@@ -61,12 +61,13 @@ namespace System.Net
                 }
 
                 _blocks = null;
+                _blockCount = 0;
             }
         }
 
-        public MultiMemory ActiveMemory => _blocks is null ? MultiMemory.Empty : new MultiMemory(_blocks!, _activeStart, _availableStart - _activeStart);
+        public MultiMemory ActiveMemory => _blocks is null ? MultiMemory.Empty : new MultiMemory(_blocks, _activeStart, _availableStart - _activeStart);
 
-        public MultiMemory AvailableMemory => _blocks is null ? MultiMemory.Empty : new MultiMemory(_blocks!, _availableStart, _blockCount * BlockSize - _availableStart);
+        public MultiMemory AvailableMemory => _blocks is null ? MultiMemory.Empty : new MultiMemory(_blocks, _availableStart, _blockCount * BlockSize - _availableStart);
 
         public void Discard(int byteCount)
         {
@@ -222,22 +223,23 @@ namespace System.Net
 
     internal readonly struct MultiMemory
     {
-        private readonly byte[][] _blocks;
+        private readonly byte[]?[]? _blocks;
         private readonly int _start;
         private readonly int _length;
 
         private const int BlockSize = 16 * 1024;
 
-        internal MultiMemory(byte[][] blocks, int start, int length)
+        internal MultiMemory(byte[]?[]? blocks, int start, int length)
         {
             if (length == 0)
             {
-                _blocks = Array.Empty<byte[]>();
+                _blocks = null;
                 _start = 0;
                 _length = 0;
             }
             else
             {
+                Debug.Assert(blocks is not null);
                 Debug.Assert(start >= 0);
                 Debug.Assert(length >= 0);
                 Debug.Assert(start + length <= blocks.Length * BlockSize);
@@ -263,7 +265,7 @@ namespace System.Net
                 }
 
                 int offset = _start + index;
-                return ref _blocks[GetBlockIndex(offset)][GetOffsetInBlock(offset)];
+                return ref _blocks![GetBlockIndex(offset)]![GetOffsetInBlock(offset)];
             }
         }
 
@@ -277,6 +279,7 @@ namespace System.Net
             }
 
             Debug.Assert(_length > 0, "Length should never be 0 here because BlockCount would be 0");
+            Debug.Assert(_blocks is not null);
 
             int startInBlock = (blockIndex == 0 ? GetOffsetInBlock(_start) : 0);
             int endInBlock = (blockIndex == BlockCount - 1 ? GetOffsetInBlock(_start + _length - 1) + 1 : BlockSize);

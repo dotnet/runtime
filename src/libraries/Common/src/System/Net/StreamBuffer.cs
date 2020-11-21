@@ -292,7 +292,10 @@ namespace System.IO
             AbortRead();
             EndWrite();
 
-            _buffer.Dispose();
+            lock (SyncObject)
+            {
+                _buffer.Dispose();
+            }
         }
 
         private sealed class ResettableValueTaskSource : IValueTaskSource

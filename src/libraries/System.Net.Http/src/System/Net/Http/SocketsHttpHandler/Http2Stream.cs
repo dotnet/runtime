@@ -1280,7 +1280,10 @@ namespace System.Net.Http
                     Cancel();
                 }
 
-                _responseBuffer.Dispose();
+                lock (SyncObject)
+                {
+                    _responseBuffer.Dispose();
+                }
             }
 
             private CancellationTokenRegistration RegisterRequestBodyCancellation(CancellationToken cancellationToken) =>
