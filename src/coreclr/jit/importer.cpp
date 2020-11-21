@@ -20923,8 +20923,8 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
         // Ask the runtime to determine the method that would be called based on the guessed-for type.
         CORINFO_CONTEXT_HANDLE ownerType                  = *contextHandle;
         bool                   requiresInstMethodTableArg = false;
-        CORINFO_METHOD_HANDLE  uniqueImplementingMethod   = impResolveVirtualMethod(
-            baseMethod, uniqueImplementingClass, &requiresInstMethodTableArg, &ownerType);
+        CORINFO_METHOD_HANDLE  uniqueImplementingMethod =
+            impResolveVirtualMethod(baseMethod, uniqueImplementingClass, &requiresInstMethodTableArg, &ownerType);
 
         if (!canResolve)
         {
@@ -20958,8 +20958,8 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
     // Fetch the method that would be called based on the declared type of 'this'
     CORINFO_CONTEXT_HANDLE ownerType                  = *contextHandle;
     bool                   requiresInstMethodTableArg = false;
-    CORINFO_METHOD_HANDLE  derivedMethod              = impResolveVirtualMethod(
-        baseMethod, objClass, &requiresInstMethodTableArg, &ownerType);
+    CORINFO_METHOD_HANDLE  derivedMethod =
+        impResolveVirtualMethod(baseMethod, objClass, &requiresInstMethodTableArg, &ownerType);
 
     // If we failed to get a handle, we can't devirtualize.  This can
     // happen when prejitting, if the devirtualization crosses
