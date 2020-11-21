@@ -46,6 +46,12 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
 
         [LoggerMessage(6, LogLevel.Error, "M7")]
         public static partial void Method7(ILogger logger, int p1, InvalidOperationException p2);
+
+        [LoggerMessage(7, LogLevel.Error, "M8")]
+        public static partial void Method8(ILogger logger, int p1, int p2, int p3, int p4, int p5, int p6, int p7);
+
+        [LoggerMessage(8, LogLevel.Error, "M9 {p1} {p2} {p3} {p4} {p5} {p6} {p7}")]
+        public static partial void Method9(ILogger logger, int p1, int p2, int p3, int p4, int p5, int p6, int p7);
     }
 
     public class LoggingTests

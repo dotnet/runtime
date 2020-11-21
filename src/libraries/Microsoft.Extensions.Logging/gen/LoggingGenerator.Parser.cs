@@ -220,12 +220,23 @@ namespace Microsoft.Extensions.Logging.Generators
 
                                         var pSymbol = GetSemanticModel(p.SyntaxTree).GetTypeInfo(p.Type!).Type!;
 
+                                        // BUGBUG: Terrible hack, need a real solution
+                                        var nspace = pSymbol.ContainingNamespace.ToString();
+                                        var typeName = p.Type!.ToString();
+#pragma warning disable CA1308 // Normalize strings to uppercase
+                                        if (!string.IsNullOrWhiteSpace(pSymbol.ContainingNamespace.ToString()) && typeName.ToLowerInvariant() != typeName)
+#pragma warning restore CA1308 // Normalize strings to uppercase
+                                        {
+                                            typeName = nspace + "." + typeName;
+                                        }
+
                                         var lp = new LoggerParameter
                                         {
                                             Name = p.Identifier.ToString(),
-                                            Type = p.Type!.ToString(),
+                                            Type = typeName,
                                             IsExceptionType = IsBaseOrIdentity(pSymbol, exSymbol),
-                                        };
+
+                                       };
                                                     
                                         lm.Parameters.Add(lp);
 
