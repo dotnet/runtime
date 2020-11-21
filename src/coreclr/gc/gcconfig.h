@@ -65,7 +65,7 @@ public:
 #define GC_CONFIGURATION_KEYS \
     BOOL_CONFIG  (ServerGC,               "gcServer",               NULL,                             false,             "Whether we should be using Server GC")                                                   \
     BOOL_CONFIG  (ConcurrentGC,           "gcConcurrent",           NULL,                             true,              "Whether we should be using Concurrent GC")                                               \
-    BOOL_CONFIG  (ConservativeGC,         "gcConservative",         NULL,                             false,             "Enables/Disables conservative GC")                                                       \
+    BOOL_CONFIG  (ConservativeGC,         "gcConservative",         NULL,                             true,             "Enables/Disables conservative GC")                                                       \
     BOOL_CONFIG  (ForceCompact,           "gcForceCompact",         NULL,                             false,             "When set to true, always do compacting GC")                                              \
     BOOL_CONFIG  (RetainVM,               "GCRetainVM",             NULL,                             false,             "When set we put the segments that should be deleted on a standby list (instead of "      \
                                                                                                                          "releasing them back to the OS) which will be considered to satisfy new segment requests" \
