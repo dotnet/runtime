@@ -223,6 +223,8 @@
     </ItemGroup>
     
     <Error Condition="!Exists('$(MicrosoftNetCoreAppRuntimePackRidDir)')" Text="MicrosoftNetCoreAppRuntimePackRidDir=$(MicrosoftNetCoreAppRuntimePackRidDir) doesn't exist" />
+
+    <CallTarget Condition="'$(RunAOTCompilation)' == 'true'" Targets="WasmAotCompile" />
     
     <WasmAppBuilder
       AppDir="$(BundleDir)"
