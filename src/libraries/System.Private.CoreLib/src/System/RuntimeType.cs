@@ -194,23 +194,34 @@ namespace System
                     typeCode = TypeCode.Single; break;
                 case CorElementType.ELEMENT_TYPE_R8:
                     typeCode = TypeCode.Double; break;
+                case CorElementType.ELEMENT_TYPE_STRING:
+                    typeCode = TypeCode.String; break;
                 case CorElementType.ELEMENT_TYPE_VALUETYPE:
-                    if (this == Convert.ConvertTypes[(int)TypeCode.Decimal])
+                    if (ReferenceEquals(this, typeof(decimal)))
                         typeCode = TypeCode.Decimal;
-                    else if (this == Convert.ConvertTypes[(int)TypeCode.DateTime])
+                    else if (ReferenceEquals(this, typeof(DateTime)))
                         typeCode = TypeCode.DateTime;
                     else if (IsEnum)
-                        typeCode = GetTypeCode(Enum.GetUnderlyingType(this));
+                        typeCode = GetTypeCode(Enum.InternalGetUnderlyingType(this));
                     else
                         typeCode = TypeCode.Object;
                     break;
                 default:
-                    if (this == Convert.ConvertTypes[(int)TypeCode.DBNull])
-                        typeCode = TypeCode.DBNull;
-                    else if (this == Convert.ConvertTypes[(int)TypeCode.String])
+#if CORECLR
+                    // GetSignatureCorElementType returns E_T_CLASS for E_T_STRING
+                    if (ReferenceEquals(this, typeof(string)))
+                    {
                         typeCode = TypeCode.String;
-                    else
-                        typeCode = TypeCode.Object;
+                        break;
+                    }
+#endif
+                    if (ReferenceEquals(this, typeof(DBNull)))
+                    {
+                        typeCode = TypeCode.DBNull;
+                        break;
+                    }
+
+                    typeCode = TypeCode.Object;
                     break;
             }
 
