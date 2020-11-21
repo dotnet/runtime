@@ -12,7 +12,7 @@
 #include "mono/utils/mono-path.h"
 #include "mono/metadata/native-library.h"
 
-extern const void* gPalGlobalizationNative[];
+extern const void* GlobalizationResolveDllImport(const char* name);
 
 enum {
     func_flag_end_of_array = 0x01,
@@ -22,7 +22,7 @@ enum {
 };
 
 #if defined(NO_GLOBALIZATION_SHIM) || !defined(ENABLE_NETCORE)
-const void* gPalGlobalizationNative[] = { (void*)func_flag_end_of_array };
+const void* GlobalizationResolveDllImport(const char* name) { return NULL; }
 #endif
 
 static const MonoQCallDef c_qcalls[] =
@@ -108,6 +108,13 @@ find_index_for_method (MonoMethod *method, const void **impls)
 gpointer
 mono_lookup_pinvoke_qcall_internal (MonoMethod *method, MonoLookupPInvokeStatus *status_out)
 {
+    const char *method_name = method->name;
+    const void *method_impl = GlobalizationResolveDllImport(method_name);
+    if (method_impl != NULL)
+    {
+        return (gpointer)method_impl;
+    }
+
     int pos_class = find_impls_index_for_class (method);
     if (pos_class < 0) {
         mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_QCALL,
