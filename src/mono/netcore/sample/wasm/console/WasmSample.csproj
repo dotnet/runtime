@@ -3,18 +3,16 @@
     <OutputType>Exe</OutputType>
     <OutputPath>bin</OutputPath>
     <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
-    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
+    <TargetFramework>$(NetCoreAppToolCurrent)</TargetFramework>
     <TargetArchitecture>wasm</TargetArchitecture>
     <TargetOS>Browser</TargetOS>
     <MicrosoftNetCoreAppRuntimePackRidDir>$(ArtifactsBinDir)microsoft.netcore.app.runtime.browser-wasm\$(Configuration)\runtimes\browser-wasm\</MicrosoftNetCoreAppRuntimePackRidDir>
     <BuildDir>$(MSBuildThisFileDirectory)obj\$(Configuration)\wasm</BuildDir>
-    <AppDir>$(MSBuildThisFileDirectory)bin\$(Configuration)\AppBundle\</AppDir>
+    <AppBundleDir>$(MSBuildProjectDirectory)\bin\$(Configuration)\AppBundle\</AppBundleDir>
     <PublishTrimmed>true</PublishTrimmed>
     <TrimMode>link</TrimMode>
     <EnableTargetingPackDownload>false</EnableTargetingPackDownload>
-    <SelfContained>true</SelfContained>
     <RuntimeIdentifier>browser-wasm</RuntimeIdentifier>
-    <RunAnalyzers>false</RunAnalyzers>
     <RunAOTCompilation Condition="'$(RunAOTCompilation)' == ''">false</RunAOTCompilation>
   </PropertyGroup>
 
@@ -37,75 +35,17 @@
     <Message Text="Packaged ID: %(RuntimePack.PackageDirectory)" Importance="high" />
   </Target>
 
-  <Import Project="$(RepoTasksDir)AotCompilerTask\MonoAOTCompiler.props" />
-
-  <Target Name="PrepareForWasmBuildApp" BeforeTargets="WasmBuildApp" DependsOnTargets="RebuildWasmAppBuilder;Build">
-    <RemoveDir Directories="$(AppDir)" />
-
+  <Target Name="PrepareForWasmBuild" BeforeTargets="WasmBuildApp">
     <PropertyGroup>
-      <WasmMainAssemblyPath>$(PublishDir)WasmSample.dll</WasmMainAssemblyPath>
-    </PropertyGroup>
-
-    <ItemGroup>
-      <BundleAssemblies Condition="'$(RunAOTCompilation)' != 'true'" Include="$(MSBuildThisFileDirectory)$(PublishDir)\*.dll" />
-    </ItemGroup>
-    <PropertyGroup>
-      <EmccFlagsFile>$(MicrosoftNetCoreAppRuntimePackRidDir)native\src\emcc-flags.txt</EmccFlagsFile>
-      <RuntimeEmccVersionFile>$(MicrosoftNetCoreAppRuntimePackRidDir)native\src\emcc-version.txt</RuntimeEmccVersionFile>
-      <EmccPublishVersionFile>$(MSBuildThisFileDirectory)$(PublishDir)\emcc-version.txt</EmccPublishVersionFile>
-      <WasmAotOutDir>$(MSBuildThisFileDirectory)$(PublishDir)</WasmAotOutDir>
-    </PropertyGroup>
-  </Target>
-
-  <Target Name="AOTCompileApp" AfterTargets="PrepareBuildApp">
-    <ItemGroup>
-      <AotInputAssemblies Condition="'$(RunAOTCompilation)' == 'true'" Include="$(MSBuildThisFileDirectory)$(PublishDir)\*.dll">
-        <AotArguments>@(MonoAOTCompilerDefaultAotArguments, ';')</AotArguments>
-        <ProcessArguments>@(MonoAOTCompilerDefaultProcessArguments, ';')</ProcessArguments>
-      </AotInputAssemblies>
-    </ItemGroup>
-
-    <Error Condition="'$(RunAOTCompilation)' == 'true' and '$(EMSDK_PATH)' == ''" Text="The EMSDK_PATH environment variable should be set pointing to the emscripten SDK root dir when using AOT."/>
-
-    <MonoAOTCompiler
-        Condition="'$(RunAOTCompilation)' == 'true'"
-        CompilerBinaryPath="$(MicrosoftNetCoreAppRuntimePackRidDir)native\cross\mono-aot-cross"
-        Mode="LLVMOnly"
-        OutputType="AsmOnly"
-        Assemblies="@(AotInputAssemblies)"
-        UseAotDataFile="false"
-        AotModulesTablePath="$(MSBuildThisFileDirectory)$(PublishDir)driver-gen.c"
-        UseLLVM="true"
-        LLVMPath="$(EMSDK_PATH)\upstream\bin">
-        <Output TaskParameter="CompiledAssemblies" ItemName="BundleAssemblies" />
-    </MonoAOTCompiler>
-  </Target>
-
-  <Target Name="BuildApp" AfterTargets="AOTCompileApp">
-    <PropertyGroup>
-      <WasmAppDir>$(AppDir)</WasmAppDir>
+      <WasmAppDir>$(AppBundleDir)</WasmAppDir>
+      <WasmAOTDir>$(MSBuildProjectDirectory)\$(PublishDir)\</WasmAOTDir>
       <WasmMainJSPath>$(MonoProjectRoot)\wasm\runtime-test.js</WasmMainJSPath>
+      <WasmMainAssemblyPath>$(WasmAotDir)WasmSample.dll</WasmMainAssemblyPath>
       <WasmGenerateRunV8Script>true</WasmGenerateRunV8Script>
     </PropertyGroup>
-    <!--
-    <PropertyGroup>
-      <EmccFlags>$(EmccFlags) -s DISABLE_EXCEPTION_CATCHING=0</EmccFlags>
-    </PropertyGroup>
-    -->
-    <CallTarget Condition="'$(RunAOTCompilation)' == 'true'" Targets="WasmAotCompile" />
-
     <ItemGroup>
-      <WasmAssembliesToBundle Include="@(BundleAssemblies)" />
+      <WasmAssembliesToBundle Include="$(TargetDir)publish\*.dll" />
     </ItemGroup>
-  </Target>
-
-  <Target Name="AfterWasmBuildApp" AfterTargets="WasmBuildApp">
-    <!-- Run mono-cil-strip on the assemblies -->
-    <!-- TODO: replace this with a linker task -->
-    <ItemGroup>
-      <_managedAppAssemblies Include="$(AppDir)managed\*.dll"/>
-    </ItemGroup>
-    <Exec Condition="'$(RunAOTCompilation)' == 'true'" Command="mono-cil-strip %(_managedAppAssemblies.Identity)" />
   </Target>
 
   <ItemGroup>
