@@ -4274,7 +4274,7 @@ void Compiler::lvaComputeRefCounts(bool isRecompute, bool setSlotNumbers)
             // If, in minopts/debug, we really want to allow locals to become
             // unreferenced later, we'll have to explicitly clear this bit.
             varDsc->setLvRefCnt(0);
-            varDsc->setLvRefCntWtd(0);
+            varDsc->setLvRefCntWtd(BB_ZERO_WEIGHT);
 
             // Special case for some varargs params ... these must
             // remain unreferenced.

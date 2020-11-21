@@ -22,6 +22,7 @@
     <Compile Include="Sum32Hash.cs" />
     <Compile Include="SymmetricAlgorithm\Minimal.cs" />
     <Compile Include="SymmetricAlgorithm\Trivial.cs" />
+    <Compile Include="SymmetricAlgorithmTests.cs" />
     <Compile Include="ZeroMemoryTests.cs" />
     <Compile Include="$(CommonPath)System\Threading\Tasks\TaskToApm.cs" Link="Common\System\Threading\Tasks\TaskToApm.cs" />
     <Compile Include="$(CommonTestPath)Tests\System\IO\StreamConformanceTests.cs" Link="Common\System\IO\StreamConformanceTests.cs" />

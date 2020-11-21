@@ -31,24 +31,6 @@
     <StableVersion Condition="'$(StabilizePackageVersion)' == 'true' and '$(StableVersion)' == ''">$(PackageVersion)</StableVersion>
   </PropertyGroup>
 
-  <!-- Set up common target properties that we use to conditionally include sources -->
-  <PropertyGroup>
-    <TargetsFreeBSD Condition="'$(TargetOS)' == 'FreeBSD'">true</TargetsFreeBSD>
-    <Targetsillumos Condition="'$(TargetOS)' == 'illumos'">true</Targetsillumos>
-    <TargetsSolaris Condition="'$(TargetOS)' == 'Solaris'">true</TargetsSolaris>
-    <TargetsLinux Condition="'$(TargetOS)' == 'Linux' or '$(TargetOS)' == 'Android'">true</TargetsLinux>
-    <TargetsNetBSD Condition="'$(TargetOS)' == 'NetBSD'">true</TargetsNetBSD>
-    <TargetsOSX Condition="'$(TargetOS)' == 'OSX'">true</TargetsOSX>
-    <TargetsiOS Condition="'$(TargetOS)' == 'iOS'">true</TargetsiOS>
-    <TargetstvOS Condition="'$(TargetOS)' == 'tvOS'">true</TargetstvOS>
-    <TargetsiOSSimulator Condition="'$(TargetsiOS)' == 'true' and ('$(Platform)' == 'x64' or '$(Platform)' == 'x86')">true</TargetsiOSSimulator>
-    <TargetstvOSSimulator Condition="'$(TargetstvOS)' == 'true' and '$(Platform)' == 'x64'">true</TargetstvOSSimulator>
-    <TargetsAndroid Condition="'$(TargetOS)' == 'Android'">true</TargetsAndroid>
-    <TargetsBrowser Condition="'$(TargetOS)' == 'Browser'">true</TargetsBrowser>
-    <TargetsWindows Condition="'$(TargetOS)' == 'windows'">true</TargetsWindows>
-    <TargetsUnix Condition="'$(TargetsFreeBSD)' == 'true' or '$(Targetsillumos)' == 'true' or '$(TargetsSolaris)' == 'true' or '$(TargetsLinux)' == 'true' or '$(TargetsNetBSD)' == 'true' or '$(TargetsOSX)' == 'true' or '$(TargetstvOS)' == 'true' or '$(TargetsiOS)' == 'true' or '$(TargetsAndroid)' == 'true'">true</TargetsUnix>
-  </PropertyGroup>
-
   <PropertyGroup>
     <!-- Minimum target OS version, keep in sync with src/libraries/Native/build-native.sh -->
     <iOSVersionMin>8.0</iOSVersionMin>

@@ -5,11 +5,11 @@
 #include <config.h>
 
 #ifdef ENABLE_PERFTRACING
-#include "ep-rt-config.h"
-#include "ep-thread.h"
-#include "ep-types.h"
-#include "ep-provider.h"
-#include "ep-session-provider.h"
+#include <eventpipe/ep-rt-config.h>
+#include <eventpipe/ep-thread.h>
+#include <eventpipe/ep-types.h>
+#include <eventpipe/ep-provider.h>
+#include <eventpipe/ep-session-provider.h>
 #include <glib.h>
 #include <mono/utils/checked-build.h>
 #include <mono/utils/mono-threads.h>

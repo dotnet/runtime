@@ -116,6 +116,7 @@
         MonoRuntimeHeaders="$(MicrosoftNetCoreAppRuntimePackNativeDir)include\mono-2.0"
         Assemblies="@(BundleAssemblies)"
         MainLibraryFileName="AppleTestRunner.dll"
+        ForceInterpreter="$(MonoForceInterpreter)"
         UseConsoleUITemplate="True"
         GenerateXcodeProject="True"
         BuildAppBundle="True"

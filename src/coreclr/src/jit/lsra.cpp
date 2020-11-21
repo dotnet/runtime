@@ -4179,9 +4179,10 @@ void LinearScan::setIntervalAsSpilled(Interval* interval)
 }
 
 //------------------------------------------------------------------------
-// spill: Spill this Interval between "fromRefPosition" and "toRefPosition"
+// spill: Spill the "interval" starting from "fromRefPosition" (upto "toRefPosition")
 //
 // Arguments:
+//    interval        - The interval that contains the RefPosition to be spilled
 //    fromRefPosition - The RefPosition at which the Interval is to be spilled
 //    toRefPosition   - The RefPosition at which it must be reloaded (debug only arg)
 //
@@ -4372,6 +4373,7 @@ void LinearScan::unassignPhysReg(RegRecord* regRec, RefPosition* spillRefPositio
 {
     Interval* assignedInterval = regRec->assignedInterval;
     assert(assignedInterval != nullptr);
+    assert(spillRefPosition == nullptr || spillRefPosition->getInterval() == assignedInterval);
     regNumber thisRegNum = regRec->regNum;
 
     // Is assignedInterval actually still assigned to this register?

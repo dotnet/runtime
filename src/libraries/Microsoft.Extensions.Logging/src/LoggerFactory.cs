@@ -3,7 +3,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 
@@ -28,7 +27,7 @@ namespace Microsoft.Extensions.Logging
         /// <summary>
         /// Creates a new <see cref="LoggerFactory"/> instance.
         /// </summary>
-        public LoggerFactory() : this(Enumerable.Empty<ILoggerProvider>())
+        public LoggerFactory() : this(Array.Empty<ILoggerProvider>())
         {
         }
 

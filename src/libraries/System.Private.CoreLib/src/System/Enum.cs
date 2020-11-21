@@ -74,7 +74,7 @@ namespace System
                     length = 1;
                     break;
                 case CorElementType.ELEMENT_TYPE_BOOLEAN:
-                    return Unsafe.As<byte, bool>(ref data) ? "01" : "00";
+                    return data != 0 ? "01" : "00";
                 case CorElementType.ELEMENT_TYPE_I2:
                 case CorElementType.ELEMENT_TYPE_U2:
                 case CorElementType.ELEMENT_TYPE_CHAR:
@@ -104,7 +104,7 @@ namespace System
             {
                 TypeCode.SByte => ((byte)(sbyte)value).ToString("X2", null),
                 TypeCode.Byte => ((byte)value).ToString("X2", null),
-                TypeCode.Boolean => Convert.ToByte((bool)value).ToString("X2", null), // direct cast from bool to byte is not allowed
+                TypeCode.Boolean => ((bool)value) ? "01" : "00",
                 TypeCode.Int16 => ((ushort)(short)value).ToString("X4", null),
                 TypeCode.UInt16 => ((ushort)value).ToString("X4", null),
                 TypeCode.Char => ((ushort)(char)value).ToString("X4", null),
@@ -258,10 +258,10 @@ namespace System
             {
                 TypeCode.SByte => (ulong)(sbyte)value,
                 TypeCode.Byte => (byte)value,
-                TypeCode.Boolean => Convert.ToByte((bool)value), // direct cast from bool to byte is not allowed
+                TypeCode.Boolean => (bool)value ? 1UL : 0UL,
                 TypeCode.Int16 => (ulong)(short)value,
                 TypeCode.UInt16 => (ushort)value,
-                TypeCode.Char => (ushort)(char)value,
+                TypeCode.Char => (char)value,
                 TypeCode.UInt32 => (uint)value,
                 TypeCode.Int32 => (ulong)(int)value,
                 TypeCode.UInt64 => (ulong)value,
@@ -276,7 +276,7 @@ namespace System
             {
                 TypeCode.SByte => (ulong)Unsafe.As<TEnum, sbyte>(ref value),
                 TypeCode.Byte => Unsafe.As<TEnum, byte>(ref value),
-                TypeCode.Boolean => Convert.ToByte(Unsafe.As<TEnum, bool>(ref value)),
+                TypeCode.Boolean => Unsafe.As<TEnum, bool>(ref value) ? 1UL : 0UL,
                 TypeCode.Int16 => (ulong)Unsafe.As<TEnum, short>(ref value),
                 TypeCode.UInt16 => Unsafe.As<TEnum, ushort>(ref value),
                 TypeCode.Char => Unsafe.As<TEnum, char>(ref value),
@@ -947,7 +947,7 @@ namespace System
                 case CorElementType.ELEMENT_TYPE_U1:
                     return data;
                 case CorElementType.ELEMENT_TYPE_BOOLEAN:
-                    return Convert.ToUInt64(Unsafe.As<byte, bool>(ref data), CultureInfo.InvariantCulture);
+                    return data != 0 ? 1UL : 0UL;
                 case CorElementType.ELEMENT_TYPE_I2:
                     return (ulong)Unsafe.As<byte, short>(ref data);
                 case CorElementType.ELEMENT_TYPE_U2:
@@ -1210,7 +1210,7 @@ namespace System
 
         object IConvertible.ToType(Type type, IFormatProvider? provider)
         {
-            return Convert.DefaultToType((IConvertible)this, type, provider);
+            return Convert.DefaultToType(this, type, provider);
         }
         #endregion
 
@@ -1247,7 +1247,7 @@ namespace System
             InternalBoxEnum(ValidateRuntimeType(enumType), value);
 
         private static object ToObject(Type enumType, bool value) =>
-            InternalBoxEnum(ValidateRuntimeType(enumType), value ? 1 : 0);
+            InternalBoxEnum(ValidateRuntimeType(enumType), value ? 1L : 0L);
 
         #endregion
 

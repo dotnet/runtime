@@ -26,7 +26,21 @@ include(../eglib/CMakeLists.txt)
 include(../utils/CMakeLists.txt)
 include(../metadata/CMakeLists.txt)
 include(../sgen/CMakeLists.txt)
-include(../eventpipe/CMakeLists.txt)
+
+if(ENABLE_PERFTRACING)
+
+    set (SHARED_EVENTPIPE_INCLUDE_PATH "../../../native/")
+    set (SHARED_EVENTPIPE_SOURCE_PATH "../../../native/eventpipe/")
+    set (MONO_EVENTPIPE_SHIM_SOURCE_PATH "../eventpipe/")
+
+    include(${MONO_EVENTPIPE_SHIM_SOURCE_PATH}/CMakeLists.txt)
+
+    include_directories(
+      ${SHARED_EVENTPIPE_INCLUDE_PATH}
+      ${MONO_EVENTPIPE_SHIM_SOURCE_PATH}
+    )
+
+endif(ENABLE_PERFTRACING)
 
 # ICU
 if(HAVE_SYS_ICU)

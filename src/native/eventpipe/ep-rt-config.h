@@ -4,13 +4,13 @@
 #include <config.h>
 #ifdef MONO_CORLIB_VERSION
 // EventPipe runtime implementation.
-#define EP_RT_H "ep-rt-mono.h"
-#define EP_RT_TYPES_H "ep-rt-types-mono.h"
-#define EP_RT_CONFIG_H "ep-rt-config-mono.h"
+#define EP_RT_H <mono/eventpipe/ep-rt-mono.h>
+#define EP_RT_TYPES_H <mono/eventpipe/ep-rt-types-mono.h>
+#define EP_RT_CONFIG_H <mono/eventpipe/ep-rt-config-mono.h>
 
 // DiagnosticServer runtime implementation.
-#define DS_RT_H "ds-rt-mono.h"
-#define DS_RT_TYPES_H "ds-rt-types-mono.h"
+#define DS_RT_H <mono/eventpipe/ds-rt-mono.h>
+#define DS_RT_TYPES_H <mono/eventpipe/ds-rt-types-mono.h>
 #else
 // EventPipe runtime implementation.
 #define EP_RT_H "ep-rt-coreclr.h"

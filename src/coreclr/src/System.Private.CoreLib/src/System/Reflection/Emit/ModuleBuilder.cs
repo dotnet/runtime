@@ -417,32 +417,14 @@ namespace System.Reflection.Emit
 
         internal SignatureHelper GetMemberRefSignature(CallingConventions call, Type? returnType,
             Type[]? parameterTypes, Type[][]? requiredCustomModifiers, Type[][]? optionalCustomModifiers,
-            IEnumerable<Type>? optionalParameterTypes, int cGenericParameters)
+            Type[]? optionalParameterTypes, int cGenericParameters)
         {
-            SignatureHelper sig = SignatureHelper.GetMethodSigHelper(this, call, returnType, cGenericParameters);
+            SignatureHelper sig = SignatureHelper.GetMethodSigHelper(this, call, cGenericParameters, returnType, null, null, parameterTypes, requiredCustomModifiers, optionalCustomModifiers);
 
-            if (parameterTypes != null)
+            if (optionalParameterTypes != null && optionalParameterTypes.Length != 0)
             {
-                for (int i = 0; i < parameterTypes.Length; i++)
-                {
-                    sig.AddArgument(parameterTypes[i], requiredCustomModifiers![i], optionalCustomModifiers![i]);
-                }
-            }
-
-            if (optionalParameterTypes != null)
-            {
-                int i = 0;
-                foreach (Type type in optionalParameterTypes)
-                {
-                    // add the sentinel
-                    if (i == 0)
-                    {
-                        sig.AddSentinel();
-                    }
-
-                    sig.AddArgument(type);
-                    i++;
-                }
+                sig.AddSentinel();
+                sig.AddArguments(optionalParameterTypes, null, null);
             }
 
             return sig;
