@@ -100,8 +100,8 @@ namespace Microsoft.Extensions.Logging.Generators
                     }}
 
                     public int Count => {lm.Parameters.Count};
-                    public global::System.Collections.Generic.KeyValuePair<string, object?> this[int index] => _holder[index];
-                    public global::System.Collections.Generic.IEnumerator<global::System.Collections.Generic.KeyValuePair<string, object?>> GetEnumerator() => (global::System.Collections.Generic.IEnumerator<global::System.Collections.Generic.KeyValuePair<string, object?>>)_holder.GetEnumerator();
+                    public global::System.Collections.Generic.KeyValuePair<string, object?> this[int index] => __holder[index];
+                    public global::System.Collections.Generic.IEnumerator<global::System.Collections.Generic.KeyValuePair<string, object?>> GetEnumerator() => (global::System.Collections.Generic.IEnumerator<global::System.Collections.Generic.KeyValuePair<string, object?>>)__holder.GetEnumerator();
                     System.Collections.IEnumerator global::System.Collections.IEnumerable.GetEnumerator() => GetEnumerator();
                 }}
             ";
@@ -111,7 +111,7 @@ namespace Microsoft.Extensions.Logging.Generators
         {
             if (lm.Parameters.Count > MaxStaeHolderArity)
             {
-                return "private readonly global::System.Collections.Generic.KeyValuePair<string, object?>[] _holder;";
+                return "private readonly global::System.Collections.Generic.KeyValuePair<string, object?>[] __holder;";
             }
 
             var sb = new StringBuilder();
@@ -125,21 +125,21 @@ namespace Microsoft.Extensions.Logging.Generators
                 sb.Append(p.Type);
             }
  
-            return $"private readonly global::Microsoft.Extensions.Logging.LogStateHolder<{sb}> _holder;";
+            return $"private readonly global::Microsoft.Extensions.Logging.LogStateHolder<{sb}> __holder;";
         }
 
         private static string GenHolderFieldAssignment(LoggerMethod lm)
         {
             if (lm.Parameters.Count == 1)
             {
-                return $"_holder = new(nameof({lm.Parameters[0].Name}), {lm.Parameters[0].Name});";
+                return $"__holder = new(nameof({lm.Parameters[0].Name}), {lm.Parameters[0].Name});";
             }
 
             var sb = new StringBuilder();
 
             if (lm.Parameters.Count > MaxStaeHolderArity)
             {
-                sb = new StringBuilder("_holder = new []{");
+                sb = new StringBuilder("__holder = new []{");
 
                 foreach (var p in lm.Parameters)
                 {
@@ -150,7 +150,7 @@ namespace Microsoft.Extensions.Logging.Generators
             }
             else
             {
-                sb.Append("_holder = new(new []{");
+                sb.Append("__holder = new(new []{");
                 bool first = true;
                 foreach (var p in lm.Parameters)
                 {
@@ -200,7 +200,7 @@ namespace Microsoft.Extensions.Logging.Generators
             {
                 sb.Append("var ");
                 sb.Append(lm.Parameters[0].Name);
-                sb.Append(" = _holder.Value;\n");
+                sb.Append(" = __holder.Value;\n");
             }
             else if (lm.Parameters.Count > MaxStaeHolderArity)
             {
@@ -209,7 +209,7 @@ namespace Microsoft.Extensions.Logging.Generators
                 {
                     sb.Append("var ");
                     sb.Append(p.Name);
-                    sb.AppendFormat(CultureInfo.InvariantCulture, " = _holder[0];\n", index++);
+                    sb.AppendFormat(CultureInfo.InvariantCulture, " = __holder[0];\n", index++);
                 }
             }
             else 
@@ -219,7 +219,7 @@ namespace Microsoft.Extensions.Logging.Generators
                 {
                     sb.Append("var ");
                     sb.Append(p.Name);
-                    sb.AppendFormat(CultureInfo.InvariantCulture, " = _holder.Value{0};\n", index++);
+                    sb.AppendFormat(CultureInfo.InvariantCulture, " = __holder.Value{0};\n", index++);
                 }
             }
 
@@ -241,7 +241,7 @@ namespace Microsoft.Extensions.Logging.Generators
                 }
             }
 
-            var loggerArg = "global::Microsoft.Extensions.Logging.ILogger logger";
+            var loggerArg = $"{lm.LoggerType} __logger";
 
             var ctorCall = $"new __{lm.Name}State({ GenArguments(lm)})";
             if (lm.Parameters.Count == 0)
@@ -272,11 +272,11 @@ namespace Microsoft.Extensions.Logging.Generators
             var eventIdCall = $"new global::Microsoft.Extensions.Logging.EventId({lm.EventId}, {eventName})";
 
             return $@"
-                public static partial void {lm.Name}({loggerArg}{(lm.Parameters.Count > 0 ? ", " : string.Empty)}{GenParameters(lm)})
+                {lm.Modifier} static partial void {lm.Name}({loggerArg}{(lm.Parameters.Count > 0 ? ", " : string.Empty)}{GenParameters(lm)})
                 {{
-                    if (logger.IsEnabled((global::Microsoft.Extensions.Logging.LogLevel){lm.Level}))
+                    if (__logger.IsEnabled((global::Microsoft.Extensions.Logging.LogLevel){lm.Level}))
                     {{
-                        logger.Log((global::Microsoft.Extensions.Logging.LogLevel){lm.Level}, {eventIdCall}, {ctorCall}, {exceptionArg}, {formatCall});
+                        __logger.Log((global::Microsoft.Extensions.Logging.LogLevel){lm.Level}, {eventIdCall}, {ctorCall}, {exceptionArg}, {formatCall});
                     }}
                 }}
         ";

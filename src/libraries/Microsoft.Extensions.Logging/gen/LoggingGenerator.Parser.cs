@@ -73,10 +73,42 @@ namespace Microsoft.Extensions.Logging.Generators
                 DiagnosticSeverity.Error,
                 isEnabledByDefault: true);
 
-            private static readonly DiagnosticDescriptor ErrorMethodGeneric = new(
+            private static readonly DiagnosticDescriptor ErrorFirstArgMustBeILogger = new(
                 id: "LG7",
+                title: "The first argument to a logging method must implement the Microsoft.Extensions.Logging.ILogger interface",
+                messageFormat: "The first argument to a logging method must implement the Microsoft.Extensions.Logging.ILogger interface",
+                category: DiagnosticCategory,
+                DiagnosticSeverity.Error,
+                isEnabledByDefault: true);
+
+            private static readonly DiagnosticDescriptor ErrorNotStaticMethod = new(
+                id: "LG8",
+                title: "Logging methods must be static",
+                messageFormat: "Logging methods must be static",
+                category: DiagnosticCategory,
+                DiagnosticSeverity.Error,
+                isEnabledByDefault: true);
+
+            private static readonly DiagnosticDescriptor ErrorNotPartialMethod = new(
+                id: "LG9",
+                title: "Logging methods must be partial",
+                messageFormat: "Logging methods must be partial",
+                category: DiagnosticCategory,
+                DiagnosticSeverity.Error,
+                isEnabledByDefault: true);
+
+            private static readonly DiagnosticDescriptor ErrorMethodIsGeneric = new(
+                id: "LG10",
                 title: "Logging methods cannot be generic",
                 messageFormat: "Logging methods cannot be generic",
+                category: DiagnosticCategory,
+                DiagnosticSeverity.Error,
+                isEnabledByDefault: true);
+
+            private static readonly DiagnosticDescriptor ErrorParameterIsGeneric = new(
+                id: "LG11",
+                title: "Logging method parameters cannot be generic",
+                messageFormat: "Logging method parameters cannot be generic",
                 category: DiagnosticCategory,
                 DiagnosticSeverity.Error,
                 isEnabledByDefault: true);
@@ -117,6 +149,13 @@ namespace Microsoft.Extensions.Logging.Generators
                     yield break;
                 }
 
+                var loggerSymbol = _compilation.GetTypeByMetadataName("Microsoft.Extensions.Logging.ILogger");
+                if (loggerSymbol == null)
+                {
+                    Diag(ErrorMissingRequiredType, null, "Microsoft.Extensions.Logging.ILogger");
+                    yield break;
+                }
+
                 foreach (var classDef in classes)
                 {
                     // determine the namespace the class is declared in, if any
@@ -128,6 +167,7 @@ namespace Microsoft.Extensions.Logging.Generators
                         {
                             // since this generator doesn't know how to generate a nested type...
                             Diag(ErrorNestedType, classDef.Identifier.GetLocation());
+                            continue;
                         }
                     }
 
@@ -173,9 +213,10 @@ namespace Microsoft.Extensions.Logging.Generators
                                         Message = message,
                                         EventName = eventName,
                                         MessageHasTemplates = HasTemplates(message),
+                                        Modifier = string.Empty,
                                     };
-                                    lc.Methods.Add(lm);
 
+                                    bool keep = true;
                                     if (lm.Name.StartsWith("__", StringComparison.Ordinal))
                                     {
                                         // can't have logging method names that start with __ since that can lead to conflicting symbol names
@@ -186,11 +227,47 @@ namespace Microsoft.Extensions.Logging.Generators
                                     if (!GetSemanticModel(method.ReturnType.SyntaxTree).GetTypeInfo(method.ReturnType!).Type!.Equals(voidSymbol, SymbolEqualityComparer.Default))
                                     {
                                         Diag(ErrorInvalidMethodReturnType, method.ReturnType.GetLocation());
+                                        keep = false;
                                     }
 
                                     if (method.Arity > 0)
                                     {
-                                        Diag(ErrorMethodGeneric, method.GetLocation());
+                                        Diag(ErrorMethodIsGeneric, method.Identifier.GetLocation());
+                                        keep = false;
+                                    }
+
+                                    bool isStatic = false;
+                                    bool isPartial = false;
+                                    foreach (var mod in method.Modifiers)
+                                    {
+                                        switch (mod.Text)
+                                        {
+                                            case "static":
+                                                isStatic = true;
+                                                break;
+
+                                            case "partial":
+                                                isPartial = true;
+                                                break;
+
+                                            case "public":
+                                            case "internal":
+                                            case "private":
+                                                lm.Modifier = mod.Text;
+                                                break;
+                                        }
+                                    }
+
+                                    if (!isStatic)
+                                    {
+                                        Diag(ErrorNotStaticMethod, method.GetLocation());
+                                        keep = false;
+                                    }
+
+                                    if (!isPartial)
+                                    {
+                                        Diag(ErrorNotPartialMethod, method.GetLocation());
+                                        keep = false;
                                     }
 
                                     // ensure there are no duplicate ids.
@@ -211,13 +288,6 @@ namespace Microsoft.Extensions.Logging.Generators
                                     bool first = true;
                                     foreach (var p in method.ParameterList.Parameters)
                                     {
-                                        if (first)
-                                        {
-                                            // skip the ILogger
-                                            first = false;
-                                            continue;
-                                        }
-
                                         var pSymbol = GetSemanticModel(p.SyntaxTree).GetTypeInfo(p.Type!).Type!;
 
                                         // BUGBUG: Terrible hack, need a real solution
@@ -230,13 +300,27 @@ namespace Microsoft.Extensions.Logging.Generators
                                             typeName = nspace + "." + typeName;
                                         }
 
+                                        if (first)
+                                        {
+                                            // skip the ILogger
+                                            first = false;
+
+                                            if (!IsBaseOrIdentity(pSymbol, loggerSymbol))
+                                            {
+                                                Diag(ErrorFirstArgMustBeILogger, p.Identifier.GetLocation());
+                                                keep = false;
+                                            }
+                                            lm.LoggerType = typeName;
+
+                                            continue;
+                                        }
+
                                         var lp = new LoggerParameter
                                         {
                                             Name = p.Identifier.ToString(),
                                             Type = typeName,
                                             IsExceptionType = IsBaseOrIdentity(pSymbol, exSymbol),
-
-                                       };
+                                        };
                                                     
                                         lm.Parameters.Add(lp);
 
@@ -246,6 +330,17 @@ namespace Microsoft.Extensions.Logging.Generators
                                             // because all generated symbols start with __
                                             Diag(ErrorInvalidParameterName, p.Identifier.GetLocation());
                                         }
+
+                                        if (pSymbol.TypeKind == TypeKind.TypeParameter)
+                                        {
+                                            Diag(ErrorParameterIsGeneric, p.Identifier.GetLocation());
+                                            keep = false;
+                                        }
+                                    }
+
+                                    if (keep)
+                                    {
+                                        lc.Methods.Add(lm);
                                     }
                                 }
                             }
@@ -334,6 +429,8 @@ namespace Microsoft.Extensions.Logging.Generators
             public string? EventName = null!;
             public List<LoggerParameter> Parameters = new();
             public bool MessageHasTemplates;
+            public string Modifier = string.Empty;
+            public string LoggerType = string.Empty;
         }
 
         // A single parameter to a log method
