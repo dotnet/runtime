@@ -142,33 +142,33 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
 
             logger.Reset();
             ArgTestExtensions.Method1(logger);
-            var rol = logger.LastState as IReadOnlyList<KeyValuePair<string, object >>;
+            var rol = logger.LastState as IReadOnlyList<KeyValuePair<string, object?>>;
             Assert.Equal(0, rol!.Count);
             Assert.Empty(rol);
             Assert.Throws<ArgumentOutOfRangeException>(() => _ = rol[0]);
 
             logger.Reset();
             ArgTestExtensions.Method2(logger, "arg1");
-            rol = logger.LastState as IReadOnlyList<KeyValuePair<string, object>>;
+            rol = logger.LastState as IReadOnlyList<KeyValuePair<string, object?>>;
             Assert.Equal(1, rol!.Count);
 #pragma warning disable CA1829 // Use Length/Count property instead of Count() when available
             Assert.Equal(1, rol.LongCount());
 #pragma warning restore CA1829 // Use Length/Count property instead of Count() when available
             Assert.Equal("p1", (string)rol[0].Key);
-            Assert.Equal("arg1", (string)rol[0].Value);
+            Assert.Equal("arg1", (string?)rol[0].Value);
             Assert.Throws<ArgumentOutOfRangeException>(() => _ = rol[1]);
 
             logger.Reset();
             ArgTestExtensions.Method3(logger, "arg1", 2);
-            rol = logger.LastState as IReadOnlyList<KeyValuePair<string, object>>;
+            rol = logger.LastState as IReadOnlyList<KeyValuePair<string, object?>>;
             Assert.Equal(2, rol!.Count);
 #pragma warning disable CA1829 // Use Length/Count property instead of Count() when available
             Assert.Equal(2, rol.LongCount());
 #pragma warning restore CA1829 // Use Length/Count property instead of Count() when available
             Assert.Equal("p1", (string)rol[0].Key);
-            Assert.Equal("arg1", (string)rol[0].Value);
+            Assert.Equal("arg1", (string?)rol[0].Value);
             Assert.Equal("p2", (string)rol[1].Key);
-            Assert.Equal(2, (int)rol[1].Value);
+            Assert.Equal(2, (int?)rol[1].Value);
             Assert.Throws<ArgumentOutOfRangeException>(() => _ = rol[2]);
         }
     }

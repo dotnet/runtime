@@ -6,6 +6,7 @@ namespace Microsoft.Extensions.Logging.Generators
     using System.Collections.Generic;
     using System.Data;
     using System.Globalization;
+    using System.Net.Mime;
     using System.Text;
     using System.Threading;
     using Microsoft.CodeAnalysis;
@@ -49,7 +50,7 @@ namespace Microsoft.Extensions.Logging.Generators
             var methods = new StringBuilder();
             foreach (var lm in lc.Methods)
             {
-                methods.Append(GenStruct(lm));
+                methods.Append(GenFormatFunc(lm));
                 methods.Append(GenLogMethod(lm));
             }
 
@@ -74,146 +75,50 @@ namespace Microsoft.Extensions.Logging.Generators
                 ";
         }
 
-        private static string GenStruct(LoggerMethod lm)
-        {
-            if (lm.Parameters.Count == 0)
-            {
-                // we don't need a custom struct if there aren't any parameters
-                return string.Empty;
-            }
-
-            return $@"
-                private readonly struct __{lm.Name}State : global::System.Collections.Generic.IReadOnlyList<global::System.Collections.Generic.KeyValuePair<string, object?>>
-                {{
-                    {GenHolderField(lm)}
-
-                    public __{lm.Name}State({GenParameters(lm)})
-                    {{
-                        {GenHolderFieldAssignment(lm)}
-                    }}
-
-                    {GenFormatFunc(lm)}
-
-                    public override string ToString()
-                    {{
-                        {GenToString(lm)}
-                    }}
-
-                    public int Count => {lm.Parameters.Count};
-                    public global::System.Collections.Generic.KeyValuePair<string, object?> this[int index] => __holder[index];
-                    public global::System.Collections.Generic.IEnumerator<global::System.Collections.Generic.KeyValuePair<string, object?>> GetEnumerator() => (global::System.Collections.Generic.IEnumerator<global::System.Collections.Generic.KeyValuePair<string, object?>>)__holder.GetEnumerator();
-                    System.Collections.IEnumerator global::System.Collections.IEnumerable.GetEnumerator() => GetEnumerator();
-                }}
-            ";
-        }
-
-        private static string GenHolderField(LoggerMethod lm)
-        {
-            if (lm.Parameters.Count > MaxStaeHolderArity)
-            {
-                return "private readonly global::System.Collections.Generic.KeyValuePair<string, object?>[] __holder;";
-            }
-
-            var sb = new StringBuilder();
-            foreach (var p in lm.Parameters)
-            {
-                if (sb.Length > 0)
-                {
-                    sb.Append(", ");
-                }
-
-                sb.Append(p.Type);
-            }
- 
-            return $"private readonly global::Microsoft.Extensions.Logging.LogStateHolder<{sb}> __holder;";
-        }
-
-        private static string GenHolderFieldAssignment(LoggerMethod lm)
-        {
-            if (lm.Parameters.Count == 1)
-            {
-                return $"__holder = new(nameof({lm.Parameters[0].Name}), {lm.Parameters[0].Name});";
-            }
-
-            var sb = new StringBuilder();
-
-            if (lm.Parameters.Count > MaxStaeHolderArity)
-            {
-                sb = new StringBuilder("__holder = new []{");
-
-                foreach (var p in lm.Parameters)
-                {
-                    sb.Append($"new global::System.Collections.Generic.KeyValuePair<string, object?>(\"{p.Name}\", {p.Name}), ");
-                }
-
-                sb.Append("};");
-            }
-            else
-            {
-                sb.Append("__holder = new(new []{");
-                bool first = true;
-                foreach (var p in lm.Parameters)
-                {
-                    if (!first)
-                    {
-                        sb.Append(", ");
-                    }
-                    first = false;
-                    sb.Append("nameof(");
-                    sb.Append(p.Name);
-                    sb.Append(')');
-                }
-
-                sb.Append("}, ");
-                first = true;
-                foreach (var p in lm.Parameters)
-                {
-                    if (!first)
-                    {
-                        sb.Append(", ");
-                    }
-                    first = false;
-
-                    sb.Append(p.Name);
-                }
-
-                sb.Append(");");
-            };
-
-            return sb.ToString();
-        }
-
         private static string GenFormatFunc(LoggerMethod lm)
         {
-            if (lm.MessageHasTemplates)
-            {
-                return $"public static readonly global::System.Func<__{lm.Name}State, global::System.Exception?, string> Format = (s, _) => s.ToString();";
-            }
-
-            return string.Empty;
-        }
-
-        private static string GenToString(LoggerMethod lm)
-        {
+            string typeName;
             var sb = new StringBuilder();
-            if (lm.Parameters.Count == 1)
+
+            if (lm.Parameters.Count == 0 || !lm.MessageHasTemplates)
             {
+                return string.Empty;
+            }
+            else if (lm.Parameters.Count == 1)
+            {
+                typeName = $"global::Microsoft.Extensions.Logging.LogStateHolder<{lm.Parameters[0].Type}>";
                 sb.Append("var ");
                 sb.Append(lm.Parameters[0].Name);
                 sb.Append(" = __holder.Value;\n");
             }
             else if (lm.Parameters.Count > MaxStaeHolderArity)
             {
+                typeName = $"global::System.Collections.Generic.KeyValuePair<string, object?>[]";
                 var index = 0;
                 foreach (var p in lm.Parameters)
                 {
                     sb.Append("var ");
                     sb.Append(p.Name);
-                    sb.AppendFormat(CultureInfo.InvariantCulture, " = __holder[0];\n", index++);
+                    sb.AppendFormat(CultureInfo.InvariantCulture, " = __holder[{0}];\n", index++);
                 }
             }
-            else 
+            else
             {
+                sb.Append("global::Microsoft.Extensions.Logging.LogStateHolder<");
+
+                foreach (var p in lm.Parameters)
+                {
+                    if (p != lm.Parameters[0])
+                    {
+                        sb.Append(", ");
+                    }
+
+                    sb.Append(p.Type);
+                }
+                sb.Append('>');
+                typeName = sb.ToString();
+
+                sb.Clear();
                 var index = 1;
                 foreach (var p in lm.Parameters)
                 {
@@ -223,10 +128,11 @@ namespace Microsoft.Extensions.Logging.Generators
                 }
             }
 
-            return $@"
-                {sb}
-                return $""{lm.Message}"";
-            ";
+            return $@"private static readonly global::System.Func<{typeName}, global::System.Exception?, string> __{lm.Name}FormatFunc = (__holder, _) =>
+                {{
+                    {sb}
+                    return $""{lm.Message}"";
+                }};";
         }
 
         private static string GenLogMethod(LoggerMethod lm)
@@ -243,14 +149,7 @@ namespace Microsoft.Extensions.Logging.Generators
 
             var loggerArg = $"{lm.LoggerType} __logger";
 
-            var ctorCall = $"new __{lm.Name}State({ GenArguments(lm)})";
-            if (lm.Parameters.Count == 0)
-            {
-                // when no parameters, use the common struct
-                ctorCall = "new Microsoft.Extensions.Logging.LogStateHolder()";
-            }
-
-            var formatCall = $"(s, _) => \"{ lm.Message}\"";
+            var formatCall = $"(_, _) => \"{ lm.Message}\"";
             if (lm.MessageHasTemplates)
             {
                 if (lm.Parameters.Count == 0)
@@ -259,7 +158,7 @@ namespace Microsoft.Extensions.Logging.Generators
                 }
                 else
                 {
-                    formatCall = $"__{lm.Name}State.Format";
+                    formatCall = $"__{lm.Name}FormatFunc";
                 }
             }
 
@@ -276,7 +175,12 @@ namespace Microsoft.Extensions.Logging.Generators
                 {{
                     if (__logger.IsEnabled((global::Microsoft.Extensions.Logging.LogLevel){lm.Level}))
                     {{
-                        __logger.Log((global::Microsoft.Extensions.Logging.LogLevel){lm.Level}, {eventIdCall}, {ctorCall}, {exceptionArg}, {formatCall});
+                        __logger.Log(
+                            (global::Microsoft.Extensions.Logging.LogLevel){lm.Level},
+                            {eventIdCall},
+                            {GenHolder(lm)},
+                            {exceptionArg},
+                            {formatCall});
                     }}
                 }}
         ";
@@ -284,11 +188,6 @@ namespace Microsoft.Extensions.Logging.Generators
 
         private static string GenParameters(LoggerMethod lm)
         {
-            if (lm.Parameters.Count == 0)
-            {
-                return string.Empty;
-            }
-
             var sb = new StringBuilder();
             foreach (var p in lm.Parameters)
             {
@@ -305,61 +204,68 @@ namespace Microsoft.Extensions.Logging.Generators
             return sb.ToString();
         }
 
-        private static string GenArguments(LoggerMethod lm)
+        private static string GenHolder(LoggerMethod lm)
         {
             if (lm.Parameters.Count == 0)
             {
-                return string.Empty;
+                return "new global::Microsoft.Extensions.Logging.LogStateHolder()";
             }
-
-            var sb = new StringBuilder();
-            foreach (var p in lm.Parameters)
+            else if (lm.Parameters.Count == 1)
             {
-                if (sb.Length > 0)
+                return $"new global::Microsoft.Extensions.Logging.LogStateHolder<{lm.Parameters[0].Type}>(nameof({lm.Parameters[0].Name}), {lm.Parameters[0].Name})";
+            }
+            else if (lm.Parameters.Count > MaxStaeHolderArity)
+            {
+                var sb = new StringBuilder("new []{");
+                foreach (var p in lm.Parameters)
                 {
-                    sb.Append(", ");
+                    sb.Append($"new global::System.Collections.Generic.KeyValuePair<string, object?>(\"{p.Name}\", {p.Name}), ");
                 }
 
-                sb.Append(p.Name);
+                sb.Append('}');
+                return sb.ToString();
             }
-
-            return sb.ToString();
-        }
-
-        private static string GenFieldAssignments(LoggerMethod lm)
-        {
-            var sb = new StringBuilder();
-            foreach (var p in lm.Parameters)
+            else
             {
-                sb.Append($"                this.{p.Name} = {p.Name};\n");
+                var sb = new StringBuilder();
+                foreach (var p in lm.Parameters)
+                {
+                    if (sb.Length > 0)
+                    {
+                        sb.Append(", ");
+                    }
+
+                    sb.Append(p.Type);
+                }
+                var tp = sb.ToString();
+
+                sb.Clear();
+                sb.Append($"new global::Microsoft.Extensions.Logging.LogStateHolder<{tp}>(new []{{");
+                foreach (var p in lm.Parameters)
+                {
+                    if (p != lm.Parameters[0])
+                    {
+                        sb.Append(", ");
+                    }
+                    sb.Append("nameof(");
+                    sb.Append(p.Name);
+                    sb.Append(')');
+                }
+
+                sb.Append("}, ");
+                foreach (var p in lm.Parameters)
+                {
+                    if (p != lm.Parameters[0])
+                    {
+                        sb.Append(", ");
+                    }
+
+                    sb.Append(p.Name);
+                }
+
+                sb.Append(')');
+                return sb.ToString();
             }
-
-            return sb.ToString();
-        }
-
-        private static string GenEnumerator(LoggerMethod lm)
-        {
-            var sb = new StringBuilder();
-            int index = 0;
-            foreach (var p in lm.Parameters)
-            {
-                sb.Append($"                yield return this[{index}];\n");
-            }
-
-            return sb.ToString();
-        }
-
-        private static string GenCases(LoggerMethod lm)
-        {
-            var sb = new StringBuilder();
-            var index = 0;
-            foreach (var p in lm.Parameters)
-            {
-                sb.Append($"                        case {index++}:\n");
-                sb.Append($"                            return new KeyValuePair<string, object>(nameof({p.Name}), {p.Name});\n");
-            }
-
-            return sb.ToString();
         }
 
         private sealed class SyntaxReceiver : ISyntaxReceiver
