@@ -51,8 +51,6 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
         [LoggerMessage(5, LogLevel.Critical, "Message6\n\"\r")]
         private static partial void M6(ILogger logger);
 
-
-
         public static void Combo(ILogger logger, ILogger<int> logger2)
         {
             M1(logger);
