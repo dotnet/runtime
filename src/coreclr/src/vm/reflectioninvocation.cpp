@@ -2009,14 +2009,16 @@ FCIMPLEND
 
 /*
  * Given a RuntimeType, queries info on how to instantiate the object.
+ * pTypeHandle - [required] the TypeHandle for the RuntimeType
+ * pRuntimeType - [required] the RuntimeType object (used for COM)
  * pRefType - [required] the RuntimeType
  * ppfnAllocator - [required, null-init] fnptr to the allocator
  *                 mgd sig: void* -> object
  * pvAllocatorFirstArg - [required, null-init] first argument to the allocator
  *                       (normally, but not always, the MethodTable*)
  * fUnwrapNullable - if true and type handle is Nullable<T>, queries info for T
- * fGetRefThisValueTypeCtor - if true and type handle is a value type,
- *                            retrieves a ctor with mgd sig (ref T) -> void
+ * fForceObjectRefCtorEntryPoint - if false and type handle is a value type,
+ *                                 retrieves a ctor with mgd sig (ref T) -> void
  * ppfnCtor - [optional, null-init] the instance's parameterless ctor,
  *            mgd sig object -> void, or null if no parameterless ctor exists
  * pfCtorIsPublic - [optional, null-init] whether the parameterless ctor is public
@@ -2024,20 +2026,21 @@ FCIMPLEND
  * ==========
  * This method will not run the type's static ctor or instantiate the type.
  */
-FCIMPL8(void, RuntimeTypeHandle::GetActivationInfo,
-    ReflectClassBaseObject* pRefType,
+void QCALLTYPE RuntimeTypeHandle::GetActivationInfo(
+    QCall::TypeHandle pTypeHandle,
+    QCall::ObjectHandleOnStack pRuntimeType,
     PCODE* ppfnAllocator,
     void** pvAllocatorFirstArg,
-    CLR_BOOL fUnwrapNullable,
-    CLR_BOOL fGetRefThisValueTypeCtor,
+    BOOL fUnwrapNullable,
+    BOOL fForceObjectRefCtorEntryPoint,
     PCODE* ppfnCtor,
-    CLR_BOOL* pfCtorIsPublic,
+    BOOL* pfCtorIsPublic,
     MethodTable** ppMethodTable
 )
 {
     CONTRACTL{
-        FCALL_CHECK;
-        PRECONDITION(CheckPointer(pRefType));
+        QCALL_CHECK;
+        PRECONDITION(!pTypeHandle.AsTypeHandle().IsNull());
         PRECONDITION(CheckPointer(ppfnAllocator));
         PRECONDITION(CheckPointer(pvAllocatorFirstArg));
         PRECONDITION(*ppfnAllocator == NULL);
@@ -2050,8 +2053,6 @@ FCIMPL8(void, RuntimeTypeHandle::GetActivationInfo,
     }
     CONTRACTL_END;
 
-    REFLECTCLASSBASEREF refType = (REFLECTCLASSBASEREF)ObjectToOBJECTREF(pRefType);
-
     // If caller didn't want us to locate a ctor, then they want the
     // behavior of GetUninitializedObject, which prohibits COM activation
     // and throws slightly different exceptions.
@@ -2061,10 +2062,9 @@ FCIMPL8(void, RuntimeTypeHandle::GetActivationInfo,
     bool fRequiresSpecialComActivationStub = false;
     void* pClassFactory = NULL;
 
-    // Various helpers we invoke can cause GC, so protect this ref
-    HELPER_METHOD_FRAME_BEGIN_1(refType);
+    BEGIN_QCALL;
 
-    TypeHandle typeHandle = refType->GetType();
+    TypeHandle typeHandle = pTypeHandle.AsTypeHandle();
 
     // Don't allow void
     if (typeHandle.GetSignatureCorElementType() == ELEMENT_TYPE_VOID)
@@ -2144,7 +2144,12 @@ FCIMPL8(void, RuntimeTypeHandle::GetActivationInfo,
         if (IsComObjectClass(typeHandle))
         {
 #ifdef FEATURE_COMINTEROP_UNMANAGED_ACTIVATION
-            SyncBlock* pSyncBlock = refType->GetSyncBlock();
+            // Need to enter cooperative mode to manipulate OBJECTREFs
+            GCX_COOP();
+
+            _ASSERTE(pRuntimeType.Get()->GetTypeHandle() == typeHandle);
+            SyncBlock* pSyncBlock = pRuntimeType.Get()->GetSyncBlock();
+
             pClassFactory = (void*)pSyncBlock->GetInteropInfo()->GetComClassFactory();
 #endif // FEATURE_COMINTEROP_UNMANAGED_ACTIVATION
 
@@ -2176,20 +2181,25 @@ FCIMPL8(void, RuntimeTypeHandle::GetActivationInfo,
 
         if (ppfnCtor != NULL && pMT->HasDefaultConstructor())
         {
-            MethodDesc* pMD = pMT->GetDefaultConstructor(!fGetRefThisValueTypeCtor);
+            if (!pMT->IsValueType())
+            {
+                // Reference types always get an (object) -> void ctor.
+                fForceObjectRefCtorEntryPoint = TRUE;
+            }
+
+            MethodDesc* pMD = pMT->GetDefaultConstructor(fForceObjectRefCtorEntryPoint);
             _ASSERTE(pMD != NULL);
 
             pMD->EnsureActive();
             *ppfnCtor = pMD->GetMultiCallableAddrOfCode();
-            *pfCtorIsPublic = pMD->IsPublic() != FALSE;
+            *pfCtorIsPublic = pMD->IsPublic();
         }
     }
 
     *ppMethodTable = pMT;
 
-    HELPER_METHOD_FRAME_END();
+    END_QCALL;
 }
-FCIMPLEND
 
 /*
  * Given a ComClassFactory*, calls the COM allocator

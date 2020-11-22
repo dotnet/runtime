@@ -123,14 +123,16 @@ public:
 
     // Static method on RuntimeTypeHandle
 
-    static FCDECL8(void, GetActivationInfo,
-        ReflectClassBaseObject* pRefType,
+    static
+    void QCALLTYPE GetActivationInfo(
+        QCall::TypeHandle pTypeHandle,
+        QCall::ObjectHandleOnStack pRuntimeType,
         PCODE* ppfnAllocator,
         void** pvAllocatorFirstArg,
-        CLR_BOOL fUnwrapNullable,
-        CLR_BOOL fGetRefThisValueTypeCtor,
+        BOOL fUnwrapNullable,
+        BOOL fForceObjectRefCtorEntryPoint,
         PCODE* ppfnCtor,
-        CLR_BOOL* pfCtorIsPublic,
+        BOOL* pfCtorIsPublic,
         MethodTable** ppMethodTable);
 
     static FCDECL1(Object*, AllocateComObject, void* pClassFactory);

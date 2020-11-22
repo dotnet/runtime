@@ -234,13 +234,14 @@ namespace System
                 delegate*<void*, object> pfnAllocatorTemp = default;
                 void* vAllocatorFirstArgTemp = default;
                 delegate*<object, void> pfnCtorTemp = default;
-                bool fCtorIsPublicTemp = default;
+                Interop.BOOL fCtorIsPublicTemp = default;
                 MethodTable* pMethodTableTemp = default;
 
-                GetActivationInfo(
-                    rt, &pfnAllocatorTemp, &vAllocatorFirstArgTemp,
-                    fUnwrapNullable: forGetUninitializedInstance,
-                    fGetRefThisValueTypeCtor: false,
+                _GetActivationInfo(
+                    new QCallTypeHandle(ref rt), ObjectHandleOnStack.Create(ref rt),
+                    &pfnAllocatorTemp, &vAllocatorFirstArgTemp,
+                    fUnwrapNullable: forGetUninitializedInstance ? Interop.BOOL.TRUE : Interop.BOOL.FALSE,
+                    fForceObjectRefCtorEntryPoint: Interop.BOOL.TRUE,
                     ppfnCtor: forGetUninitializedInstance ? null : &pfnCtorTemp,
                     pfCtorIsPublic: forGetUninitializedInstance ? null : &fCtorIsPublicTemp,
                     &pMethodTableTemp);
@@ -257,7 +258,7 @@ namespace System
                 vAllocatorFirstArg = vAllocatorFirstArgTemp;
 
                 pfnCtor = pfnCtorTemp; // could be null
-                ctorIsPublic = fCtorIsPublicTemp;
+                ctorIsPublic = fCtorIsPublicTemp != Interop.BOOL.FALSE;
             }
             catch (Exception ex)
             {
@@ -279,15 +280,16 @@ namespace System
             }
         }
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern void GetActivationInfo(
-            RuntimeType pRefType,
+        [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
+        private static extern void _GetActivationInfo(
+            QCallTypeHandle pTypeHandle,
+            ObjectHandleOnStack pRuntimeType,
             delegate*<void*, object>* ppfnAllocator,
             void** pvAllocatorFirstArg,
-            bool fUnwrapNullable,
-            bool fGetRefThisValueTypeCtor,
+            Interop.BOOL fUnwrapNullable,
+            Interop.BOOL fForceObjectRefCtorEntryPoint,
             delegate*<object, void>* ppfnCtor,
-            bool* pfCtorIsPublic,
+            Interop.BOOL* pfCtorIsPublic,
             MethodTable** ppMethodTable);
 
         internal RuntimeType GetRuntimeType()
