@@ -271,6 +271,7 @@ namespace System
                 switch (ex)
                 {
                     case ArgumentException: throw new ArgumentException(friendlyMessage);
+                    case PlatformNotSupportedException: throw new PlatformNotSupportedException(friendlyMessage);
                     case NotSupportedException: throw new NotSupportedException(friendlyMessage);
                     case MethodAccessException: throw new MethodAccessException(friendlyMessage);
                     case MissingMethodException: throw new MissingMethodException(friendlyMessage);
