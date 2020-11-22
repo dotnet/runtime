@@ -21,15 +21,18 @@ using System.Runtime.InteropServices;
 using System.Text;
 
 #if ES_BUILD_STANDALONE
+using System.Runtime.CompilerServices;
 namespace Microsoft.Diagnostics.Tracing
 #else
+using Internal.Runtime.CompilerServices;
 namespace System.Diagnostics.Tracing
 #endif
 {
     public partial class EventSource
     {
 #if FEATURE_MANAGED_ETW
-        private byte[] providerMetadata = null!;
+        protected internal virtual ReadOnlySpan<byte> ProviderMetadata => m_providerMetadata;
+        private byte[]? m_providerMetadata;
 #endif
 
 #if FEATURE_PERFTRACING
@@ -427,12 +430,13 @@ namespace System.Diagnostics.Tracing
             for (int i = 0; i < pinCount; i++)
                 pins[i] = default;
 
+            ReadOnlySpan<byte> providerMetadata = ProviderMetadata;
             fixed (byte*
-                pMetadata0 = this.providerMetadata,
+                pMetadata0 = providerMetadata,
                 pMetadata1 = nameInfo.nameMetadata,
                 pMetadata2 = eventTypes.typeMetadata)
             {
-                descriptors[0].SetMetadata(pMetadata0, this.providerMetadata.Length, 2);
+                descriptors[0].SetMetadata(pMetadata0, providerMetadata.Length, 2);
                 descriptors[1].SetMetadata(pMetadata1, nameInfo.nameMetadata.Length, 1);
                 descriptors[2].SetMetadata(pMetadata2, eventTypes.typeMetadata.Length, 1);
 
@@ -538,12 +542,13 @@ namespace System.Diagnostics.Tracing
                 for (int i = 0; i < descriptorsLength; i++)
                     descriptors[i] = default;
 
+                ReadOnlySpan<byte> providerMetadata = ProviderMetadata;
                 fixed (byte*
-                    pMetadata0 = this.providerMetadata,
+                    pMetadata0 = providerMetadata,
                     pMetadata1 = nameInfo.nameMetadata,
                     pMetadata2 = eventTypes.typeMetadata)
                 {
-                    descriptors[0].SetMetadata(pMetadata0, this.providerMetadata.Length, 2);
+                    descriptors[0].SetMetadata(pMetadata0, providerMetadata.Length, 2);
                     descriptors[1].SetMetadata(pMetadata1, nameInfo.nameMetadata.Length, 1);
                     descriptors[2].SetMetadata(pMetadata2, eventTypes.typeMetadata.Length, 1);
                     int numDescrs = 3;
@@ -610,12 +615,13 @@ namespace System.Diagnostics.Tracing
                     for (int i = 0; i < pinCount; i++)
                         pins[i] = default;
 
+                    ReadOnlySpan<byte> providerMetadata = ProviderMetadata;
                     fixed (byte*
-                        pMetadata0 = this.providerMetadata,
+                        pMetadata0 = providerMetadata,
                         pMetadata1 = nameInfo.nameMetadata,
                         pMetadata2 = eventTypes.typeMetadata)
                     {
-                        descriptors[0].SetMetadata(pMetadata0, this.providerMetadata.Length, 2);
+                        descriptors[0].SetMetadata(pMetadata0, providerMetadata.Length, 2);
                         descriptors[1].SetMetadata(pMetadata1, nameInfo.nameMetadata.Length, 1);
                         descriptors[2].SetMetadata(pMetadata2, eventTypes.typeMetadata.Length, 1);
 #endif // FEATURE_MANAGED_ETW
@@ -749,6 +755,12 @@ namespace System.Diagnostics.Tracing
         private void InitializeProviderMetadata()
         {
 #if FEATURE_MANAGED_ETW
+            if (!Unsafe.IsNullRef(ref MemoryMarshal.GetReference(ProviderMetadata)))
+            {
+                // Already set
+                return;
+            }
+
             if (m_traits != null)
             {
                 List<byte> traitMetaData = new List<byte>(100);
@@ -778,13 +790,18 @@ namespace System.Diagnostics.Tracing
                         traitMetaData[lenPos + 1] = unchecked((byte)(valueLen >> 8));
                     }
                 }
-                providerMetadata = Statics.MetadataForString(this.Name, 0, traitMetaData.Count, 0);
+                byte[] providerMetadata = Statics.MetadataForString(this.Name, 0, traitMetaData.Count, 0);
                 int startPos = providerMetadata.Length - traitMetaData.Count;
                 foreach (byte b in traitMetaData)
+                {
                     providerMetadata[startPos++] = b;
+                }
+                m_providerMetadata = providerMetadata;
             }
             else
-                providerMetadata = Statics.MetadataForString(this.Name, 0, 0, 0);
+            {
+                m_providerMetadata = Statics.MetadataForString(this.Name, 0, 0, 0);
+            }
 #endif //FEATURE_MANAGED_ETW
         }
 

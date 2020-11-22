@@ -18,7 +18,7 @@ namespace System.Threading.Tasks
             null
 #endif
         )]
-    internal sealed class TplEventSource : EventSource
+    internal sealed partial class TplEventSource : EventSource
     {
         /// Used to determine if tasks should generate Activity IDs for themselves
         internal bool TasksSetActivityIds;        // This keyword is set

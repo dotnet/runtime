@@ -19,9 +19,9 @@ namespace System.Threading
     // - Use a different provider name and guid (maybe "System.Threading.ThreadPool"), update PerfView and dotnet-trace to
     //   enable the provider by default when the Threading or other ThreadPool-related keywords are specified for the runtime
     //   provider, and update PerfView with a trace event parser for the new provider so that it knows about the events and may
-    //   use them to identify thread pool threads.
+    //   use them to identify thread pool threads. Also update overriden ProviderMetadata data.
     [EventSource(Name = "Microsoft-Windows-DotNETRuntime", Guid = "e13c0d23-ccbc-4e12-931b-d9cc2eee27e4")]
-    internal sealed class PortableThreadPoolEventSource : EventSource
+    internal sealed partial class PortableThreadPoolEventSource : EventSource
     {
         // This value does not seem to be used, leaving it as zero for now. It may be useful for a scenario that may involve
         // multiple instances of the runtime within the same process, but then it seems unlikely that both instances' thread

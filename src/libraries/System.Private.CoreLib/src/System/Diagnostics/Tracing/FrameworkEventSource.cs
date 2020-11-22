@@ -7,7 +7,7 @@ using Internal.Runtime.CompilerServices;
 namespace System.Diagnostics.Tracing
 {
     [EventSource(Guid = "8E9F5090-2D75-4d03-8A81-E5AFBF85DAF1", Name = "System.Diagnostics.Eventing.FrameworkEventSource")]
-    internal sealed class FrameworkEventSource : EventSource
+    internal sealed partial class FrameworkEventSource : EventSource
     {
         public static readonly FrameworkEventSource Log = new FrameworkEventSource();
 

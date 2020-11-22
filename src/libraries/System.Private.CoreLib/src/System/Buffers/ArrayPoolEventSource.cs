@@ -6,7 +6,7 @@ using System.Diagnostics.Tracing;
 namespace System.Buffers
 {
     [EventSource(Guid = "0866B2B8-5CEF-5DB9-2612-0C0FFD814A44", Name = "System.Buffers.ArrayPoolEventSource")]
-    internal sealed class ArrayPoolEventSource : EventSource
+    internal sealed partial class ArrayPoolEventSource : EventSource
     {
         internal static readonly ArrayPoolEventSource Log = new ArrayPoolEventSource();
 

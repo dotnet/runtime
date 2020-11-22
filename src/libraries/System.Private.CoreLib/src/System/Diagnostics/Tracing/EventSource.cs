@@ -1508,12 +1508,13 @@ namespace System.Diagnostics.Tracing
                 if (this.Name != "System.Diagnostics.Eventing.FrameworkEventSource" || Environment.IsWindows8OrAbove)
 #endif
                 {
-                    fixed (byte* providerMetadata = this.providerMetadata)
+                    ReadOnlySpan<byte> providerMetadata = ProviderMetadata;
+                    fixed (byte* metadata = providerMetadata)
                     {
                         m_etwProvider.SetInformation(
                             Interop.Advapi32.EVENT_INFO_CLASS.SetTraits,
-                            providerMetadata,
-                            (uint)this.providerMetadata.Length);
+                            metadata,
+                            (uint)providerMetadata.Length);
                     }
                 }
 #endif // TARGET_WINDOWS
