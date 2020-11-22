@@ -2166,7 +2166,8 @@ void QCALLTYPE RuntimeTypeHandle::GetActivationInfo(
     if (fRequiresSpecialComActivationStub)
     {
         // managed sig: ComClassFactory* -> object (via FCALL)
-        *ppfnAllocator = (PCODE)GetEEFuncEntryPoint(AllocateComObject);
+        // caller understands the -1 sentinel value and substitutes real address
+        *ppfnAllocator = (PCODE)(-1);
         *pvAllocatorFirstArg = pClassFactory;
     }
     else

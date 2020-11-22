@@ -208,7 +208,6 @@ namespace System
         /// the VM, but it will not call any static ctors on the type.
         /// </summary>
 #if FEATURE_COMINTEROP
-        [DynamicDependency("_AllocateComObject(System.Void*)")]
 #endif
         internal static void GetActivationInfo(
             RuntimeType rt,
@@ -244,6 +243,14 @@ namespace System
 
                 Debug.Assert(pMethodTableTemp != null);
                 pMT = pMethodTableTemp;
+
+#if FEATURE_COMINTEROP
+                if ((nint)pfnAllocatorTemp == -1)
+                {
+                    // Sentinel value to mean use special COM allocator
+                    pfnAllocatorTemp = &_AllocateComObject;
+                }
+#endif
 
                 Debug.Assert(pfnAllocatorTemp != null);
                 pfnAllocator = pfnAllocatorTemp;
@@ -285,7 +292,6 @@ namespace System
             MethodTable** ppMethodTable);
 
 #if FEATURE_COMINTEROP
-        // May be invoked via calli by ActivatorCache
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern object _AllocateComObject(void* pClassFactory);
 #endif
