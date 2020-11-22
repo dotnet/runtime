@@ -293,15 +293,10 @@ namespace Microsoft.Extensions.Logging.Generators
                                     foreach (var p in method.ParameterList.Parameters)
                                     {
                                         var pSymbol = GetSemanticModel(p.SyntaxTree).GetTypeInfo(p.Type!).Type!;
-
-                                        // BUGBUG: Terrible hack, need a real solution
-                                        var nspace = pSymbol.ContainingNamespace.ToString();
-                                        var typeName = p.Type!.ToString();
-#pragma warning disable CA1308 // Normalize strings to uppercase
-                                        if (!string.IsNullOrWhiteSpace(pSymbol.ContainingNamespace.ToString()) && typeName.ToLowerInvariant() != typeName)
-#pragma warning restore CA1308 // Normalize strings to uppercase
+                                        var typeName = pSymbol.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
+                                        if (pSymbol.NullableAnnotation == NullableAnnotation.Annotated)
                                         {
-                                            typeName = nspace + "." + typeName;
+                                            typeName += '?';
                                         }
 
                                         if (first)

@@ -27,17 +27,25 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
     // test particular method signature variations are generated correctly
     partial class SignatureTests
     {
+        // normal public method
         [LoggerMessage(0, LogLevel.Critical, "Message1")]
         public static partial void M1(ILogger logger);
 
+        // internal method
         [LoggerMessage(1, LogLevel.Critical, "Message2")]
         internal static partial void M2(ILogger logger);
 
+        // private method
         [LoggerMessage(2, LogLevel.Critical, "Message3")]
         private static partial void M3(ILogger logger);
 
+        // generic ILogger
         [LoggerMessage(3, LogLevel.Critical, "Message4")]
         private static partial void M4(ILogger<int> logger);
+
+        // random type method parameter
+        [LoggerMessage(4, LogLevel.Critical, "Message5")]
+        private static partial void M5(ILogger logger, System.Collections.IEnumerable items);
 
         public static void Combo(ILogger logger, ILogger<int> logger2)
         {
@@ -45,6 +53,7 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
             M2(logger);
             M3(logger);
             M4(logger2);
+            M5(logger, new string[] { "A" });
         }
     }
 
