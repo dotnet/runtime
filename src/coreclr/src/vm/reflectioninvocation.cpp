@@ -2000,35 +2000,63 @@ lExit: ;
 FCIMPLEND
 
 /*
- * Given a TypeHandle, returns the address of the NEWOBJ helper function that creates
- * a zero-inited instance of this type. If NEWOBJ is not supported on this TypeHandle,
- * throws an exception. If TypeHandle is a value type, the NEWOBJ helper will create
- * a boxed zero-inited instance of the value type. The "fGetUninitializedObject"
- * parameter dictates whether the caller is RuntimeHelpers.GetUninitializedObject or
- * Activator.CreateInstance, which have different behavior w.r.t. what exceptions are
- * thrown on failure and how nullables and COM types are handled.
+ * Given a RuntimeType, queries info on how to instantiate the object.
+ * pRefType - [required] the RuntimeType
+ * ppfnAllocator - [required, null-init] fnptr to the allocator
+ *                 mgd sig: void* -> object
+ * pvAllocatorFirstArg - [required, null-init] first argument to the allocator
+ *                       (normally, but not always, the MethodTable*)
+ * fUnwrapNullable - if true and type handle is Nullable<T>, queries info for T
+ * fGetRefThisValueTypeCtor - if true and type handle is a value type,
+ *                            retrieves a ctor with mgd sig (ref T) -> void
+ * ppfnCtor - [optional, null-init] the instance's parameterless ctor,
+ *            mgd sig object -> void, or null if no parameterless ctor exists
+ * pfCtorIsPublic - [optional, null-init] whether the parameterless ctor is public
+ * ppMethodTable - [required, null-init] the MethodTable* for the queried type
+ * ==========
+ * This method will not run the type's static ctor or instantiate the type.
  */
-void QCALLTYPE RuntimeTypeHandle::GetAllocatorFtn(
-    QCall::TypeHandle pTypeHandle,
-    PCODE* ppNewobjHelper,
-    MethodTable** ppMT,
-    BOOL fGetUninitializedObject,
-    BOOL* pfFailedWhileRunningCctor)
+FCIMPL8(void, RuntimeTypeHandle::GetActivationInfo,
+    ReflectClassBaseObject* pRefType,
+    PCODE* ppfnAllocator,
+    void** pvAllocatorFirstArg,
+    CLR_BOOL fUnwrapNullable,
+    CLR_BOOL fGetRefThisValueTypeCtor,
+    PCODE* ppfnCtor,
+    CLR_BOOL* pfCtorIsPublic,
+    MethodTable** ppMethodTable
+)
 {
     CONTRACTL{
-        QCALL_CHECK;
-        PRECONDITION(CheckPointer(ppNewobjHelper));
-        PRECONDITION(CheckPointer(ppMT));
-        PRECONDITION(CheckPointer(pfFailedWhileRunningCctor));
-        PRECONDITION(*ppNewobjHelper == NULL);
-        PRECONDITION(*ppMT == NULL);
-        PRECONDITION(!*pfFailedWhileRunningCctor);
+        FCALL_CHECK;
+        PRECONDITION(CheckPointer(pRefType));
+        PRECONDITION(CheckPointer(ppfnAllocator));
+        PRECONDITION(CheckPointer(pvAllocatorFirstArg));
+        PRECONDITION(*ppfnAllocator == NULL);
+        PRECONDITION(*pvAllocatorFirstArg == NULL);
+        PRECONDITION((ppfnCtor == NULL) == (pfCtorIsPublic == NULL));
+        PRECONDITION((ppfnCtor == NULL) || (*ppfnCtor == NULL));
+        PRECONDITION((pfCtorIsPublic == NULL) || (!*pfCtorIsPublic));
+        PRECONDITION(CheckPointer(ppMethodTable));
+        PRECONDITION(*ppMethodTable == NULL);
     }
     CONTRACTL_END;
 
-    BEGIN_QCALL;
+    REFLECTCLASSBASEREF refType = (REFLECTCLASSBASEREF)ObjectToOBJECTREF(pRefType);
 
-    TypeHandle typeHandle = pTypeHandle.AsTypeHandle();
+    // If caller didn't want us to locate a ctor, then they want the
+    // behavior of GetUninitializedObject, which prohibits COM activation
+    // and throws slightly different exceptions.
+    bool fGetUninitializedObject = (ppfnCtor != NULL);
+
+    // If we're activating __ComObject.
+    bool fRequiresSpecialComActivationStub = false;
+    void* pClassFactory = NULL;
+
+    // Various helpers we invoke can cause GC, so protect this ref
+    HELPER_METHOD_FRAME_BEGIN_1(refType);
+
+    TypeHandle typeHandle = refType->GetType();
 
     // Don't allow void
     if (typeHandle.GetSignatureCorElementType() == ELEMENT_TYPE_VOID)
@@ -2044,8 +2072,6 @@ void QCALLTYPE RuntimeTypeHandle::GetAllocatorFtn(
 
     MethodTable* pMT = typeHandle.AsMethodTable();
     PREFIX_ASSUME(pMT != NULL);
-
-    pMT->EnsureInstanceActive();
 
     // Don't allow creating instances of delegates
     if (pMT->IsDelegate())
@@ -2085,111 +2111,103 @@ void QCALLTYPE RuntimeTypeHandle::GetAllocatorFtn(
         COMPlusThrow(kNotSupportedException, W("NotSupported_ByRefLike"));
     }
 
-    // Never allow the allocation of an unitialized ContextBoundObject derived type, these must always be created with a paired
-    // transparent proxy or the jit will get confused.
-
-#ifdef FEATURE_COMINTEROP
-    // COM allocation can involve the __ComObject base type (with attached CLSID) or an RCW type.
-    // For Activator.CreateInstance, we'll optimistically return a reference to the allocator,
-    // which will fail if there's not a legal CLSID associated with the requested type.
-    // For __ComObject, Activator.CreateInstance will special-case this and replace it with a stub.
-    // RuntimeHelpers.GetUninitializedObject always fails when it sees COM objects.
-    if (fGetUninitializedObject && pMT->IsComObjectType())
-    {
-        COMPlusThrow(kNotSupportedException, W("NotSupported_ManagedActivation"));
-    }
-#endif // FEATURE_COMINTEROP
-
-    // If the caller is GetUninitializedInstance, they'll want a boxed T instead of a boxed Nullable<T>.
-    // Other callers will get the MethodTable* corresponding to Nullable<T>.
-    if (fGetUninitializedObject && Nullable::IsNullableType(pMT))
+    // Caller passed Nullable<T> but wanted information for T instead?
+    if (fUnwrapNullable && Nullable::IsNullableType(pMT))
     {
         pMT = pMT->GetInstantiation()[0].GetMethodTable();
     }
 
-    // Run the type's cctor if needed (if not marked beforefieldinit)
-    if (pMT->HasPreciseInitCctors())
+#ifdef FEATURE_COMINTEROP
+    // COM allocation can involve the __ComObject base type (with attached CLSID) or a
+    // VM-implemented [ComImport] class. For GetUninitializedObject, we block all COM types.
+    // For CreateInstance, the flowchart is:
+    //   - For __ComObject,
+    //     .. on Windows, bypass normal newobj logic and use ComClassFactory::CreateInstance.
+    //     .. on non-Windows, treat as a normal class, type has no special handling in VM.
+    //   - For [ComImport] class, treat as a normal class. VM will replace default
+    //     ctor with COM activation logic on supported platforms, else ctor itself will PNSE.
+    if (pMT->IsComObjectType())
     {
-        *pfFailedWhileRunningCctor = TRUE;
-        pMT->CheckRunClassInitAsIfConstructingThrowing();
-        *pfFailedWhileRunningCctor = FALSE;
+        if (fGetUninitializedObject)
+        {
+            COMPlusThrow(kNotSupportedException, W("NotSupported_ManagedActivation"));
+        }
+
+        if (IsComObjectClass(typeHandle))
+        {
+#ifdef FEATURE_COMINTEROP_UNMANAGED_ACTIVATION
+            SyncBlock* pSyncBlock = refType->GetSyncBlock();
+            pClassFactory = (void*)pSyncBlock->GetInteropInfo()->GetComClassFactory();
+#endif // FEATURE_COMINTEROP_UNMANAGED_ACTIVATION
+
+            if (!pClassFactory)
+            {
+                COMPlusThrow(kInvalidComObjectException, IDS_EE_NO_BACKING_CLASS_FACTORY);
+            }
+
+            fRequiresSpecialComActivationStub = true;
+        }
     }
-
-    // And we're done!
-    PCODE pNewobjFn = (PCODE)CEEJitInfo::getHelperFtnStatic(CEEInfo::getNewHelperStatic(pMT));
-    _ASSERTE(pNewobjFn != NULL);
-
-    *ppNewobjHelper = pNewobjFn;
-    *ppMT = pMT;
-
-    END_QCALL;
-}
-
-/*
- * Given a TypeHandle, returns the MethodDesc* for the default (parameterless) ctor,
- * or nullptr if the parameterless ctor doesn't exist. For reference types, the parameterless
- * ctor has a managed (object @this) -> void calling convention. For value types,
- * the parameterless ctor has a managed (ref T @this) -> void calling convention, unless
- * fForceBoxedEntryPoint is set, then managed (object @this) -> void stub is returned.
- * The returned MethodDesc* is appropriately instantiated over any necessary generic args.
- */
-MethodDesc* QCALLTYPE RuntimeTypeHandle::GetDefaultCtor(
-    QCall::TypeHandle pTypeHandle,
-    BOOL fForceBoxedEntryPoint)
-{
-    QCALL_CONTRACT;
-
-    MethodDesc* pMethodDesc = NULL;
-
-    BEGIN_QCALL;
-
-    TypeHandle typeHandle = pTypeHandle.AsTypeHandle();
-    MethodTable* pMT = typeHandle.AsMethodTable();
-    PREFIX_ASSUME(pMT != NULL);
+#endif // FEATURE_COMINTEROP
 
     pMT->EnsureInstanceActive();
-    if (pMT->HasDefaultConstructor())
+
+    // All checks passed! Pass parameters back to the caller.
+
+    if (fRequiresSpecialComActivationStub)
     {
-        pMethodDesc = pMT->GetDefaultConstructor(fForceBoxedEntryPoint);
+        // managed sig: ComClassFactory* -> object (via FCALL)
+        *ppfnAllocator = (PCODE)GetEEFuncEntryPoint(AllocateComObject);
+        *pvAllocatorFirstArg = pClassFactory;
+    }
+    else
+    {
+        // managed sig: MethodTable* -> object (via JIT helper)
+        *ppfnAllocator = CEEJitInfo::getHelperFtnStatic(CEEInfo::getNewHelperStatic(pMT));
+        *pvAllocatorFirstArg = pMT;
+
+        if (ppfnCtor != NULL && pMT->HasDefaultConstructor())
+        {
+            MethodDesc* pMD = pMT->GetDefaultConstructor(!fGetRefThisValueTypeCtor);
+            _ASSERTE(pMD != NULL);
+
+            pMD->EnsureActive();
+            *ppfnCtor = pMD->GetMultiCallableAddrOfCode();
+            *pfCtorIsPublic = pMD->IsPublic() != FALSE;
+        }
     }
 
-    END_QCALL;
+    *ppMethodTable = pMT;
 
-    return pMethodDesc;
+    HELPER_METHOD_FRAME_END();
 }
+FCIMPLEND
 
 /*
- * Given a RuntimeType that represents __ComObject, activates an instance of the
- * COM object and returns a RCW around it. Throws if activation fails or if the
- * RuntimeType isn't __ComObject.
+ * Given a ComClassFactory*, calls the COM allocator
+ * and returns a RCW.
  */
-void QCALLTYPE RuntimeTypeHandle::AllocateComObject(
-    QCall::ObjectHandleOnStack refRuntimeType,
-    QCall::ObjectHandleOnStack retInstance)
+FCIMPL1(Object*, RuntimeTypeHandle::AllocateComObject(
+    void* pClassFactory)
 {
-    QCALL_CONTRACT;
+    CONTRACTL{
+        FCALL_CHECK;
+        PRECONDITION(CheckPointer(pClassFactory));
+    }
+    CONTRACTL_END;
 
+    OBJECTREF rv = NULL;
     bool allocated = false;
 
-    BEGIN_QCALL;
+    HELPER_METHOD_FRAME_BEGIN_RET_1(rv);
 
 #ifdef FEATURE_COMINTEROP
 #ifdef FEATURE_COMINTEROP_UNMANAGED_ACTIVATION
     {
-        GCX_COOP();
-        REFLECTCLASSBASEREF refThis = (REFLECTCLASSBASEREF)refRuntimeType.Get();
-
-        if (IsComObjectClass(refThis->GetType()))
+        if (pClassFactory != NULL)
         {
-            InteropSyncBlockInfo* pSyncBlockInfo = refThis->GetSyncBlock()->GetInteropInfo();
-            refThis = NULL; // GetInteropInfo might trigger GC, assume 'refThis' ref now invalid
-
-            void* pClassFactory = (void*)pSyncBlockInfo->GetComClassFactory();
-            if (pClassFactory)
-            {
-                retInstance.Set(((ComClassFactory*)pClassFactory)->CreateInstance(NULL));
-                allocated = true;
-            }
+            auto x = ((ComClassFactory*)pClassFactory)->CreateInstance(NULL);
+            allocated = true;
         }
     }
 #endif // FEATURE_COMINTEROP_UNMANAGED_ACTIVATION
@@ -2204,8 +2222,10 @@ void QCALLTYPE RuntimeTypeHandle::AllocateComObject(
 #endif // FEATURE_COMINTEROP
     }
 
-    END_QCALL;
+    HELPER_METHOD_FRAME_END();
+    return OBJECTREFToObject(rv);
 }
+FCIMPLEND
 
 //*************************************************************************************************
 //*************************************************************************************************
@@ -2327,6 +2347,8 @@ void QCALLTYPE ReflectionEnum::GetEnumValuesAndNames(QCall::TypeHandle pEnumType
             static_assert_no_msg(offsetof(MDDefaultValue, m_byteValue) == offsetof(MDDefaultValue, m_usValue));
             static_assert_no_msg(offsetof(MDDefaultValue, m_ulValue) == offsetof(MDDefaultValue, m_ullValue));
             PVOID pValue = &defaultValue.m_byteValue;
+
+            auto y = ReflectionEnum::InternalGetEnumUnderlyingType;
 
             switch (type) {
             case ELEMENT_TYPE_I1:

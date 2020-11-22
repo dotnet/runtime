@@ -123,14 +123,17 @@ public:
 
     // Static method on RuntimeTypeHandle
 
-    static
-    void QCALLTYPE GetAllocatorFtn(QCall::TypeHandle pTypeHandle, PCODE* ppNewobjHelper, MethodTable** ppMT, BOOL fGetUninitializedObject, BOOL* pfFailedWhileRunningCctor);
+    static FCDECL8(void, GetActivationInfo,
+        ReflectClassBaseObject* pRefType,
+        PCODE* ppfnAllocator,
+        void** pvAllocatorFirstArg,
+        CLR_BOOL fUnwrapNullable,
+        CLR_BOOL fGetRefThisValueTypeCtor,
+        PCODE* ppfnCtor,
+        CLR_BOOL* pfCtorIsPublic,
+        MethodTable** ppMethodTable);
 
-    static
-    MethodDesc* QCALLTYPE GetDefaultCtor(QCall::TypeHandle pTypeHandle, BOOL fForceBoxedEntryPoint);
-
-    static
-    void QCALLTYPE AllocateComObject(QCall::ObjectHandleOnStack refRuntimeType, QCall::ObjectHandleOnStack retInstance);
+    static FCDECL1(Object*, AllocateComObject, void* pClassFactory);
 
     static
     void QCALLTYPE MakeByRef(QCall::TypeHandle pTypeHandle, QCall::ObjectHandleOnStack retType);
