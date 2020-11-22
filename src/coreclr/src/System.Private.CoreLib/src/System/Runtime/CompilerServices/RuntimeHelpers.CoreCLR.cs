@@ -42,20 +42,15 @@ namespace System.Runtime.CompilerServices
 
         public static void RunClassConstructor(RuntimeTypeHandle type)
         {
-            RunClassConstructor(type, preciseCctorsOnly: false);
+            _RunClassConstructor(
+                new QCallTypeHandle(ref type),
+                preciseCctorsOnly: Interop.BOOL.FALSE);
         }
 
         // If 'preciseCctorsOnly' is true, runs only cctors *NOT* marked .beforefieldinit.
         // If 'preciseCctorsOnly' is false, runs any cctor, regardless of .beforefieldinit annotation.
-        internal static void RunClassConstructor(RuntimeTypeHandle typeHandle, bool preciseCctorsOnly)
-        {
-            _RunClassConstructor(
-                new QCallTypeHandle(ref typeHandle),
-                (preciseCctorsOnly) ? Interop.BOOL.TRUE : Interop.BOOL.FALSE);
-        }
-
         [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
-        private static extern void _RunClassConstructor(QCallTypeHandle typeHandle, Interop.BOOL preciseCctorsOnly);
+        internal static extern void _RunClassConstructor(QCallTypeHandle typeHandle, Interop.BOOL preciseCctorsOnly);
 
 
         // RunModuleConstructor causes the module constructor for the given type to be triggered
@@ -169,7 +164,9 @@ namespace System.Runtime.CompilerServices
 
             if (pMT->HasPreciseInitCctors)
             {
-                RunClassConstructor(rt.TypeHandle, preciseCctorsOnly: true);
+                _RunClassConstructor(
+                    new QCallTypeHandle(ref rt),
+                    preciseCctorsOnly: Interop.BOOL.TRUE);
             }
 
             object retVal = pfnAllocator(vAllocatorFirstArg);

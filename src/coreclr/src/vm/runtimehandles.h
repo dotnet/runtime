@@ -125,12 +125,10 @@ public:
 
     static
     void QCALLTYPE GetActivationInfo(
-        QCall::TypeHandle pTypeHandle,
         QCall::ObjectHandleOnStack pRuntimeType,
         PCODE* ppfnAllocator,
         void** pvAllocatorFirstArg,
         BOOL fUnwrapNullable,
-        BOOL fForceObjectRefCtorEntryPoint,
         PCODE* ppfnCtor,
         BOOL* pfCtorIsPublic,
         MethodTable** ppMethodTable);

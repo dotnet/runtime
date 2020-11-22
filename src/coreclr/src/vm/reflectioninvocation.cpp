@@ -2009,16 +2009,13 @@ FCIMPLEND
 
 /*
  * Given a RuntimeType, queries info on how to instantiate the object.
- * pTypeHandle - [required] the TypeHandle for the RuntimeType
- * pRuntimeType - [required] the RuntimeType object (used for COM)
+ * pRuntimeType - [required] the RuntimeType object
  * pRefType - [required] the RuntimeType
  * ppfnAllocator - [required, null-init] fnptr to the allocator
  *                 mgd sig: void* -> object
  * pvAllocatorFirstArg - [required, null-init] first argument to the allocator
  *                       (normally, but not always, the MethodTable*)
  * fUnwrapNullable - if true and type handle is Nullable<T>, queries info for T
- * fForceObjectRefCtorEntryPoint - if false and type handle is a value type,
- *                                 retrieves a ctor with mgd sig (ref T) -> void
  * ppfnCtor - [optional, null-init] the instance's parameterless ctor,
  *            mgd sig object -> void, or null if no parameterless ctor exists
  * pfCtorIsPublic - [optional, null-init] whether the parameterless ctor is public
@@ -2027,12 +2024,10 @@ FCIMPLEND
  * This method will not run the type's static ctor or instantiate the type.
  */
 void QCALLTYPE RuntimeTypeHandle::GetActivationInfo(
-    QCall::TypeHandle pTypeHandle,
     QCall::ObjectHandleOnStack pRuntimeType,
     PCODE* ppfnAllocator,
     void** pvAllocatorFirstArg,
     BOOL fUnwrapNullable,
-    BOOL fForceObjectRefCtorEntryPoint,
     PCODE* ppfnCtor,
     BOOL* pfCtorIsPublic,
     MethodTable** ppMethodTable
@@ -2040,7 +2035,6 @@ void QCALLTYPE RuntimeTypeHandle::GetActivationInfo(
 {
     CONTRACTL{
         QCALL_CHECK;
-        PRECONDITION(!pTypeHandle.AsTypeHandle().IsNull());
         PRECONDITION(CheckPointer(ppfnAllocator));
         PRECONDITION(CheckPointer(pvAllocatorFirstArg));
         PRECONDITION(*ppfnAllocator == NULL);
@@ -2062,9 +2056,14 @@ void QCALLTYPE RuntimeTypeHandle::GetActivationInfo(
     bool fRequiresSpecialComActivationStub = false;
     void* pClassFactory = NULL;
 
+    TypeHandle typeHandle = NULL;
+
     BEGIN_QCALL;
 
-    TypeHandle typeHandle = pTypeHandle.AsTypeHandle();
+    {
+        GCX_COOP();
+        typeHandle = ((REFLECTCLASSBASEREF)pRuntimeType.Get())->GetType();
+    }
 
     // Don't allow void
     if (typeHandle.GetSignatureCorElementType() == ELEMENT_TYPE_VOID)
@@ -2181,17 +2180,16 @@ void QCALLTYPE RuntimeTypeHandle::GetActivationInfo(
 
         if (ppfnCtor != NULL && pMT->HasDefaultConstructor())
         {
-            if (!pMT->IsValueType())
-            {
-                // Reference types always get an (object) -> void ctor.
-                fForceObjectRefCtorEntryPoint = TRUE;
-            }
-
-            MethodDesc* pMD = pMT->GetDefaultConstructor(fForceObjectRefCtorEntryPoint);
+            // managed sig: object -> void
+            // for ctors on value types, lookup boxed entry point stub
+            MethodDesc* pMD = pMT->GetDefaultConstructor(pMT->IsValueType());
             _ASSERTE(pMD != NULL);
 
             pMD->EnsureActive();
-            *ppfnCtor = pMD->GetMultiCallableAddrOfCode();
+            PCODE pCode = pMD->GetMultiCallableAddrOfCode();
+            _ASSERTE(pCode != NULL);
+
+            *ppfnCtor = pCode;
             *pfCtorIsPublic = pMD->IsPublic();
         }
     }

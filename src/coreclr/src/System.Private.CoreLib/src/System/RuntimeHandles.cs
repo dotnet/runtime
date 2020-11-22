@@ -218,14 +218,6 @@ namespace System
         {
             Debug.Assert(rt != null);
 
-            // Initialize all out vars
-
-            pMT = default;
-            pfnAllocator = default;
-            vAllocatorFirstArg = default;
-            pfnCtor = default;
-            ctorIsPublic = default;
-
             // Get the requested activation information
             // GetUninitializedInstance doesn't care about ctor information
 
@@ -238,10 +230,9 @@ namespace System
                 MethodTable* pMethodTableTemp = default;
 
                 _GetActivationInfo(
-                    new QCallTypeHandle(ref rt), ObjectHandleOnStack.Create(ref rt),
+                    ObjectHandleOnStack.Create(ref rt),
                     &pfnAllocatorTemp, &vAllocatorFirstArgTemp,
                     fUnwrapNullable: forGetUninitializedInstance ? Interop.BOOL.TRUE : Interop.BOOL.FALSE,
-                    fForceObjectRefCtorEntryPoint: Interop.BOOL.TRUE,
                     ppfnCtor: forGetUninitializedInstance ? null : &pfnCtorTemp,
                     pfCtorIsPublic: forGetUninitializedInstance ? null : &fCtorIsPublicTemp,
                     &pMethodTableTemp);
@@ -282,12 +273,10 @@ namespace System
 
         [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
         private static extern void _GetActivationInfo(
-            QCallTypeHandle pTypeHandle,
             ObjectHandleOnStack pRuntimeType,
             delegate*<void*, object>* ppfnAllocator,
             void** pvAllocatorFirstArg,
             Interop.BOOL fUnwrapNullable,
-            Interop.BOOL fForceObjectRefCtorEntryPoint,
             delegate*<object, void>* ppfnCtor,
             Interop.BOOL* pfCtorIsPublic,
             MethodTable** ppMethodTable);
