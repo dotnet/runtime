@@ -5,7 +5,7 @@
 #include <config.h>
 
 #ifdef ENABLE_PERFTRACING
-#include "ep-rt-config.h"
+#include <eventpipe/ep-rt-config.h>
 #include <glib.h>
 #include <mono/utils/mono-threads.h>
 #include <mono/utils/os-event.h>

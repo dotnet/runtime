@@ -759,6 +759,30 @@ CORINFO_CLASS_HANDLE MethodContext::repGetMethodClass(CORINFO_METHOD_HANDLE meth
     return value;
 }
 
+void MethodContext::recGetMethodModule(CORINFO_METHOD_HANDLE methodHandle, CORINFO_MODULE_HANDLE moduleHandle)
+{
+    if (GetMethodModule == nullptr)
+        GetMethodModule = new LightWeightMap<DWORDLONG, DWORDLONG>();
+
+    GetMethodModule->Add((DWORDLONG)methodHandle, (DWORDLONG)moduleHandle);
+    DEBUG_REC(dmpGetMethodModule((DWORDLONG)methodHandle, (DWORDLONG)moduleHandle));
+}
+void MethodContext::dmpGetMethodModule(DWORDLONG key, DWORDLONG value)
+{
+    printf("GetMethodModule key %016llX, value %016llX", key, value);
+}
+CORINFO_MODULE_HANDLE MethodContext::repGetMethodModule(CORINFO_METHOD_HANDLE methodHandle)
+{
+    AssertCodeMsg(GetMethodModule != nullptr, EXCEPTIONCODE_MC,
+                  "Found a null GetMethodModule.  Probably missing a fatTrigger for %016llX.", (DWORDLONG)methodHandle);
+    int index = GetMethodModule->GetIndex((DWORDLONG)methodHandle);
+    AssertCodeMsg(index != -1, EXCEPTIONCODE_MC, "Didn't find %016llX.  Probably missing a fatTrigger",
+                  (DWORDLONG)methodHandle);
+    CORINFO_MODULE_HANDLE value = (CORINFO_MODULE_HANDLE)GetMethodModule->Get((DWORDLONG)methodHandle);
+    DEBUG_REP(dmpGetMethodModule((DWORDLONG)methodHandle, (DWORDLONG)value));
+    return value;
+}
+
 void MethodContext::recGetClassAttribs(CORINFO_CLASS_HANDLE classHandle, DWORD attribs)
 {
     if (GetClassAttribs == nullptr)

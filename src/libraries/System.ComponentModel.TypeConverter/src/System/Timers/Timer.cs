@@ -290,7 +290,7 @@ namespace System.Timers
                 _enabled = false;
             }
 
-            ElapsedEventArgs elapsedEventArgs = new ElapsedEventArgs(DateTime.UtcNow.ToFileTime());
+            ElapsedEventArgs elapsedEventArgs = new ElapsedEventArgs(DateTime.Now);
             try
             {
                 // To avoid race between remove handler and raising the event

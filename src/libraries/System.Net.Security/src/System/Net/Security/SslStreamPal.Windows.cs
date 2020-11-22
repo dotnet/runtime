@@ -216,7 +216,7 @@ namespace System.Net.Security
                 credential.paCred = &certificateHandle;
             }
 
-            if (NetEventSource.IsEnabled) NetEventSource.Info($"flags=({flags}), ProtocolFlags=({protocolFlags}), EncryptionPolicy={policy}");
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info($"flags=({flags}), ProtocolFlags=({protocolFlags}), EncryptionPolicy={policy}");
 
             if (protocolFlags != 0)
             {

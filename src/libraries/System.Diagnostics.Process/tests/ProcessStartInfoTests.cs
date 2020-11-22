@@ -957,6 +957,7 @@ namespace System.Diagnostics.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer), // Nano does not support UseShellExecute
+                                                    nameof(PlatformDetection.IsNotWindowsServerCore), // https://github.com/dotnet/runtime/issues/26231
                                                     nameof(PlatformDetection.IsNotWindows8x))] // https://github.com/dotnet/runtime/issues/22007
         [OuterLoop("Launches notepad")]
         [PlatformSpecific(TestPlatforms.Windows)]
@@ -1168,6 +1169,11 @@ namespace System.Diagnostics.Tests
 
         private void VerifyNotepadMainWindowTitle(Process process, string filename)
         {
+            if (PlatformDetection.IsWindowsServerCore)
+            {
+                return; // On Server Core, notepad exists but does not return a title
+            }
+
             // On some Windows versions, the file extension is not included in the title
             string expected = Path.GetFileNameWithoutExtension(filename);
 

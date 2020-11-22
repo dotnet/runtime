@@ -72,6 +72,7 @@
         OutputDirectory="$(AppDir)"
         Optimized="$(Optimized)"
         UseAotForSimulator="$(UseAotForSimulator)"
+        ForceInterpreter="$(MonoForceInterpreter)"
         AppDir="$(MSBuildThisFileDirectory)$(PublishDir)">
         <Output TaskParameter="AppBundlePath" PropertyName="AppBundlePath" />
         <Output TaskParameter="XcodeProjectPath" PropertyName="XcodeProjectPath" />

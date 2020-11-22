@@ -1289,7 +1289,7 @@ public:
 
     void AddGenericParamConstraint(int index, char * pStrGenericParam, mdToken tkTypeConstraint);
 
-    bool CheckAddGenericParamConstraint(GenericParamConstraintList* pGPCList, int index, mdToken tkTypeConstraint);
+    void CheckAddGenericParamConstraint(GenericParamConstraintList* pGPCList, int index, mdToken tkTypeConstraint, bool isParamDirective);
 
     void EmitGenericParamConstraints(int numTyPars, TyParDescr* pTyPars, mdToken tkOwner, GenericParamConstraintList* pGPCL);
 

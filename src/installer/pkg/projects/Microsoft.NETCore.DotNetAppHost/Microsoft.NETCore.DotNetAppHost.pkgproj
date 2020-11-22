@@ -4,10 +4,10 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <NativeBinary Include="$(DotNetHostBinDir)/apphost$(ApplicationFileExtension)" />
-    <NativeBinary Include="$(DotNetHostBinDir)/singlefilehost$(ApplicationFileExtension)" />
-    <NativeBinary Include="$(DotNetHostBinDir)/$(LibraryFilePrefix)nethost$(LibraryFileExtension)" />
-    <NativeBinary Include="$(DotNetHostBinDir)/$(LibraryFilePrefix)nethost$(StaticLibraryFileExtension)" />
+    <NativeBinary Include="$(DotNetHostBinDir)/apphost$(ExeSuffix)" />
+    <NativeBinary Include="$(DotNetHostBinDir)/singlefilehost$(ExeSuffix)" />
+    <NativeBinary Include="$(DotNetHostBinDir)/$(LibPrefix)nethost$(LibSuffix)" />
+    <NativeBinary Include="$(DotNetHostBinDir)/$(LibPrefix)nethost$(StaticLibSuffix)" />
     <NativeBinary Include="$(DotNetHostBinDir)/coreclr_delegates.h" />
     <NativeBinary Include="$(DotNetHostBinDir)/hostfxr.h" />
     <NativeBinary Include="$(DotNetHostBinDir)/nethost.h" />

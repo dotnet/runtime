@@ -95,7 +95,7 @@
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
       <Optimization>Disabled</Optimization>
-      <AdditionalIncludeDirectories>$(MONO_DIR);$(MONO_INCLUDE_DIR);$(LIBGC_CPPFLAGS_INCLUDE);$(GLIB_CFLAGS_INCLUDE);$(MONO_LLVM_DEFAULT_INCLUDE_DIR);$(SHIM_GLOBALIZATION_INCLUDE_DIR);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(MONO_DIR);$(MONO_INCLUDE_DIR);$(LIBGC_CPPFLAGS_INCLUDE);$(GLIB_CFLAGS_INCLUDE);$(MONO_LLVM_DEFAULT_INCLUDE_DIR);$(SHIM_GLOBALIZATION_INCLUDE_DIR);$(EVENTPIPE_INCLUDE_DIR);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;WIN32_LEAN_AND_MEAN;$(GC_DEFINES);MONO_DLL_EXPORT;LLVM_API_VERSION=$(MONO_LLVM_DEFAULT_API_VERSION);$(SHIM_GLOBALIZATION_DEFINES);_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <DisableSpecificWarnings>4996;4018;4244;%(DisableSpecificWarnings)</DisableSpecificWarnings>
       <WarningLevel>Level3</WarningLevel>
@@ -121,7 +121,7 @@
     </Midl>
     <ClCompile>
       <Optimization>Disabled</Optimization>
-      <AdditionalIncludeDirectories>$(MONO_DIR);$(MONO_INCLUDE_DIR);$(LIBGC_CPPFLAGS_INCLUDE);$(GLIB_CFLAGS_INCLUDE);$(MONO_LLVM_DEFAULT_INCLUDE_DIR);$(SHIM_GLOBALIZATION_INCLUDE_DIR);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(MONO_DIR);$(MONO_INCLUDE_DIR);$(LIBGC_CPPFLAGS_INCLUDE);$(GLIB_CFLAGS_INCLUDE);$(MONO_LLVM_DEFAULT_INCLUDE_DIR);$(SHIM_GLOBALIZATION_INCLUDE_DIR);$(EVENTPIPE_INCLUDE_DIR);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;WIN32_LEAN_AND_MEAN;$(GC_DEFINES);MONO_DLL_EXPORT;LLVM_API_VERSION=$(MONO_LLVM_DEFAULT_API_VERSION);$(SHIM_GLOBALIZATION_DEFINES);WIN64;_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <DisableSpecificWarnings>4996;4018;4244;%(DisableSpecificWarnings)</DisableSpecificWarnings>
       <WarningLevel>Level3</WarningLevel>
@@ -144,7 +144,7 @@
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <ClCompile>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <AdditionalIncludeDirectories>$(MONO_DIR);$(MONO_INCLUDE_DIR);$(LIBGC_CPPFLAGS_INCLUDE);$(GLIB_CFLAGS_INCLUDE);$(MONO_LLVM_DEFAULT_INCLUDE_DIR);$(SHIM_GLOBALIZATION_INCLUDE_DIR);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(MONO_DIR);$(MONO_INCLUDE_DIR);$(LIBGC_CPPFLAGS_INCLUDE);$(GLIB_CFLAGS_INCLUDE);$(MONO_LLVM_DEFAULT_INCLUDE_DIR);$(SHIM_GLOBALIZATION_INCLUDE_DIR);$(EVENTPIPE_INCLUDE_DIR);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;WIN32_LEAN_AND_MEAN;$(GC_DEFINES);MONO_DLL_EXPORT;LLVM_API_VERSION=$(MONO_LLVM_DEFAULT_API_VERSION);$(SHIM_GLOBALIZATION_DEFINES);NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <StringPooling>true</StringPooling>
       <WarningLevel>Level3</WarningLevel>
@@ -172,7 +172,7 @@
     </Midl>
     <ClCompile>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <AdditionalIncludeDirectories>$(MONO_DIR);$(MONO_INCLUDE_DIR);$(LIBGC_CPPFLAGS_INCLUDE);$(GLIB_CFLAGS_INCLUDE);$(MONO_LLVM_DEFAULT_INCLUDE_DIR);$(SHIM_GLOBALIZATION_INCLUDE_DIR);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(MONO_DIR);$(MONO_INCLUDE_DIR);$(LIBGC_CPPFLAGS_INCLUDE);$(GLIB_CFLAGS_INCLUDE);$(MONO_LLVM_DEFAULT_INCLUDE_DIR);$(SHIM_GLOBALIZATION_INCLUDE_DIR);$(EVENTPIPE_INCLUDE_DIR);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;WIN32_LEAN_AND_MEAN;$(GC_DEFINES);MONO_DLL_EXPORT;LLVM_API_VERSION=$(MONO_LLVM_DEFAULT_API_VERSION);$(SHIM_GLOBALIZATION_DEFINES);WIN64;NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <StringPooling>true</StringPooling>
       <WarningLevel>Level3</WarningLevel>

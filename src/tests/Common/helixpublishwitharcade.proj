@@ -182,7 +182,7 @@
       <_XUnitConsoleRunnerFiles Include="$(NuGetPackageRoot)$(MicrosoftDotNetXUnitConsoleRunnerPackage)\$(MicrosoftDotNetXUnitConsoleRunnerVersion)\**\xunit.console.*" />
     </ItemGroup>
 
-    <Copy SourceFiles="@(_XUnitConsoleRunnerFiles)" DestinationFolder="$(CoreRootDirectory)" />
+    <Copy SourceFiles="@(_XUnitConsoleRunnerFiles)" DestinationFolder="$(CoreRootDirectory)\xunit" />
     <Copy SourceFiles="$(MSBuildThisFileDirectory)scripts\runincontext.cmd" DestinationFolder="$(CoreRootDirectory)" Condition=" '$(TargetsWindows)' == 'true' and '$(_RunInUnloadableContext)' == 'true'" />
     <Copy SourceFiles="$(MSBuildThisFileDirectory)scripts/runincontext.sh" DestinationFolder="$(CoreRootDirectory)" Condition=" '$(TargetsWindows)' != 'true' and '$(_RunInUnloadableContext)' == 'true'" />
   </Target>
@@ -289,11 +289,11 @@
   </PropertyGroup>
 
   <PropertyGroup Condition=" '$(TargetsWindows)' == 'true' ">
-    <XUnitRunnerDll>%CORE_ROOT%\xunit.console.dll</XUnitRunnerDll>
+    <XUnitRunnerDll>%CORE_ROOT%\xunit\xunit.console.dll</XUnitRunnerDll>
   </PropertyGroup>
 
   <PropertyGroup Condition=" '$(TargetsWindows)' != 'true' ">
-    <XUnitRunnerDll>$CORE_ROOT/xunit.console.dll</XUnitRunnerDll>
+    <XUnitRunnerDll>$CORE_ROOT/xunit/xunit.console.dll</XUnitRunnerDll>
   </PropertyGroup>
 
   <ItemGroup Condition=" '$(UsesHelixSdk)' == 'true' ">

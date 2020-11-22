@@ -1372,6 +1372,7 @@ MonoObjectHandle
 ves_icall_System_Runtime_CompilerServices_RuntimeHelpers_GetUninitializedObjectInternal (MonoType *handle, MonoError *error)
 {
 	MonoClass *klass;
+	MonoVTable *vtable;
 
 	g_assert (handle);
 
@@ -1399,6 +1400,14 @@ ves_icall_System_Runtime_CompilerServices_RuntimeHelpers_GetUninitializedObjectI
 	if (m_class_is_byreflike (klass)) {
 		mono_error_set_not_supported (error, NULL, NULL);
 		return NULL_HANDLE;
+	}
+
+	if (!mono_class_is_before_field_init (klass)) {
+		vtable = mono_class_vtable_checked (mono_domain_get (), klass, error);
+		return_val_if_nok (error, NULL_HANDLE);
+
+		mono_runtime_class_init_full (vtable, error);
+		return_val_if_nok (error, NULL_HANDLE);
 	}
 
 	if (m_class_is_nullable (klass))

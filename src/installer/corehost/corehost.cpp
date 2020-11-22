@@ -53,8 +53,7 @@ bool is_exe_enabled_for_execution(pal::string_t* app_dll)
     static const char hi_part[] = EMBED_HASH_HI_PART_UTF8;
     static const char lo_part[] = EMBED_HASH_LO_PART_UTF8;
 
-    std::string binding(&embed[0]);
-    if (!pal::utf8_palstring(binding, app_dll))
+    if (!pal::clr_palstring(embed, app_dll))
     {
         trace::error(_X("The managed DLL bound to this executable could not be retrieved from the executable image."));
         return false;
@@ -65,6 +64,7 @@ bool is_exe_enabled_for_execution(pal::string_t* app_dll)
     size_t hi_len = (sizeof(hi_part) / sizeof(hi_part[0])) - 1;
     size_t lo_len = (sizeof(lo_part) / sizeof(lo_part[0])) - 1;
 
+    std::string binding(&embed[0]);
     if ((binding.size() >= (hi_len + lo_len)) &&
         binding.compare(0, hi_len, &hi_part[0]) == 0 &&
         binding.compare(hi_len, lo_len, &lo_part[0]) == 0)
