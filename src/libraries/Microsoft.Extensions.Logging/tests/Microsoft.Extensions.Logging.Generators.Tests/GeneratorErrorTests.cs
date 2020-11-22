@@ -11,7 +11,7 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
     using System.Threading;
     using Xunit;
 
-    public class GeneratorTests
+    public class GeneratorErrorTests
     {
         [Fact]
         public void InvalidMethodName()
