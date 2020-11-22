@@ -2,13 +2,9 @@
 
 namespace Microsoft.Extensions.Logging.Generators
 {
-    using System;
     using System.Collections.Generic;
-    using System.Data;
     using System.Globalization;
-    using System.Net.Mime;
     using System.Text;
-    using System.Threading;
     using Microsoft.CodeAnalysis;
     using Microsoft.CodeAnalysis.CSharp;
     using Microsoft.CodeAnalysis.CSharp.Syntax;

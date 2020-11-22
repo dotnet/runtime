@@ -1,21 +1,23 @@
 // © Microsoft Corporation. All rights reserved.
 
 [assembly: System.Resources.NeutralResourcesLanguage("en-us")]
+[assembly: System.Runtime.CompilerServices.InternalsVisibleTo("Microsoft.Extensions.Logging.Generators.Tests")]
 
 namespace Microsoft.Extensions.Logging.Generators
 {
     using System;
     using System.Collections.Generic;
+    using System.Diagnostics;
     using System.Linq;
     using System.Reflection;
+    using System.Threading;
     using Microsoft.CodeAnalysis;
     using Microsoft.CodeAnalysis.CSharp;
     using Microsoft.CodeAnalysis.CSharp.Syntax;
 
-
     public partial class LoggingGenerator
     {
-        private class Parser
+        internal class Parser
         {
             private const string DiagnosticCategory = "LoggingGenerator";
 
@@ -117,49 +119,58 @@ namespace Microsoft.Extensions.Logging.Generators
                 DiagnosticSeverity.Error,
                 isEnabledByDefault: true);
 
+            private readonly CancellationToken _cancellationToken;
             private readonly Compilation _compilation;
-            private readonly GeneratorExecutionContext _context;
+            private readonly Action<Diagnostic> _reportDiagnostic;
             private readonly Dictionary<SyntaxTree, SemanticModel> _semanticModels = new();
 
-            public Parser(GeneratorExecutionContext context)
+            public Parser(GeneratorExecutionContext context) : this(context.Compilation, context.ReportDiagnostic, context.CancellationToken)
             {
-                _context = context;
-                _compilation = context.Compilation;
+            }
+
+            public Parser(Compilation compilation, Action<Diagnostic> reportDiagnostic, CancellationToken cancellationToken)
+            {
+                _compilation = compilation;
+                _cancellationToken = cancellationToken;
+                _reportDiagnostic = reportDiagnostic;
             }
 
             /// <summary>
-            /// Gets the set of logging classes contains methods to output.
+            /// Gets the set of logging classes containing methods to output.
             /// </summary>
-            public IEnumerable<LoggerClass> GetLogClasses(List<ClassDeclarationSyntax> classes)
+            public IEnumerable<LoggerClass> GetLogClasses(IEnumerable<ClassDeclarationSyntax> classes)
             {
+                var results = new List<LoggerClass>(); 
+
                 var loggerMessageAttribute = _compilation.GetTypeByMetadataName("Microsoft.Extensions.Logging.LoggerMessageAttribute");
                 if (loggerMessageAttribute is null)
                 {
                     Diag(ErrorMissingRequiredType, null, "Microsoft.Extensions.Logging.LoggerMessageAttribute");
-                    yield break;
+                    return results;
                 }
 
                 var exSymbol = _compilation.GetTypeByMetadataName("System.Exception");
                 if (exSymbol == null)
                 {
                     Diag(ErrorMissingRequiredType, null, "System.Exception");
-                    yield break;
+                    return results;
                 }
 
                 var voidSymbol = _compilation.GetTypeByMetadataName("System.Void");
                 if (voidSymbol == null)
                 {
                     Diag(ErrorMissingRequiredType, null, "System.Void");
-                    yield break;
+                    return results;
                 }
 
                 var loggerSymbol = _compilation.GetTypeByMetadataName("Microsoft.Extensions.Logging.ILogger");
                 if (loggerSymbol == null)
                 {
                     Diag(ErrorMissingRequiredType, null, "Microsoft.Extensions.Logging.ILogger");
-                    yield break;
+                    return results;
                 }
 
+                var ids = new HashSet<string>();
                 foreach (var classDef in classes)
                 {
                     // determine the namespace the class is declared in, if any
@@ -181,7 +192,7 @@ namespace Microsoft.Extensions.Logging.Generators
                         Name = classDef.Identifier.ToString(),
                     };
 
-                    var ids = new HashSet<string>();
+                    ids.Clear();
                     foreach (var method in classDef.Members.Where(m => m.IsKind(SyntaxKind.MethodDeclaration)).OfType<MethodDeclarationSyntax>())
                     {
                         foreach (var mal in method.AttributeLists)
@@ -189,7 +200,7 @@ namespace Microsoft.Extensions.Logging.Generators
                             foreach (var ma in mal.Attributes)
                             {
                                 var semanticModel = GetSemanticModel(ma.SyntaxTree);
-                                var maSymbol = semanticModel.GetSymbolInfo(ma, _context.CancellationToken);
+                                var maSymbol = semanticModel.GetSymbolInfo(ma, _cancellationToken);
                                 if (maSymbol.Symbol is IMethodSymbol ms && loggerMessageAttribute.Equals(ms.ContainingType, SymbolEqualityComparer.Default))
                                 {
                                     var arg = ma.ArgumentList!.Arguments[0];
@@ -293,11 +304,7 @@ namespace Microsoft.Extensions.Logging.Generators
                                     foreach (var p in method.ParameterList.Parameters)
                                     {
                                         var pSymbol = GetSemanticModel(p.SyntaxTree).GetTypeInfo(p.Type!).Type!;
-                                        var typeName = pSymbol.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
-                                        if (pSymbol.NullableAnnotation == NullableAnnotation.Annotated)
-                                        {
-                                            typeName += '?';
-                                        }
+                                        var typeName = pSymbol.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat.WithMiscellaneousOptions(SymbolDisplayMiscellaneousOptions.IncludeNullableReferenceTypeModifier));
 
                                         if (first)
                                         {
@@ -346,13 +353,18 @@ namespace Microsoft.Extensions.Logging.Generators
                         }
                     }
 
-                    yield return lc;
+                    if (lc.Methods.Count > 0)
+                    {
+                        results.Add(lc);
+                    }
                 }
+
+                return results;
             }
 
             private void Diag(DiagnosticDescriptor desc, Location? location, params object?[]? messageArgs)
             {
-                _context.ReportDiagnostic(Diagnostic.Create(desc, location, messageArgs));
+                _reportDiagnostic(Diagnostic.Create(desc, location, messageArgs));
             }
 
             // Workaround for https://github.com/dotnet/roslyn/pull/49330
@@ -411,7 +423,7 @@ namespace Microsoft.Extensions.Logging.Generators
 #pragma warning disable SA1401 // Fields should be private
 
         // An logging class holding a bunch of log methods
-        private class LoggerClass
+        internal class LoggerClass
         {
             public string? Namespace;
             public string Name = string.Empty;
@@ -419,7 +431,7 @@ namespace Microsoft.Extensions.Logging.Generators
         }
 
         // A log method in a logging class
-        private class LoggerMethod
+        internal class LoggerMethod
         {
             public string Name = string.Empty;
             public string Message = string.Empty;
@@ -433,7 +445,7 @@ namespace Microsoft.Extensions.Logging.Generators
         }
 
         // A single parameter to a log method
-        private class LoggerParameter
+        internal class LoggerParameter
         {
             public string Name = string.Empty;
             public string Type = string.Empty;
