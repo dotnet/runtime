@@ -1,13 +1,17 @@
 // © Microsoft Corporation. All rights reserved.
 
+[assembly: System.Resources.NeutralResourcesLanguage("en-us")]
+
 namespace Microsoft.Extensions.Logging.Generators
 {
     using System;
     using System.Collections.Generic;
     using System.Linq;
+    using System.Reflection;
     using Microsoft.CodeAnalysis;
     using Microsoft.CodeAnalysis.CSharp;
     using Microsoft.CodeAnalysis.CSharp.Syntax;
+
 
     public partial class LoggingGenerator
     {
@@ -19,96 +23,96 @@ namespace Microsoft.Extensions.Logging.Generators
 
             private static readonly DiagnosticDescriptor ErrorInvalidMethodName = new(
                 id: "LG0",
-                title: "Logging method names cannot start with __",
-                messageFormat: "Logging method names cannot start with __",
+                title: new LocalizableResourceString(nameof(LoggingGeneratorResources.ErrorInvalidMethodNameTitle), LoggingGeneratorResources.ResourceManager, typeof(LoggingGeneratorResources)),
+                messageFormat: new LocalizableResourceString(nameof(LoggingGeneratorResources.ErrorInvalidMethodNameMessage), LoggingGeneratorResources.ResourceManager, typeof(LoggingGeneratorResources)),
                 category: DiagnosticCategory,
                 DiagnosticSeverity.Error,
                 isEnabledByDefault: true);
 
             private static readonly DiagnosticDescriptor ErrorInvalidMessage = new(
                 id: "LG1",
-                title: "Missing message for logging method",
-                messageFormat: "Missing message for logging method {0}",
+                title: new LocalizableResourceString(nameof(LoggingGeneratorResources.ErrorInvalidMessageTitle), LoggingGeneratorResources.ResourceManager, typeof(LoggingGeneratorResources)),
+                messageFormat: new LocalizableResourceString(nameof(LoggingGeneratorResources.ErrorInvalidMessageMessage), LoggingGeneratorResources.ResourceManager, typeof(LoggingGeneratorResources)),
                 category: DiagnosticCategory,
                 DiagnosticSeverity.Error,
                 isEnabledByDefault: true);
 
             private static readonly DiagnosticDescriptor ErrorInvalidParameterName = new(
                 id: "LG2",
-                title: "Logging method parameter names cannot start with __",
-                messageFormat: "Logging method parameter names cannot start with __",
+                title: new LocalizableResourceString(nameof(LoggingGeneratorResources.ErrorInvalidParameterNameTitle), LoggingGeneratorResources.ResourceManager, typeof(LoggingGeneratorResources)),
+                messageFormat: new LocalizableResourceString(nameof(LoggingGeneratorResources.ErrorInvalidParameterNameMessage), LoggingGeneratorResources.ResourceManager, typeof(LoggingGeneratorResources)),
                 category: DiagnosticCategory,
                 DiagnosticSeverity.Error,
                 isEnabledByDefault: true);
 
             private static readonly DiagnosticDescriptor ErrorNestedType = new(
                 id: "LG3",
-                title: "Logging class cannot be in nested types",
-                messageFormat: "Logging class cannot be in nested types",
+                title: new LocalizableResourceString(nameof(LoggingGeneratorResources.ErrorNestedTypeTitle), LoggingGeneratorResources.ResourceManager, typeof(LoggingGeneratorResources)),
+                messageFormat: new LocalizableResourceString(nameof(LoggingGeneratorResources.ErrorNestedTypeMessage), LoggingGeneratorResources.ResourceManager, typeof(LoggingGeneratorResources)),
                 category: DiagnosticCategory,
                 DiagnosticSeverity.Error,
                 isEnabledByDefault: true);
 
             private static readonly DiagnosticDescriptor ErrorMissingRequiredType = new(
                 id: "LG4",
-                title: "Could not find a required type definition",
-                messageFormat: "Could not find definition for type {0}",
+                title: new LocalizableResourceString(nameof(LoggingGeneratorResources.ErrorMissingRequiredTypeTitle), LoggingGeneratorResources.ResourceManager, typeof(LoggingGeneratorResources)),
+                messageFormat: new LocalizableResourceString(nameof(LoggingGeneratorResources.ErrorMissingRequiredTypeMessage), LoggingGeneratorResources.ResourceManager, typeof(LoggingGeneratorResources)),
                 category: DiagnosticCategory,
                 DiagnosticSeverity.Error,
                 isEnabledByDefault: true);
 
             private static readonly DiagnosticDescriptor ErrorEventIdReuse = new(
                 id: "LG5",
-                title: "Multiple logging messages cannot use the same event id",
-                messageFormat: "Multiple logging messages are using event id {0}",
+                title: new LocalizableResourceString(nameof(LoggingGeneratorResources.ErrorEventIdReuseTitle), LoggingGeneratorResources.ResourceManager, typeof(LoggingGeneratorResources)),
+                messageFormat: new LocalizableResourceString(nameof(LoggingGeneratorResources.ErrorEventIdReuseMessage), LoggingGeneratorResources.ResourceManager, typeof(LoggingGeneratorResources)),
                 category: DiagnosticCategory,
                 DiagnosticSeverity.Error,
                 isEnabledByDefault: true);
 
             private static readonly DiagnosticDescriptor ErrorInvalidMethodReturnType = new(
                 id: "LG6",
-                title: "Logging methods must return void",
-                messageFormat: "Logging methods must return void",
+                title: new LocalizableResourceString(nameof(LoggingGeneratorResources.ErrorInvalidMethodReturnTypeTitle), LoggingGeneratorResources.ResourceManager, typeof(LoggingGeneratorResources)),
+                messageFormat: new LocalizableResourceString(nameof(LoggingGeneratorResources.ErrorInvalidMethodReturnTypeMessage), LoggingGeneratorResources.ResourceManager, typeof(LoggingGeneratorResources)),
                 category: DiagnosticCategory,
                 DiagnosticSeverity.Error,
                 isEnabledByDefault: true);
 
             private static readonly DiagnosticDescriptor ErrorFirstArgMustBeILogger = new(
                 id: "LG7",
-                title: "The first argument to a logging method must implement the Microsoft.Extensions.Logging.ILogger interface",
-                messageFormat: "The first argument to a logging method must implement the Microsoft.Extensions.Logging.ILogger interface",
+                title: new LocalizableResourceString(nameof(LoggingGeneratorResources.ErrorFirstArgMustBeILoggerTitle), LoggingGeneratorResources.ResourceManager, typeof(LoggingGeneratorResources)),
+                messageFormat: new LocalizableResourceString(nameof(LoggingGeneratorResources.ErrorFirstArgMustBeILoggerMessage), LoggingGeneratorResources.ResourceManager, typeof(LoggingGeneratorResources)),
                 category: DiagnosticCategory,
                 DiagnosticSeverity.Error,
                 isEnabledByDefault: true);
 
             private static readonly DiagnosticDescriptor ErrorNotStaticMethod = new(
                 id: "LG8",
-                title: "Logging methods must be static",
-                messageFormat: "Logging methods must be static",
+                title: new LocalizableResourceString(nameof(LoggingGeneratorResources.ErrorNotStaticMethodTitle), LoggingGeneratorResources.ResourceManager, typeof(LoggingGeneratorResources)),
+                messageFormat: new LocalizableResourceString(nameof(LoggingGeneratorResources.ErrorNotStaticMethodMessage), LoggingGeneratorResources.ResourceManager, typeof(LoggingGeneratorResources)),
                 category: DiagnosticCategory,
                 DiagnosticSeverity.Error,
                 isEnabledByDefault: true);
 
             private static readonly DiagnosticDescriptor ErrorNotPartialMethod = new(
                 id: "LG9",
-                title: "Logging methods must be partial",
-                messageFormat: "Logging methods must be partial",
+                title: new LocalizableResourceString(nameof(LoggingGeneratorResources.ErrorNotPartialMethodTitle), LoggingGeneratorResources.ResourceManager, typeof(LoggingGeneratorResources)),
+                messageFormat: new LocalizableResourceString(nameof(LoggingGeneratorResources.ErrorNotPartialMethodMessage), LoggingGeneratorResources.ResourceManager, typeof(LoggingGeneratorResources)),
                 category: DiagnosticCategory,
                 DiagnosticSeverity.Error,
                 isEnabledByDefault: true);
 
             private static readonly DiagnosticDescriptor ErrorMethodIsGeneric = new(
                 id: "LG10",
-                title: "Logging methods cannot be generic",
-                messageFormat: "Logging methods cannot be generic",
+                title: new LocalizableResourceString(nameof(LoggingGeneratorResources.ErrorMethodIsGenericTitle), LoggingGeneratorResources.ResourceManager, typeof(LoggingGeneratorResources)),
+                messageFormat: new LocalizableResourceString(nameof(LoggingGeneratorResources.ErrorMethodIsGenericMessage), LoggingGeneratorResources.ResourceManager, typeof(LoggingGeneratorResources)),
                 category: DiagnosticCategory,
                 DiagnosticSeverity.Error,
                 isEnabledByDefault: true);
 
             private static readonly DiagnosticDescriptor ErrorParameterIsGeneric = new(
                 id: "LG11",
-                title: "Logging method parameters cannot be generic",
-                messageFormat: "Logging method parameters cannot be generic",
+                title: new LocalizableResourceString(nameof(LoggingGeneratorResources.ErrorParameterIsGenericTitle), LoggingGeneratorResources.ResourceManager, typeof(LoggingGeneratorResources)),
+                messageFormat: new LocalizableResourceString(nameof(LoggingGeneratorResources.ErrorParameterIsGenericMessage), LoggingGeneratorResources.ResourceManager, typeof(LoggingGeneratorResources)),
                 category: DiagnosticCategory,
                 DiagnosticSeverity.Error,
                 isEnabledByDefault: true);
