@@ -96,6 +96,9 @@ namespace System
                     }
                 }
 
+                // We don't need to worry about invoking cctors here. The runtime will figure it
+                // out for us when the instance ctor is called.
+
                 if (useNoopCtorStub)
                 {
                     static void CtorNoopStub(object? uninitializedObject) { }
@@ -104,7 +107,6 @@ namespace System
                 }
 
                 Debug.Assert(_pfnAllocator != null);
-                Debug.Assert(_allocatorFirstArg != null);
                 Debug.Assert(_pfnCtor != null); // we use null singleton pattern if no ctor call is necessary
             }
 

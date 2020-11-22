@@ -2195,7 +2195,7 @@ FCIMPLEND
  * Given a ComClassFactory*, calls the COM allocator
  * and returns a RCW.
  */
-FCIMPL1(Object*, RuntimeTypeHandle::AllocateComObject(
+FCIMPL1(Object*, RuntimeTypeHandle::AllocateComObject,
     void* pClassFactory)
 {
     CONTRACTL{
@@ -2214,7 +2214,7 @@ FCIMPL1(Object*, RuntimeTypeHandle::AllocateComObject(
     {
         if (pClassFactory != NULL)
         {
-            auto x = ((ComClassFactory*)pClassFactory)->CreateInstance(NULL);
+            rv = ((ComClassFactory*)pClassFactory)->CreateInstance(NULL);
             allocated = true;
         }
     }
