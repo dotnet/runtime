@@ -172,6 +172,8 @@ using System.Globalization;
 using System.Numerics;
 using System.Reflection;
 using System.Resources;
+using System.Runtime.InteropServices;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -183,6 +185,7 @@ using System.Security.Permissions;
 #if ES_BUILD_STANDALONE
 namespace Microsoft.Diagnostics.Tracing
 #else
+using Internal.Runtime.CompilerServices;
 namespace System.Diagnostics.Tracing
 #endif
 {
@@ -1355,7 +1358,7 @@ namespace System.Diagnostics.Tracing
                 {
                     try
                     {
-                        SendManifest(m_rawManifest);
+                        SendManifest(RawManifest);
                     }
                     catch { } // If it fails, simply give up.
                     m_eventSourceEnabled = false;
@@ -2210,7 +2213,7 @@ namespace System.Diagnostics.Tracing
             {
                 // We want the name of the provider to show up so if we don't have a manifest we create
                 // on that at least has the provider name (I don't define any events).
-                if (m_rawManifest == null && m_outOfBandMessageCount == 1)
+                if (RawManifest.Length == 0 && m_outOfBandMessageCount == 1)
                 {
                     ManifestBuilder manifestBuilder = new ManifestBuilder(Name, Guid, Name, null, EventManifestOptions.None);
                     manifestBuilder.StartEvent(EventName, new EventAttribute(0) { Level = level, Task = (EventTask)0xFFFE });
@@ -2671,7 +2674,7 @@ namespace System.Diagnostics.Tracing
                         // we were already enabled.   This is because there may be multiple sessions active
                         // and we can't know that all the sessions have seen the manifest.
                         if (!SelfDescribingEvents)
-                            SendManifest(m_rawManifest);
+                            SendManifest(RawManifest);
                     }
 
                     // Turn on the enable bit before making the OnEventCommand callback  This allows you to do useful
@@ -2722,8 +2725,11 @@ namespace System.Diagnostics.Tracing
                     if (commandArgs.Command == EventCommand.SendManifest)
                     {
                         // TODO: should we generate the manifest here if we hadn't already?
-                        if (m_rawManifest != null)
-                            SendManifest(m_rawManifest);
+                        ReadOnlySpan<byte> rawManifest = RawManifest;
+                        if (rawManifest.Length > 0)
+                        {
+                            SendManifest(rawManifest);
+                        }
                     }
 
                     // These are not used for non-update commands and thus should always be 'default' values
@@ -2841,9 +2847,9 @@ namespace System.Diagnostics.Tracing
 
         // Send out the ETW manifest XML out to ETW
         // Today, we only send the manifest to ETW, custom listeners don't get it.
-        private unsafe void SendManifest(byte[]? rawManifest)
+        private unsafe void SendManifest(ReadOnlySpan<byte> rawManifest)
         {
-            if (rawManifest == null)
+            if (rawManifest.Length == 0)
                 return;
 
             Debug.Assert(!SelfDescribingEvents);
@@ -3052,7 +3058,15 @@ namespace System.Diagnostics.Tracing
             EventManifestOptions flags = EventManifestOptions.None)
         {
             ManifestBuilder? manifest = null;
-            bool bNeedsManifest = source != null ? !source.SelfDescribingEvents : true;
+            bool alreadyHasManifest = false;
+            bool bNeedsManifest = true;
+
+            if (source is not null)
+            {
+                alreadyHasManifest = !Unsafe.IsNullRef(ref MemoryMarshal.GetReference(source.RawManifest));
+                bNeedsManifest = !source.SelfDescribingEvents && !alreadyHasManifest;
+            }
+
             Exception? exception = null; // exception that might get raised during validation b/c we couldn't/didn't recover from a previous error
             byte[]? res = null;
 
@@ -3317,8 +3331,10 @@ namespace System.Diagnostics.Tracing
 ;
 
                     // if the manifest is not needed and we're not requested to validate the event source return early
-                    if (!bNeedsManifest && (flags & EventManifestOptions.Strict) == 0)
+                    if (alreadyHasManifest || (!bNeedsManifest && (flags & EventManifestOptions.Strict) == 0))
+                    {
                         return null;
+                    }
 
                     res = manifest.CreateManifest();
                 }
@@ -3759,6 +3775,8 @@ namespace System.Diagnostics.Tracing
         internal int m_id;                              // A small integer that is unique to this instance.
         private Guid m_guid;                            // GUID representing the ETW eventSource to the OS.
         internal volatile EventMetadata[]? m_eventData; // None per-event data
+
+        protected internal virtual ReadOnlySpan<byte> RawManifest => m_rawManifest;
         private volatile byte[]? m_rawManifest;          // Bytes to send out representing the event schema
 
         private EventHandler<EventCommandEventArgs>? m_eventCommandExecuted;
