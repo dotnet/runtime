@@ -100,7 +100,7 @@ namespace Microsoft.Extensions.Logging.Generators
                 {
                     sb.Append("var ");
                     sb.Append(p.Name);
-                    sb.AppendFormat(CultureInfo.InvariantCulture, " = __holder[{0}];\n", index++);
+                    sb.AppendFormat(CultureInfo.InvariantCulture, " = __holder[{0}].Value;\n", index++);
                 }
             }
             else

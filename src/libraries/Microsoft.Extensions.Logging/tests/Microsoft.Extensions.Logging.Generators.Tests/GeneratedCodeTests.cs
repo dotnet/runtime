@@ -92,7 +92,34 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
         public static partial void Method9(ILogger logger, int p1, int p2, int p3, int p4, int p5, int p6, int p7);
     }
 
-    public class GeneratedTests
+    partial class ReadOnlyListExtensions
+    {
+        [LoggerMessage(0, LogLevel.Error, "M0")]
+        public static partial void M0(ILogger logger);
+
+        [LoggerMessage(1, LogLevel.Error, "M1")]
+        public static partial void M1(ILogger logger, int p0);
+
+        [LoggerMessage(2, LogLevel.Error, "M2")]
+        public static partial void M2(ILogger logger, int p0, int p1);
+
+        [LoggerMessage(3, LogLevel.Error, "M3")]
+        public static partial void M3(ILogger logger, int p0, int p1, int p2);
+
+        [LoggerMessage(4, LogLevel.Error, "M4")]
+        public static partial void M4(ILogger logger, int p0, int p1, int p2, int p3);
+
+        [LoggerMessage(5, LogLevel.Error, "M5")]
+        public static partial void M5(ILogger logger, int p0, int p1, int p2, int p3, int p4);
+
+        [LoggerMessage(6, LogLevel.Error, "M6")]
+        public static partial void M6(ILogger logger, int p0, int p1, int p2, int p3, int p4, int p5);
+
+        [LoggerMessage(7, LogLevel.Error, "M7")]
+        public static partial void M7(ILogger logger, int p0, int p1, int p2, int p3, int p4, int p5, int p6);
+    }
+
+    public class GeneratedCodeTests
     {
         [Fact]
         public void BasicTests()
@@ -171,6 +198,16 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
             Assert.Equal("B", logger.LastException!.Message);
             Assert.Equal("M7", logger.LastFormattedString);
             Assert.Equal(1, logger.CallCount);
+
+            logger.Reset();
+            ArgTestExtensions.Method8(logger, 1, 2, 3, 4, 5, 6, 7);
+            Assert.Equal("M8", logger.LastFormattedString);
+            Assert.Equal(1, logger.CallCount);
+
+            logger.Reset();
+            ArgTestExtensions.Method9(logger, 1, 2, 3, 4, 5, 6, 7);
+            Assert.Equal("M9 1 2 3 4 5 6 7", logger.LastFormattedString);
+            Assert.Equal(1, logger.CallCount);
         }
 
         [Fact]
@@ -179,43 +216,61 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
             var logger = new MockLogger();
 
             logger.Reset();
-            ArgTestExtensions.Method1(logger);
-            var rol = logger.LastState as IReadOnlyList<KeyValuePair<string, object?>>;
-            Assert.Equal(0, rol!.Count);
-            Assert.Empty(rol);
-            Assert.Throws<ArgumentOutOfRangeException>(() => _ = rol[0]);
+            ReadOnlyListExtensions.M0(logger);
+            TestCollection(0, logger);
 
             logger.Reset();
-            ArgTestExtensions.Method2(logger, "arg1");
-            rol = logger.LastState as IReadOnlyList<KeyValuePair<string, object?>>;
-            Assert.Equal(1, rol!.Count);
-#pragma warning disable CA1829 // Use Length/Count property instead of Count() when available
-#pragma warning disable xUnit2013 // Do not use equality check to check for collection size.
-#pragma warning disable CA1826 // Do not use Enumerable methods on indexable collections
-            Assert.Equal(1, rol.Count());
-#pragma warning restore CA1826 // Do not use Enumerable methods on indexable collections
-#pragma warning restore xUnit2013 // Do not use equality check to check for collection size.
-#pragma warning restore CA1829 // Use Length/Count property instead of Count() when available
-            Assert.Equal("p1", (string)rol[0].Key);
-            Assert.Equal("arg1", (string?)rol[0].Value);
-            Assert.Throws<ArgumentOutOfRangeException>(() => _ = rol[1]);
+            ReadOnlyListExtensions.M1(logger, 0);
+            TestCollection(1, logger);
 
             logger.Reset();
-            ArgTestExtensions.Method3(logger, "arg1", 2);
-            rol = logger.LastState as IReadOnlyList<KeyValuePair<string, object?>>;
-            Assert.Equal(2, rol!.Count);
-#pragma warning disable CA1829 // Use Length/Count property instead of Count() when available
-#pragma warning disable xUnit2013 // Do not use equality check to check for collection size.
-#pragma warning disable CA1826 // Do not use Enumerable methods on indexable collections
-            Assert.Equal(2, rol.Count());
-#pragma warning restore CA1826 // Do not use Enumerable methods on indexable collections
-#pragma warning restore xUnit2013 // Do not use equality check to check for collection size.
-#pragma warning restore CA1829 // Use Length/Count property instead of Count() when available
-            Assert.Equal("p1", (string)rol[0].Key);
-            Assert.Equal("arg1", (string?)rol[0].Value);
-            Assert.Equal("p2", (string)rol[1].Key);
-            Assert.Equal(2, (int?)rol[1].Value);
-            Assert.Throws<ArgumentOutOfRangeException>(() => _ = rol[2]);
+            ReadOnlyListExtensions.M2(logger, 0, 1);
+            TestCollection(2, logger);
+
+            logger.Reset();
+            ReadOnlyListExtensions.M3(logger, 0, 1, 2);
+            TestCollection(3, logger);
+
+            logger.Reset();
+            ReadOnlyListExtensions.M4(logger, 0, 1, 2, 3);
+            TestCollection(4, logger);
+
+            logger.Reset();
+            ReadOnlyListExtensions.M5(logger, 0, 1, 2, 3, 4);
+            TestCollection(5, logger);
+
+            logger.Reset();
+            ReadOnlyListExtensions.M6(logger, 0, 1, 2, 3, 4, 5);
+            TestCollection(6, logger);
+
+            logger.Reset();
+            ReadOnlyListExtensions.M7(logger, 0, 1, 2, 3, 4, 5, 6);
+            TestCollection(7, logger);
+        }
+
+        private static void TestCollection(int expected, MockLogger logger)
+        {
+            var rol = (logger.LastState as IReadOnlyList<KeyValuePair<string, object?>>)!;
+            Assert.NotNull(rol);
+
+            Assert.Equal(expected, rol.Count);
+            for (int i = 0; i < expected; i++)
+            {
+                var kvp = new KeyValuePair<string, object?>($"p{i}", i);
+                Assert.Equal(kvp, rol[i]);
+            }
+
+            int count = 0;
+            foreach (var actual in rol)
+            {
+                var kvp = new KeyValuePair<string, object?>($"p{count}", count);
+                Assert.Equal(kvp, actual);
+                count++;
+            }
+
+            Assert.Equal(expected, count);
+
+            Assert.Throws<ArgumentOutOfRangeException>(() => _ = rol[expected]);
         }
     }
 }
