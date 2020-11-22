@@ -207,6 +207,9 @@ namespace System
         /// semantics. This method will ensure the type object is fully initialized within
         /// the VM, but it will not call any static ctors on the type.
         /// </summary>
+#if FEATURE_COMINTEROP
+        [DynamicDependency("_AllocateComObject(System.Void*)")]
+#endif
         internal static void GetActivationInfo(
             RuntimeType rt,
             bool forGetUninitializedInstance,
@@ -280,6 +283,12 @@ namespace System
             delegate*<object, void>* ppfnCtor,
             Interop.BOOL* pfCtorIsPublic,
             MethodTable** ppMethodTable);
+
+#if FEATURE_COMINTEROP
+        // May be invoked via calli by ActivatorCache
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        private static extern object _AllocateComObject(void* pClassFactory);
+#endif
 
         internal RuntimeType GetRuntimeType()
         {
