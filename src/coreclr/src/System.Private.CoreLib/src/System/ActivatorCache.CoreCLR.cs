@@ -78,7 +78,7 @@ namespace System
 #if FEATURE_COMINTEROP
                     if (pMT->IsComObject)
                     {
-                        if (rt == typeof(__ComObject))
+                        if (rt.TypeHandle.Value == typeof(__ComObject).TypeHandle.Value)
                         {
                             // Base COM class - activation is handled entirely by the allocator.
                             // We shouldn't call the ctor fn (which points to __ComObject's ctor).
