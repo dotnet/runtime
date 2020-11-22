@@ -8,6 +8,7 @@ using System.IO;
 using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Runtime.Versioning;
+using System.Threading.Tasks;
 
 namespace System.Net.Sockets
 {
@@ -392,7 +393,7 @@ namespace System.Net.Sockets
             return acceptSocket;
         }
 
-        private void SendFileInternal(string? fileName, byte[]? preBuffer, byte[]? postBuffer, TransmitFileOptions flags)
+        private void SendFileInternal(string? fileName, ReadOnlySpan<byte> preBuffer, ReadOnlySpan<byte> postBuffer, TransmitFileOptions flags)
         {
             // Open the file, if any
             FileStream? fileStream = OpenFile(fileName);
@@ -420,6 +421,11 @@ namespace System.Net.Sockets
                 SetToDisconnected();
                 _remoteEndPoint = null;
             }
+        }
+
+        private ValueTask SendFileInternalAsync(FileStream? fileStream, ReadOnlyMemory<byte> preBuffer, ReadOnlyMemory<byte> postBuffer, TransmitFileOptions flags = TransmitFileOptions.UseDefaultWorkerThread, CancellationToken cancellationToken = default)
+        {
+            throw new NotImplementedException();
         }
 
         private IAsyncResult BeginSendFileInternal(string? fileName, byte[]? preBuffer, byte[]? postBuffer, TransmitFileOptions flags, AsyncCallback? callback, object? state)
