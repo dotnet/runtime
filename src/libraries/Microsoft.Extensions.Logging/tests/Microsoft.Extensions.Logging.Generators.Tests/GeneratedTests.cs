@@ -47,6 +47,12 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
         [LoggerMessage(4, LogLevel.Critical, "Message5")]
         private static partial void M5(ILogger logger, System.Collections.IEnumerable items);
 
+        // linefeeds and quotes in the message string
+        [LoggerMessage(5, LogLevel.Critical, "Message6\n\"")]
+        private static partial void M6(ILogger logger);
+
+
+
         public static void Combo(ILogger logger, ILogger<int> logger2)
         {
             M1(logger);
@@ -54,6 +60,7 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
             M3(logger);
             M4(logger2);
             M5(logger, new string[] { "A" });
+            M6(logger);
         }
     }
 

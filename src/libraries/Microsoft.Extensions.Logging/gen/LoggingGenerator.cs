@@ -132,7 +132,7 @@ namespace Microsoft.Extensions.Logging.Generators
             return $@"private static readonly global::System.Func<{typeName}, global::System.Exception?, string> __{lm.Name}FormatFunc = (__holder, _) =>
                 {{
                     {sb}
-                    return $""{lm.Message}"";
+                    return $""{EscapeMessageString(lm.Message)}"";
                 }};
                 ";
         }
@@ -169,7 +169,7 @@ namespace Microsoft.Extensions.Logging.Generators
 
             var loggerArg = $"{lm.LoggerType} __logger";
 
-            var formatCall = $"(_, _) => \"{ lm.Message}\"";
+            var formatCall = $"(_, _) => \"{EscapeMessageString(lm.Message)}\"";
             if (lm.MessageHasTemplates)
             {
                 if (lm.Parameters.Count == 0)
@@ -204,6 +204,11 @@ namespace Microsoft.Extensions.Logging.Generators
                     }}
                 }}
         ";
+        }
+
+        private static string EscapeMessageString(string message)
+        {
+            return message.Replace("\n", "\\n").Replace("\"", "\\\"");
         }
 
         private static string GenParameters(LoggerMethod lm)
