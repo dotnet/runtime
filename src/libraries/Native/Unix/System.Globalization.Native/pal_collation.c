@@ -63,6 +63,9 @@ struct SortHandle
 static const UChar hiraganaStart = 0x3041;
 static const UChar hiraganaEnd = 0x309e;
 static const UChar hiraganaToKatakanaOffset = 0x30a1 - 0x3041;
+// Length of the fullwidth charcatres from 'A' to 'Z'
+// We'll use it to map the casing of the full width 'A' to 'Z' characters
+const int32_t FullWidthAlphabetRangeLength = 0xFF3A - 0xFF21 + 1;
 
 // Mapping between half- and fullwidth characters.
 // LowerChars are the characters that should sort lower than HigherChars
@@ -274,10 +277,6 @@ static UCollator* CloneCollatorWithOptions(const UCollator* pCollator, int32_t o
     int32_t customRuleLength = 0;
     if (applyIgnoreKanaTypeCustomRule || applyIgnoreWidthTypeCustomRule)
     {
-        // Length of the fullwidth charcatres from 'A' to 'Z'
-        // We'll use it to map the casing of the full width 'A' to 'Z' characters
-        const int32_t FullWidthAlphabetRangeLength = 0xFF3A - 0xFF21 + 1;
-
         // If we need to create customRules, the KanaType custom rule will be 88 kana characters * 4 = 352 chars long
         // and the Width custom rule will be at most 212 halfwidth characters * 5 = 1060 chars long.
         customRuleLength = (applyIgnoreKanaTypeCustomRule ? 4 * (hiraganaEnd - hiraganaStart + 1) : 0) +
