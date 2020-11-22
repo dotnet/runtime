@@ -158,6 +158,10 @@ static void FillIgnoreKanaRules(UChar* completeRules, int32_t* fillIndex, int32_
         if (hiraganaChar <= 0x3096 || hiraganaChar >= 0x309D) // characters between 3096 and 309D are not mapped to katakana
         {
             assert((*fillIndex) + 4 <= completeRulesLength);
+            if ((*fillIndex) + 4 > completeRulesLength)
+            {
+                return;
+            }
             completeRules[*fillIndex] = '&';
             completeRules[(*fillIndex) + 1] = hiraganaChar;
             completeRules[(*fillIndex) + 2] = compareChar;
@@ -192,7 +196,11 @@ static void FillIgnoreWidthRules(UChar* completeRules, int32_t* fillIndex, int32
         // this character is a symbol, and if so skip it
         if (!(isIgnoreSymbols && (!isIgnoreWidth) && (needsEscape || IsHalfFullHigherSymbol(higherChar))))
         {
-            assert((*fillIndex) + 4 <= completeRulesLength);
+            assert((*fillIndex) + 5 <= completeRulesLength);
+            if ((*fillIndex) + 5 > completeRulesLength)
+            {
+                return;
+            }
             completeRules[*fillIndex] = '&';
             (*fillIndex)++;
 
