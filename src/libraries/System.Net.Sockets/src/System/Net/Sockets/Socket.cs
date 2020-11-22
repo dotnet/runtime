@@ -1289,6 +1289,21 @@ namespace System.Net.Sockets
 
         }
 
+        public void SendFile(string? fileName, ReadOnlySpan<byte> preBuffer, ReadOnlySpan<byte> postBuffer, TransmitFileOptions flags)
+        {
+            throw new NotImplementedException();
+        }
+
+        public ValueTask SendFileAsync(string? fileName, CancellationToken cancellationToken = default)
+        {
+            return SendFileAsync(fileName, default, default, TransmitFileOptions.UseDefaultWorkerThread, cancellationToken);
+        }
+
+        public ValueTask SendFileAsync(string? fileName, ReadOnlyMemory<byte> preBuffer, ReadOnlyMemory<byte> postBuffer, TransmitFileOptions flags, CancellationToken cancellationToken = default)
+        {
+            throw new NotImplementedException();
+        }
+
         // Sends data to a specific end point, starting at the indicated location in the buffer.
         public int SendTo(byte[] buffer, int offset, int size, SocketFlags socketFlags, EndPoint remoteEP)
         {
