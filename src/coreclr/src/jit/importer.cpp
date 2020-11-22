@@ -21409,9 +21409,23 @@ bool Compiler::impCanSkipCovariantStoreCheck(GenTree* value, GenTree* array)
     // Check for assignment of NULL.
     if (value->OperIs(GT_CNS_INT))
     {
-        JITDUMP("\nstelem of null: skipping covariant store check\n");
-        assert((value->gtType == TYP_REF) && (value->AsIntCon()->gtIconVal == 0));
-        return true;
+        assert(value->gtType == TYP_REF);
+        bool skipCheck = false;
+        if (!IsTargetAbi(CORINFO_CORERT_ABI))
+        {
+            // Non CoreRt ABI can have only 0 const refs.
+            assert(value->AsIntCon()->gtIconVal == 0);
+            skipCheck = true;
+        }
+        else if (value->AsIntCon()->gtIconVal == 0)
+        {
+            skipCheck = true;
+        }
+        if (skipCheck)
+        {
+            JITDUMP("\nstelem of null: skipping covariant store check\n");
+            return true;
+        }
     }
 
     // Try and get a class handle for the array
