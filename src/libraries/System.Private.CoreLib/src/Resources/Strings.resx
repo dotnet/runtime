@@ -1381,9 +1381,6 @@
   <data name="Argument_NoUninitializedStrings" xml:space="preserve">
     <value>Uninitialized Strings cannot be created.</value>
   </data>
-  <data name="Argument_ObjIsWinRTObject" xml:space="preserve">
-    <value>The object's type must not be a Windows Runtime type.</value>
-  </data>
   <data name="Argument_ObjNotComObject" xml:space="preserve">
     <value>The object's type must be __ComObject or derived from __ComObject.</value>
   </data>
@@ -1504,9 +1501,6 @@
   <data name="Argument_TypedReferenceInvalidField" xml:space="preserve">
     <value>Field '{0}' in TypedReferences cannot be static.</value>
   </data>
-  <data name="Argument_TypeIsWinRTType" xml:space="preserve">
-    <value>The type must not be a Windows Runtime type.</value>
-  </data>
   <data name="Argument_TypeMustBeVisibleFromCom" xml:space="preserve">
     <value>The specified type must be visible from COM.</value>
   </data>
@@ -1548,9 +1542,6 @@
   </data>
   <data name="Argument_WaitHandleNameTooLong" xml:space="preserve">
     <value>The length of the name exceeds the maximum limit.</value>
-  </data>
-  <data name="Argument_WinRTSystemRuntimeType" xml:space="preserve">
-    <value>Cannot marshal type '{0}' to Windows Runtime. Only 'System.RuntimeType' is supported.</value>
   </data>
   <data name="ArgumentException_BadMethodImplBody" xml:space="preserve">
     <value>MethodOverride's body must be from this type.</value>
@@ -2395,15 +2386,6 @@
   <data name="InvalidCast_StoreArrayElement" xml:space="preserve">
     <value>Object cannot be stored in an array of this type.</value>
   </data>
-  <data name="InvalidCast_WinRTIPropertyValueArrayCoersion" xml:space="preserve">
-    <value>Object in an IPropertyValue is of type '{0}' which cannot be convereted to a '{1}' due to array element '{2}': {3}.</value>
-  </data>
-  <data name="InvalidCast_WinRTIPropertyValueCoersion" xml:space="preserve">
-    <value>Object in an IPropertyValue is of type '{0}' with value '{1}', which cannot be converted to a '{2}'.</value>
-  </data>
-  <data name="InvalidCast_WinRTIPropertyValueElement" xml:space="preserve">
-    <value>Object in an IPropertyValue is of type '{0}', which cannot be converted to a '{1}'.</value>
-  </data>
   <data name="InvalidOperation_AsyncFlowCtrlCtxMismatch" xml:space="preserve">
     <value>AsyncFlowControl objects can be used to restore flow only on a Context that had its flow suppressed.</value>
   </data>
@@ -2562,9 +2544,6 @@
   </data>
   <data name="InvalidOperation_NotGenericType" xml:space="preserve">
     <value>This operation is only valid on generic types.</value>
-  </data>
-  <data name="InvalidOperation_NotSupportedOnWinRTEvent" xml:space="preserve">
-    <value>Adding or removing event handlers dynamically is not supported on WinRT events.</value>
   </data>
   <data name="InvalidOperation_NotWithConcurrentGC" xml:space="preserve">
     <value>This API is not available when the concurrent GC is enabled.</value>
@@ -2863,9 +2842,6 @@
   <data name="NotSupported_CollectibleBoundNonCollectible" xml:space="preserve">
     <value>A non-collectible assembly may not reference a collectible assembly.</value>
   </data>
-  <data name="NotSupported_CollectibleWinRT" xml:space="preserve">
-    <value>WinRT Interop is not supported for collectible types.</value>
-  </data>
   <data name="NotSupported_CreateInstanceWithTypeBuilder" xml:space="preserve">
     <value>CreateInstance cannot be used with an object of type TypeBuilder.</value>
   </data>
@@ -3135,9 +3111,6 @@
   </data>
   <data name="PlatformNotSupported_StrongNameSigning" xml:space="preserve">
     <value>Strong-name signing is not supported on this platform.</value>
-  </data>
-  <data name="PlatformNotSupported_WinRT" xml:space="preserve">
-    <value>Windows Runtime is not supported on this operating system.</value>
   </data>
   <data name="PlatformNotSupported_OverlappedIO" xml:space="preserve">
     <value>This API is specific to the way in which Windows handles asynchronous I/O, and is not supported on this platform.</value>
