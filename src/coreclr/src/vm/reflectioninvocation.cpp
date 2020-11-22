@@ -2050,7 +2050,7 @@ void QCALLTYPE RuntimeTypeHandle::GetActivationInfo(
     // If caller didn't want us to locate a ctor, then they want the
     // behavior of GetUninitializedObject, which prohibits COM activation
     // and throws slightly different exceptions.
-    bool fGetUninitializedObject = (ppfnCtor != NULL);
+    bool fGetUninitializedObject = (ppfnCtor == NULL);
 
     // If we're activating __ComObject.
     bool fRequiresSpecialComActivationStub = false;
@@ -2145,10 +2145,7 @@ void QCALLTYPE RuntimeTypeHandle::GetActivationInfo(
 #ifdef FEATURE_COMINTEROP_UNMANAGED_ACTIVATION
             // Need to enter cooperative mode to manipulate OBJECTREFs
             GCX_COOP();
-
-            _ASSERTE(pRuntimeType.Get()->GetTypeHandle() == typeHandle);
             SyncBlock* pSyncBlock = pRuntimeType.Get()->GetSyncBlock();
-
             pClassFactory = (void*)pSyncBlock->GetInteropInfo()->GetComClassFactory();
 #endif // FEATURE_COMINTEROP_UNMANAGED_ACTIVATION
 
