@@ -51,6 +51,7 @@ namespace Microsoft.Extensions.Logging.Generators
             foreach (var lm in lc.Methods)
             {
                 methods.Append(GenFormatFunc(lm));
+                methods.Append(GenNameArray(lm));
                 methods.Append(GenLogMethod(lm));
             }
 
@@ -132,7 +133,26 @@ namespace Microsoft.Extensions.Logging.Generators
                 {{
                     {sb}
                     return $""{lm.Message}"";
-                }};";
+                }};
+                ";
+        }
+
+        private static string GenNameArray(LoggerMethod lm)
+        {
+            if (lm.Parameters.Count is < 2 or > MaxStaeHolderArity)
+            {
+                return string.Empty;
+            }
+
+            var sb = new StringBuilder();
+            sb.Append($"private static readonly string[] __{lm.Name}Names = new []{{");
+            foreach (var p in lm.Parameters)
+            {
+                sb.Append($"\"{p.Name}\",");
+            }
+
+            sb.Append("};");
+            return sb.ToString();
         }
 
         private static string GenLogMethod(LoggerMethod lm)
@@ -240,19 +260,7 @@ namespace Microsoft.Extensions.Logging.Generators
                 var tp = sb.ToString();
 
                 sb.Clear();
-                sb.Append($"new global::Microsoft.Extensions.Logging.LogStateHolder<{tp}>(new []{{");
-                foreach (var p in lm.Parameters)
-                {
-                    if (p != lm.Parameters[0])
-                    {
-                        sb.Append(", ");
-                    }
-                    sb.Append("nameof(");
-                    sb.Append(p.Name);
-                    sb.Append(')');
-                }
-
-                sb.Append("}, ");
+                sb.Append($"new global::Microsoft.Extensions.Logging.LogStateHolder<{tp}>(__{lm.Name}Names, ");
                 foreach (var p in lm.Parameters)
                 {
                     if (p != lm.Parameters[0])
