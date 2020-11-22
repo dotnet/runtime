@@ -104,7 +104,7 @@ namespace System
                         {
                             // Add may throw if the environment block was corrupted leading to duplicate entries.
                             // We allow such throws and eat them (rather than proactively checking for duplication)
-                            // to as to provide a non-fatal notification about the corruption.
+                            // to provide a non-fatal notification about the corruption.
                             results.Add(key, value);
                         }
                         catch (ArgumentException) { }
@@ -118,8 +118,8 @@ namespace System
             }
             finally
             {
-                int success = Interop.Kernel32.FreeEnvironmentStringsW(stringPtr);
-                Debug.Assert(success != 0);
+                Interop.BOOL success = Interop.Kernel32.FreeEnvironmentStringsW(stringPtr);
+                Debug.Assert(success != Interop.BOOL.FALSE);
             }
         }
     }
