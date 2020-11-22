@@ -65,7 +65,7 @@ static const UChar hiraganaEnd = 0x309e;
 static const UChar hiraganaToKatakanaOffset = 0x30a1 - 0x3041;
 // Length of the fullwidth charcatres from 'A' to 'Z'
 // We'll use it to map the casing of the full width 'A' to 'Z' characters
-const int32_t FullWidthAlphabetRangeLength = 0xFF3A - 0xFF21 + 1;
+static const int32_t FullWidthAlphabetRangeLength = 0xFF3A - 0xFF21 + 1;
 
 // Mapping between half- and fullwidth characters.
 // LowerChars are the characters that should sort lower than HigherChars
