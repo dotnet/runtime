@@ -202,8 +202,49 @@ namespace System
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern object Allocate(RuntimeType type);
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern object CreateInstanceForAnotherGenericParameter(RuntimeType type, RuntimeType genericParameter);
+        internal static object CreateInstanceForAnotherGenericParameter(RuntimeType type, RuntimeType genericParameter)
+        {
+            object? instantiatedObject = null;
+
+            IntPtr typeHandle = genericParameter.GetTypeHandleInternal().Value;
+            _CreateInstanceForAnotherGenericParameter(
+                new QCallTypeHandle(ref type),
+                &typeHandle,
+                1,
+                ObjectHandleOnStack.Create(ref instantiatedObject));
+
+            GC.KeepAlive(genericParameter);
+            return instantiatedObject!;
+        }
+
+        internal static object CreateInstanceForAnotherGenericParameter(RuntimeType type, RuntimeType genericParameter1, RuntimeType genericParameter2)
+        {
+            object? instantiatedObject = null;
+
+            IntPtr* pTypeHandles = stackalloc IntPtr[]
+            {
+                genericParameter1.GetTypeHandleInternal().Value,
+                genericParameter2.GetTypeHandleInternal().Value
+            };
+
+            _CreateInstanceForAnotherGenericParameter(
+                new QCallTypeHandle(ref type),
+                pTypeHandles,
+                2,
+                ObjectHandleOnStack.Create(ref instantiatedObject));
+
+            GC.KeepAlive(genericParameter1);
+            GC.KeepAlive(genericParameter2);
+
+            return instantiatedObject!;
+        }
+
+        [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
+        private static extern void _CreateInstanceForAnotherGenericParameter(
+            QCallTypeHandle baseType,
+            IntPtr* pTypeHandles,
+            int cTypeHandles,
+            ObjectHandleOnStack instantiatedObject);
 
         internal RuntimeType GetRuntimeType()
         {
@@ -471,7 +512,12 @@ namespace System
 
         internal RuntimeType Instantiate(Type[]? inst)
         {
-            // defensive copy to be sure array is not mutated from the outside during processing
+            // Defensive copy to ensure array is not mutated while during processing.
+            // Otherwise another thread could mutate the array after we've already
+            // fetched the underlying handles, resulting in our KeepAlive tracking
+            // the wrong values.
+
+            inst = (Type[]?)inst?.Clone();
             IntPtr[]? instHandles = CopyRuntimeTypeHandles(inst, out int instCount);
 
             fixed (IntPtr* pInst = instHandles)
