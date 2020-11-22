@@ -1770,13 +1770,13 @@ namespace System.Net.Sockets
             return GetSocketErrorForErrorCode(err);
         }
 
-        public static SocketError SendFileAsync(SafeSocketHandle handle, FileStream fileStream, Action<long, SocketError> callback) =>
-            SendFileAsync(handle, fileStream, 0, fileStream.Length, callback);
+        public static SocketError SendFileAsync(SafeSocketHandle handle, FileStream fileStream, Action<long, SocketError> callback, CancellationToken cancellationToken = default) =>
+            SendFileAsync(handle, fileStream, 0, fileStream.Length, callback, cancellationToken);
 
-        private static SocketError SendFileAsync(SafeSocketHandle handle, FileStream fileStream, long offset, long count, Action<long, SocketError> callback)
+        private static SocketError SendFileAsync(SafeSocketHandle handle, FileStream fileStream, long offset, long count, Action<long, SocketError> callback, CancellationToken cancellationToken = default)
         {
             long bytesSent;
-            SocketError socketError = handle.AsyncContext.SendFileAsync(fileStream.SafeFileHandle, offset, count, out bytesSent, callback);
+            SocketError socketError = handle.AsyncContext.SendFileAsync(fileStream.SafeFileHandle, offset, count, out bytesSent, callback, cancellationToken);
             if (socketError == SocketError.Success)
             {
                 callback(bytesSent, SocketError.Success);

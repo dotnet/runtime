@@ -1274,6 +1274,11 @@ namespace System.Net.Sockets
 
         public void SendFile(string? fileName, byte[]? preBuffer, byte[]? postBuffer, TransmitFileOptions flags)
         {
+            SendFile(fileName, preBuffer.AsSpan(), postBuffer.AsSpan(), flags);
+        }
+
+        public void SendFile(string? fileName, ReadOnlySpan<byte> preBuffer, ReadOnlySpan<byte> postBuffer, TransmitFileOptions flags)
+        {
             ThrowIfDisposed();
 
             if (!Connected)
@@ -1286,12 +1291,6 @@ namespace System.Net.Sockets
             if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"::SendFile() SRC:{LocalEndPoint} DST:{RemoteEndPoint} fileName:{fileName}");
 
             SendFileInternal(fileName, preBuffer, postBuffer, flags);
-
-        }
-
-        public void SendFile(string? fileName, ReadOnlySpan<byte> preBuffer, ReadOnlySpan<byte> postBuffer, TransmitFileOptions flags)
-        {
-            throw new NotImplementedException();
         }
 
         public ValueTask SendFileAsync(string? fileName, CancellationToken cancellationToken = default)
@@ -1301,7 +1300,22 @@ namespace System.Net.Sockets
 
         public ValueTask SendFileAsync(string? fileName, ReadOnlyMemory<byte> preBuffer, ReadOnlyMemory<byte> postBuffer, TransmitFileOptions flags, CancellationToken cancellationToken = default)
         {
-            throw new NotImplementedException();
+            ThrowIfDisposed();
+
+            if (!Connected)
+            {
+                throw new NotSupportedException(SR.net_notconnected);
+            }
+
+            if (cancellationToken.IsCancellationRequested)
+            {
+                return ValueTask.FromCanceled(cancellationToken);
+            }
+
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"::SendFileAsync() SRC:{LocalEndPoint} DST:{RemoteEndPoint} fileName:{fileName}");
+
+            FileStream? fileStream = OpenFile(fileName);
+            return SendFileInternalAsync(fileStream, preBuffer, postBuffer, flags, cancellationToken);
         }
 
         // Sends data to a specific end point, starting at the indicated location in the buffer.

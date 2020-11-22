@@ -5,6 +5,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Threading.Tasks;
 using System.Runtime.Versioning;
+using System.Threading;
 
 namespace System.Net.Sockets
 {
@@ -195,7 +196,7 @@ namespace System.Net.Sockets
             }
         }
 
-        private void SendFileInternal(string? fileName, byte[]? preBuffer, byte[]? postBuffer, TransmitFileOptions flags)
+        private void SendFileInternal(string? fileName, ReadOnlySpan<byte> preBuffer, ReadOnlySpan<byte> postBuffer, TransmitFileOptions flags)
         {
             CheckTransmitFileOptions(flags);
 
@@ -208,7 +209,7 @@ namespace System.Net.Sockets
             {
                 // Send the preBuffer, if any
                 // This will throw on error
-                if (preBuffer != null && preBuffer.Length > 0)
+                if (!preBuffer.IsEmpty)
                 {
                     Send(preBuffer);
                 }
@@ -230,30 +231,32 @@ namespace System.Net.Sockets
 
             // Send the postBuffer, if any
             // This will throw on error
-            if (postBuffer != null && postBuffer.Length > 0)
+            if (!postBuffer.IsEmpty)
             {
                 Send(postBuffer);
             }
         }
 
-        private async Task SendFileInternalAsync(FileStream? fileStream, byte[]? preBuffer, byte[]? postBuffer)
+        private async ValueTask SendFileInternalAsync(FileStream? fileStream, ReadOnlyMemory<byte> preBuffer, ReadOnlyMemory<byte> postBuffer, TransmitFileOptions flags = TransmitFileOptions.UseDefaultWorkerThread, CancellationToken cancellationToken = default)
         {
+            CheckTransmitFileOptions(flags);
+
             SocketError errorCode = SocketError.Success;
             using (fileStream)
             {
                 // Send the preBuffer, if any
                 // This will throw on error
-                if (preBuffer != null && preBuffer.Length > 0)
+                if (!preBuffer.IsEmpty)
                 {
                     // Using "this." makes the extension method kick in
-                    await this.SendAsync(new ArraySegment<byte>(preBuffer), SocketFlags.None).ConfigureAwait(false);
+                    await SendAsync(preBuffer, SocketFlags.None, cancellationToken).ConfigureAwait(false);
                 }
 
                 // Send the file, if any
                 if (fileStream != null)
                 {
                     var tcs = new TaskCompletionSource<SocketError>();
-                    errorCode = SocketPal.SendFileAsync(_handle, fileStream, (_, socketError) => tcs.SetResult(socketError));
+                    errorCode = SocketPal.SendFileAsync(_handle, fileStream, (_, socketError) => tcs.SetResult(socketError), cancellationToken);
                     if (errorCode == SocketError.IOPending)
                     {
                         errorCode = await tcs.Task.ConfigureAwait(false);
@@ -269,10 +272,10 @@ namespace System.Net.Sockets
 
             // Send the postBuffer, if any
             // This will throw on error
-            if (postBuffer != null && postBuffer.Length > 0)
+            if (!postBuffer.IsEmpty)
             {
                 // Using "this." makes the extension method kick in
-                await this.SendAsync(new ArraySegment<byte>(postBuffer), SocketFlags.None).ConfigureAwait(false);
+                await SendAsync(postBuffer, SocketFlags.None, cancellationToken).ConfigureAwait(false);
             }
         }
 
@@ -284,7 +287,7 @@ namespace System.Net.Sockets
             // Open it before we send the preBuffer so that any exception happens first
             FileStream? fileStream = OpenFile(fileName);
 
-            return TaskToApm.Begin(SendFileInternalAsync(fileStream, preBuffer, postBuffer), callback, state);
+            return TaskToApm.Begin(SendFileInternalAsync(fileStream, preBuffer, postBuffer).AsTask(), callback, state);
         }
 
         private void EndSendFileInternal(IAsyncResult asyncResult)
