@@ -424,15 +424,14 @@ namespace System
 
         public static TypeCode GetTypeCode(Type? type)
         {
-            if (type == null)
-                return TypeCode.Empty;
-            return type.GetTypeCodeImpl();
+            return type?.GetTypeCodeImpl() ?? TypeCode.Empty;
         }
+
         protected virtual TypeCode GetTypeCodeImpl()
         {
             Type systemType = UnderlyingSystemType;
-            if (this != systemType && systemType != null)
-                return Type.GetTypeCode(systemType);
+            if (!ReferenceEquals(this, systemType) && systemType is not null)
+                return GetTypeCode(systemType);
 
             return TypeCode.Object;
         }
