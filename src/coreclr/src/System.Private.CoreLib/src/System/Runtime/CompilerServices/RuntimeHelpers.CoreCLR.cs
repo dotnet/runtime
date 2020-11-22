@@ -154,12 +154,25 @@ namespace System.Runtime.CompilerServices
             RuntimeType rt = (RuntimeType)type;
 
             // If type is Nullable<T>, returns the allocator and MethodTable* for the underlying T.
-            delegate*<MethodTable*, object> pfnAllocator = RuntimeTypeHandle.GetAllocatorFtn(rt, out MethodTable* pMT, forGetUninitializedObject: true, wrapExceptions: false);
+            RuntimeTypeHandle.GetActivationInfo(rt, forGetUninitializedInstance: true, out MethodTable* pMT,
+                out delegate*<void*, object> pfnAllocator, out void* vAllocatorFirstArg, out _, out _);
+
             Debug.Assert(pfnAllocator != null);
             Debug.Assert(pMT != null);
             Debug.Assert(!pMT->IsNullable, "Should've unwrapped any Nullable<T> input.");
+            Debug.Assert(!pMT->HasComponentSize, "Should've blocked string, array, and similar.");
 
-            object retVal = pfnAllocator(pMT);
+            // Per ECMA-335, Sec. I.8.9.5, the instance ctor is normally responsible for
+            // invoking any non-.beforefieldinit static cctor. However, since we're bypassing
+            // instance ctors here, we need to invoke any non-.beforefieldinit static cctor
+            // manually, otherwise we could hand the caller a not-fully-initialized type.
+
+            if (pMT->HasPreciseInitCctors)
+            {
+                RunClassConstructor(rt.TypeHandle, preciseCctorsOnly: true);
+            }
+
+            object retVal = pfnAllocator(vAllocatorFirstArg);
             GC.KeepAlive(rt); // don't allow the type to be collected before the object is instantiated
 
             return retVal;
@@ -407,6 +420,7 @@ namespace System.Runtime.CompilerServices
         private const uint enum_flag_ComObject = 0x40000000;
         private const uint enum_flag_HasComponentSize = 0x80000000;
         private const uint enum_flag_HasDefaultCtor = 0x00000200;
+        private const uint enum_flag_HasPreciseInitCctors = 0x00000400;
         private const uint enum_flag_HasTypeEquivalence = 0x00004000; // TODO: shouldn't this be 0x02000000?
         // Types that require non-trivial interface cast have this bit set in the category
         private const uint enum_flag_NonTrivialInterfaceCast = 0x00080000 // enum_flag_Category_Array
@@ -469,6 +483,14 @@ namespace System.Runtime.CompilerServices
             get
             {
                 return (Flags & enum_flag_HasDefaultCtor) != 0;
+            }
+        }
+
+        public bool HasPreciseInitCctors
+        {
+            get
+            {
+                return !HasComponentSize && (Flags & enum_flag_HasPreciseInitCctors) != 0;
             }
         }
 

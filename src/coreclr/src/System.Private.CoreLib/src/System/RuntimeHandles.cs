@@ -203,47 +203,69 @@ namespace System
         internal static extern object CreateInstanceForAnotherGenericParameter(RuntimeType type, RuntimeType genericParameter);
 
         /// <summary>
-        /// Given a RuntimeType, returns both the address of the JIT's newobj allocator helper for
-        /// that type and the MethodTable* corresponding to that type. Return value signature is
-        /// managed calli (MethodTable* pMT) -> object.
+        /// Given a RuntimeType, returns information about how to activate it via calli
+        /// semantics. This method will ensure the type object is fully initialized within
+        /// the VM, but it will not call any static ctors on the type.
         /// </summary>
-        internal static delegate*<MethodTable*, object> GetAllocatorFtn(
-            // This API doesn't call any constructors, but the type needs to be seen as constructed.
-            // A type is seen as constructed if a constructor is kept.
-            // This obviously won't cover a type with no constructor. Reference types with no
-            // constructor are an academic problem. Valuetypes with no constructors are a problem,
-            // but IL Linker currently treats them as always implicitly boxed.
-            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors)] RuntimeType type,
-            out MethodTable* pMT, bool forGetUninitializedObject, bool wrapExceptions)
+        internal static void GetActivationInfo(
+            RuntimeType rt,
+            bool forGetUninitializedInstance,
+            out MethodTable* pMT,
+            out delegate*<void*, object> pfnAllocator,
+            out void* vAllocatorFirstArg,
+            out delegate*<object, void> pfnCtor,
+            out bool ctorIsPublic)
         {
-            Debug.Assert(type != null);
+            Debug.Assert(rt != null);
 
-            delegate*<MethodTable*, object> pNewobjHelperTemp = null;
-            MethodTable* pMTTemp = null;
-            Interop.BOOL fFailedWhileRunningCctor = Interop.BOOL.FALSE;
+            // Initialize all out vars
+
+            pMT = default;
+            pfnAllocator = default;
+            vAllocatorFirstArg = default;
+            pfnCtor = default;
+            ctorIsPublic = default;
+
+            // Get the requested activation information
+            // GetUninitializedInstance doesn't care about ctor information
 
             try
             {
-                GetAllocatorFtn(
-                    new QCallTypeHandle(ref type),
-                    &pNewobjHelperTemp,
-                    &pMTTemp,
-                    forGetUninitializedObject ? Interop.BOOL.TRUE : Interop.BOOL.FALSE,
-                    &fFailedWhileRunningCctor);
+                delegate*<void*, object> pfnAllocatorTemp = default;
+                void* vAllocatorFirstArgTemp = default;
+                delegate*<object, void> pfnCtorTemp = default;
+                bool fCtorIsPublicTemp = default;
+                MethodTable* pMethodTableTemp = default;
+
+                GetActivationInfo(
+                    rt, &pfnAllocatorTemp, &vAllocatorFirstArgTemp,
+                    fUnwrapNullable: forGetUninitializedInstance,
+                    fGetRefThisValueTypeCtor: false,
+                    ppfnCtor: forGetUninitializedInstance ? null : &pfnCtorTemp,
+                    pfCtorIsPublic: forGetUninitializedInstance ? null : &fCtorIsPublicTemp,
+                    &pMethodTableTemp);
+
+                // Marshal values back to caller
+
+                Debug.Assert(pMethodTableTemp != null);
+                pMT = pMethodTableTemp;
+
+                Debug.Assert(pfnAllocatorTemp != null);
+                pfnAllocator = pfnAllocatorTemp;
+
+                Debug.Assert(vAllocatorFirstArgTemp != null);
+                vAllocatorFirstArg = vAllocatorFirstArgTemp;
+
+                pfnCtor = pfnCtorTemp; // could be null
+                ctorIsPublic = fCtorIsPublicTemp;
             }
             catch (Exception ex)
             {
-                // If the cctor failed, propagate the exception as-is, wrapping in a TIE
-                // if needed. Otherwise, make the error message friendlier by including
-                // the name of the type that couldn't be instantiated.
+                // Exception messages coming from the runtime won't include
+                // the type name. Let's include it here to improve the
+                // debugging experience for our callers.
 
-                if (fFailedWhileRunningCctor != Interop.BOOL.FALSE)
-                {
-                    if (wrapExceptions) throw new TargetInvocationException(ex);
-                    else throw; // rethrow original, no TIE
-                }
-
-                string friendlyMessage = SR.Format(SR.Activator_CannotCreateInstance, type, ex.Message);
+                string friendlyMessage = SR.Format(SR.Activator_CannotCreateInstance, rt, ex.Message);
                 switch (ex)
                 {
                     case ArgumentException: throw new ArgumentException(friendlyMessage);
@@ -255,55 +277,18 @@ namespace System
 
                 throw; // can't make a friendlier message, rethrow original exception
             }
-
-            pMT = pMTTemp;
-            return pNewobjHelperTemp;
         }
 
-        [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
-        private static extern void GetAllocatorFtn(QCallTypeHandle typeHandle, delegate*<MethodTable*, object>* ppNewobjHelper, MethodTable** ppMT, Interop.BOOL fGetUninitializedObject, Interop.BOOL* pfFailedWhileRunningCctor);
-
-        /// <summary>
-        /// Returns the MethodDesc* for this type's parameterless instance ctor.
-        /// For reference types, signature is (object @this) -> void.
-        /// For value types, unboxed signature is (ref T @thisUnboxed) -> void.
-        /// For value types, forced boxed signature is (object @this) -> void.
-        /// Returns nullptr if no parameterless ctor is defined.
-        /// </summary>
-        internal static RuntimeMethodHandleInternal GetDefaultConstructor(
-            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors)] RuntimeType type,
-            bool forceBoxedEntryPoint)
-        {
-            Debug.Assert(type != null);
-
-            return GetDefaultCtor(new QCallTypeHandle(ref type), (forceBoxedEntryPoint) ? Interop.BOOL.TRUE : Interop.BOOL.FALSE);
-        }
-
-        [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
-        private static extern RuntimeMethodHandleInternal GetDefaultCtor(QCallTypeHandle typeHandle, Interop.BOOL forceBoxedEntryPoint);
-
-        /// <summary>
-        /// Given a RuntimeType which represents __ComObject, activates the class and creates
-        /// a RCW around it.
-        /// </summary>
-        /// <exception cref="InvalidComObjectException">No CLSID present, or invalid CLSID.</exception>
-        internal static object AllocateComObject(
-            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors)] RuntimeType type)
-        {
-            Debug.Assert(type != null);
-
-            // n.b. use ObjectHandleOnStack instead of QCallTypeHandle since runtime needs the actual RuntimeType instance,
-            // not just its underlying TypeHandle.
-
-            object activatedInstance = null!;
-            AllocateComObject(ObjectHandleOnStack.Create(ref type), ObjectHandleOnStack.Create(ref activatedInstance));
-
-            Debug.Assert(activatedInstance != null);
-            return activatedInstance;
-        }
-
-        [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
-        private static extern void AllocateComObject(ObjectHandleOnStack runtimeType, ObjectHandleOnStack activatedInstance);
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        private static extern void GetActivationInfo(
+            RuntimeType pRefType,
+            delegate*<void*, object>* ppfnAllocator,
+            void** pvAllocatorFirstArg,
+            bool fUnwrapNullable,
+            bool fGetRefThisValueTypeCtor,
+            delegate*<object, void>* ppfnCtor,
+            bool* pfCtorIsPublic,
+            MethodTable** ppMethodTable);
 
         internal RuntimeType GetRuntimeType()
         {
