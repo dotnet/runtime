@@ -28,7 +28,9 @@ namespace System.Net.Sockets
         /// <summary>Cached instance for send operations that return <see cref="Task{Int32}"/>.</summary>
         private TaskSocketAsyncEventArgs<int>? _multiBufferSendEventArgs;
 
-        internal Task<Socket> AcceptAsync(Socket? acceptSocket)
+        public Task<Socket> AcceptAsync() => AcceptAsync((Socket?)null);
+
+        public Task<Socket> AcceptAsync(Socket? acceptSocket)
         {
             // Get any cached SocketAsyncEventArg we may have.
             TaskSocketAsyncEventArgs<Socket>? saea = Interlocked.Exchange(ref _acceptEventArgs, null);
@@ -71,9 +73,9 @@ namespace System.Net.Sockets
             return t;
         }
 
-        internal Task ConnectAsync(EndPoint remoteEP) => ConnectAsync(remoteEP, default).AsTask();
+        public Task ConnectAsync(EndPoint remoteEP) => ConnectAsync(remoteEP, default).AsTask();
 
-        internal ValueTask ConnectAsync(EndPoint remoteEP, CancellationToken cancellationToken)
+        public ValueTask ConnectAsync(EndPoint remoteEP, CancellationToken cancellationToken)
         {
             if (cancellationToken.IsCancellationRequested)
             {
@@ -114,16 +116,15 @@ namespace System.Net.Sockets
                     throw;
                 }
             }
-
         }
 
-        internal Task ConnectAsync(IPAddress address, int port) => ConnectAsync(new IPEndPoint(address, port));
+        public Task ConnectAsync(IPAddress address, int port) => ConnectAsync(new IPEndPoint(address, port));
 
-        internal ValueTask ConnectAsync(IPAddress address, int port, CancellationToken cancellationToken) => ConnectAsync(new IPEndPoint(address, port), cancellationToken);
+        public ValueTask ConnectAsync(IPAddress address, int port, CancellationToken cancellationToken) => ConnectAsync(new IPEndPoint(address, port), cancellationToken);
 
-        internal Task ConnectAsync(IPAddress[] addresses, int port) => ConnectAsync(addresses, port, CancellationToken.None).AsTask();
+        public Task ConnectAsync(IPAddress[] addresses, int port) => ConnectAsync(addresses, port, CancellationToken.None).AsTask();
 
-        internal ValueTask ConnectAsync(IPAddress[] addresses, int port, CancellationToken cancellationToken)
+        public ValueTask ConnectAsync(IPAddress[] addresses, int port, CancellationToken cancellationToken)
         {
             ThrowIfDisposed();
 
@@ -188,9 +189,9 @@ namespace System.Net.Sockets
             }
         }
 
-        internal Task ConnectAsync(string host, int port) => ConnectAsync(host, port, default).AsTask();
+        public Task ConnectAsync(string host, int port) => ConnectAsync(host, port, default).AsTask();
 
-        internal ValueTask ConnectAsync(string host, int port, CancellationToken cancellationToken)
+        public ValueTask ConnectAsync(string host, int port, CancellationToken cancellationToken)
         {
             if (host == null)
             {
@@ -203,11 +204,16 @@ namespace System.Net.Sockets
             return ConnectAsync(ep, cancellationToken);
         }
 
+        public Task<int> ReceiveAsync(ArraySegment<byte> buffer, SocketFlags socketFlags) => ReceiveAsync(buffer, socketFlags, fromNetworkStream: false);
+
         internal Task<int> ReceiveAsync(ArraySegment<byte> buffer, SocketFlags socketFlags, bool fromNetworkStream)
         {
             ValidateBuffer(buffer);
             return ReceiveAsync(buffer, socketFlags, fromNetworkStream, default).AsTask();
         }
+
+        public ValueTask<int> ReceiveAsync(Memory<byte> buffer, SocketFlags socketFlags, CancellationToken cancellationToken) =>
+            ReceiveAsync(buffer, socketFlags, fromNetworkStream: false, cancellationToken);
 
         internal ValueTask<int> ReceiveAsync(Memory<byte> buffer, SocketFlags socketFlags, bool fromNetworkStream, CancellationToken cancellationToken)
         {
@@ -227,7 +233,7 @@ namespace System.Net.Sockets
             return saea.ReceiveAsync(this, cancellationToken);
         }
 
-        internal Task<int> ReceiveAsync(IList<ArraySegment<byte>> buffers, SocketFlags socketFlags)
+        public Task<int> ReceiveAsync(IList<ArraySegment<byte>> buffers, SocketFlags socketFlags)
         {
             ValidateBuffersList(buffers);
 
@@ -243,7 +249,7 @@ namespace System.Net.Sockets
             return GetTaskForSendReceive(ReceiveAsync(saea), saea, fromNetworkStream: false, isReceive: true);
         }
 
-        internal Task<SocketReceiveFromResult> ReceiveFromAsync(ArraySegment<byte> buffer, SocketFlags socketFlags, EndPoint remoteEndPoint)
+        public Task<SocketReceiveFromResult> ReceiveFromAsync(ArraySegment<byte> buffer, SocketFlags socketFlags, EndPoint remoteEndPoint)
         {
             var tcs = new StateTaskCompletionSource<EndPoint, SocketReceiveFromResult>(this) { _field1 = remoteEndPoint };
             BeginReceiveFrom(buffer.Array!, buffer.Offset, buffer.Count, socketFlags, ref tcs._field1, iar =>
@@ -263,7 +269,7 @@ namespace System.Net.Sockets
             return tcs.Task;
         }
 
-        internal Task<SocketReceiveMessageFromResult> ReceiveMessageFromAsync(ArraySegment<byte> buffer, SocketFlags socketFlags, EndPoint remoteEndPoint)
+        public Task<SocketReceiveMessageFromResult> ReceiveMessageFromAsync(ArraySegment<byte> buffer, SocketFlags socketFlags, EndPoint remoteEndPoint)
         {
             var tcs = new StateTaskCompletionSource<SocketFlags, EndPoint, SocketReceiveMessageFromResult>(this) { _field1 = socketFlags, _field2 = remoteEndPoint };
             BeginReceiveMessageFrom(buffer.Array!, buffer.Offset, buffer.Count, socketFlags, ref tcs._field2, iar =>
@@ -286,13 +292,13 @@ namespace System.Net.Sockets
             return tcs.Task;
         }
 
-        internal Task<int> SendAsync(ArraySegment<byte> buffer, SocketFlags socketFlags)
+        public Task<int> SendAsync(ArraySegment<byte> buffer, SocketFlags socketFlags)
         {
             ValidateBuffer(buffer);
             return SendAsync(buffer, socketFlags, default).AsTask();
         }
 
-        internal ValueTask<int> SendAsync(ReadOnlyMemory<byte> buffer, SocketFlags socketFlags, CancellationToken cancellationToken)
+        public ValueTask<int> SendAsync(ReadOnlyMemory<byte> buffer, SocketFlags socketFlags, CancellationToken cancellationToken)
         {
             if (cancellationToken.IsCancellationRequested)
             {
@@ -328,7 +334,7 @@ namespace System.Net.Sockets
             return saea.SendAsyncForNetworkStream(this, cancellationToken);
         }
 
-        internal Task<int> SendAsync(IList<ArraySegment<byte>> buffers, SocketFlags socketFlags)
+        public Task<int> SendAsync(IList<ArraySegment<byte>> buffers, SocketFlags socketFlags)
         {
             ValidateBuffersList(buffers);
 
@@ -344,7 +350,7 @@ namespace System.Net.Sockets
             return GetTaskForSendReceive(SendAsync(saea), saea, fromNetworkStream: false, isReceive: false);
         }
 
-        internal Task<int> SendToAsync(ArraySegment<byte> buffer, SocketFlags socketFlags, EndPoint remoteEP)
+        public Task<int> SendToAsync(ArraySegment<byte> buffer, SocketFlags socketFlags, EndPoint remoteEP)
         {
             var tcs = new TaskCompletionSource<int>(this);
             BeginSendTo(buffer.Array!, buffer.Offset, buffer.Count, socketFlags, remoteEP, iar =>
