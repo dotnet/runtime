@@ -48,7 +48,7 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
         private static partial void M5(ILogger logger, System.Collections.IEnumerable items);
 
         // linefeeds and quotes in the message string
-        [LoggerMessage(5, LogLevel.Critical, "Message6\n\"")]
+        [LoggerMessage(5, LogLevel.Critical, "Message6\n\"\r")]
         private static partial void M6(ILogger logger);
 
 

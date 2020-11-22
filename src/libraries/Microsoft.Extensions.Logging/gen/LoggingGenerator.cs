@@ -208,7 +208,10 @@ namespace Microsoft.Extensions.Logging.Generators
 
         private static string EscapeMessageString(string message)
         {
-            return message.Replace("\n", "\\n").Replace("\"", "\\\"");
+            return message
+                .Replace("\n", "\\n")
+                .Replace("\r", "\\r")
+                .Replace("\"", "\\\"");
         }
 
         private static string GenParameters(LoggerMethod lm)
