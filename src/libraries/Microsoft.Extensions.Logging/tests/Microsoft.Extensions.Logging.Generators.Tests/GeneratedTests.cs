@@ -24,6 +24,30 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
         public static partial void CouldNotOpenSocket(ILogger logger, string hostName);
     }
 
+    // test particular method signature variations are generated correctly
+    partial class SignatureTests
+    {
+        [LoggerMessage(0, LogLevel.Critical, "Message1")]
+        public static partial void M1(ILogger logger);
+
+        [LoggerMessage(1, LogLevel.Critical, "Message2")]
+        internal static partial void M2(ILogger logger);
+
+        [LoggerMessage(2, LogLevel.Critical, "Message3")]
+        private static partial void M3(ILogger logger);
+
+        [LoggerMessage(3, LogLevel.Critical, "Message4")]
+        private static partial void M4(ILogger<int> logger);
+
+        public static void Combo(ILogger logger, ILogger<int> logger2)
+        {
+            M1(logger);
+            M2(logger);
+            M3(logger);
+            M4(logger2);
+        }
+    }
+
     partial class ArgTestExtensions
     {
         [LoggerMessage(0, LogLevel.Error, "M1")]
@@ -54,10 +78,10 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
         public static partial void Method9(ILogger logger, int p1, int p2, int p3, int p4, int p5, int p6, int p7);
     }
 
-    public class LoggingTests
+    public class GeneratedTests
     {
         [Fact]
-        public void ExtensionMethodTest()
+        public void BasicTests()
         {
             var logger = new MockLogger();
 
@@ -152,7 +176,11 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
             rol = logger.LastState as IReadOnlyList<KeyValuePair<string, object?>>;
             Assert.Equal(1, rol!.Count);
 #pragma warning disable CA1829 // Use Length/Count property instead of Count() when available
-            Assert.Equal(1, rol.LongCount());
+#pragma warning disable xUnit2013 // Do not use equality check to check for collection size.
+#pragma warning disable CA1826 // Do not use Enumerable methods on indexable collections
+            Assert.Equal(1, rol.Count());
+#pragma warning restore CA1826 // Do not use Enumerable methods on indexable collections
+#pragma warning restore xUnit2013 // Do not use equality check to check for collection size.
 #pragma warning restore CA1829 // Use Length/Count property instead of Count() when available
             Assert.Equal("p1", (string)rol[0].Key);
             Assert.Equal("arg1", (string?)rol[0].Value);
@@ -163,7 +191,11 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
             rol = logger.LastState as IReadOnlyList<KeyValuePair<string, object?>>;
             Assert.Equal(2, rol!.Count);
 #pragma warning disable CA1829 // Use Length/Count property instead of Count() when available
-            Assert.Equal(2, rol.LongCount());
+#pragma warning disable xUnit2013 // Do not use equality check to check for collection size.
+#pragma warning disable CA1826 // Do not use Enumerable methods on indexable collections
+            Assert.Equal(2, rol.Count());
+#pragma warning restore CA1826 // Do not use Enumerable methods on indexable collections
+#pragma warning restore xUnit2013 // Do not use equality check to check for collection size.
 #pragma warning restore CA1829 // Use Length/Count property instead of Count() when available
             Assert.Equal("p1", (string)rol[0].Key);
             Assert.Equal("arg1", (string?)rol[0].Value);
