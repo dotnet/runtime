@@ -1585,35 +1585,43 @@ void QCALLTYPE ReflectionInvocation::CompileMethod(MethodDesc * pMD)
 }
 
 // This method triggers the class constructor for a give type
-FCIMPL1(void, ReflectionInvocation::RunClassConstructor, ReflectClassBaseObject *pTypeUNSAFE)
+void QCALLTYPE ReflectionInvocation::RunClassConstructor(
+    QCall::TypeHandle pTypeHandle,
+    BOOL fPreciseCctorsOnly)
 {
-    FCALL_CONTRACT;
+    QCALL_CONTRACT;
 
-    REFLECTCLASSBASEREF refType = (REFLECTCLASSBASEREF)ObjectToOBJECTREF(pTypeUNSAFE);
+    BEGIN_QCALL;
 
-    if (refType == NULL)
-        FCThrowArgumentVoidEx(kArgumentException, NULL, W("InvalidOperation_HandleIsNotInitialized"));
+    TypeHandle typeHnd = pTypeHandle.AsTypeHandle();
+    if (typeHnd.IsNull())
+        COMPlusThrow(kArgumentException, W("InvalidOperation_HandleIsNotInitialized"));
 
-    TypeHandle typeHnd = refType->GetType();
-    if (typeHnd.IsTypeDesc())
-        return;
-
-    MethodTable *pMT = typeHnd.AsMethodTable();
-
-    Assembly *pAssem = pMT->GetAssembly();
-
-    if (!pMT->IsClassInited())
+    if (!typeHnd.IsTypeDesc())
     {
-        HELPER_METHOD_FRAME_BEGIN_1(refType);
+        MethodTable* pMT = typeHnd.AsMethodTable();
 
-        pMT->CheckRestore();
-        pMT->EnsureInstanceActive();
-        pMT->CheckRunClassInitThrowing();
+        Assembly* pAssem = pMT->GetAssembly();
 
-        HELPER_METHOD_FRAME_END();
+        if (!pMT->IsClassInited())
+        {
+            pMT->CheckRestore();
+            pMT->EnsureInstanceActive();
+            if (fPreciseCctorsOnly)
+            {
+                // only cctors NOT marked .beforefieldinit
+                pMT->CheckRunClassInitAsIfConstructingThrowing();
+            }
+            else
+            {
+                // any cctor, regardless of .beforefieldinit annotation
+                pMT->CheckRunClassInitThrowing();
+            }
+        }
     }
+
+    END_QCALL;
 }
-FCIMPLEND
 
 // This method triggers the module constructor for a give module
 FCIMPL1(void, ReflectionInvocation::RunModuleConstructor, ReflectModuleBaseObject *pModuleUNSAFE) {

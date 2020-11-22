@@ -40,13 +40,23 @@ namespace System.Runtime.CompilerServices
         // This call will generate an exception if the specified class constructor threw an
         // exception when it ran.
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern void _RunClassConstructor(RuntimeType type);
-
         public static void RunClassConstructor(RuntimeTypeHandle type)
         {
-            _RunClassConstructor(type.GetRuntimeType());
+            RunClassConstructor(type, preciseCctorsOnly: false);
         }
+
+        // If 'preciseCctorsOnly' is true, runs only cctors *NOT* marked .beforefieldinit.
+        // If 'preciseCctorsOnly' is false, runs any cctor, regardless of .beforefieldinit annotation.
+        internal static void RunClassConstructor(RuntimeTypeHandle typeHandle, bool preciseCctorsOnly)
+        {
+            _RunClassConstructor(
+                new QCallTypeHandle(ref typeHandle),
+                (preciseCctorsOnly) ? Interop.BOOL.TRUE : Interop.BOOL.FALSE);
+        }
+
+        [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
+        private static extern void _RunClassConstructor(QCallTypeHandle typeHandle, Interop.BOOL preciseCctorsOnly);
+
 
         // RunModuleConstructor causes the module constructor for the given type to be triggered
         // in the current domain.  After this call returns, the module constructor is guaranteed to
