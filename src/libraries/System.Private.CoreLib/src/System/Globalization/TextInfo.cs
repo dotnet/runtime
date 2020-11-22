@@ -37,7 +37,7 @@ namespace System.Globalization
         private Tristate _isAsciiCasingSameAsInvariant = Tristate.NotInitialized;
 
         // Invariant text info
-        internal static readonly TextInfo Invariant = new TextInfo(CultureData.Invariant, readOnly: true, isInvariant: true);
+        internal static readonly TextInfo Invariant = new TextInfo(CultureData.Invariant, readOnly: true) { _isAsciiCasingSameAsInvariant = Tristate.True };
 
         internal TextInfo(CultureData cultureData)
         {
@@ -52,14 +52,9 @@ namespace System.Globalization
             }
         }
 
-        private TextInfo(CultureData cultureData, bool readOnly, bool isInvariant = false)
+        private TextInfo(CultureData cultureData, bool readOnly)
             : this(cultureData)
         {
-            if (isInvariant)
-            {
-                _isAsciiCasingSameAsInvariant = Tristate.True;
-            }
-
             SetReadOnlyState(readOnly);
         }
 
