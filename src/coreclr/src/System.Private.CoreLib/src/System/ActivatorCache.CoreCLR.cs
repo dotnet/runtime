@@ -3,9 +3,7 @@
 
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using System.Reflection;
 using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 
 namespace System
 {
@@ -19,12 +17,12 @@ namespace System
         {
             // The managed calli to the newobj allocator, plus its first argument (MethodTable*).
             // In the case of the COM allocator, first arg is ComClassFactory*, not MethodTable*.
-            private readonly delegate*<IntPtr, object?> _pfnAllocator;
-            private readonly IntPtr _allocatorFirstArg;
+            private readonly delegate*<void*, object?> _pfnAllocator;
+            private readonly void* _allocatorFirstArg;
 
             // The managed calli to the parameterless ctor, taking "this" (as object) as its first argument.
-            // For value type ctors, we'll point to a special unboxing stub.
             private readonly delegate*<object?, void> _pfnCtor;
+            private readonly bool _ctorIsPublic;
 
 #if DEBUG
             private readonly RuntimeType _originalRuntimeType;
@@ -46,10 +44,11 @@ namespace System
 
                 rt.CreateInstanceCheckThis();
 
-                _pfnAllocator = (delegate*<IntPtr, object>)RuntimeTypeHandle.GetAllocatorFtn(rt, out MethodTable* pMT, forGetUninitializedObject: false, wrapExceptions);
-                _allocatorFirstArg = (IntPtr)pMT;
+                RuntimeTypeHandle.GetActivationInfo(rt, forGetUninitializedInstance: false,
+                    out MethodTable* pMT, out _pfnAllocator!, out _allocatorFirstArg,
+                    out _pfnCtor!, out _ctorIsPublic);
 
-                RuntimeMethodHandleInternal ctorHandle = RuntimeMethodHandleInternal.EmptyHandle; // default nullptr
+                bool useNoopCtorStub = false;
 
                 if (pMT->IsValueType)
                 {
@@ -57,19 +56,17 @@ namespace System
                     {
                         // Activator.CreateInstance returns null given typeof(Nullable<T>).
 
-                        static object? ReturnNull(IntPtr _) => null;
+                        static object? ReturnNull(void* _) => null;
                         _pfnAllocator = &ReturnNull;
-                    }
-                    else if (pMT->HasDefaultConstructor)
-                    {
-                        // Value type with an explicit default ctor; we'll ask the runtime to create
-                        // an unboxing stub on our behalf.
+                        _allocatorFirstArg = default;
 
-                        ctorHandle = RuntimeTypeHandle.GetDefaultConstructor(rt, forceBoxedEntryPoint: true);
+                        useNoopCtorStub = true;
                     }
-                    else
+                    else if (_pfnCtor == null)
                     {
-                        // ValueType with no explicit parameterless ctor; assume ctor returns default(T)
+                        // Value type with no parameterless ctor - we'll point it to our noop stub.
+
+                        useNoopCtorStub = true;
                     }
                 }
                 else
@@ -78,66 +75,40 @@ namespace System
 
                     Debug.Assert(rt.IsClass);
 
+#if FEATURE_COMINTEROP
                     if (pMT->IsComObject)
                     {
-                        if (rt.IsGenericCOMObjectImpl())
+                        if (rt == typeof(__ComObject))
                         {
-                            // This is the __ComObject base type, which means that the MethodTable* we have
-                            // doesn't contain CLSID information. The CLSID information is instead hanging
-                            // off of the RuntimeType's sync block. We'll set the allocator to our stub, and
-                            // instead of a MethodTable* we'll pass in the handle to the RuntimeType. The
-                            // handles we create live for the lifetime of the app, but that's ok since it
-                            // matches coreclr's internal implementation anyway (see GetComClassHelper).
+                            // Base COM class - activation is handled entirely by the allocator.
+                            // We shouldn't call the ctor fn (which points to __ComObject's ctor).
 
-                            [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2072:UnrecognizedReflectionPattern",
-                                Justification = "Linker already saw this type through Activator/Type.CreateInstance.")]
-                            static object AllocateComObject(IntPtr runtimeTypeHandle)
-                            {
-                                RuntimeType rt = (RuntimeType)GCHandle.FromIntPtr(runtimeTypeHandle).Target!;
-                                Debug.Assert(rt != null);
-
-                                return RuntimeTypeHandle.AllocateComObject(rt);
-                            }
-                            _pfnAllocator = &AllocateComObject;
-                            _allocatorFirstArg = GCHandle.ToIntPtr(GCHandle.Alloc(rt));
+                            useNoopCtorStub = true;
                         }
-
-                        // Neither __ComObject nor any derived type gets its parameterless ctor called.
-                        // Activation is handled entirely by the allocator.
-
-                        ctorHandle = default;
-                    }
-                    else if (!pMT->HasDefaultConstructor)
-                    {
-                        throw new MissingMethodException(SR.Format(SR.Arg_NoDefCTor, rt));
                     }
                     else
+#endif
+                    if (_pfnCtor == null)
                     {
-                        // Reference type with explicit parameterless ctor
+                        // Reference type with no parameterless ctor - we cannot continue.
 
-                        ctorHandle = RuntimeTypeHandle.GetDefaultConstructor(rt, forceBoxedEntryPoint: false);
-                        Debug.Assert(!ctorHandle.IsNullHandle());
+                        throw new MissingMethodException(SR.Format(SR.Arg_NoDefCTor, rt));
                     }
                 }
 
-                if (ctorHandle.IsNullHandle())
+                if (useNoopCtorStub)
                 {
                     static void CtorNoopStub(object? uninitializedObject) { }
                     _pfnCtor = &CtorNoopStub; // we use null singleton pattern if no ctor call is necessary
-                    CtorIsPublic = true; // implicit parameterless ctor is always considered public
-                }
-                else
-                {
-                    _pfnCtor = (delegate*<object?, void>)RuntimeMethodHandle.GetFunctionPointer(ctorHandle);
-                    CtorIsPublic = (RuntimeMethodHandle.GetAttributes(ctorHandle) & MethodAttributes.Public) != 0;
+                    _ctorIsPublic = true; // implicit parameterless ctor is always considered public
                 }
 
                 Debug.Assert(_pfnAllocator != null);
-                Debug.Assert(_allocatorFirstArg != IntPtr.Zero);
+                Debug.Assert(_allocatorFirstArg != null);
                 Debug.Assert(_pfnCtor != null); // we use null singleton pattern if no ctor call is necessary
             }
 
-            internal bool CtorIsPublic { get; }
+            internal bool CtorIsPublic => _ctorIsPublic;
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             internal object? CreateUninitializedObject(RuntimeType rt)

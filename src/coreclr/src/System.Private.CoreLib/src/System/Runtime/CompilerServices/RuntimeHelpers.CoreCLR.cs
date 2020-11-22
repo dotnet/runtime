@@ -419,7 +419,6 @@ namespace System.Runtime.CompilerServices
         private const uint enum_flag_ContainsPointers = 0x01000000;
         private const uint enum_flag_ComObject = 0x40000000;
         private const uint enum_flag_HasComponentSize = 0x80000000;
-        private const uint enum_flag_HasDefaultCtor = 0x00000200;
         private const uint enum_flag_HasPreciseInitCctors = 0x00000400;
         private const uint enum_flag_HasTypeEquivalence = 0x00004000; // TODO: shouldn't this be 0x02000000?
         // Types that require non-trivial interface cast have this bit set in the category
@@ -475,14 +474,6 @@ namespace System.Runtime.CompilerServices
             get
             {
                 return (Flags & enum_flag_NonTrivialInterfaceCast) != 0;
-            }
-        }
-
-        public bool HasDefaultConstructor
-        {
-            get
-            {
-                return (Flags & enum_flag_HasDefaultCtor) != 0;
             }
         }
 
