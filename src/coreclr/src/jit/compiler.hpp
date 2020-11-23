@@ -3871,7 +3871,7 @@ inline GenTree* Compiler::impCheckForNullPointer(GenTree* obj)
         // We can see non-zero byrefs for RVA statics or for frozen strings.
         if (obj->AsIntCon()->gtIconVal != 0)
         {
-            assert((obj->gtType == TYP_BYREF) || doesMethodHaveFrozenString());
+            assert((obj->gtType == TYP_BYREF) || (doesMethodHaveFrozenString() && obj->IsIconHandle(GTF_ICON_STR_HDL)));
             return obj;
         }
 
