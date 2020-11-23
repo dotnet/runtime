@@ -160,7 +160,7 @@ namespace System.Xml.Serialization
         {
         }
 
-        public XmlSerializer(Type type, XmlRootAttribute? root) : this(type, null, Array.Empty<Type>(), root, null, null)
+        public XmlSerializer(Type type, XmlRootAttribute? root) : this(type, null, Type.EmptyTypes, root, null, null)
         {
         }
 
@@ -168,7 +168,7 @@ namespace System.Xml.Serialization
         {
         }
 
-        public XmlSerializer(Type type, XmlAttributeOverrides? overrides) : this(type, overrides, Array.Empty<Type>(), null, null, null)
+        public XmlSerializer(Type type, XmlAttributeOverrides? overrides) : this(type, overrides, Type.EmptyTypes, null, null, null)
         {
         }
 

@@ -2671,7 +2671,7 @@ namespace System.Linq.Expressions.Interpreter
 
             if (typeof(LambdaExpression).IsAssignableFrom(node.Expression.Type))
             {
-                MethodInfo compMethod = node.Expression.Type.GetMethod("Compile", Array.Empty<Type>())!;
+                MethodInfo compMethod = node.Expression.Type.GetMethod("Compile", Type.EmptyTypes)!;
                 CompileMethodCallExpression(
                     Expression.Call(
                         node.Expression,

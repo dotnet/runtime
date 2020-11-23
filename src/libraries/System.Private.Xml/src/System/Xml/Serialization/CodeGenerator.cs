@@ -309,7 +309,7 @@ namespace System.Xml.Serialization
                     MethodInfo ICollection_get_Count = typeof(ICollection).GetMethod(
                           "get_Count",
                           CodeGenerator.InstanceBindingFlags,
-                          Array.Empty<Type>()
+                          Type.EmptyTypes
                           )!;
                     Call(ICollection_get_Count);
                 }
