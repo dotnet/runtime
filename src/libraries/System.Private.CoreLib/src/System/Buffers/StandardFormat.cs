@@ -182,7 +182,8 @@ namespace System.Buffers
 
                     if (precision >= 10)
                     {
-                        uint div = Math.DivRem(precision, 10, out precision);
+                        uint div;
+                        (div, precision) = Math.DivRem(precision, 10);
                         destination[1] = (char)('0' + div % 10);
                         count = 2;
                     }
