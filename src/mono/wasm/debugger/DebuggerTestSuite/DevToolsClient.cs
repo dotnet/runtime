@@ -16,10 +16,9 @@ namespace Microsoft.WebAssembly.Diagnostics
     {
         DevToolsQueue _queue;
         ClientWebSocket socket;
-        List<Task> pending_ops = new List<Task>();
         TaskCompletionSource _clientInitiatedClose = new TaskCompletionSource();
         TaskCompletionSource _shutdownRequested = new TaskCompletionSource();
-        TaskCompletionSource _pendingOpsChanged = new TaskCompletionSource();
+        TaskCompletionSource _newSendTaskAvailable = new ();
         protected readonly ILogger logger;
 
         public event EventHandler<(RunLoopStopReason reason, Exception ex)> RunLoopStopped;
@@ -111,7 +110,7 @@ namespace Microsoft.WebAssembly.Diagnostics
         {
             Task sendTask = _queue.Send(bytes, token);
             if (sendTask != null)
-                pending_ops.Add(sendTask);
+                _newSendTaskAvailable.TrySetResult();
         }
 
         protected async Task ConnectWithMainLoops(
@@ -137,7 +136,7 @@ namespace Microsoft.WebAssembly.Diagnostics
 
                     try
                     {
-                        (reason, exception) = await RunLoop(uri, receive, linkedCts);
+                        (reason, exception) = await RunLoop(receive, linkedCts);
                     }
                     catch (Exception ex)
                     {
@@ -158,33 +157,31 @@ namespace Microsoft.WebAssembly.Diagnostics
                 }
                 finally
                 {
-                    logger.LogDebug($"Loop ended with pending_ops: {pending_ops?.Count}, socket: {socket.State}");
+                    logger.LogDebug($"Loop ended with socket: {socket.State}");
                     linkedCts.Cancel();
-                    pending_ops = null;
                 }
             });
         }
 
         private async Task<(RunLoopStopReason, Exception)> RunLoop(
-            Uri uri,
             Func<string, CancellationToken, Task> receive,
             CancellationTokenSource linkedCts)
         {
-            pending_ops.InsertRange(0, new[]
+            var pending_ops = new List<Task>
             {
                 ReadOne(linkedCts.Token),
-                _pendingOpsChanged.Task,
+                _newSendTaskAvailable.Task,
                 _clientInitiatedClose.Task,
                 _shutdownRequested.Task
-            });
+            };
 
             // In case we had a Send called already
-            if (_queue.TryPump(linkedCts.Token, out Task sendTask))
+            if (_queue.TryPumpIfCurrentCompleted(linkedCts.Token, out Task sendTask))
                 pending_ops.Add(sendTask);
 
             while (!linkedCts.IsCancellationRequested)
             {
-                var task = await Task.WhenAny(pending_ops.ToArray()).ConfigureAwait(false);
+                var task = await Task.WhenAny(pending_ops).ConfigureAwait(false);
 
                 if (task.IsCanceled && linkedCts.IsCancellationRequested)
                     return (RunLoopStopReason.Cancelled, null);
@@ -195,10 +192,21 @@ namespace Microsoft.WebAssembly.Diagnostics
                 if (_clientInitiatedClose.Task.IsCompleted)
                     return (RunLoopStopReason.ClientInitiatedClose, new TaskCanceledException("Proxy or the browser closed the connection"));
 
+                if (_newSendTaskAvailable.Task.IsCompleted)
+                {
+                    // Just needed to wake up. the new task has already
+                    // been added to pending_ops
+                    _newSendTaskAvailable = new ();
+                    pending_ops[1] = _newSendTaskAvailable.Task;
+
+                    _queue.TryPumpIfCurrentCompleted(linkedCts.Token, out _);
+                    if (_queue.CurrentSend != null)
+                        pending_ops.Add(_queue.CurrentSend);
+                }
+
                 if (task == pending_ops[0])
                 {
-                    //pending_ops[0] is for message reading
-                    var msg = await (Task<string>)task;
+                    var msg = await (Task<string>)pending_ops[0];
                     pending_ops[0] = ReadOne(linkedCts.Token);
 
                     if (msg != null)
@@ -208,18 +216,12 @@ namespace Microsoft.WebAssembly.Diagnostics
                             pending_ops.Add(tsk);
                     }
                 }
-                else if (task == pending_ops[1])
-                {
-                    // Just needed to wake up. the new task has already
-                    // been added to pending_ops
-                    _pendingOpsChanged = new TaskCompletionSource();
-                    pending_ops[1] = _pendingOpsChanged.Task;
-                }
                 else
-                { //must be a background task
+                {
+                    //must be a background task
                     pending_ops.Remove(task);
-                    if (task == _queue.CurrentSend && _queue.TryPump(linkedCts.Token, out Task tsk))
-                        pending_ops.Add(tsk);
+                    if (task == _queue.CurrentSend && _queue.TryPumpIfCurrentCompleted(linkedCts.Token, out sendTask))
+                        pending_ops.Add(sendTask);
                 }
             }
 

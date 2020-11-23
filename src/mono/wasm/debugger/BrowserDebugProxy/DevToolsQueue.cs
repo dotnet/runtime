@@ -32,11 +32,11 @@ namespace Microsoft.WebAssembly.Diagnostics
                 throw new ArgumentNullException(nameof(bytes));
 
             pending.Enqueue(bytes);
-            TryPump(token, out Task? sendTask);
+            TryPumpIfCurrentCompleted(token, out Task? sendTask);
             return sendTask;
         }
 
-        public bool TryPump(CancellationToken token, [NotNullWhen(true)] out Task? sendTask)
+        public bool TryPumpIfCurrentCompleted(CancellationToken token, [NotNullWhen(true)] out Task? sendTask)
         {
             sendTask = null;
 

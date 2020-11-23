@@ -299,7 +299,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                                 DevToolsQueue queue = GetQueueForTask(task);
                                 if (queue != null)
                                 {
-                                    if (queue.TryPump(x.Token, out Task tsk))
+                                    if (queue.TryPumpIfCurrentCompleted(x.Token, out Task tsk))
                                         pending_ops.Add(tsk);
                                 }
                             }
