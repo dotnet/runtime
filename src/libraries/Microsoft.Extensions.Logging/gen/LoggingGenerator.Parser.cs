@@ -180,13 +180,13 @@ namespace Microsoft.Extensions.Logging.Generators
                                     var eventId = semanticModel.GetConstantValue(arg.Expression).ToString();
 
                                     arg = ma.ArgumentList!.Arguments[1];
-                                    var level = semanticModel.GetConstantValue(arg.Expression).ToString();
+                                    var level = (int)semanticModel.GetConstantValue(arg.Expression).Value!;
 
                                     arg = ma.ArgumentList!.Arguments[2];
                                     var message = semanticModel.GetConstantValue(arg.Expression).ToString();
 
                                     string methodName = method.Identifier.ToString();
-                                    string eventName = methodName;
+                                    string eventName = string.Empty;
 
                                     if (ma.ArgumentList?.Arguments is { Count: > 3 } args)
                                     {
@@ -430,7 +430,7 @@ namespace Microsoft.Extensions.Logging.Generators
         {
             public string Name = string.Empty;
             public string Message = string.Empty;
-            public string Level = string.Empty;
+            public int Level;
             public string EventId = string.Empty;
             public string EventName = string.Empty;
             public bool MessageHasTemplates;

@@ -132,6 +132,33 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
         public static partial void M7(ILogger logger, int p0, int p1, int p2, int p3, int p4, int p5, int p6);
     }
 
+    partial class LevelTestExtensions
+    {
+        [LoggerMessage(0, LogLevel.Trace, "M0")]
+        public static partial void M0(ILogger logger);
+
+        [LoggerMessage(1, LogLevel.Debug, "M1")]
+        public static partial void M1(ILogger logger);
+
+        [LoggerMessage(2, LogLevel.Information, "M2")]
+        public static partial void M2(ILogger logger);
+
+        [LoggerMessage(3, LogLevel.Warning, "M3")]
+        public static partial void M3(ILogger logger);
+
+        [LoggerMessage(4, LogLevel.Error, "M4")]
+        public static partial void M4(ILogger logger);
+
+        [LoggerMessage(5, LogLevel.Critical, "M5")]
+        public static partial void M5(ILogger logger);
+
+        [LoggerMessage(6, LogLevel.None, "M6")]
+        public static partial void M6(ILogger logger);
+
+        [LoggerMessage(7, LogLevel.None, "M7")]
+        public static partial void M7(ILogger logger);
+    }
+
     public class GeneratedCodeTests
     {
         [Fact]
@@ -284,6 +311,68 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
             Assert.Equal(expected, count);
 
             Assert.Throws<ArgumentOutOfRangeException>(() => _ = rol[expected]);
+        }
+
+        [Fact]
+        public void LevelTests()
+        {
+            var logger = new MockLogger();
+
+            logger.Reset();
+            LevelTestExtensions.M0(logger);
+            Assert.Null(logger.LastException);
+            Assert.Equal("M0", logger.LastFormattedString);
+            Assert.Equal(LogLevel.Trace, logger.LastLogLevel);
+            Assert.Equal(1, logger.CallCount);
+
+            logger.Reset();
+            LevelTestExtensions.M1(logger);
+            Assert.Null(logger.LastException);
+            Assert.Equal("M1", logger.LastFormattedString);
+            Assert.Equal(LogLevel.Debug, logger.LastLogLevel);
+            Assert.Equal(1, logger.CallCount);
+
+            logger.Reset();
+            LevelTestExtensions.M2(logger);
+            Assert.Null(logger.LastException);
+            Assert.Equal("M2", logger.LastFormattedString);
+            Assert.Equal(LogLevel.Information, logger.LastLogLevel);
+            Assert.Equal(1, logger.CallCount);
+
+            logger.Reset();
+            LevelTestExtensions.M3(logger);
+            Assert.Null(logger.LastException);
+            Assert.Equal("M3", logger.LastFormattedString);
+            Assert.Equal(LogLevel.Warning, logger.LastLogLevel);
+            Assert.Equal(1, logger.CallCount);
+
+            logger.Reset();
+            LevelTestExtensions.M4(logger);
+            Assert.Null(logger.LastException);
+            Assert.Equal("M4", logger.LastFormattedString);
+            Assert.Equal(LogLevel.Error, logger.LastLogLevel);
+            Assert.Equal(1, logger.CallCount);
+
+            logger.Reset();
+            LevelTestExtensions.M5(logger);
+            Assert.Null(logger.LastException);
+            Assert.Equal("M5", logger.LastFormattedString);
+            Assert.Equal(LogLevel.Critical, logger.LastLogLevel);
+            Assert.Equal(1, logger.CallCount);
+
+            logger.Reset();
+            LevelTestExtensions.M6(logger);
+            Assert.Null(logger.LastException);
+            Assert.Equal("M6", logger.LastFormattedString);
+            Assert.Equal(LogLevel.None, logger.LastLogLevel);
+            Assert.Equal(1, logger.CallCount);
+
+            logger.Reset();
+            LevelTestExtensions.M7(logger);
+            Assert.Null(logger.LastException);
+            Assert.Equal("M7", logger.LastFormattedString);
+            Assert.Equal(LogLevel.None, logger.LastLogLevel);
+            Assert.Equal(1, logger.CallCount);
         }
     }
 }

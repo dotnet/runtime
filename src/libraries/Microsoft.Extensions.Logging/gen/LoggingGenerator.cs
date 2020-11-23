@@ -185,6 +185,28 @@ namespace Microsoft.Extensions.Logging.Generators
 
         private string GenLogMethod(LoggerMethod lm)
         {
+            string level = lm.Level switch
+            {
+                0 => "global::Microsoft.Extensions.Logging.LogLevel.Trace",
+                1 => "global::Microsoft.Extensions.Logging.LogLevel.Debug",
+                2 => "global::Microsoft.Extensions.Logging.LogLevel.Information",
+                3 => "global::Microsoft.Extensions.Logging.LogLevel.Warning",
+                4 => "global::Microsoft.Extensions.Logging.LogLevel.Error",
+                5 => "global::Microsoft.Extensions.Logging.LogLevel.Critical",
+                6 => "global::Microsoft.Extensions.Logging.LogLevel.None",
+                _ => $"(global::Microsoft.Extensions.Logging.LogLevel){lm.Level}",
+            };
+
+            string eventName;
+            if (string.IsNullOrWhiteSpace(lm.EventName))
+            {
+                eventName = $"nameof({lm.Name})";
+            }
+            else
+            {
+                eventName = $"\"{lm.EventName}\"";
+            }
+
             string exceptionArg = "null";
             foreach (var p in lm.Parameters)
             {
@@ -215,11 +237,11 @@ namespace Microsoft.Extensions.Logging.Generators
             return $@"
                 {lm.Modifiers} void {lm.Name}({lm.LoggerType} __logger{(lm.Parameters.Count > 0 ? ", " : string.Empty)}{GenParameters(lm)})
                 {{
-                    if (__logger.IsEnabled((global::Microsoft.Extensions.Logging.LogLevel){lm.Level}))
+                    if (__logger.IsEnabled({level}))
                     {{
                         __logger.Log(
-                            (global::Microsoft.Extensions.Logging.LogLevel){lm.Level},
-                            new global::Microsoft.Extensions.Logging.EventId({lm.EventId}, ""{lm.EventName}""),
+                            {level},
+                            new global::Microsoft.Extensions.Logging.EventId({lm.EventId}, {eventName}),
                             {GenHolder(lm)},
                             {exceptionArg},
                             {formatCall});
