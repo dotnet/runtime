@@ -18,15 +18,18 @@ namespace DebuggerTests
         public async Task TimedOutWaitingForInvalidBreakpoint()
         {
             await SetBreakpoint("dotnet://debugger-test.dll/debugger-test.cs", 100, 0);
-            await AssertHelpers.ThrowsAsync<TaskCanceledException>(
-                async () => await EvaluateAndCheck("window.setTimeout(function() { invoke_add(); }, 1);", null, -1, -1, null),
-                ex => Assert.Contains("timed out", ex.Message));
+            var tce = await Assert.ThrowsAsync<TaskCanceledException>(
+                         async () => await EvaluateAndCheck("window.setTimeout(function() { invoke_add(); }, 1);", null, -1, -1, null));
+            Assert.Contains("timed out", tce.Message);
         }
 
         [Fact]
-        public async Task ExceptionThrown() => await AssertHelpers.ThrowsAsync<ArgumentException>(
-                async () => await EvaluateAndCheck("window.setTimeout(function() { non_existant_fn(); }, 1);", null, -1, -1, null),
-                ex => Assert.Contains("non_existant_fn is not defined", ex.Message));
+        public async Task ExceptionThrown()
+        {
+            var ae = await Assert.ThrowsAsync<ArgumentException>(
+                        async () => await EvaluateAndCheck("window.setTimeout(function() { non_existant_fn(); }, 1);", null, -1, -1, null));
+            Assert.Contains("non_existant_fn is not defined", ae.Message);
+        }
 
         [Fact]
         public async Task BrowserCrash() => await Assert.ThrowsAsync<WebSocketException>(async () =>
@@ -55,8 +58,10 @@ namespace DebuggerTests
         }
 
         [Fact]
-        public async Task InspectorWaitForMessageThatNeverArrives() => await AssertHelpers.ThrowsAsync<TaskCanceledException>(
-                async () => await insp.WaitFor("Message.that.never.arrives"),
-                ex => Assert.Contains("timed out", ex.Message));
+        public async Task InspectorWaitForMessageThatNeverArrives()
+        {
+            var tce = await Assert.ThrowsAsync<TaskCanceledException>(async () => await insp.WaitFor("Message.that.never.arrives"));
+            Assert.Contains("timed out", tce.Message);
+        }
     }
 }

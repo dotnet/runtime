@@ -37,9 +37,8 @@ namespace DebuggerTests
 
             await Ready();
 
-            await AssertHelpers.ThrowsAsync<ArgumentException>(
-                    async () => await insp.OpenSessionAsync(fn),
-                    ae => ae.Message.Contains(bad_cmd_name + "Queue"));
+            var ae = await Assert.ThrowsAsync<ArgumentException>(async () => await insp.OpenSessionAsync(fn));
+            Assert.Contains(bad_cmd_name, ae.Message);
         }
     }
 }
