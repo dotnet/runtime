@@ -5,8 +5,6 @@
 // Code that is used by both the Unix corerun and coreconsole.
 //
 
-#include "config.h"
-
 #include <cstdlib>
 #include <cstring>
 #include <assert.h>
