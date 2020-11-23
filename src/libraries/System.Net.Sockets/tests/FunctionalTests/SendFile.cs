@@ -79,6 +79,10 @@ namespace System.Net.Sockets.Tests
             {
                 s.Dispose();
                 Assert.Throws<ObjectDisposedException>(() => s.SendFile(null));
+                Assert.Throws<ObjectDisposedException>(() => s.SendFile(null, null, null, TransmitFileOptions.UseDefaultWorkerThread));
+                Assert.Throws<ObjectDisposedException>(() => s.SendFile(null, default, default, TransmitFileOptions.UseDefaultWorkerThread));
+                Assert.Throws<ObjectDisposedException>(() => s.SendFileAsync(null));
+                Assert.Throws<ObjectDisposedException>(() => s.SendFileAsync(null, default, default, TransmitFileOptions.UseDefaultWorkerThread));
                 Assert.Throws<ObjectDisposedException>(() => s.BeginSendFile(null, null, null));
                 Assert.Throws<ObjectDisposedException>(() => s.BeginSendFile(null, null, null, TransmitFileOptions.UseDefaultWorkerThread, null, null));
                 Assert.Throws<ObjectDisposedException>(() => s.EndSendFile(null));
@@ -100,6 +104,10 @@ namespace System.Net.Sockets.Tests
             using (Socket s = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
             {
                 Assert.Throws<NotSupportedException>(() => s.SendFile(null));
+                Assert.Throws<NotSupportedException>(() => s.SendFile(null, null, null, TransmitFileOptions.UseDefaultWorkerThread));
+                Assert.Throws<NotSupportedException>(() => s.SendFile(null, default, default, TransmitFileOptions.UseDefaultWorkerThread));
+                Assert.Throws<NotSupportedException>(() => s.SendFileAsync(null));
+                Assert.Throws<NotSupportedException>(() => s.SendFileAsync(null, default, default, TransmitFileOptions.UseDefaultWorkerThread));
                 Assert.Throws<NotSupportedException>(() => s.BeginSendFile(null, null, null));
                 Assert.Throws<NotSupportedException>(() => s.BeginSendFile(null, null, null, TransmitFileOptions.UseDefaultWorkerThread, null, null));
             }
@@ -156,6 +164,39 @@ namespace System.Net.Sockets.Tests
             Assert.Equal(0, client.Available);
         }
 
+        [Theory]
+        [InlineData(false, false)]
+        [InlineData(false, true)]
+        [InlineData(true, false)]
+        [InlineData(true, true)]
+        public async Task SendFileAsync_NoFile_Succeeds(bool usePreBuffer, bool usePostBuffer)
+        {
+            using var client = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+            using var listener = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+            listener.BindToAnonymousPort(IPAddress.Loopback);
+            listener.Listen(1);
+
+            client.Connect(listener.LocalEndPoint);
+            using Socket server = listener.Accept();
+
+            await server.SendFileAsync(null);
+            Assert.Equal(0, client.Available);
+
+            byte[] preBuffer = usePreBuffer ? new byte[1] : null;
+            byte[] postBuffer = usePostBuffer ? new byte[1] : null;
+            int bytesExpected = (usePreBuffer ? 1 : 0) + (usePostBuffer ? 1 : 0);
+
+            await server.SendFileAsync(null, preBuffer, postBuffer, TransmitFileOptions.UseDefaultWorkerThread);
+
+            byte[] receiveBuffer = new byte[1];
+            for (int i = 0; i < bytesExpected; i++)
+            {
+                Assert.Equal(1, client.Receive(receiveBuffer));
+            }
+
+            Assert.Equal(0, client.Available);
+        }
+
         [ActiveIssue("https://github.com/dotnet/runtime/issues/42534", TestPlatforms.Windows)]
         [OuterLoop("Creates and sends a file several gigabytes long")]
         [Theory]
@@ -192,6 +233,45 @@ namespace System.Net.Sockets.Tests
                         server.SendFile(tmpFile);
                     }
                 }),
+                Task.Run(() =>
+                {
+                    byte[] buffer = new byte[100_000];
+                    long count = 0;
+                    while (count < FileLength)
+                    {
+                        int received = client.Receive(buffer);
+                        Assert.NotEqual(0, received);
+                        count += received;
+                    }
+                    Assert.Equal(0, client.Available);
+                })
+            }.WhenAllOrAnyFailed();
+        }
+
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/42534", TestPlatforms.Windows)]
+        [OuterLoop("Creates and sends a file several gigabytes long")]
+        [Fact]
+        public async Task SendFileAsync_GreaterThan2GBFile_SendsAllBytes()
+        {
+            const long FileLength = 100L + int.MaxValue;
+
+            string tmpFile = GetTestFilePath();
+            using (FileStream fs = File.Create(tmpFile))
+            {
+                fs.SetLength(FileLength);
+            }
+
+            using var client = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+            using var listener = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+            listener.BindToAnonymousPort(IPAddress.Loopback);
+            listener.Listen(1);
+
+            client.Connect(listener.LocalEndPoint);
+            using Socket server = listener.Accept();
+
+            await new Task[]
+            {
+                Task.Run(async () => await server.SendFileAsync(tmpFile)),
                 Task.Run(() =>
                 {
                     byte[] buffer = new byte[100_000];
@@ -282,6 +362,75 @@ namespace System.Net.Sockets.Tests
             File.Delete(filename);
         }
 
+        [OuterLoop]
+        [Theory]
+        [MemberData(nameof(SendFile_MemberData))]
+        public async Task SendFileAsync(IPAddress listenAt, bool sendPreAndPostBuffers, int bytesToSend)
+        {
+            const int ListenBacklog = 1;
+            const int TestTimeout = 30000;
+
+            // Create file to send
+            byte[] preBuffer;
+            byte[] postBuffer;
+            Fletcher32 sentChecksum;
+            string filename = CreateFileToSend(bytesToSend, sendPreAndPostBuffers, out preBuffer, out postBuffer, out sentChecksum);
+
+            // Start server
+            var server = new Socket(listenAt.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
+            server.BindToAnonymousPort(listenAt);
+
+            server.Listen(ListenBacklog);
+
+            int bytesReceived = 0;
+            var receivedChecksum = new Fletcher32();
+            var serverThread = new Thread(() =>
+            {
+                using (server)
+                {
+                    Socket remote = server.Accept();
+                    Assert.NotNull(remote);
+
+                    using (remote)
+                    {
+                        var recvBuffer = new byte[256];
+                        while (true)
+                        {
+                            int received = remote.Receive(recvBuffer, 0, recvBuffer.Length, SocketFlags.None);
+                            if (received == 0)
+                            {
+                                break;
+                            }
+
+                            bytesReceived += received;
+                            receivedChecksum.Add(recvBuffer, 0, received);
+                        }
+                    }
+                }
+            });
+            serverThread.Start();
+
+            // Run client
+            EndPoint clientEndpoint = server.LocalEndPoint;
+            var client = new Socket(clientEndpoint.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
+
+            client.Connect(clientEndpoint);
+
+            using (client)
+            {
+                await client.SendFileAsync(filename, preBuffer, postBuffer, TransmitFileOptions.UseDefaultWorkerThread);
+                client.Shutdown(SocketShutdown.Send);
+            }
+
+            Assert.True(serverThread.Join(TestTimeout), "Completed within allowed time");
+
+            Assert.Equal(bytesToSend, bytesReceived);
+            Assert.Equal(sentChecksum.Sum, receivedChecksum.Sum);
+
+            // Clean up the file we created
+            File.Delete(filename);
+        }
+
         [Fact]
         public async Task SyncSendFileGetsCanceledByDispose()
         {
@@ -353,6 +502,34 @@ namespace System.Net.Sockets.Tests
                     }
                 }
             }, maxAttempts: 10, retryWhen: e => e is XunitException);
+        }
+
+        [Fact]
+        public async Task SendFileAsync_Cancellation()
+        {
+            using var client = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+            using var listener = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+            listener.BindToAnonymousPort(IPAddress.Loopback);
+            listener.Listen(1);
+
+            client.Connect(listener.LocalEndPoint);
+            using Socket server = listener.Accept();
+
+            string fileName = GetTestFilePath();
+            using (var fs = new FileStream(fileName, FileMode.CreateNew, FileAccess.Write))
+            {
+                fs.SetLength(200 * 1024 * 1024 /* 200MB */);
+            }
+
+            using (CancellationTokenSource cts = new(0))
+            {
+                await Assert.ThrowsAsync<TaskCanceledException>(async () => await server.SendFileAsync(fileName, cts.Token));
+            }
+
+            using (CancellationTokenSource cts = new(5))
+            {
+                await Assert.ThrowsAsync<OperationCanceledException>(async () => await server.SendFileAsync(fileName, cts.Token));
+            }
         }
 
         [OuterLoop]
