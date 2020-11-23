@@ -27,6 +27,9 @@ namespace System.Security.Cryptography
         private int _startIndex;
         private int _endIndex;
 
+        /// <summary>
+        /// Gets the hash algorithm used for byte derivation.
+        /// </summary>
         public HashAlgorithmName HashAlgorithm { get; }
 
         public Rfc2898DeriveBytes(byte[] password, byte[] salt, int iterations)

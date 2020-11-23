@@ -371,7 +371,7 @@ class RefInfoListNodePool final
 
 public:
     RefInfoListNodePool(Compiler* compiler, unsigned preallocate = defaultPreallocation);
-    RefInfoListNode* GetNode(RefPosition* r, GenTree* t, unsigned regIdx = 0);
+    RefInfoListNode* GetNode(RefPosition* r, GenTree* t);
     void ReturnNode(RefInfoListNode* listNode);
 };
 
@@ -520,7 +520,7 @@ public:
 
     // interval to which this register is currently allocated.
     // If the interval is inactive (isActive == false) then it is not currently live,
-    // and the register call be unassigned (i.e. setting assignedInterval to nullptr)
+    // and the register can be unassigned (i.e. setting assignedInterval to nullptr)
     // without spilling the register.
     Interval* assignedInterval;
     // Interval to which this register was previously allocated, and which was unassigned
@@ -1494,11 +1494,11 @@ private:
     // i.e. whose consuming node has not yet been handled.
     RefInfoListNodePool listNodePool;
 
-    // The defList is used for the transient RefInfo that is computed by
-    // the Build methods, and used in building RefPositions.
-    // When Def RefPositions are built for a node, their NodeInfo is placed
-    // in the defList. As the consuming node is handled, it moves the NodeInfo
-    // into an ordered useList corresponding to the uses for that node.
+    // When Def RefPositions are built for a node, their RefInfoListNode
+    // (GenTree* to RefPosition* mapping) is placed in the defList.
+    // As the consuming node is handled, it removes the RefInfoListNode from the
+    // defList, use the interval associated with the corresponding Def RefPosition and
+    // use it to build the Use RefPosition.
     RefInfoList defList;
 
     // As we build uses, we may want to preference the next definition (i.e. the register produced
@@ -1925,13 +1925,12 @@ public:
     GenTree*     treeNode;
     unsigned int bbNum;
 
-    // Prior to the allocation pass, registerAssignment captures the valid registers
-    // for this RefPosition. An empty set means that any register is valid.  A non-empty
-    // set means that it must be one of the given registers (may be the full set if the
-    // only constraint is that it must reside in SOME register)
-    // After the allocation pass, this contains the actual assignment
     LsraLocation nodeLocation;
-    regMaskTP    registerAssignment;
+
+    // Prior to the allocation pass, registerAssignment captures the valid registers
+    // for this RefPosition.
+    // After the allocation pass, this contains the actual assignment
+    regMaskTP registerAssignment;
 
     RefType refType;
 

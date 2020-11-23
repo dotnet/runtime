@@ -339,7 +339,6 @@
     <Reference Include="System.Diagnostics.FileVersionInfo" />
     <Reference Include="System.IO.FileSystem" />
     <Reference Include="System.IO.FileSystem.DriveInfo" />
-    <Reference Include="System.Linq" />
     <Reference Include="System.Memory" />
     <Reference Include="System.Net.Sockets" />
     <Reference Include="System.Runtime" />
