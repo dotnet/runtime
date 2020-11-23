@@ -17,7 +17,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
         private List<object> _disposables;
 
         private bool _disposed;
-        private static object s_locker = new object();
+        private object _locker = new object();
 
         public ServiceProviderEngineScope(ServiceProviderEngine engine)
         {
@@ -49,7 +49,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
                 return service;
             }
 
-            lock (s_locker)
+            lock (_locker)
             {
                 if (_disposed)
                 {
@@ -152,7 +152,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
         private List<object> BeginDispose()
         {
             List<object> toDispose;
-            lock (s_locker)
+            lock (_locker)
             {
                 if (_disposed)
                 {
