@@ -183,7 +183,7 @@ namespace System.Linq.Expressions.Compiler
             if (typeof(LambdaExpression).IsAssignableFrom(expr.Type))
             {
                 // if the invoke target is a lambda expression tree, first compile it into a delegate
-                expr = Expression.Call(expr, expr.Type.GetMethod("Compile", Array.Empty<Type>())!);
+                expr = Expression.Call(expr, expr.Type.GetMethod("Compile", Type.EmptyTypes)!);
             }
 
             EmitMethodCall(expr, expr.Type.GetInvokeMethod(), node, CompilationFlags.EmitAsNoTail | CompilationFlags.EmitExpressionStart);
