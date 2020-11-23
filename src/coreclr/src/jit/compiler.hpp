@@ -3868,15 +3868,10 @@ inline GenTree* Compiler::impCheckForNullPointer(GenTree* obj)
     {
         assert(obj->gtType == TYP_REF || obj->gtType == TYP_BYREF);
 
-        // We can see non-zero byrefs for RVA statics (all ABIs) or for frozen strings (CoreRT only).
+        // We can see non-zero byrefs for RVA statics or for frozen strings.
         if (obj->AsIntCon()->gtIconVal != 0)
         {
-#ifdef DEBUG
-            if (!IsTargetAbi(CORINFO_CORERT_ABI))
-            {
-                assert(obj->gtType == TYP_BYREF);
-            }
-#endif // DEBUG
+            assert((obj->gtType == TYP_BYREF) || doesMethodHaveFrozenString());
             return obj;
         }
 

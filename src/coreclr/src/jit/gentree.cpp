@@ -6076,7 +6076,7 @@ GenTree* Compiler::gtNewStringLiteralNode(InfoAccessType iat, void* pValue)
                 // Non CoreRT - This case is illegal, creating a TYP_REF from an INT_CNS
                 noway_assert(!"unreachable IAT_VALUE case in gtNewStringLiteralNode");
             }
-
+            setMethodHasFrozenString();
             tree         = gtNewIconEmbHndNode(pValue, nullptr, GTF_ICON_STR_HDL, nullptr);
             tree->gtType = TYP_REF;
 #ifdef DEBUG

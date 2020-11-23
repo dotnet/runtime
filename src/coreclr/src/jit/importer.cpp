@@ -21410,22 +21410,13 @@ bool Compiler::impCanSkipCovariantStoreCheck(GenTree* value, GenTree* array)
     if (value->OperIs(GT_CNS_INT))
     {
         assert(value->gtType == TYP_REF);
-        bool skipCheck = false;
-        if (!IsTargetAbi(CORINFO_CORERT_ABI))
-        {
-            // Non CoreRt ABI can have only 0 const refs.
-            assert(value->AsIntCon()->gtIconVal == 0);
-            skipCheck = true;
-        }
-        else if (value->AsIntCon()->gtIconVal == 0)
-        {
-            skipCheck = true;
-        }
-        if (skipCheck)
+        if (value->AsIntCon()->gtIconVal == 0)
         {
             JITDUMP("\nstelem of null: skipping covariant store check\n");
             return true;
         }
+        // Non-0 const refs can only occur with frozen objects
+        assert(doesMethodHaveFrozenString());
     }
 
     // Try and get a class handle for the array
