@@ -18,4 +18,4 @@ clean:
 	rm -rf bin
 
 run:
-	cd bin/$(CONFIG)/publish && python3 server.py
+	$(DOTNET) serve -o -d bin/$(CONFIG)/publish -p 8000
