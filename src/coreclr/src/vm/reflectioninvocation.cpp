@@ -515,7 +515,7 @@ DoneCreateInstance:
 }
 FCIMPLEND
 
-void QCALLTYPE RuntimeTypeHandle::CreateInstanceForGenericType(
+void QCALLTYPE RuntimeTypeHandle::CreateInstanceForAnotherGenericParameter(
     QCall::TypeHandle pTypeHandle,
     TypeHandle* pInstArray,
     INT32 cInstArray,

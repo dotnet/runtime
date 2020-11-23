@@ -248,7 +248,7 @@ public:
     static FCDECL1(void, GetNextIntroducedMethod, MethodDesc **ppMethod);
 
     static
-    void QCALLTYPE CreateInstanceForGenericType(QCall::TypeHandle pTypeHandle, TypeHandle *pInstArray, INT32 cInstArray, QCall::ObjectHandleOnStack pInstantiatedObject);
+    void QCALLTYPE CreateInstanceForAnotherGenericParameter(QCall::TypeHandle pTypeHandle, TypeHandle *pInstArray, INT32 cInstArray, QCall::ObjectHandleOnStack pInstantiatedObject);
 
     static
     FCDECL1(IMDInternalImport*, GetMetadataImport, ReflectClassBaseObject * pModuleUNSAFE);
