@@ -21,7 +21,7 @@ namespace System.Drawing
 
         // 0 - reserved for "not a known color"
 
-        // "System" colors
+        // "System" colors, Part 1
         ActiveBorder = 1,
         ActiveCaption,
         ActiveCaptionText,
@@ -49,7 +49,7 @@ namespace System.Drawing
         WindowFrame,
         WindowText,
 
-        // "Web" Colors
+        // "Web" Colors, Part 1
         Transparent,
         AliceBlue,
         AntiqueWhite,
@@ -191,6 +191,8 @@ namespace System.Drawing
         WhiteSmoke,
         Yellow,
         YellowGreen,
+
+        // "System" colors, Part 2
         ButtonFace,
         ButtonHighlight,
         ButtonShadow,
@@ -198,6 +200,8 @@ namespace System.Drawing
         GradientInactiveCaption,
         MenuBar,
         MenuHighlight,
+
+        // "Web" colors, Part 2
         RebeccaPurple,
     }
 }

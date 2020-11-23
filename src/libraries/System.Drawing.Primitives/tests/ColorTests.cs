@@ -533,7 +533,7 @@ namespace System.Drawing.Primitives.Tests
         [Theory]
         [InlineData((KnownColor)(-1))]
         [InlineData((KnownColor)0)]
-        [InlineData(KnownColor.MenuHighlight + 1)]
+        [InlineData(KnownColor.RebeccaPurple + 1)]
         public void FromOutOfRangeKnownColor(KnownColor known)
         {
             Color color = Color.FromKnownColor(known);
@@ -557,7 +557,7 @@ namespace System.Drawing.Primitives.Tests
         [Theory]
         [InlineData((KnownColor)(-1))]
         [InlineData((KnownColor)0)]
-        [InlineData(KnownColor.MenuHighlight + 1)]
+        [InlineData(KnownColor.RebeccaPurple + 1)]
         public void FromOutOfRangeKnownColorToKnownColor(KnownColor known)
         {
             Color color = Color.FromKnownColor(known);
@@ -589,7 +589,7 @@ namespace System.Drawing.Primitives.Tests
         [Theory]
         [InlineData((KnownColor)(-1))]
         [InlineData((KnownColor)0)]
-        [InlineData(KnownColor.MenuHighlight + 1)]
+        [InlineData(KnownColor.RebeccaPurple + 1)]
         public void IsSystemColorOutOfRangeKnown(KnownColor known)
         {
             Color color = Color.FromKnownColor(known);
@@ -613,7 +613,7 @@ namespace System.Drawing.Primitives.Tests
         [Theory]
         [InlineData((KnownColor)(-1))]
         [InlineData((KnownColor)0)]
-        [InlineData(KnownColor.MenuHighlight + 1)]
+        [InlineData(KnownColor.RebeccaPurple + 1)]
         public void IsKnownColorOutOfRangeKnown(KnownColor known)
         {
             Color color = Color.FromKnownColor(known);
@@ -679,12 +679,13 @@ namespace System.Drawing.Primitives.Tests
                 KnownColor.Olive, KnownColor.OliveDrab, KnownColor.Orange, KnownColor.OrangeRed, KnownColor.Orchid,
                 KnownColor.PaleGoldenrod, KnownColor.PaleGreen, KnownColor.PaleTurquoise, KnownColor.PaleVioletRed,
                 KnownColor.PapayaWhip, KnownColor.PeachPuff, KnownColor.Peru, KnownColor.Pink, KnownColor.Plum,
-                KnownColor.PowderBlue, KnownColor.Purple, KnownColor.RebeccaPurple, KnownColor.Red, KnownColor.RosyBrown, KnownColor.RoyalBlue,
+                KnownColor.PowderBlue, KnownColor.Purple, KnownColor.Red, KnownColor.RosyBrown, KnownColor.RoyalBlue,
                 KnownColor.SaddleBrown, KnownColor.Salmon, KnownColor.SandyBrown, KnownColor.SeaGreen,
                 KnownColor.SeaShell, KnownColor.Sienna, KnownColor.Silver, KnownColor.SkyBlue, KnownColor.SlateBlue,
                 KnownColor.SlateGray, KnownColor.Snow, KnownColor.SpringGreen, KnownColor.SteelBlue, KnownColor.Tan,
                 KnownColor.Teal, KnownColor.Thistle, KnownColor.Tomato, KnownColor.Turquoise, KnownColor.Violet,
-                KnownColor.Wheat, KnownColor.White, KnownColor.WhiteSmoke, KnownColor.Yellow, KnownColor.YellowGreen
+                KnownColor.Wheat, KnownColor.White, KnownColor.WhiteSmoke, KnownColor.Yellow, KnownColor.YellowGreen,
+                KnownColor.RebeccaPurple
             }.Select(kc => new object[] { kc }).ToArray();
 
         [DllImport("user32.dll", SetLastError = true)]
