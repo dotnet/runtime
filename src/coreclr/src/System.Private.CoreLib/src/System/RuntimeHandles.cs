@@ -162,6 +162,12 @@ namespace System
                    || (corElemType == CorElementType.ELEMENT_TYPE_BYREF);                                      // IsByRef
         }
 
+        // ** WARNING **
+        // Caller bears responsibility for ensuring that the provided Types remain
+        // GC-reachable while the unmanaged handles are being manipulated. The caller
+        // may need to make a defensive copy of the input array to ensure it's not
+        // mutated by another thread, and this defensive copy should be passed to
+        // a KeepAlive routine.
         internal static IntPtr[]? CopyRuntimeTypeHandles(RuntimeTypeHandle[]? inHandles, out int length)
         {
             if (inHandles == null || inHandles.Length == 0)
@@ -179,6 +185,12 @@ namespace System
             return outHandles;
         }
 
+        // ** WARNING **
+        // Caller bears responsibility for ensuring that the provided Types remain
+        // GC-reachable while the unmanaged handles are being manipulated. The caller
+        // may need to make a defensive copy of the input array to ensure it's not
+        // mutated by another thread, and this defensive copy should be passed to
+        // a KeepAlive routine.
         internal static IntPtr[]? CopyRuntimeTypeHandles(Type[]? inHandles, out int length)
         {
             if (inHandles == null || inHandles.Length == 0)
@@ -1239,6 +1251,10 @@ namespace System
                 throw new ArgumentOutOfRangeException(nameof(typeToken),
                     SR.Format(SR.Argument_InvalidToken, typeToken, new ModuleHandle(module)));
 
+            // defensive copy of user-provided array, per CopyRuntimeTypeHandles contract
+            typeInstantiationContext = (RuntimeTypeHandle[]?)typeInstantiationContext?.Clone();
+            methodInstantiationContext = (RuntimeTypeHandle[]?)methodInstantiationContext?.Clone();
+
             IntPtr[]? typeInstantiationContextHandles = RuntimeTypeHandle.CopyRuntimeTypeHandles(typeInstantiationContext, out int typeInstCount);
             IntPtr[]? methodInstantiationContextHandles = RuntimeTypeHandle.CopyRuntimeTypeHandles(methodInstantiationContext, out int methodInstCount);
 
@@ -1272,6 +1288,9 @@ namespace System
 
         internal static IRuntimeMethodInfo ResolveMethodHandleInternal(RuntimeModule module, int methodToken, RuntimeTypeHandle[]? typeInstantiationContext, RuntimeTypeHandle[]? methodInstantiationContext)
         {
+            // defensive copy of user-provided array, per CopyRuntimeTypeHandles contract
+            typeInstantiationContext = (RuntimeTypeHandle[]?)typeInstantiationContext?.Clone();
+            methodInstantiationContext = (RuntimeTypeHandle[]?)methodInstantiationContext?.Clone();
 
             IntPtr[]? typeInstantiationContextHandles = RuntimeTypeHandle.CopyRuntimeTypeHandles(typeInstantiationContext, out int typeInstCount);
             IntPtr[]? methodInstantiationContextHandles = RuntimeTypeHandle.CopyRuntimeTypeHandles(methodInstantiationContext, out int methodInstCount);
@@ -1316,6 +1335,10 @@ namespace System
             if (!ModuleHandle.GetMetadataImport(module.GetNativeHandle()).IsValidToken(fieldToken))
                 throw new ArgumentOutOfRangeException(nameof(fieldToken),
                     SR.Format(SR.Argument_InvalidToken, fieldToken, new ModuleHandle(module)));
+
+            // defensive copy of user-provided array, per CopyRuntimeTypeHandles contract
+            typeInstantiationContext = (RuntimeTypeHandle[]?)typeInstantiationContext?.Clone();
+            methodInstantiationContext = (RuntimeTypeHandle[]?)methodInstantiationContext?.Clone();
 
             // defensive copy to be sure array is not mutated from the outside during processing
             IntPtr[]? typeInstantiationContextHandles = RuntimeTypeHandle.CopyRuntimeTypeHandles(typeInstantiationContext, out int typeInstCount);
