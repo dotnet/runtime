@@ -151,6 +151,10 @@
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Private.Xml.Linq\tests\xNodeReader\System.Xml.Linq.xNodeReader.Tests.csproj" />
   </ItemGroup>
 
+  <ItemGroup Condition="'$(TargetOS)' != 'Android'">
+    <ProjectExclusions Include="..\mono\netcore\sample\Android\AndroidSampleApp.csproj" />
+  </ItemGroup>
+
   <ItemGroup Condition="'$(TargetOS)' == 'Browser' and '$(RunDisabledWasmTests)' != 'true'">
     <!-- Mono-Browser ignores runtimeconfig.template.json (e.g. for this it has "System.Globalization.EnforceJapaneseEraYearRanges": true) -->
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Globalization.Calendars\tests\CalendarTestWithConfigSwitch\System.Globalization.CalendarsWithConfigSwitch.Tests.csproj" />
@@ -169,6 +173,10 @@
                       Exclude="@(ProjectExclusions)"
                       BuildInParallel="false"
                       Condition="'$(TestTrimming)' == 'true'" />
+    <ProjectReference Include="..\mono\netcore\sample\Android\AndroidSampleApp.csproj"
+                      Exclude="@(ProjectExclusions)"
+                      BuildInParallel="false"
+                      Condition="'$(ArchiveTests)' == 'true'" />
   </ItemGroup>
 
   <Target Name="GenerateMergedCoverageReport"

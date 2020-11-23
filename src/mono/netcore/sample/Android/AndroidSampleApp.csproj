@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk" DefaultTargets="BuildApp">
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
@@ -22,7 +22,7 @@
 
   <UsingTask TaskName="AndroidAppBuilderTask" AssemblyFile="$(AndroidAppBuilderTasksAssemblyPath)"/>
 
-  <Target Name="BuildApp" AfterTargets="CopyFilesToPublishDirectory">
+  <Target Name="BuildApp" AfterTargets="Build">
     <PropertyGroup>
       <StripDebugSymbols>False</StripDebugSymbols>
       <StripDebugSymbols Condition="'$(Configuration)' == 'Release'">True</StripDebugSymbols>
@@ -48,19 +48,39 @@
     <Message Importance="High" Text="Apk:       $(ApkBundlePath)"/>
     <Message Importance="High" Text="PackageId: $(ApkPackageId)"/>
 
-    <Exec Condition="'$(DeployAndRun)' == 'true'" Command="$(AdbTool) kill-server"/>
-    <Exec Condition="'$(DeployAndRun)' == 'true'" Command="$(AdbTool) start-server"/>
-    <Exec Condition="'$(DeployAndRun)' == 'true'" Command="$(AdbTool) logcat -c" ContinueOnError="WarnAndContinue" />
-    <Message Condition="'$(DeployAndRun)' == 'true'" Importance="High" Text="Uninstalling apk (ignore errors if any):"/>
-    <Exec Condition="'$(DeployAndRun)' == 'true'" Command="$(AdbTool) uninstall net.dot.HelloAndroid" ContinueOnError="WarnAndContinue" />
-    <Exec Condition="'$(DeployAndRun)' == 'true'" Command="$(AdbTool) install $(ApkDir)/bin/HelloAndroid.apk" />
-    <Exec Condition="'$(DeployAndRun)' == 'true' and '$(RunActivity)' != 'true'"
+    <Exec Condition="'$(DeployAndRun)' == 'true' and '$(ArchiveTests)' != 'true'" Command="$(AdbTool) kill-server"/>
+    <Exec Condition="'$(DeployAndRun)' == 'true' and '$(ArchiveTests)' != 'true'" Command="$(AdbTool) start-server"/>
+    <Exec Condition="'$(DeployAndRun)' == 'true' and '$(ArchiveTests)' != 'true'" Command="$(AdbTool) logcat -c" ContinueOnError="WarnAndContinue" />
+    <Message Condition="'$(DeployAndRun)' == 'true' and '$(ArchiveTests)' != 'true'" Importance="High" Text="Uninstalling apk (ignore errors if any):"/>
+    <Exec Condition="'$(DeployAndRun)' == 'true' and '$(ArchiveTests)' != 'true'" Command="$(AdbTool) uninstall net.dot.HelloAndroid" ContinueOnError="WarnAndContinue" />
+    <Exec Condition="'$(DeployAndRun)' == 'true' and '$(ArchiveTests)' != 'true'" Command="$(AdbTool) install $(ApkDir)/bin/HelloAndroid.apk" />
+    <Exec Condition="'$(DeployAndRun)' == 'true' and '$(RunActivity)' != 'true' and '$(ArchiveTests)' != 'true'"
           Command="$(AdbTool) shell am instrument -e env:MONO_LOG_LEVEL warning -e env:MONO_LOG_MASK all -w net.dot.HelloAndroid/net.dot.MonoRunner"/>
-    <Exec Condition="'$(DeployAndRun)' == 'true' and '$(RunActivity)' == 'true'" Command="$(AdbTool) shell am start -n net.dot.HelloAndroid/net.dot.MainActivity" />
-    <Exec Condition="'$(DeployAndRun)' == 'true'" Command="$(AdbTool) logcat -d" />
+    <Exec Condition="'$(DeployAndRun)' == 'true' and '$(RunActivity)' == 'true' and '$(ArchiveTests)' != 'true'" Command="$(AdbTool) shell am start -n net.dot.HelloAndroid/net.dot.MainActivity" />
+    <Exec Condition="'$(DeployAndRun)' == 'true' and '$(ArchiveTests)' != 'true'" Command="$(AdbTool) logcat -d" />
   </Target>
 
   <ItemGroup>
     <Compile Include="Program.cs" />
   </ItemGroup>
+
+  <Target Name="CopySampleAppToHelixTestDir" Condition="'$(ArchiveTests)' == 'true'" AfterTargets="BuildApp">
+    <PropertyGroup>
+      <!-- Helix properties -->
+      <!-- AnyCPU as Platform-->
+      <OSPlatformConfig>$(TargetOS).AnyCPU.$(Configuration)</OSPlatformConfig>
+      <!-- <OSPlatformConfig>$(TargetOS).$(Platform).$(Configuration)</OSPlatformConfig> -->
+      <TestArchiveRoot>$(ArtifactsDir)helix/</TestArchiveRoot>
+      <TestArchiveTestsRoot>$(TestArchiveRoot)tests/</TestArchiveTestsRoot>
+      <TestArchiveTestsDir>$(TestArchiveTestsRoot)$(OSPlatformConfig)/</TestArchiveTestsDir>
+    </PropertyGroup>
+    <ItemGroup>
+      <_appFiles Include="$(ApkBundlePath)" />
+    </ItemGroup>
+    <Copy SourceFiles="@(_appFiles)"
+          DestinationFolder="$(TestArchiveTestsDir)" />
+
+    <Message Importance="High" Text="ApkBundlePath: $(ApkBundlePath)"/>
+    <Message Importance="High" Text="TestArchiveTestsDir: $(TestArchiveTestsDir)"/>
+  </Target>
 </Project>
