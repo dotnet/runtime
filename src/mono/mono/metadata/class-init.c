@@ -2510,6 +2510,8 @@ generic_array_methods (MonoClass *klass)
 		const char *ireadonlylist_prefix = "InternalArray__IReadOnlyList_";
 		const char *ireadonlycollection_prefix = "InternalArray__IReadOnlyCollection_";
 
+		// TODO: Check that the interfaces / methods have not been linked away.
+
 		generic_array_method_info [i].array_method = m;
 		if (!strncmp (m->name, "InternalArray__ICollection_", 27)) {
 			iname = "System.Collections.Generic.ICollection`1.";
@@ -3715,20 +3717,26 @@ mono_class_setup_interfaces (MonoClass *klass, MonoError *error)
 		MonoType *args [1];
 
 		/* IList and IReadOnlyList -> 2x if enum*/
-		interface_count = klass->element_class->enumtype ? 4 : 2;
+		interface_count = 0;
+		int mult = klass->element_class->enumtype ? 2 : 1;
+		if (mono_defaults.generic_ilist_class)
+			interface_count += mult;
+		if (mono_defaults.generic_ireadonlylist_class)
+			interface_count += mult;
 		interfaces = (MonoClass **)mono_image_alloc0 (klass->image, sizeof (MonoClass*) * interface_count);
 
+		int itf_idx = 0;
 		args [0] = m_class_get_byval_arg (m_class_get_element_class (klass));
-		interfaces [0] = mono_class_bind_generic_parameters (
-			mono_defaults.generic_ilist_class, 1, args, FALSE);
-		interfaces [1] = mono_class_bind_generic_parameters (
-			   mono_defaults.generic_ireadonlylist_class, 1, args, FALSE);
+		if (mono_defaults.generic_ilist_class)
+			interfaces [itf_idx++] = mono_class_bind_generic_parameters (mono_defaults.generic_ilist_class, 1, args, FALSE);
+		if (mono_defaults.generic_ireadonlylist_class)
+			interfaces [itf_idx++] = mono_class_bind_generic_parameters (mono_defaults.generic_ireadonlylist_class, 1, args, FALSE);
 		if (klass->element_class->enumtype) {
 			args [0] = mono_class_enum_basetype_internal (klass->element_class);
-			interfaces [2] = mono_class_bind_generic_parameters (
-				mono_defaults.generic_ilist_class, 1, args, FALSE);
-			interfaces [3] = mono_class_bind_generic_parameters (
-				   mono_defaults.generic_ireadonlylist_class, 1, args, FALSE);
+			if (mono_defaults.generic_ilist_class)
+				interfaces [itf_idx++] = mono_class_bind_generic_parameters (mono_defaults.generic_ilist_class, 1, args, FALSE);
+			if (mono_defaults.generic_ireadonlylist_class)
+				interfaces [itf_idx++] = mono_class_bind_generic_parameters (mono_defaults.generic_ireadonlylist_class, 1, args, FALSE);
 		}
 	} else if (mono_class_is_ginst (klass)) {
 		MonoClass *gklass = mono_class_get_generic_class (klass)->container_class;
