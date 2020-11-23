@@ -60,6 +60,13 @@ static int generic_array_methods (MonoClass *klass);
 static void setup_generic_array_ifaces (MonoClass *klass, MonoClass *iface, MonoMethod **methods, int pos, GHashTable *cache);
 static gboolean class_has_isbyreflike_attribute (MonoClass *klass);
 
+static
+GENERATE_TRY_GET_CLASS_WITH_CACHE(icollection, "System.Collections.Generic", "ICollection`1");
+static
+GENERATE_TRY_GET_CLASS_WITH_CACHE(ienumerable, "System.Collections.Generic", "IEnumerable`1");
+static
+GENERATE_TRY_GET_CLASS_WITH_CACHE(ireadonlycollection, "System.Collecitons.Generic", "IReadOnlyCollection`1");
+
 /* This TLS variable points to a GSList of classes which have setup_fields () executing */
 static MonoNativeTlsKey setup_fields_tls_id;
 
@@ -2483,6 +2490,16 @@ setup_generic_array_ifaces (MonoClass *klass, MonoClass *iface, MonoMethod **met
 	}
 }
 
+static gboolean
+check_method_exists (MonoClass *iface, const char *method_name)
+{
+	g_assert (iface != NULL);
+	ERROR_DECL (method_lookup_error);
+	gboolean found = NULL != mono_class_get_method_from_name_checked (iface, method_name, -1, 0, method_lookup_error);
+	mono_error_cleanup (method_lookup_error);
+	return found;
+}
+
 static int
 generic_array_methods (MonoClass *klass)
 {
@@ -2510,27 +2527,36 @@ generic_array_methods (MonoClass *klass)
 		const char *ireadonlylist_prefix = "InternalArray__IReadOnlyList_";
 		const char *ireadonlycollection_prefix = "InternalArray__IReadOnlyCollection_";
 
-		// TODO: Check that the interfaces / methods have not been linked away.
+		MonoClass *iface = NULL;
 
-		generic_array_method_info [i].array_method = m;
 		if (!strncmp (m->name, "InternalArray__ICollection_", 27)) {
 			iname = "System.Collections.Generic.ICollection`1.";
 			mname = m->name + 27;
+			iface = mono_class_try_get_icollection_class ();
 		} else if (!strncmp (m->name, "InternalArray__IEnumerable_", 27)) {
 			iname = "System.Collections.Generic.IEnumerable`1.";
 			mname = m->name + 27;
+			iface = mono_class_try_get_ienumerable_class ();
 		} else if (!strncmp (m->name, ireadonlylist_prefix, strlen (ireadonlylist_prefix))) {
 			iname = "System.Collections.Generic.IReadOnlyList`1.";
 			mname = m->name + strlen (ireadonlylist_prefix);
+			iface = mono_defaults.generic_ireadonlylist_class;
 		} else if (!strncmp (m->name, ireadonlycollection_prefix, strlen (ireadonlycollection_prefix))) {
 			iname = "System.Collections.Generic.IReadOnlyCollection`1.";
 			mname = m->name + strlen (ireadonlycollection_prefix);
+			iface = mono_class_try_get_ireadonlycollection_class ();
 		} else if (!strncmp (m->name, "InternalArray__", 15)) {
 			iname = "System.Collections.Generic.IList`1.";
 			mname = m->name + 15;
+			iface = mono_defaults.generic_ilist_class;
 		} else {
 			g_assert_not_reached ();
 		}
+
+		if (!iface || !check_method_exists (iface, mname))
+			continue;
+		
+		generic_array_method_info [i].array_method = m;
 
 		name = (gchar *)mono_image_alloc (mono_defaults.corlib, strlen (iname) + strlen (mname) + 1);
 		strcpy (name, iname);
