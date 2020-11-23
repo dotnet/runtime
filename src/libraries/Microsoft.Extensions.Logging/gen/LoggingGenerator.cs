@@ -4,6 +4,7 @@ namespace Microsoft.Extensions.Logging.Generators
 {
     using System.Collections.Generic;
     using System.Text;
+    using System.Xml;
     using Microsoft.CodeAnalysis;
     using Microsoft.CodeAnalysis.CSharp;
     using Microsoft.CodeAnalysis.CSharp.Syntax;
@@ -72,22 +73,22 @@ namespace Microsoft.Extensions.Logging.Generators
                 if (string.IsNullOrWhiteSpace(lc.Namespace))
                 {
                     return $@"
-                    partial class {lc.Name}
-                    {{
-                        {sb}
-                    }}
+                        partial class {lc.Name} {lc.Constraints}
+                        {{
+                            {sb}
+                        }}
                 ";
                 }
 
                 return $@"
-                namespace {lc.Namespace}
-                {{
-                    partial class {lc.Name}
+                    namespace { lc.Namespace}
                     {{
-                        {sb}
+                        partial class {lc.Name} {lc.Constraints}
+                        {{
+                            {sb}
+                        }}
                     }}
-                }}
-                ";
+                    ";
             }
             finally
             {

@@ -117,89 +117,70 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
-
   <data name="ErrorInvalidMethodNameTitle" xml:space="preserve">
     <value>Logging method names cannot start with __</value>
   </data>
   <data name="ErrorInvalidMethodNameMessage" xml:space="preserve">
     <value>Logging method names cannot start with __</value>
   </data>
-
   <data name="ErrorInvalidMessageTitle" xml:space="preserve">
     <value>Missing message for logging method</value>
   </data>
   <data name="ErrorInvalidMessageMessage" xml:space="preserve">
     <value>Missing message for logging method {0}</value>
   </data>
-
   <data name="ErrorInvalidParameterNameTitle" xml:space="preserve">
     <value>Logging method parameter names cannot start with __</value>
   </data>
   <data name="ErrorInvalidParameterNameMessage" xml:space="preserve">
     <value>Logging method parameter names cannot start with __</value>
   </data>
-
   <data name="ErrorNestedTypeTitle" xml:space="preserve">
     <value>Logging class cannot be in nested types</value>
   </data>
   <data name="ErrorNestedTypeMessage" xml:space="preserve">
     <value>Logging class cannot be in nested types</value>
   </data>
-
   <data name="ErrorMissingRequiredTypeTitle" xml:space="preserve">
     <value>Could not find a required type definition</value>
   </data>
   <data name="ErrorMissingRequiredTypeMessage" xml:space="preserve">
     <value>Could not find definition for type {0}</value>
   </data>
-
   <data name="ErrorEventIdReuseTitle" xml:space="preserve">
     <value>Multiple logging messages cannot use the same event id</value>
   </data>
   <data name="ErrorEventIdReuseMessage" xml:space="preserve">
     <value>Multiple logging messages are using event id {0}</value>
   </data>
-
   <data name="ErrorInvalidMethodReturnTypeTitle" xml:space="preserve">
     <value>Logging methods must return void</value>
   </data>
   <data name="ErrorInvalidMethodReturnTypeMessage" xml:space="preserve">
     <value>Logging methods must return void</value>
   </data>
-
   <data name="ErrorFirstArgMustBeILoggerTitle" xml:space="preserve">
     <value>The first argument to a logging method must implement the Microsoft.Extensions.Logging.ILogger interface</value>
   </data>
   <data name="ErrorFirstArgMustBeILoggerMessage" xml:space="preserve">
     <value>The first argument to a logging method must implement the Microsoft.Extensions.Logging.ILogger interface</value>
   </data>
-
   <data name="ErrorNotStaticMethodTitle" xml:space="preserve">
     <value>Logging methods must be static</value>
   </data>
   <data name="ErrorNotStaticMethodMessage" xml:space="preserve">
     <value>Logging methods must be static</value>
   </data>
-
   <data name="ErrorNotPartialMethodTitle" xml:space="preserve">
     <value>Logging methods must be partial</value>
   </data>
   <data name="ErrorNotPartialMethodMessage" xml:space="preserve">
     <value>Logging methods must be partial</value>
   </data>
-
   <data name="ErrorMethodIsGenericTitle" xml:space="preserve">
     <value>Logging methods cannot be generic</value>
   </data>
   <data name="ErrorMethodIsGenericMessage" xml:space="preserve">
     <value>Logging methods cannot be generic</value>
   </data>
-
-  <data name="ErrorParameterIsGenericTitle" xml:space="preserve">
-    <value>Logging method parameters cannot be generic</value>
-  </data>
-  <data name="ErrorParameterIsGenericMessage" xml:space="preserve">
-    <value>Logging method parameters cannot be generic</value>
-  </data>
-
 </root>

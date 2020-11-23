@@ -257,23 +257,5 @@ namespace Microsoft.Extensions.Logging.Generators {
                 return ResourceManager.GetString("ErrorNotStaticMethodTitle", resourceCulture);
             }
         }
-        
-        /// <summary>
-        ///   Looks up a localized string similar to Logging method parameters cannot be generic.
-        /// </summary>
-        internal static string ErrorParameterIsGenericMessage {
-            get {
-                return ResourceManager.GetString("ErrorParameterIsGenericMessage", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   Looks up a localized string similar to Logging method parameters cannot be generic.
-        /// </summary>
-        internal static string ErrorParameterIsGenericTitle {
-            get {
-                return ResourceManager.GetString("ErrorParameterIsGenericTitle", resourceCulture);
-            }
-        }
     }
 }

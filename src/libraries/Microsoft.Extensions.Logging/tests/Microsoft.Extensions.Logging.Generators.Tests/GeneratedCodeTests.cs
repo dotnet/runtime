@@ -24,7 +24,7 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
     }
 
     // test particular method signature variations are generated correctly
-    partial class SignatureTests
+    partial class SignatureTests<T> where T : class
     {
         // normal public method
         [LoggerMessage(0, LogLevel.Critical, "Message1")]
@@ -49,6 +49,10 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
         // linefeeds and quotes in the message string
         [LoggerMessage(5, LogLevel.Critical, "Message6\n\"\r")]
         private static partial void M6(ILogger logger);
+
+        // generic parameter
+        [LoggerMessage(6, LogLevel.Critical, "Message7\n\"\r")]
+        private static partial void M7(ILogger logger, T p1);
 
         public static void Combo(ILogger logger, ILogger<int> logger2)
         {

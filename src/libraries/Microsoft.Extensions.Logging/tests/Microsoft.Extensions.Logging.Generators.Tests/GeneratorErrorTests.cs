@@ -182,21 +182,6 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
             Assert.Equal("LG10", d[0].Id);
         }
 
-        [Fact]
-        public void ParameterGeneric()
-        {
-            var d = TryCode(@"
-                partial class C<T>
-                {{
-                    [LoggerMessage(0, LogLevel.Debug, ""M1"")]
-                    public static partial void M1(ILogger logger, T foo) {}
-                }}
-            ");
-
-            Assert.Single(d);
-            Assert.Equal("LG11", d[0].Id);
-        }
-
         private static IReadOnlyList<Diagnostic> TryCode(string code, bool wrap = true)
         {
             var results = new List<Diagnostic>();

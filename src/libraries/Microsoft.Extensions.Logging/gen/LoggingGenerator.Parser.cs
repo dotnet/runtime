@@ -111,14 +111,6 @@ namespace Microsoft.Extensions.Logging.Generators
                 DiagnosticSeverity.Error,
                 isEnabledByDefault: true);
 
-            private static readonly DiagnosticDescriptor ErrorParameterIsGeneric = new(
-                id: "LG11",
-                title: new LocalizableResourceString(nameof(LoggingGeneratorResources.ErrorParameterIsGenericTitle), LoggingGeneratorResources.ResourceManager, typeof(LoggingGeneratorResources)),
-                messageFormat: new LocalizableResourceString(nameof(LoggingGeneratorResources.ErrorParameterIsGenericMessage), LoggingGeneratorResources.ResourceManager, typeof(LoggingGeneratorResources)),
-                category: DiagnosticCategory,
-                DiagnosticSeverity.Error,
-                isEnabledByDefault: true);
-
             private readonly CancellationToken _cancellationToken;
             private readonly Compilation _compilation;
             private readonly Action<Diagnostic> _reportDiagnostic;
@@ -324,12 +316,6 @@ namespace Microsoft.Extensions.Logging.Generators
                                             // because all generated symbols start with __
                                             Diag(ErrorInvalidParameterName, p.Identifier.GetLocation());
                                         }
-
-                                        if (pSymbol.TypeKind == TypeKind.TypeParameter)
-                                        {
-                                            Diag(ErrorParameterIsGeneric, p.Identifier.GetLocation());
-                                            keep = false;
-                                        }
                                     }
 
                                     if (keep)
@@ -353,7 +339,13 @@ namespace Microsoft.Extensions.Logging.Generators
                                             {
                                                 Namespace = ns?.Name.ToString(),
                                                 Name = classDef.Identifier.ToString(),
+                                                Constraints = classDef.ConstraintClauses.ToString(),
                                             };
+
+                                            if (classDef.TypeParameterList != null)
+                                            {
+                                                lc.Name += classDef.TypeParameterList.ToString();
+                                            }
                                         }
 
                                         lc.Methods.Add(lm);
@@ -437,6 +429,7 @@ namespace Microsoft.Extensions.Logging.Generators
         {
             public string? Namespace;
             public string Name = string.Empty;
+            public string Constraints = string.Empty;
             public List<LoggerMethod> Methods = new();
         }
 
