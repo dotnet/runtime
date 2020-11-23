@@ -2815,7 +2815,16 @@ namespace System.Diagnostics.Tracing
             {
                 // get the metadata via reflection.
                 Debug.Assert(m_rawManifest == null);
-                m_rawManifest = CreateManifestAndDescriptors(this.GetType(), Name, this);
+#if !ES_BUILD_STANDALONE && !DEBUG
+                if (HasManifest)
+                {
+                    CreateDescriptors(this.GetType(), Name);
+                }
+                else
+#endif
+                {
+                    m_rawManifest = CreateManifestAndDescriptors(this.GetType(), Name, this);
+                }
                 Debug.Assert(m_eventData != null);
 
                 // TODO Enforce singleton pattern
@@ -3063,7 +3072,7 @@ namespace System.Diagnostics.Tracing
 
             if (source is not null)
             {
-                alreadyHasManifest = !Unsafe.IsNullRef(ref MemoryMarshal.GetReference(source.RawManifest));
+                alreadyHasManifest = source.HasManifest;
                 bNeedsManifest = !source.SelfDescribingEvents && !alreadyHasManifest;
             }
 
@@ -3279,9 +3288,14 @@ namespace System.Diagnostics.Tracing
                         if (source != null || (flags & EventManifestOptions.Strict) != 0)
                         {
                             Debug.Assert(eventData != null);
-                            // Do checking for user errors (optional, but not a big deal so we do it).
-                            DebugCheckEvent(ref eventsByName, eventData, method, eventAttribute, manifest, flags);
 
+#if !ES_BUILD_STANDALONE && !DEBUG
+                            if (!alreadyHasManifest)
+#endif
+                            {
+                                // Do checking for user errors (optional, but not a big deal so we do it).
+                                DebugCheckEvent(ref eventsByName, eventData, method, eventAttribute, manifest, flags);
+                            }
 #if FEATURE_MANAGED_ETW_CHANNELS
                             // add the channel keyword for Event Viewer channel based filters. This is added for creating the EventDescriptors only
                             // and is not required for the manifest
@@ -3329,10 +3343,14 @@ namespace System.Diagnostics.Tracing
                                             || manifest.GetChannelData().Length > 0
 #endif
 ;
-
                     // if the manifest is not needed and we're not requested to validate the event source return early
                     if (alreadyHasManifest || (!bNeedsManifest && (flags & EventManifestOptions.Strict) == 0))
                     {
+                        if (alreadyHasManifest)
+                        {
+                            // Validate the provided manifest still matches in debug
+                            Debug.Assert(source!.RawManifest.SequenceEqual(manifest.CreateManifest()));
+                        }
                         return null;
                     }
 
@@ -3778,6 +3796,7 @@ namespace System.Diagnostics.Tracing
 
         protected internal virtual ReadOnlySpan<byte> RawManifest => m_rawManifest;
         private volatile byte[]? m_rawManifest;          // Bytes to send out representing the event schema
+        private bool HasManifest => !Unsafe.IsNullRef(ref MemoryMarshal.GetReference(RawManifest));
 
         private EventHandler<EventCommandEventArgs>? m_eventCommandExecuted;
 

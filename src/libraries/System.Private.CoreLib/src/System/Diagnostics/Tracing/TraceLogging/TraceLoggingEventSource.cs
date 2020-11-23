@@ -33,6 +33,7 @@ namespace System.Diagnostics.Tracing
 #if FEATURE_MANAGED_ETW
         protected internal virtual ReadOnlySpan<byte> ProviderMetadata => m_providerMetadata;
         private byte[]? m_providerMetadata;
+        private bool HasProviderMetadata => !Unsafe.IsNullRef(ref MemoryMarshal.GetReference(ProviderMetadata));
 #endif
 
 #if FEATURE_PERFTRACING
@@ -755,12 +756,14 @@ namespace System.Diagnostics.Tracing
         private void InitializeProviderMetadata()
         {
 #if FEATURE_MANAGED_ETW
-            if (!Unsafe.IsNullRef(ref MemoryMarshal.GetReference(ProviderMetadata)))
+#if !ES_BUILD_STANDALONE && !DEBUG
+            bool hasProviderMetadata = HasProviderMetadata;
+            if (hasProviderMetadata)
             {
                 // Already set
                 return;
             }
-
+#endif
             if (m_traits != null)
             {
                 List<byte> traitMetaData = new List<byte>(100);
@@ -802,6 +805,14 @@ namespace System.Diagnostics.Tracing
             {
                 m_providerMetadata = Statics.MetadataForString(this.Name, 0, 0, 0);
             }
+
+#if !ES_BUILD_STANDALONE && !DEBUG
+            if (hasProviderMetadata)
+            {
+                // Validate the provided ProviderMetadata still matches in debug
+                Debug.Assert(ProviderMetadata.SequenceEqual(m_providerMetadata));
+            }
+#endif
 #endif //FEATURE_MANAGED_ETW
         }
 
