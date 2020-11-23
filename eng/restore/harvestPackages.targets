@@ -1,16 +1,21 @@
 ﻿<Project InitialTargets="AddPackageDownload">
   <UsingTask TaskName="GetLastStablePackage" AssemblyFile="$(PackagingTaskAssembly)"/>
-  <Target Name="AddPackageDownload">
-    <ItemGroup>
-      <_AllPkgProjs Include="$(LibrariesProjectRoot)*\pkg\**\*.pkgproj" />
-    </ItemGroup>
-    <!-- Need separate ItemGroups so right metadata gets populated -->
-    <ItemGroup>
-      <_AllPkgProjsToPackageIdentity Include="@(_AllPkgProjs -> '%(Filename)')" />
-    </ItemGroup>
 
+  <Target Name="_GetBuildingPackageVersions">
+    <ItemGroup>
+      <_AllPkgProjs Include="$(LibrariesProjectRoot)*\pkg\**\*.pkgproj">
+        <UndefineProperties>MSBuildRestoreSessionId</UndefineProperties>
+      </_AllPkgProjs>
+    </ItemGroup>
+    
+    <MSBuild Projects="@(_AllPkgProjs)" Targets="GetPackageIdentityIfStable" Properties="$(ProjectProperties)">
+      <Output TaskParameter="TargetOutputs" ItemName="_AllPkgProjsWithVersion" />
+    </MSBuild>
+  </Target>
+
+  <Target Name="AddPackageDownload" DependsOnTargets="_GetBuildingPackageVersions">    
     <GetLastStablePackage
-      LatestPackages="@(_AllPkgProjsToPackageIdentity)"
+      LatestPackages="@(_AllPkgProjsWithVersion)"
       PackageIndexes="$(PackageIndexFile)"
       DoNotAllowVersionsFromSameRelease="true">
       <Output TaskParameter="LastStablePackages" ItemName="_PackageDownload" />
