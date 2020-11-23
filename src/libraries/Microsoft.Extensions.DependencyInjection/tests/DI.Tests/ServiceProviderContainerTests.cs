@@ -314,7 +314,7 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
                 scope2.ServiceProvider.GetRequiredService<Thing2>();
             });
 
-            await Assert.ThrowsAsync<ObjectDisposedException>(async () => {await t1; await t2;});
+            await Assert.ThrowsAsync<ObjectDisposedException>(async () => { await t1; await t2; });
         }
 
         public class Thing2 : IDisposable
