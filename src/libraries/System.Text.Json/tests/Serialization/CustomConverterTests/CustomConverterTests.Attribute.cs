@@ -169,7 +169,7 @@ namespace System.Text.Json.Serialization.Tests
 
             ClassWithJsonConverterAttributeOverride point = JsonSerializer.Deserialize<ClassWithJsonConverterAttributeOverride>(json);
 
-            // The property attribute overides the type attribute.
+            // The property attribute overrides the type attribute.
             Assert.Equal(101, point.Point1.X);
             Assert.Equal(102, point.Point1.Y);
 
@@ -187,7 +187,7 @@ namespace System.Text.Json.Serialization.Tests
 
             ClassWithJsonConverterAttributeOverride point = JsonSerializer.Deserialize<ClassWithJsonConverterAttributeOverride>(json);
 
-            // The property attribute overides the runtime.
+            // The property attribute overrides the runtime.
             Assert.Equal(101, point.Point1.X);
             Assert.Equal(102, point.Point1.Y);
 
