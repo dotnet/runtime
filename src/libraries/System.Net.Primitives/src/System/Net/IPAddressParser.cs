@@ -78,13 +78,13 @@ namespace System.Net
         {
             int offset = 0;
 
-            FormatIPv4AddressNumber((byte)address, addressString, ref offset);
+            FormatIPv4AddressNumber((int)(address & 0xFF), addressString, ref offset);
             addressString[offset++] = '.';
-            FormatIPv4AddressNumber((byte)(address >> 8), addressString, ref offset);
+            FormatIPv4AddressNumber((int)((address >> 8) & 0xFF), addressString, ref offset);
             addressString[offset++] = '.';
-            FormatIPv4AddressNumber((byte)(address >> 16), addressString, ref offset);
+            FormatIPv4AddressNumber((int)((address >> 16) & 0xFF), addressString, ref offset);
             addressString[offset++] = '.';
-            FormatIPv4AddressNumber((byte)(address >> 24), addressString, ref offset);
+            FormatIPv4AddressNumber((int)((address >> 24) & 0xFF), addressString, ref offset);
 
             return offset;
         }
@@ -153,15 +153,17 @@ namespace System.Net
             return buffer;
         }
 
-        private static unsafe void FormatIPv4AddressNumber(byte number, char* addressString, ref int offset)
+        private static unsafe void FormatIPv4AddressNumber(int number, char* addressString, ref int offset)
         {
+            // Math.DivRem has no overload for byte, assert here for safety
+            Debug.Assert(number < 256);
+
             offset += number > 99 ? 3 : number > 9 ? 2 : 1;
 
             int i = offset;
             do
             {
-                byte rem;
-                (number, rem) = Math.DivRem(number, (byte)10);
+                number = Math.DivRem(number, 10, out int rem);
                 addressString[--i] = (char)('0' + rem);
             } while (number != 0);
         }
