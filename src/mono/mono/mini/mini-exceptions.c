@@ -99,6 +99,10 @@
 #endif
 #include "mono/utils/mono-tls-inline.h"
 
+#ifdef HOST_WASM
+#include <emscripten.h>
+#endif
+
 /*
  * Raw frame information is stored in MonoException.trace_ips as an IntPtr[].
  * This structure represents one entry.
@@ -2698,8 +2702,17 @@ mono_handle_exception_internal (MonoContext *ctx, MonoObject *obj, gboolean resu
 			}
 			g_print ("[%p:] EXCEPTION handling: %s.%s: %s\n", (void*)(gsize)mono_native_thread_id_get (), m_class_get_name_space (mono_object_class (obj)), m_class_get_name (mono_object_class (obj)), msg);
 			g_free (msg);
-			if (mono_ex && mono_trace_eval_exception (mono_object_class (mono_ex)))
+			if (mono_ex && mono_trace_eval_exception (mono_object_class (mono_ex))) {
 				mono_print_thread_dump_from_ctx (ctx);
+
+#ifdef HOST_WASM
+				EM_ASM(
+					var err = new Error();
+					console.log ("Native Stacktrace: \n");
+					console.log (err.stack);
+				);
+#endif
+			}
 		}
 		jit_tls->orig_ex_ctx_set = TRUE;
 		MONO_PROFILER_RAISE (exception_throw, (obj));
