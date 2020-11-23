@@ -577,11 +577,8 @@ void Compiler::lvaInitRetBuffArg(InitVarDscInfo* varDscInfo, bool useFixedRetBuf
 }
 
 //-----------------------------------------------------------------------------
-// getReturnTypeForStruct:
-//     Get the type that is used to return values of the given struct type.
-//     If you have already retrieved the struct size then it should be
-//     passed as the optional third argument, as this allows us to avoid
-//     an extra call to getClassSize(clsHnd)
+// lvaInitUserArgs:
+//     Initialize local var descriptions for incoming user arguments
 //
 // Arguments:
 //    varDscInfo     - the local var descriptions

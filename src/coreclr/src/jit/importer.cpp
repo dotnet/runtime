@@ -9324,7 +9324,6 @@ GenTree* Compiler::impFixupCallStructReturn(GenTreeCall* call, CORINFO_CLASS_HAN
 /*****************************************************************************
    For struct return values, re-type the operand in the case where the ABI
    does not use a struct return buffer
-   Note that this method is only call for !TARGET_X86
  */
 
 GenTree* Compiler::impFixupStructReturnType(GenTree*                 op,
@@ -9339,9 +9338,9 @@ GenTree* Compiler::impFixupStructReturnType(GenTree*                 op,
 
 #if defined(TARGET_XARCH)
 
-#ifdef UNIX_AMD64_ABI
+#if defined(UNIX_AMD64_ABI) || defined(TARGET_X86)
     // No VarArgs for CoreCLR on x64 Unix
-    assert(!info.compIsVarArgs);
+    UNIX_AMD64_ABI_ONLY(assert(!info.compIsVarArgs));
 
     // Is method returning a multi-reg struct?
     if (varTypeIsStruct(info.compRetNativeType) && IsMultiRegReturnedType(retClsHnd, unmgdCallConv))
@@ -9369,36 +9368,9 @@ GenTree* Compiler::impFixupStructReturnType(GenTree*                 op,
 
         return impAssignMultiRegTypeToVar(op, retClsHnd DEBUGARG(unmgdCallConv));
     }
-#elif defined(TARGET_X86)
-    // Is method returning a multi-reg struct?
-    if (varTypeIsStruct(info.compRetNativeType) && IsMultiRegReturnedType(retClsHnd, unmgdCallConv))
-    {
-        // In case of multi-reg struct return, we force IR to be one of the following:
-        // GT_RETURN(lclvar) or GT_RETURN(call).  If op is anything other than a
-        // lclvar or call, it is assigned to a temp to create: temp = op and GT_RETURN(tmp).
-
-        if (op->gtOper == GT_LCL_VAR)
-        {
-            // Make sure that this struct stays in memory and doesn't get promoted.
-            unsigned lclNum                  = op->AsLclVarCommon()->GetLclNum();
-            lvaTable[lclNum].lvIsMultiRegRet = true;
-
-            // TODO-1stClassStructs: Handle constant propagation and CSE-ing of multireg returns.
-            op->gtFlags |= GTF_DONT_CSE;
-
-            return op;
-        }
-
-        if (op->gtOper == GT_CALL)
-        {
-            return op;
-        }
-
-        return impAssignMultiRegTypeToVar(op, retClsHnd DEBUGARG(unmgdCallConv));
-    }
-#else  // !UNIX_AMD64_ABI
+#else
     assert(info.compRetNativeType != TYP_STRUCT);
-#endif // !UNIX_AMD64_ABI
+#endif // defined(UNIX_AMD64_ABI) || defined(TARGET_X86)
 
 #elif FEATURE_MULTIREG_RET && defined(TARGET_ARM)
 
