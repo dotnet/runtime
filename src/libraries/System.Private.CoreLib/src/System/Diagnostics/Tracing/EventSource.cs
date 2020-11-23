@@ -3961,10 +3961,11 @@ namespace System.Diagnostics.Tracing
         private Guid m_guid;                            // GUID representing the ETW eventSource to the OS.
         internal volatile EventMetadata[]? m_eventData; // None per-event data
 
-        protected internal virtual ReadOnlySpan<byte> RawManifest => m_rawManifest;
         private volatile byte[]? m_rawManifest;          // Bytes to send out representing the event schema
+#if !ES_BUILD_STANDALONE
+        private protected virtual ReadOnlySpan<byte> RawManifest => m_rawManifest;
         private bool HasManifest => !Unsafe.IsNullRef(ref MemoryMarshal.GetReference(RawManifest));
-
+#endif
         private EventHandler<EventCommandEventArgs>? m_eventCommandExecuted;
 
         private readonly EventSourceSettings m_config;      // configuration information

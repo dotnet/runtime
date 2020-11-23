@@ -31,9 +31,11 @@ namespace System.Diagnostics.Tracing
     public partial class EventSource
     {
 #if FEATURE_MANAGED_ETW
-        protected internal virtual ReadOnlySpan<byte> ProviderMetadata => m_providerMetadata;
         private byte[]? m_providerMetadata;
+#if !ES_BUILD_STANDALONE
+        private protected virtual ReadOnlySpan<byte> ProviderMetadata => m_providerMetadata;
         private bool HasProviderMetadata => !Unsafe.IsNullRef(ref MemoryMarshal.GetReference(ProviderMetadata));
+#endif
 #endif
 
 #if FEATURE_PERFTRACING
