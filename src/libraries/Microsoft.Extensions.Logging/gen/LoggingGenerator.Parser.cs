@@ -179,34 +179,10 @@ namespace Microsoft.Extensions.Logging.Generators
                         return results;
                     }
 
-                    // determine the namespace the class is declared in, if any
-                    NamespaceDeclarationSyntax? ns = null;
-                    if (classDef.Parent != null)
-                    {
-                        ns = classDef.Parent as NamespaceDeclarationSyntax;
-                        if (ns == null && classDef.Parent is not CompilationUnitSyntax)
-                        {
-                            // since this generator doesn't know how to generate a nested type...
-                            Diag(ErrorNestedType, classDef.Identifier.GetLocation());
-                            continue;
-                        }
-                    }
-
-                    var lc = new LoggerClass
-                    {
-                        Namespace = ns?.Name.ToString(),
-                        Name = classDef.Identifier.ToString(),
-                    };
-
+                    LoggerClass? lc = null;
                     ids.Clear();
                     foreach (var method in classDef.Members.Where(m => m.IsKind(SyntaxKind.MethodDeclaration)).OfType<MethodDeclarationSyntax>())
                     {
-                        if (_cancellationToken.IsCancellationRequested)
-                        {
-                            // be nice and stop if we're asked to
-                            return results;
-                        }
-
                         foreach (var mal in method.AttributeLists)
                         {
                             foreach (var ma in mal.Attributes)
@@ -358,6 +334,28 @@ namespace Microsoft.Extensions.Logging.Generators
 
                                     if (keep)
                                     {
+                                        if (lc == null)
+                                        {
+                                            // determine the namespace the class is declared in, if any
+                                            NamespaceDeclarationSyntax? ns = null;
+                                            if (classDef.Parent != null)
+                                            {
+                                                ns = classDef.Parent as NamespaceDeclarationSyntax;
+                                                if (ns == null && classDef.Parent is not CompilationUnitSyntax)
+                                                {
+                                                    // since this generator doesn't know how to generate a nested type...
+                                                    Diag(ErrorNestedType, classDef.Identifier.GetLocation());
+                                                    continue;
+                                                }
+                                            }
+
+                                            lc = new LoggerClass
+                                            {
+                                                Namespace = ns?.Name.ToString(),
+                                                Name = classDef.Identifier.ToString(),
+                                            };
+                                        }
+
                                         lc.Methods.Add(lm);
                                     }
                                 }
@@ -365,7 +363,7 @@ namespace Microsoft.Extensions.Logging.Generators
                         }
                     }
 
-                    if (lc.Methods.Count > 0)
+                    if (lc != null)
                     {
                         results.Add(lc);
                     }

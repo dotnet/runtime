@@ -353,8 +353,9 @@ namespace Microsoft.Extensions.Logging.Generators
 
             public void OnVisitSyntaxNode(SyntaxNode syntaxNode)
             {
-                // Any partial class
-                if (syntaxNode is ClassDeclarationSyntax { Modifiers: { Count: > 0 } modifiers } classSyntax && modifiers.Any(SyntaxKind.PartialKeyword))
+                // Any class
+                var classSyntax = syntaxNode as ClassDeclarationSyntax;
+                if (classSyntax != null)
                 {
                     ClassDeclarations.Add(classSyntax);
                 }
