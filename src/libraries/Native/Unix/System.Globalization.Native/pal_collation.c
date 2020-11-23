@@ -280,7 +280,7 @@ static UCollator* CloneCollatorWithOptions(const UCollator* pCollator, int32_t o
     //          iii.	If (IgnoreWidth == false && Strength <= “Secondary”)
     //              1.	Build up a custom rule set saying that the half-width and full-width characters have a primary level difference (which will cause it always to be unequal)
     //                  a.	Ex. “0x30F2 < 0xFF66 & 0x30F3 < 0xFF9D & …”
-    //  IgnoreKanaType – this works the same way as IgnoreWidth, only change “Secondary” to “Tertiary” and use the set of Hiragana and Katakana characters instead of half-width vs full-width characters to build the rules.
+    //  IgnoreKanaType – this works the same way as IgnoreWidth, it uses the set of Hiragana and Katakana characters instead of half-width vs full-width characters to build the rules.
     int32_t applyIgnoreKanaTypeCustomRule  = isIgnoreKanaType ^ (strength < UCOL_TERTIARY); // kana differs at the tertiary level
     int32_t applyIgnoreWidthTypeCustomRule = isIgnoreWidth    ^ (strength < UCOL_TERTIARY); // character width differs at the tertiary level
 
