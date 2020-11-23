@@ -499,20 +499,21 @@ namespace System
 
         public static Attribute? GetCustomAttribute(MemberInfo element, Type attributeType)
         {
-            return GetCustomAttribute(element, attributeType, true);
+            return GetCustomAttribute(element, attributeType, inherit: true);
         }
 
         public static Attribute? GetCustomAttribute(MemberInfo element, Type attributeType, bool inherit)
         {
-            Attribute[] attrib = GetCustomAttributes(element, attributeType, inherit);
+            if (element == null)
+                throw new ArgumentNullException(nameof(element));
 
-            if (attrib == null || attrib.Length == 0)
-                return null;
+            if (attributeType == null)
+                throw new ArgumentNullException(nameof(attributeType));
 
-            if (attrib.Length == 1)
-                return attrib[0];
+            if (!attributeType.IsSubclassOf(typeof(Attribute)) && attributeType != typeof(Attribute))
+                throw new ArgumentException(SR.Argument_MustHaveAttributeBaseClass);
 
-            throw new AmbiguousMatchException(SR.RFLCT_AmbigCust);
+            return element.GetCustomAttribute(attributeType, inherit);
         }
 
         #endregion

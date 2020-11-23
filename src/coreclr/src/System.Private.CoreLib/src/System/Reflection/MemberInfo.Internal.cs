@@ -24,5 +24,18 @@ namespace System.Reflection
 
             return true;
         }
+
+        internal virtual Attribute? GetCustomAttribute(Type attributeType, bool inherit)
+        {
+            Attribute[]? attrib = GetCustomAttributes(attributeType, inherit) as Attribute[];
+
+            if (attrib == null || attrib.Length == 0)
+                return null;
+
+            if (attrib.Length == 1)
+                return attrib[0];
+
+            throw new AmbiguousMatchException(SR.RFLCT_AmbigCust);
+        }
     }
 }

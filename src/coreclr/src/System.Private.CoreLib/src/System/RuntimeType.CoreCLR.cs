@@ -1876,6 +1876,19 @@ namespace System
             return retval;
         }
 
+        internal override Attribute? GetCustomAttribute(Type attributeType, bool inherit)
+        {
+            if (attributeType == null)
+                throw new ArgumentNullException(nameof(attributeType));
+
+            RuntimeType? attributeRuntimeType = attributeType.UnderlyingSystemType as RuntimeType;
+
+            if (attributeRuntimeType == null)
+                throw new ArgumentException(SR.Arg_MustBeType, nameof(attributeType));
+
+            return CustomAttribute.GetCustomAttribute(this, attributeRuntimeType, inherit);
+        }
+
         internal object? GenericCache
         {
             get => CacheIfExists?.GenericCache;

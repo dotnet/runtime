@@ -939,6 +939,53 @@ namespace System.Reflection
             return IsCustomAttributeDefined(module, module.MetadataToken, caType);
         }
 
+        internal static Attribute? GetCustomAttribute(RuntimeType type, RuntimeType caType, bool inherit)
+        {
+            Debug.Assert(type != null);
+            Debug.Assert(caType != null);
+
+            if (type.GetElementType() != null)
+                return null;
+
+            if (type.IsGenericType && !type.IsGenericTypeDefinition)
+                type = (type.GetGenericTypeDefinition() as RuntimeType)!;
+
+            PseudoCustomAttribute.GetCustomAttributes(type, caType, out RuntimeType.ListBuilder<Attribute> pcas);
+
+            RuntimeType.ListBuilder<object> attributes = default;
+            // if we are asked to go up the hierarchy chain we have to do it now and regardless of the
+            // attribute usage for the specific attribute because a derived attribute may override the usage...
+            // ... however if the attribute is sealed we can rely on the attribute usage
+            if (!inherit || (caType.IsSealed && !CustomAttribute.GetAttributeUsage(caType).Inherited))
+            {
+                AddCustomAttributes(ref attributes, type.GetRuntimeModule(), type.MetadataToken, caType, false, default);
+            }
+            else
+            {
+                bool mustBeInheritable = false;
+
+                for (int i = 0; i < pcas.Count; i++)
+                {
+                    attributes.Add(pcas[i]);
+                }
+
+                while (type != (RuntimeType)typeof(object) && type != null)
+                {
+                    AddCustomAttributes(ref attributes, type.GetRuntimeModule(), type.MetadataToken, caType, mustBeInheritable, attributes);
+                    mustBeInheritable = true;
+                    type = (type.BaseType as RuntimeType)!;
+                }
+            }
+
+            if (attributes.Count == 0)
+                return null;
+
+            if (attributes.Count == 1)
+                return attributes[0] as Attribute;
+
+            throw new AmbiguousMatchException(SR.RFLCT_AmbigCust);
+        }
+
         internal static object[] GetCustomAttributes(RuntimeType type, RuntimeType caType, bool inherit)
         {
             Debug.Assert(type != null);
@@ -983,6 +1030,50 @@ namespace System.Reflection
                 typedResult[i] = result[i];
             }
             return typedResult;
+        }
+
+        internal static Attribute? GetCustomAttribute(RuntimeMethodInfo method, RuntimeType caType, bool inherit)
+        {
+            Debug.Assert(method != null);
+            Debug.Assert(caType != null);
+
+            if (method.IsGenericMethod && !method.IsGenericMethodDefinition)
+                method = (method.GetGenericMethodDefinition() as RuntimeMethodInfo)!;
+
+            PseudoCustomAttribute.GetCustomAttributes(method, caType, out RuntimeType.ListBuilder<Attribute> pcas);
+
+            RuntimeType.ListBuilder<object> attributes = default;
+            // if we are asked to go up the hierarchy chain we have to do it now and regardless of the
+            // attribute usage for the specific attribute because a derived attribute may override the usage...
+            // ... however if the attribute is sealed we can rely on the attribute usage
+            if (!inherit || (caType.IsSealed && !CustomAttribute.GetAttributeUsage(caType).Inherited))
+            {
+                AddCustomAttributes(ref attributes, method.GetRuntimeModule(), method.MetadataToken, caType, false, default);
+            }
+            else
+            {
+                bool mustBeInheritable = false;
+
+                for (int i = 0; i < pcas.Count; i++)
+                {
+                    attributes.Add(pcas[i]);
+                }
+
+                while (method != null)
+                {
+                    AddCustomAttributes(ref attributes, method.GetRuntimeModule(), method.MetadataToken, caType, mustBeInheritable, attributes);
+                    mustBeInheritable = true;
+                    method = method.GetParentDefinition()!;
+                }
+            }
+
+            if (attributes.Count == 0)
+                return null;
+
+            if (attributes.Count == 1)
+                return attributes[0] as Attribute;
+
+            throw new AmbiguousMatchException(SR.RFLCT_AmbigCust);
         }
 
         internal static object[] GetCustomAttributes(RuntimeMethodInfo method, RuntimeType caType, bool inherit)
