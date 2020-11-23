@@ -515,30 +515,28 @@ DoneCreateInstance:
 }
 FCIMPLEND
 
-FCIMPL2(Object*, RuntimeTypeHandle::CreateInstanceForGenericType, ReflectClassBaseObject* pTypeUNSAFE, ReflectClassBaseObject* pParameterTypeUNSAFE) {
-    FCALL_CONTRACT;
+void QCALLTYPE RuntimeTypeHandle::CreateInstanceForAnotherGenericParameter(
+    QCall::TypeHandle pTypeHandle,
+    TypeHandle* pInstArray,
+    INT32 cInstArray,
+    QCall::ObjectHandleOnStack pInstantiatedObject
+)
+{
+    CONTRACTL{
+        QCALL_CHECK;
+        PRECONDITION(!pTypeHandle.AsTypeHandle().IsNull());
+        PRECONDITION(cInstArray >= 0);
+        PRECONDITION(cInstArray == 0 || pInstArray != NULL);
+    }
+    CONTRACTL_END;
 
-    struct _gc
-    {
-        OBJECTREF rv;
-        REFLECTCLASSBASEREF refType;
-        REFLECTCLASSBASEREF refParameterType;
-    } gc;
+    TypeHandle genericType = pTypeHandle.AsTypeHandle();
 
-    gc.rv = NULL;
-    gc.refType = (REFLECTCLASSBASEREF)ObjectToOBJECTREF(pTypeUNSAFE);
-    gc.refParameterType = (REFLECTCLASSBASEREF)ObjectToOBJECTREF(pParameterTypeUNSAFE);
-
-    MethodDesc* pMeth;
-    TypeHandle genericType = gc.refType->GetType();
-
-    TypeHandle parameterHandle = gc.refParameterType->GetType();
+    BEGIN_QCALL;
 
     _ASSERTE (genericType.HasInstantiation());
 
-    HELPER_METHOD_FRAME_BEGIN_RET_PROTECT(gc);
-
-    TypeHandle instantiatedType = ((TypeHandle)genericType.GetCanonicalMethodTable()).Instantiate(Instantiation(&parameterHandle, 1));
+    TypeHandle instantiatedType = ((TypeHandle)genericType.GetCanonicalMethodTable()).Instantiate(Instantiation(pInstArray, (DWORD)cInstArray));
 
     // Get the type information associated with refThis
     MethodTable* pVMT = instantiatedType.GetMethodTable();
@@ -546,24 +544,24 @@ FCIMPL2(Object*, RuntimeTypeHandle::CreateInstanceForGenericType, ReflectClassBa
     _ASSERTE( !pVMT->IsAbstract() ||! instantiatedType.ContainsGenericVariables());
     _ASSERTE(!pVMT->IsByRefLike() && pVMT->HasDefaultConstructor());
 
-    pMeth = pVMT->GetDefaultConstructor();
-    MethodDescCallSite ctor(pMeth);
-
     // We've got the class, lets allocate it and call the constructor
 
     // Nullables don't take this path, if they do we need special logic to make an instance
     _ASSERTE(!Nullable::IsNullableType(instantiatedType));
-    gc.rv = instantiatedType.GetMethodTable()->Allocate();
 
-    ARG_SLOT arg = ObjToArgSlot(gc.rv);
+    {
+        GCX_COOP();
 
-    // Call the method
-    TryCallMethod(&ctor, &arg, true);
+        OBJECTREF newObj = instantiatedType.GetMethodTable()->Allocate();
+        GCPROTECT_BEGIN(newObj);
+        CallDefaultConstructor(newObj);
+        GCPROTECT_END();
 
-    HELPER_METHOD_FRAME_END();
-    return OBJECTREFToObject(gc.rv);
+        pInstantiatedObject.Set(newObj);
+    }
+
+    END_QCALL;
 }
-FCIMPLEND
 
 NOINLINE FC_BOOL_RET IsInstanceOfTypeHelper(OBJECTREF obj, REFLECTCLASSBASEREF refType)
 {
