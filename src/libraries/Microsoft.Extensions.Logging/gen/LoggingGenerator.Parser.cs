@@ -185,7 +185,8 @@ namespace Microsoft.Extensions.Logging.Generators
                                     arg = ma.ArgumentList!.Arguments[2];
                                     var message = semanticModel.GetConstantValue(arg.Expression).ToString();
 
-                                    string? eventName = null;
+                                    string methodName = method.Identifier.ToString();
+                                    string eventName = methodName;
 
                                     if (ma.ArgumentList?.Arguments is { Count: > 3 } args)
                                     {
@@ -195,13 +196,13 @@ namespace Microsoft.Extensions.Logging.Generators
 
                                     var lm = new LoggerMethod
                                     {
-                                        Name = method.Identifier.ToString(),
-                                        EventId = eventId,
+                                        Name = methodName,
                                         Level = level,
                                         Message = message,
+                                        EventId = eventId,
                                         EventName = eventName,
                                         MessageHasTemplates = HasTemplates(message),
-                                        Modifiers = string.Empty,
+                                        Modifiers = method.Modifiers.ToString(),
                                     };
 
                                     bool keep = true;
@@ -236,13 +237,6 @@ namespace Microsoft.Extensions.Logging.Generators
 
                                             case "static":
                                                 isStatic = true;
-                                                break;
-
-                                            case "public":
-                                            case "internal":
-                                            case "private":
-                                            case "protected":
-                                                lm.Modifiers += " " + mod.Text;
                                                 break;
                                         }
                                     }
@@ -418,7 +412,9 @@ namespace Microsoft.Extensions.Logging.Generators
 
 #pragma warning disable SA1401 // Fields should be private
 
-        // An logging class holding a bunch of log methods
+        /// <summary>
+        /// A logger class holding a bunch of logger methods.
+        /// </summary>
         internal class LoggerClass
         {
             public string? Namespace;
@@ -427,21 +423,25 @@ namespace Microsoft.Extensions.Logging.Generators
             public List<LoggerMethod> Methods = new();
         }
 
-        // A log method in a logging class
+        /// <summary>
+        /// A logger method in a logger class.
+        /// </summary>
         internal class LoggerMethod
         {
             public string Name = string.Empty;
             public string Message = string.Empty;
             public string Level = string.Empty;
             public string EventId = string.Empty;
-            public string? EventName = null!;
-            public List<LoggerParameter> Parameters = new();
+            public string EventName = string.Empty;
             public bool MessageHasTemplates;
             public string Modifiers = string.Empty;
             public string LoggerType = string.Empty;
+            public List<LoggerParameter> Parameters = new();
         }
 
-        // A single parameter to a log method
+        /// <summary>
+        /// A single parameter to a logger method.
+        /// </summary>
         internal class LoggerParameter
         {
             public string Name = string.Empty;

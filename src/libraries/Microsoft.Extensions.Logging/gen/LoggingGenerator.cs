@@ -212,24 +212,14 @@ namespace Microsoft.Extensions.Logging.Generators
                 formatCall = $"(_, _) => \"{EscapeMessageString(lm.Message)}\"";
             }
 
-            string eventIdCall;
-            if (lm.EventName != null)
-            {
-                eventIdCall = $"new global::Microsoft.Extensions.Logging.EventId({lm.EventId}, \"{lm.EventName}\")";
-            }
-            else
-            {
-                eventIdCall = $"new global::Microsoft.Extensions.Logging.EventId({lm.EventId}, nameof({lm.Name}))";
-            }
-
             return $@"
-                {lm.Modifiers} static partial void {lm.Name}({lm.LoggerType} __logger{(lm.Parameters.Count > 0 ? ", " : string.Empty)}{GenParameters(lm)})
+                {lm.Modifiers} void {lm.Name}({lm.LoggerType} __logger{(lm.Parameters.Count > 0 ? ", " : string.Empty)}{GenParameters(lm)})
                 {{
                     if (__logger.IsEnabled((global::Microsoft.Extensions.Logging.LogLevel){lm.Level}))
                     {{
                         __logger.Log(
                             (global::Microsoft.Extensions.Logging.LogLevel){lm.Level},
-                            {eventIdCall},
+                            new global::Microsoft.Extensions.Logging.EventId({lm.EventId}, ""{lm.EventName}""),
                             {GenHolder(lm)},
                             {exceptionArg},
                             {formatCall});
@@ -298,7 +288,7 @@ namespace Microsoft.Extensions.Logging.Generators
                 {
                     foreach (var p in lm.Parameters)
                     {
-                        if (sb.Length > 0)
+                        if (p != lm.Parameters[0])
                         {
                             sb.Append(", ");
                         }
