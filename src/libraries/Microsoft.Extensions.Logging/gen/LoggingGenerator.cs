@@ -114,7 +114,8 @@ namespace Microsoft.Extensions.Logging.Generators
                 }
                 else if (lm.Parameters.Count > MaxStaeHolderArity)
                 {
-                    typeName = "global::System.Collections.Generic.KeyValuePair<string, object?>[]";
+                    typeName = "global::Microsoft.Extensions.Logging.LogStateHolderN";
+
                     var index = 0;
                     foreach (var p in lm.Parameters)
                     {
@@ -217,21 +218,21 @@ namespace Microsoft.Extensions.Logging.Generators
                 }
             }
 
-            string formatCall;
+            string formatFunc;
             if (lm.MessageHasTemplates)
             {
                 if (lm.Parameters.Count == 0)
                 {
-                    formatCall = "Microsoft.Extensions.Logging.LogStateHolder.Format";
+                    formatFunc = "Microsoft.Extensions.Logging.LogStateHolder.Format";
                 }
                 else
                 {
-                    formatCall = $"__{lm.Name}FormatFunc";
+                    formatFunc = $"__{lm.Name}FormatFunc";
                 }
             }
             else
             {
-                formatCall = $"(_, _) => \"{EscapeMessageString(lm.Message)}\"";
+                formatFunc = $"(_, _) => \"{EscapeMessageString(lm.Message)}\"";
             }
 
             return $@"
@@ -242,9 +243,9 @@ namespace Microsoft.Extensions.Logging.Generators
                         __logger.Log(
                             {level},
                             new global::Microsoft.Extensions.Logging.EventId({lm.EventId}, {eventName}),
-                            {GenHolder(lm)},
+                            {GenHolder(lm, formatFunc)},
                             {exceptionArg},
-                            {formatCall});
+                            {formatFunc});
                     }}
                 }}
         ";
@@ -281,7 +282,7 @@ namespace Microsoft.Extensions.Logging.Generators
             }
         }
 
-        private string GenHolder(LoggerMethod lm)
+        private string GenHolder(LoggerMethod lm, string formatFunc)
         {
             if (lm.Parameters.Count == 0)
             {
@@ -290,7 +291,7 @@ namespace Microsoft.Extensions.Logging.Generators
 
             if (lm.Parameters.Count == 1)
             {
-                return $"new global::Microsoft.Extensions.Logging.LogStateHolder<{lm.Parameters[0].Type}>(nameof({lm.Parameters[0].Name}), {lm.Parameters[0].Name})";
+                return $"new global::Microsoft.Extensions.Logging.LogStateHolder<{lm.Parameters[0].Type}>({formatFunc}, nameof({lm.Parameters[0].Name}), {lm.Parameters[0].Name})";
             }
 
             var sb = GetStringBuilder();
@@ -298,13 +299,13 @@ namespace Microsoft.Extensions.Logging.Generators
             {
                 if (lm.Parameters.Count > MaxStaeHolderArity)
                 {
-                    sb.Append("new []{");
+                    sb.Append($"new global::Microsoft.Extensions.Logging.LogStateHolderN({formatFunc}, new global::System.Collections.Generic.KeyValuePair<string, object?>[]{{");
                     foreach (var p in lm.Parameters)
                     {
-                        sb.Append($"new global::System.Collections.Generic.KeyValuePair<string, object?>(\"{p.Name}\", {p.Name}), ");
+                        sb.Append($"new(\"{p.Name}\", {p.Name}), ");
                     }
 
-                    sb.Append('}');
+                    sb.Append("})");
                 }
                 else
                 {
@@ -320,7 +321,7 @@ namespace Microsoft.Extensions.Logging.Generators
                     var tp = sb.ToString();
 
                     sb.Clear();
-                    sb.Append($"new global::Microsoft.Extensions.Logging.LogStateHolder<{tp}>(__{lm.Name}Names, ");
+                    sb.Append($"new global::Microsoft.Extensions.Logging.LogStateHolder<{tp}>({formatFunc}, __{lm.Name}Names, ");
                     foreach (var p in lm.Parameters)
                     {
                         if (p != lm.Parameters[0])
