@@ -81,7 +81,7 @@ namespace Microsoft.Interop
                         if (UsesConditionalStackAlloc(info, context))
                         {
                             // <allocationMarker> = true
-                            windowsBlock.AddStatements(
+                            windowsBlock = windowsBlock.AddStatements(
                                 ExpressionStatement(
                                     AssignmentExpression(
                                         SyntaxKind.SimpleAssignmentExpression,
