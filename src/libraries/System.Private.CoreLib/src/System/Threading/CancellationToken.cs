@@ -156,7 +156,7 @@ namespace System.Threading
         /// <exception cref="System.ArgumentNullException"><paramref name="callback"/> is null.</exception>
         public CancellationTokenRegistration Register(Action callback, bool useSynchronizationContext) =>
             Register(
-                new Action<object?>(static obj => ((Action)obj!)()),
+                (Action<object?>)(static obj => ((Action)obj!)()),
                 callback ?? throw new ArgumentNullException(nameof(callback)),
                 useSynchronizationContext,
                 useExecutionContext: true);
