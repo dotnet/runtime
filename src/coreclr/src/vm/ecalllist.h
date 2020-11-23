@@ -190,7 +190,7 @@ FCFuncEnd()
 
 FCFuncStart(gCOMTypeHandleFuncs)
     FCFuncElement("CreateInstance", RuntimeTypeHandle::CreateInstance)
-    QCFuncElement("_CreateInstanceForAnotherGenericParameter", RuntimeTypeHandle::CreateInstanceForGenericType)
+    QCFuncElement("CreateInstanceForAnotherGenericParameter", RuntimeTypeHandle::CreateInstanceForGenericType)
     QCFuncElement("GetGCHandle", RuntimeTypeHandle::GetGCHandle)
     QCFuncElement("FreeGCHandle", RuntimeTypeHandle::FreeGCHandle)
 

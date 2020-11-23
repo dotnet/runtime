@@ -207,7 +207,7 @@ namespace System
             object? instantiatedObject = null;
 
             IntPtr typeHandle = genericParameter.GetTypeHandleInternal().Value;
-            _CreateInstanceForAnotherGenericParameter(
+            CreateInstanceForAnotherGenericParameter(
                 new QCallTypeHandle(ref type),
                 &typeHandle,
                 1,
@@ -227,7 +227,7 @@ namespace System
                 genericParameter2.GetTypeHandleInternal().Value
             };
 
-            _CreateInstanceForAnotherGenericParameter(
+            CreateInstanceForAnotherGenericParameter(
                 new QCallTypeHandle(ref type),
                 pTypeHandles,
                 2,
@@ -240,7 +240,7 @@ namespace System
         }
 
         [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
-        private static extern void _CreateInstanceForAnotherGenericParameter(
+        private static extern void CreateInstanceForAnotherGenericParameter(
             QCallTypeHandle baseType,
             IntPtr* pTypeHandles,
             int cTypeHandles,
@@ -512,12 +512,6 @@ namespace System
 
         internal RuntimeType Instantiate(Type[]? inst)
         {
-            // Defensive copy to ensure array is not mutated while during processing.
-            // Otherwise another thread could mutate the array after we've already
-            // fetched the underlying handles, resulting in our KeepAlive tracking
-            // the wrong values.
-
-            inst = (Type[]?)inst?.Clone();
             IntPtr[]? instHandles = CopyRuntimeTypeHandles(inst, out int instCount);
 
             fixed (IntPtr* pInst = instHandles)
