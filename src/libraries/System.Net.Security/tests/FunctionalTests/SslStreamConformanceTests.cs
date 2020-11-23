@@ -29,8 +29,8 @@ namespace System.Net.Security.Tests
 
             await new[]
             {
-                ssl2.AuthenticateAsClientAsync(cert.GetNameInfo(X509NameType.SimpleName, false), null, GetSslProtocols(), false),
-                ssl1.AuthenticateAsServerAsync(cert, false, GetSslProtocols(), false)
+                ssl1.AuthenticateAsClientAsync(cert.GetNameInfo(X509NameType.SimpleName, false), null, GetSslProtocols(), false),
+                ssl2.AuthenticateAsServerAsync(cert, false, GetSslProtocols(), false)
             }.WhenAllOrAnyFailed().ConfigureAwait(false);
 
             if (wrapped.Stream2 is NetworkStream)
