@@ -1378,7 +1378,7 @@ private:
 };
 
 // ********************* Please keep this up-to-date to ease adding more ***************
-// Highest packet number: 181
+// Highest packet number: 182
 // *************************************************************************************
 enum mcPackets
 {
@@ -1477,7 +1477,7 @@ enum mcPackets
     Packet_GetJitFlags                                   = 154, // Added 2/3/2016
     Packet_GetJitTimeLogFilename                         = 67,
     Packet_GetJustMyCodeHandle                           = 68,
-    Packet_GetLikelyClass                                = 181, // Added 9/27/2020
+    Packet_GetLikelyClass                                = 182, // Added 9/27/2020
     Packet_GetLocationOfThisType                         = 69,
     Packet_GetMethodAttribs                              = 70,
     Packet_GetMethodClass                                = 71,
