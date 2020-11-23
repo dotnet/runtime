@@ -19,7 +19,6 @@
 #endif // FEATURE_GDBJIT
 #include "bundle.h"
 #include "pinvokeoverride.h"
-#include "pinvokeoverrideimpl.h"
 
 #define ASSERTE_ALL_BUILDS(expr) _ASSERTE_ALL_BUILDS(__FILE__, (expr))
 
@@ -225,10 +224,6 @@ int coreclr_initialize(
     if (pinvokeOverride != nullptr)
     {
         PInvokeOverride::SetPInvokeOverride(pinvokeOverride);
-    }
-    else
-    {
-        PInvokeOverride::SetPInvokeOverride(DefaultPInvokeOverride::ResolveDllImport);
     }
 
     ReleaseHolder<ICLRRuntimeHost4> host;

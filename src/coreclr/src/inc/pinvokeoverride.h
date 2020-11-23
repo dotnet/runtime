@@ -24,6 +24,9 @@ private:
 public:
     static void SetPInvokeOverride(PInvokeOverrideFn* overrideImpl);
     static const void* TryGetMethodImpl(const char* libraryName, const char* entrypointName);
+
+private:
+    static const void* DefaultResolveDllImport(const char* libraryName, const char* entrypointName);
 };
 
 #endif // _PINVOKEOVERRIDE_H_
