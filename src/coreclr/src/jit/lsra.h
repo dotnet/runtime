@@ -1047,10 +1047,6 @@ private:
     regMaskTP allSIMDRegs();
     regMaskTP internalFloatRegCandidates();
 
-    bool registerIsAvailable(RegRecord*    physRegRecord,
-                             LsraLocation  currentLoc,
-                             LsraLocation* nextRefLocationPtr,
-                             RegisterType  regType);
     void makeRegisterInactive(RegRecord* physRegRecord);
     void freeRegister(RegRecord* physRegRecord);
     void freeRegisters(regMaskTP regsToFree);

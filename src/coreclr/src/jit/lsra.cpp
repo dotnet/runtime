@@ -2658,51 +2658,6 @@ bool copyOrMoveRegInUse(RefPosition* ref, LsraLocation loc)
     return false;
 }
 
-// Determine whether the register represented by "physRegRecord" is available at least
-// at the "currentLoc", and if so, return the next location at which it is in use in
-// "nextRefLocationPtr"
-//
-bool LinearScan::registerIsAvailable(RegRecord*    physRegRecord,
-                                     LsraLocation  currentLoc,
-                                     LsraLocation* nextRefLocationPtr,
-                                     RegisterType  regType)
-{
-    regNumber    reg             = physRegRecord->regNum;
-    LsraLocation nextRefLocation = Min(nextFixedRef[reg], nextIntervalRef[reg]);
-    assert(!isRegBusy(reg, regType) && !isRegInUse(reg, regType));
-    bool isAvailable = ((m_AvailableRegs & genRegMask(reg)) != RBM_NONE);
-    if (!isAvailable)
-    {
-        assert(physRegRecord->assignedInterval != nullptr);
-        if (!physRegRecord->assignedInterval->isActive)
-        {
-            // This must be in use in the current location.
-            RefPosition* recentRef = physRegRecord->assignedInterval->recentRefPosition;
-            assert((recentRef->nodeLocation == currentLoc) ||
-                   ((recentRef->nodeLocation == (currentLoc - 1)) && recentRef->delayRegFree));
-        }
-    }
-    *nextRefLocationPtr = nextRefLocation;
-
-#ifdef TARGET_ARM
-    if (regType == TYP_DOUBLE)
-    {
-        // Recurse, but check the other half this time (TYP_FLOAT)
-        RegRecord* secondHalfRegRec = getSecondHalfRegRec(physRegRecord);
-        assert(!isRegBusy(secondHalfRegRec->regNum, TYP_FLOAT) && !isRegInUse(reg, regType));
-        if (!registerIsAvailable(secondHalfRegRec, currentLoc, nextRefLocationPtr, TYP_FLOAT))
-            return false;
-        // The above will overwrite the value in *nextRefLocationPtr. We want to keep the nearest location.
-        if (*nextRefLocationPtr > nextRefLocation)
-        {
-            *nextRefLocationPtr = nextRefLocation;
-        }
-    }
-#endif // TARGET_ARM
-
-    return isAvailable;
-}
-
 //------------------------------------------------------------------------
 // getRegisterType: Get the RegisterType to use for the given RefPosition
 //
@@ -3223,8 +3178,9 @@ regNumber LinearScan::allocateReg(Interval* currentInterval, RefPosition* refPos
             if (!found)
             {
                 // Find the next RefPosition of the register.
-                LsraLocation nextIntervalLocation    = nextIntervalRef[coversCandidateRegNum];
-                LsraLocation coversCandidateLocation = Min(nextFixedRef[coversCandidateRegNum], nextIntervalLocation);
+                LsraLocation nextIntervalLocation    = getNextIntervalRef(coversCandidateRegNum, regType);
+                LsraLocation nextPhysRefLocation     = getNextFixedRef(coversCandidateRegNum, regType);
+                LsraLocation coversCandidateLocation = Min(nextPhysRefLocation, nextIntervalLocation);
 #ifdef TARGET_ARM
                 if (currentInterval->registerType == TYP_DOUBLE)
                 {
