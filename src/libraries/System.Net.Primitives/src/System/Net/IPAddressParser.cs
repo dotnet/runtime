@@ -161,7 +161,7 @@ namespace System.Net
             do
             {
                 byte rem;
-                (number, rem) = Math.DivRem(number, 10);
+                (number, rem) = Math.DivRem(number, (byte)10);
                 addressString[--i] = (char)('0' + rem);
             } while (number != 0);
         }
