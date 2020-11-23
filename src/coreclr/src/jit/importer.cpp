@@ -18893,7 +18893,7 @@ void Compiler::impMakeDiscretionaryInlineObservations(InlineInfo* pInlineInfo, I
     }
     else
     {
-        const float prejitHotCallerWeight = 1000000f;
+        const float prejitHotCallerWeight = 1000000.0f;
         weight                            = prejitHotCallerWeight;
     }
 
