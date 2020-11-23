@@ -17,15 +17,15 @@
 #define SUCCEEDED(Status) ((Status) >= 0)
 #endif // !SUCCEEDED
 
+#include <config.h>
+#include <getexepath.h>
+
 #if !HAVE_DIRENT_D_TYPE
 #define DT_UNKNOWN 0
 #define DT_DIR 4
 #define DT_REG 8
 #define DT_LNK 10
 #endif
-
-#include <config.h>
-#include <getexepath.h>
 
 // Name of the environment variable controlling server GC.
 // If set to 1, server GC is enabled on startup. If 0, server GC is
