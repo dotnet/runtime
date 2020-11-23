@@ -63,7 +63,7 @@ struct SortHandle
 static const UChar hiraganaStart = 0x3041;
 static const UChar hiraganaEnd = 0x309e;
 static const UChar hiraganaToKatakanaOffset = 0x30a1 - 0x3041;
-// Length of the fullwidth charcatres from 'A' to 'Z'
+// Length of the fullwidth characters from 'A' to 'Z'
 // We'll use it to map the casing of the full width 'A' to 'Z' characters
 static const int32_t FullWidthAlphabetRangeLength = 0xFF3A - 0xFF21 + 1;
 
@@ -152,16 +152,17 @@ static void FillIgnoreKanaRules(UChar* completeRules, int32_t* fillIndex, int32_
 {
     UChar compareChar = isIgnoreKanaType ? '=' : '<';
 
+    assert((*fillIndex) + (4 * (hiraganaEnd - hiraganaStart + 1)) <= completeRulesLength);
+    if ((*fillIndex) + (4 * (hiraganaEnd - hiraganaStart + 1)) > completeRulesLength) // check the allocated the size
+    {
+        return;
+    }
+
     for (UChar hiraganaChar = hiraganaStart; hiraganaChar <= hiraganaEnd; hiraganaChar++)
     {
         // Hiragana is the range 3041 to 3096 & 309D & 309E
         if (hiraganaChar <= 0x3096 || hiraganaChar >= 0x309D) // characters between 3096 and 309D are not mapped to katakana
         {
-            assert((*fillIndex) + 4 <= completeRulesLength);
-            if ((*fillIndex) + 4 > completeRulesLength)
-            {
-                return;
-            }
             completeRules[*fillIndex] = '&';
             completeRules[(*fillIndex) + 1] = hiraganaChar;
             completeRules[(*fillIndex) + 2] = compareChar;
@@ -185,6 +186,12 @@ static void FillIgnoreWidthRules(UChar* completeRules, int32_t* fillIndex, int32
     UChar higherChar;
     int needsEscape;
 
+    assert((*fillIndex) + (5 * g_HalfFullCharsLength) <= completeRulesLength);
+    if ((*fillIndex) + (5 * g_HalfFullCharsLength) > completeRulesLength)
+    {
+        return;
+    }
+
     for (int i = 0; i < g_HalfFullCharsLength; i++)
     {
         lowerChar = g_HalfFullLowerChars[i];
@@ -196,11 +203,6 @@ static void FillIgnoreWidthRules(UChar* completeRules, int32_t* fillIndex, int32
         // this character is a symbol, and if so skip it
         if (!(isIgnoreSymbols && (!isIgnoreWidth) && (needsEscape || IsHalfFullHigherSymbol(higherChar))))
         {
-            assert((*fillIndex) + 5 <= completeRulesLength);
-            if ((*fillIndex) + 5 > completeRulesLength)
-            {
-                return;
-            }
             completeRules[*fillIndex] = '&';
             (*fillIndex)++;
 
@@ -217,9 +219,9 @@ static void FillIgnoreWidthRules(UChar* completeRules, int32_t* fillIndex, int32
         }
     }
 
-    // When we have isIgnoreWidth is false, we sort the normal width latin alphabet charcatres before the full width latin alphabet charcatres
+    // When we have isIgnoreWidth is false, we sort the normal width latin alphabet characters before the full width latin alphabet characters
     //              e.g. `a` < `ａ` (\uFF41)
-    // This break the casing of the full width latin alphabet charcatres.
+    // This break the casing of the full width latin alphabet characters.
     //              e.g. `ａ` (\uFF41) == `Ａ` (\uFF21).
     // we are fixing back this case mapping here.
     if (isIgnoreCase && (!isIgnoreWidth))
