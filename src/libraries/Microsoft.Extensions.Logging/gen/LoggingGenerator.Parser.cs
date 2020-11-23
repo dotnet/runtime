@@ -173,6 +173,12 @@ namespace Microsoft.Extensions.Logging.Generators
                 var ids = new HashSet<string>();
                 foreach (var classDef in classes)
                 {
+                    if (_cancellationToken.IsCancellationRequested)
+                    {
+                        // be nice and stop if we're asked to
+                        return results;
+                    }
+
                     // determine the namespace the class is declared in, if any
                     NamespaceDeclarationSyntax? ns = null;
                     if (classDef.Parent != null)
@@ -195,6 +201,12 @@ namespace Microsoft.Extensions.Logging.Generators
                     ids.Clear();
                     foreach (var method in classDef.Members.Where(m => m.IsKind(SyntaxKind.MethodDeclaration)).OfType<MethodDeclarationSyntax>())
                     {
+                        if (_cancellationToken.IsCancellationRequested)
+                        {
+                            // be nice and stop if we're asked to
+                            return results;
+                        }
+
                         foreach (var mal in method.AttributeLists)
                         {
                             foreach (var ma in mal.Attributes)

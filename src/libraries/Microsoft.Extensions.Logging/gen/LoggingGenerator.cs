@@ -35,6 +35,12 @@ namespace Microsoft.Extensions.Logging.Generators
             var types = new StringBuilder();
             foreach (var lc in p.GetLogClasses(receiver.ClassDeclarations))
             {
+                if (context.CancellationToken.IsCancellationRequested)
+                {
+                    // stop any additional work
+                    return;
+                }
+
                 types.Append(GenType(lc));
             }
 
