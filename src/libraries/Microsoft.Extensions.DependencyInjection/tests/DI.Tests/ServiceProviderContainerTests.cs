@@ -4,7 +4,9 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Fakes;
 using Microsoft.Extensions.DependencyInjection.Specification;
 using Microsoft.Extensions.DependencyInjection.Specification.Fakes;
@@ -263,6 +265,70 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
             Assert.Throws<ObjectDisposedException>(() => scope.ServiceProvider.GetService<IFakeService>());
             //Check that resolution from root works
             Assert.NotNull(provider.CreateScope());
+        }
+        
+        [ThreadStatic]
+        public static int ThreadId;
+
+        [Fact]
+        public async Task ServiceProviderDispose_ContinueResolvingServices_Throws()
+        {
+            var services = new ServiceCollection();
+            ServiceProvider sp = null;
+
+            var lazy = new Lazy<Thing1>(() =>
+            {
+                // Tries to take the singleton lock (global)
+                return new Thing1(sp);
+            });
+
+            services.AddTransient(sp =>
+            {
+                if (ThreadId == 1)
+                {
+                    Thread.Sleep(1000);
+                }
+                else
+                {
+                    // Let Thread 1 over take Thread 2
+                    Thread.Sleep(3000);
+                }
+
+                return lazy.Value;
+            });
+            services.AddSingleton<Thing2>();
+
+            sp = services.BuildServiceProvider();
+
+            var t1 = Task.Run(() =>
+            {
+                ThreadId = 1;
+                using var scope1 = sp.CreateScope();
+                scope1.ServiceProvider.GetRequiredService<Thing1>();
+            });
+
+           var t2 = Task.Run(() =>
+            {
+                ThreadId = 2;
+                using var scope2 = sp.CreateScope();
+                scope2.ServiceProvider.GetRequiredService<Thing2>();
+            });
+
+            await Assert.ThrowsAsync<ObjectDisposedException>(async () => {await t1; await t2;});
+        }
+
+        public class Thing2 : IDisposable
+        {
+            public Thing2(Thing1 thing1) { }
+            public void Dispose() { }
+        }
+
+        public class Thing1
+        {
+            public Thing1(ServiceProvider sp)
+            {
+                sp.Dispose();
+            }
         }
 
         [ActiveIssue("https://github.com/dotnet/runtime/issues/42160")] // We don't support value task services currently
