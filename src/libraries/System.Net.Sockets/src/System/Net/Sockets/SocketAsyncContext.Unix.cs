@@ -619,7 +619,7 @@ namespace System.Net.Sockets
                 Callback!(ErrorCode);
         }
 
-        private sealed class SendFileOperation : WriteOperation
+        private class SendFileOperation : WriteOperation
         {
             public SafeFileHandle FileHandle = null!; // always set when constructed
             public long Offset;
@@ -635,8 +635,20 @@ namespace System.Net.Sockets
             public override void InvokeCallback(bool allowPooling) =>
                 Callback!(BytesTransferred, ErrorCode);
 
-            protected override bool DoTryComplete(SocketAsyncContext context) =>
+            protected sealed override bool DoTryComplete(SocketAsyncContext context) =>
                 SocketPal.TryCompleteSendFile(context._socket, FileHandle, ref Offset, ref Count, ref BytesTransferred, out ErrorCode);
+        }
+
+        private sealed class SendFileOperation<TState> : SendFileOperation
+        {
+            public TState? State;
+
+            public SendFileOperation(SocketAsyncContext context) : base(context) { }
+
+            public new Action<TState?, long, SocketError>? Callback { get; set; }
+
+            public override void InvokeCallback(bool allowPooling) =>
+                Callback!(State, BytesTransferred, ErrorCode);
         }
 
         // In debug builds, this struct guards against:
@@ -1999,7 +2011,7 @@ namespace System.Net.Sockets
             return operation.ErrorCode;
         }
 
-        public SocketError SendFileAsync(SafeFileHandle fileHandle, long offset, long count, out long bytesSent, Action<long, SocketError> callback, CancellationToken cancellationToken = default)
+        public SocketError SendFileAsync<TState>(SafeFileHandle fileHandle, long offset, long count, out long bytesSent, TState? state, Action<TState?, long, SocketError> callback, CancellationToken cancellationToken = default)
         {
             SetNonBlocking();
 
@@ -2012,13 +2024,14 @@ namespace System.Net.Sockets
                 return errorCode;
             }
 
-            var operation = new SendFileOperation(this)
+            var operation = new SendFileOperation<TState>(this)
             {
                 Callback = callback,
                 FileHandle = fileHandle,
                 Offset = offset,
                 Count = count,
-                BytesTransferred = bytesSent
+                BytesTransferred = bytesSent,
+                State = state
             };
 
             if (!_sendQueue.StartAsyncOperation(this, operation, observedSequenceNumber, cancellationToken))

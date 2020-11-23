@@ -6,6 +6,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
@@ -1770,16 +1771,16 @@ namespace System.Net.Sockets
             return GetSocketErrorForErrorCode(err);
         }
 
-        public static SocketError SendFileAsync(SafeSocketHandle handle, FileStream fileStream, Action<long, SocketError> callback, CancellationToken cancellationToken = default) =>
-            SendFileAsync(handle, fileStream, 0, fileStream.Length, callback, cancellationToken);
+        public static SocketError SendFileAsync<TState>(SafeSocketHandle handle, FileStream fileStream, TState? state, Action<TState?, long, SocketError> callback, CancellationToken cancellationToken = default) =>
+            SendFileAsync(handle, fileStream, 0, fileStream.Length, state, callback, cancellationToken);
 
-        private static SocketError SendFileAsync(SafeSocketHandle handle, FileStream fileStream, long offset, long count, Action<long, SocketError> callback, CancellationToken cancellationToken = default)
+        private static SocketError SendFileAsync<TState>(SafeSocketHandle handle, FileStream fileStream, long offset, long count, TState? state, Action<TState?, long, SocketError> callback, CancellationToken cancellationToken = default)
         {
             long bytesSent;
-            SocketError socketError = handle.AsyncContext.SendFileAsync(fileStream.SafeFileHandle, offset, count, out bytesSent, callback, cancellationToken);
+            SocketError socketError = handle.AsyncContext.SendFileAsync(fileStream.SafeFileHandle, offset, count, out bytesSent, state, callback, cancellationToken);
             if (socketError == SocketError.Success)
             {
-                callback(bytesSent, SocketError.Success);
+                callback(state, bytesSent, SocketError.Success);
             }
             return socketError;
         }
@@ -1799,7 +1800,7 @@ namespace System.Net.Sockets
                     {
                         if (e.Buffer != null)
                         {
-                            bytesTransferred += await socket.SendAsync(new ArraySegment<byte>(e.Buffer, e.Offset, e.Count), SocketFlags.None).ConfigureAwait(false);
+                            bytesTransferred += await socket.SendAsync(e.Buffer.AsMemory(e.Offset, e.Count), SocketFlags.None).ConfigureAwait(false);
                         }
                         else
                         {
@@ -1809,17 +1810,20 @@ namespace System.Net.Sockets
                                 throw new ArgumentOutOfRangeException();
                             }
 
-                            var tcs = new TaskCompletionSource<SocketError>();
+                            AsyncValueTaskMethodBuilder<SocketError> taskBuilder = AsyncValueTaskMethodBuilder<SocketError>.Create();
+                            ValueTask<SocketError> task = taskBuilder.Task;
                             error = SendFileAsync(socket.InternalSafeHandle, fs, e.OffsetLong,
                                 e.Count > 0 ? e.Count : fs.Length - e.OffsetLong,
-                                (transferred, se) =>
+                                taskBuilder,
+                                (state, transferred, se) =>
                                 {
                                     bytesTransferred += transferred;
-                                    tcs.TrySetResult(se);
+                                    state.SetResult(se);
                                 });
+
                             if (error == SocketError.IOPending)
                             {
-                                error = await tcs.Task.ConfigureAwait(false);
+                                error = await task.ConfigureAwait(false);
                             }
                             if (error != SocketError.Success)
                             {

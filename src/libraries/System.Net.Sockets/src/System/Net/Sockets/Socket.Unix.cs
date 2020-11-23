@@ -6,6 +6,7 @@ using System.IO;
 using System.Threading.Tasks;
 using System.Runtime.Versioning;
 using System.Threading;
+using System.Runtime.CompilerServices;
 
 namespace System.Net.Sockets
 {
@@ -255,11 +256,12 @@ namespace System.Net.Sockets
                 // Send the file, if any
                 if (fileStream != null)
                 {
-                    var tcs = new TaskCompletionSource<SocketError>();
-                    errorCode = SocketPal.SendFileAsync(_handle, fileStream, (_, socketError) => tcs.SetResult(socketError), cancellationToken);
+                    AsyncValueTaskMethodBuilder<SocketError> taskBuilder = AsyncValueTaskMethodBuilder<SocketError>.Create();
+                    ValueTask<SocketError> task = taskBuilder.Task;
+                    errorCode = SocketPal.SendFileAsync(_handle, fileStream, taskBuilder, static (state, _, socketError) => state.SetResult(socketError), cancellationToken);
                     if (errorCode == SocketError.IOPending)
                     {
-                        errorCode = await tcs.Task.ConfigureAwait(false);
+                        errorCode = await task.ConfigureAwait(false);
                     }
                 }
             }
