@@ -71,7 +71,7 @@ namespace System.Net.Sockets
         private readonly bool _flowExecutionContext;
         private ExecutionContext? _context;
         private static readonly ContextCallback s_executionCallback = ExecutionCallback;
-        private Socket? _currentSocket;
+        private protected Socket? _currentSocket;
         private bool _userSocket; // if false when performing Connect, _currentSocket should be disposed
         private bool _disposeCalled;
         private protected bool _disableTelemetry;
@@ -499,7 +499,7 @@ namespace System.Net.Sockets
         }
 
         // NOTE: Use a try/finally to make sure Complete is called when you're done
-        private void StartConfiguring()
+        private protected void StartConfiguring()
         {
             int status = Interlocked.CompareExchange(ref _operating, Configuring, Free);
             if (status != Free)

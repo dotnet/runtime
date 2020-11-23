@@ -291,16 +291,6 @@ namespace System.Net.Sockets
             return SocketError.Success;
         }
 
-        public static unsafe SocketError SendFile(SafeSocketHandle handle, SafeFileHandle? fileHandle, ReadOnlySpan<byte> preBuffer, ReadOnlySpan<byte> postBuffer, TransmitFileOptions flags)
-        {
-            fixed (byte* prePinnedBuffer = preBuffer)
-            fixed (byte* postPinnedBuffer = postBuffer)
-            {
-                bool success = TransmitFileHelper(handle, fileHandle, null, (IntPtr)prePinnedBuffer, preBuffer.Length, (IntPtr)postPinnedBuffer, postBuffer.Length, flags);
-                return success ? SocketError.Success : GetLastSocketError();
-            }
-        }
-
         public static unsafe SocketError SendTo(SafeSocketHandle handle, byte[] buffer, int offset, int size, SocketFlags socketFlags, byte[] peerAddress, int peerAddressSize, out int bytesTransferred)
         {
             int bytesSent;
@@ -1068,6 +1058,22 @@ namespace System.Net.Sockets
                     fileHandle!.DangerousRelease();
                 }
             }
+        }
+
+        public static unsafe SocketError SendFile(SafeSocketHandle handle, SafeFileHandle? fileHandle, ReadOnlySpan<byte> preBuffer, ReadOnlySpan<byte> postBuffer, TransmitFileOptions flags)
+        {
+            fixed (byte* prePinnedBuffer = preBuffer)
+            fixed (byte* postPinnedBuffer = postBuffer)
+            {
+                bool success = TransmitFileHelper(handle, fileHandle, null, (IntPtr)prePinnedBuffer, preBuffer.Length, (IntPtr)postPinnedBuffer, postBuffer.Length, flags);
+                return success ? SocketError.Success : GetLastSocketError();
+            }
+        }
+
+        public static unsafe SocketError SendFileAsync(SafeSocketHandle handle, FileStream? fileStream, NativeOverlapped* overlapped, IntPtr preBuffer, int preBufferLength, IntPtr postBuffer, int postBufferLength, TransmitFileOptions flags)
+        {
+            bool success = TransmitFileHelper(handle, fileStream?.SafeFileHandle, overlapped, preBuffer, preBufferLength, postBuffer, postBufferLength, flags);
+            return success ? SocketError.Success : GetLastSocketError();
         }
 
         public static unsafe SocketError SendFileAsync(SafeSocketHandle handle, FileStream? fileStream, byte[]? preBuffer, byte[]? postBuffer, TransmitFileOptions flags, TransmitFileAsyncResult asyncResult)

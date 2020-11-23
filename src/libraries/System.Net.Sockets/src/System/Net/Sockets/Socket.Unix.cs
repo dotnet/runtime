@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using System.Runtime.Versioning;
 using System.Threading;
 using System.Runtime.CompilerServices;
+using System.Threading.Tasks.Sources;
 
 namespace System.Net.Sockets
 {
@@ -295,6 +296,13 @@ namespace System.Net.Sockets
         private void EndSendFileInternal(IAsyncResult asyncResult)
         {
             TaskToApm.End(asyncResult);
+        }
+
+        internal sealed class FileSendSocketAsyncEventargs : SocketAsyncEventArgs, IValueTaskSource
+        {
+            public void GetResult(short token) => throw new NotImplementedException();
+            public ValueTaskSourceStatus GetStatus(short token) => throw new NotImplementedException();
+            public void OnCompleted(Action<object?> continuation, object? state, short token, ValueTaskSourceOnCompletedFlags flags) => throw new NotImplementedException();
         }
     }
 }

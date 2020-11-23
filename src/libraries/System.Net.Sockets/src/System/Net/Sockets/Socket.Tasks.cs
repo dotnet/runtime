@@ -28,6 +28,9 @@ namespace System.Net.Sockets
         /// <summary>Cached instance for send operations that return <see cref="Task{Int32}"/>.</summary>
         private TaskSocketAsyncEventArgs<int>? _multiBufferSendEventArgs;
 
+        /// <summary>Cached instance for file send operations that return <see cref="ValueTask"/>.</summary>
+        private FileSendSocketAsyncEventargs? _fileSendEventArgs;
+
         internal Task<Socket> AcceptAsync(Socket? acceptSocket)
         {
             // Get any cached SocketAsyncEventArg we may have.
@@ -356,6 +359,31 @@ namespace System.Net.Sockets
             return tcs.Task;
         }
 
+        public ValueTask SendFileAsync(string? fileName, CancellationToken cancellationToken = default)
+        {
+            return SendFileAsync(fileName, default, default, TransmitFileOptions.UseDefaultWorkerThread, cancellationToken);
+        }
+
+        public ValueTask SendFileAsync(string? fileName, ReadOnlyMemory<byte> preBuffer, ReadOnlyMemory<byte> postBuffer, TransmitFileOptions flags, CancellationToken cancellationToken = default)
+        {
+            ThrowIfDisposed();
+
+            if (!Connected)
+            {
+                throw new NotSupportedException(SR.net_notconnected);
+            }
+
+            if (cancellationToken.IsCancellationRequested)
+            {
+                return ValueTask.FromCanceled(cancellationToken);
+            }
+
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"::SendFileAsync() SRC:{LocalEndPoint} DST:{RemoteEndPoint} fileName:{fileName}");
+
+            FileStream? fileStream = OpenFile(fileName);
+            return SendFileInternalAsync(fileStream, preBuffer, postBuffer, flags, cancellationToken);
+        }
+
         private static void ValidateBufferArguments(byte[] buffer, int offset, int size)
         {
             if (buffer == null)
@@ -563,6 +591,7 @@ namespace System.Net.Sockets
             Interlocked.Exchange(ref _multiBufferSendEventArgs, null)?.Dispose();
             Interlocked.Exchange(ref _singleBufferReceiveEventArgs, null)?.Dispose();
             Interlocked.Exchange(ref _singleBufferSendEventArgs, null)?.Dispose();
+            Interlocked.Exchange(ref _fileSendEventArgs, null)?.Dispose();
         }
 
         /// <summary>A TaskCompletionSource that carries an extra field of strongly-typed state.</summary>

@@ -14,6 +14,7 @@ namespace System.Net.Sockets
         ReceiveMessageFrom,
         Send,
         SendPackets,
-        SendTo
+        SendTo,
+        SendFile
     }
 }

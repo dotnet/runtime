@@ -15,8 +15,8 @@ namespace System.Net.Sockets
     {
         // Single buffer
         private MemoryHandle _singleBufferHandle;
-        private volatile SingleBufferHandleState _singleBufferHandleState;
-        private enum SingleBufferHandleState : byte { None, InProcess, Set }
+        private protected volatile SingleBufferHandleState _singleBufferHandleState;
+        private protected enum SingleBufferHandleState : byte { None, InProcess, Set }
 
         // BufferList property variables.
         // Note that these arrays are allocated and then grown as necessary, but never shrunk.
@@ -35,6 +35,11 @@ namespace System.Net.Sockets
 
         // SendPacketsElements property variables.
         private FileStream[]? _sendPacketsFileStreams;
+
+        // SendFile property variables
+        private protected FileStream? _sendFileFileStream;
+        private protected MemoryHandle _preBufferHandle;
+        private protected MemoryHandle _postBufferHandle;
 
         // Overlapped object related variables.
         private PreAllocatedOverlapped _preAllocatedOverlapped;
@@ -74,7 +79,7 @@ namespace System.Net.Sockets
             FreeOverlapped();
         }
 
-        private unsafe NativeOverlapped* AllocateNativeOverlapped()
+        private protected unsafe NativeOverlapped* AllocateNativeOverlapped()
         {
             Debug.Assert(OperatingSystem.IsWindows());
             Debug.Assert(_operating == InProgress, $"Expected {nameof(_operating)} == {nameof(InProgress)}, got {_operating}");
@@ -86,7 +91,7 @@ namespace System.Net.Sockets
             return boundHandle.AllocateNativeOverlapped(_preAllocatedOverlapped);
         }
 
-        private unsafe void FreeNativeOverlapped(NativeOverlapped* overlapped)
+        private protected unsafe void FreeNativeOverlapped(NativeOverlapped* overlapped)
         {
             Debug.Assert(OperatingSystem.IsWindows());
             Debug.Assert(overlapped != null, "overlapped is null");
@@ -99,7 +104,7 @@ namespace System.Net.Sockets
             _currentSocket.SafeHandle.IOCPBoundHandle.FreeNativeOverlapped(overlapped);
         }
 
-        private unsafe void RegisterToCancelPendingIO(NativeOverlapped* overlapped, CancellationToken cancellationToken)
+        private protected unsafe void RegisterToCancelPendingIO(NativeOverlapped* overlapped, CancellationToken cancellationToken)
         {
             Debug.Assert(_singleBufferHandleState == SingleBufferHandleState.InProcess);
             Debug.Assert(_pendingOverlappedForCancellation == null);
@@ -933,6 +938,8 @@ namespace System.Net.Sockets
             {
                 _singleBufferHandleState = SingleBufferHandleState.None;
                 _singleBufferHandle.Dispose();
+                _preBufferHandle.Dispose();
+                _postBufferHandle.Dispose();
             }
 
             if (_multipleBufferGCHandles != null)
@@ -1194,6 +1201,8 @@ namespace System.Net.Sockets
                 {
                     _singleBufferHandleState = SingleBufferHandleState.None;
                     _singleBufferHandle.Dispose();
+                    _preBufferHandle.Dispose();
+                    _postBufferHandle.Dispose();
                 }
             }
         }
@@ -1230,6 +1239,12 @@ namespace System.Net.Sockets
                 }
 
                 _sendPacketsFileStreams = null;
+            }
+
+            if (_sendFileFileStream != null)
+            {
+                _sendFileFileStream.Dispose();
+                _sendFileFileStream = null;
             }
         }
 

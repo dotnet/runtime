@@ -9,6 +9,8 @@ using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Runtime.Versioning;
 using System.Threading.Tasks;
+using System.Threading.Tasks.Sources;
+using System.Runtime.InteropServices;
 
 namespace System.Net.Sockets
 {
@@ -425,7 +427,41 @@ namespace System.Net.Sockets
 
         private ValueTask SendFileInternalAsync(FileStream? fileStream, ReadOnlyMemory<byte> preBuffer, ReadOnlyMemory<byte> postBuffer, TransmitFileOptions flags = TransmitFileOptions.UseDefaultWorkerThread, CancellationToken cancellationToken = default)
         {
-            throw new NotImplementedException();
+            FileSendSocketAsyncEventargs saea =
+                Interlocked.Exchange(ref _fileSendEventArgs, null) ??
+                new FileSendSocketAsyncEventargs(this);
+
+            Debug.Assert(saea.Buffer == null);
+            Debug.Assert(saea.BufferList == null);
+            saea.Configure(fileStream, preBuffer, postBuffer, flags);
+            saea.SocketFlags = SocketFlags.None;
+            return saea.SendFileAsync(this, cancellationToken);
+        }
+
+        private bool SendFileAsync(FileSendSocketAsyncEventargs e, CancellationToken cancellationToken)
+        {
+            ThrowIfDisposed();
+
+            if (e == null)
+            {
+                throw new ArgumentNullException(nameof(e));
+            }
+
+            // Prepare for and make the native call.
+            e.StartOperationCommon(this, SocketAsyncOperation.SendFile);
+            SocketError socketError;
+            try
+            {
+                socketError = e.DoOperationSendFile(_handle, cancellationToken);
+            }
+            catch
+            {
+                // Clear in-use flag on event args object.
+                e.Complete();
+                throw;
+            }
+
+            return socketError == SocketError.IOPending;
         }
 
         private IAsyncResult BeginSendFileInternal(string? fileName, byte[]? preBuffer, byte[]? postBuffer, TransmitFileOptions flags, AsyncCallback? callback, object? state)
@@ -492,6 +528,190 @@ namespace System.Net.Sockets
             // So, don't try to enable skipping the completion port on success in this case.
             bool trySkipCompletionPortOnSuccess = !(CompletionPortHelper.PlatformHasUdpIssue && _protocolType == ProtocolType.Udp);
             return _handle.GetOrAllocateThreadPoolBoundHandle(trySkipCompletionPortOnSuccess);
+        }
+
+        internal sealed class FileSendSocketAsyncEventargs : SocketAsyncEventArgs, IValueTaskSource
+        {
+            private readonly Socket _owner;
+            private ManualResetValueTaskSourceCore<bool> _mrvtsc;
+
+            /// <summary>The cancellation token used for the current operation.</summary>
+            private CancellationToken _cancellationToken;
+
+            private ReadOnlyMemory<byte> _preBuffer;
+            private ReadOnlyMemory<byte> _postBuffer;
+            private TransmitFileOptions _transmitFileOptions;
+
+            public FileSendSocketAsyncEventargs(Socket owner) :
+                base(unsafeSuppressExecutionContextFlow: true) // avoid flowing context at lower layers as we only expose ValueTask, which handles it
+            {
+                _owner = owner;
+            }
+
+            public void Configure(FileStream? fileStream, ReadOnlyMemory<byte> preBuffer, ReadOnlyMemory<byte> postBuffer, TransmitFileOptions flags)
+            {
+                StartConfiguring();
+                try
+                {
+                    _sendFileFileStream = fileStream;
+                    _preBuffer = preBuffer;
+                    _postBuffer = postBuffer;
+                    _transmitFileOptions = flags;
+                }
+                finally
+                {
+                    Complete();
+                }
+            }
+
+            public ValueTask SendFileAsync(Socket socket, CancellationToken cancellationToken)
+            {
+                if (socket.SendFileAsync(this, cancellationToken))
+                {
+                    _cancellationToken = cancellationToken;
+                    return new ValueTask(this, _mrvtsc.Version);
+                }
+
+                SocketError error = SocketError;
+
+                Release();
+
+                return error == SocketError.Success
+                    ? ValueTask.CompletedTask
+                    : ValueTask.FromException(CreateException(error));
+            }
+
+            public unsafe SocketError DoOperationSendFile(SafeSocketHandle handle, CancellationToken cancellationToken)
+            {
+                fixed (byte* preBufferPtr = &MemoryMarshal.GetReference(_preBuffer.Span))
+                fixed (byte* postBufferPtr = &MemoryMarshal.GetReference(_postBuffer.Span))
+                {
+                    NativeOverlapped* overlapped = AllocateNativeOverlapped();
+                    try
+                    {
+                        Debug.Assert(_singleBufferHandleState == SingleBufferHandleState.None);
+                        _singleBufferHandleState = SingleBufferHandleState.InProcess;
+
+                        SocketError socketError = SocketPal.SendFileAsync(
+                            handle,
+                            _sendFileFileStream,
+                            overlapped,
+                            (IntPtr)preBufferPtr, _preBuffer.Length,
+                            (IntPtr)postBufferPtr, _postBuffer.Length,
+                            _transmitFileOptions);
+
+                        return ProcessIOFileSendResult(socketError, overlapped, cancellationToken);
+                    }
+                    catch
+                    {
+                        _singleBufferHandleState = SingleBufferHandleState.None;
+                        FreeNativeOverlapped(overlapped);
+                        throw;
+                    }
+                }
+            }
+
+            public void GetResult(short token)
+            {
+                _mrvtsc.GetResult(token);
+
+                SocketError error = SocketError;
+                CancellationToken cancellationToken = _cancellationToken;
+
+                Release();
+
+                if (error != SocketError.Success)
+                {
+                    ThrowException(error, cancellationToken);
+                }
+            }
+
+            public ValueTaskSourceStatus GetStatus(short token) => _mrvtsc.GetStatus(token);
+            public void OnCompleted(Action<object?> continuation, object? state, short token, ValueTaskSourceOnCompletedFlags flags) => _mrvtsc.OnCompleted(continuation, state, token, flags);
+
+            protected override void OnCompleted(SocketAsyncEventArgs e) => _mrvtsc.SetResult(true);
+
+            private unsafe SocketError ProcessIOFileSendResult(SocketError socketError, NativeOverlapped* overlapped, CancellationToken cancellationToken)
+            {
+                // Note: We need to dispose of the overlapped iff the operation completed synchronously,
+                // and if we do, we must do so before we mark the operation as completed.
+
+                if (socketError == SocketError.Success)
+                {
+                    // Synchronous success.
+                    if (_currentSocket!.SafeHandle.SkipCompletionPortOnSuccess)
+                    {
+                        // The socket handle is configured to skip completion on success,
+                        // so we can set the results right now.
+                        _singleBufferHandleState = SingleBufferHandleState.None;
+                        FreeNativeOverlapped(overlapped);
+                        FinishOperationSyncSuccess(0, SocketFlags.None);
+
+                        return SocketError.Success;
+                    }
+
+                    // Completed synchronously, but the handle wasn't marked as skip completion port on success,
+                    // so we still need to fall through and behave as if the IO was pending.
+                }
+                else
+                {
+                    // Get the socket error (which may be IOPending)
+                    socketError = SocketPal.GetLastSocketError();
+                    if (socketError != SocketError.IOPending)
+                    {
+                        // Completed synchronously with a failure.
+                        _singleBufferHandleState = SingleBufferHandleState.None;
+                        FreeNativeOverlapped(overlapped);
+                        FinishOperationSyncFailure(socketError, 0, SocketFlags.None);
+
+                        return socketError;
+                    }
+
+                    // Fall through to IOPending handling for asynchronous completion.
+                }
+
+                // Socket handle is going to post a completion to the completion port (may have done so already).
+                // Return pending and we will continue in the completion port callback.
+                if (_singleBufferHandleState == SingleBufferHandleState.InProcess)
+                {
+                    RegisterToCancelPendingIO(overlapped, cancellationToken); // must happen before we change state to Set to avoid race conditions
+                    _preBufferHandle = _preBuffer.Pin();
+                    _postBufferHandle = _postBuffer.Pin();
+                    _singleBufferHandleState = SingleBufferHandleState.Set;
+                }
+
+                return SocketError.IOPending;
+            }
+
+            private void Release()
+            {
+                _cancellationToken = default;
+                _mrvtsc.Reset();
+
+                if (_sendFileFileStream != null)
+                {
+                    _sendFileFileStream.Dispose();
+                    _sendFileFileStream = null;
+                }
+
+                ref FileSendSocketAsyncEventargs? cache = ref _owner._fileSendEventArgs;
+                if (Interlocked.CompareExchange(ref cache, this, null) != null)
+                {
+                    Dispose();
+                }
+            }
+
+            private static void ThrowException(SocketError error, CancellationToken cancellationToken)
+            {
+                if (error == SocketError.OperationAborted)
+                {
+                    cancellationToken.ThrowIfCancellationRequested();
+                }
+
+                throw CreateException(error);
+            }
+
+            private static Exception CreateException(SocketError error) => new SocketException((int)error);
         }
     }
 }
