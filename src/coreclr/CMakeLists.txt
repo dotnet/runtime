@@ -8,7 +8,8 @@ endif()
 # Set the project name
 project(CoreCLR)
 
-include(${CLR_REPO_ROOT_DIR}/eng/native/configurecompiler.cmake)
+include(../../eng/native/configurepaths.cmake)
+include(${CLR_ENG_NATIVE_DIR}/configurecompiler.cmake)
 
 if(MSVC)
   string(REPLACE "/EHsc" "" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")

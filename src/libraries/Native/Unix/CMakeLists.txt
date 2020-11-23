@@ -9,7 +9,8 @@ cmake_policy(SET CMP0042 NEW)
 
 project(CoreFX C)
 
-include(${CLR_REPO_ROOT_DIR}/eng/native/configuretools.cmake)
+include(../../../../eng/native/configurepaths.cmake)
+include(${CLR_ENG_NATIVE_DIR}/configuretools.cmake)
 
 set(CMAKE_MACOSX_RPATH ON)
 if(CLR_CMAKE_TARGET_IOS OR CLR_CMAKE_TARGET_TVOS)

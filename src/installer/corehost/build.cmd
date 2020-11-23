@@ -156,7 +156,7 @@ set __ExtraCmakeParams=%__ExtraCmakeParams% "-DCLI_CMAKE_HOST_VER=%__HostVersion
 set __ExtraCmakeParams=%__ExtraCmakeParams% "-DCLI_CMAKE_HOST_POLICY_VER=%__HostPolicyVersion%" "-DCLI_CMAKE_PKG_RID=%cm_BaseRid%" "-DCLI_CMAKE_COMMIT_HASH=%__CommitSha%"
 set __ExtraCmakeParams=%__ExtraCmakeParams% "-DCORECLR_ARTIFACTS=%__CoreClrArtifacts% " "-DRUNTIME_CONFIG=%__RuntimeConfiguration%" "-DNATIVE_LIBS_ARTIFACTS=%__NativeLibsArtifacts%"
 set __ExtraCmakeParams=%__ExtraCmakeParams% "-DRUNTIME_FLAVOR=%__RuntimeFlavor% "
-set __ExtraCmakeParams=%__ExtraCmakeParams% "-DCLI_CMAKE_RESOURCE_DIR=%__ResourcesDir%" "-DCLR_REPO_ROOT_DIR=%__sourceDir%" "-DCMAKE_BUILD_TYPE=%CMAKE_BUILD_TYPE%"
+set __ExtraCmakeParams=%__ExtraCmakeParams% "-DCLI_CMAKE_RESOURCE_DIR=%__ResourcesDir%" "-DCMAKE_BUILD_TYPE=%CMAKE_BUILD_TYPE%"
 
 :: Regenerate the native build files
 echo Calling "%__engNativeDir%\gen-buildsys.cmd "%__sourceDir%" "%__IntermediatesDir%" %__VSVersion% %__BuildArch% %__ExtraCmakeParams%"

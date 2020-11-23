@@ -147,7 +147,6 @@ EOF
         fi
 
         engNativeDir="$__RepoRootDir/eng/native"
-        cmakeArgs="-DCLR_REPO_ROOT_DIR=\"$__RepoRootDir\" $cmakeArgs"
         nextCommand="\"$engNativeDir/gen-buildsys.sh\" \"$cmakeDir\" \"$tryrunDir\" \"$intermediatesDir\" $platformArch $__Compiler \"$__CompilerMajorVersion\" \"$__CompilerMinorVersion\" $__BuildType \"$generator\" $scan_build $cmakeArgs"
         echo "Invoking $nextCommand"
         eval $nextCommand

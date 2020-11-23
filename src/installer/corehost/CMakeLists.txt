@@ -6,7 +6,8 @@ endif()
 
 project(corehost)
 
-include(${CLR_REPO_ROOT_DIR}/eng/native/configurecompiler.cmake)
+include(../../../eng/native/configurepaths.cmake)
+include(${CLR_ENG_NATIVE_DIR}/configurecompiler.cmake)
 
 if(MSVC)
     add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/wd4996>)
