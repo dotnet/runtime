@@ -3,7 +3,9 @@
 
 using System.IO;
 using System.IO.Tests;
+using System.Net.Sockets;
 using System.Security.Authentication;
+using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading.Tasks;
 using Xunit;
@@ -17,6 +19,7 @@ namespace System.Net.Security.Tests
         protected override Type UnsupportedConcurrentExceptionType => typeof(NotSupportedException);
 
         protected virtual SslProtocols GetSslProtocols() => SslProtocols.None;
+        internal NetworkStream? networkStream;
 
         protected override async Task<StreamPair> CreateWrappedConnectedStreamsAsync(StreamPair wrapped, bool leaveOpen = false)
         {
@@ -26,9 +29,14 @@ namespace System.Net.Security.Tests
 
             await new[]
             {
-                ssl1.AuthenticateAsServerAsync(cert, false, GetSslProtocols(), false),
-                ssl2.AuthenticateAsClientAsync(cert.GetNameInfo(X509NameType.SimpleName, false), null, GetSslProtocols(), false)
+                ssl2.AuthenticateAsClientAsync(cert.GetNameInfo(X509NameType.SimpleName, false), null, GetSslProtocols(), false),
+                ssl1.AuthenticateAsServerAsync(cert, false, GetSslProtocols(), false)
             }.WhenAllOrAnyFailed().ConfigureAwait(false);
+
+            if (wrapped.Stream2 is NetworkStream)
+            {
+                networkStream = wrapped.Stream2 as NetworkStream;
+            }
 
             return new StreamPair(ssl1, ssl2);
         }
@@ -64,5 +72,45 @@ namespace System.Net.Security.Tests
     public sealed class SslStreamTls13NetworkConformanceTests : SslStreamDefaultNetworkConformanceTests
     {
         protected override SslProtocols GetSslProtocols() => SslProtocols.Tls13;
+
+        // Override the default method as we need to process extra TLS 1.3 messages to avoid
+        // connection reset when we have unidirectional transfer.
+        public override async Task CopyToAsync_AllDataCopied(int byteCount, bool useAsync)
+        {
+            using StreamPair streams = await CreateConnectedStreamsAsync();
+            (Stream writeable, Stream readable) = GetReadWritePair(streams);
+
+            var results = new MemoryStream();
+            byte[] dataToCopy = RandomNumberGenerator.GetBytes(byteCount);
+
+            if (networkStream != null)
+            {
+                // If we are network stream, signal peer we will not write.
+                networkStream.Socket.Shutdown(SocketShutdown.Send);
+            }
+
+            Task copyTask;
+            if (useAsync)
+            {
+                copyTask = readable.CopyToAsync(results);
+                await writeable.WriteAsync(dataToCopy);
+            }
+            else
+            {
+                copyTask = Task.Run(() => readable.CopyTo(results));
+                writeable.Write(new ReadOnlySpan<byte>(dataToCopy));
+            }
+
+            // Read any pending protocol messages to avoid reset on close.
+            // There should not be any application data.
+            byte[] readBuffer = new byte[10];
+            int readLength = await writeable.ReadAsync(readBuffer);
+            Assert.Equal(0, readLength);
+
+            writeable.Dispose();
+            await copyTask;
+
+            Assert.Equal(dataToCopy, results.ToArray());
+        }
     }
 }
