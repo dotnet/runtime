@@ -5,10 +5,7 @@ include(configure.cmake)
 
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
-_add_executable(corerun
-    corerun.cpp
-    coreruncommon.cpp
-)
+_add_executable(corerun corerun.cpp)
 
 target_link_libraries(corerun ${CMAKE_DL_LIBS})
 
