@@ -554,13 +554,7 @@ void QCALLTYPE RuntimeTypeHandle::CreateInstanceForGenericType(
 
         OBJECTREF newObj = instantiatedType.GetMethodTable()->Allocate();
         GCPROTECT_BEGIN(newObj);
-
-        MethodDesc* pMeth = pVMT->GetDefaultConstructor();
-        MethodDescCallSite ctor(pMeth);
-
-        // Call the method
-        ARG_SLOT arg = ObjToArgSlot(newObj);
-        TryCallMethod(&ctor, &arg, true);
+        CallDefaultConstructor(newObj);
         GCPROTECT_END();
 
         pInstantiatedObject.Set(newObj);
