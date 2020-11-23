@@ -3076,6 +3076,142 @@ namespace System.Diagnostics.Tracing
             return ret;
         }
 
+        // Sets up the code:EventData structures needed to dispatch events at run time.
+        private void CreateDescriptors(
+#if !ES_BUILD_STANDALONE
+            [DynamicallyAccessedMembers(ManifestMemberTypes)]
+#endif
+            Type eventSourceType,
+            string? eventSourceDllName)
+        {
+            Debug.Assert(HasManifest);
+
+            if (eventSourceType.IsAbstract)
+            {
+                return;
+            }
+
+            MethodInfo[] methods = eventSourceType.GetMethods(BindingFlags.DeclaredOnly | BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Instance);
+            EventAttribute defaultEventAttribute;
+            int eventId = 1;        // The number given to an event that does not have a explicitly given ID.
+            EventMetadata[]? eventData = new EventMetadata[methods.Length + 1];
+
+            eventData[0].Name = "";         // Event 0 is the 'write messages string' event, and has an empty name.
+
+            for (int i = 0; i < methods.Length; i++)
+            {
+                MethodInfo method = methods[i];
+                ParameterInfo[] args = method.GetParameters();
+
+                // Get the EventDescriptor (from the Custom attributes)
+                EventAttribute? eventAttribute = (EventAttribute?)GetCustomAttributeHelper(method, typeof(EventAttribute), EventManifestOptions.None);
+
+                // Compat: until v4.5.1 we ignored any non-void returning methods as well as virtual methods for
+                // the only reason of limiting the number of methods considered to be events. This broke a common
+                // design of having event sources implement specific interfaces. To fix this in a compatible way
+                // we will now allow both non-void returning and virtual methods to be Event methods, as long
+                // as they are marked with the [Event] attribute
+                if (/* method.IsVirtual || */ method.IsStatic)
+                {
+                    continue;
+                }
+
+                if (eventSourceType.IsAbstract)
+                {
+                    continue;
+                }
+                else if (eventAttribute == null)
+                {
+                    // Methods that don't return void can't be events, if they're NOT marked with [Event].
+                    // (see Compat comment above)
+                    if (method.ReturnType != typeof(void))
+                    {
+                        continue;
+                    }
+
+                    // Continue to ignore virtual methods if they do NOT have the [Event] attribute
+                    // (see Compat comment above)
+                    if (method.IsVirtual)
+                    {
+                        continue;
+                    }
+
+                    // If we explicitly mark the method as not being an event, then honor that.
+                    if (IsCustomAttributeDefinedHelper(method, typeof(NonEventAttribute), EventManifestOptions.None))
+                        continue;
+
+                    defaultEventAttribute = new EventAttribute(eventId);
+                    eventAttribute = defaultEventAttribute;
+                }
+                else if (eventAttribute.EventId <= 0)
+                {
+                    continue;   // don't validate anything else for this event
+                }
+
+                eventId++;
+                string eventName = method.Name;
+
+                if (eventAttribute.Opcode == EventOpcode.Info)      // We are still using the default opcode.
+                {
+                    // By default pick a task ID derived from the EventID, starting with the highest task number and working back
+                    bool noTask = (eventAttribute.Task == EventTask.None);
+                    if (noTask)
+                    {
+                        eventAttribute.Task = (EventTask)(0xFFFE - eventAttribute.EventId);
+                    }
+
+                    // Unless we explicitly set the opcode to Info (to override the auto-generate of Start or Stop opcodes,
+                    // pick a default opcode based on the event name (either Info or start or stop if the name ends with that suffix).
+                    if (!eventAttribute.IsOpcodeSet)
+                        eventAttribute.Opcode = GetOpcodeWithDefault(EventOpcode.Info, eventName);
+
+                    // Make the stop opcode have the same task as the start opcode.
+                    if (noTask)
+                    {
+                        if (eventAttribute.Opcode == EventOpcode.Start)
+                        {
+                        }
+                        else if (eventAttribute.Opcode == EventOpcode.Stop)
+                        {
+                            // Find the start associated with this stop event.  We require start to be immediately before the stop
+                            int startEventId = eventAttribute.EventId - 1;
+                            if (eventData != null && startEventId < eventData.Length)
+                            {
+                                Debug.Assert(0 <= startEventId);                // Since we reserve id 0, we know that id-1 is <= 0
+                                EventMetadata startEventMetadata = eventData[startEventId];
+
+                                // If you remove the Stop and add a Start does that name match the Start Event's Name?
+                                // Ideally we would throw an error
+                                string taskName = eventName.Substring(0, eventName.Length - s_ActivityStopSuffix.Length); // Remove the Stop suffix to get the task name
+                                if (startEventMetadata.Descriptor.Opcode == (byte)EventOpcode.Start &&
+                                    string.Compare(startEventMetadata.Name, 0, taskName, 0, taskName.Length) == 0 &&
+                                    string.Compare(startEventMetadata.Name, taskName.Length, s_ActivityStartSuffix, 0, Math.Max(startEventMetadata.Name.Length - taskName.Length, s_ActivityStartSuffix.Length)) == 0)
+                                {
+                                    // Make the stop event match the start event
+                                    eventAttribute.Task = (EventTask)startEventMetadata.Descriptor.Task;
+                                    noTask = false;
+                                }
+                            }
+                        }
+                    }
+                }
+
+                bool hasRelatedActivityID = RemoveFirstArgIfRelatedActivityId(ref args);
+                Debug.Assert(eventData != null);
+                AddEventDescriptor(ref eventData, eventName, eventAttribute, args, hasRelatedActivityID);
+            }
+
+            // Tell the TraceLogging stuff where to start allocating its own IDs.
+            NameInfo.ReserveEventIDsBelow(eventId);
+
+            Debug.Assert(eventData != null);
+            TrimEventDescriptors(ref eventData);
+            m_eventData = eventData;     // officially initialize it. We do this at most once (it is racy otherwise).
+#if FEATURE_MANAGED_ETW_CHANNELS
+            m_channelData = Array.Empty<ulong>();
+#endif
+        }
+
         // Use reflection to look at the attributes of a class, and generate a manifest for it (as UTF8) and
         // return the UTF8 bytes.  It also sets up the code:EventData structures needed to dispatch events
         // at run time.  'source' is the event source to place the descriptors.  If it is null,
