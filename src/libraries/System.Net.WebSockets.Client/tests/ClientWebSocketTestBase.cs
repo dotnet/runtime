@@ -106,7 +106,5 @@ namespace System.Net.WebSockets.Client.Tests
         }
 
         public static bool WebSocketsSupported { get { return WebSocketHelper.WebSocketsSupported; } }
-        // On browser WebSocket is only available when DOM is supported
-        public static bool WebSocketsSupportedInBrowser { get { return WebSocketHelper.WebSocketsSupportedInBrowser; } }
     }
 }

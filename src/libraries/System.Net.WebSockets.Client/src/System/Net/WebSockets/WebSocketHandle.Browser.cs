@@ -14,7 +14,11 @@ namespace System.Net.WebSockets
         public WebSocket? WebSocket { get; private set; }
         public WebSocketState State => WebSocket?.State ?? _state;
 
-        public static ClientWebSocketOptions CreateDefaultOptions() => new ClientWebSocketOptions();
+        public static ClientWebSocketOptions CreateDefaultOptions()
+        {
+            BrowserWebSocket.ThrowIfPlatformNotSupported();
+            return new ClientWebSocketOptions();
+        }
 
         public void Dispose()
         {
@@ -62,12 +66,14 @@ namespace System.Net.WebSockets
 
                 Abort();
 
-                if (exc is WebSocketException ||
-                    (exc is OperationCanceledException && cancellationToken.IsCancellationRequested))
-                {
-                    throw;
+                switch (exc) {
+                    case WebSocketException:
+                    case PlatformNotSupportedException:
+                    case OperationCanceledException _ when cancellationToken.IsCancellationRequested:
+                        throw;
+                    default:
+                        throw new WebSocketException(SR.net_webstatus_ConnectFailure, exc);
                 }
-                throw new WebSocketException(SR.net_webstatus_ConnectFailure, exc);
             }
         }
     }

@@ -59,6 +59,19 @@ namespace System.Net.WebSockets
             Disposed = 3
         }
 
+        internal static void ThrowIfPlatformNotSupported()
+        {
+            try {
+                if (JavaScript.Runtime.InvokeJS("typeof (WebSocket)") == "undefined")
+                {
+                    throw new PlatformNotSupportedException("WebSockets are not supported on this platform");
+                }
+            }
+            catch (JSException jse)
+            {
+                throw new PlatformNotSupportedException("WebSockets are not supported on this platform", jse);
+            }
+        }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="System.Net.WebSockets.BrowserWebSocket"/> class.
@@ -219,15 +232,16 @@ namespace System.Net.WebSockets
                 _innerWebSocket.SetObjectProperty("onmessage", _onMessage);
                 await tcsConnect.Task.ConfigureAwait(continueOnCapturedContext: true);
             }
-            catch (OperationCanceledException)
-            {
-                throw;
-            }
             catch (Exception wse)
             {
                 Dispose();
-                WebSocketException wex = new WebSocketException(SR.net_webstatus_ConnectFailure, wse);
-                throw wex;
+                switch (wse)
+                {
+                    case OperationCanceledException:
+                        throw;
+                    default:
+                        throw new WebSocketException(SR.net_webstatus_ConnectFailure, wse);
+                }
             }
             finally
             {

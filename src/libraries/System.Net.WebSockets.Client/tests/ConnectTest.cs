@@ -248,7 +248,6 @@ namespace System.Net.WebSockets.Client.Tests
         }
 
         [ConditionalFact(nameof(WebSocketsSupported))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/44720", TestPlatforms.Browser)]
         public async Task ConnectAsync_CancellationRequestedBeforeConnect_ThrowsOperationCanceledException()
         {
             using (var clientSocket = new ClientWebSocket())
@@ -260,8 +259,7 @@ namespace System.Net.WebSockets.Client.Tests
             }
         }
 
-
-        [ConditionalFact(nameof(WebSocketsSupported), nameof(WebSocketsSupportedInBrowser))]  // On browser the JavaScript host object 'WebSocket' is only available when DOM is supported
+        [ConditionalFact(nameof(WebSocketsSupported))]
         public async Task ConnectAsync_CancellationRequestedInflightConnect_ThrowsOperationCanceledException()
         {
             using (var clientSocket = new ClientWebSocket())
