@@ -222,11 +222,13 @@ namespace $([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").
 
     <PropertyGroup>
       <TestExecutableReplacement Condition="'$(TestWrapperTargetsWindows)' != 'true' ">testExecutable = testExecutable.Replace("\\", "/")%3B</TestExecutableReplacement>
+      <TestScriptExtension Condition="'$(TestWrapperTargetsWindows)' != 'true' ">sh</TestScriptExtension>
+      <TestScriptExtension Condition="'$(TestWrapperTargetsWindows)' == 'true' ">cmd</TestScriptExtension>
     </PropertyGroup>
 
     <ItemGroup>
-      <AllCMDsPresent Include="$(_CMDDIR)\**\*.cmd" Condition="'$(RunningOnUnix)' != 'true'" />
-      <AllCMDsPresent Include="$(_CMDDIR)\**\*.sh" Condition="'$(RunningOnUnix)' == 'true'" />
+      <AllCMDsPresent Include="$(_CMDDIR)\**\*.cmd" Condition="'$(TestWrapperTargetsWindows)' == 'true'" />
+      <AllCMDsPresent Include="$(_CMDDIR)\**\*.sh" Condition="'$(TestWrapperTargetsWindows)' != 'true'" />
       <AllCMDsPresent Remove="$(_CMDDIR)\**\run-v8.sh" Condition="'$(TargetArchitecture)' == 'wasm'" />
       <TestGroupingDistinctWithCase Include="@(TestGrouping->Metadata('FullPath')->DistinctWithCase())" />
       <TestGroupingNotRelevant Include="@(TestGroupingDistinctWithCase)" Exclude="@(AllCMDsPresent)" />
@@ -241,9 +243,9 @@ namespace $([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").
       <AllCommands Include="@(AllCMDs)" Condition="@(AllCMDs->Count()) &gt; 0">
         <DisplayName>$([MSBuild]::MakeRelative($(XunitTestBinBase), %(AllCMDs.FullPath)))</DisplayName>
         <FactName Condition="'$(RunningOnUnix)' != 'true'" >_$([MSBuild]::ValueOrDefault(%(AllCMDs.RelativeToCMDDIR),"").Replace(".","_").Replace("\","_").Replace("-","_"))</FactName>
-        <ClassName Condition="'$(RunningOnUnix)' != 'true'" >_$([MSBuild]::ValueOrDefault(%(AllCMDs.RelativeToCMDDIR),"").Replace("cmd","").Replace(".","_").Replace("\","_").Replace("-","_"))</ClassName>
+        <ClassName Condition="'$(RunningOnUnix)' != 'true'" >_$([MSBuild]::ValueOrDefault(%(AllCMDs.RelativeToCMDDIR),"").Replace($(TestScriptExtension),"").Replace(".","_").Replace("\","_").Replace("-","_"))</ClassName>
         <FactName Condition="'$(RunningOnUnix)' == 'true'" >_$([MSBuild]::ValueOrDefault(%(AllCMDs.RelativeToCMDDIR),"").Replace(".","_").Replace("/","_").Replace("-","_"))</FactName>
-        <ClassName Condition="'$(RunningOnUnix)' == 'true'" >_$([MSBuild]::ValueOrDefault(%(AllCMDs.RelativeToCMDDIR), '').Replace('sh','').Replace('.','_').Replace('/','_').Replace('-','_'))</ClassName>
+        <ClassName Condition="'$(RunningOnUnix)' == 'true'" >_$([MSBuild]::ValueOrDefault(%(AllCMDs.RelativeToCMDDIR), '').Replace($(TestScriptExtension),'').Replace('.','_').Replace('/','_').Replace('-','_'))</ClassName>
         <TestGroup>%(AllCMDs.TestGroup)</TestGroup>
         <XUnitFact >
           <![CDATA[
