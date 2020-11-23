@@ -107,7 +107,6 @@ namespace Microsoft.Extensions.Logging.Generators
             var sb = GetStringBuilder();
             try
             {
-
                 if (lm.Parameters.Count == 1)
                 {
                     typeName = $"global::Microsoft.Extensions.Logging.LogStateHolder<{lm.Parameters[0].Type}>";
@@ -224,7 +223,7 @@ namespace Microsoft.Extensions.Logging.Generators
             }
 
             return $@"
-                {lm.Modifier} static partial void {lm.Name}({lm.LoggerType} __logger{(lm.Parameters.Count > 0 ? ", " : string.Empty)}{GenParameters(lm)})
+                {lm.Modifiers} static partial void {lm.Name}({lm.LoggerType} __logger{(lm.Parameters.Count > 0 ? ", " : string.Empty)}{GenParameters(lm)})
                 {{
                     if (__logger.IsEnabled((global::Microsoft.Extensions.Logging.LogLevel){lm.Level}))
                     {{

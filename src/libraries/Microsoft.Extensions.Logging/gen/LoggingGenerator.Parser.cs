@@ -148,13 +148,6 @@ namespace Microsoft.Extensions.Logging.Generators
                     return results;
                 }
 
-                var voidSymbol = _compilation.GetTypeByMetadataName("System.Void");
-                if (voidSymbol == null)
-                {
-                    Diag(ErrorMissingRequiredType, null, "System.Void");
-                    return results;
-                }
-
                 var loggerSymbol = _compilation.GetTypeByMetadataName("Microsoft.Extensions.Logging.ILogger");
                 if (loggerSymbol == null)
                 {
@@ -208,7 +201,7 @@ namespace Microsoft.Extensions.Logging.Generators
                                         Message = message,
                                         EventName = eventName,
                                         MessageHasTemplates = HasTemplates(message),
-                                        Modifier = string.Empty,
+                                        Modifiers = string.Empty,
                                     };
 
                                     bool keep = true;
@@ -219,7 +212,7 @@ namespace Microsoft.Extensions.Logging.Generators
                                         Diag(ErrorInvalidMethodName, method.Identifier.GetLocation());
                                     }
 
-                                    if (!GetSemanticModel(method.ReturnType.SyntaxTree).GetTypeInfo(method.ReturnType!).Type!.Equals(voidSymbol, SymbolEqualityComparer.Default))
+                                    if (GetSemanticModel(method.ReturnType.SyntaxTree).GetTypeInfo(method.ReturnType!).Type!.SpecialType != SpecialType.System_Void)
                                     {
                                         Diag(ErrorInvalidMethodReturnType, method.ReturnType.GetLocation());
                                         keep = false;
@@ -237,18 +230,19 @@ namespace Microsoft.Extensions.Logging.Generators
                                     {
                                         switch (mod.Text)
                                         {
-                                            case "static":
-                                                isStatic = true;
-                                                break;
-
                                             case "partial":
                                                 isPartial = true;
+                                                break;
+
+                                            case "static":
+                                                isStatic = true;
                                                 break;
 
                                             case "public":
                                             case "internal":
                                             case "private":
-                                                lm.Modifier = mod.Text;
+                                            case "protected":
+                                                lm.Modifiers += " " + mod.Text;
                                                 break;
                                         }
                                     }
@@ -296,8 +290,8 @@ namespace Microsoft.Extensions.Logging.Generators
                                                 Diag(ErrorFirstArgMustBeILogger, p.Identifier.GetLocation());
                                                 keep = false;
                                             }
-                                            lm.LoggerType = typeName;
 
+                                            lm.LoggerType = typeName;
                                             continue;
                                         }
 
@@ -443,7 +437,7 @@ namespace Microsoft.Extensions.Logging.Generators
             public string? EventName = null!;
             public List<LoggerParameter> Parameters = new();
             public bool MessageHasTemplates;
-            public string Modifier = string.Empty;
+            public string Modifiers = string.Empty;
             public string LoggerType = string.Empty;
         }
 

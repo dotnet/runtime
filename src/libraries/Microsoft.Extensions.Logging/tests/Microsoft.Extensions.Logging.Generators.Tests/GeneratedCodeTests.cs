@@ -54,6 +54,14 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
         [LoggerMessage(6, LogLevel.Critical, "Message7\n\"\r")]
         private static partial void M7(ILogger logger, T p1);
 
+        // normal public method
+        [LoggerMessage(7, LogLevel.Critical, "Message8")]
+        private protected static partial void M8(ILogger logger);
+
+        // internal method
+        [LoggerMessage(8, LogLevel.Critical, "Message9")]
+        internal protected static partial void M9(ILogger logger);
+
         public static void Combo(ILogger logger, ILogger<int> logger2)
         {
             M1(logger);
@@ -62,6 +70,8 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
             M4(logger2);
             M5(logger, new string[] { "A" });
             M6(logger);
+            M8(logger);
+            M9(logger);
         }
     }
 
