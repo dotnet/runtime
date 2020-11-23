@@ -1205,7 +1205,7 @@ GenTree* Compiler::impAssignStructPtr(GenTree*             destAddr,
                     {
                         for (; lastArg->GetNext() != nullptr; lastArg = lastArg->GetNext())
                             ;
-                        lastArg->SetNext(gtPrependNewCallArg(destAddr, lastArg->GetNext()));
+                        gtInsertNewCallArgAfter(destAddr, lastArg);
                     }
 #else
                     // insert the return value buffer into the argument list as first byref parameter
