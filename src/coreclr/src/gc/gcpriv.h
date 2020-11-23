@@ -118,7 +118,7 @@ inline void FATAL_GC_ERROR()
 #define MAX_LONGPATH 1024
 #endif // MAX_LONGPATH
 
-//#define TRACE_GC
+#define TRACE_GC
 //#define SIMPLE_DPRINTF
 
 //#define JOIN_STATS         //amount of time spent in the join
@@ -243,8 +243,8 @@ void GCLog (const char *fmt, ... );
 // Nobody used the logging mechanism that used to be here. If we find ourselves
 // wanting to inspect GC logs on unmodified builds, we can use this define here
 // to do so.
-#define dprintf(l, x)
-//#define dprintf(l,x) STRESS_LOG_VA(x);
+//#define dprintf(l, x)
+#define dprintf(l,x) STRESS_LOG_VA(x);
 
 #endif //SIMPLE_DPRINTF
 
