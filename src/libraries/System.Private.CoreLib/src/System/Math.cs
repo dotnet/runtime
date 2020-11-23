@@ -271,6 +271,7 @@ namespace System
             return div;
         }
 
+        [NonVersionable]
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static (sbyte Quotient, sbyte Remainder) DivRem(sbyte left, sbyte right)
@@ -279,6 +280,7 @@ namespace System
             return (quotient, (sbyte)(left - (quotient * right)));
         }
 
+        [NonVersionable]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static (byte Quotient, byte Remainder) DivRem(byte left, byte right)
         {
@@ -286,6 +288,7 @@ namespace System
             return (quotient, (byte)(left - (quotient * right)));
         }
 
+        [NonVersionable]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static (short Quotient, short Remainder) DivRem(short left, short right)
         {
@@ -293,6 +296,7 @@ namespace System
             return (quotient, (short)(left - (quotient * right)));
         }
 
+        [NonVersionable]
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static (ushort Quotient, ushort Remainder) DivRem(ushort left, ushort right)
@@ -301,6 +305,7 @@ namespace System
             return (quotient, (ushort)(left - (quotient * right)));
         }
 
+        [NonVersionable]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static (int Quotient, int Remainder) DivRem(int left, int right)
         {
@@ -308,6 +313,7 @@ namespace System
             return (quotient, left - (quotient * right));
         }
 
+        [NonVersionable]
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static (uint Quotient, uint Remainder) DivRem(uint left, uint right)
@@ -316,6 +322,7 @@ namespace System
             return (quotient, left - (quotient * right));
         }
 
+        [NonVersionable]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static (long Quotient, long Remainder) DivRem(long left, long right)
         {
@@ -323,6 +330,7 @@ namespace System
             return (quotient, left - (quotient * right));
         }
 
+        [NonVersionable]
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static (ulong Quotient, ulong Remainder) DivRem(ulong left, ulong right)
@@ -331,6 +339,7 @@ namespace System
             return (quotient, left - (quotient * right));
         }
 
+        [NonVersionable]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static (nint Quotient, nint Remainder) DivRem(nint left, nint right)
         {
@@ -338,6 +347,7 @@ namespace System
             return (quotient, left - (quotient * right));
         }
 
+        [NonVersionable]
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static (nuint Quotient, nuint Remainder) DivRem(nuint left, nuint right)
