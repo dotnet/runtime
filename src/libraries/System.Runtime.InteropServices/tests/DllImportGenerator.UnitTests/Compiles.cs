@@ -149,7 +149,7 @@ namespace DllImportGenerator.UnitTests
             yield return new[] { CodeSnippets.ArrayPreserveSigFalse<bool>() };
             yield return new[] { CodeSnippets.ArrayPreserveSigFalse<IntPtr>() };
             yield return new[] { CodeSnippets.ArrayPreserveSigFalse<UIntPtr>() };
-            
+
             // Custom type marshalling
             yield return new[] { CodeSnippets.CustomStructMarshallingParametersAndModifiers };
             yield return new[] { CodeSnippets.CustomStructMarshallingStackallocParametersAndModifiersNoRef };

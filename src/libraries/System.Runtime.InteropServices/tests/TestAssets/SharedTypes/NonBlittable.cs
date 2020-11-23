@@ -132,10 +132,13 @@ namespace SharedTypes
                 ptr = null;
                 span = default;
             }
-            else if (str.Length < StackBufferSize)
+            else if ((str.Length + 1) < StackBufferSize)
             {
                 span = MemoryMarshal.Cast<byte, ushort>(buffer);
                 str.AsSpan().CopyTo(MemoryMarshal.Cast<byte, char>(buffer));
+                // Supplied memory is in an undefined state so ensure
+                // there is a trailing null in the buffer.
+                span[str.Length] = '\0';
                 ptr = null;
             }
             else

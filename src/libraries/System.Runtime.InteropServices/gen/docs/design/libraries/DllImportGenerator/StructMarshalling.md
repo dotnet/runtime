@@ -123,6 +123,8 @@ The P/Invoke source generator (as well as the struct source generator when neste
 
 If a structure type does not have either the `BlittableTypeAttribute` or the `NativeMarshallingAttribute` applied at the type definition, the user can supply a `MarshalUsingAttribute` at the marshalling location (field, parameter, or return value) with a native type matching the same requirements as `NativeMarshallingAttribute`'s native type.
 
+All generated stubs will be marked with [`SkipLocalsInitAttribute`](https://docs.microsoft.com/dotnet/api/system.runtime.compilerservices.skiplocalsinitattribute) on supported frameworks. This does require attention when performing custom marshalling as the state of stub allocated memory will be in an undefined state.
+
 ### Why do we need `BlittableTypeAttribute`?
 
 Based on the design above, it seems that we wouldn't need `BlittableTypeAttribute`. However, due to the ref assembly issue above in combination with the desire to enable manual interop, we need to provide a way for users to signal that a given type should be blittable and that the source generator should not generate marshalling code.

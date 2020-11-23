@@ -47,7 +47,10 @@ namespace Microsoft.Interop
             var syntaxToModel = new Dictionary<SyntaxTree, SemanticModel>();
 
             var generatorDiagnostics = new GeneratorDiagnostics(context);
-            if (!IsSupportedTargetFramework(context.Compilation))
+
+            Version targetFrameworkVersion;
+            bool isSupported = IsSupportedTargetFramework(context.Compilation, out targetFrameworkVersion);
+            if (!isSupported)
             {
                 // We don't return early here, letting the source generation continue.
                 // This allows a user to copy generated source and use it as a starting point
@@ -55,6 +58,7 @@ namespace Microsoft.Interop
                 generatorDiagnostics.ReportTargetFrameworkNotSupported(MinimumSupportedFrameworkVersion);
             }
 
+            var env = new StubEnvironment(context.Compilation, isSupported, targetFrameworkVersion);
             var generatedDllImports = new StringBuilder();
             foreach (SyntaxReference synRef in synRec.Methods)
             {
@@ -116,7 +120,7 @@ namespace Microsoft.Interop
                 }
 
                 // Create the stub.
-                var dllImportStub = DllImportStub.Create(methodSymbolInfo, dllImportData!, context.Compilation, generatorDiagnostics, context.CancellationToken);
+                var dllImportStub = DllImportStub.Create(methodSymbolInfo, dllImportData!, env, generatorDiagnostics, context.CancellationToken);
 
                 PrintGeneratedSource(generatedDllImports, methodSyntax, dllImportStub, dllImportAttr!);
             }
@@ -138,6 +142,7 @@ namespace Microsoft.Interop
         {
             // Create stub function
             var stubMethod = MethodDeclaration(stub.StubReturnType, userDeclaredMethod.Identifier)
+                .AddAttributeLists(stub.AdditionalAttributes)
                 .WithModifiers(userDeclaredMethod.Modifiers)
                 .WithParameterList(ParameterList(SeparatedList(stub.StubParameters)))
                 .WithBody(stub.StubCode);
@@ -173,9 +178,11 @@ namespace Microsoft.Interop
             builder.AppendLine(toPrint.NormalizeWhitespace().ToString());
         }
 
-        private static bool IsSupportedTargetFramework(Compilation compilation)
+        private static bool IsSupportedTargetFramework(Compilation compilation, out Version version)
         {
             IAssemblySymbol systemAssembly = compilation.GetSpecialType(SpecialType.System_Object).ContainingAssembly;
+            version = systemAssembly.Identity.Version;
+
             return systemAssembly.Identity.Name switch
             {
                 // .NET Framework
@@ -183,7 +190,7 @@ namespace Microsoft.Interop
                 // .NET Standard
                 "netstandard" => false,
                 // .NET Core (when version < 5.0) or .NET
-                "System.Runtime" => systemAssembly.Identity.Version >= MinimumSupportedFrameworkVersion,
+                "System.Runtime" => version >= MinimumSupportedFrameworkVersion,
                 _ => false,
             };
         }
