@@ -18879,8 +18879,12 @@ void Compiler::impMakeDiscretionaryInlineObservations(InlineInfo* pInlineInfo, I
         frequency = InlineCallsiteFrequency::BORING;
     }
 
-    // Also capture the block weight of the call site.  In the prejit
-    // root case, assume there's some hot call site for this method.
+    // Also capture the block weight of the call site.
+    //
+    // In the prejit root case, assume at runtime there might be a hot call site
+    // for this method, so we won't prematurely conclude this method should never
+    // be inlined.
+    //
     BasicBlock::weight_t weight = 0;
 
     if (pInlineInfo != nullptr)
@@ -18889,7 +18893,8 @@ void Compiler::impMakeDiscretionaryInlineObservations(InlineInfo* pInlineInfo, I
     }
     else
     {
-        weight = BB_HOT_WEIGHT;
+        const float prejitHotCallerWeight = 1000000f;
+        weight                            = prejitHotCallerWeight;
     }
 
     inlineResult->NoteInt(InlineObservation::CALLSITE_FREQUENCY, static_cast<int>(frequency));
