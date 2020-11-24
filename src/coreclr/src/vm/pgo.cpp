@@ -532,7 +532,7 @@ CORINFO_CLASS_HANDLE PgoManager::getLikelyClass(MethodDesc* pMD, unsigned ilSize
             //
             while (j < header->recordCount)
             {
-                if ((s_PgoData[index + j].ILOffset && ICorJitInfo::ClassProfile::CLASS_FLAG) != 0)
+                if ((s_PgoData[index + j].ILOffset & ICorJitInfo::ClassProfile::CLASS_FLAG) != 0)
                 {
                     break;
                 }
