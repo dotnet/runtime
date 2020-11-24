@@ -18,5 +18,4 @@ target_link_libraries(CoreRun
     ${STATIC_MT_VCRT_LIB}
 )
 
-# Can't compile on linux yet so only add for windows
 install_clr(TARGETS CoreRun)
