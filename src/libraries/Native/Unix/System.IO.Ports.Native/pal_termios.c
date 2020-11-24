@@ -11,6 +11,9 @@
 #if HAVE_SYS_FILIO_H
 #include <sys/filio.h>
 #endif
+#if HAVE_IOSS_H
+#include <IOKit/serial/ioss.h>
+#endif
 
 /* This is dup of System/IO/Ports/NativeMethods.cs */
 enum
@@ -352,6 +355,14 @@ int32_t SystemIoPortsNative_TermiosSetSpeed(intptr_t handle, int32_t speed)
 
     if (brate == B0)
     {
+#if HAVE_IOSS_H
+        // Looks like custom speed out of POSIX. Let see if we can set it via specialized call.
+        brate = speed;
+        if (ioctl(fd, IOSSIOSPEED, &brate) != -1)
+        {
+            return speed;
+        }
+#endif
         errno = EINVAL;
         return -1;
     }
@@ -418,6 +429,7 @@ int32_t SystemIoPortsNative_TermiosReset(intptr_t handle, int32_t speed, int32_t
 {
     int fd = ToFileDescriptor(handle);
     struct termios term;
+    speed_t brate;
     int ret = 0;
 
     if (tcgetattr(fd, &term) < 0)
@@ -503,24 +515,41 @@ int32_t SystemIoPortsNative_TermiosReset(intptr_t handle, int32_t speed, int32_t
 
     if (speed)
     {
-        speed_t brate = SystemIoPortsNative_TermiosSpeed2Rate(speed);
+        brate = SystemIoPortsNative_TermiosSpeed2Rate(speed);
         if (brate == B0)
         {
+#if !HAVE_IOSS_H
+            // We can try to set non-standard speed after tcsetattr().
             errno = EINVAL;
             return -1;
-        }
-
-#if HAVE_CFSETSPEED
-        ret = cfsetspeed(&term, brate);
-#else
-        ret = cfsetispeed(&term, brate) & cfsetospeed(&term, brate);
 #endif
+        }
+        else
+        {
+#if HAVE_CFSETSPEED
+            ret = cfsetspeed(&term, brate);
+#else
+            ret = cfsetispeed(&term, brate) & cfsetospeed(&term, brate);
+#endif
+        }
     }
 
     if ((ret != 0) || (tcsetattr(fd, TCSANOW, &term) < 0))
     {
         return -1;
     }
+
+#if HAVE_IOSS_H
+    if (speed && brate == B0)
+    {
+        // we have deferred non-standard speed.
+        brate = speed;
+        if (ioctl(fd, IOSSIOSPEED, &brate) == -1)
+        {
+           return  -1;
+        }
+    }
+#endif
 
     return 0;
 }
