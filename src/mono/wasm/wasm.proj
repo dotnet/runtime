@@ -54,7 +54,7 @@
     AssemblyFile="$(WasmBuildTasksAssemblyPath)"/>
   <Target Name="CompileTimeZones">
     <PropertyGroup>
-      <FilterSystemTimeZones>true</FilterSystemTimeZones>
+      <FilterSystemTimeZones>false</FilterSystemTimeZones>
     </PropertyGroup>
 
     <ItemGroup>
