@@ -26,6 +26,8 @@ public class CompileTimeZoneData : Task
     [Required]
     public string[]? TimeZones { get; set; }
 
+    public bool FilterSystemTimeZones { get; set; }
+
     private const string ZoneTabFileName = "zone1970.tab";
 
     private void CompileTimeZoneDataSource()
@@ -49,7 +51,8 @@ public class CompileTimeZoneData : Task
         //  for ex: `CST6CDT`, `MST`, etc.
         foreach (var entry in new DirectoryInfo (OutputDirectory!).EnumerateFiles())
         {
-            File.Delete(entry.FullName);
+            if (entry.Name != "zone.tab")
+                File.Delete(entry.FullName);
         }
     }
 
@@ -81,17 +84,21 @@ public class CompileTimeZoneData : Task
             Log.LogError($"Could not find required file {ZoneTabFile}");
             return false;
         }
-
         CompileTimeZoneDataSource();
 
-        string[] filtered = new string[] { "America/Los_Angeles", "Australia/Sydney", "Europe/London", "Pacific/Tongatapu",
+        if (FilterSystemTimeZones!) {
+            string[] filtered = new string[] { "America/Los_Angeles", "Australia/Sydney", "Europe/London", "Pacific/Tongatapu",
                                 "America/Sao_Paulo", "Australia/Perth", "Africa/Nairobi", "Europe/Berlin",
                                 "Europe/Moscow", "Africa/Tripoli", "America/Argentina/Catamarca", "Europe/Lisbon",
                                 "America/St_Johns"};
+            FilterZoneTab(filtered, ZoneTabFile);
+        }
+        else
+        {
+            File.Copy(ZoneTabFile, Path.Combine(OutputDirectory!, "zone.tab"), true);
+        }
 
         FilterTimeZoneData();
-        FilterZoneTab(filtered, ZoneTabFile);
-
         return !Log.HasLoggedErrors;
     }
 }

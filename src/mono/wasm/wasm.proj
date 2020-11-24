@@ -53,6 +53,10 @@
   <UsingTask TaskName="CompileTimeZoneData"
     AssemblyFile="$(WasmBuildTasksAssemblyPath)"/>
   <Target Name="CompileTimeZones">
+    <PropertyGroup>
+      <FilterSystemTimeZones>true</FilterSystemTimeZones>
+    </PropertyGroup>
+
     <ItemGroup>
       <TimeZoneToCompile Include="africa" />
       <TimeZoneToCompile Include="antarctica" />
@@ -64,10 +68,12 @@
       <TimeZoneToCompile Include="southamerica" />
       <TimeZoneToCompile Include="backward" />
     </ItemGroup>
+
     <CompileTimeZoneData
       TimeZones="@(TimeZoneToCompile)"
       InputDirectory="$([MSBuild]::NormalizePath('$(PkgSystem_Runtime_TimeZoneData)', 'contentFiles', 'any', 'any', 'data'))"
-      OutputDirectory="$(ArtifactsObjDir)wasm/timezones" />
+      OutputDirectory="$(ArtifactsObjDir)wasm/timezones" 
+      FilterSystemTimeZones="$(FilterSystemTimeZones)"/>
   </Target>
 
   <UsingTask TaskName="GenerateWasmBundle"
