@@ -133,7 +133,7 @@ void Compiler::optMarkLoopBlocks(BasicBlock* begBlk, BasicBlock* endBlk, bool ex
        Thus we increase each block by 7 times the weight of
        the loop header block,
        if the loops are all properly formed gives us:
-       (assuming that BB_LOOP_WEIGHT is 8)
+       (assuming that BB_LOOP_WEIGHT_SCALE is 8)
 
           1 -- non loop basic block
           8 -- single loop nesting
@@ -228,11 +228,11 @@ void Compiler::optMarkLoopBlocks(BasicBlock* begBlk, BasicBlock* endBlk, bool ex
                 {
                     if (dominates)
                     {
-                        weight = curBlk->bbWeight * BB_LOOP_WEIGHT;
+                        weight = curBlk->bbWeight * BB_LOOP_WEIGHT_SCALE;
                     }
                     else
                     {
-                        weight = curBlk->bbWeight * (BB_LOOP_WEIGHT / 2);
+                        weight = curBlk->bbWeight * (BB_LOOP_WEIGHT_SCALE / 2);
                     }
 
                     //
@@ -372,7 +372,7 @@ void Compiler::optUnmarkLoopBlocks(BasicBlock* begBlk, BasicBlock* endBlk)
                 {
                     /* Merging of blocks can disturb the Dominates
                        information (see RAID #46649) */
-                    if (weight < BB_LOOP_WEIGHT)
+                    if (weight < BB_LOOP_WEIGHT_SCALE)
                     {
                         weight *= 2;
                     }
@@ -384,9 +384,9 @@ void Compiler::optUnmarkLoopBlocks(BasicBlock* begBlk, BasicBlock* endBlk)
                     weight = BB_MAX_WEIGHT;
                 }
 
-                assert(weight >= BB_LOOP_WEIGHT);
+                assert(weight >= BB_LOOP_WEIGHT_SCALE);
 
-                curBlk->modifyBBWeight(weight / BB_LOOP_WEIGHT);
+                curBlk->modifyBBWeight(weight / BB_LOOP_WEIGHT_SCALE);
             }
 
 #ifdef DEBUG
@@ -3782,7 +3782,7 @@ void Compiler::optUnrollLoops()
                         goto DONE_LOOP;
                     }
                     // Block weight should no longer have the loop multiplier
-                    newBlock->modifyBBWeight(newBlock->bbWeight / BB_LOOP_WEIGHT);
+                    newBlock->modifyBBWeight(newBlock->bbWeight / BB_LOOP_WEIGHT_SCALE);
                     // Jump dests are set in a post-pass; make sure CloneBlockState hasn't tried to set them.
                     assert(newBlock->bbJumpDest == nullptr);
 
@@ -4162,7 +4162,7 @@ void Compiler::fgOptWhileLoop(BasicBlock* block)
     gtPrepareCost(condTree);
     unsigned estDupCostSz = condTree->GetCostSz();
 
-    double loopIterations = (double)BB_LOOP_WEIGHT;
+    double loopIterations = (double)BB_LOOP_WEIGHT_SCALE;
 
     bool                 allProfileWeightsAreValid = false;
     BasicBlock::weight_t weightBlock               = block->bbWeight;
@@ -5159,7 +5159,7 @@ void Compiler::optCloneLoop(unsigned loopInd, LoopCloneContext* context)
     for (unsigned j = 0; j < depth; j++)
     {
         BasicBlock::weight_t lastWeight = ambientWeight;
-        ambientWeight *= BB_LOOP_WEIGHT;
+        ambientWeight *= BB_LOOP_WEIGHT_SCALE;
         assert(ambientWeight > lastWeight);
     }
 

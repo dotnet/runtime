@@ -3606,11 +3606,11 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 
 // are we compiling for fast code, or are we compiling for blended code and
 // inside a loop?
-// We return true for BLENDED_CODE if the Block executes more than BB_LOOP_WEIGHT/2
+// We return true for BLENDED_CODE if the Block executes more than BB_LOOP_WEIGHT_SCALE/2
 inline bool Compiler::optFastCodeOrBlendedLoop(BasicBlock::weight_t bbWeight)
 {
     return (compCodeOpt() == FAST_CODE) ||
-           ((compCodeOpt() == BLENDED_CODE) && (bbWeight > (BB_LOOP_WEIGHT / 2 * BB_UNITY_WEIGHT)));
+           ((compCodeOpt() == BLENDED_CODE) && (bbWeight > ((BB_LOOP_WEIGHT_SCALE / 2) * BB_UNITY_WEIGHT)));
 }
 
 // are we running on a Intel Pentium 4?

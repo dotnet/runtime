@@ -517,9 +517,9 @@ struct BasicBlock : private LIR::Range
     // Type used to hold block and edge weights
     typedef float weight_t;
 
-#define BB_UNITY_WEIGHT 100.0f       // how much a normal execute once block weights
-#define BB_UNITY_WEIGHT_UNSIGNED 100 // how much a normal execute once block weights
-#define BB_LOOP_WEIGHT 8.0f          // how much more loops are weighted
+#define BB_UNITY_WEIGHT 100.0f       // how much a normal execute once block weighs
+#define BB_UNITY_WEIGHT_UNSIGNED 100 // how much a normal execute once block weighs
+#define BB_LOOP_WEIGHT_SCALE 8.0f    // synthetic profile scale factor for loops
 #define BB_ZERO_WEIGHT 0.0f
 #define BB_MAX_WEIGHT FLT_MAX // maximum finite weight  -- needs rethinking.
 
