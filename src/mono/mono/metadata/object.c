@@ -2162,7 +2162,7 @@ mono_class_create_runtime_vtable (MonoDomain *domain, MonoClass *klass, MonoErro
 	// DEBUG PRINTING
     mono_gc_descr descr_for_debug;
 	descr_for_debug.desc = vt->gc_descr;
-	printf( "mono_class_create_runtime_vtable: gc_descr.m_baseSize: %d instance_size: %d",  descr_for_debug.fields.m_baseSize, m_class_get_instance_size(klass));
+	printf( "mono_class_create_runtime_vtable: gc_descr.m_baseSize: %d instance_size: %d\n",  descr_for_debug.fields.m_baseSize, m_class_get_instance_size(klass));
 	// END DEBUG PRINTING
 
 

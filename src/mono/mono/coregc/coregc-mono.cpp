@@ -35,6 +35,7 @@ typedef struct _CoreGCThreadInfo CoreGCThreadInfo;
 #include "coregc-mono.h"
 #include "volatile.h"
 #include "gceventstatus.h"
+#include "coregc-mono-mtflags.h"
 
 struct _CoreGCThreadInfo {
 	MonoThreadInfo info;
@@ -296,13 +297,6 @@ typedef union {
 	MonoGCDescriptor ptr_gc_descr;
 } mono_gc_descr_union;
 
-#define MTFlag_ContainsPointers     0x0100
-#define MTFlag_HasCriticalFinalizer 0x0800
-#define MTFlag_HasFinalizer         0x0010
-#define MTFlag_IsString             0x0004
-#define MTFlag_IsArray              0x0008
-#define MTFlag_Collectible          0x1000
-#define MTFlag_HasComponentSize     0x8000
 
 #define BITMAP_EL_SIZE (sizeof (gsize) * 8)
 
@@ -324,7 +318,10 @@ mono_gc_make_descr_for_object (gpointer klass, gsize *bitmap, int numbits, size_
 	if (gc_descr.struct_gc_descr.m_baseSize < MIN_OBJECT_SIZE)
 		gc_descr.struct_gc_descr.m_baseSize = MIN_OBJECT_SIZE;
 
+
 	printf("mono_gc_make_descr_for_object: gc_descr.struct_gc_descr.m_baseSize (dec): %d\n", gc_descr.struct_gc_descr.m_baseSize);
+
+
 
 	GPtrArray *full = g_ptr_array_new ();
 
@@ -609,6 +606,7 @@ mono_gc_alloc_obj (MonoVTable *vtable, size_t size)
 
 	// Deubgging
 	MethodTable* mt = (MethodTable*)(o->vtable);
+	// g_assert(mt->GetBaseSize() + mt-> == size);
 	printf("mono_gc_alloc_obj: %p o->vtable: %p, o->vtable->gc_descr: %llu, size: %ld, o->vtable->gc_descr.m_baseSize: %d\n", o, o->vtable, o->vtable->gc_descr, size, mt->GetBaseSize());
 	
 	return o;

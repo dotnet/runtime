@@ -6,6 +6,7 @@
 
 
 #include "gcenv.interlocked.h"
+#include "coregc-mono-mtflags.h"
 
 // ARM requires that 64-bit primitive types are aligned at 64-bit boundaries for interlocked-like operations.
 // Additionally the platform ABI requires these types and composite type containing them to be similarly
@@ -44,17 +45,6 @@ public:
 };
 
 static_assert(sizeof(ObjHeader) == sizeof(uintptr_t), "this assumption is made by the VM!");
-
-#define MTFlag_RequireAlign8            0x00001000
-#define MTFlag_Category_ValueType       0x00040000
-#define MTFlag_Category_ValueType_Mask  0x000C0000
-#define MTFlag_ContainsPointers         0x01000000
-#define MTFlag_HasCriticalFinalizer     0x08000000
-#define MTFlag_IsString                 0x00000004
-#define MTFlag_HasFinalizer             0x00100000
-#define MTFlag_IsArray                  0x00080000
-#define MTFlag_Collectible              0x10000000
-#define MTFlag_HasComponentSize         0x80000000
 
 typedef struct {
     uint16_t    m_componentSize;
