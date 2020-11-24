@@ -505,30 +505,58 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
-        public async Task SendFileAsync_Cancellation()
+        public async Task SendFileAsync_Precanceled_Throws()
         {
-            using var client = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
-            using var listener = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
-            listener.BindToAnonymousPort(IPAddress.Loopback);
-            listener.Listen(1);
-
-            client.Connect(listener.LocalEndPoint);
-            using Socket server = listener.Accept();
-
             string fileName = GetTestFilePath();
             using (var fs = new FileStream(fileName, FileMode.CreateNew, FileAccess.Write))
             {
                 fs.SetLength(200 * 1024 * 1024 /* 200MB */);
             }
 
-            using (CancellationTokenSource cts = new(0))
+            (Socket client, Socket server) = SocketTestExtensions.CreateConnectedSocketPair();
+            using (client)
+            using (server)
             {
+                using CancellationTokenSource cts = new();
+                cts.Cancel();
+
                 await Assert.ThrowsAsync<TaskCanceledException>(async () => await server.SendFileAsync(fileName, cts.Token));
             }
+        }
 
-            using (CancellationTokenSource cts = new(5))
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public async Task SendFileAsync_CanceledDuringOperation_Throws(bool ipv6)
+        {
+            string fileName = GetTestFilePath();
+            using (var fs = new FileStream(fileName, FileMode.CreateNew, FileAccess.Write))
             {
-                await Assert.ThrowsAsync<OperationCanceledException>(async () => await server.SendFileAsync(fileName, cts.Token));
+                fs.SetLength(200 * 1024 * 1024 /* 200MB */);
+            }
+
+            const int CancelAfter = 200; // ms
+            const int NumOfSends = 100;
+
+            (Socket client, Socket server) = SocketTestExtensions.CreateConnectedSocketPair(ipv6);
+
+            using (client)
+            using (server)
+            {
+                using CancellationTokenSource cts = new();
+                List<Task> tasks = new List<Task>();
+
+                // After flooding the socket with a high number of send tasks,
+                // we assume some of them won't complete before the "CancelAfter" period expires.
+                for (int i = 0; i < NumOfSends; ++i)
+                {
+                    var task = server.SendFileAsync(fileName, cts.Token).AsTask();
+                    tasks.Add(task);
+                }
+
+                cts.CancelAfter(CancelAfter);
+
+                await Assert.ThrowsAnyAsync<OperationCanceledException>(() => Task.WhenAll(tasks));
             }
         }
 
