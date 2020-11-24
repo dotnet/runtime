@@ -466,56 +466,10 @@ namespace System.Net.Sockets
 
         private IAsyncResult BeginSendFileInternal(string? fileName, byte[]? preBuffer, byte[]? postBuffer, TransmitFileOptions flags, AsyncCallback? callback, object? state)
         {
-            FileStream? fileStream = OpenFile(fileName);
-
-            TransmitFileAsyncResult asyncResult = new TransmitFileAsyncResult(this, state, callback);
-            asyncResult.StartPostingAsyncOp(false);
-
-            SocketError errorCode = SocketPal.SendFileAsync(_handle, fileStream, preBuffer, postBuffer, flags, asyncResult);
-
-            // Check for synchronous exception
-            if (!CheckErrorAndUpdateStatus(errorCode))
-            {
-                UpdateSendSocketErrorForDisposed(ref errorCode);
-                throw new SocketException((int)errorCode);
-            }
-
-            asyncResult.FinishPostingAsyncOp(ref Caches.SendClosureCache);
-
-            return asyncResult;
+            return TaskToApm.Begin(SendFileAsync(fileName, preBuffer, postBuffer, flags).AsTask(), callback, state);
         }
 
-        private void EndSendFileInternal(IAsyncResult asyncResult)
-        {
-            TransmitFileAsyncResult? castedAsyncResult = asyncResult as TransmitFileAsyncResult;
-            if (castedAsyncResult == null || castedAsyncResult.AsyncObject != this)
-            {
-                throw new ArgumentException(SR.net_io_invalidasyncresult, nameof(asyncResult));
-            }
-
-            if (castedAsyncResult.EndCalled)
-            {
-                throw new InvalidOperationException(SR.Format(SR.net_io_invalidendcall, "EndSendFile"));
-            }
-
-            castedAsyncResult.InternalWaitForCompletion();
-            castedAsyncResult.EndCalled = true;
-
-            // If the user passed the Disconnect and/or ReuseSocket flags, then TransmitFile disconnected the socket.
-            // Update our state to reflect this.
-            if (castedAsyncResult.DoDisconnect)
-            {
-                SetToDisconnected();
-                _remoteEndPoint = null;
-            }
-
-            SocketError errorCode = (SocketError)castedAsyncResult.ErrorCode;
-            if (errorCode != SocketError.Success)
-            {
-                UpdateSendSocketErrorForDisposed(ref errorCode);
-                UpdateStatusAfterSocketErrorAndThrowException(errorCode);
-            }
-        }
+        private void EndSendFileInternal(IAsyncResult asyncResult) => TaskToApm.End(asyncResult);
 
         internal ThreadPoolBoundHandle GetOrAllocateThreadPoolBoundHandle() =>
             _handle.GetThreadPoolBoundHandle() ??
