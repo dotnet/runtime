@@ -291,6 +291,19 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
             });
         }
 
+        [Fact]
+        public void GetAsyncService_DisposeAsyncOnSameThread_Throws()
+        {
+            var services = new ServiceCollection();
+            services.AddSingleton<FooAsyncDisposable>();
+            var sp = services.BuildServiceProvider();
+            Assert.Throws<ObjectDisposedException>(() =>
+            {
+                // ctor disposes ServiceProvider
+                var foo = sp.GetRequiredService<FooAsyncDisposable>();
+            });
+        }
+
         public class Foo1 : IDisposable
         {
             public Foo1()
@@ -312,6 +325,18 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
                 (sp as IDisposable).Dispose();
             }
             public void Dispose() { }
+        }
+
+        private class FooAsyncDisposable : IFakeService, IAsyncDisposable
+        {
+            public FooAsyncDisposable(IServiceProvider sp)
+            {
+                (sp as IDisposable).Dispose();
+            }
+            public ValueTask DisposeAsync()
+            {
+                return new ValueTask(Task.CompletedTask);
+            }
         }
 
         [ActiveIssue("https://github.com/dotnet/runtime/issues/42160")] // We don't support value task services currently
