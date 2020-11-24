@@ -71,7 +71,7 @@ namespace System.Net.Quic.Implementations.MsQuic
         // Creates a new MsQuicStream
         internal MsQuicStream(MsQuicConnection connection, QUIC_STREAM_OPEN_FLAG flags, IntPtr nativeObjPtr, bool inbound)
         {
-            Debug.Assert(connection != null);
+            Debug.Assert(connection != null, "Connection null");
 
             _ptr = nativeObjPtr;
 
@@ -936,7 +936,7 @@ namespace System.Net.Quic.Implementations.MsQuic
         /// </summary>
         private void StartLocalStream()
         {
-            Debug.Assert(!_started);
+            Debug.Assert(!_started, "start local stream");
             uint status = MsQuicApi.Api.StreamStartDelegate(
               _ptr,
               (uint)QUIC_STREAM_START_FLAG.ASYNC);
