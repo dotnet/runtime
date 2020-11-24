@@ -2259,7 +2259,7 @@ void LinearScan::buildIntervals()
                 while (iter.NextElem(&varIndex))
                 {
                     Interval* interval = getIntervalForLocalVar(varIndex);
-                    if (interval->recentRefPosition != nullptr)
+                    if (interval->recentRefPosition != nullptr && interval->recentRefPosition->IsActualRef())
                     {
                         JITDUMP("  Marking RP #%d of V%02u as spillAfter\n", interval->recentRefPosition->rpNum,
                                 interval->varNum);
