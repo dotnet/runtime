@@ -6,7 +6,7 @@ namespace System.Net.Quic
     public class QuicStreamAbortedException : QuicException
     {
         internal QuicStreamAbortedException(long errorCode)
-            : this("", errorCode)
+            : this(SR.Format(SR.net_quic_streamaborted, errorCode), errorCode)
         {
         }
 

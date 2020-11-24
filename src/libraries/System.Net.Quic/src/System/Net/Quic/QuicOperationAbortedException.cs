@@ -6,7 +6,7 @@ namespace System.Net.Quic
     public class QuicOperationAbortedException : QuicException
     {
         internal QuicOperationAbortedException()
-            : base("")
+            : base(SR.net_quic_operationaborted)
         {
         }
 
