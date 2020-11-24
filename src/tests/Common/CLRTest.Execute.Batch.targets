@@ -328,9 +328,6 @@ IF NOT "%XHARNESS_CLI_PATH%"=="" (
   set HARNESS_RUNNER="xharness"
 )
 
-echo %__TestBinaryBase%
-echo %__Category%
-
 %__Command% %HARNESS_RUNNER% android test --instrumentation="net.dot.MonoRunner" --package-name="net.dot.%__Category%" --app="%__TestBinaryBase%\%__Category%.apk" --output-directory=`pwd` --arg=entryPointLibName=$(MsBuildProjectName).dll --expected-exit-code=100
 set CLRTestExitCode=!ERRORLEVEL!
 set CLRTestExpectedExitCode=0
@@ -413,7 +410,7 @@ $(BatchCLRTestArgPrep)
       <!-- NOTE! semicolons must be escaped with %3B boooo -->
       <_CLRTestExecutionScriptText>
   <![CDATA[
-@ECHO OFF
+@ECHO ON
 setlocal ENABLEDELAYEDEXPANSION
 set "lockFolder=%~dp0\lock"
 pushd %~dp0
