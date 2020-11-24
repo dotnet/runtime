@@ -350,7 +350,7 @@ namespace $([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").
                         if(File.Exists(androidLogFile))
                         {
                             //testOutput.AddRange(System.IO.File.ReadAllLines(androidLogFile))%3B
-                            testOutput.AddRange("~~~Found log file")%3B
+                            output.WriteLine("~~~Found log file")%3B
                         }
                     }
 
