@@ -92,7 +92,7 @@ namespace System.Threading
                 return isFlowSuppressed ?
                     (s_defaultFlowSuppressed ??= new ExecutionContext(AsyncLocalValueMap.Empty, new IAsyncLocal[0], isFlowSuppressed: true)) :
                     null; // implies the default context
-#pragma warning restore
+#pragma warning restore CA1825
             }
 
             return new ExecutionContext(m_localValues, m_localChangeNotifications, isFlowSuppressed);
