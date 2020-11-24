@@ -156,9 +156,7 @@ CORINFO_CLASS_HANDLE MyICJI::getMethodClass(CORINFO_METHOD_HANDLE method)
 CORINFO_MODULE_HANDLE MyICJI::getMethodModule(CORINFO_METHOD_HANDLE method)
 {
     jitInstance->mc->cr->AddCall("getMethodModule");
-    LogError("Hit unimplemented getMethodModule");
-    DebugBreakorAV(7);
-    return 0;
+    return jitInstance->mc->repGetMethodModule(method);
 }
 
 // This function returns the offset of the specified method in the
@@ -1566,7 +1564,16 @@ void MyICJI::notifyInstructionSetUsage(CORINFO_InstructionSet instructionSet, bo
 DWORD MyICJI::getJitFlags(CORJIT_FLAGS* jitFlags, DWORD sizeInBytes)
 {
     jitInstance->mc->cr->AddCall("getJitFlags");
-    return jitInstance->mc->repGetJitFlags(jitFlags, sizeInBytes);
+    DWORD ret = jitInstance->mc->repGetJitFlags(jitFlags, sizeInBytes);
+    if (jitInstance->forceClearAltJitFlag)
+    {
+        jitFlags->Clear(CORJIT_FLAGS::CORJIT_FLAG_ALT_JIT);
+    }
+    else if (jitInstance->forceSetAltJitFlag)
+    {
+        jitFlags->Set(CORJIT_FLAGS::CORJIT_FLAG_ALT_JIT);
+    }
+    return ret;
 }
 
 // Runs the given function with the given parameter under an error trap

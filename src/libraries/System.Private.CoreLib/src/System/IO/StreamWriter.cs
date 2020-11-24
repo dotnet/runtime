@@ -471,18 +471,18 @@ namespace System.IO
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)] // prevent WriteSpan from bloating call sites
-        public override void WriteLine(ReadOnlySpan<char> value)
+        public override void WriteLine(ReadOnlySpan<char> buffer)
         {
             if (GetType() == typeof(StreamWriter))
             {
                 CheckAsyncTaskInProgress();
-                WriteSpan(value, appendNewLine: true);
+                WriteSpan(buffer, appendNewLine: true);
             }
             else
             {
                 // If a derived class may have overridden existing WriteLine behavior,
                 // we need to make sure we use it.
-                base.WriteLine(value);
+                base.WriteLine(buffer);
             }
         }
 

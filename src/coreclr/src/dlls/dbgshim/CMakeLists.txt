@@ -29,6 +29,10 @@ else(CLR_CMAKE_TARGET_WIN32)
         # This option is necessary to ensure that the overloaded delete operator defined inside
         # of the utilcode will be used instead of the standard library delete operator.
         set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Xlinker -Bsymbolic")
+
+        # These options are used to force every object to be included even if it's unused.
+        set(START_WHOLE_ARCHIVE -Wl,--whole-archive)
+        set(END_WHOLE_ARCHIVE -Wl,--no-whole-archive)
     endif(CLR_CMAKE_HOST_LINUX OR CLR_CMAKE_HOST_FREEBSD OR CLR_CMAKE_HOST_NETBSD OR CLR_CMAKE_HOST_SUNOS)
 
     set_exports_linker_option(${EXPORTS_FILE})
@@ -69,9 +73,11 @@ if(CLR_CMAKE_HOST_WIN32)
     )
 else()
     list(APPEND DBGSHIM_LIBRARIES
-        coreclrpal
         mscorrc
+        ${START_WHOLE_ARCHIVE}
+        coreclrpal
         palrt
+        ${END_WHOLE_ARCHIVE}
     )
 endif(CLR_CMAKE_HOST_WIN32)
 

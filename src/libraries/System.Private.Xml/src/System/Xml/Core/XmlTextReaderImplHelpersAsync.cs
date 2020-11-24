@@ -48,7 +48,7 @@ namespace System.Xml
                 return _reader.DtdParserProxy_ParseCommentAsync(sb);
             }
 
-            Task<Tuple<int, bool>> IDtdParserAdapter.PushEntityAsync(IDtdEntityInfo entity)
+            Task<(int, bool)> IDtdParserAdapter.PushEntityAsync(IDtdEntityInfo entity)
             {
                 return _reader.DtdParserProxy_PushEntityAsync(entity);
             }

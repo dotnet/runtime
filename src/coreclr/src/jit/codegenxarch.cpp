@@ -1970,43 +1970,32 @@ void CodeGen::genAllocLclFrame(unsigned frameSize, regNumber initReg, bool* pIni
         return;
     }
 
-    const target_size_t pageSize       = compiler->eeGetPageSize();
-    target_size_t       lastTouchDelta = 0; // What offset from the final SP was the last probe?
+    const target_size_t pageSize = compiler->eeGetPageSize();
 
     if (frameSize == REGSIZE_BYTES)
     {
         // Frame size is the same as register size.
-        inst_RV(INS_push, REG_EAX, TYP_I_IMPL);
+        GetEmitter()->emitIns_R(INS_push, EA_PTRSIZE, REG_EAX);
+        compiler->unwindAllocStack(frameSize);
     }
     else if (frameSize < pageSize)
     {
-        // Frame size is (0x0008..0x1000)
-        inst_RV_IV(INS_sub, REG_SPBASE, frameSize, EA_PTRSIZE);
-        lastTouchDelta = frameSize;
-    }
-    else if (frameSize < compiler->getVeryLargeFrameSize())
-    {
-        lastTouchDelta = frameSize;
+        GetEmitter()->emitIns_R_I(INS_sub, EA_PTRSIZE, REG_SPBASE, frameSize);
+        compiler->unwindAllocStack(frameSize);
 
-        // Frame size is (0x1000..0x3000)
+        const unsigned lastProbedLocToFinalSp = frameSize;
 
-        GetEmitter()->emitIns_AR_R(INS_test, EA_PTRSIZE, REG_EAX, REG_SPBASE, -(int)pageSize);
-        lastTouchDelta -= pageSize;
-
-        if (frameSize >= 0x2000)
+        if (lastProbedLocToFinalSp + STACK_PROBE_BOUNDARY_THRESHOLD_BYTES > pageSize)
         {
-            GetEmitter()->emitIns_AR_R(INS_test, EA_PTRSIZE, REG_EAX, REG_SPBASE, -2 * (int)pageSize);
-            lastTouchDelta -= pageSize;
+            // We haven't probed almost a complete page. If the next action on the stack might subtract from SP
+            // first, before touching the current SP, then we need to probe at the very bottom. This can
+            // happen on x86, for example, when we copy an argument to the stack using a "SUB ESP; REP MOV"
+            // strategy.
+            GetEmitter()->emitIns_R_AR(INS_test, EA_4BYTE, REG_EAX, REG_SPBASE, 0);
         }
-
-        inst_RV_IV(INS_sub, REG_SPBASE, frameSize, EA_PTRSIZE);
-        assert(lastTouchDelta == frameSize % pageSize);
     }
     else
     {
-        // Frame size >= 0x3000
-        assert(frameSize >= compiler->getVeryLargeFrameSize());
-
 #ifdef TARGET_X86
         int spOffset = -(int)frameSize;
 
@@ -2053,23 +2042,13 @@ void CodeGen::genAllocLclFrame(unsigned frameSize, regNumber initReg, bool* pIni
         GetEmitter()->emitIns_R_R(INS_mov, EA_PTRSIZE, REG_SPBASE, REG_STACK_PROBE_HELPER_ARG);
 #endif // !TARGET_X86
 
+        compiler->unwindAllocStack(frameSize);
+
         if (initReg == REG_STACK_PROBE_HELPER_ARG)
         {
             *pInitRegZeroed = false;
         }
     }
-
-    if (lastTouchDelta + STACK_PROBE_BOUNDARY_THRESHOLD_BYTES > pageSize)
-    {
-        // We haven't probed almost a complete page. If the next action on the stack might subtract from SP
-        // first, before touching the current SP, then we do one more probe at the very bottom. This can
-        // happen on x86, for example, when we copy an argument to the stack using a "SUB ESP; REP MOV"
-        // strategy.
-
-        GetEmitter()->emitIns_AR_R(INS_test, EA_PTRSIZE, REG_EAX, REG_SPBASE, 0);
-    }
-
-    compiler->unwindAllocStack(frameSize);
 
 #ifdef USING_SCOPE_INFO
     if (!doubleAlignOrFramePointerUsed())
@@ -3156,7 +3135,7 @@ void CodeGen::genStructPutArgUnroll(GenTreePutArgStk* putArgNode)
     // in genPutStructArgStk().
     noway_assert(src->TypeGet() == TYP_STRUCT);
 
-    unsigned size = putArgNode->getArgSize();
+    unsigned size = putArgNode->GetStackByteSize();
     assert(size <= CPBLK_UNROLL_LIMIT);
 
     emitter* emit         = GetEmitter();
@@ -5049,7 +5028,7 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
         if (arg->OperIs(GT_PUTARG_STK) && ((arg->gtFlags & GTF_LATE_ARG) == 0))
         {
             GenTree* source = arg->AsPutArgStk()->gtGetOp1();
-            unsigned size   = arg->AsPutArgStk()->getArgSize();
+            unsigned size   = arg->AsPutArgStk()->GetStackByteSize();
             stackArgBytes += size;
 #ifdef DEBUG
             fgArgTabEntry* curArgTabEntry = compiler->gtArgEntryByNode(call, arg);
@@ -7292,7 +7271,7 @@ void CodeGen::genRemoveAlignmentAfterCall(GenTreeCall* call, unsigned bias)
 //
 bool CodeGen::genAdjustStackForPutArgStk(GenTreePutArgStk* putArgStk)
 {
-    const unsigned argSize = putArgStk->getArgSize();
+    const unsigned argSize = putArgStk->GetStackByteSize();
     GenTree*       source  = putArgStk->gtGetOp1();
 
 #ifdef FEATURE_SIMD
@@ -7389,7 +7368,7 @@ void CodeGen::genPutArgStkFieldList(GenTreePutArgStk* putArgStk)
     // If we are pushing the arguments (i.e. we have not pre-adjusted the stack), then we are pushing them
     // in reverse order, so we start with the current field offset at the size of the struct arg (which must be
     // a multiple of the target pointer size).
-    unsigned  currentOffset   = (preAdjustedStack) ? 0 : putArgStk->getArgSize();
+    unsigned  currentOffset   = (preAdjustedStack) ? 0 : putArgStk->GetStackByteSize();
     unsigned  prevFieldOffset = currentOffset;
     regNumber intTmpReg       = REG_NA;
     regNumber simdTmpReg      = REG_NA;
@@ -7601,7 +7580,7 @@ void CodeGen::genPutArgStk(GenTreePutArgStk* putArgStk)
     // On a 32-bit target, all of the long arguments are handled with GT_FIELD_LISTs of TYP_INT.
     assert(targetType != TYP_LONG);
 
-    const unsigned argSize = putArgStk->getArgSize();
+    const unsigned argSize = putArgStk->GetStackByteSize();
     assert((argSize % TARGET_POINTER_SIZE) == 0);
 
     if (data->isContainedIntOrIImmed())
@@ -7653,12 +7632,12 @@ void CodeGen::genPutArgStk(GenTreePutArgStk* putArgStk)
         // Get argument offset on stack.
         // Here we cross check that argument offset hasn't changed from lowering to codegen since
         // we are storing arg slot number in GT_PUTARG_STK node in lowering phase.
-        int            argOffset      = putArgStk->getArgOffset();
+        unsigned       argOffset      = putArgStk->getArgOffset();
 
 #ifdef DEBUG
         fgArgTabEntry* curArgTabEntry = compiler->gtArgEntryByNode(putArgStk->gtCall, putArgStk);
-        assert(curArgTabEntry);
-        assert(argOffset == (int)curArgTabEntry->slotNum * TARGET_POINTER_SIZE);
+        assert(curArgTabEntry != nullptr);
+        assert(argOffset == curArgTabEntry->slotNum * TARGET_POINTER_SIZE);
 #endif
 
         if (data->isContainedIntOrIImmed())
@@ -7899,7 +7878,10 @@ void CodeGen::genPutStructArgStk(GenTreePutArgStk* putArgStk)
         assert(m_pushStkArg);
 
         GenTree*       srcAddr  = source->gtGetOp1();
-        const unsigned numSlots = putArgStk->gtNumSlots;
+        const unsigned byteSize = putArgStk->GetStackByteSize();
+        assert(byteSize % TARGET_POINTER_SIZE == 0);
+        const unsigned numSlots = byteSize / TARGET_POINTER_SIZE;
+        assert(putArgStk->gtNumSlots == numSlots);
 
         regNumber  srcRegNum    = srcAddr->GetRegNum();
         const bool srcAddrInReg = srcRegNum != REG_NA;
@@ -7920,15 +7902,15 @@ void CodeGen::genPutStructArgStk(GenTreePutArgStk* putArgStk)
 
         for (int i = numSlots - 1; i >= 0; --i)
         {
-            emitAttr       slotAttr = emitTypeSize(layout->GetGCPtrType(i));
-            const unsigned offset   = i * TARGET_POINTER_SIZE;
+            emitAttr       slotAttr   = emitTypeSize(layout->GetGCPtrType(i));
+            const unsigned byteOffset = i * TARGET_POINTER_SIZE;
             if (srcAddrInReg)
             {
-                GetEmitter()->emitIns_AR_R(INS_push, slotAttr, REG_NA, srcRegNum, offset);
+                GetEmitter()->emitIns_AR_R(INS_push, slotAttr, REG_NA, srcRegNum, byteOffset);
             }
             else
             {
-                GetEmitter()->emitIns_S(INS_push, slotAttr, srcLclNum, srcLclOffset + offset);
+                GetEmitter()->emitIns_S(INS_push, slotAttr, srcLclNum, srcLclOffset + byteOffset);
             }
             AddStackLevel(TARGET_POINTER_SIZE);
         }
@@ -7945,7 +7927,10 @@ void CodeGen::genPutStructArgStk(GenTreePutArgStk* putArgStk)
         unsigned       numGCSlotsCopied = 0;
 #endif // DEBUG
 
-        const unsigned numSlots = putArgStk->gtNumSlots;
+        const unsigned byteSize = putArgStk->GetStackByteSize();
+        assert(byteSize % TARGET_POINTER_SIZE == 0);
+        const unsigned numSlots = byteSize / TARGET_POINTER_SIZE;
+        assert(putArgStk->gtNumSlots == numSlots);
         for (unsigned i = 0; i < numSlots;)
         {
             if (!layout->IsGCPtr(i))

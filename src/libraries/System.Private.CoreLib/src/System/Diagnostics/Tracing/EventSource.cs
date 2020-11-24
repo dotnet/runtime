@@ -3278,10 +3278,15 @@ namespace System.Diagnostics.Tracing
                                 }
                             }
 #endif
-                            string eventKey = "event_" + eventName;
-                            string? msg = manifest.GetLocalizedMessage(eventKey, CultureInfo.CurrentUICulture, etwFormat: false);
-                            // overwrite inline message with the localized message
-                            if (msg != null) eventAttribute.Message = msg;
+                            if (manifest.HasResources)
+                            {
+                                string eventKey = "event_" + eventName;
+                                if (manifest.GetLocalizedMessage(eventKey, CultureInfo.CurrentUICulture, etwFormat: false) is string msg)
+                                {
+                                    // overwrite inline message with the localized message
+                                    eventAttribute.Message = msg;
+                                }
+                            }
 
                             AddEventDescriptor(ref eventData, eventName, eventAttribute, args, hasRelatedActivityID);
                         }
@@ -5366,11 +5371,11 @@ namespace System.Diagnostics.Tracing
             numParams = 0;
             byteArrArgIndices = null;
 
-            events.Append("  <event").
-                 Append(" value=\"").Append(eventAttribute.EventId).Append('"').
-                 Append(" version=\"").Append(eventAttribute.Version).Append('"').
-                 Append(" level=\"").Append(GetLevelName(eventAttribute.Level)).Append('"').
-                 Append(" symbol=\"").Append(eventName).Append('"');
+            events.Append("  <event value=\"").Append(eventAttribute.EventId).
+                 Append("\" version=\"").Append(eventAttribute.Version).
+                 Append("\" level=\"");
+            AppendLevelName(events, eventAttribute.Level);
+            events.Append("\" symbol=\"").Append(eventName).Append('"');
 
             // at this point we add to the manifest's stringTab a message that is as-of-yet
             // "untranslated to manifest convention", b/c we don't have the number or position
@@ -5378,11 +5383,22 @@ namespace System.Diagnostics.Tracing
             WriteMessageAttrib(events, "event", eventName, eventAttribute.Message);
 
             if (eventAttribute.Keywords != 0)
-                events.Append(" keywords=\"").Append(GetKeywords((ulong)eventAttribute.Keywords, eventName)).Append('"');
+            {
+                events.Append(" keywords=\"");
+                AppendKeywords(events, (ulong)eventAttribute.Keywords, eventName);
+                events.Append('"');
+            }
+
             if (eventAttribute.Opcode != 0)
+            {
                 events.Append(" opcode=\"").Append(GetOpcodeName(eventAttribute.Opcode, eventName)).Append('"');
+            }
+
             if (eventAttribute.Task != 0)
+            {
                 events.Append(" task=\"").Append(GetTaskName(eventAttribute.Task, eventName)).Append('"');
+            }
+
 #if FEATURE_MANAGED_ETW_CHANNELS
             if (eventAttribute.Channel != 0)
             {
@@ -5442,10 +5458,11 @@ namespace System.Diagnostics.Tracing
 
             // at this point we have all the information we need to translate the C# Message
             // to the manifest string we'll put in the stringTab
-            if (stringTab.TryGetValue("event_" + eventName, out string? msg))
+            string prefixedEventName = "event_" + eventName;
+            if (stringTab.TryGetValue(prefixedEventName, out string? msg))
             {
                 msg = TranslateToManifestConvention(msg, eventName);
-                stringTab["event_" + eventName] = msg;
+                stringTab[prefixedEventName] = msg;
             }
 
             eventName = null;
@@ -5499,6 +5516,8 @@ namespace System.Diagnostics.Tracing
 
         public IList<string> Errors => errors;
 
+        public bool HasResources => resources != null;
+
         /// <summary>
         /// When validating an event source it adds the error to the error collection.
         /// When not validating it throws an exception if runtimeCritical is "true".
@@ -5516,6 +5535,10 @@ namespace System.Diagnostics.Tracing
 
         private string CreateManifestString()
         {
+#if !ES_BUILD_STANDALONE
+            Span<char> ulongHexScratch = stackalloc char[16]; // long enough for ulong.MaxValue formatted as hex
+#endif
+
 #if FEATURE_MANAGED_ETW_CHANNELS
             // Write out the channels
             if (channelTab != null)
@@ -5530,7 +5553,6 @@ namespace System.Diagnostics.Tracing
                     ChannelInfo channelInfo = kvpair.Value;
 
                     string? channelType = null;
-                    const string ElementName = "channel";
                     bool enabled = false;
                     string? fullName = null;
 #if FEATURE_ADVANCED_MANAGED_ETW_CHANNELS
@@ -5557,24 +5579,20 @@ namespace System.Diagnostics.Tracing
 
                     fullName ??= providerName + "/" + channelInfo.Name;
 
-                    sb.Append("  <").Append(ElementName);
-                    sb.Append(" chid=\"").Append(channelInfo.Name).Append('"');
-                    sb.Append(" name=\"").Append(fullName).Append('"');
-                    if (ElementName == "channel")   // not applicable to importChannels.
-                    {
-                        Debug.Assert(channelInfo.Name != null);
-                        WriteMessageAttrib(sb, "channel", channelInfo.Name, null);
-                        sb.Append(" value=\"").Append(channel).Append('"');
-                        if (channelType != null)
-                            sb.Append(" type=\"").Append(channelType).Append('"');
-                        sb.Append(" enabled=\"").Append(enabled ? "true" : "false").Append('"');
+                    sb.Append("  <channel chid=\"").Append(channelInfo.Name).Append("\" name=\"").Append(fullName).Append('"');
+
+                    Debug.Assert(channelInfo.Name != null);
+                    WriteMessageAttrib(sb, "channel", channelInfo.Name, null);
+                    sb.Append(" value=\"").Append(channel).Append('"');
+                    if (channelType != null)
+                        sb.Append(" type=\"").Append(channelType).Append('"');
+                    sb.Append(" enabled=\"").Append(enabled ? "true" : "false").Append('"');
 #if FEATURE_ADVANCED_MANAGED_ETW_CHANNELS
-                        if (access != null)
-                            sb.Append(" access=\"").Append(access).Append("\"");
-                        if (isolation != null)
-                            sb.Append(" isolation=\"").Append(isolation).Append("\"");
+                    if (access != null)
+                        sb.Append(" access=\"").Append(access).Append("\"");
+                    if (isolation != null)
+                        sb.Append(" isolation=\"").Append(isolation).Append("\"");
 #endif
-                    }
                     sb.AppendLine("/>");
                 }
                 sb.AppendLine(" </channels>");
@@ -5625,7 +5643,14 @@ namespace System.Diagnostics.Tracing
                             // TODO: Warn people about the dropping of values.
                             if (isbitmap && ((hexValue & (hexValue - 1)) != 0 || hexValue == 0))
                                 continue;
-                            sb.Append("   <map value=\"0x").Append(hexValue.ToString("x", CultureInfo.InvariantCulture)).Append('"');
+
+#if ES_BUILD_STANDALONE
+                            string hexValueFormatted = hexValue.ToString("x", CultureInfo.InvariantCulture);
+#else
+                            hexValue.TryFormat(ulongHexScratch, out int charsWritten, "x");
+                            Span<char> hexValueFormatted = ulongHexScratch.Slice(0, charsWritten);
+#endif
+                            sb.Append("   <map value=\"0x").Append(hexValueFormatted).Append('"');
                             WriteMessageAttrib(sb, "map", enumType.Name + "." + staticField.Name, staticField.Name);
                             sb.AppendLine("/>");
                             anyValuesWritten = true;
@@ -5667,7 +5692,13 @@ namespace System.Diagnostics.Tracing
                 {
                     sb.Append("  <keyword");
                     WriteNameAndMessageAttribs(sb, "keyword", keywordTab[keyword]);
-                    sb.Append(" mask=\"0x").Append(keyword.ToString("x", CultureInfo.InvariantCulture)).AppendLine("\"/>");
+#if ES_BUILD_STANDALONE
+                    string keywordFormatted = keyword.ToString("x", CultureInfo.InvariantCulture);
+#else
+                    keyword.TryFormat(ulongHexScratch, out int charsWritten, "x");
+                    Span<char> keywordFormatted = ulongHexScratch.Slice(0, charsWritten);
+#endif
+                    sb.Append(" mask=\"0x").Append(keywordFormatted).AppendLine("\"/>");
                 }
                 sb.AppendLine(" </keywords>");
             }
@@ -5724,18 +5755,21 @@ namespace System.Diagnostics.Tracing
         }
         private void WriteMessageAttrib(StringBuilder stringBuilder, string elementName, string name, string? value)
         {
-            string key = elementName + "_" + name;
+            string? key = null;
+
             // See if the user wants things localized.
             if (resources != null)
             {
                 // resource fallback: strings in the neutral culture will take precedence over inline strings
-                string? localizedString = resources.GetString(key, CultureInfo.InvariantCulture);
-                if (localizedString != null)
+                key = elementName + "_" + name;
+                if (resources.GetString(key, CultureInfo.InvariantCulture) is string localizedString)
                     value = localizedString;
             }
+
             if (value == null)
                 return;
 
+            key ??= elementName + "_" + name;
             stringBuilder.Append(" message=\"$(string.").Append(key).Append(")\"");
 
             if (stringTab.TryGetValue(key, out string? prevValue) && !prevValue.Equals(value))
@@ -5768,9 +5802,23 @@ namespace System.Diagnostics.Tracing
             return value;
         }
 
-        private static string GetLevelName(EventLevel level)
+        private static void AppendLevelName(StringBuilder sb, EventLevel level)
         {
-            return (((int)level >= 16) ? "" : "win:") + level.ToString();
+            if ((int)level < 16)
+            {
+                sb.Append("win:");
+            }
+
+            sb.Append(level switch // avoid boxing that comes from level.ToString()
+            {
+                EventLevel.LogAlways => nameof(EventLevel.LogAlways),
+                EventLevel.Critical => nameof(EventLevel.Critical),
+                EventLevel.Error => nameof(EventLevel.Error),
+                EventLevel.Warning => nameof(EventLevel.Warning),
+                EventLevel.Informational => nameof(EventLevel.Informational),
+                EventLevel.Verbose => nameof(EventLevel.Verbose),
+                _ => ((int)level).ToString()
+            });
         }
 
 #if FEATURE_MANAGED_ETW_CHANNELS
@@ -5851,7 +5899,7 @@ namespace System.Diagnostics.Tracing
             return ret;
         }
 
-        private string GetKeywords(ulong keywords, string eventName)
+        private void AppendKeywords(StringBuilder sb, ulong keywords, string eventName)
         {
 #if FEATURE_MANAGED_ETW_CHANNELS
             // ignore keywords associate with channels
@@ -5859,7 +5907,7 @@ namespace System.Diagnostics.Tracing
             keywords &= ~ValidPredefinedChannelKeywords;
 #endif
 
-            string ret = "";
+            bool appended = false;
             for (ulong bit = 1; bit != 0; bit <<= 1)
             {
                 if ((keywords & bit) != 0)
@@ -5877,12 +5925,19 @@ namespace System.Diagnostics.Tracing
                         ManifestError(SR.Format(SR.EventSource_UndefinedKeyword, "0x" + bit.ToString("x", CultureInfo.CurrentCulture), eventName), true);
                         keyword = string.Empty;
                     }
-                    if (ret.Length != 0 && keyword.Length != 0)
-                        ret += " ";
-                    ret += keyword;
+
+                    if (keyword.Length != 0)
+                    {
+                        if (appended)
+                        {
+                            sb.Append(' ');
+                        }
+
+                        sb.Append(keyword);
+                        appended = true;
+                    }
                 }
             }
-            return ret;
         }
 
         private string GetTypeName(Type type)

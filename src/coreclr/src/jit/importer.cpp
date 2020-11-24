@@ -21409,9 +21409,16 @@ bool Compiler::impCanSkipCovariantStoreCheck(GenTree* value, GenTree* array)
     // Check for assignment of NULL.
     if (value->OperIs(GT_CNS_INT))
     {
-        JITDUMP("\nstelem of null: skipping covariant store check\n");
-        assert((value->gtType == TYP_REF) && (value->AsIntCon()->gtIconVal == 0));
-        return true;
+        assert(value->gtType == TYP_REF);
+        if (value->AsIntCon()->gtIconVal == 0)
+        {
+            JITDUMP("\nstelem of null: skipping covariant store check\n");
+            return true;
+        }
+        // Non-0 const refs can only occur with frozen objects
+        assert(value->IsIconHandle(GTF_ICON_STR_HDL));
+        assert(doesMethodHaveFrozenString() ||
+               (compIsForInlining() && impInlineInfo->InlinerCompiler->doesMethodHaveFrozenString()));
     }
 
     // Try and get a class handle for the array

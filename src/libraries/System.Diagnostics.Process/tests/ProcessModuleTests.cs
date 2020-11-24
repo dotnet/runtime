@@ -83,8 +83,10 @@ namespace System.Diagnostics.Tests
                 processModule.Disposed += (_, __) => disposedCount += 1;
             }
 
-            process.Dispose();
+            KillWait(process);
+            Assert.Equal(0, disposedCount);
 
+            process.Dispose();
             Assert.Equal(expectedCount, disposedCount);
         }
     }

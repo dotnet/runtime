@@ -1630,7 +1630,9 @@ public:
         return 0;
     }
 
-    // Get the number of bytes that this argument is occupying on the stack.
+    // Get the number of bytes that this argument is occupying on the stack,
+    // including padding up to the target pointer size for platforms
+    // where a stack argument can't take less.
     unsigned GetStackByteSize() const
     {
         if (!IsSplit() && numRegs > 0)
@@ -1642,7 +1644,10 @@ public:
 
         assert(GetByteSize() > TARGET_POINTER_SIZE * numRegs);
         unsigned stackByteSize = GetByteSize() - TARGET_POINTER_SIZE * numRegs;
-        return GetByteSize() - TARGET_POINTER_SIZE * numRegs;
+#if !defined(OSX_ARM64_ABI)
+        stackByteSize = roundUp(stackByteSize, TARGET_POINTER_SIZE);
+#endif
+        return stackByteSize;
     }
 
     var_types GetHfaType() const
@@ -1800,7 +1805,7 @@ public:
         return size;
     }
 
-#endif // DEBUG && !OSX_ARM64_ABI
+#endif // DEBUG_ARG_SLOTS
 
 private:
     unsigned m_byteOffset;
@@ -6692,6 +6697,7 @@ public:
 #define OMF_HAS_EXPRUNTIMELOOKUP 0x00000100 // Method contains a runtime lookup to an expandable dictionary.
 #define OMF_HAS_PATCHPOINT 0x00000200       // Method contains patchpoints
 #define OMF_NEEDS_GCPOLLS 0x00000400        // Method needs GC polls
+#define OMF_HAS_FROZEN_STRING 0x00000800    // Method has a frozen string (REF constant int), currently only on CoreRT.
 
     bool doesMethodHaveFatPointer()
     {
@@ -6710,7 +6716,17 @@ public:
 
     void addFatPointerCandidate(GenTreeCall* call);
 
-    bool doesMethodHaveGuardedDevirtualization()
+    bool doesMethodHaveFrozenString() const
+    {
+        return (optMethodFlags & OMF_HAS_FROZEN_STRING) != 0;
+    }
+
+    void setMethodHasFrozenString()
+    {
+        optMethodFlags |= OMF_HAS_FROZEN_STRING;
+    }
+
+    bool doesMethodHaveGuardedDevirtualization() const
     {
         return (optMethodFlags & OMF_HAS_GUARDEDDEVIRT) != 0;
     }
@@ -9011,10 +9027,8 @@ public:
 #endif
     } opts;
 
-#ifdef ALT_JIT
     static bool                s_pAltJitExcludeAssembliesListInitialized;
     static AssemblyNamesList2* s_pAltJitExcludeAssembliesList;
-#endif // ALT_JIT
 
 #ifdef DEBUG
     static bool                s_pJitDisasmIncludeAssembliesListInitialized;

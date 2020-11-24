@@ -268,7 +268,7 @@ namespace System.Reflection.Emit
             m_exceptions = null;
         }
 
-        internal override Type[] GetParameterTypes() => m_parameterTypes ??= Array.Empty<Type>();
+        internal override Type[] GetParameterTypes() => m_parameterTypes ??= Type.EmptyTypes;
 
         internal static Type? GetMethodBaseReturnType(MethodBase? method)
         {
@@ -306,7 +306,7 @@ namespace System.Reflection.Emit
 
         internal SignatureHelper GetMethodSignature()
         {
-            m_parameterTypes ??= Array.Empty<Type>();
+            m_parameterTypes ??= Type.EmptyTypes;
 
             m_signature = SignatureHelper.GetMethodSigHelper(m_module, m_callingConvention, m_inst != null ? m_inst.Length : 0,
                 m_returnType, m_returnTypeRequiredCustomModifiers, m_returnTypeOptionalCustomModifiers,
@@ -538,7 +538,7 @@ namespace System.Reflection.Emit
 
         public override bool IsGenericMethod => m_inst != null;
 
-        public override Type[] GetGenericArguments() => m_inst ?? Array.Empty<Type>();
+        public override Type[] GetGenericArguments() => m_inst ?? Type.EmptyTypes;
 
         public override MethodInfo MakeGenericMethod(params Type[] typeArguments)
         {

@@ -92,7 +92,7 @@ namespace System.Runtime.Serialization.Json
                     }
                     else
                     {
-                        _knownTypeCollection = new ReadOnlyCollection<Type>(Array.Empty<Type>());
+                        _knownTypeCollection = new ReadOnlyCollection<Type>(Type.EmptyTypes);
                     }
                 }
                 return _knownTypeCollection;
@@ -547,7 +547,7 @@ namespace System.Runtime.Serialization.Json
                     }
                     else
                     {
-                        _knownTypeCollection = new ReadOnlyCollection<Type>(Array.Empty<Type>());
+                        _knownTypeCollection = new ReadOnlyCollection<Type>(Type.EmptyTypes);
                     }
                 }
                 return _knownTypeCollection;

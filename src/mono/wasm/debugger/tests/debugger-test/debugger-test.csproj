@@ -24,16 +24,16 @@
     </ItemGroup>
 
     <MSBuild Projects="@(WasmAppBuildProject)"
-             Properties="Configuration=$(Configuration);MSBuildRestoreSessionId=$([System.Guid]::NewGuid())"
+             Properties="Configuration=Debug;MSBuildRestoreSessionId=$([System.Guid]::NewGuid())"
              Targets="Restore"/>
 
     <MSBuild Projects="@(WasmAppBuildProject)"
-             Properties="Configuration=$(Configuration)"
+             Properties="Configuration=Debug"
              Targets="Build;Publish"/>
   </Target>
 
   <UsingTask TaskName="WasmAppBuilder"
-             AssemblyFile="$(ArtifactsBinDir)WasmAppBuilder\$(Configuration)\$(NetCoreAppCurrent)\publish\WasmAppBuilder.dll"/>
+             AssemblyFile="$(ArtifactsBinDir)WasmAppBuilder\Debug\$(NetCoreAppCurrent)\publish\WasmAppBuilder.dll"/>
 
   <Target Name="BuildApp" DependsOnTargets="RebuildWasmAppBuilder;Build">
     <PropertyGroup>

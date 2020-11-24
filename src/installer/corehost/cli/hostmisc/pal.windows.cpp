@@ -8,7 +8,6 @@
 
 #include <cassert>
 #include <locale>
-#include <codecvt>
 #include <ShlObj.h>
 #include <ctime>
 
@@ -623,11 +622,6 @@ static bool wchar_convert_helper(DWORD code_page, const char* cstr, int len, pal
     return ::MultiByteToWideChar(code_page, 0, cstr, len, &(*out)[0], out->size()) != 0;
 }
 
-bool pal::utf8_palstring(const std::string& str, pal::string_t* out)
-{
-    return wchar_convert_helper(CP_UTF8, &str[0], str.size(), out);
-}
-
 bool pal::pal_utf8string(const pal::string_t& str, std::vector<char>* out)
 {
     out->clear();
@@ -650,12 +644,6 @@ bool pal::pal_clrstring(const pal::string_t& str, std::vector<char>* out)
 bool pal::clr_palstring(const char* cstr, pal::string_t* out)
 {
     return wchar_convert_helper(CP_UTF8, cstr, ::strlen(cstr), out);
-}
-
-bool pal::unicode_palstring(const char16_t* str, pal::string_t* out)
-{
-    out->assign((const wchar_t *)str);
-    return true;
 }
 
 // Return if path is valid and file exists, return true and adjust path as appropriate.

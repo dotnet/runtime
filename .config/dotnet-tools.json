@@ -19,6 +19,12 @@
       "commands": [
         "xharness"
       ]
+    },
+    "microsoft.visualstudio.slngen.tool": {
+      "version": "4.4.0",
+      "commands": [
+        "slngen"
+      ]
     }
   }
 }

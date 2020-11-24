@@ -14,7 +14,7 @@ namespace System
         /// </summary>
         internal static string Paste(IEnumerable<string> arguments, bool pasteFirstArgumentUsingArgV0Rules)
         {
-            var stringBuilder = new StringBuilder();
+            var stringBuilder = new ValueStringBuilder(stackalloc char[256]);
 
             foreach (string argument in arguments)
             {
@@ -53,7 +53,7 @@ namespace System
                 }
                 else
                 {
-                    AppendArgument(stringBuilder, argument);
+                    AppendArgument(ref stringBuilder, argument);
                 }
             }
 

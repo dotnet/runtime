@@ -4,7 +4,6 @@
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.Linq;
 using System.Reflection;
 using System.Reflection.Emit;
 
@@ -19,7 +18,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
         private static readonly FieldInfo ConstantsField = typeof(ILEmitResolverBuilderRuntimeContext).GetField(nameof(ILEmitResolverBuilderRuntimeContext.Constants));
         private static readonly MethodInfo GetTypeFromHandleMethod = typeof(Type).GetMethod(nameof(Type.GetTypeFromHandle));
 
-        private static readonly ConstructorInfo CacheKeyCtor = typeof(ServiceCacheKey).GetConstructors().First();
+        private static readonly ConstructorInfo CacheKeyCtor = typeof(ServiceCacheKey).GetConstructors()[0];
 
         private class ILEmitResolverBuilderRuntimeContext
         {

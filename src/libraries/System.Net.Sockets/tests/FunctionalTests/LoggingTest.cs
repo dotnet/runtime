@@ -44,17 +44,17 @@ namespace System.Net.Sockets.Tests
                     {
                         // Invoke several tests to execute code paths while tracing is enabled
 
-                        new SendReceiveSync(null).SendRecv_Stream_TCP(IPAddress.Loopback, false).GetAwaiter();
-                        new SendReceiveSync(null).SendRecv_Stream_TCP(IPAddress.Loopback, true).GetAwaiter();
+                        new SendReceive_Sync(null).SendRecv_Stream_TCP(IPAddress.Loopback, false).GetAwaiter();
+                        new SendReceive_Sync(null).SendRecv_Stream_TCP(IPAddress.Loopback, true).GetAwaiter();
 
-                        new SendReceiveTask(null).SendRecv_Stream_TCP(IPAddress.Loopback, false).GetAwaiter();
-                        new SendReceiveTask(null).SendRecv_Stream_TCP(IPAddress.Loopback, true).GetAwaiter();
+                        new SendReceive_Task(null).SendRecv_Stream_TCP(IPAddress.Loopback, false).GetAwaiter();
+                        new SendReceive_Task(null).SendRecv_Stream_TCP(IPAddress.Loopback, true).GetAwaiter();
 
-                        new SendReceiveEap(null).SendRecv_Stream_TCP(IPAddress.Loopback, false).GetAwaiter();
-                        new SendReceiveEap(null).SendRecv_Stream_TCP(IPAddress.Loopback, true).GetAwaiter();
+                        new SendReceive_Eap(null).SendRecv_Stream_TCP(IPAddress.Loopback, false).GetAwaiter();
+                        new SendReceive_Eap(null).SendRecv_Stream_TCP(IPAddress.Loopback, true).GetAwaiter();
 
-                        new SendReceiveApm(null).SendRecv_Stream_TCP(IPAddress.Loopback, false).GetAwaiter();
-                        new SendReceiveApm(null).SendRecv_Stream_TCP(IPAddress.Loopback, true).GetAwaiter();
+                        new SendReceive_Apm(null).SendRecv_Stream_TCP(IPAddress.Loopback, false).GetAwaiter();
+                        new SendReceive_Apm(null).SendRecv_Stream_TCP(IPAddress.Loopback, true).GetAwaiter();
 
                         new NetworkStreamTest().CopyToAsync_AllDataCopied(4096, true).GetAwaiter().GetResult();
                         new NetworkStreamTest().Timeout_Roundtrips().GetAwaiter().GetResult();
