@@ -17,6 +17,9 @@ jobs:
       runtimeFlavorDisplayName: 'CoreCLR'
     ${{ if eq(parameters.jobParameters.runtimeFlavor, 'mono') }}:
       runtimeFlavorDisplayName: 'Mono'
+    
+    shouldContinueOnError: ${{ endsWith(variables['Build.DefinitionName'], 'staging') }}
+
     variables:
       # Disable component governance in our CI builds. These builds are not shipping nor
       # are they a service. Also the component governance jobs issue lots of inconsequential

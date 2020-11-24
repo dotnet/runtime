@@ -8,6 +8,7 @@ parameters:
   pool: ''
   platform: ''
   runtimeFlavorDisplayName: ''
+  shouldContinueOnError: false
   jobParameters: {}
 
 jobs:
@@ -19,6 +20,7 @@ jobs:
     archType: ${{ parameters.archType }}
     container: ${{ parameters.container }}
     pool: ${{ parameters.pool }}
+    shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
     runtimeFlavorDisplayName: ${{ parameters.runtimeFlavorDisplayName }}
     helixQueues:
 

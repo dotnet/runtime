@@ -24,6 +24,7 @@ parameters:
   preBuildSteps: []
   container: ''
   condition: true
+  shouldContinueOnError: false
   variables: {}
   pool: ''
   runTests: false
@@ -142,6 +143,7 @@ jobs:
               buildConfig: ${{ parameters.buildConfig }}
               helixQueues: ${{ parameters.helixQueues }}
               testScope: ${{ parameters.testScope }}
+              shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
               creator: dotnet-bot
               testRunNamePrefixSuffix: $(_testRunNamePrefixSuffix)
               extraHelixArguments: $(_extraHelixArguments)

@@ -22,6 +22,7 @@ parameters:
   timeoutInMinutes: ''
   enableMicrobuild: ''
   gatherAssetManifests: false
+  shouldContinueOnError: false
   
   
 steps:
@@ -38,6 +39,7 @@ steps:
       osSubgroup: ${{ parameters.osSubgroup}}
       coreClrRepoRoot: $(Build.SourcesDirectory)/src/coreclr
       runtimeFlavorDisplayName: ${{ parameters.runtimeFlavorDisplayName }}
+      shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
 
       ${{ if eq(variables['System.TeamProject'], 'public') }}:
         creator: $(Build.DefinitionName)
