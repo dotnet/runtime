@@ -3090,6 +3090,28 @@ inline unsigned SKIP_LEA_EAX_ESP(int val, PTR_CBYTE base, unsigned offset)
     return(offset + delta);
 }
 
+inline unsigned SKIP_HELPER_CALL(PTR_CBYTE base, unsigned offset)
+{
+    LIMITED_METHOD_DAC_CONTRACT;
+
+    unsigned delta;
+
+    if (CheckInstrByte(base[offset], X86_INSTR_CALL_REL32))
+    {
+        delta = 5;
+    }
+    else
+    {
+#ifdef _DEBUG
+        WORD wOpcode = *(PTR_WORD)(base+offset);
+        _ASSERTE(CheckInstrWord(wOpcode, X86_INSTR_W_CALL_IND_IMM));
+#endif
+        delta = 6;
+    }
+
+    return(offset+delta);
+}
+
 unsigned SKIP_ALLOC_FRAME(int size, PTR_CBYTE base, unsigned offset)
 {
     CONTRACTL {
