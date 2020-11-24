@@ -305,8 +305,6 @@ namespace System.Net.Quic.Tests
             }
         }
 
-
-
         [Fact]
         public async Task TestStreams()
         {

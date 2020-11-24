@@ -120,7 +120,7 @@ namespace System.Net.Quic.Implementations.MsQuic
         {
             ThrowIfDisposed();
 
-            // protect against double dispose here.
+            // protect against double starts.
             if (_started)
             {
                 return;
