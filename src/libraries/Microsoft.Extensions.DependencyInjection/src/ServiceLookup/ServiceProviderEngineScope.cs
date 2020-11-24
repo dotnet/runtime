@@ -17,7 +17,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
         private List<object> _disposables;
 
         private bool _disposed;
-        private object _locker = new object();
+        private object _lock = new object();
 
         public ServiceProviderEngineScope(ServiceProviderEngine engine)
         {
@@ -49,13 +49,17 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
                 return service;
             }
 
-            lock (_locker)
+            lock (_lock)
             {
                 if (_disposed)
                 {
                     if (_disposables != null)
                     {
                         // cleanup disposable just in case still has items before throwing
+                        foreach (IDisposable disposable in _disposables)
+                        {
+                            disposable.Dispose();
+                        }
                         _disposables = null;
                     }
                     ThrowHelper.ThrowObjectDisposedException();
@@ -152,7 +156,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
         private List<object> BeginDispose()
         {
             List<object> toDispose;
-            lock (_locker)
+            lock (_lock)
             {
                 if (_disposed)
                 {

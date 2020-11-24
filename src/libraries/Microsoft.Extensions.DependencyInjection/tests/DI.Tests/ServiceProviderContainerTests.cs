@@ -270,71 +270,48 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
         private void GetService_ThenDisposeOnDifferentThread_ServiceDisposed()
         {
             var services = new ServiceCollection();
-            services.AddSingleton<Foo>();
+            services.AddSingleton<Foo1>();
             var sp = services.BuildServiceProvider();
-            var foo = sp.GetRequiredService<Foo>();
+            var foo = sp.GetRequiredService<Foo1>();
             Task.Run(() => sp.Dispose()).Wait();
             
-            Assert.Equal(
-                Foo.TimesConstructorCalled,
-                Foo.TimesDisposeCalled);
+            Assert.True(foo.IsDisposed);
         }
 
         [Fact]
         public void GetService_DisposeOnSameThread_Throws()
         {
             var services = new ServiceCollection();
-            services.AddSingleton<DisposableFoo>();
+            services.AddSingleton<Foo2>();
             var sp = services.BuildServiceProvider();
             Assert.Throws<ObjectDisposedException>(() =>
             {
-                // foo ctor disposes ServiceProvider
-                var foo = sp.GetRequiredService<DisposableFoo>();
+                // ctor disposes ServiceProvider
+                var foo = sp.GetRequiredService<Foo2>();
             });
         }
 
-        public class Foo : IDisposable
+        public class Foo1 : IDisposable
         {
-            public static int TimesConstructorCalled = 0;
-            public static int TimesDisposeCalled = 0;
-            public Foo()
+            public Foo1()
             {
-                Interlocked.Increment(ref TimesConstructorCalled);
                 Thread.Sleep(5000);
             }
+            public bool IsDisposed { get; private set; }
+
             public void Dispose()
             {
-                Interlocked.Increment(ref TimesDisposeCalled);
+                IsDisposed = true;
             }
         }
 
-        public class DisposableFoo : IDisposable
+        public class Foo2 : IDisposable
         {
-            public static int TimesConstructorCalled = 0;
-            public static int TimesDisposeCalled = 0;
-            public DisposableFoo(IServiceProvider sp)
+            public Foo2(IServiceProvider sp)
             {
-                Interlocked.Increment(ref TimesConstructorCalled);
                 (sp as IDisposable).Dispose();
             }
-            public void Dispose()
-            {
-                Interlocked.Increment(ref TimesDisposeCalled);
-            }
-        }
-
-        public class Thing2 : IDisposable
-        {
-            public Thing2(Thing1 thing1) { }
             public void Dispose() { }
-        }
-
-        public class Thing1
-        {
-            public Thing1(ServiceProvider sp)
-            {
-                sp.Dispose();
-            }
         }
 
         [ActiveIssue("https://github.com/dotnet/runtime/issues/42160")] // We don't support value task services currently
