@@ -3359,7 +3359,7 @@ regNumber LinearScan::allocateReg(Interval* currentInterval, RefPosition* refPos
         // This will always result in a single candidate. That is, it is the tie-breaker
         // for free candidates, and doesn't make sense as anything other than the last
         // heuristic for free registers.
-        unsigned  lowestRegOrder    = MAXUINT;
+        unsigned  lowestRegOrder    = UINT_MAX;
         regMaskTP lowestRegOrderBit = RBM_NONE;
         for (regMaskTP regOrderCandidates = selector.candidates; regOrderCandidates != RBM_NONE;)
         {
