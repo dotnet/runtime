@@ -17,6 +17,7 @@ typedef struct _CoreGCThreadInfo CoreGCThreadInfo;
 #include <glib.h>
 #include <sys/sysctl.h>
 #include "sgen/sgen-archdep.h"
+#include "sgen/gc-internal-agnostic.h"
 #include <mono/metadata/mono-gc.h>
 #include <mono/metadata/gc-internals.h>
 #include <mono/metadata/class-init.h>
@@ -292,7 +293,7 @@ mono_gc_deregister_root (char* addr)
 
 typedef union {
 	mono_gc_descr struct_gc_descr;
-	gpointer ptr_gc_descr;
+	MonoGCDescriptor ptr_gc_descr;
 } mono_gc_descr_union;
 
 #define MTFlag_ContainsPointers     0x0100
@@ -368,7 +369,7 @@ mono_gc_make_descr_for_object (gpointer klass, gsize *bitmap, int numbits, size_
 	return gc_descr.ptr_gc_descr;
 }
 
-void*
+MonoGCDescriptor
 mono_gc_make_descr_for_string (gsize *bitmap, int numbits, GPtrArray **gc_descr_full)
 {
 	mono_gc_descr_union gc_descr;
@@ -378,7 +379,7 @@ mono_gc_make_descr_for_string (gsize *bitmap, int numbits, GPtrArray **gc_descr_
 	return gc_descr.ptr_gc_descr;
 }
 
-void*
+MonoGCDescriptor
 mono_gc_make_descr_for_array (int vector, gsize *elem_bitmap, int numbits, size_t elem_size, GPtrArray **gc_descr_full)
 {
 	mono_gc_descr_union gc_descr;
@@ -556,7 +557,7 @@ coreclr_get_user_descriptor_func (RootDescriptor desc)
 }
 
 MonoObject*
-mono_gc_alloc_fixed (size_t size, void *descr, MonoGCRootSource source, void *key, const char *msg)
+mono_gc_alloc_fixed (size_t size, MonoGCDescriptor descr, MonoGCRootSource source, void *key, const char *msg)
 {
 	void *res = g_calloc (1, size);
 	if (!res)
@@ -602,11 +603,14 @@ mono_gc_alloc_obj (MonoVTable *vtable, size_t size)
 	CoreGCThreadInfo *info = (CoreGCThreadInfo*) mono_thread_info_current ();
 	o = (MonoObject*) pGCHeap->Alloc (&info->alloc_context, size, flags);
 
+
+
 	o->vtable = vtable;
 
 	// Deubgging
 	MethodTable* mt = (MethodTable*)(o->vtable);
-	printf("mono_gc_alloc_obj: %p o->vtable: %p, o->vtable->gc_descr: %p, o->vtable->gc_descr.m_baseSize: %ld\n", o, o->vtable, o->vtable->gc_descr, mt->GetBaseSize());
+	printf("mono_gc_alloc_obj: %p o->vtable: %p, o->vtable->gc_descr: %llu, size: %ld, o->vtable->gc_descr.m_baseSize: %d\n", o, o->vtable, o->vtable->gc_descr, size, mt->GetBaseSize());
+	
 	return o;
 }
 
@@ -1004,7 +1008,7 @@ mono_gc_scan_object (void *obj, void *gc_data)
 }
 
 gsize*
-mono_gc_get_bitmap_for_descr (void *descr, int *numbits)
+mono_gc_get_bitmap_for_descr (MonoGCDescriptor descr, int *numbits)
 {
 	g_assert_not_reached ();
 	return NULL;
@@ -1040,11 +1044,11 @@ mono_gc_user_markers_supported (void)
 	return FALSE;
 }
 
-void *
+MonoGCDescriptor
 mono_gc_make_root_descr_user (MonoGCRootMarkFunc marker)
 {
 	g_assert_not_reached ();
-	return NULL;
+	return MONO_GC_DESCRIPTOR_NULL;
 }
 
 #ifndef HOST_WIN32

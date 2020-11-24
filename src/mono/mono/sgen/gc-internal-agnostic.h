@@ -80,6 +80,9 @@ extern GCStats mono_gc_stats;
 #ifdef HAVE_SGEN_GC
 typedef SgenDescriptor MonoGCDescriptor;
 #define MONO_GC_DESCRIPTOR_NULL	SGEN_DESCRIPTOR_NULL
+#elif HAVE_CORE_GC 
+typedef guint64 MonoGCDescriptor;
+#define MONO_GC_DESCRIPTOR_NULL 0
 #else
 typedef void* MonoGCDescriptor;
 #define MONO_GC_DESCRIPTOR_NULL NULL

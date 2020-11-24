@@ -1990,6 +1990,16 @@ alloc_vtable (MonoDomain *domain, size_t vtable_size, size_t imt_table_bytes)
 	return (gpointer*) ((char*)mono_domain_alloc0 (domain, vtable_size) + alloc_offset);
 }
 
+// TODO Delete me, just for debugging
+typedef union {
+	struct {
+    	guint16    m_componentSize;
+    	guint16    m_flags;
+    	guint32    m_baseSize;
+	} fields;
+	guint64 desc;
+} mono_gc_descr;
+
 static MonoVTable *
 mono_class_create_runtime_vtable (MonoDomain *domain, MonoClass *klass, MonoError *error)
 {
@@ -2148,6 +2158,13 @@ mono_class_create_runtime_vtable (MonoDomain *domain, MonoClass *klass, MonoErro
 		vt->gc_descr = MONO_GC_DESCRIPTOR_NULL;
 	else
 		vt->gc_descr = m_class_get_gc_descr (klass);
+
+	// DEBUG PRINTING
+    mono_gc_descr descr_for_debug;
+	descr_for_debug.desc = vt->gc_descr;
+	printf( "mono_class_create_runtime_vtable: gc_descr.m_baseSize: %d instance_size: %d",  descr_for_debug.fields.m_baseSize, m_class_get_instance_size(klass));
+	// END DEBUG PRINTING
+
 
 	gc_bits = mono_gc_get_vtable_bits (klass);
 	g_assert (!(gc_bits & ~((1 << MONO_VTABLE_AVAILABLE_GC_BITS) - 1)));
