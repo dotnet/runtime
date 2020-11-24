@@ -144,7 +144,7 @@ namespace System.Net.Http.WinHttpHandlerUnitTests
         }
 
         [Fact]
-        public void TcpKeepalive_InfiniteTimeSpan_TranslatesToMaxUInt32()
+        public void TcpKeepalive_InfiniteTimeSpan_TranslatesToUInt32MaxValue()
         {
             using var handler = new WinHttpHandler();
 
