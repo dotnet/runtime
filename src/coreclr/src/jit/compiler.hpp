@@ -856,7 +856,7 @@ inline unsigned int genCSEnum2bit(unsigned index)
 
 #ifdef DEBUG
 const char* genES2str(BitVecTraits* traits, EXPSET_TP set);
-const char* refCntWtd2str(unsigned refCntWtd);
+const char* refCntWtd2str(BasicBlock::weight_t refCntWtd);
 #endif
 
 /*
@@ -1841,15 +1841,9 @@ inline void LclVarDsc::incRefCnts(BasicBlock::weight_t weight, Compiler* comp, R
                 weight *= 2;
             }
 
-            unsigned newWeight = lvRefCntWtd(state) + weight;
-            if (newWeight >= lvRefCntWtd(state))
-            { // lvRefCntWtd is an "unsigned".  Don't overflow it
-                setLvRefCntWtd(newWeight, state);
-            }
-            else
-            { // On overflow we assign UINT32_MAX
-                setLvRefCntWtd(UINT32_MAX, state);
-            }
+            BasicBlock::weight_t newWeight = lvRefCntWtd(state) + weight;
+            assert(newWeight >= lvRefCntWtd(state));
+            setLvRefCntWtd(newWeight, state);
         }
     }
 
@@ -3612,11 +3606,11 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 
 // are we compiling for fast code, or are we compiling for blended code and
 // inside a loop?
-// We return true for BLENDED_CODE if the Block executes more than BB_LOOP_WEIGHT/2
+// We return true for BLENDED_CODE if the Block executes more than BB_LOOP_WEIGHT_SCALE/2
 inline bool Compiler::optFastCodeOrBlendedLoop(BasicBlock::weight_t bbWeight)
 {
     return (compCodeOpt() == FAST_CODE) ||
-           ((compCodeOpt() == BLENDED_CODE) && (bbWeight > (BB_LOOP_WEIGHT / 2 * BB_UNITY_WEIGHT)));
+           ((compCodeOpt() == BLENDED_CODE) && (bbWeight > ((BB_LOOP_WEIGHT_SCALE / 2) * BB_UNITY_WEIGHT)));
 }
 
 // are we running on a Intel Pentium 4?

@@ -5526,7 +5526,7 @@ protected:
 
     bool fgHaveProfileData();
     void fgComputeProfileScale();
-    bool fgGetProfileWeightForBasicBlock(IL_OFFSET offset, unsigned* weight);
+    bool fgGetProfileWeightForBasicBlock(IL_OFFSET offset, BasicBlock::weight_t* weight);
     void fgInstrumentMethod();
 
 public:
@@ -5538,10 +5538,10 @@ public:
     }
 
     // fgProfileRunsCount - returns total number of scenario runs for the profile data
-    //                      or BB_UNITY_WEIGHT when we aren't using profile data.
+    //                      or BB_UNITY_WEIGHT_UNSIGNED when we aren't using profile data.
     unsigned fgProfileRunsCount()
     {
-        return fgIsUsingProfileWeights() ? fgNumProfileRuns : BB_UNITY_WEIGHT;
+        return fgIsUsingProfileWeights() ? fgNumProfileRuns : BB_UNITY_WEIGHT_UNSIGNED;
     }
 
 //-------- Insert a statement at the start or end of a basic block --------
@@ -6080,7 +6080,7 @@ public:
     // non-loop predecessors other than the head entry, create a new, empty block that goes (only) to the entry,
     // and redirects the preds of the entry to this new block.)  Sets the weight of the newly created block to
     // "ambientWeight".
-    void optEnsureUniqueHead(unsigned loopInd, unsigned ambientWeight);
+    void optEnsureUniqueHead(unsigned loopInd, BasicBlock::weight_t ambientWeight);
 
     void optUnrollLoops(); // Unrolls loops (needs to have cost info)
 
@@ -6485,8 +6485,8 @@ protected:
         unsigned short csdDefCount; // definition   count
         unsigned short csdUseCount; // use          count  (excluding the implicit uses at defs)
 
-        unsigned csdDefWtCnt; // weighted def count
-        unsigned csdUseWtCnt; // weighted use count  (excluding the implicit uses at defs)
+        BasicBlock::weight_t csdDefWtCnt; // weighted def count
+        BasicBlock::weight_t csdUseWtCnt; // weighted use count  (excluding the implicit uses at defs)
 
         GenTree*    csdTree;  // treenode containing the 1st occurrence
         Statement*  csdStmt;  // stmt containing the 1st occurrence
@@ -6599,13 +6599,13 @@ protected:
 #endif // FEATURE_VALNUM_CSE
 
 #if FEATURE_ANYCSE
-    bool     optDoCSE;             // True when we have found a duplicate CSE tree
-    bool     optValnumCSE_phase;   // True when we are executing the optValnumCSE_phase
-    unsigned optCSECandidateTotal; // Grand total of CSE candidates for both Lexical and ValNum
-    unsigned optCSECandidateCount; // Count of CSE's candidates, reset for Lexical and ValNum CSE's
-    unsigned optCSEstart;          // The first local variable number that is a CSE
-    unsigned optCSEcount;          // The total count of CSE's introduced.
-    unsigned optCSEweight;         // The weight of the current block when we are doing PerformCSE
+    bool                 optDoCSE;             // True when we have found a duplicate CSE tree
+    bool                 optValnumCSE_phase;   // True when we are executing the optValnumCSE_phase
+    unsigned             optCSECandidateTotal; // Grand total of CSE candidates for both Lexical and ValNum
+    unsigned             optCSECandidateCount; // Count of CSE's candidates, reset for Lexical and ValNum CSE's
+    unsigned             optCSEstart;          // The first local variable number that is a CSE
+    unsigned             optCSEcount;          // The total count of CSE's introduced.
+    BasicBlock::weight_t optCSEweight;         // The weight of the current block when we are doing PerformCSE
 
     bool optIsCSEcandidate(GenTree* tree);
 
@@ -7723,11 +7723,11 @@ public:
         return codeGen->doDoubleAlign();
     }
     DWORD getCanDoubleAlign();
-    bool shouldDoubleAlign(unsigned refCntStk,
-                           unsigned refCntReg,
-                           unsigned refCntWtdReg,
-                           unsigned refCntStkParam,
-                           unsigned refCntWtdStkDbl);
+    bool shouldDoubleAlign(unsigned             refCntStk,
+                           unsigned             refCntReg,
+                           BasicBlock::weight_t refCntWtdReg,
+                           unsigned             refCntStkParam,
+                           BasicBlock::weight_t refCntWtdStkDbl);
 #endif // DOUBLE_ALIGN
 
     bool IsFullPtrRegMapRequired()

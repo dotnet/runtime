@@ -18117,7 +18117,7 @@ void Compiler::fgRetypeImplicitByRefArgs()
                 // arguments to calls. We undo promotion unless we see enough non-call uses.
                 //
                 const unsigned totalAppearances = varDsc->lvRefCnt(RCS_EARLY);
-                const unsigned callAppearances  = varDsc->lvRefCntWtd(RCS_EARLY);
+                const unsigned callAppearances  = (unsigned)varDsc->lvRefCntWtd(RCS_EARLY);
                 assert(totalAppearances >= callAppearances);
                 const unsigned nonCallAppearances = totalAppearances - callAppearances;
 
