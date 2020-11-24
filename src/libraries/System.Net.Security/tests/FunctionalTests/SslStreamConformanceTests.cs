@@ -3,9 +3,7 @@
 
 using System.IO;
 using System.IO.Tests;
-using System.Net.Sockets;
 using System.Security.Authentication;
-using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading.Tasks;
 using Xunit;
