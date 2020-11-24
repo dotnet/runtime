@@ -36,13 +36,17 @@
 #define X86_INSTR_NOP5_5                0x90    // 5th byte of 5-byte nop
 #define X86_INSTR_INT3                  0xCC    // int3
 #define X86_INSTR_HLT                   0xF4    // hlt
+#define X86_INSTR_PUSH_EAX              0x50    // push eax
 #define X86_INSTR_PUSH_EBP              0x55    // push ebp
 #define X86_INSTR_W_MOV_EBP_ESP         0xEC8B  // mov ebp, esp
 #define X86_INSTR_POP_ECX               0x59    // pop ecx
 #define X86_INSTR_RET                   0xC2    // ret imm16
 #define X86_INSTR_RETN                  0xC3    // ret
+#define X86_INSTR_w_TEST_ESP_EAX        0x0485  // test [esp], eax
 #define X86_INSTR_w_LEA_ESP_EBP_BYTE_OFFSET     0x658d      // lea esp, [ebp-bOffset]
 #define X86_INSTR_w_LEA_ESP_EBP_DWORD_OFFSET    0xa58d      // lea esp, [ebp-dwOffset]
+#define X86_INSTR_w_LEA_EAX_ESP_BYTE_OFFSET     0x448d      // lea eax, [esp-bOffset]
+#define X86_INSTR_w_LEA_EAX_ESP_DWORD_OFFSET    0x848d      // lea eax, [esp-dwOffset]
 #define X86_INSTR_JMP_NEAR_REL32     0xE9        // near jmp rel32
 #define X86_INSTR_w_JMP_FAR_IND_IMM     0x25FF        // far jmp [addr32]
 
