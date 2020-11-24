@@ -14,7 +14,7 @@ namespace System.Reflection.Emit.Tests
         {
             TypeBuilder type = Helpers.DynamicType(TypeAttributes.Abstract);
             MethodBuilder method = type.DefineMethod("Name", MethodAttributes.Public);
-            Assert.Equal(Array.Empty<Type>(), method.GetGenericArguments());
+            Assert.Equal(Type.EmptyTypes, method.GetGenericArguments());
         }
 
         [Fact]

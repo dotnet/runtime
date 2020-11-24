@@ -413,7 +413,7 @@ namespace DispatchProxyTests
             List<MethodInfo> invokedMethods = new List<MethodInfo>();
             object proxy =
                 typeof(DispatchProxy)
-                .GetRuntimeMethod("Create", Array.Empty<Type>()).MakeGenericMethod(ieventServiceTypeInfo.AsType(), typeof(TestDispatchProxy))
+                .GetRuntimeMethod("Create", Type.EmptyTypes).MakeGenericMethod(ieventServiceTypeInfo.AsType(), typeof(TestDispatchProxy))
                 .Invoke(null, null);
             ((TestDispatchProxy)proxy).CallOnInvoke = (method, args) =>
             {
