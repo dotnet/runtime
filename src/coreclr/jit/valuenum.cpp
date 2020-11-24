@@ -8444,6 +8444,8 @@ void Compiler::fgValueNumberSimd(GenTree* tree)
     assert(tree->OperGet() == GT_SIMD);
     GenTreeSIMD* simdNode = tree->AsSIMD();
     assert(simdNode != nullptr);
+
+    VNFunc       simdFunc = GetVNFuncForNode(tree);
     ValueNumPair excSetPair;
     ValueNumPair normalPair;
 
@@ -8451,7 +8453,7 @@ void Compiler::fgValueNumberSimd(GenTree* tree)
     if (tree->AsOp()->gtOp1 == nullptr)
     {
         excSetPair = ValueNumStore::VNPForEmptyExcSet();
-        normalPair = vnStore->VNPairForFunc(tree->TypeGet(), GetVNFuncForNode(tree));
+        normalPair = vnStore->VNPairForFunc(tree->TypeGet(), simdFunc);
     }
     else if (tree->AsOp()->gtOp1->OperIs(GT_LIST))
     {
@@ -8471,9 +8473,18 @@ void Compiler::fgValueNumberSimd(GenTree* tree)
         ValueNumPair op1Xvnp;
         vnStore->VNPUnpackExc(tree->AsOp()->gtOp1->gtVNPair, &op1vnp, &op1Xvnp);
 
-        if (simdNode->gtSIMDIntrinsicID == SIMDIntrinsicInitArray)
+        ValueNum addrVN       = ValueNumStore::NoVN;
+        bool     isMemoryLoad = simdNode->OperIsMemoryLoad();
+
+        if (isMemoryLoad)
         {
+            // Currently the only SIMD operation with MemoryLoad sematics is SIMDIntrinsicInitArray
+            // and it has to be handled specially since it has an optional op2
+            //
+            assert(simdNode->gtSIMDIntrinsicID == SIMDIntrinsicInitArray);
+
             // rationalize rewrites this as an explicit load with op1 as the base address
+            assert(tree->OperIsImplicitIndir());
 
             ValueNumPair op2vnp;
             if (tree->AsOp()->gtOp2 == nullptr)
@@ -8491,17 +8502,19 @@ void Compiler::fgValueNumberSimd(GenTree* tree)
                 excSetPair = vnStore->VNPExcSetUnion(op1Xvnp, op2Xvnp);
             }
 
-            ValueNum addrVN =
-                vnStore->VNForFunc(TYP_BYREF, GetVNFuncForNode(tree), op1vnp.GetLiberal(), op2vnp.GetLiberal());
+            assert(vnStore->VNFuncArity(simdFunc) == 2);
+            addrVN = vnStore->VNForFunc(TYP_BYREF, simdFunc, op1vnp.GetLiberal(), op2vnp.GetLiberal());
+
 #ifdef DEBUG
             if (verbose)
             {
-                printf("Treating GT_SIMD InitArray as a ByrefExposed load , addrVN is ");
+                printf("Treating GT_SIMD %s as a ByrefExposed load , addrVN is ",
+                       simdIntrinsicNames[simdNode->gtSIMDIntrinsicID]);
                 vnPrint(addrVN, 0);
             }
 #endif // DEBUG
 
-            // The address points into the heap, so it is an ByrefExposed load.
+            // The address could point anywhere, so it is an ByrefExposed load.
             //
             ValueNum loadVN = fgValueNumberByrefExposedLoad(tree->TypeGet(), addrVN);
             tree->gtVNPair.SetLiberal(loadVN);
@@ -8529,8 +8542,6 @@ void Compiler::fgValueNumberSimd(GenTree* tree)
             }
 #endif
         }
-
-        VNFunc simdFunc = GetVNFuncForNode(tree);
 
         if (tree->AsOp()->gtOp2 == nullptr)
         {
@@ -8585,9 +8596,37 @@ void Compiler::fgValueNumberHWIntrinsic(GenTree* tree)
         fgMutateGcHeap(tree DEBUGARG("HWIntrinsic - MemoryStore"));
     }
 
-    int    lookupNumArgs    = HWIntrinsicInfo::lookupNumArgs(hwIntrinsicNode->gtHWIntrinsicId);
-    bool   encodeResultType = vnEncodesResultTypeForHWIntrinsic(hwIntrinsicNode->gtHWIntrinsicId);
-    VNFunc func             = GetVNFuncForNode(tree);
+    VNFunc func         = GetVNFuncForNode(tree);
+    bool   isMemoryLoad = hwIntrinsicNode->OperIsMemoryLoad();
+
+    // If we have a MemoryLoad operation we will use the fgValueNumberByrefExposedLoad
+    // method to assign a value number that depends upon fgCurMemoryVN[ByrefExposed] ValueNumber
+    //
+    if (isMemoryLoad)
+    {
+        ValueNumPair op1vnp;
+        ValueNumPair op1Xvnp;
+        vnStore->VNPUnpackExc(tree->AsOp()->gtOp1->gtVNPair, &op1vnp, &op1Xvnp);
+
+        // The addrVN incorporates both op1's ValueNumber and the func operation
+        // The func is used because operations such as LoadLow and LoadHigh perform
+        // different operations, thus need to compute different ValueNumbers
+        // We don't need to encode the result type as it will be encoded by the opcode in 'func'
+        //
+        ValueNum addrVN = vnStore->VNForFunc(TYP_BYREF, func, op1vnp.GetLiberal());
+
+        // The address could point anywhere, so it is an ByrefExposed load.
+        //
+        ValueNum loadVN = fgValueNumberByrefExposedLoad(tree->TypeGet(), addrVN);
+        tree->gtVNPair.SetLiberal(loadVN);
+        tree->gtVNPair.SetConservative(vnStore->VNForExpr(compCurBB, tree->TypeGet()));
+        tree->gtVNPair = vnStore->VNPWithExc(tree->gtVNPair, op1Xvnp);
+        fgValueNumberAddExceptionSetForIndirection(tree, tree->AsOp()->gtOp1);
+        return;
+    }
+
+    int  lookupNumArgs    = HWIntrinsicInfo::lookupNumArgs(hwIntrinsicNode->gtHWIntrinsicId);
+    bool encodeResultType = vnEncodesResultTypeForHWIntrinsic(hwIntrinsicNode->gtHWIntrinsicId);
 
     ValueNumPair excSetPair = ValueNumStore::VNPForEmptyExcSet();
     ValueNumPair normalPair;
