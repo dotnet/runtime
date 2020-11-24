@@ -2342,7 +2342,9 @@ namespace Internal.JitInterface
         { throw new NotImplementedException("getBBProfileData"); }
 
         private CORINFO_CLASS_STRUCT_* getLikelyClass(CORINFO_METHOD_STRUCT_* ftnHnd, CORINFO_CLASS_STRUCT_* baseHnd, uint IlOffset, ref uint pLikelihood, ref uint pNumberOfClasses)
-        { throw new NotImplementedException("getLikelyClass"); }
+        {
+            return 0;
+        }
 
         private void getAddressOfPInvokeTarget(CORINFO_METHOD_STRUCT_* method, ref CORINFO_CONST_LOOKUP pLookup)
         {
