@@ -3238,14 +3238,28 @@ namespace System
             if (instantiation == null)
                 throw new ArgumentNullException(nameof(instantiation));
 
-            RuntimeType[] instantiationRuntimeType = new RuntimeType[instantiation.Length];
-
             if (!IsGenericTypeDefinition)
-                throw new InvalidOperationException(
-                    SR.Format(SR.Arg_NotGenericTypeDefinition, this));
+                throw new InvalidOperationException(SR.Format(SR.Arg_NotGenericTypeDefinition, this));
 
-            if (GetGenericArguments().Length != instantiation.Length)
+            RuntimeType[] genericParameters = GetGenericArgumentsInternal();
+            if (genericParameters.Length != instantiation.Length)
                 throw new ArgumentException(SR.Argument_GenericArgsCount, nameof(instantiation));
+
+            if (instantiation.Length == 1 && instantiation[0] is RuntimeType rt)
+            {
+                ThrowIfTypeNeverValidGenericArgument(rt);
+                try
+                {
+                    return new RuntimeTypeHandle(this).Instantiate(rt);
+                }
+                catch (TypeLoadException e)
+                {
+                    ValidateGenericArguments(this, new[] { rt }, e);
+                    throw;
+                }
+            }
+
+            RuntimeType[] instantiationRuntimeType = new RuntimeType[instantiation.Length];
 
             bool foundSigType = false;
             bool foundNonRuntimeType = false;
@@ -3276,8 +3290,6 @@ namespace System
 
                 return System.Reflection.Emit.TypeBuilderInstantiation.MakeGenericType(this, (Type[])(instantiation.Clone()));
             }
-
-            RuntimeType[] genericParameters = GetGenericArgumentsInternal();
 
             SanityCheckGenericArguments(instantiationRuntimeType, genericParameters);
 
