@@ -60,7 +60,6 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
                         {
                             disposable.Dispose();
                         }
-                        _disposables = null;
                     }
                     ThrowHelper.ThrowObjectDisposedException();
                 }
