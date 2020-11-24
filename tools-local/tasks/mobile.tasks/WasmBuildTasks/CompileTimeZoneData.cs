@@ -86,7 +86,7 @@ public class CompileTimeZoneData : Task
         }
         CompileTimeZoneDataSource();
 
-        if (FilterSystemTimeZones!) {
+        if (FilterSystemTimeZones) {
             string[] filtered = new string[] { "America/Los_Angeles", "Australia/Sydney", "Europe/London", "Pacific/Tongatapu",
                                 "America/Sao_Paulo", "Australia/Perth", "Africa/Nairobi", "Europe/Berlin",
                                 "Europe/Moscow", "Africa/Tripoli", "America/Argentina/Catamarca", "Europe/Lisbon",
