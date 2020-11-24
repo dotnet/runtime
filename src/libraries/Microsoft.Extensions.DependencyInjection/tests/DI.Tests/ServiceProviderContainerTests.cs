@@ -267,7 +267,7 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
         }
 
         [Fact]
-        private void GetService_ThenDisposeOnDifferentThread_ServiceDisposed()
+        public void GetService_ThenDisposeOnDifferentThread_ServiceDisposed()
         {
             var services = new ServiceCollection();
             services.AddSingleton<Foo1>();
@@ -304,7 +304,7 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
             });
         }
 
-        public class Foo1 : IDisposable
+        private class Foo1 : IDisposable
         {
             public Foo1()
             {
@@ -318,7 +318,7 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
             }
         }
 
-        public class Foo2 : IDisposable
+        private class Foo2 : IDisposable
         {
             public Foo2(IServiceProvider sp)
             {
