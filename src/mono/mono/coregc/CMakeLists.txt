@@ -11,12 +11,12 @@ include_directories(
   ${coreclr_root}/src/pal/inc)
 
 
-add_definitions(-D_AMD64_ -DBIT64 -DFEATURE_REDHAWK -DPLATFORM_UNIX -DHOST_64BIT -DHOST_AMD64 -DTARGET_UNIX -DNDEBUG -DHAVE_CLOCK_GETTIME_NSEC_NP -DHAVE_SYSCTL)
+add_definitions(-D_AMD64_ -DHAVE_CORE_GC -DBIT64 -DFEATURE_CONSERVATIVE_GC -DFEATURE_REDHAWK -DPLATFORM_UNIX -DHOST_64BIT -DHOST_AMD64 -DTARGET_UNIX -DNDEBUG -DHAVE_CLOCK_GETTIME_NSEC_NP -DHAVE_SYSCTL)
 
 set(mono_coregc_sources_base
     coregc-mono.cpp
     coregc-mono.h
- )
+)
 	 
  set (coregc_sources_base
     gceventstatus.h
