@@ -59,7 +59,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
                     }
                     else
                     {
-                        ((IAsyncDisposable)service).DisposeAsync().AsTask().Wait();
+                        ((IAsyncDisposable)service).DisposeAsync().AsTask().GetAwaiter().GetResult();
                     }
                     ThrowHelper.ThrowObjectDisposedException();
                 }
