@@ -3817,6 +3817,11 @@ public:
 
 class fgArgInfo;
 
+// This represents the managed calling convention. We need some way to represent the
+// managed calling convention here since we use this type within the JIT for choosing
+// how to home return values and arguments.
+#define CORINFO_UNMANAGED_CALLCONV_MANAGED CORINFO_UNMANAGED_CALLCONV_UNKNOWN
+
 struct GenTreeCall final : public GenTree
 {
     class Use
