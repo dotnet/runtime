@@ -522,6 +522,17 @@ namespace System
         [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
         private static extern void Instantiate(QCallTypeHandle handle, IntPtr* pInst, int numGenericArgs, ObjectHandleOnStack type);
 
+        internal RuntimeType Instantiate(RuntimeType inst)
+        {
+            IntPtr ptr = inst.TypeHandle.Value;
+
+            RuntimeType? type = null;
+            RuntimeTypeHandle nativeHandle = GetNativeHandle();
+            Instantiate(new QCallTypeHandle(ref nativeHandle), &ptr, 1, ObjectHandleOnStack.Create(ref type));
+            GC.KeepAlive(inst);
+            return type!;
+        }
+
         internal RuntimeType Instantiate(Type[]? inst)
         {
             IntPtr[]? instHandles = CopyRuntimeTypeHandles(inst, out int instCount);
