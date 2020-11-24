@@ -37,9 +37,11 @@ namespace Internal.Cryptography.Pal
             List<ICertificatePal>? certPals;
             Exception? openSslException;
 
+            bool permitKeyReuse = !keyStorageFlags.HasFlag(X509KeyStorageFlags.EphemeralKeySet);
+
             if (PkcsFormatReader.TryReadPkcs7Der(rawData, out certPals) ||
                 PkcsFormatReader.TryReadPkcs7Pem(rawData, out certPals) ||
-                PkcsFormatReader.TryReadPkcs12(rawData, password, out certPals, out openSslException))
+                PkcsFormatReader.TryReadPkcs12(rawData, password, permitKeyReuse, out certPals, out openSslException))
             {
                 Debug.Assert(certPals != null);
 
@@ -56,11 +58,11 @@ namespace Internal.Cryptography.Pal
             {
                 Interop.Crypto.CheckValidOpenSslHandle(bio);
 
-                return FromBio(fileName, bio, password);
+                return FromBio(fileName, bio, password, keyStorageFlags);
             }
         }
 
-        private static ILoaderPal FromBio(string fileName, SafeBioHandle bio, SafePasswordHandle password)
+        private static ILoaderPal FromBio(string fileName, SafeBioHandle bio, SafePasswordHandle password, X509KeyStorageFlags keyStorageFlags)
         {
             int bioPosition = Interop.Crypto.BioTell(bio);
             Debug.Assert(bioPosition >= 0);
@@ -104,7 +106,9 @@ namespace Internal.Cryptography.Pal
             // Capture the exception so in case of failure, the call to BioSeek does not override it.
             Exception? openSslException;
             byte[] data = File.ReadAllBytes(fileName);
-            if (PkcsFormatReader.TryReadPkcs12(data, password, out certPals, out openSslException))
+            bool permitKeyReuse = !keyStorageFlags.HasFlag(X509KeyStorageFlags.EphemeralKeySet);
+
+            if (PkcsFormatReader.TryReadPkcs12(data, password, permitKeyReuse, out certPals, out openSslException))
             {
                 return ListToLoaderPal(certPals);
             }

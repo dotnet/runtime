@@ -27,6 +27,8 @@ namespace Internal.Cryptography.Pal
         private int _certCount;
         private PointerMemoryManager<byte>? _tmpManager;
 
+        protected bool PermitKeyReuse { get; init; }
+
         protected abstract ICertificatePalCore ReadX509Der(ReadOnlyMemory<byte> data);
         protected abstract AsymmetricAlgorithm LoadKey(ReadOnlyMemory<byte> safeBagBagValue);
 
@@ -288,6 +290,7 @@ namespace Internal.Cryptography.Pal
             SafeBagAsn[] keyBags = ArrayPool<SafeBagAsn>.Shared.Rent(10);
             RentedSubjectPublicKeyInfo[]? publicKeyInfos = null;
             AsymmetricAlgorithm[]? keys = null;
+            bool[]? consumedKeys = null;
             CertAndKey[]? certs = null;
             int certBagIdx = 0;
             int keyBagIdx = 0;
@@ -308,6 +311,9 @@ namespace Internal.Cryptography.Pal
                 keys = ArrayPool<AsymmetricAlgorithm>.Shared.Rent(keyBagIdx);
                 keys.AsSpan().Clear();
 
+                consumedKeys = ArrayPool<bool>.Shared.Rent(keyBagIdx);
+                consumedKeys.AsSpan().Clear();
+
                 publicKeyInfos = ArrayPool<RentedSubjectPublicKeyInfo>.Shared.Rent(keyBagIdx);
                 publicKeyInfos.AsSpan().Clear();
 
@@ -321,6 +327,7 @@ namespace Internal.Cryptography.Pal
                     keyBags,
                     publicKeyInfos,
                     keys,
+                    consumedKeys,
                     keyBagIdx);
 
                 _certCount = certBagIdx;
@@ -343,12 +350,19 @@ namespace Internal.Cryptography.Pal
             {
                 if (keys != null)
                 {
-                    foreach (AsymmetricAlgorithm key in keys)
+                    Debug.Assert(consumedKeys is not null);
+
+                    // Release any keys that did not get consumed.
+                    for (int i = 0; i < keyBagIdx; i++)
                     {
-                        key?.Dispose();
+                        if (!consumedKeys[i])
+                        {
+                            keys[i]?.Dispose();
+                        }
                     }
 
-                    ArrayPool<AsymmetricAlgorithm>.Shared.Return(keys);
+                    ArrayPool<AsymmetricAlgorithm>.Shared.Return(keys, clearArray: true);
+                    ArrayPool<bool>.Shared.Return(consumedKeys);
                 }
 
                 if (publicKeyInfos != null)
@@ -504,6 +518,7 @@ namespace Internal.Cryptography.Pal
             SafeBagAsn[] keyBags,
             RentedSubjectPublicKeyInfo[] publicKeyInfos,
             AsymmetricAlgorithm?[] keys,
+            bool[] consumedKeys,
             int keyBagIdx)
         {
             for (certBagIdx--; certBagIdx >= 0; certBagIdx--)
@@ -550,13 +565,13 @@ namespace Internal.Cryptography.Pal
 
                 if (matchingKeyIdx != -1)
                 {
-                    if (keys[matchingKeyIdx] == null)
+                    if (keys[matchingKeyIdx] is null || (consumedKeys[matchingKeyIdx] && !PermitKeyReuse))
                     {
                         throw new CryptographicException(SR.Cryptography_Pfx_BadKeyReference);
                     }
 
                     certs[certBagIdx].Key = keys[matchingKeyIdx];
-                    keys[matchingKeyIdx] = null;
+                    consumedKeys[matchingKeyIdx] = true;
                 }
             }
         }

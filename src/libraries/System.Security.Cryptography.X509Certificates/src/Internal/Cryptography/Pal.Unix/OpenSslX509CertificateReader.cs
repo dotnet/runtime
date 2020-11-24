@@ -50,11 +50,13 @@ namespace Internal.Cryptography.Pal
             ICertificatePal? cert;
             Exception? openSslException;
 
+            bool permitKeyReuse = !keyStorageFlags.HasFlag(X509KeyStorageFlags.EphemeralKeySet);
+
             if (TryReadX509Der(rawData, out cert) ||
                 TryReadX509Pem(rawData, out cert) ||
                 PkcsFormatReader.TryReadPkcs7Der(rawData, out cert) ||
                 PkcsFormatReader.TryReadPkcs7Pem(rawData, out cert) ||
-                PkcsFormatReader.TryReadPkcs12(rawData, password, out cert, out openSslException))
+                PkcsFormatReader.TryReadPkcs12(rawData, password, permitKeyReuse, out cert, out openSslException))
             {
                 if (cert == null)
                 {
@@ -84,9 +86,12 @@ namespace Internal.Cryptography.Pal
 
             if (pal == null)
             {
+                bool permitKeyReuse = !keyStorageFlags.HasFlag(X509KeyStorageFlags.EphemeralKeySet);
+
                 PkcsFormatReader.TryReadPkcs12(
                     File.ReadAllBytes(fileName),
                     password,
+                    permitKeyReuse,
                     out pal,
                     out Exception? exception);
 

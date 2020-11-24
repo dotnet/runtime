@@ -253,24 +253,35 @@ namespace Internal.Cryptography.Pal
             return true;
         }
 
-        internal static bool TryReadPkcs12(ReadOnlySpan<byte> rawData, SafePasswordHandle password, [NotNullWhen(true)] out ICertificatePal? certPal, out Exception? openSslException)
+        internal static bool TryReadPkcs12(
+            ReadOnlySpan<byte> rawData,
+            SafePasswordHandle password,
+            bool permitKeyReuse,
+            [NotNullWhen(true)] out ICertificatePal? certPal,
+            out Exception? openSslException)
         {
             List<ICertificatePal>? ignored;
 
-            return TryReadPkcs12(rawData, password, true, out certPal!, out ignored, out openSslException);
+            return TryReadPkcs12(rawData, password, single: true, permitKeyReuse, out certPal!, out ignored, out openSslException);
         }
 
-        internal static bool TryReadPkcs12(ReadOnlySpan<byte> rawData, SafePasswordHandle password, [NotNullWhen(true)] out List<ICertificatePal>? certPals, out Exception? openSslException)
+        internal static bool TryReadPkcs12(
+            ReadOnlySpan<byte> rawData,
+            SafePasswordHandle password,
+            bool permitKeyReuse,
+            [NotNullWhen(true)] out List<ICertificatePal>? certPals,
+            out Exception? openSslException)
         {
             ICertificatePal? ignored;
 
-            return TryReadPkcs12(rawData, password, false, out ignored, out certPals!, out openSslException);
+            return TryReadPkcs12(rawData, password, single: false, permitKeyReuse, out ignored, out certPals!, out openSslException);
         }
 
         private static bool TryReadPkcs12(
             ReadOnlySpan<byte> rawData,
             SafePasswordHandle password,
             bool single,
+            bool permitKeyReuse,
             out ICertificatePal? readPal,
             out List<ICertificatePal>? readCerts,
             out Exception? openSslException)
@@ -278,7 +289,7 @@ namespace Internal.Cryptography.Pal
             // DER-PKCS12
             OpenSslPkcs12Reader? pfx;
 
-            if (!OpenSslPkcs12Reader.TryRead(rawData, out pfx, out openSslException))
+            if (!OpenSslPkcs12Reader.TryRead(rawData, permitKeyReuse, out pfx, out openSslException))
             {
                 readPal = null;
                 readCerts = null;

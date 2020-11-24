@@ -45,14 +45,17 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             byte[] pfxBytes,
             string correctPassword,
             X509Certificate2 expectedCert,
-            Action<X509Certificate2> otherWork = null);
+            Action<X509Certificate2> otherWork = null,
+            X509KeyStorageFlags? requiredFlags = null);
 
         protected abstract void ReadMultiPfx(
             byte[] pfxBytes,
             string correctPassword,
             X509Certificate2 expectedSingleCert,
             X509Certificate2[] expectedOrder,
-            Action<X509Certificate2> perCertOtherWork = null);
+            Action<X509Certificate2> perCertOtherWork = null,
+            Action<X509Certificate2Collection> collectionWork = null,
+            X509KeyStorageFlags? requiredFlags = null);
 
         protected abstract void ReadEmptyPfx(byte[] pfxBytes, string correctPassword);
         protected abstract void ReadWrongPassword(byte[] pfxBytes, string wrongPassword);
@@ -62,7 +65,10 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             string bestPassword,
             // NTE_FAIL
             int win32Error = -2146893792,
-            int altWin32Error = 0);
+            int altWin32Error = 0,
+            X509KeyStorageFlags? requiredFlags = null);
+
+        public static bool PlatformSupportsEphemeralKeys => !OperatingSystem.IsMacOS();
 
         [Fact]
         public void EmptyPfx_NoMac()
@@ -777,12 +783,16 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             }
         }
 
-        [Theory]
+        [ConditionalTheory(nameof(PlatformSupportsEphemeralKeys))]
         [InlineData(false)]
         [InlineData(true)]
-        public void CertTwice_KeyOnce(bool addLocalKeyId)
+        public void CertTwice_KeyOnce_Ephemeral(bool addLocalKeyId)
         {
-            string pw = nameof(CertTwice_KeyOnce);
+            // Windows permits two certificates to use the same key, as long
+            // as the key is not ephemerally imported. This test makes sure that
+            // if the import uses ephemeral keys, we do not allow the key to be
+            // used by multiple certificates.
+            string pw = nameof(CertTwice_KeyOnce_Ephemeral);
 
             using (var cert = new X509Certificate2(TestData.PfxData, TestData.PfxDataPassword, s_exportableImportFlags))
             using (RSA key = cert.GetRSAPrivateKey())
@@ -811,7 +821,70 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                     pfxBytes,
                     pw,
                     // NTE_BAD_DATA
-                    -2146893819);
+                    -2146893819,
+                    requiredFlags: X509KeyStorageFlags.EphemeralKeySet);
+            }
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void CertTwice_KeyOnce_Persisted(bool addLocalKeyId)
+        {
+            // If a key is not ephemeral, then using the key multiple times is
+            // permitted.
+            string pw = nameof(CertTwice_KeyOnce_Persisted);
+
+            using (var cert = new X509Certificate2(TestData.PfxData, TestData.PfxDataPassword, s_exportableImportFlags))
+            using (RSA key = cert.GetRSAPrivateKey())
+            {
+                Pkcs12Builder builder = new Pkcs12Builder();
+                Pkcs12SafeContents keyContents = new Pkcs12SafeContents();
+                Pkcs12SafeContents certContents = new Pkcs12SafeContents();
+
+                Pkcs12SafeBag keyBag = keyContents.AddShroudedKey(key, pw, s_windowsPbe);
+                Pkcs12SafeBag certBag = certContents.AddCertificate(cert);
+                Pkcs12SafeBag certBag2 = certContents.AddCertificate(cert);
+
+                if (addLocalKeyId)
+                {
+                    certBag.Attributes.Add(s_keyIdOne);
+                    certBag2.Attributes.Add(s_keyIdOne);
+                    keyBag.Attributes.Add(s_keyIdOne);
+                }
+
+                AddContents(keyContents, builder, pw, encrypt: false);
+                AddContents(certContents, builder, pw, encrypt: true);
+                builder.SealWithMac(pw, s_digestAlgorithm, MacCount);
+                byte[] pfxBytes = builder.Encode();
+
+                ReadMultiPfx(
+                    pfxBytes,
+                    pw,
+                    cert,
+                    new [] { cert, cert },
+                    collectionWork: SharedKeyValidation,
+                    requiredFlags: X509KeyStorageFlags.UserKeySet | X509KeyStorageFlags.PersistKeySet);
+            }
+
+            static void SharedKeyValidation(X509Certificate2Collection collection)
+            {
+                X509Certificate2 cert1 = collection[0];
+                X509Certificate2 cert2 = collection[1];
+                using RSA key1 = cert1.GetRSAPrivateKey();
+                using RSA key2 = cert2.GetRSAPrivateKey();
+                byte[] spki1 = key1.ExportSubjectPublicKeyInfo();
+                byte[] spki2 = key2.ExportSubjectPublicKeyInfo();
+
+                Assert.Equal(1024, key1.KeySize);
+                Assert.Equal(spki1, spki2);
+
+                // Changing the key size and exporting forces generate a new key.
+                key1.KeySize = 2048;
+                Assert.NotEqual(spki1, key1.ExportSubjectPublicKeyInfo());
+
+                // Make sure it didn't mutate key2.
+                Assert.Equal(spki2, key2.ExportSubjectPublicKeyInfo());
             }
         }
 

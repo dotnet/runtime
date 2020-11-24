@@ -11,10 +11,15 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             byte[] pfxBytes,
             string correctPassword,
             X509Certificate2 expectedCert,
-            Action<X509Certificate2> otherWork)
+            Action<X509Certificate2> otherWork,
+            X509KeyStorageFlags? requiredFlags)
         {
-            ReadPfx(pfxBytes, correctPassword, expectedCert, otherWork, s_importFlags);
-            ReadPfx(pfxBytes, correctPassword, expectedCert, otherWork, s_exportableImportFlags);
+            ReadPfx(pfxBytes, correctPassword, expectedCert, otherWork, null, requiredFlags ?? s_importFlags);
+
+            if (requiredFlags is null)
+            {
+                ReadPfx(pfxBytes, correctPassword, expectedCert, otherWork, null, s_exportableImportFlags);
+            }
         }
 
         protected override void ReadMultiPfx(
@@ -22,10 +27,26 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             string correctPassword,
             X509Certificate2 expectedSingleCert,
             X509Certificate2[] expectedOrder,
-            Action<X509Certificate2> perCertOtherWork)
+            Action<X509Certificate2> perCertOtherWork,
+            Action<X509Certificate2Collection> collectionWork,
+            X509KeyStorageFlags? requiredFlags)
         {
-            ReadPfx(pfxBytes, correctPassword, expectedSingleCert, perCertOtherWork, s_importFlags);
-            ReadPfx(pfxBytes, correctPassword, expectedSingleCert, perCertOtherWork, s_exportableImportFlags);
+            ReadPfx(
+                pfxBytes,
+                correctPassword,
+                expectedSingleCert,
+                perCertOtherWork,
+                requiredFlags ?? s_importFlags);
+
+            if (requiredFlags is null)
+            {
+                ReadPfx(
+                    pfxBytes,
+                    correctPassword,
+                    expectedSingleCert,
+                    perCertOtherWork,
+                    s_exportableImportFlags);
+            }
         }
 
         private void ReadPfx(
@@ -33,6 +54,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             string correctPassword,
             X509Certificate2 expectedCert,
             Action<X509Certificate2> otherWork,
+            Action<X509Certificate2Collection> collectionWork,
             X509KeyStorageFlags flags)
         {
             using (X509Certificate2 cert = new X509Certificate2(pfxBytes, correctPassword, flags))
@@ -63,10 +85,11 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             byte[] pfxBytes,
             string bestPassword,
             int win32Error,
-            int altWin32Error)
+            int altWin32Error,
+            X509KeyStorageFlags? requiredFlags)
         {
             CryptographicException ex = Assert.ThrowsAny<CryptographicException>(
-                () => new X509Certificate2(pfxBytes, bestPassword, s_importFlags));
+                () => new X509Certificate2(pfxBytes, bestPassword, requiredFlags ?? s_importFlags));
 
             if (OperatingSystem.IsWindows())
             {

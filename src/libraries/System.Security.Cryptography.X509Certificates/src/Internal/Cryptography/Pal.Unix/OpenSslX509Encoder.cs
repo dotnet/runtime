@@ -86,7 +86,7 @@ namespace Internal.Cryptography.Pal
             {
                 OpenSslPkcs12Reader? pfx;
 
-                if (OpenSslPkcs12Reader.TryRead(rawData, out pfx))
+                if (OpenSslPkcs12Reader.TryRead(rawData, permitKeyReuse: true, out pfx))
                 {
                     pfx.Dispose();
                     return X509ContentType.Pkcs12;
@@ -153,7 +153,10 @@ namespace Internal.Cryptography.Pal
             {
                 OpenSslPkcs12Reader? pkcs12Reader;
 
-                if (OpenSslPkcs12Reader.TryRead(File.ReadAllBytes(fileName), out pkcs12Reader))
+                // We permit key-reuse only when attempting to determine the content type.
+                // If later during a real import key reuse should not be used, an exception
+                // is thrown then.
+                if (OpenSslPkcs12Reader.TryRead(File.ReadAllBytes(fileName), permitKeyReuse: true, out pkcs12Reader))
                 {
                     pkcs12Reader.Dispose();
 

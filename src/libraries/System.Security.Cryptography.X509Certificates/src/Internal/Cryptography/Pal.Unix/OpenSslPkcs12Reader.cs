@@ -26,11 +26,18 @@ namespace Internal.Cryptography.Pal
             throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
         }
 
-        public static bool TryRead(ReadOnlySpan<byte> data, [NotNullWhen(true)] out OpenSslPkcs12Reader? pkcs12Reader) =>
-            TryRead(data, out pkcs12Reader, out _, captureException: false);
+        public static bool TryRead(
+            ReadOnlySpan<byte> data,
+            bool permitKeyReuse,
+            [NotNullWhen(true)] out OpenSslPkcs12Reader? pkcs12Reader) =>
+                TryRead(data, permitKeyReuse, out pkcs12Reader, out _, captureException: false);
 
-        public static bool TryRead(ReadOnlySpan<byte> data, [NotNullWhen(true)] out OpenSslPkcs12Reader? pkcs12Reader, [NotNullWhen(false)] out Exception? openSslException) =>
-            TryRead(data, out pkcs12Reader, out openSslException!, captureException: true);
+        public static bool TryRead(
+            ReadOnlySpan<byte> data,
+            bool permitKeyReuse,
+            [NotNullWhen(true)] out OpenSslPkcs12Reader? pkcs12Reader,
+            [NotNullWhen(false)] out Exception? openSslException) =>
+                TryRead(data, permitKeyReuse, out pkcs12Reader, out openSslException!, captureException: true);
 
         protected override AsymmetricAlgorithm LoadKey(ReadOnlyMemory<byte> pkcs8)
         {
@@ -82,6 +89,7 @@ namespace Internal.Cryptography.Pal
 
         private static bool TryRead(
             ReadOnlySpan<byte> data,
+            bool permitKeyReuse,
             [NotNullWhen(true)] out OpenSslPkcs12Reader? pkcs12Reader,
             out Exception? openSslException,
             bool captureException)
@@ -90,7 +98,7 @@ namespace Internal.Cryptography.Pal
 
             try
             {
-                pkcs12Reader = new OpenSslPkcs12Reader(data);
+                pkcs12Reader = new OpenSslPkcs12Reader(data) { PermitKeyReuse = permitKeyReuse };
                 return true;
             }
             catch (CryptographicException e)
