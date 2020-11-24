@@ -64,22 +64,17 @@ extern inline char* getexepath(void)
     const char* path = (const char *)getauxval(AT_EXECFN);
     if (path)
     {
-        return strdup(path);
+        return realpath(path, NULL);
     }
-    else
-    {
 #endif // HAVE_GETAUXVAL && defined(AT_EXECFN)
 #ifdef __linux__
-        const char* symlinkEntrypointExecutable = "/proc/self/exe";
+    const char* symlinkEntrypointExecutable = "/proc/self/exe";
 #else
-        const char* symlinkEntrypointExecutable = "/proc/curproc/exe";
+    const char* symlinkEntrypointExecutable = "/proc/curproc/exe";
 #endif
 
-        // Resolve the symlink to the executable from /proc
-        return realpath(symlinkEntrypointExecutable, NULL);
-#if HAVE_GETAUXVAL && defined(AT_EXECFN)
-    }
-#endif // HAVE_GETAUXVAL && defined(AT_EXECFN)
+    // Resolve the symlink to the executable from /proc
+    return realpath(symlinkEntrypointExecutable, NULL);
 #endif // defined(__APPLE__)
 }
 
