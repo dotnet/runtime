@@ -39,7 +39,7 @@ jobs:
       
       - ${{ if and(eq(parameters.osGroup, 'Linux'), eq(parameters.osSubGroup, '_musl')) }}:
         - name: _osParameter
-          value: /p:RuntimeOS=linux-musl /p:OutputRid=linux-musl-${{ parameters.archType }}
+          value: /p:RuntimeOS=linux-musl
 
       # Do not rename as it clashes with MSBuild property in libraries/build-native.proj
       - name: _crossBuildPropertyArg

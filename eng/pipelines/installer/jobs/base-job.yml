@@ -202,10 +202,6 @@ jobs:
       value: ${{ eq(parameters.osSubgroup, '') }}
 
     - ${{ if and(eq(parameters.osSubgroup, '_musl'), eq(parameters.osGroup, 'Linux')) }}:
-      # Set output RID manually: musl isn't properly detected. Make sure to also convert linux to
-      # lowercase for RID format. (Detection normally converts, but we're preventing it.)
-      - name: OutputRidArg
-        value: /p:OutputRid=linux-musl-${{ parameters.archType }}
       - name: _PortableBuild
         value: true
 
@@ -218,13 +214,11 @@ jobs:
         /p:SkipTests=$(SkipTests)
         $(LiveOverridePathArgs)
         $(CommonMSBuildArgs)
-        $(OutputRidArg)
 
     - name: PublishArguments
       value: >-
         /p:PortableBuild=$(_PortableBuild)
         $(CommonMSBuildArgs)
-        $(OutputRidArg)
         /bl:msbuild.publish.binlog
 
     - name: DockerRunMSBuild
