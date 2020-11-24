@@ -24,7 +24,7 @@ namespace System.Threading
 
     public sealed class ExecutionContext : IDisposable, ISerializable
     {
-        internal static readonly ExecutionContext Default = new ExecutionContext(isDefault: true);
+        internal static readonly ExecutionContext Default = new ExecutionContext();
         private static volatile ExecutionContext? s_defaultFlowSuppressed;
 
         private readonly IAsyncLocalValueMap? m_localValues;
@@ -32,9 +32,9 @@ namespace System.Threading
         private readonly bool m_isFlowSuppressed;
         private readonly bool m_isDefault;
 
-        private ExecutionContext(bool isDefault)
+        private ExecutionContext()
         {
-            m_isDefault = isDefault;
+            m_isDefault = true;
         }
 
         private ExecutionContext(
