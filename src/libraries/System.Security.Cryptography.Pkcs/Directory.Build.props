@@ -2,6 +2,8 @@
   <Import Project="..\Directory.Build.props" />
   <PropertyGroup>
     <StrongNameKeyId>Microsoft</StrongNameKeyId>
+    <PackageVersion>5.0.1</PackageVersion>
+    <AssemblyVersion>5.0.0.1</AssemblyVersion>
     <IncludePlatformAttributes>true</IncludePlatformAttributes>
     <UnsupportedOSPlatforms>browser</UnsupportedOSPlatforms>
   </PropertyGroup>
