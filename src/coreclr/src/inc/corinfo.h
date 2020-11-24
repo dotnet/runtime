@@ -734,16 +734,21 @@ inline bool IsCallerPop(CorInfoCallConv callConv)
 }
 #endif // UNIX_X86_ABI
 
+// Represents the calling conventions supported with the extensible calling convention syntax
+// as well as the metadata-encoded calling conventions and the managed calling convention.
 enum CorInfoUnmanagedCallConv
 {
     // These correspond to CorUnmanagedCallingConvention
-
     CORINFO_UNMANAGED_CALLCONV_UNKNOWN,
     CORINFO_UNMANAGED_CALLCONV_C,
     CORINFO_UNMANAGED_CALLCONV_STDCALL,
     CORINFO_UNMANAGED_CALLCONV_THISCALL,
     CORINFO_UNMANAGED_CALLCONV_FASTCALL,
+    // This represents the managed calling convention. We need some way to represent the
+    // managed calling convention here since we use this type within the JIT for choosing
+    // how to home return values and arguments.
     CORINFO_UNMANAGED_CALLCONV_MANAGED
+    // New calling conventions supported with the extensible calling convention encoding go here.
 };
 
 // These are returned from getMethodOptions
