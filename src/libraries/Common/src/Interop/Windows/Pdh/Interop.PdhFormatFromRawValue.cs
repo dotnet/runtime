@@ -5,10 +5,10 @@ using System.Runtime.InteropServices;
 
 internal partial class Interop
 {
-    internal partial class PerfCounter
+    internal partial class Pdh
     {
-        [DllImport(Libraries.PerfCounter, CharSet = CharSet.Unicode)]
-        public static extern int FormatFromRawValue(
+        [DllImport(Libraries.Pdh, CharSet = CharSet.Unicode)]
+        public static extern int PdhFormatFromRawValue(
             uint dwCounterType,
             uint dwFormat,
             ref long pTimeBase,
