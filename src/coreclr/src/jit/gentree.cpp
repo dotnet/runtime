@@ -6070,13 +6070,7 @@ GenTree* Compiler::gtNewStringLiteralNode(InfoAccessType iat, void* pValue)
     switch (iat)
     {
         case IAT_VALUE:
-            // For CoreRT only - Constant object can be a frozen string.
-            if (!IsTargetAbi(CORINFO_CORERT_ABI))
-            {
-                // Non CoreRT - This case is illegal, creating a TYP_REF from an INT_CNS
-                noway_assert(!"unreachable IAT_VALUE case in gtNewStringLiteralNode");
-            }
-
+            setMethodHasFrozenString();
             tree         = gtNewIconEmbHndNode(pValue, nullptr, GTF_ICON_STR_HDL, nullptr);
             tree->gtType = TYP_REF;
 #ifdef DEBUG
