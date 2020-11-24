@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Reflection;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.FileProviders;
@@ -528,6 +529,18 @@ namespace Microsoft.Extensions.Hosting.Tests
             Assert.Equal("value", hostBuilder.Properties["key"]);
 
             using (hostBuilder.Build()) { }
+        }
+
+        [Fact]
+        public void HostServicesSameServiceProviderAsInHostBuilder()
+        {
+            var hostBuilder = Host.CreateDefaultBuilder();
+            var host = hostBuilder.Build();
+            
+            var type = hostBuilder.GetType();
+            var field = type.GetField("_appServices", BindingFlags.Instance | BindingFlags.NonPublic)!;
+            var appServicesFromHostBuilder = (IServiceProvider)field.GetValue(hostBuilder)!;
+            Assert.Same(appServicesFromHostBuilder, host.Services);
         }
 
         private class ServiceC
