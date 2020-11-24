@@ -5243,9 +5243,10 @@ HCIMPL2(void, JIT_ClassProfile, Object *obj, void* tableAddress)
     VALIDATEOBJECTREF(objRef);
 
     ICorJitInfo::ClassProfile* const classProfile = (ICorJitInfo::ClassProfile*) tableAddress;
-    const int count = classProfile->Count++;
-    const int S = ICorJitInfo::ClassProfile::SIZE;
-    const int N = ICorJitInfo::ClassProfile::SAMPLE_INTERVAL;
+    volatile unsigned* pCount = (volatile unsigned*) &classProfile->Count;
+    const unsigned count = *pCount++;
+    const unsigned S = ICorJitInfo::ClassProfile::SIZE;
+    const unsigned N = ICorJitInfo::ClassProfile::SAMPLE_INTERVAL;
 
     if (objRef == NULL)
     {
@@ -5272,7 +5273,7 @@ HCIMPL2(void, JIT_ClassProfile, Object *obj, void* tableAddress)
         // intentionally simple so we can have multithreaded
         // access w/o tearing state.
         //
-        static unsigned s_rng = 100;
+        static volatile unsigned s_rng = 100;
         
         unsigned x = s_rng;
         x ^= x << 13;

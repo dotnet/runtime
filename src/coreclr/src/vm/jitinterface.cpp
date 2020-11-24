@@ -11946,7 +11946,7 @@ CORINFO_CLASS_HANDLE CEEJitInfo::getLikelyClass(
 
 #ifdef FEATURE_PGO
 
-    // If TieredPGO is enabled, query the per call site class profile.
+    // Query the PGO manager's per call site class profile.
     //
     MethodDesc* pMD = (MethodDesc*)ftnHnd;
     unsigned codeSize = 0;

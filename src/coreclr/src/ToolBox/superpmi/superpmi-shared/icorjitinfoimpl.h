@@ -979,6 +979,34 @@ struct BlockCounts  // Also defined here: code:CORBBTPROF_BLOCK_DATA
     UINT32 ILOffset;
     UINT32 ExecutionCount;
 };
+
+// Data structure for a single class probe.
+//
+// ILOffset is the IL offset in the method for the call site being probed.
+// Currently it must be ORed with CLASS_FLAG and (for interface calls)
+// INTERFACE_FLAG.
+//
+// Count is the number of times a call was made at that call site.
+//
+// SIZE is the number of entries in the table.
+//
+// SAMPLE_INTERVAL must be >= SIZE. SAMPLE_INTERVAL / SIZE
+// gives the average number of calls between table updates.
+// 
+struct ClassProfile
+{
+    enum { 
+        SIZE = 8, 
+        SAMPLE_INTERVAL = 32, 
+        CLASS_FLAG     = 0x80000000, 
+        INTERFACE_FLAG = 0x40000000,
+        OFFSET_MASK    = 0x3FFFFFFF
+    };
+
+    UINT32 ILOffset;
+    UINT32 Count;
+    CORINFO_CLASS_HANDLE ClassTable[SIZE];
+};
 */
 
 // allocate a basic block profile buffer where execution counts will be stored

@@ -6698,7 +6698,6 @@ public:
 #define OMF_HAS_EXPRUNTIMELOOKUP 0x00000100 // Method contains a runtime lookup to an expandable dictionary.
 #define OMF_HAS_PATCHPOINT 0x00000200       // Method contains patchpoints
 #define OMF_NEEDS_GCPOLLS 0x00000400        // Method needs GC polls
-#define OMF_HAS_VIRTUAL_CALL 0x00000800     // Method contains call that needs a class profile
 
     bool doesMethodHaveFatPointer()
     {

@@ -420,13 +420,13 @@ void Compiler::fgInstrumentMethod()
         countOfBlocks++;
     }
 
-    // We've alread counted the number of class probes
+    // We've already counted the number of class probes
     // when importing.
     //
     int countOfCalls = info.compClassProbeCount;
 
-    // Optionally bail out, if there are less than three blocks an no call sites to profile
-    // One block is common. We don't expect to see zero or two blcoks here.
+    // Optionally bail out, if there are less than three blocks and no call sites to profile.
+    // One block is common. We don't expect to see zero or two blocks here.
     //
     // Note we have to at least visit all the profile call sites to properly restore their
     // stub addresses. So we can't bail out early if there are any of these.
@@ -491,7 +491,7 @@ void Compiler::fgInstrumentMethod()
             continue;
         }
 
-        // We may see class probes in internal blcoks, thanks to the
+        // We may see class probes in internal blocks, thanks to the
         // block splitting done by the indirect call transformer.
         //
         if (JitConfig.JitClassProfiling() > 0)
@@ -499,7 +499,7 @@ void Compiler::fgInstrumentMethod()
             // Only works when jitting.
             assert(!opts.jitFlags->IsSet(JitFlags::JIT_FLAG_PREJIT));
 
-            if ((block->bbFlags & BBF_HAS_VIRTUAL_CALL) != 0)
+            if ((block->bbFlags & BBF_HAS_CLASS_PROFILE) != 0)
             {
                 // Would be nice to avoid having to search here by tracking
                 // candidates more directly.
@@ -590,17 +590,18 @@ void Compiler::fgInstrumentMethod()
 
                                     // Initialize the class table
                                     //
-                                    // Hack: we use the high bits of the offset to indicate that this record
+                                    // Hack: we use two high bits of the offset to indicate that this record
                                     // is the start of a class profile, and what kind of call is being profiled.
                                     //
                                     IL_OFFSET offset = jitGetILoffs(call->gtClassProfileCandidateInfo->ilOffset);
-                                    assert((int)offset >= 0);
+                                    assert((offset & (ICorJitInfo::ClassProfile::CLASS_FLAG |
+                                                      ICorJitInfo::ClassProfile::INTERFACE_FLAG)) == 0);
 
-                                    offset |= 0x80000000;
+                                    offset |= ICorJitInfo::ClassProfile::CLASS_FLAG;
 
                                     if (call->IsVirtualStub())
                                     {
-                                        offset |= 0x40000000;
+                                        offset |= ICorJitInfo::ClassProfile::INTERFACE_FLAG;
                                     }
                                     else
                                     {

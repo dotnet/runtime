@@ -20599,7 +20599,7 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
 
             // Flag block as needing scrutiny
             //
-            compCurBB->bbFlags |= BBF_HAS_VIRTUAL_CALL;
+            compCurBB->bbFlags |= BBF_HAS_CLASS_PROFILE;
         }
 
         return;

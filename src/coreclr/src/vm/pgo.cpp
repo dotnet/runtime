@@ -159,7 +159,7 @@ void PgoManager::WritePgoData()
             const unsigned thisOffset = records[i].ILOffset;
 
 
-            if (((int) thisOffset) < 0)
+            if ((thisOffset & ICorJitInfo::ClassProfile::CLASS_FLAG) != 0)
             {
                 // remainder must be class probe data
                 hasClassProfile = true;
@@ -195,17 +195,15 @@ void PgoManager::WritePgoData()
                 //
                 const char* profileType = "virtual";
 
-                if (classProfile->ILOffset & 0x40000000)
+                if ((classProfile->ILOffset & ICorJitInfo::ClassProfile::INTERFACE_FLAG) != 0)
                 {
                     profileType = "interface";
                 }
 
                 // "classProfile iloffs %u samples %u entries %u totalCount %u %s\n";
                 //
-                fprintf(pgoDataFile, s_ClassProfileHeader, (classProfile->ILOffset & 0x0FFFFFFF), 
+                fprintf(pgoDataFile, s_ClassProfileHeader, (classProfile->ILOffset & ICorJitInfo::ClassProfile::OFFSET_MASK),
                     classProfile->Count, h.m_count, h.m_totalCount, profileType);
-
-                fflush(pgoDataFile);
 
                 for (unsigned j = 0; j < h.m_count; j++)
                 {
@@ -222,8 +220,6 @@ void PgoManager::WritePgoData()
                 // Advance to next entry.
                 //
                 i += sizeof(ICorJitInfo::ClassProfile) / sizeof(ICorJitInfo::BlockCounts);
-
-                fflush(pgoDataFile);
             }
         }
 
@@ -536,7 +532,7 @@ CORINFO_CLASS_HANDLE PgoManager::getLikelyClass(MethodDesc* pMD, unsigned ilSize
             //
             while (j < header->recordCount)
             {
-                if (((int)s_PgoData[index + j].ILOffset) < 0)
+                if ((s_PgoData[index + j].ILOffset && ICorJitInfo::ClassProfile::CLASS_FLAG) != 0)
                 {
                     break;
                 }
@@ -552,7 +548,7 @@ CORINFO_CLASS_HANDLE PgoManager::getLikelyClass(MethodDesc* pMD, unsigned ilSize
             {
                 const ICorJitInfo::ClassProfile* const classProfile = (ICorJitInfo::ClassProfile*)&s_PgoData[index + j];
 
-                if ((classProfile->ILOffset & 0x0FFFFFFF) != ilOffset)
+                if ((classProfile->ILOffset & ICorJitInfo::ClassProfile::OFFSET_MASK) != ilOffset)
                 {
                     // Need to make sure this is even divisor
                     //
