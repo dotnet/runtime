@@ -1599,8 +1599,6 @@ void QCALLTYPE ReflectionInvocation::RunClassConstructor(
     {
         MethodTable* pMT = typeHnd.AsMethodTable();
 
-        Assembly* pAssem = pMT->GetAssembly();
-
         if (!pMT->IsClassInited())
         {
             pMT->CheckRestore();
@@ -2164,8 +2162,7 @@ void QCALLTYPE RuntimeTypeHandle::GetActivationInfo(
     if (fRequiresSpecialComActivationStub)
     {
         // managed sig: ComClassFactory* -> object (via FCALL)
-        // caller understands the -1 sentinel value and substitutes real address
-        *ppfnAllocator = (PCODE)(-1);
+        *ppfnAllocator = CoreLibBinder::GetMethod(METHOD__RT_TYPE_HANDLE__ALLOCATECOMOBJECT)->GetMultiCallableAddrOfCode();
         *pvAllocatorFirstArg = pClassFactory;
     }
     else

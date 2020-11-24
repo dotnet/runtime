@@ -371,6 +371,7 @@ DEFINE_CLASS(RT_TYPE_HANDLE,        System,                 RuntimeTypeHandle)
 DEFINE_METHOD(RT_TYPE_HANDLE,       GET_TYPE_HELPER,        GetTypeHelper,              SM_Type_ArrType_IntPtr_int_RetType)
 DEFINE_METHOD(RT_TYPE_HANDLE,       PVOID_CTOR,             .ctor,                      IM_RuntimeType_RetVoid)
 DEFINE_METHOD(RT_TYPE_HANDLE,       GETVALUEINTERNAL,       GetValueInternal,           SM_RuntimeTypeHandle_RetIntPtr)
+DEFINE_METHOD(RT_TYPE_HANDLE,       ALLOCATECOMOBJECT,      _AllocateComObject,         SM_VoidPtr_RetObj)
 DEFINE_FIELD(RT_TYPE_HANDLE,        M_TYPE,                 m_type)
 
 DEFINE_CLASS_U(Reflection,             RtFieldInfo,         NoClass)
