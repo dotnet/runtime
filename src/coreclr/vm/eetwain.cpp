@@ -3067,6 +3067,29 @@ inline unsigned SKIP_LEA_ESP_EBP(int val, PTR_CBYTE base, unsigned offset)
     return(offset + delta);
 }
 
+inline unsigned SKIP_LEA_EAX_ESP(int val, PTR_CBYTE base, unsigned offset)
+{
+    LIMITED_METHOD_DAC_CONTRACT;
+
+#ifdef _DEBUG
+    WORD wOpcode = *(PTR_WORD)(base + offset);
+    if (CheckInstrWord(wOpcode, X86_INSTR_w_LEA_EAX_ESP_BYTE_OFFSET))
+    {
+        _ASSERTE(val == *(PTR_SBYTE)(base + offset + 3));
+        _ASSERTE(CAN_COMPRESS(val));
+    }
+    else
+    {
+        _ASSERTE(CheckInstrWord(wOpcode, X86_INSTR_w_LEA_EAX_ESP_DWORD_OFFSET));
+        _ASSERTE(val == *(PTR_INT32)(base + offset + 3));
+        _ASSERTE(!CAN_COMPRESS(val));
+    }
+#endif
+
+    unsigned delta = 3 + (CAN_COMPRESS(-val) ? 1 : 4);
+    return(offset + delta);
+}
+
 unsigned SKIP_ALLOC_FRAME(int size, PTR_CBYTE base, unsigned offset)
 {
     CONTRACTL {
