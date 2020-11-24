@@ -336,7 +336,7 @@ elif [[ -n $__CodeName ]]; then
     chroot $__RootfsDir apt-get -f -y install
     chroot $__RootfsDir apt-get -y install $__UbuntuPackages
     chroot $__RootfsDir symlinks -cr /usr
-    chroot $__RootfsDir apt-get clean
+    chroot $__RootfsDir apt clean
 
     if [ $__SkipUnmount == 0 ]; then
         umount $__RootfsDir/* || true
@@ -346,12 +346,6 @@ elif [[ -n $__CodeName ]]; then
         pushd $__RootfsDir
         patch -p1 < $__CrossDir/$__BuildArch/trusty.patch
         patch -p1 < $__CrossDir/$__BuildArch/trusty-lttng-2.4.patch
-        popd
-    fi
-
-    if [[ "$__BuildArch" == "armel" && "$__CodeName" == "jessie" ]]; then
-        pushd $__RootfsDir
-        patch -p1 < $__CrossDir/$__BuildArch/armel.jessie.patch
         popd
     fi
 elif [[ "$__Tizen" == "tizen" ]]; then
