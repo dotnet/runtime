@@ -20813,6 +20813,15 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
             return;
         }
 
+        // Some of these may be redundant
+        //
+        DWORD likelyMethodAttribs = info.compCompHnd->getMethodAttribs(likelyMethod);
+        DWORD likelyClassAttribs  = info.compCompHnd->getClassAttribs(likelyClass);
+
+        // Try guarded devirtualization.
+        //
+        addGuardedDevirtualizationCandidate(call, likelyMethod, likelyClass, likelyMethodAttribs, likelyClassAttribs,
+                                            likelihood);
         return;
     }
 
@@ -21426,20 +21435,6 @@ void Compiler::addGuardedDevirtualizationCandidate(GenTreeCall*          call,
     static ConfigMethodRange JitGuardedDevirtualizationRange;
     JitGuardedDevirtualizationRange.EnsureInit(JitConfig.JitGuardedDevirtualizationRange());
     assert(!JitGuardedDevirtualizationRange.Error());
-
-    static bool first = true;
-
-    if (first)
-    {
-        first = false;
-
-        if (!JitGuardedDevirtualizationRange.IsEmpty())
-        {
-            printf("**** Range-based GDV enabled for ****\n");
-            JitGuardedDevirtualizationRange.Dump();
-        }
-    }
-
     if (!JitGuardedDevirtualizationRange.Contains(impInlineRoot()->info.compMethodHash()))
     {
         JITDUMP("NOT Marking call [%06u] as guarded devirtualization candidate -- excluded by "
