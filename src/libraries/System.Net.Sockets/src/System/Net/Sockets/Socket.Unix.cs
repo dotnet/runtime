@@ -227,7 +227,6 @@ namespace System.Net.Sockets
             if (errorCode != SocketError.Success)
             {
                 UpdateSendSocketErrorForDisposed(ref errorCode);
-
                 UpdateStatusAfterSocketErrorAndThrowException(errorCode);
             }
 
@@ -270,7 +269,16 @@ namespace System.Net.Sockets
             if (errorCode != SocketError.Success)
             {
                 UpdateSendSocketErrorForDisposed(ref errorCode);
-                UpdateStatusAfterSocketErrorAndThrowException(errorCode);
+
+                if (errorCode == SocketError.OperationAborted)
+                {
+                    // Don't wrap into a SocketException
+                    throw new OperationCanceledException(cancellationToken);
+                }
+                else
+                {
+                    UpdateStatusAfterSocketErrorAndThrowException(errorCode);
+                }
             }
 
             // Send the postBuffer, if any
@@ -298,11 +306,7 @@ namespace System.Net.Sockets
             TaskToApm.End(asyncResult);
         }
 
-        internal sealed class FileSendSocketAsyncEventargs : SocketAsyncEventArgs, IValueTaskSource
-        {
-            public void GetResult(short token) => throw new NotImplementedException();
-            public ValueTaskSourceStatus GetStatus(short token) => throw new NotImplementedException();
-            public void OnCompleted(Action<object?> continuation, object? state, short token, ValueTaskSourceOnCompletedFlags flags) => throw new NotImplementedException();
-        }
+        internal sealed class FileSendSocketAsyncEventargs : SocketAsyncEventArgs
+        { }
     }
 }
