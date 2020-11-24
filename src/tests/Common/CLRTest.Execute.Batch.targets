@@ -328,7 +328,7 @@ IF NOT "%XHARNESS_CLI_PATH%"=="" (
   set HARNESS_RUNNER="xharness"
 )
 
-%__Command% %HARNESS_RUNNER% android test --instrumentation="net.dot.MonoRunner" --package-name="net.dot.%__Category%" --app="%__TestBinaryBase%/%__Category%.apk" --output-directory=`pwd` --arg=entryPointLibName=$(MsBuildProjectName).dll --expected-exit-code=100
+%__Command% %HARNESS_RUNNER% android test --instrumentation="net.dot.MonoRunner" --package-name="net.dot.%__Category%" --app="%__TestBinaryBase%\%__Category%.apk" --output-directory=`pwd` --arg=entryPointLibName=$(MsBuildProjectName).dll --expected-exit-code=100
 set CLRTestExitCode=!ERRORLEVEL!
 set CLRTestExpectedExitCode=0
     ]]></BatchCLRTestLaunchCmds>
