@@ -2009,8 +2009,6 @@ void CodeGen::genAllocLclFrame(unsigned frameSize, regNumber initReg, bool* pIni
         GetEmitter()->emitIns_R_AR(INS_lea, EA_PTRSIZE, REG_STACK_PROBE_HELPER_ARG, REG_SPBASE, spOffset);
         regSet.verifyRegUsed(REG_STACK_PROBE_HELPER_ARG);
 
-        // Can't have a call until we have enough padding for ReJit.
-        genPrologPadForReJit();
         genEmitHelperCall(CORINFO_HELP_STACK_PROBE, 0, EA_UNKNOWN);
 
         if (compiler->info.compPublishStubParam)
@@ -2029,8 +2027,6 @@ void CodeGen::genAllocLclFrame(unsigned frameSize, regNumber initReg, bool* pIni
         GetEmitter()->emitIns_R_AR(INS_lea, EA_PTRSIZE, REG_STACK_PROBE_HELPER_ARG, REG_SPBASE, -(int)frameSize);
         regSet.verifyRegUsed(REG_STACK_PROBE_HELPER_ARG);
 
-        // Can't have a call until we have enough padding for ReJit.
-        genPrologPadForReJit();
         genEmitHelperCall(CORINFO_HELP_STACK_PROBE, 0, EA_UNKNOWN);
 
         if (initReg == REG_DEFAULT_HELPER_CALL_TARGET)
