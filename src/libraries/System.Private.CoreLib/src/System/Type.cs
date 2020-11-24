@@ -60,7 +60,7 @@ namespace System
         public virtual int GetArrayRank() => throw new NotSupportedException(SR.NotSupported_SubclassOverride);
 
         public virtual Type GetGenericTypeDefinition() => throw new NotSupportedException(SR.NotSupported_SubclassOverride);
-        public virtual Type[] GenericTypeArguments => (IsGenericType && !IsGenericTypeDefinition) ? GetGenericArguments() : Array.Empty<Type>();
+        public virtual Type[] GenericTypeArguments => (IsGenericType && !IsGenericTypeDefinition) ? GetGenericArguments() : Type.EmptyTypes;
         public virtual Type[] GetGenericArguments() => throw new NotSupportedException(SR.NotSupported_SubclassOverride);
 
         public virtual int GenericParameterPosition => throw new InvalidOperationException(SR.Arg_NotGenericParameter);
@@ -131,6 +131,27 @@ namespace System
 
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)]
         public ConstructorInfo? GetConstructor(Type[] types) => GetConstructor(BindingFlags.Public | BindingFlags.Instance, null, types, null);
+
+        /// <summary>
+        /// Searches for a constructor whose parameters match the specified argument types, using the specified binding constraints.
+        /// </summary>
+        /// <param name="bindingAttr">
+        /// A bitwise combination of the enumeration values that specify how the search is conducted.
+        /// -or-
+        /// Default to return null.
+        /// </param>
+        /// <param name="types">
+        /// An array of Type objects representing the number, order, and type of the parameters for the constructor to get.
+        /// -or-
+        /// An empty array of the type <see cref="Type"/> (that is, Type[] types = Array.Empty{Type}()) to get a constructor that takes no parameters.
+        /// -or-
+        /// <see cref="EmptyTypes"/>.
+        /// </param>
+        /// <returns>
+        /// A <see cref="ConstructorInfo"/> object representing the constructor that matches the specified requirements, if found; otherwise, null.
+        /// </returns>
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors)]
+        public ConstructorInfo? GetConstructor(BindingFlags bindingAttr, Type[] types) => GetConstructor(bindingAttr, binder: null, types, modifiers: null);
 
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors)]
         public ConstructorInfo? GetConstructor(BindingFlags bindingAttr, Binder? binder, Type[] types, ParameterModifier[]? modifiers) => GetConstructor(bindingAttr, binder, CallingConventions.Any, types, modifiers);
@@ -220,6 +241,24 @@ namespace System
                 throw new ArgumentNullException(nameof(name));
             return GetMethodImpl(name, bindingAttr, null, CallingConventions.Any, null, null);
         }
+
+        /// <summary>
+        /// Searches for the specified method whose parameters match the specified argument types, using the specified binding constraints.
+        /// </summary>
+        /// <param name="name">The string containing the name of the method to get.</param>
+        /// <param name="bindingAttr">
+        /// A bitwise combination of the enumeration values that specify how the search is conducted.
+        /// -or-
+        /// Default to return null.
+        /// </param>
+        /// <param name="types">
+        /// An array of <see cref="Type"/> objects representing the number, order, and type of the parameters for the method to get.
+        /// -or-
+        /// An empty array of <see cref="Type"/> objects (as provided by the <see cref="EmptyTypes"/> field) to get a method that takes no parameters.
+        /// </param>
+        /// <returns>An object representing the method that matches the specified requirements, if found; otherwise, null.</returns>
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods | DynamicallyAccessedMemberTypes.NonPublicMethods)]
+        public MethodInfo? GetMethod(string name, BindingFlags bindingAttr, Type[] types) => GetMethod(name, bindingAttr, binder: null, types, modifiers: null);
 
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)]
         public MethodInfo? GetMethod(string name, Type[] types) => GetMethod(name, types, null);
@@ -385,15 +424,14 @@ namespace System
 
         public static TypeCode GetTypeCode(Type? type)
         {
-            if (type == null)
-                return TypeCode.Empty;
-            return type.GetTypeCodeImpl();
+            return type?.GetTypeCodeImpl() ?? TypeCode.Empty;
         }
+
         protected virtual TypeCode GetTypeCodeImpl()
         {
             Type systemType = UnderlyingSystemType;
-            if (this != systemType && systemType != null)
-                return Type.GetTypeCode(systemType);
+            if (!ReferenceEquals(this, systemType) && systemType is not null)
+                return GetTypeCode(systemType);
 
             return TypeCode.Object;
         }

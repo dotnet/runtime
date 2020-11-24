@@ -834,7 +834,7 @@ namespace System.Linq.Expressions
         public new TDelegate Compile() { throw null; }
         public new TDelegate Compile(bool preferInterpretation) { throw null; }
         public new TDelegate Compile(System.Runtime.CompilerServices.DebugInfoGenerator debugInfoGenerator) { throw null; }
-        public System.Linq.Expressions.Expression<TDelegate>? Update(System.Linq.Expressions.Expression body, System.Collections.Generic.IEnumerable<System.Linq.Expressions.ParameterExpression>? parameters) { throw null; }
+        public System.Linq.Expressions.Expression<TDelegate> Update(System.Linq.Expressions.Expression body, System.Collections.Generic.IEnumerable<System.Linq.Expressions.ParameterExpression>? parameters) { throw null; }
     }
     public sealed partial class GotoExpression : System.Linq.Expressions.Expression
     {
@@ -1008,7 +1008,7 @@ namespace System.Linq.Expressions
         public sealed override System.Type Type { get { throw null; } }
         protected internal override System.Linq.Expressions.Expression Accept(System.Linq.Expressions.ExpressionVisitor visitor) { throw null; }
         System.Linq.Expressions.Expression System.Linq.Expressions.IArgumentProvider.GetArgument(int index) { throw null; }
-        public System.Linq.Expressions.MethodCallExpression Update(System.Linq.Expressions.Expression @object, System.Collections.Generic.IEnumerable<System.Linq.Expressions.Expression>? arguments) { throw null; }
+        public System.Linq.Expressions.MethodCallExpression Update(System.Linq.Expressions.Expression? @object, System.Collections.Generic.IEnumerable<System.Linq.Expressions.Expression>? arguments) { throw null; }
     }
     public partial class NewArrayExpression : System.Linq.Expressions.Expression
     {

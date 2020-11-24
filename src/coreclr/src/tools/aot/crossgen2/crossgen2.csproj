@@ -12,8 +12,11 @@
     <OutputPath>$(RuntimeBinDir)/crossgen2</OutputPath>
     <GenerateRuntimeConfigurationFiles>true</GenerateRuntimeConfigurationFiles>
     <EnableDefaultEmbeddedResourceItems>false</EnableDefaultEmbeddedResourceItems>
-    <RuntimeIdentifiers>linux-x64;linux-musl-x64;win-x64</RuntimeIdentifiers>
+    <RuntimeIdentifiers>linux-x64;linux-musl-x64;osx-x64;win-x64</RuntimeIdentifiers>
     <Configurations>Debug;Release;Checked</Configurations>
+    <ServerGarbageCollection>true</ServerGarbageCollection>
+    <!-- The default value for macOS is false -->
+    <UseAppHost>true</UseAppHost>
   </PropertyGroup>
 
   <ItemGroup Label="Embedded Resources">
@@ -63,13 +66,7 @@
     <TargetSpec>$(TargetOSComponent)_$(TargetArchitecture)_$(TargetArchitecture)</TargetSpec>
     <CrossTargetSpec>$(TargetOSComponent)_$(TargetArchitecture)_$(CrossHostArch)</CrossTargetSpec>
 
-    <LibraryNamePrefix>lib</LibraryNamePrefix>
-    <LibraryNamePrefix Condition="$([MSBuild]::IsOsPlatform('WINDOWS'))"></LibraryNamePrefix>
-    <LibraryNameExtension Condition="$([MSBuild]::IsOsPlatform('WINDOWS'))">.dll</LibraryNameExtension>
-    <LibraryNameExtension Condition="$([MSBuild]::IsOsPlatform('LINUX'))">.so</LibraryNameExtension>
-    <LibraryNameExtension Condition="$([MSBuild]::IsOsPlatform('OSX'))">.dylib</LibraryNameExtension>
-
-    <JitInterfaceLibraryName>$(LibraryNamePrefix)jitinterface_$(TargetArchitecture)$(LibraryNameExtension)</JitInterfaceLibraryName>
+    <JitInterfaceLibraryName>$(LibPrefix)jitinterface_$(TargetArchitecture)$(LibSuffix)</JitInterfaceLibraryName>
   </PropertyGroup>
 
   <ItemGroup>
@@ -79,7 +76,7 @@
       Link="%(FileName)%(Extension)"
      />
 
-    <Content Include="$(RuntimeBinDir)\$(NativeArchFolder)$(LibraryNamePrefix)clrjit_*_$(TargetArchitecture)$(LibraryNameExtension)"
+    <Content Include="$(RuntimeBinDir)\$(NativeArchFolder)$(LibPrefix)clrjit_*_$(TargetArchitecture)$(LibSuffix)"
       CopyToOutputDirectory="PreserveNewest"
       CopyToPublishDirectory="PreserveNewest"
       Link="%(FileName)%(Extension)"
@@ -89,10 +86,10 @@
   <!-- On windows we can re-use the clrjit.dll produced in the build for aot compilation. On Linux
        this works at runtime, but makes it difficult to debug the jit.-->
   <ItemGroup Condition="'$(TargetOS)' == 'windows'">
-    <Content Include="$(RuntimeBinDir)\$(NativeArchFolder)$(LibraryNamePrefix)clrjit$(LibraryNameExtension)"
+    <Content Include="$(RuntimeBinDir)\$(NativeArchFolder)$(LibPrefix)clrjit$(LibSuffix)"
       CopyToOutputDirectory="PreserveNewest"
       CopyToPublishDirectory="PreserveNewest"
-      Link="$(LibraryNamePrefix)clrjit_$(TargetSpec)$(LibraryNameExtension)"
+      Link="$(LibPrefix)clrjit_$(TargetSpec)$(LibSuffix)"
      />
   </ItemGroup>
 
@@ -104,8 +101,8 @@
 
     <ItemGroup>
       <PackageFile Include="$(RuntimeBinDir)\crossgen2\*"
-        Exclude="$(RuntimeBinDir)\crossgen2\$(JitInterfaceLibraryName);$(RuntimeBinDir)\crossgen2\$(LibraryNamePrefix)clrjit_*$(LibraryNameExtension)" />
-      <PackageFile Include="$(RuntimeBinDir)\$(CrossHostArch)\$(LibraryNamePrefix)jitinterface_$(CrossHostArch)$(LibraryNameExtension)" />
+        Exclude="$(RuntimeBinDir)\crossgen2\$(JitInterfaceLibraryName);$(RuntimeBinDir)\crossgen2\$(LibPrefix)clrjit_*$(LibSuffix)" />
+      <PackageFile Include="$(RuntimeBinDir)\$(CrossHostArch)\$(LibPrefix)jitinterface_$(CrossHostArch)$(LibSuffix)" />
     </ItemGroup>
 
     <MakeDir Directories="$(CrossPackageFolder)" />
@@ -117,33 +114,16 @@
 
     <Copy
       Condition="'$(TargetOS)' != 'windows'"
-      SourceFiles="$(RuntimeBinDir)$(CrossHostArch)\$(LibraryNamePrefix)clrjit_$(CrossTargetSpec)$(LibraryNameExtension)"
+      SourceFiles="$(RuntimeBinDir)$(CrossHostArch)\$(LibPrefix)clrjit_$(CrossTargetSpec)$(LibSuffix)"
       DestinationFolder="$(CrossPackageFolder)"
       UseHardLinksIfPossible="true"
       />
     <Copy
       Condition="'$(TargetOS)' == 'windows'"
-      SourceFiles="$(RuntimeBinDir)$(CrossHostArch)\$(LibraryNamePrefix)clrjit$(LibraryNameExtension)"
-      DestinationFiles="$(CrossPackageFolder)\$(LibraryNamePrefix)clrjit_$(CrossTargetSpec)$(LibraryNameExtension)"
+      SourceFiles="$(RuntimeBinDir)$(CrossHostArch)\$(LibPrefix)clrjit$(LibSuffix)"
+      DestinationFiles="$(CrossPackageFolder)\$(LibPrefix)clrjit_$(CrossTargetSpec)$(LibSuffix)"
       UseHardLinksIfPossible="true"
       />
 
-  </Target>
-
-  <Target Name="GenerateDepsJsonFile" Returns="$(ProjectDepsFilePath)" DependsOnTargets="GenerateBuildDependencyFile" />
-
-  <Target Name="RemoveUnusedFilesFromDepsJson" AfterTargets="ResolveRuntimePackAssets" BeforeTargets="GenerateBuildDependencyFile">
-    <PropertyGroup>
-      <StaticLibraryFileExtension>.a</StaticLibraryFileExtension>
-      <StaticLibraryFileExtension Condition="'$(TargetOS)' == 'windows'">.lib</StaticLibraryFileExtension>
-    </PropertyGroup>
-
-    <ItemGroup>
-      <RuntimePackAsset Remove="@(RuntimePackAsset)" Condition="'%(Extension)' == '$(StaticLibraryFileExtension)'" />
-    </ItemGroup>
-
-    <ItemGroup Condition="'$(RemoveLongNameDac)' == 'true'">
-      <RuntimePackAsset Remove="@(RuntimePackAsset)" Condition="$([System.String]::new('%(FileName)').StartsWith('mscordaccore_'))" />
-    </ItemGroup>
   </Target>
 </Project>

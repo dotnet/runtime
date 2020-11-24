@@ -1022,6 +1022,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\TimeZoneInfo.TransitionTime.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\TimeZoneNotFoundException.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Tuple.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\TupleSlim.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\TupleExtensions.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Type.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Type.Enum.cs" />
@@ -1353,8 +1354,8 @@
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetCurrentDirectory.cs">
       <Link>Common\Interop\Windows\Kernel32\Interop.GetCurrentDirectory.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetCurrentProcess_IntPtr.cs">
-      <Link>Common\Interop\Windows\Kernel32\Interop.GetCurrentProcess_IntPtr.cs</Link>
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetCurrentProcess.cs">
+      <Link>Common\Interop\Windows\Kernel32\Interop.GetCurrentProcess.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\Kernel32\Interop.GetCurrentProcessId.cs">
       <Link>Common\Interop\Windows\Kernel32\Interop.GetCurrentProcessId.cs</Link>
@@ -1623,7 +1624,6 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\Marshal.Windows.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\StandardOleMarshalObject.Windows.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Security\SecureString.Windows.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\Threading\Thread.Windows.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\LowLevelMonitor.Windows.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\TimerQueue.Windows.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\TimeZoneInfo.Win32.cs" />
@@ -1829,7 +1829,6 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\StandardOleMarshalObject.Unix.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Security\SecureString.Unix.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\LowLevelMonitor.Unix.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\Threading\Thread.Unix.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\TimerQueue.Unix.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\TimeZoneInfo.Unix.cs" />
   </ItemGroup>
@@ -1853,11 +1852,14 @@
              Link="Common\System\IO\StringParser.cs" />
     <Compile Include="$(CommonPath)Interop\OSX\Interop.libproc.GetProcessInfoById.cs" Condition="'$(IsOSXLike)' == 'true'"
              Link="Common\Interop\OSX\Interop.libproc.GetProcessInfoById.cs" />
+    <Compile Include="$(CommonPath)Interop\SunOS\procfs\Interop.ProcFsStat.TryReadProcessStatusInfo.cs" Condition="'$(Targetsillumos)' == 'true' or '$(TargetsSolaris)' == 'true'"
+             Link="Common\Interop\SunOS\Interop.ProcFsStat.TryReadProcessStatusInfo.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Environment.Unix.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Environment.FreeBSD.cs" Condition="'$(TargetsFreeBSD)' == 'true'" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Environment.Linux.cs" Condition="'$(TargetsLinux)' == 'true'" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Environment.OSX.cs" Condition="'$(IsOSXLike)' == 'true'" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Environment.OSVersion.Unix.cs" Condition="'$(IsOSXLike)' != 'true'" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Environment.SunOS.cs" Condition="'$(Targetsillumos)' == 'true' or '$(TargetsSolaris)' == 'true'" />
     <Compile Include="$(MSBuildThisFileDirectory)System\TimeZoneInfo.GetDisplayName.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\DriveInfoInternal.Unix.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\PersistedFiles.Unix.cs" />
@@ -1953,25 +1955,5 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\LowLevelSpinWaiter.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\RegisteredWaitHandle.Portable.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\ThreadInt64PersistentCounter.cs" />
-  </ItemGroup>
-  <ItemGroup Condition="'$(FeatureUtf8String)' == 'true'">
-    <Compile Include="$(MSBuildThisFileDirectory)System\Char8.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\Utf8Extensions.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\Utf8Extensions.CoreLib.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\Utf8String.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\Utf8String.Comparison.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\Utf8String.Construction.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\Utf8String.Conversion.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\Utf8String.Enumeration.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\Utf8String.Manipulation.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\Utf8String.Searching.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\Utf8StringSplitOptions.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\Text\Utf8Span.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\Text\Utf8Span.Comparison.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\Text\Utf8Span.Conversion.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\Text\Utf8Span.Enumeration.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\Text\Utf8Span.Manipulation.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\Text\Utf8Span.Searching.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\Text\Utf8StringComparer.cs" />
   </ItemGroup>
 </Project>

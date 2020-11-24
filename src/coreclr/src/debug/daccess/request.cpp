@@ -74,7 +74,11 @@ TADDR DACGetMethodTableFromObjectPointer(TADDR objAddr, ICorDebugDataTarget * ta
         return NULL;
     }
 
+#if TARGET_64BIT
+    Value = Value & ~7; // equivalent to Object::GetGCSafeMethodTable()
+#else
     Value = Value & ~3; // equivalent to Object::GetGCSafeMethodTable()
+#endif
     return Value;
 }
 
@@ -4353,13 +4357,6 @@ HRESULT ClrDataAccess::IsRCWDCOMProxy(CLRDATA_ADDRESS rcwAddr, BOOL* isDCOMProxy
     *isDCOMProxy = FALSE;
 
 #ifdef FEATURE_COMINTEROP
-    SOSDacEnter();
-
-    PTR_RCW pRCW = dac_cast<PTR_RCW>(CLRDATA_ADDRESS_TO_TADDR(rcwAddr));
-    *isDCOMProxy = pRCW->IsDCOMProxy();
-
-    SOSDacLeave();
-
     return S_OK;
 #else
     return E_NOTIMPL;

@@ -12,16 +12,6 @@
     <ProjectReference Include="@(ProjectToBuild)" />
   </ItemGroup>
 
-  <!--
-    Exclude installer depproj and pkgproj from static graph restore. We restore them below.
-    Remove when https://github.com/NuGet/Home/issues/9398 is fixed.
-  -->
-  <ItemGroup Condition="'$(MSBuildRestoreSessionId)' != ''">
-    <ProjectReference Remove="@(DepprojProjectToBuild)"  />
-    <ProjectReference Remove="@(PkgprojProjectToBuild)" />
-    <ProjectReference Remove="@(BundleProjectToBuild)" />
-  </ItemGroup>
-
   <!-- Custom arcade target which isn't available in Microsoft.Build.Traversal. -->
   <Target Name="Rebuild" DependsOnTargets="Clean;Build" />
 
@@ -36,12 +26,4 @@
     <MSBuild Projects="$(RepoTasksDir)tasks.proj"
              Targets="BuildAndRestoreIncrementally"/>
   </Target>
-
-  <Target Name="RestoreWithoutStaticGraph"
-          BeforeTargets="Restore">
-    <MSBuild Projects="@(DepprojProjectToBuild);@(PkgprojProjectToBuild);@(BundleProjectToBuild)"
-             Properties="MSBuildRestoreSessionId=$([System.Guid]::NewGuid());RestoreUseStaticGraphEvaluation=false"
-             Targets="Restore" />
-  </Target>
-
 </Project>

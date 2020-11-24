@@ -3868,10 +3868,21 @@ inline GenTree* Compiler::impCheckForNullPointer(GenTree* obj)
     {
         assert(obj->gtType == TYP_REF || obj->gtType == TYP_BYREF);
 
-        // We can see non-zero byrefs for RVA statics.
+        // We can see non-zero byrefs for RVA statics or for frozen strings.
         if (obj->AsIntCon()->gtIconVal != 0)
         {
-            assert(obj->gtType == TYP_BYREF);
+#ifdef DEBUG
+            if (!obj->TypeIs(TYP_BYREF))
+            {
+                assert(obj->TypeIs(TYP_REF));
+                assert(obj->IsIconHandle(GTF_ICON_STR_HDL));
+                if (!doesMethodHaveFrozenString())
+                {
+                    assert(compIsForInlining());
+                    assert(impInlineInfo->InlinerCompiler->doesMethodHaveFrozenString());
+                }
+            }
+#endif // DEBUG
             return obj;
         }
 

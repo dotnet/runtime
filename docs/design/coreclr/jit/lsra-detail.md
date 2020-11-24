@@ -387,7 +387,7 @@ well as supporting components) in more depth.
 -   `LinearScan::identifyCandidates`
 
     -   This mostly duplicates what is done in
-        `Compiler::lvaMarkLocalVars(). There are differences in what
+        `Compiler::lvaMarkLocalVars()`. There are differences in what
         constitutes a register candidate vs. what is tracked, but we
         should probably handle them in `Compiler::lvaMarkLocalVars()`
         when it is called after `Lowering`.
@@ -445,7 +445,7 @@ node, which builds `RefPositions` according to the liveness model described abov
 
 -   First, we create `RefPosition`s to define any internal registers that are required.
     As we create new `Interval`s for these, we add the definition `RefPosition` to an array,
-    `InternalDefs`. This allows us to create the corresponding uses of these internal
+    `internalDefs`. This allows us to create the corresponding uses of these internal
     registers later.
 
 -   Then we create `RefPosition`s for each use in the instruction.
@@ -474,7 +474,7 @@ node, which builds `RefPositions` according to the liveness model described abov
          we need to ensure that the other source isn't given the same register as the
          target. For this, we annotate the use `RefPosition` with `delayRegFree`.
 
--   Next we create the uses of the internal registers, using the `InternalDefs` array.
+-   Next we create the uses of the internal registers, using the `internalDefs` array.
     This is cleared before the next instruction is handled.
 
 -   Next, any registers in the kill set for the instruction are killed. This is performed
@@ -652,7 +652,7 @@ LinearScanAllocation(List<RefPosition> refPositions)
         -   When `COMPlus_EnableEHWriteThru == 0`, any variable that's
             live in to an exception region is always referenced on the stack.
 
-        -   See [Enable EHWriteThru by default](#enable-EHWriteThru-by-default).
+        -   See [Enable EHWriteThru by default](#enable-ehwritethru-by-default).
 
 -   Code generation (genGenerateCode)
 

@@ -192,12 +192,15 @@ namespace System.Threading.Tasks
         {
             Debug.Assert(task != null, "Null Task objects can't be added to the ActiveTasks collection");
 
-            LazyInitializer.EnsureInitialized(ref s_currentActiveTasks, () => new Dictionary<int, Task>());
+            Dictionary<int, Task> activeTasks =
+                Volatile.Read(ref s_currentActiveTasks) ??
+                Interlocked.CompareExchange(ref s_currentActiveTasks, new Dictionary<int, Task>(), null) ??
+                s_currentActiveTasks;
 
             int taskId = task.Id;
-            lock (s_currentActiveTasks)
+            lock (activeTasks)
             {
-                s_currentActiveTasks[taskId] = task;
+                activeTasks[taskId] = task;
             }
             // always return true to keep signature as bool for backwards compatibility
             return true;
@@ -205,13 +208,14 @@ namespace System.Threading.Tasks
 
         internal static void RemoveFromActiveTasks(Task task)
         {
-            if (s_currentActiveTasks == null)
+            Dictionary<int, Task>? activeTasks = s_currentActiveTasks;
+            if (activeTasks is null)
                 return;
 
             int taskId = task.Id;
-            lock (s_currentActiveTasks)
+            lock (activeTasks)
             {
-                s_currentActiveTasks.Remove(taskId);
+                activeTasks.Remove(taskId);
             }
         }
 
@@ -630,15 +634,14 @@ namespace System.Threading.Tasks
                             // antecedent.RemoveCancellation(continuation) can be invoked.
                             ctr = cancellationToken.UnsafeRegister(static t =>
                             {
-                                var tuple = (Tuple<Task, Task, TaskContinuation>)t!;
+                                var tuple = (TupleSlim<Task, Task, TaskContinuation>)t!;
 
                                 Task targetTask = tuple.Item1;
                                 Task antecedentTask = tuple.Item2;
 
                                 antecedentTask.RemoveContinuation(tuple.Item3);
                                 targetTask.InternalCancel();
-                            },
-                            new Tuple<Task, Task, TaskContinuation>(this, antecedent, continuation));
+                            }, new TupleSlim<Task, Task, TaskContinuation>(this, antecedent, continuation));
                         }
 
                         props.m_cancellationRegistration = new StrongBox<CancellationTokenRegistration>(ctr);
@@ -1316,7 +1319,13 @@ namespace System.Threading.Tasks
         /// <returns>The initialized contingent properties object.</returns>
         internal ContingentProperties EnsureContingentPropertiesInitialized()
         {
-            return LazyInitializer.EnsureInitialized(ref m_contingentProperties, () => new ContingentProperties());
+            return Volatile.Read(ref m_contingentProperties) ?? InitializeContingentProperties();
+
+            ContingentProperties InitializeContingentProperties()
+            {
+                Interlocked.CompareExchange(ref m_contingentProperties, new ContingentProperties(), null);
+                return m_contingentProperties;
+            }
         }
 
         /// <summary>
@@ -1839,7 +1848,7 @@ namespace System.Threading.Tasks
         }
 
         /// <summary>Gets the exception dispatch infos once the task has faulted.</summary>
-        internal ReadOnlyCollection<ExceptionDispatchInfo> GetExceptionDispatchInfos()
+        internal List<ExceptionDispatchInfo> GetExceptionDispatchInfos()
         {
             Debug.Assert(IsFaulted && ExceptionRecorded, "Must only be used when the task has faulted with exceptions.");
             return m_contingentProperties!.m_exceptionsHolder!.GetExceptionDispatchInfos();
@@ -4807,8 +4816,8 @@ namespace System.Threading.Tasks
                 // this will make sure it won't throw again in the implicit wait
                 t.UpdateExceptionObservedStatus();
 
-                exceptions ??= new List<Exception>(ex.InnerExceptions.Count);
-                exceptions.AddRange(ex.InnerExceptions);
+                exceptions ??= new List<Exception>(ex.InnerExceptionCount);
+                exceptions.AddRange(ex.InternalInnerExceptions);
             }
         }
 
@@ -6657,9 +6666,9 @@ namespace System.Threading.Tasks
             ThreadPool.UnsafeQueueUserWorkItem(static state =>
             {
                 // InvokeCore(completingTask);
-                var tuple = (Tuple<UnwrapPromise<TResult>, Task>)state!;
+                var tuple = (TupleSlim<UnwrapPromise<TResult>, Task>)state!;
                 tuple.Item1.InvokeCore(tuple.Item2);
-            }, Tuple.Create<UnwrapPromise<TResult>, Task>(this, completingTask));
+            }, new TupleSlim<UnwrapPromise<TResult>, Task>(this, completingTask));
         }
 
         /// <summary>Processes the outer task once it's completed.</summary>
@@ -6709,7 +6718,7 @@ namespace System.Threading.Tasks
                     break;
 
                 case TaskStatus.Faulted:
-                    ReadOnlyCollection<ExceptionDispatchInfo> edis = task.GetExceptionDispatchInfos();
+                    List<ExceptionDispatchInfo> edis = task.GetExceptionDispatchInfos();
                     ExceptionDispatchInfo oceEdi;
                     if (lookForOce && edis.Count > 0 &&
                         (oceEdi = edis[0]) != null &&

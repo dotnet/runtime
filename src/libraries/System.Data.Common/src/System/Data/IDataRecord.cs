@@ -16,9 +16,9 @@ namespace System.Data
         int GetOrdinal(string name);
         bool GetBoolean(int i);
         byte GetByte(int i);
-        long GetBytes(int i, long fieldOffset, byte[] buffer, int bufferoffset, int length);
+        long GetBytes(int i, long fieldOffset, byte[]? buffer, int bufferoffset, int length);
         char GetChar(int i);
-        long GetChars(int i, long fieldoffset, char[] buffer, int bufferoffset, int length);
+        long GetChars(int i, long fieldoffset, char[]? buffer, int bufferoffset, int length);
         Guid GetGuid(int i);
         short GetInt16(int i);
         int GetInt32(int i);

@@ -11370,7 +11370,7 @@ bool Debugger::HandleIPCEvent(DebuggerIPCEvent * pEvent)
              Object * pObject = (Object*)pEvent->CreateHandle.objectToken;
              OBJECTREF objref = ObjectToOBJECTREF(pObject);
              AppDomain * pAppDomain = pEvent->vmAppDomain.GetRawPtr();
-             BOOL fStrong = pEvent->CreateHandle.fStrong;
+             CorDebugHandleType handleType = pEvent->CreateHandle.handleType;
              OBJECTHANDLE objectHandle;
 
              // This is a synchronous event (reply required)
@@ -11386,17 +11386,27 @@ bool Debugger::HandleIPCEvent(DebuggerIPCEvent * pEvent)
 
                  if (SUCCEEDED(pEvent->hr))
                  {
-                     if (fStrong == TRUE)
-                     {
-                         // create strong handle
-                         objectHandle = pAppDomain->CreateStrongHandle(objref);
-                     }
-                     else
-                     {
+                    switch (handleType)
+                    {
+                    case HANDLE_STRONG:
+                        // create strong handle
+                        objectHandle = pAppDomain->CreateStrongHandle(objref);
+                        break;
+                    case HANDLE_WEAK_TRACK_RESURRECTION:
                          // create the weak long handle
                          objectHandle = pAppDomain->CreateLongWeakHandle(objref);
-                     }
-                     pEvent->CreateHandleResult.vmObjectHandle.SetRawPtr(objectHandle);
+                        break;
+                    case HANDLE_PINNED:
+                        // create pinning handle
+                        objectHandle = pAppDomain->CreatePinningHandle(objref);
+                        break;
+                    default:
+                        pEvent->hr = E_INVALIDARG;
+                    }
+                 }
+                 if (SUCCEEDED(pEvent->hr))
+                 {
+                    pEvent->CreateHandleResult.vmObjectHandle.SetRawPtr(objectHandle);
                  }
              }
 

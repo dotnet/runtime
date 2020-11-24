@@ -322,6 +322,10 @@ namespace System.Text.RegularExpressions
                             return;
                         }
 
+                        // Now that we've matched successfully, update the starting position to reflect
+                        // the current position, just as Match.NextMatch() would pass in _textpos as textstart.
+                        runtextstart = runtextpos;
+
                         // Reset state for another iteration.
                         runtrackpos = runtrack!.Length;
                         runstackpos = runstack!.Length;

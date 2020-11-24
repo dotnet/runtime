@@ -611,6 +611,10 @@ public:
     void dmpGetMethodClass(DWORDLONG key, DWORDLONG value);
     CORINFO_CLASS_HANDLE repGetMethodClass(CORINFO_METHOD_HANDLE methodHandle);
 
+    void recGetMethodModule(CORINFO_METHOD_HANDLE methodHandle, CORINFO_MODULE_HANDLE moduleHandle);
+    void dmpGetMethodModule(DWORDLONG key, DWORDLONG value);
+    CORINFO_MODULE_HANDLE repGetMethodModule(CORINFO_METHOD_HANDLE methodHandle);
+
     void recGetClassAttribs(CORINFO_CLASS_HANDLE classHandle, DWORD attribs);
     void dmpGetClassAttribs(DWORDLONG key, DWORD value);
     DWORD repGetClassAttribs(CORINFO_CLASS_HANDLE classHandle);
@@ -1355,7 +1359,7 @@ private:
 };
 
 // ********************* Please keep this up-to-date to ease adding more ***************
-// Highest packet number: 178
+// Highest packet number: 181
 // *************************************************************************************
 enum mcPackets
 {
@@ -1457,6 +1461,7 @@ enum mcPackets
     Packet_GetLocationOfThisType                         = 69,
     Packet_GetMethodAttribs                              = 70,
     Packet_GetMethodClass                                = 71,
+    Packet_GetMethodModule                               = 181, // Added 11/20/2020
     Packet_GetMethodDefFromMethod                        = 72,
     Packet_GetMethodHash                                 = 73,
     Packet_GetMethodInfo                                 = 74,

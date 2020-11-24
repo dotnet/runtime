@@ -1187,17 +1187,10 @@ void fgArgInfo::UpdateStkArg(fgArgTabEntry* curArgTabEntry, GenTree* node, bool 
     assert(curArgTabEntry->slotNum == nextSlotNum);
     nextSlotNum += curArgTabEntry->numSlots;
 #endif
+
     nextStackByteOffset = roundUp(nextStackByteOffset, curArgTabEntry->byteAlignment);
     assert(curArgTabEntry->GetByteOffset() == nextStackByteOffset);
-
-    if (!curArgTabEntry->IsSplit())
-    {
-        nextStackByteOffset += curArgTabEntry->GetByteSize();
-    }
-    else
-    {
-        nextStackByteOffset += curArgTabEntry->GetStackByteSize();
-    }
+    nextStackByteOffset += curArgTabEntry->GetStackByteSize();
 }
 
 void fgArgInfo::SplitArg(unsigned argNum, unsigned numRegs, unsigned numSlots)
@@ -8435,6 +8428,10 @@ void Compiler::fgMorphTailCallViaJitHelper(GenTreeCall* call)
             thisPtr = objp;
         }
 
+        // TODO-Cleanup: we leave it as a virtual stub call to
+        // use logic in `LowerVirtualStubCall`, clear GTF_CALL_VIRT_KIND_MASK here
+        // and change `LowerCall` to recognize it as a direct call.
+
         // During rationalization tmp="this" and null check will
         // materialize as embedded stmts in right execution order.
         assert(thisPtr != nullptr);
@@ -9083,26 +9080,6 @@ GenTree* Compiler::fgMorphCall(GenTreeCall* call)
             }
 
             return result;
-        }
-    }
-
-    // Optimize get_ManagedThreadId(get_CurrentThread)
-    if ((call->gtCallMoreFlags & GTF_CALL_M_SPECIAL_INTRINSIC) &&
-        info.compCompHnd->getIntrinsicID(call->gtCallMethHnd) == CORINFO_INTRINSIC_GetManagedThreadId)
-    {
-        noway_assert(origDest == nullptr);
-        noway_assert(call->gtCallLateArgs->GetNode() != nullptr);
-
-        GenTree* innerCall = call->gtCallLateArgs->GetNode();
-
-        if (innerCall->gtOper == GT_CALL && (innerCall->AsCall()->gtCallMoreFlags & GTF_CALL_M_SPECIAL_INTRINSIC) &&
-            info.compCompHnd->getIntrinsicID(innerCall->AsCall()->gtCallMethHnd) ==
-                CORINFO_INTRINSIC_GetCurrentManagedThread)
-        {
-            // substitute expression with call to helper
-            GenTree* newCall = gtNewHelperCallNode(CORINFO_HELP_GETCURRENTMANAGEDTHREADID, TYP_INT);
-            JITDUMP("get_ManagedThreadId(get_CurrentThread) folding performed\n");
-            return fgMorphTree(newCall);
         }
     }
 

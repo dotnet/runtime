@@ -30,25 +30,26 @@ const SString &BundleFileLocation::Path() const
     return Bundle::AppBundle->Path();
 }
 
-Bundle::Bundle(LPCWSTR bundlePath, BundleProbe *probe)
+Bundle::Bundle(LPCSTR bundlePath, BundleProbe *probe)
 {
     STANDARD_VM_CONTRACT;
 
     _ASSERTE(probe != nullptr);
 
-    m_path.Set(bundlePath);
+    m_path.SetUTF8(bundlePath);
     m_probe = probe;
 
     // The bundle-base path is the directory containing the single-file bundle.
     // When the Probe() function searches within the bundle, it masks out the basePath from the assembly-path (if found).
 
-    LPCWSTR pos = wcsrchr(bundlePath, DIRECTORY_SEPARATOR_CHAR_W);
+    LPCSTR pos = strrchr(bundlePath, DIRECTORY_SEPARATOR_CHAR_A);
     _ASSERTE(pos != nullptr);
-    size_t baseLen = pos - bundlePath + 1; // Include DIRECTORY_SEPARATOR_CHAR_W in m_basePath
-    m_basePath.Set(bundlePath, (COUNT_T)baseLen);
+    size_t baseLen = pos - bundlePath + 1; // Include DIRECTORY_SEPARATOR_CHAR_A in m_basePath
+    m_basePath.SetUTF8(bundlePath, (COUNT_T)baseLen);
+    m_basePathLength = (COUNT_T)baseLen;
 }
 
-BundleFileLocation Bundle::Probe(LPCWSTR path, bool pathIsBundleRelative) const
+BundleFileLocation Bundle::Probe(const SString& path, bool pathIsBundleRelative) const
 {
     STANDARD_VM_CONTRACT;
 
@@ -59,17 +60,18 @@ BundleFileLocation Bundle::Probe(LPCWSTR path, bool pathIsBundleRelative) const
     //    Bundle.Probe("path/to/exe/lib.dll") => m_probe("lib.dll")
     //    Bundle.Probe("path/to/exe/and/some/more/lib.dll") => m_probe("and/some/more/lib.dll")
 
+    StackScratchBuffer scratchBuffer;
+    LPCSTR utf8Path(path.GetUTF8(scratchBuffer));
+
     if (!pathIsBundleRelative)
     {
-        size_t baseLen = m_basePath.GetCount();
-
 #ifdef TARGET_UNIX
-        if (wcsncmp(m_basePath, path, baseLen) == 0)
+        if (wcsncmp(m_basePath, path, m_basePath.GetCount()) == 0)
 #else
-        if (_wcsnicmp(m_basePath, path, baseLen) == 0)
+        if (_wcsnicmp(m_basePath, path, m_basePath.GetCount()) == 0)
 #endif // TARGET_UNIX
         {
-            path += baseLen; // m_basePath includes count for DIRECTORY_SEPARATOR_CHAR_W
+            utf8Path += m_basePathLength; // m_basePath includes count for DIRECTORY_SEPARATOR_CHAR_W
         }
         else
         {
@@ -78,15 +80,14 @@ BundleFileLocation Bundle::Probe(LPCWSTR path, bool pathIsBundleRelative) const
         }
     }
 
-    m_probe(path, &loc.Offset, &loc.Size);
+    m_probe(utf8Path, &loc.Offset, &loc.Size);
 
     return loc;
 }
 
-BundleFileLocation Bundle::ProbeAppBundle(LPCWSTR path, bool pathIsBundleRelative)
+BundleFileLocation Bundle::ProbeAppBundle(const SString& path, bool pathIsBundleRelative)
 {
     STANDARD_VM_CONTRACT;
 
     return AppIsBundle() ? AppBundle->Probe(path, pathIsBundleRelative) : BundleFileLocation::Invalid();
 }
-

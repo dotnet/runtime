@@ -1,6 +1,8 @@
 TOP=$(realpath $(CURDIR)/../../..)
 -include Make.config
 
+escape_quote = $(subst ",\",$(1))
+
 DOTNET=$(TOP)/dotnet.sh
 JSVU=$(HOME)/.jsvu
 CHROMEDRIVER?=$(HOME)/.chromedriver
@@ -71,13 +73,13 @@ EMCC_RELEASE_FLAGS=-Oz --llvm-opts 2 -DENABLE_NETCORE=1
 STRIP_CMD=&& $(EMSDK_PATH)/upstream/bin/wasm-opt --strip-dwarf $(NATIVE_BIN_DIR)/dotnet.wasm -o $(NATIVE_BIN_DIR)/dotnet.wasm
 
 #
-# Interpreter builds
+# Wasm builds
 #
 
 # $(1) - EMCC_FLAGS
 # $(2) - libs
 # $(3) - strip cmd
-define InterpBuildTemplate
+define WasmBuildTemplate
 
 $(NATIVE_BIN_DIR):
 	mkdir -p $$@
@@ -97,23 +99,29 @@ $(NATIVE_BIN_DIR)/dotnet.js: $(BUILDS_OBJ_DIR)/driver.o $(BUILDS_OBJ_DIR)/pinvok
 $(BUILDS_OBJ_DIR)/pinvoke-table.h: $(PINVOKE_TABLE) | $(BUILDS_OBJ_DIR)
 	if cmp -s $(PINVOKE_TABLE) $$@ ; then : ; else cp $(PINVOKE_TABLE) $$@ ; fi
 
-$(BUILDS_OBJ_DIR)/driver.o: runtime/driver.c runtime/corebindings.c | $(BUILDS_OBJ_DIR)
+$(BUILDS_OBJ_DIR)/driver.o: runtime/driver.c | $(BUILDS_OBJ_DIR)
 	$(EMCC) $(EMCC_FLAGS) $(1) -Oz -DCORE_BINDINGS -I$(BUILDS_OBJ_DIR) -I$(MONO_INCLUDE_DIR) runtime/driver.c -c -o $$@
 
 $(BUILDS_OBJ_DIR)/pinvoke.o: runtime/pinvoke.c runtime/pinvoke.h $(BUILDS_OBJ_DIR)/pinvoke-table.h | $(BUILDS_OBJ_DIR)
-	$(EMCC) $(EMCC_FLAGS) $(1) -Oz -DGEN_PINVOKE=1 -I$(BUILDS_OBJ_DIR) -I$(MONO_INCLUDE_DIR) runtime/pinvoke.c -c -o $$@
+	$(EMCC) $(EMCC_FLAGS) $(1) -Oz -DGEN_PINVOKE=1 -I$(BUILDS_OBJ_DIR) runtime/pinvoke.c -c -o $$@
 
 $(BUILDS_OBJ_DIR)/corebindings.o: runtime/corebindings.c | $(BUILDS_OBJ_DIR)
 	$(EMCC) $(EMCC_FLAGS) $(1) -Oz -I$(MONO_INCLUDE_DIR) runtime/corebindings.c -c -o $$@
 
-build-native: $(NATIVE_BIN_DIR)/dotnet.js
+$(NATIVE_BIN_DIR)/src/emcc-flags.txt: | $(NATIVE_BIN_DIR)/src
+	echo "$(call escape_quote,$(EMCC_FLAGS)) $(1) -Oz" > $$@
+
+$(NATIVE_BIN_DIR)/src/emcc-version.txt: $(EMSDK_PATH)/upstream/.emsdk_version | $(NATIVE_BIN_DIR)/src
+	$(EMCC) --version | head -1 > $$@
+
+build-native: $(NATIVE_BIN_DIR)/dotnet.js $(NATIVE_BIN_DIR)/src/emcc-flags.txt $(NATIVE_BIN_DIR)/src/emcc-version.txt
 
 endef
 
 ifeq ($(CONFIG),Debug)
-$(eval $(call InterpBuildTemplate,$(EMCC_DEBUG_FLAGS),$(MONO_LIBS),))
+$(eval $(call WasmBuildTemplate,$(EMCC_DEBUG_FLAGS),$(MONO_LIBS),))
 else
-$(eval $(call InterpBuildTemplate,$(EMCC_RELEASE_FLAGS),$(MONO_LIBS),$(STRIP_CMD)))
+$(eval $(call WasmBuildTemplate,$(EMCC_RELEASE_FLAGS),$(MONO_LIBS),$(STRIP_CMD)))
 endif
 
 clean-emsdk:
@@ -121,9 +129,6 @@ clean-emsdk:
 
 clean:
 	$(RM) -rf $(BUILDS_OBJ_DIR)
-
-# Helper targets
-.PHONY: runtime
 
 icu-files: $(wildcard $(ICU_LIBDIR)/*.dat) $(ICU_LIBDIR)/libicuuc.a $(ICU_LIBDIR)/libicui18n.a | $(NATIVE_BIN_DIR)
 	cp $^ $(NATIVE_BIN_DIR)
@@ -134,6 +139,9 @@ source-files: runtime/driver.c runtime/pinvoke.c runtime/corebindings.c runtime/
 header-files: runtime/pinvoke.h $(BUILDS_OBJ_DIR)/pinvoke-table.h | $(NATIVE_BIN_DIR)/include/wasm
 	cp $^ $(NATIVE_BIN_DIR)/include/wasm
 
+# Helper targets
+.PHONY: runtime
+
 build:
 	EMSDK_PATH=$(EMSDK_PATH) $(TOP)/build.sh mono+libs.pretest -os Browser -c $(CONFIG) /p:ContinueOnError=false /p:StopOnFirstFailure=true
 
@@ -141,7 +149,7 @@ build-all:
 	EMSDK_PATH=$(EMSDK_PATH) $(TOP)/build.sh mono+libs -os Browser -c $(CONFIG) /p:ContinueOnError=false /p:StopOnFirstFailure=true
 
 runtime:
-	EMSDK_PATH=$(EMSDK_PATH) $(TOP)/build.sh mono.runtime+mono.wasmruntime+libs.pretest -os Browser -c $(CONFIG) /p:ContinueOnError=false /p:StopOnFirstFailure=true
+	EMSDK_PATH=$(EMSDK_PATH) $(TOP)/build.sh mono.runtime+mono.wasmruntime+libs.native+libs.pretest -os Browser -c $(CONFIG) /p:ContinueOnError=false /p:StopOnFirstFailure=true
 
 corlib:
 	EMSDK_PATH=$(EMSDK_PATH) $(TOP)/build.sh mono.corelib+mono.wasmruntime+libs.pretest -os Browser -c $(CONFIG) /p:ContinueOnError=false /p:StopOnFirstFailure=true

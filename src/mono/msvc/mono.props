@@ -29,10 +29,10 @@
     <MONO_ENABLE_BTLS>false</MONO_ENABLE_BTLS>
     <!-- When true, mono binaries will be compiled for use as a .NET Core runtime.  -->
     <MONO_ENABLE_NETCORE>false</MONO_ENABLE_NETCORE>
-    <MONO_ENABLE_NETCORE Condition="Exists('..\mono.proj')">true</MONO_ENABLE_NETCORE>
+    <MONO_ENABLE_NETCORE Condition="Exists('$(MSBuildThisFileDirectory)..\mono.proj')">true</MONO_ENABLE_NETCORE>
     <!-- When true, mono runtime supports eventpipe library.  -->
     <MONO_ENABLE_PERFTRACING>false</MONO_ENABLE_PERFTRACING>
-    <MONO_ENABLE_PERFTRACING Condition="Exists('..\mono\eventpipe\ep.h')">true</MONO_ENABLE_PERFTRACING>
+    <MONO_ENABLE_PERFTRACING Condition="Exists('$(MSBuildThisFileDirectory)..\mono\eventpipe\ep-rt-mono.h')">true</MONO_ENABLE_PERFTRACING>
   </PropertyGroup>
   <PropertyGroup Label="MonoDirectories">
     <MonoSourceLocation Condition="'$(MonoSourceLocation)' == '' ">..</MonoSourceLocation>
@@ -51,6 +51,7 @@
     <SHIM_GLOBALIZATION Condition="'$(MONO_ENABLE_NETCORE)'=='true'">$(top_srcdir)/../libraries/Native/Unix/System.Globalization.Native</SHIM_GLOBALIZATION>
     <SHIM_GLOBALIZATION_COMMON Condition="'$(MONO_ENABLE_NETCORE)'=='true'">$(top_srcdir)/../libraries/Native/Unix/Common</SHIM_GLOBALIZATION_COMMON>
     <SHIM_GLOBALIZATION_INCLUDE_DIR Condition="'$(MONO_ENABLE_NETCORE)'=='true'">$(SHIM_GLOBALIZATION_COMMON);$(SHIM_GLOBALIZATION)</SHIM_GLOBALIZATION_INCLUDE_DIR>
+    <EVENTPIPE_INCLUDE_DIR Condition="'$(MONO_ENABLE_PERFTRACING)'=='true'">$(top_srcdir)/../native/</EVENTPIPE_INCLUDE_DIR>
     <MONO_LLVM_DEFAULT_INCLUDE_DIR>$(MONO_DIR)/external/llvm-project/llvm/include</MONO_LLVM_DEFAULT_INCLUDE_DIR>
   </PropertyGroup>
   <PropertyGroup Label="Static-C-Runtime" Condition="'$(MONO_USE_STATIC_C_RUNTIME)'=='true'">

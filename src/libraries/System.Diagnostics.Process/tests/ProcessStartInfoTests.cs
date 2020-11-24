@@ -947,11 +947,7 @@ namespace System.Diagnostics.Tests
 
                 try
                 {
-                    process.WaitForInputIdle(); // Give the file a chance to load
-                    Assert.Equal("notepad", process.ProcessName);
-
-                    // On some Windows versions, the file extension is not included in the title
-                    Assert.StartsWith(Path.GetFileNameWithoutExtension(tempFile), process.MainWindowTitle);
+                    VerifyNotepadMainWindowTitle(process, tempFile);
                 }
                 finally
                 {
@@ -961,6 +957,7 @@ namespace System.Diagnostics.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer), // Nano does not support UseShellExecute
+                                                    nameof(PlatformDetection.IsNotWindowsServerCore), // https://github.com/dotnet/runtime/issues/26231
                                                     nameof(PlatformDetection.IsNotWindows8x))] // https://github.com/dotnet/runtime/issues/22007
         [OuterLoop("Launches notepad")]
         [PlatformSpecific(TestPlatforms.Windows)]
@@ -985,18 +982,7 @@ namespace System.Diagnostics.Tests
 
                 try
                 {
-                    process.WaitForInputIdle(); // Give the file a chance to load
-                    Assert.Equal("notepad", process.ProcessName);
-
-                    if (PlatformDetection.IsInAppContainer)
-                    {
-                        Assert.Throws<PlatformNotSupportedException>(() => process.MainWindowTitle);
-                    }
-                    else
-                    {
-                        // On some Windows versions, the file extension is not included in the title
-                        Assert.StartsWith(Path.GetFileNameWithoutExtension(tempFile), process.MainWindowTitle);
-                    }
+                    VerifyNotepadMainWindowTitle(process, tempFile);
                 }
                 finally
                 {
@@ -1172,17 +1158,43 @@ namespace System.Diagnostics.Tests
 
                 try
                 {
-                    process.WaitForInputIdle(); // Give the file a chance to load
-                    Assert.Equal("notepad", process.ProcessName);
-
-                    // On some Windows versions, the file extension is not included in the title
-                    Assert.StartsWith(Path.GetFileNameWithoutExtension(tempFile), process.MainWindowTitle);
+                    VerifyNotepadMainWindowTitle(process, tempFile);
                 }
                 finally
                 {
                     process?.Kill();
                 }
             }
+        }
+
+        private void VerifyNotepadMainWindowTitle(Process process, string filename)
+        {
+            if (PlatformDetection.IsWindowsServerCore)
+            {
+                return; // On Server Core, notepad exists but does not return a title
+            }
+
+            // On some Windows versions, the file extension is not included in the title
+            string expected = Path.GetFileNameWithoutExtension(filename);
+
+            process.WaitForInputIdle(); // Give the file a chance to load
+            Assert.Equal("notepad", process.ProcessName);
+
+            // Notepad calls CreateWindowEx with pWindowName of empty string, then calls SetWindowTextW
+            // with "Untitled - Notepad" then finally if you're opening a file, calls SetWindowTextW
+            // with something similar to "myfilename - Notepad". So there's a race between input idle
+            // and the expected MainWindowTitle because of how Notepad is implemented.
+            string title = process.MainWindowTitle;
+            int count = 0;
+            while (!title.StartsWith(expected) && count < 500)
+            {
+                Thread.Sleep(10);
+                process.Refresh();
+                title = process.MainWindowTitle;
+                count++;
+            }
+
+            Assert.StartsWith(expected, title);
         }
     }
 }

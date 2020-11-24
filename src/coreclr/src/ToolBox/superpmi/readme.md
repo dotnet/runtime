@@ -121,9 +121,7 @@ Set the following environment variables:
 ```
 SuperPMIShimLogPath=<full path to an existing, empty temporary directory>
 SuperPMIShimPath=<full path to clrjit.dll, the "standalone" JIT>
-COMPlus_AltJit=*
-COMPlus_AltJitNgen=*
-COMPlus_AltJitName=superpmi-shim-collector.dll
+COMPlus_JitName=superpmi-shim-collector.dll
 ```
 
 for example, on Windows:
@@ -132,9 +130,7 @@ for example, on Windows:
 mkdir f:\spmi\temp
 set SuperPMIShimLogPath=f:\spmi\temp
 set SuperPMIShimPath=f:\gh\runtime\artifacts\tests\coreclr\windows.x64.Checked\Tests\Core_Root\clrjit.dll
-set COMPlus_AltJit=*
-set COMPlus_AltJitNgen=*
-set COMPlus_AltJitName=superpmi-shim-collector.dll
+set COMPlus_JitName=superpmi-shim-collector.dll
 ```
 
 (On Linux, use `libclrjit.so` and `libsuperpmi-shim-collector.so`.

@@ -4179,9 +4179,10 @@ void LinearScan::setIntervalAsSpilled(Interval* interval)
 }
 
 //------------------------------------------------------------------------
-// spill: Spill this Interval between "fromRefPosition" and "toRefPosition"
+// spill: Spill the "interval" starting from "fromRefPosition" (upto "toRefPosition")
 //
 // Arguments:
+//    interval        - The interval that contains the RefPosition to be spilled
 //    fromRefPosition - The RefPosition at which the Interval is to be spilled
 //    toRefPosition   - The RefPosition at which it must be reloaded (debug only arg)
 //
@@ -4372,6 +4373,7 @@ void LinearScan::unassignPhysReg(RegRecord* regRec, RefPosition* spillRefPositio
 {
     Interval* assignedInterval = regRec->assignedInterval;
     assert(assignedInterval != nullptr);
+    assert(spillRefPosition == nullptr || spillRefPosition->getInterval() == assignedInterval);
     regNumber thisRegNum = regRec->regNum;
 
     // Is assignedInterval actually still assigned to this register?
@@ -5596,8 +5598,13 @@ void LinearScan::allocateRegisters()
             {
                 allocate = false;
             }
-            else if (refType == RefTypeParamDef && varDsc->lvRefCntWtd() <= BB_UNITY_WEIGHT)
+            else if (refType == RefTypeParamDef && (varDsc->lvRefCntWtd() <= BB_UNITY_WEIGHT) &&
+                     (!currentRefPosition->lastUse || (currentInterval->physReg == REG_STK)))
             {
+                // If this is a low ref-count parameter, and either it is used (def is not the last use) or it's
+                // passed on the stack, don't allocate a register.
+                // Note that if this is an unused register parameter we don't want to set allocate to false because that
+                // will cause us to allocate stack space to spill it.
                 allocate = false;
             }
             else if ((currentInterval->physReg == REG_STK) && nextRefPosition->treeNode->OperIs(GT_BITCAST))

@@ -346,8 +346,8 @@ namespace System.Runtime.Serialization.Json
                     {
                         enumeratorType = collectionContract.GetEnumeratorMethod.ReturnType;
                     }
-                    MethodInfo? moveNextMethod = enumeratorType.GetMethod(Globals.MoveNextMethodName, BindingFlags.Instance | BindingFlags.Public, null, Array.Empty<Type>(), null);
-                    MethodInfo? getCurrentMethod = enumeratorType.GetMethod(Globals.GetCurrentMethodName, BindingFlags.Instance | BindingFlags.Public, null, Array.Empty<Type>(), null);
+                    MethodInfo? moveNextMethod = enumeratorType.GetMethod(Globals.MoveNextMethodName, BindingFlags.Instance | BindingFlags.Public, Type.EmptyTypes);
+                    MethodInfo? getCurrentMethod = enumeratorType.GetMethod(Globals.GetCurrentMethodName, BindingFlags.Instance | BindingFlags.Public, Type.EmptyTypes);
                     if (moveNextMethod == null || getCurrentMethod == null)
                     {
                         if (enumeratorType.IsInterface)
@@ -388,7 +388,7 @@ namespace System.Runtime.Serialization.Json
                     _ilg.Call(_objectLocal, collectionContract.GetEnumeratorMethod);
                     if (isDictionary)
                     {
-                        ConstructorInfo dictEnumCtor = enumeratorType.GetConstructor(Globals.ScanAllMembers, null, new Type[] { Globals.TypeOfIDictionaryEnumerator }, null)!;
+                        ConstructorInfo dictEnumCtor = enumeratorType.GetConstructor(Globals.ScanAllMembers, new Type[] { Globals.TypeOfIDictionaryEnumerator })!;
                         _ilg.ConvertValue(collectionContract.GetEnumeratorMethod.ReturnType, Globals.TypeOfIDictionaryEnumerator);
                         _ilg.New(dictEnumCtor);
                     }
@@ -396,7 +396,7 @@ namespace System.Runtime.Serialization.Json
                     {
                         Debug.Assert(keyValueTypes != null);
                         Type ctorParam = Globals.TypeOfIEnumeratorGeneric.MakeGenericType(Globals.TypeOfKeyValuePair.MakeGenericType(keyValueTypes));
-                        ConstructorInfo dictEnumCtor = enumeratorType.GetConstructor(Globals.ScanAllMembers, null, new Type[] { ctorParam }, null)!;
+                        ConstructorInfo dictEnumCtor = enumeratorType.GetConstructor(Globals.ScanAllMembers, new Type[] { ctorParam })!;
                         _ilg.ConvertValue(collectionContract.GetEnumeratorMethod.ReturnType, ctorParam);
                         _ilg.New(dictEnumCtor);
                     }
@@ -560,9 +560,7 @@ namespace System.Runtime.Serialization.Json
                     MethodInfo writeArrayMethodInfo = typeof(JsonWriterDelegator).GetMethod(
                         writeArrayMethod,
                         Globals.ScanAllMembers,
-                        null,
-                        new Type[] { type, typeof(XmlDictionaryString), typeof(XmlDictionaryString) },
-                        null)!;
+                        new Type[] { type, typeof(XmlDictionaryString), typeof(XmlDictionaryString) })!;
                     _ilg.Call(_xmlWriterArg, writeArrayMethodInfo, value, itemName, null);
                     return true;
                 }
