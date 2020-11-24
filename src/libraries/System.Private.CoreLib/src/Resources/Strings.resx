@@ -259,9 +259,6 @@
   <data name="Arg_DataMisalignedException" xml:space="preserve">
     <value>A datatype misalignment was detected in a load or store instruction.</value>
   </data>
-  <data name="Arg_DateTimeRange" xml:space="preserve">
-    <value>Combination of arguments to the DateTime constructor is out of the legal range.</value>
-  </data>
   <data name="Arg_DecBitCtor" xml:space="preserve">
     <value>Decimal constructor requires an array or span of four valid decimal bytes.</value>
   </data>

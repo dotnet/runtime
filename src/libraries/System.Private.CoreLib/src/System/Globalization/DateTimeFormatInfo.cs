@@ -1826,20 +1826,23 @@ namespace System.Globalization
                                                                | DateTimeStyles.AdjustToUniversal | DateTimeStyles.AssumeLocal
                                                                | DateTimeStyles.AssumeUniversal | DateTimeStyles.RoundtripKind);
 
-        internal static void ValidateStyles(DateTimeStyles style, string parameterName)
+        internal static void ValidateStyles(DateTimeStyles style, bool styles = false)
         {
-            if ((style & InvalidDateTimeStyles) != 0)
+            const DateTimeStyles localUniversal = DateTimeStyles.AssumeLocal | DateTimeStyles.AssumeUniversal;
+
+            if ((style & InvalidDateTimeStyles) != 0 ||
+                (style & localUniversal) == localUniversal ||
+                (style & (DateTimeStyles.RoundtripKind | localUniversal | DateTimeStyles.AdjustToUniversal)) > DateTimeStyles.RoundtripKind)
             {
-                throw new ArgumentException(SR.Argument_InvalidDateTimeStyles, parameterName);
+                ThrowInvalid(style, styles);
             }
-            if (((style & (DateTimeStyles.AssumeLocal)) != 0) && ((style & (DateTimeStyles.AssumeUniversal)) != 0))
+
+            static void ThrowInvalid(DateTimeStyles style, bool styles)
             {
-                throw new ArgumentException(SR.Argument_ConflictingDateTimeStyles, parameterName);
-            }
-            if (((style & DateTimeStyles.RoundtripKind) != 0)
-                && ((style & (DateTimeStyles.AssumeLocal | DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal)) != 0))
-            {
-                throw new ArgumentException(SR.Argument_ConflictingDateTimeRoundtripStyles, parameterName);
+                string message = (style & InvalidDateTimeStyles) != 0 ? SR.Argument_InvalidDateTimeStyles
+                    : (style & localUniversal) == localUniversal ? SR.Argument_ConflictingDateTimeStyles
+                    : SR.Argument_ConflictingDateTimeRoundtripStyles;
+                throw new ArgumentException(message, styles ? nameof(styles) : nameof(style));
             }
         }
 

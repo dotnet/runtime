@@ -15,7 +15,7 @@ namespace System
         {
             get
             {
-                long fileTime;
+                ulong fileTime;
                 s_pfnGetSystemTimeAsFileTime(&fileTime);
 
                 if (s_systemSupportsLeapSeconds)
@@ -25,7 +25,7 @@ namespace System
                     if (Interop.Kernel32.FileTimeToSystemTime(&fileTime, &time.systemTime) != Interop.BOOL.FALSE)
                     {
                         // to keep the time precision
-                        time.hundredNanoSecond = fileTime % 10000; // 10000 is the number of 100-nano seconds per Millisecond
+                        time.hundredNanoSecond = (uint)(fileTime % 10000); // 10000 is the number of 100-nano seconds per Millisecond
                     }
                     else
                     {
@@ -33,28 +33,19 @@ namespace System
                         time.hundredNanoSecond = 0;
                     }
 
-                    if (time.systemTime.Second > 59)
-                    {
-                        // we have a leap second, force it to last second in the minute as DateTime doesn't account for leap seconds in its calculation.
-                        // we use the maxvalue from the milliseconds and the 100-nano seconds to avoid reporting two out of order 59 seconds
-                        time.systemTime.Second = 59;
-                        time.systemTime.Milliseconds = 999;
-                        time.hundredNanoSecond = 9999;
-                    }
-
                     return CreateDateTimeFromSystemTime(in time);
                 }
                 else
                 {
-                    return new DateTime(((ulong)(fileTime + FileTimeOffset)) | KindUtc);
+                    return new DateTime(fileTime + FileTimeOffset | KindUtc);
                 }
             }
         }
 
-        internal static unsafe bool IsValidTimeWithLeapSeconds(int year, int month, int day, int hour, int minute, int second, DateTimeKind kind)
+        internal static unsafe bool IsValidTimeWithLeapSeconds(int year, int month, int day, int hour, int minute, DateTimeKind kind)
         {
             DateTime dt = new DateTime(year, month, day);
-            FullSystemTime time = new FullSystemTime(year, month, dt.DayOfWeek, day, hour, minute, second);
+            FullSystemTime time = new FullSystemTime(year, month, dt.DayOfWeek, day, hour, minute, 60);
 
             if (kind != DateTimeKind.Utc)
             {
@@ -65,7 +56,7 @@ namespace System
 
             if (kind != DateTimeKind.Local)
             {
-                long ft;
+                ulong ft;
                 if (Interop.Kernel32.SystemTimeToFileTime(&time.systemTime, &ft) != Interop.BOOL.FALSE)
                     return true;
             }
@@ -73,7 +64,7 @@ namespace System
             return false;
         }
 
-        private static unsafe DateTime FromFileTimeLeapSecondsAware(long fileTime)
+        private static unsafe DateTime FromFileTimeLeapSecondsAware(ulong fileTime)
         {
             FullSystemTime time;
             if (Interop.Kernel32.FileTimeToSystemTime(&fileTime, &time.systemTime) == Interop.BOOL.FALSE)
@@ -82,39 +73,44 @@ namespace System
             }
 
             // to keep the time precision
-            time.hundredNanoSecond = fileTime % TicksPerMillisecond;
-            if (time.systemTime.Second > 59)
-            {
-                // we have a leap second, force it to last second in the minute as DateTime doesn't account for leap seconds in its calculation.
-                // we use the maxvalue from the milliseconds and the 100-nano seconds to avoid reporting two out of order 59 seconds
-                time.systemTime.Second = 59;
-                time.systemTime.Milliseconds = 999;
-                time.hundredNanoSecond = 9999;
-            }
+            time.hundredNanoSecond = (uint)(fileTime % TicksPerMillisecond);
             return CreateDateTimeFromSystemTime(in time);
         }
 
-        private static unsafe long ToFileTimeLeapSecondsAware(long ticks)
+        private static unsafe ulong ToFileTimeLeapSecondsAware(long ticks)
         {
             FullSystemTime time = new FullSystemTime(ticks);
-            long fileTime;
+            ulong fileTime;
 
             if (Interop.Kernel32.SystemTimeToFileTime(&time.systemTime, &fileTime) == Interop.BOOL.FALSE)
             {
                 throw new ArgumentOutOfRangeException(null, SR.ArgumentOutOfRange_FileTimeInvalid);
             }
 
-            return fileTime + ticks % TicksPerMillisecond;
+            return fileTime + (ulong)ticks % TicksPerMillisecond;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static DateTime CreateDateTimeFromSystemTime(in FullSystemTime time)
         {
-            long ticks = DateToTicks(time.systemTime.Year, time.systemTime.Month, time.systemTime.Day);
-            ticks += TimeToTicks(time.systemTime.Hour, time.systemTime.Minute, time.systemTime.Second);
-            ticks += time.systemTime.Milliseconds * TicksPerMillisecond;
-            ticks += time.hundredNanoSecond;
-            return new DateTime(((ulong)(ticks)) | KindUtc);
+            uint year = time.systemTime.Year;
+            uint[] days = IsLeapYear((int)year) ? s_daysToMonth366 : s_daysToMonth365;
+            uint n = DaysToYear(year) + days[time.systemTime.Month - 1] + time.systemTime.Day - 1;
+            ulong ticks = n * (ulong)TicksPerDay;
+
+            ticks += time.systemTime.Hour * (ulong)TicksPerHour;
+            ticks += time.systemTime.Minute * (ulong)TicksPerMinute;
+            uint second = time.systemTime.Second;
+            if (second <= 59)
+            {
+                ulong tmp = second * (uint)TicksPerSecond + time.systemTime.Milliseconds * (uint)TicksPerMillisecond + time.hundredNanoSecond;
+                return new DateTime(ticks + tmp | KindUtc);
+            }
+
+            // we have a leap second, force it to last second in the minute as DateTime doesn't account for leap seconds in its calculation.
+            // we use the maxvalue from the milliseconds and the 100-nano seconds to avoid reporting two out of order 59 seconds
+            ticks += TicksPerMinute - 1 | KindUtc;
+            return new DateTime(ticks);
         }
 
         // FullSystemTime struct is the SYSTEMTIME struct with extra hundredNanoSecond field to store more precise time.
@@ -122,7 +118,7 @@ namespace System
         private struct FullSystemTime
         {
             internal Interop.Kernel32.SYSTEMTIME systemTime;
-            internal long hundredNanoSecond;
+            internal uint hundredNanoSecond;
 
             internal FullSystemTime(int year, int month, DayOfWeek dayOfWeek, int day, int hour, int minute, int second)
             {
@@ -156,9 +152,9 @@ namespace System
             }
         }
 
-        private static unsafe readonly delegate* unmanaged[SuppressGCTransition]<long*, void> s_pfnGetSystemTimeAsFileTime = GetGetSystemTimeAsFileTimeFnPtr();
+        private static unsafe readonly delegate* unmanaged[SuppressGCTransition]<ulong*, void> s_pfnGetSystemTimeAsFileTime = GetGetSystemTimeAsFileTimeFnPtr();
 
-        private static unsafe delegate* unmanaged[SuppressGCTransition]<long*, void> GetGetSystemTimeAsFileTimeFnPtr()
+        private static unsafe delegate* unmanaged[SuppressGCTransition]<ulong*, void> GetGetSystemTimeAsFileTimeFnPtr()
         {
             IntPtr kernel32Lib = Interop.Kernel32.LoadLibraryEx(Interop.Libraries.Kernel32, IntPtr.Zero, Interop.Kernel32.LOAD_LIBRARY_SEARCH_SYSTEM32);
             Debug.Assert(kernel32Lib != IntPtr.Zero);
@@ -192,7 +188,7 @@ namespace System
                 }
             }
 
-            return (delegate* unmanaged[SuppressGCTransition]<long*, void>)pfnGetSystemTime;
+            return (delegate* unmanaged[SuppressGCTransition]<ulong*, void>)pfnGetSystemTime;
         }
     }
 }
