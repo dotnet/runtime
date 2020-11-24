@@ -349,7 +349,8 @@ namespace $([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").
                         string androidLogFile = System.IO.Path.Combine(System.IO.Path.GetDirectoryName(testExecutable), "adb-logcat-net.dot." + _Global.category + ".log")%3B
                         if(File.Exists(androidLogFile))
                         {
-                            testOutput.AddRange(System.IO.File.ReadAllLines(androidLogFile))%3B
+                            //testOutput.AddRange(System.IO.File.ReadAllLines(androidLogFile))%3B
+                            testOutput.AddRange("~~~Found log file")%3B
                         }
                     }
 
