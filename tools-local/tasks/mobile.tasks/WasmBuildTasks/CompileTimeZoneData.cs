@@ -30,19 +30,40 @@ public class CompileTimeZoneData : Task
 
     private const string ZoneTabFileName = "zone1970.tab";
 
-    private void CompileTimeZoneDataSource()
+    private bool CompileTimeZoneDataSource()
     {
-        using (Process process = new Process())
+        foreach (var f in TimeZones!)
         {
-            process.StartInfo.UseShellExecute = false;
-            process.StartInfo.FileName = "zic";
-            foreach (var f in TimeZones!)
+            using Process process = new ();
+
+            // zic writes warnings over stderr
+            process.ErrorDataReceived += (_, args) => Log.LogMessage(MessageImportance.Low, args.Data ?? string.Empty);
+            process.OutputDataReceived += (_, args) => Log.LogMessage(MessageImportance.Low, args.Data ?? string.Empty);
+
+            process.StartInfo  = new ProcessStartInfo
             {
-                process.StartInfo.Arguments = $"-d \"{OutputDirectory}\" \"{Path.Combine(InputDirectory!, f)}\"";
-                process.Start();
-                process.WaitForExit();
+                UseShellExecute = false,
+                FileName = "zic",
+                RedirectStandardError = true,
+                RedirectStandardOutput = true,
+                Arguments = $"-d \"{OutputDirectory}\" \"{Path.Combine(InputDirectory!, f)}\""
+            };
+
+            Log.LogMessage(MessageImportance.Low, $"Running {process.StartInfo.FileName} {process.StartInfo.Arguments}");
+
+            process.Start();
+            process.BeginErrorReadLine();
+            process.BeginOutputReadLine();
+
+            process.WaitForExit();
+            if (process.ExitCode != 0)
+            {
+                Log.LogError($"{process.StartInfo.FileName} {process.StartInfo.Arguments} returned exit code {process.ExitCode}");
+                return false;
             }
         }
+
+        return true;
     }
 
     private void FilterTimeZoneData()
@@ -51,8 +72,8 @@ public class CompileTimeZoneData : Task
         //  for ex: `CST6CDT`, `MST`, etc.
         foreach (var entry in new DirectoryInfo (OutputDirectory!).EnumerateFiles())
         {
-            if (entry.Name != "zone.tab")
-                File.Delete(entry.FullName);
+            File.Delete(entry.FullName);
+            Log.LogMessage(MessageImportance.Low, $"Removing file created by zic: \"{entry.FullName}\".");
         }
     }
 
@@ -70,35 +91,43 @@ public class CompileTimeZoneData : Task
                 }
             }
         }
+
+        Log.LogMessage(MessageImportance.Low, $"Wrote \"{ZoneTabFile}\" filtered to \"{path}\".");
     }
 
     public override bool Execute()
     {
-        string ZoneTabFile = Path.Combine(InputDirectory!, ZoneTabFileName);
+        string zoneTabFilePath = Path.Combine(InputDirectory!, ZoneTabFileName);
 
         if (!Directory.Exists(OutputDirectory))
             Directory.CreateDirectory(OutputDirectory!);
 
-        if (!File.Exists(ZoneTabFile))
+        if (!File.Exists(zoneTabFilePath))
         {
-            Log.LogError($"Could not find required file {ZoneTabFile}");
+            Log.LogError($"Could not find required file {zoneTabFilePath}");
             return false;
         }
-        CompileTimeZoneDataSource();
 
-        if (FilterSystemTimeZones) {
+        if (!CompileTimeZoneDataSource())
+            return !Log.HasLoggedErrors;
+
+        FilterTimeZoneData();
+
+        if (FilterSystemTimeZones)
+        {
             string[] filtered = new string[] { "America/Los_Angeles", "Australia/Sydney", "Europe/London", "Pacific/Tongatapu",
                                 "America/Sao_Paulo", "Australia/Perth", "Africa/Nairobi", "Europe/Berlin",
                                 "Europe/Moscow", "Africa/Tripoli", "America/Argentina/Catamarca", "Europe/Lisbon",
                                 "America/St_Johns"};
-            FilterZoneTab(filtered, ZoneTabFile);
+            FilterZoneTab(filtered, zoneTabFilePath);
         }
         else
         {
-            File.Copy(ZoneTabFile, Path.Combine(OutputDirectory!, "zone.tab"), true);
+            string dest = Path.Combine(OutputDirectory!, "zone.tab");
+            File.Copy(zoneTabFilePath, dest, true);
+            Log.LogMessage(MessageImportance.Low, $"Copying file from \"{zoneTabFilePath}\" to \"{dest}\".");
         }
 
-        FilterTimeZoneData();
         return !Log.HasLoggedErrors;
     }
 }
