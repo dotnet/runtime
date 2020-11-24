@@ -144,6 +144,24 @@ namespace System.Net.Http.WinHttpHandlerUnitTests
         }
 
         [Fact]
+        public void TcpKeepalive_InfiniteTimeSpan_TranslatesToMaxUInt32()
+        {
+            using var handler = new WinHttpHandler();
+
+            SendRequestHelper.Send(handler, () => {
+                handler.TcpKeepAliveEnabled = true;
+                handler.TcpKeepAliveTime = Timeout.InfiniteTimeSpan;
+                handler.TcpKeepAliveInterval = Timeout.InfiniteTimeSpan;
+            });
+
+            (uint onOff, uint keepAliveTime, uint keepAliveInterval) = APICallHistory.WinHttpOptionTcpKeepAlive.Value;
+
+            Assert.True(onOff != 0);
+            Assert.Equal(uint.MaxValue, keepAliveTime);
+            Assert.Equal(uint.MaxValue, keepAliveInterval);
+        }
+
+        [Fact]
         public void AutomaticRedirection_SetFalseAndGet_ValueIsFalse()
         {
             var handler = new WinHttpHandler();

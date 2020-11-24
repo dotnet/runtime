@@ -984,6 +984,8 @@ namespace System.Net.Http
                 var tcpKeepalive = new Interop.WinHttp.tcp_keepalive
                 {
                     onoff = 1,
+
+                    // Timeout.InfiniteTimeSpan will be converted to uint.MaxValue milliseconds (~ 50 days)
                     keepaliveinterval = (uint)_tcpKeepAliveInterval.TotalMilliseconds,
                     keepalivetime = (uint)_tcpKeepAliveTime.TotalMilliseconds
                 };
