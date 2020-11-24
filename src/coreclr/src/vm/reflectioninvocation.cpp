@@ -2178,7 +2178,6 @@ void QCALLTYPE RuntimeTypeHandle::GetActivationInfo(
             MethodDesc* pMD = pMT->GetDefaultConstructor(pMT->IsValueType());
             _ASSERTE(pMD != NULL);
 
-            pMD->EnsureActive();
             PCODE pCode = pMD->GetMultiCallableAddrOfCode();
             _ASSERTE(pCode != NULL);
 
@@ -2356,8 +2355,6 @@ void QCALLTYPE ReflectionEnum::GetEnumValuesAndNames(QCall::TypeHandle pEnumType
             static_assert_no_msg(offsetof(MDDefaultValue, m_byteValue) == offsetof(MDDefaultValue, m_usValue));
             static_assert_no_msg(offsetof(MDDefaultValue, m_ulValue) == offsetof(MDDefaultValue, m_ullValue));
             PVOID pValue = &defaultValue.m_byteValue;
-
-            auto y = ReflectionEnum::InternalGetEnumUnderlyingType;
 
             switch (type) {
             case ELEMENT_TYPE_I1:
