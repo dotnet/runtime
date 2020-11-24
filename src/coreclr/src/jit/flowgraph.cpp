@@ -5179,7 +5179,7 @@ void Compiler::fgObserveInlineConstants(OPCODE opcode, const FgStack& stack, boo
                     // Check for the double whammy of an incoming constant argument
                     // feeding a constant test.
                     unsigned varNum = FgStack::SlotTypeToArgNum(slot0);
-                    if (impInlineInfo->inlArgInfo[varNum].argNode->OperIsConst())
+                    if (impInlineInfo->inlArgInfo[varNum].argIsInvariant)
                     {
                         compInlineResult->Note(InlineObservation::CALLSITE_CONSTANT_ARG_FEEDS_TEST);
                     }
@@ -5221,7 +5221,7 @@ void Compiler::fgObserveInlineConstants(OPCODE opcode, const FgStack& stack, boo
             compInlineResult->Note(InlineObservation::CALLEE_ARG_FEEDS_TEST);
 
             unsigned varNum = FgStack::SlotTypeToArgNum(slot0);
-            if (impInlineInfo->inlArgInfo[varNum].argNode->OperIsConst())
+            if (impInlineInfo->inlArgInfo[varNum].argIsInvariant)
             {
                 compInlineResult->Note(InlineObservation::CALLSITE_CONSTANT_ARG_FEEDS_TEST);
             }
@@ -5232,7 +5232,7 @@ void Compiler::fgObserveInlineConstants(OPCODE opcode, const FgStack& stack, boo
             compInlineResult->Note(InlineObservation::CALLEE_ARG_FEEDS_TEST);
 
             unsigned varNum = FgStack::SlotTypeToArgNum(slot1);
-            if (impInlineInfo->inlArgInfo[varNum].argNode->OperIsConst())
+            if (impInlineInfo->inlArgInfo[varNum].argIsInvariant)
             {
                 compInlineResult->Note(InlineObservation::CALLSITE_CONSTANT_ARG_FEEDS_TEST);
             }

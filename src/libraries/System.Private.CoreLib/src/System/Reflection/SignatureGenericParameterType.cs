@@ -30,8 +30,8 @@ namespace System.Reflection
         internal sealed override SignatureType? ElementType => null;
         public sealed override int GetArrayRank() => throw new ArgumentException(SR.Argument_HasToBeArrayClass);
         public sealed override Type GetGenericTypeDefinition() => throw new InvalidOperationException(SR.InvalidOperation_NotGenericType);
-        public sealed override Type[] GetGenericArguments() => Array.Empty<Type>();
-        public sealed override Type[] GenericTypeArguments => Array.Empty<Type>();
+        public sealed override Type[] GetGenericArguments() => Type.EmptyTypes;
+        public sealed override Type[] GenericTypeArguments => Type.EmptyTypes;
         public sealed override int GenericParameterPosition => _position;
         public abstract override string Name { get; }
         public sealed override string? Namespace => null;

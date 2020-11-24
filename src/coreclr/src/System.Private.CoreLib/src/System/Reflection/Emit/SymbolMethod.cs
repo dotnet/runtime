@@ -39,7 +39,7 @@ namespace System.Reflection.Emit
             }
             else
             {
-                m_parameterTypes = Array.Empty<Type>();
+                m_parameterTypes = Type.EmptyTypes;
             }
 
             m_module = mod;

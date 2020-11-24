@@ -3230,7 +3230,7 @@ namespace System
         public override Type[] GetGenericArguments()
         {
             Type[] types = GetRootElementType().GetTypeHandleInternal().GetInstantiationPublic();
-            return types ?? Array.Empty<Type>();
+            return types ?? Type.EmptyTypes;
         }
 
         public override Type MakeGenericType(Type[] instantiation)
@@ -3315,7 +3315,7 @@ namespace System
                 throw new InvalidOperationException(SR.Arg_NotGenericParameter);
 
             Type[] constraints = new RuntimeTypeHandle(this).GetConstraints();
-            return constraints ?? Array.Empty<Type>();
+            return constraints ?? Type.EmptyTypes;
         }
         #endregion
 

@@ -1625,7 +1625,8 @@ void Compiler::optDebugCheckAssertion(AssertionDsc* assertion)
                     assert(assertion->op2.u1.iconFlags != 0);
                     break;
                 case O1K_LCLVAR:
-                    assert((lvaTable[assertion->op1.lcl.lclNum].lvType != TYP_REF) || (assertion->op2.u1.iconVal == 0));
+                    assert((lvaTable[assertion->op1.lcl.lclNum].lvType != TYP_REF) ||
+                           (assertion->op2.u1.iconVal == 0) || doesMethodHaveFrozenString());
                     break;
                 case O1K_VALUE_NUMBER:
                     assert((vnStore->TypeOfVN(assertion->op1.vn) != TYP_REF) || (assertion->op2.u1.iconVal == 0));

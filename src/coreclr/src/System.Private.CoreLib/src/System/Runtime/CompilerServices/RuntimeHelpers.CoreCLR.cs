@@ -80,6 +80,9 @@ namespace System.Runtime.CompilerServices
 
         public static void PrepareMethod(RuntimeMethodHandle method, RuntimeTypeHandle[]? instantiation)
         {
+            // defensive copy of user-provided array, per CopyRuntimeTypeHandles contract
+            instantiation = (RuntimeTypeHandle[]?)instantiation?.Clone();
+
             unsafe
             {
                 IntPtr[]? instantiationHandles = RuntimeTypeHandle.CopyRuntimeTypeHandles(instantiation, out int length);
