@@ -65,9 +65,9 @@ namespace System.Net
             }
         }
 
-        public MultiMemory ActiveMemory => _blocks is null ? MultiMemory.Empty : new MultiMemory(_blocks, _activeStart, _availableStart - _activeStart);
+        public MultiMemory ActiveMemory => new MultiMemory(_blocks, _activeStart, _availableStart - _activeStart);
 
-        public MultiMemory AvailableMemory => _blocks is null ? MultiMemory.Empty : new MultiMemory(_blocks, _availableStart, _blockCount * BlockSize - _availableStart);
+        public MultiMemory AvailableMemory => new MultiMemory(_blocks, _availableStart, _blockCount * BlockSize - _availableStart);
 
         public void Discard(int byteCount)
         {
@@ -269,7 +269,7 @@ namespace System.Net
             }
         }
 
-        public int BlockCount => _length == 0 ? 0 : GetBlockIndex(_start + _length - 1) - GetBlockIndex(_start) + 1;
+        public int BlockCount => GetBlockIndex(_start + _length + (BlockSize - 1)) - GetBlockIndex(_start);
 
         public Memory<byte> GetBlock(int blockIndex)
         {
