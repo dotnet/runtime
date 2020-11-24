@@ -3128,42 +3128,54 @@ unsigned SKIP_ALLOC_FRAME(int size, PTR_CBYTE base, unsigned offset)
         return (SKIP_PUSH_REG(base, offset));
     }
 
-    if (size >= (int)GetOsPageSize())
+    const int pageSize = (int)GetOsPageSize();
+
+    if (size < pageSize)
     {
-        if (size < int(3 * GetOsPageSize()))
+        // sub esp, size
+        offset = SKIP_ARITH_REG(size, base, offset);
+
+        const int STACK_PROBE_BOUNDARY_THRESHOLD_BYTES = 1024;
+
+        unsigned delta = 0;
+
+        if (size + STACK_PROBE_BOUNDARY_THRESHOLD_BYTES > pageSize)
         {
-            // add 7 bytes for one or two TEST EAX, [ESP+GetOsPageSize()]
-            offset += (size / GetOsPageSize()) * 7;
+#ifdef _DEBUG
+            WORD wOpcode = *(PTR_WORD)(base+offset);
+            _ASSERTE(CheckInstrWord(wOpcode, X86_INSTR_w_TEST_ESP_EAX));
+#endif
+            // test [esp], eax
+            delta = 3;
+        }
+
+        return (offset+delta);
+    }
+    else
+    {
+        if (CheckInstrByte(base[offset], X86_INSTR_PUSH_EAX))
+        {
+            // push eax
+            offset = SKIP_PUSH_REG(base, offset);
+            // lea eax, [esp-size+4]
+            offset = SKIP_LEA_EAX_ESP(-size+4, base, offset);
+            // call JIT_StackProbe
+            offset = SKIP_HELPER_CALL(base, offset);
+            // pop eax
+            offset = SKIP_POP_REG(base, offset);
+            // sub esp, size
+            return (SKIP_ARITH_REG(size, base, offset));
         }
         else
         {
-            //      xor eax, eax                2
-            //      [nop]                       0-3
-            // loop:
-            //      test [esp + eax], eax       3
-            //      sub eax, 0x1000             5
-            //      cmp EAX, -size              5
-            //      jge loop                    2
-            offset += 2;
-
-            // NGEN images that support rejit may have extra nops we need to skip over
-            while (offset < 5)
-            {
-                if (CheckInstrByte(base[offset], X86_INSTR_NOP))
-                {
-                    offset++;
-                }
-                else
-                {
-                    break;
-                }
-            }
-            offset += 15;
+            // lea eax, [esp-size]
+            offset = SKIP_LEA_EAX_ESP(-size, base, offset);
+            // call JIT_StackProbe
+            offset = SKIP_HELPER_CALL(base, offset);
+            // mov esp, eax
+            return (SKIP_MOV_REG_REG(base, offset));
         }
     }
-
-    // sub ESP, size
-    return (SKIP_ARITH_REG(size, base, offset));
 }
 
 
