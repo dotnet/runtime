@@ -53,13 +53,13 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
             {
                 if (_disposed)
                 {
-                    if (_disposables != null)
+                    if (service is IDisposable disposable)
                     {
-                        // cleanup disposable just in case still has items before throwing
-                        foreach (IDisposable disposable in _disposables)
-                        {
-                            disposable.Dispose();
-                        }
+                        disposable.Dispose();
+                    }
+                    else
+                    {
+                        ((IAsyncDisposable)service).DisposeAsync().AsTask().Wait();
                     }
                     ThrowHelper.ThrowObjectDisposedException();
                 }
