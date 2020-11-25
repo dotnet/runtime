@@ -87,7 +87,7 @@ namespace Mono.Linker
 				};
 			}
 
-			return assembly.MainModule.GetType (typeName.ToString ());
+			return assembly.MainModule.ResolveType (typeName.ToString ());
 		}
 	}
 }

@@ -500,7 +500,7 @@ namespace Mono.Linker
 			Debug.Assert (module != null);
 
 			if (declaringType == null) {
-				var type = module.GetType (name);
+				var type = module.ResolveType (name);
 				if (type != null) {
 					results.Add (type);
 				}
