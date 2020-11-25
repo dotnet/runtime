@@ -30,6 +30,7 @@
     <Compile Remove="CommandLine\Dependencies\CustomStepUser.cs" />
     <Compile Remove="Logging\Dependencies\LogStep.cs" />
     <Compile Remove="Extensibility\Dependencies\*.cs" />
+    <Compile Remove="DynamicDependencies\Dependencies\FacadeAssembly.cs" />
     <Compile Remove="Warnings\Dependencies\CustomStep.cs" />
   </ItemGroup>
   <ItemGroup>
