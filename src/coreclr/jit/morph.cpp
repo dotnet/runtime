@@ -17951,16 +17951,26 @@ void Compiler::fgMorphStructField(GenTree* tree, GenTree* parent)
                         }
                         // Access the promoted field as a field of a non-promoted struct with the same class handle.
                     }
-#ifdef DEBUG
                     else if (tree->TypeGet() == TYP_STRUCT)
                     {
-                        // The field tree accesses it as a struct, but the promoted lcl var for the field
-                        // says that it has another type. It can happen only if struct promotion faked
-                        // field type for a struct of single field of scalar type aligned at their natural boundary.
+                        // If we have a GT_RETURN of a TYP_STRUCT, but the field type is different
+                        // then we can't return the field directly, so we have to de-optimize here
+                        //
+                        if (parent->OperGet() == GT_RETURN)
+                        {
+                            return;
+                        }
+#ifdef DEBUG
+                        // The field tree accesses it as a struct, but the promoted LCL_VAR field
+                        // says that it has another type. This happens when struct promotion unwraps
+                        // a single field struct to get to its ultimate type.
+                        //
+                        // Note that currently, we cannot have a promoted LCL_VAR field with a struct type.
+                        //
                         assert(structPromotionHelper != nullptr);
                         structPromotionHelper->CheckRetypedAsScalar(field->gtFldHnd, fieldType);
-                    }
 #endif // DEBUG
+                    }
                 }
 
                 tree->SetOper(GT_LCL_VAR);
