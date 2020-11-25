@@ -12,6 +12,7 @@
     <MicrosoftNetCoreAppRuntimePackRidDir>$([MSBuild]::NormalizeDirectory('$(MicrosoftNetCoreAppRuntimePackDir)', 'runtimes', '$(PackageRID)'))</MicrosoftNetCoreAppRuntimePackRidDir>
     <MicrosoftNetCoreAppRuntimePackNativeDir>$([MSBuild]::NormalizeDirectory('$(MicrosoftNetCoreAppRuntimePackRidDir)', 'native'))</MicrosoftNetCoreAppRuntimePackNativeDir>
     <WasmEnableES6 Condition="'$(WasmEnableES6)' == ''">false</WasmEnableES6>
+    <FilterSystemTimeZones Condition="'$(FilterSystemTimeZones)' == ''">false</FilterSystemTimeZones>
   </PropertyGroup>
 
   <Target Name="CheckEnv">
@@ -64,10 +65,12 @@
       <TimeZoneToCompile Include="southamerica" />
       <TimeZoneToCompile Include="backward" />
     </ItemGroup>
+
     <CompileTimeZoneData
       TimeZones="@(TimeZoneToCompile)"
       InputDirectory="$([MSBuild]::NormalizePath('$(PkgSystem_Runtime_TimeZoneData)', 'contentFiles', 'any', 'any', 'data'))"
-      OutputDirectory="$(ArtifactsObjDir)wasm/timezones" />
+      OutputDirectory="$(ArtifactsObjDir)wasm/timezones" 
+      FilterSystemTimeZones="$(FilterSystemTimeZones)"/>
   </Target>
 
   <UsingTask TaskName="GenerateWasmBundle"
