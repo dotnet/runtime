@@ -531,8 +531,8 @@ void ThreadStressLog::LogMsg(unsigned facility, int cArgs, const char* format, v
 
 #ifndef DACCESS_COMPILE
 #ifdef _DEBUG
-    // _ASSERTE ( cArgs >= 0 && cArgs <= 7 );
-	if (cArgs < 0 || cArgs > 7) DebugBreak();
+    // _ASSERTE ( cArgs >= 0 && cArgs <= 63 );
+	if (cArgs < 0 || cArgs > 63) DebugBreak();
 #endif //
 
     size_t offs = ((size_t)format - StressLog::theLog.moduleOffset);
@@ -559,7 +559,8 @@ void ThreadStressLog::LogMsg(unsigned facility, int cArgs, const char* format, v
     msg->timeStamp = getTimeStamp();
     msg->facility = facility;
 	msg->formatOffset = offs;
-	msg->numberOfArgs = cArgs;
+	msg->numberOfArgs = cArgs & 0x7;
+    msg->numberOfArgsX = cArgs >> 3;
 
     for ( int i = 0; i < cArgs; ++i )
     {
@@ -636,7 +637,7 @@ void StressLog::LogMsg (unsigned level, unsigned facility, int cArgs, const char
     // set the stress log config parameter.
     CONTRACT_VIOLATION(TakesLockViolation);
 
-    _ASSERTE ( cArgs >= 0 && cArgs <= 7 );
+    _ASSERTE ( cArgs >= 0 && cArgs <= 63 );
 
     va_list Args;
 

@@ -462,10 +462,12 @@ inline BOOL StressLog::LogOn(unsigned facility, unsigned level)
 // And make sure the timeStamp field is naturally alligned, so we don't waste
 // space on 32-bit platforms
 struct StressMsg {
+    static const size_t formatOffsetBits = 26;
     union {
         struct {
-            uint32_t numberOfArgs  : 4;     // at most 15 arguments
-            uint32_t formatOffset  : 28;    // offset of string in mscorwks
+            uint32_t numberOfArgs  : 3;                   // at most 7 arguments here
+            uint32_t formatOffset  : formatOffsetBits;    // offset of string in mscorwks
+            uint32_t numberOfArgsX : 3;                   // extend number of args in a backward compat way
         };
         uint32_t fmtOffsCArgs;    // for optimized access
     };
@@ -473,8 +475,8 @@ struct StressMsg {
     uint64_t timeStamp;                     // time when mssg was logged
     void*     args[0];                      // size given by numberOfArgs
 
-    static const size_t maxArgCnt = 15;
-    static const size_t maxOffset = 0x10000000;
+    static const size_t maxArgCnt = 63;
+    static const size_t maxOffset = 1 << formatOffsetBits;
     static size_t maxMsgSize ()
     { return sizeof(StressMsg) + maxArgCnt*sizeof(void*); }
 
