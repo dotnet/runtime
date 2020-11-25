@@ -39,6 +39,24 @@ namespace Microsoft.Extensions.Options
         }
 
         /// <summary>
+        /// Gets a named options instance, if available.
+        /// </summary>
+        /// <param name="name">The name of the options instance.</param>
+        /// <param name="options">The options instance.</param>
+        /// <returns>true if the options were retrieved; otherwise, false.</returns>
+        internal bool TryGetValue(string name, out TOptions options)
+        {
+            if (_cache.TryGetValue(name ?? Options.DefaultName, out Lazy<TOptions> lazy))
+            {
+                options = lazy.Value;
+                return true;
+            }
+
+            options = default;
+            return false;
+        }
+
+        /// <summary>
         /// Tries to adds a new option to the cache, will return false if the name already exists.
         /// </summary>
         /// <param name="name">The name of the options instance.</param>
