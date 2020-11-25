@@ -223,14 +223,14 @@ namespace System.Net
 
             // Allocate new blocks
             Debug.Assert(_allocatedEnd % BlockSize == 0);
-            uint blockCount = _allocatedEnd / BlockSize;
+            uint allocatedBlockCount = _allocatedEnd / BlockSize;
             for (uint i = 0; i < newBlocksNeeded; i++)
             {
-                Debug.Assert(_blocks[blockCount + i] is null);
-                _blocks[blockCount + i] = ArrayPool<byte>.Shared.Rent(BlockSize);
+                Debug.Assert(_blocks[allocatedBlockCount] is null);
+                _blocks[allocatedBlockCount++] = ArrayPool<byte>.Shared.Rent(BlockSize);
             }
 
-            _allocatedEnd += newBlocksNeeded + blockCount;
+            _allocatedEnd = allocatedBlockCount * BlockSize;
 
             // After all of that, we should have enough available memory now
             Debug.Assert(byteCount <= AvailableMemory.Length);
