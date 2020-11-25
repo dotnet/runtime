@@ -446,7 +446,7 @@ namespace System
 
                 if ((lhsLength == 1) && (rhsLength == 1))
                 {
-                    var (quotient, remainder) = Math.DivRem(lhs._blocks[0], rhs._blocks[0]);
+                    (uint quotient, uint remainder) = Math.DivRem(lhs._blocks[0], rhs._blocks[0]);
                     SetUInt32(out quo, quotient);
                     SetUInt32(out rem, remainder);
                     return;
