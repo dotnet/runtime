@@ -18,6 +18,7 @@ namespace Microsoft.Extensions.Logging.Generators
         const int MaxStaeHolderArity = 6;
 
         private readonly Stack<StringBuilder> _builders = new();
+        private bool _pascalCaseArguments;
 
         /// <inheritdoc />
         public void Initialize(GeneratorInitializationContext context)
@@ -32,6 +33,12 @@ namespace Microsoft.Extensions.Logging.Generators
             {
                 // nothing to do yet
                 return;
+            }
+
+            _pascalCaseArguments = false;
+            if (context.AnalyzerConfigOptions.GlobalOptions.TryGetValue("PascalCaseArguments", out var value))
+            {
+                _pascalCaseArguments = ((value.ToUpperInvariant() == "TRUE") || (value.ToUpperInvariant() == "YES"));
             }
 
             var p = new Parser(context);
@@ -172,7 +179,7 @@ namespace Microsoft.Extensions.Logging.Generators
                 sb.Append($"private static readonly string[] __{lm.Name}Names = new []{{");
                 foreach (var p in lm.Parameters)
                 {
-                    sb.Append($"\"{p.Name}\", ");
+                    sb.Append($"\"{NormalizeArgumentName(p.Name)}\", ");
                 }
 
                 sb.Append("};");
@@ -251,14 +258,6 @@ namespace Microsoft.Extensions.Logging.Generators
         ";
         }
 
-        private static string EscapeMessageString(string message)
-        {
-            return message
-                .Replace("\n", "\\n")
-                .Replace("\r", "\\r")
-                .Replace("\"", "\\\"");
-        }
-
         private string GenParameters(LoggerMethod lm)
         {
             var sb = GetStringBuilder();
@@ -291,7 +290,7 @@ namespace Microsoft.Extensions.Logging.Generators
 
             if (lm.Parameters.Count == 1)
             {
-                return $"new global::Microsoft.Extensions.Logging.LogStateHolder<{lm.Parameters[0].Type}>({formatFunc}, nameof({lm.Parameters[0].Name}), {lm.Parameters[0].Name})";
+                return $"new global::Microsoft.Extensions.Logging.LogStateHolder<{lm.Parameters[0].Type}>({formatFunc}, \"{NormalizeArgumentName(lm.Parameters[0].Name)}\", {lm.Parameters[0].Name})";
             }
 
             var sb = GetStringBuilder();
@@ -302,7 +301,7 @@ namespace Microsoft.Extensions.Logging.Generators
                     sb.Append($"new global::Microsoft.Extensions.Logging.LogStateHolderN({formatFunc}, new global::System.Collections.Generic.KeyValuePair<string, object?>[]{{");
                     foreach (var p in lm.Parameters)
                     {
-                        sb.Append($"new(\"{p.Name}\", {p.Name}), ");
+                        sb.Append($"new(\"{NormalizeArgumentName(p.Name)}\", {p.Name}), ");
                     }
 
                     sb.Append("})");
@@ -340,6 +339,34 @@ namespace Microsoft.Extensions.Logging.Generators
             {
                 ReturnStringBuilder(sb);
             }
+        }
+
+        private string NormalizeArgumentName(string name)
+        {
+            if (!_pascalCaseArguments || char.IsUpper(name, 0))
+            {
+                return name;
+            }
+
+            var sb = GetStringBuilder();
+            try
+            {
+                sb.Append(char.ToUpperInvariant(name[0]));
+                sb.Append(name, 1, name.Length - 1);
+                return sb.ToString();
+            }
+            finally
+            {
+                ReturnStringBuilder(sb);
+            }
+        }
+
+        private static string EscapeMessageString(string message)
+        {
+            return message
+                .Replace("\n", "\\n")
+                .Replace("\r", "\\r")
+                .Replace("\"", "\\\"");
         }
 
         // our own cheezy object pool since we can't use the .NET core version

@@ -24,89 +24,89 @@ namespace Microsoft.Extensions.Logging.Generators
 #pragma warning disable RS2008 // Enable analyzer release tracking
 
             private static readonly DiagnosticDescriptor ErrorInvalidMethodName = new(
-                id: "LG0",
-                title: new LocalizableResourceString(nameof(LoggingGeneratorResources.ErrorInvalidMethodNameTitle), LoggingGeneratorResources.ResourceManager, typeof(LoggingGeneratorResources)),
-                messageFormat: new LocalizableResourceString(nameof(LoggingGeneratorResources.ErrorInvalidMethodNameMessage), LoggingGeneratorResources.ResourceManager, typeof(LoggingGeneratorResources)),
+                id: "LG0000",
+                title: new LocalizableResourceString(nameof(Resources.ErrorInvalidMethodNameTitle), Resources.ResourceManager, typeof(Resources)),
+                messageFormat: new LocalizableResourceString(nameof(Resources.ErrorInvalidMethodNameMessage), Resources.ResourceManager, typeof(Resources)),
                 category: DiagnosticCategory,
                 DiagnosticSeverity.Error,
                 isEnabledByDefault: true);
 
             private static readonly DiagnosticDescriptor ErrorInvalidMessage = new(
-                id: "LG1",
-                title: new LocalizableResourceString(nameof(LoggingGeneratorResources.ErrorInvalidMessageTitle), LoggingGeneratorResources.ResourceManager, typeof(LoggingGeneratorResources)),
-                messageFormat: new LocalizableResourceString(nameof(LoggingGeneratorResources.ErrorInvalidMessageMessage), LoggingGeneratorResources.ResourceManager, typeof(LoggingGeneratorResources)),
+                id: "LG0001",
+                title: new LocalizableResourceString(nameof(Resources.ErrorInvalidMessageTitle), Resources.ResourceManager, typeof(Resources)),
+                messageFormat: new LocalizableResourceString(nameof(Resources.ErrorInvalidMessageMessage), Resources.ResourceManager, typeof(Resources)),
                 category: DiagnosticCategory,
                 DiagnosticSeverity.Error,
                 isEnabledByDefault: true);
 
             private static readonly DiagnosticDescriptor ErrorInvalidParameterName = new(
-                id: "LG2",
-                title: new LocalizableResourceString(nameof(LoggingGeneratorResources.ErrorInvalidParameterNameTitle), LoggingGeneratorResources.ResourceManager, typeof(LoggingGeneratorResources)),
-                messageFormat: new LocalizableResourceString(nameof(LoggingGeneratorResources.ErrorInvalidParameterNameMessage), LoggingGeneratorResources.ResourceManager, typeof(LoggingGeneratorResources)),
+                id: "LG0002",
+                title: new LocalizableResourceString(nameof(Resources.ErrorInvalidParameterNameTitle), Resources.ResourceManager, typeof(Resources)),
+                messageFormat: new LocalizableResourceString(nameof(Resources.ErrorInvalidParameterNameMessage), Resources.ResourceManager, typeof(Resources)),
                 category: DiagnosticCategory,
                 DiagnosticSeverity.Error,
                 isEnabledByDefault: true);
 
             private static readonly DiagnosticDescriptor ErrorNestedType = new(
-                id: "LG3",
-                title: new LocalizableResourceString(nameof(LoggingGeneratorResources.ErrorNestedTypeTitle), LoggingGeneratorResources.ResourceManager, typeof(LoggingGeneratorResources)),
-                messageFormat: new LocalizableResourceString(nameof(LoggingGeneratorResources.ErrorNestedTypeMessage), LoggingGeneratorResources.ResourceManager, typeof(LoggingGeneratorResources)),
+                id: "LG0003",
+                title: new LocalizableResourceString(nameof(Resources.ErrorNestedTypeTitle), Resources.ResourceManager, typeof(Resources)),
+                messageFormat: new LocalizableResourceString(nameof(Resources.ErrorNestedTypeMessage), Resources.ResourceManager, typeof(Resources)),
                 category: DiagnosticCategory,
                 DiagnosticSeverity.Error,
                 isEnabledByDefault: true);
 
             private static readonly DiagnosticDescriptor ErrorMissingRequiredType = new(
-                id: "LG4",
-                title: new LocalizableResourceString(nameof(LoggingGeneratorResources.ErrorMissingRequiredTypeTitle), LoggingGeneratorResources.ResourceManager, typeof(LoggingGeneratorResources)),
-                messageFormat: new LocalizableResourceString(nameof(LoggingGeneratorResources.ErrorMissingRequiredTypeMessage), LoggingGeneratorResources.ResourceManager, typeof(LoggingGeneratorResources)),
+                id: "LG0004",
+                title: new LocalizableResourceString(nameof(Resources.ErrorMissingRequiredTypeTitle), Resources.ResourceManager, typeof(Resources)),
+                messageFormat: new LocalizableResourceString(nameof(Resources.ErrorMissingRequiredTypeMessage), Resources.ResourceManager, typeof(Resources)),
                 category: DiagnosticCategory,
                 DiagnosticSeverity.Error,
                 isEnabledByDefault: true);
 
             private static readonly DiagnosticDescriptor ErrorEventIdReuse = new(
-                id: "LG5",
-                title: new LocalizableResourceString(nameof(LoggingGeneratorResources.ErrorEventIdReuseTitle), LoggingGeneratorResources.ResourceManager, typeof(LoggingGeneratorResources)),
-                messageFormat: new LocalizableResourceString(nameof(LoggingGeneratorResources.ErrorEventIdReuseMessage), LoggingGeneratorResources.ResourceManager, typeof(LoggingGeneratorResources)),
+                id: "LG0005",
+                title: new LocalizableResourceString(nameof(Resources.ErrorEventIdReuseTitle), Resources.ResourceManager, typeof(Resources)),
+                messageFormat: new LocalizableResourceString(nameof(Resources.ErrorEventIdReuseMessage), Resources.ResourceManager, typeof(Resources)),
                 category: DiagnosticCategory,
                 DiagnosticSeverity.Error,
                 isEnabledByDefault: true);
 
             private static readonly DiagnosticDescriptor ErrorInvalidMethodReturnType = new(
-                id: "LG6",
-                title: new LocalizableResourceString(nameof(LoggingGeneratorResources.ErrorInvalidMethodReturnTypeTitle), LoggingGeneratorResources.ResourceManager, typeof(LoggingGeneratorResources)),
-                messageFormat: new LocalizableResourceString(nameof(LoggingGeneratorResources.ErrorInvalidMethodReturnTypeMessage), LoggingGeneratorResources.ResourceManager, typeof(LoggingGeneratorResources)),
+                id: "LG0006",
+                title: new LocalizableResourceString(nameof(Resources.ErrorInvalidMethodReturnTypeTitle), Resources.ResourceManager, typeof(Resources)),
+                messageFormat: new LocalizableResourceString(nameof(Resources.ErrorInvalidMethodReturnTypeMessage), Resources.ResourceManager, typeof(Resources)),
                 category: DiagnosticCategory,
                 DiagnosticSeverity.Error,
                 isEnabledByDefault: true);
 
             private static readonly DiagnosticDescriptor ErrorFirstArgMustBeILogger = new(
-                id: "LG7",
-                title: new LocalizableResourceString(nameof(LoggingGeneratorResources.ErrorFirstArgMustBeILoggerTitle), LoggingGeneratorResources.ResourceManager, typeof(LoggingGeneratorResources)),
-                messageFormat: new LocalizableResourceString(nameof(LoggingGeneratorResources.ErrorFirstArgMustBeILoggerMessage), LoggingGeneratorResources.ResourceManager, typeof(LoggingGeneratorResources)),
+                id: "LG0007",
+                title: new LocalizableResourceString(nameof(Resources.ErrorFirstArgMustBeILoggerTitle), Resources.ResourceManager, typeof(Resources)),
+                messageFormat: new LocalizableResourceString(nameof(Resources.ErrorFirstArgMustBeILoggerMessage), Resources.ResourceManager, typeof(Resources)),
                 category: DiagnosticCategory,
                 DiagnosticSeverity.Error,
                 isEnabledByDefault: true);
 
             private static readonly DiagnosticDescriptor ErrorNotStaticMethod = new(
-                id: "LG8",
-                title: new LocalizableResourceString(nameof(LoggingGeneratorResources.ErrorNotStaticMethodTitle), LoggingGeneratorResources.ResourceManager, typeof(LoggingGeneratorResources)),
-                messageFormat: new LocalizableResourceString(nameof(LoggingGeneratorResources.ErrorNotStaticMethodMessage), LoggingGeneratorResources.ResourceManager, typeof(LoggingGeneratorResources)),
+                id: "LG0008",
+                title: new LocalizableResourceString(nameof(Resources.ErrorNotStaticMethodTitle), Resources.ResourceManager, typeof(Resources)),
+                messageFormat: new LocalizableResourceString(nameof(Resources.ErrorNotStaticMethodMessage), Resources.ResourceManager, typeof(Resources)),
                 category: DiagnosticCategory,
                 DiagnosticSeverity.Error,
                 isEnabledByDefault: true);
 
             private static readonly DiagnosticDescriptor ErrorNotPartialMethod = new(
-                id: "LG9",
-                title: new LocalizableResourceString(nameof(LoggingGeneratorResources.ErrorNotPartialMethodTitle), LoggingGeneratorResources.ResourceManager, typeof(LoggingGeneratorResources)),
-                messageFormat: new LocalizableResourceString(nameof(LoggingGeneratorResources.ErrorNotPartialMethodMessage), LoggingGeneratorResources.ResourceManager, typeof(LoggingGeneratorResources)),
+                id: "LG0009",
+                title: new LocalizableResourceString(nameof(Resources.ErrorNotPartialMethodTitle), Resources.ResourceManager, typeof(Resources)),
+                messageFormat: new LocalizableResourceString(nameof(Resources.ErrorNotPartialMethodMessage), Resources.ResourceManager, typeof(Resources)),
                 category: DiagnosticCategory,
                 DiagnosticSeverity.Error,
                 isEnabledByDefault: true);
 
             private static readonly DiagnosticDescriptor ErrorMethodIsGeneric = new(
-                id: "LG10",
-                title: new LocalizableResourceString(nameof(LoggingGeneratorResources.ErrorMethodIsGenericTitle), LoggingGeneratorResources.ResourceManager, typeof(LoggingGeneratorResources)),
-                messageFormat: new LocalizableResourceString(nameof(LoggingGeneratorResources.ErrorMethodIsGenericMessage), LoggingGeneratorResources.ResourceManager, typeof(LoggingGeneratorResources)),
+                id: "LG0010",
+                title: new LocalizableResourceString(nameof(Resources.ErrorMethodIsGenericTitle), Resources.ResourceManager, typeof(Resources)),
+                messageFormat: new LocalizableResourceString(nameof(Resources.ErrorMethodIsGenericMessage), Resources.ResourceManager, typeof(Resources)),
                 category: DiagnosticCategory,
                 DiagnosticSeverity.Error,
                 isEnabledByDefault: true);
