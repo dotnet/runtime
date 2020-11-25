@@ -15,7 +15,7 @@
 
   <PropertyGroup Condition="'$(TargetOS)' == 'Android'">
     <_expectedExitCode>0</_expectedExitCode>
-    <_expectedExitCode Condition="'(TestProjectName)' == 'HelloAndroid'">42</_expectedExitCode>
+    <_expectedExitCode Condition="'$(TestProjectName)' == 'HelloAndroid'">42</_expectedExitCode>
     <RunScriptCommand>$HARNESS_RUNNER android test --instrumentation="net.dot.MonoRunner" --package-name="net.dot.$(AssemblyName)" --app=$EXECUTION_DIR/bin/$(TestProjectName).apk --output-directory=$XHARNESS_OUT -v --expected-exit-code=$(_expectedExitCode) --</RunScriptCommand>
   </PropertyGroup>
   <ItemGroup>
