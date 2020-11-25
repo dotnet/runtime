@@ -34,8 +34,20 @@ namespace Microsoft.Extensions.Options
             {
                 throw new ArgumentNullException(nameof(createOptions));
             }
+
             name = name ?? Options.DefaultName;
-            return _cache.GetOrAdd(name, new Lazy<TOptions>(createOptions)).Value;
+            Lazy<TOptions> value;
+
+#if NETCOREAPP
+            value = _cache.GetOrAdd(name, static (name, createOptions) => new Lazy<TOptions>(createOptions), createOptions);
+#else
+            if (!_cache.TryGetValue(name, out value))
+            {
+                value = _cache.GetOrAdd(name, new Lazy<TOptions>(createOptions));
+            }
+#endif
+
+            return value.Value;
         }
 
         /// <summary>
@@ -50,8 +62,12 @@ namespace Microsoft.Extensions.Options
             {
                 throw new ArgumentNullException(nameof(options));
             }
-            name = name ?? Options.DefaultName;
-            return _cache.TryAdd(name, new Lazy<TOptions>(() => options));
+
+            return _cache.TryAdd(name ?? Options.DefaultName, new Lazy<TOptions>(
+#if !NETCOREAPP
+                () =>
+#endif
+                options));
         }
 
         /// <summary>
@@ -59,10 +75,7 @@ namespace Microsoft.Extensions.Options
         /// </summary>
         /// <param name="name">The name of the options instance.</param>
         /// <returns>Whether anything was removed.</returns>
-        public virtual bool TryRemove(string name)
-        {
-            name = name ?? Options.DefaultName;
-            return _cache.TryRemove(name, out Lazy<TOptions> ignored);
-        }
+        public virtual bool TryRemove(string name) =>
+            _cache.TryRemove(name ?? Options.DefaultName, out _);
     }
 }
