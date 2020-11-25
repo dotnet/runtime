@@ -299,7 +299,7 @@ void Compiler::fgComputeProfileScale()
     //
     if (calleeWeight < callSiteWeight)
     {
-        JITDUMP("   ... callee entry count %d is less than call site count %d\n", calleeWeight, callSiteWeight);
+        JITDUMP("   ... callee entry count %f is less than call site count %f\n", calleeWeight, callSiteWeight);
         impInlineInfo->profileScaleState = InlineInfo::ProfileScaleState::UNAVAILABLE;
         return;
     }
@@ -310,7 +310,7 @@ void Compiler::fgComputeProfileScale()
     impInlineInfo->profileScaleFactor = scale;
     impInlineInfo->profileScaleState  = InlineInfo::ProfileScaleState::KNOWN;
 
-    JITDUMP("   call site count %u callee entry count %u scale %f\n", callSiteWeight, calleeWeight, scale);
+    JITDUMP("   call site count %f callee entry count %f scale %f\n", callSiteWeight, calleeWeight, scale);
 }
 
 //------------------------------------------------------------------------
@@ -323,10 +323,10 @@ void Compiler::fgComputeProfileScale()
 // Returns:
 //   true if data was found
 //
-bool Compiler::fgGetProfileWeightForBasicBlock(IL_OFFSET offset, unsigned* weightWB)
+bool Compiler::fgGetProfileWeightForBasicBlock(IL_OFFSET offset, BasicBlock::weight_t* weightWB)
 {
     noway_assert(weightWB != nullptr);
-    unsigned weight = 0;
+    BasicBlock::weight_t weight = 0;
 
 #ifdef DEBUG
     unsigned hashSeed = fgStressBBProf();
@@ -345,17 +345,17 @@ bool Compiler::fgGetProfileWeightForBasicBlock(IL_OFFSET offset, unsigned* weigh
         }
         else if (hash % 11 == 0)
         {
-            weight = (hash % 23) * (hash % 29) * (hash % 31);
+            weight = (BasicBlock::weight_t)(hash % 23) * (hash % 29) * (hash % 31);
         }
         else
         {
-            weight = (hash % 17) * (hash % 19);
+            weight = (BasicBlock::weight_t)(hash % 17) * (hash % 19);
         }
 
         // The first block is never given a weight of zero
         if ((offset == 0) && (weight == 0))
         {
-            weight = 1 + (hash % 5);
+            weight = (BasicBlock::weight_t)1 + (hash % 5);
         }
 
         *weightWB = weight;
@@ -372,7 +372,7 @@ bool Compiler::fgGetProfileWeightForBasicBlock(IL_OFFSET offset, unsigned* weigh
     {
         if (fgBlockCounts[i].ILOffset == offset)
         {
-            *weightWB = fgBlockCounts[i].ExecutionCount;
+            *weightWB = (BasicBlock::weight_t)fgBlockCounts[i].ExecutionCount;
             return true;
         }
     }
@@ -5816,7 +5816,7 @@ unsigned Compiler::fgMakeBasicBlocks(const BYTE* codeAddr, IL_OFFSET codeSize, F
         curBBdesc->bbCodeOffs    = curBBoffs;
         curBBdesc->bbCodeOffsEnd = nxtBBoffs;
 
-        unsigned profileWeight;
+        BasicBlock::weight_t profileWeight;
 
         if (fgGetProfileWeightForBasicBlock(curBBoffs, &profileWeight))
         {
@@ -5824,7 +5824,8 @@ unsigned Compiler::fgMakeBasicBlocks(const BYTE* codeAddr, IL_OFFSET codeSize, F
             {
                 if (impInlineInfo->profileScaleState == InlineInfo::ProfileScaleState::KNOWN)
                 {
-                    profileWeight = (unsigned)(impInlineInfo->profileScaleFactor * profileWeight);
+                    double scaledWeight = impInlineInfo->profileScaleFactor * profileWeight;
+                    profileWeight       = (BasicBlock::weight_t)scaledWeight;
                 }
             }
 
@@ -13201,7 +13202,7 @@ void Compiler::fgPrintEdgeWeights()
 
                 if (edge->edgeWeightMin() < BB_MAX_WEIGHT)
                 {
-                    printf("(%u", edge->edgeWeightMin());
+                    printf("(%f", edge->edgeWeightMin());
                 }
                 else
                 {
@@ -13211,7 +13212,7 @@ void Compiler::fgPrintEdgeWeights()
                 {
                     if (edge->edgeWeightMax() < BB_MAX_WEIGHT)
                     {
-                        printf("..%u", edge->edgeWeightMax());
+                        printf("..%f", edge->edgeWeightMax());
                     }
                     else
                     {
@@ -13492,7 +13493,7 @@ void Compiler::fgComputeCalledCount(BasicBlock::weight_t returnWeight)
 #if DEBUG
     if (verbose)
     {
-        printf("We are using the Profile Weights and fgCalledCount is %d.\n", fgCalledCount);
+        printf("We are using the Profile Weights and fgCalledCount is %.0f.\n", fgCalledCount);
     }
 #endif
 }
@@ -13614,8 +13615,8 @@ void Compiler::fgComputeEdgeWeights()
                 slop = BasicBlock::GetSlopFraction(bSrc, bDst) + 1;
                 if (bSrc->bbJumpKind == BBJ_COND)
                 {
-                    int       diff;
-                    flowList* otherEdge;
+                    BasicBlock::weight_t diff;
+                    flowList*            otherEdge;
                     if (bSrc->bbNext == bDst)
                     {
                         otherEdge = fgGetPredForBlock(bSrc->bbJumpDest, bSrc);
@@ -13628,7 +13629,7 @@ void Compiler::fgComputeEdgeWeights()
                     noway_assert(otherEdge->edgeWeightMin() <= otherEdge->edgeWeightMax());
 
                     // Adjust edge->flEdgeWeightMin up or adjust otherEdge->flEdgeWeightMax down
-                    diff = ((int)bSrc->bbWeight) - ((int)edge->edgeWeightMin() + (int)otherEdge->edgeWeightMax());
+                    diff = bSrc->bbWeight - (edge->edgeWeightMin() + otherEdge->edgeWeightMax());
                     if (diff > 0)
                     {
                         assignOK &= edge->setEdgeWeightMinChecked(edge->edgeWeightMin() + diff, slop, &usedSlop);
@@ -13640,7 +13641,7 @@ void Compiler::fgComputeEdgeWeights()
                     }
 
                     // Adjust otherEdge->flEdgeWeightMin up or adjust edge->flEdgeWeightMax down
-                    diff = ((int)bSrc->bbWeight) - ((int)otherEdge->edgeWeightMin() + (int)edge->edgeWeightMax());
+                    diff = bSrc->bbWeight - (otherEdge->edgeWeightMin() + edge->edgeWeightMax());
                     if (diff > 0)
                     {
                         assignOK &=
@@ -13660,12 +13661,12 @@ void Compiler::fgComputeEdgeWeights()
                     }
 #ifdef DEBUG
                     // Now edge->flEdgeWeightMin and otherEdge->flEdgeWeightMax) should add up to bSrc->bbWeight
-                    diff = ((int)bSrc->bbWeight) - ((int)edge->edgeWeightMin() + (int)otherEdge->edgeWeightMax());
-                    noway_assert((-((int)slop) <= diff) && (diff <= ((int)slop)));
+                    diff = bSrc->bbWeight - (edge->edgeWeightMin() + otherEdge->edgeWeightMax());
+                    assert(((-slop) <= diff) && (diff <= slop));
 
                     // Now otherEdge->flEdgeWeightMin and edge->flEdgeWeightMax) should add up to bSrc->bbWeight
-                    diff = ((int)bSrc->bbWeight) - ((int)otherEdge->edgeWeightMin() + (int)edge->edgeWeightMax());
-                    noway_assert((-((int)slop) <= diff) && (diff <= ((int)slop)));
+                    diff = bSrc->bbWeight - (otherEdge->edgeWeightMin() + edge->edgeWeightMax());
+                    assert(((-slop) <= diff) && (diff <= slop));
 #endif // DEBUG
                 }
             }
@@ -13691,8 +13692,8 @@ void Compiler::fgComputeEdgeWeights()
                     bDstWeight -= fgCalledCount;
                 }
 
-                UINT64 minEdgeWeightSum = 0;
-                UINT64 maxEdgeWeightSum = 0;
+                BasicBlock::weight_t minEdgeWeightSum = 0;
+                BasicBlock::weight_t maxEdgeWeightSum = 0;
 
                 // Calculate the sums of the minimum and maximum edge weights
                 for (edge = bDst->bbPreds; edge != nullptr; edge = edge->flNext)
@@ -13718,12 +13719,12 @@ void Compiler::fgComputeEdgeWeights()
                     // otherMaxEdgesWeightSum is the sum of all of the other edges flEdgeWeightMax values
                     // This can be used to compute a lower bound for our minimum edge weight
                     noway_assert(maxEdgeWeightSum >= edge->edgeWeightMax());
-                    UINT64 otherMaxEdgesWeightSum = maxEdgeWeightSum - edge->edgeWeightMax();
+                    BasicBlock::weight_t otherMaxEdgesWeightSum = maxEdgeWeightSum - edge->edgeWeightMax();
 
                     // otherMinEdgesWeightSum is the sum of all of the other edges flEdgeWeightMin values
                     // This can be used to compute an upper bound for our maximum edge weight
                     noway_assert(minEdgeWeightSum >= edge->edgeWeightMin());
-                    UINT64 otherMinEdgesWeightSum = minEdgeWeightSum - edge->edgeWeightMin();
+                    BasicBlock::weight_t otherMinEdgesWeightSum = minEdgeWeightSum - edge->edgeWeightMin();
 
                     if (bDstWeight >= otherMaxEdgesWeightSum)
                     {
@@ -15247,9 +15248,9 @@ bool Compiler::fgOptimizeBranch(BasicBlock* bJump)
             {
                 newWeightDest = (weightDest - weightJump);
             }
-            if (weightDest >= (BB_LOOP_WEIGHT * BB_UNITY_WEIGHT) / 2)
+            if (weightDest >= (BB_LOOP_WEIGHT_SCALE * BB_UNITY_WEIGHT) / 2)
             {
-                newWeightDest = (weightDest * 2) / (BB_LOOP_WEIGHT * BB_UNITY_WEIGHT);
+                newWeightDest = (weightDest * 2) / (BB_LOOP_WEIGHT_SCALE * BB_UNITY_WEIGHT);
             }
             if (newWeightDest > 0)
             {
@@ -19987,7 +19988,7 @@ bool Compiler::fgDumpFlowGraph(Phases phase)
 
         if (fgHaveProfileData())
         {
-            fprintf(fgxFile, "\n    calledCount=\"%d\"", fgCalledCount);
+            fprintf(fgxFile, "\n    calledCount=\"%f\"", fgCalledCount);
             fprintf(fgxFile, "\n    profileData=\"true\"");
         }
         if (compHndBBtabCount > 0)
@@ -20158,7 +20159,7 @@ bool Compiler::fgDumpFlowGraph(Phases phase)
 
                     if (validWeights)
                     {
-                        unsigned edgeWeight = (edge->edgeWeightMin() + edge->edgeWeightMax()) / 2;
+                        BasicBlock::weight_t edgeWeight = (edge->edgeWeightMin() + edge->edgeWeightMax()) / 2;
                         fprintf(fgxFile, "%slabel=\"%7.2f\"", sep, (double)edgeWeight / weightDivisor);
                     }
 
@@ -20183,7 +20184,7 @@ bool Compiler::fgDumpFlowGraph(Phases phase)
                     }
                     if (validWeights)
                     {
-                        unsigned edgeWeight = (edge->edgeWeightMin() + edge->edgeWeightMax()) / 2;
+                        BasicBlock::weight_t edgeWeight = (edge->edgeWeightMin() + edge->edgeWeightMax()) / 2;
                         fprintf(fgxFile, "\n            weight=");
                         fprintfDouble(fgxFile, ((double)edgeWeight) / weightDivisor);
 
@@ -20418,13 +20419,13 @@ void Compiler::fgTableDispBasicBlock(BasicBlock* block, int ibcColWidth /* = 0 *
             if (weight <= 99999 * BB_UNITY_WEIGHT)
             {
                 // print weight in this format ddddd.
-                printf("%5u.", (weight + (BB_UNITY_WEIGHT / 2)) / BB_UNITY_WEIGHT);
+                printf("%5u.", (unsigned)FloatingPointUtils::round(weight / BB_UNITY_WEIGHT));
             }
             else // print weight in terms of k (i.e. 156k )
             {
                 // print weight in this format dddddk
                 BasicBlock::weight_t weightK = weight / 1000;
-                printf("%5uk", (weightK + (BB_UNITY_WEIGHT / 2)) / BB_UNITY_WEIGHT);
+                printf("%5uk", (unsigned)FloatingPointUtils::round(weightK / BB_UNITY_WEIGHT));
             }
         }
         else // print weight in this format ddd.dd
@@ -20432,7 +20433,6 @@ void Compiler::fgTableDispBasicBlock(BasicBlock* block, int ibcColWidth /* = 0 *
             printf("%6s", refCntWtd2str(weight));
         }
     }
-    printf(" ");
 
     //
     // Display optional IBC weight column.
@@ -20443,7 +20443,7 @@ void Compiler::fgTableDispBasicBlock(BasicBlock* block, int ibcColWidth /* = 0 *
     {
         if (block->hasProfileWeight())
         {
-            printf("%*u", ibcColWidth, block->bbWeight);
+            printf("%*u", ibcColWidth, (unsigned)FloatingPointUtils::round(block->bbWeight));
         }
         else
         {
@@ -22743,7 +22743,11 @@ void Compiler::fgAttachStructInlineeToAsg(GenTree* tree, GenTree* child, CORINFO
 //    If the return type is a struct type and we're on a platform
 //    where structs can be returned in multiple registers, ensure the
 //    call has a suitable parent.
-
+//
+//    If the original call type and the substitution type are different
+//    the functions makes necessary updates. It could happen if there was
+//    an implicit conversion in the inlinee body.
+//
 Compiler::fgWalkResult Compiler::fgUpdateInlineReturnExpressionPlaceHolder(GenTree** pTree, fgWalkData* data)
 {
     // All the operations here and in the corresponding postorder
@@ -22798,6 +22802,29 @@ Compiler::fgWalkResult Compiler::fgUpdateInlineReturnExpressionPlaceHolder(GenTr
         }
 #endif // DEBUG
 
+        var_types newType = inlineCandidate->TypeGet();
+
+        // If we end up swapping type we may need to retype the tree:
+        if (retType != newType)
+        {
+            if ((retType == TYP_BYREF) && (tree->OperGet() == GT_IND))
+            {
+                // - in an RVA static if we've reinterpreted it as a byref;
+                assert(newType == TYP_I_IMPL);
+                JITDUMP("Updating type of the return GT_IND expression to TYP_BYREF\n");
+                inlineCandidate->gtType = TYP_BYREF;
+            }
+            else
+            {
+                // - under a call if we changed size of the argument.
+                GenTree* putArgType = comp->fgCheckCallArgUpdate(data->parent, inlineCandidate, retType);
+                if (putArgType != nullptr)
+                {
+                    inlineCandidate = putArgType;
+                }
+            }
+        }
+
         tree->ReplaceWith(inlineCandidate, comp);
         comp->compCurBB->bbFlags |= (bbFlags & BBF_SPLIT_GAINED);
 
@@ -22809,17 +22836,6 @@ Compiler::fgWalkResult Compiler::fgUpdateInlineReturnExpressionPlaceHolder(GenTr
             printf("\n");
         }
 #endif // DEBUG
-
-        var_types newType = tree->TypeGet();
-
-        // If we end up swapping in an RVA static we may need to retype it here,
-        // if we've reinterpreted it as a byref.
-        if ((retType != newType) && (retType == TYP_BYREF) && (tree->OperGet() == GT_IND))
-        {
-            assert(newType == TYP_I_IMPL);
-            JITDUMP("Updating type of the return GT_IND expression to TYP_BYREF\n");
-            tree->gtType = TYP_BYREF;
-        }
     }
 
     // If an inline was rejected and the call returns a struct, we may
@@ -23101,8 +23117,16 @@ Compiler::fgWalkResult Compiler::fgLateDevirtualization(GenTree** pTree, fgWalkD
     }
     else
     {
-        GenTree* foldedTree = comp->gtFoldExpr(tree);
-        *pTree              = foldedTree;
+        const var_types retType    = tree->TypeGet();
+        GenTree*        foldedTree = comp->gtFoldExpr(tree);
+        const var_types newType    = foldedTree->TypeGet();
+
+        GenTree* putArgType = comp->fgCheckCallArgUpdate(data->parent, foldedTree, retType);
+        if (putArgType != nullptr)
+        {
+            foldedTree = putArgType;
+        }
+        *pTree = foldedTree;
     }
 
     return WALK_CONTINUE;
@@ -23799,8 +23823,12 @@ Statement* Compiler::fgInlinePrependStatements(InlineInfo* inlineInfo)
         {
             const InlArgInfo& argInfo        = inlArgInfo[argNum];
             const bool        argIsSingleDef = !argInfo.argHasLdargaOp && !argInfo.argHasStargOp;
-            GenTree* const    argNode        = inlArgInfo[argNum].argNode;
-            unsigned __int64  bbFlags        = inlArgInfo[argNum].bbFlags;
+            GenTree*          argNode        = inlArgInfo[argNum].argNode;
+            const bool        argHasPutArg   = argNode->OperIs(GT_PUTARG_TYPE);
+
+            unsigned __int64 bbFlags = 0;
+            argNode                  = argNode->gtSkipPutArgType();
+            argNode                  = argNode->gtRetExprVal(&bbFlags);
 
             if (argInfo.argHasTmp)
             {
@@ -23820,7 +23848,11 @@ Statement* Compiler::fgInlinePrependStatements(InlineInfo* inlineInfo)
 
                 GenTree* argSingleUseNode = argInfo.argBashTmpNode;
 
-                if ((argSingleUseNode != nullptr) && !(argSingleUseNode->gtFlags & GTF_VAR_CLONED) && argIsSingleDef)
+                // argHasPutArg disqualifies the arg from a direct substitution because we don't have information about
+                // its user. For example: replace `LCL_VAR short` with `PUTARG_TYPE short->LCL_VAR int`,
+                // we should keep `PUTARG_TYPE` iff the user is a call that needs `short` and delete it otherwise.
+                if ((argSingleUseNode != nullptr) && !(argSingleUseNode->gtFlags & GTF_VAR_CLONED) && argIsSingleDef &&
+                    !argHasPutArg)
                 {
                     // Change the temp in-place to the actual argument.
                     // We currently do not support this for struct arguments, so it must not be a GT_OBJ.
@@ -26499,6 +26531,44 @@ void Compiler::fgTailMergeThrowsJumpToHelper(BasicBlock* predBlock,
 
     // Note there is now a jump to the canonical block
     canonicalBlock->bbFlags |= (BBF_JMP_TARGET | BBF_HAS_LABEL);
+}
+
+//------------------------------------------------------------------------
+// fgCheckCallArgUpdate: check if we are replacing a call argument and add GT_PUTARG_TYPE if necessary.
+//
+// Arguments:
+//    parent   - the parent that could be a call;
+//    child    - the new child node;
+//    origType - the original child type;
+//
+// Returns:
+//   PUT_ARG_TYPE node if it is needed, nullptr otherwise.
+//
+GenTree* Compiler::fgCheckCallArgUpdate(GenTree* parent, GenTree* child, var_types origType)
+{
+    if ((parent == nullptr) || !parent->IsCall())
+    {
+        return nullptr;
+    }
+    const var_types newType = child->TypeGet();
+    if (newType == origType)
+    {
+        return nullptr;
+    }
+    if (varTypeIsStruct(origType) || (genTypeSize(origType) == genTypeSize(newType)))
+    {
+        assert(!varTypeIsStruct(newType));
+        return nullptr;
+    }
+    GenTree* putArgType = gtNewOperNode(GT_PUTARG_TYPE, origType, child);
+#if defined(DEBUG)
+    if (verbose)
+    {
+        printf("For call [%06d] the new argument's type [%06d]", dspTreeID(parent), dspTreeID(child));
+        printf(" does not match the original type size, add a GT_PUTARG_TYPE [%06d]\n", dspTreeID(parent));
+    }
+#endif
+    return putArgType;
 }
 
 #ifdef DEBUG

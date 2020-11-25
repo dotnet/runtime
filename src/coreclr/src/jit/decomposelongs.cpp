@@ -61,9 +61,7 @@ void DecomposeLongs::DecomposeBlock(BasicBlock* block)
 {
     assert(block == m_compiler->compCurBB); // compCurBB must already be set.
     assert(block->isEmpty() || block->IsLIR());
-
-    m_blockWeight = block->getBBWeight(m_compiler);
-    m_range       = &LIR::AsRange(block);
+    m_range = &LIR::AsRange(block);
     DecomposeRangeHelper();
 }
 
@@ -75,20 +73,17 @@ void DecomposeLongs::DecomposeBlock(BasicBlock* block)
 //
 // Arguments:
 //    compiler    - The compiler context.
-//    blockWeight - The weight of the block into which the range will be
-//                  inserted.
 //    range       - The range to decompose.
 //
 // Return Value:
 //    None.
 //
-void DecomposeLongs::DecomposeRange(Compiler* compiler, unsigned blockWeight, LIR::Range& range)
+void DecomposeLongs::DecomposeRange(Compiler* compiler, LIR::Range& range)
 {
     assert(compiler != nullptr);
 
     DecomposeLongs decomposer(compiler);
-    decomposer.m_blockWeight = blockWeight;
-    decomposer.m_range       = &range;
+    decomposer.m_range = &range;
 
     decomposer.DecomposeRangeHelper();
 }
@@ -626,7 +621,7 @@ GenTree* DecomposeLongs::DecomposeCast(LIR::Use& use)
             else
             {
                 LIR::Use src(Range(), &(cast->AsOp()->gtOp1), cast);
-                unsigned lclNum = src.ReplaceWithLclVar(m_compiler, m_blockWeight);
+                unsigned lclNum = src.ReplaceWithLclVar(m_compiler);
 
                 loResult = src.Def();
 
@@ -768,14 +763,14 @@ GenTree* DecomposeLongs::DecomposeStoreInd(LIR::Use& use)
 
     // Save address to a temp. It is used in storeIndLow and storeIndHigh trees.
     LIR::Use address(Range(), &tree->AsOp()->gtOp1, tree);
-    address.ReplaceWithLclVar(m_compiler, m_blockWeight);
+    address.ReplaceWithLclVar(m_compiler);
     JITDUMP("[DecomposeStoreInd]: Saving address tree to a temp var:\n");
     DISPTREERANGE(Range(), address.Def());
 
     if (!gtLong->AsOp()->gtOp1->OperIsLeaf())
     {
         LIR::Use op1(Range(), &gtLong->AsOp()->gtOp1, gtLong);
-        op1.ReplaceWithLclVar(m_compiler, m_blockWeight);
+        op1.ReplaceWithLclVar(m_compiler);
         JITDUMP("[DecomposeStoreInd]: Saving low data tree to a temp var:\n");
         DISPTREERANGE(Range(), op1.Def());
     }
@@ -783,7 +778,7 @@ GenTree* DecomposeLongs::DecomposeStoreInd(LIR::Use& use)
     if (!gtLong->AsOp()->gtOp2->OperIsLeaf())
     {
         LIR::Use op2(Range(), &gtLong->AsOp()->gtOp2, gtLong);
-        op2.ReplaceWithLclVar(m_compiler, m_blockWeight);
+        op2.ReplaceWithLclVar(m_compiler);
         JITDUMP("[DecomposeStoreInd]: Saving high data tree to a temp var:\n");
         DISPTREERANGE(Range(), op2.Def());
     }
@@ -841,7 +836,7 @@ GenTree* DecomposeLongs::DecomposeInd(LIR::Use& use)
     GenTree* indLow = use.Def();
 
     LIR::Use address(Range(), &indLow->AsOp()->gtOp1, indLow);
-    address.ReplaceWithLclVar(m_compiler, m_blockWeight);
+    address.ReplaceWithLclVar(m_compiler);
     JITDUMP("[DecomposeInd]: Saving addr tree to a temp var:\n");
     DISPTREERANGE(Range(), address.Def());
 
@@ -1151,7 +1146,7 @@ GenTree* DecomposeLongs::DecomposeShift(LIR::Use& use)
                         // x = x << 32
 
                         LIR::Use loOp1Use(Range(), &gtLong->AsOp()->gtOp1, gtLong);
-                        loOp1Use.ReplaceWithLclVar(m_compiler, m_blockWeight);
+                        loOp1Use.ReplaceWithLclVar(m_compiler);
 
                         hiResult = loOp1Use.Def();
                         Range().Remove(gtLong);
@@ -1434,10 +1429,10 @@ GenTree* DecomposeLongs::DecomposeRotate(LIR::Use& use)
     {
         // If the rotate amount is 32, then swap hi and lo
         LIR::Use loOp1Use(Range(), &gtLong->AsOp()->gtOp1, gtLong);
-        loOp1Use.ReplaceWithLclVar(m_compiler, m_blockWeight);
+        loOp1Use.ReplaceWithLclVar(m_compiler);
 
         LIR::Use hiOp1Use(Range(), &gtLong->AsOp()->gtOp2, gtLong);
-        hiOp1Use.ReplaceWithLclVar(m_compiler, m_blockWeight);
+        hiOp1Use.ReplaceWithLclVar(m_compiler);
 
         hiResult              = loOp1Use.Def();
         loResult              = hiOp1Use.Def();
@@ -1821,7 +1816,7 @@ GenTree* DecomposeLongs::StoreNodeToVar(LIR::Use& use)
     }
 
     // Otherwise, we need to force var = call()
-    unsigned varNum                              = use.ReplaceWithLclVar(m_compiler, m_blockWeight);
+    unsigned varNum                              = use.ReplaceWithLclVar(m_compiler);
     m_compiler->lvaTable[varNum].lvIsMultiRegRet = true;
 
     // Decompose the new LclVar use
@@ -1848,7 +1843,7 @@ GenTree* DecomposeLongs::RepresentOpAsLocalVar(GenTree* op, GenTree* user, GenTr
     else
     {
         LIR::Use opUse(Range(), edge, user);
-        opUse.ReplaceWithLclVar(m_compiler, m_blockWeight);
+        opUse.ReplaceWithLclVar(m_compiler);
         return *edge;
     }
 }

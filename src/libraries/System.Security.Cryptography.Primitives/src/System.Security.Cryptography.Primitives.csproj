@@ -25,8 +25,6 @@
     <Compile Include="System\Security\Cryptography\SymmetricAlgorithm.cs" />
     <Compile Include="$(CommonPath)System\Obsoletions.cs"
              Link="Common\System\Obsoletions.cs" />
-    <Compile Include="$(CommonPath)System\Threading\Tasks\ForceAsyncAwaiter.cs"
-             Link="Common\System\Threading\Tasks\ForceAsyncAwaiter.cs" />
     <Compile Include="$(CommonPath)Internal\Cryptography\Helpers.cs"
              Link="Internal\Cryptography\Helpers.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\CryptoPool.cs"

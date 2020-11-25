@@ -836,6 +836,10 @@ check_include_files(
     linux/can.h
     HAVE_LINUX_CAN_H)
 
+check_include_files(
+    IOKit/serial/ioss.h
+    HAVE_IOSS_H)
+
 check_symbol_exists(
     getpeereid
     unistd.h

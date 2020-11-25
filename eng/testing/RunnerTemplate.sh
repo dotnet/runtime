@@ -204,4 +204,10 @@ if [[ "$(uname -s)" == "Linux" && $test_exitcode -ne 0 ]]; then
 fi
 popd >/dev/null
 # ======================== END Core File Inspection ==========================
-exit $test_exitcode
+# The helix work item should not exit with non-zero if tests ran and produced results
+# The special console runner for runtime returns 1 when tests fail
+if [ "$test_exitcode" == "1" ]; then
+  exit 0
+else
+  exit $test_exitcode
+fi

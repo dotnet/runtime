@@ -179,10 +179,10 @@ void lsraAssignRegToTree(GenTree* tree, regNumber reg, unsigned regIdx)
 //
 // Returns:
 //    Weight of ref position.
-unsigned LinearScan::getWeight(RefPosition* refPos)
+BasicBlock::weight_t LinearScan::getWeight(RefPosition* refPos)
 {
-    unsigned weight;
-    GenTree* treeNode = refPos->treeNode;
+    BasicBlock::weight_t weight;
+    GenTree*             treeNode = refPos->treeNode;
 
     if (treeNode != nullptr)
     {
@@ -1037,8 +1037,8 @@ int LinearScan::compareBlocksForSequencing(BasicBlock* block1, BasicBlock* block
 {
     if (useBlockWeights)
     {
-        unsigned weight1 = block1->getBBWeight(compiler);
-        unsigned weight2 = block2->getBBWeight(compiler);
+        BasicBlock::weight_t weight1 = block1->getBBWeight(compiler);
+        BasicBlock::weight_t weight2 = block2->getBBWeight(compiler);
 
         if (weight1 > weight2)
         {
@@ -1620,13 +1620,13 @@ void LinearScan::identifyCandidates()
     // This is defined as thresholdLargeVectorRefCntWtd, as we are likely to use the same mechanism
     // for vectors on Arm64, though the actual value may differ.
 
-    unsigned int floatVarCount        = 0;
-    unsigned int thresholdFPRefCntWtd = 4 * BB_UNITY_WEIGHT;
-    unsigned int maybeFPRefCntWtd     = 2 * BB_UNITY_WEIGHT;
-    VARSET_TP    fpMaybeCandidateVars(VarSetOps::UninitVal());
+    unsigned int         floatVarCount        = 0;
+    BasicBlock::weight_t thresholdFPRefCntWtd = 4 * BB_UNITY_WEIGHT;
+    BasicBlock::weight_t maybeFPRefCntWtd     = 2 * BB_UNITY_WEIGHT;
+    VARSET_TP            fpMaybeCandidateVars(VarSetOps::UninitVal());
 #if FEATURE_PARTIAL_SIMD_CALLEE_SAVE
-    unsigned int largeVectorVarCount           = 0;
-    unsigned int thresholdLargeVectorRefCntWtd = 4 * BB_UNITY_WEIGHT;
+    unsigned int         largeVectorVarCount           = 0;
+    BasicBlock::weight_t thresholdLargeVectorRefCntWtd = 4 * BB_UNITY_WEIGHT;
 #endif // FEATURE_PARTIAL_SIMD_CALLEE_SAVE
     if (enregisterLocalVars)
     {
@@ -1638,13 +1638,13 @@ void LinearScan::identifyCandidates()
 #endif // FEATURE_PARTIAL_SIMD_CALLEE_SAVE
     }
 #if DOUBLE_ALIGN
-    unsigned refCntStk       = 0;
-    unsigned refCntReg       = 0;
-    unsigned refCntWtdReg    = 0;
-    unsigned refCntStkParam  = 0; // sum of     ref counts for all stack based parameters
-    unsigned refCntWtdStkDbl = 0; // sum of wtd ref counts for stack based doubles
-    doDoubleAlign            = false;
-    bool checkDoubleAlign    = true;
+    unsigned             refCntStk       = 0;
+    unsigned             refCntReg       = 0;
+    BasicBlock::weight_t refCntWtdReg    = 0;
+    unsigned             refCntStkParam  = 0; // sum of     ref counts for all stack based parameters
+    BasicBlock::weight_t refCntWtdStkDbl = 0; // sum of wtd ref counts for stack based doubles
+    doDoubleAlign                        = false;
+    bool checkDoubleAlign                = true;
     if (compiler->codeGen->isFramePointerRequired() || compiler->opts.MinOpts())
     {
         checkDoubleAlign = false;
@@ -1802,7 +1802,7 @@ void LinearScan::identifyCandidates()
             {
                 largeVectorVarCount++;
                 VarSetOps::AddElemD(compiler, largeVectorVars, varDsc->lvVarIndex);
-                unsigned refCntWtd = varDsc->lvRefCntWtd();
+                BasicBlock::weight_t refCntWtd = varDsc->lvRefCntWtd();
                 if (refCntWtd >= thresholdLargeVectorRefCntWtd)
                 {
                     VarSetOps::AddElemD(compiler, largeVectorCalleeSaveCandidateVars, varDsc->lvVarIndex);
@@ -1813,7 +1813,7 @@ void LinearScan::identifyCandidates()
                 if (regType(type) == FloatRegisterType)
             {
                 floatVarCount++;
-                unsigned refCntWtd = varDsc->lvRefCntWtd();
+                BasicBlock::weight_t refCntWtd = varDsc->lvRefCntWtd();
                 if (varDsc->lvIsRegArg)
                 {
                     // Don't count the initial reference for register params.  In those cases,
@@ -1861,8 +1861,8 @@ void LinearScan::identifyCandidates()
         // the lclVars allocated to the frame pointer.
         // => Here, estimate of the EBP refCnt and weighted refCnt is a wild guess.
         //
-        unsigned refCntEBP    = refCntReg / 8;
-        unsigned refCntWtdEBP = refCntWtdReg / 8;
+        unsigned             refCntEBP    = refCntReg / 8;
+        BasicBlock::weight_t refCntWtdEBP = refCntWtdReg / 8;
 
         doDoubleAlign =
             compiler->shouldDoubleAlign(refCntStk, refCntEBP, refCntWtdEBP, refCntStkParam, refCntWtdStkDbl);
@@ -3297,7 +3297,9 @@ regNumber LinearScan::tryAllocateFreeReg(Interval* currentInterval, RefPosition*
 //
 // Note: This helper is designed to be used only from allocateBusyReg() and canSpillDoubleReg()
 //
-bool LinearScan::canSpillReg(RegRecord* physRegRecord, LsraLocation refLocation, unsigned* recentAssignedRefWeight)
+bool LinearScan::canSpillReg(RegRecord*            physRegRecord,
+                             LsraLocation          refLocation,
+                             BasicBlock::weight_t* recentAssignedRefWeight)
 {
     assert(physRegRecord->assignedInterval != nullptr);
     RefPosition* recentAssignedRef = physRegRecord->assignedInterval->recentRefPosition;
@@ -3335,14 +3337,14 @@ bool LinearScan::canSpillReg(RegRecord* physRegRecord, LsraLocation refLocation,
 //    This helper is designed to be used only from allocateBusyReg() and canSpillDoubleReg().
 //    The recentAssignedRefWeight is not updated if either register cannot be spilled.
 //
-bool LinearScan::canSpillDoubleReg(RegRecord*   physRegRecord,
-                                   LsraLocation refLocation,
-                                   unsigned*    recentAssignedRefWeight)
+bool LinearScan::canSpillDoubleReg(RegRecord*            physRegRecord,
+                                   LsraLocation          refLocation,
+                                   BasicBlock::weight_t* recentAssignedRefWeight)
 {
     assert(genIsValidDoubleReg(physRegRecord->regNum));
-    bool     retVal  = true;
-    unsigned weight  = BB_ZERO_WEIGHT;
-    unsigned weight2 = BB_ZERO_WEIGHT;
+    bool                 retVal  = true;
+    BasicBlock::weight_t weight  = BB_ZERO_WEIGHT;
+    BasicBlock::weight_t weight2 = BB_ZERO_WEIGHT;
 
     RegRecord* physRegRecord2 = findAnotherHalfRegRec(physRegRecord);
 
@@ -3686,9 +3688,9 @@ regNumber LinearScan::allocateBusyReg(Interval* current, RefPosition* refPositio
 #ifdef TARGET_ARM
     RegRecord* farthestRefPhysRegRecord2 = nullptr;
 #endif
-    LsraLocation farthestLocation = MinLocation;
-    LsraLocation refLocation      = refPosition->nodeLocation;
-    unsigned     farthestRefPosWeight;
+    LsraLocation         farthestLocation = MinLocation;
+    LsraLocation         refLocation      = refPosition->nodeLocation;
+    BasicBlock::weight_t farthestRefPosWeight;
     if (allocateIfProfitable)
     {
         // If allocating a reg is optional, we will consider those ref positions
@@ -3703,7 +3705,7 @@ regNumber LinearScan::allocateBusyReg(Interval* current, RefPosition* refPositio
         // initialized to MinLocation, the first available ref position
         // will be selected as spill candidate and its weight as the
         // fathestRefPosWeight.
-        farthestRefPosWeight = BB_MAX_WEIGHT;
+        farthestRefPosWeight = FloatingPointUtils::infinite_float();
     }
 
     for (regNumber regNum : Registers(regType))
@@ -3725,10 +3727,10 @@ regNumber LinearScan::allocateBusyReg(Interval* current, RefPosition* refPositio
 
         // We've passed the preliminary checks for a spill candidate.
         // Now, if we have a recentAssignedRef, check that it is going to be OK to spill it.
-        Interval*    assignedInterval        = physRegRecord->assignedInterval;
-        unsigned     recentAssignedRefWeight = BB_ZERO_WEIGHT;
-        RefPosition* recentAssignedRef       = nullptr;
-        RefPosition* recentAssignedRef2      = nullptr;
+        Interval*            assignedInterval        = physRegRecord->assignedInterval;
+        BasicBlock::weight_t recentAssignedRefWeight = BB_ZERO_WEIGHT;
+        RefPosition*         recentAssignedRef       = nullptr;
+        RefPosition*         recentAssignedRef2      = nullptr;
 #ifdef TARGET_ARM
         if (current->registerType == TYP_DOUBLE)
         {
@@ -9176,13 +9178,13 @@ void LinearScan::updateLsraStat(LsraStat stat, unsigned bbNum)
 //
 void LinearScan::dumpLsraStats(FILE* file)
 {
-    unsigned sumSpillCount         = 0;
-    unsigned sumCopyRegCount       = 0;
-    unsigned sumResolutionMovCount = 0;
-    unsigned sumSplitEdgeCount     = 0;
-    UINT64   wtdSpillCount         = 0;
-    UINT64   wtdCopyRegCount       = 0;
-    UINT64   wtdResolutionMovCount = 0;
+    unsigned             sumSpillCount         = 0;
+    unsigned             sumCopyRegCount       = 0;
+    unsigned             sumResolutionMovCount = 0;
+    unsigned             sumSplitEdgeCount     = 0;
+    BasicBlock::weight_t wtdSpillCount         = 0;
+    BasicBlock::weight_t wtdCopyRegCount       = 0;
+    BasicBlock::weight_t wtdResolutionMovCount = 0;
 
     fprintf(file, "----------\n");
     fprintf(file, "LSRA Stats");
@@ -9227,18 +9229,18 @@ void LinearScan::dumpLsraStats(FILE* file)
         sumResolutionMovCount += resolutionMovCount;
         sumSplitEdgeCount += splitEdgeCount;
 
-        wtdSpillCount += (UINT64)spillCount * block->bbWeight;
-        wtdCopyRegCount += (UINT64)copyRegCount * block->bbWeight;
-        wtdResolutionMovCount += (UINT64)resolutionMovCount * block->bbWeight;
+        wtdSpillCount += spillCount * block->bbWeight;
+        wtdCopyRegCount += copyRegCount * block->bbWeight;
+        wtdResolutionMovCount += resolutionMovCount * block->bbWeight;
     }
 
     fprintf(file, "Total Tracked Vars:  %d\n", compiler->lvaTrackedCount);
     fprintf(file, "Total Reg Cand Vars: %d\n", regCandidateVarCount);
     fprintf(file, "Total number of Intervals: %d\n", static_cast<unsigned>(intervals.size() - 1));
     fprintf(file, "Total number of RefPositions: %d\n", static_cast<unsigned>(refPositions.size() - 1));
-    fprintf(file, "Total Spill Count: %d    Weighted: %I64u\n", sumSpillCount, wtdSpillCount);
-    fprintf(file, "Total CopyReg Count: %d   Weighted: %I64u\n", sumCopyRegCount, wtdCopyRegCount);
-    fprintf(file, "Total ResolutionMov Count: %d    Weighted: %I64u\n", sumResolutionMovCount, wtdResolutionMovCount);
+    fprintf(file, "Total Spill Count: %d    Weighted: %f\n", sumSpillCount, wtdSpillCount);
+    fprintf(file, "Total CopyReg Count: %d   Weighted: %f\n", sumCopyRegCount, wtdCopyRegCount);
+    fprintf(file, "Total ResolutionMov Count: %d    Weighted: %f\n", sumResolutionMovCount, wtdResolutionMovCount);
     fprintf(file, "Total number of split edges: %d\n", sumSplitEdgeCount);
 
     // compute total number of spill temps created

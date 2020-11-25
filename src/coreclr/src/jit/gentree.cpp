@@ -5112,6 +5112,7 @@ bool GenTree::TryGetUse(GenTree* def, GenTree*** use)
         case GT_NULLCHECK:
         case GT_PUTARG_REG:
         case GT_PUTARG_STK:
+        case GT_PUTARG_TYPE:
         case GT_RETURNTRAP:
         case GT_NOP:
         case GT_RETURN:
@@ -6070,13 +6071,7 @@ GenTree* Compiler::gtNewStringLiteralNode(InfoAccessType iat, void* pValue)
     switch (iat)
     {
         case IAT_VALUE:
-            // For CoreRT only - Constant object can be a frozen string.
-            if (!IsTargetAbi(CORINFO_CORERT_ABI))
-            {
-                // Non CoreRT - This case is illegal, creating a TYP_REF from an INT_CNS
-                noway_assert(!"unreachable IAT_VALUE case in gtNewStringLiteralNode");
-            }
-
+            setMethodHasFrozenString();
             tree         = gtNewIconEmbHndNode(pValue, nullptr, GTF_ICON_STR_HDL, nullptr);
             tree->gtType = TYP_REF;
 #ifdef DEBUG
@@ -9113,6 +9108,7 @@ GenTreeUseEdgeIterator::GenTreeUseEdgeIterator(GenTree* node)
         case GT_NULLCHECK:
         case GT_PUTARG_REG:
         case GT_PUTARG_STK:
+        case GT_PUTARG_TYPE:
         case GT_BSWAP:
         case GT_BSWAP16:
         case GT_KEEPALIVE:
@@ -12027,7 +12023,7 @@ void Compiler::gtGetArgMsg(GenTreeCall* call, GenTree* arg, unsigned argNum, cha
             }
 #endif // TARGET_ARM
 #if FEATURE_FIXED_OUT_ARGS
-            sprintf_s(bufp, bufLength, "arg%d out+%02x%c", argNum, curArgTabEntry->slotNum * TARGET_POINTER_SIZE, 0);
+            sprintf_s(bufp, bufLength, "arg%d out+%02x%c", argNum, curArgTabEntry->GetByteOffset(), 0);
 #else
             sprintf_s(bufp, bufLength, "arg%d on STK%c", argNum, 0);
 #endif
@@ -15523,7 +15519,7 @@ GenTree* Compiler::gtNewTempAssign(
         // There are 2 special cases:
         // 1. we have lost classHandle from a FIELD node  because the parent struct has overlapping fields,
         //     the field was transformed as IND opr GT_LCL_FLD;
-        // 2. we are propogating `ASG(struct V01, 0)` to `RETURN(struct V01)`, `CNT_INT` doesn't `structHnd`;
+        // 2. we are propagation `ASG(struct V01, 0)` to `RETURN(struct V01)`, `CNT_INT` doesn't `structHnd`;
         // in these cases, we can use the type of the merge return for the assignment.
         assert(val->OperIs(GT_IND, GT_LCL_FLD, GT_CNS_INT));
         assert(!compDoOldStructRetyping());

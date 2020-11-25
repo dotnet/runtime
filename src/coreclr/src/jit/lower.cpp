@@ -5186,9 +5186,9 @@ bool Lowering::LowerUnsignedDivOrMod(GenTreeOp* divMod)
         // add == true (when divisor == 7 for example):
         //     mulhi = dividend MULHI magic
         //     div   = (((dividend SUB mulhi) RSZ 1) ADD mulhi)) RSZ (shift - 1)
-        const bool     requiresAdjustment       = add;
-        const bool     requiresDividendMultiuse = requiresAdjustment || !isDiv;
-        const unsigned curBBWeight              = m_block->getBBWeight(comp);
+        const bool                 requiresAdjustment       = add;
+        const bool                 requiresDividendMultiuse = requiresAdjustment || !isDiv;
+        const BasicBlock::weight_t curBBWeight              = m_block->getBBWeight(comp);
 
         if (requiresDividendMultiuse)
         {
@@ -5375,10 +5375,10 @@ GenTree* Lowering::LowerConstIntDivOrMod(GenTree* node)
         // For -3 we need:
         //     mulhi -= dividend                    ; requires sub adjust
         //     div = signbit(mulhi) + sar(mulhi, 1) ; requires shift adjust
-        bool     requiresAddSubAdjust     = signum(divisorValue) != signum(magic);
-        bool     requiresShiftAdjust      = shift != 0;
-        bool     requiresDividendMultiuse = requiresAddSubAdjust || !isDiv;
-        unsigned curBBWeight              = comp->compCurBB->getBBWeight(comp);
+        bool                 requiresAddSubAdjust     = signum(divisorValue) != signum(magic);
+        bool                 requiresShiftAdjust      = shift != 0;
+        bool                 requiresDividendMultiuse = requiresAddSubAdjust || !isDiv;
+        BasicBlock::weight_t curBBWeight              = comp->compCurBB->getBBWeight(comp);
 
         if (requiresDividendMultiuse)
         {

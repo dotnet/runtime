@@ -514,16 +514,14 @@ struct BasicBlock : private LIR::Range
     const char* dspToString(int blockNumPadding = 0);
 #endif // DEBUG
 
-    typedef unsigned weight_t; // Type used to hold block and edge weights
-                               // Note that for CLR v2.0 and earlier our
-                               // block weights were stored using unsigned shorts
+    // Type used to hold block and edge weights
+    typedef float weight_t;
 
-#define BB_UNITY_WEIGHT 100 // how much a normal execute once block weights
-#define BB_LOOP_WEIGHT 8    // how much more loops are weighted
-#define BB_ZERO_WEIGHT 0
-#define BB_MAX_WEIGHT UINT32_MAX // we're using an 'unsigned' for the weight
-#define BB_VERY_HOT_WEIGHT 256   // how many average hits a BB has (per BBT scenario run) for this block
-                                 // to be considered as very hot
+#define BB_UNITY_WEIGHT 100.0f       // how much a normal execute once block weighs
+#define BB_UNITY_WEIGHT_UNSIGNED 100 // how much a normal execute once block weighs
+#define BB_LOOP_WEIGHT_SCALE 8.0f    // synthetic profile scale factor for loops
+#define BB_ZERO_WEIGHT 0.0f
+#define BB_MAX_WEIGHT FLT_MAX // maximum finite weight  -- needs rethinking.
 
     weight_t bbWeight; // The dynamic execution weight of this block
 
@@ -551,7 +549,7 @@ struct BasicBlock : private LIR::Range
     }
 
     // setBBProfileWeight -- Set the profile-derived weight for a basic block
-    void setBBProfileWeight(unsigned weight)
+    void setBBProfileWeight(weight_t weight)
     {
         this->bbFlags |= BBF_PROF_WEIGHT;
         this->bbWeight = weight;
