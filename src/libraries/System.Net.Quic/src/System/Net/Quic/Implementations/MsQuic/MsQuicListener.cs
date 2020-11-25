@@ -123,7 +123,7 @@ namespace System.Net.Quic.Implementations.MsQuic
             // protect against double starts.
             if (_started)
             {
-                return;
+                throw new QuicException("Cannot start Listener multiple times");
             }
 
             _started = true;
