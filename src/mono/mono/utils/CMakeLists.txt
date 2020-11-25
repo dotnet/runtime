@@ -1,15 +1,30 @@
 
 set(utils_win32_sources
+    mono-os-semaphore-win32.c
+    mono-os-wait-win32.c
+    mono-windows-thread-name.c
     os-event-win32.c
-    mono-os-wait-win32.c)
+    w32subset.h)
+
+if(TARGET_WIN32 AND TARGET_AMD64)
+    enable_language(ASM_MASM)
+    set(CMAKE_ASM_MASM_COMPILE_OPTIONS_MSVC_RUNTIME_LIBRARY_MultiThreaded         "")
+    set(CMAKE_ASM_MASM_COMPILE_OPTIONS_MSVC_RUNTIME_LIBRARY_MultiThreadedDLL      "")
+    set(CMAKE_ASM_MASM_COMPILE_OPTIONS_MSVC_RUNTIME_LIBRARY_MultiThreadedDebug    "")
+    set(CMAKE_ASM_MASM_COMPILE_OPTIONS_MSVC_RUNTIME_LIBRARY_MultiThreadedDebugDLL "")
+
+    list(APPEND utils_win32_sources win64.asm)
+endif()
 
 set(utils_unix_sources
+    dlmalloc.h
+    dlmalloc.c
     os-event-unix.c)
 
 if(HOST_WIN32)
-set(utils_platform_sources ${utils_win32_sources})
+    set(utils_platform_sources ${utils_win32_sources})
 else()
-set(utils_platform_sources ${utils_unix_sources})
+    set(utils_platform_sources ${utils_unix_sources})
 endif()
 
 set(utils_common_sources
@@ -18,8 +33,6 @@ set(utils_common_sources
     mono-logger.c
     mono-logger-internals.h
     mono-codeman.c
-    dlmalloc.h
-    dlmalloc.c
     mono-counters.c
     mono-compiler.h
     mono-complex.h
@@ -70,6 +83,7 @@ set(utils_common_sources
     mono-string.h
     mono-time.c
     mono-time.h
+    strenc-internals.h
     strenc.h
     strenc.c
     mono-uri.c
@@ -96,6 +110,7 @@ set(utils_common_sources
     mono-counters.h
     mono-digest.h
     mono-error.h
+    mono-forward-internal.h
     mono-machine.h
     mono-math.h
     mono-membar.h
@@ -111,14 +126,14 @@ set(utils_common_sources
     mono-stack-unwinding.h
     hazard-pointer.c
     hazard-pointer.h
+    lifo-semaphore.c
+    lifo-semaphore.h
     lock-free-queue.c
     lock-free-queue.h
     lock-free-alloc.c
     lock-free-alloc.h
     lock-free-array-queue.c
     lock-free-array-queue.h
-    lifo-semaphore.c
-    lifo-semaphore.h
     mono-linked-list-set.c
     mono-linked-list-set.h
     mono-threads.c
@@ -145,6 +160,7 @@ set(utils_common_sources
     mono-utility-thread.c
     mono-utility-thread.h
     mono-tls.h
+    mono-tls-inline.h
     mono-tls.c
     mono-utils-debug.c
     mono-utils-debug.h
@@ -224,12 +240,12 @@ endif()
 addprefix(utils_sources ../utils/ "${utils_platform_sources};${utils_arch_sources};${utils_common_sources}")
 
 set(utils_public_headers_base
-	mono-logger.h
-	mono-error.h
-	mono-forward.h
-	mono-publib.h
-	mono-jemalloc.h
-	mono-dl-fallback.h
-	mono-private-unstable.h
-	mono-counters.h)
+    mono-logger.h
+    mono-error.h
+    mono-forward.h
+    mono-publib.h
+    mono-jemalloc.h
+    mono-dl-fallback.h
+    mono-private-unstable.h
+    mono-counters.h)
 addprefix(utils_public_headers ../utils "${utils_public_headers_base}")
