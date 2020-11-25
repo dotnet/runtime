@@ -314,7 +314,7 @@ $(BatchLinkerTestCleanupCmds)
       <BatchCLRTestLaunchCmds Condition="'$(CLRTestKind)' == 'BuildAndRun' And $(TargetOS) == 'Android' ">
     <![CDATA[
 REM run Android app
-IF NOT "%__TestDotNetCmd"=="" (
+IF NOT "%__TestDotNetCmd%"=="" (
   set __Command=%__TestDotNetCmd%
 ) ELSE (
   set __Command="dotnet"
@@ -327,6 +327,8 @@ IF NOT "%XHARNESS_CLI_PATH%"=="" (
 ) ELSE (
   set HARNESS_RUNNER="xharness"
 )
+
+echo %__Command%
 
 %__Command% %HARNESS_RUNNER% android test --instrumentation="net.dot.MonoRunner" --package-name="net.dot.%__Category%" --app="%__TestBinaryBase%\%__Category%.apk" --output-directory=`pwd` --arg=entryPointLibName=$(MsBuildProjectName).dll --expected-exit-code=100
 set CLRTestExitCode=!ERRORLEVEL!
