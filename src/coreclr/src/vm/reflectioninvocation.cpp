@@ -2163,9 +2163,11 @@ void QCALLTYPE RuntimeTypeHandle::GetActivationInfo(
 
     if (fRequiresSpecialComActivationStub)
     {
+#ifdef FEATURE_COMINTEROP
         // managed sig: ComClassFactory* -> object (via FCALL)
         *ppfnAllocator = CoreLibBinder::GetMethod(METHOD__RT_TYPE_HANDLE__ALLOCATECOMOBJECT)->GetMultiCallableAddrOfCode();
         *pvAllocatorFirstArg = pClassFactory;
+#endif // FEATURE_COMINTEROP
     }
     else
     {
