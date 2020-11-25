@@ -173,6 +173,9 @@ public:
 // vtable which contains header_ptr, vtable_ptr, sync_ptr and length
 #define MIN_OBJECT_SIZE     (4*sizeof(uint8_t*))
 
+/* The layout of ArrayBase needs to be congruent with MonoString and MonoArray,
+    up to the length field. This currently relies on the compiler to put the inherited fields
+    first; but I don't think that is garunteed by the standard. */
 class ArrayBase : public Object
 {
     uint32_t m_dwLength;
