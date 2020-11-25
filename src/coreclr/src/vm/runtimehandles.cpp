@@ -635,6 +635,7 @@ FCIMPL2(MethodDesc *, RuntimeTypeHandle::GetMethodAt, ReflectClassBaseObject *pT
 
     return pRetMethod;
 }
+
 FCIMPLEND
 
 FCIMPL3(FC_BOOL_RET, RuntimeTypeHandle::GetFields, ReflectClassBaseObject *pTypeUNSAFE, INT32 **result, INT32 *pCount) {
@@ -1604,6 +1605,7 @@ BOOL QCALLTYPE RuntimeTypeHandle::IsConstructedNullableType(QCall::TypeHandle pT
     TypeHandle typeHandle = pTypeHandle.AsTypeHandle();
     _ASSERTE(!typeHandle.IsNull());
 
+    // eqivalent to IsGenericType && !IsGenericTypeDefinition && GetGenericTypeDefinition() == typeof(Nullable<>)
     return typeHandle.HasInstantiation()
         && !typeHandle.IsGenericTypeDefinition()
         && typeHandle.AsMethodTable()->IsNullable();

@@ -9150,7 +9150,7 @@ BOOL MethodTable::HasExplicitOrImplicitPublicDefaultConstructor()
 }
 
 //==========================================================================================
-MethodDesc *MethodTable::GetDefaultConstructor(BOOL forceBoxedEntryPoint)
+MethodDesc *MethodTable::GetDefaultConstructor(BOOL forceBoxedEntryPoint /* = FALSE */)
 {
     WRAPPER_NO_CONTRACT;
     _ASSERTE(HasDefaultConstructor());

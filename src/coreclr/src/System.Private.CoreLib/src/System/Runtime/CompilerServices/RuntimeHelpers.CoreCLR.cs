@@ -150,7 +150,7 @@ namespace System.Runtime.CompilerServices
             Debug.Assert(type != null);
             RuntimeType rt = (RuntimeType)type;
 
-            // If type is Nullable<T>, returns the allocator and MethodTable* for the underlying T.
+            // If type is Nullable<T>, returns the allocator for the underlying T.
             RuntimeTypeHandle.GetActivationInfo(rt, forGetUninitializedInstance: true,
                 out delegate*<void*, object> pfnAllocator, out void* vAllocatorFirstArg, out _, out _);
 
@@ -411,15 +411,9 @@ namespace System.Runtime.CompilerServices
         public MethodTable** InterfaceMap;
 
         // WFLAGS_HIGH_ENUM & WFLAGS_LOW_ENUM
-        private const uint enum_flag_Category_Mask = 0x000F0000;
-        private const uint enum_flag_Category_Nullable = 0x00050000;
-        private const uint enum_flag_Category_ValueType = 0x00040000;
-        private const uint enum_flag_Category_ValueType_Mask = 0x000C0000;
         private const uint enum_flag_ContainsPointers = 0x01000000;
-        private const uint enum_flag_ComObject = 0x40000000;
         private const uint enum_flag_HasComponentSize = 0x80000000;
-        private const uint enum_flag_HasPreciseInitCctors = 0x00000400;
-        private const uint enum_flag_HasTypeEquivalence = 0x00004000; // TODO: shouldn't this be 0x02000000?
+        private const uint enum_flag_HasTypeEquivalence = 0x00004000;
         // Types that require non-trivial interface cast have this bit set in the category
         private const uint enum_flag_NonTrivialInterfaceCast = 0x00080000 // enum_flag_Category_Array
                                                              | 0x40000000 // enum_flag_ComObject
@@ -473,38 +467,6 @@ namespace System.Runtime.CompilerServices
             get
             {
                 return (Flags & enum_flag_NonTrivialInterfaceCast) != 0;
-            }
-        }
-
-        public bool HasPreciseInitCctors
-        {
-            get
-            {
-                return !HasComponentSize && (Flags & enum_flag_HasPreciseInitCctors) != 0;
-            }
-        }
-
-        public bool IsComObject
-        {
-            get
-            {
-                return (Flags & enum_flag_ComObject) != 0;
-            }
-        }
-
-        public bool IsNullable
-        {
-            get
-            {
-                return (Flags & enum_flag_Category_Mask) == enum_flag_Category_Nullable;
-            }
-        }
-
-        public bool IsValueType
-        {
-            get
-            {
-                return (Flags & enum_flag_Category_ValueType_Mask) == enum_flag_Category_ValueType;
             }
         }
 

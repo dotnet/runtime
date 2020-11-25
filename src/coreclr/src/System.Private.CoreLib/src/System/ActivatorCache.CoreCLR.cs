@@ -29,8 +29,7 @@ namespace System
 #endif
 
             internal ActivatorCache(
-                [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors)] RuntimeType rt,
-                bool wrapExceptions)
+                [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors)] RuntimeType rt)
             {
                 Debug.Assert(rt != null);
 
@@ -94,6 +93,8 @@ namespace System
 
             internal bool CtorIsPublic => _ctorIsPublic;
 
+            [DebuggerStepThrough]
+            [DebuggerHidden]
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             internal object? CreateUninitializedObject(RuntimeType rt)
             {
@@ -116,6 +117,8 @@ namespace System
                 return retVal;
             }
 
+            [DebuggerStepThrough]
+            [DebuggerHidden]
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             internal void CallConstructor(object? uninitializedObject) => _pfnCtor(uninitializedObject);
         }

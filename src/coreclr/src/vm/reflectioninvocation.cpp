@@ -2031,8 +2031,8 @@ void QCALLTYPE RuntimeTypeHandle::GetActivationInfo(
         PRECONDITION(CheckPointer(pvAllocatorFirstArg));
         PRECONDITION(*ppfnAllocator == NULL);
         PRECONDITION(*pvAllocatorFirstArg == NULL);
-        // Both ctor "out" params must be specified, or both must be null.
-        // If they're specified, the target must be zero-initialized.
+        // Both ctor "out" params must be specified, or both must be nullptr.
+        // If they're specified, the destination must be zero-initialized.
         PRECONDITION((ppfnCtor == NULL) == (pfCtorIsPublic == NULL));
         PRECONDITION((ppfnCtor == NULL) || (*ppfnCtor == NULL));
         PRECONDITION((pfCtorIsPublic == NULL) || (!*pfCtorIsPublic));
@@ -2056,6 +2056,10 @@ void QCALLTYPE RuntimeTypeHandle::GetActivationInfo(
 
     {
         GCX_COOP();
+
+        // We need to take the RuntimeType itself rather than the RuntimeTypeHandle,
+        // as the COM CLSID is stored in the RuntimeType object's sync block, and we
+        // might need to pull it out later in this method.
         typeHandle = ((REFLECTCLASSBASEREF)pRuntimeType.Get())->GetType();
     }
 
