@@ -1863,7 +1863,7 @@ bool Compiler::StructPromotionHelper::CanPromoteStructVar(unsigned lclNum)
             canPromote = false;
         }
 #if defined(TARGET_ARMARCH)
-        else if (fieldCnt > 1)
+        else
         {
             for (unsigned i = 0; canPromote && (i < fieldCnt); i++)
             {
@@ -1872,14 +1872,14 @@ bool Compiler::StructPromotionHelper::CanPromoteStructVar(unsigned lclNum)
                 // If there are any floating point fields, don't promote for now.
                 // TODO-1stClassStructs: add support in Lowering and prolog generation
                 // to enable promoting these types.
-                if (varDsc->lvIsParam && !varDsc->lvIsHfa() && varTypeIsFloating(fieldType))
+                if (varDsc->lvIsParam && !varDsc->lvIsHfa() && varTypeUsesFloatReg(fieldType))
                 {
                     canPromote = false;
                 }
 #if defined(FEATURE_SIMD)
                 // If we have a register-passed struct with mixed non-opaque SIMD types (i.e. with defined fields)
                 // and non-SIMD types, we don't currently handle that case in the prolog, so we can't promote.
-                else if (varTypeIsStruct(fieldType) &&
+                else if ((fieldCnt > 1) && varTypeIsStruct(fieldType) &&
                          !compiler->isOpaqueSIMDType(structPromotionInfo.fields[i].fldTypeHnd))
                 {
                     canPromote = false;
