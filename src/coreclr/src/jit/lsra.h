@@ -977,7 +977,7 @@ private:
     bool isAssignedToInterval(Interval* interval, RegRecord* regRec);
     bool isRefPositionActive(RefPosition* refPosition, LsraLocation refLocation);
     bool canSpillReg(RegRecord* physRegRecord, LsraLocation refLocation);
-    unsigned getSpillWeight(RegRecord* physRegRecord);
+    float getSpillWeight(RegRecord* physRegRecord);
     bool isRegInUse(RegRecord* regRec, RefPosition* refPosition);
 
     // insert refpositions representing prolog zero-inits which will be added later
@@ -1651,7 +1651,7 @@ private:
 #endif
         return loc;
     }
-    unsigned int spillCost[REG_COUNT];
+    float spillCost[REG_COUNT];
 
     regMaskTP regsBusyUntilKill;
     regMaskTP regsInUseThisLocation;

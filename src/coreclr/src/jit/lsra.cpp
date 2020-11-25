@@ -352,13 +352,13 @@ void LinearScan::updateSpillCost(regNumber reg, Interval* interval)
 {
     // An interval can have no recentRefPosition if this is the initial assignment
     // of a parameter to its home register.
-    unsigned int weight = (interval->recentRefPosition != nullptr) ? getWeight(interval->recentRefPosition) : 0;
-    spillCost[reg]      = weight;
+    float cost     = (interval->recentRefPosition != nullptr) ? getWeight(interval->recentRefPosition) : 0;
+    spillCost[reg] = cost;
 #ifdef TARGET_ARM
     if (interval->registerType == TYP_DOUBLE)
     {
         regNumber otherReg  = REG_NEXT(reg);
-        spillCost[otherReg] = weight;
+        spillCost[otherReg] = cost;
     }
 #endif
 }
@@ -3383,9 +3383,9 @@ regNumber LinearScan::allocateReg(Interval* currentInterval, RefPosition* refPos
     if (!found)
     {
         // The spill weight for 'refPosition' (the one we're allocating now).
-        unsigned int thisSpillWeight = getWeight(refPosition);
+        float thisSpillWeight = getWeight(refPosition);
         // The  spill weight for the best candidate we've found so far.
-        unsigned int bestSpillWeight = BB_MAX_WEIGHT;
+        float bestSpillWeight = BB_MAX_WEIGHT;
         // True if we found registers with lower spill weight than this refPosition.
         bool foundLowerSpillWeight = false;
 
@@ -3408,7 +3408,7 @@ regNumber LinearScan::allocateReg(Interval* currentInterval, RefPosition* refPos
                 continue;
             }
 
-            unsigned currentSpillWeight = spillCost[spillCandidateRegNum];
+            float currentSpillWeight = spillCost[spillCandidateRegNum];
 #ifdef TARGET_ARM
             if (currentInterval->registerType == TYP_DOUBLE)
             {
@@ -3610,11 +3610,11 @@ bool LinearScan::canSpillReg(RegRecord* physRegRecord, LsraLocation refLocation)
 //
 // Note: This helper is designed to be used only from allocateReg() and getDoubleSpillWeight()
 //
-unsigned LinearScan::getSpillWeight(RegRecord* physRegRecord)
+float LinearScan::getSpillWeight(RegRecord* physRegRecord)
 {
     assert(physRegRecord->assignedInterval != nullptr);
     RefPosition* recentAssignedRef = physRegRecord->assignedInterval->recentRefPosition;
-    unsigned     weight            = BB_ZERO_WEIGHT;
+    float        weight            = BB_ZERO_WEIGHT;
 
     // We shouldn't call this method if there is no recentAssignedRef.
     assert(recentAssignedRef != nullptr);
