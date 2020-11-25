@@ -24,7 +24,7 @@ namespace System.Net
     internal struct MultiArrayBuffer : IDisposable
     {
         private byte[]?[]? _blocks;
-        private int _blockCount;
+        private int _allocatedEnd;
         private int _activeStart;
         private int _availableStart;
 
@@ -39,7 +39,7 @@ namespace System.Net
             // I kept it because some callers are passing useful info here that we might want to act on in the future.
 
             _blocks = null;
-            _blockCount = 0;
+            _allocatedEnd = 0;
             _activeStart = 0;
             _availableStart = 0;
         }
@@ -61,13 +61,13 @@ namespace System.Net
                 }
 
                 _blocks = null;
-                _blockCount = 0;
+                _allocatedEnd = 0;
             }
         }
 
         public MultiMemory ActiveMemory => new MultiMemory(_blocks, _activeStart, _availableStart - _activeStart);
 
-        public MultiMemory AvailableMemory => new MultiMemory(_blocks, _availableStart, _blockCount * BlockSize - _availableStart);
+        public MultiMemory AvailableMemory => new MultiMemory(_blocks, _availableStart, _allocatedEnd - _availableStart);
 
         public void Discard(int byteCount)
         {
@@ -138,81 +138,95 @@ namespace System.Net
 
             int newBytesNeeded = byteCount - AvailableMemory.Length;
             int newBlocksNeeded = (newBytesNeeded + BlockSize - 1) / BlockSize;
-            Debug.Assert(newBlocksNeeded > 0);
-            Debug.Assert(newBlocksNeeded * BlockSize >= newBytesNeeded);
-            Debug.Assert(newBlocksNeeded * BlockSize - newBytesNeeded < BlockSize);
 
+            // Ensure we have enough space in the block array for the new blocks needed.
             if (_blocks is null)
             {
-                Debug.Assert(_blockCount == 0);
+                Debug.Assert(_allocatedEnd == 0);
                 Debug.Assert(_activeStart == 0);
                 Debug.Assert(_availableStart == 0);
 
                 int blockArraySize = 4;
-                while (blockArraySize < newBlocksNeeded)
+                while (blockArraySize  < newBlocksNeeded)
                 {
                     blockArraySize *= 2;
                 }
 
                 _blocks = new byte[]?[blockArraySize];
             }
-            else if (_blocks.Length < _blockCount + newBlocksNeeded)
+            else
             {
-                int firstUsedBlock = _activeStart / BlockSize;
-                int usedBlockCount = _blockCount - firstUsedBlock;
+                Debug.Assert(_allocatedEnd % BlockSize == 0);
+                Debug.Assert(_allocatedEnd <= _blocks.Length * BlockSize);
+
+                int allocatedBlocks = _allocatedEnd / BlockSize;
+                int blockArraySize = _blocks.Length;
+                if (allocatedBlocks + newBlocksNeeded > blockArraySize)
+                {
+                    // Not enough room in current block array.
+                    int unusedInitialBlocks = _activeStart / BlockSize;
 
 #if DEBUG
-                for (int i = 0; i < firstUsedBlock; i++)
-                {
-                    Debug.Assert(_blocks[i] is null);
-                }
+                    for (int i = 0; i < unusedInitialBlocks; i++)
+                    {
+                        Debug.Assert(_blocks[i] is null);
+                    }
+
+                    for (int i = unusedInitialBlocks; i < allocatedBlocks; i++)
+                    {
+                        Debug.Assert(_blocks[i] is not null);
+                    }
+
+                    for (int i = allocatedBlocks; i < blockArraySize; i++)
+                    {
+                        Debug.Assert(_blocks[i] is null);
+                    }
 #endif
 
-                if (usedBlockCount + newBlocksNeeded <= _blocks.Length)
-                {
-                    Debug.Assert(firstUsedBlock > 0);
-
-                    // We can shift the array down to make enough space
-                    _blocks.AsSpan().Slice(firstUsedBlock, usedBlockCount).CopyTo(_blocks);
-
-                    // Null out the part of the array left over from the shift, so that we aren't holding references to those blocks.
-                    for (int i = 0; i < firstUsedBlock; i++)
+                    int usedBlocks = (allocatedBlocks - unusedInitialBlocks);
+                    int blocksNeeded = usedBlocks + newBlocksNeeded;
+                    if (blocksNeeded > blockArraySize)
                     {
-                        _blocks[usedBlockCount + i] = null;
+                        // Need to allocate a new array and copy.
+                        while (blockArraySize < blocksNeeded)
+                        {
+                            blockArraySize *= 2;
+                        }
+
+                        byte[]?[] newBlockArray = new byte[]?[blockArraySize];
+                        _blocks.AsSpan().Slice(unusedInitialBlocks, usedBlocks).CopyTo(newBlockArray);
+                        _blocks = newBlockArray;
                     }
-                }
-                else
-                {
-                    // Need to reallocate the array
-                    int blockArraySize = _blocks.Length;
-                    while (blockArraySize < usedBlockCount + newBlocksNeeded)
+                    else
                     {
-                        blockArraySize *= 2;
+                        // We can shift the array down to make enough space
+                        _blocks.AsSpan().Slice(unusedInitialBlocks, usedBlocks).CopyTo(_blocks);
+
+                        // Null out the part of the array left over from the shift, so that we aren't holding references to those blocks.
+                        _blocks.AsSpan().Slice(usedBlocks, unusedInitialBlocks).Fill(null);
                     }
 
-                    byte[]?[] newBlockArray = new byte[]?[blockArraySize];
-                    _blocks.AsSpan().Slice(firstUsedBlock, usedBlockCount).CopyTo(newBlockArray);
-                    _blocks = newBlockArray;
+                    int shift = unusedInitialBlocks + BlockSize;
+                    _allocatedEnd -= shift;
+                    _activeStart -= shift;
+                    _availableStart -= shift;
+
+                    Debug.Assert(_activeStart / BlockSize == 0, $"Start is not in first block after move or resize?? _activeStart={_activeStart}");
                 }
-
-                _blockCount = usedBlockCount;
-                _activeStart -= firstUsedBlock * BlockSize;
-                _availableStart -= firstUsedBlock * BlockSize;
-
-                Debug.Assert(_activeStart / BlockSize == 0, $"Start is not in first block after move or resize?? _activeStart={_activeStart}");
             }
-
-            Debug.Assert(_blockCount + newBlocksNeeded <= _blocks.Length, $"Not enough room for new blocks?? _blockCount={_blockCount}, newBlocksNeeded={newBlocksNeeded}, _blocks.Length={_blocks.Length}");
 
             // Allocate new blocks
+            Debug.Assert(_allocatedEnd % BlockSize == 0);
+            int blockCount = _allocatedEnd / BlockSize;
             for (int i = 0; i < newBlocksNeeded; i++)
             {
-                Debug.Assert(_blocks[_blockCount + i] is null);
-                _blocks[_blockCount + i] = ArrayPool<byte>.Shared.Rent(BlockSize);
+                Debug.Assert(_blocks[blockCount + i] is null);
+                _blocks[blockCount + i] = ArrayPool<byte>.Shared.Rent(BlockSize);
             }
 
-            _blockCount += newBlocksNeeded;
+            _allocatedEnd += newBlocksNeeded + blockCount;
 
+            // After all of that, we should have enough available memory now
             Debug.Assert(byteCount <= AvailableMemory.Length);
         }
     }
