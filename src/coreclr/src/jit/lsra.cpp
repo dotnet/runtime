@@ -4174,7 +4174,6 @@ void LinearScan::unassignPhysRegNoSpill(RegRecord* regRec)
     assert(assignedInterval != nullptr && assignedInterval->isActive);
     assignedInterval->isActive = false;
     unassignPhysReg(regRec, nullptr);
-    // makeRegAvailable(regRec->regNum, assignedInterval->registerType);
     assignedInterval->isActive = true;
 }
 
@@ -6018,6 +6017,7 @@ void LinearScan::allocateRegisters()
                 {
                     unassignPhysRegNoSpill(physRegRecord);
                     physRegRecord->assignedInterval = nullptr;
+                    clearConstantReg(assignedRegister, currentInterval->registerType);
                 }
                 currentRefPosition->moveReg = true;
                 assignedRegister            = REG_NA;
