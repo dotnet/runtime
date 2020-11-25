@@ -51,11 +51,6 @@ namespace
     // Check if given function belongs to one of statically linked libraries and return a pointer if found.
     const void* STDMETHODCALLTYPE pinvoke_override(const char* libraryName, const char* entrypointName)
     {
-        if (strcmp(libraryName, "libSystem.Globalization.Native") == 0)
-        {
-            return GlobalizationResolveDllImport(entrypointName);
-        }
-
 #if defined(_WIN32)
         if (strcmp(libraryName, "clrcompression") == 0)
 #else

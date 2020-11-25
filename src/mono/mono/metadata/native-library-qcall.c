@@ -12,18 +12,12 @@
 #include "mono/utils/mono-path.h"
 #include "mono/metadata/native-library.h"
 
-extern const void* GlobalizationResolveDllImport(const char* name);
-
 enum {
     func_flag_end_of_array = 0x01,
     func_flag_has_signature = 0x02,
     func_flag_unreferenced = 0x04, // Suppress unused fcall check
     func_flag_qcall = 0x08, // QCall - mscorlib.dll to mscorwks.dll transition implemented as PInvoke
 };
-
-#if defined(NO_GLOBALIZATION_SHIM) || !defined(ENABLE_NETCORE)
-const void* GlobalizationResolveDllImport(const char* name) { return NULL; }
-#endif
 
 static const MonoQCallDef c_qcalls[] =
 {
@@ -106,14 +100,8 @@ find_index_for_method (MonoMethod *method, const void **impls)
 }
 
 gpointer
-mono_lookup_pinvoke_qcall_internal (MonoMethod *method, const char* dllentry, MonoLookupPInvokeStatus *status_out)
+mono_lookup_pinvoke_qcall_internal (MonoMethod *method, MonoLookupPInvokeStatus *status_out)
 {
-    const void *method_impl = GlobalizationResolveDllImport(dllentry);
-    if (method_impl != NULL)
-    {
-        return (gpointer)method_impl;
-    }
-
     int pos_class = find_impls_index_for_class (method);
     if (pos_class < 0) {
         mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_QCALL,

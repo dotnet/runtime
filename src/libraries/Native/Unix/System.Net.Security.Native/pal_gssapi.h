@@ -80,9 +80,9 @@ NetSecurityNative_ImportUserName(uint32_t* minorStatus, char* inputName, uint32_
 Shims the gss_import_name method with nametype = GSS_C_NT_USER_NAME.
 */
 PALEXPORT uint32_t NetSecurityNative_ImportPrincipalName(uint32_t* minorStatus,
-                                                         char* inputName,
-                                                         uint32_t inputNameLen,
-                                                         GssName** outputName);
+    char* inputName,
+    uint32_t inputNameLen,
+    GssName** outputName);
 
 /*
 Shims the gss_release_name method.
@@ -109,42 +109,42 @@ PALEXPORT uint32_t NetSecurityNative_ReleaseCred(uint32_t* minorStatus, GssCredI
 Shims the gss_init_sec_context method with SPNEGO oids.
 */
 PALEXPORT uint32_t NetSecurityNative_InitSecContext(uint32_t* minorStatus,
-                                                    GssCredId* claimantCredHandle,
-                                                    GssCtxId** contextHandle,
-                                                    uint32_t isNtlm,
-                                                    GssName* targetName,
-                                                    uint32_t reqFlags,
-                                                    uint8_t* inputBytes,
-                                                    uint32_t inputLength,
-                                                    PAL_GssBuffer* outBuffer,
-                                                    uint32_t* retFlags,
-                                                    int32_t* isNtlmUsed);
+    GssCredId* claimantCredHandle,
+    GssCtxId** contextHandle,
+    uint32_t isNtlm,
+    GssName* targetName,
+    uint32_t reqFlags,
+    uint8_t* inputBytes,
+    uint32_t inputLength,
+    PAL_GssBuffer* outBuffer,
+    uint32_t* retFlags,
+    int32_t* isNtlmUsed);
 
 PALEXPORT uint32_t NetSecurityNative_InitSecContextEx(uint32_t* minorStatus,
-                                                      GssCredId* claimantCredHandle,
-                                                      GssCtxId** contextHandle,
-                                                      uint32_t isNtlm,
-                                                      void* cbt,
-                                                      int32_t cbtSize,
-                                                      GssName* targetName,
-                                                      uint32_t reqFlags,
-                                                      uint8_t* inputBytes,
-                                                      uint32_t inputLength,
-                                                      PAL_GssBuffer* outBuffer,
-                                                      uint32_t* retFlags,
-                                                      int32_t* isNtlmUsed);
+    GssCredId* claimantCredHandle,
+    GssCtxId** contextHandle,
+    uint32_t isNtlm,
+    void* cbt,
+    int32_t cbtSize,
+    GssName* targetName,
+    uint32_t reqFlags,
+    uint8_t* inputBytes,
+    uint32_t inputLength,
+    PAL_GssBuffer* outBuffer,
+    uint32_t* retFlags,
+    int32_t* isNtlmUsed);
 
 /*
 Shims the gss_accept_sec_context method.
 */
 PALEXPORT uint32_t NetSecurityNative_AcceptSecContext(uint32_t* minorStatus,
-                                                      GssCredId* acceptorCredHandle,
-                                                      GssCtxId** contextHandle,
-                                                      uint8_t* inputBytes,
-                                                      uint32_t inputLength,
-                                                      PAL_GssBuffer* outBuffer,
-                                                      uint32_t* retFlags,
-                                                      int32_t* isNtlmUsed);
+    GssCredId* acceptorCredHandle,
+    GssCtxId** contextHandle,
+    uint8_t* inputBytes,
+    uint32_t inputLength,
+    PAL_GssBuffer* outBuffer,
+    uint32_t* retFlags,
+    int32_t* isNtlmUsed);
 
 /*
 
@@ -156,31 +156,31 @@ PALEXPORT uint32_t NetSecurityNative_DeleteSecContext(uint32_t* minorStatus, Gss
 Shims the gss_wrap method.
 */
 PALEXPORT uint32_t NetSecurityNative_Wrap(uint32_t* minorStatus,
-                                          GssCtxId* contextHandle,
-                                          int32_t isEncrypt,
-                                          uint8_t* inputBytes,
-                                          int32_t count,
-                                          PAL_GssBuffer* outBuffer);
+    GssCtxId* contextHandle,
+    int32_t isEncrypt,
+    uint8_t* inputBytes,
+    int32_t count,
+    PAL_GssBuffer* outBuffer);
 
 /*
 Shims the gss_unwrap method.
 */
 PALEXPORT uint32_t NetSecurityNative_Unwrap(uint32_t* minorStatus,
-                                            GssCtxId* contextHandle,
-                                            uint8_t* inputBytes,
-                                            int32_t offset,
-                                            int32_t count,
-                                            PAL_GssBuffer* outBuffer);
+    GssCtxId* contextHandle,
+    uint8_t* inputBytes,
+    int32_t offset,
+    int32_t count,
+    PAL_GssBuffer* outBuffer);
 
 /*
 Shims the gss_acquire_cred_with_password method with GSS_C_INITIATE.
 */
 PALEXPORT uint32_t NetSecurityNative_InitiateCredWithPassword(uint32_t* minorStatus,
-                                                              int32_t isNtlm,
-                                                              GssName* desiredName,
-                                                              char* password,
-                                                              uint32_t passwdLen,
-                                                              GssCredId** outputCredHandle);
+    int32_t isNtlm,
+    GssName* desiredName,
+    char* password,
+    uint32_t passwdLen,
+    GssCredId** outputCredHandle);
 
 /*
 Shims the gss_indicate_mechs method to detect if NTLM mech is installed.
@@ -191,5 +191,5 @@ PALEXPORT uint32_t NetSecurityNative_IsNtlmInstalled(void);
 Shims gss_inquire_context and gss_display_name to get the remote user principal name.
 */
 PALEXPORT uint32_t NetSecurityNative_GetUser(uint32_t* minorStatus,
-                                             GssCtxId* contextHandle,
-                                             PAL_GssBuffer* outBuffer);
+    GssCtxId* contextHandle,
+    PAL_GssBuffer* outBuffer);

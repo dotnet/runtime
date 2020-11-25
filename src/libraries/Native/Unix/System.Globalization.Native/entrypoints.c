@@ -19,7 +19,7 @@ typedef uint16_t UChar;
 #include "pal_timeZoneInfo.h"
 
 #ifndef lengthof
-#define lengthof(rg)    (int)(sizeof(rg)/sizeof(rg[0]))
+#define lengthof(rg) (sizeof(rg)/sizeof(rg[0]))
 #endif
 
 typedef struct
@@ -28,49 +28,53 @@ typedef struct
     const void* method;
 } Entry;
 
-static Entry s_globalizationNative[] =
+// expands to:      {"impl", (void*)impl},
+#define OverrideEntry(impl) \
+    {#impl, (void*)impl},
+
+static const Entry s_globalizationNative[] =
 {
-    {"GlobalizationNative_ChangeCase", (void*)GlobalizationNative_ChangeCase},
-    {"GlobalizationNative_ChangeCaseInvariant", (void*)GlobalizationNative_ChangeCaseInvariant},
-    {"GlobalizationNative_ChangeCaseTurkish", (void*)GlobalizationNative_ChangeCaseTurkish},
-    {"GlobalizationNative_CloseSortHandle", (void*)GlobalizationNative_CloseSortHandle},
-    {"GlobalizationNative_CompareString", (void*)GlobalizationNative_CompareString},
-    {"GlobalizationNative_EndsWith", (void*)GlobalizationNative_EndsWith},
-    {"GlobalizationNative_EnumCalendarInfo", (void*)GlobalizationNative_EnumCalendarInfo},
-    {"GlobalizationNative_GetCalendarInfo", (void*)GlobalizationNative_GetCalendarInfo},
-    {"GlobalizationNative_GetCalendars", (void*)GlobalizationNative_GetCalendars},
-    {"GlobalizationNative_GetDefaultLocaleName", (void*)GlobalizationNative_GetDefaultLocaleName},
-    {"GlobalizationNative_GetICUVersion", (void*)GlobalizationNative_GetICUVersion},
-    {"GlobalizationNative_GetJapaneseEraStartDate", (void*)GlobalizationNative_GetJapaneseEraStartDate},
-    {"GlobalizationNative_GetLatestJapaneseEra", (void*)GlobalizationNative_GetLatestJapaneseEra},
-    {"GlobalizationNative_GetLocaleInfoGroupingSizes", (void*)GlobalizationNative_GetLocaleInfoGroupingSizes},
-    {"GlobalizationNative_GetLocaleInfoInt", (void*)GlobalizationNative_GetLocaleInfoInt},
-    {"GlobalizationNative_GetLocaleInfoString", (void*)GlobalizationNative_GetLocaleInfoString},
-    {"GlobalizationNative_GetLocaleName", (void*)GlobalizationNative_GetLocaleName},
-    {"GlobalizationNative_GetLocales", (void*)GlobalizationNative_GetLocales},
-    {"GlobalizationNative_GetLocaleTimeFormat", (void*)GlobalizationNative_GetLocaleTimeFormat},
-    {"GlobalizationNative_GetSortHandle", (void*)GlobalizationNative_GetSortHandle},
-    {"GlobalizationNative_GetSortKey", (void*)GlobalizationNative_GetSortKey},
-    {"GlobalizationNative_GetSortVersion", (void*)GlobalizationNative_GetSortVersion},
-    {"GlobalizationNative_GetTimeZoneDisplayName", (void*)GlobalizationNative_GetTimeZoneDisplayName},
-    {"GlobalizationNative_IndexOf", (void*)GlobalizationNative_IndexOf},
-    {"GlobalizationNative_InitICUFunctions", (void*)GlobalizationNative_InitICUFunctions},
-    {"GlobalizationNative_InitOrdinalCasingPage", (void*)GlobalizationNative_InitOrdinalCasingPage},
-    {"GlobalizationNative_IsNormalized", (void*)GlobalizationNative_IsNormalized},
-    {"GlobalizationNative_IsPredefinedLocale", (void*)GlobalizationNative_IsPredefinedLocale},
-    {"GlobalizationNative_LastIndexOf", (void*)GlobalizationNative_LastIndexOf},
-    {"GlobalizationNative_LoadICU", (void*)GlobalizationNative_LoadICU},
-    {"GlobalizationNative_NormalizeString", (void*)GlobalizationNative_NormalizeString},
-    {"GlobalizationNative_StartsWith", (void*)GlobalizationNative_StartsWith},
-    {"GlobalizationNative_ToAscii", (void*)GlobalizationNative_ToAscii},
-    {"GlobalizationNative_ToUnicode", (void*)GlobalizationNative_ToUnicode},
+    OverrideEntry(GlobalizationNative_ChangeCase)
+    OverrideEntry(GlobalizationNative_ChangeCaseInvariant)
+    OverrideEntry(GlobalizationNative_ChangeCaseTurkish)
+    OverrideEntry(GlobalizationNative_CloseSortHandle)
+    OverrideEntry(GlobalizationNative_CompareString)
+    OverrideEntry(GlobalizationNative_EndsWith)
+    OverrideEntry(GlobalizationNative_EnumCalendarInfo)
+    OverrideEntry(GlobalizationNative_GetCalendarInfo)
+    OverrideEntry(GlobalizationNative_GetCalendars)
+    OverrideEntry(GlobalizationNative_GetDefaultLocaleName)
+    OverrideEntry(GlobalizationNative_GetICUVersion)
+    OverrideEntry(GlobalizationNative_GetJapaneseEraStartDate)
+    OverrideEntry(GlobalizationNative_GetLatestJapaneseEra)
+    OverrideEntry(GlobalizationNative_GetLocaleInfoGroupingSizes)
+    OverrideEntry(GlobalizationNative_GetLocaleInfoInt)
+    OverrideEntry(GlobalizationNative_GetLocaleInfoString)
+    OverrideEntry(GlobalizationNative_GetLocaleName)
+    OverrideEntry(GlobalizationNative_GetLocales)
+    OverrideEntry(GlobalizationNative_GetLocaleTimeFormat)
+    OverrideEntry(GlobalizationNative_GetSortHandle)
+    OverrideEntry(GlobalizationNative_GetSortKey)
+    OverrideEntry(GlobalizationNative_GetSortVersion)
+    OverrideEntry(GlobalizationNative_GetTimeZoneDisplayName)
+    OverrideEntry(GlobalizationNative_IndexOf)
+    OverrideEntry(GlobalizationNative_InitICUFunctions)
+    OverrideEntry(GlobalizationNative_InitOrdinalCasingPage)
+    OverrideEntry(GlobalizationNative_IsNormalized)
+    OverrideEntry(GlobalizationNative_IsPredefinedLocale)
+    OverrideEntry(GlobalizationNative_LastIndexOf)
+    OverrideEntry(GlobalizationNative_LoadICU)
+    OverrideEntry(GlobalizationNative_NormalizeString)
+    OverrideEntry(GlobalizationNative_StartsWith)
+    OverrideEntry(GlobalizationNative_ToAscii)
+    OverrideEntry(GlobalizationNative_ToUnicode)
 };
 
 EXTERN_C const void* GlobalizationResolveDllImport(const char* name);
 
 EXTERN_C const void* GlobalizationResolveDllImport(const char* name)
 {
-    for (int i = 0; i < lengthof(s_globalizationNative); i++)
+    for (size_t i = 0; i < lengthof(s_globalizationNative); i++)
     {
         if (strcmp(name, s_globalizationNative[i].name) == 0)
         {

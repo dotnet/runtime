@@ -29,7 +29,7 @@ typedef struct MonoLookupPInvokeStatus {
 } MonoLookupPInvokeStatus;
 
 gpointer
-mono_lookup_pinvoke_qcall_internal (MonoMethod *method, const char* dllentry, MonoLookupPInvokeStatus *error);
+mono_lookup_pinvoke_qcall_internal (MonoMethod *method, MonoLookupPInvokeStatus *error);
 
 typedef struct MonoQCallDef
 {

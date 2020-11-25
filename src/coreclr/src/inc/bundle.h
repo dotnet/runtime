@@ -3,7 +3,7 @@
 
 /*****************************************************************************
  **                                                                         **
- ** bundle.h - Information about applications bundled as a single-file  **
+ ** bundle.h - Information about applications bundled as a single-file      **
  **                                                                         **
  *****************************************************************************/
 
@@ -34,7 +34,7 @@ struct BundleFileLocation
     bool IsValid() const { LIMITED_METHOD_CONTRACT; return Offset != 0; }
 };
 
-typedef bool(__stdcall BundleProbe)(LPCSTR, INT64*, INT64*);
+typedef bool(BundleProbe)(LPCSTR, INT64*, INT64*);
 
 class Bundle
 {
@@ -59,4 +59,3 @@ private:
 };
 
 #endif // _BUNDLE_H_
-// EOF =======================================================================

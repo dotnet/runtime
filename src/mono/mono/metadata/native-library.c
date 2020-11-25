@@ -49,6 +49,10 @@ static GHashTable *native_library_module_map;
 static GHashTable *native_library_module_blocklist;
 #endif
 
+#if defined(ENABLE_NETCORE) && !defined(NO_GLOBALIZATION_SHIM)
+extern const void* GlobalizationResolveDllImport(const char* name);
+#endif
+
 #ifndef DISABLE_DLLMAP
 static MonoDllMap *global_dll_map;
 #endif
@@ -1323,8 +1327,8 @@ lookup_pinvoke_call_impl (MonoMethod *method, MonoLookupPInvokeStatus *status_ou
 
 	/* If qcalls are disabled, we fall back to the normal pinvoke code for them */
 #ifndef DISABLE_QCALLS
-	if (strcmp (new_scope, "QCall") == 0 || strcmp(new_scope, "libSystem.Globalization.Native") == 0) {
-		piinfo->addr = mono_lookup_pinvoke_qcall_internal (method, new_import, status_out);
+	if (strcmp (new_scope, "QCall") == 0) {
+		piinfo->addr = mono_lookup_pinvoke_qcall_internal (method, status_out);
 		if (!piinfo->addr) {
 			mono_trace (G_LOG_LEVEL_WARNING, MONO_TRACE_DLLIMPORT,
 						"Unable to find qcall for '%s'.",
@@ -1333,6 +1337,16 @@ lookup_pinvoke_call_impl (MonoMethod *method, MonoLookupPInvokeStatus *status_ou
 			status_out->err_arg = g_strdup (new_import);
 		}
 		return piinfo->addr;
+	}
+#endif
+
+#if defined(ENABLE_NETCORE) && !defined(NO_GLOBALIZATION_SHIM)
+	if (strcmp(new_scope, "libSystem.Globalization.Native") == 0) {
+		const void* method_impl = GlobalizationResolveDllImport(new_import);
+		if (method_impl)
+		{
+			return (gpointer)method_impl;
+		}
 	}
 #endif
 

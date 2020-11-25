@@ -6510,7 +6510,7 @@ VOID NDirect::NDirectLink(NDirectMethodDesc *pMD)
     pMD->EnsureActive();
 
     {
-        LPVOID pvTarget = (LPVOID)PInvokeOverride::TryGetMethodImpl(pMD->GetLibNameRaw(), pMD->GetEntrypointName());
+        LPVOID pvTarget = (LPVOID)PInvokeOverride::GetMethodImpl(pMD->GetLibNameRaw(), pMD->GetEntrypointName());
         if (pvTarget != NULL)
         {
             pMD->SetNDirectTarget(pvTarget);
