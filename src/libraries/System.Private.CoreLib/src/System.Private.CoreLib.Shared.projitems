@@ -1112,6 +1112,9 @@
     <Compile Include="$(CommonPath)System\Obsoletions.cs">
       <Link>Common\System\Obsoletions.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)System\Sha1ForNonSecretPurposes.cs">
+      <Link>Common\System\Sha1ForNonSecretPurposes.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)System\SR.cs">
       <Link>Common\System\SR.cs</Link>
     </Compile>
