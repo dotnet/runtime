@@ -416,14 +416,20 @@ CONFIG_INTEGER(JitEnableGuardedDevirtualization, W("JitEnableGuardedDevirtualiza
 
 #if defined(DEBUG)
 // Various policies for GuardedDevirtualization
+CONFIG_STRING(JitGuardedDevirtualizationRange, W("JitGuardedDevirtualizationRange"))
 CONFIG_INTEGER(JitGuardedDevirtualizationGuessUniqueInterface, W("JitGuardedDevirtualizationGuessUniqueInterface"), 1)
 CONFIG_INTEGER(JitGuardedDevirtualizationGuessBestClass, W("JitGuardedDevirtualizationGuessBestClass"), 1)
+CONFIG_INTEGER(JitGuardedDeivrtualizationUseProfile, W("JitGuardedDevirtualizationUseProfile"), 0)
 #endif // DEBUG
 
 // Enable insertion of patchpoints into Tier0 methods with loops.
 CONFIG_INTEGER(TC_OnStackReplacement, W("TC_OnStackReplacement"), 0)
 // Initial patchpoint counter value used by jitted code
 CONFIG_INTEGER(TC_OnStackReplacement_InitialCounter, W("TC_OnStackReplacement_InitialCounter"), 1000)
+
+// Profile instrumentation options
+CONFIG_INTEGER(JitMinimalProfiling, W("JitMinimalProfiling"), 0)
+CONFIG_INTEGER(JitClassProfiling, W("JitClassProfiling"), 0)
 
 #if defined(DEBUG)
 // JitFunctionFile: Name of a file that contains a list of functions. If the currently compiled function is in the

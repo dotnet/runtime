@@ -448,6 +448,7 @@ struct BasicBlock : private LIR::Range
 
 #define BBF_BACKWARD_JUMP_TARGET           MAKE_BBFLAG(36) // Block is a target of a backward jump
 #define BBF_PATCHPOINT                     MAKE_BBFLAG(37) // Block is a patchpoint
+#define BBF_HAS_CLASS_PROFILE              MAKE_BBFLAG(38) // BB contains a call needing a class profile
 
 // clang-format on
 
@@ -492,7 +493,7 @@ struct BasicBlock : private LIR::Range
 #define BBF_SPLIT_GAINED                                                                                               \
     (BBF_DONT_REMOVE | BBF_HAS_LABEL | BBF_HAS_JMP | BBF_BACKWARD_JUMP | BBF_HAS_IDX_LEN | BBF_HAS_NEWARRAY |          \
      BBF_PROF_WEIGHT | BBF_HAS_NEWOBJ | BBF_KEEP_BBJ_ALWAYS | BBF_CLONED_FINALLY_END | BBF_HAS_NULLCHECK |             \
-     BBF_HAS_VTABREF)
+     BBF_HAS_VTABREF | BBF_HAS_CLASS_PROFILE)
 
 #ifndef __GNUC__ // GCC doesn't like C_ASSERT at global scope
     static_assert_no_msg((BBF_SPLIT_NONEXIST & BBF_SPLIT_LOST) == 0);

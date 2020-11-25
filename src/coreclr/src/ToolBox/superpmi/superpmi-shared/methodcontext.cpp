@@ -5265,6 +5265,48 @@ HRESULT MethodContext::repGetMethodBlockCounts(CORINFO_METHOD_HANDLE        ftnH
     return result;
 }
 
+void MethodContext::recGetLikelyClass(CORINFO_METHOD_HANDLE ftnHnd, CORINFO_CLASS_HANDLE baseHnd, UINT32 ilOffset, CORINFO_CLASS_HANDLE result, UINT32* pLikelihood, UINT32* pNumberOfClasses)
+{
+    if (GetLikelyClass == nullptr)
+        GetLikelyClass = new LightWeightMap<Agnostic_GetLikelyClass, Agnostic_GetLikelyClassResult>();
+
+    Agnostic_GetLikelyClass key;
+    ZeroMemory(&key, sizeof(Agnostic_GetLikelyClass));
+
+    key.ftnHnd = (DWORDLONG) ftnHnd;
+    key.baseHnd = (DWORDLONG) baseHnd;
+    key.ilOffset = (DWORD) ilOffset;
+
+    Agnostic_GetLikelyClassResult value;
+    ZeroMemory(&value, sizeof(Agnostic_GetLikelyClassResult));
+    value.classHnd = (DWORDLONG) result;
+    value.likelihood = *pLikelihood;
+    value.numberOfClasses = *pNumberOfClasses;
+
+    GetLikelyClass->Add(key, value);
+    DEBUG_REC(dmpGetLikelyClass(key, value));
+}
+void MethodContext::dmpGetLikelyClass(const Agnostic_GetLikelyClass& key, const Agnostic_GetLikelyClassResult& value)
+{
+    printf("GetLikelyClass key ftn-%016llX base-%016llX il-%u, class-%016llX likelihood-%u numberOfClasses-%u", 
+        key.ftnHnd, key.baseHnd, key.ilOffset, value.classHnd, value.likelihood, value.numberOfClasses);
+}
+CORINFO_CLASS_HANDLE MethodContext::repGetLikelyClass(CORINFO_METHOD_HANDLE ftnHnd, CORINFO_CLASS_HANDLE baseHnd, UINT32 ilOffset, UINT32* pLikelihood, UINT32* pNumberOfClasses)
+{
+    Agnostic_GetLikelyClass key;
+    ZeroMemory(&key, sizeof(Agnostic_GetLikelyClass));
+    key.ftnHnd = (DWORDLONG) ftnHnd;
+    key.baseHnd = (DWORDLONG) baseHnd;
+    key.ilOffset = (DWORD) ilOffset;
+
+    Agnostic_GetLikelyClassResult value = GetLikelyClass->Get(key);
+    DEBUG_REP(dmpGetLikelyClass(key, value));
+
+    *pLikelihood = value.likelihood;
+    *pNumberOfClasses = value.numberOfClasses;
+    return (CORINFO_CLASS_HANDLE) value.classHnd;
+}
+
 void MethodContext::recMergeClasses(CORINFO_CLASS_HANDLE cls1, CORINFO_CLASS_HANDLE cls2, CORINFO_CLASS_HANDLE result)
 {
     if (MergeClasses == nullptr)
