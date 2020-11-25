@@ -16,20 +16,28 @@ const char* const         PgoManager::s_RecordString = "ilOffs %u count %u\n";
 const char* const         PgoManager::s_ClassProfileHeader = "classProfile iloffs %u samples %u entries %u totalCount %u %s\n";
 const char* const         PgoManager::s_ClassProfileEntry = "class %p (%s) count %u\n";
 
+// Data item in class profile histogram
+//
 struct HistogramEntry
 {
+    // Class that was observed at runtime
     CORINFO_CLASS_HANDLE m_mt;
+    // Number of observations in the table
     unsigned             m_count;
 };
 
+// Summarizes a ClassProfile table by forming a Histogram
+//
 struct Histogram
 {
     Histogram(const ICorJitInfo::ClassProfile* classProfile);
 
-    // Number of nonzero entries in the table
+    // Number of nonzero entries in the histogram
     unsigned m_count;
-    // Total count from all entries in the table
+    // Sum of counts from all entries in the histogram
     unsigned m_totalCount;
+    // Histogram entries, in no particular order.
+    // The first m_count of these will be valid.
     HistogramEntry m_histogram[ICorJitInfo::ClassProfile::SIZE];
 };
 
@@ -479,6 +487,12 @@ HRESULT PgoManager::getMethodBlockCounts(MethodDesc* pMD, unsigned ilSize, UINT3
     return E_NOTIMPL;
 }
 
+// See if there is a class profile for this method at the indicated il Offset.
+// If so, return the most frequently seen class, along with the likelihood that
+// it was the class seen, and the total number of classes seen.
+//
+// Return NULL if there is no profile data to be found.
+//
 CORINFO_CLASS_HANDLE PgoManager::getLikelyClass(MethodDesc* pMD, unsigned ilSize, unsigned ilOffset, UINT32* pLikelihood, UINT32* pNumberOfClasses)
 {
     *pLikelihood = 0;
