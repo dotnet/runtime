@@ -1481,12 +1481,12 @@ namespace System.Diagnostics.Tracing
 #endif
 #if FEATURE_MANAGED_ETW
                 // Register the provider with ETW
-                var etwProvider = new OverideEventProvider(this, EventProviderType.ETW);
+                var etwProvider = new OverrideEventProvider(this, EventProviderType.ETW);
                 etwProvider.Register(this);
 #endif
 #if FEATURE_PERFTRACING
                 // Register the provider with EventPipe
-                var eventPipeProvider = new OverideEventProvider(this, EventProviderType.EventPipe);
+                var eventPipeProvider = new OverrideEventProvider(this, EventProviderType.EventPipe);
                 lock (EventListener.EventListenersLock)
                 {
                     eventPipeProvider.Register(this);
@@ -2444,9 +2444,9 @@ namespace System.Diagnostics.Tracing
         /// <summary>
         /// This class lets us hook the 'OnEventCommand' from the eventSource.
         /// </summary>
-        private class OverideEventProvider : EventProvider
+        private class OverrideEventProvider : EventProvider
         {
-            public OverideEventProvider(EventSource eventSource, EventProviderType providerType)
+            public OverrideEventProvider(EventSource eventSource, EventProviderType providerType)
                 : base(providerType)
             {
                 this.m_eventSource = eventSource;
@@ -3774,12 +3774,12 @@ namespace System.Diagnostics.Tracing
         // Dispatching state
         internal volatile EventDispatcher? m_Dispatchers;    // Linked list of code:EventDispatchers we write the data to (we also do ETW specially)
 #if FEATURE_MANAGED_ETW
-        private volatile OverideEventProvider m_etwProvider = null!;   // This hooks up ETW commands to our 'OnEventCommand' callback
+        private volatile OverrideEventProvider m_etwProvider = null!;   // This hooks up ETW commands to our 'OnEventCommand' callback
 #endif
 #if FEATURE_PERFTRACING
         private object? m_createEventLock;
         private IntPtr m_writeEventStringEventHandle = IntPtr.Zero;
-        private volatile OverideEventProvider m_eventPipeProvider = null!;
+        private volatile OverrideEventProvider m_eventPipeProvider = null!;
 #endif
         private bool m_completelyInited;                // The EventSource constructor has returned without exception.
         private Exception? m_constructionException;      // If there was an exception construction, this is it

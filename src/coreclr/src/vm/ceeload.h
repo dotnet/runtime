@@ -3282,7 +3282,7 @@ public:
     void Destruct();
 #endif // !DACCESS_COMPILE && !CROSSGEN_COMPILE
 
-    // Overides functions to access sections
+    // Overrides functions to access sections
     virtual TADDR GetIL(RVA target);
     virtual PTR_VOID GetRvaField(RVA rva, BOOL fZapped);
 
