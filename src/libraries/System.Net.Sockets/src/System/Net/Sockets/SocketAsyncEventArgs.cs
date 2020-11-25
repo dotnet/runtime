@@ -813,11 +813,17 @@ namespace System.Net.Sockets
                     }
 
                     // Complete the operation.
-                    if (SocketsTelemetry.Log.IsEnabled() && !_disableTelemetry) LogBytesTransferEvents(_connectSocket?.SocketType, SocketAsyncOperation.Connect, internalArgs.BytesTransferred);
+                    if (SocketsTelemetry.Log.IsEnabled() && !_disableTelemetry)
+                    {
+                        LogBytesTransferEvents(_connectSocket?.SocketType, SocketAsyncOperation.Connect, internalArgs.BytesTransferred);
+                        AfterConnectAcceptTelemetry();
+                    }
                     Complete();
 
-                    // If the caller is treating this operation as pending, own the completion.
+                    // Clean up after our temporary arguments.
                     internalArgs.Dispose();
+
+                    // If the caller is treating this operation as pending, own the completion.
                     if (!internalArgs.ReachedCoordinationPointFirst())
                     {
                         // Regardless of _flowExecutionContext, context will have been flown through this async method, as that's part
@@ -825,7 +831,7 @@ namespace System.Net.Sockets
                         // the completion callback.  This method may have even mutated the ExecutionContext, in which case for telemetry
                         // we need those mutations to be surfaced as part of this callback, so that logging performed here sees those
                         // mutations (e.g. to the current Activity).
-                        OnCompletedInternal();
+                        OnCompleted(this);
                     }
                 }
             }
