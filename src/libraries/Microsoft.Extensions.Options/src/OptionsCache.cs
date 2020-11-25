@@ -15,7 +15,7 @@ namespace Microsoft.Extensions.Options
         IOptionsMonitorCache<TOptions>
         where TOptions : class
     {
-        private readonly ConcurrentDictionary<string, Lazy<TOptions>> _cache = new ConcurrentDictionary<string, Lazy<TOptions>>(concurrencyLevel: 1, capacity: 31, StringComparer.Ordinal);
+        private readonly ConcurrentDictionary<string, Lazy<TOptions>> _cache = new ConcurrentDictionary<string, Lazy<TOptions>>(concurrencyLevel: 1, capacity: 31, StringComparer.Ordinal); // 31 == default capacity
 
         /// <summary>
         /// Clears all options instances from the cache.
