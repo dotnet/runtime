@@ -1657,6 +1657,7 @@ namespace System.Net.Http.Functional.Tests
         [OuterLoop("Significant delay.")]
         [MemberData(nameof(KeepAliveTestDataSource))]
         [ConditionalTheory(nameof(SupportsAlpn))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/41929")]
         public async Task Http2_PingKeepAlive(TimeSpan keepAlivePingDelay, HttpKeepAlivePingPolicy keepAlivePingPolicy, bool expectRequestFail)
         {
             TimeSpan pingTimeout = TimeSpan.FromSeconds(5);
