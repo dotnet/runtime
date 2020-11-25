@@ -271,6 +271,10 @@ namespace System
             return div;
         }
 
+        /// <summary>Produces the quotient and the remainder of two signed 8-bit numbers.</summary>
+        /// <param name="left">The dividend.</param>
+        /// <param name="right">The divisor.</param>
+        /// <returns>The quotient and the remainder of the specified numbers.</returns>
         [NonVersionable]
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -280,6 +284,10 @@ namespace System
             return (quotient, (sbyte)(left - (quotient * right)));
         }
 
+        /// <summary>Produces the quotient and the remainder of two unsigned 8-bit numbers.</summary>
+        /// <param name="left">The dividend.</param>
+        /// <param name="right">The divisor.</param>
+        /// <returns>The quotient and the remainder of the specified numbers.</returns>
         [NonVersionable]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static (byte Quotient, byte Remainder) DivRem(byte left, byte right)
@@ -288,6 +296,10 @@ namespace System
             return (quotient, (byte)(left - (quotient * right)));
         }
 
+        /// <summary>Produces the quotient and the remainder of two signed 16-bit numbers.</summary>
+        /// <param name="left">The dividend.</param>
+        /// <param name="right">The divisor.</param>
+        /// <returns>The quotient and the remainder of the specified numbers.</returns>
         [NonVersionable]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static (short Quotient, short Remainder) DivRem(short left, short right)
@@ -296,6 +308,10 @@ namespace System
             return (quotient, (short)(left - (quotient * right)));
         }
 
+        /// <summary>Produces the quotient and the remainder of two unsigned 16-bit numbers.</summary>
+        /// <param name="left">The dividend.</param>
+        /// <param name="right">The divisor.</param>
+        /// <returns>The quotient and the remainder of the specified numbers.</returns>
         [NonVersionable]
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -305,6 +321,10 @@ namespace System
             return (quotient, (ushort)(left - (quotient * right)));
         }
 
+        /// <summary>Produces the quotient and the remainder of two signed 32-bit numbers.</summary>
+        /// <param name="left">The dividend.</param>
+        /// <param name="right">The divisor.</param>
+        /// <returns>The quotient and the remainder of the specified numbers.</returns>
         [NonVersionable]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static (int Quotient, int Remainder) DivRem(int left, int right)
@@ -313,6 +333,10 @@ namespace System
             return (quotient, left - (quotient * right));
         }
 
+        /// <summary>Produces the quotient and the remainder of two unsigned 32-bit numbers.</summary>
+        /// <param name="left">The dividend.</param>
+        /// <param name="right">The divisor.</param>
+        /// <returns>The quotient and the remainder of the specified numbers.</returns>
         [NonVersionable]
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -322,6 +346,10 @@ namespace System
             return (quotient, left - (quotient * right));
         }
 
+        /// <summary>Produces the quotient and the remainder of two signed 64-bit numbers.</summary>
+        /// <param name="left">The dividend.</param>
+        /// <param name="right">The divisor.</param>
+        /// <returns>The quotient and the remainder of the specified numbers.</returns>
         [NonVersionable]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static (long Quotient, long Remainder) DivRem(long left, long right)
@@ -330,6 +358,10 @@ namespace System
             return (quotient, left - (quotient * right));
         }
 
+        /// <summary>Produces the quotient and the remainder of two unsigned 64-bit numbers.</summary>
+        /// <param name="left">The dividend.</param>
+        /// <param name="right">The divisor.</param>
+        /// <returns>The quotient and the remainder of the specified numbers.</returns>
         [NonVersionable]
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -339,6 +371,10 @@ namespace System
             return (quotient, left - (quotient * right));
         }
 
+        /// <summary>Produces the quotient and the remainder of two signed native-size numbers.</summary>
+        /// <param name="left">The dividend.</param>
+        /// <param name="right">The divisor.</param>
+        /// <returns>The quotient and the remainder of the specified numbers.</returns>
         [NonVersionable]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static (nint Quotient, nint Remainder) DivRem(nint left, nint right)
@@ -347,6 +383,10 @@ namespace System
             return (quotient, left - (quotient * right));
         }
 
+        /// <summary>Produces the quotient and the remainder of two unsigned native-size numbers.</summary>
+        /// <param name="left">The dividend.</param>
+        /// <param name="right">The divisor.</param>
+        /// <returns>The quotient and the remainder of the specified numbers.</returns>
         [NonVersionable]
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
