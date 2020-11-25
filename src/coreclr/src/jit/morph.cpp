@@ -2958,8 +2958,6 @@ void Compiler::fgInitArgInfo(GenTreeCall* call)
         bool passUsingFloatRegs;
 #if !defined(OSX_ARM64_ABI)
         unsigned argAlignBytes = TARGET_POINTER_SIZE;
-#else
-        unsigned argAlignBytes = TARGET_POINTER_SIZE; // TODO-OSX-ARM64: change it after other changes are merged.
 #endif
         unsigned             size          = 0;
         unsigned             byteSize      = 0;
@@ -3210,6 +3208,21 @@ void Compiler::fgInitArgInfo(GenTreeCall* call)
         // The 'size' value has now must have been set. (the original value of zero is an invalid value)
         assert(size != 0);
         assert(byteSize != 0);
+
+#if defined(OSX_ARM64_ABI)
+        // Arm64 Apple has special ABI for passing small size arguments on stack,
+        // bytes are aligned to 1-byte, shorts to 2-byte, int/float to 4-byte, etc.
+        // It means passing 8 1-byte arguments on stack can take as small as 8 bytes.
+        unsigned argAlignBytes;
+        if (isStructArg)
+        {
+            argAlignBytes = TARGET_POINTER_SIZE;
+        }
+        else
+        {
+            argAlignBytes = byteSize;
+        }
+#endif
 
         //
         // Figure out if the argument will be passed in a register.
