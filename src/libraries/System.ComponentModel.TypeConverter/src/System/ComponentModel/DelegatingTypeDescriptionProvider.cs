@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections;
-using System.Runtime.Versioning;
 
 namespace System.ComponentModel
 {
@@ -32,7 +31,6 @@ namespace System.ComponentModel
         /// data type. If the method is not interested in providing a substitute
         /// instance, it should call base.
         /// </summary>
-        [UnsupportedOSPlatform("browser")]
         public override object CreateInstance(IServiceProvider provider, Type objectType, Type[] argTypes, object[] args)
         {
             return Provider.CreateInstance(provider, objectType, argTypes, args);
