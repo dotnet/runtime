@@ -20520,7 +20520,7 @@ bool Compiler::IsMathIntrinsic(GenTree* tree)
 //     method   -- [IN/OUT] the method handle for call. Updated iff call devirtualized.
 //     methodFlags -- [IN/OUT] flags for the method to call. Updated iff call devirtualized.
 //     contextHandle -- [IN/OUT] context handle for the call. Updated iff call devirtualized.
-//     exactContextHnd -- [OUT] updated context handle iff call devirtualized
+//     exactContextHandle -- [OUT] updated context handle iff call devirtualized
 //     isLateDevirtualization -- if devirtualization is happening after importation
 //     isExplicitTailCalll -- [IN] true if we plan on using an explicit tail call
 //     ilOffset -- IL offset of the call
@@ -20749,16 +20749,9 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
     //   IL_021e:  callvirt   instance int32 System.Object::GetHashCode()
     //
     // If so, we can't devirtualize, but we may be able to do guarded devirtualization.
+    //
     if ((objClassAttribs & CORINFO_FLG_INTERFACE) != 0)
     {
-        // If we're called during early devirtualiztion, attempt guarded devirtualization
-        // if there's currently just one implementing class.
-        if (exactContextHandle == nullptr)
-        {
-            JITDUMP("--- obj class is interface...unable to dervirtualize, sorry\n");
-            return;
-        }
-
         // Don't try guarded devirtualiztion when we're doing late devirtualization.
         //
         if (isLateDevirtualization)
@@ -20767,7 +20760,7 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
             return;
         }
 
-        JITDUMP("Consdering guarded devirt...\n");
+        JITDUMP("Considering guarded devirt...\n");
 
         // See if the runtime can provide a class to guess for.
         //
@@ -20813,6 +20806,8 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
             return;
         }
 
+        JITDUMP("%s call would invoke method %s\n", callKind, eeGetMethodName(likelyMethod, nullptr));
+
         // Some of these may be redundant
         //
         DWORD likelyMethodAttribs = info.compCompHnd->getMethodAttribs(likelyMethod);
@@ -20833,62 +20828,73 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
         JITDUMP("--- base class is interface\n");
     }
 
-    // Fetch the method that would be called based on the declared type of 'this'
+    // Fetch the method that would be called based on the declared type of 'this',
+    // and prepare to fetch the method attributes.
+    //
     CORINFO_CONTEXT_HANDLE ownerType     = *contextHandle;
     CORINFO_METHOD_HANDLE  derivedMethod = info.compCompHnd->resolveVirtualMethod(baseMethod, objClass, ownerType);
 
-    // If we failed to get a handle, we can't devirtualize.  This can
-    // happen when prejitting, if the devirtualization crosses
-    // servicing bubble boundaries.
-    //
-    // Note if we have some way of guessing a better and more likely type we can do something similar to the code
-    // above for the case where the best jit type is an interface type.
-    if (derivedMethod == nullptr)
-    {
-        JITDUMP("--- no derived method, sorry\n");
-        return;
-    }
-
-    // Fetch method attributes to see if method is marked final.
-    DWORD      derivedMethodAttribs = info.compCompHnd->getMethodAttribs(derivedMethod);
-    const bool derivedMethodIsFinal = ((derivedMethodAttribs & CORINFO_FLG_FINAL) != 0);
+    DWORD derivedMethodAttribs = 0;
+    bool  derivedMethodIsFinal = false;
+    bool  canDevirtualize      = false;
 
 #if defined(DEBUG)
     const char* derivedClassName  = "?derivedClass";
     const char* derivedMethodName = "?derivedMethod";
+    const char* note              = "inexact or not final";
+#endif
 
-    const char* note = "inexact or not final";
-    if (isExact)
+    // If we failed to get a method handle, we can't directly devirtualize.
+    //
+    // This can happen when prejitting, if the devirtualization crosses
+    // servicing bubble boundaries, or if objClass is a shared class.
+    //
+    if (derivedMethod == nullptr)
     {
-        note = "exact";
+        JITDUMP("--- no derived method\n");
     }
-    else if (objClassIsFinal)
+    else
     {
-        note = "final class";
-    }
-    else if (derivedMethodIsFinal)
-    {
-        note = "final method";
-    }
+        // Fetch method attributes to see if method is marked final.
+        derivedMethodAttribs = info.compCompHnd->getMethodAttribs(derivedMethod);
+        derivedMethodIsFinal = ((derivedMethodAttribs & CORINFO_FLG_FINAL) != 0);
 
-    if (verbose || doPrint)
-    {
-        derivedMethodName = eeGetMethodName(derivedMethod, &derivedClassName);
-        if (verbose)
+#if defined(DEBUG)
+        if (isExact)
         {
-            printf("    devirt to %s::%s -- %s\n", derivedClassName, derivedMethodName, note);
-            gtDispTree(call);
+            note = "exact";
         }
-    }
+        else if (objClassIsFinal)
+        {
+            note = "final class";
+        }
+        else if (derivedMethodIsFinal)
+        {
+            note = "final method";
+        }
+
+        if (verbose || doPrint)
+        {
+            derivedMethodName = eeGetMethodName(derivedMethod, &derivedClassName);
+            if (verbose)
+            {
+                printf("    devirt to %s::%s -- %s\n", derivedClassName, derivedMethodName, note);
+                gtDispTree(call);
+            }
+        }
 #endif // defined(DEBUG)
 
-    const bool canDevirtualize = isExact || objClassIsFinal || (!isInterface && derivedMethodIsFinal);
+        canDevirtualize = isExact || objClassIsFinal || (!isInterface && derivedMethodIsFinal);
+    }
 
+    // We still might be able to do a guarded devirtualization.
+    // Note the call might be an interface call or a virtual call.
+    //
     if (!canDevirtualize)
     {
         JITDUMP("    Class not final or exact%s\n", isInterface ? "" : ", and method not final");
 
-        // Don't try guarded devirtualiztion when we're doing late devirtualization.
+        // Don't try guarded devirtualiztion if we're doing late devirtualization.
         //
         if (isLateDevirtualization)
         {
@@ -20900,12 +20906,9 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
 
         // See if there's a likely guess for the class.
         //
-        // pass objClass here, or baseClass?
-        // always query, or do so under condition?
-        //
-        const unsigned       virtualLikelihoodThreshold = 30;
-        unsigned             likelihood                 = 0;
-        unsigned             numberOfClasses            = 0;
+        const unsigned       likelihoodThreshold = isInterface ? 25 : 30;
+        unsigned             likelihood          = 0;
+        unsigned             numberOfClasses     = 0;
         CORINFO_CLASS_HANDLE likelyClass =
             info.compCompHnd->getLikelyClass(info.compMethodHnd, baseClass, ilOffset, &likelihood, &numberOfClasses);
 
@@ -20914,9 +20917,11 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
             JITDUMP("Likely class for %p (%s) is %p (%s) [likelihood:%u classes seen:%u]\n", dspPtr(objClass),
                     objClassName, likelyClass, eeGetClassName(likelyClass), likelihood, numberOfClasses);
         }
-        else
+        else if (derivedMethod != nullptr)
         {
-            // Have we enabled guarded devirtualization by guessing the jit's best class?
+            // If we have a derived method we can optionally guess for
+            // the class that introduces the method.
+            //
             bool guessJitBestClass = true;
             INDEBUG(guessJitBestClass = (JitConfig.JitGuardedDevirtualizationGuessBestClass() > 0););
 
@@ -20927,12 +20932,12 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
             }
 
             // We will use the class that introduced the method as our guess
-            // for the runtime class of othe object.
+            // for the runtime class of the object.
             //
             // We don't know now likely this is; just choose a value that gets
-            // past the threshold.
+            // us past the threshold.
             likelyClass = info.compCompHnd->getMethodClass(derivedMethod);
-            likelihood  = virtualLikelihoodThreshold;
+            likelihood  = likelihoodThreshold;
 
             JITDUMP("Will guess implementing class for class %p (%s) is %p (%s)!\n", dspPtr(objClass), objClassName,
                     likelyClass, eeGetClassName(likelyClass));
@@ -20941,13 +20946,13 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
         // Todo: a more advanced heuristic using likelihood, number of
         // classes, and the profile count for this block.
         //
-        // For now we will guess if the likelihood is 30% or more, as studies
-        // have shown this should pay off for interface calls.
+        // For now we will guess if the likelihood is at least 25%/30% (intfc/virt), as studies
+        // have shown this transformation should pay off even if we guess wrong sometimes.
         //
-        if (likelihood < virtualLikelihoodThreshold)
+        if (likelihood < likelihoodThreshold)
         {
-            JITDUMP("Not guessing for class; likelihood is below virtual call threshold %u\n",
-                    virtualLikelihoodThreshold);
+            JITDUMP("Not guessing for class; likelihood is below %s call threshold %u\n", callKind,
+                    likelihoodThreshold);
             return;
         }
 
@@ -20962,7 +20967,7 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
             return;
         }
 
-        JITDUMP("Virtual call would invoke method %s\n", eeGetMethodName(likelyMethod, nullptr));
+        JITDUMP("%s call would invoke method %s\n", callKind, eeGetMethodName(likelyMethod, nullptr));
 
         // Some of these may be redundant
         //
