@@ -24,9 +24,9 @@ namespace System.Net
     internal struct MultiArrayBuffer : IDisposable
     {
         private byte[]?[]? _blocks;
-        private int _allocatedEnd;
-        private int _activeStart;
-        private int _availableStart;
+        private uint _allocatedEnd;
+        private uint _activeStart;
+        private uint _availableStart;
 
         // Invariants:
         // 0 <= _activeStart <= _availableStart <= total buffer size (i.e. _blockCount * BlockSize)
@@ -74,9 +74,11 @@ namespace System.Net
             Debug.Assert(byteCount >= 0);
             Debug.Assert(byteCount <= ActiveMemory.Length, $"MultiArrayBuffer.Discard: Expected byteCount={byteCount} <= {ActiveMemory.Length}");
 
-            int oldStartBlock = _activeStart / BlockSize;
-            _activeStart += byteCount;
-            int newStartBlock = _activeStart / BlockSize;
+            uint ubyteCount = (uint)byteCount;
+
+            uint oldStartBlock = _activeStart / BlockSize;
+            _activeStart += ubyteCount;
+            uint newStartBlock = _activeStart / BlockSize;
 
             while (oldStartBlock < newStartBlock)
             {
@@ -105,7 +107,9 @@ namespace System.Net
             Debug.Assert(byteCount >= 0);
             Debug.Assert(byteCount <= AvailableMemory.Length, $"MultiArrayBuffer.Commit: Expected byteCount={byteCount} <= {AvailableMemory.Length}");
 
-            _availableStart += byteCount;
+            uint ubyteCount = (uint)byteCount;
+
+            _availableStart += ubyteCount;
         }
 
         public void EnsureAvailableSpaceUpToLimit(int byteCount, int limit)
@@ -136,8 +140,10 @@ namespace System.Net
         {
             Debug.Assert(byteCount > AvailableMemory.Length);
 
-            int newBytesNeeded = byteCount - AvailableMemory.Length;
-            int newBlocksNeeded = (newBytesNeeded + BlockSize - 1) / BlockSize;
+            uint ubyteCount = (uint)byteCount;
+
+            uint newBytesNeeded = ubyteCount - (uint)AvailableMemory.Length;
+            uint newBlocksNeeded = (newBytesNeeded + BlockSize - 1) / BlockSize;
 
             // Ensure we have enough space in the block array for the new blocks needed.
             if (_blocks is null)
@@ -159,32 +165,32 @@ namespace System.Net
                 Debug.Assert(_allocatedEnd % BlockSize == 0);
                 Debug.Assert(_allocatedEnd <= _blocks.Length * BlockSize);
 
-                int allocatedBlocks = _allocatedEnd / BlockSize;
-                int blockArraySize = _blocks.Length;
+                uint allocatedBlocks = _allocatedEnd / BlockSize;
+                uint blockArraySize = (uint)_blocks.Length;
                 if (allocatedBlocks + newBlocksNeeded > blockArraySize)
                 {
                     // Not enough room in current block array.
-                    int unusedInitialBlocks = _activeStart / BlockSize;
+                    uint unusedInitialBlocks = _activeStart / BlockSize;
 
 #if DEBUG
-                    for (int i = 0; i < unusedInitialBlocks; i++)
+                    for (uint i = 0; i < unusedInitialBlocks; i++)
                     {
                         Debug.Assert(_blocks[i] is null);
                     }
 
-                    for (int i = unusedInitialBlocks; i < allocatedBlocks; i++)
+                    for (uint i = unusedInitialBlocks; i < allocatedBlocks; i++)
                     {
                         Debug.Assert(_blocks[i] is not null);
                     }
 
-                    for (int i = allocatedBlocks; i < blockArraySize; i++)
+                    for (uint i = allocatedBlocks; i < blockArraySize; i++)
                     {
                         Debug.Assert(_blocks[i] is null);
                     }
 #endif
 
-                    int usedBlocks = (allocatedBlocks - unusedInitialBlocks);
-                    int blocksNeeded = usedBlocks + newBlocksNeeded;
+                    uint usedBlocks = (allocatedBlocks - unusedInitialBlocks);
+                    uint blocksNeeded = usedBlocks + newBlocksNeeded;
                     if (blocksNeeded > blockArraySize)
                     {
                         // Need to allocate a new array and copy.
@@ -194,19 +200,19 @@ namespace System.Net
                         }
 
                         byte[]?[] newBlockArray = new byte[]?[blockArraySize];
-                        _blocks.AsSpan().Slice(unusedInitialBlocks, usedBlocks).CopyTo(newBlockArray);
+                        _blocks.AsSpan().Slice((int)unusedInitialBlocks, (int)usedBlocks).CopyTo(newBlockArray);
                         _blocks = newBlockArray;
                     }
                     else
                     {
                         // We can shift the array down to make enough space
-                        _blocks.AsSpan().Slice(unusedInitialBlocks, usedBlocks).CopyTo(_blocks);
+                        _blocks.AsSpan().Slice((int)unusedInitialBlocks, (int)usedBlocks).CopyTo(_blocks);
 
                         // Null out the part of the array left over from the shift, so that we aren't holding references to those blocks.
-                        _blocks.AsSpan().Slice(usedBlocks, unusedInitialBlocks).Fill(null);
+                        _blocks.AsSpan().Slice((int)usedBlocks, (int)unusedInitialBlocks).Fill(null);
                     }
 
-                    int shift = unusedInitialBlocks + BlockSize;
+                    uint shift = unusedInitialBlocks + BlockSize;
                     _allocatedEnd -= shift;
                     _activeStart -= shift;
                     _availableStart -= shift;
@@ -217,8 +223,8 @@ namespace System.Net
 
             // Allocate new blocks
             Debug.Assert(_allocatedEnd % BlockSize == 0);
-            int blockCount = _allocatedEnd / BlockSize;
-            for (int i = 0; i < newBlocksNeeded; i++)
+            uint blockCount = _allocatedEnd / BlockSize;
+            for (uint i = 0; i < newBlocksNeeded; i++)
             {
                 Debug.Assert(_blocks[blockCount + i] is null);
                 _blocks[blockCount + i] = ArrayPool<byte>.Shared.Rent(BlockSize);
@@ -238,12 +244,12 @@ namespace System.Net
     internal readonly struct MultiMemory
     {
         private readonly byte[]?[]? _blocks;
-        private readonly int _start;
-        private readonly int _length;
+        private readonly uint _start;
+        private readonly uint _length;
 
         private const int BlockSize = 16 * 1024;
 
-        internal MultiMemory(byte[]?[]? blocks, int start, int length)
+        internal MultiMemory(byte[]?[]? blocks, uint start, uint length)
         {
             if (length == 0)
             {
@@ -264,26 +270,27 @@ namespace System.Net
             }
         }
 
-        private static int GetBlockIndex(int offset) => offset / BlockSize;
-        private static int GetOffsetInBlock(int offset) => offset % BlockSize;
+        private static uint GetBlockIndex(uint offset) => offset / BlockSize;
+        private static uint GetOffsetInBlock(uint offset) => offset % BlockSize;
 
-        public int Length => _length;
+        public int Length => (int)_length;
 
         public ref byte this[int index]
         {
             get
             {
-                if (index < 0 || index >= _length)
+                uint uindex = (uint)index;
+                if (uindex >= _length)
                 {
                     throw new IndexOutOfRangeException();
                 }
 
-                int offset = _start + index;
+                uint offset = _start + uindex;
                 return ref _blocks![GetBlockIndex(offset)]![GetOffsetInBlock(offset)];
             }
         }
 
-        public int BlockCount => GetBlockIndex(_start + _length + (BlockSize - 1)) - GetBlockIndex(_start);
+        public int BlockCount => (int)(GetBlockIndex(_start + _length + (BlockSize - 1)) - GetBlockIndex(_start));
 
         public Memory<byte> GetBlock(int blockIndex)
         {
@@ -295,34 +302,37 @@ namespace System.Net
             Debug.Assert(_length > 0, "Length should never be 0 here because BlockCount would be 0");
             Debug.Assert(_blocks is not null);
 
-            int startInBlock = (blockIndex == 0 ? GetOffsetInBlock(_start) : 0);
-            int endInBlock = (blockIndex == BlockCount - 1 ? GetOffsetInBlock(_start + _length - 1) + 1 : BlockSize);
+            uint startInBlock = (blockIndex == 0 ? GetOffsetInBlock(_start) : 0);
+            uint endInBlock = (blockIndex == BlockCount - 1 ? GetOffsetInBlock(_start + _length - 1) + 1 : BlockSize);
 
             Debug.Assert(0 <= startInBlock, $"Invalid startInBlock={startInBlock}. blockIndex={blockIndex}, _blocks.Length={_blocks.Length}, _start={_start}, _length={_length}");
             Debug.Assert(startInBlock < endInBlock, $"Invalid startInBlock={startInBlock}, endInBlock={endInBlock}. blockIndex={blockIndex}, _blocks.Length={_blocks.Length}, _start={_start}, _length={_length}");
             Debug.Assert(endInBlock <= BlockSize, $"Invalid endInBlock={endInBlock}. blockIndex={blockIndex}, _blocks.Length={_blocks.Length}, _start={_start}, _length={_length}");
 
-            return new Memory<byte>(_blocks[GetBlockIndex(_start) + blockIndex], startInBlock, endInBlock - startInBlock);
+            return new Memory<byte>(_blocks[GetBlockIndex(_start) + blockIndex], (int)startInBlock, (int)(endInBlock - startInBlock));
         }
 
         public MultiMemory Slice(int start)
         {
-            if (start < 0 || start > _length)
+            uint ustart = (uint)start;
+            if (ustart > _length)
             {
                 throw new IndexOutOfRangeException();
             }
 
-            return new MultiMemory(_blocks, _start + start, _length - start);
+            return new MultiMemory(_blocks, _start + ustart, _length - ustart);
         }
 
         public MultiMemory Slice(int start, int length)
         {
-            if (start < 0 || length < 0 || start + length > _length)
+            uint ustart = (uint)start;
+            uint ulength = (uint)length;
+            if (ustart > _length || ustart + ulength > _length)
             {
                 throw new IndexOutOfRangeException();
             }
 
-            return new MultiMemory(_blocks, _start + start, length);
+            return new MultiMemory(_blocks, _start + ustart, ulength);
         }
 
         public void CopyTo(Span<byte> destination)
