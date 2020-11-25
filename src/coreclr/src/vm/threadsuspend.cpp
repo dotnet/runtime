@@ -6161,14 +6161,11 @@ retry_for_debugger:
         // that the debugger needs, just use it's code.
         if ((hr == ERROR_TIMEOUT)
 #ifdef DEBUGGING_SUPPORTED
-             || (CORDebuggerAttached() &&
-            // When the debugger is synchronizing, trying to perform a GC could deadlock. The GC has the
-            // threadstore lock and synchronization cannot complete until the debugger can get the
-            // threadstore lock. However the GC can not complete until it sends the BeforeGarbageCollection
-            // event, and the event can not be sent until the debugger is synchronized. In order to break
-            // this deadlock cycle the GC must give up the threadstore lock, allow the debugger to synchronize,
-            // then try again.
-                 (g_pDebugInterface->ThreadsAtUnsafePlaces() || g_pDebugInterface->IsSynchronizing()))
+            // If the debugging services are attached, then its possible
+            // that there is a thread which appears to be stopped at a gc
+            // safe point, but which really is not. If that is the case,
+            // back off and try again.
+            || (CORDebuggerAttached() && g_pDebugInterface->ThreadsAtUnsafePlaces())
 #endif // DEBUGGING_SUPPORTED
             )
         {

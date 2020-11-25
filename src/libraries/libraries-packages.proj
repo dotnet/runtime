@@ -20,6 +20,7 @@
     <!-- If setting BuildAllOOBPackages to false, add bellow the individual OOB packages you want to continue to build -->
     <ProjectReference Include="$(LibrariesProjectRoot)\System.IO.Pipelines\pkg\System.IO.Pipelines.pkgproj" Condition="'$(BuildAllConfigurations)' == 'true'" />
     <ProjectReference Include="$(LibrariesProjectRoot)\Microsoft.Extensions.DependencyInjection\pkg\Microsoft.Extensions.DependencyInjection.pkgproj" Condition="'$(BuildAllConfigurations)' == 'true'" />
+    <ProjectReference Include="$(LibrariesProjectRoot)\System.Security.Cryptography.Pkcs\pkg\System.Security.Cryptography.Pkcs.pkgproj" Condition="'$(BuildAllConfigurations)' == 'true'" />
   </ItemGroup>
 
   <!-- Need the PackageIndexFile file property from baseline.props -->
