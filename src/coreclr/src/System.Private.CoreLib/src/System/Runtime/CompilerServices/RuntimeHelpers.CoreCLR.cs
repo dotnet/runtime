@@ -3,7 +3,6 @@
 
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using System.Reflection;
 using System.Runtime.InteropServices;
 using Internal.Runtime.CompilerServices;
 
@@ -152,24 +151,23 @@ namespace System.Runtime.CompilerServices
             RuntimeType rt = (RuntimeType)type;
 
             // If type is Nullable<T>, returns the allocator and MethodTable* for the underlying T.
-            RuntimeTypeHandle.GetActivationInfo(rt, forGetUninitializedInstance: true, out MethodTable* pMT,
+            RuntimeTypeHandle.GetActivationInfo(rt, forGetUninitializedInstance: true,
                 out delegate*<void*, object> pfnAllocator, out void* vAllocatorFirstArg, out _, out _);
 
             Debug.Assert(pfnAllocator != null);
-            Debug.Assert(pMT != null);
-            Debug.Assert(!pMT->IsNullable, "Should've unwrapped any Nullable<T> input.");
-            Debug.Assert(!pMT->HasComponentSize, "Should've blocked string, array, and similar.");
 
-            // Per ECMA-335, Sec. I.8.9.5, the instance ctor is normally responsible for
-            // invoking any non-.beforefieldinit static cctor. However, since we're bypassing
-            // instance ctors here, we need to invoke any non-.beforefieldinit static cctor
-            // manually, otherwise we could hand the caller a not-fully-initialized type.
+            // Per ECMA-335, Sec. I.8.9.5, the instance ctor is normally responsible for invoking
+            // any non-.beforefieldinit static cctor. However, since we're going to skip calling
+            // the instance ctor, we need to invoke any precise static cctors manually, otherwise
+            // the caller could receive a not-fully-usable type. Exception: we won't call the
+            // precise static cctor for value types, since we're just creating a boxed default(T),
+            // and the precise static cctor will run when the caller invokes any instance method
+            // on the struct.
 
-            if (pMT->HasPreciseInitCctors)
+            if (!RuntimeTypeHandle.IsValueType(rt))
             {
-                _RunClassConstructor(
-                    new QCallTypeHandle(ref rt),
-                    preciseCctorsOnly: Interop.BOOL.TRUE);
+                // Call below will early-exit if there's no precise static cctor
+                _RunClassConstructor(new QCallTypeHandle(ref rt), preciseCctorsOnly: Interop.BOOL.TRUE);
             }
 
             object retVal = pfnAllocator(vAllocatorFirstArg);

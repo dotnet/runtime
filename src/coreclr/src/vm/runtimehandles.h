@@ -128,10 +128,8 @@ public:
         QCall::ObjectHandleOnStack pRuntimeType,
         PCODE* ppfnAllocator,
         void** pvAllocatorFirstArg,
-        BOOL fUnwrapNullable,
         PCODE* ppfnCtor,
-        BOOL* pfCtorIsPublic,
-        MethodTable** ppMethodTable);
+        BOOL* pfCtorIsPublic);
 
     static FCDECL1(Object*, AllocateComObject, void* pClassFactory);
 
@@ -198,6 +196,10 @@ public:
     static FCDECL2(FC_BOOL_RET, IsInstanceOfType, ReflectClassBaseObject *pType, Object *object);
 
     static FCDECL6(FC_BOOL_RET, SatisfiesConstraints, PTR_ReflectClassBaseObject pGenericParameter, TypeHandle *typeContextArgs, INT32 typeContextCount, TypeHandle *methodContextArgs, INT32 methodContextCount, PTR_ReflectClassBaseObject pGenericArgument);
+
+    static
+    BOOL QCALLTYPE IsConstructedNullableType(QCall::TypeHandle pTypeHandle);
+
     static
     FCDECL1(FC_BOOL_RET, HasInstantiation, PTR_ReflectClassBaseObject pType);
 

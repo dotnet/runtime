@@ -263,7 +263,6 @@ namespace System
         internal static void GetActivationInfo(
             RuntimeType rt,
             bool forGetUninitializedInstance,
-            out MethodTable* pMT,
             out delegate*<void*, object> pfnAllocator,
             out void* vAllocatorFirstArg,
             out delegate*<object, void> pfnCtor,
@@ -280,20 +279,14 @@ namespace System
                 void* vAllocatorFirstArgTemp = default;
                 delegate*<object, void> pfnCtorTemp = default;
                 Interop.BOOL fCtorIsPublicTemp = default;
-                MethodTable* pMethodTableTemp = default;
 
                 _GetActivationInfo(
                     ObjectHandleOnStack.Create(ref rt),
                     &pfnAllocatorTemp, &vAllocatorFirstArgTemp,
-                    fUnwrapNullable: forGetUninitializedInstance ? Interop.BOOL.TRUE : Interop.BOOL.FALSE,
                     ppfnCtor: forGetUninitializedInstance ? null : &pfnCtorTemp,
-                    pfCtorIsPublic: forGetUninitializedInstance ? null : &fCtorIsPublicTemp,
-                    &pMethodTableTemp);
+                    pfCtorIsPublic: forGetUninitializedInstance ? null : &fCtorIsPublicTemp);
 
                 // Marshal values back to caller
-
-                Debug.Assert(pMethodTableTemp != null);
-                pMT = pMethodTableTemp;
 
                 Debug.Assert(pfnAllocatorTemp != null);
                 pfnAllocator = pfnAllocatorTemp;
@@ -330,10 +323,8 @@ namespace System
             ObjectHandleOnStack pRuntimeType,
             delegate*<void*, object>* ppfnAllocator,
             void** pvAllocatorFirstArg,
-            Interop.BOOL fUnwrapNullable,
             delegate*<object, void>* ppfnCtor,
-            Interop.BOOL* pfCtorIsPublic,
-            MethodTable** ppMethodTable);
+            Interop.BOOL* pfCtorIsPublic);
 
 #if FEATURE_COMINTEROP
         // Referenced by unmanaged layer (see _GetActivationInfo).
@@ -666,6 +657,18 @@ namespace System
 
         [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
         internal static extern Interop.BOOL IsCollectible(QCallTypeHandle handle);
+
+        // Returns true iff type is a closed nullable type, like int? or double?.
+        // Returns false if given the open type Nullable<>.
+        internal static bool IsConstructedNullableType(RuntimeType type)
+        {
+            Debug.Assert(type != null);
+            return IsConstructedNullableType(new QCallTypeHandle(ref type)) != Interop.BOOL.FALSE;
+        }
+
+        [SuppressGCTransition]
+        [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
+        private static extern Interop.BOOL IsConstructedNullableType(QCallTypeHandle handle);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern bool HasInstantiation(RuntimeType type);

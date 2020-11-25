@@ -2006,27 +2006,23 @@ FCIMPLEND
 /*
  * Given a RuntimeType, queries info on how to instantiate the object.
  * pRuntimeType - [required] the RuntimeType object
- * pRefType - [required] the RuntimeType
  * ppfnAllocator - [required, null-init] fnptr to the allocator
  *                 mgd sig: void* -> object
  * pvAllocatorFirstArg - [required, null-init] first argument to the allocator
  *                       (normally, but not always, the MethodTable*)
- * fUnwrapNullable - if true and type handle is Nullable<T>, queries info for T
  * ppfnCtor - [optional, null-init] the instance's parameterless ctor,
  *            mgd sig object -> void, or null if no parameterless ctor exists
  * pfCtorIsPublic - [optional, null-init] whether the parameterless ctor is public
- * ppMethodTable - [required, null-init] the MethodTable* for the queried type
  * ==========
- * This method will not run the type's static ctor or instantiate the type.
+ * This method will not run the type's static cctor.
+ * This method will not allocate an instance of the target type.
  */
 void QCALLTYPE RuntimeTypeHandle::GetActivationInfo(
     QCall::ObjectHandleOnStack pRuntimeType,
     PCODE* ppfnAllocator,
     void** pvAllocatorFirstArg,
-    BOOL fUnwrapNullable,
     PCODE* ppfnCtor,
-    BOOL* pfCtorIsPublic,
-    MethodTable** ppMethodTable
+    BOOL* pfCtorIsPublic
 )
 {
     CONTRACTL{
@@ -2035,18 +2031,20 @@ void QCALLTYPE RuntimeTypeHandle::GetActivationInfo(
         PRECONDITION(CheckPointer(pvAllocatorFirstArg));
         PRECONDITION(*ppfnAllocator == NULL);
         PRECONDITION(*pvAllocatorFirstArg == NULL);
+        // Both ctor "out" params must be specified, or both must be null.
+        // If they're specified, the target must be zero-initialized.
         PRECONDITION((ppfnCtor == NULL) == (pfCtorIsPublic == NULL));
         PRECONDITION((ppfnCtor == NULL) || (*ppfnCtor == NULL));
         PRECONDITION((pfCtorIsPublic == NULL) || (!*pfCtorIsPublic));
-        PRECONDITION(CheckPointer(ppMethodTable));
-        PRECONDITION(*ppMethodTable == NULL);
     }
     CONTRACTL_END;
 
     // If caller didn't want us to locate a ctor, then they want the
     // behavior of GetUninitializedObject, which prohibits COM activation
-    // and throws slightly different exceptions.
+    // and throws slightly different exceptions. It also unwraps Nullable<T>
+    // into simply 'T'.
     bool fGetUninitializedObject = (ppfnCtor == NULL);
+    bool fUnwrapNullable = fGetUninitializedObject;
 
     // If we're activating __ComObject.
     bool fRequiresSpecialComActivationStub = false;
@@ -2185,8 +2183,6 @@ void QCALLTYPE RuntimeTypeHandle::GetActivationInfo(
             *pfCtorIsPublic = pMD->IsPublic();
         }
     }
-
-    *ppMethodTable = pMT;
 
     END_QCALL;
 }

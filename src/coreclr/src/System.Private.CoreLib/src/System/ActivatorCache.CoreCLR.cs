@@ -45,66 +45,48 @@ namespace System
                 rt.CreateInstanceCheckThis();
 
                 RuntimeTypeHandle.GetActivationInfo(rt, forGetUninitializedInstance: false,
-                    out MethodTable* pMT, out _pfnAllocator!, out _allocatorFirstArg,
+                    out _pfnAllocator!, out _allocatorFirstArg,
                     out _pfnCtor!, out _ctorIsPublic);
 
-                bool useNoopCtorStub = false;
+                Debug.Assert(_pfnAllocator != null);
+                Debug.Assert(_allocatorFirstArg != null);
 
-                if (pMT->IsValueType)
+                if (_pfnCtor == null)
                 {
-                    if (pMT->IsNullable)
+                    if (!RuntimeTypeHandle.IsValueType(rt))
+                    {
+                        // Reference type with no parameterless ctor.
+                        // Is it __ComObject? If not, we can't continue.
+
+#if FEATURE_COMINTEROP
+                        if (!rt.IsGenericCOMObjectImpl())
+#endif
+                        {
+                            throw new MissingMethodException(SR.Format(SR.Arg_NoDefCTor, rt));
+                        }
+                    }
+                    else if (RuntimeTypeHandle.IsConstructedNullableType(rt))
                     {
                         // Activator.CreateInstance returns null given typeof(Nullable<T>).
 
                         static object? ReturnNull(void* _) => null;
                         _pfnAllocator = &ReturnNull;
                         _allocatorFirstArg = default;
-
-                        useNoopCtorStub = true;
                     }
-                    else if (_pfnCtor == null)
-                    {
-                        // Value type with no parameterless ctor - we'll point it to our noop stub.
 
-                        useNoopCtorStub = true;
-                    }
-                }
-                else
-                {
-                    // Reference type - we can't proceed unless there's a default ctor we can call.
+                    // At this point, we have Nullable<T>, a ctorless value type T,
+                    // or a ctorless __ComObject. In any case, we should replace the
+                    // ctor call with our no-op stub.
 
-                    Debug.Assert(rt.IsClass);
-
-#if FEATURE_COMINTEROP
-                    if (pMT->IsComObject)
-                    {
-                        if (rt.TypeHandle.Value == typeof(__ComObject).TypeHandle.Value)
-                        {
-                            // Base COM class - activation is handled entirely by the allocator.
-                            // We shouldn't call the ctor fn (which points to __ComObject's ctor).
-
-                            useNoopCtorStub = true;
-                        }
-                    }
-                    else
-#endif
-                    if (_pfnCtor == null)
-                    {
-                        // Reference type with no parameterless ctor - we cannot continue.
-
-                        throw new MissingMethodException(SR.Format(SR.Arg_NoDefCTor, rt));
-                    }
-                }
-
-                // We don't need to worry about invoking cctors here. The runtime will figure it
-                // out for us when the instance ctor is called.
-
-                if (useNoopCtorStub)
-                {
                     static void CtorNoopStub(object? uninitializedObject) { }
                     _pfnCtor = &CtorNoopStub; // we use null singleton pattern if no ctor call is necessary
                     _ctorIsPublic = true; // implicit parameterless ctor is always considered public
                 }
+
+                // We don't need to worry about invoking cctors here. The runtime will figure it
+                // out for us when the instance ctor is called. For value types, because we're
+                // creating a boxed default(T), the static cctor is called when *any* instance
+                // method is invoked.
 
                 Debug.Assert(_pfnAllocator != null);
                 Debug.Assert(_pfnCtor != null); // we use null singleton pattern if no ctor call is necessary

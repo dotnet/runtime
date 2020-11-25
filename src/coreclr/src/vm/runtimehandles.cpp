@@ -1597,6 +1597,18 @@ FCIMPL2(FC_BOOL_RET, RuntimeTypeHandle::CompareCanonicalHandles, ReflectClassBas
 }
 FCIMPLEND
 
+BOOL QCALLTYPE RuntimeTypeHandle::IsConstructedNullableType(QCall::TypeHandle pTypeHandle)
+{
+    QCALL_CONTRACT_NO_GC_TRANSITION;
+
+    TypeHandle typeHandle = pTypeHandle.AsTypeHandle();
+    _ASSERTE(!typeHandle.IsNull());
+
+    return typeHandle.HasInstantiation()
+        && !typeHandle.IsGenericTypeDefinition()
+        && typeHandle.AsMethodTable()->IsNullable();
+}
+
 FCIMPL1(FC_BOOL_RET, RuntimeTypeHandle::HasInstantiation, PTR_ReflectClassBaseObject pTypeUNSAFE)
 {
     FCALL_CONTRACT;
