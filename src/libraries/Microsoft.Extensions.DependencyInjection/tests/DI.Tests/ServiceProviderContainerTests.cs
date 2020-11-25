@@ -271,9 +271,9 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
         {
             var services = new ServiceCollection();
             services.AddSingleton<Foo1>();
-            var sp = services.BuildServiceProvider();
+            IServiceProvider sp = services.BuildServiceProvider();
             var foo = sp.GetRequiredService<Foo1>();
-            Task.Run(() => sp.Dispose()).Wait();
+            Task.Run(() => (sp as IDisposable).Dispose()).Wait();
             
             Assert.True(foo.IsDisposed);
         }
@@ -283,7 +283,7 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
         {
             var services = new ServiceCollection();
             services.AddSingleton<Foo2>();
-            var sp = services.BuildServiceProvider();
+            IServiceProvider sp = services.BuildServiceProvider();
             Assert.Throws<ObjectDisposedException>(() =>
             {
                 // ctor disposes ServiceProvider
@@ -325,6 +325,38 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
                 (sp as IDisposable).Dispose();
             }
             public void Dispose() { }
+        }
+
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task AddDisposablesAndAsyncDisposables_DisposeAsync_AllDisposed(bool includeDelayedAsyncDisposable)
+        {
+            var services = new ServiceCollection();
+            services.AddSingleton<AsyncDisposable>();
+            services.AddSingleton<Disposable>();
+            if (includeDelayedAsyncDisposable)
+            {
+                //forces Dispose ValueTask to be asynchronous and not be immediately completed
+                services.AddSingleton<DelayedAsyncDisposableService>();
+            }
+            IServiceProvider sp = services.BuildServiceProvider();
+            var disposable = sp.GetRequiredService<Disposable>();
+            var asyncDisposable = sp.GetRequiredService<AsyncDisposable>();
+            DelayedAsyncDisposableService delayedAsyncDisposableService = null;
+            if (includeDelayedAsyncDisposable)
+            {
+                delayedAsyncDisposableService = sp.GetRequiredService<DelayedAsyncDisposableService>();
+            }
+
+            await (sp as IAsyncDisposable).DisposeAsync();
+            
+            Assert.True(disposable.Disposed);
+            Assert.True(asyncDisposable.DisposeAsyncCalled);
+            if (includeDelayedAsyncDisposable)
+            {
+                Assert.Equal(1, delayedAsyncDisposableService.DisposeCount);
+            }
         }
 
         private class FooAsyncDisposable : IFakeService, IAsyncDisposable
