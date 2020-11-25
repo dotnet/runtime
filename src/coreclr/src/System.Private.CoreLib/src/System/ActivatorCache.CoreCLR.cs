@@ -43,58 +43,65 @@ namespace System
 
                 rt.CreateInstanceCheckThis();
 
-                RuntimeTypeHandle.GetActivationInfo(rt, forGetUninitializedInstance: false,
-                    out _pfnAllocator!, out _allocatorFirstArg,
-                    out _pfnCtor!, out _ctorIsPublic);
-
-                Debug.Assert(_pfnAllocator != null);
-                Debug.Assert(_allocatorFirstArg != null);
-
-                if (_pfnCtor == null)
+                try
                 {
-                    if (!RuntimeTypeHandle.IsValueType(rt))
+                    RuntimeTypeHandle.GetActivationInfo(rt,
+                        out _pfnAllocator!, out _allocatorFirstArg,
+                        out _pfnCtor!, out _ctorIsPublic);
+                }
+                catch (Exception ex)
+                {
+                    // Exception messages coming from the runtime won't include
+                    // the type name. Let's include it here to improve the
+                    // debugging experience for our callers.
+
+                    string friendlyMessage = SR.Format(SR.Activator_CannotCreateInstance, rt, ex.Message);
+                    switch (ex)
                     {
-                        // Reference type with no parameterless ctor.
-                        // Is it __ComObject? If not, we can't continue.
-
-#if FEATURE_COMINTEROP
-                        if (!rt.IsGenericCOMObjectImpl())
-#endif
-                        {
-                            throw new MissingMethodException(SR.Format(SR.Arg_NoDefCTor, rt));
-                        }
-                    }
-                    else if (RuntimeTypeHandle.IsConstructedNullableType(rt))
-                    {
-                        // Activator.CreateInstance returns null given typeof(Nullable<T>).
-
-                        static object? ReturnNull(void* _) => null;
-                        _pfnAllocator = &ReturnNull;
-                        _allocatorFirstArg = default;
+                        case ArgumentException: throw new ArgumentException(friendlyMessage);
+                        case PlatformNotSupportedException: throw new PlatformNotSupportedException(friendlyMessage);
+                        case NotSupportedException: throw new NotSupportedException(friendlyMessage);
+                        case MethodAccessException: throw new MethodAccessException(friendlyMessage);
+                        case MissingMethodException: throw new MissingMethodException(friendlyMessage);
+                        case MemberAccessException: throw new MemberAccessException(friendlyMessage);
                     }
 
-                    // At this point, we have Nullable<T>, a ctorless value type T,
-                    // or a ctorless __ComObject. In any case, we should replace the
-                    // ctor call with our no-op stub.
+                    throw; // can't make a friendlier message, rethrow original exception
+                }
 
+                // Activator.CreateInstance returns null given typeof(Nullable<T>).
+
+                if (_pfnAllocator == null)
+                {
+                    Debug.Assert(Nullable.GetUnderlyingType(rt) != null,
+                        "Null allocator should only be returned for Nullable<T>.");
+
+                    static object? ReturnNull(void* _) => null;
+                    _pfnAllocator = &ReturnNull;
+                }
+
+                // If no ctor is provided, we have Nullable<T>, a ctorless value type T,
+                // or a ctorless __ComObject. In any case, we should replace the
+                // ctor call with our no-op stub. The unmanaged GetActivationInfo layer
+                // would have thrown an exception if 'rt' were a normal reference type
+                // without a ctor.
+
+                if (_pfnCtor is null)
+                {
                     static void CtorNoopStub(object? uninitializedObject) { }
                     _pfnCtor = &CtorNoopStub; // we use null singleton pattern if no ctor call is necessary
-                    _ctorIsPublic = true; // implicit parameterless ctor is always considered public
+
+                    Debug.Assert(_ctorIsPublic); // implicit parameterless ctor is always considered public
                 }
 
                 // We don't need to worry about invoking cctors here. The runtime will figure it
                 // out for us when the instance ctor is called. For value types, because we're
                 // creating a boxed default(T), the static cctor is called when *any* instance
                 // method is invoked.
-
-                Debug.Assert(_pfnAllocator != null);
-                Debug.Assert(_pfnCtor != null); // we use null singleton pattern if no ctor call is necessary
             }
 
             internal bool CtorIsPublic => _ctorIsPublic;
 
-            [DebuggerStepThrough]
-            [DebuggerHidden]
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             internal object? CreateUninitializedObject(RuntimeType rt)
             {
@@ -117,8 +124,6 @@ namespace System
                 return retVal;
             }
 
-            [DebuggerStepThrough]
-            [DebuggerHidden]
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             internal void CallConstructor(object? uninitializedObject) => _pfnCtor(uninitializedObject);
         }

@@ -48,9 +48,7 @@ public:
     static
     void QCALLTYPE CompileMethod(MethodDesc * pMD);
 
-    static
-    void QCALLTYPE RunClassConstructor(QCall::TypeHandle pTypeHandle, BOOL fPreciseCctorsOnly);
-
+    static FCDECL1(void, RunClassConstructor, ReflectClassBaseObject *pTypeUNSAFE);
     static FCDECL1(void, RunModuleConstructor, ReflectModuleBaseObject *pModuleUNSAFE);
     static FCDECL3(void, PrepareMethod, ReflectMethodObject* pMethodUNSAFE, TypeHandle *pInstantiation, UINT32 cInstantiation);
     static FCDECL1(void, PrepareDelegate, Object* delegateUNSAFE);
@@ -72,6 +70,11 @@ public:
     // helper fcalls for invocation
     static FCDECL2(FC_BOOL_RET, CanValueSpecialCast, ReflectClassBaseObject *valueType, ReflectClassBaseObject *targetType);
     static FCDECL3(Object*, AllocateValueType, ReflectClassBaseObject *targetType, Object *valueUNSAFE, CLR_BOOL fForceTypeChange);
+};
+
+class ReflectionSerialization {
+public:
+    static FCDECL1(Object*, GetUninitializedObject, ReflectClassBaseObject* objTypeUNSAFE);
 };
 
 class ReflectionEnum {

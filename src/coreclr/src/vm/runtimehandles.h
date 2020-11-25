@@ -198,9 +198,6 @@ public:
     static FCDECL6(FC_BOOL_RET, SatisfiesConstraints, PTR_ReflectClassBaseObject pGenericParameter, TypeHandle *typeContextArgs, INT32 typeContextCount, TypeHandle *methodContextArgs, INT32 methodContextCount, PTR_ReflectClassBaseObject pGenericArgument);
 
     static
-    BOOL QCALLTYPE IsConstructedNullableType(QCall::TypeHandle pTypeHandle);
-
-    static
     FCDECL1(FC_BOOL_RET, HasInstantiation, PTR_ReflectClassBaseObject pType);
 
     static
@@ -262,6 +259,10 @@ public:
 
     static
     PVOID QCALLTYPE AllocateTypeAssociatedMemory(QCall::TypeHandle type, UINT32 size);
+
+    // Helper methods not called by managed code
+
+    static void ValidateTypeAbleToBeInstantiated(TypeHandle typeHandle, bool fGetUninitializedObject);
 };
 
 class RuntimeMethodHandle {

@@ -1583,41 +1583,35 @@ void QCALLTYPE ReflectionInvocation::CompileMethod(MethodDesc * pMD)
 }
 
 // This method triggers the class constructor for a give type
-void QCALLTYPE ReflectionInvocation::RunClassConstructor(
-    QCall::TypeHandle pTypeHandle,
-    BOOL fPreciseCctorsOnly)
+FCIMPL1(void, ReflectionInvocation::RunClassConstructor, ReflectClassBaseObject *pTypeUNSAFE)
 {
-    QCALL_CONTRACT;
+    FCALL_CONTRACT;
 
-    BEGIN_QCALL;
+    REFLECTCLASSBASEREF refType = (REFLECTCLASSBASEREF)ObjectToOBJECTREF(pTypeUNSAFE);
 
-    TypeHandle typeHnd = pTypeHandle.AsTypeHandle();
-    if (typeHnd.IsNull())
-        COMPlusThrow(kArgumentException, W("InvalidOperation_HandleIsNotInitialized"));
+    if (refType == NULL)
+        FCThrowArgumentVoidEx(kArgumentException, NULL, W("InvalidOperation_HandleIsNotInitialized"));
 
-    if (!typeHnd.IsTypeDesc())
+    TypeHandle typeHnd = refType->GetType();
+    if (typeHnd.IsTypeDesc())
+        return;
+
+    MethodTable *pMT = typeHnd.AsMethodTable();
+
+    Assembly *pAssem = pMT->GetAssembly();
+
+    if (!pMT->IsClassInited())
     {
-        MethodTable* pMT = typeHnd.AsMethodTable();
+        HELPER_METHOD_FRAME_BEGIN_1(refType);
 
-        if (!pMT->IsClassInited())
-        {
-            pMT->CheckRestore();
-            pMT->EnsureInstanceActive();
-            if (fPreciseCctorsOnly)
-            {
-                // only cctors NOT marked .beforefieldinit
-                pMT->CheckRunClassInitAsIfConstructingThrowing();
-            }
-            else
-            {
-                // any cctor, regardless of .beforefieldinit annotation
-                pMT->CheckRunClassInitThrowing();
-            }
-        }
+        pMT->CheckRestore();
+        pMT->EnsureInstanceActive();
+        pMT->CheckRunClassInitThrowing();
+
+        HELPER_METHOD_FRAME_END();
     }
-
-    END_QCALL;
 }
+FCIMPLEND
 
 // This method triggers the module constructor for a give module
 FCIMPL1(void, ReflectionInvocation::RunModuleConstructor, ReflectModuleBaseObject *pModuleUNSAFE) {
@@ -2004,64 +1998,26 @@ lExit: ;
 FCIMPLEND
 
 /*
- * Given a RuntimeType, queries info on how to instantiate the object.
- * pRuntimeType - [required] the RuntimeType object
- * ppfnAllocator - [required, null-init] fnptr to the allocator
- *                 mgd sig: void* -> object
- * pvAllocatorFirstArg - [required, null-init] first argument to the allocator
- *                       (normally, but not always, the MethodTable*)
- * ppfnCtor - [optional, null-init] the instance's parameterless ctor,
- *            mgd sig object -> void, or null if no parameterless ctor exists
- * pfCtorIsPublic - [optional, null-init] whether the parameterless ctor is public
+ * Given a TypeHandle, validates whether it's legal to construct a real
+ * instance of that type. Throws an exception if the instantiation would
+ * be illegal; e.g., type is void or a pointer or an open generic. This
+ * doesn't guarantee that a ctor will succeed, only that the VM is able
+ * to support an instance of this type on the heap.
  * ==========
- * This method will not run the type's static cctor.
- * This method will not allocate an instance of the target type.
+ * The 'fForGetUninitializedInstance' parameter controls the type of
+ * exception that is thrown if a check fails.
  */
-void QCALLTYPE RuntimeTypeHandle::GetActivationInfo(
-    QCall::ObjectHandleOnStack pRuntimeType,
-    PCODE* ppfnAllocator,
-    void** pvAllocatorFirstArg,
-    PCODE* ppfnCtor,
-    BOOL* pfCtorIsPublic
-)
+void RuntimeTypeHandle::ValidateTypeAbleToBeInstantiated(
+    TypeHandle typeHandle,
+    bool fGetUninitializedObject)
 {
-    CONTRACTL{
-        QCALL_CHECK;
-        PRECONDITION(CheckPointer(ppfnAllocator));
-        PRECONDITION(CheckPointer(pvAllocatorFirstArg));
-        PRECONDITION(*ppfnAllocator == NULL);
-        PRECONDITION(*pvAllocatorFirstArg == NULL);
-        // Both ctor "out" params must be specified, or both must be nullptr.
-        // If they're specified, the destination must be zero-initialized.
-        PRECONDITION((ppfnCtor == NULL) == (pfCtorIsPublic == NULL));
-        PRECONDITION((ppfnCtor == NULL) || (*ppfnCtor == NULL));
-        PRECONDITION((pfCtorIsPublic == NULL) || (!*pfCtorIsPublic));
+    CONTRACTL
+    {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_ANY;
     }
     CONTRACTL_END;
-
-    // If caller didn't want us to locate a ctor, then they want the
-    // behavior of GetUninitializedObject, which prohibits COM activation
-    // and throws slightly different exceptions. It also unwraps Nullable<T>
-    // into simply 'T'.
-    bool fGetUninitializedObject = (ppfnCtor == NULL);
-    bool fUnwrapNullable = fGetUninitializedObject;
-
-    // If we're activating __ComObject.
-    bool fRequiresSpecialComActivationStub = false;
-    void* pClassFactory = NULL;
-
-    TypeHandle typeHandle = NULL;
-
-    BEGIN_QCALL;
-
-    {
-        GCX_COOP();
-
-        // We need to take the RuntimeType itself rather than the RuntimeTypeHandle,
-        // as the COM CLSID is stored in the RuntimeType object's sync block, and we
-        // might need to pull it out later in this method.
-        typeHandle = ((REFLECTCLASSBASEREF)pRuntimeType.Get())->GetType();
-    }
 
     // Don't allow void
     if (typeHandle.GetSignatureCorElementType() == ELEMENT_TYPE_VOID)
@@ -2091,7 +2047,8 @@ void QCALLTYPE RuntimeTypeHandle::GetActivationInfo(
     }
 
     // Don't allow abstract classes or interface types
-    if (pMT->IsAbstract()) {
+    if (pMT->IsAbstract())
+    {
         RuntimeExceptionKind exKind = fGetUninitializedObject ? kMemberAccessException : kMissingMethodException;
         if (pMT->IsInterface())
             COMPlusThrow(exKind, W("Acc_CreateInterface"));
@@ -2115,12 +2072,63 @@ void QCALLTYPE RuntimeTypeHandle::GetActivationInfo(
     if (pMT->IsByRefLike()) {
         COMPlusThrow(kNotSupportedException, W("NotSupported_ByRefLike"));
     }
+}
 
-    // Caller passed Nullable<T> but wanted information for T instead?
-    if (fUnwrapNullable && Nullable::IsNullableType(pMT))
-    {
-        pMT = pMT->GetInstantiation()[0].GetMethodTable();
+/*
+ * Given a RuntimeType, queries info on how to instantiate the object.
+ * pRuntimeType - [required] the RuntimeType object
+ * ppfnAllocator - [required, null-init] fnptr to the allocator
+ *                 mgd sig: void* -> object
+ * pvAllocatorFirstArg - [required, null-init] first argument to the allocator
+ *                       (normally, but not always, the MethodTable*)
+ * ppfnCtor - [required, null-init] the instance's parameterless ctor,
+ *            mgd sig object -> void, or null if no ctor is needed for this type
+ * pfCtorIsPublic - [required, null-init] whether the parameterless ctor is public
+ * ==========
+ * This method will not run the type's static cctor.
+ * This method will not allocate an instance of the target type.
+ */
+void QCALLTYPE RuntimeTypeHandle::GetActivationInfo(
+    QCall::ObjectHandleOnStack pRuntimeType,
+    PCODE* ppfnAllocator,
+    void** pvAllocatorFirstArg,
+    PCODE* ppfnCtor,
+    BOOL* pfCtorIsPublic
+)
+{
+    CONTRACTL{
+        QCALL_CHECK;
+        PRECONDITION(CheckPointer(ppfnAllocator));
+        PRECONDITION(CheckPointer(pvAllocatorFirstArg));
+        PRECONDITION(CheckPointer(ppfnCtor));
+        PRECONDITION(CheckPointer(pfCtorIsPublic));
+        PRECONDITION(*ppfnAllocator == NULL);
+        PRECONDITION(*pvAllocatorFirstArg == NULL);
+        PRECONDITION(*ppfnCtor == NULL);
+        PRECONDITION(*pfCtorIsPublic == NULL);
     }
+    CONTRACTL_END;
+
+    TypeHandle typeHandle = NULL;
+
+    // If we're activating __ComObject.
+    void* pClassFactory = NULL;
+
+    BEGIN_QCALL;
+
+    {
+        GCX_COOP();
+
+        // We need to take the RuntimeType itself rather than the RuntimeTypeHandle,
+        // as the COM CLSID is stored in the RuntimeType object's sync block, and we
+        // might need to pull it out later in this method.
+        typeHandle = ((REFLECTCLASSBASEREF)pRuntimeType.Get())->GetType();
+    }
+
+    ValidateTypeAbleToBeInstantiated(typeHandle, false /* fGetUninitializedObject */);
+
+    MethodTable* pMT = typeHandle.AsMethodTable();
+    PREFIX_ASSUME(pMT != NULL);
 
 #ifdef FEATURE_COMINTEROP
     // COM allocation can involve the __ComObject base type (with attached CLSID) or a
@@ -2133,11 +2141,6 @@ void QCALLTYPE RuntimeTypeHandle::GetActivationInfo(
     //     ctor with COM activation logic on supported platforms, else ctor itself will PNSE.
     if (pMT->IsComObjectType())
     {
-        if (fGetUninitializedObject)
-        {
-            COMPlusThrow(kNotSupportedException, W("NotSupported_ManagedActivation"));
-        }
-
         if (IsComObjectClass(typeHandle))
         {
 #ifdef FEATURE_COMINTEROP_UNMANAGED_ACTIVATION
@@ -2147,12 +2150,10 @@ void QCALLTYPE RuntimeTypeHandle::GetActivationInfo(
             pClassFactory = (void*)pSyncBlock->GetInteropInfo()->GetComClassFactory();
 #endif // FEATURE_COMINTEROP_UNMANAGED_ACTIVATION
 
-            if (!pClassFactory)
+            if (pClassFactory == NULL)
             {
                 COMPlusThrow(kInvalidComObjectException, IDS_EE_NO_BACKING_CLASS_FACTORY);
             }
-
-            fRequiresSpecialComActivationStub = true;
         }
     }
 #endif // FEATURE_COMINTEROP
@@ -2161,25 +2162,35 @@ void QCALLTYPE RuntimeTypeHandle::GetActivationInfo(
 
     // All checks passed! Pass parameters back to the caller.
 
-    if (fRequiresSpecialComActivationStub)
+    if (Nullable::IsNullableType(typeHandle))
     {
+        // CreateInstance returns null given Nullable<T>
+        *ppfnAllocator = NULL;
+        *pvAllocatorFirstArg = NULL;
+        *ppfnCtor = NULL;
+        *pfCtorIsPublic = TRUE; // no ctor call needed => assume 'public' equivalent
+    }
 #ifdef FEATURE_COMINTEROP
+    else if (pClassFactory != NULL)
+    {
         // managed sig: ComClassFactory* -> object (via FCALL)
         *ppfnAllocator = CoreLibBinder::GetMethod(METHOD__RT_TYPE_HANDLE__ALLOCATECOMOBJECT)->GetMultiCallableAddrOfCode();
         *pvAllocatorFirstArg = pClassFactory;
-#endif // FEATURE_COMINTEROP
+        *ppfnCtor = NULL; // no ctor call needed; activation handled entirely by the allocator
+        *pfCtorIsPublic = TRUE; // no ctor call needed => assume 'public' equivalent
     }
+#endif // FEATURE_COMINTEROP
     else
     {
         // managed sig: MethodTable* -> object (via JIT helper)
         *ppfnAllocator = CEEJitInfo::getHelperFtnStatic(CEEInfo::getNewHelperStatic(pMT));
         *pvAllocatorFirstArg = pMT;
 
-        if (ppfnCtor != NULL && pMT->HasDefaultConstructor())
+        if (pMT->HasDefaultConstructor())
         {
             // managed sig: object -> void
             // for ctors on value types, lookup boxed entry point stub
-            MethodDesc* pMD = pMT->GetDefaultConstructor(pMT->IsValueType());
+            MethodDesc* pMD = pMT->GetDefaultConstructor(pMT->IsValueType() /* forceBoxedEntryPoint */);
             _ASSERTE(pMD != NULL);
 
             PCODE pCode = pMD->GetMultiCallableAddrOfCode();
@@ -2187,6 +2198,16 @@ void QCALLTYPE RuntimeTypeHandle::GetActivationInfo(
 
             *ppfnCtor = pCode;
             *pfCtorIsPublic = pMD->IsPublic();
+        }
+        else if (pMT->IsValueType())
+        {
+            *ppfnCtor = NULL; // no ctor call needed; we're creating a boxed default(T)
+            *pfCtorIsPublic = TRUE; // no ctor call needed => assume 'public' equivalent
+        }
+        else
+        {
+            // reference type with no parameterless ctor - we can't instantiate this
+            COMPlusThrow(kMissingMethodException, W("Arg_NoDefCTorWithoutTypeName"));
         }
     }
 
@@ -2234,6 +2255,48 @@ FCIMPL1(Object*, RuntimeTypeHandle::AllocateComObject,
 
     HELPER_METHOD_FRAME_END();
     return OBJECTREFToObject(rv);
+}
+FCIMPLEND
+
+//*************************************************************************************************
+//*************************************************************************************************
+//*************************************************************************************************
+//      ReflectionSerialization
+//*************************************************************************************************
+//*************************************************************************************************
+//*************************************************************************************************
+FCIMPL1(Object*, ReflectionSerialization::GetUninitializedObject, ReflectClassBaseObject* objTypeUNSAFE) {
+    FCALL_CONTRACT;
+
+    OBJECTREF           retVal  = NULL;
+    REFLECTCLASSBASEREF objType = (REFLECTCLASSBASEREF) objTypeUNSAFE;
+
+    HELPER_METHOD_FRAME_BEGIN_RET_NOPOLL();
+
+    TypeHandle type = objType->GetType();
+
+    RuntimeTypeHandle::ValidateTypeAbleToBeInstantiated(type, true /* fForGetUninitializedInstance */);
+
+    MethodTable* pMT = type.AsMethodTable();
+
+    // Never allow the allocation of an unitialized ContextBoundObject derived type, these must always be created with a paired
+    // transparent proxy or the jit will get confused.
+
+#ifdef FEATURE_COMINTEROP
+    // Also do not allow allocation of uninitialized RCWs (COM objects).
+    if (pMT->IsComObjectType())
+        COMPlusThrow(kNotSupportedException, W("NotSupported_ManagedActivation"));
+#endif // FEATURE_COMINTEROP
+
+    // If it is a nullable, return the underlying type instead.
+    if (Nullable::IsNullableType(pMT))
+        pMT = pMT->GetInstantiation()[0].GetMethodTable();
+
+    // Allocation will invoke any precise static cctors as needed.
+    retVal = pMT->Allocate();
+
+    HELPER_METHOD_FRAME_END();
+    return OBJECTREFToObject(retVal);
 }
 FCIMPLEND
 

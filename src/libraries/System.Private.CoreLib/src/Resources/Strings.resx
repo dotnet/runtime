@@ -601,6 +601,9 @@
   <data name="Arg_NoAccessSpec" xml:space="preserve">
     <value>Must specify binding flags describing the invoke operation required (BindingFlags.InvokeMethod CreateInstance GetField SetField GetProperty SetProperty).</value>
   </data>
+  <data name="Arg_NoDefCTorWithoutTypeName" xml:space="preserve">
+    <value>No parameterless constructor defined.</value>
+  </data>
   <data name="Arg_NoDefCTor" xml:space="preserve">
     <value>No parameterless constructor defined for type '{0}'.</value>
   </data>

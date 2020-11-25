@@ -257,12 +257,8 @@ namespace System
         /// semantics. This method will ensure the type object is fully initialized within
         /// the VM, but it will not call any static ctors on the type.
         /// </summary>
-#if FEATURE_COMINTEROP
-        [DynamicDependency("_AllocateComObject(System.Void*)")]
-#endif
         internal static void GetActivationInfo(
             RuntimeType rt,
-            bool forGetUninitializedInstance,
             out delegate*<void*, object> pfnAllocator,
             out void* vAllocatorFirstArg,
             out delegate*<object, void> pfnCtor,
@@ -270,52 +266,27 @@ namespace System
         {
             Debug.Assert(rt != null);
 
-            // Get the requested activation information
-            // GetUninitializedInstance doesn't care about ctor information
+            delegate*<void*, object> pfnAllocatorTemp = default;
+            void* vAllocatorFirstArgTemp = default;
+            delegate*<object, void> pfnCtorTemp = default;
+            Interop.BOOL fCtorIsPublicTemp = default;
 
-            try
-            {
-                delegate*<void*, object> pfnAllocatorTemp = default;
-                void* vAllocatorFirstArgTemp = default;
-                delegate*<object, void> pfnCtorTemp = default;
-                Interop.BOOL fCtorIsPublicTemp = default;
+            _GetActivationInfo(
+                ObjectHandleOnStack.Create(ref rt),
+                &pfnAllocatorTemp, &vAllocatorFirstArgTemp,
+                ppfnCtor: &pfnCtorTemp,
+                pfCtorIsPublic: &fCtorIsPublicTemp);
 
-                _GetActivationInfo(
-                    ObjectHandleOnStack.Create(ref rt),
-                    &pfnAllocatorTemp, &vAllocatorFirstArgTemp,
-                    ppfnCtor: forGetUninitializedInstance ? null : &pfnCtorTemp,
-                    pfCtorIsPublic: forGetUninitializedInstance ? null : &fCtorIsPublicTemp);
+            // Marshal values back to caller
 
-                // Marshal values back to caller
+            Debug.Assert(pfnAllocatorTemp != null);
+            pfnAllocator = pfnAllocatorTemp;
 
-                Debug.Assert(pfnAllocatorTemp != null);
-                pfnAllocator = pfnAllocatorTemp;
+            Debug.Assert(vAllocatorFirstArgTemp != null);
+            vAllocatorFirstArg = vAllocatorFirstArgTemp;
 
-                Debug.Assert(vAllocatorFirstArgTemp != null);
-                vAllocatorFirstArg = vAllocatorFirstArgTemp;
-
-                pfnCtor = pfnCtorTemp; // could be null
-                ctorIsPublic = fCtorIsPublicTemp != Interop.BOOL.FALSE;
-            }
-            catch (Exception ex)
-            {
-                // Exception messages coming from the runtime won't include
-                // the type name. Let's include it here to improve the
-                // debugging experience for our callers.
-
-                string friendlyMessage = SR.Format(SR.Activator_CannotCreateInstance, rt, ex.Message);
-                switch (ex)
-                {
-                    case ArgumentException: throw new ArgumentException(friendlyMessage);
-                    case PlatformNotSupportedException: throw new PlatformNotSupportedException(friendlyMessage);
-                    case NotSupportedException: throw new NotSupportedException(friendlyMessage);
-                    case MethodAccessException: throw new MethodAccessException(friendlyMessage);
-                    case MissingMethodException: throw new MissingMethodException(friendlyMessage);
-                    case MemberAccessException: throw new MemberAccessException(friendlyMessage);
-                }
-
-                throw; // can't make a friendlier message, rethrow original exception
-            }
+            pfnCtor = pfnCtorTemp; // could be null
+            ctorIsPublic = fCtorIsPublicTemp != Interop.BOOL.FALSE;
         }
 
         [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
@@ -668,18 +639,6 @@ namespace System
 
         [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
         internal static extern Interop.BOOL IsCollectible(QCallTypeHandle handle);
-
-        // Returns true iff type is a closed nullable type, like int? or double?.
-        // Returns false if given the open type Nullable<>.
-        internal static bool IsConstructedNullableType(RuntimeType type)
-        {
-            Debug.Assert(type != null);
-            return IsConstructedNullableType(new QCallTypeHandle(ref type)) != Interop.BOOL.FALSE;
-        }
-
-        [SuppressGCTransition]
-        [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
-        private static extern Interop.BOOL IsConstructedNullableType(QCallTypeHandle handle);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern bool HasInstantiation(RuntimeType type);

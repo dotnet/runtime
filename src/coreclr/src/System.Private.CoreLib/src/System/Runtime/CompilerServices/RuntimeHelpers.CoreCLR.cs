@@ -39,18 +39,13 @@ namespace System.Runtime.CompilerServices
         // This call will generate an exception if the specified class constructor threw an
         // exception when it ran.
 
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        private static extern void _RunClassConstructor(RuntimeType type);
+
         public static void RunClassConstructor(RuntimeTypeHandle type)
         {
-            _RunClassConstructor(
-                new QCallTypeHandle(ref type),
-                preciseCctorsOnly: Interop.BOOL.FALSE);
+            _RunClassConstructor(type.GetRuntimeType());
         }
-
-        // If 'preciseCctorsOnly' is true, runs only cctors *NOT* marked .beforefieldinit.
-        // If 'preciseCctorsOnly' is false, runs any cctor, regardless of .beforefieldinit annotation.
-        [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
-        internal static extern void _RunClassConstructor(QCallTypeHandle typeHandle, Interop.BOOL preciseCctorsOnly);
-
 
         // RunModuleConstructor causes the module constructor for the given type to be triggered
         // in the current domain.  After this call returns, the module constructor is guaranteed to
@@ -143,38 +138,15 @@ namespace System.Runtime.CompilerServices
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern bool TryEnsureSufficientExecutionStack();
 
-        private static unsafe object GetUninitializedObjectInternal(
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        private static extern object GetUninitializedObjectInternal(
+            // This API doesn't call any constructors, but the type needs to be seen as constructed.
+            // A type is seen as constructed if a constructor is kept.
+            // This obviously won't cover a type with no constructor. Reference types with no
+            // constructor are an academic problem. Valuetypes with no constructors are a problem,
+            // but IL Linker currently treats them as always implicitly boxed.
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors)]
-            Type type)
-        {
-            Debug.Assert(type != null);
-            RuntimeType rt = (RuntimeType)type;
-
-            // If type is Nullable<T>, returns the allocator for the underlying T.
-            RuntimeTypeHandle.GetActivationInfo(rt, forGetUninitializedInstance: true,
-                out delegate*<void*, object> pfnAllocator, out void* vAllocatorFirstArg, out _, out _);
-
-            Debug.Assert(pfnAllocator != null);
-
-            // Per ECMA-335, Sec. I.8.9.5, the instance ctor is normally responsible for invoking
-            // any non-.beforefieldinit static cctor. However, since we're going to skip calling
-            // the instance ctor, we need to invoke any precise static cctors manually, otherwise
-            // the caller could receive a not-fully-usable type. Exception: we won't call the
-            // precise static cctor for value types, since we're just creating a boxed default(T),
-            // and the precise static cctor will run when the caller invokes any instance method
-            // on the struct.
-
-            if (!RuntimeTypeHandle.IsValueType(rt))
-            {
-                // Call below will early-exit if there's no precise static cctor
-                _RunClassConstructor(new QCallTypeHandle(ref rt), preciseCctorsOnly: Interop.BOOL.TRUE);
-            }
-
-            object retVal = pfnAllocator(vAllocatorFirstArg);
-            GC.KeepAlive(rt); // don't allow the type to be collected before the object is instantiated
-
-            return retVal;
-        }
+            Type type);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern object AllocateUninitializedClone(object obj);
