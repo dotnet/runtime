@@ -9,7 +9,8 @@
   </ItemGroup>
 
   <Target Name="CompileAsn" BeforeTargets="CoreCompile"
-    Inputs="@(AsnXml)"
+    Condition=" '@(AsnXml)' != '' "
+    Inputs="@(AsnXml);$(MSBuildThisFileDirectory)asn.xslt"
     Outputs="%(Identity).cs">
 
     <MakeDir Directories="$(IntermediateOutputPath)asnxml" />
