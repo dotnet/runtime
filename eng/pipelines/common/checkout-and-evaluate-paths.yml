@@ -75,5 +75,6 @@ jobs:
       - eng/pipelines/coreclr/*
       - eng/pipelines/mono/*
       - eng/pipelines/libraries/*
-    
-    - ${{ parameters.extraSubsets }}
+
+    - ${{ if ne(parameters.extraSubsets, '') }}:
+      - ${{ parameters.extraSubsets }}
