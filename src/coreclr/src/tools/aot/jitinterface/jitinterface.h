@@ -171,6 +171,7 @@ struct JitInterfaceCallbacks
     void (* reportFatalError)(void * thisHandle, CorInfoException** ppException, int result);
     int (* allocMethodBlockCounts)(void * thisHandle, CorInfoException** ppException, unsigned int count, void** pBlockCounts);
     int (* getMethodBlockCounts)(void * thisHandle, CorInfoException** ppException, void* ftnHnd, unsigned int* pCount, void** pBlockCounts, unsigned int* pNumRuns);
+    void* (* getLikelyClass)(void * thisHandle, CorInfoException** ppException, void* ftnHnd, void* baseHnd, unsigned int ilOffset, unsigned int* pLikelihood, unsigned int* pNumberOfClasses);
     void (* recordCallSite)(void * thisHandle, CorInfoException** ppException, unsigned int instrOffset, void* callSig, void* methodHandle);
     void (* recordRelocation)(void * thisHandle, CorInfoException** ppException, void* location, void* target, unsigned short fRelocType, unsigned short slotNum, int addlDelta);
     unsigned short (* getRelocTypeHint)(void * thisHandle, CorInfoException** ppException, void* target);
@@ -1603,6 +1604,15 @@ public:
     {
         CorInfoException* pException = nullptr;
         int _ret = _callbacks->getMethodBlockCounts(_thisHandle, &pException, ftnHnd, pCount, pBlockCounts, pNumRuns);
+        if (pException != nullptr)
+            throw pException;
+        return _ret;
+    }
+
+    virtual void* getLikelyClass(void* ftnHnd, void* baseHnd, unsigned int ilOffset, unsigned int* pLikelihood, unsigned int* pNumberOfClasses)
+    {
+        CorInfoException* pException = nullptr;
+        void* _ret = _callbacks->getLikelyClass(_thisHandle, &pException, ftnHnd, baseHnd, ilOffset, pLikelihood, pNumberOfClasses);
         if (pException != nullptr)
             throw pException;
         return _ret;

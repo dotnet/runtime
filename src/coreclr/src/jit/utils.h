@@ -169,6 +169,11 @@ public:
         }
     }
 
+    bool IsEmpty() const
+    {
+        return m_lastRange == 0;
+    }
+
     // Error checks
     bool Error() const
     {

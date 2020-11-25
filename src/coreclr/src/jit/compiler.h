@@ -3779,7 +3779,8 @@ public:
                              CORINFO_CONTEXT_HANDLE* contextHandle,
                              CORINFO_CONTEXT_HANDLE* exactContextHandle,
                              bool                    isLateDevirtualization,
-                             bool                    isExplicitTailCall);
+                             bool                    isExplicitTailCall,
+                             IL_OFFSETX              ilOffset = BAD_IL_OFFSET);
 
     //=========================================================================
     //                          PROTECTED
@@ -6746,7 +6747,8 @@ public:
                                              CORINFO_METHOD_HANDLE methodHandle,
                                              CORINFO_CLASS_HANDLE  classHandle,
                                              unsigned              methodAttr,
-                                             unsigned              classAttr);
+                                             unsigned              classAttr,
+                                             unsigned              likelihood);
 
     bool doesMethodHaveExpRuntimeLookup()
     {
@@ -9311,6 +9313,10 @@ public:
 #define CPU_ARM64 0x0400 // The generic ARM64 CPU
 
         unsigned genCPU; // What CPU are we running on
+
+        // Number of class profile probes in this method
+        unsigned compClassProbeCount;
+
     } info;
 
     // Returns true if the method being compiled returns a non-void and non-struct value.

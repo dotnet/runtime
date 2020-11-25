@@ -321,6 +321,7 @@ FUNCTIONS
     void reportFatalError(CorJitResult result)
     HRESULT allocMethodBlockCounts(UINT32 count, ICorJitInfo::BlockCounts** pBlockCounts)
     HRESULT getMethodBlockCounts(CORINFO_METHOD_HANDLE ftnHnd, UINT32* pCount, ICorJitInfo::BlockCounts** pBlockCounts, UINT32* pNumRuns)
+    CORINFO_CLASS_HANDLE getLikelyClass(CORINFO_METHOD_HANDLE ftnHnd, CORINFO_CLASS_HANDLE baseHnd, UINT32 ilOffset, UINT32* pLikelihood, UINT32* pNumberOfClasses)
     void recordCallSite(ULONG instrOffset, CORINFO_SIG_INFO* callSig, CORINFO_METHOD_HANDLE methodHandle)
     void recordRelocation(void* location, void* target, WORD fRelocType, WORD slotNum, INT32 addlDelta)
     WORD getRelocTypeHint(void* target)

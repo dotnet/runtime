@@ -2441,6 +2441,21 @@ namespace Internal.JitInterface
         }
 
         [UnmanagedCallersOnly]
+        static CORINFO_CLASS_STRUCT_* _getLikelyClass(IntPtr thisHandle, IntPtr* ppException, CORINFO_METHOD_STRUCT_* ftnHnd, CORINFO_CLASS_STRUCT_* baseHnd, uint ilOffset, uint* pLikelihood, uint* pNumberOfClasses)
+        {
+            var _this = GetThis(thisHandle);
+            try
+            {
+                return _this.getLikelyClass(ftnHnd, baseHnd, ilOffset, ref *pLikelihood, ref *pNumberOfClasses);
+            }
+            catch (Exception ex)
+            {
+                *ppException = _this.AllocException(ex);
+                return default;
+            }
+        }
+
+        [UnmanagedCallersOnly]
         static void _recordCallSite(IntPtr thisHandle, IntPtr* ppException, uint instrOffset, CORINFO_SIG_INFO* callSig, CORINFO_METHOD_STRUCT_* methodHandle)
         {
             var _this = GetThis(thisHandle);
@@ -2516,7 +2531,7 @@ namespace Internal.JitInterface
 
         static IntPtr GetUnmanagedCallbacks()
         {
-            void** callbacks = (void**)Marshal.AllocCoTaskMem(sizeof(IntPtr) * 170);
+            void** callbacks = (void**)Marshal.AllocCoTaskMem(sizeof(IntPtr) * 171);
 
             callbacks[0] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_METHOD_STRUCT_*, uint>)&_getMethodAttribs;
             callbacks[1] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_METHOD_STRUCT_*, CorInfoMethodRuntimeFlags, void>)&_setMethodAttribs;
@@ -2683,11 +2698,12 @@ namespace Internal.JitInterface
             callbacks[162] = (delegate* unmanaged<IntPtr, IntPtr*, CorJitResult, void>)&_reportFatalError;
             callbacks[163] = (delegate* unmanaged<IntPtr, IntPtr*, uint, BlockCounts**, HRESULT>)&_allocMethodBlockCounts;
             callbacks[164] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_METHOD_STRUCT_*, uint*, BlockCounts**, uint*, HRESULT>)&_getMethodBlockCounts;
-            callbacks[165] = (delegate* unmanaged<IntPtr, IntPtr*, uint, CORINFO_SIG_INFO*, CORINFO_METHOD_STRUCT_*, void>)&_recordCallSite;
-            callbacks[166] = (delegate* unmanaged<IntPtr, IntPtr*, void*, void*, ushort, ushort, int, void>)&_recordRelocation;
-            callbacks[167] = (delegate* unmanaged<IntPtr, IntPtr*, void*, ushort>)&_getRelocTypeHint;
-            callbacks[168] = (delegate* unmanaged<IntPtr, IntPtr*, uint>)&_getExpectedTargetArchitecture;
-            callbacks[169] = (delegate* unmanaged<IntPtr, IntPtr*, CORJIT_FLAGS*, uint, uint>)&_getJitFlags;
+            callbacks[165] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_METHOD_STRUCT_*, CORINFO_CLASS_STRUCT_*, uint, uint*, uint*, CORINFO_CLASS_STRUCT_*>)&_getLikelyClass;
+            callbacks[166] = (delegate* unmanaged<IntPtr, IntPtr*, uint, CORINFO_SIG_INFO*, CORINFO_METHOD_STRUCT_*, void>)&_recordCallSite;
+            callbacks[167] = (delegate* unmanaged<IntPtr, IntPtr*, void*, void*, ushort, ushort, int, void>)&_recordRelocation;
+            callbacks[168] = (delegate* unmanaged<IntPtr, IntPtr*, void*, ushort>)&_getRelocTypeHint;
+            callbacks[169] = (delegate* unmanaged<IntPtr, IntPtr*, uint>)&_getExpectedTargetArchitecture;
+            callbacks[170] = (delegate* unmanaged<IntPtr, IntPtr*, CORJIT_FLAGS*, uint, uint>)&_getJitFlags;
 
             return (IntPtr)callbacks;
         }

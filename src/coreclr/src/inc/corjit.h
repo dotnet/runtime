@@ -251,6 +251,34 @@ public:
         UINT32 ExecutionCount;
     };
 
+    // Data structure for a single class probe.
+    //
+    // ILOffset is the IL offset in the method for the call site being probed.
+    // Currently it must be ORed with CLASS_FLAG and (for interface calls)
+    // INTERFACE_FLAG.
+    //
+    // Count is the number of times a call was made at that call site.
+    //
+    // SIZE is the number of entries in the table.
+    //
+    // SAMPLE_INTERVAL must be >= SIZE. SAMPLE_INTERVAL / SIZE
+    // gives the average number of calls between table updates.
+    // 
+    struct ClassProfile
+    {
+        enum { 
+            SIZE = 8, 
+            SAMPLE_INTERVAL = 32, 
+            CLASS_FLAG     = 0x80000000, 
+            INTERFACE_FLAG = 0x40000000,
+            OFFSET_MASK    = 0x3FFFFFFF
+        };
+
+        UINT32 ILOffset;
+        UINT32 Count;
+        CORINFO_CLASS_HANDLE ClassTable[SIZE];
+    };
+
     // allocate a basic block profile buffer where execution counts will be stored
     // for jitted basic blocks.
     virtual HRESULT allocMethodBlockCounts (
@@ -265,6 +293,24 @@ public:
             UINT32 *              pCount,          // pointer to the count of <ILOffset, ExecutionCount> tuples
             BlockCounts **        pBlockCounts,    // pointer to array of <ILOffset, ExecutionCount> tuples
             UINT32 *              pNumRuns         // pointer to the total number of profile scenarios run
+            ) = 0;
+
+    // Get the likely implementing class for a virtual call or interface call made by ftnHnd
+    // at the indicated IL offset. baseHnd is the interface class or base class for the method
+    // being called. May returns NULL.
+    // 
+    // pLikelihood is the estimated percent chance that the class at runtime is the class
+    // returned by this method. A well-estimated monomorphic call site will return a likelihood
+    // of 100.
+    // 
+    // pNumberOfClasses is the estimated number of different classes seen at the site.
+    // A well-estimated monomorphic call site will return 1.
+    virtual CORINFO_CLASS_HANDLE getLikelyClass(
+            CORINFO_METHOD_HANDLE ftnHnd,
+            CORINFO_CLASS_HANDLE  baseHnd,
+            UINT32                ilOffset,
+            UINT32 *              pLikelihood,      // OUT, estimated likelihood of the class (0...100)
+            UINT32 *              pNumberOfClasses  // OUT, estimated number of possible classes
             ) = 0;
 
     // Associates a native call site, identified by its offset in the native code stream, with

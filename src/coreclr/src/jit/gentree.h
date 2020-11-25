@@ -155,6 +155,7 @@ enum TargetHandleType : BYTE
 struct BasicBlock;
 struct InlineCandidateInfo;
 struct GuardedDevirtualizationCandidateInfo;
+struct ClassProfileCandidateInfo;
 
 typedef unsigned short AssertionIndex;
 
@@ -4516,6 +4517,7 @@ struct GenTreeCall final : public GenTree
         // gtInlineCandidateInfo is only used when inlining methods
         InlineCandidateInfo*                  gtInlineCandidateInfo;
         GuardedDevirtualizationCandidateInfo* gtGuardedDevirtualizationCandidateInfo;
+        ClassProfileCandidateInfo*            gtClassProfileCandidateInfo;
         void*                                 gtStubCallStubAddr; // GTF_CALL_VIRT_STUB - these are never inlined
         CORINFO_GENERIC_HANDLE compileTimeHelperArgumentHandle; // Used to track type handle argument of dynamic helpers
         void*                  gtDirectCallAddress; // Used to pass direct call address between lower and codegen

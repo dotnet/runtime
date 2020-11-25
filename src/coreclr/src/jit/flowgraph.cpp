@@ -381,12 +381,34 @@ bool Compiler::fgGetProfileWeightForBasicBlock(IL_OFFSET offset, BasicBlock::wei
     return true;
 }
 
+//------------------------------------------------------------------------
+// fgInstrumentMethod: add instrumentation probes to the method
+//
+// Note:
+//
+//   By default this instruments each non-internal block with
+//   a counter probe.
+//
+//   Probes data is held in a runtime-allocated slab of Entries, with
+//   each Entry an (IL offset, count) pair. This method determines
+//   the number of Entrys needed and initializes each entry's IL offset.
+//
+//   Options (many not yet implemented):
+//   * suppress count instrumentation for methods with
+//     a single block, or
+//   * instrument internal blocks (requires same internal expansions
+//     for BBOPT and BBINSTR, not yet guaranteed)
+//   * use spanning tree for minimal count probing
+//   * add class profile probes for virtual and interface call sites
+//   * record indirection cells for VSD calls
+//
 void Compiler::fgInstrumentMethod()
 {
     noway_assert(!compIsForInlining());
 
     // Count the number of basic blocks in the method
-
+    // that will get block count probes.
+    //
     int         countOfBlocks = 0;
     BasicBlock* block;
     for (block = fgFirstBB; (block != nullptr); block = block->bbNext)
@@ -398,45 +420,255 @@ void Compiler::fgInstrumentMethod()
         countOfBlocks++;
     }
 
+    // We've already counted the number of class probes
+    // when importing.
+    //
+    int countOfCalls = info.compClassProbeCount;
+
+    // Optionally bail out, if there are less than three blocks and no call sites to profile.
+    // One block is common. We don't expect to see zero or two blocks here.
+    //
+    // Note we have to at least visit all the profile call sites to properly restore their
+    // stub addresses. So we can't bail out early if there are any of these.
+    //
+    if ((JitConfig.JitMinimalProfiling() > 0) && (countOfBlocks < 3) && (countOfCalls == 0))
+    {
+        JITDUMP("Not instrumenting method: %d blocks and %d calls\n", countOfBlocks, countOfCalls);
+        assert(countOfBlocks == 1);
+        return;
+    }
+
+    JITDUMP("Instrumenting method, %d blocks and %d calls\n", countOfBlocks, countOfCalls);
+
     // Allocate the profile buffer
+    //
+    // Allocation is in multiples of ICorJitInfo::BlockCounts. For each profile table we need
+    // some multiple of these.
+    //
+    const unsigned entriesPerCall = sizeof(ICorJitInfo::ClassProfile) / sizeof(ICorJitInfo::BlockCounts);
+    assert(entriesPerCall * sizeof(ICorJitInfo::BlockCounts) == sizeof(ICorJitInfo::ClassProfile));
 
-    ICorJitInfo::BlockCounts* profileBlockCountsStart;
+    const unsigned            totalEntries            = countOfBlocks + entriesPerCall * countOfCalls;
+    ICorJitInfo::BlockCounts* profileBlockCountsStart = nullptr;
 
-    HRESULT res = info.compCompHnd->allocMethodBlockCounts(countOfBlocks, &profileBlockCountsStart);
+    HRESULT res = info.compCompHnd->allocMethodBlockCounts(totalEntries, &profileBlockCountsStart);
+
+    // We may not be able to instrument, if so we'll set this false.
+    // We can't just early exit, because we have to clean up calls that we might have profiled.
+    //
+    bool instrument = true;
 
     if (!SUCCEEDED(res))
     {
+        JITDUMP("Unable to instrument -- block counter allocation failed: 0x%x\n", res);
+        instrument = false;
         // The E_NOTIMPL status is returned when we are profiling a generic method from a different assembly
-        if (res == E_NOTIMPL)
-        {
-            // expected failure...
-        }
-        else
+        if (res != E_NOTIMPL)
         {
             noway_assert(!"Error: failed to allocate profileBlockCounts");
             return;
         }
     }
-    else
+
+    ICorJitInfo::BlockCounts* profileBlockCountsEnd = &profileBlockCountsStart[countOfBlocks];
+    ICorJitInfo::BlockCounts* profileEnd            = &profileBlockCountsStart[totalEntries];
+
+    // For each BasicBlock (non-Internal)
+    //  1. Assign the blocks bbCodeOffs to the ILOffset field of this blocks profile data.
+    //  2. Add an operation that increments the ExecutionCount field at the beginning of the block.
+    //
+    // Each (non-Internal) block has it own BlockCounts tuple [ILOffset, ExecutionCount]
+    // To start we initialize our current one with the first one that we allocated
+    //
+    ICorJitInfo::BlockCounts* currentBlockCounts = profileBlockCountsStart;
+
+    for (block = fgFirstBB; (block != nullptr); block = block->bbNext)
     {
-        // For each BasicBlock (non-Internal)
-        //  1. Assign the blocks bbCodeOffs to the ILOffset field of this blocks profile data.
-        //  2. Add an operation that increments the ExecutionCount field at the beginning of the block.
-
-        // Each (non-Internal) block has it own BlockCounts tuple [ILOffset, ExecutionCount]
-        // To start we initialize our current one with the first one that we allocated
+        // We don't want to profile any un-imported blocks
         //
-        ICorJitInfo::BlockCounts* currentBlockCounts = profileBlockCountsStart;
-
-        for (block = fgFirstBB; (block != nullptr); block = block->bbNext)
+        if ((block->bbFlags & BBF_IMPORTED) == 0)
         {
-            if (!(block->bbFlags & BBF_IMPORTED) || (block->bbFlags & BBF_INTERNAL))
-            {
-                continue;
-            }
+            continue;
+        }
 
+        // We may see class probes in internal blocks, thanks to the
+        // block splitting done by the indirect call transformer.
+        //
+        if (JitConfig.JitClassProfiling() > 0)
+        {
+            // Only works when jitting.
+            assert(!opts.jitFlags->IsSet(JitFlags::JIT_FLAG_PREJIT));
+
+            if ((block->bbFlags & BBF_HAS_CLASS_PROFILE) != 0)
+            {
+                // Would be nice to avoid having to search here by tracking
+                // candidates more directly.
+                //
+                JITDUMP("Scanning for calls to profile in " FMT_BB "\n", block->bbNum);
+
+                class ClassProbeVisitor final : public GenTreeVisitor<ClassProbeVisitor>
+                {
+                public:
+                    enum
+                    {
+                        DoPreOrder = true
+                    };
+
+                    int                        m_count;
+                    ICorJitInfo::ClassProfile* m_tableBase;
+                    bool                       m_instrument;
+
+                    ClassProbeVisitor(Compiler* compiler, ICorJitInfo::ClassProfile* tableBase, bool instrument)
+                        : GenTreeVisitor<ClassProbeVisitor>(compiler)
+                        , m_count(0)
+                        , m_tableBase(tableBase)
+                        , m_instrument(instrument)
+                    {
+                    }
+                    Compiler::fgWalkResult PreOrderVisit(GenTree** use, GenTree* user)
+                    {
+                        GenTree* const node = *use;
+                        if (node->IsCall())
+                        {
+                            GenTreeCall* const call = node->AsCall();
+                            if (call->IsVirtual() && (call->gtCallType != CT_INDIRECT))
+                            {
+                                JITDUMP("Found call [%06u] with probe index %d and ilOffset 0x%X\n",
+                                        m_compiler->dspTreeID(call), call->gtClassProfileCandidateInfo->probeIndex,
+                                        call->gtClassProfileCandidateInfo->ilOffset);
+
+                                m_count++;
+
+                                if (m_instrument)
+                                {
+                                    // We transform the call from (CALLVIRT obj, ... args ...) to
+                                    // to
+                                    //      (CALLVIRT
+                                    //        (COMMA
+                                    //          (ASG tmp, obj)
+                                    //          (COMMA
+                                    //            (CALL probe_fn tmp, &probeEntry)
+                                    //            tmp)))
+                                    //         ... args ...)
+                                    //
+
+                                    assert(call->gtCallThisArg->GetNode()->TypeGet() == TYP_REF);
+
+                                    // Figure out where the table is located.
+                                    //
+                                    ICorJitInfo::ClassProfile* classProfile =
+                                        &m_tableBase[call->gtClassProfileCandidateInfo->probeIndex];
+
+                                    // Grab a temp to hold the 'this' object as it will be used three times
+                                    //
+                                    unsigned const tmpNum = m_compiler->lvaGrabTemp(true DEBUGARG("class profile tmp"));
+                                    m_compiler->lvaTable[tmpNum].lvType = TYP_REF;
+
+                                    // Generate the IR...
+                                    //
+                                    GenTree* const classProfileNode =
+                                        m_compiler->gtNewIconNode((ssize_t)classProfile, TYP_I_IMPL);
+                                    GenTree* const          tmpNode = m_compiler->gtNewLclvNode(tmpNum, TYP_REF);
+                                    GenTreeCall::Use* const args = m_compiler->gtNewCallArgs(tmpNode, classProfileNode);
+                                    GenTree* const          helperCallNode =
+                                        m_compiler->gtNewHelperCallNode(CORINFO_HELP_CLASSPROFILE, TYP_VOID, args);
+                                    GenTree* const tmpNode2 = m_compiler->gtNewLclvNode(tmpNum, TYP_REF);
+                                    GenTree* const callCommaNode =
+                                        m_compiler->gtNewOperNode(GT_COMMA, TYP_REF, helperCallNode, tmpNode2);
+                                    GenTree* const tmpNode3 = m_compiler->gtNewLclvNode(tmpNum, TYP_REF);
+                                    GenTree* const asgNode  = m_compiler->gtNewOperNode(GT_ASG, TYP_REF, tmpNode3,
+                                                                                       call->gtCallThisArg->GetNode());
+                                    GenTree* const asgCommaNode =
+                                        m_compiler->gtNewOperNode(GT_COMMA, TYP_REF, asgNode, callCommaNode);
+
+                                    // Update the call
+                                    //
+                                    call->gtCallThisArg->SetNode(asgCommaNode);
+
+                                    JITDUMP("Modified call is now\n");
+                                    DISPTREE(call);
+
+                                    // Initialize the class table
+                                    //
+                                    // Hack: we use two high bits of the offset to indicate that this record
+                                    // is the start of a class profile, and what kind of call is being profiled.
+                                    //
+                                    IL_OFFSET offset = jitGetILoffs(call->gtClassProfileCandidateInfo->ilOffset);
+                                    assert((offset & (ICorJitInfo::ClassProfile::CLASS_FLAG |
+                                                      ICorJitInfo::ClassProfile::INTERFACE_FLAG)) == 0);
+
+                                    offset |= ICorJitInfo::ClassProfile::CLASS_FLAG;
+
+                                    if (call->IsVirtualStub())
+                                    {
+                                        offset |= ICorJitInfo::ClassProfile::INTERFACE_FLAG;
+                                    }
+                                    else
+                                    {
+                                        assert(call->IsVirtualVtable());
+                                    }
+
+                                    classProfile->ILOffset = offset;
+                                    classProfile->Count    = 0;
+
+                                    for (int i = 0; i < ICorJitInfo::ClassProfile::SIZE; i++)
+                                    {
+                                        classProfile->ClassTable[i] = NO_CLASS_HANDLE;
+                                    }
+                                }
+
+                                // Restore the stub address on call, whether instrumenting or not.
+                                //
+                                call->gtStubCallStubAddr = call->gtClassProfileCandidateInfo->stubAddr;
+                            }
+                        }
+
+                        return Compiler::WALK_CONTINUE;
+                    }
+                };
+
+                // Scan the statements and add class probes
+                //
+                ClassProbeVisitor visitor(this, (ICorJitInfo::ClassProfile*)profileBlockCountsEnd, instrument);
+                for (Statement* stmt : block->Statements())
+                {
+                    visitor.WalkTree(stmt->GetRootNodePointer(), nullptr);
+                }
+
+                // Bookkeeping
+                //
+                assert(visitor.m_count <= countOfCalls);
+                countOfCalls -= visitor.m_count;
+                JITDUMP("\n%d calls remain to be visited\n", countOfCalls);
+            }
+            else
+            {
+                JITDUMP("No calls to profile in " FMT_BB "\n", block->bbNum);
+            }
+        }
+
+        // We won't need count probes in internal blocks.
+        //
+        // TODO, perhaps: profile the flow early expansion ... we would need
+        // some non-il based keying scheme.
+        //
+        if ((block->bbFlags & BBF_INTERNAL) != 0)
+        {
+            continue;
+        }
+
+        // One less block
+        countOfBlocks--;
+
+        if (instrument)
+        {
             // Assign the current block's IL offset into the profile data
-            currentBlockCounts->ILOffset       = block->bbCodeOffs;
+            // (make sure IL offset is sane)
+            //
+            IL_OFFSET offset = block->bbCodeOffs;
+            assert((int)offset >= 0);
+
+            currentBlockCounts->ILOffset       = offset;
             currentBlockCounts->ExecutionCount = 0;
 
             size_t addrOfCurrentExecutionCount = (size_t)&currentBlockCounts->ExecutionCount;
@@ -456,57 +688,63 @@ void Compiler::fgInstrumentMethod()
 
             // Advance to the next BlockCounts tuple [ILOffset, ExecutionCount]
             currentBlockCounts++;
-
-            // One less block
-            countOfBlocks--;
         }
-        // Check that we allocated and initialized the same number of BlockCounts tuples
-        noway_assert(countOfBlocks == 0);
+    }
 
-        // When prejitting, add the method entry callback node
-        if (opts.jitFlags->IsSet(JitFlags::JIT_FLAG_PREJIT))
-        {
-            GenTree* arg;
+    if (!instrument)
+    {
+        return;
+    }
+
+    // Check that we allocated and initialized the same number of BlockCounts tuples
+    //
+    noway_assert(countOfBlocks == 0);
+    noway_assert(countOfCalls == 0);
+    assert(currentBlockCounts == profileBlockCountsEnd);
+
+    // When prejitting, add the method entry callback node
+    if (opts.jitFlags->IsSet(JitFlags::JIT_FLAG_PREJIT))
+    {
+        GenTree* arg;
 
 #ifdef FEATURE_READYTORUN_COMPILER
-            if (opts.IsReadyToRun())
-            {
-                mdMethodDef currentMethodToken = info.compCompHnd->getMethodDefFromMethod(info.compMethodHnd);
+        if (opts.IsReadyToRun())
+        {
+            mdMethodDef currentMethodToken = info.compCompHnd->getMethodDefFromMethod(info.compMethodHnd);
 
-                CORINFO_RESOLVED_TOKEN resolvedToken;
-                resolvedToken.tokenContext = MAKE_METHODCONTEXT(info.compMethodHnd);
-                resolvedToken.tokenScope   = info.compScopeHnd;
-                resolvedToken.token        = currentMethodToken;
-                resolvedToken.tokenType    = CORINFO_TOKENKIND_Method;
+            CORINFO_RESOLVED_TOKEN resolvedToken;
+            resolvedToken.tokenContext = MAKE_METHODCONTEXT(info.compMethodHnd);
+            resolvedToken.tokenScope   = info.compScopeHnd;
+            resolvedToken.token        = currentMethodToken;
+            resolvedToken.tokenType    = CORINFO_TOKENKIND_Method;
 
-                info.compCompHnd->resolveToken(&resolvedToken);
+            info.compCompHnd->resolveToken(&resolvedToken);
 
-                arg = impTokenToHandle(&resolvedToken);
-            }
-            else
-#endif
-            {
-                arg = gtNewIconEmbMethHndNode(info.compMethodHnd);
-            }
-
-            GenTreeCall::Use* args = gtNewCallArgs(arg);
-            GenTree*          call = gtNewHelperCallNode(CORINFO_HELP_BBT_FCN_ENTER, TYP_VOID, args);
-
-            // Get the address of the first blocks ExecutionCount
-            size_t addrOfFirstExecutionCount = (size_t)&profileBlockCountsStart->ExecutionCount;
-
-            // Read Basic-Block count value
-            GenTree* valueNode = gtNewIndOfIconHandleNode(TYP_INT, addrOfFirstExecutionCount, GTF_ICON_BBC_PTR, false);
-
-            // Compare Basic-Block count value against zero
-            GenTree*   relop = gtNewOperNode(GT_NE, TYP_INT, valueNode, gtNewIconNode(0, TYP_INT));
-            GenTree*   colon = new (this, GT_COLON) GenTreeColon(TYP_VOID, gtNewNothingNode(), call);
-            GenTree*   cond  = gtNewQmarkNode(TYP_VOID, relop, colon);
-            Statement* stmt  = gtNewStmt(cond);
-
-            fgEnsureFirstBBisScratch();
-            fgInsertStmtAtEnd(fgFirstBB, stmt);
+            arg = impTokenToHandle(&resolvedToken);
         }
+        else
+#endif
+        {
+            arg = gtNewIconEmbMethHndNode(info.compMethodHnd);
+        }
+
+        GenTreeCall::Use* args = gtNewCallArgs(arg);
+        GenTree*          call = gtNewHelperCallNode(CORINFO_HELP_BBT_FCN_ENTER, TYP_VOID, args);
+
+        // Get the address of the first blocks ExecutionCount
+        size_t addrOfFirstExecutionCount = (size_t)&profileBlockCountsStart->ExecutionCount;
+
+        // Read Basic-Block count value
+        GenTree* valueNode = gtNewIndOfIconHandleNode(TYP_INT, addrOfFirstExecutionCount, GTF_ICON_BBC_PTR, false);
+
+        // Compare Basic-Block count value against zero
+        GenTree*   relop = gtNewOperNode(GT_NE, TYP_INT, valueNode, gtNewIconNode(0, TYP_INT));
+        GenTree*   colon = new (this, GT_COLON) GenTreeColon(TYP_VOID, gtNewNothingNode(), call);
+        GenTree*   cond  = gtNewQmarkNode(TYP_VOID, relop, colon);
+        Statement* stmt  = gtNewStmt(cond);
+
+        fgEnsureFirstBBisScratch();
+        fgInsertStmtAtEnd(fgFirstBB, stmt);
     }
 }
 

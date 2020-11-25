@@ -93,11 +93,7 @@ private:
     BasicBlock* CreateAndInsertBasicBlock(BBjumpKinds jumpKind, BasicBlock* insertAfter)
     {
         BasicBlock* block = compiler->fgNewBBafter(jumpKind, insertAfter, true);
-        if ((insertAfter->bbFlags & BBF_INTERNAL) == 0)
-        {
-            block->bbFlags &= ~BBF_INTERNAL;
-            block->bbFlags |= BBF_IMPORTED;
-        }
+        block->bbFlags |= BBF_IMPORTED;
         return block;
     }
 
@@ -138,6 +134,7 @@ private:
         block->bbJumpKind = BBJ_COND;
         block->bbJumpDest = remainderBlock;
         helperBlock->bbFlags |= BBF_BACKWARD_JUMP;
+        block->bbFlags |= BBF_INTERNAL;
 
         // Update weights
         remainderBlock->inheritWeight(block);

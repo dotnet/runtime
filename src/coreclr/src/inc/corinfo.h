@@ -208,11 +208,11 @@ TODO: Talk about initializing strutures before use
 //
 //////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-constexpr GUID JITEEVersionIdentifier = { /* 8031aa05-4568-40fc-a0d2-d971d8edba16 */
-    0x8031aa05,
-    0x4568,
-    0x40fc,
-    {0xa0, 0xd2, 0xd9, 0x71, 0xd8, 0xed, 0xba, 0x16}
+constexpr GUID JITEEVersionIdentifier = { /* 0d235fe4-65a1-487a-8553-c845496da901 */
+    0x0d235fe4,
+    0x65a1,
+    0x487a,
+    {0x85, 0x53, 0xc8, 0x45, 0x49, 0x6d, 0xa9, 0x01}
 };
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -623,6 +623,7 @@ enum CorInfoHelpFunc
     CORINFO_HELP_STACK_PROBE,               // Probes each page of the allocated stack frame
 
     CORINFO_HELP_PATCHPOINT,                // Notify runtime that code has reached a patchpoint
+    CORINFO_HELP_CLASSPROFILE,              // Update class profile for a call site
 
     CORINFO_HELP_COUNT,
 };

@@ -1073,6 +1073,16 @@ HRESULT ZapInfo::getMethodBlockCounts (
     return S_OK;
 }
 
+CORINFO_CLASS_HANDLE ZapInfo::getLikelyClass(
+    CORINFO_METHOD_HANDLE ftnHnd,
+    CORINFO_CLASS_HANDLE  baseHnd,
+    UINT32                ilOffset,
+    UINT32*               pLikelihood,
+    UINT32*               pNumberOfClasses)
+{
+    return NULL;
+}
+
 void ZapInfo::allocMem(
     ULONG               hotCodeSize,    /* IN */
     ULONG               coldCodeSize,   /* IN */
