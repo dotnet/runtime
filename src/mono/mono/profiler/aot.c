@@ -24,11 +24,14 @@
 #include <mono/utils/mono-logger-internals.h>
 #include <mono/utils/mono-os-mutex.h>
 #include <mono/utils/mono-threads.h>
+#include <mono/utils/mono-proclib.h>
 #include <string.h>
 #include <errno.h>
 #include <stdlib.h>
 #ifndef HOST_WIN32
 #include <sys/socket.h>
+#else
+#define sleep(t)                 Sleep((t) * 1000)
 #endif
 #include <glib.h>
 
@@ -364,7 +367,7 @@ mono_profiler_init_aot (const char *desc)
 		if (!aot_profiler.outfile_name)
 			aot_profiler.outfile_name = g_strdup ("output.aotprofile");
 		else if (*aot_profiler.outfile_name == '+')
-			aot_profiler.outfile_name = g_strdup_printf ("%s.%d", aot_profiler.outfile_name + 1, getpid ());
+			aot_profiler.outfile_name = g_strdup_printf ("%s.%d", aot_profiler.outfile_name + 1, mono_process_current_pid ());
 
 		if (*aot_profiler.outfile_name == '|') {
 #ifdef HAVE_POPEN
