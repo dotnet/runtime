@@ -199,6 +199,7 @@ in the IL:
     instructions, as some nodes (e.g. constants) may not require a
     register, and other nodes (e.g. those representing addressing modes)
     may become part of the parent instruction at code generation time.
+    Other nodes may cause multiple instructions to be generated.
 
 It is the job of the `Lowering` phase to transform the IR such that:
 
@@ -308,6 +309,7 @@ After LSRA, the graph has the following properties:
         must issue the appropriate move.
 
     -   However, if such a node is constrained to a set of registers,
+        as in the case of x86 instructions which require a byte-addressible register,
         and its current location does not satisfy that requirement, LSRA
         must insert a `GT_COPY` node between the node and its parent.
         The `_gtRegNum` on the `GT_COPY` node must satisfy the register
@@ -320,7 +322,7 @@ After LSRA, the graph has the following properties:
     the code generator after it has been evaluated.
 
     -   Note that a write-thru variable def is always written to the stack, and the `GTF_SPILLED`
-        flag (not otherwise used for pure defs) to indicate that it also remains live
+        flag (not otherwise used for pure defs) is set to indicate that it also remains live
         in the assigned register.
 
 -   A tree node is marked `GTF_SPILLED` if it is a lclVar that must be
@@ -471,8 +473,8 @@ node, which builds `RefPositions` according to the liveness model described abov
 
          When we have an instruction that will overwrite one of its sources, such as RMW
          operands common on x86 and x64,
-         we need to ensure that the other source isn't given the same register as the
-         target. For this, we annotate the use `RefPosition` with `delayRegFree`.
+         we need to ensure that the other source(s) isn't/aren't given the same register as the
+         target. For this, we annotate those use `RefPosition`s with `delayRegFree`.
 
 -   Next we create the uses of the internal registers, using the `internalDefs` array.
     This is cleared before the next instruction is handled.
@@ -495,8 +497,8 @@ node, which builds `RefPositions` according to the liveness model described abov
 
         -   This is generally not required, as the block will
             normally have a predecessor block that has already
-            been allocated. This facility is exercised by the 0x200
-            (`LSRA_BLOCK_BOUNDARY_LAYOUT`) setting of `COMPlus_JitStressRegs`.
+            been allocated. This facility is exercised by the 0x100
+            (`LSRA_BLOCK_BOUNDARY_LAYOUT`) or 0x200 (`LSRA_BLOCK_BOUNDARY_ROTATE`) settings of `COMPlus_JitStressRegs`.
 
 -   At the end of a block, for any exposed uses that do not have downstream
     `RefPosition`s (e.g. variables that are live across the backedge, so there is no
@@ -553,14 +555,18 @@ LinearScanAllocation(List<RefPosition> refPositions)
             freeRegisters();
             currentLoc = refPosition.Location;
         }
-        if (refPosition is BasicBlockBoundary) ProcessBlockBoundaryAlloc()
+        if (refPosition is BasicBlockBoundary)
+        {
+            ProcessBlockBoundaryAlloc();
+            continue;
+        }
         Interval currentInterval = refPosition.Interval;
         if (currentInterval->hasValidAssignment())
         {
             refPosition->setReg(currentInterval->physReg);
         }
-        // find a register for currentInterval
-        // AllocateBlockedReg will take into account whether it must have
+        // Find a register for currentInterval.
+        // AllocateBusyReg() will take into account whether it must have
         // a register in this position, and may otherwise choose not to
         // allocate if existing intervals have higher priority.
         if (!TryAllocateFreeReg(refPosition))
@@ -1048,10 +1054,25 @@ though running actual benchmarks on each configuration could be quite costly.
 In order to enable this capability without impacting throughput, it is likely that the configurability
 would be added as an alternate path in the register allocator, leaving the default path as-is.
 
+### Support for Multi-register Instructions
+
+There are a couple of distinct opportunities here:
+
+-   On Arm64, there are intrinsics that require the register allocator to allocate
+    continuous registers. This could be considered a generalization of the support for
+    doubles on Arm32, though some refactoring is probably required to ensure that
+    it doesn't hurt throughput for single-register allocation. This is Issue [\#39457](https://github.com/dotnet/runtime/issues/39457).
+
+-   Other intrinsics, as well as long multiply on X86 and Arm32, require allocating
+    multiple register targets, but do not require that they are contiguous. Now
+    that we have support for multi-reg structs, this should be relatively straightforward.
+
 ### Pre-allocating high frequency lclVars
 
 This is captured as Issue [\#8019](https://github.com/dotnet/runtime/issues/8019)
 Consider pre-allocating high-frequency lclVars.
+A fix for this might also address [\#13466](https://github.com/dotnet/runtime/issues/13466).
+
 
 The idea here is to ensure that high frequency lclVars aren't forced to use less-than-optimal
 registers (or worse, spilled), by allocating them ahead of the linear scan.
@@ -1102,6 +1123,7 @@ outweigh the impact of cases where more resolution moves would be required.
 I have an old experimental branch where I started working on this:
 https://github.com/CarolEidt/runtime/tree/NoEdgeSplitting. It was ported to
 the runtime repo, but not validated in any significant way.
+Issue [\#8552](https://github.com/dotnet/runtime/issues/8552) may be related.
 
 ### Enable EHWriteThru by default
 
@@ -1203,6 +1225,8 @@ Issue [\#9896](https://github.com/dotnet/runtime/issues/9896).
 
 -   Issue [#13090](https://github.com/dotnet/runtime/issues/13090) involves a case where anti-preferencing might be useful.
 
+-   Issue 10296 may also be related to preferencing, if it is still an issue. 
+
 ### Leveraging SSA form
 
 This has not yet been opened as a github issue.
@@ -1233,6 +1257,9 @@ Def/use conflicts arise when the producing and conusming nodes each have registe
 and they conflict. The current mechanism, in which the register assignment of one of the
 `RefPosition`s is changed, can lead to problems because there's then
 no associated `RefTypeFixedReg` for that reference. This is Issue [\#10196](https://github.com/dotnet/runtime/issues/10196).
+
+A related issue is Issue [\#7966](https://github.com/dotnet/runtime/issues/7966), which captures an issue with propagating a fixed-register use to its definition, if the value is
+defined by a node with delay-free operands.
 
 ## Throughput Enhancements
 
