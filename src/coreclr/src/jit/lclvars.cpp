@@ -1015,12 +1015,21 @@ void Compiler::lvaInitUserArgs(InitVarDscInfo* varDscInfo)
 #endif // TARGET_XXX
 
 #if FEATURE_FASTTAILCALL
-            varDsc->SetStackOffset(varDscInfo->stackArgSize);
 #if defined(OSX_ARM64_ABI)
+            unsigned argAlignment = TARGET_POINTER_SIZE;
+            if (argSize <= TARGET_POINTER_SIZE)
+            {
+                argAlignment = argSize;
+            }
+            varDscInfo->stackArgSize = roundUp(varDscInfo->stackArgSize, argAlignment);
+            assert(argSize % argAlignment == 0);
+#else  // !OSX_ARM64_ABI
+            assert((argSize % TARGET_POINTER_SIZE) == 0);
+            assert((varDscInfo->stackArgSize % TARGET_POINTER_SIZE) == 0);
+#endif // !OSX_ARM64_ABI
+
+            varDsc->SetStackOffset(varDscInfo->stackArgSize);
             varDscInfo->stackArgSize += argSize;
-#else
-            varDscInfo->stackArgSize += roundUp(argSize, TARGET_POINTER_SIZE);
-#endif
 #endif // FEATURE_FASTTAILCALL
         }
 
@@ -5738,6 +5747,18 @@ int Compiler::lvaAssignVirtualFrameOffsetToArg(unsigned lclNum,
                 break;
         }
 #endif // TARGET_ARM
+#if defined(OSX_ARM64_ABI)
+        unsigned argAlignment = TARGET_POINTER_SIZE;
+        if (argSize <= TARGET_POINTER_SIZE)
+        {
+            argAlignment = argSize;
+        }
+        argOffs = roundUp(argOffs, argAlignment);
+        assert((argOffs % argAlignment) == 0);
+#else  // !OSX_ARM64_ABI
+        assert((argSize % TARGET_POINTER_SIZE) == 0);
+        assert((argOffs % TARGET_POINTER_SIZE) == 0);
+#endif // !OSX_ARM64_ABI
 
         varDsc->SetStackOffset(argOffs);
     }
