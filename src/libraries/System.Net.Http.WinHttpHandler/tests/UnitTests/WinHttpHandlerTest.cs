@@ -55,12 +55,110 @@ namespace System.Net.Http.WinHttpHandlerUnitTests
             Assert.Null(handler.DefaultProxyCredentials);
             Assert.Null(handler.Proxy);
             Assert.Equal(int.MaxValue, handler.MaxConnectionsPerServer);
+
             Assert.Equal(TimeSpan.FromSeconds(30), handler.SendTimeout);
             Assert.Equal(TimeSpan.FromSeconds(30), handler.ReceiveHeadersTimeout);
             Assert.Equal(TimeSpan.FromSeconds(30), handler.ReceiveDataTimeout);
+
+            Assert.False(handler.TcpKeepAliveEnabled);
+            Assert.Equal(TimeSpan.FromHours(2), handler.TcpKeepAliveTime);
+            Assert.Equal(TimeSpan.FromSeconds(1), handler.TcpKeepAliveInterval);
+
             Assert.Equal(64, handler.MaxResponseHeadersLength);
             Assert.Equal(64 * 1024, handler.MaxResponseDrainSize);
             Assert.NotNull(handler.Properties);
+        }
+
+        [Fact]
+        public void SetInvalidTimeouts_ThrowsArgumentOutOfRangeException()
+        {
+            TimeSpan[] invalidIntervals =
+            {
+                TimeSpan.FromSeconds(-1),
+                TimeSpan.FromSeconds(0),
+                TimeSpan.FromSeconds(int.MaxValue)
+            };
+
+            var setters = new Action<WinHttpHandler, TimeSpan>[]
+            {
+                (h, t) => h.SendTimeout = t,
+                (h, t) => h.ReceiveHeadersTimeout = t,
+                (h, t) => h.ReceiveDataTimeout = t,
+                (h, t) => h.TcpKeepAliveInterval = t,
+                (h, t) => h.TcpKeepAliveTime = t,
+            };
+
+            using var handler = new WinHttpHandler();
+
+            foreach (Action<WinHttpHandler, TimeSpan> setter in setters)
+            {
+                foreach (TimeSpan invalid in invalidIntervals)
+                {
+                    Assert.Throws<ArgumentOutOfRangeException>(() => setter(handler, invalid));
+                }
+            }
+        }
+
+        [Fact]
+        public void TcpKeepAliveOptions_Roundtrip()
+        {
+            using var handler = new WinHttpHandler()
+            {
+                TcpKeepAliveEnabled = true,
+                TcpKeepAliveTime = TimeSpan.FromMinutes(42),
+                TcpKeepAliveInterval = TimeSpan.FromSeconds(13)
+            };
+
+            Assert.True(handler.TcpKeepAliveEnabled);
+            Assert.Equal(TimeSpan.FromMinutes(42), handler.TcpKeepAliveTime);
+            Assert.Equal(TimeSpan.FromSeconds(13), handler.TcpKeepAliveInterval);
+        }
+
+        [Fact]
+        public void TcpKeepalive_WhenDisabled_DoesntSetOptions()
+        {
+            using var handler = new WinHttpHandler();
+
+            SendRequestHelper.Send(
+                handler,
+                () => handler.TcpKeepAliveEnabled = false );
+            Assert.Null(APICallHistory.WinHttpOptionTcpKeepAlive);
+        }
+
+        [Fact]
+        public void TcpKeepalive_WhenEnabled_ForwardsCorrectNativeOptions()
+        {
+            using var handler = new WinHttpHandler();
+
+            SendRequestHelper.Send(handler, () => {
+                handler.TcpKeepAliveEnabled = true;
+                handler.TcpKeepAliveTime = TimeSpan.FromMinutes(13);
+                handler.TcpKeepAliveInterval = TimeSpan.FromSeconds(42);
+            });
+
+            (uint onOff, uint keepAliveTime, uint keepAliveInterval) = APICallHistory.WinHttpOptionTcpKeepAlive.Value;
+
+            Assert.True(onOff != 0);
+            Assert.Equal(13_000u * 60u, keepAliveTime);
+            Assert.Equal(42_000u, keepAliveInterval);
+        }
+
+        [Fact]
+        public void TcpKeepalive_InfiniteTimeSpan_TranslatesToUInt32MaxValue()
+        {
+            using var handler = new WinHttpHandler();
+
+            SendRequestHelper.Send(handler, () => {
+                handler.TcpKeepAliveEnabled = true;
+                handler.TcpKeepAliveTime = Timeout.InfiniteTimeSpan;
+                handler.TcpKeepAliveInterval = Timeout.InfiniteTimeSpan;
+            });
+
+            (uint onOff, uint keepAliveTime, uint keepAliveInterval) = APICallHistory.WinHttpOptionTcpKeepAlive.Value;
+
+            Assert.True(onOff != 0);
+            Assert.Equal(uint.MaxValue, keepAliveTime);
+            Assert.Equal(uint.MaxValue, keepAliveInterval);
         }
 
         [Fact]
