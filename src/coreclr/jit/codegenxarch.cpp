@@ -5960,7 +5960,8 @@ void CodeGen::genCompareInt(GenTree* treeNode)
 
         // Optimize "x<0" and "x>=0" to "x>>31" if "x" is not a jump condition and in a reg.
         // Morph/Lowering are responsible to rotate "0<x" to "x>0" so we won't handle it here.
-        if ((targetSize >= 4) && (op1Size >= 4) && (targetReg != REG_NA) && tree->OperIs(GT_LT, GT_GE))
+        if ((targetSize >= 4) && (op1Size >= 4) && (targetReg != REG_NA) && tree->OperIs(GT_LT, GT_GE) &&
+            !tree->IsUnsigned())
         {
             if (targetReg != op1->GetRegNum())
             {
