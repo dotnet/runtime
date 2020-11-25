@@ -515,7 +515,8 @@ During this phase, preferences are set:
         (at a previous definition) been assigned a register, and we want to try to use that
         register again, as well as the case where it has yet to be assigned a register.
 
-        This area has room for improvement, (see [Improving Preferencing](#improving-preferencing)).
+        This area has room for improvement, (see [Improving Preferencing](#improving-preferencing)
+        for specific issues related to this.).
 
     - Register preferences are set:
 
@@ -619,7 +620,7 @@ LinearScanAllocation(List<RefPosition> refPositions)
             potentially being spilled, is reg-optional
 
     -   Both `tryAllocateFreeReg()` and `allocateBusyReg()` currently fully evaluate the "goodness"
-        of each  register.
+        of each  register, except in certain cases.
 
     -   It will always spill an `Interval` either at its most recent
         use, or at the entry to the current block.
@@ -630,7 +631,30 @@ LinearScanAllocation(List<RefPosition> refPositions)
 
 -   Resolution
 
-    -   Perform resolution at block boundaries, adding moves as needed.
+    Since register allocation is performed over a linearized list of nodes, there
+    is no guarantee that register assignments on off-path edges will be consistent.
+    The resolution phase is responsible for performing moves, as needed to match up
+    the register assignments across edges.
+
+    -    The critical edges are handled first. These are the most problematic, as there
+         is no single location at which the moves can be added. We handle the critical
+         edges from the source block, handling all critical edges from that block.
+         The approach taken is:
+           - First, eliminate any variables that always get the same register, or which
+             are never live on an edge.
+           - Then, eliminate any variables that are in the same register at the end of this
+             block, and at all target blocks.
+           - Next, for the remaining variables, classify them as either:
+             - In different registers at one or more targets. These require that the edge
+               be split so that we can insert the move on the edge (this is the `diffResolutionSet`).
+             - In the same register at each target (this is the `sameResolutionSet`).
+               For these, we can insert a move at the end of this block, as long as they
+               don't write to any of the registers read by the `diffResolutionSet` as those
+               must remain live into the split block.
+
+    -   The actual resolution, for all edge types, is done by `resolveEdge()`.
+        Based on the `ResolveType`, it either inserts the move at the top or bottom
+        of the block. 
         The algorithm for resolution can be found in [[2]](#[2]), though note
         that there is a typo: in the last 'if' statement, it should be
         "if b != loc(pred(b))" instead of "if b = loc(pred(b))":
@@ -1075,7 +1099,9 @@ set would ensure that the variable locations match. This would eliminate not jus
 but all the extra branches currently inserted for resolution. It remains to be seen whether this would
 outweigh the impact of cases where more resolution moves would be required.
 
-I have an old experimental branch where I started working on this: https://github.com/CarolEidt/coreclr/tree/NoEdgeSplitting (not yet ported to the runtime repo).
+I have an old experimental branch where I started working on this:
+https://github.com/CarolEidt/runtime/tree/NoEdgeSplitting. It was ported to
+the runtime repo, but not validated in any significant way.
 
 ### Enable EHWriteThru by default
 
@@ -1090,12 +1116,22 @@ term "EH Var" means a `lclVar` marked `lvLiveInOutOfHndlr`):
 
     1. For determining whether an EH var should be a candidate for register allocation,
        e.g. if the defs outweight the uses.
+       
+       - An initial investigation might only consider an EH var as a register candidate if it has a single use. One complication is that we sometimes generate better code for a non-register-candidate local than one that is always spilled (we don't support `RegOptional` defs).
+       Thus, it would be better to identify *before* building intervals whether we should consider it a candidate, but the problem with that is that we don't necessarily know at that
+       time whether there is a single def. A possible approach:
+    
+            - Add an `isSingleDef` flag to `Interval`.
+            - When allocating a use of a `writeThru` interval:
+                - If it's marked `isSingleDef`, allocate as usual.
+                - Otherwise, if it's `RegOptional`, don't allocate.
+                - Otherwise, allocate a register but spill it immediately.
 
     2. For determining when a definition of an EH var should be only stored to the stack,
        rather than also remaining live in the register.
 
--   If the weight of the defs exceeds the weight of the blocks with successors in exception
-    regions, consider spilling the `lclVar` to the stack only at those boundaries.
+        -   If the weight of the defs exceeds the weight of the blocks with successors in exception
+        regions, consider spilling the `lclVar` to the stack only at those boundaries.
 
 The original issue to enable EH WriteThru is [#6212](https://github.com/dotnet/runtime/issues/6212).
 It remains open pending the resolution of the performance regressions.
@@ -1138,7 +1174,8 @@ This involves supporting the possibility
 of a def being reg-optional, as well as its use, so that it need
 never occupy a register.
 
-I have an old experimental branch: https://github.com/CarolEidt/coreclr/tree/RegOptDef where I started working on this.
+I have an old experimental branch: https://github.com/CarolEidt/coreclr/tree/RegOptDef
+where I started working on this, and it is in the process of being ported to the runtime repo.
 
 #### Don't Pre-determine Reg-Optional Operand
 
@@ -1156,11 +1193,15 @@ Issue [\#9896](https://github.com/dotnet/runtime/issues/9896).
 
 ### Improving Preferencing
 
--   Issue [#12945](https://github.com/dotnet/runtime/issues/12945)
-    involves preferencing for HW intrinsics.
+-   Issues [#36454](https://github.com/dotnet/runtime/issues/36454), 
+    [#11260](https://github.com/dotnet/runtime/issues/11260) and
+    [#12945](https://github.com/dotnet/runtime/issues/12945)
+    involve preferencing for HW intrinsics.
 
 -   Issue [#11959](https://github.com/dotnet/runtime/issues/11959) also has a pointer
     to some methods that could benefit from improved preferencing.
+
+-   Issue [#13090](https://github.com/dotnet/runtime/issues/13090) involves a case where anti-preferencing might be useful.
 
 ### Leveraging SSA form
 
