@@ -32,6 +32,21 @@
 
     <RemoveDir Directories="$(ApkDir)" />
 
+    <!-- TEMP: consume OpenSSL binaries from external sources via env. variables.-->
+    <PropertyGroup>
+      <AndroidAbi Condition="'$(TargetArchitecture)' == 'arm64'">arm64-v8a</AndroidAbi>
+      <AndroidAbi Condition="'$(TargetArchitecture)' == 'arm'">armeabi-v7a</AndroidAbi>
+      <AndroidAbi Condition="'$(TargetArchitecture)' == 'x64'">x86_64</AndroidAbi>
+      <AndroidAbi Condition="'$(TargetArchitecture)' == 'x86'">x86</AndroidAbi>
+    </PropertyGroup>
+
+    <Copy Condition="'$(ANDROID_OPENSSL_AAR)' != ''"
+          SourceFiles="$(ANDROID_OPENSSL_AAR)\prefab\modules\crypto\libs\android.$(AndroidAbi)\libcrypto.so"
+          DestinationFolder="$(OutputPath)" SkipUnchangedFiles="true"/>
+    <Copy Condition="'$(ANDROID_OPENSSL_AAR)' != ''"
+          SourceFiles="$(ANDROID_OPENSSL_AAR)\prefab\modules\ssl\libs\android.$(AndroidAbi)\libssl.so"
+          DestinationFolder="$(OutputPath)" SkipUnchangedFiles="true"/>
+
     <AndroidAppBuilderTask
         RuntimeIdentifier="$(RuntimeIdentifier)"
         SourceDir="$(OutputPath)"
