@@ -60,7 +60,7 @@ namespace System
         public virtual int GetArrayRank() => throw new NotSupportedException(SR.NotSupported_SubclassOverride);
 
         public virtual Type GetGenericTypeDefinition() => throw new NotSupportedException(SR.NotSupported_SubclassOverride);
-        public virtual Type[] GenericTypeArguments => (IsGenericType && !IsGenericTypeDefinition) ? GetGenericArguments() : Array.Empty<Type>();
+        public virtual Type[] GenericTypeArguments => (IsGenericType && !IsGenericTypeDefinition) ? GetGenericArguments() : Type.EmptyTypes;
         public virtual Type[] GetGenericArguments() => throw new NotSupportedException(SR.NotSupported_SubclassOverride);
 
         public virtual int GenericParameterPosition => throw new InvalidOperationException(SR.Arg_NotGenericParameter);
@@ -424,15 +424,14 @@ namespace System
 
         public static TypeCode GetTypeCode(Type? type)
         {
-            if (type == null)
-                return TypeCode.Empty;
-            return type.GetTypeCodeImpl();
+            return type?.GetTypeCodeImpl() ?? TypeCode.Empty;
         }
+
         protected virtual TypeCode GetTypeCodeImpl()
         {
             Type systemType = UnderlyingSystemType;
-            if (this != systemType && systemType != null)
-                return Type.GetTypeCode(systemType);
+            if (!ReferenceEquals(this, systemType) && systemType is not null)
+                return GetTypeCode(systemType);
 
             return TypeCode.Object;
         }

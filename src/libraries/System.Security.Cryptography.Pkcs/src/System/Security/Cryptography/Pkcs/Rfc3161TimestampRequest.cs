@@ -4,7 +4,6 @@
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Formats.Asn1;
-using System.Linq;
 using System.Security.Cryptography.Asn1;
 using System.Security.Cryptography.Pkcs.Asn1;
 using System.Security.Cryptography.X509Certificates;
@@ -317,8 +316,11 @@ namespace System.Security.Cryptography.Pkcs
 
             if (extensions != null)
             {
-                req.Extensions =
-                    extensions.OfType<X509Extension>().Select(e => new X509ExtensionAsn(e)).ToArray();
+                req.Extensions = new X509ExtensionAsn[extensions.Count];
+                for (int i = 0; i < extensions.Count; i++)
+                {
+                    req.Extensions[i] = new X509ExtensionAsn(extensions[i]);
+                }
             }
 
             // The RFC implies DER (see TryParse), and DER is the most widely understood given that

@@ -3,9 +3,11 @@
 
 using System;
 using System.IO;
+using System.Runtime.Versioning;
 
 namespace Microsoft.Extensions.Logging.Console
 {
+    [UnsupportedOSPlatform("browser")]
     internal class AnsiParsingLogConsole : IConsole
     {
         private readonly TextWriter _textWriter;

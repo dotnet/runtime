@@ -1,4 +1,4 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
@@ -23,9 +23,10 @@ public class AndroidAppBuilderTask : Task
     [Required]
     public string RuntimeIdentifier { get; set; } = ""!;
 
-    public string? ProjectName { get; set; }
+    [Required]
+    public string OutputDir { get; set; } = ""!;
 
-    public string? OutputDir { get; set; }
+    public string? ProjectName { get; set; }
 
     public string? AndroidSdk { get; set; }
 
@@ -46,6 +47,8 @@ public class AndroidAppBuilderTask : Task
     public string? NativeMainSource { get; set; }
 
     public string? KeyStorePath { get; set; }
+
+    public bool ForceInterpreter { get; set; }
 
     [Output]
     public string ApkBundlePath { get; set; } = ""!;
@@ -70,25 +73,19 @@ public class AndroidAppBuilderTask : Task
         apkBuilder.StripDebugSymbols = StripDebugSymbols;
         apkBuilder.NativeMainSource = NativeMainSource;
         apkBuilder.KeyStorePath = KeyStorePath;
+        apkBuilder.ForceInterpreter = ForceInterpreter;
         (ApkBundlePath, ApkPackageId) = apkBuilder.BuildApk(SourceDir, abi, MainLibraryFileName, MonoRuntimeHeaders);
 
         return true;
     }
 
-    private string DetermineAbi()
-    {
-        switch (RuntimeIdentifier)
+    private string DetermineAbi() =>
+        RuntimeIdentifier switch
         {
-            case "android-x86":
-                return "x86";
-            case "android-x64":
-                return "x86_64";
-            case "android-arm":
-                return "armeabi-v7a";
-            case "android-arm64":
-                return "arm64-v8a";
-            default:
-                throw new ArgumentException(RuntimeIdentifier + " is not supported for Android");
-        }
-    }
+            "android-x86" => "x86",
+            "android-x64" => "x86_64",
+            "android-arm" => "armeabi-v7a",
+            "android-arm64" => "arm64-v8a",
+            _ => throw new ArgumentException($"{RuntimeIdentifier} is not supported for Android"),
+        };
 }

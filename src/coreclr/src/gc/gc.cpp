@@ -40519,6 +40519,9 @@ void PopulateDacVars(GcDacVars *gcDacVars)
 #ifndef DACCESS_COMPILE
     assert(gcDacVars != nullptr);
     *gcDacVars = {};
+    // Note: these version numbers are not actually checked by SOS, so if you change
+    // the GC in a way that makes it incompatible with SOS, please change
+    // SOS_BREAKING_CHANGE_VERSION in both the runtime and the diagnostics repo
     gcDacVars->major_version_number = 1;
     gcDacVars->minor_version_number = 0;
     gcDacVars->built_with_svr = &g_built_with_svr_gc;

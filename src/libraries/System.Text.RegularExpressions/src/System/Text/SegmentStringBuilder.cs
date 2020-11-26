@@ -16,14 +16,9 @@ namespace System.Text
         /// <summary>The number of items in <see cref="_array"/>, and thus also the next position in the array to be filled.</summary>
         private int _count;
 
-        /// <summary>Initializes the builder.</summary>
-        /// <param name="capacity">The initial capacity of the builder.</param>
-        public SegmentStringBuilder(int capacity)
-        {
-            Debug.Assert(capacity > 0);
-            _array = ArrayPool<ReadOnlyMemory<char>>.Shared.Rent(capacity);
-            _count = 0;
-        }
+        /// <summary>Creates a new builder.</summary>
+        /// <remarks>Should be used instead of default struct initialization.</remarks>
+        public static SegmentStringBuilder Create() => new SegmentStringBuilder() { _array = Array.Empty<ReadOnlyMemory<char>>() };
 
         /// <summary>Gets the number of segments added to the builder.</summary>
         public int Count => _count;
@@ -54,7 +49,10 @@ namespace System.Text
             ReadOnlyMemory<char>[] array = _array;
             Debug.Assert(array.Length == _count);
 
-            ReadOnlyMemory<char>[] newArray = _array = ArrayPool<ReadOnlyMemory<char>>.Shared.Rent(array.Length * 2);
+            const int DefaultArraySize = 256;
+            int newSize = array.Length == 0 ? DefaultArraySize : array.Length * 2;
+
+            ReadOnlyMemory<char>[] newArray = _array = ArrayPool<ReadOnlyMemory<char>>.Shared.Rent(newSize);
             Array.Copy(array, newArray, _count);
             ArrayPool<ReadOnlyMemory<char>>.Shared.Return(array, clearArray: true);
             newArray[_count++] = segment;

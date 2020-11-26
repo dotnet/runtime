@@ -301,7 +301,6 @@ namespace System.Net.WebSockets
 
         public override void Dispose()
         {
-            System.Diagnostics.Debug.WriteLine("BrowserWebSocket::Dispose");
             int priorState = Interlocked.Exchange(ref _state, (int)InternalState.Disposed);
             if (priorState == (int)InternalState.Disposed)
             {

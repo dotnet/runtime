@@ -155,6 +155,7 @@ enum TargetHandleType : BYTE
 struct BasicBlock;
 struct InlineCandidateInfo;
 struct GuardedDevirtualizationCandidateInfo;
+struct ClassProfileCandidateInfo;
 
 typedef unsigned short AssertionIndex;
 
@@ -1736,7 +1737,9 @@ public:
     inline GenTree* gtEffectiveVal(bool commaOnly = false);
 
     // Tunnel through any GT_RET_EXPRs
-    inline GenTree* gtRetExprVal(unsigned __int64* pbbFlags);
+    inline GenTree* gtRetExprVal(unsigned __int64* pbbFlags = nullptr);
+
+    inline GenTree* gtSkipPutArgType();
 
     // Return the child of this node if it is a GT_RELOAD or GT_COPY; otherwise simply return the node itself
     inline GenTree* gtSkipReloadOrCopy();
@@ -4514,6 +4517,7 @@ struct GenTreeCall final : public GenTree
         // gtInlineCandidateInfo is only used when inlining methods
         InlineCandidateInfo*                  gtInlineCandidateInfo;
         GuardedDevirtualizationCandidateInfo* gtGuardedDevirtualizationCandidateInfo;
+        ClassProfileCandidateInfo*            gtClassProfileCandidateInfo;
         void*                                 gtStubCallStubAddr; // GTF_CALL_VIRT_STUB - these are never inlined
         CORINFO_GENERIC_HANDLE compileTimeHelperArgumentHandle; // Used to track type handle argument of dynamic helpers
         void*                  gtDirectCallAddress; // Used to pass direct call address between lower and codegen
@@ -7111,14 +7115,15 @@ inline GenTree* GenTree::gtGetOp2IfPresent() const
     return op2;
 }
 
-inline GenTree* GenTree::gtEffectiveVal(bool commaOnly)
+inline GenTree* GenTree::gtEffectiveVal(bool commaOnly /* = false */)
 {
     GenTree* effectiveVal = this;
     for (;;)
     {
+        assert(!effectiveVal->OperIs(GT_PUTARG_TYPE));
         if (effectiveVal->gtOper == GT_COMMA)
         {
-            effectiveVal = effectiveVal->AsOp()->gtOp2;
+            effectiveVal = effectiveVal->AsOp()->gtGetOp2();
         }
         else if (!commaOnly && (effectiveVal->gtOper == GT_NOP) && (effectiveVal->AsOp()->gtOp1 != nullptr))
         {
@@ -7147,21 +7152,47 @@ inline GenTree* GenTree::gtEffectiveVal(bool commaOnly)
 //    Multi-level inlines can form chains of GT_RET_EXPRs.
 //    This method walks back to the root of the chain.
 
-inline GenTree* GenTree::gtRetExprVal(unsigned __int64* pbbFlags)
+inline GenTree* GenTree::gtRetExprVal(unsigned __int64* pbbFlags /* = nullptr */)
 {
     GenTree*         retExprVal = this;
     unsigned __int64 bbFlags    = 0;
 
-    assert(pbbFlags != nullptr);
+    assert(!retExprVal->OperIs(GT_PUTARG_TYPE));
 
-    for (; retExprVal->gtOper == GT_RET_EXPR; retExprVal = retExprVal->AsRetExpr()->gtInlineCandidate)
+    while (retExprVal->OperIs(GT_RET_EXPR))
     {
-        bbFlags = retExprVal->AsRetExpr()->bbFlags;
+        const GenTreeRetExpr* retExpr = retExprVal->AsRetExpr();
+        bbFlags                       = retExpr->bbFlags;
+        retExprVal                    = retExpr->gtInlineCandidate;
     }
 
-    *pbbFlags = bbFlags;
+    if (pbbFlags != nullptr)
+    {
+        *pbbFlags = bbFlags;
+    }
 
     return retExprVal;
+}
+
+//-------------------------------------------------------------------------
+// gtSkipPutArgType - skip PUTARG_TYPE if it is presented.
+//
+// Returns:
+//    the original tree or its child if it was a PUTARG_TYPE.
+//
+// Notes:
+//   PUTARG_TYPE should be skipped when we are doing transformations
+//   that are not affected by ABI, for example: inlining, implicit byref morphing.
+//
+inline GenTree* GenTree::gtSkipPutArgType()
+{
+    if (OperIs(GT_PUTARG_TYPE))
+    {
+        GenTree* res = AsUnOp()->gtGetOp1();
+        assert(!res->OperIs(GT_PUTARG_TYPE));
+        return res;
+    }
+    return this;
 }
 
 inline GenTree* GenTree::gtSkipReloadOrCopy()

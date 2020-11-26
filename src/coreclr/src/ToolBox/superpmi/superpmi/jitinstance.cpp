@@ -29,8 +29,8 @@ JitInstance* JitInstance::InitJit(char*                         nameOfJit,
     jit->options = options;
 
     // The flag to cause the JIT to be invoked as an altjit is stored in the jit flags, not in
-    // the environment. If the user uses the "-jitoption force" flag to force AltJit off (it was
-    // probably on during collection), or to force it on, then propagate that to the jit flags.
+    // the environment. If the user uses the "-jitoption force" flag to force AltJit off
+    // or to force it on, then propagate that to the jit flags.
     jit->forceClearAltJitFlag = false;
     jit->forceSetAltJitFlag = false;
     const WCHAR* altJitFlag = jit->getForceOption(W("AltJit"));

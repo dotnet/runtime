@@ -217,7 +217,7 @@ private:
         GenTree* oldUseNode = use.Def();
         if ((oldUseNode->gtOper != GT_LCL_VAR) || (tempNum != BAD_VAR_NUM))
         {
-            use.ReplaceWithLclVar(comp, m_block->getBBWeight(comp), tempNum);
+            use.ReplaceWithLclVar(comp, tempNum);
             GenTree* newUseNode = use.Def();
             ContainCheckRange(oldUseNode->gtNext, newUseNode);
             return newUseNode->AsLclVar();

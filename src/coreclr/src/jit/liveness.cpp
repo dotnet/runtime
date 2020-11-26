@@ -1015,8 +1015,7 @@ void Compiler::fgExtendDbgLifetimes()
                     initRange.InsertBefore(nullptr, zero, store);
 
 #if !defined(TARGET_64BIT)
-                    unsigned blockWeight = block->getBBWeight(this);
-                    DecomposeLongs::DecomposeRange(this, blockWeight, initRange);
+                    DecomposeLongs::DecomposeRange(this, initRange);
 #endif // !defined(TARGET_64BIT)
                     m_pLowering->LowerRange(block, initRange);
 

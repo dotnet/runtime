@@ -47,6 +47,36 @@ namespace ILCompiler.Reflection.ReadyToRun
         }
     }
 
+    public class ReadyToRunAssembly
+    {
+        private ReadyToRunReader _reader;
+        internal List<string> _availableTypes;
+        internal List<ReadyToRunMethod> _methods;
+
+        internal ReadyToRunAssembly(ReadyToRunReader reader)
+        {
+            _reader = reader;
+        }
+
+        public IReadOnlyList<string> AvailableTypes
+        {
+            get
+            {
+                _reader.EnsureAvailableTypes();
+                return _availableTypes;
+            }
+        }
+
+        public IReadOnlyList<ReadyToRunMethod> Methods
+        {
+            get
+            {
+                _reader.EnsureMethods();
+                return _methods;
+            }
+        }
+    }
+
     public sealed class ReadyToRunReader
     {
         private const string SystemModuleName = "System.Private.CoreLib";
@@ -73,6 +103,7 @@ namespace ILCompiler.Reflection.ReadyToRun
         private int _readyToRunHeaderRVA;
         private ReadyToRunHeader _readyToRunHeader;
         private List<ReadyToRunCoreHeader> _readyToRunAssemblyHeaders;
+        private List<ReadyToRunAssembly> _readyToRunAssemblies;
 
         // DebugInfo
         private Dictionary<int, int> _runtimeFunctionIdToDebugOffset;
@@ -86,15 +117,11 @@ namespace ILCompiler.Reflection.ReadyToRun
         private Dictionary<int, EHInfo> _runtimeFunctionToEHInfo;
 
         // Methods
-        private Dictionary<ReadyToRunSection, List<ReadyToRunMethod>> _methods;
         private List<InstanceMethod> _instanceMethods;
 
         // ImportSections
         private List<ReadyToRunImportSection> _importSections;
         private Dictionary<int, ReadyToRunSignature> _importSignatures;
-
-        // AvailableType
-        private Dictionary<ReadyToRunSection, List<string>> _availableTypes;
 
         // CompilerIdentifier
         private string _compilerIdentifier;
@@ -228,15 +255,12 @@ namespace ILCompiler.Reflection.ReadyToRun
             }
         }
 
-        /// <summary>
-        /// The runtime functions and method signatures of each method
-        /// </summary>
-        public Dictionary<ReadyToRunSection, List<ReadyToRunMethod>> Methods
+        public IReadOnlyList<ReadyToRunAssembly> ReadyToRunAssemblies
         {
             get
             {
-                EnsureMethods();
-                return _methods;
+                EnsureHeader();
+                return _readyToRunAssemblies;
             }
         }
 
@@ -250,20 +274,6 @@ namespace ILCompiler.Reflection.ReadyToRun
                 EnsureMethods();
                 return _instanceMethods;
             }
-        }
-
-        /// <summary>
-        /// The available types from READYTORUN_SECTION_AVAILABLE_TYPES
-        /// </summary>
-        public Dictionary<ReadyToRunSection, List<string>> AvailableTypes
-        {
-
-            get
-            {
-                EnsureAvailableTypes();
-                return _availableTypes;
-            }
-
         }
 
         /// <summary>
@@ -411,14 +421,14 @@ namespace ILCompiler.Reflection.ReadyToRun
             }
         }
 
-        private void EnsureMethods()
+        internal void EnsureMethods()
         {
-            if (_methods != null)
+            EnsureHeader();
+            if (_readyToRunAssemblies[0]._methods != null)
             {
                 return;
             }
 
-            _methods = new Dictionary<ReadyToRunSection, List<ReadyToRunMethod>>();
             _instanceMethods = new List<InstanceMethod>();
 
             if (ReadyToRunHeader.Sections.TryGetValue(ReadyToRunSectionType.RuntimeFunctions, out ReadyToRunSection runtimeFunctionSection))
@@ -443,13 +453,10 @@ namespace ILCompiler.Reflection.ReadyToRun
             if (_runtimeFunctionToMethod == null)
             {
                 _runtimeFunctionToMethod = new Dictionary<int, ReadyToRunMethod>();
-                foreach (var section in _methods)
+                foreach (var method in Methods)
                 {
-                    foreach (var method in section.Value)
-                    {
-                        if (!_runtimeFunctionToMethod.ContainsKey(method.EntryPointRuntimeFunctionId))
-                            _runtimeFunctionToMethod.Add(method.EntryPointRuntimeFunctionId, method);
-                    }
+                    if (!_runtimeFunctionToMethod.ContainsKey(method.EntryPointRuntimeFunctionId))
+                        _runtimeFunctionToMethod.Add(method.EntryPointRuntimeFunctionId, method);
                 }
             }
         }
@@ -555,9 +562,14 @@ namespace ILCompiler.Reflection.ReadyToRun
             int r2rHeaderOffset = GetOffset(_readyToRunHeaderRVA);
             _readyToRunHeader = new ReadyToRunHeader(Image, _readyToRunHeaderRVA, r2rHeaderOffset);
 
+            _readyToRunAssemblies = new List<ReadyToRunAssembly>();
             if (_composite)
             {
                 ParseComponentAssemblies();
+            }
+            else
+            {
+                _readyToRunAssemblies.Add(new ReadyToRunAssembly(this));
             }
         }
 
@@ -693,6 +705,8 @@ namespace ILCompiler.Reflection.ReadyToRun
         /// <param name="isEntryPoint">Set to true for each runtime function index representing a method entrypoint</param>
         private void ParseMethodDefEntrypointsSection(ReadyToRunSection section, IAssemblyMetadata componentReader, bool[] isEntryPoint)
         {
+            int assemblyIndex = GetAssemblyIndex(section);
+            _readyToRunAssemblies[assemblyIndex]._methods = new List<ReadyToRunMethod>();
             int methodDefEntryPointsOffset = GetOffset(section.RelativeVirtualAddress);
             NativeArray methodEntryPoints = new NativeArray(Image, (uint)methodDefEntryPointsOffset);
             uint nMethodEntryPoints = methodEntryPoints.GetCount();
@@ -713,12 +727,7 @@ namespace ILCompiler.Reflection.ReadyToRun
                         throw new BadImageFormatException("EntryPointRuntimeFunctionId out of bounds");
                     }
                     isEntryPoint[method.EntryPointRuntimeFunctionId] = true;
-                    if (!_methods.TryGetValue(section, out List<ReadyToRunMethod> sectionMethods))
-                    {
-                        sectionMethods = new List<ReadyToRunMethod>();
-                        _methods.Add(section, sectionMethods);
-                    }
-                    sectionMethods.Add(method);
+                    _readyToRunAssemblies[assemblyIndex]._methods.Add(method);
                 }
             }
         }
@@ -746,7 +755,7 @@ namespace ILCompiler.Reflection.ReadyToRun
                     GetRuntimeFunctionIndexFromOffset(offset, out runtimeFunctionId, out fixupOffset);
                     ReadyToRunMethod r2rMethod = _runtimeFunctionToMethod[runtimeFunctionId];
                     var customMethod = provider.GetMethodFromMethodDef(metadataReader.MetadataReader, MetadataTokens.MethodDefinitionHandle((int)rid), default(TType));
-                    
+
                     if (!Object.ReferenceEquals(customMethod, null) && !foundMethods.ContainsKey(customMethod))
                         foundMethods.Add(customMethod, r2rMethod);
                 }
@@ -865,20 +874,23 @@ namespace ILCompiler.Reflection.ReadyToRun
                 {
                     isEntryPoint[method.EntryPointRuntimeFunctionId] = true;
                 }
-                if (!Methods.TryGetValue(instMethodEntryPointSection, out List<ReadyToRunMethod> sectionMethods))
-                {
-                    sectionMethods = new List<ReadyToRunMethod>();
-                    Methods.Add(instMethodEntryPointSection, sectionMethods);
-                }
-                sectionMethods.Add(method);
                 _instanceMethods.Add(new InstanceMethod(curParser.LowHashcode, method));
                 curParser = allEntriesEnum.GetNext();
             }
         }
 
+        public IEnumerable<ReadyToRunMethod> Methods
+        {
+            get
+            {
+                EnsureMethods();
+                return _readyToRunAssemblies.SelectMany(assembly => assembly.Methods).Concat(_instanceMethods.Select(im => im.Method));
+            }
+        }
+
         private void CountRuntimeFunctions(bool[] isEntryPoint)
         {
-            foreach (ReadyToRunMethod method in Methods.Values.SelectMany(sectionMethods => sectionMethods))
+            foreach (ReadyToRunMethod method in Methods)
             {
                 int runtimeFunctionId = method.EntryPointRuntimeFunctionId;
                 if (runtimeFunctionId == -1)
@@ -895,20 +907,41 @@ namespace ILCompiler.Reflection.ReadyToRun
             }
         }
 
+        public int GetAssemblyIndex(ReadyToRunSection section)
+        {
+            EnsureHeader();
+            if (_composite)
+            {
+                for (int assemblyIndex = 0; assemblyIndex < _readyToRunAssemblyHeaders.Count; assemblyIndex++)
+                {
+                    ReadyToRunSection toMatch;
+                    if (_readyToRunAssemblyHeaders[assemblyIndex].Sections.TryGetValue(section.Type, out toMatch) && section.RelativeVirtualAddress == toMatch.RelativeVirtualAddress)
+                    {
+                        return assemblyIndex;
+                    }
+                }
+                return -1;
+            }
+            else
+            {
+                return 0;
+            }
+        }
+
         /// <summary>
         /// Iterates through a native hashtable to get all RIDs
         /// </summary>
-        private void EnsureAvailableTypes()
+        internal void EnsureAvailableTypes()
         {
-            if (_availableTypes != null)
+            EnsureHeader();
+            if (_readyToRunAssemblies[0]._availableTypes != null)
             {
                 return;
             }
-            _availableTypes = new Dictionary<ReadyToRunSection, List<string>>();
             ReadyToRunSection availableTypesSection;
             if (ReadyToRunHeader.Sections.TryGetValue(ReadyToRunSectionType.AvailableTypes, out availableTypesSection))
             {
-                ParseAvailableTypesSection(availableTypesSection, GetGlobalMetadata());
+                ParseAvailableTypesSection(0, availableTypesSection, GetGlobalMetadata());
             }
             else if (_readyToRunAssemblyHeaders != null)
             {
@@ -917,7 +950,7 @@ namespace ILCompiler.Reflection.ReadyToRun
                     if (_readyToRunAssemblyHeaders[assemblyIndex].Sections.TryGetValue(
                         ReadyToRunSectionType.AvailableTypes, out availableTypesSection))
                     {
-                        ParseAvailableTypesSection(availableTypesSection, OpenReferenceAssembly(assemblyIndex + 1));
+                        ParseAvailableTypesSection(assemblyIndex, availableTypesSection, OpenReferenceAssembly(assemblyIndex + 1));
                     }
                 }
             }
@@ -928,8 +961,9 @@ namespace ILCompiler.Reflection.ReadyToRun
         /// as available types are stored separately for each component assembly of the composite R2R executable.
         /// </summary>
         /// <param name="availableTypesSection"></param>
-        private void ParseAvailableTypesSection(ReadyToRunSection availableTypesSection, IAssemblyMetadata metadataReader)
+        private void ParseAvailableTypesSection(int assemblyIndex, ReadyToRunSection availableTypesSection, IAssemblyMetadata metadataReader)
         {
+            _readyToRunAssemblies[assemblyIndex]._availableTypes = new List<string>();
             int availableTypesOffset = GetOffset(availableTypesSection.RelativeVirtualAddress);
             NativeParser parser = new NativeParser(Image, (uint)availableTypesOffset);
             NativeHashtable availableTypes = new NativeHashtable(Image, parser, (uint)(availableTypesOffset + availableTypesSection.Size));
@@ -946,23 +980,14 @@ namespace ILCompiler.Reflection.ReadyToRun
                 {
                     ExportedTypeHandle exportedTypeHandle = MetadataTokens.ExportedTypeHandle((int)rid);
                     string exportedTypeName = GetExportedTypeFullName(metadataReader.MetadataReader, exportedTypeHandle);
-                    if (!AvailableTypes.TryGetValue(availableTypesSection, out List<string> sectionTypes))
-                    {
-                        sectionTypes = new List<string>();
-                        AvailableTypes.Add(availableTypesSection, sectionTypes);
-                    }
-                    sectionTypes.Add("exported " + exportedTypeName);
+
+                    _readyToRunAssemblies[assemblyIndex]._availableTypes.Add("exported " + exportedTypeName);
                 }
                 else
                 {
                     TypeDefinitionHandle typeDefHandle = MetadataTokens.TypeDefinitionHandle((int)rid);
                     string typeDefName = MetadataNameFormatter.FormatHandle(metadataReader.MetadataReader, typeDefHandle);
-                    if (!AvailableTypes.TryGetValue(availableTypesSection, out List<string> sectionTypes))
-                    {
-                        sectionTypes = new List<string>();
-                        AvailableTypes.Add(availableTypesSection, sectionTypes);
-                    }
-                    sectionTypes.Add(typeDefName);
+                    _readyToRunAssemblies[assemblyIndex]._availableTypes.Add(typeDefName);
                 }
 
                 curParser = allEntriesEnum.GetNext();
@@ -1012,6 +1037,7 @@ namespace ILCompiler.Reflection.ReadyToRun
 
                 ReadyToRunCoreHeader assemblyHeader = new ReadyToRunCoreHeader(Image, ref headerOffset);
                 _readyToRunAssemblyHeaders.Add(assemblyHeader);
+                _readyToRunAssemblies.Add(new ReadyToRunAssembly(this));
             }
         }
 

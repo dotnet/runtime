@@ -1,29 +1,26 @@
-Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 15
-VisualStudioVersion = 15.0.27213.1
-MinimumVisualStudioVersion = 10.0.40219.1
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Private.DataContractSerialization", "src\System.Private.DataContractSerialization.csproj", "{6B4C1660-D158-4820-BE1C-D7A29CEBEC9B}"
+﻿Microsoft Visual Studio Solution File, Format Version 12.00
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Private.DataContractSerialization", "src\System.Private.DataContractSerialization.csproj", "{493BBB98-5E20-46BE-A7DC-1584F39DE27D}"
 EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{E107E9C1-E893-4E87-987E-04EF0DCEAEFD}"
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{0B1B03BE-655C-40D8-9A2C-569BC669E8C0}"
 EndProject
 Global
+	GlobalSection(NestedProjects) = preSolution
+		{493BBB98-5E20-46BE-A7DC-1584F39DE27D} = {0B1B03BE-655C-40D8-9A2C-569BC669E8C0}
+	EndGlobalSection
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{6B4C1660-D158-4820-BE1C-D7A29CEBEC9B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{6B4C1660-D158-4820-BE1C-D7A29CEBEC9B}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{6B4C1660-D158-4820-BE1C-D7A29CEBEC9B}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{6B4C1660-D158-4820-BE1C-D7A29CEBEC9B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{493BBB98-5E20-46BE-A7DC-1584F39DE27D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{493BBB98-5E20-46BE-A7DC-1584F39DE27D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{493BBB98-5E20-46BE-A7DC-1584F39DE27D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{493BBB98-5E20-46BE-A7DC-1584F39DE27D}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
 	EndGlobalSection
-	GlobalSection(NestedProjects) = preSolution
-		{6B4C1660-D158-4820-BE1C-D7A29CEBEC9B} = {E107E9C1-E893-4E87-987E-04EF0DCEAEFD}
-	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
-		SolutionGuid = {5CFD48C9-7683-4E2D-9243-54E3362548B8}
+		SolutionGuid = {9D091569-CE23-4382-B8FC-D651959BAB25}
 	EndGlobalSection
 EndGlobal

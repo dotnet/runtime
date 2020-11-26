@@ -1206,7 +1206,7 @@ namespace System
             Type[] types = GetGenericArgumentsInternal(false);
 
             if (types == null)
-                types = Array.Empty<Type>();
+                types = Type.EmptyTypes;
 
             return types;
         }
@@ -1858,7 +1858,7 @@ namespace System
             ListBuilder<ConstructorInfo> ctors = GetConstructorCandidates(
                 null,
                 BindingFlags.Public | BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.DeclaredOnly, CallingConventions.Any,
-                Array.Empty<Type>(), false);
+                Type.EmptyTypes, false);
 
             if (ctors.Count == 1)
                 cache.default_ctor = ctor = (RuntimeConstructorInfo)ctors[0];
@@ -2265,7 +2265,7 @@ namespace System
             var paramInfo = new Mono.RuntimeGenericParamInfoHandle(RuntimeTypeHandle.GetGenericParameterInfo(this));
             Type[] constraints = paramInfo.Constraints;
 
-            return constraints ?? Array.Empty<Type>();
+            return constraints ?? Type.EmptyTypes;
         }
 
         internal static object CreateInstanceForAnotherGenericParameter(Type genericType, RuntimeType genericArgument)

@@ -15,7 +15,7 @@ namespace Microsoft.Extensions.Options
         IOptionsMonitorCache<TOptions>
         where TOptions : class
     {
-        private readonly ConcurrentDictionary<string, Lazy<TOptions>> _cache = new ConcurrentDictionary<string, Lazy<TOptions>>(StringComparer.Ordinal);
+        private readonly ConcurrentDictionary<string, Lazy<TOptions>> _cache = new ConcurrentDictionary<string, Lazy<TOptions>>(concurrencyLevel: 1, capacity: 31, StringComparer.Ordinal); // 31 == default capacity
 
         /// <summary>
         /// Clears all options instances from the cache.
@@ -34,8 +34,38 @@ namespace Microsoft.Extensions.Options
             {
                 throw new ArgumentNullException(nameof(createOptions));
             }
+
             name = name ?? Options.DefaultName;
-            return _cache.GetOrAdd(name, new Lazy<TOptions>(createOptions)).Value;
+            Lazy<TOptions> value;
+
+#if NETCOREAPP
+            value = _cache.GetOrAdd(name, static (name, createOptions) => new Lazy<TOptions>(createOptions), createOptions);
+#else
+            if (!_cache.TryGetValue(name, out value))
+            {
+                value = _cache.GetOrAdd(name, new Lazy<TOptions>(createOptions));
+            }
+#endif
+
+            return value.Value;
+        }
+
+        /// <summary>
+        /// Gets a named options instance, if available.
+        /// </summary>
+        /// <param name="name">The name of the options instance.</param>
+        /// <param name="options">The options instance.</param>
+        /// <returns>true if the options were retrieved; otherwise, false.</returns>
+        internal bool TryGetValue(string name, out TOptions options)
+        {
+            if (_cache.TryGetValue(name ?? Options.DefaultName, out Lazy<TOptions> lazy))
+            {
+                options = lazy.Value;
+                return true;
+            }
+
+            options = default;
+            return false;
         }
 
         /// <summary>
@@ -50,8 +80,12 @@ namespace Microsoft.Extensions.Options
             {
                 throw new ArgumentNullException(nameof(options));
             }
-            name = name ?? Options.DefaultName;
-            return _cache.TryAdd(name, new Lazy<TOptions>(() => options));
+
+            return _cache.TryAdd(name ?? Options.DefaultName, new Lazy<TOptions>(
+#if !NETCOREAPP
+                () =>
+#endif
+                options));
         }
 
         /// <summary>
@@ -59,10 +93,7 @@ namespace Microsoft.Extensions.Options
         /// </summary>
         /// <param name="name">The name of the options instance.</param>
         /// <returns>Whether anything was removed.</returns>
-        public virtual bool TryRemove(string name)
-        {
-            name = name ?? Options.DefaultName;
-            return _cache.TryRemove(name, out Lazy<TOptions> ignored);
-        }
+        public virtual bool TryRemove(string name) =>
+            _cache.TryRemove(name ?? Options.DefaultName, out _);
     }
 }

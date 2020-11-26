@@ -103,6 +103,7 @@ JNIEnv* GetJNIEnv()
         return env;
     jint ret = (*gJvm)->AttachCurrentThreadAsDaemon(gJvm, &env, NULL);
     assert(ret == JNI_OK && "Unable to attach thread to JVM");
+    (void)ret;
     return env;
 }
 

@@ -22,9 +22,15 @@ public:
     static HRESULT allocMethodBlockCounts(MethodDesc* pMD, UINT32 count,
         ICorJitInfo::BlockCounts** pBlockCounts, unsigned ilSize);
 
-    // Retreive the profile block count buffer for a method
+    // Retrieve the profile block count buffer for a method
     static HRESULT getMethodBlockCounts(MethodDesc* pMD, unsigned ilSize, UINT32* pCount,
         ICorJitInfo::BlockCounts** pBlockCounts, UINT32* pNumRuns);
+
+    // Retrieve the most likely class for a particular call
+    static CORINFO_CLASS_HANDLE getLikelyClass(MethodDesc* pMD, unsigned ilSize, unsigned ilOffset, UINT32* pLikelihood, UINT32* pNumberOfClasses);
+
+    // Verify address in bounds
+    static void VerifyAddress(void* address);
 
 #ifdef FEATURE_PGO
 
@@ -32,8 +38,10 @@ private:
 
     enum
     {
-        // Number of ICorJitInfo::BlockCount records in the global slab
-        BUFFER_SIZE      = 64 * 1024,
+        // Number of ICorJitInfo::BlockCount records in the global slab.
+        // Currently 4MB for a 64 bit system.
+        //
+        BUFFER_SIZE      = 8 * 64 * 1024,
         MIN_RECORD_COUNT = 3,
         MAX_RECORD_COUNT = BUFFER_SIZE
     };
@@ -57,13 +65,15 @@ private:
     static ICorJitInfo::BlockCounts* s_PgoData;
 
     // Index of next free entry in the global slab
-    static unsigned s_PgoIndex;
+    static unsigned volatile s_PgoIndex;
 
     // Formatting strings for file input/output
     static const char* const s_FileHeaderString;
     static const char* const s_FileTrailerString;
     static const char* const s_MethodHeaderString;
     static const char* const s_RecordString;
+    static const char* const s_ClassProfileHeader;
+    static const char* const s_ClassProfileEntry;
 
 #endif // FEATURE_PGO
 };
