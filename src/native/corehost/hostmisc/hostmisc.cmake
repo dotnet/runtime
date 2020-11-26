@@ -20,7 +20,7 @@ list(APPEND HEADERS
     ${CMAKE_CURRENT_LIST_DIR}/trace.h
     ${CMAKE_CURRENT_LIST_DIR}/utils.h
     ${CMAKE_CURRENT_LIST_DIR}/pal.h
-    ${CMAKE_CURRENT_LIST_DIR}/../../error_codes.h
+    ${CMAKE_CURRENT_LIST_DIR}/../error_codes.h
     ${CMAKE_CURRENT_LIST_DIR}/../fxr/fx_ver.h
 )
 
