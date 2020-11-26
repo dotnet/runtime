@@ -2113,9 +2113,6 @@ void QCALLTYPE RuntimeTypeHandle::GetActivationInfo(
 
     TypeHandle typeHandle = NULL;
 
-    // If we're activating __ComObject.
-    void* pClassFactory = NULL;
-
     BEGIN_QCALL;
 
     {
@@ -2134,36 +2131,41 @@ void QCALLTYPE RuntimeTypeHandle::GetActivationInfo(
 
 #ifdef FEATURE_COMINTEROP
     // COM allocation can involve the __ComObject base type (with attached CLSID) or a
-    // VM-implemented [ComImport] class. For GetUninitializedObject, we block all COM types.
-    // For CreateInstance, the flowchart is:
+    // VM-implemented [ComImport] class. For CreateInstance, the flowchart is:
     //   - For __ComObject,
     //     .. on Windows, bypass normal newobj logic and use ComClassFactory::CreateInstance.
     //     .. on non-Windows, treat as a normal class, type has no special handling in VM.
     //   - For [ComImport] class, treat as a normal class. VM will replace default
     //     ctor with COM activation logic on supported platforms, else ctor itself will PNSE.
+    // IsComObjectClass is the correct way to check for __ComObject specifically
     if (IsComObjectClass(typeHandle))
     {
-        {
+        void* pClassFactory = NULL;
+
 #ifdef FEATURE_COMINTEROP_UNMANAGED_ACTIVATION
+        {
             // Need to enter cooperative mode to manipulate OBJECTREFs
             GCX_COOP();
             SyncBlock* pSyncBlock = pRuntimeType.Get()->GetSyncBlock();
             pClassFactory = (void*)pSyncBlock->GetInteropInfo()->GetComClassFactory();
+        }
 #endif // FEATURE_COMINTEROP_UNMANAGED_ACTIVATION
 
-            if (pClassFactory == NULL)
-            {
-                COMPlusThrow(kInvalidComObjectException, IDS_EE_NO_BACKING_CLASS_FACTORY);
-            }
+        if (pClassFactory == NULL)
+        {
+            // no factory *or* unmanaged activation is not enabled in this runtime
+            COMPlusThrow(kInvalidComObjectException, IDS_EE_NO_BACKING_CLASS_FACTORY);
         }
+
+        // managed sig: ComClassFactory* -> object (via FCALL)
+        *ppfnAllocator = CoreLibBinder::GetMethod(METHOD__RT_TYPE_HANDLE__ALLOCATECOMOBJECT)->GetMultiCallableAddrOfCode();
+        *pvAllocatorFirstArg = pClassFactory;
+        *ppfnCtor = NULL; // no ctor call needed; activation handled entirely by the allocator
+        *pfCtorIsPublic = TRUE; // no ctor call needed => assume 'public' equivalent
     }
+    else
 #endif // FEATURE_COMINTEROP
-
-    pMT->EnsureInstanceActive();
-
-    // All checks passed! Pass parameters back to the caller.
-
-    if (Nullable::IsNullableType(typeHandle))
+    if (pMT->IsNullable())
     {
         // CreateInstance returns null given Nullable<T>
         *ppfnAllocator = NULL;
@@ -2171,16 +2173,6 @@ void QCALLTYPE RuntimeTypeHandle::GetActivationInfo(
         *ppfnCtor = NULL;
         *pfCtorIsPublic = TRUE; // no ctor call needed => assume 'public' equivalent
     }
-#ifdef FEATURE_COMINTEROP
-    else if (pClassFactory != NULL)
-    {
-        // managed sig: ComClassFactory* -> object (via FCALL)
-        *ppfnAllocator = CoreLibBinder::GetMethod(METHOD__RT_TYPE_HANDLE__ALLOCATECOMOBJECT)->GetMultiCallableAddrOfCode();
-        *pvAllocatorFirstArg = pClassFactory;
-        *ppfnCtor = NULL; // no ctor call needed; activation handled entirely by the allocator
-        *pfCtorIsPublic = TRUE; // no ctor call needed => assume 'public' equivalent
-    }
-#endif // FEATURE_COMINTEROP
     else
     {
         // managed sig: MethodTable* -> object (via JIT helper)
@@ -2211,6 +2203,8 @@ void QCALLTYPE RuntimeTypeHandle::GetActivationInfo(
             COMPlusThrow(kMissingMethodException, W("Arg_NoDefCTorWithoutTypeName"));
         }
     }
+
+    pMT->EnsureInstanceActive();
 
     END_QCALL;
 }
@@ -2640,3 +2634,4 @@ FCIMPL2(FC_BOOL_RET, ReflectionEnum::InternalHasFlag, Object *pRefThis, Object* 
     FC_RETURN_BOOL(cmp);
 }
 FCIMPLEND
+
