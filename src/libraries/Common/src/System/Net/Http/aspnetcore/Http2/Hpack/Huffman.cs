@@ -7,9 +7,9 @@ using System.Threading;
 
 namespace System.Net.Http.HPack
 {
-    internal class Huffman
+    internal static class Huffman
     {
-        private static ushort[]? s_decodingTree;
+        private static ushort[] s_decodingTree = GenerateDecodingLookupTree();
 
         // HPack static huffman code. see: https://httpwg.org/specs/rfc7541.html#huffman.code
         private static readonly (uint code, int bitLength)[] _encodingTable = new (uint code, int bitLength)[]
@@ -413,10 +413,6 @@ namespace System.Net.Http.HPack
             Span<byte> dst = dstArray;
             Debug.Assert(dst != null && dst.Length > 0);
 
-            if (s_decodingTree == null)
-            {
-                Volatile.Write(ref s_decodingTree, GenerateDecodingLookupTree());
-            }
             ushort[] decodingTree = s_decodingTree;
 
             int lookupTableIndex = 0;
