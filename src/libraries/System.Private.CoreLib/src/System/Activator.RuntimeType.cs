@@ -91,7 +91,7 @@ namespace System
             if (type is null)
                 throw new ArgumentNullException(nameof(type));
 
-            if (!(type.UnderlyingSystemType is RuntimeType rt))
+            if (type.UnderlyingSystemType is not RuntimeType rt)
                 throw new ArgumentException(SR.Arg_MustBeType, nameof(type));
 
             return rt.CreateInstanceDefaultCtor(publicOnly: !nonPublic, wrapExceptions: wrapExceptions);
