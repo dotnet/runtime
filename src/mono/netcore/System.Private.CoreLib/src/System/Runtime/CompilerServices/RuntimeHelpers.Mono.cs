@@ -1,5 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
+using System.Diagnostics.CodeAnalysis;
+using System.Runtime.Serialization;
 using Internal.Runtime.CompilerServices;
 
 namespace System.Runtime.CompilerServices
@@ -148,7 +150,7 @@ namespace System.Runtime.CompilerServices
                 throw new SerializationException(SR.Format(SR.Serialization_InvalidType, type));
             }
 
-            return GetUninitializedObjectInternal(new RuntimeTypeHandle(rt.Value));
+            return GetUninitializedObjectInternal(new RuntimeTypeHandle(rt).Value);
         }
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
