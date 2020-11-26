@@ -18,10 +18,23 @@ namespace Tests.System.Net
         {
             MultiArrayBuffer buffer = new MultiArrayBuffer(0);
 
+            Assert.True(buffer.IsEmpty);
+            Assert.True(buffer.ActiveMemory.IsEmpty);
             Assert.Equal(0, buffer.ActiveMemory.Length);
             Assert.Equal(0, buffer.ActiveMemory.BlockCount);
+            Assert.True(buffer.AvailableMemory.IsEmpty);
+            Assert.Equal(0, buffer.AvailableMemory.Length);
+            Assert.Equal(0, buffer.AvailableMemory.BlockCount);
 
             buffer.EnsureAvailableSpace(3);
+
+            Assert.True(buffer.IsEmpty);
+            Assert.True(buffer.ActiveMemory.IsEmpty);
+            Assert.Equal(0, buffer.ActiveMemory.Length);
+            Assert.Equal(0, buffer.ActiveMemory.BlockCount);
+            Assert.False(buffer.AvailableMemory.IsEmpty);
+            Assert.NotEqual(0, buffer.AvailableMemory.Length);
+            Assert.NotEqual(0, buffer.AvailableMemory.BlockCount);
 
             int available = buffer.AvailableMemory.Length;
             Assert.True(available >= 3);
@@ -29,6 +42,8 @@ namespace Tests.System.Net
             buffer.AvailableMemory[0] = 10;
             buffer.Commit(1);
 
+            Assert.False(buffer.IsEmpty);
+            Assert.False(buffer.ActiveMemory.IsEmpty);
             Assert.Equal(1, buffer.ActiveMemory.Length);
             Assert.Equal(10, buffer.ActiveMemory[0]);
             Assert.Equal(available - 1, buffer.AvailableMemory.Length);
@@ -38,6 +53,8 @@ namespace Tests.System.Net
             buffer.AvailableMemory[0] = 20;
             buffer.Commit(1);
 
+            Assert.False(buffer.IsEmpty);
+            Assert.False(buffer.ActiveMemory.IsEmpty);
             Assert.Equal(2, buffer.ActiveMemory.Length);
             Assert.Equal(20, buffer.ActiveMemory[1]);
             Assert.Equal(available - 2, buffer.AvailableMemory.Length);
@@ -46,24 +63,32 @@ namespace Tests.System.Net
             buffer.AvailableMemory[0] = 30;
             buffer.Commit(1);
 
+            Assert.False(buffer.IsEmpty);
+            Assert.False(buffer.ActiveMemory.IsEmpty);
             Assert.Equal(3, buffer.ActiveMemory.Length);
             Assert.Equal(30, buffer.ActiveMemory[2]);
             Assert.Equal(available - 3, buffer.AvailableMemory.Length);
             Assert.InRange(buffer.ActiveMemory.BlockCount, 1, 2);
 
             buffer.Discard(1);
+            Assert.False(buffer.IsEmpty);
+            Assert.False(buffer.ActiveMemory.IsEmpty);
             Assert.Equal(2, buffer.ActiveMemory.Length);
             Assert.Equal(20, buffer.ActiveMemory[0]);
             Assert.InRange(buffer.ActiveMemory.BlockCount, 1, 2);
             Assert.Equal(20, buffer.ActiveMemory.GetBlock(0).Span[0]);
 
             buffer.Discard(1);
+            Assert.False(buffer.IsEmpty);
+            Assert.False(buffer.ActiveMemory.IsEmpty);
             Assert.Equal(1, buffer.ActiveMemory.Length);
             Assert.Equal(30, buffer.ActiveMemory[0]);
             Assert.Equal(1, buffer.ActiveMemory.BlockCount);
             Assert.Equal(30, buffer.ActiveMemory.GetBlock(0).Span[0]);
 
             buffer.Discard(1);
+            Assert.True(buffer.IsEmpty);
+            Assert.True(buffer.ActiveMemory.IsEmpty);
             Assert.Equal(0, buffer.ActiveMemory.Length);
             Assert.Equal(0, buffer.ActiveMemory.BlockCount);
         }
@@ -89,6 +114,8 @@ namespace Tests.System.Net
             }
 
             Assert.Equal(0, buffer.ActiveMemory.Length);
+            Assert.True(buffer.IsEmpty);
+            Assert.True(buffer.ActiveMemory.IsEmpty);
         }
 
         [Fact]
@@ -119,6 +146,8 @@ namespace Tests.System.Net
             }
 
             Assert.Equal(0, buffer.ActiveMemory.Length);
+            Assert.True(buffer.IsEmpty);
+            Assert.True(buffer.ActiveMemory.IsEmpty);
         }
 
         [Fact]
@@ -149,6 +178,8 @@ namespace Tests.System.Net
             }
 
             Assert.Equal(0, buffer.ActiveMemory.Length);
+            Assert.True(buffer.IsEmpty);
+            Assert.True(buffer.ActiveMemory.IsEmpty);
         }
 
         [Fact]
@@ -179,6 +210,8 @@ namespace Tests.System.Net
             }
 
             Assert.Equal(0, buffer.ActiveMemory.Length);
+            Assert.True(buffer.IsEmpty);
+            Assert.True(buffer.ActiveMemory.IsEmpty);
         }
 
         [Fact]
@@ -206,6 +239,8 @@ namespace Tests.System.Net
             }
 
             Assert.Equal(0, buffer.ActiveMemory.Length);
+            Assert.True(buffer.IsEmpty);
+            Assert.True(buffer.ActiveMemory.IsEmpty);
         }
 
         [Fact]
@@ -233,6 +268,8 @@ namespace Tests.System.Net
             }
 
             Assert.Equal(0, buffer.ActiveMemory.Length);
+            Assert.True(buffer.IsEmpty);
+            Assert.True(buffer.ActiveMemory.IsEmpty);
         }
 
         [Fact]
@@ -241,6 +278,7 @@ namespace Tests.System.Net
             MultiMemory mm = MultiMemory.Empty;
 
             Assert.Equal(0, mm.Length);
+            Assert.True(mm.IsEmpty);
             Assert.Equal(0, mm.BlockCount);
             Assert.Equal(0, mm.Slice(0).Length);
             Assert.Equal(0, mm.Slice(0, 0).Length);
@@ -358,23 +396,28 @@ namespace Tests.System.Net
             Assert.Equal(BlockSize, buffer.ActiveMemory.Length);
             Assert.Equal(BlockSize * 5 - 2, buffer.AvailableMemory.Length);
 
-            // This will trigger re-using the block from the beginning of the block, so our available memory starts from the beginning of the block
+            // This will discard all active bytes, which will reset the buffer
             buffer.Discard(BlockSize);
             Assert.Equal(0, buffer.ActiveMemory.Length);
-            Assert.Equal(BlockSize * 5, buffer.AvailableMemory.Length);
+            Assert.Equal(0, buffer.AvailableMemory.Length);
 
+            buffer.EnsureAvailableSpace(2);
             buffer.Commit(2);
             Assert.Equal(2, buffer.ActiveMemory.Length);
-            Assert.Equal(BlockSize * 5 - 2, buffer.AvailableMemory.Length);
+            Assert.Equal(BlockSize - 2, buffer.AvailableMemory.Length);
 
             buffer.Discard(1);
             Assert.Equal(1, buffer.ActiveMemory.Length);
-            Assert.Equal(BlockSize * 5 - 2, buffer.AvailableMemory.Length);
+            Assert.Equal(BlockSize - 2, buffer.AvailableMemory.Length);
 
             // Request a very large amount of available space.
             buffer.EnsureAvailableSpace(BlockSize * 64 + 1);
             Assert.Equal(1, buffer.ActiveMemory.Length);
             Assert.Equal(BlockSize * 65 - 2, buffer.AvailableMemory.Length);
+
+            buffer.DiscardAll();
+            Assert.Equal(0, buffer.ActiveMemory.Length);
+            Assert.Equal(0, buffer.AvailableMemory.Length);
         }
 
         [Fact]
