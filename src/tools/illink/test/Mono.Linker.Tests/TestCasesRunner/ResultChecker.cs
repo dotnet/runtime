@@ -643,8 +643,10 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
 						case nameof (ExpectedWarningAttribute): {
 								var expectedWarningCode = (string) attr.GetConstructorArgumentValue (0);
-								if (!expectedWarningCode.StartsWith ("IL"))
-									break;
+								if (!expectedWarningCode.StartsWith ("IL")) {
+									Assert.Fail ($"The warning code specified in ExpectedWarning attribute must start with the 'IL' prefix. Specified value: '{expectedWarningCode}'.");
+								}
+
 								int expectedWarningCodeNumber = int.Parse (expectedWarningCode.Substring (2));
 								var expectedMessageContains = ((CustomAttributeArgument[]) attr.GetConstructorArgumentValue (1)).Select (a => (string) a.Value).ToArray ();
 

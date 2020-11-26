@@ -87,26 +87,23 @@ namespace Mono.Linker.Dataflow
 				var annotation = _context.Annotations.FlowAnnotations.GetParameterAnnotation (method, i + paramOffset);
 				if (annotation != DynamicallyAccessedMemberTypes.None) {
 					ValueNode valueNode = GetValueNodeForCustomAttributeArgument (arguments[i]);
-					if (valueNode != null) {
-						var reflectionContext = new ReflectionPatternContext (_context, true, source, method.Parameters[i]);
-						reflectionContext.AnalyzingPattern ();
-						RequireDynamicallyAccessedMembers (ref reflectionContext, annotation, valueNode, method);
-					}
+					var methodParameter = method.Parameters[i];
+					var reflectionContext = new ReflectionPatternContext (_context, true, source, methodParameter);
+					reflectionContext.AnalyzingPattern ();
+					RequireDynamicallyAccessedMembers (ref reflectionContext, annotation, valueNode, methodParameter);
 				}
 			}
 		}
 
-		public void ProcessAttributeDataflow (FieldDefinition field, CustomAttributeArgument value)
+		public void ProcessAttributeDataflow (IMemberDefinition source, FieldDefinition field, CustomAttributeArgument value)
 		{
 			var annotation = _context.Annotations.FlowAnnotations.GetFieldAnnotation (field);
 			Debug.Assert (annotation != DynamicallyAccessedMemberTypes.None);
 
 			ValueNode valueNode = GetValueNodeForCustomAttributeArgument (value);
-			if (valueNode != null) {
-				var reflectionContext = new ReflectionPatternContext (_context, true, field.DeclaringType.Methods[0], field);
-				reflectionContext.AnalyzingPattern ();
-				RequireDynamicallyAccessedMembers (ref reflectionContext, annotation, valueNode, field);
-			}
+			var reflectionContext = new ReflectionPatternContext (_context, true, source, field);
+			reflectionContext.AnalyzingPattern ();
+			RequireDynamicallyAccessedMembers (ref reflectionContext, annotation, valueNode, field);
 		}
 
 		static ValueNode GetValueNodeForCustomAttributeArgument (CustomAttributeArgument argument)
@@ -114,7 +111,10 @@ namespace Mono.Linker.Dataflow
 			ValueNode valueNode;
 			if (argument.Type.Name == "Type") {
 				TypeDefinition referencedType = ((TypeReference) argument.Value).ResolveToMainTypeDefinition ();
-				valueNode = referencedType == null ? null : new SystemTypeValue (referencedType);
+				if (referencedType == null)
+					valueNode = UnknownValue.Instance;
+				else
+					valueNode = new SystemTypeValue (referencedType);
 			} else if (argument.Type.MetadataType == MetadataType.String) {
 				valueNode = new KnownStringValue ((string) argument.Value);
 			} else {
@@ -122,6 +122,7 @@ namespace Mono.Linker.Dataflow
 				throw new InvalidOperationException ();
 			}
 
+			Debug.Assert (valueNode != null);
 			return valueNode;
 		}
 
@@ -149,7 +150,10 @@ namespace Mono.Linker.Dataflow
 				if (genericArgumentTypeDef != null) {
 					return new SystemTypeValue (genericArgumentTypeDef);
 				} else {
-					throw new InvalidOperationException ();
+					// If we can't resolve the generic argument, it means we can't apply potential requirements on it
+					// so track it as unknown value. If we later on hit this unknown value as being used somewhere
+					// where we need to apply requirements on it, it will generate a warning.
+					return UnknownValue.Instance;
 				}
 			}
 		}
@@ -1607,8 +1611,7 @@ namespace Mono.Linker.Dataflow
 							$"Value passed to implicit 'this' parameter of method '{methodDefinition.GetDisplayName ()}' can not be statically determined and may not meet 'DynamicallyAccessedMembersAttribute' requirements.");
 						break;
 					case GenericParameter genericParameter:
-						// Note: this is currently unreachable as there's no IL way to pass unknown value to a generic parameter without using reflection.
-						// Once we support analysis of MakeGenericType/MakeGenericMethod arguments this would become reachable though.
+						// Unknown value to generic parameter - this is possible if the generic argumnet fails to resolve
 						reflectionContext.RecordUnrecognizedPattern (
 							2066,
 							$"Type passed to generic parameter '{genericParameter.Name}' of '{DiagnosticUtilities.GetGenericParameterDeclaringMemberDisplayName (genericParameter)}' can not be statically determined and may not meet 'DynamicallyAccessedMembersAttribute' requirements.");
