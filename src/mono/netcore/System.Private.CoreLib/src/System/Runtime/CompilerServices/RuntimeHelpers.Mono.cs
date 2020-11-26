@@ -140,13 +140,13 @@ namespace System.Runtime.CompilerServices
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors)]
             Type type)
         {
-            if (type is null)
+            if (type is not RuntimeType rt)
             {
-                throw new ArgumentNullException(nameof(type), SR.ArgumentNull_Type);
-            }
+                if (type is null)
+                {
+                    throw new ArgumentNullException(nameof(type), SR.ArgumentNull_Type);
+                }
 
-            if (!(type is RuntimeType rt))
-            {
                 throw new SerializationException(SR.Format(SR.Serialization_InvalidType, type));
             }
 
