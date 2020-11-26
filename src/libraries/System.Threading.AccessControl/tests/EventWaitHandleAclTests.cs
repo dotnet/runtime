@@ -177,6 +177,116 @@ namespace System.Threading.Tests
 
         }
 
+        [Fact]
+        public void EventWaitHandle_OpenExisting()
+        {
+            string name = GetRandomName();
+            EventWaitHandleSecurity expectedSecurity = GetEventWaitHandleSecurity(WellKnownSidType.BuiltinUsersSid, EventWaitHandleRights.FullControl, AccessControlType.Allow);
+            using EventWaitHandle EventWaitHandleNew = CreateAndVerifyEventWaitHandle(initialState: true, EventResetMode.AutoReset, name, expectedSecurity, expectedCreatedNew: true);
+
+            using EventWaitHandle EventWaitHandleExisting = EventWaitHandleAcl.OpenExisting(name, EventWaitHandleRights.FullControl);
+
+            VerifyHandles(EventWaitHandleNew, EventWaitHandleExisting);
+            EventWaitHandleSecurity actualSecurity = EventWaitHandleExisting.GetAccessControl();
+            VerifyEventWaitHandleSecurity(expectedSecurity, actualSecurity);
+        }
+
+        [Fact]
+        public void EventWaitHandle_TryOpenExisting()
+        {
+            string name = GetRandomName();
+            EventWaitHandleSecurity expectedSecurity = GetEventWaitHandleSecurity(WellKnownSidType.BuiltinUsersSid, EventWaitHandleRights.FullControl, AccessControlType.Allow);
+            using EventWaitHandle EventWaitHandleNew = CreateAndVerifyEventWaitHandle(initialState: true, EventResetMode.AutoReset, name, expectedSecurity, expectedCreatedNew: true);
+
+            Assert.True(EventWaitHandleAcl.TryOpenExisting(name, EventWaitHandleRights.FullControl, out EventWaitHandle EventWaitHandleExisting));
+            Assert.NotNull(EventWaitHandleExisting);
+
+            VerifyHandles(EventWaitHandleNew, EventWaitHandleExisting);
+            EventWaitHandleSecurity actualSecurity = EventWaitHandleExisting.GetAccessControl();
+            VerifyEventWaitHandleSecurity(expectedSecurity, actualSecurity);
+
+            EventWaitHandleExisting.Dispose();
+        }
+
+        [Fact]
+        public void EventWaitHandle_OpenExisting_NameNotFound()
+        {
+            string name = "ThisShouldNotExist";
+            Assert.Throws<WaitHandleCannotBeOpenedException>(() =>
+            {
+                EventWaitHandleAcl.OpenExisting(name, EventWaitHandleRights.FullControl).Dispose();
+            });
+
+            Assert.False(EventWaitHandleAcl.TryOpenExisting(name, EventWaitHandleRights.FullControl, out _));
+        }
+
+        [Fact]
+        public void EventWaitHandle_OpenExisting_NameInvalid()
+        {
+            string name = '\0'.ToString();
+            Assert.Throws<WaitHandleCannotBeOpenedException>(() =>
+            {
+                EventWaitHandleAcl.OpenExisting(name, EventWaitHandleRights.FullControl).Dispose();
+            });
+
+            Assert.False(EventWaitHandleAcl.TryOpenExisting(name, EventWaitHandleRights.FullControl, out _));
+        }
+
+        [Fact]
+        public void EventWaitHandle_OpenExisting_PathNotFound()
+        {
+            string name = @"global\foo";
+            Assert.Throws<DirectoryNotFoundException>(() =>
+            {
+                EventWaitHandleAcl.OpenExisting(name, EventWaitHandleRights.FullControl).Dispose();
+            });
+
+            Assert.False(EventWaitHandleAcl.TryOpenExisting(name, EventWaitHandleRights.FullControl, out _));
+        }
+
+        [Fact]
+        public void EventWaitHandle_OpenExisting_BadPathName()
+        {
+            string name = @"\\?\Path";
+            Assert.Throws<System.IO.IOException>(() =>
+            {
+                EventWaitHandleAcl.OpenExisting(name, EventWaitHandleRights.FullControl).Dispose();
+            });
+
+            Assert.Throws<System.IO.IOException>(() =>
+            {
+                EventWaitHandleAcl.TryOpenExisting(name, EventWaitHandleRights.FullControl, out _);
+            });
+        }
+
+        [Fact]
+        public void EventWaitHandle_OpenExisting_NullName()
+        {
+            Assert.Throws<ArgumentNullException>(() =>
+            {
+                EventWaitHandleAcl.OpenExisting(null, EventWaitHandleRights.FullControl).Dispose();
+            });
+
+            Assert.Throws<ArgumentNullException>(() =>
+            {
+                EventWaitHandleAcl.TryOpenExisting(null, EventWaitHandleRights.FullControl, out _);
+            });
+        }
+
+        [Fact]
+        public void EventWaitHandle_OpenExisting_EmptyName()
+        {
+            Assert.Throws<ArgumentException>(() =>
+            {
+                EventWaitHandleAcl.OpenExisting(string.Empty, EventWaitHandleRights.FullControl).Dispose();
+            });
+
+            Assert.Throws<ArgumentException>(() =>
+            {
+                EventWaitHandleAcl.TryOpenExisting(string.Empty, EventWaitHandleRights.FullControl, out _);
+            });
+        }
+
         private EventWaitHandleSecurity GetBasicEventWaitHandleSecurity()
         {
             return GetEventWaitHandleSecurity(
@@ -193,6 +303,7 @@ namespace System.Threading.Tests
             security.AddAccessRule(accessRule);
             return security;
         }
+
         private EventWaitHandle CreateEventWaitHandle(bool initialState, EventResetMode mode, string name, EventWaitHandleSecurity expectedSecurity, bool expectedCreatedNew)
         {
             EventWaitHandle handle = EventWaitHandleAcl.Create(initialState, mode, name, out bool createdNew, expectedSecurity);
@@ -212,6 +323,18 @@ namespace System.Threading.Tests
             }
 
             return eventHandle;
+        }
+
+        private void VerifyHandles(EventWaitHandle expected, EventWaitHandle actual)
+        {
+            Assert.NotNull(expected.SafeWaitHandle);
+            Assert.NotNull(actual.SafeWaitHandle);
+
+            Assert.False(expected.SafeWaitHandle.IsClosed);
+            Assert.False(actual.SafeWaitHandle.IsClosed);
+
+            Assert.False(expected.SafeWaitHandle.IsInvalid);
+            Assert.False(actual.SafeWaitHandle.IsInvalid);
         }
 
         private void VerifyEventWaitHandleSecurity(EventWaitHandleSecurity expectedSecurity, EventWaitHandleSecurity actualSecurity)

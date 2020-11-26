@@ -3,15 +3,24 @@ parameters:
   archType: ''
   osGroup: ''
   osSubgroup: ''
-  uploadTests: false
+  nameSuffix: ''
+  platform: ''
+  librariesBinArtifactName: ''
+  isOfficialBuild: false
+  uploadLibrariesTests: false
+  uploadRuntimeTests: false
+  uploadIntermediateArtifacts: false
 
 steps:
   # Build coreclr native test output
-  - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) skipstressdependencies skipmanaged skipgeneratelayout $(buildConfigUpper) ${{ parameters.archType }}
-    displayName: Build native test components
+  - ${{ if eq(parameters.uploadRuntimeTests, true) }}:
+    - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) skipmanaged skipgeneratelayout $(buildConfigUpper) ${{ parameters.archType }}
+      displayName: Build native test components
 
   # Copy all build output into artifacts staging directory
   - template: /eng/pipelines/libraries/prepare-for-bin-publish.yml
+    parameters:
+      isOfficialBuild: ${{ parameters.isOfficialBuild }}
 
   # Zip CoreCLR Build Output
   - template: /eng/pipelines/common/upload-artifact-step.yml
@@ -25,7 +34,7 @@ steps:
       displayName: 'CoreCLR product build'
 
   # Zip Test Build
-  - ${{ if eq(parameters.uploadTests, true) }}:
+  - ${{ if eq(parameters.uploadLibrariesTests, true) }}:
     - template: /eng/pipelines/common/upload-artifact-step.yml
       parameters:
         rootFolder: $(Build.SourcesDirectory)/artifacts/helix
@@ -36,16 +45,17 @@ steps:
         artifactName: libraries_test_assets_${{ parameters.osGroup }}_${{ parameters.archType }}_${{ parameters.buildConfig }}
         displayName: Test Assets
 
-  # Zip product native assets for use by Tests
-  - template: /eng/pipelines/common/upload-artifact-step.yml
-    parameters:
-      rootFolder: $(Build.SourcesDirectory)/artifacts/tests/coreclr/obj/${{ parameters.osGroup }}.${{ parameters.archType }}.$(buildConfigUpper)
-      includeRootFolder: false
-      archiveType: $(archiveType)
-      tarCompression: $(tarCompression)
-      archiveExtension: $(archiveExtension)
-      artifactName: CoreCLRNativeTestArtifacts_${{ parameters.osGroup }}${{ parameters.osSubgroup }}_${{ parameters.archType }}_${{ parameters.buildConfig }}
-      displayName: 'native test components'
+  # Zip runtime native assets for use by Tests
+  - ${{ if eq(parameters.uploadRuntimeTests, true) }}:
+    - template: /eng/pipelines/common/upload-artifact-step.yml
+      parameters:
+        rootFolder: $(Build.SourcesDirectory)/artifacts/tests/coreclr/obj/${{ parameters.osGroup }}.${{ parameters.archType }}.$(buildConfigUpper)
+        includeRootFolder: false
+        archiveType: $(archiveType)
+        tarCompression: $(tarCompression)
+        archiveExtension: $(archiveExtension)
+        artifactName: CoreCLRNativeTestArtifacts_${{ parameters.osGroup }}${{ parameters.osSubgroup }}_${{ parameters.archType }}_${{ parameters.buildConfig }}
+        displayName: 'native test components'
 
   # Zip Libraries Build Output
   - template: /eng/pipelines/common/upload-artifact-step.yml
@@ -55,5 +65,11 @@ steps:
       tarCompression: $(tarCompression)
       includeRootFolder: false
       archiveExtension: $(archiveExtension)
-      artifactName: libraries_bin_${{ parameters.osGroup }}${{ parameters.osSubgroup }}_${{ parameters.archType }}_${{ parameters.buildConfig }}
+      artifactName: ${{ coalesce(parameters.librariesBinArtifactName, format('libraries_bin_{0}{1}_{2}_{3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig)) }}
       displayName: Build Assets
+
+  # Upload unsigned artifacts
+  - ${{ if eq(parameters.uploadIntermediateArtifacts, true) }}:
+    - template: /eng/pipelines/common/upload-intermediate-artifacts-step.yml
+      parameters:
+        name: ${{ parameters.platform }}${{ parameters.nameSuffix }}

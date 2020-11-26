@@ -213,33 +213,6 @@ namespace ILCompiler
             return type.IsMdArray || elementType.IsPointer || elementType.IsFunctionPointer;
         }
 
-        /// <summary>
-        /// Determines whether an object of type '<paramref name="type"/>' requires 8-byte alignment on 
-        /// 32bit ARM or 32bit Wasm architectures.
-        /// </summary>
-        public static bool RequiresAlign8(this TypeDesc type)
-        {
-            if (type.Context.Target.Architecture != TargetArchitecture.ARM && type.Context.Target.Architecture != TargetArchitecture.Wasm32)
-            {
-                return false;
-            }
-
-            if (type.IsArray)
-            {
-                var elementType = ((ArrayType)type).ElementType;
-                if ((elementType.IsValueType) && ((DefType)elementType).InstanceByteAlignment.AsInt > 4)
-                {
-                    return true;
-                }
-            }
-            else if (type.IsDefType && ((DefType)type).InstanceByteAlignment.AsInt > 4)
-            {
-                return true;
-            }
-
-            return false;
-        }
-
         public static TypeDesc MergeTypesToCommonParent(TypeDesc ta, TypeDesc tb)
         {
             if (ta == tb)

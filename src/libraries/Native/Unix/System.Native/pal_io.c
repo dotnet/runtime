@@ -40,11 +40,15 @@
 // Somehow, AIX mangles the definition for this behind a C++ def
 // Redeclare it here
 extern int     getpeereid(int, uid_t *__restrict__, gid_t *__restrict__);
-// This function declaration is hidden behind `_XOPEN_SOURCE=700`, but we need
-// `_ALL_SOURCE` to build the runtime, and that resets that definition to 600.
-// Instead of trying to wrangle ifdefs in system headers with more definitions,
-// just declare it here.
-extern ssize_t  getline(char **, size_t *, FILE *);
+#elif defined(__sun)
+#ifndef _KERNEL
+#define _KERNEL
+#define UNDEF_KERNEL
+#endif
+#include <sys/procfs.h>
+#ifdef UNDEF_KERNEL
+#undef _KERNEL
+#endif
 #endif
 
 #if HAVE_STAT64
@@ -637,8 +641,16 @@ int32_t SystemNative_FChMod(intptr_t fd, int32_t mode)
 
 int32_t SystemNative_FSync(intptr_t fd)
 {
+    int fileDescriptor = ToFileDescriptor(fd);
+
     int32_t result;
-    while ((result = fsync(ToFileDescriptor(fd))) < 0 && errno == EINTR);
+    while ((result = 
+#if defined(TARGET_OSX) && HAVE_F_FULLFSYNC
+    fcntl(fileDescriptor, F_FULLFSYNC)
+#else
+    fsync(fileDescriptor)
+#endif
+    < 0) && errno == EINTR);
     return result;
 }
 
@@ -959,17 +971,6 @@ int32_t SystemNative_PosixFAdvise(intptr_t fd, int64_t offset, int64_t length, i
     (void)fd, (void)offset, (void)length, (void)advice;
     return ENOTSUP;
 #endif
-}
-
-char* SystemNative_GetLine(FILE* stream)
-{
-    assert(stream != NULL);
-
-    char* lineptr = NULL;
-    size_t n = 0;
-    ssize_t length = getline(&lineptr, &n, stream);
-
-    return length >= 0 ? lineptr : NULL;
 }
 
 int32_t SystemNative_Read(intptr_t fd, void* buffer, int32_t bufferSize)
@@ -1304,3 +1305,31 @@ int32_t SystemNative_LChflagsCanSetHiddenFlag(void)
     return false;
 #endif
 }
+
+#ifdef __sun
+
+int32_t SystemNative_ReadProcessStatusInfo(pid_t pid, ProcessStatus* processStatus)
+{
+    char statusFilename[64];
+    snprintf(statusFilename, sizeof(statusFilename), "/proc/%d/psinfo", pid);
+
+    intptr_t fd;
+    while ((fd = open(statusFilename, O_RDONLY)) < 0 && errno == EINTR);
+    if (fd < 0)
+    {
+        return 0;
+    }
+
+    psinfo_t status;
+    int result = Common_Read(fd, &status, sizeof(psinfo_t));
+    close(fd);
+    if (result >= 0)
+    {
+        processStatus->ResidentSetSize = status.pr_rssize * 1024; // pr_rssize is in Kbytes
+        return 1;
+    }
+
+    return 0;
+}
+
+#endif // __sun

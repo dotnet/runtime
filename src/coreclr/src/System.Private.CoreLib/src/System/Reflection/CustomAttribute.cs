@@ -5,6 +5,7 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Reflection
 {
@@ -289,6 +290,10 @@ namespace System.Reflection
         {
         }
 
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2075:UnrecognizedReflectionPattern",
+            Justification = "property setters and fiels which are accessed by any attribute instantiation which is present in the code linker has analyzed." +
+                            "As such enumerating all fields and properties may return different results fater trimming" +
+                            "but all those which are needed to actually have data should be there.")]
         private CustomAttributeData(RuntimeModule scope, MetadataToken caCtorToken, in ConstArray blob)
         {
             m_scope = scope;
@@ -1110,21 +1115,33 @@ namespace System.Reflection
         private static bool IsCustomAttributeDefined(
             RuntimeModule decoratedModule, int decoratedMetadataToken, RuntimeType? attributeFilterType, int attributeCtorToken, bool mustBeInheritable)
         {
-            CustomAttributeRecord[] car = CustomAttributeData.GetCustomAttributeRecords(decoratedModule, decoratedMetadataToken);
+            MetadataImport scope = decoratedModule.MetadataImport;
 
+            scope.EnumCustomAttributes(decoratedMetadataToken, out MetadataEnumResult attributeTokens);
+
+            if (attributeTokens.Length == 0)
+            {
+                return false;
+            }
+
+            CustomAttributeRecord record = default;
             if (attributeFilterType != null)
             {
                 Debug.Assert(attributeCtorToken == 0);
 
-                MetadataImport scope = decoratedModule.MetadataImport;
                 RuntimeType.ListBuilder<object> derivedAttributes = default;
 
-                for (int i = 0; i < car.Length; i++)
+                for (int i = 0; i < attributeTokens.Length; i++)
                 {
-                    if (FilterCustomAttributeRecord(car[i].tkCtor, in scope,
+                    scope.GetCustomAttributeProps(attributeTokens[i],
+                        out record.tkCtor.Value, out record.blob);
+
+                    if (FilterCustomAttributeRecord(record.tkCtor, in scope,
                         decoratedModule, decoratedMetadataToken, attributeFilterType, mustBeInheritable, ref derivedAttributes,
                         out _, out _, out _))
+                    {
                         return true;
+                    }
                 }
             }
             else
@@ -1132,10 +1149,15 @@ namespace System.Reflection
                 Debug.Assert(attributeFilterType == null);
                 Debug.Assert(!MetadataToken.IsNullToken(attributeCtorToken));
 
-                for (int i = 0; i < car.Length; i++)
+                for (int i = 0; i < attributeTokens.Length; i++)
                 {
-                    if (car[i].tkCtor == attributeCtorToken)
+                    scope.GetCustomAttributeProps(attributeTokens[i],
+                        out record.tkCtor.Value, out record.blob);
+
+                    if (record.tkCtor == attributeCtorToken)
+                    {
                         return true;
+                    }
                 }
             }
 
@@ -1160,6 +1182,10 @@ namespace System.Reflection
             return result;
         }
 
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2065:UnrecognizedReflectionPattern",
+            Justification = "Linker guarantees presence of all the constructor parameters, property setters and fiels which are accessed by any " +
+                            "attribute instantiation which is present in the code linker has analyzed." +
+                            "As such the reflection usage in this method should never fail as those methods/fields should always be present.")]
         private static void AddCustomAttributes(
             ref RuntimeType.ListBuilder<object> attributes,
             RuntimeModule decoratedModule, int decoratedMetadataToken,
@@ -1294,6 +1320,11 @@ namespace System.Reflection
             }
         }
 
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+            Justification = "Module.ResolveMethod and Module.ResolveType are marked as RequiresUnreferencedCode because they rely on tokens" +
+                            "which are not guaranteed to be stable across trimming. So if somebody harcodes a token it could break." +
+                            "The usage here is not like that as all these tokes come from existing metadata loaded from some IL" +
+                            "and so trimming has no effect (the tokens are read AFTER trimming occured).")]
         private static bool FilterCustomAttributeRecord(
             MetadataToken caCtorToken,
             in MetadataImport scope,
@@ -1426,6 +1457,11 @@ namespace System.Reflection
             return true;
         }
 
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+            Justification = "Module.ResolveType is marked as RequiresUnreferencedCode because it relies on tokens" +
+                            "which are not guaranteed to be stable across trimming. So if somebody harcodes a token it could break." +
+                            "The usage here is not like that as all these tokes come from existing metadata loaded from some IL" +
+                            "and so trimming has no effect (the tokens are read AFTER trimming occured).")]
         internal static AttributeUsageAttribute GetAttributeUsage(RuntimeType decoratedAttribute)
         {
             RuntimeModule decoratedModule = decoratedAttribute.GetRuntimeModule();

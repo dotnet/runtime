@@ -29,8 +29,6 @@ namespace System.Net.Security.Tests
 
         public static bool SupportsHandshakeAlerts { get { return OperatingSystem.IsLinux() || OperatingSystem.IsWindows(); } }
 
-        public static bool SupportsAlpnAlerts { get { return OperatingSystem.IsWindows() || (OperatingSystem.IsLinux() && PlatformDetection.OpenSslVersion.CompareTo(new Version(1,0,2)) >= 0); } }
-
         public static Task WhenAllOrAnyFailedWithTimeout(params Task[] tasks)
             => tasks.WhenAllOrAnyFailed(PassingTestTimeoutMilliseconds);
 

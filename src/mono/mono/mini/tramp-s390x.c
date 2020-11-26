@@ -98,7 +98,7 @@ typedef struct {
  */
 
 gpointer
-mono_arch_get_unbox_trampoline (MonoMethod *method, gpointer addr)
+mono_arch_get_unbox_trampoline (MonoMethod *m, gpointer addr)
 {
 	guint8 *code, *start;
 	int this_pos = s390_r2;
@@ -115,9 +115,9 @@ mono_arch_get_unbox_trampoline (MonoMethod *method, gpointer addr)
 	g_assert ((code - start) <= 28);
 
 	mono_arch_flush_icache (start, code - start);
-	MONO_PROFILER_RAISE (jit_code_buffer, (start, code - start, MONO_PROFILER_CODE_BUFFER_UNBOX_TRAMPOLINE, method));
+	MONO_PROFILER_RAISE (jit_code_buffer, (start, code - start, MONO_PROFILER_CODE_BUFFER_UNBOX_TRAMPOLINE, m));
 
-	snprintf(trampName, sizeof(trampName), "%s_unbox_trampoline", method->name);
+	snprintf(trampName, sizeof(trampName), "%s_unbox_trampoline", m->name);
 
 	mono_tramp_info_register (mono_tramp_info_create (trampName, start, code - start, NULL, NULL), domain);
 
@@ -163,18 +163,17 @@ mono_arch_create_sdb_trampoline (gboolean single_step, MonoTrampInfo **info, gbo
 	/** 
 	 * Create unwind information - On entry s390_r1 has value of method's frame reg
 	 */
-	mono_add_unwind_op_def_cfa (unwind_ops, code, buf, STK_BASE, 0);
-	s390_stmg (code, s390_r6, s390_r14, STK_BASE, S390_REG_SAVE_OFFSET);
-	gr_offset = S390_REG_SAVE_OFFSET;
-	for (i = s390_r6; i < s390_r15; i++) {
+	s390_stmg (code, s390_r6, s390_r15, STK_BASE, S390_REG_SAVE_OFFSET);
+	mono_add_unwind_op_def_cfa (unwind_ops, code, buf, STK_BASE, S390_CFA_OFFSET);
+	gr_offset = S390_REG_SAVE_OFFSET - S390_CFA_OFFSET;
+	for (i = s390_r6; i <= s390_r15; i++) {
 		mono_add_unwind_op_offset (unwind_ops, code, buf, i, gr_offset);
 		gr_offset += sizeof(uintptr_t);
 	}
 		
 	s390_lgr  (code, s390_r0, STK_BASE);
 	s390_aghi (code, STK_BASE, -framesize);
-	mono_add_unwind_op_def_cfa_offset (unwind_ops, code, buf, framesize);
-	mono_add_unwind_op_fp_alloc (unwind_ops, code, buf, STK_BASE, 0);
+	mono_add_unwind_op_def_cfa_offset (unwind_ops, code, buf, framesize + S390_CFA_OFFSET);
 	s390_stg  (code, s390_r0, 0, STK_BASE, 0);
 
 	gr_offset = ctx_offset + G_STRUCT_OFFSET(MonoContext, uc_mcontext.gregs);
@@ -231,8 +230,11 @@ mono_arch_create_sdb_trampoline (gboolean single_step, MonoTrampInfo **info, gbo
 	 * Restore everything else from the on-entry values
 	 */ 
 	s390_aghi (code, STK_BASE, framesize);
-	mono_add_unwind_op_def_cfa_offset (unwind_ops, code, buf, -framesize);
+	mono_add_unwind_op_def_cfa_offset (unwind_ops, code, buf, S390_CFA_OFFSET);
+	mono_add_unwind_op_same_value (unwind_ops, code, buf, STK_BASE);
 	s390_lmg  (code, s390_r6, s390_r13, STK_BASE, S390_REG_SAVE_OFFSET);
+        for (i = s390_r6; i <= s390_r13; i++)
+		mono_add_unwind_op_same_value (unwind_ops, code, buf, i);
 	s390_br   (code, s390_r14);
 
 	g_assertf ((code - buf) <= tramp_size, "%d %d", (int)(code - buf), tramp_size);
@@ -329,17 +331,17 @@ mono_arch_create_generic_trampoline (MonoTrampolineType tramp_type, MonoTrampInf
 	  stack size big enough to save our registers.
 	  -----------------------------------------------------------*/
 		
-	mono_add_unwind_op_def_cfa (unwind_ops, code, buf, STK_BASE, 0);
+	mono_add_unwind_op_def_cfa (unwind_ops, buf, code, STK_BASE, S390_CFA_OFFSET);
 	s390_stmg (buf, s390_r6, s390_r15, STK_BASE, S390_REG_SAVE_OFFSET);
-	offset = S390_REG_SAVE_OFFSET;
-	for (i = s390_r6; i < s390_r15; i++) {
-		mono_add_unwind_op_offset (unwind_ops, code, buf, i, offset);
+	offset = S390_REG_SAVE_OFFSET - S390_CFA_OFFSET;
+	for (i = s390_r6; i <= s390_r15; i++) {
+		mono_add_unwind_op_offset (unwind_ops, buf, code, i, offset);
 		offset += sizeof(uintptr_t);
 	}
 		
 	s390_lgr  (buf, s390_r11, s390_r15);
 	s390_aghi (buf, STK_BASE, -sizeof(trampStack_t));
-	mono_add_unwind_op_def_cfa_offset (unwind_ops, code, buf, sizeof(trampStack_t));
+	mono_add_unwind_op_def_cfa_offset (unwind_ops, buf, code, sizeof(trampStack_t) + S390_CFA_OFFSET);
 	s390_stg  (buf, s390_r11, 0, STK_BASE, 0);
 
 	/*---------------------------------------------------------------*/
@@ -493,8 +495,11 @@ mono_arch_create_generic_trampoline (MonoTrampolineType tramp_type, MonoTrampInf
 	 * R14 contains the return address to our caller 
 	 */
 	s390_lgr  (buf, STK_BASE, s390_r11);
-	// mono_add_unwind_op_def_cfa_offset (unwind_ops, code, buf, -sizeof(trampStack_t));
+	mono_add_unwind_op_def_cfa_offset (unwind_ops, buf, code, S390_CFA_OFFSET);
+	mono_add_unwind_op_same_value (unwind_ops, buf, code, STK_BASE);
 	s390_lmg  (buf, s390_r6, s390_r14, STK_BASE, S390_REG_SAVE_OFFSET);
+        for (i = s390_r6; i <= s390_r14; i++)
+		mono_add_unwind_op_same_value (unwind_ops, buf, code, i);
 
 	if (MONO_TRAMPOLINE_TYPE_MUST_RETURN(tramp_type)) {
 		s390_lgr (buf, s390_r2, s390_r1);

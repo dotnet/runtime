@@ -1,10 +1,8 @@
-﻿#!/usr/bin/env bash
+#!/usr/bin/env bash
 
 EXECUTION_DIR=$(dirname $0)
-TEST_NAME=$1
-TARGET_ARCH=$2
 
-APK=$EXECUTION_DIR/bin/$TEST_NAME.apk
+cd $EXECUTION_DIR
 
 # it doesn't support parallel execution yet, so, here is a hand-made semaphore:
 LOCKDIR=/tmp/androidtests.lock
@@ -20,12 +18,19 @@ done
 
 XHARNESS_OUT="$EXECUTION_DIR/xharness-output"
 
-dotnet xharness android test --instrumentation="net.dot.MonoRunner" \
-    --package-name="net.dot.$TEST_NAME" \
-    --app=$APK --output-directory=$XHARNESS_OUT -v
+if [ ! -z "$XHARNESS_CLI_PATH" ]; then
+	# When running in CI, we only have the .NET runtime available
+	# We need to call the XHarness CLI DLL directly via dotnet exec
+	HARNESS_RUNNER="dotnet exec $XHARNESS_CLI_PATH"
+else
+	HARNESS_RUNNER="dotnet xharness"
+fi
+
+# RunCommands defined in tests.mobile.targets
+[[RunCommands]]
 
 _exitCode=$?
 
-echo "Xharness artifacts: $XHARNESS_OUT"
+echo "XHarness artifacts: $XHARNESS_OUT"
 
 exit $_exitCode

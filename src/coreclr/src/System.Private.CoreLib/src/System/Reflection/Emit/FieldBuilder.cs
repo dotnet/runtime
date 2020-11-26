@@ -10,7 +10,6 @@ namespace System.Reflection.Emit
     {
         #region Private Data Members
         private int m_fieldTok;
-        private FieldToken m_tkField;
         private TypeBuilder m_typeBuilder;
         private string m_fieldName;
         private FieldAttributes m_Attributes;
@@ -48,9 +47,7 @@ namespace System.Reflection.Emit
 
             ModuleBuilder module = m_typeBuilder.GetModuleBuilder();
             m_fieldTok = TypeBuilder.DefineField(new QCallModule(ref module),
-                typeBuilder.TypeToken.Token, fieldName, signature, sigLength, m_Attributes);
-
-            m_tkField = new FieldToken(m_fieldTok, type);
+                typeBuilder.TypeToken, fieldName, signature, sigLength, m_Attributes);
         }
 
         #endregion
@@ -59,12 +56,12 @@ namespace System.Reflection.Emit
         internal void SetData(byte[]? data, int size)
         {
             ModuleBuilder module = m_typeBuilder.GetModuleBuilder();
-            ModuleBuilder.SetFieldRVAContent(new QCallModule(ref module), m_tkField.Token, data, size);
+            ModuleBuilder.SetFieldRVAContent(new QCallModule(ref module), m_fieldTok, data, size);
         }
         #endregion
 
         #region MemberInfo Overrides
-        internal int MetadataTokenInternal => m_fieldTok;
+        public override int MetadataToken => m_fieldTok;
 
         public override Module Module => m_typeBuilder.Module;
 
@@ -140,17 +137,12 @@ namespace System.Reflection.Emit
         #endregion
 
         #region Public Members
-        public FieldToken GetToken()
-        {
-            return m_tkField;
-        }
-
         public void SetOffset(int iOffset)
         {
             m_typeBuilder.ThrowIfCreated();
 
             ModuleBuilder module = m_typeBuilder.GetModuleBuilder();
-            TypeBuilder.SetFieldLayoutOffset(new QCallModule(ref module), GetToken().Token, iOffset);
+            TypeBuilder.SetFieldLayoutOffset(new QCallModule(ref module), m_fieldTok, iOffset);
         }
 
         public void SetConstant(object? defaultValue)
@@ -164,7 +156,7 @@ namespace System.Reflection.Emit
                     throw new ArgumentException(SR.Argument_ConstantNull);
             }
 
-            TypeBuilder.SetConstantValue(m_typeBuilder.GetModuleBuilder(), GetToken().Token, m_fieldType, defaultValue);
+            TypeBuilder.SetConstantValue(m_typeBuilder.GetModuleBuilder(), m_fieldTok, m_fieldType, defaultValue);
         }
 
         public void SetCustomAttribute(ConstructorInfo con, byte[] binaryAttribute)
@@ -180,7 +172,7 @@ namespace System.Reflection.Emit
             m_typeBuilder.ThrowIfCreated();
 
             TypeBuilder.DefineCustomAttribute(module,
-                m_tkField.Token, module.GetConstructorToken(con).Token, binaryAttribute, false, false);
+                m_fieldTok, module.GetConstructorToken(con), binaryAttribute, false, false);
         }
 
         public void SetCustomAttribute(CustomAttributeBuilder customBuilder)
@@ -192,7 +184,7 @@ namespace System.Reflection.Emit
 
             ModuleBuilder? module = m_typeBuilder.Module as ModuleBuilder;
 
-            customBuilder.CreateCustomAttribute(module!, m_tkField.Token);
+            customBuilder.CreateCustomAttribute(module!, m_fieldTok);
         }
 
         #endregion

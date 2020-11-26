@@ -170,7 +170,7 @@ namespace System.Xml
         private NodeData[]? _attrDuplSortingArray;
 
         // name table
-        private XmlNameTable _nameTable = null!; // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/43523
+        private XmlNameTable _nameTable;
         private bool _nameTableFromSettings;
 
         // resolver
@@ -210,7 +210,7 @@ namespace System.Xml
         private int _parsingStatesStackTop = -1;
 
         // current node base uri and encoding
-        private string? _reportedBaseUri;
+        private string _reportedBaseUri = string.Empty;
         private Encoding? _reportedEncoding;
 
         // DTD
@@ -712,7 +712,7 @@ namespace System.Xml
                 }
             }
 
-            _reportedBaseUri = baseUriStr;
+            _reportedBaseUri = baseUriStr ?? string.Empty;
             _closeInput = closeInput;
 
             _laterInitParam = new LaterInitParam();
@@ -764,7 +764,7 @@ namespace System.Xml
 
         // Initializes a new instance of the XmlTextReaderImpl class with the specified arguments.
         // This constructor is used when creating XmlTextReaderImpl via XmlReader.Create
-        internal XmlTextReaderImpl(TextReader input, XmlReaderSettings settings, string? baseUriStr, XmlParserContext? context)
+        internal XmlTextReaderImpl(TextReader input, XmlReaderSettings settings, string baseUriStr, XmlParserContext? context)
             : this(settings.GetXmlResolver(), settings, context)
         {
             ConvertAbsoluteUnixPathToAbsoluteUri(ref baseUriStr, settings.GetXmlResolver());
@@ -941,7 +941,7 @@ namespace System.Xml
         }
 
         // Returns the base URI of the current node.
-        public override string? BaseURI
+        public override string BaseURI
         {
             get
             {
@@ -9732,36 +9732,30 @@ namespace System.Xml
             }
         }
 
-        internal static unsafe void AdjustLineInfo(char[] chars, int startPos, int endPos, bool isNormalized, ref LineInfo lineInfo)
+        internal static void AdjustLineInfo(char[] chars, int startPos, int endPos, bool isNormalized, ref LineInfo lineInfo)
         {
             Debug.Assert(startPos >= 0);
             Debug.Assert(endPos < chars.Length);
             Debug.Assert(startPos <= endPos);
 
-            fixed (char* pChars = &chars[startPos])
-            {
-                AdjustLineInfo(pChars, endPos - startPos, isNormalized, ref lineInfo);
-            }
+            AdjustLineInfo(chars.AsSpan(startPos, endPos - startPos), isNormalized, ref lineInfo);
         }
 
-        internal static unsafe void AdjustLineInfo(string str, int startPos, int endPos, bool isNormalized, ref LineInfo lineInfo)
+        internal static void AdjustLineInfo(string str, int startPos, int endPos, bool isNormalized, ref LineInfo lineInfo)
         {
             Debug.Assert(startPos >= 0);
             Debug.Assert(endPos < str.Length);
             Debug.Assert(startPos <= endPos);
 
-            fixed (char* pChars = str)
-            {
-                AdjustLineInfo(pChars + startPos, endPos - startPos, isNormalized, ref lineInfo);
-            }
+            AdjustLineInfo(str.AsSpan(startPos, endPos - startPos), isNormalized, ref lineInfo);
         }
 
-        internal static unsafe void AdjustLineInfo(char* pChars, int length, bool isNormalized, ref LineInfo lineInfo)
+        private static void AdjustLineInfo(ReadOnlySpan<char> chars, bool isNormalized, ref LineInfo lineInfo)
         {
             int lastNewLinePos = -1;
-            for (int i = 0; i < length; i++)
+            for (int i = 0; i < chars.Length; i++)
             {
-                switch (pChars[i])
+                switch (chars[i])
                 {
                     case '\n':
                         lineInfo.lineNo++;
@@ -9774,7 +9768,8 @@ namespace System.Xml
                         }
                         lineInfo.lineNo++;
                         lastNewLinePos = i;
-                        if (i + 1 < length && pChars[i + 1] == '\n')
+                        int nextIdx = i + 1;
+                        if ((uint)nextIdx < (uint)chars.Length && chars[nextIdx] == '\n')
                         {
                             i++;
                             lastNewLinePos++;
@@ -9784,7 +9779,7 @@ namespace System.Xml
             }
             if (lastNewLinePos >= 0)
             {
-                lineInfo.linePos = length - lastNewLinePos;
+                lineInfo.linePos = chars.Length - lastNewLinePos;
             }
         }
 
@@ -9917,6 +9912,6 @@ namespace System.Xml
             Buffer.BlockCopy(src, srcOffset, dst, dstOffset, count);
         }
 
-        static partial void ConvertAbsoluteUnixPathToAbsoluteUri(ref string? url, XmlResolver? resolver);
+        static partial void ConvertAbsoluteUnixPathToAbsoluteUri([NotNullIfNotNull("url")] ref string? url, XmlResolver? resolver);
     }
 }

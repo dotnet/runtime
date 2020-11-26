@@ -692,10 +692,5 @@
 			<!-- marshal-ilgen.c:emit_invoke_call -->
 			<method signature="System.Void .ctor()" />
 		</type>
-
-		<!-- Used by binary formatter tests -->
-		<type fullname="System.Threading.ThreadStartException">
-			<method name=".ctor" />
-		</type>
 	</assembly>
 </linker>

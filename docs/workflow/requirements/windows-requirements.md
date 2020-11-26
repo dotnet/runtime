@@ -42,7 +42,13 @@ The dotnet/runtime repository requires at least Visual Studio 2019 16.6.
 - Add its location (e.g. C:\Program Files (x86)\CMake\bin) to the PATH environment variable.
   The installation script has a check box to do this, but you can do it yourself after the fact following the instructions at [Adding to the Default PATH variable](#adding-to-the-default-path-variable).
 
-The dotnet/runtime repository requires at least CMake 3.15.5.
+The dotnet/runtime repository recommends using CMake 3.16.0 or newer, but works with CMake 3.15.5.
+
+## Ninja (optional)
+
+- Install Ninja in one of the two following ways
+  - [Download the executable](https://github.com/ninja-build/ninja/releases) and add its location to [the Default PATH variable](#adding-to-the-default-path-variable).
+  - [Install via a package manager](https://github.com/ninja-build/ninja/wiki/Pre-built-Ninja-packages), which should automatically add it to the PATH environment variable.
 
 ## Python
 

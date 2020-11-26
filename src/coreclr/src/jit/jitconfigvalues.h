@@ -21,7 +21,9 @@ CONFIG_INTEGER(BreakOnDumpToken, W("BreakOnDumpToken"), 0xffffffff) // Breaks wh
                                                                     // particular token value.
 CONFIG_INTEGER(DebugBreakOnVerificationFailure, W("DebugBreakOnVerificationFailure"), 0) // Halts the jit on
                                                                                          // verification failure
-CONFIG_INTEGER(DiffableDasm, W("JitDiffableDasm"), 0)            // Make the disassembly diff-able
+CONFIG_INTEGER(DiffableDasm, W("JitDiffableDasm"), 0)          // Make the disassembly diff-able
+CONFIG_INTEGER(JitDasmWithAddress, W("JitDasmWithAddress"), 0) // Print the process address next to each instruction of
+                                                               // the disassembly
 CONFIG_INTEGER(DisplayLoopHoistStats, W("JitLoopHoistStats"), 0) // Display JIT loop hoisting statistics
 CONFIG_INTEGER(DisplayLsraStats, W("JitLsraStats"), 0)       // Display JIT Linear Scan Register Allocator statistics
 CONFIG_INTEGER(DumpJittedMethods, W("DumpJittedMethods"), 0) // Prints all jitted methods to the console
@@ -357,10 +359,8 @@ CONFIG_METHODSET(AltJit, W("AltJit"))         // Enables AltJit and selectively 
 CONFIG_METHODSET(AltJitNgen, W("AltJitNgen")) // Enables AltJit for NGEN and selectively limits it
                                               // to the specified methods.
 
-#if defined(ALT_JIT)
 CONFIG_STRING(AltJitExcludeAssemblies, W("AltJitExcludeAssemblies")) // Do not use AltJit on this
                                                                      // semicolon-delimited list of assemblies.
-#endif                                                               // defined(ALT_JIT)
 
 CONFIG_INTEGER(JitMeasureIR, W("JitMeasureIR"), 0) // If set, measure the IR size after some phases and report it in
                                                    // the time log.
@@ -400,6 +400,8 @@ CONFIG_STRING(JitInlineReplayFile, W("JitInlineReplayFile"))
 #endif // defined(DEBUG) || defined(INLINE_DATA)
 
 CONFIG_INTEGER(JitInlinePolicyModel, W("JitInlinePolicyModel"), 0)
+CONFIG_INTEGER(JitInlinePolicyProfile, W("JitInlinePolicyProfile"), 0)
+CONFIG_INTEGER(JitInlinePolicyProfileThreshold, W("JitInlinePolicyProfileThreshold"), 40)
 CONFIG_INTEGER(JitObjectStackAllocation, W("JitObjectStackAllocation"), 0)
 
 CONFIG_INTEGER(JitEECallTimingInfo, W("JitEECallTimingInfo"), 0)
@@ -414,14 +416,20 @@ CONFIG_INTEGER(JitEnableGuardedDevirtualization, W("JitEnableGuardedDevirtualiza
 
 #if defined(DEBUG)
 // Various policies for GuardedDevirtualization
+CONFIG_STRING(JitGuardedDevirtualizationRange, W("JitGuardedDevirtualizationRange"))
 CONFIG_INTEGER(JitGuardedDevirtualizationGuessUniqueInterface, W("JitGuardedDevirtualizationGuessUniqueInterface"), 1)
 CONFIG_INTEGER(JitGuardedDevirtualizationGuessBestClass, W("JitGuardedDevirtualizationGuessBestClass"), 1)
+CONFIG_INTEGER(JitGuardedDeivrtualizationUseProfile, W("JitGuardedDevirtualizationUseProfile"), 0)
 #endif // DEBUG
 
 // Enable insertion of patchpoints into Tier0 methods with loops.
 CONFIG_INTEGER(TC_OnStackReplacement, W("TC_OnStackReplacement"), 0)
 // Initial patchpoint counter value used by jitted code
 CONFIG_INTEGER(TC_OnStackReplacement_InitialCounter, W("TC_OnStackReplacement_InitialCounter"), 1000)
+
+// Profile instrumentation options
+CONFIG_INTEGER(JitMinimalProfiling, W("JitMinimalProfiling"), 0)
+CONFIG_INTEGER(JitClassProfiling, W("JitClassProfiling"), 0)
 
 #if defined(DEBUG)
 // JitFunctionFile: Name of a file that contains a list of functions. If the currently compiled function is in the

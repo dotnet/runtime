@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <TargetFrameworks>$(NetCoreAppCurrent);netstandard2.0;netcoreapp3.0;net461</TargetFrameworks>
@@ -33,6 +33,7 @@
     <Compile Include="System\Text\Json\Document\JsonElement.ArrayEnumerator.cs" />
     <Compile Include="System\Text\Json\Document\JsonElement.cs" />
     <Compile Include="System\Text\Json\Document\JsonElement.ObjectEnumerator.cs" />
+    <Compile Include="System\Text\Json\Document\JsonElement.Parse.cs" />
     <Compile Include="System\Text\Json\Document\JsonProperty.cs" />
     <Compile Include="System\Text\Json\Document\JsonValueKind.cs" />
     <Compile Include="System\Text\Json\JsonCommentHandling.cs" />
@@ -236,7 +237,6 @@
     <Reference Include="System.Collections" />
     <Reference Include="System.Collections.Concurrent" />
     <Reference Include="System.Diagnostics.Debug" />
-    <Reference Include="System.Linq" />
     <Reference Include="System.Memory" />
     <Reference Include="System.Numerics.Vectors" />
     <Reference Include="System.Reflection.Emit.ILGeneration" />

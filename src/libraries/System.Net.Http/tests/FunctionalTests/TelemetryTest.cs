@@ -36,12 +36,14 @@ namespace System.Net.Http.Functional.Tests
         {
             yield return new object[] { "GetAsync" };
             yield return new object[] { "SendAsync" };
+            yield return new object[] { "UnbufferedSendAsync" };
             yield return new object[] { "GetStringAsync" };
             yield return new object[] { "GetByteArrayAsync" };
             yield return new object[] { "GetStreamAsync" };
             yield return new object[] { "InvokerSendAsync" };
 
             yield return new object[] { "Send" };
+            yield return new object[] { "UnbufferedSend" };
             yield return new object[] { "InvokerSend" };
         }
 
@@ -63,6 +65,7 @@ namespace System.Net.Http.Functional.Tests
                 Version version = Version.Parse(useVersionString);
                 using var listener = new TestEventListener("System.Net.Http", EventLevel.Verbose, eventCounterInterval: 0.1d);
 
+                bool buffersResponse = false;
                 var events = new ConcurrentQueue<EventWrittenEventArgs>();
                 await listener.RunWithCallbackAsync(events.Enqueue, async () =>
                 {
@@ -81,38 +84,78 @@ namespace System.Net.Http.Functional.Tests
                             switch (testMethod)
                             {
                                 case "GetAsync":
-                                    await client.GetAsync(uri);
+                                    {
+                                        buffersResponse = true;
+                                        await client.GetAsync(uri);
+                                    }
                                     break;
 
                                 case "Send":
-                                    await Task.Run(() => client.Send(request));
+                                    {
+                                        buffersResponse = true;
+                                        await Task.Run(() => client.Send(request));
+                                    }
+                                    break;
+
+                                case "UnbufferedSend":
+                                    {
+                                        buffersResponse = false;
+                                        HttpResponseMessage response = await Task.Run(() => client.Send(request, HttpCompletionOption.ResponseHeadersRead));
+                                        response.Content.CopyTo(Stream.Null, null, default);
+                                    }
                                     break;
 
                                 case "SendAsync":
-                                    await client.SendAsync(request);
+                                    {
+                                        buffersResponse = true;
+                                        await client.SendAsync(request);
+                                    }
+                                    break;
+
+                                case "UnbufferedSendAsync":
+                                    {
+                                        buffersResponse = false;
+                                        HttpResponseMessage response = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead);
+                                        await response.Content.CopyToAsync(Stream.Null);
+                                    }
                                     break;
 
                                 case "GetStringAsync":
-                                    await client.GetStringAsync(uri);
+                                    {
+                                        buffersResponse = true;
+                                        await client.GetStringAsync(uri);
+                                    }
                                     break;
 
                                 case "GetByteArrayAsync":
-                                    await client.GetByteArrayAsync(uri);
+                                    {
+                                        buffersResponse = true;
+                                        await client.GetByteArrayAsync(uri);
+                                    }
                                     break;
 
                                 case "GetStreamAsync":
-                                    Stream responseStream = await client.GetStreamAsync(uri);
-                                    await responseStream.CopyToAsync(Stream.Null);
+                                    {
+                                        buffersResponse = false;
+                                        Stream responseStream = await client.GetStreamAsync(uri);
+                                        await responseStream.CopyToAsync(Stream.Null);
+                                    }
                                     break;
 
                                 case "InvokerSend":
-                                    HttpResponseMessage syncResponse = await Task.Run(() => invoker.Send(request, cancellationToken: default));
-                                    await syncResponse.Content.CopyToAsync(Stream.Null);
+                                    {
+                                        buffersResponse = false;
+                                        HttpResponseMessage response = await Task.Run(() => invoker.Send(request, cancellationToken: default));
+                                        await response.Content.CopyToAsync(Stream.Null);
+                                    }
                                     break;
 
                                 case "InvokerSendAsync":
-                                    HttpResponseMessage asyncResponse = await invoker.SendAsync(request, cancellationToken: default);
-                                    await asyncResponse.Content.CopyToAsync(Stream.Null);
+                                    {
+                                        buffersResponse = false;
+                                        HttpResponseMessage response = await invoker.SendAsync(request, cancellationToken: default);
+                                        await response.Content.CopyToAsync(Stream.Null);
+                                    }
                                     break;
                             }
                         },
@@ -143,7 +186,7 @@ namespace System.Net.Http.Functional.Tests
                 ValidateRequestResponseStartStopEvents(
                     events,
                     requestContentLength: null,
-                    responseContentLength: testMethod.StartsWith("InvokerSend") ? null : ResponseContentLength,
+                    responseContentLength: buffersResponse ? ResponseContentLength : null,
                     count: 1);
 
                 VerifyEventCounters(events, requestCount: 1, shouldHaveFailures: false);
@@ -194,8 +237,16 @@ namespace System.Net.Http.Functional.Tests
                                     await Assert.ThrowsAsync<TaskCanceledException>(async () => await Task.Run(() => client.Send(request, cts.Token)));
                                     break;
 
+                                case "UnbufferedSend":
+                                    await Assert.ThrowsAsync<TaskCanceledException>(async () => await Task.Run(() => client.Send(request, HttpCompletionOption.ResponseHeadersRead, cts.Token)));
+                                    break;
+
                                 case "SendAsync":
                                     await Assert.ThrowsAsync<TaskCanceledException>(async () => await client.SendAsync(request, cts.Token));
+                                    break;
+
+                                case "UnbufferedSendAsync":
+                                    await Assert.ThrowsAsync<TaskCanceledException>(async () => await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cts.Token));
                                     break;
 
                                 case "GetStringAsync":

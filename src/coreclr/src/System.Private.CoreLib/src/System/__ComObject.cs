@@ -4,6 +4,7 @@
 using System.Collections;
 using System.Runtime.InteropServices;
 using System.Reflection;
+using System.Runtime.Versioning;
 
 namespace System
 {
@@ -11,6 +12,7 @@ namespace System
     /// __ComObject is the root class for all COM wrappers. This class defines only
     /// the basics. This class is used for wrapping COM objects accessed from managed.
     /// </summary>
+    [SupportedOSPlatform("windows")]
     internal class __ComObject : MarshalByRefObject
     {
         private Hashtable? m_ObjectToDataMap; // Do not rename (runtime relies on this name).

@@ -2339,7 +2339,7 @@ typedef struct __F_ __F_;
  __blocksOn(resource) f :
      Function f blocks on the resource 'resource'.
 
- __fallthrough :
+ FALLTHROUGH :
      Annotates switch statement labels where fall-through is desired, to distinguish
      from forgotten break statements.
 
@@ -2586,8 +2586,6 @@ extern "C" {
     #define __inner_override                    _SA_annotes0(__override)
     #define __inner_callback                    _SA_annotes0(__callback)
     #define __inner_blocksOn(resource)          _SA_annotes1(SAL_blocksOn, resource)
-    #define __inner_fallthrough_dec             __inline __nothrow void __FallThrough() {}
-    #define __inner_fallthrough                 __FallThrough();
 
     #define __post_except_maybenull     __post __inner_exceptthat _Maybenull_impl_
     #define __pre_except_maybenull      __pre  __inner_exceptthat _Maybenull_impl_
@@ -2626,8 +2624,6 @@ extern "C" {
     #define __inner_override
     #define __inner_callback
     #define __inner_blocksOn(resource)
-    #define __inner_fallthrough_dec
-    #define __inner_fallthrough
     #define __refparam
     #define __inner_control_entrypoint(category)
     #define __inner_data_entrypoint(category)
@@ -2873,8 +2869,11 @@ of each annotation, see the advanced annotations section.
 #define __on_failure(annotes)                _On_failure_impl_(annotes _SAL_nop_impl_)
 
 #ifndef __fallthrough // [
-    __inner_fallthrough_dec
-    #define __fallthrough __inner_fallthrough
+#if __has_cpp_attribute(fallthrough)
+#define __fallthrough [[fallthrough]]
+#else
+#define __fallthrough
+#endif
 #endif // ]
 
 #ifndef __analysis_assume // [

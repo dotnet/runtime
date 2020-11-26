@@ -306,23 +306,27 @@ CrashInfo::EnumerateManagedModules(IXCLRDataProcess* pClrDataProcess)
 
             if (!moduleData.IsDynamic && moduleData.LoadedPEAddress != 0)
             {
-                ArrayHolder<WCHAR> wszUnicodeName = new WCHAR[MAX_LONGPATH + 1];
+                ArrayHolder<WCHAR> wszUnicodeName = new (std::nothrow) WCHAR[MAX_LONGPATH + 1];
+                if (wszUnicodeName == nullptr)
+                {
+                    fprintf(stderr, "Allocating unicode module name FAILED\n");
+                    result = false;
+                    break;
+                }
                 if (SUCCEEDED(hr = pClrDataModule->GetFileName(MAX_LONGPATH, nullptr, wszUnicodeName)))
                 {
-                    // If the module file name isn't empty
-                    if (wszUnicodeName[0] != 0) {
-                        ArrayHolder<char> pszName = new (std::nothrow) char[MAX_LONGPATH + 1];
-                        if (pszName == nullptr) {
-                            fprintf(stderr, "Allocating module name FAILED\n");
-                            result = false;
-                            break;
-                        }
-                        sprintf_s(pszName.GetPtr(), MAX_LONGPATH, "%S", (WCHAR*)wszUnicodeName);
-                        TRACE(" %s\n", pszName.GetPtr());
-
-                        // Change the module mapping name
-                        ReplaceModuleMapping(moduleData.LoadedPEAddress, moduleData.LoadedPESize, std::string(pszName.GetPtr()));
+                    ArrayHolder<char> pszName = new (std::nothrow) char[MAX_LONGPATH + 1];
+                    if (pszName == nullptr)
+                    {
+                        fprintf(stderr, "Allocating ascii module name FAILED\n");
+                        result = false;
+                        break;
                     }
+                    sprintf_s(pszName.GetPtr(), MAX_LONGPATH, "%S", (WCHAR*)wszUnicodeName);
+                    TRACE(" %s\n", pszName.GetPtr());
+
+                    // Change the module mapping name
+                    ReplaceModuleMapping(moduleData.LoadedPEAddress, moduleData.LoadedPESize, std::string(pszName.GetPtr()));
                 }
                 else {
                     TRACE("\nModule.GetFileName FAILED %08x\n", hr);
@@ -368,16 +372,21 @@ CrashInfo::ReplaceModuleMapping(CLRDATA_ADDRESS baseAddress, ULONG64 size, const
 {
     uint64_t start = (uint64_t)baseAddress;
     uint64_t end = ((baseAddress + size) + (PAGE_SIZE - 1)) & PAGE_MASK;
+    uint32_t flags = GetMemoryRegionFlags(start);
+
+    // Make sure that the page containing the PE header for the managed asseblies is in the dump
+    // especially on MacOS where they are added artificially.
+    MemoryRegion header(flags | MEMORY_REGION_FLAG_MEMORY_BACKED, start, start + PAGE_SIZE);
+    InsertMemoryRegion(header);
 
     // Add or change the module mapping for this PE image. The managed assembly images may already
     // be in the module mappings list but they may not have the full assembly name (like in .NET 2.0
     // they have the name "/dev/zero"). On MacOS, the managed assembly modules have not been added.
-    MemoryRegion search(0, start, start + PAGE_SIZE);
-    const auto& found = m_moduleMappings.find(search);
+    const auto& found = m_moduleMappings.find(header);
     if (found == m_moduleMappings.end())
     {
         // On MacOS the assemblies are always added.
-        MemoryRegion newRegion(GetMemoryRegionFlags(start), start, end, 0, pszName);
+        MemoryRegion newRegion(flags, start, end, 0, pszName);
         m_moduleMappings.insert(newRegion);
 
         if (g_diagnostics) {

@@ -18,7 +18,7 @@ __attribute__((visibility("default"))) DECLARE_NATIVE_STRING_RESOURCE_TABLE(NATI
 #include <stdlib.h>
 
 // External prototypes.
-extern HINSTANCE GetModuleInst();
+extern void* GetClrModuleBase();
 
 //*****************************************************************************
 // Do the mapping from an langId to an hinstance node
@@ -677,7 +677,7 @@ HRESULT CCompRC::LoadLibraryThrows(HRESOURCEDLL * pHInst)
 
 #ifdef CROSSGEN_COMPILE
     // The resources are embeded into the .exe itself for crossgen
-    *pHInst = GetModuleInst();
+    *pHInst = (HINSTANCE)GetClrModuleBase();
 #else
 
 #ifdef SELF_NO_HOST
@@ -688,7 +688,7 @@ HRESULT CCompRC::LoadLibraryThrows(HRESOURCEDLL * pHInst)
 
     // Try first in the same directory as this dll.
 
-    hr = GetCORSystemDirectoryInternaL(rcPath);
+    hr = GetClrModuleDirectory(rcPath);
     if (FAILED(hr))
         return hr;
 

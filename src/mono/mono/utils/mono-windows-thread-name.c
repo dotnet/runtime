@@ -7,14 +7,9 @@
 //  is running when the exception is raised. There is
 //  no way to get the thread name and they do not appear in ETW traces.
 //
-// XboxOne: SetThreadName(thread handle, unicode)
-//   This works with or without a debugger and can be retrieved with GetThreadName.
-//   Sometimes an inline function SetThreadDescription for source compat with next.
-//   https://github.com/microsoft/xbox-live-api/blob/90b38b434d9c13ce4916c116cd28a98b239e38e2/InProgressSamples/Kits/ATGTK/ThreadHelpers.h#L21
-//
 // Windows 10 1607 or newer (according to documentation, or Creators Update says https://randomascii.wordpress.com/2015/10/26/thread-naming-in-windows-time-for-something-better).
 //  SetThreadDescription(thread handle, unicode)
-//  This is like XboxOne -- works with or without debugger, can be retrieved
+//  Works with or without debugger, can be retrieved
 //  with GetThreadDescription, and appears in ETW traces.
 //  See https://randomascii.wordpress.com/2015/10/26/thread-naming-in-windows-time-for-something-better.
 //
@@ -36,7 +31,7 @@
 WINBASEAPI HMODULE WINAPI LoadLibraryExW (PCWSTR, HANDLE, DWORD);
 #define LOAD_LIBRARY_SEARCH_SYSTEM32        0x00000800
 
-#include "mono/metadata/w32subset.h"
+#include <mono/utils/w32subset.h>
 
 // This is compiler specific because of the use of __try / __except.
 #if _MSC_VER
@@ -75,24 +70,13 @@ mono_native_thread_set_name (MonoNativeThreadId tid, const char *name)
 #endif
 }
 
-#if HAVE_SET_THREAD_NAME
-
-void
-mono_thread_set_name_windows (HANDLE thread_handle, PCWSTR thread_name)
-{
-	SetThreadName (thread_handle, thread_name);
-}
-
-#elif HAVE_SET_THREAD_DESCRIPTION
-
+#if HAVE_API_SUPPORT_WIN32_SET_THREAD_DESCRIPTION
 void
 mono_thread_set_name_windows (HANDLE thread_handle, PCWSTR thread_name)
 {
 	SetThreadDescription (thread_handle, thread_name);
 }
-
-#else // LoadLibrary / GetProcAddress
-
+#elif !HAVE_EXTERN_DEFINED_WIN32_SET_THREAD_DESCRIPTION
 typedef
 HRESULT
 (__stdcall * MonoSetThreadDescription_t) (HANDLE thread_handle, PCWSTR thread_name);
@@ -140,4 +124,4 @@ mono_thread_set_name_windows (HANDLE thread_handle, PCWSTR thread_name)
 
 #endif
 
-#endif // Win32
+#endif /* HOST_WIN32 */

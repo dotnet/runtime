@@ -46,16 +46,12 @@ namespace Internal.Cryptography
 
         public override void GenerateIV()
         {
-            byte[] iv = new byte[BlockSize / BitsPerByte];
-            RandomNumberGenerator.Fill(iv);
-            IV = iv;
+            IV = RandomNumberGenerator.GetBytes(BlockSize / BitsPerByte);
         }
 
         public sealed override void GenerateKey()
         {
-            byte[] key = new byte[KeySize / BitsPerByte];
-            RandomNumberGenerator.Fill(key);
-            Key = key;
+            Key = RandomNumberGenerator.GetBytes(KeySize / BitsPerByte);
         }
 
         private ICryptoTransform CreateTransform(byte[] rgbKey, byte[]? rgbIV, bool encrypting)

@@ -22,6 +22,13 @@ class ThreadPoolNative
 {
 
 public:
+    static FCDECL4(INT32, GetNextConfigUInt32Value,
+        INT32 configVariableIndex,
+        UINT32 *configValueRef,
+        BOOL *isBooleanRef,
+        LPCWSTR *appContextConfigNameRef);
+    static FCDECL1(FC_BOOL_RET, CorCanSetMinIOCompletionThreads, DWORD ioCompletionThreads);
+    static FCDECL1(FC_BOOL_RET, CorCanSetMaxIOCompletionThreads, DWORD ioCompletionThreads);
     static FCDECL2(FC_BOOL_RET, CorSetMaxThreads, DWORD workerThreads, DWORD completionPortThreads);
     static FCDECL2(VOID, CorGetMaxThreads, DWORD* workerThreads, DWORD* completionPortThreads);
     static FCDECL2(FC_BOOL_RET, CorSetMinThreads, DWORD workerThreads, DWORD completionPortThreads);
@@ -38,20 +45,25 @@ public:
 
     static FCDECL1(void, ReportThreadStatus, CLR_BOOL isWorking);
 
-
     static FCDECL5(LPVOID, CorRegisterWaitForSingleObject,
                                 Object* waitObjectUNSAFE,
                                 Object* stateUNSAFE,
                                 UINT32 timeout,
                                 CLR_BOOL executeOnlyOnce,
                                 Object* registeredWaitObjectUNSAFE);
+#ifdef TARGET_WINDOWS // the IO completion thread pool is currently only available on Windows
+    static FCDECL1(void, CorQueueWaitCompletion, Object* completeWaitWorkItemObjectUNSAFE);
+#endif
 
     static BOOL QCALLTYPE RequestWorkerThread();
+    static BOOL QCALLTYPE PerformGateActivities(INT32 cpuUtilization);
 
     static FCDECL1(FC_BOOL_RET, CorPostQueuedCompletionStatus, LPOVERLAPPED lpOverlapped);
     static FCDECL2(FC_BOOL_RET, CorUnregisterWait, LPVOID WaitHandle, Object * objectToNotify);
     static FCDECL1(void, CorWaitHandleCleanupNative, LPVOID WaitHandle);
     static FCDECL1(FC_BOOL_RET, CorBindIoCompletionCallback, HANDLE fileHandle);
+
+    static void QCALLTYPE ExecuteUnmanagedThreadPoolWorkItem(LPTHREAD_START_ROUTINE callback, LPVOID state);
 };
 
 class AppDomainTimerNative

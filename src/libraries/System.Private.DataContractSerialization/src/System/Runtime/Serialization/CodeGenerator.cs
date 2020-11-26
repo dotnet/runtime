@@ -38,7 +38,7 @@ namespace System.Runtime.Serialization
             {
                 if (s_objectEquals == null)
                 {
-                    s_objectEquals = Globals.TypeOfObject.GetMethod("Equals", BindingFlags.Public | BindingFlags.Static);
+                    s_objectEquals = typeof(object).GetMethod("Equals", BindingFlags.Public | BindingFlags.Static);
                     Debug.Assert(s_objectEquals != null);
                 }
                 return s_objectEquals;
@@ -66,7 +66,7 @@ namespace System.Runtime.Serialization
             {
                 if (s_objectToString == null)
                 {
-                    s_objectToString = typeof(object).GetMethod("ToString", Array.Empty<Type>());
+                    s_objectToString = typeof(object).GetMethod("ToString", Type.EmptyTypes);
                     Debug.Assert(s_objectToString != null);
                 }
                 return s_objectToString;

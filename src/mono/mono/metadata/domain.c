@@ -51,6 +51,7 @@
 #include <mono/metadata/profiler-private.h>
 #include <mono/metadata/coree.h>
 #include <mono/utils/mono-experiments.h>
+#include <mono/utils/w32subset.h>
 #include "external-only.h"
 #include "mono/utils/mono-tls-inline.h"
 
@@ -511,7 +512,7 @@ mono_init_internal (const char *filename, const char *exe_filename, const char *
 	if (domain)
 		g_assert_not_reached ();
 
-#if defined(HOST_WIN32) && G_HAVE_API_SUPPORT(HAVE_CLASSIC_WINAPI_SUPPORT)
+#if defined(HOST_WIN32) && HAVE_API_SUPPORT_WIN32_SET_ERROR_MODE
 	/* Avoid system error message boxes. */
 	SetErrorMode (SEM_FAILCRITICALERRORS | SEM_NOOPENFILEERRORBOX);
 #endif

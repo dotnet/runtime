@@ -15,6 +15,8 @@ namespace R2RTest
 {
     public class BuildFolderSet
     {
+        const string FrameworkOutputFileName = "framework-r2r.dll";
+
         private readonly IEnumerable<BuildFolder> _buildFolders;
 
         private readonly IEnumerable<CompilerRunner> _compilerRunners;
@@ -221,6 +223,9 @@ namespace R2RTest
             Stopwatch stopwatch = Stopwatch.StartNew();
 
             string coreRoot = _options.CoreRootDirectory.FullName;
+
+            File.Delete(Path.Combine(coreRoot, FrameworkOutputFileName));
+
             string[] frameworkFolderFiles = Directory.GetFiles(coreRoot);
 
             IEnumerable<CompilerRunner> frameworkRunners = _options.CompilerRunners(isFramework: true, overrideOutputPath: _options.OutputDirectory.FullName);
@@ -259,7 +264,7 @@ namespace R2RTest
 
                     if (inputFrameworkDlls.Count > 0)
                     {
-                        string outputFileName = runner.GetOutputFileName(_options.CoreRootDirectory.FullName, "framework-r2r.dll");
+                        string outputFileName = runner.GetOutputFileName(_options.CoreRootDirectory.FullName, FrameworkOutputFileName);
                         ProcessInfo compilationProcess = new ProcessInfo(new CompilationProcessConstructor(runner, outputFileName, inputFrameworkDlls));
                         compilationsToRun.Add(compilationProcess);
                         processes[(int)runner.Index] = compilationProcess;
@@ -530,7 +535,7 @@ namespace R2RTest
                             foreach (ProcessInfo[] compilation in folder.Compilations)
                             {
                                 ProcessInfo runnerCompilation = compilation[(int)runner.Index];
-                                if (!runnerCompilation.Succeeded)
+                                if (!runnerCompilation.IsEmpty && !runnerCompilation.Succeeded)
                                 {
                                     compilationsSucceeded = false;
                                     break;
@@ -631,7 +636,7 @@ namespace R2RTest
                         bool anyCompilationFailed = false;
                         foreach (CompilerRunner runner in _compilerRunners)
                         {
-                            if (compilation[(int)runner.Index] != null)
+                            if (!compilation[(int)runner.Index].IsEmpty)
                             {
                                 CompilationOutcome outcome = GetCompilationOutcome(compilation[(int)runner.Index]);
                                 compilationOutcomes[(int)outcome, (int)runner.Index]++;

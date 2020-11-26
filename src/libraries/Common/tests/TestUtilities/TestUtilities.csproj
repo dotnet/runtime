@@ -35,8 +35,8 @@
   </ItemGroup>
   <!-- Windows imports -->
   <ItemGroup>
-    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetCurrentProcess_IntPtr.cs"
-             Link="Common\Interop\Windows\Kernel32\Interop.GetCurrentProcess_IntPtr.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetCurrentProcess.cs"
+             Link="Common\Interop\Windows\Kernel32\Interop.GetCurrentProcess.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\NtDll\Interop.RtlGetVersion.cs"
              Link="Common\Interop\Windows\NtDll\Interop.RtlGetVersion.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.OpenProcessToken_SafeAccessTokenHandle.cs"

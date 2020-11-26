@@ -220,7 +220,7 @@ int coreclr_initialize(
 
     if (bundleProbe != nullptr)
     {
-        static Bundle bundle(StringToUnicode(exePath), bundleProbe);
+        static Bundle bundle(exePath, bundleProbe);
         Bundle::AppBundle = &bundle;
     }
 

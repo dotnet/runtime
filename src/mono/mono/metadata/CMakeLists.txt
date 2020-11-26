@@ -31,24 +31,16 @@ endif()
 
 set(metadata_win32_sources
     console-win32.c
-    console-win32-internals.h
-    cominterop-win32-internals.h
     w32file-win32.c
-    w32file-win32-internals.h
     icall-windows.c
-    icall-windows-internals.h
     marshal-windows.c
-    marshal-windows-internals.h
     mono-security-windows.c
-    mono-security-windows-internals.h
     w32mutex-win32.c
     w32semaphore-win32.c
     w32event-win32.c
     w32process-win32.c
-    w32process-win32-internals.h
     w32socket-win32.c
-    w32error-win32.c
-    w32subset.h)
+    w32error-win32.c)
 
 set(metadata_unix_sources
     console-unix.c
@@ -288,7 +280,7 @@ set(reloc_libdir "${CMAKE_INSTALL_LIBDIR}")
 
 set_source_files_properties(../metadata/mono-config-dirs.c PROPERTIES COMPILE_DEFINITIONS "MONO_BINDIR=\"${bindir}\";MONO_ASSEMBLIES=\"${assembliesdir}\";MONO_CFG_DIR=\"${confdir}\";MONO_RELOC_LIBDIR=\"../${reloc_libdir}\"")
 
-addprefix(metadata_sources ../metadata/ "${metadata_platform_sources};${metadata_common_sources};${metadata_gc_dependent_sources};${metadata_sgen_sources};${ilgen_real_sources}")
+addprefix(metadata_sources ../metadata/ "${metadata_platform_sources};${metadata_common_sources};${metadata_gc_dependent_sources};${metadata_sgen_sources};${ilgen_sources}")
 
 set(metadata_public_headers_base
 	appdomain.h

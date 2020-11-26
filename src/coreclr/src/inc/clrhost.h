@@ -92,7 +92,7 @@ typedef Holder<CRITSEC_COOKIE, ClrEnterCriticalSection, ClrLeaveCriticalSection,
 FORCEINLINE void VoidClrDeleteCriticalSection(CRITSEC_COOKIE cs) { if (cs != NULL) ClrDeleteCriticalSection(cs); }
 typedef Wrapper<CRITSEC_COOKIE, DoNothing<CRITSEC_COOKIE>, VoidClrDeleteCriticalSection, NULL> CRITSEC_AllocationHolder;
 
-HMODULE GetCLRModule ();
+DWORD GetClrModulePathName(SString& buffer);
 
 extern thread_local int t_CantAllocCount;
 

@@ -168,7 +168,7 @@ namespace System.Reflection.Emit
                 }
 
                 // Make sure the property's type can take the given value.
-                // Note that there will be no coersion.
+                // Note that there will be no coercion.
                 if (propertyValue != null)
                 {
                     VerifyTypeAndPassedObjectType(propType, propertyValue.GetType(), $"{nameof(propertyValues)}[{i}]");
@@ -222,7 +222,7 @@ namespace System.Reflection.Emit
                 }
 
                 // Make sure the field's type can take the given value.
-                // Note that there will be no coersion.
+                // Note that there will be no coercion.
                 if (fieldValue != null)
                 {
                     VerifyTypeAndPassedObjectType(fldType, fieldValue.GetType(), $"{nameof(fieldValues)}[{i}]");
@@ -271,9 +271,7 @@ namespace System.Reflection.Emit
             }
             if (t.IsArray)
             {
-                if (t.GetArrayRank() != 1)
-                    return false;
-                return ValidateType(t.GetElementType()!);
+                return t.GetArrayRank() == 1 && ValidateType(t.GetElementType()!);
             }
             return t == typeof(object);
         }
@@ -527,7 +525,7 @@ namespace System.Reflection.Emit
         // return the byte interpretation of the custom attribute
         internal void CreateCustomAttribute(ModuleBuilder mod, int tkOwner)
         {
-            CreateCustomAttribute(mod, tkOwner, mod.GetConstructorToken(m_con).Token, false);
+            CreateCustomAttribute(mod, tkOwner, mod.GetConstructorToken(m_con), false);
         }
 
         /// <summary>

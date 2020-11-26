@@ -257,7 +257,8 @@ namespace Microsoft.DotNet.CoreSetup.Test
             bool? selfContained = null,
             string outputDirectory = null,
             bool singleFile = false,
-            bool restore = false)
+            bool restore = false,
+            params string[] extraArgs)
         {
             dotnet = dotnet ?? SdkDotnet;
             outputDirectory = outputDirectory ?? TestProject.OutputDirectory;
@@ -307,6 +308,11 @@ namespace Microsoft.DotNet.CoreSetup.Test
 
             publishArgs.Add($"/p:TestTargetRid={RepoDirProvider.TargetRID}");
             publishArgs.Add($"/p:MNAVersion={RepoDirProvider.MicrosoftNETCoreAppVersion}");
+
+            foreach (var arg in extraArgs)
+            {
+                publishArgs.Add(arg);
+            }
 
             dotnet.Publish(publishArgs.ToArray())
                 .WorkingDirectory(TestProject.ProjectDirectory)

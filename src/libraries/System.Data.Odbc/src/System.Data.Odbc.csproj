@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;$(NetCoreAppCurrent)-FreeBSD;$(NetCoreAppCurrent)-illumos;$(NetCoreAppCurrent)-Solaris;$(NetCoreAppCurrent)-Linux;$(NetCoreAppCurrent)-OSX;$(NetCoreAppCurrent)-iOS;$(NetCoreAppCurrent)-tvOS;$(NetCoreAppCurrent);netcoreapp2.0-FreeBSD;netcoreapp2.0-Linux;netcoreapp2.0-OSX;netcoreapp2.0-Windows_NT;netstandard2.0;net461-Windows_NT</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-FreeBSD;$(NetCoreAppCurrent)-illumos;$(NetCoreAppCurrent)-Solaris;$(NetCoreAppCurrent)-Linux;$(NetCoreAppCurrent)-OSX;$(NetCoreAppCurrent)-iOS;$(NetCoreAppCurrent)-tvOS;$(NetCoreAppCurrent);netcoreapp2.0-FreeBSD;netcoreapp2.0-Linux;netcoreapp2.0-OSX;netcoreapp2.0-windows;netstandard2.0;net461-windows</TargetFrameworks>
     <ExcludeCurrentNetCoreAppFromPackage>true</ExcludeCurrentNetCoreAppFromPackage>
     <NoWarn>$(NoWarn);CA2249;CA1838</NoWarn>
     <Nullable>enable</Nullable>
@@ -10,7 +10,7 @@
   <PropertyGroup>
     <IsPartialFacadeAssembly Condition="$(TargetFramework.StartsWith('net4'))">true</IsPartialFacadeAssembly>
     <!-- https://github.com/dotnet/arcade/issues/5717 -->
-    <NoWarn Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)' and '$(TargetsAnyOS)' == 'true'">$(NoWarn);SA1121</NoWarn>
+    <NoWarn Condition="($([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', '$(NetCoreAppCurrent)'))) and '$(TargetsAnyOS)' == 'true'">$(NoWarn);SA1121</NoWarn>
     <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(TargetFramework)' == 'netstandard2.0' or '$(TargetsAnyOS)' == 'true'">SR.Odbc_PlatformNotSupported</GeneratePlatformNotSupportedAssemblyMessage>
   </PropertyGroup>
   <ItemGroup Condition="$(TargetFramework.StartsWith('$(NetCoreAppCurrent)')) or $(TargetFramework.StartsWith('netcoreapp2.0'))" >
@@ -114,7 +114,7 @@
     <Compile Include="$(CommonPath)Interop\Interop.Odbc.cs"
              Link="Common\Interop\Interop.Odbc.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsLinux)' == 'true' or '$(TargetsFreeBSD)' == 'true' or '$(TargetsIllumos)' == 'true' or '$(TargetsSolaris)' == 'true'">
+  <ItemGroup Condition="'$(TargetsLinux)' == 'true' or '$(TargetsFreeBSD)' == 'true' or '$(Targetsillumos)' == 'true' or '$(TargetsSolaris)' == 'true'">
     <Compile Include="$(CommonPath)Interop\Linux\Interop.Libraries.cs"
              Link="Common\Interop\Linux\Interop.Libraries.cs" />
   </ItemGroup>

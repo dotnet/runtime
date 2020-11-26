@@ -20,9 +20,6 @@ namespace System.Runtime.CompilerServices
     /// </remarks>
     public struct AsyncTaskMethodBuilder<TResult>
     {
-        /// <summary>A cached task for default(TResult).</summary>
-        internal static readonly Task<TResult> s_defaultResultTask = AsyncTaskCache.CreateCacheableTask<TResult>(default);
-
         /// <summary>The lazily-initialized built task.</summary>
         private Task<TResult>? m_task; // Debugger depends on the exact name of this field.
 
@@ -332,35 +329,41 @@ namespace System.Runtime.CompilerServices
                     }
                 }
 
-                if (IsCompleted)
-                {
-                    // If async debugging is enabled, remove the task from tracking.
-                    if (System.Threading.Tasks.Task.s_asyncDebuggingEnabled)
-                    {
-                        System.Threading.Tasks.Task.RemoveFromActiveTasks(this);
-                    }
-
-                    // Clear out state now that the async method has completed.
-                    // This avoids keeping arbitrary state referenced by lifted locals
-                    // if this Task / state machine box is held onto.
-                    StateMachine = default;
-                    Context = default;
-
-#if !CORERT
-                    // In case this is a state machine box with a finalizer, suppress its finalization
-                    // as it's now complete.  We only need the finalizer to run if the box is collected
-                    // without having been completed.
-                    if (AsyncMethodBuilderCore.TrackAsyncMethodCompletion)
-                    {
-                        GC.SuppressFinalize(this);
-                    }
-#endif
-                }
-
                 if (loggingOn)
                 {
                     TplEventSource.Log.TraceSynchronousWorkEnd(CausalitySynchronousWork.Execution);
                 }
+            }
+
+            /// <summary>Clears out all state associated with a completed box.</summary>
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public void ClearStateUponCompletion()
+            {
+                Debug.Assert(IsCompleted);
+
+                // This logic may be invoked multiple times on the same instance and needs to be robust against that.
+
+                // If async debugging is enabled, remove the task from tracking.
+                if (s_asyncDebuggingEnabled)
+                {
+                    RemoveFromActiveTasks(this);
+                }
+
+                // Clear out state now that the async method has completed.
+                // This avoids keeping arbitrary state referenced by lifted locals
+                // if this Task / state machine box is held onto.
+                StateMachine = default;
+                Context = default;
+
+#if !CORERT
+                // In case this is a state machine box with a finalizer, suppress its finalization
+                // as it's now complete.  We only need the finalizer to run if the box is collected
+                // without having been completed.
+                if (AsyncMethodBuilderCore.TrackAsyncMethodCompletion)
+                {
+                    GC.SuppressFinalize(this);
+                }
+#endif
             }
 
             /// <summary>Gets the state machine as a boxed object.  This should only be used for debugging purposes.</summary>
@@ -414,8 +417,7 @@ namespace System.Runtime.CompilerServices
             // If there isn't one, get a task and store it.
             if (m_task is null)
             {
-                m_task = GetTaskForResult(result);
-                Debug.Assert(m_task != null, $"{nameof(GetTaskForResult)} should never return null");
+                m_task = Threading.Tasks.Task.FromResult(result);
             }
             else
             {
@@ -517,91 +519,5 @@ namespace System.Runtime.CompilerServices
         /// when no other threads are in the middle of accessing this or other members that lazily initialize the task.
         /// </remarks>
         internal object ObjectIdForDebugger => m_task ??= CreateWeaklyTypedStateMachineBox();
-
-        /// <summary>
-        /// Gets a task for the specified result.  This will either
-        /// be a cached or new task, never null.
-        /// </summary>
-        /// <param name="result">The result for which we need a task.</param>
-        /// <returns>The completed task containing the result.</returns>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)] // method looks long, but for a given TResult it results in a relatively small amount of asm
-        internal static Task<TResult> GetTaskForResult(TResult result)
-        {
-            // The goal of this function is to be give back a cached task if possible,
-            // or to otherwise give back a new task.  To give back a cached task,
-            // we need to be able to evaluate the incoming result value, and we need
-            // to avoid as much overhead as possible when doing so, as this function
-            // is invoked as part of the return path from every async method.
-            // Most tasks won't be cached, and thus we need the checks for those that are
-            // to be as close to free as possible. This requires some trickiness given the
-            // lack of generic specialization in .NET.
-            //
-            // Be very careful when modifying this code.  It has been tuned
-            // to comply with patterns recognized by both 32-bit and 64-bit JITs.
-            // If changes are made here, be sure to look at the generated assembly, as
-            // small tweaks can have big consequences for what does and doesn't get optimized away.
-            //
-            // Note that this code only ever accesses a static field when it knows it'll
-            // find a cached value, since static fields (even if readonly and integral types)
-            // require special access helpers in this NGEN'd and domain-neutral.
-
-            if (null != (object?)default(TResult)) // help the JIT avoid the value type branches for ref types
-            {
-                // Special case simple value types:
-                // - Boolean
-                // - Byte, SByte
-                // - Char
-                // - Int32, UInt32
-                // - Int64, UInt64
-                // - Int16, UInt16
-                // - IntPtr, UIntPtr
-                // As of .NET 4.5, the (Type)(object)result pattern used below
-                // is recognized and optimized by both 32-bit and 64-bit JITs.
-
-                // For Boolean, we cache all possible values.
-                if (typeof(TResult) == typeof(bool)) // only the relevant branches are kept for each value-type generic instantiation
-                {
-                    bool value = (bool)(object)result!;
-                    Task<bool> task = value ? AsyncTaskCache.s_trueTask : AsyncTaskCache.s_falseTask;
-                    return Unsafe.As<Task<TResult>>(task); // UnsafeCast avoids type check we know will succeed
-                }
-                // For Int32, we cache a range of common values, e.g. [-1,9).
-                else if (typeof(TResult) == typeof(int))
-                {
-                    // Compare to constants to avoid static field access if outside of cached range.
-                    // We compare to the upper bound first, as we're more likely to cache miss on the upper side than on the
-                    // lower side, due to positive values being more common than negative as return values.
-                    int value = (int)(object)result!;
-                    if (value < AsyncTaskCache.ExclusiveInt32Max &&
-                        value >= AsyncTaskCache.InclusiveInt32Min)
-                    {
-                        Task<int> task = AsyncTaskCache.s_int32Tasks[value - AsyncTaskCache.InclusiveInt32Min];
-                        return Unsafe.As<Task<TResult>>(task); // UnsafeCast avoids a type check we know will succeed
-                    }
-                }
-                // For other known value types, we only special-case 0 / default(TResult).
-                else if (
-                    (typeof(TResult) == typeof(uint) && default == (uint)(object)result!) ||
-                    (typeof(TResult) == typeof(byte) && default(byte) == (byte)(object)result!) ||
-                    (typeof(TResult) == typeof(sbyte) && default(sbyte) == (sbyte)(object)result!) ||
-                    (typeof(TResult) == typeof(char) && default(char) == (char)(object)result!) ||
-                    (typeof(TResult) == typeof(long) && default == (long)(object)result!) ||
-                    (typeof(TResult) == typeof(ulong) && default == (ulong)(object)result!) ||
-                    (typeof(TResult) == typeof(short) && default(short) == (short)(object)result!) ||
-                    (typeof(TResult) == typeof(ushort) && default(ushort) == (ushort)(object)result!) ||
-                    (typeof(TResult) == typeof(IntPtr) && default == (IntPtr)(object)result!) ||
-                    (typeof(TResult) == typeof(UIntPtr) && default == (UIntPtr)(object)result!))
-                {
-                    return s_defaultResultTask;
-                }
-            }
-            else if (result == null) // optimized away for value types
-            {
-                return s_defaultResultTask;
-            }
-
-            // No cached task is available.  Manufacture a new one for this result.
-            return new Task<TResult>(result);
-        }
     }
 }

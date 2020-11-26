@@ -615,11 +615,11 @@ MethodTableBuilder::LoadApproxInterfaceMap()
 } // MethodTableBuilder::LoadApproxInterfaceMap
 
 //*******************************************************************************
-// Fills array of TypeIDs with all duplicate occurences of pDeclIntfMT in the interface map.
+// Fills array of TypeIDs with all duplicate occurrences of pDeclIntfMT in the interface map.
 //
 // Arguments:
 //    rg/c DispatchMapTypeIDs - Array of TypeIDs and its count of elements.
-//    pcIfaceDuplicates - Number of duplicate occurences of the interface in the interface map (ideally <=
+//    pcIfaceDuplicates - Number of duplicate occurrences of the interface in the interface map (ideally <=
 //         count of elements TypeIDs.
 //
 // Note: If the passed rgDispatchMapTypeIDs array is smaller than the number of duplicates, fills it
@@ -651,7 +651,7 @@ MethodTableBuilder::ComputeDispatchMapTypeIDs(
                                                        &pItfType->GetSubstitution(),
                                                        pDeclIntfSubst,
                                                        &newVisited))
-        {   // We found another occurence of this interface
+        {   // We found another occurrence of this interface
             // Can we fit it into the TypeID array?
             if (*pcIfaceDuplicates < cDispatchMapTypeIDs)
             {
@@ -2114,7 +2114,7 @@ BOOL MethodTableBuilder::IsEligibleForCovariantReturns(mdToken methodDeclToken)
 
     //
     // Note on covariant return types: right now we only support covariant returns for MethodImpls on
-    // classes, where the MethodDecl is also on a class. Interface methods are not supported. 
+    // classes, where the MethodDecl is also on a class. Interface methods are not supported.
     // We will also allow covariant return types if both the MethodImpl and MethodDecl are not on the same type.
     //
 
@@ -3893,6 +3893,7 @@ VOID    MethodTableBuilder::InitializeFieldDescs(FieldDesc *pFieldDescList,
                 dwR8Fields++;
 
                 // Deliberate fall through...
+                FALLTHROUGH;
             }
 
         case ELEMENT_TYPE_I8:
@@ -5695,7 +5696,7 @@ MethodTableBuilder::ProcessMethodImpls()
                         }
 
                         Substitution *pDeclSubst = &bmtMetaData->pMethodDeclSubsts[m];
-                        
+
                         MethodTable * pDeclMT = NULL;
                         MethodSignature declSig(GetModule(), szName, pSig, cbSig, NULL);
 
@@ -5715,7 +5716,7 @@ MethodTableBuilder::ProcessMethodImpls()
 
                         {   // 2. Get or create the correct substitution
                             if (pDeclMT->IsInterface())
-                            {   
+                            {
                                 // If the declaration method is a part of an interface, search through
                                 // the interface map to find the matching interface so we can provide
                                 // the correct substitution chain.
@@ -9769,19 +9770,6 @@ void MethodTableBuilder::CheckForSystemTypes()
 
             pMT->SetComponentSize(2);
         }
-#ifdef FEATURE_UTF8STRING
-        else if (strcmp(name, g_Utf8StringName) == 0 && strcmp(nameSpace, g_SystemNS) == 0)
-        {
-            // Utf8Strings are not "normal" objects, so we need to mess with their method table a bit
-            // so that the GC can figure out how big each string is...
-            DWORD baseSize = Utf8StringObject::GetBaseSize();
-            pMT->SetBaseSize(baseSize); // NULL character included
-
-            GetHalfBakedClass()->SetBaseSizePadding(baseSize - bmtFP->NumInstanceFieldBytes);
-
-            pMT->SetComponentSize(1);
-        }
-#endif // FEATURE_UTF8STRING
         else if (strcmp(name, g_CriticalFinalizerObjectName) == 0 && strcmp(nameSpace, g_ConstrainedExecutionNS) == 0)
         {
             // To introduce a class with a critical finalizer,
@@ -11140,7 +11128,7 @@ VOID MethodTableBuilder::CheckLayoutDependsOnOtherModules(MethodTable * pDepende
     // Track whether field layout of this type depend on information outside its containing module and compilation unit
     //
     // It is a stronger condition than MethodTable::IsInheritanceChainLayoutFixedInCurrentVersionBubble().
-    // It has to remain fixed accross versioning changes in the module dependencies. In particular, it does
+    // It has to remain fixed across versioning changes in the module dependencies. In particular, it does
     // not take into account NonVersionable attribute. Otherwise, adding NonVersionable attribute to existing
     // type would be ReadyToRun incompatible change.
     //

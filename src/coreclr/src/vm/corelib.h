@@ -318,10 +318,6 @@ DEFINE_CLASS(ENCODING,              Text,                   Encoding)
 
 DEFINE_CLASS(RUNE,                  Text,                   Rune)
 
-#ifdef FEATURE_UTF8STRING
-DEFINE_CLASS(CHAR8,                 System,                 Char8)
-#endif // FEATURE_UTF8STRING
-
 DEFINE_CLASS(ENUM,                  System,                 Enum)
 
 DEFINE_CLASS(ENVIRONMENT,           System,                 Environment)
@@ -375,6 +371,9 @@ DEFINE_CLASS(RT_TYPE_HANDLE,        System,                 RuntimeTypeHandle)
 DEFINE_METHOD(RT_TYPE_HANDLE,       GET_TYPE_HELPER,        GetTypeHelper,              SM_Type_ArrType_IntPtr_int_RetType)
 DEFINE_METHOD(RT_TYPE_HANDLE,       PVOID_CTOR,             .ctor,                      IM_RuntimeType_RetVoid)
 DEFINE_METHOD(RT_TYPE_HANDLE,       GETVALUEINTERNAL,       GetValueInternal,           SM_RuntimeTypeHandle_RetIntPtr)
+#ifdef FEATURE_COMINTEROP
+DEFINE_METHOD(RT_TYPE_HANDLE,       ALLOCATECOMOBJECT,      AllocateComObject,          SM_VoidPtr_RetObj)
+#endif
 DEFINE_FIELD(RT_TYPE_HANDLE,        M_TYPE,                 m_type)
 
 DEFINE_CLASS_U(Reflection,             RtFieldInfo,         NoClass)
@@ -456,10 +455,6 @@ DEFINE_CLASS(IENUMERABLE,           Collections,            IEnumerable)
 DEFINE_CLASS(ICOLLECTION,           Collections,            ICollection)
 DEFINE_CLASS(ILIST,                 Collections,            IList)
 DEFINE_CLASS(IDISPOSABLE,           System,                 IDisposable)
-
-DEFINE_CLASS(IEXPANDO,              Expando,                IExpando)
-DEFINE_METHOD(IEXPANDO,             ADD_FIELD,              AddField,                   IM_Str_RetFieldInfo)
-DEFINE_METHOD(IEXPANDO,             REMOVE_MEMBER,          RemoveMember,               IM_MemberInfo_RetVoid)
 
 DEFINE_CLASS(IREFLECT,              Reflection,             IReflect)
 DEFINE_METHOD(IREFLECT,             GET_PROPERTIES,         GetProperties,              IM_BindingFlags_RetArrPropertyInfo)
@@ -851,17 +846,6 @@ DEFINE_METHOD(STRING,               WCSLEN,                 wcslen,             
 DEFINE_METHOD(STRING,               STRLEN,                 strlen,                     SM_PtrByte_RetInt)
 DEFINE_PROPERTY(STRING,             LENGTH,                 Length,                     Int)
 
-#ifdef FEATURE_UTF8STRING
-DEFINE_CLASS(UTF8_STRING,           System,                 Utf8String)
-DEFINE_METHOD(UTF8_STRING,          CTORF_READONLYSPANOFBYTE,Ctor,                      IM_ReadOnlySpanOfByte_RetUtf8Str)
-DEFINE_METHOD(UTF8_STRING,          CTORF_READONLYSPANOFCHAR,Ctor,                      IM_ReadOnlySpanOfChar_RetUtf8Str)
-DEFINE_METHOD(UTF8_STRING,          CTORF_BYTEARRAY_START_LEN,Ctor,                     IM_ArrByte_Int_Int_RetUtf8Str)
-DEFINE_METHOD(UTF8_STRING,          CTORF_BYTEPTR,           Ctor,                      IM_PtrByte_RetUtf8Str)
-DEFINE_METHOD(UTF8_STRING,          CTORF_CHARARRAY_START_LEN,Ctor,                     IM_ArrChar_Int_Int_RetUtf8Str)
-DEFINE_METHOD(UTF8_STRING,          CTORF_CHARPTR,           Ctor,                      IM_PtrChar_RetUtf8Str)
-DEFINE_METHOD(UTF8_STRING,          CTORF_STRING,            Ctor,                      IM_String_RetUtf8Str)
-#endif // FEATURE_UTF8STRING
-
 DEFINE_CLASS(STRING_BUILDER,        Text,                   StringBuilder)
 DEFINE_PROPERTY(STRING_BUILDER,     LENGTH,                 Length,                     Int)
 DEFINE_PROPERTY(STRING_BUILDER,     CAPACITY,               Capacity,                   Int)
@@ -904,6 +888,13 @@ DEFINE_METHOD(TP_WAIT_CALLBACK,        PERFORM_WAIT_CALLBACK,               Perf
 
 DEFINE_CLASS(TIMER_QUEUE,           Threading,                TimerQueue)
 DEFINE_METHOD(TIMER_QUEUE,          APPDOMAIN_TIMER_CALLBACK, AppDomainTimerCallback,   SM_Int_RetVoid)
+
+DEFINE_CLASS(THREAD_POOL,           Threading,                          ThreadPool)
+DEFINE_METHOD(THREAD_POOL,          ENSURE_GATE_THREAD_RUNNING,         EnsureGateThreadRunning,        SM_RetVoid)
+DEFINE_METHOD(THREAD_POOL,          UNSAFE_QUEUE_UNMANAGED_WORK_ITEM,   UnsafeQueueUnmanagedWorkItem,   SM_IntPtr_IntPtr_RetVoid)
+
+DEFINE_CLASS(COMPLETE_WAIT_THREAD_POOL_WORK_ITEM,   Threading,      CompleteWaitThreadPoolWorkItem)
+DEFINE_METHOD(COMPLETE_WAIT_THREAD_POOL_WORK_ITEM,  COMPLETE_WAIT,  CompleteWait,                   IM_RetVoid)
 
 DEFINE_CLASS(TIMESPAN,              System,                 TimeSpan)
 
@@ -1058,7 +1049,7 @@ DEFINE_METHOD(OBJECTMARSHALER,      CLEAR_NATIVE,           ClearNative,        
 
 DEFINE_CLASS(INTERFACEMARSHALER,    StubHelpers,            InterfaceMarshaler)
 DEFINE_METHOD(INTERFACEMARSHALER,   CONVERT_TO_NATIVE,      ConvertToNative,            SM_Obj_IntPtr_IntPtr_Int_RetIntPtr)
-DEFINE_METHOD(INTERFACEMARSHALER,   CONVERT_TO_MANAGED,     ConvertToManaged,           SM_IntPtr_IntPtr_IntPtr_Int_RetObj)
+DEFINE_METHOD(INTERFACEMARSHALER,   CONVERT_TO_MANAGED,     ConvertToManaged,           SM_RefIntPtr_IntPtr_IntPtr_Int_RetObj)
 DEFINE_METHOD(INTERFACEMARSHALER,   CLEAR_NATIVE,           ClearNative,                SM_IntPtr_RetVoid)
 
 

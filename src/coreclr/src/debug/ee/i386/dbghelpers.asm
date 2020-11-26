@@ -28,7 +28,7 @@
 _FuncEvalHijack@0 proc public
         push eax       ; the ptr to the DebuggerEval
         call _FuncEvalHijackWorker@4
-        jmp  eax       ; return is the patch addresss to jmp to
+        jmp  eax       ; return is the patch address to jmp to
 _FuncEvalHijack@0 endp
 
 

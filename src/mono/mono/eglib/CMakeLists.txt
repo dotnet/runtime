@@ -2,7 +2,7 @@
 set(eglib_win32_sources
     eglib-config.hw
     gdate-win32.c gdir-win32.c gfile-win32.c gmisc-win32.c
-    gmodule-win32.c gmodule-win32-internals.h gtimer-win32.c gunicode-win32.c)
+    gmodule-win32.c gtimer-win32.c gunicode-win32.c)
 
 set(eglib_unix_sources
     gdate-unix.c  gdir-unix.c  gfile-unix.c  gmisc-unix.c

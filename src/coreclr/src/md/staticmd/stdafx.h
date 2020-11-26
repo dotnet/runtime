@@ -8,7 +8,3 @@
 
 
 #include "intrinsic.h"					// Functions to make intrinsic.
-
-
-// Helper function returns the instance handle of this module.
-HINSTANCE GetModuleInst();

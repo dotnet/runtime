@@ -2169,10 +2169,6 @@ HRESULT CordbProcess::QueryInterface(REFIID id, void **pInterface)
     {
         *pInterface = static_cast<ICorDebugProcess8*>(this);
     }
-    else if (id == IID_ICorDebugProcess10)
-    {
-        *pInterface = static_cast<ICorDebugProcess10*>(this);
-    }
     else if (id == IID_ICorDebugProcess11)
     {
         *pInterface = static_cast<ICorDebugProcess11*>(this);

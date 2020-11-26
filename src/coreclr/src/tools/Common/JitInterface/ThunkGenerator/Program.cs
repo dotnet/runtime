@@ -333,7 +333,7 @@ namespace Internal.JitInterface
             int index = 0;
             foreach (FunctionDecl decl in functionData)
             {
-                tr.Write($"            callbacks[{index}] = (delegate* <IntPtr, IntPtr*");
+                tr.Write($"            callbacks[{index}] = (delegate* unmanaged<IntPtr, IntPtr*");
                 foreach (Parameter param in decl.Parameters)
                 {
                     tr.Write($", {param.Type.UnmanagedTypeName}");

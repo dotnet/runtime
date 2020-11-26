@@ -11,32 +11,29 @@ internal partial class Interop
 {
     internal partial class BCrypt
     {
-        internal static SafeKeyHandle BCryptImportKey(SafeAlgorithmHandle hAlg, ReadOnlySpan<byte> key)
+        internal static unsafe SafeKeyHandle BCryptImportKey(SafeAlgorithmHandle hAlg, ReadOnlySpan<byte> key)
         {
-            unsafe
+            const string BCRYPT_KEY_DATA_BLOB = "KeyDataBlob";
+            int keySize = key.Length;
+            int blobSize = sizeof(BCRYPT_KEY_DATA_BLOB_HEADER) + keySize;
+            byte[] blob = new byte[blobSize];
+            fixed (byte* pbBlob = blob)
             {
-                const string BCRYPT_KEY_DATA_BLOB = "KeyDataBlob";
-                int keySize = key.Length;
-                int blobSize = sizeof(BCRYPT_KEY_DATA_BLOB_HEADER) + keySize;
-                byte[] blob = new byte[blobSize];
-                fixed (byte* pbBlob = blob)
-                {
-                    BCRYPT_KEY_DATA_BLOB_HEADER* pBlob = (BCRYPT_KEY_DATA_BLOB_HEADER*)pbBlob;
-                    pBlob->dwMagic = BCRYPT_KEY_DATA_BLOB_HEADER.BCRYPT_KEY_DATA_BLOB_MAGIC;
-                    pBlob->dwVersion = BCRYPT_KEY_DATA_BLOB_HEADER.BCRYPT_KEY_DATA_BLOB_VERSION1;
-                    pBlob->cbKeyData = (uint)keySize;
-                }
-
-                key.CopyTo(blob.AsSpan(sizeof(BCRYPT_KEY_DATA_BLOB_HEADER)));
-                SafeKeyHandle hKey;
-                NTSTATUS ntStatus = BCryptImportKey(hAlg, IntPtr.Zero, BCRYPT_KEY_DATA_BLOB, out hKey, IntPtr.Zero, 0, blob, blobSize, 0);
-                if (ntStatus != NTSTATUS.STATUS_SUCCESS)
-                {
-                    throw CreateCryptographicException(ntStatus);
-                }
-
-                return hKey;
+                BCRYPT_KEY_DATA_BLOB_HEADER* pBlob = (BCRYPT_KEY_DATA_BLOB_HEADER*)pbBlob;
+                pBlob->dwMagic = BCRYPT_KEY_DATA_BLOB_HEADER.BCRYPT_KEY_DATA_BLOB_MAGIC;
+                pBlob->dwVersion = BCRYPT_KEY_DATA_BLOB_HEADER.BCRYPT_KEY_DATA_BLOB_VERSION1;
+                pBlob->cbKeyData = (uint)keySize;
             }
+
+            key.CopyTo(blob.AsSpan(sizeof(BCRYPT_KEY_DATA_BLOB_HEADER)));
+            SafeKeyHandle hKey;
+            NTSTATUS ntStatus = BCryptImportKey(hAlg, IntPtr.Zero, BCRYPT_KEY_DATA_BLOB, out hKey, IntPtr.Zero, 0, blob, blobSize, 0);
+            if (ntStatus != NTSTATUS.STATUS_SUCCESS)
+            {
+                throw CreateCryptographicException(ntStatus);
+            }
+
+            return hKey;
         }
 
         [StructLayout(LayoutKind.Sequential)]

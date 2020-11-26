@@ -14,14 +14,11 @@
 
 extern void jitShutdown(bool processIsTerminating);
 
-HINSTANCE g_hInst = nullptr;
-
 /*****************************************************************************/
 extern "C" DLLEXPORT BOOL WINAPI DllMain(HANDLE hInstance, DWORD dwReason, LPVOID pvReserved)
 {
     if (dwReason == DLL_PROCESS_ATTACH)
     {
-        g_hInst = (HINSTANCE)hInstance;
         DisableThreadLibraryCalls((HINSTANCE)hInstance);
     }
     else if (dwReason == DLL_PROCESS_DETACH)
@@ -33,9 +30,4 @@ extern "C" DLLEXPORT BOOL WINAPI DllMain(HANDLE hInstance, DWORD dwReason, LPVOI
     }
 
     return TRUE;
-}
-
-HINSTANCE GetModuleInst()
-{
-    return (g_hInst);
 }

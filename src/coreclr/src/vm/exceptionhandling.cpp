@@ -975,7 +975,7 @@ ProcessCLRException(IN     PEXCEPTION_RECORD   pExceptionRecord
             BOOL fExternalException;
 
             fExternalException = (!ExecutionManager::IsManagedCode(ip) &&
-                                  !IsIPInModule(g_hThisInst, ip));
+                                  !IsIPInModule(GetClrModuleBase(), ip));
 
             if (fExternalException)
             {
@@ -3312,6 +3312,10 @@ DWORD_PTR ExceptionTracker::CallHandler(
         break;
     }
 
+#if defined(HOST_OSX) && defined(HOST_ARM64)
+    auto jitWriteEnableHolder = PAL_JITWriteEnable(false);
+#endif // defined(HOST_OSX) && defined(HOST_ARM64)
+
 #ifdef USE_FUNCLET_CALL_HELPER
     // Invoke the funclet. We pass throwable only when invoking the catch block.
     // Since the actual caller of the funclet is the assembly helper, pass the reference
@@ -3947,6 +3951,10 @@ void ExceptionTracker::ResumeExecution(
 
     EH_LOG((LL_INFO100, "resuming execution at 0x%p\n", GetIP(pContextRecord)));
     EH_LOG((LL_INFO100, "^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n"));
+
+#if defined(HOST_OSX) && defined(HOST_ARM64)
+    auto jitWriteEnableHolder = PAL_JITWriteEnable(false);
+#endif // defined(HOST_OSX) && defined(HOST_ARM64)
 
     RtlRestoreContext(pContextRecord, pExceptionRecord);
 
@@ -6711,11 +6719,11 @@ StackFrame ExceptionTracker::FindParentStackFrameHelper(CrawlFrame* pCF,
             fIsCallerInVM = !ExecutionManager::IsManagedCode(callerIP);
 #else
 #if defined(DACCESS_COMPILE)
-            HMODULE_TGT hEE = DacGlobalBase();
+            PTR_VOID eeBase = DacGlobalBase();
 #else  // !DACCESS_COMPILE
-            HMODULE_TGT hEE = g_hThisInst;
+            PTR_VOID eeBase = GetClrModuleBase();
 #endif // !DACCESS_COMPILE
-            fIsCallerInVM = IsIPInModule(hEE, callerIP);
+            fIsCallerInVM = IsIPInModule(eeBase, callerIP);
 #endif // TARGET_UNIX
 
             if (!fIsCallerInVM)

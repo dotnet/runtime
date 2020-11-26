@@ -6,8 +6,8 @@ initTargetDistroRid()
 
     local passedRootfsDir=""
 
-    # Only pass ROOTFS_DIR if cross is specified.
-    if [[ "$__CrossBuild" == 1 ]]; then
+    # Only pass ROOTFS_DIR if cross is specified and the target platform is not Darwin that doesn't use rootfs
+    if [[ "$__CrossBuild" == 1 && "$platform" != "Darwin" ]]; then
         passedRootfsDir="$ROOTFS_DIR"
     fi
 
@@ -55,7 +55,7 @@ check_prereqs()
         if ! pkg-config openssl ; then
             # We export the proper PKG_CONFIG_PATH where openssl was installed by Homebrew
             # It's important to _export_ it since build-commons.sh is sourced by other scripts such as build-native.sh
-            export PKG_CONFIG_PATH=/usr/local/opt/openssl/lib/pkgconfig
+            export PKG_CONFIG_PATH=/usr/local/opt/openssl@1.1/lib/pkgconfig:/usr/local/opt/openssl/lib/pkgconfig
             # We try again with the PKG_CONFIG_PATH in place, if pkg-config still can't find OpenSSL, exit with an error, cmake won't find OpenSSL either
             pkg-config openssl || { echo >&2 "Please install openssl before running this script, see https://github.com/dotnet/runtime/blob/master/docs/workflow/requirements/macos-requirements.md"; exit 1; }
         fi
@@ -68,14 +68,27 @@ check_prereqs()
 
 build_native()
 {
-    platformArch="$1"
-    cmakeDir="$2"
-    tryrunDir="$3"
-    intermediatesDir="$4"
-    message="$5"
+    targetOS="$1"
+    platformArch="$2"
+    cmakeDir="$3"
+    tryrunDir="$4"
+    intermediatesDir="$5"
+    cmakeArgs="$6"
+    message="$7"
 
     # All set to commence the build
     echo "Commencing build of \"$message\" for $__TargetOS.$__BuildArch.$__BuildType in $intermediatesDir"
+
+    if [[ "$targetOS" == OSX ]]; then
+        if [[ "$platformArch" == x64 ]]; then
+            cmakeArgs="-DCMAKE_OSX_ARCHITECTURES=\"x86_64\" $cmakeArgs"
+        elif [[ "$platformArch" == arm64 ]]; then
+            cmakeArgs="-DCMAKE_OSX_ARCHITECTURES=\"arm64\" $cmakeArgs"
+        else
+            echo "Error: Unknown OSX architecture $platformArch."
+            exit 1
+        fi
+    fi
 
     if [[ "$__UseNinja" == 1 ]]; then
         generator="ninja"
@@ -134,8 +147,8 @@ EOF
         fi
 
         engNativeDir="$__RepoRootDir/eng/native"
-        __CMakeArgs="-DCLR_ENG_NATIVE_DIR=\"$engNativeDir\" $__CMakeArgs"
-        nextCommand="\"$engNativeDir/gen-buildsys.sh\" \"$cmakeDir\" \"$tryrunDir\" \"$intermediatesDir\" $platformArch $__Compiler \"$__CompilerMajorVersion\" \"$__CompilerMinorVersion\" $__BuildType \"$generator\" $scan_build $__CMakeArgs"
+        cmakeArgs="-DCLR_ENG_NATIVE_DIR=\"$engNativeDir\" $cmakeArgs"
+        nextCommand="\"$engNativeDir/gen-buildsys.sh\" \"$cmakeDir\" \"$tryrunDir\" \"$intermediatesDir\" $platformArch $__Compiler \"$__CompilerMajorVersion\" \"$__CompilerMinorVersion\" $__BuildType \"$generator\" $scan_build $cmakeArgs"
         echo "Invoking $nextCommand"
         eval $nextCommand
 
@@ -225,6 +238,7 @@ usage()
     echo "-portablebuild: pass -portablebuild=false to force a non-portable build."
     echo "-skipconfigure: skip build configuration."
     echo "-skipgenerateversion: disable version generation even if MSBuild is supported."
+    echo "-keepnativesymbols: keep native/unmanaged debug symbols."
     echo "-verbose: optional argument to enable verbose build output."
     echo ""
     echo "Additional Options:"
@@ -354,6 +368,10 @@ while :; do
                 __CompilerMinorVersion="${parts[1]}"
             ;;
 
+        keepnativesymbols|-keepnativesymbols)
+            __CMakeArgs="$__CMakeArgs -DCLR_CMAKE_KEEP_NATIVE_SYMBOLS=true"
+            ;;
+
         msbuildonunsupportedplatform|-msbuildonunsupportedplatform)
             __msbuildonunsupportedplatform=1
             ;;
@@ -443,7 +461,8 @@ fi
 if [[ "$__CrossBuild" == 1 ]]; then
     CROSSCOMPILE=1
     export CROSSCOMPILE
-    if [[ ! -n "$ROOTFS_DIR" ]]; then
+    # Darwin that doesn't use rootfs
+    if [[ ! -n "$ROOTFS_DIR" && "$platform" != "Darwin" ]]; then
         ROOTFS_DIR="$__RepoRootDir/.tools/rootfs/$__BuildArch"
         export ROOTFS_DIR
     fi

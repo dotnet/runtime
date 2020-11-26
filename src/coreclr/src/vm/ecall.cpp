@@ -84,30 +84,6 @@ static_assert_no_msg(ECallCtor_First + 8 == ECall::CtorSBytePtrStartLengthEncodi
 
 #define NumberOfStringConstructors 9
 
-#ifdef FEATURE_UTF8STRING
-// METHOD__UTF8STRING__CTORF_XXX has to be in same order as ECall::Utf8StringCtorCharXxx
-#define METHOD__UTF8STRING__CTORF_FIRST METHOD__UTF8_STRING__CTORF_READONLYSPANOFBYTE
-static_assert_no_msg(METHOD__UTF8STRING__CTORF_FIRST + 0 == METHOD__UTF8_STRING__CTORF_READONLYSPANOFBYTE);
-static_assert_no_msg(METHOD__UTF8STRING__CTORF_FIRST + 1 == METHOD__UTF8_STRING__CTORF_READONLYSPANOFCHAR);
-static_assert_no_msg(METHOD__UTF8STRING__CTORF_FIRST + 2 == METHOD__UTF8_STRING__CTORF_BYTEARRAY_START_LEN);
-static_assert_no_msg(METHOD__UTF8STRING__CTORF_FIRST + 3 == METHOD__UTF8_STRING__CTORF_BYTEPTR);
-static_assert_no_msg(METHOD__UTF8STRING__CTORF_FIRST + 4 == METHOD__UTF8_STRING__CTORF_CHARARRAY_START_LEN);
-static_assert_no_msg(METHOD__UTF8STRING__CTORF_FIRST + 5 == METHOD__UTF8_STRING__CTORF_CHARPTR);
-static_assert_no_msg(METHOD__UTF8STRING__CTORF_FIRST + 6 == METHOD__UTF8_STRING__CTORF_STRING);
-
-// ECall::Utf8StringCtorCharXxx has to be in same order as METHOD__UTF8STRING__CTORF_XXX
-#define ECallUtf8String_Ctor_First ECall::Utf8StringCtorReadOnlySpanOfByteManaged
-static_assert_no_msg(ECallUtf8String_Ctor_First + 0 == ECall::Utf8StringCtorReadOnlySpanOfByteManaged);
-static_assert_no_msg(ECallUtf8String_Ctor_First + 1 == ECall::Utf8StringCtorReadOnlySpanOfCharManaged);
-static_assert_no_msg(ECallUtf8String_Ctor_First + 2 == ECall::Utf8StringCtorByteArrayStartLengthManaged);
-static_assert_no_msg(ECallUtf8String_Ctor_First + 3 == ECall::Utf8StringCtorBytePtrManaged);
-static_assert_no_msg(ECallUtf8String_Ctor_First + 4 == ECall::Utf8StringCtorCharArrayStartLengthManaged);
-static_assert_no_msg(ECallUtf8String_Ctor_First + 5 == ECall::Utf8StringCtorCharPtrManaged);
-static_assert_no_msg(ECallUtf8String_Ctor_First + 6 == ECall::Utf8StringCtorStringManaged);
-
-#define NumberOfUtf8StringConstructors 7
-#endif // FEATURE_UTF8STRING
-
 void ECall::PopulateManagedStringConstructors()
 {
     STANDARD_VM_CONTRACT;
@@ -125,19 +101,6 @@ void ECall::PopulateManagedStringConstructors()
 
         ECall::DynamicallyAssignFCallImpl(pDest, ECallCtor_First + i);
     }
-
-#ifdef FEATURE_UTF8STRING
-    _ASSERTE(g_pUtf8StringClass != NULL);
-    for (int i = 0; i < NumberOfUtf8StringConstructors; i++)
-    {
-        MethodDesc* pMD = CoreLibBinder::GetMethod((BinderMethodID)(METHOD__UTF8STRING__CTORF_FIRST + i));
-        _ASSERTE(pMD != NULL);
-
-        PCODE pDest = pMD->GetMultiCallableAddrOfCode();
-
-        ECall::DynamicallyAssignFCallImpl(pDest, ECallUtf8String_Ctor_First + i);
-    }
-#endif // FEATURE_UTF8STRING
 
     INDEBUG(fInitialized = true);
 }

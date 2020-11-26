@@ -396,7 +396,7 @@ namespace ILCompiler.DependencyAnalysis
                 EcmaModule module = ((EcmaMethod)method.GetTypicalMethodDefinition()).Module;
                 ModuleToken moduleToken = Resolver.GetModuleTokenForMethod(method, throwIfNotFound: true);
 
-                IMethodNode methodNodeDebug = MethodEntrypoint(new MethodWithToken(method, moduleToken, constrainedType: null, unboxing: false), false, false);
+                IMethodNode methodNodeDebug = MethodEntrypoint(new MethodWithToken(method, moduleToken, constrainedType: null, unboxing: false, context: null), false, false);
                 MethodWithGCInfo methodCodeNodeDebug = methodNodeDebug as MethodWithGCInfo;
                 if (methodCodeNodeDebug == null && methodNodeDebug is DelayLoadMethodImport DelayLoadMethodImport)
                 {

@@ -9,24 +9,22 @@ namespace System.IO.Pipes.Tests
     /// The Specific AnonymousPipe tests cover edge cases or otherwise narrow cases that
     /// show up within particular server/client directional combinations.
     /// </summary>
-    public class AnonymousPipeTest_Specific : AnonymousPipeTestBase
+    public class AnonymousPipeTest_Specific
     {
         [Fact]
         public static void DisposeLocalCopyOfClientHandle_BeforeServerRead()
         {
             using (AnonymousPipeServerStream server = new AnonymousPipeServerStream(PipeDirection.In))
+            using (AnonymousPipeClientStream client = new AnonymousPipeClientStream(PipeDirection.Out, server.ClientSafePipeHandle))
             {
-                using (AnonymousPipeClientStream client = new AnonymousPipeClientStream(PipeDirection.Out, server.ClientSafePipeHandle))
-                {
-                    byte[] sent = new byte[] { 123 };
-                    byte[] received = new byte[] { 0 };
-                    client.Write(sent, 0, 1);
+                byte[] sent = new byte[] { 123 };
+                byte[] received = new byte[] { 0 };
+                client.Write(sent, 0, 1);
 
-                    server.DisposeLocalCopyOfClientHandle();
+                server.DisposeLocalCopyOfClientHandle();
 
-                    Assert.Equal(1, server.Read(received, 0, 1));
-                    Assert.Equal(sent[0], received[0]);
-                }
+                Assert.Equal(1, server.Read(received, 0, 1));
+                Assert.Equal(sent[0], received[0]);
             }
         }
 
@@ -34,24 +32,22 @@ namespace System.IO.Pipes.Tests
         public static void ClonedServer_ActsAsOriginalServer()
         {
             using (AnonymousPipeServerStream serverBase = new AnonymousPipeServerStream(PipeDirection.Out))
+            using (AnonymousPipeServerStream server = new AnonymousPipeServerStream(PipeDirection.Out, serverBase.SafePipeHandle, serverBase.ClientSafePipeHandle))
             {
-                using (AnonymousPipeServerStream server = new AnonymousPipeServerStream(PipeDirection.Out, serverBase.SafePipeHandle, serverBase.ClientSafePipeHandle))
+                Assert.True(server.IsConnected);
+                using (AnonymousPipeClientStream client = new AnonymousPipeClientStream(PipeDirection.In, server.ClientSafePipeHandle))
                 {
                     Assert.True(server.IsConnected);
-                    using (AnonymousPipeClientStream client = new AnonymousPipeClientStream(PipeDirection.In, server.ClientSafePipeHandle))
-                    {
-                        Assert.True(server.IsConnected);
-                        Assert.True(client.IsConnected);
+                    Assert.True(client.IsConnected);
 
-                        byte[] sent = new byte[] { 123 };
-                        byte[] received = new byte[] { 0 };
-                        server.Write(sent, 0, 1);
+                    byte[] sent = new byte[] { 123 };
+                    byte[] received = new byte[] { 0 };
+                    server.Write(sent, 0, 1);
 
-                        Assert.Equal(1, client.Read(received, 0, 1));
-                        Assert.Equal(sent[0], received[0]);
-                    }
-                    Assert.Throws<IOException>(() => server.WriteByte(5));
+                    Assert.Equal(1, client.Read(received, 0, 1));
+                    Assert.Equal(sent[0], received[0]);
                 }
+                Assert.Throws<IOException>(() => server.WriteByte(5));
             }
         }
 
@@ -59,22 +55,18 @@ namespace System.IO.Pipes.Tests
         public static void ClonedClient_ActsAsOriginalClient()
         {
             using (AnonymousPipeServerStream server = new AnonymousPipeServerStream(PipeDirection.Out))
+            using (AnonymousPipeClientStream clientBase = new AnonymousPipeClientStream(PipeDirection.In, server.ClientSafePipeHandle))
+            using (AnonymousPipeClientStream client = new AnonymousPipeClientStream(PipeDirection.In, clientBase.SafePipeHandle))
             {
-                using (AnonymousPipeClientStream clientBase = new AnonymousPipeClientStream(PipeDirection.In, server.ClientSafePipeHandle))
-                {
-                    using (AnonymousPipeClientStream client = new AnonymousPipeClientStream(PipeDirection.In, clientBase.SafePipeHandle))
-                    {
-                        Assert.True(server.IsConnected);
-                        Assert.True(client.IsConnected);
+                Assert.True(server.IsConnected);
+                Assert.True(client.IsConnected);
 
-                        byte[] sent = new byte[] { 123 };
-                        byte[] received = new byte[] { 0 };
-                        server.Write(sent, 0, 1);
+                byte[] sent = new byte[] { 123 };
+                byte[] received = new byte[] { 0 };
+                server.Write(sent, 0, 1);
 
-                        Assert.Equal(1, client.Read(received, 0, 1));
-                        Assert.Equal(sent[0], received[0]);
-                    }
-                }
+                Assert.Equal(1, client.Read(received, 0, 1));
+                Assert.Equal(sent[0], received[0]);
             }
         }
 
@@ -145,13 +137,16 @@ namespace System.IO.Pipes.Tests
             }
         }
 
-        [Fact]
-        public void PipeTransmissionMode_Returns_Byte()
+        [Theory]
+        [InlineData(PipeDirection.Out, PipeDirection.In)]
+        [InlineData(PipeDirection.In, PipeDirection.Out)]
+        public void PipeTransmissionMode_Returns_Byte(PipeDirection serverDirection, PipeDirection clientDirection)
         {
-            using (ServerClientPair pair = CreateServerClientPair())
+            using (AnonymousPipeServerStream server = new AnonymousPipeServerStream(serverDirection))
+            using (AnonymousPipeClientStream client = new AnonymousPipeClientStream(clientDirection, server.ClientSafePipeHandle))
             {
-                Assert.Equal(PipeTransmissionMode.Byte, pair.writeablePipe.TransmissionMode);
-                Assert.Equal(PipeTransmissionMode.Byte, pair.readablePipe.TransmissionMode);
+                Assert.Equal(PipeTransmissionMode.Byte, server.TransmissionMode);
+                Assert.Equal(PipeTransmissionMode.Byte, client.TransmissionMode);
             }
         }
 

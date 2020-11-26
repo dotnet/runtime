@@ -1332,7 +1332,7 @@ bool DebuggerController::ApplyPatch(DebuggerControllerPatch *patch)
     LOG((LF_CORDB, LL_INFO10000, "DC::ApplyPatch at addr 0x%p\n",
         patch->address));
 
-    // If we try to apply an already applied patch, we'll overide our saved opcode
+    // If we try to apply an already applied patch, we'll override our saved opcode
     // with the break opcode and end up getting a break in out patch bypass buffer.
     _ASSERTE(!patch->IsActivated() );
     _ASSERTE(patch->IsBound());
@@ -5883,7 +5883,7 @@ bool DebuggerStepper::TrapStep(ControllerStackInfo *info, bool in)
                 // the case we want to use...
                 fIsJump = true;
 
-                // fall through...
+                FALLTHROUGH;
 
             case WALK_CALL:
                 LOG((LF_CORDB,LL_INFO10000, "DC::TS:Imm:WALK_CALL ip=%p nextip=%p skipip=%p\n", walker.GetIP(), walker.GetNextIP(), walker.GetSkipIP()));

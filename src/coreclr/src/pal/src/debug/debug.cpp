@@ -673,42 +673,41 @@ PAL_ReadProcessMemory(
     // isn't, so we do it all the time.
     const size_t pageSize = GetVirtualPageSize();
     vm_address_t addressAligned = ALIGN_DOWN(address, pageSize);
-    size_t offset = OffsetWithinPage(address);
-    size_t bytesToRead;
+    ssize_t offset = OffsetWithinPage(address);
+    ssize_t bytesLeft = size;
 
     char *data = (char*)malloc(pageSize);
-    if (data == nullptr)
+    if (data != nullptr)
+    {
+        while (bytesLeft > 0)
+        {
+            vm_size_t bytesRead = pageSize;
+            kern_return_t result = ::vm_read_overwrite(task, addressAligned, pageSize, (vm_address_t)data, &bytesRead);
+            if (result != KERN_SUCCESS || bytesRead != pageSize)
+            {
+                TRACE("PAL_ReadProcessMemory(%p %d): vm_read_overwrite failed bytesLeft %d bytesRead %d from %p: %x %s\n",
+                    (void*)address, size, bytesLeft, bytesRead, (void*)addressAligned, result, mach_error_string(result));
+                break;
+            }
+            ssize_t bytesToCopy = pageSize - offset;
+            if (bytesToCopy > bytesLeft)
+            {
+                bytesToCopy = bytesLeft;
+            }
+            memcpy((LPSTR)buffer + read, data + offset, bytesToCopy);
+            addressAligned = addressAligned + pageSize;
+            read += bytesToCopy;
+            bytesLeft -= bytesToCopy;
+            offset = 0;
+        }
+        result = size == 0 || read > 0;
+    }
+    else
     {
         ERROR("malloc(%d) FAILED\n", pageSize);
         result = FALSE;
-        goto exit;
     }
 
-    while (size > 0)
-    {
-        vm_size_t bytesRead;
-        
-        bytesToRead = pageSize - offset;
-        if (bytesToRead > size)
-        {
-            bytesToRead = size;
-        }
-        bytesRead = pageSize;
-        kern_return_t result = ::vm_read_overwrite(task, addressAligned, pageSize, (vm_address_t)data, &bytesRead);
-        if (result != KERN_SUCCESS || bytesRead != pageSize)
-        {
-            ERROR("vm_read_overwrite failed for %d bytes from %p: %x %s\n", pageSize, (void*)addressAligned, result, mach_error_string(result));
-            result = FALSE;
-            goto exit;
-        }
-        memcpy((LPSTR)buffer + read , data + offset, bytesToRead);
-        addressAligned = addressAligned + pageSize;
-        read += bytesToRead;
-        size -= bytesToRead;
-        offset = 0;
-    }
-
-exit:
     if (data != nullptr)
     {
         free(data);

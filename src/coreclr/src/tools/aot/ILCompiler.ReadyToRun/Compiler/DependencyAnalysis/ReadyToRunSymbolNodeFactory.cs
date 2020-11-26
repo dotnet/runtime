@@ -124,7 +124,7 @@ namespace ILCompiler.DependencyAnalysis
                     _codegenNodeFactory,
                     _codegenNodeFactory.HelperImports,
                     ReadyToRunHelper.DelayLoad_Helper_ObjObj,
-                    new DelegateCtorSignature(ctorKey.Type, targetMethodNode, ctorKey.Method.Token));
+                    new DelegateCtorSignature(ctorKey.Type, targetMethodNode, ctorKey.Method));
             });
 
             _checkTypeLayoutCache = new NodeCache<TypeDesc, ISymbolNode>(key =>

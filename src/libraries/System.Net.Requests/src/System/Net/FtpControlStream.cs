@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections;
+using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Net.Sockets;
@@ -665,10 +666,7 @@ namespace System.Net
 
             if (isPassive)
             {
-                if (port == -1)
-                {
-                    NetEventSource.Fail(this, "'port' not set.");
-                }
+                Debug.Assert(port != -1, "'port' not set.");
 
                 try
                 {

@@ -908,7 +908,6 @@ FCIMPL7(void, COMCustomAttribute::GetPropertyOrFieldData, ReflectModuleBaseObjec
                 nullTH = th;
         }
 
-        //
         // get the string representing the field/property name
         *pName = ArgSlotToString(GetDataFromBlob(
             pCtorAssembly, SERIALIZATION_TYPE_STRING, nullTH, &pBlob, pBlobEnd, pModule, &bObjectCreated));
@@ -919,6 +918,7 @@ FCIMPL7(void, COMCustomAttribute::GetPropertyOrFieldData, ReflectModuleBaseObjec
         {
             case SERIALIZATION_TYPE_TAGGED_OBJECT:
                 *pType = g_pObjectClass->GetManagedClassObject();
+                FALLTHROUGH;
             case SERIALIZATION_TYPE_TYPE:
             case SERIALIZATION_TYPE_STRING:
                 *value = ArgSlotToObj(GetDataFromBlob(
@@ -936,6 +936,7 @@ FCIMPL7(void, COMCustomAttribute::GetPropertyOrFieldData, ReflectModuleBaseObjec
                 break;
             case SERIALIZATION_TYPE_SZARRAY:
             {
+                *value = NULL;
                 int arraySize = (int)GetDataFromBlob(pCtorAssembly, SERIALIZATION_TYPE_I4, nullTH, &pBlob, pBlobEnd, pModule, &bObjectCreated);
 
                 if (arraySize != -1)
@@ -1424,6 +1425,7 @@ ARG_SLOT COMCustomAttribute::GetDataFromBlob(Assembly *pCtorAssembly,
                 arrayType = (CorSerializationType)ELEMENT_TYPE_CLASS;
             // grab the array type and make a type handle for it
             nullTH = GetTypeHandleFromBlob(pCtorAssembly, arrayType, pBlob, endBlob, pModule);
+            FALLTHROUGH;
         }
         case SERIALIZATION_TYPE_TYPE:
         case SERIALIZATION_TYPE_STRING:

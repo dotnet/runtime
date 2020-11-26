@@ -297,6 +297,17 @@ typedef struct _T_RUNTIME_FUNCTION {
 } T_RUNTIME_FUNCTION, *PT_RUNTIME_FUNCTION;
 
 
+#ifdef HOST_UNIX
+
+typedef
+EXCEPTION_DISPOSITION
+(*PEXCEPTION_ROUTINE) (
+    PEXCEPTION_RECORD ExceptionRecord,
+    ULONG64 EstablisherFrame,
+    PCONTEXT ContextRecord,
+    PVOID DispatcherContext
+    );
+#endif
 //
 // Define exception dispatch context structure.
 //
@@ -347,6 +358,27 @@ typedef struct _T_KNONVOLATILE_CONTEXT_POINTERS {
     PDWORD64 D15;
 
 } T_KNONVOLATILE_CONTEXT_POINTERS, *PT_KNONVOLATILE_CONTEXT_POINTERS;
+
+#if defined(HOST_UNIX) && defined(TARGET_ARM64) && !defined(HOST_ARM64)
+enum
+{
+    UNW_AARCH64_X19 = 19,
+    UNW_AARCH64_X20 = 20,
+    UNW_AARCH64_X21 = 21,
+    UNW_AARCH64_X22 = 22,
+    UNW_AARCH64_X23 = 23,
+    UNW_AARCH64_X24 = 24,
+    UNW_AARCH64_X25 = 25,
+    UNW_AARCH64_X26 = 26,
+    UNW_AARCH64_X27 = 27,
+    UNW_AARCH64_X28 = 28,
+    UNW_AARCH64_X29 = 29,
+    UNW_AARCH64_X30 = 30,
+    UNW_AARCH64_SP = 31,
+    UNW_AARCH64_PC = 32
+};
+
+#endif // TARGET_ARM64 && !HOST_ARM64
 
 #else
 

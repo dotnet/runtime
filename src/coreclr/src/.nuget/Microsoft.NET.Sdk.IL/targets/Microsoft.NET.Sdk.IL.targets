@@ -143,6 +143,9 @@ Copyright (c) .NET Foundation. All rights reserved.
 
     <CallTarget Targets="$(TargetsTriggeredByCompilation)" Condition="'$(TargetsTriggeredByCompilation)' != ''"/>
   </Target>
+  
+  <!-- Target is called by the language server. No-op for ILProj as there is no language service support. -->
+  <Target Name="CompileDesignTime" />
 
   <!-- Import design time targets for Roslyn Project System. These are only available if Visual Studio is installed. -->
   <!-- Required for project to load in Visual Studio. -->

@@ -120,7 +120,7 @@ namespace System.Net.Http
             }
 
             _http2Enabled = _poolManager.Settings._maxHttpVersion >= HttpVersion.Version20;
-            _http3Enabled = _poolManager.Settings._maxHttpVersion >= Http3Connection.HttpVersion30;
+            _http3Enabled = _poolManager.Settings._maxHttpVersion >= Http3Connection.HttpVersion30 && (_poolManager.Settings._quicImplementationProvider ?? QuicImplementationProviders.Default).IsSupported;
 
             switch (kind)
             {
@@ -373,6 +373,7 @@ namespace System.Net.Http
                     return GetHttp3ConnectionAsync(request, authority, cancellationToken);
                 }
             }
+
             // If we got here, we cannot provide HTTP/3 connection. Do not continue if downgrade is not allowed.
             if (request.Version.Major >= 3 && request.VersionPolicy != HttpVersionPolicy.RequestVersionOrLower)
             {
@@ -815,7 +816,7 @@ namespace System.Net.Http
                 QuicConnection quicConnection;
                 try
                 {
-                    quicConnection = await ConnectHelper.ConnectQuicAsync(new DnsEndPoint(authority.IdnHost, authority.Port), _sslOptionsHttp3, cancellationToken).ConfigureAwait(false);
+                    quicConnection = await ConnectHelper.ConnectQuicAsync(Settings._quicImplementationProvider ?? QuicImplementationProviders.Default, new DnsEndPoint(authority.IdnHost, authority.Port), _sslOptionsHttp3, cancellationToken).ConfigureAwait(false);
                 }
                 catch
                 {

@@ -22,6 +22,7 @@ using Internal.CorConstants;
 
 using ILCompiler;
 using ILCompiler.DependencyAnalysis;
+using Internal.IL.Stubs;
 
 #if READYTORUN
 using System.Reflection.Metadata.Ecma335;
@@ -197,6 +198,14 @@ namespace Internal.JitInterface
             if (result == CorJitResult.CORJIT_BADCODE)
             {
                 ThrowHelper.ThrowInvalidProgramException();
+            }
+            if (result == CorJitResult.CORJIT_IMPLLIMITATION)
+            {
+#if READYTORUN
+                throw new RequiresRuntimeJitException("JIT implementation limitation");
+#else
+                ThrowHelper.ThrowInvalidProgramException();
+#endif
             }
             if (result != CorJitResult.CORJIT_OK)
             {
@@ -634,6 +643,11 @@ namespace Internal.JitInterface
 
         private CorInfoType asCorInfoType(TypeDesc type)
         {
+            return asCorInfoType(type, out _);
+        }
+
+        private CorInfoType asCorInfoType(TypeDesc type, out TypeDesc typeIfNotPrimitive)
+        {
             if (type.IsEnum)
             {
                 type = type.UnderlyingType;
@@ -641,6 +655,7 @@ namespace Internal.JitInterface
 
             if (type.IsPrimitive)
             {
+                typeIfNotPrimitive = null;
                 Debug.Assert((CorInfoType)TypeFlags.Void == CorInfoType.CORINFO_TYPE_VOID);
                 Debug.Assert((CorInfoType)TypeFlags.Double == CorInfoType.CORINFO_TYPE_DOUBLE);
 
@@ -649,8 +664,11 @@ namespace Internal.JitInterface
 
             if (type.IsPointer || type.IsFunctionPointer)
             {
+                typeIfNotPrimitive = null;
                 return CorInfoType.CORINFO_TYPE_PTR;
             }
+            
+            typeIfNotPrimitive = type;
 
             if (type.IsByRef)
             {
@@ -693,11 +711,8 @@ namespace Internal.JitInterface
 
         private CorInfoType asCorInfoType(TypeDesc type, CORINFO_CLASS_STRUCT_** structType)
         {
-            var corInfoType = asCorInfoType(type);
-            *structType = ((corInfoType == CorInfoType.CORINFO_TYPE_CLASS) ||
-                (corInfoType == CorInfoType.CORINFO_TYPE_VALUECLASS) ||
-                (corInfoType == CorInfoType.CORINFO_TYPE_BYREF) ||
-                (corInfoType == CorInfoType.CORINFO_TYPE_PTR)) ? ObjectToHandle(type) : null;
+            var corInfoType = asCorInfoType(type, out TypeDesc typeIfNotPrimitive);
+            *structType = (typeIfNotPrimitive != null) ? ObjectToHandle(typeIfNotPrimitive) : null;
             return corInfoType;
         }
 
@@ -1287,9 +1302,17 @@ namespace Internal.JitInterface
 
             Get_CORINFO_SIG_INFO(methodSig, sig);
 
-            if (sig->callConv == CorInfoCallConv.CORINFO_CALLCONV_UNMANAGED)
+            // CORINFO_CALLCONV_UNMANAGED is handled by Get_CORINFO_SIG_INFO
+            Debug.Assert(sig->callConv != CorInfoCallConv.CORINFO_CALLCONV_UNMANAGED);
+
+            // TODO: Replace this with a public mechanism to mark calli with SuppressGCTransition once it becomes available.
+            if (methodIL is PInvokeILStubMethodIL stubIL)
             {
-                throw new NotImplementedException();
+                var method = stubIL.OwningMethod;
+                if (method.IsPInvoke && method.IsSuppressGCTransition())
+                {
+                    sig->flags |= CorInfoSigInfoFlags.CORINFO_SIGFLAG_SUPPRESS_GC_TRANSITION;
+                }
             }
 
 #if !READYTORUN
@@ -1410,7 +1433,8 @@ namespace Internal.JitInterface
 
         private bool isValueClass(CORINFO_CLASS_STRUCT_* cls)
         {
-            return HandleToObject(cls).IsValueType;
+            TypeDesc type = HandleToObject(cls);
+            return type.IsValueType || type.IsPointer || type.IsFunctionPointer;
         }
 
         private CorInfoInlineTypeCheck canInlineTypeCheck(CORINFO_CLASS_STRUCT_* cls, CorInfoInlineTypeCheckSource source)
@@ -1431,6 +1455,10 @@ namespace Internal.JitInterface
             // TODO: Support for verification (CORINFO_FLG_GENERIC_TYPE_VARIABLE)
 
             CorInfoFlag result = (CorInfoFlag)0;
+
+            // CoreCLR uses UIntPtr in place of pointers here
+            if (type.IsPointer || type.IsFunctionPointer)
+                type = _compilation.TypeSystemContext.GetWellKnownType(WellKnownType.UIntPtr);
 
             var metadataType = type as MetadataType;
 
@@ -1581,10 +1609,99 @@ namespace Internal.JitInterface
             return result;
         }
 
+        /// <summary>
+        /// Managed implementation of CEEInfo::getClassAlignmentRequirementStatic
+        /// </summary>
+        public static int GetClassAlignmentRequirementStatic(DefType type)
+        {
+            int alignment = type.Context.Target.PointerSize;
+
+            if (type is MetadataType metadataType && metadataType.HasLayout())
+            {
+                if (metadataType.IsSequentialLayout || MarshalUtils.IsBlittableType(metadataType))
+                {
+                    alignment = metadataType.InstanceFieldAlignment.AsInt;
+                }
+            }
+
+            if (type.Context.Target.Architecture == TargetArchitecture.ARM &&
+                alignment < 8 && type.RequiresAlign8())
+            {
+                // If the structure contains 64-bit primitive fields and the platform requires 8-byte alignment for
+                // such fields then make sure we return at least 8-byte alignment. Note that it's technically possible
+                // to create unmanaged APIs that take unaligned structures containing such fields and this
+                // unconditional alignment bump would cause us to get the calling convention wrong on platforms such
+                // as ARM. If we see such cases in the future we'd need to add another control (such as an alignment
+                // property for the StructLayout attribute or a marshaling directive attribute for p/invoke arguments)
+                // that allows more precise control. For now we'll go with the likely scenario.
+                alignment = 8;
+            }
+
+            return alignment;
+        }
+
+        private Dictionary<DefType, bool> _doubleAlignHeuristicCache = new Dictionary<DefType, bool>();
+
+        //*******************************************************************************
+        //
+        // Heuristic to determine if we should have instances of this class 8 byte aligned
+        //
+        static bool ShouldAlign8(int dwR8Fields, int dwTotalFields)
+        {
+            return dwR8Fields*2>dwTotalFields && dwR8Fields>=2;
+        }
+
+        static bool ShouldAlign8(DefType type)
+        {
+            int instanceFields = 0;
+            int doubleFields = 0;
+            var doubleType = type.Context.GetWellKnownType(WellKnownType.Double);
+            foreach (var field in type.GetFields())
+            {
+                if (field.IsStatic)
+                    continue;
+                
+                instanceFields++;
+
+                if (field.FieldType == doubleType)
+                    doubleFields++;
+            }
+
+            return ShouldAlign8(doubleFields, instanceFields);
+        }
+
         private uint getClassAlignmentRequirement(CORINFO_CLASS_STRUCT_* cls, bool fDoubleAlignHint)
         {
             DefType type = (DefType)HandleToObject(cls);
-            return (uint)type.InstanceFieldAlignment.AsInt;
+
+
+            var target = type.Context.Target;
+            if (fDoubleAlignHint)
+            {
+                if (target.Architecture == TargetArchitecture.X86)
+                {
+                    if ((type.IsValueType) && (type.InstanceFieldAlignment.AsInt > 4))
+                    {
+                        // On X86, double aligning the stack is expensive. if fDoubleAlignHint is true
+                        // only align the local variable if it has a large enough fraction of double fields
+                        // in comparison to the total field count.
+                        if (!_doubleAlignHeuristicCache.TryGetValue(type, out bool doDoubleAlign))
+                        {
+                            doDoubleAlign = ShouldAlign8(type);
+                            _doubleAlignHeuristicCache.Add(type, doDoubleAlign);
+                        }
+
+                        // Return the size of the double align hint. Ignore the actual alignment info account
+                        // so that structs with 64-bit integer fields do not trigger double aligned frames on x86.
+                        if (doDoubleAlign)
+                            return 8;
+                    }
+
+                    return (uint)target.PointerSize;
+                }
+            }
+
+            return (uint)GetClassAlignmentRequirementStatic(type);
         }
 
         private int MarkGcField(byte* gcPtrs, CorInfoGCType gcType)
@@ -2687,7 +2804,11 @@ namespace Internal.JitInterface
         {
             // Slow tailcalls are not supported yet
             // https://github.com/dotnet/runtime/issues/35423
+#if READYTORUN
             throw new NotImplementedException(nameof(getTailCallHelpers));
+#else
+            return false;
+#endif
         }
 
         private byte[] _code;
@@ -2902,11 +3023,14 @@ namespace Internal.JitInterface
             if (targetArchitecture != TargetArchitecture.ARM64)
                 return (RelocType)fRelocType;
 
+            const ushort IMAGE_REL_ARM64_BRANCH26 = 3;
             const ushort IMAGE_REL_ARM64_PAGEBASE_REL21 = 4;
             const ushort IMAGE_REL_ARM64_PAGEOFFSET_12A = 6;
 
             switch (fRelocType)
             {
+                case IMAGE_REL_ARM64_BRANCH26:
+                    return RelocType.IMAGE_REL_BASED_ARM64_BRANCH26;
                 case IMAGE_REL_ARM64_PAGEBASE_REL21:
                     return RelocType.IMAGE_REL_BASED_ARM64_PAGEBASE_REL21;
                 case IMAGE_REL_ARM64_PAGEOFFSET_12A:

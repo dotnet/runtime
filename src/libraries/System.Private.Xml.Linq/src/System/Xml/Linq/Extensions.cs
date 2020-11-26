@@ -271,15 +271,13 @@ namespace System.Xml.Linq
         /// for each <see cref="XElement"/> in this <see cref="IEnumerable"/> of <see cref="XElement"/>.
         /// in document order
         /// </returns>
-        public static IEnumerable<T> InDocumentOrder<T>(this IEnumerable<T> source) where T : XNode
+        public static IEnumerable<T> InDocumentOrder<T>(this IEnumerable<T> source) where T : XNode?
         {
             if (source == null) throw new ArgumentNullException(nameof(source));
             return DocumentOrderIterator<T>(source);
         }
 
-        // TODO-NULLABLE: Consider changing to T? instead.
-        // If we do it, we will also need to change XNodeDocumentOrderComparer to implement IComparer<XNode?> instead.
-        private static IEnumerable<T> DocumentOrderIterator<T>(IEnumerable<T> source) where T : XNode
+        private static IEnumerable<T> DocumentOrderIterator<T>(IEnumerable<T> source) where T : XNode?
         {
             int count;
             T[] items = EnumerableHelpers.ToArray(source, out count);

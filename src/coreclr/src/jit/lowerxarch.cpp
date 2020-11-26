@@ -397,7 +397,7 @@ void Lowering::LowerPutArgStk(GenTreePutArgStk* putArgStk)
 
         // Now that the fields have been sorted, the kind of code we will generate.
         bool     allFieldsAreSlots = true;
-        unsigned prevOffset        = putArgStk->getArgSize();
+        unsigned prevOffset        = putArgStk->GetStackByteSize();
         for (GenTreeFieldList::Use& use : fieldList->Uses())
         {
             GenTree* const  fieldNode   = use.GetNode();
@@ -520,7 +520,7 @@ void Lowering::LowerPutArgStk(GenTreePutArgStk* putArgStk)
     // The cpyXXXX code is rather complex and this could cause it to be more complex, but
     // it might be the right thing to do.
 
-    ssize_t size = putArgStk->gtNumSlots * TARGET_POINTER_SIZE;
+    unsigned size = putArgStk->GetStackByteSize();
 
     // TODO-X86-CQ: The helper call either is not supported on x86 or required more work
     // (I don't know which).
@@ -593,7 +593,7 @@ void Lowering::LowerPutArgStk(GenTreePutArgStk* putArgStk)
  * TODO-XArch-CQ: (Low-pri): Jit64 generates in-line code of 8 instructions for (i) above.
  * There are hardly any occurrences of this conversion operation in platform
  * assemblies or in CQ perf benchmarks (1 occurrence in corelib, microsoft.jscript,
- * 1 occurence in Roslyn and no occurrences in system, system.core, system.numerics
+ * 1 occurrence in Roslyn and no occurrences in system, system.core, system.numerics
  * system.windows.forms, scimark, fractals, bio mums). If we ever find evidence that
  * doing this optimization is a win, should consider generating in-lined code.
  */
@@ -713,10 +713,11 @@ void Lowering::LowerSIMD(GenTreeSIMD* simdNode)
 
             assert(sizeof(constArgValues) == 16);
 
-            UNATIVE_OFFSET cnsSize  = sizeof(constArgValues);
-            UNATIVE_OFFSET cnsAlign = (comp->compCodeOpt() != Compiler::SMALL_CODE) ? cnsSize : 1;
+            unsigned cnsSize  = sizeof(constArgValues);
+            unsigned cnsAlign = (comp->compCodeOpt() != Compiler::SMALL_CODE) ? cnsSize : 1;
 
-            CORINFO_FIELD_HANDLE hnd = comp->GetEmitter()->emitAnyConst(constArgValues, cnsSize, cnsAlign);
+            CORINFO_FIELD_HANDLE hnd =
+                comp->GetEmitter()->emitBlkConst(constArgValues, cnsSize, cnsAlign, simdNode->gtSIMDBaseType);
             GenTree* clsVarAddr = new (comp, GT_CLS_VAR_ADDR) GenTreeClsVar(GT_CLS_VAR_ADDR, TYP_I_IMPL, hnd, nullptr);
             BlockRange().InsertBefore(simdNode, clsVarAddr);
             simdNode->ChangeOper(GT_IND);
@@ -1008,7 +1009,7 @@ void Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
                 break;
             }
 
-            __fallthrough;
+            FALLTHROUGH;
         }
 
         case NI_SSE_CompareGreaterThan:
@@ -1540,11 +1541,14 @@ void Lowering::LowerHWIntrinsicCreate(GenTreeHWIntrinsic* node)
             }
         }
 
-        UNATIVE_OFFSET cnsSize  = (simdSize != 12) ? simdSize : 16;
-        UNATIVE_OFFSET cnsAlign = (comp->compCodeOpt() != Compiler::SMALL_CODE) ? cnsSize : 1;
+        unsigned cnsSize = (simdSize != 12) ? simdSize : 16;
+        unsigned cnsAlign =
+            (comp->compCodeOpt() != Compiler::SMALL_CODE) ? cnsSize : emitter::dataSection::MIN_DATA_ALIGN;
+        var_types dataType = Compiler::getSIMDTypeForSize(simdSize);
 
-        CORINFO_FIELD_HANDLE hnd = comp->GetEmitter()->emitAnyConst(&vecCns, cnsSize, cnsAlign);
-        GenTree* clsVarAddr      = new (comp, GT_CLS_VAR_ADDR) GenTreeClsVar(GT_CLS_VAR_ADDR, TYP_I_IMPL, hnd, nullptr);
+        UNATIVE_OFFSET       cnum = comp->GetEmitter()->emitDataConst(&vecCns, cnsSize, cnsAlign, dataType);
+        CORINFO_FIELD_HANDLE hnd  = comp->eeFindJitDataOffs(cnum);
+        GenTree* clsVarAddr = new (comp, GT_CLS_VAR_ADDR) GenTreeClsVar(GT_CLS_VAR_ADDR, TYP_I_IMPL, hnd, nullptr);
         BlockRange().InsertBefore(node, clsVarAddr);
 
         node->ChangeOper(GT_IND);
@@ -1728,7 +1732,7 @@ void Lowering::LowerHWIntrinsicCreate(GenTreeHWIntrinsic* node)
                 BlockRange().InsertAfter(tmp2, tmp1);
                 LowerNode(tmp1);
 
-                __fallthrough;
+                FALLTHROUGH;
             }
 
             case TYP_SHORT:
@@ -1765,7 +1769,7 @@ void Lowering::LowerHWIntrinsicCreate(GenTreeHWIntrinsic* node)
                 BlockRange().InsertAfter(tmp2, tmp1);
                 LowerNode(tmp1);
 
-                __fallthrough;
+                FALLTHROUGH;
             }
 
             case TYP_INT:
@@ -5460,9 +5464,30 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                             break;
                         }
 
+                        case NI_SSE2_ShiftLeftLogical128BitLane:
+                        case NI_SSE2_ShiftRightLogical128BitLane:
+                        case NI_AVX2_ShiftLeftLogical128BitLane:
+                        case NI_AVX2_ShiftRightLogical128BitLane:
+                        {
+#if DEBUG
+                            // These intrinsics should have been marked contained by the general-purpose handling
+                            // earlier in the method.
+
+                            GenTree* lastOp = HWIntrinsicInfo::lookupLastOp(node);
+                            assert(lastOp != nullptr);
+
+                            if (HWIntrinsicInfo::isImmOp(intrinsicId, lastOp) && lastOp->IsCnsIntOrI())
+                            {
+                                assert(lastOp->isContained());
+                            }
+#endif
+
+                            break;
+                        }
+
                         default:
                         {
-                            assert("Unhandled containment for binary hardware intrinsic with immediate operand");
+                            assert(!"Unhandled containment for binary hardware intrinsic with immediate operand");
                             break;
                         }
                     }
@@ -5594,6 +5619,7 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                             }
                         }
                     }
+                    break;
                 }
 
                 case HW_Category_IMM:
@@ -5638,7 +5664,7 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
 
                         default:
                         {
-                            assert("Unhandled containment for ternary hardware intrinsic with immediate operand");
+                            assert(!"Unhandled containment for ternary hardware intrinsic with immediate operand");
                             break;
                         }
                     }

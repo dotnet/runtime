@@ -3,6 +3,7 @@
 
 using System.Collections;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Collections.Specialized;
 using System.IO;
 using System.Threading.Tasks;
@@ -573,6 +574,50 @@ namespace System.Text.Json.Serialization.Tests
         {
             public const string Suffix = "_Suffix";
             public override string ConvertName(string name) => name + Suffix;
+        }
+
+        [Fact]
+        public static void RoundtripAllDictionaryConverters()
+        {
+            const string Expected = @"{""1"":1}";
+
+            foreach (Type type in CollectionTestTypes.DeserializableDictionaryTypes<int, int>())
+            {
+                object dict = JsonSerializer.Deserialize(Expected, type);
+                Assert.Equal(Expected, JsonSerializer.Serialize(dict, type));
+            }
+        }
+
+        [Theory]
+        [InlineData(typeof(IDictionary))]
+        [InlineData(typeof(Hashtable))]
+        public static void IDictionary_Keys_ShouldBe_String_WhenDeserializing(Type type)
+        {
+            const string Expected = @"{""1998-02-14"":1}";
+
+            IDictionary dict = (IDictionary)JsonSerializer.Deserialize(Expected, type);
+            Assert.Equal(1, dict.Count);
+            JsonElement element = Assert.IsType<JsonElement>(dict["1998-02-14"]);
+            Assert.Equal(1, element.GetInt32());
+
+            Assert.Equal(Expected, JsonSerializer.Serialize(dict, type));
+        }
+
+        [Fact]
+        public static void GenericDictionary_WithObjectKeys_Throw_WhenDeserializing()
+        {
+            const string Expected = @"{""1998-02-14"":1}";
+
+            var dict = new Dictionary<object, int> { ["1998-02-14"] = 1 };
+            RunTest<IDictionary<object, int>>(dict);
+            RunTest<Dictionary<object, int>>(dict);
+            RunTest<ImmutableDictionary<object, int>>(ImmutableDictionary.CreateRange(dict));
+
+            void RunTest<T>(T dictionary)
+            {
+                Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize<T>(Expected));
+                Assert.Equal(Expected, JsonSerializer.Serialize(dictionary));
+            }
         }
     }
 }

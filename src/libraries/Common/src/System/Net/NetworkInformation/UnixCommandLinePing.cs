@@ -37,7 +37,7 @@ namespace System.Net.NetworkInformation
         }
 
         // Check if found ping is symlink to busybox like alpine /bin/ping -> /bin/busybox
-        private static unsafe bool IsBusyboxPing(string? pingBinary)
+        private static bool IsBusyboxPing(string? pingBinary)
         {
             if (pingBinary != null)
             {

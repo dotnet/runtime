@@ -10,7 +10,7 @@ namespace System.Linq
     {
         public static TSource First<TSource>(this IEnumerable<TSource> source)
         {
-            TSource first = source.TryGetFirst(out bool found);
+            TSource? first = source.TryGetFirst(out bool found);
             if (!found)
             {
                 ThrowHelper.ThrowNoElementsException();
@@ -21,7 +21,7 @@ namespace System.Linq
 
         public static TSource First<TSource>(this IEnumerable<TSource> source, Func<TSource, bool> predicate)
         {
-            TSource first = source.TryGetFirst(predicate, out bool found);
+            TSource? first = source.TryGetFirst(predicate, out bool found);
             if (!found)
             {
                 ThrowHelper.ThrowNoMatchException();

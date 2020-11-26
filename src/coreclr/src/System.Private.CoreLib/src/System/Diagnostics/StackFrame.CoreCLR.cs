@@ -49,6 +49,6 @@ namespace System.Diagnostics
             }
         }
 
-        private bool AppendStackFrameWithoutMethodBase(StringBuilder sb) => false;
+        private static bool AppendStackFrameWithoutMethodBase(StringBuilder sb) => false;
     }
 }

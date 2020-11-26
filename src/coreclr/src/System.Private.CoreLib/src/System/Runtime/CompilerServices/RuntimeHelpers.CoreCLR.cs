@@ -80,6 +80,9 @@ namespace System.Runtime.CompilerServices
 
         public static void PrepareMethod(RuntimeMethodHandle method, RuntimeTypeHandle[]? instantiation)
         {
+            // defensive copy of user-provided array, per CopyRuntimeTypeHandles contract
+            instantiation = (RuntimeTypeHandle[]?)instantiation?.Clone();
+
             unsafe
             {
                 IntPtr[]? instantiationHandles = RuntimeTypeHandle.CopyRuntimeTypeHandles(instantiation, out int length);
@@ -287,8 +290,9 @@ namespace System.Runtime.CompilerServices
         private static extern IntPtr AllocTailCallArgBuffer(int size, IntPtr gcDesc);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        private static unsafe extern TailCallTls* GetTailCallInfo(IntPtr retAddrSlot, IntPtr* retAddr);
+        private static extern unsafe TailCallTls* GetTailCallInfo(IntPtr retAddrSlot, IntPtr* retAddr);
 
+        [StackTraceHidden]
         private static unsafe void DispatchTailCalls(
             IntPtr callersRetAddrSlot,
             delegate*<IntPtr, IntPtr, IntPtr*, void> callTarget,

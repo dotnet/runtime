@@ -219,7 +219,7 @@ namespace System.Linq.Expressions
         /// <param name="body">The <see cref="LambdaExpression.Body" /> property of the result.</param>
         /// <param name="parameters">The <see cref="LambdaExpression.Parameters" /> property of the result.</param>
         /// <returns>This expression if no children changed, or an expression with the updated children.</returns>
-        public Expression<TDelegate>? Update(Expression body, IEnumerable<ParameterExpression>? parameters)
+        public Expression<TDelegate> Update(Expression body, IEnumerable<ParameterExpression>? parameters)
         {
             if (body == Body)
             {

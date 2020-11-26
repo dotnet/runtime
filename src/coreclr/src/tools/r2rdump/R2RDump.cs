@@ -18,6 +18,7 @@ using ILCompiler.Reflection.ReadyToRun;
 using ILCompiler.PdbWriter;
 
 using Internal.Runtime;
+using System.Runtime.InteropServices;
 
 namespace R2RDump
 {
@@ -55,6 +56,8 @@ namespace R2RDump
 
         public bool SignatureBinary { get; set; }
         public bool InlineSignatureBinary { get; set; }
+
+        private SignatureFormattingOptions signatureFormattingOptions;
 
         /// <summary>
         /// Probing extensions to use when looking up assemblies under reference paths.
@@ -130,6 +133,20 @@ namespace R2RDump
 
             return new StandaloneAssemblyMetadata(peReader);
         }
+        
+        public SignatureFormattingOptions GetSignatureFormattingOptions()
+        {
+            if (signatureFormattingOptions == null)
+            {
+                signatureFormattingOptions = new SignatureFormattingOptions
+                {
+                    Naked = this.Naked,
+                    SignatureBinary = this.SignatureBinary,
+                    InlineSignatureBinary = this.InlineSignatureBinary,
+                };
+            }
+            return signatureFormattingOptions;
+        }
     }
 
     public abstract class Dumper
@@ -159,7 +176,7 @@ namespace R2RDump
 
         public IEnumerable<ReadyToRunMethod> NormalizedMethods()
         {
-            IEnumerable<ReadyToRunMethod> methods = _r2r.Methods.Values.SelectMany(sectionMethods => sectionMethods);
+            IEnumerable<ReadyToRunMethod> methods = _r2r.Methods;
             if (_options.Normalize)
             {
                 methods = methods.OrderBy((m) => m.SignatureString);
@@ -475,7 +492,7 @@ namespace R2RDump
         public IList<ReadyToRunMethod> FindMethod(ReadyToRunReader r2r, string query, bool exact)
         {
             List<ReadyToRunMethod> res = new List<ReadyToRunMethod>();
-            foreach (ReadyToRunMethod method in r2r.Methods.Values.SelectMany(sectionMethods => sectionMethods))
+            foreach (ReadyToRunMethod method in r2r.Methods)
             {
                 if (Match(method, query, exact))
                 {
@@ -512,7 +529,7 @@ namespace R2RDump
         /// <param name="rtfQuery">The name or value to search for</param>
         public RuntimeFunction FindRuntimeFunction(ReadyToRunReader r2r, int rtfQuery)
         {
-            foreach (ReadyToRunMethod m in r2r.Methods.Values.SelectMany(sectionMethods => sectionMethods))
+            foreach (ReadyToRunMethod m in r2r.Methods)
             {
                 foreach (RuntimeFunction rtf in m.RuntimeFunctions)
                 {
@@ -523,6 +540,14 @@ namespace R2RDump
                 }
             }
             return null;
+        }
+
+        // TODO: Fix R2RDump issue where an R2R image cannot be dissassembled with the x86 CoreDisTools
+        // For the short term, we want to error out with a decent message explaining the unexpected error
+        // Issue https://github.com/dotnet/runtime/issues/10928
+        private static bool DisassemblerArchitectureSupported()
+        {
+            return RuntimeInformation.ProcessArchitecture != Architecture.X86;
         }
 
         private int Run()
@@ -551,7 +576,7 @@ namespace R2RDump
 
                     if (_options.Disasm)
                     {
-                        if (r2r.InputArchitectureSupported() && r2r.DisassemblerArchitectureSupported())
+                        if (DisassemblerArchitectureSupported())
                         {
                             disassembler = new Disassembler(r2r, _options);
                         }

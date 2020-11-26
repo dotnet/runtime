@@ -142,7 +142,7 @@ const char* Compiler::eeGetMethodFullName(CORINFO_METHOD_HANDLE hnd)
                         }
                     }
                 }
-                    __fallthrough;
+                    FALLTHROUGH;
                 default:
                     pParam->pArgNames[i] = varTypeName(type);
                     break;
@@ -177,7 +177,7 @@ const char* Compiler::eeGetMethodFullName(CORINFO_METHOD_HANDLE hnd)
                         }
                     }
                 }
-                    __fallthrough;
+                    FALLTHROUGH;
                 default:
                     pParam->returnType = varTypeName(retType);
                     break;

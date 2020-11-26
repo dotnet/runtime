@@ -590,7 +590,7 @@ HRESULT CordbType::MkType(CordbAppDomain * pAppDomain,
 
       pClass->SetIsValueClass(true);
       pClass->SetIsValueClassKnown(true);
-      // drop through
+      FALLTHROUGH;
 
     case ELEMENT_TYPE_CLASS:
         {
@@ -2009,6 +2009,7 @@ void CordbType::TypeToExpandedTypeData(DebuggerIPCE_ExpandedTypeData *data)
         }
     case ELEMENT_TYPE_END:
         _ASSERTE(!"bad element type!");
+        break;
 
     default:
         data->elementType = m_elementType;
@@ -2389,6 +2390,7 @@ HRESULT CordbType::GetTypeID(COR_TYPEID *pId)
         case ELEMENT_TYPE_BYREF:
         case ELEMENT_TYPE_FNPTR:
             IfFailThrow(CORDBG_E_UNSUPPORTED);
+            break;
         default:
             _ASSERTE(!"unexpected element type!");
             IfFailThrow(CORDBG_E_UNSUPPORTED);

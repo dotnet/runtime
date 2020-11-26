@@ -511,21 +511,23 @@ namespace System.Net.Tests
         }
 
         [Fact]
-        public async Task Timeout_SetTenMillisecondsOnLoopback_ThrowsWebException()
+        public async Task Timeout_Set30MillisecondsOnLoopback_ThrowsWebException()
         {
             await LoopbackServer.CreateServerAsync((server, url) =>
             {
                 HttpWebRequest request = WebRequest.CreateHttp(url);
-                request.Timeout = 10; // ms.
+                request.Timeout = 30; // ms.
 
                 var sw = Stopwatch.StartNew();
                 WebException exception = Assert.Throws<WebException>(() => request.GetResponse());
                 sw.Stop();
 
-                Assert.InRange(sw.ElapsedMilliseconds, 1, 15 * 1000);
+                _output.WriteLine(exception.ToString());
+
                 Assert.Equal(WebExceptionStatus.Timeout, exception.Status);
                 Assert.Null(exception.InnerException);
                 Assert.Null(exception.Response);
+                Assert.InRange(sw.ElapsedMilliseconds, 1, 15 * 1000);
 
                 return Task.FromResult<object>(null);
             });

@@ -13,7 +13,7 @@ internal partial class Interop
         /// Provides extended attribute (EA) information. This structure is used primarily by network drivers.
         /// </summary>
         [StructLayoutAttribute(LayoutKind.Sequential)]
-        internal unsafe struct FILE_FULL_EA_INFORMATION
+        internal struct FILE_FULL_EA_INFORMATION
         {
             /// <summary>
             /// The offset of the next FILE_FULL_EA_INFORMATION-type entry. This member is zero if no other entries follow this one.
