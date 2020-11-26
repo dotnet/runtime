@@ -150,8 +150,8 @@ namespace Microsoft.Extensions.Logging.Console
                     Formatter = logFormatter,
                 });
         }
-#pragma warning disable CS0618
 
+#pragma warning disable CS0618
         private void UpdateFormatterOptions(ConsoleFormatter formatter, ConsoleLoggerOptions deprecatedFromOptions)
         {
             // kept for deprecated apis:
