@@ -277,10 +277,7 @@ namespace System.IO
                 }
 
                 _readAborted = true;
-                if (!_buffer.IsEmpty)
-                {
-                    _buffer.Discard(_buffer.ActiveMemory.Length);
-                }
+                _buffer.DiscardAll();
 
                 _readTaskSource.SignalWaiter();
                 _writeTaskSource.SignalWaiter();

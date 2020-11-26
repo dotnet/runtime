@@ -409,10 +409,7 @@ namespace System.Net.Http
                 }
 
                 // Discard any remaining buffered response data
-                if (_responseBuffer.ActiveMemory.Length != 0)
-                {
-                    _responseBuffer.Discard(_responseBuffer.ActiveMemory.Length);
-                }
+                _responseBuffer.DiscardAll();
 
                 _responseProtocolState = ResponseProtocolState.Aborted;
 
@@ -957,7 +954,7 @@ namespace System.Net.Http
                     else
                     {
                         Debug.Assert(_responseProtocolState == ResponseProtocolState.Complete);
-                        return (false, _responseBuffer.ActiveMemory.Length == 0);
+                        return (false, _responseBuffer.IsEmpty);
                     }
                 }
             }
@@ -1045,10 +1042,11 @@ namespace System.Net.Http
                 {
                     CheckResponseBodyState();
 
-                    if (_responseBuffer.ActiveMemory.Length > 0)
+                    if (!_responseBuffer.IsEmpty)
                     {
-                        int bytesRead = Math.Min(buffer.Length, _responseBuffer.ActiveMemory.Length);
-                        _responseBuffer.ActiveMemory.Slice(0, bytesRead).CopyTo(buffer);
+                        MultiMemory activeBuffer = _responseBuffer.ActiveMemory;
+                        int bytesRead = Math.Min(buffer.Length, activeBuffer.Length);
+                        activeBuffer.Slice(0, bytesRead).CopyTo(buffer);
                         _responseBuffer.Discard(bytesRead);
 
                         return (false, bytesRead);
@@ -1268,7 +1266,7 @@ namespace System.Net.Http
                 Debug.Assert(!Monitor.IsEntered(SyncObject));
                 lock (SyncObject)
                 {
-                    if (_responseBuffer.ActiveMemory.Length == 0 && _responseProtocolState == ResponseProtocolState.Complete)
+                    if (_responseBuffer.IsEmpty && _responseProtocolState == ResponseProtocolState.Complete)
                     {
                         fullyConsumed = true;
                     }

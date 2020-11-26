@@ -77,7 +77,13 @@ namespace System.Net
             Debug.Assert(byteCount >= 0);
             Debug.Assert(byteCount <= ActiveMemory.Length, $"MultiArrayBuffer.Discard: Expected byteCount={byteCount} <= {ActiveMemory.Length}");
 
-            Debug.Assert(_blocks is not null);
+            if (byteCount == ActiveMemory.Length)
+            {
+                DiscardAll();
+                return;
+            }
+
+            CheckState();
 
             uint ubyteCount = (uint)byteCount;
 
@@ -85,22 +91,34 @@ namespace System.Net
             _activeStart += ubyteCount;
             uint newStartBlock = _activeStart / BlockSize;
 
-            byte[]?[] blocks = _blocks;
-            while (oldStartBlock < newStartBlock)
-            {
-                Debug.Assert(blocks[oldStartBlock] is not null, $"Discard: oldStartBlock is null?? byteCount={byteCount}, _activeStart={_activeStart}, oldStartBlock={oldStartBlock}, newStartBlock={newStartBlock}");
+            FreeBlocks(oldStartBlock, newStartBlock);
 
-                byte[] toReturn = blocks[oldStartBlock]!;
-                blocks[oldStartBlock] = null;
+            CheckState();
+        }
+
+        public void DiscardAll()
+        {
+            CheckState();
+
+            uint firstAllocatedBlock = _activeStart / BlockSize;
+            uint firstUnallocatedBlock = _allocatedEnd / BlockSize;
+            FreeBlocks(firstAllocatedBlock, firstUnallocatedBlock);
+
+            _activeStart = _availableStart = _allocatedEnd = 0;
+
+            CheckState();
+
+        }
+
+        private void FreeBlocks(uint startBlock, uint endBlock)
+        {
+            byte[]?[] blocks = _blocks!;
+            for (uint i = startBlock; i < endBlock; i++)
+            {
+                byte[]? toReturn = blocks[i];
+                Debug.Assert(toReturn is not null);
+                blocks[i] = null;
                 ArrayPool<byte>.Shared.Return(toReturn);
-
-                oldStartBlock++;
-            }
-
-            if (_activeStart == _availableStart)
-            {
-                // Small optimization to restart at the beginning of the current block, since we have no active bytes.
-                _activeStart = _availableStart = newStartBlock * BlockSize;
             }
         }
 
@@ -116,6 +134,9 @@ namespace System.Net
 
         public void EnsureAvailableSpaceUpToLimit(int byteCount, int limit)
         {
+            Debug.Assert(byteCount >= 0);
+            Debug.Assert(limit >= 0);
+
             if (ActiveMemory.Length >= limit)
             {
                 // Already past limit. Do nothing.
@@ -141,6 +162,8 @@ namespace System.Net
         public void GrowAvailableSpace(int byteCount)
         {
             Debug.Assert(byteCount > AvailableMemory.Length);
+
+            CheckState();
 
             uint ubyteCount = (uint)byteCount;
 
@@ -173,24 +196,6 @@ namespace System.Net
                 {
                     // Not enough room in current block array.
                     uint unusedInitialBlocks = _activeStart / BlockSize;
-
-#if DEBUG
-                    for (uint i = 0; i < unusedInitialBlocks; i++)
-                    {
-                        Debug.Assert(_blocks[i] is null);
-                    }
-
-                    for (uint i = unusedInitialBlocks; i < allocatedBlocks; i++)
-                    {
-                        Debug.Assert(_blocks[i] is not null);
-                    }
-
-                    for (uint i = allocatedBlocks; i < blockArraySize; i++)
-                    {
-                        Debug.Assert(_blocks[i] is null);
-                    }
-#endif
-
                     uint usedBlocks = (allocatedBlocks - unusedInitialBlocks);
                     uint blocksNeeded = usedBlocks + newBlocksNeeded;
                     if (blocksNeeded > blockArraySize)
@@ -237,6 +242,50 @@ namespace System.Net
 
             // After all of that, we should have enough available memory now
             Debug.Assert(byteCount <= AvailableMemory.Length);
+
+            CheckState();
+        }
+
+        [Conditional("DEBUG")]
+        private void CheckState()
+        {
+            if (_blocks == null)
+            {
+                Debug.Assert(_activeStart == 0);
+                Debug.Assert(_availableStart == 0);
+                Debug.Assert(_allocatedEnd == 0);
+            }
+            else
+            {
+                Debug.Assert(_activeStart <= _availableStart);
+                Debug.Assert(_availableStart <= _allocatedEnd);
+                Debug.Assert(_allocatedEnd <= _blocks.Length * BlockSize);
+
+                Debug.Assert(_allocatedEnd % BlockSize == 0, $"_allocatedEnd={_allocatedEnd} not at block boundary?");
+
+                uint firstAllocatedBlock = _activeStart / BlockSize;
+                uint firstUnallocatedBlock = _allocatedEnd / BlockSize;
+
+                for (uint i = 0; i < firstAllocatedBlock; i++)
+                {
+                    Debug.Assert(_blocks[i] is null);
+                }
+
+                for (uint i = firstAllocatedBlock; i < firstUnallocatedBlock; i++)
+                {
+                    Debug.Assert(_blocks[i] is not null);
+                }
+
+                for (uint i = firstUnallocatedBlock; i < _blocks.Length; i++)
+                {
+                    Debug.Assert(_blocks[i] is null);
+                }
+
+                if (_activeStart == _availableStart)
+                {
+                    Debug.Assert(_activeStart == 0, $"No active bytes but _activeStart={_activeStart}");
+                }
+            }
         }
     }
 

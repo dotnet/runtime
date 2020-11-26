@@ -450,10 +450,10 @@ namespace System
                 }
                 else
                 {
-                    const int maxDiffsToShow = 10;      // arbitrary; enough to be useful, hopefully, but still manageable
+                    const int MaxDiffsToShow = 10;      // arbitrary; enough to be useful, hopefully, but still manageable
 
                     int diffCount = 0;
-                    string message = $"Showing first {maxDiffsToShow} differences{Environment.NewLine}";
+                    string message = $"Showing first {MaxDiffsToShow} differences{Environment.NewLine}";
                     for (int i = 0; i < expected.Length; i++)
                     {
                         if (!expected[i].Equals(actual[i]))
@@ -461,7 +461,7 @@ namespace System
                             diffCount++;
 
                             // Add up to 10 differences to the exception message
-                            if (diffCount <= maxDiffsToShow)
+                            if (diffCount <= MaxDiffsToShow)
                             {
                                 message += $"  Position {i}: Expected: {expected[i]}, Actual: {actual[i]}{Environment.NewLine}";
                             }
