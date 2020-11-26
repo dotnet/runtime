@@ -271,7 +271,7 @@ namespace System.Net.Http.HPack
             (0b11111111_11111111_11111111_11111100, 30)
         };
 
-        private static ushort[] s_decodingTree = GenerateDecodingLookupTree();
+        private static readonly ushort[] s_decodingTree = GenerateDecodingLookupTree();
 
         public static (uint encoded, int bitLength) Encode(int data)
         {
