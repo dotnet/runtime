@@ -8,7 +8,7 @@ namespace Mono.Linker.Tests.Cases.Expectations.Metadata
 	[AttributeUsage (AttributeTargets.Class, AllowMultiple = true)]
 	public class SetupCompileBeforeAttribute : BaseMetadataAttribute
 	{
-		public SetupCompileBeforeAttribute (string outputName, string[] sourceFiles, string[] references = null, string[] defines = null, string[] resources = null, string additionalArguments = null, string compilerToUse = null, bool addAsReference = true)
+		public SetupCompileBeforeAttribute (string outputName, string[] sourceFiles, string[] references = null, string[] defines = null, string[] resources = null, string additionalArguments = null, string compilerToUse = null, bool addAsReference = true, bool removeFromLinkerInput = false)
 		{
 			if (sourceFiles == null)
 				throw new ArgumentNullException (nameof (sourceFiles));
@@ -17,7 +17,7 @@ namespace Mono.Linker.Tests.Cases.Expectations.Metadata
 				throw new ArgumentException ("Value cannot be null or empty.", nameof (outputName));
 		}
 
-		public SetupCompileBeforeAttribute (string outputName, Type[] typesToIncludeSourceFor, string[] references = null, string[] defines = null, string[] resources = null, string additionalArguments = null, string compilerToUse = null, bool addAsReference = true)
+		public SetupCompileBeforeAttribute (string outputName, Type[] typesToIncludeSourceFor, string[] references = null, string[] defines = null, string[] resources = null, string additionalArguments = null, string compilerToUse = null, bool addAsReference = true, bool removeFromLinkerInput = false)
 		{
 			if (typesToIncludeSourceFor == null)
 				throw new ArgumentNullException (nameof (typesToIncludeSourceFor));

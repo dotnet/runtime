@@ -42,7 +42,8 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
 			Prepare (outputDirectory);
 
-			var compiledReferences = CompileBeforeTestCaseAssemblies (outputDirectory, originalCommonReferences, originalDefines).ToArray ();
+			var removeFromLinkerInputAssemblies = new List<NPath> ();
+			var compiledReferences = CompileBeforeTestCaseAssemblies (outputDirectory, originalCommonReferences, originalDefines, removeFromLinkerInputAssemblies).ToArray ();
 			var allTestCaseReferences = originalCommonReferences
 				.Concat (compiledReferences)
 				.Concat (mainAssemblyReferences.Select (r => r.ToNPath ()))
@@ -61,8 +62,12 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			// The compile after step is used by tests to mess around with the input to the linker.  Generally speaking, it doesn't seem like we would ever want to mess with the
 			// expectations assemblies because this would undermine our ability to inspect them for expected results during ResultChecking.  The UnityLinker UnresolvedHandling tests depend on this
 			// behavior of skipping the after test compile
-			if (outputDirectory != _sandbox.ExpectationsDirectory)
+			if (outputDirectory != _sandbox.ExpectationsDirectory) {
+				foreach (var assemblyToRemove in removeFromLinkerInputAssemblies)
+					assemblyToRemove.DeleteIfExists ();
+
 				CompileAfterTestCaseAssemblies (outputDirectory, originalCommonReferences, originalDefines);
+			}
 
 			return testAssembly;
 		}
@@ -100,7 +105,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			};
 		}
 
-		private IEnumerable<NPath> CompileBeforeTestCaseAssemblies (NPath outputDirectory, NPath[] references, string[] defines)
+		private IEnumerable<NPath> CompileBeforeTestCaseAssemblies (NPath outputDirectory, NPath[] references, string[] defines, IList<NPath> removeFromLinkerInputAssemblies)
 		{
 			foreach (var setupCompileInfo in _metadataProvider.GetSetupCompileAssembliesBefore ()) {
 				var options = CreateOptionsForSupportingAssembly (
@@ -111,6 +116,10 @@ namespace Mono.Linker.Tests.TestCasesRunner
 					defines,
 					CollectSetupBeforeResourcesFiles (setupCompileInfo));
 				var output = CompileAssembly (options);
+
+				if (setupCompileInfo.RemoveFromLinkerInput)
+					removeFromLinkerInputAssemblies.Add (output);
+
 				if (setupCompileInfo.AddAsReference)
 					yield return output;
 			}

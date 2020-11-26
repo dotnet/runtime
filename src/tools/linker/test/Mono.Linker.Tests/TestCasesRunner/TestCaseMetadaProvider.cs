@@ -332,7 +332,8 @@ namespace Mono.Linker.Tests.TestCasesRunner
 				Resources = ((CustomAttributeArgument[]) ctorArguments[4].Value)?.Select (arg => MakeSourceTreeFilePathAbsolute (arg.Value.ToString ())).ToArray (),
 				AdditionalArguments = (string) ctorArguments[5].Value,
 				CompilerToUse = (string) ctorArguments[6].Value,
-				AddAsReference = ctorArguments.Count >= 8 ? (bool) ctorArguments[7].Value : true
+				AddAsReference = ctorArguments.Count >= 8 ? (bool) ctorArguments[7].Value : true,
+				RemoveFromLinkerInput = ctorArguments.Count >= 9 ? (bool) ctorArguments[8].Value : false
 			};
 		}
 
