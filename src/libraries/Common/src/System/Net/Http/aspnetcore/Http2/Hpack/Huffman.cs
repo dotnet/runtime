@@ -9,8 +9,6 @@ namespace System.Net.Http.HPack
 {
     internal static class Huffman
     {
-        private static ushort[] s_decodingTree = GenerateDecodingLookupTree();
-
         // HPack static huffman code. see: https://httpwg.org/specs/rfc7541.html#huffman.code
         private static readonly (uint code, int bitLength)[] _encodingTable = new (uint code, int bitLength)[]
         {
@@ -272,6 +270,8 @@ namespace System.Net.Http.HPack
             (0b11111111_11111111_11111011_10000000, 26),
             (0b11111111_11111111_11111111_11111100, 30)
         };
+
+        private static ushort[] s_decodingTree = GenerateDecodingLookupTree();
 
         public static (uint encoded, int bitLength) Encode(int data)
         {
