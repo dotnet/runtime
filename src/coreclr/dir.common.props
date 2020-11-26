@@ -50,22 +50,6 @@
     <StableVersion Condition="'$(StabilizePackageVersion)' == 'true' and '$(StableVersion)' == ''">$(PackageVersion)</StableVersion>
   </PropertyGroup>
 
-  <!-- Set up common target properties that we use to conditionally include sources -->
-  <PropertyGroup>
-    <TargetsFreeBSD Condition="'$(TargetOS)' == 'FreeBSD'">true</TargetsFreeBSD>
-    <TargetsLinux Condition="'$(TargetOS)' == 'Linux'">true</TargetsLinux>
-    <TargetsNetBSD Condition="'$(TargetOS)' == 'NetBSD'">true</TargetsNetBSD>
-    <Targetsillumos Condition="'$(TargetOS)' == 'illumos'">true</Targetsillumos>
-    <TargetsSolaris Condition="'$(TargetOS)' == 'Solaris'">true</TargetsSolaris>
-    <TargetsOSX Condition="'$(TargetOS)' == 'OSX'">true</TargetsOSX>
-    <TargetsWindows Condition="'$(TargetOS)' == 'windows'">true</TargetsWindows>
-
-    <TargetsUnix Condition="'$(TargetsFreeBSD)' == 'true' or '$(TargetsLinux)' == 'true' or '$(TargetsNetBSD)' == 'true' or '$(TargetsOSX)' == 'true' or '$(Targetsillumos)' == 'true' or '$(TargetsSolaris)' == 'true'">true</TargetsUnix>
-
-    <!-- We are only tracking Linux Distributions for Nuget RID mapping -->
-    <DistroRid Condition="'$(TargetsLinux)' == 'true'">$(__DistroRid)</DistroRid>
-  </PropertyGroup>
-
   <!-- Set the kind of PDB to Portable -->
   <PropertyGroup>
     <DebugType Condition="'$(DebugType)' == ''">Portable</DebugType>

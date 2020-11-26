@@ -110,7 +110,7 @@ ep_buffer_write_event (
 		(EventPipeEventInstance *)buffer->current,
 		ep_event,
 		proc_number,
-		(thread == NULL) ? ep_rt_current_thread_get_id () : ep_rt_thread_get_id (thread),
+		ep_rt_thread_id_t_to_uint64_t((thread == NULL) ? ep_rt_current_thread_get_id () : ep_rt_thread_get_id (thread)),
 		data_dest,
 		ep_event_payload_get_size (payload),
 		(thread == NULL) ? NULL : activity_id,

@@ -1099,16 +1099,6 @@ class SuperPMIReplay:
             if self.coreclr_args.spmi_log_file is not None:
                 common_flags += [ "-w", self.coreclr_args.spmi_log_file ]
 
-            # TEMPORARY: when we have collections that are done using COMPlus_JitName
-            # instead of COMPlus_AltJit, we can remove these.
-            if not self.coreclr_args.altjit:
-                repro_flags += [
-                    "-jitoption", "force", "AltJit=",
-                    "-jitoption", "force", "AltJitNgen="
-                ]
-            repro_flags += [ "-jitoption", "force", "EnableExtraSuperPmiQueries=0" ]
-            # END TEMPORARY
-
             common_flags += repro_flags
 
             # For each MCH file that we are going to replay, do the replay and replay post-processing.
@@ -1269,23 +1259,6 @@ class SuperPMIReplayAsmDiffs:
                 "-jitoption", "force", "AltJit=*",
                 "-jitoption", "force", "AltJitNgen=*"
             ]
-
-        # TEMPORARY: when we have collections that are done using COMPlus_JitName
-        # instead of COMPlus_AltJit, we can remove these.
-        if not self.coreclr_args.altjit:
-            altjit_asm_diffs_flags = [
-                "-jitoption", "force", "AltJit=",
-                "-jitoption", "force", "AltJitNgen=",
-                "-jit2option", "force", "AltJit=",
-                "-jit2option", "force", "AltJitNgen="
-            ]
-            altjit_replay_flags = [
-                "-jitoption", "force", "AltJit=",
-                "-jitoption", "force", "AltJitNgen="
-            ]
-        altjit_asm_diffs_flags += [ "-jitoption", "force", "EnableExtraSuperPmiQueries=0" ]
-        altjit_replay_flags    += [ "-jitoption", "force", "EnableExtraSuperPmiQueries=0" ]
-        # END TEMPORARY
 
         # Keep track if any MCH file replay had asm diffs
         files_with_asm_diffs = []

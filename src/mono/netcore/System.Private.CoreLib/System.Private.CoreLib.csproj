@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <!-- Generate Mono corelib version file -->
   <Import Project="GenerateMonoCoreLibVersionFile.targets" />
 
@@ -291,6 +291,11 @@
       <Compile Include="$(BclSourcesRoot)\Mono\SafeStringMarshal.cs" />
       <Compile Include="$(BclSourcesRoot)\Mono\SafeGPtrArrayHandle.cs" />
       <Compile Include="$(BclSourcesRoot)\System\TypeSpec.cs" />
+  </ItemGroup>
+
+  <!-- Enable unsupported browser warnings -->
+  <ItemGroup Condition="'$(TargetsBrowser)' == 'true' or '$(TargetsAnyOS)' == 'true'">
+    <SupportedPlatform Include="browser"/>
   </ItemGroup>
 
   <Import Project="$(LibrariesProjectRoot)\System.Private.CoreLib\src\System.Private.CoreLib.Shared.projitems" Label="Shared" />

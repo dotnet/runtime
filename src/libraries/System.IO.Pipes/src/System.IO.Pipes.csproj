@@ -167,8 +167,6 @@
              Link="Common\Interop\Unix\Interop.GetEUid.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.SetEUid.cs"
              Link="Common\Interop\Unix\Interop.SetEUid.cs" />
-    <Compile Include="$(CommonPath)System\Threading\Tasks\ForceAsyncAwaiter.cs"
-             Link="Common\System\Threading\Tasks\ForceAsyncAwaiter.cs" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="System.Collections" />

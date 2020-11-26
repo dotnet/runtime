@@ -2203,7 +2203,7 @@ void CodeGen::genGenerateMachineCode()
 
         if (compiler->fgHaveProfileData())
         {
-            printf("; with IBC profile data, edge weights are %s, and fgCalledCount is %u\n",
+            printf("; with IBC profile data, edge weights are %s, and fgCalledCount is %.0f\n",
                    compiler->fgHaveValidEdgeWeights ? "valid" : "invalid", compiler->fgCalledCount);
         }
 

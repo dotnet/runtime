@@ -292,6 +292,7 @@ GTNODE(PUTARG_REG       , GenTreeMultiRegOp  ,0,GTK_UNOP)                       
 #else
 GTNODE(PUTARG_REG       , GenTreeOp          ,0,GTK_UNOP)                        // operator that places outgoing arg in register
 #endif
+GTNODE(PUTARG_TYPE      , GenTreeOp          ,0,GTK_UNOP|GTK_NOTLIR)             // operator that places saves argument type between importation and morph
 GTNODE(PUTARG_STK       , GenTreePutArgStk   ,0,GTK_UNOP|GTK_NOVALUE)            // operator that places outgoing arg in stack
 #if FEATURE_ARG_SPLIT
 GTNODE(PUTARG_SPLIT     , GenTreePutArgSplit ,0,GTK_UNOP)                        // operator that places outgoing arg in registers with stack (split struct in ARM32)

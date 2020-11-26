@@ -208,7 +208,7 @@ ep_event_instance_serialize_to_json_file (
 		ep_event_get_event_version (ep_event_instance->ep_event));
 
 	if (characters_written > 0 && characters_written < EP_ARRAY_SIZE (buffer))
-		ep_json_file_write_event_data (json_file, ep_event_instance->timestamp, (ep_rt_thread_id_t)(ep_event_instance->thread_id), buffer, &ep_event_instance->stack_contents);
+		ep_json_file_write_event_data (json_file, ep_event_instance->timestamp, ep_rt_uint64_t_to_thread_id_t (ep_event_instance->thread_id), buffer, &ep_event_instance->stack_contents);
 }
 #else
 void
