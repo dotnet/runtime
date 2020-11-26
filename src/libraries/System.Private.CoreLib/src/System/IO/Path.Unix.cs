@@ -58,8 +58,11 @@ namespace System.IO
             if (basePath.Contains('\0') || path.Contains('\0'))
                 throw new ArgumentException(SR.Argument_InvalidPathChars);
 
-            if (IsPathFullyQualified(path))
+            if (Path.IsPathRooted(path))
                 return GetFullPath(path);
+
+            if (PathInternal.IsEffectivelyEmpty(path.AsSpan()))
+                return basePath;
 
             return GetFullPath(CombineInternal(basePath, path));
         }

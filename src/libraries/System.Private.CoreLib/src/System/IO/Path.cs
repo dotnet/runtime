@@ -1008,7 +1008,7 @@ namespace System.IO
                 return string.Empty;
             }
 
-            ValueStringBuilder sb = new ValueStringBuilder(stackalloc char[InitialValueStringBuilderBufferLength]);
+            var sb = new ValueStringBuilder(spanPath.Length > InitialValueStringBuilderBufferLength? InitialValueStringBuilderBufferLength: spanPath.Length);
 
             if (!RedundantSegmentHelper.TryRemoveRedundantSegments(spanPath, ref sb))
             {
@@ -1031,7 +1031,7 @@ namespace System.IO
                 return string.Empty;
             }
 
-            ValueStringBuilder sb = new ValueStringBuilder(stackalloc char[InitialValueStringBuilderBufferLength]);
+            var sb = new ValueStringBuilder(path.Length > InitialValueStringBuilderBufferLength ? InitialValueStringBuilderBufferLength : path.Length);
 
             if (!RedundantSegmentHelper.TryRemoveRedundantSegments(path, ref sb))
             {
@@ -1060,7 +1060,7 @@ namespace System.IO
                 return false;
             }
 
-            ValueStringBuilder sb = new ValueStringBuilder(stackalloc char[InitialValueStringBuilderBufferLength]);
+            var sb = new ValueStringBuilder(path.Length > InitialValueStringBuilderBufferLength ? InitialValueStringBuilderBufferLength : path.Length);
 
             bool result = false;
 
