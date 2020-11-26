@@ -2107,7 +2107,7 @@ void QCALLTYPE RuntimeTypeHandle::GetActivationInfo(
         PRECONDITION(*ppfnAllocator == NULL);
         PRECONDITION(*pvAllocatorFirstArg == NULL);
         PRECONDITION(*ppfnCtor == NULL);
-        PRECONDITION(*pfCtorIsPublic == NULL);
+        PRECONDITION(*pfCtorIsPublic == FALSE);
     }
     CONTRACTL_END;
 
@@ -2634,4 +2634,3 @@ FCIMPL2(FC_BOOL_RET, ReflectionEnum::InternalHasFlag, Object *pRefThis, Object* 
     FC_RETURN_BOOL(cmp);
 }
 FCIMPLEND
-
