@@ -526,22 +526,6 @@ namespace CoreXml.Test.XLinq
                     }
                 }
 
-                //[Variation("GetAttribute(i) NegativeOneOrdinal", Priority = 0)]
-                public void NegativeOneOrdinal()
-                {
-                    XmlReader DataReader = GetReader();
-                    PositionOnElement(DataReader, "ACT1");
-
-                    try
-                    {
-                        string str = DataReader.GetAttribute(-1);
-                    }
-                    catch (Exception e)
-                    {
-                        TestLog.Compare(e.GetType(), typeof(ArgumentOutOfRangeException), "Error");
-                    }
-                }
-
                 //[Variation("GetAttribute(i) FieldCountOrdinal")]
                 public void FieldCountOrdinal()
                 {
@@ -557,22 +541,7 @@ namespace CoreXml.Test.XLinq
                     PositionOnElement(DataReader, "ACT1");
                     string str = DataReader.GetAttribute(DataReader.AttributeCount + 1);
                 }
-
-                //[Variation("GetAttribute(i) OrdinalMinusOne")]
-                public void OrdinalMinusOne()
-                {
-                    XmlReader DataReader = GetReader();
-                    PositionOnElement(DataReader, "ACT1");
-                    try
-                    {
-                        string str = DataReader.GetAttribute(-2);
-                    }
-                    catch (Exception e)
-                    {
-                        TestLog.Compare(e.GetType(), typeof(ArgumentOutOfRangeException), "Error");
-                    }
-
-                }
+               
             }
 
             //[TestCase(Name = "GetAttributeName", Desc = "GetAttributeName")]
@@ -826,21 +795,6 @@ namespace CoreXml.Test.XLinq
                     }
                 }
 
-                //[Variation("ThisOrdinal NegativeOneOrdinal", Priority = 0)]
-                public void NegativeOneOrdinal()
-                {
-                    XmlReader DataReader = GetReader();
-                    PositionOnElement(DataReader, "ACT1");
-                    try
-                    {
-                        string str = DataReader[-1];
-                    }
-                    catch (Exception e)
-                    {
-                        TestLog.Compare(e.GetType(), typeof(ArgumentOutOfRangeException), "Error");
-                    }
-                }
-
                 //[Variation("ThisOrdinal FieldCountOrdinal")]
                 public void FieldCountOrdinal()
                 {
@@ -855,21 +809,6 @@ namespace CoreXml.Test.XLinq
                     XmlReader DataReader = GetReader();
                     PositionOnElement(DataReader, "ACT1");
                     string str = DataReader[DataReader.AttributeCount + 1];
-                }
-
-                //[Variation("ThisOrdinal OrdinalMinusOne")]
-                public void OrdinalMinusOne()
-                {
-                    XmlReader DataReader = GetReader();
-                    PositionOnElement(DataReader, "ACT1");
-                    try
-                    {
-                        string str = DataReader[-2];
-                    }
-                    catch (Exception e)
-                    {
-                        TestLog.Compare(e.GetType(), typeof(ArgumentOutOfRangeException), "Error");
-                    }
                 }
             }
 
