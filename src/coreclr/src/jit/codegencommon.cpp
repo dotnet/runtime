@@ -2203,13 +2203,18 @@ void CodeGen::genGenerateMachineCode()
 
         if (compiler->fgHaveProfileData())
         {
-            printf("; with IBC profile data, edge weights are %s, and fgCalledCount is %u\n",
+            printf("; with IBC profile data, edge weights are %s, and fgCalledCount is %.0f\n",
                    compiler->fgHaveValidEdgeWeights ? "valid" : "invalid", compiler->fgCalledCount);
         }
 
         if (compiler->fgProfileData_ILSizeMismatch)
         {
             printf("; discarded IBC profile data due to mismatch in ILSize\n");
+        }
+
+        if (compiler->opts.jitFlags->IsSet(JitFlags::JIT_FLAG_ALT_JIT))
+        {
+            printf("; invoked as altjit\n");
         }
     }
 #endif // DEBUG
@@ -2355,7 +2360,7 @@ void CodeGen::genEmitMachineCode()
     }
 #endif
 
-#if EMIT_TRACK_STACK_DEPTH && defined(DEBUG) && !defined(OSX_ARM64_ABI)
+#if EMIT_TRACK_STACK_DEPTH && defined(DEBUG_ARG_SLOTS)
     // Check our max stack level. Needed for fgAddCodeRef().
     // We need to relax the assert as our estimation won't include code-gen
     // stack changes (which we know don't affect fgAddCodeRef()).

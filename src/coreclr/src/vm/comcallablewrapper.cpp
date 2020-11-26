@@ -380,23 +380,6 @@ bool IsOleAutDispImplRequiredForClass(MethodTable *pClass)
     return false;
 }
 
-MethodTable* RefineProxy(OBJECTREF pServer)
-{
-    CONTRACT (MethodTable*)
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_COOPERATIVE;
-        POSTCONDITION(CheckPointer(RETVAL, NULL_OK));
-    }
-    CONTRACT_END;
-
-    MethodTable* pRefinedClass = NULL;
-
-
-    RETURN pRefinedClass;
-}
-
 //--------------------------------------------------------------------------
 // This routine is called anytime a com method is invoked for the first time.
 // It is responsible for generating the real stub.
@@ -904,31 +887,6 @@ SimpleComCallWrapper::~SimpleComCallWrapper()
     WRAPPER_NO_CONTRACT;
 
     Cleanup();
-}
-
-//--------------------------------------------------------------------------
-// Creates a simple wrapper off the process heap (thus avoiding any debug
-// memory tracking) and initializes the memory to zero
-// static
-//--------------------------------------------------------------------------
-//
-SimpleComCallWrapper* SimpleComCallWrapper::CreateSimpleWrapper()
-{
-    CONTRACT (SimpleComCallWrapper*)
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM());
-        POSTCONDITION(CheckPointer(RETVAL));
-    }
-    CONTRACT_END;
-
-    NewHolder<SimpleComCallWrapper> pWrapper = new SimpleComCallWrapper;
-    memset (pWrapper, 0, sizeof(SimpleComCallWrapper));
-
-    pWrapper.SuppressRelease();
-    RETURN pWrapper;
 }
 
 //--------------------------------------------------------------------------
@@ -2007,13 +1965,13 @@ void ComCallWrapper::Cleanup()
     _ASSERTE(m_pSimpleWrapper);
 
     // Save it into a variable to observe a consistent state
-    LONGLONG llRefCount = m_pSimpleWrapper->GetRealRefCount();
+    ULONG refCount = m_pSimpleWrapper->GetRefCount();
 
     LOG((LF_INTEROP, LL_INFO100,
         "Calling ComCallWrapper::Cleanup on CCW 0x%p. cbRef = 0x%x\n",
-        this, GET_COM_REF(llRefCount)));
+        this, refCount));
 
-    if (GET_COM_REF(llRefCount) != 0)
+    if (refCount != 0)
     {
         // _ASSERTE(g_fEEShutDown == TRUE);
         // could be either in shutdown or forced GC in appdomain unload
@@ -2221,9 +2179,6 @@ ComCallWrapper* ComCallWrapper::CreateWrapper(OBJECTREF* ppObj, ComCallWrapperTe
 
     pServer = *ppObj;
 
-    // Force Refine the object if it is a transparent proxy
-    RefineProxy(pServer);
-
     // grab the sync block from the server
     SyncBlock* pSyncBlock = pServer->GetSyncBlock();
 
@@ -2283,7 +2238,7 @@ ComCallWrapper* ComCallWrapper::CreateWrapper(OBJECTREF* ppObj, ComCallWrapperTe
                     // copy from template
                     pNewCCW = CopyFromTemplate(pTemplate, pWrapperCache, oh);
 
-                    NewHolder<SimpleComCallWrapper> pSimpleWrap = SimpleComCallWrapper::CreateSimpleWrapper();
+                    NewHolder<SimpleComCallWrapper> pSimpleWrap = new SimpleComCallWrapper();
 
                     pSimpleWrap->InitNew(pServer, pWrapperCache, pNewCCW, pClassCCW, pSyncBlock, pTemplate);
 
@@ -2488,78 +2443,6 @@ VOID __stdcall InvokeICustomQueryInterfaceGetInterface_CallBack(LPVOID ptr)
     }
 }
 
-// Returns a covariant supertype of pMT with the given IID or NULL if not found.
-static MethodTable *FindCovariantSubtype(MethodTable *pMT, REFIID riid)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-        PRECONDITION(pMT->IsInterface() && pMT->HasVariance());
-    }
-    CONTRACTL_END;
-
-    Instantiation inst = pMT->GetInstantiation();
-
-    // we only support one type parameter
-    if (inst.GetNumArgs() != 1)
-        return NULL;
-
-    // and it must be covariant
-    if (pMT->GetClass()->GetVarianceOfTypeParameter(0) != gpCovariant)
-        return NULL;
-
-    TypeHandle thArg = inst[0];
-
-    // arrays are not allowed, valuetypes don't support covariance
-    if (thArg.IsTypeDesc() || thArg.IsArray() || thArg.IsValueType())
-        return NULL;
-
-    // if the argument is System.Object, there's no covariant supertype
-    if (thArg.IsObjectType())
-        return NULL;
-
-    GUID guid;
-    TypeHandle thBaseClass = thArg.GetParent();
-
-    // try base classes first (this includes System.Object if thArg is an interface)
-    while (!thBaseClass.IsNull())
-    {
-        // The internal base classes do not have guid. Skip them to avoid confusing exception being
-        // thrown and swallowed inside GetGuidNoThrow.
-        if (thBaseClass != TypeHandle(g_pBaseCOMObject))
-        {
-            Instantiation newInst(&thBaseClass, 1);
-            MethodTable *pItfMT = TypeHandle(pMT).Instantiate(newInst).AsMethodTable();
-
-            if (SUCCEEDED(pItfMT->GetGuidNoThrow(&guid, FALSE, FALSE)) && guid == riid)
-            {
-                return pItfMT;
-            }
-        }
-
-        thBaseClass = thBaseClass.GetParent();
-    }
-
-    // now try implemented interfaces
-    MethodTable::InterfaceMapIterator it = thArg.AsMethodTable()->IterateInterfaceMap();
-    while (it.Next())
-    {
-        TypeHandle thNewArg = TypeHandle(it.GetInterface());
-        Instantiation newInst(&thNewArg, 1);
-
-        MethodTable *pItfMT = TypeHandle(pMT).Instantiate(newInst).AsMethodTable();
-
-        if (SUCCEEDED(pItfMT->GetGuidNoThrow(&guid, FALSE, FALSE)) && guid == riid)
-        {
-            return pItfMT;
-        }
-    }
-
-    return NULL;
-}
-
 //--------------------------------------------------------------------------
 //  check if the interface is supported, return a index into the IMap
 //  returns -1, if pIntfMT is not supported
@@ -2610,52 +2493,6 @@ static IUnknown *GetComIPFromCCW_VisibilityCheck(
         RETURN NULL;
     }
     RETURN pIntf;
-}
-
-static IUnknown *GetComIPFromCCW_VariantInterface(
-    ComCallWrapper *pWrap,
-    REFIID riid,
-    MethodTable *pIntfMT,
-    GetComIPFromCCW::flags flags,
-    ComCallWrapperTemplate *pTemplate)
-{
-    CONTRACT(IUnknown*)
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-        PRECONDITION(CheckPointer(pWrap));
-    }
-    CONTRACT_END;
-
-    IUnknown* pIntf = NULL;
-    ComMethodTable *pIntfComMT = NULL;
-
-    // we are only going to respond to the one interface that this CCW represents
-    pIntfComMT = pTemplate->GetComMTForIndex(0);
-    if (pIntfComMT->GetIID() == riid || (pIntfMT != NULL && GetIndexForIntfMT(pTemplate, pIntfMT) == 0))
-    {
-        SLOT **ppVtable = pWrap->GetFirstInterfaceSlot();
-        _ASSERTE(*ppVtable != NULL); // this should point to COM Vtable or interface vtable
-
-        if (!pIntfComMT->IsLayoutComplete() && !pIntfComMT->LayOutInterfaceMethodTable(NULL))
-        {
-            RETURN NULL;
-        }
-
-        // The interface pointer is the pointer to the vtable.
-        pIntf = (IUnknown*)ppVtable;
-
-        // AddRef the wrapper.
-        // Note that we don't do SafeAddRef(pIntf) because it's overkill to
-        // go via IUnknown when we already have the wrapper in-hand.
-        pWrap->AddRefWithAggregationCheck();
-
-        RETURN GetComIPFromCCW_VisibilityCheck(pIntf, pIntfMT, pIntfComMT, flags);
-    }
-
-    // for anything else, fall back to the CCW representing the "parent" class
-    RETURN ComCallWrapper::GetComIPFromCCW(pWrap->GetSimpleWrapper()->GetClassWrapper(), riid, pIntfMT, flags);
 }
 
 static IUnknown * GetComIPFromCCW_HandleExtendsCOMObject(
@@ -3699,78 +3536,6 @@ void ComMethodTable::LayOutClassMethodTable()
 
     LOG((LF_INTEROP, LL_INFO1000, "LayOutClassMethodTable: %s, parent: %s, this: %p  [DONE]\n", m_pMT->GetDebugClassName(), pParentClass ? pParentClass->GetDebugClassName() : 0, this));
 }
-
-
-BOOL ComMethodTable::CheckSigTypesCanBeLoaded(MethodTable *pItfClass)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-        PRECONDITION(CheckPointer(pItfClass));
-    }
-    CONTRACTL_END;
-
-    if (!IsLayoutComplete())
-    {
-        if (!IsSigClassLoadChecked())
-        {
-            BOOL fCheckSuccess = TRUE;
-            unsigned cbSlots = pItfClass->GetNumVirtuals();
-
-            GCX_COOP();
-            OBJECTREF pThrowable = NULL;
-            GCPROTECT_BEGIN(pThrowable);
-            {
-                EX_TRY
-                {
-                    // check the sigs of the methods to see if we can load
-                    // all the classes
-                    for (unsigned i = 0; i < cbSlots; i++)
-                    {
-                        MethodDesc* pIntfMD = m_pMT->GetMethodDescForSlot(i);
-                        MetaSig::CheckSigTypesCanBeLoaded(pIntfMD);
-                    }
-                }
-                EX_CATCH_THROWABLE(&pThrowable);
-
-                if (pThrowable != NULL)
-                {
-                    HRESULT hr = SetupErrorInfo(pThrowable);
-
-                    if (hr == COR_E_TYPELOAD)
-                    {
-                        // We only care about TypeLoadExceptions here. If one occurs, it means
-                        // that some of the type in the signature could not be loaded so this
-                        // interface is not useable from COM.
-                        SetSigClassCannotLoad();
-                    }
-                    else
-                    {
-                        // We want to rethrow any other exceptions that occur.
-                        COMPlusThrow(pThrowable);
-                    }
-                }
-            }
-            GCPROTECT_END();
-
-            SetSigClassLoadChecked();
-        }
-
-        _ASSERTE(IsSigClassLoadChecked() != 0);
-
-        // check if all types loaded successfully
-        if (IsSigClassCannotLoad())
-        {
-            LogInterop(W("CLASS LOAD FAILURE: in Interface method signature"));
-            return FALSE;
-        }
-    }
-    return TRUE;
-}
-
-
 
 //--------------------------------------------------------------------------
 // Lay out the members of a ComMethodTable that represents an interface.
@@ -4904,74 +4669,6 @@ ComMethodTable* ComCallWrapperTemplate::CreateComMethodTableForBasic(MethodTable
 #endif
 
     LOG((LF_INTEROP, LL_INFO1000, "---------- end of CreateComMethodTableForBasic %s -----------\n", pMT->GetDebugClassName()));
-
-    pComMT.SuppressRelease();
-    RETURN pComMT;
-}
-
-//--------------------------------------------------------------------------
-// Creates a ComMethodTable for a WinRT-exposed delegate class.
-//--------------------------------------------------------------------------
-ComMethodTable* ComCallWrapperTemplate::CreateComMethodTableForDelegate(MethodTable *pDelegateMT)
-{
-    CONTRACT (ComMethodTable*)
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM());
-        PRECONDITION(CheckPointer(pDelegateMT));
-        PRECONDITION(pDelegateMT->IsDelegate());
-        POSTCONDITION(CheckPointer(RETVAL));
-    }
-    CONTRACT_END;
-
-    const unsigned cbExtraSlots = ComMethodTable::GetNumExtraSlots(ifVtable);
-    const unsigned cbTotalSlots = 1; // one slot for the Invoke method
-
-    LOG((LF_INTEROP, LL_INFO1000, "CreateComMethodTableForDelegate %s\n", pDelegateMT->GetClass()->GetDebugClassName()));
-
-    // Alloc space for the delegate COM method table
-    LOG((LF_INTEROP, LL_INFO1000, "cbExtraSlots:         %d\n", cbExtraSlots));
-    LOG((LF_INTEROP, LL_INFO1000, "cbTotalSlots:         %d\n", cbTotalSlots));
-
-    // Alloc COM vtable & method descs
-    S_UINT32 cbVtable  = (S_UINT32(cbTotalSlots) + S_UINT32(cbExtraSlots)) * S_UINT32(sizeof(SLOT));
-    S_UINT32 cbMethDescs = S_UINT32(cbTotalSlots) * S_UINT32((COMMETHOD_PREPAD + sizeof(ComCallMethodDesc)));
-    S_UINT32 cbToAlloc = S_UINT32(sizeof(ComMethodTable)) + cbVtable + cbMethDescs;
-
-    if (cbToAlloc.IsOverflow())
-        ThrowHR(COR_E_OVERFLOW);
-
-    NewExecutableHolder<ComMethodTable> pComMT = (ComMethodTable*) new (executable) BYTE[cbToAlloc.Value()];
-
-    // set up the header
-    pComMT->m_ptReserved = (SLOT)(size_t)0xDEADC0FF;          // reserved
-    pComMT->m_pMT = pDelegateMT;
-    pComMT->m_cbRefCount = 0;
-    pComMT->m_pMDescr = NULL;
-    pComMT->m_pITypeInfo = NULL;
-    pComMT->m_pDispatchInfo = NULL;
-    pComMT->m_cbSlots = cbTotalSlots; // number of slots not counting IUnknown methods.
-
-    // Set the flags.
-    pComMT->m_Flags = enum_ClassVtableMask | clsIfNone | enum_ComVisible;
-
-    MethodTable *pMTForIID = pDelegateMT;
-    pMTForIID->GetGuid(&pComMT->m_IID, TRUE);
-
-    pComMT->m_Flags |= enum_GuidGenerated;
-
-#if _DEBUG
-    {
-        // In debug set all the vtable slots to 0xDEADCA11.
-        SLOT *pComVTable = (SLOT*)(pComMT + 1);
-        for (unsigned iComSlots = 0; iComSlots < cbTotalSlots + cbExtraSlots; iComSlots++)
-            *(pComVTable + iComSlots) = (SLOT)(size_t)0xDEADCA11;
-    }
-#endif
-
-    LOG((LF_INTEROP, LL_INFO1000, "---------- end of CreateComMethodTableForDelegate %s -----------\n", pDelegateMT->GetClass()->GetDebugClassName()));
 
     pComMT.SuppressRelease();
     RETURN pComMT;

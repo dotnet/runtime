@@ -271,7 +271,7 @@ jobs:
     jobParameters:
       testGroup: innerloop
       nameSuffix: AllSubsets_Mono
-      buildArgs: -s mono+libs+installer -c $(_BuildConfig)
+      buildArgs: -s mono+libs+host+packs -c $(_BuildConfig)
       condition: >-
         or(
           eq(dependencies.checkout.outputs['SetPathVars_libraries.containsChange'], true),
@@ -292,7 +292,7 @@ jobs:
     jobParameters:
       testGroup: innerloop
       nameSuffix: AllSubsets_Mono
-      buildArgs: -s mono+libs+installer -c $(_BuildConfig)
+      buildArgs: -s mono+libs+host+packs -c $(_BuildConfig)
       condition: >-
         or(
           eq(dependencies.checkout.outputs['SetPathVars_libraries.containsChange'], true),
@@ -320,7 +320,7 @@ jobs:
     jobParameters:
       testGroup: innerloop
       nameSuffix: AllSubsets_Mono
-      buildArgs: -s mono+libs+installer+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true
+      buildArgs: -s mono+libs+host+packs+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true
       timeoutInMinutes: 120
       condition: >-
         or(
@@ -365,7 +365,7 @@ jobs:
     jobParameters:
       testGroup: innerloop
       nameSuffix: AllSubsets_Mono
-      buildArgs: -s mono+libs+installer+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true
+      buildArgs: -s mono+libs+host+packs+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true
       timeoutInMinutes: 120
       condition: >-
         or(
@@ -473,7 +473,7 @@ jobs:
     jobParameters:
       testGroup: innerloop
       nameSuffix: AllSubsets_Mono_LLVMJIT
-      buildArgs: -s mono+libs+installer -c $(_BuildConfig)
+      buildArgs: -s mono+libs+host+packs -c $(_BuildConfig)
                  /p:MonoEnableLLVM=true /p:MonoBundleLLVMOptimizer=false
       condition: >-
         or(
@@ -493,7 +493,7 @@ jobs:
     jobParameters:
       testGroup: innerloop
       nameSuffix: AllSubsets_Mono_LLVMJIT
-      buildArgs: -s mono+libs+installer -c $(_BuildConfig)
+      buildArgs: -s mono+libs+host+packs -c $(_BuildConfig)
                  /p:MonoEnableLLVM=true /p:MonoBundleLLVMOptimizer=false
       condition: >-
         or(
@@ -516,7 +516,7 @@ jobs:
     jobParameters:
       testGroup: innerloop
       nameSuffix: AllSubsets_Mono_LLVMAOT
-      buildArgs: -s mono+libs+installer -c $(_BuildConfig)
+      buildArgs: -s mono+libs+host+packs -c $(_BuildConfig)
                  /p:MonoEnableLLVM=true /p:MonoBundleLLVMOptimizer=true
       condition: >-
         or(
@@ -535,7 +535,7 @@ jobs:
     jobParameters:
       testGroup: innerloop
       nameSuffix: AllSubsets_Mono_LLVMAOT
-      buildArgs: -s mono+libs+installer -c $(_BuildConfig)
+      buildArgs: -s mono+libs+host+packs -c $(_BuildConfig)
                  /p:MonoEnableLLVM=true /p:MonoBundleLLVMOptimizer=true
       condition: >-
         or(

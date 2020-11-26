@@ -605,11 +605,12 @@ void Compiler::lvaInitUserArgs(InitVarDscInfo* varDscInfo)
         // ARM softfp calling convention should affect only the floating point arguments.
         // Otherwise there appear too many surplus pre-spills and other memory operations
         // with the associated locations .
-        bool      isSoftFPPreSpill = opts.compUseSoftFP && varTypeIsFloating(varDsc->TypeGet());
-        unsigned  argSize          = eeGetArgSize(argLst, &info.compMethodInfo->args);
-        unsigned  cSlots           = argSize / TARGET_POINTER_SIZE; // the total number of slots of this argument
-        bool      isHfaArg         = false;
-        var_types hfaType          = TYP_UNDEF;
+        bool     isSoftFPPreSpill = opts.compUseSoftFP && varTypeIsFloating(varDsc->TypeGet());
+        unsigned argSize          = eeGetArgSize(argLst, &info.compMethodInfo->args);
+        unsigned cSlots =
+            (argSize + TARGET_POINTER_SIZE - 1) / TARGET_POINTER_SIZE; // the total number of slots of this argument
+        bool      isHfaArg = false;
+        var_types hfaType  = TYP_UNDEF;
 
 #if defined(TARGET_ARM64) && defined(TARGET_UNIX)
         // Native varargs on arm64 unix use the regular calling convention.
@@ -1014,8 +1015,21 @@ void Compiler::lvaInitUserArgs(InitVarDscInfo* varDscInfo)
 #endif // TARGET_XXX
 
 #if FEATURE_FASTTAILCALL
+#if defined(OSX_ARM64_ABI)
+            unsigned argAlignment = TARGET_POINTER_SIZE;
+            if (argSize <= TARGET_POINTER_SIZE)
+            {
+                argAlignment = argSize;
+            }
+            varDscInfo->stackArgSize = roundUp(varDscInfo->stackArgSize, argAlignment);
+            assert(argSize % argAlignment == 0);
+#else  // !OSX_ARM64_ABI
+            assert((argSize % TARGET_POINTER_SIZE) == 0);
+            assert((varDscInfo->stackArgSize % TARGET_POINTER_SIZE) == 0);
+#endif // !OSX_ARM64_ABI
+
             varDsc->SetStackOffset(varDscInfo->stackArgSize);
-            varDscInfo->stackArgSize += roundUp(argSize, TARGET_POINTER_SIZE);
+            varDscInfo->stackArgSize += argSize;
 #endif // FEATURE_FASTTAILCALL
         }
 
@@ -3142,47 +3156,9 @@ BasicBlock::weight_t BasicBlock::getBBWeight(Compiler* comp)
 
         // Normalize the bbWeights by multiplying by BB_UNITY_WEIGHT and dividing by the calledCount.
         //
-        // 1. For methods that do not have IBC data the called weight will always be 100 (BB_UNITY_WEIGHT)
-        //     and the entry point bbWeight value is almost always 100 (BB_UNITY_WEIGHT)
-        // 2.  For methods that do have IBC data the called weight is the actual number of calls
-        //     from the IBC data and the entry point bbWeight value is almost always the actual
-        //     number of calls from the IBC data.
-        //
-        // "almost always" - except for the rare case where a loop backedge jumps to BB01
-        //
-        // We also perform a rounding operation by adding half of the 'calledCount' before performing
-        // the division.
-        //
-        // Thus for both cases we will return 100 (BB_UNITY_WEIGHT) for the entry point BasicBlock
-        //
-        // Note that with a 100 (BB_UNITY_WEIGHT) values between 1 and 99 represent decimal fractions.
-        // (i.e. 33 represents 33% and 75 represents 75%, and values greater than 100 require
-        //  some kind of loop backedge)
-        //
+        weight_t fullResult = this->bbWeight * BB_UNITY_WEIGHT / calledCount;
 
-        if (this->bbWeight < (BB_MAX_WEIGHT / BB_UNITY_WEIGHT))
-        {
-            // Calculate the result using unsigned arithmetic
-            weight_t result = ((this->bbWeight * BB_UNITY_WEIGHT) + (calledCount / 2)) / calledCount;
-
-            // We don't allow a value of zero, as that would imply rarely run
-            return max(1, result);
-        }
-        else
-        {
-            // Calculate the full result using floating point
-            double fullResult = ((double)this->bbWeight * (double)BB_UNITY_WEIGHT) / (double)calledCount;
-
-            if (fullResult < (double)BB_MAX_WEIGHT)
-            {
-                // Add 0.5 and truncate to unsigned
-                return (weight_t)(fullResult + 0.5);
-            }
-            else
-            {
-                return BB_MAX_WEIGHT;
-            }
-        }
+        return fullResult;
     }
 }
 
@@ -3256,17 +3232,19 @@ public:
         // Break the tie by:
         //   - Increasing the weight by 2   if we are a register arg.
         //   - Increasing the weight by 0.5 if we are a GC type.
+        //
+        // Review: seems odd that this is mixing counts and weights.
 
         if (weight1 != 0)
         {
             if (dsc1->lvIsRegArg)
             {
-                weight2 += 2 * BB_UNITY_WEIGHT;
+                weight2 += 2 * BB_UNITY_WEIGHT_UNSIGNED;
             }
 
             if (varTypeIsGC(dsc1->TypeGet()))
             {
-                weight1 += BB_UNITY_WEIGHT / 2;
+                weight1 += BB_UNITY_WEIGHT_UNSIGNED / 2;
             }
         }
 
@@ -3274,12 +3252,12 @@ public:
         {
             if (dsc2->lvIsRegArg)
             {
-                weight2 += 2 * BB_UNITY_WEIGHT;
+                weight2 += 2 * BB_UNITY_WEIGHT_UNSIGNED;
             }
 
             if (varTypeIsGC(dsc2->TypeGet()))
             {
-                weight2 += BB_UNITY_WEIGHT / 2;
+                weight2 += BB_UNITY_WEIGHT_UNSIGNED / 2;
             }
         }
 
@@ -3323,8 +3301,8 @@ public:
         assert(!dsc1->lvRegister);
         assert(!dsc2->lvRegister);
 
-        unsigned weight1 = dsc1->lvRefCntWtd();
-        unsigned weight2 = dsc2->lvRefCntWtd();
+        BasicBlock::weight_t weight1 = dsc1->lvRefCntWtd();
+        BasicBlock::weight_t weight2 = dsc2->lvRefCntWtd();
 
 #ifndef TARGET_ARM
         // ARM-TODO: this was disabled for ARM under !FEATURE_FP_REGALLOC; it was probably a left-over from
@@ -4269,7 +4247,7 @@ void Compiler::lvaComputeRefCounts(bool isRecompute, bool setSlotNumbers)
             // If, in minopts/debug, we really want to allow locals to become
             // unreferenced later, we'll have to explicitly clear this bit.
             varDsc->setLvRefCnt(0);
-            varDsc->setLvRefCntWtd(0);
+            varDsc->setLvRefCntWtd(BB_ZERO_WEIGHT);
 
             // Special case for some varargs params ... these must
             // remain unreferenced.
@@ -5254,7 +5232,9 @@ void Compiler::lvaAssignVirtualFrameOffsetsToArgs()
     /* Update the argOffs to reflect arguments that are passed in registers */
 
     noway_assert(codeGen->intRegState.rsCalleeRegArgCount <= MAX_REG_ARG);
+#if !defined(OSX_ARM64_ABI)
     noway_assert(compArgSize >= codeGen->intRegState.rsCalleeRegArgCount * REGSIZE_BYTES);
+#endif
 
 #ifdef TARGET_X86
     argOffs -= codeGen->intRegState.rsCalleeRegArgCount * REGSIZE_BYTES;
@@ -5767,6 +5747,18 @@ int Compiler::lvaAssignVirtualFrameOffsetToArg(unsigned lclNum,
                 break;
         }
 #endif // TARGET_ARM
+#if defined(OSX_ARM64_ABI)
+        unsigned argAlignment = TARGET_POINTER_SIZE;
+        if (argSize <= TARGET_POINTER_SIZE)
+        {
+            argAlignment = argSize;
+        }
+        argOffs = roundUp(argOffs, argAlignment);
+        assert((argOffs % argAlignment) == 0);
+#else  // !OSX_ARM64_ABI
+        assert((argSize % TARGET_POINTER_SIZE) == 0);
+        assert((argOffs % TARGET_POINTER_SIZE) == 0);
+#endif // !OSX_ARM64_ABI
 
         varDsc->SetStackOffset(argOffs);
     }

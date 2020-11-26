@@ -72,13 +72,13 @@
              Link="Common\Interop\Windows\Kernel32\Interop.Constants.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.CreateFileMapping.cs"
              Link="Common\Interop\Windows\Kernel32\Interop.CreateFileMapping.cs" />
-    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.DuplicateHandle_SafeProcessHandle.cs"
-             Link="Common\Interop\Windows\kernel32\Interop.DuplicateHandle.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.DuplicateHandle_SafeWaitHandle.cs"
+             Link="Common\Interop\Windows\kernel32\Interop.DuplicateHandle_SafeWaitHandle.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.FreeLibrary.cs"
              Link="Common\Interop\Windows\Kernel32\Interop.FreeLibrary.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetComputerName.cs"
              Link="Common\Interop\Windows\Kernel32\Interop.GetComputerName.cs" />
-    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetCurrentProcess_SafeProcessHandle.cs"
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetCurrentProcess.cs"
              Link="Common\Interop\Windows\kernel32\Interop.GetCurrentProcess.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetCurrentProcessId.cs"
              Link="Common\Interop\Windows\Kernel32\Interop.GetCurrentProcessId.cs" />

@@ -579,7 +579,7 @@ namespace System.Reflection
             RuntimeMethodHandle.GetMethodInstantiationInternal(this);
 
         public override Type[] GetGenericArguments() =>
-            RuntimeMethodHandle.GetMethodInstantiationPublic(this) ?? Array.Empty<Type>();
+            RuntimeMethodHandle.GetMethodInstantiationPublic(this) ?? Type.EmptyTypes;
 
         public override MethodInfo GetGenericMethodDefinition()
         {

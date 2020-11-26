@@ -34133,10 +34133,19 @@ CObjectHeader* gc_heap::allocate_uoh_object (size_t jsize, uint32_t flags, int g
             //mark the new block specially so we know it is a new object
             if ((result < current_highest_address) && (result >= current_lowest_address))
             {
-                dprintf (3, ("Setting mark bit at address %Ix",
-                            (size_t)(&mark_array [mark_word_of (result)])));
+#ifdef DOUBLY_LINKED_FL
+                heap_segment* seg = seg_mapping_table_segment_of (result);
+                // if bgc_allocated is 0 it means it was allocated during bgc sweep,
+                // and since sweep does not look at this seg we cannot set the mark array bit.
+                uint8_t* background_allocated = heap_segment_background_allocated(seg);
+                if (background_allocated != 0)
+#endif //DOUBLY_LINKED_FL
+                {
+                    dprintf(3, ("Setting mark bit at address %Ix",
+                        (size_t)(&mark_array[mark_word_of(result)])));
 
-                mark_array_set_marked (result);
+                    mark_array_set_marked(result);
+                }
             }
         }
     }
@@ -34515,7 +34524,7 @@ BOOL gc_heap::fgc_should_consider_object (uint8_t* o,
         no_bgc_mark_p = TRUE;
     }
 
-    dprintf (3, ("bgc mark %Ix: %s (bm: %s)", o, (no_bgc_mark_p ? "no" : "yes"), (background_object_marked (o, FALSE) ? "yes" : "no")));
+    dprintf (3, ("bgc mark %Ix: %s (bm: %s)", o, (no_bgc_mark_p ? "no" : "yes"), ((no_bgc_mark_p || background_object_marked (o, FALSE)) ? "yes" : "no")));
     return (no_bgc_mark_p ? TRUE : background_object_marked (o, FALSE));
 }
 
@@ -40510,6 +40519,9 @@ void PopulateDacVars(GcDacVars *gcDacVars)
 #ifndef DACCESS_COMPILE
     assert(gcDacVars != nullptr);
     *gcDacVars = {};
+    // Note: these version numbers are not actually checked by SOS, so if you change
+    // the GC in a way that makes it incompatible with SOS, please change
+    // SOS_BREAKING_CHANGE_VERSION in both the runtime and the diagnostics repo
     gcDacVars->major_version_number = 1;
     gcDacVars->minor_version_number = 0;
     gcDacVars->built_with_svr = &g_built_with_svr_gc;

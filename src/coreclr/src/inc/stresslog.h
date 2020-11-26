@@ -263,7 +263,7 @@ class ThreadStressLog;
 class StressLog {
 public:
     static void Initialize(unsigned facilities, unsigned level, unsigned maxBytesPerThread,
-                    unsigned maxBytesTotal, HMODULE hMod);
+        unsigned maxBytesTotal, void* moduleBase);
     static void Terminate(BOOL fProcessDetach=FALSE);
     static void ThreadDetach();         // call at DllMain  THREAD_DETACH if you want to recycle thread logs
     static int NewChunk ()

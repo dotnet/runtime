@@ -397,7 +397,7 @@ void Lowering::LowerPutArgStk(GenTreePutArgStk* putArgStk)
 
         // Now that the fields have been sorted, the kind of code we will generate.
         bool     allFieldsAreSlots = true;
-        unsigned prevOffset        = putArgStk->getArgSize();
+        unsigned prevOffset        = putArgStk->GetStackByteSize();
         for (GenTreeFieldList::Use& use : fieldList->Uses())
         {
             GenTree* const  fieldNode   = use.GetNode();
@@ -520,7 +520,7 @@ void Lowering::LowerPutArgStk(GenTreePutArgStk* putArgStk)
     // The cpyXXXX code is rather complex and this could cause it to be more complex, but
     // it might be the right thing to do.
 
-    ssize_t size = putArgStk->gtNumSlots * TARGET_POINTER_SIZE;
+    unsigned size = putArgStk->GetStackByteSize();
 
     // TODO-X86-CQ: The helper call either is not supported on x86 or required more work
     // (I don't know which).

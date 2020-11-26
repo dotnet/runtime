@@ -1630,7 +1630,9 @@ public:
         return 0;
     }
 
-    // Get the number of bytes that this argument is occupying on the stack.
+    // Get the number of bytes that this argument is occupying on the stack,
+    // including padding up to the target pointer size for platforms
+    // where a stack argument can't take less.
     unsigned GetStackByteSize() const
     {
         if (!IsSplit() && numRegs > 0)
@@ -1642,7 +1644,10 @@ public:
 
         assert(GetByteSize() > TARGET_POINTER_SIZE * numRegs);
         unsigned stackByteSize = GetByteSize() - TARGET_POINTER_SIZE * numRegs;
-        return GetByteSize() - TARGET_POINTER_SIZE * numRegs;
+#if !defined(OSX_ARM64_ABI)
+        stackByteSize = roundUp(stackByteSize, TARGET_POINTER_SIZE);
+#endif
+        return stackByteSize;
     }
 
     var_types GetHfaType() const
@@ -1800,7 +1805,7 @@ public:
         return size;
     }
 
-#endif // DEBUG && !OSX_ARM64_ABI
+#endif // DEBUG_ARG_SLOTS
 
 private:
     unsigned m_byteOffset;
@@ -3774,7 +3779,8 @@ public:
                              CORINFO_CONTEXT_HANDLE* contextHandle,
                              CORINFO_CONTEXT_HANDLE* exactContextHandle,
                              bool                    isLateDevirtualization,
-                             bool                    isExplicitTailCall);
+                             bool                    isExplicitTailCall,
+                             IL_OFFSETX              ilOffset = BAD_IL_OFFSET);
 
     //=========================================================================
     //                          PROTECTED
@@ -4351,11 +4357,10 @@ private:
                            InlineCandidateInfo**  ppInlineCandidateInfo,
                            InlineResult*          inlineResult);
 
-    void impInlineRecordArgInfo(InlineInfo*      pInlineInfo,
-                                GenTree*         curArgVal,
-                                unsigned         argNum,
-                                unsigned __int64 bbFlags,
-                                InlineResult*    inlineResult);
+    void impInlineRecordArgInfo(InlineInfo*   pInlineInfo,
+                                GenTree*      curArgVal,
+                                unsigned      argNum,
+                                InlineResult* inlineResult);
 
     void impInlineInitVars(InlineInfo* pInlineInfo);
 
@@ -4659,6 +4664,8 @@ public:
                                        BasicBlock* nonCanonicalBlock,
                                        BasicBlock* canonicalBlock,
                                        flowList*   predEdge);
+
+    GenTree* fgCheckCallArgUpdate(GenTree* parent, GenTree* child, var_types origType);
 
 #if defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
     // Sometimes we need to defer updating the BBF_FINALLY_TARGET bit. fgNeedToAddFinallyTargetBits signals
@@ -5521,7 +5528,7 @@ protected:
 
     bool fgHaveProfileData();
     void fgComputeProfileScale();
-    bool fgGetProfileWeightForBasicBlock(IL_OFFSET offset, unsigned* weight);
+    bool fgGetProfileWeightForBasicBlock(IL_OFFSET offset, BasicBlock::weight_t* weight);
     void fgInstrumentMethod();
 
 public:
@@ -5533,10 +5540,10 @@ public:
     }
 
     // fgProfileRunsCount - returns total number of scenario runs for the profile data
-    //                      or BB_UNITY_WEIGHT when we aren't using profile data.
+    //                      or BB_UNITY_WEIGHT_UNSIGNED when we aren't using profile data.
     unsigned fgProfileRunsCount()
     {
-        return fgIsUsingProfileWeights() ? fgNumProfileRuns : BB_UNITY_WEIGHT;
+        return fgIsUsingProfileWeights() ? fgNumProfileRuns : BB_UNITY_WEIGHT_UNSIGNED;
     }
 
 //-------- Insert a statement at the start or end of a basic block --------
@@ -6075,7 +6082,7 @@ public:
     // non-loop predecessors other than the head entry, create a new, empty block that goes (only) to the entry,
     // and redirects the preds of the entry to this new block.)  Sets the weight of the newly created block to
     // "ambientWeight".
-    void optEnsureUniqueHead(unsigned loopInd, unsigned ambientWeight);
+    void optEnsureUniqueHead(unsigned loopInd, BasicBlock::weight_t ambientWeight);
 
     void optUnrollLoops(); // Unrolls loops (needs to have cost info)
 
@@ -6480,8 +6487,8 @@ protected:
         unsigned short csdDefCount; // definition   count
         unsigned short csdUseCount; // use          count  (excluding the implicit uses at defs)
 
-        unsigned csdDefWtCnt; // weighted def count
-        unsigned csdUseWtCnt; // weighted use count  (excluding the implicit uses at defs)
+        BasicBlock::weight_t csdDefWtCnt; // weighted def count
+        BasicBlock::weight_t csdUseWtCnt; // weighted use count  (excluding the implicit uses at defs)
 
         GenTree*    csdTree;  // treenode containing the 1st occurrence
         Statement*  csdStmt;  // stmt containing the 1st occurrence
@@ -6594,13 +6601,13 @@ protected:
 #endif // FEATURE_VALNUM_CSE
 
 #if FEATURE_ANYCSE
-    bool     optDoCSE;             // True when we have found a duplicate CSE tree
-    bool     optValnumCSE_phase;   // True when we are executing the optValnumCSE_phase
-    unsigned optCSECandidateTotal; // Grand total of CSE candidates for both Lexical and ValNum
-    unsigned optCSECandidateCount; // Count of CSE's candidates, reset for Lexical and ValNum CSE's
-    unsigned optCSEstart;          // The first local variable number that is a CSE
-    unsigned optCSEcount;          // The total count of CSE's introduced.
-    unsigned optCSEweight;         // The weight of the current block when we are doing PerformCSE
+    bool                 optDoCSE;             // True when we have found a duplicate CSE tree
+    bool                 optValnumCSE_phase;   // True when we are executing the optValnumCSE_phase
+    unsigned             optCSECandidateTotal; // Grand total of CSE candidates for both Lexical and ValNum
+    unsigned             optCSECandidateCount; // Count of CSE's candidates, reset for Lexical and ValNum CSE's
+    unsigned             optCSEstart;          // The first local variable number that is a CSE
+    unsigned             optCSEcount;          // The total count of CSE's introduced.
+    BasicBlock::weight_t optCSEweight;         // The weight of the current block when we are doing PerformCSE
 
     bool optIsCSEcandidate(GenTree* tree);
 
@@ -6692,6 +6699,7 @@ public:
 #define OMF_HAS_EXPRUNTIMELOOKUP 0x00000100 // Method contains a runtime lookup to an expandable dictionary.
 #define OMF_HAS_PATCHPOINT 0x00000200       // Method contains patchpoints
 #define OMF_NEEDS_GCPOLLS 0x00000400        // Method needs GC polls
+#define OMF_HAS_FROZEN_STRING 0x00000800    // Method has a frozen string (REF constant int), currently only on CoreRT.
 
     bool doesMethodHaveFatPointer()
     {
@@ -6710,7 +6718,17 @@ public:
 
     void addFatPointerCandidate(GenTreeCall* call);
 
-    bool doesMethodHaveGuardedDevirtualization()
+    bool doesMethodHaveFrozenString() const
+    {
+        return (optMethodFlags & OMF_HAS_FROZEN_STRING) != 0;
+    }
+
+    void setMethodHasFrozenString()
+    {
+        optMethodFlags |= OMF_HAS_FROZEN_STRING;
+    }
+
+    bool doesMethodHaveGuardedDevirtualization() const
     {
         return (optMethodFlags & OMF_HAS_GUARDEDDEVIRT) != 0;
     }
@@ -6729,7 +6747,8 @@ public:
                                              CORINFO_METHOD_HANDLE methodHandle,
                                              CORINFO_CLASS_HANDLE  classHandle,
                                              unsigned              methodAttr,
-                                             unsigned              classAttr);
+                                             unsigned              classAttr,
+                                             unsigned              likelihood);
 
     bool doesMethodHaveExpRuntimeLookup()
     {
@@ -7707,11 +7726,11 @@ public:
         return codeGen->doDoubleAlign();
     }
     DWORD getCanDoubleAlign();
-    bool shouldDoubleAlign(unsigned refCntStk,
-                           unsigned refCntReg,
-                           unsigned refCntWtdReg,
-                           unsigned refCntStkParam,
-                           unsigned refCntWtdStkDbl);
+    bool shouldDoubleAlign(unsigned             refCntStk,
+                           unsigned             refCntReg,
+                           BasicBlock::weight_t refCntWtdReg,
+                           unsigned             refCntStkParam,
+                           BasicBlock::weight_t refCntWtdStkDbl);
 #endif // DOUBLE_ALIGN
 
     bool IsFullPtrRegMapRequired()
@@ -9011,10 +9030,8 @@ public:
 #endif
     } opts;
 
-#ifdef ALT_JIT
     static bool                s_pAltJitExcludeAssembliesListInitialized;
     static AssemblyNamesList2* s_pAltJitExcludeAssembliesList;
-#endif // ALT_JIT
 
 #ifdef DEBUG
     static bool                s_pJitDisasmIncludeAssembliesListInitialized;
@@ -9296,6 +9313,10 @@ public:
 #define CPU_ARM64 0x0400 // The generic ARM64 CPU
 
         unsigned genCPU; // What CPU are we running on
+
+        // Number of class profile probes in this method
+        unsigned compClassProbeCount;
+
     } info;
 
     // Returns true if the method being compiled returns a non-void and non-struct value.
@@ -10433,6 +10454,7 @@ public:
             case GT_NULLCHECK:
             case GT_PUTARG_REG:
             case GT_PUTARG_STK:
+            case GT_PUTARG_TYPE:
             case GT_RETURNTRAP:
             case GT_NOP:
             case GT_RETURN:

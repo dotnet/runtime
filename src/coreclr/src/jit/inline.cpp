@@ -390,7 +390,8 @@ void InlineContext::Dump(unsigned indent)
     if (m_Parent == nullptr)
     {
         // Root method
-        printf("Inlines into %08X %s\n", calleeToken, calleeName);
+        InlinePolicy* policy = InlinePolicy::GetPolicy(compiler, true);
+        printf("Inlines into %08X [via %s] %s\n", calleeToken, policy->GetName(), calleeName);
     }
     else
     {

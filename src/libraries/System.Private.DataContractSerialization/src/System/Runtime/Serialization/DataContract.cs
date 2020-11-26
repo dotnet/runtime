@@ -1126,7 +1126,7 @@ namespace System.Runtime.Serialization
                 {
                     if (!_parseMethodSet)
                     {
-                        MethodInfo? method = UnderlyingType.GetMethod(Globals.ParseMethodName, BindingFlags.Public | BindingFlags.Static, null, new Type[] { typeof(string) }, null);
+                        MethodInfo? method = UnderlyingType.GetMethod(Globals.ParseMethodName, BindingFlags.Public | BindingFlags.Static, new Type[] { typeof(string) });
 
                         if (method != null && method.ReturnType == UnderlyingType)
                         {
@@ -1979,7 +1979,7 @@ namespace System.Runtime.Serialization
                             if (methodName.Length == 0)
                                 DataContract.ThrowInvalidDataContractException(SR.Format(SR.KnownTypeAttributeEmptyString, DataContract.GetClrTypeFullName(type)), type);
 
-                            MethodInfo? method = type.GetMethod(methodName, BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public, null, Array.Empty<Type>(), null);
+                            MethodInfo? method = type.GetMethod(methodName, BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public, Type.EmptyTypes);
                             if (method == null)
                                 DataContract.ThrowInvalidDataContractException(SR.Format(SR.KnownTypeAttributeUnknownMethod, methodName, DataContract.GetClrTypeFullName(type)), type);
 

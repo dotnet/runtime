@@ -299,7 +299,7 @@ void Compiler::fgComputeProfileScale()
     //
     if (calleeWeight < callSiteWeight)
     {
-        JITDUMP("   ... callee entry count %d is less than call site count %d\n", calleeWeight, callSiteWeight);
+        JITDUMP("   ... callee entry count %f is less than call site count %f\n", calleeWeight, callSiteWeight);
         impInlineInfo->profileScaleState = InlineInfo::ProfileScaleState::UNAVAILABLE;
         return;
     }
@@ -310,7 +310,7 @@ void Compiler::fgComputeProfileScale()
     impInlineInfo->profileScaleFactor = scale;
     impInlineInfo->profileScaleState  = InlineInfo::ProfileScaleState::KNOWN;
 
-    JITDUMP("   call site count %u callee entry count %u scale %f\n", callSiteWeight, calleeWeight, scale);
+    JITDUMP("   call site count %f callee entry count %f scale %f\n", callSiteWeight, calleeWeight, scale);
 }
 
 //------------------------------------------------------------------------
@@ -323,10 +323,10 @@ void Compiler::fgComputeProfileScale()
 // Returns:
 //   true if data was found
 //
-bool Compiler::fgGetProfileWeightForBasicBlock(IL_OFFSET offset, unsigned* weightWB)
+bool Compiler::fgGetProfileWeightForBasicBlock(IL_OFFSET offset, BasicBlock::weight_t* weightWB)
 {
     noway_assert(weightWB != nullptr);
-    unsigned weight = 0;
+    BasicBlock::weight_t weight = 0;
 
 #ifdef DEBUG
     unsigned hashSeed = fgStressBBProf();
@@ -345,17 +345,17 @@ bool Compiler::fgGetProfileWeightForBasicBlock(IL_OFFSET offset, unsigned* weigh
         }
         else if (hash % 11 == 0)
         {
-            weight = (hash % 23) * (hash % 29) * (hash % 31);
+            weight = (BasicBlock::weight_t)(hash % 23) * (hash % 29) * (hash % 31);
         }
         else
         {
-            weight = (hash % 17) * (hash % 19);
+            weight = (BasicBlock::weight_t)(hash % 17) * (hash % 19);
         }
 
         // The first block is never given a weight of zero
         if ((offset == 0) && (weight == 0))
         {
-            weight = 1 + (hash % 5);
+            weight = (BasicBlock::weight_t)1 + (hash % 5);
         }
 
         *weightWB = weight;
@@ -372,7 +372,7 @@ bool Compiler::fgGetProfileWeightForBasicBlock(IL_OFFSET offset, unsigned* weigh
     {
         if (fgBlockCounts[i].ILOffset == offset)
         {
-            *weightWB = fgBlockCounts[i].ExecutionCount;
+            *weightWB = (BasicBlock::weight_t)fgBlockCounts[i].ExecutionCount;
             return true;
         }
     }
@@ -381,12 +381,34 @@ bool Compiler::fgGetProfileWeightForBasicBlock(IL_OFFSET offset, unsigned* weigh
     return true;
 }
 
+//------------------------------------------------------------------------
+// fgInstrumentMethod: add instrumentation probes to the method
+//
+// Note:
+//
+//   By default this instruments each non-internal block with
+//   a counter probe.
+//
+//   Probes data is held in a runtime-allocated slab of Entries, with
+//   each Entry an (IL offset, count) pair. This method determines
+//   the number of Entrys needed and initializes each entry's IL offset.
+//
+//   Options (many not yet implemented):
+//   * suppress count instrumentation for methods with
+//     a single block, or
+//   * instrument internal blocks (requires same internal expansions
+//     for BBOPT and BBINSTR, not yet guaranteed)
+//   * use spanning tree for minimal count probing
+//   * add class profile probes for virtual and interface call sites
+//   * record indirection cells for VSD calls
+//
 void Compiler::fgInstrumentMethod()
 {
     noway_assert(!compIsForInlining());
 
     // Count the number of basic blocks in the method
-
+    // that will get block count probes.
+    //
     int         countOfBlocks = 0;
     BasicBlock* block;
     for (block = fgFirstBB; (block != nullptr); block = block->bbNext)
@@ -398,45 +420,255 @@ void Compiler::fgInstrumentMethod()
         countOfBlocks++;
     }
 
+    // We've already counted the number of class probes
+    // when importing.
+    //
+    int countOfCalls = info.compClassProbeCount;
+
+    // Optionally bail out, if there are less than three blocks and no call sites to profile.
+    // One block is common. We don't expect to see zero or two blocks here.
+    //
+    // Note we have to at least visit all the profile call sites to properly restore their
+    // stub addresses. So we can't bail out early if there are any of these.
+    //
+    if ((JitConfig.JitMinimalProfiling() > 0) && (countOfBlocks < 3) && (countOfCalls == 0))
+    {
+        JITDUMP("Not instrumenting method: %d blocks and %d calls\n", countOfBlocks, countOfCalls);
+        assert(countOfBlocks == 1);
+        return;
+    }
+
+    JITDUMP("Instrumenting method, %d blocks and %d calls\n", countOfBlocks, countOfCalls);
+
     // Allocate the profile buffer
+    //
+    // Allocation is in multiples of ICorJitInfo::BlockCounts. For each profile table we need
+    // some multiple of these.
+    //
+    const unsigned entriesPerCall = sizeof(ICorJitInfo::ClassProfile) / sizeof(ICorJitInfo::BlockCounts);
+    assert(entriesPerCall * sizeof(ICorJitInfo::BlockCounts) == sizeof(ICorJitInfo::ClassProfile));
 
-    ICorJitInfo::BlockCounts* profileBlockCountsStart;
+    const unsigned            totalEntries            = countOfBlocks + entriesPerCall * countOfCalls;
+    ICorJitInfo::BlockCounts* profileBlockCountsStart = nullptr;
 
-    HRESULT res = info.compCompHnd->allocMethodBlockCounts(countOfBlocks, &profileBlockCountsStart);
+    HRESULT res = info.compCompHnd->allocMethodBlockCounts(totalEntries, &profileBlockCountsStart);
+
+    // We may not be able to instrument, if so we'll set this false.
+    // We can't just early exit, because we have to clean up calls that we might have profiled.
+    //
+    bool instrument = true;
 
     if (!SUCCEEDED(res))
     {
+        JITDUMP("Unable to instrument -- block counter allocation failed: 0x%x\n", res);
+        instrument = false;
         // The E_NOTIMPL status is returned when we are profiling a generic method from a different assembly
-        if (res == E_NOTIMPL)
-        {
-            // expected failure...
-        }
-        else
+        if (res != E_NOTIMPL)
         {
             noway_assert(!"Error: failed to allocate profileBlockCounts");
             return;
         }
     }
-    else
+
+    ICorJitInfo::BlockCounts* profileBlockCountsEnd = &profileBlockCountsStart[countOfBlocks];
+    ICorJitInfo::BlockCounts* profileEnd            = &profileBlockCountsStart[totalEntries];
+
+    // For each BasicBlock (non-Internal)
+    //  1. Assign the blocks bbCodeOffs to the ILOffset field of this blocks profile data.
+    //  2. Add an operation that increments the ExecutionCount field at the beginning of the block.
+    //
+    // Each (non-Internal) block has it own BlockCounts tuple [ILOffset, ExecutionCount]
+    // To start we initialize our current one with the first one that we allocated
+    //
+    ICorJitInfo::BlockCounts* currentBlockCounts = profileBlockCountsStart;
+
+    for (block = fgFirstBB; (block != nullptr); block = block->bbNext)
     {
-        // For each BasicBlock (non-Internal)
-        //  1. Assign the blocks bbCodeOffs to the ILOffset field of this blocks profile data.
-        //  2. Add an operation that increments the ExecutionCount field at the beginning of the block.
-
-        // Each (non-Internal) block has it own BlockCounts tuple [ILOffset, ExecutionCount]
-        // To start we initialize our current one with the first one that we allocated
+        // We don't want to profile any un-imported blocks
         //
-        ICorJitInfo::BlockCounts* currentBlockCounts = profileBlockCountsStart;
-
-        for (block = fgFirstBB; (block != nullptr); block = block->bbNext)
+        if ((block->bbFlags & BBF_IMPORTED) == 0)
         {
-            if (!(block->bbFlags & BBF_IMPORTED) || (block->bbFlags & BBF_INTERNAL))
-            {
-                continue;
-            }
+            continue;
+        }
 
+        // We may see class probes in internal blocks, thanks to the
+        // block splitting done by the indirect call transformer.
+        //
+        if (JitConfig.JitClassProfiling() > 0)
+        {
+            // Only works when jitting.
+            assert(!opts.jitFlags->IsSet(JitFlags::JIT_FLAG_PREJIT));
+
+            if ((block->bbFlags & BBF_HAS_CLASS_PROFILE) != 0)
+            {
+                // Would be nice to avoid having to search here by tracking
+                // candidates more directly.
+                //
+                JITDUMP("Scanning for calls to profile in " FMT_BB "\n", block->bbNum);
+
+                class ClassProbeVisitor final : public GenTreeVisitor<ClassProbeVisitor>
+                {
+                public:
+                    enum
+                    {
+                        DoPreOrder = true
+                    };
+
+                    int                        m_count;
+                    ICorJitInfo::ClassProfile* m_tableBase;
+                    bool                       m_instrument;
+
+                    ClassProbeVisitor(Compiler* compiler, ICorJitInfo::ClassProfile* tableBase, bool instrument)
+                        : GenTreeVisitor<ClassProbeVisitor>(compiler)
+                        , m_count(0)
+                        , m_tableBase(tableBase)
+                        , m_instrument(instrument)
+                    {
+                    }
+                    Compiler::fgWalkResult PreOrderVisit(GenTree** use, GenTree* user)
+                    {
+                        GenTree* const node = *use;
+                        if (node->IsCall())
+                        {
+                            GenTreeCall* const call = node->AsCall();
+                            if (call->IsVirtual() && (call->gtCallType != CT_INDIRECT))
+                            {
+                                JITDUMP("Found call [%06u] with probe index %d and ilOffset 0x%X\n",
+                                        m_compiler->dspTreeID(call), call->gtClassProfileCandidateInfo->probeIndex,
+                                        call->gtClassProfileCandidateInfo->ilOffset);
+
+                                m_count++;
+
+                                if (m_instrument)
+                                {
+                                    // We transform the call from (CALLVIRT obj, ... args ...) to
+                                    // to
+                                    //      (CALLVIRT
+                                    //        (COMMA
+                                    //          (ASG tmp, obj)
+                                    //          (COMMA
+                                    //            (CALL probe_fn tmp, &probeEntry)
+                                    //            tmp)))
+                                    //         ... args ...)
+                                    //
+
+                                    assert(call->gtCallThisArg->GetNode()->TypeGet() == TYP_REF);
+
+                                    // Figure out where the table is located.
+                                    //
+                                    ICorJitInfo::ClassProfile* classProfile =
+                                        &m_tableBase[call->gtClassProfileCandidateInfo->probeIndex];
+
+                                    // Grab a temp to hold the 'this' object as it will be used three times
+                                    //
+                                    unsigned const tmpNum = m_compiler->lvaGrabTemp(true DEBUGARG("class profile tmp"));
+                                    m_compiler->lvaTable[tmpNum].lvType = TYP_REF;
+
+                                    // Generate the IR...
+                                    //
+                                    GenTree* const classProfileNode =
+                                        m_compiler->gtNewIconNode((ssize_t)classProfile, TYP_I_IMPL);
+                                    GenTree* const          tmpNode = m_compiler->gtNewLclvNode(tmpNum, TYP_REF);
+                                    GenTreeCall::Use* const args = m_compiler->gtNewCallArgs(tmpNode, classProfileNode);
+                                    GenTree* const          helperCallNode =
+                                        m_compiler->gtNewHelperCallNode(CORINFO_HELP_CLASSPROFILE, TYP_VOID, args);
+                                    GenTree* const tmpNode2 = m_compiler->gtNewLclvNode(tmpNum, TYP_REF);
+                                    GenTree* const callCommaNode =
+                                        m_compiler->gtNewOperNode(GT_COMMA, TYP_REF, helperCallNode, tmpNode2);
+                                    GenTree* const tmpNode3 = m_compiler->gtNewLclvNode(tmpNum, TYP_REF);
+                                    GenTree* const asgNode  = m_compiler->gtNewOperNode(GT_ASG, TYP_REF, tmpNode3,
+                                                                                       call->gtCallThisArg->GetNode());
+                                    GenTree* const asgCommaNode =
+                                        m_compiler->gtNewOperNode(GT_COMMA, TYP_REF, asgNode, callCommaNode);
+
+                                    // Update the call
+                                    //
+                                    call->gtCallThisArg->SetNode(asgCommaNode);
+
+                                    JITDUMP("Modified call is now\n");
+                                    DISPTREE(call);
+
+                                    // Initialize the class table
+                                    //
+                                    // Hack: we use two high bits of the offset to indicate that this record
+                                    // is the start of a class profile, and what kind of call is being profiled.
+                                    //
+                                    IL_OFFSET offset = jitGetILoffs(call->gtClassProfileCandidateInfo->ilOffset);
+                                    assert((offset & (ICorJitInfo::ClassProfile::CLASS_FLAG |
+                                                      ICorJitInfo::ClassProfile::INTERFACE_FLAG)) == 0);
+
+                                    offset |= ICorJitInfo::ClassProfile::CLASS_FLAG;
+
+                                    if (call->IsVirtualStub())
+                                    {
+                                        offset |= ICorJitInfo::ClassProfile::INTERFACE_FLAG;
+                                    }
+                                    else
+                                    {
+                                        assert(call->IsVirtualVtable());
+                                    }
+
+                                    classProfile->ILOffset = offset;
+                                    classProfile->Count    = 0;
+
+                                    for (int i = 0; i < ICorJitInfo::ClassProfile::SIZE; i++)
+                                    {
+                                        classProfile->ClassTable[i] = NO_CLASS_HANDLE;
+                                    }
+                                }
+
+                                // Restore the stub address on call, whether instrumenting or not.
+                                //
+                                call->gtStubCallStubAddr = call->gtClassProfileCandidateInfo->stubAddr;
+                            }
+                        }
+
+                        return Compiler::WALK_CONTINUE;
+                    }
+                };
+
+                // Scan the statements and add class probes
+                //
+                ClassProbeVisitor visitor(this, (ICorJitInfo::ClassProfile*)profileBlockCountsEnd, instrument);
+                for (Statement* stmt : block->Statements())
+                {
+                    visitor.WalkTree(stmt->GetRootNodePointer(), nullptr);
+                }
+
+                // Bookkeeping
+                //
+                assert(visitor.m_count <= countOfCalls);
+                countOfCalls -= visitor.m_count;
+                JITDUMP("\n%d calls remain to be visited\n", countOfCalls);
+            }
+            else
+            {
+                JITDUMP("No calls to profile in " FMT_BB "\n", block->bbNum);
+            }
+        }
+
+        // We won't need count probes in internal blocks.
+        //
+        // TODO, perhaps: profile the flow early expansion ... we would need
+        // some non-il based keying scheme.
+        //
+        if ((block->bbFlags & BBF_INTERNAL) != 0)
+        {
+            continue;
+        }
+
+        // One less block
+        countOfBlocks--;
+
+        if (instrument)
+        {
             // Assign the current block's IL offset into the profile data
-            currentBlockCounts->ILOffset       = block->bbCodeOffs;
+            // (make sure IL offset is sane)
+            //
+            IL_OFFSET offset = block->bbCodeOffs;
+            assert((int)offset >= 0);
+
+            currentBlockCounts->ILOffset       = offset;
             currentBlockCounts->ExecutionCount = 0;
 
             size_t addrOfCurrentExecutionCount = (size_t)&currentBlockCounts->ExecutionCount;
@@ -456,57 +688,63 @@ void Compiler::fgInstrumentMethod()
 
             // Advance to the next BlockCounts tuple [ILOffset, ExecutionCount]
             currentBlockCounts++;
-
-            // One less block
-            countOfBlocks--;
         }
-        // Check that we allocated and initialized the same number of BlockCounts tuples
-        noway_assert(countOfBlocks == 0);
+    }
 
-        // When prejitting, add the method entry callback node
-        if (opts.jitFlags->IsSet(JitFlags::JIT_FLAG_PREJIT))
-        {
-            GenTree* arg;
+    if (!instrument)
+    {
+        return;
+    }
+
+    // Check that we allocated and initialized the same number of BlockCounts tuples
+    //
+    noway_assert(countOfBlocks == 0);
+    noway_assert(countOfCalls == 0);
+    assert(currentBlockCounts == profileBlockCountsEnd);
+
+    // When prejitting, add the method entry callback node
+    if (opts.jitFlags->IsSet(JitFlags::JIT_FLAG_PREJIT))
+    {
+        GenTree* arg;
 
 #ifdef FEATURE_READYTORUN_COMPILER
-            if (opts.IsReadyToRun())
-            {
-                mdMethodDef currentMethodToken = info.compCompHnd->getMethodDefFromMethod(info.compMethodHnd);
+        if (opts.IsReadyToRun())
+        {
+            mdMethodDef currentMethodToken = info.compCompHnd->getMethodDefFromMethod(info.compMethodHnd);
 
-                CORINFO_RESOLVED_TOKEN resolvedToken;
-                resolvedToken.tokenContext = MAKE_METHODCONTEXT(info.compMethodHnd);
-                resolvedToken.tokenScope   = info.compScopeHnd;
-                resolvedToken.token        = currentMethodToken;
-                resolvedToken.tokenType    = CORINFO_TOKENKIND_Method;
+            CORINFO_RESOLVED_TOKEN resolvedToken;
+            resolvedToken.tokenContext = MAKE_METHODCONTEXT(info.compMethodHnd);
+            resolvedToken.tokenScope   = info.compScopeHnd;
+            resolvedToken.token        = currentMethodToken;
+            resolvedToken.tokenType    = CORINFO_TOKENKIND_Method;
 
-                info.compCompHnd->resolveToken(&resolvedToken);
+            info.compCompHnd->resolveToken(&resolvedToken);
 
-                arg = impTokenToHandle(&resolvedToken);
-            }
-            else
-#endif
-            {
-                arg = gtNewIconEmbMethHndNode(info.compMethodHnd);
-            }
-
-            GenTreeCall::Use* args = gtNewCallArgs(arg);
-            GenTree*          call = gtNewHelperCallNode(CORINFO_HELP_BBT_FCN_ENTER, TYP_VOID, args);
-
-            // Get the address of the first blocks ExecutionCount
-            size_t addrOfFirstExecutionCount = (size_t)&profileBlockCountsStart->ExecutionCount;
-
-            // Read Basic-Block count value
-            GenTree* valueNode = gtNewIndOfIconHandleNode(TYP_INT, addrOfFirstExecutionCount, GTF_ICON_BBC_PTR, false);
-
-            // Compare Basic-Block count value against zero
-            GenTree*   relop = gtNewOperNode(GT_NE, TYP_INT, valueNode, gtNewIconNode(0, TYP_INT));
-            GenTree*   colon = new (this, GT_COLON) GenTreeColon(TYP_VOID, gtNewNothingNode(), call);
-            GenTree*   cond  = gtNewQmarkNode(TYP_VOID, relop, colon);
-            Statement* stmt  = gtNewStmt(cond);
-
-            fgEnsureFirstBBisScratch();
-            fgInsertStmtAtEnd(fgFirstBB, stmt);
+            arg = impTokenToHandle(&resolvedToken);
         }
+        else
+#endif
+        {
+            arg = gtNewIconEmbMethHndNode(info.compMethodHnd);
+        }
+
+        GenTreeCall::Use* args = gtNewCallArgs(arg);
+        GenTree*          call = gtNewHelperCallNode(CORINFO_HELP_BBT_FCN_ENTER, TYP_VOID, args);
+
+        // Get the address of the first blocks ExecutionCount
+        size_t addrOfFirstExecutionCount = (size_t)&profileBlockCountsStart->ExecutionCount;
+
+        // Read Basic-Block count value
+        GenTree* valueNode = gtNewIndOfIconHandleNode(TYP_INT, addrOfFirstExecutionCount, GTF_ICON_BBC_PTR, false);
+
+        // Compare Basic-Block count value against zero
+        GenTree*   relop = gtNewOperNode(GT_NE, TYP_INT, valueNode, gtNewIconNode(0, TYP_INT));
+        GenTree*   colon = new (this, GT_COLON) GenTreeColon(TYP_VOID, gtNewNothingNode(), call);
+        GenTree*   cond  = gtNewQmarkNode(TYP_VOID, relop, colon);
+        Statement* stmt  = gtNewStmt(cond);
+
+        fgEnsureFirstBBisScratch();
+        fgInsertStmtAtEnd(fgFirstBB, stmt);
     }
 }
 
@@ -5179,7 +5417,7 @@ void Compiler::fgObserveInlineConstants(OPCODE opcode, const FgStack& stack, boo
                     // Check for the double whammy of an incoming constant argument
                     // feeding a constant test.
                     unsigned varNum = FgStack::SlotTypeToArgNum(slot0);
-                    if (impInlineInfo->inlArgInfo[varNum].argNode->OperIsConst())
+                    if (impInlineInfo->inlArgInfo[varNum].argIsInvariant)
                     {
                         compInlineResult->Note(InlineObservation::CALLSITE_CONSTANT_ARG_FEEDS_TEST);
                     }
@@ -5221,7 +5459,7 @@ void Compiler::fgObserveInlineConstants(OPCODE opcode, const FgStack& stack, boo
             compInlineResult->Note(InlineObservation::CALLEE_ARG_FEEDS_TEST);
 
             unsigned varNum = FgStack::SlotTypeToArgNum(slot0);
-            if (impInlineInfo->inlArgInfo[varNum].argNode->OperIsConst())
+            if (impInlineInfo->inlArgInfo[varNum].argIsInvariant)
             {
                 compInlineResult->Note(InlineObservation::CALLSITE_CONSTANT_ARG_FEEDS_TEST);
             }
@@ -5232,7 +5470,7 @@ void Compiler::fgObserveInlineConstants(OPCODE opcode, const FgStack& stack, boo
             compInlineResult->Note(InlineObservation::CALLEE_ARG_FEEDS_TEST);
 
             unsigned varNum = FgStack::SlotTypeToArgNum(slot1);
-            if (impInlineInfo->inlArgInfo[varNum].argNode->OperIsConst())
+            if (impInlineInfo->inlArgInfo[varNum].argIsInvariant)
             {
                 compInlineResult->Note(InlineObservation::CALLSITE_CONSTANT_ARG_FEEDS_TEST);
             }
@@ -5816,7 +6054,7 @@ unsigned Compiler::fgMakeBasicBlocks(const BYTE* codeAddr, IL_OFFSET codeSize, F
         curBBdesc->bbCodeOffs    = curBBoffs;
         curBBdesc->bbCodeOffsEnd = nxtBBoffs;
 
-        unsigned profileWeight;
+        BasicBlock::weight_t profileWeight;
 
         if (fgGetProfileWeightForBasicBlock(curBBoffs, &profileWeight))
         {
@@ -5824,7 +6062,8 @@ unsigned Compiler::fgMakeBasicBlocks(const BYTE* codeAddr, IL_OFFSET codeSize, F
             {
                 if (impInlineInfo->profileScaleState == InlineInfo::ProfileScaleState::KNOWN)
                 {
-                    profileWeight = (unsigned)(impInlineInfo->profileScaleFactor * profileWeight);
+                    double scaledWeight = impInlineInfo->profileScaleFactor * profileWeight;
+                    profileWeight       = (BasicBlock::weight_t)scaledWeight;
                 }
             }
 
@@ -9807,6 +10046,8 @@ void Compiler::fgSimpleLowering()
         JITDUMP("Bumping outgoingArgSpaceSize to %u for localloc", outgoingArgSpaceSize);
     }
 
+    assert((outgoingArgSpaceSize % TARGET_POINTER_SIZE) == 0);
+
     // Publish the final value and mark it as read only so any update
     // attempt later will cause an assert.
     lvaOutgoingArgSpaceSize = outgoingArgSpaceSize;
@@ -13199,7 +13440,7 @@ void Compiler::fgPrintEdgeWeights()
 
                 if (edge->edgeWeightMin() < BB_MAX_WEIGHT)
                 {
-                    printf("(%u", edge->edgeWeightMin());
+                    printf("(%f", edge->edgeWeightMin());
                 }
                 else
                 {
@@ -13209,7 +13450,7 @@ void Compiler::fgPrintEdgeWeights()
                 {
                     if (edge->edgeWeightMax() < BB_MAX_WEIGHT)
                     {
-                        printf("..%u", edge->edgeWeightMax());
+                        printf("..%f", edge->edgeWeightMax());
                     }
                     else
                     {
@@ -13490,7 +13731,7 @@ void Compiler::fgComputeCalledCount(BasicBlock::weight_t returnWeight)
 #if DEBUG
     if (verbose)
     {
-        printf("We are using the Profile Weights and fgCalledCount is %d.\n", fgCalledCount);
+        printf("We are using the Profile Weights and fgCalledCount is %.0f.\n", fgCalledCount);
     }
 #endif
 }
@@ -13612,8 +13853,8 @@ void Compiler::fgComputeEdgeWeights()
                 slop = BasicBlock::GetSlopFraction(bSrc, bDst) + 1;
                 if (bSrc->bbJumpKind == BBJ_COND)
                 {
-                    int       diff;
-                    flowList* otherEdge;
+                    BasicBlock::weight_t diff;
+                    flowList*            otherEdge;
                     if (bSrc->bbNext == bDst)
                     {
                         otherEdge = fgGetPredForBlock(bSrc->bbJumpDest, bSrc);
@@ -13626,7 +13867,7 @@ void Compiler::fgComputeEdgeWeights()
                     noway_assert(otherEdge->edgeWeightMin() <= otherEdge->edgeWeightMax());
 
                     // Adjust edge->flEdgeWeightMin up or adjust otherEdge->flEdgeWeightMax down
-                    diff = ((int)bSrc->bbWeight) - ((int)edge->edgeWeightMin() + (int)otherEdge->edgeWeightMax());
+                    diff = bSrc->bbWeight - (edge->edgeWeightMin() + otherEdge->edgeWeightMax());
                     if (diff > 0)
                     {
                         assignOK &= edge->setEdgeWeightMinChecked(edge->edgeWeightMin() + diff, slop, &usedSlop);
@@ -13638,7 +13879,7 @@ void Compiler::fgComputeEdgeWeights()
                     }
 
                     // Adjust otherEdge->flEdgeWeightMin up or adjust edge->flEdgeWeightMax down
-                    diff = ((int)bSrc->bbWeight) - ((int)otherEdge->edgeWeightMin() + (int)edge->edgeWeightMax());
+                    diff = bSrc->bbWeight - (otherEdge->edgeWeightMin() + edge->edgeWeightMax());
                     if (diff > 0)
                     {
                         assignOK &=
@@ -13658,12 +13899,12 @@ void Compiler::fgComputeEdgeWeights()
                     }
 #ifdef DEBUG
                     // Now edge->flEdgeWeightMin and otherEdge->flEdgeWeightMax) should add up to bSrc->bbWeight
-                    diff = ((int)bSrc->bbWeight) - ((int)edge->edgeWeightMin() + (int)otherEdge->edgeWeightMax());
-                    noway_assert((-((int)slop) <= diff) && (diff <= ((int)slop)));
+                    diff = bSrc->bbWeight - (edge->edgeWeightMin() + otherEdge->edgeWeightMax());
+                    assert(((-slop) <= diff) && (diff <= slop));
 
                     // Now otherEdge->flEdgeWeightMin and edge->flEdgeWeightMax) should add up to bSrc->bbWeight
-                    diff = ((int)bSrc->bbWeight) - ((int)otherEdge->edgeWeightMin() + (int)edge->edgeWeightMax());
-                    noway_assert((-((int)slop) <= diff) && (diff <= ((int)slop)));
+                    diff = bSrc->bbWeight - (otherEdge->edgeWeightMin() + edge->edgeWeightMax());
+                    assert(((-slop) <= diff) && (diff <= slop));
 #endif // DEBUG
                 }
             }
@@ -13689,8 +13930,8 @@ void Compiler::fgComputeEdgeWeights()
                     bDstWeight -= fgCalledCount;
                 }
 
-                UINT64 minEdgeWeightSum = 0;
-                UINT64 maxEdgeWeightSum = 0;
+                BasicBlock::weight_t minEdgeWeightSum = 0;
+                BasicBlock::weight_t maxEdgeWeightSum = 0;
 
                 // Calculate the sums of the minimum and maximum edge weights
                 for (edge = bDst->bbPreds; edge != nullptr; edge = edge->flNext)
@@ -13716,12 +13957,12 @@ void Compiler::fgComputeEdgeWeights()
                     // otherMaxEdgesWeightSum is the sum of all of the other edges flEdgeWeightMax values
                     // This can be used to compute a lower bound for our minimum edge weight
                     noway_assert(maxEdgeWeightSum >= edge->edgeWeightMax());
-                    UINT64 otherMaxEdgesWeightSum = maxEdgeWeightSum - edge->edgeWeightMax();
+                    BasicBlock::weight_t otherMaxEdgesWeightSum = maxEdgeWeightSum - edge->edgeWeightMax();
 
                     // otherMinEdgesWeightSum is the sum of all of the other edges flEdgeWeightMin values
                     // This can be used to compute an upper bound for our maximum edge weight
                     noway_assert(minEdgeWeightSum >= edge->edgeWeightMin());
-                    UINT64 otherMinEdgesWeightSum = minEdgeWeightSum - edge->edgeWeightMin();
+                    BasicBlock::weight_t otherMinEdgesWeightSum = minEdgeWeightSum - edge->edgeWeightMin();
 
                     if (bDstWeight >= otherMaxEdgesWeightSum)
                     {
@@ -15245,9 +15486,9 @@ bool Compiler::fgOptimizeBranch(BasicBlock* bJump)
             {
                 newWeightDest = (weightDest - weightJump);
             }
-            if (weightDest >= (BB_LOOP_WEIGHT * BB_UNITY_WEIGHT) / 2)
+            if (weightDest >= (BB_LOOP_WEIGHT_SCALE * BB_UNITY_WEIGHT) / 2)
             {
-                newWeightDest = (weightDest * 2) / (BB_LOOP_WEIGHT * BB_UNITY_WEIGHT);
+                newWeightDest = (weightDest * 2) / (BB_LOOP_WEIGHT_SCALE * BB_UNITY_WEIGHT);
             }
             if (newWeightDest > 0)
             {
@@ -19985,7 +20226,7 @@ bool Compiler::fgDumpFlowGraph(Phases phase)
 
         if (fgHaveProfileData())
         {
-            fprintf(fgxFile, "\n    calledCount=\"%d\"", fgCalledCount);
+            fprintf(fgxFile, "\n    calledCount=\"%f\"", fgCalledCount);
             fprintf(fgxFile, "\n    profileData=\"true\"");
         }
         if (compHndBBtabCount > 0)
@@ -20156,7 +20397,7 @@ bool Compiler::fgDumpFlowGraph(Phases phase)
 
                     if (validWeights)
                     {
-                        unsigned edgeWeight = (edge->edgeWeightMin() + edge->edgeWeightMax()) / 2;
+                        BasicBlock::weight_t edgeWeight = (edge->edgeWeightMin() + edge->edgeWeightMax()) / 2;
                         fprintf(fgxFile, "%slabel=\"%7.2f\"", sep, (double)edgeWeight / weightDivisor);
                     }
 
@@ -20181,7 +20422,7 @@ bool Compiler::fgDumpFlowGraph(Phases phase)
                     }
                     if (validWeights)
                     {
-                        unsigned edgeWeight = (edge->edgeWeightMin() + edge->edgeWeightMax()) / 2;
+                        BasicBlock::weight_t edgeWeight = (edge->edgeWeightMin() + edge->edgeWeightMax()) / 2;
                         fprintf(fgxFile, "\n            weight=");
                         fprintfDouble(fgxFile, ((double)edgeWeight) / weightDivisor);
 
@@ -20416,13 +20657,13 @@ void Compiler::fgTableDispBasicBlock(BasicBlock* block, int ibcColWidth /* = 0 *
             if (weight <= 99999 * BB_UNITY_WEIGHT)
             {
                 // print weight in this format ddddd.
-                printf("%5u.", (weight + (BB_UNITY_WEIGHT / 2)) / BB_UNITY_WEIGHT);
+                printf("%5u.", (unsigned)FloatingPointUtils::round(weight / BB_UNITY_WEIGHT));
             }
             else // print weight in terms of k (i.e. 156k )
             {
                 // print weight in this format dddddk
                 BasicBlock::weight_t weightK = weight / 1000;
-                printf("%5uk", (weightK + (BB_UNITY_WEIGHT / 2)) / BB_UNITY_WEIGHT);
+                printf("%5uk", (unsigned)FloatingPointUtils::round(weightK / BB_UNITY_WEIGHT));
             }
         }
         else // print weight in this format ddd.dd
@@ -20430,7 +20671,6 @@ void Compiler::fgTableDispBasicBlock(BasicBlock* block, int ibcColWidth /* = 0 *
             printf("%6s", refCntWtd2str(weight));
         }
     }
-    printf(" ");
 
     //
     // Display optional IBC weight column.
@@ -20441,7 +20681,7 @@ void Compiler::fgTableDispBasicBlock(BasicBlock* block, int ibcColWidth /* = 0 *
     {
         if (block->hasProfileWeight())
         {
-            printf("%*u", ibcColWidth, block->bbWeight);
+            printf("%*u", ibcColWidth, (unsigned)FloatingPointUtils::round(block->bbWeight));
         }
         else
         {
@@ -22741,7 +22981,11 @@ void Compiler::fgAttachStructInlineeToAsg(GenTree* tree, GenTree* child, CORINFO
 //    If the return type is a struct type and we're on a platform
 //    where structs can be returned in multiple registers, ensure the
 //    call has a suitable parent.
-
+//
+//    If the original call type and the substitution type are different
+//    the functions makes necessary updates. It could happen if there was
+//    an implicit conversion in the inlinee body.
+//
 Compiler::fgWalkResult Compiler::fgUpdateInlineReturnExpressionPlaceHolder(GenTree** pTree, fgWalkData* data)
 {
     // All the operations here and in the corresponding postorder
@@ -22796,6 +23040,29 @@ Compiler::fgWalkResult Compiler::fgUpdateInlineReturnExpressionPlaceHolder(GenTr
         }
 #endif // DEBUG
 
+        var_types newType = inlineCandidate->TypeGet();
+
+        // If we end up swapping type we may need to retype the tree:
+        if (retType != newType)
+        {
+            if ((retType == TYP_BYREF) && (tree->OperGet() == GT_IND))
+            {
+                // - in an RVA static if we've reinterpreted it as a byref;
+                assert(newType == TYP_I_IMPL);
+                JITDUMP("Updating type of the return GT_IND expression to TYP_BYREF\n");
+                inlineCandidate->gtType = TYP_BYREF;
+            }
+            else
+            {
+                // - under a call if we changed size of the argument.
+                GenTree* putArgType = comp->fgCheckCallArgUpdate(data->parent, inlineCandidate, retType);
+                if (putArgType != nullptr)
+                {
+                    inlineCandidate = putArgType;
+                }
+            }
+        }
+
         tree->ReplaceWith(inlineCandidate, comp);
         comp->compCurBB->bbFlags |= (bbFlags & BBF_SPLIT_GAINED);
 
@@ -22807,17 +23074,6 @@ Compiler::fgWalkResult Compiler::fgUpdateInlineReturnExpressionPlaceHolder(GenTr
             printf("\n");
         }
 #endif // DEBUG
-
-        var_types newType = tree->TypeGet();
-
-        // If we end up swapping in an RVA static we may need to retype it here,
-        // if we've reinterpreted it as a byref.
-        if ((retType != newType) && (retType == TYP_BYREF) && (tree->OperGet() == GT_IND))
-        {
-            assert(newType == TYP_I_IMPL);
-            JITDUMP("Updating type of the return GT_IND expression to TYP_BYREF\n");
-            tree->gtType = TYP_BYREF;
-        }
     }
 
     // If an inline was rejected and the call returns a struct, we may
@@ -23099,8 +23355,16 @@ Compiler::fgWalkResult Compiler::fgLateDevirtualization(GenTree** pTree, fgWalkD
     }
     else
     {
-        GenTree* foldedTree = comp->gtFoldExpr(tree);
-        *pTree              = foldedTree;
+        const var_types retType    = tree->TypeGet();
+        GenTree*        foldedTree = comp->gtFoldExpr(tree);
+        const var_types newType    = foldedTree->TypeGet();
+
+        GenTree* putArgType = comp->fgCheckCallArgUpdate(data->parent, foldedTree, retType);
+        if (putArgType != nullptr)
+        {
+            foldedTree = putArgType;
+        }
+        *pTree = foldedTree;
     }
 
     return WALK_CONTINUE;
@@ -23797,8 +24061,12 @@ Statement* Compiler::fgInlinePrependStatements(InlineInfo* inlineInfo)
         {
             const InlArgInfo& argInfo        = inlArgInfo[argNum];
             const bool        argIsSingleDef = !argInfo.argHasLdargaOp && !argInfo.argHasStargOp;
-            GenTree* const    argNode        = inlArgInfo[argNum].argNode;
-            unsigned __int64  bbFlags        = inlArgInfo[argNum].bbFlags;
+            GenTree*          argNode        = inlArgInfo[argNum].argNode;
+            const bool        argHasPutArg   = argNode->OperIs(GT_PUTARG_TYPE);
+
+            unsigned __int64 bbFlags = 0;
+            argNode                  = argNode->gtSkipPutArgType();
+            argNode                  = argNode->gtRetExprVal(&bbFlags);
 
             if (argInfo.argHasTmp)
             {
@@ -23818,7 +24086,11 @@ Statement* Compiler::fgInlinePrependStatements(InlineInfo* inlineInfo)
 
                 GenTree* argSingleUseNode = argInfo.argBashTmpNode;
 
-                if ((argSingleUseNode != nullptr) && !(argSingleUseNode->gtFlags & GTF_VAR_CLONED) && argIsSingleDef)
+                // argHasPutArg disqualifies the arg from a direct substitution because we don't have information about
+                // its user. For example: replace `LCL_VAR short` with `PUTARG_TYPE short->LCL_VAR int`,
+                // we should keep `PUTARG_TYPE` iff the user is a call that needs `short` and delete it otherwise.
+                if ((argSingleUseNode != nullptr) && !(argSingleUseNode->gtFlags & GTF_VAR_CLONED) && argIsSingleDef &&
+                    !argHasPutArg)
                 {
                     // Change the temp in-place to the actual argument.
                     // We currently do not support this for struct arguments, so it must not be a GT_OBJ.
@@ -26497,6 +26769,44 @@ void Compiler::fgTailMergeThrowsJumpToHelper(BasicBlock* predBlock,
 
     // Note there is now a jump to the canonical block
     canonicalBlock->bbFlags |= (BBF_JMP_TARGET | BBF_HAS_LABEL);
+}
+
+//------------------------------------------------------------------------
+// fgCheckCallArgUpdate: check if we are replacing a call argument and add GT_PUTARG_TYPE if necessary.
+//
+// Arguments:
+//    parent   - the parent that could be a call;
+//    child    - the new child node;
+//    origType - the original child type;
+//
+// Returns:
+//   PUT_ARG_TYPE node if it is needed, nullptr otherwise.
+//
+GenTree* Compiler::fgCheckCallArgUpdate(GenTree* parent, GenTree* child, var_types origType)
+{
+    if ((parent == nullptr) || !parent->IsCall())
+    {
+        return nullptr;
+    }
+    const var_types newType = child->TypeGet();
+    if (newType == origType)
+    {
+        return nullptr;
+    }
+    if (varTypeIsStruct(origType) || (genTypeSize(origType) == genTypeSize(newType)))
+    {
+        assert(!varTypeIsStruct(newType));
+        return nullptr;
+    }
+    GenTree* putArgType = gtNewOperNode(GT_PUTARG_TYPE, origType, child);
+#if defined(DEBUG)
+    if (verbose)
+    {
+        printf("For call [%06d] the new argument's type [%06d]", dspTreeID(parent), dspTreeID(child));
+        printf(" does not match the original type size, add a GT_PUTARG_TYPE [%06d]\n", dspTreeID(parent));
+    }
+#endif
+    return putArgType;
 }
 
 #ifdef DEBUG

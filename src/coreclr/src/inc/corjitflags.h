@@ -54,7 +54,7 @@ public:
 
         CORJIT_FLAG_OSR                     = 13, // Generate alternate method for On Stack Replacement
 
-        CORJIT_FLAG_UNUSED7                 = 14,
+        CORJIT_FLAG_ALT_JIT                 = 14, // JIT should consider itself an ALT_JIT
         CORJIT_FLAG_UNUSED8                 = 15,
         CORJIT_FLAG_UNUSED9                 = 16,
 

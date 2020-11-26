@@ -2951,20 +2951,18 @@ LPWSTR *SegmentCommandLine(LPCWSTR lpCmdLine, DWORD *pNumArgs)
 //======================================================================
 // This function returns true, if it can determine that the instruction pointer
 // refers to a code address that belongs in the range of the given image.
-// <TODO>@TODO: Merge with IsIPInModule from vm\util.hpp</TODO>
-
-BOOL IsIPInModule(HMODULE_TGT hModule, PCODE ip)
+BOOL IsIPInModule(PTR_VOID pModuleBaseAddress, PCODE ip)
 {
     STATIC_CONTRACT_LEAF;
     SUPPORTS_DAC;
 
     struct Param
     {
-        HMODULE_TGT hModule;
+        PTR_VOID pModuleBaseAddress;
         PCODE ip;
         BOOL fRet;
     } param;
-    param.hModule = hModule;
+    param.pModuleBaseAddress = pModuleBaseAddress;
     param.ip = ip;
     param.fRet = FALSE;
 
@@ -2972,7 +2970,7 @@ BOOL IsIPInModule(HMODULE_TGT hModule, PCODE ip)
 #ifdef HOST_WINDOWS
     PAL_TRY(Param *, pParam, &param)
     {
-        PTR_BYTE pBase = dac_cast<PTR_BYTE>(pParam->hModule);
+        PTR_BYTE pBase = dac_cast<PTR_BYTE>(pParam->pModuleBaseAddress);
 
         PTR_IMAGE_DOS_HEADER pDOS = NULL;
         PTR_IMAGE_NT_HEADERS pNT  = NULL;

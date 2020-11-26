@@ -908,7 +908,6 @@ FCIMPL7(void, COMCustomAttribute::GetPropertyOrFieldData, ReflectModuleBaseObjec
                 nullTH = th;
         }
 
-        //
         // get the string representing the field/property name
         *pName = ArgSlotToString(GetDataFromBlob(
             pCtorAssembly, SERIALIZATION_TYPE_STRING, nullTH, &pBlob, pBlobEnd, pModule, &bObjectCreated));
@@ -937,6 +936,7 @@ FCIMPL7(void, COMCustomAttribute::GetPropertyOrFieldData, ReflectModuleBaseObjec
                 break;
             case SERIALIZATION_TYPE_SZARRAY:
             {
+                *value = NULL;
                 int arraySize = (int)GetDataFromBlob(pCtorAssembly, SERIALIZATION_TYPE_I4, nullTH, &pBlob, pBlobEnd, pModule, &bObjectCreated);
 
                 if (arraySize != -1)

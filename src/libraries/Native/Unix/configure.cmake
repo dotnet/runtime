@@ -122,6 +122,11 @@ check_symbol_exists(
     HAVE_F_DUPFD_CLOEXEC)
 
 check_symbol_exists(
+    F_FULLFSYNC
+    fcntl.h
+    HAVE_F_FULLFSYNC)
+
+check_symbol_exists(
     getifaddrs
     ifaddrs.h
     HAVE_GETIFADDRS)
@@ -830,6 +835,10 @@ check_include_files(
 check_include_files(
     linux/can.h
     HAVE_LINUX_CAN_H)
+
+check_include_files(
+    IOKit/serial/ioss.h
+    HAVE_IOSS_H)
 
 check_symbol_exists(
     getpeereid
