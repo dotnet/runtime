@@ -50,6 +50,11 @@
     <PackageReference Include="$(MicrosoftNETCoreRuntimeICUTransportPackage)" PrivateAssets="all" Version="$(MicrosoftNETCoreRuntimeICUTransportVersion)" GeneratePathProperty="true" />
   </ItemGroup>
 
+  <!-- CI specific build options -->    
+  <ItemGroup Condition="'$(ContinuousIntegrationBuild)' == 'true' and ('$(TargetsOSX)' == 'true')">
+    <_MonoCMakeArgs Include="-DENABLE_WERROR=1"/>
+  </ItemGroup>
+
   <!-- Sanity checks -->
   <Target Name="CheckEnv">
     <Error Condition="'$(TargetstvOS)' == 'true' and '$(Platform)' != 'x64' and '$(Platform)' != 'arm64'" Text="Error: Invalid platform for $(TargetOS): $(Platform)." />

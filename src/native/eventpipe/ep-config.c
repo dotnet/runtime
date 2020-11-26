@@ -383,7 +383,7 @@ ep_config_build_event_metadata_event (
 	instance = ep_event_metdata_event_alloc (
 		config->metadata_event,
 		ep_rt_current_processor_get_number (),
-		ep_rt_current_thread_get_id (),
+		ep_rt_thread_id_t_to_uint64_t (ep_rt_current_thread_get_id ()),
 		instance_payload,
 		instance_payload_size,
 		NULL /* pActivityId */,

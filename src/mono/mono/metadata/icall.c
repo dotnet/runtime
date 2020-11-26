@@ -6061,7 +6061,6 @@ ves_icall_RuntimeType_get_core_clr_security_level (MonoReflectionTypeHandle rfie
 	return_val_if_nok (error, -1);
 	return mono_security_core_clr_class_level (klass);
 }
-#endif
 
 int
 ves_icall_RuntimeFieldInfo_get_core_clr_security_level (MonoReflectionFieldHandle rfield, MonoError *error)
@@ -6076,6 +6075,7 @@ ves_icall_RuntimeMethodInfo_get_core_clr_security_level (MonoReflectionMethodHan
 	MonoMethod *method = MONO_HANDLE_GETVAL (rfield, method);
 	return mono_security_core_clr_method_level (method, TRUE);
 }
+#endif
 
 MonoStringHandle
 ves_icall_System_Reflection_RuntimeAssembly_get_fullname (MonoReflectionAssemblyHandle assembly, MonoError *error)
@@ -6818,11 +6818,13 @@ mono_icall_module_get_hinstance (MonoImage *image)
 }
 #endif /* HOST_WIN32 */
 
+#ifndef ENABLE_NETCORE
 gpointer
 ves_icall_System_Reflection_RuntimeModule_GetHINSTANCE (MonoImage *image, MonoError *error)
 {
 	return mono_icall_module_get_hinstance (image);
 }
+#endif
 
 void
 ves_icall_System_Reflection_RuntimeModule_GetPEKind (MonoImage *image, gint32 *pe_kind, gint32 *machine, MonoError *error)
