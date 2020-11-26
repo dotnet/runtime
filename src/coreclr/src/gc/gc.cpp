@@ -8713,16 +8713,6 @@ void gc_heap::sort_mark_list()
         return;
     }
 
-#ifdef BACKGROUND_GC
-    // we are not going to use the mark list if background GC is running
-    // so let's not waste time sorting it
-    if (gc_heap::background_running_p())
-    {
-        mark_list_index = mark_list_end + 1;
-        return;
-    }
-#endif //BACKGROUND_GC
-
     // if any other heap had a mark list overflow, we fake one too,
     // so we don't use an incomplete mark list by mistake
     for (int i = 0; i < n_heaps; i++)
@@ -23445,11 +23435,7 @@ void gc_heap::plan_phase (int condemned_gen_number)
 #endif //GC_CONFIG_DRIVEN
 
     if ((condemned_gen_number < max_generation) &&
-        (mark_list_index <= mark_list_end)
-#ifdef BACKGROUND_GC
-        && (!gc_heap::background_running_p())
-#endif //BACKGROUND_GC
-        )
+        (mark_list_index <= mark_list_end))
     {
 #ifndef MULTIPLE_HEAPS
 #ifdef USE_VXSORT
@@ -24151,19 +24137,24 @@ void gc_heap::plan_phase (int condemned_gen_number)
 #ifdef MARK_LIST
             if (use_mark_list)
             {
-               while ((mark_list_next < mark_list_index) &&
-                      (*mark_list_next <= x))
-               {
-                   mark_list_next++;
-               }
-               if ((mark_list_next < mark_list_index)
+                uint8_t* old_x = x;
+                while ((mark_list_next < mark_list_index) &&
+                    (*mark_list_next <= x))
+                {
+                    mark_list_next++;
+                }
+                x = end;
+                if ((mark_list_next < mark_list_index)
 #ifdef MULTIPLE_HEAPS
-                   && (*mark_list_next < end) //for multiple segments
+                    && (*mark_list_next < end) //for multiple segments
 #endif //MULTIPLE_HEAPS
-                   )
-                   x = *mark_list_next;
-               else
-                   x = end;
+                    )
+                x = *mark_list_next;
+                if (current_c_gc_state == c_gc_state_marking)
+                {
+                    assert(gc_heap::background_running_p());
+                    bgc_clear_batch_mark_array_bits (old_x, x);
+                }
             }
             else
 #endif //MARK_LIST
