@@ -39,7 +39,8 @@ namespace System
         /// <param name="input">Data to include in the hash.</param>
         public void Append(byte input)
         {
-            _w[_pos / 4] = (_w[_pos / 4] << 8) | input;
+            int idx = _pos >> 2;
+            _w[idx] = (_w[idx] << 8) | input;
             if (64 == ++_pos)
             {
                 Drain();
