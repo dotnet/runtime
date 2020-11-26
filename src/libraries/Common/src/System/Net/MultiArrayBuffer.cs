@@ -37,6 +37,7 @@ namespace System.Net
         {
             // [initialBufferSize] is ignored for now;
             // I kept it because some callers are passing useful info here that we might want to act on in the future.
+            Debug.Assert(initialBufferSize >= 0);
 
             _blocks = null;
             _allocatedEnd = 0;
@@ -53,10 +54,10 @@ namespace System.Net
             {
                 for (int i = 0; i < _blocks.Length; i++)
                 {
-                    if (_blocks[i] is not null)
+                    if (_blocks[i] is byte[] toReturn)
                     {
-                        ArrayPool<byte>.Shared.Return(_blocks[i]!);
                         _blocks[i] = null;
+                        ArrayPool<byte>.Shared.Return(toReturn);
                     }
                 }
 
@@ -64,6 +65,8 @@ namespace System.Net
                 _allocatedEnd = 0;
             }
         }
+
+        public bool IsEmpty => _activeStart == _availableStart;
 
         public MultiMemory ActiveMemory => new MultiMemory(_blocks, _activeStart, _availableStart - _activeStart);
 
@@ -74,19 +77,22 @@ namespace System.Net
             Debug.Assert(byteCount >= 0);
             Debug.Assert(byteCount <= ActiveMemory.Length, $"MultiArrayBuffer.Discard: Expected byteCount={byteCount} <= {ActiveMemory.Length}");
 
+            Debug.Assert(_blocks is not null);
+
             uint ubyteCount = (uint)byteCount;
 
             uint oldStartBlock = _activeStart / BlockSize;
             _activeStart += ubyteCount;
             uint newStartBlock = _activeStart / BlockSize;
 
+            byte[]?[] blocks = _blocks;
             while (oldStartBlock < newStartBlock)
             {
-                Debug.Assert(_blocks is not null);
-                Debug.Assert(_blocks[oldStartBlock] is not null, $"Discard: oldStartBlock is null?? byteCount={byteCount}, _activeStart={_activeStart}, oldStartBlock={oldStartBlock}, newStartBlock={newStartBlock}");
+                Debug.Assert(blocks[oldStartBlock] is not null, $"Discard: oldStartBlock is null?? byteCount={byteCount}, _activeStart={_activeStart}, oldStartBlock={oldStartBlock}, newStartBlock={newStartBlock}");
 
-                ArrayPool<byte>.Shared.Return(_blocks[oldStartBlock]!);
-                _blocks[oldStartBlock] = null;
+                byte[] toReturn = blocks[oldStartBlock]!;
+                blocks[oldStartBlock] = null;
+                ArrayPool<byte>.Shared.Return(toReturn);
 
                 oldStartBlock++;
             }
@@ -94,11 +100,7 @@ namespace System.Net
             if (_activeStart == _availableStart)
             {
                 // Small optimization to restart at the beginning of the current block, since we have no active bytes.
-                // Note, we don't try to release buffers in this case. Maybe we should. But if we did,
-                // we'd need handle the fact that there could be more than one here, if we previously grew the buffer enough for that.
-
-                _activeStart = newStartBlock * BlockSize;
-                _availableStart = newStartBlock * BlockSize;
+                _activeStart = _availableStart = newStartBlock * BlockSize;
             }
         }
 
@@ -153,7 +155,7 @@ namespace System.Net
                 Debug.Assert(_availableStart == 0);
 
                 int blockArraySize = 4;
-                while (blockArraySize  < newBlocksNeeded)
+                while (blockArraySize < newBlocksNeeded)
                 {
                     blockArraySize *= 2;
                 }
@@ -212,7 +214,7 @@ namespace System.Net
                         _blocks.AsSpan().Slice((int)usedBlocks, (int)unusedInitialBlocks).Fill(null);
                     }
 
-                    uint shift = unusedInitialBlocks + BlockSize;
+                    uint shift = unusedInitialBlocks * BlockSize;
                     _allocatedEnd -= shift;
                     _activeStart -= shift;
                     _availableStart -= shift;
@@ -224,6 +226,7 @@ namespace System.Net
             // Allocate new blocks
             Debug.Assert(_allocatedEnd % BlockSize == 0);
             uint allocatedBlockCount = _allocatedEnd / BlockSize;
+            Debug.Assert(allocatedBlockCount == 0 || _blocks[allocatedBlockCount - 1] is not null);
             for (uint i = 0; i < newBlocksNeeded; i++)
             {
                 Debug.Assert(_blocks[allocatedBlockCount] is null);
@@ -272,6 +275,8 @@ namespace System.Net
 
         private static uint GetBlockIndex(uint offset) => offset / BlockSize;
         private static uint GetOffsetInBlock(uint offset) => offset % BlockSize;
+
+        public bool IsEmpty => _length == 0;
 
         public int Length => (int)_length;
 
@@ -339,7 +344,7 @@ namespace System.Net
         {
             if (destination.Length < _length)
             {
-                throw new ArgumentException(nameof(destination));
+                throw new ArgumentOutOfRangeException(nameof(destination));
             }
 
             for (int blockIndex = 0; blockIndex < BlockCount; blockIndex++)
@@ -354,7 +359,7 @@ namespace System.Net
         {
             if (_length < source.Length)
             {
-                throw new ArgumentException(nameof(source));
+                throw new ArgumentOutOfRangeException(nameof(source));
             }
 
             for (int blockIndex = 0; blockIndex < BlockCount; blockIndex++)

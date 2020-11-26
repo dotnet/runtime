@@ -40,7 +40,7 @@ namespace System.IO
                 Debug.Assert(!Monitor.IsEntered(SyncObject));
                 lock (SyncObject)
                 {
-                    return (_writeEnded && _buffer.ActiveMemory.Length == 0);
+                    return (_writeEnded && _buffer.IsEmpty);
                 }
             }
         }
@@ -203,7 +203,7 @@ namespace System.IO
                     return (false, 0);
                 }
 
-                if (_buffer.ActiveMemory.Length > 0)
+                if (!_buffer.IsEmpty)
                 {
                     int bytesRead = Math.Min(buffer.Length, _buffer.ActiveMemory.Length);
                     _buffer.ActiveMemory.Slice(0, bytesRead).CopyTo(buffer);
@@ -277,7 +277,7 @@ namespace System.IO
                 }
 
                 _readAborted = true;
-                if (_buffer.ActiveMemory.Length != 0)
+                if (!_buffer.IsEmpty)
                 {
                     _buffer.Discard(_buffer.ActiveMemory.Length);
                 }
