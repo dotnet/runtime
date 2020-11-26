@@ -159,7 +159,7 @@ namespace System.Runtime.CompilerServices
                 {
                     throw new ArgumentNullException(nameof(type), SR.ArgumentNull_Type);
                 }
-            
+
                 throw new SerializationException(SR.Format(SR.Serialization_InvalidType, type));
             }
 
