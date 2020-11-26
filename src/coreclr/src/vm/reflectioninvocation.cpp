@@ -2141,9 +2141,8 @@ void QCALLTYPE RuntimeTypeHandle::GetActivationInfo(
     //     .. on non-Windows, treat as a normal class, type has no special handling in VM.
     //   - For [ComImport] class, treat as a normal class. VM will replace default
     //     ctor with COM activation logic on supported platforms, else ctor itself will PNSE.
-    if (pMT->IsComObjectType())
+    if (IsComObjectClass(typeHandle))
     {
-        if (IsComObjectClass(typeHandle))
         {
 #ifdef FEATURE_COMINTEROP_UNMANAGED_ACTIVATION
             // Need to enter cooperative mode to manipulate OBJECTREFs
@@ -2641,4 +2640,3 @@ FCIMPL2(FC_BOOL_RET, ReflectionEnum::InternalHasFlag, Object *pRefThis, Object* 
     FC_RETURN_BOOL(cmp);
 }
 FCIMPLEND
-
