@@ -24131,37 +24131,22 @@ void gc_heap::plan_phase (int condemned_gen_number)
 #ifdef MARK_LIST
             if (use_mark_list)
             {
-                if (current_c_gc_state != c_gc_state_marking)
+                uint8_t* old_x = x;
+                while ((mark_list_next < mark_list_index) &&
+                    (*mark_list_next <= x))
                 {
-                    while ((mark_list_next < mark_list_index) &&
-                        (*mark_list_next <= x))
-                    {
-                        mark_list_next++;
-                    }
-                    x = end;
-                    if ((mark_list_next < mark_list_index)
-#ifdef MULTIPLE_HEAPS
-                        && (*mark_list_next < end) //for multiple segments
-#endif //MULTIPLE_HEAPS
-                        )
-                        x = *mark_list_next;
+                    mark_list_next++;
                 }
-                else
+                x = end;
+                if ((mark_list_next < mark_list_index)
+#ifdef MULTIPLE_HEAPS
+                    && (*mark_list_next < end) //for multiple segments
+#endif //MULTIPLE_HEAPS
+                    )
+                x = *mark_list_next;
+                if (current_c_gc_state == c_gc_state_marking)
                 {
                     assert(gc_heap::background_running_p());
-                    uint8_t* old_x = x;
-                    while ((mark_list_next < mark_list_index) &&
-                        (*mark_list_next <= x))
-                    {
-                        mark_list_next++;
-                    }
-                    x = end;
-                    if ((mark_list_next < mark_list_index)
-#ifdef MULTIPLE_HEAPS
-                        && (*mark_list_next < end) //for multiple segments
-#endif //MULTIPLE_HEAPS
-                        )
-                        x = *mark_list_next;
                     bgc_clear_batch_mark_array_bits (old_x, x);
                 }
             }
