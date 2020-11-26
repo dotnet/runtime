@@ -1218,15 +1218,9 @@ namespace System
 
     public unsafe struct ModuleHandle
     {
-        // Returns handle for interop with EE. The handle is guaranteed to be non-null.
         #region Public Static Members
-        public static readonly ModuleHandle EmptyHandle = GetEmptyMH();
+        public static readonly ModuleHandle EmptyHandle;
         #endregion
-
-        private static ModuleHandle GetEmptyMH()
-        {
-            return default;
-        }
 
         #region Private Data Members
         private readonly RuntimeModule m_ptr;

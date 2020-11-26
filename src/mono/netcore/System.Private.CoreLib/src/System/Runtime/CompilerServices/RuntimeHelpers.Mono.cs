@@ -129,8 +129,25 @@ namespace System.Runtime.CompilerServices
             return RuntimeTypeHandle.HasReferences(obj.GetType() as RuntimeType);
         }
 
-        private static object GetUninitializedObjectInternal(Type type)
+        public static object GetUninitializedObject(
+            // This API doesn't call any constructors, but the type needs to be seen as constructed.
+            // A type is seen as constructed if a constructor is kept.
+            // This obviously won't cover a type with no constructor. Reference types with no
+            // constructor are an academic problem. Valuetypes with no constructors are a problem,
+            // but IL Linker currently treats them as always implicitly boxed.
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors)]
+            Type type)
         {
+            if (type is null)
+            {
+                throw new ArgumentNullException(nameof(type), SR.ArgumentNull_Type);
+            }
+
+            if (!type.IsRuntimeImplemented())
+            {
+                throw new SerializationException(SR.Format(SR.Serialization_InvalidType, type.ToString()));
+            }
+
             return GetUninitializedObjectInternal(new RuntimeTypeHandle((RuntimeType)type).Value);
         }
 
