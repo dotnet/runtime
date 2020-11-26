@@ -220,6 +220,7 @@
     <Compile Include="$(BclSourcesRoot)\System\Runtime\Versioning\CompatibilitySwitch.cs" />
     <Compile Include="$(BclSourcesRoot)\System\RuntimeArgumentHandle.cs" />
     <Compile Include="$(BclSourcesRoot)\System\RuntimeHandles.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\RuntimeType.ActivatorCache.cs" />
     <Compile Include="$(BclSourcesRoot)\System\RuntimeType.CoreCLR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Security\DynamicSecurityMethodAttribute.cs" />
     <Compile Include="$(BclSourcesRoot)\System\StartupHookProvider.cs" />

@@ -122,13 +122,16 @@ class RuntimeTypeHandle {
 public:
 
     // Static method on RuntimeTypeHandle
-    static FCDECL1(Object*, Allocate, ReflectClassBaseObject *refType) ; //A.CI work
-    static FCDECL6(Object*, CreateInstance, ReflectClassBaseObject* refThisUNSAFE,
-                                            CLR_BOOL publicOnly,
-                                            CLR_BOOL wrapExceptions,
-                                            CLR_BOOL *pbCanBeCached,
-                                            MethodDesc** pConstructor,
-                                            CLR_BOOL *pbHasNoDefaultCtor);
+
+    static
+    void QCALLTYPE GetActivationInfo(
+        QCall::ObjectHandleOnStack pRuntimeType,
+        PCODE* ppfnAllocator,
+        void** pvAllocatorFirstArg,
+        PCODE* ppfnCtor,
+        BOOL* pfCtorIsPublic);
+
+    static FCDECL1(Object*, AllocateComObject, void* pClassFactory);
 
     static
     void QCALLTYPE MakeByRef(QCall::TypeHandle pTypeHandle, QCall::ObjectHandleOnStack retType);
@@ -193,6 +196,7 @@ public:
     static FCDECL2(FC_BOOL_RET, IsInstanceOfType, ReflectClassBaseObject *pType, Object *object);
 
     static FCDECL6(FC_BOOL_RET, SatisfiesConstraints, PTR_ReflectClassBaseObject pGenericParameter, TypeHandle *typeContextArgs, INT32 typeContextCount, TypeHandle *methodContextArgs, INT32 methodContextCount, PTR_ReflectClassBaseObject pGenericArgument);
+
     static
     FCDECL1(FC_BOOL_RET, HasInstantiation, PTR_ReflectClassBaseObject pType);
 
@@ -255,6 +259,10 @@ public:
 
     static
     PVOID QCALLTYPE AllocateTypeAssociatedMemory(QCall::TypeHandle type, UINT32 size);
+
+    // Helper methods not called by managed code
+
+    static void ValidateTypeAbleToBeInstantiated(TypeHandle typeHandle, bool fGetUninitializedObject);
 };
 
 class RuntimeMethodHandle {

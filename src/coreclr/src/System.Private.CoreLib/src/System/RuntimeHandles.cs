@@ -208,12 +208,6 @@ namespace System
             return outHandles;
         }
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern object CreateInstance(RuntimeType type, bool publicOnly, bool wrapExceptions, ref bool canBeCached, ref RuntimeMethodHandleInternal ctor, ref bool hasNoDefaultCtor);
-
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern object Allocate(RuntimeType type);
-
         internal static object CreateInstanceForAnotherGenericParameter(RuntimeType type, RuntimeType genericParameter)
         {
             object? instantiatedObject = null;
@@ -257,6 +251,51 @@ namespace System
             IntPtr* pTypeHandles,
             int cTypeHandles,
             ObjectHandleOnStack instantiatedObject);
+
+        /// <summary>
+        /// Given a RuntimeType, returns information about how to activate it via calli
+        /// semantics. This method will ensure the type object is fully initialized within
+        /// the VM, but it will not call any static ctors on the type.
+        /// </summary>
+        internal static void GetActivationInfo(
+            RuntimeType rt,
+            out delegate*<void*, object> pfnAllocator,
+            out void* vAllocatorFirstArg,
+            out delegate*<object, void> pfnCtor,
+            out bool ctorIsPublic)
+        {
+            Debug.Assert(rt != null);
+
+            delegate*<void*, object> pfnAllocatorTemp = default;
+            void* vAllocatorFirstArgTemp = default;
+            delegate*<object, void> pfnCtorTemp = default;
+            Interop.BOOL fCtorIsPublicTemp = default;
+
+            GetActivationInfo(
+                ObjectHandleOnStack.Create(ref rt),
+                &pfnAllocatorTemp, &vAllocatorFirstArgTemp,
+                &pfnCtorTemp, &fCtorIsPublicTemp);
+
+            pfnAllocator = pfnAllocatorTemp;
+            vAllocatorFirstArg = vAllocatorFirstArgTemp;
+            pfnCtor = pfnCtorTemp;
+            ctorIsPublic = fCtorIsPublicTemp != Interop.BOOL.FALSE;
+        }
+
+        [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
+        private static extern void GetActivationInfo(
+            ObjectHandleOnStack pRuntimeType,
+            delegate*<void*, object>* ppfnAllocator,
+            void** pvAllocatorFirstArg,
+            delegate*<object, void>* ppfnCtor,
+            Interop.BOOL* pfCtorIsPublic);
+
+#if FEATURE_COMINTEROP
+        // Referenced by unmanaged layer (see GetActivationInfo).
+        // First parameter is ComClassFactory*.
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        private static extern object AllocateComObject(void* pClassFactory);
+#endif
 
         internal RuntimeType GetRuntimeType()
         {

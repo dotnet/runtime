@@ -189,7 +189,6 @@ FCFuncStart(gSystem_RuntimeType)
 FCFuncEnd()
 
 FCFuncStart(gCOMTypeHandleFuncs)
-    FCFuncElement("CreateInstance", RuntimeTypeHandle::CreateInstance)
     QCFuncElement("CreateInstanceForAnotherGenericParameter", RuntimeTypeHandle::CreateInstanceForAnotherGenericParameter)
     QCFuncElement("GetGCHandle", RuntimeTypeHandle::GetGCHandle)
     QCFuncElement("FreeGCHandle", RuntimeTypeHandle::FreeGCHandle)
@@ -239,7 +238,10 @@ FCFuncStart(gCOMTypeHandleFuncs)
     FCFuncElement("IsGenericTypeDefinition", RuntimeTypeHandle::IsGenericTypeDefinition)
     FCFuncElement("ContainsGenericVariables", RuntimeTypeHandle::ContainsGenericVariables)
     FCFuncElement("SatisfiesConstraints", RuntimeTypeHandle::SatisfiesConstraints)
-    FCFuncElement("Allocate", RuntimeTypeHandle::Allocate) //for A.CI
+    QCFuncElement("GetActivationInfo", RuntimeTypeHandle::GetActivationInfo)
+#ifdef FEATURE_COMINTEROP
+    FCFuncElement("AllocateComObject", RuntimeTypeHandle::AllocateComObject)
+#endif // FEATURE_COMINTEROP
     FCFuncElement("CompareCanonicalHandles", RuntimeTypeHandle::CompareCanonicalHandles)
     FCIntrinsic("GetValueInternal", RuntimeTypeHandle::GetValueInternal, CORINFO_INTRINSIC_RTH_GetValueInternal)
     FCFuncElement("IsEquivalentTo", RuntimeTypeHandle::IsEquivalentTo)
