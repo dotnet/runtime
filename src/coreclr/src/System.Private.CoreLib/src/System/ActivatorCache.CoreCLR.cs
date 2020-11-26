@@ -125,7 +125,15 @@ namespace System
             }
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            internal void CallConstructor(object? uninitializedObject) => _pfnCtor(uninitializedObject);
+            internal void CallConstructor(object? uninitializedObject)
+            {
+#if DEBUG
+                Debug.Assert(uninitializedObject is null || uninitializedObject.GetType() == _originalRuntimeType,
+                    "Caller passed an unexpected 'this' parameter to the ctor - possible type safety violation.");
+#endif
+
+                _pfnCtor(uninitializedObject);
+            }
         }
     }
 }
