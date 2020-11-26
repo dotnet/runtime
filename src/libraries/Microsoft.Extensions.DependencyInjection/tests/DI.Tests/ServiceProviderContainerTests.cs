@@ -358,7 +358,7 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
                 //forces Dispose ValueTask to be asynchronous and not be immediately completed
                 services.AddSingleton<DelayedAsyncDisposableService>();
             }
-            IServiceProvider sp = services.BuildServiceProvider();
+            ServiceProvider sp = services.BuildServiceProvider();
             var disposable = sp.GetRequiredService<Disposable>();
             var asyncDisposable = sp.GetRequiredService<AsyncDisposable>();
             DelayedAsyncDisposableService delayedAsyncDisposableService = null;
@@ -367,7 +367,7 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
                 delayedAsyncDisposableService = sp.GetRequiredService<DelayedAsyncDisposableService>();
             }
 
-            await (sp as IAsyncDisposable).DisposeAsync();
+            await sp.DisposeAsync();
             
             Assert.True(disposable.Disposed);
             Assert.True(asyncDisposable.DisposeAsyncCalled);
