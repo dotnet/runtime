@@ -135,20 +135,24 @@ namespace Microsoft.Extensions.Logging.Console
                     ConsoleLoggerFormat.Systemd => _formatters[ConsoleFormatterNames.Systemd],
                     _ => _formatters[ConsoleFormatterNames.Simple],
                 };
+#pragma warning restore CS0618
+
                 if (_options.CurrentValue.FormatterName == null)
                 {
                     UpdateFormatterOptions(logFormatter, _options.CurrentValue);
                 }
-#pragma warning restore CS0618
             }
 
-            return _loggers.GetOrAdd(name, loggerName => new ConsoleLogger(name, _messageQueue)
-            {
-                Options = _options.CurrentValue,
-                ScopeProvider = _scopeProvider,
-                Formatter = logFormatter,
-            });
+            return _loggers.TryGetValue(name, out ConsoleLogger logger) ?
+                logger :
+                _loggers.GetOrAdd(name, new ConsoleLogger(name, _messageQueue)
+                {
+                    Options = _options.CurrentValue,
+                    ScopeProvider = _scopeProvider,
+                    Formatter = logFormatter,
+                });
         }
+
 #pragma warning disable CS0618
         private void UpdateFormatterOptions(ConsoleFormatter formatter, ConsoleLoggerOptions deprecatedFromOptions)
         {
