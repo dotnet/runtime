@@ -28,8 +28,7 @@ namespace System
             private readonly RuntimeType _originalRuntimeType;
 #endif
 
-            internal ActivatorCache(
-                [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors)] RuntimeType rt)
+            internal ActivatorCache(RuntimeType rt)
             {
                 Debug.Assert(rt != null);
 
