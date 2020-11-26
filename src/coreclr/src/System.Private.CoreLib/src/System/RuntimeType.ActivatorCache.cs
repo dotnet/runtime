@@ -85,7 +85,7 @@ namespace System
                 // would have thrown an exception if 'rt' were a normal reference type
                 // without a ctor.
 
-                if (_pfnCtor is null)
+                if (_pfnCtor == null)
                 {
                     static void CtorNoopStub(object? uninitializedObject) { }
                     _pfnCtor = &CtorNoopStub; // we use null singleton pattern if no ctor call is necessary
@@ -127,8 +127,12 @@ namespace System
             internal void CallConstructor(object? uninitializedObject)
             {
 #if DEBUG
-                Debug.Assert(uninitializedObject is null || uninitializedObject.GetType() == _originalRuntimeType,
-                    "Caller passed an unexpected 'this' parameter to the ctor - possible type safety violation.");
+                if (uninitializedObject != null && !uninitializedObject.GetType().IsEquivalentTo(_originalRuntimeType))
+                {
+                    Debug.Fail("Caller passed an unexpected 'this' parameter to ctor - possible type safety violation."
+                        + Environment.NewLineConst + "Expected type: " + (_originalRuntimeType ?? (object)"<null>")
+                        + Environment.NewLineConst + "Actual type: " + uninitializedObject.GetType());
+                }
 #endif
 
                 _pfnCtor(uninitializedObject);
