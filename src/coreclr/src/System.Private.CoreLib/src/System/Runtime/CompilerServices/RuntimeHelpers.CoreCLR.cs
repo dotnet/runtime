@@ -160,7 +160,7 @@ namespace System.Runtime.CompilerServices
 
             if (!(type is RuntimeType rt))
             {
-                throw new SerializationException(SR.Format(SR.Serialization_InvalidType, type.ToString()));
+                throw new SerializationException(SR.Format(SR.Serialization_InvalidType, type));
             }
 
             object? obj = null;

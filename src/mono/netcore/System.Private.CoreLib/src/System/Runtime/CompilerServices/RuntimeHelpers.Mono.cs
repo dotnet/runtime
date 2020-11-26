@@ -143,12 +143,12 @@ namespace System.Runtime.CompilerServices
                 throw new ArgumentNullException(nameof(type), SR.ArgumentNull_Type);
             }
 
-            if (!type.IsRuntimeImplemented())
+            if (!(type is RuntimeType rt))
             {
-                throw new SerializationException(SR.Format(SR.Serialization_InvalidType, type.ToString()));
+                throw new SerializationException(SR.Format(SR.Serialization_InvalidType, type));
             }
 
-            return GetUninitializedObjectInternal(new RuntimeTypeHandle((RuntimeType)type).Value);
+            return GetUninitializedObjectInternal(new RuntimeTypeHandle(rt.Value));
         }
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
