@@ -271,26 +271,19 @@ namespace System
             delegate*<object, void> pfnCtorTemp = default;
             Interop.BOOL fCtorIsPublicTemp = default;
 
-            _GetActivationInfo(
+            GetActivationInfo(
                 ObjectHandleOnStack.Create(ref rt),
                 &pfnAllocatorTemp, &vAllocatorFirstArgTemp,
-                ppfnCtor: &pfnCtorTemp,
-                pfCtorIsPublic: &fCtorIsPublicTemp);
+                &pfnCtorTemp, &fCtorIsPublicTemp);
 
-            // Marshal values back to caller
-
-            Debug.Assert(pfnAllocatorTemp != null);
             pfnAllocator = pfnAllocatorTemp;
-
-            Debug.Assert(vAllocatorFirstArgTemp != null);
             vAllocatorFirstArg = vAllocatorFirstArgTemp;
-
-            pfnCtor = pfnCtorTemp; // could be null
+            pfnCtor = pfnCtorTemp;
             ctorIsPublic = fCtorIsPublicTemp != Interop.BOOL.FALSE;
         }
 
         [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
-        private static extern void _GetActivationInfo(
+        private static extern void GetActivationInfo(
             ObjectHandleOnStack pRuntimeType,
             delegate*<void*, object>* ppfnAllocator,
             void** pvAllocatorFirstArg,
@@ -298,10 +291,10 @@ namespace System
             Interop.BOOL* pfCtorIsPublic);
 
 #if FEATURE_COMINTEROP
-        // Referenced by unmanaged layer (see _GetActivationInfo).
+        // Referenced by unmanaged layer (see GetActivationInfo).
         // First parameter is ComClassFactory*.
         [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern object _AllocateComObject(void* pClassFactory);
+        private static extern object AllocateComObject(void* pClassFactory);
 #endif
 
         internal RuntimeType GetRuntimeType()

@@ -382,7 +382,7 @@ namespace System.Runtime.CompilerServices
         [FieldOffset(InterfaceMapOffset)]
         public MethodTable** InterfaceMap;
 
-        // WFLAGS_HIGH_ENUM & WFLAGS_LOW_ENUM
+        // WFLAGS_HIGH_ENUM
         private const uint enum_flag_ContainsPointers = 0x01000000;
         private const uint enum_flag_HasComponentSize = 0x80000000;
         private const uint enum_flag_HasTypeEquivalence = 0x00004000;

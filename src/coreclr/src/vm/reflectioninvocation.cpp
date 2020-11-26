@@ -2064,12 +2064,14 @@ void RuntimeTypeHandle::ValidateTypeAbleToBeInstantiated(
     }
 
     // Don't allow generics instantiated over __Canon
-    if (pMT->IsSharedByGenericInstantiations()) {
+    if (pMT->IsSharedByGenericInstantiations())
+    {
         COMPlusThrow(kNotSupportedException, W("NotSupported_Type"));
     }
 
     // Don't allow ref structs
-    if (pMT->IsByRefLike()) {
+    if (pMT->IsByRefLike())
+    {
         COMPlusThrow(kNotSupportedException, W("NotSupported_ByRefLike"));
     }
 }
