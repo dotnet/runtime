@@ -67,8 +67,8 @@ ifneq ($(ENABLE_ES6),false)
     EMCC_FLAGS+=-s MODULARIZE=1 -s EXPORT_ES6=1
 endif
 
-EMCC_DEBUG_FLAGS =-g -Os -s ASSERTIONS=1 -DENABLE_NETCORE=1 -DDEBUG=1
-EMCC_RELEASE_FLAGS=-Oz --llvm-opts 2 -DENABLE_NETCORE=1
+EMCC_DEBUG_FLAGS =-g -Os -s ASSERTIONS=1 -DENABLE_NETCORE=1 -DDEBUG=1 -fsanitize=address -s TOTAL_MEMORY=393216000
+EMCC_RELEASE_FLAGS=-Oz --llvm-opts 2 -DENABLE_NETCORE=1 -fsanitize=address -s TOTAL_MEMORY=393216000
 
 STRIP_CMD=&& $(EMSDK_PATH)/upstream/bin/wasm-opt --strip-dwarf $(NATIVE_BIN_DIR)/dotnet.wasm -o $(NATIVE_BIN_DIR)/dotnet.wasm
 
