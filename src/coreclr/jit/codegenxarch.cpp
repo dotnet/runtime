@@ -5958,7 +5958,7 @@ void CodeGen::genCompareInt(GenTree* treeNode)
         if (compiler->opts.OptimizationEnabled())
         {
             emitAttr op1Size = emitActualTypeSize(op1->TypeGet());
-            assert(static_cast<int>(op1Size) >= 32);
+            assert((int)op1Size >= 4);
 
             // Optimize "x<0" and "x>=0" to "x>>31" if "x" is not a jump condition and in a reg.
             // Morph/Lowering are responsible to rotate "0<x" to "x>0" so we won't handle it here.
