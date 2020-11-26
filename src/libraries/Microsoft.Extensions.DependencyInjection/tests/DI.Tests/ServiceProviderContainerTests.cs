@@ -10,6 +10,7 @@ using Microsoft.Extensions.DependencyInjection.Fakes;
 using Microsoft.Extensions.DependencyInjection.Specification;
 using Microsoft.Extensions.DependencyInjection.Specification.Fakes;
 using Microsoft.Extensions.DependencyInjection.Tests.Fakes;
+using Microsoft.Extensions.Internal;
 using Xunit;
 
 namespace Microsoft.Extensions.DependencyInjection.Tests
@@ -292,16 +293,33 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
         }
 
         [Fact]
-        public void GetAsyncService_DisposeAsyncOnSameThread_Throws()
+        public void GetAsyncService_DisposeAsyncOnSameThread_ThrowsAndDoesNotHang()
         {
+            // Arrange
             var services = new ServiceCollection();
             services.AddSingleton<FooAsyncDisposable>();
             var sp = services.BuildServiceProvider();
-            Assert.Throws<ObjectDisposedException>(() =>
+            bool success = Task.Run(() =>
             {
-                // ctor disposes ServiceProvider
-                var foo = sp.GetRequiredService<FooAsyncDisposable>();
-            });
+                SingleThreadedSynchronizationContext.Run(() =>
+                {
+                    Task.Factory.StartNew(() => 
+                    {
+                        // Act
+                        Assert.Throws<ObjectDisposedException>(() =>
+                        {
+                            // ctor disposes ServiceProvider
+                            var foo = sp.GetRequiredService<FooAsyncDisposable>();
+                        });
+                    },
+                    CancellationToken.None, 
+                    TaskCreationOptions.None,
+                    TaskScheduler.FromCurrentSynchronizationContext()
+                    ).Wait();
+                });
+            }).Wait(TimeSpan.FromSeconds(10));
+
+            Assert.True(success);
         }
 
         private class Foo1 : IDisposable
@@ -365,9 +383,9 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
             {
                 (sp as IDisposable).Dispose();
             }
-            public ValueTask DisposeAsync()
+            public async ValueTask DisposeAsync()
             {
-                return new ValueTask(Task.CompletedTask);
+                await Task.Yield();
             }
         }
 
