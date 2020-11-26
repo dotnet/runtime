@@ -463,11 +463,11 @@ namespace System.Diagnostics.Tests
         [Fact]        
         public void TestToString_OnExitedProcess()
         {
-            var p = Process.Start("dotnet");
-            Assert.Equal("System.Diagnostics.Process (dotnet)", p.ToString());
+            var p = CreateProcessLong();
+            var name = p.ProcessName;
+            Assert.Equal($"System.Diagnostics.Process ({name})", p.ToString());
 
             p.Kill();
-
             // Ensure ToString does not throw an exception, but still returns
             // a representation of the object.
             Assert.Equal("System.Diagnostics.Process", p.ToString());
