@@ -3,6 +3,7 @@
     <AsnXml />
     <_AsnXmlDiffCmd>/usr/bin/diff -q -a</_AsnXmlDiffCmd>
     <_AsnXmlDiffCmd Condition="$([MSBuild]::IsOsPlatform('windows')) == 'true'">$(SystemRoot)\System32\fc.exe /a</_AsnXmlDiffCmd>
+    <_AsnIntermediatePath>$([MSBuild]::NormalizeDirectory('$(IntermediateOutputPath)', 'asnxml'))</_AsnIntermediatePath>
   </PropertyGroup>
   <ItemGroup>
     <None Include="$(MSBuildThisFileDirectory)asn.xsd">
@@ -15,23 +16,23 @@
     Inputs="@(AsnXml);$(MSBuildThisFileDirectory)asn.xslt"
     Outputs="%(Identity).cs">
 
-    <MakeDir Directories="$(IntermediateOutputPath)asnxml" />
+    <MakeDir Directories="$(_AsnIntermediatePath)" />
 
     <XslTransformation
       XslInputPath="$(MSBuildThisFileDirectory)asn.xslt"
       XmlInputPaths="@(AsnXml)"
-      OutputPaths="@(AsnXml -> '$(IntermediateOutputPath)asnxml\%(filename).cs')" />
+      OutputPaths="@(AsnXml -> '$(_AsnIntermediatePath)%(filename).cs')" />
 
     <Exec
       IgnoreExitCode="true"
       StandardOutputImportance="Low"
-      Command="$(_AsnXmlDiffCmd) @(AsnXml -> '$(IntermediateOutputPath)asnxml\%(filename).cs') @(AsnXml -> '%(Identity).cs')">
+      Command="$(_AsnXmlDiffCmd) @(AsnXml -> '$(_AsnIntermediatePath)%(filename).cs') @(AsnXml -> '%(Identity).cs')">
       <Output TaskParameter="ExitCode" ItemName="_AsnXmlDiffCode" />
     </Exec>
 
     <Copy
       Condition="'@(_AsnXmlDiffCode)' != '0'"
-      SourceFiles="@(AsnXml -> '$(IntermediateOutputPath)asnxml\%(filename).cs')"
+      SourceFiles="@(AsnXml -> '$(_AsnIntermediatePath)%(filename).cs')"
       DestinationFiles="@(AsnXml -> '%(Identity).cs')" />
 
     <Message Condition="'@(_AsnXmlDiffCode)' != '0'" Text="AsnXml regenerated files, be sure to check them in: @(AsnXml -> '%(Identity).cs')" Importance="high" />
