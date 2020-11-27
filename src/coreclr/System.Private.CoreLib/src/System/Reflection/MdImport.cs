@@ -173,14 +173,15 @@ namespace System.Reflection
 
     internal unsafe struct MetadataEnumResult
     {
+        public const int SmallSizeLength = 16;
         // Keep the definition in sync with vm\ManagedMdImport.hpp
         private int[] largeResult;
         private int length;
-        private fixed int smallResult[16];
+        private fixed int smallResult[SmallSizeLength];
 
-        public int Length => length;
+        public readonly int Length => length;
 
-        public int this[int index]
+        public readonly int this[int index]
         {
             get
             {

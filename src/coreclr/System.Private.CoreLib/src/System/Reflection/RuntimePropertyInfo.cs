@@ -134,7 +134,7 @@ namespace System.Reflection
         #region ICustomAttributeProvider
         public override object[] GetCustomAttributes(bool inherit)
         {
-            return CustomAttribute.GetCustomAttributes(this, (typeof(object) as RuntimeType)!);
+            return CustomAttribute.GetCustomAttributes(this, (typeof(object) as RuntimeType)!, inherit);
         }
 
         public override object[] GetCustomAttributes(Type attributeType, bool inherit)
@@ -147,7 +147,20 @@ namespace System.Reflection
             if (attributeRuntimeType == null)
                 throw new ArgumentException(SR.Arg_MustBeType, nameof(attributeType));
 
-            return CustomAttribute.GetCustomAttributes(this, attributeRuntimeType);
+            return CustomAttribute.GetCustomAttributes(this, attributeRuntimeType, inherit);
+        }
+
+        internal override Attribute? GetCustomAttribute(Type attributeType, bool inherit)
+        {
+            if (attributeType == null)
+                throw new ArgumentNullException(nameof(attributeType));
+
+            RuntimeType? attributeRuntimeType = attributeType.UnderlyingSystemType as RuntimeType;
+
+            if (attributeRuntimeType == null)
+                throw new ArgumentException(SR.Arg_MustBeType, nameof(attributeType));
+
+            return CustomAttribute.GetCustomAttribute(this, attributeRuntimeType, inherit);
         }
 
         public override bool IsDefined(Type attributeType, bool inherit)

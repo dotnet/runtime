@@ -37,6 +37,21 @@ namespace System.Reflection
         public virtual IEnumerable<CustomAttributeData> CustomAttributes => GetCustomAttributesData();
         public virtual IList<CustomAttributeData> GetCustomAttributesData() { throw NotImplemented.ByDesign; }
 
+        internal virtual Attribute? GetCustomAttribute(Type attributeType, bool inherit)
+        {
+            // Returns an Attribute of base class/inteface attributeType on the ParameterInfo or null if none exists.
+            // throws an AmbiguousMatchException if there are more than one defined.
+            Attribute[] attrib = Attribute.GetCustomAttributes(this, attributeType, inherit);
+
+            if (attrib == null || attrib.Length == 0)
+                return null;
+
+            if (attrib.Length == 1)
+                return attrib[0];
+
+            throw new AmbiguousMatchException(SR.RFLCT_AmbigCust);
+        }
+
         public virtual object[] GetCustomAttributes(bool inherit) => Array.Empty<object>();
         public virtual object[] GetCustomAttributes(Type attributeType, bool inherit)
         {

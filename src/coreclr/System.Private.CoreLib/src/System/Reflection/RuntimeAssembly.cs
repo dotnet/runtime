@@ -277,6 +277,19 @@ namespace System.Reflection
             return null;
         }
 
+        internal override Attribute? GetCustomAttribute(Type attributeType, bool inherit)
+        {
+            if (attributeType == null)
+                throw new ArgumentNullException(nameof(attributeType));
+
+            RuntimeType? attributeRuntimeType = attributeType.UnderlyingSystemType as RuntimeType;
+
+            if (attributeRuntimeType == null)
+                throw new ArgumentException(SR.Arg_MustBeType, nameof(attributeType));
+
+            return CustomAttribute.GetCustomAttribute(this, attributeRuntimeType);
+        }
+
         // ISerializable implementation
         public override void GetObjectData(SerializationInfo info, StreamingContext context)
         {

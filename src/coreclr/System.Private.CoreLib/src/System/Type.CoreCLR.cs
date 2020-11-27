@@ -105,5 +105,21 @@ namespace System
         // Exists to faciliate code sharing between CoreCLR and CoreRT.
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal bool IsRuntimeImplemented() => this is RuntimeType;
+
+        internal virtual AttributeUsageAttribute GetAttributeUsageAttribute()
+        {
+            if (!this.IsSubclassOf(typeof(Attribute)))
+                throw new ArgumentException(SR.Argument_MustHaveAttributeBaseClass);
+
+            Attribute[]? attrib = GetCustomAttributes(typeof(AttributeUsageAttribute), false) as Attribute[];
+
+            if (attrib == null || attrib.Length == 0)
+                return AttributeUsageAttribute.Default;
+
+            if (attrib.Length == 1)
+                return (AttributeUsageAttribute)attrib[0];
+
+            throw new FormatException(SR.Format(SR.Format_AttributeUsage, this));
+        }
     }
 }

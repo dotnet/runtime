@@ -143,6 +143,25 @@ namespace System.Reflection
         {
             AttrsImpl = attributes;
         }
+
+        internal override Attribute? GetCustomAttribute(Type attributeType, bool inherit)
+        {
+            if (attributeType == null)
+                throw new ArgumentNullException(nameof(attributeType));
+
+            if (MdToken.IsNullToken(m_tkParamDef))
+            {
+                if (!inherit || Member.MemberType != MemberTypes.Method)
+                    return null;
+            }
+
+            RuntimeType? attributeRuntimeType = attributeType.UnderlyingSystemType as RuntimeType;
+
+            if (attributeRuntimeType == null)
+                throw new ArgumentException(SR.Arg_MustBeType, nameof(attributeType));
+
+            return CustomAttribute.GetCustomAttribute(this, attributeRuntimeType, inherit);
+        }
         #endregion
 
         #region Constructor
@@ -502,9 +521,12 @@ namespace System.Reflection
         public override object[] GetCustomAttributes(bool inherit)
         {
             if (MdToken.IsNullToken(m_tkParamDef))
-                return Array.Empty<object>();
+            {
+                if (!inherit || Member.MemberType != MemberTypes.Method)
+                    return Array.Empty<object>();
+            }
 
-            return CustomAttribute.GetCustomAttributes(this, (typeof(object) as RuntimeType)!);
+            return CustomAttribute.GetCustomAttributes(this, (typeof(object) as RuntimeType)!, inherit);
         }
 
         public override object[] GetCustomAttributes(Type attributeType, bool inherit)
@@ -513,14 +535,17 @@ namespace System.Reflection
                 throw new ArgumentNullException(nameof(attributeType));
 
             if (MdToken.IsNullToken(m_tkParamDef))
-                return Array.Empty<object>();
+            {
+                if (!inherit || Member.MemberType != MemberTypes.Method)
+                    return Array.Empty<object>();
+            }
 
             RuntimeType? attributeRuntimeType = attributeType.UnderlyingSystemType as RuntimeType;
 
             if (attributeRuntimeType == null)
                 throw new ArgumentException(SR.Arg_MustBeType, nameof(attributeType));
 
-            return CustomAttribute.GetCustomAttributes(this, attributeRuntimeType);
+            return CustomAttribute.GetCustomAttributes(this, attributeRuntimeType, inherit);
         }
 
         public override bool IsDefined(Type attributeType, bool inherit)

@@ -104,7 +104,7 @@ namespace System
                 Array.Copy(_items!, 0, array, index, _count);
             }
 
-            public int Count => _count;
+            public readonly int Count => _count;
 
             public void Add(T item)
             {
@@ -1868,6 +1868,32 @@ namespace System
 
             GC.KeepAlive(methodInstantiation);
             return retval;
+        }
+
+        internal override Attribute? GetCustomAttribute(Type attributeType, bool inherit)
+        {
+            if (attributeType == null)
+                throw new ArgumentNullException(nameof(attributeType));
+
+            RuntimeType? attributeRuntimeType = attributeType.UnderlyingSystemType as RuntimeType;
+
+            if (attributeRuntimeType == null)
+                throw new ArgumentException(SR.Arg_MustBeType, nameof(attributeType));
+
+            return CustomAttribute.GetCustomAttribute(this, attributeRuntimeType, inherit);
+        }
+
+        internal override AttributeUsageAttribute GetAttributeUsageAttribute()
+        {
+            if (!this.IsSubclassOf(typeof(Attribute)))
+                throw new ArgumentException(SR.Argument_MustHaveAttributeBaseClass);
+
+            RuntimeType? attributeRuntimeType = typeof(AttributeUsageAttribute).UnderlyingSystemType as RuntimeType;
+
+            if (attributeRuntimeType == null)
+                throw new ArgumentException(SR.Arg_MustBeType, nameof(Attribute));
+
+            return CustomAttribute.GetAttributeUsage(this);
         }
 
         internal object? GenericCache
