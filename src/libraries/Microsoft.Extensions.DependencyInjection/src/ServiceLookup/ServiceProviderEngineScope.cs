@@ -17,7 +17,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
         private List<object> _disposables;
 
         private bool _disposed;
-        private object _lock = new object();
+        private readonly object _lock = new object();
 
         public ServiceProviderEngineScope(ServiceProviderEngine engine)
         {
@@ -59,6 +59,9 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
                     }
                     else
                     {
+                        // this synchronous code path could cause a deadlock if we were to block on DisposeAsync
+                        // instead, a fire-and-forget call may cause race conditions while disposing borrowed resources.
+                        // since this is a rare error case, we just take the fire-and-forget approach here
                         Task.Run(() => ((IAsyncDisposable)service).DisposeAsync().AsTask().GetAwaiter().GetResult());
                     }
                     ThrowHelper.ThrowObjectDisposedException();
