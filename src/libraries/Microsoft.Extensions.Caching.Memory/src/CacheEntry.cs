@@ -355,6 +355,8 @@ namespace Microsoft.Extensions.Caching.Memory
             }
         }
 
+        internal bool CanPropagateOptions() => _expirationTokens != null || _absoluteExpiration != null;
+
         internal void PropagateOptions(CacheEntry parent)
         {
             if (parent == null)
