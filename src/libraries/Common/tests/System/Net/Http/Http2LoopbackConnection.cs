@@ -764,7 +764,7 @@ namespace System.Net.Test.Common
                 flags |= FrameFlags.EndStream;
             }
 
-            HeadersFrame headersFrame = new HeadersFrame(headerBlock.AsMemory().Slice(0, bytesGenerated), flags, 0, 0, 0, streamId);
+            HeadersFrame headersFrame = new HeadersFrame(headerBlock.AsMemory(0, bytesGenerated), flags, 0, 0, 0, streamId);
             await WriteFrameAsync(headersFrame).ConfigureAwait(false);
         }
 

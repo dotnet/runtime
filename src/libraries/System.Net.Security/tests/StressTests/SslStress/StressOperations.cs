@@ -77,11 +77,11 @@ namespace SslStress
         {
             // length
             int numsize = s_encoding.GetBytes(segment.Length.ToString(), _buffer);
-            await stream.WriteAsync(_buffer.AsMemory().Slice(0, numsize), token);
+            await stream.WriteAsync(_buffer.AsMemory(0, numsize), token);
             stream.WriteByte((byte)',');
             // checksum
             numsize = s_encoding.GetBytes(segment.Checksum.ToString(), _buffer);
-            await stream.WriteAsync(_buffer.AsMemory().Slice(0, numsize), token);
+            await stream.WriteAsync(_buffer.AsMemory(0, numsize), token);
             stream.WriteByte((byte)',');
             // payload
             Memory<byte> source = segment.AsMemory();
