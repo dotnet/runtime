@@ -180,8 +180,8 @@ namespace System
         {
             get
             {
-                var utcNow = DateTime.UtcNow;
-                var result = new DateTimeOffset(validDateTime: utcNow, validOffsetMinutes: 0);
+                DateTime utcNow = DateTime.UtcNow;
+                var result = new DateTimeOffset(utcNow, validOffsetMinutes: 0);
 
                 Debug.Assert(new DateTimeOffset(utcNow) == result); // ensure lack of verification does not break anything
 
