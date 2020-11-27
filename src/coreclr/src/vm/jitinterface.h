@@ -1045,6 +1045,14 @@ public:
             UINT32 *              pNumRuns
             );
 
+    CORINFO_CLASS_HANDLE getLikelyClass(
+            CORINFO_METHOD_HANDLE ftnHnd,
+            CORINFO_CLASS_HANDLE  baseHnd,
+            UINT32                ilOffset,            
+            UINT32 *              pLikelihood,
+            UINT32 *              pNumberOfClasses
+            );
+
     void recordCallSite(
             ULONG                 instrOffset,  /* IN */
             CORINFO_SIG_INFO *    callSig,      /* IN */
@@ -1246,6 +1254,14 @@ public:
         BlockCounts **                pBlockCounts,  // pointer to array of <ILOffset, ExecutionCount> tuples
         UINT32 *                      pNumRuns
     );
+
+    CORINFO_CLASS_HANDLE getLikelyClass(
+            CORINFO_METHOD_HANDLE ftnHnd,
+            CORINFO_CLASS_HANDLE  baseHnd,
+            UINT32                ilOffset,
+            UINT32 *              pLikelihood,
+            UINT32 *              pNumberOfClasses
+            );
 
     void recordCallSite(
             ULONG                     instrOffset,  /* IN */

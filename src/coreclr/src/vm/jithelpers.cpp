@@ -55,6 +55,7 @@
 #include "runtimehandles.h"
 #include "castcache.h"
 #include "onstackreplacement.h"
+#include "pgo.h"
 
 //========================================================================
 //
@@ -5232,6 +5233,75 @@ void JIT_Patchpoint(int* counter, int ilOffset)
 }
 
 #endif // FEATURE_ON_STACK_REPLACEMENT
+
+HCIMPL2(void, JIT_ClassProfile, Object *obj, void* tableAddress)
+{
+    FCALL_CONTRACT;
+    FC_GC_POLL_NOT_NEEDED();
+
+    OBJECTREF objRef = ObjectToOBJECTREF(obj);
+    VALIDATEOBJECTREF(objRef);
+
+    ICorJitInfo::ClassProfile* const classProfile = (ICorJitInfo::ClassProfile*) tableAddress;
+    volatile unsigned* pCount = (volatile unsigned*) &classProfile->Count;
+    const unsigned count = *pCount++;
+    const unsigned S = ICorJitInfo::ClassProfile::SIZE;
+    const unsigned N = ICorJitInfo::ClassProfile::SAMPLE_INTERVAL;
+    _ASSERTE(N >= S);
+
+    if (objRef == NULL)
+    {
+        return;
+    }
+
+    CORINFO_CLASS_HANDLE clsHnd = (CORINFO_CLASS_HANDLE)objRef->GetMethodTable();
+
+#ifdef _DEBUG
+    PgoManager::VerifyAddress(classProfile);
+    PgoManager::VerifyAddress(classProfile + 1);
+#endif
+
+    // If table is not yet full, just add entries in.
+    //
+    if (count < S)
+    {
+        classProfile->ClassTable[count] = clsHnd;
+    }
+    else
+    {
+        // generate a random number (xorshift32)
+        //
+        // intentionally simple so we can have multithreaded
+        // access w/o tearing state.
+        //
+        static volatile unsigned s_rng = 100;
+        
+        unsigned x = s_rng;
+        x ^= x << 13;
+        x ^= x >> 17;
+        x ^= x << 5;
+        s_rng = x;
+        
+        // N is the sampling window size,
+        // it should be larger than the table size.
+        //
+        // If we let N == count then we are building an entire
+        // run sample -- probability of update decreases over time.
+        // Would be a good strategy for an AOT profiler.
+        //
+        // But for TieredPGO we would prefer something that is more
+        // weighted to recent observations.
+        //
+        // For S=4, N=128, we'll sample (on average) every 32nd call.
+        //
+        if ((x % N) < S)
+        {
+            unsigned i = x % S;
+            classProfile->ClassTable[i] = clsHnd;
+        }
+    }
+}
+HCIMPLEND
 
 //========================================================================
 //

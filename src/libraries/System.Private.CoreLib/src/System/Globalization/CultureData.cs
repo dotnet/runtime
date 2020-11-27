@@ -1378,7 +1378,7 @@ namespace System.Globalization
         /// list Separator
         /// (user can override)
         /// </summary>
-        internal string ListSeparator => _sListSeparator ??= GetLocaleInfoCoreUserOverride(LocaleStringData.ListSeparator);
+        internal string ListSeparator => _sListSeparator ??= ShouldUseUserOverrideNlsData ? NlsGetLocaleInfo(LocaleStringData.ListSeparator) : IcuGetListSeparator(_sWindowsName);
 
         /// <summary>
         /// AM designator

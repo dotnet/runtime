@@ -8,6 +8,8 @@ namespace Microsoft.Extensions.Hosting
 {
     internal class HostFactoryResolver
     {
+        private const BindingFlags DeclaredOnlyLookup = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static | BindingFlags.DeclaredOnly;
+
         public static readonly string BuildWebHost = nameof(BuildWebHost);
         public static readonly string CreateWebHostBuilder = nameof(CreateWebHostBuilder);
         public static readonly string CreateHostBuilder = nameof(CreateHostBuilder);
@@ -35,7 +37,7 @@ namespace Microsoft.Extensions.Hosting
                 return null;
             }
 
-            var factory = programType.GetTypeInfo().GetDeclaredMethod(name);
+            var factory = programType.GetMethod(name, DeclaredOnlyLookup);
             if (!IsFactory<T>(factory))
             {
                 return null;
@@ -105,7 +107,7 @@ namespace Microsoft.Extensions.Hosting
                 return null;
             }
             var hostType = host.GetType();
-            var servicesProperty = hostType.GetTypeInfo().GetDeclaredProperty("Services");
+            var servicesProperty = hostType.GetProperty("Services", DeclaredOnlyLookup);
             return (IServiceProvider)servicesProperty.GetValue(host);
         }
     }

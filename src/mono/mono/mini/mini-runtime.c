@@ -75,8 +75,8 @@
 #include <mono/metadata/threadpool.h>
 
 #ifdef ENABLE_PERFTRACING
-#include <mono/eventpipe/ep.h>
-#include <mono/eventpipe/ds-server.h>
+#include <eventpipe/ep.h>
+#include <eventpipe/ds-server.h>
 #endif
 
 #include "mini.h"
@@ -85,7 +85,9 @@
 #include <string.h>
 #include <ctype.h>
 #include "trace.h"
+#ifndef ENABLE_NETCORE
 #include "version.h"
+#endif
 #include "aot-compiler.h"
 #include "aot-runtime.h"
 #include "llvmonly-runtime.h"

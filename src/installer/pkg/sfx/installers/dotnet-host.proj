@@ -33,8 +33,8 @@
     <Error Condition="'$(OutputPath)' == ''" Text="Publishing to disk requires the OutputPath to be set to the root of the path to write to." />
 
     <ItemGroup>
-      <FilesToPublish Include="$(DotNetHostBinDir)\dotnet$(ApplicationFileExtension)"
-            Destination="$(OutputPath)dotnet$(ApplicationFileExtension)" />
+      <FilesToPublish Include="$(DotNetHostBinDir)\dotnet$(ExeSuffix)"
+            Destination="$(OutputPath)dotnet$(ExeSuffix)" />
       <FilesToPublish Include="$(InstallerProjectRoot)pkg\THIRD-PARTY-NOTICES.TXT"
             Destination="$(OutputPath)ThirdPartyNotices.txt" />
       <FilesToPublish Include="$(RepoRoot)LICENSE.TXT"

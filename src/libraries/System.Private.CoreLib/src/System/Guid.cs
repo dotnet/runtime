@@ -362,7 +362,7 @@ namespace System
         }
 
         // Two helpers used for parsing components:
-        // - uint.TryParse(..., NumberStyles.AllowHexSpecifier, ...)
+        // - Number.TryParseUInt32HexNumberStyle(..., NumberStyles.AllowHexSpecifier, ...)
         //       Used when we expect the entire provided span to be filled with and only with hex digits and no overflow is possible
         // - TryParseHex
         //       Used when the component may have an optional '+' and "0x" prefix, when it may overflow, etc.
@@ -421,7 +421,7 @@ namespace System
                             // _f, _g must be stored as a big-endian ushort
                             result._fg = BitConverter.IsLittleEndian ? BinaryPrimitives.ReverseEndianness((ushort)uintTmp) : (ushort)uintTmp;
 
-                            if (uint.TryParse(guidString.Slice(28, 8), NumberStyles.AllowHexSpecifier, null, out uintTmp)) // _h, _i, _j, _k
+                            if (Number.TryParseUInt32HexNumberStyle(guidString.Slice(28, 8), NumberStyles.AllowHexSpecifier, out uintTmp) == Number.ParsingStatus.OK) // _h, _i, _j, _k
                             {
                                 // _h, _i, _j, _k must be stored as a big-endian uint
                                 result._hijk = BitConverter.IsLittleEndian ? BinaryPrimitives.ReverseEndianness(uintTmp) : uintTmp;
@@ -447,20 +447,20 @@ namespace System
                 return false;
             }
 
-            if (uint.TryParse(guidString.Slice(0, 8), NumberStyles.AllowHexSpecifier, null, out result._a) && // _a
-                uint.TryParse(guidString.Slice(8, 8), NumberStyles.AllowHexSpecifier, null, out uint uintTmp)) // _b, _c
+            if (Number.TryParseUInt32HexNumberStyle(guidString.Slice(0, 8), NumberStyles.AllowHexSpecifier, out result._a) == Number.ParsingStatus.OK && // _a
+                Number.TryParseUInt32HexNumberStyle(guidString.Slice(8, 8), NumberStyles.AllowHexSpecifier, out uint uintTmp) == Number.ParsingStatus.OK) // _b, _c
             {
                 // _b, _c are independently in machine-endian order
                 if (BitConverter.IsLittleEndian) { uintTmp = BitOperations.RotateRight(uintTmp, 16); }
                 result._bc = uintTmp;
 
-                if (uint.TryParse(guidString.Slice(16, 8), NumberStyles.AllowHexSpecifier, null, out uintTmp)) // _d, _e, _f, _g
+                if (Number.TryParseUInt32HexNumberStyle(guidString.Slice(16, 8), NumberStyles.AllowHexSpecifier, out uintTmp) == Number.ParsingStatus.OK) // _d, _e, _f, _g
                 {
                     // _d, _e, _f, _g must be stored as a big-endian uint
                     if (BitConverter.IsLittleEndian) { uintTmp = BinaryPrimitives.ReverseEndianness(uintTmp); }
                     result._defg = uintTmp;
 
-                    if (uint.TryParse(guidString.Slice(24, 8), NumberStyles.AllowHexSpecifier, null, out uintTmp)) // _h, _i, _j, _k
+                    if (Number.TryParseUInt32HexNumberStyle(guidString.Slice(24, 8), NumberStyles.AllowHexSpecifier, out uintTmp) == Number.ParsingStatus.OK) // _h, _i, _j, _k
                     {
                         // _h, _i, _j, _k must be stored as big-endian uint
                         if (BitConverter.IsLittleEndian) { uintTmp = BinaryPrimitives.ReverseEndianness(uintTmp); }

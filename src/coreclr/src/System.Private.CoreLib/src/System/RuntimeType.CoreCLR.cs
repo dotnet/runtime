@@ -17,12 +17,6 @@ using MdToken = System.Reflection.MetadataToken;
 
 namespace System
 {
-    // this is a work around to get the concept of a calli. It's not as fast but it would be interesting to
-    // see how it compares to the current implementation.
-    // This delegate will disappear at some point in favor of calli
-
-    internal delegate void CtorDelegate(object instance);
-
     // Keep this in sync with FormatFlags defined in typestring.h
     internal enum TypeNameFormatFlags
     {
@@ -3230,7 +3224,7 @@ namespace System
         public override Type[] GetGenericArguments()
         {
             Type[] types = GetRootElementType().GetTypeHandleInternal().GetInstantiationPublic();
-            return types ?? Array.Empty<Type>();
+            return types ?? Type.EmptyTypes;
         }
 
         public override Type MakeGenericType(Type[] instantiation)
@@ -3238,14 +3232,28 @@ namespace System
             if (instantiation == null)
                 throw new ArgumentNullException(nameof(instantiation));
 
-            RuntimeType[] instantiationRuntimeType = new RuntimeType[instantiation.Length];
-
             if (!IsGenericTypeDefinition)
-                throw new InvalidOperationException(
-                    SR.Format(SR.Arg_NotGenericTypeDefinition, this));
+                throw new InvalidOperationException(SR.Format(SR.Arg_NotGenericTypeDefinition, this));
 
-            if (GetGenericArguments().Length != instantiation.Length)
+            RuntimeType[] genericParameters = GetGenericArgumentsInternal();
+            if (genericParameters.Length != instantiation.Length)
                 throw new ArgumentException(SR.Argument_GenericArgsCount, nameof(instantiation));
+
+            if (instantiation.Length == 1 && instantiation[0] is RuntimeType rt)
+            {
+                ThrowIfTypeNeverValidGenericArgument(rt);
+                try
+                {
+                    return new RuntimeTypeHandle(this).Instantiate(rt);
+                }
+                catch (TypeLoadException e)
+                {
+                    ValidateGenericArguments(this, new[] { rt }, e);
+                    throw;
+                }
+            }
+
+            RuntimeType[] instantiationRuntimeType = new RuntimeType[instantiation.Length];
 
             bool foundSigType = false;
             bool foundNonRuntimeType = false;
@@ -3276,8 +3284,6 @@ namespace System
 
                 return System.Reflection.Emit.TypeBuilderInstantiation.MakeGenericType(this, (Type[])(instantiation.Clone()));
             }
-
-            RuntimeType[] genericParameters = GetGenericArgumentsInternal();
 
             SanityCheckGenericArguments(instantiationRuntimeType, genericParameters);
 
@@ -3315,7 +3321,7 @@ namespace System
                 throw new InvalidOperationException(SR.Arg_NotGenericParameter);
 
             Type[] constraints = new RuntimeTypeHandle(this).GetConstraints();
-            return constraints ?? Array.Empty<Type>();
+            return constraints ?? Type.EmptyTypes;
         }
         #endregion
 
@@ -3889,7 +3895,7 @@ namespace System
             if (args.Length == 0 && (bindingAttr & BindingFlags.Public) != 0 && (bindingAttr & BindingFlags.Instance) != 0
                 && (IsGenericCOMObjectImpl() || IsValueType))
             {
-                instance = CreateInstanceDefaultCtor(publicOnly, skipCheckThis: false, fillCache: true, wrapExceptions);
+                instance = CreateInstanceDefaultCtor(publicOnly, wrapExceptions);
             }
             else
             {
@@ -3956,113 +3962,45 @@ namespace System
             return instance;
         }
 
-        // the cache entry
-        private sealed class ActivatorCache
-        {
-            // the delegate containing the call to the ctor
-            internal readonly RuntimeMethodHandleInternal _hCtorMethodHandle;
-            internal MethodAttributes _ctorAttributes;
-            internal CtorDelegate? _ctor;
-
-            // Lazy initialization was performed
-            internal volatile bool _isFullyInitialized;
-
-            private static ConstructorInfo? s_delegateCtorInfo;
-
-            internal ActivatorCache(RuntimeMethodHandleInternal rmh)
-            {
-                _hCtorMethodHandle = rmh;
-            }
-
-            private void Initialize()
-            {
-                if (!_hCtorMethodHandle.IsNullHandle())
-                {
-                    _ctorAttributes = RuntimeMethodHandle.GetAttributes(_hCtorMethodHandle);
-
-                    // The default ctor path is optimized for reference types only
-                    ConstructorInfo delegateCtorInfo = s_delegateCtorInfo ??= typeof(CtorDelegate).GetConstructor(new Type[] { typeof(object), typeof(IntPtr) })!;
-
-                    // No synchronization needed here. In the worst case we create extra garbage
-                    _ctor = (CtorDelegate)delegateCtorInfo.Invoke(new object?[] { null, RuntimeMethodHandle.GetFunctionPointer(_hCtorMethodHandle) });
-                }
-                _isFullyInitialized = true;
-            }
-
-            public void EnsureInitialized()
-            {
-                if (!_isFullyInitialized)
-                    Initialize();
-            }
-        }
-
-        /// <summary>
-        /// The slow path of CreateInstanceDefaultCtor
-        /// </summary>
-        private object? CreateInstanceDefaultCtorSlow(bool publicOnly, bool wrapExceptions, bool fillCache)
-        {
-            RuntimeMethodHandleInternal runtimeCtor = default;
-            bool canBeCached = false;
-            bool hasNoDefaultCtor = false;
-
-            object instance = RuntimeTypeHandle.CreateInstance(this, publicOnly, wrapExceptions, ref canBeCached, ref runtimeCtor, ref hasNoDefaultCtor);
-            if (hasNoDefaultCtor)
-            {
-                throw new MissingMethodException(SR.Format(SR.Arg_NoDefCTor, this));
-            }
-
-            if (canBeCached && fillCache)
-            {
-                // cache the ctor
-                GenericCache = new ActivatorCache(runtimeCtor);
-            }
-
-            return instance;
-        }
-
         /// <summary>
         /// Helper to invoke the default (parameterless) constructor.
         /// </summary>
         [DebuggerStepThrough]
         [DebuggerHidden]
-        internal object? CreateInstanceDefaultCtor(bool publicOnly, bool skipCheckThis, bool fillCache, bool wrapExceptions)
+        internal object? CreateInstanceDefaultCtor(bool publicOnly, bool wrapExceptions)
         {
-            // Call the cached
-            if (GenericCache is ActivatorCache cacheEntry)
+            // Get or create the cached factory. Creating the cache will fail if one
+            // of our invariant checks fails; e.g., no appropriate ctor found.
+            //
+            // n.b. In coreclr we ignore 'skipCheckThis' (assumed to be false)
+            // and 'fillCache' (assumed to be true).
+
+            if (GenericCache is not ActivatorCache cache)
             {
-                cacheEntry.EnsureInitialized();
-
-                if (publicOnly)
-                {
-                    if (cacheEntry._ctor != null &&
-                        (cacheEntry._ctorAttributes & MethodAttributes.MemberAccessMask) != MethodAttributes.Public)
-                    {
-                        throw new MissingMethodException(SR.Format(SR.Arg_NoDefCTor, this));
-                    }
-                }
-
-                // Allocate empty object and call the default constructor if present.
-                object instance = RuntimeTypeHandle.Allocate(this);
-                Debug.Assert(cacheEntry._ctor != null || IsValueType);
-                if (cacheEntry._ctor != null)
-                {
-                    try
-                    {
-                        cacheEntry._ctor(instance);
-                    }
-                    catch (Exception e) when (wrapExceptions)
-                    {
-                        throw new TargetInvocationException(e);
-                    }
-                }
-
-                return instance;
+                cache = new ActivatorCache(this);
+                GenericCache = cache;
             }
 
-            if (!skipCheckThis)
-                CreateInstanceCheckThis();
+            if (!cache.CtorIsPublic && publicOnly)
+            {
+                throw new MissingMethodException(SR.Format(SR.Arg_NoDefCTor, this));
+            }
 
-            return CreateInstanceDefaultCtorSlow(publicOnly, wrapExceptions, fillCache);
+            // Compat: allocation always takes place outside the try block so that OOMs
+            // bubble up to the caller; the ctor invocation is within the try block so
+            // that it can be wrapped in TIE if needed.
+
+            object? obj = cache.CreateUninitializedObject(this);
+            try
+            {
+                cache.CallConstructor(obj);
+            }
+            catch (Exception e) when (wrapExceptions)
+            {
+                throw new TargetInvocationException(e);
+            }
+
+            return obj;
         }
 
         internal void InvalidateCachedNestedType() => Cache.InvalidateCachedNestedType();

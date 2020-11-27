@@ -169,6 +169,11 @@ public:
         }
     }
 
+    bool IsEmpty() const
+    {
+        return m_lastRange == 0;
+    }
+
     // Error checks
     bool Error() const
     {
@@ -643,6 +648,7 @@ public:
  * Used when outputting strings.
  */
 unsigned CountDigits(unsigned num, unsigned base = 10);
+unsigned CountDigits(float num, unsigned base = 10);
 
 #endif // DEBUG
 
@@ -669,6 +675,8 @@ public:
     static bool hasPreciseReciprocal(double x);
 
     static bool hasPreciseReciprocal(float x);
+
+    static float infinite_float();
 };
 
 // The CLR requires that critical section locks be initialized via its ClrCreateCriticalSection API...but

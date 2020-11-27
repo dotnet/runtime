@@ -1,9 +1,9 @@
 #include <config.h>
 
 #ifdef ENABLE_PERFTRACING
-#include "ds-rt-config.h"
-#include "ds-types.h"
-#include "ds-rt.h"
+#include <eventpipe/ds-rt-config.h>
+#include <eventpipe/ds-types.h>
+#include <eventpipe/ds-rt.h>
 
 #ifdef __APPLE__
 #define APPLICATION_CONTAINER_BASE_PATH_SUFFIX "/Library/Group Containers/"

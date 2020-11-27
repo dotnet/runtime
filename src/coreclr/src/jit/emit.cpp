@@ -4755,7 +4755,7 @@ unsigned emitter::emitEndCodeGen(Compiler* comp,
     // code to be 16-byte aligned.
     //
     // 1. For ngen code with IBC data, use 16-byte alignment if the method
-    //    has been called more than BB_VERY_HOT_WEIGHT times.
+    //    has been called more than ScenarioHotWeight times.
     // 2. For JITed code and ngen code without IBC data, use 16-byte alignment
     //    when the code is 16 bytes or smaller. We align small getters/setters
     //    because of they are penalized heavily on certain hardware when not 16-byte
@@ -4764,7 +4764,8 @@ unsigned emitter::emitEndCodeGen(Compiler* comp,
     //
     if (emitComp->fgHaveProfileData())
     {
-        if (emitComp->fgCalledCount > (BB_VERY_HOT_WEIGHT * emitComp->fgProfileRunsCount()))
+        const float scenarioHotWeight = 256.0f;
+        if (emitComp->fgCalledCount > (scenarioHotWeight * emitComp->fgProfileRunsCount()))
         {
             allocMemFlag = CORJIT_ALLOCMEM_FLG_16BYTE_ALIGN;
         }

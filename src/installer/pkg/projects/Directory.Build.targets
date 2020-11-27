@@ -133,8 +133,8 @@
     Finds symbol files and injects them into the package build.
   -->
   <Target Name="GetSymbolPackageFiles" BeforeTargets="GetPackageFiles">
-    <ItemGroup Condition="'$(SymbolFileExtension)' != ''">
-      <AdditionalLibPackageExcludes Include="%2A%2A\%2A$(SymbolFileExtension)"/>
+    <ItemGroup Condition="'$(SymbolsSuffix)' != ''">
+      <AdditionalLibPackageExcludes Include="%2A%2A\%2A$(SymbolsSuffix)"/>
     </ItemGroup>
 
     <ItemGroup>
@@ -162,7 +162,7 @@
       <NonWindowsNativeFile Include="@(NativeWithSymbolFile)"
                             Exclude="@(WindowsNativeFile)" />
 
-      <NonWindowsSymbolFile Include="@(NonWindowsNativeFile -> '%(Identity)$(SymbolFileExtension)')" />
+      <NonWindowsSymbolFile Include="@(NonWindowsNativeFile -> '%(Identity)$(SymbolsSuffix)')" />
 
       <ExistingWindowsSymbolFile Include="@(WindowsSymbolFile)" Condition="Exists('%(Identity)')" />
       <ExistingNonWindowsSymbolFile Include="@(NonWindowsSymbolFile)" Condition="Exists('%(Identity)') AND '$(SkipPackagingXplatSymbols)'!='true'" />

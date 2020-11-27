@@ -1,18 +1,19 @@
 cmake_minimum_required(VERSION 3.6.2)
 include(CheckCCompilerFlag)
 
-if(CLR_CMAKE_TARGET_IOS OR CLR_CMAKE_TARGET_TVOS) 
-     # CMake 3.14.5 contains bug fixes for iOS 
-     cmake_minimum_required(VERSION 3.14.5) 
- endif() 
+if(CLR_CMAKE_TARGET_IOS OR CLR_CMAKE_TARGET_TVOS)
+     # CMake 3.14.5 contains bug fixes for iOS
+     cmake_minimum_required(VERSION 3.14.5)
+ endif()
 cmake_policy(SET CMP0042 NEW)
 
 project(CoreFX C)
 
+include(../../../../eng/native/configurepaths.cmake)
 include(${CLR_ENG_NATIVE_DIR}/configuretools.cmake)
 
 set(CMAKE_MACOSX_RPATH ON)
-if(CLR_CMAKE_TARGET_IOS OR CLR_CMAKE_TARGET_TVOS) 
+if(CLR_CMAKE_TARGET_IOS OR CLR_CMAKE_TARGET_TVOS)
     set(CMAKE_BUILD_WITH_INSTALL_NAME_DIR ON)
     set(CMAKE_INSTALL_NAME_DIR "@rpath")
 endif()

@@ -1393,11 +1393,11 @@ void Compiler::optValnumCSE_Availablity()
 
                 if (IS_CSE_INDEX(tree->gtCSEnum))
                 {
-                    unsigned CSEnum               = GET_CSE_INDEX(tree->gtCSEnum);
-                    unsigned CseAvailBit          = genCSEnum2bit(CSEnum) * 2;
-                    unsigned cseAvailCrossCallBit = CseAvailBit + 1;
-                    CSEdsc*  desc                 = optCSEfindDsc(CSEnum);
-                    unsigned stmw                 = block->getBBWeight(this);
+                    unsigned             CSEnum               = GET_CSE_INDEX(tree->gtCSEnum);
+                    unsigned             CseAvailBit          = genCSEnum2bit(CSEnum) * 2;
+                    unsigned             cseAvailCrossCallBit = CseAvailBit + 1;
+                    CSEdsc*              desc                 = optCSEfindDsc(CSEnum);
+                    BasicBlock::weight_t stmw                 = block->getBBWeight(this);
 
                     isUse = BitVecOps::IsMember(cseLivenessTraits, available_cses, CseAvailBit);
                     isDef = !isUse; // If is isn't a CSE use, it is a CSE def
@@ -1704,8 +1704,8 @@ class CSE_Heuristic
     Compiler* m_pCompiler;
     unsigned  m_addCSEcount;
 
-    unsigned               aggressiveRefCnt;
-    unsigned               moderateRefCnt;
+    BasicBlock::weight_t   aggressiveRefCnt;
+    BasicBlock::weight_t   moderateRefCnt;
     unsigned               enregCount; // count of the number of predicted enregistered variables
     bool                   largeFrame;
     bool                   hugeFrame;
@@ -1965,8 +1965,8 @@ public:
         if (m_pCompiler->verbose)
         {
             printf("\n");
-            printf("Aggressive CSE Promotion cutoff is %u\n", aggressiveRefCnt);
-            printf("Moderate CSE Promotion cutoff is %u\n", moderateRefCnt);
+            printf("Aggressive CSE Promotion cutoff is %f\n", aggressiveRefCnt);
+            printf("Moderate CSE Promotion cutoff is %f\n", moderateRefCnt);
             printf("enregCount is %u\n", enregCount);
             printf("Framesize estimate is 0x%04X\n", frameSize);
             printf("We have a %s frame\n", hugeFrame ? "huge" : (largeFrame ? "large" : "small"));
@@ -2001,9 +2001,9 @@ public:
                 Compiler::CSEdsc* dsc  = sortTab[cnt];
                 GenTree*          expr = dsc->csdTree;
 
-                unsigned def;
-                unsigned use;
-                unsigned cost;
+                BasicBlock::weight_t def;
+                BasicBlock::weight_t use;
+                unsigned             cost;
 
                 if (CodeOptKind() == Compiler::SMALL_CODE)
                 {
@@ -2020,14 +2020,14 @@ public:
 
                 if (!Compiler::Is_Shared_Const_CSE(dsc->csdHashKey))
                 {
-                    printf("CSE #%02u, {$%-3x, $%-3x} useCnt=%d: [def=%3u, use=%3u, cost=%3u%s]\n        :: ",
+                    printf("CSE #%02u, {$%-3x, $%-3x} useCnt=%d: [def=%3f, use=%3f, cost=%3u%s]\n        :: ",
                            dsc->csdIndex, dsc->csdHashKey, dsc->defExcSetPromise, dsc->csdUseCount, def, use, cost,
                            dsc->csdLiveAcrossCall ? ", call" : "      ");
                 }
                 else
                 {
                     size_t kVal = Compiler::Decode_Shared_Const_CSE_Value(dsc->csdHashKey);
-                    printf("CSE #%02u, {K_%p} useCnt=%d: [def=%3u, use=%3u, cost=%3u%s]\n        :: ", dsc->csdIndex,
+                    printf("CSE #%02u, {K_%p} useCnt=%d: [def=%3f, use=%3f, cost=%3u%s]\n        :: ", dsc->csdIndex,
                            dspPtr(kVal), dsc->csdUseCount, def, use, cost,
                            dsc->csdLiveAcrossCall ? ", call" : "      ");
                 }
@@ -2050,11 +2050,11 @@ public:
         CSE_Heuristic*    m_context;
         Compiler::CSEdsc* m_CseDsc;
 
-        unsigned m_cseIndex;
-        unsigned m_defCount;
-        unsigned m_useCount;
-        unsigned m_Cost;
-        unsigned m_Size;
+        unsigned             m_cseIndex;
+        BasicBlock::weight_t m_defCount;
+        BasicBlock::weight_t m_useCount;
+        unsigned             m_Cost;
+        unsigned             m_Size;
 
         // When this Candidate is successfully promoted to a CSE we record
         // the following information about what category was used when promoting it.
@@ -2104,11 +2104,11 @@ public:
         {
             return m_cseIndex;
         }
-        unsigned DefCount()
+        BasicBlock::weight_t DefCount()
         {
             return m_defCount;
         }
-        unsigned UseCount()
+        BasicBlock::weight_t UseCount()
         {
             return m_useCount;
         }
@@ -2336,14 +2336,14 @@ public:
         unsigned cse_def_cost;
         unsigned cse_use_cost;
 
-        unsigned no_cse_cost    = 0;
-        unsigned yes_cse_cost   = 0;
-        unsigned extra_yes_cost = 0;
-        unsigned extra_no_cost  = 0;
+        BasicBlock::weight_t no_cse_cost    = 0;
+        BasicBlock::weight_t yes_cse_cost   = 0;
+        unsigned             extra_yes_cost = 0;
+        unsigned             extra_no_cost  = 0;
 
         // The 'cseRefCnt' is the RefCnt that we will have if we promote this CSE into a new LclVar
         // Each CSE Def will contain two Refs and each CSE Use will have one Ref of this new LclVar
-        unsigned cseRefCnt = (candidate->DefCount() * 2) + candidate->UseCount();
+        BasicBlock::weight_t cseRefCnt = (candidate->DefCount() * 2) + candidate->UseCount();
 
         bool      canEnregister = true;
         unsigned  slotCount     = 1;
@@ -2381,7 +2381,7 @@ public:
 #ifdef DEBUG
                 if (m_pCompiler->verbose)
                 {
-                    printf("Aggressive CSE Promotion (%u >= %u)\n", cseRefCnt, aggressiveRefCnt);
+                    printf("Aggressive CSE Promotion (%f >= %f)\n", cseRefCnt, aggressiveRefCnt);
                 }
 #endif
                 // With aggressive promotion we expect that the candidate will be enregistered
@@ -2480,7 +2480,7 @@ public:
 #ifdef DEBUG
                 if (m_pCompiler->verbose)
                 {
-                    printf("Aggressive CSE Promotion (%u >= %u)\n", cseRefCnt, aggressiveRefCnt);
+                    printf("Aggressive CSE Promotion (%f >= %f)\n", cseRefCnt, aggressiveRefCnt);
                 }
 #endif
                 // With aggressive promotion we expect that the candidate will be enregistered
@@ -2499,7 +2499,7 @@ public:
 #ifdef DEBUG
                     if (m_pCompiler->verbose)
                     {
-                        printf("Moderate CSE Promotion (CSE never live at call) (%u >= %u)\n", cseRefCnt,
+                        printf("Moderate CSE Promotion (CSE never live at call) (%f >= %f)\n", cseRefCnt,
                                moderateRefCnt);
                     }
 #endif
@@ -2511,7 +2511,7 @@ public:
 #ifdef DEBUG
                     if (m_pCompiler->verbose)
                     {
-                        printf("Moderate CSE Promotion (%s) (%u >= %u)\n",
+                        printf("Moderate CSE Promotion (%s) (%f >= %f)\n",
                                candidate->LiveAcrossCall() ? "CSE is live across a call" : "not enregisterable",
                                cseRefCnt, moderateRefCnt);
                     }
@@ -2544,7 +2544,7 @@ public:
 #ifdef DEBUG
                     if (m_pCompiler->verbose)
                     {
-                        printf("Conservative CSE Promotion (%s) (%u < %u)\n",
+                        printf("Conservative CSE Promotion (%s) (%f < %f)\n",
                                candidate->LiveAcrossCall() ? "CSE is live across a call" : "not enregisterable",
                                cseRefCnt, moderateRefCnt);
                     }
@@ -2557,7 +2557,7 @@ public:
 #ifdef DEBUG
                     if (m_pCompiler->verbose)
                     {
-                        printf("Conservative CSE Promotion (%u < %u)\n", cseRefCnt, moderateRefCnt);
+                        printf("Conservative CSE Promotion (%f < %f)\n", cseRefCnt, moderateRefCnt);
                     }
 #endif
                     cse_def_cost = 2;
@@ -2589,7 +2589,7 @@ public:
             if ((enregCount < (CNT_CALLEE_ENREG * 3 / 2)) || varTypeIsFloating(candidate->Expr()->TypeGet()))
             {
                 // Extra cost in case we have to spill/restore a caller saved register
-                extra_yes_cost = BB_UNITY_WEIGHT;
+                extra_yes_cost = BB_UNITY_WEIGHT_UNSIGNED;
 
                 if (cseRefCnt < moderateRefCnt) // If Conservative CSE promotion
                 {
@@ -2623,7 +2623,7 @@ public:
                     cse_use_cost += 2;
                 }
 
-                extra_yes_cost = (BB_UNITY_WEIGHT * spillSimdRegInProlog) * 3;
+                extra_yes_cost = (BB_UNITY_WEIGHT_UNSIGNED * spillSimdRegInProlog) * 3;
             }
 #endif // FEATURE_SIMD
         }
@@ -2649,14 +2649,14 @@ public:
 #ifdef DEBUG
         if (m_pCompiler->verbose)
         {
-            printf("cseRefCnt=%d, aggressiveRefCnt=%d, moderateRefCnt=%d\n", cseRefCnt, aggressiveRefCnt,
+            printf("cseRefCnt=%f, aggressiveRefCnt=%f, moderateRefCnt=%f\n", cseRefCnt, aggressiveRefCnt,
                    moderateRefCnt);
-            printf("defCnt=%d, useCnt=%d, cost=%d, size=%d%s\n", candidate->DefCount(), candidate->UseCount(),
+            printf("defCnt=%f, useCnt=%f, cost=%d, size=%d%s\n", candidate->DefCount(), candidate->UseCount(),
                    candidate->Cost(), candidate->Size(), candidate->LiveAcrossCall() ? ", LiveAcrossCall" : "");
             printf("def_cost=%d, use_cost=%d, extra_no_cost=%d, extra_yes_cost=%d\n", cse_def_cost, cse_use_cost,
                    extra_no_cost, extra_yes_cost);
 
-            printf("CSE cost savings check (%u >= %u) %s\n", no_cse_cost, yes_cse_cost,
+            printf("CSE cost savings check (%f >= %f) %s\n", no_cse_cost, yes_cse_cost,
                    (no_cse_cost >= yes_cse_cost) ? "passes" : "fails");
         }
 #endif // DEBUG
@@ -2673,7 +2673,7 @@ public:
             /* In stress mode we will make some extra CSEs */
             if (no_cse_cost > 0)
             {
-                int percentage = (no_cse_cost * 100) / yes_cse_cost;
+                int percentage = (int)((no_cse_cost * 100) / yes_cse_cost);
 
                 if (m_pCompiler->compStressCompile(Compiler::STRESS_MAKE_CSE, percentage))
                 {
@@ -2719,14 +2719,14 @@ public:
     // It will also put cse0 into SSA if there is just one def.
     void PerformCSE(CSE_Candidate* successfulCandidate)
     {
-        unsigned cseRefCnt = (successfulCandidate->DefCount() * 2) + successfulCandidate->UseCount();
+        BasicBlock::weight_t cseRefCnt = (successfulCandidate->DefCount() * 2) + successfulCandidate->UseCount();
 
         if (successfulCandidate->LiveAcrossCall() != 0)
         {
             // As we introduce new LclVars for these CSE we slightly
             // increase the cutoffs for aggressive and moderate CSE's
             //
-            int incr = BB_UNITY_WEIGHT;
+            BasicBlock::weight_t incr = BB_UNITY_WEIGHT;
 
             if (cseRefCnt > aggressiveRefCnt)
             {
