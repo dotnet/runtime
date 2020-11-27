@@ -1109,20 +1109,18 @@ bool ClassLoader::IsCompatibleWith(TypeHandle hType1, TypeHandle hType2)
         return false;
     }
 
-    _ASSERTE(hType1.GetMethodTable() != NULL);
-    _ASSERTE(hType2.GetMethodTable() != NULL);
-
-    // Nullable<T> can be cast to T, but this is not compatible according to ECMA I.8.7.1
-    bool isCastFromNullableOfTtoT = hType1.GetMethodTable()->IsNullable() && hType2.IsEquivalentTo(hType1.GetMethodTable()->GetInstantiation()[0]);
-    if (isCastFromNullableOfTtoT)
+    MethodTable* pMT1 = hType1.GetMethodTable();
+    if (pMT1 != NULL)
     {
-        return false;
+        // Nullable<T> can be cast to T, but this is not compatible according to ECMA I.8.7.1
+        bool isCastFromNullableOfTtoT = pMT1->IsNullable() && hType2.IsEquivalentTo(pMT1->GetInstantiation()[0]);
+        if (isCastFromNullableOfTtoT)
+        {
+            return false;
+        }
     }
 
-    {
-        GCX_COOP();
-        return hType2.GetMethodTable()->CanCastTo(hType1.GetMethodTable(), NULL);
-    }
+    return hType2.CanCastTo(hType1, NULL);
 }
 
 /*static*/
