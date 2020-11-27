@@ -1228,7 +1228,7 @@ namespace System.Reflection
                 }
                 else
                 {
-                    attribute = attributeType.CreateInstanceDefaultCtor(publicOnly: false, skipCheckThis: true, fillCache: true, wrapExceptions: false)!;
+                    attribute = attributeType.CreateInstanceDefaultCtor(publicOnly: false, wrapExceptions: false)!;
 
                     // It is allowed by the ECMA spec to have an empty signature blob
                     int blobLen = (int)((byte*)blobEnd - (byte*)blobStart);

@@ -1583,72 +1583,44 @@ void QCALLTYPE ReflectionInvocation::CompileMethod(MethodDesc * pMD)
 }
 
 // This method triggers the class constructor for a give type
-FCIMPL1(void, ReflectionInvocation::RunClassConstructor, ReflectClassBaseObject *pTypeUNSAFE)
+void QCALLTYPE ReflectionInvocation::RunClassConstructor(QCall::TypeHandle pType)
 {
-    FCALL_CONTRACT;
+    QCALL_CONTRACT;
 
-    REFLECTCLASSBASEREF refType = (REFLECTCLASSBASEREF)ObjectToOBJECTREF(pTypeUNSAFE);
-
-    if (refType == NULL)
-        FCThrowArgumentVoidEx(kArgumentException, NULL, W("InvalidOperation_HandleIsNotInitialized"));
-
-    TypeHandle typeHnd = refType->GetType();
+    TypeHandle typeHnd = pType.AsTypeHandle();
     if (typeHnd.IsTypeDesc())
         return;
 
     MethodTable *pMT = typeHnd.AsMethodTable();
+    if (pMT->IsClassInited())
+        return;
 
-    Assembly *pAssem = pMT->GetAssembly();
-
-    if (!pMT->IsClassInited())
-    {
-        HELPER_METHOD_FRAME_BEGIN_1(refType);
-
-        pMT->CheckRestore();
-        pMT->EnsureInstanceActive();
-        pMT->CheckRunClassInitThrowing();
-
-        HELPER_METHOD_FRAME_END();
-    }
+    BEGIN_QCALL;
+    pMT->CheckRestore();
+    pMT->EnsureInstanceActive();
+    pMT->CheckRunClassInitThrowing();
+    END_QCALL;
 }
-FCIMPLEND
 
 // This method triggers the module constructor for a give module
-FCIMPL1(void, ReflectionInvocation::RunModuleConstructor, ReflectModuleBaseObject *pModuleUNSAFE) {
-    FCALL_CONTRACT;
-
-    REFLECTMODULEBASEREF refModule = (REFLECTMODULEBASEREF)ObjectToOBJECTREF(pModuleUNSAFE);
-
-    if(refModule == NULL)
-        FCThrowArgumentVoidEx(kArgumentException, NULL, W("InvalidOperation_HandleIsNotInitialized"));
-
-    Module *pModule = refModule->GetModule();
-
-    Assembly *pAssem = pModule->GetAssembly();
+void QCALLTYPE ReflectionInvocation::RunModuleConstructor(QCall::ModuleHandle pModule)
+{
+    QCALL_CONTRACT;
 
     DomainFile *pDomainFile = pModule->GetDomainFile();
-    if (pDomainFile==NULL || !pDomainFile->IsActive())
-    {
-        HELPER_METHOD_FRAME_BEGIN_1(refModule);
-        if(pDomainFile==NULL)
-            pDomainFile=pModule->GetDomainFile();
-        pDomainFile->EnsureActive();
-        HELPER_METHOD_FRAME_END();
-    }
+    if (pDomainFile != NULL && pDomainFile->IsActive())
+        return;
+
+    BEGIN_QCALL;
+    if(pDomainFile == NULL)
+        pDomainFile = pModule->GetDomainFile();
+    pDomainFile->EnsureActive();
+    END_QCALL;
 }
-FCIMPLEND
 
 static void PrepareMethodHelper(MethodDesc * pMD)
 {
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-    GCX_PREEMP();
+    STANDARD_VM_CONTRACT;
 
     pMD->EnsureActive();
 
@@ -1665,23 +1637,16 @@ static void PrepareMethodHelper(MethodDesc * pMD)
 
 // This method triggers a given method to be jitted. CoreCLR implementation of this method triggers jiting of the given method only.
 // It does not walk a subset of callgraph to provide CER guarantees.
-FCIMPL3(void, ReflectionInvocation::PrepareMethod, ReflectMethodObject* pMethodUNSAFE, TypeHandle *pInstantiation, UINT32 cInstantiation)
+void QCALLTYPE ReflectionInvocation::PrepareMethod(MethodDesc *pMD, TypeHandle *pInstantiation, UINT32 cInstantiation)
 {
     CONTRACTL {
-        FCALL_CHECK;
-        PRECONDITION(CheckPointer(pMethodUNSAFE, NULL_OK));
+        QCALL_CHECK;
+        PRECONDITION(pMD != NULL);
         PRECONDITION(CheckPointer(pInstantiation, NULL_OK));
     }
     CONTRACTL_END;
 
-    REFLECTMETHODREF refMethod = (REFLECTMETHODREF)ObjectToOBJECTREF(pMethodUNSAFE);
-
-    HELPER_METHOD_FRAME_BEGIN_1(refMethod);
-
-    if (refMethod == NULL)
-        COMPlusThrow(kArgumentException, W("InvalidOperation_HandleIsNotInitialized"));
-
-    MethodDesc *pMD = refMethod->GetMethod();
+    BEGIN_QCALL;
 
     if (pMD->IsAbstract())
         COMPlusThrow(kArgumentException, W("Argument_CannotPrepareAbstract"));
@@ -1718,9 +1683,8 @@ FCIMPL3(void, ReflectionInvocation::PrepareMethod, ReflectMethodObject* pMethodU
 
     PrepareMethodHelper(pMD);
 
-    HELPER_METHOD_FRAME_END();
+    END_QCALL;
 }
-FCIMPLEND
 
 // This method triggers target of a given method to be jitted. CoreCLR implementation of this method triggers jiting
 // of the given method only. It does not walk a subset of callgraph to provide CER guarantees.
@@ -1742,6 +1706,7 @@ FCIMPL1(void, ReflectionInvocation::PrepareDelegate, Object* delegateUNSAFE)
 
     MethodDesc *pMD = COMDelegate::GetMethodDesc(delegate);
 
+    GCX_PREEMP();
     PrepareMethodHelper(pMD);
 
     HELPER_METHOD_FRAME_END();
@@ -2011,13 +1976,7 @@ void RuntimeTypeHandle::ValidateTypeAbleToBeInstantiated(
     TypeHandle typeHandle,
     bool fGetUninitializedObject)
 {
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
+    STANDARD_VM_CONTRACT;
 
     // Don't allow void
     if (typeHandle.GetSignatureCorElementType() == ELEMENT_TYPE_VOID)
@@ -2260,22 +2219,17 @@ FCIMPLEND
 //*************************************************************************************************
 //*************************************************************************************************
 //*************************************************************************************************
-FCIMPL1(Object*, ReflectionSerialization::GetUninitializedObject, ReflectClassBaseObject* objTypeUNSAFE) {
-    FCALL_CONTRACT;
+void QCALLTYPE ReflectionSerialization::GetUninitializedObject(QCall::TypeHandle pType, QCall::ObjectHandleOnStack retObject)
+{
+    QCALL_CONTRACT;
 
-    OBJECTREF           retVal  = NULL;
-    REFLECTCLASSBASEREF objType = (REFLECTCLASSBASEREF) objTypeUNSAFE;
+    BEGIN_QCALL;
 
-    HELPER_METHOD_FRAME_BEGIN_RET_NOPOLL();
-
-    TypeHandle type = objType->GetType();
+    TypeHandle type = pType.AsTypeHandle();
 
     RuntimeTypeHandle::ValidateTypeAbleToBeInstantiated(type, true /* fForGetUninitializedInstance */);
 
     MethodTable* pMT = type.AsMethodTable();
-
-    // Never allow the allocation of an unitialized ContextBoundObject derived type, these must always be created with a paired
-    // transparent proxy or the jit will get confused.
 
 #ifdef FEATURE_COMINTEROP
     // Also do not allow allocation of uninitialized RCWs (COM objects).
@@ -2284,16 +2238,17 @@ FCIMPL1(Object*, ReflectionSerialization::GetUninitializedObject, ReflectClassBa
 #endif // FEATURE_COMINTEROP
 
     // If it is a nullable, return the underlying type instead.
-    if (Nullable::IsNullableType(pMT))
+    if (pMT->IsNullable())
         pMT = pMT->GetInstantiation()[0].GetMethodTable();
 
-    // Allocation will invoke any precise static cctors as needed.
-    retVal = pMT->Allocate();
+    {
+        GCX_COOP();
+        // Allocation will invoke any precise static cctors as needed.
+        retObject.Set(pMT->Allocate());
+    }
 
-    HELPER_METHOD_FRAME_END();
-    return OBJECTREFToObject(retVal);
+    END_QCALL;
 }
-FCIMPLEND
 
 //*************************************************************************************************
 //*************************************************************************************************
