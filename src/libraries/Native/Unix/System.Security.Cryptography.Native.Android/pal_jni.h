@@ -44,6 +44,7 @@ extern jclass    g_cipherClass;
 extern jmethodID g_cipherGetInstanceMethod;
 extern jmethodID g_cipherDoFinalMethod;
 extern jmethodID g_cipherUpdateMethod;
+extern jmethodID g_cipherUpdateAADMethod;
 extern jmethodID g_cipherInitMethod;
 extern jmethodID g_getBlockSizeMethod;
 

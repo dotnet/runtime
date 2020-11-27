@@ -35,6 +35,7 @@ jclass    g_cipherClass;
 jmethodID g_cipherGetInstanceMethod;
 jmethodID g_cipherDoFinalMethod;
 jmethodID g_cipherUpdateMethod;
+jmethodID g_cipherUpdateAADMethod;
 jmethodID g_cipherInitMethod;
 jmethodID g_getBlockSizeMethod;
 
@@ -161,8 +162,9 @@ JNI_OnLoad(JavaVM *vm, void *reserved)
     g_cipherClass =             GetClassGRef(env, "javax/crypto/Cipher");
     g_cipherGetInstanceMethod = GetMethod(env, true,  g_cipherClass, "getInstance", "(Ljava/lang/String;)Ljavax/crypto/Cipher;");
     g_getBlockSizeMethod =      GetMethod(env, false, g_cipherClass, "getBlockSize", "()I");
-    g_cipherDoFinalMethod =     GetMethod(env, false, g_cipherClass, "doFinal", "([BI)I");
+    g_cipherDoFinalMethod =     GetMethod(env, false, g_cipherClass, "doFinal", "()[B");
     g_cipherUpdateMethod =      GetMethod(env, false, g_cipherClass, "update", "([B)[B");
+    g_cipherUpdateAADMethod =   GetMethod(env, false, g_cipherClass, "updateAAD", "([B)V");
     g_cipherInitMethod =        GetMethod(env, false, g_cipherClass, "init", "(ILjava/security/Key;Ljava/security/spec/AlgorithmParameterSpec;)V");
 
     g_ivPsClass =               GetClassGRef(env, "javax/crypto/spec/IvParameterSpec");

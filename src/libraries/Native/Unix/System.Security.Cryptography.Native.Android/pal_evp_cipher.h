@@ -7,7 +7,10 @@
 #include "pal_evp.h"
 
 
-#define TAG_LENGTH 16
+#define TAG_MAX_LENGTH 16
+
+#define CIPHER_ENCRYPT_MODE 1
+#define CIPHER_DECRYPT_MODE 2
 
 typedef struct CipherCtx
 {
@@ -17,7 +20,7 @@ typedef struct CipherCtx
     int32_t encMode;
     uint8_t* key;
     uint8_t* iv;
-    uint8_t* tag[TAG_LENGTH];
+    uint8_t* tag[TAG_MAX_LENGTH];
 } CipherCtx;
 
 PALEXPORT CipherCtx* CryptoNative_EvpCipherCreate2(intptr_t type, uint8_t* key, int32_t keyLength, int32_t effectiveKeyLength, uint8_t* iv, int32_t enc);
