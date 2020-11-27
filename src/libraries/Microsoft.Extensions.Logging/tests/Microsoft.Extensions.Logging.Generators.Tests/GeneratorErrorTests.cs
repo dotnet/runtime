@@ -25,7 +25,7 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
             ");
 
             Assert.Single(d);
-            Assert.Equal("LG0", d[0].Id);
+            Assert.Equal("LG0000", d[0].Id);
         }
 
         [Fact]
@@ -40,7 +40,7 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
             ");
 
             Assert.Single(d);
-            Assert.Equal("LG1", d[0].Id);
+            Assert.Equal("LG0001", d[0].Id);
         }
 
         [Fact]
@@ -55,7 +55,7 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
             ");
 
             Assert.Single(d);
-            Assert.Equal("LG2", d[0].Id);
+            Assert.Equal("LG0002", d[0].Id);
         }
 
         [Fact]
@@ -73,7 +73,7 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
             ");
 
             Assert.Single(d);
-            Assert.Equal("LG3", d[0].Id);
+            Assert.Equal("LG0003", d[0].Id);
         }
 
         [Fact]
@@ -86,7 +86,7 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
             ", false);
 
             Assert.Single(d);
-            Assert.Equal("LG4", d[0].Id);
+            Assert.Equal("LG0004", d[0].Id);
         }
 
         [Fact]
@@ -104,7 +104,7 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
             ");
 
             Assert.Single(d);
-            Assert.Equal("LG5", d[0].Id);
+            Assert.Equal("LG0005", d[0].Id);
         }
 
         [Fact]
@@ -119,7 +119,7 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
             ");
 
             Assert.Single(d);
-            Assert.Equal("LG6", d[0].Id);
+            Assert.Equal("LG0006", d[0].Id);
         }
 
         [Fact]
@@ -134,7 +134,7 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
             ");
 
             Assert.Single(d);
-            Assert.Equal("LG7", d[0].Id);
+            Assert.Equal("LG0007", d[0].Id);
         }
 
         [Fact]
@@ -149,7 +149,7 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
             ");
 
             Assert.Single(d);
-            Assert.Equal("LG8", d[0].Id);
+            Assert.Equal("LG0008", d[0].Id);
         }
 
         [Fact]
@@ -164,7 +164,7 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
             ");
 
             Assert.Single(d);
-            Assert.Equal("LG9", d[0].Id);
+            Assert.Equal("LG0009", d[0].Id);
         }
 
         [Fact]
@@ -179,7 +179,7 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
             ");
 
             Assert.Single(d);
-            Assert.Equal("LG10", d[0].Id);
+            Assert.Equal("LG0010", d[0].Id);
         }
 
         private static IReadOnlyList<Diagnostic> TryCode(string code, bool wrap = true)

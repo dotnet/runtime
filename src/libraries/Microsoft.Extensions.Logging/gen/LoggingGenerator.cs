@@ -243,7 +243,7 @@ namespace Microsoft.Extensions.Logging.Generators
             }
 
             return $@"
-                {lm.Modifiers} void {lm.Name}({lm.LoggerType} __logger{(lm.Parameters.Count > 0 ? ", " : string.Empty)}{GenParameters(lm)})
+                {lm.Modifiers} void {lm.Name}({(lm.IsExtensionMethod ? "this " : string.Empty)}{lm.LoggerType} __logger{(lm.Parameters.Count > 0 ? ", " : string.Empty)}{GenParameters(lm)})
                 {{
                     if (__logger.IsEnabled({level}))
                     {{

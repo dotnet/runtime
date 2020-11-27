@@ -202,6 +202,7 @@ namespace Microsoft.Extensions.Logging.Generators
                                         EventId = eventId,
                                         EventName = eventName,
                                         MessageHasTemplates = HasTemplates(message),
+                                        IsExtensionMethod = false,  // TODO: how to determine this?
                                         Modifiers = method.Modifiers.ToString(),
                                     };
 
@@ -273,6 +274,7 @@ namespace Microsoft.Extensions.Logging.Generators
                                     {
                                         var pSymbol = GetSemanticModel(p.SyntaxTree).GetTypeInfo(p.Type!).Type!;
                                         var typeName = pSymbol.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat.WithMiscellaneousOptions(SymbolDisplayMiscellaneousOptions.IncludeNullableReferenceTypeModifier));
+                                            // TODO: the above doesn't deal properly with nullable types
 
                                         if (first)
                                         {
@@ -434,6 +436,7 @@ namespace Microsoft.Extensions.Logging.Generators
             public string EventId = string.Empty;
             public string EventName = string.Empty;
             public bool MessageHasTemplates;
+            public bool IsExtensionMethod;
             public string Modifiers = string.Empty;
             public string LoggerType = string.Empty;
             public List<LoggerParameter> Parameters = new();
