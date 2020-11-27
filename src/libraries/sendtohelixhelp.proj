@@ -177,9 +177,13 @@
     <Message Importance="High" Text="Using Timeout: $(_workItemTimeout)" />
 
     <ItemGroup Condition="'$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'tvOS'">
-      <!-- We have to define this temp item list because of a bug in MSBuild that would prevent access %(Filename) right away -->
-      <_apps Include="$(TestArchiveTestsRoot)**/*.app" />
-      <XHarnessAppBundleToTest Include="@(_apps)">
+      <!-- Find the sample app directory -->
+      <_runOnlyApps Include="$([System.IO.Directory]::GetDirectories('$(TestArchiveTestsRoot)'runonly, '*.app', System.IO.SearchOption.AllDirectories))">
+      <!-- Find all directories named *.app for the library tests and exclude for run-only sample app -->
+      <_testApps Include="$([System.IO.Directory]::GetDirectories('$(TestArchiveTestsRoot)', '*.app', System.IO.SearchOption.AllDirectories))"
+                 Exclude="@(_runOnlyApps)">
+      <!-- Create work items for test apps -->
+      <XHarnessAppBundleToTest Include="@(_testApps)">
         <Targets Condition="'$(TargetArchitecture)' == 'arm'">ios-device</Targets>
         <Targets Condition="'$(TargetArchitecture)' == 'arm64'">ios-device</Targets>
         <Targets Condition="'$(TargetArchitecture)' == 'x64'">ios-simulator-64</Targets>
@@ -187,13 +191,21 @@
 
         <TestTimeout>$(_workItemTimeout)</TestTimeout>
         <LaunchTimeout>$(_workItemTimeout)</LaunchTimeout>
-        
-        <!-- The iOS sample app (src/mono/netcore/sample/iOS/) is built as a part of library test build and copied to helix folder -->
-        <!-- So it can be run on simulator like other apps containing unit tests -->
-        <!-- The ios sample app doesn't need test runner -->
-        <IncludesTestRunner Condition="'%(Filename)' == 'HelloiOS'">false</IncludesTestRunner>
+      </XHarnessAppBundleToTest>
+
+      <!-- Create work items for run-only apps -->
+      <XHarnessAppBundleToTest Include="@(_runOnlyApps)">
+        <Targets Condition="'$(TargetArchitecture)' == 'arm'">ios-device</Targets>
+        <Targets Condition="'$(TargetArchitecture)' == 'arm64'">ios-device</Targets>
+        <Targets Condition="'$(TargetArchitecture)' == 'x64'">ios-simulator-64</Targets>
+        <Targets Condition="'$(TargetArchitecture)' == 'x86'">ios-simulator-32</Targets>
+
+        <TestTimeout>$(_workItemTimeout)</TestTimeout>
+        <LaunchTimeout>$(_workItemTimeout)</LaunchTimeout>
+        <!-- The sample app doesn't need test runner -->
+        <IncludesTestRunner>false</IncludesTestRunner>
         <!-- The sample's C# Main method returns 42 so it should be considered by xharness as a success -->
-        <ExpectedExitCode Condition="'%(Filename)' == 'HelloiOS'">42</ExpectedExitCode>
+        <ExpectedExitCode>42</ExpectedExitCode>
       </XHarnessAppBundleToTest>
     </ItemGroup>
 
