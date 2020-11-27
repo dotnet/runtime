@@ -1,7 +1,7 @@
 <Project>
   <PropertyGroup>
     <AsnXml />
-    <_AsnXmlDiffCmd>/usr/bin/diff -q -a</_AsnXmlDiffCmd>
+    <_AsnXmlDiffCmd>%24%28command -v diff%29 -q -a</_AsnXmlDiffCmd>
     <_AsnXmlDiffCmd Condition="$([MSBuild]::IsOsPlatform('windows')) == 'true'">$(SystemRoot)\System32\fc.exe /a</_AsnXmlDiffCmd>
     <_AsnIntermediatePath>$([MSBuild]::NormalizeDirectory('$(IntermediateOutputPath)', 'asnxml'))</_AsnIntermediatePath>
   </PropertyGroup>
