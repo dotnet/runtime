@@ -59,10 +59,8 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
                     }
                     else
                     {
-                        // this synchronous code path could cause a deadlock if we were to block on DisposeAsync
-                        // instead, a fire-and-forget call may cause race conditions while disposing borrowed resources.
-                        // since this is a rare error case, we just take the fire-and-forget approach here
-                        Task.Run(() => ((IAsyncDisposable)service).DisposeAsync().AsTask().GetAwaiter().GetResult());
+                        // sync over async, for the rare case that an object only implements IAsyncDisposable and may end up starving the thread pool.
+                        Task.Run(() => ((IAsyncDisposable)service).DisposeAsync().AsTask()).GetAwaiter().GetResult();
                     }
                     ThrowHelper.ThrowObjectDisposedException();
                 }
