@@ -109,7 +109,7 @@ namespace System.Buffers.Tests
 
             public Memory<byte> GetMemory(int sizeHint = 0) => _buffer.AsMemory().Slice(_written);
 
-            public Span<byte> GetSpan(int sizeHint) => _buffer.AsSpan().Slice(_written);
+            public Span<byte> GetSpan(int sizeHint) => _buffer.AsSpan(_written);
 
             public override string ToString()
             {

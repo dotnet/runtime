@@ -147,7 +147,7 @@ namespace SslStress
 
             ReadOnlySequence<byte> lengthBytes = buffer.Slice(0, pos.Value);
             int numSize = s_encoding.GetChars(lengthBytes.ToArray(), _charBuffer);
-            int length = int.Parse(_charBuffer.AsSpan().Slice(0, numSize));
+            int length = int.Parse(_charBuffer.AsAsSpan(0, numSize));
             buffer = buffer.Slice(buffer.GetPosition(1, pos.Value));
 
             // checksum
@@ -159,7 +159,7 @@ namespace SslStress
 
             ReadOnlySequence<byte> checksumBytes = buffer.Slice(0, pos.Value);
             numSize = s_encoding.GetChars(checksumBytes.ToArray(), _charBuffer);
-            ulong checksum = ulong.Parse(_charBuffer.AsSpan().Slice(0, numSize));
+            ulong checksum = ulong.Parse(_charBuffer.AsAsSpan(0, numSize));
             buffer = buffer.Slice(buffer.GetPosition(1, pos.Value));
 
             // payload
@@ -285,10 +285,10 @@ namespace SslStress
                     return Task.CompletedTask;
                 }
             }
-            
+
             async Task Monitor(CancellationToken token)
             {
-                do 
+                do
                 {
                     await Task.Delay(500);
 

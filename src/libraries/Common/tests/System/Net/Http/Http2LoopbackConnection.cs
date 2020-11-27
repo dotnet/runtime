@@ -540,7 +540,7 @@ namespace System.Net.Test.Common
                         byte[] newBuffer = new byte[body.Length + dataFrame.Data.Length];
 
                         body.CopyTo(newBuffer, 0);
-                        dataFrame.Data.Span.CopyTo(newBuffer.AsSpan().Slice(body.Length));
+                        dataFrame.Data.Span.CopyTo(newBuffer.AsSpan(body.Length));
                         body= newBuffer;
                     }
                 }
