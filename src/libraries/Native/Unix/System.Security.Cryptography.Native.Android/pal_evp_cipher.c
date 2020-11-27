@@ -10,25 +10,30 @@ intptr_t CryptoNative_EvpAes128Cfb8()   { return 1003; }
 intptr_t CryptoNative_EvpAes128Cfb128() { return 1004; }
 intptr_t CryptoNative_EvpAes128Gcm()    { return 1005; }
 intptr_t CryptoNative_EvpAes128Ccm()    { return 1006; }
+
 intptr_t CryptoNative_EvpAes192Ecb()    { return 1007; }
 intptr_t CryptoNative_EvpAes192Cbc()    { return 1008; }
 intptr_t CryptoNative_EvpAes192Cfb8()   { return 1009; }
 intptr_t CryptoNative_EvpAes192Cfb128() { return 1010; }
 intptr_t CryptoNative_EvpAes192Gcm()    { return 1011; }
 intptr_t CryptoNative_EvpAes192Ccm()    { return 1012; }
+
 intptr_t CryptoNative_EvpAes256Ecb()    { return 1013; }
 intptr_t CryptoNative_EvpAes256Cbc()    { return 1014; }
 intptr_t CryptoNative_EvpAes256Cfb8()   { return 1015; }
 intptr_t CryptoNative_EvpAes256Cfb128() { return 1016; }
 intptr_t CryptoNative_EvpAes256Gcm()    { return 1017; }
 intptr_t CryptoNative_EvpAes256Ccm()    { return 1018; }
+
 intptr_t CryptoNative_EvpDes3Ecb()      { return 1019; }
 intptr_t CryptoNative_EvpDes3Cbc()      { return 1020; }
 intptr_t CryptoNative_EvpDes3Cfb8()     { return 1021; }
 intptr_t CryptoNative_EvpDes3Cfb64()    { return 1022; }
+
 intptr_t CryptoNative_EvpDesEcb()       { return 1023; }
 intptr_t CryptoNative_EvpDesCfb8()      { return 1024; }
 intptr_t CryptoNative_EvpDesCbc()       { return 1025; }
+
 intptr_t CryptoNative_EvpRC2Ecb()       { return 1026; }
 intptr_t CryptoNative_EvpRC2Cbc()       { return 1027; }
 
@@ -40,40 +45,69 @@ static int32_t GetAlgorithmWidth(intptr_t type)
     if (type == CryptoNative_EvpAes128Ccm())    return 128;
     if (type == CryptoNative_EvpAes128Cfb8())   return 128;
     if (type == CryptoNative_EvpAes128Cfb128()) return 128;
+
     if (type == CryptoNative_EvpAes192Ecb())    return 192;
     if (type == CryptoNative_EvpAes192Cbc())    return 192;
     if (type == CryptoNative_EvpAes192Gcm())    return 192;
     if (type == CryptoNative_EvpAes192Ccm())    return 192;
     if (type == CryptoNative_EvpAes192Cfb8())   return 192;
     if (type == CryptoNative_EvpAes192Cfb128()) return 192;
+
     if (type == CryptoNative_EvpAes256Ecb())    return 256;
     if (type == CryptoNative_EvpAes256Cbc())    return 256;
     if (type == CryptoNative_EvpAes256Gcm())    return 256;
     if (type == CryptoNative_EvpAes256Ccm())    return 256;
     if (type == CryptoNative_EvpAes256Cfb8())   return 256;
     if (type == CryptoNative_EvpAes256Cfb128()) return 256;
+
+    if (type == CryptoNative_EvpDesEcb())       return 56;
+    if (type == CryptoNative_EvpDesCfb8())      return 56;
+    if (type == CryptoNative_EvpDesCbc())       return 56;
+
+    if (type == CryptoNative_EvpDes3Ecb())      return 168;
+    if (type == CryptoNative_EvpDes3Cbc())      return 168;
+    if (type == CryptoNative_EvpDes3Cfb8())     return 168;
+    if (type == CryptoNative_EvpDes3Cfb64())    return 168;
+
     assert(0 && "unexpected type");
     return FAIL;
 }
 
 static jobject GetAlgorithmName(JNIEnv* env, intptr_t type)
 {
-    if (type == CryptoNative_EvpAes128Ecb())  return JSTRING("AES/ECB/NoPadding");
-    if (type == CryptoNative_EvpAes128Cbc())  return JSTRING("AES/CBC/NoPadding");
-    if (type == CryptoNative_EvpAes128Gcm())  return JSTRING("AES/GCM/NoPadding");
-    if (type == CryptoNative_EvpAes128Ccm())  return JSTRING("AES/CCM/NoPadding");
-    if (type == CryptoNative_EvpAes128Cfb8()) return JSTRING("AES/CFB/NoPadding");
-    if (type == CryptoNative_EvpAes192Ecb())  return JSTRING("AES/ECB/NoPadding");
-    if (type == CryptoNative_EvpAes192Cbc())  return JSTRING("AES/CBC/NoPadding");
-    if (type == CryptoNative_EvpAes192Gcm())  return JSTRING("AES/GCM/NoPadding");
-    if (type == CryptoNative_EvpAes192Ccm())  return JSTRING("AES/CCM/NoPadding");
-    if (type == CryptoNative_EvpAes192Cfb8()) return JSTRING("AES/CFB/NoPadding");
-    if (type == CryptoNative_EvpAes256Ecb())  return JSTRING("AES/ECB/NoPadding");
-    if (type == CryptoNative_EvpAes256Cbc())  return JSTRING("AES/CBC/NoPadding");
-    if (type == CryptoNative_EvpAes256Gcm())  return JSTRING("AES/GCM/NoPadding");
-    if (type == CryptoNative_EvpAes256Ccm())  return JSTRING("AES/CCM/NoPadding");
-    if (type == CryptoNative_EvpAes256Cfb8()) return JSTRING("AES/CFB/NoPadding");
-    assert(0 && "unexpected type");
+    if (type == CryptoNative_EvpAes128Ecb())    return JSTRING("AES/ECB/NoPadding");
+    if (type == CryptoNative_EvpAes128Cbc())    return JSTRING("AES/CBC/NoPadding");
+    if (type == CryptoNative_EvpAes128Gcm())    return JSTRING("AES/GCM/NoPadding");
+    if (type == CryptoNative_EvpAes128Ccm())    return JSTRING("AES/CCM/NoPadding");
+    if (type == CryptoNative_EvpAes128Cfb8())   return JSTRING("AES/CFB/NoPadding");
+
+    if (type == CryptoNative_EvpAes192Ecb())    return JSTRING("AES/ECB/NoPadding");
+    if (type == CryptoNative_EvpAes192Cbc())    return JSTRING("AES/CBC/NoPadding");
+    if (type == CryptoNative_EvpAes192Gcm())    return JSTRING("AES/GCM/NoPadding");
+    if (type == CryptoNative_EvpAes192Ccm())    return JSTRING("AES/CCM/NoPadding");
+    if (type == CryptoNative_EvpAes192Cfb8())   return JSTRING("AES/CFB/NoPadding");
+
+    if (type == CryptoNative_EvpAes256Ecb())    return JSTRING("AES/ECB/NoPadding");
+    if (type == CryptoNative_EvpAes256Cbc())    return JSTRING("AES/CBC/NoPadding");
+    if (type == CryptoNative_EvpAes256Gcm())    return JSTRING("AES/GCM/NoPadding");
+    if (type == CryptoNative_EvpAes256Ccm())    return JSTRING("AES/CCM/NoPadding");
+    if (type == CryptoNative_EvpAes256Cfb8())   return JSTRING("AES/CFB/NoPadding");
+
+    if (type == CryptoNative_EvpDesEcb())       return JSTRING("DES/ECB/NoPadding");
+    if (type == CryptoNative_EvpDesCfb8())      return JSTRING("DES/CFB/NoPadding");
+    if (type == CryptoNative_EvpDesCbc())       return JSTRING("DES/CBC/NoPadding");
+
+    if (type == CryptoNative_EvpDes3Ecb())      return JSTRING("DESede/ECB/NoPadding");
+    if (type == CryptoNative_EvpDes3Cbc())      return JSTRING("DESede/CBC/NoPadding");
+    if (type == CryptoNative_EvpDes3Cfb8())     return JSTRING("DESede/CFB/NoPadding");
+    if (type == CryptoNative_EvpDes3Cfb64())    return JSTRING("DESede/CFB/NoPadding");
+
+    // custom feedback size is not supported yet:
+    //if (type == CryptoNative_EvpAes128Cfb128()) return JSTRING("AES/CFB/NoPadding");
+    //if (type == CryptoNative_EvpAes192Cfb128()) return JSTRING("AES/CFB/NoPadding");
+    //if (type == CryptoNative_EvpAes256Cfb128()) return JSTRING("AES/CFB/NoPadding");
+
+    LOG_ERROR("This algorithm (%ld) is not supported", type);
     return FAIL;
 }
 
@@ -91,6 +125,9 @@ CipherCtx* CryptoNative_EvpCipherCreatePartial(intptr_t type)
 {
     JNIEnv* env = GetJNIEnv();
     jobject algName = GetAlgorithmName(env, type);
+    if (!algName)
+        return FAIL;
+
     jobject cipher = ToGRef(env, (*env)->CallStaticObjectMethod(env, g_cipherClass, g_cipherGetInstanceMethod, algName));
     (*env)->DeleteLocalRef(env, algName);
 
@@ -135,6 +172,8 @@ int32_t CryptoNative_EvpCipherSetKeyAndIV(CipherCtx* ctx, uint8_t* key, uint8_t*
     // cipher.init(encMode, keySpec, ivSpec);
 
     jobject algName = GetAlgorithmName(env, ctx->type);
+    if (!algName)
+        return FAIL;
 
     if (!ctx->ivLength)
         ctx->ivLength = (*env)->CallIntMethod(env, ctx->cipher, g_getBlockSizeMethod);
