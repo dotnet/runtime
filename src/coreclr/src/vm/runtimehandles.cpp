@@ -2919,8 +2919,6 @@ void QCALLTYPE ModuleHandle::ResolveType(QCall::ModuleHandle pModule, INT32 tkTy
 
     BEGIN_QCALL;
 
-    _ASSERTE(!IsNilToken(tkType));
-
     SigTypeContext typeContext(Instantiation(typeArgs, typeArgsCount), Instantiation(methodArgs, methodArgsCount));
         typeHandle = ClassLoader::LoadTypeDefOrRefOrSpecThrowing(pModule, tkType, &typeContext,
                                                           ClassLoader::ThrowIfNotFound,

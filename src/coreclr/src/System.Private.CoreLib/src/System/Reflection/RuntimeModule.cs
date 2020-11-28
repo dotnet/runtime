@@ -226,29 +226,32 @@ namespace System.Reflection
         [RequiresUnreferencedCode("Trimming changes metadata tokens")]
         public override Type ResolveType(int metadataToken, Type[]? genericTypeArguments, Type[]? genericMethodArguments)
         {
-            MetadataToken tk = new MetadataToken(metadataToken);
-
-            if (tk.IsGlobalTypeDefToken)
-                throw new ArgumentException(SR.Format(SR.Argument_ResolveModuleType, tk), nameof(metadataToken));
-
-            if (!MetadataImport.IsValidToken(tk))
-                throw new ArgumentOutOfRangeException(nameof(metadataToken),
-                    SR.Format(SR.Argument_InvalidToken, tk, this));
-
-            if (!tk.IsTypeDef && !tk.IsTypeSpec && !tk.IsTypeRef)
-                throw new ArgumentException(SR.Format(SR.Argument_ResolveType, tk, this), nameof(metadataToken));
-
-            RuntimeTypeHandle[]? typeArgs = ConvertToTypeHandleArray(genericTypeArguments);
-            RuntimeTypeHandle[]? methodArgs = ConvertToTypeHandleArray(genericMethodArguments);
-
             try
             {
-                Type t = GetModuleHandleImpl().ResolveTypeHandle(metadataToken, typeArgs, methodArgs).GetRuntimeType();
+                MetadataToken tk = new (metadataToken);
 
-                if (t == null)
+                if (tk.IsGlobalTypeDefToken)
+                    throw new ArgumentException(SR.Format(SR.Argument_ResolveModuleType, tk), nameof(metadataToken));
+
+                if (!MetadataImport.IsValidToken(tk))
+                    throw new ArgumentOutOfRangeException(nameof(metadataToken),
+                        SR.Format(SR.Argument_InvalidToken, tk, this));
+
+                if (!tk.IsTypeDef && !tk.IsTypeSpec && !tk.IsTypeRef)
                     throw new ArgumentException(SR.Format(SR.Argument_ResolveType, tk, this), nameof(metadataToken));
 
-                return t;
+                RuntimeTypeHandle[]? typeArgs = null;
+                RuntimeTypeHandle[]? methodArgs = null;
+                if (genericTypeArguments is not null && genericTypeArguments.Length > 0)
+                {
+                    typeArgs = ConvertToTypeHandleArray(genericTypeArguments);
+                }
+                if (genericMethodArguments is not null && genericMethodArguments.Length > 0)
+                {
+                    methodArgs = ConvertToTypeHandleArray(genericMethodArguments);
+                }
+
+                return GetModuleHandleImpl().ResolveTypeHandle(metadataToken, typeArgs, methodArgs).GetRuntimeType();
             }
             catch (BadImageFormatException e)
             {
