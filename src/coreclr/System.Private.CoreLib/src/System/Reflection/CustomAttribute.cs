@@ -1673,17 +1673,23 @@ namespace System.Reflection
                     {
                         // Metadata is always written in little-endian format. Must account for this on
                         // big-endian platforms.
-                        int data = Unsafe.ReadUnaligned<int>((void*)blobStart);
 #if BIGENDIAN
-                        data = BinaryPrimitives.ReverseEndianness(data);
-#endif
+                        const int CustomAttributeVersion = 0x0100;
+                        int version = Unsafe.ReadUnaligned<short>((void*)blobStart);
+                        if (version != CustomAttributeVersion)
+                        {
+                            throw new CustomAttributeFormatException();
+                        }
+                        cNamedArgs = BinaryPrimitives.ReverseEndianness(Unsafe.ReadUnaligned<short>((byte*)blobStart + 2));
+#else
+                        int data = Unsafe.ReadUnaligned<int>((void*)blobStart);
                         const int CustomAttributeVersion = 0x0001;
                         if ((data & 0xffff) != CustomAttributeVersion)
                         {
                             throw new CustomAttributeFormatException();
                         }
-
                         cNamedArgs = data >> 16;
+#endif
                         blobStart = (IntPtr)((byte*)blobStart + 4); // skip version and namedArgs count
                     }
                 }
