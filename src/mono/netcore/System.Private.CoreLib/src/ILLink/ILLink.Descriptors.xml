@@ -688,6 +688,10 @@
 			<field name="FirstChanceException"/>
 		</type>
 
+		<!-- mono_method_has_unmanaged_callers_only_attribute () -->
+		<!-- aot-compiler.c -->
+		<type fullname="System.Runtime.InteropServices.UnmanagedCallersOnlyAttribute"/>
+
 		<type fullname="Mono.NullByRefReturnException">
 			<!-- marshal-ilgen.c:emit_invoke_call -->
 			<method signature="System.Void .ctor()" />
