@@ -8,6 +8,7 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Buffers;
+using System.Buffers.Binary;
 
 using Internal.Runtime.CompilerServices;
 
@@ -1679,7 +1680,7 @@ namespace System.Reflection
                         const int CustomAttributeVersion = 0x0001;
                         if ((data & 0xffff) != CustomAttributeVersion)
                         {
-                            ThrowIncorrectData();
+                            throw new CustomAttributeFormatException();
                         }
 
                         cNamedArgs = data >> 16;
@@ -1712,7 +1713,7 @@ namespace System.Reflection
                             // Did we get a valid property reference?
                             if (property is null)
                             {
-                                ThrowInvalidPropertyException(name);
+                                throw new CustomAttributeFormatException(SR.Format(SR.RFLCT_InvalidPropFail, name));
                             }
 
                             MethodInfo setMethod = property.GetSetMethod(true)!;
@@ -1738,30 +1739,18 @@ namespace System.Reflection
 
                     if (ex is not null)
                     {
-                        RethrowException(name, isProperty, ex);
+                        throw new CustomAttributeFormatException(
+                                        SR.Format(isProperty ? SR.RFLCT_InvalidPropFail : SR.RFLCT_InvalidFieldFail, name), ex);
                     }
                 }
 
                 if (blobStart != blobEnd)
                 {
-                    ThrowIncorrectData();
+                    throw new CustomAttributeFormatException();
                 }
 
                 attributes.Add(attribute);
             }
-
-            [DoesNotReturn]
-            [StackTraceHidden]
-            static void ThrowInvalidPropertyException(string name) => throw new CustomAttributeFormatException(SR.Format(SR.RFLCT_InvalidPropFail, name));
-
-            [DoesNotReturn]
-            [StackTraceHidden]
-            static void ThrowIncorrectData() => throw new CustomAttributeFormatException();
-
-            [DoesNotReturn]
-            [StackTraceHidden]
-            static void RethrowException(string name, bool isProperty, Exception e) => throw new CustomAttributeFormatException(
-                                        SR.Format(isProperty ? SR.RFLCT_InvalidPropFail : SR.RFLCT_InvalidFieldFail, name), e);
         }
 
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
