@@ -2963,8 +2963,6 @@ void QCALLTYPE ModuleHandle::ResolveField(QCall::ModuleHandle pModule, INT32 tkM
 
     BEGIN_QCALL;
 
-    _ASSERTE(!IsNilToken(tkMemberRef));
-
     SigTypeContext typeContext(Instantiation(typeArgs, typeArgsCount), Instantiation(methodArgs, methodArgsCount));
     pField = MemberLoader::GetFieldDescFromMemberDefOrRef(pModule, tkMemberRef, &typeContext, FALSE);
     GCX_COOP();

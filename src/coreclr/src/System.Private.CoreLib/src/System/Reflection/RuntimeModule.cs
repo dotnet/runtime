@@ -171,19 +171,27 @@ namespace System.Reflection
         [RequiresUnreferencedCode("Trimming changes metadata tokens")]
         public override FieldInfo? ResolveField(int metadataToken, Type[]? genericTypeArguments, Type[]? genericMethodArguments)
         {
-            MetadataToken tk = new MetadataToken(metadataToken);
-
-            if (!MetadataImport.IsValidToken(tk))
-                throw new ArgumentOutOfRangeException(nameof(metadataToken),
-                    SR.Format(SR.Argument_InvalidToken, tk, this));
-
-            RuntimeTypeHandle[]? typeArgs = ConvertToTypeHandleArray(genericTypeArguments);
-            RuntimeTypeHandle[]? methodArgs = ConvertToTypeHandleArray(genericMethodArguments);
-
             try
             {
-                IRuntimeFieldInfo fieldHandle;
+                MetadataToken tk = new (metadataToken);
 
+                if (!MetadataImport.IsValidToken(tk))
+                    throw new ArgumentOutOfRangeException(nameof(metadataToken),
+                        SR.Format(SR.Argument_InvalidToken, tk, this));
+
+                RuntimeTypeHandle[]? typeArgs = null;
+                RuntimeTypeHandle[]? methodArgs = null;
+                if (genericTypeArguments is not null && genericTypeArguments.Length > 0)
+                {
+                    typeArgs = ConvertToTypeHandleArray(genericTypeArguments);
+                }
+                if (genericMethodArguments is not null && genericMethodArguments.Length > 0)
+                {
+                    methodArgs = ConvertToTypeHandleArray(genericMethodArguments);
+                }
+
+                IRuntimeFieldInfo fieldHandle;
+                ModuleHandle moduleHandle = new (GetNativeHandle());
                 if (!tk.IsFieldDef)
                 {
                     if (!tk.IsMemberRef)
@@ -199,10 +207,13 @@ namespace System.Reflection
                                 nameof(metadataToken));
                     }
 
-                    fieldHandle = ModuleHandle.ResolveFieldHandleInternal(GetNativeHandle(), tk, typeArgs, methodArgs);
+                    fieldHandle = moduleHandle.ResolveFieldHandle(tk, typeArgs, methodArgs).GetRuntimeFieldInfo();
+                }
+                else
+                {
+                    fieldHandle = moduleHandle.ResolveFieldHandle(metadataToken, typeArgs, methodArgs).GetRuntimeFieldInfo();
                 }
 
-                fieldHandle = ModuleHandle.ResolveFieldHandleInternal(GetNativeHandle(), metadataToken, typeArgs, methodArgs);
                 RuntimeType declaringType = RuntimeFieldHandle.GetApproxDeclaringType(fieldHandle.Value);
 
                 if (declaringType.IsGenericType || declaringType.IsArray)
@@ -211,11 +222,11 @@ namespace System.Reflection
                     declaringType = (RuntimeType)ResolveType(tkDeclaringType, genericTypeArguments, genericMethodArguments);
                 }
 
-                return System.RuntimeType.GetFieldInfo(declaringType, fieldHandle);
+                return RuntimeType.GetFieldInfo(declaringType, fieldHandle);
             }
             catch (MissingFieldException)
             {
-                return ResolveLiteralField(tk, genericTypeArguments, genericMethodArguments);
+                return ResolveLiteralField(new MetadataToken(metadataToken), genericTypeArguments, genericMethodArguments);
             }
             catch (BadImageFormatException e)
             {
