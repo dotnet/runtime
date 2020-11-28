@@ -2940,8 +2940,6 @@ MethodDesc *QCALLTYPE ModuleHandle::ResolveMethod(QCall::ModuleHandle pModule, I
 
     BEGIN_QCALL;
 
-    _ASSERTE(!IsNilToken(tkMemberRef));
-
     BOOL strictMetadataChecks = (TypeFromToken(tkMemberRef) == mdtMethodSpec);
 
     SigTypeContext typeContext(Instantiation(typeArgs, typeArgsCount), Instantiation(methodArgs, methodArgsCount));

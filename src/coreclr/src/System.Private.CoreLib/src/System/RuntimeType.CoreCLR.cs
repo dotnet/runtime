@@ -1723,7 +1723,7 @@ namespace System
 
         internal static MethodBase? GetMethodBase(RuntimeModule scope, int typeMetadataToken)
         {
-            return GetMethodBase(ModuleHandle.ResolveMethodHandleInternal(scope, typeMetadataToken));
+            return GetMethodBase(new ModuleHandle(scope).ResolveMethodHandle(typeMetadataToken).GetMethodInfo());
         }
 
         internal static MethodBase? GetMethodBase(IRuntimeMethodInfo methodHandle)
