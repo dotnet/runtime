@@ -19,6 +19,7 @@
   <ItemGroup>
     <Compile Include="ApkBuilder.cs" />
     <Compile Include="AndroidAppBuilder.cs" />
+    <Compile Include="AndroidApkFileReplacerTask.cs" />
     <Compile Include="Utils.cs" />
   </ItemGroup>
 

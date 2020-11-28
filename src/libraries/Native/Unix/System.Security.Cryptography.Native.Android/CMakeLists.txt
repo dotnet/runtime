@@ -2,6 +2,7 @@ project(System.Security.Cryptography.Native.Android C)
 
 add_compile_options(-Wno-gnu-zero-variadic-macro-arguments)
 add_compile_options(-Wno-unused-parameter)
+add_compile_options(-Wno-unused-function)
 
 set(NATIVECRYPTO_SOURCES
     pal_jni.c
@@ -10,6 +11,7 @@ set(NATIVECRYPTO_SOURCES
     pal_evp_cipher.c
     pal_hmac.c
     pal_bignum.c
+    pal_ssl.c
 )
 
 add_library(System.Security.Cryptography.Native.Android
