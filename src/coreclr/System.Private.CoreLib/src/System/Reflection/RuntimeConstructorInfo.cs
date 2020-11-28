@@ -266,7 +266,7 @@ namespace System.Reflection
 
         internal static void CheckCanCreateInstance(Type declaringType, bool isVarArg)
         {
-            if (declaringType == null)
+            if (declaringType is null)
                 throw new ArgumentNullException(nameof(declaringType));
 
             // ctor is declared on interface class
@@ -280,7 +280,7 @@ namespace System.Reflection
                     SR.Format(SR.Acc_CreateAbstEx, declaringType));
 
             // ctor is on a class that contains stack pointers
-            else if (declaringType.GetRootElementType() == typeof(ArgIterator))
+            else if (ReferenceEquals(declaringType.GetRootElementType(), typeof(ArgIterator)))
                 throw new NotSupportedException();
 
             // ctor is vararg
@@ -295,7 +295,7 @@ namespace System.Reflection
             }
 
             // ctor is declared on System.Void
-            else if (declaringType == typeof(void))
+            else if (ReferenceEquals(declaringType, typeof(void)))
                 throw new MemberAccessException(SR.Access_Void);
         }
 

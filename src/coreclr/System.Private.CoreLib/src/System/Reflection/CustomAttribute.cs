@@ -9,6 +9,8 @@ using System.Runtime.InteropServices;
 using System.Text;
 using System.Buffers;
 
+using Internal.Runtime.CompilerServices;
+
 namespace System.Reflection
 {
     public class CustomAttributeData
@@ -1564,7 +1566,7 @@ namespace System.Reflection
                         out record.tkCtor.Value, out record.blob);
 
                     if (FilterCustomAttributeRecord(record.tkCtor, in scope,
-                        decoratedModule, decoratedMetadataToken, attributeFilterType, mustBeInheritable, ref derivedAttributes,
+                        decoratedModule, decoratedMetadataToken, attributeFilterType, mustBeInheritable, in derivedAttributes,
                         out _, out _, out _))
                     {
                         return true;
@@ -1614,8 +1616,7 @@ namespace System.Reflection
             ref RuntimeType.ListBuilder<Attribute> attributes,
             RuntimeModule decoratedModule, int decoratedMetadataToken,
             RuntimeType? attributeFilterType, bool mustBeInheritable,
-            // The derivedAttributes list must be passed by value so that it is not modified with the discovered attributes
-            RuntimeType.ListBuilder<Attribute> derivedAttributes)
+            in RuntimeType.ListBuilder<Attribute> derivedAttributes)
         {
             if (attributeFilterType is null)
             {
@@ -1641,7 +1642,7 @@ namespace System.Reflection
 
                 if (!FilterCustomAttributeRecord(caRecord.tkCtor, in scope,
                                                  decoratedModule, decoratedMetadataToken, attributeFilterType!, mustBeInheritable,
-                                                 ref derivedAttributes,
+                                                 in derivedAttributes,
                                                  out RuntimeType attributeType, out IRuntimeMethodInfo? ctorWithParameters, out bool isVarArg))
                 {
                     continue;
@@ -1671,23 +1672,18 @@ namespace System.Reflection
                     {
                         // Metadata is always written in little-endian format. Must account for this on
                         // big-endian platforms.
+                        int data = Unsafe.ReadUnaligned<int>((void*)blobStart);
 #if BIGENDIAN
-                        const int CustomAttributeVersion = 0x0100;
-#else
-                        const int CustomAttributeVersion = 0x0001;
+                        data = BinaryPrimitives.ReverseEndianness(data);
 #endif
-                        if (Marshal.ReadInt16(blobStart) != CustomAttributeVersion)
+                        const int CustomAttributeVersion = 0x0001;
+                        if ((data & 0xffff) != CustomAttributeVersion)
                         {
-                            throw new CustomAttributeFormatException();
+                            ThrowIncorrectData();
                         }
 
-                        blobStart = (IntPtr)((byte*)blobStart + 2); // skip version prefix
-
-                        cNamedArgs = Marshal.ReadInt16(blobStart);
-                        blobStart = (IntPtr)((byte*)blobStart + 2); // skip namedArgs count
-#if BIGENDIAN
-                        cNamedArgs = ((cNamedArgs & 0xff00) >> 8) | ((cNamedArgs & 0x00ff) << 8);
-#endif
+                        cNamedArgs = data >> 16;
+                        blobStart = (IntPtr)((byte*)blobStart + 4); // skip version and namedArgs count
                     }
                 }
 
@@ -1748,7 +1744,7 @@ namespace System.Reflection
 
                 if (blobStart != blobEnd)
                 {
-                    ThrowIncorrectDataLength();
+                    ThrowIncorrectData();
                 }
 
                 attributes.Add(attribute);
@@ -1760,7 +1756,7 @@ namespace System.Reflection
 
             [DoesNotReturn]
             [StackTraceHidden]
-            static void ThrowIncorrectDataLength() => throw new CustomAttributeFormatException();
+            static void ThrowIncorrectData() => throw new CustomAttributeFormatException();
 
             [DoesNotReturn]
             [StackTraceHidden]
@@ -1780,7 +1776,7 @@ namespace System.Reflection
             MetadataToken decoratedToken,
             RuntimeType attributeFilterType,
             bool mustBeInheritable,
-            ref RuntimeType.ListBuilder<Attribute> derivedAttributes,
+            in RuntimeType.ListBuilder<Attribute> derivedAttributes,
             out RuntimeType attributeType,
             out IRuntimeMethodInfo? ctorWithParameters,
             out bool isVarArg)
@@ -1797,8 +1793,9 @@ namespace System.Reflection
 
             // Ensure if attribute type must be inheritable that it is inheritable
             // Ensure that to consider a duplicate attribute type AllowMultiple is true
-            if (!AttributeUsageCheck(attributeType, mustBeInheritable, ref derivedAttributes))
-                return false;
+            if (mustBeInheritable || derivedAttributes.Count > 0)
+                if (!AttributeUsageCheck(attributeType, mustBeInheritable, in derivedAttributes))
+                    return false;
 
             // Windows Runtime attributes aren't real types - they exist to be read as metadata only, and as such
             // should be filtered out of the GetCustomAttributes path.
@@ -1877,7 +1874,7 @@ namespace System.Reflection
 
         #region Private Static Methods
         private static bool AttributeUsageCheck(
-            RuntimeType attributeType, bool mustBeInheritable, ref RuntimeType.ListBuilder<Attribute> derivedAttributes)
+            RuntimeType attributeType, bool mustBeInheritable, in RuntimeType.ListBuilder<Attribute> derivedAttributes)
         {
             AttributeUsageAttribute? attributeUsageAttribute = null;
 

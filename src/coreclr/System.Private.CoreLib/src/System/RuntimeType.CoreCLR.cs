@@ -71,10 +71,23 @@ namespace System
 
             public T this[int index]
             {
-                get
+                readonly get
                 {
                     Debug.Assert(index < Count);
                     return (_items != null) ? _items[index] : _item;
+                }
+
+                set
+                {
+                    Debug.Assert(index < Count);
+                    if (_items != null)
+                    {
+                        _items[index] = value;
+                    }
+                    else
+                    {
+                        _item = value;
+                    }
                 }
             }
 
