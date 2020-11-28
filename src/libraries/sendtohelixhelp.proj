@@ -178,7 +178,7 @@
 
     <ItemGroup Condition="'$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'tvOS'">
       <!-- Find the sample app directory -->
-      <_runOnlyApps Include="$([System.IO.Directory]::GetDirectories('$(TestArchiveTestsRoot)'runonly, '*.app', System.IO.SearchOption.AllDirectories))" />
+      <_runOnlyApps Include="$([System.IO.Directory]::GetDirectories('$(TestArchiveTestsRoot)runonly', '*.app', System.IO.SearchOption.AllDirectories))" />
       <!-- Find all directories named *.app for the library tests and exclude for run-only sample app -->
       <_testApps Include="$([System.IO.Directory]::GetDirectories('$(TestArchiveTestsRoot)', '*.app', System.IO.SearchOption.AllDirectories))"
                  Exclude="@(_runOnlyApps)" />
