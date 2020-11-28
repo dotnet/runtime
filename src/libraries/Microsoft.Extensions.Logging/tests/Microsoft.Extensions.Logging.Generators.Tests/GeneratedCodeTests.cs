@@ -8,21 +8,37 @@ using Xunit;
 #pragma warning disable CA1801 // Review unused parameters
 
 // Used to test use outside of a namespace
-partial class LoggerExtensionsNoNamespace
+partial class NoNamespace
 {
     [LoggerMessage(0, LogLevel.Critical, "Could not open socket to `{hostName}`")]
-    public static partial void CouldNotOpenSocketNoNamespace(ILogger logger, string hostName);
+    public static partial void CouldNotOpenSocket(ILogger logger, string hostName);
 }
 
-namespace Microsoft.Extensions.Logging.Generators.Tests
+namespace Level1
 {
-    // used to test use inside a namespace
-    partial class LoggerExtensions
+    // used to test use inside a one-level namespace
+    partial class OneLevelNamespace
     {
         [LoggerMessage(0, LogLevel.Critical, "Could not open socket to `{hostName}`")]
         public static partial void CouldNotOpenSocket(ILogger logger, string hostName);
     }
+}
 
+namespace Level1
+{
+    namespace Level2
+    {
+        // used to test use inside a two-level namespace
+        partial class TwoLevelNamespace
+        {
+            [LoggerMessage(0, LogLevel.Critical, "Could not open socket to `{hostName}`")]
+            public static partial void CouldNotOpenSocket(ILogger logger, string hostName);
+        }
+    }
+}
+
+namespace Microsoft.Extensions.Logging.Generators.Tests
+{
     // test particular method signature variations are generated correctly
     partial class SignatureTests<T> where T : class
     {
@@ -167,18 +183,26 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
             var logger = new MockLogger();
 
             logger.Reset();
-            LoggerExtensions.CouldNotOpenSocket(logger, "microsoft.com");
+            NoNamespace.CouldNotOpenSocket(logger, "microsoft.com");
             Assert.Equal(LogLevel.Critical, logger.LastLogLevel);
             Assert.Null(logger.LastException);
             Assert.Equal("Could not open socket to `microsoft.com`", logger.LastFormattedString);
             Assert.Equal(1, logger.CallCount);
 
             logger.Reset();
-            LoggerExtensionsNoNamespace.CouldNotOpenSocketNoNamespace(logger, "microsoft.com");
+            Level1.OneLevelNamespace.CouldNotOpenSocket(logger, "microsoft.com");
             Assert.Equal(LogLevel.Critical, logger.LastLogLevel);
             Assert.Null(logger.LastException);
             Assert.Equal("Could not open socket to `microsoft.com`", logger.LastFormattedString);
             Assert.Equal(1, logger.CallCount);
+
+            logger.Reset();
+            Level1.Level2.TwoLevelNamespace.CouldNotOpenSocket(logger, "microsoft.com");
+            Assert.Equal(LogLevel.Critical, logger.LastLogLevel);
+            Assert.Null(logger.LastException);
+            Assert.Equal("Could not open socket to `microsoft.com`", logger.LastFormattedString);
+            Assert.Equal(1, logger.CallCount);
+
         }
 
         [Fact]
@@ -188,7 +212,7 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
 
             logger.Reset();
             logger.Enabled = false;
-            LoggerExtensions.CouldNotOpenSocket(logger, "microsoft.com");
+            NoNamespace.CouldNotOpenSocket(logger, "microsoft.com");
             Assert.Equal(0, logger.CallCount);          // ensure the logger doesn't get called when it is disabled
         }
 

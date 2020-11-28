@@ -2,13 +2,11 @@
 
 namespace Microsoft.Extensions.Logging.Generators
 {
-    using System.Collections.Generic;
-    using System.Text;
-    using System.Xml;
     using Microsoft.CodeAnalysis;
-    using Microsoft.CodeAnalysis.CSharp;
     using Microsoft.CodeAnalysis.CSharp.Syntax;
     using Microsoft.CodeAnalysis.Text;
+    using System.Collections.Generic;
+    using System.Text;
 
     [Generator]
     public partial class LoggingGenerator : ISourceGenerator
@@ -41,7 +39,7 @@ namespace Microsoft.Extensions.Logging.Generators
                 _pascalCaseArguments = ((value.ToUpperInvariant() == "TRUE") || (value.ToUpperInvariant() == "YES"));
             }
 
-            var p = new Parser(context);
+            var p = new Parser(context.Compilation, context.ReportDiagnostic, context.CancellationToken);
 
             var sb = GetStringBuilder();
             try
@@ -88,7 +86,7 @@ namespace Microsoft.Extensions.Logging.Generators
                 }
 
                 return $@"
-                    namespace { lc.Namespace}
+                    namespace {lc.Namespace}
                     {{
                         partial class {lc.Name} {lc.Constraints}
                         {{

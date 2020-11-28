@@ -5,15 +5,14 @@
 
 namespace Microsoft.Extensions.Logging.Generators
 {
-    using System;
-    using System.Collections.Generic;
-    using System.Diagnostics;
-    using System.Linq;
-    using System.Reflection;
-    using System.Threading;
     using Microsoft.CodeAnalysis;
     using Microsoft.CodeAnalysis.CSharp;
     using Microsoft.CodeAnalysis.CSharp.Syntax;
+    using System;
+    using System.Collections.Generic;
+    using System.Linq;
+    using System.Reflection;
+    using System.Threading;
 
     public partial class LoggingGenerator
     {
@@ -116,10 +115,6 @@ namespace Microsoft.Extensions.Logging.Generators
             private readonly Action<Diagnostic> _reportDiagnostic;
             private readonly Dictionary<SyntaxTree, SemanticModel> _semanticModels = new();
 
-            public Parser(GeneratorExecutionContext context) : this(context.Compilation, context.ReportDiagnostic, context.CancellationToken)
-            {
-            }
-
             public Parser(Compilation compilation, Action<Diagnostic> reportDiagnostic, CancellationToken cancellationToken)
             {
                 _compilation = compilation;
@@ -132,19 +127,19 @@ namespace Microsoft.Extensions.Logging.Generators
             /// </summary>
             public IEnumerable<LoggerClass> GetLogClasses(IEnumerable<ClassDeclarationSyntax> classes)
             {
-                var results = new List<LoggerClass>(); 
-
-                var loggerMessageAttribute = _compilation.GetTypeByMetadataName("Microsoft.Extensions.Logging.LoggerMessageAttribute");
-                if (loggerMessageAttribute is null)
-                {
-                    Diag(ErrorMissingRequiredType, null, "Microsoft.Extensions.Logging.LoggerMessageAttribute");
-                    return results;
-                }
+                var results = new List<LoggerClass>();
 
                 var exSymbol = _compilation.GetTypeByMetadataName("System.Exception");
                 if (exSymbol == null)
                 {
                     Diag(ErrorMissingRequiredType, null, "System.Exception");
+                    return results;
+                }
+
+                var loggerMessageAttribute = _compilation.GetTypeByMetadataName("Microsoft.Extensions.Logging.LoggerMessageAttribute");
+                if (loggerMessageAttribute is null)
+                {
+                    Diag(ErrorMissingRequiredType, null, "Microsoft.Extensions.Logging.LoggerMessageAttribute");
                     return results;
                 }
 
@@ -165,6 +160,8 @@ namespace Microsoft.Extensions.Logging.Generators
                     }
 
                     LoggerClass? lc = null;
+                    string nspace = string.Empty;
+
                     ids.Clear();
                     foreach (var method in classDef.Members.Where(m => m.IsKind(SyntaxKind.MethodDeclaration)).OfType<MethodDeclarationSyntax>())
                     {
@@ -172,31 +169,31 @@ namespace Microsoft.Extensions.Logging.Generators
                         {
                             foreach (var ma in mal.Attributes)
                             {
-                                var semanticModel = GetSemanticModel(ma.SyntaxTree);
-                                var maSymbol = semanticModel.GetSymbolInfo(ma, _cancellationToken);
-                                if (maSymbol.Symbol is IMethodSymbol ms && loggerMessageAttribute.Equals(ms.ContainingType, SymbolEqualityComparer.Default))
+                                var sm = GetSemanticModel(ma.SyntaxTree);
+                                var maSymbolInfo = sm.GetSymbolInfo(ma, _cancellationToken);
+                                var methodSymbol = (maSymbolInfo.Symbol as IMethodSymbol)!;
+
+                                if (loggerMessageAttribute.Equals(methodSymbol.ContainingType, SymbolEqualityComparer.Default))
                                 {
                                     var arg = ma.ArgumentList!.Arguments[0];
-                                    var eventId = semanticModel.GetConstantValue(arg.Expression).ToString();
+                                    var eventId = sm.GetConstantValue(arg.Expression).ToString();
 
-                                    arg = ma.ArgumentList!.Arguments[1];
-                                    var level = (int)semanticModel.GetConstantValue(arg.Expression).Value!;
+                                    arg = ma.ArgumentList.Arguments[1];
+                                    var level = (int)sm.GetConstantValue(arg.Expression).Value!;
 
-                                    arg = ma.ArgumentList!.Arguments[2];
-                                    var message = semanticModel.GetConstantValue(arg.Expression).ToString();
+                                    arg = ma.ArgumentList.Arguments[2];
+                                    var message = sm.GetConstantValue(arg.Expression).ToString();
 
-                                    string methodName = method.Identifier.ToString();
                                     string eventName = string.Empty;
-
-                                    if (ma.ArgumentList?.Arguments is { Count: > 3 } args)
+                                    if (ma.ArgumentList.Arguments.Count > 3)
                                     {
-                                        arg = args[3];
-                                        eventName = semanticModel.GetConstantValue(arg.Expression).ToString();
+                                        arg = ma.ArgumentList.Arguments[3];
+                                        eventName = sm.GetConstantValue(arg.Expression).ToString();
                                     }
 
                                     var lm = new LoggerMethod
                                     {
-                                        Name = methodName,
+                                        Name = method.Identifier.ToString(),
                                         Level = level,
                                         Message = message,
                                         EventId = eventId,
@@ -259,6 +256,8 @@ namespace Microsoft.Extensions.Logging.Generators
                                     {
                                         Diag(ErrorEventIdReuse, ma.ArgumentList!.Arguments[0].GetLocation(), lm.EventId);
                                     }
+                              
+                                    
                                     else
                                     {
                                         ids.Add(lm.EventId);
@@ -308,26 +307,42 @@ namespace Microsoft.Extensions.Logging.Generators
                                         }
                                     }
 
+                                    if (lc == null)
+                                    {
+                                        // determine the namespace the class is declared in, if any
+                                        var ns = classDef.Parent as NamespaceDeclarationSyntax;
+                                        if (ns == null)
+                                        {
+                                            if (classDef.Parent is not CompilationUnitSyntax)
+                                            {
+                                                // since this generator doesn't know how to generate a nested type...
+                                                Diag(ErrorNestedType, classDef.Identifier.GetLocation());
+                                                keep = false;
+                                            }
+                                        }
+                                        else
+                                        {
+                                            nspace = ns.Name.ToString();
+                                            for (; ; )
+                                            {
+                                                ns = ns.Parent as NamespaceDeclarationSyntax;
+                                                if (ns == null)
+                                                {
+                                                    break;
+                                                }
+
+                                                nspace = $"{ns.Name}.{nspace}";
+                                            }
+                                        }
+                                    }
+
                                     if (keep)
                                     {
                                         if (lc == null)
                                         {
-                                            // determine the namespace the class is declared in, if any
-                                            NamespaceDeclarationSyntax? ns = null;
-                                            if (classDef.Parent != null)
-                                            {
-                                                ns = classDef.Parent as NamespaceDeclarationSyntax;
-                                                if (ns == null && classDef.Parent is not CompilationUnitSyntax)
-                                                {
-                                                    // since this generator doesn't know how to generate a nested type...
-                                                    Diag(ErrorNestedType, classDef.Identifier.GetLocation());
-                                                    continue;
-                                                }
-                                            }
-
                                             lc = new LoggerClass
                                             {
-                                                Namespace = ns?.Name.ToString(),
+                                                Namespace = nspace,
                                                 Name = classDef.Identifier.ToString(),
                                                 Constraints = classDef.ConstraintClauses.ToString(),
                                             };
@@ -382,33 +397,13 @@ namespace Microsoft.Extensions.Logging.Generators
             /// </summary>
             private static bool HasTemplates(string message)
             {
-                for (int i = 0; i < message.Length; i++)
+                int start = message.IndexOf('{');
+                if (start < 0)
                 {
-                    var ch = message[i];
-                    if (ch == '{')
-                    {
-                        if (i < message.Length - 1 && message[i + 1] != '{')
-                        {
-                            // look for a non-escaped }
-                            i++;
-                            for (; i < message.Length; i++)
-                            {
-                                ch = message[i];
-                                if (ch == '}')
-                                {
-                                    if (i == message.Length - 1 || message[i + 1] != '}')
-                                    {
-                                        return true;
-                                    }
-                                }
-                            }
-
-                            return false;
-                        }
-                    }
+                    return false;
                 }
 
-                return false;
+                return message.IndexOf('}', start) > 0;
             }
         }
 
@@ -419,7 +414,7 @@ namespace Microsoft.Extensions.Logging.Generators
         /// </summary>
         internal class LoggerClass
         {
-            public string? Namespace;
+            public string Namespace = string.Empty;
             public string Name = string.Empty;
             public string Constraints = string.Empty;
             public List<LoggerMethod> Methods = new();
