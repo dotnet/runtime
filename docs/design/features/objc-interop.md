@@ -48,7 +48,7 @@ Creating an acceptable interaction model between Objective-C and .NET type insta
 
 The mapping between an Objective-C [`id`](https://developer.apple.com/documentation/objectivec/id) and a .NET `object` is of the upmost importance. Aside from issues around inefficient memory usage, the ability to know a .NET `object`'s true self is relied upon in many important scenarios (e.g. Key in a `Dictionary<K,V>`).
 
-Ensuring a robust mapping between these concepts can be handled more efficiently within a runtime implementation. This necessitates the ability for the consumer to register a pair (`id` and `object`) and whenever asked for one, the other can be returned.
+Ensuring a robust mapping between these concepts can be handled more efficiently within a runtime implementation. This necessitates the ability for the consumer to register a pair (`id` and `object`) and whenever asked for one, the other can be returned. The identity mapping here also influences the subsequent design of how references and lifetime is handled (i.e. strong and weak references between Objective-C and managed objects).
 
 **Lifetime**
 
@@ -56,9 +56,9 @@ Objective-C lifetime semantics are handled through [manual or automatic referenc
 
 _Note_: In the following illustrations, a strong reference is depicted as a solid line (`===`) and a weak reference is depicted as a dashed line (`= = =`).
 
-When a .NET object enters an Objective-C environment, the Objective-C proxy is subject to reference counting and ensuring it extends the lifetime of the managed object it wraps. This can be accomplished in CoreCLR through use of the internal `HNDTYPE_REFCOUNTED` GC handle type. This handle, coupled with a reference count, can be used to transition a GC handle between a weak and strong reference.
+When a projected .NET object enters an Objective-C environment, the Objective-C proxy is subject to reference counting and ensuring it extends the lifetime of the managed object it wraps. This can be accomplished in CoreCLR through use of the internal `HNDTYPE_REFCOUNTED` GC handle type. This handle, coupled with a reference count, can be used to transition a GC handle between a weak and strong reference.
 
-Creating an Objective-C proxy will also require overriding the built-in [`retain`](https://developer.apple.com/documentation/objectivec/1418956-nsobject/1571946-retain) and [`release`](https://developer.apple.com/documentation/objectivec/1418956-nsobject/1571957-release) methods provided by the Objective-C runtime.
+Projecting a .NET type into Objective-C will require overriding the built-in [`retain`](https://developer.apple.com/documentation/objectivec/1418956-nsobject/1571946-retain) and [`release`](https://developer.apple.com/documentation/objectivec/1418956-nsobject/1571957-release) methods provided by the Objective-C runtime. Overriding of these methods will not be needed when activating an Objective-C type in .NET as that type's existing `retain` and `release` methods will be used.
 
 ```
  --------------------                  ----------------------
@@ -93,7 +93,7 @@ The expression of [Delegates][delegates_usage] in Objective-C and [Blocks][block
 An Objective-C Block variable defined as:
 
 ```objective-c
-int(^blk)(int) = ^(int a) { return a*2; };
+int(^blk)(int) = ^(int a) { return a * 2; };
 ```
 
 Can be queried, following the ABI, for its invoke function pointer and dispatched in C as:
@@ -102,6 +102,8 @@ Can be queried, following the ABI, for its invoke function pointer and dispatche
 void* fptr = extract_using_abi(blk);
 int b = ((int(*)(id,int))fptr)(blk, a);
 ```
+
+The lifetime of Blocks initially relies upon semantics similar to stack clean-up in C++. This makes lifetime management more complicated in .NET. A key take away here is that the runtime will always initially create a Block that is, according to Objective-C semantics, stack allocated. The contract for Blocks and how reference counting works means that if the Objective-C caller requires the Block longer than the current calling scope the Block should be copied (i.e. [`Block_copy`](https://developer.apple.com/library/archive/documentation/Cocoa/Conceptual/Blocks/Articles/bxUsing.html#//apple_ref/doc/uid/TP40007502-CH5-SW2)) and when the current managed calling scope is being left the created Block should be released.
 
 **Method dispatch**
 
@@ -123,16 +125,16 @@ The application model that has been defined by the existing Xamarin scenarios co
 
 ### Hosting <a name="hosting"></a>
 
-For Xamarin, activation of the .NET Platform is done through Mono's Embedding API and as such is presently exclusive to the Mono version of the .NET Platform. During the Xamarin start-up the Objective-C runtime is implicitly activated since the entry binary is itself an Objective-C application. This entry point concept poses a unique challenge for the CoreCLR given most main stream scenarios leverage the .NET supplied [AppHost](https://docs.microsoft.com/dotnet/core/project-sdk/msbuild-props#useapphost) entry binary.
+For Xamarin, activation of the .NET Platform is done through Mono's Embedding API and as such is presently exclusive to the Mono version of the .NET Platform. During the Xamarin start-up the Objective-C runtime is implicitly activated since the entry binary is itself an Objective-C application. This entry point concept poses a unique challenge for the CoreCLR given most main stream scenarios leverage the .NET supplied [AppHost](https://docs.microsoft.com/dotnet/core/project-sdk/msbuild-props#useapphost) entry binary. Alternatively the add-on scenario (i.e. consumption of native APIs) can be simplified since merely loading an Objective-C binary "activates: the Objective-C runtime.
 
-The mutual activation of both the .NET Platform and Objective-C runtime is required for providing an interop scenario. Multiple options exist for how to accomplish this:
+The mutual activation of both the .NET Platform and Objective-C runtime is required for providing an interop scenario. Multiple options exist for how to accomplish this but are all primarily concerned with when as opposed to how:
 
 * Create a new macOS specific AppHost entry binary that activates the Objective-C runtime.
     * This solution has a few flavors, but in general would bring complexity. If a single macOS option is provided users that have no interest in the Objective-C runtime will always get it and violate .NET's "pay-for-play" principle.  If multiple macOS AppHosts are produced, complexity is introduced at the build and SDK layer. 
 * Provide a series of object files that can be linked on the platform if Objective-C support is determined at build time.
     * This solution addresses the "pay-for-play" principle, but introduces additional complexity in the build and SDK layer.
-* Load an Objective-C binary early on in the activation of the AppHost binary.
-    * This solution satisfies the "pay-for-play" principle and avoids impacting build or the SDK. Loading this Objective-C binary would need to be done early for [Type Registration](#type_reg) purposes. Loading could also be accomplished as an extension to the AppHost or by leveraging [Startup hook](https://github.com/dotnet/runtime/blob/master/docs/design/features/host-startup-hook.md).
+* Load an Objective-C binary when the Objective-C runtime is needed.
+    * This solution satisfies the "pay-for-play" principle and avoids impacting build or the SDK. Loading this Objective-C binary would need to be done prior to usage of projected Objective-C types due to [Type Registration](#type_reg) purposes. Loading could also be accomplished as an extension to the AppHost, leveraging [Startup hook](https://github.com/dotnet/runtime/blob/master/docs/design/features/host-startup-hook.md), or P/Invoking into the Objective-C binary.
 
 ### Type Registration <a name="type_reg"></a>
 
