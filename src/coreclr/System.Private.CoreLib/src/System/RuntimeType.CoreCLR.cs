@@ -69,25 +69,12 @@ namespace System
                 _capacity = capacity;
             }
 
-            public T this[int index]
+            public readonly T this[int index]
             {
-                readonly get
+                get
                 {
                     Debug.Assert(index < Count);
                     return (_items != null) ? _items[index] : _item;
-                }
-
-                set
-                {
-                    Debug.Assert(index < Count);
-                    if (_items != null)
-                    {
-                        _items[index] = value;
-                    }
-                    else
-                    {
-                        _item = value;
-                    }
                 }
             }
 
