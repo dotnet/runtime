@@ -3769,7 +3769,8 @@ namespace System.Globalization
             int hi = s_lcidToCultureNameIndices.Length - 1;
 
             // Binary search the array
-            while (lo <= hi) {
+            while (lo <= hi)
+            {
                 int i = lo + ((hi - lo) >> 1);
 
                 int index = s_lcidToCultureNameIndices[i];
@@ -3781,9 +3782,12 @@ namespace System.Globalization
                     return GetString(CultureNames.Slice((index >> 4) & 0xFFF, index & 0xF));
                 }
 
-                if (order < 0) {
+                if (order < 0)
+                {
                     lo = i + 1;
-                } else {
+                }
+                else
+                {
                     hi = i - 1;
                 }
             }
@@ -3842,7 +3846,8 @@ namespace System.Globalization
                 return -1;
 
             Span<byte> lower_case = stackalloc byte[name.Length];
-            for (int i = 0; i < name.Length; ++i) {
+            for (int i = 0; i < name.Length; ++i)
+            {
                 char ch = name[i];
                 if (ch > 'z')
                     return -1;
@@ -3856,15 +3861,19 @@ namespace System.Globalization
             int hi = s_localesNamesIndexes.Length - 1;
 
             // Binary search the array
-            while (lo <= hi) {
+            while (lo <= hi)
+            {
                 int i = lo + ((hi - lo) >> 1);
 
                 int order = GetCultureName(i).SequenceCompareTo(lname);
 
                 if (order == 0) return i;
-                if (order < 0) {
+                if (order < 0)
+                {
                     lo = i + 1;
-                } else {
+                }
+                else
+                {
                     hi = i - 1;
                 }
             }
