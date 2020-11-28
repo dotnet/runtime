@@ -177,13 +177,8 @@
     <Message Importance="High" Text="Using Timeout: $(_workItemTimeout)" />
 
     <ItemGroup Condition="'$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'tvOS'">
-      <!-- Find the sample app directory -->
-      <_runOnlyApps Include="$([System.IO.Directory]::GetDirectories('$(TestArchiveTestsRoot)runonly', '*.app', System.IO.SearchOption.AllDirectories))" />
-      <!-- Find all directories named *.app for the library tests and exclude for run-only sample app -->
-      <_testApps Include="$([System.IO.Directory]::GetDirectories('$(TestArchiveTestsRoot)', '*.app', System.IO.SearchOption.AllDirectories))"
-                 Exclude="@(_runOnlyApps)" />
       <!-- Create work items for test apps -->
-      <XHarnessAppBundleToTest Include="@(_testApps)">
+      <XHarnessAppBundleToTest Include="$([System.IO.Directory]::GetDirectories('$(TestArchiveTestsRoot)', '*.app', System.IO.SearchOption.AllDirectories))" >
         <Targets Condition="'$(TargetArchitecture)' == 'arm'">ios-device</Targets>
         <Targets Condition="'$(TargetArchitecture)' == 'arm64'">ios-device</Targets>
         <Targets Condition="'$(TargetArchitecture)' == 'x64'">ios-simulator-64</Targets>
@@ -194,7 +189,7 @@
       </XHarnessAppBundleToTest>
 
       <!-- Create work items for run-only apps -->
-      <XHarnessAppBundleToTest Include="@(_runOnlyApps)">
+      <XHarnessAppBundleToTest Include="$([System.IO.Directory]::GetDirectories('$(TestArchiveRoot)runonly', '*.app', System.IO.SearchOption.AllDirectories))" >
         <Targets Condition="'$(TargetArchitecture)' == 'arm'">ios-device</Targets>
         <Targets Condition="'$(TargetArchitecture)' == 'arm64'">ios-device</Targets>
         <Targets Condition="'$(TargetArchitecture)' == 'x64'">ios-simulator-64</Targets>
