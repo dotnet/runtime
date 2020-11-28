@@ -2335,22 +2335,19 @@ namespace System.Net.Http.Functional.Tests
     {
         public SocketsHttpHandlerTest_ConnectCallback(ITestOutputHelper output) : base(output) { }
 
-        [Fact]
-        public void ConnectCallback_SyncRequest_Fails()
+        [Theory]
+        [InlineData(false, false)]
+        [InlineData(false, true)]
+        [InlineData(true, false)]
+        [InlineData(true, true)]
+        public async Task ConnectCallback_ContextHasCorrectProperties_Success(bool syncRequest, bool syncCallback)
         {
-            using SocketsHttpHandler handler = new SocketsHttpHandler
+            if (syncRequest && UseVersion > HttpVersion.Version11)
             {
-                ConnectCallback = (context, token) => default,
-            };
+                // Sync requests are only supported on 1.x
+                return;
+            }
 
-            using HttpClient client = CreateHttpClient(handler);
-
-            Assert.ThrowsAny<NotSupportedException>(() => client.Send(new HttpRequestMessage(HttpMethod.Get, $"http://bing.com")));
-        }
-
-        [Fact]
-        public async Task ConnectCallback_ContextHasCorrectProperties_Success()
-        {
             await LoopbackServerFactory.CreateClientAndServerAsync(
                 async uri =>
                 {
@@ -2367,14 +2364,23 @@ namespace System.Net.Http.Functional.Tests
                         Assert.Equal(uri.Port, context.DnsEndPoint.Port);
                         Assert.Equal(requestMessage, context.InitialRequestMessage);
 
-                        Socket s = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
-                        await s.ConnectAsync(context.DnsEndPoint, token);
+                        var s = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+                        if (syncCallback)
+                        {
+                            s.Connect(context.DnsEndPoint);
+                        }
+                        else
+                        {
+                            await s.ConnectAsync(context.DnsEndPoint, token);
+                        }
                         return new NetworkStream(s, ownsSocket: true);
                     };
 
                     using HttpClient client = CreateHttpClient(handler);
 
-                    HttpResponseMessage response = await client.SendAsync(requestMessage);
+                    HttpResponseMessage response = await (syncRequest ?
+                        Task.Run(() => client.Send(requestMessage)) :
+                        client.SendAsync(requestMessage));
                     Assert.Equal("foo", await response.Content.ReadAsStringAsync());
                 },
                 async server =>
