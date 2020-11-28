@@ -10,7 +10,7 @@ namespace System.Net.Http.HPack
     internal static class Huffman
     {
         // HPack static huffman code. see: https://httpwg.org/specs/rfc7541.html#huffman.code
-        // stored into two table to optimize its initialization and memory consumption
+        // Stored into two table to optimize its initialization and memory consumption.
         private static readonly uint[] s_encodingTableCodes = new uint[257]
         {
             0b11111111_11000000_00000000_00000000,
