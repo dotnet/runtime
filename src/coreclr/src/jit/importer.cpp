@@ -21195,12 +21195,43 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
     // the base in most other ways.
     *method        = derivedMethod;
     *methodFlags   = derivedMethodAttribs;
-    *contextHandle = MAKE_METHODCONTEXT(derivedMethod);
+
+    if (((SIZE_T)(*contextHandle) & CORINFO_CONTEXTFLAGS_MASK) == CORINFO_CONTEXTFLAGS_METHOD)
+    {
+        *contextHandle = MAKE_METHODCONTEXT(derivedMethod);
+    }
+    else
+    {
+        assert(((SIZE_T)(*contextHandle) & CORINFO_CONTEXTFLAGS_MASK) == CORINFO_CONTEXTFLAGS_CLASS);
+        if (isExact)
+        {
+            *contextHandle = MAKE_CLASSCONTEXT(objClass);
+        }
+        else
+        {
+            *contextHandle = MAKE_CLASSCONTEXT(derivedClass);
+        }
+    }
 
     // Update context handle.
     if ((exactContextHandle != nullptr) && (*exactContextHandle != nullptr))
     {
-        *exactContextHandle = MAKE_METHODCONTEXT(derivedMethod);
+        if (((SIZE_T)(*exactContextHandle) & CORINFO_CONTEXTFLAGS_MASK) == CORINFO_CONTEXTFLAGS_METHOD)
+        {
+            *exactContextHandle = MAKE_METHODCONTEXT(derivedMethod);
+        }
+        else
+        {
+            assert(((SIZE_T)(*exactContextHandle) & CORINFO_CONTEXTFLAGS_MASK) == CORINFO_CONTEXTFLAGS_CLASS);
+            if (isExact)
+            {
+                *exactContextHandle = MAKE_CLASSCONTEXT(objClass);
+            }
+            else
+            {
+                *exactContextHandle = MAKE_CLASSCONTEXT(derivedClass);
+            }
+        }
     }
 
 #ifdef FEATURE_READYTORUN_COMPILER
