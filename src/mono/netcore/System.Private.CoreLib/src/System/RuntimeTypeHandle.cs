@@ -133,9 +133,9 @@ namespace System
         }
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        private static extern Type GetGenericTypeDefinition_impl(RuntimeType type);
+        private static extern RuntimeType GetGenericTypeDefinition_impl(RuntimeType type);
 
-        internal static Type GetGenericTypeDefinition(RuntimeType type)
+        internal static RuntimeType GetGenericTypeDefinition(RuntimeType type)
         {
             return GetGenericTypeDefinition_impl(type);
         }

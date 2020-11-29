@@ -96,18 +96,18 @@ namespace Mono
             this.value = (RuntimeStructs.GenericParamInfo*)ptr;
         }
 
-        internal Type[] Constraints => GetConstraints();
+        internal RuntimeType[] Constraints => GetConstraints();
 
         internal GenericParameterAttributes Attributes => (GenericParameterAttributes)value->flags;
 
-        private Type[] GetConstraints()
+        private RuntimeType[] GetConstraints()
         {
             int n = GetConstraintsCount();
-            var a = new Type[n];
+            var a = new RuntimeType[n];
             for (int i = 0; i < n; i++)
             {
                 RuntimeClassHandle c = new RuntimeClassHandle(value->constraints[i]);
-                a[i] = Type.GetTypeFromHandle(c.GetTypeHandle());
+                a[i] = RuntimeType.GetTypeFromHandle(c.GetTypeHandle());
             }
 
             return a;

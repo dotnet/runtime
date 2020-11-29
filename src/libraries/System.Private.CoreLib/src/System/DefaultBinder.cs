@@ -769,12 +769,12 @@ namespace System
 
         // Return any exact bindings that may exist. (This method is not defined on the
         //  Binder and is used by RuntimeType.)
-        public static MethodBase? ExactBinding(MethodBase[] match, Type[] types, ParameterModifier[]? modifiers)
+        public static RuntimeConstructorInfo? ExactBinding(RuntimeConstructorInfo[] match, Type[] types, ParameterModifier[]? modifiers)
         {
             if (match == null)
                 throw new ArgumentNullException(nameof(match));
 
-            MethodBase[] aExactMatches = new MethodBase[match.Length];
+            RuntimeConstructorInfo[] aExactMatches = new RuntimeConstructorInfo[match.Length];
             int cExactMatches = 0;
 
             for (int i = 0; i < match.Length; i++)
@@ -1109,10 +1109,39 @@ namespace System
             return depth;
         }
 
-        internal static MethodBase? FindMostDerivedNewSlotMeth(MethodBase[] match, int cMatches)
+        internal static RuntimeMethodInfo? FindMostDerivedNewSlotMeth(RuntimeMethodInfo[] match, int cMatches)
         {
             int deepestHierarchy = 0;
-            MethodBase? methWithDeepestHierarchy = null;
+            RuntimeMethodInfo? methWithDeepestHierarchy = null;
+
+            for (int i = 0; i < cMatches; i++)
+            {
+                // Calculate the depth of the hierarchy of the declaring type of the
+                // current method.
+                int currentHierarchyDepth = GetHierarchyDepth(match[i].DeclaringType!);
+
+                // The two methods have the same name, signature, and hierarchy depth.
+                // This can only happen if at least one is vararg or generic.
+                if (currentHierarchyDepth == deepestHierarchy)
+                {
+                    throw new AmbiguousMatchException(SR.Arg_AmbiguousMatchException);
+                }
+
+                // Check to see if this method is on the most derived class.
+                if (currentHierarchyDepth > deepestHierarchy)
+                {
+                    deepestHierarchy = currentHierarchyDepth;
+                    methWithDeepestHierarchy = match[i];
+                }
+            }
+
+            return methWithDeepestHierarchy;
+        }
+
+        internal static RuntimeConstructorInfo? FindMostDerivedNewSlotMeth(RuntimeConstructorInfo[] match, int cMatches)
+        {
+            int deepestHierarchy = 0;
+            RuntimeConstructorInfo? methWithDeepestHierarchy = null;
 
             for (int i = 0; i < cMatches; i++)
             {

@@ -391,9 +391,9 @@ namespace System
         [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
         private static extern void GetConstraints(QCallTypeHandle handle, ObjectHandleOnStack types);
 
-        internal Type[] GetConstraints()
+        internal RuntimeType[] GetConstraints()
         {
-            Type[]? types = null;
+            RuntimeType[]? types = null;
             RuntimeTypeHandle nativeHandle = GetNativeHandle();
 
             GetConstraints(new QCallTypeHandle(ref nativeHandle), ObjectHandleOnStack.Create(ref types));
@@ -550,9 +550,9 @@ namespace System
             return types!;
         }
 
-        internal Type[] GetInstantiationPublic()
+        internal RuntimeType[] GetInstantiationPublic()
         {
-            Type[]? types = null;
+            RuntimeType[]? types = null;
             RuntimeTypeHandle nativeHandle = GetNativeHandle();
             GetInstantiation(new QCallTypeHandle(ref nativeHandle), ObjectHandleOnStack.Create(ref types), Interop.BOOL.FALSE);
             return types!;

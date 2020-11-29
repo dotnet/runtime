@@ -132,7 +132,7 @@ namespace System
         }
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        private static extern Type internal_from_handle(IntPtr handle);
+        internal static extern RuntimeType internal_from_handle(IntPtr handle);
 
         [Intrinsic]
         public static bool operator ==(Type? left, Type? right) => left == right;

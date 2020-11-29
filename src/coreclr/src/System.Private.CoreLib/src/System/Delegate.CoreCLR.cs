@@ -185,7 +185,7 @@ namespace System
                             // we get from the method is probably shared and those in the hierarchy we're
                             // walking won't be we compare using the generic type definition forms instead.
                             Type? currentType = _target!.GetType();
-                            Type targetType = declaringType.GetGenericTypeDefinition();
+                            RuntimeType targetType = declaringType.GetGenericTypeDefinition();
                             while (currentType != null)
                             {
                                 if (currentType.IsGenericType &&

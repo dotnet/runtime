@@ -1090,7 +1090,7 @@ namespace System
 
                     // For example, TypeDescs do not have metadata tokens
                     if (MdToken.IsNullToken(tkEnclosingType))
-                        return Array.Empty<RuntimeType>();
+                        return EmptyTypes;
 
                     ListBuilder<RuntimeType> list = default;
 
@@ -2456,7 +2456,7 @@ namespace System
 
         private const int GenericParameterCountAny = -1;
 
-        private ListBuilder<MethodInfo> GetMethodCandidates(
+        private ListBuilder<RuntimeMethodInfo> GetMethodCandidates(
             string? name, int genericParameterCount, BindingFlags bindingAttr, CallingConventions callConv,
             Type[]? types, bool allowPrefixLookup)
         {
@@ -2464,7 +2464,7 @@ namespace System
 
             RuntimeMethodInfo[] cache = Cache.GetMethodList(listType, name);
 
-            ListBuilder<MethodInfo> candidates = new ListBuilder<MethodInfo>(cache.Length);
+            ListBuilder<RuntimeMethodInfo> candidates = new ListBuilder<RuntimeMethodInfo>(cache.Length);
             for (int i = 0; i < cache.Length; i++)
             {
                 RuntimeMethodInfo methodInfo = cache[i];
@@ -2481,7 +2481,7 @@ namespace System
             return candidates;
         }
 
-        private ListBuilder<ConstructorInfo> GetConstructorCandidates(
+        private ListBuilder<RuntimeConstructorInfo> GetConstructorCandidates(
             string? name, BindingFlags bindingAttr, CallingConventions callConv,
             Type[]? types, bool allowPrefixLookup)
         {
@@ -2489,7 +2489,7 @@ namespace System
 
             RuntimeConstructorInfo[] cache = Cache.GetConstructorList(listType, name);
 
-            ListBuilder<ConstructorInfo> candidates = new ListBuilder<ConstructorInfo>(cache.Length);
+            ListBuilder<RuntimeConstructorInfo> candidates = new ListBuilder<RuntimeConstructorInfo>(cache.Length);
             for (int i = 0; i < cache.Length; i++)
             {
                 RuntimeConstructorInfo constructorInfo = cache[i];
@@ -2549,7 +2549,7 @@ namespace System
             return candidates;
         }
 
-        private ListBuilder<FieldInfo> GetFieldCandidates(string? name, BindingFlags bindingAttr, bool allowPrefixLookup)
+        private ListBuilder<RuntimeFieldInfo> GetFieldCandidates(string? name, BindingFlags bindingAttr, bool allowPrefixLookup)
         {
             FilterHelper(bindingAttr, ref name, allowPrefixLookup, out bool prefixLookup, out bool ignoreCase, out MemberListType listType);
 
@@ -2557,7 +2557,7 @@ namespace System
 
             bindingAttr ^= BindingFlags.DeclaredOnly;
 
-            ListBuilder<FieldInfo> candidates = new ListBuilder<FieldInfo>(cache.Length);
+            ListBuilder<RuntimeFieldInfo> candidates = new ListBuilder<RuntimeFieldInfo>(cache.Length);
             for (int i = 0; i < cache.Length; i++)
             {
                 RuntimeFieldInfo fieldInfo = cache[i];
@@ -2571,7 +2571,7 @@ namespace System
             return candidates;
         }
 
-        private ListBuilder<Type> GetNestedTypeCandidates(string? fullname, BindingFlags bindingAttr, bool allowPrefixLookup)
+        private ListBuilder<RuntimeType> GetNestedTypeCandidates(string? fullname, BindingFlags bindingAttr, bool allowPrefixLookup)
         {
             bindingAttr &= ~BindingFlags.Static;
             SplitName(fullname, out string? name, out string? ns);
@@ -2579,7 +2579,7 @@ namespace System
 
             RuntimeType[] cache = Cache.GetNestedTypeList(listType, name);
 
-            ListBuilder<Type> candidates = new ListBuilder<Type>(cache.Length);
+            ListBuilder<RuntimeType> candidates = new ListBuilder<RuntimeType>(cache.Length);
             for (int i = 0; i < cache.Length; i++)
             {
                 RuntimeType nestedClass = cache[i];
@@ -2619,19 +2619,19 @@ namespace System
         }
 
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields | DynamicallyAccessedMemberTypes.NonPublicFields)]
-        public override FieldInfo[] GetFields(BindingFlags bindingAttr)
+        public override RuntimeFieldInfo[] GetFields(BindingFlags bindingAttr)
         {
             return GetFieldCandidates(null, bindingAttr, false).ToArray();
         }
 
-        public override Type[] GetInterfaces()
+        public override RuntimeType[] GetInterfaces()
         {
             RuntimeType[] candidates = Cache.GetInterfaceList(MemberListType.All, null);
-            return new ReadOnlySpan<Type>(candidates).ToArray();
+            return new ReadOnlySpan<RuntimeType>(candidates).ToArray();
         }
 
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicNestedTypes | DynamicallyAccessedMemberTypes.NonPublicNestedTypes)]
-        public override Type[] GetNestedTypes(BindingFlags bindingAttr)
+        public override RuntimeType[] GetNestedTypes(BindingFlags bindingAttr)
         {
             return GetNestedTypeCandidates(null, bindingAttr, false).ToArray();
         }
@@ -2639,12 +2639,12 @@ namespace System
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
         public override MemberInfo[] GetMembers(BindingFlags bindingAttr)
         {
-            ListBuilder<MethodInfo> methods = GetMethodCandidates(null, GenericParameterCountAny, bindingAttr, CallingConventions.Any, null, false);
-            ListBuilder<ConstructorInfo> constructors = GetConstructorCandidates(null, bindingAttr, CallingConventions.Any, null, false);
+            ListBuilder<RuntimeMethodInfo> methods = GetMethodCandidates(null, GenericParameterCountAny, bindingAttr, CallingConventions.Any, null, false);
+            ListBuilder<RuntimeConstructorInfo> constructors = GetConstructorCandidates(null, bindingAttr, CallingConventions.Any, null, false);
             ListBuilder<PropertyInfo> properties = GetPropertyCandidates(null, bindingAttr, null, false);
             ListBuilder<EventInfo> events = GetEventCandidates(null, bindingAttr, false);
-            ListBuilder<FieldInfo> fields = GetFieldCandidates(null, bindingAttr, false);
-            ListBuilder<Type> nestedTypes = GetNestedTypeCandidates(null, bindingAttr, false);
+            ListBuilder<RuntimeFieldInfo> fields = GetFieldCandidates(null, bindingAttr, false);
+            ListBuilder<RuntimeType> nestedTypes = GetNestedTypeCandidates(null, bindingAttr, false);
             // Interfaces are excluded from the result of GetMembers
 
             MemberInfo[] members = new MemberInfo[
@@ -2748,18 +2748,18 @@ namespace System
             return GetMethodImplCommon(name, genericParameterCount, bindingAttr, binder, callConv, types, modifiers);
         }
 
-        private MethodInfo? GetMethodImplCommon(
+        private RuntimeMethodInfo? GetMethodImplCommon(
             string? name, int genericParameterCount, BindingFlags bindingAttr, Binder? binder, CallingConventions callConv,
             Type[]? types, ParameterModifier[]? modifiers)
         {
-            ListBuilder<MethodInfo> candidates = GetMethodCandidates(name, genericParameterCount, bindingAttr, callConv, types, false);
+            ListBuilder<RuntimeMethodInfo> candidates = GetMethodCandidates(name, genericParameterCount, bindingAttr, callConv, types, false);
 
             if (candidates.Count == 0)
                 return null;
 
             if (types == null || types.Length == 0)
             {
-                MethodInfo firstCandidate = candidates[0];
+                RuntimeMethodInfo firstCandidate = candidates[0];
 
                 if (candidates.Count == 1)
                 {
@@ -2777,27 +2777,27 @@ namespace System
                     }
 
                     // All the methods have the exact same name and sig so return the most derived one.
-                    return System.DefaultBinder.FindMostDerivedNewSlotMeth(candidates.ToArray(), candidates.Count) as MethodInfo;
+                    return System.DefaultBinder.FindMostDerivedNewSlotMeth(candidates.ToArray(), candidates.Count);
                 }
             }
 
             binder ??= DefaultBinder;
-            return binder.SelectMethod(bindingAttr, candidates.ToArray(), types, modifiers) as MethodInfo;
+            return binder.SelectMethod(bindingAttr, candidates.ToArray(), types, modifiers) as RuntimeMethodInfo;
         }
 
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors)]
-        protected override ConstructorInfo? GetConstructorImpl(
+        protected override RuntimeConstructorInfo? GetConstructorImpl(
             BindingFlags bindingAttr, Binder? binder, CallingConventions callConvention,
             Type[] types, ParameterModifier[]? modifiers)
         {
-            ListBuilder<ConstructorInfo> candidates = GetConstructorCandidates(null, bindingAttr, CallingConventions.Any, types, false);
+            ListBuilder<RuntimeConstructorInfo> candidates = GetConstructorCandidates(null, bindingAttr, CallingConventions.Any, types, false);
 
             if (candidates.Count == 0)
                 return null;
 
             if (types.Length == 0 && candidates.Count == 1)
             {
-                ConstructorInfo firstCandidate = candidates[0];
+                RuntimeConstructorInfo firstCandidate = candidates[0];
 
                 ParameterInfo[] parameters = firstCandidate.GetParametersNoCopy();
                 if (parameters == null || parameters.Length == 0)
@@ -2807,10 +2807,10 @@ namespace System
             }
 
             if ((bindingAttr & BindingFlags.ExactBinding) != 0)
-                return System.DefaultBinder.ExactBinding(candidates.ToArray(), types, modifiers) as ConstructorInfo;
+                return System.DefaultBinder.ExactBinding(candidates.ToArray(), types, modifiers);
 
             binder ??= DefaultBinder;
-            return binder.SelectMethod(bindingAttr, candidates.ToArray(), types, modifiers) as ConstructorInfo;
+            return binder.SelectMethod(bindingAttr, candidates.ToArray(), types, modifiers) as RuntimeConstructorInfo;
         }
 
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.NonPublicProperties)]
@@ -2879,14 +2879,14 @@ namespace System
         }
 
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields | DynamicallyAccessedMemberTypes.NonPublicFields)]
-        public override FieldInfo? GetField(string name, BindingFlags bindingAttr)
+        public override RuntimeFieldInfo? GetField(string name, BindingFlags bindingAttr)
         {
             if (name is null) throw new ArgumentNullException();
 
             FilterHelper(bindingAttr, ref name, out _, out MemberListType listType);
 
             RuntimeFieldInfo[] cache = Cache.GetFieldList(listType, name);
-            FieldInfo? match = null;
+            RuntimeFieldInfo? match = null;
 
             bindingAttr ^= BindingFlags.DeclaredOnly;
             bool multipleStaticFieldMatches = false;
@@ -2916,7 +2916,7 @@ namespace System
             return match;
         }
 
-        public override Type? GetInterface(string fullname, bool ignoreCase)
+        public override RuntimeType? GetInterface(string fullname, bool ignoreCase)
         {
             if (fullname is null) throw new ArgumentNullException(nameof(fullname));
 
@@ -2951,7 +2951,7 @@ namespace System
         }
 
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicNestedTypes | DynamicallyAccessedMemberTypes.NonPublicNestedTypes)]
-        public override Type? GetNestedType(string fullname, BindingFlags bindingAttr)
+        public override RuntimeType? GetNestedType(string fullname, BindingFlags bindingAttr)
         {
             if (fullname is null) throw new ArgumentNullException(nameof(fullname));
 
@@ -2984,12 +2984,12 @@ namespace System
         {
             if (name is null) throw new ArgumentNullException(nameof(name));
 
-            ListBuilder<MethodInfo> methods = default;
-            ListBuilder<ConstructorInfo> constructors = default;
+            ListBuilder<RuntimeMethodInfo> methods = default;
+            ListBuilder<RuntimeConstructorInfo> constructors = default;
             ListBuilder<PropertyInfo> properties = default;
             ListBuilder<EventInfo> events = default;
-            ListBuilder<FieldInfo> fields = default;
-            ListBuilder<Type> nestedTypes = default;
+            ListBuilder<RuntimeFieldInfo> fields = default;
+            ListBuilder<RuntimeType> nestedTypes = default;
 
             int totalCount = 0;
 
@@ -3154,7 +3154,7 @@ namespace System
                 if (fullname == null)
                     return null;
 
-                return Assembly.CreateQualifiedName(Assembly.FullName, fullname);
+                return System.Reflection.Assembly.CreateQualifiedName(Assembly.FullName, fullname);
             }
         }
 
@@ -3221,10 +3221,10 @@ namespace System
             return GetRootElementType().GetTypeHandleInternal().GetInstantiationInternal();
         }
 
-        public override Type[] GetGenericArguments()
+        public override RuntimeType[] GetGenericArguments()
         {
-            Type[] types = GetRootElementType().GetTypeHandleInternal().GetInstantiationPublic();
-            return types ?? Type.EmptyTypes;
+            RuntimeType[] types = GetRootElementType().GetTypeHandleInternal().GetInstantiationPublic();
+            return types ?? EmptyTypes;
         }
 
         public override Type MakeGenericType(Type[] instantiation)
@@ -3287,7 +3287,7 @@ namespace System
 
             SanityCheckGenericArguments(instantiationRuntimeType, genericParameters);
 
-            Type ret;
+            RuntimeType ret;
             try
             {
                 ret = new RuntimeTypeHandle(this).Instantiate(instantiationRuntimeType);
@@ -3315,26 +3315,26 @@ namespace System
         public override bool ContainsGenericParameters =>
             GetRootElementType().GetTypeHandleInternal().ContainsGenericVariables();
 
-        public override Type[] GetGenericParameterConstraints()
+        public override RuntimeType[] GetGenericParameterConstraints()
         {
             if (!IsGenericParameter)
                 throw new InvalidOperationException(SR.Arg_NotGenericParameter);
 
-            Type[] constraints = new RuntimeTypeHandle(this).GetConstraints();
-            return constraints ?? Type.EmptyTypes;
+            RuntimeType[] constraints = new RuntimeTypeHandle(this).GetConstraints();
+            return constraints ?? EmptyTypes;
         }
         #endregion
 
         #region Misc
         public sealed override bool HasSameMetadataDefinitionAs(MemberInfo other) => HasSameMetadataDefinitionAsCore<RuntimeType>(other);
 
-        public override Type MakePointerType() => new RuntimeTypeHandle(this).MakePointer();
+        public override RuntimeType MakePointerType() => new RuntimeTypeHandle(this).MakePointer();
 
-        public override Type MakeByRefType() => new RuntimeTypeHandle(this).MakeByRef();
+        public override RuntimeType MakeByRefType() => new RuntimeTypeHandle(this).MakeByRef();
 
-        public override Type MakeArrayType() => new RuntimeTypeHandle(this).MakeSZArray();
+        public override RuntimeType MakeArrayType() => new RuntimeTypeHandle(this).MakeSZArray();
 
-        public override Type MakeArrayType(int rank)
+        public override RuntimeType MakeArrayType(int rank)
         {
             if (rank <= 0)
                 throw new IndexOutOfRangeException();
@@ -3852,7 +3852,7 @@ namespace System
         [MethodImpl(MethodImplOptions.NoInlining)]
         private string? GetCachedName(TypeNameKind kind) => Cache.GetName(kind);
 
-        public override Type? DeclaringType => Cache.GetEnclosingType();
+        public override RuntimeType? DeclaringType => Cache.GetEnclosingType();
 
         #endregion
 

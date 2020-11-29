@@ -10,8 +10,9 @@ namespace System
 {
     internal sealed partial class RuntimeType : TypeInfo, ICloneable
     {
-        public override Assembly Assembly => RuntimeTypeHandle.GetAssembly(this);
-        public override Type? BaseType => GetBaseType();
+        public static new readonly RuntimeType[] EmptyTypes = Array.Empty<RuntimeType>();
+        public override RuntimeAssembly Assembly => RuntimeTypeHandle.GetAssembly(this);
+        public override RuntimeType? BaseType => GetBaseType();
         public override bool IsByRefLike => RuntimeTypeHandle.IsByRefLike(this);
         public override bool IsConstructedGenericType => IsGenericType && !IsGenericTypeDefinition;
         public override bool IsGenericType => RuntimeTypeHandle.HasInstantiation(this);
@@ -23,10 +24,10 @@ namespace System
         public override bool IsSecurityTransparent => false;
         public override MemberTypes MemberType => (IsPublic || IsNotPublic) ? MemberTypes.TypeInfo : MemberTypes.NestedType;
         public override int MetadataToken => RuntimeTypeHandle.GetToken(this);
-        public override Module Module => GetRuntimeModule();
-        public override Type? ReflectedType => DeclaringType;
+        public override RuntimeModule Module => GetRuntimeModule();
+        public override RuntimeType? ReflectedType => DeclaringType;
         public override RuntimeTypeHandle TypeHandle => new RuntimeTypeHandle(this);
-        public override Type UnderlyingSystemType => this;
+        public override RuntimeType UnderlyingSystemType => this;
 
         public object Clone() => this;
 
@@ -92,7 +93,7 @@ namespace System
             return members ?? Array.Empty<MemberInfo>();
         }
 
-        public override Type GetElementType() => RuntimeTypeHandle.GetElementType(this);
+        public override RuntimeType GetElementType() => RuntimeTypeHandle.GetElementType(this);
 
         public override string? GetEnumName(object value)
         {
@@ -140,7 +141,7 @@ namespace System
             return ret;
         }
 
-        public override Type GetEnumUnderlyingType()
+        public override RuntimeType GetEnumUnderlyingType()
         {
             if (!IsEnum)
                 throw new ArgumentException(SR.Arg_MustBeEnum, "enumType");
@@ -148,7 +149,7 @@ namespace System
             return Enum.InternalGetUnderlyingType(this);
         }
 
-        public override Type GetGenericTypeDefinition()
+        public override RuntimeType GetGenericTypeDefinition()
         {
             if (!IsGenericType)
                 throw new InvalidOperationException(SR.InvalidOperation_NotGenericType);
@@ -268,7 +269,7 @@ namespace System
                 if (!valueType.IsEquivalentTo(this))
                     throw new ArgumentException(SR.Format(SR.Arg_EnumAndObjectMustBeSameType, valueType, this));
 
-                valueType = (RuntimeType)valueType.GetEnumUnderlyingType();
+                valueType = valueType.GetEnumUnderlyingType();
             }
 
             // If a string is passed in
@@ -374,13 +375,13 @@ namespace System
 
             if (RuntimeTypeHandle.IsGenericVariable(this))
             {
-                Type[] constraints = GetGenericParameterConstraints();
+                RuntimeType[] constraints = GetGenericParameterConstraints();
 
                 RuntimeType baseType = ObjectType;
 
                 for (int i = 0; i < constraints.Length; i++)
                 {
-                    RuntimeType constraint = (RuntimeType)constraints[i];
+                    RuntimeType constraint = constraints[i];
 
                     if (constraint.IsInterface)
                         continue;

@@ -578,7 +578,7 @@ namespace System
         #region Type Overrides
 
         #region Get XXXInfo Candidates
-        private ListBuilder<MethodInfo> GetMethodCandidates(
+        private ListBuilder<RuntimeMethodInfo> GetMethodCandidates(
             string? name, BindingFlags bindingAttr, CallingConventions callConv,
             Type[]? types, int genericParamCount, bool allowPrefixLookup)
         {
@@ -587,7 +587,7 @@ namespace System
             FilterHelper(bindingAttr, ref name, allowPrefixLookup, out prefixLookup, out ignoreCase, out listType);
 
             RuntimeMethodInfo[] cache = GetMethodsByName(name, bindingAttr, listType, this);
-            ListBuilder<MethodInfo> candidates = new ListBuilder<MethodInfo>(cache.Length);
+            ListBuilder<RuntimeMethodInfo> candidates = new ListBuilder<RuntimeMethodInfo>(cache.Length);
 
             for (int i = 0; i < cache.Length; i++)
             {
@@ -613,7 +613,7 @@ namespace System
             return candidates;
         }
 
-        private ListBuilder<ConstructorInfo> GetConstructorCandidates(
+        private ListBuilder<RuntimeConstructorInfo> GetConstructorCandidates(
             string? name, BindingFlags bindingAttr, CallingConventions callConv,
             Type[]? types, bool allowPrefixLookup)
         {
@@ -622,9 +622,9 @@ namespace System
             FilterHelper(bindingAttr, ref name, allowPrefixLookup, out prefixLookup, out ignoreCase, out listType);
 
             if (!string.IsNullOrEmpty(name) && name != ConstructorInfo.ConstructorName && name != ConstructorInfo.TypeConstructorName)
-                return new ListBuilder<ConstructorInfo>(0);
+                return new ListBuilder<RuntimeConstructorInfo>(0);
             RuntimeConstructorInfo[] cache = GetConstructors_internal(bindingAttr, this);
-            ListBuilder<ConstructorInfo> candidates = new ListBuilder<ConstructorInfo>(cache.Length);
+            ListBuilder<RuntimeConstructorInfo> candidates = new ListBuilder<RuntimeConstructorInfo>(cache.Length);
             for (int i = 0; i < cache.Length; i++)
             {
                 RuntimeConstructorInfo constructorInfo = cache[i];
@@ -775,8 +775,8 @@ namespace System
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
         public override MemberInfo[] GetMembers(BindingFlags bindingAttr)
         {
-            ListBuilder<MethodInfo> methods = GetMethodCandidates(null, bindingAttr, CallingConventions.Any, null, -1, false);
-            ListBuilder<ConstructorInfo> constructors = GetConstructorCandidates(null, bindingAttr, CallingConventions.Any, null, false);
+            ListBuilder<RuntimeMethodInfo> methods = GetMethodCandidates(null, bindingAttr, CallingConventions.Any, null, -1, false);
+            ListBuilder<RuntimeConstructorInfo> constructors = GetConstructorCandidates(null, bindingAttr, CallingConventions.Any, null, false);
             ListBuilder<PropertyInfo> properties = GetPropertyCandidates(null, bindingAttr, null, false);
             ListBuilder<EventInfo> events = GetEventCandidates(null, bindingAttr, false);
             ListBuilder<FieldInfo> fields = GetFieldCandidates(null, bindingAttr, false);
@@ -812,17 +812,17 @@ namespace System
         }
 
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods | DynamicallyAccessedMemberTypes.NonPublicMethods)]
-        protected override MethodInfo? GetMethodImpl(string name, int genericParamCount,
+        protected override RuntimeMethodInfo? GetMethodImpl(string name, int genericParamCount,
             BindingFlags bindingAttr, Binder? binder, CallingConventions callConv,
             Type[]? types, ParameterModifier[]? modifiers)
         {
-            ListBuilder<MethodInfo> candidates = GetMethodCandidates(name, bindingAttr, callConv, types, genericParamCount, false);
+            ListBuilder<RuntimeMethodInfo> candidates = GetMethodCandidates(name, bindingAttr, callConv, types, genericParamCount, false);
             if (candidates.Count == 0)
                 return null;
 
             if (types == null || types.Length == 0)
             {
-                MethodInfo firstCandidate = candidates[0];
+                RuntimeMethodInfo firstCandidate = candidates[0];
 
                 if (candidates.Count == 1)
                 {
@@ -832,35 +832,35 @@ namespace System
                 {
                     for (int j = 1; j < candidates.Count; j++)
                     {
-                        MethodInfo methodInfo = candidates[j];
+                        RuntimeMethodInfo methodInfo = candidates[j];
                         if (!System.DefaultBinder.CompareMethodSig(methodInfo, firstCandidate))
                             throw new AmbiguousMatchException(Environment.GetResourceString("Arg_AmbiguousMatchException"));
                     }
 
                     // All the methods have the exact same name and sig so return the most derived one.
-                    return System.DefaultBinder.FindMostDerivedNewSlotMeth(candidates.ToArray(), candidates.Count) as MethodInfo;
+                    return System.DefaultBinder.FindMostDerivedNewSlotMeth(candidates.ToArray(), candidates.Count);
                 }
             }
 
             if (binder == null)
                 binder = DefaultBinder;
 
-            return binder.SelectMethod(bindingAttr, candidates.ToArray(), types, modifiers) as MethodInfo;
+            return binder.SelectMethod(bindingAttr, candidates.ToArray(), types, modifiers) as RuntimeMethodInfo;
         }
 
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors)]
-        protected override ConstructorInfo? GetConstructorImpl(
+        protected override RuntimeConstructorInfo? GetConstructorImpl(
             BindingFlags bindingAttr, Binder? binder, CallingConventions callConvention,
             Type[] types, ParameterModifier[]? modifiers)
         {
-            ListBuilder<ConstructorInfo> candidates = GetConstructorCandidates(null, bindingAttr, CallingConventions.Any, types, false);
+            ListBuilder<RuntimeConstructorInfo> candidates = GetConstructorCandidates(null, bindingAttr, CallingConventions.Any, types, false);
 
             if (candidates.Count == 0)
                 return null;
 
             if (types.Length == 0 && candidates.Count == 1)
             {
-                ConstructorInfo firstCandidate = candidates[0];
+                RuntimeConstructorInfo firstCandidate = candidates[0];
 
                 ParameterInfo[] parameters = firstCandidate.GetParametersNoCopy();
                 if (parameters == null || parameters.Length == 0)
@@ -870,12 +870,12 @@ namespace System
             }
 
             if ((bindingAttr & BindingFlags.ExactBinding) != 0)
-                return System.DefaultBinder.ExactBinding(candidates.ToArray(), types, modifiers) as ConstructorInfo;
+                return System.DefaultBinder.ExactBinding(candidates.ToArray(), types, modifiers);
 
             if (binder == null)
                 binder = DefaultBinder;
 
-            return binder.SelectMethod(bindingAttr, candidates.ToArray(), types, modifiers) as ConstructorInfo;
+            return binder.SelectMethod(bindingAttr, candidates.ToArray(), types, modifiers) as RuntimeConstructorInfo;
         }
 
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.NonPublicProperties)]
@@ -1073,8 +1073,8 @@ namespace System
         {
             if (name == null) throw new ArgumentNullException(nameof(name));
 
-            ListBuilder<MethodInfo> methods = default;
-            ListBuilder<ConstructorInfo> constructors = default;
+            ListBuilder<RuntimeMethodInfo> methods = default;
+            ListBuilder<RuntimeConstructorInfo> constructors = default;
             ListBuilder<PropertyInfo> properties = default;
             ListBuilder<EventInfo> events = default;
             ListBuilder<FieldInfo> fields = default;
@@ -1856,7 +1856,7 @@ namespace System
             if (Volatile.Read(ref cache.default_ctor_cached))
                 return cache.default_ctor;
 
-            ListBuilder<ConstructorInfo> ctors = GetConstructorCandidates(
+            ListBuilder<RuntimeConstructorInfo> ctors = GetConstructorCandidates(
                 null,
                 BindingFlags.Public | BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.DeclaredOnly, CallingConventions.Any,
                 Type.EmptyTypes, false);
@@ -2243,26 +2243,26 @@ namespace System
             }
         }
 
-        public override Type[] GetGenericParameterConstraints()
+        public override RuntimeType[] GetGenericParameterConstraints()
         {
             if (!IsGenericParameter)
                 throw new InvalidOperationException(Environment.GetResourceString("Arg_NotGenericParameter"));
 
             var paramInfo = new Mono.RuntimeGenericParamInfoHandle(RuntimeTypeHandle.GetGenericParameterInfo(this));
-            Type[] constraints = paramInfo.Constraints;
+            RuntimeType[] constraints = paramInfo.Constraints;
 
-            return constraints ?? Type.EmptyTypes;
+            return constraints ?? EmptyTypes;
         }
 
         internal static object CreateInstanceForAnotherGenericParameter(Type genericType, RuntimeType genericArgument)
         {
-            var gt = (RuntimeType)MakeGenericType(genericType, new Type[] { genericArgument });
+            var gt = MakeGenericType(genericType, new Type[] { genericArgument });
             RuntimeConstructorInfo ctor = gt.GetDefaultConstructor()!;
             return ctor.InternalInvoke(null, null, wrapExceptions: true)!;
         }
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        private static extern Type MakeGenericType(Type gt, Type[] types);
+        private static extern RuntimeType MakeGenericType(Type gt, Type[] types);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         internal extern IntPtr GetMethodsByName_native(IntPtr namePtr, BindingFlags bindingAttr, MemberListType listType);
@@ -2454,10 +2454,18 @@ namespace System
                 for (int i = 0; i < n; i++)
                 {
                     var th = new RuntimeTypeHandle(h[i]);
-                    a[i] = (RuntimeType)GetTypeFromHandle(th);
+                    a[i] = GetTypeFromHandle(th);
                 }
                 return a;
             }
+        }
+
+        public static new RuntimeType GetTypeFromHandle(RuntimeTypeHandle handle)
+        {
+            if (handle.Value == IntPtr.Zero)
+                return null!; // FIXME: shouldn't return null
+
+            return internal_from_handle(handle.Value);
         }
 
         public override string? AssemblyQualifiedName
@@ -2468,7 +2476,7 @@ namespace System
             }
         }
 
-        public extern override Type? DeclaringType
+        public extern override RuntimeType? DeclaringType
         {
             [MethodImplAttribute(MethodImplOptions.InternalCall)]
             get;
