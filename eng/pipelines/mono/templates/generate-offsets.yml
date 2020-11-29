@@ -92,14 +92,14 @@ jobs:
     - task: CopyFiles@2
       displayName: Collect offset files
       inputs:
-        sourceFolder: '$(Build.SourcesDirectory)'/artifacts/obj/mono/
+        sourceFolder: '$(Build.SourcesDirectory)/artifacts/obj/mono/'
         contents: '**/offsets-*-android.h'
-        targetFolder: '$(Build.SourcesDirectory)'/artifacts/obj/monooffsetfiles/'
+        targetFolder: '$(Build.SourcesDirectory)/artifacts/obj/monooffsetfiles/'
 
     - task: PublishPipelineArtifact@1
       displayName: Upload offset files
       inputs:
-        targetPath: $(Build.SourcesDirectory)/artifacts/obj/mono/offsetfiles
+        targetPath: '$(Build.SourcesDirectory)/artifacts/obj/monooffsetfiles'
         artifactName: 'Mono_Offsets_${{ parameters.runtimeVariant }}_$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)'
 
     # Publish Logs
