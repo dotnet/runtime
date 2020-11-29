@@ -4812,6 +4812,13 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
                 result = NI_System_GC_KeepAlive;
             }
         }
+        else if (strcmp(className, "Array") == 0)
+        {
+            if (strcmp(methodName, "Clone") == 0)
+            {
+                result = NI_System_Array_Clone;
+            }
+        }
         else if (strcmp(className, "Type") == 0)
         {
             if (strcmp(methodName, "get_IsValueType") == 0)
@@ -10766,14 +10773,25 @@ var_types Compiler::impGetByRefResultType(genTreeOps oper, bool fUnsigned, GenTr
 // Return Value:
 //   tree representing optimized cast, or null if no optimization possible
 
-GenTree* Compiler::impOptimizeCastClassOrIsInst(GenTree* op1, CORINFO_RESOLVED_TOKEN* pResolvedToken, bool isCastClass)
+GenTree* Compiler::impOptimizeCastClassOrIsInst(GenTree* tree, CORINFO_RESOLVED_TOKEN* pResolvedToken, bool isCastClass)
 {
+    GenTree* op1 = tree;
     assert(op1->TypeGet() == TYP_REF);
 
     // Don't optimize for minopts or debug codegen.
     if (opts.OptimizationDisabled())
     {
         return nullptr;
+    }
+
+    // Check if we can safely remove redundant cast for "(T[])array.Clone()" expression.
+    if (op1->OperIs(GT_RET_EXPR) && (op1->AsRetExpr()->gtInlineCandidate->gtFlags & CORINFO_FLG_JIT_INTRINSIC))
+    {
+        GenTreeCall* arrayCloneCall = op1->AsRetExpr()->gtInlineCandidate->AsCall();
+        if (lookupNamedIntrinsic(arrayCloneCall->gtCallMethHnd) == NI_System_Array_Clone)
+        {
+            op1 = arrayCloneCall->gtCallThisArg->GetNode();
+        }
     }
 
     // See what we know about the type of the object being cast.
@@ -10796,7 +10814,7 @@ GenTree* Compiler::impOptimizeCastClassOrIsInst(GenTree* op1, CORINFO_RESOLVED_T
         {
             // Cast will succeed, result is simply op1.
             JITDUMP("Cast will succeed, optimizing to simply return input\n");
-            return op1;
+            return tree;
         }
         else if (castResult == TypeCompareState::MustNot)
         {
@@ -10815,10 +10833,10 @@ GenTree* Compiler::impOptimizeCastClassOrIsInst(GenTree* op1, CORINFO_RESOLVED_T
                 GenTree* result = gtNewIconNode(0, TYP_REF);
 
                 // If the cast was fed by a box, we can remove that too.
-                if (op1->IsBoxedValue())
+                if (tree->IsBoxedValue())
                 {
                     JITDUMP("Also removing upstream box\n");
-                    gtTryRemoveBoxUpstreamEffects(op1);
+                    gtTryRemoveBoxUpstreamEffects(tree);
                 }
 
                 return result;
