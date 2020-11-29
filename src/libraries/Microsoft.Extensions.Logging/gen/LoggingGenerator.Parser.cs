@@ -176,19 +176,19 @@ namespace Microsoft.Extensions.Logging.Generators
                                 if (loggerMessageAttribute.Equals(methodSymbol.ContainingType, SymbolEqualityComparer.Default))
                                 {
                                     var arg = ma.ArgumentList!.Arguments[0];
-                                    var eventId = sm.GetConstantValue(arg.Expression).ToString();
+                                    var eventId = sm.GetConstantValue(arg.Expression, _cancellationToken).ToString();
 
                                     arg = ma.ArgumentList.Arguments[1];
-                                    var level = (int)sm.GetConstantValue(arg.Expression).Value!;
+                                    var level = (int)sm.GetConstantValue(arg.Expression, _cancellationToken).Value!;
 
                                     arg = ma.ArgumentList.Arguments[2];
-                                    var message = sm.GetConstantValue(arg.Expression).ToString();
+                                    var message = sm.GetConstantValue(arg.Expression, _cancellationToken).ToString();
 
                                     string eventName = string.Empty;
                                     if (ma.ArgumentList.Arguments.Count > 3)
                                     {
                                         arg = ma.ArgumentList.Arguments[3];
-                                        eventName = sm.GetConstantValue(arg.Expression).ToString();
+                                        eventName = sm.GetConstantValue(arg.Expression, _cancellationToken).ToString();
                                     }
 
                                     var lm = new LoggerMethod
@@ -355,6 +355,8 @@ namespace Microsoft.Extensions.Logging.Generators
 
                                         lc.Methods.Add(lm);
                                     }
+
+                                    break;
                                 }
                             }
                         }
