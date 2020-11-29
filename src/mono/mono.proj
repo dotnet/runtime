@@ -368,7 +368,7 @@
       <MonoAotAbi Condition="'$(Platform)' == 'arm'">armv7-none-linux-androideabi</MonoAotAbi>
       <MonoAotAbi Condition="'$(Platform)' == 'x86'">i686-none-linux-android</MonoAotAbi>
       <MonoAotAbi Condition="'$(Platform)' == 'x64'">x86_64-none-linux-android</MonoAotAbi>
-      <MonoAotOffsetsFile>$(MonoObjDir)cross/offsets-$(Platform).h</MonoAotOffsetsFile>
+      <MonoAotOffsetsFile>$(MonoObjDir)cross/offsets-$(Platform)-android.h</MonoAotOffsetsFile>
     </PropertyGroup>
 
     <PropertyGroup>
