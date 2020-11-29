@@ -170,7 +170,7 @@ namespace System.Drawing
                 if (s_colorTable[index] == argb)
                 {
                     var knownColor = KnownColor.Transparent + index;
-
+                    // Handles the mismatching of the RebeccaPurple color with ButtonFace color ("System" colors, Part 2)
                     if (knownColor > KnownColor.YellowGreen)
                     {
                         knownColor += (int)KnownColor.RebeccaPurple - (int)KnownColor.ButtonFace;
