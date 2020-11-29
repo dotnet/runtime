@@ -367,7 +367,7 @@
     <!-- Android specific options -->
     <PropertyGroup Condition="'$(TargetsAndroid)' == 'true'">
       <MonoUseCrossTool>true</MonoUseCrossTool>
-      <MonoCMakeSysroot>$(ANDROID_NDK_ROOT)/sysroot</MonoCMakeSysroot>
+      <MonoAOTCMakeSysroot>$(ANDROID_NDK_ROOT)/sysroot</MonoAOTCMakeSysroot>
       <MonoAotAbi Condition="'$(Platform)' == 'arm64'">aarch64-v8a-linux-android</MonoAotAbi>
       <MonoAotAbi Condition="'$(Platform)' == 'arm'">armv7-none-linux-androideabi</MonoAotAbi>
       <MonoAotAbi Condition="'$(Platform)' == 'x86'">i686-none-linux-android</MonoAotAbi>
