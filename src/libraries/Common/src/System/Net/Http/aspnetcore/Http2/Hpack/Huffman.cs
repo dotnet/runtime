@@ -10,7 +10,7 @@ namespace System.Net.Http.HPack
     internal static class Huffman
     {
         // HPack static huffman code. see: https://httpwg.org/specs/rfc7541.html#huffman.code
-        // Stored into two table to optimize its initialization and memory consumption.
+        // Stored into two tables to optimize its initialization and memory consumption.
         private static readonly uint[] s_encodingTableCodes = new uint[257]
         {
             0b11111111_11000000_00000000_00000000,
@@ -574,12 +574,15 @@ namespace System.Net.Http.HPack
             // it is guaranteed that for this huffman code generated decoding lookup tree MUST consist of exactly 15 lookup tables
             var decodingTree = new ushort[15 * 256];
 
+            uint[] encodingTableCodes = s_encodingTableCodes;
+            ReadOnlySpan<byte> encodingTableBitLengths = EncodingTableBitLengths;
+
             int allocatedLookupTableIndex = 0;
             // Create traverse path for all 0..256 octets, 256 is EOS, see: http://httpwg.org/specs/rfc7541.html#rfc.section.5.2
             for (int octet = 0; octet <= 256; octet++)
             {
-                uint code = s_encodingTableCodes[octet];
-                int bitLength = EncodingTableBitLengths[octet];
+                uint code = encodingTableCodes[octet];
+                int bitLength = encodingTableBitLengths[octet];
 
                 int lookupTableIndex = 0;
                 int bitsLeft = bitLength;
