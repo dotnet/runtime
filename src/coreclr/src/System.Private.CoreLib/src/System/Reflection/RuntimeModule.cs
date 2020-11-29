@@ -195,8 +195,7 @@ namespace System.Reflection
                     methodArgs = ConvertToTypeHandleArray(genericMethodArguments);
                 }
 
-                IRuntimeFieldInfo fieldHandle;
-                ModuleHandle moduleHandle = new (GetNativeHandle());
+                ModuleHandle moduleHandle = new (this);
                 if (!tk.IsFieldDef)
                 {
                     if (!tk.IsMemberRef)
@@ -207,17 +206,13 @@ namespace System.Reflection
                     {
                         ConstArray sig = MetadataImport.GetMemberRefProps(tk);
 
-                        if (*(MdSigCallingConvention*)sig.Signature.ToPointer() != MdSigCallingConvention.Field)
+                        if (*(MdSigCallingConvention*)sig.Signature != MdSigCallingConvention.Field)
                             throw new ArgumentException(SR.Format(SR.Argument_ResolveField, tk, this),
                                 nameof(metadataToken));
                     }
+                }
 
-                    fieldHandle = moduleHandle.ResolveFieldHandle(tk, typeArgs, methodArgs).GetRuntimeFieldInfo();
-                }
-                else
-                {
-                    fieldHandle = moduleHandle.ResolveFieldHandle(metadataToken, typeArgs, methodArgs).GetRuntimeFieldInfo();
-                }
+                IRuntimeFieldInfo fieldHandle = moduleHandle.ResolveFieldHandle(metadataToken, typeArgs, methodArgs).GetRuntimeFieldInfo();
 
                 RuntimeType declaringType = RuntimeFieldHandle.GetApproxDeclaringType(fieldHandle.Value);
 

@@ -1374,7 +1374,7 @@ namespace System.Reflection
                 }
                 else
                 {
-                    ctorWithParameters = new ModuleHandle(decoratedModule.GetNativeHandle()).ResolveMethodHandle(caCtorToken).GetMethodInfo();
+                    ctorWithParameters = new ModuleHandle(decoratedModule).ResolveMethodHandle(caCtorToken).GetMethodInfo();
                 }
             }
 
