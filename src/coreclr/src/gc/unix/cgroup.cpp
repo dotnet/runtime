@@ -31,6 +31,8 @@ Abstract:
 #include <errno.h>
 #include <limits>
 
+#include "config.gc.h"
+
 #include "cgroup.h"
 
 #ifndef SIZE_T_MAX

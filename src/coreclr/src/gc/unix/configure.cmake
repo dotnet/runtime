@@ -119,4 +119,30 @@ int main(int argc, char **argv)
     return 0;
 }" HAVE_XSW_USAGE)
 
+check_struct_has_member(
+    "struct statfs"
+    f_fstypename
+    "sys/mount.h"
+    HAVE_STATFS_FSTYPENAME)
+
+check_struct_has_member(
+    "struct statvfs"
+    f_fstypename
+    "sys/mount.h"
+    HAVE_STATVFS_FSTYPENAME)
+
+# statfs: Find whether this struct exists
+if (HAVE_STATFS_FSTYPENAME OR HAVE_STATVFS_FSTYPENAME)
+    set (STATFS_INCLUDES sys/mount.h)
+else ()
+    set (STATFS_INCLUDES sys/statfs.h)
+endif ()
+
+check_prototype_definition(
+    statfs
+    "int statfs(const char *path, struct statfs *buf)"
+    0
+    ${STATFS_INCLUDES}
+    HAVE_NON_LEGACY_STATFS)
+
 configure_file(${CMAKE_CURRENT_LIST_DIR}/config.gc.h.in ${CMAKE_CURRENT_BINARY_DIR}/config.gc.h)
