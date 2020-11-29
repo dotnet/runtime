@@ -42,8 +42,6 @@ namespace Internal.IO
                 return InternalExists(path);
             }
             catch (ArgumentException) { }
-            catch (NotSupportedException) { } // Security can throw this on ":"
-            catch (SecurityException) { }
             catch (IOException) { }
             catch (UnauthorizedAccessException) { }
 

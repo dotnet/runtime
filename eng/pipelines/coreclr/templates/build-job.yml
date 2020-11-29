@@ -111,7 +111,7 @@ jobs:
     - ${{ if eq(parameters.testGroup, 'clrinterpreter') }}:
       - name: clrInterpreterBuildArg
         value: '-cmakeargs "-DFEATURE_INTERPRETER=1"'
-    
+
     - name: clrBuildPALTestsBuildArg
       value: ''
     - ${{ if ne(parameters.testGroup, 'innerloop') }}:
@@ -123,7 +123,7 @@ jobs:
     - ${{ if eq(parameters.osGroup, 'windows') }}:
       - name: ninjaArg
         value: '-ninja'
-  
+
     - name: SignType
       value: $[ coalesce(variables.OfficialSignType, 'real') ]
 
@@ -170,7 +170,7 @@ jobs:
     # Build DacTableGen (Windows-only)
     - ${{ if eq(parameters.osGroup, 'windows') }}:
       - script: $(Build.SourcesDirectory)$(dir)build$(scriptExt) -subset clr.dactools $(crossArg) -arch $(archType) $(osArg) -c $(buildConfig) $(officialBuildIdArg) -ci /bl:$(Build.SourcesDirectory)artifacts/logs/$(buildConfig)/DacTools.binlog
-        displayName: Build managed product components and packages
+        displayName: Build DAC utility tools
 
     # Build CoreCLR Runtime
     - ${{ if ne(parameters.osGroup, 'windows') }}:
@@ -225,7 +225,7 @@ jobs:
     # Sign diagnostic files on Windows
     - ${{ if and(eq(parameters.osGroup, 'windows'), eq(parameters.signBinaries, true)) }}:
       - powershell: >-
-          eng\common\build.ps1 -ci -sign -restore -configuration:$(buildConfig) -warnaserror:0
+          eng\common\build.ps1 -ci -sign -restore -configuration:$(buildConfig) -warnaserror:0 $(officialBuildIdArg)
           /p:DiagnosticsFilesRoot="$(buildProductRootFolderPath)"
           /p:SignDiagnostics=true
           /p:DotNetSignType=$(SignType)

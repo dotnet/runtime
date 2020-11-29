@@ -5112,6 +5112,7 @@ bool GenTree::TryGetUse(GenTree* def, GenTree*** use)
         case GT_NULLCHECK:
         case GT_PUTARG_REG:
         case GT_PUTARG_STK:
+        case GT_PUTARG_TYPE:
         case GT_RETURNTRAP:
         case GT_NOP:
         case GT_RETURN:
@@ -6070,19 +6071,12 @@ GenTree* Compiler::gtNewStringLiteralNode(InfoAccessType iat, void* pValue)
     switch (iat)
     {
         case IAT_VALUE:
-            // For CoreRT only - Constant object can be a frozen string.
-            if (!IsTargetAbi(CORINFO_CORERT_ABI))
-            {
-                // Non CoreRT - This case is illegal, creating a TYP_REF from an INT_CNS
-                noway_assert(!"unreachable IAT_VALUE case in gtNewStringLiteralNode");
-            }
-
+            setMethodHasFrozenString();
             tree         = gtNewIconEmbHndNode(pValue, nullptr, GTF_ICON_STR_HDL, nullptr);
             tree->gtType = TYP_REF;
 #ifdef DEBUG
             tree->AsIntCon()->gtTargetHandle = (size_t)pValue;
 #endif
-            tree = gtNewOperNode(GT_NOP, TYP_REF, tree); // prevents constant folding
             break;
 
         case IAT_PVALUE: // The value needs to be accessed via an indirection
@@ -8535,15 +8529,21 @@ bool Compiler::gtCompareTree(GenTree* op1, GenTree* op2)
     return false;
 }
 
+//------------------------------------------------------------------------
+// gtGetThisArg: Return this pointer node for the call.
+//
+// Arguments:
+//   call - the call node with a this argument.
+//
+// Return value:
+//   the this pointer node.
+//
 GenTree* Compiler::gtGetThisArg(GenTreeCall* call)
 {
-    if (call->gtCallThisArg == nullptr)
-    {
-        return nullptr;
-    }
+    assert(call->gtCallThisArg != nullptr);
 
     GenTree* thisArg = call->gtCallThisArg->GetNode();
-    if (thisArg->OperIs(GT_NOP, GT_ASG) == false)
+    if (!thisArg->OperIs(GT_ASG))
     {
         if ((thisArg->gtFlags & GTF_LATE_ARG) == 0)
         {
@@ -8551,41 +8551,38 @@ GenTree* Compiler::gtGetThisArg(GenTreeCall* call)
         }
     }
 
-    if (call->gtCallLateArgs != nullptr)
-    {
-        unsigned       argNum          = 0;
-        fgArgTabEntry* thisArgTabEntry = gtArgEntryByArgNum(call, argNum);
-        GenTree*       result          = thisArgTabEntry->GetNode();
+    assert(call->gtCallLateArgs != nullptr);
 
-        // Assert if we used DEBUG_DESTROY_NODE.
-        assert(result->gtOper != GT_COUNT);
+    unsigned       argNum          = 0;
+    fgArgTabEntry* thisArgTabEntry = gtArgEntryByArgNum(call, argNum);
+    GenTree*       result          = thisArgTabEntry->GetNode();
+
+    // Assert if we used DEBUG_DESTROY_NODE.
+    assert(result->gtOper != GT_COUNT);
 
 #if !FEATURE_FIXED_OUT_ARGS && defined(DEBUG)
-        // Check that call->fgArgInfo used in gtArgEntryByArgNum was not
-        // left outdated by assertion propogation updates.
-        // There is no information about registers of late args for platforms
-        // with FEATURE_FIXED_OUT_ARGS that is why this debug check is under
-        // !FEATURE_FIXED_OUT_ARGS.
-        regNumber thisReg = REG_ARG_0;
-        regList   list    = call->regArgList;
-        int       index   = 0;
-        for (GenTreeCall::Use& use : call->LateArgs())
+    // Check that call->fgArgInfo used in gtArgEntryByArgNum was not
+    // left outdated by assertion propogation updates.
+    // There is no information about registers of late args for platforms
+    // with FEATURE_FIXED_OUT_ARGS that is why this debug check is under
+    // !FEATURE_FIXED_OUT_ARGS.
+    regNumber thisReg = REG_ARG_0;
+    regList   list    = call->regArgList;
+    int       index   = 0;
+    for (GenTreeCall::Use& use : call->LateArgs())
+    {
+        assert(index < call->regArgListCount);
+        regNumber curArgReg = list[index];
+        if (curArgReg == thisReg)
         {
-            assert(index < call->regArgListCount);
-            regNumber curArgReg = list[index];
-            if (curArgReg == thisReg)
-            {
-                assert(result == use.GetNode());
-            }
-
-            index++;
+            assert(result == use.GetNode());
         }
+
+        index++;
+    }
 #endif // !FEATURE_FIXED_OUT_ARGS && defined(DEBUG)
 
-        return result;
-    }
-
-    return nullptr;
+    return result;
 }
 
 bool GenTree::gtSetFlags() const
@@ -9111,6 +9108,7 @@ GenTreeUseEdgeIterator::GenTreeUseEdgeIterator(GenTree* node)
         case GT_NULLCHECK:
         case GT_PUTARG_REG:
         case GT_PUTARG_STK:
+        case GT_PUTARG_TYPE:
         case GT_BSWAP:
         case GT_BSWAP16:
         case GT_KEEPALIVE:
@@ -12025,7 +12023,7 @@ void Compiler::gtGetArgMsg(GenTreeCall* call, GenTree* arg, unsigned argNum, cha
             }
 #endif // TARGET_ARM
 #if FEATURE_FIXED_OUT_ARGS
-            sprintf_s(bufp, bufLength, "arg%d out+%02x%c", argNum, curArgTabEntry->slotNum * TARGET_POINTER_SIZE, 0);
+            sprintf_s(bufp, bufLength, "arg%d out+%02x%c", argNum, curArgTabEntry->GetByteOffset(), 0);
 #else
             sprintf_s(bufp, bufLength, "arg%d on STK%c", argNum, 0);
 #endif
@@ -15521,7 +15519,7 @@ GenTree* Compiler::gtNewTempAssign(
         // There are 2 special cases:
         // 1. we have lost classHandle from a FIELD node  because the parent struct has overlapping fields,
         //     the field was transformed as IND opr GT_LCL_FLD;
-        // 2. we are propogating `ASG(struct V01, 0)` to `RETURN(struct V01)`, `CNT_INT` doesn't `structHnd`;
+        // 2. we are propagation `ASG(struct V01, 0)` to `RETURN(struct V01)`, `CNT_INT` doesn't `structHnd`;
         // in these cases, we can use the type of the merge return for the assignment.
         assert(val->OperIs(GT_IND, GT_LCL_FLD, GT_CNS_INT));
         assert(!compDoOldStructRetyping());

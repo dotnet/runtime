@@ -450,10 +450,10 @@ if %__BuildCrossArchNative% EQU 1 (
     set "__CMakeBinDir=!__CMakeBinDir:\=/!"
 
     if %__Ninja% EQU 1 (
-        set __ExtraCmakeArgs="-DCMAKE_BUILD_TYPE=!__BuildType!" 
+        set __ExtraCmakeArgs="-DCMAKE_BUILD_TYPE=!__BuildType!"
     )
 
-    set __ExtraCmakeArgs=!__ExtraCmakeArgs! %__CMakeClrBuildSubsetArgs% "-DCLR_CROSS_COMPONENTS_BUILD=1" "-DCLR_CMAKE_TARGET_ARCH=%__BuildArch%" "-DCLR_CMAKE_TARGET_OS=%__TargetOS%" "-DCLR_CMAKE_PGO_INSTRUMENT=0" "-DCLR_CMAKE_OPTDATA_PATH=%__PgoOptDataPath%" "-DCLR_CMAKE_PGO_OPTIMIZE=0" "-DCLR_ENG_NATIVE_DIR=%__RepoRootDir%/eng/native" "-DCLR_REPO_ROOT_DIR=%__RepoRootDir%" %__CMakeArgs%
+    set __ExtraCmakeArgs=!__ExtraCmakeArgs! %__CMakeClrBuildSubsetArgs% "-DCLR_CROSS_COMPONENTS_BUILD=1" "-DCLR_CMAKE_TARGET_ARCH=%__BuildArch%" "-DCLR_CMAKE_TARGET_OS=%__TargetOS%" "-DCLR_CMAKE_PGO_INSTRUMENT=0" "-DCLR_CMAKE_OPTDATA_PATH=%__PgoOptDataPath%" "-DCLR_CMAKE_PGO_OPTIMIZE=0" %__CMakeArgs%
     call "%__RepoRootDir%\eng\native\gen-buildsys.cmd" "%__ProjectDir%" "%__CrossCompIntermediatesDir%" %__VSVersion% %__CrossArch% !__ExtraCmakeArgs!
 
     if not !errorlevel! == 0 (
@@ -512,22 +512,22 @@ if %__BuildCrossArchNative% EQU 1 (
 
         if /i "%__CrossArch2%" == "x86" ( set __VCBuildArch=x86 )
         if /i "%__CrossArch2%" == "x64" ( set __VCBuildArch=x86_amd64 )
-        
+
         echo %__MsgPrefix%Using environment: "%__VCToolsRoot%\vcvarsall.bat" !__VCBuildArch!
         call                                 "%__VCToolsRoot%\vcvarsall.bat" !__VCBuildArch!
         @if defined _echo @echo on
-        
+
         if not exist "%__CrossComp2IntermediatesDir%" md "%__CrossComp2IntermediatesDir%"
         if defined __SkipConfigure goto SkipConfigureCrossBuild2
 
         set __CMakeBinDir="%__CrossComponent2BinDir%"
         set "__CMakeBinDir=!__CMakeBinDir:\=/!"
-        
+
         if %__Ninja% EQU 1 (
-            set __ExtraCmakeArgs="-DCMAKE_BUILD_TYPE=!__BuildType!" 
+            set __ExtraCmakeArgs="-DCMAKE_BUILD_TYPE=!__BuildType!"
         )
 
-        set __ExtraCmakeArgs=!__ExtraCmakeArgs! %__CMakeClrBuildSubsetArgs% "-DCLR_CROSS_COMPONENTS_BUILD=1" "-DCLR_CMAKE_TARGET_ARCH=%__BuildArch%" "-DCLR_CMAKE_TARGET_OS=%__TargetOS%" "-DCLR_CMAKE_PGO_INSTRUMENT=0" "-DCLR_CMAKE_OPTDATA_PATH=%__PgoOptDataPath%" "-DCLR_CMAKE_PGO_OPTIMIZE=0" "-DCMAKE_SYSTEM_VERSION=10.0" "-DCLR_ENG_NATIVE_DIR=%__RepoRootDir%/eng/native" "-DCLR_REPO_ROOT_DIR=%__RepoRootDir%" %__CMakeArgs%
+        set __ExtraCmakeArgs=!__ExtraCmakeArgs! %__CMakeClrBuildSubsetArgs% "-DCLR_CROSS_COMPONENTS_BUILD=1" "-DCLR_CMAKE_TARGET_ARCH=%__BuildArch%" "-DCLR_CMAKE_TARGET_OS=%__TargetOS%" "-DCLR_CMAKE_PGO_INSTRUMENT=0" "-DCLR_CMAKE_OPTDATA_PATH=%__PgoOptDataPath%" "-DCLR_CMAKE_PGO_OPTIMIZE=0" "-DCMAKE_SYSTEM_VERSION=10.0" %__CMakeArgs%
         call "%__RepoRootDir%\eng\native\gen-buildsys.cmd" "%__ProjectDir%" "%__CrossComp2IntermediatesDir%" %__VSVersion% %__CrossArch2% !__ExtraCmakeArgs!
 
         if not !errorlevel! == 0 (
@@ -620,10 +620,10 @@ if %__BuildNative% EQU 1 (
     echo %__MsgPrefix%Regenerating the Visual Studio solution
 
     if %__Ninja% EQU 1 (
-        set __ExtraCmakeArgs="-DCMAKE_BUILD_TYPE=!__BuildType!" 
+        set __ExtraCmakeArgs="-DCMAKE_BUILD_TYPE=!__BuildType!"
     )
 
-    set __ExtraCmakeArgs=!__ExtraCmakeArgs! !___CrossBuildDefine! %__CMakeClrBuildSubsetArgs% "-DCLR_CMAKE_PGO_INSTRUMENT=%__PgoInstrument%" "-DCLR_CMAKE_OPTDATA_PATH=%__PgoOptDataPath%" "-DCLR_CMAKE_PGO_OPTIMIZE=%__PgoOptimize%" "-DCLR_ENG_NATIVE_DIR=%__RepoRootDir%/eng/native" "-DCLR_REPO_ROOT_DIR=%__RepoRootDir%" %__CMakeArgs%
+    set __ExtraCmakeArgs=!__ExtraCmakeArgs! !___CrossBuildDefine! %__CMakeClrBuildSubsetArgs% "-DCLR_CMAKE_PGO_INSTRUMENT=%__PgoInstrument%" "-DCLR_CMAKE_OPTDATA_PATH=%__PgoOptDataPath%" "-DCLR_CMAKE_PGO_OPTIMIZE=%__PgoOptimize%" %__CMakeArgs%
     call "%__RepoRootDir%\eng\native\gen-buildsys.cmd" "%__ProjectDir%" "%__IntermediatesDir%" %__VSVersion% %__BuildArch% !__ExtraCmakeArgs!
     if not !errorlevel! == 0 (
         echo %__ErrMsgPrefix%%__MsgPrefix%Error: failed to generate native component build project!

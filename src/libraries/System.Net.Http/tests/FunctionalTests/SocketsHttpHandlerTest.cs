@@ -2073,6 +2073,7 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [ConditionalFact(nameof(SupportsAlpn))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/45204")]
         public async Task Http2_MultipleConnectionsEnabled_InfiniteRequestsCompletelyBlockOneConnection_RemaningRequestsAreHandledByNewConnection()
         {
             const int MaxConcurrentStreams = 2;
@@ -2096,7 +2097,7 @@ namespace System.Net.Http.Functional.Tests
 
                 Assert.Equal(MaxConcurrentStreams, handledRequestCount);
 
-                //Complete inifinite requests.
+                // Complete infinite requests.
                 handledRequestCount = await SendResponses(connection0, blockedStreamIds);
 
                 Assert.Equal(MaxConcurrentStreams, handledRequestCount);
@@ -2209,7 +2210,7 @@ namespace System.Net.Http.Functional.Tests
                 Assert.True(connection1.IsInvalid);
                 Assert.False(connection0.IsInvalid);
 
-                Http2LoopbackConnection connection2 = await PrepareConnection(server, client, MaxConcurrentStreams, readTimeout: 15, expectedWarpUpTasks:2).ConfigureAwait(false);
+                Http2LoopbackConnection connection2 = await PrepareConnection(server, client, MaxConcurrentStreams, readTimeout: 15, expectedWarmUpTasks:2).ConfigureAwait(false);
 
                 AcquireAllStreamSlots(server, client, sendTasks, MaxConcurrentStreams);
 
@@ -2243,7 +2244,7 @@ namespace System.Net.Http.Functional.Tests
             SslOptions = { RemoteCertificateValidationCallback = delegate { return true; } }
         };
 
-        private async Task<Http2LoopbackConnection> PrepareConnection(Http2LoopbackServer server, HttpClient client, uint maxConcurrentStreams, int readTimeout = 3, int expectedWarpUpTasks = 1)
+        private async Task<Http2LoopbackConnection> PrepareConnection(Http2LoopbackServer server, HttpClient client, uint maxConcurrentStreams, int readTimeout = 3, int expectedWarmUpTasks = 1)
         {
             Task<HttpResponseMessage> warmUpTask = client.GetAsync(server.Address);
             Http2LoopbackConnection connection = await GetConnection(server, maxConcurrentStreams, readTimeout).TimeoutAfter(TestHelper.PassingTestTimeoutMilliseconds * 2).ConfigureAwait(false);
@@ -2251,7 +2252,7 @@ namespace System.Net.Http.Functional.Tests
             Task settingAckReceived = connection.SettingAckWaiter;
             while (true)
             {
-                Task handleRequestTask = HandleAllPendingRequests(connection, expectedWarpUpTasks);
+                Task handleRequestTask = HandleAllPendingRequests(connection, expectedWarmUpTasks);
                 await Task.WhenAll(warmUpTask, handleRequestTask).TimeoutAfter(TestHelper.PassingTestTimeoutMilliseconds * 2).ConfigureAwait(false);
                 Assert.True(warmUpTask.Result.IsSuccessStatusCode);
                 warmUpTask.Result.Dispose();

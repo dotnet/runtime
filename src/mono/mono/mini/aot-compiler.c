@@ -5060,10 +5060,42 @@ MONO_RESTORE_WARNING
 				if (cattr->attrs [j].ctor && mono_is_corlib_image (m_class_get_image (cattr->attrs [j].ctor->klass)) && !strcmp (m_class_get_name (cattr->attrs [j].ctor->klass), "UnmanagedCallersOnlyAttribute"))
 					break;
 			if (j < cattr->num_attrs) {
-				MonoMethod *wrapper = mono_marshal_get_managed_wrapper (method, NULL, 0, error);
+				MonoCustomAttrEntry *e = &cattr->attrs [j];
+				const char *named;
+				int slen;
+				char *export_name = NULL;
+				MonoMethod *wrapper;
+
+				if (!(method->flags & METHOD_ATTRIBUTE_STATIC)) {
+					g_warning ("AOT restriction: Method '%s' must be static since it is decorated with [UnmanagedCallers].",
+						mono_method_full_name (method, TRUE));
+					exit (1);
+				}
+
+				gpointer *typed_args = NULL;
+				gpointer *named_args = NULL;
+				CattrNamedArg *named_arg_info = NULL;
+				int num_named_args = 0;
+				mono_reflection_create_custom_attr_data_args_noalloc (acfg->image, e->ctor, e->data, e->data_size, &typed_args, &named_args, &num_named_args, &named_arg_info, error);
+				mono_error_assert_ok (error);
+				for (j = 0; j < num_named_args; ++j) {
+					if (named_arg_info [j].field && !strcmp (named_arg_info [j].field->name, "EntryPoint")) {
+						named = named_args [j];
+						slen = mono_metadata_decode_value (named, &named);
+						export_name = (char *)g_malloc (slen + 1);
+						memcpy (export_name, named, slen);
+						export_name [slen] = 0;
+					}
+				}
+				g_free (named_args);
+				g_free (named_arg_info);
+
+				wrapper = mono_marshal_get_managed_wrapper (method, NULL, 0, error);
 				mono_error_assert_ok (error);
 
 				add_method (acfg, wrapper);
+				if (export_name)
+					g_hash_table_insert (acfg->export_names, wrapper, export_name);
 			}
 #endif
 

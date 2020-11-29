@@ -133,7 +133,7 @@ void Compiler::optMarkLoopBlocks(BasicBlock* begBlk, BasicBlock* endBlk, bool ex
        Thus we increase each block by 7 times the weight of
        the loop header block,
        if the loops are all properly formed gives us:
-       (assuming that BB_LOOP_WEIGHT is 8)
+       (assuming that BB_LOOP_WEIGHT_SCALE is 8)
 
           1 -- non loop basic block
           8 -- single loop nesting
@@ -217,7 +217,7 @@ void Compiler::optMarkLoopBlocks(BasicBlock* begBlk, BasicBlock* endBlk, bool ex
             {
                 noway_assert(curBlk->bbWeight > BB_ZERO_WEIGHT);
 
-                unsigned weight;
+                BasicBlock::weight_t weight;
 
                 if (curBlk->hasProfileWeight())
                 {
@@ -228,11 +228,11 @@ void Compiler::optMarkLoopBlocks(BasicBlock* begBlk, BasicBlock* endBlk, bool ex
                 {
                     if (dominates)
                     {
-                        weight = curBlk->bbWeight * BB_LOOP_WEIGHT;
+                        weight = curBlk->bbWeight * BB_LOOP_WEIGHT_SCALE;
                     }
                     else
                     {
-                        weight = curBlk->bbWeight * (BB_LOOP_WEIGHT / 2);
+                        weight = curBlk->bbWeight * (BB_LOOP_WEIGHT_SCALE / 2);
                     }
 
                     //
@@ -357,7 +357,7 @@ void Compiler::optUnmarkLoopBlocks(BasicBlock* begBlk, BasicBlock* endBlk)
         //
         if (!curBlk->isRunRarely() && fgReachable(curBlk, begBlk) && fgReachable(begBlk, curBlk))
         {
-            unsigned weight = curBlk->bbWeight;
+            BasicBlock::weight_t weight = curBlk->bbWeight;
 
             // Don't unmark blocks that are set to BB_MAX_WEIGHT
             // Don't unmark blocks when we are using profile weights
@@ -372,7 +372,7 @@ void Compiler::optUnmarkLoopBlocks(BasicBlock* begBlk, BasicBlock* endBlk)
                 {
                     /* Merging of blocks can disturb the Dominates
                        information (see RAID #46649) */
-                    if (weight < BB_LOOP_WEIGHT)
+                    if (weight < BB_LOOP_WEIGHT_SCALE)
                     {
                         weight *= 2;
                     }
@@ -384,9 +384,9 @@ void Compiler::optUnmarkLoopBlocks(BasicBlock* begBlk, BasicBlock* endBlk)
                     weight = BB_MAX_WEIGHT;
                 }
 
-                assert(weight >= BB_LOOP_WEIGHT);
+                assert(weight >= BB_LOOP_WEIGHT_SCALE);
 
-                curBlk->modifyBBWeight(weight / BB_LOOP_WEIGHT);
+                curBlk->modifyBBWeight(weight / BB_LOOP_WEIGHT_SCALE);
             }
 
 #ifdef DEBUG
@@ -3782,7 +3782,7 @@ void Compiler::optUnrollLoops()
                         goto DONE_LOOP;
                     }
                     // Block weight should no longer have the loop multiplier
-                    newBlock->modifyBBWeight(newBlock->bbWeight / BB_LOOP_WEIGHT);
+                    newBlock->modifyBBWeight(newBlock->bbWeight / BB_LOOP_WEIGHT_SCALE);
                     // Jump dests are set in a post-pass; make sure CloneBlockState hasn't tried to set them.
                     assert(newBlock->bbJumpDest == nullptr);
 
@@ -4162,7 +4162,7 @@ void Compiler::fgOptWhileLoop(BasicBlock* block)
     gtPrepareCost(condTree);
     unsigned estDupCostSz = condTree->GetCostSz();
 
-    double loopIterations = (double)BB_LOOP_WEIGHT;
+    double loopIterations = (double)BB_LOOP_WEIGHT_SCALE;
 
     bool                 allProfileWeightsAreValid = false;
     BasicBlock::weight_t weightBlock               = block->bbWeight;
@@ -5154,21 +5154,13 @@ void Compiler::optCloneLoop(unsigned loopInd, LoopCloneContext* context)
             optLoopTable[loopInd].lpEntry->bbNum, optLoopTable[loopInd].lpBottom->bbNum);
 
     // Determine the depth of the loop, so we can properly weight blocks added (outside the cloned loop blocks).
-    unsigned depth         = optLoopDepth(loopInd);
-    unsigned ambientWeight = 1;
+    unsigned             depth         = optLoopDepth(loopInd);
+    BasicBlock::weight_t ambientWeight = 1;
     for (unsigned j = 0; j < depth; j++)
     {
-        unsigned lastWeight = ambientWeight;
-        ambientWeight *= BB_LOOP_WEIGHT;
-        // If the multiplication overflowed, stick at max.
-        // (Strictly speaking, a multiplication could overflow and still have a result
-        // that is >= lastWeight...but if so, the original weight must be pretty large,
-        // and it got bigger, so that's OK.)
-        if (ambientWeight < lastWeight)
-        {
-            ambientWeight = BB_MAX_WEIGHT;
-            break;
-        }
+        BasicBlock::weight_t lastWeight = ambientWeight;
+        ambientWeight *= BB_LOOP_WEIGHT_SCALE;
+        assert(ambientWeight > lastWeight);
     }
 
     // If we're in a non-natural loop, the ambient weight might be higher than we computed above.
@@ -5416,7 +5408,7 @@ BasicBlock* Compiler::optInsertLoopChoiceConditions(LoopCloneContext* context,
     return curCond;
 }
 
-void Compiler::optEnsureUniqueHead(unsigned loopInd, unsigned ambientWeight)
+void Compiler::optEnsureUniqueHead(unsigned loopInd, BasicBlock::weight_t ambientWeight)
 {
     BasicBlock* h = optLoopTable[loopInd].lpHead;
     BasicBlock* t = optLoopTable[loopInd].lpTop;
@@ -7185,8 +7177,8 @@ void Compiler::optHoistLoopBlocks(unsigned loopNum, ArrayStack<BasicBlock*>* blo
 
     while (!blocks->Empty())
     {
-        BasicBlock* block       = blocks->Pop();
-        unsigned    blockWeight = block->getBBWeight(this);
+        BasicBlock*          block       = blocks->Pop();
+        BasicBlock::weight_t blockWeight = block->getBBWeight(this);
 
         JITDUMP("    optHoistLoopBlocks " FMT_BB " (weight=%6s) of loop L%02u <" FMT_BB ".." FMT_BB
                 ">, firstBlock is %s\n",
@@ -7412,8 +7404,8 @@ void Compiler::fgCreateLoopPreHeader(unsigned lnum)
 
             if (allValidProfileWeights)
             {
-                double loopEnteredCount;
-                double loopSkippedCount;
+                BasicBlock::weight_t loopEnteredCount;
+                BasicBlock::weight_t loopSkippedCount;
 
                 if (fgHaveValidEdgeWeights)
                 {
@@ -7422,21 +7414,19 @@ void Compiler::fgCreateLoopPreHeader(unsigned lnum)
                     noway_assert(edgeToNext != nullptr);
                     noway_assert(edgeToJump != nullptr);
 
-                    loopEnteredCount =
-                        ((double)edgeToNext->edgeWeightMin() + (double)edgeToNext->edgeWeightMax()) / 2.0;
-                    loopSkippedCount =
-                        ((double)edgeToJump->edgeWeightMin() + (double)edgeToJump->edgeWeightMax()) / 2.0;
+                    loopEnteredCount = (edgeToNext->edgeWeightMin() + edgeToNext->edgeWeightMax()) / 2.0f;
+                    loopSkippedCount = (edgeToJump->edgeWeightMin() + edgeToJump->edgeWeightMax()) / 2.0f;
                 }
                 else
                 {
-                    loopEnteredCount = (double)head->bbNext->bbWeight;
-                    loopSkippedCount = (double)head->bbJumpDest->bbWeight;
+                    loopEnteredCount = head->bbNext->bbWeight;
+                    loopSkippedCount = head->bbJumpDest->bbWeight;
                 }
 
-                double loopTakenRatio = loopEnteredCount / (loopEnteredCount + loopSkippedCount);
+                BasicBlock::weight_t loopTakenRatio = loopEnteredCount / (loopEnteredCount + loopSkippedCount);
 
                 // Calculate a good approximation of the preHead's block weight
-                unsigned preHeadWeight = (unsigned)(((double)head->bbWeight * loopTakenRatio) + 0.5);
+                BasicBlock::weight_t preHeadWeight = (head->bbWeight * loopTakenRatio) + 0.5f;
                 preHead->setBBWeight(max(preHeadWeight, 1));
                 noway_assert(!preHead->isRunRarely());
             }

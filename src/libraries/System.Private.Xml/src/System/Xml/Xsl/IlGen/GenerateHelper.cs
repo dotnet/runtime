@@ -145,7 +145,7 @@ namespace System.Xml.Xsl.IlGen
 
         private static ConstructorInfo GetConstructor(Type className)
         {
-            ConstructorInfo constrInfo = className.GetConstructor(Array.Empty<Type>())!;
+            ConstructorInfo constrInfo = className.GetConstructor(Type.EmptyTypes)!;
             Debug.Assert(constrInfo != null, "Constructor " + className + " cannot be null.");
             return constrInfo;
         }

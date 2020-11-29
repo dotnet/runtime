@@ -102,6 +102,11 @@ public class AppleAppBuilderTask : Task
     public bool UseAotForSimulator { get; set; }
 
     /// <summary>
+    /// Forces the runtime to use the interpreter
+    /// </summary>
+    public bool ForceInterpreter { get; set; }
+
+    /// <summary>
     /// Path to xcode project
     /// </summary>
     [Output]
@@ -149,15 +154,20 @@ public class AppleAppBuilderTask : Task
             }
         }
 
-        if ((isDevice || UseAotForSimulator) && !assemblerFiles.Any())
+        if (((!ForceInterpreter && (isDevice || UseAotForSimulator)) && !assemblerFiles.Any()))
         {
             throw new InvalidOperationException("Need list of AOT files for device builds.");
+        }
+
+        if (ForceInterpreter && UseAotForSimulator)
+        {
+            throw new InvalidOperationException("Interpreter and AOT cannot be enabled at the same time");
         }
 
         if (GenerateXcodeProject)
         {
             XcodeProjectPath = Xcode.GenerateXCode(ProjectName, MainLibraryFileName, assemblerFiles,
-                AppDir, binDir, MonoRuntimeHeaders, !isDevice, UseConsoleUITemplate, UseAotForSimulator, Optimized, NativeMainSource);
+                AppDir, binDir, MonoRuntimeHeaders, !isDevice, UseConsoleUITemplate, UseAotForSimulator, ForceInterpreter, Optimized, NativeMainSource);
 
             if (BuildAppBundle)
             {

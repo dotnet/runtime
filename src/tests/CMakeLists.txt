@@ -6,6 +6,7 @@ if (CMAKE_VERSION VERSION_GREATER 3.15 OR CMAKE_VERSION VERSION_EQUAL 3.15)
 endif()
 project(Tests)
 
+include(../../eng/native/configurepaths.cmake)
 include(${CLR_ENG_NATIVE_DIR}/configurecompiler.cmake)
 
 # Add this subdir. We install the headers for the jit.

@@ -285,7 +285,7 @@ namespace System.ComponentModel
                 }
                 else
                 {
-                    ConstructorInfo ci = reflect.UnderlyingSystemType.GetConstructor(Array.Empty<Type>());
+                    ConstructorInfo ci = reflect.UnderlyingSystemType.GetConstructor(Type.EmptyTypes);
                     if (ci != null)
                     {
                         attr = (Attribute)ci.Invoke(Array.Empty<object>());

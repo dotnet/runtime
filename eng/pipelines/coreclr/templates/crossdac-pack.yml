@@ -77,7 +77,7 @@ jobs:
     # Sign diagnostic files
     - ${{ if eq(parameters.isOfficialBuild, true) }}:
       - powershell: >-
-          eng\common\build.ps1 -ci -sign -restore -configuration:$(buildConfig) -warnaserror:0
+          eng\common\build.ps1 -ci -sign -restore -configuration:$(buildConfig) -warnaserror:0 $(officialBuildIdArg)
           /p:PackagesFolder="$(Build.SourcesDirectory)/artifacts/packages/$(buildConfig)"
           /p:SignDiagnosticsPackages=true
           /p:DotNetSignType=$(SignType)

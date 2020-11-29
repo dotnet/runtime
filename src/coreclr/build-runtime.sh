@@ -246,7 +246,7 @@ check_prereqs
 restore_optdata
 
 # Build the coreclr (native) components.
-__CMakeArgs="-DCLR_CMAKE_PGO_INSTRUMENT=$__PgoInstrument -DCLR_CMAKE_OPTDATA_PATH=$__PgoOptDataPath -DCLR_CMAKE_PGO_OPTIMIZE=$__PgoOptimize -DCLR_REPO_ROOT_DIR=\"$__RepoRootDir\" $__CMakeArgs"
+__CMakeArgs="-DCLR_CMAKE_PGO_INSTRUMENT=$__PgoInstrument -DCLR_CMAKE_OPTDATA_PATH=$__PgoOptDataPath -DCLR_CMAKE_PGO_OPTIMIZE=$__PgoOptimize $__CMakeArgs"
 __CMakeArgs="-DCLR_CMAKE_BUILD_SUBSET_JIT=$__BuildJit -DCLR_CMAKE_BUILD_SUBSET_ALLJITS=$__BuildAllJits -DCLR_CMAKE_BUILD_SUBSET_RUNTIME=$__BuildRuntime $__CMakeArgs"
 __CMakeArgs="-DCLR_CMAKE_BUILD_TESTS=$__BuildPALTests $__CMakeArgs"
 

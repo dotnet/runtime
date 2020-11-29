@@ -7,7 +7,7 @@
   </PropertyGroup>
 
   <ItemGroup Condition="'$(PackageTargetRuntime)' != ''">
-    <NativeBinary Include="$(DotNetHostBinDir)/dotnet$(ApplicationFileExtension)" />
+    <NativeBinary Include="$(DotNetHostBinDir)/dotnet$(ExeSuffix)" />
     <File Include="@(NativeBinary)">
       <TargetPath>runtimes/$(PackageTargetRuntime)/native</TargetPath>
       <IsNative>true</IsNative>
