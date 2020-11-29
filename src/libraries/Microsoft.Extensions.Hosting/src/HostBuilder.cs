@@ -216,13 +216,13 @@ namespace Microsoft.Extensions.Hosting
 #pragma warning restore CS0618 // Type or member is obsolete
             services.AddSingleton<IHostApplicationLifetime, ApplicationLifetime>();
             services.AddSingleton<IHostLifetime, ConsoleLifetime>();
-            services.AddSingleton<IHost>(serviceProvider=>
+            services.AddSingleton<IHost>(_ =>
             {
                 return new Internal.Host(_appServices,
-                    serviceProvider.GetRequiredService<IHostApplicationLifetime>(),
-                    serviceProvider.GetRequiredService<ILogger<Internal.Host>>(),
-                    serviceProvider.GetRequiredService<IHostLifetime>(),
-                    serviceProvider.GetRequiredService<IOptions<HostOptions>>());
+                    _appServices.GetRequiredService<IHostApplicationLifetime>(),
+                    _appServices.GetRequiredService<ILogger<Internal.Host>>(),
+                    _appServices.GetRequiredService<IHostLifetime>(),
+                    _appServices.GetRequiredService<IOptions<HostOptions>>());
             });
             services.AddOptions().Configure<HostOptions>(options => { options.Initialize(_hostConfiguration); });
             services.AddLogging();
