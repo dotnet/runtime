@@ -93,7 +93,7 @@ jobs:
       displayName: Upload offset files
       inputs:
         targetPath: $(Build.SourcesDirectory)/artifacts/obj/mono/
-        archiveFilePatterns: **/offsets-*-android.h
+        archiveFilePatterns: '**/offsets-*-android.h'
 
     # Publish Logs
     - task: PublishPipelineArtifact@1
