@@ -21,7 +21,7 @@
 // pointer to achieve such an alignment for the next argument on those platforms (otherwise it is a no-op).
 // NOTE: the debugger has its own implementation of this algorithm in Debug\DI\RsType.cpp, CordbType::RequiresAlign8()
 //       so if you change this implementation be sure to update the debugger's version as well.
-static void AdjustArgPtrForAlignment(VARARGS *pData, size_t cbArg)
+static void AdjustArgPtrForAlignment(VARARGS *pData, unsigned cbArg)
 {
 #ifdef TARGET_ARM
     // Only 64-bit primitives or value types with embedded 64-bit primitives are aligned on 64-bit boundaries.
@@ -138,8 +138,8 @@ void AdvanceArgPtr(VARARGS *data)
             break;
 
         SigTypeContext      typeContext; // This is an empty type context.  This is OK because the vararg methods may not be generic
-        SIZE_T cbRaw = data->SigPtr.SizeOf(data->ArgCookie->pModule, &typeContext);
-        SIZE_T cbArg = StackElemSize(cbRaw);
+        unsigned cbRaw = data->SigPtr.SizeOf(data->ArgCookie->pModule, &typeContext);
+        unsigned cbArg = StackElemSize(cbRaw);
 
 #ifdef ENREGISTERED_PARAMTYPE_MAXSIZE
         if (ArgIterator::IsVarArgPassedByRef(cbRaw))
@@ -263,8 +263,8 @@ VarArgsNative::Init2,
             }
 
             SigTypeContext typeContext; // This is an empty type context.  This is OK because the vararg methods may not be generic
-            SIZE_T cbRaw = data->SigPtr.SizeOf(data->ArgCookie->pModule,&typeContext);
-            SIZE_T cbArg = StackElemSize(cbRaw);
+            unsigned cbRaw = data->SigPtr.SizeOf(data->ArgCookie->pModule,&typeContext);
+            unsigned cbArg = StackElemSize(cbRaw);
 
 #ifdef ENREGISTERED_PARAMTYPE_MAXSIZE
             if (ArgIterator::IsVarArgPassedByRef(cbRaw))
@@ -401,7 +401,7 @@ FCIMPL3(void, VarArgsNative::GetNextArg2, VARARGS* _this, void * value, ReflectC
     TypeHandle typehandle = refType->GetType();
 
     _ASSERTE(_this != NULL);
-    UINT size = 0;
+    unsigned size = 0;
 
     CorElementType typ = typehandle.GetInternalCorElementType();
     if (CorTypeInfo::IsPrimitiveType(typ))
@@ -472,8 +472,8 @@ VarArgsNative::GetNextArgHelper(
     _ASSERTE(data->RemainingArgs != 0);
 
     SigTypeContext typeContext; // This is an empty type context.  This is OK because the vararg methods may not be generic
-    SIZE_T cbRaw = data->SigPtr.SizeOf(data->ArgCookie->pModule,&typeContext);
-    SIZE_T cbArg = StackElemSize(cbRaw);
+    unsigned cbRaw = data->SigPtr.SizeOf(data->ArgCookie->pModule,&typeContext);
+    unsigned cbArg = StackElemSize(cbRaw);
 
     AdjustArgPtrForAlignment(data, cbArg);
 
