@@ -1900,45 +1900,11 @@ mono_image_loaded_by_guid (const char *guid)
 	return mono_image_loaded_by_guid_internal (guid, FALSE);
 }
 
-static const char *
-get_image_culture (MonoImage *image)
-{
-	MonoTableInfo *t = &image->tables [MONO_TABLE_ASSEMBLY];
-	if (!t->rows)
-		return NULL;
-
-	guint32 cols [MONO_ASSEMBLY_SIZE];
-	mono_metadata_decode_row (t, 0, cols, MONO_ASSEMBLY_SIZE);
-	return mono_metadata_string_heap (image, cols [MONO_ASSEMBLY_CULTURE]);
-}
-
-char *
-mono_image_get_name_with_culture_if_needed (MonoImage *image)
-{
-	if (!g_str_has_prefix (image->name, "data-") &&
-		!g_path_is_absolute (image->name))
-	{
-		const char *culture = get_image_culture (image);
-
-		if (culture && culture [0] != 0)
-			return g_strdup_printf ("%s/%s", culture, image->name);
-	}
-
-	return NULL;
-}
-
 static MonoImage *
 register_image (MonoLoadedImages *li, MonoImage *image, gboolean *problematic)
 {
 	MonoImage *image2;
 	char *name = image->name;
-#ifdef ENABLE_NETCORE
-	/* Since we register cultures by file name, we need to make this culture aware for
-	   satellite assemblies */
-	char *name_with_culture = mono_image_get_name_with_culture_if_needed (image);
-	if (name_with_culture)
-		name = name_with_culture;
-#endif
 	GHashTable *loaded_images = mono_loaded_images_get_hash (li, image->ref_only);
 
 	mono_images_lock ();
@@ -1949,9 +1915,6 @@ register_image (MonoLoadedImages *li, MonoImage *image, gboolean *problematic)
 		mono_image_addref (image2);
 		mono_images_unlock ();
 		mono_image_close (image);
-#ifdef ENABLE_NETCORE
-		g_free (name_with_culture);
-#endif
 		return image2;
 	}
 
@@ -1966,9 +1929,6 @@ register_image (MonoLoadedImages *li, MonoImage *image, gboolean *problematic)
 		if (problematic)
 			*problematic = TRUE;
 	}
-#ifdef ENABLE_NETCORE
-	g_free (name_with_culture);
-#endif
 	return image;
 }
 
@@ -2139,18 +2099,13 @@ mono_image_open_full (const char *fname, MonoImageOpenStatus *status, gboolean r
 	return mono_image_open_a_lot (alc, fname, status, refonly, FALSE);
 }
 
-/**
- * mono_image_open_a_lot_parameterized
- * this API is not culture aware, so if we load a satellite assembly for one culture by name
- * via this API, and then try to load it with another culture we will return the first one.
- */
 static MonoImage *
 mono_image_open_a_lot_parameterized (MonoLoadedImages *li, MonoAssemblyLoadContext *alc, const char *fname, MonoImageOpenStatus *status, gboolean refonly, gboolean load_from_context, gboolean *problematic)
 {
 	MonoImage *image;
 	GHashTable *loaded_images = mono_loaded_images_get_hash (li, refonly);
 	char *absfname;
-	
+
 	g_return_val_if_fail (fname != NULL, NULL);
 	
 #ifdef HOST_WIN32
