@@ -47,7 +47,7 @@ namespace System.Diagnostics.Tests
             }
         }
 
-        [ConditionalFact(typeof(Helpers), nameof(Helpers.IsElevatedAndCanWriteToPerfCounters))]
+        [ConditionalFact(typeof(Helpers), nameof(Helpers.IsElevatedAndCanWriteAndReadNetPerfCounters))]
         public static void PerformanceCounter_CreateCounter_MultiInstanceReadOnly()
         {
             var name = nameof(PerformanceCounter_CreateCounter_MultiInstanceReadOnly) + "_Counter";
@@ -221,7 +221,7 @@ namespace System.Diagnostics.Tests
             }
         }
 
-        [ConditionalFact(typeof(Helpers), nameof(Helpers.IsElevatedAndCanWriteToPerfCounters))]
+        [ConditionalFact(typeof(Helpers), nameof(Helpers.IsElevatedAndCanWriteAndReadNetPerfCounters))]
         public static void PerformanceCounter_IncrementBy_IncrementByReadOnly()
         {
             var name = nameof(PerformanceCounter_IncrementBy_IncrementByReadOnly) + "_Counter";
@@ -243,7 +243,7 @@ namespace System.Diagnostics.Tests
             }
         }
 
-        [ConditionalFact(typeof(Helpers), nameof(Helpers.IsElevatedAndCanWriteToPerfCounters))]
+        [ConditionalFact(typeof(Helpers), nameof(Helpers.IsElevatedAndCanWriteAndReadNetPerfCounters))]
         public static void PerformanceCounter_Decrement_DecrementReadOnly()
         {
             var name = nameof(PerformanceCounter_Decrement_DecrementReadOnly) + "_Counter";
