@@ -243,7 +243,7 @@ namespace Microsoft.Extensions.Caching.Memory
 
         private bool CheckForExpiredTime(in DateTimeOffset now)
         {
-            if (!_absoluteExpiration.HasValue && !_absoluteExpiration.HasValue)
+            if (!_absoluteExpiration.HasValue && !_slidingExpiration.HasValue)
             {
                 return false;
             }
