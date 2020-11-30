@@ -54,14 +54,14 @@ namespace System
 
         // Constructors
 
-        private DateTimeOffset(DateTime validDateTime, short validOffsetMinutes)
+        private DateTimeOffset(short validOffsetMinutes, DateTime validDateTime)
         {
             _dateTime = validDateTime;
             _offsetMinutes = validOffsetMinutes;
         }
 
         // Constructs a DateTimeOffset from a tick count and offset
-        public DateTimeOffset(long ticks, TimeSpan offset) : this(ValidateDate(new DateTime(ticks), offset), ValidateOffset(offset))
+        public DateTimeOffset(long ticks, TimeSpan offset) : this(ValidateOffset(offset), ValidateDate(new DateTime(ticks), offset))
         {
         }
 
@@ -181,7 +181,7 @@ namespace System
             get
             {
                 DateTime utcNow = DateTime.UtcNow;
-                var result = new DateTimeOffset(utcNow, validOffsetMinutes: 0);
+                var result = new DateTimeOffset(0, utcNow);
 
                 Debug.Assert(new DateTimeOffset(utcNow) == result); // ensure lack of verification does not break anything
 
