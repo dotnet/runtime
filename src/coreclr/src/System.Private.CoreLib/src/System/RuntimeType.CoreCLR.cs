@@ -3858,7 +3858,7 @@ namespace System
 
         #region Legacy Internal
 
-        private void CreateInstanceCheckThis()
+        internal void CreateInstanceCheckThis()
         {
             if (ContainsGenericParameters)
                 throw new ArgumentException(SR.Format(SR.Acc_CreateGenericEx, this));
@@ -3975,13 +3975,13 @@ namespace System
             // n.b. In coreclr we ignore 'skipCheckThis' (assumed to be false)
             // and 'fillCache' (assumed to be true).
 
-            if (GenericCache is not ActivatorCache cache)
+            if (GenericCache is not ActivationFactory factory)
             {
-                cache = new ActivatorCache(this);
-                GenericCache = cache;
+                factory = new ActivationFactory(this);
+                GenericCache = factory;
             }
 
-            if (!cache.CtorIsPublic && publicOnly)
+            if (!factory.CtorIsPublic && publicOnly)
             {
                 throw new MissingMethodException(SR.Format(SR.Arg_NoDefCTor, this));
             }
@@ -3990,10 +3990,11 @@ namespace System
             // bubble up to the caller; the ctor invocation is within the try block so
             // that it can be wrapped in TIE if needed.
 
-            object? obj = cache.CreateUninitializedObject(this);
+            factory.DebugValidateExpectedType(this);
+            object? obj = factory.GetUninitializedObject();
             try
             {
-                cache.CallConstructor(obj);
+                factory.CallConstructor(obj);
             }
             catch (Exception e) when (wrapExceptions)
             {

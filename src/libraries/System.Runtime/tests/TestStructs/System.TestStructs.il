@@ -25,10 +25,14 @@
     .class public sequential sealed StructWithPublicDefaultConstructor
         extends [System.Runtime]System.ValueType
     {
+        .field public initonly native int AddressPassedToConstructor
         .field public initonly bool ConstructorInvoked
 
         .method public hidebysig specialname rtspecialname instance void .ctor () cil managed 
         {
+            ldarg.0
+            ldarg.0
+            stfld native int System.Tests.StructWithPublicDefaultConstructor::AddressPassedToConstructor
             ldarg.0
             ldc.i4.1
             stfld bool System.Tests.StructWithPublicDefaultConstructor::ConstructorInvoked
@@ -39,10 +43,13 @@
     .class public sequential sealed StructWithPrivateDefaultConstructor
         extends [System.Runtime]System.ValueType
     {
-        .size 1
+        .field public initonly bool ConstructorInvoked
 
         .method private hidebysig specialname rtspecialname instance void .ctor () cil managed 
         {
+            ldarg.0
+            ldc.i4.1
+            stfld bool System.Tests.StructWithPrivateDefaultConstructor::ConstructorInvoked
             ret
         }
     }

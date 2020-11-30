@@ -273,6 +273,7 @@ namespace System
 
             GetActivationInfo(
                 ObjectHandleOnStack.Create(ref rt),
+                fAvoidBoxing: Interop.BOOL.FALSE,
                 &pfnAllocatorTemp, &vAllocatorFirstArgTemp,
                 &pfnCtorTemp, &fCtorIsPublicTemp);
 
@@ -282,9 +283,38 @@ namespace System
             ctorIsPublic = fCtorIsPublicTemp != Interop.BOOL.FALSE;
         }
 
+        /// <summary>
+        /// Given a RuntimeType for a struct, returns information about how to activate it
+        /// via calli semantics. This method will ensure the type object is fully initialized
+        /// within the VM, but it will not call any static ctors on the type.
+        /// </summary>
+        internal static void GetActivationInfoForStruct(
+            RuntimeType rt,
+            out delegate*<ref byte, void> pfnCtor,
+            out bool ctorIsPublic)
+        {
+            Debug.Assert(rt != null);
+            Debug.Assert(rt.IsValueType);
+
+            delegate*<void*, object> pfnAllocatorTemp = default;
+            void* vAllocatorFirstArgTemp = default;
+            delegate*<ref byte, void> pfnCtorTemp = default;
+            Interop.BOOL fCtorIsPublicTemp = default;
+
+            GetActivationInfo(
+                ObjectHandleOnStack.Create(ref rt),
+                fAvoidBoxing: Interop.BOOL.TRUE,
+                &pfnAllocatorTemp, &vAllocatorFirstArgTemp,
+                (delegate*<object, void>*)&pfnCtorTemp, &fCtorIsPublicTemp);
+
+            pfnCtor = pfnCtorTemp;
+            ctorIsPublic = fCtorIsPublicTemp != Interop.BOOL.FALSE;
+        }
+
         [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
         private static extern void GetActivationInfo(
             ObjectHandleOnStack pRuntimeType,
+            Interop.BOOL fAvoidBoxing,
             delegate*<void*, object>* ppfnAllocator,
             void** pvAllocatorFirstArg,
             delegate*<object, void>* ppfnCtor,

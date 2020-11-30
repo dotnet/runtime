@@ -434,10 +434,29 @@ namespace System
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern bool InternalEqualTypes(object a, object b);
 
-        // Used by the ctor. Do not call directly.
+        // Used by the ctor.
         // The name of this function will appear in managed stacktraces as delegate constructor.
         [MethodImpl(MethodImplOptions.InternalCall)]
-        private extern void DelegateConstruct(object target, IntPtr slot);
+        private extern void DelegateConstruct(object? target, IntPtr slot);
+
+        /// <summary>
+        /// Creates a delegate with the specified first argument and function pointer.
+        /// No type safety checks take place. Caller must validate that all arguments are valid.
+        /// If no 'this' parameter is specified, caller must manually keep fnPtr alive until instantiation is complete.
+        /// </summary>
+        /// <param name="delegateType">The type of the delegate to create. Must be a constructed delegate type.</param>
+        /// <param name="target">The 'this' parameter to wrap. May be null.</param>
+        /// <param name="fnPtr">The target function pointer. Must be compatible with the delegate type.</param>
+        internal static Delegate CreateDelegateUnsafe(RuntimeType delegateType, object? target, IntPtr fnPtr)
+        {
+            Debug.Assert(delegateType is not null);
+            Debug.Assert(delegateType.IsDelegate());
+            Debug.Assert(fnPtr != IntPtr.Zero);
+
+            Delegate del = (Delegate)RuntimeHelpers.GetUninitializedObjectSkipChecks(delegateType);
+            del.DelegateConstruct(target, fnPtr);
+            return del;
+        }
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal extern IntPtr GetMulticastInvoke();

@@ -164,12 +164,25 @@ namespace System.Runtime.CompilerServices
             }
 
             object? obj = null;
-            GetUninitializedObject(new QCallTypeHandle(ref rt), ObjectHandleOnStack.Create(ref obj));
+            GetUninitializedObject(new QCallTypeHandle(ref rt), fSkipChecks: Interop.BOOL.FALSE, ObjectHandleOnStack.Create(ref obj));
+            return obj!;
+        }
+
+        /// <summary>
+        /// Creates a new zero-inited object on the heap, bypassing all verification checks.
+        /// Caller is responsible for ensuring not attempting to instantiate an abstract type, ref struct, etc.
+        /// </summary>
+        internal static object GetUninitializedObjectSkipChecks(RuntimeType type)
+        {
+            Debug.Assert(type is not null);
+
+            object? obj = null;
+            GetUninitializedObject(new QCallTypeHandle(ref type), fSkipChecks: Interop.BOOL.TRUE, ObjectHandleOnStack.Create(ref obj));
             return obj!;
         }
 
         [DllImport(RuntimeHelpers.QCall)]
-        private static extern void GetUninitializedObject(QCallTypeHandle type, ObjectHandleOnStack retObject);
+        private static extern void GetUninitializedObject(QCallTypeHandle type, Interop.BOOL fSkipChecks, ObjectHandleOnStack retObject);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern object AllocateUninitializedClone(object obj);

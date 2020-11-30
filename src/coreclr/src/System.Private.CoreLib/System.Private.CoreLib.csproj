@@ -111,6 +111,7 @@
     <Compile Include="$(BclSourcesRoot)\Internal\Runtime\InteropServices\ComponentActivator.cs" />
     <Compile Include="$(BclSourcesRoot)\Internal\Runtime\InteropServices\IsolatedComponentLoadContext.cs" />
     <Compile Include="$(BclSourcesRoot)\System\__Canon.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\ActivationFactory.cs" />
     <Compile Include="$(BclSourcesRoot)\System\ArgIterator.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Array.CoreCLR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Attribute.CoreCLR.cs" />
@@ -220,7 +221,6 @@
     <Compile Include="$(BclSourcesRoot)\System\Runtime\Versioning\CompatibilitySwitch.cs" />
     <Compile Include="$(BclSourcesRoot)\System\RuntimeArgumentHandle.cs" />
     <Compile Include="$(BclSourcesRoot)\System\RuntimeHandles.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\RuntimeType.ActivatorCache.cs" />
     <Compile Include="$(BclSourcesRoot)\System\RuntimeType.CoreCLR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Security\DynamicSecurityMethodAttribute.cs" />
     <Compile Include="$(BclSourcesRoot)\System\StartupHookProvider.cs" />

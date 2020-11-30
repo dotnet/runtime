@@ -8,6 +8,7 @@ using System.Globalization;
 using System.IO;
 using System.Reflection;
 using System.Reflection.Emit;
+using System.Runtime.InteropServices;
 using System.Runtime.Remoting;
 using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
@@ -16,6 +17,9 @@ namespace System.Tests
 {
     public partial class ActivatorTests
     {
+        // random GUID, shouldn't map to any known COM registration
+        private static readonly Guid UnknownComClsid = new Guid("db8d1a68-84f2-4c37-9581-33286f3c1b49");
+
         [Fact]
         public static void CreateInstance()
         {
@@ -89,6 +93,44 @@ namespace System.Tests
 
             TypeWithPrivateDefaultConstructor c2 = (TypeWithPrivateDefaultConstructor)Activator.CreateInstance(typeof(TypeWithPrivateDefaultConstructor), nonPublic: true);
             Assert.Equal(-1, c2.Property);
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.SupportsComInterop))]
+        public void CreateInstance_ComObject_Success()
+        {
+            object instance = Activator.CreateInstance(typeof(WbemContext));
+            Assert.NotNull(instance);
+            Assert.True(instance.GetType().IsEquivalentTo(typeof(WbemContext)));
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.SupportsComInterop))]
+        public void CreateInstance_ComObjectWithUnknownClsid_ThrowsCOMException()
+        {
+            // failure occurs at construction time, no TIE
+            Type unknownComType = Type.GetTypeFromCLSID(UnknownComClsid);
+            var ex = Assert.Throws<COMException>(() => Activator.CreateInstance(unknownComType));
+            Assert.Equal(unchecked((int)0x80040154), ex.HResult); // REGDB_E_CLASSNOTREG, to distinguish from other unexpected exceptions
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.SupportsComInterop))]
+        public void CreateFactory_ComObject_Success()
+        {
+            Func<object> factory = Activator.CreateFactory(typeof(WbemContext));
+            Assert.NotNull(factory);
+            object instance = factory();
+            Assert.NotNull(instance);
+            Assert.True(instance.GetType().IsEquivalentTo(typeof(WbemContext)));
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.SupportsComInterop))]
+        public void CreateFactory_ComObjectWithUnknownClsid_ThrowsCOMException()
+        {
+            // obtaining the factory should succeed; invoking the factory should fail
+            Type unknownComType = Type.GetTypeFromCLSID(UnknownComClsid);
+            Func<object> factory = Activator.CreateFactory(unknownComType);
+            Assert.NotNull(factory);
+            var ex = Assert.Throws<COMException>(() => factory());
+            Assert.Equal(unchecked((int)0x80040154), ex.HResult); // REGDB_E_CLASSNOTREG, to distinguish from other unexpected exceptions
         }
 
         [Fact]
@@ -277,6 +319,156 @@ namespace System.Tests
             Assert.False(TypeWithPrivateDefaultCtorAndFinalizer.WasCreated);
         }
 
+        public static IEnumerable<object[]> CreateInstance_NegativeTestCases()
+        {
+            // TODO: Test actual function pointer types when typeof(delegate*<...>) support is available
+
+            yield return new[] { typeof(string), typeof(MissingMethodException) }; // variable-length type
+            yield return new[] { typeof(int[]), typeof(MissingMethodException) }; // variable-length type
+            yield return new[] { typeof(int[,]), typeof(MissingMethodException) }; // variable-length type
+            yield return new[] { Array.CreateInstance(typeof(int), new[] { 1 }, new[] { 1 }).GetType(), typeof(MissingMethodException) }; // variable-length type (non-szarray)
+            yield return new[] { typeof(Array), typeof(MissingMethodException) }; // abstract type
+            yield return new[] { typeof(Enum), typeof(MissingMethodException) }; // abstract type
+
+            yield return new[] { typeof(Stream), typeof(MissingMethodException) }; // abstract type
+            yield return new[] { typeof(Buffer), typeof(MissingMethodException) }; // static type (runtime sees it as abstract)
+            yield return new[] { typeof(IDisposable), typeof(MissingMethodException) }; // interface type
+
+            yield return new[] { typeof(List<>), typeof(ArgumentException) }; // open generic type
+            yield return new[] { typeof(List<>).GetGenericArguments()[0], PlatformDetection.IsMonoRuntime ? typeof(MemberAccessException) : typeof(ArgumentException) }; // 'T' placeholder typedesc
+
+            yield return new[] { typeof(Delegate), typeof(MissingMethodException) }; // abstract type
+
+            yield return new[] { typeof(void), typeof(NotSupportedException) }; // explicit block in place
+            yield return new[] { typeof(int).MakePointerType(), typeof(MissingMethodException) }; // pointer typedesc
+            yield return new[] { typeof(int).MakeByRefType(), typeof(MissingMethodException) }; // byref typedesc
+
+            yield return new[] { typeof(ReadOnlySpan<int>), typeof(NotSupportedException) }; // byref type
+            yield return new[] { typeof(ArgIterator), typeof(NotSupportedException) }; // byref type
+
+            yield return new[] { typeof(TypeWithoutDefaultCtor), typeof(MissingMethodException) }; // reference type with no parameterless ctor
+            yield return new[] { typeof(TypeWithVarargsCtor), typeof(MissingMethodException) }; // parameterless ctor exists but has incorrect calling convention
+
+            Type canonType = typeof(object).Assembly.GetType("System.__Canon", throwOnError: false);
+            if (canonType != null)
+            {
+                yield return new[] { typeof(List<>).MakeGenericType(canonType), typeof(NotSupportedException) }; // shared by generic instantiations                
+            }
+
+            Type comObjType = typeof(object).Assembly.GetType("System.__ComObject", throwOnError: false);
+            if (comObjType != null)
+            {
+                yield return new[] { comObjType, typeof(InvalidComObjectException) }; // COM type with no associated CLSID
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(CreateInstance_NegativeTestCases))]
+        public static void CreateInstance_InvalidType_ThrowsException(Type typeToInstantiate, Type expectedExceptionType)
+        {
+            // We don't expect a TIE wrapper since we won't get as far as calling the ctor
+            Assert.Throws(expectedExceptionType, () => Activator.CreateInstance(typeToInstantiate));
+            Assert.Throws(expectedExceptionType, () => Activator.CreateInstance(typeToInstantiate, nonPublic: true));
+        }
+
+        [Theory]
+        [MemberData(nameof(CreateInstance_NegativeTestCases))]
+        public static void CreateFactory_InvalidType_ThrowsException(Type typeToInstantiate, Type expectedExceptionType)
+        {
+            // We don't expect a TIE wrapper since we won't get as far as calling the ctor
+            Assert.Throws(expectedExceptionType, () => Activator.CreateFactory(typeToInstantiate));
+            Assert.Throws(expectedExceptionType, () => Activator.CreateFactory(typeToInstantiate, nonPublic: true));
+        }
+
+        [Fact]
+        public void CreateFactory_ReferenceTypeWithPublicCtor_Success()
+        {
+            Func<object> factory = Activator.CreateFactory(typeof(PublicType));
+            Assert.NotNull(factory);
+            object instance = factory();
+            var castInstance = Assert.IsType<PublicType>(instance);
+            Assert.True(castInstance.CtorWasCalled);
+        }
+
+        [Fact]
+        public void CreateFactory_ReferenceTypeWithPrivateCtor_ThrowsMissingMethodException()
+        {
+            Assert.Throws<MissingMethodException>(() => Activator.CreateFactory(typeof(PrivateTypeWithDefaultCtor)));
+            Assert.Throws<MissingMethodException>(() => Activator.CreateFactory(typeof(PrivateTypeWithDefaultCtor), nonPublic: false));
+        }
+
+        [Fact]
+        public void CreateFactory_ReferenceTypeWithPrivateCtor_AllowNonPublicCtors_Success()
+        {
+            Func<object> factory = Activator.CreateFactory(typeof(PrivateTypeWithDefaultCtor), nonPublic: true);
+            Assert.NotNull(factory);
+            object instance = factory();
+            var castInstance = Assert.IsType<PrivateTypeWithDefaultCtor>(instance);
+            Assert.True(castInstance.CtorWasCalled);
+        }
+
+        [Fact]
+        public void CreateFactory_ReferenceTypeWithPrivateCtorThatThrows_DoesNotWrapInTargetInvocationException()
+        {
+            Func<object> factory = Activator.CreateFactory(typeof(TypeWithDefaultCtorThatThrows));
+            Assert.NotNull(factory);
+            Assert.Throws<Exception>(() => factory()); // no TIE
+        }
+
+        [Fact]
+        public void CreateFactory_OfNullableT_ReturnsNull()
+        {
+            Func<object> factory = Activator.CreateFactory(typeof(int?));
+            Assert.NotNull(factory);
+            Assert.Null(factory());
+        }
+
+        [Fact]
+        public void CreateFactory_OfValueTypeWithoutDefaultCtor_ReturnsBoxedDefaultT()
+        {
+            Func<object> factory = Activator.CreateFactory(typeof(ValueTypeWithParameterfulConstructor));
+            Assert.NotNull(factory);
+            object instance = factory();
+            var castInstance = Assert.IsType<ValueTypeWithParameterfulConstructor>(instance);
+            Assert.False(castInstance.ParameterfulCtorWasCalled);
+        }
+
+        [Fact]
+        public void CreateFactory_OfValueTypeWithPublicDefaultCtor_CallsDefaultCtor()
+        {
+            Func<object> factory = Activator.CreateFactory(typeof(StructWithPublicDefaultConstructor));
+            Assert.NotNull(factory);
+            object instance = factory();
+            var castInstance = Assert.IsType<StructWithPublicDefaultConstructor>(instance);
+            Assert.True(castInstance.ConstructorInvoked);
+            Assert.False(IsAddressOnLocalStack(castInstance.AddressPassedToConstructor)); // using Func<object>, value type ctor is called using unboxing stub
+        }
+
+        [Fact]
+        public void CreateFactory_OfValueTypeWithPrivateDefaultCtor_ThrowsMissingMethodException()
+        {
+            Assert.Throws<MissingMethodException>(() => Activator.CreateFactory(typeof(StructWithPrivateDefaultConstructor)));
+            Assert.Throws<MissingMethodException>(() => Activator.CreateFactory(typeof(StructWithPrivateDefaultConstructor), nonPublic: false));
+        }
+
+        [Fact]
+        public void CreateFactory_OfValueTypeWithPrivateDefaultCtor_AllowNonPublicCtors_Success()
+        {
+            Func<object> factory = Activator.CreateFactory(typeof(StructWithPrivateDefaultConstructor), nonPublic: true);
+            Assert.NotNull(factory);
+            object instance = factory();
+            var castInstance = Assert.IsType<StructWithPrivateDefaultConstructor>(instance);
+            Assert.True(castInstance.ConstructorInvoked);
+        }
+
+        [Fact]
+        public void CreateFactory_OfValueTypeWithPublicDefaultCtorThatThrows_DoesNotWrapInTargetInvocationException()
+        {
+            Func<object> factory = Activator.CreateFactory(typeof(StructWithDefaultConstructorThatThrows));
+            Assert.NotNull(factory);
+            Assert.Throws<Exception>(() => factory()); // shouldn't wrap in TIE
+        }
+
         private class PrivateType
         {
             public PrivateType() { }
@@ -284,7 +476,8 @@ namespace System.Tests
 
         class PrivateTypeWithDefaultCtor
         {
-            private PrivateTypeWithDefaultCtor() { }
+            public readonly bool CtorWasCalled;
+            private PrivateTypeWithDefaultCtor() { CtorWasCalled = true; }
         }
 
         class PrivateTypeWithoutDefaultCtor
@@ -363,6 +556,12 @@ namespace System.Tests
         {
         }
 
+        public struct ValueTypeWithParameterfulConstructor
+        {
+            public readonly bool ParameterfulCtorWasCalled;
+            public ValueTypeWithParameterfulConstructor(int i) { ParameterfulCtorWasCalled = true; }
+        }
+
         public class TypeWithPrivateDefaultConstructor
         {
             public int Property { get; }
@@ -399,6 +598,11 @@ namespace System.Tests
         public class TypeWithoutDefaultCtor
         {
             private TypeWithoutDefaultCtor(int x) { }
+        }
+
+        public class TypeWithVarargsCtor
+        {
+            public TypeWithVarargsCtor(__arglist) { }
         }
 
         public class TypeWithDefaultCtorThatThrows
@@ -475,6 +679,14 @@ namespace System.Tests
             public static void Reset(int i) { cnt = i; }
             public static void Increase(int i) { cnt += i; }
             public static bool Equal(int i) { return cnt == i; }
+        }
+
+        // This type definition is lifted from System.Management, just for testing purposes
+        [ClassInterface((short)0x0000)]
+        [Guid("674B6698-EE92-11D0-AD71-00C04FD8FDFF")]
+        [ComImport]
+        internal class WbemContext
+        {
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsInvokingStaticConstructorsSupported))]
@@ -783,7 +995,8 @@ namespace System.Tests
 
         public class PublicType
         {
-            public PublicType() { }
+            public readonly bool CtorWasCalled;
+            public PublicType() { CtorWasCalled = true; }
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
@@ -806,6 +1019,14 @@ namespace System.Tests
 
             Assert.Throws<ArgumentException>("type", () => Activator.CreateInstance(typeBuilder));
             Assert.Throws<NotSupportedException>(() => Activator.CreateInstance(typeBuilder, new object[0]));
+        }
+
+        // Returns true iff the target address is on the local thread's stack.
+        // Heuristic-based: probably true if target address is within 1MB of a local's address.
+        private unsafe static bool IsAddressOnLocalStack(IntPtr address)
+        {
+            byte dummy = 0;
+            return Math.Abs((byte*)address - &dummy) < 1024 * 1024;
         }
     }
 }

@@ -81,7 +81,7 @@ public:
 class ReflectionSerialization {
 public:
     static
-    void QCALLTYPE GetUninitializedObject(QCall::TypeHandle pType, QCall::ObjectHandleOnStack retObject);
+    void QCALLTYPE GetUninitializedObject(QCall::TypeHandle pType, BOOL fSkipChecks, QCall::ObjectHandleOnStack retObject);
 };
 
 class ReflectionEnum {

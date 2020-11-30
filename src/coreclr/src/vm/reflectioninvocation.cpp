@@ -2038,12 +2038,15 @@ void RuntimeTypeHandle::ValidateTypeAbleToBeInstantiated(
 /*
  * Given a RuntimeType, queries info on how to instantiate the object.
  * pRuntimeType - [required] the RuntimeType object
+ * fAvoidBoxing - [required] true if ppfnCtor should have the mgd sig
+ *                (ref T) -> void for value types, otherwise object -> void.
  * ppfnAllocator - [required, null-init] fnptr to the allocator
  *                 mgd sig: void* -> object
  * pvAllocatorFirstArg - [required, null-init] first argument to the allocator
  *                       (normally, but not always, the MethodTable*)
  * ppfnCtor - [required, null-init] the instance's parameterless ctor,
- *            mgd sig object -> void, or null if no ctor is needed for this type
+ *            mgd sig object -> void, or null if no ctor is needed for this type.
+ *            for value types, can be mgd sig (ref T) -> void.
  * pfCtorIsPublic - [required, null-init] whether the parameterless ctor is public
  * ==========
  * This method will not run the type's static cctor.
@@ -2051,6 +2054,7 @@ void RuntimeTypeHandle::ValidateTypeAbleToBeInstantiated(
  */
 void QCALLTYPE RuntimeTypeHandle::GetActivationInfo(
     QCall::ObjectHandleOnStack pRuntimeType,
+    BOOL fAvoidBoxing,
     PCODE* ppfnAllocator,
     void** pvAllocatorFirstArg,
     PCODE* ppfnCtor,
@@ -2140,9 +2144,9 @@ void QCALLTYPE RuntimeTypeHandle::GetActivationInfo(
 
         if (pMT->HasDefaultConstructor())
         {
-            // managed sig: object -> void
+            // managed sig: object -> void (or ref T -> void)
             // for ctors on value types, lookup boxed entry point stub
-            MethodDesc* pMD = pMT->GetDefaultConstructor(pMT->IsValueType() /* forceBoxedEntryPoint */);
+            MethodDesc* pMD = pMT->GetDefaultConstructor(pMT->IsValueType() && !fAvoidBoxing /* forceBoxedEntryPoint */);
             _ASSERTE(pMD != NULL);
 
             PCODE pCode = pMD->GetMultiCallableAddrOfCode();
@@ -2219,7 +2223,7 @@ FCIMPLEND
 //*************************************************************************************************
 //*************************************************************************************************
 //*************************************************************************************************
-void QCALLTYPE ReflectionSerialization::GetUninitializedObject(QCall::TypeHandle pType, QCall::ObjectHandleOnStack retObject)
+void QCALLTYPE ReflectionSerialization::GetUninitializedObject(QCall::TypeHandle pType, BOOL fSkipChecks, QCall::ObjectHandleOnStack retObject)
 {
     QCALL_CONTRACT;
 
@@ -2227,19 +2231,25 @@ void QCALLTYPE ReflectionSerialization::GetUninitializedObject(QCall::TypeHandle
 
     TypeHandle type = pType.AsTypeHandle();
 
-    RuntimeTypeHandle::ValidateTypeAbleToBeInstantiated(type, true /* fForGetUninitializedInstance */);
+    if (!fSkipChecks)
+    {
+        RuntimeTypeHandle::ValidateTypeAbleToBeInstantiated(type, true /* fForGetUninitializedInstance */);
+    }
 
     MethodTable* pMT = type.AsMethodTable();
 
+    if (!fSkipChecks)
+    {
 #ifdef FEATURE_COMINTEROP
-    // Also do not allow allocation of uninitialized RCWs (COM objects).
-    if (pMT->IsComObjectType())
-        COMPlusThrow(kNotSupportedException, W("NotSupported_ManagedActivation"));
+        // Also do not allow allocation of uninitialized RCWs (COM objects).
+        if (pMT->IsComObjectType())
+            COMPlusThrow(kNotSupportedException, W("NotSupported_ManagedActivation"));
 #endif // FEATURE_COMINTEROP
 
-    // If it is a nullable, return the underlying type instead.
-    if (pMT->IsNullable())
-        pMT = pMT->GetInstantiation()[0].GetMethodTable();
+        // If it is a nullable, return the underlying type instead.
+        if (pMT->IsNullable())
+            pMT = pMT->GetInstantiation()[0].GetMethodTable();
+    }
 
     {
         GCX_COOP();

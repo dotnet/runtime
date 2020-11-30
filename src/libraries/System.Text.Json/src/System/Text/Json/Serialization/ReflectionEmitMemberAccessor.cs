@@ -12,6 +12,10 @@ namespace System.Text.Json.Serialization
 {
     internal sealed class ReflectionEmitMemberAccessor : MemberAccessor
     {
+#if NET6_0 // should really be NET6_0_OR_GREATER
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2067:UnrecognizedReflectionPattern",
+            Justification = "Temporary until IL linker understands new patterns.")]
+#endif
         public override JsonClassInfo.ConstructorDelegate? CreateConstructor(Type type)
         {
             Debug.Assert(type != null);
@@ -27,6 +31,9 @@ namespace System.Text.Json.Serialization
                 return null;
             }
 
+#if NET6_0 // should really be NET6_0_OR_GREATER
+            return new JsonClassInfo.ConstructorDelegate(Activator.CreateFactory(type));
+#else
             var dynamicMethod = new DynamicMethod(
                 ConstructorInfo.ConstructorName,
                 JsonClassInfo.ObjectType,
@@ -53,6 +60,7 @@ namespace System.Text.Json.Serialization
             generator.Emit(OpCodes.Ret);
 
             return (JsonClassInfo.ConstructorDelegate)dynamicMethod.CreateDelegate(typeof(JsonClassInfo.ConstructorDelegate));
+#endif
         }
 
         public override JsonClassInfo.ParameterizedConstructorDelegate<T>? CreateParameterizedConstructor<T>(ConstructorInfo constructor) =>

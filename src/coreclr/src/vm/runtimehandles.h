@@ -126,6 +126,7 @@ public:
     static
     void QCALLTYPE GetActivationInfo(
         QCall::ObjectHandleOnStack pRuntimeType,
+        BOOL fAvoidBoxing,
         PCODE* ppfnAllocator,
         void** pvAllocatorFirstArg,
         PCODE* ppfnCtor,

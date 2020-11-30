@@ -40,6 +40,13 @@ namespace System
         public static object? CreateInstance([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] Type type) =>
             CreateInstance(type, nonPublic: false);
 
+        [DebuggerHidden]
+        [DebuggerStepThrough]
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2067:UnrecognizedReflectionPattern",
+            Justification = "CreateFactory(Type, bool) is annotated as requiring private ctors, but this entry point only cares about public ctors.")]
+        public static Func<object?> CreateFactory([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] Type type) =>
+            CreateFactory(type, nonPublic: false);
+
         [RequiresUnreferencedCode("Type and its constructor could be removed")]
         public static ObjectHandle? CreateInstanceFrom(string assemblyFile, string typeName) =>
             CreateInstanceFrom(assemblyFile, typeName, false, ConstructorDefault, null, null, null, null);

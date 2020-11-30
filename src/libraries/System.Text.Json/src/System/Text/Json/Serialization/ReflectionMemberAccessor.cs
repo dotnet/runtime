@@ -24,7 +24,11 @@ namespace System.Text.Json.Serialization
                 return null;
             }
 
+#if NET6_0 // should really be NET6_0_OR_GREATER
+            return new JsonClassInfo.ConstructorDelegate(Activator.CreateFactory(type));
+#else
             return () => Activator.CreateInstance(type, nonPublic: false);
+#endif
         }
 
         public override JsonClassInfo.ParameterizedConstructorDelegate<T>? CreateParameterizedConstructor<T>(ConstructorInfo constructor)

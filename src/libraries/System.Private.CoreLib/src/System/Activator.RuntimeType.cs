@@ -2,8 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics.CodeAnalysis;
-using System.Reflection;
 using System.Globalization;
+using System.Reflection;
 using System.Runtime.Loader;
 using System.Runtime.Remoting;
 using System.Threading;
@@ -152,5 +152,50 @@ namespace System
         }
 
         private static T CreateDefaultInstance<T>() where T : struct => default;
+
+        public static Func<object?> CreateFactory([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors)] Type type, bool nonPublic)
+        {
+            if (type is null)
+                throw new ArgumentNullException(nameof(type));
+
+            if (type.UnderlyingSystemType is not RuntimeType rt)
+                throw new ArgumentException(SR.Arg_MustBeType, nameof(type));
+
+            // First create the factory instance.
+
+            ActivationFactory factory = new ActivationFactory(rt);
+            if (!nonPublic && !factory.CtorIsPublic)
+            {
+                throw new MissingMethodException(SR.Format(SR.Arg_NoDefCTor, rt));
+            }
+
+            // Then create a delegate to factory.CreateInstance, closed over the "this" parameter.
+
+            return (Func<object?>)factory.CreateDelegate((RuntimeType)typeof(Func<object?>));
+        }
+
+        [DynamicDependency("#ctor", typeof(ActivationFactory<>))]
+        public static Func<T> CreateFactory<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]T>()
+        {
+            if (typeof(T).IsValueType)
+            {
+                IActivationFactory factory = (IActivationFactory)RuntimeTypeHandle.CreateInstanceForAnotherGenericParameter((RuntimeType)typeof(ActivationFactory<>), (RuntimeType)typeof(T));
+                return (Func<T>)factory.GetCreateInstanceDelegate();
+            }
+            else
+            {
+                // First create the factory instance.
+
+                ActivationFactory factory = new ActivationFactory((RuntimeType)typeof(T));
+                if (!factory.CtorIsPublic)
+                {
+                    throw new MissingMethodException(SR.Format(SR.Arg_NoDefCTor, typeof(T)));
+                }
+
+                // Then create a delegate to factory.CreateInstance, closed over the "this" parameter.
+
+                return (Func<T>)factory.CreateDelegate((RuntimeType)typeof(Func<T>));
+            }
+        }
     }
 }

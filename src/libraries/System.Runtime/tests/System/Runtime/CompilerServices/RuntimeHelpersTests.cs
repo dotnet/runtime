@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
 using System.Runtime.InteropServices;
+using System.Tests;
 using Xunit;
 
 namespace System.Runtime.CompilerServices.Tests
@@ -298,6 +299,14 @@ namespace System.Runtime.CompilerServices.Tests
         {
             Assert.Equal(42, new ObjectWithDefaultCtor().Value);
             Assert.Equal(0, ((ObjectWithDefaultCtor)RuntimeHelpers.GetUninitializedObject(typeof(ObjectWithDefaultCtor))).Value);
+        }
+
+        [Fact]
+        public static void GetUninitializedObject_ValueTypeWithExplicitDefaultCtor_DoesNotRunConstructor()
+        {
+            object o = RuntimeHelpers.GetUninitializedObject(typeof(StructWithPublicDefaultConstructor));
+            var castObj = Assert.IsType<StructWithPublicDefaultConstructor>(o);
+            Assert.False(castObj.ConstructorInvoked);
         }
 
         [Fact]
