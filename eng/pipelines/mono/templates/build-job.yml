@@ -104,6 +104,11 @@ jobs:
       - script: $(Build.SourcesDirectory)\eng\common\init-tools-native.cmd -InstallDirectory $(Build.SourcesDirectory)\native-tools -Force
         displayName: Install native dependencies
 
+    - ${{ if ne(aotCrossParameter, '') }}:
+      - download: current
+        artifact: Mono_Offsets__Linux_x64_debug
+        displayName: Download AOT offset files
+
     - ${{ if in(parameters.osGroup, 'OSX', 'iOS','tvOS') }}:
       - script: |
           du -sh $(Build.SourcesDirectory)/*
