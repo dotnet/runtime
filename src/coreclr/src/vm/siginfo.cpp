@@ -2598,7 +2598,7 @@ UINT MetaSig::GetElemSize(CorElementType etype, TypeHandle thValueType)
 // Returns size of that element in bytes. This is the minimum size that a
 // field of this type would occupy inside an object.
 //
-UINT SigPointer::SizeOf(Module* pModule, const SigTypeContext *pTypeContext) const
+UINT SigPointer::SizeOf(Module* pModule, const SigTypeContext *pTypeContext, TypeHandle* pTypeHandle) const
 {
     CONTRACTL
     {
@@ -2613,9 +2613,8 @@ UINT SigPointer::SizeOf(Module* pModule, const SigTypeContext *pTypeContext) con
     }
     CONTRACTL_END
 
-    TypeHandle thValueType;
-    CorElementType etype = PeekElemTypeNormalized(pModule, pTypeContext, &thValueType);
-    return MetaSig::GetElemSize(etype, thValueType);
+    CorElementType etype = PeekElemTypeNormalized(pModule, pTypeContext, pTypeHandle);
+    return MetaSig::GetElemSize(etype, *pTypeHandle);
 }
 
 #ifndef DACCESS_COMPILE

@@ -137,8 +137,9 @@ void AdvanceArgPtr(VARARGS *data)
         if (data->SigPtr.AtSentinel())
             break;
 
-        SigTypeContext      typeContext; // This is an empty type context.  This is OK because the vararg methods may not be generic
-        unsigned cbRaw = data->SigPtr.SizeOf(data->ArgCookie->pModule, &typeContext);
+        SigTypeContext typeContext; // This is an empty type context.  This is OK because the vararg methods may not be generic
+        TypeHandle thValueType;
+        unsigned cbRaw = data->SigPtr.SizeOf(data->ArgCookie->pModule, &typeContext, &thValueType);
         unsigned cbArg = StackElemSize(cbRaw);
 
 #ifdef ENREGISTERED_PARAMTYPE_MAXSIZE
@@ -263,7 +264,8 @@ VarArgsNative::Init2,
             }
 
             SigTypeContext typeContext; // This is an empty type context.  This is OK because the vararg methods may not be generic
-            unsigned cbRaw = data->SigPtr.SizeOf(data->ArgCookie->pModule,&typeContext);
+            TypeHandle thValueType;
+            unsigned cbRaw = data->SigPtr.SizeOf(data->ArgCookie->pModule, &typeContext, &thValueType);
             unsigned cbArg = StackElemSize(cbRaw);
 
 #ifdef ENREGISTERED_PARAMTYPE_MAXSIZE
@@ -472,7 +474,8 @@ VarArgsNative::GetNextArgHelper(
     _ASSERTE(data->RemainingArgs != 0);
 
     SigTypeContext typeContext; // This is an empty type context.  This is OK because the vararg methods may not be generic
-    unsigned cbRaw = data->SigPtr.SizeOf(data->ArgCookie->pModule,&typeContext);
+    TypeHandle thValueType;
+    unsigned cbRaw = data->SigPtr.SizeOf(data->ArgCookie->pModule,&typeContext, &thValueType);
     unsigned cbArg = StackElemSize(cbRaw);
 
     AdjustArgPtrForAlignment(data, cbArg);
