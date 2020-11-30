@@ -3537,6 +3537,7 @@ bool Interpreter::MethodMayHaveLoop(BYTE* ilCode, unsigned codeSize)
             op = *(ilCode + 1) + 0x100;
             _ASSERTE(op < CEE_COUNT);  // Bounds check for below.
             // deliberate fall-through here.
+            __fallthrough;
         default:
             // For the rest of the 1-byte instructions, we'll use a table-driven approach.
             ilCode += opSizes1Byte[op];
@@ -4919,7 +4920,7 @@ void Interpreter::BinaryIntOpWork(T val1, T val2)
         {
             ThrowDivideByZero();
         }
-        else if (val2 == -1 && val1 == static_cast<T>(((UINT64)1) << (sizeof(T)*8 - 1))) // min int / -1 is not representable.
+        else if (val2 == static_cast<T>(-1) && val1 == static_cast<T>(((UINT64)1) << (sizeof(T)*8 - 1))) // min int / -1 is not representable.
         {
             ThrowSysArithException();
         }

@@ -1187,17 +1187,10 @@ void fgArgInfo::UpdateStkArg(fgArgTabEntry* curArgTabEntry, GenTree* node, bool 
     assert(curArgTabEntry->slotNum == nextSlotNum);
     nextSlotNum += curArgTabEntry->numSlots;
 #endif
+
     nextStackByteOffset = roundUp(nextStackByteOffset, curArgTabEntry->byteAlignment);
     assert(curArgTabEntry->GetByteOffset() == nextStackByteOffset);
-
-    if (!curArgTabEntry->IsSplit())
-    {
-        nextStackByteOffset += curArgTabEntry->GetByteSize();
-    }
-    else
-    {
-        nextStackByteOffset += curArgTabEntry->GetStackByteSize();
-    }
+    nextStackByteOffset += curArgTabEntry->GetStackByteSize();
 }
 
 void fgArgInfo::SplitArg(unsigned argNum, unsigned numRegs, unsigned numSlots)
@@ -2890,9 +2883,60 @@ void Compiler::fgInitArgInfo(GenTreeCall* call)
     SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR structDesc;
 #endif // UNIX_AMD64_ABI
 
+#if defined(DEBUG)
+    // Check that we have valid information about call's argument types.
+    // For example:
+    // load byte; call(int) -> CALL(PUTARG_TYPE byte(IND byte));
+    // load int; call(byte) -> CALL(PUTARG_TYPE int (IND int));
+    // etc.
+    if (call->callSig != nullptr)
+    {
+        CORINFO_SIG_INFO* sig          = call->callSig;
+        const unsigned    sigArgsCount = sig->numArgs;
+
+        GenTreeCall::Use* nodeArgs = call->gtCallArgs;
+        // It could include many arguments not included in `sig->numArgs`, for example, `this`, runtime lookup, cookie
+        // etc.
+        unsigned nodeArgsCount = call->NumChildren();
+
+        if (call->gtCallThisArg != nullptr)
+        {
+            // Handle the most common argument not in the `sig->numArgs`.
+            // so the following check works on more methods.
+            nodeArgsCount--;
+        }
+
+        assert(nodeArgsCount >= sigArgsCount);
+        if ((nodeArgsCount == sigArgsCount) &&
+            ((Target::g_tgtArgOrder == Target::ARG_ORDER_R2L) || (nodeArgsCount == 1)))
+        {
+            CORINFO_ARG_LIST_HANDLE sigArg = sig->args;
+            for (unsigned i = 0; i < sig->numArgs; ++i)
+            {
+                CORINFO_CLASS_HANDLE argClass;
+                const CorInfoType    corType = strip(info.compCompHnd->getArgType(sig, sigArg, &argClass));
+                const var_types      sigType = JITtype2varType(corType);
+
+                assert(nodeArgs != nullptr);
+                const GenTree* nodeArg = nodeArgs->GetNode();
+                assert(nodeArg != nullptr);
+                const var_types nodeType = nodeArg->TypeGet();
+
+                assert((nodeType == sigType) || varTypeIsStruct(sigType) ||
+                       genTypeSize(nodeType) == genTypeSize(sigType));
+
+                sigArg   = info.compCompHnd->getArgNext(sigArg);
+                nodeArgs = nodeArgs->GetNext();
+            }
+            assert(nodeArgs == nullptr);
+        }
+    }
+#endif // DEBUG
+
     for (args = call->gtCallArgs; args != nullptr; args = args->GetNext(), argIndex++)
     {
-        argx                    = args->GetNode();
+        argx = args->GetNode()->gtSkipPutArgType();
+
         fgArgTabEntry* argEntry = nullptr;
 
         // Change the node to TYP_I_IMPL so we don't report GC info
@@ -3155,6 +3199,12 @@ void Compiler::fgInitArgInfo(GenTreeCall* call)
             {
                 size = 1;
             }
+        }
+
+        if (args->GetNode()->OperIs(GT_PUTARG_TYPE))
+        {
+            const GenTreeUnOp* putArgType = args->GetNode()->AsUnOp();
+            byteSize                      = genTypeSize(putArgType->TypeGet());
         }
 
         // The 'size' value has now must have been set. (the original value of zero is an invalid value)
@@ -8435,6 +8485,10 @@ void Compiler::fgMorphTailCallViaJitHelper(GenTreeCall* call)
             thisPtr = objp;
         }
 
+        // TODO-Cleanup: we leave it as a virtual stub call to
+        // use logic in `LowerVirtualStubCall`, clear GTF_CALL_VIRT_KIND_MASK here
+        // and change `LowerCall` to recognize it as a direct call.
+
         // During rationalization tmp="this" and null check will
         // materialize as embedded stmts in right execution order.
         assert(thisPtr != nullptr);
@@ -9083,26 +9137,6 @@ GenTree* Compiler::fgMorphCall(GenTreeCall* call)
             }
 
             return result;
-        }
-    }
-
-    // Optimize get_ManagedThreadId(get_CurrentThread)
-    if ((call->gtCallMoreFlags & GTF_CALL_M_SPECIAL_INTRINSIC) &&
-        info.compCompHnd->getIntrinsicID(call->gtCallMethHnd) == CORINFO_INTRINSIC_GetManagedThreadId)
-    {
-        noway_assert(origDest == nullptr);
-        noway_assert(call->gtCallLateArgs->GetNode() != nullptr);
-
-        GenTree* innerCall = call->gtCallLateArgs->GetNode();
-
-        if (innerCall->gtOper == GT_CALL && (innerCall->AsCall()->gtCallMoreFlags & GTF_CALL_M_SPECIAL_INTRINSIC) &&
-            info.compCompHnd->getIntrinsicID(innerCall->AsCall()->gtCallMethHnd) ==
-                CORINFO_INTRINSIC_GetCurrentManagedThread)
-        {
-            // substitute expression with call to helper
-            GenTree* newCall = gtNewHelperCallNode(CORINFO_HELP_GETCURRENTMANAGEDTHREADID, TYP_INT);
-            JITDUMP("get_ManagedThreadId(get_CurrentThread) folding performed\n");
-            return fgMorphTree(newCall);
         }
     }
 
@@ -12257,7 +12291,7 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac)
                         LclVarDsc* varDsc = lvaGetDesc(lclVar);
                         if (varDsc->CanBeReplacedWithItsField(this))
                         {
-                            // We can replace the struct with its only field and allow copy propogation to replace
+                            // We can replace the struct with its only field and allow copy propagation to replace
                             // return value that was written as a field.
                             unsigned   fieldLclNum = varDsc->lvFieldLclStart;
                             LclVarDsc* fieldDsc    = lvaGetDesc(fieldLclNum);
@@ -12336,6 +12370,9 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac)
         case GT_LIST:
             // Special handling for the arg list.
             return fgMorphArgList(tree->AsArgList(), mac);
+
+        case GT_PUTARG_TYPE:
+            return fgMorphTree(tree->AsUnOp()->gtGetOp1());
 
         default:
             break;
@@ -13354,9 +13391,10 @@ DONE_MORPHING_CHILDREN:
                 /* Check for "op1 - cns2" , we change it to "op1 + (-cns2)" */
 
                 noway_assert(op2);
-                if (op2->IsCnsIntOrI())
+                if (op2->IsCnsIntOrI() && !op2->IsIconHandle())
                 {
-                    /* Negate the constant and change the node to be "+" */
+                    // Negate the constant and change the node to be "+",
+                    // except when `op2` is a const byref.
 
                     op2->AsIntConCommon()->SetIconValue(-op2->AsIntConCommon()->IconValue());
                     op2->AsIntConRef().gtFieldSeq = FieldSeqStore::NotAField();
@@ -13386,6 +13424,56 @@ DONE_MORPHING_CHILDREN:
 
                 /* No match - exit */
             }
+
+            // Skip optimization if non-NEG operand is constant.
+            // Both op1 and op2 are not constant because it was already checked above.
+            if (opts.OptimizationEnabled() && fgGlobalMorph &&
+                (((op1->gtFlags & GTF_EXCEPT) == 0) || ((op2->gtFlags & GTF_EXCEPT) == 0)))
+            {
+                // a - -b = > a + b
+                // SUB(a, (NEG(b)) => ADD(a, b)
+
+                if (!op1->OperIs(GT_NEG) && op2->OperIs(GT_NEG))
+                {
+                    // tree: SUB
+                    // op1: a
+                    // op2: NEG
+                    // op2Child: b
+
+                    GenTree* op2Child = op2->AsOp()->gtOp1; // b
+                    oper              = GT_ADD;
+                    tree->SetOper(oper, GenTree::PRESERVE_VN);
+                    tree->AsOp()->gtOp2 = op2Child;
+
+                    DEBUG_DESTROY_NODE(op2);
+
+                    op2 = op2Child;
+                }
+
+                // -a - -b = > b - a
+                // SUB(NEG(a), (NEG(b)) => SUB(b, a)
+
+                if (op1->OperIs(GT_NEG) && op2->OperIs(GT_NEG))
+                {
+                    // tree: SUB
+                    // op1: NEG
+                    // op1Child: a
+                    // op2: NEG
+                    // op2Child: b
+
+                    GenTree* op1Child   = op1->AsOp()->gtOp1; // a
+                    GenTree* op2Child   = op2->AsOp()->gtOp1; // b
+                    tree->AsOp()->gtOp1 = op2Child;
+                    tree->AsOp()->gtOp2 = op1Child;
+
+                    DEBUG_DESTROY_NODE(op1);
+                    DEBUG_DESTROY_NODE(op2);
+
+                    op1 = op2Child;
+                    op2 = op1Child;
+                }
+            }
+
             break;
 
 #ifdef TARGET_ARM64
@@ -13552,6 +13640,57 @@ DONE_MORPHING_CHILDREN:
 
                             return op1;
                         }
+                    }
+                }
+
+                if (opts.OptimizationEnabled() && fgGlobalMorph &&
+                    (((op1->gtFlags & GTF_EXCEPT) == 0) || ((op2->gtFlags & GTF_EXCEPT) == 0)))
+                {
+                    // - a + b = > b - a
+                    // ADD((NEG(a), b) => SUB(b, a)
+
+                    // Skip optimization if non-NEG operand is constant.
+                    if (op1->OperIs(GT_NEG) && !op2->OperIs(GT_NEG) &&
+                        !(op2->IsCnsIntOrI() && varTypeIsIntegralOrI(typ)))
+                    {
+                        // tree: ADD
+                        // op1: NEG
+                        // op2: b
+                        // op1Child: a
+
+                        GenTree* op1Child = op1->AsOp()->gtOp1; // a
+                        oper              = GT_SUB;
+                        tree->SetOper(oper, GenTree::PRESERVE_VN);
+                        tree->AsOp()->gtOp1 = op2;
+                        tree->AsOp()->gtOp2 = op1Child;
+
+                        DEBUG_DESTROY_NODE(op1);
+
+                        op1 = op2;
+                        op2 = op1Child;
+                    }
+
+                    // a + -b = > a - b
+                    // ADD(a, (NEG(b)) => SUB(a, b)
+
+                    if (!op1->OperIs(GT_NEG) && op2->OperIs(GT_NEG))
+                    {
+                        // a is non cosntant because it was already canonicalized to have
+                        // variable on the left and constant on the right.
+
+                        // tree: ADD
+                        // op1: a
+                        // op2: NEG
+                        // op2Child: b
+
+                        GenTree* op2Child = op2->AsOp()->gtOp1; // a
+                        oper              = GT_SUB;
+                        tree->SetOper(oper, GenTree::PRESERVE_VN);
+                        tree->AsOp()->gtOp2 = op2Child;
+
+                        DEBUG_DESTROY_NODE(op2);
+
+                        op2 = op2Child;
                     }
                 }
             }
@@ -18038,7 +18177,7 @@ void Compiler::fgRetypeImplicitByRefArgs()
                 // arguments to calls. We undo promotion unless we see enough non-call uses.
                 //
                 const unsigned totalAppearances = varDsc->lvRefCnt(RCS_EARLY);
-                const unsigned callAppearances  = varDsc->lvRefCntWtd(RCS_EARLY);
+                const unsigned callAppearances  = (unsigned)varDsc->lvRefCntWtd(RCS_EARLY);
                 assert(totalAppearances >= callAppearances);
                 const unsigned nonCallAppearances = totalAppearances - callAppearances;
 
@@ -18266,14 +18405,15 @@ bool Compiler::fgMorphImplicitByRefArgs(GenTree* tree)
     {
         for (GenTree** pTree : tree->UseEdges())
         {
-            GenTree* childTree = *pTree;
+            GenTree** pTreeCopy = pTree;
+            GenTree*  childTree = *pTree;
             if (childTree->gtOper == GT_LCL_VAR)
             {
                 GenTree* newChildTree = fgMorphImplicitByRefArgs(childTree, false);
                 if (newChildTree != nullptr)
                 {
-                    changed = true;
-                    *pTree  = newChildTree;
+                    changed    = true;
+                    *pTreeCopy = newChildTree;
                 }
             }
         }

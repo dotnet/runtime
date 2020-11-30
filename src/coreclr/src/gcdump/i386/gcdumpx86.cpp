@@ -255,7 +255,7 @@ size_t              GCDump::DumpGCTable(PTR_CBYTE      table,
 
         table = DumpEncoding(table, sz);
 
-        _ASSERTE(0 == ~OFFSET_MASK % sizeof(void*));
+        _ASSERTE(0 == ~OFFSET_MASK % sizeof(uint32_t));
 
         lowBits  =   OFFSET_MASK & stkOffs;
         stkOffs &=  ~OFFSET_MASK;
@@ -304,7 +304,7 @@ size_t              GCDump::DumpGCTable(PTR_CBYTE      table,
 
         DumpEncoding(bp, table-bp);
 
-        _ASSERTE(0 == ~OFFSET_MASK % sizeof(void*));
+        _ASSERTE(0 == ~OFFSET_MASK % sizeof(uint32_t));
 
         lowBits  = varOffs & 0x3;
         varOffs &= ~OFFSET_MASK;

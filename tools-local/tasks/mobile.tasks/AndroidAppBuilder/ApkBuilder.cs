@@ -16,11 +16,17 @@ public class ApkBuilder
     public string? MinApiLevel { get; set; }
     public string? BuildApiLevel { get; set; }
     public string? BuildToolsVersion { get; set; }
-    public string? OutputDir { get; set; }
+    public string OutputDir { get; set; } = ""!;
     public bool StripDebugSymbols { get; set; }
+    public string? NativeMainSource { get; set; }
+    public string? KeyStorePath { get; set; }
+    public bool ForceInterpreter { get; set; }
 
     public (string apk, string packageId) BuildApk(
-        string sourceDir, string abi, string entryPointLib, string monoRuntimeHeaders)
+        string sourceDir,
+        string abi,
+        string entryPointLib,
+        string monoRuntimeHeaders)
     {
         if (!Directory.Exists(sourceDir))
             throw new ArgumentException($"sourceDir='{sourceDir}' is empty or doesn't exist");
@@ -43,9 +49,6 @@ public class ApkBuilder
             else
                 ProjectName = Path.GetFileNameWithoutExtension(entryPointLib);
         }
-
-        if (string.IsNullOrEmpty(OutputDir))
-            OutputDir = Path.Combine(sourceDir, "bin-" + abi);
 
         if (ProjectName.Contains(' '))
             throw new ArgumentException($"ProjectName='{ProjectName}' shouldn't not contain spaces.");
@@ -128,7 +131,6 @@ public class ApkBuilder
         string apksigner = Path.Combine(buildToolsFolder, "apksigner");
         string androidJar = Path.Combine(AndroidSdk, "platforms", "android-" + BuildApiLevel, "android.jar");
         string androidToolchain = Path.Combine(AndroidNdk, "build", "cmake", "android.toolchain.cmake");
-        string keytool = "keytool";
         string javac = "javac";
         string cmake = "cmake";
         string zip = "zip";
@@ -177,15 +179,21 @@ public class ApkBuilder
         string javaSrcFolder = Path.Combine(OutputDir, "src", "net", "dot");
         Directory.CreateDirectory(javaSrcFolder);
 
+        string javaActivityPath = Path.Combine(javaSrcFolder, "MainActivity.java");
+        string monoRunnerPath = Path.Combine(javaSrcFolder, "MonoRunner.java");
+
         string packageId = $"net.dot.{ProjectName}";
 
-        File.WriteAllText(Path.Combine(javaSrcFolder, "MainActivity.java"),
+        File.WriteAllText(javaActivityPath,
             Utils.GetEmbeddedResource("MainActivity.java")
                 .Replace("%EntryPointLibName%", Path.GetFileName(entryPointLib)));
+        if (!string.IsNullOrEmpty(NativeMainSource))
+            File.Copy(NativeMainSource, javaActivityPath, true);
 
         string monoRunner = Utils.GetEmbeddedResource("MonoRunner.java")
-            .Replace("%EntryPointLibName%", Path.GetFileName(entryPointLib));
-        File.WriteAllText(Path.Combine(javaSrcFolder, "MonoRunner.java"), monoRunner);
+            .Replace("%EntryPointLibName%", Path.GetFileName(entryPointLib))
+            .Replace("%ForceInterpreter%", ForceInterpreter.ToString().ToLower());
+        File.WriteAllText(monoRunnerPath, monoRunner);
 
         File.WriteAllText(Path.Combine(OutputDir, "AndroidManifest.xml"),
             Utils.GetEmbeddedResource("AndroidManifest.xml")
@@ -193,8 +201,8 @@ public class ApkBuilder
                 .Replace("%MinSdkLevel%", MinApiLevel));
 
         string javaCompilerArgs = $"-d obj -classpath src -bootclasspath {androidJar} -source 1.8 -target 1.8 ";
-        Utils.RunProcess(javac, javaCompilerArgs + Path.Combine(javaSrcFolder, "MainActivity.java"), workingDir: OutputDir);
-        Utils.RunProcess(javac, javaCompilerArgs + Path.Combine(javaSrcFolder, "MonoRunner.java"), workingDir: OutputDir);
+        Utils.RunProcess(javac, javaCompilerArgs + javaActivityPath, workingDir: OutputDir);
+        Utils.RunProcess(javac, javaCompilerArgs + monoRunnerPath, workingDir: OutputDir);
         Utils.RunProcess(dx, "--dex --output=classes.dex obj", workingDir: OutputDir);
 
         // 3. Generate APK
@@ -232,24 +240,66 @@ public class ApkBuilder
         // we don't need the unaligned one any more
         File.Delete(apkFile);
 
-        // 5. Generate key
-
-        string signingKey = Path.Combine(OutputDir, "debug.keystore");
-        if (!File.Exists(signingKey))
-        {
-            Utils.RunProcess(keytool, "-genkey -v -keystore debug.keystore -storepass android -alias " +
-                "androiddebugkey -keypass android -keyalg RSA -keysize 2048 -noprompt " +
-                "-dname \"CN=Android Debug,O=Android,C=US\"", workingDir: OutputDir, silent: true);
-        }
-
-        // 6. Sign APK
-
-        Utils.RunProcess(apksigner, $"sign --min-sdk-version {MinApiLevel} --ks debug.keystore " +
-            $"--ks-pass pass:android --key-pass pass:android {alignedApk}", workingDir: OutputDir);
+        // 5. Generate key (if needed) & sign the apk
+        SignApk(alignedApk, apksigner);
 
         Utils.LogInfo($"\nAPK size: {(new FileInfo(alignedApk).Length / 1000_000.0):0.#} Mb.\n");
 
         return (alignedApk, packageId);
+    }
+
+    private void SignApk(string apkPath, string apksigner)
+    {
+        string defaultKey = Path.Combine(OutputDir, "debug.keystore");
+        string signingKey = string.IsNullOrEmpty(KeyStorePath) ?
+            defaultKey : Path.Combine(KeyStorePath, "debug.keystore");
+
+        if (!File.Exists(signingKey))
+        {
+            Utils.RunProcess("keytool", "-genkey -v -keystore debug.keystore -storepass android -alias " +
+                "androiddebugkey -keypass android -keyalg RSA -keysize 2048 -noprompt " +
+                "-dname \"CN=Android Debug,O=Android,C=US\"", workingDir: OutputDir, silent: true);
+        }
+        else if (Path.GetFullPath(signingKey) != Path.GetFullPath(defaultKey))
+        {
+            File.Copy(signingKey, Path.Combine(OutputDir, "debug.keystore"));
+        }
+        Utils.RunProcess(apksigner, $"sign --min-sdk-version {MinApiLevel} --ks debug.keystore " +
+            $"--ks-pass pass:android --key-pass pass:android {apkPath}", workingDir: OutputDir);
+    }
+
+    public void ReplaceFileInApk(string file)
+    {
+        if (string.IsNullOrEmpty(AndroidSdk))
+            AndroidSdk = Environment.GetEnvironmentVariable("ANDROID_SDK_ROOT");
+
+        if (string.IsNullOrEmpty(AndroidSdk) || !Directory.Exists(AndroidSdk))
+            throw new ArgumentException($"Android SDK='{AndroidSdk}' was not found or incorrect (can be set via ANDROID_SDK_ROOT envvar).");
+
+        if (string.IsNullOrEmpty(BuildToolsVersion))
+            BuildToolsVersion = GetLatestBuildTools(AndroidSdk);
+
+        if (string.IsNullOrEmpty(MinApiLevel))
+            MinApiLevel = DefaultMinApiLevel;
+
+        string buildToolsFolder = Path.Combine(AndroidSdk, "build-tools", BuildToolsVersion);
+        string aapt = Path.Combine(buildToolsFolder, "aapt");
+        string apksigner = Path.Combine(buildToolsFolder, "apksigner");
+
+        string apkPath = "";
+        if (string.IsNullOrEmpty(ProjectName))
+            apkPath = Directory.GetFiles(Path.Combine(OutputDir, "bin"), "*.apk").First();
+        else
+            apkPath = Path.Combine(OutputDir, "bin", $"{ProjectName}.apk");
+
+        if (!File.Exists(apkPath))
+            throw new Exception($"{apkPath} was not found");
+
+        Utils.RunProcess(aapt, $"remove -v bin/{Path.GetFileName(apkPath)} {file}", workingDir: OutputDir);
+        Utils.RunProcess(aapt, $"add -v bin/{Path.GetFileName(apkPath)} {file}", workingDir: OutputDir);
+
+        // we need to re-sign the apk
+        SignApk(apkPath, apksigner);
     }
 
     /// <summary>

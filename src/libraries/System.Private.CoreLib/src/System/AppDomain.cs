@@ -20,7 +20,6 @@ namespace System
     public sealed partial class AppDomain : MarshalByRefObject
     {
         private static readonly AppDomain s_domain = new AppDomain();
-        private readonly object _forLock = new object();
         private IPrincipal? _defaultPrincipal;
         private PrincipalPolicy _principalPolicy = PrincipalPolicy.NoPrincipal;
         private Func<IPrincipal>? s_getWindowsPrincipal;
@@ -272,14 +271,10 @@ namespace System
                 throw new ArgumentNullException(nameof(principal));
             }
 
-            lock (_forLock)
+            // Set the principal while checking it has not been set previously.
+            if (Interlocked.CompareExchange(ref _defaultPrincipal, principal, null) is not null)
             {
-                // Check that principal has not been set previously.
-                if (_defaultPrincipal != null)
-                {
-                    throw new SystemException(SR.AppDomain_Policy_PrincipalTwice);
-                }
-                _defaultPrincipal = principal;
+                throw new SystemException(SR.AppDomain_Policy_PrincipalTwice);
             }
         }
 

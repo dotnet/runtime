@@ -507,6 +507,7 @@ void ZapInfo::CompileMethod()
     //
     if (m_zapper->m_alternateJit)
     {
+        m_jitFlags.Set(CORJIT_FLAGS::CORJIT_FLAG_ALT_JIT);
         res = m_zapper->m_alternateJit->compileMethod( this,
                                                      &m_currentMethodInfo,
                                                      CORJIT_FLAGS::CORJIT_FLAG_CALL_GETJITFLAGS,
@@ -520,6 +521,7 @@ void ZapInfo::CompileMethod()
             ResetForJitRetry();
         }
     }
+    m_jitFlags.Clear(CORJIT_FLAGS::CORJIT_FLAG_ALT_JIT);
 
 #endif // ALLOW_SXS_JIT_NGEN
 
@@ -1069,6 +1071,16 @@ HRESULT ZapInfo::getMethodBlockCounts (
     }
 
     return S_OK;
+}
+
+CORINFO_CLASS_HANDLE ZapInfo::getLikelyClass(
+    CORINFO_METHOD_HANDLE ftnHnd,
+    CORINFO_CLASS_HANDLE  baseHnd,
+    UINT32                ilOffset,
+    UINT32*               pLikelihood,
+    UINT32*               pNumberOfClasses)
+{
+    return NULL;
 }
 
 void ZapInfo::allocMem(

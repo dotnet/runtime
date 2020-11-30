@@ -1041,8 +1041,7 @@ namespace System.Xml.Linq
             public bool ReadContentFrom(XContainer rootContainer, XmlReader r, LoadOptions o)
             {
                 XNode? newNode = null;
-                // TODO-NULLABLE: Consider changing XmlReader.BaseURI to non-nullable.
-                string baseUri = r.BaseURI!;
+                string baseUri = r.BaseURI;
 
                 switch (r.NodeType)
                 {

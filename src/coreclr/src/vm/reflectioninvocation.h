@@ -48,9 +48,15 @@ public:
     static
     void QCALLTYPE CompileMethod(MethodDesc * pMD);
 
-    static FCDECL1(void, RunClassConstructor, ReflectClassBaseObject *pTypeUNSAFE);
-    static FCDECL1(void, RunModuleConstructor, ReflectModuleBaseObject *pModuleUNSAFE);
-    static FCDECL3(void, PrepareMethod, ReflectMethodObject* pMethodUNSAFE, TypeHandle *pInstantiation, UINT32 cInstantiation);
+    static
+    void QCALLTYPE RunClassConstructor(QCall::TypeHandle pType);
+
+    static
+    void QCALLTYPE RunModuleConstructor(QCall::ModuleHandle pModule);
+
+    static
+    void QCALLTYPE PrepareMethod(MethodDesc* pMD, TypeHandle *pInstantiation, UINT32 cInstantiation);
+
     static FCDECL1(void, PrepareDelegate, Object* delegateUNSAFE);
     static FCDECL1(void, PrepareContractedDelegate, Object* delegateUNSAFE);
     static FCDECL0(void, ProbeForSufficientStack);
@@ -74,7 +80,8 @@ public:
 
 class ReflectionSerialization {
 public:
-    static FCDECL1(Object*, GetUninitializedObject, ReflectClassBaseObject* objTypeUNSAFE);
+    static
+    void QCALLTYPE GetUninitializedObject(QCall::TypeHandle pType, QCall::ObjectHandleOnStack retObject);
 };
 
 class ReflectionEnum {

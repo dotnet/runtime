@@ -58,7 +58,11 @@ namespace ILVerification.Tests
             EcmaModule module = TestDataLoader.GetModuleForTestAssembly(testCase.ModuleName);
             var typeHandle = (TypeDefinitionHandle)MetadataTokens.EntityHandle(testCase.MetadataToken);
             var type = (EcmaType)module.GetType(typeHandle);
-            var verifier = new Verifier((ILVerifyTypeSystemContext)type.Context, new VerifierOptions() { IncludeMetadataTokensInErrorMessages = true });
+            var verifier = new Verifier((ILVerifyTypeSystemContext)type.Context, new VerifierOptions
+            {
+                IncludeMetadataTokensInErrorMessages = true,
+                SanityChecks = true
+            });
             return verifier.Verify(module.PEReader, typeHandle);
         }
 

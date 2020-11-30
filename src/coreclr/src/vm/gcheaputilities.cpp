@@ -56,7 +56,7 @@ GC_LOAD_STATUS g_gc_load_status = GC_LOAD_STATUS_BEFORE_START;
 VersionInfo g_gc_version_info;
 
 // The module that contains the GC.
-HMODULE g_gc_module;
+PTR_VOID g_gc_module_base;
 
 // GC entrypoints for the the linked-in GC. These symbols are invoked
 // directly if we are not using a standalone GC.
@@ -70,10 +70,10 @@ extern "C" HRESULT GC_Initialize(
 
 #ifndef DACCESS_COMPILE
 
-HMODULE GCHeapUtilities::GetGCModule()
+PTR_VOID GCHeapUtilities::GetGCModuleBase()
 {
-    assert(g_gc_module);
-    return g_gc_module;
+    assert(g_gc_module_base);
+    return g_gc_module_base;
 }
 
 namespace
@@ -101,7 +101,7 @@ BOOL g_gcEventTracingInitialized = FALSE;
 // to "publish" it by assigning it to g_pGCHeap.
 //
 // This function can proceed concurrently with StashKeywordAndLevel below.
-void FinalizeLoad(IGCHeap* gcHeap, IGCHandleManager* handleMgr, HMODULE gcModule)
+void FinalizeLoad(IGCHeap* gcHeap, IGCHandleManager* handleMgr, PTR_VOID pGcModuleBase)
 {
     g_pGCHeap = gcHeap;
 
@@ -118,7 +118,7 @@ void FinalizeLoad(IGCHeap* gcHeap, IGCHandleManager* handleMgr, HMODULE gcModule
     g_pGCHandleManager = handleMgr;
     g_gcDacGlobals = &g_gc_dac_vars;
     g_gc_load_status = GC_LOAD_STATUS_LOAD_COMPLETE;
-    g_gc_module = gcModule;
+    g_gc_module_base = pGcModuleBase;
     LOG((LF_GC, LL_INFO100, "GC load successful\n"));
 }
 
@@ -238,7 +238,15 @@ HRESULT LoadAndInitializeGC(LPWSTR standaloneGcLocation)
     HRESULT initResult = initFunc(gcToClr, &heap, &manager, &g_gc_dac_vars);
     if (initResult == S_OK)
     {
-        FinalizeLoad(heap, manager, hMod);
+        PTR_VOID pGcModuleBase;
+
+#if TARGET_WINDOWS
+        pGcModuleBase = (PTR_VOID)hMod;
+#else
+        pGcModuleBase = (PTR_VOID)PAL_GetSymbolModuleBase((PVOID)initFunc);
+#endif
+
+        FinalizeLoad(heap, manager, pGcModuleBase);
     }
     else
     {
@@ -277,7 +285,7 @@ HRESULT InitializeDefaultGC()
     HRESULT initResult = GC_Initialize(nullptr, &heap, &manager, &g_gc_dac_vars);
     if (initResult == S_OK)
     {
-        FinalizeLoad(heap, manager, GetModuleInst());
+        FinalizeLoad(heap, manager, GetClrModuleBase());
     }
     else
     {

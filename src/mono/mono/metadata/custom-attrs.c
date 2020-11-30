@@ -374,7 +374,9 @@ handle_enum:
 		g_error ("generic valutype %s not handled in custom attr value decoding", m_class_get_name (t->data.klass));
 		break;
 
-	case MONO_TYPE_STRING:
+	case MONO_TYPE_STRING: {
+		const char *start = p;
+
 		if (!bcheck_blob (p, 0, boundp, error))
 			return NULL;
 MONO_DISABLE_WARNING (4310) // cast truncates constant value
@@ -389,7 +391,7 @@ MONO_RESTORE_WARNING
 			return NULL;
 		*end = p + slen;
 		if (!out_obj)
-			return (void*)p;
+			return (void*)start;
 		// https://bugzilla.xamarin.com/show_bug.cgi?id=60848
 		// Custom attribute strings are encoded as wtf-8 instead of utf-8.
 		// If we decode using utf-8 like the spec says, we will silently fail
@@ -398,6 +400,7 @@ MONO_RESTORE_WARNING
 		// See https://simonsapin.github.io/wtf-8/ for a description of wtf-8.
 		*out_obj = (MonoObject*)mono_string_new_wtf8_len_checked (mono_domain_get (), p, slen, error);
 		return NULL;
+	}
 	case MONO_TYPE_CLASS: {
 		MonoType *type = load_cattr_type (image, t, TRUE, p, boundp, end, error, &slen);
 		if (out_obj) {
@@ -1204,7 +1207,9 @@ fail:
  * mono_reflection_create_custom_attr_data_args_noalloc:
  *
  * Same as mono_reflection_create_custom_attr_data_args but allocate no managed objects, return values
- * using C arrays. Only usable for cattrs with primitive/type arguments.
+ * using C arrays. Only usable for cattrs with primitive/type/string arguments.
+ * For types, a MonoType* is returned.
+ * For strings, the address in the metadata blob is returned.
  * TYPED_ARGS, NAMED_ARGS, and NAMED_ARG_INFO should be freed using g_free ().
  */
 void

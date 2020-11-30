@@ -150,18 +150,32 @@ internal static partial class Interop
         /// the next certificate in the iteration. The final call sets pCertContext to an invalid SafeCertStoreHandle
         /// and returns "false" to indicate the end of the store has been reached.
         /// </summary>
-        public static bool CertEnumCertificatesInStore(SafeCertStoreHandle hCertStore, [NotNull] ref SafeCertContextHandle? pCertContext)
+        public static unsafe bool CertEnumCertificatesInStore(SafeCertStoreHandle hCertStore, [NotNull] ref SafeCertContextHandle? pCertContext)
         {
-            unsafe
+            CERT_CONTEXT* pPrevCertContext;
+            if (pCertContext == null)
             {
-                CERT_CONTEXT* pPrevCertContext = pCertContext == null ? null : pCertContext.Disconnect();
-                pCertContext = CertEnumCertificatesInStore(hCertStore, pPrevCertContext);
-                return !pCertContext.IsInvalid;
+                pCertContext = new SafeCertContextHandle();
+                pPrevCertContext = null;
             }
+            else
+            {
+                pPrevCertContext = pCertContext.Disconnect();
+            }
+
+            pCertContext.SetHandle((IntPtr)CertEnumCertificatesInStore(hCertStore, pPrevCertContext));
+
+            if (!pCertContext.IsInvalid)
+            {
+                return true;
+            }
+
+            pCertContext.Dispose();
+            return false;
         }
 
         [DllImport(Libraries.Crypt32, CharSet = CharSet.Unicode, SetLastError = true)]
-        private static extern unsafe SafeCertContextHandle CertEnumCertificatesInStore(SafeCertStoreHandle hCertStore, CERT_CONTEXT* pPrevCertContext);
+        private static extern unsafe CERT_CONTEXT* CertEnumCertificatesInStore(SafeCertStoreHandle hCertStore, CERT_CONTEXT* pPrevCertContext);
 
         [DllImport(Libraries.Crypt32, CharSet = CharSet.Unicode, SetLastError = true)]
         public static extern SafeCertStoreHandle PFXImportCertStore([In] ref CRYPTOAPI_BLOB pPFX, SafePasswordHandle password, PfxCertStoreFlags dwFlags);

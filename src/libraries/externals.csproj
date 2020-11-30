@@ -30,7 +30,7 @@
     <PropertyGroup>
       <UseHardlink>true</UseHardlink>
       <!-- workaround core-setup problem for hardlinking dotnet executable to testhost: core-setup #4742 -->
-      <UseHardlink Condition="'$(_runtimeOSFamily)' == 'FreeBSD'">false</UseHardlink>
+      <UseHardlink Condition="$(PackageRID.StartsWith('freebsd'))">false</UseHardlink>
     </PropertyGroup>
 
     <!-- We do not need apphost.exe.
@@ -55,7 +55,7 @@
           SkipUnchangedFiles="true"
           UseHardlinksIfPossible="$(UseHardlink)" />
 
-    <Exec Command="chmod +x $(TestHostRootPath)%(DotnetExe.Filename)%(DotnetExe.Extension)" Condition="'$(TargetOS)' != 'Windows_NT' and '$(OS)' != 'Windows_NT'"/>
+    <Exec Command="chmod +x $(TestHostRootPath)%(DotnetExe.Filename)%(DotnetExe.Extension)" Condition="'$(TargetOS)' != 'windows' and '$(OS)' != 'Windows_NT'"/>
   </Target>
 
   <Target Name="OverrideRuntimeCoreCLR"

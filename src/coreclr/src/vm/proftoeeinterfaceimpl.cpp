@@ -4122,7 +4122,7 @@ HRESULT ProfToEEInterfaceImpl::GetModuleInfo2(ModuleID     moduleId,
         // Return the parent assembly for this module if desired.
         if (pAssemblyId != NULL)
         {
-            // Lie and say the assembly isn't avaialable until we are loaded (even though it is.)
+            // Lie and say the assembly isn't available until we are loaded (even though it is.)
             // This is for backward compatibilty - we may want to change it
             if (pModule->IsProfilerNotified())
             {

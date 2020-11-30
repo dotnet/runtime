@@ -64,13 +64,6 @@ stub_frame_get_parent (MonoInterpFrameHandle frame)
 	return NULL;
 }
 
-static gpointer
-stub_frame_get_res (MonoInterpFrameHandle frame)
-{
-	g_assert_not_reached ();
-	return NULL;
-}
-
 static void
 stub_start_single_stepping (void)
 {

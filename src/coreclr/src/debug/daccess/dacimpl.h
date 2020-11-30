@@ -127,9 +127,6 @@ enum DAC_USAGE_TYPE
     DAC_PAL,
 };
 
-// mscordacwks's module handle
-extern HINSTANCE g_thisModule;
-
 class ReflectionModule;
 
 struct DAC_MD_IMPORT
@@ -1706,7 +1703,11 @@ public:
 
         // clear the GC flag bits off the MethodTable
         // equivalent to Object::GetGCSafeMethodTable()
+#if TARGET_64BIT
+        *mt &= ~7;
+#else
         *mt &= ~3;
+#endif
         return true;
     }
 

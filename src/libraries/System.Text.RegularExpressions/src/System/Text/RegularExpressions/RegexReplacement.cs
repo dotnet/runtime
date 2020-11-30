@@ -211,7 +211,7 @@ namespace System.Text.RegularExpressions
                 return input;
             }
 
-            var state = (replacement: this, segments: new SegmentStringBuilder(256), inputMemory: input.AsMemory(), prevat: 0, count);
+            var state = (replacement: this, segments: SegmentStringBuilder.Create(), inputMemory: input.AsMemory(), prevat: 0, count);
 
             if (!regex.RightToLeft)
             {

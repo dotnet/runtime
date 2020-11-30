@@ -855,10 +855,11 @@ namespace System.Xml.Xsl
             {
                 get
                 {
-                    // TODO-NULLABLE: Per documentation of base class we should not be returning null here
-                    //                Currently we return null for some type codes (i.e. Item, Node)
-                    //                but doc says we should be returning AnyType
-                    //                which presumably means XmlSchemaComplexType.AnyType
+                    // https://github.com/dotnet/runtime/issues/44148
+                    //     Per documentation of base class we should not be returning null here
+                    //     Currently we return null for some type codes (i.e. Item, Node)
+                    //     but doc says we should be returning AnyType
+                    //     which presumably means XmlSchemaComplexType.AnyType
                     return _schemaType!;
                 }
             }

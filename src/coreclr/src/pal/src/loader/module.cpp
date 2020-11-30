@@ -685,7 +685,6 @@ PAL_GetProcAddressDirect(
         IN NATIVE_LIBRARY_HANDLE dl_handle,
         IN LPCSTR lpProcName)
 {
-    INT name_length;
     FARPROC address = nullptr;
 
     PERF_ENTRY(PAL_GetProcAddressDirect);

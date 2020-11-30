@@ -30,7 +30,6 @@ nativeStringResourceTable_mscorrc
 #PAL_fwprintf
 #PAL_GetLogicalCpuCountFromOS
 #PAL_GetNumaProcessorNode
-#PAL_GetPALDirectoryW
 #PAL_get_stdout
 #PAL_get_stderr
 #PAL_GetApplicationGroupId
@@ -38,6 +37,7 @@ nativeStringResourceTable_mscorrc
 #PAL_GetCurrentThread
 #PAL_GetCpuLimit
 #PAL_GetNativeExceptionHolderHead
+#PAL_GetPalHostModule
 #PAL_GetSymbolModuleBase
 #PAL_GetTransportPipeName
 #PAL_InitializeDLL

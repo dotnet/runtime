@@ -14,7 +14,7 @@ function(create_standalone_jit)
 
   set(oneValueArgs TARGET OS ARCH)
   set(multiValueArgs ADDITIONAL_DESTINATIONS)
-  set(options NOALTJIT)
+  set(options)
   cmake_parse_arguments(TARGETDETAILS "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})
 
   set(JIT_ARCH_LINK_LIBRARIES gcinfo_${TARGETDETAILS_OS}_${TARGETDETAILS_ARCH})
@@ -39,10 +39,6 @@ function(create_standalone_jit)
 
   set_target_definitions_to_custom_os_and_arch(${ARGN})
   set_target_properties(${TARGETDETAILS_TARGET} PROPERTIES IGNORE_FEATURE_MERGE_JIT_AND_ENGINE TRUE)
-
-  if (NOT TARGETDETAILS_NOALTJIT)
-    target_compile_definitions(${TARGETDETAILS_TARGET} PRIVATE ALT_JIT)
-  endif (NOT TARGETDETAILS_NOALTJIT)
 
   target_compile_definitions(${TARGETDETAILS_TARGET} PRIVATE FEATURE_NO_HOST)
   target_compile_definitions(${TARGETDETAILS_TARGET} PRIVATE SELF_NO_HOST)
@@ -429,7 +425,8 @@ function(add_jit jitName)
         target_compile_definitions(${jitName} PRIVATE FX_VER_INTERNALNAME_STR=${jitName}.dll)
     endif(CLR_CMAKE_TARGET_WIN32)
 
-    target_precompile_header(TARGET ${jitName} HEADER jitpch.h ADDITIONAL_INCLUDE_DIRECTORIES ${JIT_SOURCE_DIR})
+    target_include_directories(${jitName} PRIVATE ${JIT_SOURCE_DIR})
+    target_precompile_headers(${jitName} PRIVATE "$<$<COMPILE_LANGUAGE:CXX>:jitpch.h>")
 
     add_dependencies(${jitName} jit_exports)
 
@@ -460,7 +457,7 @@ else()
 set(TARGET_OS_NAME win)
 endif()
 
-create_standalone_jit(TARGET clrjit OS ${TARGET_OS_NAME} ARCH ${ARCH_TARGET_NAME} NOALTJIT ADDITIONAL_DESTINATIONS sharedFramework)
+create_standalone_jit(TARGET clrjit OS ${TARGET_OS_NAME} ARCH ${ARCH_TARGET_NAME} ADDITIONAL_DESTINATIONS sharedFramework)
 
 # Enable profile guided optimization
 add_pgo(clrjit)

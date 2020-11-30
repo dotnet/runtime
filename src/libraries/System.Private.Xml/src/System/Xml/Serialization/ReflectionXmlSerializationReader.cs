@@ -603,13 +603,13 @@ namespace System.Xml.Serialization
             }
         }
 
-        private static readonly ConcurrentDictionary<Tuple<Type, string>, ReflectionXmlSerializationReaderHelper.SetMemberValueDelegate> s_setMemberValueDelegateCache = new ConcurrentDictionary<Tuple<Type, string>, ReflectionXmlSerializationReaderHelper.SetMemberValueDelegate>();
+        private static readonly ConcurrentDictionary<(Type, string), ReflectionXmlSerializationReaderHelper.SetMemberValueDelegate> s_setMemberValueDelegateCache = new ConcurrentDictionary<(Type, string), ReflectionXmlSerializationReaderHelper.SetMemberValueDelegate>();
 
         private static ReflectionXmlSerializationReaderHelper.SetMemberValueDelegate GetSetMemberValueDelegate(object o, string memberName)
         {
             Debug.Assert(o != null, "Object o should not be null");
             Debug.Assert(!string.IsNullOrEmpty(memberName), "memberName must have a value");
-            var typeMemberNameTuple = Tuple.Create(o.GetType(), memberName);
+            (Type, string) typeMemberNameTuple = (o.GetType(), memberName);
             if (!s_setMemberValueDelegateCache.TryGetValue(typeMemberNameTuple, out ReflectionXmlSerializationReaderHelper.SetMemberValueDelegate? result))
             {
                 MemberInfo memberInfo = ReflectionXmlSerializationHelper.GetMember(o.GetType(), memberName);
@@ -1295,27 +1295,9 @@ namespace System.Xml.Serialization
             return obj;
         }
 
-        private ConstructorInfo? GetDefaultConstructor(Type type)
-        {
-            if (type.IsValueType)
-                return null;
-
-            ConstructorInfo? ctor = FindDefaultConstructor(type.GetTypeInfo());
-            return ctor;
-        }
-
-        private static ConstructorInfo? FindDefaultConstructor(TypeInfo ti)
-        {
-            foreach (ConstructorInfo ci in ti.DeclaredConstructors)
-            {
-                if (!ci.IsStatic && ci.GetParameters().Length == 0)
-                {
-                    return ci;
-                }
-            }
-
-            return null;
-        }
+        private ConstructorInfo? GetDefaultConstructor(Type type) =>
+            type.IsValueType ? null :
+            type.GetConstructor(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.DeclaredOnly, null, Type.EmptyTypes, null);
 
         private object? WriteEncodedStructMethod(StructMapping structMapping)
         {

@@ -662,12 +662,13 @@ namespace Internal.JitInterface
                 return (CorInfoType)type.Category;
             }
 
-            typeIfNotPrimitive = type;
-
             if (type.IsPointer || type.IsFunctionPointer)
             {
+                typeIfNotPrimitive = null;
                 return CorInfoType.CORINFO_TYPE_PTR;
             }
+            
+            typeIfNotPrimitive = type;
 
             if (type.IsByRef)
             {
@@ -1432,7 +1433,8 @@ namespace Internal.JitInterface
 
         private bool isValueClass(CORINFO_CLASS_STRUCT_* cls)
         {
-            return HandleToObject(cls).IsValueType;
+            TypeDesc type = HandleToObject(cls);
+            return type.IsValueType || type.IsPointer || type.IsFunctionPointer;
         }
 
         private CorInfoInlineTypeCheck canInlineTypeCheck(CORINFO_CLASS_STRUCT_* cls, CorInfoInlineTypeCheckSource source)
@@ -1453,6 +1455,10 @@ namespace Internal.JitInterface
             // TODO: Support for verification (CORINFO_FLG_GENERIC_TYPE_VARIABLE)
 
             CorInfoFlag result = (CorInfoFlag)0;
+
+            // CoreCLR uses UIntPtr in place of pointers here
+            if (type.IsPointer || type.IsFunctionPointer)
+                type = _compilation.TypeSystemContext.GetWellKnownType(WellKnownType.UIntPtr);
 
             var metadataType = type as MetadataType;
 

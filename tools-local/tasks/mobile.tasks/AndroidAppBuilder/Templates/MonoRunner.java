@@ -29,11 +29,14 @@ import java.util.zip.ZipInputStream;
 public class MonoRunner extends Instrumentation
 {
     static {
+        // loadLibrary triggers JNI_OnLoad in these libs
+        System.loadLibrary("System.Security.Cryptography.Native.OpenSsl");
         System.loadLibrary("monodroid");
     }
 
     static String entryPointLibName = "%EntryPointLibName%";
     static Bundle result = new Bundle();
+    static boolean forceInterpreter = %ForceInterpreter%;
 
     @Override
     public void onCreate(Bundle arguments) {
@@ -41,6 +44,15 @@ public class MonoRunner extends Instrumentation
             String lib = arguments.getString("entryPointLibName");
             if (lib != null) {
                 entryPointLibName = lib;
+            }
+
+            for (String key : arguments.keySet()) {
+                if (key.startsWith("env:")) {
+                    String envName = key.substring("env:".length());
+                    String envValue = arguments.getString(key);
+                    setEnv(envName, envValue);
+                    Log.i("DOTNET", "env:" + envName + "=" + envValue);
+                }
             }
         }
 
@@ -64,8 +76,8 @@ public class MonoRunner extends Instrumentation
         // unzip libs and test files to filesDir
         unzipAssets(context, filesDir, "assets.zip");
 
-        Log.i("DOTNET", "MonoRunner initialize, entryPointLibName=" + entryPointLibName);
-        return initRuntime(filesDir, cacheDir, docsDir, entryPointLibName);
+        Log.i("DOTNET", "MonoRunner initialize,, entryPointLibName=" + entryPointLibName);
+        return initRuntime(filesDir, cacheDir, docsDir, entryPointLibName, forceInterpreter);
     }
 
     @Override
@@ -126,5 +138,7 @@ public class MonoRunner extends Instrumentation
         }
     }
 
-    static native int initRuntime(String libsDir, String cacheDir, String docsDir, String entryPointLibName);
+    static native int initRuntime(String libsDir, String cacheDir, String docsDir, String entryPointLibName, boolean forceInterpreter);
+
+    static native int setEnv(String key, String value);
 }

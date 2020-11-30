@@ -41,45 +41,27 @@ namespace System.Net.Quic
         public override void EndWrite(IAsyncResult asyncResult) =>
             TaskToApm.End(asyncResult);
 
-        private static void ValidateBufferArgs(byte[] buffer, int offset, int count)
-        {
-            if (buffer == null)
-            {
-                throw new ArgumentNullException(nameof(buffer));
-            }
-
-            if ((uint)offset > buffer.Length)
-            {
-                throw new ArgumentOutOfRangeException(nameof(offset));
-            }
-
-            if ((uint)count > buffer.Length - offset)
-            {
-                throw new ArgumentOutOfRangeException(nameof(count));
-            }
-        }
-
         public override int Read(byte[] buffer, int offset, int count)
         {
-            ValidateBufferArgs(buffer, offset, count);
+            ValidateBufferArguments(buffer, offset, count);
             return Read(buffer.AsSpan(offset, count));
         }
 
         public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
         {
-            ValidateBufferArgs(buffer, offset, count);
+            ValidateBufferArguments(buffer, offset, count);
             return ReadAsync(new Memory<byte>(buffer, offset, count), cancellationToken).AsTask();
         }
 
         public override void Write(byte[] buffer, int offset, int count)
         {
-            ValidateBufferArgs(buffer, offset, count);
+            ValidateBufferArguments(buffer, offset, count);
             Write(buffer.AsSpan(offset, count));
         }
 
         public override Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
         {
-            ValidateBufferArgs(buffer, offset, count);
+            ValidateBufferArguments(buffer, offset, count);
             return WriteAsync(new ReadOnlyMemory<byte>(buffer, offset, count), cancellationToken).AsTask();
         }
 

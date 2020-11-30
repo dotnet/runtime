@@ -118,7 +118,7 @@ namespace System.Net.Http
 
             public override Task CopyToAsync(Stream destination, int bufferSize, CancellationToken cancellationToken)
             {
-                ValidateCopyToArgs(this, destination, bufferSize);
+                ValidateCopyToArguments(destination, bufferSize);
 
                 if (cancellationToken.IsCancellationRequested)
                 {
@@ -212,11 +212,18 @@ namespace System.Net.Http
                 CancellationTokenSource? cts = null;
                 CancellationTokenRegistration ctr = default;
                 TimeSpan drainTime = _connection._pool.Settings._maxResponseDrainTime;
+
+                if (drainTime == TimeSpan.Zero)
+                {
+                    return false;
+                }
+
                 if (drainTime != Timeout.InfiniteTimeSpan)
                 {
                     cts = new CancellationTokenSource((int)drainTime.TotalMilliseconds);
                     ctr = cts.Token.Register(static s => ((HttpConnection)s!).Dispose(), _connection);
                 }
+
                 try
                 {
                     while (true)

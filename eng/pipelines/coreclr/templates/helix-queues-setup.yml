@@ -99,8 +99,8 @@ jobs:
         - OSX.1014.Amd64
         - OSX.1015.Amd64
 
-    # Windows_NT x64
-    - ${{ if eq(parameters.platform, 'Windows_NT_x64') }}:
+    # windows x64
+    - ${{ if eq(parameters.platform, 'windows_x64') }}:
       - ${{ if and(eq(variables['System.TeamProject'], 'public'), in(parameters.jobParameters.helixQueueGroup, 'pr', 'ci', 'libraries')) }}:
         - Windows.10.Amd64.Open
       - ${{ if and(eq(variables['System.TeamProject'], 'public'), notIn(parameters.jobParameters.helixQueueGroup, 'pr', 'ci', 'libraries')) }}:
@@ -115,8 +115,8 @@ jobs:
         - Windows.10.Amd64.Core
         - (Windows.Nano.1809.Amd64.Open)windows.10.amd64.serverrs5.open@mcr.microsoft.com/dotnet-buildtools/prereqs:nanoserver-1809-helix-amd64-08e8e40-20200107182504
 
-    # Windows_NT x86
-    - ${{ if eq(parameters.platform, 'Windows_NT_x86') }}:
+    # windows x86
+    - ${{ if eq(parameters.platform, 'windows_x86') }}:
       - ${{ if and(eq(variables['System.TeamProject'], 'public'), in(parameters.jobParameters.helixQueueGroup, 'pr', 'ci', 'libraries')) }}:
         - Windows.10.Amd64.Open
       - ${{ if and(eq(variables['System.TeamProject'], 'public'), notIn(parameters.jobParameters.helixQueueGroup, 'pr', 'ci', 'libraries')) }}:
@@ -129,15 +129,15 @@ jobs:
         - Windows.10.Amd64
         - Windows.10.Amd64.Core
 
-    # Windows_NT arm
-    - ${{ if eq(parameters.platform, 'Windows_NT_arm') }}:
+    # windows arm
+    - ${{ if eq(parameters.platform, 'windows_arm') }}:
       - ${{ if and(eq(variables['System.TeamProject'], 'public'), in(parameters.jobParameters.helixQueueGroup, 'pr', 'ci', 'libraries')) }}:
         - Windows.10.Arm64v8.Open
       - ${{ if eq(variables['System.TeamProject'], 'internal') }}:
         - Windows.10.Arm64
 
-    # Windows_NT arm64
-    - ${{ if eq(parameters.platform, 'Windows_NT_arm64') }}:
+    # windows arm64
+    - ${{ if eq(parameters.platform, 'windows_arm64') }}:
       - ${{ if and(eq(variables['System.TeamProject'], 'public'), in(parameters.jobParameters.helixQueueGroup, 'pr', 'ci', 'libraries')) }}:
         - Windows.10.Arm64v8.Open
       - ${{ if eq(variables['System.TeamProject'], 'internal') }}:

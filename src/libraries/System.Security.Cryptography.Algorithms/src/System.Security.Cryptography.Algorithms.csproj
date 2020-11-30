@@ -3,7 +3,7 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <DefineConstants>$(DefineConstants);INTERNAL_ASYMMETRIC_IMPLEMENTATIONS</DefineConstants>
     <NoWarn>$(NoWarn);CA5350;CA5351;CA5379;CA5384</NoWarn>
-    <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;$(NetCoreAppCurrent)-Unix;$(NetCoreAppCurrent)-Android;$(NetCoreAppCurrent)-OSX;$(NetCoreAppCurrent)-iOS;$(NetCoreAppCurrent)-tvOS;$(NetCoreAppCurrent)-Browser</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-Unix;$(NetCoreAppCurrent)-Android;$(NetCoreAppCurrent)-OSX;$(NetCoreAppCurrent)-iOS;$(NetCoreAppCurrent)-tvOS;$(NetCoreAppCurrent)-Browser</TargetFrameworks>
     <Nullable>enable</Nullable>
   </PropertyGroup>
   <Import Project="$(CommonPath)System\Security\Cryptography\Asn1\AsnXml.targets" />
@@ -487,8 +487,7 @@
              Link="Common\System\Security\Cryptography\RSAOpenSsl.cs" />
     <Compile Include="Internal\Cryptography\AesImplementation.Unix.cs" />
     <Compile Include="Internal\Cryptography\DesImplementation.Unix.cs" />
-    <Compile Condition="'$(TargetsAndroid)' != 'true' or '$(ANDROID_OPENSSL_AAR)' != ''" Include="Internal\Cryptography\HashProviderDispenser.Unix.cs" />
-    <Compile Condition="'$(TargetsAndroid)' == 'true' and '$(ANDROID_OPENSSL_AAR)' == ''" Include="Internal\Cryptography\HashProviderDispenser.Android.cs" />
+    <Compile Include="Internal\Cryptography\HashProviderDispenser.Unix.cs" />
     <Compile Include="Internal\Cryptography\OpenSslCipher.cs" />
     <Compile Condition="'$(TargetsBrowser)' != 'true'" Include="Internal\Cryptography\RandomNumberGeneratorImplementation.Unix.cs" />
     <Compile Include="Internal\Cryptography\RC2Implementation.Unix.cs" />
@@ -587,6 +586,8 @@
              Link="Common\Interop\Unix\System.Native\Interop.GetRandomBytes.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\Interop.Libraries.cs"
              Link="Common\Interop\Unix\Interop.Libraries.cs" />
+    <Compile Include="$(CommonPath)System\Sha1ForNonSecretPurposes.cs"
+             Link="Common\System\Sha1ForNonSecretPurposes.cs" />
     <Compile Include="Internal\Cryptography\HashAlgorithmNames.cs" />
     <Compile Include="Internal\Cryptography\HashProviderDispenser.Browser.cs" />
     <Compile Include="Internal\Cryptography\HMACCommon.cs" />

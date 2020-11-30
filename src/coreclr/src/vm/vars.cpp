@@ -29,7 +29,6 @@ const char g_psBaseLibrarySatelliteAssemblyName[]  = CoreLibSatelliteName_A;
 
 Volatile<LONG>       g_TrapReturningThreads;
 
-HINSTANCE            g_hThisInst;
 BBSweep              g_BBSweep;
 
 #ifdef _DEBUG
@@ -60,9 +59,6 @@ GPTR_IMPL(MethodTable,      g_pObjectClass);
 GPTR_IMPL(MethodTable,      g_pRuntimeTypeClass);
 GPTR_IMPL(MethodTable,      g_pCanonMethodTableClass);  // System.__Canon
 GPTR_IMPL(MethodTable,      g_pStringClass);
-#ifdef FEATURE_UTF8STRING
-GPTR_IMPL(MethodTable,      g_pUtf8StringClass);
-#endif // FEATURE_UTF8STRING
 GPTR_IMPL(MethodTable,      g_pArrayClass);
 GPTR_IMPL(MethodTable,      g_pSZArrayHelperClass);
 GPTR_IMPL(MethodTable,      g_pNullableClass);

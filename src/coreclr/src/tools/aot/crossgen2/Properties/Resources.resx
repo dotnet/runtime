@@ -226,7 +226,10 @@
     <value>Single method compilation: generic arguments to the method</value>
   </data>
   <data name="SingleMethodMethodName" xml:space="preserve">
-    <value>Single method compilation: generic arguments to the method</value>
+    <value>Single method compilation: method name</value>
+  </data>
+  <data name="SingleMethodIndex" xml:space="preserve">
+    <value>Single method compilation: Index of method if there are multiple with the same name</value>
   </data>
   <data name="SingleMethodTypeName" xml:space="preserve">
     <value>Single method compilation: name of the owning type</value>
@@ -251,6 +254,9 @@
   </data>
   <data name="TypeAndMethodNameNeeded" xml:space="preserve">
     <value>Both method name and type name are required parameters for single method mode</value>
+  </data>
+  <data name="SingleMethodIndexNeeded" xml:space="preserve">
+    <value>There are multiple methods with the same name. Specify --singlemethodindex [index] with the correct index.</value>
   </data>
   <data name="TypeNotFound" xml:space="preserve">
     <value>Type '{0}' not found</value>

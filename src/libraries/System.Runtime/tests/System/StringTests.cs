@@ -546,6 +546,10 @@ namespace System.Tests
             {
                 Assert.Equal(expected, string.Join(separator, values));
                 Assert.Equal(expected, string.Join(separator, (IEnumerable<string>)values));
+                // We are using concat to force the value to be an IEnumerable and avoid the optimizations for List<T> and T[]
+                Assert.Equal(expected, string.Join(separator, values.Concat(new string[0])));
+                // Validate the optimization for List<T>
+                Assert.Equal(expected, string.Join(separator, new List<string>(values)));
                 Assert.Equal(expected, string.Join(separator, (object[])values));
                 Assert.Equal(expected, string.Join(separator, (IEnumerable<object>)values));
             }

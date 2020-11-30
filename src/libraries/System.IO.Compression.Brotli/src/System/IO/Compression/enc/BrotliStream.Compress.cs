@@ -20,7 +20,7 @@ namespace System.IO.Compression
 
         public override void Write(byte[] buffer, int offset, int count)
         {
-            ValidateParameters(buffer, offset, count);
+            ValidateBufferArguments(buffer, offset, count);
             WriteCore(new ReadOnlySpan<byte>(buffer, offset, count));
         }
 
@@ -64,7 +64,7 @@ namespace System.IO.Compression
 
         public override Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
         {
-            ValidateParameters(buffer, offset, count);
+            ValidateBufferArguments(buffer, offset, count);
             return WriteAsync(new ReadOnlyMemory<byte>(buffer, offset, count), cancellationToken).AsTask();
         }
 

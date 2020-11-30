@@ -705,6 +705,7 @@ OPDEF(MINT_MONO_NEWOBJ, "mono_newobj", 2, Pop0, Push1, MintOpClassToken)
 OPDEF(MINT_MONO_RETOBJ, "mono_retobj", 1, Pop1, Push0, MintOpNoArgs)
 OPDEF(MINT_MONO_ATOMIC_STORE_I4, "mono_atomic.store.i4", 1, Pop2, Push0, MintOpNoArgs)
 OPDEF(MINT_MONO_MEMORY_BARRIER, "mono_memory_barrier", 1, Pop0, Push0, MintOpNoArgs)
+OPDEF(MINT_MONO_EXCHANGE_I8, "mono_interlocked.xchg.i8", 1, Pop2, Push1, MintOpNoArgs)
 OPDEF(MINT_MONO_LDDOMAIN, "mono_lddomain", 1, Pop0, Push1, MintOpNoArgs)
 OPDEF(MINT_MONO_GET_SP, "mono_get_sp", 1, Pop0, Push1, MintOpNoArgs)
 

@@ -12340,13 +12340,21 @@ void emitter::emitDispIns(
                             targetName = "String handle";
                         }
                     }
-                    else if ((idFlags == GTF_ICON_FIELD_HDL) || (idFlags == GTF_ICON_STATIC_HDL))
+                    else if (idFlags == GTF_ICON_FIELD_HDL)
                     {
                         targetName = emitComp->eeGetFieldName((CORINFO_FIELD_HANDLE)targetHandle);
                     }
-                    else if ((idFlags == GTF_ICON_METHOD_HDL) || (idFlags == GTF_ICON_FTN_ADDR))
+                    else if (idFlags == GTF_ICON_STATIC_HDL)
+                    {
+                        targetName = "Static handle";
+                    }
+                    else if (idFlags == GTF_ICON_METHOD_HDL)
                     {
                         targetName = emitComp->eeGetMethodFullName((CORINFO_METHOD_HANDLE)targetHandle);
+                    }
+                    else if (idFlags == GTF_ICON_FTN_ADDR)
+                    {
+                        targetName = "Function address";
                     }
                     else if (idFlags == GTF_ICON_CLASS_HDL)
                     {

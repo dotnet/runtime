@@ -409,8 +409,8 @@ namespace System.Runtime.Serialization
                     {
                         enumeratorType = collectionContract.GetEnumeratorMethod.ReturnType;
                     }
-                    MethodInfo? moveNextMethod = enumeratorType.GetMethod(Globals.MoveNextMethodName, BindingFlags.Instance | BindingFlags.Public, null, Array.Empty<Type>(), null);
-                    MethodInfo? getCurrentMethod = enumeratorType.GetMethod(Globals.GetCurrentMethodName, BindingFlags.Instance | BindingFlags.Public, null, Array.Empty<Type>(), null);
+                    MethodInfo? moveNextMethod = enumeratorType.GetMethod(Globals.MoveNextMethodName, BindingFlags.Instance | BindingFlags.Public, Type.EmptyTypes);
+                    MethodInfo? getCurrentMethod = enumeratorType.GetMethod(Globals.GetCurrentMethodName, BindingFlags.Instance | BindingFlags.Public, Type.EmptyTypes);
                     if (moveNextMethod == null || getCurrentMethod == null)
                     {
                         if (enumeratorType.IsInterface)
@@ -457,7 +457,7 @@ namespace System.Runtime.Serialization
                     else if (isGenericDictionary)
                     {
                         Type ctorParam = Globals.TypeOfIEnumeratorGeneric.MakeGenericType(Globals.TypeOfKeyValuePair.MakeGenericType(keyValueTypes!));
-                        ConstructorInfo dictEnumCtor = enumeratorType.GetConstructor(Globals.ScanAllMembers, null, new Type[] { ctorParam }, null)!;
+                        ConstructorInfo dictEnumCtor = enumeratorType.GetConstructor(Globals.ScanAllMembers, new Type[] { ctorParam })!;
                         _ilg.ConvertValue(collectionContract.GetEnumeratorMethod.ReturnType, ctorParam);
                         _ilg.New(dictEnumCtor);
                     }
@@ -576,7 +576,7 @@ namespace System.Runtime.Serialization
                     _ilg.Load(value);
                     _ilg.Load(itemName);
                     _ilg.Load(itemNamespace);
-                    _ilg.Call(typeof(XmlWriterDelegator).GetMethod(writeArrayMethod, Globals.ScanAllMembers, null, new Type[] { type, typeof(XmlDictionaryString), typeof(XmlDictionaryString) }, null)!);
+                    _ilg.Call(typeof(XmlWriterDelegator).GetMethod(writeArrayMethod, Globals.ScanAllMembers, new Type[] { type, typeof(XmlDictionaryString), typeof(XmlDictionaryString) })!);
                     return true;
                 }
                 return false;

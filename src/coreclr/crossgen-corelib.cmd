@@ -13,7 +13,7 @@ set __ThisScriptDir=%~dp0
 :: Note that the msbuild project files (specifically, dir.proj) will use the following variables, if set:
 ::      __BuildArch         -- default: x64
 ::      __BuildType         -- default: Debug
-::      __TargetOS           -- default: Windows_NT
+::      __TargetOS           -- default: windows
 ::      __ProjectDir        -- default: directory of the dir.props file
 ::      __RepoRootDir       -- default: directory two levels above the dir.props file
 ::      __RootBinDir        -- default: %__RepoRootDir%\artifacts\
@@ -26,7 +26,7 @@ set __ThisScriptDir=%~dp0
 :: Set the default arguments for build
 set __BuildArch=x64
 set __BuildType=Debug
-set __TargetOS=Windows_NT
+set __TargetOS=windows
 
 set "__ProjectDir=%~dp0"
 :: remove trailing slash

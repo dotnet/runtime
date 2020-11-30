@@ -212,7 +212,9 @@ CORINFO_CLASS_HANDLE interceptor_ICJI::getMethodClass(CORINFO_METHOD_HANDLE meth
 CORINFO_MODULE_HANDLE interceptor_ICJI::getMethodModule(CORINFO_METHOD_HANDLE method)
 {
     mc->cr->AddCall("getMethodModule");
-    return original_ICorJitInfo->getMethodModule(method);
+    CORINFO_MODULE_HANDLE temp = original_ICorJitInfo->getMethodModule(method);
+    mc->recGetMethodModule(method, temp);
+    return temp;
 }
 
 // This function returns the offset of the specified method in the
@@ -2045,6 +2047,21 @@ HRESULT interceptor_ICJI::getMethodBlockCounts(CORINFO_METHOD_HANDLE ftnHnd,
     HRESULT temp = original_ICorJitInfo->getMethodBlockCounts(ftnHnd, pCount, pBlockCounts, pNumRuns);
     mc->recGetMethodBlockCounts(ftnHnd, pCount, pBlockCounts, pNumRuns, temp);
     return temp;
+}
+
+// Get the likely implementing class for a virtual call or interface call made by ftnHnd
+// at the indicated IL offset. baseHnd is the interface class or base class for the method
+// being called. 
+CORINFO_CLASS_HANDLE interceptor_ICJI::getLikelyClass(CORINFO_METHOD_HANDLE ftnHnd,
+                                                      CORINFO_CLASS_HANDLE  baseHnd,
+                                                      UINT32                ilOffset,
+                                                      UINT32*               pLikelihood,
+                                                      UINT32*               pNumberOfClasses)
+{
+    mc->cr->AddCall("getLikelyClass");
+    CORINFO_CLASS_HANDLE result = original_ICorJitInfo->getLikelyClass(ftnHnd, baseHnd, ilOffset, pLikelihood, pNumberOfClasses);
+    mc->recGetLikelyClass(ftnHnd, baseHnd, ilOffset, result, pLikelihood, pNumberOfClasses);
+    return result;
 }
 
 // Associates a native call site, identified by its offset in the native code stream, with
