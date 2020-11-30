@@ -139,6 +139,21 @@ These various scenarios have different levels of support for these three feature
 | non-blittable array marshalling in a P/Invoke | unsupported | unsupported (supportable with https://github.com/dotnet/runtime/issues/25423) | unuspported |
 | non-blittable array marshalling not in a P/Invoke | unsupported | unsupported | unuspported |
 
+### `SetLastError=true`
+
+The stub code generation also handles [`SetLastError=true`][SetLastError] behaviour. This configuration indicates that system error code ([`errno`](https://en.wikipedia.org/wiki/Errno.h) on Unix, [`GetLastError`](https://docs.microsoft.com/windows/win32/api/errhandlingapi/nf-errhandlingapi-getlasterror) on Windows) should be stored after the native invocation, such that it can be retrieved using [`Marshal.GetLastWin32Error`](https://docs.microsoft.com/dotnet/api/system.runtime.interopservices.marshal.getlastwin32error).
+
+This means that, rather than simply invoke the native method, the generated stub will:
+
+1. Clear the system error by setting it to 0
+2. Invoke the native method
+3. Get the system error
+4. Set the stored error for the P/Invoke (accessible via `Marshal.GetLastWin32Error`)
+
+A core requirement of this functionality is that the P/Invoke called in (2) is blittable (the purpose of the P/Invoke source generator), such that there will be no additional operations (e.g unmarshalling) after the invocation that could change the system error that is retrieved in (3). Similarly, (3) must not involve any operations before getting the system error that could change the system error. This also relies on the runtime itself handling preserving the last error (see `BEGIN/END_PRESERVE_LAST_ERROR` macros) during JIT and P/Invoke resolution.
+
+Clearing the system error (1) is necessary because the native method may not set the error at all on success and the system error would retain its value from a previous operation. The developer should be able to check `Marshal.GetLastWin32Error` after a P/Inovke to determine success or failure, so the stub explicitly clears the error before the native invocation, such that the last error will indicate success if the native call does not change it.
+
 ## P/Invoke
 
 The P/Invoke called by the stub is created based on the user's original declaration of the stub. The signature is generated using the syntax returned by `AsNativeType` and `AsParameter` of the marshalling generators for the return and parameters. Any marshalling attributes on the return and parameters of the managed method - [`MarshalAsAttribute`][MarshalAsAttribute], [`InAttribute`][InAttribute], [`OutAttribute`][OutAttribute] - are dropped.

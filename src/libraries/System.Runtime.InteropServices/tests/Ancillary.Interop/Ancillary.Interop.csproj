@@ -5,6 +5,7 @@
     <LangVersion>8.0</LangVersion>
     <RootNamespace>System.Runtime.InteropServices</RootNamespace>
     <Nullable>enable</Nullable>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
 
 </Project>

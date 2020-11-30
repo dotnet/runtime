@@ -9,7 +9,7 @@ namespace DllImportGenerator.UnitTests
 {
     public class Compiles
     {
-        public static IEnumerable<object[]> CodeSnippetsToCompile_NoDiagnostics()
+        public static IEnumerable<object[]> CodeSnippetsToCompile()
         {
             yield return new[] { CodeSnippets.TrivialClassDeclarations };
             yield return new[] { CodeSnippets.TrivialStructDeclarations };
@@ -17,7 +17,7 @@ namespace DllImportGenerator.UnitTests
             yield return new[] { CodeSnippets.NestedNamespace };
             yield return new[] { CodeSnippets.NestedTypes };
             yield return new[] { CodeSnippets.UserDefinedEntryPoint };
-            //yield return new[] { CodeSnippets.AllSupportedDllImportNamedArguments };
+            yield return new[] { CodeSnippets.AllSupportedDllImportNamedArguments };
             yield return new[] { CodeSnippets.DefaultParameters };
             yield return new[] { CodeSnippets.UseCSharpFeaturesForConstants };
 
@@ -161,35 +161,15 @@ namespace DllImportGenerator.UnitTests
             yield return new[] { CodeSnippets.CustomStructMarshallingMarshalUsingParametersAndModifiers };
         }
 
-        public static IEnumerable<object[]> CodeSnippetsToCompile_WithDiagnostics()
-        {
-            yield return new[] { CodeSnippets.AllSupportedDllImportNamedArguments };
-        }
-
         [Theory]
-        [MemberData(nameof(CodeSnippetsToCompile_NoDiagnostics))]
-        public async Task ValidateSnippets_NoDiagnostics(string source)
+        [MemberData(nameof(CodeSnippetsToCompile))]
+        public async Task ValidateSnippets(string source)
         {
             Compilation comp = await TestUtils.CreateCompilation(source);
             TestUtils.AssertPreSourceGeneratorCompilation(comp);
 
             var newComp = TestUtils.RunGenerators(comp, out var generatorDiags, new Microsoft.Interop.DllImportGenerator());
             Assert.Empty(generatorDiags);
-
-            var newCompDiags = newComp.GetDiagnostics();
-            Assert.Empty(newCompDiags);
-        }
-
-        [Theory]
-        [MemberData(nameof(CodeSnippetsToCompile_WithDiagnostics))]
-        public async Task ValidateSnippets_WithDiagnostics(string source)
-        {
-            Compilation comp = await TestUtils.CreateCompilation(source);
-            TestUtils.AssertPreSourceGeneratorCompilation(comp);
-
-            var newComp = TestUtils.RunGenerators(comp, out var generatorDiags, new Microsoft.Interop.DllImportGenerator());
-            Assert.NotEmpty(generatorDiags);
-            Assert.All(generatorDiags, d => Assert.StartsWith(Microsoft.Interop.GeneratorDiagnostics.Ids.Prefix, d.Id));
 
             var newCompDiags = newComp.GetDiagnostics();
             Assert.Empty(newCompDiags);

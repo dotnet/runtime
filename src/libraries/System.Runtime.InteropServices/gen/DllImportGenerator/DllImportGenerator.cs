@@ -107,12 +107,6 @@ namespace Microsoft.Interop
                     generatorDiagnostics.ReportConfigurationNotSupported(generatedDllImportAttr, nameof(DllImportStub.GeneratedDllImportData.ThrowOnUnmappableChar));
                 }
 
-                // [TODO] Remove once we support SetLastError=true
-                if (dllImportData.SetLastError)
-                {
-                    generatorDiagnostics.ReportConfigurationNotSupported(generatedDllImportAttr, nameof(DllImportStub.GeneratedDllImportData.SetLastError), "true");
-                }
-
                 if (lcidConversionAttr != null)
                 {
                     // Using LCIDConversion with GeneratedDllImport is not supported
