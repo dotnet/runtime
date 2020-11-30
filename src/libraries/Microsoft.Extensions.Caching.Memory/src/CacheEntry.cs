@@ -216,7 +216,11 @@ namespace Microsoft.Extensions.Caching.Memory
                 if (_valueHasBeenSet)
                 {
                     _notifyCacheEntryCommit(this);
-                    PropagateOptions(CacheEntryHelper.Current);
+
+                    if (CanPropagateOptions())
+                    {
+                        PropagateOptions(CacheEntryHelper.Current);
+                    }
                 }
             }
         }
