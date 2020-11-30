@@ -13,6 +13,7 @@ parameters:
   isOfficialBuild: false
   crossBuild: false
   crossrootfsDir: ''
+  dependsOn: ''
 
 ### Product build
 jobs:
@@ -38,6 +39,7 @@ jobs:
     # Note that the containers are defined in platform-matrix.yml
     container: ${{ parameters.container }}
 
+    dependsOn: ${{ parameters.dependsOn }}
     timeoutInMinutes: ${{ parameters.timeoutInMinutes }}
 
     gatherAssetManifests: true
