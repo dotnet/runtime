@@ -226,7 +226,7 @@ namespace System.Reflection
             }
             catch (MissingFieldException)
             {
-                return ResolveLiteralField(new MetadataToken(metadataToken), genericTypeArguments, genericMethodArguments);
+                return ResolveLiteralField(metadataToken, genericTypeArguments, genericMethodArguments);
             }
             catch (BadImageFormatException e)
             {
@@ -243,10 +243,6 @@ namespace System.Reflection
 
                 if (tk.IsGlobalTypeDefToken)
                     throw new ArgumentException(SR.Format(SR.Argument_ResolveModuleType, tk), nameof(metadataToken));
-
-                if (!MetadataImport.IsValidToken(tk))
-                    throw new ArgumentOutOfRangeException(nameof(metadataToken),
-                        SR.Format(SR.Argument_InvalidToken, tk, this));
 
                 if (!tk.IsTypeDef && !tk.IsTypeSpec && !tk.IsTypeRef)
                     throw new ArgumentException(SR.Format(SR.Argument_ResolveType, tk, this), nameof(metadataToken));
