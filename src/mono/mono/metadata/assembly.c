@@ -2561,10 +2561,8 @@ open_from_bundle_internal (MonoAssemblyLoadContext *alc, const char *filename, M
 	for (int i = 0; !image && bundles [i]; ++i) {
 		if (strcmp (bundles [i]->name, name) == 0) {
 #ifdef ENABLE_NETCORE
-			char *bundle_name = g_strconcat ("MONO_BUNDLE/", name, (const char *)NULL);
 			// Since bundled images don't exist on disk, don't give them a legit filename
-			image = mono_image_open_from_data_internal (alc, (char*)bundles [i]->data, bundles [i]->size, FALSE, status, refonly, FALSE, bundle_name, NULL);
-			g_free (bundle_name);
+			image = mono_image_open_from_data_internal (alc, (char*)bundles [i]->data, bundles [i]->size, FALSE, status, refonly, FALSE, name, NULL);
 #else
 			image = mono_image_open_from_data_internal (alc, (char*)bundles [i]->data, bundles [i]->size, FALSE, status, refonly, FALSE, name, name);
 #endif
@@ -2586,7 +2584,7 @@ open_from_satellite_bundle (MonoAssemblyLoadContext *alc, const char *filename, 
 	char *name = g_strdup (filename);
 	for (int i = 0; !image && satellite_bundles [i]; ++i) {
 		if (strcmp (satellite_bundles [i]->name, name) == 0 && strcmp (satellite_bundles [i]->culture, culture) == 0) {
-			char *bundle_name = g_strconcat ("MONO_BUNDLE/", name, "/", culture, (const char *)NULL);
+			char *bundle_name = g_strconcat (name, "/", culture, (const char *)NULL);
 			image = mono_image_open_from_data_internal (alc, (char *)satellite_bundles [i]->data, satellite_bundles [i]->size, FALSE, status, refonly, FALSE, bundle_name, NULL);
 			g_free (bundle_name);
 			break;
