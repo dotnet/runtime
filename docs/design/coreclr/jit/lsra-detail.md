@@ -309,7 +309,7 @@ After LSRA, the graph has the following properties:
         must issue the appropriate move.
 
     -   However, if such a node is constrained to a set of registers,
-        as in the case of x86 instructions which require a byte-addressible register,
+        as in the case of x86 instructions which require a byte-addressable register,
         and its current location does not satisfy that requirement, LSRA
         must insert a `GT_COPY` node between the node and its parent.
         The `_gtRegNum` on the `GT_COPY` node must satisfy the register
@@ -319,16 +319,8 @@ After LSRA, the graph has the following properties:
     These must satisfy the constraints specified by the associated `RefPosition`s.
 
 -   A tree node is marked `GTF_SPILL` if the tree node must be spilled by
-    the code generator after it has been evaluated.
-
-    -   Note that a write-thru variable def is always written to the stack, and the `GTF_SPILLED`
-        flag (not otherwise used for pure defs) to indicate that it also remains live
-        in the assigned register. This is somewhat counter-intuitive, but
-        conceptually you can think of the `GTF_SPILLED` flag as indicating that the
-        value must be reloaded, and for the write-thru case, this means it is
-        reloaded and remains live in the register (though note that in the
-        non-write-thru case, if we have both `GTF_SPILLED` and `GTF_SPILL`, it does
-        *not* remain live in the register).
+    the code generator after it has been evaluated. The value will no longer be
+    live in the register, except in some cases involving EH-write-thru vars, see below.
 
 -   A tree node is marked `GTF_SPILLED` if it is a lclVar that must be
     reloaded prior to use.
@@ -345,6 +337,17 @@ After LSRA, the graph has the following properties:
         on the tree node (which is the one used when the node is evaluated), LSRA must
         insert a `GT_RELOAD` node to specify the register to which it
         should be reloaded.
+
+-   If a node has both GTF_SPILL and GTF_SPILLED, the tree node is reloaded prior to using
+    it (`GTF_SPILLED`) and spilled after it is evaluated (GTF_SPILL).
+
+    -   For normal variables, we can only have both `GTF_SPILL` and `GTF_SPILLED` on uses, 
+        since a def never needs to reload an old value. However, for EH-write-thru variable
+        defs, this combination of flags has a special meaning. A def of an EH-write-thru variable is
+        always written to the stack. However, if it is also marked `GTF_SPILLED` it remains live in the
+        register, in addition to being written to the stack. This is somewhat counter-intuitive since
+        normally the reloading (`GTF_SPILLED`) takes place *prior* to evaluation of the node.
+
 
 -   Note that `GT_COPY` and `GT_RELOAD` nodes are inserted immediately after the
     instruction that must be copied or reloaded. However, the reload or copy
@@ -501,7 +504,7 @@ node, which builds `RefPositions` according to the liveness model described abov
         would require us to spill the lclVar and reload it for the next use.
         Instead, we retain the assignment of the register to the lclVar, and mark that `RegRecord` as
         `isBusyUntilNextKill` so that it isn't reused if the lclVar goes dead before the call.
-        (Otherwise, if the either the lclVar is in a different register, or if its next use is after
+        (Otherwise, if the lclVar is in a different register, or if its next use is after
         the call, we clear the `isSpecialPutArg` flag on the interval.) Here is
         a case from `Microsoft.Win32.OAVariantLib:ChangeType(System.Variant,System.Type,short,System.Globalization.CultureInfo):System.Variant` in System.Private.CoreLib.dll (I've edited the
         dump to make it easier to see the structure):
@@ -693,9 +696,9 @@ LinearScanAllocation(List<RefPosition> refPositions)
     The resolution phase is responsible for performing moves, as needed to match up
     the register assignments across edges.
 
-    -    The critical edges are handled first. These are the most problematic, as there
-         is no single location at which the moves can be added. We handle the critical
-         edges from the source block, handling all critical edges from that block.
+    -    All of the critical edges are handled first.These are the most problematic, as there
+         is no single location at which the moves can be added. This is done in a pass over all
+         `BasicBlock`s with an outgoing critical edge, handling all critical edges from that block.
          The approach taken is:
            - First, eliminate any variables that always get the same register, or which
              are never live on an edge.
