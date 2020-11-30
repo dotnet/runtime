@@ -1448,12 +1448,26 @@ void SystemDomain::LoadBaseSystemClasses()
     g_pEnumClass = CoreLibBinder::GetClass(CLASS__ENUM);
     _ASSERTE(!g_pEnumClass->IsValueType());
 
+    // Load Array class
+    g_pArrayClass = CoreLibBinder::GetClass(CLASS__ARRAY);
+
+    // Load the Object array class.
+    g_pPredefinedArrayTypes[ELEMENT_TYPE_OBJECT] = ClassLoader::LoadArrayTypeThrowing(TypeHandle(g_pObjectClass));
+
+    // We have delayed allocation of CoreLib's static handles until we load the object class
+    CoreLibBinder::GetModule()->AllocateRegularStaticHandles(DefaultDomain());
+
+    // Make sure all primitive types are loaded
+    for (int et = ELEMENT_TYPE_VOID; et <= ELEMENT_TYPE_R8; et++)
+        CoreLibBinder::LoadPrimitiveType((CorElementType)et);
+
+#ifndef CROSSGEN_COMPILE
+    CastCache::Initialize();
+#endif // CROSSGEN_COMPILE
+
     // Load System.RuntimeType
     g_pRuntimeTypeClass = CoreLibBinder::GetClass(CLASS__CLASS);
     _ASSERTE(g_pRuntimeTypeClass->IsFullyLoaded());
-
-    // Load Array class
-    g_pArrayClass = CoreLibBinder::GetClass(CLASS__ARRAY);
 
     // Calling a method on IList<T> for an array requires redirection to a method on
     // the SZArrayHelper class. Retrieving such methods means calling
@@ -1471,16 +1485,6 @@ void SystemDomain::LoadBaseSystemClasses()
 
     // Load Nullable class
     g_pNullableClass = CoreLibBinder::GetClass(CLASS__NULLABLE);
-
-    // Load the Object array class.
-    g_pPredefinedArrayTypes[ELEMENT_TYPE_OBJECT] = ClassLoader::LoadArrayTypeThrowing(TypeHandle(g_pObjectClass));
-
-    // We have delayed allocation of CoreLib's static handles until we load the object class
-    CoreLibBinder::GetModule()->AllocateRegularStaticHandles(DefaultDomain());
-
-    // Make sure all primitive types are loaded
-    for (int et = ELEMENT_TYPE_VOID; et <= ELEMENT_TYPE_R8; et++)
-        CoreLibBinder::LoadPrimitiveType((CorElementType)et);
 
     CoreLibBinder::LoadPrimitiveType(ELEMENT_TYPE_I);
     CoreLibBinder::LoadPrimitiveType(ELEMENT_TYPE_U);
@@ -1503,7 +1507,6 @@ void SystemDomain::LoadBaseSystemClasses()
     // further loading of nonprimitive types may need casting support.
     // initialize cast cache here.
 #ifndef CROSSGEN_COMPILE
-    CastCache::Initialize();
     ECall::PopulateManagedCastHelpers();
 #endif // CROSSGEN_COMPILE
 
