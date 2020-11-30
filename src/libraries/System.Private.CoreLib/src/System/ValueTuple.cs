@@ -309,12 +309,9 @@ namespace System
             return EqualityComparer<T1>.Default.Equals(Item1, other.Item1);
         }
 
-        bool IStructuralEquatable.Equals(object? other, IEqualityComparer comparer)
-        {
-            if (other is not ValueTuple<T1> objTuple) return false;
-
-            return comparer.Equals(Item1, objTuple.Item1);
-        }
+        bool IStructuralEquatable.Equals(object? other, IEqualityComparer comparer) =>
+            other is ValueTuple<T1> vt &&
+            comparer.Equals(Item1, vt.Item1);
 
         int IComparable.CompareTo(object? other)
         {
@@ -498,13 +495,10 @@ namespace System
         ///  <see cref="IEqualityComparer.Equals"/> implementation. If this method call returns <see langword="true"/>, the method is
         ///  called again and passed the <see cref="Item2"/> values of the two <see cref="ValueTuple{T1, T2}"/> instances.
         /// </remarks>
-        bool IStructuralEquatable.Equals(object? other, IEqualityComparer comparer)
-        {
-            if (other is not ValueTuple<T1, T2> objTuple) return false;
-
-            return comparer.Equals(Item1, objTuple.Item1)
-                && comparer.Equals(Item2, objTuple.Item2);
-        }
+        bool IStructuralEquatable.Equals(object? other, IEqualityComparer comparer) =>
+            other is ValueTuple<T1, T2> vt &&
+            comparer.Equals(Item1, vt.Item1) &&
+            comparer.Equals(Item2, vt.Item2);
 
         int IComparable.CompareTo(object? other)
         {
@@ -687,14 +681,11 @@ namespace System
                 && EqualityComparer<T3>.Default.Equals(Item3, other.Item3);
         }
 
-        bool IStructuralEquatable.Equals(object? other, IEqualityComparer comparer)
-        {
-            if (other is not ValueTuple<T1, T2, T3> objTuple) return false;
-
-            return comparer.Equals(Item1, objTuple.Item1)
-                && comparer.Equals(Item2, objTuple.Item2)
-                && comparer.Equals(Item3, objTuple.Item3);
-        }
+        bool IStructuralEquatable.Equals(object? other, IEqualityComparer comparer) =>
+            other is ValueTuple<T1, T2, T3> vt &&
+            comparer.Equals(Item1, vt.Item1) &&
+            comparer.Equals(Item2, vt.Item2) &&
+            comparer.Equals(Item3, vt.Item3);
 
         int IComparable.CompareTo(object? other)
         {
@@ -892,15 +883,12 @@ namespace System
                 && EqualityComparer<T4>.Default.Equals(Item4, other.Item4);
         }
 
-        bool IStructuralEquatable.Equals(object? other, IEqualityComparer comparer)
-        {
-            if (other is not ValueTuple<T1, T2, T3, T4> objTuple) return false;
-
-            return comparer.Equals(Item1, objTuple.Item1)
-                && comparer.Equals(Item2, objTuple.Item2)
-                && comparer.Equals(Item3, objTuple.Item3)
-                && comparer.Equals(Item4, objTuple.Item4);
-        }
+        bool IStructuralEquatable.Equals(object? other, IEqualityComparer comparer) =>
+            other is ValueTuple<T1, T2, T3, T4> vt &&
+            comparer.Equals(Item1, vt.Item1) &&
+            comparer.Equals(Item2, vt.Item2) &&
+            comparer.Equals(Item3, vt.Item3) &&
+            comparer.Equals(Item4, vt.Item4);
 
         int IComparable.CompareTo(object? other)
         {
@@ -1115,16 +1103,12 @@ namespace System
                 && EqualityComparer<T5>.Default.Equals(Item5, other.Item5);
         }
 
-        bool IStructuralEquatable.Equals(object? other, IEqualityComparer comparer)
-        {
-            if (other is not ValueTuple<T1, T2, T3, T4, T5> objTuple) return false;
-
-            return comparer.Equals(Item1, objTuple.Item1)
-                && comparer.Equals(Item2, objTuple.Item2)
-                && comparer.Equals(Item3, objTuple.Item3)
-                && comparer.Equals(Item4, objTuple.Item4)
-                && comparer.Equals(Item5, objTuple.Item5);
-        }
+        bool IStructuralEquatable.Equals(object? other, IEqualityComparer comparer) =>
+            other is ValueTuple<T1, T2, T3, T4, T5> vt &&
+            comparer.Equals(Item1, vt.Item1) &&
+            comparer.Equals(Item2, vt.Item2) &&
+            comparer.Equals(Item3, vt.Item3) &&
+            comparer.Equals(Item5, vt.Item5);
 
         int IComparable.CompareTo(object? other)
         {
@@ -1356,17 +1340,13 @@ namespace System
                 && EqualityComparer<T6>.Default.Equals(Item6, other.Item6);
         }
 
-        bool IStructuralEquatable.Equals(object? other, IEqualityComparer comparer)
-        {
-            if (other is not ValueTuple<T1, T2, T3, T4, T5, T6> objTuple) return false;
-
-            return comparer.Equals(Item1, objTuple.Item1)
-                && comparer.Equals(Item2, objTuple.Item2)
-                && comparer.Equals(Item3, objTuple.Item3)
-                && comparer.Equals(Item4, objTuple.Item4)
-                && comparer.Equals(Item5, objTuple.Item5)
-                && comparer.Equals(Item6, objTuple.Item6);
-        }
+        bool IStructuralEquatable.Equals(object? other, IEqualityComparer comparer) =>
+            other is ValueTuple<T1, T2, T3, T4, T5, T6> vt &&
+            comparer.Equals(Item1, vt.Item1) &&
+            comparer.Equals(Item2, vt.Item2) &&
+            comparer.Equals(Item3, vt.Item3) &&
+            comparer.Equals(Item5, vt.Item5) &&
+            comparer.Equals(Item6, vt.Item6);
 
         int IComparable.CompareTo(object? other)
         {
@@ -1615,18 +1595,14 @@ namespace System
                 && EqualityComparer<T7>.Default.Equals(Item7, other.Item7);
         }
 
-        bool IStructuralEquatable.Equals(object? other, IEqualityComparer comparer)
-        {
-            if (other is not ValueTuple<T1, T2, T3, T4, T5, T6, T7> objTuple) return false;
-
-            return comparer.Equals(Item1, objTuple.Item1)
-                && comparer.Equals(Item2, objTuple.Item2)
-                && comparer.Equals(Item3, objTuple.Item3)
-                && comparer.Equals(Item4, objTuple.Item4)
-                && comparer.Equals(Item5, objTuple.Item5)
-                && comparer.Equals(Item6, objTuple.Item6)
-                && comparer.Equals(Item7, objTuple.Item7);
-        }
+        bool IStructuralEquatable.Equals(object? other, IEqualityComparer comparer) =>
+            other is ValueTuple<T1, T2, T3, T4, T5, T6, T7> vt &&
+            comparer.Equals(Item1, vt.Item1) &&
+            comparer.Equals(Item2, vt.Item2) &&
+            comparer.Equals(Item3, vt.Item3) &&
+            comparer.Equals(Item5, vt.Item5) &&
+            comparer.Equals(Item6, vt.Item6) &&
+            comparer.Equals(Item7, vt.Item7);
 
         int IComparable.CompareTo(object? other)
         {
@@ -1898,19 +1874,15 @@ namespace System
                 && EqualityComparer<TRest>.Default.Equals(Rest, other.Rest);
         }
 
-        bool IStructuralEquatable.Equals(object? other, IEqualityComparer comparer)
-        {
-            if (other is not ValueTuple<T1, T2, T3, T4, T5, T6, T7, TRest> objTuple) return false;
-
-            return comparer.Equals(Item1, objTuple.Item1)
-                && comparer.Equals(Item2, objTuple.Item2)
-                && comparer.Equals(Item3, objTuple.Item3)
-                && comparer.Equals(Item4, objTuple.Item4)
-                && comparer.Equals(Item5, objTuple.Item5)
-                && comparer.Equals(Item6, objTuple.Item6)
-                && comparer.Equals(Item7, objTuple.Item7)
-                && comparer.Equals(Rest, objTuple.Rest);
-        }
+        bool IStructuralEquatable.Equals(object? other, IEqualityComparer comparer) =>
+            other is ValueTuple<T1, T2, T3, T4, T5, T6, T7, TRest> vt &&
+            comparer.Equals(Item1, vt.Item1) &&
+            comparer.Equals(Item2, vt.Item2) &&
+            comparer.Equals(Item3, vt.Item3) &&
+            comparer.Equals(Item5, vt.Item5) &&
+            comparer.Equals(Item6, vt.Item6) &&
+            comparer.Equals(Item7, vt.Item7) &&
+            comparer.Equals(Rest, vt.Rest);
 
         int IComparable.CompareTo(object? other)
         {
