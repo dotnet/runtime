@@ -2676,11 +2676,7 @@ void Compiler::fgInitArgInfo(GenTreeCall* call)
     //
     CLANG_FORMAT_COMMENT_ANCHOR;
 
-#if defined(TARGET_WINDOWS) && !defined(TARGET_ARM)
-    if (hasFixedRetBuffReg() && call->HasRetBufArg() && !callConvIsInstanceMethodCallConv(call->GetUnmanagedCallConv()))
-#else
-    if (hasFixedRetBuffReg() && call->HasRetBufArg())
-#endif
+    if (call->HasFixedRetBufArg())
     {
         args = call->gtCallArgs;
         assert(args != nullptr);
