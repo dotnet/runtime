@@ -273,7 +273,6 @@ namespace Microsoft.Extensions.Logging.Generators
                                     bool first = true;
                                     foreach (var p in method.ParameterList.Parameters)
                                     {
-//                                        var parameterSyntax = p.SyntaxTree.GetRoot().DescendantNodes().OfType<ParameterSyntax>().First();
                                         var typeName = GetSemanticModel(p.SyntaxTree).GetDeclaredSymbol(p)!.ToDisplayString();
                                         var pSymbol = GetSemanticModel(p.SyntaxTree).GetTypeInfo(p.Type!).Type!;
 
