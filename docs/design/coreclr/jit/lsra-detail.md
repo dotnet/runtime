@@ -322,8 +322,13 @@ After LSRA, the graph has the following properties:
     the code generator after it has been evaluated.
 
     -   Note that a write-thru variable def is always written to the stack, and the `GTF_SPILLED`
-        flag (not otherwise used for pure defs) is set to indicate that it also remains live
-        in the assigned register.
+        flag (not otherwise used for pure defs) to indicate that it also remains live
+        in the assigned register. This is somewhat counter-intuitive, but
+        conceptually you can think of the `GTF_SPILLED` flag as indicating that the
+        value must be reloaded, and for the write-thru case, this means it is
+        reloaded and remains live in the register (though note that in the
+        non-write-thru case, if we have both `GTF_SPILLED` and `GTF_SPILL`, it does
+        *not* remain live in the register).
 
 -   A tree node is marked `GTF_SPILLED` if it is a lclVar that must be
     reloaded prior to use.
@@ -489,6 +494,52 @@ node, which builds `RefPositions` according to the liveness model described abov
 
     -   For a `STORE_LCL_VAR` of a write-thru `lclVar`, the `RefPosition` is marked `writeThru`.
 
+    -   There is some special handling for `GT_PUTARG_REG` nodes whose source is a non-last-use lclVar.
+        At build time, we mark such intervals as `isSpecialPutArg`.
+        At allocation time, if the lclVar is already in the argument register, but it has another use
+        prior to the call, we don't want to reassign that register to the tree temp interval, since that
+        would require us to spill the lclVar and reload it for the next use.
+        Instead, we retain the assignment of the register to the lclVar, and mark that `RegRecord` as
+        `isBusyUntilNextKill` so that it isn't reused if the lclVar goes dead before the call.
+        (Otherwise, if the either the lclVar is in a different register, or if its next use is after
+        the call, we clear the `isSpecialPutArg` flag on the interval.) Here is
+        a case from `Microsoft.Win32.OAVariantLib:ChangeType(System.Variant,System.Type,short,System.Globalization.CultureInfo):System.Variant` in System.Private.CoreLib.dll (I've edited the
+        dump to make it easier to see the structure):
+```
+N037  t16 =    ┌──▌  LCL_VAR   ref    V04 arg3         u:1 (last use) $c1
+N039 t127 = ┌──▌  PUTARG_REG ref    REG rcx
+N041 t128 = │                 ┌──▌  LCL_VAR   ref    V04 arg3         
+N043 t129 = │              ┌──▌  LEA(b+0)  byref 
+N045 t130 = │           ┌──▌  IND       long  
+N047 t131 = │        ┌──▌  LEA(b+72) long  
+N049 t132 = │     ┌──▌  IND       long  
+N051 t133 = │  ┌──▌  LEA(b+40) long  
+N053 t134 = ├──▌  IND       long   REG NA
+N055  t17 = ▌  CALLV ind int    System.Globalization.CultureInfo.get_LCID $242
+```
+The `PUTARG_REG` at location 39 uses V04, and wants it in `RCX`. Because it is not a last use,
+the tree temp interval `I14` is marked `isSpecialPutArg` when it is built. At allocation time, we
+allocate V04 to `RCX` so we leave the `isSpecialPutArg` flag and mark rcx as `isBusyUntilNextKill`
+(this shows as "Busy" in the dump after the last use of V04 has been encountered).
+This allows the use of V04 by the indirection at location 45
+to use the value in `RCX`, and since that register is busy, we don't incorrectly free it even
+though it is a last use of V04.
+```
+────────────────────────────────┼────┼────┼────┼────┼────┼────┼────┼────┼────┤
+Loc RP#  Name Type  Action Reg  │rax │rcx │rdx │rbx │rbp │rsi │rdi │r8  │r9  │
+────────────────────────────────┼────┼────┼────┼────┼────┼────┼────┼────┼────┤
+ 39.#15  V4   Use    Keep  rcx  │C12i│V4 a│    │V1 a│V3 a│V0 a│V2 a│    │    │
+ 40.#16  rcx  Fixd   Keep  rcx  │C12i│V4 a│    │V1 a│V3 a│V0 a│V2 a│    │    │
+ 40.#17  I14  Def    PtArg rcx  │C12i│V4 a│    │V1 a│V3 a│V0 a│V2 a│    │    │
+ 45.#18  V4   Use *  Keep  rcx  │C12i│V4 a│    │V1 a│V3 a│V0 a│V2 a│    │    │
+ 46.#19  I15  Def    Alloc rax  │I15a│Busy│    │V1 a│V3 a│V0 a│V2 a│    │    │
+ 49.#20  I15  Use *  Keep  rax  │I15a│Busy│    │V1 a│V3 a│V0 a│V2 a│    │    │
+ 50.#21  I16  Def    Alloc rax  │I16a│Busy│    │V1 a│V3 a│V0 a│V2 a│    │    │
+ 55.#22  rcx  Fixd   Keep  rcx  │I16a│Busy│    │V1 a│V3 a│V0 a│V2 a│    │    │
+ 55.#23  I14  Use *  PtArg rcx  │I16a│Busy│    │V1 a│V3 a│V0 a│V2 a│    │    │
+ 55.#24  I16  Use *  Keep  rax  │I16a│Busy│    │V1 a│V3 a│V0 a│V2 a│    │    │
+ 56.#25  rax  Kill   Keep  rax  │    │Busy│    │V1 a│V3 a│V0 a│V2 a│    │    │
+```
 -   A `RefTypeBB` `RefPosition` marks the beginning of a block, at which the incoming live
     variables are set to their locations at the end of the selected predecessor.
 
@@ -1121,8 +1172,9 @@ but all the extra branches currently inserted for resolution. It remains to be s
 outweigh the impact of cases where more resolution moves would be required.
 
 I have an old experimental branch where I started working on this:
-https://github.com/CarolEidt/runtime/tree/NoEdgeSplitting. It was ported to
+https://github.com/CarolEidt/runtime/tree/NoEdgeSplitting. It was ported from the coreclr to
 the runtime repo, but not validated in any significant way.
+Initial experience showed that this resulted in more regressions than improvements.
 Issue [\#8552](https://github.com/dotnet/runtime/issues/8552) may be related.
 
 ### Enable EHWriteThru by default
