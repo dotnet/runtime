@@ -298,8 +298,8 @@ public:
     unsigned facilitiesToLog;               // Bitvector of facilities to log (see loglf.h)
     unsigned levelToLog;                    // log level (see log.h)
     unsigned MaxSizePerThread;              // maximum number of bytes each thread should have before wrapping
-    unsigned MaxSizeTotal;               //maximum memory allowed for stress log
-    Volatile<LONG> totalChunk;              //current number of total chunks allocated
+    unsigned MaxSizeTotal;                  // maximum memory allowed for stress log
+    Volatile<LONG> totalChunk;              // current number of total chunks allocated
     Volatile<ThreadStressLog*> logs;        // the list of logs for every thread.
     unsigned padding;                       // Preserve the layout for SOS
     Volatile<LONG> deadCount;               // count of dead threads in the log
@@ -308,6 +308,27 @@ public:
     unsigned __int64 startTimeStamp;        // start time from when tick counter started
     FILETIME startTime;                     // time the application started
     SIZE_T   moduleOffset;                  // Used to compute format strings.
+#ifdef HOST_WINDOWS
+#define MEMORY_MAPPED_STRESSLOG
+#endif
+
+#ifdef MEMORY_MAPPED_STRESSLOG
+    MapViewHolder hMapView;
+    uint8_t* memoryBase;                    // base of the memory mapped file
+    uint8_t* memoryCur;                     // current allocation pointer in the memory mapped file
+    uint8_t* memoryLimit;                   // limit of the memory mapped file
+    static void* AllocMemoryMapped(size_t n);
+
+    struct StressLogHeader
+    {
+        uint8_t* memoryMapBaseAddress;
+        uint8_t* corClrBaseAddress;
+        Volatile<ThreadStressLog*> logs;        // the list of logs for every thread.
+        uint8_t                    coreclrimage[64 * 1024 * 1024];
+    };
+
+    StressLogHeader* stressLogHeader;       // header to find things in the memory mapped file
+#endif // MEMORY_MAPPED_STRESSLOG
 
     static thread_local ThreadStressLog* t_pCurrentThreadLog;
 
@@ -510,15 +531,21 @@ struct StressLogChunk
             return NULL;
         }
 
-        _ASSERTE (s_LogChunkHeap != NULL);
-        //no need to zero memory because we could handle garbage contents
-        return HeapAlloc (s_LogChunkHeap, 0, size);
+        if (s_LogChunkHeap != NULL)
+        {
+            //no need to zero memory because we could handle garbage contents
+            return HeapAlloc(s_LogChunkHeap, 0, size);
+        }
+        else
+        {
+            return StressLog::AllocMemoryMapped(size);
+        }
     }
 
     void operator delete (void * chunk)
     {
-        _ASSERTE (s_LogChunkHeap != NULL);
-        HeapFree (s_LogChunkHeap, 0, chunk);
+        if (s_LogChunkHeap != NULL)
+            HeapFree (s_LogChunkHeap, 0, chunk);
     }
 #else
     void* operator new (size_t size) throw()
@@ -652,6 +679,11 @@ public:
     }
 
 #endif //!STRESS_LOG_READONLY
+
+#ifdef MEMORY_MAPPED_STRESSLOG
+    void* __cdecl operator new(size_t n, const NoThrow&) NOEXCEPT;
+#endif
+
     ~ThreadStressLog ()
     {
         //no thing to do if the list is empty (failed to initialize)

@@ -140,8 +140,8 @@ void StressLog::Leave(CRITSEC_COOKIE) {
 }
 
 /*********************************************************************************/
-void StressLog::Initialize(unsigned facilities,  unsigned level, unsigned maxBytesPerThread,
-            unsigned maxBytesTotal, void* moduleBase)
+void StressLog::Initialize(unsigned facilities, unsigned level, unsigned maxBytesPerThread,
+    unsigned maxBytesTotal, void* moduleBase)
 {
     STATIC_CONTRACT_LEAF;
 
@@ -151,7 +151,7 @@ void StressLog::Initialize(unsigned facilities,  unsigned level, unsigned maxByt
         return;
     }
 
-    theLog.lock = ClrCreateCriticalSection(CrstStressLog,(CrstFlags)(CRST_UNSAFE_ANYMODE|CRST_DEBUGGER_THREAD));
+    theLog.lock = ClrCreateCriticalSection(CrstStressLog, (CrstFlags)(CRST_UNSAFE_ANYMODE | CRST_DEBUGGER_THREAD));
     // StressLog::Terminate is going to free memory.
     if (maxBytesPerThread < STRESSLOG_CHUNK_SIZE)
     {
@@ -171,7 +171,7 @@ void StressLog::Initialize(unsigned facilities,  unsigned level, unsigned maxByt
 
     theLog.tickFrequency = getTickFrequency();
 
-    GetSystemTimeAsFileTime (&theLog.startTime);
+    GetSystemTimeAsFileTime(&theLog.startTime);
     theLog.startTimeStamp = getTimeStamp();
     theLog.moduleOffset = (SIZE_T)moduleBase;
 
@@ -179,18 +179,71 @@ void StressLog::Initialize(unsigned facilities,  unsigned level, unsigned maxByt
 #ifdef _DEBUG
     HMODULE hModNtdll = GetModuleHandleA("ntdll.dll");
     theLog.RtlCaptureStackBackTrace = reinterpret_cast<PFNRtlCaptureStackBackTrace>(
-            GetProcAddress(hModNtdll, "RtlCaptureStackBackTrace"));
+        GetProcAddress(hModNtdll, "RtlCaptureStackBackTrace"));
 #endif // _DEBUG
 #endif // !HOST_UNIX
 
-#if !defined (STRESS_LOG_READONLY) && defined(HOST_WINDOWS)
-    StressLogChunk::s_LogChunkHeap = HeapCreate (0, STRESSLOG_CHUNK_SIZE * 128, 0);
+#if !defined (STRESS_LOG_READONLY) && !defined(MEMORY_MAPPED_STRESSLOG) && defined(HOST_WINDOWS)
+    StressLogChunk::s_LogChunkHeap = HeapCreate(0, STRESSLOG_CHUNK_SIZE * 128, 0);
     if (StressLogChunk::s_LogChunkHeap == NULL)
     {
-        StressLogChunk::s_LogChunkHeap = GetProcessHeap ();
+        StressLogChunk::s_LogChunkHeap = GetProcessHeap();
     }
-    _ASSERTE (StressLogChunk::s_LogChunkHeap);
+    _ASSERTE(StressLogChunk::s_LogChunkHeap);
 #endif //!STRESS_LOG_READONLY
+
+#ifdef MEMORY_MAPPED_STRESSLOG
+    HandleHolder hFile = WszCreateFile(L"StressLog.Log",
+        GENERIC_READ | GENERIC_WRITE,
+        FILE_SHARE_READ,
+        NULL,                 // default security descriptor
+        CREATE_ALWAYS,
+        FILE_ATTRIBUTE_NORMAL,
+        NULL);
+
+    if (hFile == INVALID_HANDLE_VALUE)
+    {
+        return;
+    }
+
+    size_t fileSize = 0x200000000i64;
+    HandleHolder hMap = WszCreateFileMapping(hFile, NULL, PAGE_READWRITE, (DWORD)(fileSize >> 32), (DWORD)fileSize, NULL);
+    if (hMap == NULL)
+    {
+        return;
+    }
+
+    theLog.hMapView = MapViewOfFileEx(hMap, FILE_MAP_ALL_ACCESS, 0, 0, fileSize, (void*)0x400000000000);
+    if (theLog.hMapView == NULL)
+    {
+        return;
+    }
+    theLog.memoryBase = (uint8_t*)(void*)theLog.hMapView;
+    theLog.memoryCur = (uint8_t*)(void*)theLog.hMapView;
+    theLog.memoryLimit = (uint8_t*)(void*)theLog.hMapView + fileSize;
+
+    StressLogHeader* hdr = (StressLogHeader*)AllocMemoryMapped(sizeof(StressLogHeader));
+    hdr->memoryMapBaseAddress = (uint8_t*)(void*)theLog.hMapView;
+    hdr->corClrBaseAddress = (uint8_t*)moduleBase;
+    hdr->logs = nullptr;
+    theLog.stressLogHeader = hdr;
+
+    // copy the regions of coreclr
+    uint8_t* addr = (uint8_t*)moduleBase;
+    while (true)
+    {
+        MEMORY_BASIC_INFORMATION mbi;
+        size_t size = VirtualQuery(addr, &mbi, sizeof(mbi));
+        if (size == 0)
+            break;
+            // copy the region containing string literals to the memory mapped file
+        if (mbi.AllocationBase != moduleBase)
+            break;
+        ptrdiff_t offs = (uint8_t*)mbi.BaseAddress - (uint8_t*)mbi.AllocationBase;
+        memcpy(&hdr->coreclrimage[offs], mbi.BaseAddress, mbi.RegionSize);
+        addr += mbi.RegionSize;
+    }
+#endif
 }
 
 /*********************************************************************************/
@@ -259,7 +312,7 @@ ThreadStressLog* StressLog::CreateThreadStressLog() {
         return NULL;
     }
 
-#ifdef HOST_WINDOWS
+#if defined(HOST_WINDOWS) && !defined(MEMORY_MAPPED_STRESSLOG)
     if (!StressLogChunk::s_LogChunkHeap)
     {
         return NULL;
@@ -417,6 +470,9 @@ ThreadStressLog* StressLog::CreateThreadStressLogHelper() {
         // Put it into the stress log
         msgs->next = theLog.logs;
         theLog.logs = msgs;
+#ifdef MEMORY_MAPPED_STRESSLOG
+        theLog.stressLogHeader->logs = msgs;
+#endif // MEMORY_MAPPED_STRESSLOG
     }
 
 LEAVE:
@@ -680,6 +736,24 @@ void  StressLog::LogCallStack(const char *const callTag){
         }
 }
 #endif //_DEBUG
+
+void* StressLog::AllocMemoryMapped(size_t n)
+{
+    StressLogLockHolder lockh(StressLog::theLog.lock, FALSE);
+
+    uint8_t* result = StressLog::theLog.memoryCur;
+    if ((ptrdiff_t)n > 0 && StressLog::theLog.memoryLimit - result >= (ptrdiff_t)n)
+    {
+        StressLog::theLog.memoryCur += n;
+        return result;
+    }
+    return nullptr;
+}
+
+void* __cdecl ThreadStressLog::operator new(size_t n, const NoThrow&) NOEXCEPT
+{
+    return StressLog::AllocMemoryMapped(n);
+}
 
 #endif // STRESS_LOG
 
