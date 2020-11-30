@@ -1,9 +1,5 @@
 <Dependencies>
   <ProductDependencies>
-    <Dependency Name="NETStandard.Library" Version="2.2.0-prerelease.19564.1">
-      <Uri>https://github.com/dotnet/standard</Uri>
-      <Sha>cfe95a23647c7de1fe1a349343115bd7720d6949</Sha>
-    </Dependency>
     <Dependency Name="Microsoft.NETCore.Runtime.ICU.Transport" Version="6.0.0-alpha.1.20573.1">
       <Uri>https://github.com/dotnet/icu</Uri>
       <Sha>f9c78959ceca029309ae76932fb441cacb9650d1</Sha>
