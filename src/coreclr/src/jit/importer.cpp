@@ -21193,8 +21193,8 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
     // https://github.com/dotnet/runtime/issues/38477
     // but hopefully the derived method conforms to
     // the base in most other ways.
-    *method        = derivedMethod;
-    *methodFlags   = derivedMethodAttribs;
+    *method      = derivedMethod;
+    *methodFlags = derivedMethodAttribs;
 
     if (((SIZE_T)(*contextHandle) & CORINFO_CONTEXTFLAGS_MASK) == CORINFO_CONTEXTFLAGS_METHOD)
     {
@@ -21214,7 +21214,7 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
     }
 
     // Update context handle.
-    if ((exactContextHandle != nullptr) && (*exactContextHandle != nullptr))
+    if ((exactContextHandle != nullptr))
     {
         if (((SIZE_T)(*exactContextHandle) & CORINFO_CONTEXTFLAGS_MASK) == CORINFO_CONTEXTFLAGS_METHOD)
         {
