@@ -3385,7 +3385,7 @@ regNumber LinearScan::allocateReg(Interval* currentInterval, RefPosition* refPos
         // The spill weight for 'refPosition' (the one we're allocating now).
         float thisSpillWeight = getWeight(refPosition);
         // The  spill weight for the best candidate we've found so far.
-        float bestSpillWeight = BB_MAX_WEIGHT;
+        float bestSpillWeight = FloatingPointUtils::infinite_float();
         // True if we found registers with lower spill weight than this refPosition.
         bool foundLowerSpillWeight = false;
 
