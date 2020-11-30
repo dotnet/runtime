@@ -18,6 +18,7 @@ parameters:
   dependsOnTestBuildConfiguration: Debug
   dependsOnTestArchitecture: x64
   condition: true
+  shouldContinueOnError: false
   variables: {}
   # coreclrTestGroup: if empty, then a normal, default test run is created. If set, it indicates a set of
   # stress modes that each test will be run with. This is the same usage as 'testGroup' in
@@ -120,6 +121,7 @@ jobs:
             helixQueues: ${{ parameters.helixQueues }}
             testScope: ${{ parameters.testScope }}
             interpreter: ${{ parameters.interpreter }}
+            shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
             creator: dotnet-bot
             testRunNamePrefixSuffix: $(_testRunNamePrefixSuffix)
             extraHelixArguments: $(_extraHelixArguments)
