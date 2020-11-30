@@ -3634,7 +3634,7 @@ public:
     }
 
     // Initialize the Return Type Descriptor for a method that returns a struct type
-    void InitializeStructReturnType(Compiler* comp, CORINFO_CLASS_HANDLE retClsHnd, CorInfoUnmanagedCallConv callConv);
+    void InitializeStructReturnType(Compiler* comp, CORINFO_CLASS_HANDLE retClsHnd, CorInfoCallConvExtension callConv);
 
     // Initialize the Return Type Descriptor for a method that returns a TYP_LONG
     // Only needed for X86 and arm32.
@@ -3817,11 +3817,6 @@ public:
 
 class fgArgInfo;
 
-// This represents the managed calling convention. We need some way to represent the
-// managed calling convention here since we use this type within the JIT for choosing
-// how to home return values and arguments.
-#define CORINFO_UNMANAGED_CALLCONV_MANAGED CORINFO_UNMANAGED_CALLCONV_UNKNOWN
-
 struct GenTreeCall final : public GenTree
 {
     class Use
@@ -3959,7 +3954,7 @@ struct GenTreeCall final : public GenTree
     union {
         TailCallSiteInfo* tailCallInfo;
         // Only used for unmanaged calls, which cannot be tail-called
-        CorInfoUnmanagedCallConv unmgdCallConv;
+        CorInfoCallConvExtension unmgdCallConv;
     };
 
 #if FEATURE_MULTIREG_RET
@@ -4003,7 +3998,7 @@ struct GenTreeCall final : public GenTree
 #endif
     }
 
-    void InitializeStructReturnType(Compiler* comp, CORINFO_CLASS_HANDLE retClsHnd, CorInfoUnmanagedCallConv callConv)
+    void InitializeStructReturnType(Compiler* comp, CORINFO_CLASS_HANDLE retClsHnd, CorInfoCallConvExtension callConv)
     {
 #if FEATURE_MULTIREG_RET
         gtReturnTypeDesc.InitializeStructReturnType(comp, retClsHnd, callConv);
@@ -4575,9 +4570,9 @@ struct GenTreeCall final : public GenTree
 
     bool AreArgsComplete() const;
 
-    CorInfoUnmanagedCallConv GetUnmanagedCallConv() const
+    CorInfoCallConvExtension GetUnmanagedCallConv() const
     {
-        return IsUnmanaged() ? unmgdCallConv : CORINFO_UNMANAGED_CALLCONV_MANAGED;
+        return IsUnmanaged() ? unmgdCallConv : CorInfoCallConvExtension::Managed;
     }
 
     static bool Equals(GenTreeCall* c1, GenTreeCall* c2);

@@ -141,7 +141,7 @@ void CodeGen::genEmitGSCookieCheck(bool pushReg)
             else // we must have a struct return type
             {
                 retTypeDesc.InitializeStructReturnType(compiler, compiler->info.compMethodInfo->args.retTypeClass,
-                                                       compiler->compMethodInfoGetUnmanagedCallConv(
+                                                       compiler->compMethodInfoGetEntrypointCallConv(
                                                            compiler->info.compMethodInfo));
             }
 

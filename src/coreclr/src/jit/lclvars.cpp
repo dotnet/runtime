@@ -146,7 +146,7 @@ void Compiler::lvaInitTypeRef()
 
         Compiler::structPassingKind howToReturnStruct;
         var_types                   returnType =
-            getReturnTypeForStruct(retClsHnd, compMethodInfoGetUnmanagedCallConv(info.compMethodInfo),
+            getReturnTypeForStruct(retClsHnd, compMethodInfoGetEntrypointCallConv(info.compMethodInfo),
                                    &howToReturnStruct);
 
         // We can safely widen the return type for enclosed structs.
@@ -353,7 +353,7 @@ void Compiler::lvaInitArgs(InitVarDscInfo* varDscInfo)
     unsigned numUserArgsToSkip = 0;
     unsigned numUserArgs       = info.compMethodInfo->args.numArgs;
 #if defined(TARGET_WINDOWS) && !defined(TARGET_ARM)
-    if (callConvIsInstanceMethodCallConv(compMethodInfoGetUnmanagedCallConv(info.compMethodInfo)))
+    if (callConvIsInstanceMethodCallConv(compMethodInfoGetEntrypointCallConv(info.compMethodInfo)))
     {
         // If we are a native instance method, handle the first user arg
         // (the unmanaged this parameter) and then handle the hidden
@@ -5344,7 +5344,7 @@ void Compiler::lvaAssignVirtualFrameOffsetsToArgs()
     // the this parameter comes before the hidden return buffer parameter.
     // So, we want to process the native "this" parameter before we process
     // the native return buffer parameter.
-    if (callConvIsInstanceMethodCallConv(compMethodInfoGetUnmanagedCallConv(info.compMethodInfo)))
+    if (callConvIsInstanceMethodCallConv(compMethodInfoGetEntrypointCallConv(info.compMethodInfo)))
     {
         noway_assert(lvaTable[lclNum].lvIsRegArg);
 #ifndef TARGET_X86

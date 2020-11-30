@@ -10065,7 +10065,7 @@ void CodeGen::genVzeroupperIfNeeded(bool check256bitOnly /* = true*/)
 // Return Value:
 //     true if type is returned in multiple registers, false otherwise.
 //
-bool Compiler::IsMultiRegReturnedType(CORINFO_CLASS_HANDLE hClass, CorInfoUnmanagedCallConv callConv)
+bool Compiler::IsMultiRegReturnedType(CORINFO_CLASS_HANDLE hClass, CorInfoCallConvExtension callConv)
 {
     if (hClass == NO_CLASS_HANDLE)
     {
@@ -11529,8 +11529,8 @@ void CodeGen::genReturn(GenTree* treeNode)
             }
             else // we must have a struct return type
             {
-                CorInfoUnmanagedCallConv callConv =
-                    compiler->compMethodInfoGetUnmanagedCallConv(compiler->info.compMethodInfo);
+                CorInfoCallConvExtension callConv =
+                    compiler->compMethodInfoGetEntrypointCallConv(compiler->info.compMethodInfo);
 
                 retTypeDesc.InitializeStructReturnType(compiler, compiler->info.compMethodInfo->args.retTypeClass,
                                                        callConv);
@@ -11659,7 +11659,7 @@ void CodeGen::genStructReturn(GenTree* treeNode)
     {
         varDsc = compiler->lvaGetDesc(actualOp1->AsLclVar()->GetLclNum());
         retTypeDesc.InitializeStructReturnType(compiler, varDsc->GetStructHnd(),
-                                               compiler->compMethodInfoGetUnmanagedCallConv(
+                                               compiler->compMethodInfoGetEntrypointCallConv(
                                                    compiler->info.compMethodInfo));
         assert(varDsc->lvIsMultiRegRet);
     }

@@ -6765,7 +6765,7 @@ bool Compiler::fgCanFastTailCall(GenTreeCall* callee, const char** failReason)
     {
         var_types retType = (compDoOldStructRetyping() ? info.compRetNativeType : info.compRetType);
         assert(impTailCallRetTypeCompatible(retType, info.compMethodInfo->args.retTypeClass,
-                                            compMethodInfoGetUnmanagedCallConv(info.compMethodInfo),
+                                            compMethodInfoGetEntrypointCallConv(info.compMethodInfo),
                                             (var_types)callee->gtReturnType, callee->gtRetClsHnd,
                                             callee->GetUnmanagedCallConv()));
     }

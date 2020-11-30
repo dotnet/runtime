@@ -2245,7 +2245,7 @@ public:
 
 #if FEATURE_MULTIREG_RET
     GenTree* impAssignMultiRegTypeToVar(GenTree*             op,
-                                        CORINFO_CLASS_HANDLE hClass DEBUGARG(CorInfoUnmanagedCallConv callConv));
+                                        CORINFO_CLASS_HANDLE hClass DEBUGARG(CorInfoCallConvExtension callConv));
 #endif // FEATURE_MULTIREG_RET
 
     GenTree* impAssignSmallStructTypeToVar(GenTree* op, CORINFO_CLASS_HANDLE hClass);
@@ -2276,7 +2276,7 @@ public:
     var_types GetHfaType(CORINFO_CLASS_HANDLE hClass);
     unsigned GetHfaCount(CORINFO_CLASS_HANDLE hClass);
 
-    bool IsMultiRegReturnedType(CORINFO_CLASS_HANDLE hClass, CorInfoUnmanagedCallConv callConv);
+    bool IsMultiRegReturnedType(CORINFO_CLASS_HANDLE hClass, CorInfoCallConvExtension callConv);
 
     //-------------------------------------------------------------------------
     // The following is used for validating format of EH table
@@ -3844,7 +3844,7 @@ protected:
 
     GenTree* impFixupStructReturnType(GenTree*                 op,
                                       CORINFO_CLASS_HANDLE     retClsHnd,
-                                      CorInfoUnmanagedCallConv unmgdCallConv);
+                                      CorInfoCallConvExtension unmgdCallConv);
 
 #ifdef DEBUG
     var_types impImportJitTestLabelMark(int numArgs);
@@ -4081,7 +4081,7 @@ public:
                                        unsigned*                typeSize,
                                        bool                     forReturn,
                                        bool                     isVarArg,
-                                       CorInfoUnmanagedCallConv callConv);
+                                       CorInfoCallConvExtension callConv);
 
     bool IsIntrinsicImplementedByUserCall(NamedIntrinsic intrinsicName);
     bool IsTargetIntrinsic(NamedIntrinsic intrinsicName);
@@ -4388,10 +4388,10 @@ private:
 
     bool impTailCallRetTypeCompatible(var_types                callerRetType,
                                       CORINFO_CLASS_HANDLE     callerRetTypeClass,
-                                      CorInfoUnmanagedCallConv callerCallConv,
+                                      CorInfoCallConvExtension callerCallConv,
                                       var_types                calleeRetType,
                                       CORINFO_CLASS_HANDLE     calleeRetTypeClass,
-                                      CorInfoUnmanagedCallConv calleeCallConv);
+                                      CorInfoCallConvExtension calleeCallConv);
 
     bool impIsTailCallILPattern(
         bool tailPrefixed, OPCODE curOpcode, const BYTE* codeAddrOfNextOpcode, const BYTE* codeEnd, bool isRecursive);
@@ -5059,7 +5059,7 @@ public:
     // Get the type that is used to return values of the given struct type.
     // If the size is unknown, pass 0 and it will be determined from 'clsHnd'.
     var_types getReturnTypeForStruct(CORINFO_CLASS_HANDLE     clsHnd,
-                                     CorInfoUnmanagedCallConv callConv,
+                                     CorInfoCallConvExtension callConv,
                                      structPassingKind*       wbPassStruct = nullptr,
                                      unsigned                 structSize   = 0);
 
@@ -9335,7 +9335,7 @@ public:
         //    to be returned in x0.
         CLANG_FORMAT_COMMENT_ANCHOR;
 #if defined(TARGET_WINDOWS) && defined(TARGET_ARM64)
-        auto callConv = compMethodInfoGetUnmanagedCallConv(info.compMethodInfo);
+        auto callConv = compMethodInfoGetEntrypointCallConv(info.compMethodInfo);
         if (callConvIsInstanceMethodCallConv(callConv))
         {
             return (info.compRetBuffArg != BAD_VAR_NUM);
@@ -9540,10 +9540,8 @@ public:
     // size of the type these describe.
     unsigned compGetTypeSize(CorInfoType cit, CORINFO_CLASS_HANDLE clsHnd);
 
-    // Gets the unmanaged calling convention the method's entry point should have.
-    // Returns CorInfoUnmanagedCallConv::CORINFO_UNMANAGED_CALLCONV_MANAGED for the managed
-    // calling convention.
-    CorInfoUnmanagedCallConv compMethodInfoGetUnmanagedCallConv(CORINFO_METHOD_INFO* mthInfo);
+    // Gets the calling convention the method's entry point should have.
+    CorInfoCallConvExtension compMethodInfoGetEntrypointCallConv(CORINFO_METHOD_INFO* mthInfo);
 
 #ifdef DEBUG
     // Components used by the compiler may write unit test suites, and

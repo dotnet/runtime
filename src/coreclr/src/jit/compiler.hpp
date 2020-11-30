@@ -692,16 +692,14 @@ inline bool isRegParamType(var_types type)
 //    isVarArg  - whether or not this is a vararg fixed arg or variable argument
 //              - if so on arm64 windows getArgTypeForStruct will ignore HFA
 //              - types
-//    callConv  - the unmanaged calling convention of the call,
-//              - or CORINFO_UNMANAGED_CALLCONV_MANAGED for the
-//              - managed calling convention.
+//    callConv  - the calling convention of the call
 //
 inline bool Compiler::VarTypeIsMultiByteAndCanEnreg(var_types                type,
                                                     CORINFO_CLASS_HANDLE     typeClass,
                                                     unsigned*                typeSize,
                                                     bool                     forReturn,
                                                     bool                     isVarArg,
-                                                    CorInfoUnmanagedCallConv callConv)
+                                                    CorInfoCallConvExtension callConv)
 {
     bool     result = false;
     unsigned size   = 0;

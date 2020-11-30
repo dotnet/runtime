@@ -51,7 +51,7 @@ ReturnKind GCInfo::getReturnKind()
         {
             CORINFO_CLASS_HANDLE structType = compiler->info.compMethodInfo->args.retTypeClass;
             var_types            retType =
-                compiler->getReturnTypeForStruct(structType, compiler->compMethodInfoGetUnmanagedCallConv(
+                compiler->getReturnTypeForStruct(structType, compiler->compMethodInfoGetEntrypointCallConv(
                                                                  compiler->info.compMethodInfo));
 
             switch (retType)

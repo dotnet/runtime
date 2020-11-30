@@ -22826,7 +22826,7 @@ Compiler::fgWalkResult Compiler::fgUpdateInlineReturnExpressionPlaceHolder(GenTr
     {
         structPassingKind howToReturnStruct;
         var_types         returnType =
-            comp->getReturnTypeForStruct(retClsHnd, CORINFO_UNMANAGED_CALLCONV_MANAGED, &howToReturnStruct);
+            comp->getReturnTypeForStruct(retClsHnd, CorInfoCallConvExtension::Managed, &howToReturnStruct);
         GenTree* parent = data->parent;
 
         switch (howToReturnStruct)
@@ -22941,7 +22941,7 @@ Compiler::fgWalkResult Compiler::fgUpdateInlineReturnExpressionPlaceHolder(GenTr
 
             noway_assert(!varTypeIsStruct(effectiveValue) || (effectiveValue->OperGet() != GT_RET_EXPR) ||
                          !comp->IsMultiRegReturnedType(effectiveValue->AsRetExpr()->gtRetClsHnd,
-                                                       CORINFO_UNMANAGED_CALLCONV_MANAGED));
+                                                       CorInfoCallConvExtension::Managed));
         }
     }
 

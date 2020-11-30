@@ -19245,7 +19245,7 @@ GenTree* Compiler::gtNewMustThrowException(unsigned helper, var_types type, CORI
 //
 void ReturnTypeDesc::InitializeStructReturnType(Compiler*                comp,
                                                 CORINFO_CLASS_HANDLE     retClsHnd,
-                                                CorInfoUnmanagedCallConv callConv)
+                                                CorInfoCallConvExtension callConv)
 {
     assert(!m_inited);
 

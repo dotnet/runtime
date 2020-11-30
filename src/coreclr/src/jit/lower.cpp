@@ -3012,7 +3012,7 @@ void Lowering::LowerRet(GenTreeUnOp* ret)
             LclVarDsc*     varDsc = nullptr;
             varDsc                = comp->lvaGetDesc(retVal->AsLclVar()->GetLclNum());
             retTypeDesc.InitializeStructReturnType(comp, varDsc->GetStructHnd(),
-                                                   comp->compMethodInfoGetUnmanagedCallConv(comp->info.compMethodInfo));
+                                                   comp->compMethodInfoGetEntrypointCallConv(comp->info.compMethodInfo));
             if (retTypeDesc.GetReturnRegCount() > 1)
             {
                 CheckMultiRegLclVar(retVal->AsLclVar(), &retTypeDesc);

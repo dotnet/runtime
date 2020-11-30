@@ -966,7 +966,7 @@ var_types Compiler::getArgTypeForStruct(CORINFO_CLASS_HANDLE clsHnd,
 //         that multiple registers are used to return this struct.
 //
 var_types Compiler::getReturnTypeForStruct(CORINFO_CLASS_HANDLE     clsHnd,
-                                           CorInfoUnmanagedCallConv callConv,
+                                           CorInfoCallConvExtension callConv,
                                            structPassingKind*       wbReturnStruct /* = nullptr */,
                                            unsigned                 structSize /* = 0 */)
 {
@@ -1014,14 +1014,14 @@ var_types Compiler::getReturnTypeForStruct(CORINFO_CLASS_HANDLE     clsHnd,
         }
     }
 #elif UNIX_X86_ABI
-    if (callConv != CORINFO_UNMANAGED_CALLCONV_MANAGED)
+    if (callConv != CorInfoCallConvExtension::Managed)
     {
         canReturnInRegister = false;
         howToReturnStruct   = SPK_ByReference;
         useType             = TYP_UNKNOWN;
     }
 #elif defined(TARGET_WINDOWS) && !defined(TARGET_ARM)
-    if (callConv == CORINFO_UNMANAGED_CALLCONV_THISCALL)
+    if (callConvIsInstanceMethodCallConv(callConv))
     {
         canReturnInRegister = false;
         howToReturnStruct   = SPK_ByReference;
@@ -1140,7 +1140,7 @@ var_types Compiler::getReturnTypeForStruct(CORINFO_CLASS_HANDLE     clsHnd,
                 // Only 8-byte structs are return in multiple registers.
                 // We also only support multireg struct returns on x86 to match the native calling convention.
                 // So return 8-byte structs only when the calling convention is a native calling convention.
-                if (structSize == MAX_RET_MULTIREG_BYTES && callConv != CORINFO_UNMANAGED_CALLCONV_MANAGED)
+                if (structSize == MAX_RET_MULTIREG_BYTES && callConv != CorInfoCallConvExtension::Managed)
                 {
                     // setup wbPassType and useType indicate that this is return by value in multiple registers
                     howToReturnStruct = SPK_ByValue;
@@ -2057,15 +2057,20 @@ unsigned Compiler::compGetTypeSize(CorInfoType cit, CORINFO_CLASS_HANDLE clsHnd)
     return sigSize;
 }
 
-CorInfoUnmanagedCallConv Compiler::compMethodInfoGetUnmanagedCallConv(CORINFO_METHOD_INFO* mthInfo)
+CorInfoCallConvExtension Compiler::compMethodInfoGetEntrypointCallConv(CORINFO_METHOD_INFO* mthInfo)
 {
     CorInfoCallConv callConv = mthInfo->args.getCallConv();
     if (callConv == CORINFO_CALLCONV_DEFAULT || callConv == CORINFO_CALLCONV_VARARG)
     {
         // Both the default and the varargs calling conventions represent a managed callconv.
-        return CORINFO_UNMANAGED_CALLCONV_MANAGED;
+        return CorInfoCallConvExtension::Managed;
     }
-    return (CorInfoUnmanagedCallConv)callConv;
+    
+    static_assert_no_msg((unsigned)CorInfoCallConvExtension::C == (unsigned)CORINFO_CALLCONV_C);
+    static_assert_no_msg((unsigned)CorInfoCallConvExtension::Stdcall == (unsigned)CORINFO_CALLCONV_STDCALL);
+    static_assert_no_msg((unsigned)CorInfoCallConvExtension::Thiscall == (unsigned)CORINFO_CALLCONV_THISCALL);
+    
+    return (CorInfoCallConvExtension)callConv;
 }
 
 #ifdef DEBUG
