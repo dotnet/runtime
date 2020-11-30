@@ -105,7 +105,7 @@ jobs:
         displayName: Install native dependencies
 
     - download: current
-      artifact: Mono_Offsets__Linux_x64_debug
+      artifact: Mono_Offsets__Android_x64_Debug
       displayName: Download AOT offset files
 
     - ${{ if in(parameters.osGroup, 'OSX', 'iOS','tvOS') }}:
