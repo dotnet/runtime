@@ -239,12 +239,14 @@ namespace Microsoft.Extensions.Caching.Memory
 
         private bool CheckForExpiredTime(in DateTimeOffset now)
         {
-            if (_absoluteExpiration == null && _absoluteExpiration == null)
+            if (!_absoluteExpiration.HasValue && !_absoluteExpiration.HasValue)
+            {
                 return false;
+            }
 
-            return SlowPath(now);
+            return FullCheck(now);
 
-            bool SlowPath(in DateTimeOffset offset)
+            bool FullCheck(in DateTimeOffset offset)
             {
                 if (_absoluteExpiration.HasValue && _absoluteExpiration.Value <= offset)
                 {
@@ -266,11 +268,13 @@ namespace Microsoft.Extensions.Caching.Memory
         private bool CheckForExpiredTokens()
         {
             if (_expirationTokens == null)
+            {
                 return false;
+            }
 
-            return SlowPath();
+            return CheckTokens();
 
-            bool SlowPath()
+            bool CheckTokens()
             {
                 for (int i = 0; i < _expirationTokens.Count; i++)
                 {
@@ -370,7 +374,7 @@ namespace Microsoft.Extensions.Caching.Memory
             }
         }
 
-        internal bool CanPropagateOptions() => _expirationTokens != null || _absoluteExpiration != null;
+        internal bool CanPropagateOptions() => _expirationTokens != null || _absoluteExpiration.HasValue;
 
         internal void PropagateOptions(CacheEntry parent)
         {
