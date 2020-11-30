@@ -97,7 +97,7 @@ goto :SetupDirs
 echo Commencing build of native components
 echo.
 
-if /i "%__BuildArch%" == "wasm" set __sourceDir=%~dp0..\Unix
+if /i "%__BuildArch%" == "wasm" set __sourceDir=%~dp0\Unix
 
 if [%__outConfig%] == [] set __outConfig=%__TargetOS%-%__BuildArch%-%CMAKE_BUILD_TYPE%
 

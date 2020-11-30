@@ -938,6 +938,7 @@ else ()
         HAVE_GSS_KRB5_CRED_NO_CI_FLAGS_X)
 endif ()
 
+check_symbol_exists(getauxval sys/auxv.h HAVE_GETAUXVAL)
 check_include_files(crt_externs.h HAVE_CRT_EXTERNS_H)
 
 if (HAVE_CRT_EXTERNS_H)

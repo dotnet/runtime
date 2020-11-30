@@ -3895,7 +3895,7 @@ namespace System
             if (args.Length == 0 && (bindingAttr & BindingFlags.Public) != 0 && (bindingAttr & BindingFlags.Instance) != 0
                 && (IsGenericCOMObjectImpl() || IsValueType))
             {
-                instance = CreateInstanceDefaultCtor(publicOnly, skipCheckThis: false, fillCache: true, wrapExceptions);
+                instance = CreateInstanceDefaultCtor(publicOnly, wrapExceptions);
             }
             else
             {
@@ -3967,7 +3967,7 @@ namespace System
         /// </summary>
         [DebuggerStepThrough]
         [DebuggerHidden]
-        internal object? CreateInstanceDefaultCtor(bool publicOnly, bool skipCheckThis, bool fillCache, bool wrapExceptions)
+        internal object? CreateInstanceDefaultCtor(bool publicOnly, bool wrapExceptions)
         {
             // Get or create the cached factory. Creating the cache will fail if one
             // of our invariant checks fails; e.g., no appropriate ctor found.

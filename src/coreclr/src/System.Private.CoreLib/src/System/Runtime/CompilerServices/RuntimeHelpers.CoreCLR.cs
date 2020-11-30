@@ -3,7 +3,10 @@
 
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Runtime.Serialization;
 using Internal.Runtime.CompilerServices;
 
 namespace System.Runtime.CompilerServices
@@ -39,12 +42,16 @@ namespace System.Runtime.CompilerServices
         // This call will generate an exception if the specified class constructor threw an
         // exception when it ran.
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern void _RunClassConstructor(RuntimeType type);
+        [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
+        private static extern void RunClassConstructor(QCallTypeHandle type);
 
         public static void RunClassConstructor(RuntimeTypeHandle type)
         {
-            _RunClassConstructor(type.GetRuntimeType());
+            RuntimeType rt = type.GetRuntimeType();
+            if (rt is null)
+                throw new ArgumentException(SR.InvalidOperation_HandleIsNotInitialized, nameof(type));
+
+            RunClassConstructor(new QCallTypeHandle(ref rt));
         }
 
         // RunModuleConstructor causes the module constructor for the given type to be triggered
@@ -55,42 +62,41 @@ namespace System.Runtime.CompilerServices
         // This call will generate an exception if the specified module constructor threw an
         // exception when it ran.
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern void _RunModuleConstructor(System.Reflection.RuntimeModule module);
+        [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
+        private static extern void RunModuleConstructor(QCallModule module);
 
         public static void RunModuleConstructor(ModuleHandle module)
         {
-            _RunModuleConstructor(module.GetRuntimeModule());
-        }
+            RuntimeModule rm = module.GetRuntimeModule();
+            if (rm is null)
+                throw new ArgumentException(SR.InvalidOperation_HandleIsNotInitialized, nameof(module));
 
+            RunModuleConstructor(new QCallModule(ref rm));
+        }
 
         [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
-        internal static extern void _CompileMethod(RuntimeMethodHandleInternal method);
+        internal static extern void CompileMethod(RuntimeMethodHandleInternal method);
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern unsafe void _PrepareMethod(IRuntimeMethodInfo method, IntPtr* pInstantiation, int cInstantiation);
+        [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
+        private static extern unsafe void PrepareMethod(RuntimeMethodHandleInternal method, IntPtr* pInstantiation, int cInstantiation);
 
-        public static void PrepareMethod(RuntimeMethodHandle method)
+        public static void PrepareMethod(RuntimeMethodHandle method) => PrepareMethod(method, null);
+
+        public static unsafe void PrepareMethod(RuntimeMethodHandle method, RuntimeTypeHandle[]? instantiation)
         {
-            unsafe
-            {
-                _PrepareMethod(method.GetMethodInfo(), null, 0);
-            }
-        }
+            IRuntimeMethodInfo methodInfo = method.GetMethodInfo();
+            if (methodInfo == null)
+                throw new ArgumentException(SR.InvalidOperation_HandleIsNotInitialized, nameof(method));
 
-        public static void PrepareMethod(RuntimeMethodHandle method, RuntimeTypeHandle[]? instantiation)
-        {
             // defensive copy of user-provided array, per CopyRuntimeTypeHandles contract
             instantiation = (RuntimeTypeHandle[]?)instantiation?.Clone();
 
-            unsafe
+            IntPtr[]? instantiationHandles = RuntimeTypeHandle.CopyRuntimeTypeHandles(instantiation, out int length);
+            fixed (IntPtr* pInstantiation = instantiationHandles)
             {
-                IntPtr[]? instantiationHandles = RuntimeTypeHandle.CopyRuntimeTypeHandles(instantiation, out int length);
-                fixed (IntPtr* pInstantiation = instantiationHandles)
-                {
-                    _PrepareMethod(method.GetMethodInfo(), pInstantiation, length);
-                    GC.KeepAlive(instantiation);
-                }
+                PrepareMethod(methodInfo.Value, pInstantiation, length);
+                GC.KeepAlive(instantiation);
+                GC.KeepAlive(methodInfo);
             }
         }
 
@@ -138,15 +144,32 @@ namespace System.Runtime.CompilerServices
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern bool TryEnsureSufficientExecutionStack();
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern object GetUninitializedObjectInternal(
+        public static object GetUninitializedObject(
             // This API doesn't call any constructors, but the type needs to be seen as constructed.
             // A type is seen as constructed if a constructor is kept.
             // This obviously won't cover a type with no constructor. Reference types with no
             // constructor are an academic problem. Valuetypes with no constructors are a problem,
             // but IL Linker currently treats them as always implicitly boxed.
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors)]
-            Type type);
+            Type type)
+        {
+            if (type is not RuntimeType rt)
+            {
+                if (type is null)
+                {
+                    throw new ArgumentNullException(nameof(type), SR.ArgumentNull_Type);
+                }
+
+                throw new SerializationException(SR.Format(SR.Serialization_InvalidType, type));
+            }
+
+            object? obj = null;
+            GetUninitializedObject(new QCallTypeHandle(ref rt), ObjectHandleOnStack.Create(ref obj));
+            return obj!;
+        }
+
+        [DllImport(RuntimeHelpers.QCall)]
+        private static extern void GetUninitializedObject(QCallTypeHandle type, ObjectHandleOnStack retObject);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern object AllocateUninitializedClone(object obj);
@@ -280,11 +303,11 @@ namespace System.Runtime.CompilerServices
             if (size < 0)
                 throw new ArgumentOutOfRangeException(nameof(size));
 
-            return AllocateTypeAssociatedMemoryInternal(new QCallTypeHandle(ref rt), (uint)size);
+            return AllocateTypeAssociatedMemory(new QCallTypeHandle(ref rt), (uint)size);
         }
 
         [DllImport(RuntimeHelpers.QCall)]
-        private static extern IntPtr AllocateTypeAssociatedMemoryInternal(QCallTypeHandle type, uint size);
+        private static extern IntPtr AllocateTypeAssociatedMemory(QCallTypeHandle type, uint size);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern IntPtr AllocTailCallArgBuffer(int size, IntPtr gcDesc);

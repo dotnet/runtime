@@ -170,6 +170,7 @@ function_name() to call the system's implementation
 #define memset DUMMY_memset
 #define memmove DUMMY_memmove
 #define memchr DUMMY_memchr
+#define atoll DUMMY_atoll
 #define strlen DUMMY_strlen
 #define stricmp DUMMY_stricmp
 #define strstr DUMMY_strstr
@@ -357,6 +358,7 @@ function_name() to call the system's implementation
 #undef memset
 #undef memmove
 #undef memchr
+#undef atoll
 #undef strlen
 #undef strnlen
 #undef wcsnlen
