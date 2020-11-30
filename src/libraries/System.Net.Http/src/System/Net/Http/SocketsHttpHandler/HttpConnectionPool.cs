@@ -1282,49 +1282,62 @@ namespace System.Net.Http
             }
         }
 
-        private static async ValueTask<Stream> DefaultConnectAsync(SocketsHttpConnectionContext context, CancellationToken cancellationToken)
+        private async ValueTask<Stream> ConnectToTcpHostAsync(string host, int port, HttpRequestMessage initialRequest, bool async, CancellationToken cancellationToken)
         {
-            Socket socket = new Socket(SocketType.Stream, ProtocolType.Tcp);
-            socket.NoDelay = true;
+            cancellationToken.ThrowIfCancellationRequested();
 
+            var endPoint = new DnsEndPoint(host, port);
+            Socket? socket = null;
             try
             {
-                await socket.ConnectAsync(context.DnsEndPoint, cancellationToken).ConfigureAwait(false);
-                return new NetworkStream(socket, ownsSocket: true);
-            }
-            catch
-            {
-                socket.Dispose();
-                throw;
-            }
-        }
+                // If a ConnectCallback was supplied, use that to establish the connection.
+                if (Settings._connectCallback != null)
+                {
+                    ValueTask<Stream> streamTask = Settings._connectCallback(new SocketsHttpConnectionContext(endPoint, initialRequest), cancellationToken);
 
-        private static readonly Func<SocketsHttpConnectionContext, CancellationToken, ValueTask<Stream>> s_defaultConnectCallback = DefaultConnectAsync;
+                    Stream stream;
+                    if (async || streamTask.IsCompleted)
+                    {
+                        stream = await streamTask.ConfigureAwait(false);
+                    }
+                    else
+                    {
+                        // User-provided ConnectCallback is completing asynchronously but the user is making a synchronous request; if the user cares, they should
+                        // set it up so that synchronous requests are made on a handler with a synchronously-completing ConnectCallback supplied. If in the future,
+                        // we could add a Boolean to SocketsHttpConnectionContext (https://github.com/dotnet/runtime/issues/44876) to let the callback know whether
+                        // this request is sync or async.  For now, log it and block.
+                        Trace($"{nameof(SocketsHttpHandler.ConnectCallback)} completing asynchronously for a synchronous request.");
+                        stream = streamTask.AsTask().GetAwaiter().GetResult();
+                    }
 
-        private ValueTask<Stream> ConnectToTcpHostAsync(string host, int port, HttpRequestMessage initialRequest, bool async, CancellationToken cancellationToken)
-        {
-            if (async)
-            {
-                Func<SocketsHttpConnectionContext, CancellationToken, ValueTask<Stream>> connectCallback = Settings._connectCallback ?? s_defaultConnectCallback;
+                    return stream ?? throw new HttpRequestException(SR.net_http_null_from_connect_callback);
+                }
+                else
+                {
+                    // Otherwise, create and connect a socket using default settings.
+                    socket = new Socket(SocketType.Stream, ProtocolType.Tcp) { NoDelay = true };
 
-                var endPoint = new DnsEndPoint(host, port);
-                return ConnectHelper.ConnectAsync(connectCallback, endPoint, initialRequest, cancellationToken);
-            }
+                    if (async)
+                    {
+                        await socket.ConnectAsync(endPoint, cancellationToken).ConfigureAwait(false);
+                    }
+                    else
+                    {
+                        using (cancellationToken.UnsafeRegister(static s => ((Socket)s!).Dispose(), socket))
+                        {
+                            socket.Connect(endPoint);
+                        }
+                    }
 
-            // Synchronous path.
-
-            if (Settings._connectCallback is not null)
-            {
-                throw new NotSupportedException(SR.net_http_sync_operations_not_allowed_with_connect_callback);
-            }
-
-            try
-            {
-                return new ValueTask<Stream>(ConnectHelper.Connect(host, port, cancellationToken));
+                    return new NetworkStream(socket, ownsSocket: true);
+                }
             }
             catch (Exception ex)
             {
-                return ValueTask.FromException<Stream>(ex);
+                socket?.Dispose();
+                throw ex is OperationCanceledException oce && oce.CancellationToken == cancellationToken ?
+                    CancellationHelper.CreateOperationCanceledException(innerException: null, cancellationToken) :
+                    ConnectHelper.CreateWrappedException(ex, endPoint.Host, endPoint.Port, cancellationToken);
             }
         }
 
