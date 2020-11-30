@@ -861,7 +861,7 @@ inline unsigned int genCSEnum2bit(unsigned index)
 
 #ifdef DEBUG
 const char* genES2str(BitVecTraits* traits, EXPSET_TP set);
-const char* refCntWtd2str(unsigned refCntWtd);
+const char* refCntWtd2str(BasicBlock::weight_t refCntWtd);
 #endif
 
 /*
@@ -1306,6 +1306,7 @@ inline GenTree* Compiler::gtNewIndir(var_types typ, GenTree* addr)
 
 inline GenTree* Compiler::gtNewNullCheck(GenTree* addr, BasicBlock* basicBlock)
 {
+    assert(fgAddrCouldBeNull(addr));
     GenTree* nullCheck = gtNewOperNode(GT_NULLCHECK, TYP_BYTE, addr);
     nullCheck->gtFlags |= GTF_EXCEPT;
     basicBlock->bbFlags |= BBF_HAS_NULLCHECK;
@@ -1845,15 +1846,9 @@ inline void LclVarDsc::incRefCnts(BasicBlock::weight_t weight, Compiler* comp, R
                 weight *= 2;
             }
 
-            unsigned newWeight = lvRefCntWtd(state) + weight;
-            if (newWeight >= lvRefCntWtd(state))
-            { // lvRefCntWtd is an "unsigned".  Don't overflow it
-                setLvRefCntWtd(newWeight, state);
-            }
-            else
-            { // On overflow we assign UINT32_MAX
-                setLvRefCntWtd(UINT32_MAX, state);
-            }
+            BasicBlock::weight_t newWeight = lvRefCntWtd(state) + weight;
+            assert(newWeight >= lvRefCntWtd(state));
+            setLvRefCntWtd(newWeight, state);
         }
     }
 
@@ -3616,11 +3611,11 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 
 // are we compiling for fast code, or are we compiling for blended code and
 // inside a loop?
-// We return true for BLENDED_CODE if the Block executes more than BB_LOOP_WEIGHT/2
+// We return true for BLENDED_CODE if the Block executes more than BB_LOOP_WEIGHT_SCALE/2
 inline bool Compiler::optFastCodeOrBlendedLoop(BasicBlock::weight_t bbWeight)
 {
     return (compCodeOpt() == FAST_CODE) ||
-           ((compCodeOpt() == BLENDED_CODE) && (bbWeight > (BB_LOOP_WEIGHT / 2 * BB_UNITY_WEIGHT)));
+           ((compCodeOpt() == BLENDED_CODE) && (bbWeight > ((BB_LOOP_WEIGHT_SCALE / 2) * BB_UNITY_WEIGHT)));
 }
 
 // are we running on a Intel Pentium 4?
@@ -3872,10 +3867,21 @@ inline GenTree* Compiler::impCheckForNullPointer(GenTree* obj)
     {
         assert(obj->gtType == TYP_REF || obj->gtType == TYP_BYREF);
 
-        // We can see non-zero byrefs for RVA statics.
+        // We can see non-zero byrefs for RVA statics or for frozen strings.
         if (obj->AsIntCon()->gtIconVal != 0)
         {
-            assert(obj->gtType == TYP_BYREF);
+#ifdef DEBUG
+            if (!obj->TypeIs(TYP_BYREF))
+            {
+                assert(obj->TypeIs(TYP_REF));
+                assert(obj->IsIconHandle(GTF_ICON_STR_HDL));
+                if (!doesMethodHaveFrozenString())
+                {
+                    assert(compIsForInlining());
+                    assert(impInlineInfo->InlinerCompiler->doesMethodHaveFrozenString());
+                }
+            }
+#endif // DEBUG
             return obj;
         }
 
@@ -4380,6 +4386,7 @@ void GenTree::VisitOperands(TVisitor visitor)
         case GT_NULLCHECK:
         case GT_PUTARG_REG:
         case GT_PUTARG_STK:
+        case GT_PUTARG_TYPE:
 #if FEATURE_ARG_SPLIT
         case GT_PUTARG_SPLIT:
 #endif // FEATURE_ARG_SPLIT

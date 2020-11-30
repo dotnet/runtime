@@ -1206,7 +1206,7 @@ bool GenTreeCall::Equals(GenTreeCall* c1, GenTreeCall* c2)
 }
 
 #if !defined(FEATURE_PUT_STRUCT_ARG_STK)
-unsigned GenTreePutArgStk::getArgSize()
+unsigned GenTreePutArgStk::GetStackByteSize() const
 {
     return genTypeSize(genActualType(gtOp1->gtType));
 }
@@ -5112,6 +5112,7 @@ bool GenTree::TryGetUse(GenTree* def, GenTree*** use)
         case GT_NULLCHECK:
         case GT_PUTARG_REG:
         case GT_PUTARG_STK:
+        case GT_PUTARG_TYPE:
         case GT_RETURNTRAP:
         case GT_NOP:
         case GT_RETURN:
@@ -6070,19 +6071,12 @@ GenTree* Compiler::gtNewStringLiteralNode(InfoAccessType iat, void* pValue)
     switch (iat)
     {
         case IAT_VALUE:
-            // For CoreRT only - Constant object can be a frozen string.
-            if (!IsTargetAbi(CORINFO_CORERT_ABI))
-            {
-                // Non CoreRT - This case is illegal, creating a TYP_REF from an INT_CNS
-                noway_assert(!"unreachable IAT_VALUE case in gtNewStringLiteralNode");
-            }
-
+            setMethodHasFrozenString();
             tree         = gtNewIconEmbHndNode(pValue, nullptr, GTF_ICON_STR_HDL, nullptr);
             tree->gtType = TYP_REF;
 #ifdef DEBUG
             tree->AsIntCon()->gtTargetHandle = (size_t)pValue;
 #endif
-            tree = gtNewOperNode(GT_NOP, TYP_REF, tree); // prevents constant folding
             break;
 
         case IAT_PVALUE: // The value needs to be accessed via an indirection
@@ -8535,15 +8529,21 @@ bool Compiler::gtCompareTree(GenTree* op1, GenTree* op2)
     return false;
 }
 
+//------------------------------------------------------------------------
+// gtGetThisArg: Return this pointer node for the call.
+//
+// Arguments:
+//   call - the call node with a this argument.
+//
+// Return value:
+//   the this pointer node.
+//
 GenTree* Compiler::gtGetThisArg(GenTreeCall* call)
 {
-    if (call->gtCallThisArg == nullptr)
-    {
-        return nullptr;
-    }
+    assert(call->gtCallThisArg != nullptr);
 
     GenTree* thisArg = call->gtCallThisArg->GetNode();
-    if (thisArg->OperIs(GT_NOP, GT_ASG) == false)
+    if (!thisArg->OperIs(GT_ASG))
     {
         if ((thisArg->gtFlags & GTF_LATE_ARG) == 0)
         {
@@ -8551,41 +8551,38 @@ GenTree* Compiler::gtGetThisArg(GenTreeCall* call)
         }
     }
 
-    if (call->gtCallLateArgs != nullptr)
-    {
-        unsigned       argNum          = 0;
-        fgArgTabEntry* thisArgTabEntry = gtArgEntryByArgNum(call, argNum);
-        GenTree*       result          = thisArgTabEntry->GetNode();
+    assert(call->gtCallLateArgs != nullptr);
 
-        // Assert if we used DEBUG_DESTROY_NODE.
-        assert(result->gtOper != GT_COUNT);
+    unsigned       argNum          = 0;
+    fgArgTabEntry* thisArgTabEntry = gtArgEntryByArgNum(call, argNum);
+    GenTree*       result          = thisArgTabEntry->GetNode();
+
+    // Assert if we used DEBUG_DESTROY_NODE.
+    assert(result->gtOper != GT_COUNT);
 
 #if !FEATURE_FIXED_OUT_ARGS && defined(DEBUG)
-        // Check that call->fgArgInfo used in gtArgEntryByArgNum was not
-        // left outdated by assertion propogation updates.
-        // There is no information about registers of late args for platforms
-        // with FEATURE_FIXED_OUT_ARGS that is why this debug check is under
-        // !FEATURE_FIXED_OUT_ARGS.
-        regNumber thisReg = REG_ARG_0;
-        regList   list    = call->regArgList;
-        int       index   = 0;
-        for (GenTreeCall::Use& use : call->LateArgs())
+    // Check that call->fgArgInfo used in gtArgEntryByArgNum was not
+    // left outdated by assertion propogation updates.
+    // There is no information about registers of late args for platforms
+    // with FEATURE_FIXED_OUT_ARGS that is why this debug check is under
+    // !FEATURE_FIXED_OUT_ARGS.
+    regNumber thisReg = REG_ARG_0;
+    regList   list    = call->regArgList;
+    int       index   = 0;
+    for (GenTreeCall::Use& use : call->LateArgs())
+    {
+        assert(index < call->regArgListCount);
+        regNumber curArgReg = list[index];
+        if (curArgReg == thisReg)
         {
-            assert(index < call->regArgListCount);
-            regNumber curArgReg = list[index];
-            if (curArgReg == thisReg)
-            {
-                assert(result == use.GetNode());
-            }
-
-            index++;
+            assert(result == use.GetNode());
         }
+
+        index++;
+    }
 #endif // !FEATURE_FIXED_OUT_ARGS && defined(DEBUG)
 
-        return result;
-    }
-
-    return nullptr;
+    return result;
 }
 
 bool GenTree::gtSetFlags() const
@@ -9111,6 +9108,7 @@ GenTreeUseEdgeIterator::GenTreeUseEdgeIterator(GenTree* node)
         case GT_NULLCHECK:
         case GT_PUTARG_REG:
         case GT_PUTARG_STK:
+        case GT_PUTARG_TYPE:
         case GT_BSWAP:
         case GT_BSWAP16:
         case GT_KEEPALIVE:
@@ -11523,10 +11521,16 @@ void Compiler::gtDispTree(GenTree*     tree,
 #if FEATURE_PUT_STRUCT_ARG_STK
         else if (tree->OperGet() == GT_PUTARG_STK)
         {
-            printf(" (%d slots)", tree->AsPutArgStk()->gtNumSlots);
-            if (tree->AsPutArgStk()->gtPutArgStkKind != GenTreePutArgStk::Kind::Invalid)
+            const GenTreePutArgStk* putArg = tree->AsPutArgStk();
+#if !defined(DEBUG_ARG_SLOTS)
+            printf(" (%d stackByteSize), (%d byteOffset)", putArg->GetStackByteSize(), putArg->getArgOffset());
+#else
+            printf(" (%d slots), (%d stackByteSize), (%d slot), (%d byteOffset)", putArg->gtNumSlots,
+                   putArg->GetStackByteSize(), putArg->gtSlotNum, putArg->getArgOffset());
+#endif
+            if (putArg->gtPutArgStkKind != GenTreePutArgStk::Kind::Invalid)
             {
-                switch (tree->AsPutArgStk()->gtPutArgStkKind)
+                switch (putArg->gtPutArgStkKind)
                 {
                     case GenTreePutArgStk::Kind::RepInstr:
                         printf(" (RepInstr)");
@@ -11545,6 +11549,18 @@ void Compiler::gtDispTree(GenTree*     tree,
                 }
             }
         }
+#if FEATURE_ARG_SPLIT
+        else if (tree->OperGet() == GT_PUTARG_SPLIT)
+        {
+            const GenTreePutArgSplit* putArg = tree->AsPutArgSplit();
+#if !defined(DEBUG_ARG_SLOTS)
+            printf(" (%d stackByteSize), (%d numRegs)", putArg->GetStackByteSize(), putArg->gtNumRegs);
+#else
+            printf(" (%d slots), (%d stackByteSize), (%d numRegs)", putArg->gtNumSlots, putArg->GetStackByteSize(),
+                   putArg->gtNumRegs);
+#endif
+        }
+#endif // FEATURE_ARG_SPLIT
 #endif // FEATURE_PUT_STRUCT_ARG_STK
 
         if (tree->gtOper == GT_INTRINSIC)
@@ -11854,7 +11870,7 @@ void Compiler::gtDispTree(GenTree*     tree,
                 for (GenTreeCall::Use& use : call->LateArgs())
                 {
                     IndentInfo arcType = (use.GetNext() == nullptr) ? IIArcBottom : IIArc;
-                    gtGetLateArgMsg(call, use.GetNode(), lateArgIndex, -1, bufp, sizeof(buf));
+                    gtGetLateArgMsg(call, use.GetNode(), lateArgIndex, bufp, sizeof(buf));
                     gtDispChild(use.GetNode(), indentStack, arcType, bufp, topOnly);
                     lateArgIndex++;
                 }
@@ -11953,8 +11969,6 @@ void Compiler::gtDispTree(GenTree*     tree,
 //    call      - The call for which 'arg' is an argument
 //    arg       - The argument for which a message should be constructed
 //    argNum    - The ordinal number of the arg in the argument list
-//    listCount - When printing in LIR form this is the count for a GT_FIELD_LIST
-//                or -1 if we are not printing in LIR form
 //    bufp      - A pointer to the buffer into which the message is written
 //    bufLength - The length of the buffer pointed to by bufp
 //
@@ -11965,8 +11979,7 @@ void Compiler::gtDispTree(GenTree*     tree,
 //    'call' must be a call node
 //    'arg' must be an argument to 'call' (else gtArgEntryByNode will assert)
 
-void Compiler::gtGetArgMsg(
-    GenTreeCall* call, GenTree* arg, unsigned argNum, int listCount, char* bufp, unsigned bufLength)
+void Compiler::gtGetArgMsg(GenTreeCall* call, GenTree* arg, unsigned argNum, char* bufp, unsigned bufLength)
 {
     if (call->gtCallLateArgs != nullptr)
     {
@@ -11983,139 +11996,6 @@ void Compiler::gtGetArgMsg(
             if (curArgTabEntry->IsSplit())
             {
                 regNumber firstReg = curArgTabEntry->GetRegNum();
-                if (listCount == -1)
-                {
-                    if (curArgTabEntry->numRegs == 1)
-                    {
-                        sprintf_s(bufp, bufLength, "arg%d %s out+%02x%c", argNum, compRegVarName(firstReg),
-                                  (curArgTabEntry->slotNum) * TARGET_POINTER_SIZE, 0);
-                    }
-                    else
-                    {
-                        regNumber lastReg   = REG_STK;
-                        char      separator = (curArgTabEntry->numRegs == 2) ? ',' : '-';
-                        if (curArgTabEntry->IsHfaRegArg())
-                        {
-                            unsigned lastRegNum = genMapFloatRegNumToRegArgNum(firstReg) + curArgTabEntry->numRegs - 1;
-                            lastReg             = genMapFloatRegArgNumToRegNum(lastRegNum);
-                        }
-                        else
-                        {
-                            unsigned lastRegNum = genMapIntRegNumToRegArgNum(firstReg) + curArgTabEntry->numRegs - 1;
-                            lastReg             = genMapIntRegArgNumToRegNum(lastRegNum);
-                        }
-                        sprintf_s(bufp, bufLength, "arg%d %s%c%s out+%02x%c", argNum, compRegVarName(firstReg),
-                                  separator, compRegVarName(lastReg), (curArgTabEntry->slotNum) * TARGET_POINTER_SIZE,
-                                  0);
-                    }
-                }
-                else
-                {
-                    unsigned curArgNum = BAD_VAR_NUM;
-                    bool     isFloat   = curArgTabEntry->IsHfaRegArg();
-                    if (isFloat)
-                    {
-                        curArgNum = genMapFloatRegNumToRegArgNum(firstReg) + listCount;
-                    }
-                    else
-                    {
-                        curArgNum = genMapIntRegNumToRegArgNum(firstReg) + listCount;
-                    }
-
-                    if (!isFloat && curArgNum < MAX_REG_ARG)
-                    {
-                        regNumber curReg = genMapIntRegArgNumToRegNum(curArgNum);
-                        sprintf_s(bufp, bufLength, "arg%d m%d %s%c", argNum, listCount, compRegVarName(curReg), 0);
-                    }
-                    else if (isFloat && curArgNum < MAX_FLOAT_REG_ARG)
-                    {
-                        regNumber curReg = genMapFloatRegArgNumToRegNum(curArgNum);
-                        sprintf_s(bufp, bufLength, "arg%d m%d %s%c", argNum, listCount, compRegVarName(curReg), 0);
-                    }
-                    else
-                    {
-                        unsigned stackSlot = listCount - curArgTabEntry->numRegs;
-                        sprintf_s(bufp, bufLength, "arg%d m%d out+%02x%c", argNum, listCount,
-                                  stackSlot * TARGET_POINTER_SIZE, 0);
-                    }
-                }
-                return;
-            }
-#endif // TARGET_ARM
-#if FEATURE_FIXED_OUT_ARGS
-            if (listCount == -1)
-            {
-                sprintf_s(bufp, bufLength, "arg%d out+%02x%c", argNum, curArgTabEntry->slotNum * TARGET_POINTER_SIZE,
-                          0);
-            }
-            else // listCount is 0,1,2 or 3
-            {
-                assert(listCount <= MAX_ARG_REG_COUNT);
-                sprintf_s(bufp, bufLength, "arg%d out+%02x%c", argNum,
-                          (curArgTabEntry->slotNum + listCount) * TARGET_POINTER_SIZE, 0);
-            }
-#else
-            sprintf_s(bufp, bufLength, "arg%d on STK%c", argNum, 0);
-#endif
-        }
-    }
-    else
-    {
-        sprintf_s(bufp, bufLength, "arg%d%c", argNum, 0);
-    }
-}
-
-//------------------------------------------------------------------------
-// gtGetLateArgMsg: Construct a message about the given argument
-//
-// Arguments:
-//    call         - The call for which 'arg' is an argument
-//    argx         - The argument for which a message should be constructed
-//    lateArgIndex - The ordinal number of the arg in the lastArg  list
-//    listCount    - When printing in LIR form this is the count for a multireg GT_FIELD_LIST
-//                   or -1 if we are not printing in LIR form
-//    bufp         - A pointer to the buffer into which the message is written
-//    bufLength    - The length of the buffer pointed to by bufp
-//
-// Return Value:
-//    No return value, but bufp is written.
-//
-// Assumptions:
-//    'call' must be a call node
-//    'arg' must be an argument to 'call' (else gtArgEntryByNode will assert)
-
-void Compiler::gtGetLateArgMsg(
-    GenTreeCall* call, GenTree* argx, int lateArgIndex, int listCount, char* bufp, unsigned bufLength)
-{
-    assert(!argx->IsArgPlaceHolderNode()); // No place holders nodes are in gtCallLateArgs;
-
-    fgArgTabEntry* curArgTabEntry = gtArgEntryByLateArgIndex(call, lateArgIndex);
-    assert(curArgTabEntry);
-    regNumber argReg = curArgTabEntry->GetRegNum();
-
-#if !FEATURE_FIXED_OUT_ARGS
-    assert(lateArgIndex < call->regArgListCount);
-    assert(argReg == call->regArgList[lateArgIndex]);
-#else
-    if (argReg == REG_STK)
-    {
-        sprintf_s(bufp, bufLength, "arg%d in out+%02x%c", curArgTabEntry->argNum,
-                  curArgTabEntry->slotNum * TARGET_POINTER_SIZE, 0);
-    }
-    else
-#endif
-    {
-        if (curArgTabEntry->use == call->gtCallThisArg)
-        {
-            sprintf_s(bufp, bufLength, "this in %s%c", compRegVarName(argReg), 0);
-        }
-#ifdef TARGET_ARM
-        else if (curArgTabEntry->IsSplit())
-        {
-            regNumber firstReg = curArgTabEntry->GetRegNum();
-            unsigned  argNum   = curArgTabEntry->argNum;
-            if (listCount == -1)
-            {
                 if (curArgTabEntry->numRegs == 1)
                 {
                     sprintf_s(bufp, bufLength, "arg%d %s out+%02x%c", argNum, compRegVarName(firstReg),
@@ -12138,36 +12018,89 @@ void Compiler::gtGetLateArgMsg(
                     sprintf_s(bufp, bufLength, "arg%d %s%c%s out+%02x%c", argNum, compRegVarName(firstReg), separator,
                               compRegVarName(lastReg), (curArgTabEntry->slotNum) * TARGET_POINTER_SIZE, 0);
                 }
+
+                return;
+            }
+#endif // TARGET_ARM
+#if FEATURE_FIXED_OUT_ARGS
+            sprintf_s(bufp, bufLength, "arg%d out+%02x%c", argNum, curArgTabEntry->GetByteOffset(), 0);
+#else
+            sprintf_s(bufp, bufLength, "arg%d on STK%c", argNum, 0);
+#endif
+        }
+    }
+    else
+    {
+        sprintf_s(bufp, bufLength, "arg%d%c", argNum, 0);
+    }
+}
+
+//------------------------------------------------------------------------
+// gtGetLateArgMsg: Construct a message about the given argument
+//
+// Arguments:
+//    call         - The call for which 'arg' is an argument
+//    argx         - The argument for which a message should be constructed
+//    lateArgIndex - The ordinal number of the arg in the lastArg  list
+//    bufp         - A pointer to the buffer into which the message is written
+//    bufLength    - The length of the buffer pointed to by bufp
+//
+// Return Value:
+//    No return value, but bufp is written.
+//
+// Assumptions:
+//    'call' must be a call node
+//    'arg' must be an argument to 'call' (else gtArgEntryByNode will assert)
+
+void Compiler::gtGetLateArgMsg(GenTreeCall* call, GenTree* argx, int lateArgIndex, char* bufp, unsigned bufLength)
+{
+    assert(!argx->IsArgPlaceHolderNode()); // No place holders nodes are in gtCallLateArgs;
+
+    fgArgTabEntry* curArgTabEntry = gtArgEntryByLateArgIndex(call, lateArgIndex);
+    assert(curArgTabEntry);
+    regNumber argReg = curArgTabEntry->GetRegNum();
+
+#if !FEATURE_FIXED_OUT_ARGS
+    assert(lateArgIndex < call->regArgListCount);
+    assert(argReg == call->regArgList[lateArgIndex]);
+#else
+    if (argReg == REG_STK)
+    {
+        sprintf_s(bufp, bufLength, "arg%d in out+%02x%c", curArgTabEntry->argNum, curArgTabEntry->GetByteOffset(), 0);
+    }
+    else
+#endif
+    {
+        if (curArgTabEntry->use == call->gtCallThisArg)
+        {
+            sprintf_s(bufp, bufLength, "this in %s%c", compRegVarName(argReg), 0);
+        }
+#ifdef TARGET_ARM
+        else if (curArgTabEntry->IsSplit())
+        {
+            regNumber firstReg = curArgTabEntry->GetRegNum();
+            unsigned  argNum   = curArgTabEntry->argNum;
+            if (curArgTabEntry->numRegs == 1)
+            {
+                sprintf_s(bufp, bufLength, "arg%d %s out+%02x%c", argNum, compRegVarName(firstReg),
+                          (curArgTabEntry->slotNum) * TARGET_POINTER_SIZE, 0);
             }
             else
             {
-                unsigned curArgNum = BAD_VAR_NUM;
-                bool     isFloat   = curArgTabEntry->IsHfaRegArg();
-                if (isFloat)
+                regNumber lastReg   = REG_STK;
+                char      separator = (curArgTabEntry->numRegs == 2) ? ',' : '-';
+                if (curArgTabEntry->IsHfaRegArg())
                 {
-                    curArgNum = genMapFloatRegNumToRegArgNum(firstReg) + listCount;
+                    unsigned lastRegNum = genMapFloatRegNumToRegArgNum(firstReg) + curArgTabEntry->numRegs - 1;
+                    lastReg             = genMapFloatRegArgNumToRegNum(lastRegNum);
                 }
                 else
                 {
-                    curArgNum = genMapIntRegNumToRegArgNum(firstReg) + listCount;
+                    unsigned lastRegNum = genMapIntRegNumToRegArgNum(firstReg) + curArgTabEntry->numRegs - 1;
+                    lastReg             = genMapIntRegArgNumToRegNum(lastRegNum);
                 }
-
-                if (!isFloat && curArgNum < MAX_REG_ARG)
-                {
-                    regNumber curReg = genMapIntRegArgNumToRegNum(curArgNum);
-                    sprintf_s(bufp, bufLength, "arg%d m%d %s%c", argNum, listCount, compRegVarName(curReg), 0);
-                }
-                else if (isFloat && curArgNum < MAX_FLOAT_REG_ARG)
-                {
-                    regNumber curReg = genMapFloatRegArgNumToRegNum(curArgNum);
-                    sprintf_s(bufp, bufLength, "arg%d m%d %s%c", argNum, listCount, compRegVarName(curReg), 0);
-                }
-                else
-                {
-                    unsigned stackSlot = listCount - curArgTabEntry->numRegs;
-                    sprintf_s(bufp, bufLength, "arg%d m%d out+%02x%c", argNum, listCount,
-                              stackSlot * TARGET_POINTER_SIZE, 0);
-                }
+                sprintf_s(bufp, bufLength, "arg%d %s%c%s out+%02x%c", argNum, compRegVarName(firstReg), separator,
+                          compRegVarName(lastReg), (curArgTabEntry->slotNum) * TARGET_POINTER_SIZE, 0);
             }
             return;
         }
@@ -12177,8 +12110,6 @@ void Compiler::gtGetLateArgMsg(
 #if FEATURE_MULTIREG_ARGS
             if (curArgTabEntry->numRegs >= 2)
             {
-                // listCount could be -1 but it is signed, so this comparison is OK.
-                assert(listCount <= MAX_ARG_REG_COUNT);
                 char separator = (curArgTabEntry->numRegs == 2) ? ',' : '-';
                 sprintf_s(bufp, bufLength, "arg%d %s%c%s%c", curArgTabEntry->argNum, compRegVarName(argReg), separator,
                           compRegVarName(curArgTabEntry->GetRegNum(curArgTabEntry->numRegs - 1)), 0);
@@ -12220,7 +12151,7 @@ void Compiler::gtDispArgList(GenTreeCall* call, IndentStack* indentStack)
         if (!argNode->IsNothingNode() && !argNode->IsArgPlaceHolderNode())
         {
             char buf[256];
-            gtGetArgMsg(call, argNode, argnum, -1, buf, sizeof(buf));
+            gtGetArgMsg(call, argNode, argnum, buf, sizeof(buf));
             gtDispChild(argNode, indentStack, (argNode == lastArgNode) ? IIArcBottom : IIArc, buf, false);
         }
         argnum++;
@@ -12393,40 +12324,18 @@ void Compiler::gtDispLIRNode(GenTree* node, const char* prefixMsg /* = nullptr *
             {
                 fgArgTabEntry* curArgTabEntry = gtArgEntryByNode(call, operand);
                 assert(curArgTabEntry);
+                assert(operand->OperGet() != GT_LIST);
 
-                if (operand->OperGet() == GT_LIST)
+                if (!curArgTabEntry->isLateArg())
                 {
-                    int listIndex = 0;
-                    for (GenTreeArgList* element = operand->AsArgList(); element != nullptr; element = element->Rest())
-                    {
-                        operand = element->Current();
-                        if (curArgTabEntry->GetLateArgInx() == (unsigned)-1)
-                        {
-                            gtGetArgMsg(call, operand, curArgTabEntry->argNum, listIndex, buf, sizeof(buf));
-                        }
-                        else
-                        {
-                            gtGetLateArgMsg(call, operand, curArgTabEntry->GetLateArgInx(), listIndex, buf,
-                                            sizeof(buf));
-                        }
-
-                        displayOperand(operand, buf, operandArc, indentStack, prefixIndent);
-                        operandArc = IIArc;
-                    }
+                    gtGetArgMsg(call, operand, curArgTabEntry->argNum, buf, sizeof(buf));
                 }
                 else
                 {
-                    if (!curArgTabEntry->isLateArg())
-                    {
-                        gtGetArgMsg(call, operand, curArgTabEntry->argNum, -1, buf, sizeof(buf));
-                    }
-                    else
-                    {
-                        gtGetLateArgMsg(call, operand, curArgTabEntry->GetLateArgInx(), -1, buf, sizeof(buf));
-                    }
-
-                    displayOperand(operand, buf, operandArc, indentStack, prefixIndent);
+                    gtGetLateArgMsg(call, operand, curArgTabEntry->GetLateArgInx(), buf, sizeof(buf));
                 }
+
+                displayOperand(operand, buf, operandArc, indentStack, prefixIndent);
             }
         }
         else if (node->OperIsDynBlkOp())
@@ -15610,7 +15519,7 @@ GenTree* Compiler::gtNewTempAssign(
         // There are 2 special cases:
         // 1. we have lost classHandle from a FIELD node  because the parent struct has overlapping fields,
         //     the field was transformed as IND opr GT_LCL_FLD;
-        // 2. we are propogating `ASG(struct V01, 0)` to `RETURN(struct V01)`, `CNT_INT` doesn't `structHnd`;
+        // 2. we are propagation `ASG(struct V01, 0)` to `RETURN(struct V01)`, `CNT_INT` doesn't `structHnd`;
         // in these cases, we can use the type of the merge return for the assignment.
         assert(val->OperIs(GT_IND, GT_LCL_FLD, GT_CNS_INT));
         assert(!compDoOldStructRetyping());

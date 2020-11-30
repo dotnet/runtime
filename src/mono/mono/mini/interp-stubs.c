@@ -64,13 +64,6 @@ stub_frame_get_parent (MonoInterpFrameHandle frame)
 	return NULL;
 }
 
-static gpointer
-stub_frame_get_res (MonoInterpFrameHandle frame)
-{
-	g_assert_not_reached ();
-	return NULL;
-}
-
 static void
 stub_start_single_stepping (void)
 {
@@ -209,12 +202,6 @@ stub_frame_arg_to_storage (MonoInterpFrameHandle frame, MonoMethodSignature *sig
 {
 	g_assert_not_reached ();
 	return NULL;
-}
-
-static void
-stub_frame_arg_set_storage (MonoInterpFrameHandle frame, MonoMethodSignature *sig, int index, gpointer storage)
-{
-	g_assert_not_reached ();
 }
 
 static void

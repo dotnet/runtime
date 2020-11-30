@@ -17,16 +17,13 @@
 
 #include <dbgenginemetrics.h>
 
-// Globals
-extern HINSTANCE g_hThisInst;
+#if !defined(CROSSGEN_COMPILE) && !defined(CORECLR_EMBEDDED)
 
-// Locals.
 BOOL STDMETHODCALLTYPE EEDllMain( // TRUE on success, FALSE on error.
                        HINSTANCE    hInst,                  // Instance handle of the loaded module.
                        DWORD        dwReason,               // Reason for loading.
-                       LPVOID       lpReserved);                // Unused.
+                       LPVOID       lpReserved);            // Unused.
 
-#ifndef CROSSGEN_COMPILE
 //*****************************************************************************
 // Handle lifetime of loaded library.
 //*****************************************************************************
@@ -48,13 +45,9 @@ BOOL WINAPI DllMain(HANDLE hInstance, DWORD dwReason, LPVOID lpReserved)
     return EEDllMain((HINSTANCE)hInstance, dwReason, lpReserved);
 }
 
-#endif // CROSSGEN_COMPILE
+#endif // !defined(CROSSGEN_COMPILE) && !defined(CORECLR_EMBEDDED)
 
-HINSTANCE GetModuleInst()
-{
-    LIMITED_METHOD_CONTRACT;
-    return (g_hThisInst);
-}
+extern void* GetClrModuleBase();
 
 // ---------------------------------------------------------------------------
 // %%Function: MetaDataGetDispenser
@@ -222,39 +215,6 @@ STDAPI ReOpenMetaDataWithMemoryEx(
     return hr;
 }
 
-STDAPI GetCORSystemDirectoryInternaL(SString& pBuffer)
-{
-    CONTRACTL {
-        NOTHROW;
-        GC_NOTRIGGER;
-        ENTRY_POINT;
-    } CONTRACTL_END;
-
-    HRESULT hr = S_OK;
-    BEGIN_ENTRYPOINT_NOTHROW;
-
-
-#ifdef CROSSGEN_COMPILE
-
-    if (WszGetModuleFileName(NULL, pBuffer) > 0)
-    {
-        hr = CopySystemDirectory(pBuffer, pBuffer);
-    }
-    else {
-        hr = HRESULT_FROM_GetLastError();
-    }
-
-#else
-
-    if (!PAL_GetPALDirectoryWrapper(pBuffer)) {
-        hr = HRESULT_FROM_GetLastError();
-    }
-#endif
-
-    END_ENTRYPOINT_NOTHROW;
-    return hr;
-}
-
 static DWORD g_dwSystemDirectory = 0;
 static WCHAR * g_pSystemDirectory = NULL;
 
@@ -326,8 +286,7 @@ HRESULT SetInternalSystemDirectory()
 
             // use local buffer for thread safety
             PathString wzSystemDirectory;
-
-            hr = GetCORSystemDirectoryInternaL(wzSystemDirectory);
+            hr = GetClrModuleDirectory(wzSystemDirectory);
 
             if (FAILED(hr)) {
                 wzSystemDirectory.Set(W('\0'));

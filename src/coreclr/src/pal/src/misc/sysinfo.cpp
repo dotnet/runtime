@@ -131,11 +131,8 @@ PAL_GetTotalCpuCount()
 #elif HAVE_SYSCTL
     int rc;
     size_t sz;
-    int mib[2];
-
+    int mib[] = { CTL_HW, HW_NCPU };
     sz = sizeof(nrcpus);
-    mib[0] = CTL_HW;
-    mib[1] = HW_NCPU;
     rc = sysctl(mib, 2, &nrcpus, &sz, NULL, 0);
     if (rc != 0)
     {
@@ -337,7 +334,6 @@ GlobalMemoryStatusEx(
     lpBuffer->ullAvailExtendedVirtual = 0;
 
     BOOL fRetVal = FALSE;
-    int mib[3];
     int rc;
 
     // Get the physical memory size
@@ -351,10 +347,8 @@ GlobalMemoryStatusEx(
 #elif HAVE_SYSCTL
     int64_t physical_memory;
     size_t length;
-
     // Get the Physical memory size
-    mib[0] = CTL_HW;
-    mib[1] = HW_MEMSIZE;
+    int mib[] = { CTL_HW, HW_MEMSIZE };
     length = sizeof(INT64);
     rc = sysctl(mib, 2, &physical_memory, &length, NULL, 0);
     if (rc != 0)
@@ -374,8 +368,7 @@ GlobalMemoryStatusEx(
 #if HAVE_XSW_USAGE
     // This is available on OSX
     struct xsw_usage xsu;
-    mib[0] = CTL_VM;
-    mib[1] = VM_SWAPUSAGE;
+    int mib[] = { CTL_HW, VM_SWAPUSAGE };
     size_t length = sizeof(xsu);
     rc = sysctl(mib, 2, &xsu, &length, NULL, 0);
     if (rc == 0)
@@ -386,7 +379,7 @@ GlobalMemoryStatusEx(
 #elif HAVE_XSWDEV
     // E.g. FreeBSD
     struct xswdev xsw;
-
+    int mib[3];
     size_t length = 2;
     rc = sysctlnametomib("vm.swap_info", mib, &length);
     if (rc == 0)
@@ -517,7 +510,7 @@ ReadMemoryValueFromFile(const char* filename, uint64_t* val)
     char *line = nullptr;
     size_t lineLen = 0;
     char* endptr = nullptr;
-    uint64_t num = 0, l, multiplier;
+    uint64_t num = 0, multiplier;
 
     if (val == nullptr)
         return false;
@@ -569,10 +562,10 @@ PAL_GetLogicalProcessorCacheSizeFromOS()
     if (cacheSize == 0)
     {
         //
-        // Fallback to retrieve cachesize via /sys/.. if sysconf was not available 
-        // for the platform. Currently musl and arm64 should be only cases to use  
+        // Fallback to retrieve cachesize via /sys/.. if sysconf was not available
+        // for the platform. Currently musl and arm64 should be only cases to use
         // this method to determine cache size.
-        // 
+        //
         size_t size;
 
         if(ReadMemoryValueFromFile("/sys/devices/system/cpu/cpu0/cache/index0/size", &size))

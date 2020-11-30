@@ -303,8 +303,8 @@ void Rationalizer::SanityCheck()
 
             for (GenTree* tree = statement->GetTreeList(); tree; tree = tree->gtNext)
             {
-                // QMARK nodes should have been removed before this phase.
-                assert(tree->OperGet() != GT_QMARK);
+                // QMARK and PUT_ARG_TYPE nodes should have been removed before this phase.
+                assert(!tree->OperIs(GT_QMARK, GT_PUTARG_TYPE));
 
                 if (tree->OperGet() == GT_ASG)
                 {

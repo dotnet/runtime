@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Buffers.Binary;
 using System.Collections;
 using System.IO;
 using System.Text;
@@ -69,13 +70,7 @@ namespace System.Xml
         }
 
         private static uint UIntFromByteArray(byte[] data, int offset)
-        {
-            int val = (data[offset]) << 0;
-            val |= (data[offset + 1]) << 8;
-            val |= (data[offset + 2]) << 16;
-            val |= (data[offset + 3]) << 24;
-            return unchecked((uint)val);
-        }
+            => BinaryPrimitives.ReadUInt32LittleEndian(data.AsSpan(offset));
 
         // Multi-precision one super-digit divide in place.
         // U = U / D,

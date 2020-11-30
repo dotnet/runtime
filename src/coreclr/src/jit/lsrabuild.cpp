@@ -103,15 +103,13 @@ RefInfoListNodePool::RefInfoListNodePool(Compiler* compiler, unsigned preallocat
 //                                    pool.
 //
 // Arguments:
-//    l -    - The `LsraLocation` for the `RefInfo` value.
-//    i      - The interval for the `RefInfo` value.
-//    t      - The IR node for the `RefInfo` value
-//    regIdx - The register index for the `RefInfo` value.
+//    r - The `RefPosition` for the `RefInfo` value.
+//    t - The IR node for the `RefInfo` value
 //
 // Returns:
 //    A pooled or newly-allocated `RefInfoListNode`, depending on the
 //    contents of the pool.
-RefInfoListNode* RefInfoListNodePool::GetNode(RefPosition* r, GenTree* t, unsigned regIdx)
+RefInfoListNode* RefInfoListNodePool::GetNode(RefPosition* r, GenTree* t)
 {
     RefInfoListNode* head = m_freeList;
     if (head == nullptr)
@@ -1695,11 +1693,11 @@ void LinearScan::buildRefPositionsForNode(GenTree* tree, BasicBlock* block, Lsra
 
 #ifdef DEBUG
     int newDefListCount = defList.Count();
-    int produce         = newDefListCount - oldDefListCount;
+    // Currently produce is unused, but need to strengthen an assert to check if produce is
+    // as expected. See https://github.com/dotnet/runtime/issues/8678
+    int produce = newDefListCount - oldDefListCount;
     assert((consume == 0) || (ComputeAvailableSrcCount(tree) == consume));
-#endif // DEBUG
 
-#ifdef DEBUG
     // If we are constraining registers, modify all the RefPositions we've just built to specify the
     // minimum reg count required.
     if ((getStressLimitRegs() != LSRA_LIMIT_NONE) || (getSelectionHeuristics() != LSRA_SELECT_DEFAULT))
@@ -2095,7 +2093,6 @@ void LinearScan::buildIntervals()
     {
         setBlockSequence();
     }
-    curBBNum = blockSequence[bbSeqCount - 1]->bbNum;
 
     // Next, create ParamDef RefPositions for all the tracked parameters, in order of their varIndex.
     // Assign these RefPositions to the (nonexistent) BB0.
@@ -2266,7 +2263,7 @@ void LinearScan::buildIntervals()
                     {
                         JITDUMP("  Marking RP #%d of V%02u as spillAfter\n", interval->recentRefPosition->rpNum,
                                 interval->varNum);
-                        interval->recentRefPosition->spillAfter;
+                        interval->recentRefPosition->spillAfter = true;
                     }
                 }
             }

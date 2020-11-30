@@ -4,18 +4,13 @@
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
-using System.Linq;
-using System.Text;
 
 namespace System.Diagnostics
 {
     internal static partial class ProcessManager
     {
         /// <summary>Gets the IDs of all processes on the current machine.</summary>
-        public static int[] GetProcessIds()
-        {
-            return EnumerateProcessIds().ToArray();
-        }
+        public static int[] GetProcessIds() => new List<int>(EnumerateProcessIds()).ToArray();
 
         /// <summary>Gets process infos for each process on the specified machine.</summary>
         /// <param name="machineName">The target machine.</param>
@@ -23,11 +18,10 @@ namespace System.Diagnostics
         public static ProcessInfo[] GetProcessInfos(string machineName)
         {
             ThrowIfRemoteMachine(machineName);
-            int[] procIds = GetProcessIds(machineName);
 
             // Iterate through all process IDs to load information about each process
-            var processes = new List<ProcessInfo>(procIds.Length);
-            foreach (int pid in procIds)
+            var processes = new List<ProcessInfo>();
+            foreach (int pid in EnumerateProcessIds())
             {
                 ProcessInfo? pi = CreateProcessInfo(pid);
                 if (pi != null)

@@ -1096,7 +1096,7 @@ namespace System
         }
 
         /// <summary>Parses uint limited to styles that make up NumberStyles.HexNumber.</summary>
-        private static ParsingStatus TryParseUInt32HexNumberStyle(ReadOnlySpan<char> value, NumberStyles styles, out uint result)
+        internal static ParsingStatus TryParseUInt32HexNumberStyle(ReadOnlySpan<char> value, NumberStyles styles, out uint result)
         {
             Debug.Assert((styles & ~NumberStyles.HexNumber) == 0, "Only handles subsets of HexNumber format");
 

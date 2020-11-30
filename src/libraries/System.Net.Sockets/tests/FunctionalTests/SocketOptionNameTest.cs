@@ -100,10 +100,7 @@ namespace System.Net.Sockets.Tests
                 var receiveBuffer = new byte[1024];
                 var receiveTask = receiveSocket.ReceiveAsync(new ArraySegment<byte>(receiveBuffer), SocketFlags.None);
 
-                for (int i = 0; i < TestSettings.UDPRedundancy; i++)
-                {
-                    sendSocket.SendTo(Encoding.UTF8.GetBytes(message), new IPEndPoint(multicastAddress, port));
-                }
+                sendSocket.SendTo(Encoding.UTF8.GetBytes(message), new IPEndPoint(multicastAddress, port));
 
                 var cts = new CancellationTokenSource();
                 Assert.True(await Task.WhenAny(receiveTask, Task.Delay(30_000, cts.Token)) == receiveTask, "Waiting for received data timed out");
@@ -213,10 +210,7 @@ namespace System.Net.Sockets.Tests
                 var receiveBuffer = new byte[1024];
                 var receiveTask = receiveSocket.ReceiveAsync(new ArraySegment<byte>(receiveBuffer), SocketFlags.None);
 
-                for (int i = 0; i < TestSettings.UDPRedundancy; i++)
-                {
-                    sendSocket.SendTo(Encoding.UTF8.GetBytes(message), new IPEndPoint(multicastAddress, port));
-                }
+                sendSocket.SendTo(Encoding.UTF8.GetBytes(message), new IPEndPoint(multicastAddress, port));
 
                 var cts = new CancellationTokenSource();
                 Assert.True(await Task.WhenAny(receiveTask, Task.Delay(30_000, cts.Token)) == receiveTask, "Waiting for received data timed out");

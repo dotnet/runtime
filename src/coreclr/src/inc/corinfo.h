@@ -208,11 +208,11 @@ TODO: Talk about initializing strutures before use
 //
 //////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-constexpr GUID JITEEVersionIdentifier = { /* 062114d0-bd20-483f-8a3e-c4ee39706ae8 */
-    0x062114d0,
-    0xbd20,
-    0x483f,
-    {0x8a, 0x3e, 0xc4, 0xee, 0x39, 0x70, 0x6a, 0xe8}
+constexpr GUID JITEEVersionIdentifier = { /* 0d235fe4-65a1-487a-8553-c845496da901 */
+    0x0d235fe4,
+    0x65a1,
+    0x487a,
+    {0x85, 0x53, 0xc8, 0x45, 0x49, 0x6d, 0xa9, 0x01}
 };
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -431,9 +431,7 @@ enum CorInfoHelpFunc
     CORINFO_HELP_THROWDIVZERO,      // throw a divide by zero exception
     CORINFO_HELP_THROWNULLREF,      // throw a null reference exception
 
-    CORINFO_HELP_INTERNALTHROW,     // Support for really fast jit
     CORINFO_HELP_VERIFICATION,      // Throw a VerificationException
-    CORINFO_HELP_SEC_UNMGDCODE_EXCPT, // throw a security unmanaged code exception
     CORINFO_HELP_FAIL_FAST,         // Kill the process avoiding any exceptions or stack and data dependencies (use for GuardStack unsafe buffer checks)
 
     CORINFO_HELP_METHOD_ACCESS_EXCEPTION,//Throw an access exception due to a failed member/class access check.
@@ -625,6 +623,7 @@ enum CorInfoHelpFunc
     CORINFO_HELP_STACK_PROBE,               // Probes each page of the allocated stack frame
 
     CORINFO_HELP_PATCHPOINT,                // Notify runtime that code has reached a patchpoint
+    CORINFO_HELP_CLASSPROFILE,              // Update class profile for a call site
 
     CORINFO_HELP_COUNT,
 };
@@ -926,8 +925,6 @@ enum CorInfoIntrinsics
     CORINFO_INTRINSIC_InterlockedCmpXchg64,
     CORINFO_INTRINSIC_MemoryBarrier,
     CORINFO_INTRINSIC_MemoryBarrierLoad,
-    CORINFO_INTRINSIC_GetCurrentManagedThread,
-    CORINFO_INTRINSIC_GetManagedThreadId,
     CORINFO_INTRINSIC_ByReference_Ctor,
     CORINFO_INTRINSIC_ByReference_Value,
     CORINFO_INTRINSIC_Span_GetItem,
@@ -1466,7 +1463,7 @@ struct CORINFO_HELPER_DESC
 //  CORINFO_DEREF_THIS        --> Deref the byref to get an object reference
 //
 // In addition, the "kind" field will be set as follows for constraint calls:
-
+//
 //    CORINFO_CALL              --> the call was resolved at compile time, and
 //                                  can be compiled like a normal call.
 //    CORINFO_CALL_CODE_POINTER --> the call was resolved, but the target address will be

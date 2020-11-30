@@ -1095,9 +1095,8 @@ namespace System.Xml
             }
         }
 
-        private async Task<Tuple<string?, string?>> ParseExternalIdAsync(Token idTokenType, Token declType)
+        private async Task<(string?, string?)> ParseExternalIdAsync(Token idTokenType, Token declType)
         {
-            Tuple<string?, string?> tuple;
             string? publicId;
             string? systemId;
 
@@ -1174,8 +1173,7 @@ namespace System.Xml
                 }
             }
 
-            tuple = new Tuple<string?, string?>(publicId, systemId);
-            return tuple;
+            return (publicId, systemId);
         }
         //
         // Scanning methods - works directly with parsing buffer

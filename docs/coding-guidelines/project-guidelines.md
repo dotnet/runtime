@@ -16,7 +16,7 @@ Below is a list of all the various options we pivot the project builds on:
 
 - **Target Frameworks:** .NETFramework, .NETStandard, .NETCoreApp
 - **Platform Runtimes:** .NETFramework (aka CLR/Desktop), CoreCLR, Mono
-- **OS:** Windows_NT, Linux, OSX, FreeBSD, AnyOS
+- **OS:** windows, Linux, OSX, FreeBSD, AnyOS
 - **Flavor:** Debug, Release
 
 ## Individual build properties
@@ -52,7 +52,7 @@ Pure netstandard configuration:
 All supported targets with unique windows/unix build for netcoreapp:
 ```
 <PropertyGroup>
-  <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;$(NetCoreAppCurrent)-Unix;net461-Windows_NT</TargetFrameworks>
+  <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-Unix;net461-windows</TargetFrameworks>
 <PropertyGroup>
 ```
 
@@ -73,7 +73,7 @@ When building an individual project the `BuildTargetFramework` and `TargetOS` wi
 
 ## Supported full build settings
 - .NET Core latest on current OS (default) -> `$(NetCoreAppCurrent)-[RunningOS]`
-- .NET Framework latest -> `net48-Windows_NT`
+- .NET Framework latest -> `net48-windows`
 
 # Library project guidelines
 
@@ -100,7 +100,7 @@ Example:
 Example:
 ```
 <PropertyGroup>
-  <TargetFrameworks>netstandard2.0-Windows_NT;netstandard2.0-Unix</TargetFrameworks>
+  <TargetFrameworks>netstandard2.0-windows;netstandard2.0-Unix</TargetFrameworks>
 </PropertyGroup>
 <ItemGroup Condition="$(TargetFramework.StartsWith('netstandard2.0'))>...</ItemGroup>
 ```

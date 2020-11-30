@@ -2604,29 +2604,9 @@ void OleVariant::MarshalRecordVariantOleToCom(VARIANT *pOleVariant,
         LPVOID pvRecord = V_RECORD(pOleVariant);
         if (pvRecord)
         {
-            // Go to the registry to find the value class associated
-            // with the record's guid.
-            GUID guid;
-            {
-                GCX_PREEMP();
-                IfFailThrow(pRecInfo->GetGuid(&guid));
-            }
-            MethodTable *pValueClass = GetValueTypeForGUID(guid);
-            if (!pValueClass)
-                COMPlusThrow(kArgumentException, IDS_EE_CANNOT_MAP_TO_MANAGED_VC);
-
-            // Now that we have the value class, allocate an instance of the
-            // boxed value class and copy the contents of the record into it.
-            BoxedValueClass = AllocateObject(pValueClass);
-
-            MethodDesc* pStructMarshalStub;
-            {
-                GCX_PREEMP();
-
-                pStructMarshalStub = NDirect::CreateStructMarshalILStub(pValueClass);
-            }
-
-            MarshalStructViaILStub(pStructMarshalStub, BoxedValueClass->GetData(), pvRecord, StructMarshalStubs::MarshalOperation::Unmarshal);
+            // This value type should have been registered through
+            // a TLB. CoreCLR doesn't support dynamic type mapping.
+            COMPlusThrow(kArgumentException, IDS_EE_CANNOT_MAP_TO_MANAGED_VC);
         }
 
         pComVariant->SetObjRef(BoxedValueClass);
@@ -5096,21 +5076,9 @@ TypeHandle OleVariant::GetElementTypeForRecordSafeArray(SAFEARRAY* pSafeArray)
     }
     CONTRACTL_END;
 
-    HRESULT hr = S_OK;
-
-    GUID guid;
-    {
-        GCX_PREEMP();
-
-        SafeComHolder<IRecordInfo> pRecInfo;
-        IfFailThrow(SafeArrayGetRecordInfo(pSafeArray, &pRecInfo));
-        IfFailThrow(pRecInfo->GetGuid(&guid));
-    }
-    MethodTable *pValueClass = GetValueTypeForGUID(guid);
-    if (!pValueClass)
-        COMPlusThrow(kArgumentException, IDS_EE_CANNOT_MAP_TO_MANAGED_VC);
-
-    return TypeHandle(pValueClass);
+    // CoreCLR doesn't support dynamic type mapping.
+    COMPlusThrow(kArgumentException, IDS_EE_CANNOT_MAP_TO_MANAGED_VC);
+    return TypeHandle(); // Unreachable
 }
 #endif //FEATURE_COMINTEROP
 

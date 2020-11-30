@@ -46,6 +46,7 @@ namespace ILVerify
             public string[] InputFilePath { get; set; }
             public string[] Reference { get; set; }
             public string SystemModule { get; set; }
+            public bool SanityChecks { get; set; }
             public string[] Include { get; set; }
             public FileInfo IncludeFile { get; set; }
             public string[] Exclude { get; set; }
@@ -63,6 +64,7 @@ namespace ILVerify
             command.AddArgument(new Argument<string[]>("input-file-path", "Input file(s)") { Arity = new ArgumentArity(1, Int32.MaxValue) });
             command.AddOption(new Option<string[]>(new[] { "--reference", "-r" }, "Reference metadata from the specified assembly"));
             command.AddOption(new Option<string>(new[] { "--system-module", "-s" }, "System module name (default: mscorlib)"));
+            command.AddOption(new Option<bool>(new[] { "--sanity-checks", "-c" }, "Check for valid constructs that are likely mistakes"));
             command.AddOption(new Option<string[]>(new[] { "--include", "-i" }, "Use only methods/types/namespaces, which match the given regular expression(s)"));
             command.AddOption(new Option<FileInfo>(new[] { "--include-file" }, "Same as --include, but the regular expression(s) are declared line by line in the specified file.").ExistingOnly());
             command.AddOption(new Option<string[]>(new[] { "--exclude", "-e" }, "Skip methods/types/namespaces, which match the given regular expression(s)"));
@@ -144,7 +146,11 @@ namespace ILVerify
 
         private int Run()
         {
-            _verifier = new Verifier(this, GetVerifierOptions());
+            _verifier = new Verifier(this, new VerifierOptions
+            {
+                IncludeMetadataTokensInErrorMessages = _options.Tokens,
+                SanityChecks = _options.SanityChecks
+            });
             _verifier.SetSystemModuleName(new AssemblyName(_options.SystemModule ?? "mscorlib"));
 
             int numErrors = 0;
@@ -162,11 +168,6 @@ namespace ILVerify
             {
                 return 0;
             }
-        }
-
-        private VerifierOptions GetVerifierOptions()
-        {
-            return new VerifierOptions { IncludeMetadataTokensInErrorMessages = _options.Tokens };
         }
 
         private void PrintVerifyMethodsResult(VerificationResult result, EcmaModule module, string pathOrModuleName)
@@ -257,7 +258,7 @@ namespace ILVerify
                     }
                 }
             }
-            catch 
+            catch
             {
                 Write("Error while getting method signature");
             }
@@ -409,7 +410,7 @@ namespace ILVerify
 
         /// <summary>
         /// This method returns the fully qualified method name by concatenating assembly, type and method name.
-        /// This method exists to avoid additional assembly resolving, which might be triggered by calling 
+        /// This method exists to avoid additional assembly resolving, which might be triggered by calling
         /// MethodDesc.ToString().
         /// </summary>
         private string GetQualifiedMethodName(MetadataReader metadataReader, MethodDefinitionHandle methodHandle)

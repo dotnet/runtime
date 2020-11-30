@@ -2073,6 +2073,7 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [ConditionalFact(nameof(SupportsAlpn))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/45204")]
         public async Task Http2_MultipleConnectionsEnabled_InfiniteRequestsCompletelyBlockOneConnection_RemaningRequestsAreHandledByNewConnection()
         {
             const int MaxConcurrentStreams = 2;
@@ -2096,7 +2097,7 @@ namespace System.Net.Http.Functional.Tests
 
                 Assert.Equal(MaxConcurrentStreams, handledRequestCount);
 
-                //Complete inifinite requests.
+                // Complete infinite requests.
                 handledRequestCount = await SendResponses(connection0, blockedStreamIds);
 
                 Assert.Equal(MaxConcurrentStreams, handledRequestCount);
@@ -2209,7 +2210,7 @@ namespace System.Net.Http.Functional.Tests
                 Assert.True(connection1.IsInvalid);
                 Assert.False(connection0.IsInvalid);
 
-                Http2LoopbackConnection connection2 = await PrepareConnection(server, client, MaxConcurrentStreams, readTimeout: 15, expectedWarpUpTasks:2).ConfigureAwait(false);
+                Http2LoopbackConnection connection2 = await PrepareConnection(server, client, MaxConcurrentStreams, readTimeout: 15, expectedWarmUpTasks:2).ConfigureAwait(false);
 
                 AcquireAllStreamSlots(server, client, sendTasks, MaxConcurrentStreams);
 
@@ -2243,7 +2244,7 @@ namespace System.Net.Http.Functional.Tests
             SslOptions = { RemoteCertificateValidationCallback = delegate { return true; } }
         };
 
-        private async Task<Http2LoopbackConnection> PrepareConnection(Http2LoopbackServer server, HttpClient client, uint maxConcurrentStreams, int readTimeout = 3, int expectedWarpUpTasks = 1)
+        private async Task<Http2LoopbackConnection> PrepareConnection(Http2LoopbackServer server, HttpClient client, uint maxConcurrentStreams, int readTimeout = 3, int expectedWarmUpTasks = 1)
         {
             Task<HttpResponseMessage> warmUpTask = client.GetAsync(server.Address);
             Http2LoopbackConnection connection = await GetConnection(server, maxConcurrentStreams, readTimeout).TimeoutAfter(TestHelper.PassingTestTimeoutMilliseconds * 2).ConfigureAwait(false);
@@ -2251,7 +2252,7 @@ namespace System.Net.Http.Functional.Tests
             Task settingAckReceived = connection.SettingAckWaiter;
             while (true)
             {
-                Task handleRequestTask = HandleAllPendingRequests(connection, expectedWarpUpTasks);
+                Task handleRequestTask = HandleAllPendingRequests(connection, expectedWarmUpTasks);
                 await Task.WhenAll(warmUpTask, handleRequestTask).TimeoutAfter(TestHelper.PassingTestTimeoutMilliseconds * 2).ConfigureAwait(false);
                 Assert.True(warmUpTask.Result.IsSuccessStatusCode);
                 warmUpTask.Result.Dispose();
@@ -2334,22 +2335,19 @@ namespace System.Net.Http.Functional.Tests
     {
         public SocketsHttpHandlerTest_ConnectCallback(ITestOutputHelper output) : base(output) { }
 
-        [Fact]
-        public void ConnectCallback_SyncRequest_Fails()
+        [Theory]
+        [InlineData(false, false)]
+        [InlineData(false, true)]
+        [InlineData(true, false)]
+        [InlineData(true, true)]
+        public async Task ConnectCallback_ContextHasCorrectProperties_Success(bool syncRequest, bool syncCallback)
         {
-            using SocketsHttpHandler handler = new SocketsHttpHandler
+            if (syncRequest && UseVersion > HttpVersion.Version11)
             {
-                ConnectCallback = (context, token) => default,
-            };
+                // Sync requests are only supported on 1.x
+                return;
+            }
 
-            using HttpClient client = CreateHttpClient(handler);
-
-            Assert.ThrowsAny<NotSupportedException>(() => client.Send(new HttpRequestMessage(HttpMethod.Get, $"http://bing.com")));
-        }
-
-        [Fact]
-        public async Task ConnectCallback_ContextHasCorrectProperties_Success()
-        {
             await LoopbackServerFactory.CreateClientAndServerAsync(
                 async uri =>
                 {
@@ -2366,14 +2364,23 @@ namespace System.Net.Http.Functional.Tests
                         Assert.Equal(uri.Port, context.DnsEndPoint.Port);
                         Assert.Equal(requestMessage, context.InitialRequestMessage);
 
-                        Socket s = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
-                        await s.ConnectAsync(context.DnsEndPoint, token);
+                        var s = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+                        if (syncCallback)
+                        {
+                            s.Connect(context.DnsEndPoint);
+                        }
+                        else
+                        {
+                            await s.ConnectAsync(context.DnsEndPoint, token);
+                        }
                         return new NetworkStream(s, ownsSocket: true);
                     };
 
                     using HttpClient client = CreateHttpClient(handler);
 
-                    HttpResponseMessage response = await client.SendAsync(requestMessage);
+                    HttpResponseMessage response = await (syncRequest ?
+                        Task.Run(() => client.Send(requestMessage)) :
+                        client.SendAsync(requestMessage));
                     Assert.Equal("foo", await response.Content.ReadAsStringAsync());
                 },
                 async server =>
@@ -2476,22 +2483,26 @@ namespace System.Net.Http.Functional.Tests
                 return new NetworkStream(clientSocket, ownsSocket: true);
             };
 
-            using HttpClient client = CreateHttpClient(handler);
-            client.DefaultVersionPolicy = HttpVersionPolicy.RequestVersionExact;
+            using (HttpClient client = CreateHttpClient(handler))
+            {
+                client.DefaultVersionPolicy = HttpVersionPolicy.RequestVersionExact;
 
-            Task<string> clientTask = client.GetStringAsync($"{(options.UseSsl ? "https" : "http")}://{guid}/foo");
+                Task<string> clientTask = client.GetStringAsync($"{(options.UseSsl ? "https" : "http")}://{guid}/foo");
 
-            Socket serverSocket = await listenSocket.AcceptAsync();
-            using GenericLoopbackConnection loopbackConnection = await LoopbackServerFactory.CreateConnectionAsync(socket: null, new NetworkStream(serverSocket, ownsSocket: true), options);
-            await loopbackConnection.InitializeConnectionAsync();
+                Socket serverSocket = await listenSocket.AcceptAsync();
+                using (GenericLoopbackConnection loopbackConnection = await LoopbackServerFactory.CreateConnectionAsync(socket: null, new NetworkStream(serverSocket, ownsSocket: true), options))
+                {
+                    await loopbackConnection.InitializeConnectionAsync();
 
-            HttpRequestData requestData = await loopbackConnection.ReadRequestDataAsync();
-            Assert.Equal("/foo", requestData.Path);
+                    HttpRequestData requestData = await loopbackConnection.ReadRequestDataAsync();
+                    Assert.Equal("/foo", requestData.Path);
 
-            await loopbackConnection.SendResponseAsync(content: "foo");
+                    await loopbackConnection.SendResponseAsync(content: "foo");
 
-            string response = await clientTask;
-            Assert.Equal("foo", response);
+                    string response = await clientTask;
+                    Assert.Equal("foo", response);
+                }
+            }
         }
 
         [Theory]

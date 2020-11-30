@@ -3,17 +3,36 @@
 
 using System.Collections.Generic;
 using System.IO;
+using System.IO.Tests;
 using System.Linq;
 using System.Runtime.InteropServices;
-using System.Security.Cryptography;
 using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
 
 namespace System.Net.Sockets.Tests
 {
-    public class NetworkStreamTest
+    public class NetworkStreamTest : ConnectedStreamConformanceTests
     {
+        protected override bool BlocksOnZeroByteReads => true;
+        protected override bool CanTimeout => true;
+        protected override Type InvalidIAsyncResultExceptionType => typeof(IOException);
+        protected override bool FlushRequiredToWriteData => false;
+        protected override Type UnsupportedConcurrentExceptionType => null;
+        protected override bool ReadWriteValueTasksProtectSingleConsumption => true;
+        protected override Task<StreamPair> CreateConnectedStreamsAsync()
+        {
+            using Socket listener = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+            listener.Bind(new IPEndPoint(IPAddress.Loopback, 0));
+            listener.Listen();
+
+            var client = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+            client.Connect(listener.LocalEndPoint);
+            Socket server = listener.Accept();
+
+            return Task.FromResult<StreamPair>((new NetworkStream(client, ownsSocket: true), new NetworkStream(server, ownsSocket: true)));
+        }
+
         [Fact]
         public void Ctor_NullSocket_ThrowsArgumentNullExceptions()
         {
@@ -271,38 +290,27 @@ namespace System.Net.Sockets.Tests
             });
         }
 
-        [Theory]
-        [InlineData(false)]
-        [InlineData(true)]
-        public async Task DisposedClosed_MembersThrowObjectDisposedException(bool close)
-        {
-            await RunWithConnectedNetworkStreamsAsync((server, _) =>
+        [Theory]	
+        [InlineData(false)]	
+        [InlineData(true)]	
+        public async Task DisposedClosed_MembersThrowObjectDisposedException(bool close)	
+        {	
+            await RunWithConnectedNetworkStreamsAsync((server, _) =>	
             {
                 if (close) server.Close();
-                else server.Dispose();
+                else server.Dispose();	
 
+                // Unique members to NetworkStream; others covered by stream conformance tests
                 Assert.Throws<ObjectDisposedException>(() => server.DataAvailable);
 
-                Assert.Throws<ObjectDisposedException>(() => server.Read(new byte[1], 0, 1));
-                Assert.Throws<ObjectDisposedException>(() => server.Write(new byte[1], 0, 1));
-
-                Assert.Throws<ObjectDisposedException>(() => server.BeginRead(new byte[1], 0, 1, null, null));
-                Assert.Throws<ObjectDisposedException>(() => server.BeginWrite(new byte[1], 0, 1, null, null));
-
-                Assert.Throws<ObjectDisposedException>(() => server.EndRead(null));
-                Assert.Throws<ObjectDisposedException>(() => server.EndWrite(null));
-
-                Assert.Throws<ObjectDisposedException>(() => { server.ReadAsync(new byte[1], 0, 1); });
-                Assert.Throws<ObjectDisposedException>(() => { server.WriteAsync(new byte[1], 0, 1); });
-
-                Assert.Throws<ObjectDisposedException>(() => { server.CopyToAsync(new MemoryStream()); });
-
-                return Task.CompletedTask;
-            });
+                return Task.CompletedTask;	
+            });	
         }
 
-        [Fact]
-        public async Task DisposeSocketDirectly_ReadWriteThrowNetworkException()
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task DisposeSocketDirectly_ReadWriteThrowNetworkException(bool derivedNetworkStream)
         {
             using (Socket listener = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
             using (Socket client = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
@@ -312,32 +320,30 @@ namespace System.Net.Sockets.Tests
 
                 Task<Socket> acceptTask = listener.AcceptAsync();
                 await Task.WhenAll(acceptTask, client.ConnectAsync(new IPEndPoint(IPAddress.Loopback, ((IPEndPoint)listener.LocalEndPoint).Port)));
-                using (Socket serverSocket = await acceptTask)
-                using (DerivedNetworkStream server = new DerivedNetworkStream(serverSocket))
-                {
-                    serverSocket.Dispose();
+                using Socket serverSocket = await acceptTask;
 
-                    Assert.Throws<IOException>(() => server.Read(new byte[1], 0, 1));
-                    Assert.Throws<IOException>(() => server.Write(new byte[1], 0, 1));
+                using NetworkStream server = derivedNetworkStream ? (NetworkStream)new DerivedNetworkStream(serverSocket) : new NetworkStream(serverSocket);
 
-                    Assert.Throws<IOException>(() => server.BeginRead(new byte[1], 0, 1, null, null));
-                    Assert.Throws<IOException>(() => server.BeginWrite(new byte[1], 0, 1, null, null));
+                serverSocket.Dispose();
 
-                    Assert.Throws<IOException>(() => { server.ReadAsync(new byte[1], 0, 1); });
-                    Assert.Throws<IOException>(() => { server.WriteAsync(new byte[1], 0, 1); });
-                }
+                ExpectIOException(() => server.Read(new byte[1], 0, 1));
+                ExpectIOException(() => server.Write(new byte[1], 0, 1));
+
+                ExpectIOException(() => server.Read((Span<byte>)new byte[1]));
+                ExpectIOException(() => server.Write((ReadOnlySpan<byte>)new byte[1]));
+
+                ExpectIOException(() => server.BeginRead(new byte[1], 0, 1, null, null));
+                ExpectIOException(() => server.BeginWrite(new byte[1], 0, 1, null, null));
+
+                ExpectIOException(() => { _ = server.ReadAsync(new byte[1], 0, 1); });
+                ExpectIOException(() => { _ = server.WriteAsync(new byte[1], 0, 1); });
             }
-        }
 
-        [Fact]
-        public async Task InvalidIAsyncResult_EndReadWriteThrows()
-        {
-            await RunWithConnectedNetworkStreamsAsync((server, _) =>
+            static void ExpectIOException(Action action)
             {
-                Assert.Throws<IOException>(() => server.EndRead(Task.CompletedTask));
-                Assert.Throws<IOException>(() => server.EndWrite(Task.CompletedTask));
-                return Task.CompletedTask;
-            });
+                IOException ex = Assert.Throws<IOException>(action);
+                Assert.IsType<ObjectDisposedException>(ex.InnerException);
+            }
         }
 
         [Fact]
@@ -348,69 +354,6 @@ namespace System.Net.Sockets.Tests
                 Assert.Throws<ArgumentOutOfRangeException>(() => server.Close(-2));
                 server.Close(-1);
                 server.Close(0);
-                return Task.CompletedTask;
-            });
-        }
-
-        [Fact]
-        public async Task ReadWrite_InvalidArguments_Throws()
-        {
-            await RunWithConnectedNetworkStreamsAsync((server, _) =>
-            {
-                Assert.Throws<ArgumentNullException>(() => server.Read(null, 0, 0));
-                Assert.Throws<ArgumentOutOfRangeException>(() => server.Read(new byte[1], -1, 0));
-                Assert.Throws<ArgumentOutOfRangeException>(() => server.Read(new byte[1], 2, 0));
-                Assert.Throws<ArgumentOutOfRangeException>(() => server.Read(new byte[1], 0, -1));
-                Assert.Throws<ArgumentOutOfRangeException>(() => server.Read(new byte[1], 0, 2));
-
-                Assert.Throws<ArgumentNullException>(() => server.BeginRead(null, 0, 0, null, null));
-                Assert.Throws<ArgumentOutOfRangeException>(() => server.BeginRead(new byte[1], -1, 0, null, null));
-                Assert.Throws<ArgumentOutOfRangeException>(() => server.BeginRead(new byte[1], 2, 0, null, null));
-                Assert.Throws<ArgumentOutOfRangeException>(() => server.BeginRead(new byte[1], 0, -1, null, null));
-                Assert.Throws<ArgumentOutOfRangeException>(() => server.BeginRead(new byte[1], 0, 2, null, null));
-
-                Assert.Throws<ArgumentNullException>(() => { server.ReadAsync(null, 0, 0); });
-                Assert.Throws<ArgumentOutOfRangeException>(() => { server.ReadAsync(new byte[1], -1, 0); });
-                Assert.Throws<ArgumentOutOfRangeException>(() => { server.ReadAsync(new byte[1], 2, 0); });
-                Assert.Throws<ArgumentOutOfRangeException>(() => { server.ReadAsync(new byte[1], 0, -1); });
-                Assert.Throws<ArgumentOutOfRangeException>(() => { server.ReadAsync(new byte[1], 0, 2); });
-
-                Assert.Throws<ArgumentNullException>(() => server.Write(null, 0, 0));
-                Assert.Throws<ArgumentOutOfRangeException>(() => server.Write(new byte[1], -1, 0));
-                Assert.Throws<ArgumentOutOfRangeException>(() => server.Write(new byte[1], 2, 0));
-                Assert.Throws<ArgumentOutOfRangeException>(() => server.Write(new byte[1], 0, -1));
-                Assert.Throws<ArgumentOutOfRangeException>(() => server.Write(new byte[1], 0, 2));
-
-                Assert.Throws<ArgumentNullException>(() => server.BeginWrite(null, 0, 0, null, null));
-                Assert.Throws<ArgumentOutOfRangeException>(() => server.BeginWrite(new byte[1], -1, 0, null, null));
-                Assert.Throws<ArgumentOutOfRangeException>(() => server.BeginWrite(new byte[1], 2, 0, null, null));
-                Assert.Throws<ArgumentOutOfRangeException>(() => server.BeginWrite(new byte[1], 0, -1, null, null));
-                Assert.Throws<ArgumentOutOfRangeException>(() => server.BeginWrite(new byte[1], 0, 2, null, null));
-
-                Assert.Throws<ArgumentNullException>(() => { server.WriteAsync(null, 0, 0); });
-                Assert.Throws<ArgumentOutOfRangeException>(() => { server.WriteAsync(new byte[1], -1, 0); });
-                Assert.Throws<ArgumentOutOfRangeException>(() => { server.WriteAsync(new byte[1], 2, 0); });
-                Assert.Throws<ArgumentOutOfRangeException>(() => { server.WriteAsync(new byte[1], 0, -1); });
-                Assert.Throws<ArgumentOutOfRangeException>(() => { server.WriteAsync(new byte[1], 0, 2); });
-
-                Assert.Throws<ArgumentNullException>(() => server.EndRead(null));
-                Assert.Throws<ArgumentNullException>(() => server.EndWrite(null));
-
-                return Task.CompletedTask;
-            });
-        }
-
-        [Fact]
-        public async Task NotSeekable_OperationsThrowExceptions()
-        {
-            await RunWithConnectedNetworkStreamsAsync((server, client) =>
-            {
-                Assert.False(server.CanSeek && client.CanSeek);
-                Assert.Throws<NotSupportedException>(() => server.Seek(0, SeekOrigin.Begin));
-                Assert.Throws<NotSupportedException>(() => server.Length);
-                Assert.Throws<NotSupportedException>(() => server.SetLength(1024));
-                Assert.Throws<NotSupportedException>(() => server.Position);
-                Assert.Throws<NotSupportedException>(() => server.Position = 0);
                 return Task.CompletedTask;
             });
         }
@@ -457,246 +400,6 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
-        public async Task ReadWrite_Byte_Success()
-        {
-            await RunWithConnectedNetworkStreamsAsync(async (server, client) =>
-            {
-                for (byte i = 0; i < 10; i++)
-                {
-                    Task<int> read = Task.Run(() => client.ReadByte());
-                    Task write = Task.Run(() => server.WriteByte(i));
-                    await Task.WhenAll(read, write);
-                    Assert.Equal(i, await read);
-                }
-            });
-        }
-
-        [Fact]
-        public async Task ReadWrite_Array_Success()
-        {
-            await RunWithConnectedNetworkStreamsAsync((server, client) =>
-            {
-                var clientData = new byte[] { 42 };
-                client.Write(clientData, 0, clientData.Length);
-
-                var serverData = new byte[clientData.Length];
-                Assert.Equal(serverData.Length, server.Read(serverData, 0, serverData.Length));
-
-                Assert.Equal(clientData, serverData);
-
-                client.Flush(); // nop
-
-                return Task.CompletedTask;
-            });
-        }
-
-        [OuterLoop]
-        [Theory]
-        [MemberData(nameof(NonCanceledTokens))]
-        public async Task ReadWriteAsync_NonCanceled_Success(CancellationToken nonCanceledToken)
-        {
-            await RunWithConnectedNetworkStreamsAsync(async (server, client) =>
-            {
-                var clientData = new byte[] { 42 };
-                await client.WriteAsync(clientData, 0, clientData.Length, nonCanceledToken);
-
-                var serverData = new byte[clientData.Length];
-                Assert.Equal(serverData.Length, await server.ReadAsync(serverData, 0, serverData.Length, nonCanceledToken));
-
-                Assert.Equal(clientData, serverData);
-
-                Assert.Equal(TaskStatus.RanToCompletion, client.FlushAsync().Status); // nop
-            });
-        }
-
-        [Fact]
-        public async Task BeginEndReadWrite_Sync_Success()
-        {
-            await RunWithConnectedNetworkStreamsAsync((server, client) =>
-            {
-                var clientData = new byte[] { 42 };
-
-                client.EndWrite(client.BeginWrite(clientData, 0, clientData.Length, null, null));
-
-                var serverData = new byte[clientData.Length];
-                Assert.Equal(serverData.Length, server.EndRead(server.BeginRead(serverData, 0, serverData.Length, null, null)));
-
-                Assert.Equal(clientData, serverData);
-
-                return Task.CompletedTask;
-            });
-        }
-
-        [Fact]
-        public async Task BeginEndReadWrite_Async_Success()
-        {
-            await RunWithConnectedNetworkStreamsAsync(async (server, client) =>
-            {
-                var clientData = new byte[] { 42 };
-                var serverData = new byte[clientData.Length];
-                var tcs = new TaskCompletionSource();
-
-                client.BeginWrite(clientData, 0, clientData.Length, writeIar =>
-                {
-                    try
-                    {
-                        client.EndWrite(writeIar);
-                        server.BeginRead(serverData, 0, serverData.Length, readIar =>
-                        {
-                            try
-                            {
-                                Assert.Equal(serverData.Length, server.EndRead(readIar));
-                                tcs.SetResult();
-                            }
-                            catch (Exception e2) { tcs.SetException(e2); }
-                        }, null);
-                    }
-                    catch (Exception e1) { tcs.SetException(e1); }
-                }, null);
-
-                await tcs.Task;
-                Assert.Equal(clientData, serverData);
-            });
-        }
-
-        [OuterLoop]
-        [Fact]
-        public async Task ReadWriteAsync_Canceled_ThrowsOperationCanceledException()
-        {
-            await RunWithConnectedNetworkStreamsAsync(async (server, client) =>
-            {
-                var canceledToken = new CancellationToken(canceled: true);
-                await Assert.ThrowsAnyAsync<OperationCanceledException>(() => client.WriteAsync(new byte[1], 0, 1, canceledToken));
-                await Assert.ThrowsAnyAsync<OperationCanceledException>(() => server.ReadAsync(new byte[1], 0, 1, canceledToken));
-            });
-        }
-
-        public static object[][] NonCanceledTokens = new object[][]
-        {
-            new object[] { CancellationToken.None },             // CanBeCanceled == false
-            new object[] { new CancellationTokenSource().Token } // CanBeCanceled == true
-        };
-
-        [OuterLoop("Timeouts")]
-        [Fact]
-        public async Task ReadTimeout_Expires_Throws()
-        {
-            await RunWithConnectedNetworkStreamsAsync((server, client) =>
-            {
-                Assert.Equal(-1, server.ReadTimeout);
-
-                server.ReadTimeout = 1;
-                Assert.ThrowsAny<IOException>(() => server.Read(new byte[1], 0, 1));
-
-                return Task.CompletedTask;
-            });
-        }
-
-        [Theory]
-        [InlineData(0)]
-        [InlineData(-2)]
-        public async Task Timeout_InvalidData_ThrowsArgumentException(int invalidTimeout)
-        {
-            await RunWithConnectedNetworkStreamsAsync((server, client) =>
-            {
-                AssertExtensions.Throws<ArgumentOutOfRangeException>("value", () => server.ReadTimeout = invalidTimeout);
-                AssertExtensions.Throws<ArgumentOutOfRangeException>("value", () => server.WriteTimeout = invalidTimeout);
-                return Task.CompletedTask;
-            });
-        }
-
-        [Fact]
-        public async Task Timeout_ValidData_Roundtrips()
-        {
-            await RunWithConnectedNetworkStreamsAsync((server, client) =>
-            {
-                Assert.Equal(-1, server.ReadTimeout);
-                Assert.Equal(-1, server.WriteTimeout);
-
-                server.ReadTimeout = 100;
-                Assert.InRange(server.ReadTimeout, 100, int.MaxValue);
-                server.ReadTimeout = 100; // same value again
-                Assert.InRange(server.ReadTimeout, 100, int.MaxValue);
-
-                server.ReadTimeout = -1;
-                Assert.Equal(-1, server.ReadTimeout);
-
-                server.WriteTimeout = 100;
-                Assert.InRange(server.WriteTimeout, 100, int.MaxValue);
-                server.WriteTimeout = 100; // same value again
-                Assert.InRange(server.WriteTimeout, 100, int.MaxValue);
-
-                server.WriteTimeout = -1;
-                Assert.Equal(-1, server.WriteTimeout);
-
-                return Task.CompletedTask;
-            });
-        }
-
-        public static IEnumerable<object[]> CopyToAsync_AllDataCopied_MemberData() =>
-            from asyncWrite in new bool[] { true, false }
-            from byteCount in new int[] { 0, 1, 1024, 4096, 4095, 1024 * 1024 }
-            select new object[] { byteCount, asyncWrite };
-
-        [Theory]
-        [MemberData(nameof(CopyToAsync_AllDataCopied_MemberData))]
-        public async Task CopyToAsync_AllDataCopied(int byteCount, bool asyncWrite)
-        {
-            await RunWithConnectedNetworkStreamsAsync(async (server, client) =>
-            {
-                var results = new MemoryStream();
-                byte[] dataToCopy = new byte[byteCount];
-                new Random().NextBytes(dataToCopy);
-
-                Task copyTask = client.CopyToAsync(results);
-
-                if (asyncWrite)
-                {
-                    await server.WriteAsync(dataToCopy, 0, dataToCopy.Length);
-                }
-                else
-                {
-                    server.Write(new ReadOnlySpan<byte>(dataToCopy, 0, dataToCopy.Length));
-                }
-
-                server.Dispose();
-                await copyTask;
-
-                Assert.Equal(dataToCopy, results.ToArray());
-            });
-        }
-
-        [Fact]
-        public async Task CopyToAsync_InvalidArguments_Throws()
-        {
-            await RunWithConnectedNetworkStreamsAsync((stream, _) =>
-            {
-                // Null destination
-                AssertExtensions.Throws<ArgumentNullException>("destination", () => { stream.CopyToAsync(null); });
-
-                // Buffer size out-of-range
-                AssertExtensions.Throws<ArgumentOutOfRangeException>("bufferSize", () => { stream.CopyToAsync(new MemoryStream(), 0); });
-                AssertExtensions.Throws<ArgumentOutOfRangeException>("bufferSize", () => { stream.CopyToAsync(new MemoryStream(), -1, CancellationToken.None); });
-
-                // Copying to non-writable stream
-                Assert.Throws<NotSupportedException>(() => { stream.CopyToAsync(new MemoryStream(new byte[0], writable: false)); });
-
-                // Copying to a disposed stream
-                Assert.Throws<ObjectDisposedException>(() =>
-                {
-                    var disposedTarget = new MemoryStream();
-                    disposedTarget.Dispose();
-                    stream.CopyToAsync(disposedTarget);
-                });
-
-                // Already canceled
-                Assert.Equal(TaskStatus.Canceled, stream.CopyToAsync(new MemoryStream(new byte[1]), 1, new CancellationToken(canceled: true)).Status);
-
-                return Task.CompletedTask;
-            });
-        }
-
-        [Fact]
         public async Task CopyToAsync_DisposedSourceStream_ThrowsOnWindows_NoThrowOnUnix()
         {
             await RunWithConnectedNetworkStreamsAsync(async (stream, _) =>
@@ -722,7 +425,6 @@ namespace System.Net.Sockets.Tests
             });
         }
 
-
         [Fact]
         public async Task CopyToAsync_NonReadableSourceStream_Throws()
         {
@@ -732,111 +434,6 @@ namespace System.Net.Sockets.Tests
                 Assert.Throws<NotSupportedException>(() => { stream.CopyToAsync(new MemoryStream()); });
                 return Task.CompletedTask;
             }, serverAccess:FileAccess.Write);
-        }
-
-        [Fact]
-        public async Task ReadWrite_Span_Success()
-        {
-            await RunWithConnectedNetworkStreamsAsync((server, client) =>
-            {
-                var clientData = new byte[] { 42 };
-
-                client.Write((ReadOnlySpan<byte>)clientData);
-
-                var serverData = new byte[clientData.Length];
-                Assert.Equal(serverData.Length, server.Read((Span<byte>)serverData));
-
-                Assert.Equal(clientData, serverData);
-                return Task.CompletedTask;
-            });
-        }
-
-        [Fact]
-        public async Task ReadWrite_Memory_Success()
-        {
-            await RunWithConnectedNetworkStreamsAsync(async (server, client) =>
-            {
-                var clientData = new byte[] { 42 };
-
-                await client.WriteAsync((ReadOnlyMemory<byte>)clientData);
-
-                var serverData = new byte[clientData.Length];
-                Assert.Equal(serverData.Length, await server.ReadAsync((Memory<byte>)serverData));
-
-                Assert.Equal(clientData, serverData);
-            });
-        }
-
-        [Fact]
-        public async Task ReadWrite_Memory_LargeWrite_Success()
-        {
-            await RunWithConnectedNetworkStreamsAsync(async (server, client) =>
-            {
-                var writeBuffer = new byte[10 * 1024 * 1024];
-                var readBuffer = new byte[writeBuffer.Length];
-                RandomNumberGenerator.Fill(writeBuffer);
-
-                ValueTask writeTask = client.WriteAsync((ReadOnlyMemory<byte>)writeBuffer);
-
-                int totalRead = 0;
-                while (totalRead < readBuffer.Length)
-                {
-                    int bytesRead = await server.ReadAsync(new Memory<byte>(readBuffer).Slice(totalRead));
-                    Assert.InRange(bytesRead, 0, int.MaxValue);
-                    if (bytesRead == 0)
-                    {
-                        break;
-                    }
-                    totalRead += bytesRead;
-                }
-                Assert.Equal(readBuffer.Length, totalRead);
-                Assert.Equal<byte>(writeBuffer, readBuffer);
-
-                await writeTask;
-            });
-        }
-
-        [Fact]
-        public async Task ReadWrite_Precanceled_Throws()
-        {
-            await RunWithConnectedNetworkStreamsAsync(async (server, client) =>
-            {
-                await Assert.ThrowsAnyAsync<OperationCanceledException>(async () => await server.WriteAsync((ArraySegment<byte>)new byte[0], new CancellationToken(true)));
-                await Assert.ThrowsAnyAsync<OperationCanceledException>(async () => await server.ReadAsync((ArraySegment<byte>)new byte[0], new CancellationToken(true)));
-
-                await Assert.ThrowsAnyAsync<OperationCanceledException>(async () => await server.WriteAsync((ReadOnlyMemory<byte>)new byte[0], new CancellationToken(true)));
-                await Assert.ThrowsAnyAsync<OperationCanceledException>(async () => await server.ReadAsync((Memory<byte>)new byte[0], new CancellationToken(true)));
-            });
-        }
-
-        [Fact]
-        public async Task ReadAsync_AwaitMultipleTimes_Throws()
-        {
-            await RunWithConnectedNetworkStreamsAsync(async (server, client) =>
-            {
-                var b = new byte[1];
-                ValueTask<int> r = server.ReadAsync(b);
-                await client.WriteAsync(new byte[] { 42 });
-                Assert.Equal(1, await r);
-                Assert.Equal(42, b[0]);
-                await Assert.ThrowsAsync<InvalidOperationException>(async () => await r);
-                Assert.Throws<InvalidOperationException>(() => r.GetAwaiter().IsCompleted);
-                Assert.Throws<InvalidOperationException>(() => r.GetAwaiter().OnCompleted(() => { }));
-                Assert.Throws<InvalidOperationException>(() => r.GetAwaiter().GetResult());
-            });
-        }
-
-        [Fact]
-        public async Task ReadAsync_MultipleContinuations_Throws()
-        {
-            await RunWithConnectedNetworkStreamsAsync((server, client) =>
-            {
-                var b = new byte[1];
-                ValueTask<int> r = server.ReadAsync(b);
-                r.GetAwaiter().OnCompleted(() => { });
-                Assert.Throws<InvalidOperationException>(() => r.GetAwaiter().OnCompleted(() => { }));
-                return Task.CompletedTask;
-            });
         }
 
         [Fact]
@@ -927,250 +524,6 @@ namespace System.Net.Sockets.Tests
                 Assert.Equal(3, await r1 + await r2 + await r3);
                 Assert.Equal(42 + 43 + 44, b1[0] + b2[0] + b3[0]);
             });
-        }
-
-        public static IEnumerable<object[]> ReadAsync_ContinuesOnCurrentContextIfDesired_MemberData() =>
-            from flowExecutionContext in new[] { true, false }
-            from continueOnCapturedContext in new bool?[] { null, false, true }
-            select new object[] { flowExecutionContext, continueOnCapturedContext };
-
-        [Theory]
-        [MemberData(nameof(ReadAsync_ContinuesOnCurrentContextIfDesired_MemberData))]
-        public async Task ReadAsync_ContinuesOnCurrentSynchronizationContextIfDesired(
-            bool flowExecutionContext, bool? continueOnCapturedContext)
-        {
-            await Task.Run(async () => // escape xunit sync ctx
-            {
-                await RunWithConnectedNetworkStreamsAsync(async (server, client) =>
-                {
-                    Assert.Null(SynchronizationContext.Current);
-
-                    var continuationRan = new TaskCompletionSource<bool>();
-                    var asyncLocal = new AsyncLocal<int>();
-                    bool schedulerWasFlowed = false;
-                    bool executionContextWasFlowed = false;
-                    Action continuation = () =>
-                    {
-                        schedulerWasFlowed = SynchronizationContext.Current is CustomSynchronizationContext;
-                        executionContextWasFlowed = 42 == asyncLocal.Value;
-                        continuationRan.SetResult(true);
-                    };
-
-                    var readBuffer = new byte[1];
-                    ValueTask<int> readValueTask = client.ReadAsync((Memory<byte>)new byte[1]);
-
-                    SynchronizationContext.SetSynchronizationContext(new CustomSynchronizationContext());
-                    asyncLocal.Value = 42;
-                    switch (continueOnCapturedContext)
-                    {
-                        case null:
-                            if (flowExecutionContext)
-                            {
-                                readValueTask.GetAwaiter().OnCompleted(continuation);
-                            }
-                            else
-                            {
-                                readValueTask.GetAwaiter().UnsafeOnCompleted(continuation);
-                            }
-                            break;
-                        default:
-                            if (flowExecutionContext)
-                            {
-                                readValueTask.ConfigureAwait(continueOnCapturedContext.Value).GetAwaiter().OnCompleted(continuation);
-                            }
-                            else
-                            {
-                                readValueTask.ConfigureAwait(continueOnCapturedContext.Value).GetAwaiter().UnsafeOnCompleted(continuation);
-                            }
-                            break;
-                    }
-                    asyncLocal.Value = 0;
-                    SynchronizationContext.SetSynchronizationContext(null);
-
-                    Assert.False(readValueTask.IsCompleted);
-                    Assert.False(readValueTask.IsCompletedSuccessfully);
-                    await server.WriteAsync(new byte[] { 42 });
-
-                    await continuationRan.Task;
-                    Assert.True(readValueTask.IsCompleted);
-                    Assert.True(readValueTask.IsCompletedSuccessfully);
-
-                    Assert.Equal(continueOnCapturedContext != false, schedulerWasFlowed);
-                    Assert.Equal(flowExecutionContext, executionContextWasFlowed);
-                });
-            });
-        }
-
-        [Theory]
-        [MemberData(nameof(ReadAsync_ContinuesOnCurrentContextIfDesired_MemberData))]
-        public async Task ReadAsync_ContinuesOnCurrentTaskSchedulerIfDesired(
-            bool flowExecutionContext, bool? continueOnCapturedContext)
-        {
-            await Task.Run(async () => // escape xunit sync ctx
-            {
-                await RunWithConnectedNetworkStreamsAsync(async (server, client) =>
-                {
-                    Assert.Null(SynchronizationContext.Current);
-
-                    var continuationRan = new TaskCompletionSource();
-                    var asyncLocal = new AsyncLocal<int>();
-                    bool schedulerWasFlowed = false;
-                    bool executionContextWasFlowed = false;
-                    Action continuation = () =>
-                    {
-                        schedulerWasFlowed = TaskScheduler.Current is CustomTaskScheduler;
-                        executionContextWasFlowed = 42 == asyncLocal.Value;
-                        continuationRan.SetResult();
-                    };
-
-                    var readBuffer = new byte[1];
-                    ValueTask<int> readValueTask = client.ReadAsync((Memory<byte>)new byte[1]);
-
-                    await Task.Factory.StartNew(() =>
-                    {
-                        Assert.IsType<CustomTaskScheduler>(TaskScheduler.Current);
-                        asyncLocal.Value = 42;
-                        switch (continueOnCapturedContext)
-                        {
-                            case null:
-                                if (flowExecutionContext)
-                                {
-                                    readValueTask.GetAwaiter().OnCompleted(continuation);
-                                }
-                                else
-                                {
-                                    readValueTask.GetAwaiter().UnsafeOnCompleted(continuation);
-                                }
-                                break;
-                            default:
-                                if (flowExecutionContext)
-                                {
-                                    readValueTask.ConfigureAwait(continueOnCapturedContext.Value).GetAwaiter().OnCompleted(continuation);
-                                }
-                                else
-                                {
-                                    readValueTask.ConfigureAwait(continueOnCapturedContext.Value).GetAwaiter().UnsafeOnCompleted(continuation);
-                                }
-                                break;
-                        }
-                        asyncLocal.Value = 0;
-                    }, CancellationToken.None, TaskCreationOptions.None, new CustomTaskScheduler());
-
-                    Assert.False(readValueTask.IsCompleted);
-                    Assert.False(readValueTask.IsCompletedSuccessfully);
-                    await server.WriteAsync(new byte[] { 42 });
-
-                    await continuationRan.Task;
-                    Assert.True(readValueTask.IsCompleted);
-                    Assert.True(readValueTask.IsCompletedSuccessfully);
-
-                    Assert.Equal(continueOnCapturedContext != false, schedulerWasFlowed);
-                    Assert.Equal(flowExecutionContext, executionContextWasFlowed);
-                });
-            });
-        }
-
-        [Fact]
-        public async Task DisposeAsync_ClosesStream()
-        {
-            await RunWithConnectedNetworkStreamsAsync(async (server, client) =>
-            {
-                Assert.True(client.DisposeAsync().IsCompletedSuccessfully);
-                Assert.True(server.DisposeAsync().IsCompletedSuccessfully);
-
-                await client.DisposeAsync();
-                await server.DisposeAsync();
-
-                Assert.False(server.CanRead);
-                Assert.False(server.CanWrite);
-
-                Assert.False(client.CanRead);
-                Assert.False(client.CanWrite);
-            });
-        }
-
-        [Fact]
-        public async Task ReadAsync_CancelPendingRead_DoesntImpactSubsequentReads()
-        {
-            await RunWithConnectedNetworkStreamsAsync(async (server, client) =>
-            {
-                await Assert.ThrowsAnyAsync<OperationCanceledException>(() => client.ReadAsync(new byte[1], 0, 1, new CancellationToken(true)));
-                await Assert.ThrowsAnyAsync<OperationCanceledException>(async () => { await client.ReadAsync(new Memory<byte>(new byte[1]), new CancellationToken(true)); });
-
-                CancellationTokenSource cts = new CancellationTokenSource();
-                Task<int> t = client.ReadAsync(new byte[1], 0, 1, cts.Token);
-                cts.Cancel();
-                await Assert.ThrowsAnyAsync<OperationCanceledException>(() => t);
-
-                cts = new CancellationTokenSource();
-                ValueTask<int> vt = client.ReadAsync(new Memory<byte>(new byte[1]), cts.Token);
-                cts.Cancel();
-                await Assert.ThrowsAnyAsync<OperationCanceledException>(async () => await vt);
-
-                byte[] buffer = new byte[1];
-                vt = client.ReadAsync(new Memory<byte>(buffer));
-                Assert.False(vt.IsCompleted);
-                await server.WriteAsync(new ReadOnlyMemory<byte>(new byte[1] { 42 }));
-                Assert.Equal(1, await vt);
-                Assert.Equal(42, buffer[0]);
-            });
-        }
-
-        [Fact]
-        public async Task WriteAsync_CancelPendingWrite_SucceedsOrThrowsOperationCanceled()
-        {
-            await RunWithConnectedNetworkStreamsAsync(async (server, client) =>
-            {
-                await Assert.ThrowsAnyAsync<OperationCanceledException>(() => client.WriteAsync(new byte[1], 0, 1, new CancellationToken(true)));
-                await Assert.ThrowsAnyAsync<OperationCanceledException>(async () => { await client.WriteAsync(new Memory<byte>(new byte[1]), new CancellationToken(true)); });
-
-                byte[] hugeBuffer = new byte[100_000_000];
-                Exception e;
-
-                var cts = new CancellationTokenSource();
-                Task t = client.WriteAsync(hugeBuffer, 0, hugeBuffer.Length, cts.Token);
-                cts.Cancel();
-                e = await Record.ExceptionAsync(async () => await t);
-                if (e != null)
-                {
-                    Assert.IsAssignableFrom<OperationCanceledException>(e);
-                }
-
-                cts = new CancellationTokenSource();
-                ValueTask vt = client.WriteAsync(new Memory<byte>(hugeBuffer), cts.Token);
-                cts.Cancel();
-                e = await Record.ExceptionAsync(async () => await vt);
-                if (e != null)
-                {
-                    Assert.IsAssignableFrom<OperationCanceledException>(e);
-                }
-            });
-        }
-
-        private sealed class CustomSynchronizationContext : SynchronizationContext
-        {
-            public override void Post(SendOrPostCallback d, object state)
-            {
-                ThreadPool.QueueUserWorkItem(delegate
-                {
-                    SetSynchronizationContext(this);
-                    try
-                    {
-                        d(state);
-                    }
-                    finally
-                    {
-                        SetSynchronizationContext(null);
-                    }
-                }, null);
-            }
-        }
-
-        private sealed class CustomTaskScheduler : TaskScheduler
-        {
-            protected override void QueueTask(Task task) => ThreadPool.QueueUserWorkItem(_ => TryExecuteTask(task));
-            protected override bool TryExecuteTaskInline(Task task, bool taskWasPreviouslyQueued) => false;
-            protected override IEnumerable<Task> GetScheduledTasks() => null;
         }
 
         /// <summary>

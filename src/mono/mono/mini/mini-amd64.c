@@ -1231,7 +1231,7 @@ mono_arch_set_native_call_context_args (CallContext *ccontext, gpointer frame, M
 }
 
 void
-mono_arch_set_native_call_context_ret (CallContext *ccontext, gpointer frame, MonoMethodSignature *sig)
+mono_arch_set_native_call_context_ret (CallContext *ccontext, gpointer frame, MonoMethodSignature *sig, gpointer retp)
 {
 	const MonoEECallbacks *interp_cb;
 	CallInfo *cinfo;
@@ -1245,7 +1245,17 @@ mono_arch_set_native_call_context_ret (CallContext *ccontext, gpointer frame, Mo
 	cinfo = get_call_info (NULL, sig);
 	ainfo = &cinfo->ret;
 
-	if (cinfo->ret.storage != ArgValuetypeAddrInIReg) {
+	if (retp) {
+		g_assert (cinfo->ret.storage == ArgValuetypeAddrInIReg);
+		interp_cb->frame_arg_to_data ((MonoInterpFrameHandle)frame, sig, -1, retp);
+#ifdef TARGET_WIN32
+		// Windows x64 ABI ainfo implementation includes info on how to return value type address.
+		// back to caller.
+		storage = arg_get_storage (ccontext, ainfo);
+		*(gpointer *)storage = retp;
+#endif
+	} else {
+		g_assert (cinfo->ret.storage != ArgValuetypeAddrInIReg);
 		int temp_size = arg_need_temp (ainfo);
 
 		if (temp_size)
@@ -1257,33 +1267,17 @@ mono_arch_set_native_call_context_ret (CallContext *ccontext, gpointer frame, Mo
 		if (temp_size)
 			arg_set_val (ccontext, ainfo, storage);
 	}
-#ifdef TARGET_WIN32
-	// Windows x64 ABI ainfo implementation includes info on how to return value type address.
-	// back to caller.
-	else {
-		storage = arg_get_storage (ccontext, ainfo);
-		*(gpointer *)storage = interp_cb->frame_arg_to_storage (frame, sig, -1);
-	}
-#endif
 
 	g_free (cinfo);
 }
 
-void
+gpointer
 mono_arch_get_native_call_context_args (CallContext *ccontext, gpointer frame, MonoMethodSignature *sig)
 {
 	const MonoEECallbacks *interp_cb = mini_get_interp_callbacks ();
 	CallInfo *cinfo = get_call_info (NULL, sig);
 	gpointer storage;
 	ArgInfo *ainfo;
-
-	if (sig->ret->type != MONO_TYPE_VOID) {
-		ainfo = &cinfo->ret;
-		if (ainfo->storage == ArgValuetypeAddrInIReg) {
-			storage = (gpointer) ccontext->gregs [cinfo->ret.reg];
-			interp_cb->frame_arg_set_storage ((MonoInterpFrameHandle)frame, sig, -1, storage);
-		}
-	}
 
 	for (int i = 0; i < sig->param_count + sig->hasthis; i++) {
 		ainfo = &cinfo->args [i];
@@ -1306,7 +1300,14 @@ mono_arch_get_native_call_context_args (CallContext *ccontext, gpointer frame, M
 		interp_cb->data_to_frame_arg ((MonoInterpFrameHandle)frame, sig, i, storage);
 	}
 
+	storage = NULL;
+	if (sig->ret->type != MONO_TYPE_VOID) {
+		ainfo = &cinfo->ret;
+		if (ainfo->storage == ArgValuetypeAddrInIReg)
+			storage = (gpointer) ccontext->gregs [cinfo->ret.reg];
+	}
 	g_free (cinfo);
+	return storage;
 }
 
 void

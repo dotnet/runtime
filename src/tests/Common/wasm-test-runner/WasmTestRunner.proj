@@ -30,6 +30,7 @@
       MicrosoftNetCoreAppRuntimePackDir="$(MicrosoftNetCoreAppRuntimePackDir)"
       MainAssembly="$(TestAssembly)"
       MainJS="$(CORE_ROOT)\runtime-test\runtime-test.js"
+      ExtraAssemblies="$(CORE_ROOT)\System.Private.Runtime.InteropServices.JavaScript.dll"
       AssemblySearchPaths="@(AssemblySearchPaths)"
       SkipMissingAssemblies="True"
       />

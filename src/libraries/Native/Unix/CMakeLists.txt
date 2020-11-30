@@ -1,18 +1,19 @@
 cmake_minimum_required(VERSION 3.6.2)
 include(CheckCCompilerFlag)
 
-if(CLR_CMAKE_TARGET_IOS OR CLR_CMAKE_TARGET_TVOS) 
-     # CMake 3.14.5 contains bug fixes for iOS 
-     cmake_minimum_required(VERSION 3.14.5) 
- endif() 
+if(CLR_CMAKE_TARGET_IOS OR CLR_CMAKE_TARGET_TVOS)
+     # CMake 3.14.5 contains bug fixes for iOS
+     cmake_minimum_required(VERSION 3.14.5)
+ endif()
 cmake_policy(SET CMP0042 NEW)
 
 project(CoreFX C)
 
+include(../../../../eng/native/configurepaths.cmake)
 include(${CLR_ENG_NATIVE_DIR}/configuretools.cmake)
 
 set(CMAKE_MACOSX_RPATH ON)
-if(CLR_CMAKE_TARGET_IOS OR CLR_CMAKE_TARGET_TVOS) 
+if(CLR_CMAKE_TARGET_IOS OR CLR_CMAKE_TARGET_TVOS)
     set(CMAKE_BUILD_WITH_INSTALL_NAME_DIR ON)
     set(CMAKE_INSTALL_NAME_DIR "@rpath")
 endif()
@@ -226,6 +227,7 @@ elseif(CLR_CMAKE_TARGET_TVOS)
 elseif(CLR_CMAKE_TARGET_ANDROID AND NOT CROSS_ROOTFS)
     #add_subdirectory(System.Net.Security.Native) # TODO: reenable
     if (NOT "$ENV{ANDROID_OPENSSL_AAR}" STREQUAL "")
+        set(PREFER_OPENSSL_ANDROID 1)
         add_subdirectory(System.Security.Cryptography.Native)
     endif()
 else()
@@ -236,4 +238,9 @@ endif()
 
 if(CLR_CMAKE_TARGET_OSX OR CLR_CMAKE_TARGET_IOS OR CLR_CMAKE_TARGET_TVOS)
     add_subdirectory(System.Security.Cryptography.Native.Apple)
+endif()
+
+# if ANDROID_OPENSSL_AAR is not set - use Android Native Crypto (it's going to replace openssl eventually)
+if(CLR_CMAKE_TARGET_ANDROID AND NOT PREFER_OPENSSL_ANDROID)
+    add_subdirectory(System.Security.Cryptography.Native.Android)
 endif()

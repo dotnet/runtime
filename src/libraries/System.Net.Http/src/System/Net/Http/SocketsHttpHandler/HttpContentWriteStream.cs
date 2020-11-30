@@ -18,7 +18,7 @@ namespace System.Net.Http
                 Debug.Assert(connection != null);
 
             public sealed override bool CanRead => false;
-            public sealed override bool CanWrite => true;
+            public sealed override bool CanWrite => _connection != null;
 
             public sealed override void Flush() =>
                 _connection?.Flush();

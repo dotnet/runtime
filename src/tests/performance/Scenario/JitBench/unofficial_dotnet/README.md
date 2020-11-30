@@ -44,7 +44,7 @@ Examples of more customized ways the benchmark can be run (see the command line 
 
 **Run with a private CoreCLR build instead of a downloaded one**
 
-    dotnet.exe run --  --coreclr-bin-dir F:\github\coreclr\artifacts\bin\coreclr\Windows_NT.x64.Release
+    dotnet.exe run --  --coreclr-bin-dir F:\github\coreclr\artifacts\bin\coreclr\windows.x64.Release
 
 **Run multiple configurations for comparison**
 

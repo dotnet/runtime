@@ -960,7 +960,7 @@ namespace System.IO.Pipelines
                 ThrowHelper.ThrowInvalidOperationException_NoWritingAllowed();
             }
 
-            if (_readerCompletion.IsCompleted)
+            if (_readerCompletion.IsCompletedOrThrow())
             {
                 return new ValueTask<FlushResult>(new FlushResult(isCanceled: false, isCompleted: true));
             }

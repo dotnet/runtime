@@ -88,6 +88,7 @@ jobs:
           du -sh $(Build.SourcesDirectory)/*
           df -h
         displayName: Disk Usage after Build
+        condition: always()
 
       # If intended to send extra steps after regular build add them here.
     - ${{ if ne(parameters.extraStepsTemplate, '') }}:

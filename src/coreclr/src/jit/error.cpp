@@ -139,11 +139,15 @@ void noWayAssertBodyConditional(
     }
 }
 
-#if defined(ALT_JIT)
-
 /*****************************************************************************/
 void notYetImplemented(const char* msg, const char* filename, unsigned line)
 {
+    Compiler* pCompiler = JitTls::GetCompiler();
+    if ((pCompiler == nullptr) || (pCompiler->opts.jitFlags->IsSet(JitFlags::JIT_FLAG_ALT_JIT)))
+    {
+        NOWAY_MSG_FILE_AND_LINE(msg, filename, line);
+        return;
+    }
 #if FUNC_INFO_LOGGING
 #ifdef DEBUG
     LogEnv* env = JitTls::GetLogEnv();
@@ -171,12 +175,8 @@ void notYetImplemented(const char* msg, const char* filename, unsigned line)
 #endif // FUNC_INFO_LOGGING
 
 #ifdef DEBUG
-    Compiler* pCompiler = JitTls::GetCompiler();
-    if (pCompiler != nullptr)
-    {
-        // Assume we're within a compFunctionTrace boundary, which might not be true.
-        pCompiler->compFunctionTraceEnd(nullptr, 0, true);
-    }
+    // Assume we're within a compFunctionTrace boundary, which might not be true.
+    pCompiler->compFunctionTraceEnd(nullptr, 0, true);
 #endif // DEBUG
 
     DWORD value = JitConfig.AltJitAssertOnNYI();
@@ -202,8 +202,6 @@ void notYetImplemented(const char* msg, const char* filename, unsigned line)
         fatal(CORJIT_SKIPPED);
     }
 }
-
-#endif // #if defined(ALT_JIT)
 
 /*****************************************************************************/
 LONG __JITfilter(PEXCEPTION_POINTERS pExceptionPointers, LPVOID lpvParam)
@@ -305,20 +303,23 @@ extern "C" void __cdecl assertAbort(const char* why, const char* file, unsigned 
         DebugBreak();
     }
 
-#ifdef ALT_JIT
-    // If we hit an assert, and we got here, it's either because the user hit "ignore" on the
-    // dialog pop-up, or they set COMPlus_ContinueOnAssert=1 to not emit a pop-up, but just continue.
-    // If we're an altjit, we have two options: (1) silently continue, as a normal JIT would, probably
-    // leading to additional asserts, or (2) tell the VM that the AltJit wants to skip this function,
-    // thus falling back to the fallback JIT. Setting COMPlus_AltJitSkipOnAssert=1 chooses this "skip"
-    // to the fallback JIT behavior. This is useful when doing ASM diffs, where we only want to see
-    // the first assert for any function, but we don't want to kill the whole ngen process on the
-    // first assert (which would happen if you used COMPlus_NoGuiOnAssert=1 for example).
-    if (JitConfig.AltJitSkipOnAssert() != 0)
+    Compiler* comp = JitTls::GetCompiler();
+
+    if (comp != nullptr && comp->opts.jitFlags->IsSet(JitFlags::JIT_FLAG_ALT_JIT))
     {
-        fatal(CORJIT_SKIPPED);
+        // If we hit an assert, and we got here, it's either because the user hit "ignore" on the
+        // dialog pop-up, or they set COMPlus_ContinueOnAssert=1 to not emit a pop-up, but just continue.
+        // If we're an altjit, we have two options: (1) silently continue, as a normal JIT would, probably
+        // leading to additional asserts, or (2) tell the VM that the AltJit wants to skip this function,
+        // thus falling back to the fallback JIT. Setting COMPlus_AltJitSkipOnAssert=1 chooses this "skip"
+        // to the fallback JIT behavior. This is useful when doing ASM diffs, where we only want to see
+        // the first assert for any function, but we don't want to kill the whole ngen process on the
+        // first assert (which would happen if you used COMPlus_NoGuiOnAssert=1 for example).
+        if (JitConfig.AltJitSkipOnAssert() != 0)
+        {
+            fatal(CORJIT_SKIPPED);
+        }
     }
-#endif
 }
 
 /*********************************************************************/

@@ -1,0 +1,11 @@
+# C# doesn't permit setting the parameter name of the setter.
+ParameterNamesCannotChange : Parameter name on member 'Microsoft.VisualBasic.ComClassAttribute.InterfaceShadows.set(System.Boolean)' is 'AutoPropertyValue' in the implementation but 'value' in the contract.
+ParameterNamesCannotChange : Parameter name on member 'Microsoft.VisualBasic.DateAndTime.DateString.set(System.String)' is 'Value' in the implementation but 'value' in the contract.
+ParameterNamesCannotChange : Parameter name on member 'Microsoft.VisualBasic.DateAndTime.TimeOfDay.set(System.DateTime)' is 'Value' in the implementation but 'value' in the contract.
+ParameterNamesCannotChange : Parameter name on member 'Microsoft.VisualBasic.DateAndTime.TimeString.set(System.String)' is 'Value' in the implementation but 'value' in the contract.
+ParameterNamesCannotChange : Parameter name on member 'Microsoft.VisualBasic.DateAndTime.Today.set(System.DateTime)' is 'Value' in the implementation but 'value' in the contract.
+ParameterNamesCannotChange : Parameter name on member 'Microsoft.VisualBasic.ErrObject.Description.set(System.String)' is 'Value' in the implementation but 'value' in the contract.
+ParameterNamesCannotChange : Parameter name on member 'Microsoft.VisualBasic.ErrObject.HelpContext.set(System.Int32)' is 'Value' in the implementation but 'value' in the contract.
+ParameterNamesCannotChange : Parameter name on member 'Microsoft.VisualBasic.ErrObject.HelpFile.set(System.String)' is 'Value' in the implementation but 'value' in the contract.
+ParameterNamesCannotChange : Parameter name on member 'Microsoft.VisualBasic.ErrObject.Number.set(System.Int32)' is 'Value' in the implementation but 'value' in the contract.
+ParameterNamesCannotChange : Parameter name on member 'Microsoft.VisualBasic.ErrObject.Source.set(System.String)' is 'Value' in the implementation but 'value' in the contract.

@@ -3343,7 +3343,7 @@
     <value>Array of type {0} is not supported.</value>
   </data>
   <data name="Xml_MissingSerializationCodeException" xml:space="preserve">
-    <value>Type '{0}' cannot be serialized by XmlSerializer, serialization code for the type is missing. Consult the SDK documentation for adding it as a root serialization type. http://go.microsoft.com/fwlink/?LinkId=613136</value>
+    <value>Type '{0}' cannot be serialized by XmlSerializer, serialization code for the type is missing. Consult the SDK documentation for adding it as a root serialization type. https://go.microsoft.com/fwlink/?LinkId=613136</value>
   </data>
   <data name="Xslt_UpperCaseFirstNotSupported" xml:space="preserve">
     <value>Uppercase-First sorting option is not supported.</value>

@@ -5,7 +5,7 @@
     <AssemblyName>HostActivation.Tests</AssemblyName>
     <PackageId>HostActivation.Tests</PackageId>
     <GenerateRuntimeConfigurationFiles>true</GenerateRuntimeConfigurationFiles>
-    <DefineConstants Condition="'$(TargetOS)' == 'Windows_NT'">$(DefineConstants);WINDOWS</DefineConstants>
+    <DefineConstants Condition="'$(TargetOS)' == 'windows'">$(DefineConstants);WINDOWS</DefineConstants>
     <!-- Reduce the length of the test output dir to make it more reliable on Windows. -->
     <TestsOutputName>ha</TestsOutputName>
     <UsesTestAssets>true</UsesTestAssets>

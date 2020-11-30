@@ -78,18 +78,18 @@ namespace System.Net.Http
         public System.Threading.Tasks.Task<string> GetStringAsync(string? requestUri, System.Threading.CancellationToken cancellationToken) { throw null; }
         public System.Threading.Tasks.Task<string> GetStringAsync(System.Uri? requestUri) { throw null; }
         public System.Threading.Tasks.Task<string> GetStringAsync(System.Uri? requestUri, System.Threading.CancellationToken cancellationToken) { throw null; }
-        public System.Threading.Tasks.Task<System.Net.Http.HttpResponseMessage> PatchAsync(string? requestUri, System.Net.Http.HttpContent content) { throw null; }
-        public System.Threading.Tasks.Task<System.Net.Http.HttpResponseMessage> PatchAsync(string? requestUri, System.Net.Http.HttpContent content, System.Threading.CancellationToken cancellationToken) { throw null; }
-        public System.Threading.Tasks.Task<System.Net.Http.HttpResponseMessage> PatchAsync(System.Uri? requestUri, System.Net.Http.HttpContent content) { throw null; }
-        public System.Threading.Tasks.Task<System.Net.Http.HttpResponseMessage> PatchAsync(System.Uri? requestUri, System.Net.Http.HttpContent content, System.Threading.CancellationToken cancellationToken) { throw null; }
-        public System.Threading.Tasks.Task<System.Net.Http.HttpResponseMessage> PostAsync(string? requestUri, System.Net.Http.HttpContent content) { throw null; }
-        public System.Threading.Tasks.Task<System.Net.Http.HttpResponseMessage> PostAsync(string? requestUri, System.Net.Http.HttpContent content, System.Threading.CancellationToken cancellationToken) { throw null; }
-        public System.Threading.Tasks.Task<System.Net.Http.HttpResponseMessage> PostAsync(System.Uri? requestUri, System.Net.Http.HttpContent content) { throw null; }
-        public System.Threading.Tasks.Task<System.Net.Http.HttpResponseMessage> PostAsync(System.Uri? requestUri, System.Net.Http.HttpContent content, System.Threading.CancellationToken cancellationToken) { throw null; }
-        public System.Threading.Tasks.Task<System.Net.Http.HttpResponseMessage> PutAsync(string? requestUri, System.Net.Http.HttpContent content) { throw null; }
-        public System.Threading.Tasks.Task<System.Net.Http.HttpResponseMessage> PutAsync(string? requestUri, System.Net.Http.HttpContent content, System.Threading.CancellationToken cancellationToken) { throw null; }
-        public System.Threading.Tasks.Task<System.Net.Http.HttpResponseMessage> PutAsync(System.Uri? requestUri, System.Net.Http.HttpContent content) { throw null; }
-        public System.Threading.Tasks.Task<System.Net.Http.HttpResponseMessage> PutAsync(System.Uri? requestUri, System.Net.Http.HttpContent content, System.Threading.CancellationToken cancellationToken) { throw null; }
+        public System.Threading.Tasks.Task<System.Net.Http.HttpResponseMessage> PatchAsync(string? requestUri, System.Net.Http.HttpContent? content) { throw null; }
+        public System.Threading.Tasks.Task<System.Net.Http.HttpResponseMessage> PatchAsync(string? requestUri, System.Net.Http.HttpContent? content, System.Threading.CancellationToken cancellationToken) { throw null; }
+        public System.Threading.Tasks.Task<System.Net.Http.HttpResponseMessage> PatchAsync(System.Uri? requestUri, System.Net.Http.HttpContent? content) { throw null; }
+        public System.Threading.Tasks.Task<System.Net.Http.HttpResponseMessage> PatchAsync(System.Uri? requestUri, System.Net.Http.HttpContent? content, System.Threading.CancellationToken cancellationToken) { throw null; }
+        public System.Threading.Tasks.Task<System.Net.Http.HttpResponseMessage> PostAsync(string? requestUri, System.Net.Http.HttpContent? content) { throw null; }
+        public System.Threading.Tasks.Task<System.Net.Http.HttpResponseMessage> PostAsync(string? requestUri, System.Net.Http.HttpContent? content, System.Threading.CancellationToken cancellationToken) { throw null; }
+        public System.Threading.Tasks.Task<System.Net.Http.HttpResponseMessage> PostAsync(System.Uri? requestUri, System.Net.Http.HttpContent? content) { throw null; }
+        public System.Threading.Tasks.Task<System.Net.Http.HttpResponseMessage> PostAsync(System.Uri? requestUri, System.Net.Http.HttpContent? content, System.Threading.CancellationToken cancellationToken) { throw null; }
+        public System.Threading.Tasks.Task<System.Net.Http.HttpResponseMessage> PutAsync(string? requestUri, System.Net.Http.HttpContent? content) { throw null; }
+        public System.Threading.Tasks.Task<System.Net.Http.HttpResponseMessage> PutAsync(string? requestUri, System.Net.Http.HttpContent? content, System.Threading.CancellationToken cancellationToken) { throw null; }
+        public System.Threading.Tasks.Task<System.Net.Http.HttpResponseMessage> PutAsync(System.Uri? requestUri, System.Net.Http.HttpContent? content) { throw null; }
+        public System.Threading.Tasks.Task<System.Net.Http.HttpResponseMessage> PutAsync(System.Uri? requestUri, System.Net.Http.HttpContent? content, System.Threading.CancellationToken cancellationToken) { throw null; }
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public System.Net.Http.HttpResponseMessage Send(System.Net.Http.HttpRequestMessage request) { throw null; }
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
@@ -118,6 +118,7 @@ namespace System.Net.Http
         public System.Net.CookieContainer CookieContainer { get { throw null; } set { } }
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public System.Net.ICredentials? Credentials { get { throw null; } set { } }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public static System.Func<System.Net.Http.HttpRequestMessage, System.Security.Cryptography.X509Certificates.X509Certificate2?, System.Security.Cryptography.X509Certificates.X509Chain?, System.Net.Security.SslPolicyErrors, bool> DangerousAcceptAnyServerCertificateValidator { get { throw null; } }
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public System.Net.ICredentials? DefaultProxyCredentials { get { throw null; } set { } }

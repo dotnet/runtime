@@ -33,11 +33,6 @@ static DebuggerEngineCallbacks rt_callbacks;
 static int log_level;
 static FILE *log_file;
 
-#ifdef HOST_ANDROID
-#define DEBUG_PRINTF(level, ...) do { if (G_UNLIKELY ((level) <= log_level)) { g_print (__VA_ARGS__); } } while (0)
-#else
-#define DEBUG_PRINTF(level, ...) do { if (G_UNLIKELY ((level) <= log_level)) { fprintf (log_file, __VA_ARGS__); fflush (log_file); } } while (0)
-#endif
 
 /*
  * Locking

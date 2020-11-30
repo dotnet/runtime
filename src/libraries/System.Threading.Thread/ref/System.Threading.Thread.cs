@@ -103,7 +103,7 @@ namespace System.Threading
         public static long VolatileRead(ref long address) { throw null; }
         public static System.IntPtr VolatileRead(ref System.IntPtr address) { throw null; }
         [return: System.Diagnostics.CodeAnalysis.NotNullIfNotNullAttribute("address")]
-        public static object? VolatileRead(ref object? address) { throw null; }
+        public static object? VolatileRead([System.Diagnostics.CodeAnalysis.NotNullIfNotNullAttribute("address")] ref object? address) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static sbyte VolatileRead(ref sbyte address) { throw null; }
         public static float VolatileRead(ref float address) { throw null; }

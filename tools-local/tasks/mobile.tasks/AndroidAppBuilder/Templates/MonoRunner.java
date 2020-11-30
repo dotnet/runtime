@@ -9,6 +9,7 @@ import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.content.res.AssetManager;
 import android.os.Bundle;
+import android.os.Looper;
 import android.util.Log;
 import android.view.View;
 import android.app.Activity;
@@ -28,10 +29,14 @@ import java.util.zip.ZipInputStream;
 public class MonoRunner extends Instrumentation
 {
     static {
+        // loadLibrary triggers JNI_OnLoad in these libs
+        System.loadLibrary("System.Security.Cryptography.Native.OpenSsl");
         System.loadLibrary("monodroid");
     }
 
     static String entryPointLibName = "%EntryPointLibName%";
+    static Bundle result = new Bundle();
+    static boolean forceInterpreter = %ForceInterpreter%;
 
     @Override
     public void onCreate(Bundle arguments) {
@@ -39,6 +44,15 @@ public class MonoRunner extends Instrumentation
             String lib = arguments.getString("entryPointLibName");
             if (lib != null) {
                 entryPointLibName = lib;
+            }
+
+            for (String key : arguments.keySet()) {
+                if (key.startsWith("env:")) {
+                    String envName = key.substring("env:".length());
+                    String envValue = arguments.getString(key);
+                    setEnv(envName, envValue);
+                    Log.i("DOTNET", "env:" + envName + "=" + envValue);
+                }
             }
         }
 
@@ -62,13 +76,13 @@ public class MonoRunner extends Instrumentation
         // unzip libs and test files to filesDir
         unzipAssets(context, filesDir, "assets.zip");
 
-        Log.i("DOTNET", "initRuntime, entryPointLibName=" + entryPointLibName);
-        return initRuntime(filesDir, cacheDir, docsDir, entryPointLibName);
+        Log.i("DOTNET", "MonoRunner initialize,, entryPointLibName=" + entryPointLibName);
+        return initRuntime(filesDir, cacheDir, docsDir, entryPointLibName, forceInterpreter);
     }
 
     @Override
     public void onStart() {
-        super.onStart();
+        Looper.prepare();
 
         if (entryPointLibName == "") {
             Log.e("DOTNET", "Missing entryPointLibName argument, pass '-e entryPointLibName <name.dll>' to adb to specify which program to run.");
@@ -76,19 +90,18 @@ public class MonoRunner extends Instrumentation
             return;
         }
         int retcode = initialize(entryPointLibName, getContext());
-        runOnMainSync(new Runnable() {
-            public void run() {
-                Bundle result = new Bundle();
-                result.putInt("return-code", retcode);
 
-                // Xharness cli expects "test-results-path" with test results
-                File testResults = new File(getDocsDir(getContext()) + "/testResults.xml");
-                if (testResults.exists()) {
-                    result.putString("test-results-path", testResults.getAbsolutePath());
-                }
-                finish(retcode, result);
-            }
-        });
+        Log.i("DOTNET", "MonoRunner finished, return-code=" + retcode);
+        result.putInt("return-code", retcode);
+
+        // Xharness cli expects "test-results-path" with test results
+        File testResults = new File(getDocsDir(getContext()) + "/testResults.xml");
+        if (testResults.exists()) {
+            Log.i("DOTNET", "MonoRunner finished, test-results-path=" + testResults.getAbsolutePath());
+            result.putString("test-results-path", testResults.getAbsolutePath());
+        }
+
+        finish(retcode, result);
     }
 
     static void unzipAssets(Context context, String toPath, String zipName) {
@@ -125,5 +138,7 @@ public class MonoRunner extends Instrumentation
         }
     }
 
-    static native int initRuntime(String libsDir, String cacheDir, String docsDir, String entryPointLibName);
+    static native int initRuntime(String libsDir, String cacheDir, String docsDir, String entryPointLibName, boolean forceInterpreter);
+
+    static native int setEnv(String key, String value);
 }

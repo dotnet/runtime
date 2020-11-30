@@ -9150,7 +9150,7 @@ BOOL MethodTable::HasExplicitOrImplicitPublicDefaultConstructor()
 }
 
 //==========================================================================================
-MethodDesc *MethodTable::GetDefaultConstructor()
+MethodDesc *MethodTable::GetDefaultConstructor(BOOL forceBoxedEntryPoint /* = FALSE */)
 {
     WRAPPER_NO_CONTRACT;
     _ASSERTE(HasDefaultConstructor());
@@ -9161,7 +9161,7 @@ MethodDesc *MethodTable::GetDefaultConstructor()
     // returns pCanonMD immediately.
     return MethodDesc::FindOrCreateAssociatedMethodDesc(pCanonMD,
                                                         this,
-                                                        FALSE /* no BoxedEntryPointStub */,
+                                                        forceBoxedEntryPoint,
                                                         Instantiation(), /* no method instantiation */
                                                         FALSE /* no allowInstParam */);
 }

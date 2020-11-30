@@ -2544,7 +2544,7 @@ void PInvokeStaticSigInfo::PreInit(MethodDesc* pMD)
 }
 
 PInvokeStaticSigInfo::PInvokeStaticSigInfo(
-    MethodDesc* pMD, LPCUTF8 *pLibName, LPCUTF8 *pEntryPointName, ThrowOnError throwOnError)
+    MethodDesc* pMD, LPCUTF8 *pLibName, LPCUTF8 *pEntryPointName)
 {
     CONTRACTL
     {
@@ -2556,8 +2556,7 @@ PInvokeStaticSigInfo::PInvokeStaticSigInfo(
 
     DllImportInit(pMD, pLibName, pEntryPointName);
 
-    if (throwOnError)
-        ReportErrors();
+    ReportErrors();
 }
 
 PInvokeStaticSigInfo::PInvokeStaticSigInfo(MethodDesc* pMD, ThrowOnError throwOnError)
@@ -2661,7 +2660,7 @@ ErrExit:
 }
 
 PInvokeStaticSigInfo::PInvokeStaticSigInfo(
-    Signature sig, Module* pModule, ThrowOnError throwOnError)
+    Signature sig, Module* pModule)
 {
     CONTRACTL
     {
@@ -2678,8 +2677,7 @@ PInvokeStaticSigInfo::PInvokeStaticSigInfo(
     SetIsStatic (!(MetaSig::GetCallingConvention(pModule, sig) & IMAGE_CEE_CS_CALLCONV_HASTHIS));
     InitCallConv((CorPinvokeMap)0, FALSE);
 
-    if (throwOnError)
-        ReportErrors();
+    ReportErrors();
 }
 
 void PInvokeStaticSigInfo::DllImportInit(MethodDesc* pMD, LPCUTF8 *ppLibName, LPCUTF8 *ppEntryPointName)
@@ -4204,9 +4202,9 @@ static void CreateNDirectStubAccessMetadata(
     }
 }
 
-void NDirect::PopulateNDirectMethodDesc(NDirectMethodDesc* pNMD, PInvokeStaticSigInfo* pSigInfo, BOOL throwOnError /*= TRUE*/)
+void NDirect::PopulateNDirectMethodDesc(NDirectMethodDesc* pNMD, PInvokeStaticSigInfo* pSigInfo)
 {
-    if (pNMD->IsSynchronized() && throwOnError)
+    if (pNMD->IsSynchronized())
         COMPlusThrow(kTypeLoadException, IDS_EE_NOSYNCHRONIZED);
 
     WORD ndirectflags = 0;
@@ -4214,8 +4212,7 @@ void NDirect::PopulateNDirectMethodDesc(NDirectMethodDesc* pNMD, PInvokeStaticSi
         ndirectflags |= NDirectMethodDesc::kVarArgs;
 
     LPCUTF8 szLibName = NULL, szEntryPointName = NULL;
-    new (pSigInfo) PInvokeStaticSigInfo(pNMD, &szLibName, &szEntryPointName,
-        (throwOnError ? PInvokeStaticSigInfo::THROW_ON_ERROR : PInvokeStaticSigInfo::NO_THROW_ON_ERROR));
+    new (pSigInfo) PInvokeStaticSigInfo(pNMD, &szLibName, &szEntryPointName);
 
     if (pSigInfo->GetCharSet() == nltAnsi)
         ndirectflags |= NDirectMethodDesc::kNativeAnsi;
@@ -5160,7 +5157,7 @@ MethodDesc* NDirect::GetILStubMethodDesc(NDirectMethodDesc* pNMD, PInvokeStaticS
 
     MethodDesc* pStubMD = NULL;
 
-    if (!pNMD->IsVarArgs() || SF_IsForNumParamBytes(dwStubFlags))
+    if (!pNMD->IsVarArgs())
     {
         if (pNMD->IsClassConstructorTriggeredByILStub())
         {
@@ -5169,7 +5166,7 @@ MethodDesc* NDirect::GetILStubMethodDesc(NDirectMethodDesc* pNMD, PInvokeStaticS
 
         pStubMD = CreateCLRToNativeILStub(
             pSigInfo,
-            dwStubFlags & ~NDIRECTSTUB_FL_FOR_NUMPARAMBYTES,
+            dwStubFlags,
             pNMD);
     }
 
@@ -5265,13 +5262,10 @@ PCODE NDirect::GetStubForILStub(NDirectMethodDesc* pNMD, MethodDesc** ppStubMD, 
     if (NULL == *ppStubMD)
     {
         PInvokeStaticSigInfo sigInfo;
-        NDirect::PopulateNDirectMethodDesc(pNMD, &sigInfo, /* throwOnError = */ !SF_IsForNumParamBytes(dwStubFlags));
+        NDirect::PopulateNDirectMethodDesc(pNMD, &sigInfo);
 
         *ppStubMD = NDirect::GetILStubMethodDesc(pNMD, &sigInfo, dwStubFlags);
     }
-
-    if (SF_IsForNumParamBytes(dwStubFlags))
-        return NULL;
 
     if (*ppStubMD)
     {
