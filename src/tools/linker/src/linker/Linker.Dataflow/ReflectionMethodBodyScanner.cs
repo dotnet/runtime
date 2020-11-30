@@ -232,6 +232,7 @@ namespace Mono.Linker.Dataflow
 			Type_GetEvent,
 			Type_GetNestedType,
 			Type_get_AssemblyQualifiedName,
+			Type_get_UnderlyingSystemType,
 			Expression_Call,
 			Expression_Field,
 			Expression_Property,
@@ -375,6 +376,12 @@ namespace Mono.Linker.Dataflow
 					&& !calledMethod.HasParameters
 					&& calledMethod.HasThis
 					=> IntrinsicId.Type_get_AssemblyQualifiedName,
+
+				// System.Type.UnderlyingSystemType
+				"get_UnderlyingSystemType" when calledMethod.IsDeclaredOnType ("System", "Type")
+					&& !calledMethod.HasParameters
+					&& calledMethod.HasThis
+					=> IntrinsicId.Type_get_UnderlyingSystemType,
 
 				// System.Type.GetProperty (string)
 				// System.Type.GetProperty (string, BindingFlags)
@@ -975,6 +982,15 @@ namespace Mono.Linker.Dataflow
 						if (transformedResult != null) {
 							methodReturnValue = transformedResult;
 						}
+					}
+					break;
+
+				//
+				// UnderlyingSystemType
+				//
+				case IntrinsicId.Type_get_UnderlyingSystemType: {
+						// This is identity for the purposes of the analysis.
+						methodReturnValue = methodParams[0];
 					}
 					break;
 
