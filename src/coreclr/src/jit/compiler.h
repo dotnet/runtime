@@ -9321,7 +9321,7 @@ public:
         //    returning the address of RetBuf.
         CLANG_FORMAT_COMMENT_ANCHOR;
 #ifdef TARGET_AMD64
-        return true;
+        return (info.compRetBuffArg != BAD_VAR_NUM);
 #endif // TARGET_AMD64
         // 2.  Profiler Leave calllback expects the address of retbuf as return value for
         //    methods with hidden RetBuf argument.  impReturnInstruction() when profiler
@@ -9329,7 +9329,7 @@ public:
         //    methods with hidden RetBufArg.
         if (compIsProfilerHookNeeded())
         {
-            return true;
+            return (info.compRetBuffArg != BAD_VAR_NUM);
         }
         // 3. Windows ARM64 native instance calling convention requires the address of RetBuff
         //    to be returned in x0.
@@ -9338,7 +9338,7 @@ public:
         auto callConv = compMethodInfoGetUnmanagedCallConv(info.compMethodInfo);
         if (callConvIsInstanceMethodCallConv(callConv))
         {
-            return true;
+            return (info.compRetBuffArg != BAD_VAR_NUM);
         }
 #endif // TARGET_WINDOWS && TARGET_ARM64
 
