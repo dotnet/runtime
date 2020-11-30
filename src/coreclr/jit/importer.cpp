@@ -10766,7 +10766,7 @@ var_types Compiler::impGetByRefResultType(genTreeOps oper, bool fUnsigned, GenTr
 // impOptimizeCastClassOrIsInst: attempt to resolve a cast when jitting
 //
 // Arguments:
-//   op1 - value to cast
+//   tree - value to cast
 //   pResolvedToken - resolved token for type to cast to
 //   isCastClass - true if this is a castclass, false if isinst
 //
@@ -10812,7 +10812,7 @@ GenTree* Compiler::impOptimizeCastClassOrIsInst(GenTree* tree, CORINFO_RESOLVED_
 
         if (castResult == TypeCompareState::Must)
         {
-            // Cast will succeed, result is simply op1.
+            // Cast will succeed, result is simply the tree.
             JITDUMP("Cast will succeed, optimizing to simply return input\n");
             return tree;
         }
