@@ -1711,6 +1711,8 @@ namespace Mono.Linker.Steps
 				Tracer.AddDirectDependency (attribute, new DependencyInfo (DependencyKind.CustomAttribute, type), marked: false);
 
 				string displayString = (string) attribute.ConstructorArguments[0].Value;
+				if (string.IsNullOrEmpty (displayString))
+					return;
 
 				Regex regex = new Regex ("{[^{}]+}", RegexOptions.Compiled);
 
