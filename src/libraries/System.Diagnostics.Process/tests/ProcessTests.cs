@@ -464,6 +464,7 @@ namespace System.Diagnostics.Tests
         public void TestToString_OnExitedProcess()
         {
             var p = CreateProcessLong();
+            p.Start();
             var name = p.ProcessName;
             Assert.Equal($"System.Diagnostics.Process ({name})", p.ToString());
 
