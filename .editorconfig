@@ -198,3 +198,8 @@ indent_size = 2
 end_of_line = lf
 [*.{cmd, bat}]
 end_of_line = crlf
+
+# ASN files are automatically generated with a BOM.
+[*Asn.xml.cs]
+charset = utf-8-bom
+generated_code = true
