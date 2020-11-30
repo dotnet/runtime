@@ -460,20 +460,20 @@ namespace System.Diagnostics.Tests
             }
         }
 
-        [Fact]        
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void TestToString_OnExitedProcess()
         {
-            var p = CreateProcessLong();
-            p.Start();
+            Process p = CreateDefaultProcess();
             var name = p.ProcessName;
             Assert.Equal($"System.Diagnostics.Process ({name})", p.ToString());
 
             p.Kill();
+            Assert.True(p.WaitForExit(WaitInMS));
+
             // Ensure ToString does not throw an exception, but still returns
             // a representation of the object.
             Assert.Equal("System.Diagnostics.Process", p.ToString());
         }
-
 
         [Fact]
         public void HasExited_GetNotStarted_ThrowsInvalidOperationException()
