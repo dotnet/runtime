@@ -9342,7 +9342,7 @@ public:
         }
 #endif // TARGET_WINDOWS && TARGET_ARM64
 
-return false;
+        return false;
     }
 
     bool compDoOldStructRetyping()
