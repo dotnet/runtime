@@ -583,6 +583,7 @@ jobs:
     # - windows_arm
     # - windows_arm64
     jobParameters:
+      dependsOn: mono__offsets_Android_x64_debug
       condition: >-
         or(
           eq(dependencies.checkout.outputs['SetPathVars_libraries.containsChange'], true),
