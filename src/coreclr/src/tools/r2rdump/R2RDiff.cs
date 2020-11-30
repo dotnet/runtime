@@ -67,9 +67,9 @@ namespace R2RDump
                 allComponentAssemblies.UnionWith(_rightDumper.Reader.ManifestReferenceAssemblies.Keys);
                 foreach (string assemblyName in allComponentAssemblies.OrderBy(name => name))
                 {
-                    int leftIndex = _leftDumper.Reader.ManifestReferenceAssemblies[assemblyName];
-                    int rightIndex = _rightDumper.Reader.ManifestReferenceAssemblies[assemblyName];
-                    DiffMethodsForModule(leftIndex, rightIndex);
+                    int leftModuleIndex = _leftDumper.Reader.ManifestReferenceAssemblies[assemblyName];
+                    int rightModuleIndex = _rightDumper.Reader.ManifestReferenceAssemblies[assemblyName];
+                    DiffMethodsForModule(leftModuleIndex, rightModuleIndex);
                 }
             }
         }
@@ -97,10 +97,10 @@ namespace R2RDump
             return methods;
         }
 
-        private void DiffMethodsForModule(int leftIndex, int rightIndex)
+        private void DiffMethodsForModule(int leftModuleIndex, int rightModuleIndex)
         {
-            IEnumerable<ReadyToRunMethod> leftSectionMethods = TryGetMethods(_leftDumper.Reader, leftIndex);
-            IEnumerable<ReadyToRunMethod> rightSectionMethods = TryGetMethods(_rightDumper.Reader, rightIndex);
+            IEnumerable<ReadyToRunMethod> leftSectionMethods = TryGetMethods(_leftDumper.Reader, leftModuleIndex);
+            IEnumerable<ReadyToRunMethod> rightSectionMethods = TryGetMethods(_rightDumper.Reader, rightModuleIndex);
 
             Dictionary<string, ReadyToRunMethod> leftMethods = new Dictionary<string, ReadyToRunMethod>(leftSectionMethods
                 .Select(method => new KeyValuePair<string, ReadyToRunMethod>(method.SignatureString, method)));
@@ -114,8 +114,8 @@ namespace R2RDump
             {
                 commonMethods = new Dictionary<string, MethodPair>(HideMethodsWithSameDisassembly(commonMethods));
             }
-            DumpCommonMethods(_leftDumper, leftIndex, commonMethods);
-            DumpCommonMethods(_rightDumper, rightIndex, commonMethods);
+            DumpCommonMethods(_leftDumper, leftModuleIndex, commonMethods);
+            DumpCommonMethods(_rightDumper, rightModuleIndex, commonMethods);
         }
 
         /// <summary>
@@ -157,16 +157,16 @@ namespace R2RDump
                 allComponentAssemblies.UnionWith(_rightDumper.Reader.ManifestReferenceAssemblies.Keys);
                 foreach (string assemblyName in allComponentAssemblies.OrderBy(name => name))
                 {
-                    if (!_leftDumper.Reader.ManifestReferenceAssemblies.TryGetValue(assemblyName, out int leftIndex))
+                    if (!_leftDumper.Reader.ManifestReferenceAssemblies.TryGetValue(assemblyName, out int leftModuleIndex))
                     {
-                        leftIndex = InvalidModule;
+                        leftModuleIndex = InvalidModule;
                     }
-                    if (!_rightDumper.Reader.ManifestReferenceAssemblies.TryGetValue(assemblyName, out int rightIndex))
+                    if (!_rightDumper.Reader.ManifestReferenceAssemblies.TryGetValue(assemblyName, out int rightModuleIndex))
                     {
-                        rightIndex = InvalidModule;
+                        rightModuleIndex = InvalidModule;
                     }
-                    Dictionary<string, int> leftMap = GetR2RMethodMap(_leftDumper.Reader, leftIndex);
-                    Dictionary<string, int> rightMap = GetR2RMethodMap(_rightDumper.Reader, rightIndex);
+                    Dictionary<string, int> leftMap = GetR2RMethodMap(_leftDumper.Reader, leftModuleIndex);
+                    Dictionary<string, int> rightMap = GetR2RMethodMap(_rightDumper.Reader, rightModuleIndex);
                     ShowMethodDiff(leftMap, rightMap, $"{assemblyName}: component R2R methods");
                 }
             }
