@@ -312,8 +312,8 @@ namespace System.Net
             else
             {
                 Debug.Assert(blocks is not null);
-                Debug.Assert(start >= 0);
-                Debug.Assert(length >= 0);
+                Debug.Assert(start <= int.MaxValue);
+                Debug.Assert(length <= int.MaxValue);
                 Debug.Assert(start + length <= blocks.Length * BlockSize);
 
                 _blocks = blocks;
@@ -348,7 +348,7 @@ namespace System.Net
 
         public Memory<byte> GetBlock(int blockIndex)
         {
-            if (blockIndex < 0 || blockIndex >= BlockCount)
+            if ((uint)blockIndex >= BlockCount)
             {
                 throw new IndexOutOfRangeException();
             }
