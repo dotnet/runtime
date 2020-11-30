@@ -104,7 +104,7 @@ namespace System.Reflection
                     {
                         ConstArray sig = MetadataImport.GetMemberRefProps(tk);
 
-                        if (*(MdSigCallingConvention*)sig.Signature.ToPointer() == MdSigCallingConvention.Field)
+                        if (*(MdSigCallingConvention*)sig.Signature == MdSigCallingConvention.Field)
                             throw new ArgumentException(SR.Format(SR.Argument_ResolveMethod, tk, this),
                                 nameof(metadataToken));
                     }
@@ -296,7 +296,7 @@ namespace System.Reflection
 
                 unsafe
                 {
-                    if (*(MdSigCallingConvention*)sig.Signature.ToPointer() == MdSigCallingConvention.Field)
+                    if (*(MdSigCallingConvention*)sig.Signature == MdSigCallingConvention.Field)
                     {
                         return ResolveField(tk, genericTypeArguments, genericMethodArguments);
                     }
