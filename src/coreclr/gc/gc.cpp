@@ -10347,15 +10347,22 @@ retry:
 #define set_pinned(i) header(i)->SetPinned()
 #define clear_pinned(i) header(i)->GetHeader()->ClrGCBit();
 
-inline size_t my_get_size (Object* ob)
+size_t my_get_size (Object* ob)
 {
     MethodTable* mT = header(ob)->GetMethodTable();
 
-    printf("gc.cpp: my_get_size: ob: %p\n", ob);
+    printf("gc.cpp: my_get_size: ob: %p MIN_OBJECT_SIZE: %d\n", ob, MIN_OBJECT_SIZE);
 
-    return (mT->GetBaseSize() +
-            (mT->HasComponentSize() ?
-             ((size_t)((CObjectHeader*)ob)->GetNumComponents() * mT->RawGetComponentSize()) : 0));
+    size_t size = (mT->GetBaseSize() +
+                    (mT->HasComponentSize() ?
+                    ((size_t)((CObjectHeader*)ob)->GetNumComponents() * mT->RawGetComponentSize()) : 0));
+    
+    if (size < 4 * MIN_OBJECT_SIZE)
+    {
+        size = MIN_OBJECT_SIZE;
+    }
+
+    return size;
 }
 
 //#define size(i) header(i)->GetSize()
