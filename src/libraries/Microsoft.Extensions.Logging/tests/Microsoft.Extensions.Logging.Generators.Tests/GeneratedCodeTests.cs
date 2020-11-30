@@ -78,6 +78,10 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
         [LoggerMessage(8, LogLevel.Critical, "Message9")]
         internal protected static partial void M9(ILogger logger);
 
+        // nullable parameter
+        [LoggerMessage(9, LogLevel.Critical, "Message10")]
+        internal static partial void M10(ILogger logger, string? optional);
+
         public static void Combo(ILogger logger, ILogger<int> logger2)
         {
             M1(logger);
@@ -88,6 +92,20 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
             M6(logger);
             M8(logger);
             M9(logger);
+            M10(logger, null);
+        }
+    }
+
+    // test particular method signature variations are generated correctly
+    static partial class SignatureTests
+    {
+        // extension method
+        [LoggerMessage(10, LogLevel.Critical, "Message11")]
+        internal static partial void M11(this ILogger logger);
+
+        public static void Combo(ILogger logger)
+        {
+            logger.M11();
         }
     }
 

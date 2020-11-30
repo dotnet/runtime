@@ -263,13 +263,13 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
             ");
 
             Assert.Single(lc);
-            Assert.False(lc.First().Methods[0].MessageHasTemplates);
-            Assert.True(lc.First().Methods[1].MessageHasTemplates);
-            Assert.False(lc.First().Methods[2].MessageHasTemplates);
-            Assert.False(lc.First().Methods[3].MessageHasTemplates);
-            Assert.False(lc.First().Methods[4].MessageHasTemplates);
-            Assert.False(lc.First().Methods[5].MessageHasTemplates);
-            Assert.True(lc.First().Methods[6].MessageHasTemplates);
+            Assert.False(lc[0].Methods[0].MessageHasTemplates);
+            Assert.True(lc[0].Methods[1].MessageHasTemplates);
+            Assert.False(lc[0].Methods[2].MessageHasTemplates);
+            Assert.False(lc[0].Methods[3].MessageHasTemplates);
+            Assert.False(lc[0].Methods[4].MessageHasTemplates);
+            Assert.False(lc[0].Methods[5].MessageHasTemplates);
+            Assert.True(lc[0].Methods[6].MessageHasTemplates);
             Assert.Empty(d);
         }
 
@@ -288,8 +288,8 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
             ");
 
             Assert.Single(lc);
-            Assert.Equal("Test.Foo", lc.First().Namespace);
-            Assert.Equal("C", lc.First().Name);
+            Assert.Equal("Test.Foo", lc[0].Namespace);
+            Assert.Equal("C", lc[0].Name);
             Assert.Empty(d);
 
             (lc, d) = TryCode(@"
@@ -301,8 +301,8 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
             ");
 
             Assert.Single(lc);
-            Assert.Equal("Test", lc.First().Namespace);
-            Assert.Equal("C", lc.First().Name);
+            Assert.Equal("Test", lc[0].Namespace);
+            Assert.Equal("C", lc[0].Name);
             Assert.Empty(d);
 
             (lc, d) = TryCode(@"
@@ -314,8 +314,8 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
             ", true, false);
 
             Assert.Single(lc);
-            Assert.Equal(string.Empty, lc.First().Namespace);
-            Assert.Equal("C", lc.First().Name);
+            Assert.Equal(string.Empty, lc[0].Namespace);
+            Assert.Equal("C", lc[0].Name);
             Assert.Empty(d);
         }
 
@@ -331,8 +331,8 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
             ");
 
             Assert.Single(lc);
-            Assert.Equal("Test", lc.First().Namespace);
-            Assert.Equal("C<T>", lc.First().Name);
+            Assert.Equal("Test", lc[0].Namespace);
+            Assert.Equal("C<T>", lc[0].Name);
             Assert.Empty(d);
         }
 
@@ -348,9 +348,9 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
             ");
 
             Assert.Single(lc);
-            Assert.Equal("Test", lc.First().Namespace);
-            Assert.Equal("C", lc.First().Name);
-            Assert.Equal("MyEvent", lc.First().Methods[0].EventName);
+            Assert.Equal("Test", lc[0].Namespace);
+            Assert.Equal("C", lc[0].Name);
+            Assert.Equal("MyEvent", lc[0].Methods[0].EventName);
             Assert.Empty(d);
         }
 
@@ -384,7 +384,22 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
             Assert.Empty(d);
         }
 
-        private static (IEnumerable<LoggingGenerator.LoggerClass>, IReadOnlyList<Diagnostic>) TryCode(
+        [Fact]
+        public void ExtensionMethod()
+        {
+            var (lc, d) = TryCode(@"
+                static partial class C
+                {
+                    [LoggerMessage(0, LogLevel.Debug, ""Hello"")]
+                    static partial void M1(this ILogger logger);
+                }
+            ");
+
+            Assert.True(lc[0].Methods[0].IsExtensionMethod);
+            Assert.Empty(d);
+        }
+
+        private static (IReadOnlyList<LoggingGenerator.LoggerClass>, IReadOnlyList<Diagnostic>) TryCode(
             string code,
             bool wrap = true,
             bool inNamespace = true,

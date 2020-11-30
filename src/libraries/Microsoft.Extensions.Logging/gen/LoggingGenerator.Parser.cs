@@ -125,7 +125,7 @@ namespace Microsoft.Extensions.Logging.Generators
             /// <summary>
             /// Gets the set of logging classes containing methods to output.
             /// </summary>
-            public IEnumerable<LoggerClass> GetLogClasses(IEnumerable<ClassDeclarationSyntax> classes)
+            public IReadOnlyList<LoggerClass> GetLogClasses(IEnumerable<ClassDeclarationSyntax> classes)
             {
                 var results = new List<LoggerClass>();
 
@@ -171,9 +171,11 @@ namespace Microsoft.Extensions.Logging.Generators
                             {
                                 var sm = GetSemanticModel(ma.SyntaxTree);
                                 var maSymbolInfo = sm.GetSymbolInfo(ma, _cancellationToken);
-                                var methodSymbol = (maSymbolInfo.Symbol as IMethodSymbol)!;
+                                var maSymbol = (maSymbolInfo.Symbol as IMethodSymbol)!;
 
-                                if (loggerMessageAttribute.Equals(methodSymbol.ContainingType, SymbolEqualityComparer.Default))
+                                var methodSymbol = (sm.GetDeclaredSymbol(method, _cancellationToken) as IMethodSymbol)!;
+
+                                if (loggerMessageAttribute.Equals(maSymbol.ContainingType, SymbolEqualityComparer.Default))
                                 {
                                     var arg = ma.ArgumentList!.Arguments[0];
                                     var eventId = sm.GetConstantValue(arg.Expression, _cancellationToken).ToString();
@@ -199,7 +201,7 @@ namespace Microsoft.Extensions.Logging.Generators
                                         EventId = eventId,
                                         EventName = eventName,
                                         MessageHasTemplates = HasTemplates(message),
-                                        IsExtensionMethod = false,  // TODO: how to determine this?
+                                        IsExtensionMethod = methodSymbol.IsExtensionMethod,
                                         Modifiers = method.Modifiers.ToString(),
                                     };
 
@@ -271,9 +273,9 @@ namespace Microsoft.Extensions.Logging.Generators
                                     bool first = true;
                                     foreach (var p in method.ParameterList.Parameters)
                                     {
+//                                        var parameterSyntax = p.SyntaxTree.GetRoot().DescendantNodes().OfType<ParameterSyntax>().First();
+                                        var typeName = GetSemanticModel(p.SyntaxTree).GetDeclaredSymbol(p)!.ToDisplayString();
                                         var pSymbol = GetSemanticModel(p.SyntaxTree).GetTypeInfo(p.Type!).Type!;
-                                        var typeName = pSymbol.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat.WithMiscellaneousOptions(SymbolDisplayMiscellaneousOptions.IncludeNullableReferenceTypeModifier));
-                                            // TODO: the above doesn't deal properly with nullable types
 
                                         if (first)
                                         {
