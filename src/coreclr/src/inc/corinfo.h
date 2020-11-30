@@ -747,6 +747,12 @@ enum CorInfoUnmanagedCallConv
     // New calling conventions supported with the extensible calling convention encoding go here.
 };
 
+// Determines whether or not this calling convention is an instance method calling convention.
+inline bool callConvIsInstanceMethodCallConv(CorInfoUnmanagedCallConv callConv)
+{
+    return callConv == CORINFO_UNMANAGED_CALLCONV_THISCALL;
+}
+
 // These are returned from getMethodOptions
 enum CorInfoOptions
 {

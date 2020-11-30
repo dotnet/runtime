@@ -742,7 +742,7 @@ var_types Compiler::getArgTypeForStruct(CORINFO_CLASS_HANDLE clsHnd,
     assert(structSize != 0);
 
 // Determine if we can pass the struct as a primitive type.
-// Note that on x86 we only pass specific pointer-sized structs as primitives that the VM used to unwrap.
+// Note that on x86 we only pass specific pointer-sized structs that satisfy isTrivialPointerSizedStruct checks.
 #ifndef TARGET_X86
 #ifdef UNIX_AMD64_ABI
 
@@ -1013,10 +1013,7 @@ var_types Compiler::getReturnTypeForStruct(CORINFO_CLASS_HANDLE     clsHnd,
             useType           = TYP_UNKNOWN;
         }
     }
-
-#endif // UNIX_AMD64_ABI
-
-#ifdef UNIX_X86_ABI
+#elif UNIX_X86_ABI
     if (callConv != CORINFO_UNMANAGED_CALLCONV_MANAGED)
     {
         canReturnInRegister = false;
@@ -2058,11 +2055,6 @@ unsigned Compiler::compGetTypeSize(CorInfoType cit, CORINFO_CLASS_HANDLE clsHnd)
         sigSize = 2 * TARGET_POINTER_SIZE;
     }
     return sigSize;
-}
-
-bool Compiler::callConvIsInstanceMethodCallConv(CorInfoUnmanagedCallConv callConv)
-{
-    return callConv == CORINFO_UNMANAGED_CALLCONV_THISCALL;
 }
 
 CorInfoUnmanagedCallConv Compiler::compMethodInfoGetUnmanagedCallConv(CORINFO_METHOD_INFO* mthInfo)

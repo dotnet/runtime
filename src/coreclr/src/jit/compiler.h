@@ -9316,30 +9316,33 @@ public:
         // There are cases where implicit RetBuf argument should be explicitly returned in a register.
         // In such cases the return type is changed to TYP_BYREF and appropriate IR is generated.
         // These cases are:
-        // 1. Profiler Leave calllback expects the address of retbuf as return value for
+        // 1. on x64 Windows and Unix the address of RetBuf needs to be returned by
+        //    methods with hidden RetBufArg in RAX. In such case GT_RETURN is of TYP_BYREF,
+        //    returning the address of RetBuf.
+        CLANG_FORMAT_COMMENT_ANCHOR;
+#ifdef TARGET_AMD64
+        return true;
+#endif // TARGET_AMD64
+        // 2.  Profiler Leave calllback expects the address of retbuf as return value for
         //    methods with hidden RetBuf argument.  impReturnInstruction() when profiler
         //    callbacks are needed creates GT_RETURN(TYP_BYREF, op1 = Addr of RetBuf) for
         //    methods with hidden RetBufArg.
-        //
-        // 2. As per the System V ABI, the address of RetBuf needs to be returned by
-        //    methods with hidden RetBufArg in RAX. In such case GT_RETURN is of TYP_BYREF,
-        //    returning the address of RetBuf.
-        //
-        // 3. Windows x64 native calling convention also requires the address of RetBuff
-        //    to be returned in RAX.
-        // 4. Windows ARM64 native instance calling convention requires the address of RetBuff
+        if (compIsProfilerHookNeeded())
+        {
+            return true;
+        }
+        // 3. Windows ARM64 native instance calling convention requires the address of RetBuff
         //    to be returned in x0.
         CLANG_FORMAT_COMMENT_ANCHOR;
+#if defined(TARGET_WINDOWS) && defined(TARGET_ARM64)
+        auto callConv = compMethodInfoGetUnmanagedCallConv(info.compMethodInfo);
+        if (callConvIsInstanceMethodCallConv(callConv))
+        {
+            return true;
+        }
+#endif // TARGET_WINDOWS && TARGET_ARM64
 
-#ifdef TARGET_AMD64
-        return (info.compRetBuffArg != BAD_VAR_NUM);
-#elif defined(TARGET_WINDOWS) && defined(TARGET_ARM64)
-        return (callConvIsInstanceMethodCallConv(compMethodInfoGetUnmanagedCallConv(info.compMethodInfo)) ||
-                compIsProfilerHookNeeded()) &&
-               (info.compRetBuffArg != BAD_VAR_NUM);
-#else  // !TARGET_AMD64
-        return (compIsProfilerHookNeeded()) && (info.compRetBuffArg != BAD_VAR_NUM);
-#endif // !TARGET_AMD64
+return false;
     }
 
     bool compDoOldStructRetyping()
@@ -9536,9 +9539,6 @@ public:
     // class handle as an out parameter if the type is a value class.  Returns the
     // size of the type these describe.
     unsigned compGetTypeSize(CorInfoType cit, CORINFO_CLASS_HANDLE clsHnd);
-
-    // Determines whether or not this calling convention is an instance method calling convention.
-    static bool callConvIsInstanceMethodCallConv(CorInfoUnmanagedCallConv callConv);
 
     // Gets the unmanaged calling convention the method's entry point should have.
     // Returns CorInfoUnmanagedCallConv::CORINFO_UNMANAGED_CALLCONV_MANAGED for the managed

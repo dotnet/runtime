@@ -2328,8 +2328,6 @@ void Compiler::StructPromotionHelper::PromoteStructVar(unsigned lclNum)
 
 #endif
 
-#if defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_ARM) || defined(TARGET_X86)
-
         // Do we have a parameter that can be enregistered?
         //
         if (varDsc->lvIsRegArg)
@@ -2368,7 +2366,6 @@ void Compiler::StructPromotionHelper::PromoteStructVar(unsigned lclNum)
                 fieldVarDsc->SetArgReg(parentArgReg);
             }
         }
-#endif // defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_ARM) || defined(TARGET_X86)
 
 #ifdef FEATURE_SIMD
         if (varTypeIsSIMD(pFieldInfo->fldType))

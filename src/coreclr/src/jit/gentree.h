@@ -4168,7 +4168,7 @@ struct GenTreeCall final : public GenTree
                                                       // importer has performed tail call checks
 #define GTF_CALL_M_TAILCALL                0x00000002 // GT_CALL -- the call is a tailcall
 #define GTF_CALL_M_VARARGS                 0x00000004 // GT_CALL -- the call uses varargs ABI
-#define GTF_CALL_M_RETBUFFARG              0x00000008 // GT_CALL -- first parameter is the return buffer argument
+#define GTF_CALL_M_RETBUFFARG              0x00000008 // GT_CALL -- call has a return buffer argument
 #define GTF_CALL_M_DELEGATE_INV            0x00000010 // GT_CALL -- call to Delegate.Invoke
 #define GTF_CALL_M_NOGCCHECK               0x00000020 // GT_CALL -- not a call for computing full interruptability and therefore no GC check is required.
 #define GTF_CALL_M_SPECIAL_INTRINSIC       0x00000040 // GT_CALL -- function that could be optimized as an intrinsic
@@ -4282,6 +4282,15 @@ struct GenTreeCall final : public GenTree
     //     use of register x8 to pass the RetBuf argument.
     //
     bool TreatAsHasRetBufArg(Compiler* compiler) const;
+
+    bool HasFixedRetBufArg() const
+    {
+#if defined(TARGET_WINDOWS) && !defined(TARGET_ARM)
+        return hasFixedRetBuffReg() && HasRetBufArg() && !callConvIsInstanceMethodCallConv(GetUnmanagedCallConv());
+#else
+        return hasFixedRetBuffReg() && HasRetBufArg();
+#endif
+    }
 
     //-----------------------------------------------------------------------------------------
     // HasMultiRegRetVal: whether the call node returns its value in multiple return registers.
