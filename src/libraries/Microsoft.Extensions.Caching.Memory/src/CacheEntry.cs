@@ -48,6 +48,8 @@ namespace Microsoft.Extensions.Caching.Memory
             get => _absoluteExpirationRelativeToNow;
             set
             {
+                // this method does not set AbsoluteExpiration as it would require calling Clock.UtcNow twice:
+                // once here and once in MemoryCache.SetEntry
 
                 if (value <= TimeSpan.Zero)
                 {
@@ -264,6 +266,7 @@ namespace Microsoft.Extensions.Caching.Memory
 
         private void DetachTokens()
         {
+            // _expirationTokenRegistrations is not checked for null, because AttachTokens might initialize it under lock
             lock (_lock)
             {
                 IList<IDisposable> registrations = _expirationTokenRegistrations;
@@ -313,6 +316,7 @@ namespace Microsoft.Extensions.Caching.Memory
             }
         }
 
+        // this simple check very often allows us to avoid expensive call to PropagateOptions(CacheEntryHelper.Current)
         internal bool CanPropagateOptions() => _expirationTokens != null || AbsoluteExpiration.HasValue;
 
         internal void PropagateOptions(CacheEntry parent)
