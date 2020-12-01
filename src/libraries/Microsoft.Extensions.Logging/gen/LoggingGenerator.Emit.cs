@@ -87,10 +87,10 @@ namespace Microsoft.Extensions.Logging.Generators
                     return string.Empty;
                 }
 
-                string typeName;
                 var sb = GetStringBuilder();
                 try
                 {
+                    string typeName;
                     if (lm.Parameters.Count == 1)
                     {
                         typeName = $"global::Microsoft.Extensions.Logging.LogStateHolder<{lm.Parameters[0].Type}>";
@@ -131,10 +131,10 @@ namespace Microsoft.Extensions.Logging.Generators
                     }
 
                     return $@"private static readonly global::System.Func<{typeName}, global::System.Exception?, string> __{lm.Name}FormatFunc = (__holder, _) =>
-                {{
-                    {sb}
-                    return $""{EscapeMessageString(lm.Message)}"";
-                }};
+                        {{
+                            {sb}
+                            return $""{EscapeMessageString(lm.Message)}"";
+                        }};
                 ";
                 }
                 finally
@@ -220,19 +220,19 @@ namespace Microsoft.Extensions.Logging.Generators
                 }
 
                 return $@"
-                {lm.Modifiers} void {lm.Name}({(lm.IsExtensionMethod ? "this " : string.Empty)}{lm.LoggerType} __logger{(lm.Parameters.Count > 0 ? ", " : string.Empty)}{GenParameters(lm)})
-                {{
-                    if (__logger.IsEnabled({level}))
+                    {lm.Modifiers} void {lm.Name}({(lm.IsExtensionMethod ? "this " : string.Empty)}{lm.LoggerType} __logger{(lm.Parameters.Count > 0 ? ", " : string.Empty)}{GenParameters(lm)})
                     {{
-                        __logger.Log(
-                            {level},
-                            new global::Microsoft.Extensions.Logging.EventId({lm.EventId}, {eventName}),
-                            {GenHolder(lm, formatFunc)},
-                            {exceptionArg},
-                            {formatFunc});
+                        if (__logger.IsEnabled({level}))
+                        {{
+                            __logger.Log(
+                                {level},
+                                new global::Microsoft.Extensions.Logging.EventId({lm.EventId}, {eventName}),
+                                {GenHolder(lm, formatFunc)},
+                                {exceptionArg},
+                                {formatFunc});
+                        }}
                     }}
-                }}
-        ";
+                ";
             }
 
             private string GenParameters(LoggerMethod lm)
@@ -354,9 +354,9 @@ namespace Microsoft.Extensions.Logging.Generators
                     return new StringBuilder(1024);
                 }
 
-                var b = _builders.Pop();
-                b.Clear();
-                return b;
+                var sb = _builders.Pop();
+                sb.Clear();
+                return sb;
             }
 
             private void ReturnStringBuilder(StringBuilder sb)
