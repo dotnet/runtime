@@ -36,7 +36,12 @@ while true; do
 done
 
 XCODE_PATH="`xcode-select -p`/../.."
-export XHARNESS_OUT="$EXECUTION_DIR/xharness-output"
+
+if [ -z "$HELIX_WORKITEM_UPLOAD_ROOT" ]; then
+    export XHARNESS_OUT="$EXECUTION_DIR/xharness-output"
+else
+    export XHARNESS_OUT="$HELIX_WORKITEM_UPLOAD_ROOT/xharness-output"
+fi
 
 dotnet xharness ios test  \
     --targets="$TARGET"   \
