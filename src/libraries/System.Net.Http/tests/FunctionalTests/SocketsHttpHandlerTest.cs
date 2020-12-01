@@ -2372,7 +2372,7 @@ namespace System.Net.Http.Functional.Tests
                         else
                         {
                             await s.ConnectAsync(context.DnsEndPoint, token);
-                            await Task.Delay(1);
+                            await Task.Delay(1); // to increase the chances of the whole operation completing asynchronously, without consuming too much additional time
                         }
                         return new NetworkStream(s, ownsSocket: true);
                     };
@@ -2661,7 +2661,7 @@ namespace System.Net.Http.Functional.Tests
 
                         if (!syncCallback)
                         {
-                            await Task.Delay(1);
+                            await Task.Delay(1); // to increase the chances of the whole operation completing asynchronously, without consuming too much additional time
                         }
 
                         return context.PlaintextStream;
