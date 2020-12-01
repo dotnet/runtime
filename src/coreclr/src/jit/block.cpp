@@ -1495,11 +1495,6 @@ bool BasicBlock::hasEHBoundaryOut()
         returnVal = true;
     }
 
-    if (bbJumpKind == BBJ_THROW)
-    {
-        returnVal = hasTryIndex() || hasHndIndex();
-    }
-
 #if FEATURE_EH_FUNCLETS
     if (bbJumpKind == BBJ_EHCATCHRET)
     {
