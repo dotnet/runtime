@@ -32,7 +32,6 @@ public class WasmAppBuilder : Task
     public string? IcuDataFileName { get; set; } = "icudt.dat";
 
     public int DebugLevel { get; set; }
-    public ITaskItem[]? ExtraAssemblies { get; set; }
     public ITaskItem[]? SatelliteAssemblies { get; set; }
     public ITaskItem[]? FilesToIncludeInFileSystem { get; set; }
     public ITaskItem[]? RemoteSources { get; set; }
@@ -117,14 +116,6 @@ public class WasmAppBuilder : Task
         {
             if (!_assemblies.Contains(MainAssembly))
                 _assemblies.Add(MainAssembly);
-        }
-        if (ExtraAssemblies != null)
-        {
-            foreach (var item in ExtraAssemblies)
-            {
-                if (!_assemblies.Contains(item.ItemSpec))
-                    _assemblies.Add(item.ItemSpec);
-            }
         }
 
         var config = new WasmAppConfig ();
