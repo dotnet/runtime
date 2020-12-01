@@ -111,21 +111,12 @@ namespace System.Reflection
                     case '\t':
                         sb.Append("\\t");
                         continue;
-#if TARGET_WINDOWS
                     case '\r':
-                        if (++i < s.Length && s[i] == '\n')
-                        {
-                            sb.Append("\\n");
-                            continue;
-                        }
-
-                        --i;
-                        break;
-#else
+                        sb.Append("\\r");
+                        continue;
                     case '\n':
                         sb.Append("\\n");
                         continue;
-#endif
                 }
 
                 sb.Append(s[i]);

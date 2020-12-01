@@ -45,10 +45,8 @@ namespace System.Reflection.Tests
             yield return new object[] { "na\tme", "na\\tme" };
             yield return new object[] { "na\0me", "na\0me" };
             yield return new object[] { "na\bme", "na\bme" };
-            if (PlatformDetection.IsWindows)
-                yield return new object[] { "name\r\n", "\"name\\n\"" };
-            else
-                yield return new object[] { "name\n", "\"name\\n\"" };
+            yield return new object[] { "name\r", "\"name\\r\"" };
+            yield return new object[] { "name\n", "\"name\\n\"" };
         }
 
         [Fact]
