@@ -7,7 +7,6 @@ using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
-using Microsoft.Extensions.Internal;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
@@ -43,8 +42,18 @@ namespace Microsoft.Extensions.Caching.Memory
         /// <param name="loggerFactory">The factory used to create loggers.</param>
         public MemoryCache(IOptions<MemoryCacheOptions> optionsAccessor, ILoggerFactory loggerFactory)
         {
-            _options = optionsAccessor?.Value ?? throw new ArgumentNullException(nameof(optionsAccessor));
-            _logger = loggerFactory?.CreateLogger<MemoryCache>() ?? throw new ArgumentNullException(nameof(loggerFactory));
+            if (optionsAccessor == null)
+            {
+                throw new ArgumentNullException(nameof(optionsAccessor));
+            }
+
+            if (loggerFactory == null)
+            {
+                throw new ArgumentNullException(nameof(loggerFactory));
+            }
+
+            _options = optionsAccessor.Value;
+            _logger = loggerFactory.CreateLogger<MemoryCache>();
 
             _entries = new ConcurrentDictionary<object, CacheEntry>();
             _lastExpirationScan = _options.Clock?.UtcNow ?? DateTimeOffset.UtcNow;

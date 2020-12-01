@@ -49,9 +49,15 @@ namespace Microsoft.Extensions.Caching.Memory
             {
                 if (value.HasValue)
                 {
-                    AbsoluteExpiration = value.Value > TimeSpan.Zero
-                        ? (_cache.GetUtcNow() + value)
-                        : throw new ArgumentOutOfRangeException(nameof(AbsoluteExpirationRelativeToNow), value, "The relative expiration value must be positive.");
+                    if (value <= TimeSpan.Zero)
+                    {
+                        throw new ArgumentOutOfRangeException(
+                            nameof(AbsoluteExpirationRelativeToNow),
+                            value,
+                            "The relative expiration value must be positive.");
+                    }
+
+                    AbsoluteExpiration = _cache.GetUtcNow() + value;
                 }
             }
         }
@@ -63,7 +69,18 @@ namespace Microsoft.Extensions.Caching.Memory
         public TimeSpan? SlidingExpiration
         {
             get => _slidingExpiration;
-            set => _slidingExpiration =  !value.HasValue || value > TimeSpan.Zero ? value : throw new ArgumentOutOfRangeException(nameof(SlidingExpiration), value, "The sliding expiration value must be positive.");
+            set
+            {
+                if (value <= TimeSpan.Zero)
+                {
+                    throw new ArgumentOutOfRangeException(
+                        nameof(SlidingExpiration),
+                        value,
+                        "The sliding expiration value must be positive.");
+                }
+
+                _slidingExpiration = value;
+            }
         }
 
         /// <summary>
@@ -88,7 +105,15 @@ namespace Microsoft.Extensions.Caching.Memory
         public long? Size
         {
             get => _size;
-            set => _size = !value.HasValue || value >= 0 ? value : throw new ArgumentOutOfRangeException(nameof(value), value, $"{nameof(value)} must be non-negative.");
+            set
+            {
+                if (value < 0)
+                {
+                    throw new ArgumentOutOfRangeException(nameof(value), value, $"{nameof(value)} must be non-negative.");
+                }
+
+                _size = value;
+            }
         }
 
         public object Key { get; private set; }
@@ -96,7 +121,11 @@ namespace Microsoft.Extensions.Caching.Memory
         public object Value
         {
             get => _value;
-            set { _value = value; IsValueSet = true; }
+            set
+            {
+                _value = value;
+                IsValueSet = true;
+            }
         }
 
         internal DateTimeOffset LastAccessed { get; set; }
@@ -236,19 +265,16 @@ namespace Microsoft.Extensions.Caching.Memory
 
         private void DetachTokens()
         {
-            if (_expirationTokenRegistrations != null)
+            lock (_lock)
             {
-                lock (_lock)
+                IList<IDisposable> registrations = _expirationTokenRegistrations;
+                if (registrations != null)
                 {
-                    IList<IDisposable> registrations = _expirationTokenRegistrations;
-                    if (registrations != null)
+                    _expirationTokenRegistrations = null;
+                    for (int i = 0; i < registrations.Count; i++)
                     {
-                        _expirationTokenRegistrations = null;
-                        for (int i = 0; i < registrations.Count; i++)
-                        {
-                            IDisposable registration = registrations[i];
-                            registration.Dispose();
-                        }
+                        IDisposable registration = registrations[i];
+                        registration.Dispose();
                     }
                 }
             }
