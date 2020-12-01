@@ -87,7 +87,7 @@ jobs:
         value: /p:MonoEnableLLVM=true /p:MonoBundleLLVMOptimizer=true $(llvmCxxAbi)
     - ${{ if and(eq(parameters.runtimeVariant, ''), eq(parameters.osGroup, 'Linux'), eq(parameters.archType, 'x64')) }}:
       - name: aotCrossParameter
-        value: /p:BuildMonoCrossAOT=true
+        value: /p:BuildMonoCrossAOT=true /p:SkipMonoCrossJitConfigure=true
     - ${{ parameters.variables }}
 
     steps:
