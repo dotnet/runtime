@@ -102,18 +102,17 @@ public class WasmAppBuilder : Task
             throw new ArgumentException("IcuDataFileName property shouldn't be empty if InvariantGlobalization=false");
 
         _assemblies = new List<string>();
-        var runtimeSourceDir = Path.Join (MicrosoftNetCoreAppRuntimePackDir, "native");
+        var runtimeSourceDir = string.Empty;
 
         foreach (var asm in Assemblies)
         {
-            string corelibPath = string.Empty;
             if (!_assemblies.Contains(asm.ItemSpec))
                 _assemblies.Add(asm.ItemSpec);
 
-            if (asm.ItemSPec.EndsWith ("System.Private.CoreLib.dll"))
-                corelibPath = Path.GetDirectoryName (asm.ItemSpec)!;
+            if (asm.ItemSpec.EndsWith("System.Private.CoreLib.dll"))
+                runtimeSourceDir = Path.GetDirectoryName(asm.ItemSpec);
         }
-        runtimeSourceDir = corelibPath!;
+
         if (MainAssembly != null)
         {
             if (!_assemblies.Contains(MainAssembly))
