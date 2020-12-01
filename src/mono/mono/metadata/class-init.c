@@ -65,7 +65,7 @@ GENERATE_TRY_GET_CLASS_WITH_CACHE(icollection, "System.Collections.Generic", "IC
 static
 GENERATE_TRY_GET_CLASS_WITH_CACHE(ienumerable, "System.Collections.Generic", "IEnumerable`1");
 static
-GENERATE_TRY_GET_CLASS_WITH_CACHE(ireadonlycollection, "System.Collecitons.Generic", "IReadOnlyCollection`1");
+GENERATE_TRY_GET_CLASS_WITH_CACHE(ireadonlycollection, "System.Collections.Generic", "IReadOnlyCollection`1");
 
 /* This TLS variable points to a GSList of classes which have setup_fields () executing */
 static MonoNativeTlsKey setup_fields_tls_id;
