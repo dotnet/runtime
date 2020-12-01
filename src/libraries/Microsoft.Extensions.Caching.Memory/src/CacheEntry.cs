@@ -242,16 +242,19 @@ namespace Microsoft.Extensions.Caching.Memory
 
         private void DetachTokens()
         {
-            lock (_lock)
+            if (_expirationTokenRegistrations != null)
             {
-                IList<IDisposable> registrations = _expirationTokenRegistrations;
-                if (registrations != null)
+                lock (_lock)
                 {
-                    _expirationTokenRegistrations = null;
-                    for (int i = 0; i < registrations.Count; i++)
+                    IList<IDisposable> registrations = _expirationTokenRegistrations;
+                    if (registrations != null)
                     {
-                        IDisposable registration = registrations[i];
-                        registration.Dispose();
+                        _expirationTokenRegistrations = null;
+                        for (int i = 0; i < registrations.Count; i++)
+                        {
+                            IDisposable registration = registrations[i];
+                            registration.Dispose();
+                        }
                     }
                 }
             }
