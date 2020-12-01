@@ -30,11 +30,6 @@ jobs:
       - name: runCodesignValidationInjection
         value: false
 
-      # Workaround for azure devops flakiness when dowloading artifacts
-      # https://github.com/dotnet/runtime/issues/32805
-      - name: System.DisableZipDownload
-        value: true
-
       - name: buildConfigUpper
         ${{ if eq(parameters.jobParameters.buildConfig, 'debug') }}:
           value: 'Debug'
