@@ -3,7 +3,6 @@
     <AsnXml />
     <_AsnXmlDiffCmd>%24%28command -v diff%29 -q -a</_AsnXmlDiffCmd>
     <_AsnXmlDiffCmd Condition="$([MSBuild]::IsOsPlatform('windows')) == 'true'">$(SystemRoot)\System32\fc.exe /a</_AsnXmlDiffCmd>
-    <_AsnIntermediatePath>$([MSBuild]::NormalizeDirectory('$(IntermediateOutputPath)', 'asnxml'))</_AsnIntermediatePath>
   </PropertyGroup>
   <ItemGroup>
     <None Include="$(MSBuildThisFileDirectory)asn.xsd">
@@ -15,6 +14,10 @@
     Condition=" '@(AsnXml)' != '' "
     Inputs="@(AsnXml);$(MSBuildThisFileDirectory)asn.xslt"
     Outputs="%(Identity).cs">
+
+    <PropertyGroup>
+      <_AsnIntermediatePath>$([MSBuild]::NormalizeDirectory('$(IntermediateOutputPath)', 'asnxml'))</_AsnIntermediatePath>
+    </PropertyGroup>
 
     <MakeDir Directories="$(_AsnIntermediatePath)" />
 
