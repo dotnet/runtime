@@ -187,11 +187,6 @@ TODO: Talk about initializing strutures before use
 #include "corhdr.h"
 #include <specstrings.h>
 #include "jiteeversionguid.h"
-//////////////////////////////////////////////////////////////////////////////////////////////////////////
-//
-// END JITEEVersionIdentifier
-//
-//////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // For System V on the CLR type system number of registers to pass in and return a struct is the same.
 // The CLR type system allows only up to 2 eightbytes to be passed in registers. There is no SSEUP classification types.

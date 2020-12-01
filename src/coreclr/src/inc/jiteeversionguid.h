@@ -1,4 +1,7 @@
 
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
 //////////////////////////////////////////////////////////////////////////////////////////////////////////
 //
 // NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE
@@ -10,6 +13,8 @@
 // be changed. This is the identifier verified by ICorJitCompiler::getVersionIdentifier().
 //
 // You can use "uuidgen.exe -s" to generate this value.
+//
+// See docs/project/updating-jitinterface.md for details
 //
 // **** NOTE TO INTEGRATORS:
 //
@@ -26,3 +31,9 @@ constexpr GUID JITEEVersionIdentifier = { /* 0d235fe4-65a1-487a-8553-c845496da90
     0x487a,
     {0x85, 0x53, 0xc8, 0x45, 0x49, 0x6d, 0xa9, 0x01}
 };
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////
+//
+// END JITEEVersionIdentifier
+//
+//////////////////////////////////////////////////////////////////////////////////////////////////////////
