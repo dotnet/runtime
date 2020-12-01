@@ -90,11 +90,7 @@ namespace Microsoft.Extensions.Caching.Memory
         public object Value
         {
             get => _value;
-            set
-            {
-                _value = value;
-                IsValueSet = true;
-            }
+            set { _value = value; IsValueSet = true; }
         }
 
         internal DateTimeOffset LastAccessed { get; set; }

@@ -43,18 +43,8 @@ namespace Microsoft.Extensions.Caching.Memory
         /// <param name="loggerFactory">The factory used to create loggers.</param>
         public MemoryCache(IOptions<MemoryCacheOptions> optionsAccessor, ILoggerFactory loggerFactory)
         {
-            if (optionsAccessor == null)
-            {
-                throw new ArgumentNullException(nameof(optionsAccessor));
-            }
-
-            if (loggerFactory == null)
-            {
-                throw new ArgumentNullException(nameof(loggerFactory));
-            }
-
-            _options = optionsAccessor.Value;
-            _logger = loggerFactory.CreateLogger<MemoryCache>();
+            _options = optionsAccessor?.Value ?? throw new ArgumentNullException(nameof(optionsAccessor));
+            _logger = loggerFactory?.CreateLogger<MemoryCache>() ?? throw new ArgumentNullException(nameof(loggerFactory));
 
             _entries = new ConcurrentDictionary<object, CacheEntry>();
             _lastExpirationScan = _options.Clock?.UtcNow ?? DateTimeOffset.UtcNow;
@@ -63,18 +53,12 @@ namespace Microsoft.Extensions.Caching.Memory
         /// <summary>
         /// Cleans up the background collection events.
         /// </summary>
-        ~MemoryCache()
-        {
-            Dispose(false);
-        }
+        ~MemoryCache() => Dispose(false);
 
         /// <summary>
         /// Gets the count of the current entries for diagnostic purposes.
         /// </summary>
-        public int Count
-        {
-            get { return _entries.Count; }
-        }
+        public int Count => _entries.Count;
 
         // internal for testing
         internal long Size { get => Interlocked.Read(ref _cacheSize); }
