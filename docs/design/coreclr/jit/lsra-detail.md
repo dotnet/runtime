@@ -338,8 +338,8 @@ After LSRA, the graph has the following properties:
         insert a `GT_RELOAD` node to specify the register to which it
         should be reloaded.
 
--   If a node has both GTF_SPILL and GTF_SPILLED, the tree node is reloaded prior to using
-    it (`GTF_SPILLED`) and spilled after it is evaluated (GTF_SPILL).
+-   If a node has both `GTF_SPILL` and `GTF_SPILLED`, the tree node is reloaded prior to using
+    it (`GTF_SPILLED`) and spilled after it is evaluated (`GTF_SPILL`).
 
     -   For normal variables, we can only have both `GTF_SPILL` and `GTF_SPILLED` on uses, 
         since a def never needs to reload an old value. However, for EH-write-thru variable
