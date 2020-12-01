@@ -5,6 +5,8 @@
     <XunitTestBinBase Condition="'$(XunitTestBinBase)'==''" >$(BaseOutputPathWithConfig)</XunitTestBinBase>
     <XunitWrapperGeneratedCSDirBase>$(XunitTestBinBase)\TestWrappers\</XunitWrapperGeneratedCSDirBase>
     <MSBuildEnableAllPropertyFunctions>1</MSBuildEnableAllPropertyFunctions>
+    <TestScriptExtension Condition="'$(TestWrapperTargetsWindows)' != 'true' ">sh</TestScriptExtension>
+    <TestScriptExtension Condition="'$(TestWrapperTargetsWindows)' == 'true' ">cmd</TestScriptExtension>
   </PropertyGroup>
 
   <ItemGroup>
@@ -222,13 +224,10 @@ namespace $([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").
 
     <PropertyGroup>
       <TestExecutableReplacement Condition="'$(TestWrapperTargetsWindows)' != 'true' ">testExecutable = testExecutable.Replace("\\", "/")%3B</TestExecutableReplacement>
-      <TestScriptExtension Condition="'$(TestWrapperTargetsWindows)' != 'true' ">sh</TestScriptExtension>
-      <TestScriptExtension Condition="'$(TestWrapperTargetsWindows)' == 'true' ">cmd</TestScriptExtension>
     </PropertyGroup>
 
     <ItemGroup>
-      <AllCMDsPresent Include="$(_CMDDIR)\**\*.cmd" Condition="'$(TestWrapperTargetsWindows)' == 'true'" />
-      <AllCMDsPresent Include="$(_CMDDIR)\**\*.sh" Condition="'$(TestWrapperTargetsWindows)' != 'true'" />
+      <AllCMDsPresent Include="$(_CMDDIR)\**\*.$(TestScriptExtension)" />
       <AllCMDsPresent Remove="$(_CMDDIR)\**\run-v8.sh" Condition="'$(TargetArchitecture)' == 'wasm'" />
       <TestGroupingDistinctWithCase Include="@(TestGrouping->Metadata('FullPath')->DistinctWithCase())" />
       <TestGroupingNotRelevant Include="@(TestGroupingDistinctWithCase)" Exclude="@(AllCMDsPresent)" />
@@ -436,8 +435,7 @@ namespace $([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").
     <MakeDir Directories="$(BuildDir)"/>
 
     <ItemGroup>
-      <AllCMDsPresent Include="$(_CMDDIR)\**\*.sh" Condition=" '$(TestWrapperTargetsWindows)' != 'true' "/>
-      <AllCMDsPresent Include="$(_CMDDIR)\**\*.cmd" Condition=" '$(TestWrapperTargetsWindows)' == 'true' "/>
+      <AllCMDsPresent Include="$(_CMDDIR)\**\*.$(TestScriptExtension)"/>
       <TestAssemblies Include="@(AllCMDsPresent->'%(RelativeDir)%(Filename).dll')" />
       <TestAssemblyDirs Include="@(AllCMDsPresent->'%(RelativeDir)')" />
       <AssembliesInTestDirs Include="%(AllCMDsPresent.RelativeDir)*.dll" Exclude="@(TestAssemblies)"/>
@@ -493,8 +491,7 @@ namespace $([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").
 
   <Target Name="GetListOfTestCmds">
     <ItemGroup>
-      <AllRunnableTestPaths Include="$(XunitTestBinBase)\**\*.cmd" Condition="'$(TestWrapperTargetsWindows)' == 'true'" />
-      <AllRunnableTestPaths Include="$(XunitTestBinBase)\**\*.sh" Condition="'$(TestWrapperTargetsWindows)' == 'false'" />
+      <AllRunnableTestPaths Include="$(XunitTestBinBase)\**\*.$(TestScriptExtension)"/>
       <AllRunnableTestPaths Remove="$(XunitTestBinBase)\**\run-v8.sh" Condition="'$(TargetArchitecture)' == 'wasm'" />
     </ItemGroup>
   </Target>

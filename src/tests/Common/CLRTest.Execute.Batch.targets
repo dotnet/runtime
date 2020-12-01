@@ -323,12 +323,12 @@ IF NOT "%__TestDotNetCmd%"=="" (
 IF NOT "%XHARNESS_CLI_PATH%"=="" (
   REM When running in CI, we only have the .NET runtime available
   REM We need to call the XHarness CLI DLL directly via dotnet exec
-  set HARNESS_RUNNER=%__Command% exec "%XHARNESS_CLI_PATH%"
+  set HARNESS_RUNNER=exec "%XHARNESS_CLI_PATH%"
 ) ELSE (
-  set HARNESS_RUNNER=%__Command% xharness
+  set HARNESS_RUNNER=xharness
 )
 
-%HARNESS_RUNNER% android test --instrumentation="net.dot.MonoRunner" --package-name="net.dot.%__Category%" --app="%__TestBinaryBase%\%__Category%.apk" --output-directory="%25cd%25" --arg=entryPointLibName=$(MsBuildProjectName).dll --expected-exit-code=100 -v
+%__Command% %HARNESS_RUNNER% android test --instrumentation="net.dot.MonoRunner" --package-name="net.dot.%__Category%" --app="%__TestBinaryBase%\%__Category%.apk" --output-directory="%25cd%25" --arg=entryPointLibName=$(MsBuildProjectName).dll --expected-exit-code=100 -v
 set CLRTestExitCode=!ERRORLEVEL!
 set CLRTestExpectedExitCode=0
     ]]></BatchCLRTestLaunchCmds>
@@ -410,7 +410,7 @@ $(BatchCLRTestArgPrep)
       <!-- NOTE! semicolons must be escaped with %3B boooo -->
       <_CLRTestExecutionScriptText>
   <![CDATA[
-@ECHO ON
+@ECHO OFF
 setlocal ENABLEDELAYEDEXPANSION
 set "lockFolder=%~dp0\lock"
 pushd %~dp0
