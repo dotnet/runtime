@@ -13,13 +13,11 @@ namespace Microsoft.Extensions.Caching.Memory
 {
     internal class CacheEntry : ICacheEntry
     {
-        private bool _disposed;
         private static readonly Action<object> ExpirationCallback = ExpirationTokensExpired;
         private readonly Action<CacheEntry> _notifyCacheOfExpiration;
         private readonly Action<CacheEntry> _notifyCacheEntryCommit;
         private IList<IDisposable> _expirationTokenRegistrations;
         private IList<PostEvictionCallbackRegistration> _postEvictionCallbacks;
-        private bool _isExpired;
         private readonly ILogger _logger;
 
         internal IList<IChangeToken> _expirationTokens;
@@ -29,7 +27,7 @@ namespace Microsoft.Extensions.Caching.Memory
         private long? _size;
         private IDisposable _scope;
         private object _value;
-        private bool _valueHasBeenSet;
+        private State _state;
 
         internal readonly object _lock = new object();
 
@@ -191,7 +189,7 @@ namespace Microsoft.Extensions.Caching.Memory
             set
             {
                 _value = value;
-                _valueHasBeenSet = true;
+                IsValueSet = true;
             }
         }
 
@@ -199,11 +197,17 @@ namespace Microsoft.Extensions.Caching.Memory
 
         internal EvictionReason EvictionReason { get; private set; }
 
+        private bool IsDisposed { get => _state.HasFlag(State.IsDisposed); set => Set(State.IsDisposed, value); }
+
+        private bool IsExpired { get => _state.HasFlag(State.IsExpired); set => Set(State.IsExpired, value); }
+
+        private bool IsValueSet { get => _state.HasFlag(State.IsValueSet); set => Set(State.IsValueSet, value); }
+
         public void Dispose()
         {
-            if (!_disposed)
+            if (!IsDisposed)
             {
-                _disposed = true;
+                IsDisposed = true;
 
                 // Ensure the _scope reference is cleared because it can reference other CacheEntry instances.
                 // This CacheEntry is going to be put into a MemoryCache, and we don't want to root unnecessary objects.
@@ -213,7 +217,7 @@ namespace Microsoft.Extensions.Caching.Memory
                 // Don't commit or propagate options if the CacheEntry Value was never set.
                 // We assume an exception occurred causing the caller to not set the Value successfully,
                 // so don't use this entry.
-                if (_valueHasBeenSet)
+                if (IsValueSet)
                 {
                     _notifyCacheEntryCommit(this);
 
@@ -228,7 +232,7 @@ namespace Microsoft.Extensions.Caching.Memory
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal bool CheckExpired(in DateTimeOffset now)
         {
-            return _isExpired || CheckForExpiredTime(now) || CheckForExpiredTokens();
+            return IsExpired || CheckForExpiredTime(now) || CheckForExpiredTokens();
         }
 
         internal void SetExpired(EvictionReason reason)
@@ -237,7 +241,7 @@ namespace Microsoft.Extensions.Caching.Memory
             {
                 EvictionReason = reason;
             }
-            _isExpired = true;
+            IsExpired = true;
             DetachTokens();
         }
 
@@ -410,6 +414,17 @@ namespace Microsoft.Extensions.Caching.Memory
                     parent._absoluteExpiration = _absoluteExpiration;
                 }
             }
+        }
+
+        private void Set(State option, bool value) => _state = value ? (_state | option) : (_state & ~option);
+
+        [Flags]
+        private enum State
+        {
+            Default = 0,
+            IsValueSet = 1 << 0,
+            IsExpired = 1 << 1,
+            IsDisposed = 1 << 2,
         }
     }
 }
