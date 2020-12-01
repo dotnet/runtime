@@ -45,9 +45,15 @@ namespace Microsoft.Extensions.Caching.Memory
         public TimeSpan? AbsoluteExpirationRelativeToNow
         {
             get => AbsoluteExpiration.HasValue ? AbsoluteExpiration.Value - _cache.GetUtcNow() : null;
-            set => AbsoluteExpiration = value > TimeSpan.Zero
-                ? (_cache.GetUtcNow() + value)
-                : throw new ArgumentOutOfRangeException(nameof(AbsoluteExpirationRelativeToNow), value, "The relative expiration value must be positive.");
+            set
+            {
+                if (value.HasValue)
+                {
+                    AbsoluteExpiration = value.Value > TimeSpan.Zero
+                        ? (_cache.GetUtcNow() + value)
+                        : throw new ArgumentOutOfRangeException(nameof(AbsoluteExpirationRelativeToNow), value, "The relative expiration value must be positive.");
+                }
+            }
         }
 
         /// <summary>
@@ -57,7 +63,7 @@ namespace Microsoft.Extensions.Caching.Memory
         public TimeSpan? SlidingExpiration
         {
             get => _slidingExpiration;
-            set => _slidingExpiration =  value > TimeSpan.Zero ? value : throw new ArgumentOutOfRangeException(nameof(SlidingExpiration), value, "The sliding expiration value must be positive.");
+            set => _slidingExpiration =  !value.HasValue || value > TimeSpan.Zero ? value : throw new ArgumentOutOfRangeException(nameof(SlidingExpiration), value, "The sliding expiration value must be positive.");
         }
 
         /// <summary>
@@ -82,7 +88,7 @@ namespace Microsoft.Extensions.Caching.Memory
         public long? Size
         {
             get => _size;
-            set => _size = value >= 0 ? value : throw new ArgumentOutOfRangeException(nameof(value), value, $"{nameof(value)} must be non-negative.");
+            set => _size = !value.HasValue || value >= 0 ? value : throw new ArgumentOutOfRangeException(nameof(value), value, $"{nameof(value)} must be non-negative.");
         }
 
         public object Key { get; private set; }
