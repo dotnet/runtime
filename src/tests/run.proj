@@ -422,7 +422,7 @@ namespace $([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").
       <Category>$([System.String]::Copy('$(CategoryWithSlash)').Replace('/','_'))</Category>
       <BuildDir>$(IntermediateOutputPath)\AndroidApps\$(Category)</BuildDir>
       <AppDir>$(BuildDir)\apk</AppDir>
-      <FinalApkPath>$(XUnitTestBinBase)\$(CategoryWithSlash)\$(Category).apk</FinalApkPath>
+      <FinalApkPath>$(XUnitTestBinBase)$(CategoryWithSlash)\$(Category).apk</FinalApkPath>
       <StripDebugSymbols>False</StripDebugSymbols>
       <StripDebugSymbols Condition="'$(Configuration)' == 'Release'">True</StripDebugSymbols>
       <MicrosoftNetCoreAppRuntimePackDir>$(ArtifactsBinDir)microsoft.netcore.app.runtime.android-$(TargetArchitecture)\$(Configuration)\runtimes\android-$(TargetArchitecture)\</MicrosoftNetCoreAppRuntimePackDir>
@@ -436,15 +436,13 @@ namespace $([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").
     <MakeDir Directories="$(BuildDir)"/>
 
     <ItemGroup>
-      <AllCMDsPresent Include="$(_CMDDIR)\**\*.sh" />
+      <AllCMDsPresent Include="$(_CMDDIR)\**\*.sh" Condition=" '$(TestWrapperTargetsWindows)' != 'true' "/>
+      <AllCMDsPresent Include="$(_CMDDIR)\**\*.cmd" Condition=" '$(TestWrapperTargetsWindows)' == 'true' "/>
       <TestAssemblies Include="@(AllCMDsPresent->'%(RelativeDir)%(Filename).dll')" />
       <TestAssemblyDirs Include="@(AllCMDsPresent->'%(RelativeDir)')" />
       <AssembliesInTestDirs Include="%(AllCMDsPresent.RelativeDir)*.dll" Exclude="@(TestAssemblies)"/>
-      <AssemblySearchPaths Include="@(TestAssemblyDirs)"/>
-      <AssemblySearchPaths Include="$(MicrosoftNetCoreAppRuntimePackDir)native"/>
-      <AssemblySearchPaths Include="$(MicrosoftNetCoreAppRuntimePackDir)lib/$(NetCoreAppCurrent)"/>
       <RuntimePackLibs Include="$(MicrosoftNetCoreAppRuntimePackDir)lib/**/*.dll" />
-      <RuntimePackNativeLibs Include="$(MicrosoftNetCoreAppRuntimePackDir)/**/*.dll;$(MicrosoftNetCoreAppRuntimePackDir)native/**/*.a;$(MicrosoftNetCoreAppRuntimePackDir)native/**/*.so" />
+      <RuntimePackNativeLibs Include="$(MicrosoftNetCoreAppRuntimePackDir)native/**/*.dll;$(MicrosoftNetCoreAppRuntimePackDir)native/**/*.a;$(MicrosoftNetCoreAppRuntimePackDir)native/**/*.so" />
     </ItemGroup>
 
     <Copy
