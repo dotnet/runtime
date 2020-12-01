@@ -21,6 +21,7 @@ namespace Microsoft.Extensions.Caching.Memory
         private IList<IDisposable> _expirationTokenRegistrations;
         private IList<PostEvictionCallbackRegistration> _postEvictionCallbacks;
         private IList<IChangeToken> _expirationTokens;
+        private TimeSpan? _absoluteExpirationRelativeToNow;
         private TimeSpan? _slidingExpiration;
         private long? _size;
         private IDisposable _scope;
@@ -44,21 +45,19 @@ namespace Microsoft.Extensions.Caching.Memory
         /// </summary>
         public TimeSpan? AbsoluteExpirationRelativeToNow
         {
-            get => AbsoluteExpiration.HasValue ? AbsoluteExpiration.Value - _cache.GetUtcNow() : null;
+            get => _absoluteExpirationRelativeToNow;
             set
             {
-                if (value.HasValue)
-                {
-                    if (value <= TimeSpan.Zero)
-                    {
-                        throw new ArgumentOutOfRangeException(
-                            nameof(AbsoluteExpirationRelativeToNow),
-                            value,
-                            "The relative expiration value must be positive.");
-                    }
 
-                    AbsoluteExpiration = _cache.GetUtcNow() + value;
+                if (value <= TimeSpan.Zero)
+                {
+                    throw new ArgumentOutOfRangeException(
+                        nameof(AbsoluteExpirationRelativeToNow),
+                        value,
+                        "The relative expiration value must be positive.");
                 }
+
+                _absoluteExpirationRelativeToNow = value;
             }
         }
 
