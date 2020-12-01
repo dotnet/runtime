@@ -28,6 +28,9 @@ namespace Microsoft.Interop.Analyzers
 
             // GeneratedDllImport
             public const string GeneratedDllImportMissingRequiredModifiers = Prefix + "013";
+
+            // Migration from DllImport to GeneratedDllImport
+            public const string ConvertToGeneratedDllImport = Prefix + "015";
         }
 
         internal static LocalizableResourceString GetResourceString(string resourceName)

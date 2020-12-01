@@ -19,3 +19,4 @@ DLLIMPORTGENANALYZER011 | Usage            | Warning  | StackallocMarshallingSho
 DLLIMPORTGENANALYZER012 | Usage            | Error    | StackallocConstructorMustHaveStackBufferSizeConstant
 DLLIMPORTGENANALYZER013 | Usage            | Warning  | GeneratedDllImportMissingRequiredModifiers
 DLLIMPORTGENANALYZER014 | Usage            | Error    | RefValuePropertyUnsupported
+DLLIMPORTGENANALYZER015 | Interoperability | Disabled | ConvertToGeneratedDllImportAnalyzer

@@ -176,7 +176,32 @@ namespace Microsoft.Interop {
                 return ResourceManager.GetString("ConfigurationNotSupportedTitle", resourceCulture);
             }
         }
+
+        ///   Looks up a localized string similar to Use &apos;GeneratedDllImportAttribute&apos; instead of &apos;DllImportAttribute&apos; to generate P/Invoke marshalling code at compile time.
+        /// </summary>
+        internal static string ConvertToGeneratedDllImportDescription {
+            get {
+                return ResourceManager.GetString("ConvertToGeneratedDllImportDescription", resourceCulture);
+            }
+        }
         
+        ///   Looks up a localized string similar to Mark the method &apos;{0}&apos; with &apos;GeneratedDllImportAttribute&apos; instead of &apos;DllImportAttribute&apos; to generate P/Invoke marshalling code at compile time.
+        /// </summary>
+        internal static string ConvertToGeneratedDllImportMessage {
+            get {
+                return ResourceManager.GetString("ConvertToGeneratedDllImportMessage", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Use &apos;GeneratedDllImportAttribute&apos; instead of &apos;DllImportAttribute&apos; to generate P/Invoke marshalling code at compile time.
+        /// </summary>
+        internal static string ConvertToGeneratedDllImportTitle {
+            get {
+                return ResourceManager.GetString("ConvertToGeneratedDllImportTitle", resourceCulture);
+            }
+        }
+
         /// <summary>
         ///   Looks up a localized string similar to The specified parameter needs to be marshalled from managed to native, but the native type &apos;{0}&apos; does not support it..
         /// </summary>
@@ -185,7 +210,7 @@ namespace Microsoft.Interop {
                 return ResourceManager.GetString("CustomTypeMarshallingManagedToNativeUnsupported", resourceCulture);
             }
         }
-        
+
         /// <summary>
         ///   Looks up a localized string similar to The specified parameter needs to be marshalled from native to managed, but the native type &apos;{0}&apos; does not support it..
         /// </summary>
@@ -194,7 +219,7 @@ namespace Microsoft.Interop {
                 return ResourceManager.GetString("CustomTypeMarshallingNativeToManagedUnsupported", resourceCulture);
             }
         }
-        
+
         /// <summary>
         ///   Looks up a localized string similar to Methods marked with &apos;GeneratedDllImportAttribute&apos; should be &apos;static&apos; and &apos;partial&apos;. P/Invoke source generation will ignore methods that are not &apos;static&apos; and &apos;partial&apos;..
         /// </summary>

@@ -156,6 +156,15 @@
   <data name="ConfigurationNotSupportedTitle" xml:space="preserve">
     <value>Specified configuration is not supported by source-generated P/Invokes.</value>
   </data>
+  <data name="ConvertToGeneratedDllImportDescription" xml:space="preserve">
+    <value>Use 'GeneratedDllImportAttribute' instead of 'DllImportAttribute' to generate P/Invoke marshalling code at compile time</value>
+  </data>
+  <data name="ConvertToGeneratedDllImportMessage" xml:space="preserve">
+    <value>Mark the method '{0}' with 'GeneratedDllImportAttribute' instead of 'DllImportAttribute' to generate P/Invoke marshalling code at compile time</value>
+  </data>
+  <data name="ConvertToGeneratedDllImportTitle" xml:space="preserve">
+    <value>Use 'GeneratedDllImportAttribute' instead of 'DllImportAttribute' to generate P/Invoke marshalling code at compile time</value>
+  </data>
   <data name="CustomTypeMarshallingManagedToNativeUnsupported" xml:space="preserve">
     <value>The specified parameter needs to be marshalled from managed to native, but the native type '{0}' does not support it.</value>
   </data>
