@@ -1749,7 +1749,7 @@ void CodeGen::genProfilingLeaveCallback(unsigned helper)
     else if (varTypeIsFloating(compiler->info.compRetType) ||
              compiler->IsHfa(compiler->info.compMethodInfo->args.retTypeClass))
     {
-        r0InUse = !compiler->info.compIsVarArgs && !compiler->opts.compUseSoftFP;
+        r0InUse = compiler->info.compIsVarArgs || compiler->opts.compUseSoftFP;
     }
     else
     {
