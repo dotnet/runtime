@@ -1405,7 +1405,7 @@ void CodeGen::genMultiRegStoreToSIMDLocal(GenTreeLclVar* lclNode)
     for (int i = regCount - 1; i >= 0; --i)
     {
         var_types type = op1->gtSkipReloadOrCopy()->GetRegTypeByIndex(i);
-        regNumber reg  = op1->GetRegByIndex(i);
+        regNumber reg  = actualOp1->GetRegByIndex(i);
         if (op1->IsCopyOrReload())
         {
             // GT_COPY/GT_RELOAD will have valid reg for those positions
