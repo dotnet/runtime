@@ -93,7 +93,7 @@ namespace System.Reflection
         {
             try
             {
-                MetadataToken tk = new (metadataToken);
+                MetadataToken tk = new MetadataToken(metadataToken);
                 if (!tk.IsMethodDef && !tk.IsMethodSpec)
                 {
                     if (!tk.IsMemberRef)
@@ -112,16 +112,16 @@ namespace System.Reflection
 
                 RuntimeTypeHandle[]? typeArgs = null;
                 RuntimeTypeHandle[]? methodArgs = null;
-                if (genericTypeArguments is not null && genericTypeArguments.Length > 0)
+                if (genericTypeArguments?.Length > 0)
                 {
                     typeArgs = ConvertToTypeHandleArray(genericTypeArguments);
                 }
-                if (genericMethodArguments is not null && genericMethodArguments.Length > 0)
+                if (genericMethodArguments?.Length > 0)
                 {
                     methodArgs = ConvertToTypeHandleArray(genericMethodArguments);
                 }
 
-                ModuleHandle moduleHandle = new (GetNativeHandle());
+                ModuleHandle moduleHandle = new ModuleHandle(GetNativeHandle());
                 IRuntimeMethodInfo methodHandle = moduleHandle.ResolveMethodHandle(tk, typeArgs, methodArgs).GetMethodInfo();
 
                 Type declaringType = RuntimeMethodHandle.GetDeclaringType(methodHandle);
@@ -178,7 +178,7 @@ namespace System.Reflection
         {
             try
             {
-                MetadataToken tk = new (metadataToken);
+                MetadataToken tk = new MetadataToken(metadataToken);
 
                 if (!MetadataImport.IsValidToken(tk))
                     throw new ArgumentOutOfRangeException(nameof(metadataToken),
@@ -186,16 +186,16 @@ namespace System.Reflection
 
                 RuntimeTypeHandle[]? typeArgs = null;
                 RuntimeTypeHandle[]? methodArgs = null;
-                if (genericTypeArguments is not null && genericTypeArguments.Length > 0)
+                if (genericTypeArguments?.Length > 0)
                 {
                     typeArgs = ConvertToTypeHandleArray(genericTypeArguments);
                 }
-                if (genericMethodArguments is not null && genericMethodArguments.Length > 0)
+                if (genericMethodArguments?.Length > 0)
                 {
                     methodArgs = ConvertToTypeHandleArray(genericMethodArguments);
                 }
 
-                ModuleHandle moduleHandle = new (this);
+                ModuleHandle moduleHandle = new ModuleHandle(this);
                 if (!tk.IsFieldDef)
                 {
                     if (!tk.IsMemberRef)
@@ -239,7 +239,7 @@ namespace System.Reflection
         {
             try
             {
-                MetadataToken tk = new (metadataToken);
+                MetadataToken tk = new MetadataToken(metadataToken);
 
                 if (tk.IsGlobalTypeDefToken)
                     throw new ArgumentException(SR.Format(SR.Argument_ResolveModuleType, tk), nameof(metadataToken));
@@ -249,11 +249,11 @@ namespace System.Reflection
 
                 RuntimeTypeHandle[]? typeArgs = null;
                 RuntimeTypeHandle[]? methodArgs = null;
-                if (genericTypeArguments is not null && genericTypeArguments.Length > 0)
+                if (genericTypeArguments?.Length > 0)
                 {
                     typeArgs = ConvertToTypeHandleArray(genericTypeArguments);
                 }
-                if (genericMethodArguments is not null && genericMethodArguments.Length > 0)
+                if (genericMethodArguments?.Length > 0)
                 {
                     methodArgs = ConvertToTypeHandleArray(genericMethodArguments);
                 }

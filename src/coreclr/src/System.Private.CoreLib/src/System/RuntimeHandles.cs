@@ -1298,12 +1298,12 @@ namespace System
             int methodInstCount = 0;
 
             // defensive copy of user-provided array, per CopyRuntimeTypeHandles contract
-            if (typeInstantiationContext is not null && typeInstantiationContext.Length > 0)
+            if (typeInstantiationContext?.Length > 0)
             {
                 typeInstantiationContext = (RuntimeTypeHandle[]?)typeInstantiationContext.Clone();
                 typeInstantiationContextHandles = RuntimeTypeHandle.CopyRuntimeTypeHandles(typeInstantiationContext, out typeInstCount);
             }
-            if (methodInstantiationContext is not null && methodInstantiationContext.Length > 0)
+            if (methodInstantiationContext?.Length > 0)
             {
                 methodInstantiationContext = (RuntimeTypeHandle[]?)methodInstantiationContext.Clone();
                 methodInstantiationContextHandles = RuntimeTypeHandle.CopyRuntimeTypeHandles(methodInstantiationContext, out methodInstCount);
@@ -1400,12 +1400,12 @@ namespace System
             int methodInstCount = 0;
 
             // defensive copy of user-provided array, per CopyRuntimeTypeHandles contract
-            if (typeInstantiationContext is not null && typeInstantiationContext.Length > 0)
+            if (typeInstantiationContext?.Length > 0)
             {
                 typeInstantiationContext = (RuntimeTypeHandle[]?)typeInstantiationContext.Clone();
                 typeInstantiationContextHandles = RuntimeTypeHandle.CopyRuntimeTypeHandles(typeInstantiationContext, out typeInstCount);
             }
-            if (methodInstantiationContext is not null && methodInstantiationContext.Length > 0)
+            if (methodInstantiationContext?.Length > 0)
             {
                 methodInstantiationContext = (RuntimeTypeHandle[]?)methodInstantiationContext.Clone();
                 methodInstantiationContextHandles = RuntimeTypeHandle.CopyRuntimeTypeHandles(methodInstantiationContext, out methodInstCount);
