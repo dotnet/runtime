@@ -34,11 +34,12 @@ namespace System.Reflection.Tests
             yield return new object[] { "\uD83D\uDC3B\uD83D\uDC3B\uD83D\uDC3B\uD83D\uDC3B\uD83D\uDC3B", "\uD83D\uDC3B\uD83D\uDC3B\uD83D\uDC3B\uD83D\uDC3B\uD83D\uDC3B" };
         }
 
-        public static IEnumerable<object[]> Names_TestDataQuoted()
+        public static IEnumerable<object[]> Names_TestDataRequiresEscaping()
         {
             yield return new object[] { " name ", "\" name \"" };
             yield return new object[] { "na,me", "na\\,me" };
             yield return new object[] { "na=me", "na\\=me" };
+            yield return new object[] { "na\\me", "na\\\\me" };
             yield return new object[] { "na\'me", "\"na\\'me\"" };
             yield return new object[] { "na\"me", "\"na\\\"me\"" };
             yield return new object[] { "na\tme", "na\\tme" };
@@ -77,11 +78,18 @@ namespace System.Reflection.Tests
         [InlineData("/a", typeof(FileLoadException))]
         [InlineData("           ", typeof(FileLoadException))]
         [InlineData("  \t \r \n ", typeof(FileLoadException))]
+        public void Ctor_String_Invalid(string assemblyName, Type exceptionType)
+        {
+            Assert.Throws(exceptionType, () => new AssemblyName(assemblyName));
+        }
+
+        [Theory]
         [InlineData("na,me", typeof(FileLoadException))]
         [InlineData("na=me", typeof(FileLoadException))]
         [InlineData("na\'me", typeof(FileLoadException))]
         [InlineData("na\"me", typeof(FileLoadException))]
-        public void Ctor_String_Invalid(string assemblyName, Type exceptionType)
+        [ActiveIssue ("https://github.com/dotnet/runtime/issues/45032", TestRuntimes.Mono)]
+        public void Ctor_String_Invalid_Issue(string assemblyName, Type exceptionType)
         {
             Assert.Throws(exceptionType, () => new AssemblyName(assemblyName));
         }
@@ -387,7 +395,7 @@ namespace System.Reflection.Tests
 
         [Theory]
         [MemberData(nameof(Names_TestData))]
-        [MemberData(nameof(Names_TestDataQuoted))]
+        [MemberData(nameof(Names_TestDataRequiresEscaping))]
         [InlineData(null, "")]
         public void Name_Set_FullName(string name, string expectedName)
         {

@@ -109,18 +109,22 @@ namespace System.Reflection
                         sb.Append('\\');
                         break;
                     case '\t':
-                        sb.Append('\\').Append('t');
-                        continue;
-                    case '\n':
-                        sb.Append('\\').Append('n');
+                        sb.Append("\\t");
                         continue;
 #if TARGET_WINDOWS
                     case '\r':
-                        if (++i < s.Length - 1 && s[i] == '\n')
-                            goto case '\n';
+                        if (++i < s.Length && s[i] == '\n')
+                        {
+                            sb.Append("\\n");
+                            continue;
+                        }
 
                         --i;
                         break;
+#else
+                    case '\n':
+                        sb.Append("\\n");
+                        continue;
 #endif
                 }
 
