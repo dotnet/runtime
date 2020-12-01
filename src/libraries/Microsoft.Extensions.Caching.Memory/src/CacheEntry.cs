@@ -21,7 +21,6 @@ namespace Microsoft.Extensions.Caching.Memory
         private readonly ILogger _logger;
 
         internal IList<IChangeToken> _expirationTokens;
-        internal DateTimeOffset? _absoluteExpiration;
         internal TimeSpan? _absoluteExpirationRelativeToNow;
         private TimeSpan? _slidingExpiration;
         private long? _size;
@@ -68,17 +67,7 @@ namespace Microsoft.Extensions.Caching.Memory
         /// <summary>
         /// Gets or sets an absolute expiration date for the cache entry.
         /// </summary>
-        public DateTimeOffset? AbsoluteExpiration
-        {
-            get
-            {
-                return _absoluteExpiration;
-            }
-            set
-            {
-                _absoluteExpiration = value;
-            }
-        }
+        public DateTimeOffset? AbsoluteExpiration { get; set; }
 
         /// <summary>
         /// Gets or sets an absolute expiration time, relative to now.
@@ -247,7 +236,7 @@ namespace Microsoft.Extensions.Caching.Memory
 
         private bool CheckForExpiredTime(in DateTimeOffset now)
         {
-            if (!_absoluteExpiration.HasValue && !_slidingExpiration.HasValue)
+            if (!AbsoluteExpiration.HasValue && !_slidingExpiration.HasValue)
             {
                 return false;
             }
@@ -256,7 +245,7 @@ namespace Microsoft.Extensions.Caching.Memory
 
             bool FullCheck(in DateTimeOffset offset)
             {
-                if (_absoluteExpiration.HasValue && _absoluteExpiration.Value <= offset)
+                if (AbsoluteExpiration.HasValue && AbsoluteExpiration.Value <= offset)
                 {
                     SetExpired(EvictionReason.Expired);
                     return true;
@@ -382,7 +371,7 @@ namespace Microsoft.Extensions.Caching.Memory
             }
         }
 
-        internal bool CanPropagateOptions() => _expirationTokens != null || _absoluteExpiration.HasValue;
+        internal bool CanPropagateOptions() => _expirationTokens != null || AbsoluteExpiration.HasValue;
 
         internal void PropagateOptions(CacheEntry parent)
         {
@@ -407,11 +396,11 @@ namespace Microsoft.Extensions.Caching.Memory
                 }
             }
 
-            if (_absoluteExpiration.HasValue)
+            if (AbsoluteExpiration.HasValue)
             {
-                if (!parent._absoluteExpiration.HasValue || _absoluteExpiration < parent._absoluteExpiration)
+                if (!parent.AbsoluteExpiration.HasValue || AbsoluteExpiration < parent.AbsoluteExpiration)
                 {
-                    parent._absoluteExpiration = _absoluteExpiration;
+                    parent.AbsoluteExpiration = AbsoluteExpiration;
                 }
             }
         }
