@@ -133,7 +133,15 @@ namespace System.Collections.Generic
                 if (source._comparer == _comparer)
                 {
                     // If comparers are the same, we can copy _entries without rehashing.
-                    CopyEntries(oldEntries, source._count);
+                    if (source._entries.Length == _entries.Length)
+                    {
+                        // If the lengths are the same we can do direct array copies.
+                        CopyEntriesSameLength(source);
+                    }
+                    else
+                    {
+                        CopyEntries(oldEntries, source._count);
+                    }
                     return;
                 }
 
@@ -1089,6 +1097,29 @@ namespace System.Collections.Generic
             Debug.Assert(oldEntries is not null);
 
             CopyEntries(oldEntries, oldCount);
+        }
+
+        private void CopyEntriesSameLength(Dictionary<TKey, TValue> source)
+        {
+            Debug.Assert(_entries is not null);
+            Debug.Assert(_buckets is not null);
+            Debug.Assert(source is not null);
+            Debug.Assert(source._entries is not null);
+            Debug.Assert(source._buckets is not null);
+
+            int startVersion = source._version;
+
+            // All members tracking internal state should be copied here.
+            Array.Copy(source._entries, _entries, _entries.Length);
+            Array.Copy(source._buckets, _buckets, _buckets.Length);
+            _count = source._count;
+            _freeCount = source._freeCount;
+            _freeList = source._freeList;
+
+            if (source._version != startVersion)
+            {
+                ThrowHelper.ThrowInvalidOperationException_ConcurrentOperationsNotSupported();
+            }
         }
 
         private void CopyEntries(Entry[] entries, int count)

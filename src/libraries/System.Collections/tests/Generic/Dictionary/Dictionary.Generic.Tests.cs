@@ -53,6 +53,16 @@ namespace System.Collections.Tests
 
         [Theory]
         [MemberData(nameof(ValidCollectionSizes))]
+        public void Dictionary_Generic_Constructor_IDictionary_Optimized(int count)
+        {
+            Dictionary<TKey, TValue> source = new Dictionary<TKey, TValue>(count);
+            AddToCollection(source, count);
+            Dictionary<TKey, TValue> copied = new Dictionary<TKey, TValue>(source);
+            Assert.Equal(source, copied);
+        }
+
+        [Theory]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void Dictionary_Generic_Constructor_IEqualityComparer(int count)
         {
             IEqualityComparer<TKey> comparer = GetKeyIEqualityComparer();
