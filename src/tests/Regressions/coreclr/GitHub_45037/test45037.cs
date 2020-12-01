@@ -1,6 +1,16 @@
-﻿using System;
+using System;
+using System.Collections.Generic;
 using System.Reflection;
 
+public abstract class Base<T>
+{
+   public virtual T Get() => throw new NotImplementedException();
+}
+
+public sealed class CovariantReturn : Base<object>
+{
+   public override string Get() => throw new NotImplementedException();
+}
 
 public abstract class ABase
 {
@@ -37,6 +47,7 @@ class Program
     {
         Type[] t = Assembly.GetExecutingAssembly().GetTypes();
         new Child<Foo>();
+        new CovariantReturn();
 
         return 100;
     }
