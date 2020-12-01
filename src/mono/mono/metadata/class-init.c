@@ -2566,7 +2566,10 @@ generic_array_methods (MonoClass *klass)
 	}
 	/*g_print ("array generic methods: %d\n", count_generic);*/
 
-	generic_array_method_num = count_generic;
+	/* only count the methods we actually added, not the ones that we
+	 * skipped if they implement an interface method that was trimmed.
+	 */
+	generic_array_method_num = i;
 	g_list_free (list);
 	return generic_array_method_num;
 }
