@@ -10,7 +10,7 @@
 #ifndef _PINVOKEOVERRIDE_H_
 #define _PINVOKEOVERRIDE_H_
 
-typedef const void* (PInvokeOverrideFn)(const char* libraryName, const char* entrypointName);
+#include "coreclrhost.h"
 
 class PInvokeOverride
 {

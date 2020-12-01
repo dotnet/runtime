@@ -14,6 +14,8 @@
 #define CORECLR_CALLING_CONVENTION
 #endif
 
+#include <stdint.h>
+
 // For each hosting API, we define a function prototype and a function pointer
 // The prototype is useful for implicit linking against the dynamic coreclr
 // library and the pointer for explicit dynamic loading (dlopen, LoadLibrary)
@@ -120,5 +122,12 @@ CORECLR_HOSTING_API(coreclr_execute_assembly,
             unsigned int* exitCode);
 
 #undef CORECLR_HOSTING_API
+
+//
+// Callback types used by the hosts
+//
+typedef bool(BundleProbeFn)(const char* path, int64_t* offset, int64_t* size);
+typedef const void* (PInvokeOverrideFn)(const char* libraryName, const char* entrypointName);
+
 
 #endif // __CORECLR_HOST_H__

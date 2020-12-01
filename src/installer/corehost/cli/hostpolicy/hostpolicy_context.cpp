@@ -44,7 +44,6 @@ namespace
     }
 
 #if defined(NATIVE_LIBS_EMBEDDED)
-    extern "C" const void* GlobalizationResolveDllImport(const char* name);
     extern "C" const void* CompressionResolveDllImport(const char* name);
 
     // pinvoke_override:

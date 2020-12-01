@@ -120,7 +120,7 @@ static void ConvertConfigPropertiesToUnicode(
     int propertyCount,
     LPCWSTR** propertyKeysWRef,
     LPCWSTR** propertyValuesWRef,
-    BundleProbe** bundleProbe,
+    BundleProbeFn** bundleProbe,
     PInvokeOverrideFn** pinvokeOverride,
     bool* hostPolicyEmbedded)
 {
@@ -139,7 +139,7 @@ static void ConvertConfigPropertiesToUnicode(
         {
             // If this application is a single-file bundle, the bundle-probe callback 
             // is passed in as the value of "BUNDLE_PROBE" property (encoded as a string).
-            *bundleProbe = (BundleProbe*)_wcstoui64(propertyValuesW[propertyIndex], nullptr, 0);
+            *bundleProbe = (BundleProbeFn*)_wcstoui64(propertyValuesW[propertyIndex], nullptr, 0);
         }
         else if (strcmp(propertyKeys[propertyIndex], "PINVOKE_OVERRIDE") == 0)
         {
@@ -193,7 +193,7 @@ int coreclr_initialize(
 
     LPCWSTR* propertyKeysW;
     LPCWSTR* propertyValuesW;
-    BundleProbe* bundleProbe = nullptr;
+    BundleProbeFn* bundleProbe = nullptr;
     bool hostPolicyEmbedded = false;
     PInvokeOverrideFn* pinvokeOverride = nullptr;
 
