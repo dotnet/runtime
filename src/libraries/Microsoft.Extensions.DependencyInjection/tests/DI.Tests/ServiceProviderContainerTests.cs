@@ -268,27 +268,27 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
         }
 
         [Fact]
-        public void GetService_ThenDisposeOnDifferentThread_ServiceDisposed()
+        public async Task GetService_ThenDisposeOnDifferentThread_ServiceDisposed()
         {
             var services = new ServiceCollection();
-            services.AddSingleton<Foo1>();
+            services.AddSingleton<DisposableSleepInCtor>();
             IServiceProvider sp = services.BuildServiceProvider();
-            var foo = sp.GetRequiredService<Foo1>();
-            Task.Run(() => (sp as IDisposable).Dispose()).Wait();
+            var service = sp.GetRequiredService<DisposableSleepInCtor>();
+            await Task.Run(() => (sp as IDisposable).Dispose());
             
-            Assert.True(foo.IsDisposed);
+            Assert.True(service.IsDisposed);
         }
 
         [Fact]
         public void GetService_DisposeOnSameThread_Throws()
         {
             var services = new ServiceCollection();
-            services.AddSingleton<Foo2>();
+            services.AddSingleton<DisposeServiceProviderInCtor>();
             IServiceProvider sp = services.BuildServiceProvider();
             Assert.Throws<ObjectDisposedException>(() =>
             {
                 // ctor disposes ServiceProvider
-                var foo = sp.GetRequiredService<Foo2>();
+                var service = sp.GetRequiredService<DisposeServiceProviderInCtor>();
             });
         }
 
@@ -297,34 +297,27 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
         {
             // Arrange
             var services = new ServiceCollection();
-            services.AddSingleton<FooAsyncDisposable>();
+            services.AddSingleton<DisposeServiceProviderInCtorAsyncDisposable>();
             var sp = services.BuildServiceProvider();
             bool success = Task.Run(() =>
             {
                 SingleThreadedSynchronizationContext.Run(() =>
                 {
-                    Task.Factory.StartNew(() => 
+                    // Act
+                    Assert.Throws<ObjectDisposedException>(() =>
                     {
-                        // Act
-                        Assert.Throws<ObjectDisposedException>(() =>
-                        {
-                            // ctor disposes ServiceProvider
-                            var foo = sp.GetRequiredService<FooAsyncDisposable>();
-                        });
-                    },
-                    CancellationToken.None, 
-                    TaskCreationOptions.None,
-                    TaskScheduler.FromCurrentSynchronizationContext()
-                    ).Wait();
+                        // ctor disposes ServiceProvider
+                        var service = sp.GetRequiredService<DisposeServiceProviderInCtorAsyncDisposable>();
+                    });
                 });
             }).Wait(TimeSpan.FromSeconds(10));
 
             Assert.True(success);
         }
 
-        private class Foo1 : IDisposable
+        private class DisposableSleepInCtor : IDisposable
         {
-            public Foo1()
+            public DisposableSleepInCtor()
             {
                 Thread.Sleep(5000);
             }
@@ -336,9 +329,9 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
             }
         }
 
-        private class Foo2 : IDisposable
+        private class DisposeServiceProviderInCtor : IDisposable
         {
-            public Foo2(IServiceProvider sp)
+            public DisposeServiceProviderInCtor(IServiceProvider sp)
             {
                 (sp as IDisposable).Dispose();
             }
@@ -377,9 +370,9 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
             }
         }
 
-        private class FooAsyncDisposable : IFakeService, IAsyncDisposable
+        private class DisposeServiceProviderInCtorAsyncDisposable : IFakeService, IAsyncDisposable
         {
-            public FooAsyncDisposable(IServiceProvider sp)
+            public DisposeServiceProviderInCtorAsyncDisposable(IServiceProvider sp)
             {
                 (sp as IDisposable).Dispose();
             }
