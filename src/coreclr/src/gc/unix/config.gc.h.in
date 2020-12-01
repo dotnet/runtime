@@ -30,6 +30,6 @@
 #cmakedefine01 HAVE_SYSINFO_WITH_MEM_UNIT
 #cmakedefine01 HAVE_XSW_USAGE
 #cmakedefine01 HAVE_XSWDEV
-
+#cmakedefine01 HAVE_NON_LEGACY_STATFS
 
 #endif // __CONFIG_H__

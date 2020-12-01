@@ -250,9 +250,12 @@ namespace Microsoft.Extensions.Caching.Memory
                     entry.LastAccessed = utcNow;
                     result = entry.Value;
 
-                    // When this entry is retrieved in the scope of creating another entry,
-                    // that entry needs a copy of these expiration tokens.
-                    entry.PropagateOptions(CacheEntryHelper.Current);
+                    if (entry.CanPropagateOptions())
+                    {
+                        // When this entry is retrieved in the scope of creating another entry,
+                        // that entry needs a copy of these expiration tokens.
+                        entry.PropagateOptions(CacheEntryHelper.Current);
+                    }
 
                     StartScanForExpiredItemsIfNeeded(utcNow);
 
