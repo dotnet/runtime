@@ -3798,7 +3798,7 @@ public:
     {
 #ifdef _DEBUG
         // check this looks like an object
-        Validate();
+        Validate(FALSE);
 #endif //_DEBUG
         RawSetMethodTable((MethodTable *)(((size_t) RawGetMethodTable()) & (~MAKE_FREE_OBJ_IN_COMPACT)));
     }
