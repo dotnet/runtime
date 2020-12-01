@@ -509,9 +509,9 @@ node, which builds `RefPositions` according to the liveness model described abov
         a case from `Microsoft.Win32.OAVariantLib:ChangeType(System.Variant,System.Type,short,System.Globalization.CultureInfo):System.Variant` in System.Private.CoreLib.dll (I've edited the
         dump to make it easier to see the structure):
 ```
-N037  t16 =    ┌──▌  LCL_VAR   ref    V04 arg3         u:1 (last use) $c1
+N037  t16 =    ┌──▌  LCL_VAR   ref    V04 arg3
 N039 t127 = ┌──▌  PUTARG_REG ref    REG rcx
-N041 t128 = │                 ┌──▌  LCL_VAR   ref    V04 arg3         
+N041 t128 = │                 ┌──▌  LCL_VAR   ref    V04 arg3    (last use)     
 N043 t129 = │              ┌──▌  LEA(b+0)  byref 
 N045 t130 = │           ┌──▌  IND       long  
 N047 t131 = │        ┌──▌  LEA(b+72) long  
