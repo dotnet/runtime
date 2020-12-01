@@ -72,7 +72,7 @@
 
 		<!-- domain.c: mono_defaults.array_class -->
 		<type fullname="System.Array">
-			<!-- InternalArray__%s_%s is used in aot-compiler.c -->
+			<!-- InternalArray__%s_%s is used in aot-compiler.c and class-init.c -->
 			<method name="InternalArray__ICollection_get_Count" />
 			<method name="InternalArray__ICollection_get_IsReadOnly" />
 			<method name="InternalArray__IEnumerable_GetEnumerator" />
@@ -478,15 +478,6 @@
 
 		<!-- domain.c: mono_defaults.void_class -->
 		<type fullname="System.Void" preserve="nothing" />
-
-		<!-- class.c: generic_array_methods -->
-		<type fullname="System.Collections.Generic.ICollection`1" />
-		<type fullname="System.Collections.Generic.IEnumerable`1" />
-		<type fullname="System.Collections.Generic.IReadOnlyList`1" />
-		<type fullname="System.Collections.Generic.IReadOnlyCollection`1" />
-
-		<!-- domain.c: mono_defaults.generic_ilist_class -->
-		<type fullname="System.Collections.Generic.IList`1" />
 
 		<!-- aot-compiler.c: add_generic_instances and add_generic_class_with_depth -->
 		<type fullname="System.Collections.Generic.GenericEqualityComparer`1">
