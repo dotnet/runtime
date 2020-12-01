@@ -4067,13 +4067,13 @@ void LinearScan::setIntervalAsSpilled(Interval* interval)
         // Now we need to mark the local as spilled also, even if the lower half is never spilled,
         // as this will use the upper part of its home location.
         interval = interval->relatedInterval;
-        // We'll now mark this as spilled, so it changes the spillCost for its recent ref, if any.
+        // We'll now mark this as spilled, so it changes the spillCost.
         RefPosition* recentRefPos = interval->recentRefPosition;
         if (!interval->isSpilled && interval->isActive && (recentRefPos != nullptr))
         {
             VarSetOps::AddElemD(compiler, splitOrSpilledVars, interval->getVarIndex(compiler));
             interval->isSpilled = true;
-            regNumber reg       = interval->recentRefPosition->assignedReg();
+            regNumber reg       = interval->physReg;
             spillCost[reg]      = getSpillWeight(getRegisterRecord(reg));
         }
     }
