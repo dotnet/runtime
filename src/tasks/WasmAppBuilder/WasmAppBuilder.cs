@@ -107,9 +107,14 @@ public class WasmAppBuilder : Task
         {
             foreach (var asm in Assemblies!)
             {
+                string corelibPath = string.Empty;
                 if (!_assemblies.Contains(asm.ItemSpec))
                     _assemblies.Add(asm.ItemSpec);
+
+                if (asm.ItemSPec.EndsWith ("System.Private.CoreLib.dll"))
+                    corelibPath = Path.GetDirectoryName (asm.ItemSpec)!;
             }
+            runtimeSourceDir = corelibPath!;
         }
         if (MainAssembly != null)
         {
