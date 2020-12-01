@@ -4,31 +4,17 @@
 using System;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
 using System.Runtime.ExceptionServices;
-
-#if ActivatorUtilities_In_DependencyInjection
 using Microsoft.Extensions.Internal;
 
 namespace Microsoft.Extensions.DependencyInjection
-#else
-namespace Microsoft.Extensions.Internal
-#endif
 {
     /// <summary>
     /// Helper code for the various activator services.
     /// </summary>
-
-#if ActivatorUtilities_In_DependencyInjection
-    public
-#else
-    // Do not take a dependency on this class unless you are explicitly trying to avoid taking a
-    // dependency on Microsoft.AspNetCore.DependencyInjection.Abstractions.
-    internal
-#endif
-    static class ActivatorUtilities
+    public static class ActivatorUtilities
     {
         private static readonly MethodInfo GetServiceInfo =
             GetMethodInfo<Func<IServiceProvider, Type, Type, bool, object?>>((sp, t, r, c) => GetService(sp, t, r, c));
