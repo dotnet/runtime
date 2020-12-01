@@ -25,7 +25,7 @@ namespace Microsoft.Extensions.Caching.Memory
         private long? _size;
         private IDisposable _scope;
         private object _value;
-        private State _state;
+        private int _state; // actually a [Flag] enum called "State"
 
         internal CacheEntry(object key, MemoryCache memoryCache)
         {
@@ -103,11 +103,11 @@ namespace Microsoft.Extensions.Caching.Memory
 
         internal EvictionReason EvictionReason { get; private set; }
 
-        private bool IsDisposed { get => _state.HasFlag(State.IsDisposed); set => Set(State.IsDisposed, value); }
+        private bool IsDisposed { get => ((State)_state).HasFlag(State.IsDisposed); set => Set(State.IsDisposed, value); }
 
-        private bool IsExpired { get => _state.HasFlag(State.IsExpired); set => Set(State.IsExpired, value); }
+        private bool IsExpired { get => ((State)_state).HasFlag(State.IsExpired); set => Set(State.IsExpired, value); }
 
-        private bool IsValueSet { get => _state.HasFlag(State.IsValueSet); set => Set(State.IsValueSet, value); }
+        private bool IsValueSet { get => ((State)_state).HasFlag(State.IsValueSet); set => Set(State.IsValueSet, value); }
 
         public void Dispose()
         {
@@ -322,7 +322,16 @@ namespace Microsoft.Extensions.Caching.Memory
             }
         }
 
-        private void Set(State option, bool value) => _state = value ? (_state | option) : (_state & ~option);
+        private void Set(State option, bool value)
+        {
+            int before, after;
+
+            do
+            {
+                before = _state;
+                after = value ? (_state | (int)option) : (_state & ~(int)option);
+            } while (Interlocked.CompareExchange(ref _state, after, before) != before);
+        }
 
         [Flags]
         private enum State
