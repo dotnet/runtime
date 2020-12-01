@@ -1,4 +1,4 @@
-// � Microsoft Corporation. All rights reserved.
+﻿// © Microsoft Corporation. All rights reserved.
 
 [assembly: System.Resources.NeutralResourcesLanguage("en-us")]
 [assembly: System.Runtime.CompilerServices.InternalsVisibleTo("Microsoft.Extensions.Logging.Generators.Tests")]
@@ -113,7 +113,6 @@ namespace Microsoft.Extensions.Logging.Generators
             private readonly CancellationToken _cancellationToken;
             private readonly Compilation _compilation;
             private readonly Action<Diagnostic> _reportDiagnostic;
-            private readonly Dictionary<SyntaxTree, SemanticModel> _semanticModels = new();
 
             public Parser(Compilation compilation, Action<Diagnostic> reportDiagnostic, CancellationToken cancellationToken)
             {
@@ -151,32 +150,50 @@ namespace Microsoft.Extensions.Logging.Generators
                 }
 
                 var ids = new HashSet<string>();
-                foreach (var classDef in classes)
+
+                // we enumerate by syntax tree, to minimize the need to instantiate semantic models (since they're expensive)
+                foreach (var group in classes.GroupBy(x => x.SyntaxTree))
                 {
-                    if (_cancellationToken.IsCancellationRequested)
+                    SemanticModel? sm = null;
+                    foreach (var classDef in group)
                     {
-                        // be nice and stop if we're asked to
-                        return results;
-                    }
-
-                    LoggerClass? lc = null;
-                    string nspace = string.Empty;
-
-                    ids.Clear();
-                    foreach (var method in classDef.Members.Where(m => m.IsKind(SyntaxKind.MethodDeclaration)).OfType<MethodDeclarationSyntax>())
-                    {
-                        foreach (var mal in method.AttributeLists)
+                        if (_cancellationToken.IsCancellationRequested)
                         {
-                            foreach (var ma in mal.Attributes)
+                            // be nice and stop if we're asked to
+                            return results;
+                        }
+
+                        LoggerClass? lc = null;
+                        string nspace = string.Empty;
+
+                        ids.Clear();
+                        foreach (var member in classDef.Members)
+                        {
+                            var method = member as MethodDeclarationSyntax;
+                            if (method == null)
                             {
-                                var sm = GetSemanticModel(ma.SyntaxTree);
-                                var maSymbolInfo = sm.GetSymbolInfo(ma, _cancellationToken);
-                                var maSymbol = (maSymbolInfo.Symbol as IMethodSymbol)!;
+                                // we only care about methods
+                                continue;
+                            }
 
-                                var methodSymbol = (sm.GetDeclaredSymbol(method, _cancellationToken) as IMethodSymbol)!;
-
-                                if (loggerMessageAttribute.Equals(maSymbol.ContainingType, SymbolEqualityComparer.Default))
+                            foreach (var mal in method.AttributeLists)
+                            {
+                                foreach (var ma in mal.Attributes)
                                 {
+                                    if (sm == null)
+                                    {
+                                        // need a semantic model for this tree
+                                        sm = _compilation.GetSemanticModel(classDef.SyntaxTree);
+                                    }
+
+                                    var maSymbol = (sm.GetSymbolInfo(ma, _cancellationToken).Symbol as IMethodSymbol)!;
+
+                                    if (!loggerMessageAttribute.Equals(maSymbol.ContainingType, SymbolEqualityComparer.Default))
+                                    {
+                                        // not the right attribute, move on
+                                        continue;
+                                    }
+
                                     var arg = ma.ArgumentList!.Arguments[0];
                                     var eventId = sm.GetConstantValue(arg.Expression, _cancellationToken).ToString();
 
@@ -193,6 +210,8 @@ namespace Microsoft.Extensions.Logging.Generators
                                         eventName = sm.GetConstantValue(arg.Expression, _cancellationToken).ToString();
                                     }
 
+                                    var methodSymbol = (sm.GetDeclaredSymbol(method, _cancellationToken) as IMethodSymbol)!;
+
                                     var lm = new LoggerMethod
                                     {
                                         Name = method.Identifier.ToString(),
@@ -205,7 +224,7 @@ namespace Microsoft.Extensions.Logging.Generators
                                         Modifiers = method.Modifiers.ToString(),
                                     };
 
-                                    bool keep = true;
+                                    bool keep = true;   // whether or not we want to keep the method definition or if it's got errors making it worth discarding instead
                                     if (lm.Name.StartsWith("__", StringComparison.Ordinal))
                                     {
                                         // can't have logging method names that start with __ since that can lead to conflicting symbol names
@@ -213,14 +232,16 @@ namespace Microsoft.Extensions.Logging.Generators
                                         Diag(ErrorInvalidMethodName, method.Identifier.GetLocation());
                                     }
 
-                                    if (GetSemanticModel(method.ReturnType.SyntaxTree).GetTypeInfo(method.ReturnType!).Type!.SpecialType != SpecialType.System_Void)
+                                    if (sm.GetTypeInfo(method.ReturnType!).Type!.SpecialType != SpecialType.System_Void)
                                     {
+                                        // logging methods must return void
                                         Diag(ErrorInvalidMethodReturnType, method.ReturnType.GetLocation());
                                         keep = false;
                                     }
 
                                     if (method.Arity > 0)
                                     {
+                                        // don't currently support generic methods
                                         Diag(ErrorMethodIsGeneric, method.Identifier.GetLocation());
                                         keep = false;
                                     }
@@ -258,8 +279,6 @@ namespace Microsoft.Extensions.Logging.Generators
                                     {
                                         Diag(ErrorEventIdReuse, ma.ArgumentList!.Arguments[0].GetLocation(), lm.EventId);
                                     }
-                              
-                                    
                                     else
                                     {
                                         ids.Add(lm.EventId);
@@ -273,8 +292,8 @@ namespace Microsoft.Extensions.Logging.Generators
                                     bool first = true;
                                     foreach (var p in method.ParameterList.Parameters)
                                     {
-                                        var typeName = GetSemanticModel(p.SyntaxTree).GetDeclaredSymbol(p)!.ToDisplayString();
-                                        var pSymbol = GetSemanticModel(p.SyntaxTree).GetTypeInfo(p.Type!).Type!;
+                                        var typeName = sm.GetDeclaredSymbol(p)!.ToDisplayString();
+                                        var pSymbol = sm.GetTypeInfo(p.Type!).Type!;
 
                                         if (first)
                                         {
@@ -297,7 +316,7 @@ namespace Microsoft.Extensions.Logging.Generators
                                             Type = typeName,
                                             IsExceptionType = IsBaseOrIdentity(pSymbol, exSymbol),
                                         };
-                                                    
+
                                         lm.Parameters.Add(lp);
 
                                         if (lp.Name.StartsWith("__", StringComparison.Ordinal))
@@ -357,15 +376,19 @@ namespace Microsoft.Extensions.Logging.Generators
                                         lc.Methods.Add(lm);
                                     }
 
-                                    break;
+                                    goto nextMember;    // There, I did it. I used a Goto in the 21th century!
                                 }
-                            }
-                        }
-                    }
 
-                    if (lc != null)
-                    {
-                        results.Add(lc);
+                            }
+
+                        nextMember:
+                            ;
+                        }
+
+                        if (lc != null)
+                        {
+                            results.Add(lc);
+                        }
                     }
                 }
 
@@ -375,18 +398,6 @@ namespace Microsoft.Extensions.Logging.Generators
             private void Diag(DiagnosticDescriptor desc, Location? location, params object?[]? messageArgs)
             {
                 _reportDiagnostic(Diagnostic.Create(desc, location, messageArgs));
-            }
-
-            // Workaround for https://github.com/dotnet/roslyn/pull/49330
-            private SemanticModel GetSemanticModel(SyntaxTree syntaxTree)
-            {
-                if (!_semanticModels.TryGetValue(syntaxTree, out var semanticModel))
-                {
-                    semanticModel = _compilation.GetSemanticModel(syntaxTree);
-                    _semanticModels[syntaxTree] = semanticModel;
-                }
-
-                return semanticModel;
             }
 
             private bool IsBaseOrIdentity(ITypeSymbol source, ITypeSymbol dest)
