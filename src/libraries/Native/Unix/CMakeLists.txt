@@ -55,6 +55,9 @@ if (PRERELEASE)
 endif()
 
 if(STATIC_LIBS_ONLY)
+    # Suppress exporting of the PAL APIs
+    add_definitions(-DPALEXPORT=EXTERN_C)
+
     set(STATIC_LIB_DESTINATION lib)
     set(GEN_SHARED_LIB 0)
 else()
