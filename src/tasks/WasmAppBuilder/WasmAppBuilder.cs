@@ -24,12 +24,13 @@ public class WasmAppBuilder : Task
     public string? MainAssembly { get; set; }
     [Required]
     public string? MainJS { get; set; }
+    [Required]
+    public ITaskItem[] Assemblies { get; set; } = Array.Empty<ITaskItem>();
 
     // full list of ICU data files we produce can be found here:
     // https://github.com/dotnet/icu/tree/maint/maint-67/icu-filters
     public string? IcuDataFileName { get; set; } = "icudt.dat";
 
-    public ITaskItem[]? Assemblies { get; set; }
     public int DebugLevel { get; set; }
     public ITaskItem[]? ExtraAssemblies { get; set; }
     public ITaskItem[]? SatelliteAssemblies { get; set; }
@@ -103,19 +104,16 @@ public class WasmAppBuilder : Task
         _assemblies = new List<string>();
         var runtimeSourceDir = Path.Join (MicrosoftNetCoreAppRuntimePackDir, "native");
 
-        if (Assemblies != null)
+        foreach (var asm in Assemblies)
         {
-            foreach (var asm in Assemblies!)
-            {
-                string corelibPath = string.Empty;
-                if (!_assemblies.Contains(asm.ItemSpec))
-                    _assemblies.Add(asm.ItemSpec);
+            string corelibPath = string.Empty;
+            if (!_assemblies.Contains(asm.ItemSpec))
+                _assemblies.Add(asm.ItemSpec);
 
-                if (asm.ItemSPec.EndsWith ("System.Private.CoreLib.dll"))
-                    corelibPath = Path.GetDirectoryName (asm.ItemSpec)!;
-            }
-            runtimeSourceDir = corelibPath!;
+            if (asm.ItemSPec.EndsWith ("System.Private.CoreLib.dll"))
+                corelibPath = Path.GetDirectoryName (asm.ItemSpec)!;
         }
+        runtimeSourceDir = corelibPath!;
         if (MainAssembly != null)
         {
             if (!_assemblies.Contains(MainAssembly))
