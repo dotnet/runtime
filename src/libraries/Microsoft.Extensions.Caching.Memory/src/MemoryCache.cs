@@ -57,13 +57,7 @@ namespace Microsoft.Extensions.Caching.Memory
             _logger = loggerFactory.CreateLogger<MemoryCache>();
 
             _entries = new ConcurrentDictionary<object, CacheEntry>();
-
-            if (_options.Clock == null)
-            {
-                _options.Clock = new SystemClock();
-            }
-
-            _lastExpirationScan = _options.Clock.UtcNow;
+            _lastExpirationScan = _options.Clock?.UtcNow ?? DateTimeOffset.UtcNow;
         }
 
         /// <summary>
@@ -96,6 +90,8 @@ namespace Microsoft.Extensions.Caching.Memory
             return new CacheEntry(key, this);
         }
 
+        internal DateTimeOffset GetUtcNow() => _options.Clock?.UtcNow ?? DateTimeOffset.UtcNow;
+
         internal void SetEntry(CacheEntry entry)
         {
             if (_disposed)
@@ -109,17 +105,7 @@ namespace Microsoft.Extensions.Caching.Memory
                 throw new InvalidOperationException($"Cache entry must specify a value for {nameof(entry.Size)} when {nameof(_options.SizeLimit)} is set.");
             }
 
-            DateTimeOffset utcNow = _options.Clock.UtcNow;
-
-            DateTimeOffset? absoluteExpiration = null;
-            if (entry.AbsoluteExpirationRelativeToNow.HasValue)
-            {
-                absoluteExpiration = utcNow + entry.AbsoluteExpirationRelativeToNow;
-            }
-            else if (entry.AbsoluteExpiration.HasValue)
-            {
-                absoluteExpiration = entry.AbsoluteExpiration;
-            }
+            DateTimeOffset? absoluteExpiration = entry.AbsoluteExpiration;
 
             // Applying the option's absolute expiration only if it's not already smaller.
             // This can be the case if a dependent cache entry has a smaller value, and
@@ -132,6 +118,7 @@ namespace Microsoft.Extensions.Caching.Memory
                 }
             }
 
+            DateTimeOffset utcNow = GetUtcNow();
             // Initialize the last access timestamp at the time the entry is added
             entry.LastAccessed = utcNow;
 
@@ -227,7 +214,7 @@ namespace Microsoft.Extensions.Caching.Memory
             ValidateCacheKey(key);
             CheckDisposed();
 
-            DateTimeOffset utcNow = _options.Clock.UtcNow;
+            DateTimeOffset utcNow = GetUtcNow();
 
             if (_entries.TryGetValue(key, out CacheEntry entry))
             {
@@ -279,7 +266,7 @@ namespace Microsoft.Extensions.Caching.Memory
                 entry.InvokeEvictionCallbacks();
             }
 
-            StartScanForExpiredItemsIfNeeded(_options.Clock.UtcNow);
+            StartScanForExpiredItemsIfNeeded(GetUtcNow());
         }
 
         private void RemoveEntry(CacheEntry entry)
@@ -298,7 +285,7 @@ namespace Microsoft.Extensions.Caching.Memory
         {
             // TODO: For efficiency consider processing these expirations in batches.
             RemoveEntry(entry);
-            StartScanForExpiredItemsIfNeeded(_options.Clock.UtcNow);
+            StartScanForExpiredItemsIfNeeded(GetUtcNow());
         }
 
         // Called by multiple actions to see how long it's been since we last checked for expired items.
@@ -321,7 +308,7 @@ namespace Microsoft.Extensions.Caching.Memory
 
         private static void ScanForExpiredItems(MemoryCache cache)
         {
-            DateTimeOffset now = cache._lastExpirationScan = cache._options.Clock.UtcNow;
+            DateTimeOffset now = cache._lastExpirationScan = cache.GetUtcNow();
             foreach (CacheEntry entry in cache._entries.Values)
             {
                 if (entry.CheckExpired(now))
@@ -404,7 +391,7 @@ namespace Microsoft.Extensions.Caching.Memory
             long removedSize = 0;
 
             // Sort items by expired & priority status
-            DateTimeOffset now = _options.Clock.UtcNow;
+            DateTimeOffset now = GetUtcNow();
             foreach (CacheEntry entry in _entries.Values)
             {
                 if (entry.CheckExpired(now))
