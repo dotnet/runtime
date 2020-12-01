@@ -36,32 +36,12 @@ namespace Microsoft.Extensions.Caching.Memory
             Action<CacheEntry> notifyCacheOfExpiration,
             ILogger logger)
         {
-            if (key == null)
-            {
-                throw new ArgumentNullException(nameof(key));
-            }
-
-            if (notifyCacheEntryCommit == null)
-            {
-                throw new ArgumentNullException(nameof(notifyCacheEntryCommit));
-            }
-
-            if (notifyCacheOfExpiration == null)
-            {
-                throw new ArgumentNullException(nameof(notifyCacheOfExpiration));
-            }
-
-            if (logger == null)
-            {
-                throw new ArgumentNullException(nameof(logger));
-            }
-
-            Key = key;
-            _notifyCacheEntryCommit = notifyCacheEntryCommit;
-            _notifyCacheOfExpiration = notifyCacheOfExpiration;
+            Key = key ?? throw new ArgumentNullException(nameof(key));
+            _notifyCacheEntryCommit = notifyCacheEntryCommit ?? throw new ArgumentNullException(nameof(notifyCacheEntryCommit));
+            _notifyCacheOfExpiration = notifyCacheOfExpiration ?? throw new ArgumentNullException(nameof(notifyCacheOfExpiration));
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
 
             _scope = CacheEntryHelper.EnterScope(this);
-            _logger = logger;
         }
 
         /// <summary>
@@ -74,22 +54,8 @@ namespace Microsoft.Extensions.Caching.Memory
         /// </summary>
         public TimeSpan? AbsoluteExpirationRelativeToNow
         {
-            get
-            {
-                return _absoluteExpirationRelativeToNow;
-            }
-            set
-            {
-                if (value <= TimeSpan.Zero)
-                {
-                    throw new ArgumentOutOfRangeException(
-                        nameof(AbsoluteExpirationRelativeToNow),
-                        value,
-                        "The relative expiration value must be positive.");
-                }
-
-                _absoluteExpirationRelativeToNow = value;
-            }
+            get => _absoluteExpirationRelativeToNow;
+            set => _absoluteExpirationRelativeToNow = value > TimeSpan.Zero ? value : throw new ArgumentOutOfRangeException(nameof(AbsoluteExpirationRelativeToNow), value, "The relative expiration value must be positive.");
         }
 
         /// <summary>
@@ -98,54 +64,19 @@ namespace Microsoft.Extensions.Caching.Memory
         /// </summary>
         public TimeSpan? SlidingExpiration
         {
-            get
-            {
-                return _slidingExpiration;
-            }
-            set
-            {
-                if (value <= TimeSpan.Zero)
-                {
-                    throw new ArgumentOutOfRangeException(
-                        nameof(SlidingExpiration),
-                        value,
-                        "The sliding expiration value must be positive.");
-                }
-                _slidingExpiration = value;
-            }
+            get => _slidingExpiration;
+            set => _slidingExpiration =  value > TimeSpan.Zero ? value : throw new ArgumentOutOfRangeException(nameof(SlidingExpiration), value, "The sliding expiration value must be positive.");
         }
 
         /// <summary>
         /// Gets the <see cref="IChangeToken"/> instances which cause the cache entry to expire.
         /// </summary>
-        public IList<IChangeToken> ExpirationTokens
-        {
-            get
-            {
-                if (_expirationTokens == null)
-                {
-                    _expirationTokens = new List<IChangeToken>();
-                }
-
-                return _expirationTokens;
-            }
-        }
+        public IList<IChangeToken> ExpirationTokens => _expirationTokens ??= new List<IChangeToken>();
 
         /// <summary>
         /// Gets or sets the callbacks will be fired after the cache entry is evicted from the cache.
         /// </summary>
-        public IList<PostEvictionCallbackRegistration> PostEvictionCallbacks
-        {
-            get
-            {
-                if (_postEvictionCallbacks == null)
-                {
-                    _postEvictionCallbacks = new List<PostEvictionCallbackRegistration>();
-                }
-
-                return _postEvictionCallbacks;
-            }
-        }
+        public IList<PostEvictionCallbackRegistration> PostEvictionCallbacks => _postEvictionCallbacks ??= new List<PostEvictionCallbackRegistration>();
 
         /// <summary>
         /// Gets or sets the priority for keeping the cache entry in the cache during a
@@ -159,15 +90,7 @@ namespace Microsoft.Extensions.Caching.Memory
         public long? Size
         {
             get => _size;
-            set
-            {
-                if (value < 0)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(value), value, $"{nameof(value)} must be non-negative.");
-                }
-
-                _size = value;
-            }
+            set => _size = value >= 0 ? value : throw new ArgumentOutOfRangeException(nameof(value), value, $"{nameof(value)} must be non-negative.");
         }
 
         public object Key { get; private set; }
@@ -219,10 +142,7 @@ namespace Microsoft.Extensions.Caching.Memory
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal bool CheckExpired(in DateTimeOffset now)
-        {
-            return IsExpired || CheckForExpiredTime(now) || CheckForExpiredTokens();
-        }
+        internal bool CheckExpired(in DateTimeOffset now) => IsExpired || CheckForExpiredTime(now) || CheckForExpiredTokens();
 
         internal void SetExpired(EvictionReason reason)
         {
