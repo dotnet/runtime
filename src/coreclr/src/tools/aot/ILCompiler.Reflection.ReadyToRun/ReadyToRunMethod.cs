@@ -275,6 +275,11 @@ namespace ILCompiler.Reflection.ReadyToRun
         public uint Rid { get; set; }
 
         /// <summary>
+        /// Total method size (sum of the sizes of all runtime functions).
+        /// </summary>
+        private int _size;
+
+        /// <summary>
         /// All the runtime functions of this method
         /// </summary>
         public IReadOnlyList<RuntimeFunction> RuntimeFunctions
@@ -283,6 +288,15 @@ namespace ILCompiler.Reflection.ReadyToRun
             {
                 EnsureRuntimeFunctions();
                 return _runtimeFunctions;
+            }
+        }
+
+        public int Size
+        {
+            get
+            {
+                EnsureRuntimeFunctions();
+                return _size;
             }
         }
 
@@ -328,7 +342,7 @@ namespace ILCompiler.Reflection.ReadyToRun
             }
         }
 
-        internal int RuntimeFunctionCount { get; set; }
+        public int RuntimeFunctionCount { get; set; }
 
         /// <summary>
         /// Extracts the method signature from the metadata by rid
@@ -579,6 +593,8 @@ namespace ILCompiler.Reflection.ReadyToRun
                 runtimeFunctionId++;
                 codeOffset += rtf.Size;
             }
+
+            _size = codeOffset;
         }
     }
 }

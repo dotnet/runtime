@@ -277,7 +277,7 @@ FCIMPL2(UINT32, MarshalNative::SizeOfClass, ReflectClassBaseObject* refClassUNSA
     // refClass is validated to be non-NULL RuntimeType by callers
     TypeHandle th = refClass->GetType();
 
-    if (throwIfNotMarshalable && !th.IsBlittable())
+    if (throwIfNotMarshalable && (!th.IsBlittable() || th.IsArray()))
     {
         GCX_PREEMP();
         // Determine if the type is marshalable
@@ -1350,7 +1350,7 @@ void QCALLTYPE MarshalNative::GetTypeFromCLSID(REFCLSID clsid, PCWSTR wszServer,
 
     BEGIN_QCALL;
 
-    // Ensure COM is started up.	
+    // Ensure COM is started up.
     EnsureComStarted();
 
     GCX_COOP();

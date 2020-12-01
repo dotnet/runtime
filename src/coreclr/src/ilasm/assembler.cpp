@@ -2715,18 +2715,24 @@ void Assembler::EmitGenericParamConstraints(int numTyPars, TyParDescr* pTyPars, 
 
         if (currParamNumConstraints > 0)
         {
-            mdGenericParam tkGenericParam = pTyPars[paramIndex].Token();
-            ULONG currNumConstraints      = (ULONG) nConstraintsArr[paramIndex];
-            mdToken* currConstraintArr    = pConstraintsArr[paramIndex];
+            mdGenericParam tkGenericParam     = pTyPars[paramIndex].Token();
+            DWORD          paramAttrs         = pTyPars[paramIndex].Attrs();
+            ULONG          currNumConstraints = (ULONG) nConstraintsArr[paramIndex];
+            mdToken*       currConstraintArr  = pConstraintsArr[paramIndex];
             mdGenericParamConstraint* currGPConstraintArr = pGPConstraintsArr[paramIndex];
 
             // call SetGenericParamProps for each generic parameter that has a non-zero count of constraints
             // to record each generic parameters tyupe constraints.
             //
+            // Pass the paramAttrs, these contain values in CorGenericParamAttr such as:
+            //    gpReferenceTypeConstraint        = 0x0004,  // type argument must be a reference type
+            //    gpNotNullableValueTypeConstraint = 0x0008,  // type argument must be a value type but not Nullable
+            //    gpDefaultConstructorConstraint   = 0x0010,  // type argument must have a public default constructor
+            //
             // This Metadata operation will also create a new GenericParamConstraint token
             // for each of the generic parameters type constraints.
             //
-            if (FAILED(m_pEmitter->SetGenericParamProps(tkGenericParam, 0, NULL, 0, currConstraintArr)))
+            if (FAILED(m_pEmitter->SetGenericParamProps(tkGenericParam, paramAttrs, NULL, 0, currConstraintArr)))
             {
                 report->error("Failed in SetGenericParamProp");
             }

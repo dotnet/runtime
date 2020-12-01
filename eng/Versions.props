@@ -115,9 +115,6 @@
     <SystemRuntimeTimeZoneDataVersion>5.0.0-beta.20568.1</SystemRuntimeTimeZoneDataVersion>
     <SystemSecurityCryptographyX509CertificatesTestDataVersion>5.0.0-beta.20568.1</SystemSecurityCryptographyX509CertificatesTestDataVersion>
     <SystemWindowsExtensionsTestDataVersion>5.0.0-beta.20568.1</SystemWindowsExtensionsTestDataVersion>
-    <!-- Standard dependencies -->
-    <NETStandardLibraryVersion>2.2.0-prerelease.19564.1</NETStandardLibraryVersion>
-    <NetStandardLibrary20Version>2.0.3</NetStandardLibrary20Version>
     <!-- dotnet-optimization dependencies -->
     <optimizationwindows_ntx64IBCCoreFxVersion>99.99.99-master-20200806.6</optimizationwindows_ntx64IBCCoreFxVersion>
     <optimizationlinuxx64IBCCoreFxVersion>99.99.99-master-20200806.6</optimizationlinuxx64IBCCoreFxVersion>
@@ -127,6 +124,8 @@
     <!-- Not auto-updated. -->
     <MicrosoftDiaSymReaderNativeVersion>1.7.0</MicrosoftDiaSymReaderNativeVersion>
     <SystemCommandLineVersion>2.0.0-beta1.20253.1</SystemCommandLineVersion>
+    <NETStandardLibraryRefVersion>2.1.0</NETStandardLibraryRefVersion>
+    <NetStandardLibraryVersion>2.0.3</NetStandardLibraryVersion>
     <!--
       These are used as reference assemblies only, so they must not take a ProdCon/source-build
       version. Insert "RefOnly" to avoid assignment via PVP.
@@ -167,7 +166,6 @@
   </PropertyGroup>
   <!-- Package names -->
   <PropertyGroup>
-    <NETStandardLibraryPackage>netstandard.library</NETStandardLibraryPackage>
     <WindowsCoreFxOptimizationDataPackage>optimization.windows_nt-x64.ibc.corefx</WindowsCoreFxOptimizationDataPackage>
     <LinuxCoreFxOptimizationDataPackage>optimization.linux-x64.ibc.corefx</LinuxCoreFxOptimizationDataPackage>
     <MicrosoftPrivateIntellisensePackage>microsoft.private.intellisense</MicrosoftPrivateIntellisensePackage>

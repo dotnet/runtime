@@ -588,10 +588,7 @@ namespace Internal.JitInterface
                 }
                 else
                 {
-                    // Use platform default
-                    sig->callConv = _compilation.TypeSystemContext.Target.IsWindows
-                        ? CorInfoCallConv.CORINFO_CALLCONV_STDCALL
-                        : CorInfoCallConv.CORINFO_CALLCONV_C;
+                    sig->callConv = (CorInfoCallConv)PlatformDefaultUnmanagedCallingConvention();
                 }
             }
 
@@ -1043,9 +1040,18 @@ namespace Internal.JitInterface
             return type.IsIntrinsic;
         }
 
+        private MethodSignatureFlags PlatformDefaultUnmanagedCallingConvention()
+        {
+            return _compilation.TypeSystemContext.Target.IsWindows ?
+                MethodSignatureFlags.UnmanagedCallingConventionStdCall : MethodSignatureFlags.UnmanagedCallingConventionCdecl;
+        }
+
         private CorInfoUnmanagedCallConv getUnmanagedCallConv(CORINFO_METHOD_STRUCT_* method)
         {
             MethodSignatureFlags unmanagedCallConv = HandleToObject(method).GetPInvokeMethodMetadata().Flags.UnmanagedCallingConvention;
+
+            if (unmanagedCallConv == MethodSignatureFlags.None)
+                unmanagedCallConv = PlatformDefaultUnmanagedCallingConvention();
 
             // Verify that it is safe to convert MethodSignatureFlags.UnmanagedCallingConvention to CorInfoUnmanagedCallConv via a simple cast
             Debug.Assert((int)CorInfoUnmanagedCallConv.CORINFO_UNMANAGED_CALLCONV_C == (int)MethodSignatureFlags.UnmanagedCallingConventionCdecl);
