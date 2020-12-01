@@ -37,8 +37,6 @@ public class WasmAppBuilder : Task
     public ITaskItem[]? RemoteSources { get; set; }
     public bool InvariantGlobalization { get; set; }
 
-    private List<string>? _assemblies;
-
     private class WasmAppConfig
     {
         [JsonPropertyName("assembly_root")]
@@ -100,7 +98,7 @@ public class WasmAppBuilder : Task
         if (!InvariantGlobalization && string.IsNullOrEmpty(IcuDataFileName))
             throw new ArgumentException("IcuDataFileName property shouldn't be empty if InvariantGlobalization=false");
 
-        _assemblies = new List<string>();
+        var _assemblies = new List<string>();
         var runtimeSourceDir = string.Empty;
 
         foreach (var asm in Assemblies)
@@ -123,7 +121,7 @@ public class WasmAppBuilder : Task
         // Create app
         Directory.CreateDirectory(AppDir!);
         Directory.CreateDirectory(Path.Join(AppDir, config.AssemblyRoot));
-        foreach (var assembly in _assemblies!) {
+        foreach (var assembly in _assemblies) {
             File.Copy(assembly, Path.Join(AppDir, config.AssemblyRoot, Path.GetFileName(assembly)), true);
             if (DebugLevel > 0) {
                 var pdb = assembly;
