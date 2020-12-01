@@ -14,21 +14,21 @@ namespace Microsoft.Extensions.Caching.Memory
     internal class CacheEntry : ICacheEntry
     {
         private static readonly Action<object> ExpirationCallback = ExpirationTokensExpired;
+
+        private readonly object _lock = new object();
         private readonly Action<CacheEntry> _notifyCacheOfExpiration;
         private readonly Action<CacheEntry> _notifyCacheEntryCommit;
-        private IList<IDisposable> _expirationTokenRegistrations;
-        private IList<PostEvictionCallbackRegistration> _postEvictionCallbacks;
         private readonly ILogger _logger;
 
-        internal IList<IChangeToken> _expirationTokens;
-        internal TimeSpan? _absoluteExpirationRelativeToNow;
+        private IList<IDisposable> _expirationTokenRegistrations;
+        private IList<PostEvictionCallbackRegistration> _postEvictionCallbacks;
+        private IList<IChangeToken> _expirationTokens;
+        private TimeSpan? _absoluteExpirationRelativeToNow;
         private TimeSpan? _slidingExpiration;
         private long? _size;
         private IDisposable _scope;
         private object _value;
         private State _state;
-
-        internal readonly object _lock = new object();
 
         internal CacheEntry(
             object key,

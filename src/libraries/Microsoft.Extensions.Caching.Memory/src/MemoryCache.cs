@@ -124,9 +124,9 @@ namespace Microsoft.Extensions.Caching.Memory
             DateTimeOffset utcNow = _options.Clock.UtcNow;
 
             DateTimeOffset? absoluteExpiration = null;
-            if (entry._absoluteExpirationRelativeToNow.HasValue)
+            if (entry.AbsoluteExpirationRelativeToNow.HasValue)
             {
-                absoluteExpiration = utcNow + entry._absoluteExpirationRelativeToNow;
+                absoluteExpiration = utcNow + entry.AbsoluteExpirationRelativeToNow;
             }
             else if (entry.AbsoluteExpiration.HasValue)
             {
