@@ -416,11 +416,12 @@
       <_MonoAotCMakeBuildCommand>cmake --build . --target install --config $(Configuration)</_MonoAotCMakeBuildCommand>
       <_MonoAotCMakeBuildCommand Condition="'$(MonoVerboseBuild)' == 'true'">$(_MonoAotCMakeBuildCommand) --verbose</_MonoAotCMakeBuildCommand>
       <_MonoAotCMakeBuildCommand Condition="'$(_MonoUseNinja)' != 'true'">$(_MonoAotCMakeBuildCommand) --parallel $([System.Environment]::ProcessorCount)</_MonoAotCMakeBuildCommand>
-      <_MonoAotPrebuiltOffsetsFile>$(ArtifactsObjDir)\monooffsetfiles\$([System.IO.Path]::GetFileName('$(MonoAotOffsetsFile)')</_MonoAotPrebuiltOffsetsFile>
+      <_MonoAotPrebuiltOffsetsFile>$(ArtifactsObjDir)\monooffsetfiles\$(PlatformConfigPathPart)\cross\$([System.IO.Path]::GetFileName('$(MonoAotOffsetsFile)')</_MonoAotPrebuiltOffsetsFile>
     </PropertyGroup>
 
     <MakeDir Directories="$(MonoObjDir)/cross" />
     <!-- offsets tool -->
+    <Message Importance="High" Text="DEBUG DEBUG DEBUG $(_MonoAotPrebuiltOffsetsFile) />
     <Message Condition="Exists('$(_MonoAotPrebuiltOffsetsFile)')" Text="Offset file found, moving into place" Importance="High" />
     <Copy Condition="Exists('$(_MonoAotPrebuiltOffsetsFile)')" SourceFiles="$(_MonoAotPrebuiltOffsetsFile)" DestinationFolder="$([System.IO.Path]::GetDirectoryName('$(MonoAotOffsetsFile)')" />
     <Message Condition="'$(MonoUseCrossTool)' == 'true' and !Exists('$(MonoAotOffsetsFile)')" Text="Running '$(_MonoAotCrossOffsetsCommand)'" Importance="High" />
