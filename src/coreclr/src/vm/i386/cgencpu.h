@@ -104,6 +104,7 @@ EXTERN_C void SinglecastDelegateInvokeStub();
 
 typedef INT32 StackElemType;
 #define STACK_ELEM_SIZE sizeof(StackElemType)
+#define STACK_POINTER_SIZE STACK_ELEM_SIZE
 
 
 

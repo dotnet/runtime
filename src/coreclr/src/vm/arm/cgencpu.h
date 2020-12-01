@@ -101,6 +101,7 @@ EXTERN_C void setFPReturn(int fpSize, INT64 retVal);
 
 typedef INT32 StackElemType;
 #define STACK_ELEM_SIZE sizeof(StackElemType)
+#define STACK_POINTER_SIZE STACK_ELEM_SIZE
 
 // !! This expression assumes STACK_ELEM_SIZE is a power of 2.
 #define StackElemSize(parmSize) (((parmSize) + STACK_ELEM_SIZE - 1) & ~((ULONG)(STACK_ELEM_SIZE - 1)))

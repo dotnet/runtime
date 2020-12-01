@@ -716,7 +716,7 @@ public:
             pLoc->m_idxStack = TransitionBlock::GetStackArgumentIndexFromOffset(argOffset);
             int argOnStackSize;
             if (IsArgPassedByRef())
-                argOnStackSize = STACK_ELEM_SIZE;
+                argOnStackSize = STACK_POINTER_SIZE;
             else
                 argOnStackSize = GetArgSize();
             pLoc->m_cStack = (argOnStackSize + STACK_ELEM_SIZE - 1) / STACK_ELEM_SIZE;
@@ -1692,7 +1692,7 @@ void ArgIteratorTemplate<ARGITERATOR_BASE>::ForceSigWalk()
         stackElemSize = StackElemSize(GetArgSize());
 #if defined(ENREGISTERED_PARAMTYPE_MAXSIZE)
         if (IsArgPassedByRef())
-            stackElemSize = STACK_ELEM_SIZE;
+            stackElemSize = STACK_POINTER_SIZE;
 #endif
 #endif // TARGET_AMD64
 

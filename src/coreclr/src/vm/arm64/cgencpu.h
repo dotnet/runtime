@@ -83,6 +83,7 @@ void     R8ToFPSpill(void* pSpillSlot, SIZE_T  srcDoubleAsSIZE_T)
 
 typedef INT64 StackElemType;
 #define STACK_ELEM_SIZE sizeof(StackElemType)
+#define STACK_POINTER_SIZE 8
 
 // The expression below assumes STACK_ELEM_SIZE is a power of 2, so check that.
 static_assert(((STACK_ELEM_SIZE & (STACK_ELEM_SIZE-1)) == 0), "STACK_ELEM_SIZE must be a power of 2");

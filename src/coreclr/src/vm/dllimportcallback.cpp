@@ -1386,8 +1386,8 @@ VOID UMThunkMarshInfo::RunTimeInit()
     {
         // callee should pop retbuf
         numRegistersUsed += 1;
-        offs += STACK_ELEM_SIZE;
-        cbRetPop += STACK_ELEM_SIZE;
+        offs += STACK_POINTER_SIZE;
+        cbRetPop += STACK_POINTER_SIZE;
     }
 #endif // UNIX_X86_ABI
 
@@ -1398,7 +1398,7 @@ VOID UMThunkMarshInfo::RunTimeInit()
         int cbSize = sig.GetElemSize(type, thValueType);
         if (ArgIterator::IsArgumentInRegister(&numRegistersUsed, type))
         {
-            offs += STACK_ELEM_SIZE;
+            offs += STACK_POINTER_SIZE;
         }
         else
         {
@@ -1470,7 +1470,7 @@ VOID UMThunkMarshInfo::SetupArguments(char *pSrc, ArgumentRegisters *pArgRegs, c
         // Pass retbuf via Ecx
         numRegistersUsed += 1;
         pArgRegs->Ecx = *((UINT32 *)pCurSrc);
-        pCurSrc += STACK_ELEM_SIZE;
+        pCurSrc += STACK_POINTER_SIZE;
     }
 #endif // UNIX_X86_ABI
 
