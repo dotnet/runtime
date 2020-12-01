@@ -268,18 +268,6 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
         }
 
         [Fact]
-        public async Task GetService_ThenDisposeOnDifferentThread_ServiceDisposed()
-        {
-            var services = new ServiceCollection();
-            services.AddSingleton<DisposableSleepInCtor>();
-            IServiceProvider sp = services.BuildServiceProvider();
-            var service = sp.GetRequiredService<DisposableSleepInCtor>();
-            await Task.Run(() => (sp as IDisposable).Dispose());
-            
-            Assert.True(service.IsDisposed);
-        }
-
-        [Fact]
         public void GetService_DisposeOnSameThread_Throws()
         {
             var services = new ServiceCollection();
@@ -313,20 +301,6 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
             }).Wait(TimeSpan.FromSeconds(10));
 
             Assert.True(success);
-        }
-
-        private class DisposableSleepInCtor : IDisposable
-        {
-            public DisposableSleepInCtor()
-            {
-                Thread.Sleep(5000);
-            }
-            public bool IsDisposed { get; private set; }
-
-            public void Dispose()
-            {
-                IsDisposed = true;
-            }
         }
 
         private class DisposeServiceProviderInCtor : IDisposable
