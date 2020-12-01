@@ -16,9 +16,7 @@ namespace Microsoft.Extensions.Caching.Memory
         private static readonly Action<object> ExpirationCallback = ExpirationTokensExpired;
 
         private readonly object _lock = new object();
-        private readonly Action<CacheEntry> _notifyCacheOfExpiration;
-        private readonly Action<CacheEntry> _notifyCacheEntryCommit;
-        private readonly ILogger _logger;
+        private readonly MemoryCache _cache;
 
         private IList<IDisposable> _expirationTokenRegistrations;
         private IList<PostEvictionCallbackRegistration> _postEvictionCallbacks;
@@ -30,17 +28,10 @@ namespace Microsoft.Extensions.Caching.Memory
         private object _value;
         private State _state;
 
-        internal CacheEntry(
-            object key,
-            Action<CacheEntry> notifyCacheEntryCommit,
-            Action<CacheEntry> notifyCacheOfExpiration,
-            ILogger logger)
+        internal CacheEntry(object key, MemoryCache memoryCache)
         {
             Key = key ?? throw new ArgumentNullException(nameof(key));
-            _notifyCacheEntryCommit = notifyCacheEntryCommit ?? throw new ArgumentNullException(nameof(notifyCacheEntryCommit));
-            _notifyCacheOfExpiration = notifyCacheOfExpiration ?? throw new ArgumentNullException(nameof(notifyCacheOfExpiration));
-            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
-
+            _cache = memoryCache ?? throw new ArgumentNullException(nameof(memoryCache));
             _scope = CacheEntryHelper.EnterScope(this);
         }
 
@@ -131,7 +122,7 @@ namespace Microsoft.Extensions.Caching.Memory
                 // so don't use this entry.
                 if (IsValueSet)
                 {
-                    _notifyCacheEntryCommit(this);
+                    _cache.SetEntry(this);
 
                     if (CanPropagateOptions())
                     {
@@ -236,7 +227,7 @@ namespace Microsoft.Extensions.Caching.Memory
             {
                 var entry = (CacheEntry)state;
                 entry.SetExpired(EvictionReason.TokenExpired);
-                entry._notifyCacheOfExpiration(entry);
+                entry._cache.EntryExpired(entry);
             }, obj, CancellationToken.None, TaskCreationOptions.DenyChildAttach, TaskScheduler.Default);
         }
 
@@ -289,7 +280,7 @@ namespace Microsoft.Extensions.Caching.Memory
                 catch (Exception e)
                 {
                     // This will be invoked on a background thread, don't let it throw.
-                    entry._logger.LogError(e, "EvictionCallback invoked failed");
+                    entry._cache._logger.LogError(e, "EvictionCallback invoked failed");
                 }
             }
         }
