@@ -110,6 +110,10 @@ jobs:
         artifact: Mono_Offsets__Android_x64_Debug
         path: '$(Build.SourcesDirectory)\artifacts\obj\monooffsetfiles'
 
+    - script: |
+        find $(Build.SourcesDirectory)/artifacts/obj/monooffsetfiles -type f
+      displayName: debug
+
     - ${{ if in(parameters.osGroup, 'OSX', 'iOS','tvOS') }}:
       - script: |
           du -sh $(Build.SourcesDirectory)/*
