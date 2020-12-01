@@ -108,26 +108,20 @@ public class WasmAppBuilder : Task
             foreach (var asm in Assemblies!)
             {
                 if (!_assemblies.Contains(asm.ItemSpec))
-                {
                     _assemblies.Add(asm.ItemSpec);
-                }
             }
         }
         if (MainAssembly != null)
         {
             if (!_assemblies.Contains(MainAssembly))
-            {
                 _assemblies.Add(MainAssembly);
-            }
         }
         if (ExtraAssemblies != null)
         {
             foreach (var item in ExtraAssemblies)
             {
                 if (!_assemblies.Contains(item.ItemSpec))
-                {
                     _assemblies.Add(item.ItemSpec);
-                }
             }
         }
 
