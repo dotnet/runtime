@@ -1,0 +1,15 @@
+<!-- Licensed to the .NET Foundation under one or more agreements. The .NET Foundation licenses this file to you under the MIT license. -->
+<Project>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NETCore.CoreDisTools" Version="$(MicrosoftNETCoreCoreDisToolsVersion)">
+      <ExcludeAssets>native</ExcludeAssets>
+      <GeneratePathProperty>true</GeneratePathProperty>
+    </PackageReference>
+  </ItemGroup>
+
+  <PropertyGroup>
+    <CoreDisToolsLibrary Condition="'$(TargetOS)' == 'windows'">$(PkgMicrosoft_NETCore_CoreDisTools)\runtimes\win-$(TargetArchitecture)\native\coredistools.dll</CoreDisToolsLibrary>
+    <CoreDisToolsLibrary Condition="'$(TargetOS)' == 'Linux'">$(PkgMicrosoft_NETCore_CoreDisTools)\runtimes\linux-$(TargetArchitecture)\native\libcoredistools.so</CoreDisToolsLibrary>
+    <CoreDisToolsLibrary Condition="'$(TargetOS)' == 'OSX'">$(PkgMicrosoft_NETCore_CoreDisTools)\runtimes\osx-$(TargetArchitecture)\native\libcoredistools.dylib</CoreDisToolsLibrary>
+  </PropertyGroup>
+</Project>

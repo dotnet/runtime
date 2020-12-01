@@ -526,7 +526,7 @@ class CrossGenRunner:
         args.append(self.dotnet)
         args.append(self.crossgen_executable_filename)
         args.append('-r')
-        args.append(platform_assemblies_paths + self.platform_directory_sep + '*.dll')
+        args.append('"' + platform_assemblies_paths + self.platform_directory_sep + '*.dll"' )
         args.append('-O')
         args.append('--out')
         args.append(ni_filename)

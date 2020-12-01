@@ -696,12 +696,7 @@ namespace System.Data.SqlTypes
         {
             CheckIfStreamClosed();
 
-            if (buffer == null)
-                throw new ArgumentNullException(nameof(buffer));
-            if (offset < 0 || offset > buffer.Length)
-                throw new ArgumentOutOfRangeException(nameof(offset));
-            if (count < 0 || count > buffer.Length - offset)
-                throw new ArgumentOutOfRangeException(nameof(count));
+            ValidateBufferArguments(buffer, offset, count);
 
             int iBytesRead = (int)_sb.Read(_lPosition, buffer, offset, count);
             _lPosition += iBytesRead;
@@ -713,12 +708,7 @@ namespace System.Data.SqlTypes
         {
             CheckIfStreamClosed();
 
-            if (buffer == null)
-                throw new ArgumentNullException(nameof(buffer));
-            if (offset < 0 || offset > buffer.Length)
-                throw new ArgumentOutOfRangeException(nameof(offset));
-            if (count < 0 || count > buffer.Length - offset)
-                throw new ArgumentOutOfRangeException(nameof(count));
+            ValidateBufferArguments(buffer, offset, count);
 
             _sb.Write(_lPosition, buffer, offset, count);
             _lPosition += count;

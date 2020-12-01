@@ -204,7 +204,7 @@ namespace System.Text.Json.Serialization
 
                     if (JsonSerializer.TryGetReferenceFromJsonElement(ref state, element, out object? referenceValue))
                     {
-                        value = (T)referenceValue;
+                        value = (T?)referenceValue;
                     }
                 }
 
@@ -289,7 +289,7 @@ namespace System.Text.Json.Serialization
 
         internal override sealed bool TryReadAsObject(ref Utf8JsonReader reader, JsonSerializerOptions options, ref ReadStack state, out object? value)
         {
-            bool success = TryRead(ref reader, TypeToConvert, options, ref state, out T typedValue);
+            bool success = TryRead(ref reader, TypeToConvert, options, ref state, out T? typedValue);
             value = typedValue;
             return success;
         }

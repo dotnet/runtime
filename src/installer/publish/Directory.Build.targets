@@ -15,10 +15,16 @@
       $(DownloadDirectory)IntermediateUnsignedArtifacts\Windows_x64\Shipping\a.nupkg
   -->
   <Target Name="FindDownloadedArtifacts">
+
     <ItemGroup>
       <DownloadedArtifactFile Include="$(DownloadDirectory)**" />
 
+      <Error
+        Condition="'@(DownloadedArtifactFile)' == ''"
+        Text="No downloaded artifacts found." />
+
       <DownloadedSymbolNupkgFile Include="$(DownloadDirectory)**\*.symbols.nupkg" />
+      <DownloadedWixPdbFile Include="$(DownloadDirectory)**\*.wixpdb" />
       <DownloadedNupkgFile
         Include="$(DownloadDirectory)**\*.nupkg"
         Exclude="@(DownloadedSymbolNupkgFile)" />
@@ -26,7 +32,7 @@
       <!-- Add files that are not affected by filtering. -->
       <UploadToBlobStorageFile
         Include="@(DownloadedArtifactFile)"
-        Exclude="@(DownloadedSymbolNupkgFile);@(DownloadedNupkgFile)" />
+        Exclude="@(DownloadedSymbolNupkgFile);@(DownloadedNupkgFile);@(DownloadedWixPdbFile)" />
 
       <!--
         Filter out the RID-specific (Runtime) nupkgs and RID-agnostic nupkgs. RID-specific packages
@@ -94,6 +100,16 @@
       <SymbolNupkgToPublishFile
         Include="@(PotentialSymbolNupkgToPublishFile -> Distinct())"
         Condition="Exists('%(Identity)')" />
+    
+      <!-- Split nupkgs into shipping/nonshipping for BAR categorization. -->
+      <ShippingNupkgToPublishFile
+        Include="@(NupkgToPublishFile)"
+        Condition="$([System.String]::new('%(Identity)').Contains('\Shipping\'))" />
+
+      <NonShippingNupkgToPublishFile
+        Include="@(NupkgToPublishFile)"
+        Exclude="@(ShippingNupkgToPublishFile)" />
+
     </ItemGroup>
 
     <Error

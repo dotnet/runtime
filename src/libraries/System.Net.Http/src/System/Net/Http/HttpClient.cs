@@ -172,7 +172,7 @@ namespace System.Net.Http
             bool telemetryStarted = StartSend(request);
             bool responseContentTelemetryStarted = false;
 
-            (CancellationTokenSource cts, bool disposeCts, long timeoutTime) = PrepareCancellationTokenSource(cancellationToken);
+            (CancellationTokenSource cts, bool disposeCts, CancellationTokenSource pendingRequestsCts) = PrepareCancellationTokenSource(cancellationToken);
             HttpResponseMessage? response = null;
             try
             {
@@ -214,7 +214,7 @@ namespace System.Net.Http
             }
             catch (Exception e)
             {
-                HandleFailure(e, telemetryStarted, response, cts, cancellationToken, timeoutTime);
+                HandleFailure(e, telemetryStarted, response, cts, cancellationToken, pendingRequestsCts);
                 throw;
             }
             finally
@@ -247,7 +247,7 @@ namespace System.Net.Http
             bool telemetryStarted = StartSend(request);
             bool responseContentTelemetryStarted = false;
 
-            (CancellationTokenSource cts, bool disposeCts, long timeoutTime) = PrepareCancellationTokenSource(cancellationToken);
+            (CancellationTokenSource cts, bool disposeCts, CancellationTokenSource pendingRequestsCts) = PrepareCancellationTokenSource(cancellationToken);
             HttpResponseMessage? response = null;
             try
             {
@@ -293,7 +293,7 @@ namespace System.Net.Http
             }
             catch (Exception e)
             {
-                HandleFailure(e, telemetryStarted, response, cts, cancellationToken, timeoutTime);
+                HandleFailure(e, telemetryStarted, response, cts, cancellationToken, pendingRequestsCts);
                 throw;
             }
             finally
@@ -325,7 +325,7 @@ namespace System.Net.Http
         {
             bool telemetryStarted = StartSend(request);
 
-            (CancellationTokenSource cts, bool disposeCts, long timeoutTime) = PrepareCancellationTokenSource(cancellationToken);
+            (CancellationTokenSource cts, bool disposeCts, CancellationTokenSource pendingRequestsCts) = PrepareCancellationTokenSource(cancellationToken);
             HttpResponseMessage? response = null;
             try
             {
@@ -339,7 +339,7 @@ namespace System.Net.Http
             }
             catch (Exception e)
             {
-                HandleFailure(e, telemetryStarted, response, cts, cancellationToken, timeoutTime);
+                HandleFailure(e, telemetryStarted, response, cts, cancellationToken, pendingRequestsCts);
                 throw;
             }
             finally
@@ -376,48 +376,48 @@ namespace System.Net.Http
         public Task<HttpResponseMessage> GetAsync(Uri? requestUri, HttpCompletionOption completionOption, CancellationToken cancellationToken) =>
             SendAsync(CreateRequestMessage(HttpMethod.Get, requestUri), completionOption, cancellationToken);
 
-        public Task<HttpResponseMessage> PostAsync(string? requestUri, HttpContent content) =>
+        public Task<HttpResponseMessage> PostAsync(string? requestUri, HttpContent? content) =>
             PostAsync(CreateUri(requestUri), content);
 
-        public Task<HttpResponseMessage> PostAsync(Uri? requestUri, HttpContent content) =>
+        public Task<HttpResponseMessage> PostAsync(Uri? requestUri, HttpContent? content) =>
             PostAsync(requestUri, content, CancellationToken.None);
 
-        public Task<HttpResponseMessage> PostAsync(string? requestUri, HttpContent content, CancellationToken cancellationToken) =>
+        public Task<HttpResponseMessage> PostAsync(string? requestUri, HttpContent? content, CancellationToken cancellationToken) =>
             PostAsync(CreateUri(requestUri), content, cancellationToken);
 
-        public Task<HttpResponseMessage> PostAsync(Uri? requestUri, HttpContent content, CancellationToken cancellationToken)
+        public Task<HttpResponseMessage> PostAsync(Uri? requestUri, HttpContent? content, CancellationToken cancellationToken)
         {
             HttpRequestMessage request = CreateRequestMessage(HttpMethod.Post, requestUri);
             request.Content = content;
             return SendAsync(request, cancellationToken);
         }
 
-        public Task<HttpResponseMessage> PutAsync(string? requestUri, HttpContent content) =>
+        public Task<HttpResponseMessage> PutAsync(string? requestUri, HttpContent? content) =>
             PutAsync(CreateUri(requestUri), content);
 
-        public Task<HttpResponseMessage> PutAsync(Uri? requestUri, HttpContent content) =>
+        public Task<HttpResponseMessage> PutAsync(Uri? requestUri, HttpContent? content) =>
             PutAsync(requestUri, content, CancellationToken.None);
 
-        public Task<HttpResponseMessage> PutAsync(string? requestUri, HttpContent content, CancellationToken cancellationToken) =>
+        public Task<HttpResponseMessage> PutAsync(string? requestUri, HttpContent? content, CancellationToken cancellationToken) =>
             PutAsync(CreateUri(requestUri), content, cancellationToken);
 
-        public Task<HttpResponseMessage> PutAsync(Uri? requestUri, HttpContent content, CancellationToken cancellationToken)
+        public Task<HttpResponseMessage> PutAsync(Uri? requestUri, HttpContent? content, CancellationToken cancellationToken)
         {
             HttpRequestMessage request = CreateRequestMessage(HttpMethod.Put, requestUri);
             request.Content = content;
             return SendAsync(request, cancellationToken);
         }
 
-        public Task<HttpResponseMessage> PatchAsync(string? requestUri, HttpContent content) =>
+        public Task<HttpResponseMessage> PatchAsync(string? requestUri, HttpContent? content) =>
             PatchAsync(CreateUri(requestUri), content);
 
-        public Task<HttpResponseMessage> PatchAsync(Uri? requestUri, HttpContent content) =>
+        public Task<HttpResponseMessage> PatchAsync(Uri? requestUri, HttpContent? content) =>
             PatchAsync(requestUri, content, CancellationToken.None);
 
-        public Task<HttpResponseMessage> PatchAsync(string? requestUri, HttpContent content, CancellationToken cancellationToken) =>
+        public Task<HttpResponseMessage> PatchAsync(string? requestUri, HttpContent? content, CancellationToken cancellationToken) =>
             PatchAsync(CreateUri(requestUri), content, cancellationToken);
 
-        public Task<HttpResponseMessage> PatchAsync(Uri? requestUri, HttpContent content, CancellationToken cancellationToken)
+        public Task<HttpResponseMessage> PatchAsync(Uri? requestUri, HttpContent? content, CancellationToken cancellationToken)
         {
             HttpRequestMessage request = CreateRequestMessage(HttpMethod.Patch, requestUri);
             request.Content = content;
@@ -458,8 +458,8 @@ namespace System.Net.Http
             // Called outside of async state machine to propagate certain exception even without awaiting the returned task.
             CheckRequestBeforeSend(request);
 
-            (CancellationTokenSource cts, bool disposeCts, long timeoutTime) = PrepareCancellationTokenSource(cancellationToken);
-            ValueTask<HttpResponseMessage> sendTask = SendAsyncCore(request, completionOption, async: false, cts, disposeCts, timeoutTime, cancellationToken);
+            (CancellationTokenSource cts, bool disposeCts, CancellationTokenSource pendingRequestsCts) = PrepareCancellationTokenSource(cancellationToken);
+            ValueTask<HttpResponseMessage> sendTask = SendAsyncCore(request, completionOption, async: false, cts, disposeCts, pendingRequestsCts, cancellationToken);
             Debug.Assert(sendTask.IsCompleted);
             return sendTask.GetAwaiter().GetResult();
         }
@@ -478,8 +478,8 @@ namespace System.Net.Http
             // Called outside of async state machine to propagate certain exception even without awaiting the returned task.
             CheckRequestBeforeSend(request);
 
-            (CancellationTokenSource cts, bool disposeCts, long timeoutTime) = PrepareCancellationTokenSource(cancellationToken);
-            return SendAsyncCore(request, completionOption, async: true, cts, disposeCts, timeoutTime, cancellationToken).AsTask();
+            (CancellationTokenSource cts, bool disposeCts, CancellationTokenSource pendingRequestsCts) = PrepareCancellationTokenSource(cancellationToken);
+            return SendAsyncCore(request, completionOption, async: true, cts, disposeCts, pendingRequestsCts, cancellationToken).AsTask();
         }
 
         private void CheckRequestBeforeSend(HttpRequestMessage request)
@@ -499,7 +499,8 @@ namespace System.Net.Http
 
         private async ValueTask<HttpResponseMessage> SendAsyncCore(
             HttpRequestMessage request, HttpCompletionOption completionOption,
-            bool async, CancellationTokenSource cts, bool disposeCts, long timeoutTime, CancellationToken originalCancellationToken)
+            bool async, CancellationTokenSource cts, bool disposeCts,
+            CancellationTokenSource pendingRequestsCts, CancellationToken originalCancellationToken)
         {
             bool telemetryStarted = StartSend(request);
             bool responseContentTelemetryStarted = false;
@@ -510,7 +511,9 @@ namespace System.Net.Http
                 // Wait for the send request to complete, getting back the response.
                 response = async ?
                     await base.SendAsync(request, cts.Token).ConfigureAwait(false) :
+#pragma warning disable CA1416 // Validate platform compatibility, not supported on browser, safe to suppress
                     base.Send(request, cts.Token);
+#pragma warning restore CA1416
                 ThrowForNullResponse(response);
 
                 // Buffer the response content if we've been asked to.
@@ -537,7 +540,7 @@ namespace System.Net.Http
             }
             catch (Exception e)
             {
-                HandleFailure(e, telemetryStarted, response, cts, originalCancellationToken, timeoutTime);
+                HandleFailure(e, telemetryStarted, response, cts, originalCancellationToken, pendingRequestsCts);
                 throw;
             }
             finally
@@ -554,7 +557,7 @@ namespace System.Net.Http
             }
         }
 
-        private void HandleFailure(Exception e, bool telemetryStarted, HttpResponseMessage? response, CancellationTokenSource cts, CancellationToken cancellationToken, long timeoutTime)
+        private void HandleFailure(Exception e, bool telemetryStarted, HttpResponseMessage? response, CancellationTokenSource cts, CancellationToken cancellationToken, CancellationTokenSource pendingRequestsCts)
         {
             LogRequestFailed(telemetryStarted);
 
@@ -562,10 +565,10 @@ namespace System.Net.Http
 
             Exception? toThrow = null;
 
-            if (e is OperationCanceledException oce && !cancellationToken.IsCancellationRequested && Environment.TickCount64 >= timeoutTime)
+            if (e is OperationCanceledException oce && !cancellationToken.IsCancellationRequested && !pendingRequestsCts.IsCancellationRequested)
             {
-                // If this exception is for cancellation, but cancellation wasn't requested and instead we find that we've passed a timeout end time,
-                // treat this instead as a timeout.
+                // If this exception is for cancellation, but cancellation wasn't requested, either by the caller's token or by the pending requests source,
+                // the only other cause could be a timeout.  Treat it as such.
                 e = toThrow = new TaskCanceledException(string.Format(SR.net_http_request_timedout, _timeout.TotalSeconds), new TimeoutException(e.Message, e), oce.CancellationToken);
             }
             else if (cts.IsCancellationRequested && e is HttpRequestException) // if cancellationToken is canceled, cts will also be canceled
@@ -745,28 +748,33 @@ namespace System.Net.Http
             }
         }
 
-        private (CancellationTokenSource TokenSource, bool DisposeTokenSource, long TimeoutTime) PrepareCancellationTokenSource(CancellationToken cancellationToken)
+        private (CancellationTokenSource TokenSource, bool DisposeTokenSource, CancellationTokenSource PendingRequestsCts) PrepareCancellationTokenSource(CancellationToken cancellationToken)
         {
             // We need a CancellationTokenSource to use with the request.  We always have the global
             // _pendingRequestsCts to use, plus we may have a token provided by the caller, and we may
             // have a timeout.  If we have a timeout or a caller-provided token, we need to create a new
             // CTS (we can't, for example, timeout the pending requests CTS, as that could cancel other
             // unrelated operations).  Otherwise, we can use the pending requests CTS directly.
+
+            // Snapshot the current pending requests cancellation source. It can change concurrently due to cancellation being requested
+            // and it being replaced, and we need a stable view of it: if cancellation occurs and the caller's token hasn't been canceled,
+            // it's either due to this source or due to the timeout, and checking whether this source is the culprit is reliable whereas
+            // it's more approximate checking elapsed time.
+            CancellationTokenSource pendingRequestsCts = _pendingRequestsCts;
+
             bool hasTimeout = _timeout != s_infiniteTimeout;
-            long timeoutTime = long.MaxValue;
             if (hasTimeout || cancellationToken.CanBeCanceled)
             {
-                CancellationTokenSource cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, _pendingRequestsCts.Token);
+                CancellationTokenSource cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, pendingRequestsCts.Token);
                 if (hasTimeout)
                 {
-                    timeoutTime = Environment.TickCount64 + (_timeout.Ticks / TimeSpan.TicksPerMillisecond);
                     cts.CancelAfter(_timeout);
                 }
 
-                return (cts, DisposeTokenSource: true, timeoutTime);
+                return (cts, DisposeTokenSource: true, pendingRequestsCts);
             }
 
-            return (_pendingRequestsCts, DisposeTokenSource: false, timeoutTime);
+            return (pendingRequestsCts, DisposeTokenSource: false, pendingRequestsCts);
         }
 
         private static void CheckBaseAddress(Uri? baseAddress, string parameterName)

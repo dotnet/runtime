@@ -29,7 +29,7 @@ add_library_clr(ceefgen_obj
     OBJECT
     ${CEEFILEGEN_SOURCES}
 )
-target_precompile_header(TARGET ceefgen_obj HEADER stdafx.h)
+target_precompile_headers(ceefgen_obj PRIVATE stdafx.h)
 
 add_library(ceefgen INTERFACE)
 target_sources(ceefgen INTERFACE $<TARGET_OBJECTS:ceefgen_obj>)

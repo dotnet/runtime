@@ -14,7 +14,8 @@ namespace System.Threading.ThreadPools.Tests
     {
         private const int UnexpectedTimeoutMilliseconds = ThreadTestHelpers.UnexpectedTimeoutMilliseconds;
         private const int ExpectedTimeoutMilliseconds = ThreadTestHelpers.ExpectedTimeoutMilliseconds;
-        private const int MaxPossibleThreadCount = 0x7fff;
+
+        private static readonly int MaxPossibleThreadCount = short.MaxValue;
 
         static ThreadPoolTests()
         {

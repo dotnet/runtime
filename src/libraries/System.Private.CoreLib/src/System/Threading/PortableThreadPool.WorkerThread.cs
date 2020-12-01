@@ -40,10 +40,12 @@ namespace System.Threading
                 }
 
                 LowLevelLock hillClimbingThreadAdjustmentLock = threadPoolInstance._hillClimbingThreadAdjustmentLock;
+                LowLevelLifoSemaphore semaphore = s_semaphore;
 
                 while (true)
                 {
-                    while (WaitForRequest())
+                    bool spinWait = true;
+                    while (semaphore.Wait(ThreadPoolThreadTimeoutMs, spinWait))
                     {
                         bool alreadyRemovedWorkingWorker = false;
                         while (TakeActiveRequest(threadPoolInstance))
@@ -52,11 +54,17 @@ namespace System.Threading
                             if (!ThreadPoolWorkQueue.Dispatch())
                             {
                                 // ShouldStopProcessingWorkNow() caused the thread to stop processing work, and it would have
-                                // already removed this working worker in the counts
+                                // already removed this working worker in the counts. This typically happens when hill climbing
+                                // decreases the worker thread count goal.
                                 alreadyRemovedWorkingWorker = true;
                                 break;
                             }
                         }
+
+                        // Don't spin-wait on the semaphore next time if the thread was actively stopped from processing work,
+                        // as it's unlikely that the worker thread count goal would be increased again so soon afterwards that
+                        // the semaphore would be released within the spin-wait window
+                        spinWait = !alreadyRemovedWorkingWorker;
 
                         if (!alreadyRemovedWorkingWorker)
                         {
@@ -113,12 +121,6 @@ namespace System.Threading
                     }
                 }
             }
-
-            /// <summary>
-            /// Waits for a request to work.
-            /// </summary>
-            /// <returns>If this thread was woken up before it timed out.</returns>
-            private static bool WaitForRequest() => s_semaphore.Wait(ThreadPoolThreadTimeoutMs);
 
             /// <summary>
             /// Reduce the number of working workers by one, but maybe add back a worker (possibily this thread) if a thread request comes in while we are marking this thread as not working.

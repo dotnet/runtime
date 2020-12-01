@@ -9,7 +9,7 @@ namespace System.IO.Pipes.Tests
     /// <summary>
     /// Tests for the constructors of AnonymousPipeClientStream
     /// </summary>
-    public class AnonymousPipeTest_CreateClient : AnonymousPipeTestBase
+    public class AnonymousPipeTest_CreateClient
     {
         [Fact]
         public static void NullParameters_Throws_ArgumentNullException()
@@ -22,11 +22,8 @@ namespace System.IO.Pipes.Tests
         [Fact]
         public static void CreateClientStreamFromStringHandle_Valid()
         {
-            using (var server = new AnonymousPipeServerStream(PipeDirection.Out))
-            using (var client = new AnonymousPipeClientStream(server.GetClientHandleAsString()))
-            {
-                SuppressClientHandleFinalizationIfNetFramework(server);
-            }
+            using var server = new AnonymousPipeServerStream(PipeDirection.Out);
+            new AnonymousPipeClientStream(server.GetClientHandleAsString()).Dispose();
         }
 
         [Theory]

@@ -1694,7 +1694,7 @@ public:
     void emitSetMediumJump(instrDescJmp* id);
 
 public:
-    CORINFO_FIELD_HANDLE emitAnyConst(const void* cnsAddr, UNATIVE_OFFSET cnsSize, UNATIVE_OFFSET cnsAlign);
+    CORINFO_FIELD_HANDLE emitBlkConst(const void* cnsAddr, unsigned cnsSize, unsigned cnsAlign, var_types elemType);
 
 private:
     CORINFO_FIELD_HANDLE emitFltOrDblConst(double constValue, emitAttr attr);
@@ -2167,6 +2167,12 @@ public:
 
     struct dataSection
     {
+        // Note to use alignments greater than 32 requires modification in the VM
+        // to support larger alignments (see ICorJitInfo::allocMem)
+        //
+        const static unsigned MIN_DATA_ALIGN = 4;
+        const static unsigned MAX_DATA_ALIGN = 32;
+
         enum sectionType
         {
             data,
@@ -2177,6 +2183,8 @@ public:
         dataSection*   dsNext;
         UNATIVE_OFFSET dsSize;
         sectionType    dsType;
+        var_types      dsDataType;
+
         // variable-sized array used to store the constant data
         // or BasicBlock* array in the block cases.
         BYTE dsCont[0];

@@ -58,7 +58,7 @@ namespace System.Threading
             return true;
         }
 
-        private static int PumpTimerQueue() // NOTE: this method is called via reflection by test code
+        private static int PumpTimerQueue()
         {
             if (s_scheduledTimersToFire == null)
             {

@@ -1097,7 +1097,11 @@ public:
         TS_Unknown                = 0x00000000,    // threads are initialized this way
 
         TS_AbortRequested         = 0x00000001,    // Abort the thread
-        TS_GCSuspendPending       = 0x00000002,    // waiting to get to safe spot for GC
+
+        TS_GCSuspendPending       = 0x00000002,    // ThreadSuspend::SuspendRuntime watches this thread to leave coop mode.
+        TS_GCSuspendRedirected    = 0x00000004,    // ThreadSuspend::SuspendRuntime has redirected the thread to suspention routine.
+        TS_GCSuspendFlags         = TS_GCSuspendPending | TS_GCSuspendRedirected, // used to track suspension progress. Only SuspendRuntime writes/resets these.
+
         TS_DebugSuspendPending    = 0x00000008,    // Is the debugger suspending threads?
         TS_GCOnTransitions        = 0x00000010,    // Force a GC on stub transitions (GCStress only)
 
@@ -1656,9 +1660,12 @@ private:
     EEThreadId m_Creater;
 #endif
 
-    // After we suspend a thread, we may need to call EEJitManager::JitCodeToMethodInfo
-    // or StressLog which may waits on a spinlock.  It is unsafe to suspend a thread while it
-    // is in this state.
+    // A thread may forbid its own suspension. For example when holding certain locks.
+    // The state is a counter to allow nested forbids.
+    // The state is only modified by the current thread.
+    // Other threads may read this state, but must mind the races.
+    // It must be assumed that a running thread (or one that may start running) may change this state at any time.
+    // One exception: SuspendThread can read this "reliably" from other threads by temporarily suspending them, reading, and releasing if != 0.
     Volatile<LONG> m_dwForbidSuspendThread;
 
 public:
@@ -1684,7 +1691,8 @@ public:
             STRESS_LOG2(LF_SYNC, LL_INFO100000, "Set forbid suspend [%d] for thread %p.\n", pThread->m_dwForbidSuspendThread.Load(), pThread);
             }
 #endif
-            FastInterlockIncrement(&pThread->m_dwForbidSuspendThread);
+            // modified only by the current thread, so ++ is ok
+            pThread->m_dwForbidSuspendThread.RawValue()++;
         }
 #endif //!DACCESS_COMPILE
     }
@@ -1703,8 +1711,10 @@ public:
         Thread * pThread = GetThreadNULLOk();
         if (pThread)
         {
-            _ASSERTE (pThread->m_dwForbidSuspendThread != (LONG)0);
-            FastInterlockDecrement(&pThread->m_dwForbidSuspendThread);
+            _ASSERTE (pThread->m_dwForbidSuspendThread >= (LONG)0);
+
+            // modified only by the current thread, so -- is ok
+            pThread->m_dwForbidSuspendThread.RawValue()--;
 #ifdef _DEBUG
             {
                 //DEBUG_ONLY;
@@ -1715,9 +1725,11 @@ public:
 #endif //!DACCESS_COMPILE
     }
 
+    // Returns the state of m_dwForbidSuspendThread as it was at the time of the call.
+    // It may asynchronously change if there are no additional guarantees (i.e. it is the current thread or the thread is suspended)
     bool IsInForbidSuspendRegion()
     {
-        return m_dwForbidSuspendThread != (LONG)0;
+        return m_dwForbidSuspendThread.LoadWithoutBarrier() != (LONG)0;
     }
 
     typedef StateHolder<Thread::IncForbidSuspendThread, Thread::DecForbidSuspendThread> ForbidSuspendThreadHolder;
@@ -2397,10 +2409,6 @@ public:
         // that either we are not allowed to call into the host, or we ran
         // out of memory.
         STR_NoStressLog,
-
-        // The EE thread is currently switched out.  This can only happen
-        // if we are hosted and the host schedules EE threads on fibers.
-        STR_SwitchedOut,
     };
 
 #if defined(FEATURE_HIJACK) && defined(TARGET_UNIX)
@@ -3506,7 +3514,6 @@ private:
             CounterHolder handleHolder(&m_dwThreadHandleBeingUsed);
             HANDLE handle = m_ThreadHandle;
             _ASSERTE ( handle == INVALID_HANDLE_VALUE
-                || handle == SWITCHOUT_HANDLE_VALUE
                 || m_OSThreadId == 0
                 || m_OSThreadId == 0xbaadf00d
                 || ::MatchThreadHandleToOsId(handle, (DWORD)m_OSThreadId) );
@@ -3522,7 +3529,6 @@ private:
         LIMITED_METHOD_CONTRACT;
 #if defined(_DEBUG)
         _ASSERTE ( h == INVALID_HANDLE_VALUE
-            || h == SWITCHOUT_HANDLE_VALUE
             || m_OSThreadId == 0
             || m_OSThreadId == 0xbaadf00d
             || ::MatchThreadHandleToOsId(h, (DWORD)m_OSThreadId) );
@@ -3934,7 +3940,7 @@ public:
             UnhijackThread();
 #endif // FEATURE_HIJACK
 
-        ResetThreadState(TS_GCSuspendPending);
+        _ASSERTE(!HasThreadStateOpportunistic(Thread::TS_GCSuspendPending));
     }
 
     static LPVOID GetStaticFieldAddress(FieldDesc *pFD);

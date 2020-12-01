@@ -8,27 +8,10 @@ using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.X86;
 using Internal.Runtime.CompilerServices;
 
-#pragma warning disable SA1121 // explicitly using type aliases instead of built-in types
-#if TARGET_64BIT
-using nint = System.Int64;
-using nuint = System.UInt64;
-#else // TARGET_64BIT
-using nint = System.Int32;
-using nuint = System.UInt32;
-#endif // TARGET_64BIT
-
 namespace System.Text
 {
     internal static partial class Latin1Utility
     {
-#if DEBUG
-        static Latin1Utility()
-        {
-            Debug.Assert(sizeof(nint) == IntPtr.Size && nint.MinValue < 0, "nint is defined incorrectly.");
-            Debug.Assert(sizeof(nuint) == IntPtr.Size && nuint.MinValue == 0, "nuint is defined incorrectly.");
-        }
-#endif // DEBUG
-
         /// <summary>
         /// Returns the index in <paramref name="pBuffer"/> where the first non-Latin1 char is found.
         /// Returns <paramref name="bufferLength"/> if the buffer is empty or all-Latin1.
@@ -776,7 +759,7 @@ namespace System.Text
             // JIT turns the below into constants
 
             uint SizeOfVector128 = (uint)Unsafe.SizeOf<Vector128<byte>>();
-            nuint MaskOfAllBitsInVector128 = (nuint)(SizeOfVector128 - 1);
+            nuint MaskOfAllBitsInVector128 = SizeOfVector128 - 1;
 
             // This method is written such that control generally flows top-to-bottom, avoiding
             // jumps as much as possible in the optimistic case of "all Latin-1". If we see non-Latin-1
@@ -963,7 +946,7 @@ namespace System.Text
             // JIT turns the below into constants
 
             uint SizeOfVector128 = (uint)Unsafe.SizeOf<Vector128<byte>>();
-            nuint MaskOfAllBitsInVector128 = (nuint)(SizeOfVector128 - 1);
+            nuint MaskOfAllBitsInVector128 = SizeOfVector128 - 1;
 
             Debug.Assert(Sse2.IsSupported);
             Debug.Assert(BitConverter.IsLittleEndian);

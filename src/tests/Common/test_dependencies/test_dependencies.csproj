@@ -5,7 +5,7 @@
     <TargetFramework>$(NetCoreAppToolCurrent)</TargetFramework>
     <DisableRarCache>true</DisableRarCache>
     <DisablePackageAssetsCache>true</DisablePackageAssetsCache>
-    <RuntimeIdentifiers>win-arm;win-arm64;win-x64;win-x86;$(TargetRid)</RuntimeIdentifiers>
+    <RuntimeIdentifiers>win-arm;win-arm64;win-x64;win-x86;$(PackageRID)</RuntimeIdentifiers>
     <IncludeOOBLibraries>true</IncludeOOBLibraries>
     <LibrariesConfiguration>Release</LibrariesConfiguration>
   </PropertyGroup>
@@ -16,7 +16,7 @@
 
   <Target Name="Build" DependsOnTargets="$(TraversalBuildDependsOn)" />
 
-  <Target Name="AddUcrtFilesToCoreRoot" BeforeTargets="CopyDependencyToCoreRoot" Condition="'$(TargetOS)' == 'Windows_NT'">
+  <Target Name="AddUcrtFilesToCoreRoot" BeforeTargets="CopyDependencyToCoreRoot" Condition="'$(TargetOS)' == 'windows'">
     <ItemGroup>
       <NativeCopyLocalItems Include="$(UniversalCRTSDKDir)Redist\ucrt\DLLs\$(TargetArchitecture)\*.dll" />
     </ItemGroup>

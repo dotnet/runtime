@@ -603,7 +603,7 @@ bool CordbThread::OwnsFrame(CordbFrame * pFrame)
 // This routine is a internal helper function for ICorDebugThread2::GetTaskId.
 //
 // Arguments:
-//    pHandle - return thread handle here after fetching from the left side. Can return SWITCHOUT_HANDLE_VALUE.
+//    pHandle - return thread handle here after fetching from the left side.
 //
 // Return Value:
 //    hr - It can fail with CORDBG_E_THREAD_NOT_SCHEDULED.
@@ -628,12 +628,6 @@ void CordbThread::RefreshHandle(HANDLE * phThread)
 
     IDacDbiInterface * pDAC = GetProcess()->GetDAC();
     HANDLE hThread = pDAC->GetThreadHandle(m_vmThreadToken);
-
-    if (hThread == SWITCHOUT_HANDLE_VALUE)
-    {
-        *phThread = SWITCHOUT_HANDLE_VALUE;
-        ThrowHR(CORDBG_E_THREAD_NOT_SCHEDULED);
-    }
 
     _ASSERTE(hThread != INVALID_HANDLE_VALUE);
     PREFAST_ASSUME(hThread != NULL);

@@ -76,28 +76,28 @@ namespace System.IO.Compression
             public bool ReadArrayInvoked = false, WriteArrayInvoked = false;
             internal DerivedDeflateStream(Stream stream, CompressionMode mode, bool leaveOpen) : base(stream, mode, leaveOpen) { }
 
-            public override int Read(byte[] array, int offset, int count)
+            public override int Read(byte[] buffer, int offset, int count)
             {
                 ReadArrayInvoked = true;
-                return base.Read(array, offset, count);
+                return base.Read(buffer, offset, count);
             }
 
-            public override Task<int> ReadAsync(byte[] array, int offset, int count, CancellationToken cancellationToken)
+            public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
             {
                 ReadArrayInvoked = true;
-                return base.ReadAsync(array, offset, count, cancellationToken);
+                return base.ReadAsync(buffer, offset, count, cancellationToken);
             }
 
-            public override void Write(byte[] array, int offset, int count)
+            public override void Write(byte[] buffer, int offset, int count)
             {
                 WriteArrayInvoked = true;
-                base.Write(array, offset, count);
+                base.Write(buffer, offset, count);
             }
 
-            public override Task WriteAsync(byte[] array, int offset, int count, CancellationToken cancellationToken)
+            public override Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
             {
                 WriteArrayInvoked = true;
-                return base.WriteAsync(array, offset, count, cancellationToken);
+                return base.WriteAsync(buffer, offset, count, cancellationToken);
             }
         }
     }

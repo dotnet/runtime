@@ -1,3 +1,4 @@
+#include "mini-runtime.h"
 #include "mini.h"
 
 static void
@@ -38,18 +39,43 @@ wasm_throw_corlib_exception (void)
 
 gboolean
 mono_arch_unwind_frame (MonoDomain *domain, MonoJitTlsData *jit_tls, 
-							 MonoJitInfo *ji, MonoContext *ctx, 
-							 MonoContext *new_ctx, MonoLMF **lmf,
-							 host_mgreg_t **save_locations,
-							 StackFrameInfo *frame)
+						MonoJitInfo *ji, MonoContext *ctx,
+						MonoContext *new_ctx, MonoLMF **lmf,
+						host_mgreg_t **save_locations,
+						StackFrameInfo *frame)
 {
-	if (ji)
-		g_error ("Can't unwind compiled code");
+	memset (frame, 0, sizeof (StackFrameInfo));
+	frame->ji = ji;
 
+	*new_ctx = *ctx;
+
+	g_assert (!ji);
+
+	/*
+	 * Can't unwind native frames on WASM, so we only process the ones
+	 * which push an LMF frame. See the needs_stack_walk code in
+	 * method-to-ir.c.
+	 */
 	if (*lmf) {
-		if ((*lmf)->top_entry)
+		ERROR_DECL (error);
+
+		if (*lmf == jit_tls->first_lmf)
 			return FALSE;
-		g_error ("Can't handle non-top-entry LMFs\n");
+
+		/* This will compute the original method address */
+		g_assert ((*lmf)->method);
+		gpointer addr = mono_compile_method_checked ((*lmf)->method, error);
+		mono_error_assert_ok (error);
+
+		ji = mini_jit_info_table_find (domain, addr, NULL);
+		g_assert (ji);
+
+		frame->type = FRAME_TYPE_MANAGED;
+		frame->ji = ji;
+		frame->actual_method = (*lmf)->method;
+
+		*lmf = (MonoLMF *)(((guint64)(*lmf)->previous_lmf) & ~3);
+		return TRUE;
 	}
 
 	return FALSE;

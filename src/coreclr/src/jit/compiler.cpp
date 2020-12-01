@@ -22,6 +22,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #include "stacklevelsetter.h"
 #include "jittelemetry.h"
 #include "patchpointinfo.h"
+#include "jitstd/algorithm.h"
 
 #if defined(DEBUG)
 // Column settings for COMPlus_JitDumpIR.  We could(should) make these programmable.
@@ -39,11 +40,9 @@ unsigned Compiler::jitTotalMethodCompiled = 0;
 LONG Compiler::jitNestingLevel = 0;
 #endif // defined(DEBUG)
 
-#ifdef ALT_JIT
 // static
 bool                Compiler::s_pAltJitExcludeAssembliesListInitialized = false;
 AssemblyNamesList2* Compiler::s_pAltJitExcludeAssembliesList            = nullptr;
-#endif // ALT_JIT
 
 #ifdef DEBUG
 // static
@@ -1207,12 +1206,13 @@ struct NowayAssertCountMap
     {
     }
 
-    static int __cdecl compare(const void* elem1, const void* elem2)
+    struct compare
     {
-        NowayAssertCountMap* e1 = (NowayAssertCountMap*)elem1;
-        NowayAssertCountMap* e2 = (NowayAssertCountMap*)elem2;
-        return (int)((ssize_t)e2->count - (ssize_t)e1->count); // sort in descending order
-    }
+        bool operator()(const NowayAssertCountMap& elem1, const NowayAssertCountMap& elem2)
+        {
+            return (ssize_t)elem2.count < (ssize_t)elem1.count; // sort in descending order
+        }
+    };
 };
 
 void DisplayNowayAssertMap()
@@ -1249,7 +1249,7 @@ void DisplayNowayAssertMap()
             ++i;
         }
 
-        qsort(nacp, count, sizeof(nacp[0]), NowayAssertCountMap::compare);
+        jitstd::sort(nacp, nacp + count, NowayAssertCountMap::compare());
 
         if (fout == jitstdout)
         {
@@ -1351,13 +1351,11 @@ void Compiler::compStartup()
 /* static */
 void Compiler::compShutdown()
 {
-#ifdef ALT_JIT
     if (s_pAltJitExcludeAssembliesList != nullptr)
     {
         s_pAltJitExcludeAssembliesList->~AssemblyNamesList2(); // call the destructor
         s_pAltJitExcludeAssembliesList = nullptr;
     }
-#endif // ALT_JIT
 
 #ifdef DEBUG
     if (s_pJitDisasmIncludeAssembliesList != nullptr)
@@ -2580,18 +2578,19 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
         pfAltJit = &JitConfig.AltJit();
     }
 
-#ifdef ALT_JIT
-    if (pfAltJit->contains(info.compMethodName, info.compClassName, &info.compMethodInfo->args))
+    if (opts.jitFlags->IsSet(JitFlags::JIT_FLAG_ALT_JIT))
     {
-        opts.altJit = true;
-    }
+        if (pfAltJit->contains(info.compMethodName, info.compClassName, &info.compMethodInfo->args))
+        {
+            opts.altJit = true;
+        }
 
-    unsigned altJitLimit = ReinterpretHexAsDecimal(JitConfig.AltJitLimit());
-    if (altJitLimit > 0 && Compiler::jitTotalMethodCompiled >= altJitLimit)
-    {
-        opts.altJit = false;
+        unsigned altJitLimit = ReinterpretHexAsDecimal(JitConfig.AltJitLimit());
+        if (altJitLimit > 0 && Compiler::jitTotalMethodCompiled >= altJitLimit)
+        {
+            opts.altJit = false;
+        }
     }
-#endif // ALT_JIT
 
 #else // !DEBUG
 
@@ -2605,20 +2604,20 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
         altJitVal = JitConfig.AltJit().list();
     }
 
-#ifdef ALT_JIT
-    // In release mode, you either get all methods or no methods. You must use "*" as the parameter, or we ignore it.
-    // You don't get to give a regular expression of methods to match.
-    // (Partially, this is because we haven't computed and stored the method and class name except in debug, and it
-    // might be expensive to do so.)
-    if ((altJitVal != nullptr) && (strcmp(altJitVal, "*") == 0))
+    if (opts.jitFlags->IsSet(JitFlags::JIT_FLAG_ALT_JIT))
     {
-        opts.altJit = true;
+        // In release mode, you either get all methods or no methods. You must use "*" as the parameter, or we ignore
+        // it. You don't get to give a regular expression of methods to match.
+        // (Partially, this is because we haven't computed and stored the method and class name except in debug, and it
+        // might be expensive to do so.)
+        if ((altJitVal != nullptr) && (strcmp(altJitVal, "*") == 0))
+        {
+            opts.altJit = true;
+        }
     }
-#endif // ALT_JIT
 
 #endif // !DEBUG
 
-#ifdef ALT_JIT
     // Take care of COMPlus_AltJitExcludeAssemblies.
     if (opts.altJit)
     {
@@ -2650,7 +2649,6 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
             }
         }
     }
-#endif // ALT_JIT
 
 #ifdef DEBUG
 
@@ -5506,6 +5504,12 @@ int Compiler::compCompile(CORINFO_MODULE_HANDLE classPtr,
 }
 
 #if defined(DEBUG) || defined(INLINE_DATA)
+//------------------------------------------------------------------------
+// compMethodHash: get hash code for currently jitted method
+//
+// Returns:
+//    Hash based on method's full name
+//
 unsigned Compiler::Info::compMethodHash() const
 {
     if (compMethodHashPrivate == 0)
@@ -5519,6 +5523,42 @@ unsigned Compiler::Info::compMethodHash() const
     }
     return compMethodHashPrivate;
 }
+
+//------------------------------------------------------------------------
+// compMethodHash: get hash code for specified method
+//
+// Arguments:
+//    methodHnd - method of interest
+//
+// Returns:
+//    Hash based on method's full name
+//
+unsigned Compiler::compMethodHash(CORINFO_METHOD_HANDLE methodHnd)
+{
+    // If this is the root method, delegate to the caching version
+    //
+    if (methodHnd == info.compMethodHnd)
+    {
+        return info.compMethodHash();
+    }
+
+    // Else compute from scratch. Might consider caching this too.
+    //
+    unsigned    methodHash = 0;
+    const char* calleeName = eeGetMethodFullName(methodHnd);
+
+    if (calleeName != nullptr)
+    {
+        methodHash = HashStringA(calleeName);
+    }
+    else
+    {
+        methodHash = info.compCompHnd->getMethodHash(methodHnd);
+    }
+
+    return methodHash;
+}
+
 #endif // defined(DEBUG) || defined(INLINE_DATA)
 
 void Compiler::compCompileFinish()
@@ -5876,14 +5916,12 @@ int Compiler::compCompileHelper(CORINFO_MODULE_HANDLE classPtr,
 
     compInitOptions(compileFlags);
 
-#ifdef ALT_JIT
-    if (!compIsForInlining() && !opts.altJit)
+    if (!compIsForInlining() && !opts.altJit && opts.jitFlags->IsSet(JitFlags::JIT_FLAG_ALT_JIT))
     {
         // We're an altjit, but the COMPlus_AltJit configuration did not say to compile this method,
         // so skip it.
         return CORJIT_SKIPPED;
     }
-#endif // ALT_JIT
 
 #ifdef DEBUG
 
@@ -5944,6 +5982,7 @@ int Compiler::compCompileHelper(CORINFO_MODULE_HANDLE classPtr,
     info.compNativeCodeSize    = 0;
     info.compTotalHotCodeSize  = 0;
     info.compTotalColdCodeSize = 0;
+    info.compClassProbeCount   = 0;
 
     compHasBackwardJump = false;
 
@@ -6173,14 +6212,12 @@ _Next:
             return CORJIT_SKIPPED;
         }
 
-#ifdef ALT_JIT
 #ifdef DEBUG
-        if (JitConfig.RunAltJitCode() == 0)
+        if (opts.jitFlags->IsSet(JitFlags::JIT_FLAG_ALT_JIT) && JitConfig.RunAltJitCode() == 0)
         {
             return CORJIT_SKIPPED;
         }
 #endif // DEBUG
-#endif // ALT_JIT
     }
 
     /* Success! */
@@ -6339,15 +6376,21 @@ void Compiler::compInitVarScopeMap()
     }
 }
 
-int __cdecl genCmpLocalVarLifeBeg(const void* elem1, const void* elem2)
+struct genCmpLocalVarLifeBeg
 {
-    return (*((VarScopeDsc**)elem1))->vsdLifeBeg - (*((VarScopeDsc**)elem2))->vsdLifeBeg;
-}
+    bool operator()(const VarScopeDsc* elem1, const VarScopeDsc* elem2)
+    {
+        return elem1->vsdLifeBeg < elem2->vsdLifeBeg;
+    }
+};
 
-int __cdecl genCmpLocalVarLifeEnd(const void* elem1, const void* elem2)
+struct genCmpLocalVarLifeEnd
 {
-    return (*((VarScopeDsc**)elem1))->vsdLifeEnd - (*((VarScopeDsc**)elem2))->vsdLifeEnd;
-}
+    bool operator()(const VarScopeDsc* elem1, const VarScopeDsc* elem2)
+    {
+        return elem1->vsdLifeEnd < elem2->vsdLifeEnd;
+    }
+};
 
 inline void Compiler::compInitScopeLists()
 {
@@ -6367,8 +6410,8 @@ inline void Compiler::compInitScopeLists()
         compEnterScopeList[i] = compExitScopeList[i] = &info.compVarScopes[i];
     }
 
-    qsort(compEnterScopeList, info.compVarScopesCount, sizeof(*compEnterScopeList), genCmpLocalVarLifeBeg);
-    qsort(compExitScopeList, info.compVarScopesCount, sizeof(*compExitScopeList), genCmpLocalVarLifeEnd);
+    jitstd::sort(compEnterScopeList, compEnterScopeList + info.compVarScopesCount, genCmpLocalVarLifeBeg());
+    jitstd::sort(compExitScopeList, compExitScopeList + info.compVarScopesCount, genCmpLocalVarLifeEnd());
 }
 
 void Compiler::compResetScopeLists()

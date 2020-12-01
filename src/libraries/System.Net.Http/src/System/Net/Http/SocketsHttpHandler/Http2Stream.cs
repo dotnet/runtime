@@ -1444,14 +1444,14 @@ namespace System.Net.Http
 
                 public override void CopyTo(Stream destination, int bufferSize)
                 {
-                    StreamHelpers.ValidateCopyToArgs(this, destination, bufferSize);
+                    ValidateCopyToArguments(destination, bufferSize);
                     Http2Stream http2Stream = _http2Stream ?? throw ExceptionDispatchInfo.SetCurrentStackTrace(new ObjectDisposedException(nameof(Http2ReadStream)));
                     http2Stream.CopyTo(_responseMessage, destination, bufferSize);
                 }
 
                 public override Task CopyToAsync(Stream destination, int bufferSize, CancellationToken cancellationToken)
                 {
-                    StreamHelpers.ValidateCopyToArgs(this, destination, bufferSize);
+                    ValidateCopyToArguments(destination, bufferSize);
                     Http2Stream? http2Stream = _http2Stream;
                     return
                         http2Stream is null ? Task.FromException<int>(ExceptionDispatchInfo.SetCurrentStackTrace(new ObjectDisposedException(nameof(Http2ReadStream)))) :

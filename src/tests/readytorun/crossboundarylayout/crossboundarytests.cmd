@@ -1,6 +1,6 @@
 echo off
 setlocal 
-set TESTDIR=%~dp0\..\..\..\..\..\..\artifacts\tests\coreclr\Windows_NT.x64.Debug\readytorun\crossboundarylayout\crossboundarytest\crossboundarytest
+set TESTDIR=%~dp0\..\..\..\..\..\..\artifacts\tests\coreclr\windows.x64.Debug\readytorun\crossboundarylayout\crossboundarytest\crossboundarytest
 set TESTBATCHROOT=%~dp0
 
 call :testSpecificCompositeScenarios

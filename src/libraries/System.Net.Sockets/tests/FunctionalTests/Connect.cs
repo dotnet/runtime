@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
@@ -121,18 +122,17 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        public static readonly TheoryData<IPAddress> ConnectGetsCanceledByDispose_Data = new TheoryData<IPAddress>
-        {
-            { IPAddress.Parse("1.1.1.1") },
-            { IPAddress.Parse("1.1.1.1").MapToIPv6() },
-        };
-
         [OuterLoop("Connects to external server")]
-        [Theory]
-        [MemberData(nameof(ConnectGetsCanceledByDispose_Data))]
         [PlatformSpecific(~(TestPlatforms.OSX | TestPlatforms.FreeBSD))] // Not supported on BSD like OSes.
-        public async Task ConnectGetsCanceledByDispose(IPAddress address)
+        [Theory]
+        [InlineData("1.1.1.1", false)]
+        [InlineData("1.1.1.1", true)]
+        [InlineData("[::ffff:1.1.1.1]", false)]
+        [InlineData("[::ffff:1.1.1.1]", true)]
+        public async Task ConnectGetsCanceledByDispose(string addressString, bool useDns)
         {
+            IPAddress address = IPAddress.Parse(addressString);
+
             // We try this a couple of times to deal with a timing race: if the Dispose happens
             // before the operation is started, we won't see a SocketException.
             int msDelay = 100;
@@ -141,10 +141,12 @@ namespace System.Net.Sockets.Tests
                 var client = new Socket(address.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
                 if (address.IsIPv4MappedToIPv6) client.DualMode = true;
 
-                Task connectTask = ConnectAsync(client, new IPEndPoint(address, 23));
+                Task connectTask = ConnectAsync(client, useDns ?
+                    new DnsEndPoint("one.one.one.one", 23) :
+                    new IPEndPoint(address, 23));
 
                 // Wait a little so the operation is started.
-                await Task.Delay(msDelay);
+                await Task.Delay(Math.Min(msDelay, 1000));
                 msDelay *= 2;
                 Task disposeTask = Task.Run(() => client.Dispose());
 
@@ -176,7 +178,7 @@ namespace System.Net.Sockets.Tests
                 }
                 else if (UsesSync)
                 {
-                    Assert.Equal(SocketError.NotSocket, localSocketError);
+                    Assert.True(disposedException || localSocketError == SocketError.NotSocket, $"{disposedException} {localSocketError}");
                 }
                 else
                 {

@@ -53,7 +53,7 @@ jobs:
       value: $(osGroup).$(archType).$(buildConfigUpper)
     - name: crossFlavor
       value: $(osGroup).$(hostArchType)_$(archType).$(buildConfigUpper)
-    - ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
+    - ${{ if ne(parameters.osGroup, 'windows') }}:
       - name: artifactsDirectory
         value: $(Build.SourcesDirectory)/artifacts
       - name: binDirectory
@@ -62,7 +62,7 @@ jobs:
         value: $(binDirectory)/coreclr
       - name: workItemDirectory
         value: $(artifactsDirectory)/tests/coreclr/$(targetFlavor)/Tests/Core_Root
-    - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
+    - ${{ if eq(parameters.osGroup, 'windows') }}:
       - name: artifactsDirectory
         value: $(Build.SourcesDirectory)\artifacts
       - name: binDirectory
@@ -110,12 +110,12 @@ jobs:
       displayName: Populate Core_Root
 
     # Create directories and ensure crossgen is executable
-    - ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
+    - ${{ if ne(parameters.osGroup, 'windows') }}:
       - script: |
           chmod +x $(workItemDirectory)/crossgen
           mkdir -p $(workItemDirectory)/log/$(crossFlavor)
         displayName: Create directories and ensure crossgen is executable
-    - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
+    - ${{ if eq(parameters.osGroup, 'windows') }}:
       - script: |
           mkdir $(workItemDirectory)\log\$(crossFlavor)
         displayName: Create directories
@@ -127,14 +127,14 @@ jobs:
         scriptSource: 'filePath'
         scriptPath: $(Build.SourcesDirectory)/src/tests/Common/scripts/crossgen_comparison.py
         pythonInterpreter: /usr/bin/python3
-        ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
+        ${{ if ne(parameters.osGroup, 'windows') }}:
           arguments:
             crossgen_framework
             --crossgen   $(productDirectory)/$(targetFlavor)/$(hostArchType)/crossgen
             --il_corelib $(productDirectory)/$(targetFlavor)/IL/System.Private.CoreLib.dll
             --core_root  $(workItemDirectory)
             --result_dir $(workItemDirectory)/log/$(crossFlavor)
-        ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
+        ${{ if eq(parameters.osGroup, 'windows') }}:
           arguments:
             crossgen_framework
             --crossgen   $(productDirectory)\$(targetFlavor)\$(hostArchType)\crossgen
@@ -143,12 +143,12 @@ jobs:
             --result_dir $(workItemDirectory)\log\$(crossFlavor)
 
     # Dump contents and payload information
-    - ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
+    - ${{ if ne(parameters.osGroup, 'windows') }}:
       - script: |
           ls $(workItemDirectory)
           du -sh $(workItemDirectory)
         displayName: Dump contents and payload information
-    - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
+    - ${{ if eq(parameters.osGroup, 'windows') }}:
       - script: |
           dir $(workItemDirectory)
         displayName: Dump contents and payload information
@@ -167,7 +167,7 @@ jobs:
         WorkItemTimeout: 3:00 # 3 hours
         WorkItemDirectory: '$(workItemDirectory)'
         CorrelationPayloadDirectory: '$(Build.SourcesDirectory)/src/tests/Common/scripts'
-        ${{ if ne(parameters.osName, 'Windows_NT') }}:
+        ${{ if ne(parameters.osName, 'windows') }}:
           WorkItemCommand:
             chmod +x     $HELIX_WORKITEM_PAYLOAD/crossgen;
             mkdir -p     $HELIX_WORKITEM_PAYLOAD/log/$(targetFlavor);
@@ -179,7 +179,7 @@ jobs:
             python3 -u $HELIX_CORRELATION_PAYLOAD/crossgen_comparison.py compare
             --base_dir   $HELIX_WORKITEM_PAYLOAD/log/$(crossFlavor)
             --diff_dir   $HELIX_WORKITEM_PAYLOAD/log/$(targetFlavor)
-        ${{ if eq(parameters.osName, 'Windows_NT') }}:
+        ${{ if eq(parameters.osName, 'windows') }}:
           WorkItemCommand:
             mkdir        %HELIX_WORKITEM_PAYLOAD%\log\$(targetFlavor);
             python3 -u %HELIX_CORRELATION_PAYLOAD%\crossgen_comparison.py crossgen_framework

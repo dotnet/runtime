@@ -74,7 +74,7 @@ If you have determined the failure is definitely not caused by changes in your P
 * Search for an [existing issue](https://github.com/dotnet/runtime/issues). Usually the test method name or (if a crash/hang) the test assembly name are good search parameters.
   * If there's an existing issue, add a comment with
     * a) the link to the build
-    * b) the affected configuration (ie `netcoreapp-Windows_NT-Release-x64-Windows.81.Amd64.Open`)
+    * b) the affected configuration (ie `net6.0-windows-Release-x64-Windows.81.Amd64.Open`)
     * c) all console output including the error message and stack trace from the Azure DevOps tab (This is necessary as retention policies are in place that recycle old builds.)
     * d) if there's a dump file (see Attachments tab in Azure DevOps) include that
     * If the issue is already closed, reopen it and update the labels to reflect the current failure state.

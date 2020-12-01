@@ -2616,6 +2616,7 @@ alloc_list gc_heap::poh_alloc_list [NUM_POH_ALIST-1];
 #ifdef DOUBLY_LINKED_FL
 // size we removed with no undo; only for recording purpose
 size_t gc_heap::gen2_removed_no_undo = 0;
+size_t gc_heap::saved_pinned_plug_index = 0;
 #endif //DOUBLY_LINKED_FL
 
 dynamic_data gc_heap::dynamic_data_table [total_generation_count];
@@ -3795,6 +3796,10 @@ public:
     }
     void ClearFreeObjInCompactBit()
     {
+#ifdef _DEBUG
+        // check this looks like an object
+        Validate();
+#endif //_DEBUG
         RawSetMethodTable((MethodTable *)(((size_t) RawGetMethodTable()) & (~MAKE_FREE_OBJ_IN_COMPACT)));
     }
 #endif //DOUBLY_LINKED_FL
@@ -8708,16 +8713,6 @@ void gc_heap::sort_mark_list()
         return;
     }
 
-#ifdef BACKGROUND_GC
-    // we are not going to use the mark list if background GC is running
-    // so let's not waste time sorting it
-    if (gc_heap::background_running_p())
-    {
-        mark_list_index = mark_list_end + 1;
-        return;
-    }
-#endif //BACKGROUND_GC
-
     // if any other heap had a mark list overflow, we fake one too,
     // so we don't use an incomplete mark list by mistake
     for (int i = 0; i < n_heaps; i++)
@@ -11783,7 +11778,7 @@ void gc_heap::adjust_limit (uint8_t* start, size_t limit_size, generation* gen)
                     // This means we cannot simply make a filler free object right after what's allocated in this alloc context if
                     // that's < 5-ptr sized.
                     //
-                    if (allocated_size < min_free_item_no_prev)
+                    if (allocated_size <= min_free_item_no_prev)
                     {
                         // We can't make the free object just yet. Need to record the size.
                         size_t* filler_free_obj_size_location = (size_t*)(generation_allocation_context_start_region (gen) + min_free_item_no_prev);
@@ -11803,7 +11798,26 @@ void gc_heap::adjust_limit (uint8_t* start, size_t limit_size, generation* gen)
                         generation_free_obj_space (gen) += filler_free_obj_size;
                         *filler_free_obj_size_location = filler_free_obj_size;
                         uint8_t* old_loc = generation_last_free_list_allocated (gen);
-                        set_free_obj_in_compact_bit (old_loc);
+
+                        // check if old_loc happens to be in a saved plug_and_gap with a pinned plug after it
+                        uint8_t* saved_plug_and_gap = pinned_plug (pinned_plug_of (saved_pinned_plug_index)) - sizeof(plug_and_gap);
+                        size_t offset = old_loc - saved_plug_and_gap;
+                        if (offset < sizeof(gap_reloc_pair))
+                        {
+                            // the object at old_loc must be at least min_obj_size
+                            assert (offset <= sizeof(plug_and_gap) - min_obj_size);
+
+                            // if so, set the bit in the saved info instead
+                            set_free_obj_in_compact_bit ((uint8_t*)(&pinned_plug_of (saved_pinned_plug_index)->saved_pre_plug_reloc) + offset);
+                        }
+                        else
+                        {
+#ifdef _DEBUG
+                            // check this looks like an object
+                            header(old_loc)->Validate();
+#endif //_DEBUG
+                            set_free_obj_in_compact_bit (old_loc);
+                        }
 
                         dprintf (3333, ("[h%d] ac: %Ix->%Ix((%Id < %Id), Pset %Ix s->%Id", heap_number,
                             generation_allocation_context_start_region (gen), generation_allocation_pointer (gen),
@@ -21795,11 +21809,13 @@ void gc_heap::mark_phase (int condemned_gen_number, BOOL mark_only_p)
     scan_dependent_handles(condemned_gen_number, &sc, false);
 
 #ifdef MULTIPLE_HEAPS
+    static VOLATILE(int32_t) syncblock_scan_p;
     dprintf(3, ("Joining for weak pointer deletion"));
     gc_t_join.join(this, gc_join_null_dead_long_weak);
     if (gc_t_join.joined())
     {
         dprintf(3, ("Starting all gc thread for weak pointer deletion"));
+        syncblock_scan_p = 0;
         gc_t_join.restart();
     }
 #endif //MULTIPLE_HEAPS
@@ -21814,17 +21830,21 @@ void gc_heap::mark_phase (int condemned_gen_number, BOOL mark_only_p)
 //    unsigned long start = GetCycleCount32();
     sort_mark_list();
 //    printf("sort_mark_list took %u cycles\n", GetCycleCount32() - start);
+    // first thread to finish sorting will scan the sync syncblk cache
+    if ((syncblock_scan_p == 0) && (Interlocked::Increment(&syncblock_scan_p) == 1))
 #endif //PARALLEL_MARK_LIST_SORT
 #endif //MARK_LIST
-
+#endif //MULTIPLE_HEAPS
+    {
+        // scan for deleted entries in the syncblk cache
+        GCScan::GcWeakPtrScanBySingleThread(condemned_gen_number, max_generation, &sc);
+    }
+#ifdef MULTIPLE_HEAPS
     dprintf (3, ("Joining for sync block cache entry scanning"));
     gc_t_join.join(this, gc_join_null_dead_syncblk);
     if (gc_t_join.joined())
 #endif //MULTIPLE_HEAPS
     {
-        // scan for deleted entries in the syncblk cache
-        GCScan::GcWeakPtrScanBySingleThread (condemned_gen_number, max_generation, &sc);
-
 #ifdef MULTIPLE_HEAPS
 #if defined(MARK_LIST) && !defined(PARALLEL_MARK_LIST_SORT)
         //compact g_mark_list and sort it.
@@ -23334,6 +23354,12 @@ void gc_heap::store_plug_gap_info (uint8_t* plug_start,
 
             if (save_pre_plug_info_p)
             {
+#ifdef DOUBLY_LINKED_FL
+                if (last_object_in_last_plug == generation_last_free_list_allocated(generation_of(max_generation)))
+                {
+                    saved_pinned_plug_index = mark_stack_tos;
+                }
+#endif //DOUBLY_LINKED_FL
                 set_gap_size (plug_start, sizeof (gap_reloc_pair));
             }
         }
@@ -23409,11 +23435,7 @@ void gc_heap::plan_phase (int condemned_gen_number)
 #endif //GC_CONFIG_DRIVEN
 
     if ((condemned_gen_number < max_generation) &&
-        (mark_list_index <= mark_list_end)
-#ifdef BACKGROUND_GC
-        && (!gc_heap::background_running_p())
-#endif //BACKGROUND_GC
-        )
+        (mark_list_index <= mark_list_end))
     {
 #ifndef MULTIPLE_HEAPS
 #ifdef USE_VXSORT
@@ -23718,6 +23740,7 @@ void gc_heap::plan_phase (int condemned_gen_number)
 
 #ifdef DOUBLY_LINKED_FL
     gen2_removed_no_undo = 0;
+    saved_pinned_plug_index = 0;
 #endif //DOUBLY_LINKED_FL
 
     while (1)
@@ -24114,19 +24137,24 @@ void gc_heap::plan_phase (int condemned_gen_number)
 #ifdef MARK_LIST
             if (use_mark_list)
             {
-               while ((mark_list_next < mark_list_index) &&
-                      (*mark_list_next <= x))
-               {
-                   mark_list_next++;
-               }
-               if ((mark_list_next < mark_list_index)
+                uint8_t* old_x = x;
+                while ((mark_list_next < mark_list_index) &&
+                    (*mark_list_next <= x))
+                {
+                    mark_list_next++;
+                }
+                x = end;
+                if ((mark_list_next < mark_list_index)
 #ifdef MULTIPLE_HEAPS
-                   && (*mark_list_next < end) //for multiple segments
+                    && (*mark_list_next < end) //for multiple segments
 #endif //MULTIPLE_HEAPS
-                   )
-                   x = *mark_list_next;
-               else
-                   x = end;
+                    )
+                x = *mark_list_next;
+                if (current_c_gc_state == c_gc_state_marking)
+                {
+                    assert(gc_heap::background_running_p());
+                    bgc_clear_batch_mark_array_bits (old_x, x);
+                }
             }
             else
 #endif //MARK_LIST
@@ -26606,7 +26634,7 @@ void  gc_heap::gcmemcopy (uint8_t* dest, uint8_t* src, size_t len, BOOL copy_car
         }
 
         BOOL make_free_obj_p = FALSE;
-        if (len < min_free_item_no_prev)
+        if (len <= min_free_item_no_prev)
         {
             make_free_obj_p = is_free_obj_in_compact_bit_set (src);
 
@@ -26869,6 +26897,7 @@ void gc_heap::compact_in_brick (uint8_t* tree, compact_args* args)
         uint8_t*  gap = (plug - gap_size);
         uint8_t*  last_plug_end = gap;
         size_t last_plug_size = (last_plug_end - args->last_plug);
+        assert ((last_plug_size & (sizeof(PTR_PTR) - 1)) == 0);
         dprintf (3, ("tree: %Ix, last_plug: %Ix, gap: %Ix(%Ix), last_plug_end: %Ix, size: %Ix",
             tree, args->last_plug, gap, gap_size, last_plug_end, last_plug_size));
 
@@ -34101,10 +34130,19 @@ CObjectHeader* gc_heap::allocate_uoh_object (size_t jsize, uint32_t flags, int g
             //mark the new block specially so we know it is a new object
             if ((result < current_highest_address) && (result >= current_lowest_address))
             {
-                dprintf (3, ("Setting mark bit at address %Ix",
-                            (size_t)(&mark_array [mark_word_of (result)])));
+#ifdef DOUBLY_LINKED_FL
+                heap_segment* seg = seg_mapping_table_segment_of (result);
+                // if bgc_allocated is 0 it means it was allocated during bgc sweep,
+                // and since sweep does not look at this seg we cannot set the mark array bit.
+                uint8_t* background_allocated = heap_segment_background_allocated(seg);
+                if (background_allocated != 0)
+#endif //DOUBLY_LINKED_FL
+                {
+                    dprintf(3, ("Setting mark bit at address %Ix",
+                        (size_t)(&mark_array[mark_word_of(result)])));
 
-                mark_array_set_marked (result);
+                    mark_array_set_marked(result);
+                }
             }
         }
     }
@@ -34483,7 +34521,7 @@ BOOL gc_heap::fgc_should_consider_object (uint8_t* o,
         no_bgc_mark_p = TRUE;
     }
 
-    dprintf (3, ("bgc mark %Ix: %s (bm: %s)", o, (no_bgc_mark_p ? "no" : "yes"), (background_object_marked (o, FALSE) ? "yes" : "no")));
+    dprintf (3, ("bgc mark %Ix: %s (bm: %s)", o, (no_bgc_mark_p ? "no" : "yes"), ((no_bgc_mark_p || background_object_marked (o, FALSE)) ? "yes" : "no")));
     return (no_bgc_mark_p ? TRUE : background_object_marked (o, FALSE));
 }
 
@@ -34704,6 +34742,12 @@ void gc_heap::background_sweep()
 
     current_bgc_state = bgc_sweep_soh;
     verify_soh_segment_list();
+
+#ifdef DOUBLY_LINKED_FL
+    // set the initial segment and position so that foreground GC knows where BGC is with the sweep
+    current_sweep_seg = heap_segment_rw (generation_start_segment (generation_of (max_generation)));
+    current_sweep_pos = 0;
+#endif //DOUBLY_LINKED_FL
 
 #ifdef FEATURE_BASICFREEZE
     generation* max_gen         = generation_of (max_generation);
@@ -40472,6 +40516,9 @@ void PopulateDacVars(GcDacVars *gcDacVars)
 #ifndef DACCESS_COMPILE
     assert(gcDacVars != nullptr);
     *gcDacVars = {};
+    // Note: these version numbers are not actually checked by SOS, so if you change
+    // the GC in a way that makes it incompatible with SOS, please change
+    // SOS_BREAKING_CHANGE_VERSION in both the runtime and the diagnostics repo
     gcDacVars->major_version_number = 1;
     gcDacVars->minor_version_number = 0;
     gcDacVars->built_with_svr = &g_built_with_svr_gc;

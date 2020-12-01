@@ -665,9 +665,13 @@ void CodeGen::genIntrinsic(GenTree* treeNode)
 void CodeGen::genPutArgStk(GenTreePutArgStk* treeNode)
 {
     assert(treeNode->OperIs(GT_PUTARG_STK));
-    GenTree*  source     = treeNode->gtOp1;
+    GenTree* source = treeNode->gtOp1;
+#if !defined(OSX_ARM64_ABI)
     var_types targetType = genActualType(source->TypeGet());
-    emitter*  emit       = GetEmitter();
+#else
+    var_types targetType = source->TypeGet();
+#endif
+    emitter* emit = GetEmitter();
 
     // This is the varNum for our store operations,
     // typically this is the varNum for the Outgoing arg space
@@ -678,12 +682,12 @@ void CodeGen::genPutArgStk(GenTreePutArgStk* treeNode)
     // Get argument offset to use with 'varNumOut'
     // Here we cross check that argument offset hasn't changed from lowering to codegen since
     // we are storing arg slot number in GT_PUTARG_STK node in lowering phase.
-    unsigned argOffsetOut = treeNode->gtSlotNum * TARGET_POINTER_SIZE;
+    unsigned argOffsetOut = treeNode->getArgOffset();
 
 #ifdef DEBUG
     fgArgTabEntry* curArgTabEntry = compiler->gtArgEntryByNode(treeNode->gtCall, treeNode);
-    assert(curArgTabEntry);
-    assert(argOffsetOut == (curArgTabEntry->slotNum * TARGET_POINTER_SIZE));
+    assert(curArgTabEntry != nullptr);
+    DEBUG_ARG_SLOTS_ASSERT(argOffsetOut == (curArgTabEntry->slotNum * TARGET_POINTER_SIZE));
 #endif // DEBUG
 
     // Whether to setup stk arg in incoming or out-going arg area?
@@ -729,6 +733,21 @@ void CodeGen::genPutArgStk(GenTreePutArgStk* treeNode)
             assert(argOffsetOut <= argOffsetMax); // We can't write beyound the outgoing area area
             return;
         }
+
+#if defined(OSX_ARM64_ABI)
+        switch (treeNode->GetStackByteSize())
+        {
+            case 1:
+                targetType = TYP_BYTE;
+                break;
+            case 2:
+                targetType = TYP_SHORT;
+                break;
+            default:
+                assert(treeNode->GetStackByteSize() >= 4);
+                break;
+        }
+#endif
 
         instruction storeIns  = ins_Store(targetType);
         emitAttr    storeAttr = emitTypeSize(targetType);
@@ -1161,7 +1180,7 @@ void CodeGen::genPutArgSplit(GenTreePutArgSplit* treeNode)
     emitter* emit         = GetEmitter();
     unsigned varNumOut    = compiler->lvaOutgoingArgSpaceVar;
     unsigned argOffsetMax = compiler->lvaOutgoingArgSpaceSize;
-    unsigned argOffsetOut = treeNode->gtSlotNum * TARGET_POINTER_SIZE;
+    unsigned argOffsetOut = treeNode->getArgOffset();
 
     if (source->OperGet() == GT_FIELD_LIST)
     {
@@ -1292,13 +1311,12 @@ void CodeGen::genPutArgSplit(GenTreePutArgSplit* treeNode)
             assert(!compiler->IsHfa(source->AsObj()->GetLayout()->GetClassHandle()));
         }
 
-        int          structSize = treeNode->getArgSize();
-        ClassLayout* layout     = source->AsObj()->GetLayout();
+        ClassLayout* layout = source->AsObj()->GetLayout();
 
         // Put on stack first
         unsigned nextIndex     = treeNode->gtNumRegs;
         unsigned structOffset  = nextIndex * TARGET_POINTER_SIZE;
-        int      remainingSize = structSize - structOffset;
+        int      remainingSize = treeNode->GetStackByteSize();
 
         // remainingSize is always multiple of TARGET_POINTER_SIZE
         assert(remainingSize % TARGET_POINTER_SIZE == 0);

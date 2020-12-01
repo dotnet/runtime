@@ -5368,6 +5368,7 @@ namespace System.Text.Json.Tests
         }
 
         [Theory]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
         [InlineData(true, true, "message")]
         [InlineData(true, false, "message")]
         [InlineData(false, true, "message")]
@@ -5589,8 +5590,7 @@ namespace System.Text.Json.Tests
                 jsonUtf8.WriteEndObject();
                 jsonUtf8.Flush();
 
-                // TODO: https://github.com/dotnet/runtime/issues/32350
-                // JsonTestHelper.AssertContents(expectedStr, output);
+                JsonTestHelper.AssertContents(expectedStr, output);
             }
         }
 
@@ -5873,7 +5873,7 @@ namespace System.Text.Json.Tests
                 }
                 else
                 {
-                    JsonTestHelper.AssertContentsNotEqual(expectedStr, output);
+                    JsonTestHelper.AssertContentsNotEqual(expectedStr, output, skipSpecialRules: true);
                 }
             }
         }
@@ -7690,33 +7690,69 @@ namespace System.Text.Json.Tests
     public static class WriterHelpers
     {
         // Normalize comparisons against Json.NET.
-        // Includes uppercasing the \u escaped hex characters and escaping forward slash to "\/" instead of "\u002f".
-        public static string NormalizeToJsonNetFormat(this string json)
+        // The following is performed unless skipSpecialRules is true:
+        // * Uppercases the \u escaped hex characters.
+        // * Escapes forward slash, greater than, and less than.
+        // * Ignores ".0" for decimal values.
+        public static string NormalizeToJsonNetFormat(this string json, bool skipSpecialRules)
         {
             var sb = new StringBuilder(json.Length);
             int i = 0;
             while (i < json.Length)
             {
-                if (json[i] == '\\')
+                if (!skipSpecialRules)
                 {
-                    sb.Append(json[i++]);
-
-                    if (i < json.Length - 1 && json[i] == 'u')
+                    if (json[i] == '\\')
                     {
                         sb.Append(json[i++]);
 
-                        if (i < json.Length - 4)
+                        if (i < json.Length - 1 && json[i] == 'u')
                         {
-                            string temp = json.Substring(i, 4).ToLowerInvariant();
-                            sb.Append(temp);
-                            i += 4;
+                            sb.Append(json[i++]);
+
+                            if (i < json.Length - 4)
+                            {
+                                string temp = json.Substring(i, 4).ToLowerInvariant();
+                                sb.Append(temp);
+                                i += 4;
+                            }
+                        }
+                        if (i < json.Length - 1 && json[i] == '/')
+                        {
+                            // Convert / to u002f
+                            i++;
+                            sb.Append("u002f");
                         }
                     }
-                    if (i < json.Length - 1 && json[i] == '/')
+                    // Convert > to \u003e
+                    else if (json[i] == '>')
                     {
-                        // Convert / to u002f
                         i++;
-                        sb.Append("u002f");
+                        sb.Append("\\u003e");
+                    }
+                    // Convert < to \u003c
+                    else if (json[i] == '<')
+                    {
+                        i++;
+                        sb.Append("\\u003c");
+                    }
+                    // Remove .0
+                    else if (json[i] == '.' && json[i + 1] == '0')
+                    {
+                        // Verify that token after .0 is a delimiter.
+                        if (json[i + 2] == ',' || json[i + 2] == ']' || json[i + 2] == '}' ||
+                            json[i + 2] == ' ' || json[i + 2] == '\r' || json[i + 2] == '\n')
+                        {
+                            i += 2;
+                        }
+                        else
+                        {
+                            sb.Append(json[i++]);
+                        }
+                    }
+                    else
+                    {
+                        sb.Append(json[i++]);
                     }
                 }
                 else

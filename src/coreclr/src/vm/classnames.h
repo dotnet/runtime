@@ -62,7 +62,6 @@
 #define g_ReflectionConstructorName "System.Reflection.RuntimeConstructorInfo"
 #define g_ReflectionEventInfoName "System.Reflection.EventInfo"
 #define g_ReflectionEventName "System.Reflection.RuntimeEventInfo"
-#define g_ReflectionExpandoItfName "System.Runtime.InteropServices.Expando.IExpando"
 #define g_CMExpandoToDispatchExMarshaler "System.Runtime.InteropServices.CustomMarshalers.ExpandoToDispatchExMarshaler"
 #define g_CMExpandoViewOfDispatchEx "System.Runtime.InteropServices.CustomMarshalers.ExpandoViewOfDispatchEx"
 #define g_ReflectionFieldName "System.Reflection.RuntimeFieldInfo"
@@ -94,10 +93,6 @@
 
 #define g_ThreadClassName "System.Threading.Thread"
 #define g_TypeClassName   "System.Type"
-
-#ifdef FEATURE_UTF8STRING
-#define g_Utf8StringName "Utf8String"
-#endif // FEATURE_UTF8STRING
 
 #define g_VariantClassName "System.Variant"
 #define g_GuidClassName "System.Guid"

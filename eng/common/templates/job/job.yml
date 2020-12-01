@@ -24,7 +24,6 @@ parameters:
   enablePublishBuildAssets: false
   enablePublishTestResults: false
   enablePublishUsingPipelines: false
-  useBuildManifest: false
   mergeTestResults: false
   testRunTitle: ''
   testResultsFormat: ''
@@ -203,7 +202,7 @@ jobs:
       continueOnError: true
       condition: always()
 
-  - ${{ if or(eq(parameters.enablePublishTestResults, 'true'), eq(parameters.testResultsFormat, 'xunit')) }}:
+  - ${{ if or(and(eq(parameters.enablePublishTestResults, 'true'), eq(parameters.testResultsFormat, '')), eq(parameters.testResultsFormat, 'xunit')) }}:
     - task: PublishTestResults@2
       displayName: Publish XUnit Test Results
       inputs:
@@ -214,7 +213,7 @@ jobs:
         mergeTestResults: ${{ parameters.mergeTestResults }}
       continueOnError: true
       condition: always()
-  - ${{ if or(eq(parameters.enablePublishTestResults, 'true'), eq(parameters.testResultsFormat, 'vstest')) }}:
+  - ${{ if or(and(eq(parameters.enablePublishTestResults, 'true'), eq(parameters.testResultsFormat, '')), eq(parameters.testResultsFormat, 'vstest')) }}:
     - task: PublishTestResults@2
       displayName: Publish TRX Test Results
       inputs:
@@ -243,12 +242,3 @@ jobs:
         ArtifactName: AssetManifests
       continueOnError: ${{ parameters.continueOnError }}
       condition: and(succeeded(), eq(variables['_DotNetPublishToBlobFeed'], 'true'))
-
-  - ${{ if eq(parameters.useBuildManifest, true) }}:
-    - task: PublishBuildArtifacts@1
-      displayName: Publish Build Manifest
-      inputs:
-        PathToPublish: '$(Build.SourcesDirectory)/artifacts/log/$(_BuildConfig)/manifest.props'
-        PublishLocation: Container
-        ArtifactName: BuildManifests
-      continueOnError: ${{ parameters.continueOnError }}

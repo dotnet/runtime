@@ -470,7 +470,7 @@ namespace System.Resources.Extensions.Tests
         {
             ResourceManager resourceManager = new ResourceManager(typeof(TestData));
             ResourceSet resSet = resourceManager.GetResourceSet(CultureInfo.InvariantCulture, true, true);
-            IResourceReader reader = (IResourceReader)resSet.GetType().GetProperty("Reader", BindingFlags.NonPublic | BindingFlags.Instance)?.GetValue(resSet);
+            IResourceReader reader = (IResourceReader)resSet.GetType().GetField("_defaultReader", BindingFlags.NonPublic | BindingFlags.Instance)?.GetValue(resSet);
             Assert.IsType<DeserializingResourceReader>(reader);
         }
 

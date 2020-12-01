@@ -27,9 +27,11 @@ const void* gPalGlobalizationNative[] = { (void*)func_flag_end_of_array };
 
 static const MonoQCallDef c_qcalls[] =
 {
+#ifndef DISABLE_QCALLS
     #define FCClassElement(name,namespace,funcs) {name, namespace, funcs},
     #include "mono/metadata/qcall-def.h"
     #undef FCClassElement
+#endif
 };
 
 const int c_nECClasses = sizeof (c_qcalls) / sizeof (c_qcalls[0]);
