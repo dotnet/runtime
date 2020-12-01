@@ -636,8 +636,17 @@ public:
 
         static void Main(string[] args)
         {
+            if (args.Length == 0)
+            {
+                Console.WriteLine("ThunkGenerator - Generate thunks for the jit interface and for defining the set of instruction sets supported by the runtime, JIT, and crossgen2. Call by using the gen scripts which are aware of the right set of files generated and command line args.");
+                return;
+            }
             if (args[0] == "InstructionSetGenerator")
             {
+                if (args.Length != 7)
+                {
+                    Console.WriteLine("Incorrect number of files specified for generation");
+                }
                 InstructionSetGenerator generator = new InstructionSetGenerator();
                 if (!generator.ParseInput(new StreamReader(args[1])))
                     return;
@@ -674,6 +683,11 @@ public:
             }
             else
             {
+                if (args.Length != 8)
+                {
+                    Console.WriteLine("Incorrect number of files specified for generation");
+                }
+
                 IEnumerable<FunctionDecl> functions = ParseInput(new StreamReader(args[0]));
 
                 EmitStuff(1, WriteManagedThunkInterface);
