@@ -2026,7 +2026,6 @@ typedef target_ssize_t cnsval_ssize_t;
 typedef target_size_t  cnsval_size_t;
 #endif
 
-
 // Represents the calling conventions supported with the extensible calling convention syntax
 // as well as the original metadata-encoded calling conventions.
 enum class CorInfoCallConvExtension

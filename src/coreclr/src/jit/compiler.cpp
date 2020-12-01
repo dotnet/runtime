@@ -2063,11 +2063,11 @@ CorInfoCallConvExtension Compiler::compMethodInfoGetEntrypointCallConv(CORINFO_M
         // Both the default and the varargs calling conventions represent a managed callconv.
         return CorInfoCallConvExtension::Managed;
     }
-    
+
     static_assert_no_msg((unsigned)CorInfoCallConvExtension::C == (unsigned)CORINFO_CALLCONV_C);
     static_assert_no_msg((unsigned)CorInfoCallConvExtension::Stdcall == (unsigned)CORINFO_CALLCONV_STDCALL);
     static_assert_no_msg((unsigned)CorInfoCallConvExtension::Thiscall == (unsigned)CORINFO_CALLCONV_THISCALL);
-    
+
     return (CorInfoCallConvExtension)callConv;
 }
 

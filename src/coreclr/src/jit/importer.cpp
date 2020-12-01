@@ -7120,11 +7120,11 @@ void Compiler::impCheckForPInvokeCall(
     }
 
     JITLOG((LL_INFO1000000, "\nInline a CALLI PINVOKE call from method %s", info.compFullName));
-    
+
     static_assert_no_msg((unsigned)CorInfoCallConvExtension::C == (unsigned)CORINFO_UNMANAGED_CALLCONV_C);
     static_assert_no_msg((unsigned)CorInfoCallConvExtension::Stdcall == (unsigned)CORINFO_UNMANAGED_CALLCONV_STDCALL);
     static_assert_no_msg((unsigned)CorInfoCallConvExtension::Thiscall == (unsigned)CORINFO_UNMANAGED_CALLCONV_THISCALL);
-    
+
     call->gtFlags |= GTF_CALL_UNMANAGED;
     call->unmgdCallConv = CorInfoCallConvExtension(unmanagedCallConv);
     if (!call->IsSuppressGCTransition())
@@ -9267,8 +9267,9 @@ bool Compiler::impMethodInfo_hasRetBuffArg(CORINFO_METHOD_INFO* methInfo)
         // We have some kind of STRUCT being returned
         structPassingKind howToReturnStruct = SPK_Unknown;
 
-        var_types returnType = getReturnTypeForStruct(methInfo->args.retTypeClass,
-                                                      compMethodInfoGetEntrypointCallConv(methInfo), &howToReturnStruct);
+        var_types returnType =
+            getReturnTypeForStruct(methInfo->args.retTypeClass, compMethodInfoGetEntrypointCallConv(methInfo),
+                                   &howToReturnStruct);
 
         if (howToReturnStruct == SPK_ByReference)
         {
