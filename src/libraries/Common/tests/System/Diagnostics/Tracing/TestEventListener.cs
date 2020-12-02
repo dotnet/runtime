@@ -67,6 +67,7 @@ namespace System.Diagnostics.Tracing
                     }
                 }
             }
+
             if (sourceToEnable != null)
             {
                 EnableEventSource(sourceToEnable, level, keywords);
@@ -78,13 +79,14 @@ namespace System.Diagnostics.Tracing
 
         protected override void OnEventSourceCreated(EventSource eventSource)
         {
-            var shouldEnable = false;
+            bool shouldEnable = false;
             Settings settings;
             lock (_eventSourceList)
             {
                 _eventSourceList.Add(eventSource);
                 shouldEnable = _names.TryGetValue(eventSource.Name, out settings) || _guids.TryGetValue(eventSource.Guid, out settings);
             }
+
             if (shouldEnable)
             {
                 EnableEventSource(eventSource, settings.Level, settings.Keywords);
