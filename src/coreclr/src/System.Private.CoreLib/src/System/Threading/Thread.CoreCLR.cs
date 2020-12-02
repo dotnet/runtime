@@ -144,6 +144,11 @@ namespace System.Threading
         private int _managedThreadId; // INT32
 #pragma warning restore CA1823, 169
 
+        // This is used for a quick check on thread pool threads after running a work item to determine if the name, background
+        // state, or priority were changed by the work item, and if so to reset it. Other threads may also change some of those,
+        // but those types of changes may race with the reset anyway, so this field doesn't need to be synchronized.
+        private bool _mayNeedResetForThreadPool;
+
         private Thread() { }
 
         private void Create(ThreadStart start) =>
@@ -160,6 +165,7 @@ namespace System.Threading
 
         public extern int ManagedThreadId
         {
+            [Intrinsic]
             [MethodImpl(MethodImplOptions.InternalCall)]
             get;
         }
@@ -259,6 +265,9 @@ namespace System.Threading
 
         public static void Sleep(int millisecondsTimeout) => SleepInternal(millisecondsTimeout);
 
+        [DllImport(RuntimeHelpers.QCall)]
+        internal static extern void UninterruptibleSleep0();
+
         /// <summary>
         /// Wait for a length of time proportional to 'iterations'.  Each iteration is should
         /// only take a few machine instructions.  Calling this API is preferable to coding
@@ -337,7 +346,14 @@ namespace System.Threading
         public bool IsBackground
         {
             get => IsBackgroundNative();
-            set => SetBackgroundNative(value);
+            set
+            {
+                SetBackgroundNative(value);
+                if (!value)
+                {
+                    _mayNeedResetForThreadPool = true;
+                }
+            }
         }
 
         [MethodImpl(MethodImplOptions.InternalCall)]
@@ -351,13 +367,22 @@ namespace System.Threading
         {
             [MethodImpl(MethodImplOptions.InternalCall)]
             get;
+            [MethodImpl(MethodImplOptions.InternalCall)]
+            internal set;
         }
 
         /// <summary>Returns the priority of the thread.</summary>
         public ThreadPriority Priority
         {
             get => (ThreadPriority)GetPriorityNative();
-            set => SetPriorityNative((int)value);
+            set
+            {
+                SetPriorityNative((int)value);
+                if (value != ThreadPriority.Normal)
+                {
+                    _mayNeedResetForThreadPool = true;
+                }
+            }
         }
 
         [MethodImpl(MethodImplOptions.InternalCall)]
@@ -393,7 +418,7 @@ namespace System.Threading
         /// single-threaded or multi-threaded apartment.
         /// </summary>
 #if FEATURE_COMINTEROP_APARTMENT_SUPPORT
-        private bool TrySetApartmentStateUnchecked(ApartmentState state)
+        private bool SetApartmentStateUnchecked(ApartmentState state, bool throwOnError)
         {
             ApartmentState retState = (ApartmentState)SetApartmentStateNative((int)state);
 
@@ -408,6 +433,12 @@ namespace System.Threading
 
             if (retState != state)
             {
+                if (throwOnError)
+                {
+                    string msg = SR.Format(SR.Thread_ApartmentState_ChangeFailed, retState);
+                    throw new InvalidOperationException(msg);
+                }
+
                 return false;
             }
 
@@ -420,9 +451,19 @@ namespace System.Threading
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal extern int SetApartmentStateNative(int state);
 #else // FEATURE_COMINTEROP_APARTMENT_SUPPORT
-        private bool TrySetApartmentStateUnchecked(ApartmentState state)
+        private static bool SetApartmentStateUnchecked(ApartmentState state, bool throwOnError)
         {
-            return state == ApartmentState.Unknown;
+             if (state != ApartmentState.Unknown)
+             {
+                if (throwOnError)
+                {
+                    throw new PlatformNotSupportedException(SR.PlatformNotSupported_ComInterop);
+                }
+
+                return false;
+             }
+
+             return true;
         }
 #endif // FEATURE_COMINTEROP_APARTMENT_SUPPORT
 
@@ -503,10 +544,23 @@ namespace System.Threading
         // we will record that in a readonly static so that it could become a JIT constant and bypass caching entirely.
         private static readonly bool s_isProcessorNumberReallyFast = ProcessorIdCache.ProcessorNumberSpeedCheck();
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal void ResetThreadPoolThread()
         {
-            // Currently implemented in unmanaged method Thread::InternalReset and
-            // called internally from the ThreadPool in NotifyWorkItemComplete.
+            Debug.Assert(this == CurrentThread);
+            Debug.Assert(IsThreadPoolThread);
+
+            if (!ThreadPool.UsePortableThreadPool)
+            {
+                // Currently implemented in unmanaged method Thread::InternalReset and
+                // called internally from the ThreadPool in NotifyWorkItemComplete.
+                return;
+            }
+
+            if (_mayNeedResetForThreadPool)
+            {
+                ResetThreadPoolThreadSlow();
+            }
         }
     } // End of class Thread
 }

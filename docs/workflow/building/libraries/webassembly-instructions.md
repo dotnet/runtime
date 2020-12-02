@@ -28,6 +28,15 @@ For Linux and macOS:
 
 Artifacts will be placed in `artifacts/bin/microsoft.netcore.app.runtime.browser-wasm/Release/`. When rebuilding with `build.sh` after a code change, you need to ensure that the `mono.wasmruntime` and `libs.pretest` subsets are included even for a Mono-only change or this directory will not be updated (details below).
 
+### Note: do not mix runtime and library configurations
+
+At this time, it is not possible to specify different configurations for the runtime and libraries.  That is mixing a Release `-runtimeConfiguration` with a Debug `-libraryConfiguration` (or `-configuration`), or vice versa will not work.
+
+Please only use the `-configuration` option with `Debug` or `Release`, and do not specify a `-runtimeConfiguration` and `-libraryConfiguration`.
+
+This is tracked in https://github.com/dotnet/runtime/issues/42553
+
+
 ## Building Mono's System.Private.CoreLib or runtime
 
 If you are working on core parts of Mono you will probably need to build the Mono runtime and [System.Private.CoreLib](../../../design/coreclr/botr/corelib.md) which can be built with the following:

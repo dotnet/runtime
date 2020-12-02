@@ -71,8 +71,6 @@ HRESULT GetAppDomainStaticAddress::Initialize(IUnknown *pICorProfilerInfoUnk)
 
         while (true)
         {
-            std::this_thread::sleep_for(std::chrono::milliseconds(100));
-
             gcWaitEvent.Wait();
 
             if (!IsRuntimeExecutingManagedCode())
@@ -96,7 +94,6 @@ HRESULT GetAppDomainStaticAddress::Initialize(IUnknown *pICorProfilerInfoUnk)
     };
 
     gcTriggerThread = thread(gcTriggerLambda);
-    gcWaitEvent.Signal();
 
     return S_OK;
 }
@@ -104,8 +101,6 @@ HRESULT GetAppDomainStaticAddress::Initialize(IUnknown *pICorProfilerInfoUnk)
 HRESULT GetAppDomainStaticAddress::Shutdown()
 {
     Profiler::Shutdown();
-
-    gcWaitEvent.Reset();
 
     if (this->pCorProfilerInfo != nullptr)
     {
@@ -144,76 +139,46 @@ HRESULT GetAppDomainStaticAddress::ModuleLoadFinished(ModuleID moduleId, HRESULT
         ++failures;
     }
 
-    if (DEBUG_OUT)
-    {
-        wprintf(L"Module 0x%" PRIxPTR " (%s) loaded\n", moduleId, name);
-    }
-
+    wprintf(L"Module 0x%" PRIxPTR " (%s) loaded\n", moduleId, name);
+    
+    printf("Forcing GC due to module load\n");
+    gcWaitEvent.Signal();
+    
     return S_OK;
 }
 
 HRESULT GetAppDomainStaticAddress::ModuleUnloadStarted(ModuleID moduleId)
-{
-    lock_guard<mutex> guard(classADMapLock);
-    constexpr size_t nameLen = 1024;
-    WCHAR name[nameLen];
-    HRESULT hr = pCorProfilerInfo->GetModuleInfo2(moduleId,
-                                                 NULL,
-                                                nameLen,
-                                                NULL,
-                                                name,
-                                                NULL,
-                                                NULL);
-    if (FAILED(hr))
-    {
-        printf("GetModuleInfo2 failed with hr=0x%x\n", hr);
-        ++failures;
-        return E_FAIL;
-    }
+{               
+    printf("Forcing GC due to module unload\n");
+    gcWaitEvent.Signal();
 
-    if (DEBUG_OUT)
     {
-        wprintf(L"Module 0x%" PRIxPTR " (%s) unload started\n", moduleId, name);
-    }
-
-    for (auto it = classADMap.begin(); it != classADMap.end(); )
-    {
-        ClassID classId = it->first;
-
-        ModuleID modId;
-        hr = pCorProfilerInfo->GetClassIDInfo(classId, &modId, NULL);
+        lock_guard<mutex> guard(classADMapLock);
+        constexpr size_t nameLen = 1024;
+        WCHAR name[nameLen];
+        HRESULT hr = pCorProfilerInfo->GetModuleInfo2(moduleId,
+                                                     NULL,
+                                                    nameLen,
+                                                    NULL,
+                                                    name,
+                                                    NULL,
+                                                    NULL);
         if (FAILED(hr))
         {
-            printf("Failed to get ClassIDInfo hr=0x%x\n", hr);
+            printf("GetModuleInfo2 failed with hr=0x%x\n", hr);
             ++failures;
             return E_FAIL;
         }
 
-        if (modId == moduleId)
+
+        wprintf(L"Module 0x%" PRIxPTR " (%s) unload started\n", moduleId, name);
+
+        for (auto it = classADMap.begin(); it != classADMap.end(); )
         {
-            if (DEBUG_OUT)
-            {
-                printf("ClassID 0x%" PRIxPTR " being removed due to parent module unloading\n", classId);
-            }
+            ClassID classId = it->first;
 
-            it = classADMap.erase(it);
-            continue;
-        }
-
-        // Now check the generic arguments
-        bool shouldEraseClassId = false;
-        vector<ClassID> genericTypes = GetGenericTypeArgs(classId);
-        for (auto genericIt = genericTypes.begin(); genericIt != genericTypes.end(); ++genericIt)
-        {
-            ClassID typeArg = *genericIt;
-            ModuleID typeArgModId;
-
-            if (DEBUG_OUT)
-            {
-                printf("Checking generic argument 0x%" PRIxPTR " of class 0x%" PRIxPTR "\n", typeArg, classId);
-            }
-
-            hr = pCorProfilerInfo->GetClassIDInfo(typeArg, &typeArgModId, NULL);
+            ModuleID modId;
+            hr = pCorProfilerInfo->GetClassIDInfo(classId, &modId, NULL);
             if (FAILED(hr))
             {
                 printf("Failed to get ClassIDInfo hr=0x%x\n", hr);
@@ -221,26 +186,59 @@ HRESULT GetAppDomainStaticAddress::ModuleUnloadStarted(ModuleID moduleId)
                 return E_FAIL;
             }
 
-            if (typeArgModId == moduleId)
+            if (modId == moduleId)
             {
                 if (DEBUG_OUT)
                 {
-                    wprintf(L"ClassID 0x%" PRIxPTR " (%s) being removed due to generic argument 0x%" PRIxPTR " (%s) belonging to the parent module 0x%" PRIxPTR " unloading\n",
-                            classId, GetClassIDName(classId).ToCStr(), typeArg, GetClassIDName(typeArg).ToCStr(), typeArgModId);
+                    printf("ClassID 0x%" PRIxPTR " being removed due to parent module unloading\n", classId);
                 }
 
-                shouldEraseClassId = true;
-                break;
+                it = classADMap.erase(it);
+                continue;
             }
-        }
 
-        if (shouldEraseClassId)
-        {
-            it = classADMap.erase(it);
-        }
-        else
-        {
-            ++it;
+            // Now check the generic arguments
+            bool shouldEraseClassId = false;
+            vector<ClassID> genericTypes = GetGenericTypeArgs(classId);
+            for (auto genericIt = genericTypes.begin(); genericIt != genericTypes.end(); ++genericIt)
+            {
+                ClassID typeArg = *genericIt;
+                ModuleID typeArgModId;
+
+                if (DEBUG_OUT)
+                {
+                    printf("Checking generic argument 0x%" PRIxPTR " of class 0x%" PRIxPTR "\n", typeArg, classId);
+                }
+
+                hr = pCorProfilerInfo->GetClassIDInfo(typeArg, &typeArgModId, NULL);
+                if (FAILED(hr))
+                {
+                    printf("Failed to get ClassIDInfo hr=0x%x\n", hr);
+                    ++failures;
+                    return E_FAIL;
+                }
+
+                if (typeArgModId == moduleId)
+                {
+                    if (DEBUG_OUT)
+                    {
+                        wprintf(L"ClassID 0x%" PRIxPTR " (%s) being removed due to generic argument 0x%" PRIxPTR " (%s) belonging to the parent module 0x%" PRIxPTR " unloading\n",
+                                classId, GetClassIDName(classId).ToCStr(), typeArg, GetClassIDName(typeArg).ToCStr(), typeArgModId);
+                    }
+
+                    shouldEraseClassId = true;
+                    break;
+                }
+            }
+
+            if (shouldEraseClassId)
+            {
+                it = classADMap.erase(it);
+            }
+            else
+            {
+                ++it;
+            }
         }
     }
 

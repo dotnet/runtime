@@ -27,44 +27,9 @@ Abstract:
 #include <string.h>
 #include <sched.h>
 
-#if HAVE_MACH_ABSOLUTE_TIME
-#include <mach/mach_time.h>
-static mach_timebase_info_data_t s_TimebaseInfo;
-#endif
-
 using namespace CorUnix;
 
 SET_DEFAULT_DEBUG_CHANNEL(MISC);
-
-/*++
-Function :
-TIMEInitialize
-
-Initialize all Time-related stuff related
-
-(no parameters)
-
-Return value :
-TRUE  if Time support initialization succeeded
-FALSE otherwise
---*/
-BOOL TIMEInitialize(void)
-{
-    BOOL retval = TRUE;
-
-#if HAVE_MACH_ABSOLUTE_TIME
-    kern_return_t result = mach_timebase_info(&s_TimebaseInfo);
-
-    if (result != KERN_SUCCESS)
-    {
-        ASSERT("mach_timebase_info() failed: %s\n", mach_error_string(result));
-        retval = FALSE;
-    }
-#endif
-
-    return retval;
-}
-
 
 /*++
 Function:
@@ -203,8 +168,8 @@ QueryPerformanceCounter(
     PERF_ENTRY(QueryPerformanceCounter);
     ENTRY("QueryPerformanceCounter()\n");
 
-#if HAVE_MACH_ABSOLUTE_TIME
-    lpPerformanceCount->QuadPart = (LONGLONG)mach_absolute_time();
+#if HAVE_CLOCK_GETTIME_NSEC_NP
+    lpPerformanceCount->QuadPart = (LONGLONG)clock_gettime_nsec_np(CLOCK_UPTIME_RAW);
 #elif HAVE_CLOCK_MONOTONIC
     struct timespec ts;
     int result = clock_gettime(CLOCK_MONOTONIC, &ts);
@@ -238,21 +203,8 @@ QueryPerformanceFrequency(
     PERF_ENTRY(QueryPerformanceFrequency);
     ENTRY("QueryPerformanceFrequency()\n");
 
-#if HAVE_MACH_ABSOLUTE_TIME
-    // use denom == 0 to indicate that s_TimebaseInfo is uninitialised.
-    if (s_TimebaseInfo.denom == 0)
-    {
-        ASSERT("s_TimebaseInfo is uninitialized.\n");
-        retval = FALSE;
-    }
-    else
-    {
-        // (numer / denom) gives you the nanoseconds per tick, so the below code
-        // computes the number of ticks per second. We explicitly do the multiplication
-        // first in order to help minimize the error that is produced by integer division.
-
-        lpFrequency->QuadPart = ((LONGLONG)(tccSecondsToNanoSeconds) * (LONGLONG)(s_TimebaseInfo.denom)) / (LONGLONG)(s_TimebaseInfo.numer);
-    }
+#if HAVE_CLOCK_GETTIME_NSEC_NP
+    lpFrequency->QuadPart = (LONGLONG)(tccSecondsToNanoSeconds);
 #elif HAVE_CLOCK_MONOTONIC
     // clock_gettime() returns a result in terms of nanoseconds rather than a count. This
     // means that we need to either always scale the result by the actual resolution (to
@@ -323,17 +275,8 @@ GetTickCount64()
 {
     LONGLONG retval = 0;
 
-#if HAVE_MACH_ABSOLUTE_TIME
-    // use denom == 0 to indicate that s_TimebaseInfo is uninitialised.
-    if (s_TimebaseInfo.denom == 0)
-    {
-        ASSERT("s_TimebaseInfo is uninitialized.\n");
-        retval = FALSE;
-    }
-    else
-    {
-        retval = ((LONGLONG)mach_absolute_time() * (LONGLONG)(s_TimebaseInfo.numer)) / ((LONGLONG)(tccMillieSecondsToNanoSeconds) * (LONGLONG)(s_TimebaseInfo.denom));
-    }
+#if HAVE_CLOCK_GETTIME_NSEC_NP
+    return  (LONGLONG)clock_gettime_nsec_np(CLOCK_UPTIME_RAW) / (LONGLONG)(tccMillieSecondsToNanoSeconds);
 #elif HAVE_CLOCK_MONOTONIC || HAVE_CLOCK_MONOTONIC_COARSE
     struct timespec ts;
 

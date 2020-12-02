@@ -3,9 +3,13 @@
 
 package net.dot;
 
-import android.app.AlertDialog;
 import android.app.Activity;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
+import android.widget.RelativeLayout;
+import android.widget.TextView;
+import android.graphics.Color;
 
 public class MainActivity extends Activity
 {
@@ -14,8 +18,35 @@ public class MainActivity extends Activity
     {
         super.onCreate(savedInstanceState);
 
-        AlertDialog.Builder dlgAlert = new AlertDialog.Builder(this);
-        dlgAlert.setMessage("Use `adb shell am instrument -w " + getApplicationContext().getPackageName() + "net.dot.MonoRunner` to run the tests.");
-        dlgAlert.create().show();
+        final String entryPointLibName = "%EntryPointLibName%";
+        final TextView textView = new TextView(this);
+        textView.setTextSize(20);
+
+        RelativeLayout rootLayout = new RelativeLayout(this);
+        RelativeLayout.LayoutParams tvLayout =
+                new RelativeLayout.LayoutParams(
+                        RelativeLayout.LayoutParams.WRAP_CONTENT,
+                        RelativeLayout.LayoutParams.WRAP_CONTENT);
+
+        tvLayout.addRule(RelativeLayout.CENTER_HORIZONTAL);
+        tvLayout.addRule(RelativeLayout.CENTER_VERTICAL);
+        rootLayout.addView(textView, tvLayout);
+        setContentView(rootLayout);
+
+        if (entryPointLibName == "" || entryPointLibName.startsWith("%")) {
+            textView.setText("ERROR: EntryPointLibName was not set.");
+            return;
+        } else {
+            textView.setText("Running " + entryPointLibName + "...");
+        }
+
+        final Activity ctx = this;
+        new Handler(Looper.getMainLooper()).postDelayed(new Runnable() {
+            @Override
+            public void run() {
+                int retcode = MonoRunner.initialize(entryPointLibName, ctx);
+                textView.setText("Mono Runtime returned: " + retcode);
+            }
+        }, 1000);
     }
 }

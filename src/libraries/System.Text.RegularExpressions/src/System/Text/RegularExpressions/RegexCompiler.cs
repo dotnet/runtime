@@ -3830,7 +3830,7 @@ namespace System.Text.RegularExpressions
                             // if (count >= 0)
                             PopStack();
                             Stloc(_runtextposLocal!);
-                            PushTrack(count);                       // Tracked(0) is alredy on the track
+                            PushTrack(count);                       // Tracked(0) is already on the track
                             TrackUnique2(Branchcountback2);
                             Advance();
 

@@ -69,6 +69,7 @@
 #include <mono/utils/mono-error-internals.h>
 #include <mono/utils/mono-state.h>
 #include <mono/utils/mono-threads-debug.h>
+#include <mono/utils/w32subset.h>
 
 #include "mini.h"
 #include "trace.h"
@@ -1364,10 +1365,12 @@ mono_walk_stack_full (MonoJitStackWalk func, MonoContext *start_ctx, MonoDomain 
 
 		frame.il_offset = il_offset;
 
-		if ((unwind_options & MONO_UNWIND_LOOKUP_ACTUAL_METHOD) && frame.ji) {
-			frame.actual_method = get_method_from_stack_frame (frame.ji, get_generic_info_from_stack_frame (frame.ji, &ctx));
-		} else {
-			frame.actual_method = frame.method;
+		/* actual_method might already be set by mono_arch_unwind_frame () */
+		if (!frame.actual_method) {
+			if ((unwind_options & MONO_UNWIND_LOOKUP_ACTUAL_METHOD) && frame.ji)
+				frame.actual_method = get_method_from_stack_frame (frame.ji, get_generic_info_from_stack_frame (frame.ji, &ctx));
+			else
+				frame.actual_method = frame.method;
 		}
 
 		if (get_reg_locations)
@@ -3216,7 +3219,7 @@ mono_free_altstack (MonoJitTlsData *tls)
 		mono_mprotect (tls->stack_ovf_guard_base, tls->stack_ovf_guard_size, MONO_MMAP_READ|MONO_MMAP_WRITE);
 }
 
-#elif G_HAVE_API_SUPPORT(HAVE_CLASSIC_WINAPI_SUPPORT) && defined(HOST_WIN32)
+#elif HAVE_API_SUPPORT_WIN32_SET_THREAD_STACK_GUARANTEE && defined(HOST_WIN32)
 void
 mono_setup_altstack (MonoJitTlsData *tls)
 {

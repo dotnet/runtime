@@ -418,6 +418,7 @@ static int __check_float_string(size_t nFloatStrUsed,
                                 ++longone;
                                 /* NOBREAK */
                             }
+                            FALLTHROUGH;
                         case _T('w') :
                             ++widechar;         /* set widechar = 1 */
                             break;
@@ -790,6 +791,7 @@ _END_SECURE_CRT_DEPRECATION_DISABLE
                     case _T('i') :      /* could be d, o, or x */
 
                         comchr = _T('d'); /* use as default */
+                        FALLTHROUGH;
 
                     case _T('x'):
 
@@ -844,6 +846,7 @@ x_incwidth:
                         ++integer64;
                         num64 = 0;
 #endif  /* HOST_64BIT */
+                        FALLTHROUGH;
                     case _T('o') :
                     case _T('u') :
                     case _T('d') :

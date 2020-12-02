@@ -2,7 +2,7 @@
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <GenFacadesIgnoreMissingTypes Condition="'$(TargetFramework)' == 'net461'">true</GenFacadesIgnoreMissingTypes>
-    <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;$(NetCoreAppCurrent);netstandard2.1;net461-Windows_NT;netcoreapp3.0-Windows_NT;netcoreapp3.0;net462-Windows_NT;net47-Windows_NT</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent);netstandard2.1;net461-windows;netcoreapp3.0-windows;netcoreapp3.0;net462-windows;net47-windows</TargetFrameworks>
     <ExcludeCurrentNetCoreAppFromPackage>true</ExcludeCurrentNetCoreAppFromPackage>
     <Nullable>enable</Nullable>
   </PropertyGroup>

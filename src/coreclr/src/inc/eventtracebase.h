@@ -923,7 +923,7 @@ namespace ETW
         static VOID MethodJitting(MethodDesc *pMethodDesc, SString *namespaceOrClassName, SString *methodName, SString *methodSignature);
         static VOID MethodJitted(MethodDesc *pMethodDesc, SString *namespaceOrClassName, SString *methodName, SString *methodSignature, PCODE pNativeCodeStartAddress, PrepareCodeConfig *pConfig);
         static VOID StubInitialized(ULONGLONG ullHelperStartAddress, LPCWSTR pHelperName);
-        static VOID StubsInitialized(PVOID *pHelperStartAddresss, PVOID *pHelperNames, LONG ulNoOfHelpers);
+        static VOID StubsInitialized(PVOID *pHelperStartAddress, PVOID *pHelperNames, LONG ulNoOfHelpers);
         static VOID MethodRestored(MethodDesc * pMethodDesc);
         static VOID MethodTableRestored(MethodTable * pMethodTable);
         static VOID DynamicMethodDestroyed(MethodDesc *pMethodDesc);
@@ -934,7 +934,7 @@ namespace ETW
         static VOID MethodJitting(MethodDesc *pMethodDesc, SString *namespaceOrClassName, SString *methodName, SString *methodSignature);
         static VOID MethodJitted(MethodDesc *pMethodDesc, SString *namespaceOrClassName, SString *methodName, SString *methodSignature, PCODE pNativeCodeStartAddress, PrepareCodeConfig *pConfig);
         static VOID StubInitialized(ULONGLONG ullHelperStartAddress, LPCWSTR pHelperName) {};
-        static VOID StubsInitialized(PVOID *pHelperStartAddresss, PVOID *pHelperNames, LONG ulNoOfHelpers) {};
+        static VOID StubsInitialized(PVOID *pHelperStartAddress, PVOID *pHelperNames, LONG ulNoOfHelpers) {};
         static VOID MethodRestored(MethodDesc * pMethodDesc) {};
         static VOID MethodTableRestored(MethodTable * pMethodTable) {};
         static VOID DynamicMethodDestroyed(MethodDesc *pMethodDesc) {};

@@ -63,6 +63,7 @@ extern void debugError(const char* msg, const char* file, unsigned line);
 extern void DECLSPEC_NORETURN badCode();
 extern void DECLSPEC_NORETURN badCode3(const char* msg, const char* msg2, int arg, __in_z const char* file, unsigned line);
 extern void DECLSPEC_NORETURN noWay();
+extern void DECLSPEC_NORETURN implLimitation();
 extern void DECLSPEC_NORETURN NOMEM();
 extern void DECLSPEC_NORETURN fatal(int errCode);
 
@@ -117,12 +118,23 @@ extern void RecordNowayAssertGlobal(const char* filename, unsigned line, const c
 #define unreached() noWayAssertBody("unreached", __FILE__, __LINE__)
 
 #define NOWAY_MSG(msg) noWayAssertBodyConditional(msg, __FILE__, __LINE__)
+#define NOWAY_MSG_FILE_AND_LINE(msg, file, line) noWayAssertBodyConditional(msg, file, line)
+
+// IMPL_LIMITATION is called when we encounter valid IL that is not
+// supported by our current implementation because of various
+// limitations (that could be removed in the future)
+#define IMPL_LIMITATION(msg) (debugError(msg, __FILE__, __LINE__), implLimitation())
 
 #else // !DEBUG
 
 #define NO_WAY(msg) noWay()
 #define BADCODE(msg) badCode()
 #define BADCODE3(msg, msg2, arg) badCode()
+
+// IMPL_LIMITATION is called when we encounter valid IL that is not
+// supported by our current implementation because of various
+// limitations (that could be removed in the future)
+#define IMPL_LIMITATION(msg) implLimitation()
 
 #ifdef FEATURE_TRACELOGGING
 #define NOWAY_ASSERT_BODY_ARGUMENTS __FILE__, __LINE__
@@ -142,27 +154,16 @@ extern void RecordNowayAssertGlobal(const char* filename, unsigned line, const c
 #define unreached() noWayAssertBody()
 
 #define NOWAY_MSG(msg) noWayAssertBodyConditional(NOWAY_ASSERT_BODY_ARGUMENTS)
+#define NOWAY_MSG_FILE_AND_LINE(msg, file, line) noWayAssertBodyConditional(NOWAY_ASSERT_BODY_ARGUMENTS)
 
 #endif // !DEBUG
 
-// IMPL_LIMITATION is called when we encounter valid IL that is not
-// supported by our current implementation because of various
-// limitations (that could be removed in the future)
-#define IMPL_LIMITATION(msg) NO_WAY(msg)
 
 #if 1 // All platforms currently enable NYI; this should be a tighter condition to exclude some platforms from NYI
-
-#if defined(ALT_JIT)
 
 // This can return based on Config flag/Debugger
 extern void notYetImplemented(const char* msg, const char* file, unsigned line);
 #define NYIRAW(msg) notYetImplemented(msg, __FILE__, __LINE__)
-
-#else // !defined(ALT_JIT)
-
-#define NYIRAW(msg) NOWAY_MSG(msg)
-
-#endif // !defined(ALT_JIT)
 
 #define NYI(msg)                    NYIRAW("NYI: " msg)
 #define NYI_IF(cond, msg) if (cond) NYIRAW("NYI: " msg)

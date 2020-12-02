@@ -436,7 +436,7 @@ namespace System.Security.Cryptography
             ForceSetKeySize(BitsPerByte * Interop.Crypto.RsaSize(key));
         }
 
-        public override unsafe void ImportRSAPublicKey(ReadOnlySpan<byte> source, out int bytesRead)
+        public override void ImportRSAPublicKey(ReadOnlySpan<byte> source, out int bytesRead)
         {
             ThrowIfDisposed();
 

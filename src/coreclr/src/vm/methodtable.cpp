@@ -5560,7 +5560,7 @@ void MethodTable::DoFullyLoad(Generics::RecursionGraph * const pVisited,  const 
         }
     }
 
-    // The rules for constraint cycles are same as rules for acccess checks
+    // The rules for constraint cycles are same as rules for access checks
     if (fNeedAccessChecks)
     {
         // Check for cyclical class constraints
@@ -8274,7 +8274,7 @@ MethodTable::MethodDataInterfaceImpl::PopulateNextLevel()
         MethodTable * pDeclMT = m_pDecl->GetImplMethodTable();
         INDEBUG(BOOL dbg_fInterfaceFound = FALSE);
 
-        // Call code:ProcessMap for every (duplicate) occurence of interface code:pDeclMT in the interface
+        // Call code:ProcessMap for every (duplicate) occurrence of interface code:pDeclMT in the interface
         // map of code:m_pImpl
         MethodTable::InterfaceMapIterator it = m_pImpl->GetImplMethodTable()->IterateInterfaceMap();
         while (it.Next())
@@ -9150,7 +9150,7 @@ BOOL MethodTable::HasExplicitOrImplicitPublicDefaultConstructor()
 }
 
 //==========================================================================================
-MethodDesc *MethodTable::GetDefaultConstructor()
+MethodDesc *MethodTable::GetDefaultConstructor(BOOL forceBoxedEntryPoint /* = FALSE */)
 {
     WRAPPER_NO_CONTRACT;
     _ASSERTE(HasDefaultConstructor());
@@ -9161,7 +9161,7 @@ MethodDesc *MethodTable::GetDefaultConstructor()
     // returns pCanonMD immediately.
     return MethodDesc::FindOrCreateAssociatedMethodDesc(pCanonMD,
                                                         this,
-                                                        FALSE /* no BoxedEntryPointStub */,
+                                                        forceBoxedEntryPoint,
                                                         Instantiation(), /* no method instantiation */
                                                         FALSE /* no allowInstParam */);
 }

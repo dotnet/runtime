@@ -28,6 +28,12 @@
 #undef min
 #undef max
 
+#if __has_cpp_attribute(fallthrough)
+#define FALLTHROUGH [[fallthrough]]
+#else
+#define FALLTHROUGH
+#endif
+
 #include <algorithm>
 
 #if HAVE_SYS_TIME_H
@@ -365,14 +371,6 @@ bool GCToOSInterface::Initialize()
             return false;
         }
     }
-
-#if HAVE_MACH_ABSOLUTE_TIME
-    kern_return_t machRet;
-    if ((machRet = mach_timebase_info(&g_TimebaseInfo)) != KERN_SUCCESS)
-    {
-        return false;
-    }
-#endif // HAVE_MACH_ABSOLUTE_TIME
 
     InitializeCGroup();
 
@@ -800,8 +798,10 @@ bool ReadMemoryValueFromFile(const char* filename, uint64_t* val)
     {
     case 'g':
     case 'G': multiplier = 1024;
+              FALLTHROUGH;
     case 'm':
     case 'M': multiplier = multiplier * 1024;
+              FALLTHROUGH;
     case 'k':
     case 'K': multiplier = multiplier * 1024;
     }
@@ -857,7 +857,7 @@ static size_t GetLogicalProcessorCacheSizeFromOS()
     }
 #endif
 
-#if defined(HOST_ARM64)
+#if defined(HOST_ARM64) && !defined(TARGET_OSX)
     if (cacheSize == 0)
     {
         // It is currently expected to be missing cache size info

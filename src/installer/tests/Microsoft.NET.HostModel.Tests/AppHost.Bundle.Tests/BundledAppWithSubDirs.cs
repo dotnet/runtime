@@ -1,16 +1,16 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
 using BundleTests.Helpers;
 using Microsoft.DotNet.Cli.Build.Framework;
-using Microsoft.NET.HostModel.Bundle;
 using Microsoft.DotNet.CoreSetup.Test;
-using System;
+using Microsoft.NET.HostModel.Bundle;
 using Xunit;
 
 namespace AppHost.Bundle.Tests
 {
-    public class BundledAppWithSubDirs : IClassFixture<BundledAppWithSubDirs.SharedTestState>
+    public class BundledAppWithSubDirs : BundleTestBase, IClassFixture<BundledAppWithSubDirs.SharedTestState>
     {
         private SharedTestState sharedTestState;
 
@@ -19,11 +19,15 @@ namespace AppHost.Bundle.Tests
             sharedTestState = fixture;
         }
 
-        private void RunTheApp(string path)
+        private void RunTheApp(string path, TestProjectFixture fixture)
         {
             Command.Create(path)
+                .EnvironmentVariable("COREHOST_TRACE", "1")
                 .CaptureStdErr()
                 .CaptureStdOut()
+                .EnvironmentVariable("DOTNET_ROOT", fixture.BuiltDotnet.BinPath)
+                .EnvironmentVariable("DOTNET_ROOT(x86)", fixture.BuiltDotnet.BinPath)
+                .EnvironmentVariable("DOTNET_MULTILEVEL_LOOKUP", "0")
                 .Execute()
                 .Should()
                 .Pass()
@@ -38,13 +42,14 @@ namespace AppHost.Bundle.Tests
         public void Bundled_Framework_dependent_App_Run_Succeeds(BundleOptions options)
         {
             var fixture = sharedTestState.TestFrameworkDependentFixture.Copy();
+            UseFrameworkDependentHost(fixture);
             var singleFile = BundleHelper.BundleApp(fixture, options);
 
             // Run the bundled app (extract files)
-            RunTheApp(singleFile);
+            RunTheApp(singleFile, fixture);
 
             // Run the bundled app again (reuse extracted files)
-            RunTheApp(singleFile);
+            RunTheApp(singleFile, fixture);
         }
 
         [InlineData(BundleOptions.None)]
@@ -57,10 +62,10 @@ namespace AppHost.Bundle.Tests
             var singleFile = BundleHelper.BundleApp(fixture, options);
 
             // Run the bundled app (extract files)
-            RunTheApp(singleFile);
+            RunTheApp(singleFile, fixture);
 
             // Run the bundled app again (reuse extracted files)
-            RunTheApp(singleFile);
+            RunTheApp(singleFile, fixture);
         }
 
         [InlineData(BundleOptions.None)]
@@ -73,25 +78,23 @@ namespace AppHost.Bundle.Tests
             var singleFile = BundleHelper.BundleApp(fixture, options);
 
             // Run the app
-            RunTheApp(singleFile);
+            RunTheApp(singleFile, fixture);
         }
 
-        public class SharedTestState : IDisposable
+        public class SharedTestState : SharedTestStateBase, IDisposable
         {
             public TestProjectFixture TestFrameworkDependentFixture { get; set; }
             public TestProjectFixture TestSelfContainedFixture { get; set; }
             public TestProjectFixture TestAppWithEmptyFileFixture { get; set; }
-            public RepoDirectoriesProvider RepoDirectories { get; set; }
 
             public SharedTestState()
             {
-                RepoDirectories = new RepoDirectoriesProvider();
-
                 TestFrameworkDependentFixture = new TestProjectFixture("AppWithSubDirs", RepoDirectories);
                 BundleHelper.AddLongNameContentToAppWithSubDirs(TestFrameworkDependentFixture);
                 TestFrameworkDependentFixture
                     .EnsureRestoredForRid(TestFrameworkDependentFixture.CurrentRid, RepoDirectories.CorehostPackages)
                     .PublishProject(runtime: TestFrameworkDependentFixture.CurrentRid,
+                                    selfContained: false,
                                     outputDirectory: BundleHelper.GetPublishPath(TestFrameworkDependentFixture));
 
                 TestSelfContainedFixture = new TestProjectFixture("AppWithSubDirs", RepoDirectories);

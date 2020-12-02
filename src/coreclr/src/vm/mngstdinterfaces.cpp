@@ -198,7 +198,7 @@ LPVOID MngStdItfBase::ForwardCallToManagedView(
         OBJECTREF   Result;
     } Lr;
 
-    // Retrieve the object that the IExpando call was made on.
+    // Retrieve the object that the call was made on.
     Lr.Obj = ArgSlotToObj(pArgs[0]);
     Lr.Result = NULL;
     GCPROTECT_BEGIN(Lr);
@@ -407,123 +407,6 @@ FCIMPL1(void, StdMngIEnumerator::Reset, Object* refThisUNSAFE)
     HELPER_METHOD_FRAME_END_POLL();
 }
 FCIMPLEND
-
-
-FCIMPL2(Object*, StdMngIExpando::AddField, Object* refThisUNSAFE, StringObject* refNameUNSAFE)
-{
-    CONTRACTL
-    {
-        FCALL_CHECK;
-        PRECONDITION(CheckPointer(refThisUNSAFE));
-    }
-    CONTRACTL_END;
-
-    OBJECTREF   retVal = NULL;
-    ARG_SLOT    args[2] =
-        {
-            ObjToArgSlot(ObjectToOBJECTREF(refThisUNSAFE)),
-            ObjToArgSlot(ObjectToOBJECTREF(refNameUNSAFE))
-        };
-
-    HELPER_METHOD_FRAME_BEGIN_RET_NOPOLL();
-
-    GCPROTECT_ARRAY_BEGIN(args[0], 2);
-
-    retVal = ObjectToOBJECTREF((Object*)AddFieldWorker(args));
-
-    GCPROTECT_END();
-    HELPER_METHOD_FRAME_END();
-
-    FC_GC_POLL_AND_RETURN_OBJREF(retVal);
-}
-FCIMPLEND
-
-FCIMPL2(Object*, StdMngIExpando::AddProperty, Object* refThisUNSAFE, StringObject* refNameUNSAFE)
-{
-    CONTRACTL
-    {
-        FCALL_CHECK;
-        PRECONDITION(CheckPointer(refThisUNSAFE));
-    }
-    CONTRACTL_END;
-
-    OBJECTREF   retVal = NULL;
-    ARG_SLOT    args[2] =
-        {
-            ObjToArgSlot(ObjectToOBJECTREF(refThisUNSAFE)),
-            ObjToArgSlot(ObjectToOBJECTREF(refNameUNSAFE))
-        };
-
-    HELPER_METHOD_FRAME_BEGIN_RET_NOPOLL();
-
-    GCPROTECT_ARRAY_BEGIN(args[0], 2);
-
-    retVal = ObjectToOBJECTREF((Object*)AddPropertyWorker(args));
-
-    GCPROTECT_END();
-    HELPER_METHOD_FRAME_END();
-
-    FC_GC_POLL_AND_RETURN_OBJREF(retVal);
-}
-FCIMPLEND
-
-FCIMPL3(Object*, StdMngIExpando::AddMethod, Object* refThisUNSAFE, StringObject* refNameUNSAFE, Object* refDelegateUNSAFE)
-{
-    CONTRACTL
-    {
-        FCALL_CHECK;
-        PRECONDITION(CheckPointer(refThisUNSAFE));
-    }
-    CONTRACTL_END;
-
-    OBJECTREF   retVal = NULL;
-    ARG_SLOT    args[3] =
-        {
-            ObjToArgSlot(ObjectToOBJECTREF(refThisUNSAFE)),
-            ObjToArgSlot(ObjectToOBJECTREF(refNameUNSAFE)),
-            ObjToArgSlot(ObjectToOBJECTREF(refDelegateUNSAFE))
-        };
-
-    HELPER_METHOD_FRAME_BEGIN_RET_NOPOLL();
-
-    GCPROTECT_ARRAY_BEGIN(args[0], 3);
-
-    retVal = ObjectToOBJECTREF((Object*)AddMethodWorker(args));
-
-    GCPROTECT_END();
-    HELPER_METHOD_FRAME_END();
-
-    FC_GC_POLL_AND_RETURN_OBJREF(retVal);
-}
-FCIMPLEND
-
-
-FCIMPL2(void, StdMngIExpando::RemoveMember, Object* refThisUNSAFE, Object* refMemberInfoUNSAFE)
-{
-    CONTRACTL
-    {
-        FCALL_CHECK;
-        PRECONDITION(CheckPointer(refThisUNSAFE));
-    }
-    CONTRACTL_END;
-
-    ARG_SLOT    args[2] =
-        {
-            ObjToArgSlot(ObjectToOBJECTREF(refThisUNSAFE)),
-            ObjToArgSlot(ObjectToOBJECTREF(refMemberInfoUNSAFE))
-        };
-
-    HELPER_METHOD_FRAME_BEGIN_NOPOLL();
-
-    GCPROTECT_ARRAY_BEGIN(args[0], 2);
-
-    RemoveMemberWorker(args);
-
-    GCPROTECT_END();
-    HELPER_METHOD_FRAME_END_POLL();
-}
-FCIMPLEND
-
 
 FCIMPL6(Object*, StdMngIReflect::GetMethod, Object* refThisUNSAFE, Object* refNameUNSAFE, INT32 enumBindingAttr, Object* refBinderUNSAFE, Object* refTypesArrayUNSAFE, Object* refModifiersArrayUNSAFE)
 {

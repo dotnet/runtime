@@ -720,7 +720,7 @@ void CodeGen::genCodeForBBlist()
 
             case BBJ_EHCATCHRET:
                 genEHCatchRet(block);
-                __fallthrough;
+                FALLTHROUGH;
 
             case BBJ_EHFINALLYRET:
             case BBJ_EHFILTERRET:
@@ -731,6 +731,7 @@ void CodeGen::genCodeForBBlist()
 
             case BBJ_EHCATCHRET:
                 noway_assert(!"Unexpected BBJ_EHCATCHRET"); // not used on x86
+                break;
 
             case BBJ_EHFINALLYRET:
             case BBJ_EHFILTERRET:
@@ -1703,8 +1704,6 @@ void CodeGen::genConsumePutStructArgStk(GenTreePutArgStk* putArgNode,
     assert((src->gtOper == GT_OBJ) || ((src->gtOper == GT_IND && varTypeIsSIMD(src))));
     GenTree* srcAddr = src->gtGetOp1();
 
-    unsigned int size = putArgNode->getArgSize();
-
     assert(dstReg != REG_NA);
     assert(srcReg != REG_NA);
 
@@ -1756,6 +1755,7 @@ void CodeGen::genConsumePutStructArgStk(GenTreePutArgStk* putArgNode,
 
     if (sizeReg != REG_NA)
     {
+        unsigned size = putArgNode->GetStackByteSize();
         inst_RV_IV(INS_mov, sizeReg, size, EA_PTRSIZE);
     }
 }
@@ -1822,7 +1822,7 @@ void CodeGen::genPutArgStkFieldList(GenTreePutArgStk* putArgStk, unsigned outArg
 // We can't write beyond the arg area unless this is a tail call, in which case we use
 // the first stack arg as the base of the incoming arg area.
 #ifdef DEBUG
-        size_t areaSize = compiler->lvaLclSize(outArgVarNum);
+        unsigned areaSize = compiler->lvaLclSize(outArgVarNum);
 #if FEATURE_FASTTAILCALL
         if (putArgStk->gtCall->IsFastTailCall())
         {

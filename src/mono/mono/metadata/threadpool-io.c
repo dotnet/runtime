@@ -21,6 +21,7 @@
 
 #if defined(HOST_WIN32)
 #include <windows.h>
+#include <mono/utils/networking.h>
 #else
 #include <errno.h>
 #include <fcntl.h>
@@ -518,8 +519,8 @@ wakeup_pipes_init (void)
 	g_assert (threadpool_io->wakeup_pipes [1] != INVALID_SOCKET);
 
 	server.sin_family = AF_INET;
-	server.sin_addr.s_addr = inet_addr ("127.0.0.1");
 	server.sin_port = 0;
+	inet_pton (server.sin_family, "127.0.0.1", &server.sin_addr);
 	if (bind (server_sock, (SOCKADDR*) &server, sizeof (server)) == SOCKET_ERROR) {
 		closesocket (server_sock);
 		g_error ("wakeup_pipes_init: bind () failed, error (%d)\n", WSAGetLastError ());

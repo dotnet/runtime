@@ -605,9 +605,11 @@ typedef DPTR(class ComCallWrapper)        PTR_ComCallWrapper;
 #include "shash.h"
 #endif // FEATURE_COMINTEROP
 
+using ManagedObjectComWrapperByIdMap = MapSHash<INT64, void*>;
 class InteropSyncBlockInfo
 {
     friend class RCWHolder;
+    friend class ClrDataAccess;
 
 public:
 #ifndef TARGET_UNIX
@@ -877,7 +879,6 @@ private:
     // See InteropLib API for usage.
     void* m_externalComObjectContext;
 
-    using ManagedObjectComWrapperByIdMap = MapSHash<INT64, void*>;
     CrstExplicitInit m_managedObjectComWrapperLock;
     NewHolder<ManagedObjectComWrapperByIdMap> m_managedObjectComWrapperMap;
 #endif // FEATURE_COMINTEROP

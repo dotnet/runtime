@@ -3361,7 +3361,7 @@ public:
 /* ------------------------------------------------------------------------ *
  * DebuggerEval class
  *
- * Note that arguments get passsed in a block allocated when
+ * Note that arguments get passed in a block allocated when
  * the func-eval is set up.  The setup phase passes the total count of arguments.
  *
  * In some situations type arguments must also be passed, e.g.

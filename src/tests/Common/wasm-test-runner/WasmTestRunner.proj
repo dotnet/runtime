@@ -7,6 +7,7 @@
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
     <BuildDir>$(MSBuildThisFileDirectory)\obj\$(Configuration)\wasm</BuildDir>
     <AppDir>$(TestBinDir)/WasmApp/</AppDir>
+    <NETCoreAppMaximumVersion>99.0</NETCoreAppMaximumVersion>
   </PropertyGroup>
 
   <UsingTask TaskName="WasmAppBuilder" 
@@ -29,6 +30,7 @@
       MicrosoftNetCoreAppRuntimePackDir="$(MicrosoftNetCoreAppRuntimePackDir)"
       MainAssembly="$(TestAssembly)"
       MainJS="$(CORE_ROOT)\runtime-test\runtime-test.js"
+      ExtraAssemblies="$(CORE_ROOT)\System.Private.Runtime.InteropServices.JavaScript.dll"
       AssemblySearchPaths="@(AssemblySearchPaths)"
       SkipMissingAssemblies="True"
       />

@@ -785,46 +785,6 @@ namespace System.Runtime.Serialization
             }
         }
 
-        #region Contract compliance for System.Type
-
-        private static bool TypeSequenceEqual(Type[] seq1, Type[] seq2)
-        {
-            if (seq1 == null || seq2 == null || seq1.Length != seq2.Length)
-                return false;
-            for (int i = 0; i < seq1.Length; i++)
-            {
-                if (!seq1[i].Equals(seq2[i]) && !seq1[i].IsAssignableFrom(seq2[i]))
-                    return false;
-            }
-            return true;
-        }
-
-        private static MethodBase? FilterMethodBases(MethodBase[]? methodBases, Type[] parameterTypes, string methodName)
-        {
-            if (methodBases == null || string.IsNullOrEmpty(methodName))
-                return null;
-
-            var matchedMethods = methodBases.Where(method => method.Name.Equals(methodName));
-            matchedMethods = matchedMethods.Where(method => TypeSequenceEqual(method.GetParameters().Select(param => param.ParameterType).ToArray(), parameterTypes));
-            return matchedMethods.FirstOrDefault();
-        }
-
-        internal static ConstructorInfo? GetConstructor(this Type type, BindingFlags bindingFlags, Type[] parameterTypes)
-        {
-            ConstructorInfo[] constructorInfos = type.GetConstructors(bindingFlags);
-            var constructorInfo = FilterMethodBases(constructorInfos.Cast<MethodBase>().ToArray()!, parameterTypes, ".ctor");
-            return constructorInfo != null ? (ConstructorInfo)constructorInfo : null;
-        }
-
-        internal static MethodInfo? GetMethod(this Type type, string methodName, BindingFlags bindingFlags, Type[] parameterTypes)
-        {
-            var methodInfos = type.GetMethods(bindingFlags);
-            var methodInfo = FilterMethodBases(methodInfos.Cast<MethodBase>().ToArray()!, parameterTypes, methodName);
-            return methodInfo != null ? (MethodInfo)methodInfo : null;
-        }
-
-        #endregion
-
         private static readonly Type? s_typeOfScriptObject;
 
         internal static ClassDataContract CreateScriptObjectClassDataContract()

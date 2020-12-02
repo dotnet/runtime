@@ -336,8 +336,6 @@
 #undef __inner_data_entrypoint
 #undef __inner_data_source
 #undef __inner_encoded
-#undef __inner_fallthrough
-#undef __inner_fallthrough_dec
 #undef __inner_nonvolatile
 #undef __inner_out_validated
 #undef __inner_override

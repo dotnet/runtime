@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net.WebSockets;
+using System.Reflection;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -130,20 +131,12 @@ namespace DebuggerTests
 
         static protected string FindTestPath()
         {
-            //FIXME how would I locate it otherwise?
-            var test_path = Environment.GetEnvironmentVariable("TEST_SUITE_PATH");
-            //Lets try to guest
-            if (test_path != null && Directory.Exists(test_path))
-                return test_path;
+            var asm_dir = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+            var test_app_path = Path.Combine(asm_dir, "..", "..", "..", "debugger-test", "Debug", "publish");
+            if (File.Exists(Path.Combine(test_app_path, "debugger-driver.html")))
+                return test_app_path;
 
-            var cwd = Environment.CurrentDirectory;
-            Console.WriteLine("guessing from {0}", cwd);
-            //tests run from DebuggerTestSuite/bin/Debug/netcoreapp2.1
-            var new_path = Path.Combine(cwd, "../../../../bin/debugger-test-suite");
-            if (File.Exists(Path.Combine(new_path, "debugger-driver.html")))
-                return new_path;
-
-            throw new Exception("Missing TEST_SUITE_PATH env var and could not guess path from CWD");
+            throw new Exception($"Could not figure out debugger-test app path ({test_app_path}) based on the test suite location ({asm_dir})");
         }
 
         static string[] PROBE_LIST = {

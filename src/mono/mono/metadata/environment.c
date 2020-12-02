@@ -16,6 +16,7 @@
 
 #include <mono/metadata/appdomain.h>
 #include <mono/metadata/environment.h>
+#include <mono/metadata/environment-internals.h>
 #include <mono/metadata/exception.h>
 #include <mono/metadata/handle.h>
 #include <mono/utils/mono-compiler.h>
@@ -45,6 +46,22 @@ mono_environment_exitcode_set (gint32 value)
 	exitcode=value;
 }
 
+static int mini_argc = 0;
+static char **mini_argv = NULL;
+
+void
+mono_set_os_args (int argc, char **argv)
+{
+	mini_argc = argc;
+	mini_argv = argv;
+}
+
+char *
+mono_get_os_cmd_line (void)
+{
+	return mono_runtime_get_cmd_line (mini_argc, mini_argv);
+}
+
 #ifndef ENABLE_NETCORE
 /* note: we better manipulate the string in managed code (easier and safer) */
 MonoStringHandle
@@ -52,10 +69,10 @@ ves_icall_System_Environment_GetOSVersionString (MonoError *error)
 {
 	error_init (error);
 #ifdef HOST_WIN32
-	OSVERSIONINFOEX verinfo;
-
+	MONO_DISABLE_WARNING (4996) // 'GetVersionExW': was declared deprecated
+	OSVERSIONINFOEXW verinfo;
 	verinfo.dwOSVersionInfoSize = sizeof (OSVERSIONINFOEX);
-	if (GetVersionEx ((OSVERSIONINFO*)&verinfo)) {
+	if (GetVersionExW ((OSVERSIONINFO*)&verinfo)) {
 		char version [128];
 		/* maximum string length is 45 bytes
 		   4 x 10 bytes per number, 1 byte for 0, 3 x 1 byte for dots, 1 for NULL */
@@ -66,6 +83,7 @@ ves_icall_System_Environment_GetOSVersionString (MonoError *error)
 				 verinfo.wServicePackMajor << 16);
 		return mono_string_new_handle (mono_domain_get (), version, error);
 	}
+	MONO_RESTORE_WARNING
 #elif defined(HAVE_SYS_UTSNAME_H) && defined(_AIX)
 	/*
 	 * AIX puts the major version number in .version and minor in .release; so make a

@@ -4,5 +4,7 @@
     <CLRTestKind>RunOnly</CLRTestKind>
     <CLRTestProjectToRun>ThreadStartBool.csproj</CLRTestProjectToRun>
     <CLRTestExecutionArguments>true</CLRTestExecutionArguments>
+    <!-- Generated shell script has no corresponding assembly -->
+    <CLRTestTargetUnsupported Condition="'$(TargetOS)' == 'Android'">true</CLRTestTargetUnsupported>
   </PropertyGroup>
 </Project>

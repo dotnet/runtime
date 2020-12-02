@@ -594,6 +594,7 @@ INST3(blsr,             "blsr",             IUM_WR, BAD_CODE,     BAD_CODE,     
 INST3(bextr,            "bextr",            IUM_WR, BAD_CODE,     BAD_CODE,     SSE38(0xF7),                             INS_Flags_IsDstDstSrcAVXInstruction)    // Bit Field Extract
 
 // BMI2
+INST3(rorx,             "rorx",             IUM_WR, BAD_CODE,     BAD_CODE,     SSE3A(0xF0),                             INS_FLAGS_None)
 INST3(pdep,             "pdep",             IUM_WR, BAD_CODE,     BAD_CODE,     SSE38(0xF5),                             INS_Flags_IsDstDstSrcAVXInstruction)    // Parallel Bits Deposit
 INST3(pext,             "pext",             IUM_WR, BAD_CODE,     BAD_CODE,     SSE38(0xF5),                             INS_Flags_IsDstDstSrcAVXInstruction)    // Parallel Bits Extract
 INST3(bzhi,             "bzhi",             IUM_WR, BAD_CODE,     BAD_CODE,     SSE38(0xF5),                             INS_Flags_IsDstDstSrcAVXInstruction)    // Zero High Bits Starting with Specified Bit Position

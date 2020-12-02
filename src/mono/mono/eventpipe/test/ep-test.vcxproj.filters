@@ -40,6 +40,9 @@
     <ClCompile Include="ep-buffer-manager-tests.c">
       <Filter>Source Files\tests</Filter>
     </ClCompile>
+    <ClCompile Include="ep-rt-tests.c">
+      <Filter>Source Files\tests</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Source Files">

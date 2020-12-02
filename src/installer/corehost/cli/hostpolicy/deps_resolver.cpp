@@ -736,7 +736,8 @@ void deps_resolver_t::get_app_context_deps_files_range(fx_definition_vector_t::i
     auto begin_iter = m_fx_definitions.begin();
     auto end_iter = m_fx_definitions.end();
 
-    if ((m_host_mode == host_mode_t::libhost || bundle::info_t::is_single_file_bundle())
+    if ((m_host_mode == host_mode_t::libhost
+        || (bundle::info_t::is_single_file_bundle() && !bundle::runner_t::app()->is_netcoreapp3_compat_mode()))
         && begin_iter != end_iter)
     {
         // Neither in a libhost scenario nor in a bundled app
@@ -873,6 +874,19 @@ bool deps_resolver_t::resolve_probe_dirs(
             {
                 return false;
             }
+        }
+    }
+
+    // If this is a single-file app, add the app's dir to the native search directories.
+    if (bundle::info_t::is_single_file_bundle() && !is_resources)
+    {
+        auto bundle = bundle::runner_t::app();
+        add_unique_path(asset_type, bundle->base_path(), &items, output, &non_serviced, core_servicing);
+
+        // Add the extraction path if it exists.
+        if (pal::directory_exists(bundle->extraction_path()))
+        {
+            add_unique_path(asset_type, bundle->extraction_path(), &items, output, &non_serviced, core_servicing);
         }
     }
 

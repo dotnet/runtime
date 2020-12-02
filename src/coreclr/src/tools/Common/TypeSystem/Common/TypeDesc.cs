@@ -24,7 +24,7 @@ namespace Internal.TypeSystem
         public override bool Equals(object o)
         {
             // Its only valid to compare two TypeDescs in the same context
-            Debug.Assert(o == null || !(o is TypeDesc) || object.ReferenceEquals(((TypeDesc)o).Context, this.Context));
+            Debug.Assert(o is not TypeDesc || object.ReferenceEquals(((TypeDesc)o).Context, this.Context));
             return object.ReferenceEquals(this, o);
         }
 
@@ -32,14 +32,14 @@ namespace Internal.TypeSystem
         public static bool operator ==(TypeDesc left, TypeDesc right)
         {
             // Its only valid to compare two TypeDescs in the same context
-            Debug.Assert(object.ReferenceEquals(left, null) || object.ReferenceEquals(right, null) || object.ReferenceEquals(left.Context, right.Context));
+            Debug.Assert(left is null || right is null || object.ReferenceEquals(left.Context, right.Context));
             return object.ReferenceEquals(left, right);
         }
 
         public static bool operator !=(TypeDesc left, TypeDesc right)
         {
             // Its only valid to compare two TypeDescs in the same context
-            Debug.Assert(object.ReferenceEquals(left, null) || object.ReferenceEquals(right, null) || object.ReferenceEquals(left.Context, right.Context));
+            Debug.Assert(left is null || right is null || object.ReferenceEquals(left.Context, right.Context));
             return !object.ReferenceEquals(left, right);
         }
 #endif

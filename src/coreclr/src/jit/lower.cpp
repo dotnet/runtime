@@ -247,7 +247,7 @@ GenTree* Lowering::LowerNode(GenTree* node)
                 LowerStoreSingleRegCallStruct(node->AsBlk());
                 break;
             }
-            __fallthrough;
+            FALLTHROUGH;
         case GT_STORE_DYN_BLK:
             LowerBlockStoreCommon(node->AsBlk());
             break;
@@ -307,7 +307,7 @@ GenTree* Lowering::LowerNode(GenTree* node)
 
         case GT_STORE_LCL_VAR:
             WidenSIMD12IfNecessary(node->AsLclVarCommon());
-            __fallthrough;
+            FALLTHROUGH;
 
         case GT_STORE_LCL_FLD:
             LowerStoreLocCommon(node->AsLclVarCommon());
@@ -1041,10 +1041,20 @@ GenTree* Lowering::NewPutArg(GenTreeCall* call, GenTree* arg, fgArgTabEntry* inf
 #endif // TARGET_ARM
         }
 
-        putArg = new (comp, GT_PUTARG_SPLIT)
-            GenTreePutArgSplit(arg, info->slotNum PUT_STRUCT_ARG_STK_ONLY_ARG(info->numSlots), info->numRegs,
-                               call->IsFastTailCall(), call);
+        const unsigned slotNumber = info->GetByteOffset() / TARGET_POINTER_SIZE;
+        DEBUG_ARG_SLOTS_ASSERT(slotNumber == info->slotNum);
+        const bool putInIncomingArgArea = call->IsFastTailCall();
 
+        putArg = new (comp, GT_PUTARG_SPLIT)
+            GenTreePutArgSplit(arg, info->GetByteOffset(),
+#if defined(DEBUG_ARG_SLOTS) && defined(FEATURE_PUT_STRUCT_ARG_STK)
+                               info->GetStackByteSize(), slotNumber, info->GetStackSlotsNumber(),
+#elif defined(DEBUG_ARG_SLOTS) && !defined(FEATURE_PUT_STRUCT_ARG_STK)
+                               slotNumber,
+#elif !defined(DEBUG_ARG_SLOTS) && defined(FEATURE_PUT_STRUCT_ARG_STK)
+                               info->GetStackByteSize(),
+#endif
+                               info->numRegs, call, putInIncomingArgArea);
         // If struct argument is morphed to GT_FIELD_LIST node(s),
         // we can know GC info by type of each GT_FIELD_LIST node.
         // So we skip setting GC Pointer info.
@@ -1126,18 +1136,22 @@ GenTree* Lowering::NewPutArg(GenTreeCall* call, GenTree* arg, fgArgTabEntry* inf
             // Mark this one as tail call arg if it is a fast tail call.
             // This provides the info to put this argument in in-coming arg area slot
             // instead of in out-going arg area slot.
+            CLANG_FORMAT_COMMENT_ANCHOR;
 
+#ifdef DEBUG
             // Make sure state is correct. The PUTARG_STK has TYP_VOID, as it doesn't produce
             // a result. So the type of its operand must be the correct type to push on the stack.
             // For a FIELD_LIST, this will be the type of the field (not the type of the arg),
             // but otherwise it is generally the type of the operand.
             info->checkIsStruct();
+#endif
+
             if ((arg->OperGet() != GT_FIELD_LIST))
             {
 #if defined(FEATURE_SIMD) && defined(FEATURE_PUT_STRUCT_ARG_STK)
                 if (type == TYP_SIMD12)
                 {
-                    assert(info->numSlots == 3);
+                    assert(info->GetByteSize() == 12);
                 }
                 else
 #endif // defined(FEATURE_SIMD) && defined(FEATURE_PUT_STRUCT_ARG_STK)
@@ -1145,11 +1159,19 @@ GenTree* Lowering::NewPutArg(GenTreeCall* call, GenTree* arg, fgArgTabEntry* inf
                     assert(genActualType(arg->TypeGet()) == type);
                 }
             }
+            const unsigned slotNumber           = info->GetByteOffset() / TARGET_POINTER_SIZE;
+            const bool     putInIncomingArgArea = call->IsFastTailCall();
 
-            putArg =
-                new (comp, GT_PUTARG_STK) GenTreePutArgStk(GT_PUTARG_STK, TYP_VOID, arg,
-                                                           info->slotNum PUT_STRUCT_ARG_STK_ONLY_ARG(info->numSlots),
-                                                           call->IsFastTailCall(), call);
+            putArg = new (comp, GT_PUTARG_STK)
+                GenTreePutArgStk(GT_PUTARG_STK, TYP_VOID, arg, info->GetByteOffset(),
+#if defined(DEBUG_ARG_SLOTS) && defined(FEATURE_PUT_STRUCT_ARG_STK)
+                                 info->GetStackByteSize(), slotNumber, info->GetStackSlotsNumber(),
+#elif defined(DEBUG_ARG_SLOTS) && !defined(FEATURE_PUT_STRUCT_ARG_STK)
+                                 slotNumber,
+#elif !defined(DEBUG_ARG_SLOTS) && defined(FEATURE_PUT_STRUCT_ARG_STK)
+                                 info->GetStackByteSize(),
+#endif
+                                 call, putInIncomingArgArea);
 
 #ifdef FEATURE_PUT_STRUCT_ARG_STK
             // If the ArgTabEntry indicates that this arg is a struct
@@ -1210,7 +1232,7 @@ GenTree* Lowering::NewPutArg(GenTreeCall* call, GenTree* arg, fgArgTabEntry* inf
                 }
                 else if (!arg->OperIs(GT_FIELD_LIST))
                 {
-                    assert(varTypeIsSIMD(arg) || (info->numSlots == 1));
+                    assert(varTypeIsSIMD(arg) || (info->GetStackSlotsNumber() == 1));
                 }
             }
 #endif // FEATURE_PUT_STRUCT_ARG_STK
@@ -1875,7 +1897,7 @@ void Lowering::LowerFastTailCall(GenTreeCall* call)
             GenTreePutArgStk* put = putargs.Bottom(i)->AsPutArgStk();
 
             unsigned int overwrittenStart = put->getArgOffset();
-            unsigned int overwrittenEnd   = overwrittenStart + put->getArgSize();
+            unsigned int overwrittenEnd   = overwrittenStart + put->GetStackByteSize();
 #if !(defined(TARGET_WINDOWS) && defined(TARGET_AMD64))
             int baseOff = -1; // Stack offset of first arg on stack
 #endif
@@ -1895,19 +1917,19 @@ void Lowering::LowerFastTailCall(GenTreeCall* call)
                 unsigned int argStart = callerArgLclNum * TARGET_POINTER_SIZE;
                 unsigned int argEnd   = argStart + static_cast<unsigned int>(callerArgDsc->lvArgStackSize());
 #else
-                assert(callerArgDsc->lvStkOffs != BAD_STK_OFFS);
+                assert(callerArgDsc->GetStackOffset() != BAD_STK_OFFS);
 
                 if (baseOff == -1)
                 {
-                    baseOff = callerArgDsc->lvStkOffs;
+                    baseOff = callerArgDsc->GetStackOffset();
                 }
 
                 // On all ABIs where we fast tail call the stack args should come in order.
-                assert(baseOff <= callerArgDsc->lvStkOffs);
+                assert(baseOff <= callerArgDsc->GetStackOffset());
 
                 // Compute offset of this stack argument relative to the first stack arg.
                 // This will be its offset into the incoming arg space area.
-                unsigned int argStart = static_cast<unsigned int>(callerArgDsc->lvStkOffs - baseOff);
+                unsigned int argStart = static_cast<unsigned int>(callerArgDsc->GetStackOffset() - baseOff);
                 unsigned int argEnd   = argStart + comp->lvaLclSize(callerArgLclNum);
 #endif
 
@@ -2115,7 +2137,10 @@ GenTree* Lowering::LowerTailCallViaJitHelper(GenTreeCall* call, GenTree* callTar
     // We need to figure out the size of the outgoing stack arguments, not including the special args.
     // The number of 4-byte words is passed to the helper for the incoming and outgoing argument sizes.
     // This number is exactly the next slot number in the call's argument info struct.
-    unsigned nNewStkArgsWords = call->fgArgInfo->GetNextSlotNum();
+    unsigned  nNewStkArgsBytes = call->fgArgInfo->GetNextSlotByteOffset();
+    const int wordSize         = 4;
+    unsigned  nNewStkArgsWords = nNewStkArgsBytes / wordSize;
+    DEBUG_ARG_SLOTS_ASSERT(call->fgArgInfo->GetNextSlotNum() == nNewStkArgsWords);
     assert(nNewStkArgsWords >= 4); // There must be at least the four special stack args.
     nNewStkArgsWords -= 4;
 
@@ -2529,7 +2554,7 @@ GenTree* Lowering::OptimizeConstCompare(GenTree* cmp)
             // into ((x AND mask) NE|EQ 0) when mask is a single bit.
             //
 
-            if (isPow2(static_cast<size_t>(op2Value)) && andOp2->IsIntegralConst(op2Value))
+            if (isPow2<target_size_t>(static_cast<target_size_t>(op2Value)) && andOp2->IsIntegralConst(op2Value))
             {
                 op2Value = 0;
                 op2->SetIconValue(0);
@@ -3280,7 +3305,7 @@ void Lowering::LowerRetStruct(GenTreeUnOp* ret)
 
         case GT_OBJ:
             retVal->ChangeOper(GT_IND);
-            __fallthrough;
+            FALLTHROUGH;
         case GT_IND:
             retVal->ChangeType(nativeReturnType);
             LowerIndir(retVal->AsIndir());
@@ -3487,7 +3512,7 @@ void Lowering::LowerCallStruct(GenTreeCall* call)
 #endif // FEATURE_SIMD
                 // importer has a separate mechanism to retype calls to helpers,
                 // keep it for now.
-                assert(user->TypeIs(TYP_REF));
+                assert(user->TypeIs(TYP_REF) || (user->TypeIs(TYP_I_IMPL) && comp->IsTargetAbi(CORINFO_CORERT_ABI)));
                 assert(call->IsHelperCall());
                 assert(returnType == user->TypeGet());
                 break;
@@ -3742,6 +3767,7 @@ GenTree* Lowering::LowerDelegateInvoke(GenTreeCall* call)
         thisArgNode = comp->gtGetThisArg(call);
     }
 
+    assert(thisArgNode != nullptr);
     assert(thisArgNode->gtOper == GT_PUTARG_REG);
     GenTree* originalThisExpr = thisArgNode->AsOp()->gtOp1;
     GenTree* thisExpr         = originalThisExpr;
@@ -4167,7 +4193,7 @@ void Lowering::InsertPInvokeCallProlog(GenTreeCall* call)
         // On x86 targets, PInvoke calls need the size of the stack args in InlinedCallFrame.m_Datum.
         // This is because the callee pops stack arguments, and we need to keep track of this during stack
         // walking
-        const unsigned    numStkArgBytes = call->fgArgInfo->GetNextSlotNum() * TARGET_POINTER_SIZE;
+        const unsigned    numStkArgBytes = call->fgArgInfo->GetNextSlotByteOffset();
         GenTree*          stackBytes     = comp->gtNewIconNode(numStkArgBytes, TYP_INT);
         GenTreeCall::Use* args           = comp->gtNewCallArgs(frameAddr, stackBytes);
 #else
@@ -4201,9 +4227,8 @@ void Lowering::InsertPInvokeCallProlog(GenTreeCall* call)
     {
 #if !defined(TARGET_64BIT)
         // On 32-bit targets, indirect calls need the size of the stack args in InlinedCallFrame.m_Datum.
-        const unsigned numStkArgBytes = call->fgArgInfo->GetNextSlotNum() * TARGET_POINTER_SIZE;
-
-        src = comp->gtNewIconNode(numStkArgBytes, TYP_INT);
+        const unsigned stackByteOffset = call->fgArgInfo->GetNextSlotByteOffset();
+        src                            = comp->gtNewIconNode(stackByteOffset, TYP_INT);
 #else
         // On 64-bit targets, indirect calls may need the stub parameter value in InlinedCallFrame.m_Datum.
         // If the stub parameter value is not needed, m_Datum will be initialized by the VM.
@@ -5161,9 +5186,9 @@ bool Lowering::LowerUnsignedDivOrMod(GenTreeOp* divMod)
         // add == true (when divisor == 7 for example):
         //     mulhi = dividend MULHI magic
         //     div   = (((dividend SUB mulhi) RSZ 1) ADD mulhi)) RSZ (shift - 1)
-        const bool     requiresAdjustment       = add;
-        const bool     requiresDividendMultiuse = requiresAdjustment || !isDiv;
-        const unsigned curBBWeight              = m_block->getBBWeight(comp);
+        const bool                 requiresAdjustment       = add;
+        const bool                 requiresDividendMultiuse = requiresAdjustment || !isDiv;
+        const BasicBlock::weight_t curBBWeight              = m_block->getBBWeight(comp);
 
         if (requiresDividendMultiuse)
         {
@@ -5350,10 +5375,10 @@ GenTree* Lowering::LowerConstIntDivOrMod(GenTree* node)
         // For -3 we need:
         //     mulhi -= dividend                    ; requires sub adjust
         //     div = signbit(mulhi) + sar(mulhi, 1) ; requires shift adjust
-        bool     requiresAddSubAdjust     = signum(divisorValue) != signum(magic);
-        bool     requiresShiftAdjust      = shift != 0;
-        bool     requiresDividendMultiuse = requiresAddSubAdjust || !isDiv;
-        unsigned curBBWeight              = comp->compCurBB->getBBWeight(comp);
+        bool                 requiresAddSubAdjust     = signum(divisorValue) != signum(magic);
+        bool                 requiresShiftAdjust      = shift != 0;
+        bool                 requiresDividendMultiuse = requiresAddSubAdjust || !isDiv;
+        BasicBlock::weight_t curBBWeight              = comp->compCurBB->getBBWeight(comp);
 
         if (requiresDividendMultiuse)
         {
@@ -6258,6 +6283,7 @@ void Lowering::ContainCheckNode(GenTree* node)
             break;
         case GT_STOREIND:
             ContainCheckStoreIndir(node->AsIndir());
+            break;
         case GT_IND:
             ContainCheckIndir(node->AsIndir());
             break;
@@ -6493,7 +6519,7 @@ void Lowering::TransformUnusedIndirection(GenTreeIndir* ind, Compiler* comp, Bas
 {
     // A nullcheck is essentially the same as an indirection with no use.
     // The difference lies in whether a target register must be allocated.
-    // On XARCH we can generate a compare with no target register as long as the addresss
+    // On XARCH we can generate a compare with no target register as long as the address
     // is not contained.
     // On ARM64 we can generate a load to REG_ZR in all cases.
     // However, on ARM we must always generate a load to a register.

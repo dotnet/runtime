@@ -1517,11 +1517,6 @@ void SystemDomain::LoadBaseSystemClasses()
     // Load String
     g_pStringClass = CoreLibBinder::LoadPrimitiveType(ELEMENT_TYPE_STRING);
 
-#ifdef FEATURE_UTF8STRING
-    // Load Utf8String
-    g_pUtf8StringClass = CoreLibBinder::GetClass(CLASS__UTF8_STRING);
-#endif // FEATURE_UTF8STRING
-
 #ifndef CROSSGEN_COMPILE
     ECall::PopulateManagedStringConstructors();
 #endif // CROSSGEN_COMPILE

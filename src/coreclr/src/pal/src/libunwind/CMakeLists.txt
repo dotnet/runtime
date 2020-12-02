@@ -32,6 +32,7 @@ if(CLR_CMAKE_HOST_UNIX)
 
     # Disable warning due to incorrect format specifier in debugging printf via the Debug macro
     add_compile_options(-Wno-format -Wno-format-security)
+    add_compile_options(-Wno-implicit-fallthrough)
 
     if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
       add_compile_options(-Wno-header-guard)

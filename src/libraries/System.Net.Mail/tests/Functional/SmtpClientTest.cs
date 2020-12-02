@@ -19,6 +19,7 @@ using Xunit;
 
 namespace System.Net.Mail.Tests
 {
+    [PlatformSpecific(~TestPlatforms.Browser)]  // SmtpClient is not supported on Browser
     public class SmtpClientTest : FileCleanupTestBase
     {
         private SmtpClient _smtp;

@@ -127,74 +127,6 @@ namespace BINDER_SPACE
         return hr;
     }
 
-    HRESULT GetNextPath(SString& paths, SString::Iterator& startPos, SString& outPath)
-    {
-        HRESULT hr = S_OK;
-
-        bool wrappedWithQuotes = false;
-
-        // Skip any leading spaces or path separators
-        while (paths.Skip(startPos, W(' ')) || paths.Skip(startPos, PATH_SEPARATOR_CHAR_W)) {}
-
-        if (startPos == paths.End())
-        {
-            // No more paths in the string and we just skipped over some white space
-            outPath.Set(W(""));
-            return S_FALSE;
-        }
-
-        // Support paths being wrapped with quotations
-        if (paths.Skip(startPos, W('\"')))
-        {
-            wrappedWithQuotes = true;
-        }
-
-        SString::Iterator iEnd = startPos;      // Where current path ends
-        SString::Iterator iNext;                // Where next path starts
-        if (wrappedWithQuotes)
-        {
-            if (paths.Find(iEnd, W('\"')))
-            {
-                iNext = iEnd;
-                // Find where the next path starts - there should be a path separator right after the closing quotation mark
-                if (paths.Find(iNext, PATH_SEPARATOR_CHAR_W))
-                {
-                    iNext++;
-                }
-                else
-                {
-                    iNext = paths.End();
-                }
-            }
-            else
-            {
-                // There was no terminating quotation mark - that's bad
-                GO_WITH_HRESULT(E_INVALIDARG);
-            }
-        }
-        else if (paths.Find(iEnd, PATH_SEPARATOR_CHAR_W))
-        {
-            iNext = iEnd + 1;
-        }
-        else
-        {
-            iNext = iEnd = paths.End();
-        }
-
-        // Skip any trailing spaces
-        while (iEnd[-1] == W(' '))
-        {
-            iEnd--;
-        }
-
-        _ASSERTE(startPos < iEnd);
-
-        outPath.Set(paths, startPos, iEnd);
-        startPos = iNext;
- Exit:
-        return hr;
-    }
-
     HRESULT ApplicationContext::SetupBindingPaths(SString &sTrustedPlatformAssemblies,
                                                   SString &sPlatformResourceRoots,
                                                   SString &sAppPaths,
@@ -221,62 +153,13 @@ namespace BINDER_SPACE
         for (SString::Iterator i = sTrustedPlatformAssemblies.Begin(); i != sTrustedPlatformAssemblies.End(); )
         {
             SString fileName;
+            SString simpleName;
+            bool isNativeImage = false;
             HRESULT pathResult = S_OK;
-            IF_FAIL_GO(pathResult = GetNextPath(sTrustedPlatformAssemblies, i, fileName));
+            IF_FAIL_GO(pathResult = GetNextTPAPath(sTrustedPlatformAssemblies, i, /*dllOnly*/ false, fileName, simpleName, isNativeImage));
             if (pathResult == S_FALSE)
             {
                 break;
-            }
-
-#ifndef CROSSGEN_COMPILE
-            if (Path::IsRelative(fileName))
-            {
-                GO_WITH_HRESULT(E_INVALIDARG);
-            }
-#endif
-
-            // Find the beginning of the simple name
-            SString::Iterator iSimpleNameStart = fileName.End();
-
-            if (!fileName.FindBack(iSimpleNameStart, DIRECTORY_SEPARATOR_CHAR_W))
-            {
-                iSimpleNameStart = fileName.Begin();
-            }
-            else
-            {
-                // Advance past the directory separator to the first character of the file name
-                iSimpleNameStart++;
-            }
-
-            if (iSimpleNameStart == fileName.End())
-            {
-                GO_WITH_HRESULT(E_INVALIDARG);
-            }
-
-            SString simpleName;
-            bool isNativeImage = false;
-
-            // GCC complains if we create SStrings inline as part of a function call
-            SString sNiDll(W(".ni.dll"));
-            SString sNiExe(W(".ni.exe"));
-            SString sDll(W(".dll"));
-            SString sExe(W(".exe"));
-
-            if (fileName.EndsWithCaseInsensitive(sNiDll) ||
-                fileName.EndsWithCaseInsensitive(sNiExe))
-            {
-                simpleName.Set(fileName, iSimpleNameStart, fileName.End() - 7);
-                isNativeImage = true;
-            }
-            else if (fileName.EndsWithCaseInsensitive(sDll) ||
-                     fileName.EndsWithCaseInsensitive(sExe))
-            {
-                simpleName.Set(fileName, iSimpleNameStart, fileName.End() - 4);
-            }
-            else
-            {
-                // Invalid filename
-                GO_WITH_HRESULT(E_INVALIDARG);
             }
 
             const SimpleNameToFileNameMapEntry *pExistingEntry = m_pTrustedPlatformAssemblyMap->LookupPtr(simpleName.GetUnicode());

@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
+    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
     <OutputType>Library</OutputType>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
@@ -19,6 +19,14 @@
   <ItemGroup>
     <Compile Include="ApkBuilder.cs" />
     <Compile Include="AndroidAppBuilder.cs" />
+    <Compile Include="AndroidApkFileReplacerTask.cs" />
     <Compile Include="Utils.cs" />
   </ItemGroup>
+
+  <Target Name="PublishBuilder"
+          AfterTargets="Build"
+          DependsOnTargets="Publish" />
+
+  <Target Name="GetFilesToPackage" />
+
 </Project>

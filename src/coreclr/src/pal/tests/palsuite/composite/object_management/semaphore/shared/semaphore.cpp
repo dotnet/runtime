@@ -148,7 +148,6 @@ PALTEST(composite_object_management_semaphore_shared_paltest_semaphore_shared, "
     {
         Fail("Error in obtaining the parameters\n");
     }
-//    Trace("Process created, value of process count is [%d]\n", USE_PROCESS_COUNT);
 
     if(argc == 6)
     {
@@ -251,14 +250,11 @@ PALTEST(composite_object_management_semaphore_shared_paltest_semaphore_shared, "
         {
             buffer = (struct statistics *)resultBuffer->getResultBuffer(i);
             returnCode = fprintf(pFile, "%d,%d,%d,%d,%lu,%d\n", buffer->processId, buffer->operationsFailed, buffer->operationsPassed, buffer->operationsTotal, buffer->operationTime, buffer->relationId );
-//            Trace("Iteration %d over\n", i);
-
         }
     }
     fclose(pFile);
     /* Logging for the test case over, clean up the handles */
 
-//    Trace("Test Thread %d done\n", USE_PROCESS_COUNT);
     for( i = 0; i < THREAD_COUNT; i++ )
     {
         if(!CloseHandle(hThread[i]) )
@@ -320,7 +316,6 @@ void  PALAPI Run_Thread_semaphore_shared (LPVOID lpParam)
 
         if(dwWaitResult != WAIT_OBJECT_0)
         {
-//            Trace("Error while waiting for onject @ thread %d, # iter %d, RC is %d, Error is %d\n", Id, i, dwWaitResult, GetLastError());
             stats.operationsFailed += 1;
             stats.operationsTotal  += 1;
             testStatus = FAIL;
@@ -329,7 +324,6 @@ void  PALAPI Run_Thread_semaphore_shared (LPVOID lpParam)
         if (! ReleaseSemaphore(hSemaphoreHandle, 1, NULL))
         {
             // Deal with error.
-  //          Trace("Error while releasing Semaphore @ thread %d # iter %d\n", Id, i);
             stats.operationsFailed += 1;
             stats.operationsTotal  += 1;
             // Probably need to have while true loop to attempt to release semaphore..
@@ -339,8 +333,6 @@ void  PALAPI Run_Thread_semaphore_shared (LPVOID lpParam)
 
         stats.operationsTotal  += 1;
         stats.operationsPassed += 1;
-//        Trace("Successs while releasing Semaphore @ iteration %d -> thread %d -> Process %d\n", i, Id, USE_PROCESS_COUNT);
-
     }
 
     stats.operationTime = GetTimeDiff(dwStartTime);
@@ -348,5 +340,4 @@ void  PALAPI Run_Thread_semaphore_shared (LPVOID lpParam)
     {
         Fail("Error:%d: while writing to shared memory, Thread Id is[%d] and Process id is [%d]\n", GetLastError(), Id, USE_PROCESS_COUNT);
     }
-    //  Trace("Thread %d over for process %d\n", Id, USE_PROCESS_COUNT);
 }

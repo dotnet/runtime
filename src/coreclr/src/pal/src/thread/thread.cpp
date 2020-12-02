@@ -539,7 +539,6 @@ CorUnix::InternalCreateThread(
 
     pthread_t pthread;
     pthread_attr_t pthreadAttr;
-    size_t pthreadStackSize;
 #if PTHREAD_CREATE_MODIFIES_ERRNO
     int storedErrno;
 #endif  // PTHREAD_CREATE_MODIFIES_ERRNO
@@ -855,7 +854,7 @@ ExitThread(
     pthread_exit(NULL);
 
     ASSERT("pthread_exit should not return!\n");
-    for (;;);
+    while (true);
 }
 
 /*++
@@ -1251,6 +1250,9 @@ InternalSetThreadPriorityExit:
     return palError;
 }
 
+#define SECS_TO_NS 1000000000 /* 10^9 */
+#define USECS_TO_NS 1000 /* 10^3 */
+
 BOOL
 CorUnix::GetThreadTimesInternal(
     IN HANDLE hThread,
@@ -1259,8 +1261,6 @@ CorUnix::GetThreadTimesInternal(
 {
     __int64 calcTime;
     BOOL retval = FALSE;
-    const __int64 SECS_TO_NS = 1000000000; /* 10^9 */
-    const __int64 USECS_TO_NS = 1000;      /* 10^3 */
 
 #if HAVE_MACH_THREADS
     thread_basic_info resUsage;

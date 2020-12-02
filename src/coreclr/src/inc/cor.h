@@ -143,8 +143,6 @@ typedef UNALIGNED void const *UVCP_CONSTANT;
 #define TARGET_MAIN_CLR_DLL_NAME_W    MAKE_TARGET_DLLNAME_W(MAIN_CLR_MODULE_NAME_W)
 #define TARGET_MAIN_CLR_DLL_NAME_A    MAKE_TARGET_DLLNAME_A(MAIN_CLR_MODULE_NAME_A)
 
-#define SWITCHOUT_HANDLE_VALUE ((HANDLE)(LONG_PTR)-2)
-
 //*****************************************************************************
 //*****************************************************************************
 //

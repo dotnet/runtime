@@ -5054,6 +5054,51 @@ MONO_RESTORE_WARNING
 				if (export_name)
 					g_hash_table_insert (acfg->export_names, wrapper, export_name);
 			}
+
+#ifdef ENABLE_NETCORE
+			for (j = 0; j < cattr->num_attrs; ++j)
+				if (cattr->attrs [j].ctor && mono_is_corlib_image (m_class_get_image (cattr->attrs [j].ctor->klass)) && !strcmp (m_class_get_name (cattr->attrs [j].ctor->klass), "UnmanagedCallersOnlyAttribute"))
+					break;
+			if (j < cattr->num_attrs) {
+				MonoCustomAttrEntry *e = &cattr->attrs [j];
+				const char *named;
+				int slen;
+				char *export_name = NULL;
+				MonoMethod *wrapper;
+
+				if (!(method->flags & METHOD_ATTRIBUTE_STATIC)) {
+					g_warning ("AOT restriction: Method '%s' must be static since it is decorated with [UnmanagedCallers].",
+						mono_method_full_name (method, TRUE));
+					exit (1);
+				}
+
+				gpointer *typed_args = NULL;
+				gpointer *named_args = NULL;
+				CattrNamedArg *named_arg_info = NULL;
+				int num_named_args = 0;
+				mono_reflection_create_custom_attr_data_args_noalloc (acfg->image, e->ctor, e->data, e->data_size, &typed_args, &named_args, &num_named_args, &named_arg_info, error);
+				mono_error_assert_ok (error);
+				for (j = 0; j < num_named_args; ++j) {
+					if (named_arg_info [j].field && !strcmp (named_arg_info [j].field->name, "EntryPoint")) {
+						named = named_args [j];
+						slen = mono_metadata_decode_value (named, &named);
+						export_name = (char *)g_malloc (slen + 1);
+						memcpy (export_name, named, slen);
+						export_name [slen] = 0;
+					}
+				}
+				g_free (named_args);
+				g_free (named_arg_info);
+
+				wrapper = mono_marshal_get_managed_wrapper (method, NULL, 0, error);
+				mono_error_assert_ok (error);
+
+				add_method (acfg, wrapper);
+				if (export_name)
+					g_hash_table_insert (acfg->export_names, wrapper, export_name);
+			}
+#endif
+
 			g_free (cattr);
 		}
 
@@ -8484,6 +8529,7 @@ can_encode_method (MonoAotCompile *acfg, MonoMethod *method)
 			case MONO_WRAPPER_MANAGED_TO_NATIVE:
 				break;
 			case MONO_WRAPPER_MANAGED_TO_MANAGED:
+			case MONO_WRAPPER_NATIVE_TO_MANAGED:
 			case MONO_WRAPPER_CASTCLASS: {
 				WrapperInfo *info = mono_marshal_get_wrapper_info (method);
 
@@ -9564,6 +9610,17 @@ append_mangled_klass (GString *s, MonoClass *klass)
 	return TRUE;
 }
 
+static const char*
+get_assembly_prefix (MonoImage *image)
+{
+	if (mono_is_corlib_image (image))
+		return "corlib";
+	else if (!strcmp (image->assembly->aname.name, "corlib"))
+		return "__corlib__";
+	else
+		return image->assembly->aname.name;
+}
+
 static gboolean
 append_mangled_method (GString *s, MonoMethod *method);
 
@@ -9573,9 +9630,11 @@ append_mangled_wrapper (GString *s, MonoMethod *method)
 	gboolean success = TRUE;
 	gboolean append_sig = TRUE;
 	WrapperInfo *info = mono_marshal_get_wrapper_info (method);
+	gboolean is_corlib = mono_is_corlib_image (m_class_get_image (method->klass));
+
 	g_string_append_printf (s, "wrapper_");
 	/* Most wrappers are in mscorlib */
-	if (m_class_get_image (method->klass) != mono_get_corlib ())
+	if (!is_corlib)
 		g_string_append_printf (s, "%s_", m_class_get_image (method->klass)->assembly->aname.name);
 
 	if (method->wrapper_type != MONO_WRAPPER_OTHER && method->wrapper_type != MONO_WRAPPER_MANAGED_TO_NATIVE)
@@ -9636,7 +9695,7 @@ append_mangled_wrapper (GString *s, MonoMethod *method)
 		} else if (info->subtype == WRAPPER_SUBTYPE_INTERP_LMF)
 			g_string_append_printf (s, "%s", method->name);
 		else if (info->subtype == WRAPPER_SUBTYPE_AOT_INIT) {
-			g_string_append_printf (s, "%s_%d_", m_class_get_image (method->klass)->assembly->aname.name, info->d.aot_init.subtype);
+			g_string_append_printf (s, "%s_%d_", get_assembly_prefix (m_class_get_image (method->klass)), info->d.aot_init.subtype);
 			append_sig = FALSE;
 		}
 		break;
@@ -9789,10 +9848,10 @@ append_mangled_method (GString *s, MonoMethod *method)
 		g_assert (imethod->context.class_inst != NULL || imethod->context.method_inst != NULL);
 
 		append_mangled_context (s, &imethod->context);
-		g_string_append_printf (s, "_declared_by_%s_", m_class_get_image (imethod->declaring->klass)->assembly->aname.name);
+		g_string_append_printf (s, "_declared_by_%s_", get_assembly_prefix (m_class_get_image (imethod->declaring->klass)));
 		append_mangled_method (s, imethod->declaring);
 	} else if (method->is_generic) {
-		g_string_append_printf (s, "%s_", m_class_get_image (method->klass)->assembly->aname.name);
+		g_string_append_printf (s, "%s_", get_assembly_prefix (m_class_get_image (method->klass)));
 
 		g_string_append_printf (s, "generic_");
 		append_mangled_klass (s, method->klass);
@@ -9804,7 +9863,7 @@ append_mangled_method (GString *s, MonoMethod *method)
 
 		return append_mangled_signature (s, mono_method_signature_internal (method));
 	} else {
-		g_string_append_printf (s, "%s", m_class_get_image (method->klass)->assembly->aname.name);
+		g_string_append_printf (s, "%s", get_assembly_prefix (m_class_get_image (method->klass)));
 		append_mangled_klass (s, method->klass);
 		g_string_append_printf (s, "_%s_", method->name);
 		if (!append_mangled_signature (s, mono_method_signature_internal (method))) {
@@ -9942,7 +10001,7 @@ execute_system (const char * command)
 {
 	int status = 0;
 
-#if G_HAVE_API_SUPPORT(HAVE_CLASSIC_WINAPI_SUPPORT) && defined(HOST_WIN32)
+#if defined (HOST_WIN32)
 	// We need an extra set of quotes around the whole command to properly handle commands 
 	// with spaces since internally the command is called through "cmd /c.
 	char * quoted_command = g_strdup_printf ("\"%s\"", command);
@@ -13920,7 +13979,7 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options,
 	if (acfg->aot_opts.llvm_only)
 		acfg->flags = (MonoAotFileFlags)(acfg->flags | MONO_AOT_FILE_FLAG_LLVM_ONLY);
 
-	acfg->assembly_name_sym = g_strdup (acfg->image->assembly->aname.name);
+	acfg->assembly_name_sym = g_strdup (get_assembly_prefix (acfg->image));
 	/* Get rid of characters which cannot occur in symbols */
 	for (p = acfg->assembly_name_sym; *p; ++p) {
 		if (!(isalnum (*p) || *p == '_'))

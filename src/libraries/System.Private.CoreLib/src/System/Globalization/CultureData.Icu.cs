@@ -235,11 +235,48 @@ namespace System.Globalization
             return geoId == -1 ? CultureData.Invariant.GeoId : geoId;
         }
 
+        private const uint DigitSubstitutionMask = 0x0000FFFF;
+        private const uint ListSeparatorMask     = 0xFFFF0000;
+
         private static int IcuGetDigitSubstitution(string cultureName)
         {
             Debug.Assert(!GlobalizationMode.UseNls);
-            int digitSubstitution = IcuLocaleData.GetLocaleDataNumericPart(cultureName, IcuLocaleDataParts.DigitSubstitution);
-            return digitSubstitution == -1 ? (int) DigitShapes.None : digitSubstitution;
+            int digitSubstitution = IcuLocaleData.GetLocaleDataNumericPart(cultureName, IcuLocaleDataParts.DigitSubstitutionOrListSeparator);
+            return digitSubstitution == -1 ? (int) DigitShapes.None : (int)(digitSubstitution & DigitSubstitutionMask);
+        }
+
+        private static string IcuGetListSeparator(string? cultureName)
+        {
+            Debug.Assert(!GlobalizationMode.UseNls);
+            Debug.Assert(cultureName != null);
+
+            int separator = IcuLocaleData.GetLocaleDataNumericPart(cultureName, IcuLocaleDataParts.DigitSubstitutionOrListSeparator);
+            if (separator != -1)
+            {
+                switch (separator & ListSeparatorMask)
+                {
+                    case IcuLocaleData.CommaSep:
+                        return ",";
+
+                    case IcuLocaleData.SemicolonSep:
+                        return ";";
+
+                    case IcuLocaleData.ArabicCommaSep:
+                        return "\u060C";
+
+                    case IcuLocaleData.ArabicSemicolonSep:
+                        return "\u061B";
+
+                    case IcuLocaleData.DoubleCommaSep:
+                        return ",,";
+
+                    default:
+                        Debug.Assert(false, "[CultureData.IcuGetListSeparator] Unexpected ListSeparator value.");
+                        break;
+                }
+            }
+
+            return ","; // default separator
         }
 
         private static string IcuGetThreeLetterWindowsLanguageName(string cultureName)

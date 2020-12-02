@@ -12,7 +12,7 @@ add_executable(
     %MainSource%
     runtime.h
     runtime.m
-    modules.m
+    %AotModulesSource%
     ${APP_RESOURCES}
 )
 

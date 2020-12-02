@@ -35,7 +35,8 @@
 #endif
 #include <windows.h>
 #include <psapi.h>
-#include <gmodule-win32-internals.h>
+#include <gmodule.h>
+#include "../utils/w32subset.h"
 
 #define LIBSUFFIX ".dll"
 #define LIBPREFIX ""
@@ -72,7 +73,7 @@ g_module_open (const gchar *file, GModuleFlags flags)
 	return module;
 }
 
-#if G_HAVE_API_SUPPORT(HAVE_CLASSIC_WINAPI_SUPPORT)
+#if HAVE_API_SUPPORT_WIN32_ENUM_PROCESS_MODULES
 gpointer
 w32_find_symbol (const gchar *symbol_name)
 {
@@ -119,7 +120,17 @@ w32_find_symbol (const gchar *symbol_name)
 	g_free (modules);
 	return NULL;
 }
-#endif /* G_HAVE_API_SUPPORT(HAVE_CLASSIC_WINAPI_SUPPORT) */
+#elif !HAVE_EXTERN_DEFINED_WIN32_ENUM_PROCESS_MODULES
+gpointer
+w32_find_symbol (const gchar *symbol_name)
+{
+	g_unsupported_api ("EnumProcessModules");
+	SetLastError (ERROR_NOT_SUPPORTED);
+	return NULL;
+}
+#else
+extern gpointer w32_find_symbol (const gchar *symbol_name);
+#endif /* HAVE_API_SUPPORT_WIN32_ENUM_PROCESS_MODULES */
 
 gboolean
 g_module_symbol (GModule *module, const gchar *symbol_name, gpointer *symbol)
@@ -140,6 +151,7 @@ g_module_symbol (GModule *module, const gchar *symbol_name, gpointer *symbol)
 	}
 }
 
+#if HAVE_API_SUPPORT_WIN32_GET_MODULE_HANDLE_EX
 gboolean
 g_module_address (void *addr, char *file_name, size_t file_name_len,
                   void **file_base, char *sym_name, size_t sym_name_len,
@@ -150,14 +162,14 @@ g_module_address (void *addr, char *file_name, size_t file_name_len,
 	 * We have to cast the address because usually this func works with strings,
 	 * this being an exception.
 	 */
-	BOOL ret = GetModuleHandleEx(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS, (LPCWSTR)addr, &module);
+	BOOL ret = GetModuleHandleExW (GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS, (LPCWSTR)addr, &module);
 	if (ret)
 		return FALSE;
 
 	if (file_name != NULL && file_name_len >= 1) {
 		/* sigh, non-const. AIX for POSIX is the same way. */
-		TCHAR *fname = (TCHAR*)g_alloca(255);
-		DWORD bytes = GetModuleFileName(module, fname, 255);
+		WCHAR fname [MAX_PATH];
+		DWORD bytes = GetModuleFileNameW (module, fname, G_N_ELEMENTS (fname));
 		/* XXX: check for ERROR_INSUFFICIENT_BUFFER? */
 		if (bytes) {
 			/* Convert back to UTF-8 from wide for runtime */
@@ -178,25 +190,47 @@ g_module_address (void *addr, char *file_name, size_t file_name_len,
 	FreeLibrary (module);
 	return TRUE;
 }
+#elif !HAVE_EXTERN_DEFINED_WIN32_GET_MODULE_HANDLE_EX
+gboolean
+g_module_address (void *addr, char *file_name, size_t file_name_len,
+	void **file_base, char *sym_name, size_t sym_name_len,
+	void **sym_addr)
+{
+	g_unsupported_api ("GetModuleHandleEx");
+	SetLastError (ERROR_NOT_SUPPORTED);
+	return FALSE;
+}
+#endif /* HAVE_API_SUPPORT_WIN32_GET_MODULE_HANDLE_EX */
 
-#if G_HAVE_API_SUPPORT(HAVE_CLASSIC_WINAPI_SUPPORT)
+#if HAVE_API_SUPPORT_WIN32_FORMAT_MESSAGE
 const gchar *
 g_module_error (void)
 {
 	gchar* ret = NULL;
-	TCHAR* buf = NULL;
 	DWORD code = GetLastError ();
+#if HAVE_API_SUPPORT_WIN32_LOCAL_ALLOC_FREE
+	PWSTR buf = NULL;
+	if (FormatMessageW (FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_ALLOCATE_BUFFER, NULL, code, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), (PWSTR)&buf, 0, NULL)) {
+		ret = u16to8 (buf);
+		LocalFree (buf);
+	}
+#else
+	WCHAR local_buf [1024];
+	if (!FormatMessageW (FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS, NULL,
+		code, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), local_buf, G_N_ELEMENTS (local_buf) - 1, NULL) )
+		local_buf [0] = TEXT('\0');
 
-	/* FIXME: buf must not be NULL! */
-	FormatMessage (FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_ALLOCATE_BUFFER, NULL, 
-		code, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), buf, 0, NULL);
-
-	ret = u16to8 (buf);
-	LocalFree(buf);
-
+	ret = u16to8 (local_buf);
+#endif
 	return ret;
 }
-#endif /* G_HAVE_API_SUPPORT(HAVE_CLASSIC_WINAPI_SUPPORT) */
+#elif !HAVE_EXTERN_DEFINED_WIN32_FORMAT_MESSAGE
+const gchar *
+g_module_error (void)
+{
+	return g_strdup_printf ("GetLastError=%d. FormatMessage not supported.", GetLastError ());
+}
+#endif /* HAVE_API_SUPPORT_WIN32_FORMAT_MESSAGE */
 
 gboolean
 g_module_close (GModule *module)
@@ -279,6 +313,7 @@ mono_get_module_filename (gpointer mod, gunichar2 **pstr, guint32 *plength)
 // Prefer mono_get_module_filename over mono_get_module_filename_ex and mono_get_module_basename.
 // Prefer not-ex, not-base.
 //
+#if HAVE_API_SUPPORT_WIN32_GET_MODULE_FILE_NAME_EX
 gboolean
 mono_get_module_filename_ex (gpointer process, gpointer mod, gunichar2 **pstr, guint32 *plength)
 {
@@ -309,6 +344,15 @@ mono_get_module_filename_ex (gpointer process, gpointer mod, gunichar2 **pstr, g
 	*plength = length;
 	return success;
 }
+#elif !HAVE_EXTERN_DEFINED_WIN32_GET_MODULE_FILE_NAME_EX
+gboolean
+mono_get_module_filename_ex (gpointer process, gpointer mod, gunichar2 **pstr, guint32 *plength)
+{
+	g_unsupported_api ("GetModuleFileNameEx");
+	SetLastError (ERROR_NOT_SUPPORTED);
+	return FALSE;
+}
+#endif /* HAVE_API_SUPPORT_WIN32_GET_MODULE_FILE_NAME_EX */
 
 // This is not about GModule but is still a close fit.
 // This is not named "g_" but that should be ok.
@@ -318,6 +362,7 @@ mono_get_module_filename_ex (gpointer process, gpointer mod, gunichar2 **pstr, g
 // Prefer mono_get_module_filename over mono_get_module_filename_ex and mono_get_module_basename.
 // Prefer not-ex, not-base.
 //
+#if HAVE_API_SUPPORT_WIN32_GET_MODULE_BASE_NAME
 gboolean
 mono_get_module_basename (gpointer process, gpointer mod, gunichar2 **pstr, guint32 *plength)
 {
@@ -348,6 +393,15 @@ mono_get_module_basename (gpointer process, gpointer mod, gunichar2 **pstr, guin
 	*plength = length;
 	return success;
 }
+#elif !HAVE_EXTERN_DEFINED_WIN32_GET_MODULE_BASE_NAME
+gboolean
+mono_get_module_basename (gpointer process, gpointer mod, gunichar2 **pstr, guint32 *plength)
+{
+	g_unsupported_api ("GetModuleBaseName");
+	SetLastError (ERROR_NOT_SUPPORTED);
+	return FALSE;
+}
+#endif /* HAVE_API_SUPPORT_WIN32_GET_MODULE_BASE_NAME */
 
 // g_free the result
 // No MAX_PATH limit.

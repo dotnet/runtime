@@ -16,7 +16,7 @@ function usage {
     echo '    --emulatorPath=/opt/linux-arm-emulator'
     echo '    --mountPath=/opt/linux-arm-emulator-root'
     echo '    --buildConfig=Release'
-    echo '    --testRootDir=~/Downloads/Windows_NT.x64.Release'
+    echo '    --testRootDir=~/Downloads/windows.x64.Release'
     echo '    --mscorlibDir=~/clr/bin/bin/coreclr/Linux.armel.Release'
     echo '    --coreFxNativeBinDir=~/cfx/bin/Linux.armel.Release'
     echo '    --coreFxBinDir="~/cfx/bin/Linux.AnyCPU.Release;~/cfx/bin/Unix.AnyCPU.Release;~/cfx/bin/AnyOS.AnyCPU.Release"'
@@ -353,7 +353,7 @@ function copy_to_emulator {
 function run_tests {
     sudo chroot $__ARMEmulRootfs /bin/bash -x <<EOF
         cd "$__ARMEmulCoreclr"
-        ./tests/bringup_runtest.sh --sequential\
+        ./bringup_runtest.sh --sequential\
                            --testRootDir=$__testRootDirBase \
                            --mscorlibDir=$__mscorlibDirBase \
                            --coreFxNativeBinDir=$__coreFxNativeBinDirBase \

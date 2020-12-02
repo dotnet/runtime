@@ -25,7 +25,7 @@ namespace System.Net.Sockets.Tests
         private const string TestMessage = "test123!";
         private static ArraySegment<byte> TestBytes => Encoding.ASCII.GetBytes(TestMessage);
         private static string GetMessageString(ArraySegment<byte> data, int count) =>
-            Encoding.ASCII.GetString(data.AsSpan().Slice(0, count));
+            Encoding.ASCII.GetString(data.AsSpan(0, count));
 
         [Fact]
         public void UseOnlyOverlappedIO_AlwaysFalse()

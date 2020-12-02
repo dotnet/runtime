@@ -14,12 +14,12 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         private readonly IMethodNode _targetMethod;
 
-        private readonly ModuleToken _methodToken;
+        private readonly MethodWithToken _methodToken;
 
         public DelegateCtorSignature(
             TypeDesc delegateType,
             IMethodNode targetMethod,
-            ModuleToken methodToken)
+            MethodWithToken methodToken)
         {
             _delegateType = delegateType;
             _targetMethod = targetMethod;
@@ -40,10 +40,10 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
             if (!relocsOnly)
             {
-                SignatureContext innerContext = builder.EmitFixup(factory, ReadyToRunFixupKind.DelegateCtor, _methodToken.Module, factory.SignatureContext);
+                SignatureContext innerContext = builder.EmitFixup(factory, ReadyToRunFixupKind.DelegateCtor, _methodToken.Token.Module, factory.SignatureContext);
 
                 builder.EmitMethodSignature(
-                    new MethodWithToken(_targetMethod.Method, _methodToken, constrainedType: null, unboxing: false),
+                    _methodToken,
                     enforceDefEncoding: false,
                     enforceOwningType: false,
                     innerContext,
@@ -88,7 +88,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             if (result != 0)
                 return result;
 
-            return _methodToken.CompareTo(otherNode._methodToken);
+            return _methodToken.CompareTo(otherNode._methodToken, comparer);
         }
     }
 }

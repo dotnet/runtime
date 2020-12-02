@@ -40,7 +40,7 @@
       </_PropertiesToPass>
 
       
-      <_PropertiesToPass Condition="'$(TargetArchitecture)' == 'wasm' ">
+      <_PropertiesToPass Condition="'$(TargetOS)' == 'Browser' Or '$(TargetOS)' == 'Android'">
         $(_PropertiesToPass);
         IncludeDotNetCli=$(IncludeDotNetCli);
         DotNetCliRuntime=$(DotNetCliRuntime);
@@ -77,33 +77,37 @@
   <!-- Choose a suitable runtime RID for Helix to restore the dotnet cli -->
   <PropertyGroup Condition="'$(HelixRuntimeRid)' == ''">
     <TargetOSSpec>$(TargetOS)$(TargetOSSubgroup)</TargetOSSpec>
-    <HelixRuntimeRid Condition="'$(TargetOSSpec)' == 'Windows_NT'">win-$(TargetArchitecture)</HelixRuntimeRid>
+    <HelixRuntimeRid Condition="'$(TargetOSSpec)' == 'windows'">win-$(TargetArchitecture)</HelixRuntimeRid>
     <HelixRuntimeRid Condition="'$(TargetOSSpec)' == 'OSX'">osx-$(TargetArchitecture)</HelixRuntimeRid>
     <HelixRuntimeRid Condition="'$(TargetOSSpec)' == 'Linux'">linux-$(TargetArchitecture)</HelixRuntimeRid>
     <HelixRuntimeRid Condition="'$(TargetOSSpec)' == 'Linux_musl'">linux-musl-$(TargetArchitecture)</HelixRuntimeRid>
-    <HelixRuntimeRid Condition="'$(TargetArchitecture)' == 'wasm'">browser-wasm</HelixRuntimeRid>
+    <HelixRuntimeRid Condition="'$(TargetOSSpec)' == 'Browser'">browser-wasm</HelixRuntimeRid>
+    <HelixRuntimeRid Condition="'$(TargetOSSpec)' == 'Android'">android-$(TargetArchitecture)</HelixRuntimeRid>
   </PropertyGroup>
 
   <PropertyGroup>
-    <BinDir>$([MSBuild]::NormalizeDirectory($(TestWorkingDir)))</BinDir>
-    <CoreRootDirectory>$(BinDir)Tests\Core_Root\</CoreRootDirectory>
-    <PayloadsRootDirectory>$(BinDir)Payloads\</PayloadsRootDirectory>
+    <CoreRootDirectory>$(TestBinDir)Tests\Core_Root\</CoreRootDirectory>
+    <PayloadsRootDirectory>$(TestBinDir)Payloads\</PayloadsRootDirectory>
     <PayloadsRootDirectory>$([MSBuild]::NormalizeDirectory($(PayloadsRootDirectory)))</PayloadsRootDirectory>
     <TestEnvFileName Condition=" '$(TargetsWindows)' == 'true' ">SetStressModes_$(Scenario).cmd</TestEnvFileName>
     <TestEnvFileName Condition=" '$(TargetsWindows)' != 'true' ">SetStressModes_$(Scenario).sh</TestEnvFileName>
 
     <IncludeDotNetCli>true</IncludeDotNetCli>
     <DotNetCliPackageType>runtime</DotNetCliPackageType>
-    <DotNetCliVersion>$(BundledNETCoreAppPackageVersion)</DotNetCliVersion>
+    <DotNetCliVersion>5.0.0</DotNetCliVersion>
     <DotNetCliRuntime>$(HelixRuntimeRid)</DotNetCliRuntime> 
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(TargetArchitecture)' == 'wasm'">
+  <PropertyGroup Condition="'$(TargetOS)' == 'Browser' Or '$(TargetOS)' == 'Android'">
     <DotNetCliPackageType>sdk</DotNetCliPackageType>
     <GlobalJsonContent>$([System.IO.File]::ReadAllText('$(RepoRoot)global.json'))</GlobalJsonContent>
     <DotNetCliVersion>$([System.Text.RegularExpressions.Regex]::Match($(GlobalJsonContent), '(%3F&lt;="dotnet": ").*(%3F=")'))</DotNetCliVersion>
-    <!-- wasm needs to use the host OS DotnetCliRuntime, which on its queue is linux-x64 -->
+    <!-- wasm and Android needs to use the host OS DotnetCliRuntime, which on its queue is linux-x64 -->
     <DotNetCliRuntime>linux-x64</DotNetCliRuntime>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(TargetOS)' == 'Android'">
+    <IncludeXHarnessCli>true</IncludeXHarnessCli>
   </PropertyGroup>
 
   <Import Project="testgrouping.proj" />
@@ -115,10 +119,10 @@
       </_XUnitWrapperDll>
       <_XUnitWrapperDll Include="@(XUnitWrapperGrouping)" />
 
-      <!-- This adds the remaining *.XUnitWrapper.dll files in BinDir unless
+      <!-- This adds the remaining *.XUnitWrapper.dll files in TestBinDir unless
            1) they are in PayloadsRootDirectory or
            2) they are grouped by XUnitWrapperGrouping. -->
-      <_XUnitWrapperDll Include="$(BinDir)**\*.XUnitWrapper.dll" Exclude="$(PayloadsRootDirectory)**\*.XUnitWrapper.dll;@(XUnitWrapperGrouping->Metadata('FullPath'))">
+      <_XUnitWrapperDll Include="$(TestBinDir)**\*.XUnitWrapper.dll" Exclude="$(PayloadsRootDirectory)**\*.XUnitWrapper.dll;@(XUnitWrapperGrouping->Metadata('FullPath'))">
          <!-- Set PayloadGroup to empty string, so we can update _XUnitWrapperDll items with no PayloadGroup to default value. Unfortunatelly, we can't do this right here. -->
          <PayloadGroup></PayloadGroup>
       </_XUnitWrapperDll>
@@ -155,7 +159,7 @@
       <_PayloadFiles Update="@(_PayloadFiles)">
         <!-- Never use [MSBuild]::MakeRelative here! We have some files containing Unicode characters in their %(FullPath) and
              MakeRelative function calls Escape function internally that replaces all the Unicode characters with %<xx>. -->
-        <FileRelativeToPayloadsRootDirectory>$(_PayloadGroup)\$([System.IO.Path]::GetRelativePath($(BinDir), %(FullPath)))</FileRelativeToPayloadsRootDirectory>
+        <FileRelativeToPayloadsRootDirectory>$(_PayloadGroup)\$([System.IO.Path]::GetRelativePath($(TestBinDir), %(FullPath)))</FileRelativeToPayloadsRootDirectory>
       </_PayloadFiles>
     </ItemGroup>
 
@@ -178,7 +182,7 @@
       <_XUnitConsoleRunnerFiles Include="$(NuGetPackageRoot)$(MicrosoftDotNetXUnitConsoleRunnerPackage)\$(MicrosoftDotNetXUnitConsoleRunnerVersion)\**\xunit.console.*" />
     </ItemGroup>
 
-    <Copy SourceFiles="@(_XUnitConsoleRunnerFiles)" DestinationFolder="$(CoreRootDirectory)" />
+    <Copy SourceFiles="@(_XUnitConsoleRunnerFiles)" DestinationFolder="$(CoreRootDirectory)\xunit" />
     <Copy SourceFiles="$(MSBuildThisFileDirectory)scripts\runincontext.cmd" DestinationFolder="$(CoreRootDirectory)" Condition=" '$(TargetsWindows)' == 'true' and '$(_RunInUnloadableContext)' == 'true'" />
     <Copy SourceFiles="$(MSBuildThisFileDirectory)scripts/runincontext.sh" DestinationFolder="$(CoreRootDirectory)" Condition=" '$(TargetsWindows)' != 'true' and '$(_RunInUnloadableContext)' == 'true'" />
   </Target>
@@ -238,6 +242,7 @@
     <TimeoutPerTestInMilliseconds Condition=" '$(TimeoutPerTestInMinutes)' != '' ">$([System.TimeSpan]::FromMinutes($(TimeoutPerTestInMinutes)).TotalMilliseconds)</TimeoutPerTestInMilliseconds>
     <WaitForWorkItemCompletion>true</WaitForWorkItemCompletion>
     <_XUnitParallelMode>collections</_XUnitParallelMode>
+    <_XUnitParallelMode Condition=" '$(TargetOS)' == 'Android' ">none</_XUnitParallelMode>
     <_XUnitParallelMode Condition=" '$(LongRunningGCTests)' == 'true' ">none</_XUnitParallelMode>
     <_XUnitParallelMode Condition=" '$(GcSimulatorTests)' == 'true' ">none</_XUnitParallelMode>
     <XUnitRunnerArgs>-parallel $(_XUnitParallelMode) -nocolor -noshadow -xml testResults.xml</XUnitRunnerArgs>
@@ -284,11 +289,11 @@
   </PropertyGroup>
 
   <PropertyGroup Condition=" '$(TargetsWindows)' == 'true' ">
-    <XUnitRunnerDll>%CORE_ROOT%\xunit.console.dll</XUnitRunnerDll>
+    <XUnitRunnerDll>%CORE_ROOT%\xunit\xunit.console.dll</XUnitRunnerDll>
   </PropertyGroup>
 
   <PropertyGroup Condition=" '$(TargetsWindows)' != 'true' ">
-    <XUnitRunnerDll>$CORE_ROOT/xunit.console.dll</XUnitRunnerDll>
+    <XUnitRunnerDll>$CORE_ROOT/xunit/xunit.console.dll</XUnitRunnerDll>
   </PropertyGroup>
 
   <ItemGroup Condition=" '$(UsesHelixSdk)' == 'true' ">

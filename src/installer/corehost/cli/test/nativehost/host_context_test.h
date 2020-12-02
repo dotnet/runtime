@@ -57,6 +57,7 @@ namespace host_context_test
         const pal::char_t *config_path,
         int argc,
         const pal::char_t *argv[],
+        bool launch_as_if_dotnet, // Imitate running the application as if it were launched with 'dotnet <appPath>'
         pal::stringstream_t &test_output);
     bool component_load_assembly_and_get_function_pointer(
         const pal::string_t &hostfxr_path,

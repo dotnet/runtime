@@ -25,7 +25,7 @@ namespace LoaderLinkTest
             Assert.Equal(typeof(ISharedInterface), sharedInterface);
 
             var instance = Activator.CreateInstance(dynamicType);
-            Assert.True(instance is ISharedInterface);
+            Assert.IsAssignableFrom<ISharedInterface>(instance);
 
             Assert.NotNull(((ISharedInterface)instance).TestString); // cast should not fail
         }

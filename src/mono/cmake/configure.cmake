@@ -5,9 +5,15 @@
 include(CheckTypeSize)
 include(CheckStructHasMember)
 include(CheckSymbolExists)
+include(CheckCCompilerFlag)
 
-if (CMAKE_HOST_SYSTEM_NAME STREQUAL "Darwin")
-  set(DARWIN 1)
+# Apple platforms like macOS/iOS allow targeting older operating system versions with a single SDK,
+# the mere presence of a symbol in the SDK doesn't tell us whether the deployment target really supports it.
+# The compiler raises a warning when using an unsupported API, turn that into an error so check_symbol_exists()
+# can correctly identify whether the API is supported on the target.
+check_c_compiler_flag("-Wunguarded-availability" "C_SUPPORTS_WUNGUARDED_AVAILABILITY")
+if(C_SUPPORTS_WUNGUARDED_AVAILABILITY)
+  set(CMAKE_REQUIRED_FLAGS "${CMAKE_REQUIRED_FLAGS} -Werror=unguarded-availability")
 endif()
 
 function(ac_check_headers)
@@ -16,8 +22,9 @@ function(ac_check_headers)
 	string(TOUPPER "${arg}" var1)
 	string(REPLACE "/" "_" var2 ${var1})
 	string(REPLACE "." "_" var3 ${var2})
+	string(REPLACE "-" "_" var4 ${var3})
 	if (FOUND_${arg})
-	  set(HAVE_${var3} 1 PARENT_SCOPE)
+	  set(HAVE_${var4} 1 PARENT_SCOPE)
 	endif()
   endforeach(arg)
 endfunction()
@@ -51,8 +58,8 @@ ac_check_headers (
   sys/mkdev.h sys/types.h sys/stat.h sys/filio.h sys/sockio.h sys/utime.h sys/un.h sys/syscall.h sys/uio.h sys/param.h sys/sysctl.h
   sys/prctl.h sys/socket.h sys/utsname.h sys/select.h sys/inotify.h sys/user.h sys/poll.h sys/wait.h sts/auxv.h sys/resource.h
   sys/event.h sys/ioctl.h sys/errno.h sys/sendfile.h sys/statvfs.h sys/statfs.h sys/mman.h sys/mount.h sys/time.h sys/random.h
-  memory.h strings.h stdint.h unistd.h netdb.h utime.h semaphore.h libproc.h alloca.h ucontext.h pwd.h
-  gnu/lib-names.h netinet/tcp.h netinet/in.h link.h arpa/inet.h unwind.h poll.h grp.h wchar.h linux/magic.h
+  memory.h strings.h string.h stdint.h signal.h inttypes.h stdlib.h unistd.h netdb.h utime.h semaphore.h libproc.h alloca.h ucontext.h pwd.h
+  gnu/lib-names.h netinet/tcp.h netinet/in.h link.h arpa/inet.h complex.h unwind.h poll.h grp.h wchar.h linux/magic.h
   android/legacy_signal_inlines.h android/ndk-version.h execinfo.h pthread.h pthread_np.h net/if.h dirent.h
   CommonCrypto/CommonDigest.h curses.h term.h termios.h dlfcn.h getopt.h pwd.h iconv.h alloca.h
   /usr/include/malloc.h)
@@ -62,17 +69,25 @@ ac_check_funcs (
   madvise getrusage getpriority setpriority dladdr sysconf getrlimit prctl nl_langinfo
   sched_getaffinity sched_setaffinity getpwnam_r getpwuid_r readlink chmod lstat getdtablesize ftruncate msync
   gethostname getpeername utime utimes openlog closelog atexit popen strerror_r inet_pton inet_aton
-  pthread_getname_np pthread_setname_np pthread_cond_timedwait_relative_np pthread_kill
-  pthread_attr_setstacksize pthread_get_stackaddr_np pthread_jit_write_protect_np
   shm_open poll getfsstat mremap posix_fadvise vsnprintf sendfile statfs statvfs setpgid system
   fork execv execve waitpid localtime_r mkdtemp getrandom execvp strlcpy stpcpy strtok_r rewinddir
   vasprintf strndup getpwuid_r getprotobyname getprotobyname_r getaddrinfo mach_absolute_time
   gethrtime read_real_time gethostbyname gethostbyname2 getnameinfo getifaddrs if_nametoindex
   access inet_ntop Qp2getifaddrs)
 
-if (NOT DARWIN)
+if(NOT HOST_DARWIN)
+  # getentropy was introduced in macOS 10.12 / iOS 10.0
   ac_check_funcs (getentropy)
 endif()
+
+find_package(Threads)
+# Needed to find pthread_ symbols
+set(CMAKE_REQUIRED_LIBRARIES "${CMAKE_REQUIRED_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT}")
+
+ac_check_funcs(
+  pthread_getname_np pthread_setname_np pthread_cond_timedwait_relative_np pthread_kill
+  pthread_attr_setstacksize pthread_get_stackaddr_np pthread_jit_write_protect_np
+)
 
 check_symbol_exists(pthread_mutexattr_setprotocol "pthread.h" HAVE_DECL_PTHREAD_MUTEXATTR_SETPROTOCOL)
 check_symbol_exists(CLOCK_MONOTONIC "time.h" HAVE_CLOCK_MONOTONIC)
@@ -115,3 +130,37 @@ file(WRITE ${CMAKE_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/CMakeTmp/test.c
 )
 try_compile(GLIBC_HAS_CPU_COUNT ${CMAKE_BINARY_DIR}/CMakeTmp SOURCES "${CMAKE_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/CMakeTmp/test.c"
     COMPILE_DEFINITIONS "-D_GNU_SOURCE")
+
+
+if(HOST_WIN32)
+  # checking for this doesn't work for some reason, hardcode result
+  set(HAVE_WINTERNL_H 1)
+  set(HAVE_SIGNAL 1)
+  set(HAVE_CRYPT_RNG 1)
+  set(HAVE_GETADDRINFO 1)
+  set(HAVE_GETNAMEINFO 1)
+  set(HAVE_GETPROTOBYNAME 1)
+  set(HAVE_INET_NTOP 1)
+  set(HAVE_INET_PTON 1)
+  set(HAVE_STRUCT_SOCKADDR_IN6 1)
+  set(HAVE_STRUCT_IP_MREQ 1)
+  set(HAVE_STRTOK_R 1)
+  set(HAVE_EXECVP 0)
+endif()
+
+if(HOST_IOS)
+  set(HAVE_SYSTEM 0)
+  set(HAVE_GETPWUID_R 0)
+  set(HAVE_SYS_USER_H 0)
+  set(HAVE_GETENTROPY 0)
+  if(HOST_TVOS)
+    set(HAVE_PTHREAD_KILL 0)
+    set(HAVE_KILL 0)
+    set(HAVE_SIGACTION 0)
+    set(HAVE_FORK 0)
+    set(HAVE_EXECV 0)
+    set(HAVE_EXECVE 0)
+    set(HAVE_EXECVP 0)
+    set(HAVE_SIGNAL 0)
+  endif()
+endif()

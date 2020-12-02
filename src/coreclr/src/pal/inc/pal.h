@@ -191,6 +191,18 @@ typedef PVOID NATIVE_LIBRARY_HANDLE;
 #endif
 #endif
 
+#ifndef __has_cpp_attribute
+#define __has_cpp_attribute(x) (0)
+#endif
+
+#ifndef FALLTHROUGH
+#if __has_cpp_attribute(fallthrough)
+#define FALLTHROUGH [[fallthrough]]
+#else // __has_cpp_attribute(fallthrough)
+#define FALLTHROUGH
+#endif // __has_cpp_attribute(fallthrough)
+#endif // FALLTHROUGH
+
 #ifndef PAL_STDCPP_COMPAT
 
 #if __GNUC__
@@ -491,15 +503,6 @@ VOID
 PALAPI
 PAL_UnregisterModule(
     IN HINSTANCE hInstance);
-
-PALIMPORT
-BOOL
-PALAPI
-PAL_GetPALDirectoryW(
-    OUT LPWSTR lpDirectoryName,
-    IN OUT UINT* cchDirectoryName);
-
-#define PAL_GetPALDirectory PAL_GetPALDirectoryW
 
 PALIMPORT
 VOID
@@ -2479,6 +2482,11 @@ PAL_FreeLibraryDirect(
         IN NATIVE_LIBRARY_HANDLE dl_handle);
 
 PALIMPORT
+HMODULE
+PALAPI
+PAL_GetPalHostModule();
+
+PALIMPORT
 FARPROC
 PALAPI
 PAL_GetProcAddressDirect(
@@ -2637,6 +2645,33 @@ VirtualFree(
         IN LPVOID lpAddress,
         IN SIZE_T dwSize,
         IN DWORD dwFreeType);
+
+#if defined(HOST_OSX) && defined(HOST_ARM64)
+#ifdef __cplusplus
+extern "C++" {
+struct PAL_JITWriteEnableHolder
+{
+public:
+  PAL_JITWriteEnableHolder(bool jitWriteEnable)
+  {
+      m_jitWriteEnableRestore = JITWriteEnable(jitWriteEnable);
+  };
+  ~PAL_JITWriteEnableHolder()
+  {
+      JITWriteEnable(m_jitWriteEnableRestore);
+  }
+
+private:
+  bool JITWriteEnable(bool enable);
+  bool m_jitWriteEnableRestore;
+};
+
+inline
+PAL_JITWriteEnableHolder
+PAL_JITWriteEnable(IN bool enable) { return PAL_JITWriteEnableHolder(enable); }
+}
+#endif // __cplusplus
+#endif // defined(HOST_OSX) && defined(HOST_ARM64)
 
 PALIMPORT
 BOOL
@@ -3941,7 +3976,7 @@ PALIMPORT int __cdecl PAL_swscanf(const WCHAR *, const WCHAR *, ...);
 PALIMPORT DLLEXPORT ULONG __cdecl PAL_wcstoul(const WCHAR *, WCHAR **, int);
 PALIMPORT double __cdecl PAL_wcstod(const WCHAR *, WCHAR **);
 
-PALIMPORT WCHAR * __cdecl _wcslwr(WCHAR *);
+PALIMPORT errno_t __cdecl _wcslwr_s(WCHAR *, size_t sz);
 PALIMPORT DLLEXPORT ULONGLONG _wcstoui64(const WCHAR *, WCHAR **, int);
 PALIMPORT DLLEXPORT errno_t __cdecl _i64tow_s(long long, WCHAR *, size_t, int);
 PALIMPORT int __cdecl _wtoi(const WCHAR *);
