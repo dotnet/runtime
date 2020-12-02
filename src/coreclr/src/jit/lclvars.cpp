@@ -864,6 +864,7 @@ void Compiler::lvaInitUserArgs(InitVarDscInfo* varDscInfo)
                 if (cSlots == 2)
                 {
                     varDsc->SetOtherArgReg(genMapRegArgNumToRegNum(firstAllocatedRegArgNum + 1, TYP_I_IMPL));
+                    varDsc->lvIsMultiRegArg = true;
                 }
             }
 #elif defined(UNIX_AMD64_ABI)
@@ -876,6 +877,7 @@ void Compiler::lvaInitUserArgs(InitVarDscInfo* varDscInfo)
                 {
                     secondEightByteType      = GetEightByteType(structDesc, 1);
                     secondAllocatedRegArgNum = varDscInfo->allocRegArg(secondEightByteType, 1);
+                    varDsc->lvIsMultiRegArg  = true;
                 }
 
                 if (secondEightByteType != TYP_UNDEF)
@@ -1860,29 +1862,45 @@ bool Compiler::StructPromotionHelper::CanPromoteStructVar(unsigned lclNum)
         {
             canPromote = false;
         }
-#if defined(FEATURE_SIMD) && defined(TARGET_ARMARCH)
-        else if (fieldCnt > 1)
+#if defined(TARGET_ARMARCH)
+        else
         {
-            // If we have a register-passed struct with mixed non-opaque SIMD types (i.e. with defined fields)
-            // and non-SIMD types, we don't currently handle that case in the prolog, so we can't promote.
             for (unsigned i = 0; canPromote && (i < fieldCnt); i++)
             {
-                if (varTypeIsStruct(structPromotionInfo.fields[i].fldType) &&
-                    !compiler->isOpaqueSIMDType(structPromotionInfo.fields[i].fldTypeHnd))
+                var_types fieldType = structPromotionInfo.fields[i].fldType;
+                // Non-HFA structs are always passed in general purpose registers.
+                // If there are any floating point fields, don't promote for now.
+                // TODO-1stClassStructs: add support in Lowering and prolog generation
+                // to enable promoting these types.
+                if (varDsc->lvIsParam && !varDsc->lvIsHfa() && varTypeUsesFloatReg(fieldType))
                 {
                     canPromote = false;
                 }
+#if defined(FEATURE_SIMD)
+                // If we have a register-passed struct with mixed non-opaque SIMD types (i.e. with defined fields)
+                // and non-SIMD types, we don't currently handle that case in the prolog, so we can't promote.
+                else if ((fieldCnt > 1) && varTypeIsStruct(fieldType) &&
+                         !compiler->isOpaqueSIMDType(structPromotionInfo.fields[i].fldTypeHnd))
+                {
+                    canPromote = false;
+                }
+#endif // FEATURE_SIMD
             }
         }
 #elif defined(UNIX_AMD64_ABI)
         else
         {
             SortStructFields();
-            // Only promote if the field types match the registers.
+            // Only promote if the field types match the registers, unless we have a single SIMD field.
             SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR structDesc;
             compiler->eeGetSystemVAmd64PassStructInRegisterDescriptor(typeHnd, &structDesc);
             unsigned regCount = structDesc.eightByteCount;
-            if (structPromotionInfo.fieldCnt != regCount)
+            if ((structPromotionInfo.fieldCnt == 1) && varTypeIsSIMD(structPromotionInfo.fields[0].fldType))
+            {
+                // Allow the case of promoting a single SIMD field, even if there are multiple registers.
+                // We will fix this up in the prolog.
+            }
+            else if (structPromotionInfo.fieldCnt != regCount)
             {
                 canPromote = false;
             }
@@ -1983,16 +2001,21 @@ bool Compiler::StructPromotionHelper::ShouldPromoteStructVar(unsigned lclNum)
 #if FEATURE_MULTIREG_STRUCT_PROMOTE
         // Is this a variable holding a value with exactly two fields passed in
         // multiple registers?
-        if ((structPromotionInfo.fieldCnt != 2) && compiler->lvaIsMultiregStruct(varDsc, compiler->info.compIsVarArgs))
+        if (compiler->lvaIsMultiregStruct(varDsc, compiler->info.compIsVarArgs))
         {
-            JITDUMP("Not promoting multireg struct local V%02u, because lvIsParam is true and #fields != 2\n", lclNum);
-            shouldPromote = false;
+            if ((structPromotionInfo.fieldCnt != 2) &&
+                !((structPromotionInfo.fieldCnt == 1) && varTypeIsSIMD(structPromotionInfo.fields[0].fldType)))
+            {
+                JITDUMP("Not promoting multireg struct local V%02u, because lvIsParam is true, #fields != 2 and it's "
+                        "not a single SIMD.\n",
+                        lclNum);
+                shouldPromote = false;
+            }
         }
         else
 #endif // !FEATURE_MULTIREG_STRUCT_PROMOTE
 
-            // TODO-PERF - Implement struct promotion for incoming multireg structs
-            //             Currently it hits assert(lvFieldCnt==1) in lclvar.cpp line 4417
+            // TODO-PERF - Implement struct promotion for incoming single-register structs.
             //             Also the implementation of jmp uses the 4 byte move to store
             //             byte parameters to the stack, so that if we have a byte field
             //             with something else occupying the same 4-byte slot, it will
@@ -2303,16 +2326,28 @@ void Compiler::StructPromotionHelper::PromoteStructVar(unsigned lclNum)
                 else
 #endif // UNIX_AMD64_ABI
                 {
-                    // TODO: Need to determine if/how to handle split args.
-                    // TODO: Assert that regs are always sequential.
-                    unsigned regIncrement = fieldVarDsc->lvFldOrdinal;
-#ifdef TARGET_ARM
-                    if (varDsc->lvIsHfa() && (varDsc->GetHfaType() == TYP_DOUBLE))
+                    regNumber fieldRegNum;
+                    if (index == 0)
                     {
-                        regIncrement = (fieldVarDsc->lvFldOrdinal * 2);
+                        fieldRegNum = parentArgReg;
                     }
+                    else if (varDsc->lvIsHfa())
+                    {
+                        unsigned regIncrement = fieldVarDsc->lvFldOrdinal;
+#ifdef TARGET_ARM
+                        // TODO: Need to determine if/how to handle split args.
+                        if (varDsc->GetHfaType() == TYP_DOUBLE)
+                        {
+                            regIncrement *= 2;
+                        }
 #endif // TARGET_ARM
-                    regNumber fieldRegNum = (regNumber)(parentArgReg + regIncrement);
+                        fieldRegNum = (regNumber)(parentArgReg + regIncrement);
+                    }
+                    else
+                    {
+                        assert(index == 1);
+                        fieldRegNum = varDsc->GetOtherArgReg();
+                    }
                     fieldVarDsc->SetArgReg(fieldRegNum);
                 }
             }
@@ -5474,8 +5509,7 @@ int Compiler::lvaAssignVirtualFrameOffsetToArg(unsigned lclNum,
         for (unsigned i = 0; i < varDsc->lvFieldCnt; i++)
         {
             LclVarDsc* fieldVarDsc = lvaGetDesc(firstFieldNum + i);
-            fieldVarDsc->SetStackOffset(offset);
-            offset += fieldVarDsc->lvFldOffset;
+            fieldVarDsc->SetStackOffset(offset + fieldVarDsc->lvFldOffset);
         }
     }
 
