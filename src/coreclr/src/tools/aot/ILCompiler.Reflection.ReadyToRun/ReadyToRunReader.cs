@@ -424,12 +424,16 @@ namespace ILCompiler.Reflection.ReadyToRun
         internal void EnsureMethods()
         {
             EnsureHeader();
-            if (_readyToRunAssemblies[0]._methods != null)
+            if (_instanceMethods != null)
             {
                 return;
             }
 
             _instanceMethods = new List<InstanceMethod>();
+            foreach (ReadyToRunAssembly assembly in _readyToRunAssemblies)
+            {
+                assembly._methods = new List<ReadyToRunMethod>();
+            }
 
             if (ReadyToRunHeader.Sections.TryGetValue(ReadyToRunSectionType.RuntimeFunctions, out ReadyToRunSection runtimeFunctionSection))
             {
@@ -706,7 +710,6 @@ namespace ILCompiler.Reflection.ReadyToRun
         private void ParseMethodDefEntrypointsSection(ReadyToRunSection section, IAssemblyMetadata componentReader, bool[] isEntryPoint)
         {
             int assemblyIndex = GetAssemblyIndex(section);
-            _readyToRunAssemblies[assemblyIndex]._methods = new List<ReadyToRunMethod>();
             int methodDefEntryPointsOffset = GetOffset(section.RelativeVirtualAddress);
             NativeArray methodEntryPoints = new NativeArray(Image, (uint)methodDefEntryPointsOffset);
             uint nMethodEntryPoints = methodEntryPoints.GetCount();
