@@ -206,7 +206,9 @@ namespace System.IO.Tests
                 if (!setBeforeBeginInit)
                     watcher.EnableRaisingEvents = true;
                 watcher.EndInit();
-                ExpectEvent(watcher, WatcherChangeTypes.Created | WatcherChangeTypes.Deleted, () => new TempFile(Path.Combine(testDirectory.Path, GetTestFileName())).Dispose(), null);
+                ExpectEvent(
+                    watcher, WatcherChangeTypes.Created | WatcherChangeTypes.Deleted, () => new TempFile(Path.Combine(testDirectory.Path, GetTestFileName())).Dispose(),
+                    null, (string)null, 10, 1000); // https://github.com/dotnet/runtime/issues/24181 for the reason for different constants
             }
         }
 
