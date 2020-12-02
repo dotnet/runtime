@@ -67,7 +67,7 @@ public class WasmAssemblySearcher : Task
             var mlc = new MetadataLoadContext(_resolver, "System.Private.CoreLib");
 
             var mainAssembly = mlc.LoadFromAssemblyPath(mainAssemblyFullPath);
-            Add(mlc, mainAssembly);
+            AddAssemblyAndReferences(mlc, mainAssembly);
 
             if (ExtraAssemblies != null)
             {
@@ -77,7 +77,7 @@ public class WasmAssemblySearcher : Task
                     try
                     {
                         var refAssembly = mlc.LoadFromAssemblyPath(asmFullPath);
-                        Add(mlc, refAssembly);
+                        AddAssemblyAndReferences(mlc, refAssembly);
                     }
                     catch (Exception ex) when (ex is FileLoadException || ex is BadImageFormatException || ex is FileNotFoundException)
                     {
@@ -106,7 +106,7 @@ public class WasmAssemblySearcher : Task
             foreach (var asm in Assemblies!)
             {
                 var assembly = mlc.LoadFromAssemblyPath(asm);
-                Add(mlc, assembly);
+                AddAssemblyAndReferences(mlc, assembly);
             }
         }
 
@@ -115,7 +115,7 @@ public class WasmAssemblySearcher : Task
         return !Log.HasLoggedErrors;
     }
 
-    private void Add(MetadataLoadContext mlc, Assembly assembly)
+    private void AddAssemblyAndReferences(MetadataLoadContext mlc, Assembly assembly)
     {
         if (_assemblies!.ContainsKey(assembly.GetName().Name!))
             return;
@@ -125,7 +125,7 @@ public class WasmAssemblySearcher : Task
             try
             {
                 Assembly refAssembly = mlc.LoadFromAssemblyName(aname);
-                Add(mlc, refAssembly);
+                AddAssemblyAndReferences(mlc, refAssembly);
             }
             catch (FileNotFoundException)
             {
