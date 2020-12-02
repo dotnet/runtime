@@ -1,5 +1,27 @@
-# The staging pipeline only makes sense to run it on PRs.
-trigger: none
+# Setting batch to true, triggers one build at a time.
+# if there is a push while a build in progress, it will wait,
+# until the running build finishes, and produce a build with all the changes
+# that happened during the last build.
+trigger:
+  batch: true
+  branches:
+    include:
+    - master
+  paths:
+    include:
+    - '*'
+    - docs/manpages/*
+    exclude:
+    - eng/Version.Details.xml
+    - .github/*
+    - docs/*
+    - CODE-OF-CONDUCT.md
+    - CONTRIBUTING.md
+    - LICENSE.TXT
+    - PATENTS.TXT
+    - README.md
+    - SECURITY.md
+    - THIRD-PARTY-NOTICES.TXT
 
 pr:
   branches:

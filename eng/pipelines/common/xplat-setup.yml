@@ -18,7 +18,7 @@ jobs:
     ${{ if eq(parameters.jobParameters.runtimeFlavor, 'mono') }}:
       runtimeFlavorDisplayName: 'Mono'
     
-    shouldContinueOnError: ${{ endsWith(variables['Build.DefinitionName'], 'staging') }}
+    shouldContinueOnError: ${{ and(endsWith(variables['Build.DefinitionName'], 'staging'), eq(variables['Build.Reason'], 'PullRequest')) }}
 
     variables:
       # Disable component governance in our CI builds. These builds are not shipping nor
