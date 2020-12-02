@@ -1,0 +1,55 @@
+<linker>
+  <assembly fullname="System.ComponentModel.Primitives">
+    <type fullname="System.ComponentModel.BrowsableAttribute">
+      <attribute internal="RemoveAttributeInstances" />
+    </type>
+    <type fullname="System.ComponentModel.CategoryAttribute">
+      <attribute internal="RemoveAttributeInstances" />
+    </type>
+    <type fullname="System.ComponentModel.DescriptionAttribute">
+      <attribute internal="RemoveAttributeInstances" />
+    </type>
+    <type fullname="System.ComponentModel.DesignerAttribute">
+      <attribute internal="RemoveAttributeInstances" />
+    </type>
+    <type fullname="System.ComponentModel.DesignerCategoryAttribute">
+      <attribute internal="RemoveAttributeInstances" />
+    </type>
+    <type fullname="System.ComponentModel.DesignOnlyAttribute">
+      <attribute internal="RemoveAttributeInstances" />
+    </type>
+    <type fullname="System.ComponentModel.DisplayNameAttribute">
+      <attribute internal="RemoveAttributeInstances" />
+    </type>
+    <type fullname="System.ComponentModel.EditorAttribute">
+      <attribute internal="RemoveAttributeInstances" />
+    </type>
+    <type fullname="System.ComponentModel.ImmutableObjectAttribute">
+      <attribute internal="RemoveAttributeInstances" />
+    </type>
+    <type fullname="System.ComponentModel.InitializationEventAttribute">
+      <attribute internal="RemoveAttributeInstances" />
+    </type>
+    <type fullname="System.ComponentModel.LocalizableAttribute">
+      <attribute internal="RemoveAttributeInstances" />
+    </type>
+    <type fullname="System.ComponentModel.MergablePropertyAttribute">
+      <attribute internal="RemoveAttributeInstances" />
+    </type>
+    <type fullname="System.ComponentModel.NotifyParentPropertyAttribute">
+      <attribute internal="RemoveAttributeInstances" />
+    </type>
+    <type fullname="System.ComponentModel.ParenthesizePropertyNameAttribute">
+      <attribute internal="RemoveAttributeInstances" />
+    </type>
+    <type fullname="System.ComponentModel.ReadOnlyAttribute">
+      <attribute internal="RemoveAttributeInstances" />
+    </type>
+    <type fullname="System.ComponentModel.RefreshPropertiesAttribute">
+      <attribute internal="RemoveAttributeInstances" />
+    </type>
+    <type fullname="System.ComponentModel.Design.Serialization.DesignerSerializerAttribute">
+      <attribute internal="RemoveAttributeInstances" />
+    </type>
+  </assembly>
+</linker>

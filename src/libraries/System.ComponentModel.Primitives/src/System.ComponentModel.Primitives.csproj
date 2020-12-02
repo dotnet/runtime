@@ -36,6 +36,9 @@
     <Compile Include="System\ComponentModel\RefreshPropertiesAttribute.cs" />
   </ItemGroup>
   <ItemGroup>
+    <ILLinkLinkAttributesXmls Include="$(MSBuildThisFileDirectory)ILLink\ILLink.LinkAttributes.xml" />
+  </ItemGroup>
+  <ItemGroup>
     <Reference Include="System.Collections.NonGeneric" />
     <Reference Include="System.ComponentModel" />
     <Reference Include="System.ObjectModel" />
