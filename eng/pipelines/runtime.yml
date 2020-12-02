@@ -473,6 +473,7 @@ jobs:
     # - windows_arm64
     jobParameters:
       dependsOn: mono__offsets_Android_x64_debug
+      buildCross: android
       condition: >-
         or(
           eq(dependencies.checkout.outputs['SetPathVars_libraries.containsChange'], true),

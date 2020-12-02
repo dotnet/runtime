@@ -13,6 +13,7 @@ parameters:
   isOfficialBuild: false
   crossBuild: false
   crossrootfsDir: ''
+  buildCross: false
   dependsOn: ''
 
 ### Product build
@@ -28,6 +29,7 @@ jobs:
     pool: ${{ parameters.pool }}
     runtimeVariant: ${{ parameters.runtimeVariant }}
     crossBuild: ${{ parameters.crossBuild }}
+    buildCross: ${{ parameters.buildCross }}
     crossrootfsDir: ${{ parameters.crossroofsDir }}
     condition: ${{ parameters.condition }}
 
@@ -89,7 +91,7 @@ jobs:
     - ${{ if eq(parameters.runtimeVariant, 'llvmaot') }}:
       - name: llvmParameter
         value: /p:MonoEnableLLVM=true /p:MonoBundleLLVMOptimizer=true $(llvmCxxAbi)
-    - ${{ if and(eq(parameters.runtimeVariant, ''), eq(parameters.osGroup, 'Linux'), eq(parameters.archType, 'x64')) }}:
+    - ${{ if eq(parameters.buildCross, 'android') }}:
       - name: aotCrossParameter
         value: /p:BuildMonoCrossAOT=true /p:SkipMonoCrossJitConfigure=true
     - ${{ parameters.variables }}
