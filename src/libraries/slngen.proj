@@ -1,4 +1,9 @@
-<!-- Important: This project requires to be invoked from within the VS Developer Command Prompt. -->
+<!--
+  Important: This project requires to be invoked from within the VS Developer Command Prompt. 
+  Targets that can be executed individually even though they are sequenced into build already:
+    - UpdateSolutionFile: Adds/updates solution files with slngen which includes dependencies.
+    - AddNuGetConfigToSolution: Checks if the solution needs a NuGet.config file to disable restore.
+-->
 <Project Sdk="Microsoft.Build.NoTargets">
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
@@ -27,7 +32,7 @@
     <Delete Files="%(SolutionFile.ProjFilePath)" />
   </Target>
 
-  <Target Name="AddNuGetConfigForRestoreToSolution"
+  <Target Name="AddNuGetConfigToSolution"
           AfterTargets="UpdateSolutionFile"
           DependsOnTargets="GetSolutionFiles;GetSourceProjectWithDuplicateTfm"
           Inputs="@(SolutionFile)"
@@ -52,6 +57,12 @@
              Condition="'$(SolutionFileContainsSourceProjectWithDuplicateTfm)' == 'true'" />
   </Target>
 
+  <Target Name="ClearNuGetConfigFile"
+          DependsOnTargets="GetSolutionFiles">
+    <!-- Delete existing NuGet.config files -->
+    <Delete Files="%(SolutionFile.NuGetConfigFilePath)" />
+  </Target>
+
   <Target Name="GetSolutionFiles">
     <ItemGroup>
       <!-- Add attributes that require a separate item mutation. -->
@@ -72,7 +83,7 @@
       <ProjectFileTargetFrameworks>$(ProjectFileTargetFrameworks.Replace('&lt;/TargetFrameworks&gt;', ''))</ProjectFileTargetFrameworks>
       <!-- Strip away TargetFrameworkSuffixes -->
       <ProjectFileTargetFrameworks>$([System.Text.RegularExpressions.Regex]::Replace('$(ProjectFileTargetFrameworks)', '(-[^;]+)', ''))</ProjectFileTargetFrameworks>
-      <!-- Check for duplicates -->
+      <!-- Check for duplicates of pre-net5.0 frameworks -->
       <ProjectFileTargetFrameworksHasDuplicates>$([System.Text.RegularExpressions.Regex]::IsMatch('$(ProjectFileTargetFrameworks);', '(netstandard.+|netcoreapp.+|net4.+)(?=.*;\1;)'))</ProjectFileTargetFrameworksHasDuplicates>
     </PropertyGroup>
 
