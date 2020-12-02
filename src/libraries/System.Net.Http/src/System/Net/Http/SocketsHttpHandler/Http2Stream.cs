@@ -24,7 +24,7 @@ namespace System.Net.Http
 #if DEBUG
                 10;
 #else
-                1024;
+                1024; //8 * 1024 * 1024;//
 #endif
 
             private static ReadOnlySpan<byte> StatusHeaderName => new byte[] { (byte)':', (byte)'s', (byte)'t', (byte)'a', (byte)'t', (byte)'u', (byte)'s' };
@@ -87,12 +87,13 @@ namespace System.Net.Http
             private const int StreamWindowSize = DefaultInitialWindowSize;
 
             // See comment on ConnectionWindowThreshold.
-            private const int StreamWindowThreshold = StreamWindowSize / 8;
+            private const int StreamWindowThreshold = StreamWindowSize / 2;//8;
 
             public Http2Stream(HttpRequestMessage request, Http2Connection connection)
             {
                 _request = request;
                 _connection = connection;
+                Trace($"StreamWindowSize: {StreamWindowSize}, StreamWindowThreshold: {StreamWindowThreshold}");
 
                 _requestCompletionState = StreamCompletionState.InProgress;
                 _responseCompletionState = StreamCompletionState.InProgress;
