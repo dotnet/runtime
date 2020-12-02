@@ -1488,7 +1488,7 @@ int LinearScan::BuildPutArgStk(GenTreePutArgStk* putArgStk)
 
         RefPosition* simdTemp   = nullptr;
         RefPosition* intTemp    = nullptr;
-        unsigned     prevOffset = putArgStk->getArgSize();
+        unsigned     prevOffset = putArgStk->GetStackByteSize();
         // We need to iterate over the fields twice; once to determine the need for internal temps,
         // and once to actually build the uses.
         for (GenTreeFieldList::Use& use : putArgStk->gtOp1->AsFieldList()->Uses())
@@ -1571,27 +1571,16 @@ int LinearScan::BuildPutArgStk(GenTreePutArgStk* putArgStk)
 
     ClassLayout* layout = src->AsObj()->GetLayout();
 
-    ssize_t size = putArgStk->gtNumSlots * TARGET_POINTER_SIZE;
+    ssize_t size = putArgStk->GetStackByteSize();
     switch (putArgStk->gtPutArgStkKind)
     {
         case GenTreePutArgStk::Kind::Push:
         case GenTreePutArgStk::Kind::PushAllSlots:
         case GenTreePutArgStk::Kind::Unroll:
             // If we have a remainder smaller than XMM_REGSIZE_BYTES, we need an integer temp reg.
-            //
-            // x86 specific note: if the size is odd, the last copy operation would be of size 1 byte.
-            // But on x86 only RBM_BYTE_REGS could be used as byte registers.  Therefore, exclude
-            // RBM_NON_BYTE_REGS from internal candidates.
             if (!layout->HasGCPtr() && (size & (XMM_REGSIZE_BYTES - 1)) != 0)
             {
                 regMaskTP regMask = allRegs(TYP_INT);
-
-#ifdef TARGET_X86
-                if ((size % 2) != 0)
-                {
-                    regMask &= ~RBM_NON_BYTE_REGS;
-                }
-#endif
                 buildInternalIntRegisterDefForNode(putArgStk, regMask);
             }
 

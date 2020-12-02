@@ -376,48 +376,48 @@ namespace System.Net.Http
         public Task<HttpResponseMessage> GetAsync(Uri? requestUri, HttpCompletionOption completionOption, CancellationToken cancellationToken) =>
             SendAsync(CreateRequestMessage(HttpMethod.Get, requestUri), completionOption, cancellationToken);
 
-        public Task<HttpResponseMessage> PostAsync(string? requestUri, HttpContent content) =>
+        public Task<HttpResponseMessage> PostAsync(string? requestUri, HttpContent? content) =>
             PostAsync(CreateUri(requestUri), content);
 
-        public Task<HttpResponseMessage> PostAsync(Uri? requestUri, HttpContent content) =>
+        public Task<HttpResponseMessage> PostAsync(Uri? requestUri, HttpContent? content) =>
             PostAsync(requestUri, content, CancellationToken.None);
 
-        public Task<HttpResponseMessage> PostAsync(string? requestUri, HttpContent content, CancellationToken cancellationToken) =>
+        public Task<HttpResponseMessage> PostAsync(string? requestUri, HttpContent? content, CancellationToken cancellationToken) =>
             PostAsync(CreateUri(requestUri), content, cancellationToken);
 
-        public Task<HttpResponseMessage> PostAsync(Uri? requestUri, HttpContent content, CancellationToken cancellationToken)
+        public Task<HttpResponseMessage> PostAsync(Uri? requestUri, HttpContent? content, CancellationToken cancellationToken)
         {
             HttpRequestMessage request = CreateRequestMessage(HttpMethod.Post, requestUri);
             request.Content = content;
             return SendAsync(request, cancellationToken);
         }
 
-        public Task<HttpResponseMessage> PutAsync(string? requestUri, HttpContent content) =>
+        public Task<HttpResponseMessage> PutAsync(string? requestUri, HttpContent? content) =>
             PutAsync(CreateUri(requestUri), content);
 
-        public Task<HttpResponseMessage> PutAsync(Uri? requestUri, HttpContent content) =>
+        public Task<HttpResponseMessage> PutAsync(Uri? requestUri, HttpContent? content) =>
             PutAsync(requestUri, content, CancellationToken.None);
 
-        public Task<HttpResponseMessage> PutAsync(string? requestUri, HttpContent content, CancellationToken cancellationToken) =>
+        public Task<HttpResponseMessage> PutAsync(string? requestUri, HttpContent? content, CancellationToken cancellationToken) =>
             PutAsync(CreateUri(requestUri), content, cancellationToken);
 
-        public Task<HttpResponseMessage> PutAsync(Uri? requestUri, HttpContent content, CancellationToken cancellationToken)
+        public Task<HttpResponseMessage> PutAsync(Uri? requestUri, HttpContent? content, CancellationToken cancellationToken)
         {
             HttpRequestMessage request = CreateRequestMessage(HttpMethod.Put, requestUri);
             request.Content = content;
             return SendAsync(request, cancellationToken);
         }
 
-        public Task<HttpResponseMessage> PatchAsync(string? requestUri, HttpContent content) =>
+        public Task<HttpResponseMessage> PatchAsync(string? requestUri, HttpContent? content) =>
             PatchAsync(CreateUri(requestUri), content);
 
-        public Task<HttpResponseMessage> PatchAsync(Uri? requestUri, HttpContent content) =>
+        public Task<HttpResponseMessage> PatchAsync(Uri? requestUri, HttpContent? content) =>
             PatchAsync(requestUri, content, CancellationToken.None);
 
-        public Task<HttpResponseMessage> PatchAsync(string? requestUri, HttpContent content, CancellationToken cancellationToken) =>
+        public Task<HttpResponseMessage> PatchAsync(string? requestUri, HttpContent? content, CancellationToken cancellationToken) =>
             PatchAsync(CreateUri(requestUri), content, cancellationToken);
 
-        public Task<HttpResponseMessage> PatchAsync(Uri? requestUri, HttpContent content, CancellationToken cancellationToken)
+        public Task<HttpResponseMessage> PatchAsync(Uri? requestUri, HttpContent? content, CancellationToken cancellationToken)
         {
             HttpRequestMessage request = CreateRequestMessage(HttpMethod.Patch, requestUri);
             request.Content = content;
@@ -511,7 +511,9 @@ namespace System.Net.Http
                 // Wait for the send request to complete, getting back the response.
                 response = async ?
                     await base.SendAsync(request, cts.Token).ConfigureAwait(false) :
+#pragma warning disable CA1416 // Validate platform compatibility, not supported on browser, safe to suppress
                     base.Send(request, cts.Token);
+#pragma warning restore CA1416
                 ThrowForNullResponse(response);
 
                 // Buffer the response content if we've been asked to.

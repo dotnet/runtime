@@ -788,6 +788,10 @@ namespace Internal.JitInterface
                     id = ReadyToRunHelper.GCPoll;
                     break;
 
+                case CorInfoHelpFunc.CORINFO_HELP_GETCURRENTMANAGEDTHREADID:
+                    id = ReadyToRunHelper.GetCurrentManagedThreadId;
+                    break;
+
                 case CorInfoHelpFunc.CORINFO_HELP_JIT_REVERSE_PINVOKE_ENTER:
                     id = ReadyToRunHelper.ReversePInvokeEnter;
                     break;
@@ -2336,6 +2340,11 @@ namespace Internal.JitInterface
 
         private HRESULT getMethodBlockCounts(CORINFO_METHOD_STRUCT_* ftnHnd, ref uint pCount, ref BlockCounts* pBlockCounts, ref uint pNumRuns)
         { throw new NotImplementedException("getBBProfileData"); }
+
+        private CORINFO_CLASS_STRUCT_* getLikelyClass(CORINFO_METHOD_STRUCT_* ftnHnd, CORINFO_CLASS_STRUCT_* baseHnd, uint IlOffset, ref uint pLikelihood, ref uint pNumberOfClasses)
+        {
+            return null;
+        }
 
         private void getAddressOfPInvokeTarget(CORINFO_METHOD_STRUCT_* method, ref CORINFO_CONST_LOOKUP pLookup)
         {

@@ -120,28 +120,33 @@ namespace System.Collections.Generic
             object? result = null;
             var runtimeType = (RuntimeType)type;
 
-            // Specialize for byte so Array.IndexOf is faster.
             if (type == typeof(byte))
             {
+                // Specialize for byte so Array.IndexOf is faster.
                 result = new ByteEqualityComparer();
             }
-            // If T implements IEquatable<T> return a GenericEqualityComparer<T>
+            else if (type == typeof(string))
+            {
+                // Specialize for string, as EqualityComparer<string>.Default is on the startup path
+                result = new GenericEqualityComparer<string>();
+            }
             else if (type.IsAssignableTo(typeof(IEquatable<>).MakeGenericType(type)))
             {
-                result = CreateInstanceForAnotherGenericParameter((RuntimeType)typeof(GenericEqualityComparer<int>), runtimeType);
+                // If T implements IEquatable<T> return a GenericEqualityComparer<T>
+                result = CreateInstanceForAnotherGenericParameter((RuntimeType)typeof(GenericEqualityComparer<string>), runtimeType);
             }
-            // Nullable does not implement IEquatable<T?> directly because that would add an extra interface call per comparison.
-            // Instead, it relies on EqualityComparer<T?>.Default to specialize for nullables and do the lifted comparisons if T implements IEquatable.
             else if (type.IsGenericType)
             {
+                // Nullable does not implement IEquatable<T?> directly because that would add an extra interface call per comparison.
+                // Instead, it relies on EqualityComparer<T?>.Default to specialize for nullables and do the lifted comparisons if T implements IEquatable.
                 if (type.GetGenericTypeDefinition() == typeof(Nullable<>))
                 {
                     result = TryCreateNullableEqualityComparer(runtimeType);
                 }
             }
-            // The equality comparer for enums is specialized to avoid boxing.
             else if (type.IsEnum)
             {
+                // The equality comparer for enums is specialized to avoid boxing.
                 result = TryCreateEnumEqualityComparer(runtimeType);
             }
 

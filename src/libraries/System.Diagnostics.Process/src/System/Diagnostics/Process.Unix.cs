@@ -556,7 +556,7 @@ namespace System.Diagnostics
         private static string[] ParseArgv(ProcessStartInfo psi, string? resolvedExe = null, bool ignoreArguments = false)
         {
             if (string.IsNullOrEmpty(resolvedExe) &&
-                (ignoreArguments || (string.IsNullOrEmpty(psi.Arguments) && psi.ArgumentList.Count == 0)))
+                (ignoreArguments || (string.IsNullOrEmpty(psi.Arguments) && !psi.HasArgumentList)))
             {
                 return new string[] { psi.FileName };
             }
@@ -579,7 +579,7 @@ namespace System.Diagnostics
                 {
                     ParseArgumentsIntoList(psi.Arguments, argvList);
                 }
-                else
+                else if (psi.HasArgumentList)
                 {
                     argvList.AddRange(psi.ArgumentList);
                 }

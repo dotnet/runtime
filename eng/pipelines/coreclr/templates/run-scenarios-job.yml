@@ -127,7 +127,7 @@ jobs:
         PERFLAB_TARGET_FRAMEWORKS: netcoreapp3.1
       condition: and(succeeded(), ne(variables['Agent.Os'], 'Windows_NT'))
     # build SizeOnDisk
-    - script: $(PayloadDirectory)\dotnet\dotnet.exe publish -c Release -o $(WorkItemDirectory)SOD -f netcoreapp3.1 -r win-$(Architecture) $(PerformanceDirectory)\src\tools\ScenarioMeasurement\SizeOnDisk\SizeOnDisk.csproj
+    - script: $(PayloadDirectory)\dotnet\dotnet.exe publish -c Release -o $(WorkItemDirectory)\SOD -f netcoreapp3.1 -r win-$(Architecture) $(PerformanceDirectory)\src\tools\ScenarioMeasurement\SizeOnDisk\SizeOnDisk.csproj
       displayName: Build SizeOnDisk tool (Windows)
       env:
         PERFLAB_TARGET_FRAMEWORKS: netcoreapp3.1

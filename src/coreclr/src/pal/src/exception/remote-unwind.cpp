@@ -1859,7 +1859,10 @@ find_proc_info(unw_addr_space_t as, unw_word_t ip, unw_proc_info_t *pip, int nee
             ehFrameHdrLen = ph.p_memsz;
             break;
 
-#ifdef PT_ARM_EXIDX
+#if defined(TARGET_ARM)
+#ifndef PT_ARM_EXIDX
+#define PT_ARM_EXIDX   0x70000001      /* See llvm ELF.h */
+#endif /* !PT_ARM_EXIDX */
         case PT_ARM_EXIDX:
             exidxFrameHdrAddr = loadbias + ph.p_vaddr;
             exidxFrameHdrLen = ph.p_memsz;

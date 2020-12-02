@@ -106,10 +106,20 @@ mono_wasm_invoke_js (MonoString *str, int *is_exception)
 			res = res.toString ();
 			setValue ($2, 0, "i32");
 		} catch (e) {
-			res = e.toString ();
+			res = e.toString();
 			setValue ($2, 1, "i32");
 			if (res === null || res === undefined)
 				res = "unknown exception";
+
+			var stack = e.stack;
+			if (stack) {
+				// Some JS runtimes insert the error message at the top of the stack, some don't,
+				//  so normalize it by using the stack as the result if it already contains the error
+				if (stack.startsWith(res))
+					res = stack;
+				else
+ 					res += "\n" + stack;
+ 			}
 		}
 		var buff = Module._malloc((res.length + 1) * 2);
 		stringToUTF16 (res, buff, (res.length + 1) * 2);
@@ -572,6 +582,12 @@ mono_wasm_assembly_load (const char *name)
 	return res;
 }
 
+EMSCRIPTEN_KEEPALIVE MonoClass* 
+mono_wasm_find_corlib_class (const char *namespace, const char *name)
+{
+	return mono_class_from_name (mono_get_corlib (), namespace, name);
+}
+
 EMSCRIPTEN_KEEPALIVE MonoClass*
 mono_wasm_assembly_find_class (MonoAssembly *assembly, const char *namespace, const char *name)
 {
@@ -582,6 +598,21 @@ EMSCRIPTEN_KEEPALIVE MonoMethod*
 mono_wasm_assembly_find_method (MonoClass *klass, const char *name, int arguments)
 {
 	return mono_class_get_method_from_name (klass, name, arguments);
+}
+
+EMSCRIPTEN_KEEPALIVE MonoObject*
+mono_wasm_box_primitive (MonoClass *klass, void *value, int value_size)
+{
+	if (!klass)
+		return NULL;
+
+	MonoType *type = mono_class_get_type (klass);
+	int alignment;
+	if (mono_type_size (type, &alignment) > value_size)
+		return NULL;
+
+	// TODO: use mono_value_box_checked and propagate error out
+	return mono_value_box (root_domain, klass, value);
 }
 
 EMSCRIPTEN_KEEPALIVE MonoObject*
@@ -721,7 +752,7 @@ MonoClass* mono_get_uri_class(MonoException** exc)
 }
 
 #define MARSHAL_TYPE_INT 1
-#define MARSHAL_TYPE_FP 2
+#define MARSHAL_TYPE_FP64 2
 #define MARSHAL_TYPE_STRING 3
 #define MARSHAL_TYPE_VT 4
 #define MARSHAL_TYPE_DELEGATE 5
@@ -745,17 +776,14 @@ MonoClass* mono_get_uri_class(MonoException** exc)
 #define MARSHAL_ARRAY_FLOAT 17
 #define MARSHAL_ARRAY_DOUBLE 18
 
-EMSCRIPTEN_KEEPALIVE int
-mono_wasm_get_obj_type (MonoObject *obj)
+#define MARSHAL_TYPE_FP32 24
+#define MARSHAL_TYPE_UINT32 25
+#define MARSHAL_TYPE_INT64 26
+#define MARSHAL_TYPE_UINT64 27
+#define MARSHAL_TYPE_CHAR 28
+
+void mono_wasm_ensure_classes_resolved ()
 {
-	if (!obj)
-		return 0;
-
-	/* Process obj before calling into the runtime, class_from_name () can invoke managed code */
-	MonoClass *klass = mono_object_get_class (obj);
-	MonoType *type = mono_class_get_type (klass);
-	obj = NULL;
-
 	if (!datetime_class && !resolved_datetime_class) {
 		datetime_class = mono_class_from_name (mono_get_corlib(), "System", "DateTime");
 		resolved_datetime_class = 1;
@@ -773,8 +801,12 @@ mono_wasm_get_obj_type (MonoObject *obj)
 		safehandle_class = mono_class_from_name (mono_get_corlib(), "System.Runtime.InteropServices", "SafeHandle");
 		resolved_safehandle_class = 1;
 	}
+}
 
-	switch (mono_type_get_type (type)) {
+int
+mono_wasm_marshal_type_from_mono_type (int mono_type, MonoClass *klass, MonoType *type)
+{
+	switch (mono_type) {
 	// case MONO_TYPE_CHAR: prob should be done not as a number?
 	case MONO_TYPE_BOOLEAN:
 		return MARSHAL_TYPE_BOOL;
@@ -783,18 +815,25 @@ mono_wasm_get_obj_type (MonoObject *obj)
 	case MONO_TYPE_I2:
 	case MONO_TYPE_U2:
 	case MONO_TYPE_I4:
-	case MONO_TYPE_U4:
-	case MONO_TYPE_I8:
-	case MONO_TYPE_U8:
 	case MONO_TYPE_I:	// IntPtr
 		return MARSHAL_TYPE_INT;
+	case MONO_TYPE_CHAR:
+		return MARSHAL_TYPE_CHAR;
+	case MONO_TYPE_U4:  // The distinction between this and signed int is
+						// important due to how numbers work in JavaScript
+		return MARSHAL_TYPE_UINT32;
+	case MONO_TYPE_I8:
+		return MARSHAL_TYPE_INT64;
+	case MONO_TYPE_U8:
+		return MARSHAL_TYPE_UINT64;
 	case MONO_TYPE_R4:
+		return MARSHAL_TYPE_FP32;
 	case MONO_TYPE_R8:
-		return MARSHAL_TYPE_FP;
+		return MARSHAL_TYPE_FP64;
 	case MONO_TYPE_STRING:
 		return MARSHAL_TYPE_STRING;
 	case MONO_TYPE_SZARRAY:  { // simple zero based one-dim-array
-		MonoClass *eklass = mono_class_get_element_class(klass);
+		MonoClass *eklass = mono_class_get_element_class (klass);
 		MonoType *etype = mono_class_get_type (eklass);
 
 		switch (mono_type_get_type (etype)) {
@@ -819,6 +858,8 @@ mono_wasm_get_obj_type (MonoObject *obj)
 		}
 	}
 	default:
+		mono_wasm_ensure_classes_resolved ();
+
 		if (klass == datetime_class)
 			return MARSHAL_TYPE_DATE;
 		if (klass == datetimeoffset_class)
@@ -842,6 +883,96 @@ mono_wasm_get_obj_type (MonoObject *obj)
 }
 
 EMSCRIPTEN_KEEPALIVE int
+mono_wasm_get_obj_type (MonoObject *obj)
+{
+	if (!obj)
+		return 0;
+
+	/* Process obj before calling into the runtime, class_from_name () can invoke managed code */
+	MonoClass *klass = mono_object_get_class (obj);
+	MonoType *type = mono_class_get_type (klass);
+	obj = NULL;
+
+	int mono_type = mono_type_get_type (type);
+
+	return mono_wasm_marshal_type_from_mono_type (mono_type, klass, type);
+}
+
+EMSCRIPTEN_KEEPALIVE int
+mono_wasm_try_unbox_primitive_and_get_type (MonoObject *obj, void *result)
+{
+	int *resultI = result;
+	int64_t *resultL = result;
+	float *resultF = result;
+	double *resultD = result;
+
+	if (!obj) {
+		*resultL = 0;
+		return 0;
+	}
+
+	/* Process obj before calling into the runtime, class_from_name () can invoke managed code */
+	MonoClass *klass = mono_object_get_class (obj);
+	MonoType *type = mono_class_get_type (klass), *original_type = type;
+
+	if (mono_class_is_enum (klass))
+		type = mono_type_get_underlying_type (type);
+	
+	int mono_type = mono_type_get_type (type);
+	
+	// FIXME: We would prefer to unbox once here but it will fail if the value isn't unboxable
+
+	switch (mono_type) {
+		case MONO_TYPE_I1:
+		case MONO_TYPE_BOOLEAN:
+			*resultI = *(signed char*)mono_object_unbox (obj);
+			break;
+		case MONO_TYPE_U1:
+			*resultI = *(unsigned char*)mono_object_unbox (obj);
+			break;
+		case MONO_TYPE_I2:
+		case MONO_TYPE_CHAR:
+			*resultI = *(short*)mono_object_unbox (obj);
+			break;
+		case MONO_TYPE_U2:
+			*resultI = *(unsigned short*)mono_object_unbox (obj);
+			break;
+		case MONO_TYPE_I4:
+		case MONO_TYPE_I:
+			*resultI = *(int*)mono_object_unbox (obj);
+			break;
+		case MONO_TYPE_U4:
+			// FIXME: Will this behave the way we want for large unsigned values?
+			*resultI = *(int*)mono_object_unbox (obj);
+			break;
+		case MONO_TYPE_R4:
+			*resultF = *(float*)mono_object_unbox (obj);
+			break;
+		case MONO_TYPE_R8:
+			*resultD = *(double*)mono_object_unbox (obj);
+			break;
+		case MONO_TYPE_I8:
+		case MONO_TYPE_U8:
+			// FIXME: At present the javascript side of things can't handle this,
+			//  but there's no reason not to future-proof this API
+			*resultL = *(int64_t*)mono_object_unbox (obj);
+			break;
+		default:
+			// If we failed to do a fast unboxing, return the original type information so
+			//  that the caller can do a proper, slow unboxing later
+			*resultL = 0;
+			obj = NULL;
+			return mono_wasm_marshal_type_from_mono_type (mono_type, klass, original_type);
+	}
+
+	// We successfully performed a fast unboxing here so use the type information
+	//  matching what we unboxed (i.e. an enum's underlying type instead of its type)
+	obj = NULL;
+	return mono_wasm_marshal_type_from_mono_type (mono_type, klass, type);
+}
+
+// FIXME: This function is retained specifically because runtime-test.js uses it
+EMSCRIPTEN_KEEPALIVE int
 mono_unbox_int (MonoObject *obj)
 {
 	if (!obj)
@@ -864,30 +995,13 @@ mono_unbox_int (MonoObject *obj)
 		return *(int*)ptr;
 	case MONO_TYPE_U4:
 		return *(unsigned int*)ptr;
+	case MONO_TYPE_CHAR:
+		return *(short*)ptr;
 	// WASM doesn't support returning longs to JS
 	// case MONO_TYPE_I8:
 	// case MONO_TYPE_U8:
 	default:
 		printf ("Invalid type %d to mono_unbox_int\n", mono_type_get_type (type));
-		return 0;
-	}
-}
-
-EMSCRIPTEN_KEEPALIVE double
-mono_wasm_unbox_float (MonoObject *obj)
-{
-	if (!obj)
-		return 0;
-	MonoType *type = mono_class_get_type (mono_object_get_class(obj));
-
-	void *ptr = mono_object_unbox (obj);
-	switch (mono_type_get_type (type)) {
-	case MONO_TYPE_R4:
-		return *(float*)ptr;
-	case MONO_TYPE_R8:
-		return *(double*)ptr;
-	default:
-		printf ("Invalid type %d to mono_wasm_unbox_float\n", mono_type_get_type (type));
 		return 0;
 	}
 }

@@ -605,11 +605,12 @@ void Compiler::lvaInitUserArgs(InitVarDscInfo* varDscInfo)
         // ARM softfp calling convention should affect only the floating point arguments.
         // Otherwise there appear too many surplus pre-spills and other memory operations
         // with the associated locations .
-        bool      isSoftFPPreSpill = opts.compUseSoftFP && varTypeIsFloating(varDsc->TypeGet());
-        unsigned  argSize          = eeGetArgSize(argLst, &info.compMethodInfo->args);
-        unsigned  cSlots           = argSize / TARGET_POINTER_SIZE; // the total number of slots of this argument
-        bool      isHfaArg         = false;
-        var_types hfaType          = TYP_UNDEF;
+        bool     isSoftFPPreSpill = opts.compUseSoftFP && varTypeIsFloating(varDsc->TypeGet());
+        unsigned argSize          = eeGetArgSize(argLst, &info.compMethodInfo->args);
+        unsigned cSlots =
+            (argSize + TARGET_POINTER_SIZE - 1) / TARGET_POINTER_SIZE; // the total number of slots of this argument
+        bool      isHfaArg = false;
+        var_types hfaType  = TYP_UNDEF;
 
 #if defined(TARGET_ARM64) && defined(TARGET_UNIX)
         // Native varargs on arm64 unix use the regular calling convention.
@@ -863,6 +864,7 @@ void Compiler::lvaInitUserArgs(InitVarDscInfo* varDscInfo)
                 if (cSlots == 2)
                 {
                     varDsc->SetOtherArgReg(genMapRegArgNumToRegNum(firstAllocatedRegArgNum + 1, TYP_I_IMPL));
+                    varDsc->lvIsMultiRegArg = true;
                 }
             }
 #elif defined(UNIX_AMD64_ABI)
@@ -875,6 +877,7 @@ void Compiler::lvaInitUserArgs(InitVarDscInfo* varDscInfo)
                 {
                     secondEightByteType      = GetEightByteType(structDesc, 1);
                     secondAllocatedRegArgNum = varDscInfo->allocRegArg(secondEightByteType, 1);
+                    varDsc->lvIsMultiRegArg  = true;
                 }
 
                 if (secondEightByteType != TYP_UNDEF)
@@ -1014,8 +1017,21 @@ void Compiler::lvaInitUserArgs(InitVarDscInfo* varDscInfo)
 #endif // TARGET_XXX
 
 #if FEATURE_FASTTAILCALL
+#if defined(OSX_ARM64_ABI)
+            unsigned argAlignment = TARGET_POINTER_SIZE;
+            if (argSize <= TARGET_POINTER_SIZE)
+            {
+                argAlignment = argSize;
+            }
+            varDscInfo->stackArgSize = roundUp(varDscInfo->stackArgSize, argAlignment);
+            assert(argSize % argAlignment == 0);
+#else  // !OSX_ARM64_ABI
+            assert((argSize % TARGET_POINTER_SIZE) == 0);
+            assert((varDscInfo->stackArgSize % TARGET_POINTER_SIZE) == 0);
+#endif // !OSX_ARM64_ABI
+
             varDsc->SetStackOffset(varDscInfo->stackArgSize);
-            varDscInfo->stackArgSize += roundUp(argSize, TARGET_POINTER_SIZE);
+            varDscInfo->stackArgSize += argSize;
 #endif // FEATURE_FASTTAILCALL
         }
 
@@ -1846,29 +1862,45 @@ bool Compiler::StructPromotionHelper::CanPromoteStructVar(unsigned lclNum)
         {
             canPromote = false;
         }
-#if defined(FEATURE_SIMD) && defined(TARGET_ARMARCH)
-        else if (fieldCnt > 1)
+#if defined(TARGET_ARMARCH)
+        else
         {
-            // If we have a register-passed struct with mixed non-opaque SIMD types (i.e. with defined fields)
-            // and non-SIMD types, we don't currently handle that case in the prolog, so we can't promote.
             for (unsigned i = 0; canPromote && (i < fieldCnt); i++)
             {
-                if (varTypeIsStruct(structPromotionInfo.fields[i].fldType) &&
-                    !compiler->isOpaqueSIMDType(structPromotionInfo.fields[i].fldTypeHnd))
+                var_types fieldType = structPromotionInfo.fields[i].fldType;
+                // Non-HFA structs are always passed in general purpose registers.
+                // If there are any floating point fields, don't promote for now.
+                // TODO-1stClassStructs: add support in Lowering and prolog generation
+                // to enable promoting these types.
+                if (varDsc->lvIsParam && !varDsc->lvIsHfa() && varTypeUsesFloatReg(fieldType))
                 {
                     canPromote = false;
                 }
+#if defined(FEATURE_SIMD)
+                // If we have a register-passed struct with mixed non-opaque SIMD types (i.e. with defined fields)
+                // and non-SIMD types, we don't currently handle that case in the prolog, so we can't promote.
+                else if ((fieldCnt > 1) && varTypeIsStruct(fieldType) &&
+                         !compiler->isOpaqueSIMDType(structPromotionInfo.fields[i].fldTypeHnd))
+                {
+                    canPromote = false;
+                }
+#endif // FEATURE_SIMD
             }
         }
 #elif defined(UNIX_AMD64_ABI)
         else
         {
             SortStructFields();
-            // Only promote if the field types match the registers.
+            // Only promote if the field types match the registers, unless we have a single SIMD field.
             SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR structDesc;
             compiler->eeGetSystemVAmd64PassStructInRegisterDescriptor(typeHnd, &structDesc);
             unsigned regCount = structDesc.eightByteCount;
-            if (structPromotionInfo.fieldCnt != regCount)
+            if ((structPromotionInfo.fieldCnt == 1) && varTypeIsSIMD(structPromotionInfo.fields[0].fldType))
+            {
+                // Allow the case of promoting a single SIMD field, even if there are multiple registers.
+                // We will fix this up in the prolog.
+            }
+            else if (structPromotionInfo.fieldCnt != regCount)
             {
                 canPromote = false;
             }
@@ -1969,16 +2001,21 @@ bool Compiler::StructPromotionHelper::ShouldPromoteStructVar(unsigned lclNum)
 #if FEATURE_MULTIREG_STRUCT_PROMOTE
         // Is this a variable holding a value with exactly two fields passed in
         // multiple registers?
-        if ((structPromotionInfo.fieldCnt != 2) && compiler->lvaIsMultiregStruct(varDsc, compiler->info.compIsVarArgs))
+        if (compiler->lvaIsMultiregStruct(varDsc, compiler->info.compIsVarArgs))
         {
-            JITDUMP("Not promoting multireg struct local V%02u, because lvIsParam is true and #fields != 2\n", lclNum);
-            shouldPromote = false;
+            if ((structPromotionInfo.fieldCnt != 2) &&
+                !((structPromotionInfo.fieldCnt == 1) && varTypeIsSIMD(structPromotionInfo.fields[0].fldType)))
+            {
+                JITDUMP("Not promoting multireg struct local V%02u, because lvIsParam is true, #fields != 2 and it's "
+                        "not a single SIMD.\n",
+                        lclNum);
+                shouldPromote = false;
+            }
         }
         else
 #endif // !FEATURE_MULTIREG_STRUCT_PROMOTE
 
-            // TODO-PERF - Implement struct promotion for incoming multireg structs
-            //             Currently it hits assert(lvFieldCnt==1) in lclvar.cpp line 4417
+            // TODO-PERF - Implement struct promotion for incoming single-register structs.
             //             Also the implementation of jmp uses the 4 byte move to store
             //             byte parameters to the stack, so that if we have a byte field
             //             with something else occupying the same 4-byte slot, it will
@@ -2289,16 +2326,28 @@ void Compiler::StructPromotionHelper::PromoteStructVar(unsigned lclNum)
                 else
 #endif // UNIX_AMD64_ABI
                 {
-                    // TODO: Need to determine if/how to handle split args.
-                    // TODO: Assert that regs are always sequential.
-                    unsigned regIncrement = fieldVarDsc->lvFldOrdinal;
-#ifdef TARGET_ARM
-                    if (varDsc->lvIsHfa() && (varDsc->GetHfaType() == TYP_DOUBLE))
+                    regNumber fieldRegNum;
+                    if (index == 0)
                     {
-                        regIncrement = (fieldVarDsc->lvFldOrdinal * 2);
+                        fieldRegNum = parentArgReg;
                     }
+                    else if (varDsc->lvIsHfa())
+                    {
+                        unsigned regIncrement = fieldVarDsc->lvFldOrdinal;
+#ifdef TARGET_ARM
+                        // TODO: Need to determine if/how to handle split args.
+                        if (varDsc->GetHfaType() == TYP_DOUBLE)
+                        {
+                            regIncrement *= 2;
+                        }
 #endif // TARGET_ARM
-                    regNumber fieldRegNum = (regNumber)(parentArgReg + regIncrement);
+                        fieldRegNum = (regNumber)(parentArgReg + regIncrement);
+                    }
+                    else
+                    {
+                        assert(index == 1);
+                        fieldRegNum = varDsc->GetOtherArgReg();
+                    }
                     fieldVarDsc->SetArgReg(fieldRegNum);
                 }
             }
@@ -3142,47 +3191,9 @@ BasicBlock::weight_t BasicBlock::getBBWeight(Compiler* comp)
 
         // Normalize the bbWeights by multiplying by BB_UNITY_WEIGHT and dividing by the calledCount.
         //
-        // 1. For methods that do not have IBC data the called weight will always be 100 (BB_UNITY_WEIGHT)
-        //     and the entry point bbWeight value is almost always 100 (BB_UNITY_WEIGHT)
-        // 2.  For methods that do have IBC data the called weight is the actual number of calls
-        //     from the IBC data and the entry point bbWeight value is almost always the actual
-        //     number of calls from the IBC data.
-        //
-        // "almost always" - except for the rare case where a loop backedge jumps to BB01
-        //
-        // We also perform a rounding operation by adding half of the 'calledCount' before performing
-        // the division.
-        //
-        // Thus for both cases we will return 100 (BB_UNITY_WEIGHT) for the entry point BasicBlock
-        //
-        // Note that with a 100 (BB_UNITY_WEIGHT) values between 1 and 99 represent decimal fractions.
-        // (i.e. 33 represents 33% and 75 represents 75%, and values greater than 100 require
-        //  some kind of loop backedge)
-        //
+        weight_t fullResult = this->bbWeight * BB_UNITY_WEIGHT / calledCount;
 
-        if (this->bbWeight < (BB_MAX_WEIGHT / BB_UNITY_WEIGHT))
-        {
-            // Calculate the result using unsigned arithmetic
-            weight_t result = ((this->bbWeight * BB_UNITY_WEIGHT) + (calledCount / 2)) / calledCount;
-
-            // We don't allow a value of zero, as that would imply rarely run
-            return max(1, result);
-        }
-        else
-        {
-            // Calculate the full result using floating point
-            double fullResult = ((double)this->bbWeight * (double)BB_UNITY_WEIGHT) / (double)calledCount;
-
-            if (fullResult < (double)BB_MAX_WEIGHT)
-            {
-                // Add 0.5 and truncate to unsigned
-                return (weight_t)(fullResult + 0.5);
-            }
-            else
-            {
-                return BB_MAX_WEIGHT;
-            }
-        }
+        return fullResult;
     }
 }
 
@@ -3256,17 +3267,19 @@ public:
         // Break the tie by:
         //   - Increasing the weight by 2   if we are a register arg.
         //   - Increasing the weight by 0.5 if we are a GC type.
+        //
+        // Review: seems odd that this is mixing counts and weights.
 
         if (weight1 != 0)
         {
             if (dsc1->lvIsRegArg)
             {
-                weight2 += 2 * BB_UNITY_WEIGHT;
+                weight2 += 2 * BB_UNITY_WEIGHT_UNSIGNED;
             }
 
             if (varTypeIsGC(dsc1->TypeGet()))
             {
-                weight1 += BB_UNITY_WEIGHT / 2;
+                weight1 += BB_UNITY_WEIGHT_UNSIGNED / 2;
             }
         }
 
@@ -3274,12 +3287,12 @@ public:
         {
             if (dsc2->lvIsRegArg)
             {
-                weight2 += 2 * BB_UNITY_WEIGHT;
+                weight2 += 2 * BB_UNITY_WEIGHT_UNSIGNED;
             }
 
             if (varTypeIsGC(dsc2->TypeGet()))
             {
-                weight2 += BB_UNITY_WEIGHT / 2;
+                weight2 += BB_UNITY_WEIGHT_UNSIGNED / 2;
             }
         }
 
@@ -3323,8 +3336,8 @@ public:
         assert(!dsc1->lvRegister);
         assert(!dsc2->lvRegister);
 
-        unsigned weight1 = dsc1->lvRefCntWtd();
-        unsigned weight2 = dsc2->lvRefCntWtd();
+        BasicBlock::weight_t weight1 = dsc1->lvRefCntWtd();
+        BasicBlock::weight_t weight2 = dsc2->lvRefCntWtd();
 
 #ifndef TARGET_ARM
         // ARM-TODO: this was disabled for ARM under !FEATURE_FP_REGALLOC; it was probably a left-over from
@@ -4269,7 +4282,7 @@ void Compiler::lvaComputeRefCounts(bool isRecompute, bool setSlotNumbers)
             // If, in minopts/debug, we really want to allow locals to become
             // unreferenced later, we'll have to explicitly clear this bit.
             varDsc->setLvRefCnt(0);
-            varDsc->setLvRefCntWtd(0);
+            varDsc->setLvRefCntWtd(BB_ZERO_WEIGHT);
 
             // Special case for some varargs params ... these must
             // remain unreferenced.
@@ -5254,7 +5267,9 @@ void Compiler::lvaAssignVirtualFrameOffsetsToArgs()
     /* Update the argOffs to reflect arguments that are passed in registers */
 
     noway_assert(codeGen->intRegState.rsCalleeRegArgCount <= MAX_REG_ARG);
+#if !defined(OSX_ARM64_ABI)
     noway_assert(compArgSize >= codeGen->intRegState.rsCalleeRegArgCount * REGSIZE_BYTES);
+#endif
 
 #ifdef TARGET_X86
     argOffs -= codeGen->intRegState.rsCalleeRegArgCount * REGSIZE_BYTES;
@@ -5494,8 +5509,7 @@ int Compiler::lvaAssignVirtualFrameOffsetToArg(unsigned lclNum,
         for (unsigned i = 0; i < varDsc->lvFieldCnt; i++)
         {
             LclVarDsc* fieldVarDsc = lvaGetDesc(firstFieldNum + i);
-            fieldVarDsc->SetStackOffset(offset);
-            offset += fieldVarDsc->lvFldOffset;
+            fieldVarDsc->SetStackOffset(offset + fieldVarDsc->lvFldOffset);
         }
     }
 
@@ -5767,6 +5781,18 @@ int Compiler::lvaAssignVirtualFrameOffsetToArg(unsigned lclNum,
                 break;
         }
 #endif // TARGET_ARM
+#if defined(OSX_ARM64_ABI)
+        unsigned argAlignment = TARGET_POINTER_SIZE;
+        if (argSize <= TARGET_POINTER_SIZE)
+        {
+            argAlignment = argSize;
+        }
+        argOffs = roundUp(argOffs, argAlignment);
+        assert((argOffs % argAlignment) == 0);
+#else  // !OSX_ARM64_ABI
+        assert((argSize % TARGET_POINTER_SIZE) == 0);
+        assert((argOffs % TARGET_POINTER_SIZE) == 0);
+#endif // !OSX_ARM64_ABI
 
         varDsc->SetStackOffset(argOffs);
     }

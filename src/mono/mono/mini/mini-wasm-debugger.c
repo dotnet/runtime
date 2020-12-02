@@ -444,6 +444,7 @@ mono_wasm_debugger_init (void)
 	objrefs = g_hash_table_new_full (NULL, NULL, NULL, mono_debugger_free_objref);
 
 	mini_get_dbg_callbacks ()->handle_exception = handle_exception;
+	mini_get_dbg_callbacks ()->user_break = mono_wasm_user_break;
 }
 
 MONO_API void
@@ -661,6 +662,12 @@ mono_wasm_breakpoint_hit (void)
 {
 	mono_de_process_breakpoint (NULL, FALSE);
 	// mono_wasm_fire_bp ();
+}
+
+void
+mono_wasm_user_break (void)
+{
+	mono_wasm_fire_bp ();
 }
 
 EMSCRIPTEN_KEEPALIVE int

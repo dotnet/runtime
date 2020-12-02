@@ -89,7 +89,7 @@ native_binaries_to_ignore = [
     "superpmi-shim-counter.dll",
     "superpmi-shim-simple.dll",
 ]
-
+MAX_FILES_COUNT = 1500
 
 def setup_args(args):
     """ Setup the args for SuperPMI to use.
@@ -206,7 +206,7 @@ def first_fit(sorted_by_size, max_size):
         if file_size < max_size:
             for p_index in partitions:
                 total_in_curr_par = sum(n for _, n in partitions[p_index])
-                if (total_in_curr_par + file_size) < max_size:
+                if (((total_in_curr_par + file_size) < max_size) and (len(partitions[p_index]) < MAX_FILES_COUNT)):
                     partitions[p_index].append(curr_file)
                     found_bucket = True
                     break
@@ -217,7 +217,7 @@ def first_fit(sorted_by_size, max_size):
     total_size = 0
     for p_index in partitions:
         partition_size = sum(n for _, n in partitions[p_index])
-        print("Partition {0}: {1} bytes.".format(p_index, partition_size))
+        print("Partition {0}: {1} files with {2} bytes.".format(p_index, len(partitions[p_index]), partition_size))
         total_size += partition_size
     print("Total {0} partitions with {1} bytes.".format(str(len(partitions)), total_size))
 

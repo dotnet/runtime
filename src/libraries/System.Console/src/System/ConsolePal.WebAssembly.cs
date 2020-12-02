@@ -29,15 +29,13 @@ namespace System
             base.Dispose(disposing);
         }
 
-        public override int Read(byte[] buffer, int offset, int count) => throw Error.GetReadNotSupported();
+        public override int Read(Span<byte> buffer) => throw Error.GetReadNotSupported();
 
-        public override unsafe void Write(byte[] buffer, int offset, int count)
+        public override unsafe void Write(ReadOnlySpan<byte> buffer)
         {
-            ValidateWrite(buffer, offset, count);
-
             fixed (byte* bufPtr = buffer)
             {
-                Write(_handle, bufPtr + offset, count);
+                Write(_handle, bufPtr, buffer.Length);
             }
         }
 

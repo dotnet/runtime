@@ -1,7 +1,7 @@
-#include "mono/eventpipe/ep.h"
-#include "mono/eventpipe/ep-session.h"
-#include "mono/eventpipe/ep-thread.h"
-#include "eglib/test/test.h"
+#include <eventpipe/ep.h>
+#include <eventpipe/ep-session.h>
+#include <eventpipe/ep-thread.h>
+#include <eglib/test/test.h>
 
 #define TEST_FILE "./ep_test_create_file.txt"
 
@@ -315,7 +315,7 @@ test_thread_session_write (void)
 	test_location = 1;
 
 	uint32_t session_write = ep_thread_get_session_write_in_progress (thread);
-	if (session_write) {
+	if (session_write < EP_MAX_NUMBER_OF_SESSIONS) {
 		result = FAILED ("Session write is in progress");
 		ep_raise_error ();
 	}
@@ -335,7 +335,7 @@ test_thread_session_write (void)
 	ep_thread_set_session_write_in_progress (thread, 0);
 
 	session_write = ep_thread_get_session_write_in_progress (thread);
-	if (session_write) {
+	if (session_write != 0) {
 		result = FAILED ("Session write is in progress");
 		ep_raise_error ();
 	}

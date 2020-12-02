@@ -3,6 +3,7 @@
 
 using System.Buffers;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Threading;
@@ -14,13 +15,18 @@ namespace System.IO
     {
         public static readonly Stream Null = new NullStream();
 
-        /// <summary>To implement Async IO operations on streams that don't support async IO</summary>
-        private SemaphoreSlim? _asyncActiveSemaphore;
+        /// <summary>To serialize async operations on streams that don't implement their own.</summary>
+        private protected SemaphoreSlim? _asyncActiveSemaphore;
 
-        internal SemaphoreSlim EnsureAsyncActiveSemaphoreInitialized() =>
+        [MemberNotNull(nameof(_asyncActiveSemaphore))]
+        private protected SemaphoreSlim EnsureAsyncActiveSemaphoreInitialized() =>
             // Lazily-initialize _asyncActiveSemaphore.  As we're never accessing the SemaphoreSlim's
             // WaitHandle, we don't need to worry about Disposing it in the case of a race condition.
-            LazyInitializer.EnsureInitialized(ref _asyncActiveSemaphore, () => new SemaphoreSlim(1, 1));
+#pragma warning disable CS8774 // We lack a NullIffNull annotation for Volatile.Read
+            Volatile.Read(ref _asyncActiveSemaphore) ??
+#pragma warning restore CS8774
+            Interlocked.CompareExchange(ref _asyncActiveSemaphore, new SemaphoreSlim(1, 1), null) ??
+            _asyncActiveSemaphore;
 
         public abstract bool CanRead { get; }
         public abstract bool CanWrite { get; }
@@ -212,7 +218,9 @@ namespace System.IO
             }
             else
             {
+#pragma warning disable CA1416 // Validate platform compatibility, issue: https://github.com/dotnet/runtime/issues/44543
                 semaphore.Wait();
+#pragma warning restore CA1416
             }
 
             // Create the task to asynchronously do a Read.  This task serves both
@@ -367,7 +375,9 @@ namespace System.IO
             }
             else
             {
+#pragma warning disable CA1416 // Validate platform compatibility, issue: https://github.com/dotnet/runtime/issues/44543
                 semaphore.Wait(); // synchronously wait here
+#pragma warning restore CA1416
             }
 
             // Create the task to asynchronously do a Write.  This task serves both

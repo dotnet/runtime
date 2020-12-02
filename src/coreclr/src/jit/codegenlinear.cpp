@@ -1704,8 +1704,6 @@ void CodeGen::genConsumePutStructArgStk(GenTreePutArgStk* putArgNode,
     assert((src->gtOper == GT_OBJ) || ((src->gtOper == GT_IND && varTypeIsSIMD(src))));
     GenTree* srcAddr = src->gtGetOp1();
 
-    unsigned int size = putArgNode->getArgSize();
-
     assert(dstReg != REG_NA);
     assert(srcReg != REG_NA);
 
@@ -1757,6 +1755,7 @@ void CodeGen::genConsumePutStructArgStk(GenTreePutArgStk* putArgNode,
 
     if (sizeReg != REG_NA)
     {
+        unsigned size = putArgNode->GetStackByteSize();
         inst_RV_IV(INS_mov, sizeReg, size, EA_PTRSIZE);
     }
 }

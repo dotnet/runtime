@@ -106,7 +106,5 @@ DWORD WINAPI GetEnvironmentVariableWrapper(
     _Out_opt_ SString&  lpBuffer
     );
 
-BOOL PAL_GetPALDirectoryWrapper(SString& pbuffer);
-
 #endif //_WIN_PATH_APIS_WRAPPER_
 

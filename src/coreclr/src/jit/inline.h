@@ -225,7 +225,8 @@ public:
     virtual void NoteSuccess() = 0;
     virtual void NoteBool(InlineObservation obs, bool value) = 0;
     virtual void NoteFatal(InlineObservation obs) = 0;
-    virtual void NoteInt(InlineObservation obs, int value) = 0;
+    virtual void NoteInt(InlineObservation obs, int value)       = 0;
+    virtual void NoteDouble(InlineObservation obs, double value) = 0;
 
     // Optional observations. Most policies ignore these.
     virtual void NoteContext(InlineContext* context)
@@ -239,6 +240,7 @@ public:
 
     // Policy determinations
     virtual void DetermineProfitability(CORINFO_METHOD_INFO* methodInfo) = 0;
+    virtual bool BudgetCheck() const                                     = 0;
 
     // Policy policies
     virtual bool PropagateNeverToRuntime() const = 0;
@@ -395,6 +397,12 @@ public:
         m_Policy->NoteInt(obs, value);
     }
 
+    // Make an observation with a double value
+    void NoteDouble(InlineObservation obs, double value)
+    {
+        m_Policy->NoteDouble(obs, value);
+    }
+
 #if defined(DEBUG) || defined(INLINE_DATA)
 
     // Record observation from an earlier failure.
@@ -504,14 +512,24 @@ private:
     bool                  m_Reported;
 };
 
-// GuardedDevirtualizationCandidateInfo provides information about
-// a potential target of a virtual call.
+// ClassProfileCandidateInfo provides information about
+// profiling an indirect or virtual call.
+//
+struct ClassProfileCandidateInfo
+{
+    IL_OFFSET ilOffset;
+    unsigned  probeIndex;
+    void*     stubAddr;
+};
 
-struct GuardedDevirtualizationCandidateInfo
+// GuardedDevirtualizationCandidateInfo provides information about
+// a potential target of a virtual or interface call.
+//
+struct GuardedDevirtualizationCandidateInfo : ClassProfileCandidateInfo
 {
     CORINFO_CLASS_HANDLE  guardedClassHandle;
     CORINFO_METHOD_HANDLE guardedMethodHandle;
-    void*                 stubAddr;
+    unsigned              likelihood;
 };
 
 // InlineCandidateInfo provides basic information about a particular
@@ -519,7 +537,7 @@ struct GuardedDevirtualizationCandidateInfo
 //
 // It is a superset of GuardedDevirtualizationCandidateInfo: calls
 // can start out as GDv candidates and turn into inline candidates
-
+//
 struct InlineCandidateInfo : public GuardedDevirtualizationCandidateInfo
 {
     CORINFO_METHOD_INFO    methInfo;
@@ -540,8 +558,6 @@ struct InlineCandidateInfo : public GuardedDevirtualizationCandidateInfo
 
 struct InlArgInfo
 {
-    unsigned __int64 bbFlags;             // basic block flags that need to be added when replacing GT_RET_EXPR
-                                          // with argNode
     GenTree* argNode;                     // caller node for this argument
     GenTree* argBashTmpNode;              // tmp node created, if it may be replaced with actual arg
     unsigned argTmpNum;                   // the argument tmp number

@@ -2711,7 +2711,7 @@ emit_get_method (MonoLLVMModule *module)
 
 		int table_len = module->max_method_idx + 1;
 		table_type = LLVMArrayType (rtype, table_len);
-		table_name = g_strdup_printf ("%s_method_table", module->assembly->aname.name);
+		table_name = g_strdup_printf ("%s_method_table", module->global_prefix);
 		table = LLVMAddGlobal (lmodule, table_type, table_name);
 		table_elems = g_new0 (LLVMValueRef, table_len);
 		for (i = 0; i < table_len; ++i) {
@@ -2861,7 +2861,7 @@ emit_get_unbox_tramp (MonoLLVMModule *module)
 		// The index table
 		elemtype = elemsize == 2 ? LLVMInt16Type () : LLVMInt32Type ();
 		table_type = LLVMArrayType (elemtype, table_len);
-		table_name = g_strdup_printf ("%s_unbox_tramp_indexes", module->assembly->aname.name);
+		table_name = g_strdup_printf ("%s_unbox_tramp_indexes", module->global_prefix);
 		table = LLVMAddGlobal (lmodule, table_type, table_name);
 		table_elems = g_new0 (LLVMValueRef, table_len);
 		int idx = 0;
@@ -2876,7 +2876,7 @@ emit_get_unbox_tramp (MonoLLVMModule *module)
 		// The trampoline table
 		elemtype = rtype;
 		table_type = LLVMArrayType (elemtype, table_len);
-		table_name = g_strdup_printf ("%s_unbox_trampolines", module->assembly->aname.name);
+		table_name = g_strdup_printf ("%s_unbox_trampolines", module->global_prefix);
 		table = LLVMAddGlobal (lmodule, table_type, table_name);
 		table_elems = g_new0 (LLVMValueRef, table_len);
 		idx = 0;
@@ -3543,7 +3543,10 @@ emit_entry_bb (EmitContext *ctx, LLVMBuilderRef builder)
 				return;
 			/* Could be already created by an OP_VPHI */
 			if (!ctx->addresses [var->dreg]) {
-				ctx->addresses [var->dreg] = build_alloca (ctx, var->inst_vtype);
+				if (var->flags & MONO_INST_LMF)
+					ctx->addresses [var->dreg] = build_alloca_llvm_type (ctx, LLVMArrayType (LLVMInt8Type (), MONO_ABI_SIZEOF (MonoLMF)), sizeof (target_mgreg_t));
+				else
+					ctx->addresses [var->dreg] = build_alloca (ctx, var->inst_vtype);
 				//LLVMSetValueName (ctx->addresses [var->dreg], g_strdup_printf ("vreg_loc_%d", var->dreg));
 			}
 			ctx->vreg_cli_types [var->dreg] = var->inst_vtype;
@@ -10143,6 +10146,8 @@ mono_llvm_create_vars (MonoCompile *cfg)
 	} else {
 		mono_arch_create_vars (cfg);
 	}
+
+	cfg->lmf_ir = TRUE;
 }
 
 /*
