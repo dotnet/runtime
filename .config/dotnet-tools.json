@@ -21,7 +21,7 @@
       ]
     },
     "microsoft.visualstudio.slngen.tool": {
-      "version": "4.4.0",
+      "version": "4.4.2",
       "commands": [
         "slngen"
       ]
