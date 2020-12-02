@@ -15,7 +15,7 @@ namespace System.Net.WebSockets.Client.Tests
 
         [OuterLoop("Uses external servers")]
         [ConditionalTheory(nameof(WebSocketsSupported)), MemberData(nameof(EchoServers))]
-        [ActiveIssue("https://github.com/dotnet/runtime/pull/44722", TestPlatforms.Browser)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/44720", TestPlatforms.Browser)]
         public async Task ConnectAsync_Cancel_ThrowsCancellationException(Uri server)
         {
             using (var cws = new ClientWebSocket())
