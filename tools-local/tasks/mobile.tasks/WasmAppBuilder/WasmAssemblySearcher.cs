@@ -32,7 +32,6 @@ public class WasmAssemblySearcher : Task
     public string[]? ReferencedAssemblies { get; set; }
 
     private SortedDictionary<string, Assembly> _assemblies = new SortedDictionary<string, Assembly>();
-    private Resolver? _resolver;
 
     public override bool Execute ()
     {
@@ -40,6 +39,7 @@ public class WasmAssemblySearcher : Task
             throw new ArgumentException("Either the AssemblySearchPaths or the Assemblies property needs to be set.");
 
         var paths = new List<string>();
+        Resolver? _resolver;
 
         if (AssemblySearchPaths != null)
         {
