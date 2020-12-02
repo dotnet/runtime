@@ -1143,8 +1143,11 @@ namespace System.Text.RegularExpressions.Tests
         [Fact]
         public void Explore()
         {
-            var regex = new Regex("abc");
-            var match = regex.Match("abcd");
+            var regex2 = new Regex("abc(efg|hij)xyz");
+            //var regex1 = new Regex("((abc|def)mno|(xyz|abc)ghi)rst");
+            var regex = new Regex("(efg|xyz|hij)abcd");
+            //var matches = regex.Matches("hijabcd");
+            var match = regex.Match("hijabcd");
             var match1 = regex.Match("ababcd");
             Console.WriteLine("BH");
         }

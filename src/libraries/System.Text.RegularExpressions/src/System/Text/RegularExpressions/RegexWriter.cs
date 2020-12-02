@@ -3,6 +3,7 @@
 
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Globalization;
 
 namespace System.Text.RegularExpressions
@@ -64,6 +65,72 @@ namespace System.Text.RegularExpressions
             _intStack.Dispose();
         }
 
+        private bool ContinueUsingAhoCorasick(RegexNode node)
+        {
+            switch (node.Type)
+            {
+                case RegexNode.Capture:
+                case RegexNode.Concatenate:
+                case RegexNode.Alternate:
+                case RegexNode.Multi:
+                    return true;
+                default:
+                    return false;
+            }
+        }
+
+        private bool EffectiveParentIsAnAlternateNode(RegexNode node)
+        {
+            Debug.Assert(node.Type == RegexNode.Multi, "Currently only used to analyze Multi nodes.");
+            if (node == null || node.Next == null)
+            {
+                return false;
+            }
+            if (node.Next.Type == RegexNode.Alternate)
+            {
+                return true;
+            }
+            if (node.Next.Type == RegexNode.Capture && node.Next.Next != null && node.Next.Next.Type == RegexNode.Alternate)
+            {
+                return true;
+            }
+            return false;
+        }
+
+        private bool ConcatenateNodeHasOnlyOneMultiNodeChild(RegexNode concatenateNode)
+        {
+            Debug.Assert(concatenateNode.Type == RegexNode.Concatenate);
+            int countOfMultiNodes = 0;
+            for (int i = 0; i < concatenateNode.ChildCount(); i++)
+            {
+                if (concatenateNode.Child(i).Type == RegexNode.Multi)
+                {
+                    countOfMultiNodes++;
+                }
+            }
+            return countOfMultiNodes == 1;
+        }
+
+        private bool EffectiveParentIsAConcatenateNode(RegexNode node)
+        {
+            Debug.Assert(node.Type == RegexNode.Multi, "Currently only used to analyze Multi nodes.");
+            if (node == null || node.Next == null)
+            {
+                return false;
+            }
+            if (node.Next.Type == RegexNode.Concatenate)
+            {
+                //Debug.Assert(node.Next.ChildCount() == 1, "Algorithm assumes a concatenate node has only 1 child of type Multi");
+                return true;
+            }
+            if (node.Next.Type == RegexNode.Capture && node.Next.Next != null && node.Next.Next.Type == RegexNode.Concatenate)
+            {
+                //Debug.Assert(node.Next.Next.ChildCount() == 1, "Algorithm assumes a concatenate node has only 1 child of type Multi");
+                return true;
+            }
+            return false;
+        }
+
         /// <summary>
         /// The top level RegexCode generator. It does a depth-first walk
         /// through the tree and calls EmitFragment to emit code before
@@ -94,6 +161,13 @@ namespace System.Text.RegularExpressions
             // to point to the ending Stop after the whole expression has been written.
             Emit(RegexCode.Lazybranch, 0);
 
+            // List of dictionary words for Aho-Corasick
+            List<string> words = new List<string>() { string.Empty };
+            // Local stack to populate the words list correctly
+            ValueListBuilder<int> concatenateStack = new ValueListBuilder<int>(stackalloc int[IntStackSize]);
+            int indexForConcatenateWords = 0;
+            bool useAhoCorasick = true;
+
             // Emit every node.
             RegexNode curNode = tree.Root;
             int curChild = 0;
@@ -103,10 +177,47 @@ namespace System.Text.RegularExpressions
                 if (curNodeChildCount == 0)
                 {
                     EmitFragment(curNode.Type, curNode, 0);
+                    if (useAhoCorasick)
+                    {
+                        useAhoCorasick = ContinueUsingAhoCorasick(curNode);
+                    }
+
+                    if (useAhoCorasick)
+                    {
+                        if (curNode.Type == RegexNode.Multi)
+                        {
+                            if (EffectiveParentIsAnAlternateNode(curNode))
+                            {
+                                words.Add(curNode.Str!);
+                            }
+                            else if (EffectiveParentIsAConcatenateNode(curNode))
+                            {
+                                for (int i = indexForConcatenateWords; i < words.Count; i++)
+                                {
+                                    words[i] = words[i] + curNode.Str!;
+                                }
+                            }
+                        }
+                    }
                 }
                 else if (curChild < curNodeChildCount)
                 {
                     EmitFragment(curNode.Type | BeforeChild, curNode, curChild);
+                    if (useAhoCorasick)
+                    {
+                        useAhoCorasick = ContinueUsingAhoCorasick(curNode);
+                    }
+                    if (useAhoCorasick)
+                    {
+                        if (curChild == 0)
+                        {
+                            concatenateStack.Append(words.Count);
+                        }
+                        else
+                        {
+                            indexForConcatenateWords = concatenateStack.Pop();
+                        }
+                    }
 
                     curNode = curNode.Child(curChild);
                     _intStack.Append(curChild);
