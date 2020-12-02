@@ -684,6 +684,7 @@ namespace System.Text.RegularExpressions
             return false;
         }
 
+        // Possible place that can be optimized with an IndexSet. Or the return can be modified to use RegexCharClass
         /// <summary>Gets all of the characters in the specified set, storing them into the provided span.</summary>
         /// <param name="set">The character class.</param>
         /// <param name="chars">The span into which the chars should be stored.</param>
@@ -1064,6 +1065,7 @@ namespace System.Text.RegularExpressions
             return CharInCategory(ch, set, start, setLength, categoryLength);
         }
 
+        // TODO: This is essentially a linear scan. An IndexSet may help here
         private static bool CharInCategory(char ch, string set, int start, int setLength, int categoryLength)
         {
             UnicodeCategory chcategory = char.GetUnicodeCategory(ch);

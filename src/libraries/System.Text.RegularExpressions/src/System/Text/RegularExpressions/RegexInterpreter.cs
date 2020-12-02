@@ -238,15 +238,20 @@ namespace System.Text.RegularExpressions
                 pos = runtextpos;
             }
 
+            // Vectorize?
             if (!_caseInsensitive)
             {
-                while (c != 0)
+                if (!str.AsSpan().SequenceEqual(runtext.AsSpan(pos - c, c)))
                 {
-                    if (str[--c] != runtext![--pos])
-                    {
-                        return false;
-                    }
+                    return false;
                 }
+                //while (c != 0)
+                //{
+                //    if (str[--c] != runtext![--pos])
+                //    {
+                //        return false;
+                //    }
+                //}
             }
             else
             {
@@ -262,7 +267,11 @@ namespace System.Text.RegularExpressions
 
             if (!_rightToLeft)
             {
-                pos += str.Length;
+                //pos += str.Length;
+            }
+            if (_rightToLeft)
+            {
+                pos -= str.Length;
             }
 
             runtextpos = pos;
