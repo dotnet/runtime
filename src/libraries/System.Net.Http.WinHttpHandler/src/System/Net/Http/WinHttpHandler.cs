@@ -1010,8 +1010,8 @@ namespace System.Net.Http
                     onoff = 1,
 
                     // Timeout.InfiniteTimeSpan will be converted to uint.MaxValue milliseconds (~ 50 days)
-                    // The result a of double->uint cast is unspecified and may differ on ARM, returning 0 instead of uint.MaxValue.
-                    // To handle Timeout.InfiniteTimespan correctly, we need to cast to Int32 first.
+                    // The result a of double->uint cast is unspecified for -1 and may differ on ARM, returning 0 instead of uint.MaxValue.
+                    // To handle Timeout.InfiniteTimespan correctly, we need to cast to int first.
                     keepaliveinterval = (uint)(int)_tcpKeepAliveInterval.TotalMilliseconds,
                     keepalivetime = (uint)(int)_tcpKeepAliveTime.TotalMilliseconds
                 };
