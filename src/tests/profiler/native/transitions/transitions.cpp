@@ -2,7 +2,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#include "Transitions.h"
+#include "transitions.h"
 
 Transitions::Transitions() :
     _failures(0),
@@ -81,6 +81,5 @@ HRESULT Transitions::ManagedToUnmanagedTransition(FunctionID functionID, COR_PRF
 bool Transitions::FunctionIsTargetFunction(FunctionID functionID)
 {
     String name = GetFunctionIDName(functionID);
-
-    return name == L"DoPInvoke";
+    return name == WCHAR("DoPInvoke");
 }
