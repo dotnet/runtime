@@ -22,9 +22,6 @@ It has 3 parts:
 
 The easiest way to build the Framework+Tests is by running `dotnet msbuild` from `<REPO_ROOT>` on `src\tests\GC\Stress\Framework\ReliabilityFramework.csproj`.
 
-Sometimes there is a need (after initial build) to rebuild Framework+Tests. For example when modifying the Framework to add a new scenario or when investigating a failure.
-In such case it is possible to go directly into the the Framework directory and build manually- Ex: `dotnet build -c:debug`.
-
 # Running stress
 
 The test binaries need to be in a directory called Tests next to `ReliabilityFramework.dll`. So if you keep `ReliabilityFramework.dll` where it is, you should see the test binaries copied to the `<TestBin>\GC\Stress\Framework\ReliabilityFramework\Tests`.
