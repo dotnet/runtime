@@ -299,8 +299,6 @@ namespace Microsoft.Extensions.Logging.Generators
                                             break;
                                         }
 
-                                        var typeName = declaredType.ToDisplayString();
-
                                         if (p.Type == null)
                                         {
                                             // semantic problem, just bail quietly
@@ -308,13 +306,23 @@ namespace Microsoft.Extensions.Logging.Generators
                                             break;
                                         }
 
-                                        var pSymbol = sm.GetTypeInfo(p.Type).Type;
-                                        if (pSymbol == null)
+                                        var paramName = p.Identifier.ToString();
+                                        if (string.IsNullOrWhiteSpace(paramName))
                                         {
                                             // semantic problem, just bail quietly
                                             keep = false;
                                             break;
                                         }
+
+                                        var pSymbol = sm.GetTypeInfo(p.Type).Type;
+                                        if (pSymbol == null || (pSymbol is IErrorTypeSymbol))
+                                        {
+                                            // semantic problem, just bail quietly
+                                            keep = false;
+                                            break;
+                                        }
+
+                                        var typeName = declaredType.ToDisplayString();
 
                                         // skip the ILogger parameter
                                         if (p == method.ParameterList.Parameters[0])
@@ -331,7 +339,7 @@ namespace Microsoft.Extensions.Logging.Generators
 
                                         var lp = new LoggerParameter
                                         {
-                                            Name = p.Identifier.ToString(),
+                                            Name = paramName,
                                             Type = typeName,
                                             IsExceptionType = IsBaseOrIdentity(pSymbol, exSymbol),
                                         };
@@ -394,13 +402,8 @@ namespace Microsoft.Extensions.Logging.Generators
 
                                         lc.Methods.Add(lm);
                                     }
-
-                                    goto nextMember;    // There, I did it. I used a Goto in the 21th century!
                                 }
                             }
-
-                        nextMember:
-                            ;
                         }
 
                         if (lc != null)

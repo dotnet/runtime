@@ -17,7 +17,7 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
         [Fact]
         public void InvalidMethodName()
         {
-            var (lc, d) = TryCode(@"
+            var (lc, d) = TryParser(@"
                 partial class C
                 {
                     [LoggerMessage(0, LogLevel.Debug, ""M1"")]
@@ -33,7 +33,7 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
         [Fact]
         public void InvalidMessage()
         {
-            var (lc, d) = TryCode(@"
+            var (lc, d) = TryParser(@"
                 partial class C
                 {
                     [LoggerMessage(0, LogLevel.Debug, """")]
@@ -49,7 +49,7 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
         [Fact]
         public void InvalidParameterName()
         {
-            var (lc, d) = TryCode(@"
+            var (lc, d) = TryParser(@"
                 partial class C
                 {
                     [LoggerMessage(0, LogLevel.Debug, ""M1"")]
@@ -65,7 +65,7 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
         [Fact]
         public void NestedType()
         {
-            var (lc, d) = TryCode(@"
+            var (lc, d) = TryParser(@"
                 partial class C
                 {
                     public partial class Nested
@@ -84,7 +84,7 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
         [Fact]
         public void RequiredTypes()
         {
-            var (lc, d) = TryCode(@"
+            var (lc, d) = TryParser(@"
                 namespace System
                 {
                     public class Object
@@ -107,7 +107,7 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
             Assert.Single(d);
             Assert.Equal("LG0004", d[0].Id);
             
-            (lc, d) = TryCode(@"
+            (lc, d) = TryParser(@"
                 partial class C
                 {
                 }
@@ -117,7 +117,7 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
             Assert.Single(d);
             Assert.Equal("LG0004", d[0].Id);
 
-            (lc, d) = TryCode(@"
+            (lc, d) = TryParser(@"
                 namespace Microsoft.Extensions.Logging
                 {
                     public sealed class LoggerMessageAttribute : System.Attribute {}
@@ -135,7 +135,7 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
         [Fact]
         public void EventIdReuse()
         {
-            var (lc, d) = TryCode(@"
+            var (lc, d) = TryParser(@"
                 partial class C
                 {
                     [LoggerMessage(0, LogLevel.Debug, ""M1"")]
@@ -154,7 +154,7 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
         [Fact]
         public void MethodReturnType()
         {
-            var (lc, d) = TryCode(@"
+            var (lc, d) = TryParser(@"
                 partial class C
                 {
                     [LoggerMessage(0, LogLevel.Debug, ""M1"")]
@@ -172,7 +172,7 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
         [Fact]
         public void FirstArgILogger()
         {
-            var (lc, d) = TryCode(@"
+            var (lc, d) = TryParser(@"
                 partial class C
                 {
                     [LoggerMessage(0, LogLevel.Debug, ""M1"")]
@@ -188,7 +188,7 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
         [Fact]
         public void NotStatic()
         {
-            var (lc, d) = TryCode(@"
+            var (lc, d) = TryParser(@"
                 partial class C
                 {
                     [LoggerMessage(0, LogLevel.Debug, ""M1"")]
@@ -204,7 +204,7 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
         [Fact]
         public void NotPartial()
         {
-            var (lc, d) = TryCode(@"
+            var (lc, d) = TryParser(@"
                 partial class C
                 {
                     [LoggerMessage(0, LogLevel.Debug, ""M1"")]
@@ -220,7 +220,7 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
         [Fact]
         public void MethodGeneric()
         {
-            var (lc, d) = TryCode(@"
+            var (lc, d) = TryParser(@"
                 partial class C
                 {
                     [LoggerMessage(0, LogLevel.Debug, ""M1"")]
@@ -236,7 +236,7 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
         [Fact]
         public void Templates()
         {
-            var (lc, d) = TryCode(@"
+            var (lc, d) = TryParser(@"
                 partial class C
                 {
                     [LoggerMessage(1, LogLevel.Debug, ""M1"")]
@@ -276,7 +276,7 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
         [Fact]
         public void Namespace()
         {
-            var (lc, d) = TryCode(@"
+            var (lc, d) = TryParser(@"
                 namespace Foo
                 {
                     partial class C
@@ -292,7 +292,7 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
             Assert.Equal("C", lc[0].Name);
             Assert.Empty(d);
 
-            (lc, d) = TryCode(@"
+            (lc, d) = TryParser(@"
                 partial class C
                 {
                     [LoggerMessage(0, LogLevel.Debug, ""M1"")]
@@ -305,7 +305,7 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
             Assert.Equal("C", lc[0].Name);
             Assert.Empty(d);
 
-            (lc, d) = TryCode(@"
+            (lc, d) = TryParser(@"
                 partial class C
                 {
                     [LoggerMessage(0, LogLevel.Debug, ""M1"")]
@@ -322,7 +322,7 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
         [Fact]
         public void Generic()
         {
-            var (lc, d) = TryCode(@"
+            var (lc, d) = TryParser(@"
                 partial class C<T>
                 {
                     [LoggerMessage(0, LogLevel.Debug, ""M1"")]
@@ -339,7 +339,7 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
         [Fact]
         public void EventName()
         {
-            var (lc, d) = TryCode(@"
+            var (lc, d) = TryParser(@"
                 partial class C
                 {
                     [LoggerMessage(0, LogLevel.Debug, ""M1"", EventName = ""MyEvent"")]
@@ -357,7 +357,7 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
         [Fact]
         public void Cancellation()
         {
-            var (lc, d) = TryCode(@"
+            var (lc, d) = TryParser(@"
                 partial class C
                 {
                     [LoggerMessage(0, LogLevel.Debug, ""M1"")]
@@ -372,7 +372,7 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
         [Fact]
         public void RandomAttribute()
         {
-            var (lc, d) = TryCode(@"
+            var (lc, d) = TryParser(@"
                 partial class C
                 {
                     [System.Obsolete(""Foo"")]
@@ -387,7 +387,7 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
         [Fact]
         public void ExtensionMethod()
         {
-            var (lc, d) = TryCode(@"
+            var (lc, d) = TryParser(@"
                 static partial class C
                 {
                     [LoggerMessage(0, LogLevel.Debug, ""Hello"")]
@@ -402,24 +402,28 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
         [Fact]
         public void SourceErrors()
         {
-            var (lc, d) = TryCode(@"
+            var (lc, d) = TryParser(@"
                 static partial class C
                 {
                     // bogus argument type
                     [LoggerMessage(0, "", ""Hello"")]
                     static partial void M1(ILogger logger);
 
-                    // attribute applied to something other than a method
-                    [LoggerMessage(0, "", ""Hello"")]
-                    int field;
-
                     // missing parameter name
-                    [LoggerMessage(0, LogLevel.Debug, ""Hello"")]
+                    [LoggerMessage(1, LogLevel.Debug, ""Hello"")]
                     static partial void M2(ILogger);
 
                     // bogus parameter type
-                    [LoggerMessage(0, LogLevel.Debug, ""Hello"")]
-                    static partial void M2(XILogger logger);
+                    [LoggerMessage(2, LogLevel.Debug, ""Hello"")]
+                    static partial void M3(XILogger logger);
+
+                    // bogus enum value
+                    [LoggerMessage(3, LogLevel.Foo, ""Hello"")]
+                    static partial void M4(ILogger logger);
+
+                    // attribute applied to something other than a method
+                    [LoggerMessage(4, "", ""Hello"")]
+                    int M5;
                 }
             ", checkDiags: false);
 
@@ -427,7 +431,7 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
             Assert.Empty(d);    // should fail quietly on broken code
         }
 
-        private static (IReadOnlyList<LoggingGenerator.LoggerClass>, IReadOnlyList<Diagnostic>) TryCode(
+        private static (IReadOnlyList<LoggingGenerator.LoggerClass>, IReadOnlyList<Diagnostic>) TryParser(
             string code,
             bool wrap = true,
             bool inNamespace = true,
@@ -451,33 +455,7 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
                     using Microsoft.Extensions.Logging;
                     {code}
                     {nsEnd}
-
-                    namespace Microsoft.Extensions.Logging
-                    {{
-                        public enum LogLevel
-                        {{
-                            Trace,
-                            Debug,
-                            Information,
-                            Warning,
-                            Error,
-                            Critical,
-                        }}
-
-                        [System.AttributeUsage(System.AttributeTargets.Method, AllowMultiple = false)]
-                        public sealed class LoggerMessageAttribute : System.Attribute
-                        {{
-                            public LoggerMessageAttribute(int eventId, LogLevel level, string message) => (EventId, Level, Message) = (eventId, level, message);
-                            public int EventId {{ get; set; }}
-                            public string? EventName {{ get; set; }}
-                            public LogLevel Level {{ get; set; }}
-                            public string Message {{ get; set; }}
-                        }}
-
-                        public interface ILogger
-                        {{
-                        }}
-                    }}
+                    {RoslynTestUtils.LoggingBoilerplate}
                 ";
             }
 
