@@ -3536,11 +3536,6 @@ static void PushFinalLevels(TypeHandle typeHnd, ClassLoadLevel targetLevel, cons
 
         typeHnd.DoFullyLoad(NULL, CLASS_LOADED, &pendingList, &fBailed, pInstContext);
 
-        if (!typeHnd.IsTypeDesc())
-        {
-            ClassLoader::ValidateMethodsWithCovariantReturnTypes(typeHnd.AsMethodTable());
-        }
-
         // In the case of a circular dependency, one or more types will have
         // had their promotions deferred.
         //
