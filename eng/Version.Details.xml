@@ -1,8 +1,8 @@
 <Dependencies>
   <ProductDependencies>
-    <Dependency Name="Microsoft.NETCore.Runtime.ICU.Transport" Version="6.0.0-alpha.1.20573.1">
+    <Dependency Name="Microsoft.NETCore.Runtime.ICU.Transport" Version="6.0.0-alpha.1.20580.2">
       <Uri>https://github.com/dotnet/icu</Uri>
-      <Sha>f9c78959ceca029309ae76932fb441cacb9650d1</Sha>
+      <Sha>a887f03bf2a71ceb83c28087c1a15c7086794d16</Sha>
     </Dependency>
   </ProductDependencies>
   <ToolsetDependencies>
@@ -130,37 +130,37 @@
       <Uri>https://github.com/dotnet/runtime-assets</Uri>
       <Sha>8c81a93d8914cc77a9858152c44e395b81083de5</Sha>
     </Dependency>
-    <Dependency Name="runtime.linux-arm64.Microsoft.NETCore.Runtime.Mono.LLVM.Sdk" Version="9.0.1-alpha.1.20573.1">
+    <Dependency Name="runtime.linux-arm64.Microsoft.NETCore.Runtime.Mono.LLVM.Sdk" Version="9.0.1-alpha.1.20580.1">
       <Uri>https://github.com/dotnet/llvm-project</Uri>
-      <Sha>395ff4866ce6b470b4d96ee599ebf6dc57fb7dd6</Sha>
+      <Sha>fb79a3140d977a6db43f88b60d1534091734e7f0</Sha>
     </Dependency>
-    <Dependency Name="runtime.linux-arm64.Microsoft.NETCore.Runtime.Mono.LLVM.Tools" Version="9.0.1-alpha.1.20573.1">
+    <Dependency Name="runtime.linux-arm64.Microsoft.NETCore.Runtime.Mono.LLVM.Tools" Version="9.0.1-alpha.1.20580.1">
       <Uri>https://github.com/dotnet/llvm-project</Uri>
-      <Sha>395ff4866ce6b470b4d96ee599ebf6dc57fb7dd6</Sha>
+      <Sha>fb79a3140d977a6db43f88b60d1534091734e7f0</Sha>
     </Dependency>
-    <Dependency Name="runtime.linux-x64.Microsoft.NETCore.Runtime.Mono.LLVM.Sdk" Version="9.0.1-alpha.1.20573.1">
+    <Dependency Name="runtime.linux-x64.Microsoft.NETCore.Runtime.Mono.LLVM.Sdk" Version="9.0.1-alpha.1.20580.1">
       <Uri>https://github.com/dotnet/llvm-project</Uri>
-      <Sha>395ff4866ce6b470b4d96ee599ebf6dc57fb7dd6</Sha>
+      <Sha>fb79a3140d977a6db43f88b60d1534091734e7f0</Sha>
     </Dependency>
-    <Dependency Name="runtime.linux-x64.Microsoft.NETCore.Runtime.Mono.LLVM.Tools" Version="9.0.1-alpha.1.20573.1">
+    <Dependency Name="runtime.linux-x64.Microsoft.NETCore.Runtime.Mono.LLVM.Tools" Version="9.0.1-alpha.1.20580.1">
       <Uri>https://github.com/dotnet/llvm-project</Uri>
-      <Sha>395ff4866ce6b470b4d96ee599ebf6dc57fb7dd6</Sha>
+      <Sha>fb79a3140d977a6db43f88b60d1534091734e7f0</Sha>
     </Dependency>
-    <Dependency Name="runtime.win-x64.Microsoft.NETCore.Runtime.Mono.LLVM.Sdk" Version="9.0.1-alpha.1.20573.1">
+    <Dependency Name="runtime.win-x64.Microsoft.NETCore.Runtime.Mono.LLVM.Sdk" Version="9.0.1-alpha.1.20580.1">
       <Uri>https://github.com/dotnet/llvm-project</Uri>
-      <Sha>395ff4866ce6b470b4d96ee599ebf6dc57fb7dd6</Sha>
+      <Sha>fb79a3140d977a6db43f88b60d1534091734e7f0</Sha>
     </Dependency>
-    <Dependency Name="runtime.win-x64.Microsoft.NETCore.Runtime.Mono.LLVM.Tools" Version="9.0.1-alpha.1.20573.1">
+    <Dependency Name="runtime.win-x64.Microsoft.NETCore.Runtime.Mono.LLVM.Tools" Version="9.0.1-alpha.1.20580.1">
       <Uri>https://github.com/dotnet/llvm-project</Uri>
-      <Sha>395ff4866ce6b470b4d96ee599ebf6dc57fb7dd6</Sha>
+      <Sha>fb79a3140d977a6db43f88b60d1534091734e7f0</Sha>
     </Dependency>
-    <Dependency Name="runtime.osx.10.12-x64.Microsoft.NETCore.Runtime.Mono.LLVM.Sdk" Version="9.0.1-alpha.1.20573.1">
+    <Dependency Name="runtime.osx.10.12-x64.Microsoft.NETCore.Runtime.Mono.LLVM.Sdk" Version="9.0.1-alpha.1.20580.1">
       <Uri>https://github.com/dotnet/llvm-project</Uri>
-      <Sha>395ff4866ce6b470b4d96ee599ebf6dc57fb7dd6</Sha>
+      <Sha>fb79a3140d977a6db43f88b60d1534091734e7f0</Sha>
     </Dependency>
-    <Dependency Name="runtime.osx.10.12-x64.Microsoft.NETCore.Runtime.Mono.LLVM.Tools" Version="9.0.1-alpha.1.20573.1">
+    <Dependency Name="runtime.osx.10.12-x64.Microsoft.NETCore.Runtime.Mono.LLVM.Tools" Version="9.0.1-alpha.1.20580.1">
       <Uri>https://github.com/dotnet/llvm-project</Uri>
-      <Sha>395ff4866ce6b470b4d96ee599ebf6dc57fb7dd6</Sha>
+      <Sha>fb79a3140d977a6db43f88b60d1534091734e7f0</Sha>
     </Dependency>
     <Dependency Name="Microsoft.NETCore.App" Version="5.0.0-rc.1.20451.14">
       <Uri>https://github.com/dotnet/runtime</Uri>
