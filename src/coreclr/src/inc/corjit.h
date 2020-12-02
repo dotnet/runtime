@@ -27,11 +27,11 @@
 #ifndef _COR_JIT_H_
 #define _COR_JIT_H_
 
-#include <corinfo.h>
+#include "corinfo.h"
 
 #include <stdarg.h>
 
-#include <corjitflags.h>
+#include "corjitflags.h"
 
 /*****************************************************************************/
     // These are error codes returned by CompileMethod
