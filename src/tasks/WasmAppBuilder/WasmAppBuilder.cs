@@ -25,7 +25,7 @@ public class WasmAppBuilder : Task
     [Required]
     public string? MainJS { get; set; }
     [Required]
-    public ITaskItem[] Assemblies { get; set; } = Array.Empty<ITaskItem>();
+    public string[] Assemblies { get; set; } = Array.Empty<string>();
 
     // full list of ICU data files we produce can be found here:
     // https://github.com/dotnet/icu/tree/maint/maint-67/icu-filters
@@ -103,11 +103,11 @@ public class WasmAppBuilder : Task
 
         foreach (var asm in Assemblies)
         {
-            if (!_assemblies.Contains(asm.ItemSpec))
-                _assemblies.Add(asm.ItemSpec);
+            if (!_assemblies.Contains(asm))
+                _assemblies.Add(asm);
 
-            if (asm.ItemSpec.EndsWith("System.Private.CoreLib.dll"))
-                runtimeSourceDir = Path.GetDirectoryName(asm.ItemSpec);
+            if (asm.EndsWith("System.Private.CoreLib.dll"))
+                runtimeSourceDir = Path.GetDirectoryName(asm);
         }
 
         if (MainAssembly != null)
