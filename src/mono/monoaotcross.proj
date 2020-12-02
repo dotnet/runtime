@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.Build.Traversal" DefaultTargets="BuildMonoCrossAllTargets">
   <PropertyGroup>
-    <MonoAotDefaultTargets>android-x64;android-arm64</MonoAotDefaultTargets>
+    <MonoAotDefaultTargets>android-x64;android-arm64;android-x86;android-arm</MonoAotDefaultTargets>
     <MonoAotTargets Condition="'$(MonoAotTargets)' == ''">$(MonoAotDefaultTargets)</MonoAotTargets>
   </PropertyGroup>
 
