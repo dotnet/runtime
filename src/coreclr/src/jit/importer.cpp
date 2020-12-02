@@ -9524,7 +9524,7 @@ GenTree* Compiler::impFixupStructReturnType(GenTree*                 op,
 
 #if defined(TARGET_XARCH)
 
-#if defined(UNIX_AMD64_ABI) || defined(TARGET_X86)
+#if FEATURE_MULTIREG_RET
     // No VarArgs for CoreCLR on x64 Unix
     UNIX_AMD64_ABI_ONLY(assert(!info.compIsVarArgs));
 
