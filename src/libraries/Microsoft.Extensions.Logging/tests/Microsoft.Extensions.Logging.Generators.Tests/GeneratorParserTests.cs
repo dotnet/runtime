@@ -399,11 +399,40 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
             Assert.Empty(d);
         }
 
+        [Fact]
+        public void SourceErrors()
+        {
+            var (lc, d) = TryCode(@"
+                static partial class C
+                {
+                    // bogus argument type
+                    [LoggerMessage(0, "", ""Hello"")]
+                    static partial void M1(ILogger logger);
+
+                    // attribute applied to something other than a method
+                    [LoggerMessage(0, "", ""Hello"")]
+                    int field;
+
+                    // missing parameter name
+                    [LoggerMessage(0, LogLevel.Debug, ""Hello"")]
+                    static partial void M2(ILogger);
+
+                    // bogus parameter type
+                    [LoggerMessage(0, LogLevel.Debug, ""Hello"")]
+                    static partial void M2(XILogger logger);
+                }
+            ", checkDiags: false);
+
+            Assert.Empty(lc);
+            Assert.Empty(d);    // should fail quietly on broken code
+        }
+
         private static (IReadOnlyList<LoggingGenerator.LoggerClass>, IReadOnlyList<Diagnostic>) TryCode(
             string code,
             bool wrap = true,
             bool inNamespace = true,
             bool includeReferences = true,
+            bool checkDiags = true,
             CancellationToken cancellationToken = default)
         {
             var text = code;
@@ -464,8 +493,11 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
                 refs)
                 .WithOptions(new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary).WithNullableContextOptions(NullableContextOptions.Enable));
 
-            // make sure we have valid syntax
-            Assert.Empty(compilation.GetDiagnostics(CancellationToken.None));
+            if (checkDiags)
+            {
+                // make sure we have valid syntax
+                Assert.Empty(compilation.GetDiagnostics(CancellationToken.None));
+            }
 
             var results = new List<Diagnostic>();
             var p = new Microsoft.Extensions.Logging.Generators.LoggingGenerator.Parser(compilation, (d) => {

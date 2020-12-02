@@ -11,10 +11,6 @@ namespace Microsoft.Extensions.Logging.Generators
     [Generator]
     public partial class LoggingGenerator : ISourceGenerator
     {
-        // The maximum arity of the LogStateHolder-family of types. Beyond this number, parameters are just kepts in an array (which implies an allocation
-        // for the array and boxing of all logging method arguments.
-        const int MaxStateHolderArity = 6;
-
         /// <inheritdoc />
         public void Initialize(GeneratorInitializationContext context)
         {
@@ -24,7 +20,8 @@ namespace Microsoft.Extensions.Logging.Generators
         /// <inheritdoc />
         public void Execute(GeneratorExecutionContext context)
         {
-            if (!(context.SyntaxReceiver is SyntaxReceiver receiver))
+            var receiver = context.SyntaxReceiver as SyntaxReceiver;
+            if (receiver == null || receiver.ClassDeclarations.Count == 0)
             {
                 // nothing to do yet
                 return;
@@ -38,7 +35,8 @@ namespace Microsoft.Extensions.Logging.Generators
 
             var p = new Parser(context.Compilation, context.ReportDiagnostic, context.CancellationToken);
             var e = new Emitter(pascalCaseArguments);
-            var result = e.Emit(p.GetLogClasses(receiver.ClassDeclarations), context.CancellationToken);
+            var logClasses = p.GetLogClasses(receiver.ClassDeclarations);
+            var result = e.Emit(logClasses, context.CancellationToken);
 
             context.AddSource(nameof(LoggingGenerator), SourceText.From(result, Encoding.UTF8));
         }
@@ -49,7 +47,6 @@ namespace Microsoft.Extensions.Logging.Generators
 
             public void OnVisitSyntaxNode(SyntaxNode syntaxNode)
             {
-                // Any class
                 var classSyntax = syntaxNode as ClassDeclarationSyntax;
                 if (classSyntax != null)
                 {

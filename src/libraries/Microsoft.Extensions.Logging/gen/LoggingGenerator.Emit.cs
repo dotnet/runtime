@@ -10,6 +10,10 @@ namespace Microsoft.Extensions.Logging.Generators
     {
         internal class Emitter
         {
+            // The maximum arity of the LogStateHolder-family of types. Beyond this number, parameters are just kepts in an array (which implies an allocation
+            // for the array and boxing of all logging method arguments.
+            const int MaxStateHolderArity = 6;
+
             private readonly Stack<StringBuilder> _builders = new();
             private readonly bool _pascalCaseArguments;
 

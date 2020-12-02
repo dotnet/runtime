@@ -186,31 +186,31 @@ namespace Microsoft.Extensions.Logging.Generators
                                         sm = _compilation.GetSemanticModel(classDef.SyntaxTree);
                                     }
 
-                                    var maSymbol = (sm.GetSymbolInfo(ma, _cancellationToken).Symbol as IMethodSymbol)!;
-
-                                    if (!loggerMessageAttribute.Equals(maSymbol.ContainingType, SymbolEqualityComparer.Default))
+                                    var maSymbol = sm.GetSymbolInfo(ma, _cancellationToken).Symbol as IMethodSymbol;
+                                    if (maSymbol == null || !loggerMessageAttribute.Equals(maSymbol.ContainingType, SymbolEqualityComparer.Default))
                                     {
-                                        // not the right attribute, move on
+                                        // badly formed attribute definition, or not the right attribute
                                         continue;
                                     }
 
-                                    var arg = ma.ArgumentList!.Arguments[0];
-                                    var eventId = sm.GetConstantValue(arg.Expression, _cancellationToken).ToString();
+                                    var args = ma.ArgumentList!.Arguments;
 
-                                    arg = ma.ArgumentList.Arguments[1];
-                                    var level = (int)sm.GetConstantValue(arg.Expression, _cancellationToken).Value!;
-
-                                    arg = ma.ArgumentList.Arguments[2];
-                                    var message = sm.GetConstantValue(arg.Expression, _cancellationToken).ToString();
+                                    var eventId = sm.GetConstantValue(args[0].Expression, _cancellationToken).ToString();
+                                    var level = (int)sm.GetConstantValue(args[1].Expression, _cancellationToken).Value!;
+                                    var message = sm.GetConstantValue(args[2].Expression, _cancellationToken).ToString();
 
                                     string eventName = string.Empty;
-                                    if (ma.ArgumentList.Arguments.Count > 3)
+                                    if (args.Count > 3)
                                     {
-                                        arg = ma.ArgumentList.Arguments[3];
-                                        eventName = sm.GetConstantValue(arg.Expression, _cancellationToken).ToString();
+                                        eventName = sm.GetConstantValue(args[3].Expression, _cancellationToken).ToString();
                                     }
 
-                                    var methodSymbol = (sm.GetDeclaredSymbol(method, _cancellationToken) as IMethodSymbol)!;
+                                    var methodSymbol = sm.GetDeclaredSymbol(method, _cancellationToken) as IMethodSymbol;
+                                    if (methodSymbol == null)
+                                    {
+                                        // semantic problem, just bail quietly
+                                        continue;
+                                    }
 
                                     var lm = new LoggerMethod
                                     {
@@ -241,7 +241,7 @@ namespace Microsoft.Extensions.Logging.Generators
 
                                     if (method.Arity > 0)
                                     {
-                                        // don't currently support generic methods
+                                        // we don't currently support generic methods
                                         Diag(ErrorMethodIsGeneric, method.Identifier.GetLocation());
                                         keep = false;
                                     }
@@ -277,7 +277,7 @@ namespace Microsoft.Extensions.Logging.Generators
                                     // ensure there are no duplicate ids.
                                     if (ids.Contains(lm.EventId))
                                     {
-                                        Diag(ErrorEventIdReuse, ma.ArgumentList!.Arguments[0].GetLocation(), lm.EventId);
+                                        Diag(ErrorEventIdReuse, args[0].GetLocation(), lm.EventId);
                                     }
                                     else
                                     {
@@ -289,17 +289,36 @@ namespace Microsoft.Extensions.Logging.Generators
                                         Diag(ErrorInvalidMessage, ma.GetLocation(), method.Identifier.ToString());
                                     }
 
-                                    bool first = true;
                                     foreach (var p in method.ParameterList.Parameters)
                                     {
-                                        var typeName = sm.GetDeclaredSymbol(p)!.ToDisplayString();
-                                        var pSymbol = sm.GetTypeInfo(p.Type!).Type!;
-
-                                        if (first)
+                                        var declaredType = sm.GetDeclaredSymbol(p);
+                                        if (declaredType == null)
                                         {
-                                            // skip the ILogger
-                                            first = false;
+                                            // semantic problem, just bail quietly
+                                            keep = false;
+                                            break;
+                                        }
 
+                                        var typeName = declaredType.ToDisplayString();
+
+                                        if (p.Type == null)
+                                        {
+                                            // semantic problem, just bail quietly
+                                            keep = false;
+                                            break;
+                                        }
+
+                                        var pSymbol = sm.GetTypeInfo(p.Type).Type;
+                                        if (pSymbol == null)
+                                        {
+                                            // semantic problem, just bail quietly
+                                            keep = false;
+                                            break;
+                                        }
+
+                                        // skip the ILogger parameter
+                                        if (p == method.ParameterList.Parameters[0])
+                                        {
                                             if (!IsBaseOrIdentity(pSymbol, loggerSymbol))
                                             {
                                                 Diag(ErrorFirstArgMustBeILogger, p.Identifier.GetLocation());
@@ -378,7 +397,6 @@ namespace Microsoft.Extensions.Logging.Generators
 
                                     goto nextMember;    // There, I did it. I used a Goto in the 21th century!
                                 }
-
                             }
 
                         nextMember:
