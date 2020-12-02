@@ -28,9 +28,9 @@ namespace System.Runtime.Serialization
     internal class CodeTypeReference : CodeObject
 #endif
     {
-        private string _baseType;
+        private string? _baseType;
         private readonly bool _isInterface;
-        private CodeTypeReferenceCollection _typeArguments;
+        private CodeTypeReferenceCollection? _typeArguments;
         private bool _needsFixup;
 
         public CodeTypeReference()
@@ -50,7 +50,7 @@ namespace System.Runtime.Serialization
             if (type.IsArray)
             {
                 ArrayRank = type.GetArrayRank();
-                ArrayElementType = new CodeTypeReference(type.GetElementType());
+                ArrayElementType = new CodeTypeReference(type.GetElementType()!);
                 _baseType = null;
             }
             else
@@ -86,7 +86,7 @@ namespace System.Runtime.Serialization
                 Type currentType = type;
                 while (currentType.IsNested)
                 {
-                    currentType = currentType.DeclaringType;
+                    currentType = currentType.DeclaringType!;
                     _baseType = currentType.Name + "+" + _baseType;
                 }
 
@@ -116,17 +116,17 @@ namespace System.Runtime.Serialization
             }
         }
 
-        private void Initialize(string typeName)
+        private void Initialize(string? typeName)
         {
             Initialize(typeName, Options);
         }
 
-        private void Initialize(string typeName, CodeTypeReferenceOptions options)
+        private void Initialize(string? typeName, CodeTypeReferenceOptions options)
         {
             Options = options;
             if (string.IsNullOrEmpty(typeName))
             {
-                typeName = typeof(void).FullName;
+                typeName = typeof(void).FullName!;
                 _baseType = typeName;
                 ArrayRank = 0;
                 ArrayElementType = null;
@@ -303,7 +303,7 @@ namespace System.Runtime.Serialization
             ArrayElementType = arrayType;
         }
 
-        public CodeTypeReference ArrayElementType { get; set; }
+        public CodeTypeReference? ArrayElementType { get; set; }
 
         public int ArrayRank { get; set; }
 

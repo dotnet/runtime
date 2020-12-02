@@ -138,7 +138,7 @@ int GetParameters(int, char * *);
 
 
 //Main Entry for the Thread Suspension Test Case
-int __cdecl main (int argc, char **argv) 
+PALTEST(composite_threading_threadsuspension_paltest_threading_threadsuspension, "composite/threading/threadsuspension/paltest_threading_threadsuspension")
 {
 
 /*

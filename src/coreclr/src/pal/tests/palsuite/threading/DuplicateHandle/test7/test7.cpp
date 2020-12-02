@@ -16,14 +16,14 @@
 
 #include <palsuite.h>
 
-DWORD PALAPI CreateTestThread(LPVOID lpParam);
+DWORD PALAPI CreateTestThread_DuplicateHandle_test7(LPVOID lpParam);
 
-int __cdecl main(int argc, char* argv[])
+PALTEST(threading_DuplicateHandle_test7_paltest_duplicatehandle_test7, "threading/DuplicateHandle/test7/paltest_duplicatehandle_test7")
 {
     HANDLE  hThread;  
     HANDLE  hDupThread;  
     DWORD   dwThreadId = 0;
-    LPTHREAD_START_ROUTINE lpStartAddress =  &CreateTestThread;
+    LPTHREAD_START_ROUTINE lpStartAddress =  &CreateTestThread_DuplicateHandle_test7;
     HANDLE  hSyncEvent;
 
     int threadPriority;
@@ -165,7 +165,7 @@ int __cdecl main(int argc, char* argv[])
 }
 
 /*Thread testing function*/
-DWORD PALAPI CreateTestThread(LPVOID lpParam)
+DWORD PALAPI CreateTestThread_DuplicateHandle_test7(LPVOID lpParam)
 {
     HANDLE hSyncEvent = (HANDLE)lpParam;
 

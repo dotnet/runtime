@@ -198,7 +198,7 @@ namespace std
         typedef unsigned int type;
     };
 
-#ifndef TARGET_UNIX
+#ifndef HOST_UNIX
 
     template<>
     struct make_unsigned<long>
@@ -206,7 +206,7 @@ namespace std
         typedef unsigned long type;
     };
 
-#endif // !TARGET_UNIX
+#endif // !HOST_UNIX
 
     template<>
     struct make_unsigned<__int64>
@@ -233,7 +233,7 @@ namespace std
         typedef signed int type;
     };
 
-#ifndef TARGET_UNIX
+#ifndef HOST_UNIX
 
     template<>
     struct make_signed<unsigned long>
@@ -241,7 +241,7 @@ namespace std
         typedef signed long type;
     };
 
-#endif // !TARGET_UNIX
+#endif // !HOST_UNIX
 
     template<>
     struct make_signed<unsigned __int64>
@@ -358,7 +358,7 @@ namespace std
 
 // On Unix 'long' is a 64-bit type (same as __int64) and the following two definitions
 // conflict with _Is_integral<unsigned __int64> and _Is_integral<signed __int64>.
-#ifndef TARGET_UNIX
+#ifndef HOST_UNIX
     template<>
     struct _Is_integral<unsigned long>
         : true_type
@@ -370,7 +370,7 @@ namespace std
         : true_type
     {    // determine whether _Ty is integral
     };
-#endif /* TARGET_UNIX */
+#endif /* HOST_UNIX */
 
  #if _HAS_CHAR16_T_LANGUAGE_SUPPORT
     template<>
@@ -426,7 +426,7 @@ namespace std
 
 // In PAL, we define long as int and so this becomes int double,
 // which is a nonsense
-#ifndef TARGET_UNIX
+#ifndef HOST_UNIX
     template<>
     struct _Is_floating_point<long double>
         : true_type

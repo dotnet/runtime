@@ -509,7 +509,6 @@ typedef unsigned char   regNumberSmall;
 #endif
   #define FEATURE_FIXED_OUT_ARGS   1       // Preallocate the outgoing arg area in the prolog
   #define FEATURE_STRUCTPROMOTE    1       // JIT Optimization to promote fields of structs into registers
-  #define FEATURE_MULTIREG_STRUCT_PROMOTE  0  // True when we want to promote fields of a multireg struct into registers
   #define FEATURE_FASTTAILCALL     1       // Tail calls made as epilog+jmp
   #define FEATURE_TAILCALL_OPT     1       // opportunistic Tail calls (i.e. without ".tail" prefix) made as fast tail calls.
   #define FEATURE_SET_FLAGS        0       // Set to true to force the JIT to mark the trees with GTF_SET_FLAGS when the flags need to be set
@@ -518,6 +517,7 @@ typedef unsigned char   regNumberSmall;
   #define FEATURE_MULTIREG_ARGS_OR_RET  1  // Support for passing and/or returning single values in more than one register
   #define FEATURE_MULTIREG_ARGS         1  // Support for passing a single argument in more than one register
   #define FEATURE_MULTIREG_RET          1  // Support for returning a single value in more than one register
+  #define FEATURE_MULTIREG_STRUCT_PROMOTE  1  // True when we want to promote fields of a multireg struct into registers
   #define FEATURE_STRUCT_CLASSIFIER     1  // Uses a classifier function to determine if structs are passed/returned in more than one register
   #define MAX_PASS_MULTIREG_BYTES      32  // Maximum size of a struct that could be passed in more than one register (Max is two SIMD16s)
   #define MAX_RET_MULTIREG_BYTES       32  // Maximum size of a struct that could be returned in more than one register  (Max is two SIMD16s)
@@ -531,6 +531,7 @@ typedef unsigned char   regNumberSmall;
   #define FEATURE_MULTIREG_ARGS_OR_RET  0  // Support for passing and/or returning single values in more than one register
   #define FEATURE_MULTIREG_ARGS         0  // Support for passing a single argument in more than one register
   #define FEATURE_MULTIREG_RET          0  // Support for returning a single value in more than one register
+  #define FEATURE_MULTIREG_STRUCT_PROMOTE  0  // True when we want to promote fields of a multireg struct into registers
   #define MAX_PASS_MULTIREG_BYTES       0  // No multireg arguments
   #define MAX_RET_MULTIREG_BYTES        0  // No multireg return values
   #define MAX_ARG_REG_COUNT             1  // Maximum registers used to pass a single argument (no arguments are passed using multiple registers)
@@ -1598,6 +1599,7 @@ C_ASSERT((FEATURE_TAILCALL_OPT == 0) || (FEATURE_FASTTAILCALL == 1));
 
 #if CPU_HAS_BYTE_REGS
   #define RBM_BYTE_REGS           (RBM_EAX|RBM_ECX|RBM_EDX|RBM_EBX)
+  #define BYTE_REG_COUNT          4
   #define RBM_NON_BYTE_REGS       (RBM_ESI|RBM_EDI)
 #else
   #define RBM_BYTE_REGS            RBM_ALLINT
@@ -2004,14 +2006,26 @@ typedef __int64          target_ssize_t;
 #define TARGET_SIGN_BIT (1ULL << 63)
 
 #else // !TARGET_64BIT
-typedef unsigned int target_size_t;
-typedef int          target_ssize_t;
+typedef unsigned int   target_size_t;
+typedef int            target_ssize_t;
 #define TARGET_SIGN_BIT (1ULL << 31)
 
 #endif // !TARGET_64BIT
 
 C_ASSERT(sizeof(target_size_t) == TARGET_POINTER_SIZE);
 C_ASSERT(sizeof(target_ssize_t) == TARGET_POINTER_SIZE);
+
+#if defined(TARGET_X86)
+// instrDescCns holds constant values for the emitter. The X86 compiler is unique in that it
+// may represent relocated pointer values with these constants. On the 64bit to 32 bit
+// cross-targetting jit, the the constant value must be represented as a 64bit value in order
+// to represent these pointers.
+typedef ssize_t cnsval_ssize_t;
+typedef size_t  cnsval_size_t;
+#else
+typedef target_ssize_t cnsval_ssize_t;
+typedef target_size_t  cnsval_size_t;
+#endif
 
 /*****************************************************************************/
 #endif // TARGET_H_

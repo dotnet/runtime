@@ -5,7 +5,7 @@ using Debug = System.Diagnostics.Debug;
 
 namespace Internal.TypeSystem
 {
-    // Implements canonicalization of generic parameters 
+    // Implements canonicalization of generic parameters
     public partial class GenericParameterDesc
     {
         public sealed override bool IsCanonicalSubtype(CanonicalFormKind policy)

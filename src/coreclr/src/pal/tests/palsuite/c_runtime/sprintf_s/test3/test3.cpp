@@ -20,7 +20,7 @@
  * Depends on memcmp and strlen
  */
 
-int __cdecl main(int argc, char *argv[])
+PALTEST(c_runtime_sprintf_s_test3_paltest_sprintf_test3, "c_runtime/sprintf_s/test3/paltest_sprintf_test3")
 {
     if (PAL_Initialize(argc, argv) != 0)
     {

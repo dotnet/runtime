@@ -64,7 +64,7 @@ namespace Internal.TypeSystem
         public override string ToString()
         {
             if (_genericParameters == null)
-                return String.Empty;
+                return string.Empty;
 
             StringBuilder sb = new StringBuilder();
             for (int i = 0; i < _genericParameters.Length; i++)

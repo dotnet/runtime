@@ -779,6 +779,8 @@ namespace Internal.TypeSystem.Interop
                         return MarshallerKind.AnsiString;
                     case NativeTypeKind.LPWStr:
                         return MarshallerKind.UnicodeString;
+                    case NativeTypeKind.LPUTF8Str:
+                        return MarshallerKind.UTF8String;
                     default:
                         return MarshallerKind.Invalid;
                 }

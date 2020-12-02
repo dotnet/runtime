@@ -34,20 +34,20 @@ struct BundleFileLocation
     bool IsValid() const { LIMITED_METHOD_CONTRACT; return Offset != 0; }
 };
 
-typedef bool(__stdcall BundleProbe)(LPCWSTR, INT64*, INT64*);
+typedef bool(__stdcall BundleProbe)(LPCSTR, INT64*, INT64*);
 
 class Bundle
 {
 public:
-    Bundle(LPCWSTR bundlePath, BundleProbe *probe);
-    BundleFileLocation Probe(LPCWSTR path, bool pathIsBundleRelative = false) const;
+    Bundle(LPCSTR bundlePath, BundleProbe *probe);
+    BundleFileLocation Probe(const SString& path, bool pathIsBundleRelative = false) const;
 
     const SString &Path() const { LIMITED_METHOD_CONTRACT; return m_path; }
     const SString &BasePath() const { LIMITED_METHOD_CONTRACT; return m_basePath; }
 
     static Bundle* AppBundle; // The BundleInfo for the current app, initialized by coreclr_initialize.
     static bool AppIsBundle() { LIMITED_METHOD_CONTRACT; return AppBundle != nullptr; }
-    static BundleFileLocation ProbeAppBundle(LPCWSTR path, bool pathIsBundleRelative = false);
+    static BundleFileLocation ProbeAppBundle(const SString& path, bool pathIsBundleRelative = false);
 
 private:
 
@@ -55,6 +55,7 @@ private:
     BundleProbe *m_probe;
 
     SString m_basePath; // The prefix to denote a path within the bundle
+    COUNT_T m_basePathLength;
 };
 
 #endif // _BUNDLE_H_

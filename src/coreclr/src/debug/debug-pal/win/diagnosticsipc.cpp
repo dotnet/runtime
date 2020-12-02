@@ -134,6 +134,7 @@ IpcStream *IpcStream::DiagnosticsIpc::Accept(ErrorCallback callback)
     _ASSERTE(mode == ConnectionMode::LISTEN);
 
     DWORD dwDummy = 0;
+    IpcStream *pStream = nullptr;
     bool fSuccess = GetOverlappedResult(
         _hPipe,     // handle
         &_oOverlap, // overlapped
@@ -144,11 +145,14 @@ IpcStream *IpcStream::DiagnosticsIpc::Accept(ErrorCallback callback)
     {
         if (callback != nullptr)
             callback("Failed to GetOverlappedResults for NamedPipe server", ::GetLastError());
-        return nullptr;
+        // close the pipe (cleaned up and reset below)
+        ::CloseHandle(_hPipe);
     }
-
-    // create new IpcStream using handle and reset the Server object so it can listen again
-    IpcStream *pStream = new IpcStream(_hPipe, ConnectionMode::LISTEN);
+    else
+    {
+        // create new IpcStream using handle (passes ownership to pStream)
+        pStream = new IpcStream(_hPipe, ConnectionMode::LISTEN);
+    }
 
     // reset the server
     _hPipe = INVALID_HANDLE_VALUE;
@@ -159,7 +163,7 @@ IpcStream *IpcStream::DiagnosticsIpc::Accept(ErrorCallback callback)
     if (!fSuccess)
     {
         delete pStream;
-        return nullptr;
+        pStream = nullptr;
     }
 
     return pStream;
@@ -393,12 +397,12 @@ int32_t IpcStream::DiagnosticsIpc::Poll(IpcPollHandle *rgIpcPollHandles, uint32_
         if (!fSuccess)
         {
             DWORD error = ::GetLastError();
-            if (error == ERROR_PIPE_NOT_CONNECTED)
+            if (error == ERROR_PIPE_NOT_CONNECTED || error == ERROR_BROKEN_PIPE)
                 rgIpcPollHandles[index].revents = (uint8_t)IpcStream::DiagnosticsIpc::PollEvents::HANGUP;
             else
             {
                 if (callback != nullptr)
-                    callback("Client connection error", -1);
+                    callback("Client connection error", error);
                 rgIpcPollHandles[index].revents = (uint8_t)IpcStream::DiagnosticsIpc::PollEvents::ERR;
                 delete[] pHandles;
                 return -1;
@@ -434,39 +438,42 @@ bool IpcStream::Read(void *lpBuffer, const uint32_t nBytesToRead, uint32_t &nByt
 
     if (!fSuccess)
     {
-        if (timeoutMs == InfiniteTimeout)
+        DWORD dwError = GetLastError();
+
+        // if we're waiting infinitely, only make one syscall
+        if (timeoutMs == InfiniteTimeout && dwError == ERROR_IO_PENDING)
         {
-            fSuccess = GetOverlappedResult(_hPipe,
-                                           overlap,
-                                           &nNumberOfBytesRead,
-                                           true) != 0;
+            fSuccess = GetOverlappedResult(_hPipe,              // pipe
+                                           overlap,             // overlapped
+                                           &nNumberOfBytesRead, // out actual number of bytes read
+                                           true) != 0;          // block until async IO completes
         }
-        else
+        else if (dwError == ERROR_IO_PENDING)
         {
-            DWORD dwError = GetLastError();
-            if (dwError == ERROR_IO_PENDING)
+            // Wait on overlapped IO event (triggers when async IO is complete regardless of success)
+            // or timeout
+            DWORD dwWait = WaitForSingleObject(_oOverlap.hEvent, (DWORD)timeoutMs);
+            if (dwWait == WAIT_OBJECT_0)
             {
-                DWORD dwWait = WaitForSingleObject(_oOverlap.hEvent, (DWORD)timeoutMs);
-                if (dwWait == WAIT_OBJECT_0)
+                // async IO compelted, get the result
+                fSuccess = GetOverlappedResult(_hPipe,              // pipe
+                                               overlap,             // overlapped
+                                               &nNumberOfBytesRead, // out actual number of bytes read
+                                               true) != 0;          // block until async IO completes
+            }
+            else
+            {
+                // We either timed out or something else went wrong.
+                // For any error, attempt to cancel IO and ensure the cancel happened
+                if (CancelIoEx(_hPipe, overlap) != 0)
                 {
-                    // get the result
-                    fSuccess = GetOverlappedResult(_hPipe,
-                                                   overlap,
-                                                   &nNumberOfBytesRead,
-                                                   true) != 0;
-                }
-                else
-                {
-                    // cancel IO and ensure the cancel happened
-                    if (CancelIo(_hPipe))
-                    {
-                        // check if the async write beat the cancellation
-                        fSuccess = GetOverlappedResult(_hPipe, overlap, &nNumberOfBytesRead, true) != 0;
-                    }
+                    // check if the async write beat the cancellation
+                    fSuccess = GetOverlappedResult(_hPipe, overlap, &nNumberOfBytesRead, true) != 0;
+                    // Failure here isn't recoverable, so return as such
                 }
             }
         }
-        // TODO: Add error handling.
+        // error is unrecoverable, so return as such
     }
 
     nBytesRead = static_cast<uint32_t>(nNumberOfBytesRead);
@@ -489,39 +496,41 @@ bool IpcStream::Write(const void *lpBuffer, const uint32_t nBytesToWrite, uint32
     if (!fSuccess)
     {
         DWORD dwError = GetLastError();
-        if (dwError == ERROR_IO_PENDING)
+
+        // if we're waiting infinitely, only make one syscall
+        if (timeoutMs == InfiniteTimeout && dwError == ERROR_IO_PENDING)
         {
-            if (timeoutMs == InfiniteTimeout)
+            fSuccess = GetOverlappedResult(_hPipe,                 // pipe
+                                           overlap,                // overlapped
+                                           &nNumberOfBytesWritten, // out actual number of bytes written
+                                           true) != 0;             // block until async IO completes
+        }
+        else if (dwError == ERROR_IO_PENDING)
+        {
+            // Wait on overlapped IO event (triggers when async IO is complete regardless of success)
+            // or timeout
+            DWORD dwWait = WaitForSingleObject(_oOverlap.hEvent, (DWORD)timeoutMs);
+            if (dwWait == WAIT_OBJECT_0)
             {
-                // if we're waiting infinitely, don't bother with extra kernel call
-                fSuccess = GetOverlappedResult(_hPipe,
-                                               overlap,
-                                               &nNumberOfBytesWritten,
-                                                true) != 0;
+                // async IO compelted, get the result
+                fSuccess = GetOverlappedResult(_hPipe,                 // pipe
+                                               overlap,                // overlapped
+                                               &nNumberOfBytesWritten, // out actual number of bytes written
+                                               true) != 0;             // block until async IO completes
             }
             else
             {
-                DWORD dwWait = WaitForSingleObject(_oOverlap.hEvent, (DWORD)timeoutMs);
-                if (dwWait == WAIT_OBJECT_0)
+                // We either timed out or something else went wrong.
+                // For any error, attempt to cancel IO and ensure the cancel happened
+                if (CancelIoEx(_hPipe, overlap) != 0)
                 {
-                    // get the result
-                    fSuccess = GetOverlappedResult(_hPipe,
-                                                   overlap,
-                                                   &nNumberOfBytesWritten,
-                                                   true) != 0;
-                }
-                else
-                {
-                    // cancel IO and ensure the cancel happened
-                    if (CancelIo(_hPipe))
-                    {
-                        // check if the async write beat the cancellation
-                        fSuccess = GetOverlappedResult(_hPipe, overlap, &nNumberOfBytesWritten, true) != 0;
-                    }
+                    // check if the async write beat the cancellation
+                    fSuccess = GetOverlappedResult(_hPipe, overlap, &nNumberOfBytesWritten, true) != 0;
+                    // Failure here isn't recoverable, so return as such
                 }
             }
         }
-        // TODO: Add error handling.
+        // error is unrecoverable, so return as such
     }
 
     nBytesWritten = static_cast<uint32_t>(nNumberOfBytesWritten);

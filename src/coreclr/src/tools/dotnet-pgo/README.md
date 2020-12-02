@@ -32,7 +32,7 @@ Note, this tool requires MethodDetails events which are produced by the .NET 5.0
 ```
 "dotnet trace collect -p 73060 --providers Microsoft-Windows-DotNETRuntime:0x6000080018:5"
 ```
- 
+
 - Capture events from process 73060 where we capture only JIT events using EventPipe tracing
 ```
 "dotnet trace collect -p 73060 --providers Microsoft-Windows-DotNETRuntime:0x4000080018:5"

@@ -414,7 +414,7 @@ namespace System.Data.SqlTypes
 
         void IXmlSerializable.ReadXml(XmlReader reader)
         {
-            string isNull = reader.GetAttribute("nil", XmlSchema.InstanceNamespace);
+            string? isNull = reader.GetAttribute("nil", XmlSchema.InstanceNamespace);
             if (isNull != null && XmlConvert.ToBoolean(isNull))
             {
                 // Read the next value.

@@ -20,7 +20,7 @@
  * Depends on memcmp and strlen
  */
 
-int __cdecl main(int argc, char *argv[])
+PALTEST(c_runtime_sprintf_s_test7_paltest_sprintf_test7, "c_runtime/sprintf_s/test7/paltest_sprintf_test7")
 {
     WCHAR wb = (WCHAR) 'b';
     

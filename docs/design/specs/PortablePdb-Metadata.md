@@ -34,7 +34,7 @@ When debugging metadata is generated to a separate data blob "#Pdb" and "#~" str
 #### <a name="PdbStream"></a>#Pdb stream
 
 The #Pdb stream has the following structure:
- 
+
 | Offset | Size | Field          | Description                                                    |
 |:-------|:-----|:---------------|----------------------------------------------------------------|
 | 0      | 20   | PDB id         | A byte sequence uniquely representing the debugging metadata blob content. |
@@ -42,10 +42,10 @@ The #Pdb stream has the following structure:
 | 24     | 8    | ReferencedTypeSystemTables | Bit vector of referenced type system metadata tables, let n be the number of bits that are 1. |
 | 32     | 4*n  | TypeSystemTableRows     | Array of n 4-byte unsigned integers indicating the number of rows for each referenced type system metadata table. |
 
-#### #~ stream 
+#### #~ stream
 
 "#~" stream shall only contain debugging information tables defined above.
- 
+
 References to heaps (strings, blobs, guids) are references to heaps of the debugging metadata. The sizes of references to type system tables are determined using the algorithm described in ECMA-335-II Chapter 24.2.6, except their respective row counts are found in _TypeSystemTableRows_ field of the #Pdb stream.
 
 ### <a name="DocumentTable"></a>Document Table: 0x30
@@ -58,7 +58,7 @@ The Document table has the following columns:
 
 The table is not required to be sorted.
 
-There shall be no duplicate rows in the _Document_ table, based upon document name. 
+There shall be no duplicate rows in the _Document_ table, based upon document name.
 
 _Name_ shall not be nil. It can however encode an empty name string.
 
@@ -170,7 +170,7 @@ _InitialDocument_ is only present if the _Document_ field of the _MethodDebugInf
 | _δILOffset_  | 0                                  | unsigned compressed            |
 | _Document_   | Document row id                    | unsigned compressed            |
 
-Each _SequencePointRecord_ represents a single sequence point. The sequence point inherits the value of _Document_ property from the previous record (_SequencePointRecord_ or _document-record_), from the _Document_ field of the _MethodDebugInformation_ table if it's the first sequence point of a method body that spans a single document, or from _InitialDocument_ if it's the first sequence point of a method body that spans multiple documents. The value of _IL Offset_ is calculated using the value of the previous sequence point (if any) and the value stored in the record. 
+Each _SequencePointRecord_ represents a single sequence point. The sequence point inherits the value of _Document_ property from the previous record (_SequencePointRecord_ or _document-record_), from the _Document_ field of the _MethodDebugInformation_ table if it's the first sequence point of a method body that spans a single document, or from _InitialDocument_ if it's the first sequence point of a method body that spans multiple documents. The value of _IL Offset_ is calculated using the value of the previous sequence point (if any) and the value stored in the record.
 
 The values of _Start Line_, _Start Column_, _End Line_ and _End Column_ of a non-hidden sequence point are calculated based upon the values of the previous non-hidden sequence point (if any) and the data stored in the record.
 
@@ -253,14 +253,14 @@ There shall be no duplicate rows in the LocalConstant table, based upon owner an
 The structure of the blob is
 
     Blob ::= CustomMod* (PrimitiveConstant | EnumConstant | GeneralConstant)
-             
-    PrimitiveConstant ::= PrimitiveTypeCode PrimitiveValue 
+
+    PrimitiveConstant ::= PrimitiveTypeCode PrimitiveValue
     PrimitiveTypeCode ::= BOOLEAN | CHAR | I1 | U1 | I2 | U2 | I4 | U4 | I8 | U8 | R4 | R8 | STRING
-    
-    EnumConstant ::= EnumTypeCode EnumValue EnumType 
+
+    EnumConstant ::= EnumTypeCode EnumValue EnumType
     EnumTypeCode ::= BOOLEAN | CHAR | I1 | U1 | I2 | U2 | I4 | U4 | I8 | U8
     EnumType ::= TypeDefOrRefOrSpecEncoded
-    
+
     GeneralConstant ::= (CLASS | VALUETYPE) TypeDefOrRefOrSpecEncoded GeneralValue? |
                         OBJECT
 
@@ -289,18 +289,18 @@ The encoding of the _PrimitiveValue_ and _EnumValue_ is determined based upon th
 | ```U8```      | uint64                     |
 | ```R4```      | float32                    |
 | ```R8```      | float64                    |
-| ```STRING```  | A single byte 0xff (represents a null string reference), or a UTF-16 little-endian encoded string (possibly empty). | 
+| ```STRING```  | A single byte 0xff (represents a null string reference), or a UTF-16 little-endian encoded string (possibly empty). |
 
 The numeric values of the type codes are defined by ECMA-335 §II.23.1.16.
 
 _EnumType_ must be an enum type as defined in ECMA-335 §II.14.3. The value of _EnumTypeCode_ must match the underlying type of the _EnumType_.
 
-The encoding of the _GeneralValue_ is determined based upon the type expressed by _TypeDefOrRefOrSpecEncoded_ specified in _GeneralConstant_. _GeneralValue_ for special types listed in the table below has to be present and is encoded as specified. If the _GeneralValue_ is not present the value of the constant is the default value of the type. If the type is a reference type the value is a null reference, if the type is a pointer type the value is a null pointer, etc. 
+The encoding of the _GeneralValue_ is determined based upon the type expressed by _TypeDefOrRefOrSpecEncoded_ specified in _GeneralConstant_. _GeneralValue_ for special types listed in the table below has to be present and is encoded as specified. If the _GeneralValue_ is not present the value of the constant is the default value of the type. If the type is a reference type the value is a null reference, if the type is a pointer type the value is a null pointer, etc.
 
 | Namespace     | Name     | _GeneralValue_ encoding  |
 |:--------------|:---------|:-------------------------|
 | System        | Decimal  | sign (highest bit), scale (bits 0..7), low (uint32), mid (uint32), high (uint32) |
-| System        | DateTime | int64: ticks             | 
+| System        | DateTime | int64: ticks             |
 
 ### <a name="ImportScopeTable"></a>ImportScope Table: 0x35
 The ImportScope table has the following columns:

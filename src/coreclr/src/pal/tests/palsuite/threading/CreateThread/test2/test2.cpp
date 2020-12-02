@@ -15,15 +15,15 @@
 
 #define NUM_TESTS 3
 
-HANDLE hThread[NUM_TESTS];
-DWORD dwThreadId[NUM_TESTS];
-volatile BOOL bResult[NUM_TESTS];
-volatile DWORD dwThreadId1[NUM_TESTS];
+HANDLE hThread_CreateThread_test2[NUM_TESTS];
+DWORD dwThreadId_CreateThread_test2[NUM_TESTS];
+volatile BOOL bResult_CreateThread_test2[NUM_TESTS];
+volatile DWORD dwThreadId1_CreateThread_test2[NUM_TESTS];
 
-DWORD PALAPI Thread( LPVOID lpParameter)
+DWORD PALAPI Thread_CreateThread_test2( LPVOID lpParameter)
 {
-    dwThreadId1[(DWORD)(SIZE_T)lpParameter] = GetCurrentThreadId();
-    bResult[(DWORD)(SIZE_T) lpParameter] = TRUE;
+    dwThreadId1_CreateThread_test2[(DWORD)(SIZE_T)lpParameter] = GetCurrentThreadId();
+    bResult_CreateThread_test2[(DWORD)(SIZE_T) lpParameter] = TRUE;
     return (DWORD)(SIZE_T) lpParameter;
 }
 
@@ -36,36 +36,36 @@ struct testCase
     LPDWORD lpThreadId;
 };
 
-struct testCase testCases[]=
-{
-    {NULL, 0, &Thread, 0, NULL},
-    {NULL, 0, &Thread, CREATE_SUSPENDED, NULL},
-    {NULL, 0, &Thread, 0, (LPDWORD) 1}
-};
-
 /*
  * close handles 
  */
-BOOL cleanup(int index)
+BOOL cleanup_CreateThread_test2(int index)
 {
     int i;
     BOOL bRet = TRUE;
 
     for (i = 0; i < index; i++)
     {
-        if (!CloseHandle(hThread[i]))
+        if (!CloseHandle(hThread_CreateThread_test2[i]))
         {
             bRet = FALSE;
             Trace("PALSUITE ERROR: CloseHandle(%p) call failed for index %d\n",
-                  hThread[i], i);
+                  hThread_CreateThread_test2[i], i);
         }
     }
 
     return(bRet);
 }
 
-int __cdecl main(int argc, char **argv)
+PALTEST(threading_CreateThread_test2_paltest_createthread_test2, "threading/CreateThread/test2/paltest_createthread_test2")
 {
+    struct testCase testCases[]=
+    {
+        {NULL, 0, &Thread_CreateThread_test2, 0, NULL},
+        {NULL, 0, &Thread_CreateThread_test2, CREATE_SUSPENDED, NULL},
+        {NULL, 0, &Thread_CreateThread_test2, 0, (LPDWORD) 1}
+    };
+
     SIZE_T i;
     DWORD dwRetWFSO;
     DWORD dwRetRT;
@@ -79,24 +79,24 @@ int __cdecl main(int argc, char **argv)
     /* set results array to FALSE */
     for (i = 0; i < NUM_TESTS; i++)
     {
-        bResult[i]=FALSE;
-        dwThreadId[i]=0;
+        bResult_CreateThread_test2[i]=FALSE;
+        dwThreadId_CreateThread_test2[i]=0;
     }
 
     for (i = 0; i < NUM_TESTS; i++)
     {
         if (NULL != testCases[i].lpThreadId)
         {
-            testCases[i].lpThreadId = &dwThreadId[i];
+            testCases[i].lpThreadId = &dwThreadId_CreateThread_test2[i];
         }
         /* pass the index as the thread argument */
-        hThread[i] = CreateThread( testCases[i].lpThreadAttributes,   
+        hThread_CreateThread_test2[i] = CreateThread( testCases[i].lpThreadAttributes,   
                                    testCases[i].dwStackSize,          
                                    testCases[i].lpStartAddress,       
                                    (LPVOID)i,
                                    testCases[i].dwCreationFlags,      
                                    testCases[i].lpThreadId);  
-        if (hThread[i] == NULL)
+        if (hThread_CreateThread_test2[i] == NULL)
         {
             Trace("PALSUITE ERROR: CreateThread('%p' '%d' '%p' '%p' '%d' "
                   "'%p') call failed.\nGetLastError returned '%u'.\n", 
@@ -104,21 +104,21 @@ int __cdecl main(int argc, char **argv)
                   testCases[i].lpStartAddress, (LPVOID)i, 
                   testCases[i].dwCreationFlags, 
                   testCases[i].lpThreadId, GetLastError());
-            cleanup(i - 1);
+            cleanup_CreateThread_test2(i - 1);
             Fail("");
         } 
 
         /* Resume suspended threads */
         if (testCases[i].dwCreationFlags == CREATE_SUSPENDED)
         {   
-            dwRetRT = ResumeThread (hThread[i]);
+            dwRetRT = ResumeThread (hThread_CreateThread_test2[i]);
             if (dwRetRT != 1)
             {
                 Trace ("PALSUITE ERROR: ResumeThread(%p) "
                        "call returned %d it should have returned %d.\n"
-                       "GetLastError returned %u.\n", hThread[i], dwRetRT,
+                       "GetLastError returned %u.\n", hThread_CreateThread_test2[i], dwRetRT,
                        1, GetLastError());
-                cleanup(i);
+                cleanup_CreateThread_test2(i);
                 Fail("");
             }
         }
@@ -127,18 +127,18 @@ int __cdecl main(int argc, char **argv)
     /* cleanup */
     for (i = 0; i < NUM_TESTS; i++)
     {
-        dwRetWFSO = WaitForSingleObject(hThread[i], 10000);
+        dwRetWFSO = WaitForSingleObject(hThread_CreateThread_test2[i], 10000);
         if (dwRetWFSO != WAIT_OBJECT_0)
         {
             Trace ("PALSUITE ERROR: WaitForSingleObject('%p' '%d') "
                    "call returned %d instead of WAIT_OBJECT_0 ('%d').\n"
-                   "GetLastError returned %u.\n", hThread[i], 10000, 
+                   "GetLastError returned %u.\n", hThread_CreateThread_test2[i], 10000, 
                    dwRetWFSO, WAIT_OBJECT_0, GetLastError());
-            cleanup(i);
+            cleanup_CreateThread_test2(i);
             Fail("");
         }
     }
-    if(!cleanup(NUM_TESTS))
+    if(!cleanup_CreateThread_test2(NUM_TESTS))
     {
         Fail("");
     }
@@ -149,7 +149,7 @@ int __cdecl main(int argc, char **argv)
          * check to see that all threads were created and were passed 
          * the array index as an argument. 
          */
-        if (FALSE == bResult[i])
+        if (FALSE == bResult_CreateThread_test2[i])
         {
             bRet = FALSE;
             Trace("PALSUITE ERROR: result[%d]=%d.  It should be %d\n", i, 
@@ -158,20 +158,20 @@ int __cdecl main(int argc, char **argv)
         /* 
          * check to see that lpThreadId received the correct value. 
          */
-        if (0 != dwThreadId[i])
+        if (0 != dwThreadId_CreateThread_test2[i])
         {
-            if (dwThreadId[i] != dwThreadId1[i])
+            if (dwThreadId_CreateThread_test2[i] != dwThreadId1_CreateThread_test2[i])
             {
                 bRet = FALSE;
-                Trace("PALSUITE ERROR: dwThreadId[%d]=%p and dwThreadId1[%d]"
+                Trace("PALSUITE ERROR: dwThreadId_CreateThread_test2[%d]=%p and dwThreadId1_CreateThread_test2[%d]"
                       "=%p\nThese values should be identical.\n",  i, 
-                      dwThreadId[i], i, dwThreadId1[i]);
+                      dwThreadId_CreateThread_test2[i], i, dwThreadId1_CreateThread_test2[i]);
             }
         }
     }  
     if (!bRet)
     {
-        cleanup(NUM_TESTS);
+        cleanup_CreateThread_test2(NUM_TESTS);
         Fail("");
     }
 

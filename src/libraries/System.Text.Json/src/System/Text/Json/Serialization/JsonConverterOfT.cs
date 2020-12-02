@@ -21,7 +21,7 @@ namespace System.Text.Json.Serialization
             // In the future, this will be check for !IsSealed (and excluding value types).
             CanBePolymorphic = TypeToConvert == JsonClassInfo.ObjectType;
             IsValueType = TypeToConvert.IsValueType;
-            CanBeNull = !IsValueType || Nullable.GetUnderlyingType(TypeToConvert) != null;
+            CanBeNull = !IsValueType || TypeToConvert.IsNullableOfT();
             IsInternalConverter = GetType().Assembly == typeof(JsonConverter).Assembly;
 
             if (HandleNull)
@@ -163,7 +163,7 @@ namespace System.Text.Json.Serialization
                 // For performance, only perform validation on internal converters on debug builds.
                 if (IsInternalConverter)
                 {
-                    if (IsInternalConverterForNumberType && state.Current.NumberHandling != null)
+                    if (state.Current.NumberHandling != null)
                     {
                         value = ReadNumberWithCustomHandling(ref reader, state.Current.NumberHandling.Value);
                     }
@@ -179,7 +179,7 @@ namespace System.Text.Json.Serialization
                     int originalPropertyDepth = reader.CurrentDepth;
                     long originalPropertyBytesConsumed = reader.BytesConsumed;
 
-                    if (IsInternalConverterForNumberType && state.Current.NumberHandling != null)
+                    if (state.Current.NumberHandling != null)
                     {
                         value = ReadNumberWithCustomHandling(ref reader, state.Current.NumberHandling.Value);
                     }
@@ -196,16 +196,15 @@ namespace System.Text.Json.Serialization
                         ref reader);
                 }
 
-                if (CanBePolymorphic && options.ReferenceHandler != null)
+                if (CanBePolymorphic && options.ReferenceHandler != null && value is JsonElement element)
                 {
                     // Edge case where we want to lookup for a reference when parsing into typeof(object)
                     // instead of return `value` as a JsonElement.
                     Debug.Assert(TypeToConvert == typeof(object));
-                    Debug.Assert(value is JsonElement);
 
-                    if (JsonSerializer.TryGetReferenceFromJsonElement(ref state, (JsonElement)(object)value, out object? referenceValue))
+                    if (JsonSerializer.TryGetReferenceFromJsonElement(ref state, element, out object? referenceValue))
                     {
-                        value = (T)referenceValue;
+                        value = (T?)referenceValue;
                     }
                 }
 
@@ -290,7 +289,7 @@ namespace System.Text.Json.Serialization
 
         internal override sealed bool TryReadAsObject(ref Utf8JsonReader reader, JsonSerializerOptions options, ref ReadStack state, out object? value)
         {
-            bool success = TryRead(ref reader, TypeToConvert, options, ref state, out T typedValue);
+            bool success = TryRead(ref reader, TypeToConvert, options, ref state, out T? typedValue);
             value = typedValue;
             return success;
         }
@@ -331,9 +330,10 @@ namespace System.Text.Json.Serialization
                     return true;
                 }
 
-                if (type != TypeToConvert)
+                if (type != TypeToConvert && IsInternalConverter)
                 {
-                    // Handle polymorphic case and get the new converter.
+                    // For internal converter only: Handle polymorphic case and get the new converter.
+                    // Custom converter, even though polymorphic converter, get called for reading AND writing.
                     JsonConverter jsonConverter = state.Current.InitializeReEntry(type, options);
                     if (jsonConverter != this)
                     {
@@ -356,7 +356,7 @@ namespace System.Text.Json.Serialization
 
                 int originalPropertyDepth = writer.CurrentDepth;
 
-                if (IsInternalConverterForNumberType && state.Current.NumberHandling != null)
+                if (state.Current.NumberHandling != null && IsInternalConverterForNumberType)
                 {
                     WriteNumberWithCustomHandling(writer, value, state.Current.NumberHandling.Value);
                 }

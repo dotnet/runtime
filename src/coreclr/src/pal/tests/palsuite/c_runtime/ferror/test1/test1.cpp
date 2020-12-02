@@ -18,7 +18,7 @@
 
 #include <palsuite.h>
 
-int __cdecl main(int argc, char **argv)
+PALTEST(c_runtime_ferror_test1_paltest_ferror_test1, "c_runtime/ferror/test1/paltest_ferror_test1")
 {
     const char filename[] = "testfile";
     char buffer[128];

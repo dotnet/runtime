@@ -443,65 +443,6 @@ GetEnvironmentStringsW(
 
 /*++
 Function:
-  GetEnvironmentStringsA
-
-See GetEnvironmentStringsW.
-
---*/
-LPSTR
-PALAPI
-GetEnvironmentStringsA(
-               VOID)
-{
-    char *environ = nullptr, *tempEnviron;
-    int i, len, envNum;
-
-    PERF_ENTRY(GetEnvironmentStringsA);
-    ENTRY("GetEnvironmentStringsA()\n");
-
-    CPalThread * pthrCurrent = InternalGetCurrentThread();
-    InternalEnterCriticalSection(pthrCurrent, &gcsEnvironment);
-
-    envNum = 0;
-    len    = 0;
-
-    /* get total length of the bytes that we need to allocate */
-    for (i = 0; palEnvironment[i] != 0; i++)
-    {
-        len = strlen(palEnvironment[i]) + 1;
-        envNum += len;
-    }
-
-    environ = (char *)PAL_malloc(envNum + 1);
-    if (environ == nullptr)
-    {
-        ERROR("malloc failed\n");
-        SetLastError(ERROR_NOT_ENOUGH_MEMORY);
-        goto EXIT;
-    }
-
-    len = 0;
-    tempEnviron = environ;
-    for (i = 0; palEnvironment[i] != 0; i++)
-    {
-        len = strlen(palEnvironment[i]) + 1;
-        memcpy(tempEnviron, palEnvironment[i], len);
-        tempEnviron += len;
-        envNum      -= len;
-    }
-
-    *tempEnviron = 0; /* Put an extra null at the end */
-
- EXIT:
-    InternalLeaveCriticalSection(pthrCurrent, &gcsEnvironment);
-
-    LOGEXIT("GetEnvironmentStringsA returning %p\n", environ);
-    PERF_EXIT(GetEnvironmentStringsA);
-    return environ;
-}
-
-/*++
-Function:
   FreeEnvironmentStringsW
 
 The FreeEnvironmentStrings function frees a block of environment strings.
@@ -540,31 +481,6 @@ FreeEnvironmentStringsW(
 
     LOGEXIT("FreeEnvironmentStringW returning BOOL TRUE\n");
     PERF_EXIT(FreeEnvironmentStringsW);
-    return TRUE;
-}
-
-/*++
-Function:
-  FreeEnvironmentStringsA
-
-See FreeEnvironmentStringsW.
-
---*/
-BOOL
-PALAPI
-FreeEnvironmentStringsA(
-            IN LPSTR lpValue)
-{
-    PERF_ENTRY(FreeEnvironmentStringsA);
-    ENTRY("FreeEnvironmentStringsA(lpValue=%p (%s))\n", lpValue ? lpValue : "NULL", lpValue ? lpValue : "NULL");
-
-    if (lpValue != nullptr)
-    {
-        PAL_free(lpValue);
-    }
-
-    LOGEXIT("FreeEnvironmentStringA returning BOOL TRUE\n");
-    PERF_EXIT(FreeEnvironmentStringsA);
     return TRUE;
 }
 
@@ -915,28 +831,28 @@ char* FindEnvVarValue(const char* name)
 {
     if (*name == '\0')
         return nullptr;
-    
+
     for (int i = 0; palEnvironment[i] != nullptr; ++i)
     {
         const char* pch = name;
         char* p = palEnvironment[i];
 
-        do 
+        do
         {
-            if (*pch == '\0') 
+            if (*pch == '\0')
             {
                 if (*p == '=')
                     return p + 1;
-                    
+
                 if (*p == '\0') // no = sign -> empty value
                     return p;
-                
+
                 break;
             }
         }
         while (*pch++ == *p++);
     }
-    
+
     return nullptr;
 }
 
@@ -969,9 +885,9 @@ char* EnvironGetenv(const char* name, BOOL copyValue)
 {
     CPalThread * pthrCurrent = InternalGetCurrentThread();
     InternalEnterCriticalSection(pthrCurrent, &gcsEnvironment);
-    
+
     char* retValue = FindEnvVarValue(name);
-    
+
     if ((retValue != nullptr) && copyValue)
     {
         retValue = strdup(retValue);

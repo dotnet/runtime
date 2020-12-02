@@ -100,10 +100,12 @@ namespace System.Net.Http.Functional.Tests
         [MemberData(nameof(GetAsync_AllowedSSLVersion_Succeeds_MemberData))]
         public async Task GetAsync_AllowedSSLVersion_Succeeds(SslProtocols acceptedProtocol, bool requestOnlyThisProtocol)
         {
+            int count = 0;
             using (HttpClientHandler handler = CreateHttpClientHandler())
             using (HttpClient client = CreateHttpClient(handler))
             {
-                handler.ServerCertificateCustomValidationCallback = TestHelper.AllowAllCertificates;
+                handler.ServerCertificateCustomValidationCallback =
+                    (request, cert, chain, errors) => { count++; return true; };
 
                 if (requestOnlyThisProtocol)
                 {
@@ -131,6 +133,8 @@ namespace System.Net.Http.Functional.Tests
                         server.AcceptConnectionSendResponseAndCloseAsync(),
                         client.GetAsync(url));
                 }, options);
+
+                Assert.Equal(1, count);
             }
         }
 
@@ -142,9 +146,20 @@ namespace System.Net.Http.Functional.Tests
                 yield return new object[] { SslProtocols.Ssl3, Configuration.Http.SSLv3RemoteServer };
             }
 #pragma warning restore 0618
-            yield return new object[] { SslProtocols.Tls, Configuration.Http.TLSv10RemoteServer };
-            yield return new object[] { SslProtocols.Tls11, Configuration.Http.TLSv11RemoteServer };
-            yield return new object[] { SslProtocols.Tls12, Configuration.Http.TLSv12RemoteServer };
+            if (PlatformDetection.SupportsTls10)
+            {
+                yield return new object[] { SslProtocols.Tls, Configuration.Http.TLSv10RemoteServer };
+            }
+
+            if (PlatformDetection.SupportsTls11)
+            {
+                yield return new object[] { SslProtocols.Tls11, Configuration.Http.TLSv11RemoteServer };
+            }
+
+            if (PlatformDetection.SupportsTls12)
+            {
+                yield return new object[] { SslProtocols.Tls12, Configuration.Http.TLSv12RemoteServer };
+            }
         }
 
         // We have tests that validate with SslStream, but that's limited by what the current OS supports.

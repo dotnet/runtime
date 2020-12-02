@@ -45,31 +45,6 @@
 
 #define _CVTBUFSIZE (309+40) /* # of digits in max. dp value + slop */
 
-//#include <cruntime.h>
-//#include <stdio.h>
-//#include <ctype.h>
-//#include <cvt.h>
-//#include <conio.h>
-//#include <stdarg.h>
-//#include <string.h>
-//#include <internal.h>
-//#include <fltintrn.h>
-//#include <malloc.h>
-//#include <locale.h>
-//#include <mtdll.h>
-//#include <stdlib.h>
-//#include <setlocal.h>
-//#include <dbgint.h>
-
-//#ifndef _INC_INTERNAL_SAFECRT
-//#include <internal_securecrt.h>
-//#endif  /* _INC_INTERNAL_SAFECRT */
-
-//#ifdef _MBCS
-//#undef _MBCS
-//#endif  /* _MBCS */
-//#include <tchar.h>
-
 #define _MBTOWC(x,y,z) _minimal_chartowchar( x, y )
 
 #define _istspace(x)    isspace((unsigned char)x)
@@ -443,6 +418,7 @@ static int __check_float_string(size_t nFloatStrUsed,
                                 ++longone;
                                 /* NOBREAK */
                             }
+                            FALLTHROUGH;
                         case _T('w') :
                             ++widechar;         /* set widechar = 1 */
                             break;
@@ -815,6 +791,7 @@ _END_SECURE_CRT_DEPRECATION_DISABLE
                     case _T('i') :      /* could be d, o, or x */
 
                         comchr = _T('d'); /* use as default */
+                        FALLTHROUGH;
 
                     case _T('x'):
 
@@ -869,6 +846,7 @@ x_incwidth:
                         ++integer64;
                         num64 = 0;
 #endif  /* HOST_64BIT */
+                        FALLTHROUGH;
                     case _T('o') :
                     case _T('u') :
                     case _T('d') :

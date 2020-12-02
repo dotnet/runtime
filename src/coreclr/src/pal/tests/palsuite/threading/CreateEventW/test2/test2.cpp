@@ -14,7 +14,7 @@
 #define UNICODE
 #include <palsuite.h>
 
-BOOL CreateEventTest()
+BOOL CreateEventTest_CreateEvent_test2()
 {
     BOOL bRet = FALSE;
     DWORD dwRet = 0;
@@ -66,14 +66,14 @@ BOOL CreateEventTest()
     return bRet;
 }
 
-int __cdecl main(int argc, char **argv)
+PALTEST(threading_CreateEventW_test2_paltest_createeventw_test2, "threading/CreateEventW/test2/paltest_createeventw_test2")
 {
     if(0 != (PAL_Initialize(argc, argv)))
     {
         return ( FAIL );
     }
 
-    if(!CreateEventTest())
+    if(!CreateEventTest_CreateEvent_test2())
     {
         Fail ("Test failed\n");
     }

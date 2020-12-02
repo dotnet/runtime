@@ -20,7 +20,7 @@
                                                                          
 #include <palsuite.h>
 
-int __cdecl main(int argc, char **argv)
+PALTEST(c_runtime__wfopen_test6_paltest_wfopen_test6, "c_runtime/_wfopen/test6/paltest_wfopen_test6")
 {
     FILE *fp;
     char buffer[128];

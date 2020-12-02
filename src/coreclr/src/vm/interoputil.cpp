@@ -1331,31 +1331,10 @@ void CleanupSyncBlockComData(InteropSyncBlockInfo* pInteropInfo)
 #endif // FEATURE_COMWRAPPERS
 }
 
-void ReleaseRCWsInCachesNoThrow(LPVOID pCtxCookie)
-{
-    CONTRACTL
-    {
-        DISABLED(NOTHROW);
-        GC_TRIGGERS;
-        MODE_ANY;
-        PRECONDITION(CheckPointer(pCtxCookie, NULL_OK));
-    }
-    CONTRACTL_END;
-
-    EX_TRY
-    {
-        ReleaseRCWsInCaches(pCtxCookie);
-    }
-    EX_CATCH
-    {
-    }
-    EX_END_CATCH(SwallowAllExceptions);
-}
-
 //--------------------------------------------------------------------------------
 //  Helper to release all of the RCWs in the specified context across all caches.
 //  If pCtxCookie is NULL, release all RCWs
-void ReleaseRCWsInCaches(LPVOID pCtxCookie)
+static void ReleaseRCWsInCaches(LPVOID pCtxCookie)
 {
     CONTRACTL
     {
@@ -1387,6 +1366,27 @@ void ReleaseRCWsInCaches(LPVOID pCtxCookie)
         if (FinalizerThread::GetFinalizerThread()->RequireSyncBlockCleanup() || SyncBlockCache::GetSyncBlockCache()->IsSyncBlockCleanupInProgress())
             FinalizerThread::FinalizerThreadWait();
     }
+}
+
+void ReleaseRCWsInCachesNoThrow(LPVOID pCtxCookie)
+{
+    CONTRACTL
+    {
+        DISABLED(NOTHROW);
+        GC_TRIGGERS;
+        MODE_ANY;
+        PRECONDITION(CheckPointer(pCtxCookie, NULL_OK));
+    }
+    CONTRACTL_END;
+
+    EX_TRY
+    {
+        ReleaseRCWsInCaches(pCtxCookie);
+    }
+    EX_CATCH
+    {
+    }
+    EX_END_CATCH(SwallowAllExceptions);
 }
 
 //--------------------------------------------------------------------------------
@@ -1520,47 +1520,6 @@ HRESULT EnsureComStartedNoThrow(BOOL fCoInitCurrentThread)
 
     return hr;
 }
-
-//--------------------------------------------------------------------------------
-// BOOL ExtendsComImport(MethodTable* pMT);
-// check if the class is OR extends a COM Imported class
-BOOL ExtendsComImport(MethodTable* pMT)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-        PRECONDITION(CheckPointer(pMT));
-    }
-    CONTRACTL_END;
-
-    while (pMT != NULL && !pMT->IsComImport())
-    {
-        pMT = pMT->GetParentMethodTable();
-    }
-    return pMT != NULL;
-}
-
-#ifdef FEATURE_COMINTEROP
-//--------------------------------------------------------------------------------
-// Gets the CLSID from the specified Prog ID.
-
-HRESULT GetCLSIDFromProgID(__in_z WCHAR *strProgId, GUID *pGuid)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_TRIGGERS;
-        MODE_PREEMPTIVE;
-    }
-    CONTRACTL_END;
-
-    HRESULT     hr = S_OK;
-
-    return CLSIDFromProgID(strProgId, pGuid);
-}
-#endif // FEATURE_COMINTEROP
 
 #include <optsmallperfcritical.h>
 //--------------------------------------------------------------------------------
@@ -1875,45 +1834,6 @@ OBJECTREF AllocateComObject_ForManaged(MethodTable* pMT)
     return pComClsFac->CreateInstance(pMT, TRUE);
 }
 #endif // FEATURE_COMINTEROP_UNMANAGED_ACTIVATION
-
-#ifdef FEATURE_COMINTEROP
-
-//---------------------------------------------------------------------------
-//  get/load type for a given clsid
-MethodTable* GetTypeForCLSID(REFCLSID rclsid)
-{
-    CONTRACT (MethodTable*)
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_COOPERATIVE;
-        POSTCONDITION(CheckPointer(RETVAL, NULL_OK));
-    }
-    CONTRACT_END;
-
-    // Not supported in .NET Core - requires typelib registration/generation
-    RETURN NULL;
-}
-
-
-//---------------------------------------------------------------------------
-//  get/load a value class for a given guid
-MethodTable* GetValueTypeForGUID(REFCLSID guid)
-{
-    CONTRACT (MethodTable*)
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_COOPERATIVE;
-        POSTCONDITION(CheckPointer(RETVAL, NULL_OK));
-    }
-    CONTRACT_END;
-
-    // Not supported in .NET Core - requires typelib registration/generation
-    RETURN NULL;
-}
-
-#endif // FEATURE_COMINTEROP
 
 #endif //#ifndef CROSSGEN_COMPILE
 
@@ -3772,22 +3692,20 @@ void IUInvokeDispMethod(
 
 #if defined(FEATURE_COMINTEROP_UNMANAGED_ACTIVATION) && defined(FEATURE_COMINTEROP)
 
-void GetComClassHelper(
+static void GetComClassHelper(
     _Out_ OBJECTREF *pRef,
     _In_ EEClassFactoryInfoHashTable *pClassFactHash,
-    _In_ ClassFactoryInfo *pClassFactInfo,
-    _In_opt_ WCHAR *wszProgID)
+    _In_ ClassFactoryInfo *pClassFactInfo)
 {
     CONTRACTL
     {
         THROWS;
         GC_TRIGGERS;
-        MODE_ANY;
+        MODE_COOPERATIVE;
         INJECT_FAULT(ThrowOutOfMemory());
         PRECONDITION(CheckPointer(pRef));
         PRECONDITION(CheckPointer(pClassFactHash));
         PRECONDITION(CheckPointer(pClassFactInfo));
-        PRECONDITION(CheckPointer(wszProgID, NULL_OK));
     }
     CONTRACTL_END;
 
@@ -3809,16 +3727,8 @@ void GetComClassHelper(
         // represent it.
         //
 
-        NewHolder<ComClassFactory> pComClsFac = ComClassFactoryCreator::Create(pClassFactInfo->m_clsid);
+        NewHolder<ComClassFactory> pComClsFac = new ComClassFactory(pClassFactInfo->m_clsid);
         pComClsFac->SetManagedVersion();
-
-        NewArrayHolder<WCHAR> wszRefProgID = NULL;
-        if (wszProgID)
-        {
-            size_t len = wcslen(wszProgID)+1;
-            wszRefProgID = new WCHAR[len];
-            wcscpy_s(wszRefProgID, len, wszProgID);
-        }
 
         NewArrayHolder<WCHAR> wszRefServer = NULL;
         if (pClassFactInfo->m_strServerName)
@@ -3828,7 +3738,7 @@ void GetComClassHelper(
             wcscpy_s(wszRefServer, len, pClassFactInfo->m_strServerName);
         }
 
-        pComClsFac->Init(wszRefProgID, wszRefServer, NULL);
+        pComClsFac->Init(wszRefServer, NULL);
         AllocateComClassObject(pComClsFac, pRef);
 
         // Insert to hash.
@@ -3838,7 +3748,6 @@ void GetComClassHelper(
         // Make sure the hash code is working.
         _ASSERTE (pClassFactHash->GetValue(pClassFactInfo, (HashDatum *)&hRef));
 
-        wszRefProgID.SuppressRelease();
         wszRefServer.SuppressRelease();
         pComClsFac.SuppressRelease();
     }
@@ -3846,90 +3755,7 @@ void GetComClassHelper(
 
 //-------------------------------------------------------------
 // returns a ComClass reflect class that wraps the IClassFactory
-void GetComClassFromProgID(STRINGREF srefProgID, STRINGREF srefServer, OBJECTREF *pRef)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_COOPERATIVE;
-        INJECT_FAULT(COMPlusThrowOM());
-        PRECONDITION(srefProgID != NULL);
-        PRECONDITION(pRef != NULL);
-    }
-    CONTRACTL_END;
-
-    NewArrayHolder<WCHAR>   wszProgID;
-    NewArrayHolder<WCHAR>   wszServer;
-    HRESULT                 hr          = S_OK;
-    MethodTable*            pMT         = NULL;
-    CLSID                   clsid       = {0};
-
-    //
-    // Allocate strings for the ProgID and the server.
-    //
-
-    int len = srefProgID->GetStringLength();
-
-    wszProgID = new WCHAR[len+1];
-
-    if (len)
-        memcpy(wszProgID, srefProgID->GetBuffer(), (len*2));
-    wszProgID[len] = W('\0');
-
-    if (srefServer != NULL)
-    {
-        len = srefServer->GetStringLength();
-
-        wszServer = new WCHAR[len+1];
-
-        if (len)
-            memcpy(wszServer, srefServer->GetBuffer(), (len*2));
-        wszServer[len] = W('\0');
-    }
-
-
-    //
-    // Call GetCLSIDFromProgID() to convert the ProgID to a CLSID.
-    //
-
-    EnsureComStarted();
-
-    {
-        GCX_PREEMP();
-        hr = GetCLSIDFromProgID(wszProgID, &clsid);
-    }
-
-    if (FAILED(hr))
-        COMPlusThrowHR(hr);
-
-    //
-    // See if we can find the well known managed class for this CLSID.
-    //
-
-    // Check if we have in the hash.
-    OBJECTHANDLE hRef;
-    ClassFactoryInfo ClassFactInfo;
-    ClassFactInfo.m_clsid = clsid;
-    ClassFactInfo.m_strServerName = wszServer;
-    EEClassFactoryInfoHashTable *pClassFactHash = GetAppDomain()->GetClassFactHash();
-
-    if (pClassFactHash->GetValue(&ClassFactInfo, (HashDatum *)&hRef))
-    {
-        *pRef = ObjectFromHandle(hRef);
-    }
-    else
-    {
-        GetComClassHelper(pRef, pClassFactHash, &ClassFactInfo, wszProgID);
-    }
-
-    // If we made it this far *pRef better be set.
-    _ASSERTE(*pRef != NULL);
-}
-
-//-------------------------------------------------------------
-// returns a ComClass reflect class that wraps the IClassFactory
-void GetComClassFromCLSID(REFCLSID clsid, STRINGREF srefServer, OBJECTREF *pRef)
+void GetComClassFromCLSID(REFCLSID clsid, _In_opt_z_ PCWSTR wszServer, OBJECTREF *pRef)
 {
     CONTRACTL
     {
@@ -3940,27 +3766,6 @@ void GetComClassFromCLSID(REFCLSID clsid, STRINGREF srefServer, OBJECTREF *pRef)
         PRECONDITION(pRef != NULL);
     }
     CONTRACTL_END;
-
-    NewArrayHolder<WCHAR>   wszServer;
-    HRESULT                 hr              = S_OK;
-    MethodTable*            pMT             = NULL;
-
-    //
-    // Allocate strings for the server.
-    //
-
-    if (srefServer != NULL)
-    {
-        int len = srefServer->GetStringLength();
-
-        wszServer = new WCHAR[len+1];
-
-        if (len)
-            memcpy(wszServer, srefServer->GetBuffer(), (len*2));
-
-        wszServer[len] = W('\0');
-    }
-
 
     //
     // See if we can find the well known managed class for this CLSID.
@@ -3979,7 +3784,7 @@ void GetComClassFromCLSID(REFCLSID clsid, STRINGREF srefServer, OBJECTREF *pRef)
     }
     else
     {
-        GetComClassHelper(pRef, pClassFactHash, &ClassFactInfo, NULL);
+        GetComClassHelper(pRef, pClassFactHash, &ClassFactInfo);
     }
 
     // If we made it this far *pRef better be set.
@@ -4027,11 +3832,11 @@ ClassFactoryBase *GetComClassFactory(MethodTable* pClassMT)
         GUID guid;
         pClassMT->GetGuid(&guid, TRUE);
 
-        ComClassFactory *pComClsFac = ComClassFactoryCreator::Create(guid);
+        ComClassFactory *pComClsFac = new ComClassFactory(guid);
 
         pNewFactory = pComClsFac;
 
-        pComClsFac->Init(NULL, NULL, pClassMT);
+        pComClsFac->Init(NULL, pClassMT);
 
         // store the class factory in EE Class
         if (!pClassMT->SetComClassFactory(pNewFactory))
@@ -4458,66 +4263,6 @@ void UnmarshalObjectFromInterface(OBJECTREF *ppObjectDest, IUnknown **ppUnkSrc, 
         }
     }
 }
-
-#ifdef FEATURE_COMINTEROP
-
-//--------------------------------------------------------------------------------
-//  Check if the pUnk implements IProvideClassInfo and try to figure
-// out the class from there
-MethodTable* GetClassFromIProvideClassInfo(IUnknown* pUnk)
-{
-    CONTRACT (MethodTable*)
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-        PRECONDITION(CheckPointer(pUnk));
-        POSTCONDITION(CheckPointer(RETVAL, NULL_OK));
-    }
-    CONTRACT_END;
-
-    MethodTable*                    pClassMT    = NULL;
-    SafeComHolder<ITypeInfo>            pTypeInfo   = NULL;
-    SafeComHolder<IProvideClassInfo>    pclsInfo    = NULL;
-
-    // Use IProvideClassInfo to detect the appropriate class to use for wrapping
-    HRESULT hr = SafeQueryInterface(pUnk, IID_IProvideClassInfo, (IUnknown **)&pclsInfo);
-    LogInteropQI(pUnk, IID_IProvideClassInfo, hr, "GetClassFromIProvideClassInfo: QIing for IProvideClassinfo");
-    if (hr == S_OK && pclsInfo)
-    {
-        hr = E_FAIL;
-
-        // Make sure the class info is not our own
-        if (!IsSimpleTearOff(pclsInfo))
-        {
-            GCX_PREEMP();
-
-            hr = pclsInfo->GetClassInfo(&pTypeInfo);
-        }
-
-        // If we succeded in retrieving the type information then keep going.
-        TYPEATTRHolder ptattr(pTypeInfo);
-        if (hr == S_OK && pTypeInfo)
-        {
-            {
-            GCX_PREEMP();
-            hr = pTypeInfo->GetTypeAttr(&ptattr);
-            }
-
-            // If we succeeded in retrieving the attributes and they represent
-            // a CoClass, then look up the class from the CLSID.
-            if (hr == S_OK && ptattr->typekind == TKIND_COCLASS)
-            {
-                GCX_ASSERT_COOP();
-                pClassMT = GetTypeForCLSID(ptattr->guid);
-            }
-        }
-    }
-
-    RETURN pClassMT;
-}
-
-#endif // FEATURE_COMINTEROP
 
 #endif //#ifndef CROSSGEN_COMPILE
 

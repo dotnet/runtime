@@ -94,63 +94,10 @@ static CAllowedObjectTypes aotAnyMutex(anyMutexTypeIds, _countof(anyMutexTypeIds
 
 /*++
 Function:
-  CreateMutexA
-
-Note:
-  lpMutexAttributes currentely ignored:
-  -- Win32 object security not supported
-  -- handles to mutex objects are not inheritable
-
-Parameters:
-  See MSDN doc.
---*/
-
-HANDLE
-PALAPI
-CreateMutexA(
-    IN LPSECURITY_ATTRIBUTES lpMutexAttributes,
-    IN BOOL bInitialOwner,
-    IN LPCSTR lpName)
-{
-    HANDLE hMutex = NULL;
-    CPalThread *pthr = NULL;
-    PAL_ERROR palError;
-
-    PERF_ENTRY(CreateMutexA);
-    ENTRY("CreateMutexA(lpMutexAttr=%p, bInitialOwner=%d, lpName=%p (%s)\n",
-          lpMutexAttributes, bInitialOwner, lpName, lpName?lpName:"NULL");
-
-    pthr = InternalGetCurrentThread();
-
-    palError = InternalCreateMutex(
-        pthr,
-        lpMutexAttributes,
-        bInitialOwner,
-        lpName,
-        &hMutex
-        );
-
-    //
-    // We always need to set last error, even on success:
-    // we need to protect ourselves from the situation
-    // where last error is set to ERROR_ALREADY_EXISTS on
-    // entry to the function
-    //
-
-    pthr->SetLastError(palError);
-
-    LOGEXIT("CreateMutexA returns HANDLE %p\n", hMutex);
-    PERF_EXIT(CreateMutexA);
-    return hMutex;
-}
-
-
-/*++
-Function:
   CreateMutexW
 
 Note:
-  lpMutexAttributes currentely ignored:
+  lpMutexAttributes currently ignored:
   -- Win32 object security not supported
   -- handles to mutex objects are not inheritable
 
@@ -223,7 +170,7 @@ Function:
 CreateMutexW
 
 Note:
-lpMutexAttributes currentely ignored:
+lpMutexAttributes currently ignored:
 -- Win32 object security not supported
 -- handles to mutex objects are not inheritable
 
@@ -247,7 +194,7 @@ Function:
   InternalCreateMutex
 
 Note:
-  lpMutexAttributes currentely ignored:
+  lpMutexAttributes currently ignored:
   -- Win32 object security not supported
   -- handles to mutex objects are not inheritable
 

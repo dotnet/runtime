@@ -274,7 +274,7 @@ CSharedMemoryObjectManager::RegisterObject(
         _ASSERTE(fShared);
 
         //
-        // Check if an object by this name alredy exists
+        // Check if an object by this name already exists
         //
 
         palError = LocateObject(

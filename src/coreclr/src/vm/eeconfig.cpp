@@ -38,7 +38,7 @@ Volatile<DWORD> GCStressPolicy::InhibitHolder::s_nGcStressDisabled = 0;
 
 /**************************************************************/
 // Poor mans narrow
-LPUTF8 NarrowWideChar(__inout_z LPWSTR str)
+LPUTF8 NarrowWideChar(__inout_z LPCWSTR str)
 {
     CONTRACT (LPUTF8)
     {
@@ -50,7 +50,7 @@ LPUTF8 NarrowWideChar(__inout_z LPWSTR str)
     } CONTRACT_END;
 
     if (str != 0) {
-        LPWSTR fromPtr = str;
+        LPCWSTR fromPtr = str;
         LPUTF8 toPtr = (LPUTF8) str;
         LPUTF8 result = toPtr;
         while(*fromPtr != 0)
@@ -211,8 +211,6 @@ HRESULT EEConfig::Init()
     dwNgenForceFailureCount = 0;
     dwNgenForceFailureKind  = 0;
 #endif
-
-    iGCPollType = GCPOLL_TYPE_DEFAULT;
 
 #ifdef _DEBUG
     fShouldInjectFault = 0;
@@ -839,21 +837,6 @@ fTrackDynamicMethodDebugInfo = CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_
     dwNgenForceFailureKind  = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_NgenForceFailureKind);
 #endif
 #endif // FEATURE_PREJIT
-
-    DWORD iGCPollTypeOverride = GetConfigDWORD_DontUse_(CLRConfig::EXTERNAL_GCPollType, iGCPollType);
-
-#ifndef FEATURE_HIJACK
-    // Platforms that do not support hijacking MUST support GC polling.
-    // Reject attempts by the user to configure the GC polling type as
-    // GCPOLL_TYPE_HIJACK.
-    _ASSERTE(EEConfig::GCPOLL_TYPE_HIJACK != iGCPollTypeOverride);
-    if (EEConfig::GCPOLL_TYPE_HIJACK == iGCPollTypeOverride)
-        iGCPollTypeOverride = EEConfig::GCPOLL_TYPE_DEFAULT;
-#endif
-
-    _ASSERTE(iGCPollTypeOverride < GCPOLL_TYPE_COUNT);
-    if (iGCPollTypeOverride < GCPOLL_TYPE_COUNT)
-        iGCPollType = GCPollType(iGCPollTypeOverride);
 
 #if defined(_DEBUG) && defined(FEATURE_EH_FUNCLETS)
     fSuppressLockViolationsOnReentryFromOS = (CLRConfig::GetConfigValue(CLRConfig::INTERNAL_SuppressLockViolationsOnReentryFromOS) != 0);

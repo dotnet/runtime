@@ -22,7 +22,7 @@
 
 #include <palsuite.h>
 
-int __cdecl main(int argc,char *argv[]) 
+PALTEST(miscellaneous_CGroup_test1_paltest_cgroup_test1, "miscellaneous/CGroup/test1/paltest_cgroup_test1")
 {
 
     /*

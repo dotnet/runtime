@@ -26,7 +26,7 @@
 
 #include <palsuite.h>
 
-int __cdecl main( int argc, char **argv )
+PALTEST(threading_OpenEventW_test3_paltest_openeventw_test3_child, "threading/OpenEventW/test3/paltest_openeventw_test3_child")
 {
     /* local variables */
     HANDLE                  hEvent = NULL;

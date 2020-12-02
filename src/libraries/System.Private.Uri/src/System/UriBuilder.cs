@@ -45,7 +45,7 @@ namespace System
 
         public UriBuilder(Uri uri)
         {
-            if ((object?)uri == null)
+            if (uri is null)
                 throw new ArgumentNullException(nameof(uri));
 
             Init(uri);

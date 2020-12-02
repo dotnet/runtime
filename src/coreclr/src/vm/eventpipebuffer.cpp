@@ -30,13 +30,6 @@ EventPipeBuffer::EventPipeBuffer(unsigned int bufferSize, EventPipeThread* pWrit
     // to servicing releases. We may come back in the future to reassess this and potentially improve
     // the throughput via more performant solution afterwards.
     m_pBuffer = (BYTE*)ClrVirtualAlloc(NULL, bufferSize, MEM_COMMIT, PAGE_READWRITE);
-
-    // memset may be unnecessary here because VirtualAlloc with MEM_COMMIT zero-initializes the pages and mmap also zero-initializes
-    // if MAP_UNINITIALIZED isn't passed (which ClrVirtualAlloc doesn't). If this memset ends up being a perf cost in future investigations
-    // we may remove this. But for risk mitigation we're leaving it as-is.
-    // (See https://github.com/dotnet/runtime/pull/35924#discussion_r421282564 for discussion on this)
-    memset(m_pBuffer, 0, bufferSize);
-    
     m_pLimit = m_pBuffer + bufferSize;
     m_pCurrent = GetNextAlignedAddress(m_pBuffer);
 

@@ -27,11 +27,11 @@
 
 #define TIMEOUT 60000
 
-BOOL  PALAPI StartThreadTest();
-DWORD PALAPI CreateTestThread(LPVOID);
-BOOL  PALAPI TestDll(HMODULE, int);
+BOOL  PALAPI StartThreadTest_FreeLibraryAndExitThread_test1();
+DWORD PALAPI CreateTestThread_FreeLibraryAndExitThread_test1(LPVOID);
+BOOL  PALAPI TestDll_FreeLibraryAndExitThread_test1(HMODULE, int);
 
-int __cdecl main(int argc, char* argv[])
+PALTEST(filemapping_memmgt_FreeLibraryAndExitThread_test1_paltest_freelibraryandexitthread_test1, "filemapping_memmgt/FreeLibraryAndExitThread/test1/paltest_freelibraryandexitthread_test1")
 {
     /*Initialize the PAL*/
     if ((PAL_Initialize(argc, argv)) != 0)
@@ -39,7 +39,7 @@ int __cdecl main(int argc, char* argv[])
         return (FAIL);
     }
 
-    if (!StartThreadTest())
+    if (!StartThreadTest_FreeLibraryAndExitThread_test1())
     {
         Fail("ERROR: FreeLibraryAndExitThread test failed.\n");
     }
@@ -51,12 +51,12 @@ int __cdecl main(int argc, char* argv[])
 }
 
 
-BOOL  PALAPI StartThreadTest()
+BOOL  PALAPI StartThreadTest_FreeLibraryAndExitThread_test1()
 {
     HMODULE hLib;
     HANDLE  hThread;  
     DWORD   dwThreadId;
-    LPTHREAD_START_ROUTINE lpStartAddress =  &CreateTestThread;
+    LPTHREAD_START_ROUTINE lpStartAddress =  &CreateTestThread_FreeLibraryAndExitThread_test1;
     LPVOID lpParameter = (LPVOID)lpStartAddress;
     DWORD rc = -1;
     /*Load library (DLL).*/
@@ -101,7 +101,7 @@ BOOL  PALAPI StartThreadTest()
     }
             
     /*Test access to DLL.*/
-    if(!TestDll(hLib, 0))
+    if(!TestDll_FreeLibraryAndExitThread_test1(hLib, 0))
     {
         Trace("ERROR: TestDll function returned FALSE "
             "expected TRUE\n.");
@@ -117,7 +117,7 @@ BOOL  PALAPI StartThreadTest()
     return (TRUE);
 }
 
-BOOL PALAPI TestDll(HMODULE hLib, int testResult)
+BOOL PALAPI TestDll_FreeLibraryAndExitThread_test1(HMODULE hLib, int testResult)
 {
     int     RetVal;
     char    FunctName[] = "DllTest";
@@ -164,10 +164,10 @@ BOOL PALAPI TestDll(HMODULE hLib, int testResult)
     return (TRUE);
 }
 
-DWORD PALAPI CreateTestThread(LPVOID lpParam)
+DWORD PALAPI CreateTestThread_FreeLibraryAndExitThread_test1(LPVOID lpParam)
 {
     /* Test access to DLL.*/
-    TestDll(lpParam, 1);
+    TestDll_FreeLibraryAndExitThread_test1(lpParam, 1);
 
     /*Free library and exit thread.*/
     FreeLibraryAndExitThread(lpParam, (DWORD)0);

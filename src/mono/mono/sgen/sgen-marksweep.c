@@ -2433,6 +2433,23 @@ major_print_gc_param_usage (void)
 			);
 }
 
+static void
+get_block_range_for_job (int job_index, int job_split_count, int block_count, int *start, int *end)
+{
+	/*
+	* The last_block's index is at least (num_major_sections - 1) since we
+	* can have nulls in the allocated_blocks list. The last worker will
+	* scan the left-overs of the list. We expect few null entries in the
+	* allocated_blocks list, therefore using num_major_sections for computing
+	* block_count shouldn't affect work distribution.
+	*/
+	*start = block_count * job_index;
+	if (job_index == job_split_count - 1)
+		*end = allocated_blocks.next_slot;
+	else
+		*end = block_count * (job_index + 1);
+}
+
 /*
  * This callback is used to clear cards, move cards to the shadow table and do counting.
  */
@@ -2446,6 +2463,21 @@ major_iterate_block_ranges (sgen_cardtable_block_callback callback)
 		if (has_references)
 			callback ((mword)MS_BLOCK_FOR_BLOCK_INFO (block), ms_block_size);
 	} END_FOREACH_BLOCK_NO_LOCK;
+}
+
+static void
+major_iterate_block_ranges_in_parallel (sgen_cardtable_block_callback callback, int job_index, int job_split_count, int block_count)
+{
+	MSBlockInfo *block;
+	gboolean has_references;
+	int first_block, last_block, index;
+
+	get_block_range_for_job (job_index, job_split_count, block_count, &first_block, &last_block);
+
+	FOREACH_BLOCK_RANGE_HAS_REFERENCES_NO_LOCK (block, first_block, last_block, index, has_references) {
+		if (has_references)
+			callback ((mword)MS_BLOCK_FOR_BLOCK_INFO (block), ms_block_size);
+	} END_FOREACH_BLOCK_RANGE_NO_LOCK;
 }
 
 static void
@@ -2656,18 +2688,7 @@ major_scan_card_table (CardTableScanType scan_type, ScanCopyContext ctx, int job
 	gboolean has_references, was_sweeping, skip_scan;
 	int first_block, last_block, index;
 
-	/*
-	 * The last_block's index is at least (num_major_sections - 1) since we
-	 * can have nulls in the allocated_blocks list. The last worker will
-	 * scan the left-overs of the list. We expect few null entries in the
-	 * allocated_blocks list, therefore using num_major_sections for computing
-	 * block_count shouldn't affect work distribution.
-	 */
-	first_block = block_count * job_index;
-	if (job_index == job_split_count - 1)
-		last_block = allocated_blocks.next_slot;
-	else
-		last_block = block_count * (job_index + 1);
+	get_block_range_for_job (job_index, job_split_count, block_count, &first_block, &last_block);
 
 	if (!concurrent_mark)
 		g_assert (scan_type == CARDTABLE_SCAN_GLOBAL);
@@ -2908,6 +2929,7 @@ sgen_marksweep_init_internal (SgenMajorCollector *collector, gboolean is_concurr
 	collector->scan_card_table = major_scan_card_table;
 	collector->iterate_live_block_ranges = major_iterate_live_block_ranges;
 	collector->iterate_block_ranges = major_iterate_block_ranges;
+	collector->iterate_block_ranges_in_parallel = major_iterate_block_ranges_in_parallel;
 #ifndef DISABLE_SGEN_MAJOR_MARKSWEEP_CONC
 	if (is_concurrent) {
 		collector->update_cardtable_mod_union = update_cardtable_mod_union;

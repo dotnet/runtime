@@ -43,17 +43,6 @@ Function :
 PAL_time_t __cdecl PAL_time(PAL_time_t*);
 
 /*++
-Function:
-TIMEInitialize
-
-Return value:
-TRUE if initialize succeeded
-FALSE otherwise
-
---*/
-BOOL TIMEInitialize( void );
-
-/*++
 Function :
     MsgBoxInitialize
 

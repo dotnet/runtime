@@ -13,7 +13,7 @@ namespace Internal.TypeSystem
         /// Determine if the construction of a type contains one of a given set of types. This is a deep
         /// scan. For instance, given type MyType&lt;SomeGeneric&lt;int[]&gt;&gt;, and a set of typesToFind
         /// that includes int, this function will return true. Does not detect the open generics that may be
-        /// instantiated over in this type. IsConstructedOverType would return false if only passed MyType, 
+        /// instantiated over in this type. IsConstructedOverType would return false if only passed MyType,
         /// or SomeGeneric for the above examplt.
         /// </summary>
         /// <param name="type">type to examine</param>
@@ -58,15 +58,15 @@ namespace Internal.TypeSystem
         }
 
         /// <summary>
-        /// Replace some of the types in a type's construction with a new set of types. This function does not 
-        /// support any situation where there is an instantiated generic that is not represented by an 
+        /// Replace some of the types in a type's construction with a new set of types. This function does not
+        /// support any situation where there is an instantiated generic that is not represented by an
         /// InstantiatedType. Does not replace the open generics that may be instantiated over in this type.
-        /// 
+        ///
         /// For instance, Given MyType&lt;object, int[]&gt;,
-        ///  an array of types to replace such as {int,object}, and 
+        ///  an array of types to replace such as {int,object}, and
         ///  an array of replacement types such as {string,__Canon}.
         ///  The result shall be MyType&lt;__Canon, string[]&gt;
-        /// 
+        ///
         /// This function cannot be used to replace MyType in the above example.
         /// </summary>
         public static TypeDesc ReplaceTypesInConstructionOfType(this TypeDesc type, TypeDesc[] typesToReplace, TypeDesc[] replacementTypes)
@@ -144,12 +144,12 @@ namespace Internal.TypeSystem
         /// <summary>
         /// Replace some of the types in a method's construction with a new set of types.
         /// Does not replace the open generics that may be instantiated over in this type.
-        /// 
+        ///
         /// For instance, Given MyType&lt;object, int[]&gt;.Function&lt;short&gt;(),
-        ///  an array of types to replace such as {int,short}, and 
+        ///  an array of types to replace such as {int,short}, and
         ///  an array of replacement types such as {string,char}.
         ///  The result shall be MyType&lt;object, string[]&gt;.Function&lt;char&gt;
-        /// 
+        ///
         /// This function cannot be used to replace MyType in the above example.
         /// </summary>
         public static MethodDesc ReplaceTypesInConstructionOfMethod(this MethodDesc method, TypeDesc[] typesToReplace, TypeDesc[] replacementTypes)

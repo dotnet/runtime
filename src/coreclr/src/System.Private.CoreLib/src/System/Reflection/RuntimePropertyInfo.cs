@@ -226,7 +226,7 @@ namespace System.Reflection
             if (Associates.IncludeAccessor(m_setterMethod, nonPublic))
                 accessorList.Add(m_setterMethod!);
 
-            if ((object?)m_otherMethod != null)
+            if (m_otherMethod is not null)
             {
                 for (int i = 0; i < m_otherMethod.Length; i++)
                 {

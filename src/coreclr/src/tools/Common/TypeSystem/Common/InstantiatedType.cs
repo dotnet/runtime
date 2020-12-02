@@ -178,8 +178,8 @@ namespace Internal.TypeSystem
             MetadataType typeInHierarchy = this;
 
             // Note, we go back to the type definition/typical method definition in this code.
-            // If the finalizer is implemented on a base type that is also a generic, then the 
-            // typicalFinalizer in that case is a MethodForInstantiatedType for an instantiated type 
+            // If the finalizer is implemented on a base type that is also a generic, then the
+            // typicalFinalizer in that case is a MethodForInstantiatedType for an instantiated type
             // which is instantiated over the open type variables of the derived type.
 
             while (typicalFinalizer.OwningType.GetTypeDefinition() != typeInHierarchy.GetTypeDefinition())

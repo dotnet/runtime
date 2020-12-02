@@ -4469,6 +4469,21 @@ mini_is_gsharedvt_sharable_inst (MonoGenericInst *inst)
 }
 
 gboolean
+mini_is_gsharedvt_inst (MonoGenericInst *inst)
+{
+	int i;
+
+	for (i = 0; i < inst->type_argc; ++i) {
+		MonoType *type = inst->type_argv [i];
+
+		if (mini_is_gsharedvt_type (type))
+			return TRUE;
+	}
+
+	return FALSE;
+}
+
+gboolean
 mini_is_gsharedvt_sharable_method (MonoMethod *method)
 {
 	MonoMethodSignature *sig;

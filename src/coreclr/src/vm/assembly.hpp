@@ -337,7 +337,7 @@ public:
     }
 #endif // DACCESS_COMPILE
 
-    void GetCodeBase(SString &result)
+    BOOL GetCodeBase(SString &result)
     {
         WRAPPER_NO_CONTRACT;
 

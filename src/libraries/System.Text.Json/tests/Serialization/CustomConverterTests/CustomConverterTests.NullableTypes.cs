@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Reflection;
 using Xunit;
 
 namespace System.Text.Json.Serialization.Tests
@@ -429,6 +430,140 @@ namespace System.Text.Json.Serialization.Tests
                 writer.WriteStartObject();
                 writer.WriteNumber("InnerValue", value.InnerValue + 5);
                 writer.WriteEndObject();
+            }
+        }
+
+        [Fact]
+        public static void NonNullableConverter_ReturnedByJsonConverterFactory_CanBeUsedAsFallback_ForNullableProperty()
+        {
+            string json = @"{
+""Property"": {
+""Item1"":1,
+""Item2"":2
+}}";
+            // Verify that below converters will be called -
+            // serializer doesn't support ValueTuple unless field support is active.
+            ClassWithValueTuple obj0 = JsonSerializer.Deserialize<ClassWithValueTuple>(json);
+            Assert.Equal(0, obj0.Property.Item1);
+            Assert.Equal(0, obj0.Property.Item2);
+
+            obj0 = JsonSerializer.Deserialize<ClassWithValueTuple>(json, new JsonSerializerOptions { IncludeFields = true });
+            Assert.Equal(1, obj0.Property.Item1);
+            Assert.Equal(2, obj0.Property.Item2);
+
+            // Baseline: converter returned from factory can be used for non-nullable property.
+            ClassWithFactoryOn_NonNullableProperty obj1 = JsonSerializer.Deserialize<ClassWithFactoryOn_NonNullableProperty>(json);
+            Assert.Equal(1, obj1.Property.Item1);
+            Assert.Equal(2, obj1.Property.Item2);
+
+            JsonTestHelper.AssertJsonEqual(json, JsonSerializer.Serialize(obj1));
+
+            // Test: converter returned from factory can be used for nullable property.
+            ClassWithFactoryOn_NullableProperty obj2 = JsonSerializer.Deserialize<ClassWithFactoryOn_NullableProperty>(json);
+            Assert.Equal(1, obj2.Property?.Item1);
+            Assert.Equal(2, obj2.Property?.Item2);
+
+            JsonTestHelper.AssertJsonEqual(json, JsonSerializer.Serialize(obj2));
+        }
+
+        private class ClassWithValueTuple
+        {
+            public (int, int) Property { get; set; }
+        }
+
+        private class ClassWithFactoryOn_NonNullableProperty
+        {
+            [JsonConverter(typeof(MyValueTupleConverterFactory))]
+            public (int, int) Property { get; set; }
+        }
+
+        private class ClassWithFactoryOn_NullableProperty
+        {
+            [JsonConverter(typeof(MyValueTupleConverterFactory))]
+            public (int, int)? Property { get; set; }
+        }
+
+        public class MyValueTupleConverterFactory : JsonConverterFactory
+        {
+            public override bool CanConvert(Type typeToConvert) => IsValueTupleType(typeToConvert);
+
+            public override JsonConverter CreateConverter(Type typeToConvert, JsonSerializerOptions options)
+            {
+                Debug.Assert(CanConvert(typeToConvert));
+
+                Type[] genericArgs = typeToConvert.GetGenericArguments();
+                Type item1Type = genericArgs[0];
+                Type item2Type = genericArgs[1];
+
+                JsonConverter converter = (JsonConverter)Activator.CreateInstance(
+                    typeof(ValueTupleConverter<,>).MakeGenericType(new Type[] { item1Type, item2Type }),
+                    BindingFlags.Instance | BindingFlags.Public,
+                    binder: null,
+                    args: new object[] { },
+                    culture: null);
+
+                return converter;
+            }
+
+            protected static bool IsValueTupleType(Type type) =>
+                type.IsGenericType && type.GetGenericTypeDefinition() == typeof(ValueTuple<,>);
+
+            protected class ValueTupleConverter<TItem1, TItem2> : JsonConverter<ValueTuple<TItem1, TItem2>>
+            {
+                public override (TItem1, TItem2) Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+                {
+                    Debug.Assert(reader.TokenType == JsonTokenType.StartObject);
+
+                    reader.Read();
+                    JsonTokenType tokenType = reader.TokenType;
+
+                    (TItem1, TItem2) value = default;
+
+                    while (true)
+                    {
+                        if (tokenType == JsonTokenType.PropertyName)
+                        {
+                            string propertyName = reader.GetString();
+                            if (propertyName == "Item1")
+                            {
+                                value.Item1 = JsonSerializer.Deserialize<TItem1>(ref reader);
+                            }
+                            else if (propertyName == "Item2")
+                            {
+                                value.Item2 = JsonSerializer.Deserialize<TItem2>(ref reader);
+                            }
+                            else
+                            {
+                                throw new JsonException();
+                            }
+
+                            reader.Read();
+                            tokenType = reader.TokenType;
+                            continue;
+                        }
+                        else if (tokenType == JsonTokenType.EndObject)
+                        {
+                            break;
+                        }
+
+                        throw new JsonException();
+                    }
+
+                    return value;
+                }
+
+                public override void Write(Utf8JsonWriter writer, (TItem1, TItem2) value, JsonSerializerOptions options)
+                {
+                    writer.WriteStartObject();
+
+                    writer.WritePropertyName("Item1");
+                    JsonSerializer.Serialize(writer, value.Item1);
+
+                    writer.WritePropertyName("Item2");
+                    JsonSerializer.Serialize(writer, value.Item2);
+
+                    writer.WriteEndObject();
+                }
             }
         }
     }

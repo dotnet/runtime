@@ -18,7 +18,7 @@
 
 #include <palsuite.h>
 
-int __cdecl main(int argc, char *argv[]) 
+PALTEST(miscellaneous_InterlockedCompareExchangePointer_test1_paltest_interlockedcompareexchangepointer_test1, "miscellaneous/InterlockedCompareExchangePointer/test1/paltest_interlockedcompareexchangepointer_test1")
 {
 
     long StartValue = 5;

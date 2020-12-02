@@ -2,12 +2,10 @@
 ' The .NET Foundation licenses this file to you under the MIT license.
 
 Imports System
-Imports System.Globalization
 Imports System.Diagnostics
 Imports System.Reflection
 
 Imports Microsoft.VisualBasic.CompilerServices.ExceptionUtils
-Imports Microsoft.VisualBasic.CompilerServices.Utils
 
 Namespace Microsoft.VisualBasic.CompilerServices
 

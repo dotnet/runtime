@@ -17,7 +17,7 @@
 
 #include <palsuite.h>
 
-int __cdecl main(int argc, char *argv[])
+PALTEST(locale_info_CompareStringA_test1_paltest_comparestringa_test1, "locale_info/CompareStringA/test1/paltest_comparestringa_test1")
 {    
     char str1[] = {'f','o','o',0};
     char str2[] = {'f','o','o','x',0};

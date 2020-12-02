@@ -77,7 +77,7 @@ namespace Internal.TypeSystem
 
             public static string Type(string @namespace, string name)
             {
-                return String.IsNullOrEmpty(@namespace) ? name : @namespace + "." + name;
+                return string.IsNullOrEmpty(@namespace) ? name : @namespace + "." + name;
             }
 
             public static string Field(TypeDesc owningType, string fieldName)

@@ -17,6 +17,70 @@ namespace ILCompiler
         {
             _genericsMode = genericsMode;
         }
+
+        private object _normalizedLock = new object();
+        private HashSet<TypeDesc> _nonNormalizedTypes = new HashSet<TypeDesc>();
+        private Dictionary<TypeDesc, TypeFlags> _normalizedTypeCategory = new Dictionary<TypeDesc, TypeFlags>();
+
+        public TypeFlags NormalizedCategoryFor4ByteStructOnX86(TypeDesc type)
+        {
+            // Fast early out for cases which don't need normalization
+            var typeCategory = type.Category;
+
+            if (((typeCategory != TypeFlags.ValueType) && (typeCategory != TypeFlags.Enum)) || (type.GetElementSize().AsInt != 4))
+            {
+                return typeCategory;
+            }
+
+            lock(_normalizedLock)
+            {
+                if (_nonNormalizedTypes.Contains(type))
+                    return typeCategory;
+                
+                if (_normalizedTypeCategory.TryGetValue(type, out TypeFlags category))
+                    return category;
+
+                if (Target.Architecture != TargetArchitecture.X86)
+                {
+                    throw new NotSupportedException();
+                }
+
+                TypeDesc typeOfEmbeddedField = null;
+                foreach (var field in type.GetFields())
+                {
+                    if (field.IsStatic)
+                        continue;
+                    if (typeOfEmbeddedField != null)
+                    {
+                        // Type has more than one instance field
+                        _nonNormalizedTypes.Add(type);
+                        return typeCategory;
+                    }
+
+                    typeOfEmbeddedField = field.FieldType;
+                }
+
+                if ((typeOfEmbeddedField != null) && ((typeOfEmbeddedField.IsValueType) || (typeOfEmbeddedField.IsPointer)))
+                {
+                    TypeFlags singleElementFieldType = NormalizedCategoryFor4ByteStructOnX86(typeOfEmbeddedField);
+                    if (singleElementFieldType == TypeFlags.Pointer)
+                        singleElementFieldType = TypeFlags.UIntPtr;
+                    
+                    switch (singleElementFieldType)
+                    {
+                        case TypeFlags.IntPtr:
+                        case TypeFlags.UIntPtr:
+                        case TypeFlags.Int32:
+                        case TypeFlags.UInt32:
+                            _normalizedTypeCategory.Add(type, singleElementFieldType);
+                            return singleElementFieldType;
+                    }
+                }
+
+                _nonNormalizedTypes.Add(type);
+                return typeCategory;
+            }
+        }
     }
 
     public partial class ReadyToRunCompilerContext : CompilerTypeSystemContext
@@ -26,12 +90,14 @@ namespace ILCompiler
         private VectorOfTFieldLayoutAlgorithm _vectorOfTFieldLayoutAlgorithm;
         private VectorFieldLayoutAlgorithm _vectorFieldLayoutAlgorithm;
 
-        public ReadyToRunCompilerContext(TargetDetails details, SharedGenericsMode genericsMode)
+        public ReadyToRunCompilerContext(TargetDetails details, SharedGenericsMode genericsMode, bool bubbleIncludesCorelib)
             : base(details, genericsMode)
         {
             _r2rFieldLayoutAlgorithm = new ReadyToRunMetadataFieldLayoutAlgorithm();
             _systemObjectFieldLayoutAlgorithm = new SystemObjectFieldLayoutAlgorithm(_r2rFieldLayoutAlgorithm);
-            _vectorFieldLayoutAlgorithm = new VectorFieldLayoutAlgorithm(_r2rFieldLayoutAlgorithm);
+
+            // Only the Arm64 JIT respects the OS rules for vector type abi currently
+            _vectorFieldLayoutAlgorithm = new VectorFieldLayoutAlgorithm(_r2rFieldLayoutAlgorithm, (details.Architecture == TargetArchitecture.ARM64) ? true : bubbleIncludesCorelib);
 
             string matchingVectorType = "Unknown";
             if (details.MaximumSimdVectorLength == SimdVectorLength.Vector128Bit)
@@ -39,8 +105,8 @@ namespace ILCompiler
             else if (details.MaximumSimdVectorLength == SimdVectorLength.Vector256Bit)
                 matchingVectorType = "Vector256`1";
 
-            _vectorOfTFieldLayoutAlgorithm = new VectorOfTFieldLayoutAlgorithm(_r2rFieldLayoutAlgorithm, _vectorFieldLayoutAlgorithm, matchingVectorType);
-
+            // No architecture has completely stable handling of Vector<T> in the abi (Arm64 may change to SVE)
+            _vectorOfTFieldLayoutAlgorithm = new VectorOfTFieldLayoutAlgorithm(_r2rFieldLayoutAlgorithm, _vectorFieldLayoutAlgorithm, matchingVectorType, bubbleIncludesCorelib);
         }
 
         public override FieldLayoutAlgorithm GetLayoutAlgorithmForType(DefType type)
@@ -112,12 +178,14 @@ namespace ILCompiler
         private FieldLayoutAlgorithm _vectorFallbackAlgorithm;
         private string _similarVectorName;
         private DefType _similarVectorOpenType;
+        private bool _vectorAbiIsStable;
 
-        public VectorOfTFieldLayoutAlgorithm(FieldLayoutAlgorithm fallbackAlgorithm, FieldLayoutAlgorithm vectorFallbackAlgorithm, string similarVector)
+        public VectorOfTFieldLayoutAlgorithm(FieldLayoutAlgorithm fallbackAlgorithm, FieldLayoutAlgorithm vectorFallbackAlgorithm, string similarVector, bool vectorAbiIsStable = true)
         {
             _fallbackAlgorithm = fallbackAlgorithm;
             _vectorFallbackAlgorithm = vectorFallbackAlgorithm;
             _similarVectorName = similarVector;
+            _vectorAbiIsStable = vectorAbiIsStable;
         }
 
         private DefType GetSimilarVector(DefType vectorOfTType)
@@ -158,6 +226,7 @@ namespace ILCompiler
                     ByteCountUnaligned = LayoutInt.Indeterminate,
                     ByteCountAlignment = LayoutInt.Indeterminate,
                     Offsets = fieldsAndOffsets.ToArray(),
+                    LayoutAbiStable = false,
                 };
                 return instanceLayout;
             }
@@ -175,6 +244,7 @@ namespace ILCompiler
                     FieldAlignment = layoutFromSimilarIntrinsicVector.FieldAlignment,
                     FieldSize = layoutFromSimilarIntrinsicVector.FieldSize,
                     Offsets = layoutFromMetadata.Offsets,
+                    LayoutAbiStable = _vectorAbiIsStable,
                 };
 #else
                 return new ComputedInstanceFieldLayout
@@ -184,6 +254,7 @@ namespace ILCompiler
                     FieldAlignment = layoutFromMetadata.FieldAlignment,
                     FieldSize = layoutFromSimilarIntrinsicVector.FieldSize,
                     Offsets = layoutFromMetadata.Offsets,
+                    LayoutAbiStable = _vectorAbiIsStable,
                 };
 #endif
             }

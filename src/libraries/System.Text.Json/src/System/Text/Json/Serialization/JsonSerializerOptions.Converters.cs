@@ -18,12 +18,12 @@ namespace System.Text.Json
         // The global list of built-in simple converters.
         private static readonly Dictionary<Type, JsonConverter> s_defaultSimpleConverters = GetDefaultSimpleConverters();
 
-        private static readonly Type s_nullableOfTType = typeof(Nullable<>);
-
         // The global list of built-in converters that override CanConvert().
         private static readonly JsonConverter[] s_defaultFactoryConverters = new JsonConverter[]
         {
-            // Nullable converter should always be first since it forwards to any nullable type.
+            // Check for disallowed types.
+            new DisallowedTypeConverterFactory(),
+            // Nullable converter should always be next since it forwards to any nullable type.
             new NullableConverterFactory(),
             new EnumConverterFactory(),
             // IEnumerable should always be second to last since they can convert any IEnumerable.
@@ -60,11 +60,11 @@ namespace System.Text.Json
             Add(new SByteConverter());
             Add(new SingleConverter());
             Add(new StringConverter());
-            Add(new TypeConverter());
             Add(new UInt16Converter());
             Add(new UInt32Converter());
             Add(new UInt64Converter());
             Add(new UriConverter());
+            Add(new VersionConverter());
 
             Debug.Assert(NumberOfSimpleConverters == converters.Count);
 
@@ -186,7 +186,7 @@ namespace System.Text.Json
             // We also throw to avoid passing an invalid argument to setters for nullable struct properties,
             // which would cause an InvalidProgramException when the generated IL is invoked.
             // This is not an issue of the converter is wrapped in NullableConverter<T>.
-            if (IsNullableType(runtimePropertyType) && !IsNullableType(converter.TypeToConvert))
+            if (runtimePropertyType.CanBeNull() && !converter.TypeToConvert.CanBeNull())
             {
                 ThrowHelper.ThrowInvalidOperationException_ConverterCanConvertNullableRedundant(runtimePropertyType, converter);
             }
@@ -217,7 +217,7 @@ namespace System.Text.Json
             }
 
             // Priority 2: Attempt to get custom converter added at runtime.
-            // Currently there is not a way at runtime to overide the [JsonConverter] when applied to a property.
+            // Currently there is not a way at runtime to override the [JsonConverter] when applied to a property.
             foreach (JsonConverter item in Converters)
             {
                 if (item.CanConvert(typeToConvert))
@@ -274,8 +274,8 @@ namespace System.Text.Json
 
             Type converterTypeToConvert = converter.TypeToConvert;
 
-            if (!converterTypeToConvert.IsAssignableFrom(typeToConvert) &&
-                !typeToConvert.IsAssignableFrom(converterTypeToConvert))
+            if (!converterTypeToConvert.IsAssignableFromInternal(typeToConvert)
+                && !typeToConvert.IsAssignableFromInternal(converterTypeToConvert))
             {
                 ThrowHelper.ThrowInvalidOperationException_SerializationConverterNotCompatible(converter.GetType(), typeToConvert);
             }
@@ -323,6 +323,11 @@ namespace System.Text.Json
                 Type? underlyingType = Nullable.GetUnderlyingType(typeToConvert);
                 if (underlyingType != null && converter.CanConvert(underlyingType))
                 {
+                    if (converter is JsonConverterFactory converterFactory)
+                    {
+                        converter = converterFactory.GetConverterInternal(underlyingType, this);
+                    }
+
                     // Allow nullable handling to forward to the underlying type's converter.
                     return NullableConverterFactory.CreateValueConverter(underlyingType, converter);
                 }
@@ -361,9 +366,5 @@ namespace System.Text.Json
             return default;
         }
 
-        private static bool IsNullableType(Type type)
-        {
-            return type.IsGenericType && type.GetGenericTypeDefinition() == s_nullableOfTType;
-        }
     }
 }

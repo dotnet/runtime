@@ -15,7 +15,7 @@
 #include <palsuite.h>
 
 
-int __cdecl main(int argc, char *argv[])
+PALTEST(file_io_ReadFile_test1_paltest_readfile_test1, "file_io/ReadFile/test1/paltest_readfile_test1")
 {
     HANDLE hFile = NULL;
     DWORD dwByteCount = 0;

@@ -2,16 +2,12 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Buffers;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
-using System.Linq;
-using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.Json;
-using System.Text.Json.Serialization;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 
@@ -58,25 +54,12 @@ namespace Microsoft.Extensions.Logging.Console
 
                     if (exception != null)
                     {
-                        writer.WriteStartObject(nameof(Exception));
-                        writer.WriteString(nameof(exception.Message), exception.Message.ToString());
-                        writer.WriteString("Type", exception.GetType().ToString());
-                        writer.WriteStartArray(nameof(exception.StackTrace));
-                        string stackTrace = exception?.StackTrace;
-                        if (stackTrace != null)
+                        string exceptionMessage = exception.ToString();
+                        if (!FormatterOptions.JsonWriterOptions.Indented)
                         {
-#if NETCOREAPP
-                            foreach (var stackTraceLines in stackTrace?.Split(Environment.NewLine))
-#else
-                            foreach (var stackTraceLines in stackTrace?.Split(new string[] { Environment.NewLine }, StringSplitOptions.None))
-#endif
-                            {
-                                writer.WriteStringValue(stackTraceLines);
-                            }
+                            exceptionMessage = exceptionMessage.Replace(Environment.NewLine, " ");
                         }
-                        writer.WriteEndArray();
-                        writer.WriteNumber(nameof(exception.HResult), exception.HResult);
-                        writer.WriteEndObject();
+                        writer.WriteString(nameof(Exception), exceptionMessage);
                     }
 
                     if (logEntry.State != null)

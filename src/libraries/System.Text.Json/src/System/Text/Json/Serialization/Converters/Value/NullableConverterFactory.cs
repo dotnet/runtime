@@ -10,7 +10,7 @@ namespace System.Text.Json.Serialization.Converters
     {
         public override bool CanConvert(Type typeToConvert)
         {
-            return Nullable.GetUnderlyingType(typeToConvert) != null;
+            return typeToConvert.IsNullableOfT();
         }
 
         public override JsonConverter CreateConverter(Type typeToConvert, JsonSerializerOptions options)
@@ -21,6 +21,12 @@ namespace System.Text.Json.Serialization.Converters
 
             JsonConverter valueConverter = options.GetConverter(valueTypeToConvert);
             Debug.Assert(valueConverter != null);
+
+            // If the value type has an interface or object converter, just return that converter directly.
+            if (!valueConverter.TypeToConvert.IsValueType && valueTypeToConvert.IsValueType)
+            {
+                return valueConverter;
+            }
 
             return CreateValueConverter(valueTypeToConvert, valueConverter);
         }

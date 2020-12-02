@@ -20,7 +20,7 @@ const int ParentDelayTime = 2000;
 
 DWORD PALAPI AcquiringProc(LPVOID lpParameter);
 
-int __cdecl main( int argc, char **argv) 
+PALTEST(threading_WaitForMultipleObjectsEx_test3_paltest_waitformultipleobjectsex_test3, "threading/WaitForMultipleObjectsEx/test3/paltest_waitformultipleobjectsex_test3")
 {
     HANDLE Mutex;
     HANDLE hThread = 0;

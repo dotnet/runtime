@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#nullable enable
 namespace System.Xml.Schema
 {
     using System;
@@ -35,9 +34,6 @@ namespace System.Xml.Schema
         private XmlNode? _parentNode;
         private XmlNamespaceManager? _annotationNSManager;
         private string? _xmlns;
-
-        //Whitespace check for text nodes
-        private XmlCharType _xmlCharType = XmlCharType.Instance;
 
         public Parser(SchemaType schemaType, XmlNameTable nameTable, SchemaNames schemaNames, ValidationEventHandler? eventHandler)
         {
@@ -225,7 +221,7 @@ namespace System.Xml.Schema
             }
             else if (_reader.NodeType == XmlNodeType.Text)
             { //Check for whitespace
-                if (!_xmlCharType.IsOnlyWhitespace(_reader.Value))
+                if (!XmlCharType.IsOnlyWhitespace(_reader.Value))
                 {
                     _builder!.ProcessCData(_reader.Value);
                 }
@@ -244,10 +240,10 @@ namespace System.Xml.Schema
                     {
                         Debug.Assert(_parentNode != null);
                         XmlNodeList list = _parentNode.ChildNodes;
-                        XmlNode[] markup = new XmlNode[list.Count];
+                        XmlNode?[] markup = new XmlNode[list.Count];
                         for (int i = 0; i < list.Count; i++)
                         {
-                            markup[i] = list[i]!;
+                            markup[i] = list[i];
                         }
 
                         _builder!.ProcessMarkup(markup);

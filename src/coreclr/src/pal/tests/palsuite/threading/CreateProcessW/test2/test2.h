@@ -11,13 +11,13 @@
 **=========================================================*/
 
 
-const WCHAR szChildFileW[] = u"paltest_createprocessw_test2_child";
+const WCHAR szChildFileW[] = u"threading/CreateProcessW/test2/paltest_createprocessw_test2_child";
 const WCHAR szArgs[] = {' ',0x41,' ','B',' ','C','\0'};
 const WCHAR szArg1[] = {0x41,'\0'};
 const WCHAR szArg2[] = {'B','\0'};
 const WCHAR szArg3[] = {'C','\0'};
 
-const char *szTestString = "An uninteresting test string (it works though)";
+#define szTestString "An uninteresting test string (it works though)"
 
 const DWORD EXIT_OK_CODE   = 100;
 const DWORD EXIT_ERR_CODE1 = 101;

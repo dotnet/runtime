@@ -9,6 +9,7 @@ using Xunit;
 
 namespace System.Security.Cryptography.CryptoConfigTests
 {
+    [SkipOnMono("Not supported on Browser", TestPlatforms.Browser)]
     public static class CryptoConfigTests
     {
         [Fact]

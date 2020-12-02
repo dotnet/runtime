@@ -7,6 +7,7 @@ using Xunit;
 
 namespace System.Security.Cryptography.Encryption.Des.Tests
 {
+    [SkipOnMono("Not supported on Browser", TestPlatforms.Browser)]
     public static partial class DesTests
     {
         private static readonly byte[] KnownWeakKey = "e0e0e0e0f1f1f1f1".HexToByteArray();

@@ -3,8 +3,8 @@
   <PropertyGroup>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
     <OutputType>Exe</OutputType>
-    <RuntimeIdentifier>$(TestTargetRid)</RuntimeIdentifier>
     <RuntimeFrameworkVersion>$(MNAVersion)</RuntimeFrameworkVersion>
+    <RuntimeIdentifier>$(TestTargetRid)</RuntimeIdentifier>
   </PropertyGroup>
 
   <Target Name="CopyFiles" AfterTargets="Publish">

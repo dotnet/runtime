@@ -49,7 +49,7 @@ FindFirstFileExWrapper(
     _In_ DWORD dwAdditionalFlags
     );
 
-#ifndef TARGET_UNIX
+#ifndef HOST_UNIX
 BOOL
 CopyFileExWrapper(
     _In_        LPCWSTR lpExistingFileName,
@@ -60,7 +60,7 @@ CopyFileExWrapper(
     _Inout_opt_ LPBOOL pbCancel,
     _In_        DWORD dwCopyFlags
     );
-#endif //TARGET_UNIX
+#endif //HOST_UNIX
 
 BOOL
 MoveFileExWrapper(
@@ -105,8 +105,6 @@ DWORD WINAPI GetEnvironmentVariableWrapper(
     _In_opt_  LPCTSTR lpName,
     _Out_opt_ SString&  lpBuffer
     );
-
-BOOL PAL_GetPALDirectoryWrapper(SString& pbuffer);
 
 #endif //_WIN_PATH_APIS_WRAPPER_
 

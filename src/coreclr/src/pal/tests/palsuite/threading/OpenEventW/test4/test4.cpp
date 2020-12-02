@@ -25,7 +25,7 @@
 
 
 
-int __cdecl main( int argc, char **argv )
+PALTEST(threading_OpenEventW_test4_paltest_openeventw_test4, "threading/OpenEventW/test4/paltest_openeventw_test4")
 
 {
     /* local variables */

@@ -108,7 +108,6 @@ namespace System.ServiceModel.Syndication.Tests
         [Fact]
         public void ItemSet_Null_ThrowsArgumentNullException()
         {
-            var extension = new SyndicationElementExtension(new ExtensionObject { Value = 10 });
             SyndicationElementExtensionCollection elementExtensions = new SyndicationCategory().ElementExtensions;
             elementExtensions.Add(new ExtensionObject { Value = 9 });
 
@@ -206,7 +205,9 @@ namespace System.ServiceModel.Syndication.Tests
         public void Clone_NoExtensions_ReturnsExpected()
         {
             var category = new SyndicationCategory();
+
             SyndicationElementExtensionCollection elementExtensions = category.ElementExtensions;
+            Assert.Empty(elementExtensions);
 
             SyndicationElementExtensionCollection clone = category.Clone().ElementExtensions;
             Assert.Empty(clone);

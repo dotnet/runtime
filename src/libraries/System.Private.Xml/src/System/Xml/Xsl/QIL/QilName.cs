@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#nullable enable
 using System;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
@@ -112,7 +111,7 @@ namespace System.Xml.Xsl.Qil
             {
                 return true;
             }
-            if ((object?)a == null || (object?)b == null)
+            if (a is null || b is null)
             {
                 return false;
             }

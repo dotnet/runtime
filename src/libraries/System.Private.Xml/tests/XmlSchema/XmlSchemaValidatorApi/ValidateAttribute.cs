@@ -68,7 +68,6 @@ namespace System.Xml.Tests
         public void PassNullXmlSchemaInfo__Valid()
         {
             XmlSchemaValidator val = CreateValidator(XSDFILE_VALIDATE_ATTRIBUTE);
-            XmlSchemaInfo info = new XmlSchemaInfo();
 
             val.Initialize();
             val.ValidateElement("OneAttributeElement", "", null);
@@ -202,17 +201,14 @@ namespace System.Xml.Tests
 
     public class TCGetUnspecifiedDefaultAttributes : CXmlSchemaValidatorTestCase
     {
-        private ITestOutputHelper _output;
         public TCGetUnspecifiedDefaultAttributes(ITestOutputHelper output) : base(output)
         {
-            _output = output;
         }
 
         [Fact]
         public void PassNull__Invalid()
         {
             XmlSchemaValidator val = CreateValidator(XSDFILE_VALIDATE_ATTRIBUTE);
-            XmlSchemaInfo info = new XmlSchemaInfo();
 
             val.Initialize();
             val.ValidateElement("OneAttributeElement", "", null);
@@ -439,7 +435,6 @@ namespace System.Xml.Tests
         public void CallWithoutValidationOfRequiredAttribute()
         {
             XmlSchemaValidator val = CreateValidator(XSDFILE_VALIDATE_ATTRIBUTE);
-            ArrayList atts = new ArrayList();
 
             val.Initialize();
             val.ValidateElement("RequiredAttributeElement", "", null);

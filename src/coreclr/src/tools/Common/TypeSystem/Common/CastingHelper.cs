@@ -180,7 +180,7 @@ namespace Internal.TypeSystem
                 default:
                     Debug.Assert(thisType.IsDefType);
                     return thisType.CanCastToClassOrInterface(otherType, protect);
-            }            
+            }
         }
 
         private static bool CanCastGenericParameterTo(this GenericParameterDesc thisType, TypeDesc otherType, StackOverflowProtect protect)
@@ -360,7 +360,7 @@ namespace Internal.TypeSystem
         {
             if (!otherType.HasVariance)
             {
-                return thisType.CanCastToNonVariantInterface(otherType,protect);
+                return thisType.CanCastToNonVariantInterface(otherType, protect);
             }
             else
             {
@@ -426,7 +426,7 @@ namespace Internal.TypeSystem
             {
                 TypeDesc arg = instantiationThis[i];
                 TypeDesc targetArg = instantiationTarget[i];
-                
+
                 if (arg != targetArg)
                 {
                     GenericParameterDesc openArgType = (GenericParameterDesc)instantiationOpen[i];

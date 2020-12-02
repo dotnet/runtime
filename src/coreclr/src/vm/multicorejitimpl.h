@@ -35,6 +35,7 @@ const int      MULTICOREJITLIFE  = 60 * 1000;       // 60 seconds
 
 const int      MULTICOREJITBLOCKLIMIT = 10 * 1000;  // 10 seconds
 
+const unsigned MAX_GENERIC_ARRAY  = 16384;          // Maximum number of generics
                                                     //  8-bit module index
 
                                                     // Method JIT information: 8-bit module 4-bit flag 20-bit method index
@@ -50,13 +51,16 @@ const unsigned MODULE_MASK       = 0xFF;            //  8-bit dependent module i
 
 const int      MAX_WALKBACK      = 128;
 
+const unsigned SIGNATURELENGTH_MASK  = 0x0FFFFFF;        // 24-bit signature length
+
 enum
 {
     MULTICOREJIT_PROFILE_VERSION   = 101,
 
-    MULTICOREJIT_HEADER_RECORD_ID  = 1,
-    MULTICOREJIT_MODULE_RECORD_ID  = 2,
-    MULTICOREJIT_JITINF_RECORD_ID  = 3
+    MULTICOREJIT_HEADER_RECORD_ID          = 1,
+    MULTICOREJIT_MODULE_RECORD_ID          = 2,
+    MULTICOREJIT_JITINF_RECORD_ID          = 3,
+    MULTICOREJIT_GENERICINF_RECORD_ID      = 4
 };
 
 
@@ -269,9 +273,9 @@ private:
 
     HRESULT HandleModuleRecord(const ModuleRecord * pModule);
     HRESULT HandleMethodRecord(unsigned * buffer, int count);
+    HRESULT HandleGenericMethodRecord(unsigned moduleIndex, BYTE * signature, unsigned length);
 
     bool CompileMethodDesc(Module * pModule, MethodDesc * pMD);
-
     HRESULT PlayProfile();
 
     bool GroupWaitForModuleLoad(int pos);
@@ -301,6 +305,8 @@ public:
     HRESULT ProcessProfile(const WCHAR * pFileName);
 
     HRESULT OnModule(Module * pModule);
+
+    Module * GetModuleFromIndex(DWORD ix) const;
 };
 
 
@@ -327,6 +333,19 @@ struct RecorderModuleInfo
     bool SetModule(Module * pModule);
 };
 
+struct RecorderGenericInfo
+{
+    unsigned        genericInfo;
+    BYTE *          genericSignature;
+
+    RecorderGenericInfo()
+    {
+        LIMITED_METHOD_CONTRACT;
+
+        genericInfo      = 0;
+        genericSignature = nullptr;
+    }
+};
 
 class MulticoreJitRecorder
 {
@@ -343,6 +362,9 @@ private:
     unsigned                  m_JitInfoArray[MAX_METHOD_ARRAY];
     LONG                      m_JitInfoCount;
 
+    MethodDesc*               m_GenericInfoArray[MAX_GENERIC_ARRAY];
+    LONG                      m_GenericInfoCount;
+
     bool                      m_fFirstMethod;
     bool                      m_fAborted;
     bool                      m_fAppxMode;
@@ -351,13 +373,13 @@ private:
     static TP_TIMER         * s_delayedWriteTimer;
 #endif // !TARGET_UNIX
 
-
     unsigned FindModule(Module * pModule);
-    unsigned GetModuleIndex(Module * pModule);
+    unsigned GetOrAddModuleIndex(Module * pModule);
 
     HRESULT WriteModuleRecord(IStream * pStream,  const RecorderModuleInfo & module);
 
     void RecordJitInfo(unsigned module, unsigned method);
+    void RecordGenericInfo(MethodDesc * pMethod);
 
     void AddAllModulesInAsm(DomainAssembly * pAssembly);
 
@@ -383,6 +405,7 @@ public:
         m_JitInfoCount      = 0;
         m_ModuleCount       = 0;
         m_ModuleDepCount    = 0;
+        m_GenericInfoCount  = 0;
 
         m_fFirstMethod      = true;
         m_fAborted          = false;
@@ -422,12 +445,13 @@ public:
         LIMITED_METHOD_CONTRACT;
 
         return (m_JitInfoCount >= (LONG) MAX_METHOD_ARRAY) ||
+               (m_GenericInfoCount >= (LONG) MAX_GENERIC_ARRAY) ||
                (m_ModuleCount  >= MAX_MODULES);
     }
 
     void RecordMethodJit(MethodDesc * pMethod, bool application);
 
-    PCODE RequestMethodCode(MethodDesc * pMethod, MulticoreJitManager * pManager);
+    MulticoreJitCodeInfo RequestMethodCode(MethodDesc * pMethod, MulticoreJitManager * pManager);
 
     HRESULT StartProfile(const WCHAR * pRoot, const WCHAR * pFileName, int suffix, LONG nSession);
 
@@ -438,6 +462,8 @@ public:
     void RecordModuleLoad(Module * pModule, FileLoadLevel loadLevel);
 
     void AddModuleDependency(Module * pModule, FileLoadLevel loadLevel);
+
+    DWORD EncodeModule(Module * pReferencedModule);
 };
 
 #ifdef MULTICOREJIT_LOGGING

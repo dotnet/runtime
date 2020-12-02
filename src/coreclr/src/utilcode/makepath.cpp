@@ -100,16 +100,12 @@ void MakePath (
                         _ASSERTE(count < maxCount);
                 }
 
-#ifdef _MBCS
-                if (*(p=_mbsdec(dir,p)) != _T('/') && *p != _T('\\')) {
-#else  /* _MBCS */
                 // suppress warning for the following line; this is safe but would require significant code
                 // delta for prefast to understand.
 #ifdef _PREFAST_
                 #pragma warning( suppress: 26001 )
 #endif
                 if (*(p-1) != _T('/') && *(p-1) != _T('\\')) {
-#endif  /* _MBCS */
                         *path++ = _T('\\');
                         count++;
 
@@ -155,11 +151,9 @@ void MakePath (
 }
 
 
-// Returns the directory for HMODULE. So, if HMODULE was for "C:\Dir1\Dir2\Filename.DLL",
-// then this would return "C:\Dir1\Dir2\" (note the trailing backslash).
-HRESULT GetHModuleDirectory(
-    __in                          HMODULE   hMod,
-    SString&                                 wszPath)
+// Returns the directory for clr module. So, if path was for "C:\Dir1\Dir2\Filename.DLL",
+// then this would return "C:\Dir1\Dir2\" (note the trailing backslash).HRESULT GetClrModuleDirectory(SString& wszPath)
+HRESULT GetClrModuleDirectory(SString& wszPath)
 {
     CONTRACTL
     {
@@ -169,16 +163,14 @@ HRESULT GetHModuleDirectory(
     }
     CONTRACTL_END;
 
-    DWORD dwRet = WszGetModuleFileName(hMod, wszPath);
+    DWORD dwRet = GetClrModulePathName(wszPath);
 
-     if (dwRet == 0)
+    if (dwRet == 0)
     {   // Some other error.
         return HRESULT_FROM_GetLastError();
     }
 
-     CopySystemDirectory(wszPath, wszPath);
-
-
+    CopySystemDirectory(wszPath, wszPath);
     return S_OK;
 }
 

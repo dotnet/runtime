@@ -65,7 +65,7 @@ MulticoreJitCodeStorage::~MulticoreJitCodeStorage()
 
 
 // Callback from MakeJitWorker to store compiled code, under MethodDesc lock
-void MulticoreJitCodeStorage::StoreMethodCode(MethodDesc * pMD, PCODE pCode)
+void MulticoreJitCodeStorage::StoreMethodCode(MethodDesc * pMD, MulticoreJitCodeInfo codeInfo)
 {
     STANDARD_VM_CONTRACT;
 
@@ -76,22 +76,27 @@ void MulticoreJitCodeStorage::StoreMethodCode(MethodDesc * pMD, PCODE pCode)
     }
 #endif
 
-    if (pCode != NULL)
+    if (!codeInfo.IsNull())
     {
         CrstHolder holder(& m_crstCodeMap);
 
 #ifdef MULTICOREJIT_LOGGING
         if (Logging2On(LF2_MULTICOREJIT, LL_INFO1000))
         {
-            MulticoreJitTrace(("%p %p StoredMethodCode", pMD, pCode));
+            MulticoreJitTrace((
+                "%p %p %d %d StoredMethodCode",
+                pMD,
+                codeInfo.GetEntryPoint(),
+                (int)codeInfo.WasTier0Jit(),
+                (int)codeInfo.JitSwitchedToOptimized()));
         }
 #endif
 
-        PCODE code = NULL;
+        MulticoreJitCodeInfo existingCodeInfo;
 
-        if (! m_nativeCodeMap.Lookup(pMD, & code))
+        if (! m_nativeCodeMap.Lookup(pMD, & existingCodeInfo))
         {
-            m_nativeCodeMap.Add(pMD, pCode);
+            m_nativeCodeMap.Add(pMD, codeInfo);
 
             m_nStored ++;
         }
@@ -100,33 +105,40 @@ void MulticoreJitCodeStorage::StoreMethodCode(MethodDesc * pMD, PCODE pCode)
 
 
 // Query from MakeJitWorker: Lookup stored JITted methods
-PCODE MulticoreJitCodeStorage::QueryMethodCode(MethodDesc * pMethod, BOOL shouldRemoveCode)
+MulticoreJitCodeInfo MulticoreJitCodeStorage::QueryAndRemoveMethodCode(MethodDesc * pMethod)
 {
     STANDARD_VM_CONTRACT;
 
-    PCODE code = NULL;
+    MulticoreJitCodeInfo codeInfo;
 
     if (m_nStored > m_nReturned) // Quick check before taking lock
     {
         CrstHolder holder(& m_crstCodeMap);
 
-        if (m_nativeCodeMap.Lookup(pMethod, & code) && shouldRemoveCode)
+        if (m_nativeCodeMap.Lookup(pMethod, & codeInfo))
         {
+            _ASSERTE(!codeInfo.IsNull());
+
             m_nReturned ++;
 
             // Remove it to keep storage small (hopefully flat)
             m_nativeCodeMap.Remove(pMethod);
+
+#ifdef MULTICOREJIT_LOGGING
+            if (Logging2On(LF2_MULTICOREJIT, LL_INFO1000))
+            {
+                MulticoreJitTrace((
+                    "%p %p %d %d QueryAndRemoveMethodCode",
+                    pMethod,
+                    codeInfo.GetEntryPoint(),
+                    (int)codeInfo.WasTier0Jit(),
+                    (int)codeInfo.JitSwitchedToOptimized()));
+            }
+#endif
         }
     }
 
-#ifdef MULTICOREJIT_LOGGING
-    if (Logging2On(LF2_MULTICOREJIT, LL_INFO1000))
-    {
-        MulticoreJitTrace(("%p %p QueryMethodCode", pMethod, code));
-    }
-#endif
-
-    return code;
+    return codeInfo;
 }
 
 
@@ -473,6 +485,20 @@ bool MulticoreJitManager::IsSupportedModule(Module * pModule, bool fMethodJit, b
 }
 
 
+
+// static
+Module * MulticoreJitManager::DecodeModuleFromIndex(void * pModuleContext, DWORD ix)
+{
+    STANDARD_VM_CONTRACT
+
+    if (pModuleContext == NULL)
+        return NULL;
+
+    MulticoreJitProfilePlayer * pPlayer = (MulticoreJitProfilePlayer *)pModuleContext;
+    return pPlayer->GetModuleFromIndex(ix);
+}
+
+
 // ModuleRecord handling: add to m_ModuleList
 
 HRESULT MulticoreJitProfilePlayer::HandleModuleRecord(const ModuleRecord * pMod)
@@ -495,23 +521,53 @@ HRESULT MulticoreJitProfilePlayer::HandleModuleRecord(const ModuleRecord * pMod)
     return hr;
 }
 
-
 #ifndef DACCESS_COMPILE
-class MulticoreJitPrepareCodeConfig : public PrepareCodeConfig
+MulticoreJitPrepareCodeConfig::MulticoreJitPrepareCodeConfig(MethodDesc* pMethod) :
+    PrepareCodeConfig(NativeCodeVersion(pMethod), FALSE, FALSE), m_wasTier0Jit(false)
 {
-public:
-    MulticoreJitPrepareCodeConfig(MethodDesc* pMethod) :
-        PrepareCodeConfig(NativeCodeVersion(pMethod), FALSE, FALSE)
-    {}
+    WRAPPER_NO_CONTRACT;
 
-    virtual BOOL SetNativeCode(PCODE pCode, PCODE * ppAlternateCodeToUse)
-    {
-        MulticoreJitManager & mcJitManager = GetAppDomain()->GetMulticoreJitManager();
-        mcJitManager.GetMulticoreJitCodeStorage().StoreMethodCode(GetMethodDesc(), pCode);
-        return TRUE;
-    }
-};
+#ifdef FEATURE_MULTICOREJIT
+    SetIsForMulticoreJit();
 #endif
+}
+
+BOOL MulticoreJitPrepareCodeConfig::SetNativeCode(PCODE pCode, PCODE * ppAlternateCodeToUse)
+{
+    WRAPPER_NO_CONTRACT;
+
+    MulticoreJitManager & mcJitManager = GetAppDomain()->GetMulticoreJitManager();
+    mcJitManager.GetMulticoreJitCodeStorage().StoreMethodCode(GetMethodDesc(), MulticoreJitCodeInfo(pCode, this));
+    return TRUE;
+}
+
+MulticoreJitCodeInfo::MulticoreJitCodeInfo(PCODE entryPoint, const MulticoreJitPrepareCodeConfig *pConfig)
+{
+    WRAPPER_NO_CONTRACT;
+
+    m_entryPointAndTierInfo = PCODEToPINSTR(entryPoint);
+    _ASSERTE(m_entryPointAndTierInfo != NULL);
+    _ASSERTE((m_entryPointAndTierInfo & (TADDR)TierInfo::Mask) == 0);
+
+#ifdef FEATURE_TIERED_COMPILATION
+    if (pConfig->WasTier0Jit())
+    {
+        m_entryPointAndTierInfo |= (TADDR)TierInfo::WasTier0Jit;
+    }
+
+    if (pConfig->JitSwitchedToOptimized())
+    {
+        m_entryPointAndTierInfo |= (TADDR)TierInfo::JitSwitchedToOptimized;
+    }
+#endif
+}
+#endif // !DACCESS_COMPILE
+
+void MulticoreJitCodeInfo::VerifyIsNotNull() const
+{
+    WRAPPER_NO_CONTRACT;
+    _ASSERTE(!IsNull());
+}
 
 // Call JIT to compile a method
 
@@ -568,37 +624,47 @@ void MulticoreJitProfilePlayer::JITMethod(Module * pModule, unsigned methodIndex
     // Similar to Module::FindMethod + Module::FindMethodThrowing,
     // except it calls GetMethodDescFromMemberDefOrRefOrSpec with strictMetadataChecks=FALSE to allow generic instantiation
     MethodDesc * pMethod = MemberLoader::GetMethodDescFromMemberDefOrRefOrSpec(pModule, token, NULL, FALSE, FALSE);
-
-    if ((pMethod != NULL) && ! pMethod->IsDynamicMethod() && pMethod->HasILHeader())
+    if (pMethod != NULL && !pMethod->IsDynamicMethod())
     {
-        // MethodDesc::FindOrCreateTypicalSharedInstantiation is expensive, avoid calling it unless the method or class has generic arguments
-        if (pMethod->HasClassOrMethodInstantiation())
+        if (pMethod->HasILHeader())
         {
-             pMethod = pMethod->FindOrCreateTypicalSharedInstantiation();
-
-            if (pMethod == NULL)
+            // MethodDesc::FindOrCreateTypicalSharedInstantiation is expensive, avoid calling it unless the method or class has generic arguments
+            if (pMethod->HasClassOrMethodInstantiation())
             {
-                goto BadMethod;
+                pMethod = pMethod->FindOrCreateTypicalSharedInstantiation();
+
+                if (pMethod == NULL)
+                {
+                    goto BadMethod;
+                }
+
+                pModule = pMethod->GetModule_NoLogging();
             }
 
-            pModule = pMethod->GetModule_NoLogging();
+            if (pMethod->GetNativeCode() != NULL) // last check before
+            {
+                m_stats.m_nHasNativeCode ++;
+
+                return;
+            }
+            else
+            {
+                m_busyWith = methodIndex;
+
+                bool rslt = CompileMethodDesc(pModule, pMethod);
+
+                m_busyWith = EmptyToken;
+
+                if (rslt)
+                {
+                    return;
+                }
+            }
         }
-
-        if (pMethod->GetNativeCode() != NULL) // last check before
+        else if (pMethod->IsNDirect())
         {
-            m_stats.m_nHasNativeCode ++;
-
-            return;
-        }
-        else
-        {
-            m_busyWith = methodIndex;
-
-            bool rslt = CompileMethodDesc(pModule, pMethod);
-
-            m_busyWith = EmptyToken;
-
-            if (rslt)
+            // NDirect Stub
+            if (GetStubForInteropMethod(pMethod))
             {
                 return;
             }
@@ -1032,9 +1098,7 @@ HRESULT MulticoreJitProfilePlayer::HandleMethodRecord(unsigned * buffer, int cou
 
                             PlayerModuleInfo & mod = m_pModules[inst >> 24];
 
-                            _ASSERTE(mod.IsModuleLoaded());
-
-                            if (mod.m_enableJit)
+                            if (mod.IsModuleLoaded() && mod.m_enableJit)
                             {
                                 JITMethod(mod.m_pModule, inst);
                             }
@@ -1078,6 +1142,59 @@ Abort:
     return hr;
 }
 
+HRESULT MulticoreJitProfilePlayer::HandleGenericMethodRecord(unsigned moduleIndex, BYTE * signature, unsigned length)
+{
+    STANDARD_VM_CONTRACT;
+
+    HRESULT hr = E_ABORT;
+
+    MulticoreJitTrace(("MethodRecord(%d) start a generic method, %d mod loaded", m_stats.m_nTotalMethod, m_nLoadedModuleCount));
+
+    if (moduleIndex >= m_moduleCount)
+    {
+        m_stats.m_nMissingModuleSkip += 1;
+    }
+    else
+    {
+        PlayerModuleInfo & mod = m_pModules[moduleIndex];
+        if (mod.IsModuleLoaded() && mod.m_enableJit)
+        {
+            m_stats.m_nTotalMethod ++;
+
+            Module * pModule = mod.m_pModule;
+
+            SigTypeContext typeContext;   // empty type context
+            ZapSig::Context zapSigContext(pModule, (void *)this, ZapSig::MulticoreJitTokens);
+            MethodDesc * pMethod = NULL;
+            EX_TRY
+            {
+                pMethod = ZapSig::DecodeMethod(pModule, (PCCOR_SIGNATURE)signature, &typeContext, &zapSigContext);
+            }
+            EX_CATCH
+            {
+            }
+            EX_END_CATCH(SwallowAllExceptions);
+
+            if (pMethod && !pMethod->IsDynamicMethod() && pMethod->HasILHeader() && pMethod->GetNativeCode() == NULL)
+            {
+                CompileMethodDesc(pModule, pMethod);
+            }
+            else
+            {
+                m_stats.m_nFilteredMethods ++;
+            }
+        }
+
+        hr = S_OK;
+    }
+
+    MulticoreJitTrace(("MethodRecord(%d) end a generic method compiled, hr=%x",
+        m_stats.m_nTotalMethod,
+        hr));
+
+    TraceSummary();
+    return hr;
+}
 
 void MulticoreJitProfilePlayer::TraceSummary()
 {
@@ -1264,6 +1381,13 @@ HRESULT MulticoreJitProfilePlayer::PlayProfile()
 
                 hr = HandleMethodRecord((unsigned *) (pBuffer + sizeof(unsigned)), mCount);
             }
+            else if (rcdTyp == MULTICOREJIT_GENERICINF_RECORD_ID)
+            {
+                unsigned info = *(unsigned *)(pBuffer + sizeof(unsigned));
+                unsigned moduleIndex = info >> 24;
+                unsigned signatureLength = info & SIGNATURELENGTH_MASK;
+                hr = HandleGenericMethodRecord(moduleIndex, (BYTE *) (pBuffer + sizeof(unsigned) * 2), signatureLength);
+            }
             else
             {
                 hr = COR_E_BADIMAGEFORMAT;
@@ -1413,4 +1537,20 @@ HRESULT MulticoreJitProfilePlayer::ProcessProfile(const WCHAR * pFileName)
     return hr;
 }
 
+Module * MulticoreJitProfilePlayer::GetModuleFromIndex(DWORD ix) const
+{
+    STANDARD_VM_CONTRACT;
+
+    if (ix >= m_moduleCount)
+    {
+        return NULL;
+    }
+
+    PlayerModuleInfo & mod = m_pModules[ix];
+    if (mod.IsModuleLoaded() && mod.m_enableJit)
+    {
+        return mod.m_pModule;
+    }
+    return NULL;
+}
 

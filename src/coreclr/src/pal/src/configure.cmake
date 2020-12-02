@@ -44,7 +44,6 @@ check_include_files(runetype.h HAVE_RUNETYPE_H)
 check_include_files(semaphore.h HAVE_SEMAPHORE_H)
 check_include_files(sys/prctl.h HAVE_PRCTL_H)
 check_include_files(numa.h HAVE_NUMA_H)
-check_include_files(pthread_np.h HAVE_PTHREAD_NP_H)
 check_include_files("sys/auxv.h;asm/hwcap.h" HAVE_AUXV_HWCAP_H)
 check_include_files("sys/ptrace.h" HAVE_SYS_PTRACE_H)
 check_symbol_exists(getauxval sys/auxv.h HAVE_GETAUXVAL)
@@ -446,16 +445,14 @@ set(CMAKE_REQUIRED_LIBRARIES)
 
 check_cxx_source_runs("
 #include <stdlib.h>
-#include <mach/mach_time.h>
+#include <time.h>
 
 int main()
 {
   int ret;
-  mach_timebase_info_data_t timebaseInfo;
-  ret = mach_timebase_info(&timebaseInfo);
-  mach_absolute_time();
-  exit(ret);
-}" HAVE_MACH_ABSOLUTE_TIME)
+  ret = clock_gettime_nsec_np(CLOCK_UPTIME_RAW);
+  exit((ret == 0) ? 1 : 0);
+}" HAVE_CLOCK_GETTIME_NSEC_NP)
 
 set(CMAKE_REQUIRED_LIBRARIES ${CMAKE_RT_LIBS})
 check_cxx_source_runs("
@@ -1049,8 +1046,6 @@ if(NOT CLR_CMAKE_USE_SYSTEM_LIBUNWIND)
   list(INSERT CMAKE_REQUIRED_INCLUDES 0 ${CMAKE_CURRENT_SOURCE_DIR}/libunwind/include ${CMAKE_CURRENT_BINARY_DIR}/libunwind/include)
 endif()
 
-set(CMAKE_REQUIRED_FLAGS "-c -Werror=implicit-function-declaration")
-
 check_c_source_compiles("
 #include <libunwind.h>
 #include <ucontext.h>
@@ -1062,29 +1057,9 @@ int main(int argc, char **argv)
         return 0;
 }" UNWIND_CONTEXT_IS_UCONTEXT_T)
 
-check_c_source_compiles("
-#include <libunwind.h>
+check_symbol_exists(unw_get_save_loc libunwind.h HAVE_UNW_GET_SAVE_LOC)
+check_symbol_exists(unw_get_accessors libunwind.h HAVE_UNW_GET_ACCESSORS)
 
-int main(int argc, char **argv) {
-  unw_cursor_t cursor;
-  unw_save_loc_t saveLoc;
-  int reg = UNW_REG_IP;
-  unw_get_save_loc(&cursor, reg, &saveLoc);
-
-  return 0;
-}" HAVE_UNW_GET_SAVE_LOC)
-
-check_c_source_compiles("
-#include <libunwind.h>
-
-int main(int argc, char **argv) {
-  unw_addr_space_t as;
-  unw_get_accessors(as);
-
-  return 0;
-}" HAVE_UNW_GET_ACCESSORS)
-
-set(CMAKE_REQUIRED_FLAGS)
 if(NOT CLR_CMAKE_USE_SYSTEM_LIBUNWIND)
   list(REMOVE_AT CMAKE_REQUIRED_INCLUDES 0 1)
 endif()

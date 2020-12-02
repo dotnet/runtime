@@ -2,16 +2,16 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 /*============================================================
-** 
+**
 ** Source Code: main.c and semaphore.c
 **     main.c creates process and waits for all processes to get over
 **     semaphore.c creates a semaphore and then calls threads which will contend for the semaphore
-** 
+**
 ** This test is for Object Management Test case for semaphore where Object type is shareable.
 ** Algorithm
 ** o	Main Process Creates OBJECT_TYPE Object
-** o	Create PROCESS_COUNT processes aware of the Shared Object 
-** 
+** o	Create PROCESS_COUNT processes aware of the Shared Object
+**
 **
 **
 **============================================================
@@ -44,21 +44,21 @@ struct TestStats{
 
 int GetParameters( int argc, char **argv)
 {
-    if( (!((argc == 5) || (argc == 6) ) )|| ((argc == 1) && !strcmp(argv[1],"/?")) 
+    if( (!((argc == 5) || (argc == 6) ) )|| ((argc == 1) && !strcmp(argv[1],"/?"))
        || !strcmp(argv[1],"/h") || !strcmp(argv[1],"/H"))
     {
         printf("PAL -Composite Object Management event Test\n");
         printf("Usage:\n");
-        printf("main\n\t[PROCESS_COUNT (greater than 1)] \n"); 
-        printf("\t[THREAD_COUNT (greater than 1)] \n"); 
+        printf("main\n\t[PROCESS_COUNT (greater than 1)] \n");
+        printf("\t[THREAD_COUNT (greater than 1)] \n");
         printf("\t[REPEAT_COUNT (greater than 1)]\n");
-        printf("\t[RELATION_ID  [greater than or equal to 1]\n");        
+        printf("\t[RELATION_ID  [greater than or equal to 1]\n");
 	 printf("\t[Object Name Suffix]\n");
         return -1;
     }
 
     PROCESS_COUNT = atoi(argv[1]);
-    if( (PROCESS_COUNT < 1) || (PROCESS_COUNT > MAXIMUM_WAIT_OBJECTS) ) 
+    if( (PROCESS_COUNT < 1) || (PROCESS_COUNT > MAXIMUM_WAIT_OBJECTS) )
     {
         printf("\nMain Process:Invalid PROCESS_COUNT number, Pass greater than 1 and less than PROCESS_COUNT %d\n", MAXIMUM_WAIT_OBJECTS);
         return -1;
@@ -72,20 +72,20 @@ int GetParameters( int argc, char **argv)
     }
 
     REPEAT_COUNT = atoi(argv[3]);
-    if( REPEAT_COUNT < 1) 
+    if( REPEAT_COUNT < 1)
     {
         printf("\nMain Process:Invalid REPEAT_COUNT number, Pass greater than 1\n");
         return -1;
     }
 
     RELATION_ID = atoi(argv[4]);
-    if( RELATION_ID < 1) 
+    if( RELATION_ID < 1)
     {
         printf("\nMain Process:Invalid RELATION_ID number, Pass greater than 1\n");
         return -1;
     }
 
-	
+
     if(argc == 6)
     {
         strncpy(objectSuffix, argv[5], MAX_PATH-1);
@@ -94,7 +94,7 @@ int GetParameters( int argc, char **argv)
     return 0;
 }
 
- int __cdecl main(INT argc, CHAR **argv)
+PALTEST(composite_object_management_semaphore_shared_paltest_semaphore_shared, "composite/object_management/semaphore/shared/paltest_semaphore_shared")
 {
     unsigned int i = 0;
     HANDLE hProcess[MAXIMUM_WAIT_OBJECTS];
@@ -121,11 +121,11 @@ int GetParameters( int argc, char **argv)
     }
 
 /*
-"While the new PAL does support named semaphore it's unclear 
-if we should change the Windows PAL, since we share that w/ Rotor 
-and they are still using the old PAL. For the time being it may 
-make the most sense to just skip the named semaphore test on Windows 
-- from an object management perspective it doesn't really gain 
+"While the new PAL does support named semaphore it's unclear
+if we should change the Windows PAL, since we share that w/ Rotor
+and they are still using the old PAL. For the time being it may
+make the most sense to just skip the named semaphore test on Windows
+- from an object management perspective it doesn't really gain
 us anything over what we already have."
 */
     ZeroMemory( objectSuffix, MAX_PATH );
@@ -134,13 +134,13 @@ us anything over what we already have."
     {
         Fail("Error in obtaining the parameters\n");
     }
-    
+
     if(argc == 6)
     {
         strncat(ObjName, objectSuffix, MAX_PATH - (sizeof(ObjName) + 1) );
     }
 
-     /* Register the start time */  
+     /* Register the start time */
     dwStartTime = GetTickCount();
     testStats.relationId   = RELATION_ID;
     testStats.processCount = PROCESS_COUNT;
@@ -151,7 +151,7 @@ us anything over what we already have."
     _snprintf(fileName, MAX_PATH, "main_semaphore_%d_.txt", RELATION_ID);
     pFile = fopen(fileName, "w+");
     if(pFile == NULL)
-    { 
+    {
         Fail("Error in opening main file for write\n");
     }
 
@@ -159,14 +159,16 @@ us anything over what we already have."
                                 NULL, /* lpSemaphoreAttributes */
                                 lInitialCount, /*lInitialCount*/
                                 lMaximumCount, /*lMaximumCount */
-                                ObjName  
+                                ObjName,
+                                0,
+                                0
                                );
-            
+
     if( hSemaphoreHandle == NULL)
     {
         Fail("Unable to create shared Semaphore handle @ Main returned error [%d]\n", GetLastError());
     }
-    
+
     for( i = 0; i < PROCESS_COUNT; i++ )
     {
 
@@ -177,7 +179,7 @@ us anything over what we already have."
             Fail("Error: Insufficient semaphore name string length for %s for iteration [%d]\n", ObjName, i);
         }
 
-       
+
         /* Zero the data structure space */
         ZeroMemory ( &pi[i], sizeof(pi[i]) );
         ZeroMemory ( &si[i], sizeof(si[i]) );
@@ -208,7 +210,7 @@ us anything over what we already have."
 
     }
 
-    returnCode = WaitForMultipleObjects( PROCESS_COUNT, hProcess, TRUE, INFINITE);  
+    returnCode = WaitForMultipleObjects( PROCESS_COUNT, hProcess, TRUE, INFINITE);
     if( WAIT_OBJECT_0 != returnCode )
     {
         Trace("Wait for Object(s) @ Main thread for %d processes returned %d, and GetLastError value is %d\n", PROCESS_COUNT, returnCode, GetLastError());
@@ -220,15 +222,15 @@ us anything over what we already have."
         /* check the exit code from the process */
         if( ! GetExitCodeProcess( pi[i].hProcess, &processReturnCode ) )
         {
-            Trace( "GetExitCodeProcess call failed for iteration %d with error code %u\n", 
-                i, GetLastError() ); 
-           
+            Trace( "GetExitCodeProcess call failed for iteration %d with error code %u\n",
+                i, GetLastError() );
+
             testReturnCode = FAIL;
         }
 
         if(processReturnCode == FAIL)
         {
-            Trace( "Process [%d] failed and returned FAIL\n", i); 
+            Trace( "Process [%d] failed and returned FAIL\n", i);
             testReturnCode = FAIL;
         }
 
@@ -245,7 +247,7 @@ us anything over what we already have."
         }
     }
 
-    testStats.operationTime = GetTimeDiff(dwStartTime); 
+    testStats.operationTime = GetTimeDiff(dwStartTime);
     fprintf(pFile, "%d,%d,%d,%d,%d,%s\n", testStats.operationTime, testStats.relationId, testStats.processCount, testStats.threadCount, testStats.repeatCount, testStats.buildNumber);
     if(fclose(pFile))
     {
@@ -257,8 +259,8 @@ us anything over what we already have."
     {
         Trace("Error:%d: CloseHandle failed for hSemaphoreHandle\n", GetLastError());
         testReturnCode = FAIL;
-        
-    } 
+
+    }
 
     if( testReturnCode == PASS)
     {

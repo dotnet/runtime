@@ -18,13 +18,13 @@ namespace System.Xml.Serialization
     public abstract class SchemaImporter
     {
         private XmlSchemas _schemas;
-        private StructMapping _root;
+        private StructMapping? _root;
         private readonly CodeGenerationOptions _options;
-        private TypeScope _scope;
+        private TypeScope? _scope;
         private ImportContext _context;
         private bool _rootImported;
-        private NameTable _typesInUse;
-        private NameTable _groupsInUse;
+        private NameTable? _typesInUse;
+        private NameTable? _groupsInUse;
 
         internal SchemaImporter(XmlSchemas schemas, CodeGenerationOptions options, ImportContext context)
         {
@@ -114,7 +114,7 @@ namespace System.Xml.Serialization
             get { return _options; }
         }
 
-        internal void MakeDerived(StructMapping structMapping, Type baseType, bool baseTypeCanBeIndirect)
+        internal void MakeDerived(StructMapping structMapping, Type? baseType, bool baseTypeCanBeIndirect)
         {
             structMapping.ReferencedByTopLevelElement = true;
             TypeDesc baseTypeDesc;
@@ -123,7 +123,7 @@ namespace System.Xml.Serialization
                 baseTypeDesc = Scope.GetTypeDesc(baseType);
                 if (baseTypeDesc != null)
                 {
-                    TypeDesc typeDescToChange = structMapping.TypeDesc;
+                    TypeDesc typeDescToChange = structMapping.TypeDesc!;
                     if (baseTypeCanBeIndirect)
                     {
                         // if baseTypeCanBeIndirect is true, we apply the supplied baseType to the top of the
@@ -132,7 +132,7 @@ namespace System.Xml.Serialization
                             typeDescToChange = typeDescToChange.BaseTypeDesc;
                     }
                     if (typeDescToChange.BaseTypeDesc != null && typeDescToChange.BaseTypeDesc != baseTypeDesc)
-                        throw new InvalidOperationException(SR.Format(SR.XmlInvalidBaseType, structMapping.TypeDesc.FullName, baseType.FullName, typeDescToChange.BaseTypeDesc.FullName));
+                        throw new InvalidOperationException(SR.Format(SR.XmlInvalidBaseType, structMapping.TypeDesc!.FullName, baseType.FullName, typeDescToChange.BaseTypeDesc.FullName));
                     typeDescToChange.BaseTypeDesc = baseTypeDesc;
                 }
             }

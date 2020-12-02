@@ -15,7 +15,7 @@
 
 #include <palsuite.h>
 
-INT __cdecl main( int argc, char **argv ) 
+PALTEST(threading_TerminateProcess_test1_paltest_terminateprocess_test1, "threading/TerminateProcess/test1/paltest_terminateprocess_test1")
 {
 
     HANDLE hProcess; 

@@ -20,6 +20,43 @@ namespace System.Net.Mail.Tests
             Assert.Equal(string.Format("\"{0}\" <{1}>", DisplayNameWithUnicode, Address), _mailAddress.ToString());
         }
 
+        [Theory]
+        [InlineData(Address, "test\"Display\"Name")]
+        [InlineData(Address, "Hello \"world hello\" world")]
+        [InlineData(Address, "Hello \"world")]
+        [InlineData(Address, "Hello \"\"world")]
+        [InlineData(Address, "\"")]
+        [InlineData(Address, "Hello \\\"world hello\\\" world")]
+        public void MailAddress_WithDoubleQuotesDisplayAndMailAddress_ToStringShouldReturnEscapedDisplayNameAndAddressInAngleBrackets(string address, string displayName)
+        {
+            MailAddress mailAddress = new MailAddress(address, displayName);
+            Assert.Equal(displayName, mailAddress.DisplayName);
+            Assert.Equal(string.Format("\"{0}\" <{1}>", displayName.Replace("\"", "\\\""), address), mailAddress.ToString());
+        }
+
+        [Theory]
+        [InlineData(Address, "\"John Doe\"")]
+        [InlineData(Address, "\"\"")]
+        [InlineData(Address, "\"\"\"")]
+        [InlineData(Address, "\"John \"Johnny\" Doe\"")]
+        public void MailAddress_WithOuterDoubleQuotesDisplayAndMailAddress_ToStringShouldReturnEscapedDisplayNameAndAddressInAngleBrackets(string address, string displayName)
+        {
+            MailAddress mailAddress = new MailAddress(address, displayName);
+            displayName = displayName.Substring(1, displayName.Length - 2);
+
+            Assert.Equal(displayName, mailAddress.DisplayName);
+
+            if (string.IsNullOrEmpty(displayName))
+            {
+                Assert.Equal($"{address}", mailAddress.ToString());
+            }
+            else
+            {
+                Assert.Equal($"\"{displayName.Replace("\"", "\\\"")}\" <{address}>", mailAddress.ToString());
+            }
+        }
+
+
         [Fact]
         public void MailAddress_WithNoDisplayName_AndOnlyAddress_ToStringShouldOutputAddressOnlyWithNoAngleBrackets()
         {

@@ -139,7 +139,7 @@ public:
         }
 
         while (eventPipeProviderCallbackDataQueue.TryDequeue(&eventPipeProviderCallbackData))
-            InvokeCallback(eventPipeProviderCallbackData);
+            InvokeCallback(&eventPipeProviderCallbackData);
     }
 
     // Returns the a number 0...N representing the processor number this thread is currently
@@ -158,7 +158,7 @@ public:
     }
 
 private:
-    static void InvokeCallback(EventPipeProviderCallbackData eventPipeProviderCallbackData);
+    static void InvokeCallback(EventPipeProviderCallbackData *pEventPipeProviderCallbackData);
 
     // Get the event used to write metadata to the event stream.
     static EventPipeEventInstance *BuildEventMetadataEvent(EventPipeEventInstance &instance, unsigned int metadataId);

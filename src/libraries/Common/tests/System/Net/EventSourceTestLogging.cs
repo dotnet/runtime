@@ -5,7 +5,7 @@ using System.Diagnostics.Tracing;
 
 namespace System.Net.Test.Common
 {
-    [EventSource(Name = "Microsoft-System-Net-TestLogging")]
+    [EventSource(Name = "System.Net.TestLogging")]
     internal class EventSourceTestLogging : EventSource
     {
         private static EventSourceTestLogging s_log = new EventSourceTestLogging();

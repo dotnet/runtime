@@ -15,12 +15,12 @@
 #include <palsuite.h>
 
 /* Execution flags */
-BOOL bTry           = FALSE;
-BOOL bExcept        = FALSE;
-BOOL bTry_nested    = FALSE;
-BOOL bExcept_nested = FALSE;
+BOOL bTry_palexcept_test4           = FALSE;
+BOOL bExcept_palexcept_test4        = FALSE;
+BOOL bTry_nested_palexcept_test4    = FALSE;
+BOOL bExcept_nested_palexcept_test4 = FALSE;
 
-int __cdecl main(int argc, char *argv[])
+PALTEST(exception_handling_pal_except_test4_paltest_pal_except_test4, "exception_handling/pal_except/test4/paltest_pal_except_test4")
 {
     if (0 != PAL_Initialize(argc, argv))
     {
@@ -31,14 +31,14 @@ int __cdecl main(int argc, char *argv[])
     {
         int* p = 0x00000000;   /* NULL pointer */
 
-        bTry = TRUE;    /* indicate we hit the PAL_TRY block */
+        bTry_palexcept_test4 = TRUE;    /* indicate we hit the PAL_TRY block */
         *p = 13;        /* causes an access violation exception */
 
         Fail("ERROR: code was executed after the access violation.\n");
     }
     PAL_EXCEPT(EXCEPTION_EXECUTE_HANDLER)
     {
-        if (!bTry)
+        if (!bTry_palexcept_test4)
         {
             Fail("ERROR: PAL_EXCEPT was hit without PAL_TRY being hit.\n");
         }
@@ -47,7 +47,7 @@ int __cdecl main(int argc, char *argv[])
         {
             int *lp = 0x00000000;
 
-            bTry_nested = TRUE;
+            bTry_nested_palexcept_test4 = TRUE;
             *lp = 13; /* causes an access violation exception */
 
             Fail("ERROR: code was executed after the "
@@ -55,44 +55,44 @@ int __cdecl main(int argc, char *argv[])
         }
         PAL_EXCEPT(EXCEPTION_EXECUTE_HANDLER)
         {
-            if (!bTry_nested)
+            if (!bTry_nested_palexcept_test4)
             {
                 Fail("ERROR: PAL_EXCEPT was hit without PAL_TRY being hit "
                      "in the nested block.\n");
             }
-            bExcept_nested = TRUE;
+            bExcept_nested_palexcept_test4 = TRUE;
         }
         PAL_ENDTRY;
 
-        bExcept = TRUE; /* indicate we hit the PAL_EXCEPT block */
+        bExcept_palexcept_test4 = TRUE; /* indicate we hit the PAL_EXCEPT block */
     }
     PAL_ENDTRY;
 
-    if (!bTry)
+    if (!bTry_palexcept_test4)
     {
         Trace("ERROR: the code in the PAL_TRY block was not executed.\n");
     }
 
-    if (!bExcept)
+    if (!bExcept_palexcept_test4)
     {
         Trace("ERROR: the code in the PAL_EXCEPT block was not executed.\n");
     }
 
-    if (!bTry_nested)
+    if (!bTry_nested_palexcept_test4)
     {
         Trace("ERROR: the code in the nested "
               "PAL_TRY block was not executed.\n");
     }
 
-    if (!bExcept_nested)
+    if (!bExcept_nested_palexcept_test4)
     {
         Trace("ERROR: the code in the nested "
               "PAL_EXCEPT block was not executed.\n");
     }
 
     /* did we hit all the code blocks? */
-    if(!bTry || !bExcept ||
-       !bTry_nested || !bExcept_nested)
+    if(!bTry_palexcept_test4 || !bExcept_palexcept_test4 ||
+       !bTry_nested_palexcept_test4 || !bExcept_nested_palexcept_test4)
     {
         Fail("");
     }

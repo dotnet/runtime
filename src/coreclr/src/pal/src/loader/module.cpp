@@ -67,13 +67,6 @@ using namespace CorUnix;
 /* get the full name of a module if available, and the short name otherwise*/
 #define MODNAME(x) ((x)->lib_name)
 
-/* Which path should FindLibrary search? */
-#if defined(__APPLE__)
-#define LIBSEARCHPATH "DYLD_LIBRARY_PATH"
-#else
-#define LIBSEARCHPATH "LD_LIBRARY_PATH"
-#endif
-
 #define LIBC_NAME_WITHOUT_EXTENSION "libc"
 
 /* static variables ***********************************************************/
@@ -662,6 +655,22 @@ PAL_FreeLibraryDirect(
     return retValue;
 }
 
+/*++
+Function:
+  PAL_GetPalHostModule
+
+  Returns the module that hosts the PAL.
+  That is typically:
+      - coreclr.dll when coreclr is dynamically linked
+      - containing executable in the statically linked case
+--*/
+HMODULE
+PALAPI
+PAL_GetPalHostModule()
+{
+    return (HMODULE)LOADGetPalLibrary();
+}
+
 /*
 Function:
   PAL_GetProcAddressDirect
@@ -676,7 +685,6 @@ PAL_GetProcAddressDirect(
         IN NATIVE_LIBRARY_HANDLE dl_handle,
         IN LPCSTR lpProcName)
 {
-    INT name_length;
     FARPROC address = nullptr;
 
     PERF_ENTRY(PAL_GetProcAddressDirect);

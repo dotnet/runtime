@@ -25,7 +25,7 @@ namespace System.Net.Primitives.Functional.Tests
             const string Message = "Hello";
             Exception inner = new Exception();
 
-            NetworkException e = new NetworkException(Message, NetworkError.Unknown, inner);
+            NetworkException e = new NetworkException(Message, NetworkError.Other, inner);
 
             Assert.Equal(inner, e.InnerException);
             Assert.Equal(Message, e.Message);

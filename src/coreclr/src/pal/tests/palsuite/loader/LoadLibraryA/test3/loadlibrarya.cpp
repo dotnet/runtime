@@ -12,7 +12,7 @@
 **============================================================*/
 #include <palsuite.h>
 
-int __cdecl main(int argc, char *argv[])
+PALTEST(loader_LoadLibraryA_test3_paltest_loadlibrarya_test3, "loader/LoadLibraryA/test3/paltest_loadlibrarya_test3")
 {
     HMODULE ModuleHandle;
     int err;

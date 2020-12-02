@@ -105,12 +105,17 @@ extern "C" void __stdcall __cpuidex(int cpuInfo[4], int function_id, int subFunc
 extern "C" DWORD __stdcall xmmYmmStateSupport();
 #endif
 
+const int CPUID_EAX = 0;
+const int CPUID_EBX = 1;
+const int CPUID_ECX = 2;
+const int CPUID_EDX = 3;
+
 inline bool TargetHasAVXSupport()
 {
 #if (defined(TARGET_X86) || defined(TARGET_AMD64)) && !defined(CROSSGEN_COMPILE)
     int cpuInfo[4];
     __cpuid(cpuInfo, 0x00000001);           // All x86/AMD64 targets support cpuid.
-    return ((cpuInfo[3] & (1 << 28)) != 0); // The AVX feature is ECX bit 28.
+    return ((cpuInfo[CPUID_ECX] & (1 << 28)) != 0); // The AVX feature is ECX bit 28.
 #endif // (defined(TARGET_X86) || defined(TARGET_AMD64)) && !defined(CROSSGEN_COMPILE)
     return false;
 }

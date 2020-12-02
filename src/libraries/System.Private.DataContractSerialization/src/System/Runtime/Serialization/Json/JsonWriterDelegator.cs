@@ -8,14 +8,14 @@ namespace System.Runtime.Serialization.Json
 {
     internal class JsonWriterDelegator : XmlWriterDelegator
     {
-        private readonly DateTimeFormat _dateTimeFormat;
+        private readonly DateTimeFormat? _dateTimeFormat;
 
         public JsonWriterDelegator(XmlWriter writer)
             : base(writer)
         {
         }
 
-        public JsonWriterDelegator(XmlWriter writer, DateTimeFormat dateTimeFormat)
+        public JsonWriterDelegator(XmlWriter writer, DateTimeFormat? dateTimeFormat)
             : this(writer)
         {
             _dateTimeFormat = dateTimeFormat;
@@ -26,7 +26,7 @@ namespace System.Runtime.Serialization.Json
             WriteString(XmlConvert.ToString(value));
         }
 
-        internal override void WriteBase64(byte[] bytes)
+        internal override void WriteBase64(byte[]? bytes)
         {
             if (bytes == null)
             {
@@ -118,7 +118,7 @@ namespace System.Runtime.Serialization.Json
         }
 
 
-        internal void WriteJsonBooleanArray(bool[] value, XmlDictionaryString itemName, XmlDictionaryString itemNamespace)
+        internal void WriteJsonBooleanArray(bool[] value, XmlDictionaryString itemName, XmlDictionaryString? itemNamespace)
         {
             for (int i = 0; i < value.Length; i++)
             {
@@ -126,7 +126,7 @@ namespace System.Runtime.Serialization.Json
             }
         }
 
-        internal void WriteJsonDateTimeArray(DateTime[] value, XmlDictionaryString itemName, XmlDictionaryString itemNamespace)
+        internal void WriteJsonDateTimeArray(DateTime[] value, XmlDictionaryString itemName, XmlDictionaryString? itemNamespace)
         {
             for (int i = 0; i < value.Length; i++)
             {
@@ -134,7 +134,7 @@ namespace System.Runtime.Serialization.Json
             }
         }
 
-        internal void WriteJsonDecimalArray(decimal[] value, XmlDictionaryString itemName, XmlDictionaryString itemNamespace)
+        internal void WriteJsonDecimalArray(decimal[] value, XmlDictionaryString itemName, XmlDictionaryString? itemNamespace)
         {
             for (int i = 0; i < value.Length; i++)
             {
@@ -142,7 +142,7 @@ namespace System.Runtime.Serialization.Json
             }
         }
 
-        internal void WriteJsonInt32Array(int[] value, XmlDictionaryString itemName, XmlDictionaryString itemNamespace)
+        internal void WriteJsonInt32Array(int[] value, XmlDictionaryString itemName, XmlDictionaryString? itemNamespace)
         {
             for (int i = 0; i < value.Length; i++)
             {
@@ -150,7 +150,7 @@ namespace System.Runtime.Serialization.Json
             }
         }
 
-        internal void WriteJsonInt64Array(long[] value, XmlDictionaryString itemName, XmlDictionaryString itemNamespace)
+        internal void WriteJsonInt64Array(long[] value, XmlDictionaryString itemName, XmlDictionaryString? itemNamespace)
         {
             for (int i = 0; i < value.Length; i++)
             {
@@ -217,7 +217,7 @@ namespace System.Runtime.Serialization.Json
             writer.WriteString(JsonGlobals.DateTimeEndGuardReader);
         }
 
-        internal void WriteJsonSingleArray(float[] value, XmlDictionaryString itemName, XmlDictionaryString itemNamespace)
+        internal void WriteJsonSingleArray(float[] value, XmlDictionaryString itemName, XmlDictionaryString? itemNamespace)
         {
             for (int i = 0; i < value.Length; i++)
             {
@@ -225,7 +225,7 @@ namespace System.Runtime.Serialization.Json
             }
         }
 
-        internal void WriteJsonDoubleArray(double[] value, XmlDictionaryString itemName, XmlDictionaryString itemNamespace)
+        internal void WriteJsonDoubleArray(double[] value, XmlDictionaryString itemName, XmlDictionaryString? itemNamespace)
         {
             for (int i = 0; i < value.Length; i++)
             {
@@ -233,7 +233,7 @@ namespace System.Runtime.Serialization.Json
             }
         }
 
-        internal override void WriteStartElement(string prefix, string localName, string ns)
+        internal override void WriteStartElement(string? prefix, string localName, string? ns)
         {
             if (localName != null && localName.Length == 0)
             {
@@ -242,7 +242,7 @@ namespace System.Runtime.Serialization.Json
             }
             else
             {
-                base.WriteStartElement(prefix, localName, ns);
+                base.WriteStartElement(prefix, localName!, ns);
             }
         }
     }

@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#nullable enable
 namespace System.Xml.Xsl.XsltOld
 {
     using System;
@@ -37,7 +36,6 @@ namespace System.Xml.Xsl.XsltOld
         internal override bool CompileAttribute(Compiler compiler)
         {
             string name = compiler.Input.LocalName;
-            string value = compiler.Input.Value;
             if (Ref.Equal(name, compiler.Atoms.UseAttributeSets))
             {
                 AddAction(compiler.CreateUseAttributeSetsAction());

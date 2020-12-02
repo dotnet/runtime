@@ -81,10 +81,10 @@ void GetMapViewOfFile(__in WCHAR *szFile, PBYTE *ppbMap, DWORD *pdwFileSize)
     }
     _ASSERTE(dwHighSize == 0);
 
-    hMapFile = CreateFileMappingA(hFile, NULL, PAGE_READONLY, 0, 0, NULL);
+    hMapFile = CreateFileMappingW(hFile, NULL, PAGE_READONLY, 0, 0, NULL);
     CloseHandle(hFile);
     if (!hMapFile)
-        MDInfo::Error("CreateFileMappingA failed!");
+        MDInfo::Error("CreateFileMappingW failed!");
 
     *ppbMap = (PBYTE) MapViewOfFile(hMapFile, FILE_MAP_READ, 0, 0, 0);
     CloseHandle(hMapFile);

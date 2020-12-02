@@ -54,7 +54,7 @@ static VOID CheckThreadPriority( HANDLE hThread, int expectedPriority )
  *
  * executable entry point
  */
-INT __cdecl main( INT argc, CHAR **argv )
+PALTEST(threading_ThreadPriority_test1_paltest_threadpriority_test1, "threading/ThreadPriority/test1/paltest_threadpriority_test1")
 {
 
     /* PAL initialization */

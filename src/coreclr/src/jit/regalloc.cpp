@@ -61,8 +61,11 @@ DWORD Compiler::getCanDoubleAlign()
 //    Otherwise, we compare the weighted ref count of ebp-enregistered variables against double the
 //    ref count for double-aligned values.
 //
-bool Compiler::shouldDoubleAlign(
-    unsigned refCntStk, unsigned refCntEBP, unsigned refCntWtdEBP, unsigned refCntStkParam, unsigned refCntWtdStkDbl)
+bool Compiler::shouldDoubleAlign(unsigned             refCntStk,
+                                 unsigned             refCntEBP,
+                                 BasicBlock::weight_t refCntWtdEBP,
+                                 unsigned             refCntStkParam,
+                                 BasicBlock::weight_t refCntWtdStkDbl)
 {
     bool           doDoubleAlign        = false;
     const unsigned DBL_ALIGN_SETUP_SIZE = 7;
@@ -78,10 +81,10 @@ bool Compiler::shouldDoubleAlign(
 
     JITDUMP("\nDouble alignment:\n");
     JITDUMP("  Bytes that could be saved by not using EBP frame: %i\n", bytesUsed);
-    JITDUMP("  Sum of weighted ref counts for EBP enregistered variables: %i\n", refCntWtdEBP);
-    JITDUMP("  Sum of weighted ref counts for weighted stack based doubles: %i\n", refCntWtdStkDbl);
+    JITDUMP("  Sum of weighted ref counts for EBP enregistered variables: %f\n", refCntWtdEBP);
+    JITDUMP("  Sum of weighted ref counts for weighted stack based doubles: %f\n", refCntWtdStkDbl);
 
-    if (bytesUsed > ((refCntWtdStkDbl * misaligned_weight) / BB_UNITY_WEIGHT))
+    if (((BasicBlock::weight_t)bytesUsed) > ((refCntWtdStkDbl * misaligned_weight) / BB_UNITY_WEIGHT))
     {
         JITDUMP("    Predicting not to double-align ESP to save %d bytes of code.\n", bytesUsed);
     }
@@ -165,7 +168,7 @@ regNumber Compiler::raUpdateRegStateForArg(RegState* regState, LclVarDsc* argDsc
         if (argDsc->lvIsHfaRegArg())
         {
             assert(regState->rsIsFloat);
-            unsigned cSlots = GetHfaCount(argDsc->lvVerTypeInfo.GetClassHandleForValueClass());
+            unsigned cSlots = GetHfaCount(argDsc->GetStructHnd());
             for (unsigned i = 1; i < cSlots; i++)
             {
                 assert(inArgReg + i <= LAST_FP_ARGREG);

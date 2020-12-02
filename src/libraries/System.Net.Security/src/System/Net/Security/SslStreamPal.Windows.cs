@@ -216,7 +216,7 @@ namespace System.Net.Security
                 credential.paCred = &certificateHandle;
             }
 
-            if (NetEventSource.IsEnabled) NetEventSource.Info($"flags=({flags}), ProtocolFlags=({protocolFlags}), EncryptionPolicy={policy}");
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info($"flags=({flags}), ProtocolFlags=({protocolFlags}), EncryptionPolicy={policy}");
 
             if (protocolFlags != 0)
             {
@@ -250,16 +250,7 @@ namespace System.Net.Security
         public static unsafe SecurityStatusPal EncryptMessage(SafeDeleteSslContext securityContext, ReadOnlyMemory<byte> input, int headerSize, int trailerSize, ref byte[] output, out int resultSize)
         {
             // Ensure that there is sufficient space for the message output.
-            int bufferSizeNeeded;
-            try
-            {
-                bufferSizeNeeded = checked(input.Length + headerSize + trailerSize);
-            }
-            catch
-            {
-                NetEventSource.Fail(securityContext, "Arguments out of range");
-                throw;
-            }
+            int bufferSizeNeeded = checked(input.Length + headerSize + trailerSize);
             if (output == null || output.Length < bufferSizeNeeded)
             {
                 output = new byte[bufferSizeNeeded];
@@ -396,7 +387,7 @@ namespace System.Net.Security
             return SecurityStatusAdapterPal.GetSecurityStatusPalFromInterop(errorCode, attachException: true);
         }
 
-        public static unsafe SafeFreeContextBufferChannelBinding? QueryContextChannelBinding(SafeDeleteContext securityContext, ChannelBindingKind attribute)
+        public static SafeFreeContextBufferChannelBinding? QueryContextChannelBinding(SafeDeleteContext securityContext, ChannelBindingKind attribute)
         {
             return SSPIWrapper.QueryContextChannelBinding(GlobalSSPI.SSPISecureChannel, securityContext, (Interop.SspiCli.ContextAttribute)attribute);
         }

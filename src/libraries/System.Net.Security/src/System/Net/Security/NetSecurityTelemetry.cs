@@ -133,7 +133,7 @@ namespace System.Net.Security
         }
 
         [Event(2, Level = EventLevel.Informational)]
-        private void HandshakeStop(string protocol)
+        private void HandshakeStop(SslProtocols protocol)
         {
             if (IsEnabled(EventLevel.Informational, EventKeywords.None))
             {
@@ -159,7 +159,7 @@ namespace System.Net.Security
                 HandshakeFailed(isServer, stopwatch.GetElapsedTime().TotalMilliseconds, exceptionMessage);
             }
 
-            HandshakeStop(protocol: string.Empty);
+            HandshakeStop(SslProtocols.None);
         }
 
         [NonEvent]
@@ -206,10 +206,7 @@ namespace System.Net.Security
             handshakeDurationCounter?.WriteMetric(duration);
             _handshakeDurationCounter!.WriteMetric(duration);
 
-            if (IsEnabled(EventLevel.Informational, EventKeywords.None))
-            {
-                HandshakeStop(protocol.ToString());
-            }
+            HandshakeStop(protocol);
         }
 
         [NonEvent]
@@ -268,6 +265,21 @@ namespace System.Net.Security
 
                     WriteEventCore(eventId, NumEventDatas, descrs);
                 }
+            }
+        }
+
+        [NonEvent]
+        private unsafe void WriteEvent(int eventId, SslProtocols arg1)
+        {
+            if (IsEnabled())
+            {
+                var data = new EventData
+                {
+                    DataPointer = (IntPtr)(&arg1),
+                    Size = sizeof(SslProtocols)
+                };
+
+                WriteEventCore(eventId, eventDataCount: 1, &data);
             }
         }
 

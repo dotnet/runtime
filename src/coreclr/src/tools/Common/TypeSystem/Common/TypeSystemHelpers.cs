@@ -211,7 +211,7 @@ namespace Internal.TypeSystem
             }
             else
             {
-                // The method will be null if calling a non-virtual instance 
+                // The method will be null if calling a non-virtual instance
                 // methods on System.Object, i.e. when these are used as a constraint.
                 method = null;
             }
@@ -223,7 +223,7 @@ namespace Internal.TypeSystem
             }
 
             //#TryResolveConstraintMethodApprox_DoNotReturnParentMethod
-            // Only return a method if the value type itself declares the method, 
+            // Only return a method if the value type itself declares the method,
             // otherwise we might get a method from Object or System.ValueType
             if (!method.OwningType.IsValueType)
             {
@@ -250,7 +250,7 @@ namespace Internal.TypeSystem
         public static string GetFullName(this DefType metadataType)
         {
             string ns = metadataType.Namespace;
-            return ns.Length > 0 ? String.Concat(ns, ".", metadataType.Name) : metadataType.Name;
+            return ns.Length > 0 ? string.Concat(ns, ".", metadataType.Name) : metadataType.Name;
         }
 
         /// <summary>
@@ -350,7 +350,7 @@ namespace Internal.TypeSystem
         }
 
         /// <summary>
-        /// Scan the type and its base types for an implementation of an interface method. Returns null if no 
+        /// Scan the type and its base types for an implementation of an interface method. Returns null if no
         /// implementation is found.
         /// </summary>
         public static MethodDesc ResolveInterfaceMethodTarget(this TypeDesc thisType, MethodDesc interfaceMethodToResolve)
@@ -369,7 +369,7 @@ namespace Internal.TypeSystem
             return result;
         }
 
-        public static bool ContainsSignatureVariables(this TypeDesc thisType)
+        public static bool ContainsSignatureVariables(this TypeDesc thisType, bool treatGenericParameterLikeSignatureVariable = false)
         {
             switch (thisType.Category)
             {
@@ -377,29 +377,34 @@ namespace Internal.TypeSystem
                 case TypeFlags.SzArray:
                 case TypeFlags.ByRef:
                 case TypeFlags.Pointer:
-                    return ((ParameterizedType)thisType).ParameterType.ContainsSignatureVariables();
+                    return ((ParameterizedType)thisType).ParameterType.ContainsSignatureVariables(treatGenericParameterLikeSignatureVariable);
 
                 case TypeFlags.FunctionPointer:
                     MethodSignature pointerSignature = ((FunctionPointerType)thisType).Signature;
 
                     for (int i = 0; i < pointerSignature.Length; i++)
-                        if (pointerSignature[i].ContainsSignatureVariables())
+                        if (pointerSignature[i].ContainsSignatureVariables(treatGenericParameterLikeSignatureVariable))
                             return true;
 
-                    return pointerSignature.ReturnType.ContainsSignatureVariables();
+                    return pointerSignature.ReturnType.ContainsSignatureVariables(treatGenericParameterLikeSignatureVariable);
 
                 case TypeFlags.SignatureMethodVariable:
                 case TypeFlags.SignatureTypeVariable:
                     return true;
 
                 case TypeFlags.GenericParameter:
+                    if (treatGenericParameterLikeSignatureVariable)
+                        return true;
+                    // It is generally a bug to have instantiations over generic parameters
+                    // in the system. Typical instantiations are represented as instantiations
+                    // over own formals - so these should be signature variables instead.
                     throw new ArgumentException();
 
                 default:
                     Debug.Assert(thisType is DefType);
                     foreach (TypeDesc arg in thisType.Instantiation)
                     {
-                        if (arg.ContainsSignatureVariables())
+                        if (arg.ContainsSignatureVariables(treatGenericParameterLikeSignatureVariable))
                             return true;
                     }
 
@@ -434,6 +439,41 @@ namespace Internal.TypeSystem
                 }
 #endif
                 return true;
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// Determines whether an object of type '<paramref name="type"/>' requires 8-byte alignment on
+        /// 32bit ARM or 32bit Wasm architectures.
+        /// </summary>
+        public static bool RequiresAlign8(this TypeDesc type)
+        {
+            if (type.Context.Target.Architecture != TargetArchitecture.ARM && type.Context.Target.Architecture != TargetArchitecture.Wasm32)
+            {
+                return false;
+            }
+
+            if (type.IsArray)
+            {
+                var elementType = ((ArrayType)type).ElementType;
+                if (elementType.IsValueType)
+                {
+                    var alignment = ((DefType)elementType).InstanceByteAlignment;
+                    if (!alignment.IsIndeterminate && alignment.AsInt > 4)
+                    {
+                        return true;
+                    }
+                }
+            }
+            else if (type.IsDefType)
+            {
+                var alignment = ((DefType)type).InstanceByteAlignment;
+                if (!alignment.IsIndeterminate && alignment.AsInt > 4)
+                {
+                    return true;
+                }
             }
 
             return false;

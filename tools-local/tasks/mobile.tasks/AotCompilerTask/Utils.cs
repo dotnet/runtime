@@ -64,7 +64,7 @@ internal class Utils
             throw new Exception("Error: " + errorBuilder);
         }
 
-        return outputBuilder.ToString().Trim('\r','\n');
+        return outputBuilder.ToString().Trim('\r', '\n');
     }
 
     public static TaskLoggingHelper? Logger { get; set; }

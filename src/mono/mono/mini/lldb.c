@@ -440,7 +440,7 @@ mono_lldb_save_method_info (MonoCompile *cfg)
 		g_hash_table_insert (dyn_codegen_regions, cfg->method, GINT_TO_POINTER (region_id));
 		lldb_unlock ();
 	} else {
-		mono_domain_code_foreach (cfg->domain, find_code_region, &udata);
+		mono_mem_manager_code_foreach (cfg->mem_manager, find_code_region, &udata);
 		g_assert (udata.found);
 
 		region_id = register_codegen_region (udata.region_start, udata.region_size, FALSE);
@@ -564,7 +564,7 @@ mono_lldb_save_trampoline_info (MonoTrampInfo *info)
 	udata.code = info->code;
 	mono_global_codeman_foreach (find_code_region, &udata);
 	if (!udata.found)
-		mono_domain_code_foreach (mono_get_root_domain (), find_code_region, &udata);
+		mono_mem_manager_code_foreach (mono_domain_ambient_memory_manager (mono_get_root_domain ()), find_code_region, &udata);
 	if (!udata.found)
 		/* Can happen with AOT */
 		return;
@@ -612,7 +612,7 @@ mono_lldb_save_specific_trampoline_info (gpointer arg1, MonoTrampolineType tramp
 	udata.code = code;
 	mono_global_codeman_foreach (find_code_region, &udata);
 	if (!udata.found)
-		mono_domain_code_foreach (mono_get_root_domain (), find_code_region, &udata);
+		mono_mem_manager_code_foreach (mono_domain_ambient_memory_manager (mono_get_root_domain ()), find_code_region, &udata);
 	g_assert (udata.found);
 
 	region_id = register_codegen_region (udata.region_start, udata.region_size, FALSE);

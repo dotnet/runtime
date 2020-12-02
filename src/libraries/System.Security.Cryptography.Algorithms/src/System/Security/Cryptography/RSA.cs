@@ -5,11 +5,13 @@ using System.Buffers;
 using System.Formats.Asn1;
 using System.IO;
 using System.Runtime.InteropServices;
+using System.Runtime.Versioning;
 using System.Security.Cryptography.Asn1;
 using Internal.Cryptography;
 
 namespace System.Security.Cryptography
 {
+    [UnsupportedOSPlatform("browser")]
     public abstract partial class RSA : AsymmetricAlgorithm
     {
         public static new RSA? Create(string algName)

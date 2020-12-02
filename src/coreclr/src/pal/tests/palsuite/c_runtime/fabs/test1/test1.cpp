@@ -44,11 +44,11 @@ struct test
 };
 
 /**
- * validate
+ * fabs_test1_validate
  *
  * test validation function
  */
-void __cdecl validate(double value, double expected, double variance)
+void __cdecl fabs_test1_validate(double value, double expected, double variance)
 {
     double result = fabs(value);
 
@@ -66,11 +66,11 @@ void __cdecl validate(double value, double expected, double variance)
 }
 
 /**
- * validate
+ * fabs_test1_validate
  *
  * test validation function for values returning NaN
  */
-void __cdecl validate_isnan(double value)
+void __cdecl fabs_test1_validate_isnan(double value)
 {
     double result = fabs(value);
 
@@ -86,7 +86,7 @@ void __cdecl validate_isnan(double value)
  * 
  * executable entry point
  */
-INT __cdecl main(INT argc, CHAR **argv)
+PALTEST(c_runtime_fabs_test1_paltest_fabs_test1, "c_runtime/fabs/test1/paltest_fabs_test1")
 {
     struct test tests[] = 
     {
@@ -118,11 +118,11 @@ INT __cdecl main(INT argc, CHAR **argv)
 
     for (int i = 0; i < (sizeof(tests) / sizeof(struct test)); i++)
     {
-        validate( tests[i].value, tests[i].expected, tests[i].variance);
-        validate(-tests[i].value, tests[i].expected, tests[i].variance);
+        fabs_test1_validate( tests[i].value, tests[i].expected, tests[i].variance);
+        fabs_test1_validate(-tests[i].value, tests[i].expected, tests[i].variance);
     }
     
-    validate_isnan(PAL_NAN);
+    fabs_test1_validate_isnan(PAL_NAN);
 
     PAL_Terminate();
     return PASS;

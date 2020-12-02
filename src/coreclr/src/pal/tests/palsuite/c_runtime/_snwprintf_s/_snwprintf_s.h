@@ -13,7 +13,7 @@
 #ifndef ___SNWPRINTF_H__
 #define ___SNWPRINTF_H__
 
-void DoWStrTest(const WCHAR *formatstr, WCHAR *param, const WCHAR *checkstr)
+inline void DoWStrTest_snwprintf_s(const WCHAR *formatstr, WCHAR *param, const WCHAR *checkstr)
 {
     WCHAR buf[256] = { 0 };
 
@@ -26,8 +26,9 @@ void DoWStrTest(const WCHAR *formatstr, WCHAR *param, const WCHAR *checkstr)
              convertC(formatstr), convertC(checkstr), convertC(buf));
     }
 }
+#define DoWStrTest DoWStrTest_snwprintf_s
 
-void DoStrTest(const WCHAR *formatstr, char *param, const WCHAR *checkstr)
+inline void DoStrTest_snwprintf_s(const WCHAR *formatstr, char *param, const WCHAR *checkstr)
 {
     WCHAR buf[256] = { 0 };
 
@@ -40,8 +41,9 @@ void DoStrTest(const WCHAR *formatstr, char *param, const WCHAR *checkstr)
              param, convertC(formatstr), convertC(checkstr), convertC(buf));
     }
 }
+#define DoStrTest DoStrTest_snwprintf_s
 
-void DoPointerTest(const WCHAR *formatstr, void* param, const WCHAR *checkstr1)
+inline void DoPointerTest_snwprintf_s(const WCHAR *formatstr, void* param, const WCHAR *checkstr1)
 {
     WCHAR buf[256] = { 0 };
 
@@ -53,8 +55,9 @@ void DoPointerTest(const WCHAR *formatstr, void* param, const WCHAR *checkstr1)
              convertC(checkstr1), convertC(buf));
     }    
 }
+#define DoPointerTest DoPointerTest_snwprintf_s
 
-void DoCountTest(const WCHAR *formatstr, int param, const WCHAR *checkstr)
+inline void DoCountTest_snwprintf_s(const WCHAR *formatstr, int param, const WCHAR *checkstr)
 {
     WCHAR buf[512] = { 0 };
     int n = -1;
@@ -73,8 +76,9 @@ void DoCountTest(const WCHAR *formatstr, int param, const WCHAR *checkstr)
              convertC(checkstr), convertC(buf));
     }
 }
+#define DoCountTest DoCountTest_snwprintf_s
 
-void DoShortCountTest(const WCHAR *formatstr, int param, const WCHAR *checkstr)
+inline void DoShortCountTest_snwprintf_s(const WCHAR *formatstr, int param, const WCHAR *checkstr)
 {
     WCHAR buf[256] = { 0 };
     short int n = -1;
@@ -93,8 +97,9 @@ void DoShortCountTest(const WCHAR *formatstr, int param, const WCHAR *checkstr)
              convertC(checkstr), convertC(buf));
     }
 }
+#define DoShortCountTest DoShortCountTest_snwprintf_s
 
-void DoCharTest(const WCHAR *formatstr, char param, const WCHAR *checkstr)
+inline void DoCharTest_snwprintf_s(const WCHAR *formatstr, char param, const WCHAR *checkstr)
 {
     WCHAR buf[256] = { 0 };
 
@@ -106,8 +111,9 @@ void DoCharTest(const WCHAR *formatstr, char param, const WCHAR *checkstr)
              convertC(formatstr), convertC(checkstr), convertC(buf));
     }
 }
+#define DoCharTest DoCharTest_snwprintf_s
 
-void DoWCharTest(const WCHAR *formatstr, WCHAR param, const WCHAR *checkstr)
+inline void DoWCharTest_snwprintf_s(const WCHAR *formatstr, WCHAR param, const WCHAR *checkstr)
 {
     WCHAR buf[256] = { 0 };
 
@@ -119,8 +125,9 @@ void DoWCharTest(const WCHAR *formatstr, WCHAR param, const WCHAR *checkstr)
              convertC(formatstr),  convertC(checkstr), convertC(buf));
     }
 }
+#define DoWCharTest DoWCharTest_snwprintf_s
 
-void DoNumTest(const WCHAR *formatstr, int value, const WCHAR *checkstr)
+inline void DoNumTest_snwprintf_s(const WCHAR *formatstr, int value, const WCHAR *checkstr)
 {
     WCHAR buf[256] = { 0 };
 
@@ -132,9 +139,9 @@ void DoNumTest(const WCHAR *formatstr, int value, const WCHAR *checkstr)
              convertC(checkstr), convertC(buf));
     }
 }
+#define DoNumTest DoNumTest_snwprintf_s
 
-
-void DoI64Test(const WCHAR *formatstr, INT64 param, char *paramdesc,
+inline void DoI64Test_snwprintf_s(const WCHAR *formatstr, INT64 param, char *paramdesc,
                const WCHAR *checkstr1)
 {
     WCHAR buf[256] = { 0 };
@@ -147,8 +154,9 @@ void DoI64Test(const WCHAR *formatstr, INT64 param, char *paramdesc,
             convertC(formatstr), convertC(checkstr1), convertC(buf));
     }
 }
+#define DoI64Test DoI64Test_snwprintf_s
 
-void DoDoubleTest(const WCHAR *formatstr, double value, const WCHAR *checkstr1,
+inline void DoDoubleTest_snwprintf_s(const WCHAR *formatstr, double value, const WCHAR *checkstr1,
                   const WCHAR *checkstr2)
 {
     WCHAR buf[256] = { 0 };
@@ -163,8 +171,9 @@ void DoDoubleTest(const WCHAR *formatstr, double value, const WCHAR *checkstr1,
              convertC(checkstr2), convertC(buf));
     }
 }
+#define DoDoubleTest DoDoubleTest_snwprintf_s
 
-void DoArgumentPrecTest(const WCHAR *formatstr, int precision, void *param,
+inline void DoArgumentPrecTest_snwprintf_s(const WCHAR *formatstr, int precision, void *param,
                         char *paramstr, const WCHAR *checkstr1, const WCHAR *checkstr2)
 {
     WCHAR buf[256];
@@ -179,8 +188,9 @@ void DoArgumentPrecTest(const WCHAR *formatstr, int precision, void *param,
             convertC(checkstr1), convertC(checkstr2) ,convertC(buf));
     }
 }
+#define DoArgumentPrecTest DoArgumentPrecTest_snwprintf_s
 
-void DoArgumentPrecDoubleTest(const WCHAR *formatstr, int precision, double param,
+inline void DoArgumentPrecDoubleTest_snwprintf_s(const WCHAR *formatstr, int precision, double param,
                               const WCHAR *checkstr)
 {
     WCHAR buf[256];
@@ -193,6 +203,7 @@ void DoArgumentPrecDoubleTest(const WCHAR *formatstr, int precision, double para
              precision, convertC(checkstr), convertC(buf));
     }
 }
+#define DoArgumentPrecDoubleTest DoArgumentPrecDoubleTest_snwprintf_s
 
 #endif
 

@@ -3,7 +3,11 @@ setlocal
 
 :SetupArgs
 :: Initialize the args that will be passed to cmake
-set __nativeWindowsDir=%~dp0Windows
+set "__sourceDir=%~dp0"
+:: remove trailing slash
+if %__sourceDir:~-1%==\ set "__ProjectDir=%__sourceDir:~0,-1%"
+
+set __engNativeDir=%__sourceDir%\..\..\..\eng\native
 set __CMakeBinDir=""
 set __IntermediatesDir=""
 set __BuildArch=x64
@@ -14,6 +18,7 @@ set "__LinkArgs= "
 set "__LinkLibraries= "
 set __PortableBuild=0
 set __IncrementalNativeBuild=0
+set __Ninja=0
 
 :Arg_Loop
 if [%1] == [] goto :ToolsVersion
@@ -40,6 +45,9 @@ if /i [%1] == [incremental-native-build] ( set __IncrementalNativeBuild=1&&shift
 if /i [%1] == [rootDir]     ( set __rootDir=%2&&shift&&shift&goto Arg_Loop)
 if /i [%1] == [coreclrartifacts]  (set __CoreClrArtifacts=%2&&shift&&shift&goto Arg_Loop)
 if /i [%1] == [nativelibsartifacts]  (set __NativeLibsArtifacts=%2&&shift&&shift&goto Arg_Loop)
+if /i [%1] == [ninja] (set __Ninja=1)
+if /i [%1] == [runtimeflavor]  (set __RuntimeFlavor=%2&&shift&&shift&goto Arg_Loop)
+if /i [%1] == [runtimeconfiguration]  (set __RuntimeConfiguration=%2&&shift&&shift&goto Arg_Loop)
 
 
 shift
@@ -75,7 +83,7 @@ exit /b 1
 :VS2019
 :: Setup vars for VS2019
 set __PlatformToolset=v142
-set __VSVersion=16 2019
+set __VSVersion=vs2019
 :: Set the environment for the native build
 call "%VS160COMNTOOLS%..\..\VC\Auxiliary\Build\vcvarsall.bat" %__VCBuildArch%
 goto :SetupDirs
@@ -83,7 +91,7 @@ goto :SetupDirs
 :VS2017
 :: Setup vars for VS2017
 set __PlatformToolset=v141
-set __VSVersion=15 2017
+set __VSVersion=vs2017
 :: Set the environment for the native build
 call "%VS150COMNTOOLS%..\..\VC\Auxiliary\Build\vcvarsall.bat" %__VCBuildArch%
 
@@ -119,7 +127,7 @@ if exist "%__IntermediatesDir%" rd /s /q "%__IntermediatesDir%"
 :CreateIntermediates
 if not exist "%__IntermediatesDir%" md "%__IntermediatesDir%"
 
-if exist "%VSINSTALLDIR%DIA SDK" goto GenVSSolution
+if exist "%VSINSTALLDIR%DIA SDK" goto FindCMake
 echo Error: DIA SDK is missing at "%VSINSTALLDIR%DIA SDK". ^
 Did you install all the requirements for building on Windows, including the "Desktop Development with C++" workload? ^
 Please see https://github.com/dotnet/runtime/blob/master/docs/workflow/requirements/windows-requirements.md ^
@@ -127,31 +135,52 @@ Another possibility is that you have a parallel installation of Visual Studio an
 may help to copy its "DIA SDK" folder into "%VSINSTALLDIR%" manually, then try again.
 exit /b 1
 
+:FindCMake
+if defined CMakePath goto GenVSSolution
+:: Find CMake
+
+:: Eval the output from set-cmake-path.ps1
+for /f "delims=" %%a in ('powershell -NoProfile -ExecutionPolicy ByPass "& ""%__engNativeDir%\set-cmake-path.ps1"""') do %%a
+
 :GenVSSolution
-:: Regenerate the VS solution
+if /i "%__BuildArch%" == "x64"     (set cm_BaseRid=win7)
+if /i "%__BuildArch%" == "x86"     (set cm_BaseRid=win7)
+if /i "%__BuildArch%" == "arm"     (set cm_BaseRid=win8)
+if /i "%__BuildArch%" == "arm64"   (set cm_BaseRid=win10)
+:: Form the base RID to be used if we are doing a portable build
+if /i "%__PortableBuild%" == "1"   (set cm_BaseRid=win)
+set cm_BaseRid=%cm_BaseRid%-%__BuildArch%
+echo "Computed RID for native build is %cm_BaseRid%"
 
-echo Calling "%__nativeWindowsDir%\gen-buildsys-win.bat %~dp0 "%__VSVersion%" %__BuildArch% %__CommitSha% %__HostVersion% %__AppHostVersion% %__HostFxrVersion% %__HostPolicyVersion% %__PortableBuild%"
-pushd "%__IntermediatesDir%"
-call "%__nativeWindowsDir%\gen-buildsys-win.bat" %~dp0 "%__VSVersion%" %__BuildArch% %__CommitSha% %__HostVersion% %__AppHostVersion% %__HostFxrVersion% %__HostPolicyVersion% %__PortableBuild%
+set __ExtraCmakeParams=%__ExtraCmakeParams% "-DCLI_CMAKE_HOST_VER=%__HostVersion%" "-DCLI_CMAKE_COMMON_HOST_VER=%__AppHostVersion%" "-DCLI_CMAKE_HOST_FXR_VER=%__HostFxrVersion%"
+set __ExtraCmakeParams=%__ExtraCmakeParams% "-DCLI_CMAKE_HOST_POLICY_VER=%__HostPolicyVersion%" "-DCLI_CMAKE_PKG_RID=%cm_BaseRid%" "-DCLI_CMAKE_COMMIT_HASH=%__CommitSha%"
+set __ExtraCmakeParams=%__ExtraCmakeParams% "-DCORECLR_ARTIFACTS=%__CoreClrArtifacts% " "-DRUNTIME_CONFIG=%__RuntimeConfiguration%" "-DNATIVE_LIBS_ARTIFACTS=%__NativeLibsArtifacts%"
+set __ExtraCmakeParams=%__ExtraCmakeParams% "-DRUNTIME_FLAVOR=%__RuntimeFlavor% "
+set __ExtraCmakeParams=%__ExtraCmakeParams% "-DCLI_CMAKE_RESOURCE_DIR=%__ResourcesDir%" "-DCMAKE_BUILD_TYPE=%CMAKE_BUILD_TYPE%"
+
+:: Regenerate the native build files
+echo Calling "%__engNativeDir%\gen-buildsys.cmd "%__sourceDir%" "%__IntermediatesDir%" %__VSVersion% %__BuildArch% %__ExtraCmakeParams%"
+
+call "%__engNativeDir%\gen-buildsys.cmd" "%__sourceDir%" "%__IntermediatesDir%" %__VSVersion% %__BuildArch% %__ExtraCmakeParams%
+if NOT [%errorlevel%] == [0] goto :Failure
 popd
-
-:CheckForProj
-:: Check that the project created by Cmake exists
-if exist "%__IntermediatesDir%\INSTALL.vcxproj" goto BuildNativeProj
-goto :Failure
 
 :BuildNativeProj
 :: Build the project created by Cmake
-set __msbuildArgs=/p:Platform=%__BuildArch% /p:PlatformToolset="%__PlatformToolset%"
+set __generatorArgs=
+if [%__Ninja%] == [1] (
+    set __generatorArgs=
+) else if [%__BuildArch%] == [wasm] (
+    set __generatorArgs=-j
+) else (
+    set __generatorArgs=/p:Platform=%__BuildArch% /p:PlatformToolset="%__PlatformToolset%" -noWarn:MSB8065
+)
 
-SET __NativeBuildArgs=/t:rebuild
-if /i "%__IncrementalNativeBuild%" == "1" SET __NativeBuildArgs=
-
-echo msbuild "%__IntermediatesDir%\INSTALL.vcxproj" %__NativeBuildArgs% /m /p:Configuration=%CMAKE_BUILD_TYPE% %__msbuildArgs%
-call msbuild "%__IntermediatesDir%\INSTALL.vcxproj" %__NativeBuildArgs% /m /p:Configuration=%CMAKE_BUILD_TYPE% %__msbuildArgs%
+call "%CMakePath%" --build "%__IntermediatesDir%" --target install --config %CMAKE_BUILD_TYPE% -- %__generatorArgs%
 IF ERRORLEVEL 1 (
     goto :Failure
 )
+
 echo Done building Native components
 exit /B 0
 

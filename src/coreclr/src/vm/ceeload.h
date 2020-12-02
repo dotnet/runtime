@@ -3282,7 +3282,7 @@ public:
     void Destruct();
 #endif // !DACCESS_COMPILE && !CROSSGEN_COMPILE
 
-    // Overides functions to access sections
+    // Overrides functions to access sections
     virtual TADDR GetIL(RVA target);
     virtual PTR_VOID GetRvaField(RVA rva, BOOL fZapped);
 
@@ -3419,9 +3419,9 @@ struct VASigCookieEx : public VASigCookie
     const BYTE *m_pArgs;        // pointer to first unfixed unmanaged arg
 };
 
-// Rerieve the full command line for the current process.
-LPCWSTR GetManagedCommandLine();
 // Save the command line for the current process.
 void SaveManagedCommandLine(LPCWSTR pwzAssemblyPath, int argc, LPCWSTR *argv);
+
+LPCWSTR GetCommandLineForDiagnostics();
 
 #endif // !CEELOAD_H_

@@ -21,15 +21,15 @@
 
 
 //Declaring Variables
-HANDLE hThread = NULL;
-HANDLE hEvent = NULL;
+HANDLE hThread_WFSOThreadTest = NULL;
+HANDLE hEvent_WFSOThreadTest = NULL;
 
-unsigned int globalcounter =0;
+unsigned int globalcounter_WFSOThreadTest =0;
 
 //Declaring Function Prototypes
 DWORD PALAPI incrementCounter(LPVOID params);
 
-int __cdecl main(int argc, char **argv)
+PALTEST(threading_WaitForSingleObject_WFSOThreadTest_paltest_waitforsingleobject_wfsothreadtest, "threading/WaitForSingleObject/WFSOThreadTest/paltest_waitforsingleobject_wfsothreadtest")
 {
 
 	//Declare local variables
@@ -44,8 +44,8 @@ int __cdecl main(int argc, char **argv)
 
 
 	//Create Event
-	hEvent = CreateEvent(NULL,TRUE,FALSE, NULL);
-	if(hEvent == NULL)
+	hEvent_WFSOThreadTest = CreateEvent(NULL,TRUE,FALSE, NULL);
+	if(hEvent_WFSOThreadTest == NULL)
 	{
 		Fail("Create Event Failed\n"
 			"GetLastError returned %d\n", GetLastError());
@@ -53,7 +53,7 @@ int __cdecl main(int argc, char **argv)
 
 	
 	//Create Thread
-	hThread = CreateThread(
+	hThread_WFSOThreadTest = CreateThread(
 		NULL,         
 		0,            
 		incrementCounter,     
@@ -61,7 +61,7 @@ int __cdecl main(int argc, char **argv)
 		0,           
 		&dwThreadId);
 
-	    if ( NULL == hThread ) 
+	    if ( NULL == hThread_WFSOThreadTest ) 
 	    {
 		Fail ( "CreateThread() returned NULL.  Failing test.\n"
 		       "GetLastError returned %d\n", GetLastError());   
@@ -69,7 +69,7 @@ int __cdecl main(int argc, char **argv)
 
 
 	//Wait For Thread to signal start  
-	dwWaitResult  = WaitForSingleObject(hEvent,INFINITE);
+	dwWaitResult  = WaitForSingleObject(hEvent_WFSOThreadTest,INFINITE);
 	
 	switch (dwWaitResult) 
     	{
@@ -102,7 +102,7 @@ int __cdecl main(int argc, char **argv)
 		
 	//Wait for Thread to finish 
 	dwWaitResult = WaitForSingleObject( 
-	        hThread,   //handle to thread
+	        hThread_WFSOThreadTest,   //handle to thread
 	        5000L);     //Wait Indefinitely
 
        
@@ -137,12 +137,12 @@ int __cdecl main(int argc, char **argv)
 
 
 //Close Handles
-if (0==CloseHandle(hEvent))
+if (0==CloseHandle(hEvent_WFSOThreadTest))
 		 {
 		    	Trace("Could not Close event handle\n"); 
 			Fail ( "GetLastError returned %d\n", GetLastError());  
 	    	}
-if (0==CloseHandle(hThread))
+if (0==CloseHandle(hThread_WFSOThreadTest))
 		 {
 		    	Trace("Could not Close thread handle\n"); 
 			Fail ( "GetLastError returned %d\n", GetLastError());  
@@ -157,17 +157,17 @@ DWORD PALAPI incrementCounter(LPVOID params)
 {
 
 	//Signal Event so that main thread can start to wait for thread object
-	if (0==SetEvent(hEvent))
+	if (0==SetEvent(hEvent_WFSOThreadTest))
 	{
 		Fail ( "SetEvent returned Zero.  Failing test.\n"
 		       "GetLastError returned %d\n", GetLastError());  
 	}
 
-	for (globalcounter=0;globalcounter<100000;globalcounter++);
+	for (globalcounter_WFSOThreadTest=0;globalcounter_WFSOThreadTest<100000;globalcounter_WFSOThreadTest++);
 
 	//Sleep(5000);
 	
-	Trace("Global Counter Value: %d \n", globalcounter);
+	Trace("Global Counter Value: %d \n", globalcounter_WFSOThreadTest);
 	return 0;
 }
 

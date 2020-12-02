@@ -3,9 +3,9 @@
 
 /*============================================================
 **
-** Source:  child6.c 
+** Source:  child6.c
 **
-** Purpose: Test for WaitForMultipleObjectsEx in multiple 
+** Purpose: Test for WaitForMultipleObjectsEx in multiple
 **          scenarios - child process
 **
 **
@@ -13,7 +13,7 @@
 
 #include <palsuite.h>
 
-int __cdecl main(int argc, char **argv)
+PALTEST(threading_WaitForMultipleObjectsEx_test6_paltest_waitformultipleobjectsex_test6_child, "threading/WaitForMultipleObjectsEx/test6/paltest_waitformultipleobjectsex_test6_child")
 {
     int i, iRet;
     BOOL bRet;
@@ -34,7 +34,7 @@ int __cdecl main(int argc, char **argv)
     WCHAR wszSemName[128];
     DWORD iExitCode = 0;
     HANDLE hSemaphore;
-    
+
     if(0 != (PAL_Initialize(argc, argv)))
     {
         return ( FAIL );
@@ -71,7 +71,7 @@ int __cdecl main(int argc, char **argv)
         {
             strncpy(szTestName, argv[i], 256);
             szTestName[255] = 0;
-            iRet = MultiByteToWideChar(CP_ACP, 0, szTestName, strlen(szTestName)+1, wszTestName, 256);            
+            iRet = MultiByteToWideChar(CP_ACP, 0, szTestName, strlen(szTestName)+1, wszTestName, 256);
             if (0 == iRet)
             {
                 Fail("Failed to convert test string\n");
@@ -106,19 +106,19 @@ int __cdecl main(int argc, char **argv)
     hMutex = OpenMutexW(0, FALSE, wszMutexName);
     if (NULL == hMutex)
     {
-        Fail("[child] OpenMutexW failed [GetLastError()=%u]\n", 
+        Fail("[child] OpenMutexW failed [GetLastError()=%u]\n",
              GetLastError());
     }
-    hSemaphore = CreateSemaphoreW(NULL, 0, 256, wszSemName);
+    hSemaphore = CreateSemaphoreExW(NULL, 0, 256, wszSemName, 0, 0);
     if (NULL == hSemaphore)
     {
         Fail("[child] CreateSemaphore failed [GetLastError()=%u]\n",
              GetLastError());
     }
 
-    
+
     if (bMutex)
-    {    
+    {
         Trace("[child] Going to wait on mutex %s\n", szMutexName);
         dwRet = WaitForSingleObject(hMutex, INFINITE);
         if (WAIT_FAILED == dwRet)
@@ -135,10 +135,10 @@ int __cdecl main(int argc, char **argv)
                  GetLastError());
         }
 
-        // mutex will be abandoned        
+        // mutex will be abandoned
     }
     else if (bMutexAndNamedEvent)
-    {    
+    {
         dwRet = WaitForSingleObject(hMutex, INFINITE);
         if (WAIT_FAILED == dwRet)
         {
@@ -166,7 +166,7 @@ int __cdecl main(int argc, char **argv)
     }
     else if (bSemaphore)
     {
-        LONG lPrevCount = 42;        
+        LONG lPrevCount = 42;
 
 
         Trace("[child] Going to wait on event %s\n", szEventName);
@@ -187,12 +187,12 @@ int __cdecl main(int argc, char **argv)
         if (0 != lPrevCount)
         {
             Fail("Previous count from semaphore=%d, expected 0\n", lPrevCount);
-        }        
+        }
     }
     else if (bNamedEvent)
-    {   
+    {
         Sleep(1000);
-    
+
         bRet = SetEvent(hNamedEvent);
         if (FALSE == bRet)
         {
@@ -204,7 +204,7 @@ int __cdecl main(int argc, char **argv)
     Sleep(1000);
 
     Trace("[child] Done\n");
-   
+
     PAL_TerminateEx(iExitCode);
     return iExitCode;
 }

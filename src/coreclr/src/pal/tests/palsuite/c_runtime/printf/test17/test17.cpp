@@ -18,7 +18,7 @@
 
 
 
-int __cdecl main(int argc, char *argv[])
+PALTEST(c_runtime_printf_test17_paltest_printf_test17, "c_runtime/printf/test17/paltest_printf_test17")
 {
     double val = 2560.001;
     double neg = -2560.001;

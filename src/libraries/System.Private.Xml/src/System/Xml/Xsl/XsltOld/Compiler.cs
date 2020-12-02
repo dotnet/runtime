@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#nullable enable
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -747,13 +746,13 @@ namespace System.Xml.Xsl.XsltOld
 
         internal int AddStringQuery(string xpathQuery)
         {
-            string modifiedQuery = XmlCharType.Instance.IsOnlyWhitespace(xpathQuery) ? xpathQuery : "string(" + xpathQuery + ")";
+            string modifiedQuery = XmlCharType.IsOnlyWhitespace(xpathQuery) ? xpathQuery : "string(" + xpathQuery + ")";
             return AddQuery(modifiedQuery);
         }
 
         internal int AddBooleanQuery(string xpathQuery)
         {
-            string modifiedQuery = XmlCharType.Instance.IsOnlyWhitespace(xpathQuery) ? xpathQuery : "boolean(" + xpathQuery + ")";
+            string modifiedQuery = XmlCharType.IsOnlyWhitespace(xpathQuery) ? xpathQuery : "boolean(" + xpathQuery + ")";
             return AddQuery(modifiedQuery);
         }
 

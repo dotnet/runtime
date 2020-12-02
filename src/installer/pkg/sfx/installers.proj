@@ -1,0 +1,26 @@
+<Project Sdk="Microsoft.Build.NoTargets">
+  <ItemGroup>
+    <InstallerProjectReference Include="Microsoft.NETCore.App/*.sfxproj" />
+    <InstallerProjectReference Include="installers/*.proj" />
+    <InstallerProjectReference Include="bundle/*.bundleproj" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(BuildDebPackage)' == 'true'">
+    <InstallerProjectReference Include="installers/dotnet-runtime-deps/dotnet-runtime-deps-debian.proj" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(BuildRpmPackage)' == 'true'">
+    <InstallerProjectReference Include="installers/dotnet-runtime-deps/dotnet-runtime-deps-centos.7.proj" />
+    <InstallerProjectReference Include="installers/dotnet-runtime-deps/dotnet-runtime-deps-fedora.27.proj" />
+    <InstallerProjectReference Include="installers/dotnet-runtime-deps/dotnet-runtime-deps-opensuse.42.proj" />
+    <InstallerProjectReference Include="installers/dotnet-runtime-deps/dotnet-runtime-deps-oraclelinux.7.proj" />
+    <InstallerProjectReference Include="installers/dotnet-runtime-deps/dotnet-runtime-deps-rhel.7.proj" />
+    <InstallerProjectReference Include="installers/dotnet-runtime-deps/dotnet-runtime-deps-sles.12.proj" />
+  </ItemGroup>
+
+  <Target Name="BuildInstallerProjects" BeforeTargets="Build">
+    <MSBuild Projects="@(InstallerProjectReference)"
+             Targets="GenerateInstallers"
+             SkipNonexistentTargets="true" />
+  </Target>
+</Project>

@@ -26,7 +26,7 @@ namespace System.Text.Json
         /// <remarks>
         /// Note that the <paramref name="bytePositionInLine"/> counts the number of bytes (i.e. UTF-8 code units) and not characters or scalars.
         /// </remarks>
-        public JsonException(string? message, string path, long? lineNumber, long? bytePositionInLine, Exception? innerException) : base(message, innerException)
+        public JsonException(string? message, string? path, long? lineNumber, long? bytePositionInLine, Exception? innerException) : base(message, innerException)
         {
             _message = message;
             LineNumber = lineNumber;

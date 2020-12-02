@@ -33,9 +33,7 @@ namespace Internal.Cryptography
 
         public override void GenerateIV()
         {
-            byte[] iv = new byte[BlockSize / BitsPerByte];
-            RandomNumberGenerator.Fill(iv);
-            IV = iv;
+            IV = RandomNumberGenerator.GetBytes(BlockSize / BitsPerByte);
         }
 
         public sealed override void GenerateKey()

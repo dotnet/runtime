@@ -8,7 +8,7 @@ add_definitions(-DSELF_NO_HOST)
 
 if(CLR_CMAKE_HOST_WIN32)
   #use static crt
-  add_definitions(-MT)
+  set(CMAKE_MSVC_RUNTIME_LIBRARY MultiThreaded)
 endif(CLR_CMAKE_HOST_WIN32)
 
 include_directories(.)
@@ -46,7 +46,7 @@ _add_library(superpmi-shim-counter
     ${SUPERPMI_SHIM_COUNTER_SOURCES}
 )
 
-target_precompile_header(TARGET superpmi-shim-counter HEADER standardpch.h)
+target_precompile_headers(superpmi-shim-counter PRIVATE "$<$<COMPILE_LANGUAGE:CXX>:standardpch.h>")
 
 if(CLR_CMAKE_HOST_UNIX)
     target_link_libraries(superpmi-shim-counter
@@ -62,7 +62,7 @@ else()
         ${STATIC_MT_CPP_LIB}
     )
 
-    _install (FILES ${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>/superpmi-shim-counter.pdb DESTINATION PDB)
+    _install (FILES $<TARGET_PDB_FILE:superpmi-shim-counter> DESTINATION PDB)
 endif(CLR_CMAKE_HOST_UNIX)
 
 _install (TARGETS superpmi-shim-counter DESTINATION .)

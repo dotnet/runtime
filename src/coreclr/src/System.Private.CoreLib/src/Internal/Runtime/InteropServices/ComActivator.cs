@@ -9,6 +9,7 @@ using System.IO;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Runtime.Loader;
+using System.Runtime.Versioning;
 
 //
 // Types in this file marked as 'public' are done so only to aid in
@@ -108,6 +109,7 @@ namespace Internal.Runtime.InteropServices
         }
     }
 
+    [SupportedOSPlatform("windows")]
     public static class ComActivator
     {
 #if FEATURE_COMINTEROP_UNMANAGED_ACTIVATION
@@ -219,7 +221,7 @@ namespace Internal.Runtime.InteropServices
                     if (methParams[0].ParameterType == typeof(string))
                     {
                         // We are dealing with the string overload of the function - provide the registry key - see comhost.dll implementation
-                        objs[0] = $"HKEY_LOCAL_MACHINE\\SOFTWARE\\Classes\\CLSID\\{cxt.ClassId.ToString("B")}";
+                        objs[0] = $"HKEY_LOCAL_MACHINE\\SOFTWARE\\Classes\\CLSID\\{cxt.ClassId:B}";
                     }
                     else
                     {

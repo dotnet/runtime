@@ -121,7 +121,7 @@ namespace System.Security.Principal
             return IsInRole(
                 new SecurityIdentifier(
                     IdentifierAuthority.NTAuthority,
-#if NETCOREAPP2_0
+#if NETSTANDARD2_0
                     new
 #else
                     stackalloc

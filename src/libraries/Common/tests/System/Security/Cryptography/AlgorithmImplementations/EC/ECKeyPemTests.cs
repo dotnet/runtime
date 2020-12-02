@@ -7,6 +7,7 @@ using Xunit;
 
 namespace System.Security.Cryptography.Tests
 {
+    [SkipOnMono("Not supported on Browser", TestPlatforms.Browser)]
     public abstract class ECKeyPemTests<TAlg> where TAlg : AsymmetricAlgorithm
     {
         private const string AmbiguousExceptionMarker = "multiple keys";

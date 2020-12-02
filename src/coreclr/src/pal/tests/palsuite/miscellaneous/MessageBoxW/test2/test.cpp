@@ -14,7 +14,8 @@
 
 #include <palsuite.h>
 
-int __cdecl main(int argc, char *argv[]) {
+PALTEST(miscellaneous_MessageBoxW_test2_paltest_messageboxw_test2, "miscellaneous/MessageBoxW/test2/paltest_messageboxw_test2")
+{
   
     /*
      * Initialize the PAL and return FAILURE if this fails

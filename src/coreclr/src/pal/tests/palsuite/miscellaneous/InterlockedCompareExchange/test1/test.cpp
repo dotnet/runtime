@@ -22,7 +22,8 @@
 #define SECOND_VALUE 5
 #define THIRD_VALUE 10
 
-int __cdecl main(int argc, char *argv[]) {
+PALTEST(miscellaneous_InterlockedCompareExchange_test1_paltest_interlockedcompareexchange_test1, "miscellaneous/InterlockedCompareExchange/test1/paltest_interlockedcompareexchange_test1")
+{
   
     int BaseVariableToManipulate = START_VALUE;
     int ValueToExchange = SECOND_VALUE;

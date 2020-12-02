@@ -15,11 +15,11 @@
 #include <palsuite.h>
 
 
-const char* szStringTest = "The quick fox jumped over the lazy dog's back.\0";
-const char* szWritableFile = "writeable.txt";
+#define szStringTest "The quick fox jumped over the lazy dog's back.\0"
+#define szWritableFile "writeable.txt"
 
 
-BOOL validateResults(const char* szString)
+BOOL validateResults_WriteFile_test3(const char* szString)
 {
     FILE *pFile = NULL;
     char szReadString[100];
@@ -58,7 +58,7 @@ BOOL validateResults(const char* szString)
 
 
 
-BOOL writeTest(const char* szString)
+BOOL writeTest_WriteFile_test3(const char* szString)
 {
     HANDLE hFile = NULL;
     DWORD dwBytesWritten;
@@ -104,7 +104,7 @@ BOOL writeTest(const char* szString)
     }
     else
     {
-        return (validateResults(szString));
+        return (validateResults_WriteFile_test3(szString));
     }
 
     return TRUE;
@@ -113,7 +113,7 @@ BOOL writeTest(const char* szString)
 
 
 
-int __cdecl main(int argc, char *argv[])
+PALTEST(file_io_WriteFile_test3_paltest_writefile_test3, "file_io/WriteFile/test3/paltest_writefile_test3")
 {
     const char *pString = szStringTest;
     BOOL bRc = FALSE;
@@ -124,7 +124,7 @@ int __cdecl main(int argc, char *argv[])
     }
 
 
-    bRc = writeTest(pString);
+    bRc = writeTest_WriteFile_test3(pString);
     if (bRc != TRUE)
     {
         Fail("WriteFile: ERROR -> Failed\n");

@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Buffers.Binary;
 using System.Collections.Generic;
 using System.IO.Compression;
 using System.Reflection;
@@ -78,7 +79,7 @@ namespace ILCompiler.IBC
                         case ILOpcode.ldstr:
                             if (mibcGroupName == "")
                             {
-                                UInt32 userStringToken = (UInt32)(ilBytes[currentOffset + 1] + (ilBytes[currentOffset + 2] << 8) + (ilBytes[currentOffset + 3] << 16) + (ilBytes[currentOffset + 4] << 24));
+                                UInt32 userStringToken = BinaryPrimitives.ReadUInt32LittleEndian(ilBytes.AsSpan(currentOffset + 1));
                                 mibcGroupName = (string)ilBody.GetObject((int)userStringToken);
                             }
                             break;
@@ -110,7 +111,7 @@ namespace ILCompiler.IBC
                             if (!areAllEntriesInVersionBubble)
                                 break;
 
-                            uint token = (uint)(ilBytes[currentOffset + 1] + (ilBytes[currentOffset + 2] << 8) + (ilBytes[currentOffset + 3] << 16) + (ilBytes[currentOffset + 4] << 24));
+                            uint token = BinaryPrimitives.ReadUInt32LittleEndian(ilBytes.AsSpan(currentOffset + 1));
                             loadedMethodProfileData = loadedMethodProfileData.Concat(ReadMIbcGroup(tsc, (EcmaMethod)ilBody.GetObject((int)token)));
                             break;
                         case ILOpcode.pop:

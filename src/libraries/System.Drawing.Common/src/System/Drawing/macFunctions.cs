@@ -1,5 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
+
 //
 // System.Drawing.carbonFunctions.cs
 //
@@ -58,7 +59,7 @@ namespace System.Drawing
                     Type? driver_type = asm.GetType("System.Windows.Forms.XplatUICarbon");
                     if (driver_type != null)
                     {
-                        return (Delegate?)driver_type.GetTypeInfo().GetField("HwndDelegate", BindingFlags.NonPublic | BindingFlags.Static)!.GetValue(null);
+                        return (Delegate?)driver_type.GetField("HwndDelegate", BindingFlags.NonPublic | BindingFlags.Static)!.GetValue(null);
                     }
                 }
             }

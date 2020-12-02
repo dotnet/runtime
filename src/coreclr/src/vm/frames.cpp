@@ -41,6 +41,7 @@
 
 #define CHECK_APP_DOMAIN    0
 
+#if !defined(CROSSGEN_COMPILE)
 //-----------------------------------------------------------------------
 #if _DEBUG
 //-----------------------------------------------------------------------
@@ -1976,3 +1977,239 @@ PCODE UnmanagedToManagedFrame::GetReturnAddress()
         return pRetAddr;
     }
 }
+#endif // !CROSSGEN_COMPILE
+
+#ifndef DACCESS_COMPILE
+//=================================================================================
+
+void FakePromote(PTR_PTR_Object ppObj, ScanContext *pSC, uint32_t dwFlags)
+{
+    CONTRACTL {
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_ANY;
+    } CONTRACTL_END;
+
+    CORCOMPILE_GCREFMAP_TOKENS newToken = (dwFlags & GC_CALL_INTERIOR) ? GCREFMAP_INTERIOR : GCREFMAP_REF;
+
+    _ASSERTE((*(CORCOMPILE_GCREFMAP_TOKENS *)ppObj == NULL) || (*(CORCOMPILE_GCREFMAP_TOKENS *)ppObj == newToken));
+
+    *(CORCOMPILE_GCREFMAP_TOKENS *)ppObj = newToken;
+}
+
+//=================================================================================
+
+void FakePromoteCarefully(promote_func *fn, Object **ppObj, ScanContext *pSC, uint32_t dwFlags)
+{
+    (*fn)(ppObj, pSC, dwFlags);
+}
+
+//=================================================================================
+
+void FakeGcScanRoots(MetaSig& msig, ArgIterator& argit, MethodDesc * pMD, BYTE * pFrame)
+{
+    STANDARD_VM_CONTRACT;
+
+    ScanContext sc;
+
+    // Encode generic instantiation arg
+    if (argit.HasParamType())
+    {
+        // Note that intrinsic array methods have hidden instantiation arg too, but it is not reported to GC
+        if (pMD->RequiresInstMethodDescArg())
+            *(CORCOMPILE_GCREFMAP_TOKENS *)(pFrame + argit.GetParamTypeArgOffset()) = GCREFMAP_METHOD_PARAM;
+        else
+        if (pMD->RequiresInstMethodTableArg())
+            *(CORCOMPILE_GCREFMAP_TOKENS *)(pFrame + argit.GetParamTypeArgOffset()) = GCREFMAP_TYPE_PARAM;
+    }
+
+    // If the function has a this pointer, add it to the mask
+    if (argit.HasThis())
+    {
+        BOOL interior = pMD->GetMethodTable()->IsValueType() && !pMD->IsUnboxingStub();
+
+        FakePromote((Object **)(pFrame + argit.GetThisOffset()), &sc, interior ? GC_CALL_INTERIOR : 0);
+    }
+
+    if (argit.IsVarArg())
+    {
+        *(CORCOMPILE_GCREFMAP_TOKENS *)(pFrame + argit.GetVASigCookieOffset()) = GCREFMAP_VASIG_COOKIE;
+
+        // We are done for varargs - the remaining arguments are reported via vasig cookie
+        return;
+    }
+
+    // Also if the method has a return buffer, then it is the first argument, and could be an interior ref,
+    // so always promote it.
+    if (argit.HasRetBuffArg())
+    {
+        FakePromote((Object **)(pFrame + argit.GetRetBuffArgOffset()), &sc, GC_CALL_INTERIOR);
+    }
+
+    //
+    // Now iterate the arguments
+    //
+
+    // Cycle through the arguments, and call msig.GcScanRoots for each
+    int argOffset;
+    while ((argOffset = argit.GetNextOffset()) != TransitionBlock::InvalidOffset)
+    {
+        ArgDestination argDest(pFrame, argOffset, argit.GetArgLocDescForStructInRegs());
+        msig.GcScanRoots(&argDest, &FakePromote, &sc, &FakePromoteCarefully);
+    }
+}
+
+bool CheckGCRefMapEqual(PTR_BYTE pGCRefMap, MethodDesc* pMD, bool isDispatchCell)
+{
+#ifdef _DEBUG
+    GCRefMapBuilder gcRefMapNew;
+    ComputeCallRefMap(pMD, &gcRefMapNew, isDispatchCell);
+    
+    DWORD dwFinalLength;
+    PVOID pBlob = gcRefMapNew.GetBlob(&dwFinalLength);
+
+    UINT nTokensDecoded = 0;
+
+    GCRefMapDecoder decoderNew((BYTE *)pBlob);
+    GCRefMapDecoder decoderExisting(pGCRefMap);
+
+#ifdef TARGET_X86
+    _ASSERTE(decoderNew.ReadStackPop() == decoderExisting.ReadStackPop());
+#endif
+
+    _ASSERTE(decoderNew.AtEnd() == decoderExisting.AtEnd());
+    while (!decoderNew.AtEnd())
+    {
+        _ASSERTE(decoderNew.CurrentPos() == decoderExisting.CurrentPos());
+        _ASSERTE(decoderNew.ReadToken() == decoderExisting.ReadToken());
+        _ASSERTE(decoderNew.AtEnd() == decoderExisting.AtEnd());
+    }
+#endif
+    return true;
+}
+
+void ComputeCallRefMap(MethodDesc* pMD,
+                       GCRefMapBuilder * pBuilder,
+                       bool isDispatchCell)
+{
+#ifdef _DEBUG
+    DWORD dwInitialLength = pBuilder->GetBlobLength();
+    UINT nTokensWritten = 0;
+#endif
+
+    SigTypeContext typeContext(pMD);
+    PCCOR_SIGNATURE pSig;
+    DWORD cbSigSize;
+    pMD->GetSig(&pSig, &cbSigSize);
+    MetaSig msig(pSig, cbSigSize, pMD->GetModule(), &typeContext);
+
+    //
+    // Shared default interface methods (i.e. virtual interface methods with an implementation) require
+    // an instantiation argument. But if we're in a situation where we haven't resolved the method yet
+    // we need to pretent that unresolved default interface methods are like any other interface
+    // methods and don't have an instantiation argument.
+    // See code:CEEInfo::getMethodSigInternal
+    //
+    assert(!isDispatchCell || !pMD->RequiresInstArg() || pMD->GetMethodTable()->IsInterface());
+    if (pMD->RequiresInstArg() && !isDispatchCell)
+    {
+        msig.SetHasParamTypeArg();
+    }
+
+    ArgIterator argit(&msig);
+
+    UINT nStackBytes = argit.SizeOfFrameArgumentArray();
+
+    // Allocate a fake stack
+    CQuickBytes qbFakeStack;
+    qbFakeStack.AllocThrows(sizeof(TransitionBlock) + nStackBytes);
+    memset(qbFakeStack.Ptr(), 0, qbFakeStack.Size());
+
+    BYTE * pFrame = (BYTE *)qbFakeStack.Ptr();
+
+    // Fill it in
+    FakeGcScanRoots(msig, argit, pMD, pFrame);
+
+    //
+    // Encode the ref map
+    //
+
+    UINT nStackSlots;
+
+#ifdef TARGET_X86
+    UINT cbStackPop = argit.CbStackPop();
+    pBuilder->WriteStackPop(cbStackPop / sizeof(TADDR));
+
+    nStackSlots = nStackBytes / sizeof(TADDR) + NUM_ARGUMENT_REGISTERS;
+#else
+    nStackSlots = (sizeof(TransitionBlock) + nStackBytes - TransitionBlock::GetOffsetOfFirstGCRefMapSlot()) / TARGET_POINTER_SIZE;
+#endif
+
+    for (UINT pos = 0; pos < nStackSlots; pos++)
+    {
+        int ofs;
+
+#ifdef TARGET_X86
+        ofs = (pos < NUM_ARGUMENT_REGISTERS) ?
+            (TransitionBlock::GetOffsetOfArgumentRegisters() + ARGUMENTREGISTERS_SIZE - (pos + 1) * sizeof(TADDR)) :
+            (TransitionBlock::GetOffsetOfArgs() + (pos - NUM_ARGUMENT_REGISTERS) * sizeof(TADDR));
+#else
+        ofs = TransitionBlock::GetOffsetOfFirstGCRefMapSlot() + pos * TARGET_POINTER_SIZE;
+#endif
+
+        CORCOMPILE_GCREFMAP_TOKENS token = *(CORCOMPILE_GCREFMAP_TOKENS *)(pFrame + ofs);
+
+        if (token != 0)
+        {
+            INDEBUG(nTokensWritten++;)
+            pBuilder->WriteToken(pos, token);
+        }
+    }
+
+    // We are done
+    pBuilder->Flush();
+
+#ifdef _DEBUG
+    //
+    // Verify that decoder produces what got encoded
+    //
+
+    DWORD dwFinalLength;
+    PVOID pBlob = pBuilder->GetBlob(&dwFinalLength);
+
+    UINT nTokensDecoded = 0;
+
+    GCRefMapDecoder decoder((BYTE *)pBlob + dwInitialLength);
+
+#ifdef TARGET_X86
+    _ASSERTE(decoder.ReadStackPop() * sizeof(TADDR) == cbStackPop);
+#endif
+
+    while (!decoder.AtEnd())
+    {
+        int pos = decoder.CurrentPos();
+        int token = decoder.ReadToken();
+
+        int ofs;
+
+#ifdef TARGET_X86
+        ofs = (pos < NUM_ARGUMENT_REGISTERS) ?
+            (TransitionBlock::GetOffsetOfArgumentRegisters() + ARGUMENTREGISTERS_SIZE - (pos + 1) * sizeof(TADDR)) :
+            (TransitionBlock::GetOffsetOfArgs() + (pos - NUM_ARGUMENT_REGISTERS) * sizeof(TADDR));
+#else
+        ofs = TransitionBlock::GetOffsetOfFirstGCRefMapSlot() + pos * TARGET_POINTER_SIZE;
+#endif
+
+        if (token != 0)
+        {
+            _ASSERTE(*(CORCOMPILE_GCREFMAP_TOKENS *)(pFrame + ofs) == token);
+            nTokensDecoded++;
+        }
+    }
+
+    // Verify that all tokens got decoded.
+    _ASSERTE(nTokensWritten == nTokensDecoded);
+#endif // _DEBUG
+}
+
+#endif // !DACCESS_COMPILE

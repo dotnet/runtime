@@ -17,7 +17,7 @@
  * Notes: memcmp is used, as is strlen.
  */
 
-int __cdecl main(int argc, char *argv[])
+PALTEST(c_runtime__vsnprintf_s_test3_paltest_vsnprintf_test3, "c_runtime/_vsnprintf_s/test3/paltest_vsnprintf_test3")
 {
 
     if (PAL_Initialize(argc, argv) != 0)

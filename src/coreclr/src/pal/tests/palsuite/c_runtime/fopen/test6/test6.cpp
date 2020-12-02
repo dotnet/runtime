@@ -22,7 +22,7 @@
                                                                          
 #include <palsuite.h>
 
-int __cdecl main(int argc, char **argv)
+PALTEST(c_runtime_fopen_test6_paltest_fopen_test6, "c_runtime/fopen/test6/paltest_fopen_test6")
 {
   
     FILE *fp;

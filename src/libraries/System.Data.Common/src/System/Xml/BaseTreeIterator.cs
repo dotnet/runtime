@@ -1,8 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-// TODO: Enable after System.Private.Xml is annotated
-#nullable disable
+using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Xml
 {
@@ -16,11 +16,15 @@ namespace System.Xml
             this.mapper = mapper;
         }
 
-        internal abstract XmlNode CurrentNode { get; }
+        internal abstract XmlNode? CurrentNode { get; }
 
+        [MemberNotNullWhen(true, nameof(CurrentNode))]
         internal abstract bool Next();
+
+        [MemberNotNullWhen(true, nameof(CurrentNode))]
         internal abstract bool NextRight();
 
+        [MemberNotNullWhen(true, nameof(CurrentNode))]
         internal bool NextRowElement()
         {
             while (Next())
@@ -33,6 +37,7 @@ namespace System.Xml
             return false;
         }
 
+        [MemberNotNullWhen(true, nameof(CurrentNode))]
         internal bool NextRightRowElement()
         {
             if (NextRight())
@@ -47,10 +52,10 @@ namespace System.Xml
         }
 
         // Returns true if the current node is on a row element (head of a region)
+        [MemberNotNullWhen(true, nameof(CurrentNode))]
         internal bool OnRowElement()
         {
-            XmlBoundElement be = CurrentNode as XmlBoundElement;
-            return (be != null) && (be.Row != null);
+            return CurrentNode is XmlBoundElement be && be.Row != null;
         }
     }
 }

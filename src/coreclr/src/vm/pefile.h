@@ -663,9 +663,7 @@ class PEAssembly : public PEFile
     // Codebase is the fusion codebase or path for the assembly.  It is in URL format.
     // Note this may be obtained from the parent PEFile if we don't have a path or fusion
     // assembly.
-    //
-    // fCopiedName means to get the "shadow copied" path rather than the original path, if applicable
-    void GetCodeBase(SString &result, BOOL fCopiedName = FALSE);
+    BOOL GetCodeBase(SString &result);
 
     // Display name is the fusion binding name for an assembly
     void GetDisplayName(SString &result, DWORD flags = 0);

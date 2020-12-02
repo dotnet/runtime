@@ -15,7 +15,7 @@ namespace System.Xml.Serialization
     ///<internalonly/>
     public abstract class XmlSerializationGeneratedCode
     {
-        internal void Init(TempAssembly tempAssembly)
+        internal void Init(TempAssembly? tempAssembly)
         {
         }
 
@@ -31,11 +31,11 @@ namespace System.Xml.Serialization
         private readonly Hashtable _methodNames = new Hashtable();
         private readonly ReflectionAwareCodeGen _raCodeGen;
         private readonly TypeScope[] _scopes;
-        private readonly TypeDesc _stringTypeDesc;
-        private readonly TypeDesc _qnameTypeDesc;
+        private readonly TypeDesc? _stringTypeDesc;
+        private readonly TypeDesc? _qnameTypeDesc;
         private readonly string _access;
         private readonly string _className;
-        private TypeMapping[] _referencedMethods;
+        private TypeMapping[]? _referencedMethods;
         private int _references;
         private readonly Hashtable _generatedMethods = new Hashtable();
 
@@ -56,8 +56,8 @@ namespace System.Xml.Serialization
         internal IndentedWriter Writer { get { return _writer; } }
         internal int NextMethodNumber { get { return _nextMethodNumber; } set { _nextMethodNumber = value; } }
         internal ReflectionAwareCodeGen RaCodeGen { get { return _raCodeGen; } }
-        internal TypeDesc StringTypeDesc { get { return _stringTypeDesc; } }
-        internal TypeDesc QnameTypeDesc { get { return _qnameTypeDesc; } }
+        internal TypeDesc? StringTypeDesc { get { return _stringTypeDesc; } }
+        internal TypeDesc? QnameTypeDesc { get { return _qnameTypeDesc; } }
         internal string ClassName { get { return _className; } }
         internal string Access { get { return _access; } }
         internal TypeScope[] Scopes { get { return _scopes; } }
@@ -70,22 +70,22 @@ namespace System.Xml.Serialization
         {
             while (_references > 0)
             {
-                TypeMapping mapping = _referencedMethods[--_references];
+                TypeMapping mapping = _referencedMethods![--_references];
                 GenerateMethod(mapping);
             }
         }
 
-        internal string ReferenceMapping(TypeMapping mapping)
+        internal string? ReferenceMapping(TypeMapping mapping)
         {
             if (!mapping.IsSoap)
             {
                 if (_generatedMethods[mapping] == null)
                 {
-                    _referencedMethods = EnsureArrayIndex(_referencedMethods, _references);
+                    _referencedMethods = EnsureArrayIndex(_referencedMethods!, _references);
                     _referencedMethods[_references++] = mapping;
                 }
             }
-            return (string)_methodNames[mapping];
+            return (string?)_methodNames[mapping];
         }
 
         private TypeMapping[] EnsureArrayIndex(TypeMapping[] a, int index)
@@ -97,7 +97,7 @@ namespace System.Xml.Serialization
             return b;
         }
 
-        internal void WriteQuotedCSharpString(string value)
+        internal void WriteQuotedCSharpString(string? value)
         {
             _raCodeGen.WriteQuotedCSharpString(value);
         }
@@ -149,7 +149,7 @@ namespace System.Xml.Serialization
             _writer.Indent--;
             _writer.WriteLine("}");
         }
-        internal void GeneratePublicMethods(string privateName, string publicName, string[] methods, XmlMapping[] xmlMappings)
+        internal void GeneratePublicMethods(string privateName, string publicName, string?[] methods, XmlMapping[] xmlMappings)
         {
             GenerateHashtableGetBegin(privateName, publicName);
             if (methods != null && methods.Length != 0 && xmlMappings != null && xmlMappings.Length == methods.Length)
@@ -168,7 +168,7 @@ namespace System.Xml.Serialization
             GenerateHashtableGetEnd(privateName);
         }
 
-        internal void GenerateSupportedTypes(Type[] types)
+        internal void GenerateSupportedTypes(Type?[] types)
         {
             _writer.Write("public override ");
             _writer.Write(typeof(bool).FullName);
@@ -179,7 +179,7 @@ namespace System.Xml.Serialization
             Hashtable uniqueTypes = new Hashtable();
             for (int i = 0; i < types.Length; i++)
             {
-                Type type = types[i];
+                Type? type = types[i];
 
                 if (type == null)
                     continue;
@@ -240,9 +240,9 @@ namespace System.Xml.Serialization
             return baseSerializer;
         }
 
-        internal string GenerateTypedSerializer(string readMethod, string writeMethod, XmlMapping mapping, CodeIdentifiers classes, string baseSerializer, string readerClass, string writerClass)
+        internal string GenerateTypedSerializer(string? readMethod, string? writeMethod, XmlMapping mapping, CodeIdentifiers classes, string baseSerializer, string readerClass, string writerClass)
         {
-            string serializerName = CodeIdentifier.MakeValid(Accessor.UnescapeName(mapping.Accessor.Mapping.TypeDesc.Name));
+            string serializerName = CodeIdentifier.MakeValid(Accessor.UnescapeName(mapping.Accessor.Mapping!.TypeDesc!.Name));
             serializerName = classes.AddUnique(serializerName + "Serializer", mapping);
 
             _writer.WriteLine();
@@ -327,7 +327,7 @@ namespace System.Xml.Serialization
                 _writer.Write("_tmp.Add(");
                 WriteQuotedCSharpString(key);
                 _writer.Write(", new ");
-                _writer.Write((string)serializers[key]);
+                _writer.Write((string?)serializers[key]);
                 _writer.WriteLine("());");
             }
             GenerateHashtableGetEnd("typedSerializers");
@@ -347,7 +347,7 @@ namespace System.Xml.Serialization
             {
                 if (xmlMappings[i] is XmlTypeMapping)
                 {
-                    Type type = xmlMappings[i].Accessor.Mapping.TypeDesc.Type;
+                    Type? type = xmlMappings[i].Accessor.Mapping!.TypeDesc!.Type;
                     if (type == null)
                         continue;
                     if (!type.IsPublic && !type.IsNestedPublic)
@@ -359,7 +359,7 @@ namespace System.Xml.Serialization
                     _writer.Write("if (type == typeof(");
                     _writer.Write(CodeIdentifier.GetCSharpName(type));
                     _writer.Write(")) return new ");
-                    _writer.Write((string)serializers[xmlMappings[i].Key]);
+                    _writer.Write((string?)serializers[xmlMappings[i].Key!]);
                     _writer.WriteLine("();");
                 }
             }
@@ -368,7 +368,7 @@ namespace System.Xml.Serialization
             _writer.WriteLine("}");
         }
 
-        internal void GenerateSerializerContract(string className, XmlMapping[] xmlMappings, Type[] types, string readerType, string[] readMethods, string writerType, string[] writerMethods, Hashtable serializers)
+        internal void GenerateSerializerContract(string className, XmlMapping[] xmlMappings, Type?[] types, string readerType, string?[] readMethods, string writerType, string?[] writerMethods, Hashtable serializers)
         {
             _writer.WriteLine();
             _writer.Write("public class XmlSerializerContract : global::");
@@ -402,7 +402,7 @@ namespace System.Xml.Serialization
         {
             if (mapping is SerializableMapping)
                 return ((SerializableMapping)mapping).IsAny;
-            return mapping.TypeDesc.CanBeElementValue;
+            return mapping.TypeDesc!.CanBeElementValue;
         }
     }
 }

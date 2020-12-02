@@ -42,19 +42,29 @@ typedef ArrayDPTR(const uint8_t) PTR_CBYTE;
 
 #define VALIDATE_ROOT(isInterior, hCallBack, pObjRef)
 
-#define _ASSERTE(x) assert(x)
-
-#define UINT32 UInt32
-#define INT32 Int32
-#define UINT16 UInt16
-#define UINT UInt32
-#define SIZE_T UIntNative
-#define SSIZE_T IntNative
+#define UINT32 uint32_t
+#define INT32 int32_t
+#define UINT16 uint16_t
+#define UINT uint32_t
+#define SIZE_T uintptr_t
+#define SSIZE_T intptr_t
 #define LPVOID void*
 
 typedef void * OBJECTREF;
 
 #define GET_CALLER_SP(pREGDISPLAY) ((TADDR)0)
+
+struct GCInfoToken
+{
+    PTR_VOID Info;
+    UINT32 Version;
+
+    GCInfoToken(PTR_VOID info)
+    {
+        Info = info;
+        Version = 2;
+    }
+};
 
 #else // FEATURE_REDHAWK
 

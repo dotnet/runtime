@@ -50,7 +50,7 @@ namespace System.Xml.Tests
             XmlDocument doc = CreateDocumentWithElement();
             XmlElement element = doc.DocumentElement;
             XmlAttribute anotherAttr = element.Attributes.Append(doc.CreateAttribute("anotherAttribute"));
-            XmlAttribute existingAttr = element.Attributes.Append(doc.CreateAttribute(attributeName, attributeUri));
+            element.Attributes.Append(doc.CreateAttribute(attributeName, attributeUri));
             // assert on implicitly set preconditions
             Assert.Same(anotherAttr, element.Attributes[0]);
 

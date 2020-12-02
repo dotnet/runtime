@@ -563,8 +563,8 @@ typedef EEHashTable<const SigTypeContext*, EEInstantiationHashTableHelper, FALSE
 
 struct ClassFactoryInfo
 {
-    GUID     m_clsid;
-    WCHAR   *m_strServerName;
+    GUID    m_clsid;
+    PCWSTR  m_strServerName;
 };
 
 class EEClassFactoryInfoHashTableHelper

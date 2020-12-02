@@ -1,6 +1,7 @@
 LIBRARY     Profiler.dll
 
 EXPORTS
-            DllGetClassObject   PRIVATE
-            DllCanUnloadNow     PRIVATE
+            DllGetClassObject       PRIVATE
+            DllCanUnloadNow         PRIVATE
+            PassBoolToProfiler      PRIVATE
 

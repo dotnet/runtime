@@ -1206,7 +1206,7 @@ bool GenTreeCall::Equals(GenTreeCall* c1, GenTreeCall* c2)
 }
 
 #if !defined(FEATURE_PUT_STRUCT_ARG_STK)
-unsigned GenTreePutArgStk::getArgSize()
+unsigned GenTreePutArgStk::GetStackByteSize() const
 {
     return genTypeSize(genActualType(gtOp1->gtType));
 }
@@ -1852,7 +1852,7 @@ AGAIN:
             {
                 return true;
             }
-            __fallthrough;
+            FALLTHROUGH;
         case GT_DYN_BLK:
             if (gtHasRef(tree->AsDynBlk()->Addr(), lclNum, defOnly))
             {
@@ -2258,7 +2258,7 @@ AGAIN:
 
         case GT_STORE_DYN_BLK:
             hash = genTreeHashAdd(hash, gtHashValue(tree->AsDynBlk()->Data()));
-            __fallthrough;
+            FALLTHROUGH;
         case GT_DYN_BLK:
             hash = genTreeHashAdd(hash, gtHashValue(tree->AsDynBlk()->Addr()));
             hash = genTreeHashAdd(hash, gtHashValue(tree->AsDynBlk()->gtDynamicSize));
@@ -3302,7 +3302,7 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                 // Any constant that requires a reloc must use the movw/movt sequence
                 //
                 GenTreeIntConCommon* con    = tree->AsIntConCommon();
-                INT32                conVal = con->IconValue();
+                target_ssize_t       conVal = (target_ssize_t)con->IconValue();
 
                 if (con->ImmedValNeedsReloc(this))
                 {
@@ -3310,14 +3310,13 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                     costSz = 8;
                     costEx = 2;
                 }
-                else if (codeGen->validImmForInstr(INS_add, (target_ssize_t)conVal))
+                else if (codeGen->validImmForInstr(INS_add, conVal))
                 {
                     // Typically included with parent oper
                     costSz = 2;
                     costEx = 1;
                 }
-                else if (codeGen->validImmForInstr(INS_mov, (target_ssize_t)conVal) &&
-                         codeGen->validImmForInstr(INS_mvn, (target_ssize_t)conVal))
+                else if (codeGen->validImmForInstr(INS_mov, conVal) && codeGen->validImmForInstr(INS_mvn, conVal))
                 {
                     // Uses mov or mvn
                     costSz = 4;
@@ -3975,7 +3974,7 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                     }
                 }
 
-                __fallthrough;
+                FALLTHROUGH;
 
             case GT_DIV:
             case GT_UDIV:
@@ -4184,7 +4183,8 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                         break;
                     }
 
-                // fall through and set GTF_REVERSE_OPS
+                    // fall through and set GTF_REVERSE_OPS
+                    FALLTHROUGH;
 
                 case GT_LCL_VAR:
                 case GT_LCL_FLD:
@@ -4351,7 +4351,7 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                             tree->SetOper(GenTree::SwapRelop(oper), GenTree::PRESERVE_VN);
                         }
 
-                        __fallthrough;
+                        FALLTHROUGH;
 
                     case GT_ADD:
                     case GT_MUL:
@@ -5112,6 +5112,7 @@ bool GenTree::TryGetUse(GenTree* def, GenTree*** use)
         case GT_NULLCHECK:
         case GT_PUTARG_REG:
         case GT_PUTARG_STK:
+        case GT_PUTARG_TYPE:
         case GT_RETURNTRAP:
         case GT_NOP:
         case GT_RETURN:
@@ -5690,9 +5691,9 @@ bool GenTree::OperMayThrow(Compiler* comp)
                 //
                 return true;
             }
+            break;
         }
 #endif // FEATURE_HW_INTRINSICS
-
         default:
             break;
     }
@@ -5988,18 +5989,25 @@ GenTree* Compiler::gtNewIndOfIconHandleNode(var_types indType, size_t addr, unsi
     //
     indNode->gtFlags |= GTF_IND_NONFAULTING;
 
-    // String Literal handles are indirections that return a TYP_REF.
-    // They are pointers into the GC heap and they are not invariant
-    // as the address is a reportable GC-root and as such it can be
-    // modified during a GC collection
+    // String Literal handles are indirections that return a TYP_REF, and
+    // these are pointers into the GC heap.  We don't currently have any
+    // TYP_BYREF pointers, but if we did they also must be pointers into the GC heap.
     //
-    if (indType == TYP_REF)
+    // Also every GTF_ICON_STATIC_HDL also must be a pointer into the GC heap
+    // we will set GTF_GLOB_REF for these kinds of references.
+    //
+    if ((varTypeIsGC(indType)) || (iconFlags == GTF_ICON_STATIC_HDL))
     {
-        // This indirection points into the gloabal heap
+        // This indirection also points into the gloabal heap
         indNode->gtFlags |= GTF_GLOB_REF;
     }
+
     if (isInvariant)
     {
+        assert(iconFlags != GTF_ICON_STATIC_HDL); // Pointer to a mutable class Static variable
+        assert(iconFlags != GTF_ICON_BBC_PTR);    // Pointer to a mutable basic block count value
+        assert(iconFlags != GTF_ICON_GLOBAL_PTR); // Pointer to mutable data from the VM state
+
         // This indirection also is invariant.
         indNode->gtFlags |= GTF_IND_INVARIANT;
     }
@@ -6045,12 +6053,9 @@ GenTree* Compiler::gtNewIconEmbHndNode(void* value, void* pValue, unsigned iconF
 
         // This indirection won't cause an exception.
         handleNode->gtFlags |= GTF_IND_NONFAULTING;
-#if 0
-        // It should also be invariant, but marking it as such leads to bad diffs.
 
         // This indirection also is invariant.
         handleNode->gtFlags |= GTF_IND_INVARIANT;
-#endif
     }
 
     iconNode->AsIntCon()->gtCompileTimeHandle = (size_t)compileTimeHandle;
@@ -6065,18 +6070,18 @@ GenTree* Compiler::gtNewStringLiteralNode(InfoAccessType iat, void* pValue)
 
     switch (iat)
     {
-        case IAT_VALUE: // constructStringLiteral in CoreRT case can return IAT_VALUE
+        case IAT_VALUE:
+            setMethodHasFrozenString();
             tree         = gtNewIconEmbHndNode(pValue, nullptr, GTF_ICON_STR_HDL, nullptr);
             tree->gtType = TYP_REF;
 #ifdef DEBUG
             tree->AsIntCon()->gtTargetHandle = (size_t)pValue;
 #endif
-            tree = gtNewOperNode(GT_NOP, TYP_REF, tree); // prevents constant folding
             break;
 
         case IAT_PVALUE: // The value needs to be accessed via an indirection
             // Create an indirection
-            tree = gtNewIndOfIconHandleNode(TYP_REF, (size_t)pValue, GTF_ICON_STR_HDL, false);
+            tree = gtNewIndOfIconHandleNode(TYP_REF, (size_t)pValue, GTF_ICON_STR_HDL, true);
 #ifdef DEBUG
             tree->gtGetOp1()->AsIntCon()->gtTargetHandle = (size_t)pValue;
 #endif
@@ -6084,7 +6089,7 @@ GenTree* Compiler::gtNewStringLiteralNode(InfoAccessType iat, void* pValue)
 
         case IAT_PPVALUE: // The value needs to be accessed via a double indirection
             // Create the first indirection
-            tree = gtNewIndOfIconHandleNode(TYP_I_IMPL, (size_t)pValue, GTF_ICON_PSTR_HDL, true);
+            tree = gtNewIndOfIconHandleNode(TYP_I_IMPL, (size_t)pValue, GTF_ICON_CONST_PTR, true);
 #ifdef DEBUG
             tree->gtGetOp1()->AsIntCon()->gtTargetHandle = (size_t)pValue;
 #endif
@@ -6142,7 +6147,7 @@ GenTree* Compiler::gtNewZeroConNode(var_types type)
             break;
 
         case TYP_BYREF:
-            __fallthrough;
+            FALLTHROUGH;
 
         case TYP_REF:
             zero         = gtNewIconNode(0);
@@ -6686,8 +6691,7 @@ GenTree* Compiler::gtNewStructVal(CORINFO_CLASS_HANDLE structHnd, GenTree* addr)
         {
             unsigned   lclNum = addr->gtGetOp1()->AsLclVarCommon()->GetLclNum();
             LclVarDsc* varDsc = &(lvaTable[lclNum]);
-            if (varTypeIsStruct(varDsc) && (varDsc->lvVerTypeInfo.GetClassHandle() == structHnd) &&
-                !lvaIsImplicitByRefLocal(lclNum))
+            if (varTypeIsStruct(varDsc) && (varDsc->GetStructHnd() == structHnd) && !lvaIsImplicitByRefLocal(lclNum))
             {
                 return addr->gtGetOp1();
             }
@@ -8525,15 +8529,21 @@ bool Compiler::gtCompareTree(GenTree* op1, GenTree* op2)
     return false;
 }
 
+//------------------------------------------------------------------------
+// gtGetThisArg: Return this pointer node for the call.
+//
+// Arguments:
+//   call - the call node with a this argument.
+//
+// Return value:
+//   the this pointer node.
+//
 GenTree* Compiler::gtGetThisArg(GenTreeCall* call)
 {
-    if (call->gtCallThisArg == nullptr)
-    {
-        return nullptr;
-    }
+    assert(call->gtCallThisArg != nullptr);
 
     GenTree* thisArg = call->gtCallThisArg->GetNode();
-    if (thisArg->OperIs(GT_NOP, GT_ASG) == false)
+    if (!thisArg->OperIs(GT_ASG))
     {
         if ((thisArg->gtFlags & GTF_LATE_ARG) == 0)
         {
@@ -8541,41 +8551,38 @@ GenTree* Compiler::gtGetThisArg(GenTreeCall* call)
         }
     }
 
-    if (call->gtCallLateArgs != nullptr)
-    {
-        unsigned       argNum          = 0;
-        fgArgTabEntry* thisArgTabEntry = gtArgEntryByArgNum(call, argNum);
-        GenTree*       result          = thisArgTabEntry->GetNode();
+    assert(call->gtCallLateArgs != nullptr);
 
-        // Assert if we used DEBUG_DESTROY_NODE.
-        assert(result->gtOper != GT_COUNT);
+    unsigned       argNum          = 0;
+    fgArgTabEntry* thisArgTabEntry = gtArgEntryByArgNum(call, argNum);
+    GenTree*       result          = thisArgTabEntry->GetNode();
+
+    // Assert if we used DEBUG_DESTROY_NODE.
+    assert(result->gtOper != GT_COUNT);
 
 #if !FEATURE_FIXED_OUT_ARGS && defined(DEBUG)
-        // Check that call->fgArgInfo used in gtArgEntryByArgNum was not
-        // left outdated by assertion propogation updates.
-        // There is no information about registers of late args for platforms
-        // with FEATURE_FIXED_OUT_ARGS that is why this debug check is under
-        // !FEATURE_FIXED_OUT_ARGS.
-        regNumber thisReg = REG_ARG_0;
-        regList   list    = call->regArgList;
-        int       index   = 0;
-        for (GenTreeCall::Use& use : call->LateArgs())
+    // Check that call->fgArgInfo used in gtArgEntryByArgNum was not
+    // left outdated by assertion propogation updates.
+    // There is no information about registers of late args for platforms
+    // with FEATURE_FIXED_OUT_ARGS that is why this debug check is under
+    // !FEATURE_FIXED_OUT_ARGS.
+    regNumber thisReg = REG_ARG_0;
+    regList   list    = call->regArgList;
+    int       index   = 0;
+    for (GenTreeCall::Use& use : call->LateArgs())
+    {
+        assert(index < call->regArgListCount);
+        regNumber curArgReg = list[index];
+        if (curArgReg == thisReg)
         {
-            assert(index < call->regArgListCount);
-            regNumber curArgReg = list[index];
-            if (curArgReg == thisReg)
-            {
-                assert(result == use.GetNode());
-            }
-
-            index++;
+            assert(result == use.GetNode());
         }
+
+        index++;
+    }
 #endif // !FEATURE_FIXED_OUT_ARGS && defined(DEBUG)
 
-        return result;
-    }
-
-    return nullptr;
+    return result;
 }
 
 bool GenTree::gtSetFlags() const
@@ -9101,6 +9108,7 @@ GenTreeUseEdgeIterator::GenTreeUseEdgeIterator(GenTree* node)
         case GT_NULLCHECK:
         case GT_PUTARG_REG:
         case GT_PUTARG_STK:
+        case GT_PUTARG_TYPE:
         case GT_BSWAP:
         case GT_BSWAP16:
         case GT_KEEPALIVE:
@@ -9540,7 +9548,7 @@ void          GenTreeUseEdgeIterator::AdvanceCall()
                 m_edge = &call->gtCallThisArg->NodeRef();
                 return;
             }
-            __fallthrough;
+            FALLTHROUGH;
 
         case CALL_ARGS:
             if (m_statePtr != nullptr)
@@ -9552,7 +9560,7 @@ void          GenTreeUseEdgeIterator::AdvanceCall()
             }
             m_statePtr = call->gtCallLateArgs;
             m_advance  = &GenTreeUseEdgeIterator::AdvanceCall<CALL_LATE_ARGS>;
-            __fallthrough;
+            FALLTHROUGH;
 
         case CALL_LATE_ARGS:
             if (m_statePtr != nullptr)
@@ -9563,7 +9571,7 @@ void          GenTreeUseEdgeIterator::AdvanceCall()
                 return;
             }
             m_advance = &GenTreeUseEdgeIterator::AdvanceCall<CALL_CONTROL_EXPR>;
-            __fallthrough;
+            FALLTHROUGH;
 
         case CALL_CONTROL_EXPR:
             if (call->gtControlExpr != nullptr)
@@ -9584,7 +9592,7 @@ void          GenTreeUseEdgeIterator::AdvanceCall()
                 m_state = -1;
                 return;
             }
-            __fallthrough;
+            FALLTHROUGH;
 
         case CALL_COOKIE:
             assert(call->gtCallType == CT_INDIRECT);
@@ -9595,7 +9603,7 @@ void          GenTreeUseEdgeIterator::AdvanceCall()
                 m_edge = &call->gtCallCookie;
                 return;
             }
-            __fallthrough;
+            FALLTHROUGH;
 
         case CALL_ADDRESS:
             assert(call->gtCallType == CT_INDIRECT);
@@ -10139,7 +10147,7 @@ void Compiler::gtDispNode(GenTree* tree, IndentStack* indentStack, __in __in_z _
                         break;
                     }
                 }
-                __fallthrough;
+                FALLTHROUGH;
 
             case GT_INDEX:
             case GT_INDEX_ADDR:
@@ -10303,6 +10311,31 @@ void Compiler::gtDispNode(GenTree* tree, IndentStack* indentStack, __in __in_z _
             case GT_JCMP:
                 printf((tree->gtFlags & GTF_JCMP_TST) ? "T" : "C");
                 printf((tree->gtFlags & GTF_JCMP_EQ) ? "EQ" : "NE");
+                goto DASH;
+
+            case GT_CNS_INT:
+                if (tree->IsIconHandle())
+                {
+                    if ((tree->gtFlags & GTF_ICON_INITCLASS) != 0)
+                    {
+                        printf("I"); // Static Field handle with INITCLASS requirement
+                        --msgLength;
+                        break;
+                    }
+                    else if ((tree->gtFlags & GTF_ICON_FIELD_OFF) != 0)
+                    {
+                        printf("O");
+                        --msgLength;
+                        break;
+                    }
+                    else
+                    {
+                        // Some other handle
+                        printf("H");
+                        --msgLength;
+                        break;
+                    }
+                }
                 goto DASH;
 
             default:
@@ -10500,71 +10533,92 @@ void Compiler::gtDispNode(GenTree* tree, IndentStack* indentStack, __in __in_z _
     }
 }
 
+#if FEATURE_MULTIREG_RET
+//----------------------------------------------------------------------------------
+// gtDispRegCount: determine how many registers to print for a multi-reg node
+//
+// Arguments:
+//    tree  -  Gentree node whose registers we want to print
+//
+// Return Value:
+//    The number of registers to print
+//
+// Notes:
+//    This is not the same in all cases as GenTree::GetMultiRegCount().
+//    In particular, for COPY or RELOAD it only returns the number of *valid* registers,
+//    and for CALL, it will return 0 if the ReturnTypeDesc hasn't yet been initialized.
+//    But we want to print all register positions.
+//
+unsigned Compiler::gtDispRegCount(GenTree* tree)
+{
+    if (tree->IsCopyOrReload())
+    {
+        // GetRegCount() will return only the number of valid regs for COPY or RELOAD,
+        // but we want to print all positions, so we get the reg count for op1.
+        return gtDispRegCount(tree->gtGetOp1());
+    }
+    else if (!tree->IsMultiRegNode())
+    {
+        // We can wind up here because IsMultiRegNode() always returns true for COPY or RELOAD,
+        // even if its op1 is not multireg.
+        // Note that this method won't be called for non-register-producing nodes.
+        return 1;
+    }
+    else if (tree->IsMultiRegLclVar())
+    {
+        return tree->AsLclVar()->GetFieldCount(this);
+    }
+    else if (tree->OperIs(GT_CALL))
+    {
+        unsigned regCount = tree->AsCall()->GetReturnTypeDesc()->TryGetReturnRegCount();
+        // If it hasn't yet been initialized, we'd still like to see the registers printed.
+        if (regCount == 0)
+        {
+            regCount = MAX_RET_REG_COUNT;
+        }
+        return regCount;
+    }
+    else
+    {
+        return tree->GetMultiRegCount();
+    }
+}
+#endif // FEATURE_MULTIREG_RET
+
+//----------------------------------------------------------------------------------
+// gtDispRegVal: Print the register(s) defined by the given node
+//
+// Arguments:
+//    tree  -  Gentree node whose registers we want to print
+//
 void Compiler::gtDispRegVal(GenTree* tree)
 {
     switch (tree->GetRegTag())
     {
-        // Don't display NOREG; the absence of this tag will imply this state
-        // case GenTree::GT_REGTAG_NONE:       printf(" NOREG");   break;
+        // Don't display anything for the GT_REGTAG_NONE case;
+        // the absence of printed register values will imply this state.
 
         case GenTree::GT_REGTAG_REG:
             printf(" REG %s", compRegVarName(tree->GetRegNum()));
             break;
 
         default:
-            break;
+            return;
     }
 
 #if FEATURE_MULTIREG_RET
-    if (tree->OperIs(GT_CALL))
+    if (tree->IsMultiRegNode())
     {
         // 0th reg is GetRegNum(), which is already printed above.
-        // Print the remaining regs of a multi-reg call node.
-        // Note that, prior to the initialization of the ReturnTypeDesc we won't print
-        // any additional registers.
-        const GenTreeCall* call     = tree->AsCall();
-        const unsigned     regCount = call->GetReturnTypeDesc()->TryGetReturnRegCount();
+        // Print the remaining regs of a multi-reg node.
+        unsigned regCount = gtDispRegCount(tree);
+
+        // For some nodes, e.g. COPY, RELOAD or CALL, we may not have valid regs for all positions.
         for (unsigned i = 1; i < regCount; ++i)
         {
-            printf(",%s", compRegVarName(call->GetRegNumByIdx(i)));
+            regNumber reg = tree->GetRegByIndex(i);
+            printf(",%s", genIsValidReg(reg) ? compRegVarName(reg) : "NA");
         }
-    }
-    else if (tree->IsCopyOrReload())
-    {
-        GenTree*                   op1          = tree->gtGetOp1();
-        const GenTreeCopyOrReload* copyOrReload = tree->AsCopyOrReload();
-        unsigned                   regCount     = 0;
-        if (op1->OperIs(GT_CALL))
-        {
-            regCount = op1->AsCall()->GetReturnTypeDesc()->TryGetReturnRegCount();
-            // If it hasn't yet been initialized, we'd still like to see the registers printed.
-            if (regCount == 0)
-            {
-                regCount = MAX_RET_REG_COUNT;
-            }
-        }
-        else if (op1->IsMultiRegLclVar())
-        {
-            regCount = op1->AsLclVar()->GetFieldCount(this);
-        }
-        else if (op1->IsMultiRegNode())
-        {
-            regCount = op1->GetMultiRegCount();
-        }
-        // We will only have valid regs for positions that require copy or reload.
-        // But we'd like to keep track of where they are so we print all positions.
-        for (unsigned i = 1; i < regCount; i++)
-        {
-            regNumber reg = tree->AsCopyOrReload()->GetRegNumByIdx(i);
-            printf(",%s", (reg == REG_NA) ? "NA" : compRegVarName(reg));
-        }
-    }
-#endif
-
-#if defined(TARGET_ARM)
-    if (tree->OperIsMultiRegOp() && (tree->AsMultiRegOp()->gtOtherReg != REG_NA))
-    {
-        printf(",%s", compRegVarName(tree->AsMultiRegOp()->gtOtherReg));
     }
 #endif
 }
@@ -10870,13 +10924,14 @@ void Compiler::gtDispConst(GenTree* tree)
             if (tree->IsIconHandle(GTF_ICON_STR_HDL))
             {
                 const WCHAR* str = eeGetCPString(tree->AsIntCon()->gtIconVal);
-                if (str != nullptr)
+                // If *str points to a '\0' then don't print the string's values
+                if ((str != nullptr) && (*str != '\0'))
                 {
                     printf(" 0x%X \"%S\"", dspPtr(tree->AsIntCon()->gtIconVal), str);
                 }
-                else
+                else // We can't print the value of the string
                 {
-                    // Note that eGetCPString isn't currently implemented on Linux/ARM
+                    // Note that eeGetCPString isn't currently implemented on Linux/ARM
                     // and instead always returns nullptr
                     printf(" 0x%X [ICON_STR_HDL]", dspPtr(tree->AsIntCon()->gtIconVal));
                 }
@@ -10942,11 +10997,11 @@ void Compiler::gtDispConst(GenTree* tree)
                         case GTF_ICON_STR_HDL:
                             unreached(); // This case is handled above
                             break;
-                        case GTF_ICON_PSTR_HDL:
-                            printf(" pstr");
+                        case GTF_ICON_CONST_PTR:
+                            printf(" const ptr");
                             break;
-                        case GTF_ICON_PTR_HDL:
-                            printf(" ptr");
+                        case GTF_ICON_GLOBAL_PTR:
+                            printf(" global ptr");
                             break;
                         case GTF_ICON_VARG_HDL:
                             printf(" vararg");
@@ -11079,22 +11134,21 @@ void Compiler::gtDispLeaf(GenTree* tree, IndentStack* indentStack)
 
     switch (tree->gtOper)
     {
-        unsigned   varNum;
-        LclVarDsc* varDsc;
 
         case GT_LCL_FLD:
         case GT_LCL_FLD_ADDR:
         case GT_STORE_LCL_FLD:
             isLclFld = true;
-            __fallthrough;
+            FALLTHROUGH;
 
         case GT_PHI_ARG:
         case GT_LCL_VAR:
         case GT_LCL_VAR_ADDR:
         case GT_STORE_LCL_VAR:
+        {
             printf(" ");
-            varNum = tree->AsLclVarCommon()->GetLclNum();
-            varDsc = &lvaTable[varNum];
+            const unsigned   varNum = tree->AsLclVarCommon()->GetLclNum();
+            const LclVarDsc* varDsc = lvaGetDesc(varNum);
             gtDispLclVar(varNum);
             if (tree->AsLclVarCommon()->HasSsaName())
             {
@@ -11135,8 +11189,6 @@ void Compiler::gtDispLeaf(GenTree* tree, IndentStack* indentStack)
                 }
                 else
                 {
-                    CORINFO_CLASS_HANDLE typeHnd = varDsc->lvVerTypeInfo.GetClassHandle();
-                    CORINFO_FIELD_HANDLE fldHnd;
 
                     for (unsigned i = varDsc->lvFieldLclStart; i < varDsc->lvFieldLclStart + varDsc->lvFieldCnt; ++i)
                     {
@@ -11150,7 +11202,9 @@ void Compiler::gtDispLeaf(GenTree* tree, IndentStack* indentStack)
                         else
 #endif // !defined(TARGET_64BIT)
                         {
-                            fldHnd    = info.compCompHnd->getFieldInClass(typeHnd, fieldVarDsc->lvFldOrdinal);
+                            CORINFO_CLASS_HANDLE typeHnd = varDsc->GetStructHnd();
+                            CORINFO_FIELD_HANDLE fldHnd =
+                                info.compCompHnd->getFieldInClass(typeHnd, fieldVarDsc->lvFldOrdinal);
                             fieldName = eeGetFieldName(fldHnd);
                         }
 
@@ -11182,7 +11236,8 @@ void Compiler::gtDispLeaf(GenTree* tree, IndentStack* indentStack)
                     printf(" (last use)");
                 }
             }
-            break;
+        }
+        break;
 
         case GT_JMP:
         {
@@ -11264,6 +11319,7 @@ void Compiler::gtDispLeaf(GenTree* tree, IndentStack* indentStack)
         case GT_JCMP:
             printf(" cond=%s%s", (tree->gtFlags & GTF_JCMP_TST) ? "TEST_" : "",
                    (tree->gtFlags & GTF_JCMP_EQ) ? "EQ" : "NE");
+            break;
 
         default:
             assert(!"don't know how to display tree leaf node");
@@ -11465,10 +11521,16 @@ void Compiler::gtDispTree(GenTree*     tree,
 #if FEATURE_PUT_STRUCT_ARG_STK
         else if (tree->OperGet() == GT_PUTARG_STK)
         {
-            printf(" (%d slots)", tree->AsPutArgStk()->gtNumSlots);
-            if (tree->AsPutArgStk()->gtPutArgStkKind != GenTreePutArgStk::Kind::Invalid)
+            const GenTreePutArgStk* putArg = tree->AsPutArgStk();
+#if !defined(DEBUG_ARG_SLOTS)
+            printf(" (%d stackByteSize), (%d byteOffset)", putArg->GetStackByteSize(), putArg->getArgOffset());
+#else
+            printf(" (%d slots), (%d stackByteSize), (%d slot), (%d byteOffset)", putArg->gtNumSlots,
+                   putArg->GetStackByteSize(), putArg->gtSlotNum, putArg->getArgOffset());
+#endif
+            if (putArg->gtPutArgStkKind != GenTreePutArgStk::Kind::Invalid)
             {
-                switch (tree->AsPutArgStk()->gtPutArgStkKind)
+                switch (putArg->gtPutArgStkKind)
                 {
                     case GenTreePutArgStk::Kind::RepInstr:
                         printf(" (RepInstr)");
@@ -11487,6 +11549,18 @@ void Compiler::gtDispTree(GenTree*     tree,
                 }
             }
         }
+#if FEATURE_ARG_SPLIT
+        else if (tree->OperGet() == GT_PUTARG_SPLIT)
+        {
+            const GenTreePutArgSplit* putArg = tree->AsPutArgSplit();
+#if !defined(DEBUG_ARG_SLOTS)
+            printf(" (%d stackByteSize), (%d numRegs)", putArg->GetStackByteSize(), putArg->gtNumRegs);
+#else
+            printf(" (%d slots), (%d stackByteSize), (%d numRegs)", putArg->gtNumSlots, putArg->GetStackByteSize(),
+                   putArg->gtNumRegs);
+#endif
+        }
+#endif // FEATURE_ARG_SPLIT
 #endif // FEATURE_PUT_STRUCT_ARG_STK
 
         if (tree->gtOper == GT_INTRINSIC)
@@ -11796,7 +11870,7 @@ void Compiler::gtDispTree(GenTree*     tree,
                 for (GenTreeCall::Use& use : call->LateArgs())
                 {
                     IndentInfo arcType = (use.GetNext() == nullptr) ? IIArcBottom : IIArc;
-                    gtGetLateArgMsg(call, use.GetNode(), lateArgIndex, -1, bufp, sizeof(buf));
+                    gtGetLateArgMsg(call, use.GetNode(), lateArgIndex, bufp, sizeof(buf));
                     gtDispChild(use.GetNode(), indentStack, arcType, bufp, topOnly);
                     lateArgIndex++;
                 }
@@ -11895,8 +11969,6 @@ void Compiler::gtDispTree(GenTree*     tree,
 //    call      - The call for which 'arg' is an argument
 //    arg       - The argument for which a message should be constructed
 //    argNum    - The ordinal number of the arg in the argument list
-//    listCount - When printing in LIR form this is the count for a GT_FIELD_LIST
-//                or -1 if we are not printing in LIR form
 //    bufp      - A pointer to the buffer into which the message is written
 //    bufLength - The length of the buffer pointed to by bufp
 //
@@ -11907,8 +11979,7 @@ void Compiler::gtDispTree(GenTree*     tree,
 //    'call' must be a call node
 //    'arg' must be an argument to 'call' (else gtArgEntryByNode will assert)
 
-void Compiler::gtGetArgMsg(
-    GenTreeCall* call, GenTree* arg, unsigned argNum, int listCount, char* bufp, unsigned bufLength)
+void Compiler::gtGetArgMsg(GenTreeCall* call, GenTree* arg, unsigned argNum, char* bufp, unsigned bufLength)
 {
     if (call->gtCallLateArgs != nullptr)
     {
@@ -11925,139 +11996,6 @@ void Compiler::gtGetArgMsg(
             if (curArgTabEntry->IsSplit())
             {
                 regNumber firstReg = curArgTabEntry->GetRegNum();
-                if (listCount == -1)
-                {
-                    if (curArgTabEntry->numRegs == 1)
-                    {
-                        sprintf_s(bufp, bufLength, "arg%d %s out+%02x%c", argNum, compRegVarName(firstReg),
-                                  (curArgTabEntry->slotNum) * TARGET_POINTER_SIZE, 0);
-                    }
-                    else
-                    {
-                        regNumber lastReg   = REG_STK;
-                        char      separator = (curArgTabEntry->numRegs == 2) ? ',' : '-';
-                        if (curArgTabEntry->IsHfaRegArg())
-                        {
-                            unsigned lastRegNum = genMapFloatRegNumToRegArgNum(firstReg) + curArgTabEntry->numRegs - 1;
-                            lastReg             = genMapFloatRegArgNumToRegNum(lastRegNum);
-                        }
-                        else
-                        {
-                            unsigned lastRegNum = genMapIntRegNumToRegArgNum(firstReg) + curArgTabEntry->numRegs - 1;
-                            lastReg             = genMapIntRegArgNumToRegNum(lastRegNum);
-                        }
-                        sprintf_s(bufp, bufLength, "arg%d %s%c%s out+%02x%c", argNum, compRegVarName(firstReg),
-                                  separator, compRegVarName(lastReg), (curArgTabEntry->slotNum) * TARGET_POINTER_SIZE,
-                                  0);
-                    }
-                }
-                else
-                {
-                    unsigned curArgNum = BAD_VAR_NUM;
-                    bool     isFloat   = curArgTabEntry->IsHfaRegArg();
-                    if (isFloat)
-                    {
-                        curArgNum = genMapFloatRegNumToRegArgNum(firstReg) + listCount;
-                    }
-                    else
-                    {
-                        curArgNum = genMapIntRegNumToRegArgNum(firstReg) + listCount;
-                    }
-
-                    if (!isFloat && curArgNum < MAX_REG_ARG)
-                    {
-                        regNumber curReg = genMapIntRegArgNumToRegNum(curArgNum);
-                        sprintf_s(bufp, bufLength, "arg%d m%d %s%c", argNum, listCount, compRegVarName(curReg), 0);
-                    }
-                    else if (isFloat && curArgNum < MAX_FLOAT_REG_ARG)
-                    {
-                        regNumber curReg = genMapFloatRegArgNumToRegNum(curArgNum);
-                        sprintf_s(bufp, bufLength, "arg%d m%d %s%c", argNum, listCount, compRegVarName(curReg), 0);
-                    }
-                    else
-                    {
-                        unsigned stackSlot = listCount - curArgTabEntry->numRegs;
-                        sprintf_s(bufp, bufLength, "arg%d m%d out+%02x%c", argNum, listCount,
-                                  stackSlot * TARGET_POINTER_SIZE, 0);
-                    }
-                }
-                return;
-            }
-#endif // TARGET_ARM
-#if FEATURE_FIXED_OUT_ARGS
-            if (listCount == -1)
-            {
-                sprintf_s(bufp, bufLength, "arg%d out+%02x%c", argNum, curArgTabEntry->slotNum * TARGET_POINTER_SIZE,
-                          0);
-            }
-            else // listCount is 0,1,2 or 3
-            {
-                assert(listCount <= MAX_ARG_REG_COUNT);
-                sprintf_s(bufp, bufLength, "arg%d out+%02x%c", argNum,
-                          (curArgTabEntry->slotNum + listCount) * TARGET_POINTER_SIZE, 0);
-            }
-#else
-            sprintf_s(bufp, bufLength, "arg%d on STK%c", argNum, 0);
-#endif
-        }
-    }
-    else
-    {
-        sprintf_s(bufp, bufLength, "arg%d%c", argNum, 0);
-    }
-}
-
-//------------------------------------------------------------------------
-// gtGetLateArgMsg: Construct a message about the given argument
-//
-// Arguments:
-//    call         - The call for which 'arg' is an argument
-//    argx         - The argument for which a message should be constructed
-//    lateArgIndex - The ordinal number of the arg in the lastArg  list
-//    listCount    - When printing in LIR form this is the count for a multireg GT_FIELD_LIST
-//                   or -1 if we are not printing in LIR form
-//    bufp         - A pointer to the buffer into which the message is written
-//    bufLength    - The length of the buffer pointed to by bufp
-//
-// Return Value:
-//    No return value, but bufp is written.
-//
-// Assumptions:
-//    'call' must be a call node
-//    'arg' must be an argument to 'call' (else gtArgEntryByNode will assert)
-
-void Compiler::gtGetLateArgMsg(
-    GenTreeCall* call, GenTree* argx, int lateArgIndex, int listCount, char* bufp, unsigned bufLength)
-{
-    assert(!argx->IsArgPlaceHolderNode()); // No place holders nodes are in gtCallLateArgs;
-
-    fgArgTabEntry* curArgTabEntry = gtArgEntryByLateArgIndex(call, lateArgIndex);
-    assert(curArgTabEntry);
-    regNumber argReg = curArgTabEntry->GetRegNum();
-
-#if !FEATURE_FIXED_OUT_ARGS
-    assert(lateArgIndex < call->regArgListCount);
-    assert(argReg == call->regArgList[lateArgIndex]);
-#else
-    if (argReg == REG_STK)
-    {
-        sprintf_s(bufp, bufLength, "arg%d in out+%02x%c", curArgTabEntry->argNum,
-                  curArgTabEntry->slotNum * TARGET_POINTER_SIZE, 0);
-    }
-    else
-#endif
-    {
-        if (curArgTabEntry->use == call->gtCallThisArg)
-        {
-            sprintf_s(bufp, bufLength, "this in %s%c", compRegVarName(argReg), 0);
-        }
-#ifdef TARGET_ARM
-        else if (curArgTabEntry->IsSplit())
-        {
-            regNumber firstReg = curArgTabEntry->GetRegNum();
-            unsigned  argNum   = curArgTabEntry->argNum;
-            if (listCount == -1)
-            {
                 if (curArgTabEntry->numRegs == 1)
                 {
                     sprintf_s(bufp, bufLength, "arg%d %s out+%02x%c", argNum, compRegVarName(firstReg),
@@ -12080,36 +12018,89 @@ void Compiler::gtGetLateArgMsg(
                     sprintf_s(bufp, bufLength, "arg%d %s%c%s out+%02x%c", argNum, compRegVarName(firstReg), separator,
                               compRegVarName(lastReg), (curArgTabEntry->slotNum) * TARGET_POINTER_SIZE, 0);
                 }
+
+                return;
+            }
+#endif // TARGET_ARM
+#if FEATURE_FIXED_OUT_ARGS
+            sprintf_s(bufp, bufLength, "arg%d out+%02x%c", argNum, curArgTabEntry->GetByteOffset(), 0);
+#else
+            sprintf_s(bufp, bufLength, "arg%d on STK%c", argNum, 0);
+#endif
+        }
+    }
+    else
+    {
+        sprintf_s(bufp, bufLength, "arg%d%c", argNum, 0);
+    }
+}
+
+//------------------------------------------------------------------------
+// gtGetLateArgMsg: Construct a message about the given argument
+//
+// Arguments:
+//    call         - The call for which 'arg' is an argument
+//    argx         - The argument for which a message should be constructed
+//    lateArgIndex - The ordinal number of the arg in the lastArg  list
+//    bufp         - A pointer to the buffer into which the message is written
+//    bufLength    - The length of the buffer pointed to by bufp
+//
+// Return Value:
+//    No return value, but bufp is written.
+//
+// Assumptions:
+//    'call' must be a call node
+//    'arg' must be an argument to 'call' (else gtArgEntryByNode will assert)
+
+void Compiler::gtGetLateArgMsg(GenTreeCall* call, GenTree* argx, int lateArgIndex, char* bufp, unsigned bufLength)
+{
+    assert(!argx->IsArgPlaceHolderNode()); // No place holders nodes are in gtCallLateArgs;
+
+    fgArgTabEntry* curArgTabEntry = gtArgEntryByLateArgIndex(call, lateArgIndex);
+    assert(curArgTabEntry);
+    regNumber argReg = curArgTabEntry->GetRegNum();
+
+#if !FEATURE_FIXED_OUT_ARGS
+    assert(lateArgIndex < call->regArgListCount);
+    assert(argReg == call->regArgList[lateArgIndex]);
+#else
+    if (argReg == REG_STK)
+    {
+        sprintf_s(bufp, bufLength, "arg%d in out+%02x%c", curArgTabEntry->argNum, curArgTabEntry->GetByteOffset(), 0);
+    }
+    else
+#endif
+    {
+        if (curArgTabEntry->use == call->gtCallThisArg)
+        {
+            sprintf_s(bufp, bufLength, "this in %s%c", compRegVarName(argReg), 0);
+        }
+#ifdef TARGET_ARM
+        else if (curArgTabEntry->IsSplit())
+        {
+            regNumber firstReg = curArgTabEntry->GetRegNum();
+            unsigned  argNum   = curArgTabEntry->argNum;
+            if (curArgTabEntry->numRegs == 1)
+            {
+                sprintf_s(bufp, bufLength, "arg%d %s out+%02x%c", argNum, compRegVarName(firstReg),
+                          (curArgTabEntry->slotNum) * TARGET_POINTER_SIZE, 0);
             }
             else
             {
-                unsigned curArgNum = BAD_VAR_NUM;
-                bool     isFloat   = curArgTabEntry->IsHfaRegArg();
-                if (isFloat)
+                regNumber lastReg   = REG_STK;
+                char      separator = (curArgTabEntry->numRegs == 2) ? ',' : '-';
+                if (curArgTabEntry->IsHfaRegArg())
                 {
-                    curArgNum = genMapFloatRegNumToRegArgNum(firstReg) + listCount;
+                    unsigned lastRegNum = genMapFloatRegNumToRegArgNum(firstReg) + curArgTabEntry->numRegs - 1;
+                    lastReg             = genMapFloatRegArgNumToRegNum(lastRegNum);
                 }
                 else
                 {
-                    curArgNum = genMapIntRegNumToRegArgNum(firstReg) + listCount;
+                    unsigned lastRegNum = genMapIntRegNumToRegArgNum(firstReg) + curArgTabEntry->numRegs - 1;
+                    lastReg             = genMapIntRegArgNumToRegNum(lastRegNum);
                 }
-
-                if (!isFloat && curArgNum < MAX_REG_ARG)
-                {
-                    regNumber curReg = genMapIntRegArgNumToRegNum(curArgNum);
-                    sprintf_s(bufp, bufLength, "arg%d m%d %s%c", argNum, listCount, compRegVarName(curReg), 0);
-                }
-                else if (isFloat && curArgNum < MAX_FLOAT_REG_ARG)
-                {
-                    regNumber curReg = genMapFloatRegArgNumToRegNum(curArgNum);
-                    sprintf_s(bufp, bufLength, "arg%d m%d %s%c", argNum, listCount, compRegVarName(curReg), 0);
-                }
-                else
-                {
-                    unsigned stackSlot = listCount - curArgTabEntry->numRegs;
-                    sprintf_s(bufp, bufLength, "arg%d m%d out+%02x%c", argNum, listCount,
-                              stackSlot * TARGET_POINTER_SIZE, 0);
-                }
+                sprintf_s(bufp, bufLength, "arg%d %s%c%s out+%02x%c", argNum, compRegVarName(firstReg), separator,
+                          compRegVarName(lastReg), (curArgTabEntry->slotNum) * TARGET_POINTER_SIZE, 0);
             }
             return;
         }
@@ -12119,8 +12110,6 @@ void Compiler::gtGetLateArgMsg(
 #if FEATURE_MULTIREG_ARGS
             if (curArgTabEntry->numRegs >= 2)
             {
-                // listCount could be -1 but it is signed, so this comparison is OK.
-                assert(listCount <= MAX_ARG_REG_COUNT);
                 char separator = (curArgTabEntry->numRegs == 2) ? ',' : '-';
                 sprintf_s(bufp, bufLength, "arg%d %s%c%s%c", curArgTabEntry->argNum, compRegVarName(argReg), separator,
                           compRegVarName(curArgTabEntry->GetRegNum(curArgTabEntry->numRegs - 1)), 0);
@@ -12162,7 +12151,7 @@ void Compiler::gtDispArgList(GenTreeCall* call, IndentStack* indentStack)
         if (!argNode->IsNothingNode() && !argNode->IsArgPlaceHolderNode())
         {
             char buf[256];
-            gtGetArgMsg(call, argNode, argnum, -1, buf, sizeof(buf));
+            gtGetArgMsg(call, argNode, argnum, buf, sizeof(buf));
             gtDispChild(argNode, indentStack, (argNode == lastArgNode) ? IIArcBottom : IIArc, buf, false);
         }
         argnum++;
@@ -12335,40 +12324,18 @@ void Compiler::gtDispLIRNode(GenTree* node, const char* prefixMsg /* = nullptr *
             {
                 fgArgTabEntry* curArgTabEntry = gtArgEntryByNode(call, operand);
                 assert(curArgTabEntry);
+                assert(operand->OperGet() != GT_LIST);
 
-                if (operand->OperGet() == GT_LIST)
+                if (!curArgTabEntry->isLateArg())
                 {
-                    int listIndex = 0;
-                    for (GenTreeArgList* element = operand->AsArgList(); element != nullptr; element = element->Rest())
-                    {
-                        operand = element->Current();
-                        if (curArgTabEntry->GetLateArgInx() == (unsigned)-1)
-                        {
-                            gtGetArgMsg(call, operand, curArgTabEntry->argNum, listIndex, buf, sizeof(buf));
-                        }
-                        else
-                        {
-                            gtGetLateArgMsg(call, operand, curArgTabEntry->GetLateArgInx(), listIndex, buf,
-                                            sizeof(buf));
-                        }
-
-                        displayOperand(operand, buf, operandArc, indentStack, prefixIndent);
-                        operandArc = IIArc;
-                    }
+                    gtGetArgMsg(call, operand, curArgTabEntry->argNum, buf, sizeof(buf));
                 }
                 else
                 {
-                    if (!curArgTabEntry->isLateArg())
-                    {
-                        gtGetArgMsg(call, operand, curArgTabEntry->argNum, -1, buf, sizeof(buf));
-                    }
-                    else
-                    {
-                        gtGetLateArgMsg(call, operand, curArgTabEntry->GetLateArgInx(), -1, buf, sizeof(buf));
-                    }
-
-                    displayOperand(operand, buf, operandArc, indentStack, prefixIndent);
+                    gtGetLateArgMsg(call, operand, curArgTabEntry->GetLateArgInx(), buf, sizeof(buf));
                 }
+
+                displayOperand(operand, buf, operandArc, indentStack, prefixIndent);
             }
         }
         else if (node->OperIsDynBlkOp())
@@ -13198,7 +13165,7 @@ GenTree* Compiler::gtFoldExprSpecial(GenTree* tree)
                 // unsigned (0 > x) is always false
                 return NewMorphedIntConNode(0);
             }
-            __fallthrough;
+            FALLTHROUGH;
         case GT_EQ:
         case GT_NE:
 
@@ -14473,12 +14440,26 @@ GenTree* Compiler::gtFoldExprConst(GenTree* tree)
 
             /* String nodes are an RVA at this point */
 
-            if (op1->gtOper == GT_CNS_STR || op2->gtOper == GT_CNS_STR)
+            if (op1->OperIs(GT_CNS_STR) || op2->OperIs(GT_CNS_STR))
             {
+                // Fold "ldstr" ==/!= null
+                if (op2->IsIntegralConst(0))
+                {
+                    if (tree->OperIs(GT_EQ))
+                    {
+                        i1 = 0;
+                        goto FOLD_COND;
+                    }
+                    if (tree->OperIs(GT_NE) || (tree->OperIs(GT_GT) && tree->IsUnsigned()))
+                    {
+                        i1 = 1;
+                        goto FOLD_COND;
+                    }
+                }
                 return tree;
             }
 
-            __fallthrough;
+            FALLTHROUGH;
 
         case TYP_BYREF:
 
@@ -14525,6 +14506,7 @@ GenTree* Compiler::gtFoldExprConst(GenTree* tree)
 #endif
                         goto DONE;
                     }
+                    break;
 
                 default:
                     break;
@@ -15537,7 +15519,7 @@ GenTree* Compiler::gtNewTempAssign(
         // There are 2 special cases:
         // 1. we have lost classHandle from a FIELD node  because the parent struct has overlapping fields,
         //     the field was transformed as IND opr GT_LCL_FLD;
-        // 2. we are propogating `ASG(struct V01, 0)` to `RETURN(struct V01)`, `CNT_INT` doesn't `structHnd`;
+        // 2. we are propagation `ASG(struct V01, 0)` to `RETURN(struct V01)`, `CNT_INT` doesn't `structHnd`;
         // in these cases, we can use the type of the merge return for the assignment.
         assert(val->OperIs(GT_IND, GT_LCL_FLD, GT_CNS_INT));
         assert(!compDoOldStructRetyping());
@@ -17400,8 +17382,8 @@ GenTree* Compiler::gtGetSIMDZero(var_types simdType, var_types baseType, CORINFO
                         break;
                     case TYP_UINT:
                         assert(simdHandle == m_simdHandleCache->Vector64UIntHandle);
-                        break;
 #endif // defined(TARGET_ARM64) && defined(FEATURE_HW_INTRINSICS)
+                        break;
                     default:
                         break;
                 }
@@ -17595,8 +17577,11 @@ CORINFO_CLASS_HANDLE Compiler::gtGetStructHandleIfPresent(GenTree* tree)
 #endif
                 break;
             case GT_LCL_VAR:
-                structHnd = lvaTable[tree->AsLclVarCommon()->GetLclNum()].lvVerTypeInfo.GetClassHandle();
+            {
+                unsigned lclNum = tree->AsLclVarCommon()->GetLclNum();
+                structHnd       = lvaGetStruct(lclNum);
                 break;
+            }
             case GT_RETURN:
                 structHnd = gtGetStructHandleIfPresent(tree->AsOp()->gtOp1);
                 break;
@@ -18464,7 +18449,7 @@ void GenTree::ParseArrayAddressWork(Compiler*       comp,
                     assert(!AsOp()->gtOp2->AsIntCon()->ImmedValNeedsReloc(comp));
                     // TODO-CrossBitness: we wouldn't need the cast below if GenTreeIntCon::gtIconVal had target_ssize_t
                     // type.
-                    target_ssize_t shiftVal = AsOp()->gtOp2->AsIntConCommon()->IconValue();
+                    target_ssize_t shiftVal = (target_ssize_t)AsOp()->gtOp2->AsIntConCommon()->IconValue();
                     target_ssize_t subMul   = target_ssize_t{1} << shiftVal;
                     AsOp()->gtOp1->ParseArrayAddressWork(comp, inputMul * subMul, pArr, pInxVN, pOffset, pFldSeq);
                     return;
@@ -19183,7 +19168,7 @@ void ReturnTypeDesc::InitializeStructReturnType(Compiler* comp, CORINFO_CLASS_HA
     {
         case Compiler::SPK_EnclosingType:
             m_isEnclosingType = true;
-            __fallthrough;
+            FALLTHROUGH;
 
         case Compiler::SPK_PrimitiveType:
         {

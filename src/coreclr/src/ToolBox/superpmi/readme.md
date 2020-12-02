@@ -78,7 +78,7 @@ To manually do a collection (not using the `superpmi.py` script or
 First, build the `dotnet/runtime` repo, which builds the `superpmi`, `mcs`,
 and `superpmi-shim-collector` programs, along with the rest of coreclr,
 and places them in the same native code directory as the JIT and the rest
-of coreclr, e.g., `f:\gh\runtime\artifacts\bin\coreclr\Windows_NT.x64.Checked\superpmi.exe`
+of coreclr, e.g., `f:\gh\runtime\artifacts\bin\coreclr\windows.x64.Checked\superpmi.exe`
 for a `dotnet/runtime` repo rooted at the `f:\gh\runtime` directory, and
 built on Windows for the x64 Checked architecture / build flavor combination.
 
@@ -121,9 +121,7 @@ Set the following environment variables:
 ```
 SuperPMIShimLogPath=<full path to an existing, empty temporary directory>
 SuperPMIShimPath=<full path to clrjit.dll, the "standalone" JIT>
-COMPlus_AltJit=*
-COMPlus_AltJitNgen=*
-COMPlus_AltJitName=superpmi-shim-collector.dll
+COMPlus_JitName=superpmi-shim-collector.dll
 ```
 
 for example, on Windows:
@@ -131,10 +129,8 @@ for example, on Windows:
 ```
 mkdir f:\spmi\temp
 set SuperPMIShimLogPath=f:\spmi\temp
-set SuperPMIShimPath=f:\gh\runtime\artifacts\tests\coreclr\Windows_NT.x64.Checked\Tests\Core_Root\clrjit.dll
-set COMPlus_AltJit=*
-set COMPlus_AltJitNgen=*
-set COMPlus_AltJitName=superpmi-shim-collector.dll
+set SuperPMIShimPath=f:\gh\runtime\artifacts\tests\coreclr\windows.x64.Checked\Tests\Core_Root\clrjit.dll
+set COMPlus_JitName=superpmi-shim-collector.dll
 ```
 
 (On Linux, use `libclrjit.so` and `libsuperpmi-shim-collector.so`.
@@ -181,7 +177,7 @@ the initial collection).
 So, for the example above, you might use:
 
 ```
-f:\gh\runtime\artifacts\bin\coreclr\Windows_NT.x64.Checked\mcs.exe -merge f:\spmi\base.mch f:\spmi\temp\*.mc -recursive -dedup -thin
+f:\gh\runtime\artifacts\bin\coreclr\windows.x64.Checked\mcs.exe -merge f:\spmi\base.mch f:\spmi\temp\*.mc -recursive -dedup -thin
 ```
 
 Note that `mcs -merge` without `-dedup -thin` is literally just a file concatenation
@@ -210,7 +206,7 @@ the ways in which we normally use SuperPMI.
 For the continuing example, you might use:
 
 ```
-f:\gh\runtime\artifacts\bin\coreclr\Windows_NT.x64.Checked\mcs.exe -removeDup -thin f:\spmi\base.mch f:\spmi\unique.mch
+f:\gh\runtime\artifacts\bin\coreclr\windows.x64.Checked\mcs.exe -removeDup -thin f:\spmi\base.mch f:\spmi\unique.mch
 ```
 
 After this step, you can remove the base.mch file (unless you want to debug
@@ -234,8 +230,8 @@ mcs.exe -strip basefail.mcl unique.mch final.mch
 Or, continuing the example above, giving full paths, we have:
 
 ```
-f:\gh\runtime\artifacts\bin\coreclr\Windows_NT.x64.Checked\superpmi.exe -p -f f:\spmi\basefail.mcl f:\spmi\unique.mch f:\gh\runtime\artifacts\bin\coreclr\Windows_NT.x64.Checked\clrjit.dll
-f:\gh\runtime\artifacts\bin\coreclr\Windows_NT.x64.Checked\mcs.exe -strip f:\spmi\basefail.mcl f:\spmi\unique.mch f:\spmi\final.mch
+f:\gh\runtime\artifacts\bin\coreclr\windows.x64.Checked\superpmi.exe -p -f f:\spmi\basefail.mcl f:\spmi\unique.mch f:\gh\runtime\artifacts\bin\coreclr\windows.x64.Checked\clrjit.dll
+f:\gh\runtime\artifacts\bin\coreclr\windows.x64.Checked\mcs.exe -strip f:\spmi\basefail.mcl f:\spmi\unique.mch f:\spmi\final.mch
 ```
 
 
@@ -250,7 +246,7 @@ mcs -toc final.mch
 or, using the full paths from above:
 
 ```
-f:\gh\runtime\artifacts\bin\coreclr\Windows_NT.x64.Checked\mcs.exe -toc f:\spmi\final.mch
+f:\gh\runtime\artifacts\bin\coreclr\windows.x64.Checked\mcs.exe -toc f:\spmi\final.mch
 ```
 
 
@@ -265,7 +261,7 @@ superpmi -p -f finalfail.mcl final.mch clrjit.dll
 Or, continuing the example above, giving full paths, we have:
 
 ```
-f:\gh\runtime\artifacts\bin\coreclr\Windows_NT.x64.Checked\superpmi.exe -p -f f:\spmi\finalfail.mcl f:\spmi\final.mch f:\gh\runtime\artifacts\bin\coreclr\Windows_NT.x64.Checked\clrjit.dll
+f:\gh\runtime\artifacts\bin\coreclr\windows.x64.Checked\superpmi.exe -p -f f:\spmi\finalfail.mcl f:\spmi\final.mch f:\gh\runtime\artifacts\bin\coreclr\windows.x64.Checked\clrjit.dll
 ```
 
 In this case, if `finalfail.mcl` is not empty, there was a failure in the final "check" replay.

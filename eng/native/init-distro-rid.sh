@@ -119,7 +119,6 @@ initNonPortableDistroRid()
 #
 #   __DistroRid
 #   __PortableBuild
-#   __RuntimeId
 #
 initDistroRidGlobal()
 {
@@ -144,13 +143,6 @@ initDistroRidGlobal()
             echo "Error rootfsDir has been passed, but the location is not valid."
             exit 1
         fi
-    fi
-
-    if [ "$buildArch" = "armel" ]; then
-        # Armel cross build is Tizen specific and does not support Portable RID build
-        __PortableBuild=0
-        export __PortableBuild
-        isPortable=0
     fi
 
     initNonPortableDistroRid "${targetOs}" "${buildArch}" "${isPortable}" "${rootfsDir}"
@@ -201,13 +193,8 @@ initDistroRidGlobal()
 
     if [ -z "$__DistroRid" ]; then
         echo "DistroRid is not set. This is almost certainly an error"
-
         exit 1
-    else
-        echo "__DistroRid: ${__DistroRid}"
-        echo "__RuntimeId: ${__DistroRid}"
-
-        __RuntimeId="${__DistroRid}"
-        export __RuntimeId
     fi
+
+    echo "__DistroRid: ${__DistroRid}"
 }

@@ -8,11 +8,10 @@ The main users of this tool are people working on software that emits MSIL code.
 
 ## How to use ILVerify
 
-ILVerify is published as a global tool in the .NET runtime nightly feed. Install it by running:
+ILVerify is published as a global tool [package](https://www.nuget.org/packages/dotnet-ilverify/). Install it by running:
 
 ```
-dotnet new tool-manifest
-dotnet tool install dotnet-ilverify --version 5.0.0-preview* --add-source https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet5/nuget/v3/index.json
+dotnet tool install --global dotnet-ilverify
 ```
 
 Example of use:

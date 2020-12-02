@@ -1657,6 +1657,7 @@ namespace System.Net.Http.Functional.Tests
         [OuterLoop("Significant delay.")]
         [MemberData(nameof(KeepAliveTestDataSource))]
         [ConditionalTheory(nameof(SupportsAlpn))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/41929")]
         public async Task Http2_PingKeepAlive(TimeSpan keepAlivePingDelay, HttpKeepAlivePingPolicy keepAlivePingPolicy, bool expectRequestFail)
         {
             TimeSpan pingTimeout = TimeSpan.FromSeconds(5);
@@ -1740,7 +1741,7 @@ namespace System.Net.Http.Functional.Tests
                     // Send response and close the stream.
                     if (expectRequestFail)
                     {
-                        await Assert.ThrowsAsync<NetworkException>(() => connection.SendDefaultResponseAsync(streamId2));
+                        await Assert.ThrowsAsync<IOException>(() => connection.SendDefaultResponseAsync(streamId2));
                         // As stream is closed we don't want to continue with sending data.
                         return;
                     }

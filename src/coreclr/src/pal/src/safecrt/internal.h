@@ -459,10 +459,6 @@ _MRTIMP int __cdecl _onexit_process(_CPVFV);
 _MRTIMP int __cdecl _onexit_app_domain(_CPVFV);
 #endif  /* MRTDLL */
 
-#ifdef _MBCS
-int  __cdecl __initmbctable(void);      /* mbctype.c */
-#endif  /* _MBCS */
-
 #ifndef _MANAGED_MAIN
 int __CRTDECL main(__in int _Argc, __in_ecount_z(_Argc) char ** _Argv, __in_z char ** _Env);
 int __CRTDECL wmain(__in int _Argc, __in_ecount_z(_Argc) char16_t ** _Argv, __in_z char16_t ** _Env);

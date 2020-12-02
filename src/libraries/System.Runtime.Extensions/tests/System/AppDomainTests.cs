@@ -391,8 +391,10 @@ namespace System.Tests
             using (Process p = Process.GetCurrentProcess())
             {
                 TimeSpan processTime = p.UserProcessorTime;
+                Assert.InRange(processTime, TimeSpan.Zero, TimeSpan.MaxValue);
+
                 TimeSpan monitoringTime = AppDomain.CurrentDomain.MonitoringTotalProcessorTime;
-                Assert.InRange(monitoringTime, processTime, TimeSpan.MaxValue);
+                Assert.InRange(monitoringTime, processTime * 0.95, TimeSpan.MaxValue); // *0.95 for a bit of wiggle room due to precision differences with employed timing mechanisms
             }
 
             GC.KeepAlive(o);

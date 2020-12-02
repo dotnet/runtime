@@ -102,6 +102,7 @@ BYTE*  NativeWalker::SetupOrSimulateInstructionForPatchSkip(T_CONTEXT * context,
 
 
     /*
+    Based off ARM DDI 0487F.c (C.4.1)
     Modify the patchBypass if the opcode is IP-relative, otherwise return it
     The following are the instructions that are IP-relative  :
     . ADR and ADRP.
@@ -113,9 +114,8 @@ BYTE*  NativeWalker::SetupOrSimulateInstructionForPatchSkip(T_CONTEXT * context,
 
     _ASSERTE((UINT_PTR)address == context->Pc);
 
-    if ((opcode & 0x1F000000) == 0x10000000)  //ADR & ADRP
+    if ((opcode & 0x1F000000) == 0x10000000)  //ADR & ADRP (PC-Relative)
     {
-
         TADDR immhigh = ((opcode >> 5) & 0x007FFFF) << 2;
         TADDR immlow  = (opcode & 0x60000000) >> 29;
         offset = immhigh | immlow; //ADR
@@ -136,13 +136,10 @@ BYTE*  NativeWalker::SetupOrSimulateInstructionForPatchSkip(T_CONTEXT * context,
         {
             LOG((LF_CORDB, LL_INFO100000, "Arm64Walker::Simulate opcode: %x to ADR X%d %p\n", opcode, RegNum, offset));
         }
-
-
     }
 
     else if ((opcode & 0x3B000000) == 0x18000000) //LDR Literal (General or SIMD)
-     {
-
+    {
         offset = Expand19bitoffset(opcode);
         RegNum = (opcode & 0x1F);
         LOG((LF_CORDB, LL_INFO100000, "Arm64Walker::Simulate opcode: %x to LDR[SW] | PRFM X%d %p\n", opcode, RegNum, offset));
@@ -187,81 +184,55 @@ BYTE*  NativeWalker::SetupOrSimulateInstructionForPatchSkip(T_CONTEXT * context,
     {
         CORDbgSetInstruction((CORDB_ADDRESS_TYPE *)patchBypass, 0xd503201f); //Add Nop in buffer
 
-        PCODE RegContents;
         if ((opcode & 0x3B000000) == 0x18000000) //LDR Literal
         {
-            RegContents = (PCODE)GetMem(ip);
-            if ((opcode & 0x4000000)) //LDR literal for SIMD
+            bool isSimd = ((opcode & 0x4000000) != 0); //LDR literal for SIMD
+            NEON128 SimdRegContents = { 0 };
+            short opc = (opcode >> 30);
+
+            LOG((LF_CORDB, LL_INFO100000, "Arm64Walker::Simulate opcode: %x (opc: %x, isSimd: %x)\n", opcode, opc, isSimd));
+
+            switch (opc)
             {
-                NEON128 SimdRegContents;
-                LOG((LF_CORDB, LL_INFO100000, "Arm64Walker::Simulate opcode: %x to LDR V%d %p\n", opcode, RegNum, offset));
-                short opc = (opcode >> 30);
-                switch (opc)
+            case 0: //load 4 bytes
+                SimdRegContents.Low = GetMem(ip, 4, /* signExtend */ false);
+                SimdRegContents.High = 0;
+                if (isSimd) //LDR St [imm]
+                    SetSimdReg(context, RegNum, SimdRegContents);
+                else // LDR Wt [imm]
+                    SetReg(context, RegNum, SimdRegContents.Low);
+
+                break;
+            case 1: //load 8 bytes
+                SimdRegContents.Low = GetMem(ip, 8, /* signExtend */ false);
+                SimdRegContents.High = 0;
+                if (isSimd) //LDR Dt [imm]
+                    SetSimdReg(context, RegNum, SimdRegContents);
+                else // LDR Xt [imm]
+                    SetReg(context, RegNum, SimdRegContents.Low);
+                break;
+            case 2: //SIMD 16 byte data
+                if (isSimd) //LDR Qt [imm]
                 {
-                case 0: //4byte data into St
-                    SimdRegContents.Low = 0xFFFFFFFF & RegContents;  //zero the upper 32bit
-                    SimdRegContents.High = 0;
-                    SetSimdReg(context, RegNum, SimdRegContents);
-                    break;
-                case 1: //8byte data into Dt
-                    SimdRegContents.Low = RegContents;
-                    SimdRegContents.High = 0;
-                    SetSimdReg(context, RegNum, SimdRegContents);
-                    break;
-                case 2: //SIMD 16 byte data
                     SimdRegContents = GetSimdMem(ip);
                     SetSimdReg(context, RegNum, SimdRegContents);
-                    break;
-                default:
-                    LOG((LF_CORDB, LL_INFO100000, "Arm64Walker::Simulate Unknown opcode: %x [LDR(litera,SIMD &FP)]  \n", opcode));
-                    _ASSERTE(!("Arm64Walker::Simulated Unknown opcode"));
-
                 }
-            }
-            else
-            {
-                short opc = (opcode >> 30);
-                switch (opc)
+                else //LDR St [imm] (sign extendeded)
                 {
-                case 0: //4byte data into Wt
-                    LOG((LF_CORDB, LL_INFO100000, "Arm64Walker::Simulate opcode: %x to LDR W%d %p\n", opcode, RegNum, offset));
-                    RegContents = 0xFFFFFFFF & RegContents;  //zero the upper 32bits
-                    SetReg(context, RegNum, RegContents);
-                    break;
-
-                case 1: //8byte data into Xt
-                    LOG((LF_CORDB, LL_INFO100000, "Arm64Walker::Simulate opcode: %x to LDR X%d %p\n", opcode, RegNum, offset));
-                    SetReg(context, RegNum, RegContents);
-                    break;
-
-                case 2: //LDRSW
-                    LOG((LF_CORDB, LL_INFO100000, "Arm64Walker::Simulate opcode: %x to LDRSW X%d %p\n", opcode, RegNum, offset));
-                    RegContents = 0xFFFFFFFF & RegContents;
-
-                    if (RegContents & 0x80000000) //Sign extend the Word
-                    {
-                        RegContents = 0xFFFFFFFF00000000 | RegContents;
-                    }
-                    SetReg(context, RegNum, RegContents);
-                    break;
-                case 3:
-                    LOG((LF_CORDB, LL_INFO100000, "Arm64Walker::Simulate opcode: %x  as PRFM ,but do nothing \n", opcode));
-
-                    break;
-                default:
-                    LOG((LF_CORDB, LL_INFO100000, "Arm64Walker::Simulate Unknown opcode: %x [LDR(literal)]  \n", opcode));
-                    _ASSERTE(!("Arm64Walker::Simulated Unknown opcode"));
-
+                    SimdRegContents.Low = GetMem(ip, 4, /* signExtend */ true);
+                    SetReg(context, RegNum, SimdRegContents.Low);
                 }
+                break;
+            case 3:
+                LOG((LF_CORDB, LL_INFO100000, "Arm64Walker::Simulate opcode: %x  as PRFM ,but do nothing \n", opcode));
+                break;
+            default:
+                LOG((LF_CORDB, LL_INFO100000, "Arm64Walker::Simulate Unknown opcode: %x [LDR(litera,SIMD &FP)]  \n", opcode));
+                _ASSERTE(!("Arm64Walker::Simulated Unknown opcode"));
             }
-        }
-        else
-        {
-            RegContents = ip;
-            SetReg(context, RegNum, RegContents);
-        }
+            LOG((LF_CORDB, LL_INFO100000, "Arm64Walker::Simulate loadedMemory [Hi: %ull, lo: %ull]\n", SimdRegContents.High, SimdRegContents.Low));
 
-        LOG((LF_CORDB, LL_INFO100000, "Arm64Walker::Simulate opcode: %x  to update Reg X[V]%d, as %p \n", opcode, RegNum, GetReg(context, RegNum)));
+        }
     }
     //else  Just execute the opcodes as IS
     //{

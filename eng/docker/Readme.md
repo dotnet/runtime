@@ -5,7 +5,7 @@ Provides reusable docker build infrastructure for the dotnet/runtime repo.
 ## libraries-sdk Dockerfiles
 
 The `libraries-sdk` Dockerfiles can be used to build dotnet sdk docker images
-that contain the current libraries built from source. 
+that contain the current libraries built from source.
 These images can be used to build dockerized dotnet services that target the current libraries.
 Currently, debian and windows nanoserver sdk's are supported.
 

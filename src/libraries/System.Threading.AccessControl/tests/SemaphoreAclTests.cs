@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Security.AccessControl;
 using System.Security.Principal;
@@ -140,6 +141,116 @@ namespace System.Threading.Tests
 
         }
 
+        [Fact]
+        public void Semaphore_OpenExisting()
+        {
+            string name = GetRandomName();
+            SemaphoreSecurity expectedSecurity = GetSemaphoreSecurity(WellKnownSidType.BuiltinUsersSid, SemaphoreRights.FullControl, AccessControlType.Allow);
+            using Semaphore semaphoreNew = CreateAndVerifySemaphore(initialCount: 1, maximumCount: 2, name, expectedSecurity, expectedCreatedNew: true);
+
+            using Semaphore semaphoreExisting = SemaphoreAcl.OpenExisting(name, SemaphoreRights.FullControl);
+
+            VerifyHandles(semaphoreNew, semaphoreExisting);
+            SemaphoreSecurity actualSecurity = semaphoreExisting.GetAccessControl();
+            VerifySemaphoreSecurity(expectedSecurity, actualSecurity);
+        }
+
+        [Fact]
+        public void Semaphore_TryOpenExisting()
+        {
+            string name = GetRandomName();
+            SemaphoreSecurity expectedSecurity = GetSemaphoreSecurity(WellKnownSidType.BuiltinUsersSid, SemaphoreRights.FullControl, AccessControlType.Allow);
+            using Semaphore semaphoreNew = CreateAndVerifySemaphore(initialCount: 1, maximumCount: 2, name, expectedSecurity, expectedCreatedNew: true);
+
+            Assert.True(SemaphoreAcl.TryOpenExisting(name, SemaphoreRights.FullControl, out Semaphore semaphoreExisting));
+            Assert.NotNull(semaphoreExisting);
+
+            VerifyHandles(semaphoreNew, semaphoreExisting);
+            SemaphoreSecurity actualSecurity = semaphoreExisting.GetAccessControl();
+            VerifySemaphoreSecurity(expectedSecurity, actualSecurity);
+
+            semaphoreExisting.Dispose();
+        }
+
+        [Fact]
+        public void Semaphore_OpenExisting_NameNotFound()
+        {
+            string name = "ThisShouldNotExist";
+            Assert.Throws<WaitHandleCannotBeOpenedException>(() =>
+            {
+                SemaphoreAcl.OpenExisting(name, SemaphoreRights.FullControl).Dispose();
+            });
+
+            Assert.False(SemaphoreAcl.TryOpenExisting(name, SemaphoreRights.FullControl, out _));
+        }
+
+        [Fact]
+        public void Semaphore_OpenExisting_NameInvalid()
+        {
+            string name = '\0'.ToString();
+            Assert.Throws<WaitHandleCannotBeOpenedException>(() =>
+            {
+                SemaphoreAcl.OpenExisting(name, SemaphoreRights.FullControl).Dispose();
+            });
+
+            Assert.False(SemaphoreAcl.TryOpenExisting(name, SemaphoreRights.FullControl, out _));
+        }
+
+        [Fact]
+        public void Semaphore_OpenExisting_PathNotFound()
+        {
+            string name = @"global\foo";
+            Assert.Throws<IOException>(() =>
+            {
+                SemaphoreAcl.OpenExisting(name, SemaphoreRights.FullControl).Dispose();
+            });
+
+            Assert.False(SemaphoreAcl.TryOpenExisting(name, SemaphoreRights.FullControl, out _));
+        }
+
+        [Fact]
+        public void Semaphore_OpenExisting_BadPathName()
+        {
+            string name = @"\\?\Path";
+            Assert.Throws<IOException>(() =>
+            {
+                SemaphoreAcl.OpenExisting(name, SemaphoreRights.FullControl).Dispose();
+            });
+
+            Assert.Throws<IOException>(() =>
+            {
+                SemaphoreAcl.TryOpenExisting(name, SemaphoreRights.FullControl, out _);
+            });
+        }
+
+        [Fact]
+        public void Semaphore_OpenExisting_NullName()
+        {
+            Assert.Throws<ArgumentNullException>(() =>
+            {
+                SemaphoreAcl.OpenExisting(null, SemaphoreRights.FullControl).Dispose();
+            });
+
+            Assert.Throws<ArgumentNullException>(() =>
+            {
+                SemaphoreAcl.TryOpenExisting(null, SemaphoreRights.FullControl, out _);
+            });
+        }
+
+        [Fact]
+        public void Semaphore_OpenExisting_EmptyName()
+        {
+            Assert.Throws<ArgumentException>(() =>
+            {
+                SemaphoreAcl.OpenExisting(string.Empty, SemaphoreRights.FullControl).Dispose();
+            });
+
+            Assert.Throws<ArgumentException>(() =>
+            {
+                SemaphoreAcl.TryOpenExisting(string.Empty, SemaphoreRights.FullControl, out _);
+            });
+        }
+
         private SemaphoreSecurity GetBasicSemaphoreSecurity()
         {
             return GetSemaphoreSecurity(
@@ -170,6 +281,18 @@ namespace System.Threading.Tests
             }
 
             return Semaphore;
+        }
+
+        private void VerifyHandles(Semaphore expected, Semaphore actual)
+        {
+            Assert.NotNull(expected.SafeWaitHandle);
+            Assert.NotNull(actual.SafeWaitHandle);
+
+            Assert.False(expected.SafeWaitHandle.IsClosed);
+            Assert.False(actual.SafeWaitHandle.IsClosed);
+
+            Assert.False(expected.SafeWaitHandle.IsInvalid);
+            Assert.False(actual.SafeWaitHandle.IsInvalid);
         }
 
         private void VerifySemaphoreSecurity(SemaphoreSecurity expectedSecurity, SemaphoreSecurity actualSecurity)

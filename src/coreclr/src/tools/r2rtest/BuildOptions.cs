@@ -15,6 +15,9 @@ namespace R2RTest
         public DirectoryInfo CoreRootDirectory { get; set; }
         public bool Crossgen { get; set; }
         public FileInfo CrossgenPath { get; set; }
+        public FileInfo Crossgen2Path { get; set; }
+        public bool VerifyTypeAndFieldLayout { get; set; }
+        public string TargetArch { get; set; }
         public bool Exe { get; set; }
         public bool NoJit { get; set; }
         public bool NoCrossgen2 { get; set; }
@@ -31,6 +34,7 @@ namespace R2RTest
         public bool LargeBubble { get; set; }
         public bool Composite { get; set; }
         public int Crossgen2Parallelism { get; set; }
+        public FileInfo Crossgen2JitPath { get; set; }
         public int CompilationTimeoutMinutes { get; set; }
         public int ExecutionTimeoutMinutes { get; set; }
         public DirectoryInfo[] ReferencePath { get; set; }
@@ -107,7 +111,7 @@ namespace R2RTest
         /// </summary>
         /// <param name="isFramework">True if compiling the CoreFX framework assemblies</param>
         /// <param name="referencePaths">Optional set of reference paths to use instead of BuildOptions.ReferencePaths()</param>
-        public IEnumerable<CompilerRunner> CompilerRunners(bool isFramework, IEnumerable<string> overrideReferencePaths = null)
+        public IEnumerable<CompilerRunner> CompilerRunners(bool isFramework, IEnumerable<string> overrideReferencePaths = null, string overrideOutputPath = null)
         {
             List<CompilerRunner> runners = new List<CompilerRunner>();
 
@@ -116,7 +120,7 @@ namespace R2RTest
                 List<string> cpaotReferencePaths = new List<string>();
                 cpaotReferencePaths.Add(CoreRootOutputPath(CompilerIndex.CPAOT, isFramework));
                 cpaotReferencePaths.AddRange(overrideReferencePaths != null ? overrideReferencePaths : ReferencePaths());
-                runners.Add(new Crossgen2Runner(this, new Crossgen2RunnerOptions(), cpaotReferencePaths));
+                runners.Add(new Crossgen2Runner(this, new Crossgen2RunnerOptions() { Composite = this.Composite }, cpaotReferencePaths, overrideOutputPath));
             }
 
             if (Crossgen)
@@ -124,7 +128,7 @@ namespace R2RTest
                 List<string> crossgenReferencePaths = new List<string>();
                 crossgenReferencePaths.Add(CoreRootOutputPath(CompilerIndex.Crossgen, isFramework));
                 crossgenReferencePaths.AddRange(overrideReferencePaths != null ? overrideReferencePaths : ReferencePaths());
-                runners.Add(new CrossgenRunner(this, crossgenReferencePaths));
+                runners.Add(new CrossgenRunner(this, crossgenReferencePaths, overrideOutputPath));
             }
 
             if (!NoJit)

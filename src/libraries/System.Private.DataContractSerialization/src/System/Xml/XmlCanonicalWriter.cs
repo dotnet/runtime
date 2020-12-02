@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections;
+using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Runtime;
 using System.Runtime.Serialization;
@@ -12,25 +14,25 @@ namespace System.Xml
 {
     internal sealed class XmlCanonicalWriter
     {
-        private XmlUTF8NodeWriter _writer;
-        private MemoryStream _elementStream;
-        private byte[] _elementBuffer;
-        private XmlUTF8NodeWriter _elementWriter;
+        private XmlUTF8NodeWriter _writer = null!; // initialized in SetOutput
+        private MemoryStream _elementStream = null!; // initialized in SetOutput
+        private byte[]? _elementBuffer;
+        private XmlUTF8NodeWriter _elementWriter = null!; // initialized in SetOutput
         private bool _inStartElement;
         private int _depth;
-        private Scope[] _scopes;
+        private Scope[]? _scopes;
         private int _xmlnsAttributeCount;
-        private XmlnsAttribute[] _xmlnsAttributes;
+        private XmlnsAttribute[]? _xmlnsAttributes;
         private int _attributeCount;
-        private Attribute[] _attributes;
+        private Attribute[]? _attributes;
         private Attribute _attribute;
         private Element _element;
-        private byte[] _xmlnsBuffer;
+        private byte[]? _xmlnsBuffer;
         private int _xmlnsOffset;
         private const int maxBytesPerChar = 3;
         private int _xmlnsStartOffset;
         private bool _includeComments;
-        private string[] _inclusivePrefixes;
+        private string[]? _inclusivePrefixes;
         private const string xmlnsNamespace = "http://www.w3.org/2000/xmlns/";
 
         private static readonly bool[] s_isEscapedAttributeChar = new bool[]
@@ -52,7 +54,7 @@ namespace System.Xml
         {
         }
 
-        public void SetOutput(Stream stream, bool includeComments, string[] inclusivePrefixes)
+        public void SetOutput(Stream stream, bool includeComments, string[]? inclusivePrefixes)
         {
             if (stream == null)
                 throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull(nameof(stream));
@@ -124,7 +126,7 @@ namespace System.Xml
             if (_elementWriter != null)
                 _elementWriter.Close();
             if (_elementStream != null && _elementStream.Length > 512)
-                _elementStream = null;
+                _elementStream = null!;
             _elementBuffer = null;
             if (_scopes != null && _scopes.Length > 16)
                 _scopes = null;
@@ -153,7 +155,7 @@ namespace System.Xml
             }
         }
 
-
+        [MemberNotNull(nameof(_scopes))]
         private void StartElement()
         {
             if (_scopes == null)
@@ -177,7 +179,7 @@ namespace System.Xml
         private void EndElement()
         {
             _depth--;
-            _xmlnsAttributeCount = _scopes[_depth].xmlnsAttributeCount;
+            _xmlnsAttributeCount = _scopes![_depth].xmlnsAttributeCount;
             _xmlnsOffset = _scopes[_depth].xmlnsOffset;
         }
 
@@ -204,7 +206,7 @@ namespace System.Xml
                 // Scan through all the namespace declarations in the outer scope.
                 for (int i = 0; i < _scopes[0].xmlnsAttributeCount; ++i)
                 {
-                    if (IsInclusivePrefix(ref _xmlnsAttributes[i]))
+                    if (IsInclusivePrefix(ref _xmlnsAttributes![i]))
                     {
                         XmlnsAttribute attribute = _xmlnsAttributes[i];
                         AddXmlnsAttribute(ref attribute);
@@ -253,7 +255,7 @@ namespace System.Xml
                 // Scan through all the namespace declarations in the outer scope.
                 for (int i = 0; i < _scopes[0].xmlnsAttributeCount; ++i)
                 {
-                    if (IsInclusivePrefix(ref _xmlnsAttributes[i]))
+                    if (IsInclusivePrefix(ref _xmlnsAttributes![i]))
                     {
                         XmlnsAttribute attribute = _xmlnsAttributes[i];
                         AddXmlnsAttribute(ref attribute);
@@ -264,11 +266,11 @@ namespace System.Xml
 
         private bool IsInclusivePrefix(ref XmlnsAttribute xmlnsAttribute)
         {
-            for (int i = 0; i < _inclusivePrefixes.Length; ++i)
+            for (int i = 0; i < _inclusivePrefixes!.Length; ++i)
             {
                 if (_inclusivePrefixes[i].Length == xmlnsAttribute.prefixLength)
                 {
-                    if (string.Compare(Encoding.UTF8.GetString(_xmlnsBuffer, xmlnsAttribute.prefixOffset, xmlnsAttribute.prefixLength), _inclusivePrefixes[i], StringComparison.Ordinal) == 0)
+                    if (string.Compare(Encoding.UTF8.GetString(_xmlnsBuffer!, xmlnsAttribute.prefixOffset, xmlnsAttribute.prefixLength), _inclusivePrefixes[i], StringComparison.Ordinal) == 0)
                     {
                         return true;
                     }
@@ -286,14 +288,15 @@ namespace System.Xml
             _inStartElement = false;
             ResolvePrefixes();
             _writer.WriteStartElement(_elementBuffer, _element.prefixOffset, _element.prefixLength, _elementBuffer, _element.localNameOffset, _element.localNameLength);
-            for (int i = _scopes[_depth - 1].xmlnsAttributeCount; i < _xmlnsAttributeCount; i++)
+            for (int i = _scopes![_depth - 1].xmlnsAttributeCount; i < _xmlnsAttributeCount; i++)
             {
                 // Check if this prefix with the same namespace has already been rendered.
                 int j = i - 1;
                 bool alreadyReferred = false;
                 while (j >= 0)
                 {
-                    if (Equals(_xmlnsBuffer, _xmlnsAttributes[i].prefixOffset, _xmlnsAttributes[i].prefixLength, _xmlnsBuffer, _xmlnsAttributes[j].prefixOffset, _xmlnsAttributes[j].prefixLength))
+                    Debug.Assert(_xmlnsBuffer != null);
+                    if (Equals(_xmlnsBuffer, _xmlnsAttributes![i].prefixOffset, _xmlnsAttributes[i].prefixLength, _xmlnsBuffer, _xmlnsAttributes[j].prefixOffset, _xmlnsAttributes[j].prefixLength))
                     {
                         // Check if the namespace is also equal.
                         if (Equals(_xmlnsBuffer, _xmlnsAttributes[i].nsOffset, _xmlnsAttributes[i].nsLength, _xmlnsBuffer, _xmlnsAttributes[j].nsOffset, _xmlnsAttributes[j].nsLength))
@@ -320,7 +323,7 @@ namespace System.Xml
 
                 if (!alreadyReferred)
                 {
-                    WriteXmlnsAttribute(ref _xmlnsAttributes[i]);
+                    WriteXmlnsAttribute(ref _xmlnsAttributes![i]);
                 }
             }
             if (_attributeCount > 0)
@@ -332,7 +335,7 @@ namespace System.Xml
 
                 for (int i = 0; i < _attributeCount; i++)
                 {
-                    _writer.WriteText(_elementBuffer, _attributes[i].offset, _attributes[i].length);
+                    _writer.WriteText(_elementBuffer, _attributes![i].offset, _attributes[i].length);
                 }
             }
             _writer.WriteEndStartElement(false);
@@ -355,6 +358,7 @@ namespace System.Xml
             EndElement();
         }
 
+        [MemberNotNull(nameof(_xmlnsBuffer))]
         private void EnsureXmlnsBuffer(int byteCount)
         {
             if (_xmlnsBuffer == null)
@@ -369,6 +373,7 @@ namespace System.Xml
             }
         }
 
+        [MemberNotNull(nameof(_xmlnsAttributes))]
         public void WriteXmlnsAttribute(string prefix, string ns)
         {
             if (prefix == null)
@@ -393,6 +398,7 @@ namespace System.Xml
             AddXmlnsAttribute(ref xmlnsAttribute);
         }
 
+        [MemberNotNull(nameof(_xmlnsAttributes))]
         public void WriteXmlnsAttribute(byte[] prefixBuffer, int prefixOffset, int prefixLength, byte[] nsBuffer, int nsOffset, int nsLength)
         {
             if (prefixBuffer == null)
@@ -571,37 +577,6 @@ namespace System.Xml
             }
         }
 
-#if OLDWRITER
-        internal unsafe void WriteText(char* chars, int charCount)
-        {
-            ThrowIfClosed();
-            if (inStartElement)
-            {
-                elementWriter.WriteText(chars, charCount);
-            }
-            else
-            {
-                writer.WriteText(chars, charCount);
-            }
-        }
-        internal unsafe void WriteEscapedText(char* chars, int count)
-        {
-            ThrowIfClosed();
-            // Skip all white spaces before the start of root element.
-            if (this.depth > 0)
-            {
-                if (inStartElement)
-                {
-                    elementWriter.WriteEscapedText(chars, count);
-                }
-                else
-                {
-                    writer.WriteEscapedText(chars, count);
-                }
-            }
-        }
-#endif
-
         public void WriteText(int ch)
         {
             ThrowIfClosed();
@@ -693,6 +668,7 @@ namespace System.Xml
         {
             if (xmlnsAttribute.referred)
             {
+                Debug.Assert(_xmlnsBuffer != null);
                 _writer.WriteXmlnsAttribute(_xmlnsBuffer, xmlnsAttribute.prefixOffset, xmlnsAttribute.prefixLength, _xmlnsBuffer, xmlnsAttribute.nsOffset, xmlnsAttribute.nsLength);
             }
         }
@@ -706,7 +682,7 @@ namespace System.Xml
                     int attributeMin = i;
                     for (int j = i + 1; j < _attributeCount; j++)
                     {
-                        if (Compare(ref _attributes[j], ref _attributes[attributeMin]) < 0)
+                        if (Compare(ref _attributes![j], ref _attributes[attributeMin]) < 0)
                         {
                             attributeMin = j;
                         }
@@ -714,7 +690,7 @@ namespace System.Xml
 
                     if (attributeMin != i)
                     {
-                        Attribute temp = _attributes[i];
+                        Attribute temp = _attributes![i];
                         _attributes[i] = _attributes[attributeMin];
                         _attributes[attributeMin] = temp;
                     }
@@ -743,6 +719,7 @@ namespace System.Xml
             _attributeCount++;
         }
 
+        [MemberNotNull(nameof(_xmlnsAttributes))]
         private void AddXmlnsAttribute(ref XmlnsAttribute xmlnsAttribute)
         {
             //            Console.WriteLine("{0}={1}", Encoding.UTF8.GetString(xmlnsBuffer, xmlnsAttribute.prefixOffset, xmlnsAttribute.prefixLength),
@@ -778,7 +755,7 @@ namespace System.Xml
             else
             {
                 // Sort the xmlns xmlnsAttribute
-                int xmlnsAttributeIndex = _scopes[_depth - 1].xmlnsAttributeCount;
+                int xmlnsAttributeIndex = _scopes![_depth - 1].xmlnsAttributeCount;
                 bool isNewPrefix = true;
                 while (xmlnsAttributeIndex < _xmlnsAttributeCount)
                 {
@@ -812,13 +789,13 @@ namespace System.Xml
 
         private void ResolvePrefix(int prefixOffset, int prefixLength, out int nsOffset, out int nsLength)
         {
-            int xmlnsAttributeMin = _scopes[_depth - 1].xmlnsAttributeCount;
+            int xmlnsAttributeMin = _scopes![_depth - 1].xmlnsAttributeCount;
 
             // Lookup the attribute; it has to be there.  The decls are in sorted order
             // so we could do a binary search.
             int j = _xmlnsAttributeCount - 1;
-            while (!Equals(_elementBuffer, prefixOffset, prefixLength,
-                           _xmlnsBuffer, _xmlnsAttributes[j].prefixOffset, _xmlnsAttributes[j].prefixLength))
+            while (!Equals(_elementBuffer!, prefixOffset, prefixLength,
+                           _xmlnsBuffer!, _xmlnsAttributes![j].prefixOffset, _xmlnsAttributes[j].prefixLength))
             {
                 j--;
             }
@@ -866,26 +843,26 @@ namespace System.Xml
 
             for (int i = 0; i < _attributeCount; i++)
             {
-                ResolvePrefix(ref _attributes[i]);
+                ResolvePrefix(ref _attributes![i]);
             }
         }
 
         private int Compare(ref XmlnsAttribute xmlnsAttribute1, ref XmlnsAttribute xmlnsAttribute2)
         {
-            return Compare(_xmlnsBuffer,
+            return Compare(_xmlnsBuffer!,
                            xmlnsAttribute1.prefixOffset, xmlnsAttribute1.prefixLength,
                            xmlnsAttribute2.prefixOffset, xmlnsAttribute2.prefixLength);
         }
 
         private int Compare(ref Attribute attribute1, ref Attribute attribute2)
         {
-            int s = Compare(_xmlnsBuffer,
+            int s = Compare(_xmlnsBuffer!,
                             attribute1.nsOffset, attribute1.nsLength,
                             attribute2.nsOffset, attribute2.nsLength);
 
             if (s == 0)
             {
-                s = Compare(_elementBuffer,
+                s = Compare(_elementBuffer!,
                             attribute1.localNameOffset, attribute1.localNameLength,
                             attribute2.localNameOffset, attribute2.localNameLength);
             }
@@ -961,7 +938,7 @@ namespace System.Xml
 
                 Array.Sort(indeces, this);
 
-                Attribute[] attributes = new Attribute[_writer._attributes.Length];
+                Attribute[] attributes = new Attribute[_writer._attributes!.Length];
                 for (int i = 0; i < indeces.Length; i++)
                 {
                     attributes[i] = _writer._attributes[(int)indeces[i]];
@@ -970,11 +947,11 @@ namespace System.Xml
                 _writer._attributes = attributes;
             }
 
-            public int Compare(object obj1, object obj2)
+            public int Compare(object? obj1, object? obj2)
             {
-                int attributeIndex1 = (int)obj1;
-                int attributeIndex2 = (int)obj2;
-                return _writer.Compare(ref _writer._attributes[attributeIndex1], ref _writer._attributes[attributeIndex2]);
+                int attributeIndex1 = (int)obj1!;
+                int attributeIndex2 = (int)obj2!;
+                return _writer.Compare(ref _writer._attributes![attributeIndex1], ref _writer._attributes[attributeIndex2]);
             }
         }
 

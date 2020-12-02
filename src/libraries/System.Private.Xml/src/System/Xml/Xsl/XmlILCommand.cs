@@ -4,7 +4,6 @@
 // <spec>http://webdata/xml/specs/querylowlevel.xml</spec>
 //------------------------------------------------------------------------------
 
-#nullable enable
 using System.Collections;
 using System.Diagnostics;
 using System.IO;

@@ -20,7 +20,7 @@
  * Depends on memcmp and strlen
  */
 
-int __cdecl main(int argc, char *argv[])
+PALTEST(c_runtime_sprintf_s_test13_paltest_sprintf_test13, "c_runtime/sprintf_s/test13/paltest_sprintf_test13")
 {
     int neg = -42;
     int pos = 0x1234AB;

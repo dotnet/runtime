@@ -20,7 +20,7 @@ struct testCase
     char avalue[20];
 };
 
-int __cdecl main(int argc, char **argv)
+PALTEST(c_runtime_atof_test1_paltest_atof_test1, "c_runtime/atof/test1/paltest_atof_test1")
 {
     int i = 0;
     double f = 0;

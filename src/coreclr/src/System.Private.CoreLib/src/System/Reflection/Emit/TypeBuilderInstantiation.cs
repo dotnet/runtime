@@ -106,6 +106,11 @@ namespace System.Reflection.Emit
         public override string? FullName => m_strFullQualName ??= TypeNameBuilder.ToString(this, TypeNameBuilder.Format.FullName);
         public override string? Namespace => m_type.Namespace;
         public override string? AssemblyQualifiedName => TypeNameBuilder.ToString(this, TypeNameBuilder.Format.AssemblyQualifiedName);
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2055:UnrecognizedReflectionPatter",
+            Justification = "The entire TypeBuilderInstantiation is serving the MakeGenericType implementation. " +
+                            "Currently this is not supported by linker. Once it is supported the outercall (Type.MakeGenericType)" +
+                            "will validate that the types fullfill the necessary requirements of annotations on type parameters." +
+                            "As such the actual internals of the implementation are not interesting.")]
         private Type Substitute(Type[] substitutes)
         {
             Type[] inst = GetGenericArguments();

@@ -10,7 +10,7 @@
 ** This test is for Object Management Test case for event where Object type is  shareable.
 ** Algorithm
 ** o	Main Process Creates OBJECT_TYPE Object
-** o	Create PROCESS_COUNT processes aware of the Shared Object 
+** o	Create PROCESS_COUNT processes aware of the Shared Object
 **
 ** Author: ShamitP
 **
@@ -38,7 +38,7 @@ struct statistics{
     unsigned int processId;
     unsigned int operationsFailed;
     unsigned int operationsPassed;
-    unsigned int operationsTotal; 
+    unsigned int operationsTotal;
     DWORD        operationTime;
     unsigned int relationId;
 };
@@ -59,27 +59,25 @@ int testStatus;
 
 const char sTmpEventName[MAX_PATH_FNAME] = "StartTestEvent";
 
-void PALAPI Run_Thread(LPVOID lpParam);
+void PALAPI Run_Thread_event_nonshared(LPVOID lpParam);
 
 int GetParameters( int argc, char **argv)
 {
-    if( (argc != 5) || ((argc == 1) && !strcmp(argv[1],"/?")) 
+    if( (argc != 5) || ((argc == 1) && !strcmp(argv[1],"/?"))
        || !strcmp(argv[1],"/h") || !strcmp(argv[1],"/H"))
     {
         printf("PAL -Composite Object Management Event Test\n");
         printf("Usage:\n");
-        printf("Event\n\t[USE_PROCESS_COUNT [greater than 1] \n"); 
-        printf("\t[THREAD_COUNT [greater than 1] \n"); 
+        printf("Event\n\t[USE_PROCESS_COUNT [greater than 1] \n");
+        printf("\t[THREAD_COUNT [greater than 1] \n");
 	 printf("\t[REPEAT_COUNT [greater than 1]\n");
 	 printf("\t[RELATION_ID  [greater than or Equal to 1]\n");
-        
+
         return -1;
     }
 
- //   Trace("Args 1 is [%s], Arg 2 is [%s], Arg 3 is [%s]\n", argv[1], argv[2], argv[3]);
-    
     USE_PROCESS_COUNT = atoi(argv[1]);
-    if( USE_PROCESS_COUNT < 0) 
+    if( USE_PROCESS_COUNT < 0)
     {
         printf("\nInvalid USE_PROCESS_COUNT number, Pass greater than 1\n");
         return -1;
@@ -93,14 +91,14 @@ int GetParameters( int argc, char **argv)
     }
 
     REPEAT_COUNT = atoi(argv[3]);
-    if( REPEAT_COUNT < 1) 
+    if( REPEAT_COUNT < 1)
     {
         printf("\nInvalid REPEAT_COUNT number, Pass greater than 1\n");
         return -1;
     }
 
    RELATION_ID = atoi(argv[4]);
-    if( RELATION_ID < 1) 
+    if( RELATION_ID < 1)
     {
         printf("\nMain Process:Invalid RELATION_ID number, Pass greater than 1\n");
         return -1;
@@ -110,7 +108,7 @@ int GetParameters( int argc, char **argv)
     return 0;
 }
 
- int __cdecl main(INT argc, CHAR **argv)
+PALTEST(composite_object_management_event_nonshared_paltest_event_nonshared, "composite/object_management/event/nonshared/paltest_event_nonshared")
 {
     unsigned int i = 0;
     HANDLE hThread[MAXIMUM_WAIT_OBJECTS];
@@ -127,7 +125,7 @@ int GetParameters( int argc, char **argv)
 
     /* Variables to capture the file name and the file pointer at process level*/
     char processFileName[MAX_LONGPATH];
-    FILE *pProcessFile = NULL;   
+    FILE *pProcessFile = NULL;
     struct ProcessStats processStats;
     DWORD dwStartTime;
 
@@ -142,9 +140,8 @@ int GetParameters( int argc, char **argv)
     {
         Fail("Error in obtaining the parameters\n");
     }
-//    Trace("Process created, value of process count is [%d]\n", USE_PROCESS_COUNT);
 
-     /* Register the start time */  
+     /* Register the start time */
     dwStartTime = GetTickCount();
     processStats.relationId = RELATION_ID;
     processStats.processId  = USE_PROCESS_COUNT;
@@ -152,7 +149,7 @@ int GetParameters( int argc, char **argv)
     _snprintf(processFileName, MAX_LONGPATH, "%d_process_event_%d_.txt", USE_PROCESS_COUNT, RELATION_ID);
     pProcessFile = fopen(processFileName, "w+");
     if(pProcessFile == NULL)
-    { 
+    {
         Fail("Error in opening process File file for write for process [%d]\n", USE_PROCESS_COUNT);
     }
 
@@ -160,27 +157,27 @@ int GetParameters( int argc, char **argv)
 
     _snprintf(fileName, MAX_LONGPATH, "%d_thread_event_%d_.txt", USE_PROCESS_COUNT, RELATION_ID);
     pFile = fopen(fileName, "w+");
-    
+
     if(pFile == NULL)
-    { 
+    {
         Fail("Error in opening thread File for write for process [%d]\n", USE_PROCESS_COUNT);
     }
     // For each thread we will log operations failed (int), passed (int), total (int)
     // and number of ticks (DWORD) for the operations
     resultBuffer = new ResultBuffer( THREAD_COUNT, statisticsSize);
 
-    StartTestsEvHandle  = CreateEvent( 
+    StartTestsEvHandle  = CreateEvent(
                                         NULL, /* lpEventAttributes*/
                                         TRUE,  /* bManualReset */
                                         FALSE,   /* bInitialState */
                                         NULL  /* name of Event */
-                                      ); 
+                                      );
 
     if( StartTestsEvHandle  == NULL )
     {
         Fail("Error:%d: Unexpected failure "
             "to create %s Event for process count %d\n", GetLastError(), sTmpEventName, USE_PROCESS_COUNT );
-  
+
     }
 
     /* Create StartTest Event */
@@ -189,9 +186,9 @@ int GetParameters( int argc, char **argv)
                                 NULL, /* lpEventAttributes, inheritable to child processes*/
                                 TRUE,  /* bAutomaticReset */
                                 TRUE,   /* bInitialState */
-                                NULL  
+                                NULL
                                );
-            
+
     if( hEventHandle == NULL)
     {
         Fail("Unable to create Event handle for process id [%d], returned error [%d]\n", i, GetLastError());
@@ -205,26 +202,26 @@ int GetParameters( int argc, char **argv)
         hThread[i] = CreateThread(
                                     NULL,                   /* no security attributes */
                                     0,                      /* use default stack size */
-                                    (LPTHREAD_START_ROUTINE)Run_Thread,/* thread function */
+                                    (LPTHREAD_START_ROUTINE)Run_Thread_event_nonshared,/* thread function */
                                     (LPVOID)dwParam,  /* argument to thread function */
                                     0,                      /* use default creation flags  */
-                                    &threadId[i]     /* returns the thread identifier*/                                  
+                                    &threadId[i]     /* returns the thread identifier*/
                                   );
-  
-    
+
+
         if(hThread[i] == NULL)
         {
             Fail("Create Thread failed for %d process, and GetLastError value is %d\n", USE_PROCESS_COUNT, GetLastError());
         }
-    
+
     }
 
      if (!SetEvent(StartTestsEvHandle))
      {
-         Fail("Set Event for Start Tests failed for %d process, and GetLastError value is %d\n", USE_PROCESS_COUNT, GetLastError());           
+         Fail("Set Event for Start Tests failed for %d process, and GetLastError value is %d\n", USE_PROCESS_COUNT, GetLastError());
      }
     /* Test running */
-    returnCode = WaitForMultipleObjects( THREAD_COUNT, hThread, TRUE, INFINITE);  
+    returnCode = WaitForMultipleObjects( THREAD_COUNT, hThread, TRUE, INFINITE);
 
     if( WAIT_OBJECT_0 != returnCode )
     {
@@ -232,17 +229,15 @@ int GetParameters( int argc, char **argv)
         testStatus = FAIL;
     }
 
-    processStats.operationTime = GetTimeDiff(dwStartTime); 
+    processStats.operationTime = GetTimeDiff(dwStartTime);
 
     /* Write to a file*/
     if(pFile!= NULL)
-    { 
+    {
         for( i = 0; i < THREAD_COUNT; i++ )
-        {  
+        {
             buffer = (struct statistics *)resultBuffer->getResultBuffer(i);
             returnCode = fprintf(pFile, "%d,%d,%d,%d,%lu,%d\n", buffer->processId, buffer->operationsFailed, buffer->operationsPassed, buffer->operationsTotal, buffer->operationTime, buffer->relationId );
-            //Trace("Iteration %d over\n", i);
-            
         }
     }
     if(fclose(pFile))
@@ -260,7 +255,6 @@ int GetParameters( int argc, char **argv)
 
     /* Logging for the test case over, clean up the handles */
 
-//    Trace("Test Thread %d done\n", USE_PROCESS_COUNT);  
     /* Clean Up */
     for( i = 0; i < THREAD_COUNT; i++ )
     {
@@ -281,17 +275,17 @@ int GetParameters( int argc, char **argv)
     {
         Trace("Error:%d: CloseHandle failed for Process [%d] hEventHandle\n", GetLastError(), USE_PROCESS_COUNT);
         testStatus = FAIL;
-    } 
+    }
 
-    PAL_Terminate();
+    PAL_TerminateEx(testStatus);
     return testStatus;
 
 }
 
-void  PALAPI Run_Thread (LPVOID lpParam)
+void  PALAPI Run_Thread_event_nonshared (LPVOID lpParam)
 {
     unsigned int i = 0;
-    DWORD dwWaitResult; 
+    DWORD dwWaitResult;
 
     struct statistics stats;
     DWORD dwStartTime;
@@ -304,10 +298,10 @@ void  PALAPI Run_Thread (LPVOID lpParam)
     stats.operationTime    = 0;
 
     int Id=(int)lpParam;
-    
-    dwWaitResult = WaitForSingleObject( 
+
+    dwWaitResult = WaitForSingleObject(
                             StartTestsEvHandle,   // handle to start test handle
-                            TIMEOUT);  
+                            TIMEOUT);
 
     if(dwWaitResult != WAIT_OBJECT_0)
     {
@@ -318,40 +312,35 @@ void  PALAPI Run_Thread (LPVOID lpParam)
 
     for( i = 0; i < REPEAT_COUNT; i++ )
     {
-        dwWaitResult = WaitForSingleObject( 
+        dwWaitResult = WaitForSingleObject(
                             hEventHandle,   // handle to Event
-                            TIMEOUT);  
+                            TIMEOUT);
 
         if(dwWaitResult != WAIT_OBJECT_0)
         {
-//            Trace("Error while waiting for onject @ thread %d, # iter %d, RC is %d, Error is %d\n", Id, i, dwWaitResult, GetLastError());
-	        stats.operationsFailed += 1;
+            stats.operationsFailed += 1;
             stats.operationsTotal  += 1;
             testStatus = FAIL;
             continue;
         }
 
-        if (! SetEvent(hEventHandle)) 
-        { 
+        if (! SetEvent(hEventHandle))
+        {
             // Deal with error.
-//            Trace("Error while setting Event @ thread %d # iter %d\n", Id, i);
             stats.operationsFailed += 1;
             stats.operationsTotal  += 1;
             // Do we need to have while true loop to attempt to set event?
             testStatus = FAIL;
             continue;
-        } 
-    
+        }
+
         stats.operationsTotal  += 1;
         stats.operationsPassed += 1;
-//        Trace("Successs while setting Event @ iteration %d -> thread %d -> Process %d\n", i, Id, USE_PROCESS_COUNT);
-        
     }
-    
-    stats.operationTime = GetTimeDiff(dwStartTime); 
+
+    stats.operationTime = GetTimeDiff(dwStartTime);
     if(resultBuffer->LogResult(Id, (char *)&stats))
     {
         Fail("Error:%d: while writing to shared memory, Thread Id is[%d] and Process id is [%d]\n", GetLastError(), Id, USE_PROCESS_COUNT);
     }
-      //Trace("Thread %d over for process %d\n", Id, USE_PROCESS_COUNT);
 }

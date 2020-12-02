@@ -17,7 +17,7 @@
 #define BUFFER_SIZE 5000
 #define SMALL_BUFFER_SIZE 5
 
-int __cdecl main(int argc, char *argv[]) 
+PALTEST(miscellaneous_GetEnvironmentVariableA_test3_paltest_getenvironmentvariablea_test3, "miscellaneous/GetEnvironmentVariableA/test3/paltest_getenvironmentvariablea_test3")
 {
 
     int ReturnValueForNonExisting = 0;

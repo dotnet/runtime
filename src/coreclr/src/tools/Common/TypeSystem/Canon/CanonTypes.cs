@@ -158,7 +158,7 @@ namespace Internal.TypeSystem
             Debug.Assert(kind == CanonicalFormKind.Specific);
             return this;
         }
-        
+
         protected override TypeFlags ComputeTypeFlags(TypeFlags mask)
         {
             TypeFlags flags = 0;
@@ -240,7 +240,7 @@ namespace Internal.TypeSystem
 
         public override bool IsCanonicalSubtype(CanonicalFormKind policy)
         {
-            return policy == CanonicalFormKind.Universal || 
+            return policy == CanonicalFormKind.Universal ||
                 policy == CanonicalFormKind.Any;
         }
 

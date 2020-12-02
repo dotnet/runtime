@@ -71,52 +71,6 @@ done:
 
 /*++
 Function:
-LocalReAlloc
-
-See MSDN doc.
---*/
-HLOCAL
-PALAPI
-LocalReAlloc(
-       IN HLOCAL hMem,
-       IN SIZE_T uBytes,
-       IN UINT   uFlags)
-{
-    LPVOID lpRetVal = NULL;
-    PERF_ENTRY(LocalReAlloc);
-    ENTRY("LocalReAlloc (hMem=%p, uBytes=%u, uFlags=%#x)\n", hMem, uBytes, uFlags);
-
-    if (uFlags != LMEM_MOVEABLE)
-    {
-        // Currently valid iff uFlags is LMEM_MOVEABLE
-        ASSERT("Invalid parameter uFlags=0x%x\n", uFlags);
-        SetLastError(ERROR_INVALID_PARAMETER);
-        goto done;
-    }
-
-    if (uBytes == 0)
-    {
-        // PAL's realloc behaves like free for a requested size of zero bytes. Force a nonzero size to get a valid pointer.	
-        uBytes = 1;
-    }
-
-    lpRetVal = PAL_realloc(hMem, uBytes);
-
-    if (lpRetVal == NULL)
-    {
-        ERROR("Not enough memory\n");
-        SetLastError(ERROR_NOT_ENOUGH_MEMORY);
-        goto done;
-    }
-
-done:
-    LOGEXIT("LocalReAlloc returning %p.\n", lpRetVal);
-    PERF_EXIT(LocalReAlloc);
-    return (HLOCAL)lpRetVal;
-}
-
-/*++
-Function:
   LocalFree
 
 See MSDN doc.

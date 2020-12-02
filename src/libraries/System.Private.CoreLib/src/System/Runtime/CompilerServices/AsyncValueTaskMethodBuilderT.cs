@@ -22,7 +22,7 @@ namespace System.Runtime.CompilerServices
         /// is valid for the mode in which we're operating.  As such, it's cached on the generic builder per TResult
         /// rather than having one sentinel instance for all types.
         /// </remarks>
-        internal static readonly object s_syncSuccessSentinel = AsyncTaskCache.s_valueTaskPoolingEnabled ? (object)
+        internal static readonly object s_syncSuccessSentinel = AsyncValueTaskMethodBuilder.s_valueTaskPoolingEnabled ? (object)
             new SyncSuccessSentinelStateMachineBox() :
             new Task<TResult>(default(TResult)!);
 
@@ -56,7 +56,7 @@ namespace System.Runtime.CompilerServices
                 _result = result;
                 m_task = s_syncSuccessSentinel;
             }
-            else if (AsyncTaskCache.s_valueTaskPoolingEnabled)
+            else if (AsyncValueTaskMethodBuilder.s_valueTaskPoolingEnabled)
             {
                 Unsafe.As<StateMachineBox>(m_task).SetResult(result);
             }
@@ -70,7 +70,7 @@ namespace System.Runtime.CompilerServices
         /// <param name="exception">The exception to bind to the value task.</param>
         public void SetException(Exception exception)
         {
-            if (AsyncTaskCache.s_valueTaskPoolingEnabled)
+            if (AsyncValueTaskMethodBuilder.s_valueTaskPoolingEnabled)
             {
                 SetException(exception, ref Unsafe.As<object?, StateMachineBox?>(ref m_task));
             }
@@ -108,7 +108,7 @@ namespace System.Runtime.CompilerServices
                 // "work" but in a degraded mode, as we don't know the TStateMachine type here, and thus we use a box around
                 // the interface instead.
 
-                if (AsyncTaskCache.s_valueTaskPoolingEnabled)
+                if (AsyncValueTaskMethodBuilder.s_valueTaskPoolingEnabled)
                 {
                     var box = Unsafe.As<StateMachineBox?>(m_task);
                     if (box is null)
@@ -138,7 +138,7 @@ namespace System.Runtime.CompilerServices
             where TAwaiter : INotifyCompletion
             where TStateMachine : IAsyncStateMachine
         {
-            if (AsyncTaskCache.s_valueTaskPoolingEnabled)
+            if (AsyncValueTaskMethodBuilder.s_valueTaskPoolingEnabled)
             {
                 AwaitOnCompleted(ref awaiter, ref stateMachine, ref Unsafe.As<object?, StateMachineBox?>(ref m_task));
             }
@@ -173,7 +173,7 @@ namespace System.Runtime.CompilerServices
             where TAwaiter : ICriticalNotifyCompletion
             where TStateMachine : IAsyncStateMachine
         {
-            if (AsyncTaskCache.s_valueTaskPoolingEnabled)
+            if (AsyncValueTaskMethodBuilder.s_valueTaskPoolingEnabled)
             {
                 AwaitUnsafeOnCompleted(ref awaiter, ref stateMachine, ref Unsafe.As<object?, StateMachineBox?>(ref m_task));
             }
@@ -286,7 +286,7 @@ namespace System.Runtime.CompilerServices
             {
                 if (m_task is null)
                 {
-                    m_task = AsyncTaskCache.s_valueTaskPoolingEnabled ? (object)
+                    m_task = AsyncValueTaskMethodBuilder.s_valueTaskPoolingEnabled ? (object)
                         CreateWeaklyTypedStateMachineBox() :
                         AsyncTaskMethodBuilder<TResult>.CreateWeaklyTypedStateMachineBox();
                 }
@@ -405,8 +405,7 @@ namespace System.Runtime.CompilerServices
                 // Clear out the state machine and associated context to avoid keeping arbitrary state referenced by
                 // lifted locals.  We want to do this regardless of whether we end up caching the box or not, in case
                 // the caller keeps the box alive for an arbitrary period of time.
-                StateMachine = default;
-                Context = default;
+                ClearStateUponCompletion();
 
                 // Reset the MRVTSC.  We can either do this here, in which case we may be paying the (small) overhead
                 // to reset the box even if we're going to drop it, or we could do it while holding the lock, in which
@@ -429,18 +428,28 @@ namespace System.Runtime.CompilerServices
                 // Try to acquire the cache lock.  If there's any contention, or if the cache is full, we just throw away the object.
                 if (Interlocked.CompareExchange(ref s_cacheLock, 1, 0) == 0)
                 {
-                    if (s_cacheSize < AsyncTaskCache.s_valueTaskPoolingCacheSize)
+                    if (s_cacheSize < AsyncValueTaskMethodBuilder.s_valueTaskPoolingCacheSize)
                     {
                         // Push the box onto the cache stack for subsequent reuse.
                         _next = s_cache;
                         s_cache = this;
                         s_cacheSize++;
-                        Debug.Assert(s_cacheSize > 0 && s_cacheSize <= AsyncTaskCache.s_valueTaskPoolingCacheSize, "Expected cache size to be within bounds.");
+                        Debug.Assert(s_cacheSize > 0 && s_cacheSize <= AsyncValueTaskMethodBuilder.s_valueTaskPoolingCacheSize, "Expected cache size to be within bounds.");
                     }
 
                     // Release the lock.
                     Volatile.Write(ref s_cacheLock, 0);
                 }
+            }
+
+            /// <summary>
+            /// Clear out the state machine and associated context to avoid keeping arbitrary state referenced by lifted locals.
+            /// </summary>
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public void ClearStateUponCompletion()
+            {
+                StateMachine = default;
+                Context = default;
             }
 
             /// <summary>

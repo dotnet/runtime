@@ -492,27 +492,3 @@ ModuleID ReJITProfiler::GetModuleIDForFunction(FunctionID functionId)
                                             typeArgs);
     return moduleId;
 }
-
-bool ReJITProfiler::EndsWith(const String &lhs, const String &rhs)
-{
-    if (lhs.Size() < rhs.Size())
-    {
-        return false;
-    }
-
-    size_t lhsPos = lhs.Size() - rhs.Size();
-    size_t rhsPos = 0;
-
-    while (rhsPos < rhs.Size())
-    {
-        if (std::tolower(lhs[lhsPos]) != std::tolower(rhs[rhsPos]))
-        {
-            return false;
-        }
-
-        ++lhsPos;
-        ++rhsPos;
-    }
-
-    return true;
-}

@@ -90,7 +90,7 @@ int LinearScan::BuildNode(GenTree* tree)
             {
                 return 0;
             }
-            __fallthrough;
+            FALLTHROUGH;
 
         case GT_LCL_FLD:
         {
@@ -323,7 +323,7 @@ int LinearScan::BuildNode(GenTree* tree)
 #if defined(TARGET_X86)
         case GT_MUL_LONG:
             dstCount = 2;
-            __fallthrough;
+            FALLTHROUGH;
 #endif
         case GT_MUL:
         case GT_MULHI:
@@ -1280,6 +1280,11 @@ int LinearScan::BuildBlockStore(GenTreeBlk* blkNode)
     regMaskTP srcRegMask     = RBM_NONE;
     regMaskTP sizeRegMask    = RBM_NONE;
 
+    RefPosition* internalIntDef = nullptr;
+#ifdef TARGET_X86
+    bool internalIsByte = false;
+#endif
+
     if (blkNode->OperIsInitBlkOp())
     {
         if (src->OperIs(GT_INIT_VAL))
@@ -1359,10 +1364,11 @@ int LinearScan::BuildBlockStore(GenTreeBlk* blkNode)
                         if ((size & 1) != 0)
                         {
                             // We'll need to store a byte so a byte register is needed on x86.
-                            regMask = allByteRegs();
+                            regMask        = allByteRegs();
+                            internalIsByte = true;
                         }
 #endif
-                        buildInternalIntRegisterDefForNode(blkNode, regMask);
+                        internalIntDef = buildInternalIntRegisterDefForNode(blkNode, regMask);
                     }
 
                     if (size >= XMM_REGSIZE_BYTES)
@@ -1436,9 +1442,30 @@ int LinearScan::BuildBlockStore(GenTreeBlk* blkNode)
         BuildUse(blkNode->AsDynBlk()->gtDynamicSize, sizeRegMask);
     }
 
+#ifdef TARGET_X86
+    // If we require a byte register on x86, we may run into an over-constrained situation
+    // if we have BYTE_REG_COUNT or more uses (currently, it can be at most 4, if both the
+    // source and destination have base+index addressing).
+    // This is because the byteable register requirement doesn't "reserve" a specific register,
+    // and it would be possible for the incoming sources to all be occupying the byteable
+    // registers, leaving none free for the internal register.
+    // In this scenario, we will require rax to ensure that it is reserved and available.
+    // We need to make that modification prior to building the uses for the internal register,
+    // so that when we create the use we will also create the RefTypeFixedRef on the RegRecord.
+    // We don't expect a useCount of more than 3 for the initBlk case, so we haven't set
+    // internalIsByte in that case above.
+    assert((useCount < BYTE_REG_COUNT) || !blkNode->OperIsInitBlkOp());
+    if (internalIsByte && (useCount >= BYTE_REG_COUNT))
+    {
+        noway_assert(internalIntDef != nullptr);
+        internalIntDef->registerAssignment = RBM_RAX;
+    }
+#endif
+
     buildInternalRegisterUses();
     regMaskTP killMask = getKillSetForBlockStore(blkNode);
     BuildDefsWithKills(blkNode, 0, RBM_NONE, killMask);
+
     return useCount;
 }
 
@@ -1461,7 +1488,7 @@ int LinearScan::BuildPutArgStk(GenTreePutArgStk* putArgStk)
 
         RefPosition* simdTemp   = nullptr;
         RefPosition* intTemp    = nullptr;
-        unsigned     prevOffset = putArgStk->getArgSize();
+        unsigned     prevOffset = putArgStk->GetStackByteSize();
         // We need to iterate over the fields twice; once to determine the need for internal temps,
         // and once to actually build the uses.
         for (GenTreeFieldList::Use& use : putArgStk->gtOp1->AsFieldList()->Uses())
@@ -1544,27 +1571,16 @@ int LinearScan::BuildPutArgStk(GenTreePutArgStk* putArgStk)
 
     ClassLayout* layout = src->AsObj()->GetLayout();
 
-    ssize_t size = putArgStk->gtNumSlots * TARGET_POINTER_SIZE;
+    ssize_t size = putArgStk->GetStackByteSize();
     switch (putArgStk->gtPutArgStkKind)
     {
         case GenTreePutArgStk::Kind::Push:
         case GenTreePutArgStk::Kind::PushAllSlots:
         case GenTreePutArgStk::Kind::Unroll:
             // If we have a remainder smaller than XMM_REGSIZE_BYTES, we need an integer temp reg.
-            //
-            // x86 specific note: if the size is odd, the last copy operation would be of size 1 byte.
-            // But on x86 only RBM_BYTE_REGS could be used as byte registers.  Therefore, exclude
-            // RBM_NON_BYTE_REGS from internal candidates.
             if (!layout->HasGCPtr() && (size & (XMM_REGSIZE_BYTES - 1)) != 0)
             {
                 regMaskTP regMask = allRegs(TYP_INT);
-
-#ifdef TARGET_X86
-                if ((size % 2) != 0)
-                {
-                    regMask &= ~RBM_NON_BYTE_REGS;
-                }
-#endif
                 buildInternalIntRegisterDefForNode(putArgStk, regMask);
             }
 
@@ -1594,6 +1610,15 @@ int LinearScan::BuildPutArgStk(GenTreePutArgStk* putArgStk)
 
     srcCount = BuildOperandUses(src);
     buildInternalRegisterUses();
+
+#ifdef TARGET_X86
+    // There are only 4 (BYTE_REG_COUNT) byteable registers on x86. If we require a byteable internal register,
+    // we must have less than BYTE_REG_COUNT sources.
+    // If we have BYTE_REG_COUNT or more sources, and require a byteable internal register, we need to reserve
+    // one explicitly (see BuildBlockStore()).
+    assert(srcCount < BYTE_REG_COUNT);
+#endif
+
     return srcCount;
 }
 #endif // FEATURE_PUT_STRUCT_ARG_STK
@@ -2728,6 +2753,7 @@ int LinearScan::BuildIndir(GenTreeIndir* indirTree)
             }
         }
     }
+
 #ifdef FEATURE_SIMD
     if (varTypeIsSIMD(indirTree))
     {
@@ -2735,6 +2761,16 @@ int LinearScan::BuildIndir(GenTreeIndir* indirTree)
     }
     buildInternalRegisterUses();
 #endif // FEATURE_SIMD
+
+#ifdef TARGET_X86
+    // There are only BYTE_REG_COUNT byteable registers on x86. If we have a source that requires
+    // such a register, we must have no more than BYTE_REG_COUNT sources.
+    // If we have more than BYTE_REG_COUNT sources, and require a byteable register, we need to reserve
+    // one explicitly (see BuildBlockStore()).
+    // (Note that the assert below doesn't count internal registers because we only have
+    // floating point internal registers, if any).
+    assert(srcCount <= BYTE_REG_COUNT);
+#endif
 
     if (indirTree->gtOper != GT_STOREIND)
     {

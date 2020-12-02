@@ -21,7 +21,7 @@
 
 #include <palsuite.h>
 
-BOOL CleanUp(HANDLE hFile, const char * fileName)
+BOOL CleanUp_WriteFile_test5(HANDLE hFile, const char * fileName)
 {
     BOOL bRc = TRUE;
     if (CloseHandle(hFile) != TRUE)
@@ -40,7 +40,7 @@ BOOL CleanUp(HANDLE hFile, const char * fileName)
 }
 
 
-int __cdecl main(int argc, char *argv[])
+PALTEST(file_io_WriteFile_test5_paltest_writefile_test5, "file_io/WriteFile/test5/paltest_writefile_test5")
 {
 
     HANDLE hFile = NULL;
@@ -81,7 +81,7 @@ int __cdecl main(int argc, char *argv[])
         {
             Trace("WriteFile: ERROR -> Unable to write to file error: %ld \n",
                 GetLastError());
-            CleanUp(hFile,szWritableFile);
+            CleanUp_WriteFile_test5(hFile,szWritableFile);
             Fail("");
 
         }
@@ -91,7 +91,7 @@ int __cdecl main(int argc, char *argv[])
     {
         Trace("WriteFile: ERROR -> Call to FlushFileBuffers failed"
               "error %ld \n",GetLastError());
-        CleanUp(hFile,szWritableFile);        
+        CleanUp_WriteFile_test5(hFile,szWritableFile);        
         Fail("");
     }
 
@@ -101,12 +101,12 @@ int __cdecl main(int argc, char *argv[])
         Trace("WriteFile: ERROR -> file size did not change properly"
             " after writing 4000 000 chars to it ( size= %u )\n",                   
             GetFileSize(hFile,NULL));
-        CleanUp(hFile,szWritableFile); 
+        CleanUp_WriteFile_test5(hFile,szWritableFile); 
         Fail("");
 
     }
 
-    if (!CleanUp(hFile,szWritableFile))
+    if (!CleanUp_WriteFile_test5(hFile,szWritableFile))
     {
         Fail("");
     }

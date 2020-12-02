@@ -64,7 +64,7 @@ namespace System.IO.Tests
             await ThrowWhenHandlePositionIsChanged(useAsync: false);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public async Task ThrowWhenHandlePositionIsChanged_async()
         {
             await ThrowWhenHandlePositionIsChanged(useAsync: true);

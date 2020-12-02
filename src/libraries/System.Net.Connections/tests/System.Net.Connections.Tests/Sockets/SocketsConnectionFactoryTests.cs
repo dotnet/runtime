@@ -134,8 +134,8 @@ namespace System.Net.Connections.Tests
 
             IPEndPoint doesNotExist = new IPEndPoint(IPAddress.Parse("1.2.3.4"), 23);
 
-            // SocketError.TimedOut currently maps to SocketError.Unknown, so no asserion
-            await Assert.ThrowsAsync<NetworkException>(() => factory.ConnectAsync(doesNotExist).AsTask());
+            NetworkException ex = await Assert.ThrowsAsync<NetworkException>(() => factory.ConnectAsync(doesNotExist).AsTask());
+            Assert.Equal(NetworkError.TimedOut, ex.NetworkError);
         }
 
         // On Windows, connection timeout takes 21 seconds. Abusing this behavior to test the cancellation logic
@@ -223,36 +223,6 @@ namespace System.Net.Connections.Tests
 
             // The test server should echo the data:
             Assert.True(rr.Buffer.FirstSpan.SequenceEqual(sendData));
-        }
-
-        [Fact]
-        public async Task Connection_Stream_FailingOperation_ThowsNetworkException()
-        {
-            using var server = SocketTestServer.SocketTestServerFactory(SocketImplementationType.Async, IPAddress.Loopback);
-            using SocketsConnectionFactory factory = new SocketsConnectionFactory(SocketType.Stream, ProtocolType.Tcp);
-            using Connection connection = await factory.ConnectAsync(server.EndPoint);
-
-            connection.ConnectionProperties.TryGet(out Socket socket);
-            Stream stream = connection.Stream;
-            socket.Dispose();
-
-            Assert.Throws<NetworkException>(() => stream.Read(new byte[1], 0, 1));
-            Assert.Throws<NetworkException>(() => stream.Write(new byte[1], 0, 1));
-        }
-
-        [Fact]
-        public async Task Connection_Pipe_FailingOperation_ThowsNetworkException()
-        {
-            using var server = SocketTestServer.SocketTestServerFactory(SocketImplementationType.Async, IPAddress.Loopback);
-            using SocketsConnectionFactory factory = new SocketsConnectionFactory(SocketType.Stream, ProtocolType.Tcp);
-            using Connection connection = await factory.ConnectAsync(server.EndPoint);
-
-            connection.ConnectionProperties.TryGet(out Socket socket);
-            IDuplexPipe pipe = connection.Pipe;
-            socket.Dispose();
-
-            await Assert.ThrowsAsync<NetworkException>(() =>  pipe.Input.ReadAsync().AsTask());
-            await Assert.ThrowsAsync<NetworkException>(() => pipe.Output.WriteAsync(new byte[1]).AsTask());
         }
 
         [Theory]

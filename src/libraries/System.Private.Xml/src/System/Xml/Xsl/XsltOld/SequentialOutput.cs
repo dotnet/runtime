@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#nullable enable
 using System.Diagnostics;
 using System.Text;
 using System.Collections;
@@ -74,8 +73,6 @@ namespace System.Xml.Xsl.XsltOld
         // Uri Escaping:
         private byte[]? _byteBuffer;
         private Encoding? _utf8Encoding;
-
-        private XmlCharType _xmlCharType = XmlCharType.Instance;
 
         [MemberNotNull(nameof(_output))]
         private void CacheOuptutProps(XsltOutput output)
@@ -375,7 +372,7 @@ namespace System.Xml.Xsl.XsltOld
                 case XmlNodeType.Text:
                 case XmlNodeType.Whitespace:
                 case XmlNodeType.SignificantWhitespace:
-                    if (_xmlCharType.IsOnlyWhitespace(node.Value))
+                    if (XmlCharType.IsOnlyWhitespace(node.Value))
                     {
                         return false;
                     }

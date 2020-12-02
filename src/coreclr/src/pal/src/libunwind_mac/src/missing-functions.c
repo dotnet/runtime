@@ -47,11 +47,25 @@ unw_get_accessors_int (unw_addr_space_t as)
   return unw_get_accessors(as);
 }
  
+#if defined(TARGET_AMD64) && !defined(HOST_AMD64)
+#define X86_64_SCF_NONE 0
+#endif
+
+#if defined(TARGET_ARM64) && !defined(HOST_ARM64)
+#define AARCH64_SCF_NONE 0
+#endif
+
 int
 unw_is_signal_frame (unw_cursor_t *cursor)
 {
   struct cursor *c = (struct cursor *) cursor;
+#ifdef TARGET_AMD64
   return c->sigcontext_format != X86_64_SCF_NONE;
+#elif defined(TARGET_ARM64)
+  return c->sigcontext_format != AARCH64_SCF_NONE;
+#else
+  #error Unexpected target
+#endif
 }
 
 int

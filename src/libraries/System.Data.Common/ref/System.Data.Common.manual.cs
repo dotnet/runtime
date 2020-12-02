@@ -30,6 +30,7 @@ namespace System.Data
 
     public partial class DataTable
     {
+        [System.ComponentModel.EditorAttribute("Microsoft.VSDesigner.Data.Design.PrimaryKeyEditor, Microsoft.VSDesigner, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a", "System.Drawing.Design.UITypeEditor, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a")]
         [System.ComponentModel.TypeConverter(typeof(PrimaryKeyTypeConverter))]
         public System.Data.DataColumn[] PrimaryKey { get { throw null; } set { } }
     }
@@ -40,7 +41,7 @@ namespace System.Data
         [System.ComponentModel.DefaultValueAttribute(null)]
         [System.ComponentModel.RefreshPropertiesAttribute(System.ComponentModel.RefreshProperties.All)]
         [System.ComponentModel.TypeConverter(typeof(DataTableTypeConverter))]
-        public System.Data.DataTable Table { get { throw null; } set { } }
+        public System.Data.DataTable? Table { get { throw null; } set { } }
     }
     internal class DataTableTypeConverter { }
 }

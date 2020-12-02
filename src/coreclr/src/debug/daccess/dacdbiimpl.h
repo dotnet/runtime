@@ -733,7 +733,7 @@ public:
 
     void GetModuleForDomainFile(VMPTR_DomainFile vmDomainFile, OUT VMPTR_Module * pModule);
 
-    // Yields true if the adddress is a CLR stub.
+    // Yields true if the address is a CLR stub.
     BOOL IsTransitionStub(CORDB_ADDRESS address);
 
     // Get the "type" of address.

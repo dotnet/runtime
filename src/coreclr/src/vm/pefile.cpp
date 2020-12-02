@@ -1067,46 +1067,6 @@ LPCWSTR CorCompileGetRuntimeDllName(CorCompileRuntimeDlls id)
     return CorCompileRuntimeDllNames[id];
 }
 
-#ifndef CROSSGEN_COMPILE
-
-//==============================================================================
-// Will always return a valid HMODULE for CLR_INFO, but will return NULL for NGEN_COMPILER_INFO
-// if the DLL has not yet been loaded (it does not try to cause a load).
-
-extern HMODULE CorCompileGetRuntimeDll(CorCompileRuntimeDlls id)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_NOTRIGGER;
-        MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM(););
-    }
-    CONTRACTL_END;
-
-    // Currently special cased for every entry.
-    static_assert_no_msg(NUM_RUNTIME_DLLS == 2);
-    static_assert_no_msg(CORECLR_INFO == 0);
-
-    HMODULE hMod = NULL;
-
-    // Try to load the correct DLL
-    switch (id)
-    {
-    case CORECLR_INFO:
-        hMod = GetCLRModule();
-        break;
-
-    default:
-        COMPlusThrowNonLocalized(kExecutionEngineException,
-            W("Invalid runtime DLL ID"));
-        break;
-    }
-
-    return hMod;
-}
-#endif // CROSSGEN_COMPILE
-
 //===========================================================================================================
 // Validates that an NI matches the running CLR, OS, CPU, etc.
 //
@@ -2128,9 +2088,8 @@ const SString &PEAssembly::GetEffectivePath()
 // Codebase is the fusion codebase or path for the assembly.  It is in URL format.
 // Note this may be obtained from the parent PEFile if we don't have a path or fusion
 // assembly.
-//
-// fCopiedName means to get the "shadow copied" path rather than the original path, if applicable
-void PEAssembly::GetCodeBase(SString &result, BOOL fCopiedName/*=FALSE*/)
+// Returns false if the assembly was loaded from a bundle, true otherwise
+BOOL PEAssembly::GetCodeBase(SString &result)
 {
     CONTRACTL
     {
@@ -2142,10 +2101,20 @@ void PEAssembly::GetCodeBase(SString &result, BOOL fCopiedName/*=FALSE*/)
     }
     CONTRACTL_END;
 
-    // All other cases use the file path.
-    result.Set(GetEffectivePath());
-    if (!result.IsEmpty())
-        PathToUrl(result);
+    auto ilImage = GetILimage();
+    if (ilImage == nullptr || !ilImage->IsInBundle())
+    {
+        // All other cases use the file path.
+        result.Set(GetEffectivePath());
+        if (!result.IsEmpty())
+            PathToUrl(result);
+        return TRUE;
+    }
+    else
+    {
+        result.Set(SString::Empty());
+        return FALSE;
+    }
 }
 
 /* static */

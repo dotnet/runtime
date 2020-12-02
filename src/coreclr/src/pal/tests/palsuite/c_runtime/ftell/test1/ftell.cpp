@@ -82,7 +82,7 @@ BOOL MovePointer(long lDist, int nFrom)
 
 
 
-int __cdecl main(int argc, char *argv[])
+PALTEST(c_runtime_ftell_test1_paltest_ftell_test1, "c_runtime/ftell/test1/paltest_ftell_test1")
 {
     const char szFileName[] = {"testfile.txt"};
     long lPos = -1;

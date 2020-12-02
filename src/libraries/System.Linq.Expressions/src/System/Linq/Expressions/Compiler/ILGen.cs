@@ -16,7 +16,7 @@ namespace System.Linq.Expressions.Compiler
             Debug.Assert(methodBase is MethodInfo || methodBase is ConstructorInfo);
 
             var ctor = methodBase as ConstructorInfo;
-            if ((object?)ctor != null)
+            if (ctor is not null)
             {
                 il.Emit(opcode, ctor);
             }

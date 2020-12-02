@@ -4,7 +4,11 @@ EXECUTION_DIR=$(dirname $0)
 
 cd $EXECUTION_DIR
 
-XHARNESS_OUT="$EXECUTION_DIR/xharness-output"
+if [ -z "$HELIX_WORKITEM_UPLOAD_ROOT" ]; then
+	XHARNESS_OUT="$EXECUTION_DIR/xharness-output"
+else
+	XHARNESS_OUT="$HELIX_WORKITEM_UPLOAD_ROOT/xharness-output"
+fi
 
 if [ ! -z "$XHARNESS_CLI_PATH" ]; then
 	# When running in CI, we only have the .NET runtime available
@@ -12,6 +16,10 @@ if [ ! -z "$XHARNESS_CLI_PATH" ]; then
 	HARNESS_RUNNER="dotnet exec $XHARNESS_CLI_PATH"
 else
 	HARNESS_RUNNER="dotnet xharness"
+fi
+
+if [ -z "$XHARNESS_COMMAND" ]; then
+	XHARNESS_COMMAND="test"
 fi
 
 # RunCommands defined in tests.mobile.targets

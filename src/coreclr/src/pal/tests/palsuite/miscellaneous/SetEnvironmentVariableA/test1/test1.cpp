@@ -23,7 +23,7 @@
 #include <palsuite.h>
 #define BUF_SIZE 128
 
-int __cdecl main(int argc, char *argv[]) 
+PALTEST(miscellaneous_SetEnvironmentVariableA_test1_paltest_setenvironmentvariablea_test1, "miscellaneous/SetEnvironmentVariableA/test1/paltest_setenvironmentvariablea_test1")
 {
   
     /* Define some buffers needed for the function */

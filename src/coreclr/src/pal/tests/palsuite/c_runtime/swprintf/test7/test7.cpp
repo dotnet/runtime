@@ -20,7 +20,7 @@
  */
 
 
-int __cdecl main(int argc, char *argv[])
+PALTEST(c_runtime_swprintf_test7_paltest_swprintf_test7, "c_runtime/swprintf/test7/paltest_swprintf_test7")
 {
     WCHAR wb = (WCHAR) 'b';
     

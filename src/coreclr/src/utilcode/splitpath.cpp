@@ -137,26 +137,18 @@ void    SplitPathInterior(
 
     /* extract path string, if any.  Path now points to the first character
      * of the path, if any, or the filename or extension, if no path was
-     * specified.  Scan ahead for the last occurence, if any, of a '/' or
+     * specified.  Scan ahead for the last occurrence, if any, of a '/' or
      * '\' path separator character.  If none is found, there is no path.
      * We will also note the last '.' character found, if any, to aid in
      * handling the extension.
      */
 
     for (last_slash = NULL, p = (WCHAR *)wszPath; *p; p++) {
-#ifdef _MBCS
-        if (_ISLEADBYTE (*p))
-            p++;
-        else {
-#endif  /* _MBCS */
         if (*p == _T('/') || *p == _T('\\'))
             /* point to one beyond for later copy */
             last_slash = p + 1;
         else if (*p == _T('.'))
             dot = p;
-#ifdef _MBCS
-        }
-#endif  /* _MBCS */
     }
 
     if (last_slash) {

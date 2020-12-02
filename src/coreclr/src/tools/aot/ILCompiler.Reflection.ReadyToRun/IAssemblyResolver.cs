@@ -7,11 +7,14 @@ namespace ILCompiler.Reflection.ReadyToRun
 {
     public interface IAssemblyResolver
     {
-        MetadataReader FindAssembly(MetadataReader metadataReader, AssemblyReferenceHandle assemblyReferenceHandle, string parentFile);
-        MetadataReader FindAssembly(string simpleName, string parentFile);
-        // TODO (refactoring) - signature formatting options should be independent of assembly resolver
-        bool Naked { get; }
-        bool SignatureBinary { get; }
-        bool InlineSignatureBinary { get; }
+        IAssemblyMetadata FindAssembly(MetadataReader metadataReader, AssemblyReferenceHandle assemblyReferenceHandle, string parentFile);
+        IAssemblyMetadata FindAssembly(string simpleName, string parentFile);
+    }
+
+    public class SignatureFormattingOptions
+    {
+        public bool Naked { get; set; }
+        public bool SignatureBinary { get; set;  }
+        public bool InlineSignatureBinary { get; set; }
     }
 }

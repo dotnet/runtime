@@ -15,6 +15,8 @@ namespace R2RTest
 {
     public class BuildFolderSet
     {
+        const string FrameworkOutputFileName = "framework-r2r.dll";
+
         private readonly IEnumerable<BuildFolder> _buildFolders;
 
         private readonly IEnumerable<CompilerRunner> _compilerRunners;
@@ -221,9 +223,12 @@ namespace R2RTest
             Stopwatch stopwatch = Stopwatch.StartNew();
 
             string coreRoot = _options.CoreRootDirectory.FullName;
+
+            File.Delete(Path.Combine(coreRoot, FrameworkOutputFileName));
+
             string[] frameworkFolderFiles = Directory.GetFiles(coreRoot);
 
-            IEnumerable<CompilerRunner> frameworkRunners = _options.CompilerRunners(isFramework: true);
+            IEnumerable<CompilerRunner> frameworkRunners = _options.CompilerRunners(isFramework: true, overrideOutputPath: _options.OutputDirectory.FullName);
 
             // Pre-populate the output folders with the input files so that we have backdrops
             // for failing compilations.
@@ -234,6 +239,7 @@ namespace R2RTest
             }
 
             var compilationsToRun = new List<ProcessInfo>();
+            var r2rDumpExecutionsToRun = new List<ProcessInfo>();
             var compilationsPerRunner = new List<KeyValuePair<string, ProcessInfo[]>>();
             var excludedAssemblies = new List<string>();
 
@@ -259,10 +265,15 @@ namespace R2RTest
 
                     if (inputFrameworkDlls.Count > 0)
                     {
-                        string outputFileName = runner.GetOutputFileName(_options.CoreRootDirectory.FullName, "framework-r2r.dll");
+                        string outputFileName = runner.GetOutputFileName(_options.CoreRootDirectory.FullName, FrameworkOutputFileName);
                         ProcessInfo compilationProcess = new ProcessInfo(new CompilationProcessConstructor(runner, outputFileName, inputFrameworkDlls));
                         compilationsToRun.Add(compilationProcess);
                         processes[(int)runner.Index] = compilationProcess;
+                        if (_options.R2RDumpPath != null)
+                        {
+                            r2rDumpExecutionsToRun.Add(new ProcessInfo(new R2RDumpProcessConstructor(runner, outputFileName, naked: false)));
+                            r2rDumpExecutionsToRun.Add(new ProcessInfo(new R2RDumpProcessConstructor(runner, outputFileName, naked: true)));
+                        }
                     }
                 }
             }
@@ -281,13 +292,16 @@ namespace R2RTest
                             _frameworkExclusions[simpleName] = reason;
                             continue;
                         }
-                        var compilationProcess = new ProcessInfo(
-                            new CompilationProcessConstructor(
-                                runner,
-                                Path.Combine(runner.GetOutputPath(_options.CoreRootDirectory.FullName), Path.GetFileName(frameworkDll)),
-                                new string[] { frameworkDll }));
+                        string outputFileName = Path.Combine(runner.GetOutputPath(_options.CoreRootDirectory.FullName), Path.GetFileName(frameworkDll));
+                        var compilationProcess = new ProcessInfo(new CompilationProcessConstructor(runner, outputFileName, new string[] { frameworkDll }));
                         compilationsToRun.Add(compilationProcess);
                         processes[(int)runner.Index] = compilationProcess;
+
+                        if (_options.R2RDumpPath != null)
+                        {
+                            r2rDumpExecutionsToRun.Add(new ProcessInfo(new R2RDumpProcessConstructor(runner, outputFileName, naked: false)));
+                            r2rDumpExecutionsToRun.Add(new ProcessInfo(new R2RDumpProcessConstructor(runner, outputFileName, naked: true)));
+                        }
                     }
                 }
             }
@@ -349,7 +363,34 @@ namespace R2RTest
 
             _frameworkCompilationMilliseconds = stopwatch.ElapsedMilliseconds;
 
-            return failedCompileCount == 0;
+            bool success = (failedCompileCount == 0);
+
+            ParallelRunner.Run(r2rDumpExecutionsToRun, _options.DegreeOfParallelism);
+
+            foreach (ProcessInfo r2rDumpExecution in r2rDumpExecutionsToRun)
+            {
+                if (!r2rDumpExecution.Succeeded)
+                {
+                    string causeOfFailure;
+                    if (r2rDumpExecution.TimedOut)
+                    {
+                        causeOfFailure = "timed out";
+                    }
+                    else if (r2rDumpExecution.ExitCode != 0)
+                    {
+                        causeOfFailure = $"invalid exit code {r2rDumpExecution.ExitCode}";
+                    }
+                    else
+                    {
+                        causeOfFailure = "Unknown cause of failure";
+                    }
+
+                    Console.Error.WriteLine("Error running R2R dump on {0}: {1}", string.Join(", ", r2rDumpExecution.Parameters.InputFileNames), causeOfFailure);
+                    success = false;
+                }
+            }
+
+            return success;
         }
 
         private void AnalyzeCompilationLog(ProcessInfo compilationProcess, CompilerIndex runnerIndex)
@@ -530,7 +571,7 @@ namespace R2RTest
                             foreach (ProcessInfo[] compilation in folder.Compilations)
                             {
                                 ProcessInfo runnerCompilation = compilation[(int)runner.Index];
-                                if (!runnerCompilation.Succeeded)
+                                if (!runnerCompilation.IsEmpty && !runnerCompilation.Succeeded)
                                 {
                                     compilationsSucceeded = false;
                                     break;
@@ -631,7 +672,7 @@ namespace R2RTest
                         bool anyCompilationFailed = false;
                         foreach (CompilerRunner runner in _compilerRunners)
                         {
-                            if (compilation[(int)runner.Index] != null)
+                            if (!compilation[(int)runner.Index].IsEmpty)
                             {
                                 CompilationOutcome outcome = GetCompilationOutcome(compilation[(int)runner.Index]);
                                 compilationOutcomes[(int)outcome, (int)runner.Index]++;

@@ -14,7 +14,7 @@ Getting Started
 - [Installing the .NET SDK](https://dotnet.microsoft.com/download)
 - [Official .NET Docs](https://docs.microsoft.com/dotnet/core/)
 
-Workflow (Building, testing, etc.)
+Workflow (Building, testing, benchmarking, profiling, etc.)
 ===============
 
 If you want to contribute a code change to this repo, start here.

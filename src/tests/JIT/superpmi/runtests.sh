@@ -11,8 +11,8 @@
 # 4. On Windows, build Linux mscorlib: build.cmd linuxmscorlib
 # 5. Mount Windows shares on Linux
 # 6. Copy tests to Linux/Mac:
-#       Linux: cp --recursive ~/brucefo1/ManagedCodeGen/artifacts/tests/Windows_NT.x64.Debug ~/test/Windows_NT.x64.Debug
-#       Mac  : cp -R          ~/brucefo1/ManagedCodeGen/artifacts/tests/Windows_NT.x64.Debug ~/test/Windows_NT.x64.Debug
+#       Linux: cp --recursive ~/brucefo1/ManagedCodeGen/artifacts/tests/windows.x64.Debug ~/test/windows.x64.Debug
+#       Mac  : cp -R          ~/brucefo1/ManagedCodeGen/artifacts/tests/windows.x64.Debug ~/test/windows.x64.Debug
 # 7. Run this script
 #
 # If you pass "--testDir=NONE" to runtest.sh, it will create the "test overlay" (i.e., core_root directory)
@@ -22,7 +22,7 @@ TESTROOT=~/test
 CORECLRROOT=~/src/coreclr
 COREFXROOT=~/src/corefx
 WINDOWSCORECLRROOT=~/WindowsMachine/coreclr
-WINDOWSFLAVOR=Windows_NT.x64.Debug
+WINDOWSFLAVOR=windows.x64.Debug
 UNIXANYFLAVOR=OSX.AnyCPU.Debug
 UNIXARCHFLAVOR=OSX.x64.Debug
 

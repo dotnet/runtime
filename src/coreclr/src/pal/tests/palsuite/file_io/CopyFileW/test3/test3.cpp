@@ -24,7 +24,7 @@
 
 #include <palsuite.h>
 
-int __cdecl main(int argc, char *argv[])
+PALTEST(file_io_CopyFileW_test3_paltest_copyfilew_test3, "file_io/CopyFileW/test3/paltest_copyfilew_test3")
 {
 
 #if WIN32

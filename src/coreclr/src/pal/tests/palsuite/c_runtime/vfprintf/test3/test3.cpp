@@ -18,7 +18,7 @@
 
 
 
-int __cdecl main(int argc, char *argv[])
+PALTEST(c_runtime_vfprintf_test3_paltest_vfprintf_test3, "c_runtime/vfprintf/test3/paltest_vfprintf_test3")
 {
     if (PAL_Initialize(argc, argv))
     {

@@ -87,7 +87,9 @@ size_t FASTCALL decodeSigned(PTR_CBYTE src, int* val)
 /*****************************************************************************/
 
 #if defined(_MSC_VER)
+#ifdef HOST_X86
 #pragma optimize("tgy", on)
+#endif
 #endif
 
 PTR_CBYTE FASTCALL decodeHeader(PTR_CBYTE table, UINT32 version, InfoHdr* header)
@@ -316,7 +318,7 @@ const InfoHdrSmall infoHdrShortcut[128] = {
 //        |   |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  returnKind
 //        |   |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |
 //        |   |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  Arg count
-//        |   |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |                                 Counted occurences
+//        |   |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |                                 Counted occurrences
 //        |   |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |   Frame size                    |
 //        |   |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |   |                             |
 //        |   |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |   |   untrackedCnt              |   Header encoding
@@ -529,7 +531,7 @@ const unsigned callCommonDelta[4] = { 6,8,10,12 };
  *   EDI = 0x1, ESI = 0x2, EBX = 0x4, EBP = 0x8
  *
  */
-const unsigned callPatternTable[80] = {               // # of occurences
+const unsigned callPatternTable[80] = {               // # of occurrences
     0x0a000200, //   30109
     0x0c000200, //   22970
     0x0c000201, //   19005

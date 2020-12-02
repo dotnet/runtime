@@ -100,6 +100,10 @@ namespace System.Drawing.Tests
             }
         }
 
+        // This will fail on any platform we use libgdiplus, with any
+        // installed system fonts whose name is longer than 31 chars.
+        // macOS 10.15+ ships out of the box with a problem font
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/40937", TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.IsDrawingSupported)]
         public void Families_Get_ReturnsExpected()
         {

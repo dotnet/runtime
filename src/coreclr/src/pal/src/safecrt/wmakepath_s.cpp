@@ -24,6 +24,5 @@
 #define _DEST _Dst
 #define _SIZE _SizeInWords
 #define _T(_Character) L##_Character
-#define _MBS_SUPPORT 0
 
 #include "tmakepath_s.inl"

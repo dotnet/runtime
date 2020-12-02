@@ -1,7 +1,0 @@
-T:System.Drawing.FontConverter
-T:System.Drawing.FontConverter.FontNameConverter
-T:System.Drawing.FontConverter.FontUnitConverter
-T:System.Drawing.IconConverter
-T:System.Drawing.ImageConverter
-T:System.Drawing.ImageFormatConverter
-T:System.Drawing.Printing.MarginsConverter

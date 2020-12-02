@@ -2008,6 +2008,7 @@ BYTE* PrettyPrintCABlobValue(PCCOR_SIGNATURE &typePtr,
                 break;
             case ELEMENT_TYPE_CLASS        :
                 typePtr += CorSigUncompressToken(typePtr, &tk); //skip the following token
+                FALLTHROUGH;
             case SERIALIZATION_TYPE_TYPE   :
                 appendStr(out,KEYWORD("type"));
                 appendStr(out,appendix);
@@ -2668,6 +2669,7 @@ void DumpDefaultValue(mdToken tok, __inout __nullterminated char* szString, void
                 break;
             }
             //else fall thru to default case, to report the error
+            FALLTHROUGH;
 
         default:
             szptr+=sprintf_s(szptr,SZSTRING_REMAINING_SIZE(szptr),ERRORMSG(" /* ILLEGAL CONSTANT type:0x%02X, size:%d bytes, blob: "),MDDV.m_bType,MDDV.m_cbSize);

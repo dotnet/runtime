@@ -1,0 +1,73 @@
+
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 15
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DebuggerTestSuite", "DebuggerTestSuite\DebuggerTestSuite.csproj", "{FF4CBDBF-EAC9-4531-A0F7-F3B834182862}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "lazy-debugger-test", "tests\lazy-debugger-test\lazy-debugger-test.csproj", "{BB824B8F-3E3B-48AB-86DB-168D15121372}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "debugger-test", "tests\debugger-test\debugger-test.csproj", "{6C3A70F3-12C1-457D-A8D7-1E0E335B1F66}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BrowserDebugProxy", "BrowserDebugProxy\BrowserDebugProxy.csproj", "{532E9E35-D877-41A6-81F4-505AEA17AA04}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BrowserDebugHost", "BrowserDebugHost\BrowserDebugHost.csproj", "{E8A5E324-3FCD-4E3A-AC99-0C39037A8C1B}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "lazy-debugger-test-embedded", "tests\lazy-debugger-test-embedded\lazy-debugger-test-embedded.csproj", "{1E2F50AA-DA21-4D71-AF07-F38B68026CAA}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|x64 = Debug|x64
+		Debug|x86 = Debug|x86
+		Release|x64 = Release|x64
+		Release|x86 = Release|x86
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{FF4CBDBF-EAC9-4531-A0F7-F3B834182862}.Debug|x64.ActiveCfg = Debug|x64
+		{FF4CBDBF-EAC9-4531-A0F7-F3B834182862}.Debug|x64.Build.0 = Debug|x64
+		{FF4CBDBF-EAC9-4531-A0F7-F3B834182862}.Debug|x86.ActiveCfg = Debug|x86
+		{FF4CBDBF-EAC9-4531-A0F7-F3B834182862}.Debug|x86.Build.0 = Debug|x86
+		{FF4CBDBF-EAC9-4531-A0F7-F3B834182862}.Release|x64.ActiveCfg = Release|x64
+		{FF4CBDBF-EAC9-4531-A0F7-F3B834182862}.Release|x64.Build.0 = Release|x64
+		{FF4CBDBF-EAC9-4531-A0F7-F3B834182862}.Release|x86.ActiveCfg = Release|x86
+		{FF4CBDBF-EAC9-4531-A0F7-F3B834182862}.Release|x86.Build.0 = Release|x86
+		{BB824B8F-3E3B-48AB-86DB-168D15121372}.Debug|x64.ActiveCfg = Debug|x64
+		{BB824B8F-3E3B-48AB-86DB-168D15121372}.Debug|x64.Build.0 = Debug|x64
+		{BB824B8F-3E3B-48AB-86DB-168D15121372}.Debug|x86.ActiveCfg = Debug|x86
+		{BB824B8F-3E3B-48AB-86DB-168D15121372}.Debug|x86.Build.0 = Debug|x86
+		{BB824B8F-3E3B-48AB-86DB-168D15121372}.Release|x64.ActiveCfg = Release|x64
+		{BB824B8F-3E3B-48AB-86DB-168D15121372}.Release|x64.Build.0 = Release|x64
+		{BB824B8F-3E3B-48AB-86DB-168D15121372}.Release|x86.ActiveCfg = Release|x86
+		{BB824B8F-3E3B-48AB-86DB-168D15121372}.Release|x86.Build.0 = Release|x86
+		{6C3A70F3-12C1-457D-A8D7-1E0E335B1F66}.Debug|x64.ActiveCfg = Debug|x64
+		{6C3A70F3-12C1-457D-A8D7-1E0E335B1F66}.Debug|x64.Build.0 = Debug|x64
+		{6C3A70F3-12C1-457D-A8D7-1E0E335B1F66}.Debug|x86.ActiveCfg = Debug|x86
+		{6C3A70F3-12C1-457D-A8D7-1E0E335B1F66}.Debug|x86.Build.0 = Debug|x86
+		{6C3A70F3-12C1-457D-A8D7-1E0E335B1F66}.Release|x64.ActiveCfg = Release|x64
+		{6C3A70F3-12C1-457D-A8D7-1E0E335B1F66}.Release|x64.Build.0 = Release|x64
+		{6C3A70F3-12C1-457D-A8D7-1E0E335B1F66}.Release|x86.ActiveCfg = Release|x86
+		{6C3A70F3-12C1-457D-A8D7-1E0E335B1F66}.Release|x86.Build.0 = Release|x86
+		{532E9E35-D877-41A6-81F4-505AEA17AA04}.Debug|x64.ActiveCfg = Debug|x64
+		{532E9E35-D877-41A6-81F4-505AEA17AA04}.Debug|x64.Build.0 = Debug|x64
+		{532E9E35-D877-41A6-81F4-505AEA17AA04}.Debug|x86.ActiveCfg = Debug|x86
+		{532E9E35-D877-41A6-81F4-505AEA17AA04}.Debug|x86.Build.0 = Debug|x86
+		{532E9E35-D877-41A6-81F4-505AEA17AA04}.Release|x64.ActiveCfg = Release|x64
+		{532E9E35-D877-41A6-81F4-505AEA17AA04}.Release|x64.Build.0 = Release|x64
+		{532E9E35-D877-41A6-81F4-505AEA17AA04}.Release|x86.ActiveCfg = Release|x86
+		{532E9E35-D877-41A6-81F4-505AEA17AA04}.Release|x86.Build.0 = Release|x86
+		{E8A5E324-3FCD-4E3A-AC99-0C39037A8C1B}.Debug|x64.ActiveCfg = Debug|x64
+		{E8A5E324-3FCD-4E3A-AC99-0C39037A8C1B}.Debug|x64.Build.0 = Debug|x64
+		{E8A5E324-3FCD-4E3A-AC99-0C39037A8C1B}.Debug|x86.ActiveCfg = Debug|x86
+		{E8A5E324-3FCD-4E3A-AC99-0C39037A8C1B}.Debug|x86.Build.0 = Debug|x86
+		{E8A5E324-3FCD-4E3A-AC99-0C39037A8C1B}.Release|x64.ActiveCfg = Release|x64
+		{E8A5E324-3FCD-4E3A-AC99-0C39037A8C1B}.Release|x64.Build.0 = Release|x64
+		{E8A5E324-3FCD-4E3A-AC99-0C39037A8C1B}.Release|x86.ActiveCfg = Release|x86
+		{E8A5E324-3FCD-4E3A-AC99-0C39037A8C1B}.Release|x86.Build.0 = Release|x86
+		{1E2F50AA-DA21-4D71-AF07-F38B68026CAA}.Debug|x64.ActiveCfg = Debug|x64
+		{1E2F50AA-DA21-4D71-AF07-F38B68026CAA}.Debug|x64.Build.0 = Debug|x64
+		{1E2F50AA-DA21-4D71-AF07-F38B68026CAA}.Debug|x86.ActiveCfg = Debug|x86
+		{1E2F50AA-DA21-4D71-AF07-F38B68026CAA}.Debug|x86.Build.0 = Debug|x86
+		{1E2F50AA-DA21-4D71-AF07-F38B68026CAA}.Release|x64.ActiveCfg = Release|x64
+		{1E2F50AA-DA21-4D71-AF07-F38B68026CAA}.Release|x64.Build.0 = Release|x64
+		{1E2F50AA-DA21-4D71-AF07-F38B68026CAA}.Release|x86.ActiveCfg = Release|x86
+		{1E2F50AA-DA21-4D71-AF07-F38B68026CAA}.Release|x86.Build.0 = Release|x86
+	EndGlobalSection
+EndGlobal

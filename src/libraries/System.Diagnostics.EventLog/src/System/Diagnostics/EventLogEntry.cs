@@ -140,6 +140,8 @@ namespace System.Diagnostics
         /// <summary>
         /// The text of the message for this entry.
         /// </summary>
+        [Editor("System.ComponentModel.Design.BinaryEditor, System.Design, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a",
+                "System.Drawing.Design.UITypeEditor, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a")]
         public string Message
         {
             get

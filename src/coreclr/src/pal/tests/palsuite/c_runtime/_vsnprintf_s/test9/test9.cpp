@@ -18,7 +18,7 @@
  */
 
 
-int __cdecl main(int argc, char *argv[])
+PALTEST(c_runtime__vsnprintf_s_test9_paltest_vsnprintf_test9, "c_runtime/_vsnprintf_s/test9/paltest_vsnprintf_test9")
 {
     int neg = -42;
     int pos = 42;

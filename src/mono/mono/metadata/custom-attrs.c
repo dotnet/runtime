@@ -1,7 +1,7 @@
 /**
  * \file
  * Custom attributes.
- * 
+ *
  * Author:
  *   Paolo Molaro (lupus@ximian.com)
  *
@@ -71,7 +71,7 @@ metadata_foreach_custom_attr_from_index (MonoImage *image, guint32 idx, MonoAsse
 
 
 /*
- * LOCKING: Acquires the loader lock. 
+ * LOCKING: Acquires the loader lock.
  */
 static MonoCustomAttrInfo*
 lookup_custom_attr (MonoImage *image, gpointer member)
@@ -361,7 +361,7 @@ handle_enum:
 			goto handle_enum;
 		} else {
 			MonoClass *k =  t->data.klass;
-			
+
 			if (mono_is_corlib_image (m_class_get_image (k)) && strcmp (m_class_get_name_space (k), "System") == 0 && strcmp (m_class_get_name (k), "DateTime") == 0){
 				guint64 *val = (guint64 *)g_malloc (sizeof (guint64));
 				if (!bcheck_blob (p, 7, boundp, error))
@@ -373,8 +373,10 @@ handle_enum:
 		}
 		g_error ("generic valutype %s not handled in custom attr value decoding", m_class_get_name (t->data.klass));
 		break;
-		
-	case MONO_TYPE_STRING:
+
+	case MONO_TYPE_STRING: {
+		const char *start = p;
+
 		if (!bcheck_blob (p, 0, boundp, error))
 			return NULL;
 MONO_DISABLE_WARNING (4310) // cast truncates constant value
@@ -389,7 +391,7 @@ MONO_RESTORE_WARNING
 			return NULL;
 		*end = p + slen;
 		if (!out_obj)
-			return (void*)p;
+			return (void*)start;
 		// https://bugzilla.xamarin.com/show_bug.cgi?id=60848
 		// Custom attribute strings are encoded as wtf-8 instead of utf-8.
 		// If we decode using utf-8 like the spec says, we will silently fail
@@ -398,6 +400,7 @@ MONO_RESTORE_WARNING
 		// See https://simonsapin.github.io/wtf-8/ for a description of wtf-8.
 		*out_obj = (MonoObject*)mono_string_new_wtf8_len_checked (mono_domain_get (), p, slen, error);
 		return NULL;
+	}
 	case MONO_TYPE_CLASS: {
 		MonoType *type = load_cattr_type (image, t, TRUE, p, boundp, end, error, &slen);
 		if (out_obj) {
@@ -1003,7 +1006,7 @@ create_custom_attr (MonoImage *image, MonoMethod *method, const guchar *data, gu
 			mono_property_set_value_handle (prop, attr, pparams, error);
 			goto_if_nok (error, fail);
 		}
-		
+
 		g_free (name);
 		name = NULL;
 	}
@@ -1070,7 +1073,7 @@ mono_reflection_create_custom_attr_data_args (MonoImage *image, MonoMethod *meth
 		return;
 
 	mono_class_init_internal (method->klass);
-	
+
 	domain = mono_domain_get ();
 
 	if (len < 2 || read16 (p) != 0x0001) /* Prolog */
@@ -1204,7 +1207,9 @@ fail:
  * mono_reflection_create_custom_attr_data_args_noalloc:
  *
  * Same as mono_reflection_create_custom_attr_data_args but allocate no managed objects, return values
- * using C arrays. Only usable for cattrs with primitive/type arguments.
+ * using C arrays. Only usable for cattrs with primitive/type/string arguments.
+ * For types, a MonoType* is returned.
+ * For strings, the address in the metadata blob is returned.
  * TYPED_ARGS, NAMED_ARGS, and NAMED_ARG_INFO should be freed using g_free ().
  */
 void
@@ -1731,7 +1736,7 @@ mono_custom_attrs_from_method_checked (MonoMethod *method, MonoError *error)
 	 */
 	if (method->is_inflated)
 		method = ((MonoMethodInflated *) method)->declaring;
-	
+
 	if (method_is_dynamic (method) || image_is_dynamic (m_class_get_image (method->klass)))
 		return lookup_custom_attr (m_class_get_image (method->klass), method);
 
@@ -1817,7 +1822,7 @@ MonoCustomAttrInfo*
 mono_custom_attrs_from_assembly_checked (MonoAssembly *assembly, gboolean ignore_missing, MonoError *error)
 {
 	guint32 idx;
-	
+
 	error_init (error);
 
 	if (image_is_dynamic (assembly->image))
@@ -1834,7 +1839,7 @@ mono_custom_attrs_from_module (MonoImage *image, MonoError *error)
 	guint32 idx;
 
 	error_init (error);
-	
+
 	if (image_is_dynamic (image))
 		return lookup_custom_attr (image, image);
 	idx = 1; /* there is only one module */
@@ -1861,7 +1866,7 @@ mono_custom_attrs_from_property_checked (MonoClass *klass, MonoProperty *propert
 	guint32 idx;
 
 	error_init (error);
-	
+
 	if (image_is_dynamic (m_class_get_image (klass))) {
 		property = mono_metadata_get_corresponding_property_from_generic_type_definition (property);
 		return lookup_custom_attr (m_class_get_image (klass), property);
@@ -1890,7 +1895,7 @@ mono_custom_attrs_from_event_checked (MonoClass *klass, MonoEvent *event, MonoEr
 	guint32 idx;
 
 	error_init (error);
-	
+
 	if (image_is_dynamic (m_class_get_image (klass))) {
 		event = mono_metadata_get_corresponding_event_from_generic_type_definition (event);
 		return lookup_custom_attr (m_class_get_image (klass), event);
@@ -2116,7 +2121,7 @@ mono_reflection_get_custom_attrs_info_checked (MonoObjectHandle obj, MonoError *
 	HANDLE_FUNCTION_ENTER ();
 	MonoClass *klass;
 	MonoCustomAttrInfo *cinfo = NULL;
-	
+
 	error_init (error);
 
 	klass = mono_handle_class (obj);
@@ -2177,7 +2182,7 @@ mono_reflection_get_custom_attrs_info_checked (MonoObjectHandle obj, MonoError *
 
 			cinfo = mono_custom_attrs_from_param_checked (method, position + 1, error);
 			goto_if_nok (error, leave);
-		} 
+		}
 #ifndef DISABLE_REFLECTION_EMIT
 		else if (mono_is_sre_method_on_tb_inst (member_class)) {/*XXX This is a workaround for Compiler Context*/
 			// FIXME: Is this still needed ?
@@ -2185,7 +2190,7 @@ mono_reflection_get_custom_attrs_info_checked (MonoObjectHandle obj, MonoError *
 		} else if (mono_is_sre_ctor_on_tb_inst (member_class)) { /*XX This is a workaround for Compiler Context*/
 			// FIXME: Is this still needed ?
 			g_assert_not_reached ();
-		} 
+		}
 #endif
 		else {
 			char *type_name = mono_type_get_full_name (member_class);
@@ -2252,7 +2257,7 @@ leave:
  * mono_reflection_get_custom_attrs_by_type:
  * \param obj a reflection object handle
  * \returns an array with all the custom attributes defined of the
- * reflection handle \p obj. If \p attr_klass is non-NULL, only custom attributes 
+ * reflection handle \p obj. If \p attr_klass is non-NULL, only custom attributes
  * of that type are returned. The objects are fully build. Return NULL if a loading error
  * occurs.
  */
@@ -2395,7 +2400,7 @@ custom_attr_class_name_from_methoddef (MonoImage *image, guint32 method_token, c
  * custom_attr_class_name_from_method_token:
  * @image: The MonoImage
  * @method_token: a token for a custom attr constructor in @image
- * @assembly_token: out argment set to the assembly ref token of the custom attr
+ * @assembly_token: out argument set to the assembly ref token of the custom attr
  * @nspace: out argument set to namespace (a string in the string heap of @image) of the custom attr
  * @class_name: out argument set to the class name of the custom attr.
  *
@@ -2495,7 +2500,7 @@ mono_assembly_metadata_foreach_custom_attr (MonoAssembly *assembly, MonoAssembly
 }
 
 /**
- * iterate over the custom attributes that belong to the given index and call func, passing the 
+ * iterate over the custom attributes that belong to the given index and call func, passing the
  *  assembly ref (if any) and the namespace and name of the custom attribute.
  *
  * Everything is done using low-level metadata APIs, so it is safe to use

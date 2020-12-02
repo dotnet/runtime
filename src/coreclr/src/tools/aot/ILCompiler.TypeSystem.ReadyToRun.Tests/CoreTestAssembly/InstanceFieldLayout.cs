@@ -304,3 +304,98 @@ namespace IsByRefLike
         int X;
     }
 }
+
+namespace EnumAlignment
+{
+    public enum ByteEnum : byte {}
+    public enum ShortEnum : short {}
+    public enum IntEnum : int {}
+    public enum LongEnum : long {}
+
+    public struct LongIntEnumStruct
+    {
+        public LongEnum _1;
+        public IntEnum _2;
+        public LongEnum _3;
+        public IntEnum _4;
+    }
+
+    public struct LongIntEnumStructFieldStruct
+    {
+        public byte _0;
+        public LongIntEnumStruct _struct;
+    }
+
+    public struct IntShortEnumStruct
+    {
+        public IntEnum _1;
+        public ShortEnum _2;
+        public IntEnum _3;
+        public ShortEnum _4;
+    }
+
+    public struct IntShortEnumStructFieldStruct
+    {
+        public byte _0;
+        public IntShortEnumStruct _struct;
+    }
+
+    public struct ShortByteEnumStruct
+    {
+        public ShortEnum _1;
+        public ByteEnum _2;
+        public ShortEnum _3;
+        public ByteEnum _4;
+    }
+
+    public struct ShortByteEnumStructFieldStruct
+    {
+        public byte _0;
+        public ShortByteEnumStruct _struct;
+    }
+
+    [StructLayout(LayoutKind.Auto)]
+    public struct LongIntEnumStructAuto
+    {
+        public LongEnum _1;
+        public IntEnum _2;
+        public LongEnum _3;
+        public IntEnum _4;
+    }
+
+    public struct LongIntEnumStructAutoFieldStruct
+    {
+        public byte _0;
+        public LongIntEnumStructAuto _struct;
+    }
+
+    [StructLayout(LayoutKind.Auto)]
+    public struct IntShortEnumStructAuto
+    {
+        public IntEnum _1;
+        public ShortEnum _2;
+        public IntEnum _3;
+        public ShortEnum _4;
+    }
+
+    public struct IntShortEnumStructAutoFieldStruct
+    {
+        public byte _0;
+        public IntShortEnumStructAuto _struct;
+    }
+
+    [StructLayout(LayoutKind.Auto)]
+    public struct ShortByteEnumStructAuto
+    {
+        public ShortEnum _1;
+        public ByteEnum _2;
+        public ShortEnum _3;
+        public ByteEnum _4;
+    }
+
+    public struct ShortByteEnumStructAutoFieldStruct
+    {
+        public byte _0;
+        public ShortByteEnumStructAuto _struct;
+    }
+}

@@ -28,22 +28,21 @@ struct testCase
     BOOL bResult;
 };
 
-struct testCase testCases[]=
+PALTEST(threading_CreateEventW_test3_paltest_createeventw_test3, "threading/CreateEventW/test3/paltest_createeventw_test3")
 {
-    {0, TRUE, FALSE, {'\0'}, 0, ERROR_SUCCESS, PASS}, 
-    {0, TRUE, FALSE, {'\0'}, 5, ERROR_SUCCESS, PASS},
-    {0, TRUE, FALSE, {'\0'}, 5, ERROR_ALREADY_EXISTS, PASS},
-    {0, TRUE, FALSE, {'\0'}, 6, ERROR_INVALID_HANDLE, PASS},
-    {0, TRUE, FALSE, {'\0'}, MAX_PATH - 1 - 60, ERROR_SUCCESS, PASS},
-    {0, TRUE, FALSE, {'\0'}, MAX_PATH - 60, ERROR_SUCCESS, PASS},
-};
+    struct testCase testCases[]=
+    {
+        {0, TRUE, FALSE, {'\0'}, 0, ERROR_SUCCESS, PASS}, 
+        {0, TRUE, FALSE, {'\0'}, 5, ERROR_SUCCESS, PASS},
+        {0, TRUE, FALSE, {'\0'}, 5, ERROR_ALREADY_EXISTS, PASS},
+        {0, TRUE, FALSE, {'\0'}, 6, ERROR_INVALID_HANDLE, PASS},
+        {0, TRUE, FALSE, {'\0'}, MAX_PATH - 1 - 60, ERROR_SUCCESS, PASS},
+        {0, TRUE, FALSE, {'\0'}, MAX_PATH - 60, ERROR_SUCCESS, PASS},
+    };
 
-static HANDLE hEvent[sizeof(testCases)/sizeof(struct testCase)];
+    HANDLE hEvent[sizeof(testCases)/sizeof(struct testCase)];
 
-DWORD result[sizeof(testCases)/sizeof(struct testCase)];
-
-int __cdecl main(int argc, char **argv)
-{
+    DWORD result[sizeof(testCases)/sizeof(struct testCase)];
 
     BOOL bRet = TRUE;
     WCHAR nonEventName[] = {'a','a','a','a','a','a','\0'};

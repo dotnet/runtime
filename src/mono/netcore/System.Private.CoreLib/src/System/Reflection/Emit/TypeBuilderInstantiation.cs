@@ -1,5 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
+
 //
 // System.Reflection.Emit.TypeBuilderInstantiation
 //
@@ -72,7 +73,7 @@ namespace System.Reflection.Emit
             this.type_arguments = args;
         }
 
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2006:UnrecognizedReflectionPattern",
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2055:UnrecognizedReflectionPattern",
             Justification = "Reflection.Emit is not subject to trimming")]
         internal override Type InternalResolve()
         {
@@ -122,7 +123,7 @@ namespace System.Reflection.Emit
             return InflateType(type, type_arguments, method_args);
         }
 
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2006:UnrecognizedReflectionPattern",
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2055:UnrecognizedReflectionPattern",
             Justification = "Reflection emitted types have all of their members")]
         internal static Type? InflateType(Type? type, Type[]? type_args, Type[]? method_args)
         {

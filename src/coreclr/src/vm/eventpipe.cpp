@@ -22,7 +22,6 @@
 #include "win32threadpool.h"
 #include "ceemain.h"
 #include "configuration.h"
-#include "genanalysis.h"
 
 #ifdef TARGET_UNIX
 #include "pal.h"
@@ -500,14 +499,7 @@ void EventPipe::DisableHelper(EventPipeSessionID id)
 static void LogProcessInformationEvent(EventPipeEventSource &eventSource)
 {
     // Get the managed command line.
-    LPCWSTR pCmdLine = GetManagedCommandLine();
-
-    // Checkout https://github.com/dotnet/coreclr/pull/24433 for more information about this fall back.
-    if (pCmdLine == nullptr)
-    {
-        // Use the result from GetCommandLineW() instead
-        pCmdLine = GetCommandLineW();
-    }
+    LPCWSTR pCmdLine = GetCommandLineForDiagnostics();
 
     // Log the process information event.
     eventSource.SendProcessInfo(pCmdLine);
@@ -1049,9 +1041,13 @@ HANDLE EventPipe::GetWaitHandle(EventPipeSessionID sessionID)
     return pSession ? pSession->GetWaitEvent()->GetHandleUNHOSTED() : 0;
 }
 
-void EventPipe::InvokeCallback(EventPipeProviderCallbackData eventPipeProviderCallbackData)
+void EventPipe::InvokeCallback(EventPipeProviderCallbackData *pEventPipeProviderCallbackData)
 {
-    EventPipeProvider::InvokeCallback(eventPipeProviderCallbackData);
+#if defined(HOST_OSX) && defined(HOST_ARM64)
+    auto jitWriteEnableHolder = PAL_JITWriteEnable(false);
+#endif // defined(HOST_OSX) && defined(HOST_ARM64)
+
+    EventPipeProvider::InvokeCallback(pEventPipeProviderCallbackData);
 }
 
 EventPipeEventInstance *EventPipe::BuildEventMetadataEvent(EventPipeEventInstance &instance, unsigned int metadataId)

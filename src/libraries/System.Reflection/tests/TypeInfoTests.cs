@@ -479,7 +479,6 @@ namespace System.Reflection.Tests
         }
 
         [Theory]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/40868", TestRuntimes.Mono)]
         [InlineData(typeof(InheritedInteraface), new Type[] { typeof(TI_NonGenericInterface2) })]
         [InlineData(typeof(StructWithInheritedInterface), new Type[] { typeof(TI_NonGenericInterface2), typeof(InheritedInteraface) })]
         [InlineData(typeof(NonGenericClassWithNonGenericInterface), new Type[] { typeof(TI_NonGenericInterface1) })]
@@ -734,7 +733,6 @@ namespace System.Reflection.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/mono/mono/issues/15029", TestRuntimes.Mono)]
         public static void FindMembers()
         {
             MemberInfo[] members = typeof(MembersClass).GetTypeInfo().FindMembers(MemberTypes.All, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance, (MemberInfo memberInfo, object c) => true, "notused");
@@ -818,7 +816,6 @@ namespace System.Reflection.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/mono/mono/issues/15029", TestRuntimes.Mono)]
         public void GetMethod()
         {
             MethodInfo[] methods = typeof(MembersClass).GetTypeInfo().GetMethods();
@@ -837,7 +834,6 @@ namespace System.Reflection.Tests
         }
 
         [Theory]
-        [ActiveIssue("https://github.com/mono/mono/issues/15029", TestRuntimes.Mono)]
         [InlineData(BindingFlags.Default, 9)]
         [InlineData(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance, 16)]
         public void GetMethods(BindingFlags bindingAttributes, int length)
@@ -904,7 +900,6 @@ namespace System.Reflection.Tests
         }
 
         [Theory]
-        [ActiveIssue("https://github.com/mono/mono/issues/15029", TestRuntimes.Mono)]
         [InlineData(BindingFlags.Default, 15)]
         [InlineData(BindingFlags.NonPublic | BindingFlags.Instance, 13)]
         [InlineData(BindingFlags.Public | BindingFlags.Instance, 15)]
@@ -1408,6 +1403,9 @@ namespace System.Reflection.Tests
         [InlineData(typeof(PublicEnum), "System.Reflection.Tests")]
         [InlineData(typeof(TI_BaseClass.PublicNestedClass1), "System.Reflection.Tests")]
         [InlineData(typeof(int), "System")]
+        [InlineData(typeof(TI_BaseClass[]), "System.Reflection.Tests")]
+        [InlineData(typeof(TI_BaseClass.PublicNestedClass1[]), "System.Reflection.Tests")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/42633", TestRuntimes.Mono)]
         public void Namespace(Type type, string expected)
         {
             Assert.Equal(expected, type.GetTypeInfo().Namespace);

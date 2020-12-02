@@ -11,6 +11,13 @@ namespace Internal.Cryptography
     {
         private const int BitsPerByte = 8;
 
+        public TripleDesImplementation()
+        {
+            // Default CFB to CFB8 to match .NET Framework's default for TripleDES.Create()
+            // and TripleDESCryptoServiceProvider.
+            FeedbackSizeValue = 8;
+        }
+
         public override ICryptoTransform CreateDecryptor()
         {
             return CreateTransform(Key, IV, encrypting: false);
@@ -33,16 +40,12 @@ namespace Internal.Cryptography
 
         public override void GenerateIV()
         {
-            byte[] iv = new byte[BlockSize / BitsPerByte];
-            RandomNumberGenerator.Fill(iv);
-            IV = iv;
+            IV = RandomNumberGenerator.GetBytes(BlockSize / BitsPerByte);
         }
 
         public sealed override void GenerateKey()
         {
-            byte[] key = new byte[KeySize / BitsPerByte];
-            RandomNumberGenerator.Fill(key);
-            Key = key;
+            Key = RandomNumberGenerator.GetBytes(KeySize / BitsPerByte);
         }
 
         private ICryptoTransform CreateTransform(byte[] rgbKey, byte[]? rgbIV, bool encrypting)

@@ -32,7 +32,7 @@ unsigned emitEndCodeGen(Compiler* comp,
                         unsigned* epilogSize,
                         void**    codeAddr,
                         void**    coldCodeAddr,
-                        void**    consAddr);
+                        void** consAddr DEBUGARG(unsigned* instrCount));
 
 /************************************************************************/
 /*                      Method prolog and epilog                        */
@@ -82,7 +82,7 @@ void emitIns_J(instruction ins, BasicBlock* dst, int instrCount = 0);
 /*                   Emit initialized data sections                     */
 /************************************************************************/
 
-UNATIVE_OFFSET emitDataGenBeg(UNATIVE_OFFSET size, UNATIVE_OFFSET alignment);
+UNATIVE_OFFSET emitDataGenBeg(unsigned size, unsigned alignment, var_types dataType);
 
 UNATIVE_OFFSET emitBBTableDataGenBeg(unsigned numEntries, bool relativeAddr);
 
@@ -92,7 +92,11 @@ void emitDataGenData(unsigned offs, BasicBlock* label);
 
 void emitDataGenEnd();
 
-UNATIVE_OFFSET emitDataConst(const void* cnsAddr, UNATIVE_OFFSET cnsSize, UNATIVE_OFFSET cnsAlign);
+static const UNATIVE_OFFSET INVALID_UNATIVE_OFFSET = (UNATIVE_OFFSET)-1;
+
+UNATIVE_OFFSET emitDataGenFind(const void* cnsAddr, unsigned size, unsigned alignment, var_types dataType);
+
+UNATIVE_OFFSET emitDataConst(const void* cnsAddr, unsigned cnsSize, unsigned cnsAlign, var_types dataType);
 
 UNATIVE_OFFSET emitDataSize();
 

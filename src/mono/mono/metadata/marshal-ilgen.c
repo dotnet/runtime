@@ -2055,6 +2055,7 @@ emit_native_wrapper_ilgen (MonoImage *image, MonoMethodBuilder *mb, MonoMethodSi
 	if (need_gc_safe)
 		gc_safe_transition_builder_add_locals (&gc_safe_transition_builder);
 
+#ifdef ENABLE_NETCORE
 	if (!func && !aot && !func_param && !MONO_CLASS_IS_IMPORT (mb->method->klass)) {
 		/*
 		 * On netcore, its possible to register pinvoke resolvers at runtime, so
@@ -2087,6 +2088,7 @@ emit_native_wrapper_ilgen (MonoImage *image, MonoMethodBuilder *mb, MonoMethodSi
 		mono_mb_emit_byte (mb, CEE_LDIND_I);
 		mono_mb_emit_stloc (mb, func_addr_local);
 	}
+#endif
 
 	/*
 	 * cookie = mono_threads_enter_gc_safe_region_unbalanced (ref dummy);
@@ -2735,10 +2737,12 @@ emit_marshal_array_ilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 			mono_mb_emit_ldloc (mb, conv_arg);
 		break;
 
-	case MARSHAL_ACTION_CONV_RESULT:
-		/* fixme: we need conversions here */
-		mono_mb_emit_stloc (mb, 3);
+	case MARSHAL_ACTION_CONV_RESULT: {
+		mono_mb_emit_byte (mb, CEE_POP);
+		char *msg = g_strdup_printf ("Cannot marshal 'return value': Invalid managed/unmanaged type combination.");
+		mono_mb_emit_exception_marshal_directive (mb, msg);
 		break;
+	}
 
 	case MARSHAL_ACTION_MANAGED_CONV_IN: {
 		guint32 label1, label2, label3;

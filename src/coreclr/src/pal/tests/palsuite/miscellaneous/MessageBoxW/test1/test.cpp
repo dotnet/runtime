@@ -14,7 +14,7 @@
 
 #include <palsuite.h>
 
-int __cdecl main(int argc, char *argv[]) 
+PALTEST(miscellaneous_MessageBoxW_test1_paltest_messageboxw_test1, "miscellaneous/MessageBoxW/test1/paltest_messageboxw_test1")
 {
     /* Declare Variables to use with convert()*/
     WCHAR * PalTitle = NULL;

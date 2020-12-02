@@ -87,7 +87,7 @@ int GetParameters( int argc, char **argv)
 }
 
 //Main entry point for the application
- int __cdecl main(INT argc, CHAR **argv)
+PALTEST(composite_synchronization_criticalsection_paltest_synchronization_criticalsection, "composite/synchronization/criticalsection/paltest_synchronization_criticalsection")
 {
 	unsigned int i = 0;
 	HANDLE hProcess[MAXIMUM_WAIT_OBJECTS];  //Array to hold Process handles

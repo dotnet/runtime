@@ -3326,6 +3326,7 @@ namespace System.Tests
             yield return new object[] { new string[] { "5", "2", "9", "8", "4", "3", "2", "4", "6" }, 0, 9, new StringComparer(), new string[] { "2", "2", "3", "4", "4", "5", "6", "8", "9" } };
             yield return new object[] { new string[] { "5", null, "2", "9", "8", "4", "3", "2", "4", "6" }, 0, 10, new StringComparer(), new string[] { null, "2", "2", "3", "4", "4", "5", "6", "8", "9" } };
             yield return new object[] { new string[] { "5", null, "2", "9", "8", "4", "3", "2", "4", "6" }, 3, 4, new StringComparer(), new string[] { "5", null, "2", "3", "4", "8", "9", "2", "4", "6" } };
+            yield return new object[] { new string[] { null, null, null, null, null, "foo", null, null, null, null, null, "bar", null, null, null, null, null }, 0, 17, null, new string[] { null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, "bar", "foo" } };
             yield return new object[] { new int[] { 1, 2, 3, 4 }, 0, 4, null, new int[] { 1, 2, 3, 4 } };
             yield return new object[] { new int[] { 4, 3, 2, 1 }, 0, 4, null, new int[] { 1, 2, 3, 4 } };
             yield return new object[] { new int[] { 4, 3, 2, 1 }, 1, 2, null, new int[] { 4, 2, 3, 1 } };

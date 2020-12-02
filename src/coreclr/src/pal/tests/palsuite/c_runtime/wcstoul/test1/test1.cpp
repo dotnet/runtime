@@ -17,7 +17,7 @@
  */
 
 
-int __cdecl main(int argc, char *argv[])
+PALTEST(c_runtime_wcstoul_test1_paltest_wcstoul_test1, "c_runtime/wcstoul/test1/paltest_wcstoul_test1")
 {
     WCHAR teststr[] = {'1','2','3','4','5',0};
     WCHAR *end;

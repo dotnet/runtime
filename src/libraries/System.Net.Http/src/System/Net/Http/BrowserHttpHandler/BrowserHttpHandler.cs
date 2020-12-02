@@ -34,6 +34,9 @@ namespace System.Net.Http
 
         private static readonly HttpRequestOptionsKey<bool> EnableStreamingResponse = new HttpRequestOptionsKey<bool>("WebAssemblyEnableStreamingResponse");
         private static readonly HttpRequestOptionsKey<IDictionary<string, object>> FetchOptions = new HttpRequestOptionsKey<IDictionary<string, object>>("WebAssemblyFetchOptions");
+        private bool _allowAutoRedirect = HttpHandlerDefaults.DefaultAutomaticRedirection;
+        // flag to determine if the _allowAutoRedirect was explicitly set or not.
+        private bool _isAllowAutoRedirectTouched;
 
         /// <summary>
         /// Gets whether the current Browser supports streaming responses
@@ -95,8 +98,12 @@ namespace System.Net.Http
 
         public bool AllowAutoRedirect
         {
-            get => throw new PlatformNotSupportedException();
-            set => throw new PlatformNotSupportedException();
+            get => _allowAutoRedirect;
+            set
+            {
+                _allowAutoRedirect = value;
+                _isAllowAutoRedirectTouched = true;
+            }
         }
 
         public int MaxAutomaticRedirections
@@ -123,12 +130,17 @@ namespace System.Net.Http
             set => throw new PlatformNotSupportedException();
         }
 
-        public bool SupportsAutomaticDecompression => false;
-        public bool SupportsProxy => false;
-        public bool SupportsRedirectConfiguration => false;
+        public const bool SupportsAutomaticDecompression = false;
+        public const bool SupportsProxy = false;
+        public const bool SupportsRedirectConfiguration = true;
 
         private Dictionary<string, object?>? _properties;
         public IDictionary<string, object?> Properties => _properties ??= new Dictionary<string, object?>();
+
+        protected internal override HttpResponseMessage Send(HttpRequestMessage request, CancellationToken cancellationToken)
+        {
+            throw new PlatformNotSupportedException ();
+        }
 
         protected internal override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
         {
@@ -145,6 +157,22 @@ namespace System.Net.Http
                 }
 
                 requestObject.SetObjectProperty("method", request.Method.Method);
+
+                // Only set if property was specifically modified and is not default value
+                if (_isAllowAutoRedirectTouched)
+                {
+                    // Allowing or Disallowing redirects.
+                    // Here we will set redirect to `manual` instead of error if AllowAutoRedirect is
+                    // false so there is no exception thrown
+                    //
+                    // https://developer.mozilla.org/en-US/docs/Web/API/Response/type
+                    //
+                    // other issues from whatwg/fetch:
+                    //
+                    // https://github.com/whatwg/fetch/issues/763
+                    // https://github.com/whatwg/fetch/issues/601
+                    requestObject.SetObjectProperty("redirect", AllowAutoRedirect ? "follow" : "manual");
+                }
 
                 // We need to check for body content
                 if (request.Content != null)
@@ -219,13 +247,25 @@ namespace System.Net.Http
                 var response = s_fetch?.Invoke("apply", s_window, args) as Task<object>;
                 args.Dispose();
                 if (response == null)
-                    throw new Exception("Internal error marshalling the response Promise from `fetch`.");
+                    throw new Exception(SR.net_http_marshalling_response_promise_from_fetch);
 
                 JSObject t = (JSObject)await response.ConfigureAwait(continueOnCapturedContext: true);
 
                 var status = new WasmFetchResponse(t, abortController, abortCts, abortRegistration);
-
                 HttpResponseMessage httpResponse = new HttpResponseMessage((HttpStatusCode)status.Status);
+                httpResponse.RequestMessage = request;
+
+                // Here we will set the ReasonPhrase so that it can be evaluated later.
+                // We do not have a status code but this will signal some type of what happened
+                // after interrogating the status code for success or not i.e. IsSuccessStatusCode
+                //
+                // https://developer.mozilla.org/en-US/docs/Web/API/Response/type
+                // opaqueredirect: The fetch request was made with redirect: "manual".
+                // The Response's status is 0, headers are empty, body is null and trailer is empty.
+                if (status.ResponseType == "opaqueredirect")
+                {
+                    httpResponse.SetReasonPhraseWithoutValidation(status.ResponseType);
+                }
 
                 bool streamingEnabled = false;
                 if (StreamingSupported)
@@ -522,7 +562,7 @@ namespace System.Net.Http
 
             public override int Read(byte[] buffer, int offset, int count)
             {
-                throw new NotSupportedException("Synchronous reads are not supported, use ReadAsync instead");
+                throw new NotSupportedException(SR.net_http_synchronous_reads_not_supported);
             }
 
             public override long Seek(long offset, SeekOrigin origin)

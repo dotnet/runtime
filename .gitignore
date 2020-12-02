@@ -133,6 +133,9 @@ AutoTest.Net/
 # Web workbench (sass)
 .sass-cache/
 
+# BenchmarkDotNet
+BenchmarkDotNet.Artifacts/
+
 # Installshield output folder
 [Ee]xpress/
 
@@ -319,7 +322,6 @@ Vagrantfile
 CMakeFiles/
 cmake_install.cmake
 CMakeCache.txt
-Makefile
 
 # Cross compilation
 cross/rootfs/*

@@ -13,7 +13,7 @@
 
 #include <palsuite.h>
 
-int __cdecl main(int argc, char **argv)
+PALTEST(c_runtime_fwrite_test1_paltest_fwrite_test1, "c_runtime/fwrite/test1/paltest_fwrite_test1")
 {
     const char filename[] = "testfile.tmp";
     const char outBuffer[] = "This is a test.";

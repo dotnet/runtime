@@ -13,7 +13,7 @@
 #include <palsuite.h>
 
 
-int __cdecl main(int argc, char *argv[])
+PALTEST(file_io_GetCurrentDirectoryW_test1_paltest_getcurrentdirectoryw_test1, "file_io/GetCurrentDirectoryW/test1/paltest_getcurrentdirectoryw_test1")
 {
     DWORD dwRc = 0;
     DWORD dwRc2 = 0;

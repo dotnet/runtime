@@ -2052,12 +2052,14 @@ MarshalInfo::MarshalInfo(Module* pModule,
                         case NATIVE_TYPE_STRUCT:
                             m_resID = IDS_EE_OBJECT_TO_VARIANT_NOT_SUPPORTED;
                             IfFailGoto(E_FAIL, lFail);
+                            break;
 
                         case NATIVE_TYPE_INTF:
                         case NATIVE_TYPE_IUNKNOWN:
                         case NATIVE_TYPE_IDISPATCH:
                             m_resID = IDS_EE_OBJECT_TO_ITF_NOT_SUPPORTED;
                             IfFailGoto(E_FAIL, lFail);
+                            break;
 #endif // FEATURE_COMINTEROP
 
                         case NATIVE_TYPE_ASANY:

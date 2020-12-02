@@ -19,7 +19,7 @@
 
 #include <palsuite.h>
 
-int __cdecl main( int argc, char **argv )
+PALTEST(threading_GetCurrentThread_test1_paltest_getcurrentthread_test1, "threading/GetCurrentThread/test1/paltest_getcurrentthread_test1")
 {
 
     HANDLE hThread;

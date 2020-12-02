@@ -1,5 +1,11 @@
 project(System.Native C)
 
+if (NOT CLR_CMAKE_TARGET_IOS AND NOT CLR_CMAKE_TARGET_TVOS)
+    add_definitions(-DHAS_CONSOLE_SIGNALS)
+endif ()
+
+include_directories("${CLR_SRC_NATIVE_DIR}/common")
+
 set(NATIVE_SOURCES
     pal_errno.c
     pal_interfaceaddresses.c
@@ -16,6 +22,7 @@ set(NATIVE_SOURCES
     pal_signal.c
     pal_string.c
     pal_tcpstate.c
+    pal_threading.c
     pal_time.c
     pal_uid.c
     pal_datetime.c
@@ -27,7 +34,9 @@ if (CLR_CMAKE_TARGET_IOS OR CLR_CMAKE_TARGET_TVOS)
         pal_log.m
         pal_searchpath.m)
 else ()
-    set(NATIVE_SOURCES ${NATIVE_SOURCES} pal_console.c)
+    set(NATIVE_SOURCES ${NATIVE_SOURCES}
+        pal_console.c
+        pal_log.c)
 endif ()
 
 if (CLR_CMAKE_TARGET_LINUX AND NOT CLR_CMAKE_TARGET_BROWSER)

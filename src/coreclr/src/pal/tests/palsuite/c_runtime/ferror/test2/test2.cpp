@@ -19,7 +19,7 @@
 
 #include <palsuite.h>
 
-int __cdecl main(int argc, char **argv)
+PALTEST(c_runtime_ferror_test2_paltest_ferror_test2, "c_runtime/ferror/test2/paltest_ferror_test2")
 {
     const char filename[] = "testfile";
     FILE * fp = NULL;

@@ -43,54 +43,48 @@ namespace Microsoft.Extensions.Caching.Memory
 
         public static TItem Set<TItem>(this IMemoryCache cache, object key, TItem value)
         {
-            ICacheEntry entry = cache.CreateEntry(key);
+            using ICacheEntry entry = cache.CreateEntry(key);
             entry.Value = value;
-            entry.Dispose();
 
             return value;
         }
 
         public static TItem Set<TItem>(this IMemoryCache cache, object key, TItem value, DateTimeOffset absoluteExpiration)
         {
-            ICacheEntry entry = cache.CreateEntry(key);
+            using ICacheEntry entry = cache.CreateEntry(key);
             entry.AbsoluteExpiration = absoluteExpiration;
             entry.Value = value;
-            entry.Dispose();
 
             return value;
         }
 
         public static TItem Set<TItem>(this IMemoryCache cache, object key, TItem value, TimeSpan absoluteExpirationRelativeToNow)
         {
-            ICacheEntry entry = cache.CreateEntry(key);
+            using ICacheEntry entry = cache.CreateEntry(key);
             entry.AbsoluteExpirationRelativeToNow = absoluteExpirationRelativeToNow;
             entry.Value = value;
-            entry.Dispose();
 
             return value;
         }
 
         public static TItem Set<TItem>(this IMemoryCache cache, object key, TItem value, IChangeToken expirationToken)
         {
-            ICacheEntry entry = cache.CreateEntry(key);
+            using ICacheEntry entry = cache.CreateEntry(key);
             entry.AddExpirationToken(expirationToken);
             entry.Value = value;
-            entry.Dispose();
 
             return value;
         }
 
         public static TItem Set<TItem>(this IMemoryCache cache, object key, TItem value, MemoryCacheEntryOptions options)
         {
-            using (ICacheEntry entry = cache.CreateEntry(key))
+            using ICacheEntry entry = cache.CreateEntry(key);
+            if (options != null)
             {
-                if (options != null)
-                {
-                    entry.SetOptions(options);
-                }
-
-                entry.Value = value;
+                entry.SetOptions(options);
             }
+
+            entry.Value = value;
 
             return value;
         }
@@ -99,13 +93,10 @@ namespace Microsoft.Extensions.Caching.Memory
         {
             if (!cache.TryGetValue(key, out object result))
             {
-                ICacheEntry entry = cache.CreateEntry(key);
+                using ICacheEntry entry = cache.CreateEntry(key);
+
                 result = factory(entry);
-                entry.SetValue(result);
-                // need to manually call dispose instead of having a using
-                // in case the factory passed in throws, in which case we
-                // do not want to add the entry to the cache
-                entry.Dispose();
+                entry.Value = result;
             }
 
             return (TItem)result;
@@ -115,13 +106,10 @@ namespace Microsoft.Extensions.Caching.Memory
         {
             if (!cache.TryGetValue(key, out object result))
             {
-                ICacheEntry entry = cache.CreateEntry(key);
+                using ICacheEntry entry = cache.CreateEntry(key);
+
                 result = await factory(entry).ConfigureAwait(false);
-                entry.SetValue(result);
-                // need to manually call dispose instead of having a using
-                // in case the factory passed in throws, in which case we
-                // do not want to add the entry to the cache
-                entry.Dispose();
+                entry.Value = result;
             }
 
             return (TItem)result;

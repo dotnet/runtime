@@ -59,7 +59,14 @@ typedef DPTR(RUNTIME_FUNCTION) PTR_RUNTIME_FUNCTION;
 
 
 // Chained unwind info. Used for cold methods.
+#ifdef HOST_X86
 #define RUNTIME_FUNCTION_INDIRECT 0x80000000
+#else
+// If not hosted on X86, undefine RUNTIME_FUNCTION_INDIRECT as it likely isn't correct
+#ifdef RUNTIME_FUNCTION_INDIRECT
+#undef RUNTIME_FUNCTION_INDIRECT
+#endif // RUNTIME_FUNCTION_INDIRECT
+#endif // HOST_X86
 
 #endif // TARGET_X86
 
@@ -806,10 +813,6 @@ typedef enum
 } CorCompileRuntimeDlls;
 
 extern LPCWSTR CorCompileGetRuntimeDllName(CorCompileRuntimeDlls id);
-
-// Will always return a valid HMODULE for CLR_INFO, but will return NULL for NGEN_COMPILER_INFO
-// if the DLL has not yet been loaded (it does not try to cause a load).
-extern HMODULE CorCompileGetRuntimeDll(CorCompileRuntimeDlls id);
 
 struct CORCOMPILE_RUNTIME_DLL_INFO
 {

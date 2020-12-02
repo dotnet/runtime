@@ -30,14 +30,13 @@ namespace System.Net.Http.Functional.Tests
         public DiagnosticsTest(ITestOutputHelper output) : base(output) { }
 
         [Fact]
-        public static void EventSource_ExistsWithCorrectId()
+        public void EventSource_ExistsWithCorrectId()
         {
-            Type esType = typeof(HttpClient).GetTypeInfo().Assembly
-                .GetType("System.Net.NetEventSource", throwOnError: true, ignoreCase: false);
+            Type esType = typeof(HttpClient).Assembly.GetType("System.Net.NetEventSource", throwOnError: true, ignoreCase: false);
             Assert.NotNull(esType);
 
-            Assert.Equal("Microsoft-System-Net-Http", EventSource.GetName(esType));
-            Assert.Equal(Guid.Parse("bdd9a83e-1929-5482-0d73-2fe5e1c0e16d"), EventSource.GetGuid(esType));
+            Assert.Equal("Private.InternalDiagnostics.System.Net.Http", EventSource.GetName(esType));
+            Assert.Equal(Guid.Parse("a60cec70-947b-5b80-efe2-7c5547b99b3d"), EventSource.GetGuid(esType));
 
             Assert.NotEmpty(EventSource.GenerateManifest(esType, "assemblyPathToIncludeInManifest"));
         }
@@ -183,7 +182,7 @@ namespace System.Net.Http.Functional.Tests
         {
             RemoteExecutor.Invoke(async (useVersionString, useSslString) =>
             {
-                using (var listener = new TestEventListener("Microsoft-System-Net-Http", EventLevel.Verbose))
+                using (var listener = new TestEventListener("Private.InternalDiagnostics.System.Net.Http", EventLevel.Verbose))
                 {
                     var events = new ConcurrentQueue<EventWrittenEventArgs>();
                     await listener.RunWithCallbackAsync(events.Enqueue, async () =>

@@ -15,7 +15,7 @@
 
 #include <palsuite.h>
 
-int __cdecl main(int argc, char *argv[]) 
+PALTEST(miscellaneous_SetEnvironmentVariableA_test4_paltest_setenvironmentvariablea_test4, "miscellaneous/SetEnvironmentVariableA/test4/paltest_setenvironmentvariablea_test4")
 {
 
 #if WIN32

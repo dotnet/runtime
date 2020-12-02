@@ -23,7 +23,7 @@
  * 
  * executable entry point
  */
-INT __cdecl main(INT argc, CHAR **argv)
+PALTEST(miscellaneous_IsBadCodePtr_test1_paltest_isbadcodeptr_test1, "miscellaneous/IsBadCodePtr/test1/paltest_isbadcodeptr_test1")
 {
     BOOL ResultValue = 0;
   

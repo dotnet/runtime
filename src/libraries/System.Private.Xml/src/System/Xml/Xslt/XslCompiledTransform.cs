@@ -4,21 +4,16 @@
 // <spec>http://webdata/xml/specs/XslCompiledTransform.xml</spec>
 //------------------------------------------------------------------------------
 
-#nullable enable
 using System.CodeDom.Compiler;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Reflection;
 using System.Reflection.Emit;
-using System.Security;
 using System.Xml.XPath;
 using System.Xml.Xsl.Qil;
 using System.Xml.Xsl.Runtime;
 using System.Xml.Xsl.Xslt;
-using System.Runtime.Versioning;
-using System.Collections.Generic;
-using System.Linq;
 
 namespace System.Xml.Xsl
 {

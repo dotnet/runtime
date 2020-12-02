@@ -756,7 +756,7 @@ void ILWSTRBufferMarshaler::EmitConvertContentsCLRToNative(ILCodeStream* pslILEm
 {
     STANDARD_VM_CONTRACT;
 
-    DWORD dwTempNumBytesLocal = pslILEmit->NewLocal(ELEMENT_TYPE_I4);
+    DWORD dwTempNumCharsLocal = pslILEmit->NewLocal(ELEMENT_TYPE_I4);
 
     ILCodeLabel* pNullRefLabel = pslILEmit->NewCodeLabel();
 
@@ -778,19 +778,14 @@ void ILWSTRBufferMarshaler::EmitConvertContentsCLRToNative(ILCodeStream* pslILEm
 
     // stack: StringBuilder length
 
-    pslILEmit->EmitDUP();
-    pslILEmit->EmitADD();
-
-    // stack: StringBuilder cb
-
-    pslILEmit->EmitSTLOC(dwTempNumBytesLocal);
+    pslILEmit->EmitSTLOC(dwTempNumCharsLocal);
 
     // stack: StringBuilder
 
     EmitLoadNativeValue(pslILEmit);
-    pslILEmit->EmitLDLOC(dwTempNumBytesLocal);
+    pslILEmit->EmitLDLOC(dwTempNumCharsLocal);
 
-    // stack: stringbuilder native_buffer cb
+    // stack: StringBuilder native_buffer length
 
     // void System.Text.StringBuilder.InternalCopy(IntPtr dest,int len)
     pslILEmit->EmitCALL(METHOD__STRING_BUILDER__INTERNAL_COPY, 3, 0);
@@ -799,8 +794,10 @@ void ILWSTRBufferMarshaler::EmitConvertContentsCLRToNative(ILCodeStream* pslILEm
     // null-terminate the native string
     //
     EmitLoadNativeValue(pslILEmit);
-    pslILEmit->EmitLDLOC(dwTempNumBytesLocal);
-    pslILEmit->EmitADD();
+    pslILEmit->EmitLDLOC(dwTempNumCharsLocal);
+    pslILEmit->EmitDUP();
+    pslILEmit->EmitADD(); // dwTempNumCharsLocal + dwTempNumCharsLocal
+    pslILEmit->EmitADD(); // + native_buffer
     pslILEmit->EmitLDC(0);
     pslILEmit->EmitSTIND_I2();
 

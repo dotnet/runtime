@@ -564,11 +564,22 @@ finite maps tag{ t0, ..tn-1} is defined below. Note that to decode a physical ro
 inverse of this mapping.
 
  */
-#define rtsize(meta,s,b) (((s) < (1 << (b)) ? 2 : 4))
+static int
+rtsize (MonoImage *meta, int sz, int bits)
+{
+	if (G_UNLIKELY (meta->minimal_delta))
+		return 4;
+	if (sz < (1 << bits))
+		return 2;
+	else
+		return 4;
+}
 
 static int
 idx_size (MonoImage *meta, int idx)
 {
+	if (G_UNLIKELY (meta->minimal_delta))
+		return 4;
 	if (meta->referenced_tables && (meta->referenced_tables & ((guint64)1 << idx)))
 		return meta->referenced_table_rows [idx] < 65536 ? 2 : 4;
 	else

@@ -11,32 +11,40 @@ GcGenAnalysisState gcGenAnalysisConfigured = GcGenAnalysisState::Uninitialized;
 int64_t gcGenAnalysisGen = -1;
 int64_t gcGenAnalysisBytes = 0;
 int64_t gcGenAnalysisIndex = 0;
+uint32_t gcGenAnalysisBufferMB = 0;
 
 /* static */ void GenAnalysis::Initialize()
 {
 #ifndef GEN_ANALYSIS_STRESS
     if (gcGenAnalysisConfigured == GcGenAnalysisState::Uninitialized)
     {
-        if (CLRConfig::IsConfigOptionSpecified(W("GCGenAnalysisGen")))
+        bool match = true;
+        CLRConfigStringHolder gcGenAnalysisCmd(CLRConfig::GetConfigValue(CLRConfig::INTERNAL_GCGenAnalysisCmd));
+        if (gcGenAnalysisCmd != nullptr)
         {
+            // Get the managed command line.
+            LPCWSTR pCmdLine = GetCommandLineForDiagnostics();
+            match = wcsncmp(pCmdLine, gcGenAnalysisCmd, wcslen(gcGenAnalysisCmd)) == 0;
+        }
+        if (match && !CLRConfig::IsConfigOptionSpecified(W("GCGenAnalysisGen")))
+        {
+            match = false;
+        }
+        if (match && !CLRConfig::IsConfigOptionSpecified(W("GCGenAnalysisBytes")))
+        {
+            match = false;
+        }
+        if (match)
+        {
+            gcGenAnalysisBytes = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_GCGenAnalysisBytes);
             gcGenAnalysisGen = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_GCGenAnalysisGen);
-            if (CLRConfig::IsConfigOptionSpecified(W("GCGenAnalysisBytes")))
-            {
-                gcGenAnalysisBytes = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_GCGenAnalysisBytes);
-                if (CLRConfig::IsConfigOptionSpecified(W("GCGenAnalysisIndex")))
-                {
-                    gcGenAnalysisIndex = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_GCGenAnalysisIndex);
-                    gcGenAnalysisConfigured = GcGenAnalysisState::Enabled;
-                }
-                else
-                {
-                    gcGenAnalysisConfigured = GcGenAnalysisState::Disabled;
-                }
-            }
-            else
-            {
-                gcGenAnalysisConfigured = GcGenAnalysisState::Disabled;
-            }
+            gcGenAnalysisIndex = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_GCGenAnalysisIndex);
+            gcGenAnalysisBufferMB = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_EventPipeCircularMB);
+            gcGenAnalysisConfigured = GcGenAnalysisState::Enabled;
+        }
+        else
+        {
+            gcGenAnalysisConfigured = GcGenAnalysisState::Disabled;
         }
     }
     if ((gcGenAnalysisConfigured == GcGenAnalysisState::Enabled) && (gcGenAnalysisState == GcGenAnalysisState::Uninitialized))
@@ -61,7 +69,7 @@ int64_t gcGenAnalysisIndex = 0;
     pProviders[0] = EventPipeProviderConfiguration(W("Microsoft-Windows-DotNETRuntime"), keyword, 5, nullptr);
     gcGenAnalysisEventPipeSessionId = EventPipe::Enable(
         outputPath,
-        1024,
+        gcGenAnalysisBufferMB,
         pProviders,
         providerCnt,
         EventPipeSessionType::File,

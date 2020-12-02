@@ -218,6 +218,20 @@ void Phase::PostPhase(PhaseStatus status)
         }
     }
 
+    // Optionally check profile data, if we have any.
+    //
+    // There's no point checking until we've built pred lists, as
+    // we can't easily reason about consistency without them.
+    //
+    // Bypass the "doPostPhase" filter until we're sure all
+    // phases that mess with profile counts set their phase status
+    // appropriately.
+    //
+    if ((JitConfig.JitProfileChecks() > 0) && comp->fgHaveProfileData() && comp->fgComputePredsDone)
+    {
+        comp->fgDebugCheckProfileData();
+    }
+
 #endif // DEBUG
 
     comp->EndPhase(m_phase);

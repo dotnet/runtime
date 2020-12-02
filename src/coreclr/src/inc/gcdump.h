@@ -44,10 +44,10 @@ public:
      * Return value     : Size in bytes of the header encoding
      */
 
-    unsigned FASTCALL   DumpInfoHdr (PTR_CBYTE   gcInfoBlock,
-                                     InfoHdr    *   header,         /* OUT */
-                                     unsigned   *   methodSize,     /* OUT */
-                                     bool           verifyGCTables = false);
+    size_t FASTCALL   DumpInfoHdr (PTR_CBYTE   gcInfoBlock,
+                                   InfoHdr    *   header,         /* OUT */
+                                   unsigned   *   methodSize,     /* OUT */
+                                   bool           verifyGCTables = false);
 #endif
 
     /*-------------------------------------------------------------------------
@@ -90,7 +90,7 @@ protected:
     /* Helper methods */
 
     PTR_CBYTE           DumpEncoding(PTR_CBYTE      gcInfoBlock,
-                                     int            cDumpBytes);
+                                     size_t         cDumpBytes);
     void                DumpOffset  (unsigned       o);
     void                DumpOffsetEx(unsigned       o);
 

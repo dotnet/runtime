@@ -19,7 +19,7 @@
 /* ditto with wcslen */
 
 
-int __cdecl main(int argc, char *argv[])
+PALTEST(c_runtime__snwprintf_s_test3_paltest_snwprintf_test3, "c_runtime/_snwprintf_s/test3/paltest_snwprintf_test3")
 {
     if (PAL_Initialize(argc, argv) != 0)
     {

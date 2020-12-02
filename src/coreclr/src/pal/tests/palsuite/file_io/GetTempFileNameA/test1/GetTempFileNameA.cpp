@@ -18,7 +18,7 @@
 
 
 
-int __cdecl main(int argc, char *argv[])
+PALTEST(file_io_GetTempFileNameA_test1_paltest_gettempfilenamea_test1, "file_io/GetTempFileNameA/test1/paltest_gettempfilenamea_test1")
 {
     UINT uiError = 0;
     const UINT uUnique = 0;

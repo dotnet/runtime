@@ -170,7 +170,7 @@ namespace System.Text.RegularExpressions
                 return input;
             }
 
-            var state = (segments: new SegmentStringBuilder(256), evaluator, prevat: 0, input, count);
+            var state = (segments: SegmentStringBuilder.Create(), evaluator, prevat: 0, input, count);
 
             if (!regex.RightToLeft)
             {
@@ -180,7 +180,7 @@ namespace System.Text.RegularExpressions
                     state.prevat = match.Index + match.Length;
                     state.segments.Add(state.evaluator(match).AsMemory());
                     return --state.count != 0;
-                });
+                }, reuseMatchObject: false);
 
                 if (state.segments.Count == 0)
                 {
@@ -199,7 +199,7 @@ namespace System.Text.RegularExpressions
                     state.prevat = match.Index;
                     state.segments.Add(evaluator(match).AsMemory());
                     return --state.count != 0;
-                });
+                }, reuseMatchObject: false);
 
                 if (state.segments.Count == 0)
                 {

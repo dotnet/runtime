@@ -137,7 +137,7 @@ namespace System.Text.Json.Serialization
 
         protected JsonNamingPolicy() { }
         public abstract string ConvertName(string name);
-    }    
+    }
 }
 ```
 

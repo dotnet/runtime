@@ -257,7 +257,7 @@ namespace System.Net.Mail
             }
             else
             {
-                return "\"" + DisplayName + "\" " + SmtpAddress;
+                return "\"" + DisplayName.Replace("\"", "\\\"") + "\" " + SmtpAddress;
             }
         }
 
@@ -272,7 +272,7 @@ namespace System.Net.Mail
 
         public override int GetHashCode()
         {
-            return ToString().GetHashCode();
+            return ToString().GetHashCode(StringComparison.InvariantCultureIgnoreCase);
         }
 
         private static readonly EncodedStreamFactory s_encoderFactory = new EncodedStreamFactory();

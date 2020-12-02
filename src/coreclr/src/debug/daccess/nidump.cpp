@@ -92,7 +92,6 @@ FORCEINLINE ULONG DacSigUncompressData(
         return *pData++;
     return DacSigUncompressBigData(pData);
 }
-//const static mdToken g_tkCorEncodeToken[4] ={mdtTypeDef, mdtTypeRef, mdtTypeSpec, mdtBaseType};
 
 // uncompress a token
 inline mdToken DacSigUncompressToken(   // return the token.
@@ -102,7 +101,7 @@ inline mdToken DacSigUncompressToken(   // return the token.
     mdToken     tkType;
 
     tk = DacSigUncompressData(pData);
-    tkType = g_tkCorEncodeToken[tk & 0x3];
+    tkType = CorSigDecodeTokenType(tk & 0x3);
     tk = TokenFromRid(tk >> 2, tkType);
     return tk;
 }
