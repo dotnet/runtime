@@ -2239,11 +2239,8 @@ void LinearScan::buildIntervals()
                 currentLoc = 1;
             }
 
-            // Handle special cases for live-in.
-            // If this block hasEHBoundaryIn, then we will mark the recentRefPosition of each EH Var preemptively as
-            // spillAfter, since we don't want them to remain in registers.
-            // Otherwise, determine if we need any DummyDefs.
-            // We need DummyDefs for cases where "predBlock" isn't really a predecessor.
+            // For blocks that don't have EHBoundaryIn, we need DummyDefs for cases where "predBlock" isn't
+            // really a predecessor.
             // Note that it's possible to have uses of unitialized variables, in which case even the first
             // block may require DummyDefs, which we are not currently adding - this means that these variables
             // will always be considered to be in memory on entry (and reloaded when the use is encountered).
@@ -2251,23 +2248,7 @@ void LinearScan::buildIntervals()
             // variables (which may actually be initialized along the dynamically executed paths, but not
             // on all static paths), we wind up with excessive liveranges for some of these variables.
 
-            if (blockInfo[block->bbNum].hasEHBoundaryIn)
-            {
-                VARSET_TP       liveInEHVars(VarSetOps::Intersection(compiler, currentLiveVars, exceptVars));
-                VarSetOps::Iter iter(compiler, liveInEHVars);
-                unsigned        varIndex = 0;
-                while (iter.NextElem(&varIndex))
-                {
-                    Interval* interval = getIntervalForLocalVar(varIndex);
-                    if (interval->recentRefPosition != nullptr)
-                    {
-                        JITDUMP("  Marking RP #%d of V%02u as spillAfter\n", interval->recentRefPosition->rpNum,
-                                interval->varNum);
-                        interval->recentRefPosition->spillAfter = true;
-                    }
-                }
-            }
-            else
+            if (!blockInfo[block->bbNum].hasEHBoundaryIn)
             {
                 // Any lclVars live-in on a non-EH boundary edge are resolution candidates.
                 VarSetOps::UnionD(compiler, resolutionCandidateVars, currentLiveVars);

@@ -287,12 +287,6 @@
       <argument>ILLink</argument>
       <argument>IL2075</argument>
       <property name="Scope">member</property>
-      <property name="Target">M:System.Diagnostics.StackTrace.TryResolveStateMachineMethod(System.Reflection.MethodBase@,System.Type@)</property>
-    </attribute>
-    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
-      <argument>ILLink</argument>
-      <argument>IL2075</argument>
-      <property name="Scope">member</property>
       <property name="Target">M:System.Diagnostics.Tracing.EventSource.CreateManifestAndDescriptors(System.Type,System.String,System.Diagnostics.Tracing.EventSource,System.Diagnostics.Tracing.EventManifestOptions)</property>
     </attribute>
     <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
