@@ -115,9 +115,6 @@
     <SystemRuntimeTimeZoneDataVersion>5.0.0-beta.20601.2</SystemRuntimeTimeZoneDataVersion>
     <SystemSecurityCryptographyX509CertificatesTestDataVersion>5.0.0-beta.20601.2</SystemSecurityCryptographyX509CertificatesTestDataVersion>
     <SystemWindowsExtensionsTestDataVersion>5.0.0-beta.20601.2</SystemWindowsExtensionsTestDataVersion>
-    <!-- Standard dependencies -->
-    <NETStandardLibraryVersion>2.2.0-prerelease.19564.1</NETStandardLibraryVersion>
-    <NetStandardLibrary20Version>2.0.3</NetStandardLibrary20Version>
     <!-- dotnet-optimization dependencies -->
     <optimizationwindows_ntx64IBCCoreFxVersion>99.99.99-master-20200806.6</optimizationwindows_ntx64IBCCoreFxVersion>
     <optimizationlinuxx64IBCCoreFxVersion>99.99.99-master-20200806.6</optimizationlinuxx64IBCCoreFxVersion>
