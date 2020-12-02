@@ -1029,7 +1029,7 @@ void Compiler::lvaInitUserArgs(InitVarDscInfo* varDscInfo)
             assert((argSize % TARGET_POINTER_SIZE) == 0);
             assert((varDscInfo->stackArgSize % TARGET_POINTER_SIZE) == 0);
 #endif // !OSX_ARM64_ABI
-
+            JITDUMP("set user arg V%02u offset to %u\n", varDscInfo->stackArgSize);
             varDsc->SetStackOffset(varDscInfo->stackArgSize);
             varDscInfo->stackArgSize += argSize;
 #endif // FEATURE_FASTTAILCALL
