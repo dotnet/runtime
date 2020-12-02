@@ -73,9 +73,7 @@ if [[ "$CROSSCOMPILE" == "1" ]]; then
     TARGET_BUILD_ARCH="$build_arch"
     export TARGET_BUILD_ARCH
 
-    if [[ -n "$tryrun_dir" ]]; then
-        cmake_extra_defines="$cmake_extra_defines -C $tryrun_dir/tryrun.cmake"
-    fi
+    cmake_extra_defines="$cmake_extra_defines -C $scriptroot/tryrun.cmake"
 
     if [[ "$platform" == "Darwin" ]]; then
         cmake_extra_defines="$cmake_extra_defines -DCMAKE_SYSTEM_NAME=Darwin"
