@@ -27,7 +27,7 @@
 
   <UsingTask TaskName="WasmAppBuilder" 
              AssemblyFile="$(WasmAppBuilderTasksAssemblyPath)"/>
-  <UsingTask TaskName="WasmAssemblySearcher" 
+  <UsingTask TaskName="WasmLoadAssembliesAndReferences"
              AssemblyFile="$(WasmAppBuilderTasksAssemblyPath)"/>
 
   <Target Name="BuildApp" DependsOnTargets="RebuildWasmAppBuilder;Build">
@@ -37,12 +37,12 @@
       <AssemblySearchPaths Include="$(MicrosoftNetCoreAppRuntimePackDir)lib\$(NetCoreAppCurrent)"/>
     </ItemGroup>
 
-    <WasmAssemblySearcher
+    <WasmLoadAssembliesAndReferences
       MainAssembly="bin\WasmSample.dll"
       ExtraAssemblies="$(MicrosoftNetCoreAppRuntimePackDir)lib\$(NetCoreAppToolCurrent)\System.Private.Runtime.InteropServices.JavaScript.dll"
       AssemblySearchPaths="@(AssemblySearchPaths)">
       <Output TaskParameter="ReferencedAssemblies" ItemName="ReferencedAssemblies" />
-    </WasmAssemblySearcher>
+    </WasmLoadAssembliesAndReferences>
 
     <WasmAppBuilder
       AppDir="$(AppDir)"

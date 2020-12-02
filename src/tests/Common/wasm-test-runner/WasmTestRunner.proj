@@ -12,7 +12,7 @@
 
   <UsingTask TaskName="WasmAppBuilder" 
       AssemblyFile="$(CORE_ROOT)/WasmAppBuilder/WasmAppBuilder.dll"/>
-  <UsingTask TaskName="WasmAssemblySearcher" 
+  <UsingTask TaskName="WasmLoadAssembliesAndReferences"
              AssemblyFile="$(CORE_ROOT)/WasmAppBuilder/WasmAppBuilder.dll"/>
 
   <Target Name="BuildApp">
@@ -27,13 +27,13 @@
     <Message Importance="High" Text="TestBinDir: $(TestBinDir)" />
     <Message Importance="High" Text="ArtifactsBinDir: $(ArtifactsBinDir)" />
 
-    <WasmAssemblySearcher
+    <WasmLoadAssembliesAndReferences
       MainAssembly="$(TestAssembly)"
       ExtraAssemblies="$(CORE_ROOT)\System.Private.Runtime.InteropServices.JavaScript.dll"
       AssemblySearchPaths="@(AssemblySearchPaths)"
       SkipMissingAssemblies="True">
       <Output TaskParameter="ReferencedAssemblies" ItemName="ReferencedAssemblies" />
-    </WasmAssemblySearcher>
+    </WasmLoadAssembliesAndReferences>
 
     <WasmAppBuilder
       AppDir="$(AppDir)"

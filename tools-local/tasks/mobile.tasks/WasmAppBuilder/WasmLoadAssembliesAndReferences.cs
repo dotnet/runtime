@@ -9,7 +9,7 @@ using System.Reflection;
 using Microsoft.Build.Framework;
 using Microsoft.Build.Utilities;
 
-public class WasmAssemblySearcher : Task
+public class WasmLoadAssembliesAndReferences : Task
 {
     public string? MainAssembly { get; set; }
 
