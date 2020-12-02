@@ -476,7 +476,7 @@
     },
     "android.30": {
       "#import": [
-        "android.30"
+        "android.29"
       ]
     },
     "android.30-arm": {
