@@ -105,7 +105,7 @@ public class AppleAppBuilderTask : Task
     /// <summary>
     /// Prefer FullAOT mode for Simulator over JIT
     /// </summary>
-    public bool UseAotForSimulator { get; set; }
+    public bool ForceAOT { get; set; }
 
     /// <summary>
     /// Forces the runtime to use the interpreter
@@ -160,12 +160,12 @@ public class AppleAppBuilderTask : Task
             }
         }
 
-        if (((!ForceInterpreter && (isDevice || UseAotForSimulator)) && !assemblerFiles.Any()))
+        if (((!ForceInterpreter && (isDevice || ForceAOT)) && !assemblerFiles.Any()))
         {
             throw new InvalidOperationException("Need list of AOT files for device builds.");
         }
 
-        if (ForceInterpreter && UseAotForSimulator)
+        if (ForceInterpreter && ForceAOT)
         {
             throw new InvalidOperationException("Interpreter and AOT cannot be enabled at the same time");
         }
@@ -174,7 +174,7 @@ public class AppleAppBuilderTask : Task
         {
             Xcode generator = new Xcode(TargetOS);
             XcodeProjectPath = generator.GenerateXCode(ProjectName, MainLibraryFileName, assemblerFiles,
-                AppDir, binDir, MonoRuntimeHeaders, !isDevice, UseConsoleUITemplate, UseAotForSimulator, ForceInterpreter, Optimized, NativeMainSource);
+                AppDir, binDir, MonoRuntimeHeaders, !isDevice, UseConsoleUITemplate, ForceAOT, ForceInterpreter, Optimized, NativeMainSource);
 
             if (BuildAppBundle)
             {

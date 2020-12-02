@@ -29,7 +29,7 @@ internal class Xcode
         string monoInclude,
         bool preferDylibs,
         bool useConsoleUiTemplate,
-        bool useAotForSimulator,
+        bool forceAOT,
         bool forceInterpreter,
         bool stripDebugSymbols,
         string? nativeMainSource = null)
@@ -110,9 +110,9 @@ internal class Xcode
         {
             defines = "add_definitions(-DFORCE_INTERPRETER=1)";
         }
-        else if (useAotForSimulator)
+        else if (forceAOT)
         {
-            defines = "add_definitions(-DUSE_AOT_FOR_SIMULATOR=1)";
+            defines = "add_definitions(-DFORCE_AOT=1)";
         }
         cmakeLists = cmakeLists.Replace("%Defines%", defines);
 

@@ -95,7 +95,7 @@ internal class Utils
 
     internal class TargetOS
     {
-        public static string iOS { get { return "iOS"; } }
-        public static string tvOS { get { return "tvOS"; } }
+        public const string iOS = "iOS";
+        public const string tvOS = "tvOS";
     }
 }
