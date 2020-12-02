@@ -332,9 +332,7 @@ namespace System.Reflection.Emit
         // _internalModuleBuilder is null iff this is a "internal" ModuleBuilder
         internal InternalModuleBuilder InternalModule => _internalModuleBuilder;
 
-        protected override ModuleHandle GetModuleHandleImpl() => new ModuleHandle(GetNativeHandle());
-
-        internal RuntimeModule GetNativeHandle() => InternalModule.GetNativeHandle();
+        protected override ModuleHandle GetModuleHandleImpl() => new ModuleHandle(InternalModule);
 
         private static RuntimeModule GetRuntimeModuleFromModule(Module? m)
         {
