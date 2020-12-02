@@ -112,7 +112,7 @@ stages:
       - Browser_wasm
       # - Linux_musl_arm
       # - Linux_musl_arm64
-      # - windows_x64 enable once coreclr.dll has a version header: https://github.com/dotnet/runtime/issues/37503
+      - windows_x64
       # - windows_x86
       # - windows_arm
       # - windows_arm64

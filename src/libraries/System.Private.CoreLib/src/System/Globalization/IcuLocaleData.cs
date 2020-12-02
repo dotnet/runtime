@@ -73,7 +73,7 @@ namespace System.Globalization
 
             Console.WriteLine("};");
 
-            Console.WriteLine("private static ushort[] s_localesNamesIndexes = new ushort [] {");
+            Console.WriteLine("private static readonly ushort[] s_localesNamesIndexes = new ushort [] {");
             int max_length = 0;
             foreach (var entry in indexes) {
                 Debug.Assert(entry.Item1 < Math.Pow (2,12));
@@ -693,7 +693,7 @@ namespace System.Globalization
         // Table which holds index into LocalesNames data and length of the string for each locale
         // Values are binary searched and need to be sorted alphabetically
         //
-        private static ushort[] s_localesNamesIndexes = new ushort[CulturesCount]
+        private static readonly ushort[] s_localesNamesIndexes = new ushort[CulturesCount]
         {
             0 << 4 | 2,     // aa
             0 << 4 | 5,     // aa-dj

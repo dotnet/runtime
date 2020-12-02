@@ -261,6 +261,7 @@ Crst Interop
     AcquiredBefore AppDomainHandleTable AvailableParamTypes ClassInit DeadlockDetection DomainLocalBlock
                    HandleTable InstMethodHashTable InteropData JitGenericHandleCache LoaderHeap SigConvert
                    StubDispatchCache StubUnwindInfoHeapSegments SyncBlockCache TypeIDMap UnresolvedClassLock
+                   PendingTypeLoadEntry
 End
 
 Crst InteropData
@@ -407,15 +408,6 @@ End
 // same type).
 Crst EtwTypeLogHash
     AcquiredAfter SingleUseLock
-End
-
-Crst Remoting
-    AcquiredBefore AppDomainHandleTable AvailableParamTypes ClassInit DeadlockDetection DebuggerController
-                   DebuggerHeapLock DebuggerJitInfo DebuggerMutex DomainLocalBlock ExecuteManRangeLock
-                   FuncPtrStubs GlobalStrLiteralMap HandleTable InstMethodHashTable Jit JitGenericHandleCache
-                   JumpStubCache LoaderHeap StubCache Module ModuleLookupTable SecurityStackwalkCache SigConvert
-                   SingleUseLock StubUnwindInfoHeapSegments SyncBlockCache SystemDomainDelayedUnloadList
-                   ThreadStore UnresolvedClassLock PendingTypeLoadEntry
 End
 
 Crst SavedExceptionInfo
