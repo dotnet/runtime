@@ -36,7 +36,7 @@ public class WasmAssemblySearcher : Task
             return false;
         }
 
-        Resolver? _resolver;
+        SearchPathsAssemblyResolver? _resolver;
 
         if (AssemblySearchPaths != null)
         {
@@ -63,7 +63,7 @@ public class WasmAssemblySearcher : Task
                     return false;
                 }
             }
-            _resolver = new Resolver(AssemblySearchPaths);
+            _resolver = new SearchPathsAssemblyResolver(AssemblySearchPaths);
             var mlc = new MetadataLoadContext(_resolver, "System.Private.CoreLib");
 
             var mainAssembly = mlc.LoadFromAssemblyPath(mainAssemblyFullPath);
@@ -100,7 +100,7 @@ public class WasmAssemblySearcher : Task
                 Log.LogError("Could not find 'System.Private.CoreLib.dll' within Assemblies.");
                 return false;
             }
-            _resolver = new Resolver(new string[] { corelibPath });
+            _resolver = new SearchPathsAssemblyResolver(new string[] { corelibPath });
             var mlc = new MetadataLoadContext(_resolver, "System.Private.CoreLib");
 
             foreach (var asm in Assemblies!)
@@ -134,11 +134,11 @@ public class WasmAssemblySearcher : Task
     }
 }
 
-internal class Resolver : MetadataAssemblyResolver
+internal class SearchPathsAssemblyResolver : MetadataAssemblyResolver
 {
     private readonly string[] _searchPaths;
 
-    public Resolver(string[] searchPaths)
+    public SearchPathsAssemblyResolver(string[] searchPaths)
     {
         _searchPaths = searchPaths;
     }
