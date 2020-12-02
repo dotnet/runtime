@@ -35,7 +35,7 @@ if /i "%__Ninja%" == "1" (
         if /i "%__Arch%" == "arm64" (set __ExtraCmakeParams=%__ExtraCmakeParams% -A ARM64)
         if /i "%__Arch%" == "x86" (set __ExtraCmakeParams=%__ExtraCmakeParams% -A Win32)
     ) else (
-        set __CmakeGenerator=NMake Makefiles
+        set __CmakeGenerator=Ninja
     )
 )
 
@@ -45,10 +45,10 @@ if /i "%__Arch%" == "wasm" (
        exit /B 1
     )
 
-    if "%EMSCRIPTEN_ROOT%" == "" (
-      set EMSCRIPTEN_ROOT="%EMSDK_PATH/upstream/emscripten%"
-    )
-    set __ExtraCmakeParams=%__ExtraCmakeParams% "-DEMSCRIPTEN_GENERATE_BITCODE_STATIC_LIBRARIES=1" "-DCMAKE_TOOLCHAIN_FILE=%EMSCRIPTEN%/cmake/Modules/Platform/Emscripten.cmake"
+    echo EMSCRIPTEN ROOT: "%EMSDK_PATH%"
+
+    :: "-DEMSCRIPTEN_GENERATE_BITCODE_STATIC_LIBRARIES=1"
+    set __ExtraCmakeParams=%__ExtraCmakeParams% "-DCMAKE_TOOLCHAIN_FILE=%EMSDK_PATH%/upstream/emscripten/cmake/Modules/Platform/Emscripten.cmake"
     set __UseEmcmake=1
 ) else (
     set __ExtraCmakeParams=%__ExtraCmakeParams%  "-DCMAKE_SYSTEM_VERSION=10.0"
