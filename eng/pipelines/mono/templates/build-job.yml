@@ -110,14 +110,15 @@ jobs:
       - script: $(Build.SourcesDirectory)\eng\common\init-tools-native.cmd -InstallDirectory $(Build.SourcesDirectory)\native-tools -Force
         displayName: Install native dependencies
 
-    - task: DownloadPipelineArtifact@2
-      displayName: Download AOT offset files
-      inputs:
-        artifact: Mono_Offsets__Android_x64_Debug
-        path: '$(Build.SourcesDirectory)\artifacts\obj\monooffsetfiles'
+    - ${{ if eq(parameters.buildCross, 'android') }}:
+      - task: DownloadPipelineArtifact@2
+        displayName: Download AOT offset files
+        inputs:
+          artifact: Mono_Offsets__Android_x64_Debug
+          path: '$(Build.SourcesDirectory)/artifacts/obj/monooffsetfiles'
 
     - script: |
-        find $(Build.SourcesDirectory)/artifacts/obj/monooffsetfiles -type f
+        find $(Build.SourcesDirectory) -name \*offset\*h
       displayName: debug
 
     - ${{ if in(parameters.osGroup, 'OSX', 'iOS','tvOS') }}:
