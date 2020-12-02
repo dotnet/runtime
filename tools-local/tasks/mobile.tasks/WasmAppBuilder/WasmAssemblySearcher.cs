@@ -16,7 +16,6 @@ using Microsoft.Build.Utilities;
 
 public class WasmAssemblySearcher : Task
 {
-    [Required]
     public string? MainAssembly { get; set; }
 
     // If true, continue when a referenced assembly cannot be found.
@@ -27,7 +26,6 @@ public class WasmAssemblySearcher : Task
     public ITaskItem[]? AssemblySearchPaths { get; set; }
     public ITaskItem[]? Assemblies { get; set; }
     public ITaskItem[]? ExtraAssemblies { get; set; }
-    public int DebugLevel { get; set; }
 
     // The set of assemblies the app will use
     [Output]
