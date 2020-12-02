@@ -919,6 +919,7 @@ FCIMPL7(void, COMCustomAttribute::GetPropertyOrFieldData, ReflectModuleBaseObjec
         {
             case SERIALIZATION_TYPE_TAGGED_OBJECT:
                 *pType = g_pObjectClass->GetManagedClassObject();
+                FALLTHROUGH;
             case SERIALIZATION_TYPE_TYPE:
             case SERIALIZATION_TYPE_STRING:
                 *value = ArgSlotToObj(GetDataFromBlob(
@@ -1424,6 +1425,7 @@ ARG_SLOT COMCustomAttribute::GetDataFromBlob(Assembly *pCtorAssembly,
                 arrayType = (CorSerializationType)ELEMENT_TYPE_CLASS;
             // grab the array type and make a type handle for it
             nullTH = GetTypeHandleFromBlob(pCtorAssembly, arrayType, pBlob, endBlob, pModule);
+            FALLTHROUGH;
         }
         case SERIALIZATION_TYPE_TYPE:
         case SERIALIZATION_TYPE_STRING:

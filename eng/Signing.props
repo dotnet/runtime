@@ -37,9 +37,9 @@
       <FileSignInfo Include="Mono.Cecil.Rocks.dll" CertificateName="3PartySHA2" />
     </ItemGroup>
 
-    <ItemGroup Condition="'$(CrossTargetComponentFolder)' != ''">
-      <CoreCLRCrossTargetItemsToSign Include="$(CoreCLRArtifactsPath)$(CrossTargetComponentFolder)/sharedFramework/*.dll" />
-      <CoreCLRCrossTargetItemsToSign Include="$(CoreCLRArtifactsPath)$(CrossTargetComponentFolder)/sharedFramework/*.exe" />
+    <ItemGroup Condition="'$(CoreCLRCrossTargetComponentDirName)' != ''">
+      <CoreCLRCrossTargetItemsToSign Include="$(CoreCLRArtifactsPath)$(CoreCLRCrossTargetComponentDirName)/sharedFramework/*.dll" />
+      <CoreCLRCrossTargetItemsToSign Include="$(CoreCLRArtifactsPath)$(CoreCLRCrossTargetComponentDirName)/sharedFramework/*.exe" />
     </ItemGroup>
 
     <ItemGroup Condition="'$(SignBinaries)' == 'true'">

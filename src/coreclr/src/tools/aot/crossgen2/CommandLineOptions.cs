@@ -2,207 +2,131 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.CommandLine;
+using System.Collections.Generic;
 using System.IO;
+using System.Reflection;
+
+using Internal.CommandLine;
 
 namespace ILCompiler
 {
-    public class CommandLineOptions
+    internal class CommandLineOptions
     {
-        public FileInfo[] InputFilePaths { get; set; }
-        public FileInfo[] UnrootedInputFilePaths { get; set; }
-        public FileInfo[] Mibc { get; set; }
-        public string[] Reference { get; set; }
-        public string InstructionSet { get; set; }
-        public FileInfo OutputFilePath { get; set; }
+        public bool Help;
+        public string HelpText;
 
-        public DirectoryInfo CompositeRootPath { get; set; }
-        public bool Optimize { get; set; }
-        public bool OptimizeSpace { get; set; }
-        public bool OptimizeTime { get; set; }
-        public bool InputBubble { get; set; }
-        public bool CompileBubbleGenerics { get; set; }
-        public bool Verbose { get; set; }
-        public bool Composite { get; set; }
-        public bool CompileNoMethods { get; set; }
+        public IReadOnlyList<string> InputFilePaths;
+        public IReadOnlyList<string> UnrootedInputFilePaths;
+        public IReadOnlyList<string> ReferenceFilePaths;
+        public IReadOnlyList<string> MibcFilePaths;
+        public string InstructionSet;
+        public string OutputFilePath;
 
-        public FileInfo DgmlLogFileName { get; set; }
-        public bool GenerateFullDgmlLog { get; set; }
+        public string CompositeRootPath;
+        public bool Optimize;
+        public bool OptimizeSpace;
+        public bool OptimizeTime;
+        public bool InputBubble;
+        public bool CompileBubbleGenerics;
+        public bool Verbose;
+        public bool Composite;
+        public bool CompileNoMethods;
 
-        public string TargetArch { get; set; }
-        public string TargetOS { get; set; }
-        public FileInfo JitPath { get; set; }
-        public string SystemModule { get; set; }
-        public bool WaitForDebugger { get; set; }
-        public bool Tuning { get; set; }
-        public bool Partial { get; set; }
-        public bool Resilient { get; set; }
-        public bool Map { get; set; }
-        public int Parallelism { get; set; }
-        public ReadyToRunMethodLayoutAlgorithm MethodLayout { get; set; }
-        public ReadyToRunFileLayoutAlgorithm FileLayout { get; set; }
-        public int? CustomPESectionAlignment { get; set; }
-        public bool VerifyTypeAndFieldLayout { get; set; }
+        public string DgmlLogFileName;
+        public bool GenerateFullDgmlLog;
 
-        public string SingleMethodTypeName { get; set; }
-        public string SingleMethodName { get; set; }
-        public string[] SingleMethodGenericArg { get; set; }
+        public string TargetArch;
+        public string TargetOS;
+        public string JitPath;
+        public string SystemModule;
+        public bool WaitForDebugger;
+        public bool Tuning;
+        public bool Partial;
+        public bool Resilient;
+        public bool Map;
+        public bool MapCsv;
+        public int Parallelism;
+        public int CustomPESectionAlignment;
+        public string MethodLayout;
+        public string FileLayout;
+        public bool VerifyTypeAndFieldLayout;
 
-        public string[] CodegenOptions { get; set; }
+        public string SingleMethodTypeName;
+        public string SingleMethodName;
+        public IReadOnlyList<string> SingleMethodGenericArg;
+
+        public IReadOnlyList<string> CodegenOptions;
 
         public bool CompositeOrInputBubble => Composite || InputBubble;
 
-        public static Command RootCommand()
+        public CommandLineOptions(string[] args)
         {
-            // For some reason, arity caps at 255 by default
-            ArgumentArity arbitraryArity = new ArgumentArity(0, 100000);
+            InputFilePaths = Array.Empty<string>();
+            UnrootedInputFilePaths = Array.Empty<string>();
+            ReferenceFilePaths = Array.Empty<string>();
+            MibcFilePaths = Array.Empty<string>();
+            CodegenOptions = Array.Empty<string>();
 
-            return new Command("Crossgen2Compilation")
+            Parallelism = Environment.ProcessorCount;
+            SingleMethodGenericArg = null;
+
+            ArgumentSyntax argSyntax = ArgumentSyntax.Parse(args, syntax =>
             {
-                new Argument<FileInfo[]>() 
-                { 
-                    Name = "input-file-paths", 
-                    Description = SR.InputFilesToCompile,
-                    Arity = arbitraryArity,
-                },
-                new Option(new[] { "--unrooted-input-file-paths", "-u" }, SR.UnrootedInputFilesToCompile)
-                {
-                    Argument = new Argument<FileInfo[]>()
-                    {
-                        Arity = arbitraryArity
-                    }
-                },
-                new Option(new[] { "--reference", "-r" }, SR.ReferenceFiles)
-                {
-                    Argument = new Argument<string[]>() 
-                    { 
-                        Arity = arbitraryArity
-                    } 
-                },
-                new Option(new[] { "--instruction-set" }, SR.InstructionSets)
-                {
-                    Argument = new Argument<string>() 
-                },
-                new Option(new[] { "--mibc", "-m" }, SR.MibcFiles)
-                {
-                    Argument = new Argument<string[]>()
-                    {
-                        Arity = arbitraryArity
-                    }
-                },
-                new Option(new[] { "--outputfilepath", "--out", "-o" }, SR.OutputFilePath)
-                {
-                    Argument = new Argument<FileInfo>()
-                },
-                new Option(new[] { "--compositerootpath", "--crp" }, SR.CompositeRootPath)
-                {
-                    Argument = new Argument<DirectoryInfo>()
-                },
-                new Option(new[] { "--optimize", "-O" }, SR.EnableOptimizationsOption) 
-                { 
-                    Argument = new Argument<bool>() 
-                },
-                new Option(new[] { "--optimize-space", "--Os" }, SR.OptimizeSpaceOption) 
-                { 
-                    Argument = new Argument<bool>() 
-                },
-                new Option(new[] { "--optimize-time", "--Ot" }, SR.OptimizeSpeedOption),
-                new Option(new[] { "--inputbubble" }, SR.InputBubbleOption),
-                new Option(new[] { "--composite" }, SR.CompositeBuildMode),
-                new Option(new[] { "--compile-no-methods" }, SR.CompileNoMethodsOption),
-                new Option(new[] { "--tuning" }, SR.TuningImageOption) 
-                {
-                    Argument = new Argument<bool>() 
-                },
-                new Option(new[] { "--partial" }, SR.PartialImageOption) 
-                { 
-                    Argument = new Argument<bool>() 
-                },
-                new Option(new[] { "--compilebubblegenerics" }, SR.BubbleGenericsOption) 
-                { 
-                    Argument = new Argument<bool>() 
-                },
-                new Option(new[] { "--dgml-log-file-name", "--dmgllog" }, SR.SaveDependencyLogOption) 
-                { 
-                    Argument = new Argument<FileInfo>() 
-                },
-                new Option(new[] { "--generate-full-dmgl-log", "--fulllog" }, SR.SaveDetailedLogOption) 
-                { 
-                    Argument = new Argument<bool>() 
-                },
-                new Option(new[] { "--verbose" }, SR.VerboseLoggingOption) 
-                { 
-                    Argument = new Argument<bool>() 
-                },
-                new Option(new[] { "--systemmodule" }, SR.SystemModuleOverrideOption) 
-                { 
-                    Argument = new Argument<string>() 
-                },
-                new Option(new[] { "--waitfordebugger" }, SR.WaitForDebuggerOption) 
-                { 
-                    Argument = new Argument<bool>() 
-                },
-                new Option(new[] { "--codegen-options", "--codegenopt" }, SR.CodeGenOptions) 
-                { 
-                    Argument = new Argument<string[]>()
-                    {
-                        Arity = arbitraryArity
-                    }
-                },
-                new Option(new[] { "--resilient" }, SR.ResilientOption) 
-                { 
-                    Argument = new Argument<bool>() 
-                },
-                new Option(new[] { "--targetarch" }, SR.TargetArchOption) 
-                { 
-                    Argument = new Argument<string>() 
-                },
-                new Option(new[] { "--targetos" }, SR.TargetOSOption) 
-                { 
-                    Argument = new Argument<string>() 
-                },
-                new Option(new[] { "--jitpath" }, SR.JitPathOption) 
-                { 
-                    Argument =  new Argument<FileInfo>() 
-                },
-                new Option(new[] { "--singlemethodtypename" }, SR.SingleMethodTypeName) 
-                { 
-                    Argument = new Argument<string>() 
-                },
-                new Option(new[] { "--singlemethodname" }, SR.SingleMethodMethodName) 
-                { 
-                    Argument = new Argument<string>() 
-                },
-                new Option(new[] { "--singlemethodgenericarg" }, SR.SingleMethodGenericArgs) 
-                { 
-                    // We don't need to override arity here as 255 is the maximum number of generic arguments
-                    Argument = new Argument<string[]>()
-                },
-                new Option(new[] { "--parallelism" }, SR.ParalellismOption)
-                { 
-                    Argument = new Argument<int>(() => Environment.ProcessorCount)
-                },
-                new Option(new[] { "--custom-pe-section-alignment" }, SR.CustomPESectionAlignmentOption)
-                { 
-                    Argument = new Argument<int?>()
-                },
-                new Option(new[] { "--map" }, SR.MapFileOption)
-                {
-                    Argument = new Argument<bool>()
-                },
-                new Option(new[] { "--method-layout" }, SR.MethodLayoutOption)
-                {
-                    Argument = new Argument<ReadyToRunMethodLayoutAlgorithm>()
-                },
-                new Option(new[] { "--file-layout" }, SR.FileLayoutOption)
-                {
-                    Argument = new Argument<ReadyToRunFileLayoutAlgorithm>()
-                },
-                new Option(new[] { "--verify-type-and-field-layout" }, SR.VerifyTypeAndFieldLayoutOption)
-                {
-                    Argument = new Argument<bool>()
-                }
-            };
+                syntax.ApplicationName = typeof(Program).Assembly.GetName().Name.ToString();
+
+                // HandleHelp writes to error, fails fast with crash dialog and lacks custom formatting.
+                syntax.HandleHelp = false;
+                syntax.HandleErrors = true;
+
+                syntax.DefineOptionList("u|unrooted-input-file-paths", ref UnrootedInputFilePaths, SR.UnrootedInputFilesToCompile);
+                syntax.DefineOptionList("r|reference", ref ReferenceFilePaths, SR.ReferenceFiles);
+                syntax.DefineOption("instruction-set", ref InstructionSet, SR.InstructionSets);
+                syntax.DefineOptionList("m|mibc", ref MibcFilePaths, SR.MibcFiles);
+                syntax.DefineOption("o|out|outputfilepath", ref OutputFilePath, SR.OutputFilePath);
+                syntax.DefineOption("crp|compositerootpath", ref CompositeRootPath, SR.CompositeRootPath);
+                syntax.DefineOption("O|optimize", ref Optimize, SR.EnableOptimizationsOption);
+                syntax.DefineOption("Os|optimize-space", ref OptimizeSpace, SR.OptimizeSpaceOption);
+                syntax.DefineOption("Ot|optimize-time", ref OptimizeTime, SR.OptimizeSpeedOption);
+                syntax.DefineOption("inputbubble", ref InputBubble, SR.InputBubbleOption);
+                syntax.DefineOption("composite", ref Composite, SR.CompositeBuildMode);
+                syntax.DefineOption("compile-no-methods", ref CompileNoMethods, SR.CompileNoMethodsOption);
+                syntax.DefineOption("tuning", ref Tuning, SR.TuningImageOption);
+                syntax.DefineOption("partial", ref Partial, SR.PartialImageOption);
+                syntax.DefineOption("compilebubblegenerics", ref CompileBubbleGenerics, SR.BubbleGenericsOption);
+                syntax.DefineOption("dgmllog|dgml-log-file-name", ref DgmlLogFileName, SR.SaveDependencyLogOption);
+                syntax.DefineOption("fulllog|generate-full-dmgl-log", ref GenerateFullDgmlLog, SR.SaveDetailedLogOption);
+                syntax.DefineOption("verbose", ref Verbose, SR.VerboseLoggingOption);
+                syntax.DefineOption("systemmodule", ref SystemModule, SR.SystemModuleOverrideOption);
+                syntax.DefineOption("waitfordebugger", ref WaitForDebugger, SR.WaitForDebuggerOption);
+                syntax.DefineOptionList("codegenopt|codegen-options", ref CodegenOptions, SR.CodeGenOptions);
+                syntax.DefineOption("resilient", ref Resilient, SR.ResilientOption);
+
+                syntax.DefineOption("targetarch", ref TargetArch, SR.TargetArchOption);
+                syntax.DefineOption("targetos", ref TargetOS, SR.TargetOSOption);
+                syntax.DefineOption("jitpath", ref JitPath, SR.JitPathOption);
+
+                syntax.DefineOption("singlemethodtypename", ref SingleMethodTypeName, SR.SingleMethodTypeName);
+                syntax.DefineOption("singlemethodname", ref SingleMethodName, SR.SingleMethodMethodName);
+                syntax.DefineOptionList("singlemethodgenericarg", ref SingleMethodGenericArg, SR.SingleMethodGenericArgs);
+
+                syntax.DefineOption("parallelism", ref Parallelism, SR.ParalellismOption);
+                syntax.DefineOption("custom-pe-section-alignment", ref CustomPESectionAlignment, SR.CustomPESectionAlignmentOption);
+                syntax.DefineOption("map", ref Map, SR.MapFileOption);
+                syntax.DefineOption("mapcsv", ref MapCsv, SR.MapCsvFileOption);
+
+                syntax.DefineOption("method-layout", ref MethodLayout, SR.MethodLayoutOption);
+                syntax.DefineOption("file-layout", ref FileLayout, SR.FileLayoutOption);
+                syntax.DefineOption("verify-type-and-field-layout", ref VerifyTypeAndFieldLayout, SR.VerifyTypeAndFieldLayoutOption);
+
+                syntax.DefineOption("h|help", ref Help, SR.HelpOption);
+
+                syntax.DefineParameterList("in", ref InputFilePaths, SR.InputFilesToCompile);
+            });
+
+            if (Help)
+            {
+                HelpText = argSyntax.GetHelpText();
+            }
         }
     }
 }

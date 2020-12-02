@@ -363,11 +363,8 @@ class DispatchExInfo : public DispatchInfo
 {
 public:
     // Constructor and destructor.
-    DispatchExInfo(SimpleComCallWrapper *pSimpleWrapper, MethodTable *pMT, BOOL bSupportsExpando);
+    DispatchExInfo(SimpleComCallWrapper *pSimpleWrapper, MethodTable *pMT);
     virtual ~DispatchExInfo();
-
-    // Returns true if this DispatchExInfo supports expando operations.
-    BOOL                    SupportsExpando();
 
     // Methods to lookup members. These methods synch with the managed view if they fail to
     // find the method.
@@ -385,13 +382,8 @@ public:
     DispatchMemberInfo*     GetFirstMember();
     DispatchMemberInfo*     GetNextMember(DISPID CurrMemberDispID);
 
-    // Methods to add and delete members.
-    DispatchMemberInfo*     AddMember(SString& strName, BOOL bCaseSensitive);
-    void                    DeleteMember(DISPID DispID);
-
     // Methods to retrieve the cached MD's
     MethodDesc*             GetIReflectMD(BinderMethodID Method);
-    MethodDesc*             GetIExpandoMD(BinderMethodID Method);
 
 private:
     // Helper methods called from SynchWithManagedView() to retrieve the lists of members.
@@ -409,7 +401,6 @@ private:
     virtual ComMTMemberInfoMap* GetMemberInfoMap();
 
     SimpleComCallWrapper*   m_pSimpleWrapperOwner;
-    BOOL                    m_bSupportsExpando;
 };
 
 #endif // _DISPATCHINFO_H

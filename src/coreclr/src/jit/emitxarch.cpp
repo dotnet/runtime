@@ -288,7 +288,7 @@ bool emitter::AreFlagsSetToZeroCmp(regNumber reg, emitAttr opSize, bool needsOCF
             {
                 return false;
             }
-            __fallthrough;
+            FALLTHROUGH;
         // these always set OC to 0
         case INS_and:
         case INS_or:
@@ -3825,7 +3825,7 @@ void emitter::emitIns_R_I(instruction ins, emitAttr attr, regNumber reg, ssize_t
     UNATIVE_OFFSET sz;
     instrDesc*     id;
     insFormat      fmt       = emitInsModeFormat(ins, IF_RRD_CNS);
-    bool           valInByte = ((signed char)val == val) && (ins != INS_mov) && (ins != INS_test);
+    bool           valInByte = ((signed char)val == (target_ssize_t)val) && (ins != INS_mov) && (ins != INS_test);
 
     // BT reg,imm might be useful but it requires special handling of the immediate value
     // (it is always encoded in a byte). Let's not complicate things until this is needed.
@@ -3952,7 +3952,7 @@ void emitter::emitIns_I(instruction ins, emitAttr attr, cnsval_ssize_t val)
 {
     UNATIVE_OFFSET sz;
     instrDesc*     id;
-    bool           valInByte = ((signed char)val == val);
+    bool           valInByte = ((signed char)val == (target_ssize_t)val);
 
 #ifdef TARGET_AMD64
     // mov reg, imm64 is the only opcode which takes a full 8 byte immediate
@@ -7117,7 +7117,7 @@ void emitter::emitIns_Call(EmitCallType          callType,
 
                 id->idSetIsCallRegPtr();
 
-                __fallthrough;
+                FALLTHROUGH;
 
             case EC_INDIR_ARD: // the address is an indirection
 
@@ -7352,7 +7352,7 @@ size_t emitter::emitSizeOfInsDsc(instrDesc* id)
                 return sizeof(instrDescCGCA);
             }
 
-            __fallthrough;
+            FALLTHROUGH;
 
         case ID_OP_SCNS:
         case ID_OP_CNS:
@@ -8238,10 +8238,14 @@ void emitter::emitDispIns(
     // printf("[A=%08X] " , emitSimpleByrefStkMask);
     // printf("[L=%02u] " , id->idCodeSize());
 
-    if (!emitComp->opts.dspEmit && !isNew && !asmfm)
+    if (!isNew && !asmfm)
     {
         doffs = true;
     }
+
+    /* Display the instruction address */
+
+    emitDispInsAddr(code);
 
     /* Display the instruction offset */
 
@@ -9188,46 +9192,46 @@ static BYTE* emitOutputNOP(BYTE* dst, size_t nBytes)
     {
         case 15:
             *dst++ = 0x90;
-            __fallthrough;
+            FALLTHROUGH;
         case 14:
             *dst++ = 0x90;
-            __fallthrough;
+            FALLTHROUGH;
         case 13:
             *dst++ = 0x90;
-            __fallthrough;
+            FALLTHROUGH;
         case 12:
             *dst++ = 0x90;
-            __fallthrough;
+            FALLTHROUGH;
         case 11:
             *dst++ = 0x90;
-            __fallthrough;
+            FALLTHROUGH;
         case 10:
             *dst++ = 0x90;
-            __fallthrough;
+            FALLTHROUGH;
         case 9:
             *dst++ = 0x90;
-            __fallthrough;
+            FALLTHROUGH;
         case 8:
             *dst++ = 0x90;
-            __fallthrough;
+            FALLTHROUGH;
         case 7:
             *dst++ = 0x90;
-            __fallthrough;
+            FALLTHROUGH;
         case 6:
             *dst++ = 0x90;
-            __fallthrough;
+            FALLTHROUGH;
         case 5:
             *dst++ = 0x90;
-            __fallthrough;
+            FALLTHROUGH;
         case 4:
             *dst++ = 0x90;
-            __fallthrough;
+            FALLTHROUGH;
         case 3:
             *dst++ = 0x90;
-            __fallthrough;
+            FALLTHROUGH;
         case 2:
             *dst++ = 0x90;
-            __fallthrough;
+            FALLTHROUGH;
         case 1:
             *dst++ = 0x90;
             break;
@@ -9239,7 +9243,7 @@ static BYTE* emitOutputNOP(BYTE* dst, size_t nBytes)
     {
         case 2:
             *dst++ = 0x66;
-            __fallthrough;
+            FALLTHROUGH;
         case 1:
             *dst++ = 0x90;
             break;
@@ -9258,7 +9262,7 @@ static BYTE* emitOutputNOP(BYTE* dst, size_t nBytes)
             break;
         case 6:
             *dst++ = 0x66;
-            __fallthrough;
+            FALLTHROUGH;
         case 5:
             *dst++ = 0x0F;
             *dst++ = 0x1F;
@@ -9293,13 +9297,13 @@ static BYTE* emitOutputNOP(BYTE* dst, size_t nBytes)
             break;
         case 11:
             *dst++ = 0x66;
-            __fallthrough;
+            FALLTHROUGH;
         case 10:
             *dst++ = 0x66;
-            __fallthrough;
+            FALLTHROUGH;
         case 9:
             *dst++ = 0x66;
-            __fallthrough;
+            FALLTHROUGH;
         case 8:
             *dst++ = 0x0F;
             *dst++ = 0x1F;
@@ -9573,7 +9577,7 @@ BYTE* emitter::emitOutputAM(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
 
                 dst += emitOutputByte(dst, 0x66);
 
-                __fallthrough;
+                FALLTHROUGH;
 
             case EA_4BYTE:
 #ifdef TARGET_AMD64
@@ -10338,7 +10342,7 @@ BYTE* emitter::emitOutputSV(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
             case EA_2BYTE:
                 // Output a size prefix for a 16-bit operand
                 dst += emitOutputByte(dst, 0x66);
-                __fallthrough;
+                FALLTHROUGH;
 
             case EA_4BYTE:
 #ifdef TARGET_AMD64
@@ -10804,7 +10808,7 @@ BYTE* emitter::emitOutputCV(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
             case EA_2BYTE:
                 // Output a size prefix for a 16-bit operand
                 dst += emitOutputByte(dst, 0x66);
-                __fallthrough;
+                FALLTHROUGH;
 
             case EA_4BYTE:
 #ifdef TARGET_AMD64
@@ -11224,7 +11228,7 @@ BYTE* emitter::emitOutputR(BYTE* dst, instrDesc* id)
             emitGCregDeadUpd(REG_EAX, dst);
             emitGCregDeadUpd(REG_EDX, dst);
 
-            __fallthrough;
+            FALLTHROUGH;
 
         default:
 
@@ -11390,7 +11394,7 @@ BYTE* emitter::emitOutputRR(BYTE* dst, instrDesc* id)
             case EA_2BYTE:
                 // Output a size prefix for a 16-bit operand
                 dst += emitOutputByte(dst, 0x66);
-                __fallthrough;
+                FALLTHROUGH;
 
             case EA_4BYTE:
                 // Set the 'w' bit to get the large version
@@ -11760,7 +11764,7 @@ BYTE* emitter::emitOutputRI(BYTE* dst, instrDesc* id)
     instruction ins       = id->idIns();
     regNumber   reg       = id->idReg1();
     ssize_t     val       = emitGetInsSC(id);
-    bool        valInByte = ((signed char)val == val) && (ins != INS_mov) && (ins != INS_test);
+    bool        valInByte = ((signed char)val == (target_ssize_t)val) && (ins != INS_mov) && (ins != INS_test);
 
     // BT reg,imm might be useful but it requires special handling of the immediate value
     // (it is always encoded in a byte). Let's not complicate things until this is needed.
@@ -11941,7 +11945,7 @@ BYTE* emitter::emitOutputRI(BYTE* dst, instrDesc* id)
         case EA_2BYTE:
             // Output a size prefix for a 16-bit operand
             dst += emitOutputByte(dst, 0x66);
-            __fallthrough;
+            FALLTHROUGH;
 
         case EA_4BYTE:
             // Set the 'w' bit to get the large version
@@ -12111,7 +12115,7 @@ BYTE* emitter::emitOutputIV(BYTE* dst, instrDesc* id)
     instruction ins       = id->idIns();
     emitAttr    size      = id->idOpSize();
     ssize_t     val       = emitGetInsSC(id);
-    bool        valInByte = ((signed char)val == val);
+    bool        valInByte = ((signed char)val == (target_ssize_t)val);
 
     // We would to update GC info correctly
     assert(!IsSSEInstruction(ins));
@@ -13680,7 +13684,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
     assert(*dp != dst || emitInstHasNoCode(ins));
 
 #ifdef DEBUG
-    if (emitComp->opts.disAsm || emitComp->opts.dspEmit || emitComp->verbose)
+    if (emitComp->opts.disAsm || emitComp->verbose)
     {
         emitDispIns(id, false, dspOffs, true, emitCurCodeOffs(*dp), *dp, (dst - *dp));
     }
@@ -13985,6 +13989,7 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
 
     switch (ins)
     {
+        case INS_align:
         case INS_nop:
         case INS_int3:
             assert(memFmt == IF_NONE);

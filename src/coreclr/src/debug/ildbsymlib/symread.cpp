@@ -1945,7 +1945,7 @@ SymMethod::GetRanges(
         {
 
             // Search through all the sequence points since line might have there
-            // IL spread accross multiple ranges (for loops for example)
+            // IL spread across multiple ranges (for loops for example)
             if (m_pData->m_pSequencePoints[point].Document() == DocumentEntry &&
                 line >= m_pData->m_pSequencePoints[point].StartLine() &&
                 line <= m_pData->m_pSequencePoints[point].EndLine())

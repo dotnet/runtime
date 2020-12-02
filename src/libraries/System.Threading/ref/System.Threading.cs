@@ -18,7 +18,7 @@ namespace System.Threading
         public System.Threading.Mutex? Mutex { get { throw null; } }
         public int MutexIndex { get { throw null; } }
     }
-    public partial struct AsyncFlowControl : System.IDisposable
+    public partial struct AsyncFlowControl : System.IEquatable<AsyncFlowControl>, System.IDisposable
     {
         private object _dummy;
         private int _dummyPrimitive;

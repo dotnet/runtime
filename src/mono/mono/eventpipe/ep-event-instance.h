@@ -133,4 +133,4 @@ void
 ep_sequence_point_free (EventPipeSequencePoint *sequence_point);
 
 #endif /* ENABLE_PERFTRACING */
-#endif /** __EVENTPIPE_EVENT_INSTANCE_H__ **/
+#endif /* __EVENTPIPE_EVENT_INSTANCE_H__ */

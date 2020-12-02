@@ -216,6 +216,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "monow", "monow.vcxproj", "{
 		{92AE7622-5F58-4234-9A26-9EC71876B3F4} = {92AE7622-5F58-4234-9A26-9EC71876B3F4}
 	EndProjectSection
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "mprof-report", "mprof-report.vcxproj", "{32AC21A3-DDCD-417B-9637-9807752491F0}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Win32 = Debug|Win32
@@ -456,6 +458,14 @@ Global
 		{D89D58F1-DA7A-4157-AFEE-F43D3BA20C9D}.Release|Win32.Build.0 = Release|Win32
 		{D89D58F1-DA7A-4157-AFEE-F43D3BA20C9D}.Release|x64.ActiveCfg = Release|x64
 		{D89D58F1-DA7A-4157-AFEE-F43D3BA20C9D}.Release|x64.Build.0 = Release|x64
+		{32AC21A3-DDCD-417B-9637-9807752491F0}.Debug|Win32.ActiveCfg = Debug|Win32
+		{32AC21A3-DDCD-417B-9637-9807752491F0}.Debug|Win32.Build.0 = Debug|Win32
+		{32AC21A3-DDCD-417B-9637-9807752491F0}.Debug|x64.ActiveCfg = Debug|x64
+		{32AC21A3-DDCD-417B-9637-9807752491F0}.Debug|x64.Build.0 = Debug|x64
+		{32AC21A3-DDCD-417B-9637-9807752491F0}.Release|Win32.ActiveCfg = Release|Win32
+		{32AC21A3-DDCD-417B-9637-9807752491F0}.Release|Win32.Build.0 = Release|Win32
+		{32AC21A3-DDCD-417B-9637-9807752491F0}.Release|x64.ActiveCfg = Release|x64
+		{32AC21A3-DDCD-417B-9637-9807752491F0}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -497,11 +507,13 @@ Global
 		{C3D4C623-55F8-4653-980D-61AA629B4E1D} = {7AF3635B-001C-42BF-94B9-C036CFDCA71D}
 		{8C02A728-7A50-43CE-B507-BDFC05B7EA94} = {4CFD7702-60B2-4E82-BFAD-FCBB53EB4DA2}
 		{D89D58F1-DA7A-4157-AFEE-F43D3BA20C9D} = {DE3617B4-17A8-4E5F-A00F-BA43D956881F}
+		{32AC21A3-DDCD-417B-9637-9807752491F0} = {EE2CC761-9652-44AC-9204-7EB31194CAA6}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
-		AMDCaPersistentConfig = Debug|Win32
-		AMDCaPersistentStartup = mono
 		AMDCaProjectFile = C:\Users\Owner\Development\monogit\mono\msvc\CodeAnalyst\mono.caw
+		AMDCaPersistentStartup = mono
+		AMDCaPersistentConfig = Debug|Win32
+		SolutionGuid = {24E08570-1FAE-4030-8A4F-B124544AF6EA}
 	EndGlobalSection
 	GlobalSection(DPCodeReviewSolutionGUID) = preSolution
 		DPCodeReviewSolutionGUID = {00000000-0000-0000-0000-000000000000}

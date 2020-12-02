@@ -3297,6 +3297,10 @@ ClrDataAccess::QueryInterface(THIS_
     {
         ifaceRet = static_cast<ISOSDacInterface9*>(this);
     }
+    else if (IsEqualIID(interfaceId, __uuidof(ISOSDacInterface10)))
+    {
+        ifaceRet = static_cast<ISOSDacInterface10*>(this);
+    }
     else
     {
         *iface = NULL;
@@ -6635,7 +6639,7 @@ bool ClrDataAccess::GetILImageNameFromNgenImage( LPCWSTR ilExtension,
         if (wszFileExtension != 0)
         {
             LPWSTR  wszNextFileExtension = wszFileExtension;
-            // Find last occurence
+            // Find last occurrence
             do
             {
                 wszFileExtension = wszNextFileExtension;

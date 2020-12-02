@@ -129,6 +129,10 @@ namespace
         }
     };
 
+    // Identity is used by the DAC, any changes to the layout must be updated on the DAC side (request.cpp)
+    static constexpr size_t DACIdentityOffset = 0;
+    static_assert(offsetof(ExternalObjectContext, Identity) == DACIdentityOffset, "Keep in sync with DAC interfaces");
+
     const DWORD ExternalObjectContext::InvalidSyncBlockIndex = 0; // See syncblk.h
 
     static_assert((sizeof(ExternalObjectContext) % sizeof(void*)) == 0, "Keep context pointer size aligned");

@@ -362,7 +362,7 @@ buffer_manager_init_sequence_point_thread_list (
 	// This needs to come after querying the thread sequence numbers to ensure that any recorded
 	// sequence number is <= the actual sequence number at this timestamp
 	ep_buffer_manager_requires_lock_held (buffer_manager);
-	ep_sequence_point_set_timestamp (sequence_point, ep_rt_perf_counter_query ());
+	ep_sequence_point_set_timestamp (sequence_point, ep_perf_timestamp_get ());
 }
 
 static
@@ -555,7 +555,7 @@ buffer_manager_move_next_event_any_thread (
 	ep_rt_buffer_array_t buffer_array;
 	ep_rt_buffer_list_array_t buffer_list_array;
 
-	//TODO: Init on stack instead of alloc?
+	// TODO: Init on stack instead of alloc?
 	ep_rt_buffer_array_alloc (&buffer_array);
 	ep_rt_buffer_list_array_alloc (&buffer_list_array);
 
@@ -1256,7 +1256,7 @@ ep_buffer_manager_get_next_event (EventPipeBufferManager *buffer_manager)
 	// to accumulate in the write buffer before we converted it and forced the writer to allocate another. Other more
 	// sophisticated approaches would probably build a low overhead synchronization mechanism to read and write the
 	// buffer at the same time.
-	ep_timestamp_t stop_timetamp = ep_rt_perf_counter_query ();
+	ep_timestamp_t stop_timetamp = ep_perf_timestamp_get ();
 	buffer_manager_move_next_event_any_thread (buffer_manager, stop_timetamp);
 	return buffer_manager->current_event;
 }

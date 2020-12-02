@@ -57,7 +57,7 @@ namespace System
             _k = b[15];  // hoist bounds checks
             _a = BinaryPrimitives.ReadInt32LittleEndian(b);
             _b = BinaryPrimitives.ReadInt16LittleEndian(b.Slice(4));
-            _c = BinaryPrimitives.ReadInt16LittleEndian(b.Slice(8));
+            _c = BinaryPrimitives.ReadInt16LittleEndian(b.Slice(6));
             _d = b[8];
             _e = b[9];
             _f = b[10];
@@ -752,7 +752,7 @@ namespace System
             destination[15] = _k; // hoist bounds checks
             BinaryPrimitives.WriteInt32LittleEndian(destination, _a);
             BinaryPrimitives.WriteInt16LittleEndian(destination.Slice(4), _b);
-            BinaryPrimitives.WriteInt16LittleEndian(destination.Slice(8), _c);
+            BinaryPrimitives.WriteInt16LittleEndian(destination.Slice(6), _c);
             destination[8] = _d;
             destination[9] = _e;
             destination[10] = _f;

@@ -2531,7 +2531,7 @@ public:
     //
     // Arguments:
     //    rg/c DispatchMapTypeIDs - Array of TypeIDs and its count of elements.
-    //    pcIfaceDuplicates - Number of duplicate occurences of the interface in the interface map (ideally <=
+    //    pcIfaceDuplicates - Number of duplicate occurrences of the interface in the interface map (ideally <=
     //         count of elements TypeIDs).
     //
     void

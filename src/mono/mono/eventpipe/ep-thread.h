@@ -297,4 +297,4 @@ void
 ep_thread_session_state_increment_sequence_number (EventPipeThreadSessionState *thread_session_state);
 
 #endif /* ENABLE_PERFTRACING */
-#endif /** __EVENTPIPE_THREAD_H__ **/
+#endif /* __EVENTPIPE_THREAD_H__ */

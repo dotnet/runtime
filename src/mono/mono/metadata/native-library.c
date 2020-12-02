@@ -1321,6 +1321,8 @@ lookup_pinvoke_call_impl (MonoMethod *method, MonoLookupPInvokeStatus *status_ou
 	new_import = g_strdup (orig_import);
 #endif
 
+	/* If qcalls are disabled, we fall back to the normal pinvoke code for them */
+#ifndef DISABLE_QCALLS
 	if (strcmp (new_scope, "QCall") == 0) {
 		piinfo->addr = mono_lookup_pinvoke_qcall_internal (method, status_out);
 		if (!piinfo->addr) {
@@ -1332,6 +1334,7 @@ lookup_pinvoke_call_impl (MonoMethod *method, MonoLookupPInvokeStatus *status_ou
 		}
 		return piinfo->addr;
 	}
+#endif
 
 #ifdef ENABLE_NETCORE
 #ifndef HOST_WIN32

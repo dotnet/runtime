@@ -243,8 +243,10 @@ namespace System.ServiceProcess
             {
                 if (_eventLog == null)
                 {
-                    _eventLog = new EventLog("Application");
-                    _eventLog.Source = ServiceName;
+                    _eventLog = new EventLog("Application")
+                    {
+                        Source = ServiceName
+                    };
                 }
 
                 return _eventLog;
@@ -295,7 +297,7 @@ namespace System.ServiceProcess
             // no slashes or backslash allowed
             foreach (char c in serviceName)
             {
-                if ((c == '\\') || (c == '/'))
+                if (c == '\\' || c == '/')
                     return false;
             }
 
@@ -628,7 +630,7 @@ namespace System.ServiceProcess
                     }
                 }
 
-                string errorMessage = "";
+                string errorMessage = string.Empty;
 
                 if (!res)
                 {
@@ -701,8 +703,8 @@ namespace System.ServiceProcess
                 _status.checkPoint = 0;
                 _status.waitHint = 0;
 
-                _mainCallback = new ServiceMainCallback(this.ServiceMainCallback);
-                _commandCallbackEx = new ServiceControlCallbackEx(this.ServiceCommandCallbackEx);
+                _mainCallback = this.ServiceMainCallback;
+                _commandCallbackEx = this.ServiceCommandCallbackEx;
 
                 _initialized = true;
             }

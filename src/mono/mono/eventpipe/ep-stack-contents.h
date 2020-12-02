@@ -175,4 +175,4 @@ ep_stack_contents_get_size (const EventPipeStackContents *stack_contents)
 }
 
 #endif /* ENABLE_PERFTRACING */
-#endif /** __EVENTPIPE_STACK_CONTENTS_H__ **/
+#endif /* __EVENTPIPE_STACK_CONTENTS_H__ */

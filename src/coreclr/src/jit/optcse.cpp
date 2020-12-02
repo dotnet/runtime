@@ -11,6 +11,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 */
 
 #include "jitpch.h"
+#include "jitstd/algorithm.h"
 #ifdef _MSC_VER
 #pragma hdrstop
 #endif
@@ -267,90 +268,74 @@ bool Compiler::optCSE_canSwap(GenTree* tree)
 
 /*****************************************************************************
  *
- *  Compare function passed to qsort() by CSE_Heuristic::SortCandidates
+ *  Compare function passed to jitstd::sort() by CSE_Heuristic::SortCandidates
  *  when (CodeOptKind() != Compiler::SMALL_CODE)
  */
 
 /* static */
-int __cdecl Compiler::optCSEcostCmpEx(const void* op1, const void* op2)
+bool Compiler::optCSEcostCmpEx::operator()(const CSEdsc* dsc1, const CSEdsc* dsc2)
 {
-    CSEdsc* dsc1 = *(CSEdsc**)op1;
-    CSEdsc* dsc2 = *(CSEdsc**)op2;
-
     GenTree* exp1 = dsc1->csdTree;
     GenTree* exp2 = dsc2->csdTree;
 
-    int diff;
+    auto expCost1 = exp1->GetCostEx();
+    auto expCost2 = exp2->GetCostEx();
 
-    diff = (int)(exp2->GetCostEx() - exp1->GetCostEx());
-
-    if (diff != 0)
+    if (expCost2 != expCost1)
     {
-        return diff;
+        return expCost2 < expCost1;
     }
 
     // Sort the higher Use Counts toward the top
-    diff = (int)(dsc2->csdUseWtCnt - dsc1->csdUseWtCnt);
-
-    if (diff != 0)
+    if (dsc2->csdUseWtCnt != dsc1->csdUseWtCnt)
     {
-        return diff;
+        return dsc2->csdUseWtCnt < dsc1->csdUseWtCnt;
     }
 
     // With the same use count, Sort the lower Def Counts toward the top
-    diff = (int)(dsc1->csdDefWtCnt - dsc2->csdDefWtCnt);
-
-    if (diff != 0)
+    if (dsc1->csdDefWtCnt != dsc2->csdDefWtCnt)
     {
-        return diff;
+        return dsc1->csdDefWtCnt < dsc2->csdDefWtCnt;
     }
 
     // In order to ensure that we have a stable sort, we break ties using the csdIndex
-    return (int)(dsc1->csdIndex - dsc2->csdIndex);
+    return dsc1->csdIndex < dsc2->csdIndex;
 }
 
 /*****************************************************************************
  *
- *  Compare function passed to qsort() by CSE_Heuristic::SortCandidates
+ *  Compare function passed to jitstd::sort() by CSE_Heuristic::SortCandidates
  *  when (CodeOptKind() == Compiler::SMALL_CODE)
  */
 
 /* static */
-int __cdecl Compiler::optCSEcostCmpSz(const void* op1, const void* op2)
+bool Compiler::optCSEcostCmpSz::operator()(const CSEdsc* dsc1, const CSEdsc* dsc2)
 {
-    CSEdsc* dsc1 = *(CSEdsc**)op1;
-    CSEdsc* dsc2 = *(CSEdsc**)op2;
-
     GenTree* exp1 = dsc1->csdTree;
     GenTree* exp2 = dsc2->csdTree;
 
-    int diff;
+    auto expCost1 = exp1->GetCostSz();
+    auto expCost2 = exp2->GetCostSz();
 
-    diff = (int)(exp2->GetCostSz() - exp1->GetCostSz());
-
-    if (diff != 0)
+    if (expCost2 != expCost1)
     {
-        return diff;
+        return expCost2 < expCost1;
     }
 
     // Sort the higher Use Counts toward the top
-    diff = (int)(dsc2->csdUseCount - dsc1->csdUseCount);
-
-    if (diff != 0)
+    if (dsc2->csdUseCount != dsc1->csdUseCount)
     {
-        return diff;
+        return dsc2->csdUseCount < dsc1->csdUseCount;
     }
 
     // With the same use count, Sort the lower Def Counts toward the top
-    diff = (int)(dsc1->csdDefCount - dsc2->csdDefCount);
-
-    if (diff != 0)
+    if (dsc1->csdDefCount != dsc2->csdDefCount)
     {
-        return diff;
+        return dsc1->csdDefCount < dsc2->csdDefCount;
     }
 
     // In order to ensure that we have a stable sort, we break ties using the csdIndex
-    return (int)(dsc1->csdIndex - dsc2->csdIndex);
+    return dsc1->csdIndex < dsc2->csdIndex;
 }
 
 /*****************************************************************************/
@@ -1417,7 +1402,7 @@ void Compiler::optValnumCSE_Availablity()
                     isUse = BitVecOps::IsMember(cseLivenessTraits, available_cses, CseAvailBit);
                     isDef = !isUse; // If is isn't a CSE use, it is a CSE def
 
-                    // Is this a "use", that we haven't yet marked as live accross a call
+                    // Is this a "use", that we haven't yet marked as live across a call
                     // and it is not available when we have calls that kill CSE's (cseAvailCrossCallBit)
                     // if the above is true then we will mark this the CSE as live across a call
                     //
@@ -1999,11 +1984,11 @@ public:
 
         if (CodeOptKind() == Compiler::SMALL_CODE)
         {
-            qsort(sortTab, m_pCompiler->optCSECandidateCount, sizeof(*sortTab), m_pCompiler->optCSEcostCmpSz);
+            jitstd::sort(sortTab, sortTab + m_pCompiler->optCSECandidateCount, Compiler::optCSEcostCmpSz());
         }
         else
         {
-            qsort(sortTab, m_pCompiler->optCSECandidateCount, sizeof(*sortTab), m_pCompiler->optCSEcostCmpEx);
+            jitstd::sort(sortTab, sortTab + m_pCompiler->optCSECandidateCount, Compiler::optCSEcostCmpEx());
         }
 
 #ifdef DEBUG
@@ -2785,7 +2770,7 @@ public:
         if (varTypeIsStruct(cseLclVarTyp))
         {
             // Retrieve the struct handle that we recorded while bulding the list of CSE candidates.
-            // If all occurances were in GT_IND nodes it could still be NO_CLASS_HANDLE
+            // If all occurrences were in GT_IND nodes it could still be NO_CLASS_HANDLE
             //
             CORINFO_CLASS_HANDLE structHnd = successfulCandidate->CseDsc()->csdStructHnd;
             if (structHnd == NO_CLASS_HANDLE)
@@ -3633,6 +3618,7 @@ bool Compiler::optIsCSEcandidate(GenTree* tree)
             {
                 return false;
             }
+            return true;
 
         case GT_EQ:
         case GT_NE:

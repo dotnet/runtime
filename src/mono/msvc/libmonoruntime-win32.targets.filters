@@ -4,36 +4,18 @@
     <ClCompile Include="$(MonoSourceLocation)\mono\metadata\console-win32.c">
       <Filter>Source Files$(MonoRuntimeFilterSubFolder)\win32</Filter>
     </ClCompile>
-    <ClInclude Include="$(MonoSourceLocation)\mono\metadata\console-win32-internals.h">
-      <Filter>Header Files$(MonoRuntimeFilterSubFolder)\win32</Filter>
-    </ClInclude>
-    <ClInclude Include="$(MonoSourceLocation)\mono\metadata\cominterop-win32-internals.h">
-      <Filter>Header Files$(MonoRuntimeFilterSubFolder)\win32</Filter>
-    </ClInclude>
     <ClCompile Include="$(MonoSourceLocation)\mono\metadata\w32file-win32.c">
       <Filter>Source Files$(MonoRuntimeFilterSubFolder)\win32</Filter>
     </ClCompile>
-    <ClInclude Include="$(MonoSourceLocation)\mono\metadata\w32file-win32-internals.h">
-      <Filter>Header Files$(MonoRuntimeFilterSubFolder)\win32</Filter>
-    </ClInclude>
     <ClCompile Include="$(MonoSourceLocation)\mono\metadata\icall-windows.c">
       <Filter>Source Files$(MonoRuntimeFilterSubFolder)\win32</Filter>
     </ClCompile>
-    <ClInclude Include="$(MonoSourceLocation)\mono\metadata\icall-windows-internals.h">
-      <Filter>Header Files$(MonoRuntimeFilterSubFolder)\win32</Filter>
-    </ClInclude>
     <ClCompile Include="$(MonoSourceLocation)\mono\metadata\marshal-windows.c">
       <Filter>Source Files$(MonoRuntimeFilterSubFolder)\win32</Filter>
     </ClCompile>
-    <ClInclude Include="$(MonoSourceLocation)\mono\metadata\marshal-windows-internals.h">
-      <Filter>Header Files$(MonoRuntimeFilterSubFolder)\win32</Filter>
-    </ClInclude>
     <ClCompile Include="$(MonoSourceLocation)\mono\metadata\mono-security-windows.c">
       <Filter>Source Files$(MonoRuntimeFilterSubFolder)\win32</Filter>
     </ClCompile>
-    <ClInclude Include="$(MonoSourceLocation)\mono\metadata\mono-security-windows-internals.h">
-      <Filter>Header Files$(MonoRuntimeFilterSubFolder)\win32</Filter>
-    </ClInclude>
     <ClCompile Include="$(MonoSourceLocation)\mono\metadata\w32mutex-win32.c">
       <Filter>Source Files$(MonoRuntimeFilterSubFolder)\win32</Filter>
     </ClCompile>

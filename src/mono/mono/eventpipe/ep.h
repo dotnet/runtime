@@ -261,7 +261,7 @@ inline
 bool
 ep_walk_managed_stack_for_current_thread (EventPipeStackContents *stack_contents)
 {
-	//TODO: Implement.
+	// TODO: Implement.
 	ep_stack_contents_reset (stack_contents);
 	return ep_rt_walk_managed_stack_for_current_thread (stack_contents);
 }
@@ -270,11 +270,41 @@ ep_walk_managed_stack_for_current_thread (EventPipeStackContents *stack_contents
  * EventPipePerf.
  */
 
-int64_t
-ep_perf_counter_query (void);
+static
+inline
+ep_timestamp_t
+ep_perf_timestamp_get (void)
+{
+	return (ep_timestamp_t)ep_rt_perf_counter_query ();
+}
 
+static
+inline
 int64_t
-ep_perf_frequency_query (void);
+ep_perf_frequency_query (void)
+{
+	return ep_rt_perf_frequency_query ();
+}
+
+/*
+ * EventPipeSystemTime.
+ */
+
+static
+inline
+ep_system_timestamp_t
+ep_system_timestamp_get (void)
+{
+	return (ep_system_timestamp_t)ep_rt_system_timestamp_get ();
+}
+
+static
+inline
+void
+ep_system_time_get (EventPipeSystemTime *system_time)
+{
+	ep_rt_system_time_get (system_time);
+}
 
 #else /* ENABLE_PERFTRACING */
 
@@ -303,4 +333,4 @@ ep_shutdown (void)
 }
 
 #endif /* ENABLE_PERFTRACING */
-#endif /** __EVENTPIPE_H__ **/
+#endif /* __EVENTPIPE_H__ */

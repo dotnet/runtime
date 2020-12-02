@@ -65,7 +65,7 @@ namespace System.IO
 
         public override int Read(byte[] buffer, int offset, int count)
         {
-            ValidateReadArrayArguments(buffer, offset, count);
+            ValidateBufferArguments(buffer, offset, count);
             return Read(new Span<byte>(buffer, offset, count));
         }
 
@@ -93,7 +93,7 @@ namespace System.IO
 
         public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
         {
-            ValidateReadArrayArguments(buffer, offset, count);
+            ValidateBufferArguments(buffer, offset, count);
             return cancellationToken.IsCancellationRequested ?
                 Task.FromCanceled<int>(cancellationToken) :
                 Task.FromResult(Read(new Span<byte>(buffer, offset, count)));
@@ -112,7 +112,7 @@ namespace System.IO
 
         public override void CopyTo(Stream destination, int bufferSize)
         {
-            StreamHelpers.ValidateCopyToArgs(this, destination, bufferSize);
+            ValidateCopyToArguments(destination, bufferSize);
             if (_content.Length > _position)
             {
                 destination.Write(_content.Span.Slice(_position));
@@ -121,7 +121,7 @@ namespace System.IO
 
         public override Task CopyToAsync(Stream destination, int bufferSize, CancellationToken cancellationToken)
         {
-            StreamHelpers.ValidateCopyToArgs(this, destination, bufferSize);
+            ValidateCopyToArguments(destination, bufferSize);
             return _content.Length > _position ?
                 destination.WriteAsync(_content.Slice(_position), cancellationToken).AsTask() :
                 Task.CompletedTask;
@@ -134,21 +134,5 @@ namespace System.IO
         public override void SetLength(long value) => throw new NotSupportedException();
 
         public override void Write(byte[] buffer, int offset, int count) => throw new NotSupportedException();
-
-        private static void ValidateReadArrayArguments(byte[] buffer, int offset, int count)
-        {
-            if (buffer == null)
-            {
-                throw new ArgumentNullException(nameof(buffer));
-            }
-            if (offset < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(offset));
-            }
-            if (count < 0 || buffer.Length - offset < count)
-            {
-                throw new ArgumentOutOfRangeException(nameof(count));
-            }
-        }
     }
 }

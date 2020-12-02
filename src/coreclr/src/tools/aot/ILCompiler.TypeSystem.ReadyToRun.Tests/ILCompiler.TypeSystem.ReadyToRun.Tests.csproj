@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <AssemblyName>ILCompiler.TypeSystem.ReadyToRun.Tests</AssemblyName>
-    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
+    <TargetFramework>$(NetCoreAppToolCurrent)</TargetFramework>
     <Configurations>Debug;Release;Checked</Configurations>
     <!-- This seems to be required for supporting assemblies to be copied into the output -->
     <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>

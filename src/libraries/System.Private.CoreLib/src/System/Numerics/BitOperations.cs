@@ -227,6 +227,9 @@ namespace System.Numerics
         /// Similar in behavior to the x86 instruction POPCNT.
         /// </summary>
         /// <param name="value">The value.</param>
+#if SYSTEM_PRIVATE_CORELIB
+        [Intrinsic]
+#endif
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [CLSCompliant(false)]
         public static int PopCount(uint value)
@@ -267,6 +270,9 @@ namespace System.Numerics
         /// Similar in behavior to the x86 instruction POPCNT.
         /// </summary>
         /// <param name="value">The value.</param>
+#if SYSTEM_PRIVATE_CORELIB
+        [Intrinsic]
+#endif
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [CLSCompliant(false)]
         public static int PopCount(ulong value)

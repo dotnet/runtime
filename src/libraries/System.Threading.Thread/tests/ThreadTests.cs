@@ -606,7 +606,7 @@ namespace System.Threading.Threads.Tests
             var t = ThreadTestHelpers.CreateGuardedThread(out waitForThread, e.CheckedWait);
             t.IsBackground = true;
             t.Start();
-            Assert.NotEqual(Thread.CurrentThread.ManagedThreadId, t.ManagedThreadId);
+            Assert.NotEqual(Environment.CurrentManagedThreadId, t.ManagedThreadId);
             e.Set();
             waitForThread();
         }

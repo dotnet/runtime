@@ -201,11 +201,9 @@ namespace Internal.IL
             }
         }
 
-        public Action<ErrorArgument[], VerifierError> ReportVerificationError
-        {
-            set;
-            private get;
-        }
+        public Action<ErrorArgument[], VerifierError> ReportVerificationError { set; private get; }
+
+        public bool SanityChecks { set; private get; }
 
         public void Verify()
         {
@@ -509,9 +507,9 @@ again:
             if (_currentBasicBlock != null)
                 _currentBasicBlock.IncrementErrorCount();
 
-            var args = new ErrorArgument[] 
-            { 
-                new ErrorArgument("Offset", _currentInstructionOffset) 
+            var args = new ErrorArgument[]
+            {
+                new ErrorArgument("Offset", _currentInstructionOffset)
             };
             ReportVerificationError(args, error);
         }
@@ -566,7 +564,7 @@ again:
 
         void CheckIsNumeric(StackValue value)
         {
-            if (!Check(StackValueKind.Int32 <= value.Kind && value.Kind <= StackValueKind.Float, 
+            if (!Check(StackValueKind.Int32 <= value.Kind && value.Kind <= StackValueKind.Float,
                 VerifierError.ExpectedNumericType, value))
             {
                 AbortBasicBlockVerification();
@@ -601,14 +599,14 @@ again:
 
         void CheckIsArray(StackValue value)
         {
-            Check((value.Kind == StackValueKind.ObjRef) && ((value.Type == null) || value.Type.IsSzArray), 
+            Check((value.Kind == StackValueKind.ObjRef) && ((value.Type == null) || value.Type.IsSzArray),
                 VerifierError.ExpectedArray /* , value */);
         }
 
-        void CheckIsAssignable(StackValue src, StackValue dst)
+        void CheckIsAssignable(StackValue src, StackValue dst, VerifierError error = VerifierError.StackUnexpected)
         {
             if (!IsAssignable(src, dst))
-                VerificationError(VerifierError.StackUnexpected, src, dst);
+                VerificationError(error, src, dst);
         }
 
         private void CheckIsValidLeaveTarget(BasicBlock src, BasicBlock target)
@@ -647,7 +645,7 @@ again:
                     ref var targetRegion = ref _exceptionRegions[target.TryIndex.Value].ILRegion;
 
                     // Target is not enclosing source
-                    if (targetRegion.TryOffset > srcRegion.TryOffset || 
+                    if (targetRegion.TryOffset > srcRegion.TryOffset ||
                         src.StartOffset >= targetRegion.TryOffset + targetRegion.TryLength)
                     {
                         // Target is not first instruction
@@ -687,8 +685,8 @@ again:
                     ref var targetRegion = ref _exceptionRegions[target.TryIndex.Value].ILRegion;
 
                     // If target is not associated try block, and not enclosing srcRegion
-                    if (target.TryIndex != src.HandlerIndex && 
-                        (targetRegion.TryOffset > srcRegion.HandlerOffset || 
+                    if (target.TryIndex != src.HandlerIndex &&
+                        (targetRegion.TryOffset > srcRegion.HandlerOffset ||
                         targetRegion.TryOffset + targetRegion.TryLength < srcRegion.HandlerOffset))
                     {
                         // If target is not first instruction of try, or not a direct sibling
@@ -771,7 +769,7 @@ again:
                     ref var srcRegion = ref _exceptionRegions[src.TryIndex.Value].ILRegion;
                     ref var targetRegion = ref _exceptionRegions[target.TryIndex.Value].ILRegion;
                     // If target is inside source region
-                    if (srcRegion.TryOffset <= targetRegion.TryOffset && 
+                    if (srcRegion.TryOffset <= targetRegion.TryOffset &&
                         target.StartOffset < srcRegion.TryOffset + srcRegion.TryLength)
                     {
                         // Only branching to first instruction of try-block is valid
@@ -919,7 +917,7 @@ again:
         }
 
         /// <summary>
-        /// Checks whether the given enclosed try block is a direct child try-region of 
+        /// Checks whether the given enclosed try block is a direct child try-region of
         /// the given enclosing try block.
         /// </summary>
         /// <param name="enclosingBlock">The block enclosing the try block given by <paramref name="enclosedBlock"/>.</param>
@@ -1008,11 +1006,11 @@ again:
                 case TypeFlags.Char: return "Char";
                 case TypeFlags.SByte:
                 case TypeFlags.Byte: return "Byte";
-                case TypeFlags.Int16: 
+                case TypeFlags.Int16:
                 case TypeFlags.UInt16: return "Short";
                 case TypeFlags.Int32:
                 case TypeFlags.UInt32: return "Int32";
-                case TypeFlags.Int64: 
+                case TypeFlags.Int64:
                 case TypeFlags.UInt64: return "Long";
                 case TypeFlags.Single: return "Single";
                 case TypeFlags.Double: return "Double";
@@ -1302,6 +1300,12 @@ again:
                         var exceptionType = ResolveTypeToken(r.ILRegion.ClassToken);
                         Check(!exceptionType.IsByRef, VerifierError.CatchByRef);
                         basicBlock.EntryStack[0] = StackValue.CreateObjRef(exceptionType);
+
+                        if (SanityChecks && basicBlock.EntryStack[0] != StackValue.CreateObjRef(GetWellKnownType(WellKnownType.Object)))
+                        {
+                            CheckIsAssignable(basicBlock.EntryStack[0], StackValue.CreateObjRef(GetWellKnownType(WellKnownType.Exception)),
+                                VerifierError.ThrowOrCatchOnlyExceptionType);
+                        }
                     }
                 }
                 else
@@ -1606,21 +1610,21 @@ again:
                 {
                     // Rules for non-virtual call to a non-final virtual method (ECMA III.3.19: Verifiability of 'call'):
 
-                    // Define: 
+                    // Define:
                     // The "this" pointer is considered to be "possibly written" if
                     //   1. Its address have been taken (LDARGA 0) anywhere in the method.
                     //   (or)
                     //   2. It has been stored to (STARG.0) anywhere in the method.
 
                     // A non-virtual call to a non-final virtual method is only allowed if
-                    //   1. The this pointer passed to the callee is an instance of a boxed value type. 
+                    //   1. The this pointer passed to the callee is an instance of a boxed value type.
                     //   (or)
                     //   2. The this pointer passed to the callee is the current method's this pointer.
                     //      (and) The current method's this pointer is not "possibly written".
 
-                    // Thus the rule is that if you assign to this ANYWHERE you can't make "base" calls to 
-                    // virtual methods.  (Luckily this does not affect .ctors, since they are not virtual).    
-                    // This is stronger than is strictly needed, but implementing a laxer rule is significantly 
+                    // Thus the rule is that if you assign to this ANYWHERE you can't make "base" calls to
+                    // virtual methods.  (Luckily this does not affect .ctors, since they are not virtual).
+                    // This is stronger than is strictly needed, but implementing a laxer rule is significantly
                     // harder and more error prone.
                     if (method.IsVirtual && !method.IsFinal && !actualThis.IsBoxedValueType)
                     {
@@ -1636,7 +1640,7 @@ again:
                     Check(!IsByRefLike(declaredThis), VerifierError.TailByRef, declaredThis);
 
                     // Tail calls on constrained calls should be illegal too:
-                    // when instantiated at a value type, a constrained call may pass the address of a stack allocated value 
+                    // when instantiated at a value type, a constrained call may pass the address of a stack allocated value
                     Check(constrained == null, VerifierError.TailByRef);
                 }
             }
@@ -1832,7 +1836,7 @@ again:
             {
                 if (next.IsThisInitialized && !_isThisInitialized)
                 {
-                    // Next block has 'this' initialized, but current state has not 
+                    // Next block has 'this' initialized, but current state has not
                     // therefore next block must be reverified with 'this' uninitialized
                     if (next.State == BasicBlock.ImportState.WasVerified && next.ErrorCount == 0)
                         next.State = BasicBlock.ImportState.Unmarked;
@@ -2218,6 +2222,12 @@ again:
 
             CheckIsObjRef(value);
 
+            if (SanityChecks && value != StackValue.CreateObjRef(GetWellKnownType(WellKnownType.Object)))
+            {
+                CheckIsAssignable(value, StackValue.CreateFromType(GetWellKnownType(WellKnownType.Exception)),
+                    VerifierError.ThrowOrCatchOnlyExceptionType);
+            }
+
             EmptyTheStack();
         }
 
@@ -2250,7 +2260,7 @@ again:
 
             Check(!IsByRefLike(targetType), VerifierError.BoxByRef, targetType);
 
-            Check(type.IsPrimitive || targetType.Kind == StackValueKind.ObjRef || 
+            Check(type.IsPrimitive || targetType.Kind == StackValueKind.ObjRef ||
                 type.IsGenericParameter || type.IsValueType, VerifierError.ExpectedValClassObjRefVariable);
 
             Check(type.CheckConstraints(), VerifierError.UnsatisfiedBoxOperand);

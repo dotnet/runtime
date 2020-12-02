@@ -216,7 +216,7 @@ public:
     {
     }
 
-    virtual UINT GetAligment()
+    virtual UINT GetAlignment()
     {
         return sizeof(DWORD);
     }

@@ -128,12 +128,12 @@ namespace System
                     if (s_out != null && !s_isOutTextWriterRedirected)
                     {
                         s_out.Flush();
-                        Volatile.Write(ref s_out, null);
+                        Volatile.Write(ref s_out, null!);
                     }
                     if (s_error != null && !s_isErrorTextWriterRedirected)
                     {
                         s_error.Flush();
-                        Volatile.Write(ref s_error, null);
+                        Volatile.Write(ref s_error, null!);
                     }
 
                     Volatile.Write(ref s_outputEncoding, (Encoding)value.Clone());

@@ -121,4 +121,4 @@ ep_provider_set_delete_deferred (
 	bool deferred);
 
 #endif /* ENABLE_PERFTRACING */
-#endif /** __EVENTPIPE_PROVIDER_H__ **/
+#endif /* __EVENTPIPE_PROVIDER_H__ */

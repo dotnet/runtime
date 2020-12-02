@@ -62,4 +62,4 @@ void
 ep_parameter_desc_fini (EventPipeParameterDesc *parameter_desc);
 
 #endif /* ENABLE_PERFTRACING */
-#endif /** __EVENTPIPE_METADATA_GENERATOR_H__ **/
+#endif /* __EVENTPIPE_METADATA_GENERATOR_H__ */

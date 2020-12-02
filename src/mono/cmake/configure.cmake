@@ -16,8 +16,9 @@ function(ac_check_headers)
 	string(TOUPPER "${arg}" var1)
 	string(REPLACE "/" "_" var2 ${var1})
 	string(REPLACE "." "_" var3 ${var2})
+	string(REPLACE "-" "_" var4 ${var3})
 	if (FOUND_${arg})
-	  set(HAVE_${var3} 1 PARENT_SCOPE)
+	  set(HAVE_${var4} 1 PARENT_SCOPE)
 	endif()
   endforeach(arg)
 endfunction()
@@ -62,8 +63,6 @@ ac_check_funcs (
   madvise getrusage getpriority setpriority dladdr sysconf getrlimit prctl nl_langinfo
   sched_getaffinity sched_setaffinity getpwnam_r getpwuid_r readlink chmod lstat getdtablesize ftruncate msync
   gethostname getpeername utime utimes openlog closelog atexit popen strerror_r inet_pton inet_aton
-  pthread_getname_np pthread_setname_np pthread_cond_timedwait_relative_np pthread_kill
-  pthread_attr_setstacksize pthread_get_stackaddr_np pthread_jit_write_protect_np
   shm_open poll getfsstat mremap posix_fadvise vsnprintf sendfile statfs statvfs setpgid system
   fork execv execve waitpid localtime_r mkdtemp getrandom execvp strlcpy stpcpy strtok_r rewinddir
   vasprintf strndup getpwuid_r getprotobyname getprotobyname_r getaddrinfo mach_absolute_time
@@ -73,6 +72,15 @@ ac_check_funcs (
 if (NOT DARWIN)
   ac_check_funcs (getentropy)
 endif()
+
+find_package(Threads)
+# Needed to find pthread_ symbols
+set(CMAKE_REQUIRED_LIBRARIES "${CMAKE_REQUIRED_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT}")
+
+ac_check_funcs(
+  pthread_getname_np pthread_setname_np pthread_cond_timedwait_relative_np pthread_kill
+  pthread_attr_setstacksize pthread_get_stackaddr_np pthread_jit_write_protect_np
+)
 
 check_symbol_exists(pthread_mutexattr_setprotocol "pthread.h" HAVE_DECL_PTHREAD_MUTEXATTR_SETPROTOCOL)
 check_symbol_exists(CLOCK_MONOTONIC "time.h" HAVE_CLOCK_MONOTONIC)

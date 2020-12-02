@@ -245,7 +245,7 @@ namespace System.Reflection.Emit
             return GetTypeRef(new QCallModule(ref thisModule), typeName, new QCallModule(ref refedRuntimeModule), strRefedModuleFileName, tkResolution);
         }
 
-        internal MethodToken InternalGetConstructorToken(ConstructorInfo con, bool usingRef)
+        internal int InternalGetConstructorToken(ConstructorInfo con, bool usingRef)
         {
             // Helper to get constructor token. If usingRef is true, we will never use the def token
             if (con == null)
@@ -254,29 +254,29 @@ namespace System.Reflection.Emit
             }
 
             int tr;
-            int mr = 0;
+            int mr;
 
             if (con is ConstructorBuilder conBuilder)
             {
                 if (!usingRef && conBuilder.Module.Equals(this))
-                    return conBuilder.GetToken();
+                    return conBuilder.MetadataToken;
 
                 // constructor is defined in a different module
-                tr = GetTypeTokenInternal(con.ReflectedType!).Token;
-                mr = GetMemberRef(con.ReflectedType!.Module, tr, conBuilder.GetToken().Token);
+                tr = GetTypeTokenInternal(con.ReflectedType!);
+                mr = GetMemberRef(con.ReflectedType!.Module, tr, conBuilder.MetadataToken);
             }
             else if (con is ConstructorOnTypeBuilderInstantiation conOnTypeBuilderInst)
             {
                 if (usingRef) throw new InvalidOperationException();
 
-                tr = GetTypeTokenInternal(con.DeclaringType!).Token;
-                mr = GetMemberRef(con.DeclaringType!.Module, tr, conOnTypeBuilderInst.MetadataTokenInternal);
+                tr = GetTypeTokenInternal(con.DeclaringType!);
+                mr = GetMemberRef(con.DeclaringType!.Module, tr, conOnTypeBuilderInst.MetadataToken);
             }
             else if (con is RuntimeConstructorInfo rtCon && !con.ReflectedType!.IsArray)
             {
                 // constructor is not a dynamic field
                 // We need to get the TypeRef tokens
-                tr = GetTypeTokenInternal(con.ReflectedType).Token;
+                tr = GetTypeTokenInternal(con.ReflectedType);
                 mr = GetMemberRefOfMethodInfo(tr, rtCon);
             }
             else
@@ -305,14 +305,14 @@ namespace System.Reflection.Emit
                     optionalCustomModifiers[i] = parameters[i].GetOptionalCustomModifiers();
                 }
 
-                tr = GetTypeTokenInternal(con.ReflectedType!).Token;
+                tr = GetTypeTokenInternal(con.ReflectedType!);
 
                 SignatureHelper sigHelp = SignatureHelper.GetMethodSigHelper(this, con.CallingConvention, null, null, null, parameterTypes, requiredCustomModifiers, optionalCustomModifiers);
                 byte[] sigBytes = sigHelp.InternalGetSignature(out int length);
                 mr = GetMemberRefFromSignature(tr, con.Name, sigBytes, length);
             }
 
-            return new MethodToken(mr);
+            return mr;
         }
 
         internal void Init(string strModuleName)
@@ -401,15 +401,15 @@ namespace System.Reflection.Emit
             else if (!method.Module.Equals(this))
             {
                 // Use typeRef as parent because the method's declaringType lives in a different assembly
-                tkParent = GetTypeToken(method.DeclaringType).Token;
+                tkParent = GetTypeToken(method.DeclaringType);
             }
             else
             {
                 // Use methodDef as parent because the method lives in this assembly and its declaringType has no generic arguments
                 if (masmi != null)
-                    tkParent = GetMethodToken(masmi).Token;
+                    tkParent = GetMethodToken(masmi);
                 else
-                    tkParent = GetConstructorToken((method as ConstructorInfo)!).Token;
+                    tkParent = GetConstructorToken((method as ConstructorInfo)!);
             }
 
             return GetMemberRefFromSignature(tkParent, method.Name, sigBytes, sigLength);
@@ -1065,12 +1065,12 @@ namespace System.Reflection.Emit
         //   1. GetTypeToken
         //   2. ldtoken (see ILGenerator)
         // For all other occasions we should return the generic type instantiated on its formal parameters.
-        internal TypeToken GetTypeTokenInternal(Type type)
+        internal int GetTypeTokenInternal(Type type)
         {
             return GetTypeTokenInternal(type, getGenericDefinition: false);
         }
 
-        private TypeToken GetTypeTokenInternal(Type type, bool getGenericDefinition)
+        private int GetTypeTokenInternal(Type type, bool getGenericDefinition)
         {
             lock (SyncRoot)
             {
@@ -1078,12 +1078,12 @@ namespace System.Reflection.Emit
             }
         }
 
-        public TypeToken GetTypeToken(Type type)
+        internal int GetTypeToken(Type type)
         {
             return GetTypeTokenInternal(type, getGenericDefinition: true);
         }
 
-        private TypeToken GetTypeTokenWorkerNoLock(Type type, bool getGenericDefinition)
+        private int GetTypeTokenWorkerNoLock(Type type, bool getGenericDefinition)
         {
             if (type == null)
             {
@@ -1112,7 +1112,7 @@ namespace System.Reflection.Emit
                 type.IsPointer)
             {
                 byte[] sig = SignatureHelper.GetTypeSigToken(this, type).InternalGetSignature(out int length);
-                return new TypeToken(GetTokenFromTypeSpec(sig, length));
+                return GetTokenFromTypeSpec(sig, length);
             }
 
             Module refedModule = type.Module;
@@ -1132,10 +1132,10 @@ namespace System.Reflection.Emit
                 }
                 else if (type is GenericTypeParameterBuilder paramBuilder)
                 {
-                    return new TypeToken(paramBuilder.MetadataTokenInternal);
+                    return paramBuilder.MetadataToken;
                 }
 
-                return new TypeToken(GetTypeRefNested(type, this, string.Empty));
+                return GetTypeRefNested(type, this, string.Empty);
             }
 
             // After this point, the referenced module is not the same as the referencing
@@ -1158,10 +1158,10 @@ namespace System.Reflection.Emit
                 referencedModuleFileName = refedModuleBuilder._moduleData._moduleName;
             }
 
-            return new TypeToken(GetTypeRefNested(type, refedModule, referencedModuleFileName));
+            return GetTypeRefNested(type, refedModule, referencedModuleFileName);
         }
 
-        public TypeToken GetTypeToken(string name)
+        internal int GetTypeToken(string name)
         {
             // Return a token for the class relative to the Module.
             // Module.GetType() verifies name
@@ -1172,15 +1172,7 @@ namespace System.Reflection.Emit
             return GetTypeToken(InternalModule.GetType(name, false, true)!);
         }
 
-        public MethodToken GetMethodToken(MethodInfo method)
-        {
-            lock (SyncRoot)
-            {
-                return GetMethodTokenNoLock(method, true);
-            }
-        }
-
-        internal MethodToken GetMethodTokenInternal(MethodInfo method)
+        internal int GetMethodToken(MethodInfo method)
         {
             lock (SyncRoot)
             {
@@ -1192,7 +1184,7 @@ namespace System.Reflection.Emit
         //   1. GetMethodToken
         //   2. ldtoken (see ILGenerator)
         // For all other occasions we should return the method on the generic type instantiated on the formal parameters.
-        private MethodToken GetMethodTokenNoLock(MethodInfo method, bool getGenericTypeDefinition)
+        private int GetMethodTokenNoLock(MethodInfo method, bool getGenericTypeDefinition)
         {
             // Return a MemberRef token if MethodInfo is not defined in this module. Or
             // return the MethodDef token.
@@ -1206,10 +1198,10 @@ namespace System.Reflection.Emit
 
             if (method is MethodBuilder methBuilder)
             {
-                int methodToken = methBuilder.MetadataTokenInternal;
+                int methodToken = methBuilder.MetadataToken;
                 if (method.Module.Equals(this))
                 {
-                    return new MethodToken(methodToken);
+                    return methodToken;
                 }
 
                 if (method.DeclaringType == null)
@@ -1218,17 +1210,17 @@ namespace System.Reflection.Emit
                 }
 
                 // method is defined in a different module
-                tr = getGenericTypeDefinition ? GetTypeToken(method.DeclaringType).Token : GetTypeTokenInternal(method.DeclaringType).Token;
+                tr = getGenericTypeDefinition ? GetTypeToken(method.DeclaringType) : GetTypeTokenInternal(method.DeclaringType);
                 mr = GetMemberRef(method.DeclaringType.Module, tr, methodToken);
             }
             else if (method is MethodOnTypeBuilderInstantiation)
             {
-                return new MethodToken(GetMemberRefToken(method, null));
+                return GetMemberRefToken(method, null);
             }
             else if (method is SymbolMethod symMethod)
             {
                 if (symMethod.GetModule() == this)
-                    return symMethod.GetToken();
+                    return symMethod.MetadataToken;
 
                 // form the method token
                 return symMethod.GetToken(this);
@@ -1257,7 +1249,7 @@ namespace System.Reflection.Emit
                 }
                 else if (method is RuntimeMethodInfo rtMeth)
                 {
-                    tr = getGenericTypeDefinition ? GetTypeToken(declaringType).Token : GetTypeTokenInternal(declaringType).Token;
+                    tr = getGenericTypeDefinition ? GetTypeToken(declaringType) : GetTypeTokenInternal(declaringType);
                     mr = GetMemberRefOfMethodInfo(tr, rtMeth);
                 }
                 else
@@ -1277,7 +1269,7 @@ namespace System.Reflection.Emit
                         optionalCustomModifiers[i] = parameters[i].GetOptionalCustomModifiers();
                     }
 
-                    tr = getGenericTypeDefinition ? GetTypeToken(declaringType).Token : GetTypeTokenInternal(declaringType).Token;
+                    tr = getGenericTypeDefinition ? GetTypeToken(declaringType) : GetTypeTokenInternal(declaringType);
 
                     SignatureHelper sigHelp;
 
@@ -1299,7 +1291,7 @@ namespace System.Reflection.Emit
                 }
             }
 
-            return new MethodToken(mr);
+            return mr;
         }
 
         internal int GetMethodTokenInternal(MethodBase method, Type[]? optionalParameterTypes, bool useMethodDef)
@@ -1328,7 +1320,7 @@ namespace System.Reflection.Emit
                 }
                 else
                 {
-                    tk = GetMethodTokenInternal(methodInfoUnbound).Token;
+                    tk = GetMethodToken(methodInfoUnbound);
                 }
 
                 // For Ldtoken, Ldftn, and Ldvirtftn, we should emit the method def/ref token for a generic method definition.
@@ -1351,11 +1343,11 @@ namespace System.Reflection.Emit
                 {
                     if (methodInfo != null)
                     {
-                        tk = GetMethodTokenInternal(methodInfo).Token;
+                        tk = GetMethodToken(methodInfo);
                     }
                     else
                     {
-                        tk = GetConstructorToken((method as ConstructorInfo)!).Token;
+                        tk = GetConstructorToken((method as ConstructorInfo)!);
                     }
                 }
                 else
@@ -1367,7 +1359,7 @@ namespace System.Reflection.Emit
             return tk;
         }
 
-        public MethodToken GetArrayMethodToken(Type arrayClass, string methodName, CallingConventions callingConvention,
+        internal int GetArrayMethodToken(Type arrayClass, string methodName, CallingConventions callingConvention,
             Type? returnType, Type[]? parameterTypes)
         {
             lock (SyncRoot)
@@ -1376,7 +1368,7 @@ namespace System.Reflection.Emit
             }
         }
 
-        private MethodToken GetArrayMethodTokenNoLock(Type arrayClass, string methodName, CallingConventions callingConvention,
+        private int GetArrayMethodTokenNoLock(Type arrayClass, string methodName, CallingConventions callingConvention,
             Type? returnType, Type[]? parameterTypes)
         {
             if (arrayClass == null)
@@ -1404,11 +1396,11 @@ namespace System.Reflection.Emit
             SignatureHelper sigHelp = SignatureHelper.GetMethodSigHelper(
                 this, callingConvention, returnType, null, null, parameterTypes, null, null);
             byte[] sigBytes = sigHelp.InternalGetSignature(out int length);
-            TypeToken typeSpec = GetTypeTokenInternal(arrayClass);
+            int typeSpec = GetTypeTokenInternal(arrayClass);
 
             ModuleBuilder thisModule = this;
-            return new MethodToken(GetArrayMethodToken(new QCallModule(ref thisModule),
-                typeSpec.Token, methodName, sigBytes, length));
+            return GetArrayMethodToken(new QCallModule(ref thisModule),
+                typeSpec, methodName, sigBytes, length);
         }
 
         public MethodInfo GetArrayMethod(Type arrayClass, string methodName, CallingConventions callingConvention,
@@ -1422,18 +1414,18 @@ namespace System.Reflection.Emit
             // method that takes an array of the type as a parameter. In order to access the elements of the array,
             // you will need to call methods of the Array class.
 
-            MethodToken token = GetArrayMethodToken(arrayClass, methodName, callingConvention, returnType, parameterTypes);
+            int token = GetArrayMethodToken(arrayClass, methodName, callingConvention, returnType, parameterTypes);
 
             return new SymbolMethod(this, token, arrayClass, methodName, callingConvention, returnType, parameterTypes);
         }
 
-        public MethodToken GetConstructorToken(ConstructorInfo con)
+        internal int GetConstructorToken(ConstructorInfo con)
         {
             // Return a token for the ConstructorInfo relative to the Module.
             return InternalGetConstructorToken(con, false);
         }
 
-        public FieldToken GetFieldToken(FieldInfo field)
+        internal int GetFieldToken(FieldInfo field)
         {
             lock (SyncRoot)
             {
@@ -1441,7 +1433,7 @@ namespace System.Reflection.Emit
             }
         }
 
-        private FieldToken GetFieldTokenNoLock(FieldInfo field)
+        private int GetFieldTokenNoLock(FieldInfo field)
         {
             if (field == null)
             {
@@ -1457,12 +1449,12 @@ namespace System.Reflection.Emit
                 {
                     byte[] sig = SignatureHelper.GetTypeSigToken(this, field.DeclaringType).InternalGetSignature(out int length);
                     tr = GetTokenFromTypeSpec(sig, length);
-                    mr = GetMemberRef(this, tr, fdBuilder.GetToken().Token);
+                    mr = GetMemberRef(this, tr, fdBuilder.MetadataToken);
                 }
                 else if (fdBuilder.Module.Equals(this))
                 {
                     // field is defined in the same module
-                    return fdBuilder.GetToken();
+                    return fdBuilder.MetadataToken;
                 }
                 else
                 {
@@ -1471,8 +1463,8 @@ namespace System.Reflection.Emit
                     {
                         throw new InvalidOperationException(SR.InvalidOperation_CannotImportGlobalFromDifferentModule);
                     }
-                    tr = GetTypeTokenInternal(field.DeclaringType).Token;
-                    mr = GetMemberRef(field.ReflectedType!.Module, tr, fdBuilder.GetToken().Token);
+                    tr = GetTypeTokenInternal(field.DeclaringType);
+                    mr = GetMemberRef(field.ReflectedType!.Module, tr, fdBuilder.MetadataToken);
                 }
             }
             else if (field is RuntimeFieldInfo rtField)
@@ -1492,7 +1484,7 @@ namespace System.Reflection.Emit
                 }
                 else
                 {
-                    tr = GetTypeTokenInternal(field.DeclaringType!).Token;
+                    tr = GetTypeTokenInternal(field.DeclaringType!);
                     mr = GetMemberRefOfFieldInfo(tr, field.DeclaringType!.GetTypeHandleInternal(), rtField);
                 }
             }
@@ -1501,12 +1493,12 @@ namespace System.Reflection.Emit
                 FieldInfo fb = fOnTB.FieldInfo;
                 byte[] sig = SignatureHelper.GetTypeSigToken(this, field.DeclaringType!).InternalGetSignature(out int length);
                 tr = GetTokenFromTypeSpec(sig, length);
-                mr = GetMemberRef(fb.ReflectedType!.Module, tr, fOnTB.MetadataTokenInternal);
+                mr = GetMemberRef(fb.ReflectedType!.Module, tr, fOnTB.MetadataToken);
             }
             else
             {
                 // user defined FieldInfo
-                tr = GetTypeTokenInternal(field.ReflectedType!).Token;
+                tr = GetTypeTokenInternal(field.ReflectedType!);
 
                 SignatureHelper sigHelp = SignatureHelper.GetFieldSigHelper(this);
 
@@ -1516,10 +1508,10 @@ namespace System.Reflection.Emit
                 mr = GetMemberRefFromSignature(tr, field.Name, sigBytes, length);
             }
 
-            return new FieldToken(mr, field.GetType());
+            return mr;
         }
 
-        public StringToken GetStringConstant(string str)
+        internal int GetStringConstant(string str)
         {
             if (str == null)
             {
@@ -1529,10 +1521,10 @@ namespace System.Reflection.Emit
             // Returns a token representing a String constant.  If the string
             // value has already been defined, the existing token will be returned.
             ModuleBuilder thisModule = this;
-            return new StringToken(GetStringConstant(new QCallModule(ref thisModule), str, str.Length));
+            return GetStringConstant(new QCallModule(ref thisModule), str, str.Length);
         }
 
-        public SignatureToken GetSignatureToken(SignatureHelper sigHelper)
+        internal int GetSignatureToken(SignatureHelper sigHelper)
         {
             // Define signature token given a signature helper. This will define a metadata
             // token for the signature described by SignatureHelper.
@@ -1544,10 +1536,10 @@ namespace System.Reflection.Emit
             // get the signature in byte form
             byte[] sigBytes = sigHelper.InternalGetSignature(out int sigLength);
             ModuleBuilder thisModule = this;
-            return new SignatureToken(TypeBuilder.GetTokenFromSig(new QCallModule(ref thisModule), sigBytes, sigLength));
+            return TypeBuilder.GetTokenFromSig(new QCallModule(ref thisModule), sigBytes, sigLength);
         }
 
-        public SignatureToken GetSignatureToken(byte[] sigBytes, int sigLength)
+        internal int GetSignatureToken(byte[] sigBytes, int sigLength)
         {
             if (sigBytes == null)
             {
@@ -1558,7 +1550,7 @@ namespace System.Reflection.Emit
             Buffer.BlockCopy(sigBytes, 0, localSigBytes, 0, sigBytes.Length);
 
             ModuleBuilder thisModule = this;
-            return new SignatureToken(TypeBuilder.GetTokenFromSig(new QCallModule(ref thisModule), localSigBytes, sigLength));
+            return TypeBuilder.GetTokenFromSig(new QCallModule(ref thisModule), localSigBytes, sigLength);
         }
 
         #endregion
@@ -1579,7 +1571,7 @@ namespace System.Reflection.Emit
             TypeBuilder.DefineCustomAttribute(
                 this,
                 1,                                          // This is hard coding the module token to 1
-                GetConstructorToken(con).Token,
+                GetConstructorToken(con),
                 binaryAttribute,
                 false, false);
         }

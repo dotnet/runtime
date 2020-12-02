@@ -153,17 +153,17 @@ namespace System
             return true;
         }
 
-        private bool TrySetSlot(object?[] a, int index, object o)
+        private static bool TrySetSlot(object?[] a, int index, object o)
         {
             if (a[index] == null && System.Threading.Interlocked.CompareExchange<object?>(ref a[index], o, null) == null)
                 return true;
 
             // The slot may be already set because we have added and removed the same method before.
             // Optimize this case, because it's cheaper than copying the array.
-            if (a[index] != null)
+            if (a[index] is object ai)
             {
                 MulticastDelegate d = (MulticastDelegate)o;
-                MulticastDelegate dd = (MulticastDelegate)a[index]!; // TODO-NULLABLE: Indexer nullability tracked (https://github.com/dotnet/roslyn/issues/34644)
+                MulticastDelegate dd = (MulticastDelegate)ai;
 
                 if (dd._methodPtr == d._methodPtr &&
                     dd._target == d._target &&
@@ -322,7 +322,7 @@ namespace System
             return newInvocationList;
         }
 
-        private bool EqualInvocationLists(object[] a, object[] b, int start, int count)
+        private static bool EqualInvocationLists(object[] a, object[] b, int start, int count)
         {
             for (int i = 0; i < count; i++)
             {

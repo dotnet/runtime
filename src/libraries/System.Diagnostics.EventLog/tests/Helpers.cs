@@ -15,7 +15,7 @@ namespace System.Diagnostics.Tests
     {
         public static bool NotElevatedAndSupportsEventLogs { get => !AdminHelpers.IsProcessElevated() && SupportsEventLogs; }
         public static bool IsElevatedAndSupportsEventLogs { get => AdminHelpers.IsProcessElevated() && SupportsEventLogs; }
-        public static bool SupportsEventLogs { get => PlatformDetection.IsNotWindowsNanoServer && PlatformDetection.IsNotWindowsIoTCore; }
+        public static bool SupportsEventLogs { get => PlatformDetection.IsNotWindowsNanoNorServerCore && PlatformDetection.IsNotWindowsIoTCore; }
 
         // Retry that eats exceptions: for "best effort cleanup"
         public static void RetrySilently(Action func)

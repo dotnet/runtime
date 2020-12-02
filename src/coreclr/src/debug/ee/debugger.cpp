@@ -1899,7 +1899,7 @@ void Debugger::CleanupTransportSocket(void)
 // Initialize Left-Side debugger object
 //
 // Return Value:
-//    S_OK on successs. May also throw.
+//    S_OK on success. May also throw.
 //
 // Assumptions:
 //    This is called in the startup path.
@@ -10722,6 +10722,7 @@ bool Debugger::HandleIPCEvent(DebuggerIPCEvent * pEvent)
         //
         // For regular (non-jit) attach, fall through to do an async break.
         //
+        FALLTHROUGH;
 
     case DB_IPCE_ASYNC_BREAK:
         {
@@ -12138,7 +12139,7 @@ void Debugger::TypeHandleToExpandedTypeInfo(AreValueTypesBoxed boxed,
     case ELEMENT_TYPE_VALUETYPE:
         if (boxed == OnlyPrimitivesUnboxed || boxed == AllBoxed)
             res->elementType = ELEMENT_TYPE_CLASS;
-        // drop through
+        FALLTHROUGH;
 
     case ELEMENT_TYPE_CLASS:
         {
@@ -12896,7 +12897,7 @@ private:
 //
 EnCSequencePointHelper::EnCSequencePointHelper(DebuggerJitInfo *pJitInfo)
     : m_pJitInfo(pJitInfo),
-    m_pOffsetToHandlerInfo(NULL)      
+    m_pOffsetToHandlerInfo(NULL)
 {
     CONTRACTL
     {

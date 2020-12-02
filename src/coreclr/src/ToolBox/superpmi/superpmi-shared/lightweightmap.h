@@ -369,7 +369,14 @@ public:
             else if (res > 0)
                 last = mid - 1; // repeat search in bottom half.
             else
+            {
+                int resItem = memcmp(&pItems[mid], &item, sizeof(_Item));
+                if (resItem != 0)
+                {
+                    LogDebug("Tried to add a new value for an existing key, the new value was ignored");
+                }
                 return false; // found it. return position /////
+            }
         }
         insert = first;
         if (insert != (unsigned int)first)

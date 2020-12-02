@@ -563,9 +563,9 @@ else()
 endif()
 
 check_symbol_exists(
-    mach_absolute_time
-    mach/mach_time.h
-    HAVE_MACH_ABSOLUTE_TIME)
+    clock_gettime_nsec_np
+    time.h
+    HAVE_CLOCK_GETTIME_NSEC_NP)
 
 check_symbol_exists(
     futimes
@@ -684,7 +684,7 @@ check_c_source_compiles(
     HAVE_MKSTEMP)
 
 if (NOT HAVE_MKSTEMPS AND NOT HAVE_MKSTEMP)
-    message(FATAL_ERROR "Cannot find mkstemp nor mkstemp on this platform.")
+    message(FATAL_ERROR "Cannot find mkstemps nor mkstemp on this platform.")
 endif()
 
 check_c_source_compiles(

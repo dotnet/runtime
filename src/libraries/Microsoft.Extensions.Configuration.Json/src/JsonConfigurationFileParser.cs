@@ -35,7 +35,7 @@ namespace Microsoft.Extensions.Configuration.Json
             {
                 if (doc.RootElement.ValueKind != JsonValueKind.Object)
                 {
-                    throw new FormatException(SR.Format(SR.Error_UnsupportedJSONToken, doc.RootElement.ValueKind));
+                    throw new FormatException(SR.Format(SR.Error_InvalidTopLevelJSONElement, doc.RootElement.ValueKind));
                 }
                 VisitElement(doc.RootElement);
             }

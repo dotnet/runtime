@@ -340,8 +340,8 @@ ep_config_build_event_metadata_event (
 	EventPipeEvent *source_event = ep_event_instance_get_ep_event (source_instance);
 	EventPipeProvider *provider = ep_event_get_provider (source_event);
 	const ep_char16_t *provider_name_utf16 = ep_provider_get_provider_name_utf16 (provider);
-	const uint8_t *payload_data = ep_event_instance_get_data (source_instance);
-	uint32_t payload_data_len = ep_event_instance_get_data_len (source_instance);
+	const uint8_t *payload_data = ep_event_get_metadata (source_event);
+	uint32_t payload_data_len = ep_event_get_metadata_len (source_event);
 	uint32_t provider_name_len = (ep_rt_utf16_string_len (provider_name_utf16) + 1) * sizeof (ep_char16_t);
 	uint32_t instance_payload_size = sizeof (metadata_id) + provider_name_len + payload_data_len;
 	

@@ -74,6 +74,7 @@
     <WriteLinesToFile File="$(_projectFile)"
                       Lines="$([System.IO.File]::ReadAllText('$(ProjectTemplate)')
                                                  .Replace('{NetCoreAppCurrent}', '$(NetCoreAppCurrent)')
+                                                 .Replace('{NetCoreAppMaximumVersion}', '$(NetCoreAppMaximumVersion)')
                                                  .Replace('{RuntimePackDir}', '%(TestConsoleApps.RuntimePackDirectory)')
                                                  .Replace('{TargetingPackDir}','$(MicrosoftNetCoreAppRefPackDir)')
                                                  .Replace('{RuntimeIdentifier}','%(TestConsoleApps.TestRuntimeIdentifier)')

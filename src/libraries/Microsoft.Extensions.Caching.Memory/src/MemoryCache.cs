@@ -273,10 +273,7 @@ namespace Microsoft.Extensions.Caching.Memory
         /// <inheritdoc />
         public void Remove(object key)
         {
-            if (key == null)
-            {
-                throw new ArgumentNullException(nameof(key));
-            }
+            ValidateCacheKey(key);
 
             CheckDisposed();
             if (_entries.TryRemove(key, out CacheEntry entry))

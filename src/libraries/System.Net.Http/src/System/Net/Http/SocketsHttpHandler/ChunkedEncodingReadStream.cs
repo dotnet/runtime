@@ -191,7 +191,7 @@ namespace System.Net.Http
 
             public override Task CopyToAsync(Stream destination, int bufferSize, CancellationToken cancellationToken)
             {
-                ValidateCopyToArgs(this, destination, bufferSize);
+                ValidateCopyToArguments(destination, bufferSize);
 
                 return
                     cancellationToken.IsCancellationRequested ? Task.FromCanceled(cancellationToken) :

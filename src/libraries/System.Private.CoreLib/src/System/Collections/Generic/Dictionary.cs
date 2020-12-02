@@ -90,29 +90,7 @@ namespace System.Collections.Generic
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.dictionary);
             }
 
-            // It is likely that the passed-in dictionary is Dictionary<TKey,TValue>. When this is the case,
-            // avoid the enumerator allocation and overhead by looping through the entries array directly.
-            // We only do this when dictionary is Dictionary<TKey,TValue> and not a subclass, to maintain
-            // back-compat with subclasses that may have overridden the enumerator behavior.
-            if (dictionary.GetType() == typeof(Dictionary<TKey, TValue>))
-            {
-                Dictionary<TKey, TValue> d = (Dictionary<TKey, TValue>)dictionary;
-                int count = d._count;
-                Entry[]? entries = d._entries;
-                for (int i = 0; i < count; i++)
-                {
-                    if (entries![i].next >= -1)
-                    {
-                        Add(entries[i].key, entries[i].value);
-                    }
-                }
-                return;
-            }
-
-            foreach (KeyValuePair<TKey, TValue> pair in dictionary)
-            {
-                Add(pair.Key, pair.Value);
-            }
+            AddRange(dictionary);
         }
 
         public Dictionary(IEnumerable<KeyValuePair<TKey, TValue>> collection) : this(collection, null) { }
@@ -125,6 +103,54 @@ namespace System.Collections.Generic
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.collection);
             }
 
+            AddRange(collection);
+        }
+
+        private void AddRange(IEnumerable<KeyValuePair<TKey, TValue>> collection)
+        {
+            // It is likely that the passed-in dictionary is Dictionary<TKey,TValue>. When this is the case,
+            // avoid the enumerator allocation and overhead by looping through the entries array directly.
+            // We only do this when dictionary is Dictionary<TKey,TValue> and not a subclass, to maintain
+            // back-compat with subclasses that may have overridden the enumerator behavior.
+            if (collection.GetType() == typeof(Dictionary<TKey, TValue>))
+            {
+                Dictionary<TKey, TValue> source = (Dictionary<TKey, TValue>)collection;
+
+                if (source.Count == 0)
+                {
+                    // Nothing to copy, all done
+                    return;
+                }
+
+                // This is not currently a true .AddRange as it needs to be an initalized dictionary
+                // of the correct size, and also an empty dictionary with no current entities (and no argument checks).
+                Debug.Assert(source._entries is not null);
+                Debug.Assert(_entries is not null);
+                Debug.Assert(_entries.Length >= source.Count);
+                Debug.Assert(_count == 0);
+
+                Entry[] oldEntries = source._entries;
+                if (source._comparer == _comparer)
+                {
+                    // If comparers are the same, we can copy _entries without rehashing.
+                    CopyEntries(oldEntries, source._count);
+                    return;
+                }
+
+                // Comparers differ need to rehash all the entires via Add
+                int count = source._count;
+                for (int i = 0; i < count; i++)
+                {
+                    // Only copy if an entry
+                    if (oldEntries[i].next >= -1)
+                    {
+                        Add(oldEntries[i].key, oldEntries[i].value);
+                    }
+                }
+                return;
+            }
+
+            // Fallback path for IEnumerable that isn't a non-subclassed Dictionary<TKey,TValue>.
             foreach (KeyValuePair<TKey, TValue> pair in collection)
             {
                 Add(pair.Key, pair.Value);
@@ -1059,23 +1085,33 @@ namespace System.Collections.Generic
             int oldCount = _count;
             _version++;
             Initialize(newSize);
-            Entry[]? entries = _entries;
-            int count = 0;
-            for (int i = 0; i < oldCount; i++)
+
+            Debug.Assert(oldEntries is not null);
+
+            CopyEntries(oldEntries, oldCount);
+        }
+
+        private void CopyEntries(Entry[] entries, int count)
+        {
+            Debug.Assert(_entries is not null);
+
+            Entry[] newEntries = _entries;
+            int newCount = 0;
+            for (int i = 0; i < count; i++)
             {
-                uint hashCode = oldEntries![i].hashCode; // At this point, we know we have entries.
-                if (oldEntries[i].next >= -1)
+                uint hashCode = entries[i].hashCode;
+                if (entries[i].next >= -1)
                 {
-                    ref Entry entry = ref entries![count];
-                    entry = oldEntries[i];
+                    ref Entry entry = ref newEntries[newCount];
+                    entry = entries[i];
                     ref int bucket = ref GetBucket(hashCode);
                     entry.next = bucket - 1; // Value in _buckets is 1-based
-                    bucket = count + 1;
-                    count++;
+                    bucket = newCount + 1;
+                    newCount++;
                 }
             }
 
-            _count = count;
+            _count = newCount;
             _freeCount = 0;
         }
 

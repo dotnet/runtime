@@ -208,11 +208,11 @@ TODO: Talk about initializing strutures before use
 //
 //////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-constexpr GUID JITEEVersionIdentifier = { /* a5eec3a4-4176-43a7-8c2b-a05b551d4f49 */
-    0xa5eec3a4,
-    0x4176,
-    0x43a7,
-    {0x8c, 0x2b, 0xa0, 0x5b, 0x55, 0x1d, 0x4f, 0x49}
+constexpr GUID JITEEVersionIdentifier = { /* 062114d0-bd20-483f-8a3e-c4ee39706ae8 */
+    0x062114d0,
+    0xbd20,
+    0x483f,
+    {0x8a, 0x3e, 0xc4, 0xee, 0x39, 0x70, 0x6a, 0xe8}
 };
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////

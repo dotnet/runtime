@@ -50,6 +50,7 @@ Install the following packages for the toolchain:
 - libkrb5-dev
 - libnuma-dev (optional, enables numa support)
 - zlib1g-dev
+- ninja (optional, enables building native code with ninja instead of make)
 
 The following dependencies are needed if Mono Runtime is enabled (default behavior):
 
@@ -61,7 +62,7 @@ The following dependencies are needed if Mono Runtime is enabled (default behavi
 sudo apt-get install -y cmake llvm-9 clang-9 autoconf automake \
 libtool build-essential python curl git lldb-6.0 liblldb-6.0-dev \
 libunwind8 libunwind8-dev gettext libicu-dev liblttng-ust-dev \
-libssl-dev libnuma-dev libkrb5-dev zlib1g-dev
+libssl-dev libnuma-dev libkrb5-dev zlib1g-dev ninja
 ```
 
 You now have all the required components.

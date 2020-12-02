@@ -1762,7 +1762,7 @@ void DomainAssembly::GetOptimizedIdentitySignature(CORCOMPILE_ASSEMBLY_SIGNATURE
     ReleaseHolder<IMDInternalImport> scope (GetFile()->GetMDImportWithRef());
     IfFailThrow(scope->GetScopeProps(NULL, &pSignature->mvid));
 
-    // Use the NGen image if posssible. IL image does not even have to be present on CoreCLR.
+    // Use the NGen image if possible. IL image does not even have to be present on CoreCLR.
     if (GetFile()->HasNativeImage())
     {
         PEImageHolder pNativeImage(GetFile()->GetNativeImageWithRef());

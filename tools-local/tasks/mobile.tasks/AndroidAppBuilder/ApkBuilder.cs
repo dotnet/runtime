@@ -18,11 +18,14 @@ public class ApkBuilder
     public string? BuildToolsVersion { get; set; }
     public string? OutputDir { get; set; }
     public bool StripDebugSymbols { get; set; }
-    public string[]? AssemblySearchPaths { get; set; }
-    public string[]? ExtraAssemblies { get; set; }
+    public string? NativeMainSource { get; set; }
+    public string? KeyStorePath { get; set; }
 
     public (string apk, string packageId) BuildApk(
-        string sourceDir, string abi, string entryPointLib, string monoRuntimeHeaders)
+        string sourceDir,
+        string abi,
+        string entryPointLib,
+        string monoRuntimeHeaders)
     {
         if (!Directory.Exists(sourceDir))
             throw new ArgumentException($"sourceDir='{sourceDir}' is empty or doesn't exist");
@@ -30,15 +33,21 @@ public class ApkBuilder
         if (string.IsNullOrEmpty(abi))
             throw new ArgumentException("abi shoudln't be empty (e.g. x86, x86_64, armeabi-v7a or arm64-v8a");
 
-        if (string.IsNullOrEmpty(entryPointLib))
-            throw new ArgumentException("entryPointLib shouldn't be empty");
-
-        string entryPointLibPath = Path.Combine(sourceDir, entryPointLib);
-        if (!File.Exists(entryPointLibPath))
-            throw new ArgumentException($"{entryPointLib} was not found in sourceDir='{sourceDir}'");
+        string entryPointLibPath = "";
+        if (!string.IsNullOrEmpty(entryPointLib))
+        {
+            entryPointLibPath = Path.Combine(sourceDir, entryPointLib);
+            if (!File.Exists(entryPointLibPath))
+                throw new ArgumentException($"{entryPointLib} was not found in sourceDir='{sourceDir}'");
+        }
 
         if (string.IsNullOrEmpty(ProjectName))
-            ProjectName = Path.GetFileNameWithoutExtension(entryPointLib);
+        {
+            if (string.IsNullOrEmpty(entryPointLib))
+                throw new ArgumentException("ProjectName needs to be set if entryPointLib is empty.");
+            else
+                ProjectName = Path.GetFileNameWithoutExtension(entryPointLib);
+        }
 
         if (string.IsNullOrEmpty(OutputDir))
             OutputDir = Path.Combine(sourceDir, "bin-" + abi);
@@ -96,37 +105,6 @@ public class ApkBuilder
             extensionsToIgnore.Add(".dbg");
         }
 
-        var assembliesToResolve = new List<string> { entryPointLibPath };
-        if (ExtraAssemblies != null)
-            assembliesToResolve.AddRange(ExtraAssemblies);
-
-        // try to resolve dependencies of entryPointLib + ExtraAssemblies from AssemblySearchPaths
-        // and copy them to sourceDir
-        if (AssemblySearchPaths?.Length > 0)
-        {
-            string[] resolvedDependencies = AssemblyResolver.ResolveDependencies(assembliesToResolve.ToArray(), AssemblySearchPaths, true);
-            foreach (string resolvedDependency in resolvedDependencies)
-            {
-                string destination = Path.Combine(sourceDir, Path.GetFileName(resolvedDependency));
-                if (!File.Exists(destination))
-                    File.Copy(resolvedDependency, destination);
-            }
-        }
-        else
-        {
-            AssemblySearchPaths = new[] {OutputDir};
-        }
-
-        // copy all native libs from AssemblySearchPaths to sourceDir
-        // TODO: skip some if not used by the app
-        string[] allFiles = AssemblySearchPaths.SelectMany(p => Directory.GetFiles(p, "*", SearchOption.AllDirectories)).ToArray();
-        foreach (string nativeLib in allFiles.Where(f => f.EndsWith(".a") || f.EndsWith(".so")))
-        {
-            string destination = Path.Combine(sourceDir, Path.GetFileName(nativeLib));
-            if (!File.Exists(destination))
-                File.Copy(nativeLib, destination);
-        }
-
         // Copy sourceDir to OutputDir/assets-tozip (ignore native files)
         // these files then will be zipped and copied to apk/assets/assets.zip
         Utils.DirectoryCopy(sourceDir, Path.Combine(OutputDir, "assets-tozip"), file =>
@@ -177,10 +155,7 @@ public class ApkBuilder
             .Replace("%NativeLibrariesToLink%", monoRuntimeLib);
         File.WriteAllText(Path.Combine(OutputDir, "CMakeLists.txt"), cmakeLists);
 
-        string monodroidSrc = Utils.GetEmbeddedResource("monodroid.c")
-            .Replace("%EntryPointLibName%", Path.GetFileName(entryPointLib)
-            .Replace("%RID%", GetRid(abi)));
-        File.WriteAllText(Path.Combine(OutputDir, "monodroid.c"), monodroidSrc);
+        File.WriteAllText(Path.Combine(OutputDir, "monodroid.c"), Utils.GetEmbeddedResource("monodroid.c"));
 
         string cmakeGenArgs = $"-DCMAKE_TOOLCHAIN_FILE={androidToolchain} -DANDROID_ABI=\"{abi}\" -DANDROID_STL=none " +
             $"-DANDROID_NATIVE_API_LEVEL={MinApiLevel} -B monodroid";
@@ -207,20 +182,29 @@ public class ApkBuilder
         string javaSrcFolder = Path.Combine(OutputDir, "src", "net", "dot");
         Directory.CreateDirectory(javaSrcFolder);
 
+        string javaActivityPath = Path.Combine(javaSrcFolder, "MainActivity.java");
+        string monoRunnerPath = Path.Combine(javaSrcFolder, "MonoRunner.java");
+
         string packageId = $"net.dot.{ProjectName}";
 
-        File.WriteAllText(Path.Combine(javaSrcFolder, "MainActivity.java"),
-            Utils.GetEmbeddedResource("MainActivity.java"));
-        File.WriteAllText(Path.Combine(javaSrcFolder, "MonoRunner.java"),
-            Utils.GetEmbeddedResource("MonoRunner.java"));
+        File.WriteAllText(javaActivityPath,
+            Utils.GetEmbeddedResource("MainActivity.java")
+                .Replace("%EntryPointLibName%", Path.GetFileName(entryPointLib)));
+        if (!string.IsNullOrEmpty(NativeMainSource))
+            File.Copy(NativeMainSource, javaActivityPath, true);
+
+        string monoRunner = Utils.GetEmbeddedResource("MonoRunner.java")
+            .Replace("%EntryPointLibName%", Path.GetFileName(entryPointLib));
+        File.WriteAllText(monoRunnerPath, monoRunner);
+
         File.WriteAllText(Path.Combine(OutputDir, "AndroidManifest.xml"),
             Utils.GetEmbeddedResource("AndroidManifest.xml")
                 .Replace("%PackageName%", packageId)
                 .Replace("%MinSdkLevel%", MinApiLevel));
 
         string javaCompilerArgs = $"-d obj -classpath src -bootclasspath {androidJar} -source 1.8 -target 1.8 ";
-        Utils.RunProcess(javac, javaCompilerArgs + Path.Combine(javaSrcFolder, "MainActivity.java"), workingDir: OutputDir);
-        Utils.RunProcess(javac, javaCompilerArgs + Path.Combine(javaSrcFolder, "MonoRunner.java"), workingDir: OutputDir);
+        Utils.RunProcess(javac, javaCompilerArgs + javaActivityPath, workingDir: OutputDir);
+        Utils.RunProcess(javac, javaCompilerArgs + monoRunnerPath, workingDir: OutputDir);
         Utils.RunProcess(dx, "--dex --output=classes.dex obj", workingDir: OutputDir);
 
         // 3. Generate APK
@@ -261,11 +245,17 @@ public class ApkBuilder
         // 5. Generate key
 
         string signingKey = Path.Combine(OutputDir, "debug.keystore");
+        if (!string.IsNullOrEmpty(KeyStorePath))
+            signingKey = Path.Combine(KeyStorePath, "debug.keystore");
         if (!File.Exists(signingKey))
         {
             Utils.RunProcess(keytool, "-genkey -v -keystore debug.keystore -storepass android -alias " +
                 "androiddebugkey -keypass android -keyalg RSA -keysize 2048 -noprompt " +
                 "-dname \"CN=Android Debug,O=Android,C=US\"", workingDir: OutputDir, silent: true);
+        }
+        else
+        {
+            File.Copy(signingKey, Path.Combine(OutputDir, "debug.keystore"));
         }
 
         // 6. Sign APK
@@ -277,14 +267,6 @@ public class ApkBuilder
 
         return (alignedApk, packageId);
     }
-
-    private static string GetRid(string abi) => abi switch
-        {
-            "arm64-v8a" => "android-arm64",
-            "armeabi-v7a" => "android-arm",
-            "x86_64" => "android-x64",
-            _ => "android-" + abi
-        };
 
     /// <summary>
     /// Scan android SDK for build tools (ignore preview versions)

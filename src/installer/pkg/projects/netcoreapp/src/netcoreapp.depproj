@@ -102,7 +102,7 @@
       <LibrariesRuntimeFiles Condition="'%(IsNative)' != 'true'" TargetPath="runtimes/$(PackageRID)/lib/$(NetCoreAppCurrent)" />
       <LibrariesRuntimeFiles Condition="'%(IsNative)' == 'true'" TargetPath="$([System.String]::new('runtimes/$(PackageRID)/native/%(LibrariesRuntimeFiles.NativeSubDirectory)%(RecursiveDir)').TrimEnd('/'))" />
       <ReferenceCopyLocalPaths Include="@(LibrariesRuntimeFiles)" 
-          Condition="'%(LibrariesRuntimeFiles.Extension)' != '.a'"/>
+          Condition="'%(LibrariesRuntimeFiles.Extension)' != '.a' or '$(TargetsMobile)' == 'true'"/>
     </ItemGroup>
 
     <ItemGroup>

@@ -29,10 +29,6 @@ public class Program
         [DllImport(nameof(UnmanagedCallersOnlyDll))]
         // Returns -1 if exception was throw and caught.
         public static extern int CallManagedProcCatchException(IntPtr callbackProc, int n);
-
-        [UnmanagedCallersOnly]
-        [DllImport(nameof(UnmanagedCallersOnlyDll), EntryPoint = "DoesntExist")]
-        public static extern int PInvokeMarkedWithUnmanagedCallersOnly(int n);
     }
 
     private const string InvalidCSharpAssemblyName = "InvalidCSharp";
@@ -47,6 +43,12 @@ public class Program
     {
         var asm = Assembly.Load(InvalidCSharpAssemblyName);
         return asm.GetType("InvalidCSharp.GenericClass`1").MakeGenericType(typeof(int));
+    }
+
+    public static Type GetCallingUnmanagedCallersOnlyDirectlyType()
+    {
+        var asm = Assembly.Load(InvalidCSharpAssemblyName);
+        return asm.GetType("InvalidCSharp.CallingUnmanagedCallersOnlyDirectly");
     }
 
     private delegate int IntNativeMethodInvoker();
@@ -347,7 +349,7 @@ public class Program
         // Local function to delay exception thrown during JIT
         void CallAsDelegate()
         {
-            Func<int, int> invoker = ManagedDoubleCallback;
+            Func<int, int> invoker = (Func<int, int>)GetCallingUnmanagedCallersOnlyDirectlyType().GetMethod("GetDoubleDelegate").Invoke(null, BindingFlags.DoNotWrapExceptions, null, null, null);
             invoker(0);
         }
     }
@@ -716,10 +718,11 @@ public class Program
         Console.WriteLine($"Running {nameof(TestPInvokeMarkedWithUnmanagedCallersOnly)}...");
 
         // Call P/Invoke directly
-        Assert.Throws<NotSupportedException>(() => UnmanagedCallersOnlyDll.PInvokeMarkedWithUnmanagedCallersOnly(0));
+        var pInvokeWrapperMethod = GetCallingUnmanagedCallersOnlyDirectlyType().GetMethod("CallPInvokeMarkedWithUnmanagedCallersOnly");
+        Assert.Throws<NotSupportedException>(() => pInvokeWrapperMethod.Invoke(null, BindingFlags.DoNotWrapExceptions, null, new[] { (object)0 }, null));
 
         // Call P/Invoke via reflection
-        var method = typeof(UnmanagedCallersOnlyDll).GetMethod(nameof(UnmanagedCallersOnlyDll.PInvokeMarkedWithUnmanagedCallersOnly));
+        var method = GetCallingUnmanagedCallersOnlyDirectlyType().GetMethod("PInvokeMarkedWithUnmanagedCallersOnly");
         Assert.Throws<NotSupportedException>(() => method.Invoke(null, BindingFlags.DoNotWrapExceptions, null, new[] { (object)0 }, null));
 
         // Call P/Invoke as a function pointer
@@ -728,7 +731,7 @@ public class Program
            {
                 .locals init (native int V_0)
                 IL_0000:  nop
-                IL_0001:  ldftn      int UnmanagedCallersOnlyDll.PInvokeMarkedWithUnmanagedCallersOnly(int32)
+                IL_0001:  ldftn      int InvalidCSharp.CallingUnmanagedCallersOnlyDirectly::PInvokeMarkedWithUnmanagedCallersOnly(int32)
                 IL_0007:  stloc.0
 
                 IL_0008:  ldc.i4     1234

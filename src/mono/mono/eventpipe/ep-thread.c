@@ -66,9 +66,20 @@ ep_thread_free (EventPipeThread *thread)
 
 	ep_rt_spin_lock_aquire (&_ep_threads_lock);
 		// Remove ourselves from the global list
-		if (EP_UNLIKELY (!ep_rt_thread_array_remove (&_ep_threads, thread)))
-			EP_ASSERT (!"We couldn't find ourselves in the global thread list");
+		ep_rt_thread_array_iterator_t iterator;
+		bool found = false;
+		ep_rt_thread_array_iterator_begin (&_ep_threads, &iterator);
+		while (!ep_rt_thread_array_iterator_end (&_ep_threads, &iterator)) {
+			if (ep_rt_thread_array_iterator_value (&iterator) == thread) {
+				ep_rt_thread_array_remove (&_ep_threads, &iterator);
+				found = true;
+				break;
+			}
+			ep_rt_thread_array_iterator_next (&_ep_threads, &iterator);
+		}
 	ep_rt_spin_lock_release (&_ep_threads_lock);
+
+	EP_ASSERT (found || !"We couldn't find ourselves in the global thread list");
 
 	ep_rt_spin_lock_free (&thread->rt_lock);
 	ep_rt_object_free (thread);

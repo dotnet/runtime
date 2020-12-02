@@ -129,6 +129,20 @@ typedef interface ISOSDacInterface8 ISOSDacInterface8;
 #endif  /* __ISOSDacInterface8_FWD_DEFINED__ */
 
 
+#ifndef __ISOSDacInterface9_FWD_DEFINED__
+#define __ISOSDacInterface9_FWD_DEFINED__
+typedef interface ISOSDacInterface9 ISOSDacInterface9;
+
+#endif  /* __ISOSDacInterface9_FWD_DEFINED__ */
+
+
+#ifndef __ISOSDacInterface10_FWD_DEFINED__
+#define __ISOSDacInterface10_FWD_DEFINED__
+typedef interface ISOSDacInterface10 ISOSDacInterface10;
+
+#endif  /* __ISOSDacInterface10_FWD_DEFINED__ */
+
+
 /* header files for imported files */
 #include "unknwn.h"
 #include "xclrdata.h"
@@ -2743,6 +2757,144 @@ EXTERN_C const IID IID_ISOSDacInterface9;
 
 
 #endif  /* __ISOSDacInterface9_INTERFACE_DEFINED__ */
+
+
+#ifndef __ISOSDacInterface10_INTERFACE_DEFINED__
+#define __ISOSDacInterface10_INTERFACE_DEFINED__
+
+/* interface ISOSDacInterface10 */
+/* [uuid][local][object] */ 
+
+
+EXTERN_C const IID IID_ISOSDacInterface10;
+
+#if defined(__cplusplus) && !defined(CINTERFACE)
+    
+    MIDL_INTERFACE("90B8FCC3-7251-4B0A-AE3D-5C13A67EC9AA")
+    ISOSDacInterface10 : public IUnknown
+    {
+    public:
+        virtual HRESULT STDMETHODCALLTYPE GetObjectComWrappersData( 
+            CLRDATA_ADDRESS objAddr,
+            CLRDATA_ADDRESS *rcw,
+            unsigned int count,
+            CLRDATA_ADDRESS *mowList,
+            unsigned int *pNeeded) = 0;
+        
+        virtual HRESULT STDMETHODCALLTYPE IsComWrappersCCW( 
+            CLRDATA_ADDRESS ccw,
+            BOOL *isComWrappersCCW) = 0;
+        
+        virtual HRESULT STDMETHODCALLTYPE GetComWrappersCCWData( 
+            CLRDATA_ADDRESS ccw,
+            CLRDATA_ADDRESS *managedObject,
+            int *refCount) = 0;
+        
+        virtual HRESULT STDMETHODCALLTYPE IsComWrappersRCW( 
+            CLRDATA_ADDRESS rcw,
+            BOOL *isComWrappersRCW) = 0;
+        
+        virtual HRESULT STDMETHODCALLTYPE GetComWrappersRCWData( 
+            CLRDATA_ADDRESS rcw,
+            CLRDATA_ADDRESS *identity) = 0;
+        
+    };
+    
+    
+#else   /* C style interface */
+
+    typedef struct ISOSDacInterface10Vtbl
+    {
+        BEGIN_INTERFACE
+        
+        HRESULT ( STDMETHODCALLTYPE *QueryInterface )( 
+            ISOSDacInterface10 * This,
+            /* [in] */ REFIID riid,
+            /* [annotation][iid_is][out] */ 
+            _COM_Outptr_  void **ppvObject);
+        
+        ULONG ( STDMETHODCALLTYPE *AddRef )( 
+            ISOSDacInterface10 * This);
+        
+        ULONG ( STDMETHODCALLTYPE *Release )( 
+            ISOSDacInterface10 * This);
+        
+        HRESULT ( STDMETHODCALLTYPE *GetObjectComWrappersData )( 
+            ISOSDacInterface10 * This,
+            CLRDATA_ADDRESS objAddr,
+            CLRDATA_ADDRESS *rcw,
+            unsigned int count,
+            CLRDATA_ADDRESS *mowList,
+            unsigned int *pNeeded);
+        
+        HRESULT ( STDMETHODCALLTYPE *IsComWrappersCCW )( 
+            ISOSDacInterface10 * This,
+            CLRDATA_ADDRESS ccw,
+            BOOL *isComWrappersCCW);
+        
+        HRESULT ( STDMETHODCALLTYPE *GetComWrappersCCWData )( 
+            ISOSDacInterface10 * This,
+            CLRDATA_ADDRESS ccw,
+            CLRDATA_ADDRESS *managedObject,
+            int *refCount);
+        
+        HRESULT ( STDMETHODCALLTYPE *IsComWrappersRCW )( 
+            ISOSDacInterface10 * This,
+            CLRDATA_ADDRESS rcw,
+            BOOL *isComWrappersRCW);
+        
+        HRESULT ( STDMETHODCALLTYPE *GetComWrappersRCWData )( 
+            ISOSDacInterface10 * This,
+            CLRDATA_ADDRESS rcw,
+            CLRDATA_ADDRESS *identity);
+        
+        END_INTERFACE
+    } ISOSDacInterface10Vtbl;
+
+    interface ISOSDacInterface10
+    {
+        CONST_VTBL struct ISOSDacInterface10Vtbl *lpVtbl;
+    };
+
+    
+
+#ifdef COBJMACROS
+
+
+#define ISOSDacInterface10_QueryInterface(This,riid,ppvObject)  \
+    ( (This)->lpVtbl -> QueryInterface(This,riid,ppvObject) ) 
+
+#define ISOSDacInterface10_AddRef(This) \
+    ( (This)->lpVtbl -> AddRef(This) ) 
+
+#define ISOSDacInterface10_Release(This)    \
+    ( (This)->lpVtbl -> Release(This) ) 
+
+
+#define ISOSDacInterface10_GetObjectComWrappersData(This,objAddr,rcw,count,mowList,pNeeded) \
+    ( (This)->lpVtbl -> GetObjectComWrappersData(This,objAddr,rcw,count,mowList,pNeeded) ) 
+
+#define ISOSDacInterface10_IsComWrappersCCW(This,ccw,isComWrappersCCW)  \
+    ( (This)->lpVtbl -> IsComWrappersCCW(This,ccw,isComWrappersCCW) ) 
+
+#define ISOSDacInterface10_GetComWrappersCCWData(This,ccw,managedObject,refCount)   \
+    ( (This)->lpVtbl -> GetComWrappersCCWData(This,ccw,managedObject,refCount) ) 
+
+#define ISOSDacInterface10_IsComWrappersRCW(This,rcw,isComWrappersRCW)  \
+    ( (This)->lpVtbl -> IsComWrappersRCW(This,rcw,isComWrappersRCW) ) 
+
+#define ISOSDacInterface10_GetComWrappersRCWData(This,rcw,identity) \
+    ( (This)->lpVtbl -> GetComWrappersRCWData(This,rcw,identity) ) 
+
+#endif /* COBJMACROS */
+
+
+#endif  /* C style interface */
+
+
+
+
+#endif  /* __ISOSDacInterface10_INTERFACE_DEFINED__ */
 
 
 /* Additional Prototypes for ALL interfaces */

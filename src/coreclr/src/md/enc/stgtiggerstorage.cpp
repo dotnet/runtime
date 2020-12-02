@@ -624,7 +624,7 @@ HRESULT STDMETHODCALLTYPE TiggerStorage::OpenStream(
 
     // Look for the stream which must be found for this to work.  Note that
     // this error is explicitly not posted as an error object since unfound streams
-    // are a common occurence and do not warrant a resource file load.
+    // are a common occurrence and do not warrant a resource file load.
     IfFailRet(FindStream(rcName, &pStream));
 
     // Get the memory for the stream.

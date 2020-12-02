@@ -36,19 +36,19 @@ struct _EventPipeEventSource {
 
 static
 inline
-const char *
+const ep_char8_t *
 ep_event_source_get_os_info (void)
 {
-	extern const char *_ep_os_info;
+	extern const ep_char8_t *_ep_os_info;
 	return _ep_os_info;
 }
 
 static
 inline
-const char *
+const ep_char8_t *
 ep_event_source_get_arch_info (void)
 {
-	extern const char *_ep_arch_info;
+	extern const ep_char8_t *_ep_arch_info;
 	return _ep_arch_info;
 }
 
@@ -81,4 +81,4 @@ ep_event_source_get (void)
 }
 
 #endif /* ENABLE_PERFTRACING */
-#endif /** __EVENTPIPE_EVENT_SOURCE_H__ **/
+#endif /* __EVENTPIPE_EVENT_SOURCE_H__ */

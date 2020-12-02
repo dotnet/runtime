@@ -93,6 +93,7 @@ TieredCompilationManager::TieredCompilationManager() :
     m_countOfNewMethodsCalledDuringDelay(0),
     m_methodsPendingCountingForTier1(nullptr),
     m_tieringDelayTimerHandle(nullptr),
+    m_doBackgroundWorkTimerHandle(nullptr),
     m_isBackgroundWorkScheduled(false),
     m_tier1CallCountingCandidateMethodRecentlyRecorded(false),
     m_isPendingCallCountingCompletion(false),
@@ -566,10 +567,57 @@ void TieredCompilationManager::RequestBackgroundWork()
     WRAPPER_NO_CONTRACT;
     _ASSERTE(m_isBackgroundWorkScheduled);
 
+    if (ThreadpoolMgr::UsePortableThreadPool())
+    {
+        // QueueUserWorkItem is not intended to be supported in this mode, and there are call sites of this function where
+        // managed code cannot be called instead to queue a work item. Use a timer with zero due time instead, which would on
+        // the timer thread call into managed code to queue a work item.
+
+        NewHolder<ThreadpoolMgr::TimerInfoContext> timerContextHolder = new ThreadpoolMgr::TimerInfoContext();
+        timerContextHolder->TimerId = 0;
+
+        _ASSERTE(m_doBackgroundWorkTimerHandle == nullptr);
+        if (!ThreadpoolMgr::CreateTimerQueueTimer(
+                &m_doBackgroundWorkTimerHandle,
+                DoBackgroundWorkTimerCallback,
+                timerContextHolder,
+                0 /* DueTime */,
+                (DWORD)-1 /* Period, non-repeating */,
+                0 /* Flags */))
+        {
+            _ASSERTE(m_doBackgroundWorkTimerHandle == nullptr);
+            ThrowOutOfMemory();
+        }
+
+        timerContextHolder.SuppressRelease(); // the timer context is automatically deleted by the timer infrastructure
+        return;
+    }
+
     if (!ThreadpoolMgr::QueueUserWorkItem(StaticBackgroundWorkCallback, this, QUEUE_ONLY, TRUE))
     {
         ThrowOutOfMemory();
     }
+}
+
+void WINAPI TieredCompilationManager::DoBackgroundWorkTimerCallback(PVOID parameter, BOOLEAN timerFired)
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_PREEMPTIVE;
+    }
+    CONTRACTL_END;
+
+    _ASSERTE(ThreadpoolMgr::UsePortableThreadPool());
+    _ASSERTE(timerFired);
+
+    TieredCompilationManager *pTieredCompilationManager = GetAppDomain()->GetTieredCompilationManager();
+    _ASSERTE(pTieredCompilationManager->m_doBackgroundWorkTimerHandle != nullptr);
+    ThreadpoolMgr::DeleteTimerQueueTimer(pTieredCompilationManager->m_doBackgroundWorkTimerHandle, nullptr);
+    pTieredCompilationManager->m_doBackgroundWorkTimerHandle = nullptr;
+
+    pTieredCompilationManager->DoBackgroundWork();
 }
 
 // This is the initial entrypoint for the background thread, called by
@@ -577,6 +625,7 @@ void TieredCompilationManager::RequestBackgroundWork()
 DWORD WINAPI TieredCompilationManager::StaticBackgroundWorkCallback(void *args)
 {
     STANDARD_VM_CONTRACT;
+    _ASSERTE(!ThreadpoolMgr::UsePortableThreadPool());
 
     TieredCompilationManager * pTieredCompilationManager = (TieredCompilationManager *)args;
     pTieredCompilationManager->DoBackgroundWork();
@@ -590,6 +639,7 @@ DWORD WINAPI TieredCompilationManager::StaticBackgroundWorkCallback(void *args)
 void TieredCompilationManager::DoBackgroundWork()
 {
     WRAPPER_NO_CONTRACT;
+    _ASSERTE(m_doBackgroundWorkTimerHandle == nullptr);
 
     AutoResetIsBackgroundWorkScheduled autoResetIsBackgroundWorkScheduled(this);
 
@@ -937,12 +987,12 @@ CORJIT_FLAGS TieredCompilationManager::GetJitFlags(NativeCodeVersion nativeCodeV
 #ifdef FEATURE_ON_STACK_REPLACEMENT
         case NativeCodeVersion::OptimizationTier1OSR:
             flags.Set(CORJIT_FLAGS::CORJIT_FLAG_OSR);
-            // fall through
+            FALLTHROUGH;
 #endif
 
         case NativeCodeVersion::OptimizationTier1:
             flags.Set(CORJIT_FLAGS::CORJIT_FLAG_TIER1);
-            // fall through
+            FALLTHROUGH;
 
         case NativeCodeVersion::OptimizationTierOptimized:
         Optimized:

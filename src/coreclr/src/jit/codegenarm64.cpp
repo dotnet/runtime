@@ -629,7 +629,7 @@ void CodeGen::genSaveCalleeSavedRegisterGroup(regMaskTP regsMask, int spDelta, i
 // The caller can tell us to fold in a stack pointer adjustment, which we will do with the first instruction.
 // Note that the stack pointer adjustment must be by a multiple of 16 to preserve the invariant that the
 // stack pointer is always 16 byte aligned. If we are saving an odd number of callee-saved
-// registers, though, we will have an empty aligment slot somewhere. It turns out we will put
+// registers, though, we will have an empty alignment slot somewhere. It turns out we will put
 // it below (at a lower address) the callee-saved registers, as that is currently how we
 // do frame layout. This means that the first stack offset will be 8 and the stack pointer
 // adjustment must be done by a SUB, and not folded in to a pre-indexed store.

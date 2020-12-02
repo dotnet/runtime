@@ -15,6 +15,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{E107E9C1-E89
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TestUtilities", "..\Common\tests\TestUtilities\TestUtilities.csproj", "{71CDAEB3-0F69-4DCD-A720-92270C4C44C8}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SerializableAssembly", "tests\SerializableAssembly.csproj", "{81BE9FCA-42C2-4EFE-913C-36C291A6DD76}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -33,6 +35,10 @@ Global
 		{71CDAEB3-0F69-4DCD-A720-92270C4C44C8}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{71CDAEB3-0F69-4DCD-A720-92270C4C44C8}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{71CDAEB3-0F69-4DCD-A720-92270C4C44C8}.Release|Any CPU.Build.0 = Release|Any CPU
+		{81BE9FCA-42C2-4EFE-913C-36C291A6DD76}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{81BE9FCA-42C2-4EFE-913C-36C291A6DD76}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{81BE9FCA-42C2-4EFE-913C-36C291A6DD76}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{81BE9FCA-42C2-4EFE-913C-36C291A6DD76}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

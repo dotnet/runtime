@@ -17,7 +17,7 @@
     <AssemblyName>Microsoft.VisualBasic.Core</AssemblyName>
     <RemoveIntegerChecks>false</RemoveIntegerChecks>
     <RootNamespace />
-    <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppCurrent)-Windows_NT</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppCurrent)-windows</TargetFrameworks>
   </PropertyGroup>
   <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
     <Compile Include="Microsoft\VisualBasic\Helpers\NativeMethods.vb" />

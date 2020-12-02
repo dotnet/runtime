@@ -18,7 +18,7 @@ namespace System.Security.Cryptography
     public class HMACSHA256 : HMAC
     {
         public HMACSHA256()
-            : this(Helpers.GenerateRandom(BlockSize))
+            : this(RandomNumberGenerator.GetBytes(BlockSize))
         {
         }
 

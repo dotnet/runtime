@@ -5874,21 +5874,21 @@ const BYTE *UnparseType(const BYTE *pType, DWORD& csig, StubLinker *psl)
 
         case ELEMENT_TYPE_U1:
             psl->EmitUtf8("unsigned ");
-            //fallthru
+            FALLTHROUGH;
         case ELEMENT_TYPE_I1:
             psl->EmitUtf8("byte");
             break;
 
         case ELEMENT_TYPE_U2:
             psl->EmitUtf8("unsigned ");
-            //fallthru
+            FALLTHROUGH;
         case ELEMENT_TYPE_I2:
             psl->EmitUtf8("short");
             break;
 
         case ELEMENT_TYPE_U4:
             psl->EmitUtf8("unsigned ");
-            //fallthru
+            FALLTHROUGH;
         case ELEMENT_TYPE_I4:
             psl->EmitUtf8("int");
             break;
@@ -5902,7 +5902,7 @@ const BYTE *UnparseType(const BYTE *pType, DWORD& csig, StubLinker *psl)
 
         case ELEMENT_TYPE_U8:
             psl->EmitUtf8("unsigned ");
-            //fallthru
+            FALLTHROUGH;
         case ELEMENT_TYPE_I8:
             psl->EmitUtf8("long");
             break;

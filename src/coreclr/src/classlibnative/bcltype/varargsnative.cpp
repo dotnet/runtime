@@ -575,7 +575,8 @@ TryAgain:
             }
 #endif
 
-        // fall through
+            FALLTHROUGH;
+
         case ELEMENT_TYPE_CLASS: {
             value->type = data->SigPtr.GetTypeHandleThrowing(data->ArgCookie->pModule, &typeContext);
 

@@ -989,7 +989,7 @@ void SimpleComCallWrapper::InitNew(OBJECTREF oref, ComCallWrapperCache *pWrapper
     // IErrorInfo is valid only for exception classes
     m_rgpVtable[enum_IErrorInfo] = NULL;
 
-    // IDispatchEx is valid only for classes that have expando capabilities.
+    // IDispatchEx is valid only for classes that have IExpando capabilities - which is no longer supported.
     m_rgpVtable[enum_IDispatchEx] = NULL;
 }
 
@@ -1070,9 +1070,9 @@ void SimpleComCallWrapper::InitDispatchExInfo()
         return;
 
     // Create the DispatchExInfo object.
-    NewHolder<DispatchExInfo> pDispExInfo = new DispatchExInfo(this, m_pMT, SupportsIExpando(m_pMT));
+    NewHolder<DispatchExInfo> pDispExInfo = new DispatchExInfo(this, m_pMT);
 
-    // Synchronize the DispatchExInfo with the actual expando object.
+    // Synchronize the DispatchExInfo with the actual object.
     pDispExInfo->SynchWithManagedView();
 
     // Swap the lock into the class member in a thread safe manner.
@@ -1236,7 +1236,7 @@ BOOL SimpleComCallWrapper::SupportsExceptions(MethodTable *pClass)
 
 //--------------------------------------------------------------------------
 // Returns TRUE if the COM+ object that this wrapper represents implements
-// IExpando.
+// IReflect.
 //--------------------------------------------------------------------------
 BOOL SimpleComCallWrapper::SupportsIReflect(MethodTable *pClass)
 {
@@ -1262,27 +1262,8 @@ BOOL SimpleComCallWrapper::SupportsIReflect(MethodTable *pClass)
     if (CoreLibBinder::IsClass(pClass, CLASS__ENUM_BUILDER))
         return FALSE;
 
-    // Check to see if the MethodTable associated with the wrapper implements IExpando.
+    // Check to see if the MethodTable associated with the wrapper implements IReflect.
     return pClass->ImplementsInterface(CoreLibBinder::GetClass(CLASS__IREFLECT));
-}
-
-//--------------------------------------------------------------------------
-// Returns TRUE if the COM+ object that this wrapper represents implements
-// IReflect.
-//--------------------------------------------------------------------------
-BOOL SimpleComCallWrapper::SupportsIExpando(MethodTable *pClass)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-        PRECONDITION(CheckPointer(pClass));
-    }
-    CONTRACTL_END;
-
-    // Check to see if the MethodTable associated with the wrapper implements IExpando.
-    return pClass->ImplementsInterface(CoreLibBinder::GetClass(CLASS__IEXPANDO));
 }
 
 // NOINLINE to prevent RCWHolder from forcing caller to push/pop an FS:0 handler
@@ -4063,7 +4044,7 @@ DispatchInfo *ComMethodTable::GetDispatchInfo()
         // Create the DispatchInfo object.
         NewHolder<DispatchInfo> pDispInfo = new DispatchInfo(m_pMT);
 
-        // Synchronize the DispatchInfo with the actual expando object.
+        // Synchronize the DispatchInfo with the actual object.
         pDispInfo->SynchWithManagedView();
 
         // Swap the lock into the class member in a thread safe manner.

@@ -8,7 +8,7 @@
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="$(MicrosoftNETCoreCoreDisToolsPackageName)" GeneratePathProperty="True">
-      <Version>1.0.1-prerelease-*</Version>
+      <Version>1.0.1-prerelease-00005</Version>
     </PackageReference>
   </ItemGroup>
 

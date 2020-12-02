@@ -1266,7 +1266,7 @@ void RemoveGcCoverageInterrupt(TADDR instrPtr, BYTE * savedInstrPtr, GCCoverageI
 
 // A managed thread (T) can race with the GC as follows:
 // 1)	At the first safepoint, we notice that T is in preemptive mode during the call for GCStress
-//      So, it is put it in cooperative mode for the purpose of GCStress(fPremptiveGcDisabledForGcStress)
+//      So, it is put it in cooperative mode for the purpose of GCStress(fPreemptiveGcDisabledForGcStress)
 // 2)	We DoGCStress(). Start off background GC in a different thread.
 // 3)	Then the thread T is put back to preemptive mode (because that's where it was).
 //      Thread T continues execution along with the GC thread.

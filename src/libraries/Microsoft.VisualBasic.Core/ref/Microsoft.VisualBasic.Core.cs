@@ -496,6 +496,7 @@ namespace Microsoft.VisualBasic
         public static object? CallByName(object? ObjectRef, string ProcName, Microsoft.VisualBasic.CallType UseCallType, params object?[] Args) { throw null; }
         public static object? Choose(double Index, params object?[] Choice) { throw null; }
         public static string Command() { throw null; }
+        [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
         public static object CreateObject(string ProgId, string? ServerName = "") { throw null; }
         [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
         public static void DeleteSetting(string AppName, string? Section = null, string? Key = null) { }

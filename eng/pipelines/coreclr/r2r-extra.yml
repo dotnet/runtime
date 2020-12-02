@@ -1,7 +1,5 @@
 trigger: none
 
-pr: none
-
 schedules:
 - cron: "0 2 * * 0,1"
   displayName: Sat and Sun at 6:00 PM (UTC-8:00)

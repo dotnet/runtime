@@ -58,7 +58,7 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <ExeSuffix Condition="'$(TargetOS)' == 'Windows_NT'">.exe</ExeSuffix>
+    <ExeSuffix Condition="'$(TargetOS)' == 'windows'">.exe</ExeSuffix>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(OutputRid)' == '' and '$(HostRuntimeIdentifier)' != ''">
@@ -67,7 +67,7 @@
 
   <!-- Portable -->
   <PropertyGroup Condition="'$(PortableBuild)' == 'true'">
-    <OutputRid Condition="'$(TargetOS)' == 'Windows_NT'">win-$(TargetArchitecture)</OutputRid>
+    <OutputRid Condition="'$(TargetOS)' == 'windows'">win-$(TargetArchitecture)</OutputRid>
     <OutputRid Condition="'$(TargetOS)' == 'OSX'">osx-$(TargetArchitecture)</OutputRid>
     <OutputRid Condition="'$(TargetOS)' == 'Linux'">linux-$(TargetArchitecture)</OutputRid>
     <OutputRid Condition="'$(TargetOS)' == 'FreeBSD'">freebsd-$(TargetArchitecture)</OutputRid>
@@ -305,14 +305,14 @@
   </Choose>
 
   <PropertyGroup>
-    <CompressedFileExtension Condition="'$(TargetOS)' == 'Windows_NT'">.zip</CompressedFileExtension>
-    <CompressedFileExtension Condition="'$(TargetOS)' != 'Windows_NT'">.tar.gz</CompressedFileExtension>
-    <InstallerExtension Condition="'$(TargetOS)' == 'Windows_NT'">.msi</InstallerExtension>
+    <CompressedFileExtension Condition="'$(TargetOS)' == 'windows'">.zip</CompressedFileExtension>
+    <CompressedFileExtension Condition="'$(TargetOS)' != 'windows'">.tar.gz</CompressedFileExtension>
+    <InstallerExtension Condition="'$(TargetOS)' == 'windows'">.msi</InstallerExtension>
     <InstallerExtension Condition="'$(TargetOS)' == 'OSX'">.pkg</InstallerExtension>
     <InstallerExtension Condition="'$(TargetsDebian)' == 'true' or '$(TargetsUbuntu)' == 'true' or '$(TargetsLinuxMint)' == 'true' or '$(HostMachineRidTargetsDebianPackages)' == 'true'">.deb</InstallerExtension>
     <InstallerExtension Condition="'$(TargetsRhel)' == 'true' or '$(TargetsCentos)' == 'true' or '$(TargetsOpensuse)' == 'true' or '$(TargetsFedora)' == 'true' or '$(TargetsOracle)' == 'true' or '$(TargetsSles)' == 'true' or '$(HostMachineRidTargetsRpmPackages)' == 'true'">.rpm</InstallerExtension>
-    <CombinedInstallerExtension Condition="'$(TargetOS)' == 'Windows_NT'">.exe</CombinedInstallerExtension>
-    <CombinedInstallerExtension Condition="'$(TargetOS)' != 'Windows_NT'">$(InstallerExtension)</CombinedInstallerExtension>
+    <CombinedInstallerExtension Condition="'$(TargetOS)' == 'windows'">.exe</CombinedInstallerExtension>
+    <CombinedInstallerExtension Condition="'$(TargetOS)' != 'windows'">$(InstallerExtension)</CombinedInstallerExtension>
   </PropertyGroup>
 
   <!-- Use actual publishable (non-dummy) package name produced by the build system for this RID -->
@@ -331,18 +331,18 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <LibPrefix Condition="'$(TargetOS)' != 'Windows_NT'">lib</LibPrefix>
+    <LibPrefix Condition="'$(TargetOS)' != 'windows'">lib</LibPrefix>
     <LibSuffix>.so</LibSuffix>
-    <LibSuffix Condition="'$(TargetOS)' == 'Windows_NT'">.dll</LibSuffix>
+    <LibSuffix Condition="'$(TargetOS)' == 'windows'">.dll</LibSuffix>
     <LibSuffix Condition="'$(TargetOS)' == 'OSX' or '$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'tvOS'">.dylib</LibSuffix>
     <StaticLibPrefix>lib</StaticLibPrefix>
     <StaticLibSuffix>.a</StaticLibSuffix>
-    <StaticLibSuffix Condition="'$(TargetOS)' == 'Windows_NT'">.lib</StaticLibSuffix>
+    <StaticLibSuffix Condition="'$(TargetOS)' == 'windows'">.lib</StaticLibSuffix>
   </PropertyGroup>
 
   <PropertyGroup>
     <CrossGenSymbolExtension>.map</CrossGenSymbolExtension>
-    <CrossGenSymbolExtension Condition="'$(TargetOS)' == 'Windows_NT'">.ni.pdb</CrossGenSymbolExtension>
+    <CrossGenSymbolExtension Condition="'$(TargetOS)' == 'windows'">.ni.pdb</CrossGenSymbolExtension>
     <!-- OSX doesn't have crossgen symbols, yet -->
     <CrossGenSymbolExtension Condition="'$(TargetOS)' == 'OSX' or '$(TargetsMobile)' == 'true' or '$(TargetOS)' == 'FreeBSD'"></CrossGenSymbolExtension>
   </PropertyGroup>

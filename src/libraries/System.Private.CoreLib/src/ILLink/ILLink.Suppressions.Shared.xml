@@ -251,7 +251,7 @@
       <argument>ILLink</argument>
       <argument>IL2072</argument>
       <property name="Scope">member</property>
-      <property name="Target">M:System.Diagnostics.Tracing.NullableTypeInfo.WriteData(System.Diagnostics.Tracing.TraceLoggingDataCollector,System.Diagnostics.Tracing.PropertyValue)</property>
+      <property name="Target">M:System.Diagnostics.Tracing.NullableTypeInfo.WriteData(System.Diagnostics.Tracing.PropertyValue)</property>
     </attribute>
     <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
       <argument>ILLink</argument>

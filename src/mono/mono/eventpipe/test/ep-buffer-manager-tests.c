@@ -401,7 +401,7 @@ test_buffer_manager_write_events_to_file (EventPipeSerializationFormat format)
 
 	test_location = 4;
 
-	ep_buffer_manager_write_all_buffers_to_file (buffer_manager, ep_session_get_file (session), ep_perf_counter_query (), &events_written);
+	ep_buffer_manager_write_all_buffers_to_file (buffer_manager, ep_session_get_file (session), ep_perf_timestamp_get (), &events_written);
 
 	ep_raise_error_if_nok (events_written == true);
 
@@ -506,9 +506,9 @@ test_buffer_manager_perf (void)
 	test_location = 3;
 
 	while (!done) {
-		int64_t start = ep_perf_counter_query ();
+		int64_t start = ep_perf_timestamp_get ();
 		write_result = write_events (buffer_manager, thread, session, ep_event, 10 * 1000 * 1000, &events_written);
-		int64_t stop = ep_perf_counter_query ();
+		int64_t stop = ep_perf_timestamp_get ();
 
 		accumulted_buffer_manager_write_time_ticks += stop - start;
 		total_events_written += events_written;
@@ -516,9 +516,9 @@ test_buffer_manager_perf (void)
 			done = true;
 		} else {
 			bool ignore_events_written;
-			int64_t start = ep_perf_counter_query ();
-			ep_buffer_manager_write_all_buffers_to_file (buffer_manager, null_file, ep_perf_counter_query (), &ignore_events_written);
-			int64_t stop = ep_perf_counter_query ();
+			int64_t start = ep_perf_timestamp_get ();
+			ep_buffer_manager_write_all_buffers_to_file (buffer_manager, null_file, ep_perf_timestamp_get (), &ignore_events_written);
+			int64_t stop = ep_perf_timestamp_get ();
 
 			accumulted_buffer_to_null_file_time_ticks += stop - start;
 		}
@@ -540,7 +540,7 @@ test_buffer_manager_perf (void)
 	float total_events_written_per_sec = (float)total_events_written / (total_accumulted_time_sec ? total_accumulted_time_sec : 1.0);
 
 	// Measured number of events/second for one thread.
-	//TODO: Setup acceptable pass/failure metrics.
+	// TODO: Setup acceptable pass/failure metrics.
 	printf ("\n\tPerformance stats:\n");
 	printf ("\t\tTotal number of events: %i\n", total_events_written);
 	printf ("\t\tTotal time in sec: %.2f\n\t\tTotal number of events written per sec/core: %.2f\n", total_accumulted_time_sec, total_events_written_per_sec);

@@ -62,7 +62,6 @@
 #define g_ReflectionConstructorName "System.Reflection.RuntimeConstructorInfo"
 #define g_ReflectionEventInfoName "System.Reflection.EventInfo"
 #define g_ReflectionEventName "System.Reflection.RuntimeEventInfo"
-#define g_ReflectionExpandoItfName "System.Runtime.InteropServices.Expando.IExpando"
 #define g_CMExpandoToDispatchExMarshaler "System.Runtime.InteropServices.CustomMarshalers.ExpandoToDispatchExMarshaler"
 #define g_CMExpandoViewOfDispatchEx "System.Runtime.InteropServices.CustomMarshalers.ExpandoViewOfDispatchEx"
 #define g_ReflectionFieldName "System.Reflection.RuntimeFieldInfo"

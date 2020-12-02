@@ -626,13 +626,6 @@ Initialize(
 
         palError = ERROR_GEN_FAILURE;
 
-        if (FALSE == TIMEInitialize())
-        {
-            ERROR("Unable to initialize TIME support\n");
-            palError = ERROR_PALINIT_TIME;
-            goto CLEANUP6;
-        }
-
         /* Initialize the File mapping critical section. */
         if (FALSE == MAPInitialize())
         {

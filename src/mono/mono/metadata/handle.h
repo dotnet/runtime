@@ -651,6 +651,10 @@ mono_array_handle_memcpy_refs (MonoArrayHandle dest, uintptr_t dest_idx, MonoArr
 gpointer
 mono_array_handle_pin_with_size (MonoArrayHandle handle, int size, uintptr_t index, MonoGCHandle *gchandle);
 
+// Returns a pointer to the element with the given index, but does not pin
+gpointer
+mono_array_handle_addr (MonoArrayHandle handle, int size, uintptr_t index);
+
 #define MONO_ARRAY_HANDLE_PIN(handle,type,index,gchandle_out) ((type*)mono_array_handle_pin_with_size (MONO_HANDLE_CAST(MonoArray,(handle)), sizeof (type), (index), (gchandle_out)))
 
 void

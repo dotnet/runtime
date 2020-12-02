@@ -53,7 +53,7 @@ namespace System.Reflection.Emit
 
         public override bool IsByRefLike => false;
 
-        internal int MetadataTokenInternal => m_type.MetadataTokenInternal;
+        public override int MetadataToken => m_type.MetadataToken;
         #endregion
 
         #region Type Overrides

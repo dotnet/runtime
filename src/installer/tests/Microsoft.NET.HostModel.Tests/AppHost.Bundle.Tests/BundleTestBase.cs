@@ -59,13 +59,14 @@ namespace AppHost.Bundle.Tests
                 RepoDirectories = new RepoDirectoriesProvider();
             }
 
-            public TestProjectFixture PreparePublishedSelfContainedTestProject(string projectName)
+            public TestProjectFixture PreparePublishedSelfContainedTestProject(string projectName, params string[] extraArgs)
             {
                 var testFixture = new TestProjectFixture(projectName, RepoDirectories);
                 testFixture
                     .EnsureRestoredForRid(testFixture.CurrentRid, RepoDirectories.CorehostPackages)
                     .PublishProject(runtime: testFixture.CurrentRid,
-                                    outputDirectory: BundleHelper.GetPublishPath(testFixture));
+                                    outputDirectory: BundleHelper.GetPublishPath(testFixture),
+                                    extraArgs: extraArgs);
 
                 return testFixture;
             }

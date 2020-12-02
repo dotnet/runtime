@@ -85,7 +85,7 @@ ep_event_instance_init (
 	event_instance->data = data;
 	event_instance->data_len = data_len;
 
-	event_instance->timestamp = ep_perf_counter_query ();
+	event_instance->timestamp = ep_perf_timestamp_get ();
 	EP_ASSERT (event_instance->timestamp > 0);
 
 	ep_event_instance_ensure_consistency (event_instance);

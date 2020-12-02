@@ -13,7 +13,7 @@ echo corefx tree, including tests, and then copying the built runtime layout and
 echo to the ARM/ARM64 machine.
 echo.
 echo Arguments:
-echo ^<runtime path^>        -- Path to corefx-built runtime "layout", e.g. _\fx\bin\testhost\netcoreapp-Windows_NT-Release-arm
+echo ^<runtime path^>        -- Path to corefx-built runtime "layout", e.g. _\fx\bin\testhost\netcoreapp-windows-Release-arm
 echo ^<tests dir^>           -- Path to corefx test tree, e.g., _\fx\bin\tests
 echo ^<test exclusion file^> -- Path to test exclusion file, e.g., C:\coreclr\tests\arm\corefx_test_exclusions.txt
 echo ^<architecture^>        -- Architecture to run, either ARM or ARM64. (We can't depend on PROCESSOR_ARCHITECTURE because
@@ -56,7 +56,7 @@ set _skipped=0
 set _total=0
 
 pushd %_tests_dir%
-for /F %%i in ('dir /s /b /A:D netcoreapp-Windows_NT-Release-%_architecture%') do (
+for /F %%i in ('dir /s /b /A:D netcoreapp-windows-Release-%_architecture%') do (
     if exist %%i\RunTests.cmd call :one %%i
 )
 popd
@@ -70,15 +70,15 @@ exit /b 0
 set /A _total=_total + 1
 
 REM Extract out the test name from the path.
-REM The path looks like: e:\gh\corefx\bin\tests\System.Management.Tests\netcoreapp-Windows_NT-Release-arm
+REM The path looks like: e:\gh\corefx\bin\tests\System.Management.Tests\netcoreapp-windows-Release-arm
 REM From this, we want System.Management.Tests to compare against the exclusion file, which should be a list
 REM of test names to skip.
 
 set _t1=%1
 if /i %_architecture%==arm (
-    set _t2=%_t1:\netcoreapp-Windows_NT-Release-arm=%
+    set _t2=%_t1:\netcoreapp-windows-Release-arm=%
 ) else (
-    set _t2=%_t1:\netcoreapp-Windows_NT-Release-arm64=%
+    set _t2=%_t1:\netcoreapp-windows-Release-arm64=%
 )
 for /F %%j in ("%_t2%") do set _t3=%%~nxj
 findstr /i %_t3% %_exclusion_file% >nul

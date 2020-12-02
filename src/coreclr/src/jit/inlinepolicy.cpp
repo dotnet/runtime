@@ -1536,6 +1536,7 @@ void DiscretionaryPolicy::ComputeOpcodeBin(OPCODE opcode)
 
         case CEE_RET:
             m_ReturnCount++;
+            break;
 
         default:
             break;

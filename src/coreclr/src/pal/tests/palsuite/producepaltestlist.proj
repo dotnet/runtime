@@ -13,7 +13,7 @@
             <FilteredTestList Remove="@(ExcludeList)" />
         </ItemGroup>
 
-        <WriteLinesToFile File="$(BinDir)paltests/paltestlist.txt"
+        <WriteLinesToFile File="$(RuntimeBinDir)paltests/paltestlist.txt"
                           Lines="@(FilteredTestList)"
                           Overwrite="true"
                           WriteOnlyWhenDifferent="true"/>

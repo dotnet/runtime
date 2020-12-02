@@ -47,7 +47,7 @@ namespace Microsoft.Extensions.Internal
 
                 [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2067:UnrecognizedReflectionPattern",
                     Justification = "CreateInstance is only called on a ValueType, which will always have a default constructor.")]
-                object? CreateValueType(Type t) => Activator.CreateInstance(t);
+                static object? CreateValueType(Type t) => Activator.CreateInstance(t);
 
                 // Handle nullable enums
                 if (defaultValue != null &&

@@ -697,6 +697,7 @@ namespace System.Diagnostics
                             }
                             else
                             {
+                                Debug.Assert(counterNamesObject is string[], $"Expected string[], got '{counterNamesObject}' with kind '{categoryKey.GetValueKind("Counter Names")}'for category '{_categoryName}'");
                                 string[] counterNames = (string[])counterNamesObject;
                                 for (int i = 0; i < counterNames.Length; i++)
                                     counterNames[i] = counterNames[i].ToLowerInvariant();

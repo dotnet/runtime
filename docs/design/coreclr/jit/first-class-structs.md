@@ -328,7 +328,7 @@ static foo getfoo() { return new foo(); }
     the struct may or may not be passed or returned directly.
   * Unfortunately, there is not currently a scenario or test case for this issue.
 
-* [\#10879 Unix: Unnecessary struct copy while passsing struct of size <=16](https://github.com/dotnet/runtime/issues/10879)
+* [\#10879 Unix: Unnecessary struct copy while passing struct of size <=16](https://github.com/dotnet/runtime/issues/10879)
 * [\#9839 [RyuJIT] Eliminate unecessary copies when passing structs](https://github.com/dotnet/runtime/issues/9839)
   * These require changing both the callsite and the callee to avoid copying the parameter onto the stack.
 

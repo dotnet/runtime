@@ -127,6 +127,7 @@ DumpDataTarget::ReadVirtual(
     size_t read = 0;
     if (!m_crashInfo.ReadProcessMemory((void*)(ULONG_PTR)address, buffer, size, &read))
     {
+        TRACE("DumpDataTarget::ReadVirtual %p %d FAILED\n", (void*)address, size);
         *done = 0;
         return E_FAIL;
     }

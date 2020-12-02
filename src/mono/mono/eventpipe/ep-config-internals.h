@@ -53,4 +53,4 @@ config_enable_disable (
 	bool enable);
 
 #endif /* ENABLE_PERFTRACING */
-#endif /** __EVENTPIPE_CONFIGURATION_INTERNALS_H__ **/
+#endif /* __EVENTPIPE_CONFIGURATION_INTERNALS_H__ */

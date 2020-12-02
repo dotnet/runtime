@@ -24,8 +24,8 @@ struct _EventPipeSession {
 #else
 struct _EventPipeSession_Internal {
 #endif
-	// When the session is of IPC type, this becomes a handle to the streaming thread.
-	EventPipeThread ipc_streaming_thread;
+	// When the session is of IPC type, this becomes a reference to the streaming thread.
+	EventPipeThread *ipc_streaming_thread;
 	// Event object used to signal Disable that the IPC streaming thread is done.
 	ep_rt_wait_event_handle_t rt_thread_shutdown_event;
 	// The set of configurations for each provider in the session.
@@ -37,7 +37,7 @@ struct _EventPipeSession_Internal {
 	// For synchoronous sessions.
 	EventPipeSessionSynchronousCallback synchronous_callback;
 	// Start date and time in UTC.
-	ep_systemtime_t session_start_time;
+	ep_system_timestamp_t session_start_time;
 	// Start timestamp.
 	ep_timestamp_t session_start_timestamp;
 	uint32_t index;
@@ -66,7 +66,7 @@ EP_DEFINE_GETTER(EventPipeSession *, session, EventPipeSessionProviderList *, pr
 EP_DEFINE_GETTER(EventPipeSession *, session, EventPipeBufferManager *, buffer_manager)
 EP_DEFINE_GETTER_REF(EventPipeSession *, session, volatile uint32_t *, rundown_enabled)
 EP_DEFINE_GETTER(EventPipeSession *, session, bool, rundown_requested)
-EP_DEFINE_GETTER(EventPipeSession *, session, ep_systemtime_t, session_start_time)
+EP_DEFINE_GETTER(EventPipeSession *, session, ep_timestamp_t, session_start_time)
 EP_DEFINE_GETTER(EventPipeSession *, session, ep_timestamp_t, session_start_timestamp)
 EP_DEFINE_GETTER(EventPipeSession *, session, EventPipeFile *, file)
 
@@ -180,4 +180,4 @@ ep_session_set_ipc_streaming_enabled (
 	bool enabled);
 
 #endif /* ENABLE_PERFTRACING */
-#endif /** __EVENTPIPE_SESSION_H__ **/
+#endif /* __EVENTPIPE_SESSION_H__ */

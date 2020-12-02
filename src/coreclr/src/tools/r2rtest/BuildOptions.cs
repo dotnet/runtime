@@ -34,6 +34,7 @@ namespace R2RTest
         public bool LargeBubble { get; set; }
         public bool Composite { get; set; }
         public int Crossgen2Parallelism { get; set; }
+        public FileInfo Crossgen2JitPath { get; set; }
         public int CompilationTimeoutMinutes { get; set; }
         public int ExecutionTimeoutMinutes { get; set; }
         public DirectoryInfo[] ReferencePath { get; set; }
@@ -119,7 +120,7 @@ namespace R2RTest
                 List<string> cpaotReferencePaths = new List<string>();
                 cpaotReferencePaths.Add(CoreRootOutputPath(CompilerIndex.CPAOT, isFramework));
                 cpaotReferencePaths.AddRange(overrideReferencePaths != null ? overrideReferencePaths : ReferencePaths());
-                runners.Add(new Crossgen2Runner(this, new Crossgen2RunnerOptions(), cpaotReferencePaths, overrideOutputPath));
+                runners.Add(new Crossgen2Runner(this, new Crossgen2RunnerOptions() { Composite = this.Composite }, cpaotReferencePaths, overrideOutputPath));
             }
 
             if (Crossgen)

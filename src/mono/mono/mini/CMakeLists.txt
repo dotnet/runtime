@@ -12,7 +12,7 @@ include_directories(
   ${PROJECT_BINARY_DIR}/
   ${PROJECT_BINARY_DIR}/../..
   ${PROJECT_BINARY_DIR}/../../mono/eglib
-  ${CMAKE_SOURCE_DIR}/
+  ${CMAKE_CURRENT_SOURCE_DIR}/../..
   ${PROJECT_SOURCE_DIR}/../
   ${PROJECT_SOURCE_DIR}/../eglib
   ${PROJECT_SOURCE_DIR}/../sgen)
@@ -50,8 +50,10 @@ set(icu_shim_sources_base
     ${pal_icushim_sources_base})
 addprefix(icu_shim_sources "${ICU_SHIM_PATH}" "${icu_shim_sources_base}")
 set_source_files_properties(${icu_shim_sources} PROPERTIES COMPILE_DEFINITIONS OSX_ICU_LIBRARY_PATH="${OSX_ICU_LIBRARY_PATH}")
-set_source_files_properties(${icu_shim_sources} PROPERTIES COMPILE_FLAGS "-I${ICU_INCLUDEDIR} -I${CMAKE_SOURCE_DIR}/../libraries/Native/Unix/System.Globalization.Native/ -I${CMAKE_SOURCE_DIR}/../libraries/Native/Unix/Common/ ${ICU_FLAGS}")
-set(ICU_LDFLAGS "-L${ICU_LIBDIR}")
+set_source_files_properties(${icu_shim_sources} PROPERTIES COMPILE_FLAGS "-I${ICU_INCLUDEDIR} -I${CMAKE_CURRENT_SOURCE_DIR}/../../../libraries/Native/Unix/System.Globalization.Native/ -I${CMAKE_CURRENT_SOURCE_DIR}/../../../libraries/Native/Unix/Common/ ${ICU_FLAGS}")
+if(ICU_LIBDIR)
+  set(ICU_LDFLAGS "-L${ICU_LIBDIR}")
+endif()
 endif()
 
 #
@@ -281,6 +283,8 @@ if(HOST_DARWIN)
 set(OS_LIBS "-framework CoreFoundation" "-framework Foundation")
 elseif(HOST_IOS)
 set(OS_LIBS "-framework CoreFoundation" "-lobjc" "-lc++")
+elseif(HOST_ANDROID)
+set(OS_LIBS m dl log)
 elseif(HOST_LINUX)
 set(OS_LIBS pthread m dl)
 endif()
@@ -303,7 +307,10 @@ if(NOT DISABLE_SHARED_LIBS)
   set_target_properties(monosgen PROPERTIES LIBRARY_OUTPUT_DIRECTORY .libs)
   target_link_libraries(monosgen ${OS_LIBS} ${ICONV_LIB} ${LLVM_LIBS} ${ICU_LIBS})
   if(ICU_LDFLAGS)
-    set_target_properties(monosgen PROPERTIES LINK_FLAGS ${ICU_LDFLAGS})
+    set_property(TARGET monosgen APPEND_STRING PROPERTY LINK_FLAGS ${ICU_LDFLAGS})
+  endif()
+  if(TARGET_DARWIN OR TARGET_IOS OR TARGET_TVOS)
+    set_property(TARGET monosgen APPEND_STRING PROPERTY LINK_FLAGS "-Wl,-compatibility_version -Wl,2.0 -Wl,-current_version -Wl,2.0")
   endif()
   install(TARGETS monosgen LIBRARY)
 endif()
@@ -360,11 +367,11 @@ add_custom_command(
 )
 
 if(NOT DISABLE_EXECUTABLES)
-set(CMAKE_SKIP_RPATH 1)
-add_executable(mono-sgen "main-sgen.c")
-target_link_libraries(mono-sgen monosgen-static ${OS_LIBS} ${ICONV_LIB} ${LLVM_LIBS} ${ICU_LIBS})
-if(ICU_LDFLAGS)
-  set_target_properties(mono-sgen PROPERTIES LINK_FLAGS ${ICU_LDFLAGS})
-endif()
-install(TARGETS mono-sgen RUNTIME)
+  set(CMAKE_SKIP_RPATH 1)
+  add_executable(mono-sgen "main-sgen.c")
+  target_link_libraries(mono-sgen monosgen-static ${OS_LIBS} ${ICONV_LIB} ${LLVM_LIBS} ${ICU_LIBS})
+  if(ICU_LDFLAGS)
+    set_target_properties(mono-sgen PROPERTIES LINK_FLAGS ${ICU_LDFLAGS})
+  endif()
+  install(TARGETS mono-sgen RUNTIME)
 endif()

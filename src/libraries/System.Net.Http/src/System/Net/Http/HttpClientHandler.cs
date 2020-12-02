@@ -9,16 +9,17 @@ using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 using System.Threading.Tasks;
+#if TARGET_BROWSER
+using HttpHandlerType = System.Net.Http.BrowserHttpHandler;
+#else
+using HttpHandlerType = System.Net.Http.SocketsHttpHandler;
+#endif
 
 namespace System.Net.Http
 {
     public partial class HttpClientHandler : HttpMessageHandler
     {
-#if TARGET_BROWSER
-        private readonly BrowserHttpHandler _underlyingHandler;
-#else
-        private readonly SocketsHttpHandler _underlyingHandler;
-#endif
+        private readonly HttpHandlerType _underlyingHandler;
         private readonly DiagnosticsHandler? _diagnosticsHandler;
         private ClientCertificateOption _clientCertificateOptions;
 
@@ -26,11 +27,7 @@ namespace System.Net.Http
 
         public HttpClientHandler()
         {
-#if TARGET_BROWSER
-            _underlyingHandler = new BrowserHttpHandler();
-#else
-            _underlyingHandler = new SocketsHttpHandler();
-#endif
+            _underlyingHandler = new HttpHandlerType();
             if (DiagnosticsHandler.IsGloballyEnabled())
             {
                 _diagnosticsHandler = new DiagnosticsHandler(_underlyingHandler);
@@ -49,9 +46,9 @@ namespace System.Net.Http
             base.Dispose(disposing);
         }
 
-        public virtual bool SupportsAutomaticDecompression => _underlyingHandler.SupportsAutomaticDecompression;
-        public virtual bool SupportsProxy => _underlyingHandler.SupportsProxy;
-        public virtual bool SupportsRedirectConfiguration => _underlyingHandler.SupportsRedirectConfiguration;
+        public virtual bool SupportsAutomaticDecompression => HttpHandlerType.SupportsAutomaticDecompression;
+        public virtual bool SupportsProxy => HttpHandlerType.SupportsProxy;
+        public virtual bool SupportsRedirectConfiguration => HttpHandlerType.SupportsRedirectConfiguration;
 
         [UnsupportedOSPlatform("browser")]
         public bool UseCookies
@@ -290,6 +287,7 @@ namespace System.Net.Http
 
         public IDictionary<string, object?> Properties => _underlyingHandler.Properties;
 
+        [UnsupportedOSPlatform("browser")]
         protected internal override HttpResponseMessage Send(HttpRequestMessage request,
             CancellationToken cancellationToken)
         {

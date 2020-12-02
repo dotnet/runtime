@@ -28,6 +28,7 @@
     <ClCompile Include="ep-fastserializer-tests.c" />
     <ClCompile Include="ep-file-tests.c" />
     <ClCompile Include="ep-provider-callback-dataqueue-tests.c" />
+    <ClCompile Include="ep-rt-tests.c" />
     <ClCompile Include="ep-session-tests.c" />
     <ClCompile Include="ep-setup-tests.c" />
     <ClCompile Include="ep-teardown-tests.c" />

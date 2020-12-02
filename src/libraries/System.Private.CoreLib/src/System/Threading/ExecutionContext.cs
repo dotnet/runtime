@@ -222,6 +222,7 @@ namespace System.Threading
         /// It will not automatically be reverted unlike <seealso cref="ExecutionContext.Run"/>.
         /// </remarks>
         /// <param name="executionContext">The ExecutionContext to set.</param>
+        /// <exception cref="InvalidOperationException"><paramref name="executionContext"/> is null.</exception>
         public static void Restore(ExecutionContext executionContext)
         {
             if (executionContext == null)
@@ -557,7 +558,7 @@ namespace System.Threading
         }
     }
 
-    public struct AsyncFlowControl : IDisposable
+    public struct AsyncFlowControl : IEquatable<AsyncFlowControl>, IDisposable
     {
         private Thread? _thread;
 
@@ -604,7 +605,7 @@ namespace System.Threading
 
         public override bool Equals(object? obj)
         {
-            return obj is AsyncFlowControl && Equals((AsyncFlowControl)obj);
+            return obj is AsyncFlowControl asyncControl && Equals(asyncControl);
         }
 
         public bool Equals(AsyncFlowControl obj)

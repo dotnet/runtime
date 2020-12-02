@@ -104,10 +104,7 @@ namespace System.StubHelpers
                     // + 1 for the null character from the user.  + 1 for the null character we put in.
                     pbNativeBuffer = (byte*)Marshal.AllocCoTaskMem(nb + 2);
 
-                    fixed (byte* pBytes = &bytes[0])
-                    {
-                        Buffer.Memcpy(pbNativeBuffer, pBytes, nb);
-                    }
+                    Buffer.Memmove(ref *pbNativeBuffer, ref MemoryMarshal.GetArrayDataReference(bytes), (nuint)nb);
                 }
             }
 
@@ -339,13 +336,7 @@ namespace System.StubHelpers
                 }
 
                 // copy characters from the managed string
-                fixed (char* ch = strManaged)
-                {
-                    Buffer.Memcpy(
-                        ptrToFirstChar,
-                        (byte*)ch,
-                        (strManaged.Length + 1) * 2);
-                }
+                Buffer.Memmove(ref *(char*)ptrToFirstChar, ref strManaged.GetRawStringData(), (nuint)strManaged.Length + 1);
 
                 // copy the trail byte if present
                 if (hasTrailByte)
@@ -438,11 +429,9 @@ namespace System.StubHelpers
             {
                 byte[] bytes = AnsiCharMarshaler.DoAnsiConversion(strManaged, fBestFit, fThrowOnUnmappableChar, out int nbytesused);
 
-                Debug.Assert(nbytesused < nbytes, "Insufficient buffer allocated in VBByValStrMarshaler.ConvertToNative");
-                fixed (byte* pBytes = &bytes[0])
-                {
-                    Buffer.Memcpy(pNative, pBytes, nbytesused);
-                }
+                Debug.Assert(nbytesused >= 0 && nbytesused < nbytes, "Insufficient buffer allocated in VBByValStrMarshaler.ConvertToNative");
+
+                Buffer.Memmove(ref *pNative, ref MemoryMarshal.GetArrayDataReference(bytes), (nuint)nbytesused);
 
                 pNative[nbytesused] = 0;
                 *pLength = nbytesused;
@@ -489,10 +478,11 @@ namespace System.StubHelpers
 
             uint length = (uint)nb;
             IntPtr bstr = Marshal.AllocBSTRByteLen(length);
-            fixed (byte* firstByte = bytes)
+            if (bytes != null)
             {
-                Buffer.Memmove((byte*)bstr, firstByte, length);
+                Buffer.Memmove(ref *(byte*)bstr, ref MemoryMarshal.GetArrayDataReference(bytes), length);
             }
+
             return bstr;
         }
 
@@ -845,11 +835,12 @@ namespace System.StubHelpers
             else
             {
                 // marshal the object as Unicode string (UnmanagedType.LPWStr)
-
                 int allocSize = (pManagedHome.Length + 1) * 2;
                 pNativeHome = Marshal.AllocCoTaskMem(allocSize);
-
-                string.InternalCopy(pManagedHome, pNativeHome, allocSize);
+                unsafe
+                {
+                    Buffer.Memmove(ref *(char*)pNativeHome, ref pManagedHome.GetRawStringData(), (nuint)pManagedHome.Length + 1);
+                }
             }
 
             return pNativeHome;
@@ -872,14 +863,23 @@ namespace System.StubHelpers
             // |                                    | |
             // +====================================+ / <-- native home
 
+            // Cache StringBuilder capacity and length to ensure we don't allocate a certain amount of
+            // native memory and then walk beyond its end if the StringBuilder concurrently grows erroneously.
+            int pManagedHomeCapacity = pManagedHome.Capacity;
+            int pManagedHomeLength = pManagedHome.Length;
+            if (pManagedHomeLength > pManagedHomeCapacity)
+            {
+                ThrowHelper.ThrowInvalidOperationException();
+            }
+
             // Note that StringBuilder.Capacity is the number of characters NOT including any terminators.
 
             if (IsAnsi(dwFlags))
             {
-                StubHelpers.CheckStringLength(pManagedHome.Capacity);
+                StubHelpers.CheckStringLength(pManagedHomeCapacity);
 
                 // marshal the object as Ansi string (UnmanagedType.LPStr)
-                int allocSize = checked((pManagedHome.Capacity * Marshal.SystemMaxDBCSCharSize) + 4);
+                int allocSize = checked((pManagedHomeCapacity * Marshal.SystemMaxDBCSCharSize) + 4);
                 pNativeHome = Marshal.AllocCoTaskMem(allocSize);
 
                 byte* ptr = (byte*)pNativeHome;
@@ -903,7 +903,7 @@ namespace System.StubHelpers
             else
             {
                 // marshal the object as Unicode string (UnmanagedType.LPWStr)
-                int allocSize = checked((pManagedHome.Capacity * 2) + 4);
+                int allocSize = checked((pManagedHomeCapacity * 2) + 4);
                 pNativeHome = Marshal.AllocCoTaskMem(allocSize);
 
                 byte* ptr = (byte*)pNativeHome;
@@ -912,10 +912,10 @@ namespace System.StubHelpers
 
                 if (IsIn(dwFlags))
                 {
-                    int length = pManagedHome.Length * 2;
-                    pManagedHome.InternalCopy(pNativeHome, length);
+                    pManagedHome.InternalCopy(pNativeHome, pManagedHomeLength);
 
                     // null-terminate the native string
+                    int length = pManagedHomeLength * 2;
                     *(ptr + length + 0) = 0;
                     *(ptr + length + 1) = 0;
                 }

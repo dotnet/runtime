@@ -125,4 +125,4 @@ uint8_t *
 ep_event_payload_get_flat_data (EventPipeEventPayload *event_payload);
 
 #endif /* ENABLE_PERFTRACING */
-#endif /** __EVENTPIPE_EVENT_PAYLOAD_H__ **/
+#endif /* __EVENTPIPE_EVENT_PAYLOAD_H__ */

@@ -489,7 +489,7 @@ void Compiler::optUpdateLoopsBeforeRemoveBlock(BasicBlock* block, bool skipUnmar
                     break;
                 }
 
-                __fallthrough;
+                FALLTHROUGH;
 
             case BBJ_ALWAYS:
                 noway_assert(block->bbJumpDest);
@@ -550,7 +550,7 @@ void Compiler::optUpdateLoopsBeforeRemoveBlock(BasicBlock* block, bool skipUnmar
                             break;
                         }
 
-                        __fallthrough;
+                        FALLTHROUGH;
 
                     case BBJ_ALWAYS:
                         noway_assert(auxBlock->bbJumpDest);
@@ -1392,7 +1392,7 @@ void Compiler::optCheckPreds()
                     {
                         break;
                     }
-                    __fallthrough;
+                    FALLTHROUGH;
                 case BBJ_NONE:
                     noway_assert(blockPred->bbNext == block);
                     break;
@@ -3207,7 +3207,7 @@ bool Compiler::optComputeLoopRep(int        constInit,
             {
                 case GT_SUB:
                     iterInc = -iterInc;
-                    __fallthrough;
+                    FALLTHROUGH;
 
                 case GT_ADD:
                     if (constInitX != constLimitX)
@@ -3254,7 +3254,7 @@ bool Compiler::optComputeLoopRep(int        constInit,
             {
                 case GT_SUB:
                     iterInc = -iterInc;
-                    __fallthrough;
+                    FALLTHROUGH;
 
                 case GT_ADD:
                     if (constInitX < constLimitX)
@@ -3301,7 +3301,7 @@ bool Compiler::optComputeLoopRep(int        constInit,
             {
                 case GT_SUB:
                     iterInc = -iterInc;
-                    __fallthrough;
+                    FALLTHROUGH;
 
                 case GT_ADD:
                     if (constInitX <= constLimitX)
@@ -3348,7 +3348,7 @@ bool Compiler::optComputeLoopRep(int        constInit,
             {
                 case GT_SUB:
                     iterInc = -iterInc;
-                    __fallthrough;
+                    FALLTHROUGH;
 
                 case GT_ADD:
                     if (constInitX > constLimitX)
@@ -3395,7 +3395,7 @@ bool Compiler::optComputeLoopRep(int        constInit,
             {
                 case GT_SUB:
                     iterInc = -iterInc;
-                    __fallthrough;
+                    FALLTHROUGH;
 
                 case GT_ADD:
                     if (constInitX >= constLimitX)
@@ -5780,7 +5780,7 @@ bool Compiler::optNarrowTree(GenTree* tree, var_types srct, var_types dstt, Valu
                     noway_assert(doit == false);
                     return false;
                 }
-                __fallthrough;
+                FALLTHROUGH;
 
             case GT_OR:
             case GT_XOR:
@@ -7522,7 +7522,7 @@ void Compiler::fgCreateLoopPreHeader(unsigned lnum)
                     noway_assert(predBlock->bbJumpDest != top);
                     break;
                 }
-                __fallthrough;
+                FALLTHROUGH;
 
             case BBJ_ALWAYS:
             case BBJ_EHCATCHRET:
@@ -7561,6 +7561,7 @@ void Compiler::fgCreateLoopPreHeader(unsigned lnum)
                         preHead->bbFlags |= BBF_JMP_TARGET | BBF_HAS_LABEL;
                     }
                 } while (++jumpTab, --jumpCnt);
+                break;
 
             default:
                 noway_assert(!"Unexpected bbJumpKind");

@@ -34,7 +34,7 @@ ep_buffer_alloc (
 	instance->limit = instance->buffer + buffer_size;
 	instance->current = ep_buffer_get_next_aligned_address (instance, instance->buffer);
 
-	instance->creation_timestamp = ep_perf_counter_query ();
+	instance->creation_timestamp = ep_perf_timestamp_get ();
 	EP_ASSERT (instance->creation_timestamp > 0);
 
 	instance->current_read_event = NULL;

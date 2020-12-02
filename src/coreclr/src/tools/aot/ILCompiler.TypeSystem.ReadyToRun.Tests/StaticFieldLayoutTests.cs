@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Buffers.Binary;
 using System.Linq;
 
 using Internal.TypeSystem;
@@ -280,10 +281,7 @@ namespace TypeSystemTests
 
             Assert.Equal(4, rvaData.Length);
 
-            int value = rvaData[0] |
-                rvaData[1] << 8 |
-                rvaData[2] << 16 |
-                rvaData[3] << 24;
+            int value = BinaryPrimitives.ReadInt32LittleEndian(rvaData);
 
             Assert.Equal(0x78563412, value);
         }

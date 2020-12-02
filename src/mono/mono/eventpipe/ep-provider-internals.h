@@ -41,4 +41,4 @@ void
 provider_invoke_callback (EventPipeProviderCallbackData *provider_callback_data);
 
 #endif /* ENABLE_PERFTRACING */
-#endif /** __EVENTPIPE_PROVIDER_INTERNALS_H__ **/
+#endif /* __EVENTPIPE_PROVIDER_INTERNALS_H__ */

@@ -4,10 +4,19 @@
 using System;
 using System.Runtime;
 using System.Runtime.CompilerServices;
+using System.Text.RegularExpressions;
 using System.Threading;
 
 public static class BasicTest
 {
+    public class MCJTestClass
+    {
+    }
+
+    public struct MCJTestStruct
+    {
+    }
+
     private static int Main()
     {
         const int Pass = 100;
@@ -18,9 +27,22 @@ public static class BasicTest
         // Let multi-core JIT start jitting
         Thread.Sleep(100);
 
-        PromoteToTier1(Foo, () => FooWithLoop(2));
+        MCJTestStruct s;
+        PromoteToTier1(Foo, () => FooWithLoop(2), () => FooWithGeneric<int>(3),
+                       () => FooWithGeneric<string>("MCJ"),
+                       () => FooWithGeneric<MCJTestClass>(null),
+                       () => FooWithGeneric<MCJTestStruct>(s),
+                       () => FooWithGeneric<Regex>(null),
+                       () => FooWithGeneric(RegexOptions.IgnoreCase));
+
         Foo();
         FooWithLoop(2);
+        FooWithGeneric<int>(3);
+        FooWithGeneric<string>("MCJ");
+        FooWithGeneric<MCJTestClass>(null);
+        FooWithGeneric<MCJTestStruct>(s);
+        FooWithGeneric<Regex>(null);
+        FooWithGeneric(RegexOptions.IgnoreCase);
 
         ProfileOptimization.StartProfile(null);
         return Pass;
@@ -45,6 +67,16 @@ public static class BasicTest
             sum += i;
         }
         return sum;
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static void FooWithGeneric<T>(T n)
+    {
+        FooWithGeneric2();
+    }
+
+    private static void FooWithGeneric2()
+    {
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
