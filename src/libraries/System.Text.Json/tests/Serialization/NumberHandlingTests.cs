@@ -599,6 +599,7 @@ namespace System.Text.Json.Serialization.Tests
             }
         }
 
+        [SkipOnCoreClr("Long running test on Checked mode", RuntimeConfiguration.Checked)]
         [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/39674", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoInterpreter))]
         public static void DictionariesRoundTrip()

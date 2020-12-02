@@ -3115,6 +3115,7 @@ namespace System.Text.Json.Tests
         }
 
         // https://github.com/dotnet/runtime/issues/30746
+        [SkipOnCoreClr("Long running test on Checked mode", RuntimeConfiguration.Checked)]
         [Theory]
         [InlineData(true, true)]
         [InlineData(true, false)]

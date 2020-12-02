@@ -1809,6 +1809,7 @@ namespace System.Text.Json.Tests
             }
         }
 
+        [SkipOnCoreClr("Long running test on Checked mode", RuntimeConfiguration.Checked)]
         [Theory]
         [InlineData("{]")]
         [InlineData("[}")]

@@ -124,6 +124,7 @@ namespace System.Text.Json.Serialization.Tests
         // this options is not the default options instance the tests will not use previously cached metadata.
         private JsonSerializerOptions s_options = new JsonSerializerOptions();
 
+        [SkipOnCoreClr("Long running test on Checked mode", RuntimeConfiguration.Checked)]
         [Fact]
         public async Task MultipleTypes()
         {

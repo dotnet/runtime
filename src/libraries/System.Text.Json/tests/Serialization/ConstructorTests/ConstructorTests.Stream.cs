@@ -10,6 +10,7 @@ namespace System.Text.Json.Serialization.Tests
 {
     public abstract partial class ConstructorTests
     {
+        [SkipOnCoreClr("Long running test on Checked mode", RuntimeConfiguration.Checked)]
         [Fact]
         public async Task ReadSimpleObjectAsync()
         {

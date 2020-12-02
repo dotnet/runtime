@@ -470,6 +470,7 @@ namespace System.Text.Json.Tests
                     new WrappedMemoryStream(canRead: true, canWrite: false, canSeek: false, data)));
         }
 
+        [SkipOnCoreClr("Long running test on Checked mode", RuntimeConfiguration.Checked)]
         [Theory]
         [MemberData(nameof(BadBOMCases))]
         public static Task ParseJson_UnseekableStream_Async_BadBOM(string json)
