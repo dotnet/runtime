@@ -16,8 +16,7 @@ namespace System.Diagnostics
 {
     public partial class Process : IDisposable
     {
-        private static readonly UTF8Encoding s_utf8NoBom =
-            new UTF8Encoding(encoderShouldEmitUTF8Identifier: false);
+        private static readonly Encoding s_utf8NoBom = Encoding.Default;
         private static volatile bool s_initialized;
         private static readonly object s_initializedGate = new object();
         private static readonly ReaderWriterLockSlim s_processStartLock = new ReaderWriterLockSlim();
