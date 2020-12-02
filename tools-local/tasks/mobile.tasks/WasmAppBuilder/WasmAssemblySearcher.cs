@@ -23,15 +23,15 @@ public class WasmAssemblySearcher : Task
     public bool SkipMissingAssemblies { get; set; }
 
     // Either one of these two need to be set
-    public ITaskItem[]? AssemblySearchPaths { get; set; }
-    public ITaskItem[]? Assemblies { get; set; }
-    public ITaskItem[]? ExtraAssemblies { get; set; }
+    public string[]? AssemblySearchPaths { get; set; }
+    public string[]? Assemblies { get; set; }
+    public string[]? ExtraAssemblies { get; set; }
 
     // The set of assemblies the app will use
     [Output]
-    public ITaskItem[]? ReferencedAssemblies { get; set; }
+    public string[]? ReferencedAssemblies { get; set; }
 
-    private SortedDictionary<string, Assembly>? _assemblies;
+    private SortedDictionary<string, Assembly> _assemblies = new SortedDictionary<string, Assembly>();
     private Resolver? _resolver;
 
     public override bool Execute ()
@@ -40,17 +40,15 @@ public class WasmAssemblySearcher : Task
             throw new ArgumentException("Either the AssemblySearchPaths or the Assemblies property needs to be set.");
 
         var paths = new List<string>();
-        _assemblies = new SortedDictionary<string, Assembly>();
 
         if (AssemblySearchPaths != null)
         {
             // Collect and load assemblies used by the app
-            foreach (var v in AssemblySearchPaths!)
+            foreach (var path in AssemblySearchPaths!)
             {
-                var dir = v.ItemSpec;
-                if (!Directory.Exists(dir))
-                    throw new ArgumentException($"Directory '{dir}' doesn't exist or not a directory.");
-                paths.Add(dir);
+                if (!Directory.Exists(path))
+                    throw new ArgumentException($"Directory '{path}' doesn't exist or not a directory.");
+                paths.Add(path);
             }
             _resolver = new Resolver(paths);
             var mlc = new MetadataLoadContext(_resolver, "System.Private.CoreLib");
@@ -60,11 +58,11 @@ public class WasmAssemblySearcher : Task
 
             if (ExtraAssemblies != null)
             {
-                foreach (var item in ExtraAssemblies)
+                foreach (var asm in ExtraAssemblies)
                 {
                     try
                     {
-                        var refAssembly = mlc.LoadFromAssemblyPath(item.ItemSpec);
+                        var refAssembly = mlc.LoadFromAssemblyPath(asm);
                         Add(mlc, refAssembly);
                     }
                     catch (System.IO.FileLoadException)
@@ -79,18 +77,18 @@ public class WasmAssemblySearcher : Task
         {
             string corelibPath = string.Empty;
             string runtimeSourceDir = string.Empty;
-            foreach (var v in Assemblies!)
+            foreach (var asm in Assemblies!)
             {
-                if (v.ItemSpec.EndsWith ("System.Private.CoreLib.dll"))
-                    corelibPath = Path.GetDirectoryName (v.ItemSpec)!;
+                if (asm.EndsWith ("System.Private.CoreLib.dll"))
+                    corelibPath = Path.GetDirectoryName (asm)!;
             }
             runtimeSourceDir = corelibPath!;
             _resolver = new Resolver(new List<string>() { corelibPath });
             var mlc = new MetadataLoadContext(_resolver, "System.Private.CoreLib");
 
-            foreach (var v in Assemblies!)
+            foreach (var asm in Assemblies!)
             {
-                var assembly = mlc.LoadFromAssemblyPath(v.ItemSpec);
+                var assembly = mlc.LoadFromAssemblyPath(asm);
                 Add(mlc, assembly);
             }
         }
@@ -100,14 +98,14 @@ public class WasmAssemblySearcher : Task
         return true;
     }
 
-    private ITaskItem[] GetOutputReferencedAssemblies()
+    private string[] GetOutputReferencedAssemblies()
     {
         int count = 0;
-        ITaskItem[] items = new TaskItem[_assemblies!.Count];
+        var items = new string[_assemblies.Count];
 
         foreach (var asm in _assemblies)
         {
-            items[count++] = new TaskItem(asm.Value.Location);
+            items[count++] = new string(asm.Value.Location);
         }
 
         return items;
