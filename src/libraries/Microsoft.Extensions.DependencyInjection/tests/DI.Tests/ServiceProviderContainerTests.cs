@@ -281,13 +281,16 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
         }
 
         [Fact]
-        public void GetAsyncService_DisposeAsyncOnSameThread_ThrowsAndDoesNotHang()
+        public void GetAsyncService_DisposeAsyncOnSameThread_ThrowsAndDoesNotHangAndDisposeAsyncGetsCalled()
         {
             // Arrange
             var services = new ServiceCollection();
-            services.AddSingleton<DisposeServiceProviderInCtorAsyncDisposable>();
+            var asyncDisposableResource = new AsyncDisposable();
+            services.AddSingleton<DisposeServiceProviderInCtorAsyncDisposable>(sp =>
+                new DisposeServiceProviderInCtorAsyncDisposable(asyncDisposableResource, sp));
+
             var sp = services.BuildServiceProvider();
-            bool success = Task.Run(() =>
+            bool doesNotHang = Task.Run(() =>
             {
                 SingleThreadedSynchronizationContext.Run(() =>
                 {
@@ -300,7 +303,35 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
                 });
             }).Wait(TimeSpan.FromSeconds(10));
 
-            Assert.True(success);
+            Assert.True(doesNotHang);
+            Assert.True(asyncDisposableResource.DisposeAsyncCalled);
+        }
+
+        [Fact]
+        public void GetService_DisposeOnSameThread_ThrowsAndDoesNotHangAndDisposeGetsCalled()
+        {
+            // Arrange
+            var services = new ServiceCollection();
+            var disposableResource = new Disposable();
+            services.AddSingleton<DisposeServiceProviderInCtorDisposable>(sp =>
+                new DisposeServiceProviderInCtorDisposable(disposableResource, sp));
+
+            var sp = services.BuildServiceProvider();
+            bool doesNotHang = Task.Run(() =>
+            {
+                SingleThreadedSynchronizationContext.Run(() =>
+                {
+                    // Act
+                    Assert.Throws<ObjectDisposedException>(() =>
+                    {
+                        // ctor disposes ServiceProvider
+                        var service = sp.GetRequiredService<DisposeServiceProviderInCtorDisposable>();
+                    });
+                });
+            }).Wait(TimeSpan.FromSeconds(10));
+
+            Assert.True(doesNotHang);
+            Assert.True(disposableResource.Disposed);
         }
 
         private class DisposeServiceProviderInCtor : IDisposable
@@ -346,13 +377,32 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
 
         private class DisposeServiceProviderInCtorAsyncDisposable : IFakeService, IAsyncDisposable
         {
-            public DisposeServiceProviderInCtorAsyncDisposable(IServiceProvider sp)
+            private readonly AsyncDisposable _asyncDisposable;
+
+            public DisposeServiceProviderInCtorAsyncDisposable(AsyncDisposable asyncDisposable, IServiceProvider sp)
             {
-                (sp as IDisposable).Dispose();
+                _asyncDisposable = asyncDisposable;
+                (sp as IAsyncDisposable).DisposeAsync();
             }
             public async ValueTask DisposeAsync()
             {
+                await _asyncDisposable.DisposeAsync();
                 await Task.Yield();
+            }
+        }
+
+        private class DisposeServiceProviderInCtorDisposable : IFakeService, IDisposable
+        {
+            private readonly Disposable _disposable;
+
+            public DisposeServiceProviderInCtorDisposable(Disposable disposable, IServiceProvider sp)
+            {
+                _disposable = disposable;
+                (sp as IDisposable).Dispose();
+            }
+            public void Dispose()
+            {
+                _disposable.Dispose();
             }
         }
 
