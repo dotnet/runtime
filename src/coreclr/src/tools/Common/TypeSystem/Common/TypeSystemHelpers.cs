@@ -369,7 +369,7 @@ namespace Internal.TypeSystem
             return result;
         }
 
-        public static bool ContainsSignatureVariables(this TypeDesc thisType)
+        public static bool ContainsSignatureVariables(this TypeDesc thisType, bool treatGenericParameterLikeSignatureVariable = false)
         {
             switch (thisType.Category)
             {
@@ -377,29 +377,34 @@ namespace Internal.TypeSystem
                 case TypeFlags.SzArray:
                 case TypeFlags.ByRef:
                 case TypeFlags.Pointer:
-                    return ((ParameterizedType)thisType).ParameterType.ContainsSignatureVariables();
+                    return ((ParameterizedType)thisType).ParameterType.ContainsSignatureVariables(treatGenericParameterLikeSignatureVariable);
 
                 case TypeFlags.FunctionPointer:
                     MethodSignature pointerSignature = ((FunctionPointerType)thisType).Signature;
 
                     for (int i = 0; i < pointerSignature.Length; i++)
-                        if (pointerSignature[i].ContainsSignatureVariables())
+                        if (pointerSignature[i].ContainsSignatureVariables(treatGenericParameterLikeSignatureVariable))
                             return true;
 
-                    return pointerSignature.ReturnType.ContainsSignatureVariables();
+                    return pointerSignature.ReturnType.ContainsSignatureVariables(treatGenericParameterLikeSignatureVariable);
 
                 case TypeFlags.SignatureMethodVariable:
                 case TypeFlags.SignatureTypeVariable:
                     return true;
 
                 case TypeFlags.GenericParameter:
+                    if (treatGenericParameterLikeSignatureVariable)
+                        return true;
+                    // It is generally a bug to have instantiations over generic parameters
+                    // in the system. Typical instantiations are represented as instantiations
+                    // over own formals - so these should be signature variables instead.
                     throw new ArgumentException();
 
                 default:
                     Debug.Assert(thisType is DefType);
                     foreach (TypeDesc arg in thisType.Instantiation)
                     {
-                        if (arg.ContainsSignatureVariables())
+                        if (arg.ContainsSignatureVariables(treatGenericParameterLikeSignatureVariable))
                             return true;
                     }
 

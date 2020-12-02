@@ -312,6 +312,8 @@ namespace Internal.ReadyToRunConstants
         TypeHandleToRuntimeType,
         GetRefAny,
         TypeHandleToRuntimeTypeHandle,
+
+        GetCurrentManagedThreadId,
     }
 
     // Enum used for HFA type recognition.

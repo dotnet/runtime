@@ -83,7 +83,7 @@
       <argument>ILLink</argument>
       <argument>IL2026</argument>
       <property name="Scope">member</property>
-      <property name="Target">M:System.StartupHookProvider.CallStartupHook(System.StartupHookProvider.StartupHookNameOrPath)</property>
+      <property name="Target">M:System.StartupHookProvider.ProcessStartupHooks()</property>
     </attribute>
     <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
       <argument>ILLink</argument>
@@ -282,12 +282,6 @@
       <argument>IL2075</argument>
       <property name="Scope">member</property>
       <property name="Target">M:System.Attribute.GetParentDefinition(System.Reflection.PropertyInfo,System.Type[])</property>
-    </attribute>
-    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
-      <argument>ILLink</argument>
-      <argument>IL2075</argument>
-      <property name="Scope">member</property>
-      <property name="Target">M:System.Diagnostics.StackTrace.TryResolveStateMachineMethod(System.Reflection.MethodBase@,System.Type@)</property>
     </attribute>
     <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
       <argument>ILLink</argument>

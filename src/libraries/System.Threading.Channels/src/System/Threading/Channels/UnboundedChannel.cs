@@ -67,7 +67,7 @@ namespace System.Threading.Channels
 
                 // Dequeue an item if we can.
                 UnboundedChannel<T> parent = _parent;
-                if (parent._items.TryDequeue(out T item))
+                if (parent._items.TryDequeue(out T? item))
                 {
                     CompleteIfDone(parent);
                     return new ValueTask<T>(item);

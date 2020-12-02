@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
@@ -215,12 +216,17 @@ namespace Microsoft.Extensions.Caching.Memory
                 if (_valueHasBeenSet)
                 {
                     _notifyCacheEntryCommit(this);
-                    PropagateOptions(CacheEntryHelper.Current);
+
+                    if (CanPropagateOptions())
+                    {
+                        PropagateOptions(CacheEntryHelper.Current);
+                    }
                 }
             }
         }
 
-        internal bool CheckExpired(DateTimeOffset now)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal bool CheckExpired(in DateTimeOffset now)
         {
             return _isExpired || CheckForExpiredTime(now) || CheckForExpiredTokens();
         }
@@ -235,27 +241,44 @@ namespace Microsoft.Extensions.Caching.Memory
             DetachTokens();
         }
 
-        private bool CheckForExpiredTime(DateTimeOffset now)
+        private bool CheckForExpiredTime(in DateTimeOffset now)
         {
-            if (_absoluteExpiration.HasValue && _absoluteExpiration.Value <= now)
+            if (!_absoluteExpiration.HasValue && !_slidingExpiration.HasValue)
             {
-                SetExpired(EvictionReason.Expired);
-                return true;
+                return false;
             }
 
-            if (_slidingExpiration.HasValue
-                && (now - LastAccessed) >= _slidingExpiration)
-            {
-                SetExpired(EvictionReason.Expired);
-                return true;
-            }
+            return FullCheck(now);
 
-            return false;
+            bool FullCheck(in DateTimeOffset offset)
+            {
+                if (_absoluteExpiration.HasValue && _absoluteExpiration.Value <= offset)
+                {
+                    SetExpired(EvictionReason.Expired);
+                    return true;
+                }
+
+                if (_slidingExpiration.HasValue
+                    && (offset - LastAccessed) >= _slidingExpiration)
+                {
+                    SetExpired(EvictionReason.Expired);
+                    return true;
+                }
+
+                return false;
+            }
         }
 
-        internal bool CheckForExpiredTokens()
+        private bool CheckForExpiredTokens()
         {
-            if (_expirationTokens != null)
+            if (_expirationTokens == null)
+            {
+                return false;
+            }
+
+            return CheckTokens();
+
+            bool CheckTokens()
             {
                 for (int i = 0; i < _expirationTokens.Count; i++)
                 {
@@ -266,8 +289,8 @@ namespace Microsoft.Extensions.Caching.Memory
                         return true;
                     }
                 }
+                return false;
             }
-            return false;
         }
 
         internal void AttachTokens()
@@ -354,6 +377,8 @@ namespace Microsoft.Extensions.Caching.Memory
                 }
             }
         }
+
+        internal bool CanPropagateOptions() => _expirationTokens != null || _absoluteExpiration.HasValue;
 
         internal void PropagateOptions(CacheEntry parent)
         {

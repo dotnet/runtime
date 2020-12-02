@@ -846,7 +846,7 @@ namespace System.Reflection.Emit
 
             if (m_typeInterfaces == null)
             {
-                return Array.Empty<Type>();
+                return Type.EmptyTypes;
             }
 
             return m_typeInterfaces.ToArray();
@@ -1188,7 +1188,7 @@ namespace System.Reflection.Emit
             return TypeBuilderInstantiation.MakeGenericType(this, typeArguments);
         }
 
-        public override Type[] GetGenericArguments() => m_inst ?? Array.Empty<Type>();
+        public override Type[] GetGenericArguments() => m_inst ?? Type.EmptyTypes;
 
         // If a TypeBuilder is generic, it must be a generic type definition
         // All instantiated generic types are TypeBuilderInstantiation.

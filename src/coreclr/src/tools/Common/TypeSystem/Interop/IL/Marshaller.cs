@@ -287,15 +287,22 @@ namespace Internal.TypeSystem.Interop
             bool isOut,
             bool isReturn)
         {
-            MarshallerKind elementMarshallerKind;
+            bool isAnsi = flags.CharSet switch
+            {
+                CharSet.Ansi => true,
+                CharSet.Unicode => false,
+                CharSet.Auto => !parameterType.Context.Target.IsWindows,
+                _ => true
+            };
+
             MarshallerKind marshallerKind = MarshalHelpers.GetMarshallerKind(parameterType,
                                                 parameterIndex,
                                                 customModifierData,
                                                 marshalAs,
                                                 isReturn,
-                                                flags.CharSet == CharSet.Ansi,
+                                                isAnsi,
                                                 marshallerType,
-                                                out elementMarshallerKind);
+                                                out MarshallerKind elementMarshallerKind);
 
             TypeSystemContext context = parameterType.Context;
             // Create the marshaller based on MarshallerKind

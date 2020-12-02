@@ -1206,7 +1206,7 @@ namespace System
             Type[] types = GetGenericArgumentsInternal(false);
 
             if (types == null)
-                types = Array.Empty<Type>();
+                types = Type.EmptyTypes;
 
             return types;
         }
@@ -1726,7 +1726,7 @@ namespace System
                     if (argCnt == 0 && (bindingAttr & BindingFlags.Public) != 0 && (bindingAttr & BindingFlags.Instance) != 0
                         && (IsValueType))
                     {
-                        server = CreateInstanceDefaultCtor(publicOnly, false, true, wrapExceptions);
+                        server = CreateInstanceDefaultCtor(publicOnly, wrapExceptions);
                     }
                     else
                     {
@@ -1809,31 +1809,26 @@ namespace System
         }
 
         // Helper to invoke the default (parameterless) ctor.
-        // fillCache is set in the SL2/3 compat mode or when called from Marshal.PtrToStructure.
         [DebuggerStepThroughAttribute]
         [Diagnostics.DebuggerHidden]
-        internal object? CreateInstanceDefaultCtor(bool publicOnly, bool skipCheckThis, bool fillCache, bool wrapExceptions)
+        internal object? CreateInstanceDefaultCtor(bool publicOnly, bool wrapExceptions)
         {
             if (IsByRefLike)
                 throw new NotSupportedException(SR.NotSupported_ByRefLike);
 
-            return CreateInstanceSlow(publicOnly, wrapExceptions, skipCheckThis, fillCache);
+            CreateInstanceCheckThis();
+
+            return CreateInstanceMono(!publicOnly, wrapExceptions);
         }
 
         #endregion
 
-        private TypeCache cache;
+        private TypeCache? cache;
 
-        internal TypeCache Cache
-        {
-            get
-            {
-                if (cache == null)
-                    LazyInitializer.EnsureInitialized(ref cache, () => new TypeCache());
-
-                return cache;
-            }
-        }
+        internal TypeCache Cache =>
+            Volatile.Read(ref cache) ??
+            Interlocked.CompareExchange(ref cache, new TypeCache(), null) ??
+            cache;
 
         internal sealed class TypeCache
         {
@@ -1864,7 +1859,7 @@ namespace System
             ListBuilder<ConstructorInfo> ctors = GetConstructorCandidates(
                 null,
                 BindingFlags.Public | BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.DeclaredOnly, CallingConventions.Any,
-                Array.Empty<Type>(), false);
+                Type.EmptyTypes, false);
 
             if (ctors.Count == 1)
                 cache.default_ctor = ctor = (RuntimeConstructorInfo)ctors[0];
@@ -1927,21 +1922,6 @@ namespace System
             }
 
             return m_serializationCtor;
-        }
-
-        internal object? CreateInstanceSlow(bool publicOnly, bool wrapExceptions, bool skipCheckThis, bool fillCache)
-        {
-            //bool bNeedSecurityCheck = true;
-            //bool bCanBeCached = false;
-            //bool bSecurityCheckOff = false;
-
-            if (!skipCheckThis)
-                CreateInstanceCheckThis();
-
-            //if (!fillCache)
-            //  bSecurityCheckOff = true;
-
-            return CreateInstanceMono(!publicOnly, wrapExceptions);
         }
 
         private object? CreateInstanceMono(bool nonPublic, bool wrapExceptions)
@@ -2271,7 +2251,7 @@ namespace System
             var paramInfo = new Mono.RuntimeGenericParamInfoHandle(RuntimeTypeHandle.GetGenericParameterInfo(this));
             Type[] constraints = paramInfo.Constraints;
 
-            return constraints ?? Array.Empty<Type>();
+            return constraints ?? Type.EmptyTypes;
         }
 
         internal static object CreateInstanceForAnotherGenericParameter(Type genericType, RuntimeType genericArgument)

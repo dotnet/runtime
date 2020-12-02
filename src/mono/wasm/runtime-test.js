@@ -392,6 +392,15 @@ var App = {
 		}
 	},
 	call_test_method: function (method_name, args) {
-		return BINDING.call_static_method("[System.Private.Runtime.InteropServices.JavaScript.Tests]System.Runtime.InteropServices.JavaScript.Tests.HelperMarshal:" + method_name, args);
+		if (arguments.length > 2)
+			throw new Error("Invalid number of arguments for call_test_method");
+
+		var fqn = "[System.Private.Runtime.InteropServices.JavaScript.Tests]System.Runtime.InteropServices.JavaScript.Tests.HelperMarshal:" + method_name;
+		try {
+			return BINDING.call_static_method(fqn, args || []);
+		} catch (exc) {
+			console.error("exception thrown in", fqn);
+			throw exc;
+		}
 	}
 };

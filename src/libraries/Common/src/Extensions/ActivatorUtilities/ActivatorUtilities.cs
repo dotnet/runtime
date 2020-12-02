@@ -50,7 +50,7 @@ namespace Microsoft.Extensions.Internal
 
             ConstructorMatcher bestMatcher = default;
 
-            if (!instanceType.GetTypeInfo().IsAbstract)
+            if (!instanceType.IsAbstract)
             {
                 foreach (ConstructorInfo? constructor in instanceType.GetConstructors())
                 {
@@ -323,7 +323,7 @@ namespace Microsoft.Extensions.Internal
             for (int i = 0; i < argumentTypes.Length; i++)
             {
                 bool foundMatch = false;
-                TypeInfo? givenParameter = argumentTypes[i].GetTypeInfo();
+                Type? givenParameter = argumentTypes[i];
 
                 for (int j = 0; j < constructorParameters.Length; j++)
                 {
@@ -333,7 +333,7 @@ namespace Microsoft.Extensions.Internal
                         continue;
                     }
 
-                    if (constructorParameters[j].ParameterType.GetTypeInfo().IsAssignableFrom(givenParameter))
+                    if (constructorParameters[j].ParameterType.IsAssignableFrom(givenParameter))
                     {
                         foundMatch = true;
                         parameterMap[j] = i;
@@ -369,13 +369,13 @@ namespace Microsoft.Extensions.Internal
                 int applyExactLength = 0;
                 for (int givenIndex = 0; givenIndex != givenParameters.Length; givenIndex++)
                 {
-                    TypeInfo? givenType = givenParameters[givenIndex]?.GetType().GetTypeInfo();
+                    Type? givenType = givenParameters[givenIndex]?.GetType();
                     bool givenMatched = false;
 
                     for (int applyIndex = applyIndexStart; givenMatched == false && applyIndex != _parameters.Length; ++applyIndex)
                     {
                         if (_parameterValues[applyIndex] == null &&
-                            _parameters[applyIndex].ParameterType.GetTypeInfo().IsAssignableFrom(givenType))
+                            _parameters[applyIndex].ParameterType.IsAssignableFrom(givenType))
                         {
                             givenMatched = true;
                             _parameterValues[applyIndex] = givenParameters[givenIndex];

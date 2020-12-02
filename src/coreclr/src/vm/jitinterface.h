@@ -203,11 +203,6 @@ extern FCDECL1(StringObject*, AllocateString_MP_FastPortable, DWORD stringLength
 extern FCDECL1(StringObject*, UnframedAllocateString, DWORD stringLength);
 extern FCDECL1(StringObject*, FramedAllocateString, DWORD stringLength);
 
-#ifdef FEATURE_UTF8STRING
-extern FCDECL1(Utf8StringObject*, AllocateUtf8String_MP_FastPortable, DWORD stringLength);
-extern FCDECL1(Utf8StringObject*, FramedAllocateUtf8String, DWORD stringLength);
-#endif // FEATURE_UTF8STRING
-
 extern FCDECL2(Object*, JIT_NewArr1VC_MP_FastPortable, CORINFO_CLASS_HANDLE arrayMT, INT_PTR size);
 extern FCDECL2(Object*, JIT_NewArr1OBJ_MP_FastPortable, CORINFO_CLASS_HANDLE arrayMT, INT_PTR size);
 extern FCDECL2(Object*, JIT_NewArr1, CORINFO_CLASS_HANDLE arrayMT, INT_PTR size);
@@ -1050,6 +1045,14 @@ public:
             UINT32 *              pNumRuns
             );
 
+    CORINFO_CLASS_HANDLE getLikelyClass(
+            CORINFO_METHOD_HANDLE ftnHnd,
+            CORINFO_CLASS_HANDLE  baseHnd,
+            UINT32                ilOffset,            
+            UINT32 *              pLikelihood,
+            UINT32 *              pNumberOfClasses
+            );
+
     void recordCallSite(
             ULONG                 instrOffset,  /* IN */
             CORINFO_SIG_INFO *    callSig,      /* IN */
@@ -1251,6 +1254,14 @@ public:
         BlockCounts **                pBlockCounts,  // pointer to array of <ILOffset, ExecutionCount> tuples
         UINT32 *                      pNumRuns
     );
+
+    CORINFO_CLASS_HANDLE getLikelyClass(
+            CORINFO_METHOD_HANDLE ftnHnd,
+            CORINFO_CLASS_HANDLE  baseHnd,
+            UINT32                ilOffset,
+            UINT32 *              pLikelihood,
+            UINT32 *              pNumberOfClasses
+            );
 
     void recordCallSite(
             ULONG                     instrOffset,  /* IN */

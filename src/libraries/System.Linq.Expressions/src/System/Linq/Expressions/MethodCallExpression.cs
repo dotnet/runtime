@@ -59,7 +59,7 @@ namespace System.Linq.Expressions
         /// <param name="object">The <see cref="Object"/> property of the result.</param>
         /// <param name="arguments">The <see cref="Arguments"/> property of the result.</param>
         /// <returns>This expression if no children changed, or an expression with the updated children.</returns>
-        public MethodCallExpression Update(Expression @object, IEnumerable<Expression>? arguments)
+        public MethodCallExpression Update(Expression? @object, IEnumerable<Expression>? arguments)
         {
             if (@object == Object)
             {

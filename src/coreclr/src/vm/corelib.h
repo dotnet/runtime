@@ -318,10 +318,6 @@ DEFINE_CLASS(ENCODING,              Text,                   Encoding)
 
 DEFINE_CLASS(RUNE,                  Text,                   Rune)
 
-#ifdef FEATURE_UTF8STRING
-DEFINE_CLASS(CHAR8,                 System,                 Char8)
-#endif // FEATURE_UTF8STRING
-
 DEFINE_CLASS(ENUM,                  System,                 Enum)
 
 DEFINE_CLASS(ENVIRONMENT,           System,                 Environment)
@@ -375,6 +371,9 @@ DEFINE_CLASS(RT_TYPE_HANDLE,        System,                 RuntimeTypeHandle)
 DEFINE_METHOD(RT_TYPE_HANDLE,       GET_TYPE_HELPER,        GetTypeHelper,              SM_Type_ArrType_IntPtr_int_RetType)
 DEFINE_METHOD(RT_TYPE_HANDLE,       PVOID_CTOR,             .ctor,                      IM_RuntimeType_RetVoid)
 DEFINE_METHOD(RT_TYPE_HANDLE,       GETVALUEINTERNAL,       GetValueInternal,           SM_RuntimeTypeHandle_RetIntPtr)
+#ifdef FEATURE_COMINTEROP
+DEFINE_METHOD(RT_TYPE_HANDLE,       ALLOCATECOMOBJECT,      AllocateComObject,          SM_VoidPtr_RetObj)
+#endif
 DEFINE_FIELD(RT_TYPE_HANDLE,        M_TYPE,                 m_type)
 
 DEFINE_CLASS_U(Reflection,             RtFieldInfo,         NoClass)
@@ -701,7 +700,7 @@ DEFINE_METHOD(RUNTIME_HELPERS,      IS_BITWISE_EQUATABLE,    IsBitwiseEquatable,
 DEFINE_METHOD(RUNTIME_HELPERS,      GET_METHOD_TABLE,        GetMethodTable,     NoSig)
 DEFINE_METHOD(RUNTIME_HELPERS,      GET_RAW_DATA,            GetRawData,         NoSig)
 DEFINE_METHOD(RUNTIME_HELPERS,      GET_RAW_ARRAY_DATA,      GetRawArrayData, NoSig)
-DEFINE_METHOD(RUNTIME_HELPERS,      GET_UNINITIALIZED_OBJECT, GetUninitializedObject, NoSig)
+DEFINE_METHOD(RUNTIME_HELPERS,      GET_UNINITIALIZED_OBJECT, GetUninitializedObject, SM_Type_RetObj)
 DEFINE_METHOD(RUNTIME_HELPERS,      ENUM_EQUALS,            EnumEquals, NoSig)
 DEFINE_METHOD(RUNTIME_HELPERS,      ENUM_COMPARE_TO,        EnumCompareTo, NoSig)
 DEFINE_METHOD(RUNTIME_HELPERS,      ALLOC_TAILCALL_ARG_BUFFER, AllocTailCallArgBuffer,  SM_Int_IntPtr_RetIntPtr)
@@ -846,17 +845,6 @@ DEFINE_METHOD(STRING,               INTERNAL_COPY,          InternalCopy,       
 DEFINE_METHOD(STRING,               WCSLEN,                 wcslen,                     SM_PtrChar_RetInt)
 DEFINE_METHOD(STRING,               STRLEN,                 strlen,                     SM_PtrByte_RetInt)
 DEFINE_PROPERTY(STRING,             LENGTH,                 Length,                     Int)
-
-#ifdef FEATURE_UTF8STRING
-DEFINE_CLASS(UTF8_STRING,           System,                 Utf8String)
-DEFINE_METHOD(UTF8_STRING,          CTORF_READONLYSPANOFBYTE,Ctor,                      IM_ReadOnlySpanOfByte_RetUtf8Str)
-DEFINE_METHOD(UTF8_STRING,          CTORF_READONLYSPANOFCHAR,Ctor,                      IM_ReadOnlySpanOfChar_RetUtf8Str)
-DEFINE_METHOD(UTF8_STRING,          CTORF_BYTEARRAY_START_LEN,Ctor,                     IM_ArrByte_Int_Int_RetUtf8Str)
-DEFINE_METHOD(UTF8_STRING,          CTORF_BYTEPTR,           Ctor,                      IM_PtrByte_RetUtf8Str)
-DEFINE_METHOD(UTF8_STRING,          CTORF_CHARARRAY_START_LEN,Ctor,                     IM_ArrChar_Int_Int_RetUtf8Str)
-DEFINE_METHOD(UTF8_STRING,          CTORF_CHARPTR,           Ctor,                      IM_PtrChar_RetUtf8Str)
-DEFINE_METHOD(UTF8_STRING,          CTORF_STRING,            Ctor,                      IM_String_RetUtf8Str)
-#endif // FEATURE_UTF8STRING
 
 DEFINE_CLASS(STRING_BUILDER,        Text,                   StringBuilder)
 DEFINE_PROPERTY(STRING_BUILDER,     LENGTH,                 Length,                     Int)

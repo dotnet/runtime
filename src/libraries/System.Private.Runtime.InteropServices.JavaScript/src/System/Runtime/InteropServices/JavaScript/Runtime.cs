@@ -71,7 +71,16 @@ namespace System.Runtime.InteropServices.JavaScript
             WeakReference? reference;
             lock (_boundObjects)
             {
-                if (!_boundObjects.TryGetValue(jsId, out reference))
+                if (_boundObjects.TryGetValue(jsId, out reference))
+                {
+                    if ((reference.Target == null) || ((reference.Target as JSObject)?.IsDisposed == true))
+                    {
+                        _boundObjects.Remove(jsId);
+                        reference = null;
+                    }
+                }
+
+                if (reference == null)
                 {
                     IntPtr jsIntPtr = (IntPtr)jsId;
                     reference = new WeakReference(mappedType > 0 ? BindJSType(jsIntPtr, ownsHandle, mappedType) : new JSObject(jsIntPtr, ownsHandle), true);
@@ -227,21 +236,6 @@ namespace System.Runtime.InteropServices.JavaScript
 
             return h.Target is JSObject js ?
                 js.GetWrappedObject() ?? h.Target : h.Target;
-        }
-
-        private static object BoxInt(int i)
-        {
-            return i;
-        }
-
-        private static object BoxDouble(double d)
-        {
-            return d;
-        }
-
-        private static object BoxBool(int b)
-        {
-            return b == 0 ? false : true;
         }
 
         private static bool IsSimpleArray(object a)

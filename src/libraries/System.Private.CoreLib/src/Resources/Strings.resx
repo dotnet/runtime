@@ -362,7 +362,7 @@
     <value>Property Get method was not found.</value>
   </data>
   <data name="Arg_GuidArrayCtor" xml:space="preserve">
-    <value>Byte array for GUID must be exactly {0} bytes long.</value>
+    <value>Byte array for Guid must be exactly {0} bytes long.</value>
   </data>
   <data name="Arg_HandleNotAsync" xml:space="preserve">
     <value>Handle does not support asynchronous operations. The parameters to the FileStream constructor may need to be changed to indicate that the handle was opened synchronously (that is, it was not opened for overlapped I/O).</value>
@@ -600,6 +600,9 @@
   </data>
   <data name="Arg_NoAccessSpec" xml:space="preserve">
     <value>Must specify binding flags describing the invoke operation required (BindingFlags.InvokeMethod CreateInstance GetField SetField GetProperty SetProperty).</value>
+  </data>
+  <data name="Arg_NoDefCTorWithoutTypeName" xml:space="preserve">
+    <value>No parameterless constructor defined.</value>
   </data>
   <data name="Arg_NoDefCTor" xml:space="preserve">
     <value>No parameterless constructor defined for type '{0}'.</value>
@@ -1381,9 +1384,6 @@
   <data name="Argument_NoUninitializedStrings" xml:space="preserve">
     <value>Uninitialized Strings cannot be created.</value>
   </data>
-  <data name="Argument_ObjIsWinRTObject" xml:space="preserve">
-    <value>The object's type must not be a Windows Runtime type.</value>
-  </data>
   <data name="Argument_ObjNotComObject" xml:space="preserve">
     <value>The object's type must be __ComObject or derived from __ComObject.</value>
   </data>
@@ -1504,9 +1504,6 @@
   <data name="Argument_TypedReferenceInvalidField" xml:space="preserve">
     <value>Field '{0}' in TypedReferences cannot be static.</value>
   </data>
-  <data name="Argument_TypeIsWinRTType" xml:space="preserve">
-    <value>The type must not be a Windows Runtime type.</value>
-  </data>
   <data name="Argument_TypeMustBeVisibleFromCom" xml:space="preserve">
     <value>The specified type must be visible from COM.</value>
   </data>
@@ -1548,9 +1545,6 @@
   </data>
   <data name="Argument_WaitHandleNameTooLong" xml:space="preserve">
     <value>The length of the name exceeds the maximum limit.</value>
-  </data>
-  <data name="Argument_WinRTSystemRuntimeType" xml:space="preserve">
-    <value>Cannot marshal type '{0}' to Windows Runtime. Only 'System.RuntimeType' is supported.</value>
   </data>
   <data name="ArgumentException_BadMethodImplBody" xml:space="preserve">
     <value>MethodOverride's body must be from this type.</value>
@@ -2395,15 +2389,6 @@
   <data name="InvalidCast_StoreArrayElement" xml:space="preserve">
     <value>Object cannot be stored in an array of this type.</value>
   </data>
-  <data name="InvalidCast_WinRTIPropertyValueArrayCoersion" xml:space="preserve">
-    <value>Object in an IPropertyValue is of type '{0}' which cannot be convereted to a '{1}' due to array element '{2}': {3}.</value>
-  </data>
-  <data name="InvalidCast_WinRTIPropertyValueCoersion" xml:space="preserve">
-    <value>Object in an IPropertyValue is of type '{0}' with value '{1}', which cannot be converted to a '{2}'.</value>
-  </data>
-  <data name="InvalidCast_WinRTIPropertyValueElement" xml:space="preserve">
-    <value>Object in an IPropertyValue is of type '{0}', which cannot be converted to a '{1}'.</value>
-  </data>
   <data name="InvalidOperation_AsyncFlowCtrlCtxMismatch" xml:space="preserve">
     <value>AsyncFlowControl objects can be used to restore flow only on a Context that had its flow suppressed.</value>
   </data>
@@ -2562,9 +2547,6 @@
   </data>
   <data name="InvalidOperation_NotGenericType" xml:space="preserve">
     <value>This operation is only valid on generic types.</value>
-  </data>
-  <data name="InvalidOperation_NotSupportedOnWinRTEvent" xml:space="preserve">
-    <value>Adding or removing event handlers dynamically is not supported on WinRT events.</value>
   </data>
   <data name="InvalidOperation_NotWithConcurrentGC" xml:space="preserve">
     <value>This API is not available when the concurrent GC is enabled.</value>
@@ -2819,7 +2801,7 @@
     <value>Delegates that are not of type MulticastDelegate may not be combined.</value>
   </data>
   <data name="MustUseCCRewrite" xml:space="preserve">
-    <value>An assembly (probably "{1}") must be rewritten using the code contracts binary rewriter (CCRewrite) because it is calling Contract.{0} and the CONTRACTS_FULL symbol is defined.  Remove any explicit definitions of the CONTRACTS_FULL symbol from your project and rebuild.  CCRewrite can be downloaded from http://go.microsoft.com/fwlink/?LinkID=169180. \r\nAfter the rewriter is installed, it can be enabled in Visual Studio from the project's Properties page on the Code Contracts pane.  Ensure that "Perform Runtime Contract Checking" is enabled, which will define CONTRACTS_FULL.</value>
+    <value>An assembly (probably "{1}") must be rewritten using the code contracts binary rewriter (CCRewrite) because it is calling Contract.{0} and the CONTRACTS_FULL symbol is defined.  Remove any explicit definitions of the CONTRACTS_FULL symbol from your project and rebuild.  CCRewrite can be downloaded from https://go.microsoft.com/fwlink/?LinkID=169180. \r\nAfter the rewriter is installed, it can be enabled in Visual Studio from the project's Properties page on the Code Contracts pane.  Ensure that "Perform Runtime Contract Checking" is enabled, which will define CONTRACTS_FULL.</value>
   </data>
   <data name="NotSupported_AbstractNonCLS" xml:space="preserve">
     <value>This non-CLS method is not implemented.</value>
@@ -2862,9 +2844,6 @@
   </data>
   <data name="NotSupported_CollectibleBoundNonCollectible" xml:space="preserve">
     <value>A non-collectible assembly may not reference a collectible assembly.</value>
-  </data>
-  <data name="NotSupported_CollectibleWinRT" xml:space="preserve">
-    <value>WinRT Interop is not supported for collectible types.</value>
   </data>
   <data name="NotSupported_CreateInstanceWithTypeBuilder" xml:space="preserve">
     <value>CreateInstance cannot be used with an object of type TypeBuilder.</value>
@@ -3135,9 +3114,6 @@
   </data>
   <data name="PlatformNotSupported_StrongNameSigning" xml:space="preserve">
     <value>Strong-name signing is not supported on this platform.</value>
-  </data>
-  <data name="PlatformNotSupported_WinRT" xml:space="preserve">
-    <value>Windows Runtime is not supported on this operating system.</value>
   </data>
   <data name="PlatformNotSupported_OverlappedIO" xml:space="preserve">
     <value>This API is specific to the way in which Windows handles asynchronous I/O, and is not supported on this platform.</value>
@@ -3440,7 +3416,7 @@
     <value>An attempt was made to transition a task to a final state when it had already completed.</value>
   </data>
   <data name="Thread_ApartmentState_ChangeFailed" xml:space="preserve">
-    <value>Failed to set the specified COM apartment state.</value>
+    <value>Failed to set the specified COM apartment state. Current apartment state '{0}'.</value>
   </data>
   <data name="Thread_GetSetCompressedStack_NotSupported" xml:space="preserve">
     <value>Use CompressedStack.(Capture/Run) instead.</value>
@@ -3774,5 +3750,8 @@
   </data>
   <data name="NotSupported_CodeBase" xml:space="preserve">
     <value>CodeBase is not supported on assemblies loaded from a single-file bundle.</value>
+  </data>
+  <data name="Activator_CannotCreateInstance" xml:space="preserve">
+    <value>Cannot dynamically create an instance of type '{0}'. Reason: {1}</value>
   </data>
 </root>

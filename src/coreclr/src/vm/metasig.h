@@ -352,6 +352,7 @@ DEFINE_METASIG(SM(Int_Str_IntPtr_Int_RetVoid, i s I i, v))
 DEFINE_METASIG(SM(Str_IntPtr_RetIntPtr, s I, I))
 DEFINE_METASIG(SM(Str_Bool_Int_RetV, s F i, v))
 
+DEFINE_METASIG_T(SM(Type_RetObj, C(TYPE), j))
 DEFINE_METASIG_T(SM(Type_RetInt, C(TYPE), i))
 DEFINE_METASIG(SM(ArrByte_RetObj, a(b), j))
 DEFINE_METASIG(SM(ArrByte_Bool_RetObj, a(b) F, j))
@@ -414,16 +415,6 @@ DEFINE_METASIG(IM(Obj_Int_RetIntPtr, j i, I))
 DEFINE_METASIG(IM(ArrByte_Int_Int_RetVoid, a(b) i i, v))
 DEFINE_METASIG(IM(PtrByte_RetVoid, P(b), v))
 
-#ifdef FEATURE_UTF8STRING
-DEFINE_METASIG_T(IM(ReadOnlySpanOfByte_RetUtf8Str, GI(g(READONLY_SPAN), 1, b), C(UTF8_STRING)))
-DEFINE_METASIG_T(IM(ReadOnlySpanOfChar_RetUtf8Str, GI(g(READONLY_SPAN), 1, u), C(UTF8_STRING)))
-DEFINE_METASIG_T(IM(ArrByte_Int_Int_RetUtf8Str, a(b) i i, C(UTF8_STRING)))
-DEFINE_METASIG_T(IM(PtrByte_RetUtf8Str, P(b), C(UTF8_STRING)))
-DEFINE_METASIG_T(IM(ArrChar_Int_Int_RetUtf8Str, a(u) i i, C(UTF8_STRING)))
-DEFINE_METASIG_T(IM(PtrChar_RetUtf8Str, P(u), C(UTF8_STRING)))
-DEFINE_METASIG_T(IM(String_RetUtf8Str, s, C(UTF8_STRING)))
-#endif // FEATURE_UTF8STRING
-
 DEFINE_METASIG(IM(Char_Char_RetStr, u u, s))
 DEFINE_METASIG(IM(Char_Int_RetVoid, u i, v))
 DEFINE_METASIG_T(SM(RetCultureInfo, _, C(CULTURE_INFO)))
@@ -474,6 +465,7 @@ DEFINE_METASIG(IM(RefObject_RetBool, r(j), F))
 DEFINE_METASIG_T(IM(Class_RetObj, C(CLASS), j))
 DEFINE_METASIG(IM(Int_VoidPtr_RetVoid, i P(v), v))
 DEFINE_METASIG(IM(VoidPtr_RetVoid, P(v), v))
+DEFINE_METASIG(SM(VoidPtr_RetObj, P(v), j))
 
 DEFINE_METASIG_T(IM(Str_RetModule, s, C(MODULE)))
 DEFINE_METASIG_T(SM(Assembly_Str_RetAssembly, C(ASSEMBLY) s, C(ASSEMBLY)))

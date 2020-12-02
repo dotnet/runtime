@@ -398,6 +398,7 @@ namespace System.Buffers.ArrayPool.Tests
             Assert.Equal(64, pool.Rent(63).Length); // still get original size
         }
 
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/42899")]
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public static void RentBufferFiresRentedDiagnosticEvent()
         {
@@ -418,6 +419,7 @@ namespace System.Buffers.ArrayPool.Tests
             });
         }
 
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/42899")]
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public static void ReturnBufferFiresDiagnosticEvent()
         {

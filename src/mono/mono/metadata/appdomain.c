@@ -76,7 +76,7 @@
 #include <mono/utils/w32api.h>
 
 #ifdef ENABLE_PERFTRACING
-#include <mono/eventpipe/ds-server.h>
+#include <eventpipe/ds-server.h>
 #endif
 
 #ifdef HOST_WIN32

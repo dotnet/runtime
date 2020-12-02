@@ -10,7 +10,7 @@ namespace System.Linq
     {
         public static TSource Last<TSource>(this IEnumerable<TSource> source)
         {
-            TSource last = source.TryGetLast(out bool found);
+            TSource? last = source.TryGetLast(out bool found);
             if (!found)
             {
                 ThrowHelper.ThrowNoElementsException();
@@ -21,7 +21,7 @@ namespace System.Linq
 
         public static TSource Last<TSource>(this IEnumerable<TSource> source, Func<TSource, bool> predicate)
         {
-            TSource last = source.TryGetLast(predicate, out bool found);
+            TSource? last = source.TryGetLast(predicate, out bool found);
             if (!found)
             {
                 ThrowHelper.ThrowNoMatchException();

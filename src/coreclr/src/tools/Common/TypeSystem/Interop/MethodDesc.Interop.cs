@@ -126,30 +126,29 @@ namespace Internal.TypeSystem
         {
             get
             {
-                PInvokeAttributes mask = _attributes & PInvokeAttributes.CharSetMask;
-
-                // ECMA-335 II.10.1.5 - Default value is Ansi.
-                CharSet charset = CharSet.Ansi;
-
-                if (mask == PInvokeAttributes.CharSetUnicode || mask == PInvokeAttributes.CharSetAuto)
+                return (_attributes & PInvokeAttributes.CharSetMask) switch
                 {
-                    charset = CharSet.Unicode;
-                }
-                return charset;
+                    PInvokeAttributes.CharSetAnsi => CharSet.Ansi,
+                    PInvokeAttributes.CharSetUnicode => CharSet.Unicode,
+                    PInvokeAttributes.CharSetAuto => CharSet.Auto,
+                    _ => CharSet.None
+                };
             }
 
             set
             {
                 // clear the charset bits;
                 _attributes &= ~(PInvokeAttributes.CharSetMask);
-                if (value == CharSet.Unicode || (short)value == 4) // CharSet.Auto has value 4, but not in the enum
+
+                _attributes |= value switch
                 {
-                    _attributes |= PInvokeAttributes.CharSetUnicode;
-                }
-                else
-                {
-                    _attributes |= PInvokeAttributes.CharSetAnsi;
-                }
+                    CharSet.None => PInvokeAttributes.None,
+                    CharSet.Ansi => PInvokeAttributes.CharSetAnsi,
+                    CharSet.Unicode => PInvokeAttributes.CharSetUnicode,
+                    CharSet.Auto => PInvokeAttributes.CharSetAuto,
+                    (CharSet)0 => PInvokeAttributes.None,
+                    _ => throw new BadImageFormatException()
+                };
             }
         }
 
@@ -159,14 +158,13 @@ namespace Internal.TypeSystem
             {
                 switch (_attributes & PInvokeAttributes.CallingConventionMask)
                 {
-                    case PInvokeAttributes.CallingConventionWinApi:
-                        return MethodSignatureFlags.UnmanagedCallingConventionStdCall; // TODO: CDecl for varargs
                     case PInvokeAttributes.CallingConventionCDecl:
                         return MethodSignatureFlags.UnmanagedCallingConventionCdecl;
                     case PInvokeAttributes.CallingConventionStdCall:
                         return MethodSignatureFlags.UnmanagedCallingConventionStdCall;
                     case PInvokeAttributes.CallingConventionThisCall:
                         return MethodSignatureFlags.UnmanagedCallingConventionThisCall;
+                    case PInvokeAttributes.CallingConventionWinApi: // Platform default
                     case PInvokeAttributes.None:
                         return MethodSignatureFlags.None;
                     default:

@@ -163,6 +163,24 @@ namespace System.Resources.Tests
             Assert.Equal("message", rs.GetString("String"));
             Assert.Equal("message", rs.GetString("string", true));
         }
+
+        [Fact]
+        public void GetEnumerator()
+        {
+            var rs = new ResourceSet(new SimpleResourceReader());
+
+            var expected = new HashSet<object>() {
+                1, "String", "Int32"
+            };
+
+            foreach (DictionaryEntry entry in rs)
+            {
+                Assert.Contains(entry.Key, expected);
+                expected.Remove(entry.Key);
+            }
+
+            Assert.Equal(0, expected.Count);
+        }
     }
 
     public class ResourceSetTests_StreamCtor : ResourceSetTests

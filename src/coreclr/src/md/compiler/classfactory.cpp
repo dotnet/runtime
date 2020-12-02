@@ -23,9 +23,6 @@
 #include "mscoree.h"
 #include "corhost.h"
 
-//********** Locals. **********************************************************
-HINSTANCE GetModuleInst();
-
 // @telesto - why does Telesto export any Co-classes at all?
 
 // This map contains the list of coclasses which are exported from this module.

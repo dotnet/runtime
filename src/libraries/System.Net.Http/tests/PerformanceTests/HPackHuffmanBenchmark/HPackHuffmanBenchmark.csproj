@@ -1,0 +1,22 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net5.0</TargetFramework>
+    <StringResourcesPath>../../../src/Resources/Strings.resx</StringResourcesPath>
+    <Nullable>enable</Nullable>
+    <LangVersion>9.0</LangVersion>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Http2\Hpack\Huffman.cs"
+             Link="Common\System\Net\Http\aspnetcore\Http2\Hpack\Huffman.cs" />
+    <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Http2\Hpack\HuffmanDecodingException.cs"
+             Link="Common\System\Net\Http\aspnetcore\Http2\Hpack\HuffmanDecodingException.cs" />
+    <Compile Include="Program.cs" />
+  </ItemGroup>
+  
+  <ItemGroup>
+    <PackageReference Include="BenchmarkDotNet" Version="0.12.1" />
+  </ItemGroup>  
+</Project>
