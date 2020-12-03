@@ -136,8 +136,11 @@ public class WasmAppBuilder : Task
         if (!InvariantGlobalization)
             nativeAssets.Add(IcuDataFileName!);
 
-        foreach (var f in nativeAssets)
-            File.Copy(Path.Join (runtimeSourceDir, f), Path.Join(AppDir, f), true);
+        if (Path.TrimEndingDirectorySeparator(Path.GetFullPath(runtimeSourceDir)) != Path.TrimEndingDirectorySeparator(Path.GetFullPath(AppDir!)))
+        {
+            foreach (var f in nativeAssets)
+                File.Copy(Path.Join(runtimeSourceDir, f), Path.Join(AppDir, f), true);
+        }
         File.Copy(MainJS!, Path.Join(AppDir, "runtime.js"),  true);
 
         var html = @"<html><body><script type=""text/javascript"" src=""runtime.js""></script></body></html>";
