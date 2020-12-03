@@ -3327,14 +3327,14 @@ public:
             {
                 if (!Compiler::Is_Shared_Const_CSE(dsc->csdHashKey))
                 {
-                    printf("\nConsidering CSE #%02u {$%-3x, $%-3x} [def=%3u, use=%3u, cost=%3u%s]\n",
+                    printf("\nConsidering CSE #%02u {$%-3x, $%-3x} [def=%3f, use=%3f, cost=%3u%s]\n",
                            candidate.CseIndex(), dsc->csdHashKey, dsc->defExcSetPromise, candidate.DefCount(),
                            candidate.UseCount(), candidate.Cost(), dsc->csdLiveAcrossCall ? ", call" : "      ");
                 }
                 else
                 {
                     size_t kVal = Compiler::Decode_Shared_Const_CSE_Value(dsc->csdHashKey);
-                    printf("\nConsidering CSE #%02u {K_%p} [def=%3u, use=%3u, cost=%3u%s]\n", candidate.CseIndex(),
+                    printf("\nConsidering CSE #%02u {K_%p} [def=%3f, use=%3f, cost=%3u%s]\n", candidate.CseIndex(),
                            dspPtr(kVal), candidate.DefCount(), candidate.UseCount(), candidate.Cost(),
                            dsc->csdLiveAcrossCall ? ", call" : "      ");
                 }

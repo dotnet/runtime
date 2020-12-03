@@ -232,7 +232,7 @@ namespace Internal.TypeSystem.Ecma
                         flags.UnmanagedCallingConvention = MethodSignatureFlags.UnmanagedCallingConventionThisCall;
                         break;
                     case CallingConvention.Winapi:
-                        flags.UnmanagedCallingConvention = MethodSignatureFlags.UnmanagedCallingConventionStdCall;
+                        // Platform default
                         break;
                 }
             }

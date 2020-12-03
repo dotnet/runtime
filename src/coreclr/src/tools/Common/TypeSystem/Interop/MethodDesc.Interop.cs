@@ -158,14 +158,13 @@ namespace Internal.TypeSystem
             {
                 switch (_attributes & PInvokeAttributes.CallingConventionMask)
                 {
-                    case PInvokeAttributes.CallingConventionWinApi:
-                        return MethodSignatureFlags.UnmanagedCallingConventionStdCall; // TODO: CDecl for varargs
                     case PInvokeAttributes.CallingConventionCDecl:
                         return MethodSignatureFlags.UnmanagedCallingConventionCdecl;
                     case PInvokeAttributes.CallingConventionStdCall:
                         return MethodSignatureFlags.UnmanagedCallingConventionStdCall;
                     case PInvokeAttributes.CallingConventionThisCall:
                         return MethodSignatureFlags.UnmanagedCallingConventionThisCall;
+                    case PInvokeAttributes.CallingConventionWinApi: // Platform default
                     case PInvokeAttributes.None:
                         return MethodSignatureFlags.None;
                     default:

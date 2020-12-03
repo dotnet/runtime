@@ -586,9 +586,6 @@ namespace Internal.TypeSystem
         //    See current interface call resolution for details on how that happens.
         private static MethodDesc ResolveInterfaceMethodToVirtualMethodOnType(MethodDesc interfaceMethod, MetadataType currentType)
         {
-            if (currentType.IsInterface)
-                return null;
-
             MethodDesc methodImpl = FindImplFromDeclFromMethodImpls(currentType, interfaceMethod);
             if (methodImpl != null)
                 return methodImpl;
