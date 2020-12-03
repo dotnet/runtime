@@ -1,0 +1,17 @@
+
+
+if (CLR_CMAKE_TARGET_LINUX AND NOT CLR_CMAKE_TARGET_ANDROID)
+    list(APPEND NATIVE_LIBS_EXTRA rt)
+elseif (CLR_CMAKE_TARGET_FREEBSD)
+    list(APPEND NATIVE_LIBS_EXTRA pthread)
+    if (HAVE_INOTIFY)
+        find_library(INOTIFY_LIBRARY inotify HINTS /usr/local/lib)
+        list(APPEND NATIVE_LIBS_EXTRA ${INOTIFY_LIBRARY})
+    endif ()
+elseif (CLR_CMAKE_TARGET_SUNOS)
+    list(APPEND NATIVE_LIBS_EXTRA socket)
+endif ()
+
+if (CLR_CMAKE_TARGET_IOS OR CLR_CMAKE_TARGET_TVOS)
+    list(APPEND NATIVE_LIBS_EXTRA "-framework Foundation")
+endif ()

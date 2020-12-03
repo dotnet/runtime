@@ -2,14 +2,10 @@ project(System.IO.Compression.Native C)
 
 if (CLR_CMAKE_TARGET_BROWSER)
     add_definitions(-s USE_ZLIB)
-elseif (CLR_CMAKE_TARGET_ANDROID)
-    # need special case here since we want to link against libz.so but find_package() would resolve libz.a
-    set(ZLIB_LIBRARIES z)
-elseif (CLR_CMAKE_TARGET_SUNOS)
-    set(ZLIB_LIBRARIES z m)
-else ()
-    find_package(ZLIB REQUIRED)
-endif ()
+endif()
+
+set(NATIVE_LIBS_EXTRA)
+include(${CMAKE_CURRENT_LIST_DIR}/extra_libs.cmake)
 
 set(NATIVECOMPRESSION_SOURCES
     ../../AnyOS/zlib/pal_zlib.c
@@ -67,7 +63,7 @@ if (GEN_SHARED_LIB)
     )
 
     target_link_libraries(System.IO.Compression.Native
-        ${ZLIB_LIBRARIES}
+        ${NATIVE_LIBS_EXTRA}
     )
     install_with_stripped_symbols (System.IO.Compression.Native PROGRAMS .)
 endif ()

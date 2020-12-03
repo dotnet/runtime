@@ -2,24 +2,8 @@ project(System.Net.Security.Native C)
 
 add_compile_options(-Wno-incompatible-pointer-types-discards-qualifiers)
 
-if (HAVE_GSSFW_HEADERS)
-   find_library(LIBGSS NAMES GSS)
-   if(LIBGSS STREQUAL LIBGSS-NOTFOUND)
-      message(FATAL_ERROR "Cannot find GSS.Framework and System.Net.Security.Native cannot build without it. Try installing GSS.Framework (or the appropriate package for your platform)")
-   endif()
-elseif(HAVE_HEIMDAL_HEADERS)
-   find_library(LIBGSS NAMES gssapi)
-   if(LIBGSS STREQUAL LIBGSS-NOTFOUND)
-      message(FATAL_ERROR "Cannot find libgssapi and System.Net.Security.Native cannot build without it. Try installing heimdal (or the appropriate package for your platform)")
-   endif()
-elseif(HeimdalGssApi)
-     message(FATAL_ERROR "HeimdalGssApi option was set but gssapi headers could not be found and System.Net.Security.Native cannot build without the headers. Try installing heimdal (or the appropriate package for your platform)")
-else()
-   find_library(LIBGSS NAMES gssapi_krb5)
-   if(LIBGSS STREQUAL LIBGSS-NOTFOUND)
-      message(FATAL_ERROR "Cannot find libgssapi_krb5 and System.Net.Security.Native cannot build without it. Try installing libkrb5-dev (or the appropriate package for your platform)")
-   endif()
-endif()
+set(NATIVE_LIBS_EXTRA)
+include(${CMAKE_CURRENT_LIST_DIR}/extra_libs.cmake)
 
 set(NATIVEGSS_SOURCES
     pal_gssapi.c
@@ -42,7 +26,7 @@ set_target_properties(System.Net.Security.Native-Static PROPERTIES OUTPUT_NAME S
 
 if (GEN_SHARED_LIB)
     target_link_libraries(System.Net.Security.Native
-        ${LIBGSS}
+        ${NATIVE_LIBS_EXTRA}
     )
 
     install_with_stripped_symbols (System.Net.Security.Native PROGRAMS .)

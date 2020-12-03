@@ -53,23 +53,20 @@ elseif (CLR_CMAKE_TARGET_FREEBSD)
     endif ()
 endif ()
 
+set(NATIVE_LIBS_EXTRA)
+include(${CMAKE_CURRENT_LIST_DIR}/extra_libs.cmake)
+
 if (GEN_SHARED_LIB)
     add_library(System.Native
         SHARED
         ${NATIVE_SOURCES}
         ${VERSION_FILE_PATH}
     )
-    if (CLR_CMAKE_TARGET_LINUX AND NOT CLR_CMAKE_TARGET_ANDROID)
-        target_link_libraries(System.Native rt)
-    elseif (CLR_CMAKE_TARGET_FREEBSD)
-        target_link_libraries(System.Native pthread)
-        if (HAVE_INOTIFY)
-            find_library(INOTIFY_LIBRARY inotify HINTS /usr/local/lib)
-            target_link_libraries(System.Native ${INOTIFY_LIBRARY})
-        endif ()
-    elseif (CLR_CMAKE_TARGET_SUNOS)
-        target_link_libraries(System.Native socket)
-    endif ()
+
+    target_link_libraries(System.Native
+        ${NATIVE_LIBS_EXTRA}
+    )
+
     install_with_stripped_symbols (System.Native PROGRAMS .)
 endif ()
 
@@ -77,10 +74,6 @@ add_library(System.Native-Static
     STATIC
     ${NATIVE_SOURCES}
 )
-
-if (CLR_CMAKE_TARGET_IOS OR CLR_CMAKE_TARGET_TVOS)
-    target_link_libraries(System.Native "-framework Foundation")
-endif ()
 
 set_target_properties(System.Native-Static PROPERTIES OUTPUT_NAME System.Native CLEAN_DIRECT_OUTPUT 1)
 
