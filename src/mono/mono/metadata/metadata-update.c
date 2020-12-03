@@ -681,13 +681,8 @@ mono_image_load_enc_delta (MonoDomain *domain, MonoImage *image_base, gconstpoin
 	if (image_dmeta->minimal_delta) {
 		guint32 idx = mono_metadata_decode_row_col (&image_dmeta->tables [MONO_TABLE_MODULE], 0, MONO_MODULE_NAME);
 
-		/* TODO: hmm. */
 		const char *module_name = NULL;
-		if (idx >= image_base->heap_strings.size) {
-			module_name = mono_metadata_string_heap (image_dmeta, idx - image_base->heap_strings.size);
-		} else {
-			module_name = mono_metadata_string_heap (image_base, idx);
-		}
+		module_name = mono_metadata_string_heap (image_base, idx);
 
 		/* Set the module name now that we know the base String heap size */
 		g_assert (!image_dmeta->module_name);
@@ -718,22 +713,6 @@ mono_image_load_enc_delta (MonoDomain *domain, MonoImage *image_base, gconstpoin
 
 	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "base  guid: %s", image_base->guid);
 	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "dmeta guid: %s", image_dmeta->guid);
-
-	if (image_dmeta->minimal_delta) {
-		append_heap (&image_base->heap_strings, &image_dmeta->heap_strings);
-		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "base image strings heap addr (merged): %p", image_base->heap_strings.data);
-		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "base image strings heap size (merged): 0x%08x", image_base->heap_strings.size);
-
-		append_heap (&image_base->heap_us, &image_dmeta->heap_us);
-		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "base image user string heap addr (merged): %p", image_base->heap_us.data);
-		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "base image user string heap size (merged): 0x%08x", image_base->heap_us.size);
-
-		append_heap (&image_base->heap_blob, &image_dmeta->heap_blob);
-		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "base image blob heap addr (merged): %p", image_base->heap_blob.data);
-		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "base image blob heap size (merged): 0x%08x", image_base->heap_blob.size);
-	} else {
-		g_error ("implement me for regular delta images");
-	}
 
 	if (mono_trace_is_traced (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE))
 		dump_update_summary (image_base, image_dmeta);
