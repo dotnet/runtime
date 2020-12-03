@@ -1260,6 +1260,20 @@ legacy_lookup_native_library (MonoImage *image, const char *scope)
 
 #endif // ENABLE_NETCORE
 
+#if defined(ENABLE_NETCORE) && !defined(NO_GLOBALIZATION_SHIM)
+static gpointer
+default_resolve_dllimport(const char* dll, const char* func)
+{
+	if (strcmp(dll, "libSystem.Globalization.Native") == 0) {
+		const void* method_impl = GlobalizationResolveDllImport(func);
+		if (method_impl)
+			return (gpointer)method_impl;
+	}
+
+	return NULL;
+}
+#endif
+
 gpointer
 lookup_pinvoke_call_impl (MonoMethod *method, MonoLookupPInvokeStatus *status_out)
 {
@@ -1341,13 +1355,9 @@ lookup_pinvoke_call_impl (MonoMethod *method, MonoLookupPInvokeStatus *status_ou
 #endif
 
 #if defined(ENABLE_NETCORE) && !defined(NO_GLOBALIZATION_SHIM)
-	if (strcmp(new_scope, "libSystem.Globalization.Native") == 0) {
-		const void* method_impl = GlobalizationResolveDllImport(new_import);
-		if (method_impl)
-		{
-			return (gpointer)method_impl;
-		}
-	}
+	gpointer default_override = default_resolve_dllimport(new_scope, new_import);
+	if (default_override)
+		return default_override;
 #endif
 
 #ifdef ENABLE_NETCORE
