@@ -209,10 +209,6 @@ namespace BinderTracingTests
             {
                 EnableEvents(eventSource, EventLevel.Verbose, AssemblyLoaderKeyword);
             }
-            else if (eventSource.Name == "System.Threading.Tasks.TplEventSource")
-            {
-                EnableEvents(eventSource, EventLevel.Verbose, TasksFlowActivityIds);
-            }
         }
 
         protected override void OnEventWritten(EventWrittenEventArgs data)
