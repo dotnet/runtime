@@ -794,8 +794,6 @@ public:
     void EnumMemoryRegions(CLRDataEnumMemoryFlags flags, MethodTable *pMT);
 #endif
 
-    static CorElementType ComputeInternalCorElementTypeForValueType(MethodTable * pMT);
-
     /************************************
      *  INSTANCE MEMBER VARIABLES
      ************************************/

@@ -10070,7 +10070,7 @@ void CodeGen::genVzeroupperIfNeeded(bool check256bitOnly /* = true*/)
 // Return Value:
 //     true if type is returned in multiple registers, false otherwise.
 //
-bool Compiler::IsMultiRegReturnedType(CORINFO_CLASS_HANDLE hClass)
+bool Compiler::IsMultiRegReturnedType(CORINFO_CLASS_HANDLE hClass, CorInfoCallConvExtension callConv)
 {
     if (hClass == NO_CLASS_HANDLE)
     {
@@ -10078,7 +10078,7 @@ bool Compiler::IsMultiRegReturnedType(CORINFO_CLASS_HANDLE hClass)
     }
 
     structPassingKind howToReturnStruct;
-    var_types         returnType = getReturnTypeForStruct(hClass, &howToReturnStruct);
+    var_types         returnType = getReturnTypeForStruct(hClass, callConv, &howToReturnStruct);
 
 #ifdef TARGET_ARM64
     return (varTypeIsStruct(returnType) && (howToReturnStruct != SPK_PrimitiveType));
@@ -11534,7 +11534,11 @@ void CodeGen::genReturn(GenTree* treeNode)
             }
             else // we must have a struct return type
             {
-                retTypeDesc.InitializeStructReturnType(compiler, compiler->info.compMethodInfo->args.retTypeClass);
+                CorInfoCallConvExtension callConv =
+                    compiler->compMethodInfoGetEntrypointCallConv(compiler->info.compMethodInfo);
+
+                retTypeDesc.InitializeStructReturnType(compiler, compiler->info.compMethodInfo->args.retTypeClass,
+                                                       callConv);
             }
             regCount = retTypeDesc.GetReturnRegCount();
         }
@@ -11659,7 +11663,9 @@ void CodeGen::genStructReturn(GenTree* treeNode)
     if (actualOp1->OperIs(GT_LCL_VAR))
     {
         varDsc = compiler->lvaGetDesc(actualOp1->AsLclVar()->GetLclNum());
-        retTypeDesc.InitializeStructReturnType(compiler, varDsc->GetStructHnd());
+        retTypeDesc.InitializeStructReturnType(compiler, varDsc->GetStructHnd(),
+                                               compiler->compMethodInfoGetEntrypointCallConv(
+                                                   compiler->info.compMethodInfo));
         assert(varDsc->lvIsMultiRegRet);
     }
     else
@@ -11839,7 +11845,8 @@ void CodeGen::genMultiRegStoreToLocal(GenTreeLclVar* lclNode)
                 hasRegs = true;
                 if (varReg != reg)
                 {
-                    inst_RV_RV(ins_Copy(type), varReg, reg, type);
+                    // We may need a cross register-file copy here.
+                    inst_RV_RV(ins_Copy(reg, type), varReg, reg, type);
                 }
                 fieldVarDsc->SetRegNum(varReg);
             }

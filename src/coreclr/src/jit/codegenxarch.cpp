@@ -140,7 +140,9 @@ void CodeGen::genEmitGSCookieCheck(bool pushReg)
             }
             else // we must have a struct return type
             {
-                retTypeDesc.InitializeStructReturnType(compiler, compiler->info.compMethodInfo->args.retTypeClass);
+                retTypeDesc.InitializeStructReturnType(compiler, compiler->info.compMethodInfo->args.retTypeClass,
+                                                       compiler->compMethodInfoGetEntrypointCallConv(
+                                                           compiler->info.compMethodInfo));
             }
 
             const unsigned regCount = retTypeDesc.GetReturnRegCount();
@@ -5688,12 +5690,29 @@ void CodeGen::genJmpMethod(GenTree* jmp)
 #endif // !defined(UNIX_AMD64_ABI)
         {
             // Register argument
+            CLANG_FORMAT_COMMENT_ANCHOR;
+#ifdef TARGET_X86
+            noway_assert(
+                isRegParamType(genActualType(varDsc->TypeGet())) ||
+                (varTypeIsStruct(varDsc->TypeGet()) && compiler->isTrivialPointerSizedStruct(varDsc->GetStructHnd())));
+#else
             noway_assert(isRegParamType(genActualType(varDsc->TypeGet())));
+#endif // TARGET_X86
 
             // Is register argument already in the right register?
             // If not load it from its stack location.
             var_types loadType = varDsc->lvaArgType();
-            regNumber argReg   = varDsc->GetArgReg(); // incoming arg register
+
+#ifdef TARGET_X86
+            if (varTypeIsStruct(varDsc->TypeGet()))
+            {
+                // Treat trivial pointer-sized structs as a pointer sized primitive
+                // for the purposes of registers.
+                loadType = TYP_I_IMPL;
+            }
+#endif
+
+            regNumber argReg = varDsc->GetArgReg(); // incoming arg register
 
             if (varDsc->GetRegNum() != argReg)
             {
