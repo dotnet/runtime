@@ -21,12 +21,9 @@ namespace ILLink.RoslynAnalyzer.Tests
 		{
 			switch (m.Identifier.ValueText) {
 			case "RequiresAndCallsOtherRequiresMethods":
-			case "TestRequiresWithMessageAndUrlOnMethod":
-				// Test failures because analyzer support is not complete
-				// Skip for now
+			case "MethodWithDuplicateRequiresAttribute":
 				return;
 			}
-
 			RunTest (m, attrs);
 		}
 	}

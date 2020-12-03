@@ -5,7 +5,6 @@
 using System;
 using System.Collections.Immutable;
 using System.Diagnostics;
-using System.Linq;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Diagnostics;
 using Microsoft.CodeAnalysis.Operations;
@@ -85,11 +84,18 @@ namespace ILLink.RoslynAnalyzer
 							IsNamedType (attrClass, "System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute") &&
 							attr.ConstructorArguments.Length == 1 &&
 							attr.ConstructorArguments[0] is { Type: { SpecialType: SpecialType.System_String } } ctorArg) {
+
+							string urlArgument = "";
+							foreach (var namedArgument in attr.NamedArguments) {
+								if (namedArgument.Key == "Url")
+									urlArgument = namedArgument.Value.Value?.ToString () ?? "";
+							}
 							operationContext.ReportDiagnostic (Diagnostic.Create (
 								s_rule,
 								location,
-								method,
-								(string) ctorArg.Value!));
+								method.OriginalDefinition.ToString (),
+								(string) ctorArg.Value!,
+								urlArgument));
 						}
 					}
 				}

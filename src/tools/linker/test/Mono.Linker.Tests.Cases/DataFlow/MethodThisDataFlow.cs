@@ -45,11 +45,11 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			GetWithNonPublicMethods ().RequireThisNonPublicMethods ();
 		}
 
-		[UnrecognizedReflectionAccessPattern (typeof (MethodThisDataFlowTypeTest), "get_" + nameof (MethodThisDataFlowTypeTest.PropertyRequireThisPublicMethods), new Type[] { },
+		[UnrecognizedReflectionAccessPattern (typeof (MethodThisDataFlowTypeTest), nameof (MethodThisDataFlowTypeTest.PropertyRequireThisPublicMethods) + ".get", new Type[] { },
 			messageCode: "IL2075", message: new string[] {
 				"Mono.Linker.Tests.Cases.DataFlow.MethodThisDataFlow.GetWithNonPublicMethods()",
-				"System.MethodThisDataFlowTypeTest.get_PropertyRequireThisPublicMethods()" })]
-		[UnrecognizedReflectionAccessPattern (typeof (MethodThisDataFlowTypeTest), "get_" + nameof (MethodThisDataFlowTypeTest.PropertyRequireThisNonPublicMethods), new Type[] { }, messageCode: "IL2075")]
+				"System.MethodThisDataFlowTypeTest.PropertyRequireThisPublicMethods.get" })]
+		[UnrecognizedReflectionAccessPattern (typeof (MethodThisDataFlowTypeTest), nameof (MethodThisDataFlowTypeTest.PropertyRequireThisNonPublicMethods) + ".get", new Type[] { }, messageCode: "IL2075")]
 		static void PropagateToThisWithGetters ()
 		{
 			_ = GetWithPublicMethods ().PropertyRequireThisPublicMethods;
@@ -59,11 +59,11 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			_ = GetWithNonPublicMethods ().PropertyRequireThisNonPublicMethods;
 		}
 
-		[UnrecognizedReflectionAccessPattern (typeof (MethodThisDataFlowTypeTest), "set_" + nameof (MethodThisDataFlowTypeTest.PropertyRequireThisPublicMethods), new Type[] { typeof (Object) },
+		[UnrecognizedReflectionAccessPattern (typeof (MethodThisDataFlowTypeTest), nameof (MethodThisDataFlowTypeTest.PropertyRequireThisPublicMethods) + ".set", new Type[] { typeof (Object) },
 			messageCode: "IL2075", message: new string[] {
 				"Mono.Linker.Tests.Cases.DataFlow.MethodThisDataFlow.GetWithNonPublicMethods()",
-				"System.MethodThisDataFlowTypeTest.set_PropertyRequireThisPublicMethods(Object)" })]
-		[UnrecognizedReflectionAccessPattern (typeof (MethodThisDataFlowTypeTest), "set_" + nameof (MethodThisDataFlowTypeTest.PropertyRequireThisNonPublicMethods), new Type[] { typeof (Object) }, messageCode: "IL2075")]
+				"System.MethodThisDataFlowTypeTest.PropertyRequireThisPublicMethods.set" })]
+		[UnrecognizedReflectionAccessPattern (typeof (MethodThisDataFlowTypeTest), nameof (MethodThisDataFlowTypeTest.PropertyRequireThisNonPublicMethods) + ".set", new Type[] { typeof (Object) }, messageCode: "IL2075")]
 		static void PropagateToThisWithSetters ()
 		{
 			GetWithPublicMethods ().PropertyRequireThisPublicMethods = null;
