@@ -2247,7 +2247,7 @@ DWORD NDirectStubLinker::EmitProfilerBeginTransitionCallback(ILCodeStream* pcsEm
     else
     {
         // we use a null pThread to indicate reverse interop
-        pcsEmit->EmitLDC(NULL);
+        pcsEmit->EmitLoadNullPtr();
     }
 
     // In the unmanaged delegate case, we need the "this" object to retrieve the MD
@@ -2269,8 +2269,9 @@ DWORD NDirectStubLinker::EmitProfilerBeginTransitionCallback(ILCodeStream* pcsEm
     }
     else
     {
-        pcsEmit->EmitLDC(NULL);
+        pcsEmit->EmitLDNULL();
     }
+
     pcsEmit->EmitCALL(METHOD__STUBHELPERS__PROFILER_BEGIN_TRANSITION_CALLBACK, 3, 1);
 
     // Store the MD for StubHelpers::ProfilerLeaveCallback().
@@ -2287,7 +2288,7 @@ void NDirectStubLinker::EmitProfilerEndTransitionCallback(ILCodeStream* pcsEmit,
     if (SF_IsReverseStub(dwStubFlags))
     {
         // we use a null pThread to indicate reverse interop
-        pcsEmit->EmitLDC(NULL);
+        pcsEmit->EmitLoadNullPtr();
     }
     else
     {
