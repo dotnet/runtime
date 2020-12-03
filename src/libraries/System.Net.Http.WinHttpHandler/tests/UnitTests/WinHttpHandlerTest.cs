@@ -464,6 +464,16 @@ namespace System.Net.Http.WinHttpHandlerUnitTests
         }
 
         [Fact]
+        public void ReceiveDataTimeout_SetValidValue_ForwardsCorrectNativeOptionToWinHttp()
+        {
+            var handler = new WinHttpHandler();
+
+            SendRequestHelper.Send(handler, () => handler.ReceiveDataTimeout = TimeSpan.FromSeconds(13));
+
+            Assert.Equal(13_000u, APICallHistory.WinHttpOptionReceiveTimeout.Value);
+        }
+
+        [Fact]
         public void ReceiveDataTimeout_SetNegativeValue_ThrowsArgumentOutOfRangeException()
         {
             var handler = new WinHttpHandler();
@@ -490,11 +500,13 @@ namespace System.Net.Http.WinHttpHandlerUnitTests
         }
 
         [Fact]
-        public void ReceiveDataTimeout_SetInfiniteValue_NoExceptionThrown()
+        public void ReceiveDataTimeout_SetInfiniteTimeSpan_TranslatesToUInt32MaxValue()
         {
             var handler = new WinHttpHandler();
 
-            handler.ReceiveDataTimeout = Timeout.InfiniteTimeSpan;
+            SendRequestHelper.Send(handler, () => handler.ReceiveDataTimeout = Timeout.InfiniteTimeSpan);
+
+            Assert.Equal(uint.MaxValue, APICallHistory.WinHttpOptionReceiveTimeout.Value);
         }
 
         [Fact]

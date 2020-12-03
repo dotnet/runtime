@@ -113,7 +113,7 @@ stages:
       # - Linux_musl_arm
       # - Linux_musl_arm64
       - windows_x64
-      # - windows_x86
+      - windows_x86
       # - windows_arm
       # - windows_arm64
       jobParameters:

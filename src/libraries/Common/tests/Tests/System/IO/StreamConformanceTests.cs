@@ -1858,6 +1858,8 @@ namespace System.IO.Tests
 
             using StreamReader reader = new StreamReader(readable);
             Assert.Equal("hello", reader.ReadToEnd());
+
+            await write;
         }
 
         [Fact]
