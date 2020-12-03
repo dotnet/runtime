@@ -431,7 +431,7 @@ DWORD EEClassFactoryInfoHashTableHelper::Hash(ClassFactoryInfo *pKey)
 
     if (pKey->m_strServerName)
     {
-        WCHAR *pSrvNameData = pKey->m_strServerName;
+        PCWSTR pSrvNameData = pKey->m_strServerName;
 
         while (*pSrvNameData != 0)
         {

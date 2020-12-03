@@ -19,7 +19,7 @@
  * Note: The _stricmp is dependent on the LC_CTYPE category of the locale,
  *      and this is ignored by these tests.
  */
-int __cdecl main(int argc, char *argv[])
+PALTEST(c_runtime__stricmp_test1_paltest_stricmp_test1, "c_runtime/_stricmp/test1/paltest_stricmp_test1")
 {
     char *str1 = "foo";
     char *str2 = "fOo";

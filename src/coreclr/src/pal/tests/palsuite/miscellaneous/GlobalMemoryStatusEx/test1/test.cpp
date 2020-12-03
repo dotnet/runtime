@@ -12,7 +12,8 @@
 
 #include <palsuite.h>
 
-int __cdecl main(int argc, char *argv[]) {
+PALTEST(miscellaneous_GlobalMemoryStatusEx_test1_paltest_globalmemorystatusex_test1, "miscellaneous/GlobalMemoryStatusEx/test1/paltest_globalmemorystatusex_test1")
+{
   
     MEMORYSTATUSEX memoryStatus;
 

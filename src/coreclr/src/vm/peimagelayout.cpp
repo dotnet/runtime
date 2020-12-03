@@ -712,14 +712,22 @@ FlatImageLayout::FlatImageLayout(PEImage* pOwner)
         if (m_FileMap == NULL)
             ThrowLastError();
 
-        //DWORD lowPart = (DWORD)offset;
-        //DWORD highPart = (DWORD)(offset >> 32);
-        char *addr = (char*)CLRMapViewOfFile(m_FileMap, FILE_MAP_READ, 0, 0, 0);
-        addr += offset;
-        m_FileView.Assign((LPVOID)addr);
+        // - Windows - MapViewOfFileEx requires offset to be allocation granularity aligned (typically 64KB)
+        // - Linux/OSX - mmap requires offset to be page aligned (PAL sets allocation granularity to page size)
+        UINT32 alignment = g_SystemInfo.dwAllocationGranularity;
+        UINT64 mapBegin = AlignDown((UINT64)offset, alignment);
+        UINT64 mapSize = ((UINT64)(offset + size)) - mapBegin;
 
-        if (m_FileView == NULL)
+        _ASSERTE((offset - mapBegin) < alignment);
+        _ASSERTE((offset - mapBegin) < mapSize);
+        _ASSERTE(mapSize >= (UINT64)size);
+
+        char *addr = (char*)CLRMapViewOfFile(m_FileMap, FILE_MAP_READ, mapBegin >> 32, (DWORD)mapBegin, (DWORD)mapSize);
+        if (addr == NULL)
             ThrowLastError();
+
+        addr += (offset - mapBegin);
+        m_FileView.Assign((LPVOID)addr);
     }
     Init(m_FileView, (COUNT_T)size);
 }

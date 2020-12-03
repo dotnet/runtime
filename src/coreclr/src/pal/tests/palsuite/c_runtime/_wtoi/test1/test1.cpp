@@ -24,7 +24,7 @@ struct testCase
     char avalue[20];
 };
 
-int __cdecl main(int argc, char **argv)
+PALTEST(c_runtime__wtoi_test1_paltest_wtoi_test1, "c_runtime/_wtoi/test1/paltest_wtoi_test1")
 {
 
     int result=0;

@@ -103,15 +103,13 @@ RefInfoListNodePool::RefInfoListNodePool(Compiler* compiler, unsigned preallocat
 //                                    pool.
 //
 // Arguments:
-//    l -    - The `LsraLocation` for the `RefInfo` value.
-//    i      - The interval for the `RefInfo` value.
-//    t      - The IR node for the `RefInfo` value
-//    regIdx - The register index for the `RefInfo` value.
+//    r - The `RefPosition` for the `RefInfo` value.
+//    t - The IR node for the `RefInfo` value
 //
 // Returns:
 //    A pooled or newly-allocated `RefInfoListNode`, depending on the
 //    contents of the pool.
-RefInfoListNode* RefInfoListNodePool::GetNode(RefPosition* r, GenTree* t, unsigned regIdx)
+RefInfoListNode* RefInfoListNodePool::GetNode(RefPosition* r, GenTree* t)
 {
     RefInfoListNode* head = m_freeList;
     if (head == nullptr)
@@ -1695,11 +1693,11 @@ void LinearScan::buildRefPositionsForNode(GenTree* tree, BasicBlock* block, Lsra
 
 #ifdef DEBUG
     int newDefListCount = defList.Count();
-    int produce         = newDefListCount - oldDefListCount;
+    // Currently produce is unused, but need to strengthen an assert to check if produce is
+    // as expected. See https://github.com/dotnet/runtime/issues/8678
+    int produce = newDefListCount - oldDefListCount;
     assert((consume == 0) || (ComputeAvailableSrcCount(tree) == consume));
-#endif // DEBUG
 
-#ifdef DEBUG
     // If we are constraining registers, modify all the RefPositions we've just built to specify the
     // minimum reg count required.
     if ((getStressLimitRegs() != LSRA_LIMIT_NONE) || (getSelectionHeuristics() != LSRA_SELECT_DEFAULT))
@@ -2095,7 +2093,6 @@ void LinearScan::buildIntervals()
     {
         setBlockSequence();
     }
-    curBBNum = blockSequence[bbSeqCount - 1]->bbNum;
 
     // Next, create ParamDef RefPositions for all the tracked parameters, in order of their varIndex.
     // Assign these RefPositions to the (nonexistent) BB0.
@@ -2180,15 +2177,24 @@ void LinearScan::buildIntervals()
 
         if (argDsc->lvPromotedStruct())
         {
-            noway_assert(argDsc->lvFieldCnt == 1); // We only handle one field here
-
-            unsigned fieldVarNum = argDsc->lvFieldLclStart;
-            argDsc               = &(compiler->lvaTable[fieldVarNum]);
+            for (unsigned fieldVarNum = argDsc->lvFieldLclStart;
+                 fieldVarNum < argDsc->lvFieldLclStart + argDsc->lvFieldCnt; ++fieldVarNum)
+            {
+                LclVarDsc* fieldVarDsc = compiler->lvaGetDesc(fieldVarNum);
+                noway_assert(fieldVarDsc->lvIsParam);
+                if (!fieldVarDsc->lvTracked && fieldVarDsc->lvIsRegArg)
+                {
+                    updateRegStateForArg(fieldVarDsc);
+                }
+            }
         }
-        noway_assert(argDsc->lvIsParam);
-        if (!argDsc->lvTracked && argDsc->lvIsRegArg)
+        else
         {
-            updateRegStateForArg(argDsc);
+            noway_assert(argDsc->lvIsParam);
+            if (!argDsc->lvTracked && argDsc->lvIsRegArg)
+            {
+                updateRegStateForArg(argDsc);
+            }
         }
     }
 
@@ -2233,11 +2239,8 @@ void LinearScan::buildIntervals()
                 currentLoc = 1;
             }
 
-            // Handle special cases for live-in.
-            // If this block hasEHBoundaryIn, then we will mark the recentRefPosition of each EH Var preemptively as
-            // spillAfter, since we don't want them to remain in registers.
-            // Otherwise, determine if we need any DummyDefs.
-            // We need DummyDefs for cases where "predBlock" isn't really a predecessor.
+            // For blocks that don't have EHBoundaryIn, we need DummyDefs for cases where "predBlock" isn't
+            // really a predecessor.
             // Note that it's possible to have uses of unitialized variables, in which case even the first
             // block may require DummyDefs, which we are not currently adding - this means that these variables
             // will always be considered to be in memory on entry (and reloaded when the use is encountered).
@@ -2245,23 +2248,7 @@ void LinearScan::buildIntervals()
             // variables (which may actually be initialized along the dynamically executed paths, but not
             // on all static paths), we wind up with excessive liveranges for some of these variables.
 
-            if (blockInfo[block->bbNum].hasEHBoundaryIn)
-            {
-                VARSET_TP       liveInEHVars(VarSetOps::Intersection(compiler, currentLiveVars, exceptVars));
-                VarSetOps::Iter iter(compiler, liveInEHVars);
-                unsigned        varIndex = 0;
-                while (iter.NextElem(&varIndex))
-                {
-                    Interval* interval = getIntervalForLocalVar(varIndex);
-                    if (interval->recentRefPosition != nullptr)
-                    {
-                        JITDUMP("  Marking RP #%d of V%02u as spillAfter\n", interval->recentRefPosition->rpNum,
-                                interval->varNum);
-                        interval->recentRefPosition->spillAfter;
-                    }
-                }
-            }
-            else
+            if (!blockInfo[block->bbNum].hasEHBoundaryIn)
             {
                 // Any lclVars live-in on a non-EH boundary edge are resolution candidates.
                 VarSetOps::UnionD(compiler, resolutionCandidateVars, currentLiveVars);
@@ -3475,7 +3462,7 @@ int LinearScan::BuildReturn(GenTree* tree)
                     assert(compiler->lvaEnregMultiRegVars);
                     LclVarDsc*     varDsc = compiler->lvaGetDesc(op1->AsLclVar()->GetLclNum());
                     ReturnTypeDesc retTypeDesc;
-                    retTypeDesc.InitializeStructReturnType(compiler, varDsc->lvVerTypeInfo.GetClassHandle());
+                    retTypeDesc.InitializeStructReturnType(compiler, varDsc->GetStructHnd());
                     pRetTypeDesc = &retTypeDesc;
                     assert(compiler->lvaGetDesc(op1->AsLclVar()->GetLclNum())->lvFieldCnt ==
                            retTypeDesc.GetReturnRegCount());

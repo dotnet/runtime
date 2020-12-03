@@ -5066,11 +5066,10 @@ VOID ETW::InfoLog::RuntimeInformation(INT32 type)
             PCWSTR lpwszCommandLine = W("");
 
 
-            // if WszGetModuleFileName fails, we return an empty string
-            if (!WszGetModuleFileName(GetCLRModule(), dllPath)) {
+            // if GetClrModulePathName fails, we return an empty string
+            if (!GetClrModulePathName(dllPath)) {
                 dllPath.Set(W("\0"));
             }
-
 
             if(type == ETW::InfoLog::InfoStructs::Callback)
             {

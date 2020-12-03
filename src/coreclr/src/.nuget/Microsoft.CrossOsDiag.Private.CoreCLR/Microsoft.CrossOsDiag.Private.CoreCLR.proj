@@ -3,7 +3,7 @@
 
   <PropertyGroup>
     <BuildIdentityPackage>false</BuildIdentityPackage>
-    <SupportedRids>linux-x64;linux-musl-x64;linux-arm64;linux-musl-arm64;linux-arm;</SupportedRids>
+    <SupportedRids>linux-x64;linux-musl-x64;linux-arm64;linux-musl-arm64;linux-arm;linux-musl-arm</SupportedRids>
   </PropertyGroup>
 
   <Target Name="VerifyCrossDacProperties" BeforeTargets="Build">
@@ -19,6 +19,7 @@
         <AdditionalProperties Condition="'%(Project.PackageTargetRuntime)' == 'linux-arm64'">%(AdditionalProperties);CrossDacBinRoot=$(CrossDacArtifactsDir)/Linux.arm64.$(Configuration)/x64</AdditionalProperties>
         <AdditionalProperties Condition="'%(Project.PackageTargetRuntime)' == 'linux-musl-arm64'">%(AdditionalProperties);CrossDacBinRoot=$(CrossDacArtifactsDir)/Linux_musl.arm64.$(Configuration)/x64</AdditionalProperties>
         <AdditionalProperties Condition="'%(Project.PackageTargetRuntime)' == 'linux-arm'">%(AdditionalProperties);CrossDacBinRoot=$(CrossDacArtifactsDir)/Linux.arm.$(Configuration)/x86</AdditionalProperties>
+        <AdditionalProperties Condition="'%(Project.PackageTargetRuntime)' == 'linux-musl-arm'">%(AdditionalProperties);CrossDacBinRoot=$(CrossDacArtifactsDir)/Linux_musl.arm.$(Configuration)/x86</AdditionalProperties>
       </_projectsToBuild>
     </ItemGroup>
 

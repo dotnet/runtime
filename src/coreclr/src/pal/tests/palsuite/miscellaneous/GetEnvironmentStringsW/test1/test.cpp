@@ -15,7 +15,8 @@
 #define UNICODE
 #include <palsuite.h>
 
-int __cdecl main(int argc, char *argv[]) {
+PALTEST(miscellaneous_GetEnvironmentStringsW_test1_paltest_getenvironmentstringsw_test1, "miscellaneous/GetEnvironmentStringsW/test1/paltest_getenvironmentstringsw_test1")
+{
 
     LPWSTR CapturedEnvironmentStrings = NULL;
     LPWSTR EnviroStringReturned = NULL;

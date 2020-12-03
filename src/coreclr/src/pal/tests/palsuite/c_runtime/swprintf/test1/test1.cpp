@@ -19,7 +19,7 @@
  * Uses memcmp & wcslen
  */
 
-int __cdecl main(int argc, char *argv[])
+PALTEST(c_runtime_swprintf_test1_paltest_swprintf_test1, "c_runtime/swprintf/test1/paltest_swprintf_test1")
 {
     WCHAR *checkstr;
     WCHAR buf[256];

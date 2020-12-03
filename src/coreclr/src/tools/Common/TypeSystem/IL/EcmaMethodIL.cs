@@ -22,24 +22,19 @@ namespace Internal.IL
         private LocalVariableDefinition[] _locals;
         private ILExceptionRegion[] _ilExceptionRegions;
 
-        // TODO: Remove: Workaround for missing ClearInitLocals transforms in CoreRT CoreLib
-        private readonly bool _clearInitLocals;
-
-        public static EcmaMethodIL Create(EcmaMethod method, bool clearInitLocals = false)
+        public static EcmaMethodIL Create(EcmaMethod method)
         {
             var rva = method.MetadataReader.GetMethodDefinition(method.Handle).RelativeVirtualAddress;
             if (rva == 0)
                 return null;
-            return new EcmaMethodIL(method, rva, clearInitLocals);
+            return new EcmaMethodIL(method, rva);
         }
 
-        private EcmaMethodIL(EcmaMethod method, int rva, bool clearInitLocals)
+        private EcmaMethodIL(EcmaMethod method, int rva)
         {
             _method = method;
             _module = method.Module;
             _methodBody = _module.PEReader.GetMethodBody(rva);
-
-            _clearInitLocals = clearInitLocals;
         }
 
         public EcmaModule Module
@@ -71,7 +66,7 @@ namespace Internal.IL
         {
             get
             {
-                return !_clearInitLocals && _methodBody.LocalVariablesInitialized;
+                return _methodBody.LocalVariablesInitialized;
             }
         }
 

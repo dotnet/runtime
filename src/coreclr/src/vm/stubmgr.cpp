@@ -1478,7 +1478,7 @@ BOOL RangeSectionStubManager::DoTraceStub(PCODE stubStartAddress, TraceDestinati
             }
         }
 
-        __fallthrough;
+        FALLTHROUGH;
 #endif
 
     case STUB_CODE_BLOCK_METHOD_CALL_THUNK:

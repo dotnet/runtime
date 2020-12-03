@@ -13,7 +13,7 @@
 
 #include <palsuite.h>
 
-int __cdecl main(int argc, char *argv[])
+PALTEST(file_io_CopyFileA_test3_paltest_copyfilea_test3, "file_io/CopyFileA/test3/paltest_copyfilea_test3")
 {
 
     BOOL bRc = TRUE;

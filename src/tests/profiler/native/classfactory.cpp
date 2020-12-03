@@ -10,6 +10,7 @@
 #include "getappdomainstaticaddress/getappdomainstaticaddress.h"
 #include "eltprofiler/slowpatheltprofiler.h"
 #include "gcprofiler/gcprofiler.h"
+#include "releaseondetach/releaseondetach.h"
 
 ClassFactory::ClassFactory(REFCLSID clsid) : refCount(0), clsid(clsid)
 {
@@ -65,7 +66,8 @@ HRESULT STDMETHODCALLTYPE ClassFactory::CreateInstance(IUnknown *pUnkOuter, REFI
         new MetaDataGetDispenser(),
         new GetAppDomainStaticAddress(),
         new SlowPathELTProfiler(),
-        new GCProfiler()
+        new GCProfiler(),
+        new ReleaseOnDetach()
 		// add new profilers here
 	};
 

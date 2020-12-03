@@ -15,7 +15,7 @@
 #include <palsuite.h>
 #include "../_snwprintf_s.h"
 
-int __cdecl main(int argc, char *argv[])
+PALTEST(c_runtime__snwprintf_s_test19_paltest_snwprintf_test19, "c_runtime/_snwprintf_s/test19/paltest_snwprintf_test19")
 {
     int n = -1;
 

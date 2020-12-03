@@ -4707,19 +4707,7 @@ FORCEINLINE void HolderSysFreeString(BSTR str) { CONTRACT_VIOLATION(ThrowsViolat
 
 typedef Wrapper<BSTR, DoNothing, HolderSysFreeString> BSTRHolder;
 
-// HMODULE_TGT represents a handle to a module in the target process.  In non-DAC builds this is identical
-// to HMODULE (HINSTANCE), which is the base address of the module.  In DAC builds this must be a target address,
-// and so is represented by TADDR.
-
-#ifdef DACCESS_COMPILE
-typedef TADDR HMODULE_TGT;
-#else
-typedef HMODULE HMODULE_TGT;
-#endif
-
-BOOL IsIPInModule(HMODULE_TGT hModule, PCODE ip);
-
-extern HINSTANCE g_hmodCoreCLR;
+BOOL IsIPInModule(PTR_VOID pModuleBaseAddress, PCODE ip);
 
 namespace UtilCode
 {
@@ -4906,9 +4894,9 @@ inline T* InterlockedCompareExchangeT(
 #undef InterlockedCompareExchangePointer
 #define InterlockedCompareExchangePointer Use_InterlockedCompareExchangeT
 
-// Returns the directory for HMODULE. So, if HMODULE was for "C:\Dir1\Dir2\Filename.DLL",
+// Returns the directory for clr module. So, if path was for "C:\Dir1\Dir2\Filename.DLL",
 // then this would return "C:\Dir1\Dir2\" (note the trailing backslash).
-HRESULT GetHModuleDirectory(HMODULE hMod, SString& wszPath);
+HRESULT GetClrModuleDirectory(SString& wszPath);
 HRESULT CopySystemDirectory(const SString& pPathString, SString& pbuffer);
 
 HMODULE LoadLocalizedResourceDLLForSDK(_In_z_ LPCWSTR wzResourceDllName, _In_opt_z_ LPCWSTR modulePath=NULL, bool trySelf=true);

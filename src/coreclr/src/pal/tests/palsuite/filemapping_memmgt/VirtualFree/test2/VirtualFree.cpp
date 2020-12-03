@@ -13,7 +13,7 @@
 **============================================================*/
 #include <palsuite.h>
 
-int __cdecl main(int argc, char *argv[])
+PALTEST(filemapping_memmgt_VirtualFree_test2_paltest_virtualfree_test2, "filemapping_memmgt/VirtualFree/test2/paltest_virtualfree_test2")
 {
     int err;
     LPVOID lpVirtualAddress;
@@ -33,7 +33,7 @@ int __cdecl main(int argc, char *argv[])
     if(NULL == lpVirtualAddress)
     {
         Fail("\nFailed to call VirtualAlloc API!\n");
-        PAL_Terminate();
+        PAL_TerminateEx(1);
         return 1;
     }
 
@@ -44,7 +44,7 @@ int __cdecl main(int argc, char *argv[])
     if(0 == err)
     {
         Fail("\nFailed to call VirtualFree API!\n");
-        PAL_Terminate();
+        PAL_TerminateEx(1);
         return 1;
     }
 

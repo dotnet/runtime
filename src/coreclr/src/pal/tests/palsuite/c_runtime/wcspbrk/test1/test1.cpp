@@ -14,7 +14,7 @@
 
 #include <palsuite.h>
 
-int __cdecl main(int argc, char *argv[])
+PALTEST(c_runtime_wcspbrk_test1_paltest_wcspbrk_test1, "c_runtime/wcspbrk/test1/paltest_wcspbrk_test1")
 {
     WCHAR *string;
     WCHAR *key1;

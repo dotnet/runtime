@@ -66,7 +66,7 @@ ULONGLONG getPerfCallibrationValue(void);
 
 
 
-extern int main(int argc, char **argv)
+PALTEST(composite_synchronization_nativecs_interlocked_paltest_synchronization_nativecs_interlocked, "composite/synchronization/nativecs_interlocked/paltest_synchronization_nativecs_interlocked")
  {
 	//Variable Declaration
 	pthread_t pthreads[640];

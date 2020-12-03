@@ -1,3 +1,4 @@
+#include <glib.h>
 #include "mini.h"
 #include "mini-runtime.h"
 #include <mono/metadata/mono-debug.h>
@@ -19,10 +20,9 @@
 #include <emscripten.h>
 
 #include "mono/metadata/assembly-internals.h"
+#include "mono/metadata/debug-mono-ppdb.h"
 
 static int log_level = 1;
-
-#define DEBUG_PRINTF(level, ...) do { if (G_UNLIKELY ((level) <= log_level)) { fprintf (stdout, __VA_ARGS__); } } while (0)
 
 enum {
 	EXCEPTION_MODE_NONE,
@@ -52,6 +52,7 @@ EMSCRIPTEN_KEEPALIVE gboolean mono_wasm_get_array_values (int object_id, int sta
 EMSCRIPTEN_KEEPALIVE gboolean mono_wasm_invoke_getter_on_object (int object_id, const char* name);
 EMSCRIPTEN_KEEPALIVE gboolean mono_wasm_invoke_getter_on_value (void *value, MonoClass *klass, const char *name);
 EMSCRIPTEN_KEEPALIVE gboolean mono_wasm_get_deref_ptr_value (void *value_addr, MonoClass *klass);
+EMSCRIPTEN_KEEPALIVE void mono_wasm_set_is_debugger_attached (gboolean is_attached);
 
 //JS functions imported that we use
 extern void mono_wasm_add_frame (int il_offset, int method_token, int frame_id, const char *assembly_name, const char *method_name);
@@ -64,14 +65,18 @@ extern void mono_wasm_add_properties_var (const char*, gint32);
 extern void mono_wasm_add_array_item (int);
 extern void mono_wasm_set_is_async_method (guint64);
 extern void mono_wasm_add_typed_value (const char *type, const char *str_value, double value);
+extern void mono_wasm_asm_loaded (const char *asm_name, const char *assembly_data, guint32 assembly_len, const char *pdb_data, guint32 pdb_len);
 
 G_END_DECLS
 
 static void describe_object_properties_for_klass (void *obj, MonoClass *klass, gboolean isAsyncLocalThis, int gpflags);
 static void handle_exception (MonoException *exc, MonoContext *throw_ctx, MonoContext *catch_ctx, StackFrameInfo *catch_frame);
+static void assembly_loaded (MonoProfiler *prof, MonoAssembly *assembly);
 
 //FIXME move all of those fields to the profiler object
 static gboolean debugger_enabled;
+
+static gboolean has_pending_lazy_loaded_assemblies;
 
 static int event_request_id;
 static GHashTable *objrefs;
@@ -95,6 +100,30 @@ to_string_as_descr_names[] = {
 };
 
 #define THREAD_TO_INTERNAL(thread) (thread)->internal_thread
+
+void wasm_debugger_log (int level, const gchar *format, ...)
+{
+	va_list args;
+	char *mesg;
+
+	va_start (args, format);
+	mesg = g_strdup_vprintf (format, args);
+	va_end (args);
+
+	EM_ASM ({
+		var level = $0;
+		var message = Module.UTF8ToString ($1);
+		var namespace = "Debugger.Debug";
+
+		if (MONO["logging"] && MONO.logging["debugger"]) {
+			MONO.logging.debugger (level, message);
+			return;
+		}
+
+		console.debug("%s: %s", namespace, message);
+	}, level, mesg);
+	g_free (mesg);
+}
 
 static void
 inplace_tolower (char *c)
@@ -148,13 +177,17 @@ collect_frames (MonoStackFrameInfo *info, MonoContext *ctx, gpointer data)
 	if (!mono_find_prev_seq_point_for_native_offset (mono_get_root_domain (), method, info->native_offset, NULL, &sp))
 		DEBUG_PRINTF (2, "collect_frames: Failed to lookup sequence point. method: %s, native_offset: %d \n", method->name, info->native_offset);
 
-	DbgEngineStackFrame *frame = g_new0 (DbgEngineStackFrame, 1);
+ 
+	StackFrame *frame = g_new0 (StackFrame, 1);
+	frame->de.ji = info->ji;
+	frame->de.domain = info->domain;
+	frame->de.method = method;
+	frame->de.native_offset = info->native_offset;
 
-	frame->ji = info->ji;
-	frame->domain = info->domain;
-	frame->method = method;
-	frame->native_offset = info->native_offset;
-
+	frame->il_offset = info->il_offset;
+	frame->interp_frame = info->interp_frame;
+	frame->frame_addr = info->frame_addr;
+	
 	g_ptr_array_add (frames, frame);
 
 	return FALSE;
@@ -235,24 +268,56 @@ ensure_runtime_is_suspended (void)
 	return DE_ERR_NONE;
 }
 
+static int 
+get_object_id (MonoObject *obj) 
+{
+	ObjRef *ref;
+	if (!obj)
+		return 0;
+
+	ref = (ObjRef *)g_hash_table_lookup (obj_to_objref, GINT_TO_POINTER (~((gsize)obj)));
+	if (ref)
+		return ref->id;
+	ref = g_new0 (ObjRef, 1);
+	ref->id = mono_atomic_inc_i32 (&objref_id);
+	ref->handle = mono_gchandle_new_weakref_internal (obj, FALSE);
+	g_hash_table_insert (objrefs, GINT_TO_POINTER (ref->id), ref);
+	g_hash_table_insert (obj_to_objref, GINT_TO_POINTER (~((gsize)obj)), ref);
+	return ref->id;
+}
+
+
 static int
-get_this_async_id (DbgEngineStackFrame *f)
+get_this_async_id (DbgEngineStackFrame *frame)
 {
-	g_error ("get_this_async_id");
-	return 0;
-}
+	MonoClassField *builder_field;
+	gpointer builder;
+	MonoMethod *method;
+	MonoObject *ex;
+	ERROR_DECL (error);
+	MonoObject *obj;
+	
+	/*
+	 * FRAME points to a method in a state machine class/struct.
+	 * Call the ObjectIdForDebugger method of the associated method builder type.
+	 */
+	builder = get_async_method_builder (frame);
+	if (!builder)
+		return 0;
 
-static gboolean
-set_set_notification_for_wait_completion_flag (DbgEngineStackFrame *f)
-{
-	g_error ("set_set_notification_for_wait_completion_flag");
-	return FALSE;
-}
+	builder_field = mono_class_get_field_from_name_full (get_class_to_get_builder_field(frame), "<>t__builder", NULL);
+	if (!builder_field)
+		return 0;
 
-static MonoMethod*
-get_notify_debugger_of_wait_completion_method (void)
-{
-	g_error ("get_notify_debugger_of_wait_completion_method");
+	method = get_object_id_for_debugger_method (mono_class_from_mono_type_internal (builder_field->type));
+	if (!method) {
+		return 0;
+	}
+
+	obj = mono_runtime_try_invoke (method, builder, NULL, &ex, error);
+	mono_error_assert_ok (error);
+
+	return get_object_id (obj);
 }
 
 typedef struct {
@@ -373,11 +438,13 @@ mono_wasm_debugger_init (void)
 	mono_profiler_set_jit_done_callback (prof, jit_done);
 	//FIXME support multiple appdomains
 	mono_profiler_set_domain_loaded_callback (prof, appdomain_load);
+	mono_profiler_set_assembly_loaded_callback (prof, assembly_loaded);
 
 	obj_to_objref = g_hash_table_new (NULL, NULL);
 	objrefs = g_hash_table_new_full (NULL, NULL, NULL, mono_debugger_free_objref);
 
 	mini_get_dbg_callbacks ()->handle_exception = handle_exception;
+	mini_get_dbg_callbacks ()->user_break = mono_wasm_user_break;
 }
 
 MONO_API void
@@ -451,22 +518,33 @@ mono_wasm_setup_single_step (int kind)
 	return isBPOnNativeCode;
 }
 
-static int 
-get_object_id(MonoObject *obj) 
+static void
+assembly_loaded (MonoProfiler *prof, MonoAssembly *assembly)
 {
-	ObjRef *ref;
-	if (!obj)
-		return 0;
+	DEBUG_PRINTF (2, "assembly_loaded callback called for %s\n", assembly->aname.name);
+	MonoImage *assembly_image = assembly->image;
+	MonoImage *pdb_image = NULL;
 
-	ref = (ObjRef *)g_hash_table_lookup (obj_to_objref, GINT_TO_POINTER (~((gsize)obj)));
-	if (ref)
-		return ref->id;
-	ref = g_new0 (ObjRef, 1);
-	ref->id = mono_atomic_inc_i32 (&objref_id);
-	ref->handle = mono_gchandle_new_weakref_internal (obj, FALSE);
-	g_hash_table_insert (objrefs, GINT_TO_POINTER (ref->id), ref);
-	g_hash_table_insert (obj_to_objref, GINT_TO_POINTER (~((gsize)obj)), ref);
-	return ref->id;
+	if (!mono_is_debugger_attached ()) {
+		has_pending_lazy_loaded_assemblies = TRUE;
+		return;
+	}
+
+	if (mono_wasm_assembly_already_added(assembly->aname.name))
+		return;
+
+	if (mono_has_pdb_checksum ((char *) assembly_image->raw_data, assembly_image->raw_data_len)) { //if it's a release assembly we don't need to send to DebuggerProxy
+		MonoDebugHandle *handle = mono_debug_get_handle (assembly_image);
+		if (handle) {
+			MonoPPDBFile *ppdb = handle->ppdb;
+			if (!mono_ppdb_is_embedded (ppdb)) { //if it's an embedded pdb we don't need to send pdb extrated to DebuggerProxy. 
+				pdb_image = mono_ppdb_get_image (ppdb);
+				mono_wasm_asm_loaded (assembly_image->assembly_name, assembly_image->raw_data, assembly_image->raw_data_len, pdb_image->raw_data, pdb_image->raw_data_len);
+				return;
+			}
+		}
+		mono_wasm_asm_loaded (assembly_image->assembly_name, assembly_image->raw_data, assembly_image->raw_data_len, NULL, 0);
+	}
 }
 
 static void
@@ -584,6 +662,12 @@ mono_wasm_breakpoint_hit (void)
 {
 	mono_de_process_breakpoint (NULL, FALSE);
 	// mono_wasm_fire_bp ();
+}
+
+void
+mono_wasm_user_break (void)
+{
+	mono_wasm_fire_bp ();
 }
 
 EMSCRIPTEN_KEEPALIVE int
@@ -928,6 +1012,10 @@ describe_value(MonoType * type, gpointer addr, int gpflags)
 			}
 
 			type = m_class_get_byval_arg (klass);
+			if (type->type == MONO_TYPE_OBJECT) {
+				mono_wasm_add_obj_var ("object", "object", get_object_id (obj));
+				break;
+			}
 
 			// Boxed valuetype
 			if (m_class_is_valuetype (klass))
@@ -964,6 +1052,12 @@ describe_value(MonoType * type, gpointer addr, int gpflags)
 		case MONO_TYPE_CLASS: {
 			MonoObject *obj = *(MonoObject**)addr;
 			MonoClass *klass = type->data.klass;
+
+			if (m_class_is_valuetype (mono_object_class (obj))) {
+				addr = mono_object_unbox_internal (obj);
+				type = m_class_get_byval_arg (mono_object_class (obj));
+				goto handle_vtype;
+			}
 
 			char *class_name = mono_type_full_name (type);
 			int obj_id = get_object_id (obj);
@@ -1503,6 +1597,24 @@ mono_wasm_invoke_getter_on_value (void *value, MonoClass *klass, const char *nam
 	}
 
 	return invoke_getter (value, klass, name);
+}
+
+EMSCRIPTEN_KEEPALIVE void 
+mono_wasm_set_is_debugger_attached (gboolean is_attached)
+{
+	mono_set_is_debugger_attached (is_attached);
+	if (is_attached && has_pending_lazy_loaded_assemblies)
+	{
+		MonoDomain* domain =  mono_domain_get ();
+		mono_domain_assemblies_lock (domain);
+		GSList *tmp;
+		for (tmp = domain->domain_assemblies; tmp; tmp = tmp->next) {
+			MonoAssembly *ass = (MonoAssembly *)tmp->data;
+			assembly_loaded (NULL, ass);
+		}
+		mono_domain_assemblies_unlock (domain);
+		has_pending_lazy_loaded_assemblies = FALSE;
+	}
 }
 
 // Functions required by debugger-state-machine.

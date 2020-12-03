@@ -322,21 +322,6 @@ namespace System.Text.Json
             return false;
         }
 
-        public static char GetFloatingPointStandardParseFormat(ReadOnlySpan<byte> span)
-        {
-            // Assume that 'e/E' is closer to the end.
-            int startIndex = span.Length - 1;
-            for (int i = startIndex; i >= 0; i--)
-            {
-                byte token = span[i];
-                if (token == 'E' || token == 'e')
-                {
-                    return JsonConstants.ScientificNotationFormat;
-                }
-            }
-            return default;
-        }
-
         public static bool TryGetFloatingPointConstant(ReadOnlySpan<byte> span, out float value)
         {
             if (span.Length == 3)

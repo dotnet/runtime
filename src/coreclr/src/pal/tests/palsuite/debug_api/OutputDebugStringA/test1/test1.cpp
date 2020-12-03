@@ -5,7 +5,7 @@
 **
 ** Source: test1.c
 **
-** Purpose: Debugs the helper application.  Checks that certain events, in 
+** Purpose: Debugs the helper application.  Checks that certain events, in
 **          particular the OUTPUT_DEBUG_STRING_EVENT, is generated correctly
 **          and gives the correct values.
 **
@@ -16,47 +16,52 @@
 
 const int DELAY_MS = 2000;
 
-struct OutputCheck 
+struct OutputCheck
 {
     DWORD ExpectedEventCode;
     DWORD ExpectedUnicode;
     char *ExpectedStr;
 };
 
-int __cdecl main(int argc, char *argv[])
+PALTEST(debug_api_OutputDebugStringA_test1_paltest_outputdebugstringa_test1, "debug_api/OutputDebugStringA/test1/paltest_outputdebugstringa_test1")
 {
-    
+
     PROCESS_INFORMATION pi;
     STARTUPINFO si;
-        
+
     if(0 != (PAL_Initialize(argc, argv)))
     {
         return FAIL;
     }
-    
+
     ZeroMemory( &si, sizeof(si) );
     si.cb = sizeof(si);
     ZeroMemory( &pi, sizeof(pi) );
-    
+
+    WCHAR name[] = {'h','e','l', 'p', 'e', 'r', '\0'};
     /* Create a new process.  This is the process to be Debugged */
-    if(!CreateProcess( NULL, "helper", NULL, NULL, 
-                       FALSE, 0, NULL, NULL, &si, &pi)) 
+    if(!CreateProcessW( NULL, name, NULL, NULL,
+                        FALSE, 0, NULL, NULL, &si, &pi))
     {
+        DWORD dwError = GetLastError();
+        free(name);
         Fail("ERROR: CreateProcess failed to load executable 'helper'.  "
-             "GetLastError() returned %d.\n",GetLastError());
+             "GetLastError() returned %d.\n", dwError);
     }
+
+    free(name);
 
     /* This is the main loop.  It exits when the process which is being
        debugged is finished executing.
     */
-    
+
     while(1)
-    {    
+    {
         DWORD dwRet = 0;
         dwRet = WaitForSingleObject(pi.hProcess,
                                     DELAY_MS /* Wait for 2 seconds max*/
             );
-    
+
         if (dwRet != WAIT_OBJECT_0)
         {
             Trace("WaitForSingleObjectTest:WaitForSingleObject "
@@ -75,8 +80,8 @@ int __cdecl main(int argc, char *argv[])
                 dwError = GetLastError();
                 CloseHandle ( pi.hProcess );
                 CloseHandle ( pi.hThread );
-                Fail( "GetExitCodeProcess call failed with error code %d\n", 
-                      dwError ); 
+                Fail( "GetExitCodeProcess call failed with error code %d\n",
+                      dwError );
             }
 
             if(dwExitCode != STILL_ACTIVE) {
@@ -85,9 +90,9 @@ int __cdecl main(int argc, char *argv[])
                 break;
             }
             Trace("still executing %d..\n", dwExitCode);
-        }        
+        }
     }
-        
+
     PAL_Terminate();
     return PASS;
 }

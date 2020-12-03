@@ -10,6 +10,8 @@ if(CORECLR_SET_RPATH)
   endif(CLR_CMAKE_HOST_OSX)
 endif(CORECLR_SET_RPATH)
 
+set(CMAKE_INCLUDE_CURRENT_DIR ON)
+
 set(MSCORDBI_SOURCES
     mscordbi.cpp
 )
@@ -50,7 +52,7 @@ else(CLR_CMAKE_HOST_WIN32)
 endif(CLR_CMAKE_HOST_WIN32)
 
 add_library_clr(mscordbi SHARED ${MSCORDBI_SOURCES})
-target_precompile_header(TARGET mscordbi HEADER stdafx.h)
+target_precompile_headers(mscordbi PRIVATE $<$<COMPILE_LANGUAGE:CXX>:stdafx.h>)
 
 if(CLR_CMAKE_HOST_UNIX)
     add_custom_target(mscordbi_exports DEPENDS ${EXPORTS_FILE})
@@ -118,4 +120,4 @@ if(FEATURE_SINGLE_FILE_DIAGNOSTICS)
 endif(FEATURE_SINGLE_FILE_DIAGNOSTICS)
 
 # add the install targets
-install_clr(TARGETS mscordbi ADDITIONAL_DESTINATION sharedFramework)
+install_clr(TARGETS mscordbi ADDITIONAL_DESTINATIONS sharedFramework)

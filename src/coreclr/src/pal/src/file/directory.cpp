@@ -175,52 +175,6 @@ RemoveDirectoryHelper (
 
 /*++
 Function:
-  RemoveDirectoryA
-
-See MSDN doc.
---*/
-BOOL
-PALAPI
-RemoveDirectoryA(
-         IN LPCSTR lpPathName)
-{
-    DWORD dwLastError = 0;
-    BOOL  bRet = FALSE;
-    PathCharString mb_dirPathString;
-
-    PERF_ENTRY(RemoveDirectoryA);
-    ENTRY("RemoveDirectoryA(lpPathName=%p (%s))\n",
-          lpPathName,
-          lpPathName);
-
-    if (lpPathName == NULL)
-    {
-        dwLastError = ERROR_PATH_NOT_FOUND;
-        goto done;
-    }
-
-    if (!mb_dirPathString.Set(lpPathName, strlen(lpPathName)))
-    {
-        WARN("Set failed !\n");
-        dwLastError = ERROR_NOT_ENOUGH_MEMORY;
-        goto done;
-    }
-
-    bRet = RemoveDirectoryHelper (mb_dirPathString, &dwLastError);
-
-done:
-    if( dwLastError )
-    {
-        SetLastError( dwLastError );
-    }
-
-    LOGEXIT("RemoveDirectoryA returns BOOL %d\n", bRet);
-    PERF_EXIT(RemoveDirectoryA);
-    return bRet;
-}
-
-/*++
-Function:
   RemoveDirectoryW
 
 See MSDN doc.

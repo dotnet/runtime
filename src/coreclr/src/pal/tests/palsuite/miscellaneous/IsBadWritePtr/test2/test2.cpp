@@ -16,7 +16,8 @@
 
 #include <palsuite.h>
 
-int __cdecl main(int argc, char *argv[]) {
+PALTEST(miscellaneous_IsBadWritePtr_test2_paltest_isbadwriteptr_test2, "miscellaneous/IsBadWritePtr/test2/paltest_isbadwriteptr_test2")
+{
     
     LPVOID PageOne, PageTwo, PageThree;
 

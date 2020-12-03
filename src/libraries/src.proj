@@ -47,7 +47,7 @@
              Properties="$(TraversalGlobalProperties)" />
   </Target>
 
-  <Import Condition="'$(BuildTargetFramework)' == '$(NetCoreAppCurrent)'"
+  <Import Condition="'$(BuildingNetCoreAppVertical)' == 'true'"
           Project="$(MSBuildThisFileDirectory)\illink-sharedframework.targets" />
 
   <Target Name="RunApiCompat"

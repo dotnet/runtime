@@ -40,7 +40,6 @@ extern bool TryGetSymbol(ICorDebugDataTarget* dataTarget, uint64_t baseAddress, 
 
 CRITICAL_SECTION g_dacCritSec;
 ClrDataAccess* g_dacImpl;
-HINSTANCE g_thisModule;
 
 EXTERN_C
 #ifdef TARGET_UNIX
@@ -75,9 +74,6 @@ BOOL WINAPI DllMain(HANDLE instance, DWORD reason, LPVOID reserved)
 #endif
         InitializeCriticalSection(&g_dacCritSec);
 
-        // Save the module handle.
-        g_thisModule = (HINSTANCE)instance;
-
         g_procInitialized = true;
         break;
     }
@@ -93,12 +89,6 @@ BOOL WINAPI DllMain(HANDLE instance, DWORD reason, LPVOID reserved)
     }
 
     return TRUE;
-}
-
-HINSTANCE
-GetModuleInst(void)
-{
-    return g_thisModule;
 }
 
 HRESULT
@@ -3297,6 +3287,10 @@ ClrDataAccess::QueryInterface(THIS_
     {
         ifaceRet = static_cast<ISOSDacInterface9*>(this);
     }
+    else if (IsEqualIID(interfaceId, __uuidof(ISOSDacInterface10)))
+    {
+        ifaceRet = static_cast<ISOSDacInterface10*>(this);
+    }
     else
     {
         *iface = NULL;
@@ -5618,16 +5612,6 @@ ClrDataAccess::Initialize(void)
     // Do some validation
     IfFailRet(VerifyDlls());
 
-    // To support EH SxS, utilcode requires the base address of the runtime
-    // as part of its initialization so that functions like "WasThrownByUs" work correctly since
-    // they use the CLR base address to check if an exception was raised by a given instance of the runtime
-    // or not.
-    //
-    // Thus, when DAC is initialized, initialize utilcode with the base address of the runtime loaded in the
-    // target process. This is similar to work done in CorDB::SetTargetCLR for mscordbi.
-
-    g_hmodCoreCLR = (HINSTANCE)m_globalBase; // Base address of the runtime in the target process
-
     return S_OK;
 }
 
@@ -6635,7 +6619,7 @@ bool ClrDataAccess::GetILImageNameFromNgenImage( LPCWSTR ilExtension,
         if (wszFileExtension != 0)
         {
             LPWSTR  wszNextFileExtension = wszFileExtension;
-            // Find last occurence
+            // Find last occurrence
             do
             {
                 wszFileExtension = wszNextFileExtension;

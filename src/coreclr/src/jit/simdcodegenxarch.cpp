@@ -105,7 +105,7 @@ instruction CodeGen::getOpForSIMDIntrinsic(SIMDIntrinsicID intrinsicId, var_type
             }
 
             // For SSE, SIMDIntrinsicInit uses the same instruction as the SIMDIntrinsicShuffleSSE2 intrinsic.
-            __fallthrough;
+            FALLTHROUGH;
 
         case SIMDIntrinsicShuffleSSE2:
             if (baseType == TYP_FLOAT)

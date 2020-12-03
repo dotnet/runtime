@@ -18,7 +18,7 @@
 /* memcmp is used to verify the results, so this test is dependent on it. */
 /* ditto with wcslen */
 
-int __cdecl main(int argc, char *argv[])
+PALTEST(c_runtime__snwprintf_s_test6_paltest_snwprintf_test6, "c_runtime/_snwprintf_s/test6/paltest_snwprintf_test6")
 {
     WCHAR wc = (WCHAR) 'c';
     

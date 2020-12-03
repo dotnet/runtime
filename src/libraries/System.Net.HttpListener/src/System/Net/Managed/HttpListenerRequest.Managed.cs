@@ -1,5 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
+
 //
 // System.Net.HttpListenerRequest
 //
@@ -379,7 +380,7 @@ namespace System.Net
 
         public Guid RequestTraceIdentifier { get; } = Guid.NewGuid();
 
-        private IAsyncResult BeginGetClientCertificateCore(AsyncCallback requestCallback, object state)
+        private IAsyncResult BeginGetClientCertificateCore(AsyncCallback? requestCallback, object? state)
         {
             var asyncResult = new GetClientCertificateAsyncResult(this, state, requestCallback);
 
@@ -419,7 +420,7 @@ namespace System.Net
 
         private class GetClientCertificateAsyncResult : LazyAsyncResult
         {
-            public GetClientCertificateAsyncResult(object myObject, object myState, AsyncCallback myCallBack) : base(myObject, myState, myCallBack) { }
+            public GetClientCertificateAsyncResult(object myObject, object? myState, AsyncCallback? myCallBack) : base(myObject, myState, myCallBack) { }
         }
     }
 }

@@ -15,7 +15,7 @@
 
 #define VIRTUALMEMORYSIZE 1024
 
-int __cdecl main(int argc, char *argv[])
+PALTEST(filemapping_memmgt_VirtualQuery_test1_paltest_virtualquery_test1, "filemapping_memmgt/VirtualQuery/test1/paltest_virtualquery_test1")
 {
     int err;
     LPVOID lpVirtualAddress;

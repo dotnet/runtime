@@ -145,6 +145,7 @@ namespace ILVerify
         DelegateCtorSigO,               // Unrecognized delegate .ctor signature; expected Object.
         //E_RA_PTR_TO_STACK             "Mkrefany on TypedReference, ArgHandle, or ArgIterator."
         CatchByRef,                     // ByRef not allowed as catch type.
+        ThrowOrCatchOnlyExceptionType,  // The type caught or thrown must be derived from System.Exception.
         LdvirtftnOnStatic,              // ldvirtftn on static.
         CallVirtOnStatic,               // callvirt on static.
         InitLocals,                     // initlocals must be set for verifiable methods with one or more local variables.
@@ -189,6 +190,6 @@ namespace ILVerify
         //IDS_E_GLOBAL         "<GlobalFunction>"
         //IDS_E_MDTOKEN        "[mdToken=0x%x]"
         InterfaceImplHasDuplicate,            // InterfaceImpl has a duplicate
-        InterfaceMethodNotImplemented         // Class implements interface but not method 
+        InterfaceMethodNotImplemented         // Class implements interface but not method
     }
 }

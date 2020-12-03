@@ -43,6 +43,9 @@ namespace R2RTest
                         OutputDirectory(),
                         Crossgen(),
                         CrossgenPath(),
+                        Crossgen2Path(),
+                        TargetArch(),
+                        VerifyTypeAndFieldLayout(),
                         NoJit(),
                         NoCrossgen2(),
                         Exe(),
@@ -58,6 +61,7 @@ namespace R2RTest
                         LargeBubble(),
                         Composite(),
                         Crossgen2Parallelism(),
+                        Crossgen2JitPath(),
                         ReferencePath(),
                         IssuesPath(),
                         CompilationTimeoutMinutes(),
@@ -76,6 +80,9 @@ namespace R2RTest
                         OutputDirectory(),
                         Crossgen(),
                         CrossgenPath(),
+                        Crossgen2Path(),
+                        TargetArch(),
+                        VerifyTypeAndFieldLayout(),
                         NoJit(),
                         NoCrossgen2(),
                         Exe(),
@@ -91,6 +98,7 @@ namespace R2RTest
                         LargeBubble(),
                         Composite(),
                         Crossgen2Parallelism(),
+                        Crossgen2JitPath(),
                         ReferencePath(),
                         IssuesPath(),
                         CompilationTimeoutMinutes(),
@@ -106,8 +114,13 @@ namespace R2RTest
                     {
                         Crossgen(),
                         CrossgenPath(),
+                        Crossgen2Path(),
+                        TargetArch(),
+                        VerifyTypeAndFieldLayout(),
                         NoCrossgen2(),
                         NoCleanup(),
+                        Crossgen2Parallelism(),
+                        Crossgen2JitPath(),
                         DegreeOfParallelism(),
                         Sequential(),
                         Release(),
@@ -119,6 +132,7 @@ namespace R2RTest
                         R2RDumpPath(),
                         MeasurePerf(),
                         InputFileSearchString(),
+                        OutputDirectory(),
                     },
                     CompileFrameworkCommand.CompileFramework);
 
@@ -177,6 +191,12 @@ namespace R2RTest
             Option CrossgenPath() =>
                 new Option<FileInfo>(new[] { "--crossgen-path", "-cp" }, "Explicit Crossgen path (useful for cross-targeting)").ExistingOnly();
 
+            Option Crossgen2Path() =>
+                new Option<FileInfo>(new[] { "--crossgen2-path", "-c2p" }, "Explicit Crossgen2 path (useful for cross-targeting)").ExistingOnly();
+
+            Option VerifyTypeAndFieldLayout() =>
+                new Option<bool>(new[] { "--verify-type-and-field-layout" }, "Verify that struct type layout and field offsets match between compile time and runtime. Use only for diagnostic purposes.");
+
             Option NoJit() =>
                 new Option<bool>(new[] { "--nojit" }, "Don't run tests in JITted mode");
 
@@ -221,6 +241,9 @@ namespace R2RTest
 
             Option Crossgen2Parallelism() =>
                 new Option<int>(new[] { "--crossgen2-parallelism" }, "Max number of threads to use in Crossgen2 (default = logical processor count)");
+            
+            Option Crossgen2JitPath() =>
+                new Option<FileInfo>(new[] { "--crossgen2-jitpath" }, "Jit path to use for crossgen2");
 
             Option IssuesPath() =>
                 new Option<FileInfo[]>(new[] { "--issues-path", "-ip" }, "Path to issues.targets")
@@ -246,7 +269,9 @@ namespace R2RTest
 
             Option DotNetCli() =>
                 new Option<string>(new [] { "--dotnet-cli", "-cli" }, "For dev box testing, point at .NET 5 dotnet.exe or <repo>/dotnet.cmd.");
-                
+
+            Option TargetArch() =>
+                new Option<string>(new[] { "--target-arch" }, "Target architecture for crossgen2");
 
             //
             // compile-nuget specific options

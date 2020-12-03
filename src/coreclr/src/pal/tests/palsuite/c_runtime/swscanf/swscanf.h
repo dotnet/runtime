@@ -13,7 +13,7 @@
 #ifndef __SWSCANF_H__
 #define __SWSCANF_H__
 
-void DoVoidTest(WCHAR *inputstr, const WCHAR *formatstr)
+inline void DoVoidTest_swscanf(WCHAR *inputstr, const WCHAR *formatstr)
 {
     char buf[256] = { 0 };
     int i;
@@ -38,8 +38,9 @@ void DoVoidTest(WCHAR *inputstr, const WCHAR *formatstr)
     }
 
 }
+#define DoVoidTest DoVoidTest_swscanf
 
-void DoStrTest(WCHAR *inputstr, const WCHAR *formatstr, const char *checkstr)
+inline void DoStrTest_swscanf(WCHAR *inputstr, const WCHAR *formatstr, const char *checkstr)
 {
     char buf[256] = { 0 };
     int ret;
@@ -61,8 +62,9 @@ void DoStrTest(WCHAR *inputstr, const WCHAR *formatstr, const char *checkstr)
     }
 
 }
+#define DoStrTest DoStrTest_swscanf
 
-void DoWStrTest(WCHAR *inputstr, const WCHAR *formatstr, const WCHAR *checkstr)
+inline void DoWStrTest_swscanf(WCHAR *inputstr, const WCHAR *formatstr, const WCHAR *checkstr)
 {
     WCHAR buf[256] = { 0 };
     int ret;
@@ -84,8 +86,9 @@ void DoWStrTest(WCHAR *inputstr, const WCHAR *formatstr, const WCHAR *checkstr)
     }
 
 }
+#define DoWStrTest DoWStrTest_swscanf
 
-void DoNumTest(WCHAR *inputstr, const WCHAR *formatstr, int checknum)
+inline void DoNumTest_swscanf(WCHAR *inputstr, const WCHAR *formatstr, int checknum)
 {
     int num = 0;
     int ret;
@@ -105,8 +108,9 @@ void DoNumTest(WCHAR *inputstr, const WCHAR *formatstr, int checknum)
             convertC(formatstr), checknum, num);
     }
 }
+#define DoNumTest DoNumTest_swscanf
 
-void DoShortNumTest(WCHAR *inputstr, const WCHAR *formatstr, short checknum)
+inline void DoShortNumTest_swscanf(WCHAR *inputstr, const WCHAR *formatstr, short checknum)
 {
     short num = 0;
     int ret;
@@ -126,8 +130,9 @@ void DoShortNumTest(WCHAR *inputstr, const WCHAR *formatstr, short checknum)
             convertC(formatstr), checknum, num);
     }
 }
+#define DoShortNumTest DoShortNumTest_swscanf
 
-void DoI64NumTest(WCHAR *inputstr, const WCHAR *formatstr, INT64 checknum)
+inline void DoI64NumTest_swscanf(WCHAR *inputstr, const WCHAR *formatstr, INT64 checknum)
 {
     char buf[256];
     char check[256];
@@ -151,8 +156,9 @@ void DoI64NumTest(WCHAR *inputstr, const WCHAR *formatstr, INT64 checknum)
             convertC(formatstr), check, buf);
     }
 }
+#define DoI64NumTest DoI64NumTest_swscanf
 
-void DoCharTest(WCHAR *inputstr, const WCHAR *formatstr, char* checkchars, int numchars)
+inline void DoCharTest_swscanf(WCHAR *inputstr, const WCHAR *formatstr, char* checkchars, int numchars)
 {
     char buf[256];
     int ret;
@@ -185,8 +191,9 @@ void DoCharTest(WCHAR *inputstr, const WCHAR *formatstr, char* checkchars, int n
             convertC(inputstr), convertC(formatstr), numchars);
     }
 }
+#define DoCharTest DoCharTest_swscanf
 
-void DoWCharTest(WCHAR *inputstr, const WCHAR *formatstr, const WCHAR *checkchars, int numchars)
+inline void DoWCharTest_swscanf(WCHAR *inputstr, const WCHAR *formatstr, const WCHAR *checkchars, int numchars)
 {
     WCHAR buf[256];
     int ret;
@@ -220,9 +227,9 @@ void DoWCharTest(WCHAR *inputstr, const WCHAR *formatstr, const WCHAR *checkchar
             convertC(inputstr), convertC(formatstr), numchars);
     }
 }
+#define DoWCharTest DoWCharTest_swscanf
 
-
-void DoFloatTest(WCHAR *inputstr, const WCHAR *formatstr, float checkval)
+inline void DoFloatTest_swscanf(WCHAR *inputstr, const WCHAR *formatstr, float checkval)
 {
     char buf[256] = { 0 };
     float val;
@@ -256,6 +263,6 @@ void DoFloatTest(WCHAR *inputstr, const WCHAR *formatstr, float checkval)
 
     }
 }
-
+#define DoFloatTest DoFloatTest_swscanf
 
 #endif

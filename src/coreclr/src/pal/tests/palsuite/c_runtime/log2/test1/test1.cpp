@@ -40,11 +40,11 @@ struct test
 };
 
 /**
- * validate
+ * log2_test1_validate
  *
  * test validation function
  */
-void __cdecl validate(double value, double expected, double variance)
+void __cdecl log2_test1_validate(double value, double expected, double variance)
 {
     double result = log2(value);
 
@@ -62,11 +62,11 @@ void __cdecl validate(double value, double expected, double variance)
 }
 
 /**
- * validate
+ * log2_test1_validate
  *
  * test validation function for values returning NaN
  */
-void __cdecl validate_isnan(double value)
+void __cdecl log2_test1_validate_isnan(double value)
 {
     double result = log2(value);
 
@@ -82,7 +82,7 @@ void __cdecl validate_isnan(double value)
  * 
  * executable entry point
  */
-int __cdecl main(int argc, char **argv)
+PALTEST(c_runtime_log2_test1_paltest_log2_test1, "c_runtime/log2/test1/paltest_log2_test1")
 {
     struct test tests[] = 
     {
@@ -127,11 +127,11 @@ int __cdecl main(int argc, char **argv)
 
     for (int i = 0; i < (sizeof(tests) / sizeof(struct test)); i++)
     {
-        validate(tests[i].value, tests[i].expected, tests[i].variance);
+        log2_test1_validate(tests[i].value, tests[i].expected, tests[i].variance);
     }
 
-    validate_isnan(PAL_NEGINF);
-    validate_isnan(PAL_NAN);
+    log2_test1_validate_isnan(PAL_NEGINF);
+    log2_test1_validate_isnan(PAL_NAN);
 
     PAL_Terminate();
     return PASS;

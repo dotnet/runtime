@@ -13,7 +13,7 @@
 #include <palsuite.h>
 
 
-int __cdecl main(int argc, char *argv[])
+PALTEST(file_io_GetConsoleOutputCP_test1_paltest_getconsoleoutputcp_test1, "file_io/GetConsoleOutputCP/test1/paltest_getconsoleoutputcp_test1")
 {
     UINT uiCP = 0;
 

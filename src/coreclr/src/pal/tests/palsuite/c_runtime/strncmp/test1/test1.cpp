@@ -23,29 +23,28 @@ typedef struct
     int number;
 } testCase;
 
-testCase testCases[]=
+PALTEST(c_runtime_strncmp_test1_paltest_strncmp_test1, "c_runtime/strncmp/test1/paltest_strncmp_test1")
 {
-     {0,"Hello","Hello",5},
-     {1,"hello","Hello",3},
-     {-1,"Hello","hello",5},
-     {0,"heLLo","heLLo",5},
-     {1,"hello","heLlo",5},
-     {-1,"heLlo","hello",5},
-     {0,"0Test","0Test",5},
-     {0,"***???","***???",6},
-     {0,"Testing the string for string comparison","Testing the string for "
-        "string comparison",40},
-     {-1,"Testing the string for string comparison","Testing the string for "
-         "string comparsioa",40},
-     {1,"Testing the string for string comparison","Testing the string for "
-        "comparison",34},
-     {0,"aaaabbbbb","aabcdefeccg",2},
-     {0,"abcd","abcd",10}
-};
+    testCase testCases[]=
+    {
+        {0,"Hello","Hello",5},
+        {1,"hello","Hello",3},
+        {-1,"Hello","hello",5},
+        {0,"heLLo","heLLo",5},
+        {1,"hello","heLlo",5},
+        {-1,"heLlo","hello",5},
+        {0,"0Test","0Test",5},
+        {0,"***???","***???",6},
+        {0,"Testing the string for string comparison","Testing the string for "
+            "string comparison",40},
+        {-1,"Testing the string for string comparison","Testing the string for "
+            "string comparsioa",40},
+        {1,"Testing the string for string comparison","Testing the string for "
+            "comparison",34},
+        {0,"aaaabbbbb","aabcdefeccg",2},
+        {0,"abcd","abcd",10}
+    };
 
-
-int __cdecl main(int argc, char *argv[])
-{
     int i=0;
     int iresult=0;
     

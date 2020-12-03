@@ -5,23 +5,16 @@ if !ENABLE_MSVC_ONLY
 if HOST_WIN32
 win32_sources = \
 	console-win32.c \
-	console-win32-internals.h \
-	cominterop-win32-internals.h \
 	w32file-win32.c \
-	w32file-win32-internals.h \
 	icall-windows.c \
-	icall-windows-internals.h \
 	marshal-windows.c \
-	marshal-windows-internals.h \
 	mono-security-windows.c \
-	mono-security-windows-internals.h \
 	w32mutex-win32.c \
 	w32semaphore-win32.c \
 	w32event-win32.c \
 	w32process-win32.c \
 	w32socket-win32.c \
-	w32error-win32.c \
-	w32subset.h
+	w32error-win32.c
 
 platform_sources = $(win32_sources)
 
@@ -280,6 +273,7 @@ common_sources = \
 	domain-internals.h	\
 	environment.c		\
 	environment.h		\
+	environment-internals.h		\
 	icall-eventpipe.c	\
 	exception.c		\
 	exception.h		\
@@ -427,6 +421,7 @@ common_sources = \
 	callspec.h	\
 	callspec.c	\
 	abi.c	\
+	memory-manager.c \
 	native-library.c \
 	native-library.h \
 	native-library-qcall.c \

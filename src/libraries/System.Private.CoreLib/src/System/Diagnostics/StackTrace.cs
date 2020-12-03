@@ -3,6 +3,7 @@
 
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Reflection;
 using System.Runtime.CompilerServices;
@@ -384,7 +385,13 @@ namespace System.Diagnostics
                 return false;
             }
 
-            MethodInfo[]? methods = parentType.GetMethods(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static | BindingFlags.Instance | BindingFlags.DeclaredOnly);
+            [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2070:UnrecognizedReflectionPattern",
+                Justification = "Using Reflection to find the state machine's corresponding method is safe because the corresponding method is the only " +
+                                "caller of the state machine. If the state machine is present, the corresponding method will be, too.")]
+            static MethodInfo[]? GetDeclaredMethods(Type type) =>
+                type.GetMethods(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static | BindingFlags.Instance | BindingFlags.DeclaredOnly);
+
+            MethodInfo[]? methods = GetDeclaredMethods(parentType);
             if (methods == null)
             {
                 return false;

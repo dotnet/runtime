@@ -17,6 +17,8 @@ namespace System.Security.Cryptography.Tests
         protected abstract void ImportParameters(T key, ECParameters ecParameters);
         protected abstract ECParameters ExportParameters(T key, bool includePrivate);
         protected abstract void Exercise(T key);
+        protected virtual Func<T, byte[]> PublicKeyWriteArrayFunc { get; } = null;
+        protected virtual WriteKeyToSpanFunc PublicKeyWriteSpanFunc { get; } = null;
 
         public static bool SupportsBrainpool { get; } = IsCurveSupported(ECCurve.NamedCurves.brainpoolP160r1.Oid);
         public static bool SupportsSect163k1 { get; } = IsCurveSupported(EccTestData.Sect163k1Key1.Curve.Oid);
@@ -1153,7 +1155,9 @@ xoMaz20Yx+2TSN5dSm2FcD+0YFI=",
                         key.ImportSubjectPublicKeyInfo(source, out read),
                     key => key.ExportSubjectPublicKeyInfo(),
                     (T key, Span<byte> destination, out int written) =>
-                        key.TryExportSubjectPublicKeyInfo(destination, out written));
+                        key.TryExportSubjectPublicKeyInfo(destination, out written),
+                    writePublicArrayFunc: PublicKeyWriteArrayFunc,
+                    writePublicSpanFunc: PublicKeyWriteSpanFunc);
             }
             else
             {
@@ -1175,7 +1179,9 @@ xoMaz20Yx+2TSN5dSm2FcD+0YFI=",
             ReadKeyAction readAction,
             Func<T, byte[]> writeArrayFunc,
             WriteKeyToSpanFunc writeSpanFunc,
-            bool isEncrypted = false)
+            bool isEncrypted = false,
+            Func<T, byte[]> writePublicArrayFunc = null,
+            WriteKeyToSpanFunc writePublicSpanFunc = null)
         {
             bool isPrivateKey = expected.D != null;
 
@@ -1191,6 +1197,16 @@ xoMaz20Yx+2TSN5dSm2FcD+0YFI=",
                 Assert.Equal(derBytes.Length, bytesRead);
 
                 arrayExport = writeArrayFunc(key);
+
+                if (writePublicArrayFunc is not null)
+                {
+                    byte[] publicArrayExport = writePublicArrayFunc(key);
+                    Assert.Equal(arrayExport, publicArrayExport);
+
+                    Assert.True(writePublicSpanFunc(key, publicArrayExport, out int publicExportWritten));
+                    Assert.Equal(publicExportWritten, publicArrayExport.Length);
+                    Assert.Equal(arrayExport, publicArrayExport);
+                }
 
                 ECParameters ecParameters = ExportParameters(key, isPrivateKey);
                 EccTestBase.AssertEqual(expected, ecParameters);
@@ -1286,7 +1302,7 @@ xoMaz20Yx+2TSN5dSm2FcD+0YFI=",
             }
         }
 
-        private delegate void ReadKeyAction(T key, ReadOnlySpan<byte> source, out int bytesRead);
-        private delegate bool WriteKeyToSpanFunc(T key, Span<byte> destination, out int bytesWritten);
+        protected delegate void ReadKeyAction(T key, ReadOnlySpan<byte> source, out int bytesRead);
+        protected delegate bool WriteKeyToSpanFunc(T key, Span<byte> destination, out int bytesWritten);
     }
 }

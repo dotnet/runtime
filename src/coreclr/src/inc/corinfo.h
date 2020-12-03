@@ -184,42 +184,9 @@ TODO: Talk about initializing strutures before use
 #ifndef _COR_INFO_H_
 #define _COR_INFO_H_
 
-#include <corhdr.h>
+#include "corhdr.h"
 #include <specstrings.h>
-
-//////////////////////////////////////////////////////////////////////////////////////////////////////////
-//
-// NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE
-//
-// #JITEEVersionIdentifier
-//
-// This GUID represents the version of the JIT/EE interface. Any time the interface between the JIT and
-// the EE changes (by adding or removing methods to any interface shared between them), this GUID should
-// be changed. This is the identifier verified by ICorJitCompiler::getVersionIdentifier().
-//
-// You can use "uuidgen.exe -s" to generate this value.
-//
-// **** NOTE TO INTEGRATORS:
-//
-// If there is a merge conflict here, because the version changed in two different places, you must
-// create a **NEW** GUID, not simply choose one or the other!
-//
-// NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE
-//
-//////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-constexpr GUID JITEEVersionIdentifier = { /* a5eec3a4-4176-43a7-8c2b-a05b551d4f49 */
-    0xa5eec3a4,
-    0x4176,
-    0x43a7,
-    {0x8c, 0x2b, 0xa0, 0x5b, 0x55, 0x1d, 0x4f, 0x49}
-};
-
-//////////////////////////////////////////////////////////////////////////////////////////////////////////
-//
-// END JITEEVersionIdentifier
-//
-//////////////////////////////////////////////////////////////////////////////////////////////////////////
+#include "jiteeversionguid.h"
 
 // For System V on the CLR type system number of registers to pass in and return a struct is the same.
 // The CLR type system allows only up to 2 eightbytes to be passed in registers. There is no SSEUP classification types.
@@ -431,9 +398,7 @@ enum CorInfoHelpFunc
     CORINFO_HELP_THROWDIVZERO,      // throw a divide by zero exception
     CORINFO_HELP_THROWNULLREF,      // throw a null reference exception
 
-    CORINFO_HELP_INTERNALTHROW,     // Support for really fast jit
     CORINFO_HELP_VERIFICATION,      // Throw a VerificationException
-    CORINFO_HELP_SEC_UNMGDCODE_EXCPT, // throw a security unmanaged code exception
     CORINFO_HELP_FAIL_FAST,         // Kill the process avoiding any exceptions or stack and data dependencies (use for GuardStack unsafe buffer checks)
 
     CORINFO_HELP_METHOD_ACCESS_EXCEPTION,//Throw an access exception due to a failed member/class access check.
@@ -625,6 +590,7 @@ enum CorInfoHelpFunc
     CORINFO_HELP_STACK_PROBE,               // Probes each page of the allocated stack frame
 
     CORINFO_HELP_PATCHPOINT,                // Notify runtime that code has reached a patchpoint
+    CORINFO_HELP_CLASSPROFILE,              // Update class profile for a call site
 
     CORINFO_HELP_COUNT,
 };
@@ -918,8 +884,6 @@ enum CorInfoIntrinsics
     CORINFO_INTRINSIC_InterlockedCmpXchg64,
     CORINFO_INTRINSIC_MemoryBarrier,
     CORINFO_INTRINSIC_MemoryBarrierLoad,
-    CORINFO_INTRINSIC_GetCurrentManagedThread,
-    CORINFO_INTRINSIC_GetManagedThreadId,
     CORINFO_INTRINSIC_ByReference_Ctor,
     CORINFO_INTRINSIC_ByReference_Value,
     CORINFO_INTRINSIC_Span_GetItem,
@@ -1458,7 +1422,7 @@ struct CORINFO_HELPER_DESC
 //  CORINFO_DEREF_THIS        --> Deref the byref to get an object reference
 //
 // In addition, the "kind" field will be set as follows for constraint calls:
-
+//
 //    CORINFO_CALL              --> the call was resolved at compile time, and
 //                                  can be compiled like a normal call.
 //    CORINFO_CALL_CODE_POINTER --> the call was resolved, but the target address will be
@@ -2761,8 +2725,9 @@ public:
     // to interface functions that may throw exceptions without needing to be aware of
     // the EH ABI, exception types, etc. Returns true if the given function completed
     // successfully and false otherwise.
+    typedef void (*errorTrapFunction)(void*);
     virtual bool runWithErrorTrap(
-        void (*function)(void*), // The function to run
+        errorTrapFunction function, // The function to run
         void* parameter          // The context parameter that will be passed to the function and the handler
         ) = 0;
 

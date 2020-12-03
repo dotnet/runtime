@@ -179,13 +179,6 @@ CORJIT_FLAGS ZapInfo::ComputeJitFlags(CORINFO_METHOD_HANDLE handle)
     if (m_zapper->m_pOpt->m_noProcedureSplitting)
         jitFlags.Clear(CORJIT_FLAGS::CORJIT_FLAG_PROCSPLIT);
 
-    //never emit inlined polls for NGen'd code.  The extra indirection is not optimal.
-    if (jitFlags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_GCPOLL_INLINE))
-    {
-        jitFlags.Clear(CORJIT_FLAGS::CORJIT_FLAG_GCPOLL_INLINE);
-        jitFlags.Set(CORJIT_FLAGS::CORJIT_FLAG_GCPOLL_CALLS);
-    }
-
     // If the method is specified for min-opts then turn everything off
     if (jitFlags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_MIN_OPT))
     {
@@ -514,6 +507,7 @@ void ZapInfo::CompileMethod()
     //
     if (m_zapper->m_alternateJit)
     {
+        m_jitFlags.Set(CORJIT_FLAGS::CORJIT_FLAG_ALT_JIT);
         res = m_zapper->m_alternateJit->compileMethod( this,
                                                      &m_currentMethodInfo,
                                                      CORJIT_FLAGS::CORJIT_FLAG_CALL_GETJITFLAGS,
@@ -527,6 +521,7 @@ void ZapInfo::CompileMethod()
             ResetForJitRetry();
         }
     }
+    m_jitFlags.Clear(CORJIT_FLAGS::CORJIT_FLAG_ALT_JIT);
 
 #endif // ALLOW_SXS_JIT_NGEN
 
@@ -976,7 +971,6 @@ HRESULT ZapInfo::getMethodBlockCounts (
 {
     _ASSERTE(pBlockCounts != nullptr);
     _ASSERTE(pCount != nullptr);
-    _ASSERTE(ftnHnd == m_currentMethodHandle);
 
     HRESULT hr;
 
@@ -1004,21 +998,9 @@ HRESULT ZapInfo::getMethodBlockCounts (
         return E_FAIL;
     }
 
-    mdMethodDef md = m_currentMethodToken;
+    mdMethodDef md;
+    IfFailRet(m_zapper->m_pEECompileInfo->GetMethodDef(ftnHnd, &md));
 
-    if (IsNilToken(md))
-    {
-        // This must be the non-System.Object instantiation of a generic type/method.
-        IfFailRet(m_zapper->m_pEECompileInfo->GetMethodDef(ftnHnd, &md));
-    }
-#ifdef _DEBUG
-    else
-    {
-        mdMethodDef mdTemp;
-        IfFailRet(m_zapper->m_pEECompileInfo->GetMethodDef(ftnHnd, &mdTemp));
-        _ASSERTE(md == mdTemp);
-    }
-#endif
     if (IsNilToken(md))
     {
         return E_FAIL;
@@ -1064,9 +1046,23 @@ HRESULT ZapInfo::getMethodBlockCounts (
     *pBlockCounts = (ICorJitInfo::BlockCounts *) &profileData->method.block[0];
     *pCount  = profileData->method.cBlock;
 
+    // Find method's IL size
+    //
+    unsigned ilSize = m_currentMethodInfo.ILCodeSize;
+
+    if (ftnHnd != m_currentMethodHandle)
+    {
+        CORINFO_METHOD_INFO methodInfo;
+        if (!getMethodInfo(ftnHnd, &methodInfo))
+        {
+            return E_FAIL;
+        }
+        ilSize = methodInfo.ILCodeSize;
+    }
+
     // If the ILSize is non-zero the the ILCodeSize also must match
     //
-    if ((profileData->method.ILSize != 0) && (profileData->method.ILSize != m_currentMethodInfo.ILCodeSize))
+    if ((profileData->method.ILSize != 0) && (profileData->method.ILSize != ilSize))
     {
         // IL code for this method does not match the IL code for the method when it was profiled
         // in such cases we tell the JIT to discard the profile data by returning E_FAIL
@@ -1075,6 +1071,16 @@ HRESULT ZapInfo::getMethodBlockCounts (
     }
 
     return S_OK;
+}
+
+CORINFO_CLASS_HANDLE ZapInfo::getLikelyClass(
+    CORINFO_METHOD_HANDLE ftnHnd,
+    CORINFO_CLASS_HANDLE  baseHnd,
+    UINT32                ilOffset,
+    UINT32*               pLikelihood,
+    UINT32*               pNumberOfClasses)
+{
+    return NULL;
 }
 
 void ZapInfo::allocMem(

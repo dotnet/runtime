@@ -13,7 +13,7 @@
 #ifndef __SPRINTF_S_H__
 #define __SPRINTF_S_H__
 
-void DoStrTest(const char *formatstr, char* param, const char *checkstr)
+inline void DoStrTest_sprintf_s(const char *formatstr, char* param, const char *checkstr)
 {
     char buf[256] = { 0 };
 
@@ -25,8 +25,9 @@ void DoStrTest(const char *formatstr, char* param, const char *checkstr)
              param, formatstr, checkstr, buf);
     }    
 }
+#define DoStrTest DoStrTest_sprintf_s
 
-void DoWStrTest(const char *formatstr, WCHAR* param, const char *checkstr)
+inline void DoWStrTest_sprintf_s(const char *formatstr, WCHAR* param, const char *checkstr)
 {
     char buf[256] = { 0 };
 
@@ -38,8 +39,9 @@ void DoWStrTest(const char *formatstr, WCHAR* param, const char *checkstr)
              convertC(param), formatstr, checkstr, buf);
     }    
 }
+#define DoWStrTest DoWStrTest_sprintf_s
 
-void DoPointerTest(const char *formatstr, void* param, char* paramstr, 
+inline void DoPointerTest_sprintf_s(const char *formatstr, void* param, char* paramstr, 
                    const char *checkstr1)
 {
     char buf[256] = { 0 };
@@ -52,8 +54,9 @@ void DoPointerTest(const char *formatstr, void* param, char* paramstr,
              paramstr, formatstr, checkstr1, buf);
     }
 }
+#define DoPointerTest DoPointerTest_sprintf_s
 
-void DoCountTest(const char *formatstr, int param, const char *checkstr)
+inline void DoCountTest_sprintf_s(const char *formatstr, int param, const char *checkstr)
 {
     char buf[512] = { 0 };
     int n = -1;
@@ -70,8 +73,9 @@ void DoCountTest(const char *formatstr, int param, const char *checkstr)
         Fail("ERROR: Expected \"%s\" got \"%s\".\n", checkstr, buf);
     }
 }
+#define DoCountTest DoCountTest_sprintf_s
 
-void DoShortCountTest(const char *formatstr, int param, const char *checkstr)
+inline void DoShortCountTest_sprintf_s(const char *formatstr, int param, const char *checkstr)
 {
     char buf[256] = { 0 };
     short int n = -1;
@@ -88,9 +92,9 @@ void DoShortCountTest(const char *formatstr, int param, const char *checkstr)
         Fail("ERROR: Expected \"%s\" got \"%s\".\n", checkstr, buf);
     }
 }
+#define DoShortCountTest DoShortCountTest_sprintf_s
 
-
-void DoCharTest(const char *formatstr, char param, const char *checkstr)
+inline void DoCharTest_sprintf_s(const char *formatstr, char param, const char *checkstr)
 {
     char buf[256] = { 0 };
 
@@ -102,8 +106,9 @@ void DoCharTest(const char *formatstr, char param, const char *checkstr)
              param, param, formatstr, checkstr, buf);
     }
 }
+#define DoCharTest DoCharTest_sprintf_s
 
-void DoWCharTest(const char *formatstr, WCHAR param, const char *checkstr)
+inline void DoWCharTest_sprintf_s(const char *formatstr, WCHAR param, const char *checkstr)
 {
     char buf[256] = { 0 };
 
@@ -115,8 +120,9 @@ void DoWCharTest(const char *formatstr, WCHAR param, const char *checkstr)
              (char)param, param, formatstr, checkstr, buf);
     }
 }
+#define DoWCharTest DoWCharTest_sprintf_s
 
-void DoNumTest(const char *formatstr, int value, const char *checkstr)
+inline void DoNumTest_sprintf_s(const char *formatstr, int value, const char *checkstr)
 {
     char buf[256] = { 0 };
 
@@ -128,8 +134,9 @@ void DoNumTest(const char *formatstr, int value, const char *checkstr)
              value, formatstr, checkstr, buf);
     }
 }
+#define DoNumTest DoNumTest_sprintf_s
 
-void DoI64Test(const char *formatstr, INT64 value, char *valuestr, const char *checkstr1)
+inline void DoI64Test_sprintf_s(const char *formatstr, INT64 value, char *valuestr, const char *checkstr1)
 {
     char buf[256] = { 0 };
 
@@ -141,8 +148,9 @@ void DoI64Test(const char *formatstr, INT64 value, char *valuestr, const char *c
              valuestr, formatstr, checkstr1, buf);
     }    
 }
+#define DoI64Test DoI64Test_sprintf_s
 
-void DoDoubleTest(const char *formatstr, double value, const char *checkstr1,
+inline void DoDoubleTest_sprintf_s(const char *formatstr, double value, const char *checkstr1,
                   const char *checkstr2)
 {
     char buf[256] = { 0 };
@@ -156,8 +164,9 @@ void DoDoubleTest(const char *formatstr, double value, const char *checkstr1,
             value, formatstr, checkstr1, checkstr2, buf);
     }
 }
+#define DoDoubleTest DoDoubleTest_sprintf_s
 
-void DoArgumentPrecTest(const char *formatstr, int precision, void *param,
+inline void DoArgumentPrecTest_sprintf_s(const char *formatstr, int precision, void *param,
                         char *paramstr, const char *checkstr1, const char *checkstr2)
 {
     char buf[256];
@@ -172,8 +181,9 @@ void DoArgumentPrecTest(const char *formatstr, int precision, void *param,
     }
 
 }
+#define DoArgumentPrecTest DoArgumentPrecTest_sprintf_s
 
-void DoArgumentPrecDoubleTest(const char *formatstr, int precision, double param,
+inline void DoArgumentPrecDoubleTest_sprintf_s(const char *formatstr, int precision, double param,
                               const char *checkstr1, const char *checkstr2)
 {
     char buf[256];
@@ -188,6 +198,7 @@ void DoArgumentPrecDoubleTest(const char *formatstr, int precision, double param
     }
 
 }
+#define DoArgumentPrecDoubleTest DoArgumentPrecDoubleTest_sprintf_s
 
 #endif
 

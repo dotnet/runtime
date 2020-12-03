@@ -20,10 +20,10 @@
 
 #include <palsuite.h>
 
-const char* szTextFile = "text.txt";
 
 
-int __cdecl main(int argc, char *argv[])
+
+PALTEST(file_io_SetEndOfFile_test1_paltest_setendoffile_test1, "file_io/SetEndOfFile/test1/paltest_setendoffile_test1")
 {
     HANDLE hFile = NULL;
     BOOL bRc = FALSE;

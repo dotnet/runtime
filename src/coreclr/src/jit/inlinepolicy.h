@@ -12,6 +12,7 @@
 // DefaultPolicy        - default inliner policy
 // DiscretionaryPolicy  - default variant with uniform size policy
 // ModelPolicy          - policy based on statistical modelling
+// ProfilePolicy        - policy based on statistical modelling and profile feedback
 //
 // These experimental policies are available only in
 // DEBUG or release+INLINE_DATA builds of the jit.
@@ -116,9 +117,11 @@ public:
     void NoteSuccess() override;
     void NoteBool(InlineObservation obs, bool value) override;
     void NoteInt(InlineObservation obs, int value) override;
+    void NoteDouble(InlineObservation obs, double value) override;
 
     // Policy determinations
     void DetermineProfitability(CORINFO_METHOD_INFO* methodInfo) override;
+    bool BudgetCheck() const override;
 
     // Policy policies
     bool PropagateNeverToRuntime() const override;
@@ -192,6 +195,7 @@ public:
     // Policy observations
     void NoteBool(InlineObservation obs, bool value) override;
     void NoteInt(InlineObservation obs, int value) override;
+    void NoteDouble(InlineObservation obs, double value) override;
 
     // Policy policies
     bool PropagateNeverToRuntime() const override;
@@ -226,6 +230,7 @@ protected:
         MAX_ARGS = 6
     };
 
+    double      m_ProfileFrequency;
     unsigned    m_BlockCount;
     unsigned    m_Maxstack;
     unsigned    m_ArgCount;
@@ -266,6 +271,7 @@ protected:
     unsigned    m_CallSiteWeight;
     int         m_ModelCodeSizeEstimate;
     int         m_PerCallInstructionEstimate;
+    bool        m_HasProfile;
     bool        m_IsClassCtor;
     bool        m_IsSameThis;
     bool        m_CallerHasNewArray;
@@ -300,6 +306,32 @@ public:
     const char* GetName() const override
     {
         return "ModelPolicy";
+    }
+
+#endif // defined(DEBUG) || defined(INLINE_DATA)
+};
+
+// ProfilePolicy is an experimental policy that uses the results
+// of data modelling and profile feedback to make estimates.
+
+class ProfilePolicy : public DiscretionaryPolicy
+{
+public:
+    // Construct a ProfilePolicy
+    ProfilePolicy(Compiler* compiler, bool isPrejitRoot);
+
+    // Policy observations
+    void NoteInt(InlineObservation obs, int value) override;
+
+    // Policy determinations
+    void DetermineProfitability(CORINFO_METHOD_INFO* methodInfo) override;
+
+#if defined(DEBUG) || defined(INLINE_DATA)
+
+    // Miscellaneous
+    const char* GetName() const override
+    {
+        return "ProfilePolicy";
     }
 
 #endif // defined(DEBUG) || defined(INLINE_DATA)
@@ -350,6 +382,7 @@ public:
 
     // Policy determinations
     void DetermineProfitability(CORINFO_METHOD_INFO* methodInfo) override;
+    bool BudgetCheck() const override;
 
     // Miscellaneous
     const char* GetName() const override

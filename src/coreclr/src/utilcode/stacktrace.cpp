@@ -740,7 +740,7 @@ CONTEXT * pContext      // Context to use (or NULL to use current)
     stkfrm.AddrFrame.Offset = context.Ebp;  // Frame Pointer
 #endif
 
-#ifndef TARGET_X86
+#ifndef HOST_X86
     // If we don't have a user-supplied context, then don't skip any frames.
     // So ignore this function (GetStackBackTrace)
     // ClrCaptureContext on x86 gives us the ESP/EBP/EIP of its caller's caller
@@ -749,7 +749,7 @@ CONTEXT * pContext      // Context to use (or NULL to use current)
     {
         ifrStart += 1;
     }
-#endif // !TARGET_X86
+#endif // !HOST_X86
 
     for (UINT i = 0; i < ifrStart + cfrTotal; i++)
     {
@@ -948,7 +948,7 @@ void MagicDeinit(void)
     }
 }
 
-#if defined(TARGET_X86)
+#if defined(HOST_X86)
 /****************************************************************************
 * ClrCaptureContext *
 *-------------------*
@@ -988,4 +988,4 @@ ClrCaptureContext(__out PCONTEXT ctx)
         ret  4
     }
 }
-#endif // _TARGET_X86
+#endif // HOST_X86

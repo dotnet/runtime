@@ -131,7 +131,7 @@ namespace System.Linq.Expressions.Compiler
         private void EmitMemberAddress(MemberInfo member, Type? objectType)
         {
             FieldInfo? field = member as FieldInfo;
-            if ((object?)field != null)
+            if (field is not null)
             {
                 // Verifiable code may not take the address of an init-only field.
                 // If we are asked to do so then get the value out of the field, stuff it
@@ -260,7 +260,7 @@ namespace System.Linq.Expressions.Compiler
         private WriteBack? AddressOfWriteBack(MemberExpression node)
         {
             var property = node.Member as PropertyInfo;
-            if ((object?)property == null || !property.CanWrite)
+            if (property is null || !property.CanWrite)
             {
                 return null;
             }

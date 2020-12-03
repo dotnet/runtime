@@ -16,7 +16,7 @@
 #define BUFFER_SIZE 5000
 #define SMALL_BUFFER_SIZE 5
 
-int __cdecl main(int argc, char *argv[]) 
+PALTEST(miscellaneous_GetEnvironmentVariableW_test3_paltest_getenvironmentvariablew_test3, "miscellaneous/GetEnvironmentVariableW/test3/paltest_getenvironmentvariablew_test3")
 {
 
     /* Define some buffers needed for the function */

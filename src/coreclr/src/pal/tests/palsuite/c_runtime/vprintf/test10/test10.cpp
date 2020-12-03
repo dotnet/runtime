@@ -17,7 +17,7 @@
 #include "../vprintf.h"
 
 
-int __cdecl main(int argc, char *argv[])
+PALTEST(c_runtime_vprintf_test10_paltest_vprintf_test10, "c_runtime/vprintf/test10/paltest_vprintf_test10")
 {
     int neg = -42;
     int pos = 42;

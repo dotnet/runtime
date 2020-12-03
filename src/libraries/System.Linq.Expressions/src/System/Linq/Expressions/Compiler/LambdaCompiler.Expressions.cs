@@ -183,7 +183,7 @@ namespace System.Linq.Expressions.Compiler
             if (typeof(LambdaExpression).IsAssignableFrom(expr.Type))
             {
                 // if the invoke target is a lambda expression tree, first compile it into a delegate
-                expr = Expression.Call(expr, expr.Type.GetMethod("Compile", Array.Empty<Type>())!);
+                expr = Expression.Call(expr, expr.Type.GetMethod("Compile", Type.EmptyTypes)!);
             }
 
             EmitMethodCall(expr, expr.Type.GetInvokeMethod(), node, CompilationFlags.EmitAsNoTail | CompilationFlags.EmitExpressionStart);
@@ -803,7 +803,7 @@ namespace System.Linq.Expressions.Compiler
             }
 
             var fld = member as FieldInfo;
-            if ((object?)fld != null)
+            if (fld is not null)
             {
                 _ilg.EmitFieldSet((FieldInfo)member);
             }
@@ -840,7 +840,7 @@ namespace System.Linq.Expressions.Compiler
         private void EmitMemberGet(MemberInfo member, Type? objectType)
         {
             var fi = member as FieldInfo;
-            if ((object?)fi != null)
+            if (fi is not null)
             {
                 if (fi.IsLiteral)
                 {

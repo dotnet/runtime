@@ -81,9 +81,6 @@
 #define ALLOW_SXS_JIT
 #define ALLOW_SXS_JIT_NGEN
 
-//master switch for gc suspension not based on hijacking
-#define FEATURE_ENABLE_GCPOLL
-
 #if !defined(TARGET_UNIX)
 // PLATFORM_SUPPORTS_THREADSUSPEND is defined for platforms where it is safe to call
 //   SuspendThread.  This API is dangerous on non-Windows platforms, as it can lead to

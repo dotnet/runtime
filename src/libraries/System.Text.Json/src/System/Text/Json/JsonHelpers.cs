@@ -5,11 +5,15 @@ using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
+using System.Text.Json.Serialization;
 
 namespace System.Text.Json
 {
     internal static partial class JsonHelpers
     {
+        // Copy of Array.MaxArrayLength. For byte arrays the limit is slightly larger
+        private const int MaxArrayLength = 0X7FEFFFFF;
+
         /// <summary>
         /// Returns the span for the given reader.
         /// </summary>
@@ -133,6 +137,23 @@ namespace System.Text.Json
 #else
             return !(float.IsNaN(value) || float.IsInfinity(value));
 #endif
+        }
+
+        public static bool IsValidNumberHandlingValue(JsonNumberHandling handling) =>
+            IsInRangeInclusive((int)handling, 0,
+                (int)(
+                JsonNumberHandling.Strict |
+                JsonNumberHandling.AllowReadingFromString |
+                JsonNumberHandling.WriteAsString |
+                JsonNumberHandling.AllowNamedFloatingPointLiterals));
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void ValidateInt32MaxArrayLength(uint length)
+        {
+            if (length > MaxArrayLength)
+            {
+                ThrowHelper.ThrowOutOfMemoryException(length);
+            }
         }
     }
 }

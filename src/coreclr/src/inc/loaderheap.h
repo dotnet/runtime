@@ -549,6 +549,9 @@ private:
     {
         WRAPPER_NO_CONTRACT;
 
+#if defined(HOST_OSX) && defined(HOST_ARM64)
+        auto jitWriteEnableHolder = PAL_JITWriteEnable(true);
+#endif // defined(HOST_OSX) && defined(HOST_ARM64)
 
         void *pResult;
         TaggedMemAllocPtr tmap;
@@ -568,6 +571,7 @@ private:
         tmap.m_szFile           = szFile;
         tmap.m_lineNum          = lineNum;
 #endif
+
         return tmap;
     }
 
@@ -624,6 +628,10 @@ public:
                                          )
     {
         WRAPPER_NO_CONTRACT;
+
+#if defined(HOST_OSX) && defined(HOST_ARM64)
+        auto jitWriteEnableHolder = PAL_JITWriteEnable(true);
+#endif // defined(HOST_OSX) && defined(HOST_ARM64)
 
         CRITSEC_Holder csh(m_CriticalSection);
 

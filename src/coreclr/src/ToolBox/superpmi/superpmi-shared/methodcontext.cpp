@@ -47,6 +47,7 @@ MethodContext::MethodContext()
 
     cr    = new CompileResult();
     index = -1;
+    isReadyToRunCompilation = ReadyToRunCompilation::Uninitialized;
 }
 
 MethodContext::~MethodContext()
@@ -758,6 +759,30 @@ CORINFO_CLASS_HANDLE MethodContext::repGetMethodClass(CORINFO_METHOD_HANDLE meth
     return value;
 }
 
+void MethodContext::recGetMethodModule(CORINFO_METHOD_HANDLE methodHandle, CORINFO_MODULE_HANDLE moduleHandle)
+{
+    if (GetMethodModule == nullptr)
+        GetMethodModule = new LightWeightMap<DWORDLONG, DWORDLONG>();
+
+    GetMethodModule->Add((DWORDLONG)methodHandle, (DWORDLONG)moduleHandle);
+    DEBUG_REC(dmpGetMethodModule((DWORDLONG)methodHandle, (DWORDLONG)moduleHandle));
+}
+void MethodContext::dmpGetMethodModule(DWORDLONG key, DWORDLONG value)
+{
+    printf("GetMethodModule key %016llX, value %016llX", key, value);
+}
+CORINFO_MODULE_HANDLE MethodContext::repGetMethodModule(CORINFO_METHOD_HANDLE methodHandle)
+{
+    AssertCodeMsg(GetMethodModule != nullptr, EXCEPTIONCODE_MC,
+                  "Found a null GetMethodModule.  Probably missing a fatTrigger for %016llX.", (DWORDLONG)methodHandle);
+    int index = GetMethodModule->GetIndex((DWORDLONG)methodHandle);
+    AssertCodeMsg(index != -1, EXCEPTIONCODE_MC, "Didn't find %016llX.  Probably missing a fatTrigger",
+                  (DWORDLONG)methodHandle);
+    CORINFO_MODULE_HANDLE value = (CORINFO_MODULE_HANDLE)GetMethodModule->Get((DWORDLONG)methodHandle);
+    DEBUG_REP(dmpGetMethodModule((DWORDLONG)methodHandle, (DWORDLONG)value));
+    return value;
+}
+
 void MethodContext::recGetClassAttribs(CORINFO_CLASS_HANDLE classHandle, DWORD attribs)
 {
     if (GetClassAttribs == nullptr)
@@ -1119,6 +1144,8 @@ void MethodContext::recGetJitFlags(CORJIT_FLAGS* jitFlags, DWORD sizeInBytes, DW
     //       zero.
     GetJitFlags->Add((DWORD)0, value);
     DEBUG_REC(dmpGetJitFlags((DWORD)0, value));
+    InitReadyToRunFlag(jitFlags);
+
 }
 void MethodContext::dmpGetJitFlags(DWORD key, DD value)
 {
@@ -1132,6 +1159,7 @@ DWORD MethodContext::repGetJitFlags(CORJIT_FLAGS* jitFlags, DWORD sizeInBytes)
     CORJIT_FLAGS* resultFlags = (CORJIT_FLAGS*)GetJitFlags->GetBuffer(value.A);
     memcpy(jitFlags, resultFlags, value.B);
     DEBUG_REP(dmpGetJitFlags((DWORD)0, value));
+    InitReadyToRunFlag(resultFlags);
     return value.B;
 }
 
@@ -2453,7 +2481,7 @@ bool MethodContext::repConvertPInvokeCalliToCall(CORINFO_RESOLVED_TOKEN* pResolv
     key.B = (DWORD)pResolvedToken->token;
 
     DWORDLONG value = ConvertPInvokeCalliToCall->Get(key);
-    DEBUG_REP(dmpGetArgType(key, value));
+    DEBUG_REP(dmpConvertPInvokeCalliToCall(key, value));
 
     pResolvedToken->hMethod = (CORINFO_METHOD_HANDLE)value;
     return value != 0;
@@ -3060,7 +3088,7 @@ void MethodContext::recResolveVirtualMethod(CORINFO_METHOD_HANDLE  virtMethod,
     key.implementingClass = (DWORDLONG)implClass;
     key.ownerType         = (DWORDLONG)ownerType;
     ResolveVirtualMethod->Add(key, (DWORDLONG)result);
-    DEBUG_REC(dmpResolveVirtualMethod(key, result));
+    DEBUG_REC(dmpResolveVirtualMethod(key, (DWORDLONG)result));
 }
 
 void MethodContext::dmpResolveVirtualMethod(const Agnostic_ResolveVirtualMethod& key, DWORDLONG value)
@@ -3368,8 +3396,13 @@ void MethodContext::recGetFieldAddress(CORINFO_FIELD_HANDLE field, void** ppIndi
 
     value.fieldValue = (DWORD)-1;
 
-    // Make an attempt at stashing a copy of the value
-    if (result > (void*)0xffff) // TODO-Cleanup: sometimes there is a field offset?
+    AssertCodeMsg(isReadyToRunCompilation != ReadyToRunCompilation::Uninitialized, EXCEPTIONCODE_MC,
+                  "ReadyToRun flag should be initialized");
+
+    // Make an attempt at stashing a copy of the value, Jit can try to access
+    // a static readonly field value.
+    if (isReadyToRunCompilation == ReadyToRunCompilation::NotReadyToRun &&
+        result > (void*)0xffff)
     {
         DWORDLONG scratch = 0x4242424242424242;
         switch (cit)
@@ -3408,8 +3441,9 @@ void MethodContext::recGetFieldAddress(CORINFO_FIELD_HANDLE field, void** ppIndi
                 value.fieldValue =
                     (DWORD)GetFieldAddress->AddBuffer((unsigned char*)result, sizeof(size_t),
                                                       true); // important to not merge two fields into one address
-                GetFieldAddress->AddBuffer((unsigned char*)&scratch, sizeof(DWORD)); // Padding out the data so we can
-                                                                                     // read it back "safetly" on x64
+                GetFieldAddress->AddBuffer((unsigned char*)&scratch, sizeof(DWORD)); // Padding out the data so we
+                                                                                     // can read it back "safetly"
+                                                                                     // on x64
                 break;
             default:
                 break;
@@ -3429,8 +3463,13 @@ void* MethodContext::repGetFieldAddress(CORINFO_FIELD_HANDLE field, void** ppInd
 
     value = GetFieldAddress->Get((DWORDLONG)field);
 
+    AssertCodeMsg(isReadyToRunCompilation != ReadyToRunCompilation::Uninitialized,
+        EXCEPTIONCODE_MC, "isReadyToRunCompilation should be initialized");
+
     if (ppIndirection != nullptr)
+    {
         *ppIndirection = (void*)value.ppIndirection;
+    }
     void* temp;
 
     if (value.fieldValue != (DWORD)-1)
@@ -3439,7 +3478,9 @@ void* MethodContext::repGetFieldAddress(CORINFO_FIELD_HANDLE field, void** ppInd
         cr->recAddressMap((void*)value.fieldAddress, temp, toCorInfoSize(repGetFieldType(field, nullptr, nullptr)));
     }
     else
+    {
         temp = (void*)value.fieldAddress;
+    }
 
     DEBUG_REP(dmpGetFieldAddress((DWORDLONG)field, value));
     return temp;
@@ -3458,7 +3499,7 @@ void MethodContext::recGetStaticFieldCurrentClass(CORINFO_FIELD_HANDLE field,
     value.isSpeculative = isSpeculative;
 
     GetStaticFieldCurrentClass->Add((DWORDLONG)field, value);
-    DEBUG_REC(dmpGetFieldAddress((DWORDLONG)field, value));
+    DEBUG_REC(dmpGetStaticFieldCurrentClass((DWORDLONG)field, value));
 }
 void MethodContext::dmpGetStaticFieldCurrentClass(DWORDLONG key, const Agnostic_GetStaticFieldCurrentClass& value)
 {
@@ -3475,7 +3516,7 @@ CORINFO_CLASS_HANDLE MethodContext::repGetStaticFieldCurrentClass(CORINFO_FIELD_
     }
 
     CORINFO_CLASS_HANDLE result = (CORINFO_CLASS_HANDLE)value.classHandle;
-    DEBUG_REP(dmpGetStaticFieldCurrentValue((DWORDLONG)field, value));
+    DEBUG_REP(dmpGetStaticFieldCurrentClass((DWORDLONG)field, value));
     return result;
 }
 
@@ -5224,6 +5265,48 @@ HRESULT MethodContext::repGetMethodBlockCounts(CORINFO_METHOD_HANDLE        ftnH
     return result;
 }
 
+void MethodContext::recGetLikelyClass(CORINFO_METHOD_HANDLE ftnHnd, CORINFO_CLASS_HANDLE baseHnd, UINT32 ilOffset, CORINFO_CLASS_HANDLE result, UINT32* pLikelihood, UINT32* pNumberOfClasses)
+{
+    if (GetLikelyClass == nullptr)
+        GetLikelyClass = new LightWeightMap<Agnostic_GetLikelyClass, Agnostic_GetLikelyClassResult>();
+
+    Agnostic_GetLikelyClass key;
+    ZeroMemory(&key, sizeof(Agnostic_GetLikelyClass));
+
+    key.ftnHnd = (DWORDLONG) ftnHnd;
+    key.baseHnd = (DWORDLONG) baseHnd;
+    key.ilOffset = (DWORD) ilOffset;
+
+    Agnostic_GetLikelyClassResult value;
+    ZeroMemory(&value, sizeof(Agnostic_GetLikelyClassResult));
+    value.classHnd = (DWORDLONG) result;
+    value.likelihood = *pLikelihood;
+    value.numberOfClasses = *pNumberOfClasses;
+
+    GetLikelyClass->Add(key, value);
+    DEBUG_REC(dmpGetLikelyClass(key, value));
+}
+void MethodContext::dmpGetLikelyClass(const Agnostic_GetLikelyClass& key, const Agnostic_GetLikelyClassResult& value)
+{
+    printf("GetLikelyClass key ftn-%016llX base-%016llX il-%u, class-%016llX likelihood-%u numberOfClasses-%u", 
+        key.ftnHnd, key.baseHnd, key.ilOffset, value.classHnd, value.likelihood, value.numberOfClasses);
+}
+CORINFO_CLASS_HANDLE MethodContext::repGetLikelyClass(CORINFO_METHOD_HANDLE ftnHnd, CORINFO_CLASS_HANDLE baseHnd, UINT32 ilOffset, UINT32* pLikelihood, UINT32* pNumberOfClasses)
+{
+    Agnostic_GetLikelyClass key;
+    ZeroMemory(&key, sizeof(Agnostic_GetLikelyClass));
+    key.ftnHnd = (DWORDLONG) ftnHnd;
+    key.baseHnd = (DWORDLONG) baseHnd;
+    key.ilOffset = (DWORD) ilOffset;
+
+    Agnostic_GetLikelyClassResult value = GetLikelyClass->Get(key);
+    DEBUG_REP(dmpGetLikelyClass(key, value));
+
+    *pLikelihood = value.likelihood;
+    *pNumberOfClasses = value.numberOfClasses;
+    return (CORINFO_CLASS_HANDLE) value.classHnd;
+}
+
 void MethodContext::recMergeClasses(CORINFO_CLASS_HANDLE cls1, CORINFO_CLASS_HANDLE cls2, CORINFO_CLASS_HANDLE result)
 {
     if (MergeClasses == nullptr)
@@ -5270,6 +5353,7 @@ void MethodContext::recIsMoreSpecificType(CORINFO_CLASS_HANDLE cls1, CORINFO_CLA
     key.B = (DWORDLONG)cls2;
 
     IsMoreSpecificType->Add(key, (DWORD)result);
+    DEBUG_REC(dmpIsMoreSpecificType(key, (DWORD)result));
 }
 void MethodContext::dmpIsMoreSpecificType(DLDL key, DWORD value)
 {
@@ -5277,6 +5361,9 @@ void MethodContext::dmpIsMoreSpecificType(DLDL key, DWORD value)
 }
 BOOL MethodContext::repIsMoreSpecificType(CORINFO_CLASS_HANDLE cls1, CORINFO_CLASS_HANDLE cls2)
 {
+    AssertCodeMsg(IsMoreSpecificType != nullptr, EXCEPTIONCODE_MC, "Didn't find %016llX %016llX", (DWORDLONG)cls1,
+        (DWORDLONG)cls2);
+
     DLDL key;
     ZeroMemory(&key, sizeof(DLDL)); // We use the input structs as a key and use memcmp to compare.. so we need to zero
                                     // out padding too
@@ -5290,6 +5377,7 @@ BOOL MethodContext::repIsMoreSpecificType(CORINFO_CLASS_HANDLE cls1, CORINFO_CLA
 
     value = IsMoreSpecificType->Get(key);
 
+    DEBUG_REP(dmpIsMoreSpecificType(key, value));
     return (BOOL)value;
 }
 
@@ -6485,4 +6573,17 @@ bool MethodContext::IsStringContentEqual(LightWeightMap<DWORD, DWORD>* prev, Lig
     {
         return (prev == curr);
     }
+}
+
+void MethodContext::InitReadyToRunFlag(const CORJIT_FLAGS* jitFlags)
+{
+    if (jitFlags->IsSet(CORJIT_FLAGS::CORJIT_FLAG_READYTORUN))
+    {
+        isReadyToRunCompilation = ReadyToRunCompilation::ReadyToRun;
+    }
+    else
+    {
+        isReadyToRunCompilation = ReadyToRunCompilation::NotReadyToRun;
+    }
+
 }

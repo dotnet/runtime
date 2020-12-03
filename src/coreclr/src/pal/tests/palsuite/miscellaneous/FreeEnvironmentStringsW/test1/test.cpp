@@ -13,7 +13,7 @@
 #define UNICODE
 #include <palsuite.h>
 
-int __cdecl main(int argc, char *argv[]) 
+PALTEST(miscellaneous_FreeEnvironmentStringsW_test1_paltest_freeenvironmentstringsw_test1, "miscellaneous/FreeEnvironmentStringsW/test1/paltest_freeenvironmentstringsw_test1")
 {
 
     LPWSTR CapturedEnvironment = NULL;

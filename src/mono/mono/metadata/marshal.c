@@ -6559,6 +6559,9 @@ mono_marshal_get_generic_array_helper (MonoClass *klass, const gchar *name, Mono
 	get_marshal_cb ()->mb_skip_visibility (mb);
 
 	info = mono_wrapper_info_create (mb, WRAPPER_SUBTYPE_GENERIC_ARRAY_HELPER);
+	/* Assume name is constant/not freed */
+	info->d.generic_array_helper.name = name;
+	info->d.generic_array_helper.klass = klass;
 	info->d.generic_array_helper.method = method;
 	res = mono_mb_create (mb, csig, csig->param_count + 16, info);
 

@@ -1159,6 +1159,11 @@ BOOL UnlockedLoaderHeap::UnlockedReservePages(size_t dwSizeToCommit)
 
     LoaderHeapBlock *pNewBlock;
 
+#if defined(HOST_OSX) && defined(HOST_ARM64)
+    // Always assume we are touching executable heap
+    auto jitWriteEnableHolder = PAL_JITWriteEnable(true);
+#endif // defined(HOST_OSX) && defined(HOST_ARM64)
+
     pNewBlock = (LoaderHeapBlock *) pData;
 
     pNewBlock->dwVirtualSize    = dwSizeToReserve;

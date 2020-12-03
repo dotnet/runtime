@@ -21,7 +21,7 @@
 #define ModuleName    "rotor_pal.dll"
 #endif
 
-int __cdecl main(int argc, char *argv[])
+PALTEST(loader_LoadLibraryA_test1_paltest_loadlibrarya_test1, "loader/LoadLibraryA/test1/paltest_loadlibrarya_test1")
 {
     HMODULE ModuleHandle;
     int err;

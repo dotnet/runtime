@@ -150,6 +150,34 @@ namespace System.Runtime.InteropServices
 
             IntPtr s = p + sizeof(IntPtr);
             *(((uint*)s) - 1) = (uint)(length * sizeof(char));
+            ((char*)s)[length] = '\0';
+
+            return s;
+        }
+
+        internal static unsafe IntPtr AllocBSTRByteLen(uint length)
+        {
+            // SysAllocString on Windows aligns the memory block size up
+            const nuint WIN32_ALLOC_ALIGN = 15;
+
+            ulong cbNative = (ulong)(uint)length + (uint)sizeof(IntPtr) + (uint)sizeof(char) + WIN32_ALLOC_ALIGN;
+            if (cbNative > uint.MaxValue)
+            {
+                throw new OutOfMemoryException();
+            }
+
+            IntPtr p = Interop.Sys.MemAlloc((nuint)cbNative & ~WIN32_ALLOC_ALIGN);
+            if (p == IntPtr.Zero)
+            {
+                throw new OutOfMemoryException();
+            }
+
+            IntPtr s = p + sizeof(IntPtr);
+            *(((uint*)s) - 1) = (uint)length;
+
+            // NULL-terminate with both a narrow and wide zero.
+            *(byte*)((byte*)s + length) = (byte)'\0';
+            *(short*)((byte*)s + ((length + 1) & ~1)) = 0;
 
             return s;
         }
@@ -160,6 +188,17 @@ namespace System.Runtime.InteropServices
             {
                 Interop.Sys.MemFree(ptr - sizeof(IntPtr));
             }
+        }
+
+        internal static Type? GetTypeFromProgID(string progID, string? server, bool throwOnError)
+        {
+            if (progID == null)
+                throw new ArgumentNullException(nameof(progID));
+
+            if (throwOnError)
+                throw new PlatformNotSupportedException(SR.PlatformNotSupported_ComInterop);
+
+            return null;
         }
     }
 }

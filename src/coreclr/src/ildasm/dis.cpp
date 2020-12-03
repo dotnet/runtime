@@ -1448,9 +1448,9 @@ BOOL Disassemble(IMDInternalImport *pImport, BYTE *ILHeader, void *GUICookie, md
 
             case InlineVar:
             {
-                if(g_fShowBytes)
+               if(g_fShowBytes)
                 {
-                    szptr+=sprintf_s(szptr,SZSTRING_REMAINING_SIZE(szptr), "%2.2X%2.2X ", pCode[PC], pCode[PC+1]);
+                    szptr+=sprintf_s(szptr,SZSTRING_REMAINING_SIZE(szptr), "%2.2X%2.2X ", pCode[PC+1], pCode[PC]);
                     Len += 5;
                     PadTheString;
                 }
@@ -1509,7 +1509,8 @@ BOOL Disassemble(IMDInternalImport *pImport, BYTE *ILHeader, void *GUICookie, md
                 DWORD v = pCode[PC] + (pCode[PC+1] << 8) + (pCode[PC+2] << 16) + (pCode[PC+3] << 24);
                 if(g_fShowBytes)
                 {
-                    szptr+=sprintf_s(szptr,SZSTRING_REMAINING_SIZE(szptr), "%2.2X%2.2X%2.2X%2.2X ", pCode[PC], pCode[PC+1], pCode[PC+2], pCode[PC+3]);
+                    szptr+=sprintf_s(szptr,SZSTRING_REMAINING_SIZE(szptr), "%2.2X%2.2X%2.2X%2.2X ",
+                                     pCode[PC+3], pCode[PC+2], pCode[PC+1], pCode[PC]);
                     Len += 9;
                     PadTheString;
                 }
@@ -1533,8 +1534,8 @@ BOOL Disassemble(IMDInternalImport *pImport, BYTE *ILHeader, void *GUICookie, md
                 {
                     szptr+=sprintf_s(szptr,SZSTRING_REMAINING_SIZE(szptr),
                         "%2.2X%2.2X%2.2X%2.2X%2.2X%2.2X%2.2X%2.2X",
-                        pCode[PC], pCode[PC+1], pCode[PC+2], pCode[PC+3],
-                        pCode[PC+4], pCode[PC+5], pCode[PC+6], pCode[PC+7]);
+                        pCode[PC+7], pCode[PC+6], pCode[PC+5], pCode[PC+4],
+                        pCode[PC+3], pCode[PC+2], pCode[PC+1], pCode[PC]);
                     Len += 8*2;
                     PadTheString;
                 }
@@ -1555,7 +1556,8 @@ BOOL Disassemble(IMDInternalImport *pImport, BYTE *ILHeader, void *GUICookie, md
 
                 if(g_fShowBytes)
                 {
-                    szptr+=sprintf_s(szptr,SZSTRING_REMAINING_SIZE(szptr), "%2.2X%2.2X%2.2X%2.2X ", pCode[PC], pCode[PC+1], pCode[PC+2], pCode[PC+3]);
+                    szptr+=sprintf_s(szptr,SZSTRING_REMAINING_SIZE(szptr), "%2.2X%2.2X%2.2X%2.2X ",
+                                     pCode[PC+3], pCode[PC+2], pCode[PC+1], pCode[PC]);
                     Len += 9;
                     PadTheString;
                 }
@@ -1594,8 +1596,8 @@ BOOL Disassemble(IMDInternalImport *pImport, BYTE *ILHeader, void *GUICookie, md
                 {
                     szptr+=sprintf_s(szptr,SZSTRING_REMAINING_SIZE(szptr),
                         "%2.2X%2.2X%2.2X%2.2X%2.2X%2.2X%2.2X%2.2X",
-                        pCode[PC], pCode[PC+1], pCode[PC+2], pCode[PC+3],
-                        pCode[PC+4], pCode[PC+5], pCode[PC+6], pCode[PC+7]);
+                        pCode[PC+7], pCode[PC+6], pCode[PC+5], pCode[PC+4],
+                        pCode[PC+3], pCode[PC+2], pCode[PC+1], pCode[PC]);
                     Len += 8*2;
                     PadTheString;
                 }
@@ -1610,8 +1612,10 @@ BOOL Disassemble(IMDInternalImport *pImport, BYTE *ILHeader, void *GUICookie, md
                 if (((__int64&)df == v)&&!IsSpecialNumber(szf))
                     szptr+=sprintf_s(szptr,SZSTRING_REMAINING_SIZE(szptr), "%-10s %s", pszInstrName, szf);
                 else
-                    szptr+=sprintf_s(szptr,SZSTRING_REMAINING_SIZE(szptr), "%-10s (%2.2X %2.2X %2.2X %2.2X %2.2X %2.2X %2.2X %2.2X)",
-                        pszInstrName, pCode[PC], pCode[PC+1], pCode[PC+2], pCode[PC+3],
+                    szptr+=sprintf_s(szptr,SZSTRING_REMAINING_SIZE(szptr),
+                        "%-10s (%2.2X %2.2X %2.2X %2.2X %2.2X %2.2X %2.2X %2.2X)",
+                        pszInstrName, 
+                        pCode[PC], pCode[PC+1], pCode[PC+2], pCode[PC+3],
                         pCode[PC+4], pCode[PC+5], pCode[PC+6], pCode[PC+7]);
                 PC += 8;
                 break;
@@ -1642,7 +1646,8 @@ BOOL Disassemble(IMDInternalImport *pImport, BYTE *ILHeader, void *GUICookie, md
 
                 if(g_fShowBytes)
                 {
-                    szptr+=sprintf_s(szptr,SZSTRING_REMAINING_SIZE(szptr), "%2.2X%2.2X%2.2X%2.2X ", pCode[PC], pCode[PC+1], pCode[PC+2], pCode[PC+3]);
+                    szptr+=sprintf_s(szptr,SZSTRING_REMAINING_SIZE(szptr), "%2.2X%2.2X%2.2X%2.2X ",
+                                     pCode[PC+3], pCode[PC+2], pCode[PC+1], pCode[PC]);
                     Len += 9;
                     PadTheString;
                 }
@@ -1659,7 +1664,8 @@ BOOL Disassemble(IMDInternalImport *pImport, BYTE *ILHeader, void *GUICookie, md
 
                 if(g_fShowBytes)
                 {
-                    szptr+=sprintf_s(szptr,SZSTRING_REMAINING_SIZE(szptr), "%2.2X%2.2X%2.2X%2.2X ", pCode[PC], pCode[PC+1], pCode[PC+2], pCode[PC+3]);
+                    szptr+=sprintf_s(szptr,SZSTRING_REMAINING_SIZE(szptr), "%2.2X%2.2X%2.2X%2.2X ",
+                                     pCode[PC+3], pCode[PC+2], pCode[PC+1], pCode[PC]);
                     Len += 9;
                     PadTheString;
                 }
@@ -1676,8 +1682,9 @@ BOOL Disassemble(IMDInternalImport *pImport, BYTE *ILHeader, void *GUICookie, md
                     szptr+=sprintf_s(szptr,SZSTRING_REMAINING_SIZE(szptr),"%s          ",g_szAsmCodeIndent); //indent+label
                     if(g_fShowBytes)
                     {
-                        szptr+=sprintf_s(szptr,SZSTRING_REMAINING_SIZE(szptr),"/*      | %2.2X%2.2X%2.2X%2.2X ",         // comment
-                            pCode[PC], pCode[PC+1], pCode[PC+2], pCode[PC+3]);
+                        szptr+=sprintf_s(szptr,SZSTRING_REMAINING_SIZE(szptr),
+                                         "/*      | %2.2X%2.2X%2.2X%2.2X ",         // comment
+                                         pCode[PC+3], pCode[PC+2], pCode[PC+1], pCode[PC]);
                         Len = 9;
                         PadTheString;
                     }
@@ -1699,9 +1706,9 @@ BOOL Disassemble(IMDInternalImport *pImport, BYTE *ILHeader, void *GUICookie, md
                 {
                     szptr+=sprintf_s(szptr,SZSTRING_REMAINING_SIZE(szptr), "%2.2X", cases);
                     Len += 2;
-                    for(i=0; i < cases*2; i++)
+                    for(i=cases*2; i > 0; i--)
                     {
-                        szptr+=sprintf_s(szptr,SZSTRING_REMAINING_SIZE(szptr), "%2.2X", pCode[PC+1+i]);
+                        szptr+=sprintf_s(szptr,SZSTRING_REMAINING_SIZE(szptr), "%2.2X", pCode[PC+i]);
                         Len += 2;
                     }
                     PadTheString;
@@ -1733,7 +1740,7 @@ BOOL Disassemble(IMDInternalImport *pImport, BYTE *ILHeader, void *GUICookie, md
                     if(g_fShowBytes)
                     {
                         szptr+=sprintf_s(szptr,SZSTRING_REMAINING_SIZE(szptr), "%2.2X%2.2X%2.2X%2.2X ",
-                            pCode[PC], pCode[PC+1], pCode[PC+2], pCode[PC+3]);
+                                         pCode[PC+3], pCode[PC+2], pCode[PC+1], pCode[PC]);
                         Len += 9;
                         PadTheString;
                     }
@@ -1821,7 +1828,7 @@ BOOL Disassemble(IMDInternalImport *pImport, BYTE *ILHeader, void *GUICookie, md
                 if(g_fShowBytes)
                 {
                     szptr+=sprintf_s(szptr,SZSTRING_REMAINING_SIZE(szptr), "%2.2X%2.2X%2.2X%2.2X ",
-                        pCode[PC], pCode[PC+1], pCode[PC+2], pCode[PC+3]);
+                                     pCode[PC+3], pCode[PC+2], pCode[PC+1], pCode[PC]);
                     // output the offset and the raw bytes
                     Len += 9;
                     PadTheString;

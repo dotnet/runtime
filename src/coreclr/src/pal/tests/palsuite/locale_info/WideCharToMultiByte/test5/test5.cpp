@@ -12,7 +12,7 @@
 
 #include <palsuite.h>
 
-int __cdecl main(int argc, char *argv[])
+PALTEST(locale_info_WideCharToMultiByte_test5_paltest_widechartomultibyte_test5, "locale_info/WideCharToMultiByte/test5/paltest_widechartomultibyte_test5")
 {    
     int ret;
     int ret2;

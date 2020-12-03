@@ -3,6 +3,8 @@
   <PropertyGroup>
     <_targetFrameworkVersionIndex>$(TargetFramework.IndexOfAny(".-0123456789"))</_targetFrameworkVersionIndex>
     <_targetFrameworkIdentifier Condition="'$(_runtimeOSVersionIndex)' != '-1'">$(TargetFramework.SubString(0, $(_targetFrameworkVersionIndex)))</_targetFrameworkIdentifier>
+    <!-- For net5.0 and later use netcoreapp folder. -->
+    <_targetFrameworkIdentifier Condition="'$(_targetFrameworkIdentifier)' == 'net' and !$(TargetFramework.StartsWith('net4'))">netcoreapp</_targetFrameworkIdentifier>
     <ToolsDir>$(MSBuildThisFileDirectory)tools\</ToolsDir>
 
     <RestoreSources>

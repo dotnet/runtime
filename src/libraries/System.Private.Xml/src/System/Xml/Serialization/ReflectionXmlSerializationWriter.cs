@@ -1,16 +1,12 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
 using System.Reflection;
 using System.Text;
-using System.Threading.Tasks;
 using System.Xml.Schema;
-using System.Xml;
 
 namespace System.Xml.Serialization
 {
@@ -201,7 +197,6 @@ namespace System.Xml.Serialization
                 int anyCount = 0;
                 var namedAnys = new List<ElementAccessor>();
                 ElementAccessor? unnamedAny = null; // can only have one
-                string? enumTypeName = (choice != null) ? choice.Mapping!.TypeDesc!.FullName : null;
 
                 for (int i = 0; i < elements.Length; i++)
                 {
@@ -357,7 +352,6 @@ namespace System.Xml.Serialization
                 }
                 else if (element.IsUnbounded)
                 {
-                    TypeDesc arrayTypeDesc = mapping.TypeDesc!.CreateArrayTypeDesc();
                     var enumerable = (IEnumerable)o!;
                     foreach (var e in enumerable)
                     {
@@ -578,7 +572,7 @@ namespace System.Xml.Serialization
                     if (m.CheckShouldPersist)
                     {
                         string methodInvoke = "ShouldSerialize" + m.Name;
-                        MethodInfo method = o!.GetType().GetTypeInfo().GetDeclaredMethod(methodInvoke)!;
+                        MethodInfo method = o!.GetType().GetMethod(methodInvoke, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static | BindingFlags.DeclaredOnly)!;
                         shouldPersist = (bool)method.Invoke(o, Array.Empty<object>())!;
                     }
 
@@ -610,7 +604,7 @@ namespace System.Xml.Serialization
                     if (m.CheckShouldPersist)
                     {
                         string methodInvoke = "ShouldSerialize" + m.Name;
-                        MethodInfo method = o!.GetType().GetTypeInfo().GetDeclaredMethod(methodInvoke)!;
+                        MethodInfo method = o!.GetType().GetMethod(methodInvoke, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static | BindingFlags.DeclaredOnly)!;
                         shouldPersist = (bool)method.Invoke(o, Array.Empty<object>())!;
                     }
 
@@ -1217,7 +1211,6 @@ namespace System.Xml.Serialization
                 int xmlnsMember = FindXmlnsIndex(mapping.Members!);
                 if (xmlnsMember >= 0)
                 {
-                    MemberMapping member = mapping.Members![xmlnsMember];
                     var source = (XmlSerializerNamespaces)p[xmlnsMember];
 
                     if (pLength > xmlnsMember)

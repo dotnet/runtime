@@ -28,7 +28,7 @@ DWORD PALAPI ThreadFunction ( LPVOID lpParam )
     return 0;
 }
 
-int __cdecl main( int argc, char **argv ) 
+PALTEST(threading_GetCurrentThreadId_test1_paltest_getcurrentthreadid_test1, "threading/GetCurrentThreadId/test1/paltest_getcurrentthreadid_test1")
 {
     extern DWORD dwThreadIdTF;
     DWORD dwThreadIdCT;

@@ -28,8 +28,9 @@ Install the following packages:
 - openssl 1.1
 - pkg-config
 - python3
+- ninja (optional, enables building native code with ninja instead of make)
 
-You can install all the packages above using Homebrew by running this command in the repository root:
+You can install all the required packages above using Homebrew by running this command in the repository root:
 
 ```
 brew bundle --no-lock --file eng/Brewfile

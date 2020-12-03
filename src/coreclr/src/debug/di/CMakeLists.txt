@@ -50,7 +50,7 @@ set(CORDBDI_HEADERS
 
 if(CLR_CMAKE_HOST_WIN32)
     #use static crt
-    add_definitions(-MT)
+    set(CMAKE_MSVC_RUNTIME_LIBRARY MultiThreaded)
 
     if (CLR_CMAKE_TARGET_ARCH_AMD64 OR ((CLR_CMAKE_TARGET_ARCH_ARM64 OR CLR_CMAKE_TARGET_ARCH_ARM)
         AND NOT DEFINED CLR_CROSS_COMPONENTS_BUILD))
@@ -59,7 +59,10 @@ if(CLR_CMAKE_HOST_WIN32)
 
     if ((CLR_CMAKE_TARGET_ARCH_ARM OR CLR_CMAKE_TARGET_ARCH_ARM64) AND NOT DEFINED CLR_CROSS_COMPONENTS_BUILD)
         convert_to_absolute_path(CORDBDI_SOURCES_ASM_FILE ${CORDBDI_SOURCES_ASM_FILE})
-        preprocess_compile_asm(TARGET cordbdi ASM_FILES ${CORDBDI_SOURCES_ASM_FILE} OUTPUT_OBJECTS CORDBDI_SOURCES_ASM_FILE)
+        preprocess_files(CORDBDI_SOURCES_ASM_FILE ${CORDBDI_SOURCES_ASM_FILE})
+        if (CMAKE_GENERATOR MATCHES "Visual Studio")
+            compile_asm(TARGET cordbdi ASM_FILES ${CORDBDI_SOURCES_ASM_FILE} OUTPUT_OBJECTS CORDBDI_SOURCES_ASM_FILE)
+        endif()
     endif()
 elseif(CLR_CMAKE_HOST_UNIX)
 
@@ -79,5 +82,5 @@ endif (CLR_CMAKE_TARGET_WIN32)
 list(APPEND CORDBDI_SOURCES ${CORDBDI_SOURCES_ASM_FILE})
 
 add_library_clr(cordbdi STATIC ${CORDBDI_SOURCES})
-target_precompile_header(TARGET cordbdi HEADER stdafx.h)
+target_precompile_headers(cordbdi PRIVATE stdafx.h)
 add_dependencies(cordbdi eventing_headers)

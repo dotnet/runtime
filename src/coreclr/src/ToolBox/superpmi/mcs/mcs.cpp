@@ -19,6 +19,7 @@
 #include "verbconcat.h"
 #include "verbmerge.h"
 #include "verbstrip.h"
+#include "verbprintjiteeversion.h"
 #include "logging.h"
 
 int __cdecl main(int argc, char* argv[])
@@ -96,6 +97,10 @@ int __cdecl main(int argc, char* argv[])
     if (o.actionTOC)
     {
         exitCode = verbTOC::DoWork(o.nameOfFile1);
+    }
+    if (o.actionPrintJITEEVersion)
+    {
+        exitCode = verbPrintJITEEVersion::DoWork();
     }
 
     Logger::Shutdown();

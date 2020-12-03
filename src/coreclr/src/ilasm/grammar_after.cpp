@@ -843,7 +843,11 @@ Its_An_Id:
                             if(wzFile != NULL)
                             {
                                 if((parser->wzIncludePath != NULL)
-                                 &&(wcschr(wzFile,'\\')==NULL)&&(wcschr(wzFile,':')==NULL))
+                                 &&(wcschr(wzFile,DIRECTORY_SEPARATOR_CHAR_A)==NULL)
+#ifdef TARGET_WINDOWS
+                                 &&(wcschr(wzFile,':')==NULL)
+#endif
+                                )
                                 {
                                     PathString wzFullName;
 
@@ -924,10 +928,6 @@ Its_An_Id:
                                     tok = parse_literal(curSym, curPos, FALSE);
                                     if(tok == QSTRING)
                                     {
-                                        // insert UTF-8 BOM prefix
-                                        yylval.binstr->insertInt8(0xEF);
-                                        yylval.binstr->insertInt8(0xBB);
-                                        yylval.binstr->insertInt8(0xBF);
                                         yylval.binstr->appendInt8(' ');
                                         DefineVar(newstr, yylval.binstr);
                                     }

@@ -16,7 +16,7 @@
 #include <palsuite.h>
 
 
-int __cdecl main(int argc, char **argv)
+PALTEST(file_io_GetSystemTimeAsFileTime_test1_paltest_getsystemtimeasfiletime_test1, "file_io/GetSystemTimeAsFileTime/test1/paltest_getsystemtimeasfiletime_test1")
 {
 
     FILETIME TheFirstTime, TheSecondTime;

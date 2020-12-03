@@ -47,7 +47,7 @@ namespace System.Diagnostics
         public System.Diagnostics.ActivitySpanId SpanId { get { throw null; } }
         public System.DateTime StartTimeUtc { get { throw null; } }
         public System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, string?>> Tags { get { throw null; } }
-        public System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, object>> TagObjects { get { throw null; } }
+        public System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, object?>> TagObjects { get { throw null; } }
         public System.Collections.Generic.IEnumerable<System.Diagnostics.ActivityEvent> Events { get { throw null; } }
         public System.Collections.Generic.IEnumerable<System.Diagnostics.ActivityLink> Links { get { throw null; } }
         public System.Diagnostics.ActivityTraceId TraceId { get { throw null; } }
@@ -55,8 +55,8 @@ namespace System.Diagnostics
         public System.Diagnostics.Activity AddBaggage(string key, string? value) { throw null; }
         public System.Diagnostics.Activity AddEvent(System.Diagnostics.ActivityEvent e) { throw null; }
         public System.Diagnostics.Activity AddTag(string key, string? value) { throw null; }
-        public System.Diagnostics.Activity AddTag(string key, object value) { throw null; }
-        public System.Diagnostics.Activity SetTag(string key, object value) { throw null; }
+        public System.Diagnostics.Activity AddTag(string key, object? value) { throw null; }
+        public System.Diagnostics.Activity SetTag(string key, object? value) { throw null; }
         public string? GetBaggageItem(string key) { throw null; }
         public System.Diagnostics.Activity SetEndTime(System.DateTime endTimeUtc) { throw null; }
         public System.Diagnostics.Activity SetIdFormat(System.Diagnostics.ActivityIdFormat format) { throw null; }
@@ -71,31 +71,31 @@ namespace System.Diagnostics
         public object? GetCustomProperty(string propertyName) { throw null; }
         public ActivityContext Context { get { throw null; } }
     }
-    public class ActivityTagsCollection : System.Collections.Generic.IDictionary<string, object>
+    public class ActivityTagsCollection : System.Collections.Generic.IDictionary<string, object?>
     {
         public ActivityTagsCollection() { throw null; }
-        public ActivityTagsCollection(System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, object>> list) { throw null; }
+        public ActivityTagsCollection(System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, object?>> list) { throw null; }
         public object? this[string key] { get { throw null; } set { } }
         public System.Collections.Generic.ICollection<string> Keys { get { throw null; } }
-        public System.Collections.Generic.ICollection<object> Values { get { throw null; } }
+        public System.Collections.Generic.ICollection<object?> Values { get { throw null; } }
         public int Count { get { throw null; } }
         public bool IsReadOnly { get { throw null; } }
-        public void Add(string key, object value) { throw null; }
-        public void Add(System.Collections.Generic.KeyValuePair<string, object> item) { throw null; }
+        public void Add(string key, object? value) { throw null; }
+        public void Add(System.Collections.Generic.KeyValuePair<string, object?> item) { throw null; }
         public void Clear() { throw null; }
-        public bool Contains(System.Collections.Generic.KeyValuePair<string, object> item) { throw null; }
+        public bool Contains(System.Collections.Generic.KeyValuePair<string, object?> item) { throw null; }
         public bool ContainsKey(string key) { throw null; }
-        public void CopyTo(System.Collections.Generic.KeyValuePair<string, object>[] array, int arrayIndex) { throw null; }
-        System.Collections.Generic.IEnumerator<System.Collections.Generic.KeyValuePair<string, object>> System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, object>>.GetEnumerator() { throw null; }
+        public void CopyTo(System.Collections.Generic.KeyValuePair<string, object?>[] array, int arrayIndex) { throw null; }
+        System.Collections.Generic.IEnumerator<System.Collections.Generic.KeyValuePair<string, object?>> System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, object?>>.GetEnumerator() { throw null; }
         public bool Remove(string key) { throw null; }
-        public bool Remove(System.Collections.Generic.KeyValuePair<string, object> item) { throw null; }
-        public bool TryGetValue(string key, out object value) { throw null; }
+        public bool Remove(System.Collections.Generic.KeyValuePair<string, object?> item) { throw null; }
+        public bool TryGetValue(string key, out object? value) { throw null; }
         System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() { throw null; }
         public Enumerator GetEnumerator()  { throw null; }
 
-        public struct Enumerator : System.Collections.Generic.IEnumerator<System.Collections.Generic.KeyValuePair<string, object>>, System.Collections.IEnumerator
+        public struct Enumerator : System.Collections.Generic.IEnumerator<System.Collections.Generic.KeyValuePair<string, object?>>, System.Collections.IEnumerator
         {
-            public System.Collections.Generic.KeyValuePair<string, object> Current { get { throw null; } }
+            public System.Collections.Generic.KeyValuePair<string, object?> Current { get { throw null; } }
             object System.Collections.IEnumerator.Current { get { throw null; } }
             public void Dispose() { throw null; }
             public bool MoveNext() { throw null; }
@@ -200,7 +200,7 @@ namespace System.Diagnostics
         public ActivityEvent(string name, System.DateTimeOffset timestamp = default, System.Diagnostics.ActivityTagsCollection? tags = null) { throw null; }
         public string Name { get { throw null; } }
         public System.DateTimeOffset Timestamp { get { throw null; } }
-        public System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, object>> Tags { get { throw null; } }
+        public System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, object?>> Tags { get { throw null; } }
     }
     public readonly struct ActivityContext : System.IEquatable<System.Diagnostics.ActivityContext>
     {
@@ -222,7 +222,7 @@ namespace System.Diagnostics
     {
         public ActivityLink(System.Diagnostics.ActivityContext context, System.Diagnostics.ActivityTagsCollection? tags = null) { throw null; }
         public System.Diagnostics.ActivityContext Context  { get { throw null; } }
-        public System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, object>>? Tags  { get { throw null; } }
+        public System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, object?>>? Tags  { get { throw null; } }
         public override bool Equals(object? obj) { throw null; }
         public bool Equals(System.Diagnostics.ActivityLink value) { throw null; }
         public static bool operator ==(System.Diagnostics.ActivityLink left, System.Diagnostics.ActivityLink right) { throw null; }
@@ -235,8 +235,8 @@ namespace System.Diagnostics
         public string Name  { get { throw null; } }
         public System.Diagnostics.ActivityKind Kind  { get { throw null; } }
         public T Parent  { get { throw null; } }
-        public System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, object?>> Tags  { get { throw null; } }
-        public System.Collections.Generic.IEnumerable<System.Diagnostics.ActivityLink> Links  { get { throw null; } }
+        public System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, object?>>? Tags  { get { throw null; } }
+        public System.Collections.Generic.IEnumerable<System.Diagnostics.ActivityLink>? Links  { get { throw null; } }
         public System.Diagnostics.ActivityTagsCollection SamplingTags { get { throw null; } }
         public System.Diagnostics.ActivityTraceId TraceId { get { throw null; } }
     }

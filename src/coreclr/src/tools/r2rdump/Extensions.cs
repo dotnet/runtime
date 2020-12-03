@@ -117,7 +117,7 @@ namespace R2RDump
                 writer.Write($"  SignatureRVA: 0x{theThis.SignatureRVA:X8}");
                 writer.Write("   ");
             }
-            writer.Write(theThis.Signature);
+            writer.Write(theThis.Signature.ToString(options.GetSignatureFormattingOptions()));
             if (theThis.GCRefMap != null)
             {
                 writer.Write(" -- ");
@@ -152,7 +152,7 @@ namespace R2RDump
                 IEnumerable<FixupCell> fixups = theThis.Fixups;
                 if (options.Normalize)
                 {
-                    fixups = fixups.OrderBy((fc) => fc.Signature);
+                    fixups = fixups.OrderBy((fc) => fc.Signature.ToString(options.GetSignatureFormattingOptions()));
                 }
 
                 foreach (FixupCell cell in fixups)
@@ -162,7 +162,7 @@ namespace R2RDump
                     {
                         writer.Write($"TableIndex {cell.TableIndex}, Offset {cell.CellOffset:X4}: ");
                     }
-                    writer.WriteLine(cell.Signature);
+                    writer.WriteLine(cell.Signature.ToString(options.GetSignatureFormattingOptions()));
                 }
             }
         }
@@ -232,8 +232,11 @@ namespace R2RDump
 
             if (theThis.EHInfo != null)
             {
-                writer.WriteLine($@"EH info @ {theThis.EHInfo.RelativeVirtualAddress:X4}, #clauses = {theThis.EHInfo.EHClauses.Count}");
-                theThis.EHInfo.WriteTo(writer);
+                if (options.Naked)
+                    writer.WriteLine($@"EH info, #clauses = {theThis.EHInfo.EHClauses.Count}");
+                else
+                    writer.WriteLine($@"EH info @ {theThis.EHInfo.RelativeVirtualAddress:X4}, #clauses = {theThis.EHInfo.EHClauses.Count}");
+                theThis.EHInfo.WriteTo(writer, !options.Naked);
                 writer.WriteLine();
             }
 

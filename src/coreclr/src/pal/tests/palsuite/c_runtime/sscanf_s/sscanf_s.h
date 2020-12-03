@@ -13,7 +13,7 @@
 #ifndef __SSCANF_S_H__
 #define __SSCANF_S_H__
 
-void DoVoidTest(char *inputstr, const char *formatstr)
+inline void DoVoidTest_scanf_s(char *inputstr, const char *formatstr)
 {
     char buf[256] = { 0 };
     int i;
@@ -36,8 +36,9 @@ void DoVoidTest(char *inputstr, const char *formatstr)
     }
 
 }
+#define DoVoidTest DoVoidTest_scanf_s
 
-void DoStrTest(char *inputstr, const char *formatstr, const char *checkstr)
+inline void DoStrTest_scanf_s(char *inputstr, const char *formatstr, const char *checkstr)
 {
     char buf[256] = { 0 };
     int ret;
@@ -57,8 +58,9 @@ void DoStrTest(char *inputstr, const char *formatstr, const char *checkstr)
     }
 
 }
+#define DoStrTest DoStrTest_scanf_s
 
-void DoWStrTest(char *inputstr, const char *formatstr, const WCHAR *checkstr)
+inline void DoWStrTest_scanf_s(char *inputstr, const char *formatstr, const WCHAR *checkstr)
 {
     WCHAR buf[256] = { 0 };
     int ret;
@@ -78,8 +80,9 @@ void DoWStrTest(char *inputstr, const char *formatstr, const WCHAR *checkstr)
     }
 
 }
+#define DoWStrTest DoWStrTest_scanf_s
 
-void DoNumTest(char *inputstr, const char *formatstr, int checknum)
+inline void DoNumTest_scanf_s(char *inputstr, const char *formatstr, int checknum)
 {
     int num;
     int ret;
@@ -97,8 +100,9 @@ void DoNumTest(char *inputstr, const char *formatstr, int checknum)
             "Expected %d, got %d.\n", inputstr, formatstr, checknum, num);
     }
 }
+#define DoNumTest DoNumTest_scanf_s
 
-void DoShortNumTest(char *inputstr, const char *formatstr, short checknum)
+inline void DoShortNumTest_scanf_s(char *inputstr, const char *formatstr, short checknum)
 {
     short num;
     int ret;
@@ -116,8 +120,9 @@ void DoShortNumTest(char *inputstr, const char *formatstr, short checknum)
             "Expected %hd, got %hd.\n", inputstr, formatstr, checknum, num);
     }
 }
+#define DoShortNumTest DoShortNumTest_scanf_s
 
-void DoI64NumTest(char *inputstr, const char *formatstr, INT64 checknum)
+inline void DoI64NumTest_scanf_s(char *inputstr, const char *formatstr, INT64 checknum)
 {
     char buf[256];
     char check[256];
@@ -139,8 +144,9 @@ void DoI64NumTest(char *inputstr, const char *formatstr, INT64 checknum)
             "Expected %s, got %s.\n", inputstr, formatstr, check, buf);
     }
 }
+#define DoI64NumTest DoI64NumTest_scanf_s
 
-void DoCharTest(char *inputstr, const char *formatstr, char* checkchars, int numchars)
+inline void DoCharTest_scanf_s(char *inputstr, const char *formatstr, char* checkchars, int numchars)
 {
     char buf[256];
     int ret;
@@ -172,8 +178,9 @@ void DoCharTest(char *inputstr, const char *formatstr, char* checkchars, int num
             numchars);
     }
 }
+#define DoCharTest DoCharTest_scanf_s
 
-void DoWCharTest(char *inputstr, const char *formatstr, WCHAR* checkchars, int numchars)
+inline void DoWCharTest_scanf_s(char *inputstr, const char *formatstr, WCHAR* checkchars, int numchars)
 {
     WCHAR buf[256];
     int ret;
@@ -205,9 +212,9 @@ void DoWCharTest(char *inputstr, const char *formatstr, WCHAR* checkchars, int n
             numchars);
     }
 }
+#define DoWCharTest DoWCharTest_scanf_s
 
-
-void DoFloatTest(char *inputstr, const char *formatstr, float checkval)
+inline void DoFloatTest_scanf_s(char *inputstr, const char *formatstr, float checkval)
 {
     char buf[256] = { 0 };
     float val;
@@ -240,6 +247,6 @@ void DoFloatTest(char *inputstr, const char *formatstr, float checkval)
 
     }
 }
-
+#define DoFloatTest DoFloatTest_scanf_s
 
 #endif

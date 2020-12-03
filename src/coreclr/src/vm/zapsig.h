@@ -36,13 +36,17 @@ public:
     {
         IllegalValue,
         NormalTokens,
-        IbcTokens
+        IbcTokens,
+        MulticoreJitTokens
     };
 
     struct Context
     {
         Module *        pInfoModule;              // The tokens in this ZapSig are expressed relative to context.pInfoModule
-        void *          pModuleContext;           // This is a code:Module* when we are resolving Ngen fixups or doing an Ibc Profiling run
+
+        // This is a code:Module* when we are resolving Ngen fixups or doing an Ibc Profiling run.
+        // And this is a MulticoreJitProfilePlayer or a MulticoreJitRecorder when we are doing multicorejit
+        void *          pModuleContext;
                                                   // and is a code:ZapImportTable* when we are running ngen
         ExternalTokens  externalTokens;           // When we see a ELEMENT_TYPE_MODULE_ZAPSIG this tells us what type of token follows.
 
@@ -168,10 +172,10 @@ public:
         TypeHandle          *ppTH = NULL);
 
     static MethodDesc *DecodeMethod(
-        Module              *referencingModule,
-        Module              *fromModule,
+        Module              *pInfoModule,
         PCCOR_SIGNATURE     pBuffer,
         SigTypeContext      *pContext,
+        ZapSig::Context     *pZapSigContext,
         TypeHandle          *ppTH = NULL,
         PCCOR_SIGNATURE     *ppOwnerTypeSpecWithVars = NULL,
         PCCOR_SIGNATURE     *ppMethodSpecWithVars = NULL);

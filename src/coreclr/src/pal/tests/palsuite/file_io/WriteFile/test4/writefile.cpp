@@ -24,7 +24,7 @@
 
 #include <palsuite.h>
 
-BOOL CleanUp(HANDLE hFile, const char * fileName)
+BOOL CleanUp_WriteFile_test4(HANDLE hFile, const char * fileName)
 {
     BOOL bRc = TRUE;
     if (CloseHandle(hFile) != TRUE)
@@ -42,7 +42,7 @@ BOOL CleanUp(HANDLE hFile, const char * fileName)
     return bRc;
 }
 
-int __cdecl main(int argc, char *argv[])
+PALTEST(file_io_WriteFile_test4_paltest_writefile_test4, "file_io/WriteFile/test4/paltest_writefile_test4")
 {
     const char* szStringTest = "1234567890";
     const char* szWritableFile = "writeable.txt";
@@ -80,14 +80,14 @@ int __cdecl main(int argc, char *argv[])
     {
         Trace("WriteFile: ERROR -> Unable to write to file error: %ld \n",
             GetLastError());
-        CleanUp(hFile,szWritableFile);
+        CleanUp_WriteFile_test4(hFile,szWritableFile);
         Fail("");
     }
 
     if(!FlushFileBuffers(hFile))
     {   Trace("WriteFile: ERROR -> Call to FlushFile Buffers failed "
               "error %ld \n",GetLastError());
-        CleanUp(hFile,szWritableFile);
+        CleanUp_WriteFile_test4(hFile,szWritableFile);
         Fail("");        
     }
 
@@ -97,7 +97,7 @@ int __cdecl main(int argc, char *argv[])
         Trace("WriteFile: ERROR -> writing %u chars to empty file "
             "caused its size to become %u\n",strlen(szStringTest),
             GetFileSize(hFile, NULL));
-        CleanUp(hFile,szWritableFile);        
+        CleanUp_WriteFile_test4(hFile,szWritableFile);        
         Fail("");
     }
 
@@ -120,7 +120,7 @@ int __cdecl main(int argc, char *argv[])
         Trace("WriteFile: ERROR -> Unable to write to file after "
               " moiving the file poiner to 5 error: %ld \n",
               GetLastError());       
-        CleanUp(hFile,szWritableFile);        
+        CleanUp_WriteFile_test4(hFile,szWritableFile);        
         Fail("");
     }
 
@@ -129,7 +129,7 @@ int __cdecl main(int argc, char *argv[])
     {
         Trace("WriteFile: ERROR -> Call to FlushFile Buffers failed "
               "error %ld \n",GetLastError());
-        CleanUp(hFile,szWritableFile);
+        CleanUp_WriteFile_test4(hFile,szWritableFile);
         Fail("");
     }
 
@@ -140,11 +140,11 @@ int __cdecl main(int argc, char *argv[])
               "sitting the file pointer to 5 resulted in wrong file size; "
               "Expected %u resulted %u.",strlen(szStringTest),
               (strlen(szStringTest)+5),GetFileSize(hFile, NULL));
-        CleanUp(hFile,szWritableFile);
+        CleanUp_WriteFile_test4(hFile,szWritableFile);
         Fail("");
     }
 
-    if (!CleanUp(hFile,szWritableFile))
+    if (!CleanUp_WriteFile_test4(hFile,szWritableFile))
     {
         Fail("");
     }

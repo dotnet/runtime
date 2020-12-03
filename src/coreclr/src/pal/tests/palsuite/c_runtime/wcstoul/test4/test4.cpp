@@ -16,7 +16,7 @@
  * this is not currently tested.
  */
 
-int __cdecl main(int argc, char *argv[])
+PALTEST(c_runtime_wcstoul_test4_paltest_wcstoul_test4, "c_runtime/wcstoul/test4/paltest_wcstoul_test4")
 {
     WCHAR maxstr[] = {'4','2','9','4','9','6','7','2','9','5',0};
     ULONG max =    4294967295ul;

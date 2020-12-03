@@ -17,6 +17,7 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
             {
                 Assert.Equal(128, aes.BlockSize);
                 Assert.Equal(256, aes.KeySize);
+                Assert.Equal(8, aes.FeedbackSize);
                 Assert.Equal(CipherMode.CBC, aes.Mode);
                 Assert.Equal(PaddingMode.PKCS7, aes.Padding);
             }
@@ -94,7 +95,7 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
             }
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindows7))]
+        [Theory]
         [InlineData(0, true)]
         [InlineData(1, true)]
         [InlineData(7, true)]
@@ -134,11 +135,17 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
             }
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindows7))]
+        [Theory]
         [InlineData(8)]
         [InlineData(128)]
         public static void ValidCFBFeedbackSizes(int feedbackSize)
         {
+            // Windows 7 only supports CFB8.
+            if (feedbackSize != 8 && PlatformDetection.IsWindows7)
+            {
+                return;
+            }
+
             using (Aes aes = AesFactory.Create())
             {
                 aes.GenerateKey();

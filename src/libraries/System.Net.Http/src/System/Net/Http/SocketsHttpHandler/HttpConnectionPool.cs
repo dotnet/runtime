@@ -120,7 +120,7 @@ namespace System.Net.Http
             }
 
             _http2Enabled = _poolManager.Settings._maxHttpVersion >= HttpVersion.Version20;
-            _http3Enabled = _poolManager.Settings._maxHttpVersion >= Http3Connection.HttpVersion30;
+            _http3Enabled = _poolManager.Settings._maxHttpVersion >= Http3Connection.HttpVersion30 && (_poolManager.Settings._quicImplementationProvider ?? QuicImplementationProviders.Default).IsSupported;
 
             switch (kind)
             {
@@ -373,6 +373,7 @@ namespace System.Net.Http
                     return GetHttp3ConnectionAsync(request, authority, cancellationToken);
                 }
             }
+
             // If we got here, we cannot provide HTTP/3 connection. Do not continue if downgrade is not allowed.
             if (request.Version.Major >= 3 && request.VersionPolicy != HttpVersionPolicy.RequestVersionOrLower)
             {
@@ -485,8 +486,8 @@ namespace System.Net.Http
                 conn.Dispose();
             }
 
-            // We are at the connection limit. Wait for an available connection or connection count (indicated by null).
-            if (NetEventSource.Log.IsEnabled()) Trace("Connection limit reached, waiting for available connection.");
+            // We are at the connection limit. Wait for an available connection or connection count.
+            if (NetEventSource.Log.IsEnabled()) Trace($"{(async ? "As" : "S")}ynchronous request. Connection limit reached, waiting for available connection.");
 
             if (HttpTelemetry.Log.IsEnabled())
             {
@@ -494,24 +495,14 @@ namespace System.Net.Http
             }
             else
             {
-                return async ?
-                    waiter.WaitWithCancellationAsync(cancellationToken) :
-                    new ValueTask<HttpConnection?>(waiter.Task.GetAwaiter().GetResult());
+                return waiter.WaitWithCancellationAsync(cancellationToken);
             }
 
             static async ValueTask<HttpConnection?> WaitOnWaiterWithTelemetryAsync(TaskCompletionSourceWithCancellation<HttpConnection?> waiter, bool async, CancellationToken cancellationToken)
             {
                 ValueStopwatch stopwatch = ValueStopwatch.StartNew();
-                HttpConnection? connection;
 
-                if (async)
-                {
-                    connection = await waiter.WaitWithCancellationAsync(cancellationToken).ConfigureAwait(false);
-                }
-                else
-                {
-                    connection = waiter.Task.GetAwaiter().GetResult();
-                }
+                HttpConnection? connection = await waiter.WaitWithCancellationAsync(cancellationToken).ConfigureAwait(false);
 
                 HttpTelemetry.Log.Http11RequestLeftQueue(stopwatch.GetElapsedTime().TotalMilliseconds);
                 return connection;
@@ -614,10 +605,7 @@ namespace System.Net.Http
 
                     if (_kind == HttpConnectionKind.Http)
                     {
-                        http2Connection = new Http2Connection(this, stream);
-                        await http2Connection.SetupAsync().ConfigureAwait(false);
-
-                        AddHttp2Connection(http2Connection);
+                        http2Connection = await ConstructHttp2ConnectionAsync(stream, request, cancellationToken).ConfigureAwait(false);
 
                         if (NetEventSource.Log.IsEnabled())
                         {
@@ -635,13 +623,11 @@ namespace System.Net.Http
 
                         if (sslStream.SslProtocol < SslProtocols.Tls12)
                         {
+                            sslStream.Dispose();
                             throw new HttpRequestException(SR.Format(SR.net_ssl_http2_requires_tls12, sslStream.SslProtocol));
                         }
 
-                        http2Connection = new Http2Connection(this, stream);
-                        await http2Connection.SetupAsync().ConfigureAwait(false);
-
-                        AddHttp2Connection(http2Connection);
+                        http2Connection = await ConstructHttp2ConnectionAsync(stream, request, cancellationToken).ConfigureAwait(false);
 
                         if (NetEventSource.Log.IsEnabled())
                         {
@@ -695,7 +681,7 @@ namespace System.Net.Http
 
                 if (canUse)
                 {
-                    return (ConstructHttp11Connection(stream!, transportContext), true, null);
+                    return (await ConstructHttp11ConnectionAsync(async, stream!, transportContext, request, cancellationToken).ConfigureAwait(false), true, null);
                 }
                 else
                 {
@@ -820,7 +806,7 @@ namespace System.Net.Http
                 QuicConnection quicConnection;
                 try
                 {
-                    quicConnection = await ConnectHelper.ConnectQuicAsync(new DnsEndPoint(authority.IdnHost, authority.Port), _sslOptionsHttp3, cancellationToken).ConfigureAwait(false);
+                    quicConnection = await ConnectHelper.ConnectQuicAsync(Settings._quicImplementationProvider ?? QuicImplementationProviders.Default, new DnsEndPoint(authority.IdnHost, authority.Port), _sslOptionsHttp3, cancellationToken).ConfigureAwait(false);
                 }
                 catch
                 {
@@ -1258,7 +1244,7 @@ namespace System.Net.Http
                     case HttpConnectionKind.ProxyTunnel:
                     case HttpConnectionKind.SslProxyTunnel:
                         HttpResponseMessage? response;
-                        (stream, response) = await EstablishProxyTunnel(async, request.HasHeaders ? request.Headers : null, cancellationToken).ConfigureAwait(false);
+                        (stream, response) = await EstablishProxyTunnelAsync(async, request.HasHeaders ? request.Headers : null, cancellationToken).ConfigureAwait(false);
                         if (response != null)
                         {
                             // Return non-success response from proxy.
@@ -1286,27 +1272,56 @@ namespace System.Net.Http
             }
         }
 
-        private static readonly SocketsConnectionFactory s_defaultConnectionFactory = new SocketsConnectionFactory(SocketType.Stream, ProtocolType.Tcp);
-
-        private ValueTask<Stream> ConnectToTcpHostAsync(string host, int port, HttpRequestMessage initialRequest, bool async, CancellationToken cancellationToken)
+        private async ValueTask<Stream> ConnectToTcpHostAsync(string host, int port, HttpRequestMessage initialRequest, bool async, CancellationToken cancellationToken)
         {
-            if (async)
-            {
-                SocketsConnectionFactory connectionFactory = s_defaultConnectionFactory;
+            cancellationToken.ThrowIfCancellationRequested();
 
-                var endPoint = new DnsEndPoint(host, port);
-                return ConnectHelper.ConnectAsync(connectionFactory, endPoint, cancellationToken);
-            }
-
-            // Synchronous path.
-
+            var endPoint = new DnsEndPoint(host, port);
+            Socket? socket = null;
             try
             {
-                return new ValueTask<Stream>(ConnectHelper.Connect(host, port, cancellationToken));
+                // If a ConnectCallback was supplied, use that to establish the connection.
+                if (Settings._connectCallback != null)
+                {
+                    ValueTask<Stream> streamTask = Settings._connectCallback(new SocketsHttpConnectionContext(endPoint, initialRequest), cancellationToken);
+
+                    if (!async && !streamTask.IsCompleted)
+                    {
+                        // User-provided ConnectCallback is completing asynchronously but the user is making a synchronous request; if the user cares, they should
+                        // set it up so that synchronous requests are made on a handler with a synchronously-completing ConnectCallback supplied. If in the future,
+                        // we could add a Boolean to SocketsHttpConnectionContext (https://github.com/dotnet/runtime/issues/44876) to let the callback know whether
+                        // this request is sync or async.
+                        Trace($"{nameof(SocketsHttpHandler.ConnectCallback)} completing asynchronously for a synchronous request.");
+                    }
+
+                    return await streamTask.ConfigureAwait(false) ?? throw new HttpRequestException(SR.net_http_null_from_connect_callback);
+                }
+                else
+                {
+                    // Otherwise, create and connect a socket using default settings.
+                    socket = new Socket(SocketType.Stream, ProtocolType.Tcp) { NoDelay = true };
+
+                    if (async)
+                    {
+                        await socket.ConnectAsync(endPoint, cancellationToken).ConfigureAwait(false);
+                    }
+                    else
+                    {
+                        using (cancellationToken.UnsafeRegister(static s => ((Socket)s!).Dispose(), socket))
+                        {
+                            socket.Connect(endPoint);
+                        }
+                    }
+
+                    return new NetworkStream(socket, ownsSocket: true);
+                }
             }
             catch (Exception ex)
             {
-                return ValueTask.FromException<Stream>(ex);
+                socket?.Dispose();
+                throw ex is OperationCanceledException oce && oce.CancellationToken == cancellationToken ?
+                    CancellationHelper.CreateOperationCanceledException(innerException: null, cancellationToken) :
+                    ConnectHelper.CreateWrappedException(ex, endPoint.Host, endPoint.Port, cancellationToken);
             }
         }
 
@@ -1320,7 +1335,7 @@ namespace System.Net.Http
                 return (null, failureResponse);
             }
 
-            return (ConstructHttp11Connection(stream!, transportContext), null);
+            return (await ConstructHttp11ConnectionAsync(async, stream!, transportContext, request, cancellationToken).ConfigureAwait(false), null);
         }
 
         private SslClientAuthenticationOptions GetSslOptionsForRequest(HttpRequestMessage request)
@@ -1340,13 +1355,65 @@ namespace System.Net.Http
             return _sslOptionsHttp11!;
         }
 
-        private HttpConnection ConstructHttp11Connection(Stream stream, TransportContext? transportContext)
+        private async ValueTask<Stream> ApplyPlaintextFilterAsync(bool async, Stream stream, Version httpVersion, HttpRequestMessage request, CancellationToken cancellationToken)
         {
+            if (Settings._plaintextStreamFilter is null)
+            {
+                return stream;
+            }
+
+            Stream newStream;
+            try
+            {
+                ValueTask<Stream> streamTask = Settings._plaintextStreamFilter(new SocketsHttpPlaintextStreamFilterContext(stream, httpVersion, request), cancellationToken);
+
+                if (!async && !streamTask.IsCompleted)
+                {
+                    // User-provided PlaintextStreamFilter is completing asynchronously but the user is making a synchronous request; if the user cares, they should
+                    // set it up so that synchronous requests are made on a handler with a synchronously-completing PlaintextStreamFilter supplied. If in the future,
+                    // we could add a Boolean to SocketsHttpPlaintextStreamFilterContext (https://github.com/dotnet/runtime/issues/44876) to let the callback know whether
+                    // this request is sync or async.
+                    Trace($"{nameof(SocketsHttpHandler.PlaintextStreamFilter)} completing asynchronously for a synchronous request.");
+                }
+
+                newStream = await streamTask.ConfigureAwait(false);
+            }
+            catch (Exception e)
+            {
+                stream.Dispose();
+                throw new HttpRequestException(SR.net_http_exception_during_plaintext_filter, e);
+            }
+
+            if (newStream == null)
+            {
+                stream.Dispose();
+                throw new HttpRequestException(SR.net_http_null_from_plaintext_filter);
+            }
+
+            return newStream;
+        }
+
+        private async ValueTask<HttpConnection> ConstructHttp11ConnectionAsync(bool async, Stream stream, TransportContext? transportContext, HttpRequestMessage request, CancellationToken cancellationToken)
+        {
+            stream = await ApplyPlaintextFilterAsync(async, stream, HttpVersion.Version11, request, cancellationToken).ConfigureAwait(false);
             return new HttpConnection(this, stream, transportContext);
         }
 
+        private async ValueTask<Http2Connection> ConstructHttp2ConnectionAsync(Stream stream, HttpRequestMessage request, CancellationToken cancellationToken)
+        {
+            stream = await ApplyPlaintextFilterAsync(async: true, stream, HttpVersion.Version20, request, cancellationToken).ConfigureAwait(false);
+
+            Http2Connection http2Connection = new Http2Connection(this, stream);
+            await http2Connection.SetupAsync().ConfigureAwait(false);
+
+            AddHttp2Connection(http2Connection);
+
+            return http2Connection;
+        }
+
+
         // Returns the established stream or an HttpResponseMessage from the proxy indicating failure.
-        private async ValueTask<(Stream?, HttpResponseMessage?)> EstablishProxyTunnel(bool async, HttpRequestHeaders? headers, CancellationToken cancellationToken)
+        private async ValueTask<(Stream?, HttpResponseMessage?)> EstablishProxyTunnelAsync(bool async, HttpRequestHeaders? headers, CancellationToken cancellationToken)
         {
             Debug.Assert(_originAuthority != null);
             // Send a CONNECT request to the proxy server to establish a tunnel.
@@ -1366,7 +1433,6 @@ namespace System.Net.Http
             }
 
             Stream stream = tunnelResponse.Content.ReadAsStream(cancellationToken);
-            EndPoint remoteEndPoint = new DnsEndPoint(_originAuthority.IdnHost, _originAuthority.Port);
 
             return (stream, null);
         }

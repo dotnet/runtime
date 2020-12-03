@@ -99,7 +99,7 @@ IGCHandleStore* GCHandleManager::CreateHandleStore()
 
     return store;
 #else
-    assert("CreateHandleStore is not implemented when FEATURE_REDHAWK is defined!");
+    assert(!"CreateHandleStore is not implemented when FEATURE_REDHAWK is defined!");
     return nullptr;
 #endif
 }

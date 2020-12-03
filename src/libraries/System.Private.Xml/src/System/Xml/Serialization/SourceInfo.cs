@@ -216,7 +216,7 @@ namespace System.Xml.Serialization
                 MethodInfo Nullable_get_Value = nullableType.GetMethod(
                     "get_Value",
                     CodeGenerator.InstanceBindingFlags,
-                    Array.Empty<Type>()
+                    Type.EmptyTypes
                     )!;
                 ILG.Call(Nullable_get_Value);
                 if (targetType != null)
@@ -233,16 +233,16 @@ namespace System.Xml.Serialization
 
         public static bool operator !=(SourceInfo? a, SourceInfo? b)
         {
-            if ((object?)a != null)
+            if (a is not null)
                 return !a.Equals(b);
-            return (object?)b != null;
+            return b is not null;
         }
 
         public static bool operator ==(SourceInfo? a, SourceInfo? b)
         {
-            if ((object?)a != null)
+            if (a is not null)
                 return a.Equals(b);
-            return (object?)b == null;
+            return b is null;
         }
 
         public override bool Equals(object? obj)

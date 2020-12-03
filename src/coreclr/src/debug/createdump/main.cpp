@@ -74,6 +74,8 @@ int __cdecl main(const int argc, const char* argv[])
             {
                 dumpType = "minidump";
                 minidumpType = (MINIDUMP_TYPE)(MiniDumpNormal |
+                                               MiniDumpWithDataSegs |
+                                               MiniDumpWithHandleData |
                                                MiniDumpWithThreadInfo);
             }
             else if ((strcmp(*argv, "-h") == 0) || (strcmp(*argv, "--withheap") == 0))
@@ -91,6 +93,9 @@ int __cdecl main(const int argc, const char* argv[])
             {
                 dumpType = "triage minidump";
                 minidumpType = (MINIDUMP_TYPE)(MiniDumpFilterTriage |
+                                               MiniDumpWithDataSegs |
+                                               MiniDumpWithHandleData |
+                                               MiniDumpFilterModulePaths |
                                                MiniDumpWithThreadInfo);
             }
             else if ((strcmp(*argv, "-u") == 0) || (strcmp(*argv, "--full") == 0))

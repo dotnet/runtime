@@ -48,7 +48,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         public override ObjectData GetData(NodeFactory factory, bool relocsOnly = false)
         {
-            return new ObjectData(_ehInfoBuilder.ToArray(), Array.Empty<Relocation>(), alignment: 1, definedSymbols: new ISymbolDefinitionNode[] { this });
+            return new ObjectData(_ehInfoBuilder.ToArray(), Array.Empty<Relocation>(), alignment: 4, definedSymbols: new ISymbolDefinitionNode[] { this });
         }
 
         protected override string GetName(NodeFactory context)

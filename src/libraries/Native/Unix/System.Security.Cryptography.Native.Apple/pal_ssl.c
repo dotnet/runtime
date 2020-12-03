@@ -594,7 +594,7 @@ int32_t AppleCryptoNative_SslSetEnabledCipherSuites(SSLContextRef sslContext, co
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wdeprecated-declarations"
         // macOS
-        return SSLSetEnabledCiphers(sslContext, cipherSuites, (size_t)numCipherSuites);
+        return SSLSetEnabledCiphers(sslContext, (const SSLCipherSuite *)cipherSuites, (size_t)numCipherSuites);
 #pragma clang diagnostic pop   
     }
     else

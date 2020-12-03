@@ -22,7 +22,7 @@ struct testCase
     char *string2;
 };
 
-int __cdecl main(int argc, char *argv[])
+PALTEST(c_runtime_strcspn_test1_paltest_strcspn_test1, "c_runtime/strcspn/test1/paltest_strcspn_test1")
 {
     int i=0;
     long TheResult = 0;

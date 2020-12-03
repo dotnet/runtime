@@ -95,7 +95,7 @@ BOOL CreateThreadTest()
 }
 
 
-int __cdecl main(int argc, char **argv)
+PALTEST(threading_CreateThread_test1_paltest_createthread_test1, "threading/CreateThread/test1/paltest_createthread_test1")
 {
     if(0 != (PAL_Initialize(argc, argv)))
     {

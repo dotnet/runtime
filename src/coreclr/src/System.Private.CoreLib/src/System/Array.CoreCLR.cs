@@ -483,6 +483,7 @@ namespace System
         public extern void Initialize();
     }
 
+#pragma warning disable CA1822 // Mark members as static
     //----------------------------------------------------------------------------------------
     // ! READ THIS BEFORE YOU WORK ON THIS CLASS.
     //
@@ -619,4 +620,5 @@ namespace System
             ThrowHelper.ThrowNotSupportedException(ExceptionResource.NotSupported_FixedSizeCollection);
         }
     }
+#pragma warning restore CA1822
 }

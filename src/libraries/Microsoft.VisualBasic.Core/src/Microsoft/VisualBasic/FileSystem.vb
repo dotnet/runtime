@@ -719,7 +719,7 @@ Namespace Microsoft.VisualBasic
             End Try
         End Sub
 
-        <ObsoleteAttribute("This member has been deprecated. Please use FilePutObject to write Object types, or coerce FileNumber and RecordNumber to Integer for writing non-Object types. http://go.microsoft.com/fwlink/?linkid=14202")>
+        <ObsoleteAttribute("This member has been deprecated. Please use FilePutObject to write Object types, or coerce FileNumber and RecordNumber to Integer for writing non-Object types. https://go.microsoft.com/fwlink/?linkid=14202")>
         Public Sub FilePut(ByVal FileNumber As Object, ByVal Value As Object, Optional ByVal RecordNumber As Object = -1)
             Throw New ArgumentException(SR.UseFilePutObject)
         End Sub
@@ -1247,7 +1247,7 @@ Namespace Microsoft.VisualBasic
 
             ' This exception should never be hit.
             ' We will throw Arguments are not valid.
-            Throw New ArgumentException(SR.Argument_InvalidValue, "om")
+            Throw New ArgumentException(SR.Argument_InvalidValue, NameOf(om))
         End Function
 
         Friend Sub CloseAllFiles(ByVal assem As System.Reflection.Assembly)

@@ -44,7 +44,7 @@ namespace System.Collections.Generic
 
             EnsureCapacity(_count + length);
             Array.Copy(newItems, offset, _items, _count, length);
-            _count += length; 
+            _count += length;
         }
 
         public void Append(ArrayBuilder<T> newItems)
@@ -97,6 +97,19 @@ namespace System.Collections.Generic
             for (int i = 0; i < _count; i++)
             {
                 if (_items[i].Equals(t))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        public bool Any(Func<T, bool> func)
+        {
+            for (int i = 0; i < _count; i++)
+            {
+                if (func(_items[i]))
                 {
                     return true;
                 }

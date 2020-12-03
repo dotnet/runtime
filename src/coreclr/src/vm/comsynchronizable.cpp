@@ -648,6 +648,17 @@ FCIMPLEND
 
 #define Sleep(dwMilliseconds) Dont_Use_Sleep(dwMilliseconds)
 
+void QCALLTYPE ThreadNative::UninterruptibleSleep0()
+{
+    QCALL_CONTRACT;
+
+    BEGIN_QCALL;
+
+    ClrSleepEx(0, false);
+
+    END_QCALL;
+}
+
 FCIMPL1(INT32, ThreadNative::GetManagedThreadId, ThreadBaseObject* th) {
     FCALL_CONTRACT;
 
@@ -1315,6 +1326,22 @@ FCIMPL1(FC_BOOL_RET, ThreadNative::IsThreadpoolThread, ThreadBaseObject* thread)
     FC_GC_POLL_RET();
 
     FC_RETURN_BOOL(ret);
+}
+FCIMPLEND
+
+FCIMPL1(void, ThreadNative::SetIsThreadpoolThread, ThreadBaseObject* thread)
+{
+    FCALL_CONTRACT;
+
+    if (thread == NULL)
+        FCThrowResVoid(kNullReferenceException, W("NullReference_This"));
+
+    Thread *pThread = thread->GetInternal();
+
+    if (pThread == NULL)
+        FCThrowExVoid(kThreadStateException, IDS_EE_THREAD_DEAD_STATE, NULL, NULL, NULL);
+
+    pThread->SetIsThreadPoolThread();
 }
 FCIMPLEND
 

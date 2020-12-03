@@ -19,7 +19,7 @@
  * Notes: memcmp is used, as is strlen.
  */
 
-int __cdecl main(int argc, char *argv[])
+PALTEST(c_runtime__snprintf_s_test1_paltest_snprintf_test1, "c_runtime/_snprintf_s/test1/paltest_snprintf_test1")
 {
     char checkstr[] = "hello world";
     char buf[256] = { 0 };

@@ -32,7 +32,7 @@ static int IsFileTimeOk(FILETIME FirstTime, FILETIME SecondTime)
     return(TimeOne <= TimeTwo);
 }
 
-int __cdecl main(int argc, char **argv)
+PALTEST(file_io_GetFileAttributesExW_test2_paltest_getfileattributesexw_test2, "file_io/GetFileAttributesExW/test2/paltest_getfileattributesexw_test2")
 {
     DWORD res;
     char fileName[MAX_PATH] = "test_file";

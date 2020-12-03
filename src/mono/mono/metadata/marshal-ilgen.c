@@ -2737,10 +2737,12 @@ emit_marshal_array_ilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 			mono_mb_emit_ldloc (mb, conv_arg);
 		break;
 
-	case MARSHAL_ACTION_CONV_RESULT:
-		/* fixme: we need conversions here */
-		mono_mb_emit_stloc (mb, 3);
+	case MARSHAL_ACTION_CONV_RESULT: {
+		mono_mb_emit_byte (mb, CEE_POP);
+		char *msg = g_strdup_printf ("Cannot marshal 'return value': Invalid managed/unmanaged type combination.");
+		mono_mb_emit_exception_marshal_directive (mb, msg);
 		break;
+	}
 
 	case MARSHAL_ACTION_MANAGED_CONV_IN: {
 		guint32 label1, label2, label3;

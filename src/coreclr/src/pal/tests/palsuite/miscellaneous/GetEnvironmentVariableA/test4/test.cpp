@@ -18,7 +18,8 @@
 
 #include <palsuite.h>
 
-int __cdecl main(int argc, char *argv[]) {
+PALTEST(miscellaneous_GetEnvironmentVariableA_test4_paltest_getenvironmentvariablea_test4, "miscellaneous/GetEnvironmentVariableA/test4/paltest_getenvironmentvariablea_test4")
+{
 
     /* Define some buffers needed for the function */
     char * pResultBuffer = NULL;

@@ -200,12 +200,38 @@ namespace System.Runtime.InteropServices
             return bstr;
         }
 
+        internal static unsafe IntPtr AllocBSTRByteLen(uint length)
+        {
+            IntPtr bstr = Interop.OleAut32.SysAllocStringByteLen(null, length);
+            if (bstr == IntPtr.Zero)
+            {
+                throw new OutOfMemoryException();
+            }
+            return bstr;
+        }
+
         public static void FreeBSTR(IntPtr ptr)
         {
             if (!IsNullOrWin32Atom(ptr))
             {
                 Interop.OleAut32.SysFreeString(ptr);
             }
+        }
+
+        internal static Type? GetTypeFromProgID(string progID, string? server, bool throwOnError)
+        {
+            if (progID == null)
+                throw new ArgumentNullException(nameof(progID));
+
+            int hr = Interop.Ole32.CLSIDFromProgID(progID, out Guid clsid);
+            if (hr < 0)
+            {
+                if (throwOnError)
+                    throw Marshal.GetExceptionForHR(hr, new IntPtr(-1))!;
+                return null;
+            }
+
+            return GetTypeFromCLSID(clsid, server, throwOnError);
         }
     }
 }

@@ -18,7 +18,7 @@ struct TESTS
     int nResult;
 };
 
-int __cdecl main(int argc, char *argv[])
+PALTEST(c_runtime_abs_test1_paltest_abs_test1, "c_runtime/abs/test1/paltest_abs_test1")
 {
     int i = 0;
     int nRc = 0;

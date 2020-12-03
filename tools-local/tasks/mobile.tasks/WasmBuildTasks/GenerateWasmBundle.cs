@@ -1,3 +1,6 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
 using System;
 using System.Buffers.Binary;
 using System.Collections.Generic;
@@ -18,16 +21,16 @@ public class GenerateWasmBundle : Task
     public string? InputDirectory { get; set; }
 
     [Required]
-    public string? OutputFileName { get; set; } 
+    public string? OutputFileName { get; set; }
 
-    private (byte[] json_bytes, MemoryStream stream) EnumerateData() 
+    private (byte[] json_bytes, MemoryStream stream) EnumerateData()
     {
         var indices = new List<object[]>();
         var stream = new MemoryStream();
-        
+
         var directoryInfo = new DirectoryInfo(InputDirectory!);
-        
-        foreach (var entry in directoryInfo.EnumerateFiles("*", SearchOption.AllDirectories)) 
+
+        foreach (var entry in directoryInfo.EnumerateFiles("*", SearchOption.AllDirectories))
         {
             var relativePath = Path.GetRelativePath(InputDirectory!, entry.FullName);
             indices.Add(new object[] { relativePath, entry.Length });
@@ -35,23 +38,23 @@ public class GenerateWasmBundle : Task
             using (var readStream = entry.OpenRead())
                 readStream.CopyTo(stream);
         }
-        
+
         stream.Position = 0;
         var jsonBytes = JsonSerializer.SerializeToUtf8Bytes(indices);
-        
+
         return (jsonBytes, stream);
     }
 
     public override bool Execute()
     {
-        if (!Directory.Exists(InputDirectory)) 
+        if (!Directory.Exists(InputDirectory))
         {
             Log.LogError($"Input directory '{InputDirectory}' does not exist");
             return false;
         }
 
         (byte[] json_bytes, MemoryStream stream) data = EnumerateData();
-        
+
         using (var file = File.Open(OutputFileName!, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.ReadWrite))
         {
             var lengthBytes = new byte[4];
@@ -60,11 +63,10 @@ public class GenerateWasmBundle : Task
             file.Write(magicBytes);
             file.Write(lengthBytes);
             file.Write(data.json_bytes);
-            
+
             data.stream.CopyTo(file);
         }
-        
+
         return true;
     }
 }
-

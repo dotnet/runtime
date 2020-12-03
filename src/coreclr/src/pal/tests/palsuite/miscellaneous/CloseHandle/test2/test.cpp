@@ -12,7 +12,7 @@
 
 #include <palsuite.h>
 
-int __cdecl main(int argc, char *argv[])
+PALTEST(miscellaneous_CloseHandle_test2_paltest_closehandle_test2, "miscellaneous/CloseHandle/test2/paltest_closehandle_test2")
 {
 
     HANDLE SomeHandle = NULL;

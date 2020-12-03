@@ -24,14 +24,18 @@ typedef unsigned short char16_t;
 #include <pal.h>
 #include <palprivate.h>
 
+#define PALTEST(testfunc, testname) \
+ int __cdecl testfunc(int argc, char* argv[]); \
+ static PALTest testfunc##_lookup(testfunc, testname); \
+ int __cdecl testfunc(int argc, char* argv[]) \
+
 enum
 {
     PASS = 0,
     FAIL = 1
 };
 
-
-void Trace(const char *format, ...)
+inline void Trace(const char *format, ...)
 {
     va_list arglist;
 	
@@ -42,7 +46,7 @@ void Trace(const char *format, ...)
     va_end(arglist);
 }
 
-void Fail(const char *format, ...)
+inline void Fail(const char *format, ...)
 {
     va_list arglist;
 	
@@ -56,6 +60,23 @@ void Fail(const char *format, ...)
     // This will exit the test process
     PAL_TerminateEx(FAIL);
 }
+
+typedef int __cdecl(*PALTestEntrypoint)(int argc, char*[]);
+
+struct PALTest
+{
+    static PALTest* s_tests;
+    PALTest *_next;
+    PALTestEntrypoint _entrypoint;
+    const char *_name;
+    PALTest(PALTestEntrypoint entrypoint, const char *entrypointName)
+    {
+        _entrypoint = entrypoint;
+        _name = entrypointName;
+        _next = s_tests;
+        s_tests = this;
+    }
+};
 
 #ifdef PAL_PERF
 
@@ -138,46 +159,65 @@ inline ULONG   VAL32(ULONG x)
 
 #define _countof(_array) (sizeof(_array)/sizeof(_array[0]))
 
-WCHAR* convert(const char * aString) 
-{
-    int size;
-    WCHAR* wideBuffer;
+WCHAR* convert(const char * aString);
+char* convertC(const WCHAR * wString);
+UINT64 GetHighPrecisionTimeStamp(LARGE_INTEGER performanceFrequency);
 
-    size = MultiByteToWideChar(CP_ACP,0,aString,-1,NULL,0);
-    wideBuffer = (WCHAR*) malloc(size*sizeof(WCHAR));
-    if (wideBuffer == NULL)
-    {
-        Fail("ERROR: Unable to allocate memory!\n");
-    }
-    MultiByteToWideChar(CP_ACP,0,aString,-1,wideBuffer,size);
-    return wideBuffer;
-}
+extern const char* szTextFile;
 
-char* convertC(const WCHAR * wString) 
-{
-    int size;
-    char * MultiBuffer = NULL;
 
-    size = WideCharToMultiByte(CP_ACP,0,wString,-1,MultiBuffer,0,NULL,NULL);
-    MultiBuffer = (char*) malloc(size);
-    if (MultiBuffer == NULL)
-    {
-        Fail("ERROR: Unable to allocate memory!\n");
-    }
-    WideCharToMultiByte(CP_ACP,0,wString,-1,MultiBuffer,size,NULL,NULL);
-    return MultiBuffer;
-}
+int
+mkAbsoluteFilename( LPSTR dirName,
+                    DWORD dwDirLength,
+                    LPCSTR fileName,
+                    DWORD dwFileLength,
+                    LPSTR absPathName );
 
-UINT64 GetHighPrecisionTimeStamp(LARGE_INTEGER performanceFrequency)
-{
-    LARGE_INTEGER ts;
-    if (!QueryPerformanceCounter(&ts))
-    {
-        Fail("ERROR: Unable to query performance counter!\n");      
-    }
-    
-    return ts.QuadPart / (performanceFrequency.QuadPart / 1000);    
-}
+BOOL CleanupHelper (HANDLE *hArray, DWORD dwIndex);
+BOOL Cleanup(HANDLE *hArray, DWORD dwIndex);
+
+
+/* 
+ * Tokens 0 and 1 are events.  Token 2 is the thread.
+ */
+#define NUM_TOKENS 3                             
+
+extern HANDLE hToken[NUM_TOKENS];
+extern CRITICAL_SECTION CriticalSection;
+
+/*
+ * Take two wide strings representing file and directory names
+ * (dirName, fileName), join the strings with the appropriate path
+ * delimiter and populate a wide character buffer (absPathName) with
+ * the resulting string.
+ *
+ * Returns: The number of wide characters in the resulting string.
+ * 0 is returned on Error.
+ */
+int 
+mkAbsoluteFilenameW ( 
+    LPWSTR dirName,  
+    DWORD dwDirLength, 
+    LPCWSTR fileName, 
+    DWORD dwFileLength,
+    LPWSTR absPathName );
+
+/*
+ * Take two wide strings representing file and directory names
+ * (dirName, fileName), join the strings with the appropriate path
+ * delimiter and populate a wide character buffer (absPathName) with
+ * the resulting string.
+ *
+ * Returns: The number of wide characters in the resulting string.
+ * 0 is returned on Error.
+ */
+int 
+mkAbsoluteFilenameA ( 
+    LPSTR dirName,  
+    DWORD dwDirLength, 
+    LPCSTR fileName, 
+    DWORD dwFileLength,
+    LPSTR absPathName );
 
 #endif
 

@@ -16,8 +16,9 @@
 
 #include <pal.h>
 #include "myexitcode.h"
+#include <palsuite.h>
 
-int __cdecl main( int argc, char **argv ) 
+PALTEST(threading_GetExitCodeProcess_test1_paltest_getexitcodeprocess_test1_child, "threading/GetExitCodeProcess/test1/paltest_getexitcodeprocess_test1_child")
 {
     int i;
     

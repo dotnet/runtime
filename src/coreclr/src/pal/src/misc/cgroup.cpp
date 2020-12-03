@@ -53,8 +53,8 @@ public:
     static void Initialize()
     {
         s_cgroup_version = FindCGroupVersion();
-        s_memory_cgroup_path = FindCGroupPath(&IsCGroup1MemorySubsystem);
-        s_cpu_cgroup_path = FindCGroupPath(&IsCGroup1CpuSubsystem);
+        s_memory_cgroup_path = FindCGroupPath(s_cgroup_version == 1 ? &IsCGroup1MemorySubsystem : nullptr);
+        s_cpu_cgroup_path = FindCGroupPath(s_cgroup_version == 1 ? &IsCGroup1CpuSubsystem : nullptr);
     }
 
     static void Cleanup()
@@ -245,33 +245,37 @@ private:
 
             if (strncmp(filesystemType, "cgroup", 6) == 0)
             {
-                char* context = nullptr;
-                char* strTok = strtok_s(options, ",", &context);
-                while (strTok != nullptr)
+                bool isSubsystemMatch = is_subsystem == nullptr;
+                if (!isSubsystemMatch)
                 {
-                    if (is_subsystem(strTok))
+                    char* context = nullptr;
+                    char* strTok = strtok_s(options, ",", &context);
+                    while (!isSubsystemMatch && strTok != nullptr)
                     {
-                        mountpath = (char*)PAL_malloc(lineLen+1);
-                        if (mountpath == nullptr)
-                            goto done;
-                        mountroot = (char*)PAL_malloc(lineLen+1);
-                        if (mountroot == nullptr)
-                            goto done;
-
-                        sscanfRet = sscanf_s(line,
-                                             "%*s %*s %*s %s %s ",
-                                             mountroot, lineLen+1,
-                                             mountpath, lineLen+1);
-                        if (sscanfRet != 2)
-                            _ASSERTE(!"Failed to parse mount info file contents with sscanf_s.");
-
-                        // assign the output arguments and clear the locals so we don't free them.
-                        *pmountpath = mountpath;
-                        *pmountroot = mountroot;
-                        mountpath = mountroot = nullptr;
-                        goto done;
+                        isSubsystemMatch = is_subsystem(strTok);
+                        strTok = strtok_s(nullptr, ",", &context);
                     }
-                    strTok = strtok_s(nullptr, ",", &context);
+                }
+                if (isSubsystemMatch)
+                {
+                    mountpath = (char*)PAL_malloc(lineLen+1);
+                    if (mountpath == nullptr)
+                        goto done;
+                    mountroot = (char*)PAL_malloc(lineLen+1);
+                    if (mountroot == nullptr)
+                        goto done;
+
+                    sscanfRet = sscanf_s(line,
+                                        "%*s %*s %*s %s %s ",
+                                        mountroot, lineLen+1,
+                                        mountpath, lineLen+1);
+                    if (sscanfRet != 2)
+                        _ASSERTE(!"Failed to parse mount info file contents with sscanf_s.");
+
+                    // assign the output arguments and clear the locals so we don't free them.
+                    *pmountpath = mountpath;
+                    *pmountroot = mountroot;
+                    mountpath = mountroot = nullptr;
                 }
             }
         }
@@ -343,7 +347,7 @@ private:
                 // See https://www.kernel.org/doc/Documentation/cgroup-v2.txt
                 // Look for a "0::/some/path"
                 int sscanfRet = sscanf_s(line,
-                                         "0::%s", lineLen+1,
+                                         "0::%s",
                                          cgroup_path, lineLen+1);
                 if (sscanfRet == 1)
                 {

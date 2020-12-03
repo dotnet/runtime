@@ -88,7 +88,7 @@ static void DoTest(const WCHAR* szwDir,
     }
 }
 
-int __cdecl main(int argc, char *argv[])
+PALTEST(file_io_FindNextFileW_test2_paltest_findnextfilew_test2, "file_io/FindNextFileW/test2/paltest_findnextfilew_test2")
 {
 
     if (0 != PAL_Initialize(argc,argv))

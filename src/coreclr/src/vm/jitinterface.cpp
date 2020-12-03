@@ -2629,7 +2629,7 @@ void CEEInfo::embedGenericHandle(
 
         // Runtime lookup is only required for stubs. Regular entrypoints are always the same shared MethodDescs.
         fRuntimeLookup = pMD->IsWrapperStub() &&
-            (pMD->GetMethodTable()->IsSharedByGenericInstantiations() || TypeHandle::IsCanonicalSubtypeInstantiation(methodInst));
+            (th.IsSharedByGenericInstantiations() || TypeHandle::IsCanonicalSubtypeInstantiation(methodInst));
     }
     else
     if (!fEmbedParent && pResolvedToken->hField != NULL)
@@ -3326,7 +3326,7 @@ NoSpecialCase:
         _ASSERTE(pTemplateMD != NULL);
         sigBuilder.AppendElementType(ELEMENT_TYPE_INTERNAL);
         sigBuilder.AppendPointer(pTemplateMD->GetMethodTable());
-        // fall through
+        FALLTHROUGH;
 
     case TypeHandleSlot:
         {
@@ -3362,7 +3362,7 @@ NoSpecialCase:
             sigBuilder.AppendElementType(ELEMENT_TYPE_INTERNAL);
             sigBuilder.AppendPointer(pConstrainedResolvedToken->hClass);
         }
-        // fall through
+        FALLTHROUGH;
 
     case MethodDescSlot:
     case MethodEntrySlot:
@@ -7399,9 +7399,6 @@ bool getILIntrinsicImplementationForRuntimeHelpers(MethodDesc * ftn,
         if (methodTable == CoreLibBinder::GetClass(CLASS__BOOLEAN)
             || methodTable == CoreLibBinder::GetClass(CLASS__BYTE)
             || methodTable == CoreLibBinder::GetClass(CLASS__SBYTE)
-#ifdef FEATURE_UTF8STRING
-            || methodTable == CoreLibBinder::GetClass(CLASS__CHAR8)
-#endif // FEATURE_UTF8STRING
             || methodTable == CoreLibBinder::GetClass(CLASS__CHAR)
             || methodTable == CoreLibBinder::GetClass(CLASS__INT16)
             || methodTable == CoreLibBinder::GetClass(CLASS__UINT16)
@@ -11900,31 +11897,22 @@ HRESULT CEEJitInfo::getMethodBlockCounts (
 
 #ifdef FEATURE_PGO
 
-    // For now, only return the info for the method being jitted.
-    // Will need to fix this to gain access to pgo data for inlinees.
     MethodDesc* pMD = (MethodDesc*)ftnHnd;
-
-    if (pMD == m_pMethodBeingCompiled)
+    unsigned codeSize = 0;
+    if (pMD->IsDynamicMethod())
     {
-        unsigned codeSize = 0;
-        if (pMD->IsDynamicMethod())
-        {
-            unsigned stackSize, ehSize;
-            CorInfoOptions options;
-            DynamicResolver * pResolver = m_pMethodBeingCompiled->AsDynamicMethodDesc()->GetResolver();
-            pResolver->GetCodeInfo(&codeSize, &stackSize, &options, &ehSize);
-        }
-        else
-        {
-            codeSize = m_ILHeader->GetCodeSize();
-        }
-
-        hr = PgoManager::getMethodBlockCounts(pMD, codeSize, pCount, pBlockCounts, pNumRuns);
+        unsigned stackSize, ehSize;
+        CorInfoOptions options;
+        DynamicResolver * pResolver = m_pMethodBeingCompiled->AsDynamicMethodDesc()->GetResolver();
+        pResolver->GetCodeInfo(&codeSize, &stackSize, &options, &ehSize);
     }
-    else
+    else if (pMD->HasILHeader())
     {
-        hr = E_NOTIMPL;
+        COR_ILMETHOD_DECODER decoder(pMD->GetILHeader());
+        codeSize = decoder.GetCodeSize();
     }
+
+    hr = PgoManager::getMethodBlockCounts(pMD, codeSize, pCount, pBlockCounts, pNumRuns);
 
 #else
     _ASSERTE(!"getMethodBlockCounts not implemented on CEEJitInfo!");
@@ -11934,6 +11922,54 @@ HRESULT CEEJitInfo::getMethodBlockCounts (
     EE_TO_JIT_TRANSITION();
     
     return hr;
+}
+
+CORINFO_CLASS_HANDLE CEEJitInfo::getLikelyClass(
+                     CORINFO_METHOD_HANDLE ftnHnd,
+                     CORINFO_CLASS_HANDLE  baseHnd,
+                     UINT32                ilOffset,
+                     UINT32 *              pLikelihood,
+                     UINT32 *              pNumberOfClasses
+)
+{
+    CONTRACTL {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_PREEMPTIVE;
+    } CONTRACTL_END;
+
+    CORINFO_CLASS_HANDLE result = NULL;
+    *pLikelihood = 0;
+    *pNumberOfClasses = 0;
+
+    JIT_TO_EE_TRANSITION();
+
+#ifdef FEATURE_PGO
+
+    // Query the PGO manager's per call site class profile.
+    //
+    MethodDesc* pMD = (MethodDesc*)ftnHnd;
+    unsigned codeSize = 0;
+    if (pMD->IsDynamicMethod())
+    {
+        unsigned stackSize, ehSize;
+        CorInfoOptions options;
+        DynamicResolver * pResolver = m_pMethodBeingCompiled->AsDynamicMethodDesc()->GetResolver();
+        pResolver->GetCodeInfo(&codeSize, &stackSize, &options, &ehSize);
+    }
+    else if (pMD->HasILHeader())
+    {
+        COR_ILMETHOD_DECODER decoder(pMD->GetILHeader());
+        codeSize = decoder.GetCodeSize();
+    }
+
+    result = PgoManager::getLikelyClass(pMD, codeSize, ilOffset, pLikelihood, pNumberOfClasses);
+
+#endif
+
+    EE_TO_JIT_TRANSITION();
+
+    return result;
 }
 
 void CEEJitInfo::allocMem (
@@ -12016,6 +12052,22 @@ void CEEJitInfo::allocMem (
     if( totalSize.IsOverflow() )
     {
         COMPlusThrowHR(CORJIT_OUTOFMEM);
+    }
+
+    if (ETW_EVENT_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_DOTNET_Context, MethodJitMemoryAllocatedForCode))
+    {
+        ULONGLONG ullMethodIdentifier = 0;
+        ULONGLONG ullModuleID = 0;
+
+        if (m_pMethodBeingCompiled)
+        {
+            Module* pModule = m_pMethodBeingCompiled->GetModule_NoLogging();
+            ullModuleID = (ULONGLONG)(TADDR)pModule;
+            ullMethodIdentifier = (ULONGLONG)m_pMethodBeingCompiled;
+        }
+
+        FireEtwMethodJitMemoryAllocatedForCode(ullMethodIdentifier, ullModuleID,
+            hotCodeSize + coldCodeSize, roDataSize, totalSize.Value(), flag, GetClrInstanceId());
     }
 
     m_CodeHeader = m_jitManager->allocCode(m_pMethodBeingCompiled, totalSize.Value(), GetReserveForJumpStubs(), flag
@@ -12239,8 +12291,6 @@ CorJitResult invokeCompileMethodHelper(EEJitManager *jitMgr,
 
     CorJitResult ret = CORJIT_SKIPPED;   // Note that CORJIT_SKIPPED is an error exit status code
 
-    comp->setJitFlags(jitFlags);
-
 #ifdef FEATURE_STACK_SAMPLING
     static ConfigDWORD s_stackSamplingEnabled;
     bool samplingEnabled = (s_stackSamplingEnabled.val(CLRConfig::UNSUPPORTED_StackSamplingEnabled) != 0);
@@ -12253,6 +12303,9 @@ CorJitResult invokeCompileMethodHelper(EEJitManager *jitMgr,
 #endif
        )
     {
+        CORJIT_FLAGS altJitFlags = jitFlags;
+        altJitFlags.Set(CORJIT_FLAGS::CORJIT_FLAG_ALT_JIT);
+        comp->setJitFlags(altJitFlags);
         ret = jitMgr->m_alternateJit->compileMethod( comp,
                                                      info,
                                                      CORJIT_FLAGS::CORJIT_FLAG_CALL_GETJITFLAGS,
@@ -12276,6 +12329,7 @@ CorJitResult invokeCompileMethodHelper(EEJitManager *jitMgr,
         }
     }
 #endif // defined(ALLOW_SXS_JIT) && !defined(CROSSGEN_COMPILE)
+    comp->setJitFlags(jitFlags);
 
 #ifdef FEATURE_INTERPRETER
     static ConfigDWORD s_InterpreterFallback;
@@ -12505,16 +12559,6 @@ CorJitResult CallCompileMethodWithSEHWrapper(EEJitManager *jitMgr,
         flags.Set(CORJIT_FLAGS::CORJIT_FLAG_PINVOKE_RESTORE_ESP);
 #endif // TARGET_X86
 
-    //See if we should instruct the JIT to emit calls to JIT_PollGC for thread suspension.  If we have a
-    //non-default value in the EE Config, then use that.  Otherwise select the platform specific default.
-#ifdef FEATURE_ENABLE_GCPOLL
-    EEConfig::GCPollType pollType = g_pConfig->GetGCPollType();
-    if (EEConfig::GCPOLL_TYPE_POLL == pollType)
-        flags.Set(CORJIT_FLAGS::CORJIT_FLAG_GCPOLL_CALLS);
-    else if (EEConfig::GCPOLL_TYPE_INLINE == pollType)
-        flags.Set(CORJIT_FLAGS::CORJIT_FLAG_GCPOLL_INLINE);
-#endif //FEATURE_ENABLE_GCPOLL
-
     // Set flags based on method's ImplFlags.
     if (!ftn->IsNoMetadata())
     {
@@ -12664,7 +12708,13 @@ CORJIT_FLAGS GetCompileFlags(MethodDesc * ftn, CORJIT_FLAGS flags, CORINFO_METHO
 
 #ifdef FEATURE_PGO
 
-    if (CLRConfig::GetConfigValue(CLRConfig::INTERNAL_WritePGOData) > 0)
+    // Instrument, if
+    // 
+    // * We're writing pgo data and we're jitting at Tier0.
+    // * Tiered PGO is enabled and we're jitting at Tier0.
+    //
+    if ((CLRConfig::GetConfigValue(CLRConfig::INTERNAL_WritePGOData) > 0)
+        && flags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_TIER0))
     {
         flags.Set(CORJIT_FLAGS::CORJIT_FLAG_BBINSTR);
     }
@@ -12713,6 +12763,7 @@ void ThrowExceptionForJit(HRESULT res)
             break;
 
         case CORJIT_BADCODE:
+        case CORJIT_IMPLLIMITATION:
         default:
             COMPlusThrow(kInvalidProgramException);
             break;
@@ -13808,6 +13859,15 @@ BOOL LoadDynamicInfoEntry(Module *currentModule,
                     fatalErrorString.Printf(W("Verify_TypeLayout '%s' failed to verify type layout"), 
                         GetFullyQualifiedNameForClassW(pMT));
 
+#ifdef _DEBUG
+                    {
+                        StackScratchBuffer buf;
+                        _ASSERTE_MSG(false, fatalErrorString.GetUTF8(buf));
+                        // Run through the type layout logic again, after the assert, makes debugging easy
+                        TypeLayoutCheck(pMT, pBlob);
+                    }
+#endif
+
                     EEPOLICY_HANDLE_FATAL_ERROR_WITH_MESSAGE(-1, fatalErrorString.GetUnicode());
                     return FALSE;
                 }
@@ -13863,13 +13923,20 @@ BOOL LoadDynamicInfoEntry(Module *currentModule,
                 SString ssFieldName(SString::Utf8, pField->GetName());
 
                 SString fatalErrorString;
-                fatalErrorString.Printf(W("Verify_FieldOffset '%s.%s' %d!=%d || %d!=%d"), 
+                fatalErrorString.Printf(W("Verify_FieldOffset '%s.%s' Field offset %d!=%d(actual) || baseOffset %d!=%d(actual)"), 
                     GetFullyQualifiedNameForClassW(pEnclosingMT),
                     ssFieldName.GetUnicode(),
                     fieldOffset,
                     actualFieldOffset,
                     baseOffset,
                     actualBaseOffset);
+
+#ifdef _DEBUG
+                {
+                    StackScratchBuffer buf;
+                    _ASSERTE_MSG(false, fatalErrorString.GetUTF8(buf));
+                }
+#endif
 
                 EEPOLICY_HANDLE_FATAL_ERROR_WITH_MESSAGE(-1, fatalErrorString.GetUnicode());
                 return FALSE;
@@ -14146,6 +14213,17 @@ HRESULT CEEInfo::getMethodBlockCounts(
     UNREACHABLE_RET();      // only called on derived class.
 }
 
+CORINFO_CLASS_HANDLE CEEInfo::getLikelyClass(
+                     CORINFO_METHOD_HANDLE ftnHnd,
+                     CORINFO_CLASS_HANDLE  baseHnd,
+                     UINT32                ilOffset,
+                     UINT32*               pLikelihood,
+                     UINT32*               pNumberOfCases
+)
+{
+    LIMITED_METHOD_CONTRACT;
+    UNREACHABLE_RET();      // only called on derived class.
+}
 
 void CEEInfo::recordCallSite(
         ULONG                 instrOffset,  /* IN */

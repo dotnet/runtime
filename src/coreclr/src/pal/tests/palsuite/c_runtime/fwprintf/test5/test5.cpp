@@ -18,7 +18,7 @@
  * Depends on memcmp, strlen, fopen, fseek and fgets.
  */
 
-int __cdecl main(int argc, char *argv[])
+PALTEST(c_runtime_fwprintf_test5_paltest_fwprintf_test5, "c_runtime/fwprintf/test5/paltest_fwprintf_test5")
 {    
     WCHAR *longStr;
     char *longResult = 

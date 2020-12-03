@@ -14,7 +14,7 @@
 
 #define MEMORY_AMOUNT 16
 
-int __cdecl main(int argc, char *argv[]) 
+PALTEST(miscellaneous_IsBadReadPtr_test1_paltest_isbadreadptr_test1, "miscellaneous/IsBadReadPtr/test1/paltest_isbadreadptr_test1")
 {
     LPVOID TestingPointer = NULL;
     BOOL ResultValue = 0;

@@ -333,6 +333,12 @@ namespace ILCompiler
 
             Debug.Assert(method is EcmaMethod);
 
+            if (method.Context.Target.Architecture == TargetArchitecture.X86)
+            {
+                // X86 architecture does not yet support inline pinvokes
+                return false;
+            }
+
             // If the PInvoke is declared on an external module, we can only compile it if
             // that module is part of the version bubble.
             if (!_versionBubbleModuleSet.Contains(((EcmaMethod)method).Module))

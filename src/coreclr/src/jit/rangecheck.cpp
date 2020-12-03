@@ -59,13 +59,29 @@ int RangeCheck::GetArrLength(ValueNum vn)
     return m_pCompiler->vnStore->GetNewArrSize(arrRefVN);
 }
 
-// Check if the computed range is within bounds.
-bool RangeCheck::BetweenBounds(Range& range, int lower, GenTree* upper)
+//------------------------------------------------------------------------
+// BetweenBounds: Check if the computed range is within bounds
+//
+// Arguments:
+//    Range - the range to check if in bounds
+//    upper - the array length vn
+//    arrSize - the length of the array if known, or <= 0
+//
+// Return Value:
+//    True iff range is between [0 and vn - 1] or [0, arrSize - 1]
+//
+// notes:
+//    This function assumes that the lower range is resolved and upper range is symbolic as in an
+//    increasing loop.
+//
+// TODO-CQ: This is not general enough.
+//
+bool RangeCheck::BetweenBounds(Range& range, GenTree* upper, int arrSize)
 {
 #ifdef DEBUG
     if (m_pCompiler->verbose)
     {
-        printf("%s BetweenBounds <%d, ", range.ToString(m_pCompiler->getAllocatorDebugOnly()), lower);
+        printf("%s BetweenBounds <%d, ", range.ToString(m_pCompiler->getAllocatorDebugOnly()), 0);
         Compiler::printTreeID(upper);
         printf(">\n");
     }
@@ -85,28 +101,9 @@ bool RangeCheck::BetweenBounds(Range& range, int lower, GenTree* upper)
     JITDUMP("\n");
 #endif
 
-    int arrSize = 0;
-
-    if (vnStore->IsVNConstant(uLimitVN))
+    if ((arrSize <= 0) && !vnStore->IsVNCheckedBound(uLimitVN))
     {
-        ssize_t  constVal  = -1;
-        unsigned iconFlags = 0;
-
-        if (m_pCompiler->optIsTreeKnownIntValue(true, upper, &constVal, &iconFlags))
-        {
-            arrSize = (int)constVal;
-        }
-    }
-    else if (vnStore->IsVNArrLen(uLimitVN))
-    {
-        // Get the array reference from the length.
-        ValueNum arrRefVN = vnStore->GetArrForLenVn(uLimitVN);
-        // Check if array size can be obtained.
-        arrSize = vnStore->GetNewArrSize(arrRefVN);
-    }
-    else if (!vnStore->IsVNCheckedBound(uLimitVN))
-    {
-        // If the upper limit is not length, then bail.
+        // If we don't know the array size and the upper limit is not known, then bail.
         return false;
     }
 
@@ -231,6 +228,19 @@ void RangeCheck::OptimizeRangeCheck(BasicBlock* block, Statement* stmt, GenTree*
 #endif // FEATURE_SIMD
     {
         arrSize = GetArrLength(arrLenVn);
+
+        // if we can't find the array length, see if there
+        // are any assertions about the array size we can use to get a minimum length
+        if (arrSize <= 0)
+        {
+            JITDUMP("Looking for array size assertions for: " FMT_VN "\n", arrLenVn);
+            Range arrLength = Range(Limit(Limit::keDependent));
+            MergeEdgeAssertions(arrLenVn, block->bbAssertionIn, &arrLength);
+            if (arrLength.lLimit.IsConstant())
+            {
+                arrSize = arrLength.lLimit.GetConstant();
+            }
+        }
     }
 
     JITDUMP("ArrSize for lengthVN:%03X = %d\n", arrLenVn, arrSize);
@@ -286,7 +296,7 @@ void RangeCheck::OptimizeRangeCheck(BasicBlock* block, Statement* stmt, GenTree*
     }
 
     // Is the range between the lower and upper bound values.
-    if (BetweenBounds(range, 0, bndsChk->gtArrLen))
+    if (BetweenBounds(range, bndsChk->gtArrLen, arrSize))
     {
         JITDUMP("[RangeCheck::OptimizeRangeCheck] Between bounds\n");
         m_pCompiler->optRemoveRangeCheck(treeParent, stmt);
@@ -532,18 +542,51 @@ void RangeCheck::SetDef(UINT64 hash, Location* loc)
 }
 #endif
 
-// Merge assertions on the edge flowing into the block about a variable.
+//------------------------------------------------------------------------
+// MergeEdgeAssertions: Merge assertions on the edge flowing into the block about a variable
+//
+// Arguments:
+//    GenTreeLclVarCommon - the variable to look for assertions for
+//    assertions - the assertions to use
+//    pRange - the range to tighten with assertions
+//
 void RangeCheck::MergeEdgeAssertions(GenTreeLclVarCommon* lcl, ASSERT_VALARG_TP assertions, Range* pRange)
+{
+    if (lcl->GetSsaNum() == SsaConfig::RESERVED_SSA_NUM)
+    {
+        return;
+    }
+
+    LclVarDsc* varDsc = m_pCompiler->lvaGetDesc(lcl);
+    if (varDsc->CanBeReplacedWithItsField(m_pCompiler))
+    {
+        varDsc = m_pCompiler->lvaGetDesc(varDsc->lvFieldLclStart);
+    }
+    LclSsaVarDsc* ssaData     = varDsc->GetPerSsaData(lcl->GetSsaNum());
+    ValueNum      normalLclVN = m_pCompiler->vnStore->VNConservativeNormalValue(ssaData->m_vnPair);
+    MergeEdgeAssertions(normalLclVN, assertions, pRange);
+}
+
+//------------------------------------------------------------------------
+// MergeEdgeAssertions: Merge assertions on the edge flowing into the block about a variable
+//
+// Arguments:
+//    normalLclVN - the value number to look for assertions for
+//    assertions - the assertions to use
+//    pRange - the range to tighten with assertions
+//
+void RangeCheck::MergeEdgeAssertions(ValueNum normalLclVN, ASSERT_VALARG_TP assertions, Range* pRange)
 {
     if (BitVecOps::IsEmpty(m_pCompiler->apTraits, assertions))
     {
         return;
     }
 
-    if (lcl->GetSsaNum() == SsaConfig::RESERVED_SSA_NUM)
+    if (normalLclVN == ValueNumStore::NoVN)
     {
         return;
     }
+
     // Walk through the "assertions" to check if the apply.
     BitVecOps::Iter iter(m_pCompiler->apTraits, assertions);
     unsigned        index = 0;
@@ -554,15 +597,8 @@ void RangeCheck::MergeEdgeAssertions(GenTreeLclVarCommon* lcl, ASSERT_VALARG_TP 
         Compiler::AssertionDsc* curAssertion = m_pCompiler->optGetAssertion(assertionIndex);
 
         Limit      limit(Limit::keUndef);
-        genTreeOps cmpOper = GT_NONE;
-
-        LclVarDsc* varDsc = m_pCompiler->lvaGetDesc(lcl);
-        if (varDsc->CanBeReplacedWithItsField(m_pCompiler))
-        {
-            varDsc = m_pCompiler->lvaGetDesc(varDsc->lvFieldLclStart);
-        }
-        LclSsaVarDsc* ssaData     = varDsc->GetPerSsaData(lcl->GetSsaNum());
-        ValueNum      normalLclVN = m_pCompiler->vnStore->VNConservativeNormalValue(ssaData->m_vnPair);
+        genTreeOps cmpOper             = GT_NONE;
+        bool       isConstantAssertion = false;
 
         // Current assertion is of the form (i < len - cns) != 0
         if (curAssertion->IsCheckedBoundArithBound())
@@ -602,13 +638,20 @@ void RangeCheck::MergeEdgeAssertions(GenTreeLclVarCommon* lcl, ASSERT_VALARG_TP 
             m_pCompiler->vnStore->GetCompareCheckedBound(curAssertion->op1.vn, &info);
 
             // If we don't have the same variable we are comparing against, bail.
-            if (normalLclVN != info.cmpOp)
+            if (normalLclVN == info.cmpOp)
+            {
+                cmpOper = (genTreeOps)info.cmpOper;
+                limit   = Limit(Limit::keBinOpArray, info.vnBound, 0);
+            }
+            else if (normalLclVN == info.vnBound)
+            {
+                cmpOper = GenTree::SwapRelop((genTreeOps)info.cmpOper);
+                limit   = Limit(Limit::keBinOpArray, info.cmpOp, 0);
+            }
+            else
             {
                 continue;
             }
-
-            limit   = Limit(Limit::keBinOpArray, info.vnBound, 0);
-            cmpOper = (genTreeOps)info.cmpOper;
         }
         // Current assertion is of the form (i < 100) != 0
         else if (curAssertion->IsConstantBound())
@@ -627,6 +670,36 @@ void RangeCheck::MergeEdgeAssertions(GenTreeLclVarCommon* lcl, ASSERT_VALARG_TP 
             limit   = Limit(Limit::keConstant, info.constVal);
             cmpOper = (genTreeOps)info.cmpOper;
         }
+        // Current assertion is of the form i == 100
+        else if (curAssertion->IsConstantInt32Assertion())
+        {
+            if (curAssertion->op1.vn != normalLclVN)
+            {
+                continue;
+            }
+
+            int cnstLimit = m_pCompiler->vnStore->CoercedConstantValue<int>(curAssertion->op2.vn);
+
+            if ((cnstLimit == 0) && (curAssertion->assertionKind == Compiler::OAK_NOT_EQUAL) &&
+                m_pCompiler->vnStore->IsVNCheckedBound(curAssertion->op1.vn))
+            {
+                // we have arr.Len != 0, so the length must be atleast one
+                limit   = Limit(Limit::keConstant, 1);
+                cmpOper = GT_GE;
+            }
+            else if (curAssertion->assertionKind == Compiler::OAK_EQUAL)
+            {
+                limit   = Limit(Limit::keConstant, cnstLimit);
+                cmpOper = GT_EQ;
+            }
+            else
+            {
+                // We have a != assertion, but it doesn't tell us much about the interval. So just skip it.
+                continue;
+            }
+
+            isConstantAssertion = true;
+        }
         // Current assertion is not supported, ignore it
         else
         {
@@ -635,8 +708,8 @@ void RangeCheck::MergeEdgeAssertions(GenTreeLclVarCommon* lcl, ASSERT_VALARG_TP 
 
         assert(limit.IsBinOpArray() || limit.IsConstant());
 
-        // Make sure the assertion is of the form != 0 or == 0.
-        if (curAssertion->op2.vn != m_pCompiler->vnStore->VNZeroForType(TYP_INT))
+        // Make sure the assertion is of the form != 0 or == 0 if it isn't a constant assertion.
+        if (!isConstantAssertion && (curAssertion->op2.vn != m_pCompiler->vnStore->VNZeroForType(TYP_INT)))
         {
             continue;
         }
@@ -646,6 +719,17 @@ void RangeCheck::MergeEdgeAssertions(GenTreeLclVarCommon* lcl, ASSERT_VALARG_TP 
             m_pCompiler->optPrintAssertion(curAssertion, assertionIndex);
         }
 #endif
+
+        // Limits are sometimes made with the form vn + constant, where vn is a known constant
+        // see if we can simplify this to just a constant
+        if (limit.IsBinOpArray() && m_pCompiler->vnStore->IsVNInt32Constant(limit.vn))
+        {
+            Limit tempLimit = Limit(Limit::keConstant, m_pCompiler->vnStore->ConstantValue<int>(limit.vn));
+            if (tempLimit.AddConstant(limit.cns))
+            {
+                limit = tempLimit;
+            }
+        }
 
         ValueNum arrLenVN = m_pCompiler->vnStore->VNConservativeNormalValue(m_pCurBndsChk->gtArrLen->gtVNPair);
 
@@ -663,22 +747,25 @@ void RangeCheck::MergeEdgeAssertions(GenTreeLclVarCommon* lcl, ASSERT_VALARG_TP 
         //      (i < length) != 0
         //      (i < 100) == 0
         //      (i < 100) != 0
+        //      i == 100
         //
-        // At this point, we have detected that op1.vn is (i < length) or (i < length + cns) or
-        // (i < 100) and the op2.vn is 0.
+        // At this point, we have detected that either op1.vn is (i < length) or (i < length + cns) or
+        // (i < 100) and the op2.vn is 0 or that op1.vn is i and op2.vn is a known constant.
         //
         // Now, let us check if we are == 0 (i.e., op1 assertion is false) or != 0 (op1 assertion
-        // is true.),
+        // is true.).
         //
-        // If we have an assertion of the form == 0 (i.e., equals false), then reverse relop.
+        // If we have a non-constant assertion of the form == 0 (i.e., equals false), then reverse relop.
         // The relop has to be reversed because we have: (i < length) is false which is the same
         // as (i >= length).
-        if (curAssertion->assertionKind == Compiler::OAK_EQUAL)
+        if ((curAssertion->assertionKind == Compiler::OAK_EQUAL) && !isConstantAssertion)
         {
             cmpOper = GenTree::ReverseRelop(cmpOper);
         }
 
-        // Bounds are inclusive, so add -1 for upper bound when "<". But make sure we won't overflow.
+        assert(cmpOper != GT_NONE);
+
+        // Bounds are inclusive, so add -1 for upper bound when "<". But make sure we won't underflow.
         if (cmpOper == GT_LT && !limit.AddConstant(-1))
         {
             continue;
@@ -741,6 +828,11 @@ void RangeCheck::MergeEdgeAssertions(GenTreeLclVarCommon* lcl, ASSERT_VALARG_TP 
 
             case GT_GT:
             case GT_GE:
+                pRange->lLimit = limit;
+                break;
+
+            case GT_EQ:
+                pRange->uLimit = limit;
                 pRange->lLimit = limit;
                 break;
 

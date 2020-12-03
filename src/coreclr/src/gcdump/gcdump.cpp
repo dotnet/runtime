@@ -34,7 +34,7 @@ GCDump::GCDump(UINT32 gcInfoVer, bool encBytes, unsigned maxEncBytes, bool dumpC
  *  Display the byte encodings for the given range of the GC tables.
  */
 
-PTR_CBYTE GCDump::DumpEncoding(PTR_CBYTE gcInfoBlock, int cDumpBytes)
+PTR_CBYTE GCDump::DumpEncoding(PTR_CBYTE gcInfoBlock, size_t cDumpBytes)
 {
     _ASSERTE((cDumpBytes >= 0) && (cMaxEncBytes < 256));
 
@@ -42,7 +42,7 @@ PTR_CBYTE GCDump::DumpEncoding(PTR_CBYTE gcInfoBlock, int cDumpBytes)
     {
         PTR_CBYTE       pCurPos;
         unsigned        count;
-        int             cBytesLeft;
+        size_t          cBytesLeft;
 
         for (count = cMaxEncBytes, cBytesLeft = cDumpBytes, pCurPos = gcInfoBlock;
              count > 0;

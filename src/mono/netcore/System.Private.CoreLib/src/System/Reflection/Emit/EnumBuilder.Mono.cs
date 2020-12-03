@@ -1,5 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
+
 //
 // Copyright (C) 2004 Novell, Inc (http://www.novell.com)
 //
@@ -167,11 +168,11 @@ namespace System.Reflection.Emit
             }
         }
 
-        public TypeToken TypeToken
+        internal int TypeToken
         {
             get
             {
-                return _tb.TypeToken;
+                return _tb.MetadataToken;
             }
         }
 
@@ -470,7 +471,8 @@ namespace System.Reflection.Emit
 
         public override bool IsAssignableFrom([NotNullWhen(true)] TypeInfo? typeInfo)
         {
-            return base.IsAssignableFrom(typeInfo);
+            if (typeInfo == null) return false;
+            return IsAssignableFrom(typeInfo.AsType());
         }
 
         public override bool IsTypeDefinition => true;

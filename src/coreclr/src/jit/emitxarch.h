@@ -299,7 +299,7 @@ void emitInsRMW(instruction inst, emitAttr attr, GenTreeStoreInd* storeInd);
 
 void emitIns_Nop(unsigned size);
 
-void emitIns_I(instruction ins, emitAttr attr, int val);
+void emitIns_I(instruction ins, emitAttr attr, cnsval_ssize_t val);
 
 void emitIns_R(instruction ins, emitAttr attr, regNumber reg);
 
@@ -409,7 +409,7 @@ void emitIns_R_AR(instruction ins, emitAttr attr, regNumber reg, regNumber base,
 
 void emitIns_R_AI(instruction ins, emitAttr attr, regNumber ireg, ssize_t disp);
 
-void emitIns_AR_R(instruction ins, emitAttr attr, regNumber reg, regNumber base, int disp);
+void emitIns_AR_R(instruction ins, emitAttr attr, regNumber reg, regNumber base, cnsval_ssize_t disp);
 
 void emitIns_AI_R(instruction ins, emitAttr attr, regNumber ireg, ssize_t disp);
 
@@ -424,8 +424,13 @@ void emitIns_I_ARX(instruction ins, emitAttr attr, int val, regNumber reg, regNu
 void emitIns_R_ARX(
     instruction ins, emitAttr attr, regNumber reg, regNumber base, regNumber index, unsigned scale, int disp);
 
-void emitIns_ARX_R(
-    instruction ins, emitAttr attr, regNumber reg, regNumber base, regNumber index, unsigned scale, int disp);
+void emitIns_ARX_R(instruction    ins,
+                   emitAttr       attr,
+                   regNumber      reg,
+                   regNumber      base,
+                   regNumber      index,
+                   unsigned       scale,
+                   cnsval_ssize_t disp);
 
 void emitIns_I_AX(instruction ins, emitAttr attr, int val, regNumber reg, unsigned mul, int disp);
 

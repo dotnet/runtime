@@ -3441,7 +3441,7 @@ ISymUnmanagedReader *Module::GetISymUnmanagedReader(void)
             if (FAILED(hr))
             {
                 PathString symbolReaderPath;
-                hr = GetHModuleDirectory(GetModuleInst(), symbolReaderPath);
+                hr = GetClrModuleDirectory(symbolReaderPath);
                 if (FAILED(hr))
                 {
                     RETURN (NULL);

@@ -580,6 +580,7 @@ static int opSize(Amd64InstrDecode::InstrForm form, int pp, bool W, bool L, bool
     // P_M6B_or_M4B
     case Amd64InstrDecode::InstrForm::MOnly_P_M6B_or_M4B:
         opSize = P ? 6 : 4;
+        break;
     // M4B
     case Amd64InstrDecode::InstrForm::M1st_M4B:
     case Amd64InstrDecode::InstrForm::M1st_M4B_I1B:
@@ -833,7 +834,7 @@ void NativeWalker::DecodeInstructionForPatchSkip(const BYTE *address, Instructio
                 opCodeMap = Primary;
                 break;
             }
-            // Fall through
+            FALLTHROUGH;
         case 0xc4: // Vex 3-byte
             opCodeMap = (OpcodeMap)(int(address[0]) << 8 | (address[1] & 0x1f));
             // W is the top bit of opcode2.
@@ -965,7 +966,7 @@ void NativeWalker::DecodeInstructionForPatchSkip(const BYTE *address, Instructio
                     case 2:
                     case 3:
                         pInstrAttrib->m_fIsCall = true;
-                        // fall through
+                        FALLTHROUGH;
                     case 4:
                     case 5:
                         pInstrAttrib->m_fIsAbsBranch = true;

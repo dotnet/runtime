@@ -6,6 +6,11 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <CLRTestPriority>0</CLRTestPriority>
     <Optimize>true</Optimize>
+    <!-- The test launches a secondary process and process launch creates
+    an infinite event loop in the SocketAsyncEngine on Linux. Since 
+    runincontext loads even framework assemblies into the unloadable
+    context, locals in this loop prevent unloading -->
+    <UnloadabilityIncompatible>true</UnloadabilityIncompatible>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="$(MSBuildProjectName).cs" />

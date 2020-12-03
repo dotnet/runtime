@@ -126,10 +126,7 @@ namespace System
 
         internal static bool IsPrimitive(RuntimeType type)
         {
-            CorElementType corElemType = GetCorElementType(type);
-            return (corElemType >= CorElementType.ELEMENT_TYPE_BOOLEAN && corElemType <= CorElementType.ELEMENT_TYPE_R8) ||
-                    corElemType == CorElementType.ELEMENT_TYPE_I ||
-                    corElemType == CorElementType.ELEMENT_TYPE_U;
+            return RuntimeHelpers.IsPrimitiveType(GetCorElementType(type));
         }
 
         internal static bool IsByRef(RuntimeType type)
@@ -165,6 +162,12 @@ namespace System
                    || (corElemType == CorElementType.ELEMENT_TYPE_BYREF);                                      // IsByRef
         }
 
+        // ** WARNING **
+        // Caller bears responsibility for ensuring that the provided Types remain
+        // GC-reachable while the unmanaged handles are being manipulated. The caller
+        // may need to make a defensive copy of the input array to ensure it's not
+        // mutated by another thread, and this defensive copy should be passed to
+        // a KeepAlive routine.
         internal static IntPtr[]? CopyRuntimeTypeHandles(RuntimeTypeHandle[]? inHandles, out int length)
         {
             if (inHandles == null || inHandles.Length == 0)
@@ -182,6 +185,12 @@ namespace System
             return outHandles;
         }
 
+        // ** WARNING **
+        // Caller bears responsibility for ensuring that the provided Types remain
+        // GC-reachable while the unmanaged handles are being manipulated. The caller
+        // may need to make a defensive copy of the input array to ensure it's not
+        // mutated by another thread, and this defensive copy should be passed to
+        // a KeepAlive routine.
         internal static IntPtr[]? CopyRuntimeTypeHandles(Type[]? inHandles, out int length)
         {
             if (inHandles == null || inHandles.Length == 0)
@@ -199,14 +208,94 @@ namespace System
             return outHandles;
         }
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern object CreateInstance(RuntimeType type, bool publicOnly, bool wrapExceptions, ref bool canBeCached, ref RuntimeMethodHandleInternal ctor, ref bool hasNoDefaultCtor);
+        internal static object CreateInstanceForAnotherGenericParameter(RuntimeType type, RuntimeType genericParameter)
+        {
+            object? instantiatedObject = null;
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern object Allocate(RuntimeType type);
+            IntPtr typeHandle = genericParameter.GetTypeHandleInternal().Value;
+            CreateInstanceForAnotherGenericParameter(
+                new QCallTypeHandle(ref type),
+                &typeHandle,
+                1,
+                ObjectHandleOnStack.Create(ref instantiatedObject));
 
+            GC.KeepAlive(genericParameter);
+            return instantiatedObject!;
+        }
+
+        internal static object CreateInstanceForAnotherGenericParameter(RuntimeType type, RuntimeType genericParameter1, RuntimeType genericParameter2)
+        {
+            object? instantiatedObject = null;
+
+            IntPtr* pTypeHandles = stackalloc IntPtr[]
+            {
+                genericParameter1.GetTypeHandleInternal().Value,
+                genericParameter2.GetTypeHandleInternal().Value
+            };
+
+            CreateInstanceForAnotherGenericParameter(
+                new QCallTypeHandle(ref type),
+                pTypeHandles,
+                2,
+                ObjectHandleOnStack.Create(ref instantiatedObject));
+
+            GC.KeepAlive(genericParameter1);
+            GC.KeepAlive(genericParameter2);
+
+            return instantiatedObject!;
+        }
+
+        [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
+        private static extern void CreateInstanceForAnotherGenericParameter(
+            QCallTypeHandle baseType,
+            IntPtr* pTypeHandles,
+            int cTypeHandles,
+            ObjectHandleOnStack instantiatedObject);
+
+        /// <summary>
+        /// Given a RuntimeType, returns information about how to activate it via calli
+        /// semantics. This method will ensure the type object is fully initialized within
+        /// the VM, but it will not call any static ctors on the type.
+        /// </summary>
+        internal static void GetActivationInfo(
+            RuntimeType rt,
+            out delegate*<void*, object> pfnAllocator,
+            out void* vAllocatorFirstArg,
+            out delegate*<object, void> pfnCtor,
+            out bool ctorIsPublic)
+        {
+            Debug.Assert(rt != null);
+
+            delegate*<void*, object> pfnAllocatorTemp = default;
+            void* vAllocatorFirstArgTemp = default;
+            delegate*<object, void> pfnCtorTemp = default;
+            Interop.BOOL fCtorIsPublicTemp = default;
+
+            GetActivationInfo(
+                ObjectHandleOnStack.Create(ref rt),
+                &pfnAllocatorTemp, &vAllocatorFirstArgTemp,
+                &pfnCtorTemp, &fCtorIsPublicTemp);
+
+            pfnAllocator = pfnAllocatorTemp;
+            vAllocatorFirstArg = vAllocatorFirstArgTemp;
+            pfnCtor = pfnCtorTemp;
+            ctorIsPublic = fCtorIsPublicTemp != Interop.BOOL.FALSE;
+        }
+
+        [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
+        private static extern void GetActivationInfo(
+            ObjectHandleOnStack pRuntimeType,
+            delegate*<void*, object>* ppfnAllocator,
+            void** pvAllocatorFirstArg,
+            delegate*<object, void>* ppfnCtor,
+            Interop.BOOL* pfCtorIsPublic);
+
+#if FEATURE_COMINTEROP
+        // Referenced by unmanaged layer (see GetActivationInfo).
+        // First parameter is ComClassFactory*.
         [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern object CreateInstanceForAnotherGenericParameter(RuntimeType type, RuntimeType genericParameter);
+        private static extern object AllocateComObject(void* pClassFactory);
+#endif
 
         internal RuntimeType GetRuntimeType()
         {
@@ -472,9 +561,19 @@ namespace System
         [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
         private static extern void Instantiate(QCallTypeHandle handle, IntPtr* pInst, int numGenericArgs, ObjectHandleOnStack type);
 
+        internal RuntimeType Instantiate(RuntimeType inst)
+        {
+            IntPtr ptr = inst.TypeHandle.Value;
+
+            RuntimeType? type = null;
+            RuntimeTypeHandle nativeHandle = GetNativeHandle();
+            Instantiate(new QCallTypeHandle(ref nativeHandle), &ptr, 1, ObjectHandleOnStack.Create(ref type));
+            GC.KeepAlive(inst);
+            return type!;
+        }
+
         internal RuntimeType Instantiate(Type[]? inst)
         {
-            // defensive copy to be sure array is not mutated from the outside during processing
             IntPtr[]? instHandles = CopyRuntimeTypeHandles(inst, out int instCount);
 
             fixed (IntPtr* pInst = instHandles)
@@ -1119,15 +1218,9 @@ namespace System
 
     public unsafe struct ModuleHandle
     {
-        // Returns handle for interop with EE. The handle is guaranteed to be non-null.
         #region Public Static Members
-        public static readonly ModuleHandle EmptyHandle = GetEmptyMH();
+        public static readonly ModuleHandle EmptyHandle;
         #endregion
-
-        private static ModuleHandle GetEmptyMH()
-        {
-            return default;
-        }
 
         #region Private Data Members
         private readonly RuntimeModule m_ptr;
@@ -1180,38 +1273,59 @@ namespace System
         private static void ValidateModulePointer(RuntimeModule module)
         {
             // Make sure we have a valid Module to resolve against.
-            if (module == null)
-                throw new InvalidOperationException(SR.InvalidOperation_NullModuleHandle);
+            if (module is null)
+            {
+                // Local function to allow inlining of simple null check.
+                ThrowInvalidOperationException();
+            }
+
+            [StackTraceHidden]
+            [DoesNotReturn]
+            static void ThrowInvalidOperationException() => throw new InvalidOperationException(SR.InvalidOperation_NullModuleHandle);
         }
 
         // SQL-CLR LKG9 Compiler dependency
         public RuntimeTypeHandle GetRuntimeTypeHandleFromMetadataToken(int typeToken) { return ResolveTypeHandle(typeToken); }
-        public RuntimeTypeHandle ResolveTypeHandle(int typeToken)
-        {
-            return new RuntimeTypeHandle(ResolveTypeHandleInternal(GetRuntimeModule(), typeToken, null, null));
-        }
+        public RuntimeTypeHandle ResolveTypeHandle(int typeToken) => ResolveTypeHandle(typeToken, null, null);
         public RuntimeTypeHandle ResolveTypeHandle(int typeToken, RuntimeTypeHandle[]? typeInstantiationContext, RuntimeTypeHandle[]? methodInstantiationContext)
         {
-            return new RuntimeTypeHandle(ModuleHandle.ResolveTypeHandleInternal(GetRuntimeModule(), typeToken, typeInstantiationContext, methodInstantiationContext));
-        }
-
-        internal static RuntimeType ResolveTypeHandleInternal(RuntimeModule module, int typeToken, RuntimeTypeHandle[]? typeInstantiationContext, RuntimeTypeHandle[]? methodInstantiationContext)
-        {
+            RuntimeModule module = GetRuntimeModule();
             ValidateModulePointer(module);
-            if (!ModuleHandle.GetMetadataImport(module).IsValidToken(typeToken))
-                throw new ArgumentOutOfRangeException(nameof(typeToken),
-                    SR.Format(SR.Argument_InvalidToken, typeToken, new ModuleHandle(module)));
 
-            IntPtr[]? typeInstantiationContextHandles = RuntimeTypeHandle.CopyRuntimeTypeHandles(typeInstantiationContext, out int typeInstCount);
-            IntPtr[]? methodInstantiationContextHandles = RuntimeTypeHandle.CopyRuntimeTypeHandles(methodInstantiationContext, out int methodInstCount);
+            IntPtr[]? typeInstantiationContextHandles = null;
+            int typeInstCount = 0;
+            IntPtr[]? methodInstantiationContextHandles = null;
+            int methodInstCount = 0;
+
+            // defensive copy of user-provided array, per CopyRuntimeTypeHandles contract
+            if (typeInstantiationContext?.Length > 0)
+            {
+                typeInstantiationContext = (RuntimeTypeHandle[]?)typeInstantiationContext.Clone();
+                typeInstantiationContextHandles = RuntimeTypeHandle.CopyRuntimeTypeHandles(typeInstantiationContext, out typeInstCount);
+            }
+            if (methodInstantiationContext?.Length > 0)
+            {
+                methodInstantiationContext = (RuntimeTypeHandle[]?)methodInstantiationContext.Clone();
+                methodInstantiationContextHandles = RuntimeTypeHandle.CopyRuntimeTypeHandles(methodInstantiationContext, out methodInstCount);
+            }
 
             fixed (IntPtr* typeInstArgs = typeInstantiationContextHandles, methodInstArgs = methodInstantiationContextHandles)
             {
-                RuntimeType? type = null;
-                ResolveType(new QCallModule(ref module), typeToken, typeInstArgs, typeInstCount, methodInstArgs, methodInstCount, ObjectHandleOnStack.Create(ref type));
-                GC.KeepAlive(typeInstantiationContext);
-                GC.KeepAlive(methodInstantiationContext);
-                return type!;
+                try
+                {
+                    RuntimeType? type = null;
+                    ResolveType(new QCallModule(ref module), typeToken, typeInstArgs, typeInstCount, methodInstArgs, methodInstCount, ObjectHandleOnStack.Create(ref type));
+                    GC.KeepAlive(typeInstantiationContext);
+                    GC.KeepAlive(methodInstantiationContext);
+                    return new RuntimeTypeHandle(type!);
+                }
+                catch (Exception)
+                {
+                    if (!GetMetadataImport(module).IsValidToken(typeToken))
+                        throw new ArgumentOutOfRangeException(nameof(typeToken),
+                            SR.Format(SR.Argument_InvalidToken, typeToken, new ModuleHandle(module)));
+                    throw;
+                }
             }
         }
 
@@ -1226,36 +1340,41 @@ namespace System
 
         // SQL-CLR LKG9 Compiler dependency
         public RuntimeMethodHandle GetRuntimeMethodHandleFromMetadataToken(int methodToken) { return ResolveMethodHandle(methodToken); }
-        public RuntimeMethodHandle ResolveMethodHandle(int methodToken) { return ResolveMethodHandle(methodToken, null, null); }
-        internal static IRuntimeMethodInfo ResolveMethodHandleInternal(RuntimeModule module, int methodToken) { return ModuleHandle.ResolveMethodHandleInternal(module, methodToken, null, null); }
+        public RuntimeMethodHandle ResolveMethodHandle(int methodToken) => ResolveMethodHandle(methodToken, null, null);
         public RuntimeMethodHandle ResolveMethodHandle(int methodToken, RuntimeTypeHandle[]? typeInstantiationContext, RuntimeTypeHandle[]? methodInstantiationContext)
         {
-            return new RuntimeMethodHandle(ResolveMethodHandleInternal(GetRuntimeModule(), methodToken, typeInstantiationContext, methodInstantiationContext));
-        }
-
-        internal static IRuntimeMethodInfo ResolveMethodHandleInternal(RuntimeModule module, int methodToken, RuntimeTypeHandle[]? typeInstantiationContext, RuntimeTypeHandle[]? methodInstantiationContext)
-        {
+            RuntimeModule module = GetRuntimeModule();
+            // defensive copy of user-provided array, per CopyRuntimeTypeHandles contract
+            typeInstantiationContext = (RuntimeTypeHandle[]?)typeInstantiationContext?.Clone();
+            methodInstantiationContext = (RuntimeTypeHandle[]?)methodInstantiationContext?.Clone();
 
             IntPtr[]? typeInstantiationContextHandles = RuntimeTypeHandle.CopyRuntimeTypeHandles(typeInstantiationContext, out int typeInstCount);
             IntPtr[]? methodInstantiationContextHandles = RuntimeTypeHandle.CopyRuntimeTypeHandles(methodInstantiationContext, out int methodInstCount);
 
-            RuntimeMethodHandleInternal handle = ResolveMethodHandleInternalCore(module, methodToken, typeInstantiationContextHandles, typeInstCount, methodInstantiationContextHandles, methodInstCount);
+            RuntimeMethodHandleInternal handle = ResolveMethodHandleInternal(module, methodToken, typeInstantiationContextHandles, typeInstCount, methodInstantiationContextHandles, methodInstCount);
             IRuntimeMethodInfo retVal = new RuntimeMethodInfoStub(handle, RuntimeMethodHandle.GetLoaderAllocator(handle));
             GC.KeepAlive(typeInstantiationContext);
             GC.KeepAlive(methodInstantiationContext);
-            return retVal;
+            return new RuntimeMethodHandle(retVal);
         }
 
-        internal static RuntimeMethodHandleInternal ResolveMethodHandleInternalCore(RuntimeModule module, int methodToken, IntPtr[]? typeInstantiationContext, int typeInstCount, IntPtr[]? methodInstantiationContext, int methodInstCount)
+        internal static RuntimeMethodHandleInternal ResolveMethodHandleInternal(RuntimeModule module, int methodToken, IntPtr[]? typeInstantiationContext, int typeInstCount, IntPtr[]? methodInstantiationContext, int methodInstCount)
         {
             ValidateModulePointer(module);
-            if (!ModuleHandle.GetMetadataImport(module.GetNativeHandle()).IsValidToken(methodToken))
-                throw new ArgumentOutOfRangeException(nameof(methodToken),
-                    SR.Format(SR.Argument_InvalidToken, methodToken, new ModuleHandle(module)));
 
-            fixed (IntPtr* typeInstArgs = typeInstantiationContext, methodInstArgs = methodInstantiationContext)
+            try
             {
-                return ResolveMethod(new QCallModule(ref module), methodToken, typeInstArgs, typeInstCount, methodInstArgs, methodInstCount);
+                fixed (IntPtr* typeInstArgs = typeInstantiationContext, methodInstArgs = methodInstantiationContext)
+                {
+                    return ResolveMethod(new QCallModule(ref module), methodToken, typeInstArgs, typeInstCount, methodInstArgs, methodInstCount);
+                }
+            }
+            catch (Exception)
+            {
+                if (!ModuleHandle.GetMetadataImport(module.GetNativeHandle()).IsValidToken(methodToken))
+                    throw new ArgumentOutOfRangeException(nameof(methodToken),
+                        SR.Format(SR.Argument_InvalidToken, methodToken, new ModuleHandle(module)));
+                throw;
             }
         }
 
@@ -1269,28 +1388,46 @@ namespace System
 
         // SQL-CLR LKG9 Compiler dependency
         public RuntimeFieldHandle GetRuntimeFieldHandleFromMetadataToken(int fieldToken) { return ResolveFieldHandle(fieldToken); }
-        public RuntimeFieldHandle ResolveFieldHandle(int fieldToken) { return new RuntimeFieldHandle(ResolveFieldHandleInternal(GetRuntimeModule(), fieldToken, null, null)); }
+        public RuntimeFieldHandle ResolveFieldHandle(int fieldToken) => ResolveFieldHandle(fieldToken, null, null);
         public RuntimeFieldHandle ResolveFieldHandle(int fieldToken, RuntimeTypeHandle[]? typeInstantiationContext, RuntimeTypeHandle[]? methodInstantiationContext)
-        { return new RuntimeFieldHandle(ResolveFieldHandleInternal(GetRuntimeModule(), fieldToken, typeInstantiationContext, methodInstantiationContext)); }
-
-        internal static IRuntimeFieldInfo ResolveFieldHandleInternal(RuntimeModule module, int fieldToken, RuntimeTypeHandle[]? typeInstantiationContext, RuntimeTypeHandle[]? methodInstantiationContext)
         {
+            RuntimeModule module = GetRuntimeModule();
             ValidateModulePointer(module);
-            if (!ModuleHandle.GetMetadataImport(module.GetNativeHandle()).IsValidToken(fieldToken))
-                throw new ArgumentOutOfRangeException(nameof(fieldToken),
-                    SR.Format(SR.Argument_InvalidToken, fieldToken, new ModuleHandle(module)));
 
-            // defensive copy to be sure array is not mutated from the outside during processing
-            IntPtr[]? typeInstantiationContextHandles = RuntimeTypeHandle.CopyRuntimeTypeHandles(typeInstantiationContext, out int typeInstCount);
-            IntPtr[]? methodInstantiationContextHandles = RuntimeTypeHandle.CopyRuntimeTypeHandles(methodInstantiationContext, out int methodInstCount);
+            IntPtr[]? typeInstantiationContextHandles = null;
+            int typeInstCount = 0;
+            IntPtr[]? methodInstantiationContextHandles = null;
+            int methodInstCount = 0;
+
+            // defensive copy of user-provided array, per CopyRuntimeTypeHandles contract
+            if (typeInstantiationContext?.Length > 0)
+            {
+                typeInstantiationContext = (RuntimeTypeHandle[]?)typeInstantiationContext.Clone();
+                typeInstantiationContextHandles = RuntimeTypeHandle.CopyRuntimeTypeHandles(typeInstantiationContext, out typeInstCount);
+            }
+            if (methodInstantiationContext?.Length > 0)
+            {
+                methodInstantiationContext = (RuntimeTypeHandle[]?)methodInstantiationContext.Clone();
+                methodInstantiationContextHandles = RuntimeTypeHandle.CopyRuntimeTypeHandles(methodInstantiationContext, out methodInstCount);
+            }
 
             fixed (IntPtr* typeInstArgs = typeInstantiationContextHandles, methodInstArgs = methodInstantiationContextHandles)
             {
-                IRuntimeFieldInfo? field = null;
-                ResolveField(new QCallModule(ref module), fieldToken, typeInstArgs, typeInstCount, methodInstArgs, methodInstCount, ObjectHandleOnStack.Create(ref field));
-                GC.KeepAlive(typeInstantiationContext);
-                GC.KeepAlive(methodInstantiationContext);
-                return field!;
+                try
+                {
+                    IRuntimeFieldInfo? field = null;
+                    ResolveField(new QCallModule(ref module), fieldToken, typeInstArgs, typeInstCount, methodInstArgs, methodInstCount, ObjectHandleOnStack.Create(ref field));
+                    GC.KeepAlive(typeInstantiationContext);
+                    GC.KeepAlive(methodInstantiationContext);
+                    return new RuntimeFieldHandle(field!);
+                }
+                catch (Exception)
+                {
+                    if (!GetMetadataImport(module.GetNativeHandle()).IsValidToken(fieldToken))
+                        throw new ArgumentOutOfRangeException(nameof(fieldToken),
+                            SR.Format(SR.Argument_InvalidToken, fieldToken, new ModuleHandle(module)));
+                    throw;
+                }
             }
         }
 

@@ -1041,9 +1041,13 @@ HANDLE EventPipe::GetWaitHandle(EventPipeSessionID sessionID)
     return pSession ? pSession->GetWaitEvent()->GetHandleUNHOSTED() : 0;
 }
 
-void EventPipe::InvokeCallback(EventPipeProviderCallbackData eventPipeProviderCallbackData)
+void EventPipe::InvokeCallback(EventPipeProviderCallbackData *pEventPipeProviderCallbackData)
 {
-    EventPipeProvider::InvokeCallback(eventPipeProviderCallbackData);
+#if defined(HOST_OSX) && defined(HOST_ARM64)
+    auto jitWriteEnableHolder = PAL_JITWriteEnable(false);
+#endif // defined(HOST_OSX) && defined(HOST_ARM64)
+
+    EventPipeProvider::InvokeCallback(pEventPipeProviderCallbackData);
 }
 
 EventPipeEventInstance *EventPipe::BuildEventMetadataEvent(EventPipeEventInstance &instance, unsigned int metadataId)

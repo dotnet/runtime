@@ -1353,10 +1353,10 @@ void EEJitManager::SetCpuInfo()
 
     int cpuidInfo[4];
 
-    const int EAX = 0;
-    const int EBX = 1;
-    const int ECX = 2;
-    const int EDX = 3;
+    const int EAX = CPUID_EAX;
+    const int EBX = CPUID_EBX;
+    const int ECX = CPUID_ECX;
+    const int EDX = CPUID_EDX;
 
     __cpuid(cpuidInfo, 0x00000000);
     uint32_t maxCpuId = static_cast<uint32_t>(cpuidInfo[EAX]);
@@ -1529,7 +1529,7 @@ enum JIT_LOAD_JIT_ID
 {
     JIT_LOAD_MAIN = 500,    // The "main" JIT. Normally, this is named "clrjit.dll". Start at a number that is somewhat uncommon (i.e., not zero or 1) to help distinguish from garbage, in process dumps.
     // 501 is JIT_LOAD_LEGACY on some platforms; please do not reuse this value.
-    JIT_LOAD_ALTJIT = 502   // An "altjit". By default, named "protojit.dll". Used both internally, as well as externally for JIT CTP builds.
+    JIT_LOAD_ALTJIT = 502   // An "altjit". By default, named something like "clrjit_<targetos>_<target_arch>_<host_arch>.dll". Used both internally, as well as externally for JIT CTP builds.
 };
 
 enum JIT_LOAD_STATUS
@@ -1556,6 +1556,39 @@ struct JIT_LOAD_DATA
 
 // Here's the global data for JIT load and initialization state.
 JIT_LOAD_DATA g_JitLoadData;
+
+//  Validate that the name used to load the JIT is just a simple file name
+//  and does not contain something that could be used in a non-qualified path.
+//  For example, using the string "..\..\..\myjit.dll" we might attempt to
+//  load a JIT from the root of the drive.
+//
+//  The minimal set of characters that we must check for and exclude are:
+//     '\\' - (backslash)
+//     '/'  - (forward slash)
+//     ':'  - (colon)
+//
+//  Returns false if we find any of these characters in 'pwzJitName'
+//  Returns true if we reach the null terminator without encountering 
+//  any of these characters.
+//
+static bool ValidateJitName(LPCWSTR pwzJitName)
+{
+    LPCWSTR pCurChar = pwzJitName;
+    wchar_t curChar;
+    do {
+        curChar = *pCurChar;
+        if ((curChar == '\\') || (curChar == '/') || (curChar == ':'))
+        {
+            //  Return false if we find any of these character in 'pwzJitName'
+            return false;
+        }
+        pCurChar++;
+    } while (curChar != 0);
+
+    //  Return true; we have reached the null terminator
+    //
+    return true;
+}
 
 // LoadAndInitializeJIT: load the JIT dll into the process, and initialize it (call the UtilCode initialization function,
 // check the JIT-EE interface GUID, etc.)
@@ -1589,35 +1622,40 @@ static void LoadAndInitializeJIT(LPCWSTR pwzJitName, OUT HINSTANCE* phJit, OUT I
     *phJit = NULL;
     *ppICorJitCompiler = NULL;
 
-    HRESULT hr = E_FAIL;
-
-    PathString CoreClrFolderHolder;
-    extern HINSTANCE g_hThisInst;
-    bool havePath = false;
-
-    if (WszGetModuleFileName(g_hThisInst, CoreClrFolderHolder))
+    if (pwzJitName == nullptr)
     {
-        // Load JIT from next to CoreCLR binary
-        havePath = true;
+        pJitLoadData->jld_hr = E_FAIL;
+        LOG((LF_JIT, LL_FATALERROR, "LoadAndInitializeJIT: pwzJitName is null"));
+        return;
     }
 
-    if (havePath && !CoreClrFolderHolder.IsEmpty())
-    {
-        SString::Iterator iter = CoreClrFolderHolder.End();
-        BOOL findSep = CoreClrFolderHolder.FindBack(iter, DIRECTORY_SEPARATOR_CHAR_W);
-        if (findSep)
-        {
-            SString sJitName(pwzJitName);
-            CoreClrFolderHolder.Replace(iter + 1, CoreClrFolderHolder.End() - (iter + 1), sJitName);
+    HRESULT hr = E_FAIL;
 
-            *phJit = CLRLoadLibrary(CoreClrFolderHolder.GetUnicode());
-            if (*phJit != NULL)
+    if (ValidateJitName(pwzJitName))
+    {
+        // Load JIT from next to CoreCLR binary
+        PathString CoreClrFolderHolder;
+        if (GetClrModulePathName(CoreClrFolderHolder) && !CoreClrFolderHolder.IsEmpty())
+        {
+            SString::Iterator iter = CoreClrFolderHolder.End();
+            BOOL findSep = CoreClrFolderHolder.FindBack(iter, DIRECTORY_SEPARATOR_CHAR_W);
+            if (findSep)
             {
-                hr = S_OK;
+                SString sJitName(pwzJitName);
+                CoreClrFolderHolder.Replace(iter + 1, CoreClrFolderHolder.End() - (iter + 1), sJitName);
+
+                *phJit = CLRLoadLibrary(CoreClrFolderHolder.GetUnicode());
+                if (*phJit != NULL)
+                {
+                    hr = S_OK;
+                }
             }
         }
     }
-
+    else
+    {
+        LOG((LF_JIT, LL_FATALERROR, "LoadAndInitializeJIT: invalid characters in %S\n", pwzJitName));
+    }
 
     if (SUCCEEDED(hr))
     {
@@ -1767,7 +1805,27 @@ BOOL EEJitManager::LoadJIT()
 
         if (altJitName == NULL)
         {
-            altJitName = MAKEDLLNAME_W(W("protojit"));
+#ifdef TARGET_WINDOWS
+#ifdef TARGET_X86
+            altJitName = MAKEDLLNAME_W(W("clrjit_win_x86_x86"));
+#elif defined(TARGET_AMD64)
+            altJitName = MAKEDLLNAME_W(W("clrjit_win_x64_x64"));
+#elif defined(TARGET_ARM)
+            altJitName = MAKEDLLNAME_W(W("clrjit_win_arm_arm"));
+#elif defined(TARGET_ARM64)
+            altJitName = MAKEDLLNAME_W(W("clrjit_win_arm64_arm64"));
+#endif
+#else // TARGET_WINDOWS
+#ifdef TARGET_X86
+            altJitName = MAKEDLLNAME_W(W("clrjit_unix_x86_x86"));
+#elif defined(TARGET_AMD64)
+            altJitName = MAKEDLLNAME_W(W("clrjit_unix_x64_x64"));
+#elif defined(TARGET_ARM)
+            altJitName = MAKEDLLNAME_W(W("clrjit_unix_arm_arm"));
+#elif defined(TARGET_ARM64)
+            altJitName = MAKEDLLNAME_W(W("clrjit_unix_arm64_arm64"));
+#endif
+#endif // TARGET_WINDOWS
         }
 
         g_JitLoadData.jld_id = JIT_LOAD_ALTJIT;
@@ -1828,6 +1886,10 @@ TaggedMemAllocPtr CodeFragmentHeap::RealAllocAlignedMem(size_t  dwRequestedSize
                     )
 {
     CrstHolder ch(&m_CritSec);
+
+#if defined(HOST_OSX) && defined(HOST_ARM64)
+    auto jitWriteEnableHolder = PAL_JITWriteEnable(true);
+#endif // defined(HOST_OSX) && defined(HOST_ARM64)
 
     dwRequestedSize = ALIGN_UP(dwRequestedSize, sizeof(TADDR));
 
@@ -1909,6 +1971,10 @@ void CodeFragmentHeap::RealBackoutMem(void *pMem
     CrstHolder ch(&m_CritSec);
 
     _ASSERTE(dwSize >= sizeof(FreeBlock));
+
+#if defined(HOST_OSX) && defined(HOST_ARM64)
+    auto jitWriteEnableHolder = PAL_JITWriteEnable(true);
+#endif // defined(HOST_OSX) && defined(HOST_ARM64)
 
     ZeroMemory((BYTE *)pMem, dwSize);
 
@@ -4340,7 +4406,17 @@ LPCWSTR ExecutionManager::GetJitName()
 {
     STANDARD_VM_CONTRACT;
 
-    return MAKEDLLNAME_W(W("clrjit"));
+    LPCWSTR  pwzJitName = NULL;
+
+    // Try to obtain a name for the jit library from the env. variable
+    IfFailThrow(CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_JitName, const_cast<LPWSTR *>(&pwzJitName)));
+    
+    if (NULL == pwzJitName)
+    {
+        pwzJitName = MAKEDLLNAME_W(W("clrjit"));
+    }
+
+    return pwzJitName;
 }
 #endif // !FEATURE_MERGE_JIT_AND_ENGINE
 
@@ -4823,6 +4899,10 @@ void ExecutionManager::Unload(LoaderAllocator *pLoaderAllocator)
         NOTHROW;
         GC_NOTRIGGER;
     } CONTRACTL_END;
+
+#if defined(HOST_OSX) && defined(HOST_ARM64)
+    auto jitWriteEnableHolder = PAL_JITWriteEnable(true);
+#endif // defined(HOST_OSX) && defined(HOST_ARM64)
 
     // a size of 0 is a signal to Nirvana to flush the entire cache
     FlushInstructionCache(GetCurrentProcess(),0,0);

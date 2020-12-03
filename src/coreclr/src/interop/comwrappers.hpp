@@ -34,6 +34,7 @@ namespace ABI
 // Class for wrapping a managed object and projecting it in a non-managed environment
 class ManagedObjectWrapper
 {
+    friend constexpr size_t RefCountOffset();
 public:
     Volatile<InteropLib::OBJECTHANDLE> Target;
 
@@ -117,6 +118,18 @@ public: // Lifetime
     ULONG AddRef(void);
     ULONG Release(void);
 };
+
+// The Target and _refCount fields are used by the DAC, any changes to the layout must be updated on the DAC side (request.cpp)
+static constexpr size_t DACTargetOffset = 0;
+static_assert(offsetof(ManagedObjectWrapper, Target) == DACTargetOffset, "Keep in sync with DAC interfaces");
+static constexpr size_t DACRefCountOffset = (4 * sizeof(intptr_t)) + (2 * sizeof(int32_t));
+static constexpr size_t RefCountOffset()
+{
+    // _refCount is a private field and offsetof won't let you look at private fields. To overcome
+    // this RefCountOffset() is a friend function.
+    return offsetof(ManagedObjectWrapper, _refCount);
+}
+static_assert(RefCountOffset() == DACRefCountOffset, "Keep in sync with DAC interfaces");
 
 // ABI contract. This below offset is assumed in managed code.
 ABI_ASSERT(offsetof(ManagedObjectWrapper, Target) == 0);

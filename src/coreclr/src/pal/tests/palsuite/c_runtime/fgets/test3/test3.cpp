@@ -13,7 +13,7 @@
 
 #include <palsuite.h>
 
-int __cdecl main(int argc, char **argv)
+PALTEST(c_runtime_fgets_test3_paltest_fgets_test3, "c_runtime/fgets/test3/paltest_fgets_test3")
 {
     char inBuf[10];
     const char filename[] = "testfile.tmp";

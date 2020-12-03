@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-//
-// System.Reflection.Emit.GenericTypeParameterBuilder
+
 //
 // Martin Baulig (martin@ximian.com)
 //
@@ -451,7 +450,7 @@ namespace System.Reflection.Emit
             SetCustomAttribute(new CustomAttributeBuilder(con, binaryAttribute));
         }
 
-        private Exception not_supported()
+        private static Exception not_supported()
         {
             return new NotSupportedException();
         }

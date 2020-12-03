@@ -19,23 +19,23 @@ struct testCase
     int stopChar;
 };
 
-struct testCase testCases[] = 
+PALTEST(c_runtime_wcstod_test1_paltest_wcstod_test1, "c_runtime/wcstod/test1/paltest_wcstod_test1")
 {
-    {1234,"1234", 4},
-    {-1234,"-1234", 5},
-    {1234.44,"1234.44", 7},
-    {1234e-5,"1234e-5", 7},
-    {1234e+5,"1234e+5", 7},
-    {1234E5,"1234E5", 6},
-    {1234.657e-8,  "1234.657e-8", 11},
-    {0,  "1e-800", 6},
-    {0,  "-1e-800", 7},
-    {1234567e-8,  "   1234567e-8 foo", 13},
-    {0,     " foo 32 bar", 0},
-};
+    struct testCase testCases[] = 
+    {
+        {1234,"1234", 4},
+        {-1234,"-1234", 5},
+        {1234.44,"1234.44", 7},
+        {1234e-5,"1234e-5", 7},
+        {1234e+5,"1234e+5", 7},
+        {1234E5,"1234E5", 6},
+        {1234.657e-8,  "1234.657e-8", 11},
+        {0,  "1e-800", 6},
+        {0,  "-1e-800", 7},
+        {1234567e-8,  "   1234567e-8 foo", 13},
+        {0,     " foo 32 bar", 0},
+    };
 
-int __cdecl main(int argc, char **argv)
-{
     WCHAR *wideStr;
     WCHAR *endptr;
     double result;  

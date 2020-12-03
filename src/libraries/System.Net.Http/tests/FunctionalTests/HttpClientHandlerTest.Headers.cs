@@ -23,6 +23,29 @@ namespace System.Net.Http.Functional.Tests
         private sealed class DerivedHttpHeaders : HttpHeaders { }
 
         [Fact]
+        public async Task SendAsync_RequestWithSimpleHeader_ResponseReferencesUnmodifiedRequestHeaders()
+        {
+            const string HeaderKey = "some-header-123", HeaderValue = "this is the expected header value";
+
+            await LoopbackServerFactory.CreateClientAndServerAsync(async uri =>
+            {
+                using HttpClient client = CreateHttpClient();
+
+                var requestMessage = new HttpRequestMessage(HttpMethod.Get, uri) { Version = UseVersion };
+                requestMessage.Headers.TryAddWithoutValidation(HeaderKey, HeaderValue);
+
+                using HttpResponseMessage response = await client.SendAsync(TestAsync, requestMessage);
+                Assert.Same(requestMessage, response.RequestMessage);
+                Assert.Equal(HeaderValue, requestMessage.Headers.GetValues(HeaderKey).First());
+            },
+            async server =>
+            {
+                HttpRequestData requestData = await server.HandleRequestAsync(HttpStatusCode.OK);
+                Assert.Equal(HeaderValue, requestData.GetSingleHeaderValue(HeaderKey));
+            });
+        }
+
+        [Fact]
         public async Task SendAsync_UserAgent_CorrectlyWritten()
         {
             string userAgent = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_3) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/63.0.3239.18 Safari/537.36";
@@ -48,6 +71,12 @@ namespace System.Net.Http.Functional.Tests
         [Fact]
         public async Task SendAsync_LargeHeaders_CorrectlyWritten()
         {
+            if (UseVersion == HttpVersion30)
+            {
+                // TODO: ActiveIssue
+                return;
+            }
+
             // Intentionally larger than 16K in total because that's the limit that will trigger a CONTINUATION frame in HTTP2.
             string largeHeaderValue = new string('a', 1024);
             int count = 20;
@@ -309,6 +338,12 @@ namespace System.Net.Http.Functional.Tests
         [InlineData(true)]
         public async Task SendAsync_GetWithValidHostHeader_Success(bool withPort)
         {
+            if (UseVersion == HttpVersion30)
+            {
+                // External servers do not support HTTP3 currently.
+                return;
+            }
+
             var m = new HttpRequestMessage(HttpMethod.Get, Configuration.Http.SecureRemoteEchoServer) { Version = UseVersion };
             m.Headers.Host = withPort ? Configuration.Http.SecureHost + ":443" : Configuration.Http.SecureHost;
 

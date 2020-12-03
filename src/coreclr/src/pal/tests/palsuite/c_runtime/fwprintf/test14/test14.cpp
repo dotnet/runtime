@@ -19,7 +19,7 @@
  * Depends on memcmp, strlen, fopen, fseek and fgets.
  */
 
-int __cdecl main(int argc, char *argv[])
+PALTEST(c_runtime_fwprintf_test14_paltest_fwprintf_test14, "c_runtime/fwprintf/test14/paltest_fwprintf_test14")
 {
     double val = 256.0;
     double neg = -256.0;

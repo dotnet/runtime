@@ -1881,7 +1881,6 @@ namespace System.Xml.Serialization
             if (!typeDesc.UseReflection)
                 return obj + ".@" + memberName;
 
-            TypeDesc saveTypeDesc = typeDesc;
             while (typeDesc != null)
             {
                 string typeFullName = typeDesc.CSharpName;
@@ -2574,7 +2573,6 @@ namespace System.Xml.Serialization
                 int xmlnsMember = FindXmlnsIndex(mapping.Members!);
                 if (xmlnsMember >= 0)
                 {
-                    MemberMapping member = mapping.Members![xmlnsMember];
                     string source = "((" + typeof(System.Xml.Serialization.XmlSerializerNamespaces).FullName + ")p[" + xmlnsMember.ToString(CultureInfo.InvariantCulture) + "])";
 
                     Writer.Write("if (pLength > ");
@@ -3444,8 +3442,7 @@ namespace System.Xml.Serialization
 
             if (choice != null)
             {
-                bool choiceUseReflection = choice.Mapping!.TypeDesc!.UseReflection;
-                string choiceFullName = choice.Mapping.TypeDesc.CSharpName;
+                string choiceFullName = choice.Mapping!.TypeDesc!.CSharpName;
                 WriteArrayLocalDecl(choiceFullName + "[]", "c", choiceSource, choice.Mapping.TypeDesc);
                 // write check for the choice identifier array
                 Writer.WriteLine("if (c == null || c.Length < a.Length) {");
@@ -3691,7 +3688,6 @@ namespace System.Xml.Serialization
 
                         string? enumFullName = null;
 
-                        bool useReflection = element.Mapping!.TypeDesc!.UseReflection;
                         if (choice != null)
                         {
                             bool enumUseReflection = choice.Mapping!.TypeDesc!.UseReflection;
@@ -4073,12 +4069,6 @@ namespace System.Xml.Serialization
             }
             else if (element.Mapping is SpecialMapping)
             {
-                SpecialMapping mapping = (SpecialMapping)element.Mapping;
-                bool useReflection = mapping.TypeDesc!.UseReflection;
-                TypeDesc td = mapping.TypeDesc;
-                string fullTypeName = td.CSharpName;
-
-
                 if (element.Mapping is SerializableMapping)
                 {
                     WriteElementCall("WriteSerializable", typeof(IXmlSerializable), source, name, ns, element.IsNullable, !element.Any);

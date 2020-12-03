@@ -388,7 +388,7 @@ BOOL Thread::Alert ()
     BOOL fRetVal = FALSE;
     {
         HANDLE handle = GetThreadHandle();
-        if (handle != INVALID_HANDLE_VALUE && handle != SWITCHOUT_HANDLE_VALUE)
+        if (handle != INVALID_HANDLE_VALUE)
         {
             fRetVal = ::QueueUserAPC(UserInterruptAPC, handle, APC_Code);
         }
@@ -422,7 +422,7 @@ DWORD Thread::JoinEx(DWORD timeout, WaitMode mode)
         mode = (WaitMode)(mode & ~WaitMode_InDeadlock);
 
         HANDLE handle = GetThreadHandle();
-        if (handle == INVALID_HANDLE_VALUE || handle == SWITCHOUT_HANDLE_VALUE) {
+        if (handle == INVALID_HANDLE_VALUE) {
             return WAIT_FAILED;
         }
         if (pCurThread) {
@@ -572,8 +572,7 @@ DWORD Thread::StartThread()
     m_Creater.Clear();
 #endif
 
-    _ASSERTE (GetThreadHandle() != INVALID_HANDLE_VALUE &&
-                GetThreadHandle() != SWITCHOUT_HANDLE_VALUE);
+    _ASSERTE (GetThreadHandle() != INVALID_HANDLE_VALUE);
     dwRetVal = ::ResumeThread(GetThreadHandle());
 
 
@@ -706,6 +705,11 @@ Thread* SetupThread()
         chk.EnterAssert();
     }
 #endif
+
+#if defined(HOST_OSX) && defined(HOST_ARM64)
+    // Initialize new threads to JIT Write disabled
+    auto jitWriteEnableHolder = PAL_JITWriteEnable(false);
+#endif // defined(HOST_OSX) && defined(HOST_ARM64)
 
     // Normally, HasStarted is called from the thread's entrypoint to introduce it to
     // the runtime.  But sometimes that thread is used for DLL_THREAD_ATTACH notifications
@@ -995,7 +999,7 @@ HRESULT Thread::DetachThread(BOOL fDLLThreadDetach)
     }
 
     HANDLE hThread = GetThreadHandle();
-    SetThreadHandle (SWITCHOUT_HANDLE_VALUE);
+    SetThreadHandle (INVALID_HANDLE_VALUE);
     while (m_dwThreadHandleBeingUsed > 0)
     {
         // Another thread is using the handle now.
@@ -1097,9 +1101,14 @@ PCODE AdjustWriteBarrierIP(PCODE controlPc)
     return (PCODE)JIT_PatchedCodeStart + (controlPc - (PCODE)s_barrierCopy);
 }
 
-#endif // FEATURE_WRITEBARRIER_COPY
-
 extern "C" void *JIT_WriteBarrier_Loc;
+#ifdef TARGET_ARM64
+extern "C" void (*JIT_WriteBarrier_Table)();
+extern "C" void *JIT_WriteBarrier_Loc = 0;
+extern "C" void *JIT_WriteBarrier_Table_Loc = 0;
+#endif // TARGET_ARM64
+
+#endif // FEATURE_WRITEBARRIER_COPY
 
 #ifndef TARGET_UNIX
 // g_TlsIndex is only used by the DAC. Disable optimizations around it to prevent it from getting optimized out.
@@ -1127,6 +1136,7 @@ void InitThreadManager()
 
     // All patched helpers should fit into one page.
     // If you hit this assert on retail build, there is most likely problem with BBT script.
+    _ASSERTE_ALL_BUILDS("clr/src/VM/threads.cpp", (BYTE*)JIT_PatchedCodeLast - (BYTE*)JIT_PatchedCodeStart > (ptrdiff_t)0);
     _ASSERTE_ALL_BUILDS("clr/src/VM/threads.cpp", (BYTE*)JIT_PatchedCodeLast - (BYTE*)JIT_PatchedCodeStart < (ptrdiff_t)GetOsPageSize());
 
 #ifdef FEATURE_WRITEBARRIER_COPY
@@ -1137,6 +1147,10 @@ void InitThreadManager()
         COMPlusThrowWin32();
     }
 
+#if defined(HOST_OSX) && defined(HOST_ARM64)
+    auto jitWriteEnableHolder = PAL_JITWriteEnable(true);
+#endif // defined(HOST_OSX) && defined(HOST_ARM64)
+
     memcpy(s_barrierCopy, (BYTE*)JIT_PatchedCodeStart, (BYTE*)JIT_PatchedCodeLast - (BYTE*)JIT_PatchedCodeStart);
 
     // Store the JIT_WriteBarrier copy location to a global variable so that helpers
@@ -1144,6 +1158,12 @@ void InitThreadManager()
     JIT_WriteBarrier_Loc = GetWriteBarrierCodeLocation((void*)JIT_WriteBarrier);
 
     SetJitHelperFunction(CORINFO_HELP_ASSIGN_REF, GetWriteBarrierCodeLocation((void*)JIT_WriteBarrier));
+
+#ifdef TARGET_ARM64
+    // Store the JIT_WriteBarrier_Table copy location to a global variable so that it can be updated.
+    JIT_WriteBarrier_Table_Loc = GetWriteBarrierCodeLocation((void*)&JIT_WriteBarrier_Table);
+#endif // TARGET_ARM64
+
 #else // FEATURE_WRITEBARRIER_COPY
 
     // I am using virtual protect to cover the entire range that this code falls in.
@@ -2087,6 +2107,7 @@ HANDLE Thread::CreateUtilityThread(Thread::StackSizeBucket stackSizeBucket, LPTH
 
     default:
         _ASSERTE(!"Bad stack size bucket");
+        break;
     case StackSize_Large:
         stackSize = 1024 * 1024;
         break;
@@ -5160,7 +5181,16 @@ void ThreadStore::InitThreadStore()
 // additional semantics well beyond a normal lock.
 DEBUG_NOINLINE void ThreadStore::Enter()
 {
-    WRAPPER_NO_CONTRACT;
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+        // we must be in preemptive mode while taking this lock
+        // if suspension is in progress, the lock is taken, and there is no way to suspend us once we block
+        MODE_PREEMPTIVE;
+    }
+    CONTRACTL_END;
+
     ANNOTATION_SPECIAL_HOLDER_CALLER_NEEDS_DYNAMIC_CONTRACT;
     CHECK_ONE_STORE();
     m_Crst.Enter();
@@ -5168,7 +5198,12 @@ DEBUG_NOINLINE void ThreadStore::Enter()
 
 DEBUG_NOINLINE void ThreadStore::Leave()
 {
-    WRAPPER_NO_CONTRACT;
+    CONTRACTL {
+        NOTHROW;
+        GC_NOTRIGGER;
+    }
+    CONTRACTL_END;
+
     ANNOTATION_SPECIAL_HOLDER_CALLER_NEEDS_DYNAMIC_CONTRACT;
     CHECK_ONE_STORE();
     m_Crst.Leave();
@@ -6107,7 +6142,7 @@ size_t getStackHash(size_t* stackTrace, size_t* stackTop, size_t* stackStop, siz
                                NULL
                                );
 
-        if (((UINT_PTR)g_hThisInst) != uImageBase)
+        if (((UINT_PTR)GetClrModuleBase()) != uImageBase)
         {
             break;
         }
@@ -7881,15 +7916,24 @@ UINT64 Thread::GetTotalThreadPoolCompletionCount()
     }
     CONTRACTL_END;
 
+    bool usePortableThreadPool = ThreadpoolMgr::UsePortableThreadPool();
+
     // enumerate all threads, summing their local counts.
     ThreadStoreLockHolder tsl;
 
-    UINT64 total = GetWorkerThreadPoolCompletionCountOverflow() + GetIOThreadPoolCompletionCountOverflow();
+    UINT64 total = GetIOThreadPoolCompletionCountOverflow();
+    if (!usePortableThreadPool)
+    {
+        total += GetWorkerThreadPoolCompletionCountOverflow();
+    }
 
     Thread *pThread = NULL;
     while ((pThread = ThreadStore::GetAllThreadList(pThread, 0, 0)) != NULL)
     {
-        total += pThread->m_workerThreadPoolCompletionCount;
+        if (!usePortableThreadPool)
+        {
+            total += pThread->m_workerThreadPoolCompletionCount;
+        }
         total += pThread->m_ioThreadPoolCompletionCount;
     }
 

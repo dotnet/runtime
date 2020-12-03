@@ -13,7 +13,7 @@
 #ifndef __wprintf_H__
 #define __wprintf_H__
 
-void DoStrTest(const WCHAR *formatstr, const WCHAR *param, const WCHAR *checkstr)
+inline void DoStrTest_wprintf(const WCHAR *formatstr, const WCHAR *param, const WCHAR *checkstr)
 {
     int ret;
 
@@ -24,9 +24,9 @@ void DoStrTest(const WCHAR *formatstr, const WCHAR *param, const WCHAR *checkstr
             wcslen(checkstr), ret);
     }
 }
+#define DoStrTest DoStrTest_wprintf
 
-
-void DoPointerTest(const WCHAR *formatstr, void* param, WCHAR* paramstr, 
+inline void DoPointerTest_wprintf(const WCHAR *formatstr, void* param, WCHAR* paramstr, 
                    const WCHAR *checkstr1)
 {
     int ret;
@@ -38,8 +38,9 @@ void DoPointerTest(const WCHAR *formatstr, void* param, WCHAR* paramstr,
             wcslen(checkstr1), ret);
     }
 }
+#define DoPointerTest DoPointerTest_wprintf
 
-void DoCountTest(const WCHAR *formatstr, int param, const WCHAR *checkstr)
+inline void DoCountTest_wprintf(const WCHAR *formatstr, int param, const WCHAR *checkstr)
 {
     int ret;
     int n = -1;
@@ -57,8 +58,9 @@ void DoCountTest(const WCHAR *formatstr, int param, const WCHAR *checkstr)
             wcslen(checkstr), ret);
     }    
 }
+#define DoCountTest DoCountTest_wprintf
 
-void DoShortCountTest(const WCHAR *formatstr, int param, const WCHAR *checkstr)
+inline void DoShortCountTest_wprintf(const WCHAR *formatstr, int param, const WCHAR *checkstr)
 {
     int ret;
     short int n = -1;
@@ -76,9 +78,9 @@ void DoShortCountTest(const WCHAR *formatstr, int param, const WCHAR *checkstr)
             wcslen(checkstr), ret);
     }    
 }
+#define DoShortCountTest DoShortCountTest_wprintf
 
-
-void DoCharTest(const WCHAR *formatstr, WCHAR param, const WCHAR *checkstr)
+inline void DoCharTest_wprintf(const WCHAR *formatstr, WCHAR param, const WCHAR *checkstr)
 {
     int ret;
 
@@ -89,8 +91,9 @@ void DoCharTest(const WCHAR *formatstr, WCHAR param, const WCHAR *checkstr)
             wcslen(checkstr), ret);
     }
 }
+#define DoCharTest DoCharTest_wprintf
 
-void DoWCharTest(const WCHAR *formatstr, WCHAR param, const WCHAR *checkstr)
+inline void DoWCharTest_wprintf(const WCHAR *formatstr, WCHAR param, const WCHAR *checkstr)
 {
     int ret;
 
@@ -101,8 +104,9 @@ void DoWCharTest(const WCHAR *formatstr, WCHAR param, const WCHAR *checkstr)
             wcslen(checkstr), ret);
     }    
 }
+#define DoWCharTest DoWCharTest_wprintf
 
-void DoNumTest(const WCHAR *formatstr, int param, const WCHAR *checkstr)
+inline void DoNumTest_wprintf(const WCHAR *formatstr, int param, const WCHAR *checkstr)
 {
     int ret;
 
@@ -113,8 +117,9 @@ void DoNumTest(const WCHAR *formatstr, int param, const WCHAR *checkstr)
             wcslen(checkstr), ret);
     }    
 }
+#define DoNumTest DoNumTest_wprintf
 
-void DoI64Test(const WCHAR *formatstr, INT64 param, const WCHAR *valuestr, 
+inline void DoI64Test_wprintf(const WCHAR *formatstr, INT64 param, const WCHAR *valuestr, 
                const WCHAR *checkstr1)
 {
     int ret;
@@ -126,8 +131,9 @@ void DoI64Test(const WCHAR *formatstr, INT64 param, const WCHAR *valuestr,
             wcslen(checkstr1), ret);
     }
 }
+#define DoI64Test DoI64Test_wprintf
 
-void DoDoubleTest(const WCHAR *formatstr, double param, 
+inline void DoDoubleTest_wprintf(const WCHAR *formatstr, double param, 
                   const WCHAR *checkstr1, const WCHAR *checkstr2)
 {
     int ret;
@@ -139,8 +145,9 @@ void DoDoubleTest(const WCHAR *formatstr, double param,
             wcslen(checkstr1), wcslen(checkstr2), ret);
     }
 }
+#define DoDoubleTest DoDoubleTest_wprintf
 
-void DoArgumentPrecTest(const WCHAR *formatstr, int precision, void *param, 
+inline void DoArgumentPrecTest_wprintf(const WCHAR *formatstr, int precision, void *param, 
                         WCHAR *paramstr, const WCHAR *checkstr1, const WCHAR *checkstr2)
 {
     int ret;
@@ -152,8 +159,9 @@ void DoArgumentPrecTest(const WCHAR *formatstr, int precision, void *param,
             wcslen(checkstr1), wcslen(checkstr2), ret);
     }
 }
+#define DoArgumentPrecTest DoArgumentPrecTest_wprintf
 
-void DoArgumentPrecDoubleTest(const WCHAR *formatstr, int precision, double param, 
+inline void DoArgumentPrecDoubleTest_wprintf(const WCHAR *formatstr, int precision, double param, 
     const WCHAR *checkstr1, const WCHAR *checkstr2)
 {
     int ret;
@@ -165,6 +173,7 @@ void DoArgumentPrecDoubleTest(const WCHAR *formatstr, int precision, double para
             wcslen(checkstr1), wcslen(checkstr2), ret);
     }
 }
+#define DoArgumentPrecDoubleTest DoArgumentPrecDoubleTest_wprintf
 
 #endif
 

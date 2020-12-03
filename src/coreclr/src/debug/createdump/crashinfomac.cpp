@@ -24,49 +24,7 @@ void
 CrashInfo::CleanupAndResumeProcess()
 {
     // Resume all the threads suspended in EnumerateAndSuspendThreads
-    for (ThreadInfo* thread : m_threads)
-    {
-        ::thread_resume(thread->Port());
-    }
-}
-
-static
-kern_return_t
-SuspendMachThread(thread_act_t thread, int tid)
-{
-    kern_return_t result;
-
-    while (true)
-    {
-        result = thread_suspend(thread);
-        if (result != KERN_SUCCESS)
-        {
-            fprintf(stderr, "thread_suspend(%d) FAILED %x %s\n", tid, result, mach_error_string(result));
-            break;
-        }
-
-        // Ensure that if the thread was running in the kernel, the kernel operation
-        // is safely aborted so that it can be restarted later.
-        result = thread_abort_safely(thread);
-        if (result == KERN_SUCCESS)
-        {
-            break;
-        }
-        else
-        {
-            TRACE("thread_abort_safely(%d) FAILED %x %s\n", tid, result, mach_error_string(result));
-        }
-        // The thread was running in the kernel executing a non-atomic operation
-        // that cannot be restarted, so we need to resume the thread and retry
-        result = thread_resume(thread);
-        if (result != KERN_SUCCESS)
-        {
-            fprintf(stderr, "thread_resume(%d) FAILED %x %s\n", tid, result, mach_error_string(result));
-            break;
-        }
-    }
-
-    return result;
+    ::task_resume(Task());
 }
 
 //
@@ -78,7 +36,14 @@ CrashInfo::EnumerateAndSuspendThreads()
     thread_act_port_array_t threadList;
     mach_msg_type_number_t threadCount;
 
-    kern_return_t result = ::task_threads(Task(), &threadList, &threadCount);
+    kern_return_t result = ::task_suspend(Task());
+    if (result != KERN_SUCCESS)
+    {
+        fprintf(stderr, "task_suspend(%d) FAILED %x %s\n", m_pid, result, mach_error_string(result));
+        return false;
+    }
+
+    result = ::task_threads(Task(), &threadList, &threadCount);
     if (result != KERN_SUCCESS)
     {
         fprintf(stderr, "task_threads(%d) FAILED %x %s\n", m_pid, result, mach_error_string(result));
@@ -102,11 +67,6 @@ CrashInfo::EnumerateAndSuspendThreads()
             tid = tident.thread_id;
         }
 
-        result = SuspendMachThread(threadList[i], tid);
-        if (result != KERN_SUCCESS)
-        {
-            return false;
-        }
         // Add to the list of threads
         ThreadInfo* thread = new ThreadInfo(*this, tid, threadList[i]);
         m_threads.push_back(thread);
@@ -148,7 +108,7 @@ CrashInfo::EnumerateMemoryRegions()
             fprintf(stderr, "mach_vm_region_recurse for address %016llx %08llx FAILED %x %s\n", address, size, result, mach_error_string(result));
             return false;
         }
-        TRACE("%016llx - %016llx (%06llx) %08llx %s %d %d %d %c%c%c\n",
+        TRACE("%016llx - %016llx (%06llx) %08llx %s %d %d %d %c%c%c %02x\n",
             address,
             address + size,
             size / PAGE_SIZE,
@@ -159,14 +119,15 @@ CrashInfo::EnumerateMemoryRegions()
             depth,
             (info.protection & VM_PROT_READ) ? 'r' : '-',
             (info.protection & VM_PROT_WRITE) ? 'w' : '-',
-            (info.protection & VM_PROT_EXECUTE) ? 'x' : '-');
+            (info.protection & VM_PROT_EXECUTE) ? 'x' : '-',
+            info.protection);
 
         if (info.is_submap) {
             depth++;
         }
         else
         {
-            if (info.share_mode != SM_EMPTY && (info.protection & (VM_PROT_READ | VM_PROT_WRITE | VM_PROT_EXECUTE)) != 0)
+            if ((info.protection & (VM_PROT_READ | VM_PROT_WRITE | VM_PROT_EXECUTE)) != 0)
             {
                 MemoryRegion memoryRegion(ConvertProtectionFlags(info.protection), address, address + size, info.offset);
                 m_allMemoryRegions.insert(memoryRegion);
@@ -242,33 +203,32 @@ CrashInfo::TryFindDyLinker(mach_vm_address_t address, mach_vm_size_t size, bool*
 
     if (size > sizeof(mach_header_64))
     {
-        mach_header_64* header = nullptr;
-        mach_msg_type_number_t read = 0;
-        kern_return_t kresult = ::vm_read(Task(), address, sizeof(mach_header_64), (vm_offset_t*)&header, &read);
-        if (kresult == KERN_SUCCESS)
-        {
-            if (header->magic == MH_MAGIC_64)
+        mach_header_64 header;
+        size_t read = 0;
+        if (ReadProcessMemory((void*)address, &header, sizeof(mach_header_64), &read))
+        { 
+            if (header.magic == MH_MAGIC_64)
             {
                 TRACE("TryFindDyLinker: found module header at %016llx %08llx ncmds %d sizeofcmds %08x type %02x\n",
                     address,
                     size,
-                    header->ncmds,
-                    header->sizeofcmds,
-                    header->filetype);
+                    header.ncmds,
+                    header.sizeofcmds,
+                    header.filetype);
 
-                if (header->filetype == MH_DYLINKER)
+                if (header.filetype == MH_DYLINKER)
                 {
                     TRACE("TryFindDyLinker: found dylinker\n");
                     *found = true;
 
                     // Enumerate all the modules in dyld's image cache. VisitModule is called for every module found.
-                    result = EnumerateModules(address, header);
+                    result = EnumerateModules(address, &header);
                 }
             }
         }
-        if (header != nullptr)
+        else 
         {
-            ::vm_deallocate(Task(), (vm_address_t)header, sizeof(mach_header_64));
+            TRACE("TryFindDyLinker: ReadProcessMemory header at %p %d FAILED\n", address, read);
         }
     }
 
@@ -388,37 +348,35 @@ CrashInfo::ReadProcessMemory(void* address, void* buffer, size_t size, size_t* r
     // and the size be a multiple of the page size.  We can't differentiate
     // between the cases in which that's required and those in which it
     // isn't, so we do it all the time.
-    int* addressAligned = (int*)((SIZE_T)address & ~(PAGE_SIZE - 1));
-    ssize_t offset = ((SIZE_T)address & (PAGE_SIZE - 1));
+    vm_address_t addressAligned = (vm_address_t)address & ~(PAGE_SIZE - 1);
+    ssize_t offset = (ssize_t)address & (PAGE_SIZE - 1);
     char *data = (char*)alloca(PAGE_SIZE);
     ssize_t numberOfBytesRead = 0;
-    ssize_t bytesToRead;
+    ssize_t bytesLeft = size;
 
-    while (size > 0)
+    while (bytesLeft > 0)
     {
-        vm_size_t bytesRead;
-        
-        bytesToRead = PAGE_SIZE - offset;
-        if (bytesToRead > size)
-        {
-            bytesToRead = size;
-        }
-        bytesRead = PAGE_SIZE;
-        kern_return_t result = ::vm_read_overwrite(Task(), (vm_address_t)addressAligned, PAGE_SIZE, (vm_address_t)data, &bytesRead);
+        vm_size_t bytesRead = PAGE_SIZE;
+        kern_return_t result = ::vm_read_overwrite(Task(), addressAligned, PAGE_SIZE, (vm_address_t)data, &bytesRead);
         if (result != KERN_SUCCESS || bytesRead != PAGE_SIZE)
         {
-            TRACE_VERBOSE("vm_read_overwrite failed for %d bytes from %p: %x %s\n", PAGE_SIZE, (char *)addressAligned, result, mach_error_string(result));
-            *read = 0;
-            return false;
+            TRACE_VERBOSE("ReadProcessMemory(%p %d): vm_read_overwrite failed bytesLeft %d bytesRead %d from %p: %x %s\n",
+                address, size, bytesLeft, bytesRead, (void*)addressAligned, result, mach_error_string(result));
+            break;
         }
-        memcpy((LPSTR)buffer + numberOfBytesRead, data + offset, bytesToRead);
-        addressAligned = (int*)((char*)addressAligned + PAGE_SIZE);
-        numberOfBytesRead += bytesToRead;
-        size -= bytesToRead;
+        ssize_t bytesToCopy = PAGE_SIZE - offset;
+        if (bytesToCopy > bytesLeft)
+        {
+            bytesToCopy = bytesLeft;
+        }
+        memcpy((LPSTR)buffer + numberOfBytesRead, data + offset, bytesToCopy);
+        addressAligned = addressAligned + PAGE_SIZE;
+        numberOfBytesRead += bytesToCopy;
+        bytesLeft -= bytesToCopy;
         offset = 0;
     }
     *read = numberOfBytesRead;
-    return true;
+    return size == 0 || numberOfBytesRead > 0;
 }
 
 // For src/inc/llvm/ELF.h

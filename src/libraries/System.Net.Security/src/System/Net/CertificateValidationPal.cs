@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics;
 using System.Security;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
@@ -63,8 +64,7 @@ namespace System.Net
                         {
                             if (exception is CryptographicException || exception is SecurityException)
                             {
-                                NetEventSource.Fail(null,
-                                    $"Failed to open cert store, location: {storeLocation} exception: {exception}");
+                                Debug.Fail($"Failed to open cert store, location: {storeLocation} exception: {exception}");
                                 return null;
                             }
 

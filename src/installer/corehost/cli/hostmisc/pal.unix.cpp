@@ -5,6 +5,7 @@
 #define _WITH_GETLINE
 #endif
 
+#include <getexepath.h>
 #include "pal.h"
 #include "utils.h"
 #include "trace.h"
@@ -17,7 +18,6 @@
 #include <fnmatch.h>
 #include <ctime>
 #include <locale>
-#include <codecvt>
 #include <pwd.h>
 #include "config.h"
 
@@ -27,12 +27,6 @@
 #include <sys/sysctl.h>
 #elif defined(__sun)
 #include <sys/utsname.h>
-#endif
-
-#if defined(TARGET_LINUX)
-#define symlinkEntrypointExecutable "/proc/self/exe"
-#elif !defined(TARGET_OSX)
-#define symlinkEntrypointExecutable "/proc/curproc/exe"
 #endif
 
 #if !HAVE_DIRENT_D_TYPE
@@ -264,16 +258,6 @@ void pal::unload_library(dll_t library)
 int pal::xtoi(const char_t* input)
 {
     return atoi(input);
-}
-
-bool pal::unicode_palstring(const char16_t* str, pal::string_t* out)
-{
-    out->clear();
-
-    std::wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t> conversion;
-    out->assign(conversion.to_bytes(str));
-
-    return true;
 }
 
 bool pal::is_path_rooted(const pal::string_t& path)
@@ -804,90 +788,18 @@ pal::string_t pal::get_current_os_rid_platform()
 }
 #endif
 
-#if defined(TARGET_OSX)
 bool pal::get_own_executable_path(pal::string_t* recv)
 {
-    uint32_t path_length = 0;
-    if (_NSGetExecutablePath(nullptr, &path_length) == -1)
-    {
-        char path_buf[path_length];
-        if (_NSGetExecutablePath(path_buf, &path_length) == 0)
-        {
-            recv->assign(path_buf);
-            return true;
-        }
-    }
-    return false;
-}
-#elif defined(TARGET_FREEBSD)
-bool pal::get_own_executable_path(pal::string_t* recv)
-{
-    int mib[4];
-    mib[0] = CTL_KERN;
-    mib[1] = KERN_PROC;
-    mib[2] = KERN_PROC_PATHNAME;
-    mib[3] = -1;
-    char buf[PATH_MAX];
-    size_t cb = sizeof(buf);
-    int error_code = 0;
-    error_code = sysctl(mib, 4, buf, &cb, NULL, 0);
-    if (error_code == 0)
-    {
-        recv->assign(buf);
-        return true;
-    }
-
-    // ENOMEM
-    if (error_code == ENOMEM)
-    {
-        size_t len = sysctl(mib, 4, NULL, NULL, NULL, 0);
-        std::unique_ptr<char[]> buffer (new (std::nothrow) char[len]);
-
-        if (buffer == NULL)
-        {
-            return false;
-        }
-
-        error_code = sysctl(mib, 4, buffer.get(), &len, NULL, 0);
-        if (error_code == 0)
-        {
-            recv->assign(buffer.get());
-            return true;
-        }
-    }
-    return false;
-}
-#elif defined(__sun)
-bool pal::get_own_executable_path(pal::string_t* recv)
-{
-    const char *path;
-    if ((path = getexecname()) == NULL)
+    char* path = getexepath();
+    if (!path)
     {
         return false;
     }
-    else if (*path != '/')
-    {
-        if (!getcwd(recv))
-        {
-            return false;
-        }
-
-        recv->append("/").append(path);
-        return true;
-    }
 
     recv->assign(path);
+    free(path);
     return true;
 }
-#else
-bool pal::get_own_executable_path(pal::string_t* recv)
-{
-    // Just return the symlink to the exe from /proc
-    // We'll call realpath on it later
-    recv->assign(symlinkEntrypointExecutable);
-    return true;
-}
-#endif
 
 bool pal::get_own_module_path(string_t* recv)
 {

@@ -1908,9 +1908,9 @@ mono_method_add_generic_virtual_invocation (MonoDomain *domain, MonoVTable *vtab
 											MonoMethod *method, gpointer code);
 
 gpointer
-mono_method_alloc_generic_virtual_trampoline (MonoDomain *domain, int size);
+mono_method_alloc_generic_virtual_trampoline (MonoMemoryManager *mem_manager, int size);
 
-#define mono_method_alloc_generic_virtual_trampoline(domain, size) (g_cast (mono_method_alloc_generic_virtual_trampoline ((domain), (size))))
+#define mono_method_alloc_generic_virtual_trampoline(mem_manager, size) (g_cast (mono_method_alloc_generic_virtual_trampoline ((mem_manager), (size))))
 
 typedef enum {
 	MONO_UNHANDLED_POLICY_LEGACY,
@@ -2420,5 +2420,11 @@ mono_gc_wbarrier_value_copy_internal (void* dest, const void* src, int count, Mo
 
 void
 mono_gc_wbarrier_object_copy_internal (MonoObject* obj, MonoObject *src);
+
+char *
+mono_runtime_get_managed_cmd_line (void);
+
+char *
+mono_runtime_get_cmd_line (int argc, char **argv);
 
 #endif /* __MONO_OBJECT_INTERNALS_H__ */

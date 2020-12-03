@@ -3,6 +3,7 @@
 
 using System.Threading.Tasks;
 using System.Runtime.Versioning;
+using System.Diagnostics;
 
 namespace System.Net.Sockets
 {
@@ -262,6 +263,7 @@ namespace System.Net.Sockets
             return listener;
         }
 
+        [SupportedOSPlatform("windows")]
         private void SetIPProtectionLevel(bool allowed)
             => _serverSocket!.SetIPProtectionLevel(allowed ? IPProtectionLevel.Unrestricted : IPProtectionLevel.EdgeRestricted);
 
@@ -276,6 +278,7 @@ namespace System.Net.Sockets
 
             if (_allowNatTraversal != null)
             {
+                Debug.Assert(OperatingSystem.IsWindows());
                 SetIPProtectionLevel(_allowNatTraversal.GetValueOrDefault());
                 _allowNatTraversal = null; // Reset value to avoid affecting more sockets
             }

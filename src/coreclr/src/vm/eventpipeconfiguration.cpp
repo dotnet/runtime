@@ -8,6 +8,7 @@
 #include "eventpipesessionprovider.h"
 #include "eventpipeprovider.h"
 #include "eventpipesession.h"
+#include "win32threadpool.h"
 
 #ifdef FEATURE_PERFTRACING
 
@@ -146,10 +147,18 @@ bool EventPipeConfiguration::RegisterProvider(EventPipeProvider &provider, Event
     }
     CONTRACTL_END;
 
-    // See if we've already registered this provider.
-    EventPipeProvider *pExistingProvider = GetProviderNoLock(provider.GetProviderName());
-    if (pExistingProvider != nullptr)
-        return false;
+    // See if we've already registered this provider. When the portable thread pool is being used, allow there to be multiple
+    // DotNETRuntime providers, as the portable thread pool temporarily uses an event source on the managed side with the same
+    // provider name.
+    // TODO: This change to allow multiple DotNETRuntime providers is temporary to get EventPipe working for
+    // PortableThreadPoolEventSource. Once a long-term solution is figured out, this change should be reverted. See
+    // https://github.com/dotnet/runtime/issues/38763 for more information.
+    if (!ThreadpoolMgr::UsePortableThreadPool() || !provider.GetProviderName().Equals(W("Microsoft-Windows-DotNETRuntime")))
+    {
+        EventPipeProvider *pExistingProvider = GetProviderNoLock(provider.GetProviderName());
+        if (pExistingProvider != nullptr)
+            return false;
+    }
 
     // The provider list should be non-NULL, but can be NULL on shutdown.
     if (m_pProviderList != nullptr)

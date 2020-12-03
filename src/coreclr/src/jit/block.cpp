@@ -277,10 +277,6 @@ void BasicBlock::dspFlags()
     {
         printf("try ");
     }
-    if (bbFlags & BBF_NEEDS_GCPOLL)
-    {
-        printf("poll ");
-    }
     if (bbFlags & BBF_RUN_RARELY)
     {
         printf("rare ");

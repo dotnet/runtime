@@ -14,7 +14,7 @@
 **===================================================================*/
 #include <palsuite.h>
 
-int __cdecl main(int argc, char **argv)
+PALTEST(threading_DuplicateHandle_test1_paltest_duplicatehandle_test1, "threading/DuplicateHandle/test1/paltest_duplicatehandle_test1")
 {
     HANDLE  hFile;
     HANDLE  hDupFile;

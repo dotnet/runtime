@@ -35,40 +35,7 @@
 #include <palsuite.h>
 #include "myexitcode.h"
 
-
-static const char* rgchPathDelim = "\\";
-
-
-int
-mkAbsoluteFilename( LPSTR dirName,
-                    DWORD dwDirLength,
-                    LPCSTR fileName,
-                    DWORD dwFileLength,
-                    LPSTR absPathName )
-{
-    DWORD sizeDN, sizeFN, sizeAPN;
-
-    sizeDN = strlen( dirName );
-    sizeFN = strlen( fileName );
-    sizeAPN = (sizeDN + 1 + sizeFN + 1);
-
-    /* ensure ((dirName + DELIM + fileName + \0) =< _MAX_PATH ) */
-    if( sizeAPN > _MAX_PATH )
-    {
-        return ( 0 );
-    }
-
-    strncpy( absPathName, dirName, dwDirLength +1 );
-    strncpy( absPathName, rgchPathDelim, 2 );
-    strncpy( absPathName, fileName, dwFileLength +1 );
-
-    return (sizeAPN);
-
-}
-
-
-int __cdecl main( int argc, char **argv )
-
+PALTEST(threading_DuplicateHandle_test11_paltest_duplicatehandle_test11, "threading/DuplicateHandle/test11/paltest_duplicatehandle_test11")
 {
     const char* rgchChildFile = "childprocess";
 
@@ -151,9 +118,10 @@ int __cdecl main( int argc, char **argv )
               "not build absolute path name to file\n.  Exiting.\n" );
     }
 
+    LPWSTR rgchAbsPathNameW = convert(rgchAbsPathName);
     /* launch the child process    */
     if( !CreateProcess(     NULL,               /* module name to execute */
-                            rgchAbsPathName,    /* command line */
+                            rgchAbsPathNameW,   /* command line */
                             NULL,               /* process handle not */
                                                 /* inheritable */
                             NULL,               /* thread handle not */
@@ -168,6 +136,7 @@ int __cdecl main( int argc, char **argv )
         )
     {
         dwError = GetLastError();
+        free(rgchAbsPathNameW);
         if( ReleaseMutex( hMutex ) == 0 )
         {
             Trace( "ERROR:%lu:ReleaseMutex() call failed\n", GetLastError() );
@@ -179,6 +148,8 @@ int __cdecl main( int argc, char **argv )
         Fail( "CreateProcess call failed with error code %d\n",
               dwError );
     }
+
+    free(rgchAbsPathNameW);
 
     /* open another handle to the child process */
     hChildProcess = OpenProcess(    PROCESS_ALL_ACCESS,   /* access */

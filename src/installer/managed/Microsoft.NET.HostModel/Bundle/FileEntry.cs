@@ -7,8 +7,8 @@ namespace Microsoft.NET.HostModel.Bundle
 {
     /// <summary>
     /// FileEntry: Records information about embedded files.
-    /// 
-    /// The bundle manifest records the following meta-data for each 
+    ///
+    /// The bundle manifest records the following meta-data for each
     /// file embedded in the bundle:
     /// * Type       (1 byte)
     /// * NameLength (7-bit extension encoding, typically 1 byte)
@@ -44,4 +44,3 @@ namespace Microsoft.NET.HostModel.Bundle
         public override string ToString() => $"{RelativePath} [{Type}] @{Offset} Sz={Size}";
     }
 }
-

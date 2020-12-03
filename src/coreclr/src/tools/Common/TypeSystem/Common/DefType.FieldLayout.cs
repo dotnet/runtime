@@ -10,7 +10,7 @@ namespace Internal.TypeSystem
     public abstract partial class DefType : TypeDesc
     {
         /// <summary>
-        /// Bit flags for layout 
+        /// Bit flags for layout
         /// </summary>
         private class FieldLayoutFlags
         {

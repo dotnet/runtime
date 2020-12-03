@@ -22,7 +22,7 @@ struct testCase
     WCHAR character;
 };
 
-int __cdecl main(int argc, char **argv)
+PALTEST(c_runtime_iswupper_test1_paltest_iswupper_test1, "c_runtime/iswupper/test1/paltest_iswupper_test1")
 {
   
     int result;  

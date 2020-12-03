@@ -1,5 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
+
 //
 // Copyright (C) 2004 Novell, Inc (http://www.novell.com)
 //
@@ -56,18 +57,8 @@ namespace System.Reflection.Emit
         internal int len;
         internal int filter_offset;
 #endregion
-
-        internal void Debug()
-        {
-#if FALSE
-			System.Console.Write ("\ttype="+type.ToString()+" start="+start.ToString()+" len="+len.ToString());
-			if (extype != null)
-				System.Console.WriteLine (" extype="+extype.ToString());
-			else
-				System.Console.WriteLine (String.Empty);
-#endif
-        }
     }
+
     internal struct ILExceptionInfo
     {
 #region Sync with MonoILExceptionInfo in object-internals.h
@@ -150,15 +141,6 @@ namespace System.Reflection.Emit
                 handlers[handlers.Length - 1].start = start;
                 handlers[handlers.Length - 1].type = ILExceptionBlock.FILTER;
             }
-        }
-
-        internal void Debug(int b)
-        {
-#if FALSE
-			System.Console.WriteLine ("Handler {0} at {1}, len: {2}", b, start, len);
-			for (int i = 0; i < handlers.Length; ++i)
-				handlers [i].Debug ();
-#endif
         }
 
         private void add_block(int offset)
@@ -946,13 +928,9 @@ namespace System.Reflection.Emit
             InternalEndClause();
             MarkLabel(ex_handlers[cur_block].end);
             ex_handlers[cur_block].End(code_len);
-            ex_handlers[cur_block].Debug(cur_block);
-            //System.Console.WriteLine ("End Block {0} (handlers: {1})", cur_block, ex_handlers [cur_block].NumHandlers ());
             open_blocks.Pop();
             if (open_blocks.Count > 0)
                 cur_block = (int)open_blocks.Peek()!;
-            //Console.WriteLine ("curblock restored to {0}", cur_block);
-            //throw new NotImplementedException ();
         }
 
         public virtual void EndScope()
