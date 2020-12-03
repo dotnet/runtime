@@ -3,8 +3,8 @@
   <file datatype="xml" source-language="en" target-language="ko" original="../Resources.resx">
     <body>
       <trans-unit id="RequiresUnreferencedCodeAnalyzerMessage">
-        <source>Calling '{0}' which has `RequiresUnreferencedCodeAttribute` can break functionality when trimming application code. {1}.</source>
-        <target state="new">Calling '{0}' which has `RequiresUnreferencedCodeAttribute` can break functionality when trimming application code. {1}.</target>
+        <source>Calling '{0}' which has `RequiresUnreferencedCodeAttribute` can break functionality when trimming application code. {1}. {2}</source>
+        <target state="new">Calling '{0}' which has `RequiresUnreferencedCodeAttribute` can break functionality when trimming application code. {1}. {2}</target>
         <note />
       </trans-unit>
       <trans-unit id="RequiresUnreferencedCodeAnalyzerTitle">

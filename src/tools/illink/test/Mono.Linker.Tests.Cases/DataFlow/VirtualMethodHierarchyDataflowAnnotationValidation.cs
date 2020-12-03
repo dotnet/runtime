@@ -251,13 +251,13 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			// The warning is reported on the getter (or setter), which is not ideal, but it's probably good enough for now (we don't internally track annotations
 			// on properties themselves, only on methods).
 			[LogContains (
-				"'DynamicallyAccessedMemberTypes' in 'DynamicallyAccessedMembersAttribute' on the return value of method 'Mono.Linker.Tests.Cases.DataFlow.VirtualMethodHierarchyDataflowAnnotationValidation.DerivedClass.get_PropertyBaseWithDerivedWithout()' " +
-				"don't match overridden return value of method 'Mono.Linker.Tests.Cases.DataFlow.VirtualMethodHierarchyDataflowAnnotationValidation.BaseClass.get_PropertyBaseWithDerivedWithout()'. " +
+				"'DynamicallyAccessedMemberTypes' in 'DynamicallyAccessedMembersAttribute' on the return value of method 'Mono.Linker.Tests.Cases.DataFlow.VirtualMethodHierarchyDataflowAnnotationValidation.DerivedClass.PropertyBaseWithDerivedWithout.get' " +
+				"don't match overridden return value of method 'Mono.Linker.Tests.Cases.DataFlow.VirtualMethodHierarchyDataflowAnnotationValidation.BaseClass.PropertyBaseWithDerivedWithout.get'. " +
 				"All overridden members must have the same 'DynamicallyAccessedMembersAttribute' usage.")]
 			public override Type PropertyBaseWithDerivedWithout { get; }
 
-			[LogDoesNotContain ("DerivedClass.get_PropertyBaseWithDerivedWith_")]
-			[LogDoesNotContain ("DerivedClass.set_PropertyBaseWithDerivedWith_")]
+			[LogDoesNotContain ("DerivedClass.PropertyBaseWithDerivedWith_.get")]
+			[LogDoesNotContain ("DerivedClass.PropertyBaseWithDerivedWith_.set")]
 			[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)]
 			public override Type PropertyBaseWithDerivedWith_ { get; set; }
 
@@ -536,8 +536,8 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			public void GenericInterfaceBaseWithImplementationWithout<T> () { }
 
 			// === Properties ===
-			[LogContains ("ImplementationClass.get_PropertyInterfaceBaseWithoutImplementationWith")]
-			[LogContains ("ImplementationClass.set_PropertyInterfaceBaseWithoutImplementationWith")]
+			[LogContains ("ImplementationClass.PropertyInterfaceBaseWithoutImplementationWith.get")]
+			[LogContains ("ImplementationClass.PropertyInterfaceBaseWithoutImplementationWith.set")]
 			[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]
 			public Type PropertyInterfaceBaseWithoutImplementationWith { get; set; }
 
