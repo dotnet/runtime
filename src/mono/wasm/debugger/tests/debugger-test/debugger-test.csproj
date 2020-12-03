@@ -40,11 +40,20 @@
       <MicrosoftNetCoreAppRuntimePackDir>$(ArtifactsBinDir)microsoft.netcore.app.runtime.browser-wasm\Release\runtimes\browser-wasm\</MicrosoftNetCoreAppRuntimePackDir>
     </PropertyGroup>
     <ItemGroup>
+      <MainAssembly Include="$(OutDir)debugger-test.dll" />
+      <ExtraAssemblies Include="$(ArtifactsBinDir)\System.Private.Runtime.InteropServices.JavaScript\$(NetCoreAppCurrent)-Browser-$(RuntimeConfiguration)\System.Private.Runtime.InteropServices.JavaScript.dll" />
       <AssemblySearchPaths Include="$(MicrosoftNetCoreAppRuntimePackDir)native"/>
       <AssemblySearchPaths Include="$(MicrosoftNetCoreAppRuntimePackDir)lib\$(NetCoreAppCurrent)"/>
 
       <ExtraFileForPublish Include="@(ReferenceCopyLocalPaths)" />
     </ItemGroup>
+
+    <ResolveAssemblyReference
+      AssemblyFiles="@(MainAssembly);@(ExtraAssemblies)"
+      SearchPaths="@(AssemblySearchPaths)">
+      <Output TaskParameter="ResolvedFiles" ItemName="ReferencedAssemblies" />
+      <Output TaskParameter="ResolvedDependencyFiles" ItemName="ReferencedAssemblies" />
+    </ResolveAssemblyReference>
 
     <WasmAppBuilder
       AppDir="$(AppDir)"
@@ -52,8 +61,7 @@
       MainAssembly="$(OutDir)debugger-test.dll"
       MainJS="$(MonoProjectRoot)wasm\runtime-test.js"
       DebugLevel="1"
-      AssemblySearchPaths="@(AssemblySearchPaths)"
-      ExtraAssemblies="$(ArtifactsBinDir)\System.Private.Runtime.InteropServices.JavaScript\$(NetCoreAppCurrent)-Browser-$(RuntimeConfiguration)\System.Private.Runtime.InteropServices.JavaScript.dll"/>
+      Assemblies="@(ReferencedAssemblies)" />
 
     <Copy SourceFiles="@(ExtraFileForPublish)" DestinationFolder="$(AppDir)" />
   </Target>
