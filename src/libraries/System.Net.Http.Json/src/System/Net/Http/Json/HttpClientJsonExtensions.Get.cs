@@ -73,6 +73,10 @@ namespace System.Net.Http.Json
             using (HttpResponseMessage response = await taskResponse.ConfigureAwait(false))
             {
                 response.EnsureSuccessStatusCode();
+                if (response.StatusCode == System.Net.HttpStatusCode.NoContent)
+                {
+                    return default;
+                }
                 // Nullable forgiving reason:
                 // GetAsync will usually return Content as not-null.
                 // If Content happens to be null, the extension will throw.
@@ -85,6 +89,10 @@ namespace System.Net.Http.Json
             using (HttpResponseMessage response = await taskResponse.ConfigureAwait(false))
             {
                 response.EnsureSuccessStatusCode();
+                if (response.StatusCode == System.Net.HttpStatusCode.NoContent)
+                {
+                    return default;
+                }
                 // Nullable forgiving reason:
                 // GetAsync will usually return Content as not-null.
                 // If Content happens to be null, the extension will throw.
