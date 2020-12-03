@@ -9,17 +9,17 @@ typedef char16_t WCHAR;
 typedef wchar_t WCHAR;
 #endif
 
-class CorInfoException
+class CorInfoExceptionClass
 {
 public:
-    CorInfoException(const WCHAR* message, int messageLength)
+    CorInfoExceptionClass(const WCHAR* message, int messageLength)
     {
         this->message = new WCHAR[messageLength + 1];
         memcpy(this->message, message, messageLength * sizeof(WCHAR));
         this->message[messageLength] = L'\0';
     }
 
-    ~CorInfoException()
+    ~CorInfoExceptionClass()
     {
         if (message != nullptr)
         {

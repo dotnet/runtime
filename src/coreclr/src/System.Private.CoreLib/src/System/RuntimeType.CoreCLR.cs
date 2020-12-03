@@ -1094,8 +1094,8 @@ namespace System
 
                     ListBuilder<RuntimeType> list = default;
 
-                    RuntimeModule moduleHandle = RuntimeTypeHandle.GetModule(declaringType);
-                    MetadataImport scope = ModuleHandle.GetMetadataImport(moduleHandle);
+                    ModuleHandle moduleHandle = new ModuleHandle(RuntimeTypeHandle.GetModule(declaringType));
+                    MetadataImport scope = ModuleHandle.GetMetadataImport(moduleHandle.GetRuntimeModule());
 
                     scope.EnumNestedTypes(tkEnclosingType, out MetadataEnumResult tkNestedClasses);
 
@@ -1105,7 +1105,7 @@ namespace System
 
                         try
                         {
-                            nestedType = ModuleHandle.ResolveTypeHandleInternal(moduleHandle, tkNestedClasses[i], null, null);
+                            nestedType = moduleHandle.ResolveTypeHandle(tkNestedClasses[i]).GetRuntimeType();
                         }
                         catch (System.TypeLoadException)
                         {
@@ -1723,7 +1723,7 @@ namespace System
 
         internal static MethodBase? GetMethodBase(RuntimeModule scope, int typeMetadataToken)
         {
-            return GetMethodBase(ModuleHandle.ResolveMethodHandleInternal(scope, typeMetadataToken));
+            return GetMethodBase(new ModuleHandle(scope).ResolveMethodHandle(typeMetadataToken).GetMethodInfo());
         }
 
         internal static MethodBase? GetMethodBase(IRuntimeMethodInfo methodHandle)
