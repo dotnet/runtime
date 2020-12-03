@@ -1,6 +1,7 @@
 using System;
 using System.Reflection;
 using System.Runtime.CompilerServices;
+using System.Runtime.Loader;
 using System.Collections.Generic;
 
 namespace MonoDelta {
@@ -35,6 +36,23 @@ namespace MonoDelta {
 		public static DeltaHelper Make ()
 		{
 			return new DeltaHelper ();
+		}
+
+		public static void InjectUpdate (string assemblyName, string dmeta_base64, string dil_base64) {
+			var an = new AssemblyName (assemblyName);
+			Assembly assm = null;
+			/* TODO: non-default ALCs */
+			foreach (var candidate in AssemblyLoadContext.Default.Assemblies) {
+				if (candidate.GetName().Name == an.Name) {
+					assm = candidate;
+					break;
+				}
+			}
+			if (assm == null)
+				throw new ArgumentException ("assemblyName");
+			var dmeta_data = Convert.FromBase64String (dmeta_base64);
+			var dil_data = Convert.FromBase64String (dil_base64);
+			LoadMetadataUpdate (assm, dmeta_data, dil_data);
 		}
 
 		private Dictionary<Assembly, int> assembly_count = new Dictionary<Assembly, int> ();
