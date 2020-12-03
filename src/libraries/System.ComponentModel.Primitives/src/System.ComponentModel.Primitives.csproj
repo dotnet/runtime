@@ -36,7 +36,7 @@
     <Compile Include="System\ComponentModel\RefreshPropertiesAttribute.cs" />
   </ItemGroup>
   <ItemGroup>
-    <ILLinkLinkAttributesXmls Include="$(MSBuildThisFileDirectory)ILLink\ILLink.LinkAttributes.xml" />
+    <ILLinkLinkAttributesXmls Include="$(MSBuildThisFileDirectory)ILLink\ILLink.LinkAttributes.xml" Condition="'$(Platform)' == 'wasm' or '$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true' or '$(TargetsAndroid)' == 'true'" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="System.Collections.NonGeneric" />
