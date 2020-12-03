@@ -16,7 +16,7 @@
     extends [System.Runtime]System.Object
 {
     .method public hidebysig static 
-        void CallbackMethod (
+        int32 CallbackMethod (
             int32 n
         ) cil managed preservesig 
     {
