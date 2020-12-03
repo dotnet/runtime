@@ -221,18 +221,22 @@ This would be done in multiple phases:
   * First, move transformations other than those listed above to `Lowering`, but retain any "pessimizations"
     (e.g. marking nodes as `GTF_DONT_CSE` or marking lclVars as `lvDoNotEnregister`)
   * Add support for passing vector types in the SSE registers for x64/ux
-    * This will also involve modifying code in the VM. See [#23675 Arm64 Vector ABI](https://github.com/dotnet/coreclr/pull/23675)
-      for a general idea of the kinds of VM changes that may be required.
-  * Defer retyping of struct return types (`Compiler::impFixupStructReturnType()` and
-    `Compiler::impFixupCallStructReturn()`)
-    * This has largely (fully?) been addressed with [#37745 Disable JitDoOldStructRetyping by default](https://github.com/dotnet/runtime/pull/37745).
+    * This will also involve modifying code in the VM.
+      [#23675 Arm64 Vector ABI](https://github.com/dotnet/coreclr/pull/23675) added similar support
+      for Arm64. The https://github.com/CarolEidt/runtime/tree/X64Vector16ABI branch was intended to
+      add this support for 16 byte vectors for .NET 5, but didn't make it into that release.
+      The https://github.com/CarolEidt/runtime/tree/FixX64VectorABI branch was an earlier attempt
+      to support both 16 and 32 byte vectors, but was abandoned in favor of doing just 16 byte vectors
+      first.
   * Next, eliminate the "pessimizations".
     * For cases where `GT_LCL_FLD` is currently used to "retype" the struct, change it to use *either*
       `GT_LCL_FLD`, if it is already address-taken, or to use a `GT_BITCAST` otherwise.
       * This work item should address issue [#4323 RyuJIT properly optimizes structs with a single field
         if the field type is int but not if it is double](https://github.com/dotnet/runtime/issues/4323)
-        (test is `JIT\Regressions\JitBlue\GitHub_1161`) and [#7200 Struct getters are generating unneccessary
-        instructions on x64 when struct contains floats](https://github.com/dotnet/runtime/issues/7200).
+        (test is `JIT\Regressions\JitBlue\GitHub_1161`),
+        [#7200 Struct getters are generating unneccessary
+        instructions on x64 when struct contains floats](https://github.com/dotnet/runtime/issues/7200)
+        and [#11413 Inefficient codegen for casts between same size types](https://github.com/dotnet/runtime/issues/11413).
     * Remove the pessimization in `LocalAddressVisitor::PostOrderVisit()` for the `GT_RETURN` case.
     * Add support in prolog to extract fields, and remove the restriction of not promoting incoming reg
       structs whose fields do not match the register count or types.
