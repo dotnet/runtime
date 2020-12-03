@@ -151,15 +151,15 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
 
             // TODO: try to initialize TLS 1.3 in SslStream.
 
-            try
-            {
-                Api = new MsQuicApi();
-                IsQuicSupported = true;
-            }
-            catch (NotSupportedException)
-            {
+            //try
+            //{
+            //    Api = new MsQuicApi();
+            //    IsQuicSupported = true;
+            //}
+            //catch (NotSupportedException)
+            //{
                 IsQuicSupported = false;
-            }
+            //}
         }
 
         internal MsQuicNativeMethods.RegistrationOpenDelegate RegistrationOpenDelegate { get; }
