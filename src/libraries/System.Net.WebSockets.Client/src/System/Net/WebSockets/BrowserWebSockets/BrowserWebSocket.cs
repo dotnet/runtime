@@ -355,7 +355,7 @@ namespace System.Net.WebSockets
             }
 
             WebSocketValidate.ValidateArraySegment(buffer, nameof(buffer));
-            //System.Diagnostics.Debug.WriteLine($"we are here with a buffer {_writeBuffer is null}");
+
             if (!endOfMessage)
             {
                 _writeBuffer ??= new MemoryStream();
@@ -379,21 +379,6 @@ namespace System.Net.WebSockets
                 }
             }
 
-            // System.Runtime.InteropServices.JavaScript.Array writtenBufferArray = new System.Runtime.InteropServices.JavaScript.Array();
-            // string strBufferss = buffer.Array == null ? string.Empty : Encoding.UTF8.GetString(buffer.Array, buffer.Offset, buffer.Count);
-            // writtenBufferArray.Push(strBufferss);
-            // writtenBufferArray.Push(strBufferss);
-            // JSObject textPlain = new JSObject();
-
-            // textPlain.SetObjectProperty("type", "text/plain");
-            // var args = new System.Runtime.InteropServices.JavaScript.Array();
-            // args.Push(strBufferss);
-            // HostObject writtenBufferBlob1 = new HostObject("Blob", args, textPlain );
-            // args.Push(writtenBufferBlob1);
-            // HostObject writtenBufferBlob = new HostObject("Blob", args, textPlain );
-
-            // System.Diagnostics.Debug.WriteLine($"we are here with a blob {writtenBufferArray}");
-
             try
             {
                 switch (messageType)
@@ -406,9 +391,7 @@ namespace System.Net.WebSockets
                         break;
                     default:
                         string strBuffer = buffer.Array == null ? string.Empty : Encoding.UTF8.GetString(buffer.Array, buffer.Offset, buffer.Count);
-                        //_innerWebSocket!.Invoke("send", writtenBufferArray);
                         _innerWebSocket!.Invoke("send", strBuffer);
-                        //_innerWebSocket!.Invoke("send", writtenBufferBlob);
                         break;
                 }
             }
