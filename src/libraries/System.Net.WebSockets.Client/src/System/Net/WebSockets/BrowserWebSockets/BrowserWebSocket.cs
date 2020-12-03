@@ -355,7 +355,7 @@ namespace System.Net.WebSockets
             }
 
             WebSocketValidate.ValidateArraySegment(buffer, nameof(buffer));
-
+            //System.Diagnostics.Debug.WriteLine($"we are here with a buffer {_writeBuffer is null}");
             if (!endOfMessage)
             {
                 _writeBuffer ??= new MemoryStream();
@@ -379,6 +379,21 @@ namespace System.Net.WebSockets
                 }
             }
 
+            // System.Runtime.InteropServices.JavaScript.Array writtenBufferArray = new System.Runtime.InteropServices.JavaScript.Array();
+            // string strBufferss = buffer.Array == null ? string.Empty : Encoding.UTF8.GetString(buffer.Array, buffer.Offset, buffer.Count);
+            // writtenBufferArray.Push(strBufferss);
+            // writtenBufferArray.Push(strBufferss);
+            // JSObject textPlain = new JSObject();
+
+            // textPlain.SetObjectProperty("type", "text/plain");
+            // var args = new System.Runtime.InteropServices.JavaScript.Array();
+            // args.Push(strBufferss);
+            // HostObject writtenBufferBlob1 = new HostObject("Blob", args, textPlain );
+            // args.Push(writtenBufferBlob1);
+            // HostObject writtenBufferBlob = new HostObject("Blob", args, textPlain );
+
+            // System.Diagnostics.Debug.WriteLine($"we are here with a blob {writtenBufferArray}");
+
             try
             {
                 switch (messageType)
@@ -391,7 +406,9 @@ namespace System.Net.WebSockets
                         break;
                     default:
                         string strBuffer = buffer.Array == null ? string.Empty : Encoding.UTF8.GetString(buffer.Array, buffer.Offset, buffer.Count);
+                        //_innerWebSocket!.Invoke("send", writtenBufferArray);
                         _innerWebSocket!.Invoke("send", strBuffer);
+                        //_innerWebSocket!.Invoke("send", writtenBufferBlob);
                         break;
                 }
             }
@@ -446,24 +463,32 @@ namespace System.Net.WebSockets
             Dispose();
         }
 
-        public override async Task CloseAsync(WebSocketCloseStatus closeStatus, string? statusDescription, CancellationToken cancellationToken)
+        public override Task CloseAsync(WebSocketCloseStatus closeStatus, string? statusDescription, CancellationToken cancellationToken)
         {
             _writeBuffer = null;
             ThrowIfNotConnected();
-            await CloseAsyncCore(closeStatus, statusDescription, cancellationToken).ConfigureAwait(continueOnCapturedContext: true);
-        }
-
-        private async Task CloseAsyncCore(WebSocketCloseStatus closeStatus, string? statusDescription, CancellationToken cancellationToken)
-        {
-            ThrowOnInvalidState(State, WebSocketState.Open, WebSocketState.CloseReceived, WebSocketState.CloseSent);
 
             WebSocketValidate.ValidateCloseStatus(closeStatus, statusDescription);
 
+            try
+            {
+                ThrowOnInvalidState(State, WebSocketState.Open, WebSocketState.CloseReceived, WebSocketState.CloseSent);
+            }
+            catch (Exception exc)
+            {
+                return Task.FromException(exc);
+            }
+
+            return CloseAsyncCore(closeStatus, statusDescription, cancellationToken);
+        }
+
+        private Task CloseAsyncCore(WebSocketCloseStatus closeStatus, string? statusDescription, CancellationToken cancellationToken)
+        {
             _tcsClose = new TaskCompletionSource();
             _innerWebSocketCloseStatus = closeStatus;
             _innerWebSocketCloseStatusDescription = statusDescription;
             _innerWebSocket!.Invoke("close", (int)closeStatus, statusDescription);
-            await _tcsClose.Task.ConfigureAwait(continueOnCapturedContext: true);
+            return _tcsClose.Task;
         }
 
         public override Task CloseOutputAsync(WebSocketCloseStatus closeStatus, string? statusDescription, CancellationToken cancellationToken) => throw new PlatformNotSupportedException();
