@@ -1109,20 +1109,18 @@ bool ClassLoader::IsCompatibleWith(TypeHandle hType1, TypeHandle hType2)
         return false;
     }
 
-    _ASSERTE(hType1.GetMethodTable() != NULL);
-    _ASSERTE(hType2.GetMethodTable() != NULL);
-
-    // Nullable<T> can be cast to T, but this is not compatible according to ECMA I.8.7.1
-    bool isCastFromNullableOfTtoT = hType1.GetMethodTable()->IsNullable() && hType2.IsEquivalentTo(hType1.GetMethodTable()->GetInstantiation()[0]);
-    if (isCastFromNullableOfTtoT)
+    MethodTable* pMT1 = hType1.GetMethodTable();
+    if (pMT1 != NULL)
     {
-        return false;
+        // Nullable<T> can be cast to T, but this is not compatible according to ECMA I.8.7.1
+        bool isCastFromNullableOfTtoT = pMT1->IsNullable() && hType2.IsEquivalentTo(pMT1->GetInstantiation()[0]);
+        if (isCastFromNullableOfTtoT)
+        {
+            return false;
+        }
     }
 
-    {
-        GCX_COOP();
-        return hType2.GetMethodTable()->CanCastTo(hType1.GetMethodTable(), NULL);
-    }
+    return hType2.CanCastTo(hType1, NULL);
 }
 
 /*static*/
@@ -1171,16 +1169,21 @@ void ClassLoader::ValidateMethodsWithCovariantReturnTypes(MethodTable* pMT)
             if (!pMD->RequiresCovariantReturnTypeChecking() && !pParentMD->RequiresCovariantReturnTypeChecking())
                 continue;
 
-            Instantiation classInst = pParentMD->GetClassInstantiation();
-            if (ClassLoader::IsTypicalSharedInstantiation(classInst))
+            Instantiation parentClassInst = pParentMD->GetClassInstantiation();
+            if (ClassLoader::IsTypicalSharedInstantiation(parentClassInst))
             {
-                classInst = pParentMT->GetInstantiation();
+                parentClassInst = pParentMT->GetInstantiation();
             }
-            SigTypeContext context1(classInst, pMD->GetMethodInstantiation());
+            SigTypeContext context1(parentClassInst, pMD->GetMethodInstantiation());
             MetaSig methodSig1(pParentMD);
             TypeHandle hType1 = methodSig1.GetReturnProps().GetTypeHandleThrowing(pParentMD->GetModule(), &context1, ClassLoader::LoadTypesFlag::LoadTypes, CLASS_LOAD_EXACTPARENTS);
 
-            SigTypeContext context2(pMD);
+            Instantiation classInst = pMD->GetClassInstantiation();
+            if (ClassLoader::IsTypicalSharedInstantiation(classInst))
+            {
+                classInst = pMT->GetInstantiation();
+            }
+            SigTypeContext context2(classInst, pMD->GetMethodInstantiation());
             MetaSig methodSig2(pMD);
             TypeHandle hType2 = methodSig2.GetReturnProps().GetTypeHandleThrowing(pMD->GetModule(), &context2, ClassLoader::LoadTypesFlag::LoadTypes, CLASS_LOAD_EXACTPARENTS);
 
