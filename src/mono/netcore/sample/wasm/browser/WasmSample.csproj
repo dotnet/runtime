@@ -41,7 +41,8 @@
       MainAssembly="bin\WasmSample.dll"
       MainJS="runtime.js"
       AssemblySearchPaths="@(AssemblySearchPaths)"/>
-    <Exec Command="chmod a+x $(AppDir)/run-v8.sh" />
+    <Exec Condition="'$(OS)' != 'Windows_NT'" 
+          Command="chmod a+x $(AppDir)/run-v8.sh" />
     <Copy SourceFiles="bin\index.html;bin\server.py" DestinationFolder="$(AppDir)" />
   </Target>
 
