@@ -25,7 +25,7 @@ namespace Microsoft.Extensions.Caching.Memory
 
         internal static void ExitScope(CacheEntry current, CacheEntry previous)
         {
-            Debug.Assert(Current == current);
+            Debug.Assert(Current == current, "Entries disposed in invalid order");
             Current = previous;
         }
     }
