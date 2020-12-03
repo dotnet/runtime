@@ -23,6 +23,7 @@ namespace System.Net.Sockets
         internal bool DualMode { get; set; }
         internal bool ExposedHandleOrUntrackedConfiguration { get; private set; }
         internal bool PreferInlineCompletions { get; set; } = SocketAsyncEngine.InlineSocketCompletionsEnabled;
+        internal bool IsPipe { get; set; } // (ab)use Socket class for performing async I/O on pipes.
 
         internal void RegisterConnectResult(SocketError error)
         {

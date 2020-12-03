@@ -223,7 +223,6 @@ namespace System.Net.Sockets
         public SafeSocketHandle() : base (default(bool)) { }
         public SafeSocketHandle(System.IntPtr preexistingHandle, bool ownsHandle) : base (default(bool)) { }
         protected override bool ReleaseHandle() { throw null; }
-        public bool IsPipe { get { throw null; } set { } }
     }
     public enum SelectMode
     {
@@ -257,6 +256,7 @@ namespace System.Net.Sockets
     }
     public partial class Socket : System.IDisposable
     {
+        public static Socket CreateForPipeSafeHandle(System.IntPtr handle, bool ownsHandle) { throw null; }
         public Socket(System.Net.Sockets.SafeSocketHandle handle) { }
         public Socket(System.Net.Sockets.AddressFamily addressFamily, System.Net.Sockets.SocketType socketType, System.Net.Sockets.ProtocolType protocolType) { }
         [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]

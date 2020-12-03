@@ -14,6 +14,7 @@ namespace Microsoft.Win32.SafeHandles
     public sealed partial class SafePipeHandle : SafeHandleZeroOrMinusOneIsInvalid
     {
         private const int DefaultInvalidHandle = -1;
+        private static Func<IntPtr, bool, Socket>? s_createSocketForPipe;
 
         // For anonymous pipes, SafePipeHandle.handle is the file descriptor of the pipe, and the
         // For named pipes, SafePipeHandle.handle is a copy of the file descriptor
@@ -82,9 +83,9 @@ namespace Microsoft.Win32.SafeHandles
                 {
                     DangerousAddRef(ref refAdded);
 
-                    var socketHandle = new SafeSocketHandle(handle, ownsHandle);
-                    socketHandle.IsPipe = true;
-                    socket = SetPipeSocketInterlocked(new Socket(socketHandle), ownsHandle);
+                    Func<IntPtr, bool, Socket> createSocketForPipe = s_createSocketForPipe ??
+                        (s_createSocketForPipe = (Func<IntPtr, bool, Socket>)typeof(Socket).GetMethod("CreateForPipeSafeHandle", BindingFlags.Static | BindingFlags.Public)!.CreateDelegate(typeof(Func<IntPtr, bool, Socket>)));
+                    socket = SetPipeSocketInterlocked(createSocketForPipe(handle, ownsHandle), ownsHandle);
 
                     if (_disposed == 1)
                     {

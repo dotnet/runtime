@@ -10,6 +10,14 @@ namespace System.Net.Sockets
 {
     public partial class Socket
     {
+        // TODO: make internal
+        public static Socket CreateForPipeSafeHandle(IntPtr handle, bool ownsHandle)
+        {
+            var socketHandle = new SafeSocketHandle(handle, ownsHandle);
+            socketHandle.IsPipe = true;
+            return new Socket(socketHandle);
+        }
+
         [SupportedOSPlatform("windows")]
         public Socket(SocketInformation socketInformation)
         {
