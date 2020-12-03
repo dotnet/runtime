@@ -49,7 +49,8 @@ public class WasmAppBuilder : Task
         public List<string> RemoteSources { get; set; } = new List<string>();
     }
 
-    private class AssetEntry {
+    private class AssetEntry
+    {
         protected AssetEntry (string name, string behavior)
         {
             Name = name;
@@ -77,13 +78,15 @@ public class WasmAppBuilder : Task
         public string CultureName { get; set; }
     }
 
-    private class VfsEntry : AssetEntry {
+    private class VfsEntry : AssetEntry
+    {
         public VfsEntry(string name) : base(name, "vfs") {}
         [JsonPropertyName("virtual_path")]
         public string? VirtualPath { get; set; }
     }
 
-    private class IcuData : AssetEntry {
+    private class IcuData : AssetEntry
+    {
         public IcuData(string name) : base(name, "icu") {}
         [JsonPropertyName("load_remote")]
         public bool LoadRemote { get; set; }
@@ -121,9 +124,11 @@ public class WasmAppBuilder : Task
         // Create app
         Directory.CreateDirectory(AppDir!);
         Directory.CreateDirectory(Path.Join(AppDir, config.AssemblyRoot));
-        foreach (var assembly in _assemblies) {
+        foreach (var assembly in _assemblies)
+        {
             File.Copy(assembly, Path.Join(AppDir, config.AssemblyRoot, Path.GetFileName(assembly)), true);
-            if (DebugLevel > 0) {
+            if (DebugLevel > 0)
+            {
                 var pdb = assembly;
                 pdb = Path.ChangeExtension(pdb, ".pdb");
                 if (File.Exists(pdb))
@@ -146,7 +151,8 @@ public class WasmAppBuilder : Task
         var html = @"<html><body><script type=""text/javascript"" src=""runtime.js""></script></body></html>";
         File.WriteAllText(Path.Join(AppDir, "index.html"), html);
 
-        foreach (var assembly in _assemblies) {
+        foreach (var assembly in _assemblies)
+        {
             config.Assets.Add(new AssemblyEntry(Path.GetFileName(assembly)));
             if (DebugLevel > 0) {
                 var pdb = assembly;
@@ -205,7 +211,8 @@ public class WasmAppBuilder : Task
 
         config.Assets.Add(new VfsEntry ("dotnet.timezones.blat") { VirtualPath = "/usr/share/zoneinfo/"});
 
-        if (RemoteSources?.Length > 0) {
+        if (RemoteSources?.Length > 0)
+        {
             foreach (var source in RemoteSources)
                 if (source != null && source.ItemSpec != null)
                     config.RemoteSources.Add(source.ItemSpec);
