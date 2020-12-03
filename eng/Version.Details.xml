@@ -70,6 +70,10 @@
       <Uri>https://github.com/dotnet/arcade</Uri>
       <Sha>6d8efa00a7dd2d15e07df673a83cecb8a0a3031f</Sha>
     </Dependency>
+    <Dependency Name="Microsoft.DotNet.SharedFramework.Sdk" Version="6.0.0-beta.20602.5">
+      <Uri>https://github.com/dotnet/arcade</Uri>
+      <Sha>d4dc3682cbad0314b6f138017411ee03ea51096b</Sha>
+    </Dependency>
     <Dependency Name="optimization.windows_nt-x64.IBC.CoreFx" Version="99.99.99-master-20200806.6">
       <Uri>https://dev.azure.com/dnceng/internal/_git/dotnet-optimization</Uri>
       <Sha>f69d7fc09c4fdb9e9427741b9a176e867dab577f</Sha>
