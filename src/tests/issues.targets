@@ -3348,4 +3348,22 @@
             <Issue>https://github.com/dotnet/runtime/issues/44643</Issue>
         </ExcludeList>
     </ItemGroup>
+
+    <ItemGroup Condition=" $(TargetOS) == 'Android' And '$(TargetArchitecture)' == 'arm64' " >
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/HardwareIntrinsics/**">
+            <Issue>https://github.com/dotnet/runtime/issues/45568</Issue>
+        </ExcludeList>
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Methodical/eh/**">
+            <Issue>https://github.com/dotnet/runtime/issues/45568</Issue>
+        </ExcludeList>
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/IL_Conformance/**">
+            <Issue>https://github.com/dotnet/runtime/issues/45568</Issue>
+        </ExcludeList>
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/SIMD/**">
+            <Issue>https://github.com/dotnet/runtime/issues/45568</Issue>
+        </ExcludeList>
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/opt/**">
+            <Issue>https://github.com/dotnet/runtime/issues/45568</Issue>
+        </ExcludeList>
+    </ItemGroup>
 </Project>
