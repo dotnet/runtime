@@ -25,18 +25,21 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
             await proj.CommitChanges("CS8795").ConfigureAwait(false);
             var comp = (await proj.GetCompilationAsync().ConfigureAwait(false))!;
 
-            var p = new Microsoft.Extensions.Logging.Generators.LoggingGenerator.Parser(comp, d => {}, CancellationToken.None);
-            var e = new Microsoft.Extensions.Logging.Generators.LoggingGenerator.Emitter(false);
+            for (int i = 0; i < 2; i++)
+            {
+                var p = new Microsoft.Extensions.Logging.Generators.LoggingGenerator.Parser(comp, d => { }, CancellationToken.None);
+                var e = new Microsoft.Extensions.Logging.Generators.LoggingGenerator.Emitter(i == 0);
 
-            var allNodes = comp.SyntaxTrees.SelectMany(s => s.GetRoot().DescendantNodes());
-            var allClasses = allNodes.Where(d => d.IsKind(SyntaxKind.ClassDeclaration)).OfType<ClassDeclarationSyntax>();
-            var lc = p.GetLogClasses(allClasses);
-            var generatedSource = e.Emit(lc, CancellationToken.None);
+                var allNodes = comp.SyntaxTrees.SelectMany(s => s.GetRoot().DescendantNodes());
+                var allClasses = allNodes.Where(d => d.IsKind(SyntaxKind.ClassDeclaration)).OfType<ClassDeclarationSyntax>();
+                var lc = p.GetLogClasses(allClasses);
 
-            Assert.True(!string.IsNullOrEmpty(generatedSource));
-            proj = proj.WithDocument("log.cs", generatedSource);
+                var generatedSource = e.Emit(lc, CancellationToken.None);
+                Assert.True(!string.IsNullOrEmpty(generatedSource));
 
-            await RoslynTestUtils.AssertNoDiagnostic(proj).ConfigureAwait(false);
+                generatedSource = e.Emit(lc, new CancellationToken(true));
+                Assert.True(string.IsNullOrEmpty(generatedSource));
+            }
         }
     }
 }

@@ -86,7 +86,7 @@ namespace Microsoft.Extensions.Logging.Generators
 
             private string GenFormatFunc(LoggerMethod lm)
             {
-                if (lm.Parameters.Count == 0 || !lm.MessageHasTemplates)
+                if (!lm.MessageHasTemplates)
                 {
                     return string.Empty;
                 }
@@ -95,7 +95,11 @@ namespace Microsoft.Extensions.Logging.Generators
                 try
                 {
                     string typeName;
-                    if (lm.Parameters.Count == 1)
+                    if (lm.Parameters.Count == 0)
+                    {
+                        typeName = $"global::Microsoft.Extensions.Logging.LogStateHolder";
+                    }
+                    else if (lm.Parameters.Count == 1)
                     {
                         typeName = $"global::Microsoft.Extensions.Logging.LogStateHolder<{lm.Parameters[0].Type}>";
                         sb.Append($"var {lm.Parameters[0].Name} = __holder.Value;\n");
@@ -209,14 +213,7 @@ namespace Microsoft.Extensions.Logging.Generators
                 string formatFunc;
                 if (lm.MessageHasTemplates)
                 {
-                    if (lm.Parameters.Count == 0)
-                    {
-                        formatFunc = "Microsoft.Extensions.Logging.LogStateHolder.Format";
-                    }
-                    else
-                    {
-                        formatFunc = $"__{lm.Name}FormatFunc";
-                    }
+                    formatFunc = $"__{lm.Name}FormatFunc";
                 }
                 else
                 {

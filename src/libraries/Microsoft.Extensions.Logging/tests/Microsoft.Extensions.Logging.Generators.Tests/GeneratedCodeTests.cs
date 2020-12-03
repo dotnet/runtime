@@ -104,6 +104,11 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
             ArgTestExtensions.Method9(logger, 1, 2, 3, 4, 5, 6, 7);
             Assert.Equal("M9 1 2 3 4 5 6 7", logger.LastFormattedString);
             Assert.Equal(1, logger.CallCount);
+
+            logger.Reset();
+            ArgTestExtensions.Method10(logger, 1);
+            Assert.Equal("M10", logger.LastFormattedString);
+            Assert.Equal(1, logger.CallCount);
         }
 
         [Fact]
@@ -227,8 +232,22 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
             LevelTestExtensions.M7(logger);
             Assert.Null(logger.LastException);
             Assert.Equal("M7", logger.LastFormattedString);
-            Assert.Equal(LogLevel.None, logger.LastLogLevel);
+            Assert.Equal((LogLevel)42, logger.LastLogLevel);
             Assert.Equal(1, logger.CallCount);
+        }
+
+        [Fact]
+        public void EventNameTests()
+        {
+            var logger = new MockLogger();
+
+            logger.Reset();
+            EventNameTestExtensions.M0(logger);
+            Assert.Null(logger.LastException);
+            Assert.Equal("M0", logger.LastFormattedString);
+            Assert.Equal(LogLevel.Trace, logger.LastLogLevel);
+            Assert.Equal(1, logger.CallCount);
+            Assert.Equal("CustomEventName", logger.LastEventId.Name);
         }
     }
 }

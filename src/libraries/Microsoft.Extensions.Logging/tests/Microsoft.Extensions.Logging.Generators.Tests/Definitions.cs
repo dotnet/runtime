@@ -143,6 +143,9 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
 
         [LoggerMessage(8, LogLevel.Error, "M9 {p1} {p2} {p3} {p4} {p5} {p6} {p7}")]
         public static partial void Method9(ILogger logger, int p1, int p2, int p3, int p4, int p5, int p6, int p7);
+
+        [LoggerMessage(9, LogLevel.Error, "M10")]
+        public static partial void Method10(ILogger logger, int p1);
     }
 
     partial class ReadOnlyListExtensions
@@ -195,7 +198,13 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
         [LoggerMessage(6, LogLevel.None, "M6")]
         public static partial void M6(ILogger logger);
 
-        [LoggerMessage(7, LogLevel.None, "M7")]
+        [LoggerMessage(7, (LogLevel)42, "M7")]
         public static partial void M7(ILogger logger);
+    }
+
+    partial class EventNameTestExtensions
+    {
+        [LoggerMessage(0, LogLevel.Trace, "M0", EventName = "CustomEventName")]
+        public static partial void M0(ILogger logger);
     }
 }
