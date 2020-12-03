@@ -102,7 +102,7 @@ public class WasmAppBuilder : Task
             throw new ArgumentException("IcuDataFileName property shouldn't be empty if InvariantGlobalization=false");
 
         var _assemblies = new List<string>();
-        var runtimeSourceDir = string.Empty;
+        var runtimeSourceDir = Path.Join(MicrosoftNetCoreAppRuntimePackDir, "native");
 
         foreach (var asm in Assemblies)
         {
