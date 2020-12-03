@@ -16,6 +16,218 @@ namespace System.IO.Pipes
         internal const bool CheckOperationsRequiresSetHandle = true;
         internal ThreadPoolBoundHandle? _threadPoolBinding;
 
+        public override int Read(byte[] buffer, int offset, int count)
+        {
+            if (_isAsync)
+            {
+                return ReadAsync(buffer, offset, count, CancellationToken.None).GetAwaiter().GetResult();
+            }
+
+            ValidateBufferArguments(buffer, offset, count);
+            if (!CanRead)
+            {
+                throw Error.GetReadNotSupported();
+            }
+            CheckReadOperations();
+
+            return ReadCore(new Span<byte>(buffer, offset, count));
+        }
+
+        public override int Read(Span<byte> buffer)
+        {
+            if (_isAsync)
+            {
+                return base.Read(buffer);
+            }
+
+            if (!CanRead)
+            {
+                throw Error.GetReadNotSupported();
+            }
+            CheckReadOperations();
+
+            return ReadCore(buffer);
+        }
+
+        public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
+        {
+            ValidateBufferArguments(buffer, offset, count);
+            if (!CanRead)
+            {
+                throw Error.GetReadNotSupported();
+            }
+
+            if (cancellationToken.IsCancellationRequested)
+            {
+                return Task.FromCanceled<int>(cancellationToken);
+            }
+
+            CheckReadOperations();
+
+            if (!_isAsync)
+            {
+                return base.ReadAsync(buffer, offset, count, cancellationToken);
+            }
+
+            if (count == 0)
+            {
+                UpdateMessageCompletion(false);
+                return Task.FromResult(0);
+            }
+
+            return ReadAsyncCore(new Memory<byte>(buffer, offset, count), cancellationToken).AsTask();
+        }
+
+        public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default(CancellationToken))
+        {
+            if (!_isAsync)
+            {
+                return base.ReadAsync(buffer, cancellationToken);
+            }
+
+            if (!CanRead)
+            {
+                throw Error.GetReadNotSupported();
+            }
+
+            if (cancellationToken.IsCancellationRequested)
+            {
+                return ValueTask.FromCanceled<int>(cancellationToken);
+            }
+
+            CheckReadOperations();
+
+            if (buffer.Length == 0)
+            {
+                UpdateMessageCompletion(false);
+                return new ValueTask<int>(0);
+            }
+
+            return ReadAsyncCore(buffer, cancellationToken);
+        }
+
+        public override IAsyncResult BeginRead(byte[] buffer, int offset, int count, AsyncCallback? callback, object? state)
+        {
+            if (_isAsync)
+                return TaskToApm.Begin(ReadAsync(buffer, offset, count, CancellationToken.None), callback, state);
+            else
+                return base.BeginRead(buffer, offset, count, callback, state);
+        }
+
+        public override int EndRead(IAsyncResult asyncResult)
+        {
+            if (_isAsync)
+                return TaskToApm.End<int>(asyncResult);
+            else
+                return base.EndRead(asyncResult);
+        }
+
+        public override void Write(byte[] buffer, int offset, int count)
+        {
+            if (_isAsync)
+            {
+                WriteAsync(buffer, offset, count, CancellationToken.None).GetAwaiter().GetResult();
+                return;
+            }
+
+            ValidateBufferArguments(buffer, offset, count);
+            if (!CanWrite)
+            {
+                throw Error.GetWriteNotSupported();
+            }
+            CheckWriteOperations();
+
+            WriteCore(new ReadOnlySpan<byte>(buffer, offset, count));
+        }
+
+        public override void Write(ReadOnlySpan<byte> buffer)
+        {
+            if (_isAsync)
+            {
+                base.Write(buffer);
+                return;
+            }
+
+            if (!CanWrite)
+            {
+                throw Error.GetWriteNotSupported();
+            }
+            CheckWriteOperations();
+
+            WriteCore(buffer);
+        }
+
+        public override Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
+        {
+            ValidateBufferArguments(buffer, offset, count);
+            if (!CanWrite)
+            {
+                throw Error.GetWriteNotSupported();
+            }
+
+            if (cancellationToken.IsCancellationRequested)
+            {
+                return Task.FromCanceled<int>(cancellationToken);
+            }
+
+            CheckWriteOperations();
+
+            if (!_isAsync)
+            {
+                return base.WriteAsync(buffer, offset, count, cancellationToken);
+            }
+
+            if (count == 0)
+            {
+                return Task.CompletedTask;
+            }
+
+            return WriteAsyncCore(new ReadOnlyMemory<byte>(buffer, offset, count), cancellationToken);
+        }
+
+        public override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default(CancellationToken))
+        {
+            if (!_isAsync)
+            {
+                return base.WriteAsync(buffer, cancellationToken);
+            }
+
+            if (!CanWrite)
+            {
+                throw Error.GetWriteNotSupported();
+            }
+
+            if (cancellationToken.IsCancellationRequested)
+            {
+                return ValueTask.FromCanceled(cancellationToken);
+            }
+
+            CheckWriteOperations();
+
+            if (buffer.Length == 0)
+            {
+                return default;
+            }
+
+            return new ValueTask(WriteAsyncCore(buffer, cancellationToken));
+        }
+
+        public override IAsyncResult BeginWrite(byte[] buffer, int offset, int count, AsyncCallback? callback, object? state)
+        {
+            if (_isAsync)
+                return TaskToApm.Begin(WriteAsync(buffer, offset, count, CancellationToken.None), callback, state);
+            else
+                return base.BeginWrite(buffer, offset, count, callback, state);
+        }
+
+        public override void EndWrite(IAsyncResult asyncResult)
+        {
+            if (_isAsync)
+                TaskToApm.End(asyncResult);
+            else
+                base.EndWrite(asyncResult);
+        }
+
         internal static string GetPipePath(string serverName, string pipeName)
         {
             string normalizedPipePath = Path.GetFullPath(@"\\" + serverName + @"\pipe\" + pipeName);

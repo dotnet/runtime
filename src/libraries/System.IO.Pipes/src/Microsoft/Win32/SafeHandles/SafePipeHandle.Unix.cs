@@ -28,11 +28,11 @@ namespace Microsoft.Win32.SafeHandles
 
         internal SafePipeHandle(Socket namedPipeSocket) : base(ownsHandle: true)
         {
-            SetPipeSocket(namedPipeSocket, ownsHandle: true);
+            SetPipeSocketInterlocked(namedPipeSocket, ownsHandle: true);
             base.SetHandle(_pipeSocketHandle!.DangerousGetHandle());
         }
 
-        internal Socket? PipeSocket => _pipeSocket ?? CreatePipeSocket();
+        internal Socket PipeSocket => _pipeSocket ?? CreatePipeSocket();
 
         internal SafeHandle? PipeSocketHandle => _pipeSocketHandle;
 
@@ -72,42 +72,39 @@ namespace Microsoft.Win32.SafeHandles
             get { return (long)handle < 0 && _pipeSocket == null; }
         }
 
-        private Socket? CreatePipeSocket(bool ownsHandle = true)
+        private Socket CreatePipeSocket(bool ownsHandle = true)
         {
-            bool refAdded = false;
-            try
+            Socket? socket = null;
+            if (_disposed == 0)
             {
-                if (_disposed == 1)
+                bool refAdded = false;
+                try
                 {
-                    return null;
+                    DangerousAddRef(ref refAdded);
+
+                    var socketHandle = new SafeSocketHandle(handle, ownsHandle);
+                    socketHandle.IsPipe = true;
+                    socket = SetPipeSocketInterlocked(new Socket(socketHandle), ownsHandle);
+
+                    if (_disposed == 1)
+                    {
+                        Volatile.Write(ref _pipeSocket, null);
+                        socket.Dispose();
+                        socket = null;
+                    }
                 }
-
-                DangerousAddRef(ref refAdded);
-
-                var socketHandle = new SafeSocketHandle(handle, ownsHandle);
-                socketHandle.IsPipe = true;
-                var socket = new Socket(socketHandle);
-                socket = SetPipeSocket(socket, ownsHandle);
-
-                if (_disposed == 1)
+                finally
                 {
-                    Volatile.Write(ref _pipeSocket, null);
-                    socket.Dispose();
-                    socket = null;
-                }
-
-                return socket;
-            }
-            finally
-            {
-                if (refAdded)
-                {
-                    DangerousRelease();
+                    if (refAdded)
+                    {
+                        DangerousRelease();
+                    }
                 }
             }
+            return socket ?? throw new ObjectDisposedException(GetType().ToString());;
         }
 
-        private Socket SetPipeSocket(Socket socket, bool ownsHandle)
+        private Socket SetPipeSocketInterlocked(Socket socket, bool ownsHandle)
         {
             Debug.Assert(socket != null);
 
