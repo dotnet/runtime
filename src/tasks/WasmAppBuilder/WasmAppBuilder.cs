@@ -122,17 +122,18 @@ public class WasmAppBuilder : Task
         var config = new WasmAppConfig ();
 
         // Create app
+        var asmRootPath = Path.Join(AppDir, config.AssemblyRoot);
         Directory.CreateDirectory(AppDir!);
-        Directory.CreateDirectory(Path.Join(AppDir, config.AssemblyRoot));
+        Directory.CreateDirectory(asmRootPath);
         foreach (var assembly in _assemblies)
         {
-            File.Copy(assembly, Path.Join(AppDir, config.AssemblyRoot, Path.GetFileName(assembly)), true);
+            File.Copy(assembly, Path.Join(asmRootPath, Path.GetFileName(assembly)), true);
             if (DebugLevel > 0)
             {
                 var pdb = assembly;
                 pdb = Path.ChangeExtension(pdb, ".pdb");
                 if (File.Exists(pdb))
-                    File.Copy(pdb, Path.Join(AppDir, config.AssemblyRoot, Path.GetFileName(pdb)), true);
+                    File.Copy(pdb, Path.Join(asmRootPath, Path.GetFileName(pdb)), true);
             }
         }
 
