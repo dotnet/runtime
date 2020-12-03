@@ -1809,7 +1809,6 @@ namespace System.Text.Json.Tests
             }
         }
 
-        [SkipOnCoreClr("Long running test on Checked mode", RuntimeConfiguration.Checked)]
         [Theory]
         [InlineData("{]")]
         [InlineData("[}")]
@@ -1840,6 +1839,7 @@ namespace System.Text.Json.Tests
         [InlineData("{\"Property1\": {\"Property1.1\": 42} // comment\n,5}")]
         [InlineData("{\"Property1\": {\"Property1.1\": 42}, // comment\n // comment\n5}")]
         [InlineData("{// comment\n5}")]
+        [SkipOnCoreClr("https://github.com/dotnet/runtime/issues/45464", RuntimeConfiguration.Checked)]
         public static void ReadInvalidJsonStringsWithComments(string jsonString)
         {
             byte[] input = Encoding.UTF8.GetBytes(jsonString);

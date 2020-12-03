@@ -3115,12 +3115,12 @@ namespace System.Text.Json.Tests
         }
 
         // https://github.com/dotnet/runtime/issues/30746
-        [SkipOnCoreClr("Long running test on Checked mode", RuntimeConfiguration.Checked)]
         [Theory]
         [InlineData(true, true)]
         [InlineData(true, false)]
         [InlineData(false, true)]
         [InlineData(false, false)]
+        [SkipOnCoreClr("https://github.com/dotnet/runtime/issues/45464", RuntimeConfiguration.Checked)]
         public void Writing3MBBase64Bytes(bool formatted, bool skipValidation)
         {
             byte[] value = new byte[3 * 1024 * 1024];

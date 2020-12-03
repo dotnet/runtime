@@ -178,10 +178,10 @@ namespace System.Text.Json.Serialization.Tests
             }
         }
 
-        [SkipOnCoreClr("Long running test on Checked mode", RuntimeConfiguration.Checked)]
         [Theory]
         [MemberData(nameof(TestData), /* enumeratePayloadTweaks: */ false)]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/42677", platforms: TestPlatforms.Windows, runtimes: TestRuntimes.Mono)]
+        [SkipOnCoreClr("https://github.com/dotnet/runtime/issues/45464", RuntimeConfiguration.Checked)]
         public static void ShouldWorkAtAnyPosition_Sequence(
             string json,
             int bufferSize,
