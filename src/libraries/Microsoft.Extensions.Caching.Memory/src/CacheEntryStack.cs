@@ -1,27 +1,18 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
-
 namespace Microsoft.Extensions.Caching.Memory
 {
     internal class CacheEntryStack
     {
-        private readonly CacheEntryStack _previous;
         private readonly CacheEntry _entry;
 
         private CacheEntryStack()
         {
         }
 
-        private CacheEntryStack(CacheEntryStack previous, CacheEntry entry)
+        private CacheEntryStack(CacheEntry entry)
         {
-            if (previous == null)
-            {
-                throw new ArgumentNullException(nameof(previous));
-            }
-
-            _previous = previous;
             _entry = entry;
         }
 
@@ -29,7 +20,7 @@ namespace Microsoft.Extensions.Caching.Memory
 
         public CacheEntryStack Push(CacheEntry c)
         {
-            return new CacheEntryStack(this, c);
+            return new CacheEntryStack(c);
         }
 
         public CacheEntry Peek()
