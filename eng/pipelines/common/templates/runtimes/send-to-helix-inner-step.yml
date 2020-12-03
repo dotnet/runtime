@@ -18,7 +18,7 @@ steps:
     displayName: ${{ parameters.displayName }} (Windows)
     condition: and(succeeded(), ${{ and(ne(parameters.condition, false), ne(parameters.sendParams, '')) }})
     env: ${{ parameters.environment }}
-    continueOnError: ${{ parameters.shouldContinueOnError }}
+    continueOnError: ${{ eq(parameters.shouldContinueOnError, true) }}
 
 - ${{ if ne(parameters.osGroup, 'windows') }}:
   # TODO: Remove and consolidate this when we move to arcade via init-tools.sh.
@@ -34,4 +34,4 @@ steps:
     displayName: ${{ parameters.displayName }} (Unix)
     condition: and(succeeded(), ${{ and(ne(parameters.condition, false), ne(parameters.sendParams, '')) }})
     env: ${{ parameters.environment }}
-    continueOnError: ${{ parameters.shouldContinueOnError }}
+    continueOnError: ${{ eq(parameters.shouldContinueOnError, true) }}
