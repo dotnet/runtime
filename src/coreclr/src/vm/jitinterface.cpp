@@ -8998,7 +8998,23 @@ bool CEEInfo::resolveVirtualMethodHelper(CORINFO_DEVIRTUALIZATION_INFO * info)
 
     // Determine the exact class.
     //
-    MethodTable* pExactMT = pDevirtMD->GetExactDeclaringType(pObjMT);
+    // We may fail to get an exact context if the method is a default
+    // interface method. If so, we'll use the method's class.
+    //
+    MethodTable* pApproxMT = pDevirtMD->GetMethodTable();
+    MethodTable* pExactMT = pApproxMT;
+
+    if (pApproxMT->IsInterface())
+    {
+        // As noted above, we can't yet handle generic interfaces
+        // with default methods.
+        _ASSERTE(!pDevirtMD->HasClassInstantiation());
+
+    }
+    else
+    {
+        pExactMT = pDevirtMD->GetExactDeclaringType(pObjMT);
+    }
 
 #ifdef FEATURE_READYTORUN_COMPILER
     // Check if devirtualization is dependent upon cross-version
@@ -9019,6 +9035,7 @@ bool CEEInfo::resolveVirtualMethodHelper(CORINFO_DEVIRTUALIZATION_INFO * info)
 #endif
 
     // Success! Pass back the results.
+    //
     info->devirtualizedMethod = (CORINFO_METHOD_HANDLE) pDevirtMD;
     info->exactContext = MAKE_CLASSCONTEXT((CORINFO_CLASS_HANDLE) pExactMT);
     info->requiresInstMethodTableArg = false;
