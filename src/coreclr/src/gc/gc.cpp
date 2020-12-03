@@ -9007,6 +9007,17 @@ void gc_heap::append_to_mark_list (uint8_t **start, uint8_t **end)
 }
 
 #ifdef _DEBUG
+
+#if !defined(_MSC_VER)
+#if !defined(__cdecl)
+#if defined(__i386__)
+#define __cdecl __attribute__((cdecl))
+#else
+#define __cdecl
+#endif
+#endif
+#endif
+
 static int __cdecl cmp_mark_list_item (const void* vkey, const void* vdatum)
 {
     uint8_t** key = (uint8_t**)vkey;
