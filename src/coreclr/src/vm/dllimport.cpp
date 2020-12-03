@@ -3227,21 +3227,7 @@ BOOL NDirect::MarshalingRequired(
                         return TRUE;
                 }
 #endif
-
-                // return value is fine as long as it can be normalized to an integer
-                if (i == 0)
-                {
-                    CorElementType normalizedType = hndArgType.GetInternalCorElementType();
-                    if (normalizedType == ELEMENT_TYPE_VALUETYPE)
-                    {
-                        // it is a structure even after normalization
-                        return TRUE;
-                    }
-                }
-                else
-                {
-                    dwStackSize += StackElemSize(hndArgType.GetSize());
-                }
+                dwStackSize += StackElemSize(hndArgType.GetSize());
                 break;
             }
 
