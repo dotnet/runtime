@@ -314,7 +314,6 @@ void LinearScan::resolveConflictingDefAndUse(Interval* interval, RefPosition* de
                 // This is case #2.  Use the useRegAssignment
                 INDEBUG(dumpLsraAllocationEvent(LSRA_EVENT_DEFUSE_CASE2, interval));
                 defRefPosition->registerAssignment = useRegAssignment;
-                defRefPosition->isFixedRegRef      = useRefPosition->isFixedRegRef;
                 return;
             }
         }
@@ -328,7 +327,6 @@ void LinearScan::resolveConflictingDefAndUse(Interval* interval, RefPosition* de
         // This is case #3.
         INDEBUG(dumpLsraAllocationEvent(LSRA_EVENT_DEFUSE_CASE3, interval));
         defRefPosition->registerAssignment = useRegAssignment;
-        defRefPosition->isFixedRegRef      = useRefPosition->isFixedRegRef;
         return;
     }
     if (useRegRecord != nullptr && !defRegConflict && canChangeUseAssignment)
@@ -336,7 +334,6 @@ void LinearScan::resolveConflictingDefAndUse(Interval* interval, RefPosition* de
         // This is case #4.
         INDEBUG(dumpLsraAllocationEvent(LSRA_EVENT_DEFUSE_CASE4, interval));
         useRefPosition->registerAssignment = defRegAssignment;
-        useRefPosition->isFixedRegRef      = defRefPosition->isFixedRegRef;
         return;
     }
     if (defRegRecord != nullptr && useRegRecord != nullptr)
@@ -424,7 +421,6 @@ void LinearScan::checkConflictingDefUse(RefPosition* useRP)
         if (!isSingleRegister(newAssignment) || !theInterval->hasInterferingUses)
         {
             defRP->registerAssignment = newAssignment;
-            defRP->isFixedRegRef      = isSingleRegister(newAssignment);
         }
     }
     else

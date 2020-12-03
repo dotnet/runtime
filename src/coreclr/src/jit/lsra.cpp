@@ -2827,8 +2827,9 @@ regNumber LinearScan::allocateReg(Interval* currentInterval, RefPosition* refPos
 
             // If there is another fixed reference to this register before the use, change the candidates
             // on this RefPosition to include that of nextRefPos.
-            if (currFixedRegRefPosition->nextRefPosition != nullptr &&
-                currFixedRegRefPosition->nextRefPosition->nodeLocation <= nextRefPos->getRefEndLocation())
+            RefPosition* nextFixedRegRefPosition = defRegRecord->getNextRefPosition();
+            if (nextFixedRegRefPosition != nullptr &&
+                nextFixedRegRefPosition->nodeLocation <= nextRefPos->getRefEndLocation())
             {
                 candidates |= nextRefPos->registerAssignment;
                 if (preferences == refPosition->registerAssignment)
@@ -5721,7 +5722,6 @@ void LinearScan::allocateRegisters()
         assert(currentRefPosition->isIntervalRef());
         currentInterval = currentRefPosition->getInterval();
         assert(currentInterval != nullptr);
-        assert(currentRefPosition->isFixedRegRef == isSingleRegister(currentRefPosition->registerAssignment));
         assignedRegister = currentInterval->physReg;
 
         // Identify the special cases where we decide up-front not to allocate
