@@ -8967,7 +8967,7 @@ bool CEEInfo::resolveVirtualMethodHelper(CORINFO_DEVIRTUALIZATION_INFO * info)
 
         if (pCheckMT == nullptr)
         {
-            return nullptr;
+            return false;
         }
 
         // The base method should be in the base vtable
@@ -8990,7 +8990,7 @@ bool CEEInfo::resolveVirtualMethodHelper(CORINFO_DEVIRTUALIZATION_INFO * info)
 
         if (dslot != slot)
         {
-            return nullptr;
+            return false;
         }
     }
 
