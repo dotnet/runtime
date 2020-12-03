@@ -279,7 +279,7 @@ build_Tests()
     fi
 
     if [[ "$__SkipNative" != 1 && "$__TargetOS" != "Browser" && "$__TargetOS" != "Android" ]]; then
-        build_native "$__TargetOS" "$__BuildArch" "$__TestDir" "$__RepoRootDir/eng/native" "$__NativeTestIntermediatesDir" "CoreCLR test component"
+        build_native "$__TargetOS" "$__BuildArch" "$__TestDir" "$__NativeTestIntermediatesDir" "CoreCLR test component"
 
         if [[ "$?" -ne 0 ]]; then
             echo "${__ErrMsgPrefix}${__MsgPrefix}Error: native test build failed. Refer to the build log files for details (above)"

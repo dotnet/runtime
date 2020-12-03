@@ -99,7 +99,7 @@ build_cross_architecture_components()
     export __CMakeBinDir CROSSCOMPILE
 
     __CMakeArgs="-DCLR_CMAKE_TARGET_ARCH=$__BuildArch -DCLR_CROSS_COMPONENTS_BUILD=1 $__CMakeArgs"
-    build_native "$__TargetOS" "$__CrossArch" "$__ProjectRoot" "$__RepoRootDir/eng/native" "$intermediatesForBuild" "$__CMakeArgs" "cross-architecture components"
+    build_native "$__TargetOS" "$__CrossArch" "$__ProjectRoot" "$intermediatesForBuild" "$__CMakeArgs" "cross-architecture components"
 
     CROSSCOMPILE=1
     export CROSSCOMPILE
@@ -257,7 +257,7 @@ fi
 if [[ "$__SkipNative" == 1 ]]; then
     echo "Skipping CoreCLR component build."
 else
-    build_native "$__TargetOS" "$__BuildArch" "$__ProjectRoot" "$__RepoRootDir/eng/native" "$__IntermediatesDir" "$__CMakeArgs" "CoreCLR component"
+    build_native "$__TargetOS" "$__BuildArch" "$__ProjectRoot" "$__IntermediatesDir" "$__CMakeArgs" "CoreCLR component"
 
     # Build cross-architecture components
     if [[ "$__SkipCrossArchNative" != 1 ]]; then
