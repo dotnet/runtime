@@ -11845,6 +11845,21 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac)
 
         case GT_MUL:
 
+            //if (opts.OptimizationEnabled() && fgGlobalMorph &&
+            //    (((op1->gtFlags & GTF_EXCEPT) == 0) || ((op2->gtFlags & GTF_EXCEPT) == 0)))
+            //{
+            //    // -a * C => a * -C, where C is constant
+            //    // MUL(NEG(a), C) => MUL(a, NEG(C))
+            //    if (op1->OperIs(GT_NEG) && !op1->IsConstInitVal() && op2->IsConstInitVal())
+            //    {
+            //        // tree: MUL
+            //        // op1: a
+            //        // op2: NEG
+            //        // op2Child: C
+            //        // tree->AsOp()->gtOp1 = op1->AsOp()->gtOp1; // a
+            //        // op2->AsIntConCommon()->SetIconValue(-op2->AsIntConCommon()->IconValue()); // -C
+            //    }
+            //}
 #ifndef TARGET_64BIT
             if (typ == TYP_LONG)
             {
@@ -12010,6 +12025,28 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac)
             if (op2->gtOper == GT_CAST && op2->AsOp()->gtOp1->IsCnsIntOrI())
             {
                 op2 = gtFoldExprConst(op2);
+            }
+
+            if (opts.OptimizationEnabled() && fgGlobalMorph &&
+                (((op1->gtFlags & GTF_EXCEPT) == 0) || ((op2->gtFlags & GTF_EXCEPT) == 0)))
+            {
+                // -a / C => a / -C, where C is constant
+                // DIV(NEG(a), C) => DIV(a, NEG(C))
+                if (op1->OperIs(GT_NEG) && !op1->IsConstInitVal() && op2->IsConstInitVal())
+                {
+                    // tree: DIV
+                    // op1: a
+                    // op2: NEG
+                    // op2Child: C
+                    GenTree* op1Child = op1->AsOp()->gtOp1;                         // a
+                    GenTree* newOp2   = gtNewOperNode(GT_NEG, op2->TypeGet(), op2); // -C
+
+                    DEBUG_DESTROY_NODE(op1);
+                    DEBUG_DESTROY_NODE(op2);
+
+                    op1 = op1Child;
+                    op2 = newOp2;
+                }
             }
             break;
 
@@ -13366,6 +13403,21 @@ DONE_MORPHING_CHILDREN:
             break;
 
         case GT_MUL:
+            if (opts.OptimizationEnabled() && fgGlobalMorph &&
+                (((op1->gtFlags & GTF_EXCEPT) == 0) || ((op2->gtFlags & GTF_EXCEPT) == 0)))
+            {
+                // -a * C => a * -C, where C is constant
+                // MUL(NEG(a), C) => MUL(a, NEG(C))
+                if (op1->OperIs(GT_NEG) && !op1->IsConstInitVal() && op2->IsConstInitVal())
+                {
+                    // tree: MUL
+                    // op1: a
+                    // op2: NEG
+                    // op2Child: C
+                    // tree->AsOp()->gtOp1 = op1->AsOp()->gtOp1; // a
+                    // op2->AsIntConCommon()->SetIconValue(-op2->AsIntConCommon()->IconValue()); // -C
+                }
+            }
 
 #ifndef TARGET_64BIT
             if (typ == TYP_LONG)
@@ -14918,6 +14970,22 @@ GenTree* Compiler::fgMorphSmpOpOptional(GenTreeOp* tree)
                         add->AsIntCon()->TruncateOrSignExtend32();
                     }
 #endif // TARGET_64BIT
+                }
+            }
+
+            if (opts.OptimizationEnabled() && fgGlobalMorph &&
+                (((op1->gtFlags & GTF_EXCEPT) == 0) || ((op2->gtFlags & GTF_EXCEPT) == 0)))
+            {
+                // -a * C => a * -C, where C is constant
+                // MUL(NEG(a), C) => MUL(a, NEG(C))
+                if (op1->OperIs(GT_NEG) && !op1->IsConstInitVal() && op2->IsConstInitVal())
+                {
+                    // tree: MUL
+                    // op1: a
+                    // op2: NEG
+                    // op2Child: C
+                    // tree->AsOp()->gtOp1 = op1->AsOp()->gtOp1; // a
+                    // op2->AsIntConCommon()->SetIconValue(-op2->AsIntConCommon()->IconValue()); // -C
                 }
             }
 
