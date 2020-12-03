@@ -35,7 +35,7 @@ if /i "%__Ninja%" == "1" (
         if /i "%__Arch%" == "arm64" (set __ExtraCmakeParams=%__ExtraCmakeParams% -A ARM64)
         if /i "%__Arch%" == "x86" (set __ExtraCmakeParams=%__ExtraCmakeParams% -A Win32)
     ) else (
-        set __CmakeGenerator=Ninja
+        set __CmakeGenerator=NMake Makefiles
     )
 )
 
