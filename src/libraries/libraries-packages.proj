@@ -16,7 +16,7 @@
 
   <ItemGroup>
     <ProjectReference Include="$(PkgDir)*\*.proj" Exclude="$(PkgDir)test\*" />
-    <ProjectReference Include="$(MSBuildThisFileDirectory)*\pkg\**\*.pkgproj" Condition="('$(BuildAllConfigurations)' == 'true' or '$(DotNetBuildFromSource)' == 'true') And '$(BuildAllOOBPackages)' == 'true'" />
+    <PkgProjectsPath Include="$(MSBuildThisFileDirectory)*\pkg\**\*.pkgproj" Condition="('$(BuildAllConfigurations)' == 'true' or '$(DotNetBuildFromSource)' == 'true') And '$(BuildAllOOBPackages)' == 'true'" />
     <!-- If setting BuildAllOOBPackages to false, add bellow the individual OOB packages you want to continue to build -->
   </ItemGroup>
 
@@ -85,6 +85,18 @@
 
   <Import Sdk="Microsoft.Build.Traversal" Project="Sdk.targets" />
 
-  <!-- Pack is a no-op and should just invoke build. -->
-  <Target Name="Pack" DependsOnTargets="Build" />
+  <PropertyGroup>
+    <PackDependsOn>$(PackDependsOn);GetCsprojWithPkg</PackDependsOn>
+  </PropertyGroup>
+
+  <!-- Build is a no-op and should just invoke Pack. -->
+  <Target Name="Build" DependsOnTargets="Pack" />
+
+  <Target Name="GetCsprojWithPkg">
+    <ItemGroup>
+      <ProjectReference Include="%(PkgProjectsPath.Identity)\..\..\src\*.csproj"/>
+      <ProjectReference Include="%(PkgProjectsPath.Identity)\..\..\src\*.ilproj"/>
+    </ItemGroup>
+  </Target>
+
 </Project>
