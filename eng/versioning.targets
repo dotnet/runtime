@@ -160,7 +160,7 @@
   <Target Name="RemoveSupportedPlatformAssemblyAttributeForBrowser" AfterTargets="GetAssemblyAttributes" Condition="'$(TargetFrameworkSuffix)' == 'Browser' or '$(IsTestProject)' == 'true'">
     <ItemGroup>
       <AssemblyAttribute Remove="System.Runtime.Versioning.SupportedOSPlatformAttribute" />
-	  <AssemblyAttribute Remove="System.Runtime.Versioning.TargetPlatformAttribute" />
+      <AssemblyAttribute Remove="System.Runtime.Versioning.TargetPlatformAttribute" />
     </ItemGroup>
   </Target>
 
