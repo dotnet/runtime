@@ -3351,19 +3351,25 @@
 
     <ItemGroup Condition=" $(TargetOS) == 'Android' And '$(TargetArchitecture)' == 'arm64' " >
         <ExcludeList Include = "$(XunitTestBinBase)/JIT/HardwareIntrinsics/**">
-            <Issue>https://github.com/dotnet/runtime/issues/45568</Issue>
+            <Issue>https://github.com/dotnet/runtime/issues/45568 (workitem JIT.HardwareIntrinsics)</Issue>
         </ExcludeList>
         <ExcludeList Include = "$(XunitTestBinBase)/JIT/Methodical/eh/**">
-            <Issue>https://github.com/dotnet/runtime/issues/45568</Issue>
+            <Issue>https://github.com/dotnet/runtime/issues/45568 (workitem JIT.Methodical.eh)</Issue>
         </ExcludeList>
         <ExcludeList Include = "$(XunitTestBinBase)/JIT/IL_Conformance/**">
-            <Issue>https://github.com/dotnet/runtime/issues/45568</Issue>
+            <Issue>https://github.com/dotnet/runtime/issues/45568 (workitem JIT.IL_Conformance)</Issue>
         </ExcludeList>
         <ExcludeList Include = "$(XunitTestBinBase)/JIT/SIMD/**">
-            <Issue>https://github.com/dotnet/runtime/issues/45568</Issue>
+            <Issue>https://github.com/dotnet/runtime/issues/45568 (workitem JIT)</Issue>
         </ExcludeList>
         <ExcludeList Include = "$(XunitTestBinBase)/JIT/opt/**">
-            <Issue>https://github.com/dotnet/runtime/issues/45568</Issue>
+            <Issue>https://github.com/dotnet/runtime/issues/45568 (workitem JIT)</Issue>
+        </ExcludeList>
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Regression/CLR-x86-JIT/V1-M11*/**">
+            <Issue>https://github.com/dotnet/runtime/issues/45568 (workitem JIT.Regression)</Issue>
+        </ExcludeList>
+        <ExcludeList Include = "$(XunitTestBinBase)/GC/Scenarios/**">
+            <Issue>https://github.com/dotnet/runtime/issues/45568 (workitem PayloadGroup0)</Issue>
         </ExcludeList>
     </ItemGroup>
 </Project>
