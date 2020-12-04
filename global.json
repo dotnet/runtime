@@ -16,7 +16,7 @@
     "Microsoft.DotNet.Arcade.Sdk": "6.0.0-beta.20601.2",
     "Microsoft.DotNet.Build.Tasks.SharedFramework.Sdk": "6.0.0-beta.20601.2",
     "Microsoft.DotNet.Helix.Sdk": "6.0.0-beta.20601.2",
-    "Microsoft.DotNet.SharedFramework.Sdk": "6.0.0-beta.20552.5",
+    "Microsoft.DotNet.SharedFramework.Sdk": "6.0.0-beta.20602.5",
     "Microsoft.NET.Sdk.IL": "6.0.0-alpha.1.20557.2",
     "Microsoft.Build.NoTargets": "2.0.1",
     "Microsoft.Build.Traversal": "2.1.1"
