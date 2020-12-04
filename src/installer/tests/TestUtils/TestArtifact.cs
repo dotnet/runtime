@@ -4,8 +4,8 @@
 using Microsoft.DotNet.CoreSetup.Test.HostActivation;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
-using System.Threading;
 
 namespace Microsoft.DotNet.CoreSetup.Test
 {
@@ -22,7 +22,7 @@ namespace Microsoft.DotNet.CoreSetup.Test
         {
             return _repoDirectoriesProvider.Value.GetTestContextVariable(TestArtifactDirectoryEnvironmentVariable)
                    ?? Path.Combine(AppContext.BaseDirectory, TestArtifactDirectoryEnvironmentVariable);
-        });
+        }, isThreadSafe: true);
 
         public static bool PreserveTestRuns() => _preserveTestRuns.Value;
         public static string TestArtifactsPath => _testArtifactsPath.Value;
@@ -68,20 +68,24 @@ namespace Microsoft.DotNet.CoreSetup.Test
             _copies.Clear();
         }
 
-        private static readonly object _pathCountLock = new object();
         protected static string GetNewTestArtifactPath(string artifactName)
         {
-            int projectCount = 0;
-            string projectCountDir() => Path.Combine(TestArtifactsPath, projectCount.ToString(), artifactName);
+            var rand = new Random();
 
-            for (; Directory.Exists(projectCountDir()); projectCount++);
-
-            lock (_pathCountLock)
+            string path;
+            while (true)
             {
-                string projectDirectory;
-                for (; Directory.Exists(projectDirectory = projectCountDir()); projectCount++);
-                FileUtils.EnsureDirectoryExists(projectDirectory);
-                return projectDirectory;
+                path = Path.Combine(TestArtifactsPath, Path.GetRandomFileName(), artifactName);
+                Directory.CreateDirectory(path);
+                var lockPath = Path.Combine(path, ".lock");
+                try
+                {
+                    File.Open(lockPath, FileMode.CreateNew, FileAccess.Write).Dispose();
+                    return path;
+                } catch
+                {
+                    // Lock file cannot be created, potential collision
+                }
             }
         }
 

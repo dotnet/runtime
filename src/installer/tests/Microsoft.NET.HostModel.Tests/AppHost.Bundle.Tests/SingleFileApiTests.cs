@@ -8,8 +8,7 @@ using Xunit;
 
 namespace AppHost.Bundle.Tests
 {
-    [Collection(nameof(SingleFileSharedCollection))]
-    public class SingleFileApiTests : BundleTestBase
+    public class SingleFileApiTests : BundleTestBase, IClassFixture<SingleFileSharedState>
     {
         private SingleFileSharedState sharedTestState;
 

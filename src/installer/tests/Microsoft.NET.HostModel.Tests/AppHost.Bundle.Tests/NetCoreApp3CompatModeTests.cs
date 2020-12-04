@@ -13,8 +13,7 @@ using Xunit;
 
 namespace AppHost.Bundle.Tests
 {
-    [Collection(nameof(SingleFileSharedCollection))]
-    public class NetCoreApp3CompatModeTests : BundleTestBase
+    public class NetCoreApp3CompatModeTests : BundleTestBase, IClassFixture<SingleFileSharedState>
     {
         private SingleFileSharedState sharedTestState;
 

@@ -26,10 +26,4 @@ namespace AppHost.Bundle.Tests
             TestFixture.Dispose();
         }
     }
-
-    [CollectionDefinition(nameof(SingleFileSharedCollection))]
-    public class SingleFileSharedCollection : ICollectionFixture<SingleFileSharedState>
-    {
-
-    }
 }
