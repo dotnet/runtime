@@ -219,35 +219,34 @@ namespace Microsoft.Extensions.Caching.Memory
             ValidateCacheKey(key);
             CheckDisposed();
 
-            DateTimeOffset utcNow = _options.Clock.UtcNow;
-
-            if (_entries.TryGetValue(key, out CacheEntry entry))
+            if (!_entries.TryGetValue(key, out CacheEntry entry))
             {
-                // Check if expired due to expiration tokens, timers, etc. and if so, remove it.
-                // Allow a stale Replaced value to be returned due to concurrent calls to SetExpired during SetEntry.
-                if (!entry.CheckExpired(utcNow) || entry.EvictionReason == EvictionReason.Replaced)
-                {
-                    entry.LastAccessed = utcNow;
-                    result = entry.Value;
+                result = null;
+                return false;
+            }
 
-                    if (entry.CanPropagateOptions())
-                    {
-                        // When this entry is retrieved in the scope of creating another entry,
-                        // that entry needs a copy of these expiration tokens.
-                        entry.PropagateOptions(CacheEntryHelper.Current);
-                    }
-
-                    return true;
-                }
-                else
+            if (entry.CanExpire)
+            {
+                DateTimeOffset utcNow = _options.Clock.UtcNow;
+                if (entry.EvictionReason != EvictionReason.Replaced && entry.CheckExpired(utcNow))
                 {
-                    // TODO: For efficiency queue this up for batch removal
                     RemoveEntry(entry);
+
+                    result = null;
+                    return false;
+                }
+
+                entry.LastAccessed = utcNow;
+                if (entry.CanPropagateOptions())
+                {
+                    // When this entry is retrieved in the scope of creating another entry,
+                    // that entry needs a copy of these expiration tokens.
+                    entry.PropagateOptions(CacheEntryHelper.Current);
                 }
             }
 
-            result = null;
-            return false;
+            result = entry.Value;
+            return true;
         }
 
         /// <inheritdoc />
