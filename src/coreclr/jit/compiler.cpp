@@ -2308,7 +2308,7 @@ void Compiler::compSetProcessor()
     opts.compUseCMOV = jitFlags.IsSet(JitFlags::JIT_FLAG_USE_CMOV);
 #ifdef DEBUG
     if (opts.compUseCMOV)
-        opts.compUseCMOV = !compStressCompile(STRESS_USE_CMOV, 50);
+        opts.compUseCMOV                = !compStressCompile(STRESS_USE_CMOV, 50);
 #endif // DEBUG
 
 #endif // TARGET_X86
@@ -2617,13 +2617,13 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
 
 #ifdef DEBUG
     opts.compJitAlignLoopAdaptive       = JitConfig.JitAlignLoopAdaptive() == 1;
-    opts.compJitAlignLoopBoundary       = (unsigned short) JitConfig.JitAlignLoopBoundary();
-    opts.compJitAlignLoopMinBlockWeight = (unsigned short) JitConfig.JitAlignLoopMinBlockWeight();
+    opts.compJitAlignLoopBoundary       = (unsigned short)JitConfig.JitAlignLoopBoundary();
+    opts.compJitAlignLoopMinBlockWeight = (unsigned short)JitConfig.JitAlignLoopMinBlockWeight();
 
-    opts.compJitAlignLoopForJcc         = JitConfig.JitAlignLoopForJcc() == 1;
-    opts.compJitAlignLoopMaxCodeSize    = (unsigned short) JitConfig.JitAlignLoopMaxCodeSize();
+    opts.compJitAlignLoopForJcc      = JitConfig.JitAlignLoopForJcc() == 1;
+    opts.compJitAlignLoopMaxCodeSize = (unsigned short)JitConfig.JitAlignLoopMaxCodeSize();
 #else
-    opts.compJitAlignLoopAdaptive = true;
+    opts.compJitAlignLoopAdaptive       = true;
     opts.compJitAlignLoopMinBlockWeight = DEFAULT_ALIGN_LOOP_MIN_BLOCK_WEIGHT;
 #endif
 

@@ -3614,7 +3614,7 @@ size_t emitter::emitIssue1Instr(insGroup* ig, instrDesc* id, BYTE** dp)
     size_t is;
 
 #ifdef DEBUG
-    size_t     beforeAddr = (size_t)*dp;
+    size_t beforeAddr = (size_t)*dp;
 #endif
 
     /* Record the beginning offset of the instruction */
@@ -4534,13 +4534,12 @@ AGAIN:
 #endif // DEBUG
 }
 
-
 //-----------------------------------------------------------------------------
 //  For loopHeaderIg, find the size of the smallest possible loop that doesn't exceed maxLoopSize.
 //
 unsigned emitter::getLoopSize(insGroup* igLoopHeader, unsigned maxLoopSize)
 {
-    unsigned  loopSize     = 0;
+    unsigned loopSize = 0;
 
     for (insGroup* igInLoop = igLoopHeader; igInLoop != nullptr; igInLoop = igInLoop->igNext)
     {
@@ -4594,12 +4593,12 @@ void emitter::emitLoopAlignAdjustments()
     else
     {
         // For non-adaptive, just take whatever is supplied using COMPlus_ variables
-        maxLoopSize       = emitComp->opts.compJitAlignLoopMaxCodeSize;
+        maxLoopSize     = emitComp->opts.compJitAlignLoopMaxCodeSize;
         maxPaddingAdded = alignmentBoundary - 1;
     }
 
     unsigned alignBytesRemoved = 0;
-    unsigned loopSize = 0;
+    unsigned loopSize          = 0;
     for (insGroup* ig = emitIGlist; ig != nullptr; ig = ig->igNext)
     {
         ig->igOffs -= alignBytesRemoved;

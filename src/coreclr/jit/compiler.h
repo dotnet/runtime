@@ -9038,20 +9038,20 @@ public:
         bool dspGCtbls;       // Display the GC tables
 #endif
 
-        // Default numbers used to perform loop alignment. All the numbers are choosen
-        // based on experimenting with various benchmarks.
+// Default numbers used to perform loop alignment. All the numbers are choosen
+// based on experimenting with various benchmarks.
 
-        // Default minimum loop block weight required to enable loop alignment.
+// Default minimum loop block weight required to enable loop alignment.
 #define DEFAULT_ALIGN_LOOP_MIN_BLOCK_WEIGHT 10
 
-        // By default a loop will be aligned at 32B address boundary to get better
-        // performance as per architecture manuals.
+// By default a loop will be aligned at 32B address boundary to get better
+// performance as per architecture manuals.
 #define DEFAULT_ALIGN_LOOP_BOUNDARY 0x20
 
-        // For non-adaptive loop alignment, by default, only align a loop whose size is
-        // atmost 3 times of 32B chunk. If the loop is bigger than that, it is most
-        // likely the loop code is complicated enough and aligning such loop will not help
-        // much.
+// For non-adaptive loop alignment, by default, only align a loop whose size is
+// atmost 3 times of 32B chunk. If the loop is bigger than that, it is most
+// likely the loop code is complicated enough and aligning such loop will not help
+// much.
 #define DEFAULT_MAX_LOOPSIZE_FOR_ALIGN DEFAULT_ALIGN_LOOP_BOUNDARY * 3
 
 #ifdef DEBUG

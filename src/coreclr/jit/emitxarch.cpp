@@ -9396,7 +9396,7 @@ BYTE* emitter::emitOutputAlign(insGroup* ig, instrDesc* id, size_t sz, BYTE* dst
         if (displayAlignmentDetails)
         {
             printf("\t\t;; Skip alignment: 'Loop already aligned at %dB boundary.' in (%s)\n", alignmentBoundary,
-                    emitComp->info.compMethodName);
+                   emitComp->info.compMethodName);
         }
 #endif
     }
@@ -9439,7 +9439,7 @@ BYTE* emitter::emitOutputAlign(insGroup* ig, instrDesc* id, size_t sz, BYTE* dst
                     if (displayAlignmentDetails)
                     {
                         printf("\t\t;; Skip alignment: 'Loop already aligned at 16B boundary.' in (%s)\n",
-                                emitComp->info.compMethodName);
+                               emitComp->info.compMethodName);
                     }
 #endif
                 }
@@ -9451,9 +9451,9 @@ BYTE* emitter::emitOutputAlign(insGroup* ig, instrDesc* id, size_t sz, BYTE* dst
                     if (displayAlignmentDetails)
                     {
                         printf("\t\t;; Skip alignment: 'PaddingNeeded= %d, MaxPadding= %d, LoopSize= %d, "
-                                "AlignmentBoundary= %dB.' in (%s)\n",
-                                nPaddingBytes, nMaxPaddingBytes, loopSize, alignmentBoundary,
-                                emitComp->info.compFullName);
+                               "AlignmentBoundary= %dB.' in (%s)\n",
+                               nPaddingBytes, nMaxPaddingBytes, loopSize, alignmentBoundary,
+                               emitComp->info.compFullName);
                     }
 #endif
                 }
@@ -9475,7 +9475,7 @@ BYTE* emitter::emitOutputAlign(insGroup* ig, instrDesc* id, size_t sz, BYTE* dst
                     if (displayAlignmentDetails)
                     {
                         printf("\t\t;; Skip alignment: 'Loop already aligned at %dB boundary.' in (%s)\n",
-                                alignmentBoundary, emitComp->info.compMethodName);
+                               alignmentBoundary, emitComp->info.compMethodName);
                     }
 #endif
                 }
@@ -9537,7 +9537,7 @@ BYTE* emitter::emitOutputAlign(insGroup* ig, instrDesc* id, size_t sz, BYTE* dst
                 if (displayAlignmentDetails)
                 {
                     printf("\t\t;; Skip alignment: 'Loop already aligned at %dB boundary.' in (%s)\n",
-                            alignmentBoundary, emitComp->info.compMethodName);
+                           alignmentBoundary, emitComp->info.compMethodName);
                 }
 #endif
             }
@@ -9584,7 +9584,7 @@ BYTE* emitter::emitOutputAlign(insGroup* ig, instrDesc* id, size_t sz, BYTE* dst
         if (displayAlignmentDetails)
         {
             printf("\t\t;; Add alignment: 'Padding= %d, AlignmentBoundary= %dB.' in (%s)\n", paddingToAdd,
-                    alignmentBoundary, emitComp->info.compFullName);
+                   alignmentBoundary, emitComp->info.compFullName);
         }
 #endif
         // In the end dst should be at alignment boundary

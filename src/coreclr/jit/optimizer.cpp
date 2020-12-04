@@ -8021,7 +8021,8 @@ void Compiler::AddContainsCallAllContainingLoops(unsigned lnum)
     {
         BasicBlock* first = optLoopTable[nestedLoopNum].lpFirst;
         first->bbFlags &= ~BBF_LOOP_ALIGN;
-        JITDUMP("Skip alignment for L%02u that starts at " FMT_BB " because loop has a call.\n", nestedLoopNum, first->bbNum);
+        JITDUMP("Skip alignment for L%02u that starts at " FMT_BB " because loop has a call.\n", nestedLoopNum,
+                first->bbNum);
     }
 }
 
