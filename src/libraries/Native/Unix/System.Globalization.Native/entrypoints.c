@@ -1,8 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#include <stdint.h>
-#include <string.h>
+#include "../../AnyOS/entrypoints.h"
 
 typedef uint16_t UChar;
 
@@ -17,20 +16,6 @@ typedef uint16_t UChar;
 #include "pal_idna.h"
 #include "pal_normalization.h"
 #include "pal_timeZoneInfo.h"
-
-#ifndef lengthof
-#define lengthof(rg) (sizeof(rg)/sizeof(rg[0]))
-#endif
-
-typedef struct
-{
-    const char* name;
-    const void* method;
-} Entry;
-
-// expands to:      {"impl", (void*)impl},
-#define OverrideEntry(impl) \
-    {#impl, (void*)impl},
 
 static const Entry s_globalizationNative[] =
 {
@@ -74,13 +59,5 @@ EXTERN_C const void* GlobalizationResolveDllImport(const char* name);
 
 EXTERN_C const void* GlobalizationResolveDllImport(const char* name)
 {
-    for (size_t i = 0; i < lengthof(s_globalizationNative); i++)
-    {
-        if (strcmp(name, s_globalizationNative[i].name) == 0)
-        {
-            return s_globalizationNative[i].method;
-        }
-    }
-
-    return NULL;
+    return ResolveDllImport(s_globalizationNative, lengthof(s_globalizationNative), name);
 }
