@@ -3,6 +3,7 @@ parameters:
   platforms: []
   jobParameters: []
   buildConfig: Release
+  runtimeVariant: ''
 
 jobs:
 
@@ -16,5 +17,6 @@ jobs:
     platforms: ${{ parameters.platforms }}
     passPlatforms: true
     runtimeFlavor: ${{ parameters.runtimeFlavor }}
+    runtimeVariant: ${{ parameters.runtimeVariant }}
     jobParameters:
       ${{ insert }}: ${{ parameters.jobParameters }}

@@ -16,7 +16,6 @@ class JitInstance
 private:
     char*          PathToOriginalJit;
     char*          PathToTempJit;
-    HANDLE         ourHeap;
     HMODULE        hLib;
     PgetJit        pngetJit;
     PjitStartup    pnjitStartup;
@@ -33,6 +32,10 @@ private:
     void timeResult(CORINFO_METHOD_INFO info, unsigned flags);
 
 public:
+
+    bool forceClearAltJitFlag;
+    bool forceSetAltJitFlag;
+
     enum Result
     {
         RESULT_ERROR,

@@ -9,7 +9,7 @@ set(DBGSHIM_SOURCES
 
 if(CLR_CMAKE_HOST_WIN32)
     # Use static crt
-    add_definitions(-MT)
+    set(CMAKE_MSVC_RUNTIME_LIBRARY MultiThreaded)
     add_definitions(-DFX_VER_INTERNALNAME_STR=dbgshim.dll)
 endif(CLR_CMAKE_HOST_WIN32)
 
@@ -24,21 +24,20 @@ else(CLR_CMAKE_TARGET_WIN32)
     set(DEF_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/dbgshim_unixexports.src)
     set(EXPORTS_FILE ${CMAKE_CURRENT_BINARY_DIR}/dbgshim.exports)
     generate_exports_file(${DEF_SOURCES} ${EXPORTS_FILE})
+
+    if(CLR_CMAKE_HOST_LINUX OR CLR_CMAKE_HOST_FREEBSD OR CLR_CMAKE_HOST_NETBSD OR CLR_CMAKE_HOST_SUNOS)
+        # This option is necessary to ensure that the overloaded delete operator defined inside
+        # of the utilcode will be used instead of the standard library delete operator.
+        set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Xlinker -Bsymbolic")
+
+        # These options are used to force every object to be included even if it's unused.
+        set(START_WHOLE_ARCHIVE -Wl,--whole-archive)
+        set(END_WHOLE_ARCHIVE -Wl,--no-whole-archive)
+    endif(CLR_CMAKE_HOST_LINUX OR CLR_CMAKE_HOST_FREEBSD OR CLR_CMAKE_HOST_NETBSD OR CLR_CMAKE_HOST_SUNOS)
+
+    set_exports_linker_option(${EXPORTS_FILE})
+
 endif(CLR_CMAKE_TARGET_WIN32)
-
-if(CLR_CMAKE_HOST_LINUX OR CLR_CMAKE_HOST_FREEBSD OR CLR_CMAKE_HOST_NETBSD)
-    # This option is necessary to ensure that the overloaded delete operator defined inside
-    # of the utilcode will be used instead of the standard library delete operator.
-    set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Xlinker -Bsymbolic -Xlinker -Bsymbolic-functions")
-
-    # Add linker exports file option
-    set(EXPORTS_LINKER_OPTION -Wl,--version-script=${EXPORTS_FILE})
-endif(CLR_CMAKE_HOST_LINUX OR CLR_CMAKE_HOST_FREEBSD OR CLR_CMAKE_HOST_NETBSD)
-
-if(CLR_CMAKE_HOST_DARWIN)
-    # Add linker exports file option
-    set(EXPORTS_LINKER_OPTION -Wl,-exported_symbols_list,${EXPORTS_FILE})
-endif(CLR_CMAKE_HOST_DARWIN)
 
 add_library_clr(dbgshim SHARED ${DBGSHIM_SOURCES})
 
@@ -74,14 +73,15 @@ if(CLR_CMAKE_HOST_WIN32)
     )
 else()
     list(APPEND DBGSHIM_LIBRARIES
-        coreclrpal
         mscorrc
+        ${START_WHOLE_ARCHIVE}
+        coreclrpal
         palrt
+        ${END_WHOLE_ARCHIVE}
     )
 endif(CLR_CMAKE_HOST_WIN32)
 
 target_link_libraries(dbgshim ${DBGSHIM_LIBRARIES})
 
 # add the install targets
-install_clr(TARGETS dbgshim)
-install_clr(TARGETS dbgshim DESTINATION sharedFramework SKIP_STRIP)
+install_clr(TARGETS dbgshim ADDITIONAL_DESTINATIONS sharedFramework)

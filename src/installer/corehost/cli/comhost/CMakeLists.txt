@@ -1,6 +1,5 @@
 # Licensed to the .NET Foundation under one or more agreements.
 # The .NET Foundation licenses this file to you under the MIT license.
-# See the LICENSE file in the project root for more information.
 
 project(comhost)
 
@@ -42,6 +41,5 @@ if (CLR_CMAKE_TARGET_WIN32)
     target_link_libraries(comhost ${WINLIBS})
 endif()
 
-install(TARGETS comhost DESTINATION corehost)
-install_symbols(comhost corehost)
+install_with_stripped_symbols(comhost TARGETS corehost)
 target_link_libraries(comhost libhostcommon)

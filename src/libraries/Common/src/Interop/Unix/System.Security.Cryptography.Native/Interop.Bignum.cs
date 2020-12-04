@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #nullable enable
 using System;
@@ -16,7 +15,7 @@ internal static partial class Interop
         internal static extern void BigNumDestroy(IntPtr a);
 
         [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_BigNumFromBinary")]
-        private static extern IntPtr BigNumFromBinary(byte[] s, int len);
+        private static extern unsafe IntPtr BigNumFromBinary(byte* s, int len);
 
         [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_BigNumToBinary")]
         private static extern unsafe int BigNumToBinary(SafeBignumHandle a, byte* to);
@@ -24,24 +23,22 @@ internal static partial class Interop
         [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_GetBigNumBytes")]
         private static extern int GetBigNumBytes(SafeBignumHandle a);
 
-        private static IntPtr CreateBignumPtr(byte[] bigEndianValue)
+        private static unsafe IntPtr CreateBignumPtr(ReadOnlySpan<byte> bigEndianValue)
         {
-            if (bigEndianValue == null)
+            fixed (byte* pBigEndianValue = bigEndianValue)
             {
-                return IntPtr.Zero;
+                IntPtr ret = BigNumFromBinary(pBigEndianValue, bigEndianValue.Length);
+
+                if (ret == IntPtr.Zero)
+                {
+                    throw CreateOpenSslCryptographicException();
+                }
+
+                return ret;
             }
-
-            IntPtr ret = BigNumFromBinary(bigEndianValue, bigEndianValue.Length);
-
-            if (ret == IntPtr.Zero)
-            {
-                throw CreateOpenSslCryptographicException();
-            }
-
-            return ret;
         }
 
-        internal static SafeBignumHandle CreateBignum(byte[] bigEndianValue)
+        internal static SafeBignumHandle CreateBignum(ReadOnlySpan<byte> bigEndianValue)
         {
             IntPtr handle = CreateBignumPtr(bigEndianValue);
             return new SafeBignumHandle(handle, true);

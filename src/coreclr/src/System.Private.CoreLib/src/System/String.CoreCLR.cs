@@ -1,9 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Runtime.CompilerServices;
 using System.Text;
+using Internal.Runtime.CompilerServices;
 
 namespace System
 {
@@ -81,15 +81,12 @@ namespace System
         }
 
         // Copies the source String (byte buffer) to the destination IntPtr memory allocated with len bytes.
+        // Used by ilmarshalers.cpp
         internal static unsafe void InternalCopy(string src, IntPtr dest, int len)
         {
-            if (len == 0)
-                return;
-            fixed (char* charPtr = &src._firstChar)
+            if (len != 0)
             {
-                byte* srcPtr = (byte*)charPtr;
-                byte* dstPtr = (byte*)dest;
-                Buffer.Memcpy(dstPtr, srcPtr, len);
+                Buffer.Memmove(ref *(byte*)dest, ref Unsafe.As<char, byte>(ref src.GetRawStringData()), (nuint)len);
             }
         }
 

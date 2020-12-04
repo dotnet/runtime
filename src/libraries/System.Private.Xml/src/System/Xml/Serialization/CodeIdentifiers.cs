@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 namespace System.Xml.Serialization
 {
@@ -15,14 +14,14 @@ namespace System.Xml.Serialization
         {
         }
 
-        bool IEqualityComparer.Equals(object x, object y)
+        bool IEqualityComparer.Equals(object? x, object? y)
         {
             return (Compare(x, y) == 0);
         }
 
         int IEqualityComparer.GetHashCode(object obj)
         {
-            string s = obj as string;
+            string? s = obj as string;
             if (s == null)
                 throw new ArgumentException(null, nameof(obj));
 
@@ -132,7 +131,7 @@ namespace System.Xml.Serialization
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
-        public string AddUnique(string identifier, object value)
+        public string AddUnique(string identifier, object? value)
         {
             identifier = MakeUnique(identifier);
             Add(identifier, value);
@@ -150,7 +149,7 @@ namespace System.Xml.Serialization
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
-        public void Add(string identifier, object value)
+        public void Add(string identifier, object? value)
         {
             _identifiers.Add(identifier, value);
             _list.Add(value);

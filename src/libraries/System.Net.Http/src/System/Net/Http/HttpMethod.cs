@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -121,7 +120,7 @@ namespace System.Net.Http
 
         public bool Equals(HttpMethod? other)
         {
-            if ((object?)other == null)
+            if (other is null)
             {
                 return false;
             }
@@ -160,7 +159,7 @@ namespace System.Net.Http
 
         public static bool operator ==(HttpMethod? left, HttpMethod? right)
         {
-            return (object?)left == null || (object?)right == null ?
+            return left is null || right is null ?
                 ReferenceEquals(left, right) :
                 left.Equals(right);
         }
@@ -176,9 +175,12 @@ namespace System.Net.Http
         /// </summary>
         internal static HttpMethod Normalize(HttpMethod method)
         {
+            // _http3EncodedBytes is only set for the singleton instances, so if it's not null,
+            // we can avoid the dictionary lookup.  Otherwise, look up the method instance in the
+            // dictionary and return the normalized instance if it's found.
             Debug.Assert(method != null);
-            return s_knownMethods.TryGetValue(method, out HttpMethod? normalized) ?
-                normalized :
+            return
+                method._http3EncodedBytes is null && s_knownMethods.TryGetValue(method, out HttpMethod? normalized) ? normalized :
                 method;
         }
 

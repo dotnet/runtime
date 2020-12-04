@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 // ------------------------------------------------------------------------------
 // Changes to this file must follow the https://aka.ms/api-review process.
 // ------------------------------------------------------------------------------
@@ -416,16 +415,12 @@ namespace System.ComponentModel.Composition.Hosting
         protected ExportProvider() { }
         public event System.EventHandler<System.ComponentModel.Composition.Hosting.ExportsChangeEventArgs>? ExportsChanged { add { } remove { } }
         public event System.EventHandler<System.ComponentModel.Composition.Hosting.ExportsChangeEventArgs>? ExportsChanging { add { } remove { } }
-        [return: System.Diagnostics.CodeAnalysis.MaybeNullAttribute]
-        public T GetExportedValueOrDefault<T>() { throw null; }
-        [return: System.Diagnostics.CodeAnalysis.MaybeNullAttribute]
-        public T GetExportedValueOrDefault<T>(string? contractName) { throw null; }
+        public T? GetExportedValueOrDefault<T>() { throw null; }
+        public T? GetExportedValueOrDefault<T>(string? contractName) { throw null; }
         public System.Collections.Generic.IEnumerable<T> GetExportedValues<T>() { throw null; }
         public System.Collections.Generic.IEnumerable<T> GetExportedValues<T>(string? contractName) { throw null; }
-        [return: System.Diagnostics.CodeAnalysis.MaybeNullAttribute]
-        public T GetExportedValue<T>() { throw null; }
-        [return: System.Diagnostics.CodeAnalysis.MaybeNullAttribute]
-        public T GetExportedValue<T>(string? contractName) { throw null; }
+        public T? GetExportedValue<T>() { throw null; }
+        public T? GetExportedValue<T>(string? contractName) { throw null; }
         public System.Collections.Generic.IEnumerable<System.ComponentModel.Composition.Primitives.Export> GetExports(System.ComponentModel.Composition.Primitives.ImportDefinition definition) { throw null; }
         public System.Collections.Generic.IEnumerable<System.ComponentModel.Composition.Primitives.Export> GetExports(System.ComponentModel.Composition.Primitives.ImportDefinition definition, System.ComponentModel.Composition.Hosting.AtomicComposition? atomicComposition) { throw null; }
         public System.Collections.Generic.IEnumerable<System.Lazy<object, object>> GetExports(System.Type type, System.Type? metadataViewType, string? contractName) { throw null; }

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 //
 // File: DllImport.h
 //
@@ -76,15 +75,19 @@ public:
     static NATIVE_LIBRARY_HANDLE LoadLibraryByName(LPCWSTR name, Assembly *callingAssembly,
                                                    BOOL hasDllImportSearchPathFlags, DWORD dllImportSearchPathFlags,
                                                    BOOL throwOnError);
-    static NATIVE_LIBRARY_HANDLE LoadLibraryModule(NDirectMethodDesc * pMD, LoadLibErrorTracker *pErrorTracker);
+    static NATIVE_LIBRARY_HANDLE LoadNativeLibrary(NDirectMethodDesc * pMD, LoadLibErrorTracker *pErrorTracker);
     static void FreeNativeLibrary(NATIVE_LIBRARY_HANDLE handle);
     static INT_PTR GetNativeLibraryExport(NATIVE_LIBRARY_HANDLE handle, LPCWSTR symbolName, BOOL throwOnError);
 
     static VOID NDirectLink(NDirectMethodDesc *pMD);
 
     // Either MD or signature & module must be given.
-    static BOOL MarshalingRequired(MethodDesc *pMD, PCCOR_SIGNATURE pSig = NULL, Module *pModule = NULL);
-    static void PopulateNDirectMethodDesc(NDirectMethodDesc* pNMD, PInvokeStaticSigInfo* pSigInfo, BOOL throwOnError = TRUE);
+    static BOOL MarshalingRequired(
+        _In_opt_ MethodDesc* pMD,
+        _In_opt_ PCCOR_SIGNATURE pSig = NULL,
+        _In_opt_ Module* pModule = NULL,
+        _In_ bool unmanagedCallersOnlyRequiresMarshalling = true);
+    static void PopulateNDirectMethodDesc(NDirectMethodDesc* pNMD, PInvokeStaticSigInfo* pSigInfo);
 
     static MethodDesc* CreateCLRToNativeILStub(
                     StubSigDesc*       pSigDesc,
@@ -122,14 +125,6 @@ public:
 
 private:
     NDirect() {LIMITED_METHOD_CONTRACT;};     // prevent "new"'s on this class
-
-    static NATIVE_LIBRARY_HANDLE LoadFromNativeDllSearchDirectories(LPCWSTR libName, DWORD flags, LoadLibErrorTracker *pErrorTracker);
-    static NATIVE_LIBRARY_HANDLE LoadFromPInvokeAssemblyDirectory(Assembly *pAssembly, LPCWSTR libName, DWORD flags, LoadLibErrorTracker *pErrorTracker);
-    static NATIVE_LIBRARY_HANDLE LoadLibraryModuleViaHost(NDirectMethodDesc * pMD, LPCWSTR wszLibName);
-    static NATIVE_LIBRARY_HANDLE LoadLibraryModuleViaEvent(NDirectMethodDesc * pMD, LPCWSTR wszLibName);
-    static NATIVE_LIBRARY_HANDLE LoadLibraryModuleViaCallback(NDirectMethodDesc * pMD, LPCWSTR wszLibName);
-    static NATIVE_LIBRARY_HANDLE LoadLibraryModuleBySearch(NDirectMethodDesc * pMD, LoadLibErrorTracker * pErrorTracker, LPCWSTR wszLibName);
-    static NATIVE_LIBRARY_HANDLE LoadLibraryModuleBySearch(Assembly *callingAssembly, BOOL searchAssemblyDirectory, DWORD dllImportSearchPathFlags, LoadLibErrorTracker * pErrorTracker, LPCWSTR wszLibName);
 };
 
 //----------------------------------------------------------------
@@ -155,18 +150,18 @@ enum NDirectStubFlags
 #ifdef FEATURE_COMINTEROP
     NDIRECTSTUB_FL_FIELDGETTER              = 0x00002000, // COM->CLR field getter
     NDIRECTSTUB_FL_FIELDSETTER              = 0x00004000, // COM->CLR field setter
-    NDIRECTSTUB_FL_WINRT                    = 0x00008000,
-    NDIRECTSTUB_FL_WINRTDELEGATE            = 0x00010000,
-    NDIRECTSTUB_FL_WINRTSHAREDGENERIC       = 0x00020000, // stub for methods on shared generic interfaces (only used in the forward direction)
-    NDIRECTSTUB_FL_WINRTCTOR                = 0x00080000,
-    NDIRECTSTUB_FL_WINRTCOMPOSITION         = 0x00100000, // set along with WINRTCTOR
-    NDIRECTSTUB_FL_WINRTSTATIC              = 0x00200000,
+    // unused                               = 0x00008000,
+    // unused                               = 0x00010000,
+    // unused                               = 0x00020000,
+    // unused                               = 0x00080000,
+    // unused                               = 0x00100000,
+    // unused                               = 0x00200000,
     // unused                               = 0x00400000,
-    NDIRECTSTUB_FL_WINRTHASREDIRECTION      = 0x00800000, // the stub may tail-call to a static stub in mscorlib, not shareable
+    // unused                               = 0x00800000,
 #endif // FEATURE_COMINTEROP
 
     // internal flags -- these won't ever show up in an NDirectStubHashBlob
-    NDIRECTSTUB_FL_FOR_NUMPARAMBYTES        = 0x10000000,   // do just enough to return the right value from Marshal.NumParamBytes
+    // unused                               = 0x10000000,
 
 #ifdef FEATURE_COMINTEROP
     NDIRECTSTUB_FL_COMLATEBOUND             = 0x20000000,   // we use a generic stub for late bound calls
@@ -184,16 +179,18 @@ enum ILStubTypes
 #ifdef FEATURE_ARRAYSTUB_AS_IL
     ILSTUB_ARRAYOP_GET                   = 0x80000001,
     ILSTUB_ARRAYOP_SET                   = 0x80000002,
-    ILSTUB_ARRAYOP_ADDRESS               = 0x80000004,
+    ILSTUB_ARRAYOP_ADDRESS               = 0x80000003,
 #endif
 #ifdef FEATURE_MULTICASTSTUB_AS_IL
-    ILSTUB_MULTICASTDELEGATE_INVOKE      = 0x80000010,
+    ILSTUB_MULTICASTDELEGATE_INVOKE      = 0x80000004,
 #endif
 #ifdef FEATURE_INSTANTIATINGSTUB_AS_IL
-    ILSTUB_UNBOXINGILSTUB                = 0x80000020,
-    ILSTUB_INSTANTIATINGSTUB             = 0x80000040,
+    ILSTUB_UNBOXINGILSTUB                = 0x80000005,
+    ILSTUB_INSTANTIATINGSTUB             = 0x80000006,
 #endif
-    ILSTUB_WRAPPERDELEGATE_INVOKE         = 0x80000080,
+    ILSTUB_WRAPPERDELEGATE_INVOKE        = 0x80000007,
+    ILSTUB_TAILCALL_STOREARGS            = 0x80000008,
+    ILSTUB_TAILCALL_CALLTARGET           = 0x80000009,
 };
 
 #ifdef FEATURE_COMINTEROP
@@ -213,7 +210,6 @@ inline bool SF_IsNGENedStubForProfiling(DWORD dwStubFlags) { LIMITED_METHOD_CONT
 inline bool SF_IsDebuggableStub        (DWORD dwStubFlags) { LIMITED_METHOD_CONTRACT; return (dwStubFlags < NDIRECTSTUB_FL_INVALID && 0 != (dwStubFlags & NDIRECTSTUB_FL_GENERATEDEBUGGABLEIL)); }
 inline bool SF_IsCALLIStub             (DWORD dwStubFlags) { LIMITED_METHOD_CONTRACT; return (dwStubFlags < NDIRECTSTUB_FL_INVALID && 0 != (dwStubFlags & NDIRECTSTUB_FL_UNMANAGED_CALLI)); }
 inline bool SF_IsStubWithCctorTrigger  (DWORD dwStubFlags) { LIMITED_METHOD_CONTRACT; return (dwStubFlags < NDIRECTSTUB_FL_INVALID && 0 != (dwStubFlags & NDIRECTSTUB_FL_TRIGGERCCTOR)); }
-inline bool SF_IsForNumParamBytes      (DWORD dwStubFlags) { LIMITED_METHOD_CONTRACT; return (dwStubFlags < NDIRECTSTUB_FL_INVALID && 0 != (dwStubFlags & NDIRECTSTUB_FL_FOR_NUMPARAMBYTES)); }
 inline bool SF_IsStructMarshalStub     (DWORD dwStubFlags) { LIMITED_METHOD_CONTRACT; return (dwStubFlags < NDIRECTSTUB_FL_INVALID && 0 != (dwStubFlags & NDIRECTSTUB_FL_STRUCT_MARSHAL)); }
 
 #ifdef FEATURE_ARRAYSTUB_AS_IL
@@ -231,31 +227,30 @@ inline bool SF_IsWrapperDelegateStub    (DWORD dwStubFlags) { LIMITED_METHOD_CON
 inline bool SF_IsUnboxingILStub         (DWORD dwStubFlags) { LIMITED_METHOD_CONTRACT; return (dwStubFlags == ILSTUB_UNBOXINGILSTUB); }
 inline bool SF_IsInstantiatingStub      (DWORD dwStubFlags) { LIMITED_METHOD_CONTRACT; return (dwStubFlags == ILSTUB_INSTANTIATINGSTUB); }
 #endif
+inline bool SF_IsTailCallStoreArgsStub  (DWORD dwStubFlags) { LIMITED_METHOD_CONTRACT; return (dwStubFlags == ILSTUB_TAILCALL_STOREARGS); }
+inline bool SF_IsTailCallCallTargetStub (DWORD dwStubFlags) { LIMITED_METHOD_CONTRACT; return (dwStubFlags == ILSTUB_TAILCALL_CALLTARGET); }
 
 inline bool SF_IsCOMStub               (DWORD dwStubFlags) { LIMITED_METHOD_CONTRACT; return COM_ONLY(dwStubFlags < NDIRECTSTUB_FL_INVALID && 0 != (dwStubFlags & NDIRECTSTUB_FL_COM)); }
-inline bool SF_IsWinRTStub             (DWORD dwStubFlags) { LIMITED_METHOD_CONTRACT; return COM_ONLY(dwStubFlags < NDIRECTSTUB_FL_INVALID && 0 != (dwStubFlags & NDIRECTSTUB_FL_WINRT)); }
 inline bool SF_IsCOMLateBoundStub      (DWORD dwStubFlags) { LIMITED_METHOD_CONTRACT; return COM_ONLY(dwStubFlags < NDIRECTSTUB_FL_INVALID && 0 != (dwStubFlags & NDIRECTSTUB_FL_COMLATEBOUND)); }
 inline bool SF_IsCOMEventCallStub      (DWORD dwStubFlags) { LIMITED_METHOD_CONTRACT; return COM_ONLY(dwStubFlags < NDIRECTSTUB_FL_INVALID && 0 != (dwStubFlags & NDIRECTSTUB_FL_COMEVENTCALL)); }
 inline bool SF_IsFieldGetterStub       (DWORD dwStubFlags) { LIMITED_METHOD_CONTRACT; return COM_ONLY(dwStubFlags < NDIRECTSTUB_FL_INVALID && 0 != (dwStubFlags & NDIRECTSTUB_FL_FIELDGETTER)); }
 inline bool SF_IsFieldSetterStub       (DWORD dwStubFlags) { LIMITED_METHOD_CONTRACT; return COM_ONLY(dwStubFlags < NDIRECTSTUB_FL_INVALID && 0 != (dwStubFlags & NDIRECTSTUB_FL_FIELDSETTER)); }
-inline bool SF_IsWinRTDelegateStub     (DWORD dwStubFlags) { LIMITED_METHOD_CONTRACT; return COM_ONLY(dwStubFlags < NDIRECTSTUB_FL_INVALID && 0 != (dwStubFlags & NDIRECTSTUB_FL_WINRTDELEGATE)); }
-inline bool SF_IsWinRTCtorStub         (DWORD dwStubFlags) { LIMITED_METHOD_CONTRACT; return COM_ONLY(dwStubFlags < NDIRECTSTUB_FL_INVALID && 0 != (dwStubFlags & NDIRECTSTUB_FL_WINRTCTOR)); }
-inline bool SF_IsWinRTCompositionStub  (DWORD dwStubFlags) { LIMITED_METHOD_CONTRACT; return COM_ONLY(dwStubFlags < NDIRECTSTUB_FL_INVALID && 0 != (dwStubFlags & NDIRECTSTUB_FL_WINRTCOMPOSITION)); }
-inline bool SF_IsWinRTStaticStub       (DWORD dwStubFlags) { LIMITED_METHOD_CONTRACT; return COM_ONLY(dwStubFlags < NDIRECTSTUB_FL_INVALID && 0 != (dwStubFlags & NDIRECTSTUB_FL_WINRTSTATIC)); }
-inline bool SF_IsWinRTSharedGenericStub(DWORD dwStubFlags) { LIMITED_METHOD_CONTRACT; return COM_ONLY(dwStubFlags < NDIRECTSTUB_FL_INVALID && 0 != (dwStubFlags & NDIRECTSTUB_FL_WINRTSHAREDGENERIC)); }
-inline bool SF_IsWinRTHasRedirection   (DWORD dwStubFlags) { LIMITED_METHOD_CONTRACT; return COM_ONLY(dwStubFlags < NDIRECTSTUB_FL_INVALID && 0 != (dwStubFlags & NDIRECTSTUB_FL_WINRTHASREDIRECTION)); }
 
 inline bool SF_IsSharedStub(DWORD dwStubFlags)
 {
     WRAPPER_NO_CONTRACT;
 
-    if (SF_IsWinRTHasRedirection(dwStubFlags))
+    if (SF_IsTailCallStoreArgsStub(dwStubFlags) || SF_IsTailCallCallTargetStub(dwStubFlags))
     {
-        // tail-call to a target-specific mscorlib routine is burned into the stub
         return false;
     }
 
-    return !SF_IsFieldGetterStub(dwStubFlags) && !SF_IsFieldSetterStub(dwStubFlags);
+    if (SF_IsFieldGetterStub(dwStubFlags) || SF_IsFieldSetterStub(dwStubFlags))
+    {
+        return false;
+    }
+
+    return true;
 }
 
 inline bool SF_IsForwardStub             (DWORD dwStubFlags) { WRAPPER_NO_CONTRACT; return !SF_IsReverseStub(dwStubFlags); }
@@ -324,11 +319,11 @@ public:
 public:
     PInvokeStaticSigInfo() { LIMITED_METHOD_CONTRACT; }
 
-    PInvokeStaticSigInfo(Signature sig, Module* pModule, ThrowOnError throwOnError = THROW_ON_ERROR);
+    PInvokeStaticSigInfo(Signature sig, Module* pModule);
 
     PInvokeStaticSigInfo(MethodDesc* pMdDelegate, ThrowOnError throwOnError = THROW_ON_ERROR);
 
-    PInvokeStaticSigInfo(MethodDesc* pMD, LPCUTF8 *pLibName, LPCUTF8 *pEntryPointName, ThrowOnError throwOnError = THROW_ON_ERROR);
+    PInvokeStaticSigInfo(MethodDesc* pMD, LPCUTF8 *pLibName, LPCUTF8 *pEntryPointName);
 
 public:
     void ReportErrors();
@@ -546,7 +541,6 @@ protected:
 #ifdef FEATURE_COMINTEROP
     DWORD               m_dwTargetInterfacePointerLocalNum;
     DWORD               m_dwTargetEntryPointLocalNum;
-    DWORD               m_dwWinRTFactoryObjectLocalNum;
 #endif // FEATURE_COMINTEROP
 
     BOOL                m_fHasCleanupCode;
@@ -568,7 +562,6 @@ protected:
 #endif // DACCESS_COMPILE
 
 // This attempts to guess whether a target is an API call that uses SetLastError to communicate errors.
-BOOL HeuristicDoesThisLooksLikeAnApiCall(LPBYTE pTarget);
 BOOL HeuristicDoesThisLookLikeAGetLastErrorCall(LPBYTE pTarget);
 DWORD STDMETHODCALLTYPE FalseGetLastError();
 

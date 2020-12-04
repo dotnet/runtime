@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #include "common.h"
 #include "assemblybinder.hpp"
@@ -21,8 +20,8 @@ HRESULT CLRPrivBinderAssemblyLoadContext::BindAssemblyByNameWorker(BINDER_SPACE:
     HRESULT hr = S_OK;
 
 #ifdef _DEBUG
-    // MSCORLIB should be bound using BindToSystem
-    _ASSERTE(!pAssemblyName->IsMscorlib());
+    // CoreLib should be bound using BindToSystem
+    _ASSERTE(!pAssemblyName->IsCoreLib());
 #endif
 
     // Do we have the assembly already loaded in the context of the current binder?
@@ -146,7 +145,7 @@ HRESULT CLRPrivBinderAssemblyLoadContext::BindUsingPEImage( /* in */ PEImage *pP
 
         // Disallow attempt to bind to the core library. Aside from that,
         // the LoadContext can load any assembly (even if it was in a different LoadContext like TPA).
-        if (pAssemblyName->IsMscorlib())
+        if (pAssemblyName->IsCoreLib())
         {
             IF_FAIL_GO(HRESULT_FROM_WIN32(ERROR_FILE_NOT_FOUND));
         }
@@ -250,12 +249,11 @@ void CLRPrivBinderAssemblyLoadContext::PrepareForLoadContextRelease(INT_PTR ptrM
     }
     CONTRACTL_END;
 
-    // Replace the weak handle with a strong handle so that the managed assembly load context stays alive until the
+    // Add a strong handle so that the managed assembly load context stays alive until the
     // CLRPrivBinderAssemblyLoadContext::ReleaseLoadContext is called.
-    OBJECTHANDLE handle = reinterpret_cast<OBJECTHANDLE>(m_ptrManagedAssemblyLoadContext);
-    OBJECTHANDLE strongHandle = reinterpret_cast<OBJECTHANDLE>(ptrManagedStrongAssemblyLoadContext);
-    DestroyLongWeakHandle(handle);
-    m_ptrManagedAssemblyLoadContext = reinterpret_cast<INT_PTR>(strongHandle);
+    // We keep the weak handle as well since this method can be running on one thread (e.g. the finalizer one)
+    // and other thread can be using the weak handle.
+    m_ptrManagedStrongAssemblyLoadContext = ptrManagedStrongAssemblyLoadContext;
 
     _ASSERTE(m_pAssemblyLoaderAllocator != NULL);
     _ASSERTE(m_loaderAllocatorHandle != NULL);
@@ -274,15 +272,19 @@ void CLRPrivBinderAssemblyLoadContext::PrepareForLoadContextRelease(INT_PTR ptrM
 CLRPrivBinderAssemblyLoadContext::CLRPrivBinderAssemblyLoadContext()
 {
     m_pTPABinder = NULL;
+    m_ptrManagedStrongAssemblyLoadContext = NULL;
 }
 
 void CLRPrivBinderAssemblyLoadContext::ReleaseLoadContext()
 {
     VERIFY(m_ptrManagedAssemblyLoadContext != NULL);
+    VERIFY(m_ptrManagedStrongAssemblyLoadContext != NULL);
 
-    // This method is called to release the strong handle on the managed AssemblyLoadContext
+    // This method is called to release the weak and strong handles on the managed AssemblyLoadContext
     // once the Unloading event has been fired
     OBJECTHANDLE handle = reinterpret_cast<OBJECTHANDLE>(m_ptrManagedAssemblyLoadContext);
+    DestroyLongWeakHandle(handle);
+    handle = reinterpret_cast<OBJECTHANDLE>(m_ptrManagedStrongAssemblyLoadContext);
     DestroyHandle(handle);
     m_ptrManagedAssemblyLoadContext = NULL;
 }

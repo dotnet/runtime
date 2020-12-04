@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections;
@@ -11,7 +10,7 @@ namespace System.Diagnostics.Tests
 {
     public static class InstanceDataTests
     {
-        [ConditionalFact(typeof(Helpers), nameof(Helpers.IsElevatedAndCanWriteToPerfCounters))]
+        [Fact]
         public static void InstanceData_CreateInstanceData_FromCounterSample()
         {
             long timestamp = DateTime.Now.ToFileTime();
@@ -23,7 +22,7 @@ namespace System.Diagnostics.Tests
             Assert.Equal(1, id.RawValue);
         }
 
-        [ConditionalFact(typeof(Helpers), nameof(Helpers.IsElevatedAndCanWriteToPerfCounters))]
+        [Fact]
         public static void InstanceDataCollection_GetItem_ExistingCounter()
         {
             InstanceDataCollection idc = GetInstanceDataCollection();
@@ -42,7 +41,7 @@ namespace System.Diagnostics.Tests
             }
         }
 
-        [ConditionalFact(typeof(Helpers), nameof(Helpers.IsElevatedAndCanWriteToPerfCounters))]
+        [Fact]
         public static void InstanceDataCollection_NullTest()
         {
             InstanceDataCollection idc = GetInstanceDataCollection();
@@ -51,7 +50,7 @@ namespace System.Diagnostics.Tests
             Assert.Throws<ArgumentNullException>(() => idc.Contains(null));
         }
 
-        [ConditionalFact(typeof(Helpers), nameof(Helpers.IsElevatedAndCanWriteToPerfCounters))]
+        [Fact]
         public static void InstanceDataCollection_GetKeys()
         {
             InstanceDataCollection idc = GetInstanceDataCollection();
@@ -62,7 +61,7 @@ namespace System.Diagnostics.Tests
             Assert.True(keys.Length > 0);
         }
 
-        [ConditionalFact(typeof(Helpers), nameof(Helpers.IsElevatedAndCanWriteToPerfCounters))]
+        [Fact]
         public static void InstanceDataCollection_GetValues()
         {
             InstanceDataCollection idc = GetInstanceDataCollection();
@@ -73,7 +72,7 @@ namespace System.Diagnostics.Tests
             Assert.True(values.Length > 0);
         }
 
-        [ConditionalFact(typeof(Helpers), nameof(Helpers.IsElevatedAndCanWriteToPerfCounters))]
+        [Fact]
         public static void InstanceDataCollectionCollection_GetItem_Invalid()
         {
             InstanceDataCollectionCollection idcc = GetInstanceDataCollectionCollection();
@@ -81,7 +80,7 @@ namespace System.Diagnostics.Tests
             Assert.Throws<ArgumentNullException>(() => idcc[null]);
         }
 
-        [ConditionalFact(typeof(Helpers), nameof(Helpers.IsElevatedAndCanWriteToPerfCounters))]
+        [Fact]
         public static void InstanceDataCollectionCollection_GetKeys()
         {
             InstanceDataCollectionCollection idcc = GetInstanceDataCollectionCollection();
@@ -89,7 +88,7 @@ namespace System.Diagnostics.Tests
             Assert.True(idcc.Keys.Count > 0);
         }
 
-        [ConditionalFact(typeof(Helpers), nameof(Helpers.IsElevatedAndCanWriteToPerfCounters))]
+        [Fact]
         public static void InstanceDataCollectionCollection_GetValues()
         {
             InstanceDataCollectionCollection idcc = GetInstanceDataCollectionCollection();
@@ -97,7 +96,7 @@ namespace System.Diagnostics.Tests
             Assert.True(idcc.Values.Count > 0);
         }
 
-        [ConditionalFact(typeof(Helpers), nameof(Helpers.IsElevatedAndCanWriteToPerfCounters))]
+        [Fact]
         public static void InstanceDataCollectionCollection_Contains_Valid()
         {
             InstanceDataCollectionCollection idcc = GetInstanceDataCollectionCollection();
@@ -105,7 +104,7 @@ namespace System.Diagnostics.Tests
             Assert.False(idcc.Contains("Not a real instance"));
         }
 
-        [ConditionalFact(typeof(Helpers), nameof(Helpers.IsElevatedAndCanWriteToPerfCounters))]
+        [Fact]
         public static void InstanceDataCollectionCollection_Contains_inValid()
         {
             InstanceDataCollectionCollection idcc = GetInstanceDataCollectionCollection();
@@ -113,7 +112,7 @@ namespace System.Diagnostics.Tests
             Assert.Throws<ArgumentNullException>(() => idcc.Contains(null));
         }
 
-        [ConditionalFact(typeof(Helpers), nameof(Helpers.IsElevatedAndCanWriteToPerfCounters))]
+        [Fact]
         public static void InstanceDataCollectionCollection_CopyTo()
         {
             InstanceDataCollectionCollection idcc = GetInstanceDataCollectionCollection();

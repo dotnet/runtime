@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 //
 // --------------------------------------------------------------------------------------------------
 // configuration.cpp
@@ -79,7 +78,7 @@ DWORD Configuration::GetKnobDWORDValue(LPCWSTR name, DWORD defaultValue)
     return defaultValue;
 }
 
-ULONGLONG Configuration::GetKnobULONGLONGValue(LPCWSTR name)
+ULONGLONG Configuration::GetKnobULONGLONGValue(LPCWSTR name, ULONGLONG defaultValue)
 {
     LPCWSTR knobValue = GetConfigurationValue(name);
     if (knobValue != nullptr)
@@ -87,7 +86,7 @@ ULONGLONG Configuration::GetKnobULONGLONGValue(LPCWSTR name)
         return _wcstoui64(knobValue, nullptr, 0);
     }
 
-    return 0;
+    return defaultValue;
 }
 
 LPCWSTR Configuration::GetKnobStringValue(LPCWSTR name, const CLRConfig::ConfigStringInfo& stringInfo)

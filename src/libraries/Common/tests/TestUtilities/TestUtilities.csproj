@@ -1,0 +1,81 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <!-- For some reason, xunit.core.props isn't excluded in VS and sets this to true. -->
+    <IsTestProject>false</IsTestProject>
+    <!--
+      This assembly is referenced from rid agnostic configurations therefore we can't make it RID specific
+      and instead use runtime checks.
+    -->
+    <TargetFrameworks>$(NetCoreAppCurrent);net461</TargetFrameworks>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="System\AdminHelpers.cs" />
+    <Compile Include="System\AssertExtensions.cs" />
+    <Compile Include="System\IO\StreamExtensions.cs" />
+    <Compile Include="System\RetryHelper.cs" />
+    <Compile Include="System\Buffers\BoundedMemory.cs" />
+    <Compile Include="System\Buffers\BoundedMemory.Creation.cs" />
+    <Compile Include="System\Buffers\BoundedMemory.Unix.cs" />
+    <Compile Include="System\Buffers\BoundedMemory.Windows.cs" />
+    <Compile Include="System\Buffers\PoisonPagePlacement.cs" />
+    <Compile Include="System\IO\FileCleanupTestBase.cs" />
+    <Compile Include="System\TestEnvironment.cs" />
+    <Compile Include="System\ThreadCultureChange.cs" />
+    <Compile Include="System\AssemblyPathHelper.cs" />
+    <!-- We don't compile per but and instead use runtime platform checks. -->
+    <Compile Include="System\PlatformDetection.cs" />
+    <Compile Include="System\PlatformDetection.Unix.cs" />
+    <Compile Include="System\PlatformDetection.Windows.cs" />
+    <!-- 
+      Interop.Library is not designed to support runtime checks therefore we are picking the Windows
+      variant from the Common folder and adding the missing members manually.
+    -->
+    <Compile Include="Interop\Interop.Libraries.cs" />
+  </ItemGroup>
+  <!-- Windows imports -->
+  <ItemGroup>
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetCurrentProcess.cs"
+             Link="Common\Interop\Windows\Kernel32\Interop.GetCurrentProcess.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\NtDll\Interop.RtlGetVersion.cs"
+             Link="Common\Interop\Windows\NtDll\Interop.RtlGetVersion.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.OpenProcessToken_SafeAccessTokenHandle.cs"
+             Link="Common\Interop\Windows\Advapi32\Interop.OpenProcessToken_SafeAccessTokenHandle.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Interop.Libraries.cs"
+             Link="Common\Interop\Windows\Interop.Libraries.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.CloseHandle.cs"
+             Link="Common\Interop\Windows\Kernel32\Interop.CloseHandle.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.TOKEN_INFORMATION_CLASS.cs"
+             Link="Common\Interop\Windows\Advapi32\Interop.TOKEN_INFORMATION_CLASS.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.GetTokenInformation_void.cs"
+             Link="Common\Interop\Windows\Advapi32\Interop.GetTokenInformation_void.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.TOKEN_ELEVATION.cs"
+             Link="Common\Interop\Windows\Advapi32\Interop.TOKEN_ELEVATION.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Interop.BOOL.cs"
+             Link="Common\Interop\Windows\Interop.BOOL.cs" />
+  </ItemGroup>
+  <!-- Unix imports -->
+  <ItemGroup>
+    <Compile Include="$(CommonPath)Interop\Unix\System.Security.Cryptography.Native\Interop.OpenSslVersion.cs"
+             Link="Common\Interop\Unix\System.Security.Cryptography.Native\Interop.OpenSslVersion.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\System.Security.Cryptography.Native\Interop.OpenSslGetProtocolSupport.cs"
+             Link="Common\Interop\Unix\System.Security.Cryptography.Native\Interop.OpenSslGetProtocolSupport.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.GetEUid.cs"
+             Link="Common\Interop\Unix\Interop.GetEUid.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.DotNet.XUnitExtensions" Version="$(MicrosoftDotNetXUnitExtensionsVersion)" />
+    <PackageReference Include="xunit.core" Version="$(XUnitVersion)" ExcludeAssets="build" />
+    <PackageReference Include="xunit.assert" Version="$(XUnitVersion)" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)'">
+    <!-- Upgrade the NetStandard.Library transitive xunit dependency to avoid 1.x NS dependencies. -->
+    <PackageReference Include="NETStandard.Library" Version="$(NetStandardLibraryVersion)" />
+    <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Win32.Registry\ref\Microsoft.Win32.Registry.csproj" PrivateAssets="all" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Security.Principal.Windows\ref\System.Security.Principal.Windows.csproj" PrivateAssets="all" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetFramework)' == 'net461'">
+    <PackageReference Include="System.Memory" Version="$(SystemMemoryVersion)" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime.CompilerServices.Unsafe\src\System.Runtime.CompilerServices.Unsafe.ilproj" />
+  </ItemGroup>
+</Project>

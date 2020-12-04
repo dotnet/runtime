@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 // The Debugger class is a part of the System.Diagnostics package
 // and is used for communicating with a debugger.
@@ -16,9 +15,6 @@ namespace System.Diagnostics
         // debugger is launched.
         [MethodImpl(MethodImplOptions.NoInlining)]
         public static void Break() => BreakInternal();
-
-        // The VM depends on this private method.
-        private static void BreakCanThrow() => BreakInternal();
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern void BreakInternal();
@@ -73,7 +69,7 @@ namespace System.Diagnostics
         // desired events are actually reported to the debugger.
         //
         // Constant representing the default category
-        public static readonly string? DefaultCategory = null;
+        public static readonly string? DefaultCategory;
 
         // Posts a message for the attached debugger.  If there is no
         // debugger attached, has no effect.  The debugger may or may not

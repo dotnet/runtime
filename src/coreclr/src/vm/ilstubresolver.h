@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 //
 // File: ILStubResolver.h
 //
@@ -47,8 +46,6 @@ public:
     // -----------------------------------
     // ILStubResolver-specific methods
     // -----------------------------------
-    bool IsNativeToCLRInteropStub();
-    bool IsCLRToNativeInteropStub();
     MethodDesc* GetStubMethodDesc();
     MethodDesc* GetStubTargetMethodDesc();
     void SetStubTargetMethodDesc(MethodDesc* pStubTargetMD);
@@ -75,16 +72,13 @@ public:
 
     static void StubGenFailed(ILStubResolver* pResolver);
 
-protected:
     enum ILStubType
     {
         Unassigned = 0,
         CLRToNativeInteropStub,
         CLRToCOMInteropStub,
-        CLRToWinRTInteropStub,
         NativeToCLRInteropStub,
         COMToCLRInteropStub,
-        WinRTToCLRInteropStub,
         StructMarshalInteropStub,
 #ifdef FEATURE_ARRAYSTUB_AS_IL
         ArrayOpStub,
@@ -97,7 +91,13 @@ protected:
         UnboxingILStub,
         InstantiatingStub,
 #endif
+        TailCallStoreArgsStub,
+        TailCallCallTargetStub,
     };
+
+    ILStubType GetStubType();
+
+protected:
 
     enum CompileTimeStatePtrSpecialValues
     {

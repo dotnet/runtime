@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -22,29 +21,9 @@ namespace System.IO
 
             // Copy the contents of the file from the source to the destination, creating the destination in the process
             using (var src = new FileStream(sourceFullPath, FileMode.Open, FileAccess.Read, FileShare.Read, DefaultBufferSize, FileOptions.None))
+            using (var dst = new FileStream(destFullPath, overwrite ? FileMode.Create : FileMode.CreateNew, FileAccess.ReadWrite, FileShare.None, DefaultBufferSize, FileOptions.None))
             {
-                int result = Interop.Sys.CopyFile(src.SafeFileHandle, sourceFullPath, destFullPath, overwrite ? 1 : 0);
-
-                if (result < 0)
-                {
-                    Interop.ErrorInfo error = Interop.Sys.GetLastErrorInfo();
-
-                    // If we fail to open the file due to a path not existing, we need to know whether to blame
-                    // the file itself or its directory.  If we're creating the file, then we blame the directory,
-                    // otherwise we blame the file.
-                    //
-                    // When opening, we need to align with Windows, which considers a missing path to be
-                    // FileNotFound only if the containing directory exists.
-
-                    bool isDirectory = (error.Error == Interop.Error.ENOENT) &&
-                        (overwrite || !DirectoryExists(Path.GetDirectoryName(Path.TrimEndingDirectorySeparator(destFullPath))!));
-
-                    Interop.CheckIo(
-                        error.Error,
-                        destFullPath,
-                        isDirectory,
-                        errorRewriter: e => (e.Error == Interop.Error.EISDIR) ? Interop.Error.EACCES.Info() : e);
-                }
+                Interop.CheckIo(Interop.Sys.CopyFile(src.SafeFileHandle, dst.SafeFileHandle));
             }
         }
 
@@ -172,8 +151,9 @@ namespace System.IO
             // link/unlink approach and generating any exceptional messages from there as necessary.
             Interop.Sys.FileStatus sourceStat, destStat;
             if (Interop.Sys.LStat(sourceFullPath, out sourceStat) == 0 && // source file exists
-               (Interop.Sys.LStat(destFullPath, out destStat) != 0 || // dest file does not exist
-                    sourceStat.Ino == destStat.Ino) && // source and dest are the same file on that device
+                (Interop.Sys.LStat(destFullPath, out destStat) != 0 || // dest file does not exist
+                (sourceStat.Dev == destStat.Dev && // source and dest are on the same device
+                sourceStat.Ino == destStat.Ino)) && // source and dest are the same file on that device
                 Interop.Sys.Rename(sourceFullPath, destFullPath) == 0) // try the rename
             {
                 // Renamed successfully.
@@ -233,7 +213,7 @@ namespace System.IO
                     case Interop.Error.EROFS:
                         // EROFS means the file system is read-only
                         // Need to manually check file existence
-                        // github.com/dotnet/corefx/issues/21273
+                        // https://github.com/dotnet/runtime/issues/22382
                         Interop.ErrorInfo fileExistsError;
 
                         // Input allows trailing separators in order to match Windows behavior
@@ -287,10 +267,9 @@ namespace System.IO
                 int i = length - 1;
                 while (i >= lengthRoot && !somepathexists)
                 {
-                    string dir = fullPath.Substring(0, i + 1);
-                    if (!DirectoryExists(dir)) // Create only the ones missing
+                    if (!DirectoryExists(fullPath.AsSpan(0, i + 1))) // Create only the ones missing
                     {
-                        stackDir.Push(dir);
+                        stackDir.Push(fullPath.Substring(0, i + 1));
                     }
                     else
                     {
@@ -308,7 +287,7 @@ namespace System.IO
             int count = stackDir.Count;
             if (count == 0 && !somepathexists)
             {
-                string? root = Path.GetPathRoot(fullPath);
+                ReadOnlySpan<char> root = Path.GetPathRoot(fullPath.AsSpan());
                 if (!DirectoryExists(root))
                 {
                     throw Interop.GetExceptionForIoErrno(Interop.Error.ENOENT.Info(), fullPath, isDirectory: true);
@@ -381,6 +360,19 @@ namespace System.IO
                 // Throwing IOException to match Windows behavior.
                 throw new IOException(SR.Format(SR.IO_AlreadyExists_Name, destFullPath));
             }
+
+#if TARGET_BROWSER
+            // renaming a file doesn't return correct error code on emscripten if one of the parent paths does not exist,
+            // manually workaround it for now (https://github.com/dotnet/runtime/issues/40305)
+            if (!Directory.Exists(Path.GetDirectoryName(sourceFullPath)))
+            {
+                throw new DirectoryNotFoundException(SR.Format(SR.IO_PathNotFound_Path, sourceFullPath));
+            }
+            if (!Directory.Exists(Path.GetDirectoryName(destFullPath)))
+            {
+                throw new DirectoryNotFoundException(SR.Format(SR.IO_PathNotFound_Path, destFullPath));
+            }
+#endif
 
             if (Interop.Sys.Rename(sourceFullPath, destFullPath) < 0)
             {

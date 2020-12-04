@@ -21,7 +21,7 @@ error: no such file
 
 ## Debugging core dumps with lldb
 
-It is also possible to debug .NET Core crash dumps using lldb and SOS. In order to do this, you need all of the following:
+It is also possible to debug .NET crash dumps using lldb and SOS. In order to do this, you need all of the following:
 
 - The crash dump file.
 - On Linux, there is an utility called `createdump` (see [doc](../../../design/coreclr/botr/xplat-minidump-generation.md "doc")) that can be setup to generate core dumps when a managed app throws an unhandled exception or faults.'

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Net.Test.Common;
@@ -201,6 +200,7 @@ namespace System.Net.Sockets.Tests
                 // Get the socket for the accepted client connection and put it into the ReadEventArg object user token.
                 SocketAsyncEventArgs readEventArgs = _readWritePool.Pop();
 
+                NotifyAccepted(e.AcceptSocket);
                 ((AsyncUserToken)readEventArgs.UserToken).Socket = e.AcceptSocket;
 
                 // As soon as the client is connected, post a receive to the connection.

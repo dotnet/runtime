@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 
 /*************************************************************************************/
@@ -264,7 +263,7 @@ class ThreadStressLog;
 class StressLog {
 public:
     static void Initialize(unsigned facilities, unsigned level, unsigned maxBytesPerThread,
-                    unsigned maxBytesTotal, HMODULE hMod);
+        unsigned maxBytesTotal, void* moduleBase);
     static void Terminate(BOOL fProcessDetach=FALSE);
     static void ThreadDetach();         // call at DllMain  THREAD_DETACH if you want to recycle thread logs
     static int NewChunk ()
@@ -464,9 +463,10 @@ struct StressLogChunk
     DWORD dwSig2;
 
 #if !defined(STRESS_LOG_READONLY)
+#ifdef HOST_WINDOWS
     static HANDLE s_LogChunkHeap;
 
-    void * operator new (size_t) throw()
+    void * operator new (size_t size) throw()
     {
         if (IsInCantAllocStressLogRegion ())
         {
@@ -475,14 +475,30 @@ struct StressLogChunk
 
         _ASSERTE (s_LogChunkHeap != NULL);
         //no need to zero memory because we could handle garbage contents
-        return ClrHeapAlloc (s_LogChunkHeap, 0, S_SIZE_T(sizeof (StressLogChunk)));
+        return HeapAlloc (s_LogChunkHeap, 0, size);
     }
 
     void operator delete (void * chunk)
     {
         _ASSERTE (s_LogChunkHeap != NULL);
-        ClrHeapFree (s_LogChunkHeap, 0, chunk);
+        HeapFree (s_LogChunkHeap, 0, chunk);
     }
+#else
+    void* operator new (size_t size) throw()
+    {
+        if (IsInCantAllocStressLogRegion())
+        {
+            return NULL;
+        }
+
+        return malloc(size);
+    }
+
+    void operator delete (void* chunk)
+    {
+        free(chunk);
+    }
+#endif
 #endif //!STRESS_LOG_READONLY
 
     StressLogChunk (StressLogChunk * p = NULL, StressLogChunk * n = NULL)

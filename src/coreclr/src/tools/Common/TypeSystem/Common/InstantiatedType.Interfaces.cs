@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using Debug = System.Diagnostics.Debug;
@@ -11,13 +10,12 @@ namespace Internal.TypeSystem
 
     public sealed partial class InstantiatedType : MetadataType
     {
-        private DefType[] _implementedInterfaces = null;
+        private DefType[] _implementedInterfaces;
 
         private DefType[] InitializeImplementedInterfaces()
         {
-            return InstantiateTypeArray(_typeDef.ExplicitlyImplementedInterfaces, _instantiation, new Instantiation());
-
             // TODO Add duplicate detection
+            return (_implementedInterfaces = InstantiateTypeArray(_typeDef.ExplicitlyImplementedInterfaces, _instantiation, new Instantiation()));
         }
 
         /// <summary>

@@ -1,26 +1,21 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #nullable enable
+using System.Diagnostics;
+
 namespace System.Net
 {
     internal sealed class InternalException : Exception
     {
         private readonly object? _unexpectedValue;
 
-        internal InternalException()
-        {
-            NetEventSource.Fail(this, "InternalException thrown.");
-        }
+        internal InternalException() : this(null) { }
 
-        internal InternalException(object unexpectedValue)
+        internal InternalException(object? unexpectedValue)
         {
+            Debug.Fail($"InternalException thrown for unexpected value: {unexpectedValue}");
             _unexpectedValue = unexpectedValue;
-            if (NetEventSource.IsEnabled)
-            {
-                NetEventSource.Fail(this, $"InternalException thrown for unexpected value: {unexpectedValue}");
-            }
         }
 
         public override string Message => _unexpectedValue != null ?

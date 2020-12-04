@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -551,7 +550,7 @@ namespace System.Linq.Expressions.Compiler
                     // explicit guard
                     Label secondHalf = _ilg.DefineLabel();
                     _ilg.Emit(OpCodes.Ldloc, info.Value);
-                    EmitConstant(buckets[mid - 1].Last().Constant);
+                    EmitConstant(buckets[mid - 1][^1].Constant);
                     _ilg.Emit(info.IsUnsigned ? OpCodes.Bgt_Un : OpCodes.Bgt, secondHalf);
                     EmitSwitchBuckets(info, buckets, first, mid - 1);
                     _ilg.MarkLabel(secondHalf);
@@ -582,7 +581,7 @@ namespace System.Linq.Expressions.Compiler
             {
                 after = _ilg.DefineLabel();
                 _ilg.Emit(OpCodes.Ldloc, info.Value);
-                EmitConstant(bucket.Last().Constant);
+                EmitConstant(bucket[^1].Constant);
                 _ilg.Emit(info.IsUnsigned ? OpCodes.Bgt_Un : OpCodes.Bgt, after.Value);
                 _ilg.Emit(OpCodes.Ldloc, info.Value);
                 EmitConstant(bucket[0].Constant);

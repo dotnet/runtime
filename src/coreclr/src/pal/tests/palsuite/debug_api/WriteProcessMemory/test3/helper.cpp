@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 /*=============================================================
 **
@@ -122,7 +121,7 @@ int wpmVerifyCant(struct allhandles_t Comms,
     return TRUE;
 }
 
-int __cdecl main(int argc, char *argv[])
+PALTEST(debug_api_WriteProcessMemory_test3_paltest_writeprocessmemory_test3_helper, "debug_api/WriteProcessMemory/test3/paltest_writeprocessmemory_test3_helper")
 {
     BOOL  success = TRUE;  /* assume success */
     struct allhandles_t Comms = {0,0,0} ;
@@ -250,7 +249,7 @@ EXIT:
         Fail("");
     }
 
-    PAL_Terminate();
+    PAL_TerminateEx(success ? PASS : FAIL);
 
     return success ? PASS : FAIL;
 }

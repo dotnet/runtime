@@ -1,12 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using System.Diagnostics.Contracts;
 using System.Linq;
 
 namespace System.Collections.Immutable
@@ -21,7 +19,7 @@ namespace System.Collections.Immutable
     /// </devremarks>
     [DebuggerDisplay("Count = {Count}")]
     [DebuggerTypeProxy(typeof(ImmutableEnumerableDebuggerProxy<>))]
-    #if !NETSTANDARD1_0 && !NETSTANDARD1_3 && !NETSTANDARD2_0
+    #if !NETSTANDARD1_0 && !NETSTANDARD1_3 && !NETSTANDARD2_0 && !NETFRAMEWORK
     public sealed partial class ImmutableSortedSet<T> : IImmutableSet<T>, ISortKeyCollection<T>, IReadOnlySet<T>, IReadOnlyList<T>, IList<T>, ISet<T>, IList, IStrongEnumerable<T, ImmutableSortedSet<T>.Enumerator>
     #else
     public sealed partial class ImmutableSortedSet<T> : IImmutableSet<T>, ISortKeyCollection<T>, IReadOnlyList<T>, IList<T>, ISet<T>, IList, IStrongEnumerable<T, ImmutableSortedSet<T>.Enumerator>
@@ -86,8 +84,7 @@ namespace System.Collections.Immutable
         /// Gets the maximum value in the collection, as defined by the comparer.
         /// </summary>
         /// <value>The maximum value in the set.</value>
-        [MaybeNull]
-        public T Max
+        public T? Max
         {
             get { return _root.Max; }
         }
@@ -96,8 +93,7 @@ namespace System.Collections.Immutable
         /// Gets the minimum value in the collection, as defined by the comparer.
         /// </summary>
         /// <value>The minimum value in the set.</value>
-        [MaybeNull]
-        public T Min
+        public T? Min
         {
             get { return _root.Min; }
         }
@@ -186,7 +182,6 @@ namespace System.Collections.Immutable
         /// This is an O(1) operation and results in only a single (small) memory allocation.
         /// The mutable collection that is returned is *not* thread-safe.
         /// </remarks>
-        [Pure]
         public Builder ToBuilder()
         {
             // We must not cache the instance created here and return it to various callers.
@@ -198,7 +193,6 @@ namespace System.Collections.Immutable
         /// <summary>
         /// See the <see cref="IImmutableSet{T}"/> interface.
         /// </summary>
-        [Pure]
         public ImmutableSortedSet<T> Add(T value)
         {
             bool mutated;
@@ -208,7 +202,6 @@ namespace System.Collections.Immutable
         /// <summary>
         /// See the <see cref="IImmutableSet{T}"/> interface.
         /// </summary>
-        [Pure]
         public ImmutableSortedSet<T> Remove(T value)
         {
             bool mutated;
@@ -227,7 +220,6 @@ namespace System.Collections.Immutable
         /// a value that has more complete data than the value you currently have, although their
         /// comparer functions indicate they are equal.
         /// </remarks>
-        [Pure]
         public bool TryGetValue(T equalValue, out T actualValue)
         {
             Node searchResult = _root.Search(equalValue, _comparer);
@@ -246,7 +238,6 @@ namespace System.Collections.Immutable
         /// <summary>
         /// See the <see cref="IImmutableSet{T}"/> interface.
         /// </summary>
-        [Pure]
         public ImmutableSortedSet<T> Intersect(IEnumerable<T> other)
         {
             Requires.NotNull(other, nameof(other));
@@ -267,7 +258,6 @@ namespace System.Collections.Immutable
         /// <summary>
         /// See the <see cref="IImmutableSet{T}"/> interface.
         /// </summary>
-        [Pure]
         public ImmutableSortedSet<T> Except(IEnumerable<T> other)
         {
             Requires.NotNull(other, nameof(other));
@@ -287,7 +277,6 @@ namespace System.Collections.Immutable
         /// </summary>
         /// <param name="other">The other sequence of items.</param>
         /// <returns>The new set.</returns>
-        [Pure]
         public ImmutableSortedSet<T> SymmetricExcept(IEnumerable<T> other)
         {
             Requires.NotNull(other, nameof(other));
@@ -317,7 +306,6 @@ namespace System.Collections.Immutable
         /// <summary>
         /// See the <see cref="IImmutableSet{T}"/> interface.
         /// </summary>
-        [Pure]
         public ImmutableSortedSet<T> Union(IEnumerable<T> other)
         {
             Requires.NotNull(other, nameof(other));
@@ -358,7 +346,6 @@ namespace System.Collections.Immutable
         /// <summary>
         /// See the <see cref="IImmutableSet{T}"/> interface.
         /// </summary>
-        [Pure]
         public ImmutableSortedSet<T> WithComparer(IComparer<T>? comparer)
         {
             if (comparer == null)
@@ -384,7 +371,6 @@ namespace System.Collections.Immutable
         /// </summary>
         /// <param name="other">The sequence of items to check against this set.</param>
         /// <returns>A value indicating whether the sets are equal.</returns>
-        [Pure]
         public bool SetEquals(IEnumerable<T> other)
         {
             Requires.NotNull(other, nameof(other));
@@ -419,7 +405,6 @@ namespace System.Collections.Immutable
         /// </summary>
         /// <param name="other">The collection to compare to the current set.</param>
         /// <returns>true if the current set is a correct subset of other; otherwise, false.</returns>
-        [Pure]
         public bool IsProperSubsetOf(IEnumerable<T> other)
         {
             Requires.NotNull(other, nameof(other));
@@ -470,7 +455,6 @@ namespace System.Collections.Immutable
         /// </summary>
         /// <param name="other">The collection to compare to the current set.</param>
         /// <returns>true if the current set is a correct superset of other; otherwise, false.</returns>
-        [Pure]
         public bool IsProperSupersetOf(IEnumerable<T> other)
         {
             Requires.NotNull(other, nameof(other));
@@ -498,7 +482,6 @@ namespace System.Collections.Immutable
         /// </summary>
         /// <param name="other">The collection to compare to the current set.</param>
         /// <returns>true if the current set is a subset of other; otherwise, false.</returns>
-        [Pure]
         public bool IsSubsetOf(IEnumerable<T> other)
         {
             Requires.NotNull(other, nameof(other));
@@ -534,7 +517,6 @@ namespace System.Collections.Immutable
         /// </summary>
         /// <param name="other">The collection to compare to the current set.</param>
         /// <returns>true if the current set is a superset of other; otherwise, false.</returns>
-        [Pure]
         public bool IsSupersetOf(IEnumerable<T> other)
         {
             Requires.NotNull(other, nameof(other));
@@ -555,7 +537,6 @@ namespace System.Collections.Immutable
         /// </summary>
         /// <param name="other">The collection to compare to the current set.</param>
         /// <returns>true if the current set and other share at least one common element; otherwise, false.</returns>
-        [Pure]
         public bool Overlaps(IEnumerable<T> other)
         {
             Requires.NotNull(other, nameof(other));
@@ -584,7 +565,6 @@ namespace System.Collections.Immutable
         /// An enumerator that iterates over the <see cref="ImmutableSortedSet{T}"/>
         /// in reverse order.
         /// </returns>
-        [Pure]
         public IEnumerable<T> Reverse()
         {
             return new ReverseEnumerable(_root);
@@ -624,7 +604,6 @@ namespace System.Collections.Immutable
         /// <summary>
         /// See the <see cref="IImmutableSet{T}"/> interface.
         /// </summary>
-        [ExcludeFromCodeCoverage]
         IImmutableSet<T> IImmutableSet<T>.Clear()
         {
             return this.Clear();
@@ -633,7 +612,6 @@ namespace System.Collections.Immutable
         /// <summary>
         /// See the <see cref="IImmutableSet{T}"/> interface.
         /// </summary>
-        [ExcludeFromCodeCoverage]
         IImmutableSet<T> IImmutableSet<T>.Add(T value)
         {
             return this.Add(value);
@@ -642,7 +620,6 @@ namespace System.Collections.Immutable
         /// <summary>
         /// See the <see cref="IImmutableSet{T}"/> interface.
         /// </summary>
-        [ExcludeFromCodeCoverage]
         IImmutableSet<T> IImmutableSet<T>.Remove(T value)
         {
             return this.Remove(value);
@@ -651,7 +628,6 @@ namespace System.Collections.Immutable
         /// <summary>
         /// See the <see cref="IImmutableSet{T}"/> interface.
         /// </summary>
-        [ExcludeFromCodeCoverage]
         IImmutableSet<T> IImmutableSet<T>.Intersect(IEnumerable<T> other)
         {
             return this.Intersect(other);
@@ -660,7 +636,6 @@ namespace System.Collections.Immutable
         /// <summary>
         /// See the <see cref="IImmutableSet{T}"/> interface.
         /// </summary>
-        [ExcludeFromCodeCoverage]
         IImmutableSet<T> IImmutableSet<T>.Except(IEnumerable<T> other)
         {
             return this.Except(other);
@@ -671,7 +646,6 @@ namespace System.Collections.Immutable
         /// </summary>
         /// <param name="other">The other sequence of items.</param>
         /// <returns>The new set.</returns>
-        [ExcludeFromCodeCoverage]
         IImmutableSet<T> IImmutableSet<T>.SymmetricExcept(IEnumerable<T> other)
         {
             return this.SymmetricExcept(other);
@@ -680,7 +654,6 @@ namespace System.Collections.Immutable
         /// <summary>
         /// See the <see cref="IImmutableSet{T}"/> interface.
         /// </summary>
-        [ExcludeFromCodeCoverage]
         IImmutableSet<T> IImmutableSet<T>.Union(IEnumerable<T> other)
         {
             return this.Union(other);
@@ -971,7 +944,6 @@ namespace System.Collections.Immutable
         /// <returns>
         /// A <see cref="IEnumerator{T}"/> that can be used to iterate through the collection.
         /// </returns>
-        [ExcludeFromCodeCoverage]
         IEnumerator<T> IEnumerable<T>.GetEnumerator()
         {
             return this.IsEmpty ?
@@ -989,7 +961,6 @@ namespace System.Collections.Immutable
         /// <returns>
         /// An <see cref="IEnumerator"/> object that can be used to iterate through the collection.
         /// </returns>
-        [ExcludeFromCodeCoverage]
         System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator()
         {
             return this.GetEnumerator();
@@ -1042,7 +1013,6 @@ namespace System.Collections.Immutable
         /// <param name="root">The root of the collection.</param>
         /// <param name="comparer">The comparer used to build the tree.</param>
         /// <returns>The immutable sorted set instance.</returns>
-        [Pure]
         private static ImmutableSortedSet<T> Wrap(Node root, IComparer<T> comparer)
         {
             return root.IsEmpty
@@ -1061,7 +1031,6 @@ namespace System.Collections.Immutable
         /// It's performance is optimal for additions that do not significantly dwarf the existing
         /// size of this collection.
         /// </remarks>
-        [Pure]
         private ImmutableSortedSet<T> UnionIncremental(IEnumerable<T> items)
         {
             Requires.NotNull(items, nameof(items));
@@ -1083,7 +1052,6 @@ namespace System.Collections.Immutable
         /// </summary>
         /// <param name="root">The root node to wrap.</param>
         /// <returns>A wrapping collection type for the new tree.</returns>
-        [Pure]
         private ImmutableSortedSet<T> Wrap(Node root)
         {
             if (root != _root)
@@ -1101,7 +1069,6 @@ namespace System.Collections.Immutable
         /// </summary>
         /// <param name="addedItems">The sequence of elements to add to this set.</param>
         /// <returns>The immutable sorted set.</returns>
-        [Pure]
         private ImmutableSortedSet<T> LeafToRootRefill(IEnumerable<T> addedItems)
         {
             Requires.NotNull(addedItems, nameof(addedItems));

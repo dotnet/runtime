@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 // =+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+
 // A helper class that contains parallel versions of various looping constructs.  This
@@ -319,7 +318,7 @@ namespace System.Threading.Tasks
                     }
 
                     // If we have encountered any exceptions, then throw.
-                    if ((exceptionQ != null) && (exceptionQ.Count > 0))
+                    if ((exceptionQ != null) && (!exceptionQ.IsEmpty))
                     {
                         ThrowSingleCancellationExceptionOrOtherException(exceptionQ, parallelOptions.CancellationToken,
                                                                          new AggregateException(exceptionQ));
@@ -347,7 +346,9 @@ namespace System.Threading.Tasks
                     // threw an exception.  We let such exceptions go completely unhandled.
                     try
                     {
+#pragma warning disable CA1416 // Validate platform compatibility, issue: https://github.com/dotnet/runtime/issues/44605
                         Task.WaitAll(tasks);
+#pragma warning restore CA1416
                     }
                     catch (AggregateException aggExp)
                     {

@@ -1,6 +1,5 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
 
@@ -16,10 +15,14 @@ namespace System.Buffers
 #endif
     sealed class ArrayBufferWriter<T> : IBufferWriter<T>
     {
+        // Copy of Array.MaxArrayLength. For byte arrays the limit is slightly larger
+        private const int MaxArrayLength = 0X7FEFFFFF;
+
+        private const int DefaultInitialBufferSize = 256;
+
         private T[] _buffer;
         private int _index;
 
-        private const int DefaultInitialBufferSize = 256;
 
         /// <summary>
         /// Creates an instance of an <see cref="ArrayBufferWriter{T}"/>, in which data can be written to,
@@ -42,7 +45,7 @@ namespace System.Buffers
         public ArrayBufferWriter(int initialCapacity)
         {
             if (initialCapacity <= 0)
-                throw new ArgumentException(nameof(initialCapacity));
+                throw new ArgumentException(null, nameof(initialCapacity));
 
             _buffer = new T[initialCapacity];
             _index = 0;
@@ -101,7 +104,7 @@ namespace System.Buffers
         public void Advance(int count)
         {
             if (count < 0)
-                throw new ArgumentException(nameof(count));
+                throw new ArgumentException(null, nameof(count));
 
             if (_index > _buffer.Length - count)
                 ThrowInvalidOperationException_AdvancedTooFar(_buffer.Length);
@@ -167,14 +170,31 @@ namespace System.Buffers
 
             if (sizeHint > FreeCapacity)
             {
-                int growBy = Math.Max(sizeHint, _buffer.Length);
+                int currentLength = _buffer.Length;
 
-                if (_buffer.Length == 0)
+                // Attempt to grow by the larger of the sizeHint and double the current size.
+                int growBy = Math.Max(sizeHint, currentLength);
+
+                if (currentLength == 0)
                 {
                     growBy = Math.Max(growBy, DefaultInitialBufferSize);
                 }
 
-                int newSize = checked(_buffer.Length + growBy);
+                int newSize = currentLength + growBy;
+
+                if ((uint)newSize > int.MaxValue)
+                {
+                    // Attempt to grow to MaxArrayLength.
+                    uint needed = (uint)(currentLength - FreeCapacity + sizeHint);
+                    Debug.Assert(needed > currentLength);
+
+                    if (needed > MaxArrayLength)
+                    {
+                        ThrowOutOfMemoryException(needed);
+                    }
+
+                    newSize = MaxArrayLength;
+                }
 
                 Array.Resize(ref _buffer, newSize);
             }
@@ -185,6 +205,11 @@ namespace System.Buffers
         private static void ThrowInvalidOperationException_AdvancedTooFar(int capacity)
         {
             throw new InvalidOperationException(SR.Format(SR.BufferWriterAdvancedTooFar, capacity));
+        }
+
+        private static void ThrowOutOfMemoryException(uint capacity)
+        {
+            throw new OutOfMemoryException(SR.Format(SR.BufferMaximumSizeExceeded, capacity));
         }
     }
 }

@@ -1,17 +1,16 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using Microsoft.Win32.SafeHandles;
 using System.Collections.Generic;
 using System.ComponentModel;
-using System.Globalization;
 using System.IO;
-using System.Linq;
-using System.Runtime.InteropServices;
+using System.Net.Sockets;
 using System.Security;
 using System.Text;
 using System.Threading;
+using System.Runtime.InteropServices;
+using System.Runtime.Versioning;
 
 namespace System.Diagnostics
 {
@@ -19,9 +18,8 @@ namespace System.Diagnostics
     {
         private static readonly UTF8Encoding s_utf8NoBom =
             new UTF8Encoding(encoderShouldEmitUTF8Identifier: false);
-        private static volatile bool s_initialized = false;
+        private static volatile bool s_initialized;
         private static readonly object s_initializedGate = new object();
-        private static readonly Interop.Sys.SigChldCallback s_sigChildHandler = OnSigChild;
         private static readonly ReaderWriterLockSlim s_processStartLock = new ReaderWriterLockSlim();
         private static int s_childrenUsingTerminalCount;
 
@@ -44,12 +42,14 @@ namespace System.Diagnostics
         }
 
         [CLSCompliant(false)]
+        [SupportedOSPlatform("windows")]
         public static Process Start(string fileName, string userName, SecureString password, string domain)
         {
             throw new PlatformNotSupportedException(SR.ProcessStartWithPasswordAndDomainNotSupported);
         }
 
         [CLSCompliant(false)]
+        [SupportedOSPlatform("windows")]
         public static Process Start(string fileName, string arguments, string userName, SecureString password, string domain)
         {
             throw new PlatformNotSupportedException(SR.ProcessStartWithPasswordAndDomainNotSupported);
@@ -86,11 +86,11 @@ namespace System.Diagnostics
         private bool GetHasExited(bool refresh)
             => GetWaitState().GetExited(out _, refresh);
 
-        private IEnumerable<Exception> KillTree()
+        private List<Exception>? KillTree()
         {
             List<Exception>? exceptions = null;
             KillTree(ref exceptions);
-            return exceptions ?? Enumerable.Empty<Exception>();
+            return exceptions;
         }
 
         private void KillTree(ref List<Exception>? exceptions)
@@ -111,7 +111,7 @@ namespace System.Diagnostics
                 // Ignore 'process no longer exists' error.
                 if (error != Interop.Error.ESRCH)
                 {
-                    AddException(ref exceptions, new Win32Exception());
+                    (exceptions ??= new List<Exception>()).Add(new Win32Exception());
                 }
                 return;
             }
@@ -125,7 +125,7 @@ namespace System.Diagnostics
                 // Ignore 'process no longer exists' error.
                 if (error != Interop.Error.ESRCH)
                 {
-                    AddException(ref exceptions, new Win32Exception());
+                    (exceptions ??= new List<Exception>()).Add(new Win32Exception());
                 }
             }
 
@@ -133,15 +133,6 @@ namespace System.Diagnostics
             {
                 childProcess.KillTree(ref exceptions);
                 childProcess.Dispose();
-            }
-
-            void AddException(ref List<Exception>? list, Exception e)
-            {
-                if (list == null)
-                {
-                    list = new List<Exception>();
-                }
-                list.Add(e);
             }
         }
 
@@ -216,11 +207,11 @@ namespace System.Diagnostics
             {
                 if (_output != null)
                 {
-                    _output.WaitUtilEOF();
+                    _output.WaitUntilEOF();
                 }
                 if (_error != null)
                 {
-                    _error.WaitUtilEOF();
+                    _error.WaitUntilEOF();
                 }
             }
 
@@ -315,12 +306,6 @@ namespace System.Diagnostics
                     throw new Win32Exception(); // match Windows exception
                 }
             }
-        }
-
-        /// <summary>Gets the ID of the current process.</summary>
-        private static int GetCurrentProcessId()
-        {
-            return Interop.Sys.GetPid();
         }
 
         /// <summary>Checks whether the argument is a direct child of this process.</summary>
@@ -557,10 +542,6 @@ namespace System.Diagnostics
             }
         }
 
-        // -----------------------------
-        // ---- PAL layer ends here ----
-        // -----------------------------
-
         /// <summary>Finalizable holder for the underlying shared wait state object.</summary>
         private ProcessWaitState.Holder? _waitStateHolder;
 
@@ -575,7 +556,7 @@ namespace System.Diagnostics
         private static string[] ParseArgv(ProcessStartInfo psi, string? resolvedExe = null, bool ignoreArguments = false)
         {
             if (string.IsNullOrEmpty(resolvedExe) &&
-                (ignoreArguments || (string.IsNullOrEmpty(psi.Arguments) && psi.ArgumentList.Count == 0)))
+                (ignoreArguments || (string.IsNullOrEmpty(psi.Arguments) && !psi.HasArgumentList)))
             {
                 return new string[] { psi.FileName };
             }
@@ -598,7 +579,7 @@ namespace System.Diagnostics
                 {
                     ParseArgumentsIntoList(psi.Arguments, argvList);
                 }
-                else
+                else if (psi.HasArgumentList)
                 {
                     argvList.AddRange(psi.ArgumentList);
                 }
@@ -699,7 +680,7 @@ namespace System.Diagnostics
             }
 
             // Then check the executable's directory
-            string? path = GetExePath();
+            string? path = Environment.ProcessPath;
             if (path != null)
             {
                 try
@@ -773,16 +754,31 @@ namespace System.Diagnostics
             return TimeSpan.FromSeconds(ticks / (double)ticksPerSecond);
         }
 
-        /// <summary>Opens a stream around the specified file descriptor and with the specified access.</summary>
-        /// <param name="fd">The file descriptor.</param>
+        /// <summary>Opens a stream around the specified socket file descriptor and with the specified access.</summary>
+        /// <param name="fd">The socket file descriptor.</param>
         /// <param name="access">The access mode.</param>
         /// <returns>The opened stream.</returns>
-        private static FileStream OpenStream(int fd, FileAccess access)
+        private static Stream OpenStream(int fd, FileAccess access)
         {
             Debug.Assert(fd >= 0);
-            return new FileStream(
-                new SafeFileHandle((IntPtr)fd, ownsHandle: true),
-                access, StreamBufferSize, isAsync: false);
+            var socketHandle = new SafeSocketHandle((IntPtr)fd, ownsHandle: true);
+            var socket = new Socket(socketHandle);
+
+            if (!socket.Connected)
+            {
+                // WSL1 workaround -- due to issues with sockets syscalls
+                // socket pairs fd's are erroneously inferred as not connected.
+                // Fall back to using FileStream instead.
+
+                GC.SuppressFinalize(socket);
+                GC.SuppressFinalize(socketHandle);
+
+                return new FileStream(
+                    new SafeFileHandle((IntPtr)fd, ownsHandle: true),
+                    access, StreamBufferSize, isAsync: false);
+            }
+
+            return new NetworkStream(socket, access, ownsSocket: true);
         }
 
         /// <summary>Parses a command-line argument string into a list of arguments.</summary>
@@ -1004,7 +1000,7 @@ namespace System.Diagnostics
 
         private bool WaitForInputIdleCore(int milliseconds) => throw new InvalidOperationException(SR.InputIdleUnkownError);
 
-        private static void EnsureInitialized()
+        private static unsafe void EnsureInitialized()
         {
             if (s_initialized)
             {
@@ -1021,20 +1017,21 @@ namespace System.Diagnostics
                     }
 
                     // Register our callback.
-                    Interop.Sys.RegisterForSigChld(s_sigChildHandler);
+                    Interop.Sys.RegisterForSigChld(&OnSigChild);
 
                     s_initialized = true;
                 }
             }
         }
 
-        private static void OnSigChild(bool reapAll)
+        [UnmanagedCallersOnly]
+        private static void OnSigChild(int reapAll)
         {
             // Lock to avoid races with Process.Start
             s_processStartLock.EnterWriteLock();
             try
             {
-                ProcessWaitState.CheckChildren(reapAll);
+                ProcessWaitState.CheckChildren(reapAll != 0);
             }
             finally
             {

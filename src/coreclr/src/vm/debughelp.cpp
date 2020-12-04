@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 
 #include "common.h"
@@ -422,7 +421,7 @@ WCHAR* formatMethodDesc(MethodDesc* pMD,
     }
 #endif
 
-    if(_snwprintf_s(&buff[wcslen(buff)], bufSize - wcslen(buff) - 1, _TRUNCATE, W("(%x)"), (size_t)pMD) < 0)
+    if(_snwprintf_s(&buff[wcslen(buff)], bufSize - wcslen(buff) - 1, _TRUNCATE, W("(%zx)"), (size_t)pMD) < 0)
     {
         return NULL;
     }
@@ -477,7 +476,7 @@ int dumpStack(BYTE* topOfStack, unsigned len)
 
         if (isRetAddr((TADDR)*ptr, &whereCalled))
         {
-            if (_snwprintf_s(buffPtr, buffEnd - buffPtr, _TRUNCATE,  W("STK[%08X] = %08X "), (size_t)ptr, *ptr) < 0)
+            if (_snwprintf_s(buffPtr, buffEnd - buffPtr, _TRUNCATE,  W("STK[%08X] = %08X "), (DWORD)(size_t)ptr, (DWORD)*ptr) < 0)
             {
                 return(0);
             }
@@ -545,7 +544,7 @@ int dumpStack(BYTE* topOfStack, unsigned len)
 
             if (whereCalled != 0)
             {
-                if (_snwprintf_s(buffPtr, buffEnd - buffPtr, _TRUNCATE, W(" Caller called Entry %X"), whereCalled) < 0)
+                if (_snwprintf_s(buffPtr, buffEnd - buffPtr, _TRUNCATE, W(" Caller called Entry %zX"), (size_t)whereCalled) < 0)
                 {
                     return(0);
                 }
@@ -562,7 +561,7 @@ int dumpStack(BYTE* topOfStack, unsigned len)
         if (pMT != 0)
         {
             buffPtr = buff;
-            if ( _snwprintf_s(buffPtr, buffEnd - buffPtr, _TRUNCATE, W("STK[%08X] = %08X          MT PARAM "), (size_t)ptr, *ptr ) < 0)
+            if ( _snwprintf_s(buffPtr, buffEnd - buffPtr, _TRUNCATE, W("STK[%08X] = %08X          MT PARAM "), (DWORD)(size_t)ptr, (DWORD)*ptr ) < 0)
             {
                 return(0);
             }
@@ -865,7 +864,7 @@ StackWalkAction PrintStackTraceCallback(CrawlFrame* pCF, VOID* pData)
             if(_snwprintf_s(&buff[wcslen(buff)],
                           nLen - wcslen(buff) - 1,
                           _TRUNCATE,
-                          W("JIT ESP:%X MethStart:%X EIP:%X(rel %X)"),
+                          W("JIT ESP:%zX MethStart:%zX EIP:%zX(rel %X)"),
                           (size_t)GetRegdisplaySP(regs),
                           (size_t)start,
                           (size_t)GetControlPC(regs),
@@ -893,7 +892,7 @@ StackWalkAction PrintStackTraceCallback(CrawlFrame* pCF, VOID* pData)
                       nLen - wcslen(buff) - 1,
                       _TRUNCATE,
                       W("EE Frame is") LFMT_ADDR,
-                      (size_t)DBG_ADDR(frame)) < 0)
+                      DBG_ADDR(frame)) < 0)
         {
             return SWA_CONTINUE;
         }
@@ -1015,10 +1014,6 @@ void PrintDomainName(size_t ob)
 #if defined(TARGET_X86)
 
 #include "gcdump.h"
-
-#include "../gcdump/i386/gcdumpx86.cpp"
-
-#include "../gcdump/gcdump.cpp"
 
 /*********************************************************************/
 void printfToDbgOut(const char* fmt, ...)

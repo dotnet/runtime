@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 /*============================================================================
 **
@@ -14,7 +13,7 @@
 
 #include <palsuite.h>
 
-int __cdecl main(int argc, char **argv)
+PALTEST(c_runtime_fgets_test2_paltest_fgets_test2, "c_runtime/fgets/test2/paltest_fgets_test2")
 {
     const char outBuf1[] = "This is a test.\n";  
     const char outBuf2[] = "This is too.";

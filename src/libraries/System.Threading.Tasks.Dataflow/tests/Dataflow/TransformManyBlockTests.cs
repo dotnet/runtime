@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -311,7 +310,7 @@ namespace System.Threading.Tasks.Dataflow.Tests
             Assert.Equal(expected: 0, actual: tb.OutputCount);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public void TestInputCount()
         {
             foreach (bool sync in DataflowTestHelpers.BooleanValues)
@@ -748,7 +747,7 @@ namespace System.Threading.Tasks.Dataflow.Tests
             await tb.Completion;
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [InlineData(true)]
         [InlineData(false)]
         public async Task TestOrdering_Sync_OrderedDisabled(bool trustedEnumeration)
@@ -776,7 +775,7 @@ namespace System.Threading.Tasks.Dataflow.Tests
             await tb.Completion;
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [InlineData(false)]
         [InlineData(true)]
         public async Task TestOrdering_Sync_BlockingEnumeration_NoDeadlock(bool ensureOrdered)

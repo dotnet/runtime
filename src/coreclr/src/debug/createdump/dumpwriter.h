@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #ifdef HOST_64BIT
 #define ELF_CLASS ELFCLASS64
@@ -30,10 +29,9 @@
 #define NT_FILE		0x46494c45
 #endif
 
-class DumpWriter : IUnknown
+class DumpWriter
 {
 private:
-    LONG m_ref;                         // reference count
     int m_fd;
     CrashInfo& m_crashInfo;
     BYTE m_tempBuffer[0x4000];
@@ -43,11 +41,6 @@ public:
     virtual ~DumpWriter();
     bool OpenDump(const char* dumpFileName);
     bool WriteDump();
-
-    // IUnknown
-    STDMETHOD(QueryInterface)(___in REFIID InterfaceId, ___out PVOID* Interface);
-    STDMETHOD_(ULONG, AddRef)();
-    STDMETHOD_(ULONG, Release)();
 
 private:
     bool WriteProcessInfo();

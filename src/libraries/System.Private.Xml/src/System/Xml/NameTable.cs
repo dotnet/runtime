@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Runtime.InteropServices;
 
@@ -60,6 +59,7 @@ namespace System.Xml
             {
                 throw new ArgumentNullException(nameof(key));
             }
+
             int len = key.Length;
             if (len == 0)
             {
@@ -75,6 +75,7 @@ namespace System.Xml
                     return e.str;
                 }
             }
+
             return AddEntry(key, hashCode);
         }
 
@@ -100,7 +101,7 @@ namespace System.Xml
             // Compatibility check for len < 0, just throw the same exception as new string(key, start, len)
             if (len < 0)
             {
-                throw new ArgumentOutOfRangeException();
+                throw new ArgumentOutOfRangeException(nameof(len));
             }
 
             int hashCode = ComputeHash32(key, start, len);
@@ -112,18 +113,20 @@ namespace System.Xml
                     return e.str;
                 }
             }
+
             return AddEntry(new string(key, start, len), hashCode);
         }
 
         /// <devdoc>
         ///      Find the matching string in the NameTable.
         /// </devdoc>
-        public override string Get(string value)
+        public override string? Get(string value)
         {
             if (value == null)
             {
                 throw new ArgumentNullException(nameof(value));
             }
+
             if (value.Length == 0)
             {
                 return string.Empty;
@@ -138,6 +141,7 @@ namespace System.Xml
                     return e.str;
                 }
             }
+
             return null;
         }
 
@@ -145,7 +149,7 @@ namespace System.Xml
         ///      Find the matching string atom given a range of
         ///      characters.
         /// </devdoc>
-        public override string Get(char[] key, int start, int len)
+        public override string? Get(char[] key, int start, int len)
         {
             if (len == 0)
             {
@@ -172,6 +176,7 @@ namespace System.Xml
                     return e.str;
                 }
             }
+
             return null;
         }
 
@@ -190,8 +195,11 @@ namespace System.Xml
 
         internal static int ComputeHash32(string key)
         {
-            ReadOnlySpan<byte> bytes = MemoryMarshal.AsBytes(key.AsSpan());
-            return Marvin.ComputeHash32(bytes, Marvin.DefaultSeed);
+            // We rely on string.GetHashCode(ROS<char>) being randomized.
+            // n.b. not calling string.GetHashCode() because we want hash code computation to match
+            // char[]-based overload later in this file, so we normalize everything to ROS<char>.
+
+            return string.GetHashCode(key.AsSpan());
         }
 
         //
@@ -203,10 +211,12 @@ namespace System.Xml
             int index = hashCode & _mask;
             Entry e = new Entry(str, hashCode, _entries[index]);
             _entries[index] = e;
+
             if (_count++ == _mask)
             {
                 Grow();
             }
+
             return e.str;
         }
 
@@ -240,6 +250,7 @@ namespace System.Xml
             {
                 return false;
             }
+
             // use array.Length to eliminate the range check
             for (int i = 0; i < str1.Length; i++)
             {
@@ -250,10 +261,12 @@ namespace System.Xml
             }
             return true;
         }
+
         private static int ComputeHash32(char[] key, int start, int len)
         {
-            ReadOnlySpan<byte> bytes = MemoryMarshal.AsBytes(new ReadOnlySpan<char>(key, start, len));
-            return Marvin.ComputeHash32(bytes, Marvin.DefaultSeed);
+            // We rely on string.GetHashCode(ROS<char>) being randomized.
+
+            return string.GetHashCode(key.AsSpan(start, len));
         }
     }
 }

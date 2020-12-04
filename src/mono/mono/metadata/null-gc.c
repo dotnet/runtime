@@ -86,6 +86,18 @@ mono_gc_collection_count (int generation)
 }
 
 void
+mono_gc_stop_world ()
+{
+	g_assert ("mono_gc_stop_world is not supported in null GC");
+}
+
+void
+mono_gc_restart_world ()
+{
+	g_assert ("mono_gc_restart_world is not supported in null GC");
+}
+
+void
 mono_gc_add_memory_pressure (gint64 value)
 {
 }
@@ -201,6 +213,12 @@ mono_gc_alloc_obj (MonoVTable *vtable, size_t size)
 	obj->vtable = vtable;
 
 	return obj;
+}
+
+MonoArray*
+mono_gc_alloc_pinned_vector (MonoVTable *vtable, size_t size, uintptr_t max_length)
+{
+	return mono_gc_alloc_vector (vtable, size, max_length);
 }
 
 MonoArray*

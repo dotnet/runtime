@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections;
 using System.Collections.Generic;
@@ -38,13 +37,13 @@ namespace System.Dynamic.Utils
             return -1;
         }
 
-        [ExcludeFromCodeCoverage] // Unreachable
+        [ExcludeFromCodeCoverage(Justification = "Unreachable")]
         public void Insert(int index, T item)
         {
             throw ContractUtils.Unreachable;
         }
 
-        [ExcludeFromCodeCoverage] // Unreachable
+        [ExcludeFromCodeCoverage(Justification = "Unreachable")]
         public void RemoveAt(int index)
         {
             throw ContractUtils.Unreachable;
@@ -61,7 +60,7 @@ namespace System.Dynamic.Utils
 
                 return GetElement(index);
             }
-            [ExcludeFromCodeCoverage] // Unreachable
+            [ExcludeFromCodeCoverage(Justification = "Unreachable")]
             set
             {
                 throw ContractUtils.Unreachable;
@@ -72,13 +71,13 @@ namespace System.Dynamic.Utils
 
         #region ICollection<T> Members
 
-        [ExcludeFromCodeCoverage] // Unreachable
+        [ExcludeFromCodeCoverage(Justification = "Unreachable")]
         public void Add(T item)
         {
             throw ContractUtils.Unreachable;
         }
 
-        [ExcludeFromCodeCoverage] // Unreachable
+        [ExcludeFromCodeCoverage(Justification = "Unreachable")]
         public void Clear()
         {
             throw ContractUtils.Unreachable;
@@ -110,10 +109,10 @@ namespace System.Dynamic.Utils
 
         public int Count => ElementCount;
 
-        [ExcludeFromCodeCoverage] // Unreachable
+        [ExcludeFromCodeCoverage(Justification = "Unreachable")]
         public bool IsReadOnly => true;
 
-        [ExcludeFromCodeCoverage] // Unreachable
+        [ExcludeFromCodeCoverage(Justification = "Unreachable")]
         public bool Remove(T item)
         {
             throw ContractUtils.Unreachable;

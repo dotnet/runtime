@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 /*============================================================
 **
@@ -27,12 +26,12 @@ namespace System.Reflection.Emit
         // Constructs a PropertyBuilder.
         //
         internal PropertyBuilder(
-            ModuleBuilder mod,            // the module containing this PropertyBuilder
-            string name,           // property name
-            SignatureHelper sig,            // property signature descriptor info
-            PropertyAttributes attr,           // property attribute such as DefaultProperty, Bindable, DisplayBind, etc
-            Type returnType,     // return type of the property.
-            PropertyToken prToken,        // the metadata token for this property
+            ModuleBuilder mod, // the module containing this PropertyBuilder
+            string name, // property name
+            SignatureHelper sig, // property signature descriptor info
+            PropertyAttributes attr, // property attribute such as DefaultProperty, Bindable, DisplayBind, etc
+            Type returnType, // return type of the property.
+            int prToken, // the metadata token for this property
             TypeBuilder containingType) // the containing type
         {
             if (name == null)
@@ -44,11 +43,9 @@ namespace System.Reflection.Emit
 
             m_name = name;
             m_moduleBuilder = mod;
-            m_signature = sig;
             m_attributes = attr;
             m_returnType = returnType;
-            m_prToken = prToken;
-            m_tkProperty = prToken.Token;
+            m_tkProperty = prToken;
             m_containingType = containingType;
         }
 
@@ -61,7 +58,7 @@ namespace System.Reflection.Emit
 
             TypeBuilder.SetConstantValue(
                 m_moduleBuilder,
-                m_prToken.Token,
+                m_tkProperty,
                 m_returnType,
                 defaultValue);
         }
@@ -69,7 +66,7 @@ namespace System.Reflection.Emit
 
         // Return the Token for this property within the TypeBuilder that the
         // property is defined within.
-        public PropertyToken PropertyToken => m_prToken;
+        internal int PropertyToken => m_tkProperty;
 
         public override Module Module => m_containingType.Module;
 
@@ -84,9 +81,9 @@ namespace System.Reflection.Emit
             ModuleBuilder module = m_moduleBuilder;
             TypeBuilder.DefineMethodSemantics(
                 new QCallModule(ref module),
-                m_prToken.Token,
+                m_tkProperty,
                 semantics,
-                mdBuilder.GetToken().Token);
+                mdBuilder.MetadataToken);
         }
 
         public void SetGetMethod(MethodBuilder mdBuilder)
@@ -118,8 +115,8 @@ namespace System.Reflection.Emit
             m_containingType.ThrowIfCreated();
             TypeBuilder.DefineCustomAttribute(
                 m_moduleBuilder,
-                m_prToken.Token,
-                m_moduleBuilder.GetConstructorToken(con).Token,
+                m_tkProperty,
+                m_moduleBuilder.GetConstructorToken(con),
                 binaryAttribute,
                 false, false);
         }
@@ -132,7 +129,7 @@ namespace System.Reflection.Emit
                 throw new ArgumentNullException(nameof(customBuilder));
             }
             m_containingType.ThrowIfCreated();
-            customBuilder.CreateCustomAttribute(m_moduleBuilder, m_prToken.Token);
+            customBuilder.CreateCustomAttribute(m_moduleBuilder, m_tkProperty);
         }
 
         // Not supported functions in dynamic module.
@@ -222,13 +219,11 @@ namespace System.Reflection.Emit
         public override Type? ReflectedType => m_containingType;
 
         // These are package private so that TypeBuilder can access them.
-        private string m_name;                // The name of the property
-        private PropertyToken m_prToken;            // The token of this property
-        private int m_tkProperty;
+        private string m_name; // The name of the property
+        private int m_tkProperty; // The token of this property
         private ModuleBuilder m_moduleBuilder;
-        private SignatureHelper m_signature;
-        private PropertyAttributes m_attributes;        // property's attribute flags
-        private Type m_returnType;        // property's return type
+        private PropertyAttributes m_attributes; // property's attribute flags
+        private Type m_returnType; // property's return type
         private MethodInfo? m_getMethod;
         private MethodInfo? m_setMethod;
         private TypeBuilder m_containingType;

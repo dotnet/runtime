@@ -1,5 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
-// See the LICENSE file in the project root for more information.
+// The .NET Foundation licenses this file to you under the MIT license.
 
 // (C) Copyright 2002 Franklin Wise
 // (C) Copyright 2003 Martin Willemoes Hansen
@@ -366,7 +366,7 @@ namespace System.Data.Tests
         }
 
         [Fact]
-        public void Equals()
+        public void EqualsTest()
         {
             _tbl.Columns.Add();
             _tbl.Columns.Add();

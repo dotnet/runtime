@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 //
 // File: ObjectNative.cpp
 //
@@ -237,9 +236,6 @@ FCIMPL1(Object*, ObjectNative::AllocateUninitializedClone, Object* pObjUNSAFE)
 
     // assert that String has overloaded the Clone() method
     _ASSERTE(pMT != g_pStringClass);
-#ifdef FEATURE_UTF8STRING
-    _ASSERTE(pMT != g_pUtf8StringClass);
-#endif // FEATURE_UTF8STRING
 
     if (pMT->IsArray()) {
         refClone = DupArrayForCloning((BASEARRAYREF)refClone);
@@ -255,7 +251,7 @@ FCIMPL1(Object*, ObjectNative::AllocateUninitializedClone, Object* pObjUNSAFE)
 }
 FCIMPLEND
 
-FCIMPL3(FC_BOOL_RET, ObjectNative::WaitTimeout, CLR_BOOL exitContext, INT32 Timeout, Object* pThisUNSAFE)
+FCIMPL2(FC_BOOL_RET, ObjectNative::WaitTimeout, INT32 Timeout, Object* pThisUNSAFE)
 {
     FCALL_CONTRACT;
 
@@ -263,13 +259,11 @@ FCIMPL3(FC_BOOL_RET, ObjectNative::WaitTimeout, CLR_BOOL exitContext, INT32 Time
     OBJECTREF pThis = (OBJECTREF) pThisUNSAFE;
     HELPER_METHOD_FRAME_BEGIN_RET_1(pThis);
 
-    if (pThis == NULL)
-        COMPlusThrow(kNullReferenceException, W("NullReference_This"));
+     // Arguments validated on managed side
+    _ASSERTE(pThis != NULL);
+    _ASSERTE(Timeout >= INFINITE_TIMEOUT);
 
-    if ((Timeout < 0) && (Timeout != INFINITE_TIMEOUT))
-        COMPlusThrowArgumentOutOfRange(W("millisecondsTimeout"), W("ArgumentOutOfRange_NeedNonNegNum"));
-
-    retVal = pThis->Wait(Timeout, exitContext);
+    retVal = pThis->Wait(Timeout);
 
     HELPER_METHOD_FRAME_END();
     FC_RETURN_BOOL(retVal);

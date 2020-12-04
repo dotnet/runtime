@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #nullable enable
 using System.Diagnostics;
@@ -17,14 +16,14 @@ internal static partial class Interop
         private static extern int EcKeyCreateByKeyParameters(
             out SafeEcKeyHandle key,
             string oid,
-            byte[] qx, int qxLength,
-            byte[] qy, int qyLength,
+            byte[]? qx, int qxLength,
+            byte[]? qy, int qyLength,
             byte[]? d, int dLength);
 
         internal static SafeEcKeyHandle EcKeyCreateByKeyParameters(
             string oid,
-            byte[] qx, int qxLength,
-            byte[] qy, int qyLength,
+            byte[]? qx, int qxLength,
+            byte[]? qy, int qyLength,
             byte[]? d, int dLength)
         {
             SafeEcKeyHandle key;

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Runtime.InteropServices;
 using System.Security;
@@ -114,6 +113,14 @@ namespace System.IO.Compression
         /// </summary>
         public const int Deflate_DefaultWindowBits = -15; // Legal values are 8..15 and -8..-15. 15 is the window size,
                                                           // negative val causes deflate to produce raw deflate data (no zlib header).
+
+        /// <summary>
+        /// <p><strong>From the ZLib manual:</strong></p>
+        /// <p>ZLib's <code>windowBits</code> parameter is the base two logarithm of the window size (the size of the history buffer).
+        /// It should be in the range 8..15 for this version of the library. Larger values of this parameter result in better compression
+        /// at the expense of memory usage. The default value is 15 if deflateInit is used instead.<br /></p>
+        /// </summary>
+        public const int ZLib_DefaultWindowBits = 15;
 
         /// <summary>
         /// <p>Zlib's <code>windowBits</code> parameter is the base two logarithm of the window size (the size of the history buffer).

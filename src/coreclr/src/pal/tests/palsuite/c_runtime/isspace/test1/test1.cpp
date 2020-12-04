@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 /*============================================================================
 **
@@ -23,7 +22,7 @@ struct testCase
 
 
 
-int __cdecl main(int argc, char *argv[])
+PALTEST(c_runtime_isspace_test1_paltest_isspace_test1, "c_runtime/isspace/test1/paltest_isspace_test1")
 {
     int i=0;
     long result = 0;

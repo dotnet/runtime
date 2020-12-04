@@ -33,11 +33,6 @@ static DebuggerEngineCallbacks rt_callbacks;
 static int log_level;
 static FILE *log_file;
 
-#ifdef HOST_ANDROID
-#define DEBUG_PRINTF(level, ...) do { if (G_UNLIKELY ((level) <= log_level)) { g_print (__VA_ARGS__); } } while (0)
-#else
-#define DEBUG_PRINTF(level, ...) do { if (G_UNLIKELY ((level) <= log_level)) { fprintf (log_file, __VA_ARGS__); fflush (log_file); } } while (0)
-#endif
 
 /*
  * Locking
@@ -378,6 +373,9 @@ collect_domain_bp (gpointer key, gpointer value, gpointer user_data)
 	CollectDomainData *ud = (CollectDomainData*)user_data;
 	MonoMethod *m;
 
+	if (mono_domain_is_unloading (domain))
+		return;
+
 	mono_domain_lock (domain);
 	g_hash_table_iter_init (&iter, domain_jit_info (domain)->seq_points);
 	while (g_hash_table_iter_next (&iter, (void**)&m, (void**)&seq_points)) {
@@ -591,8 +589,26 @@ mono_de_clear_breakpoints_for_domain (MonoDomain *domain)
 /* Number of single stepping operations in progress */
 static int ss_count;
 
-/* The single step request instance */
-static SingleStepReq *the_ss_req;
+/* The single step request instances */
+static GPtrArray *the_ss_reqs;
+
+static void
+ss_req_init (void)
+{
+	the_ss_reqs = g_ptr_array_new ();
+}
+
+static void
+ss_req_cleanup (void)
+{
+	dbg_lock ();
+
+	g_ptr_array_free (the_ss_reqs, TRUE);
+
+	the_ss_reqs = NULL;
+
+	dbg_unlock ();
+}
 
 /*
  * mono_de_start_single_stepping:
@@ -717,16 +733,26 @@ ss_destroy (SingleStepReq *req)
 }
 
 static SingleStepReq*
-ss_req_acquire (void)
+ss_req_acquire (MonoInternalThread *thread)
 {
-	SingleStepReq *req;
-
+	SingleStepReq *req = NULL;
 	dbg_lock ();
-	req = the_ss_req;
-	if (req)
-		req->refcount ++;
+	int i;
+	for (i = 0; i < the_ss_reqs->len; ++i) {
+		SingleStepReq *current_req = (SingleStepReq *)g_ptr_array_index (the_ss_reqs, i);
+		if (current_req->thread == thread) {
+			current_req->refcount ++;	
+			req = current_req;
+		}
+	}
 	dbg_unlock ();
 	return req;
+}
+
+static int 
+ss_req_count ()
+{
+	return the_ss_reqs->len;
 }
 
 static void
@@ -739,23 +765,30 @@ mono_de_ss_req_release (SingleStepReq *req)
 	req->refcount --;
 	if (req->refcount == 0)
 		free = TRUE;
-	dbg_unlock ();
 	if (free) {
-		if (req == the_ss_req)
-			the_ss_req = NULL;
+		g_ptr_array_remove (the_ss_reqs, req);
 		ss_destroy (req);
+	}
+	dbg_unlock ();
+}
+
+void
+mono_de_cancel_ss (SingleStepReq *req)
+{
+	if (the_ss_reqs) {
+		mono_de_ss_req_release (req);
 	}
 }
 
 void
-mono_de_cancel_ss (void)
+mono_de_cancel_all_ss ()
 {
-	if (the_ss_req) {
-		mono_de_ss_req_release (the_ss_req);
-		the_ss_req = NULL;
+	int i;
+	for (i = 0; i < the_ss_reqs->len; ++i) {
+		SingleStepReq *current_req = (SingleStepReq *)g_ptr_array_index (the_ss_reqs, i);
+		mono_de_ss_req_release (current_req);
 	}
 }
-
 
 void
 mono_de_process_single_step (void *tls, gboolean from_signal)
@@ -774,21 +807,17 @@ mono_de_process_single_step (void *tls, gboolean from_signal)
 	/* Skip the instruction causing the single step */
 	rt_callbacks.begin_single_step_processing (ctx, from_signal);
 
-	if (rt_callbacks.try_process_suspend (tls, ctx))
+	if (rt_callbacks.try_process_suspend (tls, ctx, FALSE))
 		return;
 
 	/*
 	 * This can run concurrently with a clear_event_request () call, so needs locking/reference counts.
 	 */
-	ss_req = ss_req_acquire ();
+	ss_req = ss_req_acquire (mono_thread_internal_current ());
 
 	if (!ss_req)
 		// FIXME: A suspend race
 		return;
-
-	if (mono_thread_internal_current () != ss_req->thread)
-		goto exit;
-
 	ip = (guint8 *)MONO_CONTEXT_GET_IP (ctx);
 
 	ji = get_top_method_ji (ip, &domain, (gpointer*)&ip);
@@ -1022,7 +1051,7 @@ mono_de_process_breakpoint (void *void_tls, gboolean from_signal)
 	SeqPoint sp;
 	gboolean found_sp;
 
-	if (rt_callbacks.try_process_suspend (tls, ctx))
+	if (rt_callbacks.try_process_suspend (tls, ctx, TRUE))
 		return;
 
 	ip = (guint8 *)MONO_CONTEXT_GET_IP (ctx);
@@ -1289,8 +1318,11 @@ mono_de_ss_start (SingleStepReq *ss_req, SingleStepArgs *ss_args)
 	} else {
 		frame_index = 1;
 
+#ifndef TARGET_WASM
 		if (ss_args->ctx && !frames) {
-
+#else
+		if (!frames) {
+#endif
 			mono_loader_lock ();
 			locked = TRUE;
 
@@ -1488,7 +1520,7 @@ mono_de_ss_create (MonoInternalThread *thread, StepSize size, StepDepth depth, S
 		return err;
 
 	// FIXME: Multiple requests
-	if (the_ss_req) {
+	if (ss_req_count () > 1) {
 		err = rt_callbacks.handle_multiple_ss_requests ();
 
 		if (err == DE_ERR_NOT_IMPLEMENTED) {
@@ -1519,8 +1551,7 @@ mono_de_ss_create (MonoInternalThread *thread, StepSize size, StepDepth depth, S
 	err = rt_callbacks.ss_create_init_args (ss_req, &args);
 	if (err)
 		return err;
-
-	the_ss_req = ss_req;
+	g_ptr_array_add (the_ss_reqs, ss_req);
 
 	mono_de_ss_start (ss_req, &args);
 
@@ -1552,7 +1583,7 @@ mono_de_init (DebuggerEngineCallbacks *cbs)
 
 	domains_init ();
 	breakpoints_init ();
-
+	ss_req_init ();
 	mono_debugger_log_init ();
 }
 
@@ -1561,6 +1592,7 @@ mono_de_cleanup (void)
 {
 	breakpoints_cleanup ();
 	domains_cleanup ();
+	ss_req_cleanup ();
 }
 
 void
@@ -1572,4 +1604,154 @@ mono_debugger_free_objref (gpointer value)
 
 	g_free (o);
 }
+
+// Returns true if TaskBuilder has NotifyDebuggerOfWaitCompletion method
+// false if not(AsyncVoidBuilder)
+MonoClass *
+get_class_to_get_builder_field(DbgEngineStackFrame *frame)
+{
+	ERROR_DECL (error);
+	gpointer this_addr = get_this_addr (frame);
+	MonoClass *original_class = frame->method->klass;
+	MonoClass *ret;
+	if (!m_class_is_valuetype (original_class) && mono_class_is_open_constructed_type (m_class_get_byval_arg (original_class))) {
+		MonoObject *this_obj = *(MonoObject**)this_addr;
+		MonoGenericContext context;
+		MonoType *inflated_type;
+
+		if (!this_obj)
+			return NULL;
+			
+		context = mono_get_generic_context_from_stack_frame (frame->ji, this_obj->vtable);
+		inflated_type = mono_class_inflate_generic_type_checked (m_class_get_byval_arg (original_class), &context, error);
+		mono_error_assert_ok (error); /* FIXME don't swallow the error */
+
+		ret = mono_class_from_mono_type_internal (inflated_type);
+		mono_metadata_free_type (inflated_type);
+		return ret;
+	}
+	return original_class;
+}
+
+
+gboolean
+set_set_notification_for_wait_completion_flag (DbgEngineStackFrame *frame)
+{
+	MonoClassField *builder_field = mono_class_get_field_from_name_full (get_class_to_get_builder_field(frame), "<>t__builder", NULL);
+	if (!builder_field)
+		return FALSE;
+	gpointer builder = get_async_method_builder (frame);
+	if (!builder)
+		return FALSE;
+
+	MonoMethod* method = get_set_notification_method (mono_class_from_mono_type_internal (builder_field->type));
+	if (method == NULL)
+		return FALSE;
+	gboolean arg = TRUE;
+	ERROR_DECL (error);
+	void *args [ ] = { &arg };
+	mono_runtime_invoke_checked (method, builder, args, error);
+	mono_error_assert_ok (error);
+	return TRUE;
+}
+
+MonoMethod*
+get_object_id_for_debugger_method (MonoClass* async_builder_class)
+{
+	ERROR_DECL (error);
+	GPtrArray *array = mono_class_get_methods_by_name (async_builder_class, "get_ObjectIdForDebugger", 0x24, 1, FALSE, error);
+	mono_error_assert_ok (error);
+	if (array->len != 1) {
+		g_ptr_array_free (array, TRUE);
+		//if we don't find method get_ObjectIdForDebugger we try to find the property Task to continue async debug.
+		MonoProperty *prop = mono_class_get_property_from_name_internal (async_builder_class, "Task");
+		if (!prop) {
+			DEBUG_PRINTF (1, "Impossible to debug async methods.\n");
+			return NULL;
+		}
+		return prop->get;
+	}
+	MonoMethod *method = (MonoMethod *)g_ptr_array_index (array, 0);
+	g_ptr_array_free (array, TRUE);
+	return method;
+}
+
+gpointer
+get_this_addr (DbgEngineStackFrame *the_frame)
+{
+	StackFrame *frame = (StackFrame *)the_frame;
+	if (frame->de.ji->is_interp)
+		return mini_get_interp_callbacks ()->frame_get_this (frame->interp_frame);
+
+	MonoDebugVarInfo *var = frame->jit->this_var;
+	if ((var->index & MONO_DEBUG_VAR_ADDRESS_MODE_FLAGS) != MONO_DEBUG_VAR_ADDRESS_MODE_REGOFFSET)
+		return NULL;
+
+	guint8 *addr = (guint8 *)mono_arch_context_get_int_reg (&frame->ctx, var->index & ~MONO_DEBUG_VAR_ADDRESS_MODE_FLAGS);
+	addr += (gint32)var->offset;
+	return addr;
+}
+
+/* Return the address of the AsyncMethodBuilder struct belonging to the state machine method pointed to by FRAME */
+gpointer
+get_async_method_builder (DbgEngineStackFrame *frame)
+{
+	MonoObject *this_obj;
+	MonoClassField *builder_field;
+	gpointer builder;
+	gpointer this_addr;
+	MonoClass* klass = frame->method->klass;
+
+	klass = get_class_to_get_builder_field(frame);
+	builder_field = mono_class_get_field_from_name_full (klass, "<>t__builder", NULL);
+	if (!builder_field)
+		return NULL;
+
+	this_addr = get_this_addr (frame);
+	if (!this_addr)
+		return NULL;
+
+	if (m_class_is_valuetype (klass)) {
+		builder = mono_vtype_get_field_addr (*(guint8**)this_addr, builder_field);
+	} else {
+		this_obj = *(MonoObject**)this_addr;
+		builder = (char*)this_obj + builder_field->offset;
+	}
+
+	return builder;
+}
+
+MonoMethod*
+get_set_notification_method (MonoClass* async_builder_class)
+{
+	ERROR_DECL (error);
+	GPtrArray* array = mono_class_get_methods_by_name (async_builder_class, "SetNotificationForWaitCompletion", 0x24, 1, FALSE, error);
+	mono_error_assert_ok (error);
+	if (array->len == 0) {
+		g_ptr_array_free (array, TRUE);
+		return NULL;
+	}
+	MonoMethod* set_notification_method = (MonoMethod *)g_ptr_array_index (array, 0);
+	g_ptr_array_free (array, TRUE);
+	return set_notification_method;
+}
+
+static MonoMethod* notify_debugger_of_wait_completion_method_cache;
+
+MonoMethod*
+get_notify_debugger_of_wait_completion_method (void)
+{
+	if (notify_debugger_of_wait_completion_method_cache != NULL)
+		return notify_debugger_of_wait_completion_method_cache;
+	ERROR_DECL (error);
+	MonoClass* task_class = mono_class_load_from_name (mono_defaults.corlib, "System.Threading.Tasks", "Task");
+	GPtrArray* array = mono_class_get_methods_by_name (task_class, "NotifyDebuggerOfWaitCompletion", 0x24, 1, FALSE, error);
+	mono_error_assert_ok (error);
+	g_assert (array->len == 1);
+	notify_debugger_of_wait_completion_method_cache = (MonoMethod *)g_ptr_array_index (array, 0);
+	g_ptr_array_free (array, TRUE);
+	return notify_debugger_of_wait_completion_method_cache;
+}
+
+
 #endif

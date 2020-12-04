@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Generic;
@@ -370,8 +369,11 @@ namespace ILCompiler
             else
             {
                 Utf8String utf8MangledName;
-                if (_mangledMethodNames.TryGetValue(method, out utf8MangledName))
-                    return utf8MangledName;
+                lock (this)
+                {
+                    if (_mangledMethodNames.TryGetValue(method, out utf8MangledName))
+                        return utf8MangledName;
+                }
 
                 Utf8StringBuilder sb = new Utf8StringBuilder();
                 sb.Append(GetMangledTypeName(method.OwningType));

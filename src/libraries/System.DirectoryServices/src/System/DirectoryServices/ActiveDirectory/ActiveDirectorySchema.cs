@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Text;
 using System.Collections;
@@ -26,10 +25,10 @@ namespace System.DirectoryServices.ActiveDirectory
 
     public class ActiveDirectorySchema : ActiveDirectoryPartition
     {
-        private bool _disposed = false;
-        private DirectoryEntry _schemaEntry = null;
-        private DirectoryEntry _abstractSchemaEntry = null;
-        private DirectoryServer _cachedSchemaRoleOwner = null;
+        private bool _disposed;
+        private DirectoryEntry _schemaEntry;
+        private DirectoryEntry _abstractSchemaEntry;
+        private DirectoryServer _cachedSchemaRoleOwner;
 
         #region constructors
         internal ActiveDirectorySchema(DirectoryContext context, string distinguishedName)

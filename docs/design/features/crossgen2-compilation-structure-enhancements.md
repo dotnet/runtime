@@ -59,7 +59,7 @@ Note, this approach is probably more complete than we will finish in one release
 
 For non-generic code this is straightforward. Either compile all the non-generic code in the binary, or compile only that which is specified via a profile guided optimization step. This choice shall be driven by a per "input assembly" switch as in the presence of a composite R2R image we likely will want to have different policy for different assemblies, as has proven valuable in the past. Until proven otherwise, per assembly specification of this behavior shall be considered to be sufficient.
 
-We shall set a guideline for how much generic code to generate, and the amount of generic code to generate shall be gated as a multiplier of the amount of non-generic code generated. 
+We shall set a guideline for how much generic code to generate, and the amount of generic code to generate shall be gated as a multiplier of the amount of non-generic code generated.
 
 For generic code we also need a per assembly switch to adjust between various behaviors, but the proposal is as follows:
 
@@ -87,7 +87,7 @@ Runtime Layer
 
 Each layer in this stack will be compiled as a consistent set of crossgen2 compilations.
 
-I propose to reduce the generics duplication problem to allow duplication between layers, but not within a layer. There are two ways to do this. The first of which is to produce composite R2R images for a layer. Within a single composite R2R image generation, running heuristics and generating generics eagerly should be straightforward. This composite R2R image would have all instantiations statically computed that are local to that particular layer of compilation, and also any instantiations from other layers. The duplication problem would be reduced in that a single analysis would trigger these multi-layer dependent compilations, and so which there may be duplication between layers, there wouldn't be duplication within a layer. And given that the count of layers is not expected to exceed 3 or 4, that duplication will not be a major concern. 
+I propose to reduce the generics duplication problem to allow duplication between layers, but not within a layer. There are two ways to do this. The first of which is to produce composite R2R images for a layer. Within a single composite R2R image generation, running heuristics and generating generics eagerly should be straightforward. This composite R2R image would have all instantiations statically computed that are local to that particular layer of compilation, and also any instantiations from other layers. The duplication problem would be reduced in that a single analysis would trigger these multi-layer dependent compilations, and so which there may be duplication between layers, there wouldn't be duplication within a layer. And given that the count of layers is not expected to exceed 3 or 4, that duplication will not be a major concern.
 
 The second approach is to split compilation up into assembly level units, run the heuristics per assembly, generate the completely local generics in the individual assemblies, and then nominate a final mop up assembly that consumes a series of data files produced by the individual assembly compilations and holds all of the stuff that didn't make sense in the individual assemblies. In my opinion this second approach would be better for debug builds, but the first approach is strictly better for release builds, and really shouldn't be terribly slow.
 

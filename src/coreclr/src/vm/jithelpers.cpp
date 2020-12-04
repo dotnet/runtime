@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 
 
@@ -25,6 +24,7 @@
 #include "comdelegate.h"
 #include "corprof.h"
 #include "eeprofinterfaces.h"
+#include "dynamicinterfacecastable.h"
 
 #ifndef TARGET_UNIX
 // Included for referencing __report_gsfailure
@@ -55,6 +55,7 @@
 #include "runtimehandles.h"
 #include "castcache.h"
 #include "onstackreplacement.h"
+#include "pgo.h"
 
 //========================================================================
 //
@@ -2116,12 +2117,12 @@ BOOL ObjIsInstanceOfCore(Object *pObject, TypeHandle toTypeHnd, BOOL throwCastEx
     {
         fCast = TRUE;
     }
-    else
+    else if (toTypeHnd.IsInterface())
     {
 #ifdef FEATURE_COMINTEROP
         // If we are casting a COM object from interface then we need to do a check to see
         // if it implements the interface.
-        if (toTypeHnd.IsInterface() && pMT->IsComObjectType())
+        if (pMT->IsComObjectType())
         {
             fCast = ComObject::SupportsInterface(obj, toTypeHnd.AsMethodTable());
         }
@@ -2130,7 +2131,7 @@ BOOL ObjIsInstanceOfCore(Object *pObject, TypeHandle toTypeHnd, BOOL throwCastEx
 #ifdef FEATURE_ICASTABLE
         // If type implements ICastable interface we give it a chance to tell us if it can be casted
         // to a given type.
-        if (toTypeHnd.IsInterface() && pMT->IsICastable())
+        if (pMT->IsICastable())
         {
             // Make actuall call to ICastableHelpers.IsInstanceOfInterface(obj, interfaceTypeObj, out exception)
             OBJECTREF exception = NULL;
@@ -2154,7 +2155,12 @@ BOOL ObjIsInstanceOfCore(Object *pObject, TypeHandle toTypeHnd, BOOL throwCastEx
             }
             GCPROTECT_END(); //exception
         }
+        else
 #endif // FEATURE_ICASTABLE
+        if (pMT->IsIDynamicInterfaceCastable())
+        {
+            fCast = DynamicInterfaceCastable::IsInstanceOf(&obj, toTypeHnd, throwCastException);
+        }
     }
 
     if (!fCast && throwCastException)
@@ -2384,61 +2390,6 @@ HCIMPL1(StringObject*, AllocateString_MP_FastPortable, DWORD stringLength)
 }
 HCIMPLEND
 
-#ifdef FEATURE_UTF8STRING
-HCIMPL1(Utf8StringObject*, AllocateUtf8String_MP_FastPortable, DWORD stringLength)
-{
-    FCALL_CONTRACT;
-
-    do
-    {
-        _ASSERTE(GCHeapUtilities::UseThreadAllocationContexts());
-
-        // Instead of doing elaborate overflow checks, we just limit the number of elements. This will avoid all overflow
-        // problems, as well as making sure big string objects are correctly allocated in the big object heap.
-        if (stringLength >= LARGE_OBJECT_SIZE - 256)
-        {
-            break;
-        }
-
-        // This is typically the only call in the fast path. Making the call early seems to be better, as it allows the compiler
-        // to use volatile registers for intermediate values. This reduces the number of push/pop instructions and eliminates
-        // some reshuffling of intermediate values into nonvolatile registers around the call.
-        Thread *thread = GetThread();
-
-        SIZE_T totalSize = Utf8StringObject::GetSize(stringLength);
-
-        // The method table's base size includes space for a terminating null character
-        _ASSERTE(totalSize >= g_pUtf8StringClass->GetBaseSize());
-        _ASSERTE(totalSize - g_pUtf8StringClass->GetBaseSize() == stringLength);
-
-        SIZE_T alignedTotalSize = ALIGN_UP(totalSize, DATA_ALIGNMENT);
-        _ASSERTE(alignedTotalSize >= totalSize);
-        totalSize = alignedTotalSize;
-
-        gc_alloc_context *allocContext = thread->GetAllocContext();
-        BYTE *allocPtr = allocContext->alloc_ptr;
-        _ASSERTE(allocPtr <= allocContext->alloc_limit);
-        if (totalSize > static_cast<SIZE_T>(allocContext->alloc_limit - allocPtr))
-        {
-            break;
-        }
-        allocContext->alloc_ptr = allocPtr + totalSize;
-
-        _ASSERTE(allocPtr != nullptr);
-        Utf8StringObject *stringObject = reinterpret_cast<Utf8StringObject *>(allocPtr);
-        stringObject->SetMethodTable(g_pUtf8StringClass);
-        stringObject->SetLength(stringLength);
-
-        return stringObject;
-    } while (false);
-
-    // Tail call to the slow helper
-    ENDFORBIDGC();
-    return HCCALL1(FramedAllocateUtf8String, stringLength);
-}
-HCIMPLEND
-#endif // FEATURE_UTF8STRING
-
 #include <optdefault.h>
 
 /*********************************************************************/
@@ -2476,22 +2427,6 @@ HCIMPL1(StringObject*, FramedAllocateString, DWORD stringLength)
     return((StringObject*) OBJECTREFToObject(result));
 }
 HCIMPLEND
-
-#ifdef FEATURE_UTF8STRING
-HCIMPL1(Utf8StringObject*, FramedAllocateUtf8String, DWORD stringLength)
-{
-    FCALL_CONTRACT;
-
-    UTF8STRINGREF result = NULL;
-    HELPER_METHOD_FRAME_BEGIN_RET_0();    // Set up a frame
-
-    result = AllocateUtf8String(stringLength);
-
-    HELPER_METHOD_FRAME_END();
-    return((Utf8StringObject*) OBJECTREFToObject(result));
-}
-HCIMPLEND
-#endif // FEATURE_UTF8STRING
 
 /*********************************************************************/
 OBJECTHANDLE ConstructStringLiteral(CORINFO_MODULE_HANDLE scopeHnd, mdToken metaTok)
@@ -3231,7 +3166,7 @@ CORINFO_GENERIC_HANDLE JIT_GenericHandleWorker(MethodDesc * pMD, MethodTable * p
 #ifdef _DEBUG
             // Only in R2R mode are the module, dictionary index and dictionary slot provided as an input
             _ASSERTE(dictionaryIndexAndSlot != (DWORD)-1);
-            _ASSERT(ExecutionManager::FindReadyToRunModule(dac_cast<TADDR>(signature)) == pModule);
+            _ASSERT(ReadyToRunInfo::IsNativeImageSharedBy(pModule, ExecutionManager::FindReadyToRunModule(dac_cast<TADDR>(signature))));
 #endif
             dictionaryIndex = (dictionaryIndexAndSlot >> 16);
         }
@@ -4185,23 +4120,6 @@ HCIMPL1(void, IL_Throw,  Object* obj)
         }
     }
 
-#ifdef FEATURE_CORRUPTING_EXCEPTIONS
-    if (!g_pConfig->LegacyCorruptedStateExceptionsPolicy())
-    {
-        // Within the VM, we could have thrown and caught a managed exception. This is done by
-        // RaiseTheException that will flag that exception's corruption severity to be used
-        // incase it leaks out to managed code.
-        //
-        // If it does not leak out, but ends up calling into managed code that throws,
-        // we will come here. In such a case, simply reset the corruption-severity
-        // since we want the exception being thrown to have its correct severity set
-        // when CLR's managed code exception handler sets it.
-
-        ThreadExceptionState *pExState = GetThread()->GetExceptionState();
-        pExState->SetLastActiveExceptionCorruptionSeverity(NotSet);
-    }
-#endif // FEATURE_CORRUPTING_EXCEPTIONS
-
     RaiseTheExceptionInternalOnly(oref, FALSE);
 
     HELPER_METHOD_FRAME_END();
@@ -4411,21 +4329,6 @@ HCIMPL1(void, IL_VerificationError,  int ilOffset)
 HCIMPLEND
 
 /*********************************************************************/
-HCIMPL1(void, JIT_SecurityUnmanagedCodeException, CORINFO_CLASS_HANDLE typeHnd_)
-{
-    FCALL_CONTRACT;
-
-    FC_GC_POLL_NOT_NEEDED();    // throws always open up for GC
-
-    HELPER_METHOD_FRAME_BEGIN_ATTRIB_NOPOLL(Frame::FRAME_ATTR_EXCEPTION);    // Set up a frame
-
-    COMPlusThrow(kSecurityException);
-
-    HELPER_METHOD_FRAME_END();
-}
-HCIMPLEND
-
-/*********************************************************************/
 static RuntimeExceptionKind MapCorInfoExceptionToRuntimeExceptionKind(unsigned exceptNum)
 {
     LIMITED_METHOD_CONTRACT;
@@ -4538,7 +4441,7 @@ void DoJITFailFast ()
                        GetClrInstanceId());
     }
 
-    TerminateProcess(GetCurrentProcess(), STATUS_STACK_BUFFER_OVERRUN);
+    CrashDumpAndTerminateProcess(STATUS_STACK_BUFFER_OVERRUN);
 #endif // !TARGET_UNIX
 }
 
@@ -4613,17 +4516,8 @@ HCIMPLEND;
 //========================================================================
 
 /*********************************************************************/
-// JIT_UserBreakpoint
 // Called by the JIT whenever a cee_break instruction should be executed.
-// This ensures that enough info will be pushed onto the stack so that
-// we can continue from the exception w/o having special code elsewhere.
-// Body of function is written by debugger team
-// Args: None
 //
-// <TODO> make sure this actually gets called by all JITters</TODO>
-// Note: this code is duplicated in the ecall in VM\DebugDebugger:Break,
-// so propogate changes to there
-
 HCIMPL0(void, JIT_UserBreakpoint)
 {
     FCALL_CONTRACT;
@@ -4633,12 +4527,9 @@ HCIMPL0(void, JIT_UserBreakpoint)
 #ifdef DEBUGGING_SUPPORTED
     FrameWithCookie<DebuggerExitFrame> __def;
 
-    MethodDescCallSite breakCanThrow(METHOD__DEBUGGER__BREAK_CAN_THROW);
+    MethodDescCallSite debuggerBreak(METHOD__DEBUGGER__BREAK);
 
-    // Call Diagnostic.Debugger.BreakCanThrow instead. This will make us demand
-    // UnmanagedCode permission if debugger is not attached.
-    //
-    breakCanThrow.Call((ARG_SLOT*)NULL);
+    debuggerBreak.Call((ARG_SLOT*)NULL);
 
     __def.Pop();
 #else // !DEBUGGING_SUPPORTED
@@ -4660,7 +4551,6 @@ extern "C" void * _ReturnAddress(void);
 //  if (*pFlag != 0) call JIT_DbgIsJustMyCode
 // So this is only called if the flag (obtained by GetJMCFlagAddr) is
 // non-zero.
-// Body of this function is maintained by the debugger people.
 HCIMPL0(void, JIT_DbgIsJustMyCode)
 {
     FCALL_CONTRACT;
@@ -4781,34 +4671,47 @@ HCIMPL3(VOID, JIT_StructWriteBarrier, void *dest, void* src, CORINFO_CLASS_HANDL
 HCIMPLEND
 
 /*************************************************************/
-HCIMPL0(VOID, JIT_PollGC)
+// Slow helper to tailcall from the fast one
+NOINLINE HCIMPL0(void, JIT_PollGC_Framed)
 {
     BEGIN_PRESERVE_LAST_ERROR;
 
     FCALL_CONTRACT;
-
     FC_GC_POLL_NOT_NEEDED();
 
-    Thread  *thread = GetThread();
-    if (thread->CatchAtSafePointOpportunistic())    // Does someone want this thread stopped?
-    {
-        HELPER_METHOD_FRAME_BEGIN_NOPOLL();    // Set up a frame
+    HELPER_METHOD_FRAME_BEGIN_NOPOLL();    // Set up a frame
 #ifdef _DEBUG
-        BOOL GCOnTransition = FALSE;
-        if (g_pConfig->FastGCStressLevel()) {
-            GCOnTransition = GC_ON_TRANSITIONS (FALSE);
-        }
-#endif // _DEBUG
-        CommonTripThread();         // Indicate we are at a GC safe point
-#ifdef _DEBUG
-        if (g_pConfig->FastGCStressLevel()) {
-            GC_ON_TRANSITIONS (GCOnTransition);
-        }
-#endif // _DEBUG
-        HELPER_METHOD_FRAME_END();
+    BOOL GCOnTransition = FALSE;
+    if (g_pConfig->FastGCStressLevel()) {
+        GCOnTransition = GC_ON_TRANSITIONS (FALSE);
     }
-
+#endif // _DEBUG
+    CommonTripThread();         // Indicate we are at a GC safe point
+#ifdef _DEBUG
+    if (g_pConfig->FastGCStressLevel()) {
+        GC_ON_TRANSITIONS (GCOnTransition);
+    }
+#endif // _DEBUG
+    HELPER_METHOD_FRAME_END();
     END_PRESERVE_LAST_ERROR;
+}
+HCIMPLEND
+
+HCIMPL0(VOID, JIT_PollGC)
+{
+    FCALL_CONTRACT;
+
+    // As long as we can have GCPOLL_CALL polls, it would not hurt to check the trap flag.
+    if (!g_TrapReturningThreads.LoadWithoutBarrier())
+        return;
+
+    // Does someone want this thread stopped?
+    if (!GetThread()->CatchAtSafePointOpportunistic())
+        return;
+
+    // Tailcall to the slow helper
+    ENDFORBIDGC();
+    HCCALL0(JIT_PollGC_Framed);
 }
 HCIMPLEND
 
@@ -4944,7 +4847,7 @@ HCIMPLEND
 
 
 
-HCIMPL0(INT32, JIT_GetCurrentManagedThreadId)
+FCIMPL0(INT32, JIT_GetCurrentManagedThreadId)
 {
     FCALL_CONTRACT;
 
@@ -4953,7 +4856,7 @@ HCIMPL0(INT32, JIT_GetCurrentManagedThreadId)
     Thread * pThread = GetThread();
     return pThread->GetThreadId();
 }
-HCIMPLEND
+FCIMPLEND
 
 
 /*********************************************************************/
@@ -5204,7 +5107,7 @@ void JIT_Patchpoint(int* counter, int ilOffset)
             return;
         }
         
-        LONG newFlags = ppInfo->m_flags | PerPatchpointInfo::patchpoint_triggered;
+        LONG newFlags = oldFlags | PerPatchpointInfo::patchpoint_triggered;
         BOOL triggerTransition = InterlockedCompareExchange(&ppInfo->m_flags, newFlags, oldFlags) == oldFlags;
         
         if (!triggerTransition)
@@ -5236,8 +5139,8 @@ void JIT_Patchpoint(int* counter, int ilOffset)
         if (osrMethodCode == NULL)
         {
             // Unexpected, but not fatal
-            STRESS_LOG4(LF_TIEREDCOMPILATION, LL_WARNING, "Jit_Patchpoint: patchpoint (0x%p) OSR method creation failed,"
-                " marking patchpoint invalid for Method=0x%pM il offset %d\n", ip, hitCount, pMD, ilOffset);
+            STRESS_LOG3(LF_TIEREDCOMPILATION, LL_WARNING, "Jit_Patchpoint: patchpoint (0x%p) OSR method creation failed,"
+                " marking patchpoint invalid for Method=0x%pM il offset %d\n", ip, pMD, ilOffset);
             
             InterlockedOr(&ppInfo->m_flags, (LONG)PerPatchpointInfo::patchpoint_invalid);
             return;
@@ -5277,8 +5180,9 @@ void JIT_Patchpoint(int* counter, int ilOffset)
     if ((UINT_PTR)ip != GetIP(&frameContext))
     {
         // Should be fatal
-        STRESS_LOG2(LF_TIEREDCOMPILATION, LL_INFO10, "Jit_Patchpoint: patchpoint (0x%p) TRANSITION"
+        STRESS_LOG2(LF_TIEREDCOMPILATION, LL_FATALERROR, "Jit_Patchpoint: patchpoint (0x%p) TRANSITION"
             " unexpected context IP 0x%p\n", ip, GetIP(&frameContext));
+        EEPOLICY_HANDLE_FATAL_ERROR(COR_E_EXECUTIONENGINE);
     }
     
     // Now unwind back to the original method caller frame.
@@ -5329,6 +5233,75 @@ void JIT_Patchpoint(int* counter, int ilOffset)
 }
 
 #endif // FEATURE_ON_STACK_REPLACEMENT
+
+HCIMPL2(void, JIT_ClassProfile, Object *obj, void* tableAddress)
+{
+    FCALL_CONTRACT;
+    FC_GC_POLL_NOT_NEEDED();
+
+    OBJECTREF objRef = ObjectToOBJECTREF(obj);
+    VALIDATEOBJECTREF(objRef);
+
+    ICorJitInfo::ClassProfile* const classProfile = (ICorJitInfo::ClassProfile*) tableAddress;
+    volatile unsigned* pCount = (volatile unsigned*) &classProfile->Count;
+    const unsigned count = *pCount++;
+    const unsigned S = ICorJitInfo::ClassProfile::SIZE;
+    const unsigned N = ICorJitInfo::ClassProfile::SAMPLE_INTERVAL;
+    _ASSERTE(N >= S);
+
+    if (objRef == NULL)
+    {
+        return;
+    }
+
+    CORINFO_CLASS_HANDLE clsHnd = (CORINFO_CLASS_HANDLE)objRef->GetMethodTable();
+
+#ifdef _DEBUG
+    PgoManager::VerifyAddress(classProfile);
+    PgoManager::VerifyAddress(classProfile + 1);
+#endif
+
+    // If table is not yet full, just add entries in.
+    //
+    if (count < S)
+    {
+        classProfile->ClassTable[count] = clsHnd;
+    }
+    else
+    {
+        // generate a random number (xorshift32)
+        //
+        // intentionally simple so we can have multithreaded
+        // access w/o tearing state.
+        //
+        static volatile unsigned s_rng = 100;
+        
+        unsigned x = s_rng;
+        x ^= x << 13;
+        x ^= x >> 17;
+        x ^= x << 5;
+        s_rng = x;
+        
+        // N is the sampling window size,
+        // it should be larger than the table size.
+        //
+        // If we let N == count then we are building an entire
+        // run sample -- probability of update decreases over time.
+        // Would be a good strategy for an AOT profiler.
+        //
+        // But for TieredPGO we would prefer something that is more
+        // weighted to recent observations.
+        //
+        // For S=4, N=128, we'll sample (on average) every 32nd call.
+        //
+        if ((x % N) < S)
+        {
+            unsigned i = x % S;
+            classProfile->ClassTable[i] = clsHnd;
+        }
+    }
+}
+HCIMPLEND
 
 //========================================================================
 //
@@ -5383,8 +5356,14 @@ NOINLINE static void JIT_ReversePInvokeEnterRare(ReversePInvokeFrame* frame)
     if (thread->PreemptiveGCDisabled())
         ReversePInvokeBadTransition();
 
-    thread->DisablePreemptiveGC();
     frame->currentThread = thread;
+
+    thread->DisablePreemptiveGC();
+}
+
+NOINLINE static void JIT_ReversePInvokeEnterRare2(ReversePInvokeFrame* frame)
+{
+    frame->currentThread->RareDisablePreemptiveGC();
 }
 
 EXTERN_C void JIT_ReversePInvokeEnter(ReversePInvokeFrame* frame)
@@ -5397,13 +5376,17 @@ EXTERN_C void JIT_ReversePInvokeEnter(ReversePInvokeFrame* frame)
     if (thread != NULL
         && !thread->PreemptiveGCDisabled())
     {
+        frame->currentThread = thread;
+
         // Manually inline the fast path in Thread::DisablePreemptiveGC().
         thread->m_fPreemptiveGCDisabled.StoreWithoutBarrier(1);
         if (g_TrapReturningThreads.LoadWithoutBarrier() == 0)
         {
-            frame->currentThread = thread;
             return;
         }
+
+        JIT_ReversePInvokeEnterRare2(frame);
+        return;
     }
 
     JIT_ReversePInvokeEnterRare(frame);
@@ -5510,265 +5493,6 @@ void InitJITHelpers2()
         COMPlusThrowOM();
     g_pJitGenericHandleCache = tempGenericHandleCache.Extract();
 }
-
-#if defined(TARGET_AMD64) || defined(TARGET_ARM)
-
-NOINLINE void DoCopy(CONTEXT * ctx, void * pvTempStack, size_t cbTempStack, Thread * pThread, Frame * pNewFrame)
-{
-    // We need to ensure that copying pvTempStack onto our stack will not in
-    // *ANY* way trash the context record (or our pointer to it) that we need
-    // in order to restore context
-    _ASSERTE((DWORD_PTR)&ctx + sizeof(ctx) < (DWORD_PTR)GetSP(ctx));
-
-    CONTEXT ctx2;
-    if ((DWORD_PTR)ctx + sizeof(*ctx) > (DWORD_PTR)GetSP(ctx))
-    {
-        // The context record is in danger, copy it down
-        _ASSERTE((DWORD_PTR)&ctx2 + sizeof(ctx2) < (DWORD_PTR)GetSP(ctx));
-        ctx2 = *ctx;
-
-        // Clear any context that we didn't copy...
-        ctx2.ContextFlags &= CONTEXT_ALL;
-        ctx = &ctx2;
-    }
-
-    _ASSERTE((DWORD_PTR)ctx + sizeof(*ctx) <= (DWORD_PTR)GetSP(ctx));
-
-    // DevDiv 189140 - use memmove because source and dest might overlap.
-    memmove((void*)GetSP(ctx), pvTempStack, cbTempStack);
-
-    if (pNewFrame != NULL)
-    {
-        // Now that the memmove above is complete, pNewFrame is actually pointing at a
-        // TailCallFrame, and not garbage.  So it's safe to add pNewFrame to the Frame
-        // chain.
-        _ASSERTE(pThread != NULL);
-        pThread->SetFrame(pNewFrame);
-    }
-
-    RtlRestoreContext(ctx, NULL);
-}
-
-//
-// Mostly Architecture-agnostic RtlVirtualUnwind-based tail call helper...
-//
-// Can't use HCIMPL macro because it requires unwind, and this method *NEVER* unwinds.
-//
-
-#define INVOKE_COPY_ARGS_HELPER(helperFunc, arg1, arg2, arg3, arg4) ((pfnCopyArgs)helperFunc)(arg1, arg2, arg3, arg4)
-void F_CALL_VA_CONV JIT_TailCall(PCODE copyArgs, PCODE target, ...)
-{
-    // Can't have a regular contract because we would never pop it
-    // We only throw a stack overflow if needed, and we can't handle
-    // a GC because the incoming parameters are totally unprotected.
-    STATIC_CONTRACT_THROWS;
-    STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_MODE_COOPERATIVE
-
-#ifndef TARGET_UNIX
-
-    Thread *pThread = GetThread();
-
-#ifdef FEATURE_HIJACK
-    // We can't crawl the stack of a thread that currently has a hijack pending
-    // (since the hijack routine won't be recognized by any code manager). So we
-    // undo any hijack, the EE will re-attempt it later.
-    pThread->UnhijackThread();
-#endif
-
-    ULONG_PTR establisherFrame = 0;
-    PVOID     handlerData = NULL;
-    CONTEXT   ctx;
-
-    // Unwind back to our caller in managed code
-    static PT_RUNTIME_FUNCTION my_pdata;
-    static ULONG_PTR           my_imagebase;
-
-    ctx.ContextFlags = CONTEXT_ALL;
-    RtlCaptureContext(&ctx);
-
-    if (!VolatileLoadWithoutBarrier(&my_imagebase)) {
-        ULONG_PTR imagebase = 0;
-        my_pdata = RtlLookupFunctionEntry(GetIP(&ctx), &imagebase, NULL);
-        InterlockedExchangeT(&my_imagebase, imagebase);
-    }
-
-    RtlVirtualUnwind(UNW_FLAG_NHANDLER, my_imagebase, GetIP(&ctx), my_pdata, &ctx, &handlerData,
-                     &establisherFrame, NULL);
-
-    EECodeInfo codeInfo(GetIP(&ctx));
-
-    // Now unwind back to our caller's caller
-    establisherFrame = 0;
-    RtlVirtualUnwind(UNW_FLAG_NHANDLER, codeInfo.GetModuleBase(), GetIP(&ctx), codeInfo.GetFunctionEntry(), &ctx, &handlerData,
-                     &establisherFrame, NULL);
-
-    va_list     args;
-
-    // Compute the space needed for arguments
-    va_start(args, target);
-
-    ULONG_PTR pGCLayout = 0;
-    size_t    cbArgArea = INVOKE_COPY_ARGS_HELPER(copyArgs, args, NULL, NULL, (size_t)&pGCLayout);
-
-    va_end(args);
-
-    // reset (in case the helper walked them)
-    va_start(args, target);
-
-    // Fake call frame (if needed)
-    size_t cbCopyFrame = 0;
-    bool   fCopyDown = false;
-    BYTE   rgFrameBuffer[sizeof(FrameWithCookie<TailCallFrame>)];
-    Frame * pNewFrame = NULL;
-
-#if defined(TARGET_AMD64)
-#  define STACK_ADJUST_FOR_RETURN_ADDRESS  (sizeof(void*))
-#  define STACK_ALIGN_MASK                 (0xF)
-#elif defined(TARGET_ARM)
-#  define STACK_ADJUST_FOR_RETURN_ADDRESS  (0)
-#  define STACK_ALIGN_MASK                 (0x7)
-#else
-#error "Unknown tail call architecture"
-#endif
-
-    // figure out if we can re-use an existing TailCallHelperStub
-    // or if we need to create a new one.
-    if ((void*)GetIP(&ctx) == JIT_TailCallHelperStub_ReturnAddress) {
-        TailCallFrame * pCurrentFrame = TailCallFrame::GetFrameFromContext(&ctx);
-        _ASSERTE(pThread->GetFrame() == pCurrentFrame);
-        // The caller was tail called, so we can re-use that frame
-        // See if we need to enlarge the ArgArea
-        // This can potentially enlarge cbArgArea to the size of the
-        // existing TailCallFrame.
-        const size_t endOfFrame = (size_t)pCurrentFrame - (size_t)sizeof(GSCookie);
-        size_t cbOldArgArea = (endOfFrame - GetSP(&ctx));
-        if (cbOldArgArea >= cbArgArea) {
-            cbArgArea = cbOldArgArea;
-        }
-        else {
-            SetSP(&ctx, (endOfFrame - cbArgArea));
-            fCopyDown = true;
-        }
-
-        // Reset the GCLayout
-        pCurrentFrame->SetGCLayout((TADDR)pGCLayout);
-
-        // We're jumping to the new method, not calling it
-        // so make room for the return address that the 'call'
-        // would have pushed.
-        SetSP(&ctx, GetSP(&ctx) - STACK_ADJUST_FOR_RETURN_ADDRESS);
-    }
-    else {
-        // Create a fake fixed frame as if the new method was called by
-        // TailCallHelperStub asm stub and did an
-        // alloca, then called the target method.
-        cbCopyFrame = sizeof(rgFrameBuffer);
-        FrameWithCookie<TailCallFrame> * CookieFrame = new (rgFrameBuffer) FrameWithCookie<TailCallFrame>(&ctx, pThread);
-        TailCallFrame * tailCallFrame = &*CookieFrame;
-
-        tailCallFrame->SetGCLayout((TADDR)pGCLayout);
-        pNewFrame = TailCallFrame::AdjustContextForTailCallHelperStub(&ctx, cbArgArea, pThread);
-        fCopyDown = true;
-
-        // Eventually, we'll add pNewFrame to our frame chain, but don't do it yet. It's
-        // pointing to the place on the stack where the TailCallFrame contents WILL be,
-        // but aren't there yet. In order to keep the stack walkable by profilers, wait
-        // until the contents are moved over properly (inside DoCopy), and then add
-        // pNewFrame onto the frame chain.
-    }
-
-    // The stack should be properly aligned, modulo the pushed return
-    // address (at least on x64)
-    _ASSERTE((GetSP(&ctx) & STACK_ALIGN_MASK) == STACK_ADJUST_FOR_RETURN_ADDRESS);
-
-    // Set the target pointer so we land there when we restore the context
-    SetIP(&ctx, (PCODE)target);
-
-    // Begin creating the new stack frame and copying arguments
-    size_t cbTempStack = cbCopyFrame + cbArgArea + STACK_ADJUST_FOR_RETURN_ADDRESS;
-
-    // If we're going to have to overwrite some of our incoming argument slots
-    // then do a double-copy, first to temporary copy below us on the stack and
-    // then back up to the real stack.
-    void * pvTempStack;
-    if (!fCopyDown && (((ULONG_PTR)args + cbArgArea) < GetSP(&ctx))) {
-
-        //
-        // After this our stack may no longer be walkable by the debugger!!!
-        //
-
-        pvTempStack = (void*)GetSP(&ctx);
-    }
-    else {
-        fCopyDown = true;
-
-        // Need to align properly for a return address (if it goes on the stack)
-        //
-        // AMD64 ONLY:
-        //     _alloca produces 16-byte aligned buffers, but the return address,
-        //     where our buffer 'starts' is off by 8, so make sure our buffer is
-        //     off by 8.
-        //
-        pvTempStack = (BYTE*)_alloca(cbTempStack + STACK_ADJUST_FOR_RETURN_ADDRESS) + STACK_ADJUST_FOR_RETURN_ADDRESS;
-    }
-
-    _ASSERTE(((size_t)pvTempStack & STACK_ALIGN_MASK) == STACK_ADJUST_FOR_RETURN_ADDRESS);
-
-    // Start creating the new stack (bottom up)
-    BYTE * pbTempStackFill = (BYTE*)pvTempStack;
-    // Return address
-    if (STACK_ADJUST_FOR_RETURN_ADDRESS > 0) {
-        *((PVOID*)pbTempStackFill) = (PVOID)JIT_TailCallHelperStub_ReturnAddress; // return address
-        pbTempStackFill += STACK_ADJUST_FOR_RETURN_ADDRESS;
-    }
-
-    // arguments
-    INVOKE_COPY_ARGS_HELPER(copyArgs, args, &ctx, (DWORD_PTR*)pbTempStackFill, cbArgArea);
-
-    va_end(args);
-
-    pbTempStackFill += cbArgArea;
-
-    // frame (includes TailCallFrame)
-    if (cbCopyFrame > 0) {
-        _ASSERTE(cbCopyFrame == sizeof(rgFrameBuffer));
-        memcpy(pbTempStackFill, rgFrameBuffer, cbCopyFrame);
-        pbTempStackFill += cbCopyFrame;
-    }
-
-    // If this fires, check the math above, because we copied more than we should have
-    _ASSERTE((size_t)((pbTempStackFill - (BYTE*)pvTempStack)) == cbTempStack);
-
-    // If this fires, it means we messed up the math and we're about to overwrite
-    // some of our locals which would be bad because we still need them to call
-    // RtlRestoreContext and pop the contract...
-    _ASSERTE(fCopyDown || ((DWORD_PTR)&ctx + sizeof(ctx) < (DWORD_PTR)GetSP(&ctx)));
-
-    if (fCopyDown) {
-        // We've created a dummy stack below our frame and now we overwrite
-        // our own real stack.
-
-        //
-        // After this our stack may no longer be walkable by the debugger!!!
-        //
-
-        // This does the copy, adds pNewFrame to the frame chain, and calls RtlRestoreContext
-        DoCopy(&ctx, pvTempStack, cbTempStack, pThread, pNewFrame);
-    }
-
-    RtlRestoreContext(&ctx, NULL);
-
-#undef STACK_ADJUST_FOR_RETURN_ADDRESS
-#undef STACK_ALIGN_MASK
-
-#else // !TARGET_UNIX
-    PORTABILITY_ASSERT("TODO: Implement JIT_TailCall for PAL");
-#endif // !TARGET_UNIX
-
-}
-
-#endif // TARGET_AMD64 || TARGET_ARM
 
 //========================================================================
 //
@@ -5884,10 +5608,10 @@ void InitJitHelperLogging()
     {
 
 #ifdef TARGET_X86
-        IMAGE_DOS_HEADER *pDOS = (IMAGE_DOS_HEADER *)g_hThisInst;
+        IMAGE_DOS_HEADER *pDOS = (IMAGE_DOS_HEADER *)GetClrModuleBase();
         _ASSERTE(pDOS->e_magic == VAL16(IMAGE_DOS_SIGNATURE) && pDOS->e_lfanew != 0);
 
-        IMAGE_NT_HEADERS *pNT = (IMAGE_NT_HEADERS*)((LPBYTE)g_hThisInst + VAL32(pDOS->e_lfanew));
+        IMAGE_NT_HEADERS *pNT = (IMAGE_NT_HEADERS*)((LPBYTE)GetClrModuleBase() + VAL32(pDOS->e_lfanew));
 #ifdef HOST_64BIT
         _ASSERTE(pNT->Signature == VAL32(IMAGE_NT_SIGNATURE)
             && pNT->FileHeader.SizeOfOptionalHeader == VAL16(sizeof(IMAGE_OPTIONAL_HEADER64))
@@ -5991,7 +5715,7 @@ void InitJitHelperLogging()
 #else // TARGET_X86
                     // Is the address in mscoree.dll at all? (All helpers are in
                     // mscoree.dll)
-                    if (dynamicHlpFunc->pfnHelper >= (LPBYTE*)g_hThisInst && dynamicHlpFunc->pfnHelper < (LPBYTE*)g_hThisInst + VAL32(pNT->OptionalHeader.SizeOfImage))
+                    if (dynamicHlpFunc->pfnHelper >= (LPBYTE*)GetClrModuleBase() && dynamicHlpFunc->pfnHelper < (LPBYTE*)GetClrModuleBase() + VAL32(pNT->OptionalHeader.SizeOfImage))
                     {
                         // See note above. How do I get the size on x86 for a static method?
                         hlpFuncCount->helperSize = 0;

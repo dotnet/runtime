@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Concurrent;
@@ -14,7 +13,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
 
         public void ValidateCallSite(ServiceCallSite callSite)
         {
-            var scoped = VisitCallSite(callSite, default);
+            Type scoped = VisitCallSite(callSite, default);
             if (scoped != null)
             {
                 _scopedServices[callSite.ServiceType] = scoped;
@@ -24,7 +23,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
         public void ValidateResolution(Type serviceType, IServiceScope scope, IServiceScope rootScope)
         {
             if (ReferenceEquals(scope, rootScope)
-                && _scopedServices.TryGetValue(serviceType, out var scopedService))
+                && _scopedServices.TryGetValue(serviceType, out Type scopedService))
             {
                 if (serviceType == scopedService)
                 {
@@ -44,9 +43,9 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
         protected override Type VisitConstructor(ConstructorCallSite constructorCallSite, CallSiteValidatorState state)
         {
             Type result = null;
-            foreach (var parameterCallSite in constructorCallSite.ParameterCallSites)
+            foreach (ServiceCallSite parameterCallSite in constructorCallSite.ParameterCallSites)
             {
-                var scoped =  VisitCallSite(parameterCallSite, state);
+                Type scoped =  VisitCallSite(parameterCallSite, state);
                 if (result == null)
                 {
                     result = scoped;
@@ -59,9 +58,9 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
             CallSiteValidatorState state)
         {
             Type result = null;
-            foreach (var serviceCallSite in enumerableCallSite.ServiceCallSites)
+            foreach (ServiceCallSite serviceCallSite in enumerableCallSite.ServiceCallSites)
             {
-                var scoped = VisitCallSite(serviceCallSite, state);
+                Type scoped = VisitCallSite(serviceCallSite, state);
                 if (result == null)
                 {
                     result = scoped;

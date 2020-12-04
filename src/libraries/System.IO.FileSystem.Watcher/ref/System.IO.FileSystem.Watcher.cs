@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 // ------------------------------------------------------------------------------
 // Changes to this file must follow the https://aka.ms/api-review process.
 // ------------------------------------------------------------------------------
@@ -32,6 +31,7 @@ namespace System.IO
         public bool IncludeSubdirectories { get { throw null; } set { } }
         public int InternalBufferSize { get { throw null; } set { } }
         public System.IO.NotifyFilters NotifyFilter { get { throw null; } set { } }
+        [System.ComponentModel.EditorAttribute("System.Diagnostics.Design.FSWPathEditor, System.Design, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a", "System.Drawing.Design.UITypeEditor, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a")]
         public string Path { get { throw null; } set { } }
         public override System.ComponentModel.ISite? Site { get { throw null; } set { } }
         public System.ComponentModel.ISynchronizeInvoke? SynchronizingObject { get { throw null; } set { } }

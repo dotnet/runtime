@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 //
 // ===========================================================================
 // File: REJIT.H
@@ -85,9 +84,11 @@ private:
     MethodDesc *m_pInlinee;
     NewArrayHolder<MethodInModule> m_dynamicBuffer;
     COUNT_T m_dynamicBufferSize;
+    COUNT_T m_dynamicAvailable;
     COUNT_T m_currentPos;
 
     const COUNT_T s_bufferSize = 10;
+    const COUNT_T s_failurePos = -2;
 };
 #endif // DACCESS_COMPILE
 

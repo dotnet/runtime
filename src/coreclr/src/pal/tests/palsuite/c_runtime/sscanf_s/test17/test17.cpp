@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 /*============================================================================
 **
@@ -16,7 +15,7 @@
 #include <palsuite.h>
 #include "../sscanf_s.h"
 
-int __cdecl main(int argc, char *argv[])
+PALTEST(c_runtime_sscanf_s_test17_paltest_sscanf_test17, "c_runtime/sscanf_s/test17/paltest_sscanf_test17")
 {
     if (PAL_Initialize(argc, argv))
     {

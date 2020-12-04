@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 /*
  * GCHELPERS.H
@@ -36,10 +35,6 @@ OBJECTREF AllocateObjectArray(DWORD cElements, TypeHandle ElementType, BOOL bAll
 
 // Allocate a string
 STRINGREF AllocateString( DWORD cchStringLength );
-
-#ifdef FEATURE_UTF8STRING
-UTF8STRINGREF AllocateUtf8String( DWORD cchStringLength );
-#endif // FEATURE_UTF8STRING
 
 OBJECTREF DupArrayForCloning(BASEARRAYREF pRef);
 

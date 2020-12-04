@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Buffers.Binary;
 using System.Collections.Generic;
@@ -56,7 +55,7 @@ namespace System.Security.Cryptography.RNG.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void ConcurrentAccess()
         {
             const int ParallelTasks = 3;
@@ -216,7 +215,7 @@ namespace System.Security.Cryptography.RNG.Tests
             using (RandomNumberGenerator rng = RandomNumberGenerator.Create())
             {
                 AssertExtensions.Throws<ArgumentNullException>("data", () => rng.GetNonZeroBytes(null));
-                GetBytes_InvalidArgs(rng);
+                GetBytes_InvalidArgs_Helper(rng);
             }
         }
 
@@ -226,8 +225,37 @@ namespace System.Security.Cryptography.RNG.Tests
             using (var rng = new RandomNumberGeneratorMininal())
             {
                 Assert.Throws<NotImplementedException>(() => rng.GetNonZeroBytes(null));
-                GetBytes_InvalidArgs(rng);
+                GetBytes_InvalidArgs_Helper(rng);
             }
+        }
+
+        [Fact]
+        public static void GetBytes_Int_Negative()
+        {
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("count", () =>
+                RandomNumberGenerator.GetBytes(-1));
+        }
+
+        [Fact]
+        public static void GetBytes_Int_Empty()
+        {
+            byte[] result = RandomNumberGenerator.GetBytes(0);
+            Assert.Empty(result);
+        }
+
+        [Fact]
+        public static void GetBytes_Int_RandomDistribution()
+        {
+            byte[] result = RandomNumberGenerator.GetBytes(2048);
+            RandomDataGenerator.VerifyRandomDistribution(result);
+        }
+
+        [Fact]
+        public static void GetBytes_Int_NotSame()
+        {
+            byte[] result1 = RandomNumberGenerator.GetBytes(2048);
+            byte[] result2 = RandomNumberGenerator.GetBytes(2048);
+            Assert.NotEqual(result1, result2);
         }
 
         [Theory]
@@ -496,15 +524,15 @@ namespace System.Security.Cryptography.RNG.Tests
                 }
             }
             const double tolerance = 0.07;
-            foreach ((_, int occurences) in observedNumbers)
+            foreach ((_, int occurrences) in observedNumbers)
             {
-                double percentage = occurences / (double)numbers.Length;
+                double percentage = occurrences / (double)numbers.Length;
                 double actual = Math.Abs(expected - percentage);
                 Assert.True(actual < tolerance, $"Occurred number of times within threshold. Actual: {actual}");
             }
         }
 
-        private static void GetBytes_InvalidArgs(RandomNumberGenerator rng)
+        private static void GetBytes_InvalidArgs_Helper(RandomNumberGenerator rng)
         {
             AssertExtensions.Throws<ArgumentNullException>("data", () => rng.GetBytes(null, 0, 0));
             AssertExtensions.Throws<ArgumentOutOfRangeException>("offset", () => rng.GetBytes(Array.Empty<byte>(), -1, 0));

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #include "ildasmpch.h"
 
@@ -212,6 +211,7 @@ unsigned SizeOfField(PCCOR_SIGNATURE *ppSig, ULONG cSig, IMDInternalImport* pImp
                     case ELEMENT_TYPE_CMOD_OPT  :
                     case ELEMENT_TYPE_CMOD_REQD :
                         *ppSig += CorSigUncompressToken(*ppSig, &tk);
+                        FALLTHROUGH;
                     case ELEMENT_TYPE_PINNED    :
                     case ELEMENT_TYPE_SZARRAY    : // uElementNumber doesn't change
                         if(*ppSig < pSigEnd) Reiterate = TRUE;

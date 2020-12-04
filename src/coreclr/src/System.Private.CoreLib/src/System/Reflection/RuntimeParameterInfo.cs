@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -16,24 +15,26 @@ namespace System.Reflection
         {
             Debug.Assert(method is RuntimeMethodInfo || method is RuntimeConstructorInfo);
 
-            return GetParameters(method, member, sig, out _, false);
+            return GetParameters(method, member, sig, out _, fetchReturnParameter: false);
         }
 
         internal static ParameterInfo GetReturnParameter(IRuntimeMethodInfo method, MemberInfo member, Signature sig)
         {
             Debug.Assert(method is RuntimeMethodInfo || method is RuntimeConstructorInfo);
 
-            ParameterInfo returnParameter;
-            GetParameters(method, member, sig, out returnParameter!, true);
-            return returnParameter;
+            GetParameters(method, member, sig, out ParameterInfo? returnParameter, fetchReturnParameter: true);
+            return returnParameter!;
         }
 
-        internal static ParameterInfo[] GetParameters(
+        private static ParameterInfo[] GetParameters(
             IRuntimeMethodInfo methodHandle, MemberInfo member, Signature sig, out ParameterInfo? returnParameter, bool fetchReturnParameter)
         {
             returnParameter = null;
             int sigArgCount = sig.Arguments.Length;
-            ParameterInfo[] args = fetchReturnParameter ? null! : new ParameterInfo[sigArgCount];
+            ParameterInfo[] args =
+                fetchReturnParameter ? null! :
+                sigArgCount == 0 ? Array.Empty<ParameterInfo>() :
+                new ParameterInfo[sigArgCount];
 
             int tkMethodDef = RuntimeMethodHandle.GetMethodDef(methodHandle);
             int cParamDefs = 0;
@@ -113,11 +114,11 @@ namespace System.Reflection
         #region Private Data Members
         private int m_tkParamDef;
         private MetadataImport m_scope;
-        private Signature m_signature = null!;
-        private volatile bool m_nameIsCached = false;
-        private readonly bool m_noMetadata = false;
-        private bool m_noDefaultValue = false;
-        private MethodBase? m_originalMember = null;
+        private Signature? m_signature;
+        private volatile bool m_nameIsCached;
+        private readonly bool m_noMetadata;
+        private bool m_noDefaultValue;
+        private MethodBase? m_originalMember;
         #endregion
 
         #region Internal Properties
@@ -217,6 +218,8 @@ namespace System.Reflection
                 // only instance of ParameterInfo has ClassImpl, all its subclasses don't
                 if (ClassImpl == null)
                 {
+                    Debug.Assert(m_signature != null);
+
                     RuntimeType parameterType;
                     if (PositionImpl == -1)
                         parameterType = m_signature.ReturnType;
@@ -481,12 +484,16 @@ namespace System.Reflection
 
         public override Type[] GetRequiredCustomModifiers()
         {
-            return m_signature.GetCustomModifiers(PositionImpl + 1, true);
+            return m_signature is null ?
+                Type.EmptyTypes :
+                m_signature.GetCustomModifiers(PositionImpl + 1, true);
         }
 
         public override Type[] GetOptionalCustomModifiers()
         {
-            return m_signature.GetCustomModifiers(PositionImpl + 1, false);
+            return m_signature is null ?
+                Type.EmptyTypes :
+                m_signature.GetCustomModifiers(PositionImpl + 1, false);
         }
 
         #endregion

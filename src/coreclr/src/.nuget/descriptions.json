@@ -10,6 +10,11 @@
         "CommonTypes": [ ]
     },
     {
+        "Name": "Microsoft.CrossOsDiag.Private.CoreCLR",
+        "Description": "Private transport package for .NET Core cross OS diagnostic tooling.",
+        "CommonTypes": [ ]
+    },
+    {
         "Name": "Microsoft.NETCore.ILAsm",
         "Description": "The .NET IL Assembler.",
         "CommonTypes": [ ]
@@ -27,6 +32,16 @@
     {
         "Name": "Microsoft.NET.Sdk.IL",
         "Description": "Provides support for building IL projects.",
+        "CommonTypes": [ ]
+    },
+    {
+        "Name": "Microsoft.ILVerification",
+        "Description": "IL verification library.",
+        "CommonTypes": [ ]
+    },
+    {
+        "Name": "dotnet-ilverify",
+        "Description": "ILVerify tool.",
         "CommonTypes": [ ]
     }
 ]

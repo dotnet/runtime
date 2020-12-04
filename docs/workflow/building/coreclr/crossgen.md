@@ -6,7 +6,7 @@ Introduction
 
 When you create a .NET assembly using C# compiler, your assembly contains only MSIL code.
 When the app runs, the JIT compiler translates the MSIL code into native code, before the CPU can execute them.
-This execution model has some advantages. For example, your assembly code can be portable across all platforms and architectures that support .NET Core.
+This execution model has some advantages. For example, your assembly code can be portable across all platforms and architectures that support .NET.
 However, this portability comes with a performance cost. Your app starts up more slowly because the JIT compiler has to spend time to translate the code.
 
 To help make your app start up faster, CoreCLR includes a tool called CrossGen, which can pre-compile the MSIL code into native code.

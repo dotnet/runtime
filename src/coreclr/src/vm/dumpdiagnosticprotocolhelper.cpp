@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #include "common.h"
 #include "fastserializer.h"
@@ -9,8 +8,6 @@
 #include "diagnosticsprotocol.h"
 
 #ifdef FEATURE_PERFTRACING
-
-#ifdef HOST_UNIX
 
 void DumpDiagnosticProtocolHelper::HandleIpcMessage(DiagnosticsIpc::IpcMessage& message, IpcStream* pStream)
 {
@@ -91,6 +88,7 @@ void DumpDiagnosticProtocolHelper::GenerateCoreDump(DiagnosticsIpc::IpcMessage& 
         return;
     }
 
+#ifdef HOST_UNIX
     MAKE_UTF8PTR_FROMWIDE_NOTHROW(szDumpName, payload->dumpName);
     if (szDumpName != nullptr)
     {
@@ -107,6 +105,14 @@ void DumpDiagnosticProtocolHelper::GenerateCoreDump(DiagnosticsIpc::IpcMessage& 
         delete pStream;
         return;
     }
+#else
+    if (!GenerateCrashDump(payload->dumpName, payload->dumpType, payload->diagnostics))
+    {
+        DiagnosticsIpc::IpcMessage::SendErrorMessage(pStream, E_FAIL);
+        delete pStream;
+        return;
+    }
+#endif
 
     DiagnosticsIpc::IpcMessage successResponse;
     HRESULT success = S_OK;
@@ -114,7 +120,5 @@ void DumpDiagnosticProtocolHelper::GenerateCoreDump(DiagnosticsIpc::IpcMessage& 
         successResponse.Send(pStream);
     delete pStream;
 }
-
-#endif // HOST_UNIX
 
 #endif // FEATURE_PERFTRACING

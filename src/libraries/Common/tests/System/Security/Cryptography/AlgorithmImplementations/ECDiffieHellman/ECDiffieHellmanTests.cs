@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Security.Cryptography.Tests;
@@ -10,6 +9,7 @@ using Test.Cryptography;
 
 namespace System.Security.Cryptography.EcDiffieHellman.Tests
 {
+    [SkipOnMono("Not supported on Browser", TestPlatforms.Browser)]
     public partial class ECDiffieHellmanTests : EccTestBase
     {
         private static List<object[]> s_everyKeysize;
@@ -108,6 +108,18 @@ namespace System.Security.Cryptography.EcDiffieHellman.Tests
             using (ECDiffieHellmanPublicKey publicKey2 = ecdh.PublicKey)
             {
                 Assert.NotSame(publicKey1, publicKey2);
+            }
+        }
+
+        [Fact]
+        public static void PublicKey_TryExportSubjectPublicKeyInfo_TooSmall()
+        {
+            using (ECDiffieHellman ecdh = ECDiffieHellmanFactory.Create())
+            using (ECDiffieHellmanPublicKey publicKey = ecdh.PublicKey)
+            {
+                Span<byte> destination = stackalloc byte[1];
+                Assert.False(publicKey.TryExportSubjectPublicKeyInfo(destination, out int written));
+                Assert.Equal(0, written);
             }
         }
 

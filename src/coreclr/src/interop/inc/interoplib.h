@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #ifndef _INTEROP_INC_INTEROPLIB_H_
 #define _INTEROP_INC_INTEROPLIB_H_
@@ -44,6 +43,12 @@ namespace InteropLib
 
         // Reactivate the supplied wrapper.
         HRESULT ReactivateWrapper(_In_ IUnknown* wrapper, _In_ InteropLib::OBJECTHANDLE handle) noexcept;
+
+        // Get the object for the supplied wrapper
+        HRESULT GetObjectForWrapper(_In_ IUnknown* wrapper, _Outptr_result_maybenull_ OBJECTHANDLE* object) noexcept;
+
+        HRESULT MarkComActivated(_In_ IUnknown* wrapper) noexcept;
+        HRESULT IsComActivated(_In_ IUnknown* wrapper) noexcept;
 
         struct ExternalWrapperResult
         {

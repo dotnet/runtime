@@ -212,7 +212,9 @@ CORINFO_CLASS_HANDLE interceptor_ICJI::getMethodClass(CORINFO_METHOD_HANDLE meth
 CORINFO_MODULE_HANDLE interceptor_ICJI::getMethodModule(CORINFO_METHOD_HANDLE method)
 {
     mc->cr->AddCall("getMethodModule");
-    return original_ICorJitInfo->getMethodModule(method);
+    CORINFO_MODULE_HANDLE temp = original_ICorJitInfo->getMethodModule(method);
+    mc->recGetMethodModule(method, temp);
+    return temp;
 }
 
 // This function returns the offset of the specified method in the
@@ -840,13 +842,12 @@ CorInfoInitClassResult interceptor_ICJI::initClass(
     CORINFO_FIELD_HANDLE field,        // Non-nullptr - inquire about cctor trigger before static field access
                                        // nullptr - inquire about cctor trigger in method prolog
     CORINFO_METHOD_HANDLE  method,     // Method referencing the field or prolog
-    CORINFO_CONTEXT_HANDLE context,    // Exact context of method
-    BOOL                   speculative // TRUE means don't actually run it
+    CORINFO_CONTEXT_HANDLE context     // Exact context of method
     )
 {
     mc->cr->AddCall("initClass");
-    CorInfoInitClassResult temp = original_ICorJitInfo->initClass(field, method, context, speculative);
-    mc->recInitClass(field, method, context, speculative, temp);
+    CorInfoInitClassResult temp = original_ICorJitInfo->initClass(field, method, context);
+    mc->recInitClass(field, method, context, temp);
     return temp;
 }
 
@@ -1314,10 +1315,10 @@ CORINFO_CLASS_HANDLE interceptor_ICJI::getArgClass(CORINFO_SIG_INFO*       sig, 
 }
 
 // Returns type of HFA for valuetype
-CorInfoType interceptor_ICJI::getHFAType(CORINFO_CLASS_HANDLE hClass)
+CorInfoHFAElemType interceptor_ICJI::getHFAType(CORINFO_CLASS_HANDLE hClass)
 {
     mc->cr->AddCall("getHFAType");
-    CorInfoType temp = original_ICorJitInfo->getHFAType(hClass);
+    CorInfoHFAElemType temp = original_ICorJitInfo->getHFAType(hClass);
     this->mc->recGetHFAType(hClass, temp);
     return temp;
 }
@@ -1857,12 +1858,18 @@ void interceptor_ICJI::MethodCompileComplete(CORINFO_METHOD_HANDLE methHnd)
     original_ICorJitInfo->MethodCompileComplete(methHnd);
 }
 
-// return a thunk that will copy the arguments for the given signature.
-void* interceptor_ICJI::getTailCallCopyArgsThunk(CORINFO_SIG_INFO* pSig, CorInfoHelperTailCallSpecialHandling flags)
+bool interceptor_ICJI::getTailCallHelpers(
+        CORINFO_RESOLVED_TOKEN* callToken,
+        CORINFO_SIG_INFO* sig,
+        CORINFO_GET_TAILCALL_HELPERS_FLAGS flags,
+        CORINFO_TAILCALL_HELPERS* pResult)
 {
-    mc->cr->AddCall("getTailCallCopyArgsThunk");
-    void* result = original_ICorJitInfo->getTailCallCopyArgsThunk(pSig, flags);
-    mc->recGetTailCallCopyArgsThunk(pSig, flags, result);
+    mc->cr->AddCall("getTailCallHelpers");
+    bool result = original_ICorJitInfo->getTailCallHelpers(callToken, sig, flags, pResult);
+    if (result)
+        mc->recGetTailCallHelpers(callToken, sig, flags, pResult);
+    else
+        mc->recGetTailCallHelpers(callToken, sig, flags, nullptr);
     return result;
 }
 
@@ -2025,7 +2032,7 @@ HRESULT interceptor_ICJI::allocMethodBlockCounts(UINT32          count, // The n
 {
     mc->cr->AddCall("allocMethodBlockCounts");
     HRESULT result = original_ICorJitInfo->allocMethodBlockCounts(count, pBlockCounts);
-    mc->cr->recAllocMethodBlockCounts(count, pBlockCounts, result);
+    mc->recAllocMethodBlockCounts(count, pBlockCounts, result);
     return result;
 }
 
@@ -2040,6 +2047,21 @@ HRESULT interceptor_ICJI::getMethodBlockCounts(CORINFO_METHOD_HANDLE ftnHnd,
     HRESULT temp = original_ICorJitInfo->getMethodBlockCounts(ftnHnd, pCount, pBlockCounts, pNumRuns);
     mc->recGetMethodBlockCounts(ftnHnd, pCount, pBlockCounts, pNumRuns, temp);
     return temp;
+}
+
+// Get the likely implementing class for a virtual call or interface call made by ftnHnd
+// at the indicated IL offset. baseHnd is the interface class or base class for the method
+// being called. 
+CORINFO_CLASS_HANDLE interceptor_ICJI::getLikelyClass(CORINFO_METHOD_HANDLE ftnHnd,
+                                                      CORINFO_CLASS_HANDLE  baseHnd,
+                                                      UINT32                ilOffset,
+                                                      UINT32*               pLikelihood,
+                                                      UINT32*               pNumberOfClasses)
+{
+    mc->cr->AddCall("getLikelyClass");
+    CORINFO_CLASS_HANDLE result = original_ICorJitInfo->getLikelyClass(ftnHnd, baseHnd, ilOffset, pLikelihood, pNumberOfClasses);
+    mc->recGetLikelyClass(ftnHnd, baseHnd, ilOffset, result, pLikelihood, pNumberOfClasses);
+    return result;
 }
 
 // Associates a native call site, identified by its offset in the native code stream, with
@@ -2086,4 +2108,9 @@ WORD interceptor_ICJI::getRelocTypeHint(void* target)
 DWORD interceptor_ICJI::getExpectedTargetArchitecture()
 {
     return original_ICorJitInfo->getExpectedTargetArchitecture();
+}
+
+void interceptor_ICJI::notifyInstructionSetUsage(CORINFO_InstructionSet instructionSet, bool supported)
+{
+    original_ICorJitInfo->notifyInstructionSetUsage(instructionSet, supported);
 }

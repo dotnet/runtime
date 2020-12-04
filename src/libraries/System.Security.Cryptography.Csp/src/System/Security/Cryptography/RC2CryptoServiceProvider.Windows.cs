@@ -1,17 +1,17 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using Internal.Cryptography;
 using Internal.NativeCrypto;
 using System.ComponentModel;
+using System.Runtime.Versioning;
 
 namespace System.Security.Cryptography
 {
     [EditorBrowsable(EditorBrowsableState.Never)]
     public sealed class RC2CryptoServiceProvider : RC2
     {
-        private bool _use40bitSalt = false;
+        private bool _use40bitSalt;
         private const int BitsPerByte = 8;
 
         private static readonly KeySizes[] s_legalKeySizes =
@@ -44,6 +44,7 @@ namespace System.Security.Cryptography
             {
                 return _use40bitSalt;
             }
+            [SupportedOSPlatform("windows")]
             set
             {
                 _use40bitSalt = value;
@@ -64,17 +65,13 @@ namespace System.Security.Cryptography
 
         public override void GenerateKey()
         {
-            var key = new byte[KeySizeValue / 8];
-            RandomNumberGenerator.Fill(key);
-            KeyValue = key;
+            KeyValue = RandomNumberGenerator.GetBytes(KeySizeValue / 8);
         }
 
         public override void GenerateIV()
         {
             // Block size is always 64 bits so IV is always 64 bits == 8 bytes
-            var iv = new byte[8];
-            RandomNumberGenerator.Fill(iv);
-            IVValue = iv;
+            IVValue = RandomNumberGenerator.GetBytes(8);
         }
 
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA5351", Justification = "This is the implementation of RC2")]
@@ -90,8 +87,7 @@ namespace System.Security.Cryptography
             {
                 if (Mode.UsesIv())
                 {
-                    rgbIV = new byte[8];
-                    RandomNumberGenerator.Fill(rgbIV);
+                    rgbIV = RandomNumberGenerator.GetBytes(8);
                 }
             }
             else
@@ -105,7 +101,7 @@ namespace System.Security.Cryptography
             }
 
             int effectiveKeySize = EffectiveKeySizeValue == 0 ? (int)keySize : EffectiveKeySize;
-            BasicSymmetricCipher cipher = new BasicSymmetricCipherCsp(CapiHelper.CALG_RC2, Mode, BlockSize / BitsPerByte, rgbKey, effectiveKeySize, !UseSalt, rgbIV, encrypting);
+            BasicSymmetricCipher cipher = new BasicSymmetricCipherCsp(CapiHelper.CALG_RC2, Mode, BlockSize / BitsPerByte, rgbKey, effectiveKeySize, !UseSalt, rgbIV, encrypting, 0, 0);
             return UniversalCryptoTransform.Create(Padding, cipher, encrypting);
         }
     }

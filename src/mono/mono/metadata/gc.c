@@ -999,15 +999,30 @@ finalizer_thread (gpointer unused)
 	return 0;
 }
 
-#ifndef LAZY_GC_THREAD_CREATION
-static
-#endif
-void
-mono_gc_init_finalizer_thread (void)
+static void
+init_finalizer_thread (void)
 {
 	ERROR_DECL (error);
 	gc_thread = mono_thread_create_internal (mono_domain_get (), (gpointer)finalizer_thread, NULL, MONO_THREAD_CREATE_FLAGS_NONE, error);
 	mono_error_assert_ok (error);
+}
+
+/**
+ * mono_gc_init_finalizer_thread:
+ *
+ * If the runtime is compiled with --with-lazy-gc-thread-creation, this
+ * function must be called by embedders to create the finalizer. Otherwise, the
+ * function does nothing and the runtime creates the finalizer thread
+ * automatically.
+ */
+void
+mono_gc_init_finalizer_thread (void)
+{
+#ifndef LAZY_GC_THREAD_CREATION
+	/* do nothing */
+#else
+	init_finalizer_thread ();
+#endif
 }
 
 static void
@@ -1048,7 +1063,7 @@ mono_gc_init (void)
 
 #ifndef LAZY_GC_THREAD_CREATION
 	if (!mono_runtime_get_no_exec ())
-		mono_gc_init_finalizer_thread ();
+		init_finalizer_thread ();
 #endif
 }
 

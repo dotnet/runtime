@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #pragma once
 
@@ -74,6 +73,7 @@ pPrivateKeyOut: Receives a SecKeyRef for the private key associated with the ide
 */
 PALEXPORT int32_t AppleCryptoNative_X509CopyPrivateKeyFromIdentity(SecIdentityRef identity, SecKeyRef* pPrivateKeyOut);
 
+#if !defined(TARGET_IOS) && !defined(TARGET_TVOS)
 /*
 Read cbData bytes of data from pbData and interpret it to a collection of certificates (or identities).
 
@@ -191,3 +191,4 @@ PALEXPORT int32_t AppleCryptoNative_X509MoveToKeychain(SecCertificateRef cert,
                                                        SecKeyRef privateKey,
                                                        SecIdentityRef* pIdentityOut,
                                                        int32_t* pOSStatus);
+#endif

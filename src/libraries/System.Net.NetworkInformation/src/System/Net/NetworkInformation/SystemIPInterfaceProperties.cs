@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Net.Sockets;
 
@@ -13,8 +12,8 @@ namespace System.Net.NetworkInformation
     internal class SystemIPInterfaceProperties : IPInterfaceProperties
     {
         // These are valid for all interfaces.
-        private readonly bool _dnsEnabled = false;
-        private readonly bool _dynamicDnsEnabled = false;
+        private readonly bool _dnsEnabled;
+        private readonly bool _dynamicDnsEnabled;
         private readonly InternalIPAddressCollection _dnsAddresses;
         private readonly UnicastIPAddressInformationCollection _unicastAddresses;
         private readonly MulticastIPAddressInformationCollection _multicastAddresses;
@@ -75,22 +74,22 @@ namespace System.Net.NetworkInformation
 
         public override IPv4InterfaceProperties GetIPv4Properties()
         {
-            if ((_adapterFlags & Interop.IpHlpApi.AdapterFlags.IPv4Enabled) == 0)
+            if (_ipv4Properties is null)
             {
                 throw new NetworkInformationException(SocketError.ProtocolNotSupported);
             }
 
-            return _ipv4Properties!;
+            return _ipv4Properties;
         }
 
         public override IPv6InterfaceProperties GetIPv6Properties()
         {
-            if ((_adapterFlags & Interop.IpHlpApi.AdapterFlags.IPv6Enabled) == 0)
+            if (_ipv6Properties is null)
             {
                 throw new NetworkInformationException(SocketError.ProtocolNotSupported);
             }
 
-            return _ipv6Properties!;
+            return _ipv6Properties;
         }
 
         public override string DnsSuffix

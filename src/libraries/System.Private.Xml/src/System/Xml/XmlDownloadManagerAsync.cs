@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.IO;
@@ -12,7 +11,7 @@ namespace System.Xml
 {
     internal partial class XmlDownloadManager
     {
-        internal Task<Stream> GetStreamAsync(Uri uri, ICredentials credentials, IWebProxy proxy)
+        internal Task<Stream> GetStreamAsync(Uri uri, ICredentials? credentials, IWebProxy? proxy)
         {
             if (uri.Scheme == "file")
             {
@@ -25,11 +24,12 @@ namespace System.Xml
             }
         }
 
-        private async Task<Stream> GetNonFileStreamAsync(Uri uri, ICredentials credentials, IWebProxy proxy)
+        private async Task<Stream> GetNonFileStreamAsync(Uri uri, ICredentials? credentials, IWebProxy? proxy)
         {
             var handler = new HttpClientHandler();
             using (var client = new HttpClient(handler))
             {
+#pragma warning disable CA1416 // Validate platform compatibility, 'credentials' and 'proxy' will not be set for browser, so safe to suppress
                 if (credentials != null)
                 {
                     handler.Credentials = credentials;
@@ -38,6 +38,7 @@ namespace System.Xml
                 {
                     handler.Proxy = proxy;
                 }
+#pragma warning restore CA1416
 
                 using (Stream respStream = await client.GetStreamAsync(uri).ConfigureAwait(false))
                 {

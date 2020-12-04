@@ -1,5 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
-// See the LICENSE file in the project root for more information.
+// The .NET Foundation licenses this file to you under the MIT license.
 
 //
 // System.Web.HttpUtilityTest.cs - Unit tests for System.Web.HttpUtility
@@ -639,7 +639,7 @@ namespace System.Web.Tests
         [Theory]
         [InlineData(" abc defgh", "abc+def", 1, 7)]
         [InlineData(" abc defgh", "", 1, 0)]
-        public void UrlEncodeToBytesExplicitSize(string decoded, string encoded, int offset, int count)
+        public void UrlEncodeToBytesExplicitSize_WithOffsetAndCount(string decoded, string encoded, int offset, int count)
         {
             byte[] bytes = Encoding.UTF8.GetBytes(decoded);
             Assert.Equal(encoded, Encoding.UTF8.GetString(HttpUtility.UrlEncodeToBytes(bytes, offset, count)));

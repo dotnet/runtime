@@ -5,79 +5,84 @@ The CLR Profiling API allows you to hook managed functions so that your profiler
 
 ### Setting up the hooks
 
-1.     On initialization, your profiler must call SetEnterLeaveFunctionHooks(2) to specify which functions inside your profiler should be called whenever a managed function is entered, returns, or exits via tail call, respectively.
-        _(Profiler calls this…)_
+1. On initialization, your profiler must call SetEnterLeaveFunctionHooks(2) to specify which functions inside your profiler should be called whenever a managed function is entered, returns, or exits via tail call, respectively.
+
+   _(Profiler calls this…)_
+
         ```
           HRESULT SetEnterLeaveFunctionHooks(
-                        [in] FunctionEnter    \*pFuncEnter,
-                        [in] FunctionLeave    \*pFuncLeave,
-                        [in] FunctionTailcall \*pFuncTailcall);
-        ```
-         
-        _(Profiler implements these…)_
-        ```
-        typedef void FunctionEnter(FunctionID funcID);
-        typedef void FunctionLeave(FunctionID funcID);
-        typedef void FunctionTailcall(FunctionID funcID);
+                        [in] FunctionEnter    *pFuncEnter,
+                        [in] FunctionLeave    *pFuncLeave,
+                        [in] FunctionTailcall *pFuncTailcall);
         ```
 
-        **OR**
+   _(Profiler implements these…)_
 
-        _(Profiler calls this…)_
-        ```
-          HRESULT SetEnterLeaveFunctionHooks2(
-                        [in] FunctionEnter2    *pFuncEnter,
-                        [in] FunctionLeave2    *pFuncLeave,
-                        [in] FunctionTailcall2 *pFuncTailcall);
-        ```
-         
+   ```
+   typedef void FunctionEnter(FunctionID funcID);
+   typedef void FunctionLeave(FunctionID funcID);
+   typedef void FunctionTailcall(FunctionID funcID);
+   ```
 
-        _(Profiler implements these…)_
-        ```
-        typedef void FunctionEnter2(
-                        FunctionID funcId,
-                        UINT_PTR clientData,
-                        COR_PRF_FRAME_INFO func,
-                        COR_PRF_FUNCTION_ARGUMENT_INFO *argumentInfo);
+   **OR**
 
-        typedef void FunctionLeave2(
-                        FunctionID funcId,
-                        UINT_PTR clientData,
-                        COR_PRF_FRAME_INFO func,
-                        COR_PRF_FUNCTION_ARGUMENT_RANGE *retvalRange);
+   _(Profiler calls this…)_
 
-        typedef void FunctionTailcall2(
-                        FunctionID funcId,
-                        UINT_PTR clientData,
-                        COR_PRF_FRAME_INFO func);
-        ```
+   ```
+   HRESULT SetEnterLeaveFunctionHooks2(
+                 [in] FunctionEnter2    *pFuncEnter,
+                 [in] FunctionLeave2    *pFuncLeave,
+                 [in] FunctionTailcall2 *pFuncTailcall);
+   ```
 
-        This step alone does not cause the enter/leave/tailcall (ELT) hooks to be called.  But you must do this on startup to get things rolling.
+   _(Profiler implements these…)_
 
-2.     At any time during the run, your profiler calls SetEventMask specifying COR\_PRF\_MONITOR\_ENTERLEAVE in the bitmask.  Your profiler may set or reset this flag at any time to cause ELT hooks to be called or ignored, respectively.
+   ```
+   typedef void FunctionEnter2(
+                   FunctionID funcId,
+                   UINT_PTR clientData,
+                   COR_PRF_FRAME_INFO func,
+                   COR_PRF_FUNCTION_ARGUMENT_INFO *argumentInfo);
+
+   typedef void FunctionLeave2(
+                   FunctionID funcId,
+                   UINT_PTR clientData,
+                   COR_PRF_FRAME_INFO func,
+                   COR_PRF_FUNCTION_ARGUMENT_RANGE *retvalRange);
+
+   typedef void FunctionTailcall2(
+                   FunctionID funcId,
+                   UINT_PTR clientData,
+                   COR_PRF_FRAME_INFO func);
+   ```
+
+   This step alone does not cause the enter/leave/tailcall (ELT) hooks to be called.  But you must do this on startup to get things rolling.
+
+2. At any time during the run, your profiler calls SetEventMask specifying COR\_PRF\_MONITOR\_ENTERLEAVE in the bitmask.  Your profiler may set or reset this flag at any time to cause ELT hooks to be called or ignored, respectively.
 
 ### FunctionIDMapper
 
 In addition to the above two steps, your profiler may specify more granularly which managed functions should have ELT hooks compiled into them:
 
-1.     At any time, your profiler may call ICorProfilerInfo2::SetFunctionIDMapper to specify a special hook to be called when a function is JITted.
+1. At any time, your profiler may call ICorProfilerInfo2::SetFunctionIDMapper to specify a special hook to be called when a function is JITted.
 
-_(Profiler calls this…)_
-```
-  HRESULT SetFunctionIDMapper([in] FunctionIDMapper \*pFunc);
-```
- 
+   _(Profiler calls this…)_
 
-     _(Profiler implements this…)_
-```
-typedef UINT_PTR __stdcall FunctionIDMapper(
-                FunctionID funcId,
-                BOOL *pbHookFunction);
-```
- 
+   ```
+     HRESULT SetFunctionIDMapper([in] FunctionIDMapper \*pFunc);
+   ```
+
+   _(Profiler implements this…)_
+
+   ```
+   typedef UINT_PTR __stdcall FunctionIDMapper(
+                   FunctionID funcId,
+                   BOOL *pbHookFunction);
+   ```
+
 
 2. When FunctionIDMapper is called:
-    a. Your profiler sets the pbHookFunction [out] parameter appropriately to determine whether the function identified by funcId should have ELT hooks compiled into it.
+    a. Your profiler sets the pbHookFunction \[out] parameter appropriately to determine whether the function identified by funcId should have ELT hooks compiled into it.
     b. Of course, the primary purpose of FunctionIDMapper is to allow your profiler to specify an alternate ID for that function.  Your profiler does this by returning that ID from FunctionIDMapper .  The CLR will pass this alternate ID to your ELT hooks (as funcID if you're using the 1.x ELT, and as clientData if you're using the 2.x ELT).
 
 ### Writing your ELT hooks
@@ -91,8 +96,6 @@ The profiling API makes use of the fact that it can control the JITting of funct
 The solution is “NGEN /Profile”. For example, if you run this command against your assembly:
 
 `ngen install MyAssembly.dll /Profile`
-
- 
 
 it will NGEN MyAssembly.dll with the “Profile” flavor (also called “profiler-enhanced”). This flavor causes extra hooks to be baked in to enable features like ELT hooks, loader callbacks, managed/unmanaged code transition callbacks, and the JITCachedFunctionSearchStarted/Finished callbacks.
 
@@ -128,4 +131,3 @@ Why do you care? Well, it's always good to know what price you're paying. If you
 ### Next time...
 
 That about covers it for the ELT basics. Next installment of this riveting series will talk about that enigma known as tailcall.
-

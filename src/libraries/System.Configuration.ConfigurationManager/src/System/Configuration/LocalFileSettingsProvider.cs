@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections;
 using System.Collections.Specialized;
@@ -17,10 +16,10 @@ namespace System.Configuration
     public class LocalFileSettingsProvider : SettingsProvider, IApplicationSettingsProvider
     {
         private string _appName = string.Empty;
-        private ClientSettingsStore _store = null;
-        private string _prevLocalConfigFileName = null;
-        private string _prevRoamingConfigFileName = null;
-        private XmlEscaper _escaper = null;
+        private ClientSettingsStore _store;
+        private string _prevLocalConfigFileName;
+        private string _prevRoamingConfigFileName;
+        private XmlEscaper _escaper;
 
         /// <summary>
         /// Abstract SettingsProvider property.

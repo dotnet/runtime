@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #include "platform.h"
 #include <interoplib.h>
@@ -87,6 +86,43 @@ namespace InteropLib
                 InteropLibImports::DeleteObjectInstanceHandle(handle);
 
             return S_OK;
+        }
+
+        HRESULT GetObjectForWrapper(_In_ IUnknown* wrapper, _Outptr_result_maybenull_ OBJECTHANDLE* object) noexcept
+        {
+            if (object == nullptr)
+                return E_POINTER;
+
+            *object = nullptr;
+
+            HRESULT hr = IsActiveWrapper(wrapper);
+            if (hr != S_OK)
+                return hr;
+
+            ManagedObjectWrapper *mow = ManagedObjectWrapper::MapFromIUnknown(wrapper);
+            _ASSERTE(mow != nullptr);
+
+            *object = mow->Target;
+            return S_OK;
+        }
+
+        HRESULT MarkComActivated(_In_ IUnknown* wrapperMaybe) noexcept
+        {
+            ManagedObjectWrapper* wrapper = ManagedObjectWrapper::MapFromIUnknown(wrapperMaybe);
+            if (wrapper == nullptr)
+                return E_INVALIDARG;
+
+            wrapper->SetFlag(CreateComInterfaceFlagsEx::IsComActivated);
+            return S_OK;
+        }
+
+        HRESULT IsComActivated(_In_ IUnknown* wrapperMaybe) noexcept
+        {
+            ManagedObjectWrapper* wrapper = ManagedObjectWrapper::MapFromIUnknown(wrapperMaybe);
+            if (wrapper == nullptr)
+                return E_INVALIDARG;
+
+            return wrapper->IsSet(CreateComInterfaceFlagsEx::IsComActivated) ? S_OK : S_FALSE;
         }
 
         HRESULT CreateWrapperForExternal(

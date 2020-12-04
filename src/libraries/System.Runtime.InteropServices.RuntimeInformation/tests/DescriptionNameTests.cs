@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections;
 using System.Diagnostics;
@@ -13,6 +12,7 @@ namespace System.Runtime.InteropServices.RuntimeInformationTests
     public class DescriptionNameTests
     {
         [Fact]
+        [PlatformSpecific(~TestPlatforms.Browser)] // throws PNSE when binariesLocation is not an empty string.
         public void DumpRuntimeInformationToConsole()
         {
             // Not really a test, but useful to dump a variety of information to the test log to help
@@ -22,7 +22,8 @@ namespace System.Runtime.InteropServices.RuntimeInformationTests
             string osd = RuntimeInformation.OSDescription.Trim();
             string osv = Environment.OSVersion.ToString();
             string osa = RuntimeInformation.OSArchitecture.ToString();
-            Console.WriteLine($"### OS: Distro={dvs} Description={osd} Version={osv} Arch={osa}");
+            string rid = RuntimeInformation.RuntimeIdentifier;
+            Console.WriteLine($"### OS: Distro={dvs} Description={osd} Version={osv} Arch={osa} Rid={rid}");
 
             string lcr = PlatformDetection.LibcRelease;
             string lcv = PlatformDetection.LibcVersion;
@@ -40,6 +41,7 @@ namespace System.Runtime.InteropServices.RuntimeInformationTests
 
             Console.WriteLine($"### CURRENT DIRECTORY: {Environment.CurrentDirectory}");
 
+            Console.WriteLine($"### CGROUPS VERSION: {Interop.cgroups.s_cgroupVersion}");
             string cgroupsLocation = Interop.cgroups.s_cgroupMemoryLimitPath;
             if (cgroupsLocation != null)
             {
@@ -116,8 +118,8 @@ namespace System.Runtime.InteropServices.RuntimeInformationTests
 
             if (osd.Contains("Linux"))
             {
-                // Dump several procfs files
-                foreach (string path in new string[] { "/proc/self/mountinfo", "/proc/self/cgroup", "/proc/self/limits" })
+                // Dump several procfs files and /etc/os-release
+                foreach (string path in new string[] { "/proc/self/mountinfo", "/proc/self/cgroup", "/proc/self/limits", "/etc/os-release" })
                 {
                     Console.WriteLine($"### CONTENTS OF \"{path}\":");
                     try
@@ -139,7 +141,7 @@ namespace System.Runtime.InteropServices.RuntimeInformationTests
         [SkipOnTargetFramework(~TargetFrameworkMonikers.Netcoreapp)]
         public void VerifyRuntimeNameOnNetCoreApp()
         {
-            Assert.True(RuntimeInformation.FrameworkDescription.StartsWith(".NET Core"), RuntimeInformation.FrameworkDescription);
+            Assert.True(RuntimeInformation.FrameworkDescription.StartsWith(".NET"), RuntimeInformation.FrameworkDescription);
             Assert.Same(RuntimeInformation.FrameworkDescription, RuntimeInformation.FrameworkDescription);
         }
 

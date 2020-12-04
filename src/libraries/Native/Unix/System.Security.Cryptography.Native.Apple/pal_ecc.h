@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #pragma once
 
@@ -9,6 +8,7 @@
 
 #include <Security/Security.h>
 
+#if !defined(TARGET_IOS) && !defined(TARGET_TVOS)
 /*
 Generate an ECC keypair of the specified size.
 
@@ -19,6 +19,7 @@ PALEXPORT int32_t AppleCryptoNative_EccGenerateKey(int32_t keySizeBits,
                                                    SecKeyRef* pPublicKey,
                                                    SecKeyRef* pPrivateKey,
                                                    int32_t* pOSStatus);
+#endif
 
 /*
 Get the keysize, in bits, of an ECC key.

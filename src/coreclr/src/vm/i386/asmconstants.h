@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 // asmconstants.h -
 //
 // This header defines field offsets and constants used by assembly code
@@ -143,8 +142,10 @@ ASMCONSTANTS_C_ASSERT(LazyMachState_captureEip == offsetof(LazyMachState, captur
 #define VASigCookie__StubOffset 4
 ASMCONSTANTS_C_ASSERT(VASigCookie__StubOffset == offsetof(VASigCookie, pNDirectILStub))
 
+#ifndef UNIX_X86_ABI
 #define SIZEOF_TailCallFrame 32
 ASMCONSTANTS_C_ASSERT(SIZEOF_TailCallFrame == sizeof(TailCallFrame))
+#endif // !UNIX_X86_ABI
 
 #define SIZEOF_GSCookie 4
 

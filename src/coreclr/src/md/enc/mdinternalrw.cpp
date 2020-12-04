@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 // ===========================================================================
 //  File: MDInternalRW.cpp
 //
@@ -97,8 +96,6 @@ STDAPI ConvertRO2RW(
 
     // Avoid confusion.
     *ppIUnk = 0;
-
-    IfFailGo(VerifyNotWinMD(pRO, "ConvertRO2RW() not supported on .winmd files."));
 
     // If the interface is already RW, done, just return.
     if (pRO->QueryInterface(IID_IMDInternalImportENC, (void**)&pRW) == S_OK)
@@ -225,8 +222,6 @@ STDAPI GetMDPublicInterfaceFromInternal(
 
     _ASSERTE(pIUnkInternal && ppIUnkPublic);
     *ppIUnkPublic = 0;
-
-    IfFailGo(VerifyNotWinMD((IUnknown*)pIUnkInternal, "GetMDPublicInterfaceFromInternal() not supported on .winmd files."));
 
     IfFailGo(ConvertRO2RW((IUnknown*)pIUnkInternal, IID_IMDInternalImport, (void **)&pInternalImport));
 

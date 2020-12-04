@@ -19,14 +19,16 @@
 #define MINT_TYPE_R4 6
 #define MINT_TYPE_R8 7
 #define MINT_TYPE_O  8
-#define MINT_TYPE_P  9
-#define MINT_TYPE_VT 10
+#define MINT_TYPE_VT 9
 
 #define INLINED_METHOD_FLAG 0xffff
 #define TRACING_FLAG 0x1
 #define PROFILING_FLAG 0x2
 
 #define MINT_VT_ALIGNMENT 8
+#define MINT_STACK_SLOT_SIZE (sizeof (stackval))
+
+#define INTERP_STACK_SIZE (1024*1024)
 
 enum {
 	VAL_I32     = 0,
@@ -43,54 +45,16 @@ enum {
 #if SIZEOF_VOID_P == 4
 typedef guint32 mono_u;
 typedef gint32  mono_i;
+#define MINT_TYPE_I MINT_TYPE_I4
 #elif SIZEOF_VOID_P == 8
 typedef guint64 mono_u;
 typedef gint64  mono_i;
+#define MINT_TYPE_I MINT_TYPE_I8
 #endif
 
-
-/*
- * GC SAFETY:
- *
- *  The interpreter executes in gc unsafe (non-preempt) mode. On wasm, the C stack is
- * scannable but the wasm stack is not, so to make the code GC safe, the following rules
- * should be followed:
- * - every objref handled by the code needs to either be stored volatile or stored
- *   into a volatile; volatile stores are stack packable, volatile values are not.
- *   Use either OBJREF or stackval->data.o.
- *   This will ensure the objects are pinned. A volatile local
- *   is on the stack and not in registers. Volatile stores ditto.
- * - minimize the number of MonoObject* locals/arguments (or make them volatile).
- *
- * Volatile on a type/local forces all reads and writes to go to memory/stack,
- *   and each such local to have a unique address.
- *
- * Volatile absence on a type/local allows multiple locals to share storage,
- *   if their lifetimes do not overlap. This is called "stack packing".
- *
- * Volatile absence on a type/local allows the variable to live in
- * both stack and register, for fast reads and "write through".
- */
 #ifdef TARGET_WASM
-
-#define WASM_VOLATILE volatile
-
-static inline MonoObject * WASM_VOLATILE *
-mono_interp_objref (MonoObject **o)
-{
-	return o;
-}
-
-#define OBJREF(x) (*mono_interp_objref (&x))
-
-#else
-
-#define WASM_VOLATILE /* nothing */
-
-#define OBJREF(x) x
-
+#define INTERP_NO_STACK_SCAN 1
 #endif
-
 
 /*
  * Value types are represented on the eval stack as pointers to the
@@ -106,7 +70,12 @@ typedef struct {
 		} pair;
 		float f_r4;
 		double f;
-		MonoObject * WASM_VOLATILE o;
+#ifdef INTERP_NO_STACK_SCAN
+		/* Ensure objref is always flushed to interp stack */
+		MonoObject * volatile o;
+#else
+		MonoObject *o;
+#endif
 		/* native size integer and pointer types */
 		gpointer p;
 		mono_u nati;
@@ -125,6 +94,8 @@ typedef enum {
 	IMETHOD_CODE_COMPILED,
 	IMETHOD_CODE_UNKNOWN
 } InterpMethodCodeType;
+
+#define PROFILE_INTERP 0
 
 /* 
  * Structure representing a method transformed for the interpreter 
@@ -146,10 +117,9 @@ struct InterpMethod {
 	MonoExceptionClause *clauses; // num_clauses
 	void **data_items;
 	guint32 *local_offsets;
-	guint32 *exvar_offsets;
-	gpointer jit_wrapper;
-	gpointer jit_addr;
-	MonoMethodSignature *jit_sig;
+	guint32 *arg_offsets;
+	guint32 *clause_data_offsets;
+	gpointer jit_call_info;
 	gpointer jit_entry;
 	gpointer llvmonly_unbox_entry;
 	MonoType *rtype;
@@ -157,10 +127,8 @@ struct InterpMethod {
 	MonoJitInfo *jinfo;
 	MonoDomain *domain;
 
-	guint32 locals_size;
 	guint32 total_locals_size;
 	guint32 stack_size;
-	guint32 vt_stack_size;
 	guint32 alloca_size;
 	int num_clauses; // clauses
 	int transformed; // boolean
@@ -174,20 +142,42 @@ struct InterpMethod {
 	unsigned int init_locals : 1;
 	unsigned int vararg : 1;
 	unsigned int needs_thread_attach : 1;
+#if PROFILE_INTERP
+	long calls;
+	long opcounts;
+#endif
 };
 
-typedef struct _StackFragment StackFragment;
-struct _StackFragment {
+/* Used for localloc memory allocation */
+typedef struct _FrameDataFragment FrameDataFragment;
+struct _FrameDataFragment {
 	guint8 *pos, *end;
-	struct _StackFragment *next;
-	double data [1];
+	struct _FrameDataFragment *next;
+#if SIZEOF_VOID_P == 4
+	/* Align data field to MINT_VT_ALIGNMENT */
+	gint32 pad;
+#endif
+	double data [MONO_ZERO_LEN_ARRAY];
 };
 
 typedef struct {
-	StackFragment *first, *current;
+	InterpFrame *frame;
+	/*
+	 * frag and pos hold the current allocation position when the stored frame
+	 * starts allocating memory. This is used for restoring the localloc stack
+	 * when frame returns.
+	 */
+	FrameDataFragment *frag;
+	guint8 *pos;
+} FrameDataInfo;
+
+typedef struct {
+	FrameDataFragment *first, *current;
+	FrameDataInfo *infos;
+	int infos_len, infos_capacity;
 	/* For GC sync */
 	int inited;
-} FrameStack;
+} FrameDataAllocator;
 
 
 /* Arguments that are passed when invoking only a finally/filter clause from the frame */
@@ -198,28 +188,20 @@ typedef struct {
 	stackval *sp;
 	unsigned char *vt_sp;
 	const unsigned short  *ip;
-	GSList *finally_ips;
-	FrameClauseArgs *clause_args;
-	gboolean is_void : 1;
 } InterpState;
 
 struct InterpFrame {
 	InterpFrame *parent; /* parent */
 	InterpMethod  *imethod; /* parent */
-	stackval       *stack_args; /* parent */
 	stackval       *retval; /* parent */
 	stackval       *stack;
 	InterpFrame    *next_free;
-	/* Stack fragments this frame was allocated from */
-	StackFragment *data_frag;
-	/* exception info */
-	const unsigned short  *ip;
 	/* State saved before calls */
 	/* This is valid if state.ip != NULL */
 	InterpState state;
 };
 
-#define frame_locals(frame) (((guchar*)((frame)->stack)) + (frame)->imethod->stack_size + (frame)->imethod->vt_stack_size)
+#define frame_locals(frame) ((guchar*)(frame)->stack)
 
 typedef struct {
 	/* Lets interpreter know it has to resume execution after EH */
@@ -232,8 +214,17 @@ typedef struct {
 	MonoJitExceptionInfo *handler_ei;
 	/* Exception that is being thrown. Set with rest of resume state */
 	MonoGCHandle exc_gchandle;
-	/* Stack of frame data */
-	FrameStack data_stack;
+	/* This is a contiguous space allocated for interp execution stack */
+	guchar *stack_start;
+	/*
+	 * This stack pointer is the highest stack memory that can be used by the current frame. This does not
+	 * change throughout the execution of a frame and it is essentially the upper limit of the execution
+	 * stack pointer. It is needed when re-entering interp, to know from which address we can start using
+	 * stack, and also needed for the GC to be able to scan the stack.
+	 */
+	guchar *stack_pointer;
+	/* Used for allocation of localloc regions */
+	FrameDataAllocator data_stack;
 } ThreadContext;
 
 typedef struct {
@@ -245,6 +236,7 @@ typedef struct {
 	gint32 movlocs;
 	gint32 copy_propagations;
 	gint32 constant_folds;
+	gint32 ldlocas_removed;
 	gint32 killed_instructions;
 	gint32 emitted_instructions;
 	gint32 super_instructions;
@@ -274,12 +266,15 @@ mono_interp_print_code (InterpMethod *imethod);
 gboolean
 mono_interp_jit_call_supported (MonoMethod *method, MonoMethodSignature *sig);
 
+void
+mono_interp_error_cleanup (MonoError *error);
+
 static inline int
 mint_type(MonoType *type_)
 {
 	MonoType *type = mini_native_type_replace_type (type_);
 	if (type->byref)
-		return MINT_TYPE_P;
+		return MINT_TYPE_I;
 enum_type:
 	switch (type->type) {
 	case MONO_TYPE_I1:
@@ -297,13 +292,9 @@ enum_type:
 		return MINT_TYPE_I4;
 	case MONO_TYPE_I:
 	case MONO_TYPE_U:
-#if SIZEOF_VOID_P == 4
-		return MINT_TYPE_I4;
-#else
-		return MINT_TYPE_I8;
-#endif
 	case MONO_TYPE_PTR:
-		return MINT_TYPE_P;
+	case MONO_TYPE_FNPTR:
+		return MINT_TYPE_I;
 	case MONO_TYPE_R4:
 		return MINT_TYPE_R4;
 	case MONO_TYPE_I8:

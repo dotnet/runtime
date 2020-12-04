@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 namespace System.IO
 {
@@ -40,26 +39,6 @@ namespace System.IO
             if (!destinationCanWrite)
             {
                 throw new NotSupportedException(SR.NotSupported_UnwritableStream);
-            }
-        }
-
-        public static void ValidateCopyToArgs(Stream source, Delegate callback, int bufferSize)
-        {
-            if (callback == null)
-            {
-                throw new ArgumentNullException(nameof(callback));
-            }
-
-            if (bufferSize <= 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(bufferSize), bufferSize, SR.ArgumentOutOfRange_NeedPosNum);
-            }
-
-            if (!source.CanRead)
-            {
-                throw source.CanWrite ? (Exception)
-                    new NotSupportedException(SR.NotSupported_UnreadableStream) :
-                    new ObjectDisposedException(null, SR.ObjectDisposed_StreamClosed);
             }
         }
     }

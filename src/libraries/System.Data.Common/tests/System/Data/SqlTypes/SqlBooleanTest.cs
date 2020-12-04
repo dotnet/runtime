@@ -1,5 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
-// See the LICENSE file in the project root for more information.
+// The .NET Foundation licenses this file to you under the MIT license.
 
 // (C) Ville Palo
 
@@ -236,7 +236,7 @@ namespace System.Data.Tests.SqlTypes
 
         // Equals
         [Fact]
-        public void Equals()
+        public void EqualsTest()
         {
             SqlBoolean sqlTrue2 = new SqlBoolean(true);
             SqlBoolean sqlFalse2 = new SqlBoolean(false);

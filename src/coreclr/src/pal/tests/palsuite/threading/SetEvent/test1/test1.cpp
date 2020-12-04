@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 /*============================================================
 **
@@ -76,7 +75,7 @@ BOOL SetEventTest()
 }
 
 
-int __cdecl main(int argc, char **argv)
+PALTEST(threading_SetEvent_test1_paltest_setevent_test1, "threading/SetEvent/test1/paltest_setevent_test1")
 {
     if(0 != (PAL_Initialize(argc, argv)))
     {

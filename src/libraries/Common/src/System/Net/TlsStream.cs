@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #nullable enable
 using System.Net.Security;
@@ -14,9 +13,9 @@ namespace System.Net
     {
         private readonly SslStream _sslStream;
         private readonly string _host;
-        private readonly X509CertificateCollection _clientCertificates;
+        private readonly X509CertificateCollection? _clientCertificates;
 
-        public TlsStream(NetworkStream stream, Socket socket, string host, X509CertificateCollection clientCertificates) : base(socket)
+        public TlsStream(NetworkStream stream, Socket socket, string host, X509CertificateCollection? clientCertificates) : base(socket)
         {
             _sslStream = new SslStream(stream, false, ServicePointManager.ServerCertificateValidationCallback);
             _host = host;

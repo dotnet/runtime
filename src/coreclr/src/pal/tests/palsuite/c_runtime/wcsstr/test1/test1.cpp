@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 /*============================================================================
 **
@@ -15,7 +14,7 @@
 
 #include <palsuite.h>
 
-int __cdecl main(int argc, char *argv[])
+PALTEST(c_runtime_wcsstr_test1_paltest_wcsstr_test1, "c_runtime/wcsstr/test1/paltest_wcsstr_test1")
 {
     WCHAR *string;
     WCHAR *key1;

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 namespace System.Xml.Xsl.XsltOld
 {
@@ -55,7 +54,7 @@ namespace System.Xml.Xsl.XsltOld
                     break;
 
                 case ProcessingChildren:
-                    TextOnlyOutput recOutput = processor.PopOutput() as TextOnlyOutput;
+                    TextOnlyOutput? recOutput = processor.PopOutput() as TextOnlyOutput;
                     Debug.Assert(recOutput != null);
 
                     if (_Terminate)

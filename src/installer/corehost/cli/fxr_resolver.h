@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #ifndef _COREHOST_CLI_FXR_RESOLVER_H_
 #define _COREHOST_CLI_FXR_RESOLVER_H_
@@ -49,7 +48,7 @@ int load_fxr_and_get_delegate(hostfxr_delegate_type type, THostPathToConfigCallb
         if (!pal::load_library(&fxr_path, &fxr))
         {
             trace::error(_X("The library %s was found, but loading it from %s failed"), LIBFXR_NAME, fxr_path.c_str());
-            trace::error(_X("  - Installing .NET Core prerequisites might help resolve this problem."));
+            trace::error(_X("  - Installing .NET prerequisites might help resolve this problem."));
             trace::error(_X("     %s"), DOTNET_CORE_INSTALL_PREREQUISITES_URL);
             return StatusCode::CoreHostLibLoadFailure;
         }

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 // ===========================================================================
 // File: ReadyToRunInfo.cpp
 //
@@ -257,10 +256,12 @@ BOOL ReadyToRunInfo::GetEnclosingToken(IMDInternalImport * pImport, mdToken mdTy
     case mdtTypeRef:
         if (SUCCEEDED(pImport->GetResolutionScopeOfTypeRef(mdType, pEnclosingToken)))
             return ((TypeFromToken(*pEnclosingToken) == mdtTypeRef) && (*pEnclosingToken != mdTypeRefNil));
+        break;
 
     case mdtExportedType:
         if (SUCCEEDED(pImport->GetExportedTypeProps(mdType, NULL, NULL, pEnclosingToken, NULL, NULL)))
             return ((TypeFromToken(*pEnclosingToken) == mdtExportedType) && (*pEnclosingToken != mdExportedTypeNil));
+        break;
     }
 
     return FALSE;
@@ -504,10 +505,6 @@ static NativeImage *AcquireCompositeImage(Module * pModule, PEImageLayout * pLay
     if (ownerCompositeExecutableName != NULL)
     {
         AssemblyLoadContext *loadContext = pModule->GetFile()->GetAssemblyLoadContext();
-        if (loadContext == nullptr)
-        {
-            loadContext = (AssemblyLoadContext *)AppDomain::GetCurrentDomain()->CreateBinderContext();
-        }
         return loadContext->LoadNativeImage(pModule, ownerCompositeExecutableName);
     }
     
@@ -618,10 +615,16 @@ PTR_ReadyToRunInfo ReadyToRunInfo::Initialize(Module * pModule, AllocMemTracker 
     return new (pMemory) ReadyToRunInfo(pModule, pLayout, pHeader, nativeImage, pamTracker);
 }
 
+bool ReadyToRunInfo::IsNativeImageSharedBy(PTR_Module pModule1, PTR_Module pModule2)
+{
+    return pModule1->GetReadyToRunInfo()->m_pComposite == pModule2->GetReadyToRunInfo()->m_pComposite;
+}
+
 ReadyToRunInfo::ReadyToRunInfo(Module * pModule, PEImageLayout * pLayout, READYTORUN_HEADER * pHeader, NativeImage *pNativeImage, AllocMemTracker *pamTracker)
     : m_pModule(pModule),
     m_pHeader(pHeader),
     m_pNativeImage(pNativeImage),
+    m_readyToRunCodeDisabled(FALSE),
     m_Crst(CrstReadyToRunEntryPointToMethodDescMap),
     m_pPersistentInlineTrackingMap(NULL)
 {
@@ -682,6 +685,8 @@ ReadyToRunInfo::ReadyToRunInfo(Module * pModule, PEImageLayout * pLayout, READYT
         m_methodDefEntryPoints = NativeArray(&m_nativeReader, pEntryPointsDir->VirtualAddress);
     }
 
+    m_pSectionDelayLoadMethodCallThunks = m_pComposite->FindSection(ReadyToRunSectionType::DelayLoadMethodCallThunks);
+
     IMAGE_DATA_DIRECTORY * pinstMethodsDir = m_pComposite->FindSection(ReadyToRunSectionType::InstanceMethodEntryPoints);
     if (pinstMethodsDir != NULL)
     {
@@ -708,7 +713,7 @@ ReadyToRunInfo::ReadyToRunInfo(Module * pModule, PEImageLayout * pLayout, READYT
     // For format version 4.1 and later, there is an optional inlining table
     if (IsImageVersionAtLeast(4, 1))
     {
-        IMAGE_DATA_DIRECTORY* pInlineTrackingInfoDir = m_pComposite->FindSection(ReadyToRunSectionType::InliningInfo2);
+        IMAGE_DATA_DIRECTORY* pInlineTrackingInfoDir = m_component.FindSection(ReadyToRunSectionType::InliningInfo2);
         if (pInlineTrackingInfoDir != NULL)
         {
             const BYTE* pInlineTrackingMapData = (const BYTE*)m_pComposite->GetImage()->GetDirectoryData(pInlineTrackingInfoDir);
@@ -720,7 +725,7 @@ ReadyToRunInfo::ReadyToRunInfo(Module * pModule, PEImageLayout * pLayout, READYT
     // For format version 2.1 and later, there is an optional inlining table
     if (m_pPersistentInlineTrackingMap == nullptr && IsImageVersionAtLeast(2, 1))
     {
-        IMAGE_DATA_DIRECTORY * pInlineTrackingInfoDir = m_pComposite->FindSection(ReadyToRunSectionType::InliningInfo);
+        IMAGE_DATA_DIRECTORY * pInlineTrackingInfoDir = m_component.FindSection(ReadyToRunSectionType::InliningInfo);
         if (pInlineTrackingInfoDir != NULL)
         {
             const BYTE* pInlineTrackingMapData = (const BYTE*)m_pComposite->GetImage()->GetDirectoryData(pInlineTrackingInfoDir);
@@ -822,6 +827,12 @@ PCODE ReadyToRunInfo::GetEntryPoint(MethodDesc * pMD, PrepareCodeConfig* pConfig
     int rid = RidFromToken(token);
     if (rid == 0)
         goto done;
+
+    // If R2R code is disabled for this module, simply behave as if it is never found
+    if (m_readyToRunCodeDisabled)
+        goto done;
+
+    ETW::MethodLog::GetR2RGetEntryPointStart(pMD);
 
     uint offset;
     if (pMD->HasClassOrMethodInstantiation())
@@ -1006,6 +1017,9 @@ BOOL ReadyToRunInfo::MethodIterator::Next()
         MODE_ANY;
     }
     CONTRACTL_END;
+
+    if (m_pInfo->m_readyToRunCodeDisabled)
+        return FALSE;
 
     // Enumerate non-generic methods
     while (++m_methodDefIndex < (int)m_pInfo->m_methodDefEntryPoints.GetCount())

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using Xunit;
@@ -18,9 +17,9 @@ namespace System.Globalization.Tests
 
         [Theory]
         [MemberData(nameof(CurrencyDecimalDigits_TestData))]
-        public void CurrencyDecimalDigits_Get_ReturnsExpected(NumberFormatInfo format, int expectedWindows, int expectedIcu)
+        public void CurrencyDecimalDigits_Get_ReturnsExpected(NumberFormatInfo format, int expectedNls, int expectedIcu)
         {
-            int expected = PlatformDetection.IsWindows ? expectedWindows : expectedIcu;
+            int expected = PlatformDetection.IsNlsGlobalization ? expectedNls : expectedIcu;
             Assert.Equal(expected, format.CurrencyDecimalDigits);
         }
 

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Generic;
@@ -105,9 +104,7 @@ namespace Internal.JitInterface
         CORINFO_HELP_THROWDIVZERO,      // throw a divide by zero exception
         CORINFO_HELP_THROWNULLREF,      // throw a null reference exception
 
-        CORINFO_HELP_INTERNALTHROW,     // Support for really fast jit
         CORINFO_HELP_VERIFICATION,      // Throw a VerificationException
-        CORINFO_HELP_SEC_UNMGDCODE_EXCPT, // throw a security unmanaged code exception
         CORINFO_HELP_FAIL_FAST,         // Kill the process avoiding any exceptions or stack and data dependencies (use for GuardStack unsafe buffer checks)
 
         CORINFO_HELP_METHOD_ACCESS_EXCEPTION,//Throw an access exception due to a failed member/class access check.

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 //
 
 //
@@ -109,11 +108,6 @@ void ExInfo::Init()
     m_StackAddress = this;
     DestroyExceptionHandle();
     m_hThrowable = NULL;
-
-#ifdef FEATURE_CORRUPTING_EXCEPTIONS
-    // Initialize the default exception severity to NotCorrupting
-    m_CorruptionSeverity = NotSet;
-#endif // FEATURE_CORRUPTING_EXCEPTIONS
 
     // By default, mark the tracker as not having delivered the first
     // chance exception notification

@@ -1,0 +1,23 @@
+<?xml version="1.0"?>
+<manifest xmlns:a="http://schemas.android.com/apk/res/android" 
+          package="%PackageName%"
+          a:versionCode="1"
+          a:versionName="1.0">
+  <uses-sdk a:minSdkVersion="%MinSdkLevel%" />
+  <uses-permission a:name="android.permission.INTERNET"/>
+  <uses-permission a:name="android.permission.READ_EXTERNAL_STORAGE"/>
+  <uses-permission a:name="android.permission.WRITE_EXTERNAL_STORAGE"/>
+  <application a:label="%PackageName%" 
+               a:largeHeap="true">
+    <activity a:name="net.dot.MainActivity">
+      <intent-filter>
+        <category a:name="android.intent.category.LAUNCHER"/>
+        <action a:name="android.intent.action.MAIN"/>
+      </intent-filter>
+    </activity>
+  </application>
+
+  <instrumentation
+      a:name="net.dot.MonoRunner"
+      a:targetPackage="%PackageName%" />
+</manifest>

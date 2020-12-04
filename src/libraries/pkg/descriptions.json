@@ -89,6 +89,13 @@
     "CommonTypes": []
   },
   {
+    "Name": "Microsoft.Extensions.DependencyModel",
+    "Description": "Abstractions for reading `.deps` files.",
+    "CommonTypes": [
+        "Microsoft.Extensions.DependencyModel.DependencyContext"
+    ]
+  },
+  {
     "Name": "Microsoft.Extensions.DependencyInjection.Abstractions",
     "Description": "Abstractions for dependency injection.",
     "CommonTypes": [
@@ -120,13 +127,18 @@
     "CommonTypes": []
   },
   {
+    "Name": "Microsoft.Extensions.HostFactoryResolver.Sources",
+    "Description": "Internal package for sharing Microsoft.Extensions.Hosting.HostFactoryResolver type.",
+    "CommonTypes": []
+  },
+  {
     "Name": "Microsoft.Extensions.Hosting",
-    "Description": ".NET Core hosting and startup infrastructures for applications.",
+    "Description": "Hosting and startup infrastructures for applications.",
     "CommonTypes": []
   },
   {
     "Name": "Microsoft.Extensions.Hosting.Abstractions",
-    "Description": ".NET Core hosting and startup abstractions for applications.",
+    "Description": "Hosting and startup abstractions for applications.",
     "CommonTypes": []
   },
   {
@@ -200,6 +212,11 @@
     "CommonTypes": []
   },
   {
+    "Name": "Microsoft.Extensions.Internal.Transport",
+    "Description": "Internal transport package to provide aspnetcore with the assemblies that make up the Microsoft.ASPNetCore.App shared framework.",
+    "CommonTypes": []
+  },
+  {
     "Name": "Microsoft.Extensions.Primitives",
     "Description": "Primitives shared by framework extensions. Commonly used types include:",
     "CommonTypes": [
@@ -249,11 +266,6 @@
     "CommonTypes": []
   },
   {
-    "Name": "Microsoft.NETCore.Platforms.Future",
-    "Description": "Provides runtime information required to resolve target framework, platform, and runtime specific implementations of .NETCore packages.  This package represents future platforms not yet supported in .NETCore stable release and is subject to change.",
-    "CommonTypes": []
-  },
-  {
     "Name": "Microsoft.NETCore.Portable.Compatibility",
     "Description": "Enables compatibility with portable libraries targeting previous .NET releases like .NET Framework 4.0 and Silverlight.\nThis package supports retargeting references to classic reference assemblies (mscorlib.dll, system.dll, etc) to new contract assemblies (System.Runtime.dll, System.IO, etc).  It does this in a pay-for-play way to prevent consuming assemblies from having to reference all of the contracts that happen to overlap with mscorlib.  As such, when using this package you may encounter errors like\n\terror CS0012: The type 'WebRequest' is defined in an assembly that is not referenced. You must add a reference to assembly 'System.Net.Requests, Version=0.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a'.\nTo resolve these errors install the package with the same name as the missing assembly.",
     "CommonTypes": []
@@ -270,7 +282,7 @@
   },
   {
     "Name": "Microsoft.NETCore.Runtime",
-    "Description": "The .NET Core runtime.",
+    "Description": "The .NET runtime.",
     "CommonTypes": []
   },
   {
@@ -338,7 +350,7 @@
   },
   {
     "Name": "Microsoft.XmlSerializer.Generator",
-    "Description": "Like the Xml Serializer Generator (sgen.exe) on desktop, Microsoft.XmlSerializer.Generator NuGet package is the solution for .NET Core and .NET Standard Libraries. It creates an Xml serialization assembly for types contained in an assembly in order to improve the startup performance of Xml serialization when serializing or de-serializing objects of those types using XmlSerializer.",
+    "Description": "Creates an Xml serialization assembly for types contained in an assembly in order to improve the startup performance of Xml serialization when serializing or de-serializing objects of those types using XmlSerializer.",
     "CommonTypes": []
   },
   {
@@ -889,7 +901,7 @@
   },
   {
     "Name": "System.Drawing.Primitives",
-    "Description": "Provides basic drawing primitive structures, that exposes the corresponding System.Drawing.dll types in .NET Core.",
+    "Description": "Provides basic drawing primitive structures.",
     "CommonTypes": [
       "System.Drawing.Color",
       "System.Drawing.Point",
@@ -926,6 +938,22 @@
       "System.Dynamic.DynamicObject",
       "System.Runtime.CompilerServices.CallSiteBinder",
       "System.Runtime.CompilerServices.ConditionalWeakTable<TKey, TValue>"
+    ]
+  },
+  {
+    "Name": "System.Formats.Asn1",
+    "Description": "Provides classes that can read and write the ASN.1 BER, CER, and DER data formats.",
+    "CommonTypes": [
+        "System.Formats.Asn1.AsnReader",
+        "System.Formats.Asn1.AsnWriter"
+    ]
+  },
+  {
+    "Name": "System.Formats.Cbor",
+    "Description": "Provides classes that can read and write the CBOR data format.",
+    "CommonTypes": [
+        "System.Formats.Cbor.CborReader",
+        "System.Formats.Cbor.CborWriter"
     ]
   },
   {
@@ -1207,6 +1235,22 @@
     ]
   },
   {
+    "Name": "System.Memory.Data",
+    "Description": "A lightweight abstraction for a payload of bytes. Provides methods for converting between strings, streams, JSON, and bytes.",
+    "CommonTypes": [
+        "System.BinaryData"
+    ]
+  },
+  {
+    "Name": "Microsoft.Bcl.AsyncInterfaces",
+    "Description": "Provides the IAsyncEnumerable<T> and IAsyncDisposable interfaces and helper types for .NET Standard 2.0. This package is not required starting with .NET Standard 2.1 and .NET Core 3.0.",
+    "CommonTypes": [
+      "System.IAsyncDisposable",
+      "System.Collections.Generic.IAsyncEnumerable",
+      "System.Collections.Generic.IAsyncEnumerator"
+    ]
+  },
+  {
     "Name": "System.Net.Http",
     "Description": "Provides a programming interface for modern HTTP applications, including HTTP client components that allow applications to consume web services over HTTP and HTTP components that can be used by both clients and servers for parsing HTTP headers.",
     "CommonTypes": [
@@ -1227,6 +1271,15 @@
     "Description": "Provides a simple, programmatically controlled HTTP protocol listener.",
     "CommonTypes": [
       "System.Net.HttpListener"
+    ]
+  },
+  {
+    "Name": "System.Net.Http.Json",
+    "Description": "Provides extension methods for System.Net.Http.HttpClient and System.Net.Http.HttpContent that perform automatic serialization and deserialization using System.Text.Json.",
+    "CommonTypes": [
+      "System.Net.Http.Json.HttpClientJsonExtensions",
+      "System.Net.Http.Json.HttpContentJsonExtensions",
+      "System.Net.Http.Json.JsonContent"
     ]
   },
   {
@@ -1461,13 +1514,6 @@
     ]
   },
   {
-    "Name": "System.Reflection.DispatchProxy",
-    "Description": "Provides a class to dynamically create proxy types that implement a specified interface and derive from a specified DispatchProxy type. Method invocations on the generated proxyinstance are dispatched to that DispatchProxy base type.",
-    "CommonTypes": [
-      "System.Reflection.DispatchProxy"
-    ]
-  },
-  {
     "Name": "System.Reflection.Emit",
     "Description": "Provides classes that allow a compiler or tool to emit metadata and optionally generate a PE file on disk. The primary clients of these classes are script engines and compilers.",
     "CommonTypes": [
@@ -1668,13 +1714,6 @@
     ]
   },
   {
-    "Name": "System.Runtime.Intrinsics.Experimental",
-    "Description": "Provides APIs for accessing processor specific instructions.",
-    "CommonTypes": [
-        "System.Runtime.Intrinsics.Arm.Arm64"
-    ]
-  },
-  {
     "Name": "System.Runtime.Handles",
     "Description": "Provides base classes, including System.Runtime.InteropServices.CriticalHandle and System.Runtime.InteropServices.SafeHandle, for types that represent operating system handles.",
     "CommonTypes": [
@@ -1774,34 +1813,6 @@
       "System.Xml.XmlDictionaryReaderQuotas",
       "System.Runtime.Serialization.DataContractResolver",
       "System.Xml.IXmlDictionary"
-    ]
-  },
-  {
-    "Name": "System.Runtime.WindowsRuntime",
-    "Description": "Provides extensions methods that improve interoperation between managed code and the Windows Runtime.",
-    "CommonTypes": [
-      "System.WindowsRuntimeSystemExtensions",
-      "System.IO.WindowsRuntimeStorageExtensions",
-      "System.IO.WindowsRuntimeStreamExtensions",
-      "System.Runtime.InteropServices.WindowsRuntime.AsyncInfo",
-      "System.Runtime.InteropServices.WindowsRuntime.WindowsRuntimeBuffer"
-    ]
-  },
-  {
-    "Name": "System.Runtime.WindowsRuntime.UI.Xaml",
-    "Description": "Provides managed equivalents of Extensible Application Markup Language (XAML) UI types from Windows Runtime.",
-    "CommonTypes": [
-      "Windows.UI.Xaml.CornerRadius",
-      "Windows.UI.Xaml.Duration",
-      "Windows.UI.Xaml.DurationType",
-      "Windows.UI.Xaml.GridLength",
-      "Windows.UI.Xaml.GridUnitType",
-      "Windows.UI.Xaml.Thickness",
-      "Windows.UI.Xaml.Media.Matrix",
-      "Windows.UI.Xaml.Media.Animation.KeyTime",
-      "Windows.UI.Xaml.Media.Animation.RepeatBehavior",
-      "Windows.UI.Xaml.Media.Animation.RepeatBehaviorType",
-      "Windows.UI.Xaml.Media.Media3D.Matrix3D"
     ]
   },
   {

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
 using Xunit;
@@ -85,18 +84,21 @@ namespace System.ServiceProcess.Tests
         public void TestOnStartWithArgsThenStop()
         {
             ServiceController controller = ConnectToServer();
-
             controller.Stop();
             Assert.Equal((int)PipeMessageByteCode.Stop, _testService.GetByte());
             controller.WaitForStatus(ServiceControllerStatus.Stopped);
 
             controller.Start(new string[] { "StartWithArguments", "a", "b", "c" });
+
+            // Start created a new TestService; dispose of our client stream and reconnect to it
             _testService.Client = null;
             _testService.Client.Connect();
 
-            // There is no definite order between start and connected when tests are running on multiple threads.
-            // In this case we dont care much about the order, so we are just checking whether the appropiate bytes have been sent.
-            Assert.Equal((int)(PipeMessageByteCode.Connected | PipeMessageByteCode.Start), _testService.GetByte() | _testService.GetByte());
+            // Test service does not mutually synchronize Connected and Start messages
+            var bytes = new byte[] { _testService.GetByte(), _testService.GetByte() };
+            Assert.Contains((byte)PipeMessageByteCode.Connected, bytes);
+            Assert.Contains((byte)PipeMessageByteCode.Start, bytes);
+
             controller.WaitForStatus(ServiceControllerStatus.Running);
 
             controller.Stop();
@@ -175,9 +177,8 @@ namespace System.ServiceProcess.Tests
         public void LogWritten()
         {
             string serviceName = Guid.NewGuid().ToString();
-            // The default username for installing the service is NT AUTHORITY\\LocalService which does not have access to EventLog.
             // If the username is null, then the service is created under LocalSystem Account which have access to EventLog.
-            var testService = new TestServiceProvider(serviceName, userName: null);
+            var testService = new TestServiceProvider(serviceName);
             Assert.True(EventLog.SourceExists(serviceName));
             testService.DeleteTestServices();
         }
@@ -205,8 +206,10 @@ namespace System.ServiceProcess.Tests
 
         private ServiceController ConnectToServer()
         {
+            TestServiceProvider.DebugTrace("ServiceBaseTests.ConnectToServer: connecting");
             _testService.Client.Connect(connectionTimeout);
             Assert.Equal((int)PipeMessageByteCode.Connected, _testService.GetByte());
+            TestServiceProvider.DebugTrace("ServiceBaseTests.ConnectToServer: received connect byte");
 
             ServiceController controller = new ServiceController(_testService.TestServiceName);
             AssertExpectedProperties(controller);

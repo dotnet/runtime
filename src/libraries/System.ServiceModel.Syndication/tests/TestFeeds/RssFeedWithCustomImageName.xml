@@ -19,8 +19,8 @@
     <CustomElement>asd</CustomElement>
     <item>
       <link>http://Contoso.com/news/path</link>
-      <title>SyndicationFeed released for .net Core</title>
-      <description>A lot of text describing the release of .net core feature</description>
+      <title>SyndicationFeed released for .NET</title>
+      <description>A lot of text describing the release of .NET feature</description>
       <author>Contoso Item author</author>
       <category>Item Category</category>
       <pubdate>Mon, 19 Jun 2017 11:52:39 -0700</pubdate>

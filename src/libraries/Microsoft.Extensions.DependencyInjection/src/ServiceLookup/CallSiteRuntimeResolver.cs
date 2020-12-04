@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Reflection;
@@ -34,7 +33,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
             else
             {
                 parameterValues = new object[constructorCallSite.ParameterCallSites.Length];
-                for (var index = 0; index < parameterValues.Length; index++)
+                for (int index = 0; index < parameterValues.Length; index++)
                 {
                     parameterValues[index] = VisitCallSite(constructorCallSite.ParameterCallSites[index], context);
                 }
@@ -65,7 +64,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
         {
             // Check if we are in the situation where scoped service was promoted to singleton
             // and we need to lock the root
-            var requiredScope = context.Scope == context.Scope.Engine.Root ?
+            RuntimeResolverLock requiredScope = context.Scope == context.Scope.Engine.Root ?
                 RuntimeResolverLock.Root :
                 RuntimeResolverLock.Scope;
 
@@ -75,7 +74,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
         private object VisitCache(ServiceCallSite callSite, RuntimeResolverContext context, ServiceProviderEngineScope serviceProviderEngine, RuntimeResolverLock lockType)
         {
             bool lockTaken = false;
-            var resolvedServices = serviceProviderEngine.ResolvedServices;
+            System.Collections.Generic.Dictionary<ServiceCacheKey, object> resolvedServices = serviceProviderEngine.ResolvedServices;
 
             // Taking locks only once allows us to fork resolution process
             // on another thread without causing the deadlock because we
@@ -88,7 +87,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
 
             try
             {
-                if (!resolvedServices.TryGetValue(callSite.Cache.Key, out var resolved))
+                if (!resolvedServices.TryGetValue(callSite.Cache.Key, out object resolved))
                 {
                     resolved = VisitCallSiteMain(callSite, new RuntimeResolverContext
                     {
@@ -132,9 +131,9 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
                 enumerableCallSite.ItemType,
                 enumerableCallSite.ServiceCallSites.Length);
 
-            for (var index = 0; index < enumerableCallSite.ServiceCallSites.Length; index++)
+            for (int index = 0; index < enumerableCallSite.ServiceCallSites.Length; index++)
             {
-                var value = VisitCallSite(enumerableCallSite.ServiceCallSites[index], context);
+                object value = VisitCallSite(enumerableCallSite.ServiceCallSites[index], context);
                 array.SetValue(value, index);
             }
             return array;

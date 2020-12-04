@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #if defined(TARGET_ARM)
 
@@ -267,11 +266,11 @@ void emitIns_C(instruction ins, emitAttr attr, CORINFO_FIELD_HANDLE fdlHnd, int 
 
 void emitIns_S(instruction ins, emitAttr attr, int varx, int offs);
 
-void emitIns_genStackOffset(regNumber r, int varx, int offs, bool isFloatUsage);
+void emitIns_genStackOffset(regNumber r, int varx, int offs, bool isFloatUsage, regNumber* pBaseReg);
 
 void emitIns_S_R(instruction ins, emitAttr attr, regNumber ireg, int varx, int offs);
 
-void emitIns_R_S(instruction ins, emitAttr attr, regNumber ireg, int varx, int offs);
+void emitIns_R_S(instruction ins, emitAttr attr, regNumber ireg, int varx, int offs, regNumber* pBaseReg = nullptr);
 
 void emitIns_S_I(instruction ins, emitAttr attr, int varx, int offs, int val);
 

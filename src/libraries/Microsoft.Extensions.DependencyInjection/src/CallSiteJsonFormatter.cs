@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Text;
@@ -34,8 +33,8 @@ namespace Microsoft.Extensions.DependencyInjection
             {
                 argument.StartProperty("arguments");
 
-                var childContext = argument.StartArray();
-                foreach (var parameter in constructorCallSite.ParameterCallSites)
+                CallSiteFormatterContext childContext = argument.StartArray();
+                foreach (ServiceCallSite parameter in constructorCallSite.ParameterCallSites)
                 {
                     childContext.StartArrayItem();
                     VisitCallSite(parameter, childContext);
@@ -50,7 +49,7 @@ namespace Microsoft.Extensions.DependencyInjection
         {
             if (argument.ShouldFormat(callSite))
             {
-                var childContext = argument.StartObject();
+                CallSiteFormatterContext childContext = argument.StartObject();
 
                 childContext.WriteProperty("serviceType", callSite.ServiceType);
                 childContext.WriteProperty("kind", callSite.Kind);
@@ -62,7 +61,7 @@ namespace Microsoft.Extensions.DependencyInjection
             }
             else
             {
-                var childContext = argument.StartObject();
+                CallSiteFormatterContext childContext = argument.StartObject();
                 childContext.WriteProperty("ref", callSite.ServiceType);
                 argument.EndObject();
             }
@@ -96,8 +95,8 @@ namespace Microsoft.Extensions.DependencyInjection
             {
                 argument.StartProperty("items");
 
-                var childContext = argument.StartArray();
-                foreach (var item in enumerableCallSite.ServiceCallSites)
+                CallSiteFormatterContext childContext = argument.StartArray();
+                foreach (ServiceCallSite item in enumerableCallSite.ServiceCallSites)
                 {
                     childContext.StartArrayItem();
                     VisitCallSite(item, childContext);
@@ -146,20 +145,20 @@ namespace Microsoft.Extensions.DependencyInjection
 
             public CallSiteFormatterContext StartObject()
             {
-                Builder.Append("{");
+                Builder.Append('{');
                 return IncrementOffset();
             }
 
             public void EndObject()
             {
-                Builder.Append("}");
+                Builder.Append('}');
             }
 
             public void StartProperty(string name)
             {
                 if (!_firstItem)
                 {
-                    Builder.Append(",");
+                    Builder.Append(',');
                 }
                 else
                 {
@@ -172,7 +171,7 @@ namespace Microsoft.Extensions.DependencyInjection
             {
                 if (!_firstItem)
                 {
-                    Builder.Append(",");
+                    Builder.Append(',');
                 }
                 else
                 {
@@ -195,13 +194,13 @@ namespace Microsoft.Extensions.DependencyInjection
 
             public CallSiteFormatterContext StartArray()
             {
-                Builder.Append("[");
+                Builder.Append('[');
                 return IncrementOffset();
             }
 
             public void EndArray()
             {
-                Builder.Append("]");
+                Builder.Append(']');
             }
         }
     }

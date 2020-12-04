@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 /*++
 
@@ -47,6 +46,9 @@ Abstract:
 #include <string.h>
 #include <errno.h>
 #include <ctype.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <unistd.h>
 #endif
 
 #ifdef  __cplusplus
@@ -72,7 +74,6 @@ extern "C" {
 
 // Native system libray handle.
 // On Unix systems, NATIVE_LIBRARY_HANDLE type represents a library handle not registered with the PAL.
-// To get a HMODULE on Unix, call PAL_RegisterLibraryDirect() on a NATIVE_LIBRARY_HANDLE.
 typedef PVOID NATIVE_LIBRARY_HANDLE;
 
 /******************* Processor-specific glue  *****************************/
@@ -189,6 +190,18 @@ typedef PVOID NATIVE_LIBRARY_HANDLE;
 #define NODEBUG_ATTRIBUTE __artificial__
 #endif
 #endif
+
+#ifndef __has_cpp_attribute
+#define __has_cpp_attribute(x) (0)
+#endif
+
+#ifndef FALLTHROUGH
+#if __has_cpp_attribute(fallthrough)
+#define FALLTHROUGH [[fallthrough]]
+#else // __has_cpp_attribute(fallthrough)
+#define FALLTHROUGH
+#endif // __has_cpp_attribute(fallthrough)
+#endif // FALLTHROUGH
 
 #ifndef PAL_STDCPP_COMPAT
 
@@ -375,7 +388,7 @@ PALIMPORT
 DWORD
 PALAPI
 PAL_InitializeCoreCLR(
-    const char *szExePath);
+    const char *szExePath, BOOL runningInExe);
 
 /// <summary>
 /// This function shuts down PAL WITHOUT exiting the current process.
@@ -447,12 +460,10 @@ BOOL
 PALAPI
 PAL_NotifyRuntimeStarted();
 
-#ifdef __APPLE__
 PALIMPORT
 LPCSTR
 PALAPI
 PAL_GetApplicationGroupId();
-#endif
 
 static const unsigned int MAX_DEBUGGER_TRANSPORT_PIPE_NAME_LENGTH = MAX_PATH;
 
@@ -494,23 +505,37 @@ PAL_UnregisterModule(
     IN HINSTANCE hInstance);
 
 PALIMPORT
-BOOL
-PALAPI
-PAL_GetPALDirectoryW(
-    OUT LPWSTR lpDirectoryName,
-    IN OUT UINT* cchDirectoryName);
-#ifdef UNICODE
-#define PAL_GetPALDirectory PAL_GetPALDirectoryW
-#else
-#define PAL_GetPALDirectory PAL_GetPALDirectoryA
-#endif
-
-PALIMPORT
 VOID
 PALAPI
 PAL_Random(
     IN OUT LPVOID lpBuffer,
     IN DWORD dwLength);
+
+PALIMPORT
+BOOL
+PALAPI
+PAL_OpenProcessMemory(
+    IN DWORD processId,
+    OUT DWORD* pHandle
+);
+
+PALIMPORT
+VOID
+PALAPI
+PAL_CloseProcessMemory(
+    IN DWORD handle
+);
+
+PALIMPORT
+BOOL
+PALAPI
+PAL_ReadProcessMemory(
+    IN DWORD handle,
+    IN ULONG64 address,
+    IN LPVOID buffer,
+    IN SIZE_T size,
+    OUT SIZE_T* numberOfBytesRead
+);
 
 PALIMPORT
 BOOL
@@ -686,13 +711,8 @@ SearchPathW(
     OUT LPWSTR lpBuffer,
     OUT LPWSTR *lpFilePart
     );
-#ifdef UNICODE
+
 #define SearchPath  SearchPathW
-#else
-#define SearchPath  SearchPathA
-#endif // !UNICODE
-
-
 
 PALIMPORT
 BOOL
@@ -708,7 +728,6 @@ CopyFileW(
 #define CopyFile CopyFileA
 #endif
 
-
 PALIMPORT
 BOOL
 PALAPI
@@ -721,11 +740,8 @@ DeleteFileW(
 #define DeleteFile DeleteFileA
 #endif
 
-
-
 #define MOVEFILE_REPLACE_EXISTING      0x00000001
 #define MOVEFILE_COPY_ALLOWED          0x00000002
-
 
 PALIMPORT
 BOOL
@@ -1057,15 +1073,6 @@ GetCurrentDirectoryW(
 PALIMPORT
 HANDLE
 PALAPI
-CreateSemaphoreW(
-         IN LPSECURITY_ATTRIBUTES lpSemaphoreAttributes,
-         IN LONG lInitialCount,
-         IN LONG lMaximumCount,
-         IN LPCWSTR lpName);
-
-PALIMPORT
-HANDLE
-PALAPI
 CreateSemaphoreExW(
         IN LPSECURITY_ATTRIBUTES lpSemaphoreAttributes,
         IN LONG lInitialCount,
@@ -1082,13 +1089,7 @@ OpenSemaphoreW(
     IN BOOL bInheritHandle,
     IN LPCWSTR lpName);
 
-#ifdef UNICODE
-#define CreateSemaphore CreateSemaphoreW
 #define CreateSemaphoreEx CreateSemaphoreExW
-#else
-#define CreateSemaphore CreateSemaphoreA
-#define CreateSemaphoreEx CreateSemaphoreExA
-#endif
 
 PALIMPORT
 BOOL
@@ -1120,11 +1121,7 @@ CreateEventExW(
 #define CREATE_EVENT_MANUAL_RESET ((DWORD)0x1)
 #define CREATE_EVENT_INITIAL_SET ((DWORD)0x2)
 
-#ifdef UNICODE
 #define CreateEvent CreateEventW
-#else
-#define CreateEvent CreateEventA
-#endif
 
 PALIMPORT
 BOOL
@@ -1170,11 +1167,7 @@ CreateMutexExW(
 // CreateMutexExW: dwFlags
 #define CREATE_MUTEX_INITIAL_OWNER ((DWORD)0x1)
 
-#ifdef UNICODE
 #define CreateMutex CreateMutexW
-#else
-#define CreateMutex CreateMutexA
-#endif
 
 PALIMPORT
 HANDLE
@@ -1184,12 +1177,9 @@ OpenMutexW(
        IN BOOL bInheritHandle,
        IN LPCWSTR lpName);
 
-
 #ifdef UNICODE
 #define OpenMutex  OpenMutexW
-#else
-#define OpenMutex  OpenMutexA
-#endif // UNICODE
+#endif
 
 PALIMPORT
 BOOL
@@ -1253,34 +1243,8 @@ typedef struct _STARTUPINFOW {
     HANDLE hStdError;
 } STARTUPINFOW, *LPSTARTUPINFOW;
 
-typedef struct _STARTUPINFOA {
-    DWORD cb;
-    LPSTR lpReserved_PAL_Undefined;
-    LPSTR lpDesktop_PAL_Undefined;
-    LPSTR lpTitle_PAL_Undefined;
-    DWORD dwX_PAL_Undefined;
-    DWORD dwY_PAL_Undefined;
-    DWORD dwXSize_PAL_Undefined;
-    DWORD dwYSize_PAL_Undefined;
-    DWORD dwXCountChars_PAL_Undefined;
-    DWORD dwYCountChars_PAL_Undefined;
-    DWORD dwFillAttribute_PAL_Undefined;
-    DWORD dwFlags;
-    WORD wShowWindow_PAL_Undefined;
-    WORD cbReserved2_PAL_Undefined;
-    LPBYTE lpReserved2_PAL_Undefined;
-    HANDLE hStdInput;
-    HANDLE hStdOutput;
-    HANDLE hStdError;
-} STARTUPINFOA, *LPSTARTUPINFOA;
-
-#ifdef UNICODE
 typedef STARTUPINFOW STARTUPINFO;
 typedef LPSTARTUPINFOW LPSTARTUPINFO;
-#else
-typedef STARTUPINFOA STARTUPINFO;
-typedef LPSTARTUPINFOW LPSTARTUPINFO;
-#endif
 
 #define CREATE_NEW_CONSOLE          0x00000010
 
@@ -1308,11 +1272,7 @@ CreateProcessW(
            IN LPSTARTUPINFOW lpStartupInfo,
            OUT LPPROCESS_INFORMATION lpProcessInformation);
 
-#ifdef UNICODE
 #define CreateProcess CreateProcessW
-#else
-#define CreateProcess CreateProcessA
-#endif
 
 PALIMPORT
 PAL_NORETURN
@@ -2348,6 +2308,8 @@ PALIMPORT BOOL PALAPI PAL_VirtualUnwindOutOfProc(CONTEXT *context, KNONVOLATILE_
 #define PAL_CS_NATIVE_DATA_SIZE 76
 #elif defined(__APPLE__) && defined(__x86_64__)
 #define PAL_CS_NATIVE_DATA_SIZE 120
+#elif defined(__APPLE__) && defined(HOST_ARM64)
+#define PAL_CS_NATIVE_DATA_SIZE 120
 #elif defined(__FreeBSD__) && defined(HOST_X86)
 #define PAL_CS_NATIVE_DATA_SIZE 12
 #elif defined(__FreeBSD__) && defined(__x86_64__)
@@ -2366,6 +2328,8 @@ PALIMPORT BOOL PALAPI PAL_VirtualUnwindOutOfProc(CONTEXT *context, KNONVOLATILE_
 #define PAL_CS_NATIVE_DATA_SIZE 56
 #elif defined(__NetBSD__) && defined(__i386__)
 #define PAL_CS_NATIVE_DATA_SIZE 56
+#elif defined(__sun) && defined(__x86_64__)
+#define PAL_CS_NATIVE_DATA_SIZE 48
 #else
 #warning
 #error  PAL_CS_NATIVE_DATA_SIZE is not defined for this architecture
@@ -2439,11 +2403,7 @@ CreateFileMappingW(
            IN DWORD dwMaximumSizeLow,
            IN LPCWSTR lpName);
 
-#ifdef UNICODE
 #define CreateFileMapping CreateFileMappingW
-#else
-#define CreateFileMapping CreateFileMappingA
-#endif
 
 #define SECTION_QUERY       0x0001
 #define SECTION_MAP_WRITE   0x0002
@@ -2463,11 +2423,7 @@ OpenFileMappingW(
          IN BOOL bInheritHandle,
          IN LPCWSTR lpName);
 
-#ifdef UNICODE
 #define OpenFileMapping OpenFileMappingW
-#else
-#define OpenFileMapping OpenFileMappingA
-#endif
 
 typedef INT_PTR (PALAPI_NOEXPORT *FARPROC)();
 
@@ -2526,6 +2482,11 @@ PAL_FreeLibraryDirect(
         IN NATIVE_LIBRARY_HANDLE dl_handle);
 
 PALIMPORT
+HMODULE
+PALAPI
+PAL_GetPalHostModule();
+
+PALIMPORT
 FARPROC
 PALAPI
 PAL_GetProcAddressDirect(
@@ -2542,6 +2503,7 @@ Abstract
 
 Parameters:
     IN hFile    - The file to load
+    IN offset - offset within hFile where the PE "file" is located
 
 Return value:
     A valid base address if successful.
@@ -2550,7 +2512,7 @@ Return value:
 PALIMPORT
 PVOID
 PALAPI
-PAL_LOADLoadPEFile(HANDLE hFile);
+PAL_LOADLoadPEFile(HANDLE hFile, size_t offset);
 
 /*++
     PAL_LOADUnloadPEFile
@@ -2684,6 +2646,33 @@ VirtualFree(
         IN SIZE_T dwSize,
         IN DWORD dwFreeType);
 
+#if defined(HOST_OSX) && defined(HOST_ARM64)
+#ifdef __cplusplus
+extern "C++" {
+struct PAL_JITWriteEnableHolder
+{
+public:
+  PAL_JITWriteEnableHolder(bool jitWriteEnable)
+  {
+      m_jitWriteEnableRestore = JITWriteEnable(jitWriteEnable);
+  };
+  ~PAL_JITWriteEnableHolder()
+  {
+      JITWriteEnable(m_jitWriteEnableRestore);
+  }
+
+private:
+  bool JITWriteEnable(bool enable);
+  bool m_jitWriteEnableRestore;
+};
+
+inline
+PAL_JITWriteEnableHolder
+PAL_JITWriteEnable(IN bool enable) { return PAL_JITWriteEnableHolder(enable); }
+}
+#endif // __cplusplus
+#endif // defined(HOST_OSX) && defined(HOST_ARM64)
+
 PALIMPORT
 BOOL
 PALAPI
@@ -2734,61 +2723,6 @@ VirtualQuery(
 #define FillMemory(Destination,Length,Fill) memset((Destination),(Fill),(Length))
 #define ZeroMemory(Destination,Length) memset((Destination),0,(Length))
 
-PALIMPORT
-HANDLE
-PALAPI
-GetProcessHeap();
-
-#define HEAP_ZERO_MEMORY 0x00000008
-
-PALIMPORT
-HANDLE
-PALAPI
-HeapCreate(
-         IN DWORD flOptions,
-         IN SIZE_T dwInitialSize,
-         IN SIZE_T dwMaximumSize);
-
-PALIMPORT
-LPVOID
-PALAPI
-HeapAlloc(
-      IN HANDLE hHeap,
-      IN DWORD dwFlags,
-      IN SIZE_T dwBytes);
-
-PALIMPORT
-LPVOID
-PALAPI
-HeapReAlloc(
-    IN HANDLE hHeap,
-    IN DWORD dwFlags,
-    IN LPVOID lpMem,
-    IN SIZE_T dwBytes
-    );
-
-PALIMPORT
-BOOL
-PALAPI
-HeapFree(
-     IN HANDLE hHeap,
-     IN DWORD dwFlags,
-     IN LPVOID lpMem);
-
-typedef enum _HEAP_INFORMATION_CLASS {
-    HeapCompatibilityInformation,
-    HeapEnableTerminationOnCorruption
-} HEAP_INFORMATION_CLASS;
-
-PALIMPORT
-BOOL
-PALAPI
-HeapSetInformation(
-        IN OPTIONAL HANDLE HeapHandle,
-        IN HEAP_INFORMATION_CLASS HeapInformationClass,
-        IN PVOID HeapInformation,
-        IN SIZE_T HeapInformationLength);
-
 #define LMEM_FIXED          0x0000
 #define LMEM_MOVEABLE       0x0002
 #define LMEM_ZEROINIT       0x0040
@@ -2800,14 +2734,6 @@ PALAPI
 LocalAlloc(
        IN UINT uFlags,
        IN SIZE_T uBytes);
-
-PALIMPORT
-HLOCAL
-PALAPI
-LocalReAlloc(
-       IN HLOCAL hMem,
-       IN SIZE_T uBytes,
-       IN UINT   uFlags);
 
 PALIMPORT
 HLOCAL
@@ -2836,26 +2762,6 @@ typedef struct _cpinfo {
     BYTE DefaultChar[MAX_DEFAULTCHAR];
     BYTE LeadByte[MAX_LEADBYTES];
 } CPINFO, *LPCPINFO;
-
-PALIMPORT
-BOOL
-PALAPI
-GetCPInfo(
-      IN UINT CodePage,
-      OUT LPCPINFO lpCPInfo);
-
-PALIMPORT
-BOOL
-PALAPI
-IsDBCSLeadByteEx(
-         IN UINT CodePage,
-         IN BYTE TestChar);
-
-PALIMPORT
-BOOL
-PALAPI
-IsDBCSLeadByte(
-        IN BYTE TestChar);
 
 #define MB_PRECOMPOSED            0x00000001
 #define MB_ERR_INVALID_CHARS      0x00000008
@@ -3049,11 +2955,7 @@ LPWSTR
 PALAPI
 GetEnvironmentStringsW();
 
-#ifdef UNICODE
 #define GetEnvironmentStrings GetEnvironmentStringsW
-#else
-#define GetEnvironmentStrings GetEnvironmentStringsA
-#endif
 
 PALIMPORT
 BOOL
@@ -3061,11 +2963,7 @@ PALAPI
 FreeEnvironmentStringsW(
             IN LPWSTR);
 
-#ifdef UNICODE
 #define FreeEnvironmentStrings FreeEnvironmentStringsW
-#else
-#define FreeEnvironmentStrings FreeEnvironmentStringsA
-#endif
 
 PALIMPORT
 BOOL
@@ -3991,7 +3889,11 @@ PALIMPORT int    __cdecl memcmp(const void *, const void *, size_t);
 PALIMPORT void * __cdecl memset(void *, int, size_t);
 PALIMPORT void * __cdecl memmove(void *, const void *, size_t);
 PALIMPORT void * __cdecl memchr(const void *, int, size_t);
-PALIMPORT long long int __cdecl atoll(const char *) THROW_DECL;
+PALIMPORT long long int __cdecl atoll(const char *)
+#ifndef __sun
+THROW_DECL
+#endif
+;
 PALIMPORT size_t __cdecl strlen(const char *);
 PALIMPORT int __cdecl strcmp(const char*, const char *);
 PALIMPORT int __cdecl strncmp(const char*, const char *, size_t);
@@ -4042,9 +3944,6 @@ PALIMPORT DLLEXPORT int __cdecl _stricmp(const char *, const char *);
 PALIMPORT DLLEXPORT int __cdecl vsprintf_s(char *, size_t, const char *, va_list);
 PALIMPORT char * __cdecl _gcvt_s(char *, int, double, int);
 PALIMPORT int __cdecl __iscsym(int);
-PALIMPORT unsigned char * __cdecl _mbsinc(const unsigned char *);
-PALIMPORT unsigned char * __cdecl _mbsninc(const unsigned char *, size_t);
-PALIMPORT unsigned char * __cdecl _mbsdec(const unsigned char *, const unsigned char *);
 PALIMPORT DLLEXPORT int __cdecl _wcsicmp(const WCHAR *, const WCHAR*);
 PALIMPORT int __cdecl _wcsnicmp(const WCHAR *, const WCHAR *, size_t);
 PALIMPORT int __cdecl _vsnprintf(char *, size_t, const char *, va_list);
@@ -4077,21 +3976,21 @@ PALIMPORT int __cdecl PAL_swscanf(const WCHAR *, const WCHAR *, ...);
 PALIMPORT DLLEXPORT ULONG __cdecl PAL_wcstoul(const WCHAR *, WCHAR **, int);
 PALIMPORT double __cdecl PAL_wcstod(const WCHAR *, WCHAR **);
 
-PALIMPORT WCHAR * __cdecl _wcslwr(WCHAR *);
+PALIMPORT errno_t __cdecl _wcslwr_s(WCHAR *, size_t sz);
 PALIMPORT DLLEXPORT ULONGLONG _wcstoui64(const WCHAR *, WCHAR **, int);
 PALIMPORT DLLEXPORT errno_t __cdecl _i64tow_s(long long, WCHAR *, size_t, int);
 PALIMPORT int __cdecl _wtoi(const WCHAR *);
 
 #ifdef __cplusplus
 extern "C++" {
-inline WCHAR *PAL_wcschr(WCHAR *_S, WCHAR _C)
-        {return ((WCHAR *)PAL_wcschr((const WCHAR *)_S, _C)); }
-inline WCHAR *PAL_wcsrchr(WCHAR *_S, WCHAR _C)
-        {return ((WCHAR *)PAL_wcsrchr((const WCHAR *)_S, _C)); }
-inline WCHAR *PAL_wcspbrk(WCHAR *_S, const WCHAR *_P)
-        {return ((WCHAR *)PAL_wcspbrk((const WCHAR *)_S, _P)); }
-inline WCHAR *PAL_wcsstr(WCHAR *_S, const WCHAR *_P)
-        {return ((WCHAR *)PAL_wcsstr((const WCHAR *)_S, _P)); }
+inline WCHAR *PAL_wcschr(WCHAR* S, WCHAR C)
+        {return ((WCHAR *)PAL_wcschr((const WCHAR *)S, C)); }
+inline WCHAR *PAL_wcsrchr(WCHAR* S, WCHAR C)
+        {return ((WCHAR *)PAL_wcsrchr((const WCHAR *)S, C)); }
+inline WCHAR *PAL_wcspbrk(WCHAR* S, const WCHAR* P)
+        {return ((WCHAR *)PAL_wcspbrk((const WCHAR *)S, P)); }
+inline WCHAR *PAL_wcsstr(WCHAR* S, const WCHAR* P)
+        {return ((WCHAR *)PAL_wcsstr((const WCHAR *)S, P)); }
 }
 #endif
 
@@ -4163,9 +4062,17 @@ PALIMPORT double __cdecl acosh(double);
 PALIMPORT double __cdecl asin(double);
 PALIMPORT double __cdecl asinh(double);
 PALIMPORT double __cdecl atan(double) THROW_DECL;
-PALIMPORT double __cdecl atanh(double) THROW_DECL;
+PALIMPORT double __cdecl atanh(double)
+#ifndef __sun
+THROW_DECL
+#endif
+;
 PALIMPORT double __cdecl atan2(double, double);
-PALIMPORT double __cdecl cbrt(double) THROW_DECL;
+PALIMPORT double __cdecl cbrt(double)
+#ifndef __sun
+THROW_DECL
+#endif
+;
 PALIMPORT double __cdecl ceil(double);
 PALIMPORT double __cdecl cos(double);
 PALIMPORT double __cdecl cosh(double);
@@ -4194,10 +4101,22 @@ PALIMPORT float __cdecl acosf(float);
 PALIMPORT float __cdecl acoshf(float);
 PALIMPORT float __cdecl asinf(float);
 PALIMPORT float __cdecl asinhf(float);
-PALIMPORT float __cdecl atanf(float) THROW_DECL;
-PALIMPORT float __cdecl atanhf(float) THROW_DECL;
+PALIMPORT float __cdecl atanf(float)
+#ifndef __sun
+THROW_DECL
+#endif
+;
+PALIMPORT float __cdecl atanhf(float)
+#ifndef __sun
+THROW_DECL
+#endif
+;
 PALIMPORT float __cdecl atan2f(float, float);
-PALIMPORT float __cdecl cbrtf(float) THROW_DECL;
+PALIMPORT float __cdecl cbrtf(float)
+#ifndef __sun
+THROW_DECL
+#endif
+;
 PALIMPORT float __cdecl ceilf(float);
 PALIMPORT float __cdecl cosf(float);
 PALIMPORT float __cdecl coshf(float);

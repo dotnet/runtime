@@ -1,9 +1,7 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
-using System.Diagnostics;
 
 namespace System.Text.Json.Serialization.Converters
 {
@@ -11,22 +9,30 @@ namespace System.Text.Json.Serialization.Converters
         : IEnumerableDefaultConverter<TCollection, TElement>
         where TCollection : IEnumerable<TElement>
     {
-        protected override void Add(TElement value, ref ReadStack state)
+        protected override void Add(in TElement value, ref ReadStack state)
         {
-            Debug.Assert(state.Current.ReturnValue is List<TElement>);
             ((List<TElement>)state.Current.ReturnValue!).Add(value);
         }
 
         internal override bool CanHaveIdMetadata => false;
 
-        protected override void CreateCollection(ref ReadStack state, JsonSerializerOptions options)
+        protected override void CreateCollection(ref Utf8JsonReader reader, ref ReadStack state, JsonSerializerOptions options)
         {
             state.Current.ReturnValue = new List<TElement>();
         }
 
         protected override void ConvertCollection(ref ReadStack state, JsonSerializerOptions options)
         {
-            state.Current.ReturnValue = GetCreatorDelegate(options)((List<TElement>)state.Current.ReturnValue!);
+            JsonClassInfo classInfo = state.Current.JsonClassInfo;
+
+            Func<IEnumerable<TElement>, TCollection>? creator = (Func<IEnumerable<TElement>, TCollection>?)classInfo.CreateObjectWithArgs;
+            if (creator == null)
+            {
+                creator = options.MemberAccessorStrategy.CreateImmutableEnumerableCreateRangeDelegate<TCollection, TElement>();
+                classInfo.CreateObjectWithArgs = creator;
+            }
+
+            state.Current.ReturnValue = creator((List<TElement>)state.Current.ReturnValue!);
         }
 
         protected override bool OnWriteResume(Utf8JsonWriter writer, TCollection value, JsonSerializerOptions options, ref WriteStack state)
@@ -42,7 +48,6 @@ namespace System.Text.Json.Serialization.Converters
             }
             else
             {
-                Debug.Assert(state.Current.CollectionEnumerator is IEnumerator<TElement>);
                 enumerator = (IEnumerator<TElement>)state.Current.CollectionEnumerator;
             }
 
@@ -64,18 +69,6 @@ namespace System.Text.Json.Serialization.Converters
             } while (enumerator.MoveNext());
 
             return true;
-        }
-
-        private Func<IEnumerable<TElement>, TCollection>? _creatorDelegate;
-
-        private Func<IEnumerable<TElement>, TCollection> GetCreatorDelegate(JsonSerializerOptions options)
-        {
-            if (_creatorDelegate == null)
-            {
-                _creatorDelegate = options.MemberAccessorStrategy.CreateImmutableEnumerableCreateRangeDelegate<TElement, TCollection>();
-            }
-
-            return _creatorDelegate;
         }
     }
 }

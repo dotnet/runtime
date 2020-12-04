@@ -9,7 +9,7 @@ add_definitions(-DUSE_COREDISTOOLS)
 
 if(CLR_CMAKE_HOST_WIN32)
   #use static crt
-  add_definitions(-MT)
+  set(CMAKE_MSVC_RUNTIME_LIBRARY MultiThreaded)
 endif(CLR_CMAKE_HOST_WIN32)
 
 include_directories(.)
@@ -29,6 +29,7 @@ set(SUPERPMI_SOURCES
     ../superpmi-shared/callutils.cpp
     ../superpmi-shared/compileresult.cpp
     ../superpmi-shared/errorhandling.cpp
+    ../superpmi-shared/hash.cpp
     ../superpmi-shared/logging.cpp
     ../superpmi-shared/mclist.cpp
     ../superpmi-shared/methodcontext.cpp
@@ -44,7 +45,7 @@ _add_executable(superpmi
     ${SUPERPMI_SOURCES}
 )
 
-target_precompile_header(TARGET superpmi HEADER standardpch.h)
+target_precompile_headers(superpmi PRIVATE "$<$<COMPILE_LANGUAGE:CXX>:standardpch.h>")
 
 if(CLR_CMAKE_HOST_UNIX)
     target_link_libraries(superpmi
@@ -61,7 +62,7 @@ else()
         ${STATIC_MT_CPP_LIB}
     )
 
-    _install (FILES ${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>/superpmi.pdb DESTINATION PDB)
+    _install (FILES $<TARGET_PDB_FILE:superpmi> DESTINATION PDB)
 endif(CLR_CMAKE_HOST_UNIX)
 
 _install (TARGETS superpmi DESTINATION .)

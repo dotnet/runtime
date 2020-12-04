@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #include "common.h"
 #include "eventpipe.h"
@@ -23,8 +22,14 @@ EventPipeBuffer::EventPipeBuffer(unsigned int bufferSize, EventPipeThread* pWrit
     m_state = EventPipeBufferState::WRITABLE;
     m_pWriterThread = pWriterThread;
     m_eventSequenceNumber = eventSequenceNumber;
-    m_pBuffer = new BYTE[bufferSize];
-    memset(m_pBuffer, 0, bufferSize);
+    // Use ClrVirtualAlloc instead of malloc to allocate buffer to avoid potential internal fragmentation in the native CRT heap.
+    // (See https://github.com/dotnet/runtime/pull/35924 and https://github.com/microsoft/ApplicationInsights-dotnet/issues/1678 for more details)
+    //
+    // This fix does cause a little bit of performance regression (1-2%) in throughput,
+    // but within acceptable boundaries, while minimizing the risk of the fix to be backported
+    // to servicing releases. We may come back in the future to reassess this and potentially improve
+    // the throughput via more performant solution afterwards.
+    m_pBuffer = (BYTE*)ClrVirtualAlloc(NULL, bufferSize, MEM_COMMIT, PAGE_READWRITE);
     m_pLimit = m_pBuffer + bufferSize;
     m_pCurrent = GetNextAlignedAddress(m_pBuffer);
 
@@ -47,7 +52,7 @@ EventPipeBuffer::~EventPipeBuffer()
     }
     CONTRACTL_END;
 
-    delete[] m_pBuffer;
+    ClrVirtualFree(m_pBuffer, 0, MEM_RELEASE);
 }
 
 bool EventPipeBuffer::WriteEvent(Thread *pThread, EventPipeSession &session, EventPipeEvent &event, EventPipeEventPayload &payload, LPCGUID pActivityId, LPCGUID pRelatedActivityId, StackContents *pStack)

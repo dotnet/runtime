@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 /*XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
@@ -168,6 +167,11 @@ public:
             InitRanges(rangeStr, capacity);
             assert(m_inited == 1);
         }
+    }
+
+    bool IsEmpty() const
+    {
+        return m_lastRange == 0;
     }
 
     // Error checks
@@ -644,6 +648,7 @@ public:
  * Used when outputting strings.
  */
 unsigned CountDigits(unsigned num, unsigned base = 10);
+unsigned CountDigits(float num, unsigned base = 10);
 
 #endif // DEBUG
 
@@ -670,6 +675,8 @@ public:
     static bool hasPreciseReciprocal(double x);
 
     static bool hasPreciseReciprocal(float x);
+
+    static float infinite_float();
 };
 
 // The CLR requires that critical section locks be initialized via its ClrCreateCriticalSection API...but

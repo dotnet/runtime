@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
 using System.Dynamic.Utils;
@@ -17,7 +16,7 @@ namespace System.Linq.Expressions.Compiler
             Debug.Assert(methodBase is MethodInfo || methodBase is ConstructorInfo);
 
             var ctor = methodBase as ConstructorInfo;
-            if ((object?)ctor != null)
+            if (ctor is not null)
             {
                 il.Emit(opcode, ctor);
             }
@@ -34,32 +33,7 @@ namespace System.Linq.Expressions.Compiler
             Debug.Assert(index >= 0);
             Debug.Assert(index < ushort.MaxValue);
 
-            switch (index)
-            {
-                case 0:
-                    il.Emit(OpCodes.Ldarg_0);
-                    break;
-                case 1:
-                    il.Emit(OpCodes.Ldarg_1);
-                    break;
-                case 2:
-                    il.Emit(OpCodes.Ldarg_2);
-                    break;
-                case 3:
-                    il.Emit(OpCodes.Ldarg_3);
-                    break;
-                default:
-                    if (index <= byte.MaxValue)
-                    {
-                        il.Emit(OpCodes.Ldarg_S, (byte)index);
-                    }
-                    else
-                    {
-                        // cast to short, result is correct ushort.
-                        il.Emit(OpCodes.Ldarg, (short)index);
-                    }
-                    break;
-            }
+            il.Emit(OpCodes.Ldarg, index);
         }
 
         internal static void EmitLoadArgAddress(this ILGenerator il, int index)
@@ -67,15 +41,7 @@ namespace System.Linq.Expressions.Compiler
             Debug.Assert(index >= 0);
             Debug.Assert(index < ushort.MaxValue);
 
-            if (index <= byte.MaxValue)
-            {
-                il.Emit(OpCodes.Ldarga_S, (byte)index);
-            }
-            else
-            {
-                // cast to short, result is correct ushort.
-                il.Emit(OpCodes.Ldarga, (short)index);
-            }
+            il.Emit(OpCodes.Ldarga, index);
         }
 
         internal static void EmitStoreArg(this ILGenerator il, int index)
@@ -83,15 +49,7 @@ namespace System.Linq.Expressions.Compiler
             Debug.Assert(index >= 0);
             Debug.Assert(index < ushort.MaxValue);
 
-            if (index <= byte.MaxValue)
-            {
-                il.Emit(OpCodes.Starg_S, (byte)index);
-            }
-            else
-            {
-                // cast to short, result is correct ushort.
-                il.Emit(OpCodes.Starg, (short)index);
-            }
+            il.Emit(OpCodes.Starg, index);
         }
 
         /// <summary>
@@ -103,11 +61,11 @@ namespace System.Linq.Expressions.Compiler
 
             switch (type.GetTypeCode())
             {
-                case TypeCode.Byte:
+                case TypeCode.SByte:
                     il.Emit(OpCodes.Ldind_I1);
                     break;
                 case TypeCode.Boolean:
-                case TypeCode.SByte:
+                case TypeCode.Byte:
                     il.Emit(OpCodes.Ldind_U1);
                     break;
                 case TypeCode.Int16:
@@ -354,51 +312,7 @@ namespace System.Linq.Expressions.Compiler
 
         internal static void EmitPrimitive(this ILGenerator il, int value)
         {
-            OpCode c;
-            switch (value)
-            {
-                case -1:
-                    c = OpCodes.Ldc_I4_M1;
-                    break;
-                case 0:
-                    c = OpCodes.Ldc_I4_0;
-                    break;
-                case 1:
-                    c = OpCodes.Ldc_I4_1;
-                    break;
-                case 2:
-                    c = OpCodes.Ldc_I4_2;
-                    break;
-                case 3:
-                    c = OpCodes.Ldc_I4_3;
-                    break;
-                case 4:
-                    c = OpCodes.Ldc_I4_4;
-                    break;
-                case 5:
-                    c = OpCodes.Ldc_I4_5;
-                    break;
-                case 6:
-                    c = OpCodes.Ldc_I4_6;
-                    break;
-                case 7:
-                    c = OpCodes.Ldc_I4_7;
-                    break;
-                case 8:
-                    c = OpCodes.Ldc_I4_8;
-                    break;
-                default:
-                    if (value >= sbyte.MinValue && value <= sbyte.MaxValue)
-                    {
-                        il.Emit(OpCodes.Ldc_I4_S, (sbyte)value);
-                    }
-                    else
-                    {
-                        il.Emit(OpCodes.Ldc_I4, value);
-                    }
-                    return;
-            }
-            il.Emit(c);
+            il.Emit(OpCodes.Ldc_I4, value);
         }
 
         private static void EmitPrimitive(this ILGenerator il, uint value)

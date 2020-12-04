@@ -1,6 +1,6 @@
 # Status of CoreCLR Profiler APIs
 
-The .NET Core project started with the codebase from the desktop CoreCLR/Silverlight so all the profiler APIs present there are also present in the code here. This is the status of our testing and porting efforts for these APIs.
+The CoreCLR project started with the codebase from the .NET Framework so all the profiler APIs present there are also present in the code here. This is the status of our testing and porting efforts for these APIs.
 
 ## Platform test coverage
 
@@ -20,7 +20,7 @@ ReJIT feature is only available on x86/x64 for now.
 
 ### Profiler Attach/Detach
 
-We only support launch at the moment, see https://github.com/dotnet/coreclr/issues/16796
+We only support launch at the moment, see https://github.com/dotnet/runtime/issues/9886
 
 ### Any issues we missed?
 

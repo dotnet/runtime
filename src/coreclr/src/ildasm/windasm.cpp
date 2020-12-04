@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 /************************************************************************************************
  *                                                                                              *
@@ -15,7 +14,7 @@
 
 #include "dasmenum.hpp"
 #include "dis.h"
-#include <ndpversion.h>
+#include <clrversion.h>
 #include "resource.h"
 
 #include "new.hpp"
@@ -97,7 +96,7 @@ FILE* OpenOutput(__in __nullterminated const char* szFileName);
 
 void PrintLogo()
 {
-    printf("Microsoft (R) .NET Framework IL Disassembler.  Version " VER_FILEVERSION_STR);
+    printf("Microsoft (R) .NET IL Disassembler.  Version " CLR_PRODUCT_VERSION);
     printf("\n%S\n\n", VER_LEGALCOPYRIGHT_LOGO_STR_L);
 }
 
@@ -519,8 +518,10 @@ int __cdecl main(int nCmdShow, char* lpCmdLine[])
     g_pszExeFile = lpCmdLine[0];
 #endif
 
+#ifdef HOST_WINDOWS
     // SWI has requested that the exact form of the function call below be used. For details see http://swi/SWI%20Docs/Detecting%20Heap%20Corruption.doc
     (void)HeapSetInformation(NULL, HeapEnableTerminationOnCorruption, NULL, 0);
+#endif
 
 #ifdef _DEBUG
     DisableThrowCheck();

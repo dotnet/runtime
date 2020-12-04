@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 //*****************************************************************************
 // File: RsMain.cpp
 //
@@ -457,6 +456,7 @@ void LeftSideResourceCleanupList::SweepNeuterLeftSideResources(CordbProcess * pP
 /* ------------------------------------------------------------------------- *
  * CordbBase class
  * ------------------------------------------------------------------------- */
+extern void* GetClrModuleBase();
 
 // Do any initialization necessary for both CorPublish and CorDebug
 // This includes enabling logging and adding the SEDebug priv.
@@ -489,11 +489,7 @@ void CordbCommonBase::InitializeCommon()
             unsigned level = REGUTIL::GetConfigDWORD_DontUse_(CLRConfig::EXTERNAL_LogLevel, LL_INFO1000);
             unsigned bytesPerThread = REGUTIL::GetConfigDWORD_DontUse_(CLRConfig::UNSUPPORTED_StressLogSize, STRESSLOG_CHUNK_SIZE * 2);
             unsigned totalBytes = REGUTIL::GetConfigDWORD_DontUse_(CLRConfig::UNSUPPORTED_TotalStressLogSize, STRESSLOG_CHUNK_SIZE * 1024);
-#ifndef TARGET_UNIX
-            StressLog::Initialize(facilities, level, bytesPerThread, totalBytes, GetModuleInst());
-#else
-            StressLog::Initialize(facilities, level, bytesPerThread, totalBytes, NULL);
-#endif
+            StressLog::Initialize(facilities, level, bytesPerThread, totalBytes, GetClrModuleBase());
         }
     }
 
@@ -1427,13 +1423,6 @@ HRESULT Cordb::SetTargetCLR(HMODULE hmodTargetCLR)
 #ifdef FEATURE_CORESYSTEM
     m_targetCLR = hmodTargetCLR;
 #endif
-
-    // @REVIEW: are we happy with this workaround?  It allows us to use the existing
-    // infrastructure for instance name decoration, but it really doesn't fit
-    // the same model because coreclr.dll isn't in this process and hmodTargetCLR
-    // is the debuggee target, not the coreclr.dll to bind utilcode to..
-
-    g_hmodCoreCLR = hmodTargetCLR;
 
     return S_OK;
 }

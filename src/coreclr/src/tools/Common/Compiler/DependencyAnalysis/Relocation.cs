@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
 
@@ -258,6 +257,45 @@ namespace ILCompiler.DependencyAnalysis
             Debug.Assert(GetArm64Rel12(pCode) == imm12);
         }
 
+        private static unsafe int GetArm64Rel28(uint* pCode)
+        {
+            uint branchInstr = *pCode;
+
+            // first shift 6 bits left to set the sign bit,
+            // then arithmetic shift right by 4 bits
+            int imm28 = (((int)(branchInstr & 0x03FFFFFF)) << 6) >> 4;
+
+            return imm28;
+        }
+
+        private static bool FitsInArm64Rel28(long imm28)
+        {
+            return (imm28 >= -0x08000000L) && (imm28 < 0x08000000L);
+        }
+
+        private static unsafe void PutArm64Rel28(uint* pCode, long imm28)
+        {
+            // Verify that we got a valid offset
+            Debug.Assert(FitsInArm64Rel28(imm28));
+
+            Debug.Assert((imm28 & 0x3) == 0);    // the low two bits must be zero
+
+            uint branchInstr = *pCode;
+
+            branchInstr &= 0xFC000000;       // keep bits 31-26
+
+            Debug.Assert((branchInstr & 0x7FFFFFFF) == 0x14000000);  // Must be B or BL
+
+            // Assemble the pc-relative delta 'imm28' into the branch instruction
+            branchInstr |= (uint)(((imm28 >> 2) & 0x03FFFFFFU));
+
+            *pCode = branchInstr;          // write the assembled instruction
+
+            Debug.Assert(GetArm64Rel28(pCode) == imm28);
+        }
+
+
+
         public Relocation(RelocType relocType, int offset, ISymbolNode target)
         {
             RelocType = relocType;
@@ -286,6 +324,9 @@ namespace ILCompiler.DependencyAnalysis
                     break;
                 case RelocType.IMAGE_REL_BASED_THUMB_BRANCH24:
                     PutThumb2BlRel24((ushort*)location, (uint)value);
+                    break;
+                case RelocType.IMAGE_REL_BASED_ARM64_BRANCH26:
+                    PutArm64Rel28((uint*)location, value);
                     break;
                 case RelocType.IMAGE_REL_BASED_ARM64_PAGEBASE_REL21:
                     PutArm64Rel21((uint*)location, (int)value);
@@ -319,6 +360,8 @@ namespace ILCompiler.DependencyAnalysis
                     return (long)GetThumb2Mov32((ushort*)location);
                 case RelocType.IMAGE_REL_BASED_THUMB_BRANCH24:
                     return (long)GetThumb2BlRel24((ushort*)location);
+                case RelocType.IMAGE_REL_BASED_ARM64_BRANCH26:
+                    return (long)GetArm64Rel28((uint*)location);
                 case RelocType.IMAGE_REL_BASED_ARM64_PAGEBASE_REL21:
                     return GetArm64Rel21((uint*)location);
                 case RelocType.IMAGE_REL_BASED_ARM64_PAGEOFFSET_12A:
@@ -326,6 +369,27 @@ namespace ILCompiler.DependencyAnalysis
                 default:
                     Debug.Fail("Invalid RelocType: " + relocType);
                     return 0;
+            }
+        }
+
+        /// <summary>
+        /// Return file relocation type for the given relocation type. If the relocation
+        /// doesn't require a file-level relocation entry in the .reloc section, 0 is returned
+        /// corresponding to the IMAGE_REL_BASED_ABSOLUTE no-op relocation record.
+        /// </summary>
+        /// <param name="relocationType">Relocation type</param>
+        /// <returns>File-level relocation type or 0 (IMAGE_REL_BASED_ABSOLUTE) if none is required</returns>
+        public static RelocType GetFileRelocationType(RelocType relocationType)
+        {
+            switch (relocationType)
+            {
+                case RelocType.IMAGE_REL_BASED_HIGHLOW:
+                case RelocType.IMAGE_REL_BASED_DIR64:
+                case RelocType.IMAGE_REL_BASED_THUMB_MOV32:
+                    return relocationType;
+
+                default:
+                    return RelocType.IMAGE_REL_BASED_ABSOLUTE;
             }
         }
 

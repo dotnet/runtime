@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 /*++
 
@@ -93,6 +92,10 @@ Revision History:
 
 #include <algorithm>
 
+#if HAVE_SWAPCTL
+#include <sys/swap.h>
+#endif
+
 SET_DEFAULT_DEBUG_CHANNEL(MISC);
 
 #ifndef __APPLE__
@@ -128,11 +131,8 @@ PAL_GetTotalCpuCount()
 #elif HAVE_SYSCTL
     int rc;
     size_t sz;
-    int mib[2];
-
+    int mib[] = { CTL_HW, HW_NCPU };
     sz = sizeof(nrcpus);
-    mib[0] = CTL_HW;
-    mib[1] = HW_NCPU;
     rc = sysctl(mib, 2, &nrcpus, &sz, NULL, 0);
     if (rc != 0)
     {
@@ -221,6 +221,8 @@ GetSystemInfo(
     lpSystemInfo->lpMaximumApplicationAddress = (PVOID) VM_MAXUSER_ADDRESS;
 #elif defined(__linux__)
     lpSystemInfo->lpMaximumApplicationAddress = (PVOID) (1ull << 47);
+#elif defined(__sun)
+    lpSystemInfo->lpMaximumApplicationAddress = (PVOID) 0xfffffd7fffe00000ul;
 #elif defined(USERLIMIT)
     lpSystemInfo->lpMaximumApplicationAddress = (PVOID) USERLIMIT;
 #elif defined(HOST_64BIT)
@@ -332,7 +334,6 @@ GlobalMemoryStatusEx(
     lpBuffer->ullAvailExtendedVirtual = 0;
 
     BOOL fRetVal = FALSE;
-    int mib[3];
     int rc;
 
     // Get the physical memory size
@@ -346,10 +347,8 @@ GlobalMemoryStatusEx(
 #elif HAVE_SYSCTL
     int64_t physical_memory;
     size_t length;
-
     // Get the Physical memory size
-    mib[0] = CTL_HW;
-    mib[1] = HW_MEMSIZE;
+    int mib[] = { CTL_HW, HW_MEMSIZE };
     length = sizeof(INT64);
     rc = sysctl(mib, 2, &physical_memory, &length, NULL, 0);
     if (rc != 0)
@@ -369,8 +368,7 @@ GlobalMemoryStatusEx(
 #if HAVE_XSW_USAGE
     // This is available on OSX
     struct xsw_usage xsu;
-    mib[0] = CTL_VM;
-    mib[1] = VM_SWAPUSAGE;
+    int mib[] = { CTL_HW, VM_SWAPUSAGE };
     size_t length = sizeof(xsu);
     rc = sysctl(mib, 2, &xsu, &length, NULL, 0);
     if (rc == 0)
@@ -381,7 +379,7 @@ GlobalMemoryStatusEx(
 #elif HAVE_XSWDEV
     // E.g. FreeBSD
     struct xswdev xsw;
-
+    int mib[3];
     size_t length = 2;
     rc = sysctlnametomib("vm.swap_info", mib, &length);
     if (rc == 0)
@@ -403,6 +401,14 @@ GlobalMemoryStatusEx(
             lpBuffer->ullTotalPageFile += (DWORDLONG)xsw.xsw_nblks * pagesize;
             lpBuffer->ullAvailPageFile += (DWORDLONG)avail * pagesize;
         }
+    }
+#elif HAVE_SWAPCTL
+    struct anoninfo ai;
+    if (swapctl(SC_AINFO, &ai) != -1)
+    {
+        int pagesize = getpagesize();
+        lpBuffer->ullTotalPageFile = ai.ani_max * pagesize;
+        lpBuffer->ullAvailPageFile = ai.ani_free * pagesize;
     }
 #elif HAVE_SYSINFO
     // Linux
@@ -504,7 +510,7 @@ ReadMemoryValueFromFile(const char* filename, uint64_t* val)
     char *line = nullptr;
     size_t lineLen = 0;
     char* endptr = nullptr;
-    uint64_t num = 0, l, multiplier;
+    uint64_t num = 0, multiplier;
 
     if (val == nullptr)
         return false;
@@ -552,9 +558,14 @@ PAL_GetLogicalProcessorCacheSizeFromOS()
     cacheSize = std::max(cacheSize, (size_t)sysconf(_SC_LEVEL4_CACHE_SIZE));
 #endif
 
-#if defined(HOST_ARM64)
-    if(cacheSize == 0)
+#if defined(TARGET_LINUX) && !defined(HOST_ARM)
+    if (cacheSize == 0)
     {
+        //
+        // Fallback to retrieve cachesize via /sys/.. if sysconf was not available
+        // for the platform. Currently musl and arm64 should be only cases to use
+        // this method to determine cache size.
+        //
         size_t size;
 
         if(ReadMemoryValueFromFile("/sys/devices/system/cpu/cpu0/cache/index0/size", &size))
@@ -568,8 +579,10 @@ PAL_GetLogicalProcessorCacheSizeFromOS()
         if(ReadMemoryValueFromFile("/sys/devices/system/cpu/cpu0/cache/index4/size", &size))
             cacheSize = std::max(cacheSize, size);
     }
+#endif
 
-    if(cacheSize == 0)
+#if defined(HOST_ARM64) && !defined(TARGET_OSX)
+    if (cacheSize == 0)
     {
         // It is currently expected to be missing cache size info
         //

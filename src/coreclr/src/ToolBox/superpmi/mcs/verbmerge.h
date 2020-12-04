@@ -10,10 +10,12 @@
 #ifndef _verbMerge
 #define _verbMerge
 
+#include "removedup.h"
+
 class verbMerge
 {
 public:
-    static int DoWork(const char* nameOfOutputFile, const char* pattern, bool recursive);
+    static int DoWork(const char* nameOfOutputFile, const char* pattern, bool recursive, bool dedup, bool stripCR);
 
 private:
     typedef bool (*DirectoryFilterFunction_t)(WIN32_FIND_DATAW*);
@@ -29,13 +31,17 @@ private:
 
     static char* ConvertWideCharToMultiByte(LPCWSTR wstr);
 
-    static int AppendFile(HANDLE hFileOut, LPCWSTR fileName, unsigned char* buffer, size_t bufferSize);
+    static int AppendFileRaw(HANDLE hFileOut, LPCWSTR fileFullPath, unsigned char* buffer, size_t bufferSize);
+    static int AppendFile(HANDLE hFileOut, LPCWSTR fileFullPath, bool dedup, unsigned char* buffer, size_t bufferSize);
     static int AppendAllInDir(HANDLE              hFileOut,
                               LPCWSTR             dir,
                               LPCWSTR             file,
                               unsigned char*      buffer,
                               size_t              bufferSize,
                               bool                recursive,
+                              bool                dedup,
                               /* out */ LONGLONG* size);
+
+    static RemoveDup m_removeDups;
 };
 #endif

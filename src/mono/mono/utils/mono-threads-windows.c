@@ -17,8 +17,8 @@
 #include <mono/utils/mono-threads-coop.h>
 #include <mono/utils/mono-threads-debug.h>
 #include <mono/utils/mono-os-wait.h>
-#include <mono/metadata/w32subset.h>
 #include <limits.h>
+#include <mono/utils/w32subset.h>
 
 enum Win32APCInfo {
 	WIN32_APC_INFO_CLEARED = 0,
@@ -76,6 +76,7 @@ abort_apc (ULONG_PTR param)
 {
 	THREADS_INTERRUPT_DEBUG ("%06d - abort_apc () called", GetCurrentThreadId ());
 
+#if HAVE_API_SUPPORT_WIN32_CANCEL_IO || HAVE_API_SUPPORT_WIN32_CANCEL_IO_EX
 	MonoThreadInfo *info = mono_thread_info_current_unchecked ();
 	if (info) {
 		// Check if pending interrupt is still relevant and current thread has not left alertable wait region.
@@ -88,12 +89,17 @@ abort_apc (ULONG_PTR param)
 			HANDLE io_handle = (HANDLE)info->win32_apc_info_io_handle;
 			if (io_handle != INVALID_HANDLE_VALUE) {
 				// In order to break IO waits, cancel all outstanding IO requests.
-				// Start to cancel IO requests for the registered IO handle issued by current thread.
 				// NOTE, this is NOT a blocking call.
+#if HAVE_API_SUPPORT_WIN32_CANCEL_IO
+				// Start to cancel IO requests for the registered IO handle issued by current thread.
 				CancelIo (io_handle);
+#elif HAVE_API_SUPPORT_WIN32_CANCEL_IO_EX
+				CancelIoEx (io_handle, NULL);
+#endif
 			}
 		}
 	}
+#endif /* HAVE_API_SUPPORT_WIN32_CANCEL_IO || HAVE_API_SUPPORT_WIN32_CANCEL_IO_EX */
 }
 
 // Attempt to cancel sync blocking IO on abort syscall requests.
@@ -103,7 +109,7 @@ abort_apc (ULONG_PTR param)
 // thread is going away meaning that no more IO calls will be issued against the
 // same resource that was part of the cancelation. Current implementation of
 // .NET Framework and .NET Core currently don't support the ability to abort a thread
-// blocked on sync IO calls, see https://github.com/dotnet/corefx/issues/5749.
+// blocked on sync IO calls, see https://github.com/dotnet/runtime/issues/16236.
 // Since there is no solution covering all scenarios aborting blocking syscall this
 // will be on best effort and there might still be a slight risk that the blocking call
 // won't abort (depending on overlapped IO support for current file, socket).
@@ -200,7 +206,7 @@ mono_threads_suspend_begin_async_suspend (MonoThreadInfo *info, gboolean interru
 	/* suspended request, this will wait until thread is suspended and thread context has been collected */
 	/* and returned. */
 	CONTEXT context;
-	context.ContextFlags = CONTEXT_INTEGER | CONTEXT_CONTROL;
+	context.ContextFlags = CONTEXT_INTEGER | CONTEXT_FLOATING_POINT | CONTEXT_CONTROL;
 	if (!GetThreadContext (handle, &context)) {
 		result = ResumeThread (handle);
 		g_assert (result == 1);
@@ -289,19 +295,16 @@ mono_threads_suspend_begin_async_resume (MonoThreadInfo *info)
 		info->async_target = NULL;
 		info->user_data = NULL;
 
-		context.ContextFlags = CONTEXT_INTEGER | CONTEXT_CONTROL;
+		context.ContextFlags = CONTEXT_INTEGER | CONTEXT_FLOATING_POINT | CONTEXT_CONTROL;
 
 		if (!GetThreadContext (handle, &context)) {
 			THREADS_SUSPEND_DEBUG ("RESUME FAILED (GetThreadContext), id=%p, err=%u\n", GUINT_TO_POINTER (mono_thread_info_get_tid (info)), GetLastError ());
 			return FALSE;
 		}
 
-		g_assert (context.ContextFlags & CONTEXT_INTEGER);
-		g_assert (context.ContextFlags & CONTEXT_CONTROL);
-
 		mono_monoctx_to_sigctx (&ctx, &context);
 
-		context.ContextFlags = CONTEXT_INTEGER | CONTEXT_CONTROL;
+		context.ContextFlags = CONTEXT_INTEGER | CONTEXT_FLOATING_POINT | CONTEXT_CONTROL;
 		res = SetThreadContext (handle, &context);
 		if (!res) {
 			THREADS_SUSPEND_DEBUG ("RESUME FAILED (SetThreadContext), id=%p, err=%u\n", GUINT_TO_POINTER (mono_thread_info_get_tid (info)), GetLastError ());
@@ -365,7 +368,12 @@ mono_threads_suspend_get_abort_signal (void)
 
 #if defined (HOST_WIN32)
 
+#ifndef ENABLE_NETCORE
 #define MONO_WIN32_DEFAULT_NATIVE_STACK_SIZE (1024 * 1024)
+#else
+// Use default stack size on netcore.
+#define MONO_WIN32_DEFAULT_NATIVE_STACK_SIZE 0
+#endif
 
 gboolean
 mono_thread_platform_create_thread (MonoThreadStart thread_fn, gpointer thread_data, gsize* const stack_size, MonoNativeThreadId *tid)
@@ -441,10 +449,6 @@ mono_native_thread_join_handle (HANDLE thread_handle, gboolean close_handle)
 	return res != WAIT_FAILED;
 }
 
-/*
- * Can't OpenThread on UWP until SDK 15063 (our minspec today is 10240),
- * but this function doesn't seem to be used on Windows anyway
- */
 #if HAVE_API_SUPPORT_WIN32_OPEN_THREAD
 gboolean
 mono_native_thread_join (MonoNativeThreadId tid)
@@ -455,6 +459,14 @@ mono_native_thread_join (MonoNativeThreadId tid)
 		return FALSE;
 
 	return mono_native_thread_join_handle (handle, TRUE);
+}
+#elif !HAVE_EXTERN_DEFINED_WIN32_OPEN_THREAD
+gboolean
+mono_native_thread_join (MonoNativeThreadId tid)
+{
+	g_unsupported_api ("OpenThread");
+	SetLastError (ERROR_NOT_SUPPORTED);
+	return FALSE;
 }
 #endif
 
@@ -515,7 +527,7 @@ gboolean
 mono_threads_platform_in_critical_region (THREAD_INFO_TYPE *info)
 {
 	gboolean ret = FALSE;
-#if SIZEOF_VOID_P == 4 && HAVE_API_SUPPORT_WIN32_OPEN_THREAD
+#if SIZEOF_VOID_P == 4 && HAVE_API_SUPPORT_WIN32_IS_WOW64_PROCESS && HAVE_API_SUPPORT_WIN32_OPEN_THREAD
 /* FIXME On cygwin these are not defined */
 #if defined(CONTEXT_EXCEPTION_REQUEST) && defined(CONTEXT_EXCEPTION_REPORTING) && defined(CONTEXT_EXCEPTION_ACTIVE)
 	if (is_wow64 && thread_is_cooperative_suspend_aware (info)) {

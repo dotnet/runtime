@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 //*****************************************************************************
 // common.h
 //
@@ -52,7 +51,7 @@ typedef unsigned int TARGET_POINTER_TYPE;
 #include "guidfromname.h"
 #include "../dlls/mscorrc/resource.h"
 #include "zaplog.h"
-#include "ndpversion.h"
+#include "clrversion.h"
 
 #include "loaderheap.h"
 

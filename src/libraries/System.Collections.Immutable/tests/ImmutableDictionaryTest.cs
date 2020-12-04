@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -375,6 +374,15 @@ namespace System.Collections.Immutable.Tests
 
             clearedDictionary = clearedDictionary.Add("a", 1);
             Assert.True(clearedDictionary.ContainsKey("A"));
+        }
+
+        [Fact]
+        public void Indexer_KeyNotFoundException_ContainsKeyInMessage()
+        {
+            var map = ImmutableDictionary.Create<string, string>()
+                .Add("a", "1").Add("b", "2");
+            var exception = Assert.Throws<KeyNotFoundException>(() => map["c"]);
+            Assert.Contains("'c'", exception.Message);
         }
 
         protected override IImmutableDictionary<TKey, TValue> Empty<TKey, TValue>()

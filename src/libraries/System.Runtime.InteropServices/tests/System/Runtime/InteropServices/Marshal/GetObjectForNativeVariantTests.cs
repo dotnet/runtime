@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
@@ -297,7 +296,7 @@ namespace System.Runtime.InteropServices.Tests
             }
         }
 
-        public static IEnumerable<object[]> GetObjectForNativeVariant_CantMap_ThrowsArgumentException()
+        public static IEnumerable<object[]> GetObjectForNativeVariant_CantMap_ThrowsArgumentException_Data()
         {
             yield return new object[] { CreateVariant(VT_VARIANT, new UnionTypes()) };
             yield return new object[] { CreateVariant(15, new UnionTypes()) };
@@ -331,7 +330,7 @@ namespace System.Runtime.InteropServices.Tests
         }
 
         [Theory]
-        [MemberData(nameof(GetObjectForNativeVariant_CantMap_ThrowsArgumentException))]
+        [MemberData(nameof(GetObjectForNativeVariant_CantMap_ThrowsArgumentException_Data))]
         [PlatformSpecific(TestPlatforms.Windows)]
         public void GetObjectForNativeVariant_CantMap_ThrowsArgumentException(Variant variant)
         {
@@ -339,7 +338,7 @@ namespace System.Runtime.InteropServices.Tests
         }
 
         [Theory]
-        [MemberData(nameof(GetObjectForNativeVariant_CantMap_ThrowsArgumentException))]
+        [MemberData(nameof(GetObjectForNativeVariant_CantMap_ThrowsArgumentException_Data))]
         [PlatformSpecific(TestPlatforms.Windows)]
         public void GetObjectForNativeVariant_CantMapByRef_ThrowsArgumentException(Variant variant)
         {

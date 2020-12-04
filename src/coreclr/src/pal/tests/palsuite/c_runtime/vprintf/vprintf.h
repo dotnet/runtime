@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 /*============================================================================
 **
@@ -14,7 +13,7 @@
 #ifndef __vprintf_H__
 #define __vprintf_H__
 
-int DoVprintf(const char *format, ...)
+inline int DoVprintf(const char *format, ...)
 {
     int retVal;
     va_list arglist;
@@ -26,7 +25,7 @@ int DoVprintf(const char *format, ...)
     return (retVal);
 }
 
-void DoStrTest(const char *formatstr, char* param, const char *checkstr)
+inline void DoStrTest_vprintf(const char *formatstr, char* param, const char *checkstr)
 {
     int ret;
 
@@ -37,8 +36,9 @@ void DoStrTest(const char *formatstr, char* param, const char *checkstr)
             strlen(checkstr), ret);
     }
 }
+#define DoStrTest DoStrTest_vprintf
 
-void DoWStrTest(const char *formatstr, WCHAR* param, const char *checkstr)
+inline void DoWStrTest_vprintf(const char *formatstr, WCHAR* param, const char *checkstr)
 {
     int ret;
 
@@ -49,8 +49,9 @@ void DoWStrTest(const char *formatstr, WCHAR* param, const char *checkstr)
             strlen(checkstr), ret);
     }
 }
+#define DoWStrTest DoWStrTest_vprintf
 
-void DoPointerTest(const char *formatstr, void* param, char* paramstr, 
+inline void DoPointerTest_vprintf(const char *formatstr, void* param, char* paramstr, 
                    const char *checkstr1)
 {
     int ret;
@@ -62,8 +63,9 @@ void DoPointerTest(const char *formatstr, void* param, char* paramstr,
             strlen(checkstr1), ret);
     }
 }
+#define DoPointerTest DoPointerTest_vprintf
 
-void DoCountTest(const char *formatstr, int param, const char *checkstr)
+inline void DoCountTest_vprintf(const char *formatstr, int param, const char *checkstr)
 {
     int ret;
     int n = -1;
@@ -81,8 +83,9 @@ void DoCountTest(const char *formatstr, int param, const char *checkstr)
             strlen(checkstr), ret);
     }    
 }
+#define DoCountTest DoCountTest_vprintf
 
-void DoShortCountTest(const char *formatstr, int param, const char *checkstr)
+inline void DoShortCountTest_vprintf(const char *formatstr, int param, const char *checkstr)
 {
     int ret;
     short int n = -1;
@@ -100,9 +103,9 @@ void DoShortCountTest(const char *formatstr, int param, const char *checkstr)
             strlen(checkstr), ret);
     }    
 }
+#define DoShortCountTest DoShortCountTest_vprintf
 
-
-void DoCharTest(const char *formatstr, char param, const char *checkstr)
+inline void DoCharTest_vprintf(const char *formatstr, char param, const char *checkstr)
 {
     int ret;
 
@@ -113,8 +116,9 @@ void DoCharTest(const char *formatstr, char param, const char *checkstr)
             strlen(checkstr), ret);
     }
 }
+#define DoCharTest DoCharTest_vprintf
 
-void DoWCharTest(const char *formatstr, WCHAR param, const char *checkstr)
+inline void DoWCharTest_vprintf(const char *formatstr, WCHAR param, const char *checkstr)
 {
     int ret;
 
@@ -125,8 +129,9 @@ void DoWCharTest(const char *formatstr, WCHAR param, const char *checkstr)
             strlen(checkstr), ret);
     }    
 }
+#define DoWCharTest DoWCharTest_vprintf
 
-void DoNumTest(const char *formatstr, int param, const char *checkstr)
+inline void DoNumTest_vprintf(const char *formatstr, int param, const char *checkstr)
 {
     int ret;
 
@@ -137,8 +142,9 @@ void DoNumTest(const char *formatstr, int param, const char *checkstr)
             strlen(checkstr), ret);
     }    
 }
+#define DoNumTest DoNumTest_vprintf
 
-void DoI64Test(const char *formatstr, INT64 param, char *valuestr, const char *checkstr1)
+inline void DoI64Test_vprintf(const char *formatstr, INT64 param, char *valuestr, const char *checkstr1)
 {
     int ret;
 
@@ -149,8 +155,9 @@ void DoI64Test(const char *formatstr, INT64 param, char *valuestr, const char *c
             strlen(checkstr1), ret);
     }
 }
+#define DoI64Test DoI64Test_vprintf
 
-void DoDoubleTest(const char *formatstr, double param, const char *checkstr1, 
+inline void DoDoubleTest_vprintf(const char *formatstr, double param, const char *checkstr1, 
                   const char *checkstr2)
 {
     int ret;
@@ -162,8 +169,9 @@ void DoDoubleTest(const char *formatstr, double param, const char *checkstr1,
             strlen(checkstr1), strlen(checkstr2), ret);
     }
 }
+#define DoDoubleTest DoDoubleTest_vprintf
 
-void DoArgumentPrecTest(const char *formatstr, int precision, void *param, 
+inline void DoArgumentPrecTest_vprintf(const char *formatstr, int precision, void *param, 
                         char *paramstr, const char *checkstr1, const char *checkstr2)
 {
     int ret;
@@ -175,8 +183,9 @@ void DoArgumentPrecTest(const char *formatstr, int precision, void *param,
             strlen(checkstr1), strlen(checkstr2), ret);
     }
 }
+#define DoArgumentPrecTest DoArgumentPrecTest_vprintf
 
-void DoArgumentPrecDoubleTest(const char *formatstr, int precision, double param, 
+inline void DoArgumentPrecDoubleTest_vprintf(const char *formatstr, int precision, double param, 
     const char *checkstr1, const char *checkstr2)
 {
     int ret;
@@ -188,6 +197,7 @@ void DoArgumentPrecDoubleTest(const char *formatstr, int precision, double param
             strlen(checkstr1), strlen(checkstr2), ret);
     }
 }
+#define DoArgumentPrecDoubleTest DoArgumentPrecDoubleTest_vprintf
 
 #endif
 

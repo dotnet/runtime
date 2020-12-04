@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
 using System.IO;
@@ -23,10 +22,7 @@ namespace System.Net.Http
             }
 
             _content = content;
-            _offset = 0;
             _count = content.Length;
-
-            SetBuffer(_content, _offset, _count);
         }
 
         public ByteArrayContent(byte[] content, int offset, int count)
@@ -47,9 +43,10 @@ namespace System.Net.Http
             _content = content;
             _offset = offset;
             _count = count;
-
-            SetBuffer(_content, _offset, _count);
         }
+
+        protected override void SerializeToStream(Stream stream, TransportContext? context, CancellationToken cancellationToken) =>
+            stream.Write(_content, _offset, _count);
 
         protected override Task SerializeToStreamAsync(Stream stream, TransportContext? context) =>
             SerializeToStreamAsyncCore(stream, default);
@@ -68,6 +65,9 @@ namespace System.Net.Http
             length = _count;
             return true;
         }
+
+        protected override Stream CreateContentReadStream(CancellationToken cancellationToken) =>
+            CreateMemoryStreamForByteArray();
 
         protected override Task<Stream> CreateContentReadStreamAsync() =>
             Task.FromResult<Stream>(CreateMemoryStreamForByteArray());

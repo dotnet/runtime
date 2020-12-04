@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections;
 using System.Collections.Generic;
@@ -14,6 +13,7 @@ using System.ComponentModel;
 using System.Security;
 using System.Threading;
 using Microsoft.DotNet.RemoteExecutor;
+using Microsoft.DotNet.XUnitExtensions;
 using Microsoft.Win32;
 using Microsoft.Win32.SafeHandles;
 using Xunit;
@@ -57,7 +57,7 @@ namespace System.Diagnostics.Tests
             environment.Add("NewKey2", "NewValue2");
             Assert.True(environment.ContainsKey("NewKey"));
 
-            Assert.Equal(RuntimeInformation.IsOSPlatform(OSPlatform.Windows), environment.ContainsKey("newkey"));
+            Assert.Equal(OperatingSystem.IsWindows(), environment.ContainsKey("newkey"));
             Assert.False(environment.ContainsKey("NewKey99"));
 
             //Iterating
@@ -93,7 +93,7 @@ namespace System.Diagnostics.Tests
 
             //Contains
             Assert.True(environment.Contains(new KeyValuePair<string, string>("NewKey", "NewValue")));
-            Assert.Equal(RuntimeInformation.IsOSPlatform(OSPlatform.Windows), environment.Contains(new KeyValuePair<string, string>("nEwKeY", "NewValue")));
+            Assert.Equal(OperatingSystem.IsWindows(), environment.Contains(new KeyValuePair<string, string>("nEwKeY", "NewValue")));
             Assert.False(environment.Contains(new KeyValuePair<string, string>("NewKey99", "NewValue99")));
 
             //Exception not thrown with invalid key
@@ -110,7 +110,7 @@ namespace System.Diagnostics.Tests
             Assert.True(environment.TryGetValue("NewKey", out stringout));
             Assert.Equal("NewValue", stringout);
 
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            if (OperatingSystem.IsWindows())
             {
                 Assert.True(environment.TryGetValue("NeWkEy", out stringout));
                 Assert.Equal("NewValue", stringout);
@@ -144,7 +144,7 @@ namespace System.Diagnostics.Tests
             Assert.Throws<KeyNotFoundException>(() => environment["1bB"]);
 
             Assert.True(environment.Contains(new KeyValuePair<string, string>("NewKey2", "NewValue2OverriddenAgain")));
-            Assert.Equal(RuntimeInformation.IsOSPlatform(OSPlatform.Windows), environment.Contains(new KeyValuePair<string, string>("NEWKeY2", "NewValue2OverriddenAgain")));
+            Assert.Equal(OperatingSystem.IsWindows(), environment.Contains(new KeyValuePair<string, string>("NEWKeY2", "NewValue2OverriddenAgain")));
 
             Assert.False(environment.Contains(new KeyValuePair<string, string>("NewKey2", "newvalue2Overriddenagain")));
             Assert.False(environment.Contains(new KeyValuePair<string, string>("newkey2", "newvalue2Overriddenagain")));
@@ -196,7 +196,7 @@ namespace System.Diagnostics.Tests
             });
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void TestSetEnvironmentOnChildProcess()
         {
             const string name = "b5a715d3-d74f-465d-abb7-2abe844750c9";
@@ -216,7 +216,7 @@ namespace System.Diagnostics.Tests
             Assert.Equal(RemoteExecutor.SuccessExitCode, p.ExitCode);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void TestEnvironmentOfChildProcess()
         {
             const string ItemSeparator = "CAFF9451396B4EEF8A5155A15BDC2080"; // random string that shouldn't be in any env vars; used instead of newline to separate env var strings
@@ -277,7 +277,7 @@ namespace System.Diagnostics.Tests
             Assert.False(psi.UseShellExecute);
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [InlineData(0)]
         [InlineData(1)]
         [InlineData(2)]
@@ -309,7 +309,7 @@ namespace System.Diagnostics.Tests
             Assert.Equal("-arg3 -arg4", psi.Arguments);
         }
 
-        [Theory, InlineData(true), InlineData(false)]
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported)), InlineData(true), InlineData(false)]
         public void TestCreateNoWindowProperty(bool value)
         {
             Process testProcess = CreateProcessLong();
@@ -328,7 +328,7 @@ namespace System.Diagnostics.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void TestWorkingDirectoryPropertyDefaultCase()
         {
             CreateDefaultProcess();
@@ -337,7 +337,7 @@ namespace System.Diagnostics.Tests
             Assert.Equal(string.Empty, _process.StartInfo.WorkingDirectory);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void TestWorkingDirectoryPropertyInChildProcess()
         {
             string workingDirectory = string.IsNullOrEmpty(Environment.SystemDirectory) ? TestDirectory : Environment.SystemDirectory ;
@@ -351,9 +351,10 @@ namespace System.Diagnostics.Tests
         }
 
         [ActiveIssue("https://github.com/dotnet/runtime/issues/18978")]
-        [Fact, PlatformSpecific(TestPlatforms.Windows), OuterLoop] // Uses P/Invokes, Requires admin privileges
+                [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported)), PlatformSpecific(TestPlatforms.Windows), OuterLoop] // Uses P/Invokes, Requires admin privileges
         public void TestUserCredentialsPropertiesOnWindows()
         {
+            // [SuppressMessage("Microsoft.Security", "CS002:SecretInNextLine", Justification="Unit test dummy credentials.")]
             string username = "test", password = "PassWord123!!";
             try
             {
@@ -903,7 +904,9 @@ namespace System.Diagnostics.Tests
             Assert.Equal(workingDirectory ?? string.Empty, info.WorkingDirectory);
         }
 
-        [Fact(Skip = "Manual test")]
+        [Fact]
+        [OuterLoop("Opens a browser")]
+        [Trait(XunitConstants.Category, XunitConstants.IgnoreForCI)] // Native dependencies missing in CI. See https://github.com/dotnet/runtime/issues/20097
         [PlatformSpecific(TestPlatforms.Windows)]
         public void StartInfo_WebPage()
         {
@@ -916,6 +919,8 @@ namespace System.Diagnostics.Tests
             using (var p = Process.Start(info))
             {
                 Assert.NotNull(p);
+                p.WaitForInputIdle();
+                p.Kill();
             }
         }
 
@@ -942,11 +947,7 @@ namespace System.Diagnostics.Tests
 
                 try
                 {
-                    process.WaitForInputIdle(); // Give the file a chance to load
-                    Assert.Equal("notepad", process.ProcessName);
-
-                    // On some Windows versions, the file extension is not included in the title
-                    Assert.StartsWith(Path.GetFileNameWithoutExtension(tempFile), process.MainWindowTitle);
+                    VerifyNotepadMainWindowTitle(process, tempFile);
                 }
                 finally
                 {
@@ -956,6 +957,7 @@ namespace System.Diagnostics.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer), // Nano does not support UseShellExecute
+                                                    nameof(PlatformDetection.IsNotWindowsServerCore), // https://github.com/dotnet/runtime/issues/26231
                                                     nameof(PlatformDetection.IsNotWindows8x))] // https://github.com/dotnet/runtime/issues/22007
         [OuterLoop("Launches notepad")]
         [PlatformSpecific(TestPlatforms.Windows)]
@@ -980,18 +982,7 @@ namespace System.Diagnostics.Tests
 
                 try
                 {
-                    process.WaitForInputIdle(); // Give the file a chance to load
-                    Assert.Equal("notepad", process.ProcessName);
-
-                    if (PlatformDetection.IsInAppContainer)
-                    {
-                        Assert.Throws<PlatformNotSupportedException>(() => process.MainWindowTitle);
-                    }
-                    else
-                    {
-                        // On some Windows versions, the file extension is not included in the title
-                        Assert.StartsWith(Path.GetFileNameWithoutExtension(tempFile), process.MainWindowTitle);
-                    }
+                    VerifyNotepadMainWindowTitle(process, tempFile);
                 }
                 finally
                 {
@@ -1081,6 +1072,7 @@ namespace System.Diagnostics.Tests
         private const int ERROR_BAD_EXE_FORMAT = 0xC1;
 
         [Theory]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34685", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         [MemberData(nameof(UseShellExecute))]
         [PlatformSpecific(TestPlatforms.Windows)]
         public void StartInfo_BadVerb(bool useShellExecute)
@@ -1096,6 +1088,7 @@ namespace System.Diagnostics.Tests
         }
 
         [Theory]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34685", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         [MemberData(nameof(UseShellExecute))]
         [PlatformSpecific(TestPlatforms.Windows)]
         public void StartInfo_BadExe(bool useShellExecute)
@@ -1165,17 +1158,43 @@ namespace System.Diagnostics.Tests
 
                 try
                 {
-                    process.WaitForInputIdle(); // Give the file a chance to load
-                    Assert.Equal("notepad", process.ProcessName);
-
-                    // On some Windows versions, the file extension is not included in the title
-                    Assert.StartsWith(Path.GetFileNameWithoutExtension(tempFile), process.MainWindowTitle);
+                    VerifyNotepadMainWindowTitle(process, tempFile);
                 }
                 finally
                 {
                     process?.Kill();
                 }
             }
+        }
+
+        private void VerifyNotepadMainWindowTitle(Process process, string filename)
+        {
+            if (PlatformDetection.IsWindowsServerCore)
+            {
+                return; // On Server Core, notepad exists but does not return a title
+            }
+
+            // On some Windows versions, the file extension is not included in the title
+            string expected = Path.GetFileNameWithoutExtension(filename);
+
+            process.WaitForInputIdle(); // Give the file a chance to load
+            Assert.Equal("notepad", process.ProcessName);
+
+            // Notepad calls CreateWindowEx with pWindowName of empty string, then calls SetWindowTextW
+            // with "Untitled - Notepad" then finally if you're opening a file, calls SetWindowTextW
+            // with something similar to "myfilename - Notepad". So there's a race between input idle
+            // and the expected MainWindowTitle because of how Notepad is implemented.
+            string title = process.MainWindowTitle;
+            int count = 0;
+            while (!title.StartsWith(expected) && count < 500)
+            {
+                Thread.Sleep(10);
+                process.Refresh();
+                title = process.MainWindowTitle;
+                count++;
+            }
+
+            Assert.StartsWith(expected, title);
         }
     }
 }

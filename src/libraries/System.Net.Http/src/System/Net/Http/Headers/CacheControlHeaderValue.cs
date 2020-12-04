@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -52,17 +51,7 @@ namespace System.Net.Http.Headers
             set { _noCache = value; }
         }
 
-        public ICollection<string> NoCacheHeaders
-        {
-            get
-            {
-                if (_noCacheHeaders == null)
-                {
-                    _noCacheHeaders = new ObjectCollection<string>(s_checkIsValidToken);
-                }
-                return _noCacheHeaders;
-            }
-        }
+        public ICollection<string> NoCacheHeaders => _noCacheHeaders ??= new ObjectCollection<string>(s_checkIsValidToken);
 
         public bool NoStore
         {
@@ -124,17 +113,7 @@ namespace System.Net.Http.Headers
             set { _privateField = value; }
         }
 
-        public ICollection<string> PrivateHeaders
-        {
-            get
-            {
-                if (_privateHeaders == null)
-                {
-                    _privateHeaders = new ObjectCollection<string>(s_checkIsValidToken);
-                }
-                return _privateHeaders;
-            }
-        }
+        public ICollection<string> PrivateHeaders => _privateHeaders ??= new ObjectCollection<string>(s_checkIsValidToken);
 
         public bool MustRevalidate
         {
@@ -148,17 +127,7 @@ namespace System.Net.Http.Headers
             set { _proxyRevalidate = value; }
         }
 
-        public ICollection<NameValueHeaderValue> Extensions
-        {
-            get
-            {
-                if (_extensions == null)
-                {
-                    _extensions = new ObjectCollection<NameValueHeaderValue>();
-                }
-                return _extensions;
-            }
-        }
+        public ICollection<NameValueHeaderValue> Extensions => _extensions ??= new ObjectCollection<NameValueHeaderValue>();
 
         public CacheControlHeaderValue()
         {
@@ -604,11 +573,7 @@ namespace System.Net.Http.Headers
                     return false;
                 }
 
-                if (destination == null)
-                {
-                    destination = new ObjectCollection<string>(s_checkIsValidToken);
-                }
-
+                destination ??= new ObjectCollection<string>(s_checkIsValidToken);
                 destination.Add(valueString.Substring(current, tokenLength));
 
                 current = current + tokenLength;

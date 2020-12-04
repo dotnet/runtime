@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using Microsoft.Win32.SafeHandles;
 
@@ -424,10 +423,9 @@ internal static partial class Interop
         }
 
         [StructLayout(LayoutKind.Sequential)]
-        internal struct MibTcp6RowOwnerPid
+        internal unsafe struct MibTcp6RowOwnerPid
         {
-            [MarshalAs(UnmanagedType.ByValArray, SizeConst = 16)]
-            internal byte[] localAddr;
+            internal fixed byte localAddr[16];
             internal uint localScopeId;
             internal byte localPort1;
             internal byte localPort2;
@@ -435,8 +433,7 @@ internal static partial class Interop
             // There are reports where the high order bytes have garbage in them.
             internal byte ignoreLocalPort3;
             internal byte ignoreLocalPort4;
-            [MarshalAs(UnmanagedType.ByValArray, SizeConst = 16)]
-            internal byte[] remoteAddr;
+            internal fixed byte remoteAddr[16];
             internal uint remoteScopeId;
             internal byte remotePort1;
             internal byte remotePort2;
@@ -446,6 +443,9 @@ internal static partial class Interop
             internal byte ignoreRemotePort4;
             internal TcpState state;
             internal uint owningPid;
+
+            internal ReadOnlySpan<byte> localAddrAsSpan => MemoryMarshal.CreateSpan(ref localAddr[0], 16);
+            internal ReadOnlySpan<byte> remoteAddrAsSpan => MemoryMarshal.CreateSpan(ref remoteAddr[0], 16);
         }
 
         internal enum TcpTableClass
@@ -493,10 +493,9 @@ internal static partial class Interop
         }
 
         [StructLayout(LayoutKind.Sequential)]
-        internal struct MibUdp6RowOwnerPid
+        internal unsafe struct MibUdp6RowOwnerPid
         {
-            [MarshalAs(UnmanagedType.ByValArray, SizeConst = 16)]
-            internal byte[] localAddr;
+            internal fixed byte localAddr[16];
             internal uint localScopeId;
             internal byte localPort1;
             internal byte localPort2;
@@ -505,9 +504,9 @@ internal static partial class Interop
             internal byte ignoreLocalPort3;
             internal byte ignoreLocalPort4;
             internal uint owningPid;
-        }
 
-        internal delegate void StableUnicastIpAddressTableDelegate(IntPtr context, IntPtr table);
+            internal ReadOnlySpan<byte> localAddrAsSpan => MemoryMarshal.CreateSpan(ref localAddr[0], 16);
+        }
 
         [DllImport(Interop.Libraries.IpHlpApi)]
         internal static extern uint GetAdaptersAddresses(
@@ -562,10 +561,10 @@ internal static partial class Interop
         internal static extern uint CancelMibChangeNotify2(IntPtr notificationHandle);
 
         [DllImport(Interop.Libraries.IpHlpApi)]
-        internal static extern uint NotifyStableUnicastIpAddressTable(
+        internal static extern unsafe uint NotifyStableUnicastIpAddressTable(
             AddressFamily addressFamily,
             out SafeFreeMibTable table,
-            StableUnicastIpAddressTableDelegate callback,
+            delegate* unmanaged<IntPtr, IntPtr, void> callback,
             IntPtr context,
             out SafeCancelMibChangeNotify notificationHandle);
     }

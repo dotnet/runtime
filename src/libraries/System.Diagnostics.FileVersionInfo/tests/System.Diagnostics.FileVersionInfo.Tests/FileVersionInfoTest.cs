@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.IO;
 using System.Text;
@@ -10,9 +9,7 @@ namespace System.Diagnostics.Tests
 {
     public partial class FileVersionInfoTest : FileCleanupTestBase
     {
-        // The extension is ".ildll" rather than ".dll" to prevent ILC from treating TestAssembly.dll as IL to subsume into executable.
-        private const string TestAssemblyFileName = "System.Diagnostics.FileVersionInfo.TestAssembly.ildll";
-        private const string OriginalTestAssemblyFileName = "System.Diagnostics.FileVersionInfo.TestAssembly.dll";
+        private const string TestAssemblyFileName = "System.Diagnostics.FileVersionInfo.TestAssembly.dll";
         // On Unix the internal name's extension is .exe if OutputType is exe even though the TargetExt is .dll.
         private readonly string OriginalTestAssemblyInternalName = PlatformDetection.IsWindows ?
             "System.Diagnostics.FileVersionInfo.TestAssembly.dll" :

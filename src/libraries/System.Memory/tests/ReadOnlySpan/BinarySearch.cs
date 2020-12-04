@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using Xunit;
@@ -126,7 +125,7 @@ namespace System.SpanTests
                 try
                 {
                     var span = new Span<byte>(memory.ToPointer(), length);
-                    span.Fill(0);
+                    span.Clear();
                     // Fill last two elements
                     span[int.MaxValue - 2] = 2;
                     span[int.MaxValue - 1] = 3;

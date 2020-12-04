@@ -1,6 +1,5 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Net.Sockets;
@@ -109,7 +108,6 @@ namespace System.Net.Tests
             Assert.Equal("user", context.User.Identity.Name);
 
             HttpListenerWebSocketContext webSocketContext = await context.AcceptWebSocketAsync(null);
-            IPrincipal user = webSocketContext.User;
 
             // Should be copied as User gets disposed when HttpListenerContext is closed.
             Assert.NotSame(context.User, webSocketContext.User);

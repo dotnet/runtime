@@ -1,10 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Text;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Runtime.InteropServices;
 
 namespace System
 {
@@ -375,7 +375,7 @@ namespace System
                             }
                             else if (next + 2 < end)
                             {
-                                ch = EscapedAscii(pStr[next + 1], pStr[next + 2]);
+                                ch = DecodeHexChars(pStr[next + 1], pStr[next + 2]);
                                 // Unescape a good sequence if full unescape is requested
                                 if (unescapeMode >= UnescapeMode.UnescapeAll)
                                 {
@@ -497,8 +497,7 @@ namespace System
 
                         int byteCount = 1;
                         // lazy initialization of max size, will reuse the array for next sequences
-                        if ((object?)bytes == null)
-                            bytes = new byte[end - next];
+                        bytes ??= new byte[end - next];
 
                         bytes[0] = (byte)ch;
                         next += 3;
@@ -509,7 +508,7 @@ namespace System
                                 break;
 
                             // already made sure we have 3 characters in str
-                            ch = EscapedAscii(pStr[next + 1], pStr[next + 2]);
+                            ch = DecodeHexChars(pStr[next + 1], pStr[next + 2]);
 
                             //invalid hex sequence ?
                             if (ch == Uri.c_DummyChar)
@@ -667,35 +666,22 @@ namespace System
             HexConverter.ToCharsBuffer(b, to.AppendSpan(2), 0, HexConverter.Casing.Upper);
         }
 
-        internal static char EscapedAscii(char digit, char next)
+        /// <summary>
+        /// Converts 2 hex chars to a byte (returned in a char), e.g, "0a" becomes (char)0x0A.
+        /// <para>If either char is not hex, returns <see cref="Uri.c_DummyChar"/>.</para>
+        /// </summary>
+        internal static char DecodeHexChars(int first, int second)
         {
-            if (!(((digit >= '0') && (digit <= '9'))
-                || ((digit >= 'A') && (digit <= 'F'))
-                || ((digit >= 'a') && (digit <= 'f'))))
+            int a = HexConverter.FromChar(first);
+            int b = HexConverter.FromChar(second);
+
+            if ((a | b) == 0xFF)
             {
+                // either a or b is 0xFF (invalid)
                 return Uri.c_DummyChar;
             }
 
-            int res = (digit <= '9')
-                ? ((int)digit - (int)'0')
-                : (((digit <= 'F')
-                ? ((int)digit - (int)'A')
-                : ((int)digit - (int)'a'))
-                   + 10);
-
-            if (!(((next >= '0') && (next <= '9'))
-                || ((next >= 'A') && (next <= 'F'))
-                || ((next >= 'a') && (next <= 'f'))))
-            {
-                return Uri.c_DummyChar;
-            }
-
-            return (char)((res << 4) + ((next <= '9')
-                    ? ((int)next - (int)'0')
-                    : (((next <= 'F')
-                        ? ((int)next - (int)'A')
-                        : ((int)next - (int)'a'))
-                       + 10)));
+            return (char)((a << 4) | b);
         }
 
         internal const string RFC3986ReservedMarks = @";/?:@&=+$,#[]!'()*";
@@ -720,7 +706,9 @@ namespace System
                 return true;
             }
 
-            return RFC3986ReservedMarks.IndexOf(ch) >= 0 || AdditionalUnsafeToUnescape.IndexOf(ch) >= 0;
+            const string NotSafeForUnescape = RFC3986ReservedMarks + AdditionalUnsafeToUnescape;
+
+            return NotSafeForUnescape.Contains(ch);
         }
 
         // "Reserved" and "Unreserved" characters are based on RFC 3986.
@@ -775,9 +763,7 @@ namespace System
             ((((uint)character - 'A') & ~0x20) < 26) ||
             (((uint)character - '0') < 10);
 
-        internal static bool IsHexDigit(char character) =>
-            ((((uint)character - 'A') & ~0x20) < 6) ||
-            (((uint)character - '0') < 10);
+        internal static bool IsHexDigit(char character) => HexConverter.IsHexChar(character);
 
         //
         // Is this a Bidirectional control char.. These get stripped
@@ -792,21 +778,45 @@ namespace System
         //
         // Strip Bidirectional control characters from this string
         //
-        internal static unsafe string StripBidiControlCharacter(char* strToClean, int start, int length)
+        internal static unsafe string StripBidiControlCharacters(ReadOnlySpan<char> strToClean, string? backingString = null)
         {
-            if (length <= 0) return "";
+            Debug.Assert(backingString is null || strToClean.Length == backingString.Length);
 
-            char[] cleanStr = new char[length];
-            int count = 0;
-            for (int i = 0; i < length; ++i)
+            int charsToRemove = 0;
+            foreach (char c in strToClean)
             {
-                char c = strToClean[start + i];
-                if (c < '\u200E' || c > '\u202E' || !IsBidiControlCharacter(c))
+                if ((uint)(c - '\u200E') <= ('\u202E' - '\u200E') && IsBidiControlCharacter(c))
                 {
-                    cleanStr[count++] = c;
+                    charsToRemove++;
                 }
             }
-            return new string(cleanStr, 0, count);
+
+            if (charsToRemove == 0)
+            {
+                return backingString ?? new string(strToClean);
+            }
+
+            if (charsToRemove == strToClean.Length)
+            {
+                return string.Empty;
+            }
+
+            fixed (char* pStrToClean = &MemoryMarshal.GetReference(strToClean))
+            {
+                return string.Create(strToClean.Length - charsToRemove, (StrToClean: (IntPtr)pStrToClean, strToClean.Length), (buffer, state) =>
+                {
+                    var strToClean = new ReadOnlySpan<char>((char*)state.StrToClean, state.Length);
+                    int destIndex = 0;
+                    foreach (char c in strToClean)
+                    {
+                        if ((uint)(c - '\u200E') > ('\u202E' - '\u200E') || !IsBidiControlCharacter(c))
+                        {
+                            buffer[destIndex++] = c;
+                        }
+                    }
+                    Debug.Assert(buffer.Length == destIndex);
+                });
+            }
         }
     }
 }

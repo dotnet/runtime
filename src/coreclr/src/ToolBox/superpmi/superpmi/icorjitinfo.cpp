@@ -156,9 +156,7 @@ CORINFO_CLASS_HANDLE MyICJI::getMethodClass(CORINFO_METHOD_HANDLE method)
 CORINFO_MODULE_HANDLE MyICJI::getMethodModule(CORINFO_METHOD_HANDLE method)
 {
     jitInstance->mc->cr->AddCall("getMethodModule");
-    LogError("Hit unimplemented getMethodModule");
-    DebugBreakorAV(7);
-    return 0;
+    return jitInstance->mc->repGetMethodModule(method);
 }
 
 // This function returns the offset of the specified method in the
@@ -702,12 +700,11 @@ CorInfoInitClassResult MyICJI::initClass(CORINFO_FIELD_HANDLE field, // Non-null
                                                                      // static field access nullptr - inquire about
                                                                      // cctor trigger in method prolog
                                          CORINFO_METHOD_HANDLE  method,     // Method referencing the field or prolog
-                                         CORINFO_CONTEXT_HANDLE context,    // Exact context of method
-                                         BOOL                   speculative // TRUE means don't actually run it
+                                         CORINFO_CONTEXT_HANDLE context     // Exact context of method
                                          )
 {
     jitInstance->mc->cr->AddCall("initClass");
-    return jitInstance->mc->repInitClass(field, method, context, speculative);
+    return jitInstance->mc->repInitClass(field, method, context);
 }
 
 // This used to be called "loadClass".  This records the fact
@@ -1088,10 +1085,10 @@ CORINFO_CLASS_HANDLE MyICJI::getArgClass(CORINFO_SIG_INFO*       sig, /* IN */
 }
 
 // Returns type of HFA for valuetype
-CorInfoType MyICJI::getHFAType(CORINFO_CLASS_HANDLE hClass)
+CorInfoHFAElemType MyICJI::getHFAType(CORINFO_CLASS_HANDLE hClass)
 {
     jitInstance->mc->cr->AddCall("getHFAType");
-    CorInfoType value = jitInstance->mc->repGetHFAType(hClass);
+    CorInfoHFAElemType value = jitInstance->mc->repGetHFAType(hClass);
     return value;
 }
 
@@ -1540,11 +1537,14 @@ void MyICJI::MethodCompileComplete(CORINFO_METHOD_HANDLE methHnd)
     DebugBreakorAV(118);
 }
 
-// return a thunk that will copy the arguments for the given signature.
-void* MyICJI::getTailCallCopyArgsThunk(CORINFO_SIG_INFO* pSig, CorInfoHelperTailCallSpecialHandling flags)
+bool MyICJI::getTailCallHelpers(
+        CORINFO_RESOLVED_TOKEN* callToken,
+        CORINFO_SIG_INFO* sig,
+        CORINFO_GET_TAILCALL_HELPERS_FLAGS flags,
+        CORINFO_TAILCALL_HELPERS* pResult)
 {
-    jitInstance->mc->cr->AddCall("getTailCallCopyArgsThunk");
-    return jitInstance->mc->repGetTailCallCopyArgsThunk(pSig, flags);
+    jitInstance->mc->cr->AddCall("getTailCallHelpers");
+    return jitInstance->mc->repGetTailCallHelpers(callToken, sig, flags, pResult);
 }
 
 bool MyICJI::convertPInvokeCalliToCall(CORINFO_RESOLVED_TOKEN* pResolvedToken, bool fMustConvert)
@@ -1553,13 +1553,27 @@ bool MyICJI::convertPInvokeCalliToCall(CORINFO_RESOLVED_TOKEN* pResolvedToken, b
     return jitInstance->mc->repConvertPInvokeCalliToCall(pResolvedToken, fMustConvert);
 }
 
+void MyICJI::notifyInstructionSetUsage(CORINFO_InstructionSet instructionSet, bool supported)
+{
+    jitInstance->mc->cr->AddCall("notifyInstructionSetUsage");
+}
+
 // Stuff directly on ICorJitInfo
 
 // Returns extended flags for a particular compilation instance.
 DWORD MyICJI::getJitFlags(CORJIT_FLAGS* jitFlags, DWORD sizeInBytes)
 {
     jitInstance->mc->cr->AddCall("getJitFlags");
-    return jitInstance->mc->repGetJitFlags(jitFlags, sizeInBytes);
+    DWORD ret = jitInstance->mc->repGetJitFlags(jitFlags, sizeInBytes);
+    if (jitInstance->forceClearAltJitFlag)
+    {
+        jitFlags->Clear(CORJIT_FLAGS::CORJIT_FLAG_ALT_JIT);
+    }
+    else if (jitInstance->forceSetAltJitFlag)
+    {
+        jitFlags->Set(CORJIT_FLAGS::CORJIT_FLAG_ALT_JIT);
+    }
+    return ret;
 }
 
 // Runs the given function with the given parameter under an error trap
@@ -1568,6 +1582,18 @@ DWORD MyICJI::getJitFlags(CORJIT_FLAGS* jitFlags, DWORD sizeInBytes)
 bool MyICJI::runWithErrorTrap(void (*function)(void*), void* param)
 {
     return RunWithErrorTrap(function, param);
+}
+
+// Ideally we'd just use the copies of this in standardmacros.h
+// however, superpmi is missing various other dependencies as well
+static size_t ALIGN_UP_SPMI(size_t val, size_t alignment)
+{
+    return (val + (alignment - 1)) & ~(alignment - 1);
+}
+
+static void* ALIGN_UP_SPMI(void* val, size_t alignment)
+{
+    return (void*)ALIGN_UP_SPMI((size_t)val, alignment);
 }
 
 // get a block of memory for the code, readonly data, and read-write data
@@ -1582,13 +1608,46 @@ void MyICJI::allocMem(ULONG              hotCodeSize,   /* IN */
                       )
 {
     jitInstance->mc->cr->AddCall("allocMem");
-    // TODO-Cleanup: investigate if we need to check roDataBlock as well. Could hot block size be ever 0?
-    *hotCodeBlock = HeapAlloc(jitInstance->mc->cr->getCodeHeap(), 0, hotCodeSize);
+
+    // TODO-Cleanup: Could hot block size be ever 0?
+    *hotCodeBlock = jitInstance->mc->cr->allocateMemory(hotCodeSize);
+
     if (coldCodeSize > 0)
-        *coldCodeBlock = HeapAlloc(jitInstance->mc->cr->getCodeHeap(), 0, coldCodeSize);
+        *coldCodeBlock = jitInstance->mc->cr->allocateMemory(coldCodeSize);
     else
         *coldCodeBlock = nullptr;
-    *roDataBlock       = HeapAlloc(jitInstance->mc->cr->getCodeHeap(), 0, roDataSize);
+
+    if (roDataSize > 0)
+    {
+        size_t roDataAlignment   = sizeof(void*);
+        size_t roDataAlignedSize = static_cast<size_t>(roDataSize);
+
+        if ((flag & CORJIT_ALLOCMEM_FLG_RODATA_32BYTE_ALIGN) != 0)
+        {
+            roDataAlignment = 32;
+        }
+        else if ((flag & CORJIT_ALLOCMEM_FLG_RODATA_16BYTE_ALIGN) != 0)
+        {
+            roDataAlignment = 16;
+        }
+        else if (roDataSize >= 8)
+        {
+            roDataAlignment = 8;
+        }
+
+        // We need to round the roDataSize up to the alignment size and then
+        // overallocate by at most alignment - sizeof(void*) to ensure that
+        // we can offset roDataBlock to be an aligned address and that the
+        // allocation contains at least the originally requested size after
+
+        roDataAlignedSize = ALIGN_UP_SPMI(roDataAlignedSize, roDataAlignment);
+        roDataAlignedSize = roDataAlignedSize + (roDataAlignment - sizeof(void*));
+        *roDataBlock = jitInstance->mc->cr->allocateMemory(roDataAlignedSize);
+        *roDataBlock = ALIGN_UP_SPMI(*roDataBlock, roDataAlignment);
+    }
+    else
+        *roDataBlock = nullptr;
+
     jitInstance->mc->cr->recAllocMem(hotCodeSize, coldCodeSize, roDataSize, xcptnsCount, flag, hotCodeBlock,
                                      coldCodeBlock, roDataBlock);
 }
@@ -1652,7 +1711,7 @@ void* MyICJI::allocGCInfo(size_t size /* IN */
                           )
 {
     jitInstance->mc->cr->AddCall("allocGCInfo");
-    void* temp = (unsigned char*)HeapAlloc(jitInstance->mc->cr->getCodeHeap(), 0, size);
+    void* temp = jitInstance->mc->cr->allocateMemory(size);
     jitInstance->mc->cr->recAllocGCInfo(size, temp);
 
     return temp;
@@ -1732,7 +1791,7 @@ HRESULT MyICJI::allocMethodBlockCounts(UINT32          count, // The number of b
                                        BlockCounts**   pBlockCounts)
 {
     jitInstance->mc->cr->AddCall("allocMethodBlockCounts");
-    return jitInstance->mc->cr->repAllocMethodBlockCounts(count, pBlockCounts);
+    return jitInstance->mc->repAllocMethodBlockCounts(count, pBlockCounts);
 }
 
 // get profile information to be used for optimizing the current method.  The format
@@ -1744,6 +1803,19 @@ HRESULT MyICJI::getMethodBlockCounts(CORINFO_METHOD_HANDLE ftnHnd,
 {
     jitInstance->mc->cr->AddCall("getMethodBlockCounts");
     return jitInstance->mc->repGetMethodBlockCounts(ftnHnd, pCount, pBlockCounts, pNumRuns);
+}
+
+// Get the likely implementing class for a virtual call or interface call made by ftnHnd
+// at the indicated IL offset. baseHnd is the interface class or base class for the method
+// being called. 
+CORINFO_CLASS_HANDLE MyICJI::getLikelyClass(CORINFO_METHOD_HANDLE ftnHnd,
+                                            CORINFO_CLASS_HANDLE  baseHnd,
+                                            UINT32                ilOffset,
+                                            UINT32*               pLikelihood,
+                                            UINT32*               pNumberOfClasses)
+{
+    jitInstance->mc->cr->AddCall("getLikelyClass");
+    return jitInstance->mc->repGetLikelyClass(ftnHnd, baseHnd, ilOffset, pLikelihood, pNumberOfClasses);
 }
 
 // Associates a native call site, identified by its offset in the native code stream, with

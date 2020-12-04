@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #include <palsuite.h>
 
@@ -89,10 +88,10 @@ HANDLE CreateObjectToSignal(SignalableObjectType objectType)
             return CreateEvent(nullptr, false, false, nullptr);
 
         case SignalableObjectType::Semaphore:
-            return CreateSemaphore(nullptr, 0, 1, nullptr);
+            return CreateSemaphoreExW(nullptr, 0, 1, nullptr, 0, 0);
 
         case SignalableObjectType::FullSemaphore:
-            return CreateSemaphore(nullptr, 1, 1, nullptr);
+            return CreateSemaphoreExW(nullptr, 1, 1, nullptr, 0, 0);
 
         case SignalableObjectType::Mutex:
             return CreateMutex(nullptr, true, nullptr);
@@ -159,10 +158,10 @@ HANDLE CreateObjectToWaitOn(WaitableObjectType objectType)
             return CreateEvent(nullptr, false, false, nullptr);
 
         case WaitableObjectType::Semaphore:
-            return CreateSemaphore(nullptr, 1, 1, nullptr);
+            return CreateSemaphoreExW(nullptr, 1, 1, nullptr, 0, 0);
 
         case WaitableObjectType::EmptySemaphore:
-            return CreateSemaphore(nullptr, 0, 1, nullptr);
+            return CreateSemaphoreExW(nullptr, 0, 1, nullptr, 0, 0);
 
         case WaitableObjectType::Mutex:
             return CreateMutex(nullptr, false, nullptr);
@@ -383,7 +382,7 @@ void Run()
     }
 }
 
-int _cdecl main(int argc, char **argv)
+PALTEST(threading_SignalObjectAndWait_paltest_signalobjectandwaittest, "threading/SignalObjectAndWait/paltest_signalobjectandwaittest")
 {
     if (PAL_Initialize(argc, argv) != 0)
     {

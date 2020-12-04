@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using Microsoft.Extensions.Logging.Testing;
 using Moq;
@@ -11,6 +10,7 @@ namespace Microsoft.Extensions.Logging.Test
     public class LoggerFactoryExtensionsTest
     {
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34091", TestRuntimes.Mono)]
         public void LoggerFactoryCreateOfT_CallsCreateWithCorrectName()
         {
             // Arrange
@@ -29,6 +29,7 @@ namespace Microsoft.Extensions.Logging.Test
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34091", TestRuntimes.Mono)]
         public void LoggerFactoryCreateOfT_SingleGeneric_CallsCreateWithCorrectName()
         {
             // Arrange
@@ -44,6 +45,7 @@ namespace Microsoft.Extensions.Logging.Test
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34091", TestRuntimes.Mono)]
         public void LoggerFactoryCreateOfT_TwoGenerics_CallsCreateWithCorrectName()
         {
             // Arrange
@@ -114,6 +116,7 @@ namespace Microsoft.Extensions.Logging.Test
 
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34091", TestRuntimes.Mono)]
         public void LoggerFactoryCreate_CallsCreateWithCorrectName()
         {
             // Arrange
@@ -132,6 +135,7 @@ namespace Microsoft.Extensions.Logging.Test
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34091", TestRuntimes.Mono)]
         public void LoggerFactoryCreate_SingleGeneric_CallsCreateWithCorrectName()
         {
             // Arrange
@@ -147,6 +151,7 @@ namespace Microsoft.Extensions.Logging.Test
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34091", TestRuntimes.Mono)]
         public void LoggerFactoryCreate_TwoGenerics_CallsCreateWithCorrectName()
         {
             // Arrange

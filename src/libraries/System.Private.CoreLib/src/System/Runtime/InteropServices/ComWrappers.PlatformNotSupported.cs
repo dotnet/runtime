@@ -1,9 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
-using System;
 using System.Collections;
+using System.Runtime.Versioning;
 
 namespace System.Runtime.InteropServices
 {
@@ -23,6 +22,7 @@ namespace System.Runtime.InteropServices
         UniqueInstance = 2,
     }
 
+    [SupportedOSPlatform("windows")]
     [CLSCompliant(false)]
     public abstract class ComWrappers
     {
@@ -47,7 +47,7 @@ namespace System.Runtime.InteropServices
             throw new PlatformNotSupportedException();
         }
 
-        protected unsafe abstract ComInterfaceEntry* ComputeVtables(object obj, CreateComInterfaceFlags flags, out int count);
+        protected abstract unsafe ComInterfaceEntry* ComputeVtables(object obj, CreateComInterfaceFlags flags, out int count);
 
         public object GetOrCreateObjectForComInstance(IntPtr externalComObject, CreateObjectFlags flags)
         {
@@ -63,7 +63,12 @@ namespace System.Runtime.InteropServices
 
         protected abstract void ReleaseObjects(IEnumerable objects);
 
-        public void RegisterAsGlobalInstance()
+        public static void RegisterForTrackerSupport(ComWrappers instance)
+        {
+            throw new PlatformNotSupportedException();
+        }
+
+        public static void RegisterForMarshalling(ComWrappers instance)
         {
             throw new PlatformNotSupportedException();
         }

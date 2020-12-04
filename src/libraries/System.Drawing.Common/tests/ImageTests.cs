@@ -1,5 +1,5 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
-// See the LICENSE file in the project root for more information.
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
 using System.Drawing.Imaging;
@@ -78,6 +78,7 @@ namespace System.Drawing.Tests
         }
 
         [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34591", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         [ConditionalTheory(Helpers.IsDrawingSupported)]
         [MemberData(nameof(InvalidBytes_TestData))]
         public void FromStream_InvalidBytes_ThrowsArgumentException(byte[] bytes)
@@ -196,6 +197,17 @@ namespace System.Drawing.Tests
                 Assert.Equal(
                     expectedParameters,
                     paramList.Param.Select(p => p.Encoder.Guid));
+            }
+        }
+
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, ".NET Framework throws ExternalException")]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
+        public void Save_InvalidDirectory_ThrowsDirectoryNotFoundException()
+        {
+            using (var bitmap = new Bitmap(1, 1))
+            {
+                var badTarget = System.IO.Path.Combine("NoSuchDirectory", "NoSuchFile");
+                AssertExtensions.Throws<DirectoryNotFoundException>(() => bitmap.Save(badTarget), $"The directory NoSuchDirectory of the filename {badTarget} does not exist.");
             }
         }
     }

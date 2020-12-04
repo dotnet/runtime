@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 //
 
 #include <assert.h>
@@ -78,7 +77,7 @@ static UErrorCode GetLocaleIso639LanguageTwoLetterName(const char* locale, UChar
     UErrorCode status = U_ZERO_ERROR, ignore = U_ZERO_ERROR;
     int32_t length = uloc_getLanguage(locale, NULL, 0, &ignore) + 1;
 
-    char* buf = calloc((size_t)length, sizeof(char));
+    char* buf = (char*)calloc((size_t)length, sizeof(char));
     if (buf == NULL)
     {
         return U_MEMORY_ALLOCATION_ERROR;
@@ -121,7 +120,7 @@ static UErrorCode GetLocaleIso3166CountryName(const char* locale, UChar* value, 
     UErrorCode status = U_ZERO_ERROR, ignore = U_ZERO_ERROR;
     int32_t length = uloc_getCountry(locale, NULL, 0, &ignore) + 1;
 
-    char* buf = calloc((size_t)length, sizeof(char));
+    char* buf = (char*)calloc((size_t)length, sizeof(char));
     if (buf == NULL)
     {
         return U_MEMORY_ALLOCATION_ERROR;
@@ -244,8 +243,6 @@ int32_t GlobalizationNative_GetLocaleInfoString(const UChar* localeName,
         case LocaleString_NativeCountryName:
             uloc_getDisplayCountry(locale, locale, value, valueLength, &status);
             break;
-        case LocaleString_ListSeparator:
-        // fall through
         case LocaleString_ThousandSeparator:
             status = GetLocaleInfoDecimalFormatSymbol(locale, UNUM_GROUPING_SEPARATOR_SYMBOL, value, valueLength);
             break;

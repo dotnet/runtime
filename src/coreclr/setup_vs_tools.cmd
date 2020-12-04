@@ -21,16 +21,16 @@ if defined VisualStudioVersion (
     goto skip_setup
 )
 
-echo %__MsgPrefix%Searching ^for Visual Studio 2017 or later installation
+echo %__MsgPrefix%Searching ^for Visual Studio installation
 set _VSWHERE="%ProgramFiles(x86)%\Microsoft Visual Studio\Installer\vswhere.exe"
 if exist %_VSWHERE% (
     for /f "usebackq tokens=*" %%i in (`%_VSWHERE% -latest -prerelease -property installationPath`) do set _VSCOMNTOOLS=%%i\Common7\Tools
     goto call_vs
 )
-echo Visual Studio 2017 or later not found
+
 :call_vs
 if not exist "%_VSCOMNTOOLS%" (
-    echo %__MsgPrefix%Error: Visual Studio 2017 or 2019 required.
+    echo %__MsgPrefix%Error: Visual Studio 2019 required.
     echo        Please see https://github.com/dotnet/runtime/blob/master/docs/workflow/requirements/windows-requirements.md for build instructions.
     exit /b 1
 )

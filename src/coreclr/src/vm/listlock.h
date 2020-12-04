@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 // ===========================================================================
 // File: ListLock.h
 //
@@ -55,10 +54,6 @@ public:
     HRESULT                 m_hrResultCode;
     LOADERHANDLE            m_hInitException;
     PTR_LoaderAllocator     m_pLoaderAllocator;
-#ifdef FEATURE_CORRUPTING_EXCEPTIONS
-    // Field to maintain the corruption severity of the exception
-    CorruptionSeverity      m_CorruptionSeverity;
-#endif // FEATURE_CORRUPTING_EXCEPTIONS
 
     ListLockEntryBase(List_t *pList, ELEMENT data, const char *description = NULL)
     : m_deadlock(description),
@@ -72,10 +67,6 @@ public:
         m_hrResultCode(S_FALSE),
         m_hInitException(NULL),
         m_pLoaderAllocator(dac_cast<PTR_LoaderAllocator>(nullptr))
-#ifdef FEATURE_CORRUPTING_EXCEPTIONS
-        ,
-        m_CorruptionSeverity(NotCorrupting)
-#endif // FEATURE_CORRUPTING_EXCEPTIONS
     {
         WRAPPER_NO_CONTRACT;
     }

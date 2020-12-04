@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Xml.XPath;
 
@@ -48,7 +47,7 @@ namespace System.Xml
             get
             {
                 XPathNodeType xnt = _curNode.NodeType;
-                return xnt == XPathNodeType.Element || xnt == XPathNodeType.Root ? _curNode.InnerText : _curNode.Value;
+                return xnt == XPathNodeType.Element || xnt == XPathNodeType.Root ? _curNode.InnerText : _curNode.Value!;
             }
         }
 
@@ -71,7 +70,7 @@ namespace System.Xml
             }
 
             _temp.MoveTo(_curNode);
-            return _temp.MoveToAttribute(localName, namespaceURI) ? _temp.Value : string.Empty;
+            return _temp.MoveToAttribute(localName, namespaceURI) ? _temp.Value! : string.Empty;
         }
 
         public override string GetNamespace(string name) => _curNode.GetNamespace(name);
@@ -127,7 +126,7 @@ namespace System.Xml
         {
             if (other != null)
             {
-                DataDocumentXPathNavigator otherDataDocXPathNav = other as DataDocumentXPathNavigator;
+                DataDocumentXPathNavigator? otherDataDocXPathNav = other as DataDocumentXPathNavigator;
                 if (otherDataDocXPathNav != null && _curNode.MoveTo(otherDataDocXPathNav.CurNode))
                 {
                     _doc = _curNode.Document;
@@ -144,7 +143,7 @@ namespace System.Xml
         {
             if (other != null)
             {
-                DataDocumentXPathNavigator otherDataDocXPathNav = other as DataDocumentXPathNavigator;
+                DataDocumentXPathNavigator? otherDataDocXPathNav = other as DataDocumentXPathNavigator;
                 if (otherDataDocXPathNav != null &&
                     _doc == otherDataDocXPathNav.Document && _curNode.IsSamePosition(otherDataDocXPathNav.CurNode))
                 {
@@ -156,16 +155,16 @@ namespace System.Xml
 
         //the function is only called for XPathNodeList enumerate nodes and
         // shouldn't be promoted to frequently use because it will cause foliation
-        XmlNode IHasXmlNode.GetNode() => _curNode.Node;
+        XmlNode IHasXmlNode.GetNode() => _curNode.Node!;
 
-        public override XmlNodeOrder ComparePosition(XPathNavigator other)
+        public override XmlNodeOrder ComparePosition(XPathNavigator? other)
         {
             if (other == null)
             {
                 return XmlNodeOrder.Unknown; // this is what XPathDocument does.
             }
 
-            DataDocumentXPathNavigator otherDataDocXPathNav = other as DataDocumentXPathNavigator;
+            DataDocumentXPathNavigator? otherDataDocXPathNav = other as DataDocumentXPathNavigator;
 
             return otherDataDocXPathNav == null || otherDataDocXPathNav.Document != _doc ?
                 XmlNodeOrder.Unknown :

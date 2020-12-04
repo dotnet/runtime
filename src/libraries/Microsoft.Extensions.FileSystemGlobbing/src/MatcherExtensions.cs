@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Generic;
@@ -19,9 +18,9 @@ namespace Microsoft.Extensions.FileSystemGlobbing
         /// <param name="excludePatternsGroups">A list of globbing patterns</param>
         public static void AddExcludePatterns(this Matcher matcher, params IEnumerable<string>[] excludePatternsGroups)
         {
-            foreach (var group in excludePatternsGroups)
+            foreach (IEnumerable<string> group in excludePatternsGroups)
             {
-                foreach (var pattern in group)
+                foreach (string pattern in group)
                 {
                     matcher.AddExclude(pattern);
                 }
@@ -35,9 +34,9 @@ namespace Microsoft.Extensions.FileSystemGlobbing
         /// <param name="includePatternsGroups">A list of globbing patterns</param>
         public static void AddIncludePatterns(this Matcher matcher, params IEnumerable<string>[] includePatternsGroups)
         {
-            foreach (var group in includePatternsGroups)
+            foreach (IEnumerable<string> group in includePatternsGroups)
             {
-                foreach (var pattern in group)
+                foreach (string pattern in group)
                 {
                     matcher.AddInclude(pattern);
                 }
@@ -52,8 +51,8 @@ namespace Microsoft.Extensions.FileSystemGlobbing
         /// <returns>Absolute file paths of all files matched. Empty enumerable if no files matched given patterns.</returns>
         public static IEnumerable<string> GetResultsInFullPath(this Matcher matcher, string directoryPath)
         {
-            var matches = matcher.Execute(new DirectoryInfoWrapper(new DirectoryInfo(directoryPath))).Files;
-            var result = matches.Select(match => Path.GetFullPath(Path.Combine(directoryPath, match.Path))).ToArray();
+            IEnumerable<FilePatternMatch> matches = matcher.Execute(new DirectoryInfoWrapper(new DirectoryInfo(directoryPath))).Files;
+            string[] result = matches.Select(match => Path.GetFullPath(Path.Combine(directoryPath, match.Path))).ToArray();
 
             return result;
         }

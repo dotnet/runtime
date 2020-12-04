@@ -5,7 +5,7 @@
     <IBCPackage Include="$(LinuxCoreFxOptimizationDataPackage)" Version="$(optimizationlinuxx64IBCCoreFxVersion)" />
     <IBCPackage Include="$(WindowsOptimizationIBCCoreCLRPackage)" Version="$(optimizationwindows_ntx64IBCCoreCLRVersion)" />
     <IBCPackage Include="$(LinuxOptimizationIBCCoreCLRPackage)" Version="$(optimizationlinuxx64IBCCoreCLRVersion)" />
-    <PackageReference Include="@(IBCPackage)" PrivateAssets="all" IsImplicitlyDefined="true" />
+    <PackageDownload Include="@(IBCPackage)" Version="[%(Version)]" />
   </ItemGroup>
 
   <!-- IBC data packages don't follow NuGet conventions.  -->
@@ -24,6 +24,9 @@
       </IBCPackage>
       <_optimizationDataSourceFile Include="%(IBCPackage.PackagePath)\**\*.dll;%(IBCPackage.PackagePath)\**\*.ibc" SubdirectoryName="%(IBCPackage.SubdirectoryName)" />
     </ItemGroup>
+
+    <Error Condition="'@(_optimizationDataSourceFile)' == ''" Text="Failed to restore optimization data" />
+
     <Copy SourceFiles="@(_optimizationDataSourceFile)"
           DestinationFiles="@(_optimizationDataSourceFile->'$(IbcOptimizationDataDir)%(SubdirectoryName)\%(RecursiveDir)%(Filename)%(Extension)')"
           SkipUnchangedFiles="true"

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 // ===========================================================================
 // File: ReadyToRunInfo.h
 //
@@ -45,7 +44,6 @@ public:
 
 typedef DPTR(class ReadyToRunInfo) PTR_ReadyToRunInfo;
 typedef DPTR(class ReadyToRunCoreInfo) PTR_ReadyToRunCoreInfo;
-typedef DPTR(class NativeImage) PTR_NativeImage;
 
 class ReadyToRunInfo
 {
@@ -63,8 +61,12 @@ class ReadyToRunInfo
     PTR_RUNTIME_FUNCTION            m_pRuntimeFunctions;
     DWORD                           m_nRuntimeFunctions;
 
+    PTR_IMAGE_DATA_DIRECTORY        m_pSectionDelayLoadMethodCallThunks;
+
     PTR_CORCOMPILE_IMPORT_SECTION   m_pImportSections;
     DWORD                           m_nImportSections;
+
+    bool                            m_readyToRunCodeDisabled;
 
     NativeFormat::NativeReader      m_nativeReader;
     NativeFormat::NativeArray       m_methodDefEntryPoints;
@@ -88,7 +90,11 @@ public:
 
     bool IsComponentAssembly() const { return m_isComponentAssembly; }
 
+    static bool IsNativeImageSharedBy(PTR_Module pModule1, PTR_Module pModule2);
+
     PTR_READYTORUN_HEADER GetReadyToRunHeader() const { return m_pHeader; }
+
+    PTR_IMAGE_DATA_DIRECTORY GetDelayMethodCallThunksSection() const { return m_pSectionDelayLoadMethodCallThunks; }
 
     PTR_NativeImage GetNativeImage() const { return m_pNativeImage; }
 
@@ -112,6 +118,12 @@ public:
     {
         LIMITED_METHOD_CONTRACT;
         return m_pHeader->CoreHeader.Flags & READYTORUN_FLAG_PARTIAL;
+    }
+
+    void DisableAllR2RCode()
+    {
+        LIMITED_METHOD_CONTRACT;
+        m_readyToRunCodeDisabled = TRUE;
     }
 
     BOOL HasNonShareablePInvokeStubs()

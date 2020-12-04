@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 //
 
 //
@@ -61,61 +60,14 @@ LPVOID ClrVirtualAlloc(LPVOID lpAddress, SIZE_T dwSize, DWORD flAllocationType, 
 BOOL ClrVirtualFree(LPVOID lpAddress, SIZE_T dwSize, DWORD dwFreeType);
 SIZE_T ClrVirtualQuery(LPCVOID lpAddress, PMEMORY_BASIC_INFORMATION lpBuffer, SIZE_T dwLength);
 BOOL ClrVirtualProtect(LPVOID lpAddress, SIZE_T dwSize, DWORD flNewProtect, PDWORD lpflOldProtect);
-HANDLE ClrGetProcessHeap();
-HANDLE ClrHeapCreate(DWORD flOptions, SIZE_T dwInitialSize, SIZE_T dwMaximumSize);
-BOOL ClrHeapDestroy(HANDLE hHeap);
-LPVOID ClrHeapAlloc(HANDLE hHeap, DWORD dwFlags, S_SIZE_T dwBytes);
-BOOL ClrHeapFree(HANDLE hHeap, DWORD dwFlags, LPVOID lpMem);
-HANDLE ClrGetProcessExecutableHeap();
 
+#ifdef HOST_WINDOWS
+HANDLE ClrGetProcessExecutableHeap();
+#endif
 
 #ifdef FAILPOINTS_ENABLED
 extern int RFS_HashStack();
 #endif
-
-#ifndef SELF_NO_HOST
-LPVOID ClrHeapAllocInProcessHeap(DWORD dwFlags, SIZE_T dwBytes);
-BOOL ClrHeapFreeInProcessHeap(DWORD dwFlags, LPVOID lpMem);
-#endif
-
-inline LPVOID ClrAllocInProcessHeap(DWORD dwFlags, S_SIZE_T dwBytes)
-{
-    STATIC_CONTRACT_SUPPORTS_DAC_HOST_ONLY;
-    if (dwBytes.IsOverflow())
-    {
-        return NULL;
-    }
-
-#ifndef SELF_NO_HOST
-    return ClrHeapAllocInProcessHeap(dwFlags, dwBytes.Value());
-#else
-#undef HeapAlloc
-#undef GetProcessHeap
-    static HANDLE ProcessHeap = NULL;
-    if (ProcessHeap == NULL)
-        ProcessHeap = GetProcessHeap();
-    return ::HeapAlloc(ProcessHeap,dwFlags,dwBytes.Value());
-#define HeapAlloc(hHeap, dwFlags, dwBytes) Dont_Use_HeapAlloc(hHeap, dwFlags, dwBytes)
-#define GetProcessHeap() Dont_Use_GetProcessHeap()
-#endif
-}
-
-inline BOOL ClrFreeInProcessHeap(DWORD dwFlags, LPVOID lpMem)
-{
-    STATIC_CONTRACT_SUPPORTS_DAC_HOST_ONLY;
-#ifndef SELF_NO_HOST
-    return ClrHeapFreeInProcessHeap(dwFlags, lpMem);
-#else
-#undef HeapFree
-#undef GetProcessHeap
-    static HANDLE ProcessHeap = NULL;
-    if (ProcessHeap == NULL)
-        ProcessHeap = GetProcessHeap();
-    return (BOOL)(BYTE)::HeapFree(ProcessHeap, dwFlags, lpMem);
-#define HeapFree(hHeap, dwFlags, lpMem) Dont_Use_HeapFree(hHeap, dwFlags, lpMem)
-#define GetProcessHeap() Dont_Use_GetProcessHeap()
-#endif
-}
 
 // Critical section support for CLR DLLs other than the the EE.
 // Include the header defining each Crst type and its corresponding level (relative rank). This is
@@ -140,7 +92,7 @@ typedef Holder<CRITSEC_COOKIE, ClrEnterCriticalSection, ClrLeaveCriticalSection,
 FORCEINLINE void VoidClrDeleteCriticalSection(CRITSEC_COOKIE cs) { if (cs != NULL) ClrDeleteCriticalSection(cs); }
 typedef Wrapper<CRITSEC_COOKIE, DoNothing<CRITSEC_COOKIE>, VoidClrDeleteCriticalSection, NULL> CRITSEC_AllocationHolder;
 
-HMODULE GetCLRModule ();
+DWORD GetClrModulePathName(SString& buffer);
 
 extern thread_local int t_CantAllocCount;
 

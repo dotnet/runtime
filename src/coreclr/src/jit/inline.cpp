@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #include "jitpch.h"
 #ifdef _MSC_VER
@@ -391,7 +390,8 @@ void InlineContext::Dump(unsigned indent)
     if (m_Parent == nullptr)
     {
         // Root method
-        printf("Inlines into %08X %s\n", calleeToken, calleeName);
+        InlinePolicy* policy = InlinePolicy::GetPolicy(compiler, true);
+        printf("Inlines into %08X [via %s] %s\n", calleeToken, policy->GetName(), calleeName);
     }
     else
     {
@@ -496,9 +496,8 @@ void InlineContext::DumpXml(FILE* file, unsigned indent)
     {
         Compiler* compiler = m_InlineStrategy->GetCompiler();
 
-        mdMethodDef calleeToken = compiler->info.compCompHnd->getMethodDefFromMethod(m_Callee);
-        unsigned    calleeHash  = compiler->info.compCompHnd->getMethodHash(m_Callee);
-
+        mdMethodDef calleeToken  = compiler->info.compCompHnd->getMethodDefFromMethod(m_Callee);
+        unsigned    calleeHash   = compiler->compMethodHash(m_Callee);
         const char* inlineReason = InlGetObservationString(m_Observation);
 
         int offset = -1;
@@ -1151,8 +1150,16 @@ void InlineStrategy::NoteOutcome(InlineContext* context)
 
 bool InlineStrategy::BudgetCheck(unsigned ilSize)
 {
-    int timeDelta = EstimateInlineTime(ilSize);
-    return (timeDelta + m_CurrentTimeEstimate > m_CurrentTimeBudget);
+    const int  timeDelta = EstimateInlineTime(ilSize);
+    const bool result    = (timeDelta + m_CurrentTimeEstimate > m_CurrentTimeBudget);
+
+    if (result)
+    {
+        JITDUMP("\nBudgetCheck: for IL Size %d, timeDelta %d +  currentEstimate %d > currentBudget %d\n", ilSize,
+                timeDelta, m_CurrentTimeEstimate, m_CurrentTimeBudget);
+    }
+
+    return result;
 }
 
 //------------------------------------------------------------------------
@@ -1171,6 +1178,7 @@ InlineContext* InlineStrategy::NewRoot()
     InlineContext* rootContext = new (m_Compiler, CMK_Inlining) InlineContext(this);
 
     rootContext->m_ILSize = m_Compiler->info.compILCodeSize;
+    rootContext->m_Code   = m_Compiler->info.compCode;
 
 #if defined(DEBUG) || defined(INLINE_DATA)
 
@@ -1576,7 +1584,7 @@ void InlineStrategy::DumpXml(FILE* file, unsigned indent)
     strncpy(buf, methodName, sizeof(buf));
     buf[sizeof(buf) - 1] = 0;
 
-    for (int i = 0; i < _countof(buf); i++)
+    for (size_t i = 0; i < _countof(buf); i++)
     {
         switch (buf[i])
         {
@@ -1616,7 +1624,7 @@ void InlineStrategy::DumpXml(FILE* file, unsigned indent)
 
     // Root context will be null if we're not optimizing the method.
     //
-    // Note there are cases of this in mscorlib even in release builds,
+    // Note there are cases of this in System.Private.CoreLib even in release builds,
     // eg Task.NotifyDebuggerOfWaitCompletion.
     //
     // For such methods there aren't any inlines.

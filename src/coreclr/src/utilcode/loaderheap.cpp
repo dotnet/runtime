@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #include "stdafx.h"                     // Precompiled header key.
 #include "loaderheap.h"
@@ -594,8 +593,8 @@ class LoaderHeapSniffer
 
                 }
                 printf(" ptr = 0x%-8p", pEvent->m_pMem);
-                printf(" rqsize = 0x%-8x", pEvent->m_dwRequestedSize);
-                printf(" actsize = 0x%-8x", pEvent->m_dwSize);
+                printf(" rqsize = 0x%-8x", (DWORD)pEvent->m_dwRequestedSize);
+                printf(" actsize = 0x%-8x", (DWORD)pEvent->m_dwSize);
                 printf(" (at %s@%d)", pEvent->m_szFile, pEvent->m_lineNum);
                 if (pEvent->m_allocationType == kFreedMem)
                 {
@@ -1159,6 +1158,11 @@ BOOL UnlockedLoaderHeap::UnlockedReservePages(size_t dwSizeToCommit)
     m_dwTotalAlloc += dwSizeToCommit;
 
     LoaderHeapBlock *pNewBlock;
+
+#if defined(HOST_OSX) && defined(HOST_ARM64)
+    // Always assume we are touching executable heap
+    auto jitWriteEnableHolder = PAL_JITWriteEnable(true);
+#endif // defined(HOST_OSX) && defined(HOST_ARM64)
 
     pNewBlock = (LoaderHeapBlock *) pData;
 

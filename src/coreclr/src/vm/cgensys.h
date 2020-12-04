@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 // CGENSYS.H -
 //
 // Generic header for choosing system-dependent helpers
@@ -34,18 +33,6 @@ int  CallJitEHFilter (CrawlFrame* pCf, BYTE* startPC, EE_ILEXCEPTION_CLAUSE *EHC
 void CallJitEHFinally(CrawlFrame* pCf, BYTE* startPC, EE_ILEXCEPTION_CLAUSE *EHClausePtr, DWORD nestingLevel);
 #endif // TARGET_X86
 
-//These are in util.cpp
-extern size_t GetLogicalProcessorCacheSizeFromOS();
-extern size_t GetIntelDeterministicCacheEnum();
-extern size_t GetIntelDescriptorValuesCache();
-extern DWORD GetLogicalCpuCountFromOS();
-extern DWORD GetLogicalCpuCountFallback();
-
-
-// Try to determine the largest last-level cache size of the machine - return 0 if unknown or no L2/L3 cache
-size_t GetCacheSizePerLogicalCpu(BOOL bTrueSize = TRUE);
-
-
 #ifdef FEATURE_COMINTEROP
 extern "C" UINT32 STDCALL CLRToCOMWorker(TransitionBlock * pTransitionBlock, ComPlusCallMethodDesc * pMD);
 extern "C" void GenericComPlusCallStub(void);
@@ -58,7 +45,7 @@ enum class CallerGCMode
 {
     Unknown,
     Coop,
-    Preemptive    // (e.g. NativeCallableAttribute)
+    Preemptive    // (e.g. UnmanagedCallersOnlyAttribute)
 };
 
 // Non-CPU-specific helper functions called by the CPU-dependent code
@@ -108,21 +95,27 @@ inline void GetSpecificCpuInfo(CORINFO_CPU * cpuInfo)
 #endif // !TARGET_X86
 
 #if (defined(TARGET_X86) || defined(TARGET_AMD64)) && !defined(CROSSGEN_COMPILE)
-extern "C" DWORD __stdcall getcpuid(DWORD arg, unsigned char result[16]);
-extern "C" DWORD __stdcall getextcpuid(DWORD arg1, DWORD arg2, unsigned char result[16]);
+#ifdef TARGET_UNIX
+// MSVC directly defines intrinsics for __cpuid and __cpuidex matching the below signatures
+// We define matching signatures for use on Unix platforms.
+
+extern "C" void __stdcall __cpuid(int cpuInfo[4], int function_id);
+extern "C" void __stdcall __cpuidex(int cpuInfo[4], int function_id, int subFunction_id);
+#endif // TARGET_UNIX
 extern "C" DWORD __stdcall xmmYmmStateSupport();
 #endif
+
+const int CPUID_EAX = 0;
+const int CPUID_EBX = 1;
+const int CPUID_ECX = 2;
+const int CPUID_EDX = 3;
 
 inline bool TargetHasAVXSupport()
 {
 #if (defined(TARGET_X86) || defined(TARGET_AMD64)) && !defined(CROSSGEN_COMPILE)
-    unsigned char buffer[16];
-    // All x86/AMD64 targets support cpuid.
-    (void) getcpuid(1, buffer);
-    // getcpuid executes cpuid with eax set to its first argument, and ecx cleared.
-    // It returns the resulting eax, ebx, ecx and edx (in that order) in buffer[].
-    // The AVX feature is ECX bit 28.
-    return ((buffer[11] & 0x10) != 0);
+    int cpuInfo[4];
+    __cpuid(cpuInfo, 0x00000001);           // All x86/AMD64 targets support cpuid.
+    return ((cpuInfo[CPUID_ECX] & (1 << 28)) != 0); // The AVX feature is ECX bit 28.
 #endif // (defined(TARGET_X86) || defined(TARGET_AMD64)) && !defined(CROSSGEN_COMPILE)
     return false;
 }
@@ -156,7 +149,7 @@ BOOL GetAnyThunkTarget (T_CONTEXT *pctx, TADDR *pTarget, TADDR *pTargetMethodDes
 
 //
 // ResetProcessorStateHolder saves/restores processor state around calls to
-// mscorlib during exception handling.
+// CoreLib during exception handling.
 //
 class ResetProcessorStateHolder
 {

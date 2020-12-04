@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -535,7 +534,7 @@ namespace System.Tests
 
         [Theory]
         [MemberData(nameof(Equals_TestData))]
-        public static void Equals(object obj1, object obj2, bool expected)
+        public static void EqualsTest(object obj1, object obj2, bool expected)
         {
             if (obj1 is decimal d1)
             {
@@ -1858,7 +1857,7 @@ namespace System.Tests
         }
 
         [Fact]
-        public static new void GetHashCode()
+        public static void GetHashCodeTest()
         {
             var dict = new Dictionary<string, (int hash, string value)>();
             foreach (decimal d in GetRandomData(out _, hash: true))

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 .intel_syntax noprefix
 #include "unixasmmacros.inc"
@@ -412,16 +411,6 @@ ByRefWriteBarrierHelper
 LEAF_ENTRY JIT_WriteBarrierGroup_End, _TEXT
     ret
 LEAF_END JIT_WriteBarrierGroup_End, _TEXT
-
-// *********************************************************************/
-//  In cases where we support it we have an optimized GC Poll callback.
-//  Normall (when we're not trying to suspend for GC, the CORINFO_HELP_POLL_GC
-//  helper points to this nop routine.  When we're ready to suspend for GC,
-//  we whack the Jit Helper table entry to point to the real helper.  When we're
-//  done with GC we whack it back.
-LEAF_ENTRY JIT_PollGC_Nop, _TEXT
-    ret
-LEAF_END JIT_PollGC_Nop, _TEXT
 
 // *********************************************************************/
 // llshl - long shift left

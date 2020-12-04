@@ -6,13 +6,42 @@ parameters:
   container: ''
   helixQueuesTemplate: ''
   platform: ''
+  targetRid: ''
   jobParameters: {}
+  variables: []
 
 jobs:
 - template: ${{ coalesce(parameters.helixQueuesTemplate, parameters.jobTemplate) }}
   parameters:
+    ${{ if eq(parameters.jobParameters.runtimeFlavor, 'coreclr') }}:
+      runtimeFlavorDisplayName: 'CoreCLR'
+    ${{ if eq(parameters.jobParameters.runtimeFlavor, 'mono') }}:
+      runtimeFlavorDisplayName: 'Mono'
+    
+    shouldContinueOnError: ${{ and(endsWith(variables['Build.DefinitionName'], 'staging'), eq(variables['Build.Reason'], 'PullRequest')) }}
+
     variables:
-      - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
+      # Disable component governance in our CI builds. These builds are not shipping nor
+      # are they a service. Also the component governance jobs issue lots of inconsequential
+      # warnings and errors into our build timelines that make it hard to track down 
+      # real errors in the build
+      - name: skipComponentGovernanceDetection
+        value: true
+      - name: runCodesignValidationInjection
+        value: false
+
+      - name: buildConfigUpper
+        ${{ if eq(parameters.jobParameters.buildConfig, 'debug') }}:
+          value: 'Debug'
+        ${{ if eq(parameters.jobParameters.buildConfig, 'release') }}:
+          value: 'Release'
+        ${{ if eq(parameters.jobParameters.buildConfig, 'checked') }}:
+          value: 'Checked'
+
+      - name: _BuildConfig
+        value: $(buildConfigUpper)
+
+      - ${{ if eq(parameters.osGroup, 'windows') }}:
         - name: archiveExtension
           value: '.zip'
         - name: archiveType
@@ -28,7 +57,7 @@ jobs:
         - name: setScriptToEchoAndFailOnNonZero
           value: ''
 
-      - ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
+      - ${{ if ne(parameters.osGroup, 'windows') }}:
         - name: archiveExtension
           value: '.tar.gz'
         - name: archiveType
@@ -55,10 +84,14 @@ jobs:
           value: Mono
         ${{ if eq(parameters.jobParameters.runtimeFlavor, 'coreclr') }}:
           value: CoreCLR
+      
+      - ${{ each variable in parameters.variables }}:
+        - ${{ variable }}
 
     osGroup: ${{ parameters.osGroup }}
     osSubgroup: ${{ parameters.osSubgroup }}
     archType: ${{ parameters.archType }}
+    targetRid: ${{ parameters.targetRid }}
     platform: ${{ parameters.platform }}
 
     ${{ if ne(parameters.container, '') }}:
@@ -70,39 +103,34 @@ jobs:
     ${{ if eq(parameters.jobParameters.pool, '') }}:
       pool:
         # Public Linux Build Pool
-        ${{ if and(eq(parameters.osGroup, 'Linux'), eq(variables['System.TeamProject'], 'public')) }}:
+        ${{ if and(in(parameters.osGroup, 'Linux', 'FreeBSD', 'Browser', 'Android'), eq(variables['System.TeamProject'], 'public')) }}:
           name:  NetCorePublic-Pool
           queue: BuildPool.Ubuntu.1604.Amd64.Open
 
         # Official Build Linux Pool
-        ${{ if and(eq(parameters.osGroup, 'Linux'), ne(variables['System.TeamProject'], 'public')) }}:
+        ${{ if and(in(parameters.osGroup, 'Linux', 'FreeBSD', 'Browser', 'Android'), ne(variables['System.TeamProject'], 'public')) }}:
           name: NetCoreInternal-Pool
           queue: BuildPool.Ubuntu.1604.Amd64
 
-        # FreeBSD builds only in the internal project
-        ${{ if and(eq(parameters.osGroup, 'FreeBSD'), ne(variables['System.TeamProject'], 'public')) }}:
-          name: dnceng-freebsd-internal
-
-        # Public OSX Build Pool
-        ${{ if eq(parameters.osGroup, 'OSX') }}:
-          vmImage: 'macOS-10.14'
-
-        # Public OSX Build Pool
-        ${{ if eq(parameters.osGroup, 'iOS') }}:
-          vmImage: 'macOS-10.14'
+        # OSX Build Pool (we don't have on-prem OSX BuildPool
+        ${{ if in(parameters.osGroup, 'OSX', 'iOS', 'tvOS') }}:
+          vmImage: 'macOS-10.15'
 
         # Official Build Windows Pool
-        ${{ if and(eq(parameters.osGroup, 'Windows_NT'), ne(variables['System.TeamProject'], 'public')) }}:
+        ${{ if and(eq(parameters.osGroup, 'windows'), ne(variables['System.TeamProject'], 'public')) }}:
           name: NetCoreInternal-Pool
           queue: BuildPool.Windows.10.Amd64.VS2019
 
         # Public Windows Build Pool
-        ${{ if and(eq(parameters.osGroup, 'Windows_NT'), eq(variables['System.TeamProject'], 'public')) }}:
+        ${{ if and(eq(parameters.osGroup, 'windows'), eq(variables['System.TeamProject'], 'public')) }}:
           name: NetCorePublic-Pool
           queue: BuildPool.Windows.10.Amd64.VS2019.Open
 
 
     ${{ if eq(parameters.helixQueuesTemplate, '') }}:
+      # macOS hosted pool machines are slower so we need to give a greater timeout than the 60 mins default.
+      ${{ if and(eq(parameters.jobParameters.timeoutInMinutes, ''), in(parameters.osGroup, 'OSX', 'iOS', 'tvOS')) }}:
+        timeoutInMinutes: 120
       ${{ insert }}: ${{ parameters.jobParameters }}
     ${{ if ne(parameters.helixQueuesTemplate, '') }}:
       jobTemplate: ${{ parameters.jobTemplate }}

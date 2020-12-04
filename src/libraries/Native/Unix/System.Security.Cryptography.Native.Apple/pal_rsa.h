@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #pragma once
 
@@ -10,6 +9,7 @@
 
 #include <Security/Security.h>
 
+#if !defined(TARGET_IOS) && !defined(TARGET_TVOS)
 /*
 Generate a new RSA keypair with the specified key size, in bits.
 
@@ -60,6 +60,7 @@ Follows pal_seckey return conventions.
 */
 PALEXPORT int32_t AppleCryptoNative_RsaEncryptPkcs(
     SecKeyRef publicKey, uint8_t* pbData, int32_t cbData, CFDataRef* pEncryptedOut, CFErrorRef* pErrorOut);
+#endif
 
 /*
 Apply an RSA private key to a signing operation on data which was already padded.

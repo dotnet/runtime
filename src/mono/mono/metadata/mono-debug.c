@@ -114,7 +114,7 @@ mono_debug_init (MonoDebugFormat format)
 	mono_debug_handles = g_hash_table_new_full
 		(NULL, NULL, NULL, (GDestroyNotify) free_debug_handle);
 
-	mono_install_assembly_load_hook_v2 (add_assembly, NULL);
+	mono_install_assembly_load_hook_v2 (add_assembly, NULL, FALSE);
 
 	mono_debugger_unlock ();
 }

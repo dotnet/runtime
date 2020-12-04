@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 namespace Internal.TypeSystem
 {
@@ -33,16 +32,10 @@ namespace Internal.TypeSystem
         public abstract bool ComputeContainsGCPointers(DefType type);
 
         /// <summary>
-        /// Compute the shape of a valuetype. The shape information is used to control code generation and allocation
-        /// (such as vectorization, passing the valuetype by value across method calls, or boxing alignment).
+        /// Compute the shape of a value type. The shape information is used to control code generation and allocation
+        /// (such as vectorization, passing the value type by value across method calls, or boxing alignment).
         /// </summary>
         public abstract ValueTypeShapeCharacteristics ComputeValueTypeShapeCharacteristics(DefType type);
-
-        /// <summary>
-        /// If the type has <see cref="ValueTypeShapeCharacteristics.HomogenousFloatAggregate"/> characteristic, returns
-        /// the element type of the homogenous float aggregate. This will either be System.Double or System.Float.
-        /// </summary>
-        public abstract DefType ComputeHomogeneousFloatAggregateElementType(DefType type);
     }
 
     /// <summary>
@@ -83,6 +76,7 @@ namespace Internal.TypeSystem
         public LayoutInt FieldAlignment;
         public LayoutInt ByteCountUnaligned;
         public LayoutInt ByteCountAlignment;
+        public bool LayoutAbiStable; // Is the layout stable such that it can safely be used in function calling conventions
 
         /// <summary>
         /// If Offsets is non-null, then all field based layout is complete.
@@ -119,8 +113,38 @@ namespace Internal.TypeSystem
         None = 0x00,
 
         /// <summary>
-        /// The structure is an aggregate of floating point values of the same type.
+        /// The type is an aggregate of 32-bit floating-point values.
         /// </summary>
-        HomogenousFloatAggregate = 0x01,
+        Float32Aggregate = 0x01,
+
+        /// <summary>
+        /// The type is an aggregate of 64-bit floating-point values.
+        /// </summary>
+        Float64Aggregate = 0x02,
+
+        /// <summary>
+        /// The type is an aggregate of 64-bit short-vector values.
+        /// </summary>
+        Vector64Aggregate = 0x04,
+
+        /// <summary>
+        /// The type is an aggregate of 128-bit short-vector values.
+        /// </summary>
+        Vector128Aggregate = 0x08,
+
+        /// <summary>
+        /// The mask for homogeneous aggregates of floating-point values.
+        /// </summary>
+        FloatingPointAggregateMask = Float32Aggregate | Float64Aggregate,
+
+        /// <summary>
+        /// The mask for homogeneous aggregates of short-vector values.
+        /// </summary>
+        ShortVectorAggregateMask = Vector64Aggregate | Vector128Aggregate,
+
+        /// <summary>
+        /// The mask for homogeneous aggregates.
+        /// </summary>
+        AggregateMask = FloatingPointAggregateMask | ShortVectorAggregateMask,
     }
 }

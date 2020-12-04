@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #include <thread>
 #include <pal.h>
@@ -19,8 +18,7 @@ breadcrumb_writer_t::breadcrumb_writer_t(std::unordered_set<pal::string_t> &file
     }
 }
 
-// Begin breadcrumb writing: write synchronously or launch a
-// thread to write breadcrumbs.
+// Begin breadcrumb writing: launch a thread to write breadcrumbs.
 std::shared_ptr<breadcrumb_writer_t> breadcrumb_writer_t::begin_write(std::unordered_set<pal::string_t> &files)
 {
     trace::verbose(_X("--- Begin breadcrumb write"));

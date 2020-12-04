@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Globalization;
 using System.Tests;
@@ -15,7 +14,7 @@ namespace System.ComponentModel.Tests
         private static TypeListConverter s_converter = new MyTypeListConverter(new Type[] { typeof(bool), typeof(int) });
 
         [Fact]
-        public static void CanConvertFrom_WithContext()
+        public static void CanConvertFrom_WithContext_TypeListConverter()
         {
             CanConvertFrom_WithContext(new object[2, 2]
                 {
@@ -26,7 +25,7 @@ namespace System.ComponentModel.Tests
         }
 
         [Fact]
-        public static void ConvertFrom_WithContext()
+        public static void ConvertFrom_WithContext_TypeListConverter()
         {
             ConvertFrom_WithContext(new object[1, 3]
                 {
@@ -36,7 +35,7 @@ namespace System.ComponentModel.Tests
         }
 
         [Fact]
-        public static void ConvertTo_WithContext()
+        public static void ConvertTo_WithContext_TypeListConverter()
         {
             using (new ThreadCultureChange(CultureInfo.InvariantCulture))
             {

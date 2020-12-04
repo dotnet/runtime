@@ -11,6 +11,47 @@
 #include "runtimedetails.h"
 #include "lightweightmap.h"
 
+// MemoryTracker: a very simple allocator and tracker of allocated memory, so it can be deleted when needed.
+class MemoryTracker
+{
+public:
+    MemoryTracker() : m_pHead(nullptr) {}
+    ~MemoryTracker() { freeAll(); }
+
+    void* allocate(size_t sizeInBytes)
+    {
+        BYTE* pNew = new BYTE[sizeInBytes];
+        m_pHead = new MemoryNode(pNew, m_pHead);    // Prepend this new one to the tracked memory list.
+        return pNew;
+    }
+
+private:
+
+    MemoryTracker(const MemoryTracker&) = delete; // no copy ctor
+
+    void freeAll()
+    {
+        for (MemoryNode* p = m_pHead; p != nullptr; )
+        {
+            MemoryNode* pNext = p->m_pNext;
+            delete p;
+            p = pNext;
+        }
+        m_pHead = nullptr;
+    }
+
+    struct MemoryNode
+    {
+        MemoryNode(BYTE* pMem, MemoryNode* pNext) : m_pMem(pMem), m_pNext(pNext) {}
+        ~MemoryNode() { delete[] m_pMem; }
+
+        BYTE*       m_pMem;
+        MemoryNode* m_pNext;
+    };
+
+    MemoryNode* m_pHead;
+};
+
 class CompileResult
 {
 public:
@@ -125,12 +166,6 @@ public:
         DWORD HandlerLength;
         DWORD ClassToken; // one view of symetric union
     };
-    struct Agnostic_AllocMethodBlockCounts
-    {
-        DWORD count;
-        DWORD pBlockCounts_index;
-        DWORD result;
-    };
     struct Agnostic_CORINFO_SIG_INFO2
     {
         DWORD     callConv;
@@ -168,7 +203,7 @@ public:
 
     void dumpToConsole();
 
-    HANDLE getCodeHeap();
+    void* allocateMemory(size_t sizeInBytes);
 
     void recAssert(const char* buff);
     void dmpAssertLog(DWORD key, DWORD value);
@@ -287,12 +322,9 @@ public:
                             CorJitFuncKind funcKind);
     void dmpAllocUnwindInfo(DWORD key, const Agnostic_AllocUnwindInfo& value);
 
-    void recAllocMethodBlockCounts(ULONG count, ICorJitInfo::BlockCounts** pBlockCounts, HRESULT result);
-    void dmpAllocMethodBlockCounts(DWORD key, const Agnostic_AllocMethodBlockCounts& value);
-    HRESULT repAllocMethodBlockCounts(ULONG count, ICorJitInfo::BlockCounts** pBlockCounts);
-
     void recRecordCallSite(ULONG instrOffset, CORINFO_SIG_INFO* callSig, CORINFO_METHOD_HANDLE methodHandle);
-    void dmpRecordCallSite(DWORD key, const Agnostic_RecordCallSite& value);
+    void dmpRecordCallSiteWithSignature(DWORD key, const Agnostic_RecordCallSite& value) const;
+    void dmpRecordCallSiteWithoutSignature(DWORD key, DWORDLONG methodHandle) const;
     void repRecordCallSite(ULONG instrOffset, CORINFO_SIG_INFO* callSig, CORINFO_METHOD_HANDLE methodHandle);
     bool fndRecordCallSiteSigInfo(ULONG instrOffset, CORINFO_SIG_INFO* pCallSig);
     bool fndRecordCallSiteMethodHandle(ULONG instrOffset, CORINFO_METHOD_HANDLE* pMethodHandle);
@@ -309,7 +341,7 @@ public:
     LightWeightMap<DWORDLONG, DWORD>* CallTargetTypes;
 
 private:
-    HANDLE                  codeHeap;
+    MemoryTracker*          memoryTracker;
     Capture_AllocMemDetails allocMemDets;
     allocGCInfoDetails      allocGCInfoDets;
 };

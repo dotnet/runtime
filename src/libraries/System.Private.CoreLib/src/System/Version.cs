@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Globalization;
 using System.Diagnostics;
@@ -293,7 +292,7 @@ namespace System
         public static Version Parse(ReadOnlySpan<char> input) =>
             ParseVersion(input, throwOnFailure: true)!;
 
-        public static bool TryParse(string? input, [NotNullWhen(true)] out Version? result)
+        public static bool TryParse([NotNullWhen(true)] string? input, [NotNullWhen(true)] out Version? result)
         {
             if (input == null)
             {

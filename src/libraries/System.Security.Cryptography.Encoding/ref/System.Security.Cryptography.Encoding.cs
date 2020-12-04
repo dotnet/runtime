@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 // ------------------------------------------------------------------------------
 // Changes to this file must follow the https://aka.ms/api-review process.
 // ------------------------------------------------------------------------------
@@ -11,9 +10,12 @@ namespace System.Security.Cryptography
     {
         protected AsnEncodedData() { }
         public AsnEncodedData(byte[] rawData) { }
+        public AsnEncodedData(System.ReadOnlySpan<byte> rawData) { }
         public AsnEncodedData(System.Security.Cryptography.AsnEncodedData asnEncodedData) { }
         public AsnEncodedData(System.Security.Cryptography.Oid? oid, byte[] rawData) { }
+        public AsnEncodedData(System.Security.Cryptography.Oid? oid, System.ReadOnlySpan<byte> rawData) { }
         public AsnEncodedData(string oid, byte[] rawData) { }
+        public AsnEncodedData(string oid, System.ReadOnlySpan<byte> rawData) { }
         public System.Security.Cryptography.Oid? Oid { get { throw null; } set { } }
         public byte[] RawData { get { throw null; } set { } }
         public virtual void CopyFrom(System.Security.Cryptography.AsnEncodedData asnEncodedData) { }
@@ -108,6 +110,23 @@ namespace System.Security.Cryptography
         Policy = 8,
         Template = 9,
         KeyDerivationFunction = 10,
+    }
+    public static partial class PemEncoding
+    {
+        public static System.Security.Cryptography.PemFields Find(System.ReadOnlySpan<char> pemData) { throw null; }
+        public static int GetEncodedSize(int labelLength, int dataLength) { throw null; }
+        public static bool TryFind(System.ReadOnlySpan<char> pemData, out System.Security.Cryptography.PemFields fields) { throw null; }
+        public static bool TryWrite(System.ReadOnlySpan<char> label, System.ReadOnlySpan<byte> data, System.Span<char> destination, out int charsWritten) { throw null; }
+        public static char[] Write(System.ReadOnlySpan<char> label, System.ReadOnlySpan<byte> data) { throw null; }
+    }
+    public readonly partial struct PemFields
+    {
+        private readonly object _dummy;
+        private readonly int _dummyPrimitive;
+        public System.Range Base64Data { get { throw null; } }
+        public int DecodedDataLength { get { throw null; } }
+        public System.Range Label { get { throw null; } }
+        public System.Range Location { get { throw null; } }
     }
     public partial class ToBase64Transform : System.IDisposable, System.Security.Cryptography.ICryptoTransform
     {

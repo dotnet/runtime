@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -16,7 +15,7 @@ namespace System.ComponentModel.Composition.Hosting
     {
         private readonly ReadOnlyCollection<ExportProvider> _readOnlyProviders;
         private readonly ExportProvider[] _providers;
-        private volatile int _isDisposed = 0;
+        private volatile int _isDisposed;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="AggregateExportProvider"/> class.
@@ -139,6 +138,7 @@ namespace System.ComponentModel.Composition.Hosting
         /// </summary>
         /// <param name="definition">The <see cref="ImportDefinition"/> that defines the conditions of the
         /// <see cref="Export"/> to get.</param>
+        /// <param name="atomicComposition">The transactional container for the composition.</param>
         /// <returns></returns>
         /// <result>
         /// An <see cref="IEnumerable{T}"/> of <see cref="Export"/> objects that match
@@ -179,7 +179,7 @@ namespace System.ComponentModel.Composition.Hosting
                 {
                     bool cardinalityCheckResult = provider.TryGetExports(definition, atomicComposition, out IEnumerable<Export>? exports);
                     Debug.Assert(exports != null);
-                    bool anyExports = exports.FastAny();
+                    bool anyExports = exports.Any();
                     if (cardinalityCheckResult && anyExports)
                     {
                         // NOTE : if the provider returned nothing, we need to proceed, even if it indicated that the

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.ComponentModel;
 using System.Diagnostics;
@@ -89,7 +88,7 @@ namespace System.Drawing
         /// table or bitmasks, as appropriate.
         /// </summary>
         /// <returns>True if successful, false otherwise.</returns>
-        private bool FillBitmapInfo(IntPtr hdc, IntPtr hpal, ref NativeMethods.BITMAPINFO_FLAT pbmi)
+        private unsafe bool FillBitmapInfo(IntPtr hdc, IntPtr hpal, ref NativeMethods.BITMAPINFO_FLAT pbmi)
         {
             IntPtr hbm = IntPtr.Zero;
             bool bRet = false;
@@ -104,8 +103,7 @@ namespace System.Drawing
                     throw new OutOfMemoryException(SR.GraphicsBufferQueryFail);
                 }
 
-                pbmi.bmiHeader_biSize = Marshal.SizeOf(typeof(NativeMethods.BITMAPINFOHEADER));
-                pbmi.bmiColors = new byte[NativeMethods.BITMAPINFO_MAX_COLORSIZE * 4];
+                pbmi.bmiHeader_biSize = sizeof(NativeMethods.BITMAPINFOHEADER);
 
                 // Call first time to fill in BITMAPINFO header.
                 SafeNativeMethods.GetDIBits(new HandleRef(null, hdc),

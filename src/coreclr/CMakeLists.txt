@@ -1,16 +1,21 @@
-cmake_minimum_required(VERSION 3.14.2)
+cmake_minimum_required(VERSION 3.6.2)
 
 cmake_policy(SET CMP0042 NEW)
+if (CMAKE_VERSION VERSION_GREATER 3.15 OR CMAKE_VERSION VERSION_EQUAL 3.15)
+  cmake_policy(SET CMP0091 NEW)
+endif()
 
 # Set the project name
 project(CoreCLR)
 
-include(${CLR_ENG_NATIVE_DIR}/configuretools.cmake)
+include(../../eng/native/configurepaths.cmake)
+include(${CLR_ENG_NATIVE_DIR}/configurecompiler.cmake)
 
-if (CLR_CMAKE_HOST_WIN32)
-  message(STATUS "VS_PLATFORM_TOOLSET is ${CMAKE_VS_PLATFORM_TOOLSET}")
-  message(STATUS "VS_PLATFORM_NAME is ${CMAKE_VS_PLATFORM_NAME}")
-endif (CLR_CMAKE_HOST_WIN32)
+if(MSVC)
+  string(REPLACE "/EHsc" "" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
+  add_compile_options($<$<COMPILE_LANGUAGE:CXX>:/EHa>) # enable C++ EH (w/ SEH exceptions)
+  set(CMAKE_CXX_STANDARD_LIBRARIES "") # do not link against standard win32 libs i.e. kernel32, uuid, user32, etc.
+endif (MSVC)
 
 # Set commonly used directory names
 set(CLR_DIR ${CMAKE_CURRENT_SOURCE_DIR})
@@ -31,93 +36,6 @@ endif(CORECLR_SET_RPATH)
 
 OPTION(CLR_CMAKE_ENABLE_CODE_COVERAGE "Enable code coverage" OFF)
 
-# Ensure other tools are present
-if (CLR_CMAKE_HOST_WIN32)
-    if(CLR_CMAKE_HOST_ARCH_ARM)
-
-      # Confirm that Windows SDK is present
-      if(NOT DEFINED CMAKE_VS_WINDOWS_TARGET_PLATFORM_VERSION OR CMAKE_VS_WINDOWS_TARGET_PLATFORM_VERSION STREQUAL "" )
-	      message(FATAL_ERROR "Windows SDK is required for the Arm32 build.")
-      else()
-	      message("Using Windows SDK version ${CMAKE_VS_WINDOWS_TARGET_PLATFORM_VERSION}")
-      endif()
-
-      # Explicitly specify the assembler to be used for Arm32 compile
-      file(TO_CMAKE_PATH "$ENV{VCToolsInstallDir}\\bin\\HostX86\\arm\\armasm.exe" CMAKE_ASM_COMPILER)
-
-      set(CMAKE_ASM_MASM_COMPILER ${CMAKE_ASM_COMPILER})
-      message("CMAKE_ASM_MASM_COMPILER explicitly set to: ${CMAKE_ASM_MASM_COMPILER}")
-
-      # Enable generic assembly compilation to avoid CMake generate VS proj files that explicitly
-      # use ml[64].exe as the assembler.
-      enable_language(ASM)
-    elseif(CLR_CMAKE_HOST_ARCH_ARM64)
-
-      # Confirm that Windows SDK is present
-      if(NOT DEFINED CMAKE_VS_WINDOWS_TARGET_PLATFORM_VERSION OR CMAKE_VS_WINDOWS_TARGET_PLATFORM_VERSION STREQUAL "" )
-	      message(FATAL_ERROR "Windows SDK is required for the ARM64 build.")
-      else()
-	      message("Using Windows SDK version ${CMAKE_VS_WINDOWS_TARGET_PLATFORM_VERSION}")
-      endif()
-
-      # Explicitly specify the assembler to be used for Arm64 compile
-      file(TO_CMAKE_PATH "$ENV{VCToolsInstallDir}\\bin\\HostX86\\arm64\\armasm64.exe" CMAKE_ASM_COMPILER)
-
-      set(CMAKE_ASM_MASM_COMPILER ${CMAKE_ASM_COMPILER})
-      message("CMAKE_ASM_MASM_COMPILER explicitly set to: ${CMAKE_ASM_MASM_COMPILER}")
-
-      # Enable generic assembly compilation to avoid CMake generate VS proj files that explicitly
-      # use ml[64].exe as the assembler.
-      enable_language(ASM)
-    else()
-      enable_language(ASM_MASM)
-    endif()
-
-    # Ensure that MC is present
-    find_program(MC mc)
-    if (MC STREQUAL "MC-NOTFOUND")
-        message(FATAL_ERROR "MC not found")
-    endif()
-
-else (CLR_CMAKE_HOST_WIN32)
-    enable_language(ASM)
-
-    # Ensure that awk is present
-    find_program(AWK awk)
-    if (AWK STREQUAL "AWK-NOTFOUND")
-        message(FATAL_ERROR "AWK not found")
-    endif()
-
-    # Try to locate the paxctl tool. Failure to find it is not fatal,
-    # but the generated executables won't work on a system where PAX is set
-    # to prevent applications to create executable memory mappings.
-    find_program(PAXCTL paxctl)
-
-    if (CLR_CMAKE_HOST_DARWIN)
-
-      # Ensure that dsymutil and strip are present
-      find_program(DSYMUTIL dsymutil)
-      if (DSYMUTIL STREQUAL "DSYMUTIL-NOTFOUND")
-          message(FATAL_ERROR "dsymutil not found")
-      endif()
-
-      find_program(STRIP strip)
-      if (STRIP STREQUAL "STRIP-NOTFOUND")
-          message(FATAL_ERROR "strip not found")
-      endif()
-
-    endif()
-endif(CLR_CMAKE_HOST_WIN32)
-
-if(CLR_CMAKE_TARGET_ANDROID)
-  add_definitions(-DTARGET_ANDROID)
-endif()
-
-#----------------------------------------------------
-# Configure compiler settings for environment
-#----------------------------------------------------
-include(configurecompiler.cmake)
-
 #----------------------------------------------------
 # Cross target Component build specific configuration
 #----------------------------------------------------
@@ -133,9 +51,9 @@ include(pgosupport.cmake)
 #-------------------------------
 # Include libraries native shims
 #-------------------------------
-if(NOT CLR_CROSS_COMPONENTS_BUILD)
+if(NOT CLR_CROSS_COMPONENTS_BUILD AND CLR_CMAKE_BUILD_SUBSET_RUNTIME)
   add_subdirectory(src/libraries-native)
-endif(NOT CLR_CROSS_COMPONENTS_BUILD)
+endif(NOT CLR_CROSS_COMPONENTS_BUILD AND CLR_CMAKE_BUILD_SUBSET_RUNTIME)
 
 #-----------------------------------------
 # Add Projects
@@ -157,6 +75,10 @@ if(CLR_CMAKE_HOST_UNIX)
 
     add_subdirectory(src/pal)
     add_subdirectory(src/hosts)
+else(CLR_CMAKE_HOST_UNIX)
+    if(CLR_CMAKE_TARGET_UNIX)
+        add_subdirectory(src/pal/src/libunwind)
+    endif(CLR_CMAKE_TARGET_UNIX)
 endif(CLR_CMAKE_HOST_UNIX)
 
 # Add this subdir. We install the headers for the jit.
@@ -164,17 +86,17 @@ add_subdirectory(src/pal/prebuilt/inc)
 
 add_subdirectory(src/debug/debug-pal)
 
-if(CLR_CMAKE_TARGET_WIN32)
+if(CLR_CMAKE_TARGET_WIN32 AND CLR_CMAKE_BUILD_SUBSET_RUNTIME)
   add_subdirectory(src/gc/sample)
 endif()
 
-add_subdirectory(src/tools/crossgen2/jitinterface)
+add_subdirectory(src/tools/aot/jitinterface)
 
 # Above projects do not build with these compile options
 # All of the compiler options are specified in file compileoptions.cmake
 # Do not add any new options here. They should be added in compileoptions.cmake
 if(CLR_CMAKE_HOST_WIN32)
-  add_compile_options(/Zl) # omit default library name in .OBJ
+  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/Zl>) # omit default library name in .OBJ
 endif(CLR_CMAKE_HOST_WIN32)
 
 #--------------------------------
@@ -193,7 +115,9 @@ include_directories("../../artifacts/obj/coreclr")
 
 if(FEATURE_STANDALONE_GC)
   add_definitions(-DFEATURE_STANDALONE_GC)
-  add_subdirectory(src/gc)
+  if (CLR_CMAKE_BUILD_SUBSET_RUNTIME)
+    add_subdirectory(src/gc)
+  endif (CLR_CMAKE_BUILD_SUBSET_RUNTIME)
 endif(FEATURE_STANDALONE_GC)
 
 if (CLR_CMAKE_HOST_UNIX)

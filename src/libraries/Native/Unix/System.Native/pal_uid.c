@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #include "pal_config.h"
 #include "pal_uid.h"
@@ -110,6 +109,73 @@ uint32_t SystemNative_GetUid()
 
 #ifdef USE_GROUPLIST_LOCK
 static pthread_mutex_t s_groupLock = PTHREAD_MUTEX_INITIALIZER;
+#endif
+
+#if !HAVE_GETGROUPLIST
+int getgrouplist(const char *uname, gid_t agroup, gid_t *groups, int *groupCount)
+{
+    int ngroups = 1;
+    int maxgroups = *groupCount;
+
+    if (groups)
+    {
+        groups[ngroups] = agroup;
+    }
+    if (maxgroups > 1)
+    {
+        if (groups)
+            groups[ngroups++] = agroup;
+        else
+            ngroups++;
+    }
+
+    setgrent();
+
+    int i;
+    int result = 0;
+    const struct group *group;
+
+    while ((group = getgrent()) != NULL)
+    {
+        if (groups)
+        {
+            bool found = false;
+            for (i = 0; i < ngroups; i++)
+            {
+                if (group->gr_gid == groups[i])
+                {
+                    found = true;
+                    break;
+                }
+            }
+            if (found)
+                break;
+        }
+
+        for (i = 0; group->gr_mem[i]; i++)
+        {
+            if (!strcmp(group->gr_mem[i], uname))
+            {
+                if (ngroups >= maxgroups)
+                {
+                    result = -1;
+                    break;
+                }
+
+                if (groups)
+                    groups[ngroups++] = group->gr_gid;
+                else
+                    ngroups++;
+
+                break;
+            }
+        }
+    }
+
+    endgrent();
+    *groupCount = ngroups;
+    return result;
+}
 #endif
 
 int32_t SystemNative_GetGroupList(const char* name, uint32_t group, uint32_t* groups, int32_t* ngroups)

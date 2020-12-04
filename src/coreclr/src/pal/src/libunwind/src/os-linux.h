@@ -38,7 +38,7 @@ struct map_iterator
   };
 
 static inline char *
-ltoa (char *buf, long val)
+unw_ltoa (char *buf, long val)
 {
   char *cp = buf, tmp;
   ssize_t i, len;
@@ -68,7 +68,7 @@ maps_init (struct map_iterator *mi, pid_t pid)
   char path[sizeof ("/proc/0123456789/maps")], *cp;
 
   memcpy (path, "/proc/", 6);
-  cp = ltoa (path + 6, pid);
+  cp = unw_ltoa (path + 6, pid);
   assert (cp + 6 < path + sizeof (path));
   memcpy (cp, "/maps", 6);
 

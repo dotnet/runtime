@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 //
 // --------------------------------------------------------------------------------------------------
 // CLRConfig.h
@@ -42,33 +41,13 @@ public:
         IgnoreEnv = 0x1,
         // If set, do not prepend "COMPlus_" when doing environment variable lookup.
         DontPrependCOMPlus_ = 0x2,
-        // If set, don't look in HKLM in the registry.
-        IgnoreHKLM = 0x4,
-        // If set, don't look in HKCU in the registry.
-        IgnoreHKCU = 0x8,
-        // If set, don't look in any config files
-        IgnoreConfigFiles = 0x10,
-        // If set, look in config file(s) before looking in env/registry.
-        FavorConfigFile = 0x20,
-        // If set, look only in the system config file, ignoring other config files.
-        // (This option does not affect environment variable and registry lookups)
-        ConfigFile_SystemOnly = 0x40,
-        // If set, reverse the order of config file lookups (application config file first).
-        // (This option does not affect environment variable and registry lookups)
-        ConfigFile_ApplicationFirst = 0x80,
         // Remove any whitespace at beginning and end of value.  (Only applicable for
         // *string* configuration values.)
         TrimWhiteSpaceFromStringValue = 0x100,
 
-        // Legacy REGUTIL-style lookup.
-        REGUTIL_default = IgnoreConfigFiles,
         // Legacy EEConfig-style lookup.
         EEConfig_default = 0,
     };
-
-    // Function pointer definition used for calling EEConfig::GetConfigValueCallback .
-    typedef HRESULT (* GetConfigValueFunction)
-        (__in_z LPCWSTR /*pKey*/, __deref_out_opt LPCWSTR* /*value*/, BOOL /*systemOnly*/, BOOL /*applicationFirst*/);
 
     // Struct used to store information about where/how to find a Config DWORD.
     // NOTE: Please do NOT create instances of this struct. Use the macros in file:CLRConfigValues.h instead.
@@ -182,13 +161,7 @@ public:
     // Free a string returned by GetConfigValue
     static void   FreeConfigString(__in __in_z LPWSTR name);
 
-    // Register EEConfig's GetConfigValueCallback function so CLRConfig can look in config files.
-    static void RegisterGetConfigValueCallback(GetConfigValueFunction func);
-
 private:
-    // Function pointer to EEConfig's GetConfigValueCallback function (can't static bind from utilcode to VM)
-    static GetConfigValueFunction s_GetConfigValueCallback;
-
 
     // Helper method to translate LookupOptions to REGUTIL::CORConfigLevel
     static REGUTIL::CORConfigLevel GetConfigLevel(LookupOptions options);

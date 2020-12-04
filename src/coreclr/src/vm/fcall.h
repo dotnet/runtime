@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 // FCall.H
 //
 
@@ -1149,6 +1148,7 @@ public:
 #define HCIMPL4(rettype, funcname, a1, a2, a3, a4) rettype F_CALL_CONV funcname(int /* EAX */, a2, a1, a4, a3) { HCIMPL_PROLOG(funcname)
 #define HCIMPL5(rettype, funcname, a1, a2, a3, a4, a5) rettype F_CALL_CONV funcname(int /* EAX */, a2, a1, a5, a4, a3) { HCIMPL_PROLOG(funcname)
 
+#define HCCALL0(funcname)               funcname()
 #define HCCALL1(funcname, a1)           funcname(0, 0, a1)
 #define HCCALL1_V(funcname, a1)         funcname(0, 0, 0, a1)
 #define HCCALL2(funcname, a1, a2)       funcname(0, a2, a1)
@@ -1172,6 +1172,7 @@ public:
 #define HCIMPL4(rettype, funcname, a1, a2, a3, a4) rettype F_CALL_CONV funcname(a1, a2, a4, a3) { HCIMPL_PROLOG(funcname)
 #define HCIMPL5(rettype, funcname, a1, a2, a3, a4, a5) rettype F_CALL_CONV funcname(a1, a2, a5, a4, a3) { HCIMPL_PROLOG(funcname)
 
+#define HCCALL0(funcname)               funcname()
 #define HCCALL1(funcname, a1)           funcname(a1)
 #define HCCALL1_V(funcname, a1)         funcname(a1)
 #define HCCALL2(funcname, a1, a2)       funcname(a1, a2)
@@ -1196,6 +1197,7 @@ public:
 #define HCIMPL4(rettype, funcname, a1, a2, a3, a4) rettype F_CALL_CONV funcname(a1, a2, a3, a4) { HCIMPL_PROLOG(funcname)
 #define HCIMPL5(rettype, funcname, a1, a2, a3, a4, a5) rettype F_CALL_CONV funcname(a1, a2, a3, a4, a5) { HCIMPL_PROLOG(funcname)
 
+#define HCCALL0(funcname)               funcname()
 #define HCCALL1(funcname, a1)           funcname(a1)
 #define HCCALL1_V(funcname, a1)         funcname(a1)
 #define HCCALL2(funcname, a1, a2)       funcname(a1, a2)

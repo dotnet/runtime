@@ -78,6 +78,33 @@ public:
         return newOffset + sizeof(unsigned int);
     }
 
+    const unsigned char* CreateBuffer(unsigned int len)
+    {
+        if (len == 0)
+        {
+            return nullptr;
+        }
+
+        if (locked)
+        {
+            LogError("Added item that extended the buffer after it was locked by a call to GetBuffer()");
+            __debugbreak();
+        }
+
+        unsigned int   newbuffsize = bufferLength + sizeof(unsigned int) + len;
+        unsigned char* newbuffer   = new unsigned char[newbuffsize];
+        unsigned int   newOffset   = bufferLength;
+        if (bufferLength > 0)
+            memcpy(newbuffer, buffer, bufferLength);
+        memset(newbuffer + bufferLength + sizeof(unsigned int), 0, len);
+        *((unsigned int*)(newbuffer + bufferLength)) = len;
+        bufferLength += sizeof(unsigned int) + len;
+        if (buffer != nullptr)
+            delete[] buffer;
+        buffer = newbuffer;
+        return buffer + newOffset + sizeof(unsigned int);
+    }
+
     unsigned char* GetBuffer(unsigned int offset)
     {
         if (offset == (unsigned int)-1)
@@ -342,7 +369,14 @@ public:
             else if (res > 0)
                 last = mid - 1; // repeat search in bottom half.
             else
+            {
+                int resItem = memcmp(&pItems[mid], &item, sizeof(_Item));
+                if (resItem != 0)
+                {
+                    LogDebug("Tried to add a new value for an existing key, the new value was ignored");
+                }
                 return false; // found it. return position /////
+            }
         }
         insert = first;
         if (insert != (unsigned int)first)

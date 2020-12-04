@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 //
 
 #ifndef __ARGDESTINATION_H__
@@ -218,7 +217,7 @@ public:
     {
         LIMITED_METHOD_CONTRACT;
 
-        // SPAN-TODO: GC reporting - https://github.com/dotnet/coreclr/issues/8517
+        // SPAN-TODO: GC reporting - https://github.com/dotnet/runtime/issues/7103
 
        _ASSERTE(IsStructPassedInRegs());
 

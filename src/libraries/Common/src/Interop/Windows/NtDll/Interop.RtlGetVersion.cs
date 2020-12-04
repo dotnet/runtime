@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Runtime.InteropServices;
 
@@ -18,19 +17,15 @@ internal partial class Interop
             return RtlGetVersion(ref osvi);
         }
 
-        internal static unsafe string RtlGetVersion()
+        [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
+        internal unsafe struct RTL_OSVERSIONINFOEX
         {
-            const string Version = "Microsoft Windows";
-            if (RtlGetVersionEx(out RTL_OSVERSIONINFOEX osvi) == 0)
-            {
-                return osvi.szCSDVersion[0] != '\0' ?
-                    string.Format("{0} {1}.{2}.{3} {4}", Version, osvi.dwMajorVersion, osvi.dwMinorVersion, osvi.dwBuildNumber, new string(&(osvi.szCSDVersion[0]))) :
-                    string.Format("{0} {1}.{2}.{3}", Version, osvi.dwMajorVersion, osvi.dwMinorVersion, osvi.dwBuildNumber);
-            }
-            else
-            {
-                return Version;
-            }
+            internal uint dwOSVersionInfoSize;
+            internal uint dwMajorVersion;
+            internal uint dwMinorVersion;
+            internal uint dwBuildNumber;
+            internal uint dwPlatformId;
+            internal fixed char szCSDVersion[128];
         }
     }
 }

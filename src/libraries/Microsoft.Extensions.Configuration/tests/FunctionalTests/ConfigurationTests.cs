@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Generic;
@@ -8,7 +7,6 @@ using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using Microsoft.AspNetCore.Testing;
 using Microsoft.Extensions.Configuration.Ini;
 using Microsoft.Extensions.Configuration.Json;
 using Microsoft.Extensions.Configuration.UserSecrets;
@@ -209,6 +207,7 @@ CommonKey3:CommonKey4=IniValue6";
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34580", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         public void LoadAndCombineKeyValuePairsFromDifferentConfigurationProviders()
         {
             WriteTestFiles();
@@ -248,6 +247,7 @@ CommonKey3:CommonKey4=IniValue6";
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34580", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         public void LoadAndCombineKeyValuePairsFromDifferentConfigurationProvidersWithAbsolutePath()
         {
             WriteTestFiles();
@@ -288,6 +288,7 @@ CommonKey3:CommonKey4=IniValue6";
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34580", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         public void CanOverrideValuesWithNewConfigurationProvider()
         {
             WriteTestFiles();
@@ -360,6 +361,7 @@ CommonKey3:CommonKey4=IniValue6";
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34580", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         public void OnLoadErrorWillBeCalledOnJsonParseError()
         {
             _fileSystem.WriteFile(Path.Combine(_basePath, "error.json"), @"{""JsonKey1"": ", absolute: true);
@@ -388,6 +390,7 @@ CommonKey3:CommonKey4=IniValue6";
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34580", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         public void OnLoadErrorWillBeCalledOnXmlParseError()
         {
             _fileSystem.WriteFile("error.xml", @"gobblygook");
@@ -415,6 +418,7 @@ CommonKey3:CommonKey4=IniValue6";
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34580", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         public void OnLoadErrorWillBeCalledOnIniLoadError()
         {
             _fileSystem.WriteFile("error.ini", @"IniKey1=IniValue1
@@ -442,6 +446,7 @@ IniKey1=IniValue2");
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34580", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         public void OnLoadErrorCanIgnoreErrors()
         {
             _fileSystem.WriteFile("error.json", @"{""JsonKey1"": ");
@@ -465,7 +470,7 @@ IniKey1=IniValue2");
         }
 
         [Fact]
-        [Flaky("File watching is flaky (particularly on non windows.", FlakyOn.All)]
+        [ActiveIssue("File watching is flaky (particularly on non windows. https://github.com/dotnet/runtime/issues/33992")]
         public void CanSetValuesAndReloadValues()
         {
             WriteTestFiles();
@@ -508,7 +513,7 @@ IniKey1=IniValue2");
         }
 
         [Fact]
-        [Flaky("File watching is flaky (particularly on non windows.", FlakyOn.All)]
+        [ActiveIssue("File watching is flaky (particularly on non windows. https://github.com/dotnet/runtime/issues/33992")]
         public async Task ReloadOnChangeWorksAfterError()
         {
             _fileSystem.WriteFile("reload.json", @"{""JsonKey1"": ""JsonValue1""}");
@@ -539,7 +544,7 @@ IniKey1=IniValue2");
         }
 
         [Fact]
-        [Flaky("File watching is flaky (particularly on non windows.", FlakyOn.All)]
+        [ActiveIssue("File watching is flaky (particularly on non windows. https://github.com/dotnet/runtime/issues/33992")]
         public async Task TouchingFileWillReload()
         {
             _fileSystem.WriteFile("reload.json", @"{""JsonKey1"": ""JsonValue1""}");
@@ -576,7 +581,7 @@ IniKey1=IniValue2");
         }
 
         [Fact]
-        [Flaky("File watching is flaky (particularly on non windows.", FlakyOn.All)]
+        [ActiveIssue("File watching is flaky (particularly on non windows. https://github.com/dotnet/runtime/issues/33992")]
         public async Task CreatingOptionalFileInNonExistentDirectoryWillReload()
         {
             var directory = Path.GetRandomFileName();
@@ -610,7 +615,7 @@ IniKey1=IniValue2");
         }
 
         [Theory]
-        [Flaky("File watching is flaky (particularly on non windows.", FlakyOn.All)]
+        [ActiveIssue("File watching is flaky (particularly on non windows. https://github.com/dotnet/runtime/issues/33992")]
         [InlineData(false)]
         [InlineData(true)]
         public async Task DeletingFilesThatRedefineKeysWithReload(bool optional)
@@ -691,7 +696,7 @@ IniKey1=IniValue2");
         }
         
         [Theory]
-        [Flaky("File watching is flaky (particularly on non windows.", FlakyOn.All)]
+        [ActiveIssue("File watching is flaky (particularly on non windows. https://github.com/dotnet/runtime/issues/33992")]
         [InlineData(false)]
         [InlineData(true)]
         public async Task DeletingFileWillReload(bool optional)
@@ -730,7 +735,7 @@ IniKey1=IniValue2");
         }
 
         [Fact]
-        [Flaky("File watching is flaky (particularly on non windows.", FlakyOn.All)]
+        [ActiveIssue("File watching is flaky (particularly on non windows. https://github.com/dotnet/runtime/issues/33992")]
         public async Task CreatingWritingDeletingCreatingFileWillReload()
         {
             var config = CreateBuilder()
@@ -814,6 +819,7 @@ IniKey1=IniValue2");
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34580", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         public void LoadIncorrectJsonFile_ThrowException()
         {
             var json = @"{
@@ -830,6 +836,7 @@ IniKey1=IniValue2");
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34580", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         public void SetBasePathCalledMultipleTimesForEachSourceLastOneWins()
         {
             var builder = new ConfigurationBuilder();
@@ -863,6 +870,7 @@ IniKey1=IniValue2");
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34580", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         public void GetDefaultBasePathForSources()
         {
             var builder = new ConfigurationBuilder();
@@ -892,6 +900,8 @@ IniKey1=IniValue2");
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34580", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
+        [SkipOnMono("System.IO.FileSystem.Watcher is not supported on wasm", TestPlatforms.Browser)]
         public void CanEnumerateProviders()
         {
             var config = CreateBuilder()
@@ -908,7 +918,7 @@ IniKey1=IniValue2");
         }
 
         [Fact]
-        [Flaky("File watching is flaky (particularly on non windows.", FlakyOn.All)]
+        [ActiveIssue("File watching is flaky (particularly on non windows. https://github.com/dotnet/runtime/issues/33992")]
         public async Task TouchingFileWillReloadForUserSecrets()
         {
             string userSecretsId = "Test";
@@ -937,7 +947,8 @@ IniKey1=IniValue2");
             Assert.True(token.HasChanged);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34580", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         public void BindingDoesNotThrowIfReloadedDuringBinding()
         {
             WriteTestFiles();

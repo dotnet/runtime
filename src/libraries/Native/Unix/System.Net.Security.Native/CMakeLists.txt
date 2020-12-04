@@ -42,5 +42,5 @@ target_link_libraries(System.Net.Security.Native
     ${LIBGSS}
 )
 
-install_library_and_symbols (System.Net.Security.Native)
+install_with_stripped_symbols (System.Net.Security.Native PROGRAMS .)
 install (TARGETS System.Net.Security.Native-Static DESTINATION .)

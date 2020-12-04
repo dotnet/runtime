@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
 using System.Text;
@@ -26,7 +25,7 @@ namespace System.Net
         private readonly string _cookedUriQuery;
 
         // This field is used to build the final request Uri string from the Uri parts passed to the ctor.
-        private StringBuilder _requestUriString;
+        private StringBuilder? _requestUriString;
 
         // The raw path is parsed by looping through all characters from left to right. 'rawOctets'
         // is used to store consecutive percent encoded octets as actual byte values: e.g. for path /pa%C3%84th%2F/
@@ -38,11 +37,11 @@ namespace System.Net
         // we reach 't', the content of rawOctets { 0xC4 } will be fed into the ANSI encoding. The resulting
         // string '\u00C4' will be percent encoded into UTF-8 octets and appended to requestUriString. The final
         // path will be '/pa%C3%84th/', where '%C3%84' is the UTF-8 percent encoded character.
-        private List<byte> _rawOctets;
-        private string _rawPath;
+        private List<byte>? _rawOctets;
+        private string? _rawPath;
 
         // Holds the final request Uri.
-        private Uri _requestUri;
+        private Uri? _requestUri;
 
         private HttpListenerRequestUriBuilder(string rawUri, string cookedUriScheme, string cookedUriHost,
             string cookedUriPath, string cookedUriQuery)
@@ -77,7 +76,7 @@ namespace System.Net
                 BuildRequestUriUsingCookedPath();
             }
 
-            return _requestUri;
+            return _requestUri!;
         }
 
         private void BuildRequestUriUsingCookedPath()
@@ -88,7 +87,7 @@ namespace System.Net
             // Creating a Uri from the cooked Uri should really always work: If not, we log at least.
             if (!isValid)
             {
-                if (NetEventSource.IsEnabled)
+                if (NetEventSource.Log.IsEnabled())
                     NetEventSource.Error(this, SR.Format(SR.net_log_listener_cant_create_uri, _cookedUriScheme, _cookedUriHost, _cookedUriPath, _cookedUriQuery));
             }
         }
@@ -113,7 +112,7 @@ namespace System.Net
             // Log that we weren't able to create a Uri from the raw string.
             if (!isValid)
             {
-                if (NetEventSource.IsEnabled)
+                if (NetEventSource.Log.IsEnabled())
                     NetEventSource.Error(this, SR.Format(SR.net_log_listener_cant_create_uri, _cookedUriScheme, _cookedUriHost, _rawPath, _cookedUriQuery));
             }
         }
@@ -162,7 +161,7 @@ namespace System.Net
 
             if (result != ParsingResult.Success)
             {
-                if (NetEventSource.IsEnabled)
+                if (NetEventSource.Log.IsEnabled())
                     NetEventSource.Error(this, SR.Format(SR.net_log_listener_cant_convert_raw_path, _rawPath, encoding.EncodingName));
             }
 
@@ -175,6 +174,7 @@ namespace System.Net
 
             int index = 0;
             char current = '\0';
+            Debug.Assert(_rawPath != null);
             while (index < _rawPath.Length)
             {
                 current = _rawPath[index];
@@ -221,7 +221,8 @@ namespace System.Net
                         return ParsingResult.EncodingError;
                     }
                     // Append the current character to the result.
-                    _requestUriString.Append(current);
+                    Debug.Assert(_requestUriString != null);
+                    _requestUriString!.Append(current);
                     index++;
                 }
             }
@@ -243,28 +244,28 @@ namespace System.Net
             int codePointValue;
             if (!int.TryParse(codePoint, NumberStyles.HexNumber, null, out codePointValue))
             {
-                if (NetEventSource.IsEnabled)
+                if (NetEventSource.Log.IsEnabled())
                     NetEventSource.Error(this, SR.Format(SR.net_log_listener_cant_convert_percent_value, codePoint));
                 return false;
             }
 
-            string unicodeString = null;
+            string? unicodeString = null;
             try
             {
                 unicodeString = char.ConvertFromUtf32(codePointValue);
-                AppendOctetsPercentEncoded(_requestUriString, s_utf8Encoding.GetBytes(unicodeString));
+                AppendOctetsPercentEncoded(_requestUriString!, s_utf8Encoding.GetBytes(unicodeString));
 
                 return true;
             }
             catch (ArgumentOutOfRangeException)
             {
-                if (NetEventSource.IsEnabled)
+                if (NetEventSource.Log.IsEnabled())
                     NetEventSource.Error(this, SR.Format(SR.net_log_listener_cant_convert_percent_value, codePoint));
             }
             catch (EncoderFallbackException e)
             {
                 // If utf8Encoding.GetBytes() fails
-                if (NetEventSource.IsEnabled) NetEventSource.Error(this, SR.Format(SR.net_log_listener_cant_convert_to_utf8, unicodeString, e.Message));
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(this, SR.Format(SR.net_log_listener_cant_convert_to_utf8, unicodeString, e.Message));
             }
 
             return false;
@@ -275,23 +276,24 @@ namespace System.Net
             byte encodedValue;
             if (!byte.TryParse(escapedCharacter, NumberStyles.HexNumber, null, out encodedValue))
             {
-                if (NetEventSource.IsEnabled) NetEventSource.Error(this, SR.Format(SR.net_log_listener_cant_convert_percent_value, escapedCharacter));
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(this, SR.Format(SR.net_log_listener_cant_convert_percent_value, escapedCharacter));
                 return false;
             }
 
-            _rawOctets.Add(encodedValue);
+            Debug.Assert(_rawOctets != null);
+            _rawOctets!.Add(encodedValue);
 
             return true;
         }
 
         private bool EmptyDecodeAndAppendRawOctetsList(Encoding encoding)
         {
-            if (_rawOctets.Count == 0)
+            if (_rawOctets!.Count == 0)
             {
                 return true;
             }
 
-            string decodedString = null;
+            string? decodedString = null;
             try
             {
                 // If the encoding can get a string out of the byte array, this is a valid string in the
@@ -300,11 +302,11 @@ namespace System.Net
 
                 if (encoding == s_utf8Encoding)
                 {
-                    AppendOctetsPercentEncoded(_requestUriString, _rawOctets.ToArray());
+                    AppendOctetsPercentEncoded(_requestUriString!, _rawOctets.ToArray());
                 }
                 else
                 {
-                    AppendOctetsPercentEncoded(_requestUriString, s_utf8Encoding.GetBytes(decodedString));
+                    AppendOctetsPercentEncoded(_requestUriString!, s_utf8Encoding.GetBytes(decodedString));
                 }
 
                 _rawOctets.Clear();
@@ -313,12 +315,12 @@ namespace System.Net
             }
             catch (DecoderFallbackException e)
             {
-                if (NetEventSource.IsEnabled) NetEventSource.Error(this, SR.Format(SR.net_log_listener_cant_convert_bytes, GetOctetsAsString(_rawOctets), e.Message));
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(this, SR.Format(SR.net_log_listener_cant_convert_bytes, GetOctetsAsString(_rawOctets), e.Message));
             }
             catch (EncoderFallbackException e)
             {
                 // If utf8Encoding.GetBytes() fails
-                if (NetEventSource.IsEnabled) NetEventSource.Error(this, SR.Format(SR.net_log_listener_cant_convert_to_utf8, decodedString, e.Message));
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(this, SR.Format(SR.net_log_listener_cant_convert_to_utf8, decodedString, e.Message));
             }
 
             return false;

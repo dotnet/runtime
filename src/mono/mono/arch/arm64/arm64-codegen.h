@@ -867,4 +867,40 @@ arm_encode_arith_imm (int imm, guint32 *shift)
 #define arm_cmpp arm_cmpx
 #endif
 
+/* ARM v8.3 */
+
+/* PACIA */
+
+#define arm_format_pacia(p, crm, op2) arm_emit ((p), (0b11010101000000110010000000011111 << 0) | ((crm) << 8) | ((op2) << 5))
+#define arm_paciasp(p) arm_format_pacia ((p), 0b0011, 0b001)
+
+/* PACIB */
+
+#define arm_format_pacib(p, crm, op2) arm_emit ((p), (0b11010101000000110010000000011111 << 0) | ((crm) << 8) | ((op2) << 5))
+#define arm_pacibsp(p) arm_format_pacib ((p), 0b0011, 0b011)
+
+/* RETA */
+#define arm_format_reta(p,key) arm_emit ((p), 0b11010110010111110000101111111111 + ((key) << 10))
+
+#define arm_retaa(p) arm_format_reta ((p),0)
+#define arm_retab(p) arm_format_reta ((p),1)
+
+/* BRA */
+
+#define arm_format_bra(p, z, m, rn, rm) arm_emit ((p), (0b1101011000011111000010 << 10) + ((z) << 24) + ((m) << 10) + ((rn) << 5) + ((rm) << 0))
+
+#define arm_braaz(p, rn) arm_format_bra ((p), 0, 0, (rn), 0b11111)
+#define arm_brabz(p, rn) arm_format_bra ((p), 0, 1, (rn), 0b11111)
+#define arm_braa(p, rn, rm) arm_format_bra ((p), 1, 0, (rn), (rm))
+#define arm_brab(p, rn, rm) arm_format_bra ((p), 1, 1, (rn), (rm))
+
+/* BLRA */
+
+#define arm_format_blra(p, z, m, rn, rm) arm_emit ((p), (0b1101011000111111000010 << 10) + ((z) << 24) + ((m) << 10) + ((rn) << 5) + ((rm) << 0))
+
+#define arm_blraaz(p, rn) arm_format_blra ((p), 0, 0, (rn), 0b11111)
+#define arm_blraa(p, rn, rm) arm_format_blra ((p), 1, 0, (rn), (rm))
+#define arm_blrabz(p, rn) arm_format_blra ((p), 0, 1, (rn), 0b11111)
+#define arm_blrab(p, rn, rm) arm_format_blra ((p), 1, 1, (rn), (rm))
+
 #endif /* __arm_CODEGEN_H__ */

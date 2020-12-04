@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+  <PropertyGroup>
+    <DebugType>Embedded</DebugType>
+    <Optimize>True</Optimize>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="FixedRotate.Vector64.UInt32.cs" />
+    <Compile Include="HashUpdateChoose.Vector128.UInt32.cs" />
+    <Compile Include="HashUpdateMajority.Vector128.UInt32.cs" />
+    <Compile Include="HashUpdateParity.Vector128.UInt32.cs" />
+    <Compile Include="ScheduleUpdate0.Vector128.UInt32.cs" />
+    <Compile Include="ScheduleUpdate1.Vector128.UInt32.cs" />
+    <Compile Include="Program.Sha1.cs" />
+    <Compile Include="..\Shared\Helpers.cs" />
+    <Compile Include="..\Shared\Program.cs" />
+  </ItemGroup>
+</Project>

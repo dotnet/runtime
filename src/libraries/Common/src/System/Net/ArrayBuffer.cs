@@ -1,6 +1,5 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #nullable enable
 using System.Buffers;
@@ -50,7 +49,7 @@ namespace System.Net
 
                 if (array != null)
                 {
-                    ArrayPool<byte>.Shared.Return(array, true);
+                    ArrayPool<byte>.Shared.Return(array);
                 }
             }
         }
@@ -58,10 +57,12 @@ namespace System.Net
         public int ActiveLength => _availableStart - _activeStart;
         public Span<byte> ActiveSpan => new Span<byte>(_bytes, _activeStart, _availableStart - _activeStart);
         public ReadOnlySpan<byte> ActiveReadOnlySpan => new ReadOnlySpan<byte>(_bytes, _activeStart, _availableStart - _activeStart);
-        public int AvailableLength => _bytes.Length - _availableStart;
-        public Span<byte> AvailableSpan => new Span<byte>(_bytes, _availableStart, AvailableLength);
         public Memory<byte> ActiveMemory => new Memory<byte>(_bytes, _activeStart, _availableStart - _activeStart);
-        public Memory<byte> AvailableMemory => new Memory<byte>(_bytes, _availableStart, _bytes.Length - _availableStart);
+
+        public int AvailableLength => _bytes.Length - _availableStart;
+        public Span<byte> AvailableSpan => _bytes.AsSpan(_availableStart);
+        public Memory<byte> AvailableMemory => _bytes.AsMemory(_availableStart);
+        public Memory<byte> AvailableMemorySliced(int length) => new Memory<byte>(_bytes, _availableStart, length);
 
         public int Capacity => _bytes.Length;
 
@@ -130,6 +131,61 @@ namespace System.Net
             }
 
             Debug.Assert(byteCount <= AvailableLength);
+        }
+
+        // Ensure at least [byteCount] bytes to write to, up to the specified limit
+        public void TryEnsureAvailableSpaceUpToLimit(int byteCount, int limit)
+        {
+            if (byteCount <= AvailableLength)
+            {
+                return;
+            }
+
+            int totalFree = _activeStart + AvailableLength;
+            if (byteCount <= totalFree)
+            {
+                // We can free up enough space by just shifting the bytes down, so do so.
+                Buffer.BlockCopy(_bytes, _activeStart, _bytes, 0, ActiveLength);
+                _availableStart = ActiveLength;
+                _activeStart = 0;
+                Debug.Assert(byteCount <= AvailableLength);
+                return;
+            }
+
+            if (_bytes.Length >= limit)
+            {
+                // Already at limit, can't grow further.
+                return;
+            }
+
+            // Double the size of the buffer until we have enough space, or we hit the limit
+            int desiredSize = Math.Min(ActiveLength + byteCount, limit);
+            int newSize = _bytes.Length;
+            do
+            {
+                newSize = Math.Min(newSize * 2, limit);
+            } while (newSize < desiredSize);
+
+            byte[] newBytes = _usePool ?
+                ArrayPool<byte>.Shared.Rent(newSize) :
+                new byte[newSize];
+            byte[] oldBytes = _bytes;
+
+            if (ActiveLength != 0)
+            {
+                Buffer.BlockCopy(oldBytes, _activeStart, newBytes, 0, ActiveLength);
+            }
+
+            _availableStart = ActiveLength;
+            _activeStart = 0;
+
+            _bytes = newBytes;
+            if (_usePool)
+            {
+                ArrayPool<byte>.Shared.Return(oldBytes);
+            }
+
+            Debug.Assert(byteCount <= AvailableLength || desiredSize == limit);
         }
 
         public void Grow()

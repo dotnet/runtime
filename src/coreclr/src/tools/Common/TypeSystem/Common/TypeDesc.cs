@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Diagnostics;
@@ -14,32 +13,34 @@ namespace Internal.TypeSystem
     /// </summary>
     public abstract partial class TypeDesc : TypeSystemEntity
     {
+#pragma warning disable CA1825 // avoid Array.Empty<T>() instantiation for TypeLoader
         public static readonly TypeDesc[] EmptyTypes = new TypeDesc[0];
+#pragma warning restore CA1825
 
         /// Inherited types are required to override, and should use the algorithms
         /// in TypeHashingAlgorithms in their implementation.
         public abstract override int GetHashCode();
 
-        public override bool Equals(Object o)
+        public override bool Equals(object o)
         {
             // Its only valid to compare two TypeDescs in the same context
-            Debug.Assert(o == null || !(o is TypeDesc) || Object.ReferenceEquals(((TypeDesc)o).Context, this.Context));
-            return Object.ReferenceEquals(this, o);
+            Debug.Assert(o is not TypeDesc || object.ReferenceEquals(((TypeDesc)o).Context, this.Context));
+            return object.ReferenceEquals(this, o);
         }
 
 #if DEBUG
         public static bool operator ==(TypeDesc left, TypeDesc right)
         {
             // Its only valid to compare two TypeDescs in the same context
-            Debug.Assert(Object.ReferenceEquals(left, null) || Object.ReferenceEquals(right, null) || Object.ReferenceEquals(left.Context, right.Context));
-            return Object.ReferenceEquals(left, right);
+            Debug.Assert(left is null || right is null || object.ReferenceEquals(left.Context, right.Context));
+            return object.ReferenceEquals(left, right);
         }
 
         public static bool operator !=(TypeDesc left, TypeDesc right)
         {
             // Its only valid to compare two TypeDescs in the same context
-            Debug.Assert(Object.ReferenceEquals(left, null) || Object.ReferenceEquals(right, null) || Object.ReferenceEquals(left.Context, right.Context));
-            return !Object.ReferenceEquals(left, right);
+            Debug.Assert(left is null || right is null || object.ReferenceEquals(left.Context, right.Context));
+            return !object.ReferenceEquals(left, right);
         }
 #endif
 
@@ -188,13 +189,41 @@ namespace Internal.TypeSystem
 
         /// <summary>
         /// Gets a value indicating whether this is one of the primitive types (boolean, char, void,
-        /// a floating point, or an integer type).
+        /// a floating-point, or an integer type).
         /// </summary>
         public bool IsPrimitive
         {
             get
             {
                 return GetTypeFlags(TypeFlags.CategoryMask) < TypeFlags.ValueType;
+            }
+        }
+
+        /// <summary>
+        /// Gets a value indicating whether this is one of the primitive numeric types
+        /// (a floating-point or an integer type).
+        /// </summary>
+        public bool IsPrimitiveNumeric
+        {
+            get
+            {
+                switch (GetTypeFlags(TypeFlags.CategoryMask))
+                {
+                    case TypeFlags.SByte:
+                    case TypeFlags.Byte:
+                    case TypeFlags.Int16:
+                    case TypeFlags.UInt16:
+                    case TypeFlags.Int32:
+                    case TypeFlags.UInt32:
+                    case TypeFlags.Int64:
+                    case TypeFlags.UInt64:
+                    case TypeFlags.Single:
+                    case TypeFlags.Double:
+                        return true;
+
+                    default:
+                        return false;
+                }
             }
         }
 
@@ -485,14 +514,25 @@ namespace Internal.TypeSystem
         /// If signature is not specified and there are multiple matches, the first one
         /// is returned. Returns null if method not found.
         /// </summary>
-        // TODO: Substitutions, generics, modopts, ...
-        public virtual MethodDesc GetMethod(string name, MethodSignature signature)
+        public MethodDesc GetMethod(string name, MethodSignature signature)
+        {
+            return GetMethod(name, signature, default(Instantiation));
+        }
+
+        /// <summary>
+        /// Gets a named method on the type. This method only looks at methods defined
+        /// in type's metadata. The <paramref name="signature"/> parameter can be null.
+        /// If signature is not specified and there are multiple matches, the first one
+        /// is returned. If substitution is not null, then substitution will be applied to
+        /// possible target methods before signature comparison. Returns null if method not found.
+        /// </summary>
+        public virtual MethodDesc GetMethod(string name, MethodSignature signature, Instantiation substitution)
         {
             foreach (var method in GetMethods())
             {
                 if (method.Name == name)
                 {
-                    if (signature == null || signature.Equals(method.Signature))
+                    if (signature == null || signature.Equals(method.Signature.ApplySubstitution(substitution)))
                         return method;
                 }
             }
@@ -627,6 +667,17 @@ namespace Internal.TypeSystem
             get
             {
                 return (GetTypeFlags(TypeFlags.IsByRefLike | TypeFlags.AttributeCacheComputed) & TypeFlags.IsByRefLike) != 0;
+            }
+        }
+
+        /// <summary>
+        /// Gets a value indicating whether this type implements <code>IDynamicInterfaceCastable</code>
+        /// </summary>
+        public bool IsIDynamicInterfaceCastable
+        {
+            get
+            {
+                return (GetTypeFlags(TypeFlags.IsIDynamicInterfaceCastable | TypeFlags.IsIDynamicInterfaceCastableComputed) & TypeFlags.IsIDynamicInterfaceCastable) != 0;
             }
         }
     }

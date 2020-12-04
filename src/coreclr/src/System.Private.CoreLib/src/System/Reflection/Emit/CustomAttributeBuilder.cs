@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 /*============================================================
 **
@@ -14,91 +13,42 @@
 ===========================================================*/
 
 using System.Buffers.Binary;
+using System.Diagnostics;
 using System.IO;
 using System.Text;
-using System.Diagnostics;
 
 namespace System.Reflection.Emit
 {
     public class CustomAttributeBuilder
     {
+        internal ConstructorInfo m_con;
+        private object?[] m_constructorArgs;
+        private byte[] m_blob;
+
         // public constructor to form the custom attribute with constructor and constructor
         // parameters.
-        public CustomAttributeBuilder(ConstructorInfo con, object?[] constructorArgs)
+        public CustomAttributeBuilder(ConstructorInfo con, object?[] constructorArgs) :
+            this(con, constructorArgs, Array.Empty<PropertyInfo>(), Array.Empty<object>(), Array.Empty<FieldInfo>(), Array.Empty<object>())
         {
-            InitCustomAttributeBuilder(con, constructorArgs,
-                                       Array.Empty<PropertyInfo>(), Array.Empty<object>(),
-                                       Array.Empty<FieldInfo>(), Array.Empty<object>());
         }
 
         // public constructor to form the custom attribute with constructor, constructor
         // parameters and named properties.
-        public CustomAttributeBuilder(ConstructorInfo con, object?[] constructorArgs,
-                                      PropertyInfo[] namedProperties, object[] propertyValues)
+        public CustomAttributeBuilder(ConstructorInfo con, object?[] constructorArgs, PropertyInfo[] namedProperties, object?[] propertyValues) :
+            this(con, constructorArgs, namedProperties, propertyValues, Array.Empty<FieldInfo>(), Array.Empty<object>())
         {
-            InitCustomAttributeBuilder(con, constructorArgs, namedProperties,
-                                       propertyValues, Array.Empty<FieldInfo>(), Array.Empty<object>());
         }
 
         // public constructor to form the custom attribute with constructor and constructor
         // parameters.
-        public CustomAttributeBuilder(ConstructorInfo con, object?[] constructorArgs,
-                                      FieldInfo[] namedFields, object[] fieldValues)
+        public CustomAttributeBuilder(ConstructorInfo con, object?[] constructorArgs, FieldInfo[] namedFields, object?[] fieldValues) :
+            this(con, constructorArgs, Array.Empty<PropertyInfo>(), Array.Empty<object>(), namedFields, fieldValues)
         {
-            InitCustomAttributeBuilder(con, constructorArgs, Array.Empty<PropertyInfo>(),
-                                       Array.Empty<object>(), namedFields, fieldValues);
         }
 
         // public constructor to form the custom attribute with constructor and constructor
         // parameters.
-        public CustomAttributeBuilder(ConstructorInfo con, object?[] constructorArgs,
-                                      PropertyInfo[] namedProperties, object[] propertyValues,
-                                      FieldInfo[] namedFields, object[] fieldValues)
-        {
-            InitCustomAttributeBuilder(con, constructorArgs, namedProperties,
-                                       propertyValues, namedFields, fieldValues);
-        }
-
-        // Check that a type is suitable for use in a custom attribute.
-        private bool ValidateType(Type t)
-        {
-            if (t.IsPrimitive)
-            {
-                return t != typeof(IntPtr) && t != typeof(UIntPtr);
-            }
-            if (t == typeof(string) || t == typeof(Type))
-            {
-                return true;
-            }
-            if (t.IsEnum)
-            {
-                switch (Type.GetTypeCode(Enum.GetUnderlyingType(t)))
-                {
-                    case TypeCode.SByte:
-                    case TypeCode.Byte:
-                    case TypeCode.Int16:
-                    case TypeCode.UInt16:
-                    case TypeCode.Int32:
-                    case TypeCode.UInt32:
-                    case TypeCode.Int64:
-                    case TypeCode.UInt64:
-                        return true;
-                    default:
-                        return false;
-                }
-            }
-            if (t.IsArray)
-            {
-                if (t.GetArrayRank() != 1)
-                    return false;
-                return ValidateType(t.GetElementType()!);
-            }
-            return t == typeof(object);
-        }
-
-        internal void InitCustomAttributeBuilder(ConstructorInfo con, object?[] constructorArgs,
-                                                 PropertyInfo[] namedProperties, object[] propertyValues,
-                                                 FieldInfo[] namedFields, object[] fieldValues)
+        public CustomAttributeBuilder(ConstructorInfo con, object?[] constructorArgs, PropertyInfo[] namedProperties, object?[] propertyValues, FieldInfo[] namedFields, object?[] fieldValues)
         {
             if (con == null)
                 throw new ArgumentNullException(nameof(con));
@@ -112,10 +62,12 @@ namespace System.Reflection.Emit
                 throw new ArgumentNullException(nameof(namedFields));
             if (fieldValues == null)
                 throw new ArgumentNullException(nameof(fieldValues));
+#pragma warning disable CA2208 // Instantiate argument exceptions correctly, combination of arguments used
             if (namedProperties.Length != propertyValues.Length)
                 throw new ArgumentException(SR.Arg_ArrayLengthsDiffer, "namedProperties, propertyValues");
             if (namedFields.Length != fieldValues.Length)
                 throw new ArgumentException(SR.Arg_ArrayLengthsDiffer, "namedFields, fieldValues");
+#pragma warning restore CA2208
 
             if ((con.Attributes & MethodAttributes.Static) == MethodAttributes.Static ||
                 (con.Attributes & MethodAttributes.MemberAccessMask) == MethodAttributes.Private)
@@ -183,7 +135,7 @@ namespace System.Reflection.Emit
 
                 // Allow null for non-primitive types only.
                 Type propType = property.PropertyType;
-                object propertyValue = propertyValues[i];
+                object? propertyValue = propertyValues[i];
                 if (propertyValue == null && propType.IsValueType)
                     throw new ArgumentNullException("propertyValues[" + i + "]");
 
@@ -216,7 +168,7 @@ namespace System.Reflection.Emit
                 }
 
                 // Make sure the property's type can take the given value.
-                // Note that there will be no coersion.
+                // Note that there will be no coercion.
                 if (propertyValue != null)
                 {
                     VerifyTypeAndPassedObjectType(propType, propertyValue.GetType(), $"{nameof(propertyValues)}[{i}]");
@@ -241,7 +193,7 @@ namespace System.Reflection.Emit
 
                 // Allow null for non-primitive types only.
                 Type fldType = namedField.FieldType;
-                object fieldValue = fieldValues[i];
+                object? fieldValue = fieldValues[i];
                 if (fieldValue == null && fldType.IsValueType)
                     throw new ArgumentNullException("fieldValues[" + i + "]");
 
@@ -270,7 +222,7 @@ namespace System.Reflection.Emit
                 }
 
                 // Make sure the field's type can take the given value.
-                // Note that there will be no coersion.
+                // Note that there will be no coercion.
                 if (fieldValue != null)
                 {
                     VerifyTypeAndPassedObjectType(fldType, fieldValue.GetType(), $"{nameof(fieldValues)}[{i}]");
@@ -287,6 +239,41 @@ namespace System.Reflection.Emit
 
             // Create the blob array.
             m_blob = ((MemoryStream)writer.BaseStream).ToArray();
+        }
+
+        // Check that a type is suitable for use in a custom attribute.
+        private bool ValidateType(Type t)
+        {
+            if (t.IsPrimitive)
+            {
+                return t != typeof(IntPtr) && t != typeof(UIntPtr);
+            }
+            if (t == typeof(string) || t == typeof(Type))
+            {
+                return true;
+            }
+            if (t.IsEnum)
+            {
+                switch (Type.GetTypeCode(Enum.GetUnderlyingType(t)))
+                {
+                    case TypeCode.SByte:
+                    case TypeCode.Byte:
+                    case TypeCode.Int16:
+                    case TypeCode.UInt16:
+                    case TypeCode.Int32:
+                    case TypeCode.UInt32:
+                    case TypeCode.Int64:
+                    case TypeCode.UInt64:
+                        return true;
+                    default:
+                        return false;
+                }
+            }
+            if (t.IsArray)
+            {
+                return t.GetArrayRank() == 1 && ValidateType(t.GetElementType()!);
+            }
+            return t == typeof(object);
         }
 
         private static void VerifyTypeAndPassedObjectType(Type type, Type passedType, string paramName)
@@ -538,7 +525,7 @@ namespace System.Reflection.Emit
         // return the byte interpretation of the custom attribute
         internal void CreateCustomAttribute(ModuleBuilder mod, int tkOwner)
         {
-            CreateCustomAttribute(mod, tkOwner, mod.GetConstructorToken(m_con).Token, false);
+            CreateCustomAttribute(mod, tkOwner, mod.GetConstructorToken(m_con), false);
         }
 
         /// <summary>
@@ -549,9 +536,5 @@ namespace System.Reflection.Emit
             TypeBuilder.DefineCustomAttribute(mod, tkOwner, tkAttrib, m_blob, toDisk,
                                                       typeof(System.Diagnostics.DebuggableAttribute) == m_con.DeclaringType);
         }
-
-        internal ConstructorInfo m_con = null!;
-        internal object?[] m_constructorArgs = null!;
-        internal byte[] m_blob = null!;
     }
 }

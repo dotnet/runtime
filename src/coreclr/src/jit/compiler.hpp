@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 /*XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
@@ -693,20 +692,26 @@ inline bool isRegParamType(var_types type)
 //    isVarArg  - whether or not this is a vararg fixed arg or variable argument
 //              - if so on arm64 windows getArgTypeForStruct will ignore HFA
 //              - types
+//    callConv  - the calling convention of the call
 //
-inline bool Compiler::VarTypeIsMultiByteAndCanEnreg(
-    var_types type, CORINFO_CLASS_HANDLE typeClass, unsigned* typeSize, bool forReturn, bool isVarArg)
+inline bool Compiler::VarTypeIsMultiByteAndCanEnreg(var_types                type,
+                                                    CORINFO_CLASS_HANDLE     typeClass,
+                                                    unsigned*                typeSize,
+                                                    bool                     forReturn,
+                                                    bool                     isVarArg,
+                                                    CorInfoCallConvExtension callConv)
 {
     bool     result = false;
     unsigned size   = 0;
 
     if (varTypeIsStruct(type))
     {
+        assert(typeClass != nullptr);
         size = info.compCompHnd->getClassSize(typeClass);
         if (forReturn)
         {
             structPassingKind howToReturnStruct;
-            type = getReturnTypeForStruct(typeClass, &howToReturnStruct, size);
+            type = getReturnTypeForStruct(typeClass, callConv, &howToReturnStruct, size);
         }
         else
         {
@@ -856,7 +861,7 @@ inline unsigned int genCSEnum2bit(unsigned index)
 
 #ifdef DEBUG
 const char* genES2str(BitVecTraits* traits, EXPSET_TP set);
-const char* refCntWtd2str(unsigned refCntWtd);
+const char* refCntWtd2str(BasicBlock::weight_t refCntWtd);
 #endif
 
 /*
@@ -969,9 +974,11 @@ inline GenTree* Compiler::gtNewOperNode(genTreeOps oper, var_types type, GenTree
             // IND(ADDR(IND(x)) == IND(x)
             if (op1->gtOper == GT_ADDR)
             {
-                if (op1->AsOp()->gtOp1->gtOper == GT_IND && (op1->AsOp()->gtOp1->gtFlags & GTF_IND_ARR_INDEX) == 0)
+                GenTreeUnOp* addr  = op1->AsUnOp();
+                GenTree*     indir = addr->gtGetOp1();
+                if (indir->OperIs(GT_IND) && ((indir->gtFlags & GTF_IND_ARR_INDEX) == 0))
                 {
-                    op1 = op1->AsOp()->gtOp1->AsOp()->gtOp1;
+                    op1 = indir->AsIndir()->Addr();
                 }
             }
         }
@@ -981,6 +988,11 @@ inline GenTree* Compiler::gtNewOperNode(genTreeOps oper, var_types type, GenTree
             if (op1->gtOper == GT_IND && (op1->gtFlags & GTF_IND_ARR_INDEX) == 0)
             {
                 return op1->AsOp()->gtOp1;
+            }
+            else
+            {
+                // Addr source can't be CSE-ed.
+                op1->SetDoNotCSE();
             }
         }
     }
@@ -1123,6 +1135,28 @@ inline GenTreeCall* Compiler::gtNewHelperCallNode(unsigned helper, var_types typ
 #endif
 
     return result;
+}
+
+//------------------------------------------------------------------------------
+// gtNewRuntimeLookupHelperCallNode : Helper to create a runtime lookup call helper node.
+//
+//
+// Arguments:
+//    helper    - Call helper
+//    type      - Type of the node
+//    args      - Call args
+//
+// Return Value:
+//    New CT_HELPER node
+
+inline GenTreeCall* Compiler::gtNewRuntimeLookupHelperCallNode(CORINFO_RUNTIME_LOOKUP* pRuntimeLookup,
+                                                               GenTree*                ctxTree,
+                                                               void*                   compileTimeHandle)
+{
+    GenTree* argNode = gtNewIconEmbHndNode(pRuntimeLookup->signature, nullptr, GTF_ICON_GLOBAL_PTR, compileTimeHandle);
+    GenTreeCall::Use* helperArgs = gtNewCallArgs(ctxTree, argNode);
+
+    return gtNewHelperCallNode(pRuntimeLookup->helper, TYP_I_IMPL, helperArgs);
 }
 
 //------------------------------------------------------------------------
@@ -1272,6 +1306,7 @@ inline GenTree* Compiler::gtNewIndir(var_types typ, GenTree* addr)
 
 inline GenTree* Compiler::gtNewNullCheck(GenTree* addr, BasicBlock* basicBlock)
 {
+    assert(fgAddrCouldBeNull(addr));
     GenTree* nullCheck = gtNewOperNode(GT_NULLCHECK, TYP_BYTE, addr);
     nullCheck->gtFlags |= GTF_EXCEPT;
     basicBlock->bbFlags |= BBF_HAS_NULLCHECK;
@@ -1778,8 +1813,11 @@ inline void LclVarDsc::incRefCnts(BasicBlock::weight_t weight, Compiler* comp, R
     //
     // Increment counts on the local itself.
     //
-    if (lvType != TYP_STRUCT || promotionType != Compiler::PROMOTION_TYPE_INDEPENDENT)
+    if ((lvType != TYP_STRUCT) || (promotionType != Compiler::PROMOTION_TYPE_INDEPENDENT))
     {
+        // We increment ref counts of this local for primitive types, including structs that have been retyped as their
+        // only field, as well as for structs whose fields are not independently promoted.
+
         //
         // Increment lvRefCnt
         //
@@ -1808,15 +1846,9 @@ inline void LclVarDsc::incRefCnts(BasicBlock::weight_t weight, Compiler* comp, R
                 weight *= 2;
             }
 
-            unsigned newWeight = lvRefCntWtd(state) + weight;
-            if (newWeight >= lvRefCntWtd(state))
-            { // lvRefCntWtd is an "unsigned".  Don't overflow it
-                setLvRefCntWtd(newWeight, state);
-            }
-            else
-            { // On overflow we assign UINT32_MAX
-                setLvRefCntWtd(UINT32_MAX, state);
-            }
+            BasicBlock::weight_t newWeight = lvRefCntWtd(state) + weight;
+            assert(newWeight >= lvRefCntWtd(state));
+            setLvRefCntWtd(newWeight, state);
         }
     }
 
@@ -1931,9 +1963,9 @@ inline bool Compiler::lvaKeepAliveAndReportThis()
         if (opts.compDbgCode)
             return true;
 
-        if (lvaGenericsContextUseCount > 0)
+        if (lvaGenericsContextInUse)
         {
-            JITDUMP("Reporting this as generic context: %u refs\n", lvaGenericsContextUseCount);
+            JITDUMP("Reporting this as generic context\n");
             return true;
         }
     }
@@ -1944,14 +1976,11 @@ inline bool Compiler::lvaKeepAliveAndReportThis()
     // because collectible types need the generics context when gc-ing.
     if (genericsContextIsThis)
     {
-        const bool isUsed   = lvaGenericsContextUseCount > 0;
         const bool mustKeep = (info.compMethodInfo->options & CORINFO_GENERICS_CTXT_KEEP_ALIVE) != 0;
 
-        if (isUsed || mustKeep)
+        if (lvaGenericsContextInUse || mustKeep)
         {
-            JITDUMP("Reporting this as generic context: %u refs%s\n", lvaGenericsContextUseCount,
-                    mustKeep ? ", must keep" : "");
-
+            JITDUMP("Reporting this as generic context: %s\n", mustKeep ? "must keep" : "referenced");
             return true;
         }
     }
@@ -1979,7 +2008,7 @@ inline bool Compiler::lvaReportParamTypeArg()
 
         // Otherwise, if an exact type parameter is needed in the body, report the generics context.
         // We do this because collectible types needs the generics context when gc-ing.
-        if (lvaGenericsContextUseCount > 0)
+        if (lvaGenericsContextInUse)
         {
             return true;
         }
@@ -2088,7 +2117,7 @@ inline
         }
 #endif // DEBUG
 
-        varOffset = varDsc->lvStkOffs;
+        varOffset = varDsc->GetStackOffset();
     }
     else // Its a spill-temp
     {
@@ -3140,6 +3169,7 @@ inline regMaskTP genIntAllRegArgMask(unsigned numRegs)
 
 inline regMaskTP genFltAllRegArgMask(unsigned numRegs)
 {
+#ifndef TARGET_X86
     assert(numRegs <= MAX_FLOAT_REG_ARG);
 
     regMaskTP result = RBM_NONE;
@@ -3148,6 +3178,10 @@ inline regMaskTP genFltAllRegArgMask(unsigned numRegs)
         result |= fltArgMasks[i];
     }
     return result;
+#else
+    assert(!"no x86 float arg regs\n");
+    return RBM_NONE;
+#endif
 }
 
 /*
@@ -3577,11 +3611,11 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 
 // are we compiling for fast code, or are we compiling for blended code and
 // inside a loop?
-// We return true for BLENDED_CODE if the Block executes more than BB_LOOP_WEIGHT/2
+// We return true for BLENDED_CODE if the Block executes more than BB_LOOP_WEIGHT_SCALE/2
 inline bool Compiler::optFastCodeOrBlendedLoop(BasicBlock::weight_t bbWeight)
 {
     return (compCodeOpt() == FAST_CODE) ||
-           ((compCodeOpt() == BLENDED_CODE) && (bbWeight > (BB_LOOP_WEIGHT / 2 * BB_UNITY_WEIGHT)));
+           ((compCodeOpt() == BLENDED_CODE) && (bbWeight > ((BB_LOOP_WEIGHT_SCALE / 2) * BB_UNITY_WEIGHT)));
 }
 
 // are we running on a Intel Pentium 4?
@@ -3833,10 +3867,21 @@ inline GenTree* Compiler::impCheckForNullPointer(GenTree* obj)
     {
         assert(obj->gtType == TYP_REF || obj->gtType == TYP_BYREF);
 
-        // We can see non-zero byrefs for RVA statics.
+        // We can see non-zero byrefs for RVA statics or for frozen strings.
         if (obj->AsIntCon()->gtIconVal != 0)
         {
-            assert(obj->gtType == TYP_BYREF);
+#ifdef DEBUG
+            if (!obj->TypeIs(TYP_BYREF))
+            {
+                assert(obj->TypeIs(TYP_REF));
+                assert(obj->IsIconHandle(GTF_ICON_STR_HDL));
+                if (!doesMethodHaveFrozenString())
+                {
+                    assert(compIsForInlining());
+                    assert(impInlineInfo->InlinerCompiler->doesMethodHaveFrozenString());
+                }
+            }
+#endif // DEBUG
             return obj;
         }
 
@@ -4116,10 +4161,38 @@ inline void Compiler::CLR_API_Leave(API_ICorJitInfo_Names ename)
 #endif // MEASURE_CLRAPI_CALLS
 
 //------------------------------------------------------------------------------
+// fgVarIsNeverZeroInitializedInProlog : Check whether the variable is never zero initialized in the prolog.
+//
+// Arguments:
+//    varNum     -       local variable number
+//
+// Returns:
+//             true if this is a special variable that is never zero initialized in the prolog;
+//             false otherwise
+//
+
+bool Compiler::fgVarIsNeverZeroInitializedInProlog(unsigned varNum)
+{
+    LclVarDsc* varDsc = lvaGetDesc(varNum);
+    bool result = varDsc->lvIsParam || lvaIsOSRLocal(varNum) || (opts.IsOSR() && (varNum == lvaGSSecurityCookie)) ||
+                  (varNum == lvaInlinedPInvokeFrameVar) || (varNum == lvaStubArgumentVar) || (varNum == lvaRetAddrVar);
+
+#if FEATURE_FIXED_OUT_ARGS
+    result = result || (varNum == lvaPInvokeFrameRegSaveVar) || (varNum == lvaOutgoingArgSpaceVar);
+#endif
+
+#if defined(FEATURE_EH_FUNCLETS)
+    result = result || (varNum == lvaPSPSym);
+#endif
+
+    return result;
+}
+
+//------------------------------------------------------------------------------
 // fgVarNeedsExplicitZeroInit : Check whether the variable needs an explicit zero initialization.
 //
 // Arguments:
-//    varDsc     -       local var description
+//    varNum     -       local var number
 //    bbInALoop  -       true if the basic block may be in a loop
 //    bbIsReturn -       true if the basic block always returns
 //
@@ -4135,9 +4208,23 @@ inline void Compiler::CLR_API_Leave(API_ICorJitInfo_Names ename)
 //      - compInitMem is set and the variable has a long lifetime or has gc fields.
 //     In these cases we will insert zero-initialization in the prolog if necessary.
 
-bool Compiler::fgVarNeedsExplicitZeroInit(LclVarDsc* varDsc, bool bbInALoop, bool bbIsReturn)
+bool Compiler::fgVarNeedsExplicitZeroInit(unsigned varNum, bool bbInALoop, bool bbIsReturn)
 {
+    LclVarDsc* varDsc = lvaGetDesc(varNum);
+
+    if (lvaIsFieldOfDependentlyPromotedStruct(varDsc))
+    {
+        // Fields of dependently promoted structs may only be initialized in the prolog when the whole
+        // struct is initialized in the prolog.
+        return fgVarNeedsExplicitZeroInit(varDsc->lvParentLcl, bbInALoop, bbIsReturn);
+    }
+
     if (bbInALoop && !bbIsReturn)
+    {
+        return true;
+    }
+
+    if (fgVarIsNeverZeroInitializedInProlog(varNum))
     {
         return true;
     }
@@ -4271,7 +4358,7 @@ void GenTree::VisitOperands(TVisitor visitor)
             {
                 return;
             }
-            __fallthrough;
+            FALLTHROUGH;
 
         // Standard unary operators
         case GT_STORE_LCL_VAR:
@@ -4299,6 +4386,7 @@ void GenTree::VisitOperands(TVisitor visitor)
         case GT_NULLCHECK:
         case GT_PUTARG_REG:
         case GT_PUTARG_STK:
+        case GT_PUTARG_TYPE:
 #if FEATURE_ARG_SPLIT
         case GT_PUTARG_SPLIT:
 #endif // FEATURE_ARG_SPLIT
@@ -4603,6 +4691,11 @@ inline static bool StructHasOverlappingFields(DWORD attribs)
 inline static bool StructHasCustomLayout(DWORD attribs)
 {
     return ((attribs & CORINFO_FLG_CUSTOMLAYOUT) != 0);
+}
+
+inline static bool StructHasNoPromotionFlagSet(DWORD attribs)
+{
+    return ((attribs & CORINFO_FLG_DONT_PROMOTE) != 0);
 }
 
 /*****************************************************************************

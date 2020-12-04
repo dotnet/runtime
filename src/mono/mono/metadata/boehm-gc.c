@@ -289,6 +289,18 @@ mono_gc_collection_count (int generation)
 	return GC_get_gc_no ();
 }
 
+void
+mono_gc_stop_world ()
+{
+	g_assert ("mono_gc_stop_world is not supported in Boehm");
+}
+
+void
+mono_gc_restart_world ()
+{
+	g_assert ("mono_gc_restart_world is not supported in Boehm");
+}
+
 /**
  * mono_gc_add_memory_pressure:
  * \param value amount of bytes
@@ -719,6 +731,12 @@ mono_gc_alloc_obj (MonoVTable *vtable, size_t size)
 		MONO_PROFILER_RAISE (gc_allocation, (obj));
 
 	return obj;
+}
+
+MonoArray*
+mono_gc_alloc_pinned_vector (MonoVTable *vtable, size_t size, uintptr_t max_length)
+{
+	return mono_gc_alloc_vector (vtable, size, max_length);
 }
 
 MonoArray*
@@ -1456,7 +1474,7 @@ alloc_handle (HandleData *handles, MonoObject *obj, gboolean track)
 MonoGCHandle
 mono_gchandle_new_internal (MonoObject *obj, gboolean pinned)
 {
-	return (MonoGCHandle)(size_t)alloc_handle (&gc_handles [pinned? HANDLE_PINNED: HANDLE_NORMAL], obj, FALSE);
+	return MONO_GC_HANDLE_FROM_UINT(alloc_handle (&gc_handles [pinned? HANDLE_PINNED: HANDLE_NORMAL], obj, FALSE));
 }
 
 /**

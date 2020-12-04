@@ -324,6 +324,9 @@ typedef struct ucontext {
 #endif
 
 #if defined(__linux__)
+
+/* don't rely on glibc to include this for us, musl won't */
+#include <asm/ptrace.h>
 	typedef ucontext_t os_ucontext;
 
 #ifdef __mono_ppc64__
@@ -472,7 +475,7 @@ typedef struct ucontext {
 	#define UCONTEXT_REG_SP(ctx) (((ucontext_t*)(ctx))->uc_mcontext.mc_gpregs.gp_sp)
 	#define UCONTEXT_REG_R0(ctx) (((ucontext_t*)(ctx))->uc_mcontext.mc_gpregs.gp_x [ARMREG_R0])
 	#define UCONTEXT_GREGS(ctx) (&(((ucontext_t*)(ctx))->uc_mcontext.mc_gpregs.gp_x))
-#else
+#elif !defined(HOST_WIN32)
 #include <ucontext.h>
 	#define UCONTEXT_REG_PC(ctx) (((ucontext_t*)(ctx))->uc_mcontext.pc)
 	#define UCONTEXT_REG_SP(ctx) (((ucontext_t*)(ctx))->uc_mcontext.sp)
@@ -535,8 +538,12 @@ typedef struct ucontext
 #  include <ucontext.h>
 # endif
 
-# define UCONTEXT_GREGS(ctx)	(((ucontext_t *)(ctx))->uc_mcontext.gregs)
-# define UCONTEXT_FREGS(ctx)    (((ucontext_t *)(ctx))->uc_mcontext.fpregs->fprs)
+# define UCONTEXT_GREGS(ctx)	 (((ucontext_t *)(ctx))->uc_mcontext.gregs)
+# define UCONTEXT_FREGS(ctx)     (((ucontext_t *)(ctx))->uc_mcontext.fpregs->fprs)
+# define UCONTEXT_REG_Rn(ctx, n) (((ucontext_t *)(ctx))->uc_mcontext.gregs[(n)])
+# define UCONTEXT_SP(ctx)        (((ucontext_t *)(ctx))->uc_stack.ss_sp)
+# define UCONTEXT_IP(ctx)         (((ucontext_t *)(ctx))->uc_mcontext.psw.addr)
+
 #endif
 
 #elif defined (TARGET_RISCV)

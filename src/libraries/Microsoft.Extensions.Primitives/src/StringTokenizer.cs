@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections;
@@ -48,7 +47,7 @@ namespace Microsoft.Extensions.Primitives
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.value);
             }
-            
+
             if (separators == null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.separators);
@@ -102,7 +101,7 @@ namespace Microsoft.Extensions.Primitives
                     return false;
                 }
 
-                var next = _value.IndexOfAny(_separators, _index);
+                int next = _value.IndexOfAny(_separators, _index);
                 if (next == -1)
                 {
                     // No separator found. Consume the remainder of the string.

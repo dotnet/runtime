@@ -1,6 +1,5 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -20,48 +19,124 @@ namespace System.Text.Json
         private static readonly Dictionary<Type, JsonConverter> s_defaultSimpleConverters = GetDefaultSimpleConverters();
 
         // The global list of built-in converters that override CanConvert().
-        private static readonly List<JsonConverter> s_defaultFactoryConverters = GetDefaultConverters();
+        private static readonly JsonConverter[] s_defaultFactoryConverters = new JsonConverter[]
+        {
+            // Check for disallowed types.
+            new DisallowedTypeConverterFactory(),
+            // Nullable converter should always be next since it forwards to any nullable type.
+            new NullableConverterFactory(),
+            new EnumConverterFactory(),
+            // IEnumerable should always be second to last since they can convert any IEnumerable.
+            new IEnumerableConverterFactory(),
+            // Object should always be last since it converts any type.
+            new ObjectConverterFactory()
+        };
 
         // The cached converters (custom or built-in).
         private readonly ConcurrentDictionary<Type, JsonConverter?> _converters = new ConcurrentDictionary<Type, JsonConverter?>();
 
         private static Dictionary<Type, JsonConverter> GetDefaultSimpleConverters()
         {
+            const int NumberOfSimpleConverters = 23;
             var converters = new Dictionary<Type, JsonConverter>(NumberOfSimpleConverters);
 
             // Use a dictionary for simple converters.
-            foreach (JsonConverter converter in DefaultSimpleConverters)
-            {
-                converters.Add(converter.TypeToConvert!, converter);
-            }
+            // When adding to this, update NumberOfSimpleConverters above.
+            Add(new BooleanConverter());
+            Add(new ByteConverter());
+            Add(new ByteArrayConverter());
+            Add(new CharConverter());
+            Add(new DateTimeConverter());
+            Add(new DateTimeOffsetConverter());
+            Add(new DoubleConverter());
+            Add(new DecimalConverter());
+            Add(new GuidConverter());
+            Add(new Int16Converter());
+            Add(new Int32Converter());
+            Add(new Int64Converter());
+            Add(new JsonElementConverter());
+            Add(new JsonDocumentConverter());
+            Add(new ObjectConverter());
+            Add(new SByteConverter());
+            Add(new SingleConverter());
+            Add(new StringConverter());
+            Add(new UInt16Converter());
+            Add(new UInt32Converter());
+            Add(new UInt64Converter());
+            Add(new UriConverter());
+            Add(new VersionConverter());
 
             Debug.Assert(NumberOfSimpleConverters == converters.Count);
 
             return converters;
+
+            void Add(JsonConverter converter) =>
+                converters.Add(converter.TypeToConvert, converter);
         }
 
-        // Get the list for converters that implement CanConvert().
-        private static List<JsonConverter> GetDefaultConverters()
+        internal JsonConverter GetDictionaryKeyConverter(Type keyType)
         {
-            const int NumberOfConverters = 5;
+            _dictionaryKeyConverters ??= GetDictionaryKeyConverters();
 
-            var converters = new List<JsonConverter>(NumberOfConverters);
+            if (!_dictionaryKeyConverters.TryGetValue(keyType, out JsonConverter? converter))
+            {
+                if (keyType.IsEnum)
+                {
+                    converter = GetEnumConverter();
+                    _dictionaryKeyConverters[keyType] = converter;
+                }
+                else
+                {
+                    ThrowHelper.ThrowNotSupportedException_DictionaryKeyTypeNotSupported(keyType);
+                }
+            }
 
-            // Nullable converter should always be first since it forwards to any nullable type.
-            converters.Add(new NullableConverterFactory());
+            return converter!;
 
-            converters.Add(new EnumConverterFactory());
-            converters.Add(new KeyValuePairConverterFactory());
+            // Use factory pattern to generate an EnumConverter with AllowStrings and AllowNumbers options for dictionary keys.
+            // There will be one converter created for each enum type.
+            JsonConverter GetEnumConverter()
+                => (JsonConverter)Activator.CreateInstance(
+                        typeof(EnumConverter<>).MakeGenericType(keyType),
+                        BindingFlags.Instance | BindingFlags.Public,
+                        binder: null,
+                        new object[] { EnumConverterOptions.AllowStrings | EnumConverterOptions.AllowNumbers, this },
+                        culture: null)!;
+        }
 
-            // IEnumerable should always be last since they can convert any IEnumerable.
-            converters.Add(new IEnumerableConverterFactory());
+        private ConcurrentDictionary<Type, JsonConverter>? _dictionaryKeyConverters;
 
-            // Object should always be last since it converts any type.
-            converters.Add(new ObjectConverterFactory());
+        private static ConcurrentDictionary<Type, JsonConverter> GetDictionaryKeyConverters()
+        {
+            const int NumberOfConverters = 18;
+            var converters = new ConcurrentDictionary<Type, JsonConverter>(Environment.ProcessorCount, NumberOfConverters);
+
+            // When adding to this, update NumberOfConverters above.
+            Add(s_defaultSimpleConverters[typeof(bool)]);
+            Add(s_defaultSimpleConverters[typeof(byte)]);
+            Add(s_defaultSimpleConverters[typeof(char)]);
+            Add(s_defaultSimpleConverters[typeof(DateTime)]);
+            Add(s_defaultSimpleConverters[typeof(DateTimeOffset)]);
+            Add(s_defaultSimpleConverters[typeof(double)]);
+            Add(s_defaultSimpleConverters[typeof(decimal)]);
+            Add(s_defaultSimpleConverters[typeof(Guid)]);
+            Add(s_defaultSimpleConverters[typeof(short)]);
+            Add(s_defaultSimpleConverters[typeof(int)]);
+            Add(s_defaultSimpleConverters[typeof(long)]);
+            Add(s_defaultSimpleConverters[typeof(object)]);
+            Add(s_defaultSimpleConverters[typeof(sbyte)]);
+            Add(s_defaultSimpleConverters[typeof(float)]);
+            Add(s_defaultSimpleConverters[typeof(string)]);
+            Add(s_defaultSimpleConverters[typeof(ushort)]);
+            Add(s_defaultSimpleConverters[typeof(uint)]);
+            Add(s_defaultSimpleConverters[typeof(ulong)]);
 
             Debug.Assert(NumberOfConverters == converters.Count);
 
             return converters;
+
+            void Add(JsonConverter converter) =>
+                converters[converter.TypeToConvert] = converter;
         }
 
         /// <summary>
@@ -72,21 +147,21 @@ namespace System.Text.Json
         /// </remarks>
         public IList<JsonConverter> Converters { get; }
 
-        internal JsonConverter DetermineConverter(Type? parentClassType, Type runtimePropertyType, PropertyInfo? propertyInfo)
+        internal JsonConverter DetermineConverter(Type? parentClassType, Type runtimePropertyType, MemberInfo? memberInfo)
         {
             JsonConverter converter = null!;
 
             // Priority 1: attempt to get converter from JsonConverterAttribute on property.
-            if (propertyInfo != null)
+            if (memberInfo != null)
             {
                 Debug.Assert(parentClassType != null);
 
                 JsonConverterAttribute? converterAttribute = (JsonConverterAttribute?)
-                    GetAttributeThatCanHaveMultiple(parentClassType!, typeof(JsonConverterAttribute), propertyInfo);
+                    GetAttributeThatCanHaveMultiple(parentClassType!, typeof(JsonConverterAttribute), memberInfo);
 
                 if (converterAttribute != null)
                 {
-                    converter = GetConverterFromAttribute(converterAttribute, typeToConvert: runtimePropertyType, classTypeAttributeIsOn: parentClassType!, propertyInfo);
+                    converter = GetConverterFromAttribute(converterAttribute, typeToConvert: runtimePropertyType, classTypeAttributeIsOn: parentClassType!, memberInfo);
                 }
             }
 
@@ -102,6 +177,18 @@ namespace System.Text.Json
 
                 // A factory cannot return null; GetConverterInternal checked for that.
                 Debug.Assert(converter != null);
+            }
+
+            // User indicated that non-nullable-struct-handling converter should handle a nullable struct type.
+            // The serializer would have picked that converter up by default and wrapped it in NullableConverter<T>;
+            // throw so that user can modify or remove their unnecessary CanConvert method override.
+            //
+            // We also throw to avoid passing an invalid argument to setters for nullable struct properties,
+            // which would cause an InvalidProgramException when the generated IL is invoked.
+            // This is not an issue of the converter is wrapped in NullableConverter<T>.
+            if (runtimePropertyType.CanBeNull() && !converter.TypeToConvert.CanBeNull())
+            {
+                ThrowHelper.ThrowInvalidOperationException_ConverterCanConvertNullableRedundant(runtimePropertyType, converter);
             }
 
             return converter;
@@ -130,7 +217,7 @@ namespace System.Text.Json
             }
 
             // Priority 2: Attempt to get custom converter added at runtime.
-            // Currently there is not a way at runtime to overide the [JsonConverter] when applied to a property.
+            // Currently there is not a way at runtime to override the [JsonConverter] when applied to a property.
             foreach (JsonConverter item in Converters)
             {
                 if (item.CanConvert(typeToConvert))
@@ -148,7 +235,7 @@ namespace System.Text.Json
 
                 if (converterAttribute != null)
                 {
-                    converter = GetConverterFromAttribute(converterAttribute, typeToConvert: typeToConvert, classTypeAttributeIsOn: typeToConvert, propertyInfo: null);
+                    converter = GetConverterFromAttribute(converterAttribute, typeToConvert: typeToConvert, classTypeAttributeIsOn: typeToConvert, memberInfo: null);
                 }
             }
 
@@ -187,8 +274,8 @@ namespace System.Text.Json
 
             Type converterTypeToConvert = converter.TypeToConvert;
 
-            if (!converterTypeToConvert.IsAssignableFrom(typeToConvert) &&
-                !typeToConvert.IsAssignableFrom(converterTypeToConvert))
+            if (!converterTypeToConvert.IsAssignableFromInternal(typeToConvert)
+                && !typeToConvert.IsAssignableFromInternal(converterTypeToConvert))
             {
                 ThrowHelper.ThrowInvalidOperationException_SerializationConverterNotCompatible(converter.GetType(), typeToConvert);
             }
@@ -205,7 +292,7 @@ namespace System.Text.Json
             return converter;
         }
 
-        private JsonConverter GetConverterFromAttribute(JsonConverterAttribute converterAttribute, Type typeToConvert, Type classTypeAttributeIsOn, PropertyInfo? propertyInfo)
+        private JsonConverter GetConverterFromAttribute(JsonConverterAttribute converterAttribute, Type typeToConvert, Type classTypeAttributeIsOn, MemberInfo? memberInfo)
         {
             JsonConverter? converter;
 
@@ -216,7 +303,7 @@ namespace System.Text.Json
                 converter = converterAttribute.CreateConverter(typeToConvert);
                 if (converter == null)
                 {
-                    ThrowHelper.ThrowInvalidOperationException_SerializationConverterOnAttributeNotCompatible(classTypeAttributeIsOn, propertyInfo, typeToConvert);
+                    ThrowHelper.ThrowInvalidOperationException_SerializationConverterOnAttributeNotCompatible(classTypeAttributeIsOn, memberInfo, typeToConvert);
                 }
             }
             else
@@ -224,7 +311,7 @@ namespace System.Text.Json
                 ConstructorInfo? ctor = type.GetConstructor(Type.EmptyTypes);
                 if (!typeof(JsonConverter).IsAssignableFrom(type) || ctor == null || !ctor.IsPublic)
                 {
-                    ThrowHelper.ThrowInvalidOperationException_SerializationConverterOnAttributeInvalid(classTypeAttributeIsOn, propertyInfo);
+                    ThrowHelper.ThrowInvalidOperationException_SerializationConverterOnAttributeInvalid(classTypeAttributeIsOn, memberInfo);
                 }
 
                 converter = (JsonConverter)Activator.CreateInstance(type)!;
@@ -236,29 +323,34 @@ namespace System.Text.Json
                 Type? underlyingType = Nullable.GetUnderlyingType(typeToConvert);
                 if (underlyingType != null && converter.CanConvert(underlyingType))
                 {
+                    if (converter is JsonConverterFactory converterFactory)
+                    {
+                        converter = converterFactory.GetConverterInternal(underlyingType, this);
+                    }
+
                     // Allow nullable handling to forward to the underlying type's converter.
                     return NullableConverterFactory.CreateValueConverter(underlyingType, converter);
                 }
 
-                ThrowHelper.ThrowInvalidOperationException_SerializationConverterOnAttributeNotCompatible(classTypeAttributeIsOn, propertyInfo, typeToConvert);
+                ThrowHelper.ThrowInvalidOperationException_SerializationConverterOnAttributeNotCompatible(classTypeAttributeIsOn, memberInfo, typeToConvert);
             }
 
             return converter;
         }
 
-        private static Attribute? GetAttributeThatCanHaveMultiple(Type classType, Type attributeType, PropertyInfo propertyInfo)
+        private static Attribute? GetAttributeThatCanHaveMultiple(Type classType, Type attributeType, MemberInfo memberInfo)
         {
-            object[] attributes = propertyInfo.GetCustomAttributes(attributeType, inherit: false);
-            return GetAttributeThatCanHaveMultiple(attributeType, classType, propertyInfo, attributes);
+            object[] attributes = memberInfo.GetCustomAttributes(attributeType, inherit: false);
+            return GetAttributeThatCanHaveMultiple(attributeType, classType, memberInfo, attributes);
         }
 
-        private static Attribute? GetAttributeThatCanHaveMultiple(Type classType, Type attributeType)
+        internal static Attribute? GetAttributeThatCanHaveMultiple(Type classType, Type attributeType)
         {
             object[] attributes = classType.GetCustomAttributes(attributeType, inherit: false);
             return GetAttributeThatCanHaveMultiple(attributeType, classType, null, attributes);
         }
 
-        private static Attribute? GetAttributeThatCanHaveMultiple(Type attributeType, Type classType, PropertyInfo? propertyInfo, object[] attributes)
+        private static Attribute? GetAttributeThatCanHaveMultiple(Type attributeType, Type classType, MemberInfo? memberInfo, object[] attributes)
         {
             if (attributes.Length == 0)
             {
@@ -270,40 +362,9 @@ namespace System.Text.Json
                 return (Attribute)attributes[0];
             }
 
-            ThrowHelper.ThrowInvalidOperationException_SerializationDuplicateAttribute(attributeType, classType, propertyInfo);
+            ThrowHelper.ThrowInvalidOperationException_SerializationDuplicateAttribute(attributeType, classType, memberInfo);
             return default;
         }
 
-        private const int NumberOfSimpleConverters = 21;
-
-        private static IEnumerable<JsonConverter> DefaultSimpleConverters
-        {
-            get
-            {
-                // When adding to this, update NumberOfSimpleConverters above.
-
-                yield return new BooleanConverter();
-                yield return new ByteConverter();
-                yield return new ByteArrayConverter();
-                yield return new CharConverter();
-                yield return new DateTimeConverter();
-                yield return new DateTimeOffsetConverter();
-                yield return new DoubleConverter();
-                yield return new DecimalConverter();
-                yield return new GuidConverter();
-                yield return new Int16Converter();
-                yield return new Int32Converter();
-                yield return new Int64Converter();
-                yield return new JsonElementConverter();
-                yield return new ObjectConverter();
-                yield return new SByteConverter();
-                yield return new SingleConverter();
-                yield return new StringConverter();
-                yield return new UInt16Converter();
-                yield return new UInt32Converter();
-                yield return new UInt64Converter();
-                yield return new UriConverter();
-            }
-        }
     }
 }

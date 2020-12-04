@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #pragma once
 
@@ -9,6 +8,7 @@
 
 #include <Security/Security.h>
 
+#if !defined(TARGET_IOS) && !defined(TARGET_TVOS)
 /*
 Enumerate the certificates which are root trusted by the user.
 
@@ -62,3 +62,4 @@ pCertsOut: When the return value is not 1, NULL. Otherwise NULL on "no certs fou
 pOSStatus: Receives the last OSStatus value.
 */
 PALEXPORT int32_t AppleCryptoNative_StoreEnumerateMachineDisallowed(CFArrayRef* pCertsOut, int32_t* pOSStatusOut);
+#endif

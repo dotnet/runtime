@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.DirectoryServices;
@@ -1295,7 +1294,7 @@ namespace System.DirectoryServices.AccountManagement
         //
         //
 
-        private UnsafeNativeMethods.IADsPathname _pathCracker = null;
+        private UnsafeNativeMethods.IADsPathname _pathCracker;
         private readonly object _pathLock = new object();
         private Dictionary<string, bool> _usersVisited = new Dictionary<string, bool>();
 
@@ -1304,9 +1303,9 @@ namespace System.DirectoryServices.AccountManagement
 
         private List<string> _groupsToVisit = new List<string>();
 
-        protected object current = null; // current member of the group (or current group of the user)
+        protected object current; // current member of the group (or current group of the user)
 
-        private bool _returnedPrimaryGroup = false;
+        private bool _returnedPrimaryGroup;
         private readonly string _primaryGroupDN;                      // the DN of the user's PrimaryGroup (not included in this.members/originalMembers)
 
         private readonly bool _recursive;
@@ -1315,14 +1314,14 @@ namespace System.DirectoryServices.AccountManagement
         private IEnumerable _members;            // the membership we're currently enumerating over
         private readonly Queue<IEnumerable> _originalMembers = new Queue<IEnumerable>();    // the membership we started off with (before recursing)
 
-        private IEnumerator _membersEnum = null;
+        private IEnumerator _membersEnum;
 
         private ADStoreCtx _storeCtx;
         private readonly ADStoreCtx _originalStoreCtx;
 
         private bool _atBeginning = true;
 
-        private bool _disposed = false;
+        private bool _disposed;
 
         // foreign
         // This contains a list of employees built while enumerating the current group.  These are FSP objects in the current domain and need to
@@ -1331,25 +1330,25 @@ namespace System.DirectoryServices.AccountManagement
         // List of objects from the group tha are actual fake group objects.
         private List<DirectoryEntry> _fakePrincipalMembers = new List<DirectoryEntry>();
         // list of SIDs + store that have been translated.  These could be any principal object
-        private SidList _foreignMembersToReturn = null;
+        private SidList _foreignMembersToReturn;
 
-        private Principal _currentForeignPrincipal = null;
-        private DirectoryEntry _currentForeignDE = null;
+        private Principal _currentForeignPrincipal;
+        private DirectoryEntry _currentForeignDE;
 
         private List<GroupPrincipal> _foreignGroups = new List<GroupPrincipal>();
 
         // members based on a query (used for users who are group members by virtue of their primaryGroupId pointing to the group)
         private readonly DirectorySearcher _primaryGroupMembersSearcher;
-        private SearchResultCollection _queryMembersResults = null;
-        private IEnumerator _queryMembersResultEnumerator = null;
+        private SearchResultCollection _queryMembersResults;
+        private IEnumerator _queryMembersResultEnumerator;
 
-        private DirectorySearcher _currentMembersSearcher = null;
+        private DirectorySearcher _currentMembersSearcher;
 
         private readonly Queue<DirectorySearcher> _memberSearchersQueue = new Queue<DirectorySearcher>();
         private readonly Queue<DirectorySearcher> _memberSearchersQueueOriginal = new Queue<DirectorySearcher>();
 
-        private SearchResultCollection _memberSearchResults = null;
-        private IEnumerator _memberSearchResultsEnumerator = null;
+        private SearchResultCollection _memberSearchResults;
+        private IEnumerator _memberSearchResultsEnumerator;
 
         private ExpansionMode _expansionMode;
         private readonly ExpansionMode _originalExpansionMode;
@@ -1394,7 +1393,7 @@ namespace System.DirectoryServices.AccountManagement
         public List<string> groupsToVisit;
         public List<string> groupsVisited;
         public IEnumerable members;
-        public IEnumerator membersEnum = null;
+        public IEnumerator membersEnum;
         public Queue<IEnumerable> membersQueue;
         public ADStoreCtx storeCtx;
         public object current;

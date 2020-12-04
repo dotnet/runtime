@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Linq;
@@ -65,6 +64,17 @@ namespace System.Collections.Tests
             ICollection collection = bitArray;
             Assert.Equal(length, collection.Count);
             Assert.False(collection.IsSynchronized);
+        }
+
+        [Fact]
+        public static void Ctor_Int_Bool_ShouldNotLeaveDirtyBits()
+        {
+            BitArray bitArray = new BitArray(33, true);
+            bitArray.RightShift(31);
+
+            Assert.True(bitArray[0]);
+            Assert.True(bitArray[1]);
+            Assert.False(bitArray[2]);
         }
 
         [Fact]

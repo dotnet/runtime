@@ -1,12 +1,11 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 /*============================================================
 **
-** Source:  test6.c 
+** Source:  test6.c
 **
-** Purpose: Test for WaitForMultipleObjectsEx in multiple 
+** Purpose: Test for WaitForMultipleObjectsEx in multiple
 **          scenarios
 **
 **
@@ -43,9 +42,9 @@ DWORD PALAPI EventTestThread(PVOID pArg)
 
     Trace("[EventTestThread] Starting\n");
 
-    bRet = DuplicateHandle(GetCurrentProcess(), (*prgHandles)[0], GetCurrentProcess(), 
+    bRet = DuplicateHandle(GetCurrentProcess(), (*prgHandles)[0], GetCurrentProcess(),
                &hEvent[0], 0, FALSE, DUPLICATE_SAME_ACCESS);
-    bRet &= DuplicateHandle(GetCurrentProcess(), (*prgHandles)[1], GetCurrentProcess(), 
+    bRet &= DuplicateHandle(GetCurrentProcess(), (*prgHandles)[1], GetCurrentProcess(),
                &hEvent[1], 0, FALSE, DUPLICATE_SAME_ACCESS);
     if (FALSE == bRet)
     {
@@ -67,7 +66,7 @@ DWORD PALAPI EventTestThread(PVOID pArg)
         Fail("[EventTestThread] WaitForMultipleObjects failed [GetLastError()=%u]\n",
              GetLastError());
     }
-    
+
     Sleep(1000);
     bRet = SetEvent(hEvent[0]);
     if (FALSE == bRet)
@@ -99,7 +98,7 @@ DWORD PALAPI MutexTestThread(PVOID pArg)
 
     Trace("[MutexTestThread] Starting\n");
 
-    bRet = DuplicateHandle(GetCurrentProcess(), (HANDLE)pArg, GetCurrentProcess(), &hMutex, 
+    bRet = DuplicateHandle(GetCurrentProcess(), (HANDLE)pArg, GetCurrentProcess(), &hMutex,
                0, FALSE, DUPLICATE_SAME_ACCESS);
     if (FALSE == bRet)
     {
@@ -133,7 +132,7 @@ DWORD PALAPI TestThread(PVOID pArg)
     HANDLE hMutex = 0;
     HANDLE hSemaphore = 0;
     HANDLE hObjs[2];
-    DWORD dwThreadNum; 
+    DWORD dwThreadNum;
     DWORD dwSlaveThreadTid = 0;
     HANDLE hThread;
     int i, iCnt, iRet;
@@ -153,7 +152,7 @@ DWORD PALAPI TestThread(PVOID pArg)
     BOOL bLocalWaitAll  = g_bLocalWaitAll;
     BOOL bRemoteWaitAll = g_bRemoteWaitAll;
     int iDesiredExitCode;
-        
+
     dwThreadNum = (DWORD)(SIZE_T)pArg;
 
     sprintf_s (szTestName, 128, "Test6_%u", dwThreadNum);
@@ -178,14 +177,14 @@ DWORD PALAPI TestThread(PVOID pArg)
     Trace("[TestThread] TestName=%s Event: %S, Mutex: %S, Semaphore = %S\n",
        szTestName, wszEventName, wszMutexName, wszSemName);
 
-    hEvent[0] = CreateEventA(NULL, FALSE, FALSE, NULL);
-    hEvent[1] = CreateEventA(NULL, FALSE, FALSE, NULL);
+    hEvent[0] = CreateEvent(NULL, FALSE, FALSE, NULL);
+    hEvent[1] = CreateEvent(NULL, FALSE, FALSE, NULL);
 
     hNamedEvent = CreateEventW(NULL, FALSE, FALSE, wszEventName);
     hMutex = CreateMutexW(NULL, FALSE, wszMutexName);
-    hSemaphore = CreateSemaphoreW(NULL, 0, 256, wszSemName);
+    hSemaphore = CreateSemaphoreExW(NULL, 0, 256, wszSemName, 0, 0);
 
-    if (NULL == hEvent[0] || NULL == hEvent[1] || NULL == hMutex || 
+    if (NULL == hEvent[0] || NULL == hEvent[1] || NULL == hMutex ||
     NULL == hNamedEvent || NULL == hSemaphore)
     {
         Fail("[TestThread] Failed to create objects "
@@ -245,14 +244,14 @@ DWORD PALAPI TestThread(PVOID pArg)
                 Fail("Failed to create thread\n");
             }
 
-            hObjs[0] = hEvent[0];    
+            hObjs[0] = hEvent[0];
             dwRet = WaitForMultipleObjects(1, hObjs, FALSE, INFINITE);
             if (WAIT_FAILED == dwRet)
             {
                 Fail("WaitForMultipleObjects failed\n");
             }
 
-            hObjs[0] = hThread;    
+            hObjs[0] = hThread;
             dwRet = WaitForMultipleObjects(1, hObjs, FALSE, INFINITE);
             if (WAIT_FAILED == dwRet)
             {
@@ -322,14 +321,16 @@ DWORD PALAPI TestThread(PVOID pArg)
             ZeroMemory ( &si, sizeof(si) );
             si.cb = sizeof(si);
             ZeroMemory ( &pi, sizeof(pi) );
-        
+
             sprintf_s (szCmd, 128, "child6 -event %s", szTestName);
             szCmd[127] = 0;
 
-            bRet = CreateProcessA(NULL, szCmd, NULL, NULL, FALSE, 0, NULL, NULL, &si, &pi);
+            LPWSTR szCmdW = convert(szCmd);
+            bRet = CreateProcessW(NULL, szCmdW, NULL, NULL, FALSE, 0, NULL, NULL, &si, &pi);
+            free(szCmdW);
             if (FALSE == bRet)
             {
-                Fail("CreateProcess failed [GetLastError()=%u]\n",
+                Fail("CreateProcessW failed [GetLastError()=%u]\n",
                      GetLastError());
             }
 
@@ -342,7 +343,7 @@ DWORD PALAPI TestThread(PVOID pArg)
                 Fail("WaitForMultipleObjects failed [dwRet=%u GetLastError()=%u]\n",
                      dwRet, GetLastError());
             }
-        
+
             dwRet = WaitForSingleObject(pi.hProcess, INFINITE);
             if (WAIT_FAILED == dwRet)
             {
@@ -365,14 +366,17 @@ DWORD PALAPI TestThread(PVOID pArg)
 
             sprintf_s (szCmd, 128, "child6 -semaphore %s", szTestName);
             szCmd[127] = 0;
-        
-            bRet = CreateProcessA(NULL, szCmd, NULL, NULL, FALSE, 
+
+            LPWSTR szCmdW = convert(szCmd);
+            bRet = CreateProcessW(NULL, szCmdW, NULL, NULL, FALSE,
                                   0, NULL, NULL, &si, &pi);
+            free(szCmdW);
             if (FALSE == bRet)
             {
-                Fail("CreateProcessA failed [GetLastError()=%u]\n",
+                Fail("CreateProcessW failed [GetLastError()=%u]\n",
                      GetLastError());
             }
+
 
             Trace("Setting event %s\n", szEventName);
             bRet = SetEvent(hNamedEvent);
@@ -408,28 +412,30 @@ DWORD PALAPI TestThread(PVOID pArg)
             Trace("Semaphore with remote thread awakening test done\n");
             Trace("======================================================================\n");
         }
-        
+
         if (bProcess)
-        {            
-            DWORD dwExitCode;            
+        {
+            DWORD dwExitCode;
 
             Trace("======================================================================\n");
             Trace("Process wait test\n");
             Trace("----------------------------------------\n");
-            
-            iDesiredExitCode = rand() % 0xFF;            
-            
-            ZeroMemory ( &si, sizeof(si) );            
+
+            iDesiredExitCode = rand() % 0xFF;
+
+            ZeroMemory ( &si, sizeof(si) );
             si.cb = sizeof(si);
-            ZeroMemory ( &pi, sizeof(pi) );            
-            
+            ZeroMemory ( &pi, sizeof(pi) );
+
             sprintf_s (szCmd, 128, "child6 -mutex %s -exitcode %d", szTestName, iDesiredExitCode);
             szCmd[127] = 0;
-        
-            bRet = CreateProcessA(NULL, szCmd, NULL, NULL, FALSE, 0, NULL, NULL, &si, &pi);
+
+            LPWSTR szCmdW = convert(szCmd);
+            bRet = CreateProcessW(NULL, szCmdW, NULL, NULL, FALSE, 0, NULL, NULL, &si, &pi);
+            free(szCmdW);
             if (FALSE == bRet)
             {
-                Fail("CreateProcess failed [GetLastError()=%u]\n",
+                Fail("CreateProcessW failed [GetLastError()=%u]\n",
                      GetLastError());
             }
 
@@ -459,7 +465,7 @@ DWORD PALAPI TestThread(PVOID pArg)
                          GetLastError());
                 }
             }
-        
+
             dwRet = WaitForSingleObject(pi.hProcess, INFINITE);
             if (WAIT_FAILED == dwRet)
             {
@@ -469,8 +475,8 @@ DWORD PALAPI TestThread(PVOID pArg)
 
             if (!GetExitCodeProcess(pi.hProcess, &dwExitCode))
             {
-                Trace("GetExitCodeProcess call failed LastError:(%u)\n", 
-                      GetLastError()); 
+                Trace("GetExitCodeProcess call failed LastError:(%u)\n",
+                      GetLastError());
                 dwExitCode = FAIL;
             }
 
@@ -504,7 +510,7 @@ DWORD PALAPI TestThread(PVOID pArg)
                      GetLastError());
             }
 
-            hObjs[0] = hThread;    
+            hObjs[0] = hThread;
             dwRet = WaitForMultipleObjects(1, hObjs, FALSE, INFINITE);
             if (WAIT_FAILED == dwRet)
             {
@@ -526,15 +532,17 @@ DWORD PALAPI TestThread(PVOID pArg)
             ZeroMemory ( &si, sizeof(si) );
             si.cb = sizeof(si);
             ZeroMemory ( &pi, sizeof(pi) );
-        
+
             sprintf_s (szCmd, 128, "child6 -mutex_and_named_event %s", szTestName);
             szCmd[127] = 0;
 
-            bRet = CreateProcessA(NULL, szCmd, NULL, NULL, FALSE, 
+            LPWSTR szCmdW = convert(szCmd);
+            bRet = CreateProcessW(NULL, szCmdW, NULL, NULL, FALSE,
                                   0, NULL, NULL, &si, &pi);
+            free(szCmdW);
             if (FALSE == bRet)
             {
-                Fail("CreateProcess failed [GetLastError()=%u]\n",
+                Fail("CreateProcessW failed [GetLastError()=%u]\n",
                      GetLastError());
             }
 
@@ -556,7 +564,7 @@ DWORD PALAPI TestThread(PVOID pArg)
                 Fail("ReleaseMutex failed [GetLastError()=%u]\n",
                      GetLastError());
             }
-        
+
             dwRet = WaitForSingleObject(pi.hProcess, INFINITE);
             if (WAIT_FAILED == dwRet)
             {
@@ -569,12 +577,12 @@ DWORD PALAPI TestThread(PVOID pArg)
             Trace("WaitAll with remote thread awakening test done\n");
             Trace("======================================================================\n");
         }
-    }    
+    }
 
     return 0;
 }
 
-int __cdecl main(int argc, char **argv)
+PALTEST(threading_WaitForMultipleObjectsEx_test6_paltest_waitformultipleobjectsex_test6, "threading/WaitForMultipleObjectsEx/test6/paltest_waitformultipleobjectsex_test6")
 {
     DWORD dwRet;
     DWORD dwSlaveThreadTid = 0;
@@ -597,7 +605,7 @@ int __cdecl main(int argc, char **argv)
         g_bLocalWaitAll = 1;
         g_bRemoteWaitAll = 1;
     }
-    else 
+    else
     {
         for (i=1;i<argc;i++)
         {
@@ -671,13 +679,13 @@ int __cdecl main(int argc, char **argv)
 
     iCnt = 0;
     for (i=0;i<iThreads;i++)
-    {    
+    {
     hThreads[iCnt] = CreateThread(NULL, 0, TestThread, (VOID*)iCnt, 0, &dwSlaveThreadTid);
     if (NULL == hThreads[iCnt])
     {
         Trace("Failed to create thread\n");
     }
-    else 
+    else
     {
         iCnt++;
     }
@@ -703,7 +711,7 @@ int __cdecl main(int argc, char **argv)
     {
         CloseHandle(hThreads[i]);
     }
-    
+
     PAL_Terminate();
     return PASS;
 }

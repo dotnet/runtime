@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 /*++
 
@@ -79,13 +78,14 @@ extern "C"
 
     Parameters:
         IN hFile - file to map
+        IN offset - offset within hFile where the PE "file" is located
 
     Return value:
         non-NULL - the base address of the mapped image
         NULL - error, with last error set.
     --*/
 
-    void * MAPMapPEFile(HANDLE hFile);
+    void* MAPMapPEFile(HANDLE hFile, off_t offset);
 
     /*++
     Function :

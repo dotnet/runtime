@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -23,6 +22,12 @@ namespace System.Threading.Channels.Tests
         protected virtual bool RequiresSingleReader => false;
         protected virtual bool RequiresSingleWriter => false;
         protected virtual bool BuffersItems => true;
+
+        public static IEnumerable<object[]> ThreeBools =>
+            from b1 in new[] { false, true }
+            from b2 in new[] { false, true }
+            from b3 in new[] { false, true }
+            select new object[] { b1, b2, b3 };
 
         [Fact]
         public void ValidateDebuggerAttributes()
@@ -139,7 +144,7 @@ namespace System.Threading.Channels.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public void SingleProducerConsumer_ConcurrentReadWrite_Success()
         {
             Channel<int> c = CreateChannel();
@@ -162,7 +167,7 @@ namespace System.Threading.Channels.Tests
                 }));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public void SingleProducerConsumer_PingPong_Success()
         {
             Channel<int> c1 = CreateChannel();
@@ -188,7 +193,7 @@ namespace System.Threading.Channels.Tests
                 }));
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [InlineData(1, 1)]
         [InlineData(1, 10)]
         [InlineData(10, 1)]

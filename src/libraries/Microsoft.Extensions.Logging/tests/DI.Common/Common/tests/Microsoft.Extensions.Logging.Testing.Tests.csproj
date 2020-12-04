@@ -1,0 +1,24 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFrameworks>$(NetCoreAppCurrent);net461</TargetFrameworks>
+    <EnableDefaultItems>true</EnableDefaultItems>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="..\src\LogLevelAttribute.cs"
+             Link="tests\DI.Common\Common\src\LogLevelAttribute.cs" />
+    <Compile Include="..\src\LogValuesAssert.cs"
+             Link="tests\DI.Common\Common\src\LogValuesAssert.cs" />
+    <Compile Include="..\..\..\Common\TestLoggerBuilder.cs"
+             Link="tests\Common\TestLoggerBuilder.cs" />
+    <Compile Include="..\src\XunitLoggerFactoryExtensions.cs"
+             Link="tests\DI.Common\Common\src\XunitLoggerFactoryExtensions.cs" />
+    <Compile Include="..\src\XunitLoggerProvider.cs"
+             Link="tests\DI.Common\Common\src\XunitLoggerProvider.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Extensions.DependencyInjection\src\Microsoft.Extensions.DependencyInjection.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Extensions.Logging\src\Microsoft.Extensions.Logging.csproj" />
+  </ItemGroup>
+</Project>

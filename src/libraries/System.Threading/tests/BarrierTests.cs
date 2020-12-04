@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
 using System.Threading.Tasks;
@@ -51,7 +50,7 @@ namespace System.Threading.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void RunBarrierSignalAndWaitTests()
         {
             RunBarrierTest2_SignalAndWait(1, new TimeSpan(0, 0, 0, 0, -1), true, null);
@@ -151,7 +150,7 @@ namespace System.Threading.Tests
             Assert.Throws<ArgumentOutOfRangeException>(() => b.RemoveParticipants(2));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static async Task RemovingWaitingParticipants()
         {
             Barrier b = new Barrier(4);
@@ -261,7 +260,7 @@ namespace System.Threading.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void RunBarrierTest7a()
         {
             for (int j = 0; j < 100; j++)
@@ -292,7 +291,7 @@ namespace System.Threading.Tests
         /// Test the case when the post phase action throws an exception
         /// </summary>
         /// <returns>True if the test succeeded, false otherwise</returns>
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void RunBarrierTest8_PostPhaseException()
         {
             bool shouldThrow = true;
@@ -400,7 +399,7 @@ namespace System.Threading.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void RunBarrierTest10b()
         {
             // Regression test for Barrier race condition
@@ -421,7 +420,7 @@ namespace System.Threading.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void RunBarrierTest10c()
         {
             for (int j = 0; j < 10; j++)

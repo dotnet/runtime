@@ -1,5 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
-// See the LICENSE file in the project root for more information.
+// The .NET Foundation licenses this file to you under the MIT license.
 //
 // Copyright (C) 2006-2007 Novell, Inc (http://www.novell.com)
 //
@@ -370,8 +370,8 @@ namespace System.Drawing.Drawing2D.Tests
         [ConditionalFact(Helpers.IsDrawingSupported)]
         public void AddLines_ZeroPoints_ThrowsArgumentException()
         {
-            AssertExtensions.Throws<ArgumentException>(null, () => new GraphicsPath().AddLines(new Point[0]));
-            AssertExtensions.Throws<ArgumentException>(null, () => new GraphicsPath().AddLines(new PointF[0]));
+            AssertExtensions.Throws<ArgumentException>("points", null, () => new GraphicsPath().AddLines(new Point[0]));
+            AssertExtensions.Throws<ArgumentException>("points", null, () => new GraphicsPath().AddLines(new PointF[0]));
         }
 
         [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
@@ -1262,11 +1262,11 @@ namespace System.Drawing.Drawing2D.Tests
         }
 
         [ConditionalFact(Helpers.IsDrawingSupported)]
-        public void AddString_FontFamilyNull_ThrowsArgumentException()
+        public void AddString_FontFamilyNull_ThrowsArgumentNullException()
         {
             using (GraphicsPath gp = new GraphicsPath())
             {
-                AssertExtensions.Throws<ArgumentException>(null, () =>
+                AssertExtensions.Throws<ArgumentNullException, ArgumentException>("family", null, () =>
                     new GraphicsPath().AddString("mono", null, 0, 10, new Point(10, 10), StringFormat.GenericDefault));
             }
         }

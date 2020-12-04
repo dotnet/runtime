@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Runtime.CompilerServices;
 
@@ -324,7 +324,7 @@ namespace System
             ValidateStyles(styles, nameof(styles));
             return TimeSpanParse.ParseExactMultiple(input, formats, formatProvider, styles);
         }
-        public static bool TryParse(string? s, out TimeSpan result)
+        public static bool TryParse([NotNullWhen(true)] string? s, out TimeSpan result)
         {
             if (s == null)
             {
@@ -338,7 +338,7 @@ namespace System
             return TimeSpanParse.TryParse(s, null, out result);
         }
 
-        public static bool TryParse(string? input, IFormatProvider? formatProvider, out TimeSpan result)
+        public static bool TryParse([NotNullWhen(true)] string? input, IFormatProvider? formatProvider, out TimeSpan result)
         {
             if (input == null)
             {
@@ -351,7 +351,7 @@ namespace System
         {
             return TimeSpanParse.TryParse(input, formatProvider, out result);
         }
-        public static bool TryParseExact(string? input, string format, IFormatProvider? formatProvider, out TimeSpan result)
+        public static bool TryParseExact([NotNullWhen(true)] string? input, [NotNullWhen(true)] string? format, IFormatProvider? formatProvider, out TimeSpan result)
         {
             if (input == null || format == null)
             {
@@ -365,7 +365,7 @@ namespace System
         {
             return TimeSpanParse.TryParseExact(input, format, formatProvider, TimeSpanStyles.None, out result);
         }
-        public static bool TryParseExact(string? input, string[] formats, IFormatProvider? formatProvider, out TimeSpan result)
+        public static bool TryParseExact([NotNullWhen(true)] string? input, [NotNullWhen(true)] string?[]? formats, IFormatProvider? formatProvider, out TimeSpan result)
         {
             if (input == null)
             {
@@ -374,12 +374,12 @@ namespace System
             }
             return TimeSpanParse.TryParseExactMultiple(input, formats, formatProvider, TimeSpanStyles.None, out result);
         }
-        public static bool TryParseExact(ReadOnlySpan<char> input, string[] formats, IFormatProvider? formatProvider, out TimeSpan result)
+        public static bool TryParseExact(ReadOnlySpan<char> input, [NotNullWhen(true)] string?[]? formats, IFormatProvider? formatProvider, out TimeSpan result)
         {
             return TimeSpanParse.TryParseExactMultiple(input, formats, formatProvider, TimeSpanStyles.None, out result);
         }
 
-        public static bool TryParseExact(string? input, string format, IFormatProvider? formatProvider, TimeSpanStyles styles, out TimeSpan result)
+        public static bool TryParseExact([NotNullWhen(true)] string? input, [NotNullWhen(true)] string? format, IFormatProvider? formatProvider, TimeSpanStyles styles, out TimeSpan result)
         {
             ValidateStyles(styles, nameof(styles));
             if (input == null || format == null)
@@ -396,7 +396,7 @@ namespace System
             ValidateStyles(styles, nameof(styles));
             return TimeSpanParse.TryParseExact(input, format, formatProvider, styles, out result);
         }
-        public static bool TryParseExact(string? input, string[] formats, IFormatProvider? formatProvider, TimeSpanStyles styles, out TimeSpan result)
+        public static bool TryParseExact([NotNullWhen(true)] string? input, [NotNullWhen(true)] string?[]? formats, IFormatProvider? formatProvider, TimeSpanStyles styles, out TimeSpan result)
         {
             ValidateStyles(styles, nameof(styles));
             if (input == null)
@@ -407,7 +407,7 @@ namespace System
             return TimeSpanParse.TryParseExactMultiple(input, formats, formatProvider, styles, out result);
         }
 
-        public static bool TryParseExact(ReadOnlySpan<char> input, string[] formats, IFormatProvider? formatProvider, TimeSpanStyles styles, out TimeSpan result)
+        public static bool TryParseExact(ReadOnlySpan<char> input, [NotNullWhen(true)] string?[]? formats, IFormatProvider? formatProvider, TimeSpanStyles styles, out TimeSpan result)
         {
             ValidateStyles(styles, nameof(styles));
             return TimeSpanParse.TryParseExactMultiple(input, formats, formatProvider, styles, out result);

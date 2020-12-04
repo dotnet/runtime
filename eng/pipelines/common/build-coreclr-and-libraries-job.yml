@@ -3,14 +3,18 @@ parameters:
   archType: ''
   osGroup: ''
   osSubgroup: ''
+  targetRid: ''
   container: ''
   testGroup: ''
+  crossBuild: false
   crossrootfsDir: ''
   timeoutInMinutes: ''
   signBinaries: false
   stagedBuild: false
   variables: {}
   pool: ''
+  platform: ''
+  testBuildPlatforms: []
 
 jobs:
 - template: /eng/pipelines/coreclr/templates/build-job.yml
@@ -19,8 +23,10 @@ jobs:
     archType: ${{ parameters.archType }}
     osGroup: ${{ parameters.osGroup }}
     osSubgroup: ${{ parameters.osSubgroup }}
+    targetRid: ${{ parameters.targetRid }}
     container: ${{ parameters.container }}
     testGroup: ${{ parameters.testGroup }}
+    crossBuild: ${{ parameters.crossBuild }}
     crossrootfsDir: ${{ parameters.crossrootfsDir }}
     timeoutInminutes: ${{ parameters.timeoutInMinutes }}
     signBinaries: ${{ parameters.signBinaries }}
@@ -39,10 +45,11 @@ jobs:
     osSubgroup: ${{ parameters.osSubgroup }}
     container: ${{ parameters.container }}
     testGroup: ${{ parameters.testGroup }}
+    crossBuild: ${{ parameters.crossBuild }}
     crossrootfsDir: ${{ parameters.crossrootfsDir }}
     timeoutInminutes: ${{ parameters.timeoutInMinutes }}
-    signBinaries: ${{ parameters.signBinaries }}
-    stagedBuild: ${{ parameters.stagedBuild }}
     variables: ${{ parameters.variables }}
     pool: ${{ parameters.pool }}
     liveRuntimeBuildConfig: ${{ parameters.buildConfig }}
+    platform: ${{ parameters.platform }}
+    testBuildPlatforms: ${{ parameters.testBuildPlatforms }}

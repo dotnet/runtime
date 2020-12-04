@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
-    <TargetFrameworks>$(NetCoreAppCurrent);$(NetFrameworkCurrent)</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent);net48</TargetFrameworks>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System\ComponentModel\DataAnnotations\AssociatedMetadataTypeTypeDescriptionProviderTests.cs" />
@@ -16,7 +16,7 @@
     <Compile Include="System\ComponentModel\DataAnnotations\DataTypeAttributeTests.cs" />
     <Compile Include="System\ComponentModel\DataAnnotations\DisplayColumnAttributeTests.cs" />
     <Compile Include="System\ComponentModel\DataAnnotations\DisplayFormatAttributeTests.cs" />
-    <Compile Include="System\ComponentModel\DataAnnotations\DisplayFormatAttributeTests.netcoreapp.cs" Condition="'$(TargetsNetCoreApp)' == 'true'" />
+    <Compile Include="System\ComponentModel\DataAnnotations\DisplayFormatAttributeTests.netcoreapp.cs" Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)'" />
     <Compile Include="System\ComponentModel\DataAnnotations\EditableAttributeTests.cs" />
     <Compile Include="System\ComponentModel\DataAnnotations\EmailAddressAttributeTests.cs" />
     <Compile Include="System\ComponentModel\DataAnnotations\EnumDataTypeAttributeTests.cs" />
@@ -25,7 +25,7 @@
     <Compile Include="System\ComponentModel\DataAnnotations\MetadataTypeAttributeTests.cs" />
     <Compile Include="System\ComponentModel\DataAnnotations\MinLengthAttributeTests.cs" />
     <Compile Include="System\ComponentModel\DataAnnotations\PhoneAttributeTests.cs" />
-    <Compile Include="System\ComponentModel\DataAnnotations\RangeAttributeTests.cs" Condition="'$(TargetsNetCoreApp)' == 'true'" />
+    <Compile Include="System\ComponentModel\DataAnnotations\RangeAttributeTests.cs" Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)'" />
     <Compile Include="System\ComponentModel\DataAnnotations\RegularExpressionAttributeTests.cs" />
     <Compile Include="System\ComponentModel\DataAnnotations\RequiredAttributeTests.cs" />
     <Compile Include="System\ComponentModel\DataAnnotations\ScaffoldColumnAttributeTests.cs" />
@@ -41,5 +41,8 @@
     <Compile Include="System\ComponentModel\DataAnnotations\ValidationExceptionTests.cs" />
     <Compile Include="System\ComponentModel\DataAnnotations\ValidationResultTests.cs" />
     <Compile Include="System\ComponentModel\DataAnnotations\ValidatorTests.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetFramework)' == 'net48'">
+    <Reference Include="System.ComponentModel.DataAnnotations" />
   </ItemGroup>
 </Project>

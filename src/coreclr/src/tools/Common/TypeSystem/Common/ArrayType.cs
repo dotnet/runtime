@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Generic;
@@ -166,7 +165,7 @@ namespace Internal.TypeSystem
     /// and the type system needs to provide a way to represent them.
     /// </summary>
     /// <remarks>
-    /// There are two array Address methods (<see cref="ArrayMethodKind.Address"/> and 
+    /// There are two array Address methods (<see cref="ArrayMethodKind.Address"/> and
     /// <see cref="ArrayMethodKind.AddressWithHiddenArg"/>). One is used when referencing Address
     /// method from IL, the other is used when *compiling* the method body.
     /// The reason we need to do this is that the Address method is required to do a type check using a type
@@ -257,7 +256,7 @@ namespace Internal.TypeSystem
                         case ArrayMethodKind.AddressWithHiddenArg:
                             {
                                 var parameters = new TypeDesc[_owningType.Rank + 1];
-                                parameters[0] = Context.SystemModule.GetType("System", "EETypePtr");
+                                parameters[0] = Context.GetWellKnownType(WellKnownType.IntPtr);
                                 for (int i = 0; i < _owningType.Rank; i++)
                                     parameters[i + 1] = _owningType.Context.GetWellKnownType(WellKnownType.Int32);
                                 _signature = new MethodSignature(0, 0, _owningType.ElementType.MakeByRefType(), parameters);

@@ -14,18 +14,18 @@ Debugging CoreFX build issues
 
 (This documentation is work in progress.)
 
-I found the following process to help when investigating some of the build issues caused by incorrect packaging. 
+I found the following process to help when investigating some of the build issues caused by incorrect packaging.
 
-To quickly validate if a given project compiles on all supported configurations use `dotnet build /t:RebuildAll`. This applies for running tests as well. For more information, see [Building individual libraries](../../building/libraries/README.md#building-individual-libraries) 
+To quickly validate if a given project compiles on all supported configurations use `dotnet build /t:RebuildAll`. This applies for running tests as well. For more information, see [Building individual libraries](../../building/libraries/README.md#building-individual-libraries)
 
 Assuming the current directory is `\src\contractname\`:
 
-1. Build the `\ref` folder: `dotnet build` 
+1. Build the `\ref` folder: `dotnet build`
 
 
 Check the logs for output such as:
 ```
-Project "S:\c1\src\System.Net.ServicePoint\ref\System.Net.ServicePoint.builds" (1) is building "S:\c1\src\System.Net.ServicePoint\ref\System.Net.ServicePoint.csproj" (2:3) on node 1
+Project "S:\c1\src\System.Net.ServicePoint\ref\System.Net.ServicePoint.csproj" (1) is building "S:\c1\src\System.Net.ServicePoint\ref\System.Net.ServicePoint.csproj" (2:3) on node 1
 (Build target(s)).
 
 [...]
@@ -37,7 +37,7 @@ CopyFilesToOutputDirectory:
 
 [...]
 
-Project "S:\c1\src\System.Net.ServicePoint\ref\System.Net.ServicePoint.builds" (1) is building "S:\c1\src\System.Net.ServicePoint\ref\System.Net.ServicePoint.csproj" (2:4) on node 1
+Project "S:\c1\src\System.Net.ServicePoint\ref\System.Net.ServicePoint.csproj" (1) is building "S:\c1\src\System.Net.ServicePoint\ref\System.Net.ServicePoint.csproj" (2:4) on node 1
 (Build target(s)).
 
 [...]
@@ -58,7 +58,7 @@ Use the same technique above to ensure that the binaries include the correct imp
 
 Ensure that all Build Pivots are actually being built. This should build all .\ref and .\src variations as well as actually creating the NuGet packages.
 
-Verify that the contents of the nuspec as well as the actual package is correct. You can find the packages by searching for the following pattern in the msbuild output: 
+Verify that the contents of the nuspec as well as the actual package is correct. You can find the packages by searching for the following pattern in the msbuild output:
 
 ```
 GetPkgProjPackageDependencies:
@@ -86,7 +86,7 @@ Ensure that the right `BuildTargetFramework` (what we're testing) is set.
 To identify which of the combinations failed, search for the following pattern in the output:
 
 ```
-Project "S:\c1\src\System.Net.ServicePoint\tests\System.Net.ServicePoint.Tests.builds" (1) is building "S:\c1\src\System.Net.ServicePoint\tests\System.Net.ServicePoint.Tests.csproj"
+Project "S:\c1\src\System.Net.ServicePoint\tests\System.Net.ServicePoint.Tests.csproj" (1) is building "S:\c1\src\System.Net.ServicePoint\tests\System.Net.ServicePoint.Tests.csproj"
 (2:5) on node 1 (Build target(s)).
 ResolvePkgProjReferences:
   Resolved compile assets from .NETStandard,Version=v2.0: S:\c1\bin\ref\System.Net.ServicePoint\4.0.0.0\System.Net.ServicePoint.dll
@@ -101,5 +101,5 @@ dotnet build System.Net.ServicePoint.Tests.csproj -f netcoreapp2.0 /t:test /p:Ou
 Will run the test using the following pivot values:
 * Architecture: AnyCPU
 * Flavor: Debug
-* OS: Windows_NT
+* OS: windows
 * Target: netstandard2.0

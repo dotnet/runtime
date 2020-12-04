@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 /*++
 
@@ -171,6 +170,7 @@ function_name() to call the system's implementation
 #define memset DUMMY_memset
 #define memmove DUMMY_memmove
 #define memchr DUMMY_memchr
+#define atoll DUMMY_atoll
 #define strlen DUMMY_strlen
 #define stricmp DUMMY_stricmp
 #define strstr DUMMY_strstr
@@ -358,6 +358,7 @@ function_name() to call the system's implementation
 #undef memset
 #undef memmove
 #undef memchr
+#undef atoll
 #undef strlen
 #undef strnlen
 #undef wcsnlen
@@ -729,5 +730,11 @@ inline T* InterlockedCompareExchangePointerT(
 const char StackOverflowMessage[] = "Stack overflow.\n";
 
 #endif // __cplusplus
+
+#if __has_cpp_attribute(fallthrough)
+#define FALLTHROUGH [[fallthrough]]
+#else
+#define FALLTHROUGH
+#endif
 
 #endif /* _PAL_INTERNAL_H_ */

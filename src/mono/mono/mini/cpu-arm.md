@@ -130,8 +130,8 @@ storei2_membase_imm: dest:b len:20
 storei2_membase_reg: dest:b src1:i len:12
 storei4_membase_imm: dest:b len:20
 storei4_membase_reg: dest:b src1:i len:20
-storei8_membase_imm: dest:b 
-storei8_membase_reg: dest:b src1:i 
+storei8_membase_imm: dest:b
+storei8_membase_reg: dest:b src1:i
 storer4_membase_reg: dest:b src1:f len:60
 storer8_membase_reg: dest:b src1:f len:24
 store_memindex: dest:b src1:i src2:i len:4

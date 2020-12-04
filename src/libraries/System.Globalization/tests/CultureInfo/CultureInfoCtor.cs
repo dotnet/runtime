@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using Xunit;
@@ -46,6 +45,29 @@ namespace System.Globalization.Tests
                 Assert.Throws<CultureNotFoundException>(() => new CultureInfo("en-US-CUSTOM"));
                 Assert.Throws<CultureNotFoundException>(() => new CultureInfo("xx-XX"));
             }
+        }
+
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsWindows10Version1903OrGreater))]
+        [InlineData(0x2000)]
+        [InlineData(0x2400)]
+        [InlineData(0x2800)]
+        [InlineData(0x2C00)]
+        [InlineData(0x3000)]
+        [InlineData(0x3400)]
+        [InlineData(0x3800)]
+        [InlineData(0x3C00)]
+        [InlineData(0x4000)]
+        [InlineData(0x4400)]
+        [InlineData(0x4800)]
+        [InlineData(0x4C00)]
+        public void TestCreationWithTemporaryLCID(int lcid)
+        {
+            // https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-lcid/926e694f-1797-4418-a922-343d1c5e91a6
+            // If a temporary LCID is assigned it will be dynamically assigned at runtime to be
+            // 0x2000, 0x2400, 0x2800, 0x2C00, 0x3000, 0x3400, 0x3800, 0x3C00, 0x4000, 0x4400, 0x4800, or 0x4C00,
+            // for the valid language-script-region tags.
+
+            Assert.NotEqual(lcid, new CultureInfo(lcid).LCID);
         }
     }
 }

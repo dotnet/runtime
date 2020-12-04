@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 //
 
 //
@@ -31,6 +30,9 @@ GVAL_IMPL_INIT(HRESULT, g_hrFatalError, S_OK);
 //  the CLR, it may be from the Thread object.  Non-CLR users have no thread object,
 //  and it will do nothing.
 void GetLastThrownObjectExceptionFromThread(Exception **ppException);
+
+// Helper function to get pointer to clr module base
+void* GetClrModuleBase();
 
 Exception *Exception::g_OOMException = NULL;
 
@@ -1270,7 +1272,7 @@ static DWORD MarkAsThrownByUsWorker(UINT numArgs, /*out*/ ULONG_PTR exceptionArg
     exceptionArgs[0] = arg0;
 
 #if !defined(FEATURE_UTILCODE_NO_DEPENDENCIES)
-    exceptionArgs[INSTANCE_TAGGED_SEH_PARAM_ARRAY_SIZE - 1] = (ULONG_PTR) (GetCLRModule());
+    exceptionArgs[INSTANCE_TAGGED_SEH_PARAM_ARRAY_SIZE - 1] = (ULONG_PTR)GetClrModuleBase();
 #endif // !defined(FEATURE_UTILCODE_NO_DEPENDENCIES)
 
     return INSTANCE_TAGGED_SEH_PARAM_ARRAY_SIZE;
@@ -1318,7 +1320,7 @@ BOOL WasThrownByUs(const EXCEPTION_RECORD *pcER, DWORD dwExceptionCode)
         return FALSE;
     }
 #if!defined(FEATURE_UTILCODE_NO_DEPENDENCIES)
-    if ( ((ULONG_PTR)(GetCLRModule())) != pcER->ExceptionInformation[INSTANCE_TAGGED_SEH_PARAM_ARRAY_SIZE - 1] )
+    if ((ULONG_PTR)GetClrModuleBase() != pcER->ExceptionInformation[INSTANCE_TAGGED_SEH_PARAM_ARRAY_SIZE - 1] )
     {
         return FALSE;
     }

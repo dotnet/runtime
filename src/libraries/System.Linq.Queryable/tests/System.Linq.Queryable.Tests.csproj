@@ -53,8 +53,7 @@
     <Compile Include="UnionTests.cs" />
     <Compile Include="WhereTests.cs" />
     <Compile Include="ZipTests.cs" />
-    <Compile Include="$(CommonTestPath)System\Linq\SkipTakeData.cs">
-      <Link>Common\System\Linq\SkipTakeData.cs</Link>
-    </Compile>
+    <Compile Include="$(CommonTestPath)System\Linq\SkipTakeData.cs"
+             Link="Common\System\Linq\SkipTakeData.cs" />
   </ItemGroup>
 </Project>

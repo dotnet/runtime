@@ -86,15 +86,11 @@ ICALL_EXTERN_C gint64 mono_fconv_ovf_i8 (double v);
 
 ICALL_EXTERN_C guint64 mono_fconv_ovf_u8 (double v);
 
-ICALL_EXTERN_C guint64 mono_fconv_ovf_u8_un (double v);
-
 ICALL_EXTERN_C gint64 mono_rconv_i8 (float v);
 
 ICALL_EXTERN_C gint64 mono_rconv_ovf_i8 (float v);
 
 ICALL_EXTERN_C guint64 mono_rconv_ovf_u8 (float v);
-
-ICALL_EXTERN_C guint64 mono_rconv_ovf_u8_un (float v);
 
 ICALL_EXTERN_C double mono_lconv_to_r8 (gint64 a);
 
@@ -226,6 +222,10 @@ ICALL_EXTERN_C double mono_ckfinite (double d);
 ICALL_EXTERN_C void mono_throw_method_access (MonoMethod *caller, MonoMethod *callee);
 
 ICALL_EXTERN_C void mono_throw_bad_image (void);
+
+ICALL_EXTERN_C void mono_throw_not_supported (void);
+
+ICALL_EXTERN_C void mono_throw_invalid_program (const char *msg);
 
 ICALL_EXTERN_C void mono_dummy_jit_icall (void);
 

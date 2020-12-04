@@ -1,43 +1,21 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.Intrinsics;
+using System.Runtime.Intrinsics.Arm;
 using System.Runtime.Intrinsics.X86;
 
 #if SYSTEM_PRIVATE_CORELIB
 using Internal.Runtime.CompilerServices;
 #endif
 
-#pragma warning disable SA1121 // explicitly using type aliases instead of built-in types
-#if SYSTEM_PRIVATE_CORELIB
-#if TARGET_64BIT
-using nint = System.Int64;
-using nuint = System.UInt64;
-#else // TARGET_64BIT
-using nint = System.Int32;
-using nuint = System.UInt32;
-#endif // TARGET_64BIT
-#else
-using nint = System.Int64; // https://github.com/dotnet/runtime/issues/33575 - use long/ulong outside of corelib until the compiler supports it
-using nuint = System.UInt64;
-#endif
-
 namespace System.Text
 {
     internal static partial class ASCIIUtility
     {
-#if DEBUG && SYSTEM_PRIVATE_CORELIB
-        static ASCIIUtility()
-        {
-            Debug.Assert(sizeof(nint) == IntPtr.Size && nint.MinValue < 0, "nint is defined incorrectly.");
-            Debug.Assert(sizeof(nuint) == IntPtr.Size && nuint.MinValue == 0, "nuint is defined incorrectly.");
-        }
-#endif // DEBUG && SYSTEM_PRIVATE_CORELIB
-
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static bool AllBytesInUInt64AreAscii(ulong value)
         {
@@ -62,6 +40,28 @@ namespace System.Text
         private static bool AllCharsInUInt64AreAscii(ulong value)
         {
             return (value & ~0x007F007F_007F007Ful) == 0;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static int GetIndexOfFirstNonAsciiByteInLane_AdvSimd(Vector128<byte> value, Vector128<byte> bitmask)
+        {
+            if (!AdvSimd.Arm64.IsSupported || !BitConverter.IsLittleEndian)
+            {
+                throw new PlatformNotSupportedException();
+            }
+
+            // extractedBits[i] = (value[i] >> 7) & (1 << (12 * (i % 2)));
+            Vector128<byte> mostSignificantBitIsSet = AdvSimd.ShiftRightArithmetic(value.AsSByte(), 7).AsByte();
+            Vector128<byte> extractedBits = AdvSimd.And(mostSignificantBitIsSet, bitmask);
+
+            // collapse mask to lower bits
+            extractedBits = AdvSimd.Arm64.AddPairwise(extractedBits, extractedBits);
+            ulong mask = extractedBits.AsUInt64().ToScalar();
+
+            // calculate the index
+            int index = BitOperations.TrailingZeroCount(mask) >> 2;
+            Debug.Assert((mask != 0) ? index < 16 : index >= 16);
+            return index;
         }
 
         /// <summary>
@@ -89,8 +89,8 @@ namespace System.Text
             // pmovmskb which we know are optimized, and (b) we can avoid downclocking the processor while
             // this method is running.
 
-            return (Sse2.IsSupported)
-                ? GetIndexOfFirstNonAsciiByte_Sse2(pBuffer, bufferLength)
+            return (Sse2.IsSupported || AdvSimd.Arm64.IsSupported && BitConverter.IsLittleEndian)
+                ? GetIndexOfFirstNonAsciiByte_Intrinsified(pBuffer, bufferLength)
                 : GetIndexOfFirstNonAsciiByte_Default(pBuffer, bufferLength);
         }
 
@@ -237,17 +237,38 @@ namespace System.Text
             goto Finish;
         }
 
-        private static unsafe nuint GetIndexOfFirstNonAsciiByte_Sse2(byte* pBuffer, nuint bufferLength)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static bool ContainsNonAsciiByte_Sse2(uint sseMask)
+        {
+            Debug.Assert(sseMask != uint.MaxValue);
+            Debug.Assert(Sse2.IsSupported);
+            return sseMask != 0;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static bool ContainsNonAsciiByte_AdvSimd(uint advSimdIndex)
+        {
+            Debug.Assert(advSimdIndex != uint.MaxValue);
+            Debug.Assert(AdvSimd.IsSupported);
+            return advSimdIndex < 16;
+        }
+
+        private static unsafe nuint GetIndexOfFirstNonAsciiByte_Intrinsified(byte* pBuffer, nuint bufferLength)
         {
             // JIT turns the below into constants
 
             uint SizeOfVector128 = (uint)Unsafe.SizeOf<Vector128<byte>>();
             nuint MaskOfAllBitsInVector128 = (nuint)(SizeOfVector128 - 1);
 
-            Debug.Assert(Sse2.IsSupported, "Should've been checked by caller.");
-            Debug.Assert(BitConverter.IsLittleEndian, "SSE2 assumes little-endian.");
+            Debug.Assert(Sse2.IsSupported || AdvSimd.Arm64.IsSupported, "Sse2 or AdvSimd64 required.");
+            Debug.Assert(BitConverter.IsLittleEndian, "This SSE2/Arm64 implementation assumes little-endian.");
 
-            uint currentMask, secondMask;
+            Vector128<byte> bitmask = BitConverter.IsLittleEndian ?
+                Vector128.Create((ushort)0x1001).AsByte() :
+                Vector128.Create((ushort)0x0110).AsByte();
+
+            uint currentSseMask = uint.MaxValue, secondSseMask = uint.MaxValue;
+            uint currentAdvSimdIndex = uint.MaxValue, secondAdvSimdIndex = uint.MaxValue;
             byte* pOriginalBuffer = pBuffer;
 
             // This method is written such that control generally flows top-to-bottom, avoiding
@@ -262,11 +283,25 @@ namespace System.Text
 
             // Read the first vector unaligned.
 
-            currentMask = (uint)Sse2.MoveMask(Sse2.LoadVector128(pBuffer)); // unaligned load
-
-            if (currentMask != 0)
+            if (Sse2.IsSupported)
             {
-                goto FoundNonAsciiDataInCurrentMask;
+                currentSseMask = (uint)Sse2.MoveMask(Sse2.LoadVector128(pBuffer)); // unaligned load
+                if (ContainsNonAsciiByte_Sse2(currentSseMask))
+                {
+                    goto FoundNonAsciiDataInCurrentChunk;
+                }
+            }
+            else if (AdvSimd.Arm64.IsSupported)
+            {
+                currentAdvSimdIndex = (uint)GetIndexOfFirstNonAsciiByteInLane_AdvSimd(AdvSimd.LoadVector128(pBuffer), bitmask); // unaligned load
+                if (ContainsNonAsciiByte_AdvSimd(currentAdvSimdIndex))
+                {
+                    goto FoundNonAsciiDataInCurrentChunk;
+                }
+            }
+            else
+            {
+                throw new PlatformNotSupportedException();
             }
 
             // If we have less than 32 bytes to process, just go straight to the final unaligned
@@ -303,15 +338,33 @@ namespace System.Text
 
                 do
                 {
-                    Vector128<byte> firstVector = Sse2.LoadAlignedVector128(pBuffer);
-                    Vector128<byte> secondVector = Sse2.LoadAlignedVector128(pBuffer + SizeOfVector128);
-
-                    currentMask = (uint)Sse2.MoveMask(firstVector);
-                    secondMask = (uint)Sse2.MoveMask(secondVector);
-
-                    if ((currentMask | secondMask) != 0)
+                    if (Sse2.IsSupported)
                     {
-                        goto FoundNonAsciiDataInInnerLoop;
+                        Vector128<byte> firstVector = Sse2.LoadAlignedVector128(pBuffer);
+                        Vector128<byte> secondVector = Sse2.LoadAlignedVector128(pBuffer + SizeOfVector128);
+
+                        currentSseMask = (uint)Sse2.MoveMask(firstVector);
+                        secondSseMask = (uint)Sse2.MoveMask(secondVector);
+                        if (ContainsNonAsciiByte_Sse2(currentSseMask | secondSseMask))
+                        {
+                            goto FoundNonAsciiDataInInnerLoop;
+                        }
+                    }
+                    else if (AdvSimd.Arm64.IsSupported)
+                    {
+                        Vector128<byte> firstVector = AdvSimd.LoadVector128(pBuffer);
+                        Vector128<byte> secondVector = AdvSimd.LoadVector128(pBuffer + SizeOfVector128);
+
+                        currentAdvSimdIndex = (uint)GetIndexOfFirstNonAsciiByteInLane_AdvSimd(firstVector, bitmask);
+                        secondAdvSimdIndex = (uint)GetIndexOfFirstNonAsciiByteInLane_AdvSimd(secondVector, bitmask);
+                        if (ContainsNonAsciiByte_AdvSimd(currentAdvSimdIndex) || ContainsNonAsciiByte_AdvSimd(secondAdvSimdIndex))
+                        {
+                            goto FoundNonAsciiDataInInnerLoop;
+                        }
+                    }
+                    else
+                    {
+                        throw new PlatformNotSupportedException();
                     }
 
                     pBuffer += 2 * SizeOfVector128;
@@ -335,10 +388,25 @@ namespace System.Text
             // At least one full vector's worth of data remains, so we can safely read it.
             // Remember, at this point pBuffer is still aligned.
 
-            currentMask = (uint)Sse2.MoveMask(Sse2.LoadAlignedVector128(pBuffer));
-            if (currentMask != 0)
+            if (Sse2.IsSupported)
             {
-                goto FoundNonAsciiDataInCurrentMask;
+                currentSseMask = (uint)Sse2.MoveMask(Sse2.LoadAlignedVector128(pBuffer));
+                if (ContainsNonAsciiByte_Sse2(currentSseMask))
+                {
+                    goto FoundNonAsciiDataInCurrentChunk;
+                }
+            }
+            else if (AdvSimd.Arm64.IsSupported)
+            {
+                currentAdvSimdIndex = (uint)GetIndexOfFirstNonAsciiByteInLane_AdvSimd(AdvSimd.LoadVector128(pBuffer), bitmask);
+                if (ContainsNonAsciiByte_AdvSimd(currentAdvSimdIndex))
+                {
+                    goto FoundNonAsciiDataInCurrentChunk;
+                }
+            }
+            else
+            {
+                throw new PlatformNotSupportedException();
             }
 
         IncrementCurrentOffsetBeforeFinalUnalignedVectorRead:
@@ -354,17 +422,33 @@ namespace System.Text
 
                 pBuffer += (bufferLength & MaskOfAllBitsInVector128) - SizeOfVector128;
 
-                currentMask = (uint)Sse2.MoveMask(Sse2.LoadVector128(pBuffer)); // unaligned load
-                if (currentMask != 0)
+                if (Sse2.IsSupported)
                 {
-                    goto FoundNonAsciiDataInCurrentMask;
+                    currentSseMask = (uint)Sse2.MoveMask(Sse2.LoadVector128(pBuffer)); // unaligned load
+                    if (ContainsNonAsciiByte_Sse2(currentSseMask))
+                    {
+                        goto FoundNonAsciiDataInCurrentChunk;
+                    }
+
+                }
+                else if (AdvSimd.Arm64.IsSupported)
+                {
+                    currentAdvSimdIndex = (uint)GetIndexOfFirstNonAsciiByteInLane_AdvSimd(AdvSimd.LoadVector128(pBuffer), bitmask); // unaligned load
+                    if (ContainsNonAsciiByte_AdvSimd(currentAdvSimdIndex))
+                    {
+                        goto FoundNonAsciiDataInCurrentChunk;
+                    }
+
+                }
+                else
+                {
+                    throw new PlatformNotSupportedException();
                 }
 
                 pBuffer += SizeOfVector128;
             }
 
         Finish:
-
             return (nuint)pBuffer - (nuint)pOriginalBuffer; // and we're done!
 
         FoundNonAsciiDataInInnerLoop:
@@ -373,20 +457,46 @@ namespace System.Text
             // instead be the second mask. If so, skip the entire first mask and drain ASCII bytes
             // from the second mask.
 
-            if (currentMask == 0)
+            if (Sse2.IsSupported)
             {
-                pBuffer += SizeOfVector128;
-                currentMask = secondMask;
+                if (!ContainsNonAsciiByte_Sse2(currentSseMask))
+                {
+                    pBuffer += SizeOfVector128;
+                    currentSseMask = secondSseMask;
+                }
             }
+            else if (AdvSimd.IsSupported)
+            {
+                if (!ContainsNonAsciiByte_AdvSimd(currentAdvSimdIndex))
+                {
+                    pBuffer += SizeOfVector128;
+                    currentAdvSimdIndex = secondAdvSimdIndex;
+                }
+            }
+            else
+            {
+                throw new PlatformNotSupportedException();
+            }
+        FoundNonAsciiDataInCurrentChunk:
 
-        FoundNonAsciiDataInCurrentMask:
 
-            // The mask contains - from the LSB - a 0 for each ASCII byte we saw, and a 1 for each non-ASCII byte.
-            // Tzcnt is the correct operation to count the number of zero bits quickly. If this instruction isn't
-            // available, we'll fall back to a normal loop.
-
-            Debug.Assert(currentMask != 0, "Shouldn't be here unless we see non-ASCII data.");
-            pBuffer += (uint)BitOperations.TrailingZeroCount(currentMask);
+            if (Sse2.IsSupported)
+            {
+                // The mask contains - from the LSB - a 0 for each ASCII byte we saw, and a 1 for each non-ASCII byte.
+                // Tzcnt is the correct operation to count the number of zero bits quickly. If this instruction isn't
+                // available, we'll fall back to a normal loop.
+                Debug.Assert(ContainsNonAsciiByte_Sse2(currentSseMask), "Shouldn't be here unless we see non-ASCII data.");
+                pBuffer += (uint)BitOperations.TrailingZeroCount(currentSseMask);
+            }
+            else if (AdvSimd.Arm64.IsSupported)
+            {
+                Debug.Assert(ContainsNonAsciiByte_AdvSimd(currentAdvSimdIndex), "Shouldn't be here unless we see non-ASCII data.");
+                pBuffer += currentAdvSimdIndex;
+            }
+            else
+            {
+                throw new PlatformNotSupportedException();
+            }
 
             goto Finish;
 
@@ -410,7 +520,7 @@ namespace System.Text
 
             if ((bufferLength & 8) != 0)
             {
-                if (Bmi1.X64.IsSupported)
+                if (UIntPtr.Size == sizeof(ulong))
                 {
                     // If we can use 64-bit tzcnt to count the number of leading ASCII bytes, prefer it.
 
@@ -418,10 +528,10 @@ namespace System.Text
                     if (!AllBytesInUInt64AreAscii(candidateUInt64))
                     {
                         // Clear everything but the high bit of each byte, then tzcnt.
-                        // Remember the / 8 at the end to convert bit count to byte count.
+                        // Remember to divide by 8 at the end to convert bit count to byte count.
 
                         candidateUInt64 &= UInt64HighBitsOnlyMask;
-                        pBuffer += (nuint)(Bmi1.X64.TrailingZeroCount(candidateUInt64) / 8);
+                        pBuffer += (nuint)(BitOperations.TrailingZeroCount(candidateUInt64) >> 3);
                         goto Finish;
                     }
                 }
@@ -524,7 +634,9 @@ namespace System.Text
 
             char* pOriginalBuffer = pBuffer;
 
+#if SYSTEM_PRIVATE_CORELIB
             Debug.Assert(bufferLength <= nuint.MaxValue / sizeof(char));
+#endif
 
             // Before we drain off char-by-char, try a generic vectorized loop.
             // Only run the loop if we have at least two vectors we can pull out.
@@ -683,11 +795,13 @@ namespace System.Text
             // jumps as much as possible in the optimistic case of "all ASCII". If we see non-ASCII
             // data, we jump out of the hot paths to targets at the end of the method.
 
-            Vector128<ushort> asciiMaskForPTEST = Vector128.Create((ushort)0xFF80); // used for PTEST on supported hardware
-            Vector128<ushort> asciiMaskForPADDUSW = Vector128.Create((ushort)0x7F80); // used for PADDUSW
+            Vector128<ushort> asciiMaskForTestZ = Vector128.Create((ushort)0xFF80); // used for PTEST on supported hardware
+            Vector128<ushort> asciiMaskForAddSaturate = Vector128.Create((ushort)0x7F80); // used for PADDUSW
             const uint NonAsciiDataSeenMask = 0b_1010_1010_1010_1010; // used for determining whether 'currentMask' contains non-ASCII data
 
+#if SYSTEM_PRIVATE_CORELIB
             Debug.Assert(bufferLength <= nuint.MaxValue / sizeof(char));
+#endif
 
             // Read the first vector unaligned.
 
@@ -697,7 +811,7 @@ namespace System.Text
             // has value >= 0x0800 (non-ASCII). Then we'll treat the vector as a BYTE vector in order
             // to extract the mask. Reminder: the 0x0080 bit of each WORD should be ignored.
 
-            currentMask = (uint)Sse2.MoveMask(Sse2.AddSaturate(firstVector, asciiMaskForPADDUSW).AsByte());
+            currentMask = (uint)Sse2.MoveMask(Sse2.AddSaturate(firstVector, asciiMaskForAddSaturate).AsByte());
 
             if ((currentMask & NonAsciiDataSeenMask) != 0)
             {
@@ -751,7 +865,7 @@ namespace System.Text
                     {
                         // If a non-ASCII bit is set in any WORD of the combined vector, we have seen non-ASCII data.
                         // Jump to the non-ASCII handler to figure out which particular vector contained non-ASCII data.
-                        if (!Sse41.TestZ(combinedVector, asciiMaskForPTEST))
+                        if (!Sse41.TestZ(combinedVector, asciiMaskForTestZ))
                         {
                             goto FoundNonAsciiDataInFirstOrSecondVector;
                         }
@@ -759,7 +873,7 @@ namespace System.Text
                     else
                     {
                         // See comment earlier in the method for an explanation of how the below logic works.
-                        currentMask = (uint)Sse2.MoveMask(Sse2.AddSaturate(combinedVector, asciiMaskForPADDUSW).AsByte());
+                        currentMask = (uint)Sse2.MoveMask(Sse2.AddSaturate(combinedVector, asciiMaskForAddSaturate).AsByte());
                         if ((currentMask & NonAsciiDataSeenMask) != 0)
                         {
                             goto FoundNonAsciiDataInFirstOrSecondVector;
@@ -794,7 +908,7 @@ namespace System.Text
             {
                 // If a non-ASCII bit is set in any WORD of the combined vector, we have seen non-ASCII data.
                 // Jump to the non-ASCII handler to figure out which particular vector contained non-ASCII data.
-                if (!Sse41.TestZ(firstVector, asciiMaskForPTEST))
+                if (!Sse41.TestZ(firstVector, asciiMaskForTestZ))
                 {
                     goto FoundNonAsciiDataInFirstVector;
                 }
@@ -802,7 +916,7 @@ namespace System.Text
             else
             {
                 // See comment earlier in the method for an explanation of how the below logic works.
-                currentMask = (uint)Sse2.MoveMask(Sse2.AddSaturate(firstVector, asciiMaskForPADDUSW).AsByte());
+                currentMask = (uint)Sse2.MoveMask(Sse2.AddSaturate(firstVector, asciiMaskForAddSaturate).AsByte());
                 if ((currentMask & NonAsciiDataSeenMask) != 0)
                 {
                     goto FoundNonAsciiDataInCurrentMask;
@@ -827,7 +941,7 @@ namespace System.Text
                 {
                     // If a non-ASCII bit is set in any WORD of the combined vector, we have seen non-ASCII data.
                     // Jump to the non-ASCII handler to figure out which particular vector contained non-ASCII data.
-                    if (!Sse41.TestZ(firstVector, asciiMaskForPTEST))
+                    if (!Sse41.TestZ(firstVector, asciiMaskForTestZ))
                     {
                         goto FoundNonAsciiDataInFirstVector;
                     }
@@ -835,7 +949,7 @@ namespace System.Text
                 else
                 {
                     // See comment earlier in the method for an explanation of how the below logic works.
-                    currentMask = (uint)Sse2.MoveMask(Sse2.AddSaturate(firstVector, asciiMaskForPADDUSW).AsByte());
+                    currentMask = (uint)Sse2.MoveMask(Sse2.AddSaturate(firstVector, asciiMaskForAddSaturate).AsByte());
                     if ((currentMask & NonAsciiDataSeenMask) != 0)
                     {
                         goto FoundNonAsciiDataInCurrentMask;
@@ -859,14 +973,14 @@ namespace System.Text
             // See comment earlier in the method for an explanation of how the below logic works.
             if (Sse41.IsSupported)
             {
-                if (!Sse41.TestZ(firstVector, asciiMaskForPTEST))
+                if (!Sse41.TestZ(firstVector, asciiMaskForTestZ))
                 {
                     goto FoundNonAsciiDataInFirstVector;
                 }
             }
             else
             {
-                currentMask = (uint)Sse2.MoveMask(Sse2.AddSaturate(firstVector, asciiMaskForPADDUSW).AsByte());
+                currentMask = (uint)Sse2.MoveMask(Sse2.AddSaturate(firstVector, asciiMaskForAddSaturate).AsByte());
                 if ((currentMask & NonAsciiDataSeenMask) != 0)
                 {
                     goto FoundNonAsciiDataInCurrentMask;
@@ -881,7 +995,7 @@ namespace System.Text
         FoundNonAsciiDataInFirstVector:
 
             // See comment earlier in the method for an explanation of how the below logic works.
-            currentMask = (uint)Sse2.MoveMask(Sse2.AddSaturate(firstVector, asciiMaskForPADDUSW).AsByte());
+            currentMask = (uint)Sse2.MoveMask(Sse2.AddSaturate(firstVector, asciiMaskForAddSaturate).AsByte());
 
         FoundNonAsciiDataInCurrentMask:
 
@@ -932,7 +1046,7 @@ namespace System.Text
 
             if ((bufferLength & 4) != 0)
             {
-                if (Bmi1.X64.IsSupported)
+                if (UIntPtr.Size == sizeof(ulong))
                 {
                     // If we can use 64-bit tzcnt to count the number of leading ASCII chars, prefer it.
 
@@ -940,12 +1054,12 @@ namespace System.Text
                     if (!AllCharsInUInt64AreAscii(candidateUInt64))
                     {
                         // Clear the low 7 bits (the ASCII bits) of each char, then tzcnt.
-                        // Remember the / 8 at the end to convert bit count to byte count,
+                        // Remember to divide by 8 at the end to convert bit count to byte count,
                         // then the & ~1 at the end to treat a match in the high byte of
                         // any char the same as a match in the low byte of that same char.
 
                         candidateUInt64 &= 0xFF80FF80_FF80FF80ul;
-                        pBuffer = (char*)((byte*)pBuffer + ((nuint)(Bmi1.X64.TrailingZeroCount(candidateUInt64) / 8) & ~(nuint)1));
+                        pBuffer = (char*)((byte*)pBuffer + ((nuint)(BitOperations.TrailingZeroCount(candidateUInt64) >> 3) & ~(nuint)1));
                         goto Finish;
                     }
                 }
@@ -1021,6 +1135,16 @@ namespace System.Text
                 Vector128<uint> vecNarrow = Sse2.PackUnsignedSaturate(vecWide, vecWide).AsUInt32();
                 Unsafe.WriteUnaligned<uint>(ref outputBuffer, Sse2.ConvertToUInt32(vecNarrow));
             }
+            else if (AdvSimd.IsSupported)
+            {
+                // Narrows a vector of words [ w0 w1 w2 w3 ] to a vector of bytes
+                // [ b0 b1 b2 b3 * * * * ], then writes 4 bytes (32 bits) to the destination.
+
+                Vector128<short> vecWide = Vector128.CreateScalarUnsafe(value).AsInt16();
+                Vector64<byte> lower = AdvSimd.ExtractNarrowingSaturateUnsignedLower(vecWide);
+                Unsafe.WriteUnaligned<uint>(ref outputBuffer, lower.AsUInt32().ToScalar());
+            }
+
             else
             {
                 if (BitConverter.IsLittleEndian)
@@ -1320,8 +1444,8 @@ namespace System.Text
             Debug.Assert(BitConverter.IsLittleEndian);
             Debug.Assert(elementCount >= 2 * SizeOfVector128);
 
-            Vector128<short> asciiMaskForPTEST = Vector128.Create(unchecked((short)0xFF80)); // used for PTEST on supported hardware
-            Vector128<ushort> asciiMaskForPADDUSW = Vector128.Create((ushort)0x7F80); // used for PADDUSW
+            Vector128<short> asciiMaskForTestZ = Vector128.Create(unchecked((short)0xFF80)); // used for PTEST on supported hardware
+            Vector128<ushort> asciiMaskForAddSaturate = Vector128.Create((ushort)0x7F80); // used for PADDUSW
             const int NonAsciiDataSeenMask = 0b_1010_1010_1010_1010; // used for determining whether the pmovmskb operation saw non-ASCII chars
 
             // First, perform an unaligned read of the first part of the input buffer.
@@ -1333,14 +1457,14 @@ namespace System.Text
 
             if (Sse41.IsSupported)
             {
-                if (!Sse41.TestZ(utf16VectorFirst, asciiMaskForPTEST))
+                if (!Sse41.TestZ(utf16VectorFirst, asciiMaskForTestZ))
                 {
                     return 0;
                 }
             }
             else
             {
-                if ((Sse2.MoveMask(Sse2.AddSaturate(utf16VectorFirst.AsUInt16(), asciiMaskForPADDUSW).AsByte()) & NonAsciiDataSeenMask) != 0)
+                if ((Sse2.MoveMask(Sse2.AddSaturate(utf16VectorFirst.AsUInt16(), asciiMaskForAddSaturate).AsByte()) & NonAsciiDataSeenMask) != 0)
                 {
                     return 0;
                 }
@@ -1373,14 +1497,14 @@ namespace System.Text
                 // See comments earlier in this method for information about how this works.
                 if (Sse41.IsSupported)
                 {
-                    if (!Sse41.TestZ(utf16VectorFirst, asciiMaskForPTEST))
+                    if (!Sse41.TestZ(utf16VectorFirst, asciiMaskForTestZ))
                     {
                         goto Finish;
                     }
                 }
                 else
                 {
-                    if ((Sse2.MoveMask(Sse2.AddSaturate(utf16VectorFirst.AsUInt16(), asciiMaskForPADDUSW).AsByte()) & NonAsciiDataSeenMask) != 0)
+                    if ((Sse2.MoveMask(Sse2.AddSaturate(utf16VectorFirst.AsUInt16(), asciiMaskForAddSaturate).AsByte()) & NonAsciiDataSeenMask) != 0)
                     {
                         goto Finish;
                     }
@@ -1412,20 +1536,20 @@ namespace System.Text
                 // See comments in GetIndexOfFirstNonAsciiChar_Sse2 for information about how this works.
                 if (Sse41.IsSupported)
                 {
-                    if (!Sse41.TestZ(combinedVector, asciiMaskForPTEST))
+                    if (!Sse41.TestZ(combinedVector, asciiMaskForTestZ))
                     {
                         goto FoundNonAsciiDataInLoop;
                     }
                 }
                 else
                 {
-                    if ((Sse2.MoveMask(Sse2.AddSaturate(combinedVector.AsUInt16(), asciiMaskForPADDUSW).AsByte()) & NonAsciiDataSeenMask) != 0)
+                    if ((Sse2.MoveMask(Sse2.AddSaturate(combinedVector.AsUInt16(), asciiMaskForAddSaturate).AsByte()) & NonAsciiDataSeenMask) != 0)
                     {
                         goto FoundNonAsciiDataInLoop;
                     }
                 }
 
-                // Build up the UTF-8 vector and perform the store.
+                // Build up the ASCII vector and perform the store.
 
                 asciiVector = Sse2.PackUnsignedSaturate(utf16VectorFirst, utf16VectorSecond);
 
@@ -1446,14 +1570,14 @@ namespace System.Text
             // See comments in GetIndexOfFirstNonAsciiChar_Sse2 for information about how this works.
             if (Sse41.IsSupported)
             {
-                if (!Sse41.TestZ(utf16VectorFirst, asciiMaskForPTEST))
+                if (!Sse41.TestZ(utf16VectorFirst, asciiMaskForTestZ))
                 {
                     goto Finish; // found non-ASCII data
                 }
             }
             else
             {
-                if ((Sse2.MoveMask(Sse2.AddSaturate(utf16VectorFirst.AsUInt16(), asciiMaskForPADDUSW).AsByte()) & NonAsciiDataSeenMask) != 0)
+                if ((Sse2.MoveMask(Sse2.AddSaturate(utf16VectorFirst.AsUInt16(), asciiMaskForAddSaturate).AsByte()) & NonAsciiDataSeenMask) != 0)
                 {
                     goto Finish; // found non-ASCII data
                 }
@@ -1478,6 +1602,7 @@ namespace System.Text
         /// </summary>
         public static unsafe nuint WidenAsciiToUtf16(byte* pAsciiBuffer, char* pUtf16Buffer, nuint elementCount)
         {
+            // Intrinsified in mono interpreter
             nuint currentOffset = 0;
 
             // If SSE2 is supported, use those specific intrinsics instead of the generic vectorized
@@ -1485,11 +1610,11 @@ namespace System.Text
             // pmovmskb which we know are optimized, and (b) we can avoid downclocking the processor while
             // this method is running.
 
-            if (Sse2.IsSupported)
+            if (BitConverter.IsLittleEndian && (Sse2.IsSupported || AdvSimd.Arm64.IsSupported))
             {
                 if (elementCount >= 2 * (uint)Unsafe.SizeOf<Vector128<byte>>())
                 {
-                    currentOffset = WidenAsciiToUtf16_Sse2(pAsciiBuffer, pUtf16Buffer, elementCount);
+                    currentOffset = WidenAsciiToUtf16_Intrinsified(pAsciiBuffer, pUtf16Buffer, elementCount);
                 }
             }
             else if (Vector.IsHardwareAccelerated)
@@ -1604,7 +1729,18 @@ namespace System.Text
             goto Finish;
         }
 
-        private static unsafe nuint WidenAsciiToUtf16_Sse2(byte* pAsciiBuffer, char* pUtf16Buffer, nuint elementCount)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool ContainsNonAsciiByte(Vector128<byte> value)
+        {
+            if (!AdvSimd.Arm64.IsSupported)
+            {
+                throw new PlatformNotSupportedException();
+            }
+            value = AdvSimd.Arm64.MaxPairwise(value, value);
+            return (value.AsUInt64().ToScalar() & 0x8080808080808080) != 0;
+        }
+
+        private static unsafe nuint WidenAsciiToUtf16_Intrinsified(byte* pAsciiBuffer, char* pUtf16Buffer, nuint elementCount)
         {
             // JIT turns the below into constants
 
@@ -1615,7 +1751,7 @@ namespace System.Text
             // jumps as much as possible in the optimistic case of "all ASCII". If we see non-ASCII
             // data, we jump out of the hot paths to targets at the end of the method.
 
-            Debug.Assert(Sse2.IsSupported);
+            Debug.Assert(Sse2.IsSupported || AdvSimd.Arm64.IsSupported);
             Debug.Assert(BitConverter.IsLittleEndian);
             Debug.Assert(elementCount >= 2 * SizeOfVector128);
 
@@ -1624,16 +1760,28 @@ namespace System.Text
 
             Vector128<byte> asciiVector;
             Vector128<byte> utf16FirstHalfVector;
-            uint mask;
+            bool containsNonAsciiBytes;
 
             // First, perform an unaligned read of the first part of the input buffer.
 
-            asciiVector = Sse2.LoadVector128(pAsciiBuffer); // unaligned load
-            mask = (uint)Sse2.MoveMask(asciiVector);
+            if (Sse2.IsSupported)
+            {
+                asciiVector = Sse2.LoadVector128(pAsciiBuffer); // unaligned load
+                containsNonAsciiBytes = (uint)Sse2.MoveMask(asciiVector) != 0;
+            }
+            else if (AdvSimd.Arm64.IsSupported)
+            {
+                asciiVector = AdvSimd.LoadVector128(pAsciiBuffer);
+                containsNonAsciiBytes = ContainsNonAsciiByte(asciiVector);
+            }
+            else
+            {
+                throw new PlatformNotSupportedException();
+            }
 
             // If there's non-ASCII data in the first 8 elements of the vector, there's nothing we can do.
 
-            if ((byte)mask != 0)
+            if (containsNonAsciiBytes)
             {
                 return 0;
             }
@@ -1642,8 +1790,20 @@ namespace System.Text
 
             Vector128<byte> zeroVector = Vector128<byte>.Zero;
 
-            utf16FirstHalfVector = Sse2.UnpackLow(asciiVector, zeroVector);
-            Sse2.Store((byte*)pUtf16Buffer, utf16FirstHalfVector); // unaligned
+            if (Sse2.IsSupported)
+            {
+                utf16FirstHalfVector = Sse2.UnpackLow(asciiVector, zeroVector);
+                Sse2.Store((byte*)pUtf16Buffer, utf16FirstHalfVector); // unaligned
+            }
+            else if (AdvSimd.IsSupported)
+            {
+                utf16FirstHalfVector = AdvSimd.ZeroExtendWideningLower(asciiVector.GetLower()).AsByte();
+                AdvSimd.Store((byte*)pUtf16Buffer, utf16FirstHalfVector); // unaligned
+            }
+            else
+            {
+                throw new PlatformNotSupportedException();
+            }
 
             // Calculate how many elements we wrote in order to get pOutputBuffer to its next alignment
             // point, then use that as the base offset going forward. Remember the >> 1 to account for
@@ -1655,26 +1815,58 @@ namespace System.Text
 
             nuint finalOffsetWhereCanRunLoop = elementCount - SizeOfVector128;
 
+            // Calculating the destination address outside the loop results in significant
+            // perf wins vs. relying on the JIT to fold memory addressing logic into the
+            // write instructions. See: https://github.com/dotnet/runtime/issues/33002
+
+            char* pCurrentWriteAddress = pUtf16Buffer + currentOffset;
+
             do
             {
                 // In a loop, perform an unaligned read, widen to two vectors, then aligned write the two vectors.
 
-                asciiVector = Sse2.LoadVector128(pAsciiBuffer + currentOffset); // unaligned load
-                mask = (uint)Sse2.MoveMask(asciiVector);
+                if (Sse2.IsSupported)
+                {
+                    asciiVector = Sse2.LoadVector128(pAsciiBuffer + currentOffset); // unaligned load
+                    containsNonAsciiBytes = (uint)Sse2.MoveMask(asciiVector) != 0;
+                }
+                else if (AdvSimd.Arm64.IsSupported)
+                {
+                    asciiVector = AdvSimd.LoadVector128(pAsciiBuffer + currentOffset);
+                    containsNonAsciiBytes = ContainsNonAsciiByte(asciiVector);
+                }
+                else
+                {
+                    throw new PlatformNotSupportedException();
+                }
 
-                if (mask != 0)
+                if (containsNonAsciiBytes)
                 {
                     // non-ASCII byte somewhere
                     goto NonAsciiDataSeenInInnerLoop;
                 }
 
-                byte* pStore = (byte*)(pUtf16Buffer + currentOffset);
-                Sse2.StoreAligned(pStore, Sse2.UnpackLow(asciiVector, zeroVector));
+                if (Sse2.IsSupported)
+                {
+                    Vector128<byte> low = Sse2.UnpackLow(asciiVector, zeroVector);
+                    Sse2.StoreAligned((byte*)pCurrentWriteAddress, low);
 
-                pStore += SizeOfVector128;
-                Sse2.StoreAligned(pStore, Sse2.UnpackHigh(asciiVector, zeroVector));
+                    Vector128<byte> high = Sse2.UnpackHigh(asciiVector, zeroVector);
+                    Sse2.StoreAligned((byte*)pCurrentWriteAddress + SizeOfVector128, high);
+                }
+                else if (AdvSimd.Arm64.IsSupported)
+                {
+                    Vector128<ushort> low = AdvSimd.ZeroExtendWideningLower(asciiVector.GetLower());
+                    Vector128<ushort> high = AdvSimd.ZeroExtendWideningUpper(asciiVector);
+                    AdvSimd.Arm64.StorePair((ushort*)pCurrentWriteAddress, low, high);
+                }
+                else
+                {
+                    throw new PlatformNotSupportedException();
+                }
 
                 currentOffset += SizeOfVector128;
+                pCurrentWriteAddress += SizeOfVector128;
             } while (currentOffset <= finalOffsetWhereCanRunLoop);
 
         Finish:
@@ -1685,11 +1877,23 @@ namespace System.Text
 
             // Can we at least widen the first part of the vector?
 
-            if ((byte)mask == 0)
+            if (!containsNonAsciiBytes)
             {
                 // First part was all ASCII, widen
-                utf16FirstHalfVector = Sse2.UnpackLow(asciiVector, zeroVector);
-                Sse2.StoreAligned((byte*)(pUtf16Buffer + currentOffset), utf16FirstHalfVector);
+                if (Sse2.IsSupported)
+                {
+                    utf16FirstHalfVector = Sse2.UnpackLow(asciiVector, zeroVector);
+                    Sse2.StoreAligned((byte*)(pUtf16Buffer + currentOffset), utf16FirstHalfVector);
+                }
+                else if (AdvSimd.Arm64.IsSupported)
+                {
+                    Vector128<ushort> lower = AdvSimd.ZeroExtendWideningLower(asciiVector.GetLower());
+                    AdvSimd.Store((ushort*)(pUtf16Buffer + currentOffset), lower);
+                }
+                else
+                {
+                    throw new PlatformNotSupportedException();
+                }
                 currentOffset += SizeOfVector128 / 2;
             }
 
@@ -1711,6 +1915,12 @@ namespace System.Text
                 Vector128<byte> vecNarrow = Sse2.ConvertScalarToVector128UInt32(value).AsByte();
                 Vector128<ulong> vecWide = Sse2.UnpackLow(vecNarrow, Vector128<byte>.Zero).AsUInt64();
                 Unsafe.WriteUnaligned<ulong>(ref Unsafe.As<char, byte>(ref outputBuffer), Sse2.X64.ConvertToUInt64(vecWide));
+            }
+            else if (AdvSimd.Arm64.IsSupported)
+            {
+                Vector128<byte> vecNarrow = AdvSimd.DuplicateToVector128(value).AsByte();
+                Vector128<ulong> vecWide = AdvSimd.Arm64.ZipLow(vecNarrow, Vector128<byte>.Zero).AsUInt64();
+                Unsafe.WriteUnaligned<ulong>(ref Unsafe.As<char, byte>(ref outputBuffer), vecWide.ToScalar());
             }
             else
             {

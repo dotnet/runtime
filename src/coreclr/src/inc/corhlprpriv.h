@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 /*****************************************************************************
  **                                                                         **
@@ -14,7 +13,7 @@
 #include "corhlpr.h"
 #include "fstring.h"
 
-#if defined(_MSC_VER) && defined(TARGET_X86)
+#if defined(_MSC_VER) && defined(HOST_X86)
 #pragma optimize("y", on)		// If routines don't get inlined, don't pay the EBP frame penalty
 #endif
 
@@ -507,6 +506,7 @@ public:
     using CQuickArray<T>::AllocNoThrow;
     using CQuickArray<T>::ReSizeNoThrow;
     using CQuickArray<T>::MaxSize;
+    using CQuickArray<T>::Ptr;
 
     CQuickArrayList()
         : m_curSize(0)

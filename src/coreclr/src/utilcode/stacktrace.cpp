@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 //-----------------------------------------------------------------------------
 
 //-----------------------------------------------------------------------------
@@ -741,7 +740,7 @@ CONTEXT * pContext      // Context to use (or NULL to use current)
     stkfrm.AddrFrame.Offset = context.Ebp;  // Frame Pointer
 #endif
 
-#ifndef TARGET_X86
+#ifndef HOST_X86
     // If we don't have a user-supplied context, then don't skip any frames.
     // So ignore this function (GetStackBackTrace)
     // ClrCaptureContext on x86 gives us the ESP/EBP/EIP of its caller's caller
@@ -750,7 +749,7 @@ CONTEXT * pContext      // Context to use (or NULL to use current)
     {
         ifrStart += 1;
     }
-#endif // !TARGET_X86
+#endif // !HOST_X86
 
     for (UINT i = 0; i < ifrStart + cfrTotal; i++)
     {
@@ -793,8 +792,10 @@ CONTEXT * pContext      // Context to use (or NULL to use current)
 
 #ifdef HOST_64BIT
     #define FMT_ADDR_BARE      "%08x`%08x"
+    #define FMT_ADDR_OFFSET    "%llX"
 #else
     #define FMT_ADDR_BARE      "%08x"
+    #define FMT_ADDR_OFFSET    "%lX"
 #endif
 
 void GetStringFromSymbolInfo
@@ -816,7 +817,7 @@ __out_ecount (cchMaxAssertStackLevelStringLen) CHAR *pszString     // @parm Plac
     {
         sprintf_s(pszString,
                   cchMaxAssertStackLevelStringLen,
-                  "%s! %s + 0x%X (0x" FMT_ADDR_BARE ")",
+                  "%s! %s + 0x" FMT_ADDR_OFFSET " (0x" FMT_ADDR_BARE ")",
                   (psi->achModule[0]) ? psi->achModule : "<no module>",
                   (psi->achSymbol[0]) ? psi->achSymbol : "<no symbol>",
                   psi->dwOffset,
@@ -824,7 +825,6 @@ __out_ecount (cchMaxAssertStackLevelStringLen) CHAR *pszString     // @parm Plac
     }
     else
     {
-
         sprintf_s(pszString, cchMaxAssertStackLevelStringLen, "<symbols not available> (0x%p)", (void *)dwAddr);
     }
 
@@ -948,7 +948,7 @@ void MagicDeinit(void)
     }
 }
 
-#if defined(TARGET_X86)
+#if defined(HOST_X86)
 /****************************************************************************
 * ClrCaptureContext *
 *-------------------*
@@ -988,4 +988,4 @@ ClrCaptureContext(__out PCONTEXT ctx)
         ret  4
     }
 }
-#endif // _TARGET_X86
+#endif // HOST_X86

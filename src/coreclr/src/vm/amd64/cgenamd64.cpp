@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 //
 // Various helper routines for generating AMD64 assembly code.
 //
@@ -70,40 +69,6 @@ void TransitionFrame::UpdateRegDisplay(const PREGDISPLAY pRD)
     pRD->pCurrentContext->Rsp = GetSP();
 
     UpdateRegDisplayFromCalleeSavedRegisters(pRD, GetCalleeSavedRegisters());
-    ClearRegDisplayArgumentAndScratchRegisters(pRD);
-
-    SyncRegDisplayToCurrentContext(pRD);
-
-    LOG((LF_GCROOTS, LL_INFO100000, "STACKWALK    TransitionFrame::UpdateRegDisplay(rip:%p, rsp:%p)\n", pRD->ControlPC, pRD->SP));
-}
-
-#ifndef DACCESS_COMPILE
-
-void TailCallFrame::InitFromContext(T_CONTEXT * pContext)
-{
-    WRAPPER_NO_CONTRACT;
-
-#define CALLEE_SAVED_REGISTER(regname) m_calleeSavedRegisters.regname = pContext->regname;
-    ENUM_CALLEE_SAVED_REGISTERS();
-#undef CALLEE_SAVED_REGISTER
-
-    m_pGCLayout = 0;
-    m_ReturnAddress = pContext->Rip;
-}
-
-#endif // !DACCESS_COMPILE
-
-void TailCallFrame::UpdateRegDisplay(const PREGDISPLAY pRD)
-{
-    LIMITED_METHOD_CONTRACT;
-
-    pRD->IsCallerContextValid = FALSE;
-    pRD->IsCallerSPValid      = FALSE;        // Don't add usage of this field.  This is only temporary.
-
-    pRD->pCurrentContext->Rip = m_ReturnAddress;
-    pRD->pCurrentContext->Rsp = dac_cast<TADDR>(this) + sizeof(*this);
-
-    UpdateRegDisplayFromCalleeSavedRegisters(pRD, &m_calleeSavedRegisters);
     ClearRegDisplayArgumentAndScratchRegisters(pRD);
 
     SyncRegDisplayToCurrentContext(pRD);

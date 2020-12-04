@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
 using System.Globalization;
@@ -195,23 +194,26 @@ namespace System
             //
             for (int i = 0; i < formats.Length; i++)
             {
-                if (formats[i] == null || formats[i]!.Length == 0) // TODO-NULLABLE: Indexer nullability tracked (https://github.com/dotnet/roslyn/issues/34644)
+                string? format = formats[i];
+                if (string.IsNullOrEmpty(format))
                 {
                     result.SetBadFormatSpecifierFailure();
                     return false;
                 }
+
                 // Create a new result each time to ensure the runs are independent. Carry through
                 // flags from the caller and return the result.
                 DateTimeResult innerResult = default;       // The buffer to store the parsing result.
                 innerResult.Init(s);
                 innerResult.flags = result.flags;
-                if (TryParseExact(s, formats[i], dtfi, style, ref innerResult))
+                if (TryParseExact(s, format, dtfi, style, ref innerResult))
                 {
                     result.parsedDate = innerResult.parsedDate;
                     result.timeZoneOffset = innerResult.timeZoneOffset;
                     return true;
                 }
             }
+
             result.SetBadDateTimeFailure();
             return false;
         }
@@ -5160,7 +5162,7 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
                 if (s.Length > MaxLineLength || (curLineLength + s.Length + 2) > MaxLineLength)
                 {
                     buffer.Append(',');
-                    buffer.Append(Environment.NewLineConst);
+                    buffer.AppendLine();
                     buffer.Append(' ', NewLinePadding);
                     curLineLength = 0;
                 }
@@ -5177,7 +5179,7 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
             s = Hex(strs[strs.Length - 1]);
             if (s.Length > MaxLineLength || (curLineLength + s.Length + 6) > MaxLineLength)
             {
-                buffer.Append(Environment.NewLineConst);
+                buffer.AppendLine();
                 buffer.Append(' ', NewLinePadding);
             }
             else
@@ -5192,7 +5194,7 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
         private static string Hex(ReadOnlySpan<char> str)
         {
             StringBuilder buffer = new StringBuilder();
-            buffer.Append("\"");
+            buffer.Append('"');
             for (int i = 0; i < str.Length; i++)
             {
                 if (str[i] <= '\x007f')
@@ -5200,7 +5202,7 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
                 else
                     buffer.Append("\\u").Append(((int)str[i]).ToString("x4", CultureInfo.InvariantCulture));
             }
-            buffer.Append("\"");
+            buffer.Append('"');
             return buffer.ToString();
         }
         // return an unicode escaped string form of char c
@@ -5218,7 +5220,7 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
         }
 
         // for testing; do not make this readonly
-        private static bool s_tracingEnabled = false;
+        private static bool s_tracingEnabled;
 #endif // _LOGGING
     }
 

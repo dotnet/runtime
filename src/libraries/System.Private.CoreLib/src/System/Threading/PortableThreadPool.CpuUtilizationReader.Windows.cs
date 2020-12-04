@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
 using System.Runtime.InteropServices;
@@ -19,7 +18,7 @@ namespace System.Threading
             {
                 get
                 {
-                    if (!Interop.Kernel32.GetSystemTimes(out var idleTime, out var kernelTime, out var userTime))
+                    if (!Interop.Kernel32.GetSystemTimes(out long idleTime, out long kernelTime, out long userTime))
                     {
                         return 0;
                     }

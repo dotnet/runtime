@@ -4,12 +4,8 @@
     <IsInterpreting>false</IsInterpreting>
     <DefineConstants Condition=" '$(IsInterpreting)' != 'true' ">$(DefineConstants);FEATURE_COMPILE</DefineConstants>
     <DefineConstants Condition=" '$(FeatureInterpret)' == 'true' ">$(DefineConstants);FEATURE_INTERPRET</DefineConstants>
-    <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;$(NetCoreAppCurrent)-Unix</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
   </PropertyGroup>
-  <ItemGroup>
-    <DefaultReferenceExclusions Include="System.Linq.Expressions" />
-    <ReferenceFromRuntime Include="System.Linq.Expressions" />
-  </ItemGroup>
   <ItemGroup>
     <AssembliesBeingTested Include="Microsoft.CSharp" />
   </ItemGroup>
@@ -224,9 +220,8 @@
     <Compile Include="Visitor\VisitorTests.cs" />
   </ItemGroup>
   <ItemGroup Condition=" '$(IsInterpreting)' != 'true' ">
-    <Compile Include="$(CommonTestPath)System\Collections\DictionaryExtensions.cs">
-      <Link>Common\System\Collections\DictionaryExtensions.cs</Link>
-    </Compile>
+    <Compile Include="$(CommonTestPath)System\Collections\DictionaryExtensions.cs"
+             Link="Common\System\Collections\DictionaryExtensions.cs" />
     <Compile Include="ILReader\DynamicMethodILProvider.cs" />
     <Compile Include="ILReader\DynamicScopeTokenResolver.cs" />
     <Compile Include="ILReader\FormatProvider.cs" />
@@ -247,5 +242,6 @@
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="xunit.extensibility.execution" Version="$(XUnitVersion)" />
+    <ProjectReference Include="..\src\System.Linq.Expressions.csproj" SkipUseReferenceAssembly="true" />
   </ItemGroup>
 </Project>

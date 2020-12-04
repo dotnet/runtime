@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #include "nethost.h"
 #include <error_codes.h>
@@ -12,7 +11,7 @@
 namespace
 {
     // Swallow the trace messages so we don't output to stderr of a process that we do not own unless tracing is enabled.
-    void swallow_trace(const pal::char_t* msg)
+    void __cdecl swallow_trace(const pal::char_t* msg)
     {
         (void)msg;
     }

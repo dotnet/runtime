@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
 using static System.RuntimeTypeHandle;
@@ -121,28 +120,33 @@ namespace System.Collections.Generic
             object? result = null;
             var runtimeType = (RuntimeType)type;
 
-            // Specialize for byte so Array.IndexOf is faster.
             if (type == typeof(byte))
             {
+                // Specialize for byte so Array.IndexOf is faster.
                 result = new ByteEqualityComparer();
             }
-            // If T implements IEquatable<T> return a GenericEqualityComparer<T>
-            else if (typeof(IEquatable<>).MakeGenericType(type).IsAssignableFrom(type))
+            else if (type == typeof(string))
             {
-                result = CreateInstanceForAnotherGenericParameter((RuntimeType)typeof(GenericEqualityComparer<int>), runtimeType);
+                // Specialize for string, as EqualityComparer<string>.Default is on the startup path
+                result = new GenericEqualityComparer<string>();
             }
-            // Nullable does not implement IEquatable<T?> directly because that would add an extra interface call per comparison.
-            // Instead, it relies on EqualityComparer<T?>.Default to specialize for nullables and do the lifted comparisons if T implements IEquatable.
+            else if (type.IsAssignableTo(typeof(IEquatable<>).MakeGenericType(type)))
+            {
+                // If T implements IEquatable<T> return a GenericEqualityComparer<T>
+                result = CreateInstanceForAnotherGenericParameter((RuntimeType)typeof(GenericEqualityComparer<string>), runtimeType);
+            }
             else if (type.IsGenericType)
             {
+                // Nullable does not implement IEquatable<T?> directly because that would add an extra interface call per comparison.
+                // Instead, it relies on EqualityComparer<T?>.Default to specialize for nullables and do the lifted comparisons if T implements IEquatable.
                 if (type.GetGenericTypeDefinition() == typeof(Nullable<>))
                 {
                     result = TryCreateNullableEqualityComparer(runtimeType);
                 }
             }
-            // The equality comparer for enums is specialized to avoid boxing.
             else if (type.IsEnum)
             {
+                // The equality comparer for enums is specialized to avoid boxing.
                 result = TryCreateEnumEqualityComparer(runtimeType);
             }
 

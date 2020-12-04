@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 // ------------------------------------------------------------------------------
 // Changes to this file must follow the https://aka.ms/api-review process.
 // ------------------------------------------------------------------------------
@@ -185,7 +184,7 @@ namespace System.Net.NetworkInformation
         public abstract System.Net.NetworkInformation.MulticastIPAddressInformationCollection MulticastAddresses { get; }
         public abstract System.Net.NetworkInformation.UnicastIPAddressInformationCollection UnicastAddresses { get; }
         public abstract System.Net.NetworkInformation.IPAddressCollection WinsServersAddresses { get; }
-        public abstract System.Net.NetworkInformation.IPv4InterfaceProperties? GetIPv4Properties();
+        public abstract System.Net.NetworkInformation.IPv4InterfaceProperties GetIPv4Properties();
         public abstract System.Net.NetworkInformation.IPv6InterfaceProperties GetIPv6Properties();
     }
     public abstract partial class IPInterfaceStatistics

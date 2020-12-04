@@ -26,12 +26,14 @@ public:
             , actionILDump(false)
             , actionInteg(false)
             , actionMerge(false)
+            , actionPrintJITEEVersion(false)
             , actionRemoveDup(false)
             , actionStat(false)
             , actionStrip(false)
             , actionTOC(false)
             , legacyCompare(false)
             , recursive(false)
+            , dedup(false)
             , stripCR(false)
             , nameOfFile1(nullptr)
             , nameOfFile2(nullptr)
@@ -51,12 +53,14 @@ public:
         bool  actionILDump;
         bool  actionInteg;
         bool  actionMerge;
+        bool  actionPrintJITEEVersion;
         bool  actionRemoveDup;
         bool  actionStat;
         bool  actionStrip;
         bool  actionTOC;
         bool  legacyCompare;
         bool  recursive;
+        bool  dedup;
         bool  stripCR;
         char* nameOfFile1;
         char* nameOfFile2;

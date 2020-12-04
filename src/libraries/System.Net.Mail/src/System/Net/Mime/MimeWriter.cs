@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.IO;
@@ -35,12 +34,12 @@ namespace System.Net.Mime
                 throw new ArgumentNullException(nameof(headers));
 
             foreach (string key in headers)
-                WriteHeader(key, headers[key], allowUnicode);
+                WriteHeader(key, headers[key]!, allowUnicode);
         }
 
         #region Cleanup
 
-        internal IAsyncResult BeginClose(AsyncCallback callback, object state)
+        internal IAsyncResult BeginClose(AsyncCallback? callback, object? state)
         {
             MultiAsyncResult multiResult = new MultiAsyncResult(this, callback, state);
 
@@ -65,7 +64,7 @@ namespace System.Net.Mime
             _stream.Close();
         }
 
-        private void Close(MultiAsyncResult multiResult)
+        private void Close(MultiAsyncResult? multiResult)
         {
             _bufferBuilder.Append(s_crlf);
             _bufferBuilder.Append(s_DASHDASH);
@@ -81,13 +80,13 @@ namespace System.Net.Mime
         /// </summary>
         /// <param name="sender">Sender of the close event</param>
         /// <param name="args">Event args (not used)</param>
-        protected override void OnClose(object sender, EventArgs args)
+        protected override void OnClose(object? sender, EventArgs args)
         {
             if (_contentStream != sender)
                 return; // may have called WriteHeader
 
             _contentStream.Flush();
-            _contentStream = null;
+            _contentStream = null!;
             _writeBoundary = true;
 
             _isInContent = false;

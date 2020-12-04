@@ -170,7 +170,14 @@ fi
 # ======================= BEGIN Core File Inspection =========================
 pushd $EXECUTION_DIR >/dev/null
 if [[ "$(uname -s)" == "Linux" && $test_exitcode -ne 0 ]]; then
-  echo Looking around for any Linux dump...
+  if [ -n "$HELIX_WORKITEM_PAYLOAD" ]; then
+     have_sleep=$(which sleep)
+     if [ -x "$have_sleep" ]; then
+         echo Waiting a few seconds for any dump to be written..
+          sleep 10s
+     fi
+  fi
+  echo Looking around for any Linux dump..
   # Depending on distro/configuration, the core files may either be named "core"
   # or "core.<PID>" by default. We read /proc/sys/kernel/core_uses_pid to 
   # determine which it is.
@@ -197,4 +204,10 @@ if [[ "$(uname -s)" == "Linux" && $test_exitcode -ne 0 ]]; then
 fi
 popd >/dev/null
 # ======================== END Core File Inspection ==========================
-exit $test_exitcode
+# The helix work item should not exit with non-zero if tests ran and produced results
+# The special console runner for runtime returns 1 when tests fail
+if [ "$test_exitcode" == "1" ]; then
+  exit 0
+else
+  exit $test_exitcode
+fi

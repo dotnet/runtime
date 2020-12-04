@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 /*++
 
@@ -29,7 +28,9 @@ SET_DEFAULT_DEBUG_CHANNEL(THREAD); // some headers have code with asserts, so do
 #include "pal/utils.h"
 #include "pal/virtual.h"
 
+#if HAVE_SYS_PTRACE_H
 #include <sys/ptrace.h>
+#endif
 #include <errno.h>
 #include <unistd.h>
 
@@ -428,26 +429,33 @@ void CONTEXTToNativeContext(CONST CONTEXT *lpContext, native_context_t *native)
     }
 #undef ASSIGN_REG
 
+#if !HAVE_FPREGS_WITH_CW
 #if HAVE_GREGSET_T || HAVE_GREGSET_T
 #if HAVE_GREGSET_T
     if (native->uc_mcontext.fpregs == nullptr)
 #elif HAVE___GREGSET_T
     if (native->uc_mcontext.__fpregs == nullptr)
-#endif
+#endif // HAVE_GREGSET_T
     {
         // If the pointer to the floating point state in the native context
         // is not valid, we can't copy floating point registers regardless of
         // whether CONTEXT_FLOATING_POINT is set in the CONTEXT's flags.
         return;
     }
-#endif
+#endif // HAVE_GREGSET_T || HAVE_GREGSET_T
+#endif // !HAVE_FPREGS_WITH_CW
 
     if ((lpContext->ContextFlags & CONTEXT_FLOATING_POINT) == CONTEXT_FLOATING_POINT)
     {
 #ifdef HOST_AMD64
         FPREG_ControlWord(native) = lpContext->FltSave.ControlWord;
         FPREG_StatusWord(native) = lpContext->FltSave.StatusWord;
+#if HAVE_FPREGS_WITH_CW
+        FPREG_TagWord1(native) = lpContext->FltSave.TagWord >> 8;
+        FPREG_TagWord2(native) = lpContext->FltSave.TagWord & 0xff;
+#else
         FPREG_TagWord(native) = lpContext->FltSave.TagWord;
+#endif
         FPREG_ErrorOffset(native) = lpContext->FltSave.ErrorOffset;
         FPREG_ErrorSelector(native) = lpContext->FltSave.ErrorSelector;
         FPREG_DataOffset(native) = lpContext->FltSave.DataOffset;
@@ -537,12 +545,13 @@ void CONTEXTFromNativeContext(const native_context_t *native, LPCONTEXT lpContex
     }
 #undef ASSIGN_REG
 
+#if !HAVE_FPREGS_WITH_CW
 #if HAVE_GREGSET_T || HAVE___GREGSET_T
 #if HAVE_GREGSET_T
     if (native->uc_mcontext.fpregs == nullptr)
 #elif HAVE___GREGSET_T
     if (native->uc_mcontext.__fpregs == nullptr)
-#endif
+#endif // HAVE_GREGSET_T
     {
         // Reset the CONTEXT_FLOATING_POINT bit(s) and the CONTEXT_XSTATE bit(s) so it's
         // clear that the floating point and extended state data in the CONTEXT is not
@@ -559,14 +568,19 @@ void CONTEXTFromNativeContext(const native_context_t *native, LPCONTEXT lpContex
         // Bail out regardless of whether the caller wanted CONTEXT_FLOATING_POINT or CONTEXT_XSTATE
         return;
     }
-#endif
+#endif // HAVE_GREGSET_T || HAVE___GREGSET_T
+#endif // !HAVE_FPREGS_WITH_CW
 
     if ((contextFlags & CONTEXT_FLOATING_POINT) == CONTEXT_FLOATING_POINT)
     {
 #ifdef HOST_AMD64
         lpContext->FltSave.ControlWord = FPREG_ControlWord(native);
         lpContext->FltSave.StatusWord = FPREG_StatusWord(native);
+#if HAVE_FPREGS_WITH_CW
+        lpContext->FltSave.TagWord = ((DWORD)FPREG_TagWord1(native) << 8) | FPREG_TagWord2(native);
+#else
         lpContext->FltSave.TagWord = FPREG_TagWord(native);
+#endif
         lpContext->FltSave.ErrorOffset = FPREG_ErrorOffset(native);
         lpContext->FltSave.ErrorSelector = FPREG_ErrorSelector(native);
         lpContext->FltSave.DataOffset = FPREG_DataOffset(native);
@@ -797,6 +811,7 @@ DWORD CONTEXTGetExceptionCodeForSignal(const siginfo_t *siginfo,
                 default:
                     break;
             }
+            break;
         case SIGTRAP:
             switch (siginfo->si_code)
             {
@@ -935,12 +950,16 @@ CONTEXT_GetThreadContextFromPort(
     mach_msg_type_number_t StateCount;
     thread_state_flavor_t StateFlavor;
 
+#if defined(HOST_AMD64)
     if (lpContext->ContextFlags & (CONTEXT_CONTROL | CONTEXT_INTEGER | CONTEXT_SEGMENTS) & CONTEXT_AREA_MASK)
     {
-
-#ifdef HOST_AMD64
         x86_thread_state64_t State;
         StateFlavor = x86_THREAD_STATE64;
+#elif defined(HOST_ARM64)
+    if (lpContext->ContextFlags & (CONTEXT_CONTROL | CONTEXT_INTEGER) & CONTEXT_AREA_MASK)
+    {
+        arm_thread_state64_t State;
+        StateFlavor = ARM_THREAD_STATE64;
 #else
 #error Unexpected architecture.
 #endif
@@ -955,7 +974,9 @@ CONTEXT_GetThreadContextFromPort(
         CONTEXT_GetThreadContextFromThreadState(StateFlavor, (thread_state_t)&State, lpContext);
     }
 
-    if (lpContext->ContextFlags & CONTEXT_ALL_FLOATING & CONTEXT_AREA_MASK) {
+    if (lpContext->ContextFlags & CONTEXT_ALL_FLOATING & CONTEXT_AREA_MASK) 
+    {
+#if defined(HOST_AMD64)
         // The thread_get_state for floating point state can fail for some flavors when the processor is not
         // in the right mode at the time we are taking the state. So we will try to get the AVX state first and
         // if it fails, get the FLOAT state and if that fails, take AVX512 state. Both AVX and AVX512 states
@@ -994,6 +1015,20 @@ CONTEXT_GetThreadContextFromPort(
                 }
             }
         }
+#elif defined(HOST_ARM64)
+        arm_neon_state64_t State;
+
+        StateFlavor = ARM_NEON_STATE64;
+        StateCount = sizeof(arm_neon_state64_t) / sizeof(natural_t);
+        MachRet = thread_get_state(Port, StateFlavor, (thread_state_t)&State, &StateCount);
+        if (MachRet != KERN_SUCCESS)
+        {
+            // We were unable to get any floating point state.
+            lpContext->ContextFlags &= ~((CONTEXT_ALL_FLOATING) & CONTEXT_AREA_MASK);
+        }
+#else
+#error Unexpected architecture.
+#endif
 
         CONTEXT_GetThreadContextFromThreadState(StateFlavor, (thread_state_t)&State, lpContext);
     }
@@ -1015,7 +1050,7 @@ CONTEXT_GetThreadContextFromThreadState(
 {
     switch (threadStateFlavor)
     {
-#ifdef HOST_AMD64
+#if defined (HOST_AMD64)
         case x86_THREAD_STATE64:
             if (lpContext->ContextFlags & (CONTEXT_CONTROL | CONTEXT_INTEGER | CONTEXT_SEGMENTS) & CONTEXT_AREA_MASK)
             {
@@ -1059,6 +1094,7 @@ CONTEXT_GetThreadContextFromThreadState(
             }
 
             // Intentional fall-through, the AVX states are supersets of the FLOAT state
+            FALLTHROUGH;
 
         case x86_FLOAT_STATE64:
             if (lpContext->ContextFlags & CONTEXT_FLOATING_POINT & CONTEXT_AREA_MASK)
@@ -1086,9 +1122,6 @@ CONTEXT_GetThreadContextFromThreadState(
                 memcpy(&lpContext->Xmm0, &pState->__fpu_xmm0, 16 * 16);
             }
             break;
-#else
-#error Unexpected architecture.
-#endif
         case x86_THREAD_STATE:
         {
             x86_thread_state_t *pState = (x86_thread_state_t *)threadState;
@@ -1102,6 +1135,31 @@ CONTEXT_GetThreadContextFromThreadState(
             CONTEXT_GetThreadContextFromThreadState((thread_state_flavor_t)pState->fsh.flavor, (thread_state_t)&pState->ufs, lpContext);
         }
         break;
+#elif defined(HOST_ARM64)
+        case ARM_THREAD_STATE64:
+            if (lpContext->ContextFlags & (CONTEXT_CONTROL | CONTEXT_INTEGER) & CONTEXT_AREA_MASK)
+            {
+                arm_thread_state64_t *pState = (arm_thread_state64_t*)threadState;
+                memcpy(&lpContext->X0, &pState->__x[0], 29 * 8);
+                lpContext->Cpsr = pState->__cpsr;
+                lpContext->Fp = arm_thread_state64_get_fp(*pState);
+                lpContext->Sp = arm_thread_state64_get_sp(*pState);
+                lpContext->Lr = (uint64_t)arm_thread_state64_get_lr_fptr(*pState);
+                lpContext->Pc = (uint64_t)arm_thread_state64_get_pc_fptr(*pState);
+            }
+            break;
+        case ARM_NEON_STATE64:
+            if (lpContext->ContextFlags & CONTEXT_FLOATING_POINT & CONTEXT_AREA_MASK)
+            {
+                arm_neon_state64_t *pState = (arm_neon_state64_t*)threadState;
+                memcpy(&lpContext->V[0], &pState->__v, 32 * 16);
+                lpContext->Fpsr = pState->__fpsr;
+                lpContext->Fpcr = pState->__fpcr;
+            }
+            break;
+#else
+#error Unexpected architecture.
+#endif
 
         default:
             ASSERT("Invalid thread state flavor %d\n", threadStateFlavor);
@@ -1202,6 +1260,16 @@ CONTEXT_SetThreadContextOnPort(
 //        State.es = lpContext->SegEs_PAL_Undefined;
         State.__fs = lpContext->SegFs;
         State.__gs = lpContext->SegGs;
+#elif defined(HOST_ARM64)
+        arm_thread_state64_t State;
+        StateFlavor = ARM_THREAD_STATE64;
+
+        memcpy(&State.__x[0], &lpContext->X0, 29 * 8);
+        State.__cpsr = lpContext->Cpsr;
+        arm_thread_state64_set_fp(State, lpContext->Fp);
+        arm_thread_state64_set_sp(State, lpContext->Sp);
+        arm_thread_state64_set_lr_fptr(State, lpContext->Lr);
+        arm_thread_state64_set_pc_fptr(State, lpContext->Pc);
 #else
 #error Unexpected architecture.
 #endif
@@ -1247,6 +1315,10 @@ CONTEXT_SetThreadContextOnPort(
         StateFlavor = x86_FLOAT_STATE64;
         StateCount = sizeof(State) / sizeof(natural_t);
 #endif
+#elif defined(HOST_ARM64)
+        arm_neon_state64_t State;
+        StateFlavor = ARM_NEON_STATE64;
+        StateCount = sizeof(State) / sizeof(natural_t);
 #else
 #error Unexpected architecture.
 #endif
@@ -1292,6 +1364,10 @@ CONTEXT_SetThreadContextOnPort(
                 memcpy((&State.__fpu_stmm0)[i].__mmst_reg, &lpContext->FltSave.FloatRegisters[i], 10);
 
             memcpy(&State.__fpu_xmm0, &lpContext->Xmm0, 16 * 16);
+#elif defined(HOST_ARM64)
+            memcpy(&State.__v, &lpContext->V[0], 32 * 16);
+            State.__fpsr = lpContext->Fpsr;
+            State.__fpcr = lpContext->Fpcr;
 #else
 #error Unexpected architecture.
 #endif

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 namespace System.Net.NetworkInformation
 {
@@ -64,7 +63,7 @@ namespace System.Net.NetworkInformation
         /// Gets the IP version 4.0 specific properties for this network interface.
         /// </summary>
         /// <returns>The interface' IPv4-specific properties.</returns>
-        public abstract IPv4InterfaceProperties? GetIPv4Properties();
+        public abstract IPv4InterfaceProperties GetIPv4Properties();
 
         /// <summary>
         /// Gets the IP version 6.0 specific properties for this network interface.

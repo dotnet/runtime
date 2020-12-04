@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #include "jitpch.h"
 
@@ -90,11 +89,6 @@ void* ArenaAllocator::allocateNewPage(size_t size)
     // Allocate the new page
     PageDescriptor* newPage = static_cast<PageDescriptor*>(allocateHostMemory(pageSize, &pageSize));
 
-    if (newPage == nullptr)
-    {
-        NOMEM();
-    }
-
     // Append the new page to the end of the list
     newPage->m_next      = nullptr;
     newPage->m_pageBytes = pageSize;
@@ -142,16 +136,6 @@ void ArenaAllocator::destroy()
     m_lastFreeByte = nullptr;
 }
 
-// The debug version of the allocator may allocate directly from the
-// OS rather than going through the hosting APIs. In order to do so,
-// it must undef the macros that are usually in place to prevent
-// accidental uses of the OS allocator.
-#if defined(DEBUG)
-#undef GetProcessHeap
-#undef HeapAlloc
-#undef HeapFree
-#endif
-
 //------------------------------------------------------------------------
 // ArenaAllocator::allocateHostMemory:
 //    Allocates memory from the host (or the OS if `bypassHostAllocator()`
@@ -169,7 +153,12 @@ void* ArenaAllocator::allocateHostMemory(size_t size, size_t* pActualSize)
     if (bypassHostAllocator())
     {
         *pActualSize = size;
-        return ::HeapAlloc(GetProcessHeap(), 0, size);
+        void* p      = malloc(size);
+        if (p == nullptr)
+        {
+            NOMEM();
+        }
+        return p;
     }
 #endif // !defined(DEBUG)
 
@@ -187,7 +176,7 @@ void ArenaAllocator::freeHostMemory(void* block, size_t size)
 #if defined(DEBUG)
     if (bypassHostAllocator())
     {
-        ::HeapFree(GetProcessHeap(), 0, block);
+        free(block);
         return;
     }
 #endif // !defined(DEBUG)

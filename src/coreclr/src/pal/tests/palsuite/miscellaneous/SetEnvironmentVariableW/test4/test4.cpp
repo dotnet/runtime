@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 /*============================================================
 ** Source : test4.c
@@ -15,7 +14,7 @@
 
 #include <palsuite.h>
 
-int __cdecl main(int argc, char *argv[]) 
+PALTEST(miscellaneous_SetEnvironmentVariableW_test4_paltest_setenvironmentvariablew_test4, "miscellaneous/SetEnvironmentVariableW/test4/paltest_setenvironmentvariablew_test4")
 {
 
 #if WIN32

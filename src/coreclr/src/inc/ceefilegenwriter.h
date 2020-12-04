@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 // ===========================================================================
 // File: CeeFileGenWriter.h
 //
@@ -189,7 +188,10 @@ inline LPWSTR CeeFileGenWriter::getResourceFileName() {
 }
 
 inline HRESULT CeeFileGenWriter::setDllSwitch(bool dllSwitch) {
-    if((m_dllSwitch = dllSwitch)) m_objSwitch = FALSE; return S_OK;
+    if((m_dllSwitch = dllSwitch))
+        m_objSwitch = FALSE;
+
+    return S_OK;
 }
 
 inline bool CeeFileGenWriter::getDllSwitch() {
@@ -197,7 +199,10 @@ inline bool CeeFileGenWriter::getDllSwitch() {
 }
 
 inline HRESULT CeeFileGenWriter::setObjSwitch(bool objSwitch) {
-    if((m_objSwitch = objSwitch)) m_dllSwitch = FALSE; return S_OK;
+    if((m_objSwitch = objSwitch))
+        m_dllSwitch = FALSE;
+
+    return S_OK;
 }
 
 inline bool CeeFileGenWriter::getObjSwitch() {

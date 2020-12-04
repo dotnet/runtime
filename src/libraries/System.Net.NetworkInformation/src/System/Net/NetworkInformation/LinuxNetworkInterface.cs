@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.IO;
@@ -88,6 +87,11 @@ namespace System.Net.NetworkInformation
                     lni._operationalStatus = (OperationalStatus)nii->OperationalState;
                     lni._mtu = nii->Mtu;
                     lni._supportsMulticast = nii->SupportsMulticast != 0;
+
+                    if (nii->NumAddressBytes > 0)
+                    {
+                        lni._physicalAddress = new PhysicalAddress(new ReadOnlySpan<byte>(nii->AddressBytes, nii->NumAddressBytes).ToArray());
+                    }
 
                     interfaces[i] = lni;
                     interfacesByIndex.Add(nii->InterfaceIndex, lni);

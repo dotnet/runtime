@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Runtime.InteropServices;
 
@@ -30,7 +29,7 @@ namespace System.Runtime.CompilerServices
     [StructLayout(LayoutKind.Sequential)]
     internal class LAHashKeyToTrackers
     {
-        private object _trackerOrTrackerSet = null!;
-        private object _laLocalKeyValueStore = null!;
+        private object? _trackerOrTrackerSet;
+        private object? _laLocalKeyValueStore;
     }
 }

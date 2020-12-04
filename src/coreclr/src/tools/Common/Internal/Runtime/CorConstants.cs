@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 
@@ -82,7 +81,7 @@ namespace Internal.CorConstants
         // where the encoding/decoding takes place.
         ELEMENT_TYPE_NATIVE_VALUETYPE_ZAPSIG = 0x3d,
 
-        ELEMENT_TYPE_CANON_ZAPSIG = 0x3e,       // zapsig encoding for [mscorlib]System.__Canon
+        ELEMENT_TYPE_CANON_ZAPSIG = 0x3e,       // zapsig encoding for System.__Canon
         ELEMENT_TYPE_MODULE_ZAPSIG = 0x3f,      // zapsig encoding for external module id#
 
         ELEMENT_TYPE_HANDLE = 64,

@@ -1,11 +1,11 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.ComponentModel;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.InteropServices;
+using Microsoft.DotNet.RemoteExecutor;
 using System.Text;
 using Xunit;
 
@@ -13,9 +13,9 @@ namespace System.Globalization.Tests
 {
     public class CultureInfoAll
     {
-        [Fact]
         [PlatformSpecific(TestPlatforms.Windows)] // P/Invoke to Win32 function
-        public void TestAllCultures()
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNlsGlobalization))]
+        public void TestAllCultures_Nls()
         {
             Assert.True(EnumSystemLocalesEx(EnumLocales, LOCALE_WINDOWS, IntPtr.Zero, IntPtr.Zero), "EnumSystemLocalesEx has failed");
 
@@ -628,13 +628,16 @@ namespace System.Globalization.Tests
             Assert.True(found, $"Expected to find the culture {cultureName} in the enumerated list");
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void ClearCachedDataTest()
         {
-            CultureInfo ci = CultureInfo.GetCultureInfo("ja-JP");
-            Assert.True((object) ci == (object) CultureInfo.GetCultureInfo("ja-JP"), "Expected getting same object reference");
-            ci.ClearCachedData();
-            Assert.False((object) ci == (object) CultureInfo.GetCultureInfo("ja-JP"), "expected to get a new object reference");
+            RemoteExecutor.Invoke(() =>
+            {
+                CultureInfo ci = CultureInfo.GetCultureInfo("ja-JP");
+                Assert.True((object) ci == (object) CultureInfo.GetCultureInfo("ja-JP"), "Expected getting same object reference");
+                ci.ClearCachedData();
+                Assert.False((object) ci == (object) CultureInfo.GetCultureInfo("ja-JP"), "expected to get a new object reference");
+            }).Dispose();
         }
 
         [Fact]

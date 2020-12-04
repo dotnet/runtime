@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 /*============================================================
 **
@@ -34,13 +33,13 @@
 #define UNICODE
 #include <palsuite.h>
 
-const char *szMutex = "MyMutex";
-const char *szEmpty = "";
+#define szMutex "MyMutex"
+#define szEmpty ""
 
 /* Function Prototypes */
-BOOL TestNamedMutex(const char *szMutexName);
-DWORD NamedMutexThread(LPVOID lpParam);
-BOOL NegativeReleaseMutexTests();
+BOOL TestNamedMutex_CreateMutexW_ReleaseMutex_test2(const char *szMutexName);
+DWORD NamedMutexThread_CreateMutexW_ReleaseMutex_test2(LPVOID lpParam);
+BOOL NegativeReleaseMutexTests_CreateMutexW_ReleaseMutex_test2();
 
 struct ThreadData
 {
@@ -50,7 +49,7 @@ struct ThreadData
 typedef struct ThreadData THREADDATA;
 
 
-int __cdecl main (int argc, char **argv) 
+PALTEST(threading_CreateMutexW_ReleaseMutex_test2_paltest_createmutexw_releasemutex_test2, "threading/CreateMutexW_ReleaseMutex/test2/paltest_createmutexw_releasemutex_test2")
 {
     BOOL bFailures = FALSE;
     char *szMaxPath;
@@ -65,7 +64,7 @@ int __cdecl main (int argc, char **argv)
      * Test named Mutexes with ordinary string
      */
 
-    if (!TestNamedMutex(szMutex))
+    if (!TestNamedMutex_CreateMutexW_ReleaseMutex_test2(szMutex))
     {
         bFailures = TRUE;
     }
@@ -75,7 +74,7 @@ int __cdecl main (int argc, char **argv)
      * Test named Mutexes with empty ("") string
      */
 
-    if (!TestNamedMutex(szEmpty))
+    if (!TestNamedMutex_CreateMutexW_ReleaseMutex_test2(szEmpty))
     {
         bFailures = TRUE;
     }
@@ -89,7 +88,7 @@ int __cdecl main (int argc, char **argv)
     memset(szMaxPath, 'A', MAX_LONGPATH-60);
     szMaxPath[MAX_LONGPATH-60] = 0;
 
-    if (!TestNamedMutex(szMaxPath))
+    if (!TestNamedMutex_CreateMutexW_ReleaseMutex_test2(szMaxPath))
     {
         bFailures = TRUE;
     }
@@ -101,7 +100,7 @@ int __cdecl main (int argc, char **argv)
      * Run some negative tests on ReleaseMutex
      */
 
-    if (!NegativeReleaseMutexTests())
+    if (!NegativeReleaseMutexTests_CreateMutexW_ReleaseMutex_test2())
     {
         bFailures = TRUE;
     }
@@ -127,7 +126,7 @@ int __cdecl main (int argc, char **argv)
  * Try to get multiple handles to a named Mutex and test 
  * to make sure they actually refer to same Mutex object.
  */
-BOOL TestNamedMutex(const char *szMutexName)
+BOOL TestNamedMutex_CreateMutexW_ReleaseMutex_test2(const char *szMutexName)
 {
     DWORD dwData;
     HANDLE hMutex1;
@@ -182,7 +181,7 @@ BOOL TestNamedMutex(const char *szMutexName)
      * Create a thread that will Wait on the second handle.
      */
     threadData.hMutex = hMutex2;
-    hThread = CreateThread(NULL, 0, (LPTHREAD_START_ROUTINE)NamedMutexThread,
+    hThread = CreateThread(NULL, 0, (LPTHREAD_START_ROUTINE)NamedMutexThread_CreateMutexW_ReleaseMutex_test2,
                           (LPVOID)&threadData, 0, &dwData);
 
     if (NULL == hThread)
@@ -230,7 +229,7 @@ BOOL TestNamedMutex(const char *szMutexName)
 /*
  * Thread function used with above testing function.
  */
-DWORD NamedMutexThread(LPVOID lpParam)
+DWORD NamedMutexThread_CreateMutexW_ReleaseMutex_test2(LPVOID lpParam)
 {
     BOOL bTimedOut =  FALSE;
     THREADDATA *lpThreadData = (THREADDATA *)lpParam;
@@ -260,7 +259,7 @@ DWORD NamedMutexThread(LPVOID lpParam)
  *
  * Try some negative tests on ReleaseMutex
  */
-BOOL NegativeReleaseMutexTests()
+BOOL NegativeReleaseMutexTests_CreateMutexW_ReleaseMutex_test2()
 {
     HANDLE hMutex;
     BOOL bRet;

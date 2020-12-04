@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 //*****************************************************************************
 // ImportHelper.cpp
 //
@@ -857,7 +856,7 @@ ImportHelper::FindTypeDefByName(
         szTypeDefNamespace = "";
 
     if (tkEnclosingClass == TokenFromRid(1, mdtModule))
-    {   // Module scope is the same as no scope (used in .winmd files as TypeRef scope for self-references)
+    {   // Module scope is the same as no scope
         tkEnclosingClass = mdTokenNil;
     }
 

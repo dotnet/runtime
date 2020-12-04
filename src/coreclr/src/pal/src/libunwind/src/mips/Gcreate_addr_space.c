@@ -58,8 +58,15 @@ unw_create_addr_space (unw_accessors_t *a, int byte_order)
     as->big_endian = (byte_order == __BIG_ENDIAN);
 
   /* FIXME!  There is no way to specify the ABI.  */
+#if _MIPS_SIM == _ABIO32
   as->abi = UNW_MIPS_ABI_O32;
-  as->addr_size = 4;
+#elif _MIPS_SIM == _ABIN32
+  as->abi = UNW_MIPS_ABI_N32;
+#elif _MIPS_SIM == _ABI64
+  as->abi = UNW_MIPS_ABI_N64;
+#else
+# error Unsupported ABI
+#endif
 
   return as;
 #endif

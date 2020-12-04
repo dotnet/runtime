@@ -14,14 +14,12 @@
 /stest.dat
 /semantic.cache
 /*.exe
-/*.stderr
-/*.aotlog
 /*.dll
 /*.mdb
 /*.pdb
 /*.o
 /*.lo
-/*.so
+**.so
 **.dylib
 **.dylib.dSYM
 /*.netmodule

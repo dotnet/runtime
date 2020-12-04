@@ -8,7 +8,7 @@ add_definitions(-DSELF_NO_HOST)
 
 if(CLR_CMAKE_HOST_WIN32)
   #use static crt
-  add_definitions(-MT)
+  set(CMAKE_MSVC_RUNTIME_LIBRARY MultiThreaded)
 endif(CLR_CMAKE_HOST_WIN32)
 
 include_directories(.)
@@ -22,6 +22,7 @@ set(SUPERPMI_SHIM_COLLECTOR_SOURCES
     ../superpmi-shared/callutils.cpp
     ../superpmi-shared/compileresult.cpp
     ../superpmi-shared/errorhandling.cpp
+    ../superpmi-shared/hash.cpp
     ../superpmi-shared/logging.cpp
     ../superpmi-shared/mclist.cpp
     ../superpmi-shared/methodcontext.cpp
@@ -43,7 +44,7 @@ _add_library(superpmi-shim-collector
     ${SUPERPMI_SHIM_COLLECTOR_SOURCES}
 )
 
-target_precompile_header(TARGET superpmi-shim-collector HEADER standardpch.h)
+target_precompile_headers(superpmi-shim-collector PRIVATE "$<$<COMPILE_LANGUAGE:CXX>:standardpch.h>")
 
 if(CLR_CMAKE_HOST_UNIX)
     target_link_libraries(superpmi-shim-collector
@@ -59,7 +60,7 @@ else()
         ${STATIC_MT_CPP_LIB}
     )
 
-    _install (FILES ${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>/superpmi-shim-collector.pdb DESTINATION PDB)
+    _install (FILES $<TARGET_PDB_FILE:superpmi-shim-collector> DESTINATION PDB)
 endif(CLR_CMAKE_HOST_UNIX)
 
 _install (TARGETS superpmi-shim-collector DESTINATION .)

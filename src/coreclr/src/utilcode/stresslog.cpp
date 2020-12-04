@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 /*************************************************************************************/
 /*                                   StressLog.cpp                                   */
@@ -18,12 +17,14 @@
 #include "ex.h"
 
  #if !defined(STRESS_LOG_READONLY)
+#ifdef HOST_WINDOWS
 HANDLE StressLogChunk::s_LogChunkHeap = NULL;
+#endif
 thread_local ThreadStressLog* StressLog::t_pCurrentThreadLog;
 #endif // !STRESS_LOG_READONLY
 
 /*********************************************************************************/
-#if defined(TARGET_X86)
+#if defined(HOST_X86)
 
 /* This is like QueryPerformanceCounter but a lot faster.  On machines with
    variable-speed CPUs (for power management), this is not accurate, but may
@@ -38,7 +39,7 @@ __forceinline __declspec(naked) unsigned __int64 getTimeStamp() {
     };
 }
 
-#else // TARGET_X86
+#else // HOST_X86
 unsigned __int64 getTimeStamp() {
     STATIC_CONTRACT_LEAF;
 
@@ -50,9 +51,9 @@ unsigned __int64 getTimeStamp() {
     return ret.QuadPart;
 }
 
-#endif // TARGET_X86
+#endif // HOST_X86
 
-#if defined(TARGET_X86) && !defined(HOST_UNIX)
+#if defined(HOST_X86) && !defined(HOST_UNIX)
 
 /*********************************************************************************/
 /* Get the the frequency cooresponding to 'getTimeStamp'.  For x86, this is the
@@ -99,7 +100,7 @@ unsigned __int64 getTickFrequency()
     return hz;
 }
 
-#else // TARGET_X86
+#else // HOST_X86
 
 
 /*********************************************************************************/
@@ -114,7 +115,7 @@ unsigned __int64 getTickFrequency()
     return ret.QuadPart;
 }
 
-#endif // TARGET_X86
+#endif // HOST_X86
 
 #ifdef STRESS_LOG
 
@@ -140,7 +141,7 @@ void StressLog::Leave(CRITSEC_COOKIE) {
 
 /*********************************************************************************/
 void StressLog::Initialize(unsigned facilities,  unsigned level, unsigned maxBytesPerThread,
-            unsigned maxBytesTotal, HMODULE hMod)
+            unsigned maxBytesTotal, void* moduleBase)
 {
     STATIC_CONTRACT_LEAF;
 
@@ -150,7 +151,7 @@ void StressLog::Initialize(unsigned facilities,  unsigned level, unsigned maxByt
         return;
     }
 
-    theLog.lock = ClrCreateCriticalSection(CrstStressLog,(CrstFlags)(CRST_UNSAFE_ANYMODE|CRST_DEBUGGER_THREAD));
+    theLog.lock = ClrCreateCriticalSection(CrstStressLog,(CrstFlags)(CRST_UNSAFE_ANYMODE|CRST_DEBUGGER_THREAD|CRST_TAKEN_DURING_SHUTDOWN));
     // StressLog::Terminate is going to free memory.
     if (maxBytesPerThread < STRESSLOG_CHUNK_SIZE)
     {
@@ -172,25 +173,21 @@ void StressLog::Initialize(unsigned facilities,  unsigned level, unsigned maxByt
 
     GetSystemTimeAsFileTime (&theLog.startTime);
     theLog.startTimeStamp = getTimeStamp();
+    theLog.moduleOffset = (SIZE_T)moduleBase;
 
 #ifndef HOST_UNIX
-    theLog.moduleOffset = (SIZE_T)hMod; // HMODULES are base addresses.
-
 #ifdef _DEBUG
     HMODULE hModNtdll = GetModuleHandleA("ntdll.dll");
     theLog.RtlCaptureStackBackTrace = reinterpret_cast<PFNRtlCaptureStackBackTrace>(
             GetProcAddress(hModNtdll, "RtlCaptureStackBackTrace"));
 #endif // _DEBUG
-
-#else // !HOST_UNIX
-    theLog.moduleOffset = (SIZE_T)PAL_GetSymbolModuleBase((void *)StressLog::Initialize);
 #endif // !HOST_UNIX
 
-#if !defined (STRESS_LOG_READONLY)
-    StressLogChunk::s_LogChunkHeap = ClrHeapCreate (0, STRESSLOG_CHUNK_SIZE * 128, 0);
+#if !defined (STRESS_LOG_READONLY) && defined(HOST_WINDOWS)
+    StressLogChunk::s_LogChunkHeap = HeapCreate (0, STRESSLOG_CHUNK_SIZE * 128, 0);
     if (StressLogChunk::s_LogChunkHeap == NULL)
     {
-        StressLogChunk::s_LogChunkHeap = ClrGetProcessHeap ();
+        StressLogChunk::s_LogChunkHeap = GetProcessHeap ();
     }
     _ASSERTE (StressLogChunk::s_LogChunkHeap);
 #endif //!STRESS_LOG_READONLY
@@ -229,10 +226,10 @@ void StressLog::Terminate(BOOL fProcessDetach) {
         lockh.Release();
     }
 
-#if !defined (STRESS_LOG_READONLY)
-    if (StressLogChunk::s_LogChunkHeap != NULL && StressLogChunk::s_LogChunkHeap != ClrGetProcessHeap ())
+#if !defined (STRESS_LOG_READONLY) && defined(HOST_WINDOWS)
+    if (StressLogChunk::s_LogChunkHeap != NULL && StressLogChunk::s_LogChunkHeap != GetProcessHeap ())
     {
-        ClrHeapDestroy (StressLogChunk::s_LogChunkHeap);
+        HeapDestroy (StressLogChunk::s_LogChunkHeap);
     }
 #endif //!STRESS_LOG_READONLY
 }
@@ -262,8 +259,15 @@ ThreadStressLog* StressLog::CreateThreadStressLog() {
         return NULL;
     }
 
+#ifdef HOST_WINDOWS
+    if (!StressLogChunk::s_LogChunkHeap)
+    {
+        return NULL;
+    }
+#endif
+
     //if we are not allowed to allocate stress log, we should not even try to take the lock
-    if (!StressLogChunk::s_LogChunkHeap || IsInCantAllocStressLogRegion ())
+    if (IsInCantAllocStressLogRegion ())
     {
         return NULL;
     }

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Runtime.InteropServices;
 using Test.Cryptography;
@@ -21,15 +20,29 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             Assert.Equal("", dn.Decode(X500DistinguishedNameFlags.None));
         }
 
-        [Fact]
-        public static void PrintMultiComponentRdn()
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public static void PrintMultiComponentRdn(bool fromSpan)
         {
             byte[] encoded = (
                 "30223120300C060355040313054A616D65733010060355040A13094D6963726F" +
                 "736F6674").HexToByteArray();
 
             const string expected = "CN=James + O=Microsoft";
-            X500DistinguishedName dn = new X500DistinguishedName(encoded);
+            X500DistinguishedName dn;
+
+            if (fromSpan)
+            {
+                dn = new X500DistinguishedName(new ReadOnlySpan<byte>(encoded));
+            }
+            else
+            {
+                dn = new X500DistinguishedName(encoded);
+                byte[] readBack = dn.RawData;
+                Assert.NotSame(readBack, encoded);
+                Assert.Equal(readBack, encoded);
+            }
 
             Assert.Equal(expected, dn.Decode(X500DistinguishedNameFlags.None));
 

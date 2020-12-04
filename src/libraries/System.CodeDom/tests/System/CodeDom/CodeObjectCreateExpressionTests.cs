@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Linq;
@@ -27,7 +26,7 @@ namespace System.CodeDom.Tests
 
         [Theory]
         [MemberData(nameof(Ctor_CodeTypeReference_ParamsCodeExpression_TestData))]
-        public void Ctor(CodeTypeReference type, CodeExpression[] parameters)
+        public void Ctor_Type_Parameters(CodeTypeReference type, CodeExpression[] parameters)
         {
             var objectCreate = new CodeObjectCreateExpression(type, parameters);
             Assert.Equal((type ?? new CodeTypeReference("")).BaseType, objectCreate.CreateType.BaseType);
@@ -43,7 +42,7 @@ namespace System.CodeDom.Tests
 
         [Theory]
         [MemberData(nameof(Ctor_String_ParamsCodeExpression_TestData))]
-        public void Ctor(string type, CodeExpression[] parameters, string expectedBaseType)
+        public void Ctor_Type_Parameters_ExpectedBaseType(string type, CodeExpression[] parameters, string expectedBaseType)
         {
             var objectCreate = new CodeObjectCreateExpression(type, parameters);
             Assert.Equal(expectedBaseType, objectCreate.CreateType.BaseType);

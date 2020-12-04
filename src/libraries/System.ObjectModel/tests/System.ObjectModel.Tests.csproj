@@ -3,24 +3,18 @@
     <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="$(CommonTestPath)System\Collections\IEnumerableTest.cs">
-      <Link>Common\System\CollectionsIEnumerableTest.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonTestPath)System\Collections\ICollectionTest.cs">
-      <Link>Common\System\CollectionsICollectionTest.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonTestPath)System\Collections\IListTest.cs">
-      <Link>Common\System\CollectionsIListTest.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonTestPath)System\Collections\Utils.cs">
-      <Link>Common\System\CollectionsUtils.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonTestPath)System\ShouldNotBeInvokedException.cs">
-      <Link>Common\System\ShouldNotBeInvokedException.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonTestPath)System\Collections\IDictionaryTest.cs">
-      <Link>Common\System\CollectionsIDictionaryTest.cs</Link>
-    </Compile>
+    <Compile Include="$(CommonTestPath)System\Collections\IEnumerableTest.cs"
+             Link="Common\System\CollectionsIEnumerableTest.cs" />
+    <Compile Include="$(CommonTestPath)System\Collections\ICollectionTest.cs"
+             Link="Common\System\CollectionsICollectionTest.cs" />
+    <Compile Include="$(CommonTestPath)System\Collections\IListTest.cs"
+             Link="Common\System\CollectionsIListTest.cs" />
+    <Compile Include="$(CommonTestPath)System\Collections\Utils.cs"
+             Link="Common\System\CollectionsUtils.cs" />
+    <Compile Include="$(CommonTestPath)System\ShouldNotBeInvokedException.cs"
+             Link="Common\System\ShouldNotBeInvokedException.cs" />
+    <Compile Include="$(CommonTestPath)System\Collections\IDictionaryTest.cs"
+             Link="Common\System\CollectionsIDictionaryTest.cs" />
     <Compile Include="ObservableCollection\ObservableCollection_ConstructorAndPropertyTests.cs" />
     <Compile Include="ObservableCollection\ObservableCollection_MethodsTest.cs" />
     <Compile Include="ObservableCollection\ObservableCollection_ReentrancyTests.cs" />
@@ -39,16 +33,14 @@
     <Compile Include="ReadOnlyDictionary\ReadOnlyDictionaryTests.cs" />
     <Compile Include="ReadOnlyObservableCollection\ReadOnlyObservableCollection_EventsTests.cs" />
     <Compile Include="ReadOnlyObservableCollection\ReadOnlyObservableCollectionTests.cs" />
-    <Compile Include="$(CommonTestPath)System\Diagnostics\DebuggerAttributes.cs">
-      <Link>Common\System\Diagnostics\DebuggerAttributes.cs</Link>
-    </Compile>
+    <Compile Include="$(CommonTestPath)System\Diagnostics\DebuggerAttributes.cs"
+             Link="Common\System\Diagnostics\DebuggerAttributes.cs" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="KeyedCollection\Serialization.cs" />
     <Compile Include="ReadOnlyDictionary\ReadOnlyDictionary_SerializationTests.cs" />
     <Compile Include="ReadOnlyObservableCollection\ReadOnlyObservableCollection_SerializationTests.cs" />
-    <Compile Include="$(CommonTestPath)System\Runtime\Serialization\Formatters\BinaryFormatterHelpers.cs">
-      <Link>Common\System\Runtime\Serialization\Formatters\BinaryFormatterHelpers.cs</Link>
-    </Compile>
+    <Compile Include="$(CommonTestPath)System\Runtime\Serialization\Formatters\BinaryFormatterHelpers.cs"
+             Link="Common\System\Runtime\Serialization\Formatters\BinaryFormatterHelpers.cs" />
   </ItemGroup>
 </Project>

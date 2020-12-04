@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
 using System.Reflection;
@@ -1173,7 +1172,7 @@ namespace System.Collections.Tests
         private Hashtable _hashGrandDaughter;
         private const int NumberOfElements = 100;
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public void SyncRoot()
         {
             // Different hashtables have different SyncRoots

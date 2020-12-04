@@ -1,6 +1,5 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
 using System.Threading;
@@ -23,11 +22,13 @@ namespace System.Net.Http
             Debug.Assert(owner != null);
             Debug.Assert(!string.IsNullOrWhiteSpace(name));
 
-            if (NetEventSource.IsEnabled) owner.Trace($"{name}. {nameof(initialCredit)}={initialCredit}");
+            if (NetEventSource.Log.IsEnabled()) owner.Trace($"{name}. {nameof(initialCredit)}={initialCredit}");
             _owner = owner;
             _name = name;
             _current = initialCredit;
         }
+
+        public bool IsCreditAvailable => Volatile.Read(ref _current) > 0;
 
         private object SyncObject
         {
@@ -36,32 +37,30 @@ namespace System.Net.Http
             get => this;
         }
 
+        public bool TryRequestCreditNoWait(int amount)
+        {
+            lock (SyncObject)
+            {
+                return TryRequestCreditNoLock(amount) > 0;
+            }
+        }
+
         public ValueTask<int> RequestCreditAsync(int amount, CancellationToken cancellationToken)
         {
             lock (SyncObject)
             {
-                if (_disposed)
-                {
-                    throw new ObjectDisposedException($"{nameof(CreditManager)}:{_owner.GetType().Name}:{_name}");
-                }
-
                 // If we can satisfy the request with credit already available, do so synchronously.
-                if (_current > 0)
-                {
-                    Debug.Assert(_waitersTail is null, "Shouldn't have waiters when credit is available");
+                int granted = TryRequestCreditNoLock(amount);
 
-                    int granted = Math.Min(amount, _current);
-                    if (NetEventSource.IsEnabled) _owner.Trace($"{_name}. requested={amount}, current={_current}, granted={granted}");
-                    _current -= granted;
+                if (granted > 0)
+                {
                     return new ValueTask<int>(granted);
                 }
 
-                if (NetEventSource.IsEnabled) _owner.Trace($"{_name}. requested={amount}, no credit available.");
+                if (NetEventSource.Log.IsEnabled()) _owner.Trace($"{_name}. requested={amount}, no credit available.");
 
                 // Otherwise, create a new waiter.
-                CreditWaiter waiter = cancellationToken.CanBeCanceled ?
-                    new CancelableCreditWaiter(SyncObject, cancellationToken) :
-                    new CreditWaiter();
+                var waiter = new CreditWaiter(cancellationToken);
                 waiter.Amount = amount;
 
                 // Add the waiter at the tail of the queue.
@@ -88,7 +87,7 @@ namespace System.Net.Http
 
             lock (SyncObject)
             {
-                if (NetEventSource.IsEnabled) _owner.Trace($"{_name}. {nameof(amount)}={amount}, current={_current}");
+                if (NetEventSource.Log.IsEnabled()) _owner.Trace($"{_name}. {nameof(amount)}={amount}, current={_current}");
 
                 if (_disposed)
                 {
@@ -155,6 +154,27 @@ namespace System.Net.Http
                     _waitersTail = null;
                 }
             }
+        }
+
+        private int TryRequestCreditNoLock(int amount)
+        {
+            Debug.Assert(Monitor.IsEntered(SyncObject), "Shouldn't be called outside lock.");
+
+            if (_disposed)
+            {
+                throw new ObjectDisposedException($"{nameof(CreditManager)}:{_owner.GetType().Name}:{_name}");
+            }
+
+            if (_current > 0)
+            {
+                Debug.Assert(_waitersTail is null, "Shouldn't have waiters when credit is available");
+
+                int granted = Math.Min(amount, _current);
+                if (NetEventSource.Log.IsEnabled()) _owner.Trace($"{_name}. requested={amount}, current={_current}, granted={granted}");
+                _current -= granted;
+                return granted;
+            }
+            return 0;
         }
     }
 }

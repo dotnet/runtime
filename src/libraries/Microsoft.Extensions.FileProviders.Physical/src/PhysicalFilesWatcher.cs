@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Concurrent;
@@ -43,6 +42,7 @@ namespace Microsoft.Extensions.FileProviders.Physical
         private bool _timerInitialzed;
         private object _timerLock = new object();
         private Func<Timer> _timerFactory;
+        private bool _disposed;
 
         /// <summary>
         /// Initializes an instance of <see cref="PhysicalFilesWatcher" /> that watches files in <paramref name="root" />.
@@ -79,14 +79,23 @@ namespace Microsoft.Extensions.FileProviders.Physical
             bool pollForChanges,
             ExclusionFilters filters)
         {
+            if (fileSystemWatcher == null && !pollForChanges)
+            {
+                throw new ArgumentNullException(nameof(fileSystemWatcher), SR.Error_FileSystemWatcherRequiredWithoutPolling);
+            }
+
             _root = root;
-            _fileWatcher = fileSystemWatcher;
-            _fileWatcher.IncludeSubdirectories = true;
-            _fileWatcher.Created += OnChanged;
-            _fileWatcher.Changed += OnChanged;
-            _fileWatcher.Renamed += OnRenamed;
-            _fileWatcher.Deleted += OnChanged;
-            _fileWatcher.Error += OnError;
+
+            if (fileSystemWatcher != null)
+            {
+                _fileWatcher = fileSystemWatcher;
+                _fileWatcher.IncludeSubdirectories = true;
+                _fileWatcher.Created += OnChanged;
+                _fileWatcher.Changed += OnChanged;
+                _fileWatcher.Renamed += OnRenamed;
+                _fileWatcher.Deleted += OnChanged;
+                _fileWatcher.Error += OnError;
+            }
 
             PollForChanges = pollForChanges;
             _filters = filters;
@@ -130,7 +139,7 @@ namespace Microsoft.Extensions.FileProviders.Physical
                 return NullChangeToken.Singleton;
             }
 
-            var changeToken = GetOrAddChangeToken(filter);
+            IChangeToken changeToken = GetOrAddChangeToken(filter);
             TryEnableFileSystemWatcher();
 
             return changeToken;
@@ -144,7 +153,7 @@ namespace Microsoft.Extensions.FileProviders.Physical
             }
 
             IChangeToken changeToken;
-            var isWildCard = pattern.IndexOf('*') != -1;
+            bool isWildCard = pattern.IndexOf('*') != -1;
             if (isWildCard || IsDirectoryPath(pattern))
             {
                 changeToken = GetOrAddWildcardChangeToken(pattern);
@@ -159,7 +168,7 @@ namespace Microsoft.Extensions.FileProviders.Physical
 
         internal IChangeToken GetOrAddFilePathChangeToken(string filePath)
         {
-            if (!_filePathTokenLookup.TryGetValue(filePath, out var tokenInfo))
+            if (!_filePathTokenLookup.TryGetValue(filePath, out ChangeTokenInfo tokenInfo))
             {
                 var cancellationTokenSource = new CancellationTokenSource();
                 var cancellationChangeToken = new CancellationChangeToken(cancellationTokenSource.Token);
@@ -194,7 +203,7 @@ namespace Microsoft.Extensions.FileProviders.Physical
 
         internal IChangeToken GetOrAddWildcardChangeToken(string pattern)
         {
-            if (!_wildcardTokenLookup.TryGetValue(pattern, out var tokenInfo))
+            if (!_wildcardTokenLookup.TryGetValue(pattern, out ChangeTokenInfo tokenInfo))
             {
                 var cancellationTokenSource = new CancellationTokenSource();
                 var cancellationChangeToken = new CancellationChangeToken(cancellationTokenSource.Token);
@@ -232,7 +241,11 @@ namespace Microsoft.Extensions.FileProviders.Physical
         /// <summary>
         /// Disposes the provider. Change tokens may not trigger after the provider is disposed.
         /// </summary>
-        public void Dispose() => Dispose(true);
+        public void Dispose()
+        {
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
 
         /// <summary>
         /// Disposes the provider.
@@ -240,14 +253,16 @@ namespace Microsoft.Extensions.FileProviders.Physical
         /// <param name="disposing"><c>true</c> is invoked from <see cref="IDisposable.Dispose"/>.</param>
         protected virtual void Dispose(bool disposing)
         {
-            _fileWatcher.Dispose();
-            _timer?.Dispose();
+            if (!_disposed)
+            {
+                if (disposing)
+                {
+                    _fileWatcher?.Dispose();
+                    _timer?.Dispose();
+                }
+                _disposed = true;
+            }
         }
-
-        /// <summary>
-        /// Destructor for <see cref="PhysicalFilesWatcher"/>.
-        /// </summary>
-        ~PhysicalFilesWatcher() => Dispose(false);
 
         private void OnRenamed(object sender, RenamedEventArgs e)
         {
@@ -261,11 +276,11 @@ namespace Microsoft.Extensions.FileProviders.Physical
                 {
                     // If the renamed entity is a directory then notify tokens for every sub item.
                     foreach (
-                        var newLocation in
+                        string newLocation in
                         Directory.EnumerateFileSystemEntries(e.FullPath, "*", SearchOption.AllDirectories))
                     {
                         // Calculated previous path of this moved item.
-                        var oldLocation = Path.Combine(e.OldFullPath, newLocation.Substring(e.FullPath.Length + 1));
+                        string oldLocation = Path.Combine(e.OldFullPath, newLocation.Substring(e.FullPath.Length + 1));
                         OnFileSystemEntryChange(oldLocation);
                         OnFileSystemEntryChange(newLocation);
                     }
@@ -289,7 +304,7 @@ namespace Microsoft.Extensions.FileProviders.Physical
         private void OnError(object sender, ErrorEventArgs e)
         {
             // Notify all cache entries on error.
-            foreach (var path in _filePathTokenLookup.Keys)
+            foreach (string path in _filePathTokenLookup.Keys)
             {
                 ReportChangeForMatchedEntries(path);
             }
@@ -305,7 +320,7 @@ namespace Microsoft.Extensions.FileProviders.Physical
                     return;
                 }
 
-                var relativePath = fullPath.Substring(_root.Length);
+                string relativePath = fullPath.Substring(_root.Length);
                 ReportChangeForMatchedEntries(relativePath);
             }
             catch (Exception ex) when (
@@ -329,16 +344,16 @@ namespace Microsoft.Extensions.FileProviders.Physical
 
             path = NormalizePath(path);
 
-            var matched = false;
-            if (_filePathTokenLookup.TryRemove(path, out var matchInfo))
+            bool matched = false;
+            if (_filePathTokenLookup.TryRemove(path, out ChangeTokenInfo matchInfo))
             {
                 CancelToken(matchInfo);
                 matched = true;
             }
 
-            foreach (var wildCardEntry in _wildcardTokenLookup)
+            foreach (System.Collections.Generic.KeyValuePair<string, ChangeTokenInfo> wildCardEntry in _wildcardTokenLookup)
             {
-                var matchResult = wildCardEntry.Value.Matcher.Match(path);
+                PatternMatchingResult matchResult = wildCardEntry.Value.Matcher.Match(path);
                 if (matchResult.HasMatches &&
                     _wildcardTokenLookup.TryRemove(wildCardEntry.Key, out matchInfo))
                 {
@@ -355,27 +370,33 @@ namespace Microsoft.Extensions.FileProviders.Physical
 
         private void TryDisableFileSystemWatcher()
         {
-            lock (_fileWatcherLock)
+            if (_fileWatcher != null)
             {
-                if (_filePathTokenLookup.IsEmpty &&
-                    _wildcardTokenLookup.IsEmpty &&
-                    _fileWatcher.EnableRaisingEvents)
+                lock (_fileWatcherLock)
                 {
-                    // Perf: Turn off the file monitoring if no files to monitor.
-                    _fileWatcher.EnableRaisingEvents = false;
+                    if (_filePathTokenLookup.IsEmpty &&
+                        _wildcardTokenLookup.IsEmpty &&
+                        _fileWatcher.EnableRaisingEvents)
+                    {
+                        // Perf: Turn off the file monitoring if no files to monitor.
+                        _fileWatcher.EnableRaisingEvents = false;
+                    }
                 }
             }
         }
 
         private void TryEnableFileSystemWatcher()
         {
-            lock (_fileWatcherLock)
+            if (_fileWatcher != null)
             {
-                if ((!_filePathTokenLookup.IsEmpty || !_wildcardTokenLookup.IsEmpty) &&
-                    !_fileWatcher.EnableRaisingEvents)
+                lock (_fileWatcherLock)
                 {
-                    // Perf: Turn off the file monitoring if no files to monitor.
-                    _fileWatcher.EnableRaisingEvents = true;
+                    if ((!_filePathTokenLookup.IsEmpty || !_wildcardTokenLookup.IsEmpty) &&
+                        !_fileWatcher.EnableRaisingEvents)
+                    {
+                        // Perf: Turn off the file monitoring if no files to monitor.
+                        _fileWatcher.EnableRaisingEvents = true;
+                    }
                 }
             }
         }
@@ -409,9 +430,9 @@ namespace Microsoft.Extensions.FileProviders.Physical
             // Iterating over a concurrent bag gives us a point in time snapshot making it safe
             // to remove items from it.
             var changeTokens = (ConcurrentDictionary<IPollingChangeToken, IPollingChangeToken>)state;
-            foreach (var item in changeTokens)
+            foreach (System.Collections.Generic.KeyValuePair<IPollingChangeToken, IPollingChangeToken> item in changeTokens)
             {
-                var token = item.Key;
+                IPollingChangeToken token = item.Key;
 
                 if (!token.HasChanged)
                 {

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using Debug = System.Diagnostics.Debug;
 
@@ -13,8 +12,8 @@ namespace Internal.TypeSystem
         /// Stores a cached version of the canonicalized form of this method since
         /// calculating it is a recursive operation
         /// </summary>
-        InstantiatedMethod _specificCanonCache = null;
-        InstantiatedMethod _universalCanonCache = null;
+        InstantiatedMethod _specificCanonCache;
+        InstantiatedMethod _universalCanonCache;
 
         /// <summary>
         /// Returns the result of canonicalizing this method over the given kind of Canon
@@ -41,7 +40,7 @@ namespace Internal.TypeSystem
                 // This is to not end up having method instantiations like Foo<__UniversalCanon>.Method<int> or Foo<__UniversalCanon>.Method<string>
                 // or Foo<__UniversalCanon>.Method<__Canon> or Foo<int>.Method<__UniversalCanon>
                 // It should just be Foo<__UniversalCanon>.Method<__UniversalCanon>
-                if ((kind == CanonicalFormKind.Specific) && 
+                if ((kind == CanonicalFormKind.Specific) &&
                     canonicalMethodResult.IsCanonicalMethod(CanonicalFormKind.Universal))
                 {
                     canonicalMethodResult = (InstantiatedMethod)canonicalMethodResult.GetCanonMethodTarget(CanonicalFormKind.Universal);
@@ -49,7 +48,7 @@ namespace Internal.TypeSystem
 
                 SetCachedCanonValue(kind, canonicalMethodResult);
             }
-            
+
             return canonicalMethodResult;
         }
 
@@ -71,7 +70,7 @@ namespace Internal.TypeSystem
 
         void SetCachedCanonValue(CanonicalFormKind kind, InstantiatedMethod value)
         {
-            switch(kind)
+            switch (kind)
             {
                 case CanonicalFormKind.Specific:
                     Debug.Assert(_specificCanonCache == null || _specificCanonCache == value);

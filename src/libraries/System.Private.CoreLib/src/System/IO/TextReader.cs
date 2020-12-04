@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Text;
 using System.Threading;
@@ -205,7 +204,7 @@ namespace System.IO
 
         #region Task based Async APIs
         public virtual Task<string?> ReadLineAsync() =>
-            Task<string?>.Factory.StartNew(state => ((TextReader)state!).ReadLine(), this,
+            Task<string?>.Factory.StartNew(static state => ((TextReader)state!).ReadLine(), this,
                 CancellationToken.None, TaskCreationOptions.DenyChildAttach, TaskScheduler.Default);
 
         public virtual async Task<string> ReadToEndAsync()
@@ -248,22 +247,18 @@ namespace System.IO
         public virtual ValueTask<int> ReadAsync(Memory<char> buffer, CancellationToken cancellationToken = default) =>
             new ValueTask<int>(MemoryMarshal.TryGetArray(buffer, out ArraySegment<char> array) ?
                 ReadAsync(array.Array!, array.Offset, array.Count) :
-                Task<int>.Factory.StartNew(state =>
+                Task<int>.Factory.StartNew(static state =>
                 {
-                    var t = (Tuple<TextReader, Memory<char>>)state!;
+                    var t = (TupleSlim<TextReader, Memory<char>>)state!;
                     return t.Item1.Read(t.Item2.Span);
-                }, Tuple.Create(this, buffer), cancellationToken, TaskCreationOptions.DenyChildAttach, TaskScheduler.Default));
+                }, new TupleSlim<TextReader, Memory<char>>(this, buffer), cancellationToken, TaskCreationOptions.DenyChildAttach, TaskScheduler.Default));
 
-        internal virtual ValueTask<int> ReadAsyncInternal(Memory<char> buffer, CancellationToken cancellationToken)
-        {
-            var tuple = new Tuple<TextReader, Memory<char>>(this, buffer);
-            return new ValueTask<int>(Task<int>.Factory.StartNew(state =>
+        internal virtual ValueTask<int> ReadAsyncInternal(Memory<char> buffer, CancellationToken cancellationToken) =>
+            new ValueTask<int>(Task<int>.Factory.StartNew(static state =>
             {
-                var t = (Tuple<TextReader, Memory<char>>)state!;
+                var t = (TupleSlim<TextReader, Memory<char>>)state!;
                 return t.Item1.Read(t.Item2.Span);
-            },
-            tuple, cancellationToken, TaskCreationOptions.DenyChildAttach, TaskScheduler.Default));
-        }
+            }, new TupleSlim<TextReader, Memory<char>>(this, buffer), cancellationToken, TaskCreationOptions.DenyChildAttach, TaskScheduler.Default));
 
         public virtual Task<int> ReadBlockAsync(char[] buffer, int index, int count)
         {
@@ -286,11 +281,11 @@ namespace System.IO
         public virtual ValueTask<int> ReadBlockAsync(Memory<char> buffer, CancellationToken cancellationToken = default) =>
             new ValueTask<int>(MemoryMarshal.TryGetArray(buffer, out ArraySegment<char> array) ?
                 ReadBlockAsync(array.Array!, array.Offset, array.Count) :
-                Task<int>.Factory.StartNew(state =>
+                Task<int>.Factory.StartNew(static state =>
                 {
-                    var t = (Tuple<TextReader, Memory<char>>)state!;
+                    var t = (TupleSlim<TextReader, Memory<char>>)state!;
                     return t.Item1.ReadBlock(t.Item2.Span);
-                }, Tuple.Create(this, buffer), cancellationToken, TaskCreationOptions.DenyChildAttach, TaskScheduler.Default));
+                }, new TupleSlim<TextReader, Memory<char>>(this, buffer), cancellationToken, TaskCreationOptions.DenyChildAttach, TaskScheduler.Default));
 
         internal async ValueTask<int> ReadBlockAsyncInternal(Memory<char> buffer, CancellationToken cancellationToken)
         {

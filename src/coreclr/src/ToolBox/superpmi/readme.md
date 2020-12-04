@@ -53,7 +53,7 @@ there is the `superpmi-shim-collector` binary (`.dll` or `.so` or `.dylib`).
 
 To harness collection, there is a .NET Core C# program that is built as
 part of the coreclr tests build called superpmicollect.exe
-(source: src/coreclr/tests/src/JIT/superpmi in https://github.com/dotnet/runtime repository).
+(source: src/tests/JIT/superpmi in https://github.com/dotnet/runtime repository).
 This tool also functions as a SuperPMI collection and playback unit test.
 
 The superpmicollect tool is also being moved to the jitutils repository
@@ -78,7 +78,7 @@ To manually do a collection (not using the `superpmi.py` script or
 First, build the `dotnet/runtime` repo, which builds the `superpmi`, `mcs`,
 and `superpmi-shim-collector` programs, along with the rest of coreclr,
 and places them in the same native code directory as the JIT and the rest
-of coreclr, e.g., `f:\gh\runtime\artifacts\bin\coreclr\Windows_NT.x64.Checked\superpmi.exe`
+of coreclr, e.g., `f:\gh\runtime\artifacts\bin\coreclr\windows.x64.Checked\superpmi.exe`
 for a `dotnet/runtime` repo rooted at the `f:\gh\runtime` directory, and
 built on Windows for the x64 Checked architecture / build flavor combination.
 
@@ -103,7 +103,7 @@ replay. (MCH stands for "method context hive".)
 equivalent, such as trivial class constructors, or if some functions are
 compiled multiple times in different scenarios or tests. We filter out the
 duplicates, which makes playback much faster, and the resultant MCH file much
-smaller.
+smaller. This can be done as part of the "merge" step.
 4. Create a "clean" .MCH with no SuperPMI failures. The original collected MCH
 file might not replay cleanly. This is generally due to existing, un-investigated
 SuperPMI bugs or limitations. We don't want to see these during normal playback,
@@ -121,9 +121,7 @@ Set the following environment variables:
 ```
 SuperPMIShimLogPath=<full path to an existing, empty temporary directory>
 SuperPMIShimPath=<full path to clrjit.dll, the "standalone" JIT>
-COMPlus_AltJit=*
-COMPlus_AltJitNgen=*
-COMPlus_AltJitName=superpmi-shim-collector.dll
+COMPlus_JitName=superpmi-shim-collector.dll
 ```
 
 for example, on Windows:
@@ -131,10 +129,8 @@ for example, on Windows:
 ```
 mkdir f:\spmi\temp
 set SuperPMIShimLogPath=f:\spmi\temp
-set SuperPMIShimPath=f:\gh\runtime\artifacts\tests\coreclr\Windows_NT.x64.Checked\Tests\Core_Root\clrjit.dll
-set COMPlus_AltJit=*
-set COMPlus_AltJitNgen=*
-set COMPlus_AltJitName=superpmi-shim-collector.dll
+set SuperPMIShimPath=f:\gh\runtime\artifacts\tests\coreclr\windows.x64.Checked\Tests\Core_Root\clrjit.dll
+set COMPlus_JitName=superpmi-shim-collector.dll
 ```
 
 (On Linux, use `libclrjit.so` and `libsuperpmi-shim-collector.so`.
@@ -166,7 +162,7 @@ directory (specified by `SuperPMIShimLogPath`).
 Merge the generated .MC files using the `mcs` tool:
 
 ```
-mcs -merge base.mch *.mc -recursive
+mcs -merge base.mch *.mc -recursive -dedup -thin
 ```
 
 This assumes the current directory is the root directory where the .MC files
@@ -174,14 +170,18 @@ were placed, namely the directory specified as `SuperPMIShimLogPath` above.
 You can also specify a directory prefix to the file system regular expression.
 The `-recursive` flag is only necessary if .MC files also exist in subdirectories
 of this, and you want those also added to the resultant, collected `base.mch`
-file. So, for the example above, you might use:
+file. The `-dedup` and `-thin` options remove duplicates as the files are merged,
+and remove the normally-unused CompileResults (e.g., the code generated during
+the initial collection).
+
+So, for the example above, you might use:
 
 ```
-f:\gh\runtime\artifacts\bin\coreclr\Windows_NT.x64.Checked\mcs.exe -merge f:\spmi\base.mch f:\spmi\temp\*.mc -recursive
+f:\gh\runtime\artifacts\bin\coreclr\windows.x64.Checked\mcs.exe -merge f:\spmi\base.mch f:\spmi\temp\*.mc -recursive -dedup -thin
 ```
 
-Note that `mcs -merge` is literally just a file concatenation of many files into
-one, so this step will double the required disk space.
+Note that `mcs -merge` without `-dedup -thin` is literally just a file concatenation
+of many files into one, which would double the required disk space.
 
 After this step, you can remove all the individual .MC files unless you want
 to keep them to debug the SuperPMI collection process itself.
@@ -190,7 +190,8 @@ to keep them to debug the SuperPMI collection process itself.
 ## Remove duplicates in the .MCH file
 
 One benefit of SuperPMI is the ability to remove duplicated compilations, so
-on replay only unique functions are compiled. Use the following to create a
+on replay only unique functions are compiled. If you didn't use the `-merge -dedup -thin`
+option above, you can do the deduplication separately, using the following to create a
 "unique" set of functions:
 
 ```
@@ -205,7 +206,7 @@ the ways in which we normally use SuperPMI.
 For the continuing example, you might use:
 
 ```
-f:\gh\runtime\artifacts\bin\coreclr\Windows_NT.x64.Checked\mcs.exe -removeDup -thin f:\spmi\base.mch f:\spmi\unique.mch
+f:\gh\runtime\artifacts\bin\coreclr\windows.x64.Checked\mcs.exe -removeDup -thin f:\spmi\base.mch f:\spmi\unique.mch
 ```
 
 After this step, you can remove the base.mch file (unless you want to debug
@@ -218,6 +219,9 @@ As stated above, due to various bugs or otherwise uninvestigated issues, a Super
 replay of the unique.mch file might contain errors. We don't want that, so we filter
 out those errors in a "baseline" run, as follows.
 
+(Note that if you are following the steps above, you most likely deduplicated
+during the merge operation, so you have a `base.mch` file, not a `unique.mch` file.)
+
 ```
 superpmi -p -f basefail.mcl unique.mch clrjit.dll
 mcs.exe -strip basefail.mcl unique.mch final.mch
@@ -226,8 +230,8 @@ mcs.exe -strip basefail.mcl unique.mch final.mch
 Or, continuing the example above, giving full paths, we have:
 
 ```
-f:\gh\runtime\artifacts\bin\coreclr\Windows_NT.x64.Checked\superpmi.exe -p -f f:\spmi\basefail.mcl f:\spmi\unique.mch f:\gh\runtime\artifacts\bin\coreclr\Windows_NT.x64.Checked\clrjit.dll
-f:\gh\runtime\artifacts\bin\coreclr\Windows_NT.x64.Checked\mcs.exe -strip f:\spmi\basefail.mcl f:\spmi\unique.mch f:\spmi\final.mch
+f:\gh\runtime\artifacts\bin\coreclr\windows.x64.Checked\superpmi.exe -p -f f:\spmi\basefail.mcl f:\spmi\unique.mch f:\gh\runtime\artifacts\bin\coreclr\windows.x64.Checked\clrjit.dll
+f:\gh\runtime\artifacts\bin\coreclr\windows.x64.Checked\mcs.exe -strip f:\spmi\basefail.mcl f:\spmi\unique.mch f:\spmi\final.mch
 ```
 
 
@@ -242,7 +246,7 @@ mcs -toc final.mch
 or, using the full paths from above:
 
 ```
-f:\gh\runtime\artifacts\bin\coreclr\Windows_NT.x64.Checked\mcs.exe -toc f:\spmi\final.mch
+f:\gh\runtime\artifacts\bin\coreclr\windows.x64.Checked\mcs.exe -toc f:\spmi\final.mch
 ```
 
 
@@ -257,7 +261,7 @@ superpmi -p -f finalfail.mcl final.mch clrjit.dll
 Or, continuing the example above, giving full paths, we have:
 
 ```
-f:\gh\runtime\artifacts\bin\coreclr\Windows_NT.x64.Checked\superpmi.exe -p -f f:\spmi\finalfail.mcl f:\spmi\final.mch f:\gh\runtime\artifacts\bin\coreclr\Windows_NT.x64.Checked\clrjit.dll
+f:\gh\runtime\artifacts\bin\coreclr\windows.x64.Checked\superpmi.exe -p -f f:\spmi\finalfail.mcl f:\spmi\final.mch f:\gh\runtime\artifacts\bin\coreclr\windows.x64.Checked\clrjit.dll
 ```
 
 In this case, if `finalfail.mcl` is not empty, there was a failure in the final "check" replay.

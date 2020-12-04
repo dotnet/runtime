@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Text;
 using System.Diagnostics;
@@ -13,9 +12,9 @@ namespace System.Xml
     //
     internal class CharEntityEncoderFallback : EncoderFallback
     {
-        private CharEntityEncoderFallbackBuffer _fallbackBuffer;
+        private CharEntityEncoderFallbackBuffer? _fallbackBuffer;
 
-        private int[] _textContentMarks;
+        private int[]? _textContentMarks;
         private int _endMarkPos;
         private int _curMarkPos;
         private int _startOffset;
@@ -62,6 +61,8 @@ namespace System.Xml
 
         internal bool CanReplaceAt(int index)
         {
+            Debug.Assert(_textContentMarks != null);
+
             int mPos = _curMarkPos;
             int charPos = _startOffset + index;
             while (mPos < _endMarkPos && charPos >= _textContentMarks[mPos + 1])

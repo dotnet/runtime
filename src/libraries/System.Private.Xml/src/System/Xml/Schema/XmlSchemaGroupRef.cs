@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 namespace System.Xml.Schema
 {
@@ -9,8 +8,8 @@ namespace System.Xml.Schema
     public class XmlSchemaGroupRef : XmlSchemaParticle
     {
         private XmlQualifiedName _refName = XmlQualifiedName.Empty;
-        private XmlSchemaGroupBase _particle;
-        private XmlSchemaGroup _refined;
+        private XmlSchemaGroupBase? _particle;
+        private XmlSchemaGroup? _refined;
 
         [XmlAttribute("ref")]
         public XmlQualifiedName RefName
@@ -20,7 +19,7 @@ namespace System.Xml.Schema
         }
 
         [XmlIgnore]
-        public XmlSchemaGroupBase Particle
+        public XmlSchemaGroupBase? Particle
         {
             get { return _particle; }
         }
@@ -31,7 +30,7 @@ namespace System.Xml.Schema
         }
 
         [XmlIgnore]
-        internal XmlSchemaGroup Redefined
+        internal XmlSchemaGroup? Redefined
         {
             get { return _refined; }
             set { _refined = value; }

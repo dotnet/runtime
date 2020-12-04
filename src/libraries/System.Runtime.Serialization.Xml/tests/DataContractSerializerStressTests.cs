@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using SerializationTypes;
 using System.IO;
@@ -11,6 +10,7 @@ using Xunit;
 public static partial class DataContractSerializerTests
 {
     [Fact]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/34962", TestRuntimes.Mono)]
     public static void DCS_MyPersonSurrogate_Stress()
     {
         // This test is to verify a bug fix made in ObjectToIdCache.cs.

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
 using System.IO.PortsTests;
@@ -592,7 +591,6 @@ namespace System.IO.Ports.Tests
         {
             int com1BaudRate = com1.BaudRate;
             int com2BaudRate = com2.BaudRate;
-            int com1ReadBufferSize = com1.ReadBufferSize;
             int bufferSize = com1.ReadBufferSize;
             int upperLimit = (3 * bufferSize) / 4;
             int lowerLimit = bufferSize / 4;
@@ -696,7 +694,6 @@ namespace System.IO.Ports.Tests
         {
             int com1BaudRate = com1.BaudRate;
             int com2BaudRate = com2.BaudRate;
-            int com1ReadBufferSize = com1.ReadBufferSize;
             bool com2RtsEnable = com2.RtsEnable;
             int bufferSize = com1.ReadBufferSize;
             int upperLimit = bufferSize - 1024;

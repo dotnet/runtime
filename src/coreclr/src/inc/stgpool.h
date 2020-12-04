@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 //*****************************************************************************
 // StgPool.h
 //
@@ -29,8 +28,6 @@
 #include "sarray.h"
 #include "memoryrange.h"
 #include "../md/hotdata/hotheap.h"
-
-#include "../md/debug_metadata.h"
 
 //*****************************************************************************
 // NOTE:

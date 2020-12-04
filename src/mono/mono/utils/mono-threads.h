@@ -22,6 +22,7 @@
 #include <mono/utils/os-event.h>
 #include <mono/utils/refcount.h>
 #include <mono/utils/mono-error-internals.h>
+#include <mono/utils/w32subset.h>
 
 #include <glib.h>
 #include <config.h>
@@ -72,6 +73,18 @@ typedef gsize (*MonoThreadStart)(gpointer);
 #endif /* !defined(__HAIKU__) */
 
 #endif /* #ifdef HOST_WIN32 */
+
+#if HAVE_API_SUPPORT_WIN32_SET_THREAD_STACK_GUARANTEE && defined(HOST_WIN32) && defined(_DEBUG)
+// Need more memory on Windows debug build (due to less optimization) to handle stack overflows.
+#define MONO_STACK_OVERFLOW_GUARD_SIZE (64 * 1024)
+#elif HAVE_API_SUPPORT_WIN32_SET_THREAD_STACK_GUARANTEE && defined(HOST_WIN32)
+#define MONO_STACK_OVERFLOW_GUARD_SIZE (32 * 1024)
+#elif defined(HOST_WIN32)
+// Not supported.
+#define MONO_STACK_OVERFLOW_GUARD_SIZE (0)
+#else
+#define MONO_STACK_OVERFLOW_GUARD_SIZE (32 * 1024)
+#endif
 
 #define MONO_NATIVE_THREAD_HANDLE_TO_GPOINTER(handle) ((gpointer)(gsize)(handle))
 #define MONO_GPOINTER_TO_NATIVE_THREAD_HANDLE(handle) ((MonoNativeThreadHandle)(gsize)(handle))
@@ -630,6 +643,9 @@ void mono_threads_coop_end_global_suspend (void);
 
 MONO_API MonoNativeThreadId
 mono_native_thread_id_get (void);
+
+gboolean
+mono_native_thread_id_main_thread_known (MonoNativeThreadId *main_thread_tid);
 
 /*
  * This does _not_ return the same value as mono_native_thread_id_get, except on Windows.

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Linq;
 using System.Net.Test.Common;
@@ -395,17 +394,13 @@ namespace System.Net.Sockets.Tests
     [Trait("IPv6", "true")]
     public class DualModeBeginConnectToIPEndPoint : DualModeBase
     {
-        [Fact] // Base case
-        // "The system detected an invalid pointer address in attempting to use a pointer argument in a call"
+        [Fact]
         public void Socket_BeginConnectV4IPEndPointToV4Host_Throws()
         {
             using (Socket socket = new Socket(SocketType.Stream, ProtocolType.Tcp))
             {
                 socket.DualMode = false;
-                Assert.Throws<SocketException>(() =>
-                {
-                    socket.BeginConnect(new IPEndPoint(IPAddress.Loopback, UnusedPort), null, null);
-                });
+                Assert.Throws<NotSupportedException>(() => socket.BeginConnect(new IPEndPoint(IPAddress.Loopback, UnusedPort), null, null));
             }
         }
 
@@ -439,7 +434,7 @@ namespace System.Net.Sockets.Tests
         [Theory]
         [MemberData(nameof(DualMode_IPAddresses_ListenOn_DualMode_Data))]
         [PlatformSpecific(TestPlatforms.Windows)]  // Connecting sockets to DNS endpoints via the instance Connect and ConnectAsync methods not supported on Unix
-        private async Task DualModeBeginConnect_IPAddressListToHost_Helper(IPAddress[] connectTo, IPAddress listenOn, bool dualModeServer)
+        public async Task DualModeBeginConnect_IPAddressListToHost_Helper(IPAddress[] connectTo, IPAddress listenOn, bool dualModeServer)
         {
             using (Socket socket = new Socket(SocketType.Stream, ProtocolType.Tcp))
             using (SocketServer server = new SocketServer(_log, listenOn, dualModeServer, out int port))
@@ -1095,12 +1090,8 @@ namespace System.Net.Sockets.Tests
             using (Socket client = new Socket(SocketType.Dgram, ProtocolType.Udp))
             using (SocketUdpServer server = new SocketUdpServer(_log, listenOn, dualModeServer, out int port))
             {
-                // Send a few packets, in case they aren't delivered reliably.
-                for (int i = 0; i < (expectedToTimeout ? 1 : TestSettings.UDPRedundancy); i++)
-                {
-                    int sent = client.SendTo(new byte[1], new IPEndPoint(connectTo, port));
-                    Assert.Equal(1, sent);
-                }
+                int sent = client.SendTo(new byte[1], new IPEndPoint(connectTo, port));
+                Assert.Equal(1, sent);
 
                 bool success = server.WaitHandle.WaitOne(expectedToTimeout ? TestSettings.FailingTestTimeout : TestSettings.PassingTestTimeout); // Make sure the bytes were received
                 if (!success)
@@ -1194,14 +1185,10 @@ namespace System.Net.Sockets.Tests
             using (Socket client = new Socket(SocketType.Dgram, ProtocolType.Udp))
             using (SocketUdpServer server = new SocketUdpServer(_log, listenOn, dualModeServer, out int port))
             {
-                // Send a few packets, in case they aren't delivered reliably.
-                for (int i = 0; i < (expectedToTimeout ? 1 : TestSettings.UDPRedundancy); i++)
-                {
-                    IAsyncResult async = client.BeginSendTo(new byte[1], 0, 1, SocketFlags.None, new IPEndPoint(connectTo, port), null, null);
+                IAsyncResult async = client.BeginSendTo(new byte[1], 0, 1, SocketFlags.None, new IPEndPoint(connectTo, port), null, null);
 
-                    int sent = client.EndSendTo(async);
-                    Assert.Equal(1, sent);
-                }
+                int sent = client.EndSendTo(async);
+                Assert.Equal(1, sent);
 
                 bool success = server.WaitHandle.WaitOne(expectedToTimeout ? TestSettings.FailingTestTimeout : TestSettings.PassingTestTimeout); // Make sure the bytes were received
                 if (!success)
@@ -1316,28 +1303,24 @@ namespace System.Net.Sockets.Tests
             using (Socket client = new Socket(SocketType.Dgram, ProtocolType.Udp))
             using (SocketUdpServer server = new SocketUdpServer(_log, listenOn, dualModeServer, out int port))
             {
-                // Send a few packets, in case they aren't delivered reliably.
-                for (int i = 0; i < (expectedToTimeout ? 1 : TestSettings.UDPRedundancy); i++)
+                using (ManualResetEvent waitHandle = new ManualResetEvent(false))
                 {
-                    using (ManualResetEvent waitHandle = new ManualResetEvent(false))
+                    SocketAsyncEventArgs args = new SocketAsyncEventArgs();
+                    args.RemoteEndPoint = new IPEndPoint(connectTo, port);
+                    args.SetBuffer(new byte[1], 0, 1);
+                    args.UserToken = waitHandle;
+                    args.Completed += AsyncCompleted;
+
+                    bool async = client.SendToAsync(args);
+                    if (async)
                     {
-                        SocketAsyncEventArgs args = new SocketAsyncEventArgs();
-                        args.RemoteEndPoint = new IPEndPoint(connectTo, port);
-                        args.SetBuffer(new byte[1], 0, 1);
-                        args.UserToken = waitHandle;
-                        args.Completed += AsyncCompleted;
+                        Assert.True(waitHandle.WaitOne(TestSettings.PassingTestTimeout), "Timeout while waiting for connection");
+                    }
 
-                        bool async = client.SendToAsync(args);
-                        if (async)
-                        {
-                            Assert.True(waitHandle.WaitOne(TestSettings.PassingTestTimeout), "Timeout while waiting for connection");
-                        }
-
-                        Assert.Equal(1, args.BytesTransferred);
-                        if (args.SocketError != SocketError.Success)
-                        {
-                            throw new SocketException((int)args.SocketError);
-                        }
+                    Assert.Equal(1, args.BytesTransferred);
+                    if (args.SocketError != SocketError.Success)
+                    {
+                        throw new SocketException((int)args.SocketError);
                     }
                 }
 
@@ -1610,7 +1593,7 @@ namespace System.Net.Sockets.Tests
                 // Assert.Equal(AddressFamily.InterNetworkV6, remoteEndPoint.AddressFamily);
                 // Assert.Equal(connectTo.MapToIPv6(), remoteEndPoint.Address);
 
-                SocketUdpClient client = new SocketUdpClient(_log, serverSocket, connectTo, port, redundant: !expectedToTimeout);
+                SocketUdpClient client = new SocketUdpClient(_log, serverSocket, connectTo, port);
                 bool success = async.AsyncWaitHandle.WaitOne(expectedToTimeout ? TestSettings.FailingTestTimeout : TestSettings.PassingTestTimeout);
                 if (!success)
                 {
@@ -1649,7 +1632,7 @@ namespace System.Net.Sockets.Tests
                 args.RemoteEndPoint = new IPEndPoint(IPAddress.Loopback, UnusedPort);
                 args.SetBuffer(new byte[1], 0, 1);
 
-                AssertExtensions.Throws<ArgumentException>("RemoteEndPoint", () =>
+                AssertExtensions.Throws<ArgumentException>("e", () =>
                 {
                     socket.ReceiveFromAsync(args);
                 });
@@ -1755,7 +1738,7 @@ namespace System.Net.Sockets.Tests
                 args.Completed += AsyncCompleted;
 
                 bool async = serverSocket.ReceiveFromAsync(args);
-                SocketUdpClient client = new SocketUdpClient(_log, serverSocket, connectTo, port, redundant: !expectedToTimeout);
+                SocketUdpClient client = new SocketUdpClient(_log, serverSocket, connectTo, port);
                 if (async && !waitHandle.WaitOne(expectedToTimeout ? TestSettings.FailingTestTimeout : TestSettings.PassingTestTimeout))
                 {
                     throw new TimeoutException();
@@ -1946,6 +1929,57 @@ namespace System.Net.Sockets.Tests
         public void ReceiveMessageFromV4BoundToAnyV6_Success()
         {
             ReceiveMessageFrom_Helper(IPAddress.IPv6Any, IPAddress.Loopback);
+        }
+
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        [PlatformSpecific(~TestPlatforms.OSX)]  // ReceiveMessageFrom not supported on OSX
+        public void ReceiveMessageFromAsync_SocketAsyncEventArgs_Success(bool ipv4)
+        {
+            const int DataLength = 10;
+            AddressFamily family = ipv4 ? AddressFamily.InterNetwork : AddressFamily.InterNetworkV6;
+            IPAddress loopback = ipv4 ? IPAddress.Loopback : IPAddress.Loopback.MapToIPv6();
+            IPAddress clientAddress = ipv4 ? IPAddress.Loopback : IPAddress.IPv6Loopback;
+
+            var completed = new ManualResetEventSlim(false);
+            using (var sender = new Socket(family, SocketType.Dgram, ProtocolType.Udp))
+            using (var receiver = new Socket(AddressFamily.InterNetworkV6, SocketType.Dgram, ProtocolType.Udp))
+            {
+                receiver.DualMode = true;
+                receiver.SetSocketOption(SocketOptionLevel.IP, SocketOptionName.PacketInformation, true);
+                receiver.SetSocketOption(SocketOptionLevel.IPv6, SocketOptionName.PacketInformation, true);
+                int receiverPort = receiver.BindToAnonymousPort(IPAddress.IPv6Any);
+
+                if (!ipv4)
+                {
+                    sender.DualMode = true;
+                }
+
+                int senderPort = sender.BindToAnonymousPort(loopback);
+                var expectedEP = new IPEndPoint(IPAddress.Loopback.MapToIPv6(), senderPort);
+
+                var args = new SocketAsyncEventArgs() { RemoteEndPoint = new IPEndPoint(IPAddress.IPv6Any, 0) };
+                args.Completed += (s, e) => { Console.WriteLine("Got 1 packet {0} {1}", e.RemoteEndPoint, e.ReceiveMessageFromPacketInfo.Address); completed.Set(); };
+                args.SetBuffer(new byte[DataLength], 0, DataLength);
+
+                var ep = new IPEndPoint(loopback, receiverPort);
+                for (int iters = 0; iters < 5; iters++)
+                {
+                    sender.SendTo(new byte[DataLength], ep);
+
+                    if (!receiver.ReceiveMessageFromAsync(args))
+                    {
+                        completed.Set();
+                    }
+                    Assert.True(completed.Wait(TestSettings.PassingTestTimeout), "Timeout while waiting for connection");
+                    completed.Reset();
+
+                    Assert.Equal(DataLength, args.BytesTransferred);
+                    Assert.Equal(expectedEP, args.RemoteEndPoint);
+                    Assert.True(args.ReceiveMessageFromPacketInfo.Address.Equals(IPAddress.Loopback) || args.ReceiveMessageFromPacketInfo.Address.Equals(IPAddress.Loopback.MapToIPv6()));
+                }
+            }
         }
 
         private void ReceiveMessageFrom_Helper(IPAddress listenOn, IPAddress connectTo, bool expectedToTimeout = false)
@@ -2154,7 +2188,7 @@ namespace System.Net.Sockets.Tests
                 // Assert.Equal(AddressFamily.InterNetworkV6, remoteEndPoint.AddressFamily);
                 // Assert.Equal(connectTo.MapToIPv6(), remoteEndPoint.Address);
 
-                SocketUdpClient client = new SocketUdpClient(_log, serverSocket, connectTo, port, redundant: !expectedToTimeout);
+                SocketUdpClient client = new SocketUdpClient(_log, serverSocket, connectTo, port);
                 bool success = async.AsyncWaitHandle.WaitOne(expectedToTimeout ? TestSettings.FailingTestTimeout : TestSettings.PassingTestTimeout);
                 if (!success)
                 {
@@ -2188,7 +2222,7 @@ namespace System.Net.Sockets.Tests
                 args.RemoteEndPoint = new IPEndPoint(IPAddress.Loopback, UnusedPort);
                 args.SetBuffer(new byte[1], 0, 1);
 
-                AssertExtensions.Throws<ArgumentException>("RemoteEndPoint", () =>
+                AssertExtensions.Throws<ArgumentException>("e", () =>
                 {
                     socket.ReceiveMessageFromAsync(args);
                 });
@@ -2329,7 +2363,7 @@ namespace System.Net.Sockets.Tests
                 bool async = serverSocket.ReceiveMessageFromAsync(args);
                 Assert.True(async);
 
-                SocketUdpClient client = new SocketUdpClient(_log, serverSocket, connectTo, port, redundant: !expectedToTimeout);
+                SocketUdpClient client = new SocketUdpClient(_log, serverSocket, connectTo, port);
                 if (!waitHandle.WaitOne(serverSocket.ReceiveTimeout))
                 {
                     throw new TimeoutException();
@@ -2659,7 +2693,7 @@ namespace System.Net.Sockets.Tests
             private IPAddress _connectTo;
             private Socket _serverSocket;
 
-            public SocketUdpClient(ITestOutputHelper output, Socket serverSocket, IPAddress connectTo, int port, bool redundant = true, bool sendNow = true)
+            public SocketUdpClient(ITestOutputHelper output, Socket serverSocket, IPAddress connectTo, int port, bool sendNow = true)
             {
                 _output = output;
 
@@ -2669,25 +2703,22 @@ namespace System.Net.Sockets.Tests
 
                 if (sendNow)
                 {
-                    Task.Run(() => ClientSend(redundant));
+                    Task.Run(() => ClientSend());
                 }
             }
 
-            public void ClientSend(bool redundant = true, int timeout = 3)
+            public void ClientSend(int timeout = 3)
             {
                 try
                 {
                     Socket socket = new Socket(_connectTo.AddressFamily, SocketType.Dgram, ProtocolType.Udp);
                     socket.SendTimeout = timeout * 1000;
 
-                    for (int i = 0; i < (redundant ? TestSettings.UDPRedundancy : 1); i++)
-                    {
-                        SocketAsyncEventArgs e = new SocketAsyncEventArgs();
-                        e.RemoteEndPoint = new IPEndPoint(_connectTo, _port);
-                        e.SetBuffer(new byte[1], 0, 1);
+                    SocketAsyncEventArgs e = new SocketAsyncEventArgs();
+                    e.RemoteEndPoint = new IPEndPoint(_connectTo, _port);
+                    e.SetBuffer(new byte[1], 0, 1);
 
-                        socket.SendToAsync(e);
-                    }
+                    socket.SendToAsync(e);
                 }
                 catch (SocketException e)
                 {

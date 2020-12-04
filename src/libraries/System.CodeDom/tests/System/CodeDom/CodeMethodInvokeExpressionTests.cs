@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Linq;
@@ -28,7 +27,7 @@ namespace System.CodeDom.Tests
 
         [Theory]
         [MemberData(nameof(Ctor_CodeMethodReferenceExpression_ParamsCodeExpression_TestData))]
-        public void Ctor(CodeMethodReferenceExpression method, CodeExpression[] parameters)
+        public void Ctor_Method_Parameters(CodeMethodReferenceExpression method, CodeExpression[] parameters)
         {
             var methodInvoke = new CodeMethodInvokeExpression(method, parameters);
             Assert.Equal((method ?? new CodeMethodReferenceExpression()).TargetObject, methodInvoke.Method.TargetObject);
@@ -45,7 +44,7 @@ namespace System.CodeDom.Tests
 
         [Theory]
         [MemberData(nameof(Ctor_CodeExpression_String_ParamsCodeExpression_TestData))]
-        public void Ctor(CodeExpression targetObject, string methodName, CodeExpression[] parameters)
+        public void Ctor_TargetObject_MethodName_Parameters(CodeExpression targetObject, string methodName, CodeExpression[] parameters)
         {
             var methodInvoke = new CodeMethodInvokeExpression(targetObject, methodName, parameters);
             Assert.Equal(targetObject, methodInvoke.Method.TargetObject);

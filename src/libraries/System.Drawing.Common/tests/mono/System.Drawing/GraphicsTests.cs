@@ -1,5 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
-// See the LICENSE file in the project root for more information.
+// The .NET Foundation licenses this file to you under the MIT license.
 //
 // Graphics class testing unit
 //
@@ -687,15 +687,6 @@ namespace MonoTests.System.Drawing
             }
         }
 
-        private void CheckBoundsInt(string msg, RectangleF bounds, int x, int y, int w, int h)
-        {
-            // currently bounds are rounded at 8 pixels (FIXME - we can go down to 1 pixel)
-            AssertEquals(msg + ".X", x, bounds.X, -1);
-            AssertEquals(msg + ".Y", y, bounds.Y, -1);
-            AssertEquals(msg + ".Width", w, bounds.Width, -1);
-            AssertEquals(msg + ".Height", h, bounds.Height, -1);
-        }
-
         [ConditionalFact(Helpers.IsDrawingSupported)]
         public void Clip_ScaleTransform_NoBoundsChange()
         {
@@ -777,7 +768,6 @@ namespace MonoTests.System.Drawing
             }
         }
 
-        static Point[] SmallCurve = new Point[3] { new Point(0, 0), new Point(15, 5), new Point(5, 15) };
         static PointF[] SmallCurveF = new PointF[3] { new PointF(0, 0), new PointF(15, 5), new PointF(5, 15) };
 
         static Point[] TooSmallCurve = new Point[2] { new Point(0, 0), new Point(15, 5) };
@@ -2106,7 +2096,7 @@ namespace MonoTests.System.Drawing
                     new CharacterRange (2, 1)
                 };
 
-        Region[] Measure(Graphics gfx, RectangleF rect)
+        Region[] Measure_Helper(Graphics gfx, RectangleF rect)
         {
             using (StringFormat format = StringFormat.GenericTypographic)
             {
@@ -2124,10 +2114,10 @@ namespace MonoTests.System.Drawing
         {
             using (Graphics gfx = Graphics.FromImage(new Bitmap(1, 1)))
             {
-                Region[] zero = Measure(gfx, new RectangleF(0, 0, 0, 0));
+                Region[] zero = Measure_Helper(gfx, new RectangleF(0, 0, 0, 0));
                 Assert.Equal(3, zero.Length);
 
-                Region[] small = Measure(gfx, new RectangleF(0, 0, 100, 100));
+                Region[] small = Measure_Helper(gfx, new RectangleF(0, 0, 100, 100));
                 Assert.Equal(3, small.Length);
                 for (int i = 0; i < 3; i++)
                 {
@@ -2139,7 +2129,7 @@ namespace MonoTests.System.Drawing
                     Assert.Equal(sb.Height, zb.Height);
                 }
 
-                Region[] max = Measure(gfx, new RectangleF(0, 0, float.MaxValue, float.MaxValue));
+                Region[] max = Measure_Helper(gfx, new RectangleF(0, 0, float.MaxValue, float.MaxValue));
                 Assert.Equal(3, max.Length);
                 for (int i = 0; i < 3; i++)
                 {
@@ -2158,7 +2148,7 @@ namespace MonoTests.System.Drawing
         {
             using (Graphics gfx = Graphics.FromImage(new Bitmap(1, 1)))
             {
-                Region[] min = Measure(gfx, new RectangleF(0, 0, float.MinValue, float.MinValue));
+                Region[] min = Measure_Helper(gfx, new RectangleF(0, 0, float.MinValue, float.MinValue));
                 Assert.Equal(3, min.Length);
                 for (int i = 0; i < 3; i++)
                 {
@@ -2169,7 +2159,7 @@ namespace MonoTests.System.Drawing
                     Assert.Equal(8388608.0f, mb.Height);
                 }
 
-                Region[] neg = Measure(gfx, new RectangleF(0, 0, -20, -20));
+                Region[] neg = Measure_Helper(gfx, new RectangleF(0, 0, -20, -20));
                 Assert.Equal(3, neg.Length);
                 for (int i = 0; i < 3; i++)
                 {

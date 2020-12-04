@@ -1,12 +1,11 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 // Helper methods for using Tasks to implement the APM pattern.
 //
 // Example usage, wrapping a Task<int>-returning FooAsync method with Begin/EndFoo methods:
 //
-//     public IAsyncResult BeginFoo(..., AsyncCallback callback, object state) =>
+//     public IAsyncResult BeginFoo(..., AsyncCallback? callback, object? state) =>
 //         TaskToApm.Begin(FooAsync(...), callback, state);
 //
 //     public int EndFoo(IAsyncResult asyncResult) =>
@@ -14,6 +13,7 @@
 
 #nullable enable
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Threading.Tasks
 {
@@ -37,26 +37,37 @@ namespace System.Threading.Tasks
         /// <param name="asyncResult">The IAsyncResult to unwrap.</param>
         public static void End(IAsyncResult asyncResult)
         {
-            if (asyncResult is TaskAsyncResult twar)
+            if (GetTask(asyncResult) is Task t)
             {
-                twar._task.GetAwaiter().GetResult();
+                t.GetAwaiter().GetResult();
                 return;
             }
 
-            throw new ArgumentNullException();
+            ThrowArgumentException(asyncResult);
         }
 
         /// <summary>Processes an IAsyncResult returned by Begin.</summary>
         /// <param name="asyncResult">The IAsyncResult to unwrap.</param>
         public static TResult End<TResult>(IAsyncResult asyncResult)
         {
-            if (asyncResult is TaskAsyncResult twar && twar._task is Task<TResult> task)
+            if (GetTask(asyncResult) is Task<TResult> task)
             {
                 return task.GetAwaiter().GetResult();
             }
 
-            throw new ArgumentNullException();
+            ThrowArgumentException(asyncResult);
+            return default!; // unreachable
         }
+
+        /// <summary>Gets the task represented by the IAsyncResult.</summary>
+        public static Task? GetTask(IAsyncResult asyncResult) => (asyncResult as TaskAsyncResult)?._task;
+
+        /// <summary>Throws an argument exception for the invalid <paramref name="asyncResult"/>.</summary>
+        [DoesNotReturn]
+        private static void ThrowArgumentException(IAsyncResult asyncResult) =>
+            throw (asyncResult is null ?
+                new ArgumentNullException(nameof(asyncResult)) :
+                new ArgumentException(null, nameof(asyncResult)));
 
         /// <summary>Provides a simple IAsyncResult that wraps a Task.</summary>
         /// <remarks>

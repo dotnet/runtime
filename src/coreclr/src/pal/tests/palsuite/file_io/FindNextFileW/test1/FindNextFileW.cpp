@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 /*=====================================================================
 **
@@ -14,17 +13,15 @@
 #include <palsuite.h>
 
 
-const char* szFindName =            "test01.txt";
-const char* szFindName_02 =         "test02.txt";
-const char* szFindNameWldCard_01 =  "test0?.txt";
-const char* szFindNameWldCard_02 =  "*.txt";
-const char* szDirName =             "test_dir";
-const char* szDirName_02 =          "test_dir_02";
-const char* szDirNameWldCard =      "test_*";
+#define szFindName             "test01.txt"
+#define szFindName_02          "test02.txt"
+#define szFindNameWldCard_01   "test0?.txt"
+#define szFindNameWldCard_02   "*.txt"
+#define szDirName              "test_dir"
+#define szDirName_02           "test_dir_02"
+#define szDirNameWldCard       "test_*"
 
-
-
-void removeAll()
+void removeAll_FindNextFileW_test1()
 {
     WCHAR* wTempPtr = NULL;
 
@@ -47,7 +44,7 @@ void removeAll()
 
 
 
-BOOL createTestFile(const char* szName)
+BOOL createTestFile_FindNextFileW_test1(const char* szName)
 {
     FILE *pFile = NULL;
 
@@ -55,7 +52,7 @@ BOOL createTestFile(const char* szName)
     if (pFile == NULL)
     {
         Trace("FindNextFileW: ERROR -> Unable to create file \"%s\".\n", szName);
-        removeAll();
+        removeAll_FindNextFileW_test1();
         return FALSE;
     }
     else
@@ -69,7 +66,7 @@ BOOL createTestFile(const char* szName)
 
 
 
-int __cdecl main(int argc, char *argv[])
+PALTEST(file_io_FindNextFileW_test1_paltest_findnextfilew_test1, "file_io/FindNextFileW/test1/paltest_findnextfilew_test1")
 {
     WIN32_FIND_DATAW findFileData;
     WIN32_FIND_DATAW findFileData_02;
@@ -83,18 +80,18 @@ int __cdecl main(int argc, char *argv[])
     {
         return FAIL;
     }
-    removeAll();
+    removeAll_FindNextFileW_test1();
 
 
     //
     // find a file that exists
     //
-    if(createTestFile(szFindName) == FALSE)
+    if(createTestFile_FindNextFileW_test1(szFindName) == FALSE)
     {
         PAL_TerminateEx(FAIL);  
         return FAIL;
     }
-    if(createTestFile(szFindName_02) == FALSE)
+    if(createTestFile_FindNextFileW_test1(szFindName_02) == FALSE)
     {
         PAL_TerminateEx(FAIL);  
         return FAIL;
@@ -105,7 +102,7 @@ int __cdecl main(int argc, char *argv[])
     free(wTempPtr);
     if (hFind == INVALID_HANDLE_VALUE)
     {
-        removeAll();
+        removeAll_FindNextFileW_test1();
         Fail("FindNextFileW: ERROR -> Unable to find \"%s\"\n", szFindName);
     }
     else
@@ -113,7 +110,7 @@ int __cdecl main(int argc, char *argv[])
         bRc = FindNextFileW(hFind, &findFileData);
         if (bRc != FALSE)
         {
-            removeAll();
+            removeAll_FindNextFileW_test1();
             Fail("FindNextFileW: ERROR -> Found a file that doesn't exist.\n");
         }
     }
@@ -127,7 +124,7 @@ int __cdecl main(int argc, char *argv[])
     free (wTempPtr);
     if (bRc == FALSE)
     {
-        removeAll();
+        removeAll_FindNextFileW_test1();
         Fail("FindNextFileW: ERROR -> Failed to create the directory \"%s\"\n",
             szDirName);
     }
@@ -136,7 +133,7 @@ int __cdecl main(int argc, char *argv[])
     free (wTempPtr);
     if (bRc == FALSE)
     {
-        removeAll();
+        removeAll_FindNextFileW_test1();
         Fail("FindNextFileW: ERROR -> Failed to create the directory "
             "\"%s\"\n",
             szDirName_02);
@@ -147,7 +144,7 @@ int __cdecl main(int argc, char *argv[])
     free (wTempPtr);
     if (hFind == INVALID_HANDLE_VALUE)
     {
-        removeAll();
+        removeAll_FindNextFileW_test1();
         Fail("FindNextFileW: ERROR. FindFirstFileW was unable "
             "to find \"%s\"\n",
             szDirName);
@@ -157,7 +154,7 @@ int __cdecl main(int argc, char *argv[])
         bRc = FindNextFileW(hFind, &findFileData);
         if (bRc != FALSE)
         {
-            removeAll();
+            removeAll_FindNextFileW_test1();
             Fail("FindNextFileW: ERROR -> Found a directory that "
                 "doesn't exist.\n");
         }
@@ -172,7 +169,7 @@ int __cdecl main(int argc, char *argv[])
     free(wTempPtr);
     if (hFind == INVALID_HANDLE_VALUE)
     {
-        removeAll();
+        removeAll_FindNextFileW_test1();
         Fail("FindNextFileW: ERROR -> FindFirstFileW was unable to "
             "find \"%s\"\n",
             szFindNameWldCard_01);
@@ -182,7 +179,7 @@ int __cdecl main(int argc, char *argv[])
         bRc = FindNextFileW(hFind, &findFileData_02);
         if (bRc == FALSE)
         {
-            removeAll();
+            removeAll_FindNextFileW_test1();
             Fail("FindNextFileW: ERROR -> Unable to find another file.\n");
         }
         else
@@ -190,7 +187,7 @@ int __cdecl main(int argc, char *argv[])
             // validate we found the correct file
             if (wcscmp(findFileData_02.cFileName, findFileData.cFileName) == 0)
             {
-                removeAll();
+                removeAll_FindNextFileW_test1();
                 Fail("FindNextFileW: ERROR -> Found the same file \"%S\".\n",
                     findFileData.cFileName);
             }
@@ -206,7 +203,7 @@ int __cdecl main(int argc, char *argv[])
     free(wTempPtr);
     if (hFind == INVALID_HANDLE_VALUE)
     {
-        removeAll();
+        removeAll_FindNextFileW_test1();
         Fail("FindNextFileW: ERROR -> Unable to find \"%s\"\n",
             szDirNameWldCard);
     }
@@ -215,7 +212,7 @@ int __cdecl main(int argc, char *argv[])
         bRc = FindNextFileW(hFind, &findFileData_02);
         if (bRc == FALSE)
         {
-            removeAll();
+            removeAll_FindNextFileW_test1();
             Fail("FindNextFileW: ERROR -> Unable to find another directory.\n");
         }
         else
@@ -223,7 +220,7 @@ int __cdecl main(int argc, char *argv[])
             // validate we found the correct directory
             if (wcscmp(findFileData_02.cFileName, findFileData.cFileName) == 0)
             {
-                removeAll();
+                removeAll_FindNextFileW_test1();
                 Fail("FindNextFileW: ERROR -> Found the same directory "
                     "\"%S\".\n",
                     findFileData.cFileName);
@@ -237,12 +234,12 @@ int __cdecl main(int argc, char *argv[])
     bRc = WriteFile(hFind, "this is a test", 10, &dwBytesWritten, NULL);
     if (bRc == TRUE)
     {
-        removeAll();
+        removeAll_FindNextFileW_test1();
         Fail("FindNextFileW: ERROR -> Able to write to a FindNextFileW "
             "handle.\n");
     }
 
-    removeAll();
+    removeAll_FindNextFileW_test1();
     PAL_Terminate();  
 
     return PASS;

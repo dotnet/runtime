@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Generic;
@@ -43,7 +42,7 @@ namespace System.Net.Tests
             var wc = new WebClient();
 
             AssertExtensions.Throws<ArgumentException>("value", () => { wc.BaseAddress = "http::/invalid url"; });
-            AssertExtensions.Throws<ArgumentNullException>("Encoding", () => { wc.Encoding = null; });
+            AssertExtensions.Throws<ArgumentNullException>("value", () => { wc.Encoding = null; });
         }
 
         [Fact]
@@ -536,8 +535,8 @@ namespace System.Net.Tests
             {
                 var wc = new WebClient();
 
-                var downloadProgressInvoked = new TaskCompletionSource<bool>();
-                wc.DownloadProgressChanged += (s, e) => downloadProgressInvoked.TrySetResult(true);
+                var downloadProgressInvoked = new TaskCompletionSource();
+                wc.DownloadProgressChanged += (s, e) => downloadProgressInvoked.TrySetResult();
 
                 Task<byte[]> download = DownloadDataAsync(wc, url.ToString());
                 await server.AcceptConnectionSendResponseAndCloseAsync(content: ExpectedText);
@@ -557,13 +556,13 @@ namespace System.Net.Tests
             {
                 string largeText = GetRandomText(1024 * 1024);
 
-                var downloadProgressInvokedWithContentLength = new TaskCompletionSource<bool>();
+                var downloadProgressInvokedWithContentLength = new TaskCompletionSource();
                 var wc = new WebClient();
                 wc.DownloadProgressChanged += (s, e) =>
                 {
                     if (e.TotalBytesToReceive == largeText.Length && e.BytesReceived < e.TotalBytesToReceive)
                     {
-                        downloadProgressInvokedWithContentLength.TrySetResult(true);
+                        downloadProgressInvokedWithContentLength.TrySetResult();
                     }
                 };
 
@@ -636,8 +635,8 @@ namespace System.Net.Tests
         {
             var wc = new WebClient();
 
-            var uploadProgressInvoked = new TaskCompletionSource<bool>();
-            wc.UploadProgressChanged += (s, e) => uploadProgressInvoked.TrySetResult(true); // to enable chunking of the upload
+            var uploadProgressInvoked = new TaskCompletionSource();
+            wc.UploadProgressChanged += (s, e) => uploadProgressInvoked.TrySetResult(); // to enable chunking of the upload
 
             // Server will verify uploaded data. An exception will be thrown if there is a problem.
             AddMD5Header(wc, ExpectedText);

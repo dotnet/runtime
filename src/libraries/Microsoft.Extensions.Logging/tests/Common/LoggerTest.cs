@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Generic;
@@ -126,6 +125,7 @@ namespace Microsoft.Extensions.Logging.Test
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34091", TestRuntimes.Mono)]
         public void ScopesAreNotCreatedForDisabledLoggers()
         {
             var provider = new Mock<ILoggerProvider>();
@@ -151,6 +151,7 @@ namespace Microsoft.Extensions.Logging.Test
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34091", TestRuntimes.Mono)]
         public void ScopesAreNotCreatedWhenScopesAreDisabled()
         {
             var provider = new Mock<ILoggerProvider>();
@@ -175,6 +176,7 @@ namespace Microsoft.Extensions.Logging.Test
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34091", TestRuntimes.Mono)]
         public void ScopesAreNotCreatedInIScopeProviderWhenScopesAreDisabled()
         {
             var provider = new Mock<ILoggerProvider>();
@@ -207,6 +209,7 @@ namespace Microsoft.Extensions.Logging.Test
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34091", TestRuntimes.Mono)]
         public void CaptureScopesIsReadFromConfiguration()
         {
             var provider = new Mock<ILoggerProvider>();

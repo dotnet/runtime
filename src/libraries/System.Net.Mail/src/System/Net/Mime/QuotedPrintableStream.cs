@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
 using System.IO;
@@ -58,8 +57,8 @@ namespace System.Net.Mime
         private static ReadOnlySpan<byte> HexEncodeMap => new byte[] { 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 65, 66, 67, 68, 69, 70 };
 
         private readonly int _lineLength;
-        private ReadStateInfo _readState;
-        private WriteStateInfoBase _writeState;
+        private ReadStateInfo? _readState;
+        private WriteStateInfoBase? _writeState;
 
         /// <summary>
         /// ctor.
@@ -83,22 +82,11 @@ namespace System.Net.Mime
 
         private ReadStateInfo ReadState => _readState ?? (_readState = new ReadStateInfo());
 
-        internal WriteStateInfoBase WriteState => _writeState ?? (_writeState = new WriteStateInfoBase(1024, null, null, _lineLength));
+        internal WriteStateInfoBase WriteState => _writeState ??= new WriteStateInfoBase(1024, null, null, _lineLength);
 
-        public override IAsyncResult BeginWrite(byte[] buffer, int offset, int count, AsyncCallback callback, object state)
+        public override IAsyncResult BeginWrite(byte[] buffer, int offset, int count, AsyncCallback? callback, object? state)
         {
-            if (buffer == null)
-            {
-                throw new ArgumentNullException(nameof(buffer));
-            }
-            if (offset < 0 || offset > buffer.Length)
-            {
-                throw new ArgumentOutOfRangeException(nameof(offset));
-            }
-            if (offset + count > buffer.Length)
-            {
-                throw new ArgumentOutOfRangeException(nameof(count));
-            }
+            ValidateBufferArguments(buffer, offset, count);
 
             WriteAsyncResult result = new WriteAsyncResult(this, buffer, offset, count, callback, state);
             result.Write();
@@ -230,7 +218,7 @@ namespace System.Net.Mime
                 //add two to the encoded Byte Length to be conservative so that we guarantee that the line length is acceptable
                 if ((_lineLength != -1 && WriteState.CurrentLineLength + SizeOfEncodedChar + 2 >= _lineLength && (buffer[cur] == ' ' ||
                     buffer[cur] == '\t' || buffer[cur] == '\r' || buffer[cur] == '\n')) ||
-                    _writeState.CurrentLineLength + SizeOfEncodedChar + 2 >= EncodedStreamFactory.DefaultMaxLineLength)
+                    _writeState!.CurrentLineLength + SizeOfEncodedChar + 2 >= EncodedStreamFactory.DefaultMaxLineLength)
                 {
                     if (WriteState.Buffer.Length - WriteState.Length < SizeOfSoftCRLF)
                     {
@@ -312,6 +300,12 @@ namespace System.Net.Mime
             return cur - offset;
         }
 
+        public int EncodeString(string value, Encoding encoding)
+        {
+            byte[] buffer = encoding.GetBytes(value);
+            return EncodeBytes(buffer, 0, buffer.Length);
+        }
+
         public string GetEncodedString() => Encoding.ASCII.GetString(WriteState.Buffer, 0, WriteState.Length);
 
         public override void EndWrite(IAsyncResult asyncResult) => WriteAsyncResult.End(asyncResult);
@@ -333,18 +327,7 @@ namespace System.Net.Mime
 
         public override void Write(byte[] buffer, int offset, int count)
         {
-            if (buffer == null)
-            {
-                throw new ArgumentNullException(nameof(buffer));
-            }
-            if (offset < 0 || offset > buffer.Length)
-            {
-                throw new ArgumentOutOfRangeException(nameof(offset));
-            }
-            if (offset + count > buffer.Length)
-            {
-                throw new ArgumentOutOfRangeException(nameof(count));
-            }
+            ValidateBufferArguments(buffer, offset, count);
 
             int written = 0;
             while (true)
@@ -376,7 +359,7 @@ namespace System.Net.Mime
             private static readonly AsyncCallback s_onWrite = new AsyncCallback(OnWrite);
             private int _written;
 
-            internal WriteAsyncResult(QuotedPrintableStream parent, byte[] buffer, int offset, int count, AsyncCallback callback, object state) : base(null, state, callback)
+            internal WriteAsyncResult(QuotedPrintableStream parent, byte[] buffer, int offset, int count, AsyncCallback? callback, object? state) : base(null, state, callback)
             {
                 _parent = parent;
                 _buffer = buffer;
@@ -401,7 +384,7 @@ namespace System.Net.Mime
             {
                 if (!result.CompletedSynchronously)
                 {
-                    WriteAsyncResult thisPtr = (WriteAsyncResult)result.AsyncState;
+                    WriteAsyncResult thisPtr = (WriteAsyncResult)result.AsyncState!;
                     try
                     {
                         thisPtr.CompleteWrite(result);

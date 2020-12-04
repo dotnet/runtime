@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
 using System.Globalization;
@@ -51,7 +50,7 @@ namespace System.Runtime.Versioning
             {
                 safeName.Append(separator);
                 safeName.Append('p');
-                safeName.Append(GetCurrentProcessId());
+                safeName.Append(Environment.ProcessId);
             }
             if ((requires & SxSRequirements.CLRInstanceID) != 0)
             {
@@ -85,8 +84,7 @@ namespace System.Runtime.Versioning
             // actually call GetRuntimeId() which is an ecall method and cannot be
             // directly called from outside of the corelib.
             // In CoreCLR, GetRuntimeId() gets the TLS index for the thread and adds 3 to that number.
-            int id = 3;
-            return id.ToString(CultureInfo.InvariantCulture);
+            return "3";
         }
 
         private static SxSRequirements GetRequirements(ResourceScope consumeAsScope, ResourceScope calleeScope)

@@ -9,14 +9,14 @@ The host uses different URLs for different scenarios. These different URLs are d
 
 This URL is part of the output of `dotnet --info`:
 ```console
-To install additional .NET Core runtimes or SDKs:
+To install additional .NET runtimes or SDKs:
   https://aka.ms/dotnet-download
 ```
 
 It's also part of the error when an SDK command is executed and there's no SDK installed:
 ```
-  It was not possible to find any installed .NET Core SDKs
-  Did you mean to run .NET Core SDK commands? Install a .NET Core SDK from:
+  It was not possible to find any installed .NET SDKs
+  Did you mean to run .NET SDK commands? Install a .NET SDK from:
       https://aka.ms/dotnet-download
 ```
 

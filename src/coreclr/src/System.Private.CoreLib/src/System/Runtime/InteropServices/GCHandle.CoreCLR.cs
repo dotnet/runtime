@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Runtime.CompilerServices;
 #if !DEBUG
@@ -20,9 +19,9 @@ namespace System.Runtime.InteropServices
 #if DEBUG
         // The runtime performs additional checks in debug builds
         [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern object InternalGet(IntPtr handle);
+        internal static extern object? InternalGet(IntPtr handle);
 #else
-        internal static unsafe object InternalGet(IntPtr handle) =>
+        internal static unsafe object? InternalGet(IntPtr handle) =>
             Unsafe.As<IntPtr, object>(ref *(IntPtr*)handle);
 #endif
 

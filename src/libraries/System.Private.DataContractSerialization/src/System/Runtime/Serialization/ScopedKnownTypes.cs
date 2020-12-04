@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 namespace System.Runtime.Serialization
 {
@@ -26,12 +25,12 @@ namespace System.Runtime.Serialization
             _count--;
         }
 
-        internal DataContract GetDataContract(XmlQualifiedName qname)
+        internal DataContract? GetDataContract(XmlQualifiedName qname)
         {
             for (int i = (_count - 1); i >= 0; i--)
             {
                 DataContractDictionary dataContractDictionary = dataContractDictionaries[i];
-                DataContract dataContract;
+                DataContract? dataContract;
                 if (dataContractDictionary.TryGetValue(qname, out dataContract))
                     return dataContract;
             }

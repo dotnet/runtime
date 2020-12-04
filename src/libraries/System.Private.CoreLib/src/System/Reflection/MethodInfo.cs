@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Runtime.CompilerServices;
 
@@ -25,6 +24,12 @@ namespace System.Reflection
 
         public virtual Delegate CreateDelegate(Type delegateType) { throw new NotSupportedException(SR.NotSupported_SubclassOverride); }
         public virtual Delegate CreateDelegate(Type delegateType, object? target) { throw new NotSupportedException(SR.NotSupported_SubclassOverride); }
+
+        /// <summary>Creates a delegate of the given type 'T' from this method.</summary>
+        public T CreateDelegate<T>() where T : Delegate => (T)CreateDelegate(typeof(T));
+
+        /// <summary>Creates a delegate of the given type 'T' with the specified target from this method.</summary>
+        public T CreateDelegate<T>(object? target) where T : Delegate => (T)CreateDelegate(typeof(T), target);
 
         public override bool Equals(object? obj) => base.Equals(obj);
         public override int GetHashCode() => base.GetHashCode();

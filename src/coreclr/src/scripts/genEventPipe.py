@@ -7,7 +7,6 @@ from utilities import open_for_update, parseExclusionList
 
 stdprolog_cpp = """// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 /******************************************************************
 
@@ -393,10 +392,10 @@ def generateEventPipeImplFiles(
                 eventpipeImpl.write(stdprolog_cpp)
 
                 header = """
-#include "{root:s}/vm/common.h"
-#include "{root:s}/vm/eventpipeprovider.h"
-#include "{root:s}/vm/eventpipeevent.h"
-#include "{root:s}/vm/eventpipe.h"
+#include <common.h>
+#include <eventpipeprovider.h>
+#include <eventpipeevent.h>
+#include <eventpipe.h>
 
 #if defined(TARGET_UNIX)
 #define wcslen PAL_wcslen

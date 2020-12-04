@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
@@ -9,13 +8,6 @@ using System.Runtime.Serialization;
 using System.Text;
 using System.Text.Unicode;
 using Internal.Runtime.CompilerServices;
-
-#pragma warning disable SA1121 // explicitly using type aliases instead of built-in types
-#if TARGET_64BIT
-using nuint = System.UInt64;
-#else // TARGET_64BIT
-using nuint = System.UInt32;
-#endif // TARGET_64BIT
 
 namespace System.Globalization
 {
@@ -34,7 +26,7 @@ namespace System.Globalization
         }
 
         private string? _listSeparator;
-        private bool _isReadOnly = false;
+        private bool _isReadOnly;
 
         private readonly string _cultureName;
         private readonly CultureData _cultureData;
@@ -45,7 +37,7 @@ namespace System.Globalization
         private Tristate _isAsciiCasingSameAsInvariant = Tristate.NotInitialized;
 
         // Invariant text info
-        internal static readonly TextInfo Invariant = new TextInfo(CultureData.Invariant, readOnly: true);
+        internal static readonly TextInfo Invariant = new TextInfo(CultureData.Invariant, readOnly: true) { _isAsciiCasingSameAsInvariant = Tristate.True };
 
         internal TextInfo(CultureData cultureData)
         {
@@ -54,7 +46,10 @@ namespace System.Globalization
             _cultureName = _cultureData.CultureName;
             _textInfoName = _cultureData.TextInfoName;
 
-            FinishInitialization();
+            if (GlobalizationMode.UseNls)
+            {
+                _sortHandle = CompareInfo.NlsGetSortHandle(_textInfoName);
+            }
         }
 
         private TextInfo(CultureData cultureData, bool readOnly)
@@ -148,12 +143,22 @@ namespace System.Globalization
         /// </summary>
         public char ToLower(char c)
         {
-            if (GlobalizationMode.Invariant || (IsAscii(c) && IsAsciiCasingSameAsInvariant))
+            if (GlobalizationMode.Invariant || (UnicodeUtility.IsAsciiCodePoint(c) && IsAsciiCasingSameAsInvariant))
             {
                 return ToLowerAsciiInvariant(c);
             }
 
             return ChangeCase(c, toUpper: false);
+        }
+
+        internal static char ToLowerInvariant(char c)
+        {
+            if (GlobalizationMode.Invariant || UnicodeUtility.IsAsciiCodePoint(c))
+            {
+                return ToLowerAsciiInvariant(c);
+            }
+
+            return Invariant.ChangeCase(c, toUpper: false);
         }
 
         public string ToLower(string str)
@@ -176,7 +181,7 @@ namespace System.Globalization
             Debug.Assert(!GlobalizationMode.Invariant);
 
             char dst = default;
-            ChangeCase(&c, 1, &dst, 1, toUpper);
+            ChangeCaseCore(&c, 1, &dst, 1, toUpper);
             return dst;
         }
 
@@ -301,7 +306,7 @@ namespace System.Globalization
                 // has a case conversion that's different from the invariant culture, even for ASCII data (e.g., tr-TR converts
                 // 'i' (U+0069) to Latin Capital Letter I With Dot Above (U+0130)).
 
-                ChangeCase(pSource + currIdx, charCount, pDestination + currIdx, charCount, toUpper);
+                ChangeCaseCore(pSource + currIdx, charCount, pDestination + currIdx, charCount, toUpper);
             }
 
         Return:
@@ -406,7 +411,7 @@ namespace System.Globalization
                     // and run the culture-aware logic over the remainder of the data
                     fixed (char* pResult = result)
                     {
-                        ChangeCase(pSource + currIdx, source.Length - (int)currIdx, pResult + currIdx, result.Length - (int)currIdx, toUpper);
+                        ChangeCaseCore(pSource + currIdx, source.Length - (int)currIdx, pResult + currIdx, result.Length - (int)currIdx, toUpper);
                     }
                     return result;
                 }
@@ -525,11 +530,13 @@ namespace System.Globalization
             }
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static char ToLowerAsciiInvariant(char c)
         {
-            if ((uint)(c - 'A') <= (uint)('Z' - 'A'))
+            if (UnicodeUtility.IsInRangeInclusive(c, 'A', 'Z'))
             {
-                c = (char)(c | 0x20);
+                // on x86, extending BYTE -> DWORD is more efficient than WORD -> DWORD
+                c = (char)(byte)(c | 0x20);
             }
             return c;
         }
@@ -540,12 +547,22 @@ namespace System.Globalization
         /// </summary>
         public char ToUpper(char c)
         {
-            if (GlobalizationMode.Invariant || (IsAscii(c) && IsAsciiCasingSameAsInvariant))
+            if (GlobalizationMode.Invariant || (UnicodeUtility.IsAsciiCodePoint(c) && IsAsciiCasingSameAsInvariant))
             {
                 return ToUpperAsciiInvariant(c);
             }
 
             return ChangeCase(c, toUpper: true);
+        }
+
+        internal static char ToUpperInvariant(char c)
+        {
+            if (GlobalizationMode.Invariant || UnicodeUtility.IsAsciiCodePoint(c))
+            {
+                return ToUpperAsciiInvariant(c);
+            }
+
+            return Invariant.ChangeCase(c, toUpper: true);
         }
 
         public string ToUpper(string str)
@@ -563,16 +580,15 @@ namespace System.Globalization
             return ChangeCaseCommon<ToUpperConversion>(str);
         }
 
-        internal static char ToUpperAsciiInvariant(char c)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static char ToUpperAsciiInvariant(char c)
         {
-            if ((uint)(c - 'a') <= (uint)('z' - 'a'))
+            if (UnicodeUtility.IsInRangeInclusive(c, 'a', 'z'))
             {
-                c = (char)(c & ~0x20);
+                c = (char)(c & 0x5F); // = low 7 bits of ~0x20
             }
             return c;
         }
-
-        private static bool IsAscii(char c) => c < 0x80;
 
         private bool IsAsciiCasingSameAsInvariant
         {
@@ -813,6 +829,18 @@ namespace System.Globalization
                 }
             }
             return inputIndex;
+        }
+
+        private unsafe void ChangeCaseCore(char* src, int srcLen, char* dstBuffer, int dstBufferCapacity, bool bToUpper)
+        {
+            if (GlobalizationMode.UseNls)
+            {
+                NlsChangeCase(src, srcLen, dstBuffer, dstBufferCapacity, bToUpper);
+            }
+            else
+            {
+                IcuChangeCase(src, srcLen, dstBuffer, dstBufferCapacity, bToUpper);
+            }
         }
 
         // Used in ToTitleCase():

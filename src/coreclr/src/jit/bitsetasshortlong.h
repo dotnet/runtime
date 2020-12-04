@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 // A set of integers in the range [0..N], for some N defined by the "Env" (via "BitSetTraits").
 //
@@ -412,12 +411,12 @@ public:
             char*    ptr             = res;
             if (sizeof(size_t) == sizeof(int64_t))
             {
-                sprintf_s(ptr, remaining, "%016llX", bits);
+                sprintf_s(ptr, remaining, "%016zX", bits);
             }
             else
             {
                 assert(sizeof(size_t) == sizeof(int));
-                sprintf_s(ptr, remaining, "%08X", bits);
+                sprintf_s(ptr, remaining, "%08X", (DWORD)bits);
             }
             return res;
         }

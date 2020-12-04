@@ -50,7 +50,7 @@ we propose using two complementary strategies:
 
 * In the composite R2R file with embedded metadata, there must be a new table of COR headers
 and metadata blobs representing the MSIL metadata from all the input assemblies. The table
-must be indexable by simple assembly name for fast lookup. 
+must be indexable by simple assembly name for fast lookup.
 
 * in contrast to managed assemblies and single-input R2R executables, composite R2R files
   don't expose any COR header (it's not meaningful as the file potentially contains a larger
@@ -98,7 +98,7 @@ this encoding are still work in progress and likely to further evolve.
 version bubble is represented by an arbitrary mixture of single-input and composite R2R files.
 If that is the case, manifest metadata would need to be decoupled from the index to
 `READYTORUN_SECTION_ASSEMBLIES`.
-  
+
 Alternatively we could make it such that `READYTORUN_SECTION_MANIFEST_METADATA` holds all
 component assemblies of the current composite image at the beginning of the AssemblyRef table
 followed by the other needed assemblies *within the version bubble outside of the current
@@ -157,7 +157,7 @@ that could be subsequently opened by ILDASM or ILSpy.
 
 Ideally we should patch ILDASM / ILSpy to cleanly handle the composite R2R file format; sadly this may
 end up being a relatively complex change due to the presence of multiple MSIL metadata blocks in the
-file. 
+file.
 
 # Required diagnostic changes
 

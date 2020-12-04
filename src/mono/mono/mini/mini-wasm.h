@@ -52,15 +52,14 @@ struct MonoLMF {
 	gpointer previous_lmf;
 	gpointer lmf_addr;
 
-	/* This is set to signal this is the top lmf entry */
-	gboolean top_entry;
+	MonoMethod *method;
 };
 
 typedef struct {
 	gpointer cinfo;
 } MonoCompileArch;
 
-#define MONO_ARCH_INIT_TOP_LMF_ENTRY(lmf) do { (lmf)->top_entry = TRUE; } while (0)
+#define MONO_ARCH_INIT_TOP_LMF_ENTRY(lmf) do { } while (0)
 
 #define MONO_CONTEXT_SET_LLVM_EXC_REG(ctx, exc) do { (ctx)->llvm_exc_reg = (gsize)exc; } while (0)
 
@@ -104,12 +103,15 @@ typedef struct {
 void mono_wasm_debugger_init (void);
 
 // sdks/wasm/driver.c is C and uses this
-G_EXTERN_C void mono_wasm_enable_debugging (void);
+G_EXTERN_C void mono_wasm_enable_debugging (int log_level);
 
 void mono_wasm_breakpoint_hit (void);
 void mono_wasm_set_timeout (int timeout, int id);
 
 void mono_wasm_single_step_hit (void);
 void mono_wasm_breakpoint_hit (void);
+void mono_wasm_user_break (void);
+
+int mono_wasm_assembly_already_added (const char *assembly_name);
 
 #endif /* __MONO_MINI_WASM_H__ */  

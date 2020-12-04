@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Buffers;
 using System.Diagnostics;
@@ -13,7 +12,7 @@ namespace System.IO.Pipelines.Tests
 {
     public class FlushAsyncCancellationTests : PipeTest
     {
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public void FlushAsyncCancellationDeadlock()
         {
             var cts = new CancellationTokenSource();
@@ -354,7 +353,7 @@ namespace System.IO.Pipelines.Tests
     {
         public static PipeWriter WriteEmpty(this PipeWriter writer, int count)
         {
-            writer.GetSpan(count).Slice(0, count).Fill(0);
+            writer.GetSpan(count).Slice(0, count).Clear();
             writer.Advance(count);
             return writer;
         }

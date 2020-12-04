@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 /*============================================================
 **
@@ -11,11 +10,13 @@
 
 using Microsoft.Win32;
 using System;
+using System.ComponentModel;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Runtime.InteropServices;
 using System.Security.Principal;
-using System.ComponentModel;
+
 namespace System.Security.AccessControl
 {
     [Flags]
@@ -287,8 +288,6 @@ namespace System.Security.AccessControl
             //
             // Populate the header
             //
-
-            int length = BinaryLength;
 
             byte rmControl =
                 ((this is RawSecurityDescriptor rsd) &&
@@ -824,7 +823,7 @@ namespace System.Security.AccessControl
 
         private bool _isContainer;
         private bool _isDS;
-        private RawSecurityDescriptor _rawSd = null!; // Initialized in helper.
+        private RawSecurityDescriptor _rawSd;
         private SystemAcl? _sacl;
         private DiscretionaryAcl? _dacl;
 
@@ -832,7 +831,7 @@ namespace System.Security.AccessControl
         #endregion
 
         #region Private Methods
-
+        [MemberNotNull(nameof(_rawSd))]
         private void CreateFromParts(bool isContainer, bool isDS, ControlFlags flags, SecurityIdentifier? owner, SecurityIdentifier? group, SystemAcl? systemAcl, DiscretionaryAcl? discretionaryAcl)
         {
             if (systemAcl != null &&

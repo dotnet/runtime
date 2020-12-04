@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 //
 
@@ -49,3 +48,19 @@ static const BYTE s_NestedClassCol[];
 static const BYTE s_GenericParamCol[];
 static const BYTE s_MethodSpecCol[];
 static const BYTE s_GenericParamConstraintCol[];
+#ifdef FEATURE_METADATA_EMIT_PORTABLE_PDB
+// Dummy descriptors to fill the gap to 0x30
+static const BYTE s_Dummy1Col[];
+static const BYTE s_Dummy2Col[];
+static const BYTE s_Dummy3Col[];
+// Actual portable PDB tables descriptors
+static const BYTE s_DocumentCol[];
+static const BYTE s_MethodDebugInformationCol[];
+static const BYTE s_LocalScopeCol[];
+static const BYTE s_LocalVariableCol[];
+static const BYTE s_LocalConstantCol[];
+static const BYTE s_ImportScopeCol[];
+// TODO:
+// static const BYTE s_StateMachineMethodCol[];
+// static const BYTE s_CustomDebugInformationCol[];
+#endif // FEATURE_METADATA_EMIT_PORTABLE_PDB

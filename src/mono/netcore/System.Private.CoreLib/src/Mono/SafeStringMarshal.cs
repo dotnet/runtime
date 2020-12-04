@@ -1,3 +1,6 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
 //
 // Safe wrapper for a string and its UTF8 encoding
 //
@@ -5,47 +8,52 @@
 //   Aleksey Kliger <aleksey@xamarin.com>
 //   Rodrigo Kumpera <kumpera@xamarin.com>
 //
-// Copyright 2016 Dot net foundation.
-// Licensed under the MIT license. See LICENSE file in the project root for full license information.
 //
 
 using System;
 using System.Runtime.CompilerServices;
 
-namespace Mono  {
-	internal struct SafeStringMarshal : IDisposable {
-		readonly string str;
-		IntPtr marshaled_string;
+namespace Mono
+{
+    internal struct SafeStringMarshal : IDisposable
+    {
+        private readonly string? str;
+        private IntPtr marshaled_string;
 
-		[MethodImplAttribute(MethodImplOptions.InternalCall)]
-		extern static IntPtr StringToUtf8_icall (ref string str);
+        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        private static extern IntPtr StringToUtf8_icall(ref string str);
 
-		public static IntPtr StringToUtf8 (string str)
-		{
-			return StringToUtf8_icall (ref str);
-		}
+        public static IntPtr StringToUtf8(string str)
+        {
+            return StringToUtf8_icall(ref str);
+        }
 
-		[MethodImplAttribute(MethodImplOptions.InternalCall)]
-		public extern static void GFree (IntPtr ptr);
+        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        public static extern void GFree(IntPtr ptr);
 
-		public SafeStringMarshal (string str) {
-			this.str = str;
-			this.marshaled_string = IntPtr.Zero;
-		}
+        public SafeStringMarshal(string? str)
+        {
+            this.str = str;
+            this.marshaled_string = IntPtr.Zero;
+        }
 
-		public IntPtr Value {
-			get {
-				if (marshaled_string == IntPtr.Zero && str != null)
-					marshaled_string = StringToUtf8 (str);
-				return marshaled_string;
-			}
-		}
+        public IntPtr Value
+        {
+            get
+            {
+                if (marshaled_string == IntPtr.Zero && str != null)
+                    marshaled_string = StringToUtf8(str);
+                return marshaled_string;
+            }
+        }
 
-		public void Dispose () {
-			if (marshaled_string != IntPtr.Zero) {
-				GFree (marshaled_string);
-				marshaled_string = IntPtr.Zero;
-			}
-		}
-	}
+        public void Dispose()
+        {
+            if (marshaled_string != IntPtr.Zero)
+            {
+                GFree(marshaled_string);
+                marshaled_string = IntPtr.Zero;
+            }
+        }
+    }
 }

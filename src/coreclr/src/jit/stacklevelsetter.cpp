@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #include "jitpch.h"
 #ifdef _MSC_VER
@@ -27,6 +26,9 @@ StackLevelSetter::StackLevelSetter(Compiler* compiler)
 //------------------------------------------------------------------------
 // DoPhase: Calculate stack slots numbers for outgoing args.
 //
+// Returns:
+//   PhaseStatus indicating what, if anything, was changed.
+//
 // Notes:
 //   For non-x86 platforms it calculates the max number of slots
 //   that calls inside this method can push on the stack.
@@ -37,7 +39,8 @@ StackLevelSetter::StackLevelSetter(Compiler* compiler)
 //   For x86 it also sets throw-helper blocks incoming stack depth and set
 //   framePointerRequired when it is necessary. These values are used to pop
 //   pushed args when an exception occurs.
-void StackLevelSetter::DoPhase()
+//
+PhaseStatus StackLevelSetter::DoPhase()
 {
     for (BasicBlock* block = comp->fgFirstBB; block != nullptr; block = block->bbNext)
     {
@@ -55,6 +58,9 @@ void StackLevelSetter::DoPhase()
 
     comp->fgSetPtrArgCntMax(maxStackLevel);
     CheckArgCnt();
+
+    // Might want an "other" category for things like this...
+    return PhaseStatus::MODIFIED_NOTHING;
 }
 
 //------------------------------------------------------------------------
@@ -243,8 +249,9 @@ unsigned StackLevelSetter::PopArgumentsFromCall(GenTreeCall* call)
     {
         for (unsigned i = 0; i < argInfo->ArgCount(); ++i)
         {
-            fgArgTabEntry* argTab = argInfo->ArgTable()[i];
-            if (argTab->numSlots != 0)
+            const fgArgTabEntry* argTab    = argInfo->ArgTable()[i];
+            const unsigned       slotCount = argTab->GetStackSlotsNumber();
+            if (slotCount != 0)
             {
                 GenTree* node = argTab->GetNode();
                 assert(node->OperIsPutArgStkOrSplit());
@@ -252,13 +259,13 @@ unsigned StackLevelSetter::PopArgumentsFromCall(GenTreeCall* call)
                 GenTreePutArgStk* putArg = node->AsPutArgStk();
 
 #if !FEATURE_FIXED_OUT_ARGS
-                assert(argTab->numSlots == putArg->gtNumSlots);
+                assert(slotCount == putArg->gtNumSlots);
 #endif // !FEATURE_FIXED_OUT_ARGS
 
-                putArgNumSlots.Set(putArg, argTab->numSlots);
+                putArgNumSlots.Set(putArg, slotCount);
 
-                usedStackSlotsCount += argTab->numSlots;
-                AddStackLevel(argTab->numSlots);
+                usedStackSlotsCount += slotCount;
+                AddStackLevel(slotCount);
             }
         }
     }

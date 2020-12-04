@@ -1,6 +1,5 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Buffers;
 using System.Runtime.InteropServices;
@@ -17,7 +16,7 @@ namespace System.IO.Compression
 
         public override int Read(byte[] buffer, int offset, int count)
         {
-            ValidateParameters(buffer, offset, count);
+            ValidateBufferArguments(buffer, offset, count);
             return Read(new Span<byte>(buffer, offset, count));
         }
 
@@ -96,7 +95,7 @@ namespace System.IO.Compression
 
         public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
         {
-            ValidateParameters(buffer, offset, count);
+            ValidateBufferArguments(buffer, offset, count);
             return ReadAsync(new Memory<byte>(buffer, offset, count), cancellationToken).AsTask();
         }
 
@@ -109,7 +108,7 @@ namespace System.IO.Compression
 
             if (cancellationToken.IsCancellationRequested)
             {
-                return new ValueTask<int>(Task.FromCanceled<int>(cancellationToken));
+                return ValueTask.FromCanceled<int>(cancellationToken);
             }
             return FinishReadAsyncMemory(buffer, cancellationToken);
         }
@@ -134,7 +133,8 @@ namespace System.IO.Compression
                         _bufferOffset = 0;
 
                         int numRead = 0;
-                        while (_bufferCount < _buffer.Length && ((numRead = await _stream.ReadAsync(new Memory<byte>(_buffer, _bufferCount, _buffer.Length - _bufferCount)).ConfigureAwait(false)) > 0))
+                        while (_bufferCount < _buffer.Length &&
+                              ((numRead = await _stream.ReadAsync(new Memory<byte>(_buffer, _bufferCount, _buffer.Length - _bufferCount), cancellationToken).ConfigureAwait(false)) > 0))
                         {
                             _bufferCount += numRead;
                             if (_bufferCount > _buffer.Length)

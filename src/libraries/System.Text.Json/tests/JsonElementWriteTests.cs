@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using Xunit;
 using System.Buffers;
@@ -15,49 +14,6 @@ namespace System.Text.Json.Tests
         {
             var jsonDocument = JsonDocument.Parse(jsonIn, s_options);
             return jsonDocument;
-        }
-
-        protected override void WriteSingleValue(JsonDocument document, Utf8JsonWriter writer)
-        {
-            document.WriteTo(writer);
-        }
-
-        protected override void WriteDocument(JsonDocument document, Utf8JsonWriter writer)
-        {
-            document.WriteTo(writer);
-        }
-
-        [Fact]
-        public static void CheckByPassingNullWriter()
-        {
-            using (JsonDocument doc = JsonDocument.Parse("true", default))
-            {
-                AssertExtensions.Throws<ArgumentNullException>("writer", () => doc.WriteTo(null));
-            }
-        }
-    }
-
-    public sealed class JsonNodeWriteTests : JsonDomWriteTests
-    {
-        protected override JsonDocument PrepareDocument(string jsonIn)
-        {
-            JsonNode jsonNode = JsonNode.Parse(jsonIn, new JsonNodeOptions
-            {
-                AllowTrailingCommas = s_options.AllowTrailingCommas,
-                CommentHandling = s_options.CommentHandling,
-                MaxDepth = s_options.MaxDepth
-            });
-
-            using (MemoryStream stream = new MemoryStream())
-            {
-                using (Utf8JsonWriter writer = new Utf8JsonWriter(stream))
-                {
-                    jsonNode.WriteTo(writer);
-                    stream.Seek(0, SeekOrigin.Begin);
-                    JsonDocument jsonDocument = JsonDocument.Parse(stream, s_options);
-                    return jsonDocument;
-                }
-            }
         }
 
         protected override void WriteSingleValue(JsonDocument document, Utf8JsonWriter writer)

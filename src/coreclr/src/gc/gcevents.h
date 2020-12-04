@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 #ifndef KNOWN_EVENT
  #define KNOWN_EVENT(name, provider, level, keyword)
 #endif // KNOWN_EVENT
@@ -12,7 +11,7 @@
 KNOWN_EVENT(GCStart_V2, GCEventProvider_Default, GCEventLevel_Information, GCEventKeyword_GC)
 KNOWN_EVENT(GCEnd_V1, GCEventProvider_Default, GCEventLevel_Information, GCEventKeyword_GC)
 KNOWN_EVENT(GCGenerationRange, GCEventProvider_Default, GCEventLevel_Information, GCEventKeyword_GCHeapSurvivalAndMovement)
-KNOWN_EVENT(GCHeapStats_V1, GCEventProvider_Default, GCEventLevel_Information, GCEventKeyword_GC)
+KNOWN_EVENT(GCHeapStats_V2, GCEventProvider_Default, GCEventLevel_Information, GCEventKeyword_GC)
 KNOWN_EVENT(GCCreateSegment_V1, GCEventProvider_Default, GCEventLevel_Information, GCEventKeyword_GC)
 KNOWN_EVENT(GCFreeSegment_V1, GCEventProvider_Default, GCEventLevel_Information, GCEventKeyword_GC)
 KNOWN_EVENT(GCCreateConcurrentThread_V1, GCEventProvider_Default, GCEventLevel_Information, GCEventKeyword_GC)
@@ -39,7 +38,7 @@ KNOWN_EVENT(BGC2ndConBegin, GCEventProvider_Private, GCEventLevel_Information, G
 KNOWN_EVENT(BGC2ndConEnd, GCEventProvider_Private, GCEventLevel_Information, GCEventKeyword_GCPrivate)
 KNOWN_EVENT(BGCDrainMark, GCEventProvider_Private, GCEventLevel_Information, GCEventKeyword_GCPrivate)
 KNOWN_EVENT(BGCRevisit, GCEventProvider_Private, GCEventLevel_Information, GCEventKeyword_GCPrivate)
-KNOWN_EVENT(BGCOverflow, GCEventProvider_Private, GCEventLevel_Information, GCEventKeyword_GCPrivate)
+KNOWN_EVENT(BGCOverflow_V1, GCEventProvider_Private, GCEventLevel_Information, GCEventKeyword_GCPrivate)
 KNOWN_EVENT(BGCAllocWaitBegin, GCEventProvider_Private, GCEventLevel_Information, GCEventKeyword_GCPrivate)
 KNOWN_EVENT(BGCAllocWaitEnd, GCEventProvider_Private, GCEventLevel_Information, GCEventKeyword_GCPrivate)
 KNOWN_EVENT(GCFullNotify_V1, GCEventProvider_Private, GCEventLevel_Information, GCEventKeyword_GCPrivate)

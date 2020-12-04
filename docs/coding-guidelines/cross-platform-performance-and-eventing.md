@@ -252,7 +252,7 @@ Given the significant work required to bring all of this infrastructure up, this
 
 We’ll use the following scenarios when defining priorities:
 
-- P1: Performance analysis in support of bring-up of the .NET Core runtime and framework on Linux and OS X.
+- P1: Performance analysis in support of bring-up of the .NET runtime and framework on Linux and OS X.
 - P2: Performance analysis of ASP.NET running on .NET Core on Linux and OS X.
 
 To support these scenarios, we need the following capabilities:

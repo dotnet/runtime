@@ -390,7 +390,7 @@ typedef struct {
 
 #endif /* !HOST_WIN32 */
 
-#if !defined(__linux__)
+#if !defined(__linux__) && !defined(__sun)
 #define MONO_ARCH_NOMAP32BIT 1
 #endif
 

@@ -19,6 +19,7 @@
 #include "verbconcat.h"
 #include "verbmerge.h"
 #include "verbstrip.h"
+#include "verbprintjiteeversion.h"
 #include "logging.h"
 
 int __cdecl main(int argc, char* argv[])
@@ -51,7 +52,7 @@ int __cdecl main(int argc, char* argv[])
     }
     if (o.actionMerge)
     {
-        exitCode = verbMerge::DoWork(o.nameOfFile1, o.nameOfFile2, o.recursive);
+        exitCode = verbMerge::DoWork(o.nameOfFile1, o.nameOfFile2, o.recursive, o.dedup, o.stripCR);
     }
     if (o.actionCopy)
     {
@@ -96,6 +97,10 @@ int __cdecl main(int argc, char* argv[])
     if (o.actionTOC)
     {
         exitCode = verbTOC::DoWork(o.nameOfFile1);
+    }
+    if (o.actionPrintJITEEVersion)
+    {
+        exitCode = verbPrintJITEEVersion::DoWork();
     }
 
     Logger::Shutdown();

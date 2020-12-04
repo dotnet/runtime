@@ -20,14 +20,6 @@
 # If -portablebuild=false is passed a non-portable rid will be created for any
 # distro.
 #
-# Below is the list of current non-portable platforms.
-#
-# Builds from the following *must* be non-portable:
-#
-#   |    OS     |           Expected RID            |
-#   -------------------------------------------------
-#   |  freeBSD  |        freebsd.(version)-x64      |
-#
 # It is important to note that the function does not return anything, but it
 # exports __DistroRid, if there is a non-portable distro rid to be used.
 #
@@ -70,8 +62,33 @@ initNonPortableDistroRid()
     fi
 
     if [ "$targetOs" = "FreeBSD" ]; then
-        __freebsd_major_version=$(freebsd-version | { read v; echo "${v%%.*}"; })
-        nonPortableBuildID="freebsd.$__freebsd_major_version-${buildArch}"
+        if (( isPortable == 0 )); then
+            # $rootfsDir can be empty. freebsd-version is shell script and it should always work.
+            __freebsd_major_version=$($rootfsDir/bin/freebsd-version | { read v; echo "${v%%.*}"; })
+            nonPortableBuildID="freebsd.$__freebsd_major_version-${buildArch}"
+        fi
+    elif getprop ro.product.system.model 2>&1 | grep -qi android; then
+        __android_sdk_version=$(getprop ro.build.version.sdk)
+        nonPortableBuildID="android.$__android_sdk_version-${buildArch}"
+    elif [ "$targetOs" = "illumos" ]; then
+        __uname_version=$(uname -v)
+        case "$__uname_version" in
+            omnios-*)
+                __omnios_major_version=$(echo "${__uname_version:8:2}")
+                nonPortableBuildID=omnios."$__omnios_major_version"-"$buildArch"
+            ;;
+            joyent_*)
+                __smartos_major_version=$(echo "${__uname_version:7:4}")
+                nonPortableBuildID=smartos."$__smartos_major_version"-"$buildArch"
+            ;;
+            illumos_*)
+                nonPortableBuildID=openindiana-"$buildArch"
+            ;;
+        esac
+    elif [ "$targetOs" = "Solaris" ]; then
+        __uname_version=$(uname -v)
+        __solaris_major_version=$(echo "${__uname_version%.*}")
+        nonPortableBuildID=solaris."$__solaris_major_version"-"$buildArch"
     fi
 
     if [ -n "${nonPortableBuildID}" ]; then
@@ -102,7 +119,6 @@ initNonPortableDistroRid()
 #
 #   __DistroRid
 #   __PortableBuild
-#   __RuntimeId
 #
 initDistroRidGlobal()
 {
@@ -129,17 +145,10 @@ initDistroRidGlobal()
         fi
     fi
 
-    if [ "$buildArch" = "armel" ]; then
-        # Armel cross build is Tizen specific and does not support Portable RID build
-        __PortableBuild=0
-        export __PortableBuild
-        isPortable=0
-    fi
-
     initNonPortableDistroRid "${targetOs}" "${buildArch}" "${isPortable}" "${rootfsDir}"
 
     if [ "$buildArch" = "wasm" ]; then
-        __DistroRid=WebAssembly-wasm
+        __DistroRid=browser-wasm
         export __DistroRid
     fi
 
@@ -161,10 +170,20 @@ initDistroRidGlobal()
                 distroRid="linux-$buildArch"
             elif [ "$targetOs" = "OSX" ]; then
                 distroRid="osx-$buildArch"
+            elif [ "$targetOs" = "tvOS" ]; then
+                distroRid="tvos-$buildArch"
             elif [ "$targetOs" = "iOS" ]; then
                 distroRid="ios-$buildArch"
+            elif [ "$targetOs" = "Android" ]; then
+                distroRid="android-$buildArch"
+            elif [ "$targetOs" = "Browser" ]; then
+                distroRid="browser-$buildArch"
             elif [ "$targetOs" = "FreeBSD" ]; then
                 distroRid="freebsd-$buildArch"
+            elif [ "$targetOs" = "illumos" ]; then
+                distroRid="illumos-$buildArch"
+            elif [ "$targetOs" = "Solaris" ]; then
+                distroRid="solaris-$buildArch"
             fi
         fi
 
@@ -174,13 +193,8 @@ initDistroRidGlobal()
 
     if [ -z "$__DistroRid" ]; then
         echo "DistroRid is not set. This is almost certainly an error"
-
         exit 1
-    else
-        echo "__DistroRid: ${__DistroRid}"
-        echo "__RuntimeId: ${__DistroRid}"
-
-        __RuntimeId="${__DistroRid}"
-        export __RuntimeId
     fi
+
+    echo "__DistroRid: ${__DistroRid}"
 }

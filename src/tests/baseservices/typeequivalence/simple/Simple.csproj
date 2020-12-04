@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="Simple.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="../contracts/TypeContracts.csproj">
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+      <EmbedTypes>true</EmbedTypes>
+    </ProjectReference>
+    <ProjectReference Include="../impl/TypeImpl.csproj" />
+    <ProjectReference Include="$(TestSourceDir)Common/CoreCLRTestLibrary/CoreCLRTestLibrary.csproj" />
+  </ItemGroup>
+  <Import Project="$([MSBuild]::GetPathOfFileAbove(TypeEquivalence.targets))" />
+</Project>

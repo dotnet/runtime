@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Buffers;
 using System.Collections.Generic;
@@ -39,15 +38,15 @@ namespace System.MemoryTests
 
         [Theory]
         [MemberData(nameof(ReadOnlyMemoryInt32Instances))]
-        public static void AsMemory_Roundtrips(ReadOnlyMemory<int> readOnlyMemory) => AsMemory_Roundtrips_Core(readOnlyMemory, true);
+        public static void AsMemory_Roundtrips_Int(ReadOnlyMemory<int> readOnlyMemory) => AsMemory_Roundtrips_Core(readOnlyMemory, true);
 
         [Theory]
         [MemberData(nameof(ReadOnlyMemoryObjectInstances))]
-        public static void AsMemory_Roundtrips(ReadOnlyMemory<object> readOnlyMemory) => AsMemory_Roundtrips_Core(readOnlyMemory, false);
+        public static void AsMemory_Roundtrips_Object(ReadOnlyMemory<object> readOnlyMemory) => AsMemory_Roundtrips_Core(readOnlyMemory, false);
 
         [Theory]
         [MemberData(nameof(ReadOnlyMemoryCharInstances))]
-        public static void AsMemory_Roundtrips(ReadOnlyMemory<char> readOnlyMemory)
+        public static void AsMemory_Roundtrips_Char(ReadOnlyMemory<char> readOnlyMemory)
         {
             AsMemory_Roundtrips_Core(readOnlyMemory, true);
 

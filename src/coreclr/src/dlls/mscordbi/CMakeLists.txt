@@ -3,12 +3,14 @@
 # For more information: http://www.cmake.org/Wiki/CMake_RPATH_handling.
 if(CORECLR_SET_RPATH)
   set(CMAKE_BUILD_WITH_INSTALL_RPATH TRUE)
-  if(CLR_CMAKE_HOST_DARWIN)
+  if(CLR_CMAKE_HOST_OSX)
     set(CMAKE_INSTALL_RPATH "@loader_path")
   else()
     set(CMAKE_INSTALL_RPATH "\$ORIGIN")
-  endif(CLR_CMAKE_HOST_DARWIN)
+  endif(CLR_CMAKE_HOST_OSX)
 endif(CORECLR_SET_RPATH)
+
+set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
 set(MSCORDBI_SOURCES
     mscordbi.cpp
@@ -19,7 +21,7 @@ if(CLR_CMAKE_HOST_LINUX)
     list(APPEND MSCORDBI_SOURCES ${PAL_REDEFINES_FILE})
 endif(CLR_CMAKE_HOST_LINUX)
 
-if(CLR_CMAKE_TARGET_WIN32)
+if(CLR_CMAKE_HOST_WIN32)
     add_definitions(-DFX_VER_INTERNALNAME_STR=mscordbi.dll)
 
     list(APPEND MSCORDBI_SOURCES
@@ -35,28 +37,22 @@ if(CLR_CMAKE_TARGET_WIN32)
     preprocess_file(${DEF_SOURCES} ${CMAKE_CURRENT_BINARY_DIR}/mscordbi.def)
 
     list(APPEND MSCORDBI_SOURCES ${CMAKE_CURRENT_BINARY_DIR}/mscordbi.def)
-else(CLR_CMAKE_TARGET_WIN32)
+else(CLR_CMAKE_HOST_WIN32)
     set(DEF_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/mscordbi_unixexports.src)
     set(EXPORTS_FILE ${CMAKE_CURRENT_BINARY_DIR}/mscordbi.exports)
     generate_exports_file(${DEF_SOURCES} ${EXPORTS_FILE})
-endif(CLR_CMAKE_TARGET_WIN32)
 
-if(CLR_CMAKE_HOST_LINUX OR CLR_CMAKE_HOST_FREEBSD OR CLR_CMAKE_HOST_NETBSD)
-    # This option is necessary to ensure that the overloaded new/delete operators defined inside
-    # of the utilcode will be used instead of the standard library delete operator.
-    set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Xlinker -Bsymbolic -Xlinker -Bsymbolic-functions")
+    if(CLR_CMAKE_HOST_LINUX OR CLR_CMAKE_HOST_FREEBSD OR CLR_CMAKE_HOST_NETBSD OR CLR_CMAKE_HOST_SUNOS)
+        # This option is necessary to ensure that the overloaded new/delete operators defined inside
+        # of the utilcode will be used instead of the standard library delete operator.
+        set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Xlinker -Bsymbolic")
+    endif(CLR_CMAKE_HOST_LINUX OR CLR_CMAKE_HOST_FREEBSD OR CLR_CMAKE_HOST_NETBSD OR CLR_CMAKE_HOST_SUNOS)
 
-    # Add linker exports file option
-    set(EXPORTS_LINKER_OPTION -Wl,--version-script=${EXPORTS_FILE})
-endif(CLR_CMAKE_HOST_LINUX OR CLR_CMAKE_HOST_FREEBSD OR CLR_CMAKE_HOST_NETBSD)
-
-if(CLR_CMAKE_HOST_DARWIN)
-    # Add linker exports file option
-    set(EXPORTS_LINKER_OPTION -Wl,-exported_symbols_list,${EXPORTS_FILE})
-endif(CLR_CMAKE_HOST_DARWIN)
+    set_exports_linker_option(${EXPORTS_FILE})
+endif(CLR_CMAKE_HOST_WIN32)
 
 add_library_clr(mscordbi SHARED ${MSCORDBI_SOURCES})
-target_precompile_header(TARGET mscordbi HEADER stdafx.h)
+target_precompile_headers(mscordbi PRIVATE $<$<COMPILE_LANGUAGE:CXX>:stdafx.h>)
 
 if(CLR_CMAKE_HOST_UNIX)
     add_custom_target(mscordbi_exports DEPENDS ${EXPORTS_FILE})
@@ -79,9 +75,9 @@ set(COREDBI_LIBRARIES
 )
 
 if(CLR_CMAKE_HOST_WIN32)
+
     list(APPEND COREDBI_LIBRARIES
         mdhotdata-staticcrt
-        mdwinmd_dbi
         kernel32.lib
         advapi32.lib
         ole32.lib
@@ -117,6 +113,11 @@ elseif(CLR_CMAKE_HOST_UNIX)
 
 endif(CLR_CMAKE_HOST_WIN32)
 
+# Create the DBI module index header file containing the DBI build id
+# for xplat and the timestamp/size on Windows.
+if(FEATURE_SINGLE_FILE_DIAGNOSTICS)
+    generate_module_index(mscordbi ${GENERATED_INCLUDE_DIR}/dbimoduleindex.h)
+endif(FEATURE_SINGLE_FILE_DIAGNOSTICS)
+
 # add the install targets
-install_clr(TARGETS mscordbi)
-install_clr(TARGETS mscordbi DESTINATION sharedFramework SKIP_STRIP)
+install_clr(TARGETS mscordbi ADDITIONAL_DESTINATIONS sharedFramework)

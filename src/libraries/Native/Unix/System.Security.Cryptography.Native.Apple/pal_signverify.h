@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #pragma once
 
@@ -10,6 +9,7 @@
 
 #include <Security/Security.h>
 
+#if !defined(TARGET_IOS) && !defined(TARGET_TVOS)
 /*
 Generate a signature for algorithms which require only the data hash blob, like DSA and ECDSA.
 
@@ -56,3 +56,4 @@ PALEXPORT int32_t AppleCryptoNative_VerifySignature(SecKeyRef publicKey,
                                                     uint8_t* pbSignature,
                                                     int32_t cbSignature,
                                                     CFErrorRef* pErrorOut);
+#endif

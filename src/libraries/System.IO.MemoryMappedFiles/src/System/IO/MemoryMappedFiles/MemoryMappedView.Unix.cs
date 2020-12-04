@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using Microsoft.Win32.SafeHandles;
 using System.Diagnostics;
@@ -9,7 +8,7 @@ namespace System.IO.MemoryMappedFiles
 {
     internal partial class MemoryMappedView
     {
-        public static unsafe MemoryMappedView CreateView(
+        public static MemoryMappedView CreateView(
             SafeMemoryMappedFileHandle memMappedFileHandle, MemoryMappedFileAccess access,
             long requestedOffset, long requestedSize)
         {
@@ -27,7 +26,7 @@ namespace System.IO.MemoryMappedFiles
             }
             if (memMappedFileHandle.IsClosed)
             {
-                throw new ObjectDisposedException(typeof(MemoryMappedFile).Name);
+                throw new ObjectDisposedException(nameof(MemoryMappedFile));
             }
 
             if (requestedSize == MemoryMappedFile.DefaultSize)
@@ -159,10 +158,6 @@ namespace System.IO.MemoryMappedFiles
                 }
             }
         }
-
-        // -----------------------------
-        // ---- PAL layer ends here ----
-        // -----------------------------
 
         /// <summary>Attempt to prevent the specified pages from being copied into forked processes.</summary>
         /// <param name="addr">The starting address.</param>

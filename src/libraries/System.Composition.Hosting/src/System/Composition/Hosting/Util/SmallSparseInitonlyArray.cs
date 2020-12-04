@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 namespace System.Composition.Hosting.Util
 {
@@ -15,7 +14,7 @@ namespace System.Composition.Hosting.Util
         private const int ElementIndexMask = 127;
         private const int LocalOffsetMax = 3;
 
-        private Element[] _elements = null;
+        private Element[] _elements;
         private SmallSparseInitonlyArray _overflow;
 
         public void Add(int index, object value)

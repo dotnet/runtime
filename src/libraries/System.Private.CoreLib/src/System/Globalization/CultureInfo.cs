@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 ////////////////////////////////////////////////////////////////////////////
 //
@@ -187,7 +186,6 @@ namespace System.Globalization
             Debug.Assert(cultureData != null);
             _cultureData = cultureData;
             _name = cultureData.CultureName;
-            _isInherited = false;
             _isReadOnly = isReadOnly;
         }
 
@@ -498,6 +496,42 @@ namespace System.Globalization
                     CultureInfo culture;
                     string parentName = _cultureData.ParentName;
 
+                    if (parentName == "zh")
+                    {
+                        if (_name.Length == 5 && _name[2] == '-')
+                        {
+                            // We need to keep the parent chain for the zh cultures as follows to preserve the resource lookup compatability
+                            //      zh-CN -> zh-Hans -> zh -> Invariant
+                            //      zh-HK -> zh-Hant -> zh -> Invariant
+                            //      zh-MO -> zh-Hant -> zh -> Invariant
+                            //      zh-SG -> zh-Hans -> zh -> Invariant
+                            //      zh-TW -> zh-Hant -> zh -> Invariant
+
+                            if ((_name[3] == 'C' && _name[4] == 'N' ) || // zh-CN
+                                (_name[3] == 'S' && _name[4] == 'G' ))   // zh-SG
+                            {
+                                parentName = "zh-Hans";
+                            }
+                            else if ((_name[3] == 'H' && _name[4] == 'K' ) ||   // zh-HK
+                                    (_name[3] == 'M' && _name[4] == 'O' ) ||    // zh-MO
+                                    (_name[3] == 'T' && _name[4] == 'W' ))      // zh-TW
+                            {
+                                parentName = "zh-Hant";
+                            }
+                        }
+                        else if (_name.Length > 8 && _name.AsSpan(2, 4).Equals("-Han", StringComparison.Ordinal) && _name[7] == '-') // cultures like zh-Hant-* and zh-Hans-*
+                        {
+                            if (_name[6] == 't') // zh-Hant-*
+                            {
+                                parentName = "zh-Hant";
+                            }
+                            else if (_name[6] == 's') // zh-Hans-*
+                            {
+                                parentName = "zh-Hans";
+                            }
+                        }
+                    }
+
                     if (string.IsNullOrEmpty(parentName))
                     {
                         culture = InvariantCulture;
@@ -674,7 +708,7 @@ namespace System.Globalization
                     CultureTypes.NeutralCultures :
                     CultureTypes.SpecificCultures;
 
-                if (_cultureData.IsWin32Installed)
+                if (CultureData.IsWin32Installed)
                 {
                     types |= CultureTypes.InstalledWin32Cultures;
                 }
@@ -750,6 +784,9 @@ namespace System.Globalization
         public void ClearCachedData()
         {
             // reset the default culture values
+#if TARGET_WINDOWS
+            UserDefaultLocaleName = GetUserDefaultLocaleName();
+#endif
             s_userDefaultCulture = GetUserDefaultCulture();
             s_userDefaultUICulture = GetUserDefaultUICulture();
 
@@ -775,6 +812,8 @@ namespace System.Globalization
         /// </remarks>
         internal static Calendar GetCalendarInstance(CalendarId calType)
         {
+            Debug.Assert(!GlobalizationMode.Invariant);
+
             if (calType == CalendarId.GREGORIAN)
             {
                 return new GregorianCalendar();
@@ -829,7 +868,6 @@ namespace System.Globalization
             {
                 if (_calendar == null)
                 {
-                    Debug.Assert(_cultureData.CalendarIds.Length > 0, "_cultureData.CalendarIds.Length > 0");
                     // Get the default calendar for this culture.  Note that the value can be
                     // from registry if this is a user default culture.
                     Calendar newObj = _cultureData.DefaultCalendar;
@@ -850,6 +888,11 @@ namespace System.Globalization
             get
             {
                 // This property always returns a new copy of the calendar array.
+                if (GlobalizationMode.Invariant)
+                {
+                    return new[] { new GregorianCalendar() };
+                }
+
                 CalendarId[] calID = _cultureData.CalendarIds;
                 Calendar[] cals = new Calendar[calID.Length];
                 for (int i = 0; i < cals.Length; i++)
@@ -1103,7 +1146,9 @@ namespace System.Globalization
             }
             catch (ArgumentException)
             {
+#pragma warning disable CA2208 // Instantiate argument exceptions correctly, combination of arguments used
                 throw new CultureNotFoundException("name/altName", SR.Format(SR.Argument_OneOfCulturesNotSupported, name, altName));
+#pragma warning restore CA2208
             }
 
             lock (nameTable)
@@ -1121,9 +1166,11 @@ namespace System.Globalization
                 throw new ArgumentNullException(nameof(name));
             }
 
-            if (predefinedOnly)
+            if (predefinedOnly && !GlobalizationMode.Invariant)
             {
-                return GetPredefinedCultureInfo(name);
+                return GlobalizationMode.UseNls ?
+                    NlsGetPredefinedCultureInfo(name) :
+                    IcuGetPredefinedCultureInfo(name);
             }
 
             return GetCultureInfo(name);

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 //
 
 //
@@ -89,25 +88,6 @@ public:
         return PTR_EHWatsonBucketTracker(PTR_HOST_MEMBER_TADDR(ExInfo, this, m_WatsonBucketTracker));
     }
 #endif
-
-#ifdef FEATURE_CORRUPTING_EXCEPTIONS
-private:
-    CorruptionSeverity      m_CorruptionSeverity;
-public:
-    inline CorruptionSeverity GetCorruptionSeverity()
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        return (CorruptionSeverity)GET_CORRUPTION_SEVERITY(m_CorruptionSeverity);
-    }
-
-    inline void SetCorruptionSeverity(CorruptionSeverity severityToSet)
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        m_CorruptionSeverity = severityToSet;
-    }
-#endif // FEATURE_CORRUPTING_EXCEPTIONS
 
 private:
     BOOL                    m_fDeliveredFirstChanceNotification;

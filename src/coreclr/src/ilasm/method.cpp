@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 //
 // file: method.cpp
 //
@@ -135,6 +134,8 @@ Label *Method::FindLabel(DWORD PC)
     return NULL;
 }
 
+// Method::AddGenericParamConstraint is called when we have a .param constraint directive after a method definition
+// 
 void Method::AddGenericParamConstraint(int index, char * pStrGenericParam, mdToken tkTypeConstraint)
 {
     if (index > 0)
@@ -165,7 +166,10 @@ void Method::AddGenericParamConstraint(int index, char * pStrGenericParam, mdTok
             return;
         }
     }
-    m_pAssembler->CheckAddGenericParamConstraint(&m_GPCList, index, tkTypeConstraint);
+
+    // pass true for isParamDirective, we are parsing a .param directive for a method here
+    //
+    m_pAssembler->CheckAddGenericParamConstraint(&m_GPCList, index, tkTypeConstraint, true);
 }
 
 

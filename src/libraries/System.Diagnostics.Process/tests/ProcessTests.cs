@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -9,7 +8,6 @@ using System.IO;
 using System.IO.Pipes;
 using System.Linq;
 using System.Net;
-using System.Runtime.InteropServices;
 using System.Security;
 using System.Text;
 using System.Threading;
@@ -53,7 +51,7 @@ namespace System.Diagnostics.Tests
 
         private void AssertNonZeroWindowsZeroUnix(long value)
         {
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            if (OperatingSystem.IsWindows())
             {
                 Assert.NotEqual(0, value);
             }
@@ -65,7 +63,7 @@ namespace System.Diagnostics.Tests
 
         private void AssertNonZeroAllZeroDarwin(long value)
         {
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+            if (OperatingSystem.IsMacOS())
             {
                 Assert.Equal(0, value);
             }
@@ -75,7 +73,7 @@ namespace System.Diagnostics.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [PlatformSpecific(TestPlatforms.Windows)]  // Expected behavior varies on Windows and Unix
         public void TestBasePriorityOnWindows()
         {
@@ -102,7 +100,7 @@ namespace System.Diagnostics.Tests
             }
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [InlineData(true)]
         [InlineData(false)]
         [InlineData(null)]
@@ -131,6 +129,43 @@ namespace System.Diagnostics.Tests
             else
             {
                 Assert.False(exitedInvoked);
+            }
+        }
+
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void TestExited_SynchronizingObject(bool invokeRequired)
+        {
+            var mres = new ManualResetEventSlim();
+            Task beginInvokeTask = null;
+
+            Process p = CreateProcessLong();
+            p.SynchronizingObject = new DelegateSynchronizeInvoke()
+            {
+                InvokeRequiredDelegate = () => invokeRequired,
+                BeginInvokeDelegate = (d, args) =>
+                {
+                    Assert.Null(beginInvokeTask);
+                    beginInvokeTask = new Task(() => d.DynamicInvoke(args));
+                    beginInvokeTask.Start(TaskScheduler.Default);
+                    return beginInvokeTask;
+                }
+            };
+            p.EnableRaisingEvents = true;
+            p.Exited += delegate { mres.Set(); };
+            StartSleepKillWait(p);
+
+            Assert.True(mres.Wait(WaitInMS));
+
+            if (invokeRequired)
+            {
+                Assert.NotNull(beginInvokeTask);
+                Assert.True(beginInvokeTask.Wait(WaitInMS));
+            }
+            else
+            {
+                Assert.Null(beginInvokeTask);
             }
         }
 
@@ -226,6 +261,7 @@ namespace System.Diagnostics.Tests
 
                         px.Kill();
                         Assert.True(px.WaitForExit(WaitInMS));
+                        px.WaitForExit(); // wait for event handlers to complete
                     }
                 }
             }
@@ -233,6 +269,7 @@ namespace System.Diagnostics.Tests
 
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsServerCore),
             nameof(PlatformDetection.IsNotWindowsNanoServer), nameof(PlatformDetection.IsNotWindowsIoTCore))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34685", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         [InlineData(true), InlineData(false)]
         public void ProcessStart_UseShellExecute_Executes(bool filenameAsUrl)
         {
@@ -250,8 +287,14 @@ namespace System.Diagnostics.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsServerCore),
-            nameof(PlatformDetection.IsNotWindowsNanoServer), nameof(PlatformDetection.IsNotWindowsIoTCore))]
+        private static bool UseShellExecuteExecuteOrderIsRunnablePlatform =>
+            PlatformDetection.IsNotWindowsServerCore &&
+            PlatformDetection.IsNotWindowsNanoServer &&
+            PlatformDetection.IsNotWindowsIoTCore &&
+            RemoteExecutor.IsSupported;
+
+        [ConditionalFact(nameof(UseShellExecuteExecuteOrderIsRunnablePlatform))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34685", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         public void ProcessStart_UseShellExecute_ExecuteOrder()
         {
             // Create a directory that we will use as PATH
@@ -295,6 +338,7 @@ namespace System.Diagnostics.Tests
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsServerCore),
             nameof(PlatformDetection.IsNotWindowsNanoServer), nameof(PlatformDetection.IsNotWindowsIoTCore))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34685", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         public void ProcessStart_UseShellExecute_WorkingDirectory()
         {
             // Create a directory that will ProcessStartInfo.WorkingDirectory
@@ -314,7 +358,7 @@ namespace System.Diagnostics.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void TestExitCode()
         {
             {
@@ -331,7 +375,7 @@ namespace System.Diagnostics.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void TestExitTime()
         {
             // Try twice, since it's possible that the system clock could be adjusted backwards between when we snapshot it
@@ -365,11 +409,20 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
+        public void GetCurrentProcess_Id_EqualsCurrentProcessId()
+        {
+            using Process current = Process.GetCurrentProcess();
+            Assert.Equal(Environment.ProcessId, current.Id);
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void TestId()
         {
             CreateDefaultProcess();
 
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            Assert.NotEqual(Environment.ProcessId, _process.Id);
+
+            if (OperatingSystem.IsWindows())
             {
                 Assert.Equal(_process.Id, Interop.GetProcessId(_process.SafeHandle));
             }
@@ -380,7 +433,7 @@ namespace System.Diagnostics.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void TestHasExited()
         {
             {
@@ -421,7 +474,7 @@ namespace System.Diagnostics.Tests
             Assert.Throws<InvalidOperationException>(() => process.Kill());
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void TestMachineName()
         {
             CreateDefaultProcess();
@@ -442,18 +495,13 @@ namespace System.Diagnostics.Tests
         {
             Process p = Process.GetCurrentProcess();
 
-            // On UAP casing may not match - we use Path.GetFileName(exePath) instead of kernel32!GetModuleFileNameEx which is not available on UAP
-            Func<string, string> normalize = PlatformDetection.IsInAppContainer ?
-                (Func<string, string>)((s) => s.ToLowerInvariant()) :
-                (s) => s;
-
             Assert.InRange(p.Modules.Count, 1, int.MaxValue);
-            Assert.Equal(normalize(RemoteExecutor.HostRunnerName), normalize(p.MainModule.ModuleName));
-            Assert.EndsWith(normalize(RemoteExecutor.HostRunnerName), normalize(p.MainModule.FileName));
-            Assert.Equal(normalize(string.Format("System.Diagnostics.ProcessModule ({0})", RemoteExecutor.HostRunnerName)), normalize(p.MainModule.ToString()));
+            Assert.Equal(RemoteExecutor.HostRunnerName, p.MainModule.ModuleName);
+            Assert.EndsWith(RemoteExecutor.HostRunnerName, p.MainModule.FileName);
+            Assert.Equal(string.Format("System.Diagnostics.ProcessModule ({0})", RemoteExecutor.HostRunnerName), p.MainModule.ToString());
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void TestMaxWorkingSet()
         {
             CreateDefaultProcess();
@@ -464,14 +512,14 @@ namespace System.Diagnostics.Tests
                 Assert.InRange((long)p.MinWorkingSet, 0, long.MaxValue);
             }
 
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX) || RuntimeInformation.IsOSPlatform(OSPlatform.Create("FREEBSD"))) {
+            if (OperatingSystem.IsMacOS() || OperatingSystem.IsFreeBSD()) {
                 return; // doesn't support getting/setting working set for other processes
             }
 
             long curValue = (long)_process.MaxWorkingSet;
             Assert.InRange(curValue, 0, long.MaxValue);
 
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            if (OperatingSystem.IsWindows())
             {
                 try
                 {
@@ -508,7 +556,7 @@ namespace System.Diagnostics.Tests
             Assert.Throws<PlatformNotSupportedException>(() => process.MaxWorkingSet = (IntPtr)1);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void TestMinWorkingSet()
         {
             CreateDefaultProcess();
@@ -519,14 +567,14 @@ namespace System.Diagnostics.Tests
                 Assert.InRange((long)p.MinWorkingSet, 0, long.MaxValue);
             }
 
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX) || RuntimeInformation.IsOSPlatform(OSPlatform.Create("FREEBSD"))) {
+            if (OperatingSystem.IsMacOS() || OperatingSystem.IsFreeBSD()) {
                 return; // doesn't support getting/setting working set for other processes
             }
 
             long curValue = (long)_process.MinWorkingSet;
             Assert.InRange(curValue, 0, long.MaxValue);
 
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            if (OperatingSystem.IsWindows())
             {
                 try
                 {
@@ -580,7 +628,7 @@ namespace System.Diagnostics.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void TestNonpagedSystemMemorySize64()
         {
             CreateDefaultProcess();
@@ -595,7 +643,7 @@ namespace System.Diagnostics.Tests
             Assert.Throws<InvalidOperationException>(() => process.NonpagedSystemMemorySize64);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void TestPagedMemorySize64()
         {
             CreateDefaultProcess();
@@ -610,7 +658,7 @@ namespace System.Diagnostics.Tests
             Assert.Throws<InvalidOperationException>(() => process.PagedMemorySize64);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void TestPagedSystemMemorySize64()
         {
             CreateDefaultProcess();
@@ -625,7 +673,7 @@ namespace System.Diagnostics.Tests
             Assert.Throws<InvalidOperationException>(() => process.PagedSystemMemorySize64);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void TestPeakPagedMemorySize64()
         {
             CreateDefaultProcess();
@@ -640,7 +688,7 @@ namespace System.Diagnostics.Tests
             Assert.Throws<InvalidOperationException>(() => process.PeakPagedMemorySize64);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void TestPeakVirtualMemorySize64()
         {
             CreateDefaultProcess();
@@ -655,7 +703,7 @@ namespace System.Diagnostics.Tests
             Assert.Throws<InvalidOperationException>(() => process.PeakVirtualMemorySize64);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void TestPeakWorkingSet64()
         {
             CreateDefaultProcess();
@@ -670,7 +718,7 @@ namespace System.Diagnostics.Tests
             Assert.Throws<InvalidOperationException>(() => process.PeakWorkingSet64);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void TestPrivateMemorySize64()
         {
             CreateDefaultProcess();
@@ -685,7 +733,7 @@ namespace System.Diagnostics.Tests
             Assert.Throws<InvalidOperationException>(() => process.PrivateMemorySize64);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void TestVirtualMemorySize64()
         {
             CreateDefaultProcess();
@@ -700,12 +748,12 @@ namespace System.Diagnostics.Tests
             Assert.Throws<InvalidOperationException>(() => process.VirtualMemorySize64);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void TestWorkingSet64()
         {
             CreateDefaultProcess();
 
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+            if (OperatingSystem.IsMacOS())
             {
                 // resident memory can be 0 on OSX.
                 Assert.InRange(_process.WorkingSet64, 0, long.MaxValue);
@@ -722,7 +770,7 @@ namespace System.Diagnostics.Tests
             Assert.Throws<InvalidOperationException>(() => process.WorkingSet64);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void TestProcessorTime()
         {
             CreateDefaultProcess();
@@ -744,7 +792,7 @@ namespace System.Diagnostics.Tests
             Assert.InRange(processorTimeAtHalfSpin, processorTimeBeforeSpin, Process.GetCurrentProcess().TotalProcessorTime.TotalSeconds);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void TotalProcessorTime_PerformLoop_TotalProcessorTimeValid()
         {
             CreateDefaultProcess();
@@ -791,7 +839,7 @@ namespace System.Diagnostics.Tests
             Assert.Throws<InvalidOperationException>(() => process.TotalProcessorTime);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void TestProcessStartTime()
         {
             TimeSpan allowedWindow = TimeSpan.FromSeconds(3);
@@ -824,7 +872,7 @@ namespace System.Diagnostics.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void ProcessStartTime_Deterministic_Across_Instances()
         {
             CreateDefaultProcess();
@@ -844,7 +892,7 @@ namespace System.Diagnostics.Tests
             Assert.Throws<InvalidOperationException>(() => process.ExitTime);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [PlatformSpecific(~(TestPlatforms.OSX | TestPlatforms.FreeBSD))] // getting/setting affinity not supported on OSX and BSD
         public void TestProcessorAffinity()
         {
@@ -863,7 +911,7 @@ namespace System.Diagnostics.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void TestPriorityBoostEnabled()
         {
             CreateDefaultProcess();
@@ -892,7 +940,7 @@ namespace System.Diagnostics.Tests
             Assert.Throws<InvalidOperationException>(() => process.PriorityBoostEnabled = true);
         }
 
-        [Fact, PlatformSpecific(TestPlatforms.Windows)]  // Expected behavior varies on Windows and Unix
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported)), PlatformSpecific(TestPlatforms.Windows)]  // Expected behavior varies on Windows and Unix
         public void TestPriorityClassWindows()
         {
             CreateDefaultProcess();
@@ -928,7 +976,7 @@ namespace System.Diagnostics.Tests
             Assert.Throws<InvalidOperationException>(() => process.PriorityClass);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void TestProcessName()
         {
             CreateDefaultProcess();
@@ -945,7 +993,7 @@ namespace System.Diagnostics.Tests
             Assert.Throws<InvalidOperationException>(() => process.ProcessName);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void TestSafeHandle()
         {
             CreateDefaultProcess();
@@ -953,7 +1001,7 @@ namespace System.Diagnostics.Tests
             Assert.False(_process.SafeHandle.IsInvalid);
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [InlineData(false)]
         [InlineData(true)]
         public void Handle_CreateEvent_BlocksUntilProcessCompleted(bool useSafeHandle)
@@ -978,7 +1026,7 @@ namespace System.Diagnostics.Tests
             Assert.Throws<InvalidOperationException>(() => process.SafeHandle);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void TestSessionId()
         {
             CreateDefaultProcess();
@@ -1006,17 +1054,12 @@ namespace System.Diagnostics.Tests
             Process current = Process.GetCurrentProcess();
             Assert.NotNull(current);
 
-            int currentProcessId =
-#if TargetsWindows
-                Interop.GetCurrentProcessId();
-#else
-                Interop.getpid();
-#endif
+            int currentProcessId = Environment.ProcessId;
 
             Assert.Equal(currentProcessId, current.Id);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void TestGetProcessById()
         {
             CreateDefaultProcess();
@@ -1225,7 +1268,7 @@ namespace System.Diagnostics.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void StartInfo_GetFileName_ReturnsExpected()
         {
             Process process = CreateProcessLong();
@@ -1237,7 +1280,7 @@ namespace System.Diagnostics.Tests
             Assert.True(process.WaitForExit(WaitInMS));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void StartInfo_SetOnRunningProcess_ThrowsInvalidOperationException()
         {
             Process process = CreateProcessLong();
@@ -1277,7 +1320,7 @@ namespace System.Diagnostics.Tests
             Assert.Throws<InvalidOperationException>(() => process.StartInfo);
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [InlineData(@"""abc"" d e", @"abc,d,e")]
         [InlineData(@"""abc""      d e", @"abc,d,e")]
         [InlineData("\"abc\"\t\td\te", @"abc,d,e")]
@@ -1392,7 +1435,7 @@ namespace System.Diagnostics.Tests
             Assert.Throws<InvalidOperationException>(() => process.Start());
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void Start_RedirectStandardOutput_StartAgain_DoesntThrow()
         {
             using (Process process = CreateProcess(() =>
@@ -1407,6 +1450,9 @@ namespace System.Diagnostics.Tests
                 process.BeginOutputReadLine();
 
                 Assert.True(process.Start());
+
+                Assert.True(process.WaitForExit(WaitInMS));
+                process.WaitForExit(); // ensure event handlers have completed
             }
         }
 
@@ -1441,7 +1487,7 @@ namespace System.Diagnostics.Tests
         }
 
         [OuterLoop]
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [PlatformSpecific(TestPlatforms.Linux | TestPlatforms.Windows)]  // Expected process HandleCounts differs on OSX
         public void HandleCountChanges()
         {
@@ -1493,7 +1539,7 @@ namespace System.Diagnostics.Tests
             Assert.Throws<InvalidOperationException>(() => process.HandleCount);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [PlatformSpecific(TestPlatforms.Windows)] // MainWindowHandle is not supported on Unix.
         public void MainWindowHandle_NoWindow_ReturnsEmptyHandle()
         {
@@ -1546,6 +1592,42 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
+        [OuterLoop]
+        [Trait(XunitConstants.Category, XunitConstants.IgnoreForCI)] // Pops UI
+        [PlatformSpecific(TestPlatforms.Windows)]
+        public void MainWindowTitle_GetWithGui_ShouldRefresh_Windows()
+        {
+            const string ExePath = "notepad.exe";
+            Assert.True(IsProgramInstalled(ExePath));
+
+            using (Process process = Process.Start(ExePath))
+            {
+                try
+                {
+                    Assert.Equal(string.Empty, process.MainWindowTitle);
+
+                    for (int attempt = 0; attempt < 50; ++attempt)
+                    {
+                        process.Refresh();
+                        if (process.MainWindowTitle != string.Empty)
+                        {
+                            break;
+                        }
+
+                        Thread.Sleep(100);
+                    }
+
+                    Assert.NotEqual(string.Empty, process.MainWindowTitle);
+                }
+                finally
+                {
+                    process.Kill();
+                    Assert.True(process.WaitForExit(WaitInMS));
+                }
+            }
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void MainWindowTitle_NoWindow_ReturnsEmpty()
         {
             CreateDefaultProcess();
@@ -1562,7 +1644,7 @@ namespace System.Diagnostics.Tests
             Assert.Throws<InvalidOperationException>(() => process.MainWindowTitle);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void CloseMainWindow_NoWindow_ReturnsFalse()
         {
             CreateDefaultProcess();
@@ -1607,7 +1689,7 @@ namespace System.Diagnostics.Tests
             Assert.Throws<InvalidOperationException>(() => process.Responding);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void TestNonpagedSystemMemorySize()
         {
             CreateDefaultProcess();
@@ -1626,7 +1708,7 @@ namespace System.Diagnostics.Tests
 #pragma warning restore 0618
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void TestPagedMemorySize()
         {
             CreateDefaultProcess();
@@ -1645,7 +1727,7 @@ namespace System.Diagnostics.Tests
 #pragma warning restore 0618
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void TestPagedSystemMemorySize()
         {
             CreateDefaultProcess();
@@ -1664,7 +1746,7 @@ namespace System.Diagnostics.Tests
 #pragma warning restore 0618
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void TestPeakPagedMemorySize()
         {
             CreateDefaultProcess();
@@ -1683,7 +1765,7 @@ namespace System.Diagnostics.Tests
 #pragma warning restore 0618
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void TestPeakVirtualMemorySize()
         {
             CreateDefaultProcess();
@@ -1702,7 +1784,7 @@ namespace System.Diagnostics.Tests
 #pragma warning restore 0618
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void TestPeakWorkingSet()
         {
             CreateDefaultProcess();
@@ -1721,7 +1803,7 @@ namespace System.Diagnostics.Tests
 #pragma warning restore 0618
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void TestPrivateMemorySize()
         {
             CreateDefaultProcess();
@@ -1740,7 +1822,7 @@ namespace System.Diagnostics.Tests
 #pragma warning restore 0618
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void TestVirtualMemorySize()
         {
             CreateDefaultProcess();
@@ -1759,12 +1841,12 @@ namespace System.Diagnostics.Tests
 #pragma warning restore 0618
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void TestWorkingSet()
         {
             CreateDefaultProcess();
 
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+            if (OperatingSystem.IsMacOS())
             {
                 // resident memory can be 0 on OSX.
 #pragma warning disable 0618
@@ -1796,6 +1878,7 @@ namespace System.Diagnostics.Tests
             Assert.Throws<Win32Exception>(() => Process.Start("exe", string.Empty, new SecureString(), "thisDomain"));
         }
 
+        [OuterLoop("May take many seconds the first time it's run")]
         [Fact]
         [PlatformSpecific(TestPlatforms.Windows)]  // Starting process with authentication not supported on Unix
         public void Process_StartWithInvalidUserNamePassword()
@@ -1865,7 +1948,7 @@ namespace System.Diagnostics.Tests
             AssertExtensions.Throws<ArgumentException>(null, () => process.Start());
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void TestLongProcessIsWorking()
         {
             // Sanity check for CreateProcessLong
@@ -1883,23 +1966,27 @@ namespace System.Diagnostics.Tests
         [Fact]
         public void LongProcessNamesAreSupported()
         {
-            // Alpine implements sleep as a symlink to the busybox executable.
-            // If we rename it, the program will no longer sleep.
-            if (PlatformDetection.IsAlpine)
+            string sleepPath;
+            if (OperatingSystem.IsLinux())
             {
-                return;
+                // On some distros sleep is implemented using a script/symlink, which causes this test to fail.
+                // Instead of using sleep directly, we wrap it with a script.
+                sleepPath = GetTestFilePath();
+                File.WriteAllText(sleepPath, $"#!/bin/sh\nsleep 600\n"); // sleep 10 min.
+                ChMod(sleepPath, "744");
             }
-
-            string programPath = GetProgramPath("sleep");
-
-            if (programPath == null)
+            else
             {
-                return;
+                sleepPath = GetProgramPath("sleep");
+                if (sleepPath == null)
+                {
+                    return;
+                }
             }
 
             const string LongProcessName = "123456789012345678901234567890";
             string sleepCommandPathFileName = Path.Combine(TestDirectory, LongProcessName);
-            File.Copy(programPath, sleepCommandPathFileName);
+            File.Copy(sleepPath, sleepCommandPathFileName);
 
             using (Process px = Process.Start(sleepCommandPathFileName, "600"))
             {
@@ -1932,7 +2019,7 @@ namespace System.Diagnostics.Tests
             Assert.Throws<InvalidOperationException>(() => process.Start());
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void Start_StandardInputEncodingPropagatesToStreamWriter()
         {
             var process = CreateProcessPortable(RemotelyInvokable.Dummy);
@@ -1944,7 +2031,7 @@ namespace System.Diagnostics.Tests
             Assert.Same(encoding, process.StandardInput.Encoding);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [PlatformSpecific(TestPlatforms.Windows)]
         public void StartProcessWithArgumentList()
         {
@@ -1968,7 +2055,7 @@ namespace System.Diagnostics.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [PlatformSpecific(TestPlatforms.Windows)]
         public void StartProcessWithSameArgumentList()
         {
@@ -1999,7 +2086,7 @@ namespace System.Diagnostics.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void BothArgumentCtorAndArgumentListSet()
         {
             ProcessStartInfo psi = new ProcessStartInfo(GetCurrentProcessName(), "arg3");
@@ -2011,7 +2098,7 @@ namespace System.Diagnostics.Tests
             Assert.Throws<InvalidOperationException>(() => testProcess.Start());
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void BothArgumentSetAndArgumentListSet()
         {
             ProcessStartInfo psi = new ProcessStartInfo(GetCurrentProcessName());
@@ -2060,7 +2147,7 @@ namespace System.Diagnostics.Tests
             Assert.Throws<InvalidOperationException>(() => process.Kill(entireProcessTree: true));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void Kill_EntireProcessTree_True_CalledOnTreeContainingCallingProcess_ThrowsInvalidOperationException()
         {
             Process containingProcess = CreateProcess(() =>
@@ -2104,7 +2191,7 @@ namespace System.Diagnostics.Tests
             }
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [InlineData(true)]
         [InlineData(false)]
         public void Kill_ExitedChildProcess_DoesNotThrow(bool killTree)
@@ -2112,12 +2199,12 @@ namespace System.Diagnostics.Tests
             Process process = CreateProcess();
             process.Start();
 
-            process.WaitForExit();
+            Assert.True(process.WaitForExit(Helpers.PassingTestTimeoutMilliseconds), $"Proccess {process.Id} did not finish in {Helpers.PassingTestTimeoutMilliseconds}.");
 
             process.Kill(killTree);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public async Task Kill_EntireProcessTree_False_OnlyRootProcessTerminated()
         {
             IReadOnlyList<Process> tree = CreateProcessTree();
@@ -2150,7 +2237,7 @@ namespace System.Diagnostics.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public async Task Kill_EntireProcessTree_True_EntireTreeTerminated()
         {
             IReadOnlyList<Process> tree = CreateProcessTree();
@@ -2180,6 +2267,43 @@ namespace System.Diagnostics.Tests
                         // Test cleanup code, so ignore any exceptions.
                     }
                 }
+            }
+        }
+
+        [Fact]
+        public void Start_ThrowsArgumentNullExceptionForNullFileName()
+        {
+            Assert.Throws<ArgumentNullException>("fileName", () => Process.Start(null, Enumerable.Repeat("notNull", 1)));
+        }
+
+        [Fact]
+        public void Start_ThrowsArgumentNullExceptionForNullArgumentsList()
+        {
+            IEnumerable<string> @null = null;
+            Assert.Throws<ArgumentNullException>("arguments", () => Process.Start("notNull", @null));
+        }
+
+        [Fact]
+        [PlatformSpecific(TestPlatforms.Windows)] // cmd.exe is available only on Windows
+        public void Start_PassesArgumentsList_WhichGetsEscaped()
+        {
+            string folderNameWithSpaces = "folder name with spaces"; // this needs escaping
+            string fullPath = Path.Combine(TestDirectory, folderNameWithSpaces);
+            string[] arguments = new string[] { "/c", "mkdir", "-p", fullPath };
+
+            if (Directory.Exists(fullPath))
+            {
+                Directory.Delete(fullPath);
+            }
+
+            using (Process mkdir = Process.Start("cmd.exe", arguments))
+            {
+                Assert.Equal(arguments, mkdir.StartInfo.ArgumentList);
+
+                mkdir.WaitForExit(WaitInMS);
+
+                Assert.True(Directory.Exists(fullPath));
+                Directory.Delete(fullPath);
             }
         }
 

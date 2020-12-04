@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.IO;
@@ -83,13 +82,13 @@ namespace System.Xml
             _impl.OuterReader = this;
         }
 
-        public XmlTextReader(Stream xmlFragment, XmlNodeType fragType, XmlParserContext context)
+        public XmlTextReader(Stream xmlFragment, XmlNodeType fragType, XmlParserContext? context)
         {
             _impl = new XmlTextReaderImpl(xmlFragment, fragType, context);
             _impl.OuterReader = this;
         }
 
-        public XmlTextReader(string xmlFragment, XmlNodeType fragType, XmlParserContext context)
+        public XmlTextReader(string xmlFragment, XmlNodeType fragType, XmlParserContext? context)
         {
             _impl = new XmlTextReaderImpl(xmlFragment, fragType, context);
             _impl.OuterReader = this;
@@ -183,12 +182,12 @@ namespace System.Xml
 
         public override int AttributeCount { get { return _impl.AttributeCount; } }
 
-        public override string GetAttribute(string name)
+        public override string? GetAttribute(string name)
         {
             return _impl.GetAttribute(name);
         }
 
-        public override string GetAttribute(string localName, string namespaceURI)
+        public override string? GetAttribute(string localName, string? namespaceURI)
         {
             return _impl.GetAttribute(localName, namespaceURI);
         }
@@ -203,7 +202,7 @@ namespace System.Xml
             return _impl.MoveToAttribute(name);
         }
 
-        public override bool MoveToAttribute(string localName, string namespaceURI)
+        public override bool MoveToAttribute(string localName, string? namespaceURI)
         {
             return _impl.MoveToAttribute(localName, namespaceURI);
         }
@@ -263,9 +262,9 @@ namespace System.Xml
             get { return _impl.NameTable; }
         }
 
-        public override string LookupNamespace(string prefix)
+        public override string? LookupNamespace(string prefix)
         {
-            string ns = _impl.LookupNamespace(prefix);
+            string? ns = _impl.LookupNamespace(prefix);
             if (ns != null && ns.Length == 0)
             {
                 ns = null;
@@ -342,25 +341,22 @@ namespace System.Xml
             return _impl.GetNamespacesInScope(scope);
         }
 
-        string IXmlNamespaceResolver.LookupNamespace(string prefix)
+        string? IXmlNamespaceResolver.LookupNamespace(string prefix)
         {
             return _impl.LookupNamespace(prefix);
         }
 
-        string IXmlNamespaceResolver.LookupPrefix(string namespaceName)
+        string? IXmlNamespaceResolver.LookupPrefix(string namespaceName)
         {
             return _impl.LookupPrefix(namespaceName);
         }
 
-        // This pragma disables a warning that the return type is not CLS-compliant, but generics are part of CLS in Whidbey.
-#pragma warning disable 3002
         // FXCOP: ExplicitMethodImplementationsInUnsealedClassesHaveVisibleAlternates
         // public versions of IXmlNamespaceResolver methods, so that XmlTextReader subclasses can access them
         public IDictionary<string, string> GetNamespacesInScope(XmlNamespaceScope scope)
         {
             return _impl.GetNamespacesInScope(scope);
         }
-#pragma warning restore 3002
 
         //
         // XmlTextReader
@@ -377,7 +373,7 @@ namespace System.Xml
             set { _impl.Normalization = value; }
         }
 
-        public Encoding Encoding
+        public Encoding? Encoding
         {
             get { return _impl.Encoding; }
         }
@@ -407,7 +403,7 @@ namespace System.Xml
             set { _impl.EntityHandling = value; }
         }
 
-        public XmlResolver XmlResolver
+        public XmlResolver? XmlResolver
         {
             set { _impl.XmlResolver = value; }
         }
@@ -444,7 +440,7 @@ namespace System.Xml
             get { return _impl; }
         }
 
-        internal override XmlNamespaceManager NamespaceManager
+        internal override XmlNamespaceManager? NamespaceManager
         {
             get { return _impl.NamespaceManager; }
         }
@@ -455,7 +451,7 @@ namespace System.Xml
             set { _impl.XmlValidatingReaderCompatibilityMode = value; }
         }
 
-        internal override IDtdInfo DtdInfo
+        internal override IDtdInfo? DtdInfo
         {
             get { return _impl.DtdInfo; }
         }

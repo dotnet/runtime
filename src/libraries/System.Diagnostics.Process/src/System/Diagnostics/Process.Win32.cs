@@ -1,10 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.ComponentModel;
-using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
@@ -48,17 +46,7 @@ namespace System.Diagnostics
             if (startInfo._environmentVariables != null)
                 throw new InvalidOperationException(SR.CantUseEnvVars);
 
-            string arguments;
-            if (startInfo.ArgumentList.Count > 0)
-            {
-                StringBuilder sb = new StringBuilder();
-                Process.AppendArguments(sb, startInfo.ArgumentList);
-                arguments = sb.ToString();
-            }
-            else
-            {
-                arguments = startInfo.Arguments;
-            }
+            string arguments = startInfo.BuildArguments();
 
             fixed (char* fileName = startInfo.FileName.Length > 0 ? startInfo.FileName : null)
             fixed (char* verb = startInfo.Verb.Length > 0 ? startInfo.Verb : null)
@@ -365,7 +353,7 @@ namespace System.Diagnostics
             Id == process.Id
             && StartTime == process.StartTime;
 
-        private IEnumerable<Exception> KillTree()
+        private List<Exception>? KillTree()
         {
             // The process's structures will be preserved as long as a handle is held pointing to them, even if the process exits or
             // is terminated. A handle is held here to ensure a stable reference to the process during execution.
@@ -373,17 +361,17 @@ namespace System.Diagnostics
             {
                 // If the process has exited, the handle is invalid.
                 if (handle.IsInvalid)
-                    return Enumerable.Empty<Exception>();
+                    return null;
 
                 return KillTree(handle);
             }
         }
 
-        private IEnumerable<Exception> KillTree(SafeProcessHandle handle)
+        private List<Exception>? KillTree(SafeProcessHandle handle)
         {
             Debug.Assert(!handle.IsInvalid);
 
-            List<Exception> exceptions = new List<Exception>();
+            List<Exception>? exceptions = null;
 
             try
             {
@@ -394,16 +382,19 @@ namespace System.Diagnostics
             }
             catch (Win32Exception e)
             {
-                exceptions.Add(e);
+                (exceptions ??= new List<Exception>()).Add(e);
             }
 
-            IReadOnlyList<(Process Process, SafeProcessHandle Handle)> children = GetProcessHandlePairs(p => SafePredicateTest(() => IsParentOf(p)));
+            List<(Process Process, SafeProcessHandle Handle)> children = GetProcessHandlePairs(p => SafePredicateTest(() => IsParentOf(p)));
             try
             {
                 foreach ((Process Process, SafeProcessHandle Handle) child in children)
                 {
-                    IEnumerable<Exception> exceptionsFromChild = child.Process.KillTree(child.Handle);
-                    exceptions.AddRange(exceptionsFromChild);
+                    List<Exception>? exceptionsFromChild = child.Process.KillTree(child.Handle);
+                    if (exceptionsFromChild != null)
+                    {
+                        (exceptions ??= new List<Exception>()).AddRange(exceptionsFromChild);
+                    }
                 }
             }
             finally
@@ -418,12 +409,28 @@ namespace System.Diagnostics
             return exceptions;
         }
 
-        private IReadOnlyList<(Process Process, SafeProcessHandle Handle)> GetProcessHandlePairs(Func<Process, bool> predicate)
+        private List<(Process Process, SafeProcessHandle Handle)> GetProcessHandlePairs(Func<Process, bool> predicate)
         {
-            return GetProcesses()
-                .Select(p => (Process: p, Handle: SafeGetHandle(p)))
-                .Where(p => !p.Handle.IsInvalid && predicate(p.Process))
-                .ToList();
+            var results = new List<(Process Process, SafeProcessHandle Handle)>();
+
+            foreach (Process p in GetProcesses())
+            {
+                SafeProcessHandle h = SafeGetHandle(p);
+                if (!h.IsInvalid)
+                {
+                    if (predicate(p))
+                    {
+                        results.Add((p, h));
+                    }
+                    else
+                    {
+                        p.Dispose();
+                        h.Dispose();
+                    }
+                }
+            }
+
+            return results;
 
             static SafeProcessHandle SafeGetHandle(Process process)
             {

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 //
 // File: DllImport.cpp
 //
@@ -51,6 +50,12 @@
 #include "eventtrace.h"
 #include "clr/fs/path.h"
 using namespace clr::fs;
+
+// Specifies whether coreclr is embedded or standalone
+extern bool g_coreclr_embedded;
+
+// Specifies whether hostpolicy is embedded in executable or standalone
+extern bool g_hostpolicy_embedded;
 
 // remove when we get an updated SDK
 #define LOAD_LIBRARY_SEARCH_DLL_LOAD_DIR 0x00000100
@@ -232,11 +237,6 @@ public:
     virtual void MarshalLCID(int argIdx) = 0;
     virtual void MarshalField(MarshalInfo* pInfo, UINT32 managedOffset, UINT32 nativeOffset, FieldDesc* pFieldDesc) = 0;
 
-#ifdef FEATURE_COMINTEROP
-    virtual void MarshalHiddenLengthArgument(MarshalInfo *pInfo, BOOL isForReturnArray) = 0;
-    virtual void MarshalFactoryReturn() = 0;
-#endif // FEATURE_COMINTEROP
-
     virtual void EmitInvokeTarget(MethodDesc *pStubMD) = 0;
 
     virtual void FinishEmit(MethodDesc* pMD) = 0;
@@ -336,168 +336,6 @@ public:
     }
 
 #ifdef FEATURE_COMINTEROP
-    // Marshal the hidden length parameter for the managed parameter in pInfo
-    virtual void MarshalHiddenLengthArgument(MarshalInfo *pInfo, BOOL isForReturnArray)
-    {
-        STANDARD_VM_CONTRACT;
-
-        pInfo->MarshalHiddenLengthArgument(&m_slIL, SF_IsForwardStub(m_dwStubFlags), isForReturnArray);
-    }
-
-    void MarshalFactoryReturn()
-    {
-        CONTRACTL
-        {
-            STANDARD_VM_CHECK;
-            PRECONDITION(SF_IsCOMStub(m_dwStubFlags));
-            PRECONDITION(SF_IsWinRTCtorStub(m_dwStubFlags));
-        }
-        CONTRACTL_END;
-
-        ILCodeStream *pcsSetup     = m_slIL.GetSetupCodeStream();
-        ILCodeStream *pcsDispatch  = m_slIL.GetDispatchCodeStream();
-        ILCodeStream *pcsUnmarshal = m_slIL.GetReturnUnmarshalCodeStream();
-        ILCodeStream *pcsCleanup   = m_slIL.GetCleanupCodeStream();
-
-        /*
-        *    SETUP
-        */
-
-        // create a local to hold the returned pUnk and initialize to 0 in case the factory fails
-        // and we try to release it during cleanup
-        LocalDesc locDescFactoryRetVal(ELEMENT_TYPE_I);
-        DWORD dwFactoryRetValLocalNum = pcsSetup->NewLocal(locDescFactoryRetVal);
-        pcsSetup->EmitLoadNullPtr();
-        pcsSetup->EmitSTLOC(dwFactoryRetValLocalNum);
-
-        DWORD dwInnerIInspectableLocalNum = -1;
-        DWORD dwOuterIInspectableLocalNum = -1;
-        if (SF_IsWinRTCompositionStub(m_dwStubFlags))
-        {
-            // Create locals to store the outer and inner IInspectable values and initialize to null
-            // Note that we do this in the setup stream so that we're guaranteed to have a null-initialized
-            // value in the cleanup stream
-            LocalDesc locDescOuterIInspectable(ELEMENT_TYPE_I);
-            dwOuterIInspectableLocalNum = pcsSetup->NewLocal(locDescOuterIInspectable);
-            pcsSetup->EmitLoadNullPtr();
-            pcsSetup->EmitSTLOC(dwOuterIInspectableLocalNum);
-            LocalDesc locDescInnerIInspectable(ELEMENT_TYPE_I);
-            dwInnerIInspectableLocalNum = pcsSetup->NewLocal(locDescInnerIInspectable);
-            pcsSetup->EmitLoadNullPtr();
-            pcsSetup->EmitSTLOC(dwInnerIInspectableLocalNum);
-        }
-
-        /*
-        *   DISPATCH
-        */
-
-        // For composition factories, add the two extra params
-        if (SF_IsWinRTCompositionStub(m_dwStubFlags))
-        {
-            // Get outer IInspectable. The helper will return NULL if this is the "top-level" constructor,
-            // and the appropriate outer pointer otherwise.
-            pcsDispatch->EmitLoadThis();
-            m_slIL.EmitLoadStubContext(pcsDispatch, m_dwStubFlags);
-            pcsDispatch->EmitCALL(METHOD__STUBHELPERS__GET_OUTER_INSPECTABLE, 2, 1);
-            pcsDispatch->EmitSTLOC(dwOuterIInspectableLocalNum);
-
-            // load the outer IInspectable (3rd last argument)
-            pcsDispatch->SetStubTargetArgType(ELEMENT_TYPE_I, false);
-            pcsDispatch->EmitLDLOC(dwOuterIInspectableLocalNum);
-
-            // pass pointer to where inner non-delegating IInspectable should be stored (2nd last argument)
-            LocalDesc locDescInnerPtr(ELEMENT_TYPE_I);
-            locDescInnerPtr.MakeByRef();
-            pcsDispatch->SetStubTargetArgType(&locDescInnerPtr, false);
-            pcsDispatch->EmitLDLOCA(dwInnerIInspectableLocalNum);
-        }
-
-        // pass pointer to the local to the factory method (last argument)
-        locDescFactoryRetVal.MakeByRef();
-        pcsDispatch->SetStubTargetArgType(&locDescFactoryRetVal, false);
-        pcsDispatch->EmitLDLOCA(dwFactoryRetValLocalNum);
-
-        /*
-        *   UNMARSHAL
-        */
-
-        // Mark that the factory method has succesfully returned and so cleanup will be necessary after
-        // this point.
-        m_slIL.EmitSetArgMarshalIndex(pcsUnmarshal, NDirectStubLinker::CLEANUP_INDEX_RETVAL_UNMARSHAL);
-
-        // associate the 'this' RCW with one of the returned interface pointers
-        pcsUnmarshal->EmitLoadThis();
-
-        // now we need to find the right interface pointer to load
-        if (dwInnerIInspectableLocalNum != -1)
-        {
-            // We may have a composition scenario
-            ILCodeLabel* pNonCompositionLabel = pcsUnmarshal->NewCodeLabel();
-            ILCodeLabel* pLoadedLabel = pcsUnmarshal->NewCodeLabel();
-
-            // Did we pass an outer IInspectable?
-            pcsUnmarshal->EmitLDLOC(dwOuterIInspectableLocalNum);
-            pcsUnmarshal->EmitBRFALSE(pNonCompositionLabel);
-
-            // yes, this is a composition scenario
-            {
-                // ignore the delegating interface pointer (will be released in cleanup below) - we can
-                // re-create it by QI'ing the non-delegating one.
-                // Note that using this could be useful in the future (avoids an extra QueryInterface call)
-                // Just load the non-delegating interface pointer
-                pcsUnmarshal->EmitLDLOCA(dwInnerIInspectableLocalNum);
-                pcsUnmarshal->EmitBR(pLoadedLabel);
-            }
-            // else, no this is a non-composition scenario
-            {
-                pcsUnmarshal->EmitLabel(pNonCompositionLabel);
-
-                // ignore the non-delegating interface pointer (which should be null, but will regardless get
-                // cleaned up below in the event the factory doesn't follow the pattern properly).
-                // Just load the regular delegating interface pointer
-                pcsUnmarshal->EmitLDLOCA(dwFactoryRetValLocalNum);
-            }
-
-            pcsUnmarshal->EmitLabel(pLoadedLabel);
-        }
-        else
-        {
-            // Definitely can't be a composition scenario - use the only pointer we have
-            pcsUnmarshal->EmitLDLOCA(dwFactoryRetValLocalNum);
-        }
-
-        pcsUnmarshal->EmitCALL(METHOD__WINDOWSRUNTIMEMARSHAL__INITIALIZE_WRAPPER, 2, 0);
-
-        /*
-        *   CLEANUP
-        */
-
-        // release the returned interface pointer in the finally block
-        m_slIL.SetCleanupNeeded();
-
-        ILCodeLabel *pSkipCleanupLabel = pcsCleanup->NewCodeLabel();
-
-        m_slIL.EmitCheckForArgCleanup(pcsCleanup,
-                                      NDirectStubLinker::CLEANUP_INDEX_RETVAL_UNMARSHAL,
-                                      NDirectStubLinker::BranchIfNotMarshaled,
-                                      pSkipCleanupLabel);
-
-        EmitInterfaceClearNative(pcsCleanup, dwFactoryRetValLocalNum);
-
-        // Note that it's a no-op to pass NULL to Clear_Native, so we call it even though we don't
-        // know if we assigned to the inner/outer IInspectable
-        if (dwInnerIInspectableLocalNum != -1)
-        {
-            EmitInterfaceClearNative(pcsCleanup, dwInnerIInspectableLocalNum);
-        }
-        if (dwOuterIInspectableLocalNum != -1)
-        {
-            EmitInterfaceClearNative(pcsCleanup, dwOuterIInspectableLocalNum);
-        }
-
-        pcsCleanup->EmitLabel(pSkipCleanupLabel);
-    }
-
     static void EmitInterfaceClearNative(ILCodeStream* pcsEmit, DWORD dwLocalNum)
     {
         STANDARD_VM_CONTRACT;
@@ -509,7 +347,6 @@ public:
         pcsEmit->EmitCALL(METHOD__INTERFACEMARSHALER__CLEAR_NATIVE, 1, 0);
         pcsEmit->EmitLabel(pSkipClearNativeLabel);
     }
-
 #endif // FEATURE_COMINTEROP
 
     void MarshalLCID(int argIdx)
@@ -531,7 +368,7 @@ public:
             pcs->EmitCALL(METHOD__CULTURE_INFO__GET_CURRENT_CULTURE, 0, 1);
 
             // save the current culture
-            LocalDesc locDescCulture(MscorlibBinder::GetClass(CLASS__CULTURE_INFO));
+            LocalDesc locDescCulture(CoreLibBinder::GetClass(CLASS__CULTURE_INFO));
             DWORD dwCultureLocalNum = pcs->NewLocal(locDescCulture);
 
             pcs->EmitSTLOC(dwCultureLocalNum);
@@ -679,14 +516,7 @@ public:
 
         DWORD retvalLocalNum = m_slIL.GetReturnValueLocalNum();
         BinderMethodID getHRForException;
-        if (SF_IsWinRTStub(m_dwStubFlags))
-        {
-            getHRForException = METHOD__WINDOWSRUNTIMEMARSHAL__GET_HR_FOR_EXCEPTION;
-        }
-        else
-        {
-            getHRForException = METHOD__MARSHAL__GET_HR_FOR_EXCEPTION;
-        }
+        getHRForException = METHOD__MARSHAL__GET_HR_FOR_EXCEPTION;
 
         pcsExceptionHandler->EmitCALL(getHRForException,
             0,  // WARNING: This method takes 1 input arg, the exception object.  But the ILStubLinker
@@ -826,7 +656,7 @@ public:
             MetaSig nsig(
                 GetStubTargetMethodSig(),
                 GetStubTargetMethodSigLength(),
-                MscorlibBinder::GetModule(),
+                CoreLibBinder::GetModule(),
                 &typeContext);
 
             CorElementType type;
@@ -930,14 +760,7 @@ public:
                     m_slIL.EmitLoadStubContext(pcsDispatch, m_dwStubFlags);
                     m_slIL.EmitLoadRCWThis(pcsDispatch, m_dwStubFlags);
 
-                    if (SF_IsWinRTStub(m_dwStubFlags))
-                    {
-                        pcsDispatch->EmitCALL(METHOD__STUBHELPERS__GET_COM_HR_EXCEPTION_OBJECT_WINRT, 3, 1);
-                    }
-                    else
-                    {
-                        pcsDispatch->EmitCALL(METHOD__STUBHELPERS__GET_COM_HR_EXCEPTION_OBJECT, 3, 1);
-                    }
+                    pcsDispatch->EmitCALL(METHOD__STUBHELPERS__GET_COM_HR_EXCEPTION_OBJECT, 3, 1);
                 }
                 else
 #endif // FEATURE_COMINTEROP
@@ -976,8 +799,7 @@ public:
             // Struct marshal stubs don't actually call anything so they do not need the secrect parameter.
         }
 #ifndef HOST_64BIT
-        else if (SF_IsForwardDelegateStub(m_dwStubFlags) ||
-                (SF_IsForwardCOMStub(m_dwStubFlags) && SF_IsWinRTDelegateStub(m_dwStubFlags)))
+        else if (SF_IsForwardDelegateStub(m_dwStubFlags))
         {
             // Forward delegate stubs get all the context they need in 'this' so they
             // don't use the secret parameter. Except for AMD64 where we use the secret
@@ -1062,7 +884,7 @@ public:
             PCCOR_SIGNATURE pManagedSig;
             ULONG           cManagedSig;
 
-            IMDInternalImport* pIMDI = MscorlibBinder::GetModule()->GetMDImport();
+            IMDInternalImport* pIMDI = CoreLibBinder::GetModule()->GetMDImport();
 
             pStubMD->GetSig(&pManagedSig, &cManagedSig);
 
@@ -1300,13 +1122,6 @@ public:
 #ifdef FEATURE_COMINTEROP
         LogOneFlag(dwStubFlags, NDIRECTSTUB_FL_FIELDGETTER,             "   NDIRECTSTUB_FL_FIELDGETTER\n", facility, level);
         LogOneFlag(dwStubFlags, NDIRECTSTUB_FL_FIELDSETTER,             "   NDIRECTSTUB_FL_FIELDSETTER\n", facility, level);
-        LogOneFlag(dwStubFlags, NDIRECTSTUB_FL_WINRT,                   "   NDIRECTSTUB_FL_WINRT\n", facility, level);
-        LogOneFlag(dwStubFlags, NDIRECTSTUB_FL_WINRTDELEGATE,           "   NDIRECTSTUB_FL_WINRTDELEGATE\n", facility, level);
-        LogOneFlag(dwStubFlags, NDIRECTSTUB_FL_WINRTSHAREDGENERIC,      "   NDIRECTSTUB_FL_WINRTSHAREDGENERIC\n", facility, level);
-        LogOneFlag(dwStubFlags, NDIRECTSTUB_FL_WINRTCTOR,               "   NDIRECTSTUB_FL_WINRTCTOR\n", facility, level);
-        LogOneFlag(dwStubFlags, NDIRECTSTUB_FL_WINRTCOMPOSITION,        "   NDIRECTSTUB_FL_WINRTCOMPOSITION\n", facility, level);
-        LogOneFlag(dwStubFlags, NDIRECTSTUB_FL_WINRTSTATIC,             "   NDIRECTSTUB_FL_WINRTSTATIC\n", facility, level);
-        LogOneFlag(dwStubFlags, NDIRECTSTUB_FL_WINRTHASREDIRECTION,     "   NDIRECTSTUB_FL_WINRTHASREDIRECTION\n", facility, level);
 #endif // FEATURE_COMINTEROP
 
         //
@@ -1334,12 +1149,6 @@ public:
             NDIRECTSTUB_FL_COMEVENTCALL             |   // internal
             NDIRECTSTUB_FL_FIELDGETTER              |
             NDIRECTSTUB_FL_FIELDSETTER              |
-            NDIRECTSTUB_FL_WINRT                    |
-            NDIRECTSTUB_FL_WINRTDELEGATE            |
-            NDIRECTSTUB_FL_WINRTCTOR                |
-            NDIRECTSTUB_FL_WINRTCOMPOSITION         |
-            NDIRECTSTUB_FL_WINRTSTATIC              |
-            NDIRECTSTUB_FL_WINRTHASREDIRECTION      |
 #endif // FEATURE_COMINTEROP
             NULL;
 
@@ -1440,7 +1249,7 @@ public:
         pCleanupStartLabel = pcsSetup->NewCodeLabel();
         pReturnLabel = pcsSetup->NewCodeLabel();
 
-        dwExceptionDispatchInfoLocal = pcsSetup->NewLocal(MscorlibBinder::GetClass(CLASS__EXCEPTION_DISPATCH_INFO));
+        dwExceptionDispatchInfoLocal = pcsSetup->NewLocal(CoreLibBinder::GetClass(CLASS__EXCEPTION_DISPATCH_INFO));
         pcsSetup->EmitLDNULL();
         pcsSetup->EmitSTLOC(dwExceptionDispatchInfoLocal);
 
@@ -1547,10 +1356,17 @@ public:
     {
         STANDARD_VM_CONTRACT;
 
+#if defined(TARGET_X86) && !defined(FEATURE_STUBS_AS_IL)
+        // x86 with non-IL stubs manually handles calling conventions
+        // for reverse P/Invokes with the x86 stub linker.
+        // Don't use the JIT calling convention support on reverse P/Invokes.
         if (SF_IsForwardStub(dwStubFlags))
         {
             m_slIL.SetCallingConvention(unmgdCallConv, SF_IsVarArgStub(dwStubFlags));
         }
+#else
+        m_slIL.SetCallingConvention(unmgdCallConv, SF_IsVarArgStub(dwStubFlags));
+#endif
     }
 
 private:
@@ -1586,7 +1402,7 @@ public:
                 signature,
                 pTypeContext,
                 TRUE,
-                !SF_IsWinRTStaticStub(dwStubFlags), // fStubHasThis
+                TRUE,
                 dwStubFlags,
                 iLCIDParamIdx,
                 pTargetMD)
@@ -1613,85 +1429,33 @@ public:
         // convert 'this' to COM IP and the target method entry point
         m_slIL.EmitLoadRCWThis(pcsDispatch, m_dwStubFlags);
 
-#ifdef TARGET_64BIT
-        if (SF_IsWinRTDelegateStub(m_dwStubFlags))
-        {
-            // write the stub context (EEImplMethodDesc representing the Invoke)
-            // into the secret arg so it shows up in the InlinedCallFrame and can
-            // be used by stub for host
-
-            pcsDispatch->EmitCALL(METHOD__STUBHELPERS__GET_STUB_CONTEXT_ADDR, 0, 1);
-            m_slIL.EmitLoadStubContext(pcsDispatch, dwStubFlags);
-            pcsDispatch->EmitSTIND_I();
-            pcsDispatch->EmitCALL(METHOD__STUBHELPERS__GET_STUB_CONTEXT, 0, 1);
-        }
-        else
-#endif // TARGET_64BIT
-        {
-            m_slIL.EmitLoadStubContext(pcsDispatch, dwStubFlags);
-        }
+        m_slIL.EmitLoadStubContext(pcsDispatch, dwStubFlags);
 
         pcsDispatch->EmitLDLOCA(m_slIL.GetTargetEntryPointLocalNum());
 
-        BinderMethodID getCOMIPMethod;
-        bool fDoPostCallIPCleanup = true;
+        DWORD dwIPRequiresCleanupLocalNum = pcsDispatch->NewLocal(ELEMENT_TYPE_BOOLEAN);
+        pcsDispatch->EmitLDLOCA(dwIPRequiresCleanupLocalNum);
 
-        if (SF_IsWinRTStub(dwStubFlags))
-        {
-            // WinRT uses optimized helpers
-            if (SF_IsWinRTSharedGenericStub(dwStubFlags))
-                getCOMIPMethod = METHOD__STUBHELPERS__GET_COM_IP_FROM_RCW_WINRT_SHARED_GENERIC;
-            else if (SF_IsWinRTDelegateStub(dwStubFlags))
-                getCOMIPMethod = METHOD__STUBHELPERS__GET_COM_IP_FROM_RCW_WINRT_DELEGATE;
-            else
-                getCOMIPMethod = METHOD__STUBHELPERS__GET_COM_IP_FROM_RCW_WINRT;
-
-            // GetCOMIPFromRCW_WinRT, GetCOMIPFromRCW_WinRTSharedGeneric, and GetCOMIPFromRCW_WinRTDelegate
-            // always cache the COM interface pointer so no post-call cleanup is needed
-            fDoPostCallIPCleanup = false;
-        }
-        else
-        {
-            // classic COM interop uses the non-optimized helper
-            getCOMIPMethod = METHOD__STUBHELPERS__GET_COM_IP_FROM_RCW;
-        }
-
-        DWORD dwIPRequiresCleanupLocalNum = (DWORD)-1;
-        if (fDoPostCallIPCleanup)
-        {
-            dwIPRequiresCleanupLocalNum = pcsDispatch->NewLocal(ELEMENT_TYPE_BOOLEAN);
-            pcsDispatch->EmitLDLOCA(dwIPRequiresCleanupLocalNum);
-
-            // StubHelpers.GetCOMIPFromRCW(object objSrc, IntPtr pCPCMD, out IntPtr ppTarget, out bool pfNeedsRelease)
-            pcsDispatch->EmitCALL(getCOMIPMethod, 4, 1);
-        }
-        else
-        {
-            // StubHelpers.GetCOMIPFromRCW_WinRT*(object objSrc, IntPtr pCPCMD, out IntPtr ppTarget)
-            pcsDispatch->EmitCALL(getCOMIPMethod, 3, 1);
-        }
-
+        // StubHelpers.GetCOMIPFromRCW(object objSrc, IntPtr pCPCMD, out IntPtr ppTarget, out bool pfNeedsRelease)
+        pcsDispatch->EmitCALL(METHOD__STUBHELPERS__GET_COM_IP_FROM_RCW, 4, 1);
 
         // save it because we'll need it to compute the CALLI target and release it
         pcsDispatch->EmitDUP();
         pcsDispatch->EmitSTLOC(m_slIL.GetTargetInterfacePointerLocalNum());
 
-        if (fDoPostCallIPCleanup)
-        {
-            // make sure it's Release()'ed after the call
-            m_slIL.SetCleanupNeeded();
-            ILCodeStream *pcsCleanup = m_slIL.GetCleanupCodeStream();
+        // make sure it's Release()'ed after the call
+        m_slIL.SetCleanupNeeded();
+        ILCodeStream *pcsCleanup = m_slIL.GetCleanupCodeStream();
 
-            ILCodeLabel *pSkipThisCleanup = pcsCleanup->NewCodeLabel();
+        ILCodeLabel *pSkipThisCleanup = pcsCleanup->NewCodeLabel();
 
-            // and if it requires cleanup (i.e. it's not taken from the RCW cache)
-            pcsCleanup->EmitLDLOC(dwIPRequiresCleanupLocalNum);
-            pcsCleanup->EmitBRFALSE(pSkipThisCleanup);
+        // and if it requires cleanup (i.e. it's not taken from the RCW cache)
+        pcsCleanup->EmitLDLOC(dwIPRequiresCleanupLocalNum);
+        pcsCleanup->EmitBRFALSE(pSkipThisCleanup);
 
-            pcsCleanup->EmitLDLOC(m_slIL.GetTargetInterfacePointerLocalNum());
-            pcsCleanup->EmitCALL(METHOD__INTERFACEMARSHALER__CLEAR_NATIVE, 1, 0);
-            pcsCleanup->EmitLabel(pSkipThisCleanup);
-        }
+        pcsCleanup->EmitLDLOC(m_slIL.GetTargetInterfacePointerLocalNum());
+        pcsCleanup->EmitCALL(METHOD__INTERFACEMARSHALER__CLEAR_NATIVE, 1, 0);
+        pcsCleanup->EmitLabel(pSkipThisCleanup);
     }
 };
 
@@ -1720,59 +1484,7 @@ public:
 
         ILStubState::BeginEmit(dwStubFlags);
 
-        if (!SF_IsWinRTStaticStub(dwStubFlags))
-        {
-            // we are not loading 'this' because the target is static
-            // load this
-            m_slIL.GetDispatchCodeStream()->EmitLoadThis();
-        }
-    }
-
-    void MarshalFactoryReturn()
-    {
-        CONTRACTL
-        {
-            STANDARD_VM_CHECK;
-            PRECONDITION(SF_IsWinRTCtorStub(m_dwStubFlags));
-        }
-        CONTRACTL_END;
-
-        ILCodeStream *pcsSetup     = m_slIL.GetSetupCodeStream();
-        ILCodeStream *pcsDispatch  = m_slIL.GetDispatchCodeStream();
-        ILCodeStream *pcsUnmarshal = m_slIL.GetReturnUnmarshalCodeStream();
-        ILCodeStream *pcsExCleanup = m_slIL.GetExceptionCleanupCodeStream();
-
-        LocalDesc locDescFactoryRetVal(ELEMENT_TYPE_I);
-        DWORD dwFactoryRetValLocalNum = pcsSetup->NewLocal(locDescFactoryRetVal);
-        pcsSetup->EmitLoadNullPtr();
-        pcsSetup->EmitSTLOC(dwFactoryRetValLocalNum);
-
-        locDescFactoryRetVal.MakeByRef();
-
-        // expect one additional argument - pointer to a location that receives the created instance
-        DWORD dwRetValArgNum = pcsDispatch->SetStubTargetArgType(&locDescFactoryRetVal, false);
-
-        // convert 'this' to an interface pointer corresponding to the default interface of this class
-        pcsUnmarshal->EmitLoadThis();
-        pcsUnmarshal->EmitCALL(METHOD__STUBHELPERS__GET_STUB_CONTEXT, 0, 1);
-        pcsUnmarshal->EmitCALL(METHOD__STUBHELPERS__GET_WINRT_FACTORY_RETURN_VALUE, 2, 1);
-        pcsUnmarshal->EmitSTLOC(dwFactoryRetValLocalNum);
-
-        // assign it to the location pointed to by the argument
-        pcsUnmarshal->EmitLDARG(dwRetValArgNum);
-        pcsUnmarshal->EmitLDLOC(dwFactoryRetValLocalNum);
-        pcsUnmarshal->EmitSTIND_I();
-
-        // on exception, we want to release the IInspectable's and assign NULL to output locations
-        m_slIL.SetExceptionCleanupNeeded();
-
-        EmitInterfaceClearNative(pcsExCleanup, dwFactoryRetValLocalNum);
-
-        // *retVal = NULL
-        pcsExCleanup->EmitLDARG(dwRetValArgNum);
-        pcsExCleanup->EmitLoadNullPtr();
-        pcsExCleanup->EmitSTIND_I();
-
+        m_slIL.GetDispatchCodeStream()->EmitLoadThis();
     }
 };
 
@@ -1832,9 +1544,6 @@ NDirectStubLinker::NDirectStubLinker(
     m_pCleanupFinallyBeginLabel(NULL),
     m_pCleanupFinallyEndLabel(NULL),
     m_pSkipExceptionCleanupLabel(NULL),
-#ifdef FEATURE_COMINTEROP
-    m_dwWinRTFactoryObjectLocalNum(-1),
-#endif // FEATURE_COMINTEROP
     m_fHasCleanupCode(FALSE),
     m_fHasExceptionCleanupCode(FALSE),
     m_fCleanupWorkListIsSetup(FALSE),
@@ -2074,26 +1783,7 @@ void NDirectStubLinker::EmitLoadRCWThis(ILCodeStream *pcsEmit, DWORD dwStubFlags
 {
     STANDARD_VM_CONTRACT;
 
-    if (SF_IsForwardStub(dwStubFlags) &&
-        (SF_IsWinRTCtorStub(dwStubFlags) || SF_IsWinRTStaticStub(dwStubFlags)))
-    {
-        // WinRT ctor/static stubs make the call on the factory object instead of 'this'
-        if (m_dwWinRTFactoryObjectLocalNum == (DWORD)-1)
-        {
-            m_dwWinRTFactoryObjectLocalNum = NewLocal(ELEMENT_TYPE_OBJECT);
-
-            // get the factory object
-            EmitLoadStubContext(m_pcsSetup, dwStubFlags);
-            m_pcsSetup->EmitCALL(METHOD__STUBHELPERS__GET_WINRT_FACTORY_OBJECT, 1, 1);
-            m_pcsSetup->EmitSTLOC(m_dwWinRTFactoryObjectLocalNum);
-        }
-
-        pcsEmit->EmitLDLOC(m_dwWinRTFactoryObjectLocalNum);
-    }
-    else
-    {
-        pcsEmit->EmitLoadThis();
-    }
+    pcsEmit->EmitLoadThis();
 }
 #endif // FEATURE_COMINTEROP
 
@@ -2200,7 +1890,7 @@ void NDirectStubLinker::NeedsCleanupList()
         SetCleanupNeeded();
 
         // we setup a new local that will hold the cleanup work list
-        LocalDesc desc(MscorlibBinder::GetClass(CLASS__CLEANUP_WORK_LIST_ELEMENT));
+        LocalDesc desc(CoreLibBinder::GetClass(CLASS__CLEANUP_WORK_LIST_ELEMENT));
         m_dwCleanupWorkListLocalNum = NewLocal(desc);
     }
 }
@@ -2234,33 +1924,6 @@ void NDirectStubLinker::Begin(DWORD dwStubFlags)
 {
     STANDARD_VM_CONTRACT;
 
-#ifdef FEATURE_COMINTEROP
-    if (SF_IsWinRTHasRedirection(dwStubFlags))
-    {
-        _ASSERTE(SF_IsForwardCOMStub(dwStubFlags));
-
-        // The very first thing we need to do is check whether the call should be routed to
-        // the marshaling stub for the corresponding projected WinRT interface. If so, we
-        // tail-call there.
-        m_pcsSetup->EmitLoadThis();
-        EmitLoadStubContext(m_pcsSetup, dwStubFlags);
-        m_pcsSetup->EmitCALL(METHOD__STUBHELPERS__SHOULD_CALL_WINRT_INTERFACE, 2, 1);
-
-        ILCodeLabel *pNoRedirection = m_pcsSetup->NewCodeLabel();
-        m_pcsSetup->EmitBRFALSE(pNoRedirection);
-
-        MethodDesc *pAdapterMD = WinRTInterfaceRedirector::GetStubMethodForRedirectedInterfaceMethod(
-            GetTargetMD(),
-            TypeHandle::Interop_ManagedToNative);
-
-        CONSISTENCY_CHECK(pAdapterMD != NULL && !pAdapterMD->HasMethodInstantiation());
-
-        m_pcsSetup->EmitJMP(m_pcsSetup->GetToken(pAdapterMD));
-
-        m_pcsSetup->EmitLabel(pNoRedirection);
-    }
-#endif // FEATURE_COMINTEROP
-
     if (SF_IsForwardStub(dwStubFlags))
     {
 
@@ -2283,7 +1946,7 @@ void NDirectStubLinker::Begin(DWORD dwStubFlags)
             m_pcsDispatch->EmitADD();
             m_pcsDispatch->EmitLDIND_I();      // get OBJECTHANDLE
             m_pcsDispatch->EmitLDIND_REF();    // get Delegate object
-            m_pcsDispatch->EmitLDFLD(GetToken(MscorlibBinder::GetField(FIELD__DELEGATE__TARGET)));
+            m_pcsDispatch->EmitLDFLD(GetToken(CoreLibBinder::GetField(FIELD__DELEGATE__TARGET)));
         }
     }
 
@@ -2429,7 +2092,7 @@ void NDirectStubLinker::DoNDirect(ILCodeStream *pcsEmit, DWORD dwStubFlags, Meth
                 // for managed-to-unmanaged CALLI that requires marshaling, the target is passed
                 // as the secret argument to the stub by GenericPInvokeCalliHelper (asmhelpers.asm)
                 EmitLoadStubContext(pcsEmit, dwStubFlags);
-#ifdef HOST_64BIT
+#ifdef TARGET_64BIT
                 // the secret arg has been shifted to left and ORed with 1 (see code:GenericPInvokeCalliHelper)
                 pcsEmit->EmitLDC(1);
                 pcsEmit->EmitSHR_UN();
@@ -2442,7 +2105,14 @@ void NDirectStubLinker::DoNDirect(ILCodeStream *pcsEmit, DWORD dwStubFlags, Meth
             {
                 EmitLoadStubContext(pcsEmit, dwStubFlags);
                 // pcsEmit->EmitCALL(METHOD__STUBHELPERS__GET_NDIRECT_TARGET, 1, 1);
-                pcsEmit->EmitLDC(offsetof(NDirectMethodDesc, ndirect.m_pWriteableData));
+
+#ifdef _DEBUG // There are five more pointer values for _DEBUG
+                _ASSERTE(offsetof(NDirectMethodDesc, ndirect.m_pWriteableData) == sizeof(void*) * 8 + 8);
+                pcsEmit->EmitLDC(TARGET_POINTER_SIZE * 8 + 8); // offsetof(NDirectMethodDesc, ndirect.m_pWriteableData)
+#else // _DEBUG
+                _ASSERTE(offsetof(NDirectMethodDesc, ndirect.m_pWriteableData) == sizeof(void*) * 3 + 8);
+                pcsEmit->EmitLDC(TARGET_POINTER_SIZE * 3 + 8); // offsetof(NDirectMethodDesc, ndirect.m_pWriteableData)
+#endif // _DEBUG
                 pcsEmit->EmitADD();
 
                 if (decltype(NDirectMethodDesc::ndirect.m_pWriteableData)::isRelative)
@@ -2473,7 +2143,7 @@ void NDirectStubLinker::DoNDirect(ILCodeStream *pcsEmit, DWORD dwStubFlags, Meth
     {
         if (SF_IsDelegateStub(dwStubFlags)) // reverse P/Invoke via delegate
         {
-            int tokDelegate_methodPtr = pcsEmit->GetToken(MscorlibBinder::GetField(FIELD__DELEGATE__METHOD_PTR));
+            int tokDelegate_methodPtr = pcsEmit->GetToken(CoreLibBinder::GetField(FIELD__DELEGATE__METHOD_PTR));
 
             EmitLoadStubContext(pcsEmit, dwStubFlags);
             pcsEmit->EmitLDC(offsetof(UMEntryThunk, m_pObjectHandle));
@@ -2584,7 +2254,7 @@ DWORD NDirectStubLinker::EmitProfilerBeginTransitionCallback(ILCodeStream* pcsEm
     else
     {
         // we use a null pThread to indicate reverse interop
-        pcsEmit->EmitLDC(NULL);
+        pcsEmit->EmitLoadNullPtr();
     }
 
     // In the unmanaged delegate case, we need the "this" object to retrieve the MD
@@ -2606,8 +2276,9 @@ DWORD NDirectStubLinker::EmitProfilerBeginTransitionCallback(ILCodeStream* pcsEm
     }
     else
     {
-        pcsEmit->EmitLDC(NULL);
+        pcsEmit->EmitLDNULL();
     }
+
     pcsEmit->EmitCALL(METHOD__STUBHELPERS__PROFILER_BEGIN_TRANSITION_CALLBACK, 3, 1);
 
     // Store the MD for StubHelpers::ProfilerLeaveCallback().
@@ -2624,7 +2295,7 @@ void NDirectStubLinker::EmitProfilerEndTransitionCallback(ILCodeStream* pcsEmit,
     if (SF_IsReverseStub(dwStubFlags))
     {
         // we use a null pThread to indicate reverse interop
-        pcsEmit->EmitLDC(NULL);
+        pcsEmit->EmitLoadNullPtr();
     }
     else
     {
@@ -2712,21 +2383,8 @@ void NDirectStubLinker::EmitLoadStubContext(ILCodeStream* pcsEmit, DWORD dwStubF
 
     CONSISTENCY_CHECK(!SF_IsForwardDelegateStub(dwStubFlags));
     CONSISTENCY_CHECK(!SF_IsFieldGetterStub(dwStubFlags) && !SF_IsFieldSetterStub(dwStubFlags));
-
-#ifdef FEATURE_COMINTEROP
-    if (SF_IsWinRTDelegateStub(dwStubFlags) && SF_IsForwardStub(dwStubFlags))
-    {
-        // we have the delegate 'this' but we need the EEImpl/Instantiated 'Invoke' MD pointer
-        // (Delegate.GetInvokeMethod does not return exact instantiated MD so we call our own helper)
-        pcsEmit->EmitLoadThis();
-        pcsEmit->EmitCALL(METHOD__STUBHELPERS__GET_DELEGATE_INVOKE_METHOD, 1, 1);
-    }
-    else
-#endif // FEATURE_COMINTEROP
-    {
-        // get the secret argument via intrinsic
-        pcsEmit->EmitCALL(METHOD__STUBHELPERS__GET_STUB_CONTEXT, 0, 1);
-    }
+    // get the secret argument via intrinsic
+    pcsEmit->EmitCALL(METHOD__STUBHELPERS__GET_STUB_CONTEXT, 0, 1);
 }
 
 #ifdef FEATURE_COMINTEROP
@@ -2887,7 +2545,7 @@ void PInvokeStaticSigInfo::PreInit(MethodDesc* pMD)
 }
 
 PInvokeStaticSigInfo::PInvokeStaticSigInfo(
-    MethodDesc* pMD, LPCUTF8 *pLibName, LPCUTF8 *pEntryPointName, ThrowOnError throwOnError)
+    MethodDesc* pMD, LPCUTF8 *pLibName, LPCUTF8 *pEntryPointName)
 {
     CONTRACTL
     {
@@ -2899,8 +2557,7 @@ PInvokeStaticSigInfo::PInvokeStaticSigInfo(
 
     DllImportInit(pMD, pLibName, pEntryPointName);
 
-    if (throwOnError)
-        ReportErrors();
+    ReportErrors();
 }
 
 PInvokeStaticSigInfo::PInvokeStaticSigInfo(MethodDesc* pMD, ThrowOnError throwOnError)
@@ -3004,7 +2661,7 @@ ErrExit:
 }
 
 PInvokeStaticSigInfo::PInvokeStaticSigInfo(
-    Signature sig, Module* pModule, ThrowOnError throwOnError)
+    Signature sig, Module* pModule)
 {
     CONTRACTL
     {
@@ -3021,8 +2678,7 @@ PInvokeStaticSigInfo::PInvokeStaticSigInfo(
     SetIsStatic (!(MetaSig::GetCallingConvention(pModule, sig) & IMAGE_CEE_CS_CALLCONV_HASTHIS));
     InitCallConv((CorPinvokeMap)0, FALSE);
 
-    if (throwOnError)
-        ReportErrors();
+    ReportErrors();
 }
 
 void PInvokeStaticSigInfo::DllImportInit(MethodDesc* pMD, LPCUTF8 *ppLibName, LPCUTF8 *ppEntryPointName)
@@ -3279,6 +2935,58 @@ inline CorPinvokeMap GetDefaultCallConv(BOOL bIsVarArg)
 #endif // !TARGET_UNIX
 }
 
+namespace
+{
+    bool TryConvertCallConvValueToPInvokeCallConv(_In_ BYTE callConv, _Out_ CorPinvokeMap *pPinvokeMapOut)
+    {
+        LIMITED_METHOD_CONTRACT;
+
+        switch (callConv)
+        {
+        case IMAGE_CEE_CS_CALLCONV_C:
+            *pPinvokeMapOut = pmCallConvCdecl;
+            return true;
+        case IMAGE_CEE_CS_CALLCONV_STDCALL:
+            *pPinvokeMapOut = pmCallConvStdcall;
+            return true;
+        case IMAGE_CEE_CS_CALLCONV_THISCALL:
+            *pPinvokeMapOut = pmCallConvThiscall;
+            return true;
+        case IMAGE_CEE_CS_CALLCONV_FASTCALL:
+            *pPinvokeMapOut = pmCallConvFastcall;
+            return true;
+        }
+
+        return false;
+    }
+
+    HRESULT GetUnmanagedPInvokeCallingConvention(
+        _In_ Module *pModule,
+        _In_ PCCOR_SIGNATURE pSig,
+        _In_ ULONG cSig,
+        _Out_ CorPinvokeMap *pPinvokeMapOut,
+        _Out_ UINT *errorResID)
+    {
+        CONTRACTL
+        {
+            NOTHROW;
+            GC_NOTRIGGER;
+            MODE_ANY;
+        }
+        CONTRACTL_END
+
+        CorUnmanagedCallingConvention callConvMaybe;
+        HRESULT hr = MetaSig::TryGetUnmanagedCallingConventionFromModOpt(pModule, pSig, cSig, &callConvMaybe, errorResID);
+        if (hr != S_OK)
+            return hr;
+        
+        if (!TryConvertCallConvValueToPInvokeCallConv(callConvMaybe, pPinvokeMapOut))
+            return S_FALSE;
+
+        return hr;
+    }
+}
+
 void PInvokeStaticSigInfo::InitCallConv(CorPinvokeMap callConv, BOOL bIsVarArg)
 {
     CONTRACTL
@@ -3294,11 +3002,12 @@ void PInvokeStaticSigInfo::InitCallConv(CorPinvokeMap callConv, BOOL bIsVarArg)
         callConv = GetDefaultCallConv(bIsVarArg);
 
     CorPinvokeMap sigCallConv = (CorPinvokeMap)0;
-    BOOL fSuccess = MetaSig::GetUnmanagedCallingConvention(m_pModule, m_sig.GetRawSig(), m_sig.GetRawSigLen(), &sigCallConv);
-
-    if (!fSuccess)
+    UINT errorResID;
+    HRESULT hr = GetUnmanagedPInvokeCallingConvention(m_pModule, m_sig.GetRawSig(), m_sig.GetRawSigLen(), &sigCallConv, &errorResID);
+    if (FAILED(hr))
     {
-        SetError(IDS_EE_NDIRECT_BADNATL); //Bad metadata format
+        // Set an error message specific to P/Invokes or UnmanagedFunction for bad format.
+        SetError(hr == COR_E_BADIMAGEFORMAT ? IDS_EE_NDIRECT_BADNATL : errorResID);
     }
 
     // Do the same WinAPI to StdCall or CDecl for the signature calling convention as well. We need
@@ -3374,7 +3083,11 @@ HRESULT NDirect::HasNAT_LAttribute(IMDInternalImport *pInternalImport, mdToken t
 
 // Either MD or signature & module must be given.
 /*static*/
-BOOL NDirect::MarshalingRequired(MethodDesc *pMD, PCCOR_SIGNATURE pSig /*= NULL*/, Module *pModule /*= NULL*/)
+BOOL NDirect::MarshalingRequired(
+    _In_opt_ MethodDesc* pMD,
+    _In_opt_ PCCOR_SIGNATURE pSig,
+    _In_opt_ Module* pModule,
+    _In_ bool unmanagedCallersOnlyRequiresMarshalling)
 {
     CONTRACTL
     {
@@ -3408,9 +3121,23 @@ BOOL NDirect::MarshalingRequired(MethodDesc *pMD, PCCOR_SIGNATURE pSig /*= NULL*
         if (GetLCIDParameterIndex(pMD) != -1)
             return TRUE;
 
-        // making sure that cctor has run may be handled by stub
-        if (pMD->IsNDirect() && ((NDirectMethodDesc *)pMD)->IsClassConstructorTriggeredByILStub())
-            return TRUE;
+        if (pMD->IsNDirect())
+        {
+            // A P/Invoke marked with UnmanagedCallersOnlyAttribute
+            // doesn't technically require marshalling. However, we
+            // don't support a DllImport with this attribute and we
+            // error out during IL Stub generation so we indicate that
+            // when checking if an IL Stub is needed.
+            //
+            // Callers can indicate the check doesn't need to be performed.
+            if (unmanagedCallersOnlyRequiresMarshalling && pMD->HasUnmanagedCallersOnlyAttribute())
+                return TRUE;
+
+            NDirectMethodDesc* pNMD = (NDirectMethodDesc*)pMD;
+            // Make sure running cctor can be handled by stub
+            if (pNMD->IsClassConstructorTriggeredByILStub())
+                return TRUE;
+        }
 
         callConv = sigInfo.GetCallConv();
     }
@@ -3468,7 +3195,7 @@ BOOL NDirect::MarshalingRequired(MethodDesc *pMD, PCCOR_SIGNATURE pSig /*= NULL*
                         return TRUE;
                     }
                 }
-                if (i > 0) dwStackSize += sizeof(SLOT);
+                if (i > 0) dwStackSize += TARGET_POINTER_SIZE;
                 break;
             }
 
@@ -3481,7 +3208,7 @@ BOOL NDirect::MarshalingRequired(MethodDesc *pMD, PCCOR_SIGNATURE pSig /*= NULL*
                     THROW_BAD_FORMAT(BFA_BAD_SIGNATURE, (Module*)pModule);
 #endif
 
-                /* Fall thru */
+                FALLTHROUGH;
 
             case ELEMENT_TYPE_VALUETYPE:
             {
@@ -3588,7 +3315,6 @@ static MarshalInfo::MarshalType DoMarshalReturnValue(MetaSig&           msig,
                                                      CorNativeLinkFlags nlFlags,
                                                      UINT               argidx,  // this is used for reverse pinvoke hresult swapping
                                                      StubState*         pss,
-                                                     BOOL               isInstanceMethod,
                                                      int                argOffset,
                                                      DWORD              dwStubFlags,
                                                      MethodDesc         *pMD,
@@ -3615,10 +3341,7 @@ static MarshalInfo::MarshalType DoMarshalReturnValue(MetaSig&           msig,
 #ifdef FEATURE_COMINTEROP
     if (SF_IsCOMStub(dwStubFlags))
     {
-        if (SF_IsWinRTStub(dwStubFlags))
-            ms = MarshalInfo::MARSHAL_SCENARIO_WINRT;
-        else
-            ms = MarshalInfo::MARSHAL_SCENARIO_COMINTEROP;
+        ms = MarshalInfo::MARSHAL_SCENARIO_COMINTEROP;
     }
     else
 #endif // FEATURE_COMINTEROP
@@ -3626,21 +3349,6 @@ static MarshalInfo::MarshalType DoMarshalReturnValue(MetaSig&           msig,
         ms = MarshalInfo::MARSHAL_SCENARIO_NDIRECT;
     }
 
-#ifdef FEATURE_COMINTEROP
-    if (SF_IsWinRTCtorStub(dwStubFlags))
-    {
-        _ASSERTE(msig.GetReturnType() == ELEMENT_TYPE_VOID);
-        _ASSERTE(SF_IsHRESULTSwapping(dwStubFlags));
-
-        pss->MarshalFactoryReturn();
-        nativeStackOffset += sizeof(LPVOID);
-        if (SF_IsWinRTCompositionStub(dwStubFlags))
-        {
-            nativeStackOffset += 2 * sizeof(LPVOID);
-        }
-    }
-    else
-#endif // FEATURE_COMINTEROP
     if (msig.GetReturnType() != ELEMENT_TYPE_VOID)
     {
         MarshalInfo returnInfo(msig.GetModule(),
@@ -3656,7 +3364,6 @@ static MarshalInfo::MarshalType DoMarshalReturnValue(MetaSig&           msig,
                                 SF_IsBestFit(dwStubFlags),
                                 SF_IsThrowOnUnmappableChar(dwStubFlags),
                                 TRUE,
-                                isInstanceMethod,
                                 pMD,
                                 TRUE
                                 DEBUG_ARG(pDebugName)
@@ -3669,27 +3376,6 @@ static MarshalInfo::MarshalType DoMarshalReturnValue(MetaSig&           msig,
         fStubNeedsCOM |= returnInfo.MarshalerRequiresCOM();
 
 #ifdef FEATURE_COMINTEROP
-        if (marshalType == MarshalInfo::MARSHAL_TYPE_HIDDENLENGTHARRAY)
-        {
-            // Hidden length arrays are only valid with HRESULT swapping
-            if (!SF_IsHRESULTSwapping(dwStubFlags))
-            {
-                COMPlusThrow(kMarshalDirectiveException, IDS_EE_COM_UNSUPPORTED_SIG);
-            }
-
-            // We should be safe to cast here - giant signatures will fail to marashal later with IDS_EE_SIGTOOCOMPLEX
-            returnInfo.SetHiddenLengthParamIndex(static_cast<UINT16>(nativeArgIndex));
-
-            // Inject the hidden argument so that it winds up at the end of the method signature
-            pss->MarshalHiddenLengthArgument(&returnInfo, TRUE);
-            nativeStackOffset += returnInfo.GetHiddenLengthParamStackSize();
-
-            if (SF_IsReverseStub(dwStubFlags))
-            {
-                ++argOffset;
-            }
-        }
-
         if (SF_IsCOMStub(dwStubFlags))
         {
             // We don't support native methods that return VARIANTs, non-blittable structs, GUIDs, or DECIMALs directly.
@@ -3713,9 +3399,6 @@ static MarshalInfo::MarshalType DoMarshalReturnValue(MetaSig&           msig,
                     || marshalType == MarshalInfo::MARSHAL_TYPE_VALUECLASS
                     || marshalType == MarshalInfo::MARSHAL_TYPE_GUID
                     || marshalType == MarshalInfo::MARSHAL_TYPE_DECIMAL
-#ifdef FEATURE_COMINTEROP
-                    || marshalType == MarshalInfo::MARSHAL_TYPE_DATETIME
-#endif // FEATURE_COMINTEROP
                 )
             {
                 if (SF_IsHRESULTSwapping(dwStubFlags))
@@ -3765,96 +3448,11 @@ static inline UINT GetStackOffsetFromStackSize(UINT stackSize, bool fThisCall)
     if (fThisCall)
     {
         // -1 means that the argument is not on the stack
-        return (stackSize >= sizeof(SLOT) ? (stackSize - sizeof(SLOT)) : (UINT)-1);
+        return (stackSize >= TARGET_POINTER_SIZE ? (stackSize - TARGET_POINTER_SIZE) : (UINT)-1);
     }
 #endif // TARGET_X86
     return stackSize;
 }
-
-#ifdef FEATURE_COMINTEROP
-
-struct HiddenParameterInfo
-{
-    MarshalInfo *pManagedParam;     // Managed parameter which required the hidden parameter
-    int          nativeIndex;       // 0 based index into the native method signature where the hidden parameter should be injected
-};
-
-// Get the indexes of any hidden length parameters to be marshaled for the method
-//
-// At return, each value in the ppParamIndexes array is a 0 based index into the native method signature where
-// the length parameter for a hidden length array should be passed.  The MarshalInfo objects will also be
-// updated such that they all have explicit marshaling information.
-//
-// The caller is responsible for freeing the memory pointed to by ppParamIndexes
-void CheckForHiddenParameters(DWORD cParamMarshalInfo,
-                              __in_ecount(cParamMarshalInfo) MarshalInfo *pParamMarshalInfo,
-                              __out DWORD *pcHiddenNativeParameters,
-                              __out HiddenParameterInfo **ppHiddenNativeParameters)
-{
-    CONTRACTL
-    {
-        STANDARD_VM_CHECK;
-        PRECONDITION(CheckPointer(pParamMarshalInfo));
-        PRECONDITION(CheckPointer(pcHiddenNativeParameters));
-        PRECONDITION(CheckPointer(ppHiddenNativeParameters));
-    }
-    CONTRACTL_END;
-
-    NewArrayHolder<HiddenParameterInfo> hiddenParamInfo(new HiddenParameterInfo[cParamMarshalInfo]);
-    DWORD foundInfoCount = 0;
-
-    for (DWORD iParam = 0; iParam < cParamMarshalInfo; ++iParam)
-    {
-        // Look for hidden length arrays, which all require additional parameters to be added
-        if (pParamMarshalInfo[iParam].GetMarshalType() == MarshalInfo::MARSHAL_TYPE_HIDDENLENGTHARRAY)
-        {
-            DWORD currentNativeIndex = iParam + foundInfoCount;
-
-            // The location of the length parameter is implicitly just before the array pointer.
-            // We'll give it our current index, and bumping the found count will push us back a slot.
-
-            // We should be safe to cast here - giant signatures will fail to marashal later with IDS_EE_SIGTOOCOMPLEX
-            pParamMarshalInfo[iParam].SetHiddenLengthParamIndex(static_cast<UINT16>(currentNativeIndex));
-
-            hiddenParamInfo[foundInfoCount].nativeIndex = pParamMarshalInfo[iParam].HiddenLengthParamIndex();
-            hiddenParamInfo[foundInfoCount].pManagedParam = &(pParamMarshalInfo[iParam]);
-            ++foundInfoCount;
-        }
-    }
-
-    *pcHiddenNativeParameters = foundInfoCount;
-    *ppHiddenNativeParameters = hiddenParamInfo.Extract();
-}
-
-bool IsHiddenParameter(int nativeArgIndex,
-                       DWORD cHiddenParameters,
-                       __in_ecount(cHiddenParameters) HiddenParameterInfo *pHiddenParameters,
-                       __out HiddenParameterInfo **ppHiddenParameterInfo)
-{
-    CONTRACTL
-    {
-        STANDARD_VM_CHECK;
-        PRECONDITION(cHiddenParameters == 0 || CheckPointer(pHiddenParameters));
-        PRECONDITION(CheckPointer(ppHiddenParameterInfo));
-    }
-    CONTRACTL_END;
-
-    *ppHiddenParameterInfo = NULL;
-
-    for (DWORD i = 0; i < cHiddenParameters; ++i)
-    {
-        _ASSERTE(pHiddenParameters[i].nativeIndex != -1);
-        if (pHiddenParameters[i].nativeIndex == nativeArgIndex)
-        {
-            *ppHiddenParameterInfo = &(pHiddenParameters[i]);
-            return true;
-        }
-    }
-
-    return false;
-}
-
-#endif // FEATURE_COMINTEROP
 
 //---------------------------------------------------------
 // Creates a new stub for a N/Direct call. Return refcount is 1.
@@ -3926,9 +3524,6 @@ static void CreateNDirectStubWorker(StubState*         pss,
 
     if (-1 != iLCIDArg)
     {
-        // LCID is not supported on WinRT
-        _ASSERTE(!SF_IsWinRTStub(dwStubFlags));
-
         // The code to handle the LCID  will call MarshalLCID before calling MarshalArgument
         // on the argument the LCID should go after. So we just bump up the index here.
         iLCIDArg++;
@@ -3951,55 +3546,8 @@ static void CreateNDirectStubWorker(StubState*         pss,
     //
     // Marshal the return value.
     //
-
-    UINT nativeStackSize = (SF_IsCOMStub(dwStubFlags) ? sizeof(SLOT) : 0);
+    UINT nativeStackSize = (SF_IsCOMStub(dwStubFlags) ? TARGET_POINTER_SIZE : 0);
     bool fStubNeedsCOM = SF_IsCOMStub(dwStubFlags);
-
-    // Normally we would like this to be false so that we use the correct signature
-    // in the IL_STUB, (i.e if it returns a value class then the signature will use that)
-    // When this bool is true we change the return type to void and explicitly add a
-    // return buffer argument as the first argument so as to match the native calling convention correctly.
-    BOOL fMarshalReturnValueFirst = FALSE;
-
-    BOOL fReverseWithReturnBufferArg = FALSE;
-    // Only consider ThisCall methods to be instance methods.
-    // Techinically COM methods are also instance methods, but we don't want to change the behavior of the built-in
-    // COM abi work because there are many users that rely on the current behavior (for example WPF).
-    bool isInstanceMethod = fThisCall;
-
-    // We can only change fMarshalReturnValueFirst to true when we are NOT doing HRESULT-swapping!
-    // When we are HRESULT-swapping, the managed return type is actually the type of the last parameter and not the return type.
-    // The native return type of an HRESULT-swapped function is an HRESULT, which never uses a return-buffer argument.
-    // Since the managed return type is actually the last parameter, we need to marshal it after the last parameter in the managed signature
-    // to make sure we match the native signature correctly (when marshalling parameters, we add them to the native stub signature).
-    if (!SF_IsHRESULTSwapping(dwStubFlags))
-    {
-        // We cannot just use pSig.GetReturnType() here since it will return ELEMENT_TYPE_VALUETYPE for enums.
-        bool isReturnTypeValueType = msig.GetRetTypeHandleThrowing().GetVerifierCorElementType() == ELEMENT_TYPE_VALUETYPE;
-#if defined(TARGET_X86) || defined(TARGET_ARM)
-        // JIT32 has problems in generating code for pinvoke ILStubs which do a return in return buffer.
-        // Therefore instead we change the signature of calli to return void and make the return buffer as first
-        // argument. This matches the ABI i.e. return buffer is passed as first arg. So native target will get the
-        // return buffer in correct register.
-        // The return structure secret arg comes first, however byvalue return is processed at
-        // the end because it could be the HRESULT-swapped argument which always comes last.
-
-#ifdef UNIX_X86_ABI
-        // For functions with value type class, managed and unmanaged calling convention differ
-        fMarshalReturnValueFirst = HasRetBuffArgUnmanagedFixup(&msig);
-#elif defined(TARGET_ARM)
-        fMarshalReturnValueFirst = (isInstanceMethod && isReturnTypeValueType) && HasRetBuffArg(&msig);
-#else
-        // On Windows-X86, the native signature might need a return buffer when the managed doesn't (specifically when the native signature is a member function).
-        fMarshalReturnValueFirst = (!SF_IsReverseStub(dwStubFlags) && HasRetBuffArg(&msig)) || (isInstanceMethod && isReturnTypeValueType);
-#endif // UNIX_X86_ABI
-#elif defined(TARGET_AMD64) || defined (TARGET_ARM64)
-        fMarshalReturnValueFirst = isInstanceMethod && isReturnTypeValueType;
-#endif // defined(TARGET_X86) || defined(TARGET_ARM)
-#ifdef _WIN32
-        fReverseWithReturnBufferArg = fMarshalReturnValueFirst && SF_IsReverseStub(dwStubFlags);
-#endif
-    }
 
     //
     // Marshal the arguments
@@ -4008,10 +3556,7 @@ static void CreateNDirectStubWorker(StubState*         pss,
 #ifdef FEATURE_COMINTEROP
     if (SF_IsCOMStub(dwStubFlags))
     {
-        if (SF_IsWinRTStub(dwStubFlags))
-            ms = MarshalInfo::MARSHAL_SCENARIO_WINRT;
-        else
-            ms = MarshalInfo::MARSHAL_SCENARIO_COMINTEROP;
+        ms = MarshalInfo::MARSHAL_SCENARIO_COMINTEROP;
     }
     else
 #endif // FEATURE_COMINTEROP
@@ -4046,7 +3591,6 @@ static void CreateNDirectStubWorker(StubState*         pss,
                                                  SF_IsBestFit(dwStubFlags),
                                                  SF_IsThrowOnUnmappableChar(dwStubFlags),
                                                  TRUE,
-                                                 isInstanceMethod ? TRUE : FALSE,
                                                  pMD,
                                                  TRUE
                                                  DEBUG_ARG(pSigDesc->m_pDebugName)
@@ -4054,143 +3598,41 @@ static void CreateNDirectStubWorker(StubState*         pss,
                                                  DEBUG_ARG(i + 1));
     }
 
-#ifdef FEATURE_COMINTEROP
-    // Check to see if we need to inject any additional hidden parameters
-    DWORD cHiddenNativeParameters;
-    NewArrayHolder<HiddenParameterInfo> pHiddenNativeParameters;
-    CheckForHiddenParameters(numArgs, pParamMarshalInfo, &cHiddenNativeParameters, &pHiddenNativeParameters);
-
-    // Hidden parameters and LCID do not mix
-    _ASSERTE(!(cHiddenNativeParameters > 0 && iLCIDArg != -1));
-#endif // FEATURE_COMINTEROP
-
     // Marshal the parameters
     int argidx = 1;
     int nativeArgIndex = 0;
 
-    // If we are generating a return buffer on a member function that is marked as thiscall (as opposed to being a COM method)
-    // then we need to marshal the this parameter first and the return buffer second.
-    // We don't need to do this for COM methods because the "this" is implied as argument 0 by the signature of the stub.
-    if (fThisCall && fMarshalReturnValueFirst)
+    while (argidx <= numArgs)
     {
+        //
+        // Check to see if this is the parameter after which we need to insert the LCID.
+        //
+        if (argidx == iLCIDArg)
+        {
+            pss->MarshalLCID(argidx);
+            nativeStackSize += TARGET_POINTER_SIZE;
+
+            if (SF_IsReverseStub(dwStubFlags))
+                argOffset++;
+        }
+
         msig.NextArg();
 
         MarshalInfo &info = pParamMarshalInfo[argidx - 1];
+
         pss->MarshalArgument(&info, argOffset, GetStackOffsetFromStackSize(nativeStackSize, fThisCall));
         nativeStackSize += info.GetNativeArgSize();
 
         fStubNeedsCOM |= info.MarshalerRequiresCOM();
 
-        // make sure that the first parameter is enregisterable
-        if (info.GetNativeArgSize() > sizeof(SLOT))
-            COMPlusThrow(kMarshalDirectiveException, IDS_EE_NDIRECT_BADNATL_THISCALL);
+        if (fThisCall && argidx == 1)
+        {
+            // make sure that the first parameter is enregisterable
+            if (info.GetNativeArgSize() > TARGET_POINTER_SIZE)
+                COMPlusThrow(kMarshalDirectiveException, IDS_EE_NDIRECT_BADNATL_THISCALL);
+        }
 
         argidx++;
-    }
-
-    // If we're doing a native->managed call and are generating a return buffer,
-    // we need to move all of the actual arguments over one and have the return value be the first argument (after the this pointer if applicable).
-    if (fReverseWithReturnBufferArg)
-    {
-        ++argOffset;
-    }
-
-    if (fMarshalReturnValueFirst)
-    {
-        marshalType = DoMarshalReturnValue(msig,
-                                           pParamTokenArray,
-                                           nlType,
-                                           nlFlags,
-                                           0,
-                                           pss,
-                                           isInstanceMethod,
-                                           argOffset,
-                                           dwStubFlags,
-                                           pMD,
-                                           nativeStackSize,
-                                           fStubNeedsCOM,
-                                           0
-                                           DEBUG_ARG(pSigDesc->m_pDebugName)
-                                           DEBUG_ARG(pSigDesc->m_pDebugClassName)
-                                           );
-
-        if (marshalType == MarshalInfo::MARSHAL_TYPE_DATE ||
-            marshalType == MarshalInfo::MARSHAL_TYPE_CURRENCY ||
-            marshalType == MarshalInfo::MARSHAL_TYPE_ARRAYWITHOFFSET ||
-            marshalType == MarshalInfo::MARSHAL_TYPE_HANDLEREF ||
-            marshalType == MarshalInfo::MARSHAL_TYPE_ARGITERATOR
-#ifdef FEATURE_COMINTEROP
-         || marshalType == MarshalInfo::MARSHAL_TYPE_OLECOLOR
-#endif // FEATURE_COMINTEROP
-            )
-        {
-            // These are special non-blittable types returned by-ref in managed,
-            // but marshaled as primitive values returned by-value in unmanaged.
-        }
-        else
-        {
-            // This is an ordinary value type - see if it is returned by-ref.
-            MethodTable *pRetMT = msig.GetRetTypeHandleThrowing().AsMethodTable();
-            if (IsUnmanagedValueTypeReturnedByRef(pRetMT->GetNativeSize()))
-            {
-                nativeStackSize += sizeof(LPVOID);
-            }
-        }
-    }
-
-    while (argidx <= numArgs)
-    {
-#ifdef FEATURE_COMINTEROP
-        HiddenParameterInfo *pHiddenParameter;
-        // Check to see if we need to inject a hidden parameter
-        if (IsHiddenParameter(nativeArgIndex, cHiddenNativeParameters, pHiddenNativeParameters, &pHiddenParameter))
-        {
-            pss->MarshalHiddenLengthArgument(pHiddenParameter->pManagedParam, FALSE);
-            nativeStackSize += pHiddenParameter->pManagedParam->GetHiddenLengthParamStackSize();
-
-            if (SF_IsReverseStub(dwStubFlags))
-            {
-                ++argOffset;
-            }
-        }
-        else
-#endif // FEATURE_COMINTEROP
-        {
-            //
-            // Check to see if this is the parameter after which we need to insert the LCID.
-            //
-            if (argidx == iLCIDArg)
-            {
-                pss->MarshalLCID(argidx);
-                nativeStackSize += sizeof(LPVOID);
-
-                if (SF_IsReverseStub(dwStubFlags))
-                    argOffset++;
-            }
-
-            msig.NextArg();
-
-            MarshalInfo &info = pParamMarshalInfo[argidx - 1];
-
-#ifdef FEATURE_COMINTEROP
-            // For the hidden-length array, length parameters must occur before the parameter containing the array pointer
-            _ASSERTE(info.GetMarshalType() != MarshalInfo::MARSHAL_TYPE_HIDDENLENGTHARRAY || nativeArgIndex > info.HiddenLengthParamIndex());
-#endif // FEATURE_COMINTEROP
-
-            pss->MarshalArgument(&info, argOffset, GetStackOffsetFromStackSize(nativeStackSize, fThisCall));
-            nativeStackSize += info.GetNativeArgSize();
-
-            fStubNeedsCOM |= info.MarshalerRequiresCOM();
-
-            if (fThisCall && argidx == 1)
-            {
-                // make sure that the first parameter is enregisterable
-                if (info.GetNativeArgSize() > sizeof(SLOT))
-                    COMPlusThrow(kMarshalDirectiveException, IDS_EE_NDIRECT_BADNATL_THISCALL);
-            }
-
-            argidx++;
-        }
 
         ++nativeArgIndex;
     }
@@ -4199,50 +3641,74 @@ static void CreateNDirectStubWorker(StubState*         pss,
     if (argidx == iLCIDArg)
     {
         pss->MarshalLCID(argidx);
-        nativeStackSize += sizeof(LPVOID);
+        nativeStackSize += TARGET_POINTER_SIZE;
 
         if (SF_IsReverseStub(dwStubFlags))
             argOffset++;
     }
 
-    if (!fMarshalReturnValueFirst)
-    {
-        // This could be a HRESULT-swapped argument so it must come last.
-        marshalType = DoMarshalReturnValue(msig,
-                             pParamTokenArray,
-                             nlType,
-                             nlFlags,
-                             argidx,
-                             pss,
-                             isInstanceMethod,
-                             argOffset,
-                             dwStubFlags,
-                             pMD,
-                             nativeStackSize,
-                             fStubNeedsCOM,
-                             nativeArgIndex
-                             DEBUG_ARG(pSigDesc->m_pDebugName)
-                             DEBUG_ARG(pSigDesc->m_pDebugClassName)
-                             );
+    marshalType = DoMarshalReturnValue(msig,
+                            pParamTokenArray,
+                            nlType,
+                            nlFlags,
+                            argidx,
+                            pss,
+                            argOffset,
+                            dwStubFlags,
+                            pMD,
+                            nativeStackSize,
+                            fStubNeedsCOM,
+                            nativeArgIndex
+                            DEBUG_ARG(pSigDesc->m_pDebugName)
+                            DEBUG_ARG(pSigDesc->m_pDebugClassName)
+                            );
 
-        // If the return value is a SafeHandle or CriticalHandle, mark the stub method.
-        // Interop methods that use this stub will have an implicit reliability contract
-        // (see code:TAStackCrawlCallBack).
-        if (!SF_IsHRESULTSwapping(dwStubFlags))
+    // If the return value is a SafeHandle or CriticalHandle, mark the stub method.
+    // Interop methods that use this stub will have an implicit reliability contract
+    // (see code:TAStackCrawlCallBack).
+    if (!SF_IsHRESULTSwapping(dwStubFlags))
+    {
+        if (marshalType == MarshalInfo::MARSHAL_TYPE_SAFEHANDLE ||
+            marshalType == MarshalInfo::MARSHAL_TYPE_CRITICALHANDLE)
         {
-            if (marshalType == MarshalInfo::MARSHAL_TYPE_SAFEHANDLE ||
-                marshalType == MarshalInfo::MARSHAL_TYPE_CRITICALHANDLE)
-            {
-                if (pMD->IsDynamicMethod())
-                    pMD->AsDynamicMethodDesc()->SetUnbreakable(true);
-            }
+            if (pMD->IsDynamicMethod())
+                pMD->AsDynamicMethodDesc()->SetUnbreakable(true);
         }
+    }
+
+    if (marshalType == MarshalInfo::MARSHAL_TYPE_DATE ||
+        marshalType == MarshalInfo::MARSHAL_TYPE_CURRENCY ||
+        marshalType == MarshalInfo::MARSHAL_TYPE_ARRAYWITHOFFSET ||
+        marshalType == MarshalInfo::MARSHAL_TYPE_HANDLEREF ||
+        marshalType == MarshalInfo::MARSHAL_TYPE_ARGITERATOR
+#ifdef FEATURE_COMINTEROP
+        || marshalType == MarshalInfo::MARSHAL_TYPE_OLECOLOR
+#endif // FEATURE_COMINTEROP
+        )
+    {
+        // These are special non-blittable types returned by-ref in managed,
+        // but marshaled as primitive values returned by-value in unmanaged.
+    }
+    else
+    {
+        // This is an ordinary value type - see if it is returned by-ref.
+        TypeHandle retType = msig.GetRetTypeHandleThrowing();
+        if (retType.IsValueType() && !retType.IsEnum() && IsUnmanagedValueTypeReturnedByRef(retType.MakeNativeValueType().GetSize()))
+        {
+            nativeStackSize += sizeof(LPVOID);
+        }
+#if defined(TARGET_WINDOWS) && !defined(TARGET_ARM)
+        else if (fThisCall && !retType.IsEnum())
+        {
+            nativeStackSize += sizeof(LPVOID);
+        }
+#endif
     }
 
     if (SF_IsHRESULTSwapping(dwStubFlags))
     {
         if (msig.GetReturnType() != ELEMENT_TYPE_VOID)
-            nativeStackSize += sizeof(LPVOID);
+            nativeStackSize += TARGET_POINTER_SIZE;
     }
 
     if (pMD->IsDynamicMethod())
@@ -4256,8 +3722,8 @@ static void CreateNDirectStubWorker(StubState*         pss,
 #ifdef TARGET_X86
         if (fThisCall)
         {
-            _ASSERTE(nativeStackSize >= sizeof(SLOT));
-            nativeStackSize -= sizeof(SLOT);
+            _ASSERTE(nativeStackSize >= TARGET_POINTER_SIZE);
+            nativeStackSize -= TARGET_POINTER_SIZE;
         }
 #else // TARGET_X86
         //
@@ -4324,12 +3790,6 @@ static void CreateStructStub(ILStubState* pss,
 
     // Marshal the fields
     MarshalInfo::MarshalScenario ms = MarshalInfo::MARSHAL_SCENARIO_FIELD;
-#ifdef FEATURE_COMINTEROP
-    if (pMT->IsProjectedFromWinRT())
-    {
-        ms = MarshalInfo::MARSHAL_SCENARIO_WINRT_FIELD;
-    }
-#endif // FEATURE_COMINTEROP
 
     EEClassNativeLayoutInfo const* pNativeLayoutInfo = pMT->GetNativeLayoutInfo();
 
@@ -4367,7 +3827,6 @@ static void CreateStructStub(ILStubState* pss,
             SF_IsBestFit(dwStubFlags),
             SF_IsThrowOnUnmappableChar(dwStubFlags),
             TRUE,
-            FALSE,
             pMD,
             TRUE
             DEBUG_ARG(pSigDesc->m_pDebugName)
@@ -4380,10 +3839,7 @@ static void CreateStructStub(ILStubState* pss,
     if (pMD->IsDynamicMethod())
     {
         DynamicMethodDesc* pDMD = pMD->AsDynamicMethodDesc();
-#ifdef FEATURE_COMINTEROP
-        pDMD->SetStubNeedsCOMStarted(ms == MarshalInfo::MARSHAL_SCENARIO_WINRT_FIELD);
-#endif
-        pDMD->SetNativeStackArgSize(4 * sizeof(SLOT)); // The native stack arg size is constant since the signature for struct stubs is constant.
+        pDMD->SetNativeStackArgSize(4 * TARGET_POINTER_SIZE); // The native stack arg size is constant since the signature for struct stubs is constant.
     }
 
     // FinishEmit needs to know the native stack arg size so we call it after the number
@@ -4672,19 +4128,6 @@ static void CreateNDirectStubAccessMetadata(
         }
     }
 
-#ifdef FEATURE_COMINTEROP
-    if (SF_IsDelegateStub(*pdwStubFlags))
-    {
-        _ASSERTE(!SF_IsWinRTStub(*pdwStubFlags));
-        if (pSigDesc->m_pMD->GetMethodTable()->IsProjectedFromWinRT())
-        {
-            // We do not allow P/Invoking via WinRT delegates to better segregate WinRT
-            // from classic interop scenarios.
-            COMPlusThrow(kMarshalDirectiveException, IDS_EE_DELEGATEPINVOKE_WINRT);
-        }
-    }
-#endif // FEATURE_COMINTEROP
-
     MetaSig msig(pSigDesc->m_sig,
                  pSigDesc->m_pModule,
                  &pSigDesc->m_typeContext);
@@ -4708,19 +4151,6 @@ static void CreateNDirectStubAccessMetadata(
             &dwDescrOffset,
             &dwImplFlags));
 
-#ifdef FEATURE_COMINTEROP
-        if (SF_IsWinRTStub(*pdwStubFlags))
-        {
-            // All WinRT methods do HRESULT swapping
-            if (IsMiPreserveSig(dwImplFlags))
-            {
-                COMPlusThrow(kMarshalDirectiveException, IDS_EE_PRESERVESIG_WINRT);
-            }
-
-            (*pdwStubFlags) |= NDIRECTSTUB_FL_DOHRESULTSWAPPING;
-        }
-        else
-#endif // FEATURE_COMINTEROP
         if (SF_IsReverseStub(*pdwStubFlags))
         {
             // only COM-to-CLR call supports hresult swapping in the reverse direction
@@ -4741,20 +4171,26 @@ static void CreateNDirectStubAccessMetadata(
     }
 
     int lcidArg = -1;
+
+    // Check if we have a MethodDesc to query for additional data.
     if (pSigDesc->m_pMD != NULL)
     {
-        lcidArg = GetLCIDParameterIndex(pSigDesc->m_pMD);
+        MethodDesc* pMD = pSigDesc->m_pMD;
+
+        // P/Invoke marked with UnmanagedCallersOnlyAttribute is not
+        // presently supported.
+        if (pMD->HasUnmanagedCallersOnlyAttribute())
+            COMPlusThrow(kNotSupportedException, IDS_EE_NDIRECT_UNSUPPORTED_SIG);
 
         // Check to see if we need to do LCID conversion.
+        lcidArg = GetLCIDParameterIndex(pMD);
         if (lcidArg != -1 && lcidArg > (*pNumArgs))
-        {
             COMPlusThrow(kIndexOutOfRangeException, IDS_EE_INVALIDLCIDPARAM);
-        }
     }
 
     (*piLCIDArg) = lcidArg;
 
-    if (SF_IsCOMStub(*pdwStubFlags) && !SF_IsWinRTStaticStub(*pdwStubFlags))
+    if (SF_IsCOMStub(*pdwStubFlags))
     {
         CONSISTENCY_CHECK(msig.HasThis());
     }
@@ -4767,9 +4203,9 @@ static void CreateNDirectStubAccessMetadata(
     }
 }
 
-void NDirect::PopulateNDirectMethodDesc(NDirectMethodDesc* pNMD, PInvokeStaticSigInfo* pSigInfo, BOOL throwOnError /*= TRUE*/)
+void NDirect::PopulateNDirectMethodDesc(NDirectMethodDesc* pNMD, PInvokeStaticSigInfo* pSigInfo)
 {
-    if (pNMD->IsSynchronized() && throwOnError)
+    if (pNMD->IsSynchronized())
         COMPlusThrow(kTypeLoadException, IDS_EE_NOSYNCHRONIZED);
 
     WORD ndirectflags = 0;
@@ -4777,8 +4213,7 @@ void NDirect::PopulateNDirectMethodDesc(NDirectMethodDesc* pNMD, PInvokeStaticSi
         ndirectflags |= NDirectMethodDesc::kVarArgs;
 
     LPCUTF8 szLibName = NULL, szEntryPointName = NULL;
-    new (pSigInfo) PInvokeStaticSigInfo(pNMD, &szLibName, &szEntryPointName,
-        (throwOnError ? PInvokeStaticSigInfo::THROW_ON_ERROR : PInvokeStaticSigInfo::NO_THROW_ON_ERROR));
+    new (pSigInfo) PInvokeStaticSigInfo(pNMD, &szLibName, &szEntryPointName);
 
     if (pSigInfo->GetCharSet() == nltAnsi)
         ndirectflags |= NDirectMethodDesc::kNativeAnsi;
@@ -4795,7 +4230,7 @@ void NDirect::PopulateNDirectMethodDesc(NDirectMethodDesc* pNMD, PInvokeStaticSi
     if (callConv == pmCallConvThiscall)
         ndirectflags |= NDirectMethodDesc::kThisCall;
 
-    if (pNMD->GetLoaderModule()->IsSystem() && (strcmp(szLibName, "QCall") == 0 || strcmp(szLibName, "System.Globalization.Native") == 0))
+    if (pNMD->GetLoaderModule()->IsSystem() && strcmp(szLibName, "QCall") == 0)
     {
         ndirectflags |= NDirectMethodDesc::kIsQCall;
     }
@@ -4818,7 +4253,7 @@ void NDirect::PopulateNDirectMethodDesc(NDirectMethodDesc* pNMD, PInvokeStaticSi
             // so we have to special-case it here.
             // If a type doesn't have a native representation, we won't set this flag.
             // We'll throw an exception later when setting up the marshalling.
-            if (pRetMT != MscorlibBinder::GetClass(CLASS__DATE_TIME) && pRetMT->HasLayout() && IsUnmanagedValueTypeReturnedByRef(pRetMT->GetNativeSize()))
+            if (pRetMT != CoreLibBinder::GetClass(CLASS__DATE_TIME) && pRetMT->HasLayout() && IsUnmanagedValueTypeReturnedByRef(pRetMT->GetNativeSize()))
             {
                 ndirectflags |= NDirectMethodDesc::kStdCallWithRetBuf;
             }
@@ -4857,22 +4292,6 @@ HRESULT FindPredefinedILStubMethod(MethodDesc *pTargetMD, DWORD dwStubFlags, Met
 
     MethodTable *pTargetMT = pTargetMD->GetMethodTable();
 
-    // Check if this is a redirected interface - we have static stubs in mscorlib for those.
-    if (SF_IsForwardCOMStub(dwStubFlags) && pTargetMT->IsInterface())
-    {
-
-        // Redirect generic redirected interfaces to the corresponding adapter methods in mscorlib
-        if (pTargetMT->HasInstantiation())
-        {
-            MethodDesc *pAdapterMD = WinRTInterfaceRedirector::GetStubMethodForRedirectedInterfaceMethod(pTargetMD, TypeHandle::Interop_ManagedToNative);
-            if (pAdapterMD != NULL)
-            {
-                *ppRetStubMD = pAdapterMD;
-                return S_OK;
-            }
-        }
-    }
-
     //
     // Find out if we have the attribute
     //
@@ -4880,7 +4299,7 @@ HRESULT FindPredefinedILStubMethod(MethodDesc *pTargetMD, DWORD dwStubFlags, Met
     ULONG cbBytes;
 
     // Support v-table forward classic COM interop calls only
-    if (SF_IsCOMStub(dwStubFlags) && SF_IsForwardStub(dwStubFlags) && !SF_IsWinRTStub(dwStubFlags))
+    if (SF_IsCOMStub(dwStubFlags) && SF_IsForwardStub(dwStubFlags))
     {
         if (pTargetMT->HasInstantiation())
         {
@@ -4898,7 +4317,6 @@ HRESULT FindPredefinedILStubMethod(MethodDesc *pTargetMD, DWORD dwStubFlags, Met
 
         if (pTargetMD->IsInterface())
         {
-            _ASSERTE(!pTargetMD->GetAssembly()->IsWinMD());
             hr = pTargetMD->GetCustomAttribute(
                 WellKnownAttribute::ManagedToNativeComInteropStub,
                 &pBytes,
@@ -5664,7 +5082,7 @@ MethodDesc* NDirect::CreateStructMarshalILStub(MethodTable* pMT)
     LocalDesc i4(ELEMENT_TYPE_I4);
     sigBuilder.NewArg(&i4);
 
-    LocalDesc cleanupWorkList(MscorlibBinder::GetClass(CLASS__CLEANUP_WORK_LIST_ELEMENT));
+    LocalDesc cleanupWorkList(CoreLibBinder::GetClass(CLASS__CLEANUP_WORK_LIST_ELEMENT));
     cleanupWorkList.MakeByRef();
     sigBuilder.NewArg(&cleanupWorkList);
 
@@ -5727,24 +5145,11 @@ MethodDesc* NDirect::CreateCLRToNativeILStub(PInvokeStaticSigInfo* pSigInfo,
 
     StubSigDesc sigDesc(pMD, pSigInfo);
 
-    if (SF_IsWinRTDelegateStub(dwStubFlags))
-    {
-        _ASSERTE(pMD->IsEEImpl());
-
-        return CreateCLRToNativeILStub(&sigDesc,
-                                       (CorNativeLinkType)0,
-                                       (CorNativeLinkFlags)0,
-                                       (CorPinvokeMap)0,
-                                       (pSigInfo->GetStubFlags() | dwStubFlags) & ~NDIRECTSTUB_FL_DELEGATE);
-    }
-    else
-    {
-        return CreateCLRToNativeILStub(&sigDesc,
-                                       pSigInfo->GetCharSet(),
-                                       pSigInfo->GetLinkFlags(),
-                                       pSigInfo->GetCallConv(),
-                                       pSigInfo->GetStubFlags() | dwStubFlags);
-    }
+    return CreateCLRToNativeILStub(&sigDesc,
+                                    pSigInfo->GetCharSet(),
+                                    pSigInfo->GetLinkFlags(),
+                                    pSigInfo->GetCallConv(),
+                                    pSigInfo->GetStubFlags() | dwStubFlags);
 }
 
 MethodDesc* NDirect::GetILStubMethodDesc(NDirectMethodDesc* pNMD, PInvokeStaticSigInfo* pSigInfo, DWORD dwStubFlags)
@@ -5753,7 +5158,7 @@ MethodDesc* NDirect::GetILStubMethodDesc(NDirectMethodDesc* pNMD, PInvokeStaticS
 
     MethodDesc* pStubMD = NULL;
 
-    if (!pNMD->IsVarArgs() || SF_IsForNumParamBytes(dwStubFlags))
+    if (!pNMD->IsVarArgs())
     {
         if (pNMD->IsClassConstructorTriggeredByILStub())
         {
@@ -5762,7 +5167,7 @@ MethodDesc* NDirect::GetILStubMethodDesc(NDirectMethodDesc* pNMD, PInvokeStaticS
 
         pStubMD = CreateCLRToNativeILStub(
             pSigInfo,
-            dwStubFlags & ~NDIRECTSTUB_FL_FOR_NUMPARAMBYTES,
+            dwStubFlags,
             pNMD);
     }
 
@@ -5773,14 +5178,10 @@ MethodDesc* GetStubMethodDescFromInteropMethodDesc(MethodDesc* pMD, DWORD dwStub
 {
     STANDARD_VM_CONTRACT;
 
-    BOOL fGcMdaEnabled = FALSE;
 #ifdef FEATURE_COMINTEROP
     if (SF_IsReverseCOMStub(dwStubFlags))
     {
 #ifdef FEATURE_PREJIT
-        if (fGcMdaEnabled)
-            return NULL;
-
         // reverse COM stubs live in a hash table
         StubMethodHashTable *pHash = pMD->GetLoaderModule()->GetStubMethodHashTable();
         return (pHash == NULL ? NULL : pHash->FindMethodDesc(pMD));
@@ -5793,23 +5194,17 @@ MethodDesc* GetStubMethodDescFromInteropMethodDesc(MethodDesc* pMD, DWORD dwStub
     if (pMD->IsNDirect())
     {
         NDirectMethodDesc* pNMD = (NDirectMethodDesc*)pMD;
-        return ((fGcMdaEnabled && !pNMD->IsQCall()) ? NULL : pNMD->ndirect.m_pStubMD.GetValueMaybeNull());
+        return pNMD->ndirect.m_pStubMD.GetValueMaybeNull();
     }
 #ifdef FEATURE_COMINTEROP
     else if (pMD->IsComPlusCall() || pMD->IsGenericComPlusCall())
     {
-        if (fGcMdaEnabled)
-            return NULL;
-
         ComPlusCallInfo *pComInfo = ComPlusCallInfo::FromMethodDesc(pMD);
         return (pComInfo == NULL ? NULL : pComInfo->m_pStubMD.GetValueMaybeNull());
     }
 #endif // FEATURE_COMINTEROP
     else if (pMD->IsEEImpl())
     {
-        if (fGcMdaEnabled)
-            return NULL;
-
         DelegateEEClass *pClass = (DelegateEEClass *)pMD->GetClass();
         if (SF_IsReverseStub(dwStubFlags))
         {
@@ -5817,16 +5212,7 @@ MethodDesc* GetStubMethodDescFromInteropMethodDesc(MethodDesc* pMD, DWORD dwStub
         }
         else
         {
-#ifdef FEATURE_COMINTEROP
-            if (SF_IsWinRTDelegateStub(dwStubFlags))
-            {
-                return pClass->m_pComPlusCallInfo->m_pStubMD.GetValueMaybeNull();
-            }
-            else
-#endif // FEATURE_COMINTEROP
-            {
-                return pClass->m_pForwardStubMD;
-            }
+            return pClass->m_pForwardStubMD;
         }
     }
     else if (pMD->IsIL())
@@ -5877,13 +5263,10 @@ PCODE NDirect::GetStubForILStub(NDirectMethodDesc* pNMD, MethodDesc** ppStubMD, 
     if (NULL == *ppStubMD)
     {
         PInvokeStaticSigInfo sigInfo;
-        NDirect::PopulateNDirectMethodDesc(pNMD, &sigInfo, /* throwOnError = */ !SF_IsForNumParamBytes(dwStubFlags));
+        NDirect::PopulateNDirectMethodDesc(pNMD, &sigInfo);
 
         *ppStubMD = NDirect::GetILStubMethodDesc(pNMD, &sigInfo, dwStubFlags);
     }
-
-    if (SF_IsForNumParamBytes(dwStubFlags))
-        return NULL;
 
     if (*ppStubMD)
     {
@@ -6306,9 +5689,7 @@ private:
     SString  m_message;
 };  // class LoadLibErrorTracker
 
-// Load the library directly. On Unix systems, don't register it yet with PAL.
-// * External callers like System.Runtime.InteropServices.NativeLibrary.Load() need the raw system handle
-// * Internal callers like LoadLibraryModule() can convert this handle to a HMODULE via PAL APIs on Unix
+// Load the library directly and return the raw system handle
 static NATIVE_LIBRARY_HANDLE LocalLoadLibraryHelper( LPCWSTR name, DWORD flags, LoadLibErrorTracker *pErrorTracker )
 {
     STANDARD_VM_CONTRACT;
@@ -6432,65 +5813,6 @@ NATIVE_LIBRARY_HANDLE NDirect::LoadLibraryFromPath(LPCWSTR libraryPath, BOOL thr
 }
 
 // static
-NATIVE_LIBRARY_HANDLE NDirect::LoadLibraryByName(LPCWSTR libraryName, Assembly *callingAssembly,
-                                                 BOOL hasDllImportSearchFlags, DWORD dllImportSearchFlags,
-                                                 BOOL throwOnError)
-{
-    CONTRACTL
-    {
-        STANDARD_VM_CHECK;
-        PRECONDITION(CheckPointer(libraryName));
-        PRECONDITION(CheckPointer(callingAssembly));
-    }
-    CONTRACTL_END;
-
-    LoadLibErrorTracker errorTracker;
-
-    // First checks if a default dllImportSearchPathFlags was passed in, if so, use that value.
-    // Otherwise checks if the assembly has the DefaultDllImportSearchPathsAttribute attribute.
-    // If so, use that value.
-    BOOL searchAssemblyDirectory;
-    DWORD dllImportSearchPathFlags;
-
-    if (hasDllImportSearchFlags)
-    {
-        dllImportSearchPathFlags = dllImportSearchFlags & ~DLLIMPORTSEARCHPATH_ASSEMBLYDIRECTORY;
-        searchAssemblyDirectory = dllImportSearchFlags & DLLIMPORTSEARCHPATH_ASSEMBLYDIRECTORY;
-
-    }
-    else
-    {
-        GetDllImportSearchPathFlags(callingAssembly->GetManifestModule(),
-                                    &dllImportSearchPathFlags, &searchAssemblyDirectory);
-    }
-
-    NATIVE_LIBRARY_HANDLE hmod =
-        LoadLibraryModuleBySearch(callingAssembly, searchAssemblyDirectory, dllImportSearchPathFlags, &errorTracker, libraryName);
-
-    if (throwOnError && (hmod == nullptr))
-    {
-        SString libraryPathSString(libraryName);
-        errorTracker.Throw(libraryPathSString);
-    }
-
-    return hmod;
-}
-
-// static
-NATIVE_LIBRARY_HANDLE NDirect::LoadLibraryModuleBySearch(NDirectMethodDesc * pMD, LoadLibErrorTracker * pErrorTracker, PCWSTR wszLibName)
-{
-    STANDARD_VM_CONTRACT;
-
-    BOOL searchAssemblyDirectory;
-    DWORD dllImportSearchPathFlags;
-
-    GetDllImportSearchPathFlags(pMD, &dllImportSearchPathFlags, &searchAssemblyDirectory);
-
-    Assembly* pAssembly = pMD->GetMethodTable()->GetAssembly();
-    return LoadLibraryModuleBySearch(pAssembly, searchAssemblyDirectory, dllImportSearchPathFlags, pErrorTracker, wszLibName);
-}
-
-// static
 void NDirect::FreeNativeLibrary(NATIVE_LIBRARY_HANDLE handle)
 {
     STANDARD_VM_CONTRACT;
@@ -6532,483 +5854,564 @@ INT_PTR NDirect::GetNativeLibraryExport(NATIVE_LIBRARY_HANDLE handle, LPCWSTR sy
     return address;
 }
 
-#ifndef TARGET_UNIX
-BOOL IsWindowsAPISet(PCWSTR wszLibName)
+namespace
 {
-    STANDARD_VM_CONTRACT;
-
-    // This is replicating quick check from the OS implementation of api sets.
-    return SString::_wcsnicmp(wszLibName, W("api-"), 4) == 0 ||
-           SString::_wcsnicmp(wszLibName, W("ext-"), 4) == 0;
-}
-#endif // !TARGET_UNIX
-
-// static
-NATIVE_LIBRARY_HANDLE NDirect::LoadLibraryModuleViaHost(NDirectMethodDesc * pMD, PCWSTR wszLibName)
-{
-    STANDARD_VM_CONTRACT;
-    //Dynamic Pinvoke Support:
-    //Check if we  need to provide the host a chance to provide the unmanaged dll
-
 #ifndef TARGET_UNIX
-    if (IsWindowsAPISet(wszLibName))
+    BOOL IsWindowsAPISet(PCWSTR wszLibName)
     {
-        // Prevent Overriding of Windows API sets.
-        return NULL;
+        STANDARD_VM_CONTRACT;
+
+        // This is replicating quick check from the OS implementation of api sets.
+        return SString::_wcsnicmp(wszLibName, W("api-"), 4) == 0 ||
+               SString::_wcsnicmp(wszLibName, W("ext-"), 4) == 0;
     }
 #endif // !TARGET_UNIX
 
-    NATIVE_LIBRARY_HANDLE hmod = NULL;
-    AppDomain* pDomain = GetAppDomain();
-    CLRPrivBinderCoreCLR *pTPABinder = pDomain->GetTPABinderContext();
-    Assembly* pAssembly = pMD->GetMethodTable()->GetAssembly();
-
-    PEFile *pManifestFile = pAssembly->GetManifestFile();
-    PTR_ICLRPrivBinder pBindingContext = pManifestFile->GetBindingContext();
-
-    //Step 0: Check if  the assembly was bound using TPA.
-    //        The Binding Context can be null or an overridden TPA context
-    if (pBindingContext == NULL)
+    NATIVE_LIBRARY_HANDLE LoadNativeLibraryViaAssemblyLoadContext(Assembly * pAssembly, PCWSTR wszLibName)
     {
-        // If we do not have any binder associated, then return to the default resolution mechanism.
-        return NULL;
-    }
+        STANDARD_VM_CONTRACT;
 
-    UINT_PTR assemblyBinderID = 0;
-    IfFailThrow(pBindingContext->GetBinderID(&assemblyBinderID));
-
-    ICLRPrivBinder *pCurrentBinder = reinterpret_cast<ICLRPrivBinder *>(assemblyBinderID);
-
-    // For assemblies bound via TPA binder, we should use the standard mechanism to make the pinvoke call.
-    if (AreSameBinderInstance(pCurrentBinder, pTPABinder))
-    {
-        return NULL;
-    }
-
-#ifdef FEATURE_COMINTEROP
-    CLRPrivBinderWinRT *pWinRTBinder = pDomain->GetWinRtBinder();
-    if (AreSameBinderInstance(pCurrentBinder, pWinRTBinder))
-    {
-        // We could be here when a non-WinRT assembly load is triggerred by a winmd (e.g. System.Runtime being loaded due to
-        // types being referenced from Windows.Foundation.Winmd) or when dealing with a winmd (which is bound using WinRT binder).
-        //
-        // For this, we should use the standard mechanism to make pinvoke call as well.
-        return NULL;
-    }
-#endif // FEATURE_COMINTEROP
-
-    //Step 1: If the assembly was not bound using TPA,
-    //        Call System.Runtime.Loader.AssemblyLoadContext.ResolveUnamanagedDll to give
-    //        The custom assembly context a chance to load the unmanaged dll.
-
-    GCX_COOP();
-
-    STRINGREF pUnmanagedDllName;
-    pUnmanagedDllName = StringObject::NewString(wszLibName);
-
-    GCPROTECT_BEGIN(pUnmanagedDllName);
-
-    // Get the pointer to the managed assembly load context
-    INT_PTR ptrManagedAssemblyLoadContext = ((CLRPrivBinderAssemblyLoadContext *)pCurrentBinder)->GetManagedAssemblyLoadContext();
-
-    // Prepare to invoke  System.Runtime.Loader.AssemblyLoadContext.ResolveUnamanagedDll method.
-    PREPARE_NONVIRTUAL_CALLSITE(METHOD__ASSEMBLYLOADCONTEXT__RESOLVEUNMANAGEDDLL);
-    DECLARE_ARGHOLDER_ARRAY(args, 2);
-    args[ARGNUM_0]  = STRINGREF_TO_ARGHOLDER(pUnmanagedDllName);
-    args[ARGNUM_1]  = PTR_TO_ARGHOLDER(ptrManagedAssemblyLoadContext);
-
-    // Make the call
-    CALL_MANAGED_METHOD(hmod, NATIVE_LIBRARY_HANDLE, args);
-
-    GCPROTECT_END();
-
-    return hmod;
-}
-
-// Return the AssemblyLoadContext for an assembly
-INT_PTR GetManagedAssemblyLoadContext(Assembly* pAssembly)
-{
-    STANDARD_VM_CONTRACT;
-
-    PTR_ICLRPrivBinder pBindingContext = pAssembly->GetManifestFile()->GetBindingContext();
-    if (pBindingContext == NULL)
-    {
-        // GetBindingContext() returns NULL for System.Private.CoreLib
-        return NULL;
-    }
-
-    UINT_PTR assemblyBinderID = 0;
-    IfFailThrow(pBindingContext->GetBinderID(&assemblyBinderID));
-
-    AppDomain *pDomain = GetAppDomain();
-    ICLRPrivBinder *pCurrentBinder = reinterpret_cast<ICLRPrivBinder *>(assemblyBinderID);
-
-#ifdef FEATURE_COMINTEROP
-    if (AreSameBinderInstance(pCurrentBinder, pDomain->GetWinRtBinder()))
-    {
-        // No ALC associated handle with WinRT Binders.
-        return NULL;
-    }
-#endif // FEATURE_COMINTEROP
-
-    // The code here deals with two implementations of ICLRPrivBinder interface:
-    //    - CLRPrivBinderCoreCLR for the TPA binder in the default ALC, and
-    //    - CLRPrivBinderAssemblyLoadContext for custom ALCs.
-    // in order obtain the associated ALC handle.
-    INT_PTR ptrManagedAssemblyLoadContext = AreSameBinderInstance(pCurrentBinder, pDomain->GetTPABinderContext())
-        ? ((CLRPrivBinderCoreCLR *)pCurrentBinder)->GetManagedAssemblyLoadContext()
-        : ((CLRPrivBinderAssemblyLoadContext *)pCurrentBinder)->GetManagedAssemblyLoadContext();
-
-    return ptrManagedAssemblyLoadContext;
-}
-
-// static
-NATIVE_LIBRARY_HANDLE NDirect::LoadLibraryModuleViaEvent(NDirectMethodDesc * pMD, PCWSTR wszLibName)
-{
-    STANDARD_VM_CONTRACT;
-
-    NATIVE_LIBRARY_HANDLE hmod = NULL;
-    Assembly* pAssembly = pMD->GetMethodTable()->GetAssembly();
-    INT_PTR ptrManagedAssemblyLoadContext = GetManagedAssemblyLoadContext(pAssembly);
-
-    if (ptrManagedAssemblyLoadContext == NULL)
-    {
-        return NULL;
-    }
-
-    GCX_COOP();
-
-    struct {
-        STRINGREF DllName;
-        OBJECTREF AssemblyRef;
-    } gc = { NULL, NULL };
-
-    GCPROTECT_BEGIN(gc);
-
-    gc.DllName = StringObject::NewString(wszLibName);
-    gc.AssemblyRef = pAssembly->GetExposedObject();
-
-    // Prepare to invoke  System.Runtime.Loader.AssemblyLoadContext.ResolveUnmanagedDllUsingEvent method
-    // While ResolveUnmanagedDllUsingEvent() could compute the AssemblyLoadContext using the AssemblyRef
-    // argument, it will involve another pInvoke to the runtime. So AssemblyLoadContext is passed in
-    // as an additional argument.
-    PREPARE_NONVIRTUAL_CALLSITE(METHOD__ASSEMBLYLOADCONTEXT__RESOLVEUNMANAGEDDLLUSINGEVENT);
-    DECLARE_ARGHOLDER_ARRAY(args, 3);
-    args[ARGNUM_0] = STRINGREF_TO_ARGHOLDER(gc.DllName);
-    args[ARGNUM_1] = OBJECTREF_TO_ARGHOLDER(gc.AssemblyRef);
-    args[ARGNUM_2] = PTR_TO_ARGHOLDER(ptrManagedAssemblyLoadContext);
-
-    // Make the call
-    CALL_MANAGED_METHOD(hmod, NATIVE_LIBRARY_HANDLE, args);
-
-    GCPROTECT_END();
-
-    return hmod;
-}
-
-NATIVE_LIBRARY_HANDLE NDirect::LoadLibraryModuleViaCallback(NDirectMethodDesc * pMD, LPCWSTR wszLibName)
-{
-    STANDARD_VM_CONTRACT;
-
-    if (pMD->GetModule()->IsSystem())
-    {
-        // Don't attempt to callback on Corelib itself.
-        // The LoadLibrary callback stub is managed code that requires CoreLib
-        return NULL;
-    }
-
-    DWORD dllImportSearchPathFlags;
-    BOOL searchAssemblyDirectory;
-    BOOL hasDllImportSearchPathFlags = GetDllImportSearchPathFlags(pMD, &dllImportSearchPathFlags, &searchAssemblyDirectory);
-    dllImportSearchPathFlags |= searchAssemblyDirectory ? DLLIMPORTSEARCHPATH_ASSEMBLYDIRECTORY : 0;
-
-    Assembly* pAssembly = pMD->GetMethodTable()->GetAssembly();
-    NATIVE_LIBRARY_HANDLE handle = NULL;
-
-    GCX_COOP();
-
-    struct {
-        STRINGREF libNameRef;
-        OBJECTREF assemblyRef;
-    } gc = { NULL, NULL };
-
-    GCPROTECT_BEGIN(gc);
-
-    gc.libNameRef = StringObject::NewString(wszLibName);
-    gc.assemblyRef = pAssembly->GetExposedObject();
-
-    PREPARE_NONVIRTUAL_CALLSITE(METHOD__NATIVELIBRARY__LOADLIBRARYCALLBACKSTUB);
-    DECLARE_ARGHOLDER_ARRAY(args, 4);
-    args[ARGNUM_0] = STRINGREF_TO_ARGHOLDER(gc.libNameRef);
-    args[ARGNUM_1] = OBJECTREF_TO_ARGHOLDER(gc.assemblyRef);
-    args[ARGNUM_2] = BOOL_TO_ARGHOLDER(hasDllImportSearchPathFlags);
-    args[ARGNUM_3] = DWORD_TO_ARGHOLDER(dllImportSearchPathFlags);
-
-     // Make the call
-    CALL_MANAGED_METHOD(handle, NATIVE_LIBRARY_HANDLE, args);
-    GCPROTECT_END();
-
-    return handle;
-}
-
-// Try to load the module alongside the assembly where the PInvoke was declared.
-NATIVE_LIBRARY_HANDLE NDirect::LoadFromPInvokeAssemblyDirectory(Assembly *pAssembly, LPCWSTR libName, DWORD flags, LoadLibErrorTracker *pErrorTracker)
-{
-    STANDARD_VM_CONTRACT;
-
-    NATIVE_LIBRARY_HANDLE hmod = NULL;
-
-    SString path = pAssembly->GetManifestFile()->GetPath();
-
-    SString::Iterator lastPathSeparatorIter = path.End();
-    if (PEAssembly::FindLastPathSeparator(path, lastPathSeparatorIter))
-    {
-        lastPathSeparatorIter++;
-        path.Truncate(lastPathSeparatorIter);
-
-        path.Append(libName);
-        hmod = LocalLoadLibraryHelper(path, flags, pErrorTracker);
-    }
-
-    return hmod;
-}
-
-// Try to load the module from the native DLL search directories
-NATIVE_LIBRARY_HANDLE NDirect::LoadFromNativeDllSearchDirectories(LPCWSTR libName, DWORD flags, LoadLibErrorTracker *pErrorTracker)
-{
-    STANDARD_VM_CONTRACT;
-
-    NATIVE_LIBRARY_HANDLE hmod = NULL;
-    AppDomain* pDomain = GetAppDomain();
-
-    if (pDomain->HasNativeDllSearchDirectories())
-    {
-        AppDomain::PathIterator pathIter = pDomain->IterateNativeDllSearchDirectories();
-        while (hmod == NULL && pathIter.Next())
+#ifndef TARGET_UNIX
+        if (IsWindowsAPISet(wszLibName))
         {
-            SString qualifiedPath(*(pathIter.GetPath()));
-            qualifiedPath.Append(libName);
-            if (!Path::IsRelative(qualifiedPath))
+            // Prevent Overriding of Windows API sets.
+            return NULL;
+        }
+#endif // !TARGET_UNIX
+
+        NATIVE_LIBRARY_HANDLE hmod = NULL;
+        AppDomain* pDomain = GetAppDomain();
+        CLRPrivBinderCoreCLR *pTPABinder = pDomain->GetTPABinderContext();
+
+        PEFile *pManifestFile = pAssembly->GetManifestFile();
+        PTR_ICLRPrivBinder pBindingContext = pManifestFile->GetBindingContext();
+
+        //Step 0: Check if  the assembly was bound using TPA.
+        //        The Binding Context can be null or an overridden TPA context
+        if (pBindingContext == NULL)
+        {
+            // If we do not have any binder associated, then return to the default resolution mechanism.
+            return NULL;
+        }
+
+        UINT_PTR assemblyBinderID = 0;
+        IfFailThrow(pBindingContext->GetBinderID(&assemblyBinderID));
+
+        ICLRPrivBinder *pCurrentBinder = reinterpret_cast<ICLRPrivBinder *>(assemblyBinderID);
+
+        // For assemblies bound via TPA binder, we should use the standard mechanism to make the pinvoke call.
+        if (AreSameBinderInstance(pCurrentBinder, pTPABinder))
+        {
+            return NULL;
+        }
+
+        //Step 1: If the assembly was not bound using TPA,
+        //        Call System.Runtime.Loader.AssemblyLoadContext.ResolveUnmanagedDll to give
+        //        The custom assembly context a chance to load the unmanaged dll.
+
+        GCX_COOP();
+
+        STRINGREF pUnmanagedDllName;
+        pUnmanagedDllName = StringObject::NewString(wszLibName);
+
+        GCPROTECT_BEGIN(pUnmanagedDllName);
+
+        // Get the pointer to the managed assembly load context
+        INT_PTR ptrManagedAssemblyLoadContext = ((CLRPrivBinderAssemblyLoadContext *)pCurrentBinder)->GetManagedAssemblyLoadContext();
+
+        // Prepare to invoke  System.Runtime.Loader.AssemblyLoadContext.ResolveUnmanagedDll method.
+        PREPARE_NONVIRTUAL_CALLSITE(METHOD__ASSEMBLYLOADCONTEXT__RESOLVEUNMANAGEDDLL);
+        DECLARE_ARGHOLDER_ARRAY(args, 2);
+        args[ARGNUM_0]  = STRINGREF_TO_ARGHOLDER(pUnmanagedDllName);
+        args[ARGNUM_1]  = PTR_TO_ARGHOLDER(ptrManagedAssemblyLoadContext);
+
+        // Make the call
+        CALL_MANAGED_METHOD(hmod, NATIVE_LIBRARY_HANDLE, args);
+
+        GCPROTECT_END();
+
+        return hmod;
+    }
+
+    // Return the AssemblyLoadContext for an assembly
+    INT_PTR GetManagedAssemblyLoadContext(Assembly* pAssembly)
+    {
+        STANDARD_VM_CONTRACT;
+
+        PTR_ICLRPrivBinder pBindingContext = pAssembly->GetManifestFile()->GetBindingContext();
+        if (pBindingContext == NULL)
+        {
+            // GetBindingContext() returns NULL for System.Private.CoreLib
+            return NULL;
+        }
+
+        UINT_PTR assemblyBinderID = 0;
+        IfFailThrow(pBindingContext->GetBinderID(&assemblyBinderID));
+
+        AppDomain *pDomain = GetAppDomain();
+        ICLRPrivBinder *pCurrentBinder = reinterpret_cast<ICLRPrivBinder *>(assemblyBinderID);
+
+        // The code here deals with two implementations of ICLRPrivBinder interface:
+        //    - CLRPrivBinderCoreCLR for the TPA binder in the default ALC, and
+        //    - CLRPrivBinderAssemblyLoadContext for custom ALCs.
+        // in order obtain the associated ALC handle.
+        INT_PTR ptrManagedAssemblyLoadContext = AreSameBinderInstance(pCurrentBinder, pDomain->GetTPABinderContext())
+            ? ((CLRPrivBinderCoreCLR *)pCurrentBinder)->GetManagedAssemblyLoadContext()
+            : ((CLRPrivBinderAssemblyLoadContext *)pCurrentBinder)->GetManagedAssemblyLoadContext();
+
+        return ptrManagedAssemblyLoadContext;
+    }
+
+    NATIVE_LIBRARY_HANDLE LoadNativeLibraryViaAssemblyLoadContextEvent(Assembly * pAssembly, PCWSTR wszLibName)
+    {
+        STANDARD_VM_CONTRACT;
+
+        INT_PTR ptrManagedAssemblyLoadContext = GetManagedAssemblyLoadContext(pAssembly);
+        if (ptrManagedAssemblyLoadContext == NULL)
+        {
+            return NULL;
+        }
+
+        NATIVE_LIBRARY_HANDLE hmod = NULL;
+
+        GCX_COOP();
+
+        struct {
+            STRINGREF DllName;
+            OBJECTREF AssemblyRef;
+        } gc = { NULL, NULL };
+
+        GCPROTECT_BEGIN(gc);
+
+        gc.DllName = StringObject::NewString(wszLibName);
+        gc.AssemblyRef = pAssembly->GetExposedObject();
+
+        // Prepare to invoke  System.Runtime.Loader.AssemblyLoadContext.ResolveUnmanagedDllUsingEvent method
+        // While ResolveUnmanagedDllUsingEvent() could compute the AssemblyLoadContext using the AssemblyRef
+        // argument, it will involve another pInvoke to the runtime. So AssemblyLoadContext is passed in
+        // as an additional argument.
+        PREPARE_NONVIRTUAL_CALLSITE(METHOD__ASSEMBLYLOADCONTEXT__RESOLVEUNMANAGEDDLLUSINGEVENT);
+        DECLARE_ARGHOLDER_ARRAY(args, 3);
+        args[ARGNUM_0] = STRINGREF_TO_ARGHOLDER(gc.DllName);
+        args[ARGNUM_1] = OBJECTREF_TO_ARGHOLDER(gc.AssemblyRef);
+        args[ARGNUM_2] = PTR_TO_ARGHOLDER(ptrManagedAssemblyLoadContext);
+
+        // Make the call
+        CALL_MANAGED_METHOD(hmod, NATIVE_LIBRARY_HANDLE, args);
+
+        GCPROTECT_END();
+
+        return hmod;
+    }
+
+    NATIVE_LIBRARY_HANDLE LoadNativeLibraryViaDllImportResolver(NDirectMethodDesc * pMD, LPCWSTR wszLibName)
+    {
+        STANDARD_VM_CONTRACT;
+
+        if (pMD->GetModule()->IsSystem())
+        {
+            // Don't attempt to callback on Corelib itself.
+            // The LoadLibrary callback stub is managed code that requires CoreLib
+            return NULL;
+        }
+
+        DWORD dllImportSearchPathFlags;
+        BOOL searchAssemblyDirectory;
+        BOOL hasDllImportSearchPathFlags = GetDllImportSearchPathFlags(pMD, &dllImportSearchPathFlags, &searchAssemblyDirectory);
+        dllImportSearchPathFlags |= searchAssemblyDirectory ? DLLIMPORTSEARCHPATH_ASSEMBLYDIRECTORY : 0;
+
+        Assembly* pAssembly = pMD->GetMethodTable()->GetAssembly();
+        NATIVE_LIBRARY_HANDLE handle = NULL;
+
+        GCX_COOP();
+
+        struct {
+            STRINGREF libNameRef;
+            OBJECTREF assemblyRef;
+        } gc = { NULL, NULL };
+
+        GCPROTECT_BEGIN(gc);
+
+        gc.libNameRef = StringObject::NewString(wszLibName);
+        gc.assemblyRef = pAssembly->GetExposedObject();
+
+        PREPARE_NONVIRTUAL_CALLSITE(METHOD__NATIVELIBRARY__LOADLIBRARYCALLBACKSTUB);
+        DECLARE_ARGHOLDER_ARRAY(args, 4);
+        args[ARGNUM_0] = STRINGREF_TO_ARGHOLDER(gc.libNameRef);
+        args[ARGNUM_1] = OBJECTREF_TO_ARGHOLDER(gc.assemblyRef);
+        args[ARGNUM_2] = BOOL_TO_ARGHOLDER(hasDllImportSearchPathFlags);
+        args[ARGNUM_3] = DWORD_TO_ARGHOLDER(dllImportSearchPathFlags);
+
+         // Make the call
+        CALL_MANAGED_METHOD(handle, NATIVE_LIBRARY_HANDLE, args);
+        GCPROTECT_END();
+
+        return handle;
+    }
+
+    // Try to load the module alongside the assembly where the PInvoke was declared.
+    NATIVE_LIBRARY_HANDLE LoadFromPInvokeAssemblyDirectory(Assembly *pAssembly, LPCWSTR libName, DWORD flags, LoadLibErrorTracker *pErrorTracker)
+    {
+        STANDARD_VM_CONTRACT;
+
+        NATIVE_LIBRARY_HANDLE hmod = NULL;
+
+        SString path = pAssembly->GetManifestFile()->GetPath();
+
+        SString::Iterator lastPathSeparatorIter = path.End();
+        if (PEAssembly::FindLastPathSeparator(path, lastPathSeparatorIter))
+        {
+            lastPathSeparatorIter++;
+            path.Truncate(lastPathSeparatorIter);
+
+            path.Append(libName);
+            hmod = LocalLoadLibraryHelper(path, flags, pErrorTracker);
+        }
+
+        return hmod;
+    }
+
+    // Try to load the module from the native DLL search directories
+    NATIVE_LIBRARY_HANDLE LoadFromNativeDllSearchDirectories(LPCWSTR libName, DWORD flags, LoadLibErrorTracker *pErrorTracker)
+    {
+        STANDARD_VM_CONTRACT;
+
+        NATIVE_LIBRARY_HANDLE hmod = NULL;
+        AppDomain* pDomain = GetAppDomain();
+
+        if (pDomain->HasNativeDllSearchDirectories())
+        {
+            AppDomain::PathIterator pathIter = pDomain->IterateNativeDllSearchDirectories();
+            while (hmod == NULL && pathIter.Next())
             {
-                hmod = LocalLoadLibraryHelper(qualifiedPath, flags, pErrorTracker);
+                SString qualifiedPath(*(pathIter.GetPath()));
+                qualifiedPath.Append(libName);
+                if (!Path::IsRelative(qualifiedPath))
+                {
+                    hmod = LocalLoadLibraryHelper(qualifiedPath, flags, pErrorTracker);
+                }
             }
         }
-    }
 
-    return hmod;
-}
+        return hmod;
+    }
 
 #ifdef TARGET_UNIX
-static const int MaxVariationCount = 4;
-static void DetermineLibNameVariations(const WCHAR** libNameVariations, int* numberOfVariations, const SString& libName, bool libNameIsRelativePath)
-{
-    // Supported lib name variations
-    static auto NameFmt = W("%.0s%s%.0s");
-    static auto PrefixNameFmt = W("%s%s%.0s");
-    static auto NameSuffixFmt = W("%.0s%s%s");
-    static auto PrefixNameSuffixFmt = W("%s%s%s");
-
-    _ASSERTE(*numberOfVariations >= MaxVariationCount);
-
-    int varCount = 0;
-    if (!libNameIsRelativePath)
+    const int MaxVariationCount = 4;
+    void DetermineLibNameVariations(const WCHAR** libNameVariations, int* numberOfVariations, const SString& libName, bool libNameIsRelativePath)
     {
-        libNameVariations[varCount++] = NameFmt;
-    }
-    else
-    {
-        // We check if the suffix is contained in the name, because on Linux it is common to append
-        // a version number to the library name (e.g. 'libicuuc.so.57').
-        bool containsSuffix = false;
-        SString::CIterator it = libName.Begin();
-        if (libName.Find(it, PLATFORM_SHARED_LIB_SUFFIX_W))
-        {
-            it += COUNTOF(PLATFORM_SHARED_LIB_SUFFIX_W);
-            containsSuffix = it == libName.End() || *it == (WCHAR)'.';
-        }
+        // Supported lib name variations
+        static auto NameFmt = W("%.0s%s%.0s");
+        static auto PrefixNameFmt = W("%s%s%.0s");
+        static auto NameSuffixFmt = W("%.0s%s%s");
+        static auto PrefixNameSuffixFmt = W("%s%s%s");
 
-        // If the path contains a path delimiter, we don't add a prefix
-        it = libName.Begin();
-        bool containsDelim = libName.Find(it, DIRECTORY_SEPARATOR_STR_W);
+        _ASSERTE(*numberOfVariations >= MaxVariationCount);
 
-        if (containsSuffix)
+        int varCount = 0;
+        if (!libNameIsRelativePath)
         {
             libNameVariations[varCount++] = NameFmt;
-
-            if (!containsDelim)
-                libNameVariations[varCount++] = PrefixNameFmt;
-
-            libNameVariations[varCount++] = NameSuffixFmt;
-
-            if (!containsDelim)
-                libNameVariations[varCount++] = PrefixNameSuffixFmt;
         }
         else
         {
-            libNameVariations[varCount++] = NameSuffixFmt;
+            // We check if the suffix is contained in the name, because on Linux it is common to append
+            // a version number to the library name (e.g. 'libicuuc.so.57').
+            bool containsSuffix = false;
+            SString::CIterator it = libName.Begin();
+            if (libName.Find(it, PLATFORM_SHARED_LIB_SUFFIX_W))
+            {
+                it += COUNTOF(PLATFORM_SHARED_LIB_SUFFIX_W);
+                containsSuffix = it == libName.End() || *it == (WCHAR)'.';
+            }
 
-            if (!containsDelim)
-                libNameVariations[varCount++] = PrefixNameSuffixFmt;
+            // If the path contains a path delimiter, we don't add a prefix
+            it = libName.Begin();
+            bool containsDelim = libName.Find(it, DIRECTORY_SEPARATOR_STR_W);
 
-            libNameVariations[varCount++] = NameFmt;
+            if (containsSuffix)
+            {
+                libNameVariations[varCount++] = NameFmt;
 
-            if (!containsDelim)
-                libNameVariations[varCount++] = PrefixNameFmt;
+                if (!containsDelim)
+                    libNameVariations[varCount++] = PrefixNameFmt;
+
+                libNameVariations[varCount++] = NameSuffixFmt;
+
+                if (!containsDelim)
+                    libNameVariations[varCount++] = PrefixNameSuffixFmt;
+            }
+            else
+            {
+                libNameVariations[varCount++] = NameSuffixFmt;
+
+                if (!containsDelim)
+                    libNameVariations[varCount++] = PrefixNameSuffixFmt;
+
+                libNameVariations[varCount++] = NameFmt;
+
+                if (!containsDelim)
+                    libNameVariations[varCount++] = PrefixNameFmt;
+            }
         }
+
+        *numberOfVariations = varCount;
+    }
+#else // TARGET_UNIX
+    const int MaxVariationCount = 2;
+    void DetermineLibNameVariations(const WCHAR** libNameVariations, int* numberOfVariations, const SString& libName, bool libNameIsRelativePath)
+    {
+        // Supported lib name variations
+        static auto NameFmt = W("%.0s%s%.0s");
+        static auto NameSuffixFmt = W("%.0s%s%s");
+
+        _ASSERTE(*numberOfVariations >= MaxVariationCount);
+
+        int varCount = 0;
+
+        // The purpose of following code is to workaround LoadLibrary limitation:
+        // LoadLibrary won't append extension if filename itself contains '.'. Thus it will break the following scenario:
+        // [DllImport("A.B")] // The full name for file is "A.B.dll". This is common code pattern for cross-platform PInvoke
+        // The workaround for above scenario is to call LoadLibrary with "A.B" first, if it fails, then call LoadLibrary with "A.B.dll"
+        auto it = libName.Begin();
+        if (!libNameIsRelativePath ||
+            !libName.Find(it, W('.')) ||
+            libName.EndsWith(W(".")) ||
+            libName.EndsWithCaseInsensitive(W(".dll")) ||
+            libName.EndsWithCaseInsensitive(W(".exe")))
+        {
+            // Follow LoadLibrary rules in MSDN doc: https://msdn.microsoft.com/en-us/library/windows/desktop/ms684175(v=vs.85).aspx
+            // If the string specifies a full path, the function searches only that path for the module.
+            // If the string specifies a module name without a path and the file name extension is omitted, the function appends the default library extension .dll to the module name.
+            // To prevent the function from appending .dll to the module name, include a trailing point character (.) in the module name string.
+            libNameVariations[varCount++] = NameFmt;
+        }
+        else
+        {
+            libNameVariations[varCount++] = NameFmt;
+            libNameVariations[varCount++] = NameSuffixFmt;
+        }
+
+        *numberOfVariations = varCount;
+    }
+#endif // TARGET_UNIX
+
+    // Search for the library and variants of its name in probing directories.
+    NATIVE_LIBRARY_HANDLE LoadNativeLibraryBySearch(Assembly *callingAssembly,
+                                                    BOOL searchAssemblyDirectory, DWORD dllImportSearchPathFlags,
+                                                    LoadLibErrorTracker * pErrorTracker, LPCWSTR wszLibName)
+    {
+        STANDARD_VM_CONTRACT;
+
+        NATIVE_LIBRARY_HANDLE hmod = NULL;
+
+#if defined(FEATURE_CORESYSTEM) && !defined(TARGET_UNIX)
+        // Try to go straight to System32 for Windows API sets. This is replicating quick check from
+        // the OS implementation of api sets.
+        if (IsWindowsAPISet(wszLibName))
+        {
+            hmod = LocalLoadLibraryHelper(wszLibName, LOAD_LIBRARY_SEARCH_SYSTEM32, pErrorTracker);
+            if (hmod != NULL)
+            {
+                return hmod;
+            }
+        }
+#endif // FEATURE_CORESYSTEM && !TARGET_UNIX
+
+#if defined(TARGET_LINUX)
+        if (g_coreclr_embedded)
+        {
+            // this matches exactly the names in  Interop.Libraries.cs 
+            static const LPCWSTR toRedirect[] = {
+                W("libSystem.Native"),
+                W("libSystem.IO.Compression.Native"),
+                W("libSystem.Net.Security.Native"),
+                W("libSystem.Security.Cryptography.Native.OpenSsl")
+            };
+
+            int count = lengthof(toRedirect);
+            for (int i = 0; i < count; ++i)
+            {
+                if (wcscmp(wszLibName, toRedirect[i]) == 0)
+                {
+                    return PAL_LoadLibraryDirect(NULL);
+                }
+            }
+        }
+#endif
+
+        if (g_hostpolicy_embedded)
+        {
+#ifdef TARGET_WINDOWS
+            if (wcscmp(wszLibName, W("hostpolicy.dll")) == 0)
+            {
+                return WszGetModuleHandle(NULL);
+            }
+#else
+            if (wcscmp(wszLibName, W("libhostpolicy")) == 0)
+            {
+                return PAL_LoadLibraryDirect(NULL);
+            }
+#endif
+        }
+
+        AppDomain* pDomain = GetAppDomain();
+        DWORD loadWithAlteredPathFlags = GetLoadWithAlteredSearchPathFlag();
+        bool libNameIsRelativePath = Path::IsRelative(wszLibName);
+
+        // P/Invokes are often declared with variations on the actual library name.
+        // For example, it's common to leave off the extension/suffix of the library
+        // even if it has one, or to leave off a prefix like "lib" even if it has one
+        // (both of these are typically done to smooth over cross-platform differences).
+        // We try to dlopen with such variations on the original.
+        const WCHAR* prefixSuffixCombinations[MaxVariationCount] = {};
+        int numberOfVariations = COUNTOF(prefixSuffixCombinations);
+        DetermineLibNameVariations(prefixSuffixCombinations, &numberOfVariations, wszLibName, libNameIsRelativePath);
+        for (int i = 0; i < numberOfVariations; i++)
+        {
+            SString currLibNameVariation;
+            currLibNameVariation.Printf(prefixSuffixCombinations[i], PLATFORM_SHARED_LIB_PREFIX_W, wszLibName, PLATFORM_SHARED_LIB_SUFFIX_W);
+
+            // NATIVE_DLL_SEARCH_DIRECTORIES set by host is considered well known path
+            hmod = LoadFromNativeDllSearchDirectories(currLibNameVariation, loadWithAlteredPathFlags, pErrorTracker);
+            if (hmod != NULL)
+            {
+                return hmod;
+            }
+
+            if (!libNameIsRelativePath)
+            {
+                DWORD flags = loadWithAlteredPathFlags;
+                if ((dllImportSearchPathFlags & LOAD_LIBRARY_SEARCH_DLL_LOAD_DIR) != 0)
+                {
+                    // LOAD_LIBRARY_SEARCH_DLL_LOAD_DIR is the only flag affecting absolute path. Don't OR the flags
+                    // unconditionally as all absolute path P/Invokes could then lose LOAD_WITH_ALTERED_SEARCH_PATH.
+                    flags |= dllImportSearchPathFlags;
+                }
+
+                hmod = LocalLoadLibraryHelper(currLibNameVariation, flags, pErrorTracker);
+                if (hmod != NULL)
+                {
+                    return hmod;
+                }
+            }
+            else if ((callingAssembly != nullptr) && searchAssemblyDirectory)
+            {
+                hmod = LoadFromPInvokeAssemblyDirectory(callingAssembly, currLibNameVariation, loadWithAlteredPathFlags | dllImportSearchPathFlags, pErrorTracker);
+                if (hmod != NULL)
+                {
+                    return hmod;
+                }
+            }
+
+            hmod = LocalLoadLibraryHelper(currLibNameVariation, dllImportSearchPathFlags, pErrorTracker);
+            if (hmod != NULL)
+            {
+                return hmod;
+            }
+        }
+
+        // This may be an assembly name
+        // Format is "fileName, assemblyDisplayName"
+        MAKE_UTF8PTR_FROMWIDE(szLibName, wszLibName);
+        char *szComma = strchr(szLibName, ',');
+        if (szComma)
+        {
+            *szComma = '\0';
+            // Trim white spaces
+            while (COMCharacter::nativeIsWhiteSpace(*(++szComma)));
+
+            AssemblySpec spec;
+            if (SUCCEEDED(spec.Init(szComma)))
+            {
+                // Need to perform case insensitive hashing.
+                SString moduleName(SString::Utf8, szLibName);
+                moduleName.LowerCase();
+
+                StackScratchBuffer buffer;
+                szLibName = (LPSTR)moduleName.GetUTF8(buffer);
+
+                Assembly *pAssembly = spec.LoadAssembly(FILE_LOADED);
+                Module *pModule = pAssembly->FindModuleByName(szLibName);
+
+                hmod = LocalLoadLibraryHelper(pModule->GetPath(), loadWithAlteredPathFlags | dllImportSearchPathFlags, pErrorTracker);
+            }
+        }
+
+        return hmod;
     }
 
-    *numberOfVariations = varCount;
-}
-#else // TARGET_UNIX
-static const int MaxVariationCount = 2;
-static void DetermineLibNameVariations(const WCHAR** libNameVariations, int* numberOfVariations, const SString& libName, bool libNameIsRelativePath)
-{
-    // Supported lib name variations
-    static auto NameFmt = W("%.0s%s%.0s");
-    static auto NameSuffixFmt = W("%.0s%s%s");
-
-    _ASSERTE(*numberOfVariations >= MaxVariationCount);
-
-    int varCount = 0;
-
-    // The purpose of following code is to workaround LoadLibrary limitation:
-    // LoadLibrary won't append extension if filename itself contains '.'. Thus it will break the following scenario:
-    // [DllImport("A.B")] // The full name for file is "A.B.dll". This is common code pattern for cross-platform PInvoke
-    // The workaround for above scenario is to call LoadLibrary with "A.B" first, if it fails, then call LoadLibrary with "A.B.dll"
-    auto it = libName.Begin();
-    if (!libNameIsRelativePath ||
-        !libName.Find(it, W('.')) ||
-        libName.EndsWith(W(".")) ||
-        libName.EndsWithCaseInsensitive(W(".dll")) ||
-        libName.EndsWithCaseInsensitive(W(".exe")))
+    NATIVE_LIBRARY_HANDLE LoadNativeLibraryBySearch(NDirectMethodDesc *pMD, LoadLibErrorTracker *pErrorTracker, PCWSTR wszLibName)
     {
-        // Follow LoadLibrary rules in MSDN doc: https://msdn.microsoft.com/en-us/library/windows/desktop/ms684175(v=vs.85).aspx
-        // If the string specifies a full path, the function searches only that path for the module.
-        // If the string specifies a module name without a path and the file name extension is omitted, the function appends the default library extension .dll to the module name.
-        // To prevent the function from appending .dll to the module name, include a trailing point character (.) in the module name string.
-        libNameVariations[varCount++] = NameFmt;
+        STANDARD_VM_CONTRACT;
+
+        BOOL searchAssemblyDirectory;
+        DWORD dllImportSearchPathFlags;
+
+        GetDllImportSearchPathFlags(pMD, &dllImportSearchPathFlags, &searchAssemblyDirectory);
+
+        Assembly *pAssembly = pMD->GetMethodTable()->GetAssembly();
+        return LoadNativeLibraryBySearch(pAssembly, searchAssemblyDirectory, dllImportSearchPathFlags, pErrorTracker, wszLibName);
+    }
+}
+
+// static
+NATIVE_LIBRARY_HANDLE NDirect::LoadLibraryByName(LPCWSTR libraryName, Assembly *callingAssembly,
+    BOOL hasDllImportSearchFlags, DWORD dllImportSearchFlags,
+    BOOL throwOnError)
+{
+    CONTRACTL
+    {
+        STANDARD_VM_CHECK;
+        PRECONDITION(CheckPointer(libraryName));
+        PRECONDITION(CheckPointer(callingAssembly));
+    }
+    CONTRACTL_END;
+
+    NATIVE_LIBRARY_HANDLE hmod = nullptr;
+
+    // Resolve using the AssemblyLoadContext.LoadUnmanagedDll implementation
+    hmod = LoadNativeLibraryViaAssemblyLoadContext(callingAssembly, libraryName);
+    if (hmod != nullptr)
+        return hmod;
+
+    // Check if a default dllImportSearchPathFlags was passed in. If so, use that value.
+    // Otherwise, check if the assembly has the DefaultDllImportSearchPathsAttribute attribute.
+    // If so, use that value.
+    BOOL searchAssemblyDirectory;
+    DWORD dllImportSearchPathFlags;
+    if (hasDllImportSearchFlags)
+    {
+        dllImportSearchPathFlags = dllImportSearchFlags & ~DLLIMPORTSEARCHPATH_ASSEMBLYDIRECTORY;
+        searchAssemblyDirectory = dllImportSearchFlags & DLLIMPORTSEARCHPATH_ASSEMBLYDIRECTORY;
+
     }
     else
     {
-        libNameVariations[varCount++] = NameFmt;
-        libNameVariations[varCount++] = NameSuffixFmt;
+        GetDllImportSearchPathFlags(callingAssembly->GetManifestModule(),
+                                    &dllImportSearchPathFlags, &searchAssemblyDirectory);
     }
 
-    *numberOfVariations = varCount;
-}
-#endif // TARGET_UNIX
+    LoadLibErrorTracker errorTracker;
+    hmod = LoadNativeLibraryBySearch(callingAssembly, searchAssemblyDirectory, dllImportSearchPathFlags, &errorTracker, libraryName);
+    if (hmod != nullptr)
+        return hmod;
 
-// Search for the library and variants of its name in probing directories.
-//static
-NATIVE_LIBRARY_HANDLE NDirect::LoadLibraryModuleBySearch(Assembly *callingAssembly,
-                                                         BOOL searchAssemblyDirectory, DWORD dllImportSearchPathFlags,
-                                                         LoadLibErrorTracker * pErrorTracker, LPCWSTR wszLibName)
-{
-    STANDARD_VM_CONTRACT;
+    // Resolve using the AssemblyLoadContext.ResolvingUnmanagedDll event
+    hmod = LoadNativeLibraryViaAssemblyLoadContextEvent(callingAssembly, libraryName);
+    if (hmod != nullptr)
+        return hmod;
 
-    NATIVE_LIBRARY_HANDLE hmod = NULL;
-
-#if defined(FEATURE_CORESYSTEM) && !defined(TARGET_UNIX)
-    // Try to go straight to System32 for Windows API sets. This is replicating quick check from
-    // the OS implementation of api sets.
-    if (IsWindowsAPISet(wszLibName))
+    if (throwOnError)
     {
-        hmod = LocalLoadLibraryHelper(wszLibName, LOAD_LIBRARY_SEARCH_SYSTEM32, pErrorTracker);
-        if (hmod != NULL)
-        {
-            return hmod;
-        }
-    }
-#endif // FEATURE_CORESYSTEM && !TARGET_UNIX
-
-    AppDomain* pDomain = GetAppDomain();
-    DWORD loadWithAlteredPathFlags = GetLoadWithAlteredSearchPathFlag();
-    bool libNameIsRelativePath = Path::IsRelative(wszLibName);
-
-    // P/Invokes are often declared with variations on the actual library name.
-    // For example, it's common to leave off the extension/suffix of the library
-    // even if it has one, or to leave off a prefix like "lib" even if it has one
-    // (both of these are typically done to smooth over cross-platform differences).
-    // We try to dlopen with such variations on the original.
-    const WCHAR* prefixSuffixCombinations[MaxVariationCount] = {};
-    int numberOfVariations = COUNTOF(prefixSuffixCombinations);
-    DetermineLibNameVariations(prefixSuffixCombinations, &numberOfVariations, wszLibName, libNameIsRelativePath);
-    for (int i = 0; i < numberOfVariations; i++)
-    {
-        SString currLibNameVariation;
-        currLibNameVariation.Printf(prefixSuffixCombinations[i], PLATFORM_SHARED_LIB_PREFIX_W, wszLibName, PLATFORM_SHARED_LIB_SUFFIX_W);
-
-        // NATIVE_DLL_SEARCH_DIRECTORIES set by host is considered well known path
-        hmod = LoadFromNativeDllSearchDirectories(currLibNameVariation, loadWithAlteredPathFlags, pErrorTracker);
-        if (hmod != NULL)
-        {
-            return hmod;
-        }
-
-        if (!libNameIsRelativePath)
-        {
-            DWORD flags = loadWithAlteredPathFlags;
-            if ((dllImportSearchPathFlags & LOAD_LIBRARY_SEARCH_DLL_LOAD_DIR) != 0)
-            {
-                // LOAD_LIBRARY_SEARCH_DLL_LOAD_DIR is the only flag affecting absolute path. Don't OR the flags
-                // unconditionally as all absolute path P/Invokes could then lose LOAD_WITH_ALTERED_SEARCH_PATH.
-                flags |= dllImportSearchPathFlags;
-            }
-
-            hmod = LocalLoadLibraryHelper(currLibNameVariation, flags, pErrorTracker);
-            if (hmod != NULL)
-            {
-                return hmod;
-            }
-        }
-        else if ((callingAssembly != nullptr) && searchAssemblyDirectory)
-        {
-            hmod = LoadFromPInvokeAssemblyDirectory(callingAssembly, currLibNameVariation, loadWithAlteredPathFlags | dllImportSearchPathFlags, pErrorTracker);
-            if (hmod != NULL)
-            {
-                return hmod;
-            }
-        }
-
-        hmod = LocalLoadLibraryHelper(currLibNameVariation, dllImportSearchPathFlags, pErrorTracker);
-        if (hmod != NULL)
-        {
-            return hmod;
-        }
-    }
-
-    // This may be an assembly name
-    // Format is "fileName, assemblyDisplayName"
-    MAKE_UTF8PTR_FROMWIDE(szLibName, wszLibName);
-    char *szComma = strchr(szLibName, ',');
-    if (szComma)
-    {
-        *szComma = '\0';
-        // Trim white spaces
-        while (COMCharacter::nativeIsWhiteSpace(*(++szComma)));
-
-        AssemblySpec spec;
-        if (SUCCEEDED(spec.Init(szComma)))
-        {
-            // Need to perform case insensitive hashing.
-            SString moduleName(SString::Utf8, szLibName);
-            moduleName.LowerCase();
-
-            StackScratchBuffer buffer;
-            szLibName = (LPSTR)moduleName.GetUTF8(buffer);
-
-            Assembly *pAssembly = spec.LoadAssembly(FILE_LOADED);
-            Module *pModule = pAssembly->FindModuleByName(szLibName);
-
-            hmod = LocalLoadLibraryHelper(pModule->GetPath(), loadWithAlteredPathFlags | dllImportSearchPathFlags, pErrorTracker);
-        }
+        SString libraryPathSString(libraryName);
+        errorTracker.Throw(libraryPathSString);
     }
 
     return hmod;
 }
 
-// This Method returns an instance of the PAL-Registered handle
-NATIVE_LIBRARY_HANDLE NDirect::LoadLibraryModule(NDirectMethodDesc * pMD, LoadLibErrorTracker * pErrorTracker)
+NATIVE_LIBRARY_HANDLE NDirect::LoadNativeLibrary(NDirectMethodDesc * pMD, LoadLibErrorTracker * pErrorTracker)
 {
     CONTRACTL
     {
@@ -7024,23 +6427,19 @@ NATIVE_LIBRARY_HANDLE NDirect::LoadLibraryModule(NDirectMethodDesc * pMD, LoadLi
     PREFIX_ASSUME( name != NULL );
     MAKE_WIDEPTR_FROMUTF8( wszLibName, name );
 
-    NativeLibraryHandleHolder hmod = LoadLibraryModuleViaCallback(pMD, wszLibName);
+    NativeLibraryHandleHolder hmod = LoadNativeLibraryViaDllImportResolver(pMD, wszLibName);
     if (hmod != NULL)
     {
         return hmod.Extract();
     }
 
     AppDomain* pDomain = GetAppDomain();
+    Assembly* pAssembly = pMD->GetMethodTable()->GetAssembly();
 
-    // AssemblyLoadContext is not supported in AppX mode and thus,
-    // we should not perform PInvoke resolution via it when operating in AppX mode.
-    if (!AppX::IsAppXProcess())
+    hmod = LoadNativeLibraryViaAssemblyLoadContext(pAssembly, wszLibName);
+    if (hmod != NULL)
     {
-        hmod = LoadLibraryModuleViaHost(pMD, wszLibName);
-        if (hmod != NULL)
-        {
-            return hmod.Extract();
-        }
+        return hmod.Extract();
     }
 
     hmod = pDomain->FindUnmanagedImageInCache(wszLibName);
@@ -7049,7 +6448,7 @@ NATIVE_LIBRARY_HANDLE NDirect::LoadLibraryModule(NDirectMethodDesc * pMD, LoadLi
        return hmod.Extract();
     }
 
-    hmod = LoadLibraryModuleBySearch(pMD, pErrorTracker, wszLibName);
+    hmod = LoadNativeLibraryBySearch(pMD, pErrorTracker, wszLibName);
     if (hmod != NULL)
     {
         // If we have a handle add it to the cache.
@@ -7057,13 +6456,10 @@ NATIVE_LIBRARY_HANDLE NDirect::LoadLibraryModule(NDirectMethodDesc * pMD, LoadLi
         return hmod.Extract();
     }
 
-    if (!AppX::IsAppXProcess())
+    hmod = LoadNativeLibraryViaAssemblyLoadContextEvent(pAssembly, wszLibName);
+    if (hmod != NULL)
     {
-        hmod = LoadLibraryModuleViaEvent(pMD, wszLibName);
-        if (hmod != NULL)
-        {
-            return hmod.Extract();
-        }
+        return hmod.Extract();
     }
 
     return hmod.Extract();
@@ -7116,7 +6512,7 @@ VOID NDirect::NDirectLink(NDirectMethodDesc *pMD)
     LoadLibErrorTracker errorTracker;
 
     BOOL fSuccess = FALSE;
-    NATIVE_LIBRARY_HANDLE hmod = LoadLibraryModule( pMD, &errorTracker );
+    NATIVE_LIBRARY_HANDLE hmod = LoadNativeLibrary( pMD, &errorTracker );
     if ( hmod )
     {
         LPVOID pvTarget = NDirectGetEntryPoint(pMD, hmod);
@@ -7246,7 +6642,8 @@ EXTERN_C LPVOID STDCALL NDirectImportWorker(NDirectMethodDesc* pMD)
         //
         INDEBUG(Thread *pThread = GetThread());
         {
-            _ASSERTE(pMD->ShouldSuppressGCTransition() || pThread->GetFrame()->GetVTablePtr() == InlinedCallFrame::GetMethodFrameVPtr());
+            _ASSERTE(pMD->ShouldSuppressGCTransition()
+                || pThread->GetFrame()->GetVTablePtr() == InlinedCallFrame::GetMethodFrameVPtr());
 
             CONSISTENCY_CHECK(pMD->IsNDirect());
             //
@@ -7383,23 +6780,29 @@ PCODE GetILStubForCalli(VASigCookie *pVASigCookie, MethodDesc *pMD)
         dwStubFlags |= NDIRECTSTUB_FL_UNMANAGED_CALLI;
 
         // need to convert the CALLI signature to stub signature with managed calling convention
-        switch (MetaSig::GetCallingConvention(pVASigCookie->pModule, pVASigCookie->signature))
+        BYTE callConv = MetaSig::GetCallingConvention(pVASigCookie->pModule, signature);
+
+        // Unmanaged calling convention indicates modopt should be read
+        if (callConv == IMAGE_CEE_CS_CALLCONV_UNMANAGED)
         {
-            case IMAGE_CEE_CS_CALLCONV_C:
-                    unmgdCallConv = pmCallConvCdecl;
-                    break;
-            case IMAGE_CEE_CS_CALLCONV_STDCALL:
-                    unmgdCallConv = pmCallConvStdcall;
-                    break;
-            case IMAGE_CEE_CS_CALLCONV_THISCALL:
-                    unmgdCallConv = pmCallConvThiscall;
-                    break;
-            case IMAGE_CEE_CS_CALLCONV_FASTCALL:
-                    unmgdCallConv = pmCallConvFastcall;
-                    break;
-            default:
-                    COMPlusThrow(kTypeLoadException, IDS_INVALID_PINVOKE_CALLCONV);
+            CorUnmanagedCallingConvention callConvMaybe;
+            UINT errorResID;
+            HRESULT hr = MetaSig::TryGetUnmanagedCallingConventionFromModOpt(pVASigCookie->pModule, signature.GetRawSig(), signature.GetRawSigLen(), &callConvMaybe, &errorResID);
+            if (FAILED(hr))
+                COMPlusThrowHR(hr, errorResID);
+
+            if (hr == S_OK)
+            {
+                callConv = callConvMaybe;
+            }
+            else
+            {
+                callConv = MetaSig::GetDefaultUnmanagedCallingConvention();
+            }
         }
+
+        if (!TryConvertCallConvValueToPInvokeCallConv(callConv, &unmgdCallConv))
+            COMPlusThrow(kTypeLoadException, IDS_INVALID_PINVOKE_CALLCONV);
 
         LoaderHeap *pHeap = pVASigCookie->pModule->GetLoaderAllocator()->GetHighFrequencyHeap();
         PCOR_SIGNATURE new_sig = (PCOR_SIGNATURE)(void *)pHeap->AllocMem(S_SIZE_T(signature.GetRawSigLen()));

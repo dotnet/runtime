@@ -1,9 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Dynamic;
 using System.Dynamic.Utils;
 using System.Linq.Expressions;
@@ -266,56 +266,21 @@ namespace System.Runtime.CompilerServices
             if (i > 1)
             {
                 T[] rules = Rules!;
-                T rule = rules[i];
+                // Synchronization of AddRule is omitted for performance. Concurrent invocations of AddRule
+                // may cause Rules to revert back to an older (smaller) version, making i out of bounds.
+                if (i < rules.Length)
+                {
+                    T rule = rules[i];
 
-                rules[i] = rules[i - 1];
-                rules[i - 1] = rules[i - 2];
-                rules[i - 2] = rule;
+                    rules[i] = rules[i - 1];
+                    rules[i - 1] = rules[i - 2];
+                    rules[i - 2] = rule;
+                }
             }
         }
 
 #if FEATURE_COMPILE
-        // TODO https://github.com/mono/linker/issues/799: Consolidate these attributes when possible.
-        [PreserveDependency("NoMatch1`2", "System.Dynamic.UpdateDelegates")]
-        [PreserveDependency("NoMatch2`3", "System.Dynamic.UpdateDelegates")]
-        [PreserveDependency("NoMatch3`4", "System.Dynamic.UpdateDelegates")]
-        [PreserveDependency("NoMatch4`5", "System.Dynamic.UpdateDelegates")]
-        [PreserveDependency("NoMatch5`6", "System.Dynamic.UpdateDelegates")]
-        [PreserveDependency("NoMatch6`7", "System.Dynamic.UpdateDelegates")]
-        [PreserveDependency("NoMatch7`8", "System.Dynamic.UpdateDelegates")]
-        [PreserveDependency("NoMatch8`9", "System.Dynamic.UpdateDelegates")]
-        [PreserveDependency("NoMatch9`10", "System.Dynamic.UpdateDelegates")]
-        [PreserveDependency("NoMatch10`11", "System.Dynamic.UpdateDelegates")]
-        [PreserveDependency("NoMatchVoid1`1", "System.Dynamic.UpdateDelegates")]
-        [PreserveDependency("NoMatchVoid2`2", "System.Dynamic.UpdateDelegates")]
-        [PreserveDependency("NoMatchVoid3`3", "System.Dynamic.UpdateDelegates")]
-        [PreserveDependency("NoMatchVoid4`4", "System.Dynamic.UpdateDelegates")]
-        [PreserveDependency("NoMatchVoid5`5", "System.Dynamic.UpdateDelegates")]
-        [PreserveDependency("NoMatchVoid6`6", "System.Dynamic.UpdateDelegates")]
-        [PreserveDependency("NoMatchVoid7`7", "System.Dynamic.UpdateDelegates")]
-        [PreserveDependency("NoMatchVoid8`8", "System.Dynamic.UpdateDelegates")]
-        [PreserveDependency("NoMatchVoid9`9", "System.Dynamic.UpdateDelegates")]
-        [PreserveDependency("NoMatchVoid10`10", "System.Dynamic.UpdateDelegates")]
-        [PreserveDependency("UpdateAndExecute1`2", "System.Dynamic.UpdateDelegates")]
-        [PreserveDependency("UpdateAndExecute2`3", "System.Dynamic.UpdateDelegates")]
-        [PreserveDependency("UpdateAndExecute3`4", "System.Dynamic.UpdateDelegates")]
-        [PreserveDependency("UpdateAndExecute4`5", "System.Dynamic.UpdateDelegates")]
-        [PreserveDependency("UpdateAndExecute5`6", "System.Dynamic.UpdateDelegates")]
-        [PreserveDependency("UpdateAndExecute6`7", "System.Dynamic.UpdateDelegates")]
-        [PreserveDependency("UpdateAndExecute7`8", "System.Dynamic.UpdateDelegates")]
-        [PreserveDependency("UpdateAndExecute8`9", "System.Dynamic.UpdateDelegates")]
-        [PreserveDependency("UpdateAndExecute9`10", "System.Dynamic.UpdateDelegates")]
-        [PreserveDependency("UpdateAndExecute10`11", "System.Dynamic.UpdateDelegates")]
-        [PreserveDependency("UpdateAndExecuteVoid1`1", "System.Dynamic.UpdateDelegates")]
-        [PreserveDependency("UpdateAndExecuteVoid2`2", "System.Dynamic.UpdateDelegates")]
-        [PreserveDependency("UpdateAndExecuteVoid3`3", "System.Dynamic.UpdateDelegates")]
-        [PreserveDependency("UpdateAndExecuteVoid4`4", "System.Dynamic.UpdateDelegates")]
-        [PreserveDependency("UpdateAndExecuteVoid5`5", "System.Dynamic.UpdateDelegates")]
-        [PreserveDependency("UpdateAndExecuteVoid6`6", "System.Dynamic.UpdateDelegates")]
-        [PreserveDependency("UpdateAndExecuteVoid7`7", "System.Dynamic.UpdateDelegates")]
-        [PreserveDependency("UpdateAndExecuteVoid8`8", "System.Dynamic.UpdateDelegates")]
-        [PreserveDependency("UpdateAndExecuteVoid9`9", "System.Dynamic.UpdateDelegates")]
-        [PreserveDependency("UpdateAndExecuteVoid10`10", "System.Dynamic.UpdateDelegates")]
+        [DynamicDependency(DynamicallyAccessedMemberTypes.All, typeof(UpdateDelegates))]
 #endif
         internal T MakeUpdateDelegate()
         {

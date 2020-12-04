@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 //
 
 #pragma once
@@ -20,7 +19,6 @@ typedef enum
     LocaleString_NativeLanguageName = 0x04,
     LocaleString_EnglishCountryName = 0x00001002,
     LocaleString_NativeCountryName = 0x08,
-    LocaleString_ListSeparator = 0x0C,
     LocaleString_DecimalSeparator = 0x0E,
     LocaleString_ThousandSeparator = 0x0F,
     LocaleString_Digits = 0x00000013,

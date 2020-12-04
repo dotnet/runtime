@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 
 //
@@ -310,8 +309,8 @@ __ANNOTATION(SAL_failureDefault(enum __SAL_failureKind));
 				            __byte_readableTo((expr) ? (size) : (size) * 2)
 #define __post_invalid                      _Post_ __notvalid
 /* integer related macros */
-#define __allocator                         __inner_allocator
 #ifndef PAL_STDCPP_COMPAT
+#define __allocator                         __inner_allocator
 #define __deallocate(kind)                  _Pre_ __notnull __post_invalid
 #define __deallocate_opt(kind)              _Pre_ __maybenull __post_invalid
 #endif

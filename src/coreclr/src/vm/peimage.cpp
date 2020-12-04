@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 // --------------------------------------------------------------------------------
 // PEImage.cpp
 //
@@ -368,7 +367,9 @@ BOOL PEImage::CompareImage(UPTR u1, UPTR u2)
     EX_TRY
     {
         SString path(SString::Literal, pLocator->m_pPath);
-        if (PathEquals(path, pImage->GetPath()))
+        BOOL isInBundle = pLocator->m_bIsInBundle;
+        if (PathEquals(path, pImage->GetPath()) &&
+            (!isInBundle == !pImage->IsInBundle()))
             ret = TRUE;
     }
     EX_CATCH_HRESULT(hr); //<TODO>ignores failure!</TODO>
@@ -973,7 +974,7 @@ PTR_PEImageLayout PEImage::GetLayoutInternal(DWORD imageLayoutMask,DWORD flags)
         BOOL bIsFlatLayoutSuitable = ((imageLayoutMask & PEImageLayout::LAYOUT_FLAT) != 0);
 
 #if !defined(TARGET_UNIX)
-        if (bIsMappedLayoutSuitable)
+        if (!IsInBundle() && bIsMappedLayoutSuitable)
         {
             bIsFlatLayoutSuitable = FALSE;
         }
@@ -1183,7 +1184,14 @@ void PEImage::Load()
     }
 
 #ifdef TARGET_UNIX
-    if (m_pLayouts[IMAGE_FLAT] != NULL
+    bool canUseLoadedFlat = true;
+#else
+    bool canUseLoadedFlat = IsInBundle();
+#endif // TARGET_UNIX
+
+
+    if (canUseLoadedFlat
+        && m_pLayouts[IMAGE_FLAT] != NULL
         && m_pLayouts[IMAGE_FLAT]->CheckILOnlyFormat()
         && !m_pLayouts[IMAGE_FLAT]->HasWriteableSections())
     {
@@ -1200,7 +1208,6 @@ void PEImage::Load()
         SetLayout(IMAGE_LOADED, m_pLayouts[IMAGE_FLAT]);
     }
     else
-#endif // TARGET_UNIX
     {
         if(!IsFile())
         {
@@ -1328,19 +1335,19 @@ HANDLE PEImage::GetFileHandle()
 
     {
         ErrorModeHolder mode(SEM_NOOPENFILEERRORBOX|SEM_FAILCRITICALERRORS);
-        m_hFile=WszCreateFile((LPCWSTR) m_path,
-                                            GENERIC_READ,
-                                            FILE_SHARE_READ|FILE_SHARE_DELETE,
-                                            NULL,
-                                            OPEN_EXISTING,
-                                            FILE_ATTRIBUTE_NORMAL,
-                                            NULL);
+        m_hFile=WszCreateFile((LPCWSTR) GetPathToLoad(),
+                               GENERIC_READ,
+                               FILE_SHARE_READ|FILE_SHARE_DELETE,
+                               NULL,
+                               OPEN_EXISTING,
+                               FILE_ATTRIBUTE_NORMAL,
+                               NULL);
     }
 
     if (m_hFile == INVALID_HANDLE_VALUE)
     {
 #if !defined(DACCESS_COMPILE)
-        EEFileLoadException::Throw(m_path, HRESULT_FROM_WIN32(GetLastError()));
+        EEFileLoadException::Throw(GetPathToLoad(), HRESULT_FROM_WIN32(GetLastError()));
 #else // defined(DACCESS_COMPILE)
         ThrowLastError();
 #endif // !defined(DACCESS_COMPILE)
@@ -1374,14 +1381,14 @@ HRESULT PEImage::TryOpenFile()
     if (m_hFile!=INVALID_HANDLE_VALUE)
         return S_OK;
     {
-        ErrorModeHolder mode(SEM_NOOPENFILEERRORBOX|SEM_FAILCRITICALERRORS);
-        m_hFile=WszCreateFile((LPCWSTR) m_path,
-                                            GENERIC_READ,
-                                            FILE_SHARE_READ|FILE_SHARE_DELETE,
-                                            NULL,
-                                            OPEN_EXISTING,
-                                            FILE_ATTRIBUTE_NORMAL,
-                                            NULL);
+        ErrorModeHolder mode(SEM_NOOPENFILEERRORBOX | SEM_FAILCRITICALERRORS);
+        m_hFile=WszCreateFile((LPCWSTR)GetPathToLoad(), 
+                              GENERIC_READ,
+                              FILE_SHARE_READ|FILE_SHARE_DELETE,
+                              NULL,
+                              OPEN_EXISTING,
+                              FILE_ATTRIBUTE_NORMAL,
+                              NULL);
     }
     if (m_hFile != INVALID_HANDLE_VALUE)
             return S_OK;
@@ -1414,38 +1421,3 @@ BOOL PEImage::IsPtrInImage(PTR_CVOID data)
 
     return FALSE;
 }
-
-
-#if !defined(DACCESS_COMPILE)
-PEImage * PEImage::OpenImage(
-    ICLRPrivResource * pIResource,
-    MDInternalImportFlags flags)
-{
-    STANDARD_VM_CONTRACT;
-    HRESULT hr = S_OK;
-
-    PEImageHolder pPEImage;
-
-
-    IID iidResource;
-    IfFailThrow(pIResource->GetResourceType(&iidResource));
-
-    if (iidResource == __uuidof(ICLRPrivResourcePath))
-    {
-        ReleaseHolder<ICLRPrivResourcePath> pIResourcePath;
-        IfFailThrow(pIResource->QueryInterface(__uuidof(ICLRPrivResourcePath), (LPVOID*)&pIResourcePath));
-        WCHAR wzPath[_MAX_PATH];
-        DWORD cchPath = NumItems(wzPath);
-        IfFailThrow(pIResourcePath->GetPath(cchPath, &cchPath, wzPath));
-        pPEImage = PEImage::OpenImage(wzPath, flags);
-    }
-    else
-    {
-        ThrowHR(COR_E_BADIMAGEFORMAT);
-    }
-
-    return pPEImage.Extract();
-}
-#endif
-
-

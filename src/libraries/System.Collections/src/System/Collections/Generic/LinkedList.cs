@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
@@ -531,7 +530,7 @@ namespace System.Collections.Generic
             private readonly LinkedList<T> _list;
             private LinkedListNode<T>? _node;
             private readonly int _version;
-            [AllowNull] private T _current;
+            private T? _current;
             private int _index;
 
             internal Enumerator(LinkedList<T> list)
@@ -543,10 +542,7 @@ namespace System.Collections.Generic
                 _index = 0;
             }
 
-            public T Current
-            {
-                get { return _current; }
-            }
+            public T Current => _current!;
 
             object? IEnumerator.Current
             {
@@ -651,6 +647,9 @@ namespace System.Collections.Generic
             get { return item; }
             set { item = value; }
         }
+
+        /// <summary>Gets a reference to the value held by the node.</summary>
+        public ref T ValueRef => ref item;
 
         internal void Invalidate()
         {

@@ -1,8 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Buffers;
+using System.Buffers.Binary;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
@@ -11,8 +11,6 @@ using System.IO;
 using System.Text;
 using System.Threading;
 using System.Security;
-using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 
 using Internal.IO;
 
@@ -110,53 +108,6 @@ namespace System
             ValidateTimeZoneInfo(_id, _baseUtcOffset, _adjustmentRules, out _supportsDaylightSavingTime);
         }
 
-        private unsafe void GetDisplayName(Interop.Globalization.TimeZoneDisplayNameType nameType, string uiCulture, ref string? displayName)
-        {
-            if (GlobalizationMode.Invariant)
-            {
-                displayName = _standardDisplayName;
-                return;
-            }
-
-            string? timeZoneDisplayName;
-            bool result = Interop.CallStringMethod(
-                (buffer, locale, id, type) =>
-                {
-                    fixed (char* bufferPtr = buffer)
-                    {
-                        return Interop.Globalization.GetTimeZoneDisplayName(locale, id, type, bufferPtr, buffer.Length);
-                    }
-                },
-                uiCulture,
-                _id,
-                nameType,
-                out timeZoneDisplayName);
-
-            if (!result && uiCulture != FallbackCultureName)
-            {
-                // Try to fallback using FallbackCultureName just in case we can make it work.
-                result = Interop.CallStringMethod(
-                    (buffer, locale, id, type) =>
-                    {
-                        fixed (char* bufferPtr = buffer)
-                        {
-                            return Interop.Globalization.GetTimeZoneDisplayName(locale, id, type, bufferPtr, buffer.Length);
-                        }
-                    },
-                    FallbackCultureName,
-                    _id,
-                    nameType,
-                    out timeZoneDisplayName);
-            }
-
-            // If there is an unknown error, don't set the displayName field.
-            // It will be set to the abbreviation that was read out of the tzfile.
-            if (result)
-            {
-                displayName = timeZoneDisplayName;
-            }
-        }
-
         /// <summary>
         /// Returns a cloned array of AdjustmentRule objects
         /// </summary>
@@ -175,20 +126,20 @@ namespace System
 
             for (int i = 0; i < _adjustmentRules.Length; i++)
             {
-                var rule = _adjustmentRules[i];
-                var start = rule.DateStart.Kind == DateTimeKind.Utc ?
+                AdjustmentRule? rule = _adjustmentRules[i];
+                DateTime start = rule.DateStart.Kind == DateTimeKind.Utc ?
                             // At the daylight start we didn't start the daylight saving yet then we convert to Local time
                             // by adding the _baseUtcOffset to the UTC time
                             new DateTime(rule.DateStart.Ticks + _baseUtcOffset.Ticks, DateTimeKind.Unspecified) :
                             rule.DateStart;
-                var end = rule.DateEnd.Kind == DateTimeKind.Utc ?
+                DateTime end = rule.DateEnd.Kind == DateTimeKind.Utc ?
                             // At the daylight saving end, the UTC time is mapped to local time which is already shifted by the daylight delta
                             // we calculate the local time by adding _baseUtcOffset + DaylightDelta to the UTC time
                             new DateTime(rule.DateEnd.Ticks + _baseUtcOffset.Ticks + rule.DaylightDelta.Ticks, DateTimeKind.Unspecified) :
                             rule.DateEnd;
 
-                var startTransition = TimeZoneInfo.TransitionTime.CreateFixedDateRule(new DateTime(1, 1, 1, start.Hour, start.Minute, start.Second), start.Month, start.Day);
-                var endTransition = TimeZoneInfo.TransitionTime.CreateFixedDateRule(new DateTime(1, 1, 1, end.Hour, end.Minute, end.Second), end.Month, end.Day);
+                TransitionTime startTransition = TimeZoneInfo.TransitionTime.CreateFixedDateRule(new DateTime(1, 1, 1, start.Hour, start.Minute, start.Second), start.Month, start.Day);
+                TransitionTime endTransition = TimeZoneInfo.TransitionTime.CreateFixedDateRule(new DateTime(1, 1, 1, end.Hour, end.Minute, end.Second), end.Month, end.Day);
 
                 rules[i] = TimeZoneInfo.AdjustmentRule.CreateAdjustmentRule(start.Date, end.Date, rule.DaylightDelta, startTransition, endTransition);
             }
@@ -915,7 +866,7 @@ namespace System
             // to the first transition and uses the first standard transitionType (or the first transitionType if none of them are standard)
             // 2. Create an AdjustmentRule for each transition, i.e. from dts[index - 1] to dts[index].
             // This rule uses the transitionType[index - 1] and the whole AdjustmentRule only describes a single offset - either
-            // all daylight savings, or all stanard time.
+            // all daylight savings, or all standard time.
             // 3. After all the transitions are filled out, the last AdjustmentRule is created from either:
             //   a. a POSIX-style timezone description ("futureTransitionsPosixFormat"), if there is one or
             //   b. continue the last transition offset until DateTime.Max
@@ -938,8 +889,8 @@ namespace System
                         DateTime.MinValue,
                         endTransitionDate.AddTicks(-1),
                         daylightDelta,
-                        default(TransitionTime),
-                        default(TransitionTime),
+                        default,
+                        default,
                         baseUtcDelta,
                         noDaylightTransitions: true);
 
@@ -974,7 +925,7 @@ namespace System
                 }
                 else
                 {
-                    dstStart = default(TransitionTime);
+                    dstStart = default;
                 }
 
                 AdjustmentRule r = AdjustmentRule.CreateAdjustmentRule(
@@ -982,7 +933,7 @@ namespace System
                         endTransitionDate.AddTicks(-1),
                         daylightDelta,
                         dstStart,
-                        default(TransitionTime),
+                        default,
                         baseUtcDelta,
                         noDaylightTransitions: true);
 
@@ -1144,8 +1095,8 @@ namespace System
                                startTransitionDate,
                                DateTime.MaxValue,
                                TimeSpan.Zero,
-                               default(TransitionTime),
-                               default(TransitionTime),
+                               default,
+                               default,
                                baseOffset,
                                noDaylightTransitions: true);
                     }
@@ -1359,7 +1310,7 @@ namespace System
 
             month = 0;
             week = 0;
-            dayOfWeek = default(DayOfWeek);
+            dayOfWeek = default;
             return false;
         }
 
@@ -1483,25 +1434,13 @@ namespace System
 
         // Converts an array of bytes into an int - always using standard byte order (Big Endian)
         // per TZif file standard
-        private static unsafe int TZif_ToInt32(byte[] value, int startIndex)
-        {
-            fixed (byte* pbyte = &value[startIndex])
-            {
-                return (*pbyte << 24) | (*(pbyte + 1) << 16) | (*(pbyte + 2) << 8) | (*(pbyte + 3));
-            }
-        }
+        private static int TZif_ToInt32(byte[] value, int startIndex)
+            => BinaryPrimitives.ReadInt32BigEndian(value.AsSpan(startIndex));
 
         // Converts an array of bytes into a long - always using standard byte order (Big Endian)
         // per TZif file standard
-        private static unsafe long TZif_ToInt64(byte[] value, int startIndex)
-        {
-            fixed (byte* pbyte = &value[startIndex])
-            {
-                int i1 = (*pbyte << 24) | (*(pbyte + 1) << 16) | (*(pbyte + 2) << 8) | (*(pbyte + 3));
-                int i2 = (*(pbyte + 4) << 24) | (*(pbyte + 5) << 16) | (*(pbyte + 6) << 8) | (*(pbyte + 7));
-                return (uint)i2 | ((long)i1 << 32);
-            }
-        }
+        private static long TZif_ToInt64(byte[] value, int startIndex)
+            => BinaryPrimitives.ReadInt64BigEndian(value.AsSpan(startIndex));
 
         private static long TZif_ToUnixTime(byte[] value, int startIndex, TZVersion version) =>
             version != TZVersion.V1 ?

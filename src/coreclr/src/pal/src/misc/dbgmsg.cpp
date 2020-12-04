@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 /*++
 
@@ -157,8 +156,6 @@ BOOL DBG_init_channels(void)
     DWORD flag_mask = 0;
     int ret;
 
-    InternalInitializeCriticalSection(&fprintf_crit_section);
-
     /* output only asserts by default [only affects no-vararg-support case; if
        we have varargs, these flags aren't even checked for ASSERTs] */
     for(i=0;i<DCI_LAST;i++)
@@ -166,7 +163,11 @@ BOOL DBG_init_channels(void)
 
     /* parse PAL_DBG_CHANNELS environment variable */
 
-    env_string = EnvironGetenv(ENV_CHANNELS);
+    env_string = getenv(ENV_CHANNELS);
+    if (env_string != NULL)
+    {
+        env_string = strdup(env_string);
+    }
     env_pcache = env_workstring = env_string;
 
     while(env_workstring)
@@ -299,10 +300,10 @@ BOOL DBG_init_channels(void)
         }
         /* done processing this entry; on to the next. */
     }
-    PAL_free(env_pcache);
+    free(env_pcache);
 
     /* select output file */
-    env_string = EnvironGetenv(ENV_FILE);
+    env_string = getenv(ENV_FILE);
     if(env_string && *env_string!='\0')
     {
         if(!strcmp(env_string, "stderr"))
@@ -332,13 +333,8 @@ BOOL DBG_init_channels(void)
         output_file = stderr; /* output to stderr by default */
     }
 
-    if(env_string)
-    {
-        PAL_free(env_string);
-    }
-
     /* see if we need to disable assertions */
-    env_string = EnvironGetenv(ENV_ASSERTS);
+    env_string = getenv(ENV_ASSERTS);
     if(env_string && 0 == strcmp(env_string,"1"))
     {
         g_Dbg_asserts_enabled = FALSE;
@@ -348,17 +344,11 @@ BOOL DBG_init_channels(void)
         g_Dbg_asserts_enabled = TRUE;
     }
 
-    if(env_string)
-    {
-        PAL_free(env_string);
-    }
-
     /* select ENTRY level limitation */
-    env_string = EnvironGetenv(ENV_ENTRY_LEVELS);
+    env_string = getenv(ENV_ENTRY_LEVELS);
     if(env_string)
     {
         max_entry_level = atoi(env_string);
-        PAL_free(env_string);
     }
     else
     {
@@ -372,10 +362,11 @@ BOOL DBG_init_channels(void)
         {
             fprintf(stderr, "ERROR : pthread_key_create() failed error:%d (%s)\n",
                    ret, strerror(ret));
-            DeleteCriticalSection(&fprintf_crit_section);;
             return FALSE;
         }
     }
+
+    InternalInitializeCriticalSection(&fprintf_crit_section);
 
     return TRUE;
 }

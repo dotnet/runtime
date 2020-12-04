@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
 using System.Numerics;
@@ -104,7 +103,8 @@ namespace System.Buffers.Text
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static int CountHexDigits(ulong value)
         {
-            return (64 - BitOperations.LeadingZeroCount(value | 1) + 3) >> 2;
+            // The number of hex digits is log16(value) + 1, or log2(value) / 4 + 1
+            return (BitOperations.Log2(value) >> 2) + 1;
         }
 
         // Counts the number of trailing '0' digits in a decimal number.

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #pragma once
 
@@ -12,7 +11,7 @@ class StackLevelSetter final : public Phase
 public:
     StackLevelSetter(Compiler* compiler);
 
-    virtual void DoPhase() override;
+    virtual PhaseStatus DoPhase() override;
 
 private:
     void ProcessBlock(BasicBlock* block);

@@ -1,8 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.IO;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
 
@@ -73,7 +73,7 @@ namespace System
             }
 
             if (length == 0)
-                Marshal.ThrowExceptionForHR(Marshal.GetHRForLastWin32Error());
+                throw Win32Marshal.GetExceptionForLastWin32Error();
 
             // length includes the null terminator
             builder.Length = (int)length - 1;
@@ -87,18 +87,38 @@ namespace System
             Interop.Kernel32.GetComputerName() ??
             throw new InvalidOperationException(SR.InvalidOperation_ComputerName);
 
+        [MethodImplAttribute(MethodImplOptions.NoInlining)] // Avoid inlining PInvoke frame into the hot path
+        private static int GetProcessId() => unchecked((int)Interop.Kernel32.GetCurrentProcessId());
+
+        private static string? GetProcessPath()
+        {
+            var builder = new ValueStringBuilder(stackalloc char[Interop.Kernel32.MAX_PATH]);
+
+            uint length;
+            while ((length = Interop.Kernel32.GetModuleFileName(IntPtr.Zero, ref builder.GetPinnableReference(), (uint)builder.Capacity)) >= builder.Capacity)
+            {
+                builder.EnsureCapacity((int)length);
+            }
+
+            if (length == 0)
+                throw Win32Marshal.GetExceptionForLastWin32Error();
+
+            builder.Length = (int)length;
+            return builder.ToString();
+        }
+
         private static unsafe OperatingSystem GetOSVersion()
         {
-            var version = new Interop.Kernel32.OSVERSIONINFOEX { dwOSVersionInfoSize = sizeof(Interop.Kernel32.OSVERSIONINFOEX) };
-            if (!Interop.Kernel32.GetVersionExW(ref version))
+            if (Interop.NtDll.RtlGetVersionEx(out Interop.NtDll.RTL_OSVERSIONINFOEX osvi) != 0)
             {
                 throw new InvalidOperationException(SR.InvalidOperation_GetVersion);
             }
 
-            return new OperatingSystem(
-                PlatformID.Win32NT,
-                new Version(version.dwMajorVersion, version.dwMinorVersion, version.dwBuildNumber, (version.wServicePackMajor << 16) | version.wServicePackMinor),
-                Marshal.PtrToStringUni((IntPtr)version.szCSDVersion));
+            var version = new Version((int)osvi.dwMajorVersion, (int)osvi.dwMinorVersion, (int)osvi.dwBuildNumber, 0);
+
+            return osvi.szCSDVersion[0] != '\0' ?
+                new OperatingSystem(PlatformID.Win32NT, version, new string(&osvi.szCSDVersion[0])) :
+                new OperatingSystem(PlatformID.Win32NT, version);
         }
 
         public static string SystemDirectory

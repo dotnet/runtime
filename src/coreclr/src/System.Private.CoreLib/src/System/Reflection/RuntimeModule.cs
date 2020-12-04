@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 using System.Runtime.Serialization;
 using System.Collections.Generic;
@@ -31,7 +31,7 @@ namespace System.Reflection
 
         internal RuntimeType[] GetDefinedTypes()
         {
-            return GetTypes(GetNativeHandle());
+            return GetTypes(this);
         }
 
         [MethodImpl(MethodImplOptions.InternalCall)]
@@ -61,6 +61,7 @@ namespace System.Reflection
             return typeHandleArgs;
         }
 
+        [RequiresUnreferencedCode("Trimming changes metadata tokens")]
         public override byte[] ResolveSignature(int metadataToken)
         {
             MetadataToken tk = new MetadataToken(metadataToken);
@@ -87,19 +88,12 @@ namespace System.Reflection
             return sig;
         }
 
+        [RequiresUnreferencedCode("Trimming changes metadata tokens")]
         public override MethodBase? ResolveMethod(int metadataToken, Type[]? genericTypeArguments, Type[]? genericMethodArguments)
         {
-            MetadataToken tk = new MetadataToken(metadataToken);
-
-            if (!MetadataImport.IsValidToken(tk))
-                throw new ArgumentOutOfRangeException(nameof(metadataToken),
-                    SR.Format(SR.Argument_InvalidToken, tk, this));
-
-            RuntimeTypeHandle[]? typeArgs = ConvertToTypeHandleArray(genericTypeArguments);
-            RuntimeTypeHandle[]? methodArgs = ConvertToTypeHandleArray(genericMethodArguments);
-
             try
             {
+                MetadataToken tk = new MetadataToken(metadataToken);
                 if (!tk.IsMethodDef && !tk.IsMethodSpec)
                 {
                     if (!tk.IsMemberRef)
@@ -110,13 +104,26 @@ namespace System.Reflection
                     {
                         ConstArray sig = MetadataImport.GetMemberRefProps(tk);
 
-                        if (*(MdSigCallingConvention*)sig.Signature.ToPointer() == MdSigCallingConvention.Field)
+                        if (*(MdSigCallingConvention*)sig.Signature == MdSigCallingConvention.Field)
                             throw new ArgumentException(SR.Format(SR.Argument_ResolveMethod, tk, this),
                                 nameof(metadataToken));
                     }
                 }
 
-                IRuntimeMethodInfo methodHandle = ModuleHandle.ResolveMethodHandleInternal(GetNativeHandle(), tk, typeArgs, methodArgs);
+                RuntimeTypeHandle[]? typeArgs = null;
+                RuntimeTypeHandle[]? methodArgs = null;
+                if (genericTypeArguments?.Length > 0)
+                {
+                    typeArgs = ConvertToTypeHandleArray(genericTypeArguments);
+                }
+                if (genericMethodArguments?.Length > 0)
+                {
+                    methodArgs = ConvertToTypeHandleArray(genericMethodArguments);
+                }
+
+                ModuleHandle moduleHandle = new ModuleHandle(this);
+                IRuntimeMethodInfo methodHandle = moduleHandle.ResolveMethodHandle(tk, typeArgs, methodArgs).GetMethodInfo();
+
                 Type declaringType = RuntimeMethodHandle.GetDeclaringType(methodHandle);
 
                 if (declaringType.IsGenericType || declaringType.IsArray)
@@ -129,7 +136,7 @@ namespace System.Reflection
                     declaringType = ResolveType(tkDeclaringType, genericTypeArguments, genericMethodArguments);
                 }
 
-                return System.RuntimeType.GetMethodBase(declaringType as RuntimeType, methodHandle);
+                return RuntimeType.GetMethodBase(declaringType as RuntimeType, methodHandle);
             }
             catch (BadImageFormatException e)
             {
@@ -166,21 +173,29 @@ namespace System.Reflection
             }
         }
 
+        [RequiresUnreferencedCode("Trimming changes metadata tokens")]
         public override FieldInfo? ResolveField(int metadataToken, Type[]? genericTypeArguments, Type[]? genericMethodArguments)
         {
-            MetadataToken tk = new MetadataToken(metadataToken);
-
-            if (!MetadataImport.IsValidToken(tk))
-                throw new ArgumentOutOfRangeException(nameof(metadataToken),
-                    SR.Format(SR.Argument_InvalidToken, tk, this));
-
-            RuntimeTypeHandle[]? typeArgs = ConvertToTypeHandleArray(genericTypeArguments);
-            RuntimeTypeHandle[]? methodArgs = ConvertToTypeHandleArray(genericMethodArguments);
-
             try
             {
-                IRuntimeFieldInfo fieldHandle;
+                MetadataToken tk = new MetadataToken(metadataToken);
 
+                if (!MetadataImport.IsValidToken(tk))
+                    throw new ArgumentOutOfRangeException(nameof(metadataToken),
+                        SR.Format(SR.Argument_InvalidToken, tk, this));
+
+                RuntimeTypeHandle[]? typeArgs = null;
+                RuntimeTypeHandle[]? methodArgs = null;
+                if (genericTypeArguments?.Length > 0)
+                {
+                    typeArgs = ConvertToTypeHandleArray(genericTypeArguments);
+                }
+                if (genericMethodArguments?.Length > 0)
+                {
+                    methodArgs = ConvertToTypeHandleArray(genericMethodArguments);
+                }
+
+                ModuleHandle moduleHandle = new ModuleHandle(this);
                 if (!tk.IsFieldDef)
                 {
                     if (!tk.IsMemberRef)
@@ -191,28 +206,27 @@ namespace System.Reflection
                     {
                         ConstArray sig = MetadataImport.GetMemberRefProps(tk);
 
-                        if (*(MdSigCallingConvention*)sig.Signature.ToPointer() != MdSigCallingConvention.Field)
+                        if (*(MdSigCallingConvention*)sig.Signature != MdSigCallingConvention.Field)
                             throw new ArgumentException(SR.Format(SR.Argument_ResolveField, tk, this),
                                 nameof(metadataToken));
                     }
-
-                    fieldHandle = ModuleHandle.ResolveFieldHandleInternal(GetNativeHandle(), tk, typeArgs, methodArgs);
                 }
 
-                fieldHandle = ModuleHandle.ResolveFieldHandleInternal(GetNativeHandle(), metadataToken, typeArgs, methodArgs);
+                IRuntimeFieldInfo fieldHandle = moduleHandle.ResolveFieldHandle(metadataToken, typeArgs, methodArgs).GetRuntimeFieldInfo();
+
                 RuntimeType declaringType = RuntimeFieldHandle.GetApproxDeclaringType(fieldHandle.Value);
 
                 if (declaringType.IsGenericType || declaringType.IsArray)
                 {
-                    int tkDeclaringType = ModuleHandle.GetMetadataImport(GetNativeHandle()).GetParentToken(metadataToken);
+                    int tkDeclaringType = ModuleHandle.GetMetadataImport(this).GetParentToken(metadataToken);
                     declaringType = (RuntimeType)ResolveType(tkDeclaringType, genericTypeArguments, genericMethodArguments);
                 }
 
-                return System.RuntimeType.GetFieldInfo(declaringType, fieldHandle);
+                return RuntimeType.GetFieldInfo(declaringType, fieldHandle);
             }
             catch (MissingFieldException)
             {
-                return ResolveLiteralField(tk, genericTypeArguments, genericMethodArguments);
+                return ResolveLiteralField(metadataToken, genericTypeArguments, genericMethodArguments);
             }
             catch (BadImageFormatException e)
             {
@@ -220,31 +234,31 @@ namespace System.Reflection
             }
         }
 
+        [RequiresUnreferencedCode("Trimming changes metadata tokens")]
         public override Type ResolveType(int metadataToken, Type[]? genericTypeArguments, Type[]? genericMethodArguments)
         {
-            MetadataToken tk = new MetadataToken(metadataToken);
-
-            if (tk.IsGlobalTypeDefToken)
-                throw new ArgumentException(SR.Format(SR.Argument_ResolveModuleType, tk), nameof(metadataToken));
-
-            if (!MetadataImport.IsValidToken(tk))
-                throw new ArgumentOutOfRangeException(nameof(metadataToken),
-                    SR.Format(SR.Argument_InvalidToken, tk, this));
-
-            if (!tk.IsTypeDef && !tk.IsTypeSpec && !tk.IsTypeRef)
-                throw new ArgumentException(SR.Format(SR.Argument_ResolveType, tk, this), nameof(metadataToken));
-
-            RuntimeTypeHandle[]? typeArgs = ConvertToTypeHandleArray(genericTypeArguments);
-            RuntimeTypeHandle[]? methodArgs = ConvertToTypeHandleArray(genericMethodArguments);
-
             try
             {
-                Type t = GetModuleHandleImpl().ResolveTypeHandle(metadataToken, typeArgs, methodArgs).GetRuntimeType();
+                MetadataToken tk = new MetadataToken(metadataToken);
 
-                if (t == null)
+                if (tk.IsGlobalTypeDefToken)
+                    throw new ArgumentException(SR.Format(SR.Argument_ResolveModuleType, tk), nameof(metadataToken));
+
+                if (!tk.IsTypeDef && !tk.IsTypeSpec && !tk.IsTypeRef)
                     throw new ArgumentException(SR.Format(SR.Argument_ResolveType, tk, this), nameof(metadataToken));
 
-                return t;
+                RuntimeTypeHandle[]? typeArgs = null;
+                RuntimeTypeHandle[]? methodArgs = null;
+                if (genericTypeArguments?.Length > 0)
+                {
+                    typeArgs = ConvertToTypeHandleArray(genericTypeArguments);
+                }
+                if (genericMethodArguments?.Length > 0)
+                {
+                    methodArgs = ConvertToTypeHandleArray(genericMethodArguments);
+                }
+
+                return GetModuleHandleImpl().ResolveTypeHandle(metadataToken, typeArgs, methodArgs).GetRuntimeType();
             }
             catch (BadImageFormatException e)
             {
@@ -252,6 +266,7 @@ namespace System.Reflection
             }
         }
 
+        [RequiresUnreferencedCode("Trimming changes metadata tokens")]
         public override MemberInfo? ResolveMember(int metadataToken, Type[]? genericTypeArguments, Type[]? genericMethodArguments)
         {
             MetadataToken tk = new MetadataToken(metadataToken);
@@ -281,7 +296,7 @@ namespace System.Reflection
 
                 unsafe
                 {
-                    if (*(MdSigCallingConvention*)sig.Signature.ToPointer() == MdSigCallingConvention.Field)
+                    if (*(MdSigCallingConvention*)sig.Signature == MdSigCallingConvention.Field)
                     {
                         return ResolveField(tk, genericTypeArguments, genericMethodArguments);
                     }
@@ -296,6 +311,7 @@ namespace System.Reflection
                 nameof(metadataToken));
         }
 
+        [RequiresUnreferencedCode("Trimming changes metadata tokens")]
         public override string ResolveString(int metadataToken)
         {
             MetadataToken tk = new MetadataToken(metadataToken);
@@ -318,10 +334,10 @@ namespace System.Reflection
 
         public override void GetPEKind(out PortableExecutableKinds peKind, out ImageFileMachine machine)
         {
-            ModuleHandle.GetPEKind(GetNativeHandle(), out peKind, out machine);
+            ModuleHandle.GetPEKind(this, out peKind, out machine);
         }
 
-        public override int MDStreamVersion => ModuleHandle.GetMDStreamVersion(GetNativeHandle());
+        public override int MDStreamVersion => ModuleHandle.GetMDStreamVersion(this);
         #endregion
 
         #region Data Members
@@ -337,6 +353,7 @@ namespace System.Reflection
         #endregion
 
         #region Protected Virtuals
+        [RequiresUnreferencedCode("Methods might be removed")]
         protected override MethodInfo? GetMethodImpl(string name, BindingFlags bindingAttr, Binder? binder,
             CallingConventions callConvention, Type[]? types, ParameterModifier[]? modifiers)
         {
@@ -416,6 +433,7 @@ namespace System.Reflection
             throw new PlatformNotSupportedException();
         }
 
+        [RequiresUnreferencedCode("Types might be removed")]
         public override Type? GetType(string className, bool throwOnError, bool ignoreCase)
         {
             // throw on null strings regardless of the value of "throwOnError"
@@ -440,9 +458,10 @@ namespace System.Reflection
 
         public override string FullyQualifiedName => GetFullyQualifiedName();
 
+      [RequiresUnreferencedCode("Types might be removed")]
         public override Type[] GetTypes()
         {
-            return GetTypes(GetNativeHandle());
+            return GetTypes(this);
         }
 
         #endregion
@@ -458,13 +477,14 @@ namespace System.Reflection
             }
         }
 
-        public override int MetadataToken => ModuleHandle.GetToken(GetNativeHandle());
+        public override int MetadataToken => ModuleHandle.GetToken(this);
 
         public override bool IsResource()
         {
-            return IsResource(GetNativeHandle());
+            return IsResource(this);
         }
 
+        [RequiresUnreferencedCode("Fields might be removed")]
         public override FieldInfo[] GetFields(BindingFlags bindingFlags)
         {
             if (RuntimeType == null)
@@ -473,6 +493,7 @@ namespace System.Reflection
             return RuntimeType.GetFields(bindingFlags);
         }
 
+        [RequiresUnreferencedCode("Fields might be removed")]
         public override FieldInfo? GetField(string name, BindingFlags bindingAttr)
         {
             if (name == null)
@@ -484,6 +505,7 @@ namespace System.Reflection
             return RuntimeType.GetField(name, bindingAttr);
         }
 
+        [RequiresUnreferencedCode("Methods might be removed")]
         public override MethodInfo[] GetMethods(BindingFlags bindingFlags)
         {
             if (RuntimeType == null)
@@ -528,11 +550,6 @@ namespace System.Reflection
         protected override ModuleHandle GetModuleHandleImpl()
         {
             return new ModuleHandle(this);
-        }
-
-        internal RuntimeModule GetNativeHandle()
-        {
-            return this;
         }
 
         internal IntPtr GetUnderlyingNativeHandle()

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 //+---------------------------------------------------------------------------
 //
@@ -134,9 +133,5 @@ interface IAssemblyName: IUnknown
         [in]         DWORD    PropertyId,
         [out]        LPVOID   pvProperty,
         [in, out]    LPDWORD  pcbProperty);
-
-    HRESULT GetName(
-        [in, out, annotation("_Inout_")] LPDWORD lpcwBuffer,
-        [out, annotation("_Out_writes_opt_(*lpcwBuffer)")] WCHAR *pwzName);
 }
 

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 /*=====================================================================
 **
@@ -14,7 +13,7 @@
 #define __VSPRINTF_H__
 
 /* These functions leaks memory a lot. C'est la vie. */
-int testvsp(char* buf, size_t buffSize, const char* format, ...)
+inline int testvsp(char* buf, size_t buffSize, const char* format, ...)
 {
     int retVal;
     va_list arglist;
@@ -26,7 +25,7 @@ int testvsp(char* buf, size_t buffSize, const char* format, ...)
     return (retVal);
 }
 
-void DoStrTest(const char *formatstr, char* param, const char *checkstr)
+inline void DoStrTest_vsprintf(const char *formatstr, char* param, const char *checkstr)
 {
     char buf[256] = { 0 };
 
@@ -38,8 +37,9 @@ void DoStrTest(const char *formatstr, char* param, const char *checkstr)
             param, formatstr, checkstr, buf);
     }
 }
+#define DoStrTest DoStrTest_vsprintf
 
-void DoWStrTest(const char *formatstr, WCHAR* param, const char *checkstr)
+inline void DoWStrTest_vsprintf(const char *formatstr, WCHAR* param, const char *checkstr)
 {
     char buf[256] = { 0 };
 
@@ -51,9 +51,9 @@ void DoWStrTest(const char *formatstr, WCHAR* param, const char *checkstr)
             convertC(param), formatstr, checkstr, buf);
     }
 }
+#define DoWStrTest DoWStrTest_vsprintf
 
-
-void DoCharTest(const char *formatstr, char param, const char *checkstr)
+inline void DoCharTest_vsprintf(const char *formatstr, char param, const char *checkstr)
 {
     char buf[256] = { 0 };
 
@@ -65,8 +65,9 @@ void DoCharTest(const char *formatstr, char param, const char *checkstr)
             param, param, formatstr, checkstr, buf);
     }
 }
+#define DoCharTest DoCharTest_vsprintf
 
-void DoWCharTest(const char *formatstr, WCHAR param, const char *checkstr)
+inline void DoWCharTest_vsprintf(const char *formatstr, WCHAR param, const char *checkstr)
 {
     char buf[256] = { 0 };
 
@@ -78,8 +79,9 @@ void DoWCharTest(const char *formatstr, WCHAR param, const char *checkstr)
             (char)param, param, formatstr, checkstr, buf);
     }
 }
+#define DoWCharTest DoWCharTest_vsprintf
 
-void DoNumTest(const char *formatstr, int value, const char *checkstr)
+inline void DoNumTest_vsprintf(const char *formatstr, int value, const char *checkstr)
 {
     char buf[256] = { 0 };
 
@@ -91,8 +93,9 @@ void DoNumTest(const char *formatstr, int value, const char *checkstr)
             value, formatstr, checkstr, buf);
     }
 }
+#define DoNumTest DoNumTest_vsprintf
 
-void DoI64Test(const char *formatstr, INT64 value, char *valuestr, const char *checkstr)
+inline void DoI64Test_vsprintf(const char *formatstr, INT64 value, char *valuestr, const char *checkstr)
 {
     char buf[256] = { 0 };
 
@@ -104,7 +107,9 @@ void DoI64Test(const char *formatstr, INT64 value, char *valuestr, const char *c
             valuestr, formatstr, checkstr, buf);
     }
 }
-void DoDoubleTest(const char *formatstr, double value, const char *checkstr1, char
+#define DoI64Test DoI64Test_vsprintf
+
+inline void DoDoubleTest_vsprintf(const char *formatstr, double value, const char *checkstr1, char
 *checkstr2)
 {
     char buf[256] = { 0 };
@@ -118,8 +123,10 @@ void DoDoubleTest(const char *formatstr, double value, const char *checkstr1, ch
             value, formatstr, checkstr1, checkstr2, buf);
     }
 }
+#define DoDoubleTest DoDoubleTest_vsprintf
+
 /*FROM TEST 9*/
-void DoArgumentPrecTest(const char *formatstr, int precision, void *param,
+inline void DoArgumentPrecTest_vsprintf(const char *formatstr, int precision, void *param,
                         char *paramstr, const char *checkstr1, const char *checkstr2)
 {
     char buf[256];
@@ -134,8 +141,9 @@ void DoArgumentPrecTest(const char *formatstr, int precision, void *param,
     }
 
 }
+#define DoArgumentPrecTest DoArgumentPrecTest_vsprintf
 
-void DoArgumentPrecDoubleTest(const char *formatstr, int precision, double param,
+inline void DoArgumentPrecDoubleTest_vsprintf(const char *formatstr, int precision, double param,
                               const char *checkstr1, const char *checkstr2)
 {
     char buf[256];
@@ -149,8 +157,10 @@ void DoArgumentPrecDoubleTest(const char *formatstr, int precision, double param
             precision, checkstr1, checkstr2, buf);
     }
 }
+#define DoArgumentPrecDoubleTest DoArgumentPrecDoubleTest_vsprintf
+
 /*FROM TEST4*/
-void DoPointerTest(const char *formatstr, void* param, char* paramstr,
+inline void DoPointerTest_vsprintf(const char *formatstr, void* param, char* paramstr,
                    const char *checkstr1)
 {
     char buf[256] = { 0 };
@@ -163,8 +173,9 @@ void DoPointerTest(const char *formatstr, void* param, char* paramstr,
             paramstr, formatstr, checkstr1, buf);
     }
 }
+#define DoPointerTest DoPointerTest_vsprintf
 
-void DoI64DoubleTest(const char *formatstr, INT64 value, char *valuestr,
+inline void DoI64DoubleTest_vsprintf(const char *formatstr, INT64 value, char *valuestr,
                      const char *checkstr1)
 {
     char buf[256] = { 0 };
@@ -177,8 +188,9 @@ void DoI64DoubleTest(const char *formatstr, INT64 value, char *valuestr,
             valuestr, formatstr, checkstr1, buf);
     }
 }
+#define DoI64DoubleTest DoI64DoubleTest_vsprintf
 
-void DoTest(const char *formatstr, int param, const char *checkstr)
+inline void DoTest_vsprintf(const char *formatstr, int param, const char *checkstr)
 {
     char buf[256] = { 0 };
     int n = -1;
@@ -195,8 +207,9 @@ void DoTest(const char *formatstr, int param, const char *checkstr)
         Fail("ERROR: Expected \"%s\" got \"%s\".\n", checkstr, buf);
     }
 }
+#define DoTest DoTest_vsprintf
 
-void DoShortTest(const char *formatstr, int param, const char *checkstr)
+inline void DoShortTest_vsprintf(const char *formatstr, int param, const char *checkstr)
 {
     char buf[256] = { 0 };
     short int n = -1;
@@ -213,6 +226,7 @@ void DoShortTest(const char *formatstr, int param, const char *checkstr)
         Fail("ERROR: Expected \"%s\" got \"%s\".\n", checkstr, buf);
     }
 }
+#define DoShortTest DoShortTest_vsprintf
 
 #endif
 

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 /*============================================================================
 **
@@ -14,7 +13,7 @@
 #ifndef __SWPRINTF_H__
 #define __SWPRINTF_H__
 
-void DoWStrTest(const WCHAR *formatstr, WCHAR *param, const WCHAR *checkstr)
+inline void DoWStrTest_swprintf_s(const WCHAR *formatstr, WCHAR *param, const WCHAR *checkstr)
 {
     WCHAR buf[256] = { 0 };
 
@@ -28,8 +27,9 @@ void DoWStrTest(const WCHAR *formatstr, WCHAR *param, const WCHAR *checkstr)
             convertC(checkstr), convertC(buf));
     }
 }
+#define DoWStrTest DoWStrTest_swprintf_s
 
-void DoStrTest(const WCHAR *formatstr, char *param, const WCHAR *checkstr)
+inline void DoStrTest_swprintf_s(const WCHAR *formatstr, char *param, const WCHAR *checkstr)
 {
     WCHAR buf[256] = { 0 };
 
@@ -43,8 +43,9 @@ void DoStrTest(const WCHAR *formatstr, char *param, const WCHAR *checkstr)
             convertC(buf));
     }
 }
+#define DoStrTest DoStrTest_swprintf_s
 
-void DoPointerTest(const WCHAR *formatstr, void* param, const WCHAR *checkstr1)
+inline void DoPointerTest_swprintf_s(const WCHAR *formatstr, void* param, const WCHAR *checkstr1)
 {
     WCHAR buf[256] = { 0 };
 
@@ -56,8 +57,9 @@ void DoPointerTest(const WCHAR *formatstr, void* param, const WCHAR *checkstr1)
             convertC(formatstr), convertC(checkstr1), convertC(buf));
     }    
 }
+#define DoPointerTest DoPointerTest_swprintf_s
 
-void DoCharTest(const WCHAR *formatstr, char param, const WCHAR *checkstr)
+inline void DoCharTest_swprintf_s(const WCHAR *formatstr, char param, const WCHAR *checkstr)
 {
     WCHAR buf[256] = { 0 };
 
@@ -69,8 +71,9 @@ void DoCharTest(const WCHAR *formatstr, char param, const WCHAR *checkstr)
              convertC(formatstr), convertC(checkstr), convertC(buf));
     }
 }
+#define DoCharTest DoCharTest_swprintf_s
 
-void DoWCharTest(const WCHAR *formatstr, WCHAR param, const WCHAR *checkstr)
+inline void DoWCharTest_swprintf_s(const WCHAR *formatstr, WCHAR param, const WCHAR *checkstr)
 {
     WCHAR buf[256] = { 0 };
 
@@ -82,8 +85,9 @@ void DoWCharTest(const WCHAR *formatstr, WCHAR param, const WCHAR *checkstr)
              convertC(formatstr), convertC(checkstr), convertC(buf));
     }
 }
+#define DoWCharTest DoWCharTest_swprintf_s
 
-void DoNumTest(const WCHAR *formatstr, int value, const WCHAR *checkstr)
+inline void DoNumTest_swprintf_s(const WCHAR *formatstr, int value, const WCHAR *checkstr)
 {
     WCHAR buf[256] = { 0 };
 
@@ -95,8 +99,9 @@ void DoNumTest(const WCHAR *formatstr, int value, const WCHAR *checkstr)
             convertC(checkstr), convertC(buf));
     }
 }
+#define DoNumTest DoNumTest_swprintf_s
 
-void DoI64Test(const WCHAR *formatstr, INT64 param, char *paramdesc,
+inline void DoI64Test_swprintf_s(const WCHAR *formatstr, INT64 param, char *paramdesc,
                const WCHAR *checkstr1)
 {
     WCHAR buf[256] = { 0 };
@@ -109,8 +114,9 @@ void DoI64Test(const WCHAR *formatstr, INT64 param, char *paramdesc,
             convertC(formatstr), convertC(checkstr1), convertC(buf));
     }
 }
+#define DoI64Test DoI64Test_swprintf_s
 
-void DoDoubleTest(const WCHAR *formatstr, double value, const WCHAR *checkstr1,
+inline void DoDoubleTest_swprintf_s(const WCHAR *formatstr, double value, const WCHAR *checkstr1,
                   const WCHAR *checkstr2)
 {
     WCHAR buf[256] = { 0 };
@@ -125,8 +131,9 @@ void DoDoubleTest(const WCHAR *formatstr, double value, const WCHAR *checkstr1,
             convertC(checkstr2), convertC(buf));
     }
 }
+#define DoDoubleTest DoDoubleTest_swprintf_s
 
-void DoArgumentPrecTest(const WCHAR *formatstr, int precision, void *param,
+inline void DoArgumentPrecTest_swprintf_s(const WCHAR *formatstr, int precision, void *param,
                         char *paramstr, const WCHAR *checkstr1, const WCHAR *checkstr2)
 {
     WCHAR buf[256];
@@ -141,8 +148,9 @@ void DoArgumentPrecTest(const WCHAR *formatstr, int precision, void *param,
             convertC(checkstr1), convertC(checkstr2), convertC(buf));
     }
 }
+#define DoArgumentPrecTest DoArgumentPrecTest_swprintf_s
 
-void DoArgumentPrecDoubleTest(const WCHAR *formatstr, int precision, double param,
+inline void DoArgumentPrecDoubleTest_swprintf_s(const WCHAR *formatstr, int precision, double param,
                               const WCHAR *checkstr1, const WCHAR *checkstr2)
 {
     WCHAR buf[256];
@@ -157,6 +165,7 @@ void DoArgumentPrecDoubleTest(const WCHAR *formatstr, int precision, double para
             convertC(checkstr1), convertC(checkstr2), convertC(buf));
     }
 }
+#define DoArgumentPrecDoubleTest DoArgumentPrecDoubleTest_swprintf_s
 
 #endif
 

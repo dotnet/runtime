@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Reflection;
@@ -63,7 +62,7 @@ namespace System.Runtime.InteropServices.Tests
         [PlatformSpecific(TestPlatforms.Windows)]
         public void GetUniqueObjectForIUnknown_NullPointer_ThrowsArgumentNullException()
         {
-            AssertExtensions.Throws<ArgumentNullException>("pUnk", () => Marshal.GetUniqueObjectForIUnknown(IntPtr.Zero));
+            AssertExtensions.Throws<ArgumentNullException>("unknown", () => Marshal.GetUniqueObjectForIUnknown(IntPtr.Zero));
         }
 
         private static void NonGenericMethod(int i) { }

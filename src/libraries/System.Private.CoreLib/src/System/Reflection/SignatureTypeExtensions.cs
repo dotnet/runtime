@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
+
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Reflection
 {
@@ -109,6 +110,8 @@ namespace System.Reflection
             return signatureType.TryResolve(genericMethod.GetGenericArguments());
         }
 
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+            Justification = "Used to find matching method overloads. Only used for assignability checks.")]
         private static Type? TryResolve(this SignatureType signatureType, Type[] genericMethodParameters)
         {
             if (signatureType.IsSZArray)
@@ -209,6 +212,7 @@ namespace System.Reflection
             }
         }
 
+        [RequiresUnreferencedCode("Wrapper around MakeGenericType which itself has RequiresUnreferencedCode")]
         private static Type? TryMakeGenericType(this Type type, Type[] instantiation)
         {
             try

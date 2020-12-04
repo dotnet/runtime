@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 /***
 *   mbusafecrt_internal.h - internal declarations for SafeCRT functions
@@ -64,6 +63,10 @@ typedef struct miniFILE_struct
     char* _base;
     int _flag;
 } miniFILE;
+
+#undef _IOWRT
+#undef _IOREAD
+#undef _IOMYBUF
 
 #define _IOSTRG 1
 #define _IOWRT 2

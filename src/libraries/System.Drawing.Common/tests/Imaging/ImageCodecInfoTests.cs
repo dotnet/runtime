@@ -1,8 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
-// See the LICENSE file in the project root for more information.
+// The .NET Foundation licenses this file to you under the MIT license.
 //
 // Authors:
-//  Jordi Mas i Hern√†ndez (jordi@ximian.com)
+//  Jordi Mas i Hern‡ndez (jordi@ximian.com)
 //  Sebastien Pouliot  <sebastien@ximian.com>
 //
 // (C) 2004 Ximian, Inc.  http://www.ximian.com

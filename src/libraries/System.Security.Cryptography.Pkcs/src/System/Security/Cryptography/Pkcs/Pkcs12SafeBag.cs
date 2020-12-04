@@ -1,10 +1,11 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Formats.Asn1;
 using System.Security.Cryptography.Asn1;
+using Internal.Cryptography;
 
 namespace System.Security.Cryptography.Pkcs
 {
@@ -41,9 +42,7 @@ namespace System.Security.Cryptography.Pkcs
                 throw new ArgumentNullException(nameof(bagIdValue));
 
             // Read to ensure that there is precisely one legally encoded value.
-            AsnReader reader = new AsnReader(encodedBagValue, AsnEncodingRules.BER);
-            reader.ReadEncodedValue();
-            reader.ThrowIfNotEmpty();
+            PkcsHelpers.EnsureSingleBerValue(encodedBagValue.Span);
 
             _bagIdValue = bagIdValue;
             EncodedBagValue = skipCopy ? encodedBagValue : encodedBagValue.ToArray();
@@ -51,10 +50,8 @@ namespace System.Security.Cryptography.Pkcs
 
         public byte[] Encode()
         {
-            using (AsnWriter writer = EncodeToNewWriter())
-            {
-                return writer.Encode();
-            }
+            AsnWriter writer = EncodeToNewWriter();
+            return writer.Encode();
         }
 
         public Oid GetBagId()
@@ -64,36 +61,24 @@ namespace System.Security.Cryptography.Pkcs
                 _bagOid = new Oid(_bagIdValue);
             }
 
-            return new Oid(_bagOid);
+            return _bagOid.CopyOid();
         }
 
         public bool TryEncode(Span<byte> destination, out int bytesWritten)
         {
-            using (AsnWriter writer = EncodeToNewWriter())
-            {
-                ReadOnlySpan<byte> encoded = writer.EncodeAsSpan();
-
-                if (destination.Length < encoded.Length)
-                {
-                    bytesWritten = 0;
-                    return false;
-                }
-
-                encoded.CopyTo(destination);
-                bytesWritten = encoded.Length;
-                return true;
-            }
+            AsnWriter writer = EncodeToNewWriter();
+            return writer.TryEncode(destination, out bytesWritten);
         }
 
         internal void EncodeTo(AsnWriter writer)
         {
             writer.PushSequence();
 
-            writer.WriteObjectIdentifier(_bagIdValue);
+            writer.WriteObjectIdentifierForCrypto(_bagIdValue);
 
             Asn1Tag contextSpecific0 = new Asn1Tag(TagClass.ContextSpecific, 0);
             writer.PushSequence(contextSpecific0);
-            writer.WriteEncodedValue(EncodedBagValue.Span);
+            writer.WriteEncodedValueForCrypto(EncodedBagValue.Span);
             writer.PopSequence(contextSpecific0);
 
             if (_attributes?.Count > 0)
@@ -116,17 +101,8 @@ namespace System.Security.Cryptography.Pkcs
         private AsnWriter EncodeToNewWriter()
         {
             AsnWriter writer = new AsnWriter(AsnEncodingRules.BER);
-
-            try
-            {
-                EncodeTo(writer);
-                return writer;
-            }
-            catch
-            {
-                writer.Dispose();
-                throw;
-            }
+            EncodeTo(writer);
+            return writer;
         }
 
         internal sealed class UnknownBag : Pkcs12SafeBag

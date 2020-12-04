@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections;
 using System.Collections.Generic;
@@ -125,7 +124,7 @@ namespace System.Configuration
         protected override object CreateSectionFactory(FactoryRecord factoryRecord)
         {
             // Get the type of the factory
-            Type type = TypeUtil.GetType(Host, factoryRecord.FactoryTypeName, true);
+            Type type = TypeUtil.GetType(Host, factoryRecord.FactoryTypeName, throwOnError: true);
 
             // If the type is not a ConfigurationSection, use the DefaultSection if the type
             // implements IConfigurationSectionHandler.

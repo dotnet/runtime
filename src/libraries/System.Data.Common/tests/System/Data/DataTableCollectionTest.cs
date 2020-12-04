@@ -1,5 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
-// See the LICENSE file in the project root for more information.
+// The .NET Foundation licenses this file to you under the MIT license.
 
 // (C) Punit Todi
 
@@ -262,7 +262,7 @@ namespace System.Data.Tests
             Assert.Equal("Table4", array1[5].TableName);
         }
         [Fact]
-        public void Equals()
+        public void EqualsTest()
         {
             DataTableCollection tbcol1 = _dataset[0].Tables;
             DataTableCollection tbcol2 = _dataset[1].Tables;

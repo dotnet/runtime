@@ -1,6 +1,5 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.IO;
 using System.Threading;
@@ -11,20 +10,33 @@ namespace System.Runtime.Tests
 {
     public class ProfileOptimizationTest : FileCleanupTestBase
     {
-        [Fact]
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [InlineData(false)]
+        [InlineData(true)]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/31853", TestRuntimes.Mono)]
-        public void ProfileOptimization_CheckFileExists()
+        public void ProfileOptimization_CheckFileExists(bool stopProfile)
         {
             string profileFile = GetTestFileName();
 
-            RemoteExecutor.Invoke((_profileFile) =>
+            RemoteExecutor.Invoke((_profileFile, _stopProfile) =>
             {
                 // Perform the test work
                 ProfileOptimization.SetProfileRoot(Path.GetDirectoryName(_profileFile));
                 ProfileOptimization.StartProfile(Path.GetFileName(_profileFile));
 
-            }, profileFile).Dispose();
+                if (bool.Parse(_stopProfile))
+                {
+                    ProfileOptimization.StartProfile(null);
+                    CheckProfileFileExists(_profileFile);
+                }
 
+            }, profileFile, stopProfile.ToString()).Dispose();
+
+            CheckProfileFileExists(profileFile);
+        }
+
+        static void CheckProfileFileExists(string profileFile)
+        {
             // profileFile should deterministically exist now -- if not, wait 5 seconds
             bool existed = File.Exists(profileFile);
             if (!existed)

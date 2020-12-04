@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 /*=============================================================================
 **
@@ -182,7 +181,7 @@ namespace System.Collections
         }
 
         // Removes the object at the head of the queue and returns it. If the queue
-        // is empty, this method simply returns null.
+        // is empty, this method throws an InvalidOperationException.
         public virtual object? Dequeue()
         {
             if (Count == 0)

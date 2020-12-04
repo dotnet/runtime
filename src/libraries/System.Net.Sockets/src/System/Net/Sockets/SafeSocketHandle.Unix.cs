@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Runtime.InteropServices;
@@ -23,6 +22,7 @@ namespace System.Net.Sockets
         internal bool LastConnectFailed { get; set; }
         internal bool DualMode { get; set; }
         internal bool ExposedHandleOrUntrackedConfiguration { get; private set; }
+        internal bool PreferInlineCompletions { get; set; } = SocketAsyncEngine.InlineSocketCompletionsEnabled;
 
         internal void RegisterConnectResult(SocketError error)
         {
@@ -178,7 +178,7 @@ namespace System.Net.Sockets
             }
         }
 
-        internal bool IsDisconnected { get; private set; } = false;
+        internal bool IsDisconnected { get; private set; }
 
         internal void SetToDisconnected()
         {
@@ -243,7 +243,7 @@ namespace System.Net.Sockets
             // EWOULDBLOCK, in which case we need to do some recovery.
             if (!abortive)
             {
-                if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"handle:{handle} Following 'non-abortive' branch.");
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"handle:{handle} Following 'non-abortive' branch.");
 
                 // Close, and if its errno is other than EWOULDBLOCK, there's nothing more to do - we either succeeded or failed.
                 errorCode = CloseHandle(handle);
@@ -274,7 +274,7 @@ namespace System.Net.Sockets
 #if DEBUG
             _closeSocketLinger = SocketPal.GetSocketErrorForErrorCode(errorCode);
 #endif
-            if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"handle:{handle}, setsockopt():{errorCode}");
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"handle:{handle}, setsockopt():{errorCode}");
 
             switch (errorCode)
             {
@@ -309,7 +309,7 @@ namespace System.Net.Sockets
                 }
             }
 
-            if (NetEventSource.IsEnabled)
+            if (NetEventSource.Log.IsEnabled())
             {
                 NetEventSource.Info(this, remappedError ?
                     $"handle:{handle}, close():ECONNRESET, but treating it as SUCCESS" :

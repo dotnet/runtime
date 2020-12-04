@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #ifndef __HOSTPOLICY_H__
 #define __HOSTPOLICY_H__
@@ -35,7 +34,7 @@ typedef corehost_error_writer_fn(HOSTPOLICY_CALLTYPE *corehost_set_error_writer_
 
 typedef int(HOSTPOLICY_CALLTYPE *corehost_initialize_fn)(
     const corehost_initialize_request_t *init_request,
-    int32_t options,
+    uint32_t options,
     corehost_context_contract *handle);
 
 #endif //__HOSTPOLICY_H__

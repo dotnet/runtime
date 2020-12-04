@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
@@ -70,14 +69,14 @@ namespace System.IO.Tests
             yield return new string[] { @"C:\tmp\", @"C:\tmp\" };
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void GetTempPath_SetEnvVar()
         {
             RemoteExecutor.Invoke(() =>
             {
                 foreach (string[] tempPath in GetTempPath_SetEnvVar_Data())
                 {
-                    GetTempPath_SetEnvVar("TMP", tempPath[0], tempPath[1]);
+                    GetTempPath_SetEnvVar_Helper("TMP", tempPath[0], tempPath[1]);
                 }
             }).Dispose();
         }

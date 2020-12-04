@@ -1,0 +1,137 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>exe</OutputType>
+    <CLRTestKind>BuildAndRun</CLRTestKind>
+    <CrossGenTest>false</CrossGenTest>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="fieldgetter.ilproj" />
+    <ProjectReference Include="testv1\test.csproj">
+      <Project>{F74F55A1-DFCF-4C7C-B462-E96E1D0BB667}</Project>
+    </ProjectReference>
+    <ProjectReference Include="CMakeLists.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="main.cs" />
+  </ItemGroup>
+  <PropertyGroup>
+    <CLRTestBatchPreCommands><![CDATA[
+$(CLRTestBatchPreCommands)
+DEL test.dll
+if exist test.dll (
+    echo FAILED to delete test.dll
+    exit /b 1
+)
+COPY /Y ..\testv1\test\test.dll test.dll
+if not exist test.dll (
+    echo FAILED to copy test.dll
+    exit /b 1
+)
+if defined RunCrossGen2 (
+  %Core_Root%\CoreRun.exe %Core_Root%\crossgen2\crossgen2.dll -r:%Core_Root%\*.dll -r:%25CD% -o:test.ni.dll test.dll
+) else (
+  %Core_Root%\crossgen /readytorun /platform_assemblies_paths %Core_Root%%3B%25CD% /out test.ni.dll test.dll 
+)
+set CrossGenStatus=!ERRORLEVEL!
+IF NOT !CrossGenStatus!==0 (
+    ECHO Crossgen failed with exitcode - !CrossGenStatus!
+    Exit /b 1
+)
+if not exist test.ni.dll (
+    echo FAILED to build test.ni.dll
+    exit /b 1
+)
+if defined RunCrossGen2 (
+  %Core_Root%\CoreRun.exe %Core_Root%\crossgen2\crossgen2.dll -r:%Core_Root%\*.dll -r:%25CD% -o:fieldgetter.ni.dll fieldgetter.dll 
+) else (
+  %Core_Root%\crossgen /readytorun /platform_assemblies_paths %Core_Root%%3B%25CD% /out fieldgetter.ni.dll fieldgetter.dll 
+)
+set CrossGenStatus=!ERRORLEVEL!
+IF NOT !CrossGenStatus!==0 (
+    ECHO Crossgen failed with exitcode - !CrossGenStatus!
+    Exit /b 1
+)
+if not exist fieldgetter.ni.dll (
+    echo FAILED to build fieldgetter.ni.dll
+    exit /b 1
+)
+if defined RunCrossGen2 (
+  %Core_Root%\CoreRun.exe %Core_Root%\crossgen2\crossgen2.dll -r:%Core_Root%\*.dll -r:%25CD% -o:mainv1.ni.dll mainv1.dll
+) else (
+  %Core_Root%\crossgen /readytorun /platform_assemblies_paths %Core_Root%%3B%25CD% /out mainv1.ni.dll mainv1.dll
+)
+set CrossGenStatus=!ERRORLEVEL!
+IF NOT !CrossGenStatus!==0 (
+    ECHO Crossgen failed with exitcode - !CrossGenStatus!
+    Exit /b 1
+)
+if not exist mainv1.ni.dll (
+    echo FAILED to build mainv1.ni.dll
+    exit /b 1
+)
+]]></CLRTestBatchPreCommands>
+    <BashCLRTestPreCommands><![CDATA[
+$(BashCLRTestPreCommands)
+rm -f test.dll
+if [ -f test.dll ]
+then
+  echo Failed to delete test.dll
+  exit 1
+fi
+cp ../testv1/test/test.dll test.dll
+if [ ! -f test.dll ]
+then
+  echo Failed to copy test.dll
+  exit 1
+fi
+if [ ! -z "$RunCrossGen2" ]; then
+  $CORE_ROOT/corerun $CORE_ROOT/crossgen2/crossgen2.dll -r:$CORE_ROOT/*.dll -r:`pwd` -o:test.ni.dll test.dll
+else
+  $CORE_ROOT/crossgen -readytorun -platform_assemblies_paths $CORE_ROOT:`pwd` -out test.ni.dll test.dll
+fi
+__cgExitCode=$?
+if [ $__cgExitCode -ne 0 ]
+then
+  echo Crossgen failed with exitcode: $__cgExitCode
+  exit 1
+fi
+if [ ! -f test.ni.dll ]
+then
+  echo Failed to build test.ni.dll
+  exit 1
+fi
+if [ ! -z "$RunCrossGen2" ]; then
+  $CORE_ROOT/corerun $CORE_ROOT/crossgen2/crossgen2.dll -r:$CORE_ROOT/*.dll -r:`pwd` -o:fieldgetter.ni.dll fieldgetter.dll
+else
+  $CORE_ROOT/crossgen -readytorun -platform_assemblies_paths $CORE_ROOT:`pwd` -out fieldgetter.ni.dll fieldgetter.dll
+fi
+__cgExitCode=$?
+if [ $__cgExitCode -ne 0 ]
+then
+  echo Crossgen failed with exitcode: $__cgExitCode
+  exit 1
+fi
+if [ ! -f fieldgetter.ni.dll ]
+then
+  echo Failed to build fieldgetter.ni.dll
+  exit 1
+fi
+if [ ! -z "$RunCrossGen2" ]; then
+  $CORE_ROOT/corerun $CORE_ROOT/crossgen2/crossgen2.dll -r:$CORE_ROOT/*.dll -r:`pwd` -o:mainv1.ni.dll mainv1.dll
+else
+  $CORE_ROOT/crossgen -readytorun -platform_assemblies_paths $CORE_ROOT:`pwd` -out mainv1.ni.dll mainv1.dll
+fi
+__cgExitCode=$?
+if [ $__cgExitCode -ne 0 ]
+then
+  echo Crossgen failed with exitcode: $__cgExitCode
+  exit 1
+fi
+if [ ! -f mainv1.ni.dll ]
+then
+  echo Failed to build mainv1.ni.dll
+  exit 1
+fi
+]]></BashCLRTestPreCommands>
+  </PropertyGroup>
+</Project>

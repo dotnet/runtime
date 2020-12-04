@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 //*****************************************************************************
 // File: debugger.h
 //
@@ -726,37 +725,6 @@ public:
         return GetRCThreadSendBuffer();
     }
 
-    DebuggerIPCEvent *GetIPCEventSendBufferContinuation(
-        DebuggerIPCEvent *eventCur)
-    {
-        CONTRACTL
-        {
-            NOTHROW;
-            GC_NOTRIGGER;
-            PRECONDITION(eventCur != NULL);
-            PRECONDITION(eventCur->next == NULL);
-        }
-        CONTRACTL_END;
-
-        DebuggerIPCEvent *dipce = (DebuggerIPCEvent *) new (nothrow) BYTE [CorDBIPC_BUFFER_SIZE];
-        dipce->next = NULL;
-
-        LOG((LF_CORDB,LL_INFO1000000, "About to GIPCESBC 0x%x\n",dipce));
-
-        if (dipce != NULL)
-        {
-            eventCur->next = dipce;
-        }
-#ifdef _DEBUG
-        else
-        {
-            _ASSERTE( !"GetIPCEventSendBufferContinuation failed to allocate mem!" );
-        }
-#endif //_DEBUG
-
-        return dipce;
-    }
-
     // Send an IPCEvent once we're ready for sending. This should be done inbetween
     // SENDIPCEVENT_BEGIN & SENDIPCEVENT_END. See definition of SENDIPCEVENT_BEGIN
     // for usage pattern
@@ -1201,7 +1169,7 @@ public:
     ~DebuggerHeapExecutableMemoryAllocator();
 
     void* Allocate(DWORD numberOfBytes);
-    int Free(void* addr);
+    void Free(void* addr);
 
 private:
     enum class ChangePageUsageAction {ALLOCATE, FREE};
@@ -1249,7 +1217,9 @@ protected:
     BOOL m_fExecutable;
 
 private:
+#ifndef HOST_WINDOWS
     DebuggerHeapExecutableMemoryAllocator *m_execMemAllocator;
+#endif
 };
 
 class DebuggerJitInfo;
@@ -3391,7 +3361,7 @@ public:
 /* ------------------------------------------------------------------------ *
  * DebuggerEval class
  *
- * Note that arguments get passsed in a block allocated when
+ * Note that arguments get passed in a block allocated when
  * the func-eval is set up.  The setup phase passes the total count of arguments.
  *
  * In some situations type arguments must also be passed, e.g.

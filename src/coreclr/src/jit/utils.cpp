@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 // ===================================================================================================
 // Portions of the code implemented below are based on the 'Berkeley SoftFloat Release 3e' algorithms.
@@ -129,7 +128,7 @@ const char* varTypeName(var_types vt)
     return varTypeNames[vt];
 }
 
-#if defined(DEBUG) || defined(LATE_DISASM)
+#if defined(DEBUG) || defined(LATE_DISASM) || DUMP_GC_TABLES
 /*****************************************************************************
  *
  *  Return the name of the given register.
@@ -165,7 +164,7 @@ const char* getRegName(unsigned reg,
 {
     return getRegName((regNumber)reg, isFloat);
 }
-#endif // defined(DEBUG) || defined(LATE_DISASM)
+#endif // defined(DEBUG) || defined(LATE_DISASM) || DUMP_GC_TABLES
 
 #if defined(DEBUG)
 
@@ -647,7 +646,7 @@ const char* genES2str(BitVecTraits* traits, EXPSET_TP set)
     return temp;
 }
 
-const char* refCntWtd2str(unsigned refCntWtd)
+const char* refCntWtd2str(BasicBlock::weight_t refCntWtd)
 {
     const int    bufSize = 17;
     static char  num1[bufSize];
@@ -664,16 +663,27 @@ const char* refCntWtd2str(unsigned refCntWtd)
     }
     else
     {
-        unsigned valueInt  = refCntWtd / BB_UNITY_WEIGHT;
-        unsigned valueFrac = refCntWtd % BB_UNITY_WEIGHT;
+        float scaledWeight = refCntWtd / BB_UNITY_WEIGHT;
+        float intPart      = (float)floor(scaledWeight);
+        bool  isLarge      = intPart > 1e9;
+        bool  isSmall      = (intPart < 1e-2) && (intPart != 0);
 
-        if (valueFrac == 0)
+        // Use g format for high dynamic range counts.
+        //
+        if (isLarge || isSmall)
         {
-            sprintf_s(temp, bufSize, "%u   ", valueInt);
+            sprintf_s(temp, bufSize, "%.2g", scaledWeight);
         }
         else
         {
-            sprintf_s(temp, bufSize, "%u.%02u", valueInt, (valueFrac * 100 / BB_UNITY_WEIGHT));
+            if (intPart == scaledWeight)
+            {
+                sprintf_s(temp, bufSize, "%lld   ", (long long)intPart);
+            }
+            else
+            {
+                sprintf_s(temp, bufSize, "%.2f", scaledWeight);
+            }
         }
     }
     return temp;
@@ -768,11 +778,11 @@ void ConfigMethodRange::InitRanges(const WCHAR* rangeStr, unsigned capacity)
             }
             else if ((L'A' <= *p) && (*p <= L'F'))
             {
-                n = (*p++) - L'A';
+                n = (*p++) - L'A' + 10;
             }
             else if ((L'a' <= *p) && (*p <= L'f'))
             {
-                n = (*p++) - L'a';
+                n = (*p++) - L'a' + 10;
             }
 
             int j = 16 * i + n;
@@ -847,9 +857,6 @@ void ConfigMethodRange::InitRanges(const WCHAR* rangeStr, unsigned capacity)
 //------------------------------------------------------------------------
 // Dump: dump hash ranges to stdout
 //
-// Arguments:
-//    hash -- hash value to check
-
 void ConfigMethodRange::Dump()
 {
     if (m_inited != 1)
@@ -867,7 +874,14 @@ void ConfigMethodRange::Dump()
     printf("<method range with %d entries>\n", m_lastRange);
     for (unsigned i = 0; i < m_lastRange; i++)
     {
-        printf("%i [%u-%u]\n", i, m_ranges[i].m_low, m_ranges[i].m_high);
+        if (m_ranges[i].m_low == m_ranges[i].m_high)
+        {
+            printf("%i [0x%08x]\n", i, m_ranges[i].m_low);
+        }
+        else
+        {
+            printf("%i [0x%08x-0x%08x]\n", i, m_ranges[i].m_low, m_ranges[i].m_high);
+        }
     }
 }
 
@@ -1312,6 +1326,7 @@ void HelperCallProperties::init()
             case CORINFO_HELP_RUNTIMEHANDLE_CLASS:
             case CORINFO_HELP_RUNTIMEHANDLE_METHOD_LOG:
             case CORINFO_HELP_RUNTIMEHANDLE_CLASS_LOG:
+            case CORINFO_HELP_READYTORUN_GENERIC_HANDLE:
                 // logging helpers are not technically pure but can be optimized away
                 isPure        = true;
                 noThrow       = true;
@@ -1332,7 +1347,7 @@ void HelperCallProperties::init()
                 break;
 
             case CORINFO_HELP_ARE_TYPES_EQUIVALENT:
-
+            case CORINFO_HELP_GETCURRENTMANAGEDTHREADID:
                 isPure  = true;
                 noThrow = true;
                 break;
@@ -1469,7 +1484,6 @@ void HelperCallProperties::init()
             case CORINFO_HELP_INIT_PINVOKE_FRAME:
             case CORINFO_HELP_JIT_PINVOKE_BEGIN:
             case CORINFO_HELP_JIT_PINVOKE_END:
-            case CORINFO_HELP_GETCURRENTMANAGEDTHREADID:
 
                 noThrow = true;
                 break;
@@ -1833,6 +1847,18 @@ unsigned CountDigits(unsigned num, unsigned base /* = 10 */)
     return count;
 }
 
+unsigned CountDigits(float num, unsigned base /* = 10 */)
+{
+    assert(2 <= base && base <= 16); // sanity check
+    unsigned count = 1;
+    while (num >= base)
+    {
+        num /= base;
+        ++count;
+    }
+    return count;
+}
+
 #endif // DEBUG
 
 double FloatingPointUtils::convertUInt64ToDouble(unsigned __int64 uIntVal)
@@ -2074,6 +2100,21 @@ bool FloatingPointUtils::isNormal(float x)
     int32_t bits = reinterpret_cast<int32_t&>(x);
     bits &= 0x7FFFFFFF;
     return (bits < 0x7F800000) && (bits != 0) && ((bits & 0x7F800000) != 0);
+}
+
+//------------------------------------------------------------------------
+// infinite_float: return an infinite float value
+//
+// Returns:
+//    Infinite float value.
+//
+// Notes:
+//    This is the predefined constant HUGE_VALF on many platforms.
+//
+float FloatingPointUtils::infinite_float()
+{
+    int32_t bits = 0x7F800000;
+    return *reinterpret_cast<float*>(&bits);
 }
 
 //------------------------------------------------------------------------
@@ -2398,10 +2439,9 @@ T GetSignedMagic(T denom, int* shift /*out*/)
     UT  q2;
     UT  t;
     T   result_magic;
-    int iters = 0;
 
     absDenom = abs(denom);
-    t        = two_nminus1 + ((unsigned int)denom >> 31);
+    t        = two_nminus1 + (UT(denom) >> bits_minus_1);
     absNc    = t - 1 - (t % absDenom);        // absolute value of nc
     p        = bits_minus_1;                  // initialize p
     q1       = two_nminus1 / absNc;           // initialize q1 = 2^p / abs(nc)
@@ -2411,7 +2451,6 @@ T GetSignedMagic(T denom, int* shift /*out*/)
 
     do
     {
-        iters++;
         p++;
         q1 *= 2; // update q1 = 2^p / abs(nc)
         r1 *= 2; // update r1 = rem(2^p / abs(nc))

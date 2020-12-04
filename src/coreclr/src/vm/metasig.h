@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 // METASIG.H
 //
 
@@ -175,7 +174,7 @@
 DEFINE_METASIG_T(SM(Int_IntPtr_Obj_RetException, i I j, C(EXCEPTION)))
 DEFINE_METASIG_T(SM(Type_ArrType_IntPtr_int_RetType, C(TYPE) a(C(TYPE)) I i, C(TYPE) ))
 DEFINE_METASIG_T(SM(Type_RetIntPtr, C(TYPE), I))
-DEFINE_METASIG(SM(IntPtr_IntPtr_IntPtr_Int_RetObj, I I I i, j))
+DEFINE_METASIG(SM(RefIntPtr_IntPtr_IntPtr_Int_RetObj, r(I) I I i, j))
 DEFINE_METASIG(SM(Obj_IntPtr_RetIntPtr, j I, I))
 DEFINE_METASIG(SM(Obj_IntPtr_RetObj, j I, j))
 DEFINE_METASIG(SM(Obj_RefIntPtr_RetVoid, j r(I), v))
@@ -186,19 +185,10 @@ DEFINE_METASIG(SM(IntPtr_IntPtr_RefIntPtr_RetObj, I I r(I), j))
 #ifdef FEATURE_COMINTEROP
 DEFINE_METASIG(SM(Obj_IntPtr_RefIntPtr_RefBool_RetIntPtr, j I r(I) r(F), I))
 DEFINE_METASIG(SM(Obj_IntPtr_RefIntPtr_RetIntPtr, j I r(I), I))
-DEFINE_METASIG_T(SM(Obj_Str_RetICustomProperty, j s, C(ICUSTOMPROPERTY)))
-DEFINE_METASIG_T(SM(Obj_Str_PtrTypeName_RetICustomProperty, j s P(g(TYPENAMENATIVE)), C(ICUSTOMPROPERTY)))
-DEFINE_METASIG_T(SM(Obj_PtrTypeName_RetVoid, j P(g(TYPENAMENATIVE)), v))
-DEFINE_METASIG_T(SM(Type_PtrTypeName_RetVoid, C(TYPE) P(g(TYPENAMENATIVE)), v))
-DEFINE_METASIG_T(SM(PtrTypeName_RefType_RetVoid, P(g(TYPENAMENATIVE)) r(C(TYPE)), v))
-DEFINE_METASIG_T(SM(ArrType_PtrTypeName_RetVoid, a(C(TYPE)) P(g(TYPENAMENATIVE)), v))
-DEFINE_METASIG_T(SM(PtrTypeName_ArrType_RetVoid, P(g(TYPENAMENATIVE)) a(C(TYPE)), v))
-DEFINE_METASIG_T(SM(PtrTypeName_RetVoid, P(g(TYPENAMENATIVE)), v))
-DEFINE_METASIG_T(SM(PtrTypeName_Int_RetVoid, P(g(TYPENAMENATIVE)) i, v))
-DEFINE_METASIG_T(SM(Exception_IntPtr_RetException, C(EXCEPTION) I, C(EXCEPTION)))
-DEFINE_METASIG_T(SM(ComWrappers_Obj_CreateFlags_RefInt_RetPtrVoid, C(COMWRAPPERS) j g(CREATECOMINTERFACEFLAGS) r(i), P(v)))
-DEFINE_METASIG_T(SM(ComWrappers_IntPtr_CreateFlags_RetObj, C(COMWRAPPERS) I g(CREATEOBJECTFLAGS), j))
+DEFINE_METASIG_T(SM(Scenario_ComWrappers_Obj_CreateFlags_RefInt_RetPtrVoid, g(COMWRAPPERSSCENARIO) C(COMWRAPPERS) j g(CREATECOMINTERFACEFLAGS) r(i), P(v)))
+DEFINE_METASIG_T(SM(Scenario_ComWrappers_IntPtr_CreateFlags_RetObj, g(COMWRAPPERSSCENARIO) C(COMWRAPPERS) I g(CREATEOBJECTFLAGS), j))
 DEFINE_METASIG_T(SM(ComWrappers_IEnumerable_RetVoid, C(COMWRAPPERS) C(IENUMERABLE), v))
+DEFINE_METASIG_T(SM(Obj_RefGuid_RefIntPtr_RetInt, j r(g(GUID)) r(I), i))
 #endif // FEATURE_COMINTEROP
 DEFINE_METASIG(SM(Int_RetVoid, i, v))
 DEFINE_METASIG(SM(Int_Int_RetVoid, i i, v))
@@ -316,6 +306,7 @@ DEFINE_METASIG_T(SM(RetMethodBase, _, C(METHOD_BASE)))
 DEFINE_METASIG(SM(RetVoid, _, v))
 DEFINE_METASIG(SM(Str_IntPtr_Int_RetVoid, s I i, v))
 DEFINE_METASIG(SM(Int_RetIntPtr, i, I))
+DEFINE_METASIG(SM(Int_IntPtr_RetIntPtr, i I, I))
 
 DEFINE_METASIG_T(SM(DateTime_RetDbl, g(DATE_TIME), d))
 DEFINE_METASIG(SM(Dbl_RetLong, d, l))
@@ -348,10 +339,6 @@ DEFINE_METASIG(SM(Obj_Obj_RefArrByte_RetArrByte, j j r(a(b)), a(b)))
 DEFINE_METASIG_T(SM(Obj_Int_RefVariant_RetVoid, j i r(g(VARIANT)), v))
 DEFINE_METASIG_T(SM(Obj_RefVariant_RetVoid, j r(g(VARIANT)), v))
 DEFINE_METASIG_T(SM(RefVariant_RetObject, r(g(VARIANT)), j))
-DEFINE_METASIG_T(SM(Str_PtrHStringHeader_RetIntPtr, s P(g(HSTRING_HEADER_MANAGED)), I))
-
-DEFINE_METASIG_T(SM(RefDateTimeOffset_RefDateTimeNative_RetVoid, r(g(DATE_TIME_OFFSET)) r(g(DATETIMENATIVE)), v))
-
 DEFINE_METASIG_T(IM(RuntimeTypeHandle_RefBool_RefIntPtr_RetVoid, g(RT_TYPE_HANDLE) r(F) r(I), v))
 
 #endif
@@ -365,6 +352,7 @@ DEFINE_METASIG(SM(Int_Str_IntPtr_Int_RetVoid, i s I i, v))
 DEFINE_METASIG(SM(Str_IntPtr_RetIntPtr, s I, I))
 DEFINE_METASIG(SM(Str_Bool_Int_RetV, s F i, v))
 
+DEFINE_METASIG_T(SM(Type_RetObj, C(TYPE), j))
 DEFINE_METASIG_T(SM(Type_RetInt, C(TYPE), i))
 DEFINE_METASIG(SM(ArrByte_RetObj, a(b), j))
 DEFINE_METASIG(SM(ArrByte_Bool_RetObj, a(b) F, j))
@@ -397,9 +385,6 @@ DEFINE_METASIG(IM(RetBool, _, F))
 DEFINE_METASIG(IM(RetArrByte, _, a(b)))
 DEFINE_METASIG_T(IM(RetArrParameterInfo, _, a(C(PARAMETER))))
 DEFINE_METASIG_T(IM(RetCultureInfo, _, C(CULTURE_INFO)))
-#ifdef FEATURE_COMINTEROP
-DEFINE_METASIG_T(IM(RetCausalityTraceLevel, _, g(CAUSALITY_TRACE_LEVEL)))
-#endif // FEATURE_COMINTEROP
 
 DEFINE_METASIG(IM(Bool_RetIntPtr, F, I))
 DEFINE_METASIG_T(IM(Bool_RetMethodInfo, F, C(METHOD_INFO)))
@@ -429,16 +414,6 @@ DEFINE_METASIG(IM(Obj_Int_RetIntPtr, j i, I))
 
 DEFINE_METASIG(IM(ArrByte_Int_Int_RetVoid, a(b) i i, v))
 DEFINE_METASIG(IM(PtrByte_RetVoid, P(b), v))
-
-#ifdef FEATURE_UTF8STRING
-DEFINE_METASIG_T(IM(ReadOnlySpanOfByte_RetUtf8Str, GI(g(READONLY_SPAN), 1, b), C(UTF8_STRING)))
-DEFINE_METASIG_T(IM(ReadOnlySpanOfChar_RetUtf8Str, GI(g(READONLY_SPAN), 1, u), C(UTF8_STRING)))
-DEFINE_METASIG_T(IM(ArrByte_Int_Int_RetUtf8Str, a(b) i i, C(UTF8_STRING)))
-DEFINE_METASIG_T(IM(PtrByte_RetUtf8Str, P(b), C(UTF8_STRING)))
-DEFINE_METASIG_T(IM(ArrChar_Int_Int_RetUtf8Str, a(u) i i, C(UTF8_STRING)))
-DEFINE_METASIG_T(IM(PtrChar_RetUtf8Str, P(u), C(UTF8_STRING)))
-DEFINE_METASIG_T(IM(String_RetUtf8Str, s, C(UTF8_STRING)))
-#endif // FEATURE_UTF8STRING
 
 DEFINE_METASIG(IM(Char_Char_RetStr, u u, s))
 DEFINE_METASIG(IM(Char_Int_RetVoid, u i, v))
@@ -485,12 +460,12 @@ DEFINE_METASIG_T(IM(Obj_Obj_BindingFlags_Binder_CultureInfo_RetVoid, j j g(BINDI
 DEFINE_METASIG_T(IM(Obj_Obj_BindingFlags_Binder_ArrObj_CultureInfo_RetVoid, j j g(BINDING_FLAGS) C(BINDER) a(j) C(CULTURE_INFO), v))
 DEFINE_METASIG_T(IM(Obj_BindingFlags_Binder_ArrObj_CultureInfo_RetObj, j g(BINDING_FLAGS) C(BINDER) a(j) C(CULTURE_INFO), j))
 DEFINE_METASIG_T(IM(Obj_Type_CultureInfo_RetObj, j C(TYPE) C(CULTURE_INFO), j))
-DEFINE_METASIG_T(IM(MemberInfo_RetVoid, C(MEMBER), v))
 DEFINE_METASIG(IM(IntPtr_ArrObj_Obj_RefArrObj_RetObj, I a(j) j r(a(j)), j))
 DEFINE_METASIG(IM(RefObject_RetBool, r(j), F))
 DEFINE_METASIG_T(IM(Class_RetObj, C(CLASS), j))
 DEFINE_METASIG(IM(Int_VoidPtr_RetVoid, i P(v), v))
 DEFINE_METASIG(IM(VoidPtr_RetVoid, P(v), v))
+DEFINE_METASIG(SM(VoidPtr_RetObj, P(v), j))
 
 DEFINE_METASIG_T(IM(Str_RetModule, s, C(MODULE)))
 DEFINE_METASIG_T(SM(Assembly_Str_RetAssembly, C(ASSEMBLY) s, C(ASSEMBLY)))
@@ -499,8 +474,6 @@ DEFINE_METASIG(IM(Str_Str_Obj_RetVoid, s s j, v))
 DEFINE_METASIG(IM(Str_Str_Str_Obj_RetVoid, s s s j, v))
 DEFINE_METASIG(IM(Str_Str_Str_Obj_Bool_RetVoid, s s s j F, v))
 DEFINE_METASIG(IM(Str_Str_RefObj_RetVoid, s s r(j), v))
-DEFINE_METASIG_T(IM(Str_RetFieldInfo, s, C(FIELD_INFO)))
-DEFINE_METASIG_T(IM(Str_RetPropertyInfo, s, C(PROPERTY_INFO)))
 DEFINE_METASIG(SM(Str_RetStr, s, s))
 DEFINE_METASIG_T(SM(Str_CultureInfo_RetStr, s C(CULTURE_INFO), s))
 DEFINE_METASIG_T(SM(Str_CultureInfo_RefBool_RetStr, s C(CULTURE_INFO) r(F), s))
@@ -526,7 +499,6 @@ DEFINE_METASIG_T(IM(Str_BindingFlags_RetMethodInfo, s g(BINDING_FLAGS), C(METHOD
 DEFINE_METASIG_T(IM(Str_BindingFlags_RetPropertyInfo, s g(BINDING_FLAGS), C(PROPERTY_INFO)))
 DEFINE_METASIG_T(IM(Str_BindingFlags_Binder_Obj_ArrObj_ArrParameterModifier_CultureInfo_ArrStr_RetObj, \
                  s g(BINDING_FLAGS) C(BINDER) j a(j) a(g(PARAMETER_MODIFIER)) C(CULTURE_INFO) a(s), j))
-DEFINE_METASIG_T(IM(Str_Delegate_RetMethodInfo, s C(DELEGATE), C(METHOD_INFO)))
 DEFINE_METASIG_T(IM(Str_Type_Str_RetVoid, s C(TYPE) s, v))
 DEFINE_METASIG_T(SM(Delegate_RetIntPtr, C(DELEGATE), I))
 DEFINE_METASIG_T(SM(Delegate_RefIntPtr_RetIntPtr, C(DELEGATE) r(I), I))
@@ -603,6 +575,9 @@ DEFINE_METASIG_T(SM(RefCleanupWorkListElement_Obj_RetVoid, r(C(CLEANUP_WORK_LIST
 DEFINE_METASIG_T(SM(ICastable_RtType_RefException_RetBool, C(ICASTABLE) C(CLASS) r(C(EXCEPTION)), F))
 DEFINE_METASIG_T(SM(ICastable_RtType_RetRtType, C(ICASTABLE) C(CLASS), C(CLASS)))
 #endif // FEATURE_ICASTABLE
+
+DEFINE_METASIG_T(SM(IDynamicInterfaceCastable_RuntimeType_Bool_RetBool, C(IDYNAMICINTERFACECASTABLE) C(CLASS) F, F))
+DEFINE_METASIG_T(SM(IDynamicInterfaceCastable_RuntimeType_RetRtType, C(IDYNAMICINTERFACECASTABLE) C(CLASS), C(CLASS)))
 
 DEFINE_METASIG_T(IM(ArrByte_Int_Int_AsyncCallback_Object_RetIAsyncResult, a(b) i i C(ASYNCCALLBACK) j, C(IASYNCRESULT)))
 DEFINE_METASIG_T(IM(IAsyncResult_RetInt, C(IASYNCRESULT), i))

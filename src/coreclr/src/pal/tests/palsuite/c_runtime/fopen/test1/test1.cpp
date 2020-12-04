@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 /*=====================================================================
 **
@@ -25,7 +24,7 @@ struct testCase
     char mode[20];
 };
 
-int __cdecl main(int argc, char **argv)
+PALTEST(c_runtime_fopen_test1_paltest_fopen_test1, "c_runtime/fopen/test1/paltest_fopen_test1")
 {
   
     FILE *fp;

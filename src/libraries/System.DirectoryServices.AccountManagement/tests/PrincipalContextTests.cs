@@ -1,6 +1,5 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.ComponentModel;
 using System.Runtime.InteropServices;
@@ -10,7 +9,8 @@ namespace System.DirectoryServices.AccountManagement.Tests
 {
     public class PrincipalContextTests
     {
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer), nameof(PlatformDetection.IsNotWindowsIoTCore))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoNorServerCore), nameof(PlatformDetection.IsNotWindowsIoTCore))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34442", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         public void Ctor_ContextType()
         {
             var context = new PrincipalContext(ContextType.Machine);
@@ -23,7 +23,7 @@ namespace System.DirectoryServices.AccountManagement.Tests
             Assert.Equal(Environment.MachineName, context.ConnectedServer);
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoNorServerCore))]
         [OuterLoop("Takes too long on domain joined machines")]
         [InlineData(ContextType.Machine, null)]
         [InlineData(ContextType.Machine, "")]
@@ -49,13 +49,13 @@ namespace System.DirectoryServices.AccountManagement.Tests
             }
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoNorServerCore))]
         [OuterLoop("Takes too long on domain joined machines")]
         [InlineData(ContextType.Machine, null, null)]
         [InlineData(ContextType.Machine, "", null)]
         [InlineData(ContextType.Machine, "\0", null)]
         [InlineData(ContextType.Machine, "name", null)]
-        public void Ctor_ContextType_Name(ContextType contextType, string name, string container)
+        public void Ctor_ContextType_Name_Container(ContextType contextType, string name, string container)
         {
             var context = new PrincipalContext(contextType, name, container);
             Assert.Equal(contextType, context.ContextType);
@@ -75,7 +75,7 @@ namespace System.DirectoryServices.AccountManagement.Tests
             }
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoNorServerCore))]
         [OuterLoop("Takes too long on domain joined machines")]
         [InlineData(ContextType.Machine, null, null, ContextOptions.Negotiate)]
         [InlineData(ContextType.Machine, "", null, ContextOptions.Negotiate)]
@@ -102,7 +102,7 @@ namespace System.DirectoryServices.AccountManagement.Tests
         }
 
         [ActiveIssue("https://github.com/dotnet/runtime/issues/23448")]
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoNorServerCore))]
         [OuterLoop("Takes too long on domain joined machines")]
         [InlineData(ContextType.Machine, null, "userName", "password")]
         [InlineData(ContextType.Machine, "", "", "")]
@@ -128,7 +128,7 @@ namespace System.DirectoryServices.AccountManagement.Tests
         }
 
         [ActiveIssue("https://github.com/dotnet/runtime/issues/23448")]
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoNorServerCore))]
         [OuterLoop("Takes too long on domain joined machines")]
         [InlineData(ContextType.Machine, null, null, "userName", "password")]
         [InlineData(ContextType.Machine, "", null, "", "")]
@@ -288,7 +288,8 @@ namespace System.DirectoryServices.AccountManagement.Tests
             Assert.Throws<ObjectDisposedException>(() => context.UserName);
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer), nameof(PlatformDetection.IsNotWindowsIoTCore))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoNorServerCore), nameof(PlatformDetection.IsNotWindowsIoTCore))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34442", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         [InlineData(null, null, true)]
         [InlineData("", "", false)]
         public void ValidateCredentials_Invoke_ReturnsExpected(string userName, string password, bool expected)
@@ -299,7 +300,7 @@ namespace System.DirectoryServices.AccountManagement.Tests
         }
 
         [ActiveIssue("https://github.com/dotnet/runtime/issues/23448")]
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoNorServerCore))]
         [OuterLoop("Takes too long on domain joined machines")]
         public void ValidateCredentials_InvalidUserName_ThrowsException()
         {
@@ -308,7 +309,7 @@ namespace System.DirectoryServices.AccountManagement.Tests
         }
 
         [ActiveIssue("https://github.com/dotnet/runtime/issues/23448")]
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoNorServerCore))]
         [OuterLoop("Takes too long on domain joined machines")]
         public void ValidateCredentials_IncorrectUserNamePassword_ThrowsException()
         {

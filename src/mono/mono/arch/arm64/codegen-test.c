@@ -416,6 +416,19 @@ main (int argc, char *argv [])
 	arm_stlxrx (code, ARMREG_R0, ARMREG_R1, ARMREG_R2);
 	arm_stlxrw (code, ARMREG_R0, ARMREG_R1, ARMREG_R2);
 
+	arm_paciasp (code);
+	arm_pacibsp (code);
+	arm_retaa (code);
+	arm_retab (code);
+	arm_braaz (code, ARMREG_R1);
+	arm_brabz (code, ARMREG_R1);
+	arm_braa (code, ARMREG_R1, ARMREG_R2);
+	arm_brab (code, ARMREG_R1, ARMREG_R2);
+	arm_blraaz (code, ARMREG_R1);
+	arm_blraa (code, ARMREG_R1, ARMREG_R2);
+	arm_blrabz (code, ARMREG_R1);
+	arm_blrab (code, ARMREG_R1, ARMREG_R2);
+
 	for (i = 0; i < code - buf; ++i)
 		printf (".byte %d\n", buf [i]);
 	printf ("\n");

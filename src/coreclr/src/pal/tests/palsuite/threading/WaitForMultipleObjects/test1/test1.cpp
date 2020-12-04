@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 /*============================================================
 **
@@ -170,7 +169,7 @@ BOOL WaitForMultipleObjectsTest()
     return bRet;
 }
 
-BOOL WaitMultipleDuplicateHandleTest()
+BOOL WaitMultipleDuplicateHandleTest_WFMO_test1()
 {
     BOOL testResult = TRUE;
     const HANDLE eventHandle = CreateEvent(NULL, TRUE, TRUE, NULL);
@@ -200,7 +199,7 @@ BOOL WaitMultipleDuplicateHandleTest()
     return testResult;
 }
 
-int __cdecl main(int argc, char **argv)
+PALTEST(threading_WaitForMultipleObjects_test1_paltest_waitformultipleobjects_test1, "threading/WaitForMultipleObjects/test1/paltest_waitformultipleobjects_test1")
 {
     
     if(0 != (PAL_Initialize(argc, argv)))
@@ -213,7 +212,7 @@ int __cdecl main(int argc, char **argv)
         Fail ("Test failed\n");
     }
 
-    if (!WaitMultipleDuplicateHandleTest())
+    if (!WaitMultipleDuplicateHandleTest_WFMO_test1())
     {
         Fail("Test failed\n");
     }

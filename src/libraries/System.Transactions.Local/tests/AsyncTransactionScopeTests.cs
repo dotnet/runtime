@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Concurrent;
 using System.Diagnostics;
@@ -21,7 +20,7 @@ namespace System.Transactions.Tests
         private const int iterations = 5;
 
         // The work queue that requests will be placed in to be serviced by the background thread
-        private static BlockingCollection<Tuple<int, TaskCompletionSource<object>, Transaction>> s_workQueue = new BlockingCollection<Tuple<int, TaskCompletionSource<object>, Transaction>>();
+        private static BlockingCollection<Tuple<int, TaskCompletionSource, Transaction>> s_workQueue = new BlockingCollection<Tuple<int, TaskCompletionSource, Transaction>>();
 
         private static bool s_throwExceptionDefaultOrBeforeAwait;
         private static bool s_throwExceptionAfterAwait;
@@ -40,7 +39,7 @@ namespace System.Transactions.Tests
         /// <summary>
         /// This test case will verify various Async TransactionScope usage with task and async/await and also nested mixed mode(legacy TS and async TS) usage.
         /// </summary>
-        [Theory]
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [InlineData(0)]
         [InlineData(1)]
         [InlineData(2)]
@@ -435,7 +434,7 @@ namespace System.Transactions.Tests
             }, variation.ToString()).Dispose();
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [InlineData(true, false, null)]
         [InlineData(true, true, null)]
         public void AsyncTSAndDependantClone(bool requiresNew, bool syncronizeScope, string txId)
@@ -525,7 +524,7 @@ namespace System.Transactions.Tests
             AssertTransaction(txId);
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [InlineData(true, false, null)]
         [InlineData(true, true, null)]
         public void NestedAsyncTSAndDependantClone(bool parentrequiresNew, bool childRequiresNew, string txId)
@@ -1107,7 +1106,7 @@ namespace System.Transactions.Tests
             AssertTransactionNull();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public void VerifyBYOTOpenConnSimulationTest()
         {
             // Create threads to do work
@@ -1123,7 +1122,7 @@ namespace System.Transactions.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public async Task VerifyBYOTSyncTSNestedAsync()
         {
             string txId1;
@@ -1150,7 +1149,7 @@ namespace System.Transactions.Tests
             });
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public async Task VerifyBYOTAsyncTSNestedAsync()
         {
             string txId1;
@@ -1174,7 +1173,7 @@ namespace System.Transactions.Tests
             AssertTransactionNull();
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [InlineData(TransactionScopeAsyncFlowOption.Suppress)]
         [InlineData(TransactionScopeAsyncFlowOption.Enabled)]
         public void DoTxQueueWorkItem(TransactionScopeAsyncFlowOption asyncFlowOption)
@@ -1210,7 +1209,7 @@ namespace System.Transactions.Tests
             AssertTransactionNull();
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [InlineData(TransactionScopeAsyncFlowOption.Suppress)]
         [InlineData(TransactionScopeAsyncFlowOption.Enabled)]
         public void DoTxNewThread(TransactionScopeAsyncFlowOption asyncFlowOption)
@@ -1247,7 +1246,7 @@ namespace System.Transactions.Tests
             string txId1;
             string txId2;
 
-            TaskCompletionSource<object> completionSource = new TaskCompletionSource<object>();
+            TaskCompletionSource completionSource = new TaskCompletionSource();
 
             // Start a transaction - presumably the customer would do this in our code
             using (TransactionScope ts = new TransactionScope(TransactionScopeOption.RequiresNew, TransactionScopeAsyncFlowOption.Enabled))
@@ -1290,7 +1289,7 @@ namespace System.Transactions.Tests
                     Debug.WriteLine("{0}: {1}", work.Item1, Transaction.Current == work.Item3);
 
                     // Tell the other thread that we completed its work
-                    work.Item2.SetResult(null);
+                    work.Item2.SetResult();
                 }
             }, CancellationToken.None, TaskCreationOptions.LongRunning, TaskScheduler.Default);
         }

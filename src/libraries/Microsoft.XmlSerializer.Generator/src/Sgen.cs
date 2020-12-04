@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -454,8 +453,7 @@ namespace Microsoft.XmlSerializer.Generator
         private void WriteHeader()
         {
             // do not localize Copyright header
-            Console.WriteLine(string.Format(CultureInfo.CurrentCulture, "[Microsoft (R) .NET Core Xml Serialization Generation Utility, Version {0}]", ThisAssembly.InformationalVersion));
-            Console.WriteLine("Copyright (C) Microsoft Corporation. All rights reserved.");
+            Console.WriteLine(string.Format(CultureInfo.CurrentCulture, ".NET Xml Serialization Generation Utility, Version {0}]", ThisAssembly.InformationalVersion));
         }
 
         private void WriteHelp()

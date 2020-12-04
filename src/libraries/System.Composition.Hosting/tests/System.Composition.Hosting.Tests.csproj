@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>$(NetCoreAppCurrent);$(NetFrameworkCurrent)</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent);net461</TargetFrameworks>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System\Composition\Hosting\Core\CompositionDependencyTests.cs" />
@@ -11,5 +11,11 @@
     <Compile Include="System\Composition\Hosting\Core\ExportDescriptorProviderTests.cs" />
     <Compile Include="System\Composition\Hosting\Core\LifetimeContextTests.cs" />
     <Compile Include="System\Composition\Hosting\Core\ExportDescriptorTests.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\src\System.Composition.Hosting.csproj" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetFramework)' == 'net461'">
+    <Reference Include="System.ComponentModel.Composition" />
   </ItemGroup>
 </Project>

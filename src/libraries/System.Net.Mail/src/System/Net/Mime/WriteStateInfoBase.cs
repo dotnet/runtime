@@ -1,13 +1,12 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 namespace System.Net.Mime
 {
     internal class WriteStateInfoBase
     {
-        protected readonly byte[] _header;
-        protected readonly byte[] _footer;
+        protected readonly byte[]? _header;
+        protected readonly byte[]? _footer;
         protected readonly int _maxLineLength;
 
         protected byte[] _buffer;
@@ -28,12 +27,12 @@ namespace System.Net.Mime
             _currentBufferUsed = 0;
         }
 
-        internal WriteStateInfoBase(int bufferSize, byte[] header, byte[] footer, int maxLineLength)
+        internal WriteStateInfoBase(int bufferSize, byte[]? header, byte[]? footer, int maxLineLength)
             : this(bufferSize, header, footer, maxLineLength, 0)
         {
         }
 
-        internal WriteStateInfoBase(int bufferSize, byte[] header, byte[] footer, int maxLineLength, int mimeHeaderLength)
+        internal WriteStateInfoBase(int bufferSize, byte[]? header, byte[]? footer, int maxLineLength, int mimeHeaderLength)
         {
             _buffer = new byte[bufferSize];
             _header = header;
@@ -44,9 +43,9 @@ namespace System.Net.Mime
             _currentBufferUsed = 0;
         }
 
-        internal int FooterLength => _footer.Length;
-        internal byte[] Footer => _footer;
-        internal byte[] Header => _header;
+        internal int FooterLength => _footer!.Length;
+        internal byte[]? Footer => _footer;
+        internal byte[]? Header => _header;
         internal byte[] Buffer => _buffer;
         internal int Length => _currentBufferUsed;
         internal int CurrentLineLength => _currentLineLength;

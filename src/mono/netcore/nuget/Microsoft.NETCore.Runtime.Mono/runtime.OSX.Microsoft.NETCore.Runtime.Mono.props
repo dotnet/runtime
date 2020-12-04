@@ -1,7 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?>
-<Project>
-  <ItemGroup>
-    <NativeBinary Include="$(BinDir)libcoreclr.dylib" />
-    <ArchitectureSpecificLibFile Include="$(BinDir)System.Private.CoreLib.dll" />
-  </ItemGroup>
-</Project>

@@ -1,10 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Xml.Schema;
-
 
 namespace System.Xml.Serialization
 {
@@ -14,8 +13,8 @@ namespace System.Xml.Serialization
     [AttributeUsage(AttributeTargets.Field | AttributeTargets.Property | AttributeTargets.Parameter | AttributeTargets.ReturnValue, AllowMultiple = false)]
     public class XmlArrayAttribute : System.Attribute
     {
-        private string _elementName;
-        private string _ns;
+        private string? _elementName;
+        private string? _ns;
         private bool _nullable;
         private XmlSchemaForm _form = XmlSchemaForm.None;
         private int _order = -1;
@@ -30,7 +29,7 @@ namespace System.Xml.Serialization
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
-        public XmlArrayAttribute(string elementName)
+        public XmlArrayAttribute(string? elementName)
         {
             _elementName = elementName;
         }
@@ -38,6 +37,7 @@ namespace System.Xml.Serialization
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
+        [AllowNull]
         public string ElementName
         {
             get { return _elementName == null ? string.Empty : _elementName; }
@@ -47,7 +47,7 @@ namespace System.Xml.Serialization
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
-        public string Namespace
+        public string? Namespace
         {
             get { return _ns; }
             set { _ns = value; }

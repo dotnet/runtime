@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -170,15 +169,18 @@ namespace System.Collections.Concurrent
         /// <param name="result">To receive the item retrieved from the bag</param>
         /// <param name="take">Whether to remove or peek.</param>
         /// <returns>True if succeeded, false otherwise.</returns>
-        private bool TrySteal(out T result, bool take)
+        private bool TrySteal([MaybeNullWhen(false)] out T result, bool take)
         {
-            if (take)
+            if (CDSCollectionETWBCLProvider.Log.IsEnabled())
             {
-                CDSCollectionETWBCLProvider.Log.ConcurrentBag_TryTakeSteals();
-            }
-            else
-            {
-                CDSCollectionETWBCLProvider.Log.ConcurrentBag_TryPeekSteals();
+                if (take)
+                {
+                    CDSCollectionETWBCLProvider.Log.ConcurrentBag_TryTakeSteals();
+                }
+                else
+                {
+                    CDSCollectionETWBCLProvider.Log.ConcurrentBag_TryPeekSteals();
+                }
             }
 
             while (true)
@@ -216,7 +218,12 @@ namespace System.Collections.Concurrent
                     (TryStealFromTo(localQueue._nextQueue, null, out result, take) || TryStealFromTo(_workStealingQueues, localQueue, out result, take));
                 if (gotItem)
                 {
+#pragma warning disable CS8762
+                    // https://github.com/dotnet/runtime/issues/36132
+                    // Compiler can't automatically deduce that nullability constraints
+                    // for 'result' are satisfied at this exit point.
                     return true;
+#pragma warning restore CS8762
                 }
 
                 if (Interlocked.Read(ref _emptyToNonEmptyListTransitionCount) == initialEmptyToNonEmptyCounts)
@@ -245,7 +252,7 @@ namespace System.Collections.Concurrent
                 }
             }
 
-            result = default(T)!;
+            result = default(T);
             return false;
         }
 
@@ -441,7 +448,7 @@ namespace System.Collections.Concurrent
                 FreezeBag(ref lockTaken);
                 for (WorkStealingQueue? queue = _workStealingQueues; queue != null; queue = queue._nextQueue)
                 {
-                    T ignored;
+                    T? ignored;
                     while (queue.TrySteal(out ignored, take: true));
                 }
             }
@@ -867,7 +874,7 @@ namespace System.Collections.Concurrent
                 int tail = _tailIndex;
                 if (_headIndex - tail >= 0)
                 {
-                    result = default(T)!;
+                    result = default(T);
                     return false;
                 }
 
@@ -911,7 +918,7 @@ namespace System.Collections.Concurrent
                         {
                             // We encountered a race condition and the element was stolen, restore the tail.
                             _tailIndex = tail + 1;
-                            result = default(T)!;
+                            result = default(T);
                             return false;
                         }
                     }
@@ -955,7 +962,7 @@ namespace System.Collections.Concurrent
                     }
                 }
 
-                result = default(T)!;
+                result = default(T);
                 return false;
             }
 
@@ -1012,7 +1019,7 @@ namespace System.Collections.Concurrent
                 }
 
                 // The queue was empty.
-                result = default(T)!;
+                result = default(T);
                 return false;
             }
 
@@ -1082,7 +1089,7 @@ namespace System.Collections.Concurrent
         private sealed class Enumerator : IEnumerator<T>
         {
             private readonly T[] _array;
-            [AllowNull] private T _current = default;
+            private T? _current;
             private int _index;
 
             public Enumerator(T[] array)
@@ -1103,7 +1110,7 @@ namespace System.Collections.Concurrent
                 return false;
             }
 
-            public T Current => _current;
+            public T Current => _current!;
 
             object? IEnumerator.Current
             {

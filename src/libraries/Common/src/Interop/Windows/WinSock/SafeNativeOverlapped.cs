@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #nullable enable
 using System.Diagnostics;
@@ -18,7 +17,7 @@ namespace System.Net.Sockets
         private SafeNativeOverlapped()
             : this(IntPtr.Zero)
         {
-            if (NetEventSource.IsEnabled) NetEventSource.Info(this);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this);
         }
 
         private SafeNativeOverlapped(IntPtr handle)
@@ -32,7 +31,7 @@ namespace System.Net.Sockets
         {
             _socketHandle = socketHandle;
 
-            if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"socketHandle:{socketHandle}");
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"socketHandle:{socketHandle}");
         }
 
         public override bool IsInvalid
@@ -42,30 +41,28 @@ namespace System.Net.Sockets
 
         protected override bool ReleaseHandle()
         {
-            if (NetEventSource.IsEnabled) NetEventSource.Info(this);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this);
 
             FreeNativeOverlapped();
 
             return true;
         }
 
-        private void FreeNativeOverlapped()
+        private unsafe void FreeNativeOverlapped()
         {
             // Do not call free during AppDomain shutdown, there may be an outstanding operation.
             // Overlapped will take care calling free when the native callback completes.
             IntPtr oldHandle = Interlocked.Exchange(ref handle, IntPtr.Zero);
             if (oldHandle != IntPtr.Zero && !Environment.HasShutdownStarted)
             {
-                unsafe
-                {
-                    Debug.Assert(_socketHandle != null, "_socketHandle is null.");
+                Debug.Assert(OperatingSystem.IsWindows());
+                Debug.Assert(_socketHandle != null, "_socketHandle is null.");
 
-                    ThreadPoolBoundHandle? boundHandle = _socketHandle.IOCPBoundHandle;
-                    Debug.Assert(boundHandle != null, "SafeNativeOverlapped::FreeNativeOverlapped - boundHandle is null");
+                ThreadPoolBoundHandle? boundHandle = _socketHandle.IOCPBoundHandle;
+                Debug.Assert(boundHandle != null, "SafeNativeOverlapped::FreeNativeOverlapped - boundHandle is null");
 
-                    // FreeNativeOverlapped will be called even if boundHandle was previously disposed.
-                    boundHandle?.FreeNativeOverlapped((NativeOverlapped*)oldHandle);
-                }
+                // FreeNativeOverlapped will be called even if boundHandle was previously disposed.
+                boundHandle?.FreeNativeOverlapped((NativeOverlapped*)oldHandle);
             }
         }
     }

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 /*============================================================
 **
@@ -211,7 +210,7 @@ enterandleavecs( LPVOID lpParam )
 }
 
 
-int __cdecl main (int argc, char **argv) 
+PALTEST(composite_synchronization_criticalsection_paltest_synchronization_criticalsection, "composite/synchronization/criticalsection/paltest_synchronization_criticalsection")
 {
 
 /*

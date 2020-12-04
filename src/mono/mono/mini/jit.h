@@ -65,6 +65,8 @@ typedef enum {
 	MONO_AOT_MODE_INTERP_LLVMONLY,
 	/* Use only llvm compiled code, fall back to the interpeter */
 	MONO_AOT_MODE_LLVMONLY_INTERP,
+	/* Same as --interp */
+	MONO_AOT_MODE_INTERP_ONLY,
 	/* Sentinel value used internally by the runtime. We use a large number to avoid clashing with some internal values. */
 	MONO_AOT_MODE_LAST = 1000,
 } MonoAotMode;
@@ -111,7 +113,6 @@ mono_aot_register_module (void **aot_info);
 
 MONO_API MONO_RT_EXTERNAL_ONLY
 MonoDomain* mono_jit_thread_attach (MonoDomain *domain);
-
 
 MONO_END_DECLS
 

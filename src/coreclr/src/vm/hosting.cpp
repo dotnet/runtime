@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 //
 
 
@@ -13,8 +12,6 @@
 
 #define countof(x) (sizeof(x) / sizeof(x[0]))
 
-
-HANDLE g_ExecutableHeapHandle = NULL;
 
 #undef VirtualAlloc
 LPVOID ClrVirtualAlloc(LPVOID lpAddress, SIZE_T dwSize, DWORD flAllocationType, DWORD flProtect) {
@@ -176,7 +173,7 @@ BOOL ClrVirtualProtect(LPVOID lpAddress, SIZE_T dwSize, DWORD flNewProtect, PDWO
         CONTRACT_VIOLATION(ThrowsViolation);
 
         // Get reference to MSCORWKS image in memory...
-        PEDecoder pe(g_hThisInst);
+        PEDecoder pe(GetClrModuleBase());
 
         // Find the UEF section from the image
         IMAGE_SECTION_HEADER* pUEFSection = pe.FindSection(CLR_UEF_SECTION_NAME);
@@ -245,219 +242,7 @@ BOOL ClrVirtualProtect(LPVOID lpAddress, SIZE_T dwSize, DWORD flNewProtect, PDWO
 }
 #define VirtualProtect(lpAddress, dwSize, flNewProtect, lpflOldProtect) Dont_Use_VirtualProtect(lpAddress, dwSize, flNewProtect, lpflOldProtect)
 
-#undef GetProcessHeap
-HANDLE ClrGetProcessHeap()
-{
-    // Note: this can be called a little early for real contracts, so we use static contracts instead.
-    STATIC_CONTRACT_NOTHROW;
-    STATIC_CONTRACT_GC_NOTRIGGER;
-
-    return GetProcessHeap();
-}
-#define GetProcessHeap() Dont_Use_GetProcessHeap()
-
-#undef HeapCreate
-HANDLE ClrHeapCreate(DWORD flOptions, SIZE_T dwInitialSize, SIZE_T dwMaximumSize)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-    }
-    CONTRACTL_END;
-
-#ifndef TARGET_UNIX
-
-    {
-        return ::HeapCreate(flOptions, dwInitialSize, dwMaximumSize);
-    }
-#else // !TARGET_UNIX
-    return NULL;
-#endif // !TARGET_UNIX
-}
-#define HeapCreate(flOptions, dwInitialSize, dwMaximumSize) Dont_Use_HeapCreate(flOptions, dwInitialSize, dwMaximumSize)
-
-#undef HeapDestroy
-BOOL ClrHeapDestroy(HANDLE hHeap)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-    }
-    CONTRACTL_END;
-
-#ifndef TARGET_UNIX
-
-    {
-        return ::HeapDestroy(hHeap);
-    }
-#else // !TARGET_UNIX
-    UNREACHABLE();
-#endif // !TARGET_UNIX
-}
-#define HeapDestroy(hHeap) Dont_Use_HeapDestroy(hHeap)
-
-#ifdef _DEBUG
-#ifdef TARGET_X86
-#define OS_HEAP_ALIGN 8
-#else
-#define OS_HEAP_ALIGN 16
-#endif
-#endif
-
-
-#undef HeapAlloc
-LPVOID ClrHeapAlloc(HANDLE hHeap, DWORD dwFlags, S_SIZE_T dwBytes)
-{
-    STATIC_CONTRACT_NOTHROW;
-
-#ifdef FAILPOINTS_ENABLED
-    if (RFS_HashStack ())
-        return NULL;
-#endif
-
-    if (dwBytes.IsOverflow()) return NULL;
-
-
-    {
-
-        LPVOID p = NULL;
-#ifdef _DEBUG
-        // Store the heap handle to detect heap contamination
-        p = ::HeapAlloc (hHeap, dwFlags, dwBytes.Value() + OS_HEAP_ALIGN);
-        if(p)
-        {
-            *((HANDLE*)p) = hHeap;
-            p = (BYTE*)p + OS_HEAP_ALIGN;
-        }
-#else
-        p = ::HeapAlloc (hHeap, dwFlags, dwBytes.Value());
-#endif
-
-        if(p == NULL
-           // If we have not created StressLog ring buffer, we should not try to use it.
-           // StressLog is going to do a memory allocation.  We may enter an endless loop.
-           && StressLog::t_pCurrentThreadLog != NULL )
-        {
-            STRESS_LOG_OOM_STACK(dwBytes.Value());
-        }
-
-        return p;
-    }
-}
-#define HeapAlloc(hHeap, dwFlags, dwBytes) Dont_Use_HeapAlloc(hHeap, dwFlags, dwBytes)
-
-LPVOID ClrHeapAllocInProcessHeap(DWORD dwFlags, SIZE_T dwBytes)
-{
-    WRAPPER_NO_CONTRACT;
-
-    static HANDLE ProcessHeap = NULL;
-
-    if (ProcessHeap == NULL)
-        ProcessHeap = ClrGetProcessHeap();
-
-    return ClrHeapAlloc(ProcessHeap,dwFlags,S_SIZE_T(dwBytes));
-}
-
-#undef HeapFree
-BOOL ClrHeapFree(HANDLE hHeap, DWORD dwFlags, LPVOID lpMem)
-{
-    STATIC_CONTRACT_NOTHROW;
-    STATIC_CONTRACT_GC_NOTRIGGER;
-
-    BOOL retVal = FALSE;
-
-    {
-#ifdef _DEBUG
-        if (lpMem != NULL)
-        {
-            // Check the heap handle to detect heap contamination
-            lpMem = (BYTE*)lpMem - OS_HEAP_ALIGN;
-            HANDLE storedHeapHandle = *((HANDLE*)lpMem);
-            if(storedHeapHandle != hHeap)
-                _ASSERTE(!"Heap contamination detected! HeapFree was called on a heap other than the one that memory was allocated from.\n"
-                         "Possible cause: you used new (executable) to allocate the memory, but didn't use DeleteExecutable() to free it.");
-        }
-#endif
-        // DON'T REMOVE THIS SEEMINGLY USELESS CAST
-        //
-        // On AMD64 the OS HeapFree calls RtlFreeHeap which returns a 1byte
-        // BOOLEAN, HeapFree then doesn't correctly clean the return value
-        // so the other 3 bytes which come back can be junk and in that case
-        // this return value can never be false.
-        retVal =  (BOOL)(BYTE)::HeapFree (hHeap, dwFlags, lpMem);
-    }
-
-    return retVal;
-}
-#define HeapFree(hHeap, dwFlags, lpMem) Dont_Use_HeapFree(hHeap, dwFlags, lpMem)
-
-BOOL ClrHeapFreeInProcessHeap(DWORD dwFlags, LPVOID lpMem)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-    static HANDLE ProcessHeap = NULL;
-
-    if (ProcessHeap == NULL)
-        ProcessHeap = ClrGetProcessHeap();
-
-    return ClrHeapFree(ProcessHeap,dwFlags,lpMem);
-}
-
-HANDLE ClrGetProcessExecutableHeap() {
-    // Note: this can be called a little early for real contracts, so we use static contracts instead.
-    STATIC_CONTRACT_NOTHROW;
-    STATIC_CONTRACT_GC_NOTRIGGER;
-
-
-#ifndef TARGET_UNIX
-
-    //
-    // Create the executable heap lazily
-    //
-#undef HeapCreate
-#undef HeapDestroy
-    if (g_ExecutableHeapHandle == NULL)
-    {
-
-        HANDLE ExecutableHeapHandle = HeapCreate(
-                                    HEAP_CREATE_ENABLE_EXECUTE,                 // heap allocation attributes
-                                    0,                                          // initial heap size
-                                    0                                           // maximum heap size; 0 == growable
-                                    );
-
-        if (ExecutableHeapHandle == NULL)
-            return NULL;
-
-        HANDLE ExistingValue = InterlockedCompareExchangeT(&g_ExecutableHeapHandle, ExecutableHeapHandle, NULL);
-        if (ExistingValue != NULL)
-        {
-            HeapDestroy(ExecutableHeapHandle);
-        }
-    }
-
-#define HeapCreate(flOptions, dwInitialSize, dwMaximumSize) Dont_Use_HeapCreate(flOptions, dwInitialSize, dwMaximumSize)
-#define HeapDestroy(hHeap) Dont_Use_HeapDestroy(hHeap)
-
-#else // !TARGET_UNIX
-    UNREACHABLE();
-#endif // !TARGET_UNIX
-
-
-    // TODO: implement hosted executable heap
-    return g_ExecutableHeapHandle;
-}
-
-
 #undef SleepEx
-#undef Sleep
 DWORD ClrSleepEx(DWORD dwMilliseconds, BOOL bAlertable)
 {
     CONTRACTL
@@ -478,25 +263,10 @@ DWORD ClrSleepEx(DWORD dwMilliseconds, BOOL bAlertable)
 }
 #define SleepEx(dwMilliseconds,bAlertable) \
         Dont_Use_SleepEx(dwMilliseconds,bAlertable)
-#define Sleep(a) Dont_Use_Sleep(a)
 
 // non-zero return value if this function causes the OS to switch to another thread
 // See file:spinlock.h#SwitchToThreadSpinning for an explanation of dwSwitchCount
 BOOL __SwitchToThread (DWORD dwSleepMSec, DWORD dwSwitchCount)
-{
-  CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-    return  __DangerousSwitchToThread(dwSleepMSec, dwSwitchCount, FALSE);
-}
-
-#undef SleepEx
-BOOL __DangerousSwitchToThread (DWORD dwSleepMSec, DWORD dwSwitchCount, BOOL goThroughOS)
 {
     // If you sleep for a long time, the thread should be in Preemptive GC mode.
     CONTRACTL
@@ -510,14 +280,7 @@ BOOL __DangerousSwitchToThread (DWORD dwSleepMSec, DWORD dwSwitchCount, BOOL goT
 
     if (dwSleepMSec > 0)
     {
-        // when called with goThroughOS make sure to not call into the host. This function
-        // may be called from GetRuntimeFunctionCallback() which is called by the OS to determine
-        // the personality routine when it needs to unwind managed code off the stack. when this
-        // happens in the context of an SO we want to avoid calling into the host
-        if (goThroughOS)
-            ::SleepEx(dwSleepMSec, FALSE);
-        else
-            ClrSleepEx(dwSleepMSec,FALSE);
+        ClrSleepEx(dwSleepMSec,FALSE);
         return TRUE;
     }
 
@@ -544,18 +307,11 @@ BOOL __DangerousSwitchToThread (DWORD dwSleepMSec, DWORD dwSwitchCount, BOOL goT
     _ASSERTE(CALLER_LIMITS_SPINNING < SLEEP_START_THRESHOLD);
     if (dwSwitchCount >= SLEEP_START_THRESHOLD)
     {
-        if (goThroughOS)
-            ::SleepEx(1, FALSE);
-        else
-            ClrSleepEx(1, FALSE);
+        ClrSleepEx(1, FALSE);
     }
 
-    {
-        return SwitchToThread();
-    }
+    return SwitchToThread();
 }
-#define SleepEx(dwMilliseconds,bAlertable) \
-        Dont_Use_SleepEx(dwMilliseconds,bAlertable)
 
 // Locking routines supplied by the EE to the other DLLs of the CLR.  In a _DEBUG
 // build of the EE, we poison the Crst as a poor man's attempt to do some argument

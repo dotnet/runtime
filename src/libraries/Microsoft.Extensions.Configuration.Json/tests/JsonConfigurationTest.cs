@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Globalization;
@@ -181,7 +180,7 @@ namespace Microsoft.Extensions.Configuration
         [Fact]
         public void ThrowExceptionWhenPassingNullAsFilePath()
         {
-            var expectedMsg = new ArgumentException(Resources.Error_InvalidFilePath, "path").Message;
+            var expectedMsg = new ArgumentException(SR.Error_InvalidFilePath, "path").Message;
 
             var exception = Assert.Throws<ArgumentException>(() => new ConfigurationBuilder().AddJsonFile(path: null));
 
@@ -191,7 +190,7 @@ namespace Microsoft.Extensions.Configuration
         [Fact]
         public void ThrowExceptionWhenPassingEmptyStringAsFilePath()
         {
-            var expectedMsg = new ArgumentException(Resources.Error_InvalidFilePath, "path").Message;
+            var expectedMsg = new ArgumentException(SR.Error_InvalidFilePath, "path").Message;
 
             var exception = Assert.Throws<ArgumentException>(() => new ConfigurationBuilder().AddJsonFile(string.Empty));
 

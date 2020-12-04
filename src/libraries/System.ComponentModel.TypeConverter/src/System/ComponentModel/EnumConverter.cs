@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections;
 using System.Collections.Generic;
@@ -16,8 +15,6 @@ namespace System.ComponentModel
     /// </summary>
     public class EnumConverter : TypeConverter
     {
-        private static readonly char[] s_separators = { ',' };
-
         /// <summary>
         /// Initializes a new instance of the <see cref='System.ComponentModel.EnumConverter'/> class for the given
         /// type.
@@ -83,7 +80,7 @@ namespace System.ComponentModel
                     {
                         bool isUnderlyingTypeUInt64 = Enum.GetUnderlyingType(EnumType) == typeof(ulong);
                         long convertedValue = 0;
-                        string[] values = strValue.Split(s_separators);
+                        string[] values = strValue.Split(',');
                         foreach (string v in values)
                         {
                             convertedValue |= GetEnumValue(isUnderlyingTypeUInt64, (Enum)Enum.Parse(EnumType, v, true), culture);

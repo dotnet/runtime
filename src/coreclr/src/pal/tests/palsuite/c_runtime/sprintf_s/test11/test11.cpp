@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 /*============================================================================
 **
@@ -21,7 +20,7 @@
  * Depends on memcmp and strlen
  */
 
-int __cdecl main(int argc, char *argv[])
+PALTEST(c_runtime_sprintf_s_test11_paltest_sprintf_test11, "c_runtime/sprintf_s/test11/paltest_sprintf_test11")
 {
     int neg = -42;
     int pos = 42;

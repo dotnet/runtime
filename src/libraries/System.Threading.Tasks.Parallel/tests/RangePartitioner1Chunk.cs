@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 // =+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+
 //
@@ -39,60 +38,61 @@ namespace System.Threading.Tasks.Tests
         [Fact]
         public static void OneMoveNext()
         {
+            static void oneMoveNext(int length, bool isOrderable)
+            {
+                Debug.WriteLine("Length: {0} IsOrderable: {1}", length, isOrderable);
+                List<int> ds = new List<int>();
+                for (int i = 0; i < length; i++)
+                    ds.Add(i);
+                int dataSourceMoveNextCalls = 0;
+
+                //this is an enumerable that will execute user actions on move next, current and dispose
+                //in this case we will set it to wait on MoveNext for the even indexes
+                UserActionEnumerable<int> customEnumerable = new UserActionEnumerable<int>(ds);
+                Action<int> moveNextUserAction = (currentElement) =>
+                {
+                    //keep track how many times the move next of the data source was called
+                    //it is expected as
+                    //every call of MoveNext on partitioner>GetDynamicPartions.GetEnumerator
+                    //to result in only one call of datasource Move Next
+                    //there is not need to guard for concurrency issues because this scenario is single threaded
+                    dataSourceMoveNextCalls++;
+                };
+
+                customEnumerable.MoveNextAction = moveNextUserAction;
+
+                var partitioner = Partitioner.Create<int>(customEnumerable, EnumerablePartitionerOptions.NoBuffering);
+                //get the dynamic partitions - enumerator
+                if (isOrderable)
+                {
+                    IEnumerator<KeyValuePair<long, int>> enumerator = partitioner.GetOrderableDynamicPartitions().GetEnumerator();
+                    while (enumerator.MoveNext())
+                    {
+                        Assert.Equal(1, dataSourceMoveNextCalls);
+                        //reset the count - for the next moveNext call
+                        dataSourceMoveNextCalls = 0;
+                    }
+                }
+                else
+                {
+                    IEnumerator<int> enumerator = partitioner.GetDynamicPartitions().GetEnumerator();
+
+                    while (enumerator.MoveNext())
+                    {
+                        Assert.Equal(1, dataSourceMoveNextCalls);
+                        //reset the count - for the next moveNext call
+                        dataSourceMoveNextCalls = 0;
+                    }
+                }
+            }
+
             int[] lengthsArray = new[] { 1, 8, 16, 32, 64, 1024 };
             bool[] isOrderableArray = new[] { true, false };
 
             foreach (var length in lengthsArray)
             {
                 foreach (var order in isOrderableArray)
-                    OneMoveNext(length, order);
-            }
-        }
-        private static void OneMoveNext(int length, bool isOrderable)
-        {
-            Debug.WriteLine("Length: {0} IsOrderable: {1}", length, isOrderable);
-            List<int> ds = new List<int>();
-            for (int i = 0; i < length; i++)
-                ds.Add(i);
-            int dataSourceMoveNextCalls = 0;
-
-            //this is an enumerable that will execute user actions on move next, current and dispose
-            //in this case we will set it to wait on MoveNext for the even indexes
-            UserActionEnumerable<int> customEnumerable = new UserActionEnumerable<int>(ds);
-            Action<int> moveNextUserAction = (currentElement) =>
-            {
-                //keep track how many times the move next of the data source was called
-                //it is expected as
-                //every call of MoveNext on partitioner>GetDynamicPartions.GetEnumerator
-                //to result in only one call of datasource Move Next
-                //there is not need to guard for concurrency issues because this scenario is single threaded
-                dataSourceMoveNextCalls++;
-            };
-
-            customEnumerable.MoveNextAction = moveNextUserAction;
-
-            var partitioner = Partitioner.Create<int>(customEnumerable, EnumerablePartitionerOptions.NoBuffering);
-            //get the dynamic partitions - enumerator
-            if (isOrderable)
-            {
-                IEnumerator<KeyValuePair<long, int>> enumerator = partitioner.GetOrderableDynamicPartitions().GetEnumerator();
-                while (enumerator.MoveNext())
-                {
-                    Assert.Equal(1, dataSourceMoveNextCalls);
-                    //reset the count - for the next moveNext call
-                    dataSourceMoveNextCalls = 0;
-                }
-            }
-            else
-            {
-                IEnumerator<int> enumerator = partitioner.GetDynamicPartitions().GetEnumerator();
-
-                while (enumerator.MoveNext())
-                {
-                    Assert.Equal(1, dataSourceMoveNextCalls);
-                    //reset the count - for the next moveNext call
-                    dataSourceMoveNextCalls = 0;
-                }
+                    oneMoveNext(length, order);
             }
         }
 
@@ -100,54 +100,51 @@ namespace System.Threading.Tasks.Tests
         /// Test that in a parallel Foreach loop can be dependencies between iterations if a partitioner of chunk size 1 is used
         /// </summary>
         /// <param name="length"></param>
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void IterationsWithDependency()
         {
-            IterationsWithDependency(128, 126);
-            IterationsWithDependency(128, 65);
-        }
-        private static void IterationsWithDependency(int length, int dependencyIndex)
-        {
-            List<int> ds = new List<int>();
-            for (int i = 0; i < length; i++)
-                ds.Add(i);
-            var partitioner = Partitioner.Create<int>(ds, EnumerablePartitionerOptions.NoBuffering);
-            ManualResetEvent mre = new ManualResetEvent(false);
-            ConcurrentQueue<int> savedDS = new ConcurrentQueue<int>();
+            static void iterationsWithDependency(int length, int dependencyIndex)
+            {
+                List<int> ds = new List<int>();
+                for (int i = 0; i < length; i++)
+                    ds.Add(i);
+                var partitioner = Partitioner.Create<int>(ds, EnumerablePartitionerOptions.NoBuffering);
+                ManualResetEvent mre = new ManualResetEvent(false);
+                ConcurrentQueue<int> savedDS = new ConcurrentQueue<int>();
 
-            Parallel.ForEach(partitioner, (index) =>
-                {
-                    if (index == dependencyIndex + 1)
+                Parallel.ForEach(partitioner, (index) =>
                     {
-                        mre.Set();
-                    }
-                    if (index == dependencyIndex)
-                    {
-                        //if the chunk size will not be one,
-                        //this iteration and the next one will not be processed by the same thread
-                        //waiting here will lead to a deadlock
-                        mre.WaitOne();
-                    }
-                    savedDS.Enqueue(index);
-                });
-            //if the PForEach ends this means pass
-            //verify the collection
-            Assert.True(CompareCollections(savedDS, ds));
+                        if (index == dependencyIndex + 1)
+                        {
+                            mre.Set();
+                        }
+                        if (index == dependencyIndex)
+                        {
+                            //if the chunk size will not be one,
+                            //this iteration and the next one will not be processed by the same thread
+                            //waiting here will lead to a deadlock
+                            mre.WaitOne();
+                        }
+                        savedDS.Enqueue(index);
+                    });
+                //if the PForEach ends this means pass
+                //verify the collection
+                Assert.True(CompareCollections(savedDS, ds));
+            }
+
+            iterationsWithDependency(128, 126);
+            iterationsWithDependency(128, 65);
         }
 
         /// <summary>
         /// Verify that the enumerators used while executing the ParalleForEach over the partitioner are disposed
         /// </summary>
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void PFEDisposeEnum()
         {
-            PFEDisposeEnum(1204);
-        }
-        private static void PFEDisposeEnum(int length)
-        {
             List<int> ds = new List<int>();
-            for (int i = 0; i < length; i++)
+            for (int i = 0; i < 1024; i++)
                 ds.Add(i);
             //this is an enumerable that will execute user actions on move next, current and dispose
             //in this case we will set it to wait on MoveNext for the even indexes
@@ -168,36 +165,37 @@ namespace System.Threading.Tasks.Tests
         /// Partitioner is used in ParallelForEach
         /// Exception is expected and the enumerators are disposed
         /// </summary>
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void ExceptionOnMoveNext()
         {
-            ExceptionOnMoveNext(128, 65, true);
-            ExceptionOnMoveNext(128, 65, false);
-        }
-        private static void ExceptionOnMoveNext(int length, int indexToThrow, bool isOrderable)
-        {
-            List<int> ds = new List<int>();
-            for (int i = 0; i < length; i++)
-                ds.Add(i);
+            static void exceptionOnMoveNext(int length, int indexToThrow, bool isOrderable)
+            {
+                List<int> ds = new List<int>();
+                for (int i = 0; i < length; i++)
+                    ds.Add(i);
 
-            Exception userEx = new InvalidOperationException("UserException");
-            //this is an enumerable that will execute user actions on move next, current and dispose
-            //in this case we will set it to throw on MoveNext for specified index
-            UserActionEnumerable<int> customEnumerable = new UserActionEnumerable<int>(ds);
-            Action<int> moveNextUserAction = (currentElement) =>
-                                                            {
-                                                                if (currentElement == indexToThrow)
+                Exception userEx = new InvalidOperationException("UserException");
+                //this is an enumerable that will execute user actions on move next, current and dispose
+                //in this case we will set it to throw on MoveNext for specified index
+                UserActionEnumerable<int> customEnumerable = new UserActionEnumerable<int>(ds);
+                Action<int> moveNextUserAction = (currentElement) =>
                                                                 {
-                                                                    throw userEx;
+                                                                    if (currentElement == indexToThrow)
+                                                                    {
+                                                                        throw userEx;
+                                                                    };
                                                                 };
-                                                            };
 
 
-            customEnumerable.MoveNextAction = moveNextUserAction;
-            var partitioner = Partitioner.Create<int>(customEnumerable, EnumerablePartitionerOptions.NoBuffering);
-            var exception = Assert.Throws<AggregateException>(() => Parallel.ForEach(partitioner, (index) => { }));
-            VerifyAggregateException(exception, userEx);
-            Assert.True(customEnumerable.AreEnumeratorsDisposed());
+                customEnumerable.MoveNextAction = moveNextUserAction;
+                var partitioner = Partitioner.Create<int>(customEnumerable, EnumerablePartitionerOptions.NoBuffering);
+                var exception = Assert.Throws<AggregateException>(() => Parallel.ForEach(partitioner, (index) => { }));
+                VerifyAggregateException(exception, userEx);
+                Assert.True(customEnumerable.AreEnumeratorsDisposed());
+            }
+
+            exceptionOnMoveNext(128, 65, true);
+            exceptionOnMoveNext(128, 65, false);
         }
 
         /// <summary>

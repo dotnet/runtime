@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #include "common.h"
 #include "gctoclreventsink.h"
@@ -51,7 +50,7 @@ void GCToCLREventSink::FireGCEnd_V1(uint32_t count, uint32_t depth)
     FireEtwGCEnd_V1(count, depth, GetClrInstanceId());
 }
 
-void GCToCLREventSink::FireGCHeapStats_V1(
+void GCToCLREventSink::FireGCHeapStats_V2(
         uint64_t generationSize0,
         uint64_t totalPromotedSize0,
         uint64_t generationSize1,
@@ -60,6 +59,8 @@ void GCToCLREventSink::FireGCHeapStats_V1(
         uint64_t totalPromotedSize2,
         uint64_t generationSize3,
         uint64_t totalPromotedSize3,
+        uint64_t generationSize4,
+        uint64_t totalPromotedSize4,
         uint64_t finalizationPromotedSize,
         uint64_t finalizationPromotedCount,
         uint32_t pinnedObjectCount,
@@ -68,10 +69,11 @@ void GCToCLREventSink::FireGCHeapStats_V1(
 {
     LIMITED_METHOD_CONTRACT;
 
-    FireEtwGCHeapStats_V1(generationSize0, totalPromotedSize0, generationSize1, totalPromotedSize1,
+    FireEtwGCHeapStats_V2(generationSize0, totalPromotedSize0, generationSize1, totalPromotedSize1,
                           generationSize2, totalPromotedSize2, generationSize3, totalPromotedSize3,
                           finalizationPromotedSize, finalizationPromotedCount, pinnedObjectCount,
-                          sinkBlockCount, gcHandleCount, GetClrInstanceId());
+                          sinkBlockCount, gcHandleCount, GetClrInstanceId(),
+                          generationSize4, totalPromotedSize4);
 }
 
 void GCToCLREventSink::FireGCCreateSegment_V1(void* address, size_t size, uint32_t type)
@@ -303,9 +305,9 @@ void GCToCLREventSink::FireBGCRevisit(uint64_t pages, uint64_t objects, uint32_t
     FireEtwBGCRevisit(pages, objects, isLarge, GetClrInstanceId());
 }
 
-void GCToCLREventSink::FireBGCOverflow(uint64_t min, uint64_t max, uint64_t objects, uint32_t isLarge)
+void GCToCLREventSink::FireBGCOverflow_V1(uint64_t min, uint64_t max, uint64_t objects, uint32_t isLarge, uint32_t genNumber)
 {
-    FireEtwBGCOverflow(min, max, objects, isLarge, GetClrInstanceId());
+    FireEtwBGCOverflow_V1(min, max, objects, isLarge, GetClrInstanceId(), genNumber);
 }
 
 void GCToCLREventSink::FireBGCAllocWaitBegin(uint32_t reason)

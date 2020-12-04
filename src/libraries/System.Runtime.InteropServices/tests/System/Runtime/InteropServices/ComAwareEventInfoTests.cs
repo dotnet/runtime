@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
@@ -8,7 +7,6 @@ using Xunit;
 
 namespace System.Runtime.InteropServices.Tests
 {
-#pragma warning disable 0618 // CompareEventInfo is marked as Obsolete.
     public partial class ComAwareEventInfoTests
     {
         [Fact]
@@ -40,7 +38,7 @@ namespace System.Runtime.InteropServices.Tests
         [Fact]
         public void Ctor_NullEventName_ThrowsArgumentNullException()
         {
-            AssertExtensions.Throws<ArgumentNullException>(null, () => new ComAwareEventInfo(typeof(NonComObject), null));
+            AssertExtensions.Throws<ArgumentNullException>("name", () => new ComAwareEventInfo(typeof(NonComObject), null));
         }
 
         [Fact]
@@ -103,11 +101,9 @@ namespace System.Runtime.InteropServices.Tests
 
         internal class NonComObject
         {
-            [ExcludeFromCodeCoverage]
             public event EventHandler Event;
 
             public void Raise(object sender) => Event.Invoke(1, null);
         }
     }
-#pragma warning restore 0618
 }

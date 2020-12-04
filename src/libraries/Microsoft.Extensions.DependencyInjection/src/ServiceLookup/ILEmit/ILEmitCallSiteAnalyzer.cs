@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
 {
@@ -26,7 +25,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
         protected override ILEmitCallSiteAnalysisResult VisitConstructor(ConstructorCallSite constructorCallSite, object argument)
         {
             var result = new ILEmitCallSiteAnalysisResult(ConstructorILSize);
-            foreach (var callSite in constructorCallSite.ParameterCallSites)
+            foreach (ServiceCallSite callSite in constructorCallSite.ParameterCallSites)
             {
                 result = result.Add(VisitCallSite(callSite, argument));
             }
@@ -49,7 +48,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
         protected override ILEmitCallSiteAnalysisResult VisitIEnumerable(IEnumerableCallSite enumerableCallSite, object argument)
         {
             var result = new ILEmitCallSiteAnalysisResult(ConstructorILSize);
-            foreach (var callSite in enumerableCallSite.ServiceCallSites)
+            foreach (ServiceCallSite callSite in enumerableCallSite.ServiceCallSites)
             {
                 result = result.Add(VisitCallSite(callSite, argument));
             }

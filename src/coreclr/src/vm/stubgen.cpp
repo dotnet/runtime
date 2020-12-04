@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 //
 // File: StubGen.cpp
 //
@@ -58,7 +57,7 @@ void DumpIL_RemoveFullPath(SString &strTokenFormatting)
     }
 }
 
-void DumpIL_FormatToken(TokenLookupMap* pTokenMap, mdToken token, SString &strTokenFormatting, const SString &strStubTargetSig)
+void ILStubLinker::DumpIL_FormatToken(mdToken token, SString &strTokenFormatting)
 {
     void* pvLookupRetVal = (void*)POISONC;
     _ASSERTE(strTokenFormatting.IsEmpty());
@@ -67,7 +66,7 @@ void DumpIL_FormatToken(TokenLookupMap* pTokenMap, mdToken token, SString &strTo
     {
         if (TypeFromToken(token) == mdtMethodDef)
         {
-            MethodDesc* pMD = pTokenMap->LookupMethodDef(token);
+            MethodDesc* pMD = m_tokenMap.LookupMethodDef(token);
             pvLookupRetVal = pMD;
             CONSISTENCY_CHECK(CheckPointer(pMD));
 
@@ -75,7 +74,7 @@ void DumpIL_FormatToken(TokenLookupMap* pTokenMap, mdToken token, SString &strTo
         }
         else if (TypeFromToken(token) == mdtTypeDef)
         {
-            TypeHandle typeHnd = pTokenMap->LookupTypeDef(token);
+            TypeHandle typeHnd = m_tokenMap.LookupTypeDef(token);
             pvLookupRetVal = typeHnd.AsPtr();
             CONSISTENCY_CHECK(!typeHnd.IsNull());
 
@@ -100,7 +99,7 @@ void DumpIL_FormatToken(TokenLookupMap* pTokenMap, mdToken token, SString &strTo
         }
         else if (TypeFromToken(token) == mdtFieldDef)
         {
-            FieldDesc* pFD = pTokenMap->LookupFieldDef(token);
+            FieldDesc* pFD = m_tokenMap.LookupFieldDef(token);
             pvLookupRetVal = pFD;
             CONSISTENCY_CHECK(CheckPointer(pFD));
 
@@ -116,8 +115,29 @@ void DumpIL_FormatToken(TokenLookupMap* pTokenMap, mdToken token, SString &strTo
         }
         else if (TypeFromToken(token) == mdtSignature)
         {
-            CONSISTENCY_CHECK(token == TOKEN_ILSTUB_TARGET_SIG);
-            strTokenFormatting.Set(strStubTargetSig);
+            CQuickBytes qbTargetSigBytes;
+            PCCOR_SIGNATURE pSig;
+            DWORD cbSig;
+
+            if (token == TOKEN_ILSTUB_TARGET_SIG)
+            {
+                // Build the current target sig into the buffer.
+                cbSig = GetStubTargetMethodSigSize();
+                pSig = (PCCOR_SIGNATURE)qbTargetSigBytes.AllocThrows(cbSig);
+
+                GetStubTargetMethodSig((BYTE*)pSig, cbSig);
+            }
+            else
+            {
+                SigPointer sig = m_tokenMap.LookupSig(token);
+                sig.GetSignature(&pSig, &cbSig);
+            }
+
+            IMDInternalImport * pIMDI = CoreLibBinder::GetModule()->GetMDImport();
+            CQuickBytes sigStr;
+            PrettyPrintSig(pSig, cbSig, "", &sigStr, pIMDI, NULL);
+
+            strTokenFormatting.SetUTF8((LPUTF8)sigStr.Ptr());
         }
         else
         {
@@ -518,34 +538,12 @@ ILStubLinker::LogILInstruction(
             if (pDumpILStubCode == NULL)
                 strArgument.Printf(W("0x%08x"), pInstruction->uArg);
 
-            LPUTF8      pszFormattedStubTargetSig = NULL;
-            CQuickBytes qbTargetSig;
-
-            if (TOKEN_ILSTUB_TARGET_SIG == pInstruction->uArg)
-            {
-                PCCOR_SIGNATURE pTargetSig;
-                ULONG           cTargetSig;
-                CQuickBytes     qbTempTargetSig;
-
-                IMDInternalImport * pIMDI = MscorlibBinder::GetModule()->GetMDImport();
-
-                cTargetSig = GetStubTargetMethodSigSize();
-                pTargetSig = (PCCOR_SIGNATURE)qbTempTargetSig.AllocThrows(cTargetSig);
-
-                GetStubTargetMethodSig((BYTE*)pTargetSig, cTargetSig);
-                PrettyPrintSig(pTargetSig,   cTargetSig,  "",  &qbTargetSig, pIMDI, NULL);
-
-                pszFormattedStubTargetSig = (LPUTF8)qbTargetSig.Ptr();
-            }
-
             // Dump to szTokenNameBuffer if logging, otherwise dump to szArgumentBuffer to avoid an extra space because we are omitting the token
             _ASSERTE(FitsIn<mdToken>(pInstruction->uArg));
-            SString strFormattedStubTargetSig;
-            strFormattedStubTargetSig.SetUTF8(pszFormattedStubTargetSig);
             if (pDumpILStubCode == NULL)
-                DumpIL_FormatToken(&m_tokenMap, static_cast<mdToken>(pInstruction->uArg), strTokenName, strFormattedStubTargetSig);
+                DumpIL_FormatToken(static_cast<mdToken>(pInstruction->uArg), strTokenName);
             else
-                DumpIL_FormatToken(&m_tokenMap, static_cast<mdToken>(pInstruction->uArg), strArgument, strFormattedStubTargetSig);
+                DumpIL_FormatToken(static_cast<mdToken>(pInstruction->uArg), strArgument);
 
             break;
         }
@@ -802,6 +800,8 @@ size_t ILStubLinker::Link(UINT* puMaxStack)
 
     while (pCurrentStream)
     {
+        _ASSERTE(pCurrentStream->m_buildingEHClauses.GetCount() == 0);
+
         if (pCurrentStream->m_pqbILInstructions)
         {
             ILInstruction* pInstrBuffer = (ILInstruction*)pCurrentStream->m_pqbILInstructions->Ptr();
@@ -839,6 +839,56 @@ size_t ILStubLinker::Link(UINT* puMaxStack)
 
     *puMaxStack = uMaxStack;
     return cbCode;
+}
+
+size_t ILStubLinker::GetNumEHClauses()
+{
+    size_t result = 0;
+    for (ILCodeStream* stream = m_pCodeStreamList; stream; stream = stream->m_pNextStream)
+    {
+        result += stream->m_finishedEHClauses.GetCount();
+    }
+
+    return result;
+}
+
+void ILStubLinker::WriteEHClauses(COR_ILMETHOD_SECT_EH* pSect)
+{
+    unsigned int clauseIndex = 0;
+    for (ILCodeStream* stream = m_pCodeStreamList; stream; stream = stream->m_pNextStream)
+    {
+        const SArray<ILStubEHClauseBuilder>& clauses = stream->m_finishedEHClauses;
+        for (COUNT_T i = 0; i < clauses.GetCount(); i++)
+        {
+            const ILStubEHClauseBuilder& builder = clauses[i];
+
+            CorExceptionFlag flags;
+            switch (builder.kind)
+            {
+            case ILStubEHClause::kTypedCatch: flags = COR_ILEXCEPTION_CLAUSE_NONE; break;
+            case ILStubEHClause::kFinally: flags = COR_ILEXCEPTION_CLAUSE_FINALLY; break;
+            default: UNREACHABLE_MSG("unexpected EH clause kind");
+            }
+
+            size_t tryBegin = builder.tryBeginLabel->GetCodeOffset();
+            size_t tryEnd = builder.tryEndLabel->GetCodeOffset();
+            size_t handlerBegin = builder.handlerBeginLabel->GetCodeOffset();
+            size_t handlerEnd = builder.handlerEndLabel->GetCodeOffset();
+
+            IMAGE_COR_ILMETHOD_SECT_EH_CLAUSE_FAT& clause = pSect->Fat.Clauses[clauseIndex];
+            clause.Flags = flags;
+            clause.TryOffset = static_cast<DWORD>(tryBegin);
+            clause.TryLength = static_cast<DWORD>(tryEnd - tryBegin);
+            clause.HandlerOffset = static_cast<DWORD>(handlerBegin);
+            clause.HandlerLength = static_cast<DWORD>(handlerEnd - handlerBegin);
+            clause.ClassToken = builder.typeToken;
+
+            clauseIndex++;
+        }
+    }
+
+    pSect->Fat.Kind = CorILMethod_Sect_EHTable | CorILMethod_Sect_FatFormat;
+    pSect->Fat.DataSize = COR_ILMETHOD_SECT_EH_FAT::Size(clauseIndex);
 }
 
 #ifdef _DEBUG
@@ -909,11 +959,11 @@ BYTE* ILStubLinker::GenerateCodeWorker(BYTE* pbBuffer, ILInstruction* pInstrBuff
                 case 8:
                     {
                         UINT64 uVal = pInstrBuffer[i].uArg;
-#ifndef HOST_64BIT  // We don't have room on 32-bit platforms to store the CLR_NAN_64 value, so
+#ifndef TARGET_64BIT  // We don't have room on 32-bit platforms to store the CLR_NAN_64 value, so
                 // we use a special value to represent CLR_NAN_64 and then recreate it here.
                         if ((instr == ILCodeStream::CEE_LDC_R8) && (((UINT32)uVal) == ILCodeStream::SPECIAL_VALUE_NAN_64_ON_32))
                             uVal = CLR_NAN_64;
-#endif // HOST_64BIT
+#endif // TARGET_64BIT
                         SET_UNALIGNED_VAL64(pbBuffer, uVal);
                     }
                     break;
@@ -1005,6 +1055,75 @@ LPCSTR ILCodeStream::GetStreamDescription(ILStubLinker::CodeStreamType streamTyp
     return lpszDescriptions[streamType];
 }
 
+void ILCodeStream::BeginTryBlock()
+{
+    ILStubEHClauseBuilder& clause = *m_buildingEHClauses.Append();
+    memset(&clause, 0, sizeof(ILStubEHClauseBuilder));
+    clause.kind = ILStubEHClause::kNone;
+    clause.tryBeginLabel = NewCodeLabel();
+    EmitLabel(clause.tryBeginLabel);
+}
+
+void ILCodeStream::EndTryBlock()
+{
+    _ASSERTE(m_buildingEHClauses.GetCount() > 0);
+    ILStubEHClauseBuilder& clause = m_buildingEHClauses[m_buildingEHClauses.GetCount() - 1];
+
+    _ASSERTE(clause.tryBeginLabel != NULL && clause.tryEndLabel == NULL);
+    clause.tryEndLabel = NewCodeLabel();
+    EmitLabel(clause.tryEndLabel);
+}
+
+void ILCodeStream::BeginHandler(DWORD kind, DWORD typeToken)
+{
+    _ASSERTE(m_buildingEHClauses.GetCount() > 0);
+    ILStubEHClauseBuilder& clause = m_buildingEHClauses[m_buildingEHClauses.GetCount() - 1];
+
+    _ASSERTE(clause.tryBeginLabel != NULL && clause.tryEndLabel != NULL &&
+             clause.handlerBeginLabel == NULL && clause.kind == ILStubEHClause::kNone);
+
+    clause.kind = kind;
+    clause.typeToken = typeToken;
+    clause.handlerBeginLabel = NewCodeLabel();
+    EmitLabel(clause.handlerBeginLabel);
+}
+
+void ILCodeStream::EndHandler(DWORD kind)
+{
+    _ASSERTE(m_buildingEHClauses.GetCount() > 0);
+    ILStubEHClauseBuilder& clause = m_buildingEHClauses[m_buildingEHClauses.GetCount() - 1];
+
+    _ASSERTE(clause.tryBeginLabel != NULL && clause.tryEndLabel != NULL &&
+             clause.handlerBeginLabel != NULL && clause.handlerEndLabel == NULL &&
+             clause.kind == kind);
+
+    clause.handlerEndLabel = NewCodeLabel();
+    EmitLabel(clause.handlerEndLabel);
+
+    m_finishedEHClauses.Append(clause);
+    m_buildingEHClauses.SetCount(m_buildingEHClauses.GetCount() - 1);
+}
+
+void ILCodeStream::BeginCatchBlock(int token)
+{
+    BeginHandler(ILStubEHClause::kTypedCatch, static_cast<DWORD>(token));
+}
+
+void ILCodeStream::EndCatchBlock()
+{
+    EndHandler(ILStubEHClause::kTypedCatch);
+}
+
+void ILCodeStream::BeginFinallyBlock()
+{
+    BeginHandler(ILStubEHClause::kFinally, 0);
+}
+
+void ILCodeStream::EndFinallyBlock()
+{
+    EndHandler(ILStubEHClause::kFinally);
+}
+
 void ILCodeStream::EmitADD()
 {
     WRAPPER_NO_CONTRACT;
@@ -1064,6 +1183,11 @@ void ILCodeStream::EmitBLT(ILCodeLabel* pCodeLabel)
     WRAPPER_NO_CONTRACT;
     Emit(CEE_BLT, -2, (UINT_PTR)pCodeLabel);
 }
+void ILCodeStream::EmitBNE_UN(ILCodeLabel* pCodeLabel)
+{
+    WRAPPER_NO_CONTRACT;
+    Emit(CEE_BNE_UN, -2, (UINT_PTR)pCodeLabel);
+}
 void ILCodeStream::EmitBR(ILCodeLabel* pCodeLabel)
 {
     WRAPPER_NO_CONTRACT;
@@ -1089,12 +1213,17 @@ void ILCodeStream::EmitCALL(int token, int numInArgs, int numRetArgs)
     WRAPPER_NO_CONTRACT;
     Emit(CEE_CALL, (INT16)(numRetArgs - numInArgs), token);
 }
+void ILCodeStream::EmitCALLVIRT(int token, int numInArgs, int numRetArgs)
+{
+    WRAPPER_NO_CONTRACT;
+    Emit(CEE_CALLVIRT, (INT16)(numRetArgs - numInArgs), token);
+}
 void ILCodeStream::EmitCALLI(int token, int numInArgs, int numRetArgs)
 {
     WRAPPER_NO_CONTRACT;
     Emit(CEE_CALLI, (INT16)(numRetArgs - numInArgs - 1), token);
 }
-void ILCodeStream::EmitCEQ     ()
+void ILCodeStream::EmitCEQ()
 {
     WRAPPER_NO_CONTRACT;
     Emit(CEE_CEQ, -1, 0);
@@ -1289,7 +1418,7 @@ void ILCodeStream::EmitLDC(DWORD_PTR uConst)
 {
     WRAPPER_NO_CONTRACT;
     Emit(
-#ifdef HOST_64BIT
+#ifdef TARGET_64BIT
         CEE_LDC_I8
 #else
         CEE_LDC_I4
@@ -1304,14 +1433,14 @@ void ILCodeStream::EmitLDC_R4(UINT32 uConst)
 void ILCodeStream::EmitLDC_R8(UINT64 uConst)
 {
     STANDARD_VM_CONTRACT;
-#ifndef HOST_64BIT  // We don't have room on 32-bit platforms to stor the CLR_NAN_64 value, so
+#ifndef TARGET_64BIT  // We don't have room on 32-bit platforms to stor the CLR_NAN_64 value, so
                 // we use a special value to represent CLR_NAN_64 and then recreate it later.
     CONSISTENCY_CHECK(((UINT32)uConst) != SPECIAL_VALUE_NAN_64_ON_32);
     if (uConst == CLR_NAN_64)
         uConst = SPECIAL_VALUE_NAN_64_ON_32;
     else
         CONSISTENCY_CHECK(FitsInU4(uConst));
-#endif // HOST_64BIT
+#endif // TARGET_64BIT
     Emit(CEE_LDC_R8, 1, (UINT_PTR)uConst);
 }
 void ILCodeStream::EmitLDELEMA(int token)
@@ -1693,13 +1822,28 @@ void ILCodeStream::EmitUNALIGNED(BYTE alignment)
 void ILCodeStream::EmitNEWOBJ(BinderMethodID id, int numInArgs)
 {
     STANDARD_VM_CONTRACT;
-    EmitNEWOBJ(GetToken(MscorlibBinder::GetMethod(id)), numInArgs);
+    EmitNEWOBJ(GetToken(CoreLibBinder::GetMethod(id)), numInArgs);
 }
 
 void ILCodeStream::EmitCALL(BinderMethodID id, int numInArgs, int numRetArgs)
 {
     STANDARD_VM_CONTRACT;
-    EmitCALL(GetToken(MscorlibBinder::GetMethod(id)), numInArgs, numRetArgs);
+    EmitCALL(GetToken(CoreLibBinder::GetMethod(id)), numInArgs, numRetArgs);
+}
+void ILCodeStream::EmitLDFLD(BinderFieldID id)
+{
+    STANDARD_VM_CONTRACT;
+    EmitLDFLD(GetToken(CoreLibBinder::GetField(id)));
+}
+void ILCodeStream::EmitSTFLD(BinderFieldID id)
+{
+    STANDARD_VM_CONTRACT;
+    EmitSTFLD(GetToken(CoreLibBinder::GetField(id)));
+}
+void ILCodeStream::EmitLDFLDA(BinderFieldID id)
+{
+    STANDARD_VM_CONTRACT;
+    EmitLDFLDA(GetToken(CoreLibBinder::GetField(id)));
 }
 
 void ILStubLinker::SetHasThis (bool fHasThis)
@@ -1737,7 +1881,7 @@ void ILCodeStream::EmitArgIteratorCreateAndLoad()
     //
     // we insert the ArgIterator in the same spot that the VASigCookie will go for sanity
     //
-    LocalDesc   aiLoc(MscorlibBinder::GetClass(CLASS__ARG_ITERATOR));
+    LocalDesc   aiLoc(CoreLibBinder::GetClass(CLASS__ARG_ITERATOR));
     int         aiLocNum;
 
     aiLocNum = NewLocal(aiLoc);
@@ -1751,7 +1895,7 @@ void ILCodeStream::EmitArgIteratorCreateAndLoad()
     aiLoc.ElementType[0]    = ELEMENT_TYPE_BYREF;
     aiLoc.ElementType[1]    = ELEMENT_TYPE_INTERNAL;
     aiLoc.cbType            = 2;
-    aiLoc.InternalToken     = MscorlibBinder::GetClass(CLASS__ARG_ITERATOR);
+    aiLoc.InternalToken     = CoreLibBinder::GetClass(CLASS__ARG_ITERATOR);
 
     SetStubTargetArgType(&aiLoc, false);
 }
@@ -2463,7 +2607,7 @@ void ILStubLinker::TransformArgForJIT(LocalDesc *pLoc)
                 _ASSERTE(pLoc->InternalToken.IsBlittable());
                 break;
             }
-            // intentional fall-thru
+            FALLTHROUGH;
         }
 
         // pointers, byrefs, strings, arrays, other ref types -> ELEMENT_TYPE_I
@@ -2858,6 +3002,12 @@ int ILStubLinker::GetToken(FieldDesc* pFD)
     return m_tokenMap.GetToken(pFD);
 }
 
+int ILStubLinker::GetSigToken(PCCOR_SIGNATURE pSig, DWORD cbSig)
+{
+    STANDARD_VM_CONTRACT;
+    return m_tokenMap.GetSigToken(pSig, cbSig);
+}
+
 
 BOOL ILStubLinker::StubHasVoidReturnType()
 {
@@ -2877,6 +3027,11 @@ void ILStubLinker::ClearCode()
 
     DeleteCodeLabels();
     ClearCodeStreams();
+}
+
+void ILStubLinker::SetStubMethodDesc(MethodDesc* pMD)
+{
+    m_pMD = pMD;
 }
 
 // static
@@ -2937,6 +3092,11 @@ int ILCodeStream::GetToken(FieldDesc* pFD)
 {
     STANDARD_VM_CONTRACT;
     return m_pOwner->GetToken(pFD);
+}
+int ILCodeStream::GetSigToken(PCCOR_SIGNATURE pSig, DWORD cbSig)
+{
+    STANDARD_VM_CONTRACT;
+    return m_pOwner->GetSigToken(pSig, cbSig);
 }
 
 DWORD ILCodeStream::NewLocal(CorElementType typ)

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 //*****************************************************************************
 // File: primitives.h
 //
@@ -54,7 +53,7 @@ inline CORDB_ADDRESS GetPatchEndAddr(CORDB_ADDRESS patchAddr)
     CORDbgInsertBreakpoint((CORDB_ADDRESS_TYPE *)((_buffer) + ((_patchAddr) - (_requestedAddr))));
 
 
-SELECTANY const CorDebugRegister g_JITToCorDbgReg[] =
+constexpr CorDebugRegister g_JITToCorDbgReg[] =
 {
     REGISTER_AMD64_RAX,
     REGISTER_AMD64_RCX,

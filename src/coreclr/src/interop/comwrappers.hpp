@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #ifndef _INTEROP_COMWRAPPERS_H_
 #define _INTEROP_COMWRAPPERS_H_
@@ -15,10 +14,12 @@ enum class CreateComInterfaceFlagsEx : int32_t
     CallerDefinedIUnknown = InteropLib::Com::CreateComInterfaceFlags_CallerDefinedIUnknown,
     TrackerSupport = InteropLib::Com::CreateComInterfaceFlags_TrackerSupport,
 
-    // Highest bit is reserved for internal usage
+    // Highest bits are reserved for internal usage
+    LacksICustomQueryInterface = 1 << 29,
+    IsComActivated = 1 << 30,
     IsPegged = 1 << 31,
 
-    InternalMask = IsPegged,
+    InternalMask = IsPegged | IsComActivated | LacksICustomQueryInterface,
 };
 
 DEFINE_ENUM_FLAG_OPERATORS(CreateComInterfaceFlagsEx);
@@ -33,6 +34,7 @@ namespace ABI
 // Class for wrapping a managed object and projecting it in a non-managed environment
 class ManagedObjectWrapper
 {
+    friend constexpr size_t RefCountOffset();
 public:
     Volatile<InteropLib::OBJECTHANDLE> Target;
 
@@ -84,8 +86,16 @@ private:
     // the wrapper. Supplied with a decrementing value.
     ULONGLONG UniversalRelease(_In_ ULONGLONG dec);
 
+    // Query the runtime defined tables.
+    void* AsRuntimeDefined(_In_ REFIID riid);
+
+    // Query the user defined tables.
+    void* AsUserDefined(_In_ REFIID riid);
+
 public:
+    // N.B. Does not impact the reference count of the object.
     void* As(_In_ REFIID riid);
+
     // Attempt to set the target object handle based on an assumed current value.
     bool TrySetObjectHandle(_In_ InteropLib::OBJECTHANDLE objectHandle, _In_ InteropLib::OBJECTHANDLE current = nullptr);
     bool IsSet(_In_ CreateComInterfaceFlagsEx flag) const;
@@ -109,20 +119,31 @@ public: // Lifetime
     ULONG Release(void);
 };
 
+// The Target and _refCount fields are used by the DAC, any changes to the layout must be updated on the DAC side (request.cpp)
+static constexpr size_t DACTargetOffset = 0;
+static_assert(offsetof(ManagedObjectWrapper, Target) == DACTargetOffset, "Keep in sync with DAC interfaces");
+static constexpr size_t DACRefCountOffset = (4 * sizeof(intptr_t)) + (2 * sizeof(int32_t));
+static constexpr size_t RefCountOffset()
+{
+    // _refCount is a private field and offsetof won't let you look at private fields. To overcome
+    // this RefCountOffset() is a friend function.
+    return offsetof(ManagedObjectWrapper, _refCount);
+}
+static_assert(RefCountOffset() == DACRefCountOffset, "Keep in sync with DAC interfaces");
+
 // ABI contract. This below offset is assumed in managed code.
 ABI_ASSERT(offsetof(ManagedObjectWrapper, Target) == 0);
 
 // Class for connecting a native COM object to a managed object instance
 class NativeObjectWrapperContext
 {
-#ifdef _DEBUG
-    size_t _sentinel;
-#endif
-
     IReferenceTracker* _trackerObject;
     void* _runtimeContext;
     Volatile<BOOL> _isValidTracker;
 
+#ifdef _DEBUG
+    size_t _sentinel;
+#endif
 public: // static
     // Convert a context pointer into a NativeObjectWrapperContext.
     static NativeObjectWrapperContext* MapFromRuntimeContext(_In_ void* cxt);

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using Xunit;
@@ -145,7 +144,7 @@ namespace System.Text.Tests
 
         [Theory]
         [MemberData(nameof(Equals_TestData))]
-        public void Equals(UTF32Encoding encoding, object value, bool expected)
+        public void EqualsTest(UTF32Encoding encoding, object value, bool expected)
         {
             Assert.Equal(expected, encoding.Equals(value));
             Assert.Equal(expected, encoding.GetHashCode().Equals(value?.GetHashCode()));

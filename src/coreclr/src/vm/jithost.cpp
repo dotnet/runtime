@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #include "common.h"
 
@@ -12,14 +11,14 @@ void* JitHost::allocateMemory(size_t size)
 {
     WRAPPER_NO_CONTRACT;
 
-    return ClrAllocInProcessHeap(0, S_SIZE_T(size));
+    return new BYTE[size];
 }
 
 void JitHost::freeMemory(void* block)
 {
     WRAPPER_NO_CONTRACT;
 
-    ClrFreeInProcessHeap(0, block);
+    delete [] (BYTE*)block;
 }
 
 int JitHost::getIntConfigValue(const WCHAR* name, int defaultValue)
@@ -108,7 +107,7 @@ void* JitHost::allocateSlab(size_t size, size_t* pActualSize)
     }
 
     *pActualSize = size;
-    return ClrAllocInProcessHeap(0, S_SIZE_T(size));
+    return new BYTE[size];
 }
 
 void JitHost::freeSlab(void* slab, size_t actualSize)
@@ -132,7 +131,7 @@ void JitHost::freeSlab(void* slab, size_t actualSize)
         }
     }
 
-    ClrFreeInProcessHeap(0, slab);
+    delete [] (BYTE*)slab;
 }
 
 void JitHost::init()
@@ -174,7 +173,7 @@ void JitHost::reclaim()
                 m_pPreviousCachedList = slabToDelete->pNext;
             }
 
-            ClrFreeInProcessHeap(0, slabToDelete);
+            delete [] (BYTE*)slabToDelete;
         }
     }
 }

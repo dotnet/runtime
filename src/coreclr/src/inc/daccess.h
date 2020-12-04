@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 //*****************************************************************************
 // File: daccess.h
 //
@@ -628,6 +627,9 @@ typedef struct _DacGlobals
     ULONG fn__Unknown_AddRef;
     ULONG fn__Unknown_AddRefSpecial;
     ULONG fn__Unknown_AddRefInner;
+#endif
+#ifdef FEATURE_COMWRAPPERS
+    ULONG fn__ManagedObjectWrapper_QueryInterface;
 #endif
 
     // Vtable pointer values for all classes that must
@@ -2462,7 +2464,7 @@ typedef DPTR(PTR_PCODE) PTR_PTR_PCODE;
 // We add a simple macro here which defines DAC_ALIGNAS to the C++11 alignas operator
 // This helps force the alignment of the next member
 // For most cross compilation cases the layout of types simply works
-// There are a few cases (where this macro is helpful) which are not consistent accross platforms:
+// There are a few cases (where this macro is helpful) which are not consistent across platforms:
 // - Base class whose size is padded to its align size.  On Linux the gcc/clang
 //   layouts will reuse this padding in the derived class for the first member
 // - Class with an vtable pointer and an alignment greater than the pointer size.

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Runtime.CompilerServices;
 
@@ -13,7 +12,7 @@ namespace System.Reflection.Emit
         {
             TypeBuilder.SetConstantValue(
                 _methodBuilder.GetModuleBuilder(),
-                _token.Token,
+                _token,
                 _position == 0 ? _methodBuilder.ReturnType : _methodBuilder.m_parameterTypes![_position - 1],
                 defaultValue);
         }
@@ -32,8 +31,8 @@ namespace System.Reflection.Emit
 
             TypeBuilder.DefineCustomAttribute(
                 _methodBuilder.GetModuleBuilder(),
-                _token.Token,
-                ((ModuleBuilder)_methodBuilder.GetModule()).GetConstructorToken(con).Token,
+                _token,
+                ((ModuleBuilder)_methodBuilder.GetModule()).GetConstructorToken(con),
                 binaryAttribute,
                 false, false);
         }
@@ -45,7 +44,7 @@ namespace System.Reflection.Emit
             {
                 throw new ArgumentNullException(nameof(customBuilder));
             }
-            customBuilder.CreateCustomAttribute((ModuleBuilder)(_methodBuilder.GetModule()), _token.Token);
+            customBuilder.CreateCustomAttribute((ModuleBuilder)(_methodBuilder.GetModule()), _token);
         }
 
         internal ParameterBuilder(
@@ -59,15 +58,15 @@ namespace System.Reflection.Emit
             _methodBuilder = methodBuilder;
             _attributes = attributes;
             ModuleBuilder module = _methodBuilder.GetModuleBuilder();
-            _token = new ParameterToken(TypeBuilder.SetParamInfo(
+            _token = TypeBuilder.SetParamInfo(
                         new QCallModule(ref module),
-                        _methodBuilder.GetToken().Token,
+                        _methodBuilder.MetadataToken,
                         sequence,
                         attributes,
-                        paramName));
+                        paramName);
         }
 
-        public virtual ParameterToken GetToken()
+        internal int GetToken()
         {
             return _token;
         }
@@ -88,6 +87,6 @@ namespace System.Reflection.Emit
         private readonly int _position;
         private readonly ParameterAttributes _attributes;
         private MethodBuilder _methodBuilder;
-        private ParameterToken _token;
+        private int _token;
     }
 }

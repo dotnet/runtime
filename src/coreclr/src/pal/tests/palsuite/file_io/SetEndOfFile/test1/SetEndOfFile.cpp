@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 /*=====================================================================
 **
@@ -21,10 +20,10 @@
 
 #include <palsuite.h>
 
-const char* szTextFile = "text.txt";
 
 
-int __cdecl main(int argc, char *argv[])
+
+PALTEST(file_io_SetEndOfFile_test1_paltest_setendoffile_test1, "file_io/SetEndOfFile/test1/paltest_setendoffile_test1")
 {
     HANDLE hFile = NULL;
     BOOL bRc = FALSE;

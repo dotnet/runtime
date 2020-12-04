@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 // ===========================================================================
 // File: JITinterfaceX86.CPP
 //
@@ -135,8 +134,10 @@ HCIMPL1(Object*, AllocObjectWrapper, MethodTable *pMT)
 HCIMPLEND
 
 /*********************************************************************/
+#ifndef UNIX_X86_ABI
 extern "C" void* g_TailCallFrameVptr;
 void* g_TailCallFrameVptr;
+#endif // !UNI_X86_ABI
 
 #ifdef FEATURE_HIJACK
 extern "C" void STDCALL JIT_TailCallHelper(Thread * pThread);
@@ -892,18 +893,6 @@ void *GenFastGetSharedStaticBase(bool bCheckCCtor, bool bGCStatic)
     return (void*) pStub->GetEntryPoint();
 }
 
-
-#ifdef ENABLE_FAST_GCPOLL_HELPER
-void    EnableJitGCPoll()
-{
-    SetJitHelperFunction(CORINFO_HELP_POLL_GC, (void*)JIT_PollGC);
-}
-void    DisableJitGCPoll()
-{
-    SetJitHelperFunction(CORINFO_HELP_POLL_GC, (void*)JIT_PollGC_Nop);
-}
-#endif
-
 #define NUM_WRITE_BARRIERS 6
 
 static const BYTE c_rgWriteBarrierRegs[NUM_WRITE_BARRIERS] = {
@@ -1040,11 +1029,6 @@ void InitJITHelpers1()
 
     ETW::MethodLog::StubsInitialized(pMethodAddresses, (PVOID *)pHelperNames, ETW_NUM_JIT_HELPERS);
 
-#ifdef ENABLE_FAST_GCPOLL_HELPER
-    // code:JIT_PollGC_Nop
-    SetJitHelperFunction(CORINFO_HELP_POLL_GC, (void*)JIT_PollGC_Nop);
-#endif //ENABLE_FAST_GCPOLL_HELPER
-
     // All write barrier helpers should fit into one page.
     // If you hit this assert on retail build, there is most likely problem with BBT script.
     _ASSERTE_ALL_BUILDS("clr/src/VM/i386/JITinterfaceX86.cpp", (BYTE*)JIT_WriteBarrierGroup_End - (BYTE*)JIT_WriteBarrierGroup < (ptrdiff_t)GetOsPageSize());
@@ -1102,8 +1086,10 @@ void InitJITHelpers1()
 
     // Leave the patched region writable for StompWriteBarrierEphemeral(), StompWriteBarrierResize()
 
+#ifndef UNIX_X86_ABI
     // Initialize g_TailCallFrameVptr for JIT_TailCall helper
     g_TailCallFrameVptr = (void*)TailCallFrame::GetMethodFrameVPtr();
+#endif // !UNIX_X86_ABI
 }
 #pragma warning (default : 4731)
 

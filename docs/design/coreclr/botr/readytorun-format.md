@@ -9,7 +9,7 @@ Revisions:
 # Introduction
 
 This document describes ReadyToRun format 3.1 implemented in CoreCLR as of June 2019 and not yet
-implemented proposed extensions 4.1 for the support of composite R2R file format. 
+implemented proposed extensions 4.1 for the support of composite R2R file format.
 **Composite R2R file format** has basically the same structure as the traditional R2R file format
 defined in earlier revisions except that the output file represents a larger number of input MSIL
 assemblies compiled together as a logical unit.
@@ -28,8 +28,9 @@ in the COFF header represent a full copy of the input IL and MSIL metadata it wa
 
 **Composite R2R files** currently conform to Windows PE executable file format as the
 native envelope. Moving forward we plan to gradually add support for platform-native
-executable formats (ELF on Linux, MachO on OSX) as the native envelopes. As a natural corollary
-there is no global CLI / COR header in the file. The ReadyToRun header structure is pointed to
+executable formats (ELF on Linux, MachO on OSX) as the native envelopes. There is a
+global CLI / COR header in the file, but it only exists to facilitate pdb generation, and does
+not participate in any usages by the CoreCLR runtime. The ReadyToRun header structure is pointed to
 by the well-known export symbol `RTR_HEADER` and has the `READYTORUN_FLAG_COMPOSITE` flag set.
 
 Input MSIL metadata and IL streams can be either embedded in the composite R2R file or left
@@ -246,6 +247,7 @@ fixup kind, the rest of the signature varies based on the fixup kind.
 | READYTORUN_FIXUP_DeclaringTypeHandle     |  0x2D | Dictionary lookup for method declaring type. Followed by the type signature.
 | READYTORUN_FIXUP_IndirectPInvokeTarget   |  0x2E | Target (indirect) of an inlined PInvoke. Followed by method signature.
 | READYTORUN_FIXUP_PInvokeTarget           |  0x2F | Target of an inlined PInvoke. Followed by method signature.
+| READYTORUN_FIXUP_Check_InstructionSetSupport | 0x30 | Specify the instruction sets that must be supported/unsupported to use the R2R code associated with the fixup.
 | READYTORUN_FIXUP_ModuleOverride          |  0x80 | When or-ed to the fixup ID, the fixup byte in the signature is followed by an encoded uint with assemblyref index, either within the MSIL metadata of the master context module for the signature or within the manifest metadata R2R header table (used in cases inlining brings in references to assemblies not seen in the input MSIL).
 
 #### Method Signatures
@@ -318,8 +320,8 @@ basic encoding, with extended encoding for large values).
 
 ## ReadyToRunSectionType.RuntimeFunctions
 
-This section contains sorted array of `RUNTIME_FUNCTION` entries that describe all code blocks in the image with pointers to their unwind info. 
-Despite the name, these code block might represent a method body, or it could be just a part of it (e.g. a funclet) that requires its own unwind data. 
+This section contains sorted array of `RUNTIME_FUNCTION` entries that describe all code blocks in the image with pointers to their unwind info.
+Despite the name, these code block might represent a method body, or it could be just a part of it (e.g. a funclet) that requires its own unwind data.
 The standard Windows xdata/pdata format is used.
 ARM format is used for x86 to compensate for the lack of x86 unwind info standard.
 The unwind info blob is immediately followed by the GC info blob. The encoding slightly differs for amd64

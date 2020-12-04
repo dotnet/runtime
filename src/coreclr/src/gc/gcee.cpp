@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 //
 
 //
@@ -54,6 +53,11 @@ void GCHeap::UpdatePreGCCounters()
 #endif // BACKGROUND_GC
 
     FIRE_EVENT(GCStart_V2, count, depth, reason, static_cast<uint32_t>(type));
+    ReportGenerationBounds();
+}
+
+void GCHeap::ReportGenerationBounds()
+{
     g_theGCHeap->DiagDescrGenerations([](void*, int generation, uint8_t* rangeStart, uint8_t* rangeEnd, uint8_t* rangeEndReserved)
     {
         uint64_t range = static_cast<uint64_t>(rangeEnd - rangeStart);
@@ -149,12 +153,7 @@ void GCHeap::UpdatePostGCCounters()
 #endif //FEATURE_EVENT_TRACE
 
 #ifdef FEATURE_EVENT_TRACE
-    g_theGCHeap->DiagDescrGenerations([](void*, int generation, uint8_t* rangeStart, uint8_t* rangeEnd, uint8_t* rangeEndReserved)
-    {
-        uint64_t range = static_cast<uint64_t>(rangeEnd - rangeStart);
-        uint64_t rangeReserved = static_cast<uint64_t>(rangeEndReserved - rangeStart);
-        FIRE_EVENT(GCGenerationRange, generation, rangeStart, range, rangeReserved);
-    }, nullptr);
+    ReportGenerationBounds();
 
     FIRE_EVENT(GCEnd_V1, static_cast<uint32_t>(pSettings->gc_index), condemned_gen);
 
@@ -167,11 +166,12 @@ void GCHeap::UpdatePostGCCounters()
         g_GenerationSizes[3], g_GenerationPromotedSizes[3]));
 #endif //SIMPLE_DPRINTF
 
-    FIRE_EVENT(GCHeapStats_V1,
+    FIRE_EVENT(GCHeapStats_V2,
         g_GenerationSizes[0], g_GenerationPromotedSizes[0],
         g_GenerationSizes[1], g_GenerationPromotedSizes[1],
         g_GenerationSizes[2], g_GenerationPromotedSizes[2],
         g_GenerationSizes[3], g_GenerationPromotedSizes[3],
+        g_GenerationSizes[4], g_GenerationPromotedSizes[4],
         promoted_finalization_mem,
         GetFinalizablePromotedCount(),
         static_cast<uint32_t>(total_num_pinned_objects),
@@ -228,7 +228,7 @@ size_t GCHeap::GetLastGCStartTime(int generation)
     gc_heap* hp = pGenGCHeap;
 #endif //MULTIPLE_HEAPS
 
-    return dd_time_clock (hp->dynamic_data_of (generation));
+    return (size_t)(dd_time_clock (hp->dynamic_data_of (generation)) / 1000);
 }
 
 size_t GCHeap::GetLastGCDuration(int generation)
@@ -239,14 +239,14 @@ size_t GCHeap::GetLastGCDuration(int generation)
     gc_heap* hp = pGenGCHeap;
 #endif //MULTIPLE_HEAPS
 
-    return dd_gc_elapsed_time (hp->dynamic_data_of (generation));
+    return (size_t)(dd_gc_elapsed_time (hp->dynamic_data_of (generation)) / 1000);
 }
 
-size_t GetHighPrecisionTimeStamp();
+uint64_t GetHighPrecisionTimeStamp();
 
 size_t GCHeap::GetNow()
 {
-    return GetHighPrecisionTimeStamp();
+    return (size_t)(GetHighPrecisionTimeStamp() / 1000);
 }
 
 bool GCHeap::IsGCInProgressHelper (bool bConsiderGCStart)
@@ -326,7 +326,22 @@ bool GCHeap::IsConcurrentGCInProgress()
 #ifdef FEATURE_EVENT_TRACE
 void gc_heap::fire_etw_allocation_event (size_t allocation_amount, int gen_number, uint8_t* object_address)
 {
-    gc_etw_alloc_kind kind = gen_number == 0 ? gc_etw_alloc_soh : gc_etw_alloc_loh;
+    gc_etw_alloc_kind kind;
+    switch (gen_number)
+    {
+    case 0:
+        kind = gc_etw_alloc_soh;
+        break;
+    case 3:
+        kind = gc_etw_alloc_loh;
+        break;
+    case 4:
+        kind = gc_etw_alloc_poh;
+        break;
+    default:
+        __UNREACHABLE();
+    }
+
     FIRE_EVENT(GCAllocationTick_V3, static_cast<uint64_t>(allocation_amount), kind, heap_number, object_address);
 }
 
@@ -401,12 +416,18 @@ void GCHeap::DiagTraceGCSegments()
             FIRE_EVENT(GCCreateSegment_V1, address, size, static_cast<uint32_t>(type));
         }
 
-        // large obj segments
-        for (seg = generation_start_segment (h->generation_of (loh_generation)); seg != 0; seg = heap_segment_next(seg))
+        // uoh segments
+        for (int i = uoh_start_generation; i < total_generation_count; i++)
         {
-            uint8_t* address = heap_segment_mem (seg);
-            size_t size = heap_segment_reserved (seg) - heap_segment_mem (seg);
-            FIRE_EVENT(GCCreateSegment_V1, address, size, static_cast<uint32_t>(gc_etw_segment_large_object_heap));
+            for (seg = generation_start_segment (h->generation_of (i)); seg != 0; seg = heap_segment_next(seg))
+            {
+                uint8_t* address = heap_segment_mem (seg);
+                size_t size = heap_segment_reserved (seg) - heap_segment_mem (seg);
+                gc_etw_segment_type segment_type = (i == loh_generation) ?
+                    gc_etw_segment_large_object_heap :
+                    gc_etw_segment_pinned_object_heap;
+                FIRE_EVENT(GCCreateSegment_V1, address, size, static_cast<uint32_t>(segment_type));
+            }
         }
     }
 #endif // FEATURE_EVENT_TRACE

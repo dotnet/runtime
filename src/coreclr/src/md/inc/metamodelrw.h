@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 //*****************************************************************************
 // MetaModelRW.h -- header file for Read/Write compressed COM+ metadata.
@@ -204,37 +203,6 @@ class MDInternalRW;
 class CorProfileData;
 class UTSemReadWrite;
 
-enum MetaDataReorderingOptions {
-    NoReordering=0x0,
-    ReArrangeStringPool=0x1
-};
-
-#ifdef FEATURE_PREJIT
-
-// {0702E333-8D64-4ca7-B564-4AA56B1FCEA3}
-EXTERN_GUID(IID_IMetaDataCorProfileData, 0x702e333, 0x8d64, 0x4ca7, 0xb5, 0x64, 0x4a, 0xa5, 0x6b, 0x1f, 0xce, 0xa3 );
-
-#undef  INTERFACE
-#define INTERFACE IMetaDataCorProfileData
-DECLARE_INTERFACE_(IMetaDataCorProfileData, IUnknown)
-{
-    STDMETHOD(SetCorProfileData)(
-        CorProfileData *pProfileData) PURE;         // [IN] Pointer to profile data
-};
-
-// {2B464817-C0F6-454e-99E7-C352D8384D7B}
-EXTERN_GUID(IID_IMDInternalMetadataReorderingOptions, 0x2B464817, 0xC0F6, 0x454e, 0x99, 0xE7, 0xC3, 0x52, 0xD8, 0x38, 0x4D, 0x7B );
-
-#undef  INTERFACE
-#define INTERFACE IMDInternalMetadataReorderingOptions
-DECLARE_INTERFACE_(IMDInternalMetadataReorderingOptions, IUnknown)
-{
-    STDMETHOD(SetMetaDataReorderingOptions)(
-        MetaDataReorderingOptions options) PURE;         // [IN] metadata reordering options
-};
-
-#endif //FEATURE_PREJIT
-
 template <class MiniMd> class CLiteWeightStgdb;
 //*****************************************************************************
 // Read/Write MiniMd.
@@ -412,6 +380,18 @@ public:
     AddTblRecord(GenericParam)
     AddTblRecord(MethodSpec)
     AddTblRecord(GenericParamConstraint)
+
+#ifdef FEATURE_METADATA_EMIT_PORTABLE_PDB
+    AddTblRecord(Document)
+    AddTblRecord(MethodDebugInformation)
+    AddTblRecord(LocalScope)
+    AddTblRecord(LocalVariable)
+    AddTblRecord(LocalConstant)
+    AddTblRecord(ImportScope)
+    // TODO:
+    // AddTblRecord(StateMachineMethod)
+    // AddTblRecord(CustomDebugInformation)
+#endif // FEATURE_METADATA_EMIT_PORTABLE_PDB
 
     // Specialized AddXxxToYyy() functions.
     __checkReturn HRESULT AddMethodToTypeDef(RID td, RID md);

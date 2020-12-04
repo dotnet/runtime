@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Runtime.InteropServices;
 using System.Collections;
@@ -15,7 +14,7 @@ namespace System.DirectoryServices
     public class PropertyCollection : IDictionary
     {
         private readonly DirectoryEntry _entry;
-        internal readonly Hashtable valueTable = null;
+        internal readonly Hashtable valueTable;
 
         internal PropertyCollection(DirectoryEntry entry)
         {
@@ -110,7 +109,7 @@ namespace System.DirectoryServices
             DirectoryEntry entryToUse = _entry.CloneBrowsable();
             entryToUse.FillCache("");
 
-            UnsafeNativeMethods.IAdsPropertyList propList = (UnsafeNativeMethods.IAdsPropertyList)entryToUse.AdsObject;
+            _ = (UnsafeNativeMethods.IAdsPropertyList)entryToUse.AdsObject;
 
             entryToUse.propertiesAlreadyEnumerated = true;
             return new PropertyEnumerator(_entry, entryToUse);
@@ -176,7 +175,7 @@ namespace System.DirectoryServices
         {
             private readonly DirectoryEntry _entry;               // clone (to be disposed)
             private readonly DirectoryEntry _parentEntry;         // original entry to pass to PropertyValueCollection
-            private string _currentPropName = null;
+            private string _currentPropName;
 
             public PropertyEnumerator(DirectoryEntry parent, DirectoryEntry clone)
             {

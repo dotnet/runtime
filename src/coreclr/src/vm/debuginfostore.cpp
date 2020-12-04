@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 // DebugInfoStore
 
 
@@ -702,7 +701,7 @@ PatchpointInfo * CompressDebugInfo::RestorePatchpointInfo(IN PTR_BYTE pDebugInfo
 #endif
 
 #ifdef DACCESS_COMPILE
-void CompressDebugInfo::EnumMemoryRegions(CLRDataEnumMemoryFlags flags, PTR_BYTE pDebugInfo)
+void CompressDebugInfo::EnumMemoryRegions(CLRDataEnumMemoryFlags flags, PTR_BYTE pDebugInfo, BOOL hasFlagByte)
 {
     CONTRACTL
     {
@@ -711,6 +710,27 @@ void CompressDebugInfo::EnumMemoryRegions(CLRDataEnumMemoryFlags flags, PTR_BYTE
         SUPPORTS_DAC;
     }
     CONTRACTL_END;
+
+#ifdef FEATURE_ON_STACK_REPLACEMENT
+    if (hasFlagByte)
+    {
+        // Check flag byte and skip over any patchpoint info
+        BYTE flagByte = *pDebugInfo;
+        pDebugInfo++;
+
+        if (flagByte == 1)
+        {
+            PTR_PatchpointInfo patchpointInfo = dac_cast<PTR_PatchpointInfo>(pDebugInfo);
+            pDebugInfo += patchpointInfo->PatchpointInfoSize();
+        }
+        else
+        {
+            _ASSERTE(flagByte == 0);
+        }
+    }
+#else
+    _ASSERTE(!hasFlagByte);
+#endif
 
     NibbleReader r(pDebugInfo, 12 /* maximum size of compressed 2 UINT32s */);
 

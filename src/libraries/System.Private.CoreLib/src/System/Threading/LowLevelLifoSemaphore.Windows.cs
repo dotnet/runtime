@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
 using System.Runtime.InteropServices;
@@ -27,7 +26,7 @@ namespace System.Threading
                 Interop.Kernel32.CreateIoCompletionPort(new IntPtr(-1), IntPtr.Zero, UIntPtr.Zero, maximumSignalCount);
             if (_completionPort == IntPtr.Zero)
             {
-                var error = Marshal.GetLastWin32Error();
+                int error = Marshal.GetLastWin32Error();
                 var exception = new OutOfMemoryException();
                 exception.HResult = error;
                 throw exception;
@@ -46,7 +45,7 @@ namespace System.Threading
         {
             Debug.Assert(timeoutMs >= -1);
 
-            bool success = Interop.Kernel32.GetQueuedCompletionStatus(_completionPort, out var numberOfBytes, out var completionKey, out var pointerToOverlapped, timeoutMs);
+            bool success = Interop.Kernel32.GetQueuedCompletionStatus(_completionPort, out int numberOfBytes, out UIntPtr completionKey, out IntPtr pointerToOverlapped, timeoutMs);
             Debug.Assert(success || (Marshal.GetLastWin32Error() == WaitHandle.WaitTimeout));
             return success;
         }
@@ -57,9 +56,9 @@ namespace System.Threading
 
             for (int i = 0; i < count; i++)
             {
-                if(!Interop.Kernel32.PostQueuedCompletionStatus(_completionPort, 1, UIntPtr.Zero, IntPtr.Zero))
+                if (!Interop.Kernel32.PostQueuedCompletionStatus(_completionPort, 1, UIntPtr.Zero, IntPtr.Zero))
                 {
-                    var lastError = Marshal.GetLastWin32Error();
+                    int lastError = Marshal.GetLastWin32Error();
                     var exception = new OutOfMemoryException();
                     exception.HResult = lastError;
                     throw exception;

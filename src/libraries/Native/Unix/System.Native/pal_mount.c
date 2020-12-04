@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #include "pal_config.h"
 #include "pal_mount.h"
@@ -15,7 +14,13 @@
 #include <sys/mount.h>
 #else
 #include <sys/statfs.h>
+#if HAVE_SYS_MNTENT_H
+#include <sys/mntent.h>
+#include <sys/mnttab.h>
+#include <sys/statvfs.h>
+#else
 #include <mntent.h>
+#endif
 #define STRING_BUFFER_SIZE 8192
 
 // Android does not define MNTOPT_RO
@@ -24,7 +29,7 @@
 #endif
 #endif
 
-static int32_t GetMountInfo(MountPointFound onFound)
+int32_t SystemNative_GetAllMountPoints(MountPointFound onFound)
 {
 #if HAVE_MNTINFO
     // getmntinfo returns pointers to OS-internal structs, so we don't need to worry about free'ing the object
@@ -42,8 +47,28 @@ static int32_t GetMountInfo(MountPointFound onFound)
     return 0;
 }
 
-#else
+#elif HAVE_SYS_MNTENT_H
+    int result = -1;
+    FILE* fp = fopen("/proc/mounts", MNTOPT_RO);
+    if (fp != NULL)
+    {
+        char buffer[STRING_BUFFER_SIZE] = {0};
+        struct mnttab entry;
+        while(getmntent(fp, &entry) == 0)
+        {
+            onFound(entry.mnt_mountp);
+        }
 
+        result = fclose(fp);
+        assert(result == 1); // documented to always return 1
+        result =
+            0; // We need to standardize a success return code between our implementations, so settle on 0 for success
+    }
+
+    return result;
+}
+
+#else
     int result = -1;
     FILE* fp = setmntent("/proc/mounts", MNTOPT_RO);
     if (fp != NULL)
@@ -68,17 +93,12 @@ static int32_t GetMountInfo(MountPointFound onFound)
 
 #endif
 
-int32_t SystemNative_GetAllMountPoints(MountPointFound onFound)
-{
-    return GetMountInfo(onFound);
-}
-
 int32_t SystemNative_GetSpaceInfoForMountPoint(const char* name, MountPointInformation* mpi)
 {
     assert(name != NULL);
     assert(mpi != NULL);
 
-#if defined(HAVE_STATFS)
+#if HAVE_NON_LEGACY_STATFS
     struct statfs stats;
     memset(&stats, 0, sizeof(struct statfs));
 
@@ -117,7 +137,7 @@ SystemNative_GetFormatInfoForMountPoint(const char* name, char* formatNameBuffer
     assert((formatNameBuffer != NULL) && (formatType != NULL));
     assert(bufferLength > 0);
 
-#if defined(HAVE_STATFS)
+#if HAVE_NON_LEGACY_STATFS
     struct statfs stats;
     int result = statfs(name, &stats);
 #else
@@ -142,12 +162,12 @@ SystemNative_GetFormatInfoForMountPoint(const char* name, char* formatNameBuffer
             SafeStringCopy(formatNameBuffer, Int32ToSizeT(bufferLength), stats.f_fstypename);
             *formatType = -1;
         }
-#elif defined(HAVE_STATFS)
+#elif HAVE_NON_LEGACY_STATFS
         assert(formatType != NULL);
         *formatType = (int64_t)(stats.f_type);
         SafeStringCopy(formatNameBuffer, Int32ToSizeT(bufferLength), "");
 #else
-		*formatType = 0;
+        *formatType = 0;
 #endif
     }
     else
