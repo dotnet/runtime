@@ -3353,8 +3353,8 @@
         <ExcludeList Include = "$(XunitTestBinBase)/JIT/HardwareIntrinsics/**">
             <Issue>https://github.com/dotnet/runtime/issues/45568 (workitem JIT.HardwareIntrinsics)</Issue>
         </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Methodical/eh/**">
-            <Issue>https://github.com/dotnet/runtime/issues/45568 (workitem JIT.Methodical.eh)</Issue>
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Methodical/**">
+            <Issue>https://github.com/dotnet/runtime/issues/45568 (workitem JIT.Methodical*)</Issue>
         </ExcludeList>
         <ExcludeList Include = "$(XunitTestBinBase)/JIT/IL_Conformance/**">
             <Issue>https://github.com/dotnet/runtime/issues/45568 (workitem JIT.IL_Conformance)</Issue>
