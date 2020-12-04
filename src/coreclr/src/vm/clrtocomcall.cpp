@@ -307,7 +307,7 @@ I4ARRAYREF SetUpWrapperInfo(MethodDesc *pMD)
 
             MarshalInfo Info(msig.GetModule(), msig.GetArgProps(), msig.GetSigTypeContext(), params[iParam],
                              MarshalInfo::MARSHAL_SCENARIO_COMINTEROP, (CorNativeLinkType)0, (CorNativeLinkFlags)0,
-                             TRUE, iParam, numArgs, BestFit, ThrowOnUnmappableChar, FALSE, TRUE, pMD, TRUE
+                             TRUE, iParam, numArgs, BestFit, ThrowOnUnmappableChar, FALSE, pMD, TRUE
     #ifdef _DEBUG
                              , pMD->m_pszDebugMethodName, pMD->m_pszDebugClassName, iParam
     #endif

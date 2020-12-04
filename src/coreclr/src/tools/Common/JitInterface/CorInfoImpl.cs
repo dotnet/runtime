@@ -684,21 +684,6 @@ namespace Internal.JitInterface
                         throw new RequiresRuntimeJitException(type);
                     }
 #endif
-#if READYTORUN
-                    if (elementSize.AsInt == 4)
-                    {
-                        var normalizedCategory = _compilation.TypeSystemContext.NormalizedCategoryFor4ByteStructOnX86(type);
-                        if (normalizedCategory != type.Category)
-                        {
-                            if (NeedsTypeLayoutCheck(type))
-                            {
-                                ISymbolNode node = _compilation.SymbolNodeFactory.CheckTypeLayout(type);
-                                _methodCodeNode.Fixups.Add(node);
-                            }
-                            return (CorInfoType)normalizedCategory;
-                        }
-                    }
-#endif
                 }
                 return CorInfoType.CORINFO_TYPE_VALUECLASS;
             }
