@@ -73,8 +73,6 @@ namespace Microsoft.Extensions.Caching.Memory
             Assert.Same(value, result);
 
             clock.Add(TimeSpan.FromMinutes(2));
-            var ignored = cache.Get("otherKey"); // Background expiration checks are triggered by misc cache activity.
-
             Assert.True(callbackInvoked.WaitOne(TimeSpan.FromSeconds(30)), "Callback");
 
             found = cache.TryGetValue(key, out result);
