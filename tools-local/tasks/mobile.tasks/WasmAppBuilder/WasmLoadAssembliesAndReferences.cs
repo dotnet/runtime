@@ -11,16 +11,15 @@ using Microsoft.Build.Utilities;
 
 public class WasmLoadAssembliesAndReferences : Task
 {
-    public string? MainAssembly { get; set; }
+    [Required]
+    public string[]? Assemblies { get; set; }
+
+    // Either one of these two need to be set
+    public string[]? AssemblySearchPaths { get; set; }
 
     // If true, continue when a referenced assembly cannot be found.
     // If false, throw an exception.
     public bool SkipMissingAssemblies { get; set; }
-
-    // Either one of these two need to be set
-    public string[]? AssemblySearchPaths { get; set; }
-    public string[]? Assemblies { get; set; }
-    public string[]? ExtraAssemblies { get; set; }
 
     // The set of assemblies the app will use
     [Output]
@@ -30,9 +29,9 @@ public class WasmLoadAssembliesAndReferences : Task
 
     public override bool Execute ()
     {
-        if (AssemblySearchPaths == null && Assemblies == null)
+        if (Assemblies == null)
         {
-            Log.LogError("Either the AssemblySearchPaths or the Assemblies property needs to be set.");
+            Log.LogError("The Assemblies property needs to be set to the assemblies being resolved");
             return false;
         }
 
@@ -40,73 +39,45 @@ public class WasmLoadAssembliesAndReferences : Task
 
         if (AssemblySearchPaths != null)
         {
-            if (MainAssembly == null)
-            {
-                Log.LogError($"When AssemblySearchPaths is specified, the MainAssembly property needs to be set.");
-                return false;
-            }
-
-            var mainAssemblyFullPath = Path.GetFullPath(MainAssembly);
-
-            if (!File.Exists(mainAssemblyFullPath))
-            {
-                Log.LogError($"Could not find main assembly '{mainAssemblyFullPath}'");
-                return false;
-            }
-
-            // Collect and load assemblies used by the app
             foreach (var path in AssemblySearchPaths)
             {
                 if (!Directory.Exists(path))
                 {
-                    Log.LogError($"Directory '{path}' does not exist or is not a directory.");
+                    Log.LogError($"Directory '{path}' in AssemblySearchPaths does not exist or is not a directory.");
                     return false;
                 }
             }
             _resolver = new SearchPathsAssemblyResolver(AssemblySearchPaths);
-            var mlc = new MetadataLoadContext(_resolver, "System.Private.CoreLib");
-
-            var mainAssembly = mlc.LoadFromAssemblyPath(mainAssemblyFullPath);
-            AddAssemblyAndReferences(mlc, mainAssembly);
-
-            if (ExtraAssemblies != null)
-            {
-                foreach (var asm in ExtraAssemblies)
-                {
-                    var asmFullPath = Path.GetFullPath(asm);
-                    try
-                    {
-                        var refAssembly = mlc.LoadFromAssemblyPath(asmFullPath);
-                        AddAssemblyAndReferences(mlc, refAssembly);
-                    }
-                    catch (Exception ex) when (ex is FileLoadException || ex is BadImageFormatException || ex is FileNotFoundException)
-                    {
-                        if (SkipMissingAssemblies)
-                            Log.LogMessage(MessageImportance.Low, $"Loading extra assembly '{asm}' failed with {ex}. Skipping");
-                        else
-                        {
-                            Log.LogError($"Failed to load assembly from ExtraAssemblies '{asm}': {ex}");
-                            return false;
-                        }
-                    }
-                }
-            }
         }
         else
         {
-            string? corelibPath = Assemblies!.FirstOrDefault(asm => asm.EndsWith("System.Private.CoreLib.dll"));
+            string? corelibPath = Path.GetDirectoryName(Assemblies!.FirstOrDefault(asm => asm.EndsWith("System.Private.CoreLib.dll")));
             if (corelibPath == null)
             {
                 Log.LogError("Could not find 'System.Private.CoreLib.dll' within Assemblies.");
                 return false;
             }
             _resolver = new SearchPathsAssemblyResolver(new string[] { corelibPath });
-            var mlc = new MetadataLoadContext(_resolver, "System.Private.CoreLib");
+        }
+        var mlc = new MetadataLoadContext(_resolver, "System.Private.CoreLib");
 
-            foreach (var asm in Assemblies!)
+        foreach (var asm in Assemblies)
+        {
+            var asmFullPath = Path.GetFullPath(asm);
+            try
             {
-                var assembly = mlc.LoadFromAssemblyPath(asm);
-                AddAssemblyAndReferences(mlc, assembly);
+                var refAssembly = mlc.LoadFromAssemblyPath(asmFullPath);
+                AddAssemblyAndReferences(mlc, refAssembly);
+            }
+            catch (Exception ex) when (ex is FileLoadException || ex is BadImageFormatException || ex is FileNotFoundException)
+            {
+                if (SkipMissingAssemblies)
+                    Log.LogMessage(MessageImportance.Low, $"Loading extra assembly '{asm}' failed with {ex}. Skipping");
+                else
+                {
+                    Log.LogError($"Failed to load assembly from ExtraAssemblies '{asm}': {ex}");
+                    return false;
+                }
             }
         }
 
@@ -129,6 +100,8 @@ public class WasmLoadAssembliesAndReferences : Task
             }
             catch (FileNotFoundException)
             {
+                if (SkipMissingAssemblies)
+                    Log.LogMessage(MessageImportance.Low, $"Loading extra assembly '{aname.Name}' failed with FileNotFoundException. Skipping");
             }
         }
     }
