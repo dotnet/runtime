@@ -63,35 +63,14 @@
   </PropertyGroup>
 
   <Import Project="$(LibrariesProjectRoot)NetCoreAppLibrary.props" />
+  <Import Project="$(LibrariesProjectRoot)shims/netfxreference.props" />
 
   <ItemGroup>
-    <!-- Libraries specified in NetCoreAppLibrary.props -->
+    <!-- Public libraries and shims -->
     <PlatformManifestFileEntry Include="@(NetCoreAppLibrary->'%(Identity).dll')" />
     <PlatformManifestFileEntry Include="@(NetCoreAppLibraryNoReference->'%(Identity).dll')" />
-    <!-- Shim libraries -->
-    <PlatformManifestFileEntry Include="mscorlib.dll" />
+    <PlatformManifestFileEntry Include="@(NetFxReference->'%(Identity).dll')" />
     <PlatformManifestFileEntry Include="netstandard.dll" />
-    <PlatformManifestFileEntry Include="WindowsBase.dll" />
-    <PlatformManifestFileEntry Include="Microsoft.VisualBasic.dll" />
-    <PlatformManifestFileEntry Include="System.ComponentModel.DataAnnotations.dll" />
-    <PlatformManifestFileEntry Include="System.Configuration.dll" />
-    <PlatformManifestFileEntry Include="System.Core.dll" />
-    <PlatformManifestFileEntry Include="System.Data.dll" />
-    <PlatformManifestFileEntry Include="System.dll" />
-    <PlatformManifestFileEntry Include="System.Drawing.dll" />
-    <PlatformManifestFileEntry Include="System.IO.Compression.FileSystem.dll" />
-    <PlatformManifestFileEntry Include="System.Net.dll" />
-    <PlatformManifestFileEntry Include="System.Numerics.dll" />
-    <PlatformManifestFileEntry Include="System.Runtime.Serialization.dll" />
-    <PlatformManifestFileEntry Include="System.Security.dll" />
-    <PlatformManifestFileEntry Include="System.ServiceModel.Web.dll" />
-    <PlatformManifestFileEntry Include="System.ServiceProcess.dll" />
-    <PlatformManifestFileEntry Include="System.Transactions.dll" />
-    <PlatformManifestFileEntry Include="System.Web.dll" />
-    <PlatformManifestFileEntry Include="System.Windows.dll" />
-    <PlatformManifestFileEntry Include="System.Xml.dll" />
-    <PlatformManifestFileEntry Include="System.Xml.Linq.dll" />
-    <PlatformManifestFileEntry Include="System.Xml.Serialization.dll" />
     <!-- Private libraries -->
     <PlatformManifestFileEntry Include="System.Private.CoreLib.dll" />
     <PlatformManifestFileEntry Include="System.Private.DataContractSerialization.dll" />
