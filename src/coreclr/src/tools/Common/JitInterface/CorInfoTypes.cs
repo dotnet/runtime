@@ -1046,8 +1046,8 @@ namespace Internal.JitInterface
         // - exactContext is set to wrapped CORINFO_CLASS_HANDLE of devirt'ed method table.
         //
         public CORINFO_METHOD_STRUCT_* devirtualizedMethod;
-        public uint _requiresInstMethodTableArg;
-        public bool requiresInstMethodTableArg { get { return _requiresInstMethodTableArg != 0; } set { _requiresInstMethodTableArg = value ? (byte)1 : (byte)0; } }
+        public byte _requiresInstMethodTableArg;
+        public bool requiresInstMethodTableArg { get { return _requiresInstMethodTableArg != 0; } set { _requiresInstMethodTableArg = value ? 1 : 0; } }
         public CORINFO_CONTEXT_STRUCT* exactContext;
     }
 

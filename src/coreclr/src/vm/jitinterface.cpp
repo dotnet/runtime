@@ -9025,7 +9025,7 @@ bool CEEInfo::resolveVirtualMethodHelper(CORINFO_DEVIRTUALIZATION_INFO * info)
         Assembly* pCallerAssembly = callerMethod->GetModule()->GetAssembly();
         bool allowDevirt =
             IsInSameVersionBubble(pCallerAssembly , pDevirtMD->GetModule()->GetAssembly())
-            && IsInSameVersionBubble(pCallerAssembly, pExactMT->GetAssembly());
+            && IsInSameVersionBubble(pCallerAssembly, pObjMT->GetAssembly());
 
         if (!allowDevirt)
         {
