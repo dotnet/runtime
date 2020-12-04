@@ -70,6 +70,15 @@
         IL_000a: throw
     }
 
+    .method public hidebysig static
+        native int GetNonStaticCallbackFunctionPointer (
+        ) cil managed preservesig
+    {
+        .maxstack 8
+        ldftn instance int32 InvalidCSharp.Callbacks::CallbackNonStatic(int32)
+        ret
+    }
+
     .method public hidebysig specialname rtspecialname 
         instance void .ctor () cil managed 
     {

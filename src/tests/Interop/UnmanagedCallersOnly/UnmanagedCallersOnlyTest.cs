@@ -46,7 +46,6 @@ public unsafe class Program
             NegativeTest_NonStaticMethod();
             NegativeTest_ViaDelegate();
             NegativeTest_NonBlittable();
-            NegativeTest_NonInstantiatedGenericArguments();
             NegativeTest_InstantiatedGenericArguments();
             NegativeTest_FromInstantiatedGenericClass();
             TestUnmanagedCallersOnlyViaUnmanagedCalli();
@@ -188,43 +187,8 @@ public unsafe class Program
     {
         Console.WriteLine($"Running {nameof(NegativeTest_NonStaticMethod)}...");
 
-        /*
-           // C# does not support getting a function pointer of an instance method
-           void TestUnmanagedCallersOnlyNonStatic()
-           {
-                .locals init ([0] native int ptr)
-                nop
-                ldftn      int typeof(Callbacks).CallbackNonStatic(int)
-                stloc.0
-
-                ldloc.0
-                ldc.i4     <n> local
-                call       bool UnmanagedCallersOnlyDll::CallManagedProc(native int, int)
-                pop
-
-                ret
-             }
-        */
-        DynamicMethod testUnmanagedCallersOnly = new DynamicMethod("TestUnmanagedCallersOnlyNonStatic", null, null, typeof(Program).Module);
-        ILGenerator il = testUnmanagedCallersOnly.GetILGenerator();
-        il.DeclareLocal(typeof(IntPtr));
-        il.Emit(OpCodes.Nop);
-
-        // Get native function pointer of the callback
-        il.Emit(OpCodes.Ldftn, typeof(Callbacks).GetMethod("CallbackNonStatic"));
-        il.Emit(OpCodes.Stloc_0);
-        il.Emit(OpCodes.Ldloc_0);
-
         int n = 12345;
-        il.Emit(OpCodes.Ldc_I4, n);
-        il.Emit(OpCodes.Call, typeof(UnmanagedCallersOnlyDll).GetMethod("CallManagedProc"));
-        il.Emit(OpCodes.Pop);
-        il.Emit(OpCodes.Ret);
-
-        var testNativeMethod = (NativeMethodInvoker)testUnmanagedCallersOnly.CreateDelegate(typeof(NativeMethodInvoker));
-
-        // Try invoking method
-        Assert.Throws<InvalidProgramException>(() => { testNativeMethod(); });
+        Assert.Throws<InvalidProgramException>(() => { UnmanagedCallersOnlyDll.CallManagedProc(Callbacks.GetNonStaticCallbackFunctionPointer(), n); });
     }
 
     [UnmanagedCallersOnly]
@@ -241,37 +205,6 @@ public unsafe class Program
         int n = 12345;
         // Try invoking method
         Assert.Throws<InvalidProgramException>(() => { UnmanagedCallersOnlyDll.CallManagedProc((IntPtr)(delegate* unmanaged<bool, int>)&CallbackMethodNonBlittable, n); });
-    }
-
-    public static void NegativeTest_NonInstantiatedGenericArguments()
-    {
-        Console.WriteLine($"Running {nameof(NegativeTest_NonInstantiatedGenericArguments)}...");
-
-        /*
-           // C# does not support getting a function pointer of an uninstantiated generic method
-           void TestUnmanagedCallersOnlyNonInstGenericArguments()
-           {
-                .locals init ([0] native int ptr)
-                IL_0000:  nop
-                IL_0001:  ldftn      void InvalidCSharp.Callbacks.CallbackMethodGeneric(T)
-                IL_0007:  stloc.0
-                IL_0008:  ret
-             }
-        */
-        DynamicMethod testUnmanagedCallersOnly = new DynamicMethod("TestUnmanagedCallersOnlyNonInstGenericArguments", null, null, typeof(Program).Module);
-        ILGenerator il = testUnmanagedCallersOnly.GetILGenerator();
-        il.DeclareLocal(typeof(IntPtr));
-        il.Emit(OpCodes.Nop);
-
-        // Get native function pointer of the callback
-        il.Emit(OpCodes.Ldftn, typeof(Callbacks).GetMethod("CallbackMethodGeneric"));
-        il.Emit(OpCodes.Stloc_0);
-
-        il.Emit(OpCodes.Ret);
-        var testNativeMethod = (NativeMethodInvoker)testUnmanagedCallersOnly.CreateDelegate(typeof(NativeMethodInvoker));
-
-        // Try invoking method
-        Assert.Throws<InvalidProgramException>(() => { testNativeMethod(); });
     }
 
     public static void NegativeTest_InstantiatedGenericArguments()
