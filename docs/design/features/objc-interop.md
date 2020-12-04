@@ -32,13 +32,15 @@ int b = ((int(*)(id,SEL,int))&objc_msgSend)(obj, doubleNumberSel, a);
 
 The Objective-C runtime adheres to the [`cdecl`](https://en.wikipedia.org/wiki/X86_calling_conventions#cdecl) calling convention for all function calls. It should be noted that variadic arguments are supported in Objective-C.
 
+The dispatching of messages to the target method can be impacted by the concept of "method swizzling". This is a mechanism in Objective-C where one can change the implementation of a type's method. This changing of the target method implementation is typically done in the type's `+load` or `+initialize` methods but could conceivably be done at any time. The usefulness of this feature for interoperability is presently unknown, but the technique should be kept in mind during investigations into unexpected behavior.
+
 **Exceptions**
 
-The Objective-C implementation of exceptions is able to be correctly simulated through a series of well defined C functions provided by the Objective-C runtime. Details on this ABI aren't discussed here, but can be observed in various hand-written assembly code (e.g. [x86_64](https://github.com/xamarin/xamarin-macios/blob/main/runtime/trampolines-x86_64-objc_msgSend-post.inc)) in the Xamarin-macios code base.
+The Objective-C implementation of exceptions is able to be correctly simulated through a series of well defined C functions provided by the Objective-C runtime. Details on this ABI aren't discussed here, but can be observed in various hand-written assembly code (e.g. [x86_64](https://github.com/xamarin/xamarin-macios/blob/main/runtime/trampolines-x86_64-objc_msgSend-post.inc)) in the [Xamarin-macios][xamarin_repo] code base.
 
 **Blocks**
 
-An Objective-C Block is conceptually a closure. The [Block ABI][blocks_abi] described by the clang compiler is used to inform interoperability with the .NET Platform. The Objective-C signature of a Block has an implied first argument for the Block itself. For example, a Block that takes an integer and returns an integer would have the follow C function signature: `int (*)(id, int)`.
+An Objective-C Block is conceptually a closure. The [Block ABI][blocks_abi] described by the clang compiler is used to inform interoperability with the .NET Platform. The Objective-C signature of a Block has an implied first argument for the Block itself. For example, a Block that takes an integer and returns an integer would have the following C function signature: `int (*)(id, int)`.
 
 ## Interaction between Objective-C and .NET types
 
@@ -58,7 +60,7 @@ _Note_: In the following illustrations, a strong reference is depicted as a soli
 
 When a projected .NET object enters an Objective-C environment, the Objective-C proxy is subject to reference counting and ensuring it extends the lifetime of the managed object it wraps. This can be accomplished in CoreCLR through use of the internal `HNDTYPE_REFCOUNTED` GC handle type. This handle, coupled with a reference count, can be used to transition a GC handle between a weak and strong reference.
 
-Projecting a .NET type into Objective-C will require overriding the built-in [`retain`](https://developer.apple.com/documentation/objectivec/1418956-nsobject/1571946-retain) and [`release`](https://developer.apple.com/documentation/objectivec/1418956-nsobject/1571957-release) methods provided by the Objective-C runtime. Overriding of these methods will not be needed when activating an Objective-C type in .NET as that type's existing `retain` and `release` methods will be used.
+Projecting a .NET type into Objective-C will require overriding the built-in [`alloc`](https://developer.apple.com/documentation/objectivec/nsobject/1571958-alloc), [`retain`](https://developer.apple.com/documentation/objectivec/1418956-nsobject/1571946-retain), and [`release`](https://developer.apple.com/documentation/objectivec/1418956-nsobject/1571957-release) methods provided by the Objective-C runtime. Overriding of these methods will not be needed when activating an Objective-C type in .NET as that type's existing methods will be used.
 
 ```
  --------------------                  ----------------------
@@ -73,6 +75,10 @@ Projecting a .NET type into Objective-C will require overriding the built-in [`r
 
 When an Objective-C object enters a .NET environment, its lifetime must be extended by the managed proxy. The managed proxy needs only to retain a reference count to extend the Objective-C object's lifetime. When the managed proxy is finalized, it will release its reference count on the Objective-C object.
 
+There is additional complexity in this case and there is a need
+to ensure the managed proxy's life also extends to that of the Objective-C object. In order to achieve this the managed proxy creates a REFCOUNT handle to itself. This handle strength is based on the reference count of the
+Objective-C object - which is determined by calling [`retainCount`](https://developer.apple.com/documentation/objectivec/1418956-nsobject/1571952-retaincount). The handle is a weak reference when the count `= 1` and strong when the count is `> 1`.
+
 ```
  --------------------                  ----------------------
 | Objective-C object |                |     Managed proxy    |
@@ -80,8 +86,12 @@ When an Objective-C object enters a .NET environment, its lifetime must be exten
 |  ----------------  |                |  ------------------  |
 | | Weak reference |=| = = = = = = = >| | Strong reference | |
 | |    to proxy    | |<===============|=|    to object     | |
-|  ----------------  |                |  ------------------  |
- --------------------                  ----------------------
+|  ----------------  |                |  ------------------  |<===╗
+ --------------------                 |  ------------------  |    ║
+                                      | | REFCOUNTED handle|=|====╝
+                                      | |    to self       | |
+                                      |  ------------------  |
+                                       ----------------------
 ```
 
 _Note_: There is a special case with interoperability and threading in Objective-C's reference counting system - .NET [thread pools](https://docs.microsoft.com/dotnet/standard/threading/the-managed-thread-pool). The Objective-C runtime assumes each thread of execution possesses its own [`NSAutoreleasePool`](https://developer.apple.com/documentation/foundation/nsautoreleasepool) instance. In order to ensure this invariant, support for managing a thread's `NSAutoreleasePool` instance is required.
@@ -103,7 +113,7 @@ void* fptr = extract_using_abi(blk);
 int b = ((int(*)(id,int))fptr)(blk, a);
 ```
 
-The lifetime of Blocks initially relies upon semantics similar to stack clean-up in C++. This makes lifetime management more complicated in .NET. A key take away here is that the runtime will always initially create a Block that is, according to Objective-C semantics, stack allocated. The contract for Blocks and how reference counting works means that if the Objective-C caller requires the Block longer than the current calling scope the Block should be copied (i.e. [`Block_copy`](https://developer.apple.com/library/archive/documentation/Cocoa/Conceptual/Blocks/Articles/bxUsing.html#//apple_ref/doc/uid/TP40007502-CH5-SW2)) and when the current managed calling scope is being left the created Block should be released.
+The lifetime of Blocks initially relies upon semantics similar to stack clean-up in C++. This makes lifetime management more complicated in .NET. A key take away here is that the runtime will always initially create a Block that is, according to Objective-C semantics, stack allocated. The contract for Blocks and how reference counting works means that if the Objective-C caller requires the Block longer than the current calling scope the Block should be copied (i.e. [`Block_copy`](https://developer.apple.com/library/archive/documentation/Cocoa/Conceptual/Blocks/Articles/bxUsing.html#//apple_ref/doc/uid/TP40007502-CH5-SW2)) and when the current managed calling scope is left the created Block released.
 
 **Method dispatch**
 
@@ -121,7 +131,7 @@ The last option seems to have the most flexibility and follows the "pay-for-play
 
 ## Application Model
 
-The application model that has been defined by the existing Xamarin scenarios contains multiple layers for consideration. Xamarin applications begin as a C/Objective-C based binary. From there the Mono runtime is activated, types registered with the Objective-C runtime, and the .NET "main" entered.
+The application model that has been defined by the existing Xamarin scenarios contains multiple layers for consideration. Xamarin applications begin as a C/Objective-C based binary. From there the Mono runtime is activated, types registered with the Objective-C runtime, and the .NET "main" entered. This model supports a comprehensive solution for .NET to be an Objective-C application. Depending on the desired supported scenarios the early hosting may not be needed.  
 
 ### Hosting <a name="hosting"></a>
 
@@ -148,8 +158,8 @@ The Xamarin approach for static registration directly influenced the design of t
 
 The CoreCLR Diagnostics' infrastructure (i.e. [SOS](https://github.com/dotnet/diagnostics)) should be updated to assist in live and coredump scenarios. The following details should be retrievable from types:
 
-* Determine the address of the Objective-C instance wrapping a specific managed object as well as the external reference count on that managed object (e.g. `DumpOCCW` - "Dump Objective-C callable wrapper").
-* Determine the address of the Objective-C instance that a managed object is representing in a managed environment (e.g. `DumpROCW` - "Dump Runtime Objective-C wrapper").
+* Determine the address of the Objective-C instance wrapping a specific managed object as well as the external reference count on that managed object (e.g. `DumpOCCW` - "Dump Objective-C Callable Wrapper").
+* Determine the address of the Objective-C instance that a managed object is representing in a managed environment (e.g. `DumpROCW` - "Dump Runtime callable Objective-C Wrapper").
 
 ## References
 
