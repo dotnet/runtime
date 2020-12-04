@@ -978,7 +978,6 @@ private:
     bool isRefPositionActive(RefPosition* refPosition, LsraLocation refLocation);
     bool canSpillReg(RegRecord* physRegRecord, LsraLocation refLocation);
     float getSpillWeight(RegRecord* physRegRecord);
-    bool isRegInUse(RegRecord* regRec, RefPosition* refPosition);
 
     // insert refpositions representing prolog zero-inits which will be added later
     void insertZeroInitRefPositions();
@@ -1144,7 +1143,6 @@ private:
     }
 
     bool isAssigned(RegRecord* regRec ARM_ARG(RegisterType newRegType));
-    bool isAssigned(RegRecord* regRec, LsraLocation lastLocation ARM_ARG(RegisterType newRegType));
     void checkAndClearInterval(RegRecord* regRec, RefPosition* spillRefPosition);
     void unassignPhysReg(RegRecord* regRec ARM_ARG(RegisterType newRegType));
     void unassignPhysReg(RegRecord* regRec, RefPosition* spillRefPosition);
@@ -1586,17 +1584,6 @@ private:
 
     void clearNextIntervalRef(regNumber reg, var_types regType);
     void updateNextIntervalRef(regNumber reg, Interval* interval);
-    LsraLocation getNextIntervalRefLocation(regNumber reg ARM_ARG(var_types theRegType))
-    {
-        LsraLocation nextLocation = nextIntervalRef[reg];
-#ifdef TARGET_ARM
-        if (theRegType == TYP_DOUBLE)
-        {
-            nextLocation = Min(nextLocation, nextIntervalRef[REG_NEXT(reg)]);
-        }
-#endif
-        return nextLocation;
-    }
 
     void clearSpillCost(regNumber reg, var_types regType);
     void updateSpillCost(regNumber reg, Interval* interval);
@@ -1627,10 +1614,7 @@ private:
 #ifdef TARGET_ARM
         if (regType == TYP_DOUBLE)
         {
-            // The following is what you'd *expect* this to be (or at least some form of combining
-            // the two), but the existing heuristics always use the location of the odd (second) half.
-            // loc = Min(loc, nextFixedRef[regNum + 1]);
-            loc = nextFixedRef[regNum + 1];
+            loc = Min(loc, nextFixedRef[regNum + 1]);
         }
 #endif
         return loc;
@@ -1643,10 +1627,7 @@ private:
 #ifdef TARGET_ARM
         if (regType == TYP_DOUBLE)
         {
-            // The following is what you'd *expect* this to be (or at least some form of combining
-            // the two), but the existing heuristics always use the location of the odd (second) half.
-            // loc = Min(loc, nextIntervalRef[regNum + 1]);
-            loc = nextIntervalRef[regNum + 1];
+            loc = Min(loc, nextIntervalRef[regNum + 1]);
         }
 #endif
         return loc;

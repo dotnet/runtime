@@ -3182,14 +3182,7 @@ regNumber LinearScan::allocateReg(Interval* currentInterval, RefPosition* refPos
                 LsraLocation nextIntervalLocation    = getNextIntervalRef(coversCandidateRegNum, regType);
                 LsraLocation nextPhysRefLocation     = getNextFixedRef(coversCandidateRegNum, regType);
                 LsraLocation coversCandidateLocation = Min(nextPhysRefLocation, nextIntervalLocation);
-#ifdef TARGET_ARM
-                if (currentInterval->registerType == TYP_DOUBLE)
-                {
-                    LsraLocation otherNextPhysRefLocation =
-                        Min(nextFixedRef[coversCandidateRegNum + 1], nextIntervalRef[coversCandidateRegNum + 1]);
-                    coversCandidateLocation = Min(coversCandidateLocation, otherNextPhysRefLocation);
-                }
-#endif // TARGET_ARM
+
                 // If the nextPhysRefLocation is a fixedRef for the rangeEndRefPosition, increment it so that
                 // we don't think it isn't covering the live range.
                 // This doesn't handle the case where earlier RefPositions for this Interval are also
@@ -3399,7 +3392,7 @@ regNumber LinearScan::allocateReg(Interval* currentInterval, RefPosition* refPos
 
             // Can and should the interval in this register be spilled for this one,
             // if we don't find a better alternative?
-            if ((getNextIntervalRefLocation(spillCandidateRegNum ARM_ARG(regType)) == currentLocation) &&
+            if ((getNextIntervalRef(spillCandidateRegNum, regType) == currentLocation) &&
                 !spillCandidateRegRecord->assignedInterval->getNextRefPosition()->RegOptional())
             {
                 continue;
@@ -3640,10 +3633,6 @@ float LinearScan::getSpillWeight(RegRecord* physRegRecord)
 bool LinearScan::canSpillDoubleReg(RegRecord* physRegRecord, LsraLocation refLocation)
 {
     assert(genIsValidDoubleReg(physRegRecord->regNum));
-    bool                 retVal  = true;
-    BasicBlock::weight_t weight  = BB_ZERO_WEIGHT;
-    BasicBlock::weight_t weight2 = BB_ZERO_WEIGHT;
-
     RegRecord* physRegRecord2 = getSecondHalfRegRec(physRegRecord);
 
     if ((physRegRecord->assignedInterval != nullptr) && !canSpillReg(physRegRecord, refLocation))
@@ -3728,76 +3717,6 @@ bool LinearScan::isRefPositionActive(RefPosition* refPosition, LsraLocation refL
 {
     return (refPosition->nodeLocation == refLocation ||
             ((refPosition->nodeLocation + 1 == refLocation) && refPosition->delayRegFree));
-}
-
-//----------------------------------------------------------------------------------------
-// isRegInUse: Test whether regRec is being used at the refPosition
-//
-// Arguments:
-//    regRec - A register to be tested
-//    refPosition - RefPosition where regRec is tested
-//
-// Return Value:
-//    True - if regRec is being used
-//    False - otherwise
-//
-// Notes:
-//    This helper is designed to be used only from allocateReg().
-//    The caller must have already checked for the case where 'refPosition' is a fixed ref.
-//    (asserted at the beginning of this method).
-//
-bool LinearScan::isRegInUse(RegRecord* regRec, RefPosition* refPosition)
-{
-    // We shouldn't reach this check if 'refPosition' is a FixedReg of this register.
-    assert(!refPosition->isFixedRefOfReg(regRec->regNum));
-    // We shouldn't call this method if there's no currently assigned Interval.
-    RegisterType regType = refPosition->getInterval()->registerType;
-    if (!isRegInUse(regRec->regNum, regType))
-    {
-        return false;
-    }
-
-    // We should never spill a register that's occupied by an Interval with its next use at the current
-    // location.
-    // TODO: We should have checked this already?
-    Interval* assignedInterval = regRec->assignedInterval;
-#ifdef TARGET_ARM
-    if (regType == TYP_DOUBLE)
-    {
-        RegRecord* otherRegRecord = getSecondHalfRegRec(regRec);
-        if (assignedInterval != nullptr)
-        {
-            if (assignedInterval->isActive && (nextIntervalRef[regRec->regNum] <= refPosition->getRangeEndLocation()))
-            {
-                RefPosition* nextAssignedRef = assignedInterval->getNextRefPosition();
-                if (!nextAssignedRef->RegOptional())
-                {
-                    return true;
-                }
-            }
-            if (otherRegRecord == nullptr)
-            {
-                return false;
-            }
-        }
-        else
-        {
-            assert(otherRegRecord->assignedInterval != nullptr);
-        }
-        assignedInterval = otherRegRecord->assignedInterval;
-        regRec           = otherRegRecord;
-    }
-#endif
-    assert(assignedInterval != nullptr);
-    if (assignedInterval->isActive && (nextIntervalRef[regRec->regNum] <= refPosition->getRangeEndLocation()))
-    {
-        RefPosition* nextAssignedRef = assignedInterval->getNextRefPosition();
-        if (!nextAssignedRef->RegOptional())
-        {
-            return true;
-        }
-    }
-    return false;
 }
 
 //------------------------------------------------------------------------
@@ -3890,9 +3809,7 @@ regNumber LinearScan::assignCopyReg(RefPosition* refPosition)
 }
 
 //------------------------------------------------------------------------
-// isAssigned: This is the function to check if the given RegRecord has an assignedInterval
-//             regardless of lastLocation.
-//             So it would be call isAssigned() with Maxlocation value.
+// isAssigned: This is the function to check if the given RegRecord has an assignedInterval.
 //
 // Arguments:
 //    regRec       - The RegRecord to check that it is assigned.
@@ -3900,9 +3817,6 @@ regNumber LinearScan::assignCopyReg(RefPosition* refPosition)
 //
 // Return Value:
 //    Returns true if the given RegRecord has an assignedInterval.
-//
-// Notes:
-//    There is the case to check if the RegRecord has an assignedInterval regardless of Lastlocation.
 //
 bool LinearScan::isAssigned(RegRecord* regRec ARM_ARG(RegisterType newRegType))
 {
@@ -3925,30 +3839,13 @@ bool LinearScan::isAssigned(RegRecord* regRec ARM_ARG(RegisterType newRegType))
 }
 
 //------------------------------------------------------------------------
-// isAssigned: Check whether the given RegRecord has an assignedInterval
-//             that has a reference prior to the given location.
+// checkAndAssignInterval: Check if the interval is already assigned and
+//                         if it is then unassign the physical record
+//                         and set the assignedInterval to 'interval'
 //
 // Arguments:
 //    regRec       - The RegRecord of interest
-//    lastLocation - The LsraLocation up to which we want to check
-//    newRegType   - The `RegisterType` of interval we want to check
-//                   (this is for the purposes of checking the other half of a TYP_DOUBLE RegRecord)
-//
-// Return value:
-//    Returns true if the given RegRecord (and its other half, if TYP_DOUBLE) has an assignedInterval
-//    that is referenced prior to the given location
-//
-// Notes:
-//    The register is not considered to be assigned if it has no assignedInterval, or that Interval's
-//    next reference is beyond lastLocation
-//
-bool LinearScan::isAssigned(RegRecord* regRec, LsraLocation lastLocation ARM_ARG(RegisterType newRegType))
-{
-    return getNextIntervalRefLocation(regRec->regNum ARM_ARG(newRegType)) > lastLocation;
-}
-
-// Check if the interval is already assigned and if it is then unassign the physical record
-// then set the assignedInterval to 'interval'
+//    interval     - The Interval that we're going to assign to 'regRec'
 //
 void LinearScan::checkAndAssignInterval(RegRecord* regRec, Interval* interval)
 {
@@ -4338,7 +4235,7 @@ void LinearScan::unassignPhysReg(RegRecord* regRec, RefPosition* spillRefPositio
         clearSpillCost(thisRegNum, assignedInterval->registerType);
         checkAndClearInterval(regRec, spillRefPosition);
     }
-    makeRegAvailable(thisRegNum, assignedInterval->registerType);
+    makeRegAvailable(regToUnassign, assignedInterval->registerType);
 
     RefPosition* nextRefPosition = nullptr;
     if (spillRefPosition != nullptr)
@@ -5102,8 +4999,7 @@ void LinearScan::processBlockStartLocations(BasicBlock* currentBlock)
 #ifdef TARGET_ARM
         else
         {
-            RegRecord* physRegRecord    = getRegisterRecord(reg);
-            Interval*  assignedInterval = physRegRecord->assignedInterval;
+            Interval* assignedInterval = physRegRecord->assignedInterval;
 
             if (assignedInterval != nullptr && assignedInterval->registerType == TYP_DOUBLE)
             {
@@ -5549,11 +5445,6 @@ void LinearScan::allocateRegisters()
                                         assert((recentRefPosition == nullptr) ||
                                                (spillCost[reg] == getSpillWeight(physRegRecord)));
                                     }
-                                    else
-                                    {
-                                        assert(isRegAvailable(reg, assignedInterval->registerType));
-                                        assert(spillCost[reg] == 0);
-                                    }
                                 }
                                 else
                                 {
@@ -5561,14 +5452,18 @@ void LinearScan::allocateRegisters()
                                            isRegBusy(reg, assignedInterval->registerType));
                                 }
                             }
-                            else if ((assignedInterval->physReg == reg) && !assignedInterval->isConstant)
-                            // else if (!assignedInterval->isConstant)
-                            {
-                                assert(nextIntervalRef[reg] == assignedInterval->getNextRefLocation());
-                            }
                             else
                             {
-                                assert(nextIntervalRef[reg] == MaxLocation);
+                                if ((assignedInterval->physReg == reg) && !assignedInterval->isConstant)
+                                {
+                                    assert(nextIntervalRef[reg] == assignedInterval->getNextRefLocation());
+                                }
+                                else
+                                {
+                                    assert(nextIntervalRef[reg] == MaxLocation);
+                                    assert(isRegAvailable(reg, assignedInterval->registerType));
+                                    assert(spillCost[reg] == 0);
+                                }
                             }
                         }
                     }
@@ -6220,18 +6115,14 @@ void LinearScan::allocateRegisters()
         }
 
         // If we allocated a register, record it
-        assert(currentInterval != nullptr);
         if (assignedRegister != REG_NA)
         {
             assignedRegBit    = genRegMask(assignedRegister);
             regMaskTP regMask = getRegMask(assignedRegister, currentInterval->registerType);
-            // if (!RefTypeIsDef(refType))
+            regsInUseThisLocation |= regMask;
+            if (currentRefPosition->delayRegFree)
             {
-                regsInUseThisLocation |= regMask;
-                if (currentRefPosition->delayRegFree)
-                {
-                    regsInUseNextLocation |= regMask;
-                }
+                regsInUseNextLocation |= regMask;
             }
             currentRefPosition->registerAssignment = assignedRegBit;
 
@@ -6460,8 +6351,7 @@ void LinearScan::updateAssignedInterval(RegRecord* reg, Interval* interval, Regi
     regNumber doubleReg           = REG_NA;
     if (regType == TYP_DOUBLE)
     {
-        doubleReg = reg->regNum;
-        assert(genIsValidDoubleReg(doubleReg));
+        doubleReg                        = reg->regNum;
         RegRecord* anotherHalfReg        = getSecondHalfRegRec(reg);
         anotherHalfReg->assignedInterval = interval;
     }
