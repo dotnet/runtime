@@ -12676,8 +12676,6 @@ CorJitResult CallCompileMethodWithSEHWrapper(EEJitManager *jitMgr,
     CORJIT_FLAGS flags;
     if (g_pConfig->JitFramed())
         flags.Set(CORJIT_FLAGS::CORJIT_FLAG_FRAMED);
-    if (g_pConfig->JitAlignLoops())
-        flags.Set(CORJIT_FLAGS::CORJIT_FLAG_ALIGN_LOOPS);
 #ifdef TARGET_X86
     if (g_pConfig->PInvokeRestoreEsp(ftn->GetModule()->IsPreV4Assembly()))
         flags.Set(CORJIT_FLAGS::CORJIT_FLAG_PINVOKE_RESTORE_ESP);
