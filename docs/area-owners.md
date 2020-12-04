@@ -100,7 +100,7 @@ Below table shows the combined area owners on this repository:
 | area-System.Threading | @kouvel | |
 | area-System.Threading.Channels | @tarekgh @stephentoub | |
 | area-System.Threading.Tasks | @tarekgh @stephentoub | |
-| area-System.Transactions | @dasetser @HongGit | |
+| area-System.Transactions | @HongGit | |
 | area-System.Xml | @buyaa-n @krwq | |
 | **Microsoft contract assemblies** | | |
 | area-Microsoft.CSharp | @cston @333fred | Archived component - limited churn/contributions (see [#33170](https://github.com/dotnet/corefx/issues/33170)) |
