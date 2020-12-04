@@ -1653,7 +1653,7 @@ public:
 
         if (top->bbNum > bottom->bbNum) // is this a backward edge? (from BOTTOM to TOP)
         {
-            // Edge from TOP to BOTTOM is not a backward edge
+            // Edge from BOTTOM to TOP is not a backward edge
             return false;
         }
 
@@ -2542,18 +2542,6 @@ NO_MORE_LOOPS:
             }
             assert(blk->bbNext != nullptr); // We should never reach nullptr.
         }
-
-#if defined(TARGET_XARCH)
-        if (codeGen->ShouldAlignLoops())
-        {
-            // An innerloop candidate that might need alignment
-            if ((optLoopTable[loopInd].lpChild == BasicBlock::NOT_IN_LOOP) &&
-                opts.compJitAlignLoopMinBlockWeight <= first->getBBWeight(this))
-            {
-                first->bbFlags |= BBF_FIRST_BLOCK_IN_INNERLOOP;
-            }
-        }
-#endif
     }
 
     // Make sure that loops are canonical: that every loop has a unique "top", by creating an empty "nop"
@@ -2588,6 +2576,33 @@ NO_MORE_LOOPS:
         }
     }
 #endif // DEBUG
+}
+
+//-----------------------------------------------------------------------------
+//
+// All the inner loops that whose block weight meets a threshold are marked
+// as needing alignment.
+//
+
+void Compiler::optIdentifyLoopsForAlignment()
+{
+#if defined(TARGET_XARCH)
+    if (codeGen->ShouldAlignLoops())
+    {
+        for (unsigned char loopInd = 0; loopInd < optLoopCount; loopInd++)
+        {
+            BasicBlock* first = optLoopTable[loopInd].lpFirst;
+
+            // An innerloop candidate that might need alignment
+            if ((optLoopTable[loopInd].lpChild == BasicBlock::NOT_IN_LOOP) &&
+                opts.compJitAlignLoopMinBlockWeight <= first->getBBWeight(this))
+            {
+                first->bbFlags |= BBF_LOOP_ALIGN;
+                JITDUMP("L%02u that starts at " FMT_BB " needs alignment.\n", loopInd, first->bbNum);
+            }
+        }
+    }
+#endif
 }
 
 void Compiler::optRedirectBlock(BasicBlock* blk, BlockToBlockMap* redirectMap)
@@ -4439,6 +4454,10 @@ void Compiler::optOptimizeLoops()
         /* now that we have dominator information we can find loops */
 
         optFindNaturalLoops();
+
+        // Check if any of the loops need alignment
+
+        optIdentifyLoopsForAlignment();
 
         unsigned loopNum = 0;
 
@@ -7987,11 +8006,22 @@ bool Compiler::optComputeLoopSideEffectsOfBlock(BasicBlock* blk)
 // Marks the containsCall information to "lnum" and any parent loops.
 void Compiler::AddContainsCallAllContainingLoops(unsigned lnum)
 {
+    unsigned nestedLoopNum = lnum;
     assert(0 <= lnum && lnum < optLoopCount);
     while (lnum != BasicBlock::NOT_IN_LOOP)
     {
         optLoopTable[lnum].lpContainsCall = true;
         lnum                              = optLoopTable[lnum].lpParent;
+    }
+
+    // If this is the inner most loop, reset the LOOP_ALIGN flag
+    // because a loop having call will not likely to benefit from
+    // alignment
+    if (optLoopTable[nestedLoopNum].lpChild == BasicBlock::NOT_IN_LOOP)
+    {
+        BasicBlock* first = optLoopTable[nestedLoopNum].lpFirst;
+        first->bbFlags &= ~BBF_LOOP_ALIGN;
+        JITDUMP("Skip alignment for L%02u that starts at " FMT_BB " because loop has a call.\n", nestedLoopNum, first->bbNum);
     }
 }
 

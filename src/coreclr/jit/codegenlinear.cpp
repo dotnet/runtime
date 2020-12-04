@@ -735,32 +735,21 @@ void CodeGen::genCodeForBBlist()
 
             case BBJ_ALWAYS:
                 inst_JMP(EJ_jmp, block->bbJumpDest);
-                __fallthrough;
+                FALLTHROUGH;
+
             case BBJ_COND:
-                if (block->bbJumpDest->bbFlags & BBF_FIRST_BLOCK_IN_INNERLOOP)
+
+                // This is the last place where we operate on blocks and after this, we operate
+                // on IG. Hence, if we know that the destination of "block" is the first block
+                // of a loop and needs alignment (it has BBF_LOOP_ALIGN), then "block" represents
+                // end of the loop. Propagate that information on the IG through "igLoopBackEdge".
+                //
+                // During emitter, this information will be used to calculate the loop size.
+                // Depending on the loop size, decision of whether to align a loop or not will be taken.
+
+                if (block->bbJumpDest->bbFlags & BBF_LOOP_ALIGN)
                 {
-                    // Track the destination IG which is the first block of inner loop.
-                    // In emitter, this will be used to calculate total instructions present
-                    // in all IGs that participate in a loop.
-
-                    insGroup* srcIG = GetEmitter()->emitCurIG;
-                    insGroup* dstIG = (insGroup*)block->bbJumpDest->bbEmitCookie;
-
-                    // Only track back edges to the loop.
-                    // Here dstIG != nullptr checks if we have already generated dstIG for a block.
-                    // If block->bbJumpDest was a forward block, it might have not been created yet.
-                    // We don't rely on (block->bbJumpDest->bbNum <= block->bbNum) because the basic
-                    // block numbering is not guaranteed to be sequential.
-                    if (dstIG != nullptr && dstIG->igNum <= srcIG->igNum)
-                    {
-                        srcIG->igLoopBackEdge = dstIG;
-#ifdef DEBUG
-                        if (verbose)
-                        {
-                            printf("** IG_%d jumps back to IG_%d forming a loop.\n", srcIG->igNum, dstIG->igNum);
-                        }
-#endif
-                    }
+                    GetEmitter()->emitSetLoopBackEdge((insGroup*)block->bbJumpDest->bbEmitCookie);
                 }
                 break;
 
@@ -770,13 +759,23 @@ void CodeGen::genCodeForBBlist()
         }
 
 #if defined(TARGET_XARCH)
-        if ((block->bbNext != nullptr) && (block->bbNext->bbFlags & BBF_FIRST_BLOCK_IN_INNERLOOP))
+
+        // If next block is the first block of a loop (identified by BBF_LOOP_ALIGN),
+        // then need to add align instruction in current "block". Also mark the
+        // corresponding IG with IGF_ALIGN_LOOP to know that there will be align
+        // instructions at the end of that IG.
+        //
+        // For non-adaptive alignment, add alignment instruction of size depending on the
+        // compJitAlignLoopBoundary.
+        // For adaptive alignment, alignment instruction will always be of 15 bytes.
+
+        if ((block->bbNext != nullptr) && (block->bbNext->bbFlags & BBF_LOOP_ALIGN))
         {
             assert(ShouldAlignLoops());
 
             if ((compiler->opts.compJitAlignLoopBoundary > 16) && (!compiler->opts.compJitAlignLoopAdaptive))
             {
-                GetEmitter()->emitVariableLoopAlign(compiler->opts.compJitAlignLoopBoundary);
+                GetEmitter()->emitLongLoopAlign(compiler->opts.compJitAlignLoopBoundary);
             }
             else
             {
@@ -787,13 +786,8 @@ void CodeGen::genCodeForBBlist()
             // all IGs that follows this IG and participate in a loop.
             GetEmitter()->emitCurIG->igFlags |= IGF_ALIGN_LOOP;
 
-#if defined(DEBUG)
-            if (verbose)
-            {
-                printf("Adding 'align' instruction of %d bytes in G_M%03u_IG%02u to align loop header block.\n" FMT_BB,
-                       compiler->opts.compJitAlignLoopBoundary, compiler->compMethodID, GetEmitter()->emitCurIG->igNum);
-            }
-#endif
+            JITDUMP("Adding 'align' instruction of %d bytes in G_M%03u_IG%02u to align loop header block.\n" FMT_BB,
+                    compiler->opts.compJitAlignLoopBoundary, compiler->compMethodID, GetEmitter()->emitCurIG->igNum);
         }
 #endif
 

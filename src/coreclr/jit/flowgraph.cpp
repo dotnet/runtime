@@ -10946,6 +10946,12 @@ void Compiler::fgCompactBlocks(BasicBlock* block, BasicBlock* bNext)
             break;
     }
 
+    // Add the LOOP_ALIGN flag, if applicable
+    if (bNext->bbFlags & BBF_LOOP_ALIGN)
+    {
+        block->bbFlags |= BBF_LOOP_ALIGN;
+    }
+
     // If we're collapsing a block created after the dominators are
     // computed, copy block number the block and reuse dominator
     // information from bNext to block.
@@ -11047,11 +11053,6 @@ void Compiler::fgUpdateLoopsAfterCompacting(BasicBlock* block, BasicBlock* bNext
         {
             optLoopTable[loopNum].lpEntry = block;
         }
-    }
-
-    if (bNext->bbFlags & BBF_FIRST_BLOCK_IN_INNERLOOP)
-    {
-        block->bbFlags |= BBF_FIRST_BLOCK_IN_INNERLOOP;
     }
 }
 
@@ -11552,9 +11553,9 @@ void Compiler::fgRemoveBlock(BasicBlock* block, bool unreachable)
             skipUnmarkLoop = true;
         }
 
-        if (block->bbFlags & BBF_FIRST_BLOCK_IN_INNERLOOP)
+        if (block->bbFlags & BBF_LOOP_ALIGN)
         {
-            succBlock->bbFlags |= BBF_FIRST_BLOCK_IN_INNERLOOP;
+            succBlock->bbFlags |= BBF_LOOP_ALIGN;
         }
 
         noway_assert(succBlock);

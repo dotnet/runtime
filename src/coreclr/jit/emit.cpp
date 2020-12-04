@@ -3613,6 +3613,10 @@ size_t emitter::emitIssue1Instr(insGroup* ig, instrDesc* id, BYTE** dp)
 {
     size_t is;
 
+#ifdef DEBUG
+    size_t     beforeAddr = (size_t)*dp;
+#endif
+
     /* Record the beginning offset of the instruction */
 
     BYTE* curInsAdr = *dp;
@@ -3651,12 +3655,12 @@ size_t emitter::emitIssue1Instr(insGroup* ig, instrDesc* id, BYTE** dp)
 
     if (csz != id->idCodeSize())
     {
-        /* It is fatal to under-estimate the instruction size, except it was an alignment instruction */
+        // It is fatal to under-estimate the instruction size, except for alignment instructions
         bool validCodeSize = id->idCodeSize() >= csz;
 
 #if defined(TARGET_XARCH)
-        validCodeSize |= (!emitComp->opts.compJitAlignLoopAdaptive && id->idIns() == INS_align &&
-                          emitComp->opts.compJitAlignLoopBoundary > 16);
+        validCodeSize |= (!emitComp->opts.compJitAlignLoopAdaptive && (id->idIns() == INS_align) &&
+                          (emitComp->opts.compJitAlignLoopBoundary > 16));
 #endif
         noway_assert(validCodeSize);
 
@@ -3666,7 +3670,6 @@ size_t emitter::emitIssue1Instr(insGroup* ig, instrDesc* id, BYTE** dp)
             printf("Instruction predicted size = %u, actual = %u\n", id->idCodeSize(), csz);
         }
 #endif // DEBUG_EMIT
-
 
         /* The instruction size estimate wasn't accurate; remember this */
 
@@ -3690,6 +3693,51 @@ size_t emitter::emitIssue1Instr(insGroup* ig, instrDesc* id, BYTE** dp)
         printf("%s at %u: Expected size = %u , actual size = %u\n", emitIfName(id->idInsFmt()),
                id->idDebugOnlyInfo()->idNum, is, emitSizeOfInsDsc(id));
         assert(is == emitSizeOfInsDsc(id));
+    }
+
+    // Print the alignment boundary
+    if ((emitComp->opts.disAsm || emitComp->verbose) && emitComp->opts.disAddr)
+    {
+        size_t currAddr         = (size_t)*dp;
+        size_t lastBoundaryAddr = currAddr & ~((size_t)emitComp->opts.compJitAlignLoopBoundary - 1);
+
+        // draw boundary if beforeAddr was before the lastBoundary.
+        if (beforeAddr < lastBoundaryAddr)
+        {
+            printf("; ");
+            instruction currIns = id->idIns();
+
+#if defined(TARGET_XARCH)
+
+            // https://www.intel.com/content/dam/support/us/en/documents/processors/mitigations-jump-conditional-code-erratum.pdf
+            bool isJccAffectedIns =
+                ((currIns >= INS_i_jmp && currIns < INS_align) || (currIns == INS_call) || (currIns == INS_ret));
+
+            instrDesc* nextId = id;
+            castto(nextId, BYTE*) += is;
+            instruction nextIns = nextId->idIns();
+            if ((currIns == INS_cmp) || (currIns == INS_test) || (currIns == INS_add) || (currIns == INS_sub) ||
+                (currIns == INS_and) || (currIns == INS_inc) || (currIns == INS_dec))
+            {
+                isJccAffectedIns |= (nextIns >= INS_i_jmp && nextIns < INS_align);
+            }
+#else
+            bool isJccAffectedIns = false;
+#endif
+
+            // Indicate if instruction is at at 32B boundary or is splitted
+            unsigned bytesCrossedBoundary = (currAddr & (emitComp->opts.compJitAlignLoopBoundary - 1));
+            if ((bytesCrossedBoundary != 0) || (isJccAffectedIns && bytesCrossedBoundary == 0))
+            {
+                printf("^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ (%s: %d)", codeGen->genInsName(id->idIns()),
+                       bytesCrossedBoundary);
+            }
+            else
+            {
+                printf("...............................");
+            }
+            printf(" %dB boundary ...............................\n", (emitComp->opts.compJitAlignLoopBoundary));
+        }
     }
 #endif
 
@@ -4487,18 +4535,17 @@ AGAIN:
 }
 
 
-/*****************************************************************************
- *  For loopHeaderIg, find the size of the smallest possible loop that doesn't exceed maxLoopSize.
- */
-
-unsigned emitter::getLoopSize(insGroup* loopHeaderIg, unsigned maxLoopSize)
+//-----------------------------------------------------------------------------
+//  For loopHeaderIg, find the size of the smallest possible loop that doesn't exceed maxLoopSize.
+//
+unsigned emitter::getLoopSize(insGroup* igLoopHeader, unsigned maxLoopSize)
 {
     unsigned  loopSize     = 0;
 
-    for (insGroup* igInLoop = loopHeaderIg; igInLoop; igInLoop = igInLoop->igNext)
+    for (insGroup* igInLoop = igLoopHeader; igInLoop != nullptr; igInLoop = igInLoop->igNext)
     {
         loopSize += igInLoop->igSize;
-        if (igInLoop->igLoopBackEdge == loopHeaderIg || loopSize > maxLoopSize)
+        if ((igInLoop->igLoopBackEdge == igLoopHeader) || (loopSize > maxLoopSize))
         {
             break;
         }
@@ -4507,12 +4554,30 @@ unsigned emitter::getLoopSize(insGroup* loopHeaderIg, unsigned maxLoopSize)
     return loopSize;
 }
 
-/*****************************************************************************
- *  For IGs that adds padding to align loops, calculate the loop size and if it exceed the
-    threshold, then mark that alignment is not needed and hence adjust the igOffs, igSize
-    and emitTotalCodeSize.
-*/
+//-----------------------------------------------------------------------------
+// emitCurIG jumps back to dstIG forming a loop. Set appropriate field to
+// record that information
+//
+void emitter::emitSetLoopBackEdge(insGroup* dstIG)
+{
+    // Only track back edges to the loop.
+    // Here dstIG != nullptr checks if we have already generated dstIG for a block.
+    // If block->bbJumpDest was a forward block, it might have not been created yet.
+    // We don't rely on (block->bbJumpDest->bbNum <= block->bbNum) because the basic
+    // block numbering is not guaranteed to be sequential.
+    if ((dstIG != nullptr) && (dstIG->igNum <= emitCurIG->igNum))
+    {
+        emitCurIG->igLoopBackEdge = dstIG;
 
+        JITDUMP("** IG_%d jumps back to IG_%d forming a loop.\n", emitCurIG->igNum, dstIG->igNum);
+    }
+}
+
+//-----------------------------------------------------------------------------
+//  For IGs that adds padding to align loops, calculate the loop size and if it exceed the
+//  threshold, then mark that alignment is not needed and hence adjust the igOffs, igSize
+//  and emitTotalCodeSize.
+//
 void emitter::emitLoopAlignAdjustments()
 {
 #ifdef TARGET_XARCH
@@ -4544,7 +4609,8 @@ void emitter::emitLoopAlignAdjustments()
             continue;
         }
 
-        if (getLoopSize(ig->igNext, maxLoopSize) > maxLoopSize)
+        unsigned loopSize = getLoopSize(ig->igNext, maxLoopSize);
+        if (loopSize > maxLoopSize)
         {
             assert(ig->igSize >= maxPaddingAdded);
 
@@ -4556,12 +4622,8 @@ void emitter::emitLoopAlignAdjustments()
             ig->igFlags |= IGF_UPD_ISZ;
             ig->igFlags &= ~IGF_ALIGN_LOOP;
 
-#if DEBUG
-            if (emitComp->verbose)
-            {
-                printf("Removed loop alignment from G_M%03u_IG%02u: 'MaxLoopSize= %d\n", emitComp->compMethodID, ig->igNum, maxLoopSize);
-            }
-#endif
+            JITDUMP("Removed loop alignment from G_M%03u_IG%02u: 'LoopSize= %d, MaxLoopSize= %d\n",
+                    emitComp->compMethodID, ig->igNum, loopSize, maxLoopSize);
         }
     }
 #endif
@@ -5294,57 +5356,7 @@ unsigned emitter::emitEndCodeGen(Compiler* comp,
 
         for (unsigned cnt = ig->igInsCnt; cnt; cnt--)
         {
-#ifdef DEBUG
-            size_t     lastCp = (size_t)cp;
-            instrDesc* lastId = id;
-#endif
             castto(id, BYTE*) += emitIssue1Instr(ig, id, &cp);
-#ifdef DEBUG
-
-            if ((emitComp->opts.disAsm || emitComp->verbose) && emitComp->opts.disAddr)
-            {
-                size_t lastBoundaryAddr = (size_t)cp & ~((size_t)emitComp->opts.compJitAlignLoopBoundary - 1);
-
-                // draw boundary if lastCp was before the lastBoundary.
-                if (lastCp < lastBoundaryAddr)
-                {
-                    printf("; ");
-                    instruction lastIns = lastId->idIns();
-
-#if defined(TARGET_XARCH)
-                    // https://www.intel.com/content/dam/support/us/en/documents/processors/mitigations-jump-conditional-code-erratum.pdf
-                    bool isJccAffectedIns = ((lastIns >= INS_i_jmp && lastIns < INS_align) || (lastIns == INS_call) ||
-                                             (lastIns == INS_ret));
-                    if (cnt)
-                    {
-                        instruction currIns = id->idIns();
-                        if ((lastIns == INS_cmp) || (lastIns == INS_test) || (lastIns == INS_add) ||
-                            (lastIns == INS_sub) || (lastIns == INS_and) || (lastIns == INS_inc) ||
-                            (lastIns == INS_dec))
-                        {
-                            isJccAffectedIns |= (currIns >= INS_i_jmp && currIns < INS_align);
-                        }
-                    }
-#else
-                    bool isJccAffectedIns = false;
-#endif
-
-                    // Indicate if instruction is at or split at 32B boundary
-                    unsigned bytesCrossedBoundary = ((size_t)cp & 0x1f);
-                    if ((bytesCrossedBoundary != 0) || (isJccAffectedIns && bytesCrossedBoundary == 0))
-                    {
-                        printf("^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ (%s: %d)", codeGen->genInsName(lastId->idIns()),
-                               bytesCrossedBoundary);
-                    }
-                    else
-                    {
-                        printf("...............................");
-                    }
-                    printf(" %dB boundary ...............................\n",
-                           (emitComp->opts.compJitAlignLoopBoundary));
-                }
-            }
-#endif
         }
 
 #ifdef DEBUG

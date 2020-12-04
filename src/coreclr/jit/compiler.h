@@ -6367,6 +6367,8 @@ protected:
 
     void optFindNaturalLoops();
 
+    void optIdentifyLoopsForAlignment();
+
     // Ensures that all the loops in the loop nest rooted at "loopInd" (an index into the loop table) are 'canonical' --
     // each loop has a unique "top."  Returns "true" iff the flowgraph has been modified.
     bool optCanonicalizeLoopNest(unsigned char loopInd);
@@ -9036,26 +9038,40 @@ public:
         bool dspGCtbls;       // Display the GC tables
 #endif
 
+        // Default numbers used to perform loop alignment. All the numbers are choosen
+        // based on experimenting with various benchmarks.
+
+        // Default minimum loop block weight required to enable loop alignment.
 #define DEFAULT_ALIGN_LOOP_MIN_BLOCK_WEIGHT 10
+
+        // By default a loop will be aligned at 32B address boundary to get better
+        // performance as per architecture manuals.
 #define DEFAULT_ALIGN_LOOP_BOUNDARY 0x20
+
+        // For non-adaptive loop alignment, by default, only align a loop whose size is
+        // atmost 3 times of 32B chunk. If the loop is bigger than that, it is most
+        // likely the loop code is complicated enough and aligning such loop will not help
+        // much.
 #define DEFAULT_MAX_LOOPSIZE_FOR_ALIGN DEFAULT_ALIGN_LOOP_BOUNDARY * 3
 
 #ifdef DEBUG
         // Loop alignment variables
-        bool compJitAlignLoopForJcc;             // If set, for non-adaptive alignment, ensure loop jmps are not on or
-                                                 // cross alignment boundary.
+
+        // If set, for non-adaptive alignment, ensure loop jmps are not on or cross alignment boundary.
+        bool compJitAlignLoopForJcc;
 #endif
-        unsigned short compJitAlignLoopMaxCodeSize; // For non-adaptive alignment, minimum loop size (in bytes) for which
-                                              // alignment will be done.
+        // For non-adaptive alignment, minimum loop size (in bytes) for which alignment will be done.
+        unsigned short compJitAlignLoopMaxCodeSize;
 
-        unsigned short compJitAlignLoopMinBlockWeight; // Minimum weight needed for the first block of a loop to make it a
-                                                 // candidate for alignment.
+        // Minimum weight needed for the first block of a loop to make it a candidate for alignment.
+        unsigned short compJitAlignLoopMinBlockWeight;
 
-        unsigned short compJitAlignLoopBoundary; // For non-adaptive alignment, address boundary (power of 2) at which
-                                           // loop alignment should be done. By default, 32B.
+        // For non-adaptive alignment, address boundary (power of 2) at which loop alignment should
+        // be done. By default, 32B.
+        unsigned short compJitAlignLoopBoundary;
 
-        bool compJitAlignLoopAdaptive; // If set, perform adaptive loop alignment that limits number of padding
-                                       // based on loop size.
+        // If set, perform adaptive loop alignment that limits number of padding based on loop size.
+        bool compJitAlignLoopAdaptive;
 
 #ifdef LATE_DISASM
         bool doLateDisasm; // Run the late disassembler
