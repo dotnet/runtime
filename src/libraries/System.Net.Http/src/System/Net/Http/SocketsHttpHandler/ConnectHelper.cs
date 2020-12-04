@@ -24,9 +24,10 @@ namespace System.Net.Http
 
         private static async ValueTask<Stream> ConnectAsync(string host, int port, CancellationToken cancellationToken)
         {
-            // Rather than creating a new Socket and calling ConnectAsync on it, we use the static
-            // Socket.ConnectAsync with a SocketAsyncEventArgs, as we can then use Socket.CancelConnectAsync
-            // to cancel it if needed.
+            // We use the static Socket.ConnectAsync with a SocketAsyncEventArgs, because this approach is:
+            // 1. Cancellable
+            // 2. Does not create Dual-stack sockets, which are unavailable in certain environments,
+            //    see https://github.com/dotnet/runtime/issues/44686.
             var saea = new ConnectEventArgs();
             try
             {
