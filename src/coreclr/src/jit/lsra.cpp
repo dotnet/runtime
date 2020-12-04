@@ -5824,6 +5824,7 @@ void LinearScan::allocateRegisters()
                 if (keepAssignment == false)
                 {
                     currentRefPosition->registerAssignment = allRegs(currentInterval->registerType);
+                    currentRefPosition->isFixedRegRef      = false;
                     unassignPhysRegNoSpill(physRegRecord);
 
                     // If the preferences are currently set to just this register, reset them to allRegs
