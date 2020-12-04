@@ -1792,14 +1792,14 @@ void LinearScan::buildRefPositionsForNode(GenTree* tree, BasicBlock* block, Lsra
     JITDUMP("\n");
 }
 
-//------------------------------------------------------------------------
-// buildPhysRegRecords: Make an interval for each physical register
-//
 static const regNumber lsraRegOrder[]      = {REG_VAR_ORDER};
 const unsigned         lsraRegOrderSize    = ArrLen(lsraRegOrder);
 static const regNumber lsraRegOrderFlt[]   = {REG_VAR_ORDER_FLT};
 const unsigned         lsraRegOrderFltSize = ArrLen(lsraRegOrderFlt);
 
+//------------------------------------------------------------------------
+// buildPhysRegRecords: Make an interval for each physical register
+//
 void LinearScan::buildPhysRegRecords()
 {
     for (regNumber reg = REG_FIRST; reg < ACTUAL_REG_COUNT; reg = REG_NEXT(reg))
@@ -3068,6 +3068,7 @@ int LinearScan::BuildDelayFreeUses(GenTree* node, GenTree* rmwNode, regMaskTP ca
         rmwInterval = getIntervalForLocalVarNode(rmwNode->AsLclVar());
         // Note: we don't handle multi-reg vars here. It's not clear that there are any cases
         // where we'd encounter a multi-reg var in an RMW context.
+        assert(!rmwNode->AsLclVar()->IsMultiReg());
         rmwIsLastUse = rmwNode->AsLclVar()->IsLastUse(0);
     }
     if (!node->isContained())

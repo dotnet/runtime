@@ -15,9 +15,7 @@ class GitHub_13735
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    static void Print(int x) {
-        // Console.WriteLine(x);
-    }
+    static void Print(int x) { }
 
     static void SampleA()
     {
