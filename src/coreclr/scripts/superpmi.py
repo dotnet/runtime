@@ -118,6 +118,12 @@ host_os_help = "OS (windows, OSX, Linux). Default: current OS."
 
 arch_help = "Architecture (x64, x86, arm, arm64). Default: current architecture."
 
+target_os_help = "Target OS, for use with cross-compilation JIT (windows, OSX, Linux). Default: current OS."
+
+target_arch_help = "Target architecture, for use with cross-compilation JIT (x64, x86, arm, arm64). Passed as asm diffs target to SuperPMI. Default: current architecture."
+
+mch_arch_help = "Architecture of MCH files to download, used for cross-compilation altjit (x64, x86, arm, arm64). Default: target architecture."
+
 build_type_help = "Build type (Debug, Checked, Release). Default: Checked."
 
 core_root_help = "Core_Root location. Optional; it will be deduced if possible from runtime repo root."
@@ -217,7 +223,11 @@ superpmi_common_parser.add_argument("--break_on_error", action="store_true", hel
 superpmi_common_parser.add_argument("--skip_cleanup", action="store_true", help=skip_cleanup_help)
 superpmi_common_parser.add_argument("--sequential", action="store_true", help="Run SuperPMI in sequential mode. Default is to run in parallel for faster runs.")
 superpmi_common_parser.add_argument("-spmi_log_file", help=spmi_log_file_help)
-superpmi_common_parser.add_argument("-altjit", help="Replay with an altjit. Specify the filename of the altjit to use, e.g., 'clrjit_win_arm64_x64.dll'.")
+superpmi_common_parser.add_argument("-jit", help="Specify the filename of the jit to use, e.g., 'clrjit_win_arm64_x64.dll'. Default is clrjit.dll/libclrjit.so")
+superpmi_common_parser.add_argument("--altjit", action="store_true", help="Set the altjit variables on replay.")
+superpmi_common_parser.add_argument("-target_arch", help=target_arch_help)
+superpmi_common_parser.add_argument("-target_os", help=target_os_help)
+superpmi_common_parser.add_argument("-mch_arch", help=mch_arch_help)
 
 # subparser for collect
 collect_parser = subparsers.add_parser("collect", description=collect_description, parents=[core_root_parser, superpmi_common_parser])
@@ -475,6 +485,24 @@ def run_and_log(command, log_level=logging.DEBUG):
     for line in stdout_output.decode('utf-8').splitlines():  # There won't be any stderr output since it was piped to stdout
         logging.log(log_level, line)
     return proc.returncode
+
+# Functions to verify the OS and architecture. They take an instance of CoreclrArguments,
+# which is used to find the list of legal OS and architectures
+
+def check_host_os(coreclr_args, host_os):
+    return (host_os is not None) and (host_os in coreclr_args.valid_host_os)
+
+def check_target_os(coreclr_args, target_os):
+    return (target_os is not None) and (target_os in coreclr_args.valid_host_os)
+
+def check_arch(coreclr_args, arch):
+    return (arch is not None) and (arch in coreclr_args.valid_arches)
+
+def check_target_arch(coreclr_args, target_arch):
+    return (target_arch is not None) and (target_arch in coreclr_args.valid_arches)
+
+def check_mch_arch(coreclr_args, mch_arch):
+    return (mch_arch is not None) and (mch_arch in coreclr_args.valid_arches)
 
 ################################################################################
 # Helper classes
@@ -1082,10 +1110,9 @@ class SuperPMIReplay:
                     "-jitoption", "force", "AltJit=*",
                     "-jitoption", "force", "AltJitNgen=*"
                 ]
-                if self.coreclr_args.arch == "arm":
-                    repro_flags += [ "-target", "arm" ]
-                elif self.coreclr_args.arch == "arm64":
-                    repro_flags += [ "-target", "arm64" ]
+
+            if self.coreclr_args.arch != self.coreclr_args.target_arch:
+                repro_flags += [ "-target", self.coreclr_args.target_arch ]
 
             if not self.coreclr_args.sequential:
                 common_flags += [ "-p" ]
@@ -1238,24 +1265,22 @@ class SuperPMIReplayAsmDiffs:
             "COMPlus_JitDump": "*",
             "COMPlus_NgenDump": "*" }
 
-        altjit_asm_diffs_flags = []
-        altjit_replay_flags = []
+        target_flags = []
+        if self.coreclr_args.arch != self.coreclr_args.target_arch:
+            target_flags += [ "-target", self.coreclr_args.target_arch ]
+
+        altjit_asm_diffs_flags = target_flags
+        altjit_replay_flags = target_flags
 
         if self.coreclr_args.altjit:
-            target_flags = []
-            if self.coreclr_args.arch == "arm":
-                target_flags += [ "-target", "arm" ]
-            elif self.coreclr_args.arch == "arm64":
-                target_flags += [ "-target", "arm64" ]
-
-            altjit_asm_diffs_flags = target_flags + [
+            altjit_asm_diffs_flags += [
                 "-jitoption", "force", "AltJit=*",
                 "-jitoption", "force", "AltJitNgen=*",
                 "-jit2option", "force", "AltJit=*",
                 "-jit2option", "force", "AltJitNgen=*"
             ]
 
-            altjit_replay_flags = target_flags + [
+            altjit_replay_flags += [
                 "-jitoption", "force", "AltJit=*",
                 "-jitoption", "force", "AltJitNgen=*"
             ]
@@ -1682,9 +1707,9 @@ def determine_pmi_location(coreclr_args):
 
 
 def determine_jit_name(coreclr_args):
-    """ Determine the jit based on the OS. If "-altjit" is specified, then use the specified altjit.
-        This function is called for cases where the "-altjit" flag is not used, so be careful not
-        to depend on the "altjit" attribute existing.
+    """ Determine the jit based on the OS. If "-jit" is specified, then use the specified jit.
+        This function is called for cases where the "-jit" flag is not used, so be careful not
+        to depend on the "jit" attribute existing.
 
     Args:
         coreclr_args (CoreclrArguments): parsed args
@@ -1693,9 +1718,9 @@ def determine_jit_name(coreclr_args):
         jit_name(str) : name of the jit for this OS
     """
 
-    # If `-altjit` is used, it must be given a full filename, not just a "base name", so use it without additional processing.
-    if hasattr(coreclr_args, "altjit") and coreclr_args.altjit is not None:
-        return coreclr_args.altjit
+    # If `-jit` is used, it must be given a full filename, not just a "base name", so use it without additional processing.
+    if hasattr(coreclr_args, "jit") and coreclr_args.jit is not None:
+        return coreclr_args.jit
 
     jit_base_name = "clrjit"
     if coreclr_args.host_os == "OSX":
@@ -1964,7 +1989,7 @@ def process_mch_files_arg(coreclr_args):
 
     # Create the cache location. Note that we'll create it even if we end up not copying anything.
     default_mch_root_dir = os.path.join(coreclr_args.spmi_location, "mch")
-    default_mch_dir = os.path.join(default_mch_root_dir, "{}.{}.{}".format(coreclr_args.jit_ee_version, coreclr_args.host_os, coreclr_args.arch))
+    default_mch_dir = os.path.join(default_mch_root_dir, "{}.{}.{}".format(coreclr_args.jit_ee_version, coreclr_args.target_os, coreclr_args.mch_arch))
     if not os.path.isdir(default_mch_dir):
         os.makedirs(default_mch_dir)
 
@@ -2030,7 +2055,7 @@ def download_mch(coreclr_args, include_baseline_jit=False):
     """
 
     default_mch_root_dir = os.path.join(coreclr_args.spmi_location, "mch")
-    default_mch_dir = os.path.join(default_mch_root_dir, "{}.{}.{}".format(coreclr_args.jit_ee_version, coreclr_args.host_os, coreclr_args.arch))
+    default_mch_dir = os.path.join(default_mch_root_dir, "{}.{}.{}".format(coreclr_args.jit_ee_version, coreclr_args.target_os, coreclr_args.mch_arch))
 
     if os.path.isdir(default_mch_dir) and not coreclr_args.force_download:
         # The cache directory is already there, and "--force_download" was passed, so just
@@ -2042,7 +2067,7 @@ def download_mch(coreclr_args, include_baseline_jit=False):
         logging.info("Found download cache directory \"%s\" and --force_download not set; skipping download", default_mch_dir)
         return [ default_mch_dir ]
 
-    blob_filter_string = "{}/{}/{}".format(coreclr_args.jit_ee_version, coreclr_args.host_os, coreclr_args.arch)
+    blob_filter_string = "{}/{}/{}/".format(coreclr_args.jit_ee_version, coreclr_args.target_os, coreclr_args.mch_arch)
     blob_prefix_filter = "{}/{}/{}".format(az_blob_storage_superpmi_container_uri, az_collections_root_folder, blob_filter_string).lower()
 
     # Determine if a URL in Azure Storage should be allowed. The URL looks like:
@@ -2057,7 +2082,8 @@ def download_mch(coreclr_args, include_baseline_jit=False):
         return url.startswith(blob_prefix_filter) and ((coreclr_args.filter is None) or any((filter_item.lower() in url) for filter_item in coreclr_args.filter))
 
     urls = list_superpmi_collections_container_via_rest_api(filter_superpmi_collections)
-    if urls is None:
+    if urls is None or len(urls) == 0:
+        print("No MCH files to download from {}".format(blob_prefix_filter))
         return []
 
     download_urls(urls, default_mch_dir)
@@ -2200,7 +2226,7 @@ def upload_mch(coreclr_args):
         raise RuntimeError("Missing azure storage package.")
 
     blob_service_client = BlobServiceClient(account_url=az_blob_storage_account_uri, credential=coreclr_args.az_storage_key)
-    blob_folder_name = "{}/{}/{}/{}".format(az_collections_root_folder, coreclr_args.jit_ee_version, coreclr_args.host_os, coreclr_args.arch)
+    blob_folder_name = "{}/{}/{}/{}".format(az_collections_root_folder, coreclr_args.jit_ee_version, coreclr_args.target_os, coreclr_args.mch_arch)
 
     total_bytes_uploaded = 0
 
@@ -2250,7 +2276,7 @@ def list_collections_command(coreclr_args):
         coreclr_args (CoreclrArguments) : parsed args
     """
 
-    blob_filter_string = "{}/{}/{}".format(coreclr_args.jit_ee_version, coreclr_args.host_os, coreclr_args.arch)
+    blob_filter_string = "{}/{}/{}/".format(coreclr_args.jit_ee_version, coreclr_args.target_os, coreclr_args.mch_arch)
     blob_prefix_filter = "{}/{}/{}".format(az_blob_storage_superpmi_container_uri, az_collections_root_folder, blob_filter_string).lower()
 
     # Determine if a URL in Azure Storage should be allowed. The URL looks like:
@@ -2287,10 +2313,10 @@ def list_collections_local_command(coreclr_args):
     """
 
     # Display the blob filter string the local cache corresponds to
-    blob_filter_string = "{}/{}/{}".format(coreclr_args.jit_ee_version, coreclr_args.host_os, coreclr_args.arch)
+    blob_filter_string = "{}/{}/{}/".format(coreclr_args.jit_ee_version, coreclr_args.target_os, coreclr_args.mch_arch)
 
     default_mch_root_dir = os.path.join(coreclr_args.spmi_location, "mch")
-    default_mch_dir = os.path.join(default_mch_root_dir, "{}.{}.{}".format(coreclr_args.jit_ee_version, coreclr_args.host_os, coreclr_args.arch))
+    default_mch_dir = os.path.join(default_mch_root_dir, "{}.{}.{}".format(coreclr_args.jit_ee_version, coreclr_args.target_os, coreclr_args.mch_arch))
 
     # Determine if a file should be allowed. The filenames look like:
     #   c:\gh\runtime\artifacts\spmi\mch\a5eec3a4-4176-43a7-8c2b-a05b551d4f49.windows.x64\corelib.windows.x64.Checked.mch
@@ -2660,9 +2686,32 @@ def setup_args(args):
                             "Unable to set force_download")
 
         coreclr_args.verify(args,
+                            "jit",
+                            lambda unused: True,
+                            "Unable to set jit.")
+
+        coreclr_args.verify(args,
                             "altjit",                   # Must be set before `jit_path` (determine_jit_name() depends on it)
                             lambda unused: True,
                             "Unable to set altjit.")
+
+        coreclr_args.verify(args,
+                            "target_os",
+                            lambda target_os: check_target_os(coreclr_args, target_os),
+                            lambda target_os: "Unknown target_os {}\nSupported OS: {}".format(target_os, (", ".join(coreclr_args.valid_host_os))),
+                            modify_arg=lambda target_os: target_os if target_os is not None else coreclr_args.host_os) # Default to `host_os`
+
+        coreclr_args.verify(args,
+                            "target_arch",
+                            lambda target_arch: check_target_arch(coreclr_args, target_arch),
+                            lambda target_arch: "Unknown target_arch {}\nSupported architectures: {}".format(target_arch, (", ".join(coreclr_args.valid_arches))),
+                            modify_arg=lambda target_arch: target_arch if target_arch is not None else coreclr_args.arch) # Default to `arch`
+
+        coreclr_args.verify(args,
+                            "mch_arch",
+                            lambda mch_arch: check_mch_arch(coreclr_args, mch_arch),
+                            lambda mch_arch: "Unknown mch_arch {}\nSupported architectures: {}".format(mch_arch, (", ".join(coreclr_args.valid_arches))),
+                            modify_arg=lambda mch_arch: mch_arch if mch_arch is not None else coreclr_args.target_arch) # Default to `target_arch`
 
         coreclr_args.verify(args,
                             "jit_ee_version",
@@ -2685,9 +2734,35 @@ def setup_args(args):
         verify_superpmi_common_args()
 
         coreclr_args.verify(args,
+                            "jit",  # The replay code checks this, so make sure it's set
+                            lambda unused: True,
+                            "Unable to set jit.")
+
+        coreclr_args.verify(args,
                             "altjit",  # The replay code checks this, so make sure it's set
                             lambda unused: True,
                             "Unable to set altjit.")
+
+        # For collection replays, target_os is expected to just default to host_os
+        coreclr_args.verify(args,
+                            "target_os",
+                            lambda target_os: check_target_os(coreclr_args, target_os),
+                            lambda target_os: "Unknown target_os {}\nSupported OS: {}".format(target_os, (", ".join(coreclr_args.valid_host_os))),
+                            modify_arg=lambda target_os: target_os if target_os is not None else coreclr_args.host_os) # Default to `host_os`
+
+        # For collection replays, target_arch is expected to just default to the host arch.
+        coreclr_args.verify(args,
+                            "target_arch",
+                            lambda target_arch: check_target_arch(coreclr_args, target_arch),
+                            lambda target_arch: "Unknown target_arch {}\nSupported architectures: {}".format(target_arch, (", ".join(coreclr_args.valid_arches))),
+                            modify_arg=lambda target_arch: target_arch if target_arch is not None else coreclr_args.arch) # Default to `arch`
+
+        # For collection replays, mch_arch is expected to just default to the host arch.
+        coreclr_args.verify(args,
+                            "mch_arch",
+                            lambda mch_arch: check_mch_arch(coreclr_args, mch_arch),
+                            lambda mch_arch: "Unknown mch_arch {}\nSupported architectures: {}".format(mch_arch, (", ".join(coreclr_args.valid_arches))),
+                            modify_arg=lambda mch_arch: mch_arch if mch_arch is not None else coreclr_args.target_arch) # Default to `target_arch`
 
         coreclr_args.verify(args,
                             "collection_command",
