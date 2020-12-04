@@ -1265,7 +1265,7 @@ static gpointer
 default_resolve_dllimport(const char* dll, const char* func)
 {
 	if (strcmp(dll, "libSystem.Globalization.Native") == 0) {
-		const void* method_impl = GlobalizationResolveDllImport(func);
+		const void *method_impl = GlobalizationResolveDllImport (func);
 		if (method_impl)
 			return (gpointer)method_impl;
 	}
