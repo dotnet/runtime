@@ -177,12 +177,6 @@
     </attribute>
     <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
       <argument>ILLink</argument>
-      <argument>IL2059</argument>
-      <property name="Scope">member</property>
-      <property name="Target">M:System.Reflection.RuntimeConstructorInfo.Invoke(System.Object,System.Reflection.BindingFlags,System.Reflection.Binder,System.Object[],System.Globalization.CultureInfo)</property>
-    </attribute>
-    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
-      <argument>ILLink</argument>
       <argument>IL2060</argument>
       <property name="Scope">member</property>
       <property name="Target">T:System.Resources.ResourceReader</property>
