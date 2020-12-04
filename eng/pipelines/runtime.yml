@@ -463,12 +463,38 @@ jobs:
     runtimeFlavor: mono
     buildConfig: debug
     platforms:
-    - OSX_x64
-    - Linux_x64
+    # - OSX_x64
+    # - Linux_x64
     - Linux_arm64
     # - Linux_musl_arm64
     - windows_x64
     - windows_x86
+    # - windows_arm
+    # - windows_arm64
+    jobParameters:
+      dependsOn: mono__offsets_Android_x64_debug
+      condition: >-
+        or(
+          eq(dependencies.checkout.outputs['SetPathVars_libraries.containsChange'], true),
+          eq(dependencies.checkout.outputs['SetPathVars_mono.containsChange'], true),
+          eq(variables['isFullMatrix'], true))
+
+#
+# Build Mono debug, with Android AOT cross-compilers
+# Only when libraries or mono changed
+#
+- template: /eng/pipelines/common/platform-matrix.yml
+  parameters:
+    jobTemplate: /eng/pipelines/mono/templates/build-job.yml
+    runtimeFlavor: mono
+    buildConfig: debug
+    platforms:
+    - OSX_x64
+    - Linux_x64
+    # - Linux_arm64
+    # - Linux_musl_arm64
+    # - windows_x64
+    # - windows_x86
     # - windows_arm
     # - windows_arm64
     jobParameters:
