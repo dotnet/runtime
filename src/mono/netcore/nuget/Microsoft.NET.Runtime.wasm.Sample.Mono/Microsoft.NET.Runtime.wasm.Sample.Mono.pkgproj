@@ -7,9 +7,9 @@
   </ItemGroup>
 
   <ItemGroup>
-    <_wasmSampleFiles Include="$(ArtifactsDir)bin\WasmAppBuilder\$(Configuration)\$(NetCoreAppCurrent)\WasmAppBuilder.dll" />
+    <_wasmSampleFiles Include="$(ArtifactsDir)bin\WasmAppBuilder\$(Configuration)\$(NetCoreAppToolCurrent)\WasmAppBuilder.dll" />
 
-    <PackageFile Include="@(_wasmSampleFiles)" TargetPath="tools\$(NetCoreAppCurrent)\" />
+    <PackageFile Include="@(_wasmSampleFiles)" TargetPath="tools\$(NetCoreAppToolCurrent)\" />
   </ItemGroup>
 
   <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.targets))" />
