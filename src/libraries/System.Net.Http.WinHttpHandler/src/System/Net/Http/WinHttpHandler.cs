@@ -962,7 +962,10 @@ namespace System.Net.Http
                 // Since the headers have been read, set the "receive" timeout to be based on each read
                 // call of the response body data. WINHTTP_OPTION_RECEIVE_TIMEOUT sets a timeout on each
                 // lower layer winsock read.
-                uint optionData = unchecked((uint)_receiveDataTimeout.TotalMilliseconds);
+                // Timeout.InfiniteTimeSpan will be converted to uint.MaxValue milliseconds (~ 50 days).
+                // The result a of double->uint cast is unspecified for -1 and may differ on ARM, returning 0 instead of uint.MaxValue.
+                // To handle Timeout.InfiniteTimespan correctly, we need to cast to int first.
+                uint optionData = (uint)(int)_receiveDataTimeout.TotalMilliseconds;
                 SetWinHttpOption(state.RequestHandle, Interop.WinHttp.WINHTTP_OPTION_RECEIVE_TIMEOUT, ref optionData);
 
                 HttpResponseMessage responseMessage =
@@ -1007,8 +1010,10 @@ namespace System.Net.Http
                     onoff = 1,
 
                     // Timeout.InfiniteTimeSpan will be converted to uint.MaxValue milliseconds (~ 50 days)
-                    keepaliveinterval = (uint)_tcpKeepAliveInterval.TotalMilliseconds,
-                    keepalivetime = (uint)_tcpKeepAliveTime.TotalMilliseconds
+                    // The result a of double->uint cast is unspecified for -1 and may differ on ARM, returning 0 instead of uint.MaxValue.
+                    // To handle Timeout.InfiniteTimespan correctly, we need to cast to int first.
+                    keepaliveinterval = (uint)(int)_tcpKeepAliveInterval.TotalMilliseconds,
+                    keepalivetime = (uint)(int)_tcpKeepAliveTime.TotalMilliseconds
                 };
 
                 SetWinHttpOption(

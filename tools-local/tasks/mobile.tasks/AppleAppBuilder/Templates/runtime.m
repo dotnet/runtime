@@ -196,7 +196,7 @@ register_dllmap (void)
 //%DllMap%
 }
 
-#if FORCE_INTERPRETER || (TARGET_OS_IPHONE && (!TARGET_IPHONE_SIMULATOR || USE_AOT_FOR_SIMULATOR))
+#if FORCE_INTERPRETER || FORCE_AOT || !TARGET_OS_SIMULATOR
 void mono_jit_set_aot_mode (MonoAotMode mode);
 void register_aot_modules (void);
 #endif
@@ -231,7 +231,7 @@ mono_ios_runtime_init (void)
 #if FORCE_INTERPRETER
     os_log_info (OS_LOG_DEFAULT, "INTERP Enabled");
     mono_jit_set_aot_mode (MONO_AOT_MODE_INTERP_ONLY);
-#elif TARGET_OS_IPHONE && (!TARGET_IPHONE_SIMULATOR || USE_AOT_FOR_SIMULATOR)
+#elif !TARGET_OS_SIMULATOR || FORCE_AOT
     register_dllmap ();
     // register modules
     register_aot_modules ();
@@ -252,7 +252,7 @@ mono_ios_runtime_init (void)
     }
     mono_jit_init_version ("dotnet.ios", "mobile");
 
-#if !FORCE_INTERPRETER && TARGET_OS_IPHONE && (!TARGET_IPHONE_SIMULATOR || USE_AOT_FOR_SIMULATOR)
+#if !FORCE_INTERPRETER && (!TARGET_OS_SIMULATOR || FORCE_AOT)
     // device runtimes are configured to use lazy gc thread creation
     MONO_ENTER_GC_UNSAFE;
     mono_gc_init_finalizer_thread ();

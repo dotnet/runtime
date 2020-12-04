@@ -81,6 +81,7 @@
 #define g_ReflectionReflectItfName "System.Reflection.IReflect"
 #define g_RuntimeArgumentHandleName      "RuntimeArgumentHandle"
 #define g_RuntimeFieldHandleClassName    "System.RuntimeFieldHandle"
+#define g_RuntimeFieldHandleInternalName        "RuntimeFieldHandleInternal"
 #define g_RuntimeMethodHandleClassName   "System.RuntimeMethodHandle"
 #define g_RuntimeMethodHandleInternalName        "RuntimeMethodHandleInternal"
 #define g_RuntimeTypeHandleClassName     "System.RuntimeTypeHandle"

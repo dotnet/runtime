@@ -1521,7 +1521,7 @@ namespace System.Reflection
         {
             byte* pBlobStart = (byte*)blobStart;
             _GetPropertyOrFieldData(
-                module.GetNativeHandle(), &pBlobStart, (byte*)blobEnd, out name, out isProperty, out type, out value);
+                module, &pBlobStart, (byte*)blobEnd, out name, out isProperty, out type, out value);
             blobStart = (IntPtr)pBlobStart;
         }
 
@@ -1845,7 +1845,7 @@ namespace System.Reflection
 
         private static MarshalAsAttribute? GetMarshalAsCustomAttribute(int token, RuntimeModule scope)
         {
-            ConstArray nativeType = ModuleHandle.GetMetadataImport(scope.GetNativeHandle()).GetFieldMarshal(token);
+            ConstArray nativeType = ModuleHandle.GetMetadataImport(scope).GetFieldMarshal(token);
 
             if (nativeType.Length == 0)
                 return null;

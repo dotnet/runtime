@@ -34,7 +34,7 @@
       <AppDir>$(MSBuildThisFileDirectory)$(PublishDir)\app</AppDir>
       <IosSimulator Condition="'$(TargetArchitecture)' == 'x64' or '$(TargetArchitecture)' == 'x86'">iPhone 11</IosSimulator>
       <Optimized Condition="'$(Configuration)' == 'Release'">True</Optimized>
-      <RunAOTCompilation Condition="'$(IosSimulator)' == '' or '$(UseAotForSimulator)' == 'true'">true</RunAOTCompilation>
+      <RunAOTCompilation Condition="'$(IosSimulator)' == '' or '$(ForceAOT)' == 'true'">true</RunAOTCompilation>
     </PropertyGroup>
 
     <RemoveDir Directories="$(AppDir)" />
@@ -61,6 +61,7 @@
     </MonoAOTCompiler>
 
     <AppleAppBuilderTask
+        TargetOS="$(TargetOS)"
         Arch="$(TargetArchitecture)"
         ProjectName="HelloiOS"
         MonoRuntimeHeaders="$(MicrosoftNetCoreAppRuntimePackDir)native\include\mono-2.0"
@@ -71,7 +72,7 @@
         DevTeamProvisioning="$(DevTeamProvisioning)"
         OutputDirectory="$(AppDir)"
         Optimized="$(Optimized)"
-        UseAotForSimulator="$(UseAotForSimulator)"
+        ForceAOT="$(ForceAOT)"
         ForceInterpreter="$(MonoForceInterpreter)"
         AppDir="$(MSBuildThisFileDirectory)$(PublishDir)">
         <Output TaskParameter="AppBundlePath" PropertyName="AppBundlePath" />

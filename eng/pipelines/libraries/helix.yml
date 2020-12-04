@@ -31,7 +31,7 @@ steps:
             /bl:$(Build.SourcesDirectory)/artifacts/log/$(_BuildConfig)/SendToHelix.binlog
     displayName: Send to Helix
     condition: and(succeeded(), ${{ parameters.condition }})
-    continueOnError: ${{ parameters.shouldContinueOnError }}
+    continueOnError: ${{ eq(parameters.shouldContinueOnError, true) }}
     env:
       SYSTEM_ACCESSTOKEN: $(System.AccessToken) # We need to set this env var to publish helix results to Azure Dev Ops
       HelixTargetQueues: ${{ join('+', parameters.helixQueues) }} # Pass queues to MSBuild as env var to avoid need of escaping them

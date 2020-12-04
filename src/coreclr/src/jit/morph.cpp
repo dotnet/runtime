@@ -2662,9 +2662,14 @@ void Compiler::fgInitArgInfo(GenTreeCall* call)
     // If/when we change that, the following code needs to be changed to correctly support the (TBD) managed calling
     // convention for x86/SSE.
 
-    // If we have a Fixed Return Buffer argument register then we setup a non-standard argument for it
+    // If we have a Fixed Return Buffer argument register then we setup a non-standard argument for it.
     //
-    if (hasFixedRetBuffReg() && call->HasRetBufArg())
+    // We don't use the fixed return buffer argument if we have the special unmanaged instance call convention.
+    // That convention doesn't use the fixed return buffer register.
+    //
+    CLANG_FORMAT_COMMENT_ANCHOR;
+
+    if (call->HasFixedRetBufArg())
     {
         args = call->gtCallArgs;
         assert(args != nullptr);
@@ -2719,7 +2724,7 @@ void Compiler::fgInitArgInfo(GenTreeCall* call)
         *insertionPoint = gtNewCallArgs(arg);
 #else  // !defined(TARGET_X86)
         // All other architectures pass the cookie in a register.
-        call->gtCallArgs       = gtPrependNewCallArg(arg, call->gtCallArgs);
+        call->gtCallArgs = gtPrependNewCallArg(arg, call->gtCallArgs);
 #endif // defined(TARGET_X86)
 
         nonStandardArgs.Add(arg, REG_PINVOKE_COOKIE_PARAM);
@@ -2830,10 +2835,11 @@ void Compiler::fgInitArgInfo(GenTreeCall* call)
         {
             maxRegArgs = 0;
         }
-
+#ifdef UNIX_X86_ABI
         // Add in the ret buff arg
         if (callHasRetBuffArg)
             maxRegArgs++;
+#endif
     }
 #endif // TARGET_X86
 
@@ -2958,8 +2964,6 @@ void Compiler::fgInitArgInfo(GenTreeCall* call)
         bool passUsingFloatRegs;
 #if !defined(OSX_ARM64_ABI)
         unsigned argAlignBytes = TARGET_POINTER_SIZE;
-#else
-        unsigned argAlignBytes = TARGET_POINTER_SIZE; // TODO-OSX-ARM64: change it after other changes are merged.
 #endif
         unsigned             size          = 0;
         unsigned             byteSize      = 0;
@@ -3211,6 +3215,21 @@ void Compiler::fgInitArgInfo(GenTreeCall* call)
         assert(size != 0);
         assert(byteSize != 0);
 
+#if defined(OSX_ARM64_ABI)
+        // Arm64 Apple has a special ABI for passing small size arguments on stack,
+        // bytes are aligned to 1-byte, shorts to 2-byte, int/float to 4-byte, etc.
+        // It means passing 8 1-byte arguments on stack can take as small as 8 bytes.
+        unsigned argAlignBytes;
+        if (isStructArg)
+        {
+            argAlignBytes = TARGET_POINTER_SIZE;
+        }
+        else
+        {
+            argAlignBytes = byteSize;
+        }
+#endif
+
         //
         // Figure out if the argument will be passed in a register.
         //
@@ -3218,6 +3237,8 @@ void Compiler::fgInitArgInfo(GenTreeCall* call)
         if (isRegParamType(genActualType(argx->TypeGet()))
 #ifdef UNIX_AMD64_ABI
             && (!isStructArg || structDesc.passedInRegisters)
+#elif defined(TARGET_X86)
+            || (isStructArg && isTrivialPointerSizedStruct(objClass))
 #endif
                 )
         {
@@ -3746,8 +3767,6 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
             }
             else // This is passed by value.
             {
-
-#ifndef TARGET_X86
                 // Check to see if we can transform this into load of a primitive type.
                 // 'size' must be the number of pointer sized items
                 DEBUG_ARG_SLOTS_ASSERT(size == roundupSize / TARGET_POINTER_SIZE);
@@ -3939,7 +3958,6 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
                     assert(varTypeIsEnregisterable(argObj->TypeGet()) ||
                            ((copyBlkClass != NO_CLASS_HANDLE) && varTypeIsEnregisterable(structBaseType)));
                 }
-#endif // !TARGET_X86
 
 #ifndef UNIX_AMD64_ABI
                 // We still have a struct unless we converted the GT_OBJ into a GT_IND above...
@@ -5147,7 +5165,7 @@ void Compiler::fgFixupStructReturn(GenTree* callNode)
     }
     else
     {
-        returnType = getReturnTypeForStruct(retClsHnd, &howToReturnStruct);
+        returnType = getReturnTypeForStruct(retClsHnd, call->GetUnmanagedCallConv(), &howToReturnStruct);
     }
 
     if (howToReturnStruct == SPK_ByReference)
@@ -6811,7 +6829,9 @@ bool Compiler::fgCanFastTailCall(GenTreeCall* callee, const char** failReason)
     {
         var_types retType = (compDoOldStructRetyping() ? info.compRetNativeType : info.compRetType);
         assert(impTailCallRetTypeCompatible(retType, info.compMethodInfo->args.retTypeClass,
-                                            (var_types)callee->gtReturnType, callee->gtRetClsHnd));
+                                            compMethodInfoGetEntrypointCallConv(info.compMethodInfo),
+                                            (var_types)callee->gtReturnType, callee->gtRetClsHnd,
+                                            callee->GetUnmanagedCallConv()));
     }
 #endif
 
@@ -7734,7 +7754,7 @@ GenTree* Compiler::fgMorphPotentialTailCall(GenTreeCall* call)
             {
                 CORINFO_CLASS_HANDLE        retClsHnd = call->gtRetClsHnd;
                 Compiler::structPassingKind howToReturnStruct;
-                callType = getReturnTypeForStruct(retClsHnd, &howToReturnStruct);
+                callType = getReturnTypeForStruct(retClsHnd, call->GetUnmanagedCallConv(), &howToReturnStruct);
                 assert((howToReturnStruct != SPK_Unknown) && (howToReturnStruct != SPK_ByReference));
                 if (howToReturnStruct == SPK_ByValue)
                 {
@@ -8097,7 +8117,7 @@ GenTree* Compiler::fgCreateCallDispatcherAndGetResult(GenTreeCall*          orig
 
         if (varTypeIsStruct(origCall->gtType))
         {
-            retVal = impFixupStructReturnType(retVal, origCall->gtRetClsHnd);
+            retVal = impFixupStructReturnType(retVal, origCall->gtRetClsHnd, origCall->GetUnmanagedCallConv());
         }
     }
     else

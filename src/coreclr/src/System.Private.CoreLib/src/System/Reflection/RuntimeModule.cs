@@ -31,7 +31,7 @@ namespace System.Reflection
 
         internal RuntimeType[] GetDefinedTypes()
         {
-            return GetTypes(GetNativeHandle());
+            return GetTypes(this);
         }
 
         [MethodImpl(MethodImplOptions.InternalCall)]
@@ -121,7 +121,7 @@ namespace System.Reflection
                     methodArgs = ConvertToTypeHandleArray(genericMethodArguments);
                 }
 
-                ModuleHandle moduleHandle = new ModuleHandle(GetNativeHandle());
+                ModuleHandle moduleHandle = new ModuleHandle(this);
                 IRuntimeMethodInfo methodHandle = moduleHandle.ResolveMethodHandle(tk, typeArgs, methodArgs).GetMethodInfo();
 
                 Type declaringType = RuntimeMethodHandle.GetDeclaringType(methodHandle);
@@ -218,7 +218,7 @@ namespace System.Reflection
 
                 if (declaringType.IsGenericType || declaringType.IsArray)
                 {
-                    int tkDeclaringType = ModuleHandle.GetMetadataImport(GetNativeHandle()).GetParentToken(metadataToken);
+                    int tkDeclaringType = ModuleHandle.GetMetadataImport(this).GetParentToken(metadataToken);
                     declaringType = (RuntimeType)ResolveType(tkDeclaringType, genericTypeArguments, genericMethodArguments);
                 }
 
@@ -334,10 +334,10 @@ namespace System.Reflection
 
         public override void GetPEKind(out PortableExecutableKinds peKind, out ImageFileMachine machine)
         {
-            ModuleHandle.GetPEKind(GetNativeHandle(), out peKind, out machine);
+            ModuleHandle.GetPEKind(this, out peKind, out machine);
         }
 
-        public override int MDStreamVersion => ModuleHandle.GetMDStreamVersion(GetNativeHandle());
+        public override int MDStreamVersion => ModuleHandle.GetMDStreamVersion(this);
         #endregion
 
         #region Data Members
@@ -461,7 +461,7 @@ namespace System.Reflection
       [RequiresUnreferencedCode("Types might be removed")]
         public override Type[] GetTypes()
         {
-            return GetTypes(GetNativeHandle());
+            return GetTypes(this);
         }
 
         #endregion
@@ -477,11 +477,11 @@ namespace System.Reflection
             }
         }
 
-        public override int MetadataToken => ModuleHandle.GetToken(GetNativeHandle());
+        public override int MetadataToken => ModuleHandle.GetToken(this);
 
         public override bool IsResource()
         {
-            return IsResource(GetNativeHandle());
+            return IsResource(this);
         }
 
         [RequiresUnreferencedCode("Fields might be removed")]
@@ -550,11 +550,6 @@ namespace System.Reflection
         protected override ModuleHandle GetModuleHandleImpl()
         {
             return new ModuleHandle(this);
-        }
-
-        internal RuntimeModule GetNativeHandle()
-        {
-            return this;
         }
 
         internal IntPtr GetUnderlyingNativeHandle()

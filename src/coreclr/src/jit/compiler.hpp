@@ -692,9 +692,14 @@ inline bool isRegParamType(var_types type)
 //    isVarArg  - whether or not this is a vararg fixed arg or variable argument
 //              - if so on arm64 windows getArgTypeForStruct will ignore HFA
 //              - types
+//    callConv  - the calling convention of the call
 //
-inline bool Compiler::VarTypeIsMultiByteAndCanEnreg(
-    var_types type, CORINFO_CLASS_HANDLE typeClass, unsigned* typeSize, bool forReturn, bool isVarArg)
+inline bool Compiler::VarTypeIsMultiByteAndCanEnreg(var_types                type,
+                                                    CORINFO_CLASS_HANDLE     typeClass,
+                                                    unsigned*                typeSize,
+                                                    bool                     forReturn,
+                                                    bool                     isVarArg,
+                                                    CorInfoCallConvExtension callConv)
 {
     bool     result = false;
     unsigned size   = 0;
@@ -706,7 +711,7 @@ inline bool Compiler::VarTypeIsMultiByteAndCanEnreg(
         if (forReturn)
         {
             structPassingKind howToReturnStruct;
-            type = getReturnTypeForStruct(typeClass, &howToReturnStruct, size);
+            type = getReturnTypeForStruct(typeClass, callConv, &howToReturnStruct, size);
         }
         else
         {

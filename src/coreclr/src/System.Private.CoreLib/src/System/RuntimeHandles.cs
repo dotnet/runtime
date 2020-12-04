@@ -1371,7 +1371,7 @@ namespace System
             }
             catch (Exception)
             {
-                if (!ModuleHandle.GetMetadataImport(module.GetNativeHandle()).IsValidToken(methodToken))
+                if (!ModuleHandle.GetMetadataImport(module).IsValidToken(methodToken))
                     throw new ArgumentOutOfRangeException(nameof(methodToken),
                         SR.Format(SR.Argument_InvalidToken, methodToken, new ModuleHandle(module)));
                 throw;
@@ -1423,7 +1423,7 @@ namespace System
                 }
                 catch (Exception)
                 {
-                    if (!GetMetadataImport(module.GetNativeHandle()).IsValidToken(fieldToken))
+                    if (!GetMetadataImport(module).IsValidToken(fieldToken))
                         throw new ArgumentOutOfRangeException(nameof(fieldToken),
                             SR.Format(SR.Argument_InvalidToken, fieldToken, new ModuleHandle(module)));
                     throw;
@@ -1473,14 +1473,14 @@ namespace System
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern int GetMDStreamVersion(RuntimeModule module);
 
-        public int MDStreamVersion => GetMDStreamVersion(GetRuntimeModule().GetNativeHandle());
+        public int MDStreamVersion => GetMDStreamVersion(GetRuntimeModule());
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern IntPtr _GetMetadataImport(RuntimeModule module);
 
         internal static MetadataImport GetMetadataImport(RuntimeModule module)
         {
-            return new MetadataImport(_GetMetadataImport(module.GetNativeHandle()), module);
+            return new MetadataImport(_GetMetadataImport(module), module);
         }
         #endregion
     }
