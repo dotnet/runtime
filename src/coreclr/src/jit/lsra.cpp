@@ -5565,6 +5565,7 @@ void LinearScan::allocateRegisters()
             {
                 if (assignedInterval != nullptr && !assignedInterval->isActive && assignedInterval->isConstant)
                 {
+                    clearConstantReg(regRecord->regNum, assignedInterval->registerType);
                     regRecord->assignedInterval  = nullptr;
                     spillCost[regRecord->regNum] = 0;
 
