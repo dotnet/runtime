@@ -56,19 +56,11 @@ else
     export XHARNESS_OUT="$HELIX_WORKITEM_UPLOAD_ROOT/xharness-output"
 fi
 
-if [ "$TEST_NAME" != "HelloiOS" ]; then
-    dotnet xharness ios test  \
-        --targets="$TARGET"   \
-        --app="$APP_BUNDLE"   \
-        --xcode="$XCODE_PATH" \
-        --output-directory=$XHARNESS_OUT
-else 
-    dotnet xharness ios run  \
-        --targets="$TARGET"   \
-        --app="$APP_BUNDLE"   \
-        --xcode="$XCODE_PATH" \
-        --output-directory=$XHARNESS_OUT
-fi
+dotnet xharness ios test  \
+    --targets="$TARGET"   \
+    --app="$APP_BUNDLE"   \
+    --xcode="$XCODE_PATH" \
+    --output-directory=$XHARNESS_OUT
 
 _exitCode=$?
 
