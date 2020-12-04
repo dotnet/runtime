@@ -562,6 +562,10 @@ static int32_t ConvertRLimitResourcesPalToPlatform(RLimitResources value)
 #endif
         case PAL_RLIMIT_NOFILE:
             return RLIMIT_NOFILE;
+#if !defined(RLIMIT_RSS) || !(defined(RLIMIT_MEMLOCK) || defined(RLIMIT_VMEM)) || !defined(RLIMIT_NPROC)
+        default:
+            break;
+#endif
     }
 
     assert_msg(false, "Unknown RLIMIT value", (int)value);
