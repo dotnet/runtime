@@ -33,6 +33,7 @@ namespace Microsoft.Extensions.Caching.Memory
             Key = key ?? throw new ArgumentNullException(nameof(key));
             _cache = memoryCache ?? throw new ArgumentNullException(nameof(memoryCache));
             _scope = CacheEntryHelper.EnterScope(this);
+            _state = (int)State.CanExpire;
         }
 
         /// <summary>
@@ -133,6 +134,8 @@ namespace Microsoft.Extensions.Caching.Memory
 
         internal EvictionReason EvictionReason { get; private set; }
 
+        internal bool CanExpire { get => ((State)_state).HasFlag(State.CanExpire); set => Set(State.CanExpire, value); }
+
         private bool IsDisposed { get => ((State)_state).HasFlag(State.IsDisposed); set => Set(State.IsDisposed, value); }
 
         private bool IsExpired { get => ((State)_state).HasFlag(State.IsExpired); set => Set(State.IsExpired, value); }
@@ -155,6 +158,9 @@ namespace Microsoft.Extensions.Caching.Memory
                 // so don't use this entry.
                 if (IsValueSet)
                 {
+                    // set the CanExpire flag before adding the entry to the cache
+                    CanExpire = AbsoluteExpiration.HasValue || SlidingExpiration.HasValue || AbsoluteExpirationRelativeToNow.HasValue || _expirationTokens != null;
+
                     _cache.SetEntry(this);
 
                     if (CanPropagateOptions())
@@ -166,7 +172,7 @@ namespace Microsoft.Extensions.Caching.Memory
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal bool CheckExpired(in DateTimeOffset now) => IsExpired || CheckForExpiredTime(now) || CheckForExpiredTokens();
+        internal bool CheckExpired(in DateTimeOffset now) => IsExpired || (CanExpire && (CheckForExpiredTime(now) || CheckForExpiredTokens()));
 
         internal void SetExpired(EvictionReason reason)
         {
@@ -338,6 +344,7 @@ namespace Microsoft.Extensions.Caching.Memory
                         {
                             parent.AddExpirationToken(expirationToken);
                         }
+                        parent.CanExpire = true;
                     }
                 }
             }
@@ -347,6 +354,7 @@ namespace Microsoft.Extensions.Caching.Memory
                 if (!parent.AbsoluteExpiration.HasValue || AbsoluteExpiration < parent.AbsoluteExpiration)
                 {
                     parent.AbsoluteExpiration = AbsoluteExpiration;
+                    parent.CanExpire = true;
                 }
             }
         }
@@ -369,6 +377,7 @@ namespace Microsoft.Extensions.Caching.Memory
             IsValueSet = 1 << 0,
             IsExpired = 1 << 1,
             IsDisposed = 1 << 2,
+            CanExpire = 1 << 3,
         }
     }
 }
