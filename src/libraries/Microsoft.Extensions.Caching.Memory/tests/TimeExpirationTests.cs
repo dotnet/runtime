@@ -6,18 +6,12 @@ using System.Threading;
 using Microsoft.Extensions.Internal;
 using Xunit;
 
+using static Microsoft.Extensions.Internal.CacheFactory;
+
 namespace Microsoft.Extensions.Caching.Memory
 {
     public class TimeExpirationTests
     {
-        private IMemoryCache CreateCache(ISystemClock clock)
-        {
-            return new MemoryCache(new MemoryCacheOptions()
-            {
-                Clock = clock,
-            });
-        }
-
         [Fact]
         public void AbsoluteExpirationInThePastDoesntAddEntry()
         {

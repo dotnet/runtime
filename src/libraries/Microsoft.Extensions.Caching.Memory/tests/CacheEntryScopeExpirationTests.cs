@@ -8,23 +8,12 @@ using Microsoft.Extensions.Caching.Memory.Infrastructure;
 using Microsoft.Extensions.Internal;
 using Xunit;
 
+using static Microsoft.Extensions.Internal.CacheFactory;
+
 namespace Microsoft.Extensions.Caching.Memory
 {
     public class CacheEntryScopeExpirationTests
     {
-        private IMemoryCache CreateCache()
-        {
-            return CreateCache(new SystemClock());
-        }
-
-        private IMemoryCache CreateCache(ISystemClock clock)
-        {
-            return new MemoryCache(new MemoryCacheOptions()
-            {
-                Clock = clock,
-            });
-        }
-
         [Fact]
         public void SetPopulates_ExpirationTokens_IntoScopedLink()
         {

@@ -9,23 +9,12 @@ using Microsoft.Extensions.Internal;
 using Microsoft.Extensions.Primitives;
 using Xunit;
 
+using static Microsoft.Extensions.Internal.CacheFactory;
+
 namespace Microsoft.Extensions.Caching.Memory
 {
     public class TokenExpirationTests
     {
-        private IMemoryCache CreateCache()
-        {
-            return CreateCache(new SystemClock());
-        }
-
-        private IMemoryCache CreateCache(ISystemClock clock)
-        {
-            return new MemoryCache(new MemoryCacheOptions()
-            {
-                Clock = clock,
-            });
-        }
-
         [Fact]
         public void SetWithTokenRegistersForNotification()
         {
