@@ -12,6 +12,7 @@
     <!-- We need to set this in order to get extensibility on xunit category traits and other arguments we pass down to xunit via MSBuild properties -->
     <RunScriptCommand>$HARNESS_RUNNER wasm $XHARNESS_COMMAND  --app=. --engine=$(JSEngine) $(JSEngineArgs) --js-file=runtime.js --output-directory=$XHARNESS_OUT --  $(RunTestsJSArguments) --run WasmTestRunner.dll $(AssemblyName).dll</RunScriptCommand>
     <PublishTrimmed>true</PublishTrimmed>
+    <TrimMode>copyused</TrimMode>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(TargetOS)' == 'Android'">
@@ -164,12 +165,23 @@
       <WasmFilesToIncludeInFileSystem Include="@(WasmSatelliteAssemblies)" TargetPath="%(WasmSatelliteAssemblies.CultureName)\%(WasmSatelliteAssemblies.Filename)%(WasmSatelliteAssemblies.Extension)" />
       <!-- Include files specified by test projects from publish dir -->
       <WasmFilesToIncludeInFileSystem Include="@(WasmFilesToIncludeFromPublishDir -> '$(PublishDir)%(Identity)')" />
-      <Assemblies Include="$(PublishDir)$(AssemblyName).dll" />
+      <Assemblies Include="$(PublishDir)\..\$(AssemblyName).dll" />
       <!-- We need these facades for some tests. -->
-      <Assemblies Include="$(PublishDir)mscorlib.dll" />
-      <Assemblies Include="$(PublishDir)System.Drawing.dll" />
+      <Assemblies Include="$(PublishDir)\..\mscorlib.dll" />
+      <Assemblies Include="$(PublishDir)\..\System.Drawing.dll" />
+      <!-- WasmTestRunner referenced assemblies -->
+      <Assemblies Include="$(PublishDir)\..\System.Runtime.dll" />
+      <Assemblies Include="$(PublishDir)\..\System.Runtime.Extensions.dll" />
+      <Assemblies Include="$(PublishDir)\..\System.Threading.dll" />
+      <Assemblies Include="$(PublishDir)\..\System.Reflection.dll" />
+      <Assemblies Include="$(PublishDir)\..\System.Xml.XDocument.dll" />
+      <Assemblies Include="$(PublishDir)\..\System.Runtime.Loader.dll" />
+      <Assemblies Include="$(PublishDir)\..\System.Globalization.dll" />
     </ItemGroup>
+    <Message Importance="High" Text="AssemblyName: $(AssemblyName)" />
+    <Message Importance="High" Text="Assemblies: @(Assemblies)" />
     <Error Condition="!Exists('$(MicrosoftNetCoreAppRuntimePackRidDir)')" Text="MicrosoftNetCoreAppRuntimePackRidDir=$(MicrosoftNetCoreAppRuntimePackRidDir) doesn't exist" />
+
     <WasmAppBuilder
       AppDir="$(BundleDir)"
       InvariantGlobalization="$(InvariantGlobalization)"
@@ -197,4 +209,6 @@
           Condition="'$(IsCrossTargetingBuild)' != 'true'"
           AfterTargets="Build"
           DependsOnTargets="Publish;BundleTestAppleApp;BundleTestAndroidApp;BundleTestWasmApp;ArchiveTests" />
+
+  <Import Project="$(RepositoryEngineeringDir)illink.targets" Condition="'$(TargetOS)' == 'Browser'" />
 </Project>

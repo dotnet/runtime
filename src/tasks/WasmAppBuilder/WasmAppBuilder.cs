@@ -25,7 +25,7 @@ public class WasmAppBuilder : Task
     [Required]
     public string? MainJS { get; set; }
     [Required]
-    public string[] Assemblies { get; set; } = Array.Empty<string>();
+    public string[]? Assemblies { get; set; }
 
     // full list of ICU data files we produce can be found here:
     // https://github.com/dotnet/icu/tree/maint/maint-67/icu-filters
@@ -100,6 +100,11 @@ public class WasmAppBuilder : Task
             throw new ArgumentException($"File MainJS='{MainJS}' doesn't exist.");
         if (!InvariantGlobalization && string.IsNullOrEmpty(IcuDataFileName))
             throw new ArgumentException("IcuDataFileName property shouldn't be empty if InvariantGlobalization=false");
+        if (Assemblies == null)
+        {
+            Log.LogError($"Assemblies should not be null.");
+            return false;
+        }
 
         var _assemblies = new List<string>();
         var runtimeSourceDir = Path.Join(MicrosoftNetCoreAppRuntimePackDir, "native");
