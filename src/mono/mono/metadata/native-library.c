@@ -50,7 +50,7 @@ static GHashTable *native_library_module_blocklist;
 #endif
 
 #if defined(ENABLE_NETCORE) && !defined(NO_GLOBALIZATION_SHIM)
-extern const void* GlobalizationResolveDllImport(const char* name);
+extern const void *GlobalizationResolveDllImport (const char *name);
 #endif
 
 #ifndef DISABLE_DLLMAP
@@ -1262,9 +1262,9 @@ legacy_lookup_native_library (MonoImage *image, const char *scope)
 
 #if defined(ENABLE_NETCORE) && !defined(NO_GLOBALIZATION_SHIM)
 static gpointer
-default_resolve_dllimport(const char* dll, const char* func)
+default_resolve_dllimport (const char *dll, const char *func)
 {
-	if (strcmp(dll, "libSystem.Globalization.Native") == 0) {
+	if (strcmp (dll, "libSystem.Globalization.Native") == 0) {
 		const void *method_impl = GlobalizationResolveDllImport (func);
 		if (method_impl)
 			return (gpointer)method_impl;
@@ -1355,7 +1355,7 @@ lookup_pinvoke_call_impl (MonoMethod *method, MonoLookupPInvokeStatus *status_ou
 #endif
 
 #if defined(ENABLE_NETCORE) && !defined(NO_GLOBALIZATION_SHIM)
-	gpointer default_override = default_resolve_dllimport(new_scope, new_import);
+	gpointer default_override = default_resolve_dllimport (new_scope, new_import);
 	if (default_override)
 		return default_override;
 #endif
