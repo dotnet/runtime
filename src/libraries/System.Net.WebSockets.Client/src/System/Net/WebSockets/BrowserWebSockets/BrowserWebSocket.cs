@@ -467,11 +467,18 @@ namespace System.Net.WebSockets
 
         private Task CloseAsyncCore(WebSocketCloseStatus closeStatus, string? statusDescription, CancellationToken cancellationToken)
         {
-            _tcsClose = new TaskCompletionSource();
-            _innerWebSocketCloseStatus = closeStatus;
-            _innerWebSocketCloseStatusDescription = statusDescription;
-            _innerWebSocket!.Invoke("close", (int)closeStatus, statusDescription);
-            return _tcsClose.Task;
+            try
+            {
+                _tcsClose = new TaskCompletionSource();
+                _innerWebSocketCloseStatus = closeStatus;
+                _innerWebSocketCloseStatusDescription = statusDescription;
+                _innerWebSocket!.Invoke("close", (int)closeStatus, statusDescription);
+                return _tcsClose.Task;
+            }
+            catch (Exception exc)
+            {
+                return Task.FromException(exc);
+            }
         }
 
         public override Task CloseOutputAsync(WebSocketCloseStatus closeStatus, string? statusDescription, CancellationToken cancellationToken) => throw new PlatformNotSupportedException();
