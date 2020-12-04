@@ -1,5 +1,5 @@
 
-function(append_extra_cryptography_libs NativeLibsExtra)
+macro(append_extra_cryptography_libs NativeLibsExtra)
     if(CMAKE_STATIC_LIB_LINK)
        set(CMAKE_FIND_LIBRARY_SUFFIXES .a)
     endif(CMAKE_STATIC_LIB_LINK)
@@ -32,10 +32,8 @@ function(append_extra_cryptography_libs NativeLibsExtra)
     
     if (FEATURE_DISTRO_AGNOSTIC_SSL)
         # Link with libdl.so to get the dlopen / dlsym / dlclose
-        set(EXTRA_LIBS dl)
+        list(APPEND ${NativeLibsExtra} dl)
     else()
-        set(EXTRA_LIBS ${OPENSSL_CRYPTO_LIBRARY} ${OPENSSL_SSL_LIBRARY})
+        list(APPEND ${NativeLibsExtra} ${OPENSSL_CRYPTO_LIBRARY} ${OPENSSL_SSL_LIBRARY})
     endif()
-
-    set(${NativeLibsExtra} ${${NativeLibsExtra}} ${EXTRA_LIBS} PARENT_SCOPE)
-endfunction(append_extra_cryptography_libs)
+endmacro()

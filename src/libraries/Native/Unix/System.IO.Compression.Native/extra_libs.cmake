@@ -1,5 +1,5 @@
 
-function(append_extra_compression_libs NativeLibsExtra)
+macro(append_extra_compression_libs NativeLibsExtra)
   if (CLR_CMAKE_TARGET_BROWSER)
       # nothing special to link
   elseif (CLR_CMAKE_TARGET_ANDROID)
@@ -10,5 +10,5 @@ function(append_extra_compression_libs NativeLibsExtra)
   else ()
       find_package(ZLIB REQUIRED)
   endif ()
-  set(${NativeLibsExtra} ${${NativeLibsExtra}} ${ZLIB_LIBRARIES} PARENT_SCOPE)
-endfunction(append_extra_compression_libs)
+  list(APPEND ${NativeLibsExtra} ${ZLIB_LIBRARIES})
+endmacro()

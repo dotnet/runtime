@@ -1,5 +1,5 @@
 
-function(append_extra_security_libs NativeLibsExtra)
+macro(append_extra_security_libs NativeLibsExtra)
   if (HAVE_GSSFW_HEADERS)
      find_library(LIBGSS NAMES GSS)
      if(LIBGSS STREQUAL LIBGSS-NOTFOUND)
@@ -19,5 +19,5 @@ function(append_extra_security_libs NativeLibsExtra)
      endif()
   endif()
 
-  set(${NativeLibsExtra} ${${NativeLibsExtra}} ${LIBGSS} PARENT_SCOPE)
-endfunction(append_extra_compression_libs)
+  list(APPEND ${NativeLibsExtra} ${LIBGSS})
+endmacro()
