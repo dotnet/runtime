@@ -465,6 +465,9 @@ add_gsharedvt_wrappers (MonoAotCompile *acfg, MonoMethodSignature *sig, gboolean
 static void
 add_profile_instances (MonoAotCompile *acfg, ProfileData *data);
 
+static void
+encode_signature (MonoAotCompile *acfg, MonoMethodSignature *sig, guint8 *buf, guint8 **endbuf);
+
 static gboolean
 ignore_cfg (MonoCompile *cfg)
 {
@@ -3532,6 +3535,9 @@ encode_type (MonoAotCompile *acfg, MonoType *t, guint8 *buf, guint8 **endbuf)
 		break;
 	case MONO_TYPE_PTR:
 		encode_type (acfg, t->data.type, p, &p);
+		break;
+	case MONO_TYPE_FNPTR:
+		encode_signature (acfg, t->data.method, p, &p);
 		break;
 	case MONO_TYPE_GENERICINST: {
 		MonoClass *gclass = t->data.generic_class->container_class;

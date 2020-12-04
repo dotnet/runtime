@@ -257,6 +257,9 @@ init_method (MonoAotModule *amodule, gpointer info, guint32 method_index, MonoMe
 static MonoJumpInfo*
 decode_patches (MonoAotModule *amodule, MonoMemPool *mp, int n_patches, gboolean llvm, guint32 *got_offsets);
 
+static MonoMethodSignature*
+decode_signature (MonoAotModule *module, guint8 *buf, guint8 **endbuf);
+
 static void
 load_container_amodule (MonoAssemblyLoadContext *alc);
 
@@ -754,6 +757,11 @@ decode_type (MonoAotModule *module, guint8 *buf, guint8 **endbuf, MonoError *err
 	case MONO_TYPE_PTR:
 		t->data.type = decode_type (module, p, &p, error);
 		if (!t->data.type)
+			goto fail;
+		break;
+	case MONO_TYPE_FNPTR:
+		t->data.method = decode_signature (module, p, &p);
+		if (!t->data.method)
 			goto fail;
 		break;
 	case MONO_TYPE_GENERICINST: {
