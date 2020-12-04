@@ -4,9 +4,7 @@
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.Runtime.CompilerServices;
 using System.Threading;
-using System.Threading.Tasks;
 using Microsoft.Extensions.Internal;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -24,10 +22,10 @@ namespace Microsoft.Extensions.Caching.Memory
 
         private readonly MemoryCacheOptions _options;
         private readonly ConcurrentDictionary<object, CacheEntry> _entries;
+        private readonly System.Timers.Timer _timer;
 
         private long _cacheSize;
         private bool _disposed;
-        private DateTimeOffset _lastExpirationScan;
 
         /// <summary>
         /// Creates a new <see cref="MemoryCache"/> instance.
@@ -63,7 +61,9 @@ namespace Microsoft.Extensions.Caching.Memory
                 _options.Clock = new SystemClock();
             }
 
-            _lastExpirationScan = _options.Clock.UtcNow;
+            _timer = new System.Timers.Timer(Math.Max(1, _options.ExpirationScanFrequency.TotalMilliseconds));
+            _timer.Elapsed += OnTimerElapsed;
+            _timer.Start();
         }
 
         /// <summary>
@@ -211,8 +211,6 @@ namespace Microsoft.Extensions.Caching.Memory
                     RemoveEntry(priorEntry);
                 }
             }
-
-            StartScanForExpiredItemsIfNeeded(utcNow);
         }
 
         /// <inheritdoc />
@@ -239,8 +237,6 @@ namespace Microsoft.Extensions.Caching.Memory
                         entry.PropagateOptions(CacheEntryHelper.Current);
                     }
 
-                    StartScanForExpiredItemsIfNeeded(utcNow);
-
                     return true;
                 }
                 else
@@ -249,8 +245,6 @@ namespace Microsoft.Extensions.Caching.Memory
                     RemoveEntry(entry);
                 }
             }
-
-            StartScanForExpiredItemsIfNeeded(utcNow);
 
             result = null;
             return false;
@@ -272,8 +266,6 @@ namespace Microsoft.Extensions.Caching.Memory
                 entry.SetExpired(EvictionReason.Removed);
                 entry.InvokeEvictionCallbacks();
             }
-
-            StartScanForExpiredItemsIfNeeded(_options.Clock.UtcNow);
         }
 
         private void RemoveEntry(CacheEntry entry)
@@ -292,30 +284,13 @@ namespace Microsoft.Extensions.Caching.Memory
         {
             // TODO: For efficiency consider processing these expirations in batches.
             RemoveEntry(entry);
-            StartScanForExpiredItemsIfNeeded(_options.Clock.UtcNow);
         }
 
-        // Called by multiple actions to see how long it's been since we last checked for expired items.
-        // If sufficient time has elapsed then a scan is initiated on a background task.
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private void StartScanForExpiredItemsIfNeeded(DateTimeOffset utcNow)
-        {
-            if (_options.ExpirationScanFrequency < utcNow - _lastExpirationScan)
-            {
-                ScheduleTask(utcNow);
-            }
-
-            void ScheduleTask(DateTimeOffset utcNow)
-            {
-                _lastExpirationScan = utcNow;
-                Task.Factory.StartNew(state => ScanForExpiredItems((MemoryCache)state), this,
-                    CancellationToken.None, TaskCreationOptions.DenyChildAttach, TaskScheduler.Default);
-            }
-        }
+        private void OnTimerElapsed(object sender, System.Timers.ElapsedEventArgs e) => ScanForExpiredItems(this);
 
         private static void ScanForExpiredItems(MemoryCache cache)
         {
-            DateTimeOffset now = cache._lastExpirationScan = cache._options.Clock.UtcNow;
+            DateTimeOffset now = cache._options.Clock.UtcNow;
             foreach (CacheEntry entry in cache._entries.Values)
             {
                 if (entry.CheckExpired(now))
@@ -482,6 +457,10 @@ namespace Microsoft.Extensions.Caching.Memory
                 {
                     GC.SuppressFinalize(this);
                 }
+
+                _timer.Stop();
+                _timer.Elapsed -= OnTimerElapsed;
+                _timer.Dispose();
 
                 _disposed = true;
             }
