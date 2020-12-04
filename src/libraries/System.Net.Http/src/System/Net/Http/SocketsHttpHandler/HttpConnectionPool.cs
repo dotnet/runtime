@@ -1278,10 +1278,10 @@ namespace System.Net.Http
 
             var endPoint = new DnsEndPoint(host, port);
             Socket? socket = null;
-            try
+            // If a ConnectCallback was supplied, use that to establish the connection.
+            if (Settings._connectCallback != null)
             {
-                // If a ConnectCallback was supplied, use that to establish the connection.
-                if (Settings._connectCallback != null)
+                try
                 {
                     ValueTask<Stream> streamTask = Settings._connectCallback(new SocketsHttpConnectionContext(endPoint, initialRequest), cancellationToken);
 
@@ -1296,32 +1296,18 @@ namespace System.Net.Http
 
                     return await streamTask.ConfigureAwait(false) ?? throw new HttpRequestException(SR.net_http_null_from_connect_callback);
                 }
-                else
+                catch (Exception ex)
                 {
-                    // Otherwise, create and connect a socket using default settings.
-                    socket = new Socket(SocketType.Stream, ProtocolType.Tcp) { NoDelay = true };
-
-                    if (async)
-                    {
-                        await socket.ConnectAsync(endPoint, cancellationToken).ConfigureAwait(false);
-                    }
-                    else
-                    {
-                        using (cancellationToken.UnsafeRegister(static s => ((Socket)s!).Dispose(), socket))
-                        {
-                            socket.Connect(endPoint);
-                        }
-                    }
-
-                    return new NetworkStream(socket, ownsSocket: true);
+                    socket?.Dispose();
+                    throw ex is OperationCanceledException oce && oce.CancellationToken == cancellationToken ?
+                        CancellationHelper.CreateOperationCanceledException(innerException: null, cancellationToken) :
+                        ConnectHelper.CreateWrappedException(ex, endPoint.Host, endPoint.Port, cancellationToken);
                 }
             }
-            catch (Exception ex)
+            else
             {
-                socket?.Dispose();
-                throw ex is OperationCanceledException oce && oce.CancellationToken == cancellationToken ?
-                    CancellationHelper.CreateOperationCanceledException(innerException: null, cancellationToken) :
-                    ConnectHelper.CreateWrappedException(ex, endPoint.Host, endPoint.Port, cancellationToken);
+                // Otherwise, create and connect a socket using default settings.
+                return await ConnectHelper.ConnectAsync(host, port, async, cancellationToken).ConfigureAwait(false);
             }
         }
 
