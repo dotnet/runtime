@@ -92,4 +92,10 @@ internal class Utils
             Logger?.LogError(msg);
         }
     }
+
+    internal class TargetOS
+    {
+        public const string iOS = "iOS";
+        public const string tvOS = "tvOS";
+    }
 }

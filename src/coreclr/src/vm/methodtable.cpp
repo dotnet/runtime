@@ -5282,6 +5282,12 @@ void MethodTable::DoFullyLoad(Generics::RecursionGraph * const pVisited,  const 
     CONSISTENCY_CHECK(IsRestored_NoLogging());
     CONSISTENCY_CHECK(!HasApproxParent());
 
+    if ((level == CLASS_LOADED) && !IsSharedByGenericInstantiations())
+    {
+        _ASSERTE(GetLoadLevel() >= CLASS_DEPENDENCIES_LOADED);
+        ClassLoader::ValidateMethodsWithCovariantReturnTypes(this);
+    }
+
     if (IsArray())
     {
         Generics::RecursionGraph newVisited(pVisited, TypeHandle(this));

@@ -19,7 +19,7 @@ internal static partial class Interop
         internal const string Odbc32 = "odbc32.dll";
         internal const string Ole32 = "ole32.dll";
         internal const string OleAut32 = "oleaut32.dll";
-        internal const string PerfCounter = "perfcounter.dll";
+        internal const string Pdh = "pdh.dll";
         internal const string Secur32 = "secur32.dll";
         internal const string Shell32 = "shell32.dll";
         internal const string SspiCli = "sspicli.dll";

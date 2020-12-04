@@ -153,8 +153,6 @@ namespace System.Reflection.Emit
 
         internal InternalAssemblyBuilder InternalAssembly => _internalAssemblyBuilder;
 
-        internal RuntimeAssembly GetNativeHandle() => InternalAssembly.GetNativeHandle();
-
         #endregion
 
         #region Constructor
@@ -212,7 +210,7 @@ namespace System.Reflection.Emit
         [MemberNotNull(nameof(_manifestModuleBuilder))]
         private void InitManifestModule()
         {
-            InternalModuleBuilder modBuilder = (InternalModuleBuilder)GetInMemoryAssemblyModule(GetNativeHandle());
+            InternalModuleBuilder modBuilder = (InternalModuleBuilder)GetInMemoryAssemblyModule(InternalAssembly);
 
             // Note that this ModuleBuilder cannot be used for RefEmit yet
             // because it hasn't been initialized.

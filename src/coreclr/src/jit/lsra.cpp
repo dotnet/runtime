@@ -11007,6 +11007,8 @@ void LinearScan::verifyFinalAllocation()
                 }
                 if (currentRefPosition->spillAfter || currentRefPosition->lastUse)
                 {
+                    assert(!currentRefPosition->spillAfter || currentRefPosition->IsActualRef());
+
                     interval->physReg     = REG_NA;
                     interval->assignedReg = nullptr;
 

@@ -51,36 +51,14 @@
                            OutputPath="$(WasmPInvokeTablePath)" />
   </Target>
 
-  <UsingTask TaskName="CompileTimeZoneData"
-    AssemblyFile="$(WasmBuildTasksAssemblyPath)"/>
-  <Target Name="CompileTimeZones">
-    <ItemGroup>
-      <TimeZoneToCompile Include="africa" />
-      <TimeZoneToCompile Include="antarctica" />
-      <TimeZoneToCompile Include="asia" />
-      <TimeZoneToCompile Include="australasia" />
-      <TimeZoneToCompile Include="etcetera" />
-      <TimeZoneToCompile Include="europe" />
-      <TimeZoneToCompile Include="northamerica" />
-      <TimeZoneToCompile Include="southamerica" />
-      <TimeZoneToCompile Include="backward" />
-    </ItemGroup>
-
-    <CompileTimeZoneData
-      TimeZones="@(TimeZoneToCompile)"
-      InputDirectory="$([MSBuild]::NormalizePath('$(PkgSystem_Runtime_TimeZoneData)', 'contentFiles', 'any', 'any', 'data'))"
-      OutputDirectory="$(ArtifactsObjDir)wasm/timezones" 
-      FilterSystemTimeZones="$(FilterSystemTimeZones)"/>
-  </Target>
-
   <UsingTask TaskName="GenerateWasmBundle"
     AssemblyFile="$(WasmBuildTasksAssemblyPath)"/>
-  <Target Name="BundleTimeZones" DependsOnTargets="CompileTimeZones">
+  <Target Name="BundleTimeZones">
     <PropertyGroup>
       <TimeZonesDataPath>$(NativeBinDir)dotnet.timezones.blat</TimeZonesDataPath>
     </PropertyGroup>
     <GenerateWasmBundle
-      InputDirectory="$(ArtifactsObjDir)wasm/timezones"
+      InputDirectory="$([MSBuild]::NormalizePath('$(PkgSystem_Runtime_TimeZoneData)', 'contentFiles', 'any', 'any', 'data'))"
       OutputFileName="$(TimeZonesDataPath)" />
   </Target>
 

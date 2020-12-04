@@ -1299,12 +1299,50 @@ GenTree* Compiler::impAssignStructPtr(GenTree*             destAddr,
 
     if (src->gtOper == GT_CALL)
     {
-        if (src->AsCall()->TreatAsHasRetBufArg(this))
+        GenTreeCall* srcCall = src->AsCall();
+        if (srcCall->TreatAsHasRetBufArg(this))
         {
             // Case of call returning a struct via hidden retbuf arg
+            CLANG_FORMAT_COMMENT_ANCHOR;
 
-            // insert the return value buffer into the argument list as first byref parameter
-            src->AsCall()->gtCallArgs = gtPrependNewCallArg(destAddr, src->AsCall()->gtCallArgs);
+#if defined(TARGET_WINDOWS) && !defined(TARGET_ARM)
+            // Unmanaged instance methods on Windows need the retbuf arg after the first (this) parameter
+            if (srcCall->IsUnmanaged())
+            {
+                if (callConvIsInstanceMethodCallConv(srcCall->GetUnmanagedCallConv()))
+                {
+                    GenTreeCall::Use* thisArg = gtInsertNewCallArgAfter(destAddr, srcCall->gtCallArgs);
+                }
+                else
+                {
+#ifdef TARGET_X86
+                    // The argument list has already been reversed.
+                    // Insert the return buffer as the last node so it will be pushed on to the stack last
+                    // as required by the native ABI.
+                    assert(srcCall->gtCallType == CT_INDIRECT);
+                    GenTreeCall::Use* lastArg = srcCall->gtCallArgs;
+                    if (lastArg == nullptr)
+                    {
+                        srcCall->gtCallArgs = gtPrependNewCallArg(destAddr, srcCall->gtCallArgs);
+                    }
+                    else
+                    {
+                        for (; lastArg->GetNext() != nullptr; lastArg = lastArg->GetNext())
+                            ;
+                        gtInsertNewCallArgAfter(destAddr, lastArg);
+                    }
+#else
+                    // insert the return value buffer into the argument list as first byref parameter
+                    srcCall->gtCallArgs = gtPrependNewCallArg(destAddr, srcCall->gtCallArgs);
+#endif
+                }
+            }
+            else
+#endif
+            {
+                // insert the return value buffer into the argument list as first byref parameter
+                srcCall->gtCallArgs = gtPrependNewCallArg(destAddr, srcCall->gtCallArgs);
+            }
 
             // now returns void, not a struct
             src->gtType = TYP_VOID;
@@ -1316,7 +1354,7 @@ GenTree* Compiler::impAssignStructPtr(GenTree*             destAddr,
         {
             // Case of call returning a struct in one or more registers.
 
-            var_types returnType = (var_types)src->AsCall()->gtReturnType;
+            var_types returnType = (var_types)srcCall->gtReturnType;
 
             if (compDoOldStructRetyping())
             {
@@ -7083,7 +7121,12 @@ void Compiler::impCheckForPInvokeCall(
 
     JITLOG((LL_INFO1000000, "\nInline a CALLI PINVOKE call from method %s", info.compFullName));
 
+    static_assert_no_msg((unsigned)CorInfoCallConvExtension::C == (unsigned)CORINFO_UNMANAGED_CALLCONV_C);
+    static_assert_no_msg((unsigned)CorInfoCallConvExtension::Stdcall == (unsigned)CORINFO_UNMANAGED_CALLCONV_STDCALL);
+    static_assert_no_msg((unsigned)CorInfoCallConvExtension::Thiscall == (unsigned)CORINFO_UNMANAGED_CALLCONV_THISCALL);
+
     call->gtFlags |= GTF_CALL_UNMANAGED;
+    call->unmgdCallConv = CorInfoCallConvExtension(unmanagedCallConv);
     if (!call->IsSuppressGCTransition())
     {
         info.compUnmanagedCallCountWithGCTransition++;
@@ -7629,10 +7672,12 @@ void Compiler::impInsertHelperCall(CORINFO_HELPER_DESC* helperInfo)
 // so that callee can be tail called. Note that here we don't check
 // compatibility in IL Verifier sense, but on the lines of return type
 // sizes are equal and get returned in the same return register.
-bool Compiler::impTailCallRetTypeCompatible(var_types            callerRetType,
-                                            CORINFO_CLASS_HANDLE callerRetTypeClass,
-                                            var_types            calleeRetType,
-                                            CORINFO_CLASS_HANDLE calleeRetTypeClass)
+bool Compiler::impTailCallRetTypeCompatible(var_types                callerRetType,
+                                            CORINFO_CLASS_HANDLE     callerRetTypeClass,
+                                            CorInfoCallConvExtension callerCallConv,
+                                            var_types                calleeRetType,
+                                            CORINFO_CLASS_HANDLE     calleeRetTypeClass,
+                                            CorInfoCallConvExtension calleeCallConv)
 {
     // Note that we can not relax this condition with genActualType() as the
     // calling convention dictates that the caller of a function with a small
@@ -7669,10 +7714,10 @@ bool Compiler::impTailCallRetTypeCompatible(var_types            callerRetType,
     // trust code can make those tail calls.
     unsigned callerRetTypeSize = 0;
     unsigned calleeRetTypeSize = 0;
-    bool     isCallerRetTypMBEnreg =
-        VarTypeIsMultiByteAndCanEnreg(callerRetType, callerRetTypeClass, &callerRetTypeSize, true, info.compIsVarArgs);
-    bool isCalleeRetTypMBEnreg =
-        VarTypeIsMultiByteAndCanEnreg(calleeRetType, calleeRetTypeClass, &calleeRetTypeSize, true, info.compIsVarArgs);
+    bool isCallerRetTypMBEnreg = VarTypeIsMultiByteAndCanEnreg(callerRetType, callerRetTypeClass, &callerRetTypeSize,
+                                                               true, info.compIsVarArgs, callerCallConv);
+    bool isCalleeRetTypMBEnreg = VarTypeIsMultiByteAndCanEnreg(calleeRetType, calleeRetTypeClass, &calleeRetTypeSize,
+                                                               true, info.compIsVarArgs, calleeCallConv);
 
     if (varTypeIsIntegral(callerRetType) || isCallerRetTypMBEnreg)
     {
@@ -8868,8 +8913,9 @@ DONE:
         // a small-typed return value is responsible for normalizing the return val
 
         if (canTailCall &&
-            !impTailCallRetTypeCompatible(info.compRetType, info.compMethodInfo->args.retTypeClass, callRetTyp,
-                                          sig->retTypeClass))
+            !impTailCallRetTypeCompatible(info.compRetType, info.compMethodInfo->args.retTypeClass,
+                                          compMethodInfoGetEntrypointCallConv(info.compMethodInfo), callRetTyp,
+                                          sig->retTypeClass, call->AsCall()->GetUnmanagedCallConv()))
         {
             canTailCall             = false;
             szCanTailCallFailReason = "Return types are not tail call compatible";
@@ -9219,10 +9265,11 @@ bool Compiler::impMethodInfo_hasRetBuffArg(CORINFO_METHOD_INFO* methInfo)
     if ((corType == CORINFO_TYPE_VALUECLASS) || (corType == CORINFO_TYPE_REFANY))
     {
         // We have some kind of STRUCT being returned
-
         structPassingKind howToReturnStruct = SPK_Unknown;
 
-        var_types returnType = getReturnTypeForStruct(methInfo->args.retTypeClass, &howToReturnStruct);
+        var_types returnType =
+            getReturnTypeForStruct(methInfo->args.retTypeClass, compMethodInfoGetEntrypointCallConv(methInfo),
+                                   &howToReturnStruct);
 
         if (howToReturnStruct == SPK_ByReference)
         {
@@ -9313,7 +9360,7 @@ GenTree* Compiler::impFixupCallStructReturn(GenTreeCall* call, CORINFO_CLASS_HAN
     call->gtRetClsHnd = retClsHnd;
 
 #if FEATURE_MULTIREG_RET
-    call->InitializeStructReturnType(this, retClsHnd);
+    call->InitializeStructReturnType(this, retClsHnd, call->GetUnmanagedCallConv());
 #endif // FEATURE_MULTIREG_RET
 
 #ifdef UNIX_AMD64_ABI
@@ -9370,7 +9417,7 @@ GenTree* Compiler::impFixupCallStructReturn(GenTreeCall* call, CORINFO_CLASS_HAN
             // No need to assign a multi-reg struct to a local var if:
             //  - It is a tail call or
             //  - The call is marked for in-lining later
-            return impAssignMultiRegTypeToVar(call, retClsHnd);
+            return impAssignMultiRegTypeToVar(call, retClsHnd DEBUGARG(call->GetUnmanagedCallConv()));
         }
     }
 
@@ -9381,7 +9428,9 @@ GenTree* Compiler::impFixupCallStructReturn(GenTreeCall* call, CORINFO_CLASS_HAN
     // and we change the return type on those calls here.
     //
     structPassingKind howToReturnStruct;
-    var_types         returnType = getReturnTypeForStruct(retClsHnd, &howToReturnStruct);
+    var_types         returnType;
+
+    returnType = getReturnTypeForStruct(retClsHnd, call->GetUnmanagedCallConv(), &howToReturnStruct);
 
     if (howToReturnStruct == SPK_ByReference)
     {
@@ -9447,7 +9496,7 @@ GenTree* Compiler::impFixupCallStructReturn(GenTreeCall* call, CORINFO_CLASS_HAN
                 // No need to assign a multi-reg struct to a local var if:
                 //  - It is a tail call or
                 //  - The call is marked for in-lining later
-                return impAssignMultiRegTypeToVar(call, retClsHnd);
+                return impAssignMultiRegTypeToVar(call, retClsHnd DEBUGARG(call->GetUnmanagedCallConv()));
             }
         }
 #endif // FEATURE_MULTIREG_RET
@@ -9461,10 +9510,11 @@ GenTree* Compiler::impFixupCallStructReturn(GenTreeCall* call, CORINFO_CLASS_HAN
 /*****************************************************************************
    For struct return values, re-type the operand in the case where the ABI
    does not use a struct return buffer
-   Note that this method is only call for !TARGET_X86
  */
 
-GenTree* Compiler::impFixupStructReturnType(GenTree* op, CORINFO_CLASS_HANDLE retClsHnd)
+GenTree* Compiler::impFixupStructReturnType(GenTree*                 op,
+                                            CORINFO_CLASS_HANDLE     retClsHnd,
+                                            CorInfoCallConvExtension unmgdCallConv)
 {
     assert(varTypeIsStruct(info.compRetType));
     assert(info.compRetBuffArg == BAD_VAR_NUM);
@@ -9474,12 +9524,12 @@ GenTree* Compiler::impFixupStructReturnType(GenTree* op, CORINFO_CLASS_HANDLE re
 
 #if defined(TARGET_XARCH)
 
-#ifdef UNIX_AMD64_ABI
+#if FEATURE_MULTIREG_RET
     // No VarArgs for CoreCLR on x64 Unix
-    assert(!info.compIsVarArgs);
+    UNIX_AMD64_ABI_ONLY(assert(!info.compIsVarArgs));
 
     // Is method returning a multi-reg struct?
-    if (varTypeIsStruct(info.compRetNativeType) && IsMultiRegReturnedType(retClsHnd))
+    if (varTypeIsStruct(info.compRetNativeType) && IsMultiRegReturnedType(retClsHnd, unmgdCallConv))
     {
         // In case of multi-reg struct return, we force IR to be one of the following:
         // GT_RETURN(lclvar) or GT_RETURN(call).  If op is anything other than a
@@ -9487,7 +9537,7 @@ GenTree* Compiler::impFixupStructReturnType(GenTree* op, CORINFO_CLASS_HANDLE re
 
         if (op->gtOper == GT_LCL_VAR)
         {
-            // Make sure that this struct stays in memory and doesn't get promoted.
+            // Note that this is a multi-reg return.
             unsigned lclNum                  = op->AsLclVarCommon()->GetLclNum();
             lvaTable[lclNum].lvIsMultiRegRet = true;
 
@@ -9502,11 +9552,11 @@ GenTree* Compiler::impFixupStructReturnType(GenTree* op, CORINFO_CLASS_HANDLE re
             return op;
         }
 
-        return impAssignMultiRegTypeToVar(op, retClsHnd);
+        return impAssignMultiRegTypeToVar(op, retClsHnd DEBUGARG(unmgdCallConv));
     }
-#else  // !UNIX_AMD64_ABI
+#else
     assert(info.compRetNativeType != TYP_STRUCT);
-#endif // !UNIX_AMD64_ABI
+#endif // defined(UNIX_AMD64_ABI) || defined(TARGET_X86)
 
 #elif FEATURE_MULTIREG_RET && defined(TARGET_ARM)
 
@@ -9539,13 +9589,13 @@ GenTree* Compiler::impFixupStructReturnType(GenTree* op, CORINFO_CLASS_HANDLE re
                 return op;
             }
         }
-        return impAssignMultiRegTypeToVar(op, retClsHnd);
+        return impAssignMultiRegTypeToVar(op, retClsHnd DEBUGARG(unmgdCallConv));
     }
 
 #elif FEATURE_MULTIREG_RET && defined(TARGET_ARM64)
 
     // Is method returning a multi-reg struct?
-    if (IsMultiRegReturnedType(retClsHnd))
+    if (IsMultiRegReturnedType(retClsHnd, unmgdCallConv))
     {
         if (op->gtOper == GT_LCL_VAR)
         {
@@ -9578,7 +9628,7 @@ GenTree* Compiler::impFixupStructReturnType(GenTree* op, CORINFO_CLASS_HANDLE re
                 return op;
             }
         }
-        return impAssignMultiRegTypeToVar(op, retClsHnd);
+        return impAssignMultiRegTypeToVar(op, retClsHnd DEBUGARG(unmgdCallConv));
     }
 
 #endif //  FEATURE_MULTIREG_RET && FEATURE_HFA
@@ -9664,7 +9714,7 @@ REDO_RETURN_NODE:
     }
     else if (op->gtOper == GT_COMMA)
     {
-        op->AsOp()->gtOp2 = impFixupStructReturnType(op->AsOp()->gtOp2, retClsHnd);
+        op->AsOp()->gtOp2 = impFixupStructReturnType(op->AsOp()->gtOp2, retClsHnd, unmgdCallConv);
     }
 
     op->gtType = info.compRetNativeType;
@@ -13498,7 +13548,8 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                         // Calls with large struct return value have to go through this.
                         // Helper calls with small struct return value also have to go
                         // through this since they do not follow Unix calling convention.
-                        if (op1->gtOper != GT_CALL || !IsMultiRegReturnedType(clsHnd) ||
+                        if (op1->gtOper != GT_CALL ||
+                            !IsMultiRegReturnedType(clsHnd, op1->AsCall()->GetUnmanagedCallConv()) ||
                             op1->AsCall()->gtCallType == CT_HELPER)
 #endif // UNIX_AMD64_ABI
                         {
@@ -15591,7 +15642,8 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     {
                         op1->AsCall()->gtRetClsHnd = classHandle;
 #if FEATURE_MULTIREG_RET
-                        op1->AsCall()->InitializeStructReturnType(this, classHandle);
+                        op1->AsCall()->InitializeStructReturnType(this, classHandle,
+                                                                  op1->AsCall()->GetUnmanagedCallConv());
 #endif
                     }
 
@@ -15638,7 +15690,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 if (!compDoOldStructRetyping())
                 {
 #if FEATURE_MULTIREG_RET
-                    op1->AsCall()->InitializeStructReturnType(this, tokenType);
+                    op1->AsCall()->InitializeStructReturnType(this, tokenType, op1->AsCall()->GetUnmanagedCallConv());
 #endif
                     op1->AsCall()->gtRetClsHnd = tokenType;
                 }
@@ -15892,7 +15944,8 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
 #if FEATURE_MULTIREG_RET
 
-                    if (varTypeIsStruct(op1) && IsMultiRegReturnedType(resolvedToken.hClass))
+                    if (varTypeIsStruct(op1) &&
+                        IsMultiRegReturnedType(resolvedToken.hClass, CorInfoCallConvExtension::Managed))
                     {
                         // Unbox nullable helper returns a TYP_STRUCT.
                         // For the multi-reg case we need to spill it to a temp so that
@@ -16768,7 +16821,8 @@ GenTree* Compiler::impAssignSmallStructTypeToVar(GenTree* op, CORINFO_CLASS_HAND
 // Returns:
 //     Tree with reference to struct local to use as call return value.
 
-GenTree* Compiler::impAssignMultiRegTypeToVar(GenTree* op, CORINFO_CLASS_HANDLE hClass)
+GenTree* Compiler::impAssignMultiRegTypeToVar(GenTree*             op,
+                                              CORINFO_CLASS_HANDLE hClass DEBUGARG(CorInfoCallConvExtension callConv))
 {
     unsigned tmpNum = lvaGrabTemp(true DEBUGARG("Return value temp for multireg return"));
     impAssignTempGen(tmpNum, op, hClass, (unsigned)CHECK_SPILL_ALL);
@@ -16777,7 +16831,7 @@ GenTree* Compiler::impAssignMultiRegTypeToVar(GenTree* op, CORINFO_CLASS_HANDLE 
     // TODO-1stClassStructs: Handle constant propagation and CSE-ing of multireg returns.
     ret->gtFlags |= GTF_DONT_CSE;
 
-    assert(IsMultiRegReturnedType(hClass));
+    assert(IsMultiRegReturnedType(hClass, callConv));
 
     // Mark the var so that fields are not promoted and stay together.
     lvaTable[tmpNum].lvIsMultiRegRet = true;
@@ -16931,7 +16985,8 @@ bool Compiler::impReturnInstruction(int prefixFlags, OPCODE& opcode)
                     noway_assert(info.compRetBuffArg == BAD_VAR_NUM);
                     // adjust the type away from struct to integral
                     // and no normalizing
-                    op2 = impFixupStructReturnType(op2, retClsHnd);
+                    op2 = impFixupStructReturnType(op2, retClsHnd,
+                                                   compMethodInfoGetEntrypointCallConv(info.compMethodInfo));
                 }
                 else
                 {
@@ -17131,7 +17186,8 @@ bool Compiler::impReturnInstruction(int prefixFlags, OPCODE& opcode)
 // Same as !IsHfa but just don't bother with impAssignStructPtr.
 #else  // defined(UNIX_AMD64_ABI)
                 ReturnTypeDesc retTypeDesc;
-                retTypeDesc.InitializeStructReturnType(this, retClsHnd);
+                retTypeDesc.InitializeStructReturnType(this, retClsHnd,
+                                                       compMethodInfoGetEntrypointCallConv(info.compMethodInfo));
                 unsigned retRegCount = retTypeDesc.GetReturnRegCount();
 
                 if (retRegCount != 0)
@@ -17165,13 +17221,39 @@ bool Compiler::impReturnInstruction(int prefixFlags, OPCODE& opcode)
                 else
 #elif defined(TARGET_ARM64)
                 ReturnTypeDesc retTypeDesc;
-                retTypeDesc.InitializeStructReturnType(this, retClsHnd);
+                retTypeDesc.InitializeStructReturnType(this, retClsHnd,
+                                                       compMethodInfoGetEntrypointCallConv(info.compMethodInfo));
                 unsigned retRegCount = retTypeDesc.GetReturnRegCount();
 
                 if (retRegCount != 0)
                 {
                     assert(!iciCall->HasRetBufArg());
                     assert(retRegCount >= 2);
+                    if (fgNeedReturnSpillTemp())
+                    {
+                        if (!impInlineInfo->retExpr)
+                        {
+                            // The inlinee compiler has figured out the type of the temp already. Use it here.
+                            impInlineInfo->retExpr =
+                                gtNewLclvNode(lvaInlineeReturnSpillTemp, lvaTable[lvaInlineeReturnSpillTemp].lvType);
+                        }
+                    }
+                    else
+                    {
+                        impInlineInfo->retExpr = op2;
+                    }
+                }
+                else
+#elif defined(TARGET_X86)
+                ReturnTypeDesc retTypeDesc;
+                retTypeDesc.InitializeStructReturnType(this, retClsHnd,
+                                                       compMethodInfoGetEntrypointCallConv(info.compMethodInfo));
+                unsigned retRegCount = retTypeDesc.GetReturnRegCount();
+
+                if (retRegCount != 0)
+                {
+                    assert(!iciCall->HasRetBufArg());
+                    assert(retRegCount == MAX_RET_REG_COUNT);
                     if (fgNeedReturnSpillTemp())
                     {
                         if (!impInlineInfo->retExpr)
@@ -17243,7 +17325,7 @@ bool Compiler::impReturnInstruction(int prefixFlags, OPCODE& opcode)
         // return the implicit return buffer explicitly (in RAX).
         // Change the return type to be BYREF.
         op1 = gtNewOperNode(GT_RETURN, TYP_BYREF, gtNewLclvNode(info.compRetBuffArg, TYP_BYREF));
-#else  // !defined(TARGET_AMD64)
+#else // !defined(TARGET_AMD64)
         // In case of non-AMD64 targets the profiler hook requires to return the implicit RetBuf explicitly (in RAX).
         // In such case the return value of the function is changed to BYREF.
         // If profiler hook is not needed the return type of the function is TYP_VOID.
@@ -17251,6 +17333,14 @@ bool Compiler::impReturnInstruction(int prefixFlags, OPCODE& opcode)
         {
             op1 = gtNewOperNode(GT_RETURN, TYP_BYREF, gtNewLclvNode(info.compRetBuffArg, TYP_BYREF));
         }
+#if defined(TARGET_WINDOWS) && defined(TARGET_ARM64)
+        // On ARM64, the native instance calling convention variant
+        // requires the implicit ByRef to be explicitly returned.
+        else if (callConvIsInstanceMethodCallConv(compMethodInfoGetEntrypointCallConv(info.compMethodInfo)))
+        {
+            op1 = gtNewOperNode(GT_RETURN, TYP_BYREF, gtNewLclvNode(info.compRetBuffArg, TYP_BYREF));
+        }
+#endif
         else
         {
             // return void
@@ -17265,7 +17355,7 @@ bool Compiler::impReturnInstruction(int prefixFlags, OPCODE& opcode)
         // Also on System V AMD64 the multireg structs returns are also left as structs.
         noway_assert(info.compRetNativeType != TYP_STRUCT);
 #endif
-        op2 = impFixupStructReturnType(op2, retClsHnd);
+        op2 = impFixupStructReturnType(op2, retClsHnd, compMethodInfoGetEntrypointCallConv(info.compMethodInfo));
         // return op2
         var_types returnType;
         if (compDoOldStructRetyping())

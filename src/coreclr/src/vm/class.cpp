@@ -1109,20 +1109,18 @@ bool ClassLoader::IsCompatibleWith(TypeHandle hType1, TypeHandle hType2)
         return false;
     }
 
-    _ASSERTE(hType1.GetMethodTable() != NULL);
-    _ASSERTE(hType2.GetMethodTable() != NULL);
-
-    // Nullable<T> can be cast to T, but this is not compatible according to ECMA I.8.7.1
-    bool isCastFromNullableOfTtoT = hType1.GetMethodTable()->IsNullable() && hType2.IsEquivalentTo(hType1.GetMethodTable()->GetInstantiation()[0]);
-    if (isCastFromNullableOfTtoT)
+    MethodTable* pMT1 = hType1.GetMethodTable();
+    if (pMT1 != NULL)
     {
-        return false;
+        // Nullable<T> can be cast to T, but this is not compatible according to ECMA I.8.7.1
+        bool isCastFromNullableOfTtoT = pMT1->IsNullable() && hType2.IsEquivalentTo(pMT1->GetInstantiation()[0]);
+        if (isCastFromNullableOfTtoT)
+        {
+            return false;
+        }
     }
 
-    {
-        GCX_COOP();
-        return hType2.GetMethodTable()->CanCastTo(hType1.GetMethodTable(), NULL);
-    }
+    return hType2.CanCastTo(hType1, NULL);
 }
 
 /*static*/
@@ -1171,16 +1169,21 @@ void ClassLoader::ValidateMethodsWithCovariantReturnTypes(MethodTable* pMT)
             if (!pMD->RequiresCovariantReturnTypeChecking() && !pParentMD->RequiresCovariantReturnTypeChecking())
                 continue;
 
-            Instantiation classInst = pParentMD->GetClassInstantiation();
-            if (ClassLoader::IsTypicalSharedInstantiation(classInst))
+            Instantiation parentClassInst = pParentMD->GetClassInstantiation();
+            if (ClassLoader::IsTypicalSharedInstantiation(parentClassInst))
             {
-                classInst = pParentMT->GetInstantiation();
+                parentClassInst = pParentMT->GetInstantiation();
             }
-            SigTypeContext context1(classInst, pMD->GetMethodInstantiation());
+            SigTypeContext context1(parentClassInst, pMD->GetMethodInstantiation());
             MetaSig methodSig1(pParentMD);
             TypeHandle hType1 = methodSig1.GetReturnProps().GetTypeHandleThrowing(pParentMD->GetModule(), &context1, ClassLoader::LoadTypesFlag::LoadTypes, CLASS_LOAD_EXACTPARENTS);
 
-            SigTypeContext context2(pMD);
+            Instantiation classInst = pMD->GetClassInstantiation();
+            if (ClassLoader::IsTypicalSharedInstantiation(classInst))
+            {
+                classInst = pMT->GetInstantiation();
+            }
+            SigTypeContext context2(classInst, pMD->GetMethodInstantiation());
             MetaSig methodSig2(pMD);
             TypeHandle hType2 = methodSig2.GetReturnProps().GetTypeHandleThrowing(pMD->GetModule(), &context2, ClassLoader::LoadTypesFlag::LoadTypes, CLASS_LOAD_EXACTPARENTS);
 
@@ -1334,73 +1337,6 @@ void ClassLoader::PropagateCovariantReturnMethodImplSlots(MethodTable* pMT)
     }
 }
 
-
-//*******************************************************************************
-// This is the routine that computes the internal type of a given type.  It normalizes
-// structs that have only one field (of int/ptr sized values), to be that underlying type.
-//
-// * see code:MethodTable#KindsOfElementTypes for more
-// * It get used by code:TypeHandle::GetInternalCorElementType
-CorElementType EEClass::ComputeInternalCorElementTypeForValueType(MethodTable * pMT)
-{
-    CONTRACTL {
-        THROWS;
-        GC_TRIGGERS;
-    } CONTRACTL_END;
-
-    if (pMT->GetNumInstanceFields() == 1 && (!pMT->HasLayout()
-        || pMT->GetNumInstanceFieldBytes() == 4
-#ifdef TARGET_64BIT
-        || pMT->GetNumInstanceFieldBytes() == 8
-#endif // TARGET_64BIT
-        )) // Don't do the optimization if we're getting specified anything but the trivial layout.
-    {
-        FieldDesc * pFD = pMT->GetApproxFieldDescListRaw();
-        CorElementType type = pFD->GetFieldType();
-
-        if (type == ELEMENT_TYPE_VALUETYPE)
-        {
-            //@todo: Is it more apropos to call LookupApproxFieldTypeHandle() here?
-            TypeHandle fldHnd = pFD->GetApproxFieldTypeHandleThrowing();
-            CONSISTENCY_CHECK(!fldHnd.IsNull());
-
-            type = fldHnd.GetInternalCorElementType();
-        }
-
-        switch (type)
-        {
-            // "DDB 20951: vc8 unmanaged pointer bug."
-            // If ELEMENT_TYPE_PTR were returned, Compiler::verMakeTypeInfo would have problem
-            // creating a TI_STRUCT out of CORINFO_TYPE_PTR.
-            // As a result, the importer would not be able to realize that the thing on the stack
-            // is an instance of a valuetype (that contains one single "void*" field), rather than
-            // a pointer to a valuetype.
-            // Returning ELEMENT_TYPE_U allows verMakeTypeInfo to go down the normal code path
-            // for creating a TI_STRUCT.
-            case ELEMENT_TYPE_PTR:
-                type = ELEMENT_TYPE_U;
-                FALLTHROUGH;
-
-            case ELEMENT_TYPE_I:
-            case ELEMENT_TYPE_U:
-            case ELEMENT_TYPE_I4:
-            case ELEMENT_TYPE_U4:
-#ifdef TARGET_64BIT
-            case ELEMENT_TYPE_I8:
-            case ELEMENT_TYPE_U8:
-#endif // TARGET_64BIT
-
-            {
-                return type;
-            }
-
-            default:
-                break;
-        }
-    }
-
-    return ELEMENT_TYPE_VALUETYPE;
-}
 
 //*******************************************************************************
 //

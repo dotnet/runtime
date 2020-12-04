@@ -659,102 +659,6 @@ BOOL ParseNativeTypeInfo(NativeTypeParamInfo* pParamInfo,
     return TRUE;
 }
 
-//==========================================================================
-// Determines whether *pManagedElemType is really normalized (i.e. differs
-// from what sigPtr points to modulo generic instantiation). If it is the
-// case, all types that have been normalized away are checked for valid
-// managed/unmanaged type combination, and *pNativeType is updated to contain
-// the native type of the primitive type field inside. On error (a generic
-// type is encountered or managed/unmanaged type mismatch) or non-default
-// native type of the primitive type inside, *pManagedElemType is un-normalized
-// so that the calling code can deal with the situation in its own way.
-//==========================================================================
-void VerifyAndAdjustNormalizedType(
-                         Module *                   pModule,
-                         SigPointer                 sigPtr,
-                         const SigTypeContext *     pTypeContext,
-                         CorElementType *           pManagedElemType,
-                         CorNativeType *            pNativeType)
-{
-    CorElementType sigElemType = sigPtr.PeekElemTypeClosed(pModule, pTypeContext);
-
-    if (*pManagedElemType != sigElemType)
-    {
-        // Normalized element type differs from closed element type, which means that
-        // normalization has occurred.
-        _ASSERTE(sigElemType == ELEMENT_TYPE_VALUETYPE);
-
-        // Now we know that this is a normalized value type - we have to verify the removed
-        // value type(s) and get to the true primitive type inside.
-        TypeHandle th = sigPtr.GetTypeHandleThrowing(pModule,
-                                                     pTypeContext,
-                                                     ClassLoader::LoadTypes,
-                                                     CLASS_LOAD_UNRESTORED,
-                                                     TRUE);
-        _ASSERTE(!th.IsNull() && !th.IsTypeDesc());
-
-        CorNativeType ntype = *pNativeType;
-
-        if (!th.AsMethodTable()->IsTruePrimitive() &&
-            !th.IsEnum())
-        {
-            // This is a trivial (yet non-primitive) value type that has been normalized.
-            // Loop until we eventually hit the primitive type or enum inside.
-            do
-            {
-                if (th.HasInstantiation())
-                {
-                    // generic structures are either not marshalable or special-cased - the caller needs to know either way
-                    *pManagedElemType = sigElemType;
-                    return;
-                }
-
-                // verify the native type of the value type (must be default or Struct)
-                if (!(ntype == NATIVE_TYPE_DEFAULT || ntype == NATIVE_TYPE_STRUCT))
-                {
-                    *pManagedElemType = sigElemType;
-                    return;
-                }
-
-                MethodTable *pMT = th.GetMethodTable();
-                _ASSERTE(pMT != NULL && pMT->IsValueType() && pMT->GetNumInstanceFields() == 1);
-
-                // get the only instance field
-                PTR_FieldDesc fieldDesc = pMT->GetApproxFieldDescListRaw();
-
-                // retrieve the MarshalAs of the field
-                NativeTypeParamInfo paramInfo;
-                if (!ParseNativeTypeInfo(fieldDesc->GetMemberDef(), th.GetModule()->GetMDImport(), &paramInfo))
-                {
-                    *pManagedElemType = sigElemType;
-                    return;
-                }
-
-                ntype = paramInfo.m_NativeType;
-
-                th = fieldDesc->GetApproxFieldTypeHandleThrowing();
-            }
-            while (!th.IsTypeDesc() &&
-                   !th.AsMethodTable()->IsTruePrimitive() &&
-                   !th.IsEnum());
-
-            // now ntype contains the native type of *pManagedElemType
-            if (ntype == NATIVE_TYPE_DEFAULT)
-            {
-                // Let's update the caller's native type with default type only.
-                // Updating with a non-default native type that is not allowed
-                // for the given managed type would result in confusing exception
-                // messages.
-                *pNativeType = ntype;
-            }
-            else
-            {
-                *pManagedElemType = sigElemType;
-            }
-        }
-    }
-}
-
 VOID ThrowInteropParamException(UINT resID, UINT paramIdx)
 {
     CONTRACTL
@@ -1187,7 +1091,6 @@ MarshalInfo::MarshalInfo(Module* pModule,
                          BOOL BestFit,
                          BOOL ThrowOnUnmappableChar,
                          BOOL fEmitsIL,
-                         BOOL onInstanceMethod,
                          MethodDesc* pMD,
                          BOOL fLoadCustomMarshal
 #ifdef _DEBUG
@@ -1230,7 +1133,6 @@ MarshalInfo::MarshalInfo(Module* pModule,
     CorElementType corElemType      = ELEMENT_TYPE_END;
     m_pMT                           = NULL;
     m_pMD                           = pMD;
-    m_onInstanceMethod              = onInstanceMethod;
 
 #ifdef FEATURE_COMINTEROP
     m_fDispItf                      = FALSE;
@@ -1366,38 +1268,6 @@ MarshalInfo::MarshalInfo(Module* pModule,
             }
         }
     }
-
-    // System primitive types (System.Int32, et.al.) will be marshaled as expected
-    // because the mtype CorElementType is normalized (e.g. ELEMENT_TYPE_I4).
-#ifdef TARGET_X86
-    // We however need to detect if such a normalization occurred for non-system
-    // trivial value types, because we hold CorNativeType belonging to the original
-    // "un-normalized" signature type. It has to be verified that all the value types
-    // that have been normalized away have default marshaling or MarshalAs(Struct).
-    // In addition, the nativeType must be updated with the type of the real primitive inside.
-    // We don't normalize on return values of member functions since struct return values need to be treated as structures.
-    if (isParam || !onInstanceMethod)
-    {
-        VerifyAndAdjustNormalizedType(pModule, sig, pTypeContext, &mtype, &nativeType);
-    }
-    else
-    {
-        SigPointer sigtmp = sig;
-        CorElementType closedElemType = sigtmp.PeekElemTypeClosed(pModule, pTypeContext);
-        if (closedElemType == ELEMENT_TYPE_VALUETYPE)
-        {
-            TypeHandle th = sigtmp.GetTypeHandleThrowing(pModule, pTypeContext);
-            // If the return type of an instance method is a value-type we need the actual return type.
-            // However, if the return type is an enum, we can normalize it.
-            if (!th.IsEnum())
-            {
-                mtype = closedElemType;
-            }
-        }
-
-    }
-#endif // TARGET_X86
-
 
     if (nativeType == NATIVE_TYPE_CUSTOMMARSHALER)
     {
@@ -2366,23 +2236,6 @@ MarshalInfo::MarshalInfo(Module* pModule,
                             m_type = MARSHAL_TYPE_BLITTABLEVALUECLASSWITHCOPYCTOR;
                         }
                         else
-#ifdef TARGET_X86
-                        // JIT64 is not aware of normalized value types and this optimization
-                        // (returning small value types by value in registers) is already done in JIT64.
-                        if (        !m_byref   // Permit register-sized structs as return values
-                                 && !isParam
-                                 && !onInstanceMethod
-                                 && CorIsPrimitiveType(m_pMT->GetInternalCorElementType())
-                                 && !IsUnmanagedValueTypeReturnedByRef(nativeSize)
-                                 && managedSize <= TARGET_POINTER_SIZE
-                                 && nativeSize <= TARGET_POINTER_SIZE
-                                 && !IsFieldScenario())
-                        {
-                            m_type = MARSHAL_TYPE_GENERIC_4;
-                            m_args.m_pMT = m_pMT;
-                        }
-                        else
-#endif // TARGET_X86
                         {
                             m_args.m_pMT = m_pMT;
                             m_type = MARSHAL_TYPE_BLITTABLEVALUECLASS;
@@ -2777,7 +2630,7 @@ DWORD CalculateArgumentMarshalFlags(BOOL byref, BOOL in, BOOL out, BOOL fMngToNa
     return dwMarshalFlags;
 }
 
-DWORD CalculateReturnMarshalFlags(BOOL hrSwap, BOOL fMngToNative, BOOL onInstanceMethod)
+DWORD CalculateReturnMarshalFlags(BOOL hrSwap, BOOL fMngToNative)
 {
     LIMITED_METHOD_CONTRACT;
     DWORD dwMarshalFlags = MARSHAL_FLAG_RETVAL;
@@ -2790,11 +2643,6 @@ DWORD CalculateReturnMarshalFlags(BOOL hrSwap, BOOL fMngToNative, BOOL onInstanc
     if (fMngToNative)
     {
         dwMarshalFlags |= MARSHAL_FLAG_CLR_TO_NATIVE;
-    }
-
-    if (onInstanceMethod)
-    {
-        dwMarshalFlags |= MARSHAL_FLAG_IN_MEMBER_FUNCTION;
     }
 
     return dwMarshalFlags;
@@ -2940,7 +2788,7 @@ void MarshalInfo::GenerateReturnIL(NDirectStubLinker* psl,
         }
 
         NewHolder<ILMarshaler> pMarshaler = CreateILMarshaler(m_type, psl);
-        DWORD dwMarshalFlags = CalculateReturnMarshalFlags(retval, fMngToNative, m_onInstanceMethod);
+        DWORD dwMarshalFlags = CalculateReturnMarshalFlags(retval, fMngToNative);
 
         if (!pMarshaler->SupportsReturnMarshal(dwMarshalFlags, &resID))
         {

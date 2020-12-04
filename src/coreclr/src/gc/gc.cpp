@@ -3797,8 +3797,9 @@ public:
     void ClearFreeObjInCompactBit()
     {
 #ifdef _DEBUG
-        // check this looks like an object
-        Validate();
+        // check this looks like an object, but do NOT validate pointers to other objects
+        // as these may not be valid yet - we are calling this during compact_phase
+        Validate(FALSE);
 #endif //_DEBUG
         RawSetMethodTable((MethodTable *)(((size_t) RawGetMethodTable()) & (~MAKE_FREE_OBJ_IN_COMPACT)));
     }
