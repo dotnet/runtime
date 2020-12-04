@@ -399,6 +399,13 @@ void ZapInfo::CompileMethod()
         // only do it when we are truely logging
         m_zapper->Info(W("Compiling method %s\n"), m_currentMethodName.GetUnicode());
     }
+    
+    if (GetCompileInfo()->IsUnmanagedCallersOnlyMethod(m_currentMethodHandle))
+    {
+        if (m_zapper->m_pOpt->m_verbose)
+            m_zapper->Warning(W("ReadyToRun:  Methods with UnmanagedCallersOnlyAttribute not implemented\n"));
+        ThrowHR(E_NOTIMPL);
+    }
 
     m_currentMethodInfo = CORINFO_METHOD_INFO();
     if (!getMethodInfo(m_currentMethodHandle, &m_currentMethodInfo))
@@ -473,15 +480,6 @@ void ZapInfo::CompileMethod()
         m_jitFlags.Clear(CORJIT_FLAGS::CORJIT_FLAG_PROCSPLIT);
     }
 #endif
-
-#ifdef TARGET_X86
-    if (GetCompileInfo()->IsUnmanagedCallersOnlyMethod(m_currentMethodHandle))
-    {
-        if (m_zapper->m_pOpt->m_verbose)
-            m_zapper->Warning(W("ReadyToRun:  Methods with UnmanagedCallersOnlyAttribute not implemented\n"));
-        ThrowHR(E_NOTIMPL);
-    }
-#endif // TARGET_X86
 
     if (m_pImage->m_stats)
     {

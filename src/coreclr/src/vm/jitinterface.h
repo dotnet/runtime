@@ -1131,7 +1131,8 @@ public:
         CORINFO_SIG_INFO *    sigRet,
         MethodDesc *          context,
         bool                  localSig,
-        TypeHandle            owner = TypeHandle());
+        TypeHandle            owner = TypeHandle(),
+        bool                  checkUnmanagedCallersOnly = false);
 
     MethodDesc * GetMethodForSecurity(CORINFO_METHOD_HANDLE callerHandle);
 
