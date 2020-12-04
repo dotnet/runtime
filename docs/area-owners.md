@@ -145,3 +145,4 @@ Note: Editing this file doesn't update the mapping used by the `@msftbot` issue 
 | Architecture     | Lead          | Owners (area experts to tag in PR's and issues)     | Description  |
 |------------------|---------------|-----------------------------------------------------|--------------|
 | arch-wasm        | @lewing       | @lewing @BrzVlad                                    |              |
+
