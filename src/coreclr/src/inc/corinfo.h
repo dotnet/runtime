@@ -700,16 +700,24 @@ inline bool IsCallerPop(CorInfoCallConv callConv)
 }
 #endif // UNIX_X86_ABI
 
+// Represents the calling conventions supported with the extensible calling convention syntax
+// as well as the original metadata-encoded calling conventions.
 enum CorInfoUnmanagedCallConv
 {
     // These correspond to CorUnmanagedCallingConvention
-
     CORINFO_UNMANAGED_CALLCONV_UNKNOWN,
     CORINFO_UNMANAGED_CALLCONV_C,
     CORINFO_UNMANAGED_CALLCONV_STDCALL,
     CORINFO_UNMANAGED_CALLCONV_THISCALL,
     CORINFO_UNMANAGED_CALLCONV_FASTCALL
+    // New calling conventions supported with the extensible calling convention encoding go here.
 };
+
+// Determines whether or not this calling convention is an instance method calling convention.
+inline bool callConvIsInstanceMethodCallConv(CorInfoUnmanagedCallConv callConv)
+{
+    return callConv == CORINFO_UNMANAGED_CALLCONV_THISCALL;
+}
 
 // These are returned from getMethodOptions
 enum CorInfoOptions
