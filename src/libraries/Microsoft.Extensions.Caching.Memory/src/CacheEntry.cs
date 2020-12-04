@@ -134,11 +134,21 @@ namespace Microsoft.Extensions.Caching.Memory
 
         internal EvictionReason EvictionReason { get; private set; }
 
-        internal bool CanExpire { get => ((State)_state).HasFlag(State.CanExpire); set => Set(State.CanExpire, value); }
+        internal bool CanExpire
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get => ((State)_state).HasFlag(State.CanExpire);
+            set => Set(State.CanExpire, value);
+        }
 
         private bool IsDisposed { get => ((State)_state).HasFlag(State.IsDisposed); set => Set(State.IsDisposed, value); }
 
-        private bool IsExpired { get => ((State)_state).HasFlag(State.IsExpired); set => Set(State.IsExpired, value); }
+        private bool IsExpired
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get => ((State)_state).HasFlag(State.IsExpired);
+            set => Set(State.IsExpired, value);
+        }
 
         private bool IsValueSet { get => ((State)_state).HasFlag(State.IsValueSet); set => Set(State.IsValueSet, value); }
 
@@ -172,7 +182,7 @@ namespace Microsoft.Extensions.Caching.Memory
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal bool CheckExpired(in DateTimeOffset now) => IsExpired || (CanExpire && (CheckForExpiredTime(now) || CheckForExpiredTokens()));
+        internal bool CheckExpired(DateTimeOffset now) => IsExpired || (CanExpire && (CheckForExpiredTime(now) || CheckForExpiredTokens()));
 
         internal void SetExpired(EvictionReason reason)
         {
@@ -184,32 +194,22 @@ namespace Microsoft.Extensions.Caching.Memory
             DetachTokens();
         }
 
-        private bool CheckForExpiredTime(in DateTimeOffset now)
+        private bool CheckForExpiredTime(DateTimeOffset now)
         {
-            if (!AbsoluteExpiration.HasValue && !_slidingExpiration.HasValue)
+            if (AbsoluteExpiration.HasValue && AbsoluteExpiration.Value <= now)
             {
-                return false;
+                SetExpired(EvictionReason.Expired);
+                return true;
             }
 
-            return FullCheck(now);
-
-            bool FullCheck(in DateTimeOffset offset)
+            if (_slidingExpiration.HasValue
+                && (now - LastAccessed) >= _slidingExpiration)
             {
-                if (AbsoluteExpiration.HasValue && AbsoluteExpiration.Value <= offset)
-                {
-                    SetExpired(EvictionReason.Expired);
-                    return true;
-                }
-
-                if (_slidingExpiration.HasValue
-                    && (offset - LastAccessed) >= _slidingExpiration)
-                {
-                    SetExpired(EvictionReason.Expired);
-                    return true;
-                }
-
-                return false;
+                SetExpired(EvictionReason.Expired);
+                return true;
             }
+
+            return false;
         }
 
         private bool CheckForExpiredTokens()
@@ -323,6 +323,7 @@ namespace Microsoft.Extensions.Caching.Memory
         }
 
         // this simple check very often allows us to avoid expensive call to PropagateOptions(CacheEntryHelper.Current)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal bool CanPropagateOptions() => _expirationTokens != null || AbsoluteExpiration.HasValue;
 
         internal void PropagateOptions(CacheEntry parent)
