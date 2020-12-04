@@ -17,7 +17,7 @@ typedef struct
 } Entry;
 
 // expands to:      {"impl", (void*)impl},
-#define OverrideEntry(impl) \
+#define DllImportEntry(impl) \
     {#impl, (void*)impl},
 
 static const void* ResolveDllImport(const Entry* resolutionTable, size_t tableLength, const char* name)
