@@ -27,12 +27,11 @@
     <Message Importance="High" Text="TestBinDir: $(TestBinDir)" />
     <Message Importance="High" Text="ArtifactsBinDir: $(ArtifactsBinDir)" />
 
-    <ResolveAssemblyReference
-      AssemblyFiles="@(MainAssembly);@(ExtraAssemblies)"
-      SearchPaths="@(AssemblySearchPaths)" >
-      <Output TaskParameter="ResolvedFiles" ItemName="ReferencedAssemblies" />
-      <Output TaskParameter="ResolvedDependencyFiles" ItemName="ReferencedAssemblies" />
-    </ResolveAssemblyReference>
+    <WasmLoadAssembliesAndReferences
+      Assemblies="@(MainAssembly);@(ExtraAssemblies)"
+      AssemblySearchPaths="@(AssemblySearchPaths)">
+      <Output TaskParameter="ReferencedAssemblies" ItemName="ReferencedAssemblies" />
+    </WasmLoadAssembliesAndReferences>
 
     <WasmAppBuilder
       AppDir="$(AppDir)"

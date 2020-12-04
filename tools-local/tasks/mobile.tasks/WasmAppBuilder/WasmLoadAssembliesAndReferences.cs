@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
 using System.Reflection;
@@ -12,54 +13,46 @@ using Microsoft.Build.Utilities;
 public class WasmLoadAssembliesAndReferences : Task
 {
     [Required]
+    [NotNull]
     public string[]? Assemblies { get; set; }
 
-    // Either one of these two need to be set
     public string[]? AssemblySearchPaths { get; set; }
 
     // If true, continue when a referenced assembly cannot be found.
-    // If false, throw an exception.
     public bool SkipMissingAssemblies { get; set; }
 
     // The set of assemblies the app will use
     [Output]
     public string[]? ReferencedAssemblies { get; private set; }
 
-    private SortedDictionary<string, Assembly> _assemblies = new SortedDictionary<string, Assembly>();
+    private SortedDictionary<string, Assembly> _assemblies = new();
 
     public override bool Execute ()
     {
-        if (Assemblies == null)
-        {
-            Log.LogError("The Assemblies property needs to be set to the assemblies being resolved");
-            return false;
-        }
-
-        SearchPathsAssemblyResolver? _resolver;
+        SearchPathsAssemblyResolver resolver;
 
         if (AssemblySearchPaths != null)
         {
-            foreach (var path in AssemblySearchPaths)
+            string? badPath = AssemblySearchPaths.FirstOrDefault(path => !Directory.Exists(path));
+            if (badPath != null)
             {
-                if (!Directory.Exists(path))
-                {
-                    Log.LogError($"Directory '{path}' in AssemblySearchPaths does not exist or is not a directory.");
-                    return false;
-                }
+                Log.LogError($"Directory '{badPath}' in AssemblySearchPaths does not exist or is not a directory.");
+                return false;
             }
-            _resolver = new SearchPathsAssemblyResolver(AssemblySearchPaths);
+
+            resolver = new SearchPathsAssemblyResolver(AssemblySearchPaths);
         }
         else
         {
-            string? corelibPath = Path.GetDirectoryName(Assemblies!.FirstOrDefault(asm => asm.EndsWith("System.Private.CoreLib.dll")));
+            string? corelibPath = Path.GetDirectoryName(Assemblies.FirstOrDefault(asm => asm.EndsWith("System.Private.CoreLib.dll")));
             if (corelibPath == null)
             {
-                Log.LogError("Could not find 'System.Private.CoreLib.dll' within Assemblies.");
+                Log.LogError("'System.Private.CoreLib.dll' not found in given Assemblies. Since no AssemblySearchPaths were specified, path to 'System.Private.CoreLib.dll' is needed to resolve assembly dependencies.");
                 return false;
             }
-            _resolver = new SearchPathsAssemblyResolver(new string[] { corelibPath });
+            resolver = new SearchPathsAssemblyResolver(new string[] { corelibPath });
         }
-        var mlc = new MetadataLoadContext(_resolver, "System.Private.CoreLib");
+        var mlc = new MetadataLoadContext(resolver, "System.Private.CoreLib");
 
         foreach (var asm in Assemblies)
         {
@@ -67,15 +60,16 @@ public class WasmLoadAssembliesAndReferences : Task
             try
             {
                 var refAssembly = mlc.LoadFromAssemblyPath(asmFullPath);
-                AddAssemblyAndReferences(mlc, refAssembly);
+                if (!AddAssemblyAndReferences(mlc, refAssembly))
+                    return !Log.HasLoggedErrors;
             }
             catch (Exception ex) when (ex is FileLoadException || ex is BadImageFormatException || ex is FileNotFoundException)
             {
                 if (SkipMissingAssemblies)
-                    Log.LogMessage(MessageImportance.Low, $"Loading extra assembly '{asm}' failed with {ex}. Skipping");
+                    Log.LogWarning($"Loading assembly '{asm}' failed with {ex.Message} Skipping.");
                 else
                 {
-                    Log.LogError($"Failed to load assembly from ExtraAssemblies '{asm}': {ex}");
+                    Log.LogError($"Failed to load assembly '{asm}': {ex.Message}");
                     return false;
                 }
             }
@@ -86,11 +80,12 @@ public class WasmLoadAssembliesAndReferences : Task
         return !Log.HasLoggedErrors;
     }
 
-    private void AddAssemblyAndReferences(MetadataLoadContext mlc, Assembly assembly)
+    private bool AddAssemblyAndReferences(MetadataLoadContext mlc, Assembly assembly)
     {
-        if (_assemblies!.ContainsKey(assembly.GetName().Name!))
-            return;
-        _assemblies![assembly.GetName().Name!] = assembly;
+        if (_assemblies.ContainsKey(assembly.GetName().Name!))
+            return true;
+
+        _assemblies[assembly.GetName().Name!] = assembly;
         foreach (var aname in assembly.GetReferencedAssemblies())
         {
             try
@@ -98,12 +93,19 @@ public class WasmLoadAssembliesAndReferences : Task
                 Assembly refAssembly = mlc.LoadFromAssemblyName(aname);
                 AddAssemblyAndReferences(mlc, refAssembly);
             }
-            catch (FileNotFoundException)
+            catch (Exception ex) when (ex is FileLoadException || ex is BadImageFormatException || ex is FileNotFoundException)
             {
                 if (SkipMissingAssemblies)
-                    Log.LogMessage(MessageImportance.Low, $"Loading extra assembly '{aname.Name}' failed with FileNotFoundException. Skipping");
+                    Log.LogWarning($"Loading assembly reference '{aname}' for '{assembly.GetName()}' failed with {ex.Message} Skipping.");
+                else
+                {
+                    Log.LogError($"Failed to load assembly reference '{aname}' for '{assembly.GetName()}': {ex.Message}");
+                    return false;
+                }
             }
         }
+
+        return true;
     }
 }
 
@@ -118,14 +120,12 @@ internal class SearchPathsAssemblyResolver : MetadataAssemblyResolver
 
     public override Assembly? Resolve(MetadataLoadContext context, AssemblyName assemblyName)
     {
-        var name = assemblyName.Name;
+        string? name = assemblyName.Name;
         foreach (var dir in _searchPaths)
         {
-            var path = Path.Combine(dir, name + ".dll");
+            string path = Path.Combine(dir, name + ".dll");
             if (File.Exists(path))
-            {
                 return context.LoadFromAssemblyPath(path);
-            }
         }
         return null;
     }
