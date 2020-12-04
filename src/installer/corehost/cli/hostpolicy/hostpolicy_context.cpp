@@ -46,15 +46,17 @@ namespace
 #if defined(NATIVE_LIBS_EMBEDDED)
     extern "C" const void* CompressionResolveDllImport(const char* name);
 
+#if defined(_WIN32)
+#define COMPRESSION_DLL_NAME "clrcompression"
+#else
+#define COMPRESSION_DLL_NAME "libSystem.IO.Compression.Native"
+#endif
+
     // pinvoke_override:
     // Check if given function belongs to one of statically linked libraries and return a pointer if found.
     const void* STDMETHODCALLTYPE pinvoke_override(const char* libraryName, const char* entrypointName)
     {
-#if defined(_WIN32)
-        if (strcmp(libraryName, "clrcompression") == 0)
-#else
-        if (strcmp(libraryName, "libSystem.IO.Compression.Native") == 0)
-#endif
+        if (strcmp(libraryName, COMPRESSION_DLL_NAME) == 0)
         {
             return CompressionResolveDllImport(entrypointName);
         }

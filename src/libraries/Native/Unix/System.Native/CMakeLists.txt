@@ -53,8 +53,10 @@ elseif (CLR_CMAKE_TARGET_FREEBSD)
     endif ()
 endif ()
 
-set(NATIVE_LIBS_EXTRA)
 include(${CMAKE_CURRENT_LIST_DIR}/extra_libs.cmake)
+
+set(NATIVE_LIBS_EXTRA)
+append_extra_system_libs(NATIVE_LIBS_EXTRA)
 
 if (GEN_SHARED_LIB)
     add_library(System.Native

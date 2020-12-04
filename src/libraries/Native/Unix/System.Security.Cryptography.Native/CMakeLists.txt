@@ -8,8 +8,10 @@ add_compile_options(-Wno-used-but-marked-unused)
 
 add_definitions(-DOPENSSL_API_COMPAT=0x10100000L)
 
-set(NATIVE_LIBS_EXTRA)
 include(${CMAKE_CURRENT_LIST_DIR}/extra_libs.cmake)
+
+set(NATIVE_LIBS_EXTRA)
+append_extra_cryptography_libs(NATIVE_LIBS_EXTRA)
 
 include_directories(${OPENSSL_INCLUDE_DIR})
 

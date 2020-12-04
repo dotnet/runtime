@@ -2,8 +2,10 @@ project(System.Net.Security.Native C)
 
 add_compile_options(-Wno-incompatible-pointer-types-discards-qualifiers)
 
-set(NATIVE_LIBS_EXTRA)
 include(${CMAKE_CURRENT_LIST_DIR}/extra_libs.cmake)
+
+set(NATIVE_LIBS_EXTRA)
+append_extra_security_libs(NATIVE_LIBS_EXTRA)
 
 set(NATIVEGSS_SOURCES
     pal_gssapi.c

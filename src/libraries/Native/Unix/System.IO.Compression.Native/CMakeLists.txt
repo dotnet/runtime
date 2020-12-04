@@ -4,8 +4,10 @@ if (CLR_CMAKE_TARGET_BROWSER)
     add_definitions(-s USE_ZLIB)
 endif()
 
-set(NATIVE_LIBS_EXTRA)
 include(${CMAKE_CURRENT_LIST_DIR}/extra_libs.cmake)
+
+set(NATIVE_LIBS_EXTRA)
+append_extra_compression_libs(NATIVE_LIBS_EXTRA)
 
 set(NATIVECOMPRESSION_SOURCES
     ../../AnyOS/zlib/pal_zlib.c

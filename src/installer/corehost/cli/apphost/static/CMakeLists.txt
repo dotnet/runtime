@@ -144,6 +144,7 @@ else()
 
     # additional requirements for System.IO.Compression.Native
     include(${CLR_REPO_ROOT_DIR}/src/libraries/Native/Unix/System.IO.Compression.Native/extra_libs.cmake)
+    append_extra_compression_libs(NATIVE_LIBS_EXTRA)
 endif()
 
 if(CLR_CMAKE_TARGET_OSX)
@@ -197,10 +198,15 @@ if(CLR_CMAKE_TARGET_LINUX)
 
     # Additional requirements for System.Native
     include(${CLR_REPO_ROOT_DIR}/src/libraries/Native/Unix/System.Native/extra_libs.cmake)
+    append_extra_system_libs(NATIVE_LIBS_EXTRA)
+
     # Additional requirements for System.Net.Security.Native
     include(${CLR_REPO_ROOT_DIR}/src/libraries/Native/Unix/System.Net.Security.Native/extra_libs.cmake)
+    append_extra_security_libs(NATIVE_LIBS_EXTRA)
+
     # Additional requirements for System.Security.Cryptography.Native.OpenSsl
     include(${CLR_REPO_ROOT_DIR}/src/libraries/Native/Unix/System.Security.Cryptography.Native/extra_libs.cmake)
+    append_extra_cryptography_libs(NATIVE_LIBS_EXTRA)
 endif()
 
 if(CLR_CMAKE_TARGET_LINUX OR CLR_CMAKE_TARGET_FREEBSD OR CLR_CMAKE_TARGET_NETBSD OR CLR_CMAKE_TARGET_SUNOS)
