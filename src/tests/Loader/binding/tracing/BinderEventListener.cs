@@ -158,7 +158,6 @@ namespace BinderTracingTests
 
     internal sealed class BinderEventListener : EventListener
     {
-        private const EventKeywords TasksFlowActivityIds = (EventKeywords)0x80;
         private const EventKeywords AssemblyLoaderKeyword = (EventKeywords)0x4;
 
         private readonly object eventsLock = new object();
