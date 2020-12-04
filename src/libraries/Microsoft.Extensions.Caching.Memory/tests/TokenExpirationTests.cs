@@ -103,7 +103,8 @@ namespace Microsoft.Extensions.Caching.Memory
         public void ExpiredLazyTokenRemovesItemInBackground()
         {
             var clock = new TestClock();
-            var cache = CreateCache(clock);
+            TimeSpan expirationScanFrequency = TimeSpan.FromMilliseconds(100);
+            var cache = CreateCache(clock, expirationScanFrequency);
             string key = "myKey";
             var value = new object();
             var callbackInvoked = new ManualResetEvent(false);
