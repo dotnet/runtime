@@ -80,7 +80,7 @@ If you have determined the failure is definitely not caused by changes in your P
     * If the issue is already closed, reopen it and update the labels to reflect the current failure state.
   * If there's no existing issue, create an issue with the same information listed above.
   * Update the original pull request with a comment linking to the new or existing issue.
-* In a follow-up Pull Request, disable the failing test(s) with the corresponding issue link, e.g. `[ActiveIssue(x)]`, and update the tracking issue with the label `disabled-test`.
+* In a follow-up Pull Request, disable the failing test(s) with the corresponding issue link, e.g. `[ActiveIssue(x)]`, and update the tracking issue with the label `disabled-test` or, for the runtime tests, edit ./tests/issues.targets to exclude the test from the appropriate architecture/os/runtime flavor.
 
 There are plenty of possible bugs, e.g. race conditions, where a failure might highlight a real problem and it won't manifest again on a retry. Therefore these steps should be followed for every iteration of the PR build, e.g. before retrying/rebuilding.
 
