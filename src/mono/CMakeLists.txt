@@ -461,21 +461,21 @@ if(LLVM_PREFIX)
     set(llvm_cxxflags "-I${LLVM_PREFIX}/include")
 
     # llvm-config --system-libs
-    set(llvm_system_libs "-lz -lrt -ldl -lpthread -lm")
+    set(llvm_system_libs "-lz" "-lrt" "-ldl" "-lpthread" "-lm")
 
     # llvm-config --libs analysis core bitwriter mcjit orcjit
-    set(llvm_core_libs "-lLLVMOrcJIT -lLLVMJITLink -lLLVMMCJIT -lLLVMExecutionEngine -lLLVMRuntimeDyld -lLLVMAsmPrinter -lLLVMDebugInfoDWARF -lLLVMCodeGen -lLLVMTarget -lLLVMScalarOpts -lLLVMInstCombine -lLLVMAggressiveInstCombine -lLLVMTransformUtils -lLLVMBitWriter -lLLVMAnalysis -lLLVMProfileData -lLLVMObject -lLLVMMCParser -lLLVMMC -lLLVMDebugInfoCodeView -lLLVMDebugInfoMSF -lLLVMBitReader -lLLVMBitstreamReader -lLLVMCore -lLLVMRemarks -lLLVMBinaryFormat -lLLVMSupport -lLLVMDemangle")
+    set(llvm_core_libs "-lLLVMOrcJIT" "-lLLVMJITLink" "-lLLVMMCJIT" "-lLLVMExecutionEngine" "-lLLVMRuntimeDyld" "-lLLVMAsmPrinter" "-lLLVMDebugInfoDWARF" "-lLLVMCodeGen" "-lLLVMTarget" "-lLLVMScalarOpts" "-lLLVMInstCombine" "-lLLVMAggressiveInstCombine" "-lLLVMTransformUtils" "-lLLVMBitWriter" "-lLLVMAnalysis" "-lLLVMProfileData" "-lLLVMObject" "-lLLVMMCParser" "-lLLVMMC" "-lLLVMDebugInfoCodeView" "-lLLVMDebugInfoMSF" "-lLLVMBitReader" "-lLLVMBitstreamReader" "-lLLVMCore" "-lLLVMRemarks" "-lLLVMBinaryFormat" "-lLLVMSupport" "-lLLVMDemangle")
 
     # Check codegen libs and add needed libraries.
     if("${llvm_codegen_libs}" STREQUAL "x86codegen")
       # llvm-config --libs x86codegen
-      set(llvm_extra "-lLLVMX86CodeGen -lLLVMGlobalISel -lLLVMX86Desc -lLLVMX86Utils -lLLVMX86Info -lLLVMMCDisassembler -lLLVMSelectionDAG -lLLVMAsmPrinter -lLLVMDebugInfoDWARF -lLLVMCodeGen -lLLVMTarget -lLLVMScalarOpts -lLLVMInstCombine -lLLVMAggressiveInstCombine -lLLVMTransformUtils -lLLVMBitWriter -lLLVMAnalysis -lLLVMProfileData -lLLVMObject -lLLVMMCParser -lLLVMMC -lLLVMDebugInfoCodeView -lLLVMDebugInfoMSF -lLLVMBitReader -lLLVMBitstreamReader -lLLVMCore -lLLVMRemarks -lLLVMBinaryFormat -lLLVMSupport -lLLVMDemangle")
+      set(llvm_extra "-lLLVMX86CodeGen" "-lLLVMGlobalISel" "-lLLVMX86Desc" "-lLLVMX86Utils" "-lLLVMX86Info" "-lLLVMMCDisassembler" "-lLLVMSelectionDAG" "-lLLVMAsmPrinter" "-lLLVMDebugInfoDWARF" "-lLLVMCodeGen" "-lLLVMTarget" "-lLLVMScalarOpts" "-lLLVMInstCombine" "-lLLVMAggressiveInstCombine" "-lLLVMTransformUtils" "-lLLVMBitWriter" "-lLLVMAnalysis" "-lLLVMProfileData" "-lLLVMObject" "-lLLVMMCParser" "-lLLVMMC" "-lLLVMDebugInfoCodeView" "-lLLVMDebugInfoMSF" "-lLLVMBitReader" "-lLLVMBitstreamReader" "-lLLVMCore" "-lLLVMRemarks" "-lLLVMBinaryFormat" "-lLLVMSupport" "-lLLVMDemangle")
     elseif("${llvm_codegen_libs}" STREQUAL "armcodegen")
       # llvm-config --libs armcodegen
-      set(llvm_extra "-lLLVMARMCodeGen -lLLVMGlobalISel -lLLVMSelectionDAG -lLLVMAsmPrinter -lLLVMDebugInfoDWARF -lLLVMCodeGen -lLLVMTarget -lLLVMScalarOpts -lLLVMInstCombine -lLLVMAggressiveInstCombine -lLLVMTransformUtils -lLLVMBitWriter -lLLVMAnalysis -lLLVMProfileData -lLLVMObject -lLLVMMCParser -lLLVMBitReader -lLLVMBitstreamReader -lLLVMCore -lLLVMRemarks -lLLVMARMDesc -lLLVMMCDisassembler -lLLVMMC -lLLVMDebugInfoCodeView -lLLVMDebugInfoMSF -lLLVMBinaryFormat -lLLVMARMUtils -lLLVMARMInfo -lLLVMSupport -lLLVMDemangle")
+      set(llvm_extra "-lLLVMARMCodeGen" "-lLLVMGlobalISel" "-lLLVMSelectionDAG" "-lLLVMAsmPrinter" "-lLLVMDebugInfoDWARF" "-lLLVMCodeGen" "-lLLVMTarget" "-lLLVMScalarOpts" "-lLLVMInstCombine" "-lLLVMAggressiveInstCombine" "-lLLVMTransformUtils" "-lLLVMBitWriter" "-lLLVMAnalysis" "-lLLVMProfileData" "-lLLVMObject" "-lLLVMMCParser" "-lLLVMBitReader" "-lLLVMBitstreamReader" "-lLLVMCore" "-lLLVMRemarks" "-lLLVMARMDesc" "-lLLVMMCDisassembler" "-lLLVMMC" "-lLLVMDebugInfoCodeView" "-lLLVMDebugInfoMSF" "-lLLVMBinaryFormat" "-lLLVMARMUtils" "-lLLVMARMInfo" "-lLLVMSupport" "-lLLVMDemangle")
     elseif("${llvm_codegen_libs}" STREQUAL "aarch64codegen")
       # llvm-config --libs aarch64codegen
-      set(llvm_extra "-lLLVMAArch64CodeGen -lLLVMGlobalISel -lLLVMSelectionDAG -lLLVMAsmPrinter -lLLVMDebugInfoDWARF -lLLVMCodeGen -lLLVMTarget -lLLVMScalarOpts -lLLVMInstCombine -lLLVMAggressiveInstCombine -lLLVMTransformUtils -lLLVMBitWriter -lLLVMAnalysis -lLLVMProfileData -lLLVMObject -lLLVMMCParser -lLLVMBitReader -lLLVMBitstreamReader -lLLVMCore -lLLVMRemarks -lLLVMAArch64Desc -lLLVMMC -lLLVMDebugInfoCodeView -lLLVMDebugInfoMSF -lLLVMBinaryFormat -lLLVMAArch64Utils -lLLVMAArch64Info -lLLVMSupport -lLLVMDemangle")
+      set(llvm_extra "-lLLVMAArch64CodeGen" "-lLLVMGlobalISel" "-lLLVMSelectionDAG" "-lLLVMAsmPrinter" "-lLLVMDebugInfoDWARF" "-lLLVMCodeGen" "-lLLVMTarget" "-lLLVMScalarOpts" "-lLLVMInstCombine" "-lLLVMAggressiveInstCombine" "-lLLVMTransformUtils" "-lLLVMBitWriter" "-lLLVMAnalysis" "-lLLVMProfileData" "-lLLVMObject" "-lLLVMMCParser" "-lLLVMBitReader" "-lLLVMBitstreamReader" "-lLLVMCore" "-lLLVMRemarks" "-lLLVMAArch64Desc" "-lLLVMMC" "-lLLVMDebugInfoCodeView" "-lLLVMDebugInfoMSF" "-lLLVMBinaryFormat" "-lLLVMAArch64Utils" "-lLLVMAArch64Info" "-lLLVMSupport" "-lLLVMDemangle")
     else()
       message(FATAL_ERROR "FIXME: ${TARGET_ARCH}")
     endif()

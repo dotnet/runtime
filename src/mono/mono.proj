@@ -384,13 +384,14 @@
     <PropertyGroup>
       <MonoLibClang Condition="$([MSBuild]::IsOSPlatform('OSX')) and '$(MonoLibClang)' == ''">$(XcodeDir)/Toolchains/XcodeDefault.xctoolchain/usr/lib/libclang.dylib</MonoLibClang>
       <MonoLibClang Condition="$([MSBuild]::IsOSPlatform('Linux')) and '$(MonoLibClang)' == ''">$(ANDROID_NDK_ROOT)/toolchains/llvm/prebuilt/linux-x86_64/lib64/libclang.so.9svn</MonoLibClang>
+      <MonoLibClang Condition="'$(OS)' == 'Windows_NT' and '$(MonoLibClang)' == ''">c:/dev/LLVM/bin/libclang.dll</MonoLibClang>
       <MonoAotCMakeSysroot Condition="'$(MonoAotCMakeSysroot)' == ''">$(MonoCrossDir)</MonoAotCMakeSysroot>
     </PropertyGroup>
     <ItemGroup Condition="'$(MonoUseCrossTool)' == 'true'">
       <MonoAotCrossOffsetsToolParams Include="--abi=$(MonoAotAbi)" />
       <MonoAotCrossOffsetsToolParams Include="--netcore" />
       <MonoAotCrossOffsetsToolParams Include="--targetdir=&quot;$(MonoObjDir)&quot;" />
-      <MonoAotCrossOffsetsToolParams Include="--monodir=&quot;$(MonoProjectRoot)&quot;" />
+      <MonoAotCrossOffsetsToolParams Include="--monodir=&quot;$(MonoProjectRoot.TrimEnd('\/'))&quot;" />
       <MonoAotCrossOffsetsToolParams Include="--outfile=&quot;$(MonoAotOffsetsFile)&quot;" />
       <MonoAotCrossOffsetsToolParams Include="--libclang=&quot;$(MonoLibClang)&quot;" />
       <MonoAotCrossOffsetsToolParams Condition="'$(MonoAotOffsetsPrefix)' != ''" Include="--prefix=&quot;$(MonoAotOffsetsPrefix)&quot;" />
