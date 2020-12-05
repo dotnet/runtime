@@ -3028,7 +3028,7 @@ regNumber LinearScan::allocateReg(Interval* currentInterval, RefPosition* refPos
         PREV_REG_OPT = 0x0002, // The previous RefPosition of its current assigned interval is RegOptional.
 
         // TODO-CQ: Consider using REG_ORDER as a tie-breaker even for busy registers.
-        REG_NUM      = 0x0001, // It has a lower register number.
+        REG_NUM = 0x0001, // It has a lower register number.
     };
 
     LsraLocation bestLocation   = MinLocation;
