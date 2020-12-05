@@ -1572,874 +1572,875 @@ namespace System.Globalization
             211, 117, // zu-za
         };
 
-        // c_threeLetterWindowsLanguageName is string containing 3-letter Windows language names
-        // every 3-characters entry is matching locale name entry in c_localeNames
-
-        private const string c_threeLetterWindowsLanguageName =
-            "ZZZ" + // aa
-            "ZZZ" + // aa-dj
-            "ZZZ" + // aa-er
-            "ZZZ" + // aa-et
-            "AFK" + // af
-            "ZZZ" + // af-na
-            "AFK" + // af-za
-            "ZZZ" + // agq
-            "ZZZ" + // agq-cm
-            "ZZZ" + // ak
-            "ZZZ" + // ak-gh
-            "AMH" + // am
-            "AMH" + // am-et
-            "ARA" + // ar
-            "ZZZ" + // ar-001
-            "ARU" + // ar-ae
-            "ARH" + // ar-bh
-            "ZZZ" + // ar-dj
-            "ARG" + // ar-dz
-            "ARE" + // ar-eg
-            "ZZZ" + // ar-er
-            "ZZZ" + // ar-il
-            "ARI" + // ar-iq
-            "ARJ" + // ar-jo
-            "ZZZ" + // ar-km
-            "ARK" + // ar-kw
-            "ARB" + // ar-lb
-            "ARL" + // ar-ly
-            "ARM" + // ar-ma
-            "ZZZ" + // ar-mr
-            "ARO" + // ar-om
-            "ZZZ" + // ar-ps
-            "ARQ" + // ar-qa
-            "ARA" + // ar-sa
-            "ZZZ" + // ar-sd
-            "ZZZ" + // ar-so
-            "ZZZ" + // ar-ss
-            "ARS" + // ar-sy
-            "ZZZ" + // ar-td
-            "ART" + // ar-tn
-            "ARY" + // ar-ye
-            "MPD" + // arn
-            "MPD" + // arn-cl
-            "ASM" + // as
-            "ASM" + // as-in
-            "ZZZ" + // asa
-            "ZZZ" + // asa-tz
-            "ZZZ" + // ast
-            "ZZZ" + // ast-es
-            "AZE" + // az
-            "AZC" + // az-cyrl
-            "AZC" + // az-cyrl-az
-            "AZE" + // az-latn
-            "AZE" + // az-latn-az
-            "BAS" + // ba
-            "BAS" + // ba-ru
-            "ZZZ" + // bas
-            "ZZZ" + // bas-cm
-            "BEL" + // be
-            "BEL" + // be-by
-            "ZZZ" + // bem
-            "ZZZ" + // bem-zm
-            "ZZZ" + // bez
-            "ZZZ" + // bez-tz
-            "BGR" + // bg
-            "BGR" + // bg-bg
-            "ZZZ" + // bin
-            "ZZZ" + // bin-ng
-            "ZZZ" + // bm
-            "ZZZ" + // bm-latn
-            "ZZZ" + // bm-latn-ml
-            "BNB" + // bn
-            "BNB" + // bn-bd
-            "BNG" + // bn-in
-            "BOB" + // bo
-            "BOB" + // bo-cn
-            "ZZZ" + // bo-in
-            "BRE" + // br
-            "BRE" + // br-fr
-            "ZZZ" + // brx
-            "ZZZ" + // brx-in
-            "BSB" + // bs
-            "BSC" + // bs-cyrl
-            "BSC" + // bs-cyrl-ba
-            "BSB" + // bs-latn
-            "BSB" + // bs-latn-ba
-            "ZZZ" + // byn
-            "ZZZ" + // byn-er
-            "CAT" + // ca
-            "ZZZ" + // ca-ad
-            "CAT" + // ca-es
-            "VAL" + // ca-es-valencia
-            "ZZZ" + // ca-fr
-            "ZZZ" + // ca-it
-            "ZZZ" + // ce
-            "ZZZ" + // ce-ru
-            "ZZZ" + // cgg
-            "ZZZ" + // cgg-ug
-            "CRE" + // chr
-            "CRE" + // chr-cher
-            "CRE" + // chr-cher-us
-            "COS" + // co
-            "COS" + // co-fr
-            "CSY" + // cs
-            "CSY" + // cs-cz
-            "ZZZ" + // cu
-            "ZZZ" + // cu-ru
-            "CYM" + // cy
-            "CYM" + // cy-gb
-            "DAN" + // da
-            "DAN" + // da-dk
-            "ZZZ" + // da-gl
-            "ZZZ" + // dav
-            "ZZZ" + // dav-ke
-            "DEU" + // de
-            "DEA" + // de-at
-            "ZZZ" + // de-be
-            "DES" + // de-ch
-            "DEU" + // de-de
-            "DEU" + // de-de_phoneb
-            "ZZZ" + // de-it
-            "DEC" + // de-li
-            "DEL" + // de-lu
-            "ZZZ" + // dje
-            "ZZZ" + // dje-ne
-            "DSB" + // dsb
-            "DSB" + // dsb-de
-            "ZZZ" + // dua
-            "ZZZ" + // dua-cm
-            "DIV" + // dv
-            "DIV" + // dv-mv
-            "ZZZ" + // dyo
-            "ZZZ" + // dyo-sn
-            "ZZZ" + // dz
-            "ZZZ" + // dz-bt
-            "ZZZ" + // ebu
-            "ZZZ" + // ebu-ke
-            "ZZZ" + // ee
-            "ZZZ" + // ee-gh
-            "ZZZ" + // ee-tg
-            "ELL" + // el
-            "ZZZ" + // el-cy
-            "ELL" + // el-gr
-            "ENU" + // en
-            "ZZZ" + // en-001
-            "ENB" + // en-029
-            "ZZZ" + // en-150
-            "ZZZ" + // en-ag
-            "ZZZ" + // en-ai
-            "ZZZ" + // en-as
-            "ZZZ" + // en-at
-            "ENA" + // en-au
-            "ZZZ" + // en-bb
-            "ZZZ" + // en-be
-            "ZZZ" + // en-bi
-            "ZZZ" + // en-bm
-            "ZZZ" + // en-bs
-            "ZZZ" + // en-bw
-            "ENL" + // en-bz
-            "ENC" + // en-ca
-            "ZZZ" + // en-cc
-            "ZZZ" + // en-ch
-            "ZZZ" + // en-ck
-            "ZZZ" + // en-cm
-            "ZZZ" + // en-cx
-            "ZZZ" + // en-cy
-            "ZZZ" + // en-de
-            "ZZZ" + // en-dk
-            "ZZZ" + // en-dm
-            "ZZZ" + // en-er
-            "ZZZ" + // en-fi
-            "ZZZ" + // en-fj
-            "ZZZ" + // en-fk
-            "ZZZ" + // en-fm
-            "ENG" + // en-gb
-            "ZZZ" + // en-gd
-            "ZZZ" + // en-gg
-            "ZZZ" + // en-gh
-            "ZZZ" + // en-gi
-            "ZZZ" + // en-gm
-            "ZZZ" + // en-gu
-            "ZZZ" + // en-gy
-            "ENH" + // en-hk
-            "ZZZ" + // en-id
-            "ENI" + // en-ie
-            "ZZZ" + // en-il
-            "ZZZ" + // en-im
-            "ENN" + // en-in
-            "ZZZ" + // en-io
-            "ZZZ" + // en-je
-            "ENJ" + // en-jm
-            "ZZZ" + // en-ke
-            "ZZZ" + // en-ki
-            "ZZZ" + // en-kn
-            "ZZZ" + // en-ky
-            "ZZZ" + // en-lc
-            "ZZZ" + // en-lr
-            "ZZZ" + // en-ls
-            "ZZZ" + // en-mg
-            "ZZZ" + // en-mh
-            "ZZZ" + // en-mo
-            "ZZZ" + // en-mp
-            "ZZZ" + // en-ms
-            "ZZZ" + // en-mt
-            "ZZZ" + // en-mu
-            "ZZZ" + // en-mw
-            "ENM" + // en-my
-            "ZZZ" + // en-na
-            "ZZZ" + // en-nf
-            "ZZZ" + // en-ng
-            "ZZZ" + // en-nl
-            "ZZZ" + // en-nr
-            "ZZZ" + // en-nu
-            "ENZ" + // en-nz
-            "ZZZ" + // en-pg
-            "ENP" + // en-ph
-            "ZZZ" + // en-pk
-            "ZZZ" + // en-pn
-            "ZZZ" + // en-pr
-            "ZZZ" + // en-pw
-            "ZZZ" + // en-rw
-            "ZZZ" + // en-sb
-            "ZZZ" + // en-sc
-            "ZZZ" + // en-sd
-            "ZZZ" + // en-se
-            "ENE" + // en-sg
-            "ZZZ" + // en-sh
-            "ZZZ" + // en-si
-            "ZZZ" + // en-sl
-            "ZZZ" + // en-ss
-            "ZZZ" + // en-sx
-            "ZZZ" + // en-sz
-            "ZZZ" + // en-tc
-            "ZZZ" + // en-tk
-            "ZZZ" + // en-to
-            "ENT" + // en-tt
-            "ZZZ" + // en-tv
-            "ZZZ" + // en-tz
-            "ZZZ" + // en-ug
-            "ZZZ" + // en-um
-            "ENU" + // en-us
-            "ZZZ" + // en-vc
-            "ZZZ" + // en-vg
-            "ZZZ" + // en-vi
-            "ZZZ" + // en-vu
-            "ZZZ" + // en-ws
-            "ENS" + // en-za
-            "ZZZ" + // en-zm
-            "ENW" + // en-zw
-            "ZZZ" + // eo
-            "ZZZ" + // eo-001
-            "ESN" + // es
-            "ESJ" + // es-419
-            "ESS" + // es-ar
-            "ESB" + // es-bo
-            "ZZZ" + // es-br
-            "ESL" + // es-cl
-            "ESO" + // es-co
-            "ESC" + // es-cr
-            "ESK" + // es-cu
-            "ESD" + // es-do
-            "ESF" + // es-ec
-            "ESN" + // es-es
-            "ESP" + // es-es_tradnl
-            "ZZZ" + // es-gq
-            "ESG" + // es-gt
-            "ESH" + // es-hn
-            "ESM" + // es-mx
-            "ESI" + // es-ni
-            "ESA" + // es-pa
-            "ESR" + // es-pe
-            "ZZZ" + // es-ph
-            "ESU" + // es-pr
-            "ESZ" + // es-py
-            "ESE" + // es-sv
-            "EST" + // es-us
-            "ESY" + // es-uy
-            "ESV" + // es-ve
-            "ETI" + // et
-            "ETI" + // et-ee
-            "EUQ" + // eu
-            "EUQ" + // eu-es
-            "ZZZ" + // ewo
-            "ZZZ" + // ewo-cm
-            "FAR" + // fa
-            "FAR" + // fa-ir
-            "FUL" + // ff
-            "ZZZ" + // ff-cm
-            "ZZZ" + // ff-gn
-            "FUL" + // ff-latn
-            "FUL" + // ff-latn-sn
-            "ZZZ" + // ff-mr
-            "ZZZ" + // ff-ng
-            "FIN" + // fi
-            "FIN" + // fi-fi
-            "FPO" + // fil
-            "FPO" + // fil-ph
-            "FOS" + // fo
-            "ZZZ" + // fo-dk
-            "FOS" + // fo-fo
-            "FRA" + // fr
-            "ZZZ" + // fr-029
-            "FRB" + // fr-be
-            "ZZZ" + // fr-bf
-            "ZZZ" + // fr-bi
-            "ZZZ" + // fr-bj
-            "ZZZ" + // fr-bl
-            "FRC" + // fr-ca
-            "FRD" + // fr-cd
-            "ZZZ" + // fr-cf
-            "ZZZ" + // fr-cg
-            "FRS" + // fr-ch
-            "FRI" + // fr-ci
-            "FRE" + // fr-cm
-            "ZZZ" + // fr-dj
-            "ZZZ" + // fr-dz
-            "FRA" + // fr-fr
-            "ZZZ" + // fr-ga
-            "ZZZ" + // fr-gf
-            "ZZZ" + // fr-gn
-            "ZZZ" + // fr-gp
-            "ZZZ" + // fr-gq
-            "FRH" + // fr-ht
-            "ZZZ" + // fr-km
-            "FRL" + // fr-lu
-            "FRO" + // fr-ma
-            "FRM" + // fr-mc
-            "ZZZ" + // fr-mf
-            "ZZZ" + // fr-mg
-            "FRF" + // fr-ml
-            "ZZZ" + // fr-mq
-            "ZZZ" + // fr-mr
-            "ZZZ" + // fr-mu
-            "ZZZ" + // fr-nc
-            "ZZZ" + // fr-ne
-            "ZZZ" + // fr-pf
-            "ZZZ" + // fr-pm
-            "FRR" + // fr-re
-            "ZZZ" + // fr-rw
-            "ZZZ" + // fr-sc
-            "FRN" + // fr-sn
-            "ZZZ" + // fr-sy
-            "ZZZ" + // fr-td
-            "ZZZ" + // fr-tg
-            "ZZZ" + // fr-tn
-            "ZZZ" + // fr-vu
-            "ZZZ" + // fr-wf
-            "ZZZ" + // fr-yt
-            "ZZZ" + // fur
-            "ZZZ" + // fur-it
-            "FYN" + // fy
-            "FYN" + // fy-nl
-            "IRE" + // ga
-            "IRE" + // ga-ie
-            "GLA" + // gd
-            "GLA" + // gd-gb
-            "GLC" + // gl
-            "GLC" + // gl-es
-            "GRN" + // gn
-            "GRN" + // gn-py
-            "ZZZ" + // gsw
-            "ZZZ" + // gsw-ch
-            "GSW" + // gsw-fr
-            "ZZZ" + // gsw-li
-            "GUJ" + // gu
-            "GUJ" + // gu-in
-            "ZZZ" + // guz
-            "ZZZ" + // guz-ke
-            "ZZZ" + // gv
-            "ZZZ" + // gv-im
-            "HAU" + // ha
-            "HAU" + // ha-latn
-            "ZZZ" + // ha-latn-gh
-            "ZZZ" + // ha-latn-ne
-            "HAU" + // ha-latn-ng
-            "HAW" + // haw
-            "HAW" + // haw-us
-            "HEB" + // he
-            "HEB" + // he-il
-            "HIN" + // hi
-            "HIN" + // hi-in
-            "HRV" + // hr
-            "HRB" + // hr-ba
-            "HRV" + // hr-hr
-            "HSB" + // hsb
-            "HSB" + // hsb-de
-            "HUN" + // hu
-            "HUN" + // hu-hu
-            "HUN" + // hu-hu_technl
-            "HYE" + // hy
-            "HYE" + // hy-am
-            "ZZZ" + // ia
-            "ZZZ" + // ia-001
-            "ZZZ" + // ia-fr
-            "ZZZ" + // ibb
-            "ZZZ" + // ibb-ng
-            "IND" + // id
-            "IND" + // id-id
-            "IBO" + // ig
-            "IBO" + // ig-ng
-            "III" + // ii
-            "III" + // ii-cn
-            "ISL" + // is
-            "ISL" + // is-is
-            "ITA" + // it
-            "ITS" + // it-ch
-            "ITA" + // it-it
-            "ZZZ" + // it-sm
-            "IUK" + // iu
-            "IUS" + // iu-cans
-            "IUS" + // iu-cans-ca
-            "IUK" + // iu-latn
-            "IUK" + // iu-latn-ca
-            "JPN" + // ja
-            "JPN" + // ja-jp
-            "JPN" + // ja-jp_radstr
-            "ZZZ" + // jgo
-            "ZZZ" + // jgo-cm
-            "ZZZ" + // jmc
-            "ZZZ" + // jmc-tz
-            "JAV" + // jv
-            "ZZZ" + // jv-java
-            "ZZZ" + // jv-java-id
-            "JAV" + // jv-latn
-            "JAV" + // jv-latn-id
-            "KAT" + // ka
-            "KAT" + // ka-ge
-            "KAT" + // ka-ge_modern
-            "ZZZ" + // kab
-            "ZZZ" + // kab-dz
-            "ZZZ" + // kam
-            "ZZZ" + // kam-ke
-            "ZZZ" + // kde
-            "ZZZ" + // kde-tz
-            "ZZZ" + // kea
-            "ZZZ" + // kea-cv
-            "ZZZ" + // khq
-            "ZZZ" + // khq-ml
-            "ZZZ" + // ki
-            "ZZZ" + // ki-ke
-            "KKZ" + // kk
-            "KKZ" + // kk-kz
-            "ZZZ" + // kkj
-            "ZZZ" + // kkj-cm
-            "KAL" + // kl
-            "KAL" + // kl-gl
-            "ZZZ" + // kln
-            "ZZZ" + // kln-ke
-            "KHM" + // km
-            "KHM" + // km-kh
-            "KDI" + // kn
-            "KDI" + // kn-in
-            "KOR" + // ko
-            "ZZZ" + // ko-kp
-            "KOR" + // ko-kr
-            "KNK" + // kok
-            "KNK" + // kok-in
-            "ZZZ" + // kr
-            "ZZZ" + // kr-ng
-            "ZZZ" + // ks
-            "ZZZ" + // ks-arab
-            "ZZZ" + // ks-arab-in
-            "ZZZ" + // ks-deva
-            "ZZZ" + // ks-deva-in
-            "ZZZ" + // ksb
-            "ZZZ" + // ksb-tz
-            "ZZZ" + // ksf
-            "ZZZ" + // ksf-cm
-            "ZZZ" + // ksh
-            "ZZZ" + // ksh-de
-            "KUR" + // ku
-            "KUR" + // ku-arab
-            "KUR" + // ku-arab-iq
-            "ZZZ" + // ku-arab-ir
-            "ZZZ" + // kw
-            "ZZZ" + // kw-gb
-            "KYR" + // ky
-            "KYR" + // ky-kg
-            "ZZZ" + // la
-            "ZZZ" + // la-001
-            "ZZZ" + // lag
-            "ZZZ" + // lag-tz
-            "LBX" + // lb
-            "LBX" + // lb-lu
-            "ZZZ" + // lg
-            "ZZZ" + // lg-ug
-            "ZZZ" + // lkt
-            "ZZZ" + // lkt-us
-            "ZZZ" + // ln
-            "ZZZ" + // ln-ao
-            "ZZZ" + // ln-cd
-            "ZZZ" + // ln-cf
-            "ZZZ" + // ln-cg
-            "LAO" + // lo
-            "LAO" + // lo-la
-            "ZZZ" + // lrc
-            "ZZZ" + // lrc-iq
-            "ZZZ" + // lrc-ir
-            "LTH" + // lt
-            "LTH" + // lt-lt
-            "ZZZ" + // lu
-            "ZZZ" + // lu-cd
-            "ZZZ" + // luo
-            "ZZZ" + // luo-ke
-            "ZZZ" + // luy
-            "ZZZ" + // luy-ke
-            "LVI" + // lv
-            "LVI" + // lv-lv
-            "ZZZ" + // mas
-            "ZZZ" + // mas-ke
-            "ZZZ" + // mas-tz
-            "ZZZ" + // mer
-            "ZZZ" + // mer-ke
-            "ZZZ" + // mfe
-            "ZZZ" + // mfe-mu
-            "MLG" + // mg
-            "MLG" + // mg-mg
-            "ZZZ" + // mgh
-            "ZZZ" + // mgh-mz
-            "ZZZ" + // mgo
-            "ZZZ" + // mgo-cm
-            "MRI" + // mi
-            "MRI" + // mi-nz
-            "MKI" + // mk
-            "MKI" + // mk-mk
-            "MYM" + // ml
-            "MYM" + // ml-in
-            "MNN" + // mn
-            "MNN" + // mn-cyrl
-            "MNN" + // mn-mn
-            "MNG" + // mn-mong
-            "MNG" + // mn-mong-cn
-            "MNM" + // mn-mong-mn
-            "ZZZ" + // mni
-            "ZZZ" + // mni-in
-            "MWK" + // moh
-            "MWK" + // moh-ca
-            "MAR" + // mr
-            "MAR" + // mr-in
-            "MSL" + // ms
-            "MSB" + // ms-bn
-            "MSL" + // ms-my
-            "ZZZ" + // ms-sg
-            "MLT" + // mt
-            "MLT" + // mt-mt
-            "ZZZ" + // mua
-            "ZZZ" + // mua-cm
-            "MYA" + // my
-            "MYA" + // my-mm
-            "ZZZ" + // mzn
-            "ZZZ" + // mzn-ir
-            "ZZZ" + // naq
-            "ZZZ" + // naq-na
-            "NOR" + // nb
-            "NOR" + // nb-no
-            "ZZZ" + // nb-sj
-            "ZZZ" + // nd
-            "ZZZ" + // nd-zw
-            "ZZZ" + // nds
-            "ZZZ" + // nds-de
-            "ZZZ" + // nds-nl
-            "NEP" + // ne
-            "NEI" + // ne-in
-            "NEP" + // ne-np
-            "NLD" + // nl
-            "ZZZ" + // nl-aw
-            "NLB" + // nl-be
-            "ZZZ" + // nl-bq
-            "ZZZ" + // nl-cw
-            "NLD" + // nl-nl
-            "ZZZ" + // nl-sr
-            "ZZZ" + // nl-sx
-            "ZZZ" + // nmg
-            "ZZZ" + // nmg-cm
-            "NON" + // nn
-            "NON" + // nn-no
-            "ZZZ" + // nnh
-            "ZZZ" + // nnh-cm
-            "NOR" + // no
-            "NQO" + // nqo
-            "NQO" + // nqo-gn
-            "ZZZ" + // nr
-            "ZZZ" + // nr-za
-            "NSO" + // nso
-            "NSO" + // nso-za
-            "ZZZ" + // nus
-            "ZZZ" + // nus-ss
-            "ZZZ" + // nyn
-            "ZZZ" + // nyn-ug
-            "OCI" + // oc
-            "OCI" + // oc-fr
-            "ORM" + // om
-            "ORM" + // om-et
-            "ZZZ" + // om-ke
-            "ORI" + // or
-            "ORI" + // or-in
-            "ZZZ" + // os
-            "ZZZ" + // os-ge
-            "ZZZ" + // os-ru
-            "PAN" + // pa
-            "PAP" + // pa-arab
-            "PAP" + // pa-arab-pk
-            "PAN" + // pa-in
-            "ZZZ" + // pap
-            "ZZZ" + // pap-029
-            "PLK" + // pl
-            "PLK" + // pl-pl
-            "ZZZ" + // prg
-            "ZZZ" + // prg-001
-            "PRS" + // prs
-            "PRS" + // prs-af
-            "PAS" + // ps
-            "PAS" + // ps-af
-            "PTB" + // pt
-            "PTA" + // pt-ao
-            "PTB" + // pt-br
-            "ZZZ" + // pt-ch
-            "ZZZ" + // pt-cv
-            "ZZZ" + // pt-gq
-            "ZZZ" + // pt-gw
-            "ZZZ" + // pt-lu
-            "ZZZ" + // pt-mo
-            "ZZZ" + // pt-mz
-            "PTG" + // pt-pt
-            "ZZZ" + // pt-st
-            "ZZZ" + // pt-tl
-            "ENJ" + // qps-latn-x-sh
-            "ENU" + // qps-ploc
-            "JPN" + // qps-ploca
-            "ARA" + // qps-plocm
-            "QUT" + // quc
-            "QUT" + // quc-latn
-            "QUT" + // quc-latn-gt
-            "QUB" + // quz
-            "QUB" + // quz-bo
-            "QUE" + // quz-ec
-            "QUP" + // quz-pe
-            "RMC" + // rm
-            "RMC" + // rm-ch
-            "ZZZ" + // rn
-            "ZZZ" + // rn-bi
-            "ROM" + // ro
-            "ROD" + // ro-md
-            "ROM" + // ro-ro
-            "ZZZ" + // rof
-            "ZZZ" + // rof-tz
-            "RUS" + // ru
-            "ZZZ" + // ru-by
-            "ZZZ" + // ru-kg
-            "ZZZ" + // ru-kz
-            "RUM" + // ru-md
-            "RUS" + // ru-ru
-            "ZZZ" + // ru-ua
-            "KIN" + // rw
-            "KIN" + // rw-rw
-            "ZZZ" + // rwk
-            "ZZZ" + // rwk-tz
-            "SAN" + // sa
-            "SAN" + // sa-in
-            "SAH" + // sah
-            "SAH" + // sah-ru
-            "ZZZ" + // saq
-            "ZZZ" + // saq-ke
-            "ZZZ" + // sbp
-            "ZZZ" + // sbp-tz
-            "SIP" + // sd
-            "SIP" + // sd-arab
-            "SIP" + // sd-arab-pk
-            "ZZZ" + // sd-deva
-            "ZZZ" + // sd-deva-in
-            "SME" + // se
-            "SMG" + // se-fi
-            "SME" + // se-no
-            "SMF" + // se-se
-            "ZZZ" + // seh
-            "ZZZ" + // seh-mz
-            "ZZZ" + // ses
-            "ZZZ" + // ses-ml
-            "ZZZ" + // sg
-            "ZZZ" + // sg-cf
-            "ZZZ" + // shi
-            "ZZZ" + // shi-latn
-            "ZZZ" + // shi-latn-ma
-            "ZZZ" + // shi-tfng
-            "ZZZ" + // shi-tfng-ma
-            "SIN" + // si
-            "SIN" + // si-lk
-            "SKY" + // sk
-            "SKY" + // sk-sk
-            "SLV" + // sl
-            "SLV" + // sl-si
-            "SMB" + // sma
-            "SMA" + // sma-no
-            "SMB" + // sma-se
-            "SMK" + // smj
-            "SMJ" + // smj-no
-            "SMK" + // smj-se
-            "SMN" + // smn
-            "SMN" + // smn-fi
-            "SMS" + // sms
-            "SMS" + // sms-fi
-            "SNA" + // sn
-            "SNA" + // sn-latn
-            "SNA" + // sn-latn-zw
-            "SOM" + // so
-            "ZZZ" + // so-dj
-            "ZZZ" + // so-et
-            "ZZZ" + // so-ke
-            "SOM" + // so-so
-            "SQI" + // sq
-            "SQI" + // sq-al
-            "ZZZ" + // sq-mk
-            "ZZZ" + // sq-xk
-            "SRM" + // sr
-            "SRO" + // sr-cyrl
-            "SRN" + // sr-cyrl-ba
-            "SRB" + // sr-cyrl-cs
-            "SRQ" + // sr-cyrl-me
-            "SRO" + // sr-cyrl-rs
-            "ZZZ" + // sr-cyrl-xk
-            "SRM" + // sr-latn
-            "SRS" + // sr-latn-ba
-            "SRL" + // sr-latn-cs
-            "SRP" + // sr-latn-me
-            "SRM" + // sr-latn-rs
-            "ZZZ" + // sr-latn-xk
-            "ZZZ" + // ss
-            "ZZZ" + // ss-sz
-            "ZZZ" + // ss-za
-            "ZZZ" + // ssy
-            "ZZZ" + // ssy-er
-            "SOT" + // st
-            "ZZZ" + // st-ls
-            "SOT" + // st-za
-            "SVE" + // sv
-            "ZZZ" + // sv-ax
-            "SVF" + // sv-fi
-            "SVE" + // sv-se
-            "SWK" + // sw
-            "ZZZ" + // sw-cd
-            "SWK" + // sw-ke
-            "ZZZ" + // sw-tz
-            "ZZZ" + // sw-ug
-            "ZZZ" + // swc
-            "ZZZ" + // swc-cd
-            "SYR" + // syr
-            "SYR" + // syr-sy
-            "TAI" + // ta
-            "TAI" + // ta-in
-            "TAM" + // ta-lk
-            "ZZZ" + // ta-my
-            "ZZZ" + // ta-sg
-            "TEL" + // te
-            "TEL" + // te-in
-            "ZZZ" + // teo
-            "ZZZ" + // teo-ke
-            "ZZZ" + // teo-ug
-            "TAJ" + // tg
-            "TAJ" + // tg-cyrl
-            "TAJ" + // tg-cyrl-tj
-            "THA" + // th
-            "THA" + // th-th
-            "TIR" + // ti
-            "TIR" + // ti-er
-            "TIE" + // ti-et
-            "ZZZ" + // tig
-            "ZZZ" + // tig-er
-            "TUK" + // tk
-            "TUK" + // tk-tm
-            "TSN" + // tn
-            "TSB" + // tn-bw
-            "TSN" + // tn-za
-            "ZZZ" + // to
-            "ZZZ" + // to-to
-            "TRK" + // tr
-            "ZZZ" + // tr-cy
-            "TRK" + // tr-tr
-            "TSO" + // ts
-            "TSO" + // ts-za
-            "TTT" + // tt
-            "TTT" + // tt-ru
-            "ZZZ" + // twq
-            "ZZZ" + // twq-ne
-            "TZA" + // tzm
-            "ZZZ" + // tzm-arab
-            "ZZZ" + // tzm-arab-ma
-            "TZA" + // tzm-latn
-            "TZA" + // tzm-latn-dz
-            "ZZZ" + // tzm-latn-ma
-            "TZM" + // tzm-tfng
-            "TZM" + // tzm-tfng-ma
-            "UIG" + // ug
-            "UIG" + // ug-cn
-            "UKR" + // uk
-            "UKR" + // uk-ua
-            "URD" + // ur
-            "URI" + // ur-in
-            "URD" + // ur-pk
-            "UZB" + // uz
-            "ZZZ" + // uz-arab
-            "ZZZ" + // uz-arab-af
-            "UZC" + // uz-cyrl
-            "UZC" + // uz-cyrl-uz
-            "UZB" + // uz-latn
-            "UZB" + // uz-latn-uz
-            "ZZZ" + // vai
-            "ZZZ" + // vai-latn
-            "ZZZ" + // vai-latn-lr
-            "ZZZ" + // vai-vaii
-            "ZZZ" + // vai-vaii-lr
-            "ZZZ" + // ve
-            "ZZZ" + // ve-za
-            "VIT" + // vi
-            "VIT" + // vi-vn
-            "ZZZ" + // vo
-            "ZZZ" + // vo-001
-            "ZZZ" + // vun
-            "ZZZ" + // vun-tz
-            "ZZZ" + // wae
-            "ZZZ" + // wae-ch
-            "ZZZ" + // wal
-            "ZZZ" + // wal-et
-            "WOL" + // wo
-            "WOL" + // wo-sn
-            "IVL" + // x-iv_mathan
-            "XHO" + // xh
-            "XHO" + // xh-za
-            "ZZZ" + // xog
-            "ZZZ" + // xog-ug
-            "ZZZ" + // yav
-            "ZZZ" + // yav-cm
-            "ZZZ" + // yi
-            "ZZZ" + // yi-001
-            "YOR" + // yo
-            "ZZZ" + // yo-bj
-            "YOR" + // yo-ng
-            "ZZZ" + // yue
-            "ZZZ" + // yue-hk
-            "ZHG" + // zgh
-            "ZHG" + // zgh-tfng
-            "ZHG" + // zgh-tfng-ma
-            "CHS" + // zh
-            "CHS" + // zh-chs
-            "CHT" + // zh-cht
-            "CHS" + // zh-cn
-            "CHS" + // zh-cn_phoneb
-            "CHS" + // zh-cn_stroke
-            "CHS" + // zh-hans
-            "ZZZ" + // zh-hans-hk
-            "ZZZ" + // zh-hans-mo
-            "ZHH" + // zh-hant
-            "ZHH" + // zh-hk
-            "ZHH" + // zh-hk_radstr
-            "ZHM" + // zh-mo
-            "ZHM" + // zh-mo_radstr
-            "ZHM" + // zh-mo_stroke
-            "ZHI" + // zh-sg
-            "ZHI" + // zh-sg_phoneb
-            "ZHI" + // zh-sg_stroke
-            "CHT" + // zh-tw
-            "CHT" + // zh-tw_pronun
-            "CHT" + // zh-tw_radstr
-            "ZUL" + // zu
-            "ZUL";  // zu-za
+        // ThreeLetterWindowsLanguageName is string containing 3-letter Windows language names
+        // every 3-characters entry is matching locale name entry in CultureNames
+        private static ReadOnlySpan<byte> ThreeLetterWindowsLanguageName => new byte[CulturesCount * 3]
+        {
+            (byte)'Z', (byte)'Z', (byte)'Z',  // aa
+            (byte)'Z', (byte)'Z', (byte)'Z',  // aa-dj
+            (byte)'Z', (byte)'Z', (byte)'Z',  // aa-er
+            (byte)'Z', (byte)'Z', (byte)'Z',  // aa-et
+            (byte)'A', (byte)'F', (byte)'K',  // af
+            (byte)'Z', (byte)'Z', (byte)'Z',  // af-na
+            (byte)'A', (byte)'F', (byte)'K',  // af-za
+            (byte)'Z', (byte)'Z', (byte)'Z',  // agq
+            (byte)'Z', (byte)'Z', (byte)'Z',  // agq-cm
+            (byte)'Z', (byte)'Z', (byte)'Z',  // ak
+            (byte)'Z', (byte)'Z', (byte)'Z',  // ak-gh
+            (byte)'A', (byte)'M', (byte)'H',  // am
+            (byte)'A', (byte)'M', (byte)'H',  // am-et
+            (byte)'A', (byte)'R', (byte)'A',  // ar
+            (byte)'Z', (byte)'Z', (byte)'Z',  // ar-001
+            (byte)'A', (byte)'R', (byte)'U',  // ar-ae
+            (byte)'A', (byte)'R', (byte)'H',  // ar-bh
+            (byte)'Z', (byte)'Z', (byte)'Z',  // ar-dj
+            (byte)'A', (byte)'R', (byte)'G',  // ar-dz
+            (byte)'A', (byte)'R', (byte)'E',  // ar-eg
+            (byte)'Z', (byte)'Z', (byte)'Z',  // ar-er
+            (byte)'Z', (byte)'Z', (byte)'Z',  // ar-il
+            (byte)'A', (byte)'R', (byte)'I',  // ar-iq
+            (byte)'A', (byte)'R', (byte)'J',  // ar-jo
+            (byte)'Z', (byte)'Z', (byte)'Z',  // ar-km
+            (byte)'A', (byte)'R', (byte)'K',  // ar-kw
+            (byte)'A', (byte)'R', (byte)'B',  // ar-lb
+            (byte)'A', (byte)'R', (byte)'L',  // ar-ly
+            (byte)'A', (byte)'R', (byte)'M',  // ar-ma
+            (byte)'Z', (byte)'Z', (byte)'Z',  // ar-mr
+            (byte)'A', (byte)'R', (byte)'O',  // ar-om
+            (byte)'Z', (byte)'Z', (byte)'Z',  // ar-ps
+            (byte)'A', (byte)'R', (byte)'Q',  // ar-qa
+            (byte)'A', (byte)'R', (byte)'A',  // ar-sa
+            (byte)'Z', (byte)'Z', (byte)'Z',  // ar-sd
+            (byte)'Z', (byte)'Z', (byte)'Z',  // ar-so
+            (byte)'Z', (byte)'Z', (byte)'Z',  // ar-ss
+            (byte)'A', (byte)'R', (byte)'S',  // ar-sy
+            (byte)'Z', (byte)'Z', (byte)'Z',  // ar-td
+            (byte)'A', (byte)'R', (byte)'T',  // ar-tn
+            (byte)'A', (byte)'R', (byte)'Y',  // ar-ye
+            (byte)'M', (byte)'P', (byte)'D',  // arn
+            (byte)'M', (byte)'P', (byte)'D',  // arn-cl
+            (byte)'A', (byte)'S', (byte)'M',  // as
+            (byte)'A', (byte)'S', (byte)'M',  // as-in
+            (byte)'Z', (byte)'Z', (byte)'Z',  // asa
+            (byte)'Z', (byte)'Z', (byte)'Z',  // asa-tz
+            (byte)'Z', (byte)'Z', (byte)'Z',  // ast
+            (byte)'Z', (byte)'Z', (byte)'Z',  // ast-es
+            (byte)'A', (byte)'Z', (byte)'E',  // az
+            (byte)'A', (byte)'Z', (byte)'C',  // az-cyrl
+            (byte)'A', (byte)'Z', (byte)'C',  // az-cyrl-az
+            (byte)'A', (byte)'Z', (byte)'E',  // az-latn
+            (byte)'A', (byte)'Z', (byte)'E',  // az-latn-az
+            (byte)'B', (byte)'A', (byte)'S',  // ba
+            (byte)'B', (byte)'A', (byte)'S',  // ba-ru
+            (byte)'Z', (byte)'Z', (byte)'Z',  // bas
+            (byte)'Z', (byte)'Z', (byte)'Z',  // bas-cm
+            (byte)'B', (byte)'E', (byte)'L',  // be
+            (byte)'B', (byte)'E', (byte)'L',  // be-by
+            (byte)'Z', (byte)'Z', (byte)'Z',  // bem
+            (byte)'Z', (byte)'Z', (byte)'Z',  // bem-zm
+            (byte)'Z', (byte)'Z', (byte)'Z',  // bez
+            (byte)'Z', (byte)'Z', (byte)'Z',  // bez-tz
+            (byte)'B', (byte)'G', (byte)'R',  // bg
+            (byte)'B', (byte)'G', (byte)'R',  // bg-bg
+            (byte)'Z', (byte)'Z', (byte)'Z',  // bin
+            (byte)'Z', (byte)'Z', (byte)'Z',  // bin-ng
+            (byte)'Z', (byte)'Z', (byte)'Z',  // bm
+            (byte)'Z', (byte)'Z', (byte)'Z',  // bm-latn
+            (byte)'Z', (byte)'Z', (byte)'Z',  // bm-latn-ml
+            (byte)'B', (byte)'N', (byte)'B',  // bn
+            (byte)'B', (byte)'N', (byte)'B',  // bn-bd
+            (byte)'B', (byte)'N', (byte)'G',  // bn-in
+            (byte)'B', (byte)'O', (byte)'B',  // bo
+            (byte)'B', (byte)'O', (byte)'B',  // bo-cn
+            (byte)'Z', (byte)'Z', (byte)'Z',  // bo-in
+            (byte)'B', (byte)'R', (byte)'E',  // br
+            (byte)'B', (byte)'R', (byte)'E',  // br-fr
+            (byte)'Z', (byte)'Z', (byte)'Z',  // brx
+            (byte)'Z', (byte)'Z', (byte)'Z',  // brx-in
+            (byte)'B', (byte)'S', (byte)'B',  // bs
+            (byte)'B', (byte)'S', (byte)'C',  // bs-cyrl
+            (byte)'B', (byte)'S', (byte)'C',  // bs-cyrl-ba
+            (byte)'B', (byte)'S', (byte)'B',  // bs-latn
+            (byte)'B', (byte)'S', (byte)'B',  // bs-latn-ba
+            (byte)'Z', (byte)'Z', (byte)'Z',  // byn
+            (byte)'Z', (byte)'Z', (byte)'Z',  // byn-er
+            (byte)'C', (byte)'A', (byte)'T',  // ca
+            (byte)'Z', (byte)'Z', (byte)'Z',  // ca-ad
+            (byte)'C', (byte)'A', (byte)'T',  // ca-es
+            (byte)'V', (byte)'A', (byte)'L',  // ca-es-valencia
+            (byte)'Z', (byte)'Z', (byte)'Z',  // ca-fr
+            (byte)'Z', (byte)'Z', (byte)'Z',  // ca-it
+            (byte)'Z', (byte)'Z', (byte)'Z',  // ce
+            (byte)'Z', (byte)'Z', (byte)'Z',  // ce-ru
+            (byte)'Z', (byte)'Z', (byte)'Z',  // cgg
+            (byte)'Z', (byte)'Z', (byte)'Z',  // cgg-ug
+            (byte)'C', (byte)'R', (byte)'E',  // chr
+            (byte)'C', (byte)'R', (byte)'E',  // chr-cher
+            (byte)'C', (byte)'R', (byte)'E',  // chr-cher-us
+            (byte)'C', (byte)'O', (byte)'S',  // co
+            (byte)'C', (byte)'O', (byte)'S',  // co-fr
+            (byte)'C', (byte)'S', (byte)'Y',  // cs
+            (byte)'C', (byte)'S', (byte)'Y',  // cs-cz
+            (byte)'Z', (byte)'Z', (byte)'Z',  // cu
+            (byte)'Z', (byte)'Z', (byte)'Z',  // cu-ru
+            (byte)'C', (byte)'Y', (byte)'M',  // cy
+            (byte)'C', (byte)'Y', (byte)'M',  // cy-gb
+            (byte)'D', (byte)'A', (byte)'N',  // da
+            (byte)'D', (byte)'A', (byte)'N',  // da-dk
+            (byte)'Z', (byte)'Z', (byte)'Z',  // da-gl
+            (byte)'Z', (byte)'Z', (byte)'Z',  // dav
+            (byte)'Z', (byte)'Z', (byte)'Z',  // dav-ke
+            (byte)'D', (byte)'E', (byte)'U',  // de
+            (byte)'D', (byte)'E', (byte)'A',  // de-at
+            (byte)'Z', (byte)'Z', (byte)'Z',  // de-be
+            (byte)'D', (byte)'E', (byte)'S',  // de-ch
+            (byte)'D', (byte)'E', (byte)'U',  // de-de
+            (byte)'D', (byte)'E', (byte)'U',  // de-de_phoneb
+            (byte)'Z', (byte)'Z', (byte)'Z',  // de-it
+            (byte)'D', (byte)'E', (byte)'C',  // de-li
+            (byte)'D', (byte)'E', (byte)'L',  // de-lu
+            (byte)'Z', (byte)'Z', (byte)'Z',  // dje
+            (byte)'Z', (byte)'Z', (byte)'Z',  // dje-ne
+            (byte)'D', (byte)'S', (byte)'B',  // dsb
+            (byte)'D', (byte)'S', (byte)'B',  // dsb-de
+            (byte)'Z', (byte)'Z', (byte)'Z',  // dua
+            (byte)'Z', (byte)'Z', (byte)'Z',  // dua-cm
+            (byte)'D', (byte)'I', (byte)'V',  // dv
+            (byte)'D', (byte)'I', (byte)'V',  // dv-mv
+            (byte)'Z', (byte)'Z', (byte)'Z',  // dyo
+            (byte)'Z', (byte)'Z', (byte)'Z',  // dyo-sn
+            (byte)'Z', (byte)'Z', (byte)'Z',  // dz
+            (byte)'Z', (byte)'Z', (byte)'Z',  // dz-bt
+            (byte)'Z', (byte)'Z', (byte)'Z',  // ebu
+            (byte)'Z', (byte)'Z', (byte)'Z',  // ebu-ke
+            (byte)'Z', (byte)'Z', (byte)'Z',  // ee
+            (byte)'Z', (byte)'Z', (byte)'Z',  // ee-gh
+            (byte)'Z', (byte)'Z', (byte)'Z',  // ee-tg
+            (byte)'E', (byte)'L', (byte)'L',  // el
+            (byte)'Z', (byte)'Z', (byte)'Z',  // el-cy
+            (byte)'E', (byte)'L', (byte)'L',  // el-gr
+            (byte)'E', (byte)'N', (byte)'U',  // en
+            (byte)'Z', (byte)'Z', (byte)'Z',  // en-001
+            (byte)'E', (byte)'N', (byte)'B',  // en-029
+            (byte)'Z', (byte)'Z', (byte)'Z',  // en-150
+            (byte)'Z', (byte)'Z', (byte)'Z',  // en-ag
+            (byte)'Z', (byte)'Z', (byte)'Z',  // en-ai
+            (byte)'Z', (byte)'Z', (byte)'Z',  // en-as
+            (byte)'Z', (byte)'Z', (byte)'Z',  // en-at
+            (byte)'E', (byte)'N', (byte)'A',  // en-au
+            (byte)'Z', (byte)'Z', (byte)'Z',  // en-bb
+            (byte)'Z', (byte)'Z', (byte)'Z',  // en-be
+            (byte)'Z', (byte)'Z', (byte)'Z',  // en-bi
+            (byte)'Z', (byte)'Z', (byte)'Z',  // en-bm
+            (byte)'Z', (byte)'Z', (byte)'Z',  // en-bs
+            (byte)'Z', (byte)'Z', (byte)'Z',  // en-bw
+            (byte)'E', (byte)'N', (byte)'L',  // en-bz
+            (byte)'E', (byte)'N', (byte)'C',  // en-ca
+            (byte)'Z', (byte)'Z', (byte)'Z',  // en-cc
+            (byte)'Z', (byte)'Z', (byte)'Z',  // en-ch
+            (byte)'Z', (byte)'Z', (byte)'Z',  // en-ck
+            (byte)'Z', (byte)'Z', (byte)'Z',  // en-cm
+            (byte)'Z', (byte)'Z', (byte)'Z',  // en-cx
+            (byte)'Z', (byte)'Z', (byte)'Z',  // en-cy
+            (byte)'Z', (byte)'Z', (byte)'Z',  // en-de
+            (byte)'Z', (byte)'Z', (byte)'Z',  // en-dk
+            (byte)'Z', (byte)'Z', (byte)'Z',  // en-dm
+            (byte)'Z', (byte)'Z', (byte)'Z',  // en-er
+            (byte)'Z', (byte)'Z', (byte)'Z',  // en-fi
+            (byte)'Z', (byte)'Z', (byte)'Z',  // en-fj
+            (byte)'Z', (byte)'Z', (byte)'Z',  // en-fk
+            (byte)'Z', (byte)'Z', (byte)'Z',  // en-fm
+            (byte)'E', (byte)'N', (byte)'G',  // en-gb
+            (byte)'Z', (byte)'Z', (byte)'Z',  // en-gd
+            (byte)'Z', (byte)'Z', (byte)'Z',  // en-gg
+            (byte)'Z', (byte)'Z', (byte)'Z',  // en-gh
+            (byte)'Z', (byte)'Z', (byte)'Z',  // en-gi
+            (byte)'Z', (byte)'Z', (byte)'Z',  // en-gm
+            (byte)'Z', (byte)'Z', (byte)'Z',  // en-gu
+            (byte)'Z', (byte)'Z', (byte)'Z',  // en-gy
+            (byte)'E', (byte)'N', (byte)'H',  // en-hk
+            (byte)'Z', (byte)'Z', (byte)'Z',  // en-id
+            (byte)'E', (byte)'N', (byte)'I',  // en-ie
+            (byte)'Z', (byte)'Z', (byte)'Z',  // en-il
+            (byte)'Z', (byte)'Z', (byte)'Z',  // en-im
+            (byte)'E', (byte)'N', (byte)'N',  // en-in
+            (byte)'Z', (byte)'Z', (byte)'Z',  // en-io
+            (byte)'Z', (byte)'Z', (byte)'Z',  // en-je
+            (byte)'E', (byte)'N', (byte)'J',  // en-jm
+            (byte)'Z', (byte)'Z', (byte)'Z',  // en-ke
+            (byte)'Z', (byte)'Z', (byte)'Z',  // en-ki
+            (byte)'Z', (byte)'Z', (byte)'Z',  // en-kn
+            (byte)'Z', (byte)'Z', (byte)'Z',  // en-ky
+            (byte)'Z', (byte)'Z', (byte)'Z',  // en-lc
+            (byte)'Z', (byte)'Z', (byte)'Z',  // en-lr
+            (byte)'Z', (byte)'Z', (byte)'Z',  // en-ls
+            (byte)'Z', (byte)'Z', (byte)'Z',  // en-mg
+            (byte)'Z', (byte)'Z', (byte)'Z',  // en-mh
+            (byte)'Z', (byte)'Z', (byte)'Z',  // en-mo
+            (byte)'Z', (byte)'Z', (byte)'Z',  // en-mp
+            (byte)'Z', (byte)'Z', (byte)'Z',  // en-ms
+            (byte)'Z', (byte)'Z', (byte)'Z',  // en-mt
+            (byte)'Z', (byte)'Z', (byte)'Z',  // en-mu
+            (byte)'Z', (byte)'Z', (byte)'Z',  // en-mw
+            (byte)'E', (byte)'N', (byte)'M',  // en-my
+            (byte)'Z', (byte)'Z', (byte)'Z',  // en-na
+            (byte)'Z', (byte)'Z', (byte)'Z',  // en-nf
+            (byte)'Z', (byte)'Z', (byte)'Z',  // en-ng
+            (byte)'Z', (byte)'Z', (byte)'Z',  // en-nl
+            (byte)'Z', (byte)'Z', (byte)'Z',  // en-nr
+            (byte)'Z', (byte)'Z', (byte)'Z',  // en-nu
+            (byte)'E', (byte)'N', (byte)'Z',  // en-nz
+            (byte)'Z', (byte)'Z', (byte)'Z',  // en-pg
+            (byte)'E', (byte)'N', (byte)'P',  // en-ph
+            (byte)'Z', (byte)'Z', (byte)'Z',  // en-pk
+            (byte)'Z', (byte)'Z', (byte)'Z',  // en-pn
+            (byte)'Z', (byte)'Z', (byte)'Z',  // en-pr
+            (byte)'Z', (byte)'Z', (byte)'Z',  // en-pw
+            (byte)'Z', (byte)'Z', (byte)'Z',  // en-rw
+            (byte)'Z', (byte)'Z', (byte)'Z',  // en-sb
+            (byte)'Z', (byte)'Z', (byte)'Z',  // en-sc
+            (byte)'Z', (byte)'Z', (byte)'Z',  // en-sd
+            (byte)'Z', (byte)'Z', (byte)'Z',  // en-se
+            (byte)'E', (byte)'N', (byte)'E',  // en-sg
+            (byte)'Z', (byte)'Z', (byte)'Z',  // en-sh
+            (byte)'Z', (byte)'Z', (byte)'Z',  // en-si
+            (byte)'Z', (byte)'Z', (byte)'Z',  // en-sl
+            (byte)'Z', (byte)'Z', (byte)'Z',  // en-ss
+            (byte)'Z', (byte)'Z', (byte)'Z',  // en-sx
+            (byte)'Z', (byte)'Z', (byte)'Z',  // en-sz
+            (byte)'Z', (byte)'Z', (byte)'Z',  // en-tc
+            (byte)'Z', (byte)'Z', (byte)'Z',  // en-tk
+            (byte)'Z', (byte)'Z', (byte)'Z',  // en-to
+            (byte)'E', (byte)'N', (byte)'T',  // en-tt
+            (byte)'Z', (byte)'Z', (byte)'Z',  // en-tv
+            (byte)'Z', (byte)'Z', (byte)'Z',  // en-tz
+            (byte)'Z', (byte)'Z', (byte)'Z',  // en-ug
+            (byte)'Z', (byte)'Z', (byte)'Z',  // en-um
+            (byte)'E', (byte)'N', (byte)'U',  // en-us
+            (byte)'Z', (byte)'Z', (byte)'Z',  // en-vc
+            (byte)'Z', (byte)'Z', (byte)'Z',  // en-vg
+            (byte)'Z', (byte)'Z', (byte)'Z',  // en-vi
+            (byte)'Z', (byte)'Z', (byte)'Z',  // en-vu
+            (byte)'Z', (byte)'Z', (byte)'Z',  // en-ws
+            (byte)'E', (byte)'N', (byte)'S',  // en-za
+            (byte)'Z', (byte)'Z', (byte)'Z',  // en-zm
+            (byte)'E', (byte)'N', (byte)'W',  // en-zw
+            (byte)'Z', (byte)'Z', (byte)'Z',  // eo
+            (byte)'Z', (byte)'Z', (byte)'Z',  // eo-001
+            (byte)'E', (byte)'S', (byte)'N',  // es
+            (byte)'E', (byte)'S', (byte)'J',  // es-419
+            (byte)'E', (byte)'S', (byte)'S',  // es-ar
+            (byte)'E', (byte)'S', (byte)'B',  // es-bo
+            (byte)'Z', (byte)'Z', (byte)'Z',  // es-br
+            (byte)'E', (byte)'S', (byte)'L',  // es-cl
+            (byte)'E', (byte)'S', (byte)'O',  // es-co
+            (byte)'E', (byte)'S', (byte)'C',  // es-cr
+            (byte)'E', (byte)'S', (byte)'K',  // es-cu
+            (byte)'E', (byte)'S', (byte)'D',  // es-do
+            (byte)'E', (byte)'S', (byte)'F',  // es-ec
+            (byte)'E', (byte)'S', (byte)'N',  // es-es
+            (byte)'E', (byte)'S', (byte)'P',  // es-es_tradnl
+            (byte)'Z', (byte)'Z', (byte)'Z',  // es-gq
+            (byte)'E', (byte)'S', (byte)'G',  // es-gt
+            (byte)'E', (byte)'S', (byte)'H',  // es-hn
+            (byte)'E', (byte)'S', (byte)'M',  // es-mx
+            (byte)'E', (byte)'S', (byte)'I',  // es-ni
+            (byte)'E', (byte)'S', (byte)'A',  // es-pa
+            (byte)'E', (byte)'S', (byte)'R',  // es-pe
+            (byte)'Z', (byte)'Z', (byte)'Z',  // es-ph
+            (byte)'E', (byte)'S', (byte)'U',  // es-pr
+            (byte)'E', (byte)'S', (byte)'Z',  // es-py
+            (byte)'E', (byte)'S', (byte)'E',  // es-sv
+            (byte)'E', (byte)'S', (byte)'T',  // es-us
+            (byte)'E', (byte)'S', (byte)'Y',  // es-uy
+            (byte)'E', (byte)'S', (byte)'V',  // es-ve
+            (byte)'E', (byte)'T', (byte)'I',  // et
+            (byte)'E', (byte)'T', (byte)'I',  // et-ee
+            (byte)'E', (byte)'U', (byte)'Q',  // eu
+            (byte)'E', (byte)'U', (byte)'Q',  // eu-es
+            (byte)'Z', (byte)'Z', (byte)'Z',  // ewo
+            (byte)'Z', (byte)'Z', (byte)'Z',  // ewo-cm
+            (byte)'F', (byte)'A', (byte)'R',  // fa
+            (byte)'F', (byte)'A', (byte)'R',  // fa-ir
+            (byte)'F', (byte)'U', (byte)'L',  // ff
+            (byte)'Z', (byte)'Z', (byte)'Z',  // ff-cm
+            (byte)'Z', (byte)'Z', (byte)'Z',  // ff-gn
+            (byte)'F', (byte)'U', (byte)'L',  // ff-latn
+            (byte)'F', (byte)'U', (byte)'L',  // ff-latn-sn
+            (byte)'Z', (byte)'Z', (byte)'Z',  // ff-mr
+            (byte)'Z', (byte)'Z', (byte)'Z',  // ff-ng
+            (byte)'F', (byte)'I', (byte)'N',  // fi
+            (byte)'F', (byte)'I', (byte)'N',  // fi-fi
+            (byte)'F', (byte)'P', (byte)'O',  // fil
+            (byte)'F', (byte)'P', (byte)'O',  // fil-ph
+            (byte)'F', (byte)'O', (byte)'S',  // fo
+            (byte)'Z', (byte)'Z', (byte)'Z',  // fo-dk
+            (byte)'F', (byte)'O', (byte)'S',  // fo-fo
+            (byte)'F', (byte)'R', (byte)'A',  // fr
+            (byte)'Z', (byte)'Z', (byte)'Z',  // fr-029
+            (byte)'F', (byte)'R', (byte)'B',  // fr-be
+            (byte)'Z', (byte)'Z', (byte)'Z',  // fr-bf
+            (byte)'Z', (byte)'Z', (byte)'Z',  // fr-bi
+            (byte)'Z', (byte)'Z', (byte)'Z',  // fr-bj
+            (byte)'Z', (byte)'Z', (byte)'Z',  // fr-bl
+            (byte)'F', (byte)'R', (byte)'C',  // fr-ca
+            (byte)'F', (byte)'R', (byte)'D',  // fr-cd
+            (byte)'Z', (byte)'Z', (byte)'Z',  // fr-cf
+            (byte)'Z', (byte)'Z', (byte)'Z',  // fr-cg
+            (byte)'F', (byte)'R', (byte)'S',  // fr-ch
+            (byte)'F', (byte)'R', (byte)'I',  // fr-ci
+            (byte)'F', (byte)'R', (byte)'E',  // fr-cm
+            (byte)'Z', (byte)'Z', (byte)'Z',  // fr-dj
+            (byte)'Z', (byte)'Z', (byte)'Z',  // fr-dz
+            (byte)'F', (byte)'R', (byte)'A',  // fr-fr
+            (byte)'Z', (byte)'Z', (byte)'Z',  // fr-ga
+            (byte)'Z', (byte)'Z', (byte)'Z',  // fr-gf
+            (byte)'Z', (byte)'Z', (byte)'Z',  // fr-gn
+            (byte)'Z', (byte)'Z', (byte)'Z',  // fr-gp
+            (byte)'Z', (byte)'Z', (byte)'Z',  // fr-gq
+            (byte)'F', (byte)'R', (byte)'H',  // fr-ht
+            (byte)'Z', (byte)'Z', (byte)'Z',  // fr-km
+            (byte)'F', (byte)'R', (byte)'L',  // fr-lu
+            (byte)'F', (byte)'R', (byte)'O',  // fr-ma
+            (byte)'F', (byte)'R', (byte)'M',  // fr-mc
+            (byte)'Z', (byte)'Z', (byte)'Z',  // fr-mf
+            (byte)'Z', (byte)'Z', (byte)'Z',  // fr-mg
+            (byte)'F', (byte)'R', (byte)'F',  // fr-ml
+            (byte)'Z', (byte)'Z', (byte)'Z',  // fr-mq
+            (byte)'Z', (byte)'Z', (byte)'Z',  // fr-mr
+            (byte)'Z', (byte)'Z', (byte)'Z',  // fr-mu
+            (byte)'Z', (byte)'Z', (byte)'Z',  // fr-nc
+            (byte)'Z', (byte)'Z', (byte)'Z',  // fr-ne
+            (byte)'Z', (byte)'Z', (byte)'Z',  // fr-pf
+            (byte)'Z', (byte)'Z', (byte)'Z',  // fr-pm
+            (byte)'F', (byte)'R', (byte)'R',  // fr-re
+            (byte)'Z', (byte)'Z', (byte)'Z',  // fr-rw
+            (byte)'Z', (byte)'Z', (byte)'Z',  // fr-sc
+            (byte)'F', (byte)'R', (byte)'N',  // fr-sn
+            (byte)'Z', (byte)'Z', (byte)'Z',  // fr-sy
+            (byte)'Z', (byte)'Z', (byte)'Z',  // fr-td
+            (byte)'Z', (byte)'Z', (byte)'Z',  // fr-tg
+            (byte)'Z', (byte)'Z', (byte)'Z',  // fr-tn
+            (byte)'Z', (byte)'Z', (byte)'Z',  // fr-vu
+            (byte)'Z', (byte)'Z', (byte)'Z',  // fr-wf
+            (byte)'Z', (byte)'Z', (byte)'Z',  // fr-yt
+            (byte)'Z', (byte)'Z', (byte)'Z',  // fur
+            (byte)'Z', (byte)'Z', (byte)'Z',  // fur-it
+            (byte)'F', (byte)'Y', (byte)'N',  // fy
+            (byte)'F', (byte)'Y', (byte)'N',  // fy-nl
+            (byte)'I', (byte)'R', (byte)'E',  // ga
+            (byte)'I', (byte)'R', (byte)'E',  // ga-ie
+            (byte)'G', (byte)'L', (byte)'A',  // gd
+            (byte)'G', (byte)'L', (byte)'A',  // gd-gb
+            (byte)'G', (byte)'L', (byte)'C',  // gl
+            (byte)'G', (byte)'L', (byte)'C',  // gl-es
+            (byte)'G', (byte)'R', (byte)'N',  // gn
+            (byte)'G', (byte)'R', (byte)'N',  // gn-py
+            (byte)'Z', (byte)'Z', (byte)'Z',  // gsw
+            (byte)'Z', (byte)'Z', (byte)'Z',  // gsw-ch
+            (byte)'G', (byte)'S', (byte)'W',  // gsw-fr
+            (byte)'Z', (byte)'Z', (byte)'Z',  // gsw-li
+            (byte)'G', (byte)'U', (byte)'J',  // gu
+            (byte)'G', (byte)'U', (byte)'J',  // gu-in
+            (byte)'Z', (byte)'Z', (byte)'Z',  // guz
+            (byte)'Z', (byte)'Z', (byte)'Z',  // guz-ke
+            (byte)'Z', (byte)'Z', (byte)'Z',  // gv
+            (byte)'Z', (byte)'Z', (byte)'Z',  // gv-im
+            (byte)'H', (byte)'A', (byte)'U',  // ha
+            (byte)'H', (byte)'A', (byte)'U',  // ha-latn
+            (byte)'Z', (byte)'Z', (byte)'Z',  // ha-latn-gh
+            (byte)'Z', (byte)'Z', (byte)'Z',  // ha-latn-ne
+            (byte)'H', (byte)'A', (byte)'U',  // ha-latn-ng
+            (byte)'H', (byte)'A', (byte)'W',  // haw
+            (byte)'H', (byte)'A', (byte)'W',  // haw-us
+            (byte)'H', (byte)'E', (byte)'B',  // he
+            (byte)'H', (byte)'E', (byte)'B',  // he-il
+            (byte)'H', (byte)'I', (byte)'N',  // hi
+            (byte)'H', (byte)'I', (byte)'N',  // hi-in
+            (byte)'H', (byte)'R', (byte)'V',  // hr
+            (byte)'H', (byte)'R', (byte)'B',  // hr-ba
+            (byte)'H', (byte)'R', (byte)'V',  // hr-hr
+            (byte)'H', (byte)'S', (byte)'B',  // hsb
+            (byte)'H', (byte)'S', (byte)'B',  // hsb-de
+            (byte)'H', (byte)'U', (byte)'N',  // hu
+            (byte)'H', (byte)'U', (byte)'N',  // hu-hu
+            (byte)'H', (byte)'U', (byte)'N',  // hu-hu_technl
+            (byte)'H', (byte)'Y', (byte)'E',  // hy
+            (byte)'H', (byte)'Y', (byte)'E',  // hy-am
+            (byte)'Z', (byte)'Z', (byte)'Z',  // ia
+            (byte)'Z', (byte)'Z', (byte)'Z',  // ia-001
+            (byte)'Z', (byte)'Z', (byte)'Z',  // ia-fr
+            (byte)'Z', (byte)'Z', (byte)'Z',  // ibb
+            (byte)'Z', (byte)'Z', (byte)'Z',  // ibb-ng
+            (byte)'I', (byte)'N', (byte)'D',  // id
+            (byte)'I', (byte)'N', (byte)'D',  // id-id
+            (byte)'I', (byte)'B', (byte)'O',  // ig
+            (byte)'I', (byte)'B', (byte)'O',  // ig-ng
+            (byte)'I', (byte)'I', (byte)'I',  // ii
+            (byte)'I', (byte)'I', (byte)'I',  // ii-cn
+            (byte)'I', (byte)'S', (byte)'L',  // is
+            (byte)'I', (byte)'S', (byte)'L',  // is-is
+            (byte)'I', (byte)'T', (byte)'A',  // it
+            (byte)'I', (byte)'T', (byte)'S',  // it-ch
+            (byte)'I', (byte)'T', (byte)'A',  // it-it
+            (byte)'Z', (byte)'Z', (byte)'Z',  // it-sm
+            (byte)'I', (byte)'U', (byte)'K',  // iu
+            (byte)'I', (byte)'U', (byte)'S',  // iu-cans
+            (byte)'I', (byte)'U', (byte)'S',  // iu-cans-ca
+            (byte)'I', (byte)'U', (byte)'K',  // iu-latn
+            (byte)'I', (byte)'U', (byte)'K',  // iu-latn-ca
+            (byte)'J', (byte)'P', (byte)'N',  // ja
+            (byte)'J', (byte)'P', (byte)'N',  // ja-jp
+            (byte)'J', (byte)'P', (byte)'N',  // ja-jp_radstr
+            (byte)'Z', (byte)'Z', (byte)'Z',  // jgo
+            (byte)'Z', (byte)'Z', (byte)'Z',  // jgo-cm
+            (byte)'Z', (byte)'Z', (byte)'Z',  // jmc
+            (byte)'Z', (byte)'Z', (byte)'Z',  // jmc-tz
+            (byte)'J', (byte)'A', (byte)'V',  // jv
+            (byte)'Z', (byte)'Z', (byte)'Z',  // jv-java
+            (byte)'Z', (byte)'Z', (byte)'Z',  // jv-java-id
+            (byte)'J', (byte)'A', (byte)'V',  // jv-latn
+            (byte)'J', (byte)'A', (byte)'V',  // jv-latn-id
+            (byte)'K', (byte)'A', (byte)'T',  // ka
+            (byte)'K', (byte)'A', (byte)'T',  // ka-ge
+            (byte)'K', (byte)'A', (byte)'T',  // ka-ge_modern
+            (byte)'Z', (byte)'Z', (byte)'Z',  // kab
+            (byte)'Z', (byte)'Z', (byte)'Z',  // kab-dz
+            (byte)'Z', (byte)'Z', (byte)'Z',  // kam
+            (byte)'Z', (byte)'Z', (byte)'Z',  // kam-ke
+            (byte)'Z', (byte)'Z', (byte)'Z',  // kde
+            (byte)'Z', (byte)'Z', (byte)'Z',  // kde-tz
+            (byte)'Z', (byte)'Z', (byte)'Z',  // kea
+            (byte)'Z', (byte)'Z', (byte)'Z',  // kea-cv
+            (byte)'Z', (byte)'Z', (byte)'Z',  // khq
+            (byte)'Z', (byte)'Z', (byte)'Z',  // khq-ml
+            (byte)'Z', (byte)'Z', (byte)'Z',  // ki
+            (byte)'Z', (byte)'Z', (byte)'Z',  // ki-ke
+            (byte)'K', (byte)'K', (byte)'Z',  // kk
+            (byte)'K', (byte)'K', (byte)'Z',  // kk-kz
+            (byte)'Z', (byte)'Z', (byte)'Z',  // kkj
+            (byte)'Z', (byte)'Z', (byte)'Z',  // kkj-cm
+            (byte)'K', (byte)'A', (byte)'L',  // kl
+            (byte)'K', (byte)'A', (byte)'L',  // kl-gl
+            (byte)'Z', (byte)'Z', (byte)'Z',  // kln
+            (byte)'Z', (byte)'Z', (byte)'Z',  // kln-ke
+            (byte)'K', (byte)'H', (byte)'M',  // km
+            (byte)'K', (byte)'H', (byte)'M',  // km-kh
+            (byte)'K', (byte)'D', (byte)'I',  // kn
+            (byte)'K', (byte)'D', (byte)'I',  // kn-in
+            (byte)'K', (byte)'O', (byte)'R',  // ko
+            (byte)'Z', (byte)'Z', (byte)'Z',  // ko-kp
+            (byte)'K', (byte)'O', (byte)'R',  // ko-kr
+            (byte)'K', (byte)'N', (byte)'K',  // kok
+            (byte)'K', (byte)'N', (byte)'K',  // kok-in
+            (byte)'Z', (byte)'Z', (byte)'Z',  // kr
+            (byte)'Z', (byte)'Z', (byte)'Z',  // kr-ng
+            (byte)'Z', (byte)'Z', (byte)'Z',  // ks
+            (byte)'Z', (byte)'Z', (byte)'Z',  // ks-arab
+            (byte)'Z', (byte)'Z', (byte)'Z',  // ks-arab-in
+            (byte)'Z', (byte)'Z', (byte)'Z',  // ks-deva
+            (byte)'Z', (byte)'Z', (byte)'Z',  // ks-deva-in
+            (byte)'Z', (byte)'Z', (byte)'Z',  // ksb
+            (byte)'Z', (byte)'Z', (byte)'Z',  // ksb-tz
+            (byte)'Z', (byte)'Z', (byte)'Z',  // ksf
+            (byte)'Z', (byte)'Z', (byte)'Z',  // ksf-cm
+            (byte)'Z', (byte)'Z', (byte)'Z',  // ksh
+            (byte)'Z', (byte)'Z', (byte)'Z',  // ksh-de
+            (byte)'K', (byte)'U', (byte)'R',  // ku
+            (byte)'K', (byte)'U', (byte)'R',  // ku-arab
+            (byte)'K', (byte)'U', (byte)'R',  // ku-arab-iq
+            (byte)'Z', (byte)'Z', (byte)'Z',  // ku-arab-ir
+            (byte)'Z', (byte)'Z', (byte)'Z',  // kw
+            (byte)'Z', (byte)'Z', (byte)'Z',  // kw-gb
+            (byte)'K', (byte)'Y', (byte)'R',  // ky
+            (byte)'K', (byte)'Y', (byte)'R',  // ky-kg
+            (byte)'Z', (byte)'Z', (byte)'Z',  // la
+            (byte)'Z', (byte)'Z', (byte)'Z',  // la-001
+            (byte)'Z', (byte)'Z', (byte)'Z',  // lag
+            (byte)'Z', (byte)'Z', (byte)'Z',  // lag-tz
+            (byte)'L', (byte)'B', (byte)'X',  // lb
+            (byte)'L', (byte)'B', (byte)'X',  // lb-lu
+            (byte)'Z', (byte)'Z', (byte)'Z',  // lg
+            (byte)'Z', (byte)'Z', (byte)'Z',  // lg-ug
+            (byte)'Z', (byte)'Z', (byte)'Z',  // lkt
+            (byte)'Z', (byte)'Z', (byte)'Z',  // lkt-us
+            (byte)'Z', (byte)'Z', (byte)'Z',  // ln
+            (byte)'Z', (byte)'Z', (byte)'Z',  // ln-ao
+            (byte)'Z', (byte)'Z', (byte)'Z',  // ln-cd
+            (byte)'Z', (byte)'Z', (byte)'Z',  // ln-cf
+            (byte)'Z', (byte)'Z', (byte)'Z',  // ln-cg
+            (byte)'L', (byte)'A', (byte)'O',  // lo
+            (byte)'L', (byte)'A', (byte)'O',  // lo-la
+            (byte)'Z', (byte)'Z', (byte)'Z',  // lrc
+            (byte)'Z', (byte)'Z', (byte)'Z',  // lrc-iq
+            (byte)'Z', (byte)'Z', (byte)'Z',  // lrc-ir
+            (byte)'L', (byte)'T', (byte)'H',  // lt
+            (byte)'L', (byte)'T', (byte)'H',  // lt-lt
+            (byte)'Z', (byte)'Z', (byte)'Z',  // lu
+            (byte)'Z', (byte)'Z', (byte)'Z',  // lu-cd
+            (byte)'Z', (byte)'Z', (byte)'Z',  // luo
+            (byte)'Z', (byte)'Z', (byte)'Z',  // luo-ke
+            (byte)'Z', (byte)'Z', (byte)'Z',  // luy
+            (byte)'Z', (byte)'Z', (byte)'Z',  // luy-ke
+            (byte)'L', (byte)'V', (byte)'I',  // lv
+            (byte)'L', (byte)'V', (byte)'I',  // lv-lv
+            (byte)'Z', (byte)'Z', (byte)'Z',  // mas
+            (byte)'Z', (byte)'Z', (byte)'Z',  // mas-ke
+            (byte)'Z', (byte)'Z', (byte)'Z',  // mas-tz
+            (byte)'Z', (byte)'Z', (byte)'Z',  // mer
+            (byte)'Z', (byte)'Z', (byte)'Z',  // mer-ke
+            (byte)'Z', (byte)'Z', (byte)'Z',  // mfe
+            (byte)'Z', (byte)'Z', (byte)'Z',  // mfe-mu
+            (byte)'M', (byte)'L', (byte)'G',  // mg
+            (byte)'M', (byte)'L', (byte)'G',  // mg-mg
+            (byte)'Z', (byte)'Z', (byte)'Z',  // mgh
+            (byte)'Z', (byte)'Z', (byte)'Z',  // mgh-mz
+            (byte)'Z', (byte)'Z', (byte)'Z',  // mgo
+            (byte)'Z', (byte)'Z', (byte)'Z',  // mgo-cm
+            (byte)'M', (byte)'R', (byte)'I',  // mi
+            (byte)'M', (byte)'R', (byte)'I',  // mi-nz
+            (byte)'M', (byte)'K', (byte)'I',  // mk
+            (byte)'M', (byte)'K', (byte)'I',  // mk-mk
+            (byte)'M', (byte)'Y', (byte)'M',  // ml
+            (byte)'M', (byte)'Y', (byte)'M',  // ml-in
+            (byte)'M', (byte)'N', (byte)'N',  // mn
+            (byte)'M', (byte)'N', (byte)'N',  // mn-cyrl
+            (byte)'M', (byte)'N', (byte)'N',  // mn-mn
+            (byte)'M', (byte)'N', (byte)'G',  // mn-mong
+            (byte)'M', (byte)'N', (byte)'G',  // mn-mong-cn
+            (byte)'M', (byte)'N', (byte)'M',  // mn-mong-mn
+            (byte)'Z', (byte)'Z', (byte)'Z',  // mni
+            (byte)'Z', (byte)'Z', (byte)'Z',  // mni-in
+            (byte)'M', (byte)'W', (byte)'K',  // moh
+            (byte)'M', (byte)'W', (byte)'K',  // moh-ca
+            (byte)'M', (byte)'A', (byte)'R',  // mr
+            (byte)'M', (byte)'A', (byte)'R',  // mr-in
+            (byte)'M', (byte)'S', (byte)'L',  // ms
+            (byte)'M', (byte)'S', (byte)'B',  // ms-bn
+            (byte)'M', (byte)'S', (byte)'L',  // ms-my
+            (byte)'Z', (byte)'Z', (byte)'Z',  // ms-sg
+            (byte)'M', (byte)'L', (byte)'T',  // mt
+            (byte)'M', (byte)'L', (byte)'T',  // mt-mt
+            (byte)'Z', (byte)'Z', (byte)'Z',  // mua
+            (byte)'Z', (byte)'Z', (byte)'Z',  // mua-cm
+            (byte)'M', (byte)'Y', (byte)'A',  // my
+            (byte)'M', (byte)'Y', (byte)'A',  // my-mm
+            (byte)'Z', (byte)'Z', (byte)'Z',  // mzn
+            (byte)'Z', (byte)'Z', (byte)'Z',  // mzn-ir
+            (byte)'Z', (byte)'Z', (byte)'Z',  // naq
+            (byte)'Z', (byte)'Z', (byte)'Z',  // naq-na
+            (byte)'N', (byte)'O', (byte)'R',  // nb
+            (byte)'N', (byte)'O', (byte)'R',  // nb-no
+            (byte)'Z', (byte)'Z', (byte)'Z',  // nb-sj
+            (byte)'Z', (byte)'Z', (byte)'Z',  // nd
+            (byte)'Z', (byte)'Z', (byte)'Z',  // nd-zw
+            (byte)'Z', (byte)'Z', (byte)'Z',  // nds
+            (byte)'Z', (byte)'Z', (byte)'Z',  // nds-de
+            (byte)'Z', (byte)'Z', (byte)'Z',  // nds-nl
+            (byte)'N', (byte)'E', (byte)'P',  // ne
+            (byte)'N', (byte)'E', (byte)'I',  // ne-in
+            (byte)'N', (byte)'E', (byte)'P',  // ne-np
+            (byte)'N', (byte)'L', (byte)'D',  // nl
+            (byte)'Z', (byte)'Z', (byte)'Z',  // nl-aw
+            (byte)'N', (byte)'L', (byte)'B',  // nl-be
+            (byte)'Z', (byte)'Z', (byte)'Z',  // nl-bq
+            (byte)'Z', (byte)'Z', (byte)'Z',  // nl-cw
+            (byte)'N', (byte)'L', (byte)'D',  // nl-nl
+            (byte)'Z', (byte)'Z', (byte)'Z',  // nl-sr
+            (byte)'Z', (byte)'Z', (byte)'Z',  // nl-sx
+            (byte)'Z', (byte)'Z', (byte)'Z',  // nmg
+            (byte)'Z', (byte)'Z', (byte)'Z',  // nmg-cm
+            (byte)'N', (byte)'O', (byte)'N',  // nn
+            (byte)'N', (byte)'O', (byte)'N',  // nn-no
+            (byte)'Z', (byte)'Z', (byte)'Z',  // nnh
+            (byte)'Z', (byte)'Z', (byte)'Z',  // nnh-cm
+            (byte)'N', (byte)'O', (byte)'R',  // no
+            (byte)'N', (byte)'Q', (byte)'O',  // nqo
+            (byte)'N', (byte)'Q', (byte)'O',  // nqo-gn
+            (byte)'Z', (byte)'Z', (byte)'Z',  // nr
+            (byte)'Z', (byte)'Z', (byte)'Z',  // nr-za
+            (byte)'N', (byte)'S', (byte)'O',  // nso
+            (byte)'N', (byte)'S', (byte)'O',  // nso-za
+            (byte)'Z', (byte)'Z', (byte)'Z',  // nus
+            (byte)'Z', (byte)'Z', (byte)'Z',  // nus-ss
+            (byte)'Z', (byte)'Z', (byte)'Z',  // nyn
+            (byte)'Z', (byte)'Z', (byte)'Z',  // nyn-ug
+            (byte)'O', (byte)'C', (byte)'I',  // oc
+            (byte)'O', (byte)'C', (byte)'I',  // oc-fr
+            (byte)'O', (byte)'R', (byte)'M',  // om
+            (byte)'O', (byte)'R', (byte)'M',  // om-et
+            (byte)'Z', (byte)'Z', (byte)'Z',  // om-ke
+            (byte)'O', (byte)'R', (byte)'I',  // or
+            (byte)'O', (byte)'R', (byte)'I',  // or-in
+            (byte)'Z', (byte)'Z', (byte)'Z',  // os
+            (byte)'Z', (byte)'Z', (byte)'Z',  // os-ge
+            (byte)'Z', (byte)'Z', (byte)'Z',  // os-ru
+            (byte)'P', (byte)'A', (byte)'N',  // pa
+            (byte)'P', (byte)'A', (byte)'P',  // pa-arab
+            (byte)'P', (byte)'A', (byte)'P',  // pa-arab-pk
+            (byte)'P', (byte)'A', (byte)'N',  // pa-in
+            (byte)'Z', (byte)'Z', (byte)'Z',  // pap
+            (byte)'Z', (byte)'Z', (byte)'Z',  // pap-029
+            (byte)'P', (byte)'L', (byte)'K',  // pl
+            (byte)'P', (byte)'L', (byte)'K',  // pl-pl
+            (byte)'Z', (byte)'Z', (byte)'Z',  // prg
+            (byte)'Z', (byte)'Z', (byte)'Z',  // prg-001
+            (byte)'P', (byte)'R', (byte)'S',  // prs
+            (byte)'P', (byte)'R', (byte)'S',  // prs-af
+            (byte)'P', (byte)'A', (byte)'S',  // ps
+            (byte)'P', (byte)'A', (byte)'S',  // ps-af
+            (byte)'P', (byte)'T', (byte)'B',  // pt
+            (byte)'P', (byte)'T', (byte)'A',  // pt-ao
+            (byte)'P', (byte)'T', (byte)'B',  // pt-br
+            (byte)'Z', (byte)'Z', (byte)'Z',  // pt-ch
+            (byte)'Z', (byte)'Z', (byte)'Z',  // pt-cv
+            (byte)'Z', (byte)'Z', (byte)'Z',  // pt-gq
+            (byte)'Z', (byte)'Z', (byte)'Z',  // pt-gw
+            (byte)'Z', (byte)'Z', (byte)'Z',  // pt-lu
+            (byte)'Z', (byte)'Z', (byte)'Z',  // pt-mo
+            (byte)'Z', (byte)'Z', (byte)'Z',  // pt-mz
+            (byte)'P', (byte)'T', (byte)'G',  // pt-pt
+            (byte)'Z', (byte)'Z', (byte)'Z',  // pt-st
+            (byte)'Z', (byte)'Z', (byte)'Z',  // pt-tl
+            (byte)'E', (byte)'N', (byte)'J',  // qps-latn-x-sh
+            (byte)'E', (byte)'N', (byte)'U',  // qps-ploc
+            (byte)'J', (byte)'P', (byte)'N',  // qps-ploca
+            (byte)'A', (byte)'R', (byte)'A',  // qps-plocm
+            (byte)'Q', (byte)'U', (byte)'T',  // quc
+            (byte)'Q', (byte)'U', (byte)'T',  // quc-latn
+            (byte)'Q', (byte)'U', (byte)'T',  // quc-latn-gt
+            (byte)'Q', (byte)'U', (byte)'B',  // quz
+            (byte)'Q', (byte)'U', (byte)'B',  // quz-bo
+            (byte)'Q', (byte)'U', (byte)'E',  // quz-ec
+            (byte)'Q', (byte)'U', (byte)'P',  // quz-pe
+            (byte)'R', (byte)'M', (byte)'C',  // rm
+            (byte)'R', (byte)'M', (byte)'C',  // rm-ch
+            (byte)'Z', (byte)'Z', (byte)'Z',  // rn
+            (byte)'Z', (byte)'Z', (byte)'Z',  // rn-bi
+            (byte)'R', (byte)'O', (byte)'M',  // ro
+            (byte)'R', (byte)'O', (byte)'D',  // ro-md
+            (byte)'R', (byte)'O', (byte)'M',  // ro-ro
+            (byte)'Z', (byte)'Z', (byte)'Z',  // rof
+            (byte)'Z', (byte)'Z', (byte)'Z',  // rof-tz
+            (byte)'R', (byte)'U', (byte)'S',  // ru
+            (byte)'Z', (byte)'Z', (byte)'Z',  // ru-by
+            (byte)'Z', (byte)'Z', (byte)'Z',  // ru-kg
+            (byte)'Z', (byte)'Z', (byte)'Z',  // ru-kz
+            (byte)'R', (byte)'U', (byte)'M',  // ru-md
+            (byte)'R', (byte)'U', (byte)'S',  // ru-ru
+            (byte)'Z', (byte)'Z', (byte)'Z',  // ru-ua
+            (byte)'K', (byte)'I', (byte)'N',  // rw
+            (byte)'K', (byte)'I', (byte)'N',  // rw-rw
+            (byte)'Z', (byte)'Z', (byte)'Z',  // rwk
+            (byte)'Z', (byte)'Z', (byte)'Z',  // rwk-tz
+            (byte)'S', (byte)'A', (byte)'N',  // sa
+            (byte)'S', (byte)'A', (byte)'N',  // sa-in
+            (byte)'S', (byte)'A', (byte)'H',  // sah
+            (byte)'S', (byte)'A', (byte)'H',  // sah-ru
+            (byte)'Z', (byte)'Z', (byte)'Z',  // saq
+            (byte)'Z', (byte)'Z', (byte)'Z',  // saq-ke
+            (byte)'Z', (byte)'Z', (byte)'Z',  // sbp
+            (byte)'Z', (byte)'Z', (byte)'Z',  // sbp-tz
+            (byte)'S', (byte)'I', (byte)'P',  // sd
+            (byte)'S', (byte)'I', (byte)'P',  // sd-arab
+            (byte)'S', (byte)'I', (byte)'P',  // sd-arab-pk
+            (byte)'Z', (byte)'Z', (byte)'Z',  // sd-deva
+            (byte)'Z', (byte)'Z', (byte)'Z',  // sd-deva-in
+            (byte)'S', (byte)'M', (byte)'E',  // se
+            (byte)'S', (byte)'M', (byte)'G',  // se-fi
+            (byte)'S', (byte)'M', (byte)'E',  // se-no
+            (byte)'S', (byte)'M', (byte)'F',  // se-se
+            (byte)'Z', (byte)'Z', (byte)'Z',  // seh
+            (byte)'Z', (byte)'Z', (byte)'Z',  // seh-mz
+            (byte)'Z', (byte)'Z', (byte)'Z',  // ses
+            (byte)'Z', (byte)'Z', (byte)'Z',  // ses-ml
+            (byte)'Z', (byte)'Z', (byte)'Z',  // sg
+            (byte)'Z', (byte)'Z', (byte)'Z',  // sg-cf
+            (byte)'Z', (byte)'Z', (byte)'Z',  // shi
+            (byte)'Z', (byte)'Z', (byte)'Z',  // shi-latn
+            (byte)'Z', (byte)'Z', (byte)'Z',  // shi-latn-ma
+            (byte)'Z', (byte)'Z', (byte)'Z',  // shi-tfng
+            (byte)'Z', (byte)'Z', (byte)'Z',  // shi-tfng-ma
+            (byte)'S', (byte)'I', (byte)'N',  // si
+            (byte)'S', (byte)'I', (byte)'N',  // si-lk
+            (byte)'S', (byte)'K', (byte)'Y',  // sk
+            (byte)'S', (byte)'K', (byte)'Y',  // sk-sk
+            (byte)'S', (byte)'L', (byte)'V',  // sl
+            (byte)'S', (byte)'L', (byte)'V',  // sl-si
+            (byte)'S', (byte)'M', (byte)'B',  // sma
+            (byte)'S', (byte)'M', (byte)'A',  // sma-no
+            (byte)'S', (byte)'M', (byte)'B',  // sma-se
+            (byte)'S', (byte)'M', (byte)'K',  // smj
+            (byte)'S', (byte)'M', (byte)'J',  // smj-no
+            (byte)'S', (byte)'M', (byte)'K',  // smj-se
+            (byte)'S', (byte)'M', (byte)'N',  // smn
+            (byte)'S', (byte)'M', (byte)'N',  // smn-fi
+            (byte)'S', (byte)'M', (byte)'S',  // sms
+            (byte)'S', (byte)'M', (byte)'S',  // sms-fi
+            (byte)'S', (byte)'N', (byte)'A',  // sn
+            (byte)'S', (byte)'N', (byte)'A',  // sn-latn
+            (byte)'S', (byte)'N', (byte)'A',  // sn-latn-zw
+            (byte)'S', (byte)'O', (byte)'M',  // so
+            (byte)'Z', (byte)'Z', (byte)'Z',  // so-dj
+            (byte)'Z', (byte)'Z', (byte)'Z',  // so-et
+            (byte)'Z', (byte)'Z', (byte)'Z',  // so-ke
+            (byte)'S', (byte)'O', (byte)'M',  // so-so
+            (byte)'S', (byte)'Q', (byte)'I',  // sq
+            (byte)'S', (byte)'Q', (byte)'I',  // sq-al
+            (byte)'Z', (byte)'Z', (byte)'Z',  // sq-mk
+            (byte)'Z', (byte)'Z', (byte)'Z',  // sq-xk
+            (byte)'S', (byte)'R', (byte)'M',  // sr
+            (byte)'S', (byte)'R', (byte)'O',  // sr-cyrl
+            (byte)'S', (byte)'R', (byte)'N',  // sr-cyrl-ba
+            (byte)'S', (byte)'R', (byte)'B',  // sr-cyrl-cs
+            (byte)'S', (byte)'R', (byte)'Q',  // sr-cyrl-me
+            (byte)'S', (byte)'R', (byte)'O',  // sr-cyrl-rs
+            (byte)'Z', (byte)'Z', (byte)'Z',  // sr-cyrl-xk
+            (byte)'S', (byte)'R', (byte)'M',  // sr-latn
+            (byte)'S', (byte)'R', (byte)'S',  // sr-latn-ba
+            (byte)'S', (byte)'R', (byte)'L',  // sr-latn-cs
+            (byte)'S', (byte)'R', (byte)'P',  // sr-latn-me
+            (byte)'S', (byte)'R', (byte)'M',  // sr-latn-rs
+            (byte)'Z', (byte)'Z', (byte)'Z',  // sr-latn-xk
+            (byte)'Z', (byte)'Z', (byte)'Z',  // ss
+            (byte)'Z', (byte)'Z', (byte)'Z',  // ss-sz
+            (byte)'Z', (byte)'Z', (byte)'Z',  // ss-za
+            (byte)'Z', (byte)'Z', (byte)'Z',  // ssy
+            (byte)'Z', (byte)'Z', (byte)'Z',  // ssy-er
+            (byte)'S', (byte)'O', (byte)'T',  // st
+            (byte)'Z', (byte)'Z', (byte)'Z',  // st-ls
+            (byte)'S', (byte)'O', (byte)'T',  // st-za
+            (byte)'S', (byte)'V', (byte)'E',  // sv
+            (byte)'Z', (byte)'Z', (byte)'Z',  // sv-ax
+            (byte)'S', (byte)'V', (byte)'F',  // sv-fi
+            (byte)'S', (byte)'V', (byte)'E',  // sv-se
+            (byte)'S', (byte)'W', (byte)'K',  // sw
+            (byte)'Z', (byte)'Z', (byte)'Z',  // sw-cd
+            (byte)'S', (byte)'W', (byte)'K',  // sw-ke
+            (byte)'Z', (byte)'Z', (byte)'Z',  // sw-tz
+            (byte)'Z', (byte)'Z', (byte)'Z',  // sw-ug
+            (byte)'Z', (byte)'Z', (byte)'Z',  // swc
+            (byte)'Z', (byte)'Z', (byte)'Z',  // swc-cd
+            (byte)'S', (byte)'Y', (byte)'R',  // syr
+            (byte)'S', (byte)'Y', (byte)'R',  // syr-sy
+            (byte)'T', (byte)'A', (byte)'I',  // ta
+            (byte)'T', (byte)'A', (byte)'I',  // ta-in
+            (byte)'T', (byte)'A', (byte)'M',  // ta-lk
+            (byte)'Z', (byte)'Z', (byte)'Z',  // ta-my
+            (byte)'Z', (byte)'Z', (byte)'Z',  // ta-sg
+            (byte)'T', (byte)'E', (byte)'L',  // te
+            (byte)'T', (byte)'E', (byte)'L',  // te-in
+            (byte)'Z', (byte)'Z', (byte)'Z',  // teo
+            (byte)'Z', (byte)'Z', (byte)'Z',  // teo-ke
+            (byte)'Z', (byte)'Z', (byte)'Z',  // teo-ug
+            (byte)'T', (byte)'A', (byte)'J',  // tg
+            (byte)'T', (byte)'A', (byte)'J',  // tg-cyrl
+            (byte)'T', (byte)'A', (byte)'J',  // tg-cyrl-tj
+            (byte)'T', (byte)'H', (byte)'A',  // th
+            (byte)'T', (byte)'H', (byte)'A',  // th-th
+            (byte)'T', (byte)'I', (byte)'R',  // ti
+            (byte)'T', (byte)'I', (byte)'R',  // ti-er
+            (byte)'T', (byte)'I', (byte)'E',  // ti-et
+            (byte)'Z', (byte)'Z', (byte)'Z',  // tig
+            (byte)'Z', (byte)'Z', (byte)'Z',  // tig-er
+            (byte)'T', (byte)'U', (byte)'K',  // tk
+            (byte)'T', (byte)'U', (byte)'K',  // tk-tm
+            (byte)'T', (byte)'S', (byte)'N',  // tn
+            (byte)'T', (byte)'S', (byte)'B',  // tn-bw
+            (byte)'T', (byte)'S', (byte)'N',  // tn-za
+            (byte)'Z', (byte)'Z', (byte)'Z',  // to
+            (byte)'Z', (byte)'Z', (byte)'Z',  // to-to
+            (byte)'T', (byte)'R', (byte)'K',  // tr
+            (byte)'Z', (byte)'Z', (byte)'Z',  // tr-cy
+            (byte)'T', (byte)'R', (byte)'K',  // tr-tr
+            (byte)'T', (byte)'S', (byte)'O',  // ts
+            (byte)'T', (byte)'S', (byte)'O',  // ts-za
+            (byte)'T', (byte)'T', (byte)'T',  // tt
+            (byte)'T', (byte)'T', (byte)'T',  // tt-ru
+            (byte)'Z', (byte)'Z', (byte)'Z',  // twq
+            (byte)'Z', (byte)'Z', (byte)'Z',  // twq-ne
+            (byte)'T', (byte)'Z', (byte)'A',  // tzm
+            (byte)'Z', (byte)'Z', (byte)'Z',  // tzm-arab
+            (byte)'Z', (byte)'Z', (byte)'Z',  // tzm-arab-ma
+            (byte)'T', (byte)'Z', (byte)'A',  // tzm-latn
+            (byte)'T', (byte)'Z', (byte)'A',  // tzm-latn-dz
+            (byte)'Z', (byte)'Z', (byte)'Z',  // tzm-latn-ma
+            (byte)'T', (byte)'Z', (byte)'M',  // tzm-tfng
+            (byte)'T', (byte)'Z', (byte)'M',  // tzm-tfng-ma
+            (byte)'U', (byte)'I', (byte)'G',  // ug
+            (byte)'U', (byte)'I', (byte)'G',  // ug-cn
+            (byte)'U', (byte)'K', (byte)'R',  // uk
+            (byte)'U', (byte)'K', (byte)'R',  // uk-ua
+            (byte)'U', (byte)'R', (byte)'D',  // ur
+            (byte)'U', (byte)'R', (byte)'I',  // ur-in
+            (byte)'U', (byte)'R', (byte)'D',  // ur-pk
+            (byte)'U', (byte)'Z', (byte)'B',  // uz
+            (byte)'Z', (byte)'Z', (byte)'Z',  // uz-arab
+            (byte)'Z', (byte)'Z', (byte)'Z',  // uz-arab-af
+            (byte)'U', (byte)'Z', (byte)'C',  // uz-cyrl
+            (byte)'U', (byte)'Z', (byte)'C',  // uz-cyrl-uz
+            (byte)'U', (byte)'Z', (byte)'B',  // uz-latn
+            (byte)'U', (byte)'Z', (byte)'B',  // uz-latn-uz
+            (byte)'Z', (byte)'Z', (byte)'Z',  // vai
+            (byte)'Z', (byte)'Z', (byte)'Z',  // vai-latn
+            (byte)'Z', (byte)'Z', (byte)'Z',  // vai-latn-lr
+            (byte)'Z', (byte)'Z', (byte)'Z',  // vai-vaii
+            (byte)'Z', (byte)'Z', (byte)'Z',  // vai-vaii-lr
+            (byte)'Z', (byte)'Z', (byte)'Z',  // ve
+            (byte)'Z', (byte)'Z', (byte)'Z',  // ve-za
+            (byte)'V', (byte)'I', (byte)'T',  // vi
+            (byte)'V', (byte)'I', (byte)'T',  // vi-vn
+            (byte)'Z', (byte)'Z', (byte)'Z',  // vo
+            (byte)'Z', (byte)'Z', (byte)'Z',  // vo-001
+            (byte)'Z', (byte)'Z', (byte)'Z',  // vun
+            (byte)'Z', (byte)'Z', (byte)'Z',  // vun-tz
+            (byte)'Z', (byte)'Z', (byte)'Z',  // wae
+            (byte)'Z', (byte)'Z', (byte)'Z',  // wae-ch
+            (byte)'Z', (byte)'Z', (byte)'Z',  // wal
+            (byte)'Z', (byte)'Z', (byte)'Z',  // wal-et
+            (byte)'W', (byte)'O', (byte)'L',  // wo
+            (byte)'W', (byte)'O', (byte)'L',  // wo-sn
+            (byte)'I', (byte)'V', (byte)'L',  // x-iv_mathan
+            (byte)'X', (byte)'H', (byte)'O',  // xh
+            (byte)'X', (byte)'H', (byte)'O',  // xh-za
+            (byte)'Z', (byte)'Z', (byte)'Z',  // xog
+            (byte)'Z', (byte)'Z', (byte)'Z',  // xog-ug
+            (byte)'Z', (byte)'Z', (byte)'Z',  // yav
+            (byte)'Z', (byte)'Z', (byte)'Z',  // yav-cm
+            (byte)'Z', (byte)'Z', (byte)'Z',  // yi
+            (byte)'Z', (byte)'Z', (byte)'Z',  // yi-001
+            (byte)'Y', (byte)'O', (byte)'R',  // yo
+            (byte)'Z', (byte)'Z', (byte)'Z',  // yo-bj
+            (byte)'Y', (byte)'O', (byte)'R',  // yo-ng
+            (byte)'Z', (byte)'Z', (byte)'Z',  // yue
+            (byte)'Z', (byte)'Z', (byte)'Z',  // yue-hk
+            (byte)'Z', (byte)'H', (byte)'G',  // zgh
+            (byte)'Z', (byte)'H', (byte)'G',  // zgh-tfng
+            (byte)'Z', (byte)'H', (byte)'G',  // zgh-tfng-ma
+            (byte)'C', (byte)'H', (byte)'S',  // zh
+            (byte)'C', (byte)'H', (byte)'S',  // zh-chs
+            (byte)'C', (byte)'H', (byte)'T',  // zh-cht
+            (byte)'C', (byte)'H', (byte)'S',  // zh-cn
+            (byte)'C', (byte)'H', (byte)'S',  // zh-cn_phoneb
+            (byte)'C', (byte)'H', (byte)'S',  // zh-cn_stroke
+            (byte)'C', (byte)'H', (byte)'S',  // zh-hans
+            (byte)'Z', (byte)'Z', (byte)'Z',  // zh-hans-hk
+            (byte)'Z', (byte)'Z', (byte)'Z',  // zh-hans-mo
+            (byte)'Z', (byte)'H', (byte)'H',  // zh-hant
+            (byte)'Z', (byte)'H', (byte)'H',  // zh-hk
+            (byte)'Z', (byte)'H', (byte)'H',  // zh-hk_radstr
+            (byte)'Z', (byte)'H', (byte)'M',  // zh-mo
+            (byte)'Z', (byte)'H', (byte)'M',  // zh-mo_radstr
+            (byte)'Z', (byte)'H', (byte)'M',  // zh-mo_stroke
+            (byte)'Z', (byte)'H', (byte)'I',  // zh-sg
+            (byte)'Z', (byte)'H', (byte)'I',  // zh-sg_phoneb
+            (byte)'Z', (byte)'H', (byte)'I',  // zh-sg_stroke
+            (byte)'C', (byte)'H', (byte)'T',  // zh-tw
+            (byte)'C', (byte)'H', (byte)'T',  // zh-tw_pronun
+            (byte)'C', (byte)'H', (byte)'T',  // zh-tw_radstr
+            (byte)'Z', (byte)'U', (byte)'L',  // zu
+            (byte)'Z', (byte)'U', (byte)'L',  // zu-za
+        };
 
         private const int NUMERIC_LOCALE_DATA_COUNT_PER_ROW = 9;
 
@@ -3825,8 +3826,8 @@ namespace System.Globalization
                 return null;
             }
 
-            Debug.Assert(CulturesCount == (c_threeLetterWindowsLanguageName.Length / 3));
-            return c_threeLetterWindowsLanguageName.Substring(index * 3, 3);
+            Debug.Assert(CulturesCount == (ThreeLetterWindowsLanguageName.Length / 3));
+            return GetString(ThreeLetterWindowsLanguageName.Slice(index * 3, 3));
         }
 
         private static string GetLocaleDataMappedCulture(string cultureName, IcuLocaleDataParts part)
