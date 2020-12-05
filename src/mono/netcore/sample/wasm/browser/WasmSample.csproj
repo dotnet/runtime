@@ -38,7 +38,6 @@
     </ItemGroup>
 
     <WasmLoadAssembliesAndReferences
-        SkipMissingAssemblies="$(SkipMissingAssemblies)"
       Assemblies="bin\WasmSample.dll;$(MicrosoftNetCoreAppRuntimePackDir)lib\$(NetCoreAppCurrent)\System.Private.Runtime.InteropServices.JavaScript.dll"
       AssemblySearchPaths="@(AssemblySearchPaths)">
       <Output TaskParameter="ReferencedAssemblies" ItemName="ReferencedAssemblies" />
