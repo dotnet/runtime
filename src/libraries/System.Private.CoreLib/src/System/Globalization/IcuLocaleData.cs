@@ -675,7 +675,7 @@ namespace System.Globalization
             (byte)'x', (byte)'h', (byte)'-', (byte)'z', (byte)'a',  // xh, xh-za
             (byte)'x', (byte)'o', (byte)'g', (byte)'-', (byte)'u', (byte)'g',  // xog, xog-ug
             (byte)'y', (byte)'a', (byte)'v', (byte)'-', (byte)'c', (byte)'m',  // yav, yav-cm
-            (byte)'y', (byte)'i', (byte)'-', (byte)'0', (byte)'0', (byte)'1',
+            (byte)'y', (byte)'i', (byte)'-', (byte)'0', (byte)'0', (byte)'1',  // yi, yi-001
             (byte)'y', (byte)'o', (byte)'-', (byte)'b', (byte)'j',  // yo, yo-bj
             (byte)'y', (byte)'o', (byte)'-', (byte)'n', (byte)'g',  // yo-ng
             (byte)'y', (byte)'u', (byte)'e', (byte)'-', (byte)'h', (byte)'k',  // yue, yue-hk
@@ -697,13 +697,13 @@ namespace System.Globalization
             (byte)'z', (byte)'u', (byte)'-', (byte)'z', (byte)'a',  // zu, zu-za
         };
 
-        private const int LocaleLongestName = 14;
         private const int CulturesCount = 864;
 
-        //
         // Table which holds index into LocalesNames data and length of the string for each locale
         // Values are binary searched and need to be sorted alphabetically
         //
+        // value = index << 4 | length
+        // byte0 = value >> 8; byte1 = value & 0xff
         private static ReadOnlySpan<byte> LocalesNamesIndexes => new byte[CulturesCount * 2]
         {
             0, 2,     // aa
@@ -1571,6 +1571,472 @@ namespace System.Globalization
             211, 114, // zu
             211, 117, // zu-za
         };
+
+        private const int LocaleLongestName = 14;
+        private const int LcidCount = 448;
+
+        private static ReadOnlySpan<byte> LcidToCultureNameIndices => new byte[LcidCount * 4]
+        {
+            0x00, 0x01, 0x02, 0x92,  // ar
+            0x00, 0x02, 0x0f, 0x82,  // bg
+            0x00, 0x03, 0x14, 0x62,  // ca
+            0x00, 0x04, 0xca, 0x46,  // zh-chs
+            0x00, 0x05, 0x17, 0xe2,  // cs
+            0x00, 0x06, 0x18, 0xd2,  // da
+            0x00, 0x07, 0x19, 0xd2,  // de
+            0x00, 0x08, 0x1f, 0x92,  // el
+            0x00, 0x09, 0x20, 0x32,  // en
+            0x00, 0x0a, 0x41, 0x92,  // es
+            0x00, 0x0b, 0x4d, 0x12,  // fi
+            0x00, 0x0c, 0x4e, 0x62,  // fr
+            0x00, 0x0d, 0x63, 0x72,  // he
+            0x00, 0x0e, 0x65, 0x12,  // hu
+            0x00, 0x0f, 0x68, 0x22,  // is
+            0x00, 0x10, 0x68, 0x72,  // it
+            0x00, 0x11, 0x6a, 0xa2,  // ja
+            0x00, 0x12, 0x72, 0x52,  // ko
+            0x00, 0x13, 0x89, 0x32,  // nl
+            0x00, 0x14, 0x8c, 0x72,  // no
+            0x00, 0x15, 0x91, 0xa2,  // pl
+            0x00, 0x16, 0x93, 0x12,  // pt
+            0x00, 0x17, 0x9a, 0x92,  // rm
+            0x00, 0x18, 0x9b, 0x32,  // ro
+            0x00, 0x19, 0x9c, 0x32,  // ru
+            0x00, 0x1a, 0x64, 0x12,  // hr
+            0x00, 0x1b, 0xa5, 0x22,  // sk
+            0x00, 0x1c, 0xa9, 0xe2,  // sq
+            0x00, 0x1d, 0xb2, 0xb2,  // sv
+            0x00, 0x1e, 0xb8, 0x92,  // th
+            0x00, 0x1f, 0xbb, 0x22,  // tr
+            0x00, 0x20, 0xc0, 0x22,  // ur
+            0x00, 0x21, 0x67, 0x32,  // id
+            0x00, 0x22, 0xbf, 0xd2,  // uk
+            0x00, 0x23, 0x0e, 0x72,  // be
+            0x00, 0x24, 0xa5, 0x72,  // sl
+            0x00, 0x25, 0x49, 0xe2,  // et
+            0x00, 0x26, 0x7d, 0x52,  // lv
+            0x00, 0x27, 0x7b, 0xf2,  // lt
+            0x00, 0x28, 0xb7, 0xf2,  // tg
+            0x00, 0x29, 0x4a, 0xe2,  // fa
+            0x00, 0x2a, 0xc4, 0x52,  // vi
+            0x00, 0x2b, 0x65, 0xd2,  // hy
+            0x00, 0x2c, 0x0c, 0x82,  // az
+            0x00, 0x2d, 0x4a, 0x32,  // eu
+            0x00, 0x2e, 0x64, 0xb3,  // hsb
+            0x00, 0x2f, 0x80, 0x82,  // mk
+            0x00, 0x30, 0xb2, 0x12,  // st
+            0x00, 0x31, 0xbb, 0xc2,  // ts
+            0x00, 0x32, 0xba, 0x32,  // tn
+            0x00, 0x33, 0xc4, 0x02,  // ve
+            0x00, 0x34, 0xc7, 0x22,  // xh
+            0x00, 0x35, 0xd3, 0x72,  // zu
+            0x00, 0x36, 0x00, 0xf2,  // af
+            0x00, 0x37, 0x6d, 0x62,  // ka
+            0x00, 0x38, 0x4d, 0xc2,  // fo
+            0x00, 0x39, 0x63, 0xc2,  // hi
+            0x00, 0x3a, 0x85, 0x22,  // mt
+            0x00, 0x3b, 0xa1, 0x72,  // se
+            0x00, 0x3c, 0x5d, 0xd2,  // ga
+            0x00, 0x3d, 0xc8, 0x32,  // yi
+            0x00, 0x3e, 0x84, 0x32,  // ms
+            0x00, 0x3f, 0x70, 0x52,  // kk
+            0x00, 0x40, 0x77, 0x92,  // ky
+            0x00, 0x41, 0xb3, 0xa2,  // sw
+            0x00, 0x42, 0xb9, 0xe2,  // tk
+            0x00, 0x43, 0xc0, 0xc2,  // uz
+            0x00, 0x44, 0xbc, 0x12,  // tt
+            0x00, 0x45, 0x10, 0xd2,  // bn
+            0x00, 0x46, 0x90, 0x42,  // pa
+            0x00, 0x47, 0x60, 0x32,  // gu
+            0x00, 0x48, 0x8f, 0x52,  // or
+            0x00, 0x49, 0xb5, 0xa2,  // ta
+            0x00, 0x4a, 0xb6, 0xe2,  // te
+            0x00, 0x4b, 0x72, 0x02,  // kn
+            0x00, 0x4c, 0x80, 0xd2,  // ml
+            0x00, 0x4d, 0x0b, 0x72,  // as
+            0x00, 0x4e, 0x83, 0xe2,  // mr
+            0x00, 0x4f, 0x9e, 0xc2,  // sa
+            0x00, 0x50, 0x81, 0x22,  // mn
+            0x00, 0x51, 0x11, 0x72,  // bo
+            0x00, 0x52, 0x18, 0x82,  // cy
+            0x00, 0x53, 0x71, 0xb2,  // km
+            0x00, 0x54, 0x7a, 0xe2,  // lo
+            0x00, 0x55, 0x85, 0xd2,  // my
+            0x00, 0x56, 0x5e, 0x72,  // gl
+            0x00, 0x57, 0x72, 0xf3,  // kok
+            0x00, 0x58, 0x83, 0x23,  // mni
+            0x00, 0x59, 0xa0, 0x32,  // sd
+            0x00, 0x5a, 0xb5, 0x43,  // syr
+            0x00, 0x5b, 0xa4, 0xd2,  // si
+            0x00, 0x5c, 0x16, 0xe3,  // chr
+            0x00, 0x5d, 0x69, 0x62,  // iu
+            0x00, 0x5e, 0x02, 0x42,  // am
+            0x00, 0x5f, 0xbc, 0xc3,  // tzm
+            0x00, 0x60, 0x73, 0xa2,  // ks
+            0x00, 0x61, 0x88, 0x92,  // ne
+            0x00, 0x62, 0x5d, 0x82,  // fy
+            0x00, 0x63, 0x92, 0xc2,  // ps
+            0x00, 0x64, 0x4d, 0x63,  // fil
+            0x00, 0x65, 0x1d, 0x92,  // dv
+            0x00, 0x66, 0x0f, 0xd3,  // bin
+            0x00, 0x67, 0x4b, 0x32,  // ff
+            0x00, 0x68, 0x61, 0x32,  // ha
+            0x00, 0x69, 0x66, 0xd3,  // ibb
+            0x00, 0x6a, 0xc8, 0x92,  // yo
+            0x00, 0x6b, 0x99, 0x73,  // quz
+            0x00, 0x6c, 0x8d, 0x43,  // nso
+            0x00, 0x6d, 0x0d, 0xc2,  // ba
+            0x00, 0x6e, 0x78, 0xa2,  // lb
+            0x00, 0x6f, 0x71, 0x02,  // kl
+            0x00, 0x70, 0x67, 0x82,  // ig
+            0x00, 0x71, 0x73, 0x52,  // kr
+            0x00, 0x72, 0x8e, 0xb2,  // om
+            0x00, 0x73, 0xb8, 0xe2,  // ti
+            0x00, 0x74, 0x5e, 0xc2,  // gn
+            0x00, 0x75, 0x63, 0x13,  // haw
+            0x00, 0x76, 0x77, 0xe2,  // la
+            0x00, 0x77, 0xa8, 0xa2,  // so
+            0x00, 0x78, 0x67, 0xd2,  // ii
+            0x00, 0x79, 0x91, 0x33,  // pap
+            0x00, 0x7a, 0x0b, 0x13,  // arn
+            0x00, 0x7c, 0x83, 0x83,  // moh
+            0x00, 0x7e, 0x12, 0x12,  // br
+            0x00, 0x80, 0xbf, 0x82,  // ug
+            0x00, 0x81, 0x80, 0x32,  // mi
+            0x00, 0x82, 0x8e, 0x62,  // oc
+            0x00, 0x83, 0x17, 0x92,  // co
+            0x00, 0x84, 0x5f, 0x13,  // gsw
+            0x00, 0x85, 0x9f, 0x13,  // sah
+            0x00, 0x86, 0x98, 0xc3,  // quc
+            0x00, 0x87, 0x9e, 0x12,  // rw
+            0x00, 0x88, 0xc6, 0x22,  // wo
+            0x00, 0x8c, 0x92, 0x63,  // prs
+            0x00, 0x91, 0x5e, 0x22,  // gd
+            0x00, 0x92, 0x76, 0x02,  // ku
+            0x04, 0x01, 0x08, 0x95,  // ar-sa
+            0x04, 0x02, 0x0f, 0x85,  // bg-bg
+            0x04, 0x03, 0x14, 0xb5,  // ca-es
+            0x04, 0x04, 0xd1, 0xf5,  // zh-tw
+            0x04, 0x05, 0x17, 0xe5,  // cs-cz
+            0x04, 0x06, 0x18, 0xd5,  // da-dk
+            0x04, 0x07, 0x1a, 0xc5,  // de-de
+            0x04, 0x08, 0x1f, 0xe5,  // el-gr
+            0x04, 0x09, 0x3e, 0x65,  // en-us
+            0x04, 0x0a, 0x44, 0xcc,  // es-es_tradnl
+            0x04, 0x0b, 0x4d, 0x15,  // fi-fi
+            0x04, 0x0c, 0x53, 0x25,  // fr-fr
+            0x04, 0x0d, 0x63, 0x75,  // he-il
+            0x04, 0x0e, 0x65, 0x15,  // hu-hu
+            0x04, 0x0f, 0x68, 0x25,  // is-is
+            0x04, 0x10, 0x68, 0xc5,  // it-it
+            0x04, 0x11, 0x6a, 0xa5,  // ja-jp
+            0x04, 0x12, 0x72, 0xa5,  // ko-kr
+            0x04, 0x13, 0x8a, 0x75,  // nl-nl
+            0x04, 0x14, 0x86, 0xe5,  // nb-no
+            0x04, 0x15, 0x91, 0xa5,  // pl-pl
+            0x04, 0x16, 0x93, 0x65,  // pt-br
+            0x04, 0x17, 0x9a, 0x95,  // rm-ch
+            0x04, 0x18, 0x9b, 0x85,  // ro-ro
+            0x04, 0x19, 0x9d, 0x75,  // ru-ru
+            0x04, 0x1a, 0x64, 0x65,  // hr-hr
+            0x04, 0x1b, 0xa5, 0x25,  // sk-sk
+            0x04, 0x1c, 0xa9, 0xe5,  // sq-al
+            0x04, 0x1d, 0xb3, 0x55,  // sv-se
+            0x04, 0x1e, 0xb8, 0x95,  // th-th
+            0x04, 0x1f, 0xbb, 0x75,  // tr-tr
+            0x04, 0x20, 0xc0, 0x75,  // ur-pk
+            0x04, 0x21, 0x67, 0x35,  // id-id
+            0x04, 0x22, 0xbf, 0xd5,  // uk-ua
+            0x04, 0x23, 0x0e, 0x75,  // be-by
+            0x04, 0x24, 0xa5, 0x75,  // sl-si
+            0x04, 0x25, 0x49, 0xe5,  // et-ee
+            0x04, 0x26, 0x7d, 0x55,  // lv-lv
+            0x04, 0x27, 0x7b, 0xf5,  // lt-lt
+            0x04, 0x28, 0xb7, 0xfa,  // tg-cyrl-tj
+            0x04, 0x29, 0x4a, 0xe5,  // fa-ir
+            0x04, 0x2a, 0xc4, 0x55,  // vi-vn
+            0x04, 0x2b, 0x65, 0xd5,  // hy-am
+            0x04, 0x2c, 0x0d, 0x2a,  // az-latn-az
+            0x04, 0x2d, 0x4a, 0x35,  // eu-es
+            0x04, 0x2e, 0x64, 0xb6,  // hsb-de
+            0x04, 0x2f, 0x80, 0x85,  // mk-mk
+            0x04, 0x30, 0xb2, 0x65,  // st-za
+            0x04, 0x31, 0xbb, 0xc5,  // ts-za
+            0x04, 0x32, 0xba, 0x85,  // tn-za
+            0x04, 0x33, 0xc4, 0x05,  // ve-za
+            0x04, 0x34, 0xc7, 0x25,  // xh-za
+            0x04, 0x35, 0xd3, 0x75,  // zu-za
+            0x04, 0x36, 0x01, 0x45,  // af-za
+            0x04, 0x37, 0x6d, 0x65,  // ka-ge
+            0x04, 0x38, 0x4e, 0x15,  // fo-fo
+            0x04, 0x39, 0x63, 0xc5,  // hi-in
+            0x04, 0x3a, 0x85, 0x25,  // mt-mt
+            0x04, 0x3b, 0xa1, 0xc5,  // se-no
+            0x04, 0x3d, 0xc8, 0x36,  // yi-001
+            0x04, 0x3e, 0x84, 0x85,  // ms-my
+            0x04, 0x3f, 0x70, 0x55,  // kk-kz
+            0x04, 0x40, 0x77, 0x95,  // ky-kg
+            0x04, 0x41, 0xb3, 0xf5,  // sw-ke
+            0x04, 0x42, 0xb9, 0xe5,  // tk-tm
+            0x04, 0x43, 0xc2, 0x0a,  // uz-latn-uz
+            0x04, 0x44, 0xbc, 0x15,  // tt-ru
+            0x04, 0x45, 0x11, 0x25,  // bn-in
+            0x04, 0x46, 0x90, 0xe5,  // pa-in
+            0x04, 0x47, 0x60, 0x35,  // gu-in
+            0x04, 0x48, 0x8f, 0x55,  // or-in
+            0x04, 0x49, 0xb5, 0xa5,  // ta-in
+            0x04, 0x4a, 0xb6, 0xe5,  // te-in
+            0x04, 0x4b, 0x72, 0x05,  // kn-in
+            0x04, 0x4c, 0x80, 0xd5,  // ml-in
+            0x04, 0x4d, 0x0b, 0x75,  // as-in
+            0x04, 0x4e, 0x83, 0xe5,  // mr-in
+            0x04, 0x4f, 0x9e, 0xc5,  // sa-in
+            0x04, 0x50, 0x81, 0x95,  // mn-mn
+            0x04, 0x51, 0x11, 0x75,  // bo-cn
+            0x04, 0x52, 0x18, 0x85,  // cy-gb
+            0x04, 0x53, 0x71, 0xb5,  // km-kh
+            0x04, 0x54, 0x7a, 0xe5,  // lo-la
+            0x04, 0x55, 0x85, 0xd5,  // my-mm
+            0x04, 0x56, 0x5e, 0x75,  // gl-es
+            0x04, 0x57, 0x72, 0xf6,  // kok-in
+            0x04, 0x58, 0x83, 0x26,  // mni-in
+            0x04, 0x59, 0xa0, 0xda,  // sd-deva-in
+            0x04, 0x5a, 0xb5, 0x46,  // syr-sy
+            0x04, 0x5b, 0xa4, 0xd5,  // si-lk
+            0x04, 0x5c, 0x16, 0xeb,  // chr-cher-us
+            0x04, 0x5d, 0x69, 0x6a,  // iu-cans-ca
+            0x04, 0x5e, 0x02, 0x45,  // am-et
+            0x04, 0x5f, 0xbc, 0xcb,  // tzm-arab-ma
+            0x04, 0x60, 0x73, 0xa7,  // ks-arab
+            0x04, 0x61, 0x88, 0xe5,  // ne-np
+            0x04, 0x62, 0x5d, 0x85,  // fy-nl
+            0x04, 0x63, 0x92, 0xc5,  // ps-af
+            0x04, 0x64, 0x4d, 0x66,  // fil-ph
+            0x04, 0x65, 0x1d, 0x95,  // dv-mv
+            0x04, 0x66, 0x0f, 0xd6,  // bin-ng
+            0x04, 0x67, 0x4c, 0xc5,  // ff-ng
+            0x04, 0x68, 0x62, 0x7a,  // ha-latn-ng
+            0x04, 0x69, 0x66, 0xd6,  // ibb-ng
+            0x04, 0x6a, 0xc8, 0xe5,  // yo-ng
+            0x04, 0x6b, 0x99, 0x76,  // quz-bo
+            0x04, 0x6c, 0x8d, 0x46,  // nso-za
+            0x04, 0x6d, 0x0d, 0xc5,  // ba-ru
+            0x04, 0x6e, 0x78, 0xa5,  // lb-lu
+            0x04, 0x6f, 0x71, 0x05,  // kl-gl
+            0x04, 0x70, 0x67, 0x85,  // ig-ng
+            0x04, 0x71, 0x73, 0x55,  // kr-ng
+            0x04, 0x72, 0x8e, 0xb5,  // om-et
+            0x04, 0x73, 0xb9, 0x35,  // ti-et
+            0x04, 0x74, 0x5e, 0xc5,  // gn-py
+            0x04, 0x75, 0x63, 0x16,  // haw-us
+            0x04, 0x76, 0x77, 0xe6,  // la-001
+            0x04, 0x77, 0xa9, 0x95,  // so-so
+            0x04, 0x78, 0x67, 0xd5,  // ii-cn
+            0x04, 0x79, 0x91, 0x37,  // pap-029
+            0x04, 0x7a, 0x0b, 0x16,  // arn-cl
+            0x04, 0x7c, 0x83, 0x86,  // moh-ca
+            0x04, 0x7e, 0x12, 0x15,  // br-fr
+            0x04, 0x80, 0xbf, 0x85,  // ug-cn
+            0x04, 0x81, 0x80, 0x35,  // mi-nz
+            0x04, 0x82, 0x8e, 0x65,  // oc-fr
+            0x04, 0x83, 0x17, 0x95,  // co-fr
+            0x04, 0x84, 0x5f, 0x76,  // gsw-fr
+            0x04, 0x85, 0x9f, 0x16,  // sah-ru
+            0x04, 0x86, 0x98, 0xcb,  // quc-latn-gt
+            0x04, 0x87, 0x9e, 0x15,  // rw-rw
+            0x04, 0x88, 0xc6, 0x25,  // wo-sn
+            0x04, 0x8c, 0x92, 0x66,  // prs-af
+            0x04, 0x91, 0x5e, 0x25,  // gd-gb
+            0x04, 0x92, 0x76, 0x0a,  // ku-arab-iq
+            0x05, 0x01, 0x97, 0xa8,  // qps-ploc
+            0x05, 0xfe, 0x97, 0xa9,  // qps-ploca
+            0x08, 0x01, 0x05, 0x25,  // ar-iq
+            0x08, 0x03, 0x14, 0xbe,  // ca-es-valencia
+            0x08, 0x04, 0xcb, 0x05,  // zh-cn
+            0x08, 0x07, 0x1a, 0x75,  // de-ch
+            0x08, 0x09, 0x29, 0xc5,  // en-gb
+            0x08, 0x0a, 0x46, 0x75,  // es-mx
+            0x08, 0x0c, 0x4e, 0xc5,  // fr-be
+            0x08, 0x10, 0x68, 0x75,  // it-ch
+            0x08, 0x13, 0x89, 0x85,  // nl-be
+            0x08, 0x14, 0x8b, 0xc5,  // nn-no
+            0x08, 0x16, 0x95, 0xe5,  // pt-pt
+            0x08, 0x18, 0x9b, 0x35,  // ro-md
+            0x08, 0x19, 0x9d, 0x25,  // ru-md
+            0x08, 0x1a, 0xae, 0x9a,  // sr-latn-cs
+            0x08, 0x1d, 0xb3, 0x05,  // sv-fi
+            0x08, 0x20, 0xc0, 0x25,  // ur-in
+            0x08, 0x2c, 0x0c, 0x8a,  // az-cyrl-az
+            0x08, 0x2e, 0x1c, 0xd6,  // dsb-de
+            0x08, 0x32, 0xba, 0x35,  // tn-bw
+            0x08, 0x3b, 0xa2, 0x15,  // se-se
+            0x08, 0x3c, 0x5d, 0xd5,  // ga-ie
+            0x08, 0x3e, 0x84, 0x35,  // ms-bn
+            0x08, 0x43, 0xc1, 0x6a,  // uz-cyrl-uz
+            0x08, 0x45, 0x10, 0xd5,  // bn-bd
+            0x08, 0x46, 0x90, 0x4a,  // pa-arab-pk
+            0x08, 0x49, 0xb5, 0xf5,  // ta-lk
+            0x08, 0x50, 0x81, 0xea,  // mn-mong-cn
+            0x08, 0x59, 0xa0, 0x3a,  // sd-arab-pk
+            0x08, 0x5d, 0x6a, 0x0a,  // iu-latn-ca
+            0x08, 0x5f, 0xbd, 0x7b,  // tzm-latn-dz
+            0x08, 0x60, 0x74, 0x4a,  // ks-deva-in
+            0x08, 0x61, 0x88, 0x95,  // ne-in
+            0x08, 0x67, 0x4b, 0xda,  // ff-latn-sn
+            0x08, 0x6b, 0x99, 0xd6,  // quz-ec
+            0x08, 0x73, 0xb8, 0xe5,  // ti-er
+            0x09, 0x01, 0x96, 0xdd,  // qps-latn-x-sh
+            0x09, 0xff, 0x98, 0x39,  // qps-plocm
+            0x0c, 0x01, 0x04, 0x35,  // ar-eg
+            0x0c, 0x04, 0xce, 0x35,  // zh-hk
+            0x0c, 0x07, 0x19, 0xd5,  // de-at
+            0x0c, 0x09, 0x22, 0x95,  // en-au
+            0x0c, 0x0a, 0x44, 0xc5,  // es-es
+            0x0c, 0x0c, 0x50, 0x55,  // fr-ca
+            0x0c, 0x1a, 0xab, 0x7a,  // sr-cyrl-cs
+            0x0c, 0x3b, 0xa1, 0x75,  // se-fi
+            0x0c, 0x50, 0x82, 0x8a,  // mn-mong-mn
+            0x0c, 0x51, 0x1e, 0x45,  // dz-bt
+            0x0c, 0x6b, 0x9a, 0x36,  // quz-pe
+            0x10, 0x01, 0x06, 0xb5,  // ar-ly
+            0x10, 0x04, 0xd0, 0x75,  // zh-sg
+            0x10, 0x07, 0x1c, 0x25,  // de-lu
+            0x10, 0x09, 0x25, 0x15,  // en-ca
+            0x10, 0x0a, 0x45, 0xd5,  // es-gt
+            0x10, 0x0c, 0x51, 0x95,  // fr-ch
+            0x10, 0x1a, 0x64, 0x15,  // hr-ba
+            0x10, 0x3b, 0xa6, 0x86,  // smj-no
+            0x10, 0x5f, 0xbe, 0xdb,  // tzm-tfng-ma
+            0x14, 0x01, 0x03, 0xe5,  // ar-dz
+            0x14, 0x04, 0xce, 0xf5,  // zh-mo
+            0x14, 0x07, 0x1b, 0xd5,  // de-li
+            0x14, 0x09, 0x35, 0xf5,  // en-nz
+            0x14, 0x0a, 0x43, 0x85,  // es-cr
+            0x14, 0x0c, 0x55, 0xa5,  // fr-lu
+            0x14, 0x1a, 0x13, 0x6a,  // bs-latn-ba
+            0x14, 0x3b, 0xa6, 0xe6,  // smj-se
+            0x18, 0x01, 0x07, 0x05,  // ar-ma
+            0x18, 0x09, 0x2c, 0xe5,  // en-ie
+            0x18, 0x0a, 0x47, 0x15,  // es-pa
+            0x18, 0x0c, 0x56, 0x45,  // fr-mc
+            0x18, 0x1a, 0xad, 0xfa,  // sr-latn-ba
+            0x18, 0x3b, 0xa5, 0xc6,  // sma-no
+            0x1c, 0x01, 0x0a, 0x75,  // ar-tn
+            0x1c, 0x09, 0x40, 0x45,  // en-za
+            0x1c, 0x0a, 0x44, 0x25,  // es-do
+            0x1c, 0x0c, 0x4e, 0x66,  // fr-029
+            0x1c, 0x1a, 0xaa, 0xda,  // sr-cyrl-ba
+            0x1c, 0x3b, 0xa6, 0x26,  // sma-se
+            0x20, 0x01, 0x07, 0xa5,  // ar-om
+            0x20, 0x09, 0x2e, 0xc5,  // en-jm
+            0x20, 0x0a, 0x49, 0x95,  // es-ve
+            0x20, 0x0c, 0x59, 0xb5,  // fr-re
+            0x20, 0x1a, 0x12, 0xca,  // bs-cyrl-ba
+            0x20, 0x3b, 0xa7, 0xa6,  // sms-fi
+            0x24, 0x01, 0x0a, 0xc5,  // ar-ye
+            0x24, 0x09, 0x20, 0x96,  // en-029
+            0x24, 0x0a, 0x43, 0x35,  // es-co
+            0x24, 0x0c, 0x50, 0xa5,  // fr-cd
+            0x24, 0x1a, 0xaf, 0xda,  // sr-latn-rs
+            0x24, 0x3b, 0xa7, 0x46,  // smn-fi
+            0x28, 0x01, 0x09, 0xd5,  // ar-sy
+            0x28, 0x09, 0x24, 0xc5,  // en-bz
+            0x28, 0x0a, 0x47, 0x65,  // es-pe
+            0x28, 0x0c, 0x5a, 0xa5,  // fr-sn
+            0x28, 0x1a, 0xac, 0xba,  // sr-cyrl-rs
+            0x2c, 0x01, 0x05, 0x75,  // ar-jo
+            0x2c, 0x09, 0x3c, 0xd5,  // en-tt
+            0x2c, 0x0a, 0x41, 0xf5,  // es-ar
+            0x2c, 0x0c, 0x52, 0x35,  // fr-cm
+            0x2c, 0x1a, 0xaf, 0x3a,  // sr-latn-me
+            0x30, 0x01, 0x06, 0x65,  // ar-lb
+            0x30, 0x09, 0x40, 0xe5,  // en-zw
+            0x30, 0x0a, 0x44, 0x75,  // es-ec
+            0x30, 0x0c, 0x51, 0xe5,  // fr-ci
+            0x30, 0x1a, 0xac, 0x1a,  // sr-cyrl-me
+            0x34, 0x01, 0x06, 0x15,  // ar-kw
+            0x34, 0x09, 0x36, 0x95,  // en-ph
+            0x34, 0x0a, 0x42, 0xe5,  // es-cl
+            0x34, 0x0c, 0x57, 0x35,  // fr-ml
+            0x38, 0x01, 0x02, 0xf5,  // ar-ae
+            0x38, 0x09, 0x2c, 0x95,  // en-id
+            0x38, 0x0a, 0x49, 0x45,  // es-uy
+            0x38, 0x0c, 0x55, 0xf5,  // fr-ma
+            0x3c, 0x01, 0x03, 0x45,  // ar-bh
+            0x3c, 0x09, 0x2c, 0x45,  // en-hk
+            0x3c, 0x0a, 0x48, 0x55,  // es-py
+            0x3c, 0x0c, 0x55, 0x05,  // fr-ht
+            0x40, 0x01, 0x08, 0x45,  // ar-qa
+            0x40, 0x09, 0x2d, 0xd5,  // en-in
+            0x40, 0x0a, 0x42, 0x45,  // es-bo
+            0x44, 0x09, 0x33, 0xc5,  // en-my
+            0x44, 0x0a, 0x48, 0xa5,  // es-sv
+            0x48, 0x09, 0x39, 0xb5,  // en-sg
+            0x48, 0x0a, 0x46, 0x25,  // es-hn
+            0x4c, 0x0a, 0x46, 0xc5,  // es-ni
+            0x50, 0x0a, 0x48, 0x05,  // es-pr
+            0x54, 0x0a, 0x48, 0xf5,  // es-us
+            0x58, 0x0a, 0x41, 0x96,  // es-419
+            0x5c, 0x0a, 0x43, 0xd5,  // es-cu
+            0x64, 0x1a, 0x12, 0xc7,  // bs-cyrl
+            0x68, 0x1a, 0x13, 0x67,  // bs-latn
+            0x6c, 0x1a, 0xaa, 0xd7,  // sr-cyrl
+            0x70, 0x1a, 0xad, 0xf7,  // sr-latn
+            0x70, 0x3b, 0xa7, 0x43,  // smn
+            0x74, 0x2c, 0x0c, 0x87,  // az-cyrl
+            0x74, 0x3b, 0xa7, 0xa3,  // sms
+            0x78, 0x04, 0xca, 0x42,  // zh
+            0x78, 0x14, 0x8b, 0xc2,  // nn
+            0x78, 0x1a, 0x12, 0xc2,  // bs
+            0x78, 0x2c, 0x0d, 0x27,  // az-latn
+            0x78, 0x3b, 0xa5, 0xc3,  // sma
+            0x78, 0x43, 0xc1, 0x67,  // uz-cyrl
+            0x78, 0x50, 0x81, 0x27,  // mn-cyrl
+            0x78, 0x5d, 0x69, 0x67,  // iu-cans
+            0x78, 0x5f, 0xbe, 0xd8,  // tzm-tfng
+            0x7c, 0x04, 0xca, 0xa6,  // zh-cht
+            0x7c, 0x14, 0x86, 0xe2,  // nb
+            0x7c, 0x1a, 0xaa, 0xd2,  // sr
+            0x7c, 0x28, 0xb7, 0xf7,  // tg-cyrl
+            0x7c, 0x2e, 0x1c, 0xd3,  // dsb
+            0x7c, 0x3b, 0xa6, 0x83,  // smj
+            0x7c, 0x43, 0xc2, 0x07,  // uz-latn
+            0x7c, 0x46, 0x90, 0x47,  // pa-arab
+            0x7c, 0x50, 0x81, 0xe7,  // mn-mong
+            0x7c, 0x59, 0xa0, 0x37,  // sd-arab
+            0x7c, 0x5c, 0x16, 0xe8,  // chr-cher
+            0x7c, 0x5d, 0x6a, 0x07,  // iu-latn
+            0x7c, 0x5f, 0xbd, 0x78,  // tzm-latn
+            0x7c, 0x67, 0x4b, 0xd7,  // ff-latn
+            0x7c, 0x68, 0x61, 0x37,  // ha-latn
+            0x7c, 0x86, 0x98, 0xc8,  // quc-latn
+            0x7c, 0x92, 0x76, 0x07,  // ku-arab
+            // Sort 0x1
+            0x00, 0x7f, 0xc6, 0x7b,  // x-iv_mathan
+            0x04, 0x07, 0x1a, 0xcc,  // de-de_phoneb
+            0x04, 0x0e, 0x65, 0x1c,  // hu-hu_technl
+            0x04, 0x37, 0x6d, 0x6c,  // ka-ge_modern
+            // Sort 0x2
+            0x08, 0x04, 0xcb, 0xcc,  // zh-cn_stroke
+            0x10, 0x04, 0xd1, 0x3c,  // zh-sg_stroke
+            0x14, 0x04, 0xcf, 0xbc,  // zh-mo_stroke
+            // Sort 0x3
+            0x04, 0x04, 0xd1, 0xfc,  // zh-tw_pronun
+            // Sort 0x4
+            0x04, 0x04, 0xd2, 0xbc,  // zh-tw_radstr
+            0x04, 0x11, 0x6a, 0xac,  // ja-jp_radstr
+            0x0c, 0x04, 0xce, 0x3c,  // zh-hk_radstr
+            0x14, 0x04, 0xce, 0xfc,  // zh-mo_radstr
+            // Sort 0x5
+            0x08, 0x04, 0xcb, 0x0c,  // zh-cn_phoneb
+            0x10, 0x04, 0xd0, 0x7c,  // zh-sg_phoneb
+        };
+
+        private const int LcidSortPrefix1Index = 1736;
+        private const int LcidSortPrefix2Index = 1752;
+        private const int LcidSortPrefix3Index = 1764;
+        private const int LcidSortPrefix4Index = 1768;
+        private const int LcidSortPrefix5Index = 1784;
 
         // ThreeLetterWindowsLanguageName is string containing 3-letter Windows language names
         // every 3-characters entry is matching locale name entry in CultureNames
@@ -3322,476 +3788,44 @@ namespace System.Globalization
             0x435  , 0x4e4 , 0x352 , 0x2710, 0x1f4 , 0xd1  , 1 | SemicolonSep      , 863 , 863 , // 863  - zu-za
         };
 
-        // Format of the data is LCDI | index to CultureNames | culture name length
-        private static readonly int[] s_lcidToCultureNameIndices = new int[]
-        {
-            0x1 << 16 | 41 << 4 | 2,         // ar
-            0x2 << 16 | 248 << 4 | 2,        // bg
-            0x3 << 16 | 326 << 4 | 2,        // ca
-            0x4 << 16 | 3272 << 4 | 7,       // zh-hans
-            0x5 << 16 | 382 << 4 | 2,        // cs
-            0x6 << 16 | 397 << 4 | 2,        // da
-            0x7 << 16 | 413 << 4 | 2,        // de
-            0x8 << 16 | 505 << 4 | 2,        // el
-            0x9 << 16 | 515 << 4 | 2,        // en
-            0xa << 16 | 1049 << 4 | 2,       // es
-            0xb << 16 | 1233 << 4 | 2,       // fi
-            0xc << 16 | 1254 << 4 | 2,       // fr
-            0xd << 16 | 1591 << 4 | 2,       // he
-            0xe << 16 | 1617 << 4 | 2,       // hu
-            0xf << 16 | 1666 << 4 | 2,       // is
-            0x10 << 16 | 1671 << 4 | 2,      // it
-            0x11 << 16 | 1706 << 4 | 2,      // ja
-            0x12 << 16 | 1829 << 4 | 2,      // ko
-            0x13 << 16 | 2195 << 4 | 2,      // nl
-            0x14 << 16 | 2247 << 4 | 2,      // no
-            0x15 << 16 | 2330 << 4 | 2,      // pl
-            0x16 << 16 | 2353 << 4 | 2,      // pt
-            0x17 << 16 | 2473 << 4 | 2,      // rm
-            0x18 << 16 | 2483 << 4 | 2,      // ro
-            0x19 << 16 | 2499 << 4 | 2,      // ru
-            0x1a << 16 | 1601 << 4 | 2,      // hr
-            0x1b << 16 | 2642 << 4 | 2,      // sk
-            0x1c << 16 | 2718 << 4 | 2,      // sq
-            0x1d << 16 | 2859 << 4 | 2,      // sv
-            0x1e << 16 | 2953 << 4 | 2,      // th
-            0x1f << 16 | 2994 << 4 | 2,      // tr
-            0x20 << 16 | 3074 << 4 | 2,      // ur
-            0x21 << 16 | 1651 << 4 | 2,      // id
-            0x22 << 16 | 3069 << 4 | 2,      // uk
-            0x23 << 16 | 231 << 4 | 2,       // be
-            0x24 << 16 | 2647 << 4 | 2,      // sl
-            0x25 << 16 | 1182 << 4 | 2,      // et
-            0x26 << 16 | 2005 << 4 | 2,      // lv
-            0x27 << 16 | 1983 << 4 | 2,      // lt
-            0x28 << 16 | 2943 << 4 | 2,      // tg
-            0x29 << 16 | 1198 << 4 | 2,      // fa
-            0x2a << 16 | 3141 << 4 | 2,      // vi
-            0x2b << 16 | 1629 << 4 | 2,      // hy
-            0x2c << 16 | 200 << 4 | 2,       // az
-            0x2d << 16 | 1187 << 4 | 2,      // eu
-            0x2e << 16 | 1611 << 4 | 3,      // hsb
-            0x2f << 16 | 2056 << 4 | 2,      // mk
-            0x30 << 16 | 2849 << 4 | 2,      // st
-            0x31 << 16 | 3004 << 4 | 2,      // ts
-            0x32 << 16 | 2979 << 4 | 2,      // tn
-            0x33 << 16 | 3136 << 4 | 2,      // ve
-            0x34 << 16 | 3186 << 4 | 2,      // xh
-            0x35 << 16 | 3383 << 4 | 2,      // zu
-            0x36 << 16 | 15 << 4 | 2,        // af
-            0x37 << 16 | 1750 << 4 | 2,      // ka
-            0x38 << 16 | 1244 << 4 | 2,      // fo
-            0x39 << 16 | 1596 << 4 | 2,      // hi
-            0x3a << 16 | 2130 << 4 | 2,      // mt
-            0x3b << 16 | 2583 << 4 | 2,      // se
-            0x3c << 16 | 1501 << 4 | 2,      // ga
-            0x3d << 16 | 3203 << 4 | 2,      // yi
-            0x3e << 16 | 2115 << 4 | 2,      // ms
-            0x3f << 16 | 1797 << 4 | 2,      // kk
-            0x40 << 16 | 1913 << 4 | 2,      // ky
-            0x41 << 16 | 2874 << 4 | 2,      // sw
-            0x42 << 16 | 2974 << 4 | 2,      // tk
-            0x43 << 16 | 3084 << 4 | 2,      // uz
-            0x44 << 16 | 3009 << 4 | 2,      // tt
-            0x45 << 16 | 269 << 4 | 2,       // bn
-            0x46 << 16 | 2308 << 4 | 2,      // pa
-            0x47 << 16 | 1539 << 4 | 2,      // gu
-            0x48 << 16 | 2293 << 4 | 2,      // or
-            0x49 << 16 | 2906 << 4 | 2,      // ta
-            0x4a << 16 | 2926 << 4 | 2,      // te
-            0x4b << 16 | 1824 << 4 | 2,      // kn
-            0x4c << 16 | 2061 << 4 | 2,      // ml
-            0x4d << 16 | 183 << 4 | 2,       // as
-            0x4e << 16 | 2110 << 4 | 2,      // mr
-            0x4f << 16 | 2540 << 4 | 2,      // sa
-            0x50 << 16 | 2066 << 4 | 2,      // mn
-            0x51 << 16 | 279 << 4 | 2,       // bo
-            0x52 << 16 | 392 << 4 | 2,       // cy
-            0x53 << 16 | 1819 << 4 | 2,      // km
-            0x54 << 16 | 1966 << 4 | 2,      // lo
-            0x55 << 16 | 2141 << 4 | 2,      // my
-            0x56 << 16 | 1511 << 4 | 2,      // gl
-            0x57 << 16 | 1839 << 4 | 3,      // kok
-            0x58 << 16 | 2098 << 4 | 3,      // mni
-            0x59 << 16 | 2563 << 4 | 2,      // sd
-            0x5a << 16 | 2900 << 4 | 3,      // syr
-            0x5b << 16 | 2637 << 4 | 2,      // si
-            0x5c << 16 | 366 << 4 | 3,       // chr
-            0x5d << 16 | 1686 << 4 | 2,      // iu
-            0x5e << 16 | 36 << 4 | 2,        // am
-            0x5f << 16 | 3020 << 4 | 3,      // tzm
-            0x60 << 16 | 1850 << 4 | 2,      // ks
-            0x61 << 16 | 2185 << 4 | 2,      // ne
-            0x62 << 16 | 1496 << 4 | 2,      // fy
-            0x63 << 16 | 2348 << 4 | 2,      // ps
-            0x64 << 16 | 1238 << 4 | 3,      // fil
-            0x65 << 16 | 473 << 4 | 2,       // dv
-            0x66 << 16 | 253 << 4 | 3,       // bin
-            0x67 << 16 | 1203 << 4 | 2,      // ff
-            0x68 << 16 | 1555 << 4 | 2,      // ha
-            0x69 << 16 | 1645 << 4 | 3,      // ibb
-            0x6a << 16 | 3209 << 4 | 2,      // yo
-            0x6b << 16 | 2455 << 4 | 3,      // quz
-            0x6c << 16 | 2260 << 4 | 3,      // nso
-            0x6d << 16 | 220 << 4 | 2,       // ba
-            0x6e << 16 | 1930 << 4 | 2,      // lb
-            0x6f << 16 | 1808 << 4 | 2,      // kl
-            0x70 << 16 | 1656 << 4 | 2,      // ig
-            0x71 << 16 | 1845 << 4 | 2,      // kr
-            0x72 << 16 | 2283 << 4 | 2,      // om
-            0x73 << 16 | 2958 << 4 | 2,      // ti
-            0x74 << 16 | 1516 << 4 | 2,      // gn
-            0x75 << 16 | 1585 << 4 | 3,      // haw
-            0x76 << 16 | 1918 << 4 | 2,      // la
-            0x77 << 16 | 2698 << 4 | 2,      // so
-            0x78 << 16 | 1661 << 4 | 2,      // ii
-            0x79 << 16 | 2323 << 4 | 3,      // pap
-            0x7a << 16 | 177 << 4 | 3,       // arn
-            0x7c << 16 | 2104 << 4 | 3,      // moh
-            0x7e << 16 | 289 << 4 | 2,       // br
-            0x80 << 16 | 3064 << 4 | 2,      // ug
-            0x81 << 16 | 2051 << 4 | 2,      // mi
-            0x82 << 16 | 2278 << 4 | 2,      // oc
-            0x83 << 16 | 377 << 4 | 2,       // co
-            0x84 << 16 | 1521 << 4 | 3,      // gsw
-            0x85 << 16 | 2545 << 4 | 3,      // sah
-            0x86 << 16 | 2444 << 4 | 3,      // quc
-            0x87 << 16 | 2529 << 4 | 2,      // rw
-            0x88 << 16 | 3170 << 4 | 2,      // wo
-            0x8c << 16 | 2342 << 4 | 3,      // prs
-            0x91 << 16 | 1506 << 4 | 2,      // gd
-            0x92 << 16 | 1888 << 4 | 2,      // ku
-            0x401 << 16 | 137 << 4 | 5,      // ar-sa
-            0x402 << 16 | 248 << 4 | 5,      // bg-bg
-            0x403 << 16 | 331 << 4 | 5,      // ca-es
-            0x404 << 16 | 3359 << 4 | 5,     // zh-tw
-            0x405 << 16 | 382 << 4 | 5,      // cs-cz
-            0x406 << 16 | 397 << 4 | 5,      // da-dk
-            0x407 << 16 | 428 << 4 | 5,      // de-de
-            0x408 << 16 | 510 << 4 | 5,      // el-gr
-            0x409 << 16 | 998 << 4 | 5,      // en-us
-            0x40a << 16 | 1100 << 4 | 5,     // es-es
-            0x40b << 16 | 1233 << 4 | 5,     // fi-fi
-            0x40c << 16 | 1330 << 4 | 5,     // fr-fr
-            0x40d << 16 | 1591 << 4 | 5,     // he-il
-            0x40e << 16 | 1617 << 4 | 5,     // hu-hu
-            0x40f << 16 | 1666 << 4 | 5,     // is-is
-            0x410 << 16 | 1676 << 4 | 5,     // it-it
-            0x411 << 16 | 1706 << 4 | 5,     // ja-jp
-            0x412 << 16 | 1834 << 4 | 5,     // ko-kr
-            0x413 << 16 | 2215 << 4 | 5,     // nl-nl
-            0x414 << 16 | 2158 << 4 | 5,     // nb-no
-            0x415 << 16 | 2330 << 4 | 5,     // pl-pl
-            0x416 << 16 | 2358 << 4 | 5,     // pt-br
-            0x417 << 16 | 2473 << 4 | 5,     // rm-ch
-            0x418 << 16 | 2488 << 4 | 5,     // ro-ro
-            0x419 << 16 | 2519 << 4 | 5,     // ru-ru
-            0x41a << 16 | 1606 << 4 | 5,     // hr-hr
-            0x41b << 16 | 2642 << 4 | 5,     // sk-sk
-            0x41c << 16 | 2718 << 4 | 5,     // sq-al
-            0x41d << 16 | 2869 << 4 | 5,     // sv-se
-            0x41e << 16 | 2953 << 4 | 5,     // th-th
-            0x41f << 16 | 2999 << 4 | 5,     // tr-tr
-            0x420 << 16 | 3079 << 4 | 5,     // ur-pk
-            0x421 << 16 | 1651 << 4 | 5,     // id-id
-            0x422 << 16 | 3069 << 4 | 5,     // uk-ua
-            0x423 << 16 | 231 << 4 | 5,      // be-by
-            0x424 << 16 | 2647 << 4 | 5,     // sl-si
-            0x425 << 16 | 1182 << 4 | 5,     // et-ee
-            0x426 << 16 | 2005 << 4 | 5,     // lv-lv
-            0x427 << 16 | 1983 << 4 | 5,     // lt-lt
-            0x428 << 16 | 2943 << 4 | 10,    // tg-cyrl-tj
-            0x429 << 16 | 1198 << 4 | 5,     // fa-ir
-            0x42a << 16 | 3141 << 4 | 5,     // vi-vn
-            0x42b << 16 | 1629 << 4 | 5,     // hy-am
-            0x42c << 16 | 210 << 4 | 10,     // az-latn-az
-            0x42d << 16 | 1187 << 4 | 5,     // eu-es
-            0x42e << 16 | 1611 << 4 | 6,     // hsb-de
-            0x42f << 16 | 2056 << 4 | 5,     // mk-mk
-            0x430 << 16 | 2854 << 4 | 5,     // st-za
-            0x431 << 16 | 3004 << 4 | 5,     // ts-za
-            0x432 << 16 | 2984 << 4 | 5,     // tn-za
-            0x433 << 16 | 3136 << 4 | 5,     // ve-za
-            0x434 << 16 | 3186 << 4 | 5,     // xh-za
-            0x435 << 16 | 3383 << 4 | 5,     // zu-za
-            0x436 << 16 | 20 << 4 | 5,       // af-za
-            0x437 << 16 | 1750 << 4 | 5,     // ka-ge
-            0x438 << 16 | 1249 << 4 | 5,     // fo-fo
-            0x439 << 16 | 1596 << 4 | 5,     // hi-in
-            0x43a << 16 | 2130 << 4 | 5,     // mt-mt
-            0x43b << 16 | 2588 << 4 | 5,     // se-no
-            0x43d << 16 | 3203 << 4 | 6,     // yi-001
-            0x43e << 16 | 2120 << 4 | 5,     // ms-my
-            0x43f << 16 | 1797 << 4 | 5,     // kk-kz
-            0x440 << 16 | 1913 << 4 | 5,     // ky-kg
-            0x441 << 16 | 2879 << 4 | 5,     // sw-ke
-            0x442 << 16 | 2974 << 4 | 5,     // tk-tm
-            0x443 << 16 | 3104 << 4 | 10,    // uz-latn-uz
-            0x444 << 16 | 3009 << 4 | 5,     // tt-ru
-            0x445 << 16 | 274 << 4 | 5,      // bn-in
-            0x446 << 16 | 2318 << 4 | 5,     // pa-in
-            0x447 << 16 | 1539 << 4 | 5,     // gu-in
-            0x448 << 16 | 2293 << 4 | 5,     // or-in
-            0x449 << 16 | 2906 << 4 | 5,     // ta-in
-            0x44a << 16 | 2926 << 4 | 5,     // te-in
-            0x44b << 16 | 1824 << 4 | 5,     // kn-in
-            0x44c << 16 | 2061 << 4 | 5,     // ml-in
-            0x44d << 16 | 183 << 4 | 5,      // as-in
-            0x44e << 16 | 2110 << 4 | 5,     // mr-in
-            0x44f << 16 | 2540 << 4 | 5,     // sa-in
-            0x450 << 16 | 2073 << 4 | 5,     // mn-mn
-            0x451 << 16 | 279 << 4 | 5,      // bo-cn
-            0x452 << 16 | 392 << 4 | 5,      // cy-gb
-            0x453 << 16 | 1819 << 4 | 5,     // km-kh
-            0x454 << 16 | 1966 << 4 | 5,     // lo-la
-            0x455 << 16 | 2141 << 4 | 5,     // my-mm
-            0x456 << 16 | 1511 << 4 | 5,     // gl-es
-            0x457 << 16 | 1839 << 4 | 6,     // kok-in
-            0x458 << 16 | 2098 << 4 | 6,     // mni-in
-            0x459 << 16 | 2573 << 4 | 10,    // sd-deva-in
-            0x45a << 16 | 2900 << 4 | 6,     // syr-sy
-            0x45b << 16 | 2637 << 4 | 5,     // si-lk
-            0x45c << 16 | 366 << 4 | 11,     // chr-cher-us
-            0x45d << 16 | 1686 << 4 | 10,    // iu-cans-ca
-            0x45e << 16 | 36 << 4 | 5,       // am-et
-            0x45f << 16 | 3020 << 4 | 11,    // tzm-arab-ma
-            0x460 << 16 | 1850 << 4 | 7,     // ks-arab
-            0x461 << 16 | 2190 << 4 | 5,     // ne-np
-            0x462 << 16 | 1496 << 4 | 5,     // fy-nl
-            0x463 << 16 | 2348 << 4 | 5,     // ps-af
-            0x464 << 16 | 1238 << 4 | 6,     // fil-ph
-            0x465 << 16 | 473 << 4 | 5,      // dv-mv
-            0x466 << 16 | 253 << 4 | 6,      // bin-ng
-            0x467 << 16 | 1228 << 4 | 5,     // ff-ng
-            0x468 << 16 | 1575 << 4 | 10,    // ha-latn-ng
-            0x469 << 16 | 1645 << 4 | 6,     // ibb-ng
-            0x46a << 16 | 3214 << 4 | 5,     // yo-ng
-            0x46b << 16 | 2455 << 4 | 6,     // quz-bo
-            0x46c << 16 | 2260 << 4 | 6,     // nso-za
-            0x46d << 16 | 220 << 4 | 5,      // ba-ru
-            0x46e << 16 | 1930 << 4 | 5,     // lb-lu
-            0x46f << 16 | 1808 << 4 | 5,     // kl-gl
-            0x470 << 16 | 1656 << 4 | 5,     // ig-ng
-            0x471 << 16 | 1845 << 4 | 5,     // kr-ng
-            0x472 << 16 | 2283 << 4 | 5,     // om-et
-            0x473 << 16 | 2963 << 4 | 5,     // ti-et
-            0x474 << 16 | 1516 << 4 | 5,     // gn-py
-            0x475 << 16 | 1585 << 4 | 6,     // haw-us
-            0x476 << 16 | 1918 << 4 | 6,     // la-001
-            0x477 << 16 | 2713 << 4 | 5,     // so-so
-            0x478 << 16 | 1661 << 4 | 5,     // ii-cn
-            0x479 << 16 | 2323 << 4 | 7,     // pap-029
-            0x47a << 16 | 177 << 4 | 6,      // arn-cl
-            0x47c << 16 | 2104 << 4 | 6,     // moh-ca
-            0x47e << 16 | 289 << 4 | 5,      // br-fr
-            0x480 << 16 | 3064 << 4 | 5,     // ug-cn
-            0x481 << 16 | 2051 << 4 | 5,     // mi-nz
-            0x482 << 16 | 2278 << 4 | 5,     // oc-fr
-            0x483 << 16 | 377 << 4 | 5,      // co-fr
-            0x484 << 16 | 1527 << 4 | 6,     // gsw-fr
-            0x485 << 16 | 2545 << 4 | 6,     // sah-ru
-            0x486 << 16 | 2444 << 4 | 11,    // quc-latn-gt
-            0x487 << 16 | 2529 << 4 | 5,     // rw-rw
-            0x488 << 16 | 3170 << 4 | 5,     // wo-sn
-            0x48c << 16 | 2342 << 4 | 6,     // prs-af
-            0x491 << 16 | 1506 << 4 | 5,     // gd-gb
-            0x492 << 16 | 1888 << 4 | 10,    // ku-arab-iq
-            0x501 << 16 | 2426 << 4 | 8,     // qps-ploc
-            0x5fe << 16 | 2426 << 4 | 8,     // qps-ploca
-            0x801 << 16 | 82 << 4 | 5,       // ar-iq
-            0x803 << 16 | 331 << 4 | 14,     // ca-es-valencia
-            0x804 << 16 | 3248 << 4 | 5,     // zh-cn
-            0x807 << 16 | 423 << 4 | 5,      // de-ch
-            0x809 << 16 | 668 << 4 | 5,      // en-gb
-            0x80a << 16 | 1127 << 4 | 5,     // es-mx
-            0x80c << 16 | 1260 << 4 | 5,     // fr-be
-            0x810 << 16 | 1671 << 4 | 5,     // it-ch
-            0x813 << 16 | 2200 << 4 | 5,     // nl-be
-            0x814 << 16 | 2236 << 4 | 5,     // nn-no
-            0x816 << 16 | 2398 << 4 | 5,     // pt-pt
-            0x818 << 16 | 2483 << 4 | 5,     // ro-md
-            0x819 << 16 | 2514 << 4 | 5,     // ru-md
-            0x81a << 16 | 2793 << 4 | 10,    // sr-latn-cs
-            0x81d << 16 | 2864 << 4 | 5,     // sv-fi
-            0x820 << 16 | 3074 << 4 | 5,     // ur-in
-            0x82c << 16 | 200 << 4 | 10,     // az-cyrl-az
-            0x82e << 16 | 461 << 4 | 6,      // dsb-de
-            0x832 << 16 | 2979 << 4 | 5,     // tn-bw
-            0x83b << 16 | 2593 << 4 | 5,     // se-se
-            0x83c << 16 | 1501 << 4 | 5,     // ga-ie
-            0x83e << 16 | 2115 << 4 | 5,     // ms-bn
-            0x843 << 16 | 3094 << 4 | 10,    // uz-cyrl-uz
-            0x845 << 16 | 269 << 4 | 5,      // bn-bd
-            0x846 << 16 | 2308 << 4 | 10,    // pa-arab-pk
-            0x849 << 16 | 2911 << 4 | 5,     // ta-lk
-            0x850 << 16 | 2078 << 4 | 10,    // mn-mong-cn
-            0x859 << 16 | 2563 << 4 | 10,    // sd-arab-pk
-            0x85d << 16 | 1696 << 4 | 10,    // iu-latn-ca
-            0x85f << 16 | 3031 << 4 | 11,    // tzm-latn-dz
-            0x860 << 16 | 1860 << 4 | 10,    // ks-deva-in
-            0x861 << 16 | 2185 << 4 | 5,     // ne-in
-            0x867 << 16 | 1213 << 4 | 10,    // ff-latn-sn
-            0x86b << 16 | 2461 << 4 | 6,     // quz-ec
-            0x873 << 16 | 2958 << 4 | 5,     // ti-er
-            0x901 << 16 | 2413 << 4 | 13,    // qps-latn-x-sh
-            0x9ff << 16 | 2435 << 4 | 9,     // qps-plocm
-            0xc01 << 16 | 67 << 4 | 5,       // ar-eg
-            0xc04 << 16 | 3299 << 4 | 5,     // zh-hk
-            0xc07 << 16 | 413 << 4 | 5,      // de-at
-            0xc09 << 16 | 553 << 4 | 5,      // en-au
-            0xc0a << 16 | 1100 << 4 | 5,     // es-es
-            0xc0c << 16 | 1285 << 4 | 5,     // fr-ca
-            0xc1a << 16 | 2743 << 4 | 10,    // sr-cyrl-cs
-            0xc3b << 16 | 2583 << 4 | 5,     // se-fi
-            0xc50 << 16 | 2088 << 4 | 10,    // mn-mong-mn
-            0xc51 << 16 | 484 << 4 | 5,      // dz-bt
-            0xc6b << 16 | 2467 << 4 | 6,     // quz-pe
-            0x1001 << 16 | 107 << 4 | 5,     // ar-ly
-            0x1004 << 16 | 3335 << 4 | 5,    // zh-sg
-            0x1007 << 16 | 450 << 4 | 5,     // de-lu
-            0x1009 << 16 | 593 << 4 | 5,     // en-ca
-            0x100a << 16 | 1117 << 4 | 5,    // es-gt
-            0x100c << 16 | 1305 << 4 | 5,    // fr-ch
-            0x101a << 16 | 1601 << 4 | 5,    // hr-ba
-            0x103b << 16 | 2664 << 4 | 6,    // smj-no
-            0x105f << 16 | 3053 << 4 | 11,   // tzm-tfng-ma
-            0x1401 << 16 | 62 << 4 | 5,      // ar-dz
-            0x1404 << 16 | 3311 << 4 | 5,    // zh-mo
-            0x1407 << 16 | 445 << 4 | 5,     // de-li
-            0x1409 << 16 | 863 << 4 | 5,     // en-nz
-            0x140a << 16 | 1080 << 4 | 5,    // es-cr
-            0x140c << 16 | 1370 << 4 | 5,    // fr-lu
-            0x141a << 16 | 310 << 4 | 10,    // bs-latn-ba
-            0x143b << 16 | 2670 << 4 | 6,    // smj-se
-            0x1801 << 16 | 112 << 4 | 5,     // ar-ma
-            0x1809 << 16 | 718 << 4 | 5,     // en-ie
-            0x180a << 16 | 1137 << 4 | 5,    // es-pa
-            0x180c << 16 | 1380 << 4 | 5,    // fr-mc
-            0x181a << 16 | 2783 << 4 | 10,   // sr-latn-ba
-            0x183b << 16 | 2652 << 4 | 6,    // sma-no
-            0x1c01 << 16 | 167 << 4 | 5,     // ar-tn
-            0x1c09 << 16 | 1028 << 4 | 5,    // en-za
-            0x1c0a << 16 | 1090 << 4 | 5,    // es-do
-            0x1c0c << 16 | 1254 << 4 | 6,    // fr-029
-            0x1c1a << 16 | 2733 << 4 | 10,   // sr-cyrl-ba
-            0x1c3b << 16 | 2658 << 4 | 6,    // sma-se
-            0x2001 << 16 | 122 << 4 | 5,     // ar-om
-            0x2009 << 16 | 748 << 4 | 5,     // en-jm
-            0x200a << 16 | 1177 << 4 | 5,    // es-ve
-            0x200c << 16 | 1435 << 4 | 5,    // fr-re
-            0x201a << 16 | 300 << 4 | 10,    // bs-cyrl-ba
-            0x203b << 16 | 2682 << 4 | 6,    // sms-fi
-            0x2401 << 16 | 172 << 4 | 5,     // ar-ye
-            0x2409 << 16 | 521 << 4 | 6,     // en-029
-            0x240a << 16 | 1075 << 4 | 5,    // es-co
-            0x240c << 16 | 1290 << 4 | 5,    // fr-cd
-            0x241a << 16 | 2813 << 4 | 10,   // sr-latn-rs
-            0x243b << 16 | 2676 << 4 | 6,    // smn-fi
-            0x2801 << 16 | 157 << 4 | 5,     // ar-sy
-            0x2809 << 16 | 588 << 4 | 5,     // en-bz
-            0x280a << 16 | 1142 << 4 | 5,    // es-pe
-            0x280c << 16 | 1450 << 4 | 5,    // fr-sn
-            0x281a << 16 | 2763 << 4 | 10,   // sr-cyrl-rs
-            0x2c01 << 16 | 87 << 4 | 5,      // ar-jo
-            0x2c09 << 16 | 973 << 4 | 5,     // en-tt
-            0x2c0a << 16 | 1055 << 4 | 5,    // es-ar
-            0x2c0c << 16 | 1315 << 4 | 5,    // fr-cm
-            0x2c1a << 16 | 2803 << 4 | 10,   // sr-latn-me
-            0x3001 << 16 | 102 << 4 | 5,     // ar-lb
-            0x3009 << 16 | 1038 << 4 | 5,    // en-zw
-            0x300a << 16 | 1095 << 4 | 5,    // es-ec
-            0x300c << 16 | 1310 << 4 | 5,    // fr-ci
-            0x301a << 16 | 2753 << 4 | 10,   // sr-cyrl-me
-            0x3401 << 16 | 97 << 4 | 5,      // ar-kw
-            0x3409 << 16 | 873 << 4 | 5,     // en-ph
-            0x340a << 16 | 1070 << 4 | 5,    // es-cl
-            0x340c << 16 | 1395 << 4 | 5,    // fr-ml
-            0x3801 << 16 | 47 << 4 | 5,      // ar-ae
-            0x3809 << 16 | 713 << 4 | 5,     // en-id
-            0x380a << 16 | 1172 << 4 | 5,    // es-uy
-            0x380c << 16 | 1375 << 4 | 5,    // fr-ma
-            0x3c01 << 16 | 52 << 4 | 5,      // ar-bh
-            0x3c09 << 16 | 708 << 4 | 5,     // en-hk
-            0x3c0a << 16 | 1157 << 4 | 5,    // es-py
-            0x3c0c << 16 | 1360 << 4 | 5,    // fr-ht
-            0x4001 << 16 | 132 << 4 | 5,     // ar-qa
-            0x4009 << 16 | 733 << 4 | 5,     // en-in
-            0x400a << 16 | 1060 << 4 | 5,    // es-bo
-            0x4409 << 16 | 828 << 4 | 5,     // en-my
-            0x440a << 16 | 1162 << 4 | 5,    // es-sv
-            0x4809 << 16 | 923 << 4 | 5,     // en-sg
-            0x480a << 16 | 1122 << 4 | 5,    // es-hn
-            0x4c0a << 16 | 1132 << 4 | 5,    // es-ni
-            0x500a << 16 | 1152 << 4 | 5,    // es-pr
-            0x540a << 16 | 1167 << 4 | 5,    // es-us
-            0x580a << 16 | 1049 << 4 | 6,    // es-419
-            0x5c0a << 16 | 1085 << 4 | 5,    // es-cu
-            0x641a << 16 | 300 << 4 | 7,     // bs-cyrl
-            0x681a << 16 | 310 << 4 | 7,     // bs-latn
-            0x6c1a << 16 | 2733 << 4 | 7,    // sr-cyrl
-            0x701a << 16 | 2783 << 4 | 7,    // sr-latn
-            0x703b << 16 | 2676 << 4 | 3,    // smn
-            0x742c << 16 | 200 << 4 | 7,     // az-cyrl
-            0x743b << 16 | 2682 << 4 | 3,    // sms
-            0x7804 << 16 | 3236 << 4 | 2,    // zh
-            0x7814 << 16 | 2236 << 4 | 2,    // nn
-            0x781a << 16 | 300 << 4 | 2,     // bs
-            0x782c << 16 | 210 << 4 | 7,     // az-latn
-            0x783b << 16 | 2652 << 4 | 3,    // sma
-            0x7843 << 16 | 3094 << 4 | 7,    // uz-cyrl
-            0x7850 << 16 | 2066 << 4 | 7,    // mn-cyrl
-            0x785d << 16 | 1686 << 4 | 7,    // iu-cans
-            0x785f << 16 | 3053 << 4 | 8,    // tzm-tfng
-            0x7c04 << 16 | 3292 << 4 | 7,    // zh-hant
-            0x7c14 << 16 | 2158 << 4 | 2,    // nb
-            0x7c1a << 16 | 2733 << 4 | 2,    // sr
-            0x7c28 << 16 | 2943 << 4 | 7,    // tg-cyrl
-            0x7c2e << 16 | 461 << 4 | 3,     // dsb
-            0x7c3b << 16 | 2664 << 4 | 3,    // smj
-            0x7c43 << 16 | 3104 << 4 | 7,    // uz-latn
-            0x7c46 << 16 | 2308 << 4 | 7,    // pa-arab
-            0x7c50 << 16 | 2078 << 4 | 7,    // mn-mong
-            0x7c59 << 16 | 2563 << 4 | 7,    // sd-arab
-            0x7c5c << 16 | 366 << 4 | 8,     // chr-cher
-            0x7c5d << 16 | 1696 << 4 | 7,    // iu-latn
-            0x7c5f << 16 | 3031 << 4 | 8,    // tzm-latn
-            0x7c67 << 16 | 1213 << 4 | 7,    // ff-latn
-            0x7c68 << 16 | 1555 << 4 | 7,    // ha-latn
-            0x7c86 << 16 | 2444 << 4 | 8,    // quc-latn
-            0x7c92 << 16 | 1888 << 4 | 7,    // ku-arab
-            0x1007f << 16 | 3175 << 4 | 11,  // x-iv_mathan
-            0x10407 << 16 | 428 << 4 | 5,    // de-de
-            0x1040e << 16 | 1617 << 4 | 5,   // hu-hu
-            0x10437 << 16 | 1750 << 4 | 5,   // ka-ge
-            0x20804 << 16 | 3248 << 4 | 5,   // zh-cn
-            0x21004 << 16 | 3335 << 4 | 5,   // zh-sg
-            0x21404 << 16 | 3311 << 4 | 5,   // zh-mo
-            0x30404 << 16 | 3359 << 4 | 5,   // zh-tw
-            0x40404 << 16 | 3359 << 4 | 5,   // zh-tw
-            0x40411 << 16 | 1706 << 4 | 5,   // ja-jp
-            0x40c04 << 16 | 3299 << 4 | 5,   // zh-hk
-            0x41404 << 16 | 3311 << 4 | 5,   // zh-mo
-            0x50804 << 16 | 3248 << 4 | 5,   // zh-cn
-            0x51004 << 16 | 3335 << 4 | 5,   // zh-sg
-        };
-
         internal static string? LCIDToLocaleName(int culture)
         {
+            uint sort = (uint)culture >> 16;
+            culture = (ushort)culture;
+
+            ReadOnlySpan<byte> indices = LcidToCultureNameIndices;
+
+            (int start, int end) = sort switch
+            {
+                0 => (0, LcidSortPrefix1Index),
+                1 => (LcidSortPrefix1Index, LcidSortPrefix2Index),
+                2 => (LcidSortPrefix2Index, LcidSortPrefix3Index),
+                3 => (LcidSortPrefix3Index, LcidSortPrefix4Index),
+                4 => (LcidSortPrefix4Index, LcidSortPrefix5Index),
+                5 => (LcidSortPrefix5Index, indices.Length),
+                _ => default
+            };
+
+            indices = indices[start..end];
+
             int lo = 0;
-            int hi = s_lcidToCultureNameIndices.Length - 1;
+            int hi = indices.Length / 4 - 1;
 
             // Binary search the array
             while (lo <= hi)
             {
                 int i = lo + ((hi - lo) >> 1);
+                int index = i * 4;
 
-                int index = s_lcidToCultureNameIndices[i];
-                int array_value = index >> 16;
+                int array_value = indices[index] << 8 | indices[index + 1];
+
                 int order = array_value.CompareTo(culture);
 
                 if (order == 0)
                 {
-                    return GetString(CultureNames.Slice((index >> 4) & 0xFFF, index & 0xF));
+                    start = (indices[index + 2] << 4) | indices[index + 3] >> 4;
+                    int length = indices[index + 3] & 0xF;
+                    return GetString(CultureNames.Slice(start, length));
                 }
 
                 if (order < 0)
