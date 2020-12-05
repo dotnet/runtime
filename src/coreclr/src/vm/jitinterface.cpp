@@ -532,7 +532,7 @@ CEEInfo::ConvToJitSig(
             }
         }
 #if !defined(TARGET_X86)
-        else if (checkUnmanagedCallersOnly && sigRet->callConv == IMAGE_CEE_CS_CALLCONV_DEFAULT &&
+        else if (checkUnmanagedCallersOnly && sigRet->callConv == CORINFO_CALLCONV_DEFAULT &&
             pContextMD && pContextMD->HasUnmanagedCallersOnlyAttribute())
         {
 #ifdef CROSSGEN_COMPILE
@@ -557,6 +557,8 @@ CEEInfo::ConvToJitSig(
                     break;
                 case pmCallConvFastcall:
                     sigRet->callConv = CORINFO_CALLCONV_FASTCALL;
+                    break;
+                default:
                     break;
                 }
             }
