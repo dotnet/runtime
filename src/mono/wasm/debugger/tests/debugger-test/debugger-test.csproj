@@ -62,7 +62,9 @@
       MainAssembly="$(OutDir)debugger-test.dll"
       MainJS="$(MonoProjectRoot)wasm\runtime-test.js"
       DebugLevel="1"
-      Assemblies="@(ReferencedAssemblies)" />
+      Assemblies="@(ReferencedAssemblies)">
+      <Output TaskParameter="FileWrites" ItemName="FileWrites" />
+    </WasmAppBuilder>
 
     <Copy SourceFiles="@(ExtraFileForPublish)" DestinationFolder="$(AppDir)" />
   </Target>

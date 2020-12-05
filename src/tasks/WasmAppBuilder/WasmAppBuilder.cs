@@ -27,6 +27,10 @@ public class WasmAppBuilder : Task
     [Required]
     public string[]? Assemblies { get; set; }
 
+    private List<string> _fileWrites = new();
+    [Output]
+    public string[]? FileWrites => _fileWrites.ToArray();
+
     // full list of ICU data files we produce can be found here:
     // https://github.com/dotnet/icu/tree/maint/maint-67/icu-filters
     public string? IcuDataFileName { get; set; } = "icudt.dat";
@@ -132,13 +136,13 @@ public class WasmAppBuilder : Task
         Directory.CreateDirectory(asmRootPath);
         foreach (var assembly in _assemblies)
         {
-            File.Copy(assembly, Path.Join(asmRootPath, Path.GetFileName(assembly)), true);
+            FileCopyChecked(assembly, Path.Join(asmRootPath, Path.GetFileName(assembly)), "Assemblies");
             if (DebugLevel > 0)
             {
                 var pdb = assembly;
                 pdb = Path.ChangeExtension(pdb, ".pdb");
                 if (File.Exists(pdb))
-                    File.Copy(pdb, Path.Join(asmRootPath, Path.GetFileName(pdb)), true);
+                    FileCopyChecked(pdb, Path.Join(asmRootPath, Path.GetFileName(pdb)), "Assemblies");
             }
         }
 
@@ -150,9 +154,9 @@ public class WasmAppBuilder : Task
         if (Path.TrimEndingDirectorySeparator(Path.GetFullPath(runtimeSourceDir)) != Path.TrimEndingDirectorySeparator(Path.GetFullPath(AppDir!)))
         {
             foreach (var f in nativeAssets)
-                File.Copy(Path.Join(runtimeSourceDir, f), Path.Join(AppDir, f), true);
+                FileCopyChecked(Path.Join(runtimeSourceDir, f), Path.Join(AppDir, f), "NativeAssets");
         }
-        File.Copy(MainJS!, Path.Join(AppDir, "runtime.js"),  true);
+        FileCopyChecked(MainJS!, Path.Join(AppDir, "runtime.js"), string.Empty);
 
         var html = @"<html><body><script type=""text/javascript"" src=""runtime.js""></script></body></html>";
         File.WriteAllText(Path.Join(AppDir, "index.html"), html);
@@ -179,7 +183,7 @@ public class WasmAppBuilder : Task
                 string name = Path.GetFileName(fullPath);
                 string directory = Path.Join(AppDir, config.AssemblyRoot, culture);
                 Directory.CreateDirectory(directory);
-                File.Copy(fullPath, Path.Join(directory, name), true);
+                FileCopyChecked(fullPath, Path.Join(directory, name), "SatelliteAssemblies");
                 config.Assets.Add(new SatelliteAssemblyEntry(name, culture));
             }
         }
@@ -203,7 +207,7 @@ public class WasmAppBuilder : Task
 
                 var generatedFileName = $"{i++}_{Path.GetFileName(item.ItemSpec)}";
 
-                File.Copy(item.ItemSpec, Path.Join(supportFilesDir, generatedFileName), true);
+                FileCopyChecked(item.ItemSpec, Path.Join(supportFilesDir, generatedFileName), "FilesToIncludeInFileSystem");
 
                 var asset = new VfsEntry ($"supportFiles/{generatedFileName}") {
                     VirtualPath = targetPath
@@ -224,16 +228,35 @@ public class WasmAppBuilder : Task
                     config.RemoteSources.Add(source.ItemSpec);
         }
 
-        using (var sw = File.CreateText(Path.Join(AppDir, "mono-config.js")))
+        string monoConfigPath = Path.Join(AppDir, "mono-config.js");
+        using (var sw = File.CreateText(monoConfigPath))
         {
             var json = JsonSerializer.Serialize (config, new JsonSerializerOptions { WriteIndented = true });
             sw.Write($"config = {json};");
         }
+        _fileWrites.Add(monoConfigPath);
 
-        using (var sw = File.CreateText(Path.Join(AppDir, "run-v8.sh")))
+        string runv8Path = Path.Join(AppDir, "run-v8.sh");
+        using (var sw = File.CreateText(runv8Path))
         {
             sw.WriteLine("v8 --expose_wasm runtime.js -- --run " + Path.GetFileName(MainAssembly) + " $*");
         }
+        _fileWrites.Add(runv8Path);
+
+        return true;
+    }
+
+    private bool FileCopyChecked(string src, string dst, string label)
+    {
+        if (!File.Exists(src))
+        {
+            Log.LogError($"{label} file '{src}' not found");
+            return false;
+        }
+
+        Log.LogMessage(MessageImportance.Low, $"Copying file from '{src}' to '{dst}'");
+        File.Copy(src, dst, true);
+        _fileWrites.Add(dst);
 
         return true;
     }

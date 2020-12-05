@@ -48,7 +48,9 @@
       MicrosoftNetCoreAppRuntimePackDir="$(MicrosoftNetCoreAppRuntimePackDir)"
       MainAssembly="bin\WasmSample.dll"
       MainJS="runtime.js"
-      Assemblies="@(ReferencedAssemblies)"/>
+      Assemblies="@(ReferencedAssemblies)">
+      <Output TaskParameter="FileWrites" ItemName="FileWrites" />
+    </WasmAppBuilder>
     <Exec Command="chmod a+x $(AppDir)/run-v8.sh" />
     <Copy SourceFiles="bin\index.html;bin\server.py" DestinationFolder="$(AppDir)" />
   </Target>
