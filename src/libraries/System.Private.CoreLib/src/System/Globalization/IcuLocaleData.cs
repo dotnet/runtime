@@ -27,21 +27,328 @@ namespace System.Globalization
         /*
         // Program used to generate and validate the culture data
         // input data needs to come sorted
-        static void GenerateData (string[] cultures, (string, string)[] lcids)
+        static (string, string)[] s_lcids = new (string, string)[]
         {
-            var list = new List<(string, List<string>)> ();
+            ("0x1","ar"), ("0x2","bg"), ("0x3","ca"), ("0x4","zh-chs"), ("0x5","cs"),
+            ("0x6","da"), ("0x7","de"), ("0x8","el"), ("0x9","en"), ("0xa","es"),
+            ("0xb","fi"), ("0xc","fr"), ("0xd","he"), ("0xe","hu"), ("0xf","is"),
+            ("0x10","it"), ("0x11","ja"), ("0x12","ko"), ("0x13","nl"), ("0x14","no"),
+            ("0x15","pl"), ("0x16","pt"), ("0x17","rm"), ("0x18","ro"), ("0x19","ru"),
+            ("0x1a","hr"), ("0x1b","sk"), ("0x1c","sq"), ("0x1d","sv"), ("0x1e","th"),
+            ("0x1f","tr"), ("0x20","ur"), ("0x21","id"), ("0x22","uk"), ("0x23","be"),
+            ("0x24","sl"), ("0x25","et"), ("0x26","lv"), ("0x27","lt"), ("0x28","tg"),
+            ("0x29","fa"), ("0x2a","vi"), ("0x2b","hy"), ("0x2c","az"), ("0x2d","eu"),
+            ("0x2e","hsb"), ("0x2f","mk"), ("0x30","st"), ("0x31","ts"), ("0x32","tn"),
+            ("0x33","ve"), ("0x34","xh"), ("0x35","zu"), ("0x36","af"), ("0x37","ka"),
+            ("0x38","fo"), ("0x39","hi"), ("0x3a","mt"), ("0x3b","se"), ("0x3c","ga"),
+            ("0x3d","yi"), ("0x3e","ms"), ("0x3f","kk"), ("0x40","ky"), ("0x41","sw"),
+            ("0x42","tk"), ("0x43","uz"), ("0x44","tt"), ("0x45","bn"), ("0x46","pa"),
+            ("0x47","gu"), ("0x48","or"), ("0x49","ta"), ("0x4a","te"), ("0x4b","kn"),
+            ("0x4c","ml"), ("0x4d","as"), ("0x4e","mr"), ("0x4f","sa"), ("0x50","mn"),
+            ("0x51","bo"), ("0x52","cy"), ("0x53","km"), ("0x54","lo"), ("0x55","my"),
+            ("0x56","gl"), ("0x57","kok"), ("0x58","mni"), ("0x59","sd"), ("0x5a","syr"),
+            ("0x5b","si"), ("0x5c","chr"), ("0x5d","iu"), ("0x5e","am"), ("0x5f","tzm"),
+            ("0x60","ks"), ("0x61","ne"), ("0x62","fy"), ("0x63","ps"), ("0x64","fil"),
+            ("0x65","dv"), ("0x66","bin"), ("0x67","ff"), ("0x68","ha"), ("0x69","ibb"),
+            ("0x6a","yo"), ("0x6b","quz"), ("0x6c","nso"), ("0x6d","ba"), ("0x6e","lb"),
+            ("0x6f","kl"), ("0x70","ig"), ("0x71","kr"), ("0x72","om"), ("0x73","ti"),
+            ("0x74","gn"), ("0x75","haw"), ("0x76","la"), ("0x77","so"), ("0x78","ii"),
+            ("0x79","pap"), ("0x7a","arn"), ("0x7c","moh"), ("0x7e","br"), ("0x80","ug"),
+            ("0x81","mi"), ("0x82","oc"), ("0x83","co"), ("0x84","gsw"), ("0x85","sah"),
+            ("0x86","quc"), ("0x87","rw"), ("0x88","wo"), ("0x8c","prs"), ("0x91","gd"),
+            ("0x92","ku"), ("0x401","ar-sa"), ("0x402","bg-bg"), ("0x403","ca-es"), ("0x404","zh-tw"),
+            ("0x405","cs-cz"), ("0x406","da-dk"), ("0x407","de-de"), ("0x408","el-gr"), ("0x409","en-us"),
+            ("0x40a","es-es_tradnl"), ("0x40b","fi-fi"), ("0x40c","fr-fr"), ("0x40d","he-il"), ("0x40e","hu-hu"),
+            ("0x40f","is-is"), ("0x410","it-it"), ("0x411","ja-jp"), ("0x412","ko-kr"), ("0x413","nl-nl"),
+            ("0x414","nb-no"), ("0x415","pl-pl"), ("0x416","pt-br"), ("0x417","rm-ch"), ("0x418","ro-ro"),
+            ("0x419","ru-ru"), ("0x41a","hr-hr"), ("0x41b","sk-sk"), ("0x41c","sq-al"), ("0x41d","sv-se"),
+            ("0x41e","th-th"), ("0x41f","tr-tr"), ("0x420","ur-pk"), ("0x421","id-id"), ("0x422","uk-ua"),
+            ("0x423","be-by"), ("0x424","sl-si"), ("0x425","et-ee"), ("0x426","lv-lv"), ("0x427","lt-lt"),
+            ("0x428","tg-cyrl-tj"), ("0x429","fa-ir"), ("0x42a","vi-vn"), ("0x42b","hy-am"), ("0x42c","az-latn-az"),
+            ("0x42d","eu-es"), ("0x42e","hsb-de"), ("0x42f","mk-mk"), ("0x430","st-za"), ("0x431","ts-za"),
+            ("0x432","tn-za"), ("0x433","ve-za"), ("0x434","xh-za"), ("0x435","zu-za"), ("0x436","af-za"),
+            ("0x437","ka-ge"), ("0x438","fo-fo"), ("0x439","hi-in"), ("0x43a","mt-mt"), ("0x43b","se-no"),
+            ("0x43d","yi-001"), ("0x43e","ms-my"), ("0x43f","kk-kz"), ("0x440","ky-kg"), ("0x441","sw-ke"),
+            ("0x442","tk-tm"), ("0x443","uz-latn-uz"), ("0x444","tt-ru"), ("0x445","bn-in"), ("0x446","pa-in"),
+            ("0x447","gu-in"), ("0x448","or-in"), ("0x449","ta-in"), ("0x44a","te-in"), ("0x44b","kn-in"),
+            ("0x44c","ml-in"), ("0x44d","as-in"), ("0x44e","mr-in"), ("0x44f","sa-in"), ("0x450","mn-mn"),
+            ("0x451","bo-cn"), ("0x452","cy-gb"), ("0x453","km-kh"), ("0x454","lo-la"), ("0x455","my-mm"),
+            ("0x456","gl-es"), ("0x457","kok-in"), ("0x458","mni-in"), ("0x459","sd-deva-in"), ("0x45a","syr-sy"),
+            ("0x45b","si-lk"), ("0x45c","chr-cher-us"), ("0x45d","iu-cans-ca"), ("0x45e","am-et"), ("0x45f","tzm-arab-ma"),
+            ("0x460","ks-arab"), ("0x461","ne-np"), ("0x462","fy-nl"), ("0x463","ps-af"), ("0x464","fil-ph"),
+            ("0x465","dv-mv"), ("0x466","bin-ng"), ("0x467","ff-ng"), ("0x468","ha-latn-ng"), ("0x469","ibb-ng"),
+            ("0x46a","yo-ng"), ("0x46b","quz-bo"), ("0x46c","nso-za"), ("0x46d","ba-ru"), ("0x46e","lb-lu"),
+            ("0x46f","kl-gl"), ("0x470","ig-ng"), ("0x471","kr-ng"), ("0x472","om-et"), ("0x473","ti-et"),
+            ("0x474","gn-py"), ("0x475","haw-us"), ("0x476","la-001"), ("0x477","so-so"), ("0x478","ii-cn"),
+            ("0x479","pap-029"), ("0x47a","arn-cl"), ("0x47c","moh-ca"), ("0x47e","br-fr"), ("0x480","ug-cn"),
+            ("0x481","mi-nz"), ("0x482","oc-fr"), ("0x483","co-fr"), ("0x484","gsw-fr"), ("0x485","sah-ru"),
+            ("0x486","quc-latn-gt"), ("0x487","rw-rw"), ("0x488","wo-sn"), ("0x48c","prs-af"), ("0x491","gd-gb"),
+            ("0x492","ku-arab-iq"), ("0x501","qps-ploc"), ("0x5fe","qps-ploca"), ("0x801","ar-iq"), ("0x803","ca-es-valencia"),
+            ("0x804","zh-cn"), ("0x807","de-ch"), ("0x809","en-gb"), ("0x80a","es-mx"), ("0x80c","fr-be"),
+            ("0x810","it-ch"), ("0x813","nl-be"), ("0x814","nn-no"), ("0x816","pt-pt"), ("0x818","ro-md"),
+            ("0x819","ru-md"), ("0x81a","sr-latn-cs"), ("0x81d","sv-fi"), ("0x820","ur-in"), ("0x82c","az-cyrl-az"),
+            ("0x82e","dsb-de"), ("0x832","tn-bw"), ("0x83b","se-se"), ("0x83c","ga-ie"), ("0x83e","ms-bn"),
+            ("0x843","uz-cyrl-uz"), ("0x845","bn-bd"), ("0x846","pa-arab-pk"), ("0x849","ta-lk"), ("0x850","mn-mong-cn"),
+            ("0x859","sd-arab-pk"), ("0x85d","iu-latn-ca"), ("0x85f","tzm-latn-dz"), ("0x860","ks-deva-in"), ("0x861","ne-in"),
+            ("0x867","ff-latn-sn"), ("0x86b","quz-ec"), ("0x873","ti-er"), ("0x901","qps-latn-x-sh"), ("0x9ff","qps-plocm"),
+            ("0xc01","ar-eg"), ("0xc04","zh-hk"), ("0xc07","de-at"), ("0xc09","en-au"), ("0xc0a","es-es"),
+            ("0xc0c","fr-ca"), ("0xc1a","sr-cyrl-cs"), ("0xc3b","se-fi"), ("0xc50","mn-mong-mn"), ("0xc51","dz-bt"),
+            ("0xc6b","quz-pe"), ("0x1001","ar-ly"), ("0x1004","zh-sg"), ("0x1007","de-lu"), ("0x1009","en-ca"),
+            ("0x100a","es-gt"), ("0x100c","fr-ch"), ("0x101a","hr-ba"), ("0x103b","smj-no"), ("0x105f","tzm-tfng-ma"),
+            ("0x1401","ar-dz"), ("0x1404","zh-mo"), ("0x1407","de-li"), ("0x1409","en-nz"), ("0x140a","es-cr"),
+            ("0x140c","fr-lu"), ("0x141a","bs-latn-ba"), ("0x143b","smj-se"), ("0x1801","ar-ma"), ("0x1809","en-ie"),
+            ("0x180a","es-pa"), ("0x180c","fr-mc"), ("0x181a","sr-latn-ba"), ("0x183b","sma-no"), ("0x1c01","ar-tn"),
+            ("0x1c09","en-za"), ("0x1c0a","es-do"), ("0x1c0c","fr-029"), ("0x1c1a","sr-cyrl-ba"), ("0x1c3b","sma-se"),
+            ("0x2001","ar-om"), ("0x2009","en-jm"), ("0x200a","es-ve"), ("0x200c","fr-re"), ("0x201a","bs-cyrl-ba"),
+            ("0x203b","sms-fi"), ("0x2401","ar-ye"), ("0x2409","en-029"), ("0x240a","es-co"), ("0x240c","fr-cd"),
+            ("0x241a","sr-latn-rs"), ("0x243b","smn-fi"), ("0x2801","ar-sy"), ("0x2809","en-bz"), ("0x280a","es-pe"),
+            ("0x280c","fr-sn"), ("0x281a","sr-cyrl-rs"), ("0x2c01","ar-jo"), ("0x2c09","en-tt"), ("0x2c0a","es-ar"),
+            ("0x2c0c","fr-cm"), ("0x2c1a","sr-latn-me"), ("0x3001","ar-lb"), ("0x3009","en-zw"), ("0x300a","es-ec"),
+            ("0x300c","fr-ci"), ("0x301a","sr-cyrl-me"), ("0x3401","ar-kw"), ("0x3409","en-ph"), ("0x340a","es-cl"),
+            ("0x340c","fr-ml"), ("0x3801","ar-ae"), ("0x3809","en-id"), ("0x380a","es-uy"), ("0x380c","fr-ma"),
+            ("0x3c01","ar-bh"), ("0x3c09","en-hk"), ("0x3c0a","es-py"), ("0x3c0c","fr-ht"), ("0x4001","ar-qa"),
+            ("0x4009","en-in"), ("0x400a","es-bo"), ("0x4409","en-my"), ("0x440a","es-sv"), ("0x4809","en-sg"),
+            ("0x480a","es-hn"), ("0x4c0a","es-ni"), ("0x500a","es-pr"), ("0x540a","es-us"), ("0x580a","es-419"),
+            ("0x5c0a","es-cu"), ("0x641a","bs-cyrl"), ("0x681a","bs-latn"), ("0x6c1a","sr-cyrl"), ("0x701a","sr-latn"),
+            ("0x703b","smn"), ("0x742c","az-cyrl"), ("0x743b","sms"), ("0x7804","zh"), ("0x7814","nn"),
+            ("0x781a","bs"), ("0x782c","az-latn"), ("0x783b","sma"), ("0x7843","uz-cyrl"), ("0x7850","mn-cyrl"),
+            ("0x785d","iu-cans"), ("0x785f","tzm-tfng"), ("0x7c04","zh-cht"), ("0x7c14","nb"), ("0x7c1a","sr"),
+            ("0x7c28","tg-cyrl"), ("0x7c2e","dsb"), ("0x7c3b","smj"), ("0x7c43","uz-latn"), ("0x7c46","pa-arab"),
+            ("0x7c50","mn-mong"), ("0x7c59","sd-arab"), ("0x7c5c","chr-cher"), ("0x7c5d","iu-latn"), ("0x7c5f","tzm-latn"),
+            ("0x7c67","ff-latn"), ("0x7c68","ha-latn"), ("0x7c86","quc-latn"), ("0x7c92","ku-arab"),
+            // Sort 0x1
+            ("0x1007f","x-iv_mathan"), ("0x10407","de-de_phoneb"), ("0x1040e","hu-hu_technl"), ("0x10437","ka-ge_modern"),
+            // Sort 0x2
+            ("0x20804","zh-cn_stroke"), ("0x21004","zh-sg_stroke"), ("0x21404","zh-mo_stroke"),
+            // Sort 0x3
+            ("0x30404","zh-tw_pronun"),
+            // Sort 0x4
+            ("0x40404","zh-tw_radstr"), ("0x40411","ja-jp_radstr"), ("0x40c04","zh-hk_radstr"), ("0x41404","zh-mo_radstr"),
+            // Sort 0x5
+            ("0x50804","zh-cn_phoneb"), ("0x51004","zh-sg_phoneb")
+        };
+
+        static string[] s_cultures = new string[]
+        {
+            "aa", "aa-dj", "aa-er", "aa-et",
+            "af", "af-na", "af-za",
+            "agq", "agq-cm",
+            "ak", "ak-gh",
+            "am", "am-et",
+            "ar", "ar-001", "ar-ae", "ar-bh", "ar-dj", "ar-dz", "ar-eg", "ar-er", "ar-il", "ar-iq", "ar-jo", "ar-km", "ar-kw", "ar-lb", "ar-ly", "ar-ma", "ar-mr", "ar-om", "ar-ps", "ar-qa", "ar-sa", "ar-sd", "ar-so", "ar-ss", "ar-sy", "ar-td", "ar-tn", "ar-ye", "arn", "arn-cl",
+            "as", "as-in", "asa", "asa-tz", "ast", "ast-es",
+            "az", "az-cyrl", "az-cyrl-az", "az-latn", "az-latn-az",
+            "ba", "ba-ru", "bas", "bas-cm",
+            "be", "be-by", "bem", "bem-zm", "bez", "bez-tz",
+            "bg", "bg-bg",
+            "bin", "bin-ng",
+            "bm", "bm-latn", "bm-latn-ml",
+            "bn", "bn-bd", "bn-in",
+            "bo", "bo-cn", "bo-in",
+            "br", "br-fr", "brx", "brx-in",
+            "bs", "bs-cyrl", "bs-cyrl-ba", "bs-latn", "bs-latn-ba",
+            "byn", "byn-er",
+            "ca", "ca-ad", "ca-es", "ca-es-valencia", "ca-fr", "ca-it",
+            "ce", "ce-ru",
+            "cgg", "cgg-ug",
+            "chr", "chr-cher", "chr-cher-us",
+            "co", "co-fr",
+            "cs", "cs-cz",
+            "cu", "cu-ru",
+            "cy", "cy-gb",
+            "da", "da-dk", "da-gl", "dav", "dav-ke",
+            "de", "de-at", "de-be", "de-ch", "de-de", "de-de_phoneb", "de-it", "de-li", "de-lu",
+            "dje", "dje-ne",
+            "dsb", "dsb-de",
+            "dua", "dua-cm",
+            "dv", "dv-mv",
+            "dyo", "dyo-sn",
+            "dz", "dz-bt",
+            "ebu", "ebu-ke",
+            "ee", "ee-gh", "ee-tg",
+            "el", "el-cy", "el-gr",
+            "en", "en-001", "en-029", "en-150", "en-ag", "en-ai", "en-as", "en-at", "en-au", "en-bb", "en-be", "en-bi", "en-bm", "en-bs", "en-bw", "en-bz", "en-ca", "en-cc", "en-ch", "en-ck", "en-cm", "en-cx", "en-cy", "en-de", "en-dk", "en-dm", "en-er", "en-fi", "en-fj", "en-fk", "en-fm", "en-gb", "en-gd", "en-gg", "en-gh", "en-gi", "en-gm", "en-gu", "en-gy", "en-hk", "en-id", "en-ie", "en-il", "en-im", "en-in", "en-io", "en-je", "en-jm", "en-ke", "en-ki", "en-kn", "en-ky", "en-lc", "en-lr", "en-ls", "en-mg", "en-mh", "en-mo", "en-mp", "en-ms", "en-mt", "en-mu", "en-mw", "en-my", "en-na", "en-nf", "en-ng", "en-nl", "en-nr", "en-nu", "en-nz", "en-pg", "en-ph", "en-pk", "en-pn", "en-pr", "en-pw", "en-rw", "en-sb", "en-sc", "en-sd", "en-se", "en-sg", "en-sh", "en-si", "en-sl", "en-ss", "en-sx", "en-sz", "en-tc", "en-tk", "en-to", "en-tt", "en-tv", "en-tz", "en-ug", "en-um", "en-us", "en-vc", "en-vg", "en-vi", "en-vu", "en-ws", "en-za", "en-zm", "en-zw",
+            "eo", "eo-001",
+            "es", "es-419", "es-ar", "es-bo", "es-br", "es-cl", "es-co", "es-cr", "es-cu", "es-do", "es-ec", "es-es", "es-es_tradnl", "es-gq", "es-gt", "es-hn", "es-mx", "es-ni", "es-pa", "es-pe", "es-ph", "es-pr", "es-py", "es-sv", "es-us", "es-uy", "es-ve",
+            "et", "et-ee",
+            "eu", "eu-es",
+            "ewo", "ewo-cm",
+            "fa", "fa-ir",
+            "ff", "ff-cm", "ff-gn", "ff-latn", "ff-latn-sn", "ff-mr", "ff-ng",
+            "fi", "fi-fi", "fil", "fil-ph",
+            "fo", "fo-dk", "fo-fo",
+            "fr", "fr-029", "fr-be", "fr-bf", "fr-bi", "fr-bj", "fr-bl", "fr-ca", "fr-cd", "fr-cf", "fr-cg", "fr-ch", "fr-ci", "fr-cm", "fr-dj", "fr-dz", "fr-fr", "fr-ga", "fr-gf", "fr-gn", "fr-gp", "fr-gq", "fr-ht", "fr-km", "fr-lu", "fr-ma", "fr-mc", "fr-mf", "fr-mg", "fr-ml", "fr-mq", "fr-mr", "fr-mu", "fr-nc", "fr-ne", "fr-pf", "fr-pm", "fr-re", "fr-rw", "fr-sc", "fr-sn", "fr-sy", "fr-td", "fr-tg", "fr-tn", "fr-vu", "fr-wf", "fr-yt",
+            "fur", "fur-it",
+            "fy", "fy-nl",
+            "ga", "ga-ie",
+            "gd", "gd-gb",
+            "gl", "gl-es",
+            "gn", "gn-py",
+            "gsw", "gsw-ch", "gsw-fr", "gsw-li",
+            "gu", "gu-in", "guz", "guz-ke",
+            "gv", "gv-im",
+            "ha", "ha-latn", "ha-latn-gh", "ha-latn-ne", "ha-latn-ng", "haw", "haw-us",
+            "he", "he-il",
+            "hi", "hi-in",
+            "hr", "hr-ba", "hr-hr",
+            "hsb", "hsb-de",
+            "hu", "hu-hu", "hu-hu_technl",
+            "hy", "hy-am",
+            "ia", "ia-001", "ia-fr",
+            "ibb", "ibb-ng",
+            "id", "id-id",
+            "ig", "ig-ng",
+            "ii", "ii-cn",
+            "is", "is-is",
+            "it", "it-ch", "it-it", "it-sm",
+            "iu", "iu-cans", "iu-cans-ca", "iu-latn", "iu-latn-ca",
+            "ja", "ja-jp", "ja-jp_radstr",
+            "jgo", "jgo-cm",
+            "jmc", "jmc-tz",
+            "jv", "jv-java", "jv-java-id", "jv-latn", "jv-latn-id",
+            "ka", "ka-ge", "ka-ge_modern", "kab", "kab-dz", "kam", "kam-ke",
+            "kde", "kde-tz",
+            "kea", "kea-cv",
+            "khq", "khq-ml",
+            "ki", "ki-ke",
+            "kk", "kk-kz", "kkj", "kkj-cm",
+            "kl", "kl-gl", "kln", "kln-ke",
+            "km", "km-kh",
+            "kn", "kn-in",
+            "ko", "ko-kp", "ko-kr", "kok", "kok-in",
+            "kr", "kr-ng",
+            "ks", "ks-arab", "ks-arab-in", "ks-deva", "ks-deva-in", "ksb", "ksb-tz", "ksf", "ksf-cm", "ksh", "ksh-de",
+            "ku", "ku-arab", "ku-arab-iq", "ku-arab-ir",
+            "kw", "kw-gb",
+            "ky", "ky-kg",
+            "la", "la-001", "lag", "lag-tz",
+            "lb", "lb-lu",
+            "lg", "lg-ug",
+            "lkt", "lkt-us",
+            "ln", "ln-ao", "ln-cd", "ln-cf", "ln-cg",
+            "lo", "lo-la",
+            "lrc", "lrc-iq", "lrc-ir",
+            "lt", "lt-lt",
+            "lu", "lu-cd", "luo", "luo-ke", "luy", "luy-ke",
+            "lv", "lv-lv",
+            "mas", "mas-ke", "mas-tz",
+            "mer", "mer-ke",
+            "mfe", "mfe-mu",
+            "mg", "mg-mg", "mgh", "mgh-mz", "mgo", "mgo-cm",
+            "mi", "mi-nz",
+            "mk", "mk-mk",
+            "ml", "ml-in",
+            "mn", "mn-cyrl", "mn-mn", "mn-mong", "mn-mong-cn", "mn-mong-mn", "mni", "mni-in",
+            "moh", "moh-ca",
+            "mr", "mr-in",
+            "ms", "ms-bn", "ms-my", "ms-sg",
+            "mt", "mt-mt",
+            "mua", "mua-cm",
+            "my", "my-mm",
+            "mzn", "mzn-ir",
+            "naq", "naq-na",
+            "nb", "nb-no", "nb-sj",
+            "nd", "nd-zw", "nds", "nds-de", "nds-nl",
+            "ne", "ne-in", "ne-np",
+            "nl", "nl-aw", "nl-be", "nl-bq", "nl-cw", "nl-nl", "nl-sr", "nl-sx",
+            "nmg", "nmg-cm",
+            "nn", "nn-no", "nnh", "nnh-cm",
+            "no",
+            "nqo", "nqo-gn",
+            "nr", "nr-za",
+            "nso", "nso-za",
+            "nus", "nus-ss",
+            "nyn", "nyn-ug",
+            "oc", "oc-fr",
+            "om", "om-et", "om-ke",
+            "or", "or-in",
+            "os", "os-ge", "os-ru",
+            "pa", "pa-arab", "pa-arab-pk", "pa-in", "pap", "pap-029",
+            "pl", "pl-pl",
+            "prg", "prg-001", "prs", "prs-af",
+            "ps", "ps-af",
+            "pt", "pt-ao", "pt-br", "pt-ch", "pt-cv", "pt-gq", "pt-gw", "pt-lu", "pt-mo", "pt-mz", "pt-pt", "pt-st", "pt-tl",
+            "qps-latn-x-sh", "qps-ploc", "qps-ploca", "qps-plocm",
+            "quc", "quc-latn", "quc-latn-gt", "quz", "quz-bo", "quz-ec", "quz-pe",
+            "rm", "rm-ch",
+            "rn", "rn-bi",
+            "ro", "ro-md", "ro-ro", "rof", "rof-tz",
+            "ru", "ru-by", "ru-kg", "ru-kz", "ru-md", "ru-ru", "ru-ua",
+            "rw", "rw-rw", "rwk", "rwk-tz",
+            "sa", "sa-in", "sah", "sah-ru", "saq", "saq-ke",
+            "sbp", "sbp-tz",
+            "sd", "sd-arab", "sd-arab-pk", "sd-deva", "sd-deva-in",
+            "se", "se-fi", "se-no", "se-se", "seh", "seh-mz", "ses", "ses-ml",
+            "sg", "sg-cf",
+            "shi", "shi-latn", "shi-latn-ma", "shi-tfng", "shi-tfng-ma",
+            "si", "si-lk",
+            "sk", "sk-sk",
+            "sl", "sl-si",
+            "sma", "sma-no", "sma-se", "smj", "smj-no", "smj-se", "smn", "smn-fi", "sms", "sms-fi",
+            "sn", "sn-latn", "sn-latn-zw",
+            "so", "so-dj", "so-et", "so-ke", "so-so",
+            "sq", "sq-al", "sq-mk", "sq-xk",
+            "sr", "sr-cyrl", "sr-cyrl-ba", "sr-cyrl-cs", "sr-cyrl-me", "sr-cyrl-rs", "sr-cyrl-xk", "sr-latn", "sr-latn-ba", "sr-latn-cs", "sr-latn-me", "sr-latn-rs", "sr-latn-xk",
+            "ss", "ss-sz", "ss-za", "ssy", "ssy-er",
+            "st", "st-ls", "st-za",
+            "sv", "sv-ax", "sv-fi", "sv-se",
+            "sw", "sw-cd", "sw-ke", "sw-tz", "sw-ug", "swc", "swc-cd",
+            "syr", "syr-sy",
+            "ta", "ta-in", "ta-lk", "ta-my", "ta-sg",
+            "te", "te-in", "teo", "teo-ke", "teo-ug",
+            "tg", "tg-cyrl", "tg-cyrl-tj",
+            "th", "th-th",
+            "ti", "ti-er", "ti-et", "tig", "tig-er",
+            "tk", "tk-tm",
+            "tn", "tn-bw", "tn-za",
+            "to", "to-to",
+            "tr", "tr-cy", "tr-tr",
+            "ts", "ts-za",
+            "tt", "tt-ru",
+            "twq", "twq-ne",
+            "tzm", "tzm-arab", "tzm-arab-ma", "tzm-latn", "tzm-latn-dz", "tzm-latn-ma", "tzm-tfng", "tzm-tfng-ma",
+            "ug", "ug-cn",
+            "uk", "uk-ua",
+            "ur", "ur-in", "ur-pk",
+            "uz", "uz-arab", "uz-arab-af", "uz-cyrl", "uz-cyrl-uz", "uz-latn", "uz-latn-uz",
+            "vai", "vai-latn", "vai-latn-lr", "vai-vaii", "vai-vaii-lr",
+            "ve", "ve-za",
+            "vi", "vi-vn",
+            "vo", "vo-001",
+            "vun", "vun-tz",
+            "wae", "wae-ch", "wal", "wal-et",
+            "wo", "wo-sn",
+            "x-iv_mathan",
+            "xh", "xh-za",
+            "xog", "xog-ug",
+            "yav", "yav-cm",
+            "yi", "yi-001",
+            "yo", "yo-bj", "yo-ng",
+            "yue", "yue-hk",
+            "zgh", "zgh-tfng", "zgh-tfng-ma",
+            "zh", "zh-chs", "zh-cht", "zh-cn", "zh-cn_phoneb", "zh-cn_stroke", "zh-hans", "zh-hans-hk", "zh-hans-mo", "zh-hant", "zh-hk", "zh-hk_radstr", "zh-mo", "zh-mo_radstr", "zh-mo_stroke", "zh-sg", "zh-sg_phoneb", "zh-sg_stroke", "zh-tw", "zh-tw_pronun", "zh-tw_radstr",
+            "zu", "zu-za",
+        };
+
+        static void GenerateData(string[] cultures, (string lcid, string culture)[] lcids)
+        {
+            var list = new List<(string culture, List<string> cultures)>();
 
             string prev = null;
-            for (int i = 0; i < cultures.Length; ++i) {
+            for (int i = 0; i < cultures.Length; ++i)
+            {
                 var raw = cultures[i];
 
                 List<string> values;
 
-                if (i > 0 && raw.StartsWith (prev)) {
-                    values = list[^1].Item2;
+                if (i > 0 && raw.StartsWith(prev))
+                {
+                    values = list[^1].cultures;
                     list[^1] = (raw, values);
-                } else {
-                    values = new List<string> ();
+                }
+                else
+                {
+                    values = new List<string>();
                     list.Add((raw, values));
                 }
 
@@ -53,66 +360,112 @@ namespace System.Globalization
             Console.WriteLine("private static ReadOnlySpan<byte> CultureNames => new byte[]");
             Console.WriteLine("{");
 
-            var indexes = new List<(int, int, string)> ();
+            var indexes = new List<(int position, int length, string cultureName)>();
             int pos = 0;
-            for (int i = 0; i < list.Count; ++i) {
+            var isFirst = true;
+            for (int i = 0; i < list.Count; ++i)
+            {
                 var row = list[i];
 
-                for (int ii = 0; ii < row.Item2.Count; ++ii)  {
-                    string value = row.Item2[ii];
-                    indexes.Add ((pos, value.Length, value));
+                for (int ii = 0; ii < row.cultures.Count; ++ii)
+                {
+                    string value = row.cultures[ii];
+                    indexes.Add((pos, value.Length, value));
                 }
 
-                foreach (var ch in row.Item1) {
+                foreach (var ch in row.culture)
+                {
+                    if (isFirst)
+                    {
+                        isFirst = false;
+                        Console.Write("    ");
+                    }
                     Console.Write($"(byte)'{ch}', ");
                 }
-                Console.WriteLine($"\t// {string.Join(' ', row.Item2)}");
+                Console.WriteLine($" // {string.Join(", ", row.cultures)}");
+                isFirst = true;
 
-                pos += row.Item1.Length;
+                pos += row.culture.Length;
             }
 
             Console.WriteLine("};");
 
-            Console.WriteLine($"const int CulturesCount = {indexes.Count};");
+            Console.WriteLine();
+            Console.WriteLine($"private const int CulturesCount = {indexes.Count};");
+            Console.WriteLine();
 
             Console.WriteLine("private static ReadOnlySpan<byte> LocalesNamesIndexes => new byte[CulturesCount * 2]");
             Console.WriteLine("{");
-            int max_length = 0;
-            foreach (var entry in indexes) {
-                Debug.Assert(entry.Item1 < Math.Pow (2,12));
-                Debug.Assert(entry.Item2 < Math.Pow (2, 4));
 
-                int index = entry.Item1 << 4 | entry.Item2;
+            int max_length = 0;
+            foreach (var entry in indexes)
+            {
+                Debug.Assert(entry.position < Math.Pow(2, 12));
+                Debug.Assert(entry.length < Math.Pow(2, 4));
+
+                int index = entry.position << 4 | entry.length;
                 int high = index >> 8;
                 int low = (byte)index;
 
-                Debug.Assert(((high << 4) | (low >> 4)) == entry.Item1);
-                Debug.Assert((low & 0xF) == entry.Item1);
+                Debug.Assert(((high << 4) | (low >> 4)) == entry.position);
+                Debug.Assert((low & 0xF) == entry.length);
 
-                Console.WriteLine($"    {high}, {low},\t// {entry.Item3}");
 
-                max_length = Math.Max(max_length, entry.Item2);
+                string lookup = $"{high}, {low},";
+                Console.WriteLine($"    {lookup}{new string(' ', 10 - lookup.Length)}// {entry.cultureName}");
+
+                max_length = Math.Max(max_length, entry.length);
             }
+
             Console.WriteLine("};");
 
-            Console.WriteLine($"const int LocaleLongestName = {max_length};");
+            Console.WriteLine();
+            Console.WriteLine($"private const int LocaleLongestName = {max_length};");
+            Console.WriteLine($"private const int LcidCount = {lcids.Length};");
+            Console.WriteLine();
 
-            Console.WriteLine("private static readonly int[] s_lcids = new int[]");
-            foreach (var entry in lcids) {
-                string name = entry.Item2.ToLowerInvariant();
-                int entryIndex = indexes.FindIndex(l => l.Item3 == name);
-                if (entryIndex < 0) {
-                    Console.WriteLine($"{entry.Item2} // {name}");
+            int lastSort = 0;
+            List<(int sort, int index)> sortList = new List<(int sort, int index)>();
+
+            Console.WriteLine("private static ReadOnlySpan<byte> LcidToCultureNameIndices => new byte[LcidCount * 4]");
+            Console.WriteLine("{");
+            int sortIndex = 0;
+            foreach (var entry in lcids)
+            {
+                int lcid = Convert.ToInt32(entry.lcid, 16);
+                int sort = lcid >> 16;
+                if (sort != lastSort)
+                {
+                    Console.WriteLine($"    // Sort 0x{sort:x}");
+                    lastSort = sort;
+                    sortList.Add((sort, sortIndex * 4));
+                }
+
+                string cultureName = entry.culture.ToLowerInvariant();
+                int entryIndex = indexes.FindIndex(l => l.cultureName == cultureName);
+                if (entryIndex < 0)
+                {
+                    Console.WriteLine($"{entry.culture} // {cultureName}");
                     continue;
                 }
 
                 var str = indexes[entryIndex];
-                Debug.Assert(str.Item1 < Math.Pow (2, 12));
-                Debug.Assert(str.Item2 < Math.Pow (2, 4));
+                Debug.Assert(str.position < Math.Pow(2, 12));
+                Debug.Assert(str.length < Math.Pow(2, 4));
 
-                Console.WriteLine($"{entry.Item1} << 16 | {str.Item1} << 4 | {str.Item2},\t // {name}");
+                // Trim off sort
+                lcid = (ushort)lcid;
+                int positionLength = str.position << 4 | str.length;
+
+                Console.WriteLine($"    0x{((lcid >> 8) & 0xff):x2}, 0x{(lcid & 0xff):x2}, 0x{((positionLength >> 8) & 0xff):x2}, 0x{(positionLength & 0xff):x2},  // {cultureName}");
+                sortIndex++;
             }
             Console.WriteLine("};");
+
+            foreach (var item in sortList)
+            {
+                Console.WriteLine($"private const int LcidSortPrefix{item.sort}Index = {item.index};");
+            }
         }
         */
 
