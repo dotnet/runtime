@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
@@ -52,31 +53,23 @@ public class WasmLoadAssembliesAndReferences : Task
             }
             resolver = new SearchPathsAssemblyResolver(new string[] { corelibPath });
         }
-        var mlc = new MetadataLoadContext(resolver, "System.Private.CoreLib");
 
+        var mlc = new MetadataLoadContext(resolver, "System.Private.CoreLib");
         foreach (var asm in Assemblies)
         {
             var asmFullPath = Path.GetFullPath(asm);
-            try
+            if (!File.Exists(asmFullPath))
             {
-                var refAssembly = mlc.LoadFromAssemblyPath(asmFullPath);
-                if (!AddAssemblyAndReferences(mlc, refAssembly))
-                    return !Log.HasLoggedErrors;
+                Log.LogError($"Could not find assembly '{asmFullPath}'");
+                return false;
             }
-            catch (Exception ex) when (ex is FileLoadException || ex is BadImageFormatException || ex is FileNotFoundException)
-            {
-                if (SkipMissingAssemblies)
-                    Log.LogWarning($"Loading assembly '{asm}' failed with {ex.Message} Skipping.");
-                else
-                {
-                    Log.LogError($"Failed to load assembly '{asm}': {ex.Message}");
-                    return false;
-                }
-            }
+
+            var refAssembly = mlc.LoadFromAssemblyPath(asmFullPath);
+            if (!AddAssemblyAndReferences(mlc, refAssembly))
+                return !Log.HasLoggedErrors;
         }
 
         ReferencedAssemblies = _assemblies.Values.Select(asm => asm.Location).ToArray();
-
         return !Log.HasLoggedErrors;
     }
 
@@ -97,7 +90,7 @@ public class WasmLoadAssembliesAndReferences : Task
             catch (Exception ex) when (ex is FileLoadException || ex is BadImageFormatException || ex is FileNotFoundException)
             {
                 if (SkipMissingAssemblies)
-                    Log.LogWarning($"Loading assembly reference '{aname}' for '{assembly.GetName()}' failed with {ex.Message} Skipping.");
+                    Log.LogWarning($"Loading assembly reference '{aname}' for '{assembly.GetName()}' failed: {ex.Message} Skipping.");
                 else
                 {
                     Log.LogError($"Failed to load assembly reference '{aname}' for '{assembly.GetName()}': {ex.Message}");
