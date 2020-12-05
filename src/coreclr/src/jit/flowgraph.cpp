@@ -13527,13 +13527,13 @@ void Compiler::fgComputeBlockAndEdgeWeights()
         JITDUMP(" -- no profile data, so using default called count\n");
     }
 
-    if (isOptimizing)
+    if (usingProfileWeights && isOptimizing)
     {
         fgComputeEdgeWeights();
     }
     else
     {
-        JITDUMP(" -- not optimizing, so not computing edge weights\n");
+        JITDUMP(" -- not optimizing or no profile data, so not computing edge weights\n");
     }
 }
 
