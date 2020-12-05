@@ -383,8 +383,8 @@ namespace R2RDump
 
         private static Dictionary<string, ReadyToRunImportSection.ImportSectionEntry> GetImports(ReadyToRunReader reader)
         {
-            Dictionary<string, ReadyToRunImportSection.ImportSectionEntry> result = new Dictionary<string, ReadyToRunImportSection.ImportSectionEntry>();
-            SignatureFormattingOptions signatureOptions = new SignatureFormattingOptions() { Naked = true };
+            var result = new Dictionary<string, ReadyToRunImportSection.ImportSectionEntry>();
+            var signatureOptions = new SignatureFormattingOptions() { Naked = true };
             foreach (ReadyToRunImportSection section in reader.ImportSections)
             {
                 foreach (ReadyToRunImportSection.ImportSectionEntry entry in section.Entries)
