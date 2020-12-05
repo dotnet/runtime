@@ -1472,7 +1472,7 @@ namespace System.Reflection
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
             Justification = "Module.ResolveType is marked as RequiresUnreferencedCode because it relies on tokens" +
                             "which are not guaranteed to be stable across trimming. So if somebody hardcodes a token it could break." +
-                            "The usage here is not like that as all these tokes come from existing metadata loaded from some IL" +
+                            "The usage here is not like that as all these tokens come from existing metadata loaded from some IL" +
                             "and so trimming has no effect (the tokens are read AFTER trimming occured).")]
         internal static AttributeUsageAttribute GetAttributeUsage(RuntimeType decoratedAttribute)
         {
