@@ -2586,7 +2586,7 @@ NO_MORE_LOOPS:
 
 void Compiler::optIdentifyLoopsForAlignment()
 {
-#if defined(TARGET_XARCH)
+#ifdef FEATURE_LOOP_ALIGN
     if (codeGen->ShouldAlignLoops())
     {
         for (unsigned char loopInd = 0; loopInd < optLoopCount; loopInd++)

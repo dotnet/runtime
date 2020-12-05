@@ -739,6 +739,7 @@ void CodeGen::genCodeForBBlist()
 
             case BBJ_COND:
 
+#ifdef FEATURE_LOOP_ALIGN
                 // This is the last place where we operate on blocks and after this, we operate
                 // on IG. Hence, if we know that the destination of "block" is the first block
                 // of a loop and needs alignment (it has BBF_LOOP_ALIGN), then "block" represents
@@ -751,6 +752,7 @@ void CodeGen::genCodeForBBlist()
                 {
                     GetEmitter()->emitSetLoopBackEdge((insGroup*)block->bbJumpDest->bbEmitCookie);
                 }
+#endif
                 break;
 
             default:
@@ -758,7 +760,7 @@ void CodeGen::genCodeForBBlist()
                 break;
         }
 
-#if defined(TARGET_XARCH)
+#ifdef FEATURE_LOOP_ALIGN
 
         // If next block is the first block of a loop (identified by BBF_LOOP_ALIGN),
         // then need to add align instruction in current "block". Also mark the
