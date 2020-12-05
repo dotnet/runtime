@@ -492,10 +492,11 @@ regMaskTP LinearScan::stressLimitRegs(RefPosition* refPosition, regMaskTP mask)
 #endif // DEBUG
 
 //------------------------------------------------------------------------
-// conflictingFixedRegReference: Determine whether the current RegRecord has a
+// conflictingFixedRegReference: Determine whether the 'reg' has a
 //                               fixed register use that conflicts with 'refPosition'
 //
 // Arguments:
+//    regNum      - The register of interest
 //    refPosition - The RefPosition of interest
 //
 // Return Value:
@@ -2770,14 +2771,14 @@ bool LinearScan::isMatchingConstant(RegRecord* physRegRecord, RefPosition* refPo
 // Return Value:
 //    The regNumber, if any, allocated to the RefPosition.
 //    Returns REG_NA only if 'refPosition->RegOptional()' is true, and there are
-//    no free register or registers with lower-weight Intervals that can be spilled.
+//    no free registers and no registers containing lower-weight Intervals that can be spilled.
 //
 // Notes:
 //    This method will prefer to allocate a free register, but if none are available,
 //    it will look for a lower-weight Interval to spill.
 //    Weight and farthest distance of next reference are used to determine whether an Interval
 //    currently occupying a register should be spilled. It will be spilled either:
-//    - At it most recent RefPosition, if that is within the current block, OR
+//    - At its most recent RefPosition, if that is within the current block, OR
 //    - At the boundary between the previous block and this one
 //
 // To select a ref position for spilling.
@@ -3232,13 +3233,13 @@ regNumber LinearScan::allocateReg(Interval* currentInterval, RefPosition* refPos
         }
     }
 
-    // Apply the COVERS heuristic. Only applies if we have freeCandidates.
+    // Apply the COVERS heuristic.
     if (!found)
     {
         found = selector.applySelection(COVERS, coversSet & preferenceSet);
     }
 
-    // Apply the OWN_PREFERENCE heuristic. Only applies if we have freeCandidates.
+    // Apply the OWN_PREFERENCE heuristic.
     // Note that 'preferenceSet' already includes only freeCandidates.
     if (!found)
     {
@@ -3246,20 +3247,20 @@ regNumber LinearScan::allocateReg(Interval* currentInterval, RefPosition* refPos
         found = selector.applySelection(OWN_PREFERENCE, preferenceSet);
     }
 
-    // Apply the COVERS_RELATED heuristic. Only applies if we have freeCandidates.
+    // Apply the COVERS_RELATED heuristic.
     if (!found)
     {
         assert((coversRelatedSet & freeCandidates) == coversRelatedSet);
         found = selector.applySelection(COVERS_RELATED, coversRelatedSet);
     }
 
-    // Apply the RELATED_PREFERENCE heuristic. Only applies if we have freeCandidates.
+    // Apply the RELATED_PREFERENCE heuristic.
     if (!found)
     {
         found = selector.applySelection(RELATED_PREFERENCE, relatedPreferences & freeCandidates);
     }
 
-    // Apply the CALLER_CALLEE heuristic. Only applies if we have freeCandidates.
+    // Apply the CALLER_CALLEE heuristic.
     if (!found)
     {
         found = selector.applySelection(CALLER_CALLEE, callerCalleePrefs & freeCandidates);
@@ -3343,7 +3344,7 @@ regNumber LinearScan::allocateReg(Interval* currentInterval, RefPosition* refPos
         found = selector.applySelection(BEST_FIT, bestFitSet);
     }
 
-    // Apply the IS_PREV_REG heuristic. Only applies if we have freeCandidates.
+    // Apply the IS_PREV_REG heuristic. TODO: Check if Only applies if we have freeCandidates.
     // Oddly, the previous heuristics only considered this if it covered the range.
     if ((prevRegRec != nullptr) && ((selector.score & COVERS_FULL) != 0))
     {
@@ -5442,12 +5443,9 @@ void LinearScan::allocateRegisters()
                                 if (isAssignedReg)
                                 {
                                     assert(nextIntervalRef[reg] == assignedInterval->getNextRefLocation());
-                                    if (assignedInterval->isActive)
-                                    {
-                                        assert(!isRegAvailable(reg, assignedInterval->registerType));
-                                        assert((recentRefPosition == nullptr) ||
-                                               (spillCost[reg] == getSpillWeight(physRegRecord)));
-                                    }
+                                    assert(!isRegAvailable(reg, assignedInterval->registerType));
+                                    assert((recentRefPosition == nullptr) ||
+                                           (spillCost[reg] == getSpillWeight(physRegRecord)));
                                 }
                                 else
                                 {
