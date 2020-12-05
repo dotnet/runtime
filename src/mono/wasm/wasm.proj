@@ -104,7 +104,7 @@
 
   <UsingTask TaskName="GenerateWasmVersionFile"
     AssemblyFile="$(WasmBuildTasksAssemblyPath)"/>
-  <Target Name="BuildWasmRuntimes"
+  <Target Name="BuildWinWasmRuntimes"
           Condition="'$(OS)' == 'Windows_NT'"
           AfterTargets="Build"
           DependsOnTargets="BuildPInvokeTable;BundleTimezones">
