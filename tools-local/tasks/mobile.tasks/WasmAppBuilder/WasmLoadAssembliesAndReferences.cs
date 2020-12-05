@@ -91,7 +91,8 @@ public class WasmLoadAssembliesAndReferences : Task
             try
             {
                 Assembly refAssembly = mlc.LoadFromAssemblyName(aname);
-                AddAssemblyAndReferences(mlc, refAssembly);
+                if (!AddAssemblyAndReferences(mlc, refAssembly))
+                    return false;
             }
             catch (Exception ex) when (ex is FileLoadException || ex is BadImageFormatException || ex is FileNotFoundException)
             {
