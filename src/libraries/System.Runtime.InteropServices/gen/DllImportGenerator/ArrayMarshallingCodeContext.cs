@@ -12,8 +12,11 @@ namespace Microsoft.Interop
 {
     internal sealed class ArrayMarshallingCodeContext : StubCodeContext
     {
+        public const string LocalManagedIdentifierSuffix = "_local";
+
         private readonly string indexerIdentifier;
         private readonly StubCodeContext parentContext;
+        private readonly bool appendLocalManagedIdentifierSuffix;
 
         public override bool PinningSupported => false;
 
@@ -21,11 +24,28 @@ namespace Microsoft.Interop
 
         public override bool CanUseAdditionalTemporaryState => false;
 
-        public ArrayMarshallingCodeContext(Stage currentStage, string indexerIdentifier, StubCodeContext parentContext)
+        /// <summary>
+        /// Create a <see cref="StubCodeContext"/> for marshalling elements of an array.
+        /// </summary>
+        /// <param name="currentStage">The current marshalling stage.</param>
+        /// <param name="indexerIdentifier">The indexer in the loop to get the element to marshal from the array.</param>
+        /// <param name="parentContext">The parent context.</param>
+        /// <param name="appendLocalManagedIdentifierSuffix">
+        /// For array marshalling, we sometimes cache the array in a local to avoid multithreading issues.
+        /// Set this to <c>true</c> to add the <see cref="LocalManagedIdentifierSuffix"/> to the managed identifier when
+        /// marshalling the array elements to ensure that we use the local copy instead of the managed identifier
+        /// when marshalling elements.
+        /// </param>
+        public ArrayMarshallingCodeContext(
+            Stage currentStage,
+            string indexerIdentifier,
+            StubCodeContext parentContext,
+            bool appendLocalManagedIdentifierSuffix)
         {
             CurrentStage = currentStage;
             this.indexerIdentifier = indexerIdentifier;
             this.parentContext = parentContext;
+            this.appendLocalManagedIdentifierSuffix = appendLocalManagedIdentifierSuffix;
         }
 
         /// <summary>
@@ -36,6 +56,10 @@ namespace Microsoft.Interop
         public override (string managed, string native) GetIdentifiers(TypePositionInfo info)
         {
             var (managed, native) = parentContext.GetIdentifiers(info);
+            if (appendLocalManagedIdentifierSuffix)
+            {
+                managed += LocalManagedIdentifierSuffix;
+            }
             return ($"{managed}[{indexerIdentifier}]", $"{native}[{indexerIdentifier}]");
         }
 

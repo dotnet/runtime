@@ -79,9 +79,7 @@ namespace Microsoft.Interop
                     IdentifierName(nativeIdentifier),
                     LiteralExpression(SyntaxKind.NullLiteralExpression)));
                 yield return IfStatement(
-                    BinaryExpression(SyntaxKind.NotEqualsExpression,
-                        IdentifierName(managedIdentifier),
-                        LiteralExpression(SyntaxKind.NullLiteralExpression)),
+                    GenerateNullCheckExpression(info, context),
                     Block(statements));
                 yield break;
             }
@@ -137,24 +135,15 @@ namespace Microsoft.Interop
                 ElseClause(marshalOnStack));
 
             yield return IfStatement(
-                BinaryExpression(
-                    SyntaxKind.EqualsExpression,
-                    IdentifierName(managedIdentifier),
-                    LiteralExpression(SyntaxKind.NullLiteralExpression)),
-                Block(
-                    ExpressionStatement(
-                        AssignmentExpression(
-                            SyntaxKind.SimpleAssignmentExpression,
-                            IdentifierName(nativeIdentifier),
-                            LiteralExpression(SyntaxKind.NullLiteralExpression)))),
-                ElseClause(Block(byteLenAssignment, allocBlock)));
+                GenerateNullCheckExpression(info, context),
+                Block(byteLenAssignment, allocBlock));
         }
 
         protected StatementSyntax GenerateConditionalAllocationFreeSyntax(
             TypePositionInfo info,
             StubCodeContext context)
         {
-            (string managedIdentifier, string nativeIdentifier) = context.GetIdentifiers(info);
+            (string managedIdentifier, _) = context.GetIdentifiers(info);
             string allocationMarkerIdentifier = GetAllocationMarkerIdentifier(managedIdentifier);
             if (!UsesConditionalStackAlloc(info, context))
             {
@@ -219,6 +208,22 @@ namespace Microsoft.Interop
         protected abstract ExpressionSyntax GenerateFreeExpression(
             TypePositionInfo info,
             StubCodeContext context);
+        
+        /// <summary>
+        /// Generate code to check if the managed value is not null.
+        /// </summary>
+        /// <param name="info">Object to marshal</param>
+        /// <param name="context">Code generation context</param>
+        /// <returns>An expression that checks if the managed value is not null.</returns>
+        protected virtual ExpressionSyntax GenerateNullCheckExpression(
+            TypePositionInfo info,
+            StubCodeContext context)
+        {
+            return BinaryExpression(
+                    SyntaxKind.NotEqualsExpression,
+                    IdentifierName(context.GetIdentifiers(info).managed),
+                    LiteralExpression(SyntaxKind.NullLiteralExpression));
+        }
 
         /// <inheritdoc/>
         public abstract TypeSyntax AsNativeType(TypePositionInfo info);
