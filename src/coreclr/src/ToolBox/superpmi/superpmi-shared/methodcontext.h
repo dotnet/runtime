@@ -507,11 +507,19 @@ public:
         DWORD result;
     };
 
-    struct Agnostic_ResolveVirtualMethod
+    struct Agnostic_ResolveVirtualMethodKey
     {
         DWORDLONG virtualMethod;
-        DWORDLONG implementingClass;
-        DWORDLONG ownerType;
+        DWORDLONG objClass;
+        DWORDLONG context;
+    };
+
+    struct Agnostic_ResolveVirtualMethodResult
+    {
+        bool      returnValue;
+        DWORDLONG devirtualizedMethod;
+        bool      requiresInstMethodTableArg;
+        DWORDLONG exactContext;
     };
 
     struct ResolveTokenValue
@@ -927,14 +935,9 @@ public:
                                   unsigned*             offsetAfterIndirection,
                                   bool*                 isRelative);
 
-    void recResolveVirtualMethod(CORINFO_METHOD_HANDLE  virtMethod,
-                                 CORINFO_CLASS_HANDLE   implClass,
-                                 CORINFO_CONTEXT_HANDLE ownerType,
-                                 CORINFO_METHOD_HANDLE  result);
-    void dmpResolveVirtualMethod(const Agnostic_ResolveVirtualMethod& key, DWORDLONG value);
-    CORINFO_METHOD_HANDLE repResolveVirtualMethod(CORINFO_METHOD_HANDLE  virtMethod,
-                                                  CORINFO_CLASS_HANDLE   implClass,
-                                                  CORINFO_CONTEXT_HANDLE ownerType);
+    void recResolveVirtualMethod(CORINFO_DEVIRTUALIZATION_INFO * info, bool returnValue);
+    void dmpResolveVirtualMethod(const Agnostic_ResolveVirtualMethodKey& key, const Agnostic_ResolveVirtualMethodResult& value);
+    bool repResolveVirtualMethod(CORINFO_DEVIRTUALIZATION_INFO * info);
 
     void recGetUnboxedEntry(CORINFO_METHOD_HANDLE ftn, bool* requiresInstMethodTableArg, CORINFO_METHOD_HANDLE result);
     void dmpGetUnboxedEntry(DWORDLONG key, DLD value);
@@ -1378,7 +1381,7 @@ private:
 };
 
 // ********************* Please keep this up-to-date to ease adding more ***************
-// Highest packet number: 182
+// Highest packet number: 184
 // *************************************************************************************
 enum mcPackets
 {

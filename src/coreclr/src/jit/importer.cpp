@@ -20643,8 +20643,8 @@ bool Compiler::IsMathIntrinsic(GenTree* tree)
 //     call -- the call node to examine/modify
 //     method   -- [IN/OUT] the method handle for call. Updated iff call devirtualized.
 //     methodFlags -- [IN/OUT] flags for the method to call. Updated iff call devirtualized.
-//     contextHandle -- [IN/OUT] context handle for the call. Updated iff call devirtualized.
-//     exactContextHandle -- [OUT] updated context handle iff call devirtualized
+//     pContextHandle -- [IN/OUT] context handle for the call. Updated iff call devirtualized.
+//     pExactContextHandle -- [OUT] updated context handle iff call devirtualized
 //     isLateDevirtualization -- if devirtualization is happening after importation
 //     isExplicitTailCalll -- [IN] true if we plan on using an explicit tail call
 //     ilOffset -- IL offset of the call
@@ -20679,8 +20679,8 @@ bool Compiler::IsMathIntrinsic(GenTree* tree)
 void Compiler::impDevirtualizeCall(GenTreeCall*            call,
                                    CORINFO_METHOD_HANDLE*  method,
                                    unsigned*               methodFlags,
-                                   CORINFO_CONTEXT_HANDLE* contextHandle,
-                                   CORINFO_CONTEXT_HANDLE* exactContextHandle,
+                                   CORINFO_CONTEXT_HANDLE* pContextHandle,
+                                   CORINFO_CONTEXT_HANDLE* pExactContextHandle,
                                    bool                    isLateDevirtualization,
                                    bool                    isExplicitTailCall,
                                    IL_OFFSETX              ilOffset)
@@ -20688,7 +20688,7 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
     assert(call != nullptr);
     assert(method != nullptr);
     assert(methodFlags != nullptr);
-    assert(contextHandle != nullptr);
+    assert(pContextHandle != nullptr);
 
     // This should be a virtual vtable or virtual stub call.
     assert(call->IsVirtual());
@@ -20920,15 +20920,20 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
 
         // Ask the runtime to determine the method that would be called based on the likely type.
         //
-        CORINFO_CONTEXT_HANDLE ownerType   = *contextHandle;
-        CORINFO_METHOD_HANDLE likelyMethod = info.compCompHnd->resolveVirtualMethod(baseMethod, likelyClass, ownerType);
+        CORINFO_DEVIRTUALIZATION_INFO dvInfo;
+        dvInfo.virtualMethod = baseMethod;
+        dvInfo.objClass      = likelyClass;
+        dvInfo.context       = *pContextHandle;
 
-        if (likelyMethod == nullptr)
+        bool canResolve = info.compCompHnd->resolveVirtualMethod(&dvInfo);
+
+        if (!canResolve)
         {
             JITDUMP("Can't figure out which method would be invoked, sorry\n");
             return;
         }
 
+        CORINFO_METHOD_HANDLE likelyMethod = dvInfo.devirtualizedMethod;
         JITDUMP("%s call would invoke method %s\n", callKind, eeGetMethodName(likelyMethod, nullptr));
 
         // Some of these may be redundant
@@ -20954,8 +20959,23 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
     // Fetch the method that would be called based on the declared type of 'this',
     // and prepare to fetch the method attributes.
     //
-    CORINFO_CONTEXT_HANDLE ownerType     = *contextHandle;
-    CORINFO_METHOD_HANDLE  derivedMethod = info.compCompHnd->resolveVirtualMethod(baseMethod, objClass, ownerType);
+    CORINFO_DEVIRTUALIZATION_INFO dvInfo;
+    dvInfo.virtualMethod = baseMethod;
+    dvInfo.objClass      = objClass;
+    dvInfo.context       = *pContextHandle;
+
+    info.compCompHnd->resolveVirtualMethod(&dvInfo);
+
+    CORINFO_METHOD_HANDLE  derivedMethod = dvInfo.devirtualizedMethod;
+    CORINFO_CONTEXT_HANDLE exactContext  = dvInfo.exactContext;
+    CORINFO_CLASS_HANDLE   derivedClass  = NO_CLASS_HANDLE;
+
+    if (exactContext != nullptr)
+    {
+        // We currently expect the context to always be a class context.
+        assert(((size_t)exactContext & CORINFO_CONTEXTFLAGS_MASK) == CORINFO_CONTEXTFLAGS_CLASS);
+        derivedClass = (CORINFO_CLASS_HANDLE)((size_t)exactContext & ~CORINFO_CONTEXTFLAGS_MASK);
+    }
 
     DWORD derivedMethodAttribs = 0;
     bool  derivedMethodIsFinal = false;
@@ -20998,7 +21018,8 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
 
         if (verbose || doPrint)
         {
-            derivedMethodName = eeGetMethodName(derivedMethod, &derivedClassName);
+            derivedMethodName = eeGetMethodName(derivedMethod, nullptr);
+            derivedClassName  = eeGetClassName(derivedClass);
             if (verbose)
             {
                 printf("    devirt to %s::%s -- %s\n", derivedClassName, derivedMethodName, note);
@@ -21029,9 +21050,10 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
 
         // See if there's a likely guess for the class.
         //
-        const unsigned       likelihoodThreshold = isInterface ? 25 : 30;
-        unsigned             likelihood          = 0;
-        unsigned             numberOfClasses     = 0;
+        const unsigned likelihoodThreshold = isInterface ? 25 : 30;
+        unsigned       likelihood          = 0;
+        unsigned       numberOfClasses     = 0;
+
         CORINFO_CLASS_HANDLE likelyClass =
             info.compCompHnd->getLikelyClass(info.compMethodHnd, baseClass, ilOffset, &likelihood, &numberOfClasses);
 
@@ -21081,15 +21103,20 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
 
         // Figure out which method will be called.
         //
-        CORINFO_CONTEXT_HANDLE ownerType   = *contextHandle;
-        CORINFO_METHOD_HANDLE likelyMethod = info.compCompHnd->resolveVirtualMethod(baseMethod, likelyClass, ownerType);
+        CORINFO_DEVIRTUALIZATION_INFO dvInfo;
+        dvInfo.virtualMethod = baseMethod;
+        dvInfo.objClass      = likelyClass;
+        dvInfo.context       = *pContextHandle;
 
-        if (likelyMethod == nullptr)
+        bool canResolve = info.compCompHnd->resolveVirtualMethod(&dvInfo);
+
+        if (!canResolve)
         {
             JITDUMP("Can't figure out which method would be invoked, sorry\n");
             return;
         }
 
+        CORINFO_METHOD_HANDLE likelyMethod = dvInfo.devirtualizedMethod;
         JITDUMP("%s call would invoke method %s\n", callKind, eeGetMethodName(likelyMethod, nullptr));
 
         // Some of these may be redundant
@@ -21273,24 +21300,20 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
         }
     }
 
-    // Fetch the class that introduced the derived method.
+    // Need to update call info too.
     //
-    // Note this may not equal objClass, if there is a
-    // final method that objClass inherits.
-    CORINFO_CLASS_HANDLE derivedClass = info.compCompHnd->getMethodClass(derivedMethod);
+    *method      = derivedMethod;
+    *methodFlags = derivedMethodAttribs;
 
-    // Need to update call info too. This is fragile and suboptimal
-    // https://github.com/dotnet/runtime/issues/38477
-    // but hopefully the derived method conforms to
-    // the base in most other ways.
-    *method        = derivedMethod;
-    *methodFlags   = derivedMethodAttribs;
-    *contextHandle = MAKE_METHODCONTEXT(derivedMethod);
+    // Update context handle
+    //
+    *pContextHandle = MAKE_METHODCONTEXT(derivedMethod);
 
-    // Update context handle.
-    if ((exactContextHandle != nullptr) && (*exactContextHandle != nullptr))
+    // Update exact context handle.
+    //
+    if (pExactContextHandle != nullptr)
     {
-        *exactContextHandle = MAKE_METHODCONTEXT(derivedMethod);
+        *pExactContextHandle = MAKE_CLASSCONTEXT(derivedClass);
     }
 
 #ifdef FEATURE_READYTORUN_COMPILER
@@ -21303,7 +21326,7 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
         CORINFO_RESOLVED_TOKEN derivedResolvedToken = {};
 
         derivedResolvedToken.tokenScope   = info.compCompHnd->getMethodModule(derivedMethod);
-        derivedResolvedToken.tokenContext = *contextHandle;
+        derivedResolvedToken.tokenContext = *pContextHandle;
         derivedResolvedToken.token        = info.compCompHnd->getMethodDefFromMethod(derivedMethod);
         derivedResolvedToken.tokenType    = CORINFO_TOKENKIND_Method;
         derivedResolvedToken.hClass       = derivedClass;

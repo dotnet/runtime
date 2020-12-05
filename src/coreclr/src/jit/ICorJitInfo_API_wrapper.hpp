@@ -135,13 +135,11 @@ void WrapICorJitInfo::getMethodVTableOffset(
     API_LEAVE(getMethodVTableOffset);
 }
 
-CORINFO_METHOD_HANDLE WrapICorJitInfo::resolveVirtualMethod(
-          CORINFO_METHOD_HANDLE virtualMethod,
-          CORINFO_CLASS_HANDLE implementingClass,
-          CORINFO_CONTEXT_HANDLE ownerType)
+bool WrapICorJitInfo::resolveVirtualMethod(
+          CORINFO_DEVIRTUALIZATION_INFO* info)
 {
     API_ENTER(resolveVirtualMethod);
-    CORINFO_METHOD_HANDLE temp = wrapHnd->resolveVirtualMethod(virtualMethod, implementingClass, ownerType);
+    bool temp = wrapHnd->resolveVirtualMethod(info);
     API_LEAVE(resolveVirtualMethod);
     return temp;
 }
