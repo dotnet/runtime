@@ -3,7 +3,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
@@ -17,6 +16,8 @@ public class WasmLoadAssembliesAndReferences : Task
     [NotNull]
     public string[]? Assemblies { get; set; }
 
+    [Required]
+    [NotNull]
     public string[]? AssemblySearchPaths { get; set; }
 
     // If true, continue when a referenced assembly cannot be found.
@@ -30,31 +31,15 @@ public class WasmLoadAssembliesAndReferences : Task
 
     public override bool Execute ()
     {
-        SearchPathsAssemblyResolver resolver;
-
-        if (AssemblySearchPaths != null)
+        string? badPath = AssemblySearchPaths.FirstOrDefault(path => !Directory.Exists(path));
+        if (badPath != null)
         {
-            string? badPath = AssemblySearchPaths.FirstOrDefault(path => !Directory.Exists(path));
-            if (badPath != null)
-            {
-                Log.LogError($"Directory '{badPath}' in AssemblySearchPaths does not exist or is not a directory.");
-                return false;
-            }
-
-            resolver = new SearchPathsAssemblyResolver(AssemblySearchPaths);
-        }
-        else
-        {
-            string? corelibPath = Path.GetDirectoryName(Assemblies.FirstOrDefault(asm => asm.EndsWith("System.Private.CoreLib.dll")));
-            if (corelibPath == null)
-            {
-                Log.LogError("'System.Private.CoreLib.dll' not found in given Assemblies. Since no AssemblySearchPaths were specified, path to 'System.Private.CoreLib.dll' is needed to resolve assembly dependencies.");
-                return false;
-            }
-            resolver = new SearchPathsAssemblyResolver(new string[] { corelibPath });
+            Log.LogError($"Directory '{badPath}' in AssemblySearchPaths does not exist or is not a directory.");
+            return false;
         }
 
-        var mlc = new MetadataLoadContext(resolver, "System.Private.CoreLib");
+        SearchPathsAssemblyResolver resolver = new(AssemblySearchPaths);
+        MetadataLoadContext mlc = new(resolver, "System.Private.CoreLib");
         foreach (var asm in Assemblies)
         {
             var asmFullPath = Path.GetFullPath(asm);
@@ -90,7 +75,9 @@ public class WasmLoadAssembliesAndReferences : Task
             catch (Exception ex) when (ex is FileLoadException || ex is BadImageFormatException || ex is FileNotFoundException)
             {
                 if (SkipMissingAssemblies)
+                {
                     Log.LogWarning($"Loading assembly reference '{aname}' for '{assembly.GetName()}' failed: {ex.Message} Skipping.");
+                }
                 else
                 {
                     Log.LogError($"Failed to load assembly reference '{aname}' for '{assembly.GetName()}': {ex.Message}");
@@ -107,10 +94,7 @@ internal class SearchPathsAssemblyResolver : MetadataAssemblyResolver
 {
     private readonly string[] _searchPaths;
 
-    public SearchPathsAssemblyResolver(string[] searchPaths)
-    {
-        _searchPaths = searchPaths;
-    }
+    public SearchPathsAssemblyResolver(string[] searchPaths) => _searchPaths = searchPaths;
 
     public override Assembly? Resolve(MetadataLoadContext context, AssemblyName assemblyName)
     {
