@@ -5,7 +5,7 @@
 
 typedef uint16_t UChar;
 
-// Include System.Globalization.Native headers
+// Include System.Globalization.Native headers.
 #include "pal_calendarData.h"
 #include "pal_casing.h"
 #include "pal_collation.h"
