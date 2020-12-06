@@ -62,6 +62,18 @@ namespace System.Collections.Tests
             Assert.Equal(comparer, copied.Comparer);
         }
 
+        [Theory]
+        [MemberData(nameof(ValidCollectionSizes))]
+        public void SortedDictionary_Generic_Constructor_SortedDictionary_IComparer(int count)
+        {
+            IComparer<TKey> comparer = GetKeyIComparer();
+            IDictionary<TKey, TValue> source = GenericIDictionaryFactory(count);
+            SortedDictionary<TKey, TValue> sourceSorted = new SortedDictionary<TKey, TValue>(source, comparer);
+            SortedDictionary<TKey, TValue> copied = new SortedDictionary<TKey, TValue>(sourceSorted, comparer);
+            Assert.Equal(sourceSorted, copied);
+            Assert.Equal(comparer, copied.Comparer);
+        }
+
         #endregion
 
         #region ContainsValue
