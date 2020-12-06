@@ -3396,7 +3396,8 @@ PCODE DynamicHelperFixup(TransitionBlock * pTransitionBlock, TADDR * pCell, DWOR
         {
         case ENCODE_NEW_HELPER:
             {
-                CorInfoHelpFunc helpFunc = CEEInfo::getNewHelperStatic(th.AsMethodTable());
+                bool fHasSideEffectsUnused;
+                CorInfoHelpFunc helpFunc = CEEInfo::getNewHelperStatic(th.AsMethodTable(), &fHasSideEffectsUnused);
                 pHelper = DynamicHelpers::CreateHelper(pModule->GetLoaderAllocator(), th.AsTAddr(), CEEJitInfo::getHelperFtnStatic(helpFunc));
             }
             break;

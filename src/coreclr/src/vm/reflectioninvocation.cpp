@@ -2135,7 +2135,8 @@ void QCALLTYPE RuntimeTypeHandle::GetActivationInfo(
     else
     {
         // managed sig: MethodTable* -> object (via JIT helper)
-        *ppfnAllocator = CEEJitInfo::getHelperFtnStatic(CEEInfo::getNewHelperStatic(pMT));
+        bool fHasSideEffectsUnused;
+        *ppfnAllocator = CEEJitInfo::getHelperFtnStatic(CEEInfo::getNewHelperStatic(pMT, &fHasSideEffectsUnused));
         *pvAllocatorFirstArg = pMT;
 
         if (pMT->HasDefaultConstructor())

@@ -2050,7 +2050,7 @@ public:
     // Get the unboxed entry point for a method, if possible.
     virtual CORINFO_METHOD_HANDLE getUnboxedEntry(
         CORINFO_METHOD_HANDLE ftn,
-        bool* requiresInstMethodTableArg = NULL /* OUT */
+        bool* requiresInstMethodTableArg
         ) = 0;
 
     // Given T, return the type of the default EqualityComparer<T>.
@@ -2343,7 +2343,7 @@ public:
     virtual CorInfoHelpFunc getNewHelper(
             CORINFO_RESOLVED_TOKEN * pResolvedToken,
             CORINFO_METHOD_HANDLE    callerHandle,
-            bool *                   pHasSideEffects = NULL /* OUT */
+            bool *                   pHasSideEffects
             ) = 0;
 
     // returns the newArr (1-Dim array) helper optimized for "arrayCls."
