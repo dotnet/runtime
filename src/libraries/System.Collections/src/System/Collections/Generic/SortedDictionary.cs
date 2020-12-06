@@ -35,16 +35,16 @@ namespace System.Collections.Generic
                 throw new ArgumentNullException(nameof(dictionary));
             }
 
-            var keyVaultPairComparer = new KeyValuePairComparer(comparer);
+            var keyValuePairComparer = new KeyValuePairComparer(comparer);
 
             if (dictionary is SortedDictionary<TKey, TValue> sortedDictionary &&
-                sortedDictionary._set.Comparer.Equals(keyVaultPairComparer))
+                sortedDictionary._set.Comparer.Equals(keyValuePairComparer))
             {
-                _set = new TreeSet<KeyValuePair<TKey, TValue>>(sortedDictionary._set, keyVaultPairComparer);
+                _set = new TreeSet<KeyValuePair<TKey, TValue>>(sortedDictionary._set, keyValuePairComparer);
             }
             else
             {
-                _set = new TreeSet<KeyValuePair<TKey, TValue>>(keyVaultPairComparer);
+                _set = new TreeSet<KeyValuePair<TKey, TValue>>(keyValuePairComparer);
 
                 foreach (KeyValuePair<TKey, TValue> pair in dictionary)
                 {
