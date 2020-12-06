@@ -1931,9 +1931,6 @@ AssertionInfo Compiler::optAssertionGenJtrue(GenTree* tree)
 
     Compiler::optAssertionKind assertionKind = OAK_INVALID;
 
-    GenTree* op1 = relop->AsOp()->gtOp1;
-    GenTree* op2 = relop->AsOp()->gtOp2;
-
     AssertionInfo info = optCreateJTrueBoundsAssertion(tree);
     if (info.HasAssertion())
     {
@@ -1954,6 +1951,12 @@ AssertionInfo Compiler::optAssertionGenJtrue(GenTree* tree)
             // and not occupy assertion table slots. We'll add them when used.
             return NO_ASSERTION_INDEX;
     }
+
+    // Look through CSEs so we see the actual trees providing values, if possible.
+    // This is important for exact type assertions.
+    //
+    GenTree* op1 = relop->AsOp()->gtOp1->gtUnwrapCSE();
+    GenTree* op2 = relop->AsOp()->gtOp2->gtUnwrapCSE();
 
     // Check for op1 or op2 to be lcl var and if so, keep it in op1.
     if ((op1->gtOper != GT_LCL_VAR) && (op2->gtOper == GT_LCL_VAR))
@@ -2110,11 +2113,6 @@ AssertionIndex Compiler::optAssertionGenPhiDefn(GenTree* tree)
 void Compiler::optAssertionGen(GenTree* tree)
 {
     tree->ClearAssertion();
-
-    if (tree->gtFlags & GTF_COLON_COND)
-    {
-        return;
-    }
 
 #ifdef DEBUG
     optAssertionPropCurrentTree = tree;

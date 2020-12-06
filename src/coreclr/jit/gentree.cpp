@@ -12876,8 +12876,7 @@ GenTree* Compiler::gtFoldTypeCompare(GenTree* tree)
             arg1 = op1->AsCall()->gtCallThisArg->GetNode();
         }
 
-        arg1 = gtNewOperNode(GT_IND, TYP_I_IMPL, arg1);
-        arg1->gtFlags |= GTF_EXCEPT;
+        arg1 = gtNewMethodTableLookup(arg1);
 
         GenTree* arg2;
 
@@ -12890,8 +12889,7 @@ GenTree* Compiler::gtFoldTypeCompare(GenTree* tree)
             arg2 = op2->AsCall()->gtCallThisArg->GetNode();
         }
 
-        arg2 = gtNewOperNode(GT_IND, TYP_I_IMPL, arg2);
-        arg2->gtFlags |= GTF_EXCEPT;
+        arg2 = gtNewMethodTableLookup(arg2);
 
         CorInfoInlineTypeCheck inliningKind =
             info.compCompHnd->canInlineTypeCheck(nullptr, CORINFO_INLINE_TYPECHECK_SOURCE_VTABLE);
@@ -12991,10 +12989,8 @@ GenTree* Compiler::gtFoldTypeCompare(GenTree* tree)
         }
     }
 
-    GenTree* const objMT = gtNewOperNode(GT_IND, TYP_I_IMPL, objOp);
-
-    // Update various flags
-    objMT->gtFlags |= GTF_EXCEPT;
+    // Fetch the method table from the object
+    GenTree* const objMT = gtNewMethodTableLookup(objOp);
 
     // Compare the two method tables
     GenTree* const compare = gtCreateHandleCompare(oper, objMT, knownMT, typeCheckInliningResult);
