@@ -3178,8 +3178,8 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
     // Cache the profiler handle
     if (jitFlags->IsSet(JitFlags::JIT_FLAG_PROF_ENTERLEAVE))
     {
-        BOOL hookNeeded;
-        BOOL indirected;
+        bool hookNeeded;
+        bool indirected;
         info.compCompHnd->GetProfilingHandle(&hookNeeded, &compProfilerMethHnd, &indirected);
         compProfilerHookNeeded        = !!hookNeeded;
         compProfilerMethHndIndirected = !!indirected;

@@ -1602,7 +1602,7 @@ CorInfoIntrinsics MethodContext::repGetIntrinsicID(CORINFO_METHOD_HANDLE method,
     return result;
 }
 
-void MethodContext::recIsIntrinsicType(CORINFO_CLASS_HANDLE cls, BOOL result)
+void MethodContext::recIsIntrinsicType(CORINFO_CLASS_HANDLE cls, bool result)
 {
     if (IsIntrinsicType == nullptr)
         IsIntrinsicType = new LightWeightMap<DWORDLONG, DWORD>();
@@ -1614,12 +1614,12 @@ void MethodContext::dmpIsIntrinsicType(DWORDLONG key, DWORD value)
 {
     printf("IsIntrinsicType key mth-%016llX, value intr-%u", key, value);
 }
-BOOL MethodContext::repIsIntrinsicType(CORINFO_CLASS_HANDLE cls)
+bool MethodContext::repIsIntrinsicType(CORINFO_CLASS_HANDLE cls)
 {
     AssertCodeMsg(IsIntrinsicType != nullptr, EXCEPTIONCODE_MC, "Didn't find anything for %016llX", (DWORDLONG)cls);
     AssertCodeMsg(IsIntrinsicType->GetIndex((DWORDLONG)cls) != -1, EXCEPTIONCODE_MC, "Didn't find %016llX",
                   (DWORDLONG)cls);
-    BOOL result = (BOOL)IsIntrinsicType->Get((DWORDLONG)cls);
+    bool result = (BOOL)IsIntrinsicType->Get((DWORDLONG)cls);
     DEBUG_REP(dmpIsIntrinsicType((DWORDLONG)cls, (DWORD)result));
     return result;
 }
@@ -1674,7 +1674,7 @@ CorInfoType MethodContext::repAsCorInfoType(CORINFO_CLASS_HANDLE cls)
     return result;
 }
 
-void MethodContext::recIsValueClass(CORINFO_CLASS_HANDLE cls, BOOL result)
+void MethodContext::recIsValueClass(CORINFO_CLASS_HANDLE cls, bool result)
 {
     if (IsValueClass == nullptr)
         IsValueClass = new LightWeightMap<DWORDLONG, DWORD>();
@@ -1686,17 +1686,17 @@ void MethodContext::dmpIsValueClass(DWORDLONG key, DWORD value)
 {
     printf("IsValueClass key cls-%016llX, value res-%u", key, value);
 }
-BOOL MethodContext::repIsValueClass(CORINFO_CLASS_HANDLE cls)
+bool MethodContext::repIsValueClass(CORINFO_CLASS_HANDLE cls)
 {
     AssertCodeMsg((IsValueClass != nullptr) && (IsValueClass->GetIndex((DWORDLONG)cls) != -1), EXCEPTIONCODE_MC,
                   "Didn't find %016llX", (DWORDLONG)cls);
 
-    BOOL result = (BOOL)IsValueClass->Get((DWORDLONG)cls);
+    bool result = (BOOL)IsValueClass->Get((DWORDLONG)cls);
     DEBUG_REP(dmpIsValueClass((DWORDLONG)cls, (DWORD)result));
     return result;
 }
 
-void MethodContext::recIsStructRequiringStackAllocRetBuf(CORINFO_CLASS_HANDLE cls, BOOL result)
+void MethodContext::recIsStructRequiringStackAllocRetBuf(CORINFO_CLASS_HANDLE cls, bool result)
 {
     if (IsStructRequiringStackAllocRetBuf == nullptr)
         IsStructRequiringStackAllocRetBuf = new LightWeightMap<DWORDLONG, DWORD>();
@@ -1708,14 +1708,14 @@ void MethodContext::dmpIsStructRequiringStackAllocRetBuf(DWORDLONG key, DWORD va
 {
     printf("IsStructRequiringStackAllocRetBuf key cls-%016llX, value res-%u", key, value);
 }
-BOOL MethodContext::repIsStructRequiringStackAllocRetBuf(CORINFO_CLASS_HANDLE cls)
+bool MethodContext::repIsStructRequiringStackAllocRetBuf(CORINFO_CLASS_HANDLE cls)
 {
     AssertCodeMsg(IsStructRequiringStackAllocRetBuf != nullptr, EXCEPTIONCODE_MC,
                   "Found a null IsStructRequiringStackAllocRetBuf.  Probably missing a fatTrigger for %016llX.",
                   (DWORDLONG)cls);
     AssertCodeMsg(IsStructRequiringStackAllocRetBuf->GetIndex((DWORDLONG)cls) != -1, EXCEPTIONCODE_MC,
                   "Didn't find %016llX", (DWORDLONG)cls);
-    BOOL result = (BOOL)IsStructRequiringStackAllocRetBuf->Get((DWORDLONG)cls);
+    bool result = (BOOL)IsStructRequiringStackAllocRetBuf->Get((DWORDLONG)cls);
     DEBUG_REP(dmpIsStructRequiringStackAllocRetBuf((DWORDLONG)cls, (DWORD)result));
     return result;
 }
@@ -1764,7 +1764,7 @@ unsigned MethodContext::repGetHeapClassSize(CORINFO_CLASS_HANDLE cls)
     return result;
 }
 
-void MethodContext::recCanAllocateOnStack(CORINFO_CLASS_HANDLE cls, BOOL result)
+void MethodContext::recCanAllocateOnStack(CORINFO_CLASS_HANDLE cls, bool result)
 {
     if (CanAllocateOnStack == nullptr)
         CanAllocateOnStack = new LightWeightMap<DWORDLONG, DWORD>();
@@ -1776,12 +1776,12 @@ void MethodContext::dmpCanAllocateOnStack(DWORDLONG key, DWORD val)
 {
     printf("CanAllocateOnStack key %016llX, value %u", key, val);
 }
-BOOL MethodContext::repCanAllocateOnStack(CORINFO_CLASS_HANDLE cls)
+bool MethodContext::repCanAllocateOnStack(CORINFO_CLASS_HANDLE cls)
 {
     AssertCodeMsg(CanAllocateOnStack != nullptr, EXCEPTIONCODE_MC, "Didn't find %016llX", (DWORDLONG)cls);
     AssertCodeMsg(CanAllocateOnStack->GetIndex((DWORDLONG)cls) != -1, EXCEPTIONCODE_MC, "Didn't find %016llX",
                   (DWORDLONG)cls);
-    BOOL result = (BOOL)CanAllocateOnStack->Get((DWORDLONG)cls);
+    bool result = (BOOL)CanAllocateOnStack->Get((DWORDLONG)cls);
     DEBUG_REP(dmpCanAllocateOnStack((DWORDLONG)cls, (DWORD)result));
     return result;
 }
@@ -1973,7 +1973,7 @@ CORINFO_CLASS_HANDLE MethodContext::repGetParentType(CORINFO_CLASS_HANDLE cls)
     return result;
 }
 
-void MethodContext::recIsSDArray(CORINFO_CLASS_HANDLE cls, BOOL result)
+void MethodContext::recIsSDArray(CORINFO_CLASS_HANDLE cls, bool result)
 {
     if (IsSDArray == nullptr)
         IsSDArray = new LightWeightMap<DWORDLONG, DWORD>();
@@ -1985,11 +1985,11 @@ void MethodContext::dmpIsSDArray(DWORDLONG key, DWORD value)
 {
     printf("IsSDArray key cls-%016llX, value res-%u", key, value);
 }
-BOOL MethodContext::repIsSDArray(CORINFO_CLASS_HANDLE cls)
+bool MethodContext::repIsSDArray(CORINFO_CLASS_HANDLE cls)
 {
     AssertCodeMsg(IsSDArray != nullptr, EXCEPTIONCODE_MC, "Didn't find anything for %016llX", (DWORDLONG)cls);
     AssertCodeMsg(IsSDArray->GetIndex((DWORDLONG)cls) != -1, EXCEPTIONCODE_MC, "Didn't find %016llX", (DWORDLONG)cls);
-    BOOL temp = (BOOL)IsSDArray->Get((DWORDLONG)cls);
+    bool temp = (BOOL)IsSDArray->Get((DWORDLONG)cls);
     DEBUG_REP(dmpIsSDArray((DWORDLONG)cls, (DWORD)temp));
     return temp;
 }
@@ -2934,7 +2934,7 @@ CorInfoHelpFunc MethodContext::repGetNewHelper(CORINFO_RESOLVED_TOKEN* pResolved
 }
 
 void MethodContext::recEmbedGenericHandle(CORINFO_RESOLVED_TOKEN*       pResolvedToken,
-                                          BOOL                          fEmbedParent,
+                                          bool                          fEmbedParent,
                                           CORINFO_GENERICHANDLE_RESULT* pResult)
 {
     if (EmbedGenericHandle == nullptr)
@@ -2963,7 +2963,7 @@ void MethodContext::dmpEmbedGenericHandle(const Agnostic_EmbedGenericHandle&    
     printf(" cth-%016llX ht-%u", value.compileTimeHandle, value.handleType);
 }
 void MethodContext::repEmbedGenericHandle(CORINFO_RESOLVED_TOKEN*       pResolvedToken,
-                                          BOOL                          fEmbedParent,
+                                          bool                          fEmbedParent,
                                           CORINFO_GENERICHANDLE_RESULT* pResult)
 {
     Agnostic_EmbedGenericHandle key;
@@ -3574,7 +3574,7 @@ unsigned MethodContext::repGetClassGClayout(CORINFO_CLASS_HANDLE cls, BYTE* gcPt
     return (unsigned)value.valCount;
 }
 
-void MethodContext::recGetClassAlignmentRequirement(CORINFO_CLASS_HANDLE cls, BOOL fDoubleAlignHint, unsigned result)
+void MethodContext::recGetClassAlignmentRequirement(CORINFO_CLASS_HANDLE cls, bool fDoubleAlignHint, unsigned result)
 {
     if (GetClassAlignmentRequirement == nullptr)
         GetClassAlignmentRequirement = new LightWeightMap<DLD, DWORD>();
@@ -3592,7 +3592,7 @@ void MethodContext::dmpGetClassAlignmentRequirement(DLD key, DWORD value)
 {
     printf("GetClassAlignmentRequirement key %016llX %u, value %u", key.A, key.B, value);
 }
-unsigned MethodContext::repGetClassAlignmentRequirement(CORINFO_CLASS_HANDLE cls, BOOL fDoubleAlignHint)
+unsigned MethodContext::repGetClassAlignmentRequirement(CORINFO_CLASS_HANDLE cls, bool fDoubleAlignHint)
 {
     DLD key;
     ZeroMemory(&key, sizeof(DLD)); // We use the input structs as a key and use memcmp to compare.. so we need to zero
@@ -3768,7 +3768,7 @@ CORINFO_CLASS_HANDLE MethodContext::repEmbedClassHandle(CORINFO_CLASS_HANDLE han
 
 void MethodContext::recPInvokeMarshalingRequired(CORINFO_METHOD_HANDLE method,
                                                  CORINFO_SIG_INFO*     callSiteSig,
-                                                 BOOL                  result)
+                                                 bool                  result)
 {
     if (PInvokeMarshalingRequired == nullptr)
         PInvokeMarshalingRequired = new LightWeightMap<PInvokeMarshalingRequiredValue, DWORD>();
@@ -3791,7 +3791,7 @@ void MethodContext::dmpPInvokeMarshalingRequired(const PInvokeMarshalingRequired
            key.pSig_Index, value);
 }
 // Note the jit interface implementation seems to only care about scope and pSig from callSiteSig
-BOOL MethodContext::repPInvokeMarshalingRequired(CORINFO_METHOD_HANDLE method, CORINFO_SIG_INFO* callSiteSig)
+bool MethodContext::repPInvokeMarshalingRequired(CORINFO_METHOD_HANDLE method, CORINFO_SIG_INFO* callSiteSig)
 {
     if (PInvokeMarshalingRequired == nullptr) // so when we replay checked on free, we throw from lwm
         return TRUE;                          // TODO-Cleanup: hackish...
@@ -4491,7 +4491,7 @@ CorInfoInlineTypeCheck MethodContext::repCanInlineTypeCheck(CORINFO_CLASS_HANDLE
 
 void MethodContext::recSatisfiesMethodConstraints(CORINFO_CLASS_HANDLE  parent,
                                                   CORINFO_METHOD_HANDLE method,
-                                                  BOOL                  result)
+                                                  bool                  result)
 {
     if (SatisfiesMethodConstraints == nullptr)
         SatisfiesMethodConstraints = new LightWeightMap<DLDL, DWORD>();
@@ -4509,7 +4509,7 @@ void MethodContext::dmpSatisfiesMethodConstraints(DLDL key, DWORD value)
 {
     printf("SatisfiesMethodConstraints key cls-%016llX ftn-%016llX, value res-%u", key.A, key.B, value);
 }
-BOOL MethodContext::repSatisfiesMethodConstraints(CORINFO_CLASS_HANDLE parent, CORINFO_METHOD_HANDLE method)
+bool MethodContext::repSatisfiesMethodConstraints(CORINFO_CLASS_HANDLE parent, CORINFO_METHOD_HANDLE method)
 {
     DLDL key;
     ZeroMemory(&key, sizeof(DLDL)); // We use the input structs as a key and use memcmp to compare.. so we need to zero
@@ -4518,11 +4518,11 @@ BOOL MethodContext::repSatisfiesMethodConstraints(CORINFO_CLASS_HANDLE parent, C
     key.A = (DWORDLONG)parent;
     key.B = (DWORDLONG)method;
 
-    BOOL value = (BOOL)SatisfiesMethodConstraints->Get(key);
+    bool value = (BOOL)SatisfiesMethodConstraints->Get(key);
     return value;
 }
 
-void MethodContext::recIsValidStringRef(CORINFO_MODULE_HANDLE module, unsigned metaTOK, BOOL result)
+void MethodContext::recIsValidStringRef(CORINFO_MODULE_HANDLE module, unsigned metaTOK, bool result)
 {
     if (IsValidStringRef == nullptr)
         IsValidStringRef = new LightWeightMap<DLD, DWORD>();
@@ -4540,7 +4540,7 @@ void MethodContext::dmpIsValidStringRef(DLD key, DWORD value)
 {
     printf("IsValidStringRef key mod-%016llX tok-%08X, value res-%u", key.A, key.B, value);
 }
-BOOL MethodContext::repIsValidStringRef(CORINFO_MODULE_HANDLE module, unsigned metaTOK)
+bool MethodContext::repIsValidStringRef(CORINFO_MODULE_HANDLE module, unsigned metaTOK)
 {
     DLD key;
     ZeroMemory(&key, sizeof(DLD)); // We use the input structs as a key and use memcmp to compare.. so we need to zero
@@ -4549,7 +4549,7 @@ BOOL MethodContext::repIsValidStringRef(CORINFO_MODULE_HANDLE module, unsigned m
     key.A = (DWORDLONG)module;
     key.B = (DWORD)metaTOK;
 
-    BOOL value = (BOOL)IsValidStringRef->Get(key);
+    bool value = (BOOL)IsValidStringRef->Get(key);
     return value;
 }
 
@@ -4647,7 +4647,7 @@ const char* MethodContext::repGetHelperName(CorInfoHelpFunc funcNum)
     }
 }
 
-void MethodContext::recCanCast(CORINFO_CLASS_HANDLE child, CORINFO_CLASS_HANDLE parent, BOOL result)
+void MethodContext::recCanCast(CORINFO_CLASS_HANDLE child, CORINFO_CLASS_HANDLE parent, bool result)
 {
     if (CanCast == nullptr)
         CanCast = new LightWeightMap<DLDL, DWORD>();
@@ -4666,7 +4666,7 @@ void MethodContext::dmpCanCast(DLDL key, DWORD value)
 {
     printf("CanCast key chd-%016llX par-%016llX, value res-%u", key.A, key.B, value);
 }
-BOOL MethodContext::repCanCast(CORINFO_CLASS_HANDLE child, CORINFO_CLASS_HANDLE parent)
+bool MethodContext::repCanCast(CORINFO_CLASS_HANDLE child, CORINFO_CLASS_HANDLE parent)
 {
     DLDL key;
     ZeroMemory(&key, sizeof(DLDL)); // We use the input structs as a key and use memcmp to compare.. so we need to zero
@@ -4679,7 +4679,7 @@ BOOL MethodContext::repCanCast(CORINFO_CLASS_HANDLE child, CORINFO_CLASS_HANDLE 
                   (DWORDLONG)child, (DWORDLONG)parent);
     AssertCodeMsg(CanCast->GetIndex(key) != -1, EXCEPTIONCODE_MC, "Didn't find %016llX, %016llX %u in map",
                   (DWORDLONG)child, (DWORDLONG)parent, CanCast->GetCount());
-    BOOL value = (BOOL)CanCast->Get(key);
+    bool value = (BOOL)CanCast->Get(key);
     DEBUG_REP(dmpCanCast(key, (DWORD)value));
     return value;
 }
@@ -4807,7 +4807,7 @@ void MethodContext::repGetAddressOfPInvokeTarget(CORINFO_METHOD_HANDLE method, C
     pLookup->accessType = (InfoAccessType)value.B;
 }
 
-void MethodContext::recSatisfiesClassConstraints(CORINFO_CLASS_HANDLE cls, BOOL result)
+void MethodContext::recSatisfiesClassConstraints(CORINFO_CLASS_HANDLE cls, bool result)
 {
     if (SatisfiesClassConstraints == nullptr)
         SatisfiesClassConstraints = new LightWeightMap<DWORDLONG, DWORD>();
@@ -4818,7 +4818,7 @@ void MethodContext::dmpSatisfiesClassConstraints(DWORDLONG key, DWORD value)
 {
     printf("SatisfiesClassConstraints key cls-%016llX, value res-%u", key, value);
 }
-BOOL MethodContext::repSatisfiesClassConstraints(CORINFO_CLASS_HANDLE cls)
+bool MethodContext::repSatisfiesClassConstraints(CORINFO_CLASS_HANDLE cls)
 {
     return (BOOL)SatisfiesClassConstraints->Get((DWORDLONG)cls);
 }
@@ -4897,8 +4897,8 @@ void MethodContext::recIsCompatibleDelegate(CORINFO_CLASS_HANDLE  objCls,
                                             CORINFO_CLASS_HANDLE  methodParentCls,
                                             CORINFO_METHOD_HANDLE method,
                                             CORINFO_CLASS_HANDLE  delegateCls,
-                                            BOOL*                 pfIsOpenDelegate,
-                                            BOOL                  result)
+                                            bool*                 pfIsOpenDelegate,
+                                            bool                  result)
 {
     if (IsCompatibleDelegate == nullptr)
         IsCompatibleDelegate = new LightWeightMap<Agnostic_IsCompatibleDelegate, DD>();
@@ -4923,11 +4923,11 @@ void MethodContext::dmpIsCompatibleDelegate(const Agnostic_IsCompatibleDelegate&
            "pfIsOpenDelegate-%08X result-%08X",
            key.objCls, key.methodParentCls, key.method, key.delegateCls, value.A, value.B);
 }
-BOOL MethodContext::repIsCompatibleDelegate(CORINFO_CLASS_HANDLE  objCls,
+bool MethodContext::repIsCompatibleDelegate(CORINFO_CLASS_HANDLE  objCls,
                                             CORINFO_CLASS_HANDLE  methodParentCls,
                                             CORINFO_METHOD_HANDLE method,
                                             CORINFO_CLASS_HANDLE  delegateCls,
-                                            BOOL*                 pfIsOpenDelegate)
+                                            bool*                 pfIsOpenDelegate)
 {
     Agnostic_IsCompatibleDelegate key;
     ZeroMemory(&key, sizeof(Agnostic_IsCompatibleDelegate)); // We use the input structs as a key and use memcmp to
@@ -4947,7 +4947,7 @@ BOOL MethodContext::repIsCompatibleDelegate(CORINFO_CLASS_HANDLE  objCls,
 
 void MethodContext::recIsDelegateCreationAllowed(CORINFO_CLASS_HANDLE  delegateHnd,
                                                  CORINFO_METHOD_HANDLE calleeHnd,
-                                                 BOOL                  result)
+                                                 bool                  result)
 {
     if (IsDelegateCreationAllowed == nullptr)
         IsDelegateCreationAllowed = new LightWeightMap<DLDL, DWORD>();
@@ -4967,7 +4967,7 @@ void MethodContext::dmpIsDelegateCreationAllowed(DLDL key, DWORD value)
 {
     printf("IsDelegateCreationAllowed key delegateHnd-%016llX calleeHnd-%016llX result-%08X", key.A, key.B, value);
 }
-BOOL MethodContext::repIsDelegateCreationAllowed(CORINFO_CLASS_HANDLE delegateHnd, CORINFO_METHOD_HANDLE calleeHnd)
+bool MethodContext::repIsDelegateCreationAllowed(CORINFO_CLASS_HANDLE delegateHnd, CORINFO_METHOD_HANDLE calleeHnd)
 {
     DLDL key;
     ZeroMemory(&key, sizeof(key));
@@ -5343,7 +5343,7 @@ CORINFO_CLASS_HANDLE MethodContext::repMergeClasses(CORINFO_CLASS_HANDLE cls1, C
     return (CORINFO_CLASS_HANDLE)value;
 }
 
-void MethodContext::recIsMoreSpecificType(CORINFO_CLASS_HANDLE cls1, CORINFO_CLASS_HANDLE cls2, BOOL result)
+void MethodContext::recIsMoreSpecificType(CORINFO_CLASS_HANDLE cls1, CORINFO_CLASS_HANDLE cls2, bool result)
 {
     if (IsMoreSpecificType == nullptr)
         IsMoreSpecificType = new LightWeightMap<DLDL, DWORD>();
@@ -5361,7 +5361,7 @@ void MethodContext::dmpIsMoreSpecificType(DLDL key, DWORD value)
 {
     printf("IsMoreSpecificType key cls1-%016llX cls2-%016llX, value %u", key.A, key.B, value);
 }
-BOOL MethodContext::repIsMoreSpecificType(CORINFO_CLASS_HANDLE cls1, CORINFO_CLASS_HANDLE cls2)
+bool MethodContext::repIsMoreSpecificType(CORINFO_CLASS_HANDLE cls1, CORINFO_CLASS_HANDLE cls2)
 {
     AssertCodeMsg(IsMoreSpecificType != nullptr, EXCEPTIONCODE_MC, "Didn't find %016llX %016llX", (DWORDLONG)cls1,
         (DWORDLONG)cls2);
@@ -5458,7 +5458,7 @@ bool MethodContext::repCanGetCookieForPInvokeCalliSig(CORINFO_SIG_INFO* szMetaSi
     return temp != 0;
 }
 
-void MethodContext::recCanAccessFamily(CORINFO_METHOD_HANDLE hCaller, CORINFO_CLASS_HANDLE hInstanceType, BOOL result)
+void MethodContext::recCanAccessFamily(CORINFO_METHOD_HANDLE hCaller, CORINFO_CLASS_HANDLE hInstanceType, bool result)
 {
     if (CanAccessFamily == nullptr)
         CanAccessFamily = new LightWeightMap<DLDL, DWORD>();
@@ -5476,7 +5476,7 @@ void MethodContext::dmpCanAccessFamily(DLDL key, DWORD value)
 {
     printf("CanAccessFamily key cal-%016llX inst-%016llX, value %u", key.A, key.B, value);
 }
-BOOL MethodContext::repCanAccessFamily(CORINFO_METHOD_HANDLE hCaller, CORINFO_CLASS_HANDLE hInstanceType)
+bool MethodContext::repCanAccessFamily(CORINFO_METHOD_HANDLE hCaller, CORINFO_CLASS_HANDLE hInstanceType)
 {
     DLDL key;
     ZeroMemory(&key, sizeof(DLDL)); // We use the input structs as a key and use memcmp to compare.. so we need to zero
@@ -5506,7 +5506,7 @@ void MethodContext::dmpErrorList(DWORD key, DWORD value)
     printf("ErrorList NYI");
 }
 
-void MethodContext::recGetProfilingHandle(BOOL* pbHookFunction, void** pProfilerHandle, BOOL* pbIndirectedHandles)
+void MethodContext::recGetProfilingHandle(bool* pbHookFunction, void** pProfilerHandle, bool* pbIndirectedHandles)
 {
     if (GetProfilingHandle == nullptr)
         GetProfilingHandle = new LightWeightMap<DWORD, Agnostic_GetProfilingHandle>();
@@ -5526,7 +5526,7 @@ void MethodContext::dmpGetProfilingHandle(DWORD key, const Agnostic_GetProfiling
     printf("GetProfilingHandle key %u, value bHookFtn-%u profHnd-%016llX bIndHnd-%u", key, value.bHookFunction,
            value.ProfilerHandle, value.bIndirectedHandles);
 }
-void MethodContext::repGetProfilingHandle(BOOL* pbHookFunction, void** pProfilerHandle, BOOL* pbIndirectedHandles)
+void MethodContext::repGetProfilingHandle(bool* pbHookFunction, void** pProfilerHandle, bool* pbIndirectedHandles)
 {
     Agnostic_GetProfilingHandle value;
 
@@ -5566,7 +5566,7 @@ CORINFO_FIELD_HANDLE MethodContext::repEmbedFieldHandle(CORINFO_FIELD_HANDLE han
     return (CORINFO_FIELD_HANDLE)value.B;
 }
 
-void MethodContext::recAreTypesEquivalent(CORINFO_CLASS_HANDLE cls1, CORINFO_CLASS_HANDLE cls2, BOOL result)
+void MethodContext::recAreTypesEquivalent(CORINFO_CLASS_HANDLE cls1, CORINFO_CLASS_HANDLE cls2, bool result)
 {
     if (AreTypesEquivalent == nullptr)
         AreTypesEquivalent = new LightWeightMap<DLDL, DWORD>();
@@ -5584,7 +5584,7 @@ void MethodContext::dmpAreTypesEquivalent(DLDL key, DWORD value)
 {
     printf("AreTypesEquivalent NYI");
 }
-BOOL MethodContext::repAreTypesEquivalent(CORINFO_CLASS_HANDLE cls1, CORINFO_CLASS_HANDLE cls2)
+bool MethodContext::repAreTypesEquivalent(CORINFO_CLASS_HANDLE cls1, CORINFO_CLASS_HANDLE cls2)
 {
     DLDL key;
     ZeroMemory(&key, sizeof(DLDL)); // We use the input structs as a key and use memcmp to compare.. so we need to zero
@@ -5595,7 +5595,7 @@ BOOL MethodContext::repAreTypesEquivalent(CORINFO_CLASS_HANDLE cls1, CORINFO_CLA
 
     AssertCodeMsg(AreTypesEquivalent->GetIndex(key) != -1, EXCEPTIONCODE_MC, "Didn't find %016llX %016llX",
                   (DWORDLONG)cls1, (DWORDLONG)cls2);
-    BOOL value = (BOOL)AreTypesEquivalent->Get(key);
+    bool value = (BOOL)AreTypesEquivalent->Get(key);
     return value;
 }
 
@@ -5853,7 +5853,7 @@ WORD MethodContext::repGetRelocTypeHint(void* target)
     return retVal;
 }
 
-void MethodContext::recIsValidToken(CORINFO_MODULE_HANDLE module, unsigned metaTOK, BOOL result)
+void MethodContext::recIsValidToken(CORINFO_MODULE_HANDLE module, unsigned metaTOK, bool result)
 {
     if (IsValidToken == nullptr)
         IsValidToken = new LightWeightMap<DLD, DWORD>();
@@ -5869,7 +5869,7 @@ void MethodContext::dmpIsValidToken(DLD key, DWORD value)
 {
     printf("IsValidToken key mod-%016llX tok-%08X, value res-%u", key.A, key.B, value);
 }
-BOOL MethodContext::repIsValidToken(CORINFO_MODULE_HANDLE module, unsigned metaTOK)
+bool MethodContext::repIsValidToken(CORINFO_MODULE_HANDLE module, unsigned metaTOK)
 {
     DLD key;
     ZeroMemory(&key, sizeof(DLD)); // We use the input structs as a key and use memcmp to compare.. so we need to zero
@@ -5877,7 +5877,7 @@ BOOL MethodContext::repIsValidToken(CORINFO_MODULE_HANDLE module, unsigned metaT
 
     key.A      = (DWORDLONG)module;
     key.B      = (DWORD)metaTOK;
-    BOOL value = (BOOL)IsValidToken->Get(key);
+    bool value = (BOOL)IsValidToken->Get(key);
     return value;
 }
 
@@ -6017,7 +6017,7 @@ CORINFO_CLASS_HANDLE MethodContext::repGetTypeInstantiationArgument(CORINFO_CLAS
 }
 
 void MethodContext::recAppendClassName(
-    CORINFO_CLASS_HANDLE cls, BOOL fNamespace, BOOL fFullInst, BOOL fAssembly, const WCHAR* result)
+    CORINFO_CLASS_HANDLE cls, bool fNamespace, bool fFullInst, bool fAssembly, const WCHAR* result)
 {
     if (AppendClassName == nullptr)
         AppendClassName = new LightWeightMap<Agnostic_AppendClassName, DWORD>();
@@ -6046,9 +6046,9 @@ void MethodContext::dmpAppendClassName(const Agnostic_AppendClassName& key, DWOR
 }
 
 const WCHAR* MethodContext::repAppendClassName(CORINFO_CLASS_HANDLE cls,
-                                               BOOL                 fNamespace,
-                                               BOOL                 fFullInst,
-                                               BOOL                 fAssembly)
+                                               bool                 fNamespace,
+                                               bool                 fFullInst,
+                                               bool                 fAssembly)
 {
     if (AppendClassName == nullptr)
         return W("hackishClassName");
@@ -6166,7 +6166,7 @@ mdMethodDef MethodContext::repGetMethodDefFromMethod(CORINFO_METHOD_HANDLE hMeth
     return (mdMethodDef)GetMethodDefFromMethod->Get((DWORDLONG)hMethod);
 }
 
-void MethodContext::recCheckMethodModifier(CORINFO_METHOD_HANDLE hMethod, LPCSTR modifier, BOOL fOptional, BOOL result)
+void MethodContext::recCheckMethodModifier(CORINFO_METHOD_HANDLE hMethod, LPCSTR modifier, bool fOptional, bool result)
 {
     if (CheckMethodModifier == nullptr)
         CheckMethodModifier = new LightWeightMap<Agnostic_CheckMethodModifier, DWORD>();
@@ -6194,7 +6194,7 @@ void MethodContext::dmpCheckMethodModifier(const Agnostic_CheckMethodModifier& k
            (unsigned char*)CheckMethodModifier->GetBuffer(key.modifier), key.fOptional, value);
     CheckMethodModifier->Unlock();
 }
-BOOL MethodContext::repCheckMethodModifier(CORINFO_METHOD_HANDLE hMethod, LPCSTR modifier, BOOL fOptional)
+bool MethodContext::repCheckMethodModifier(CORINFO_METHOD_HANDLE hMethod, LPCSTR modifier, bool fOptional)
 {
     Agnostic_CheckMethodModifier key;
     ZeroMemory(&key, sizeof(Agnostic_CheckMethodModifier)); // We use the input structs as a key and use memcmp to
@@ -6209,7 +6209,7 @@ BOOL MethodContext::repCheckMethodModifier(CORINFO_METHOD_HANDLE hMethod, LPCSTR
 
     key.fOptional = (DWORD)fOptional;
 
-    BOOL value = (BOOL)CheckMethodModifier->Get(key);
+    bool value = (BOOL)CheckMethodModifier->Get(key);
     return value;
 }
 
@@ -6246,7 +6246,7 @@ bool MethodContext::repIsFieldStatic(CORINFO_FIELD_HANDLE fhld)
     AssertCodeMsg(IsFieldStatic != nullptr, EXCEPTIONCODE_MC, "Didn't find anything for %016llX", (DWORDLONG)fhld);
     AssertCodeMsg(IsFieldStatic->GetIndex((DWORDLONG)fhld) != -1, EXCEPTIONCODE_MC, "Didn't find %016llX",
                   (DWORDLONG)fhld);
-    bool result = (bool)(IsFieldStatic->Get((DWORDLONG)fhld) != 0);
+    bool result = (BOOL)(IsFieldStatic->Get((DWORDLONG)fhld) != 0);
     DEBUG_REP(dmpIsFieldStatic((DWORDLONG)fhld, (DWORD)result));
     return result;
 }

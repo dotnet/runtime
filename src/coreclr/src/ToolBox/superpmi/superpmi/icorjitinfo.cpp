@@ -227,7 +227,7 @@ CorInfoUnmanagedCallConv MyICJI::getUnmanagedCallConv(CORINFO_METHOD_HANDLE meth
 
 // return if any marshaling is required for PInvoke methods.  Note that
 // method == 0 => calli.  The call site sig is only needed for the varargs or calli case
-BOOL MyICJI::pInvokeMarshalingRequired(CORINFO_METHOD_HANDLE method, CORINFO_SIG_INFO* callSiteSig)
+bool MyICJI::pInvokeMarshalingRequired(CORINFO_METHOD_HANDLE method, CORINFO_SIG_INFO* callSiteSig)
 {
     jitInstance->mc->cr->AddCall("pInvokeMarshalingRequired");
     return jitInstance->mc->repPInvokeMarshalingRequired(method, callSiteSig);
@@ -235,7 +235,7 @@ BOOL MyICJI::pInvokeMarshalingRequired(CORINFO_METHOD_HANDLE method, CORINFO_SIG
 
 // Check constraints on method type arguments (only).
 // The parent class should be checked separately using satisfiesClassConstraints(parent).
-BOOL MyICJI::satisfiesMethodConstraints(CORINFO_CLASS_HANDLE  parent, // the exact parent of the method
+bool MyICJI::satisfiesMethodConstraints(CORINFO_CLASS_HANDLE  parent, // the exact parent of the method
                                         CORINFO_METHOD_HANDLE method)
 {
     jitInstance->mc->cr->AddCall("satisfiesMethodConstraints");
@@ -245,11 +245,11 @@ BOOL MyICJI::satisfiesMethodConstraints(CORINFO_CLASS_HANDLE  parent, // the exa
 // Given a delegate target class, a target method parent class,  a  target method,
 // a delegate class, check if the method signature is compatible with the Invoke method of the delegate
 // (under the typical instantiation of any free type variables in the memberref signatures).
-BOOL MyICJI::isCompatibleDelegate(CORINFO_CLASS_HANDLE  objCls,          /* type of the delegate target, if any */
+bool MyICJI::isCompatibleDelegate(CORINFO_CLASS_HANDLE  objCls,          /* type of the delegate target, if any */
                                   CORINFO_CLASS_HANDLE  methodParentCls, /* exact parent of the target method, if any */
                                   CORINFO_METHOD_HANDLE method,          /* (representative) target method, if any */
                                   CORINFO_CLASS_HANDLE  delegateCls,     /* exact type of the delegate */
-                                  BOOL*                 pfIsOpenDelegate /* is the delegate open */
+                                  bool*                 pfIsOpenDelegate /* is the delegate open */
                                   )
 {
     jitInstance->mc->cr->AddCall("isCompatibleDelegate");
@@ -350,7 +350,7 @@ CORINFO_CLASS_HANDLE MyICJI::getTokenTypeAsHandle(CORINFO_RESOLVED_TOKEN* pResol
 }
 
 // Checks if the given metadata token is valid
-BOOL MyICJI::isValidToken(CORINFO_MODULE_HANDLE module, /* IN  */
+bool MyICJI::isValidToken(CORINFO_MODULE_HANDLE module, /* IN  */
                           unsigned              metaTOK /* IN  */
                           )
 {
@@ -359,7 +359,7 @@ BOOL MyICJI::isValidToken(CORINFO_MODULE_HANDLE module, /* IN  */
 }
 
 // Checks if the given metadata token is valid StringRef
-BOOL MyICJI::isValidStringRef(CORINFO_MODULE_HANDLE module, /* IN  */
+bool MyICJI::isValidStringRef(CORINFO_MODULE_HANDLE module, /* IN  */
                               unsigned              metaTOK /* IN  */
                               )
 {
@@ -420,9 +420,9 @@ CORINFO_CLASS_HANDLE MyICJI::getTypeInstantiationArgument(CORINFO_CLASS_HANDLE c
 int MyICJI::appendClassName(__deref_inout_ecount(*pnBufLen) WCHAR** ppBuf,
                             int*                                    pnBufLen,
                             CORINFO_CLASS_HANDLE                    cls,
-                            BOOL                                    fNamespace,
-                            BOOL                                    fFullInst,
-                            BOOL                                    fAssembly)
+                            bool                                    fNamespace,
+                            bool                                    fFullInst,
+                            bool                                    fAssembly)
 {
     jitInstance->mc->cr->AddCall("appendClassName");
     const WCHAR* result = jitInstance->mc->repAppendClassName(cls, fNamespace, fFullInst, fAssembly);
@@ -442,7 +442,7 @@ int MyICJI::appendClassName(__deref_inout_ecount(*pnBufLen) WCHAR** ppBuf,
 
 // Quick check whether the type is a value class. Returns the same value as getClassAttribs(cls) &
 // CORINFO_FLG_VALUECLASS, except faster.
-BOOL MyICJI::isValueClass(CORINFO_CLASS_HANDLE cls)
+bool MyICJI::isValueClass(CORINFO_CLASS_HANDLE cls)
 {
     jitInstance->mc->cr->AddCall("isValueClass");
     return jitInstance->mc->repIsValueClass(cls);
@@ -470,7 +470,7 @@ DWORD MyICJI::getClassAttribs(CORINFO_CLASS_HANDLE cls)
 // an optimization: the JIT may assume that return buffer pointers for return types for which this predicate
 // returns TRUE are always stack allocated, and thus, that stores to the GC-pointer fields of such return
 // buffers do not require GC write barriers.
-BOOL MyICJI::isStructRequiringStackAllocRetBuf(CORINFO_CLASS_HANDLE cls)
+bool MyICJI::isStructRequiringStackAllocRetBuf(CORINFO_CLASS_HANDLE cls)
 {
     jitInstance->mc->cr->AddCall("isStructRequiringStackAllocRetBuf");
     return jitInstance->mc->repIsStructRequiringStackAllocRetBuf(cls);
@@ -547,13 +547,13 @@ unsigned MyICJI::getHeapClassSize(CORINFO_CLASS_HANDLE cls)
     return jitInstance->mc->repGetHeapClassSize(cls);
 }
 
-BOOL MyICJI::canAllocateOnStack(CORINFO_CLASS_HANDLE cls)
+bool MyICJI::canAllocateOnStack(CORINFO_CLASS_HANDLE cls)
 {
     jitInstance->mc->cr->AddCall("canAllocateOnStack");
     return jitInstance->mc->repCanAllocateOnStack(cls);
 }
 
-unsigned MyICJI::getClassAlignmentRequirement(CORINFO_CLASS_HANDLE cls, BOOL fDoubleAlignHint)
+unsigned MyICJI::getClassAlignmentRequirement(CORINFO_CLASS_HANDLE cls, bool fDoubleAlignHint)
 {
     jitInstance->mc->cr->AddCall("getClassAlignmentRequirement");
     return jitInstance->mc->repGetClassAlignmentRequirement(cls, fDoubleAlignHint);
@@ -590,10 +590,10 @@ CORINFO_FIELD_HANDLE MyICJI::getFieldInClass(CORINFO_CLASS_HANDLE clsHnd, INT nu
     return jitInstance->mc->repGetFieldInClass(clsHnd, num);
 }
 
-BOOL MyICJI::checkMethodModifier(CORINFO_METHOD_HANDLE hMethod, LPCSTR modifier, BOOL fOptional)
+bool MyICJI::checkMethodModifier(CORINFO_METHOD_HANDLE hMethod, LPCSTR modifier, bool fOptional)
 {
     jitInstance->mc->cr->AddCall("checkMethodModifier");
-    BOOL result = jitInstance->mc->repCheckMethodModifier(hMethod, modifier, fOptional);
+    bool result = jitInstance->mc->repCheckMethodModifier(hMethod, modifier, fOptional);
     return result;
 }
 
@@ -742,7 +742,7 @@ CorInfoType MyICJI::getTypeForPrimitiveNumericClass(CORINFO_CLASS_HANDLE cls)
 
 // TRUE if child is a subtype of parent
 // if parent is an interface, then does child implement / extend parent
-BOOL MyICJI::canCast(CORINFO_CLASS_HANDLE child, // subtype (extends parent)
+bool MyICJI::canCast(CORINFO_CLASS_HANDLE child, // subtype (extends parent)
                      CORINFO_CLASS_HANDLE parent // base type
                      )
 {
@@ -751,7 +751,7 @@ BOOL MyICJI::canCast(CORINFO_CLASS_HANDLE child, // subtype (extends parent)
 }
 
 // TRUE if cls1 and cls2 are considered equivalent types.
-BOOL MyICJI::areTypesEquivalent(CORINFO_CLASS_HANDLE cls1, CORINFO_CLASS_HANDLE cls2)
+bool MyICJI::areTypesEquivalent(CORINFO_CLASS_HANDLE cls1, CORINFO_CLASS_HANDLE cls2)
 {
     jitInstance->mc->cr->AddCall("areTypesEquivalent");
     return jitInstance->mc->repAreTypesEquivalent(cls1, cls2);
@@ -781,7 +781,7 @@ CORINFO_CLASS_HANDLE MyICJI::mergeClasses(CORINFO_CLASS_HANDLE cls1, CORINFO_CLA
 }
 
 // Returns true if cls2 is known to be a more specific type than cls1
-BOOL MyICJI::isMoreSpecificType(CORINFO_CLASS_HANDLE cls1, CORINFO_CLASS_HANDLE cls2)
+bool MyICJI::isMoreSpecificType(CORINFO_CLASS_HANDLE cls1, CORINFO_CLASS_HANDLE cls2)
 {
     jitInstance->mc->cr->AddCall("isMoreSpecificType");
     return jitInstance->mc->repIsMoreSpecificType(cls1, cls2);
@@ -807,14 +807,14 @@ CorInfoType MyICJI::getChildType(CORINFO_CLASS_HANDLE clsHnd, CORINFO_CLASS_HAND
 }
 
 // Check constraints on type arguments of this class and parent classes
-BOOL MyICJI::satisfiesClassConstraints(CORINFO_CLASS_HANDLE cls)
+bool MyICJI::satisfiesClassConstraints(CORINFO_CLASS_HANDLE cls)
 {
     jitInstance->mc->cr->AddCall("satisfiesClassConstraints");
     return jitInstance->mc->repSatisfiesClassConstraints(cls);
 }
 
 // Check if this is a single dimensional array type
-BOOL MyICJI::isSDArray(CORINFO_CLASS_HANDLE cls)
+bool MyICJI::isSDArray(CORINFO_CLASS_HANDLE cls)
 {
     jitInstance->mc->cr->AddCall("isSDArray");
     return jitInstance->mc->repIsSDArray(cls);
@@ -1339,7 +1339,7 @@ CORINFO_FIELD_HANDLE MyICJI::embedFieldHandle(CORINFO_FIELD_HANDLE handle, void*
 // then indicate how the handle should be looked up at run-time.
 //
 void MyICJI::embedGenericHandle(CORINFO_RESOLVED_TOKEN* pResolvedToken,
-                                BOOL fEmbedParent, // TRUE - embeds parent type handle of the field/method handle
+                                bool fEmbedParent, // TRUE - embeds parent type handle of the field/method handle
                                 CORINFO_GENERICHANDLE_RESULT* pResult)
 {
     jitInstance->mc->cr->AddCall("embedGenericHandle");
@@ -1394,7 +1394,7 @@ CORINFO_JUST_MY_CODE_HANDLE MyICJI::getJustMyCodeHandle(CORINFO_METHOD_HANDLE   
 // Gets a method handle that can be used to correlate profiling data.
 // This is the IP of a native method, or the address of the descriptor struct
 // for IL.  Always guaranteed to be unique per process, and not to move. */
-void MyICJI::GetProfilingHandle(BOOL* pbHookFunction, void** pProfilerHandle, BOOL* pbIndirectedHandles)
+void MyICJI::GetProfilingHandle(bool* pbHookFunction, void** pProfilerHandle, bool* pbIndirectedHandles)
 {
     jitInstance->mc->cr->AddCall("GetProfilingHandle");
     jitInstance->mc->repGetProfilingHandle(pbHookFunction, pProfilerHandle, pbIndirectedHandles);
@@ -1425,7 +1425,7 @@ void MyICJI::getCallInfo(
         ThrowException(exceptionCode);
 }
 
-BOOL MyICJI::canAccessFamily(CORINFO_METHOD_HANDLE hCaller, CORINFO_CLASS_HANDLE hInstanceType)
+bool MyICJI::canAccessFamily(CORINFO_METHOD_HANDLE hCaller, CORINFO_CLASS_HANDLE hInstanceType)
 
 {
     jitInstance->mc->cr->AddCall("canAccessFamily");
@@ -1433,7 +1433,7 @@ BOOL MyICJI::canAccessFamily(CORINFO_METHOD_HANDLE hCaller, CORINFO_CLASS_HANDLE
 }
 // Returns TRUE if the Class Domain ID is the RID of the class (currently true for every class
 // except reflection emitted classes and generics)
-BOOL MyICJI::isRIDClassDomainID(CORINFO_CLASS_HANDLE cls)
+bool MyICJI::isRIDClassDomainID(CORINFO_CLASS_HANDLE cls)
 {
     jitInstance->mc->cr->AddCall("isRIDClassDomainID");
     LogError("Hit unimplemented isRIDClassDomainID");
@@ -1658,8 +1658,8 @@ void MyICJI::allocMem(ULONG              hotCodeSize,   /* IN */
 // For prejitted code we split up the unwinding information into
 // separate sections .rdata and .pdata.
 //
-void MyICJI::reserveUnwindInfo(BOOL  isFunclet,  /* IN */
-                               BOOL  isColdCode, /* IN */
+void MyICJI::reserveUnwindInfo(bool  isFunclet,  /* IN */
+                               bool  isColdCode, /* IN */
                                ULONG unwindSize  /* IN */
                                )
 {
@@ -1738,7 +1738,7 @@ void MyICJI::setEHinfo(unsigned                 EHnumber, /* IN  */
 // Level 1 -> fatalError, Level 2 -> Error, Level 3 -> Warning
 // Level 4 means happens 10 times in a run, level 5 means 100, level 6 means 1000 ...
 // returns non-zero if the logging succeeded
-BOOL MyICJI::logMsg(unsigned level, const char* fmt, va_list args)
+bool MyICJI::logMsg(unsigned level, const char* fmt, va_list args)
 {
     jitInstance->mc->cr->AddCall("logMsg");
 

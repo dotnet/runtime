@@ -1302,7 +1302,7 @@ void ZapInfo::reportFatalError(CorJitResult result)
 // For prejitted code we need to count how many funclet regions
 // we have so that we can allocate and sort a contiguous .rdata block.
 //
-void ZapInfo::reserveUnwindInfo(BOOL isFunclet, BOOL isColdCode, ULONG unwindSize)
+void ZapInfo::reserveUnwindInfo(bool isFunclet, bool isColdCode, ULONG unwindSize)
 {
     // Nothing to do
 }
@@ -1400,7 +1400,7 @@ void ZapInfo::allocUnwindInfo (
 #endif // FEATURE_EH_FUNCLETS
 }
 
-BOOL ZapInfo::logMsg(unsigned level, const char *fmt, va_list args)
+bool ZapInfo::logMsg(unsigned level, const char *fmt, va_list args)
 {
     if (HasSvcLogger())
     {
@@ -1631,7 +1631,7 @@ void ZapInfo::getLocationOfThisType(CORINFO_METHOD_HANDLE context, CORINFO_LOOKU
 
 void
 ZapInfo::embedGenericHandle(CORINFO_RESOLVED_TOKEN * pResolvedToken,
-                            BOOL                     fEmbedParent,
+                            bool                     fEmbedParent,
                             CORINFO_GENERICHANDLE_RESULT *pResult)
 {
     _ASSERTE(pResult);
@@ -2116,9 +2116,9 @@ ZapImport * ZapInfo::GetProfilingHandleImport()
     return m_pProfilingHandle;
 }
 
-void ZapInfo::GetProfilingHandle(BOOL                      *pbHookFunction,
+void ZapInfo::GetProfilingHandle(bool                      *pbHookFunction,
                                  void                     **pProfilerHandle,
-                                 BOOL                      *pbIndirectedHandles)
+                                 bool                      *pbIndirectedHandles)
 {
     //
     // Return the location within the fixup table
@@ -2549,13 +2549,13 @@ void ZapInfo::getCallInfo(CORINFO_RESOLVED_TOKEN * pResolvedToken,
     }
 }
 
-BOOL ZapInfo::canAccessFamily(CORINFO_METHOD_HANDLE hCaller,
+bool ZapInfo::canAccessFamily(CORINFO_METHOD_HANDLE hCaller,
                               CORINFO_CLASS_HANDLE hInstanceType)
 {
     return m_pEEJitInfo->canAccessFamily(hCaller, hInstanceType);
 }
 
-BOOL ZapInfo::isRIDClassDomainID (CORINFO_CLASS_HANDLE cls)
+bool ZapInfo::isRIDClassDomainID (CORINFO_CLASS_HANDLE cls)
 {
     return m_pEEJitInfo->isRIDClassDomainID(cls);
 }
@@ -3359,14 +3359,14 @@ const char* ZapInfo::getHelperName(CorInfoHelpFunc func)
 
 int ZapInfo::appendClassName(__deref_inout_ecount(*pnBufLen) WCHAR** ppBuf, int* pnBufLen,
                              CORINFO_CLASS_HANDLE    cls,
-                             BOOL fNamespace,
-                             BOOL fFullInst,
-                             BOOL fAssembly)
+                             bool fNamespace,
+                             bool fFullInst,
+                             bool fAssembly)
 {
     return m_pEEJitInfo->appendClassName(ppBuf,pnBufLen,cls,fNamespace,fFullInst,fAssembly);
 }
 
-BOOL ZapInfo::isValueClass(CORINFO_CLASS_HANDLE cls)
+bool ZapInfo::isValueClass(CORINFO_CLASS_HANDLE cls)
 {
     return m_pEEJitInfo->isValueClass(cls);
 }
@@ -3381,7 +3381,7 @@ DWORD ZapInfo::getClassAttribs(CORINFO_CLASS_HANDLE cls)
     return m_pEEJitInfo->getClassAttribs(cls);
 }
 
-BOOL ZapInfo::isStructRequiringStackAllocRetBuf(CORINFO_CLASS_HANDLE cls)
+bool ZapInfo::isStructRequiringStackAllocRetBuf(CORINFO_CLASS_HANDLE cls)
 {
     return m_pEEJitInfo->isStructRequiringStackAllocRetBuf(cls);
 }
@@ -3428,13 +3428,13 @@ CorInfoType ZapInfo::getTypeForPrimitiveNumericClass(CORINFO_CLASS_HANDLE cls)
     return m_pEEJitInfo->getTypeForPrimitiveNumericClass(cls);
 }
 
-BOOL ZapInfo::canCast(CORINFO_CLASS_HANDLE child,
+bool ZapInfo::canCast(CORINFO_CLASS_HANDLE child,
                                 CORINFO_CLASS_HANDLE parent)
 {
     return m_pEEJitInfo->canCast(child, parent);
 }
 
-BOOL ZapInfo::areTypesEquivalent(CORINFO_CLASS_HANDLE cls1, CORINFO_CLASS_HANDLE cls2)
+bool ZapInfo::areTypesEquivalent(CORINFO_CLASS_HANDLE cls1, CORINFO_CLASS_HANDLE cls2)
 {
     return m_pEEJitInfo->areTypesEquivalent(cls1, cls2);
 }
@@ -3456,7 +3456,7 @@ CORINFO_CLASS_HANDLE ZapInfo::mergeClasses(
     return m_pEEJitInfo->mergeClasses(cls1, cls2);
 }
 
-BOOL ZapInfo::isMoreSpecificType(
+bool ZapInfo::isMoreSpecificType(
                 CORINFO_CLASS_HANDLE cls1,
                 CORINFO_CLASS_HANDLE cls2)
 {
@@ -3476,13 +3476,13 @@ CorInfoType ZapInfo::getChildType (
     return m_pEEJitInfo->getChildType(clsHnd, clsRet);
 }
 
-BOOL ZapInfo::satisfiesClassConstraints(
+bool ZapInfo::satisfiesClassConstraints(
             CORINFO_CLASS_HANDLE cls)
 {
     return m_pEEJitInfo->satisfiesClassConstraints(cls);
 }
 
-BOOL ZapInfo::isSDArray(CORINFO_CLASS_HANDLE cls)
+bool ZapInfo::isSDArray(CORINFO_CLASS_HANDLE cls)
 {
     return m_pEEJitInfo->isSDArray(cls);
 }
@@ -3624,12 +3624,12 @@ unsigned ZapInfo::getHeapClassSize(CORINFO_CLASS_HANDLE cls)
     return m_pEEJitInfo->getHeapClassSize(cls);
 }
 
-BOOL ZapInfo::canAllocateOnStack(CORINFO_CLASS_HANDLE cls)
+bool ZapInfo::canAllocateOnStack(CORINFO_CLASS_HANDLE cls)
 {
     return m_pEEJitInfo->canAllocateOnStack(cls);
 }
 
-unsigned ZapInfo::getClassAlignmentRequirement(CORINFO_CLASS_HANDLE cls, BOOL fDoubleAlignHint)
+unsigned ZapInfo::getClassAlignmentRequirement(CORINFO_CLASS_HANDLE cls, bool fDoubleAlignHint)
 {
     return m_pEEJitInfo->getClassAlignmentRequirement(cls, fDoubleAlignHint);
 }
@@ -3644,7 +3644,7 @@ mdMethodDef ZapInfo::getMethodDefFromMethod(CORINFO_METHOD_HANDLE hMethod)
     return m_pEEJitInfo->getMethodDefFromMethod(hMethod);
 }
 
-BOOL ZapInfo::checkMethodModifier(CORINFO_METHOD_HANDLE hMethod, LPCSTR modifier, BOOL fOptional)
+bool ZapInfo::checkMethodModifier(CORINFO_METHOD_HANDLE hMethod, LPCSTR modifier, bool fOptional)
 {
     return m_pEEJitInfo->checkMethodModifier(hMethod, modifier, fOptional);
 }
@@ -3728,11 +3728,12 @@ bool ZapInfo::getReadyToRunHelper(CORINFO_RESOLVED_TOKEN * pResolvedToken,
     DWORD fAtypicalCallsite = (id & CORINFO_HELP_READYTORUN_ATYPICAL_CALLSITE);
     id = (CorInfoHelpFunc)(id & ~CORINFO_HELP_READYTORUN_ATYPICAL_CALLSITE);
 
+    bool ignoredSideEffects = false;
     switch (id)
     {
     case CORINFO_HELP_READYTORUN_NEW:
         // Call CEEInfo::getNewHelper to validate the request (e.g., check for abstract class).
-        m_pEEJitInfo->getNewHelper(pResolvedToken, m_currentMethodHandle);
+        m_pEEJitInfo->getNewHelper(pResolvedToken, m_currentMethodHandle, &ignoredSideEffects);
 
         if ((getClassAttribs(pResolvedToken->hClass) & CORINFO_FLG_SHAREDINST) != 0)
             return false;   // Requires runtime lookup.
@@ -3867,14 +3868,14 @@ size_t ZapInfo::findNameOfToken(CORINFO_MODULE_HANDLE tokenScope,
     return m_pEEJitInfo->findNameOfToken(tokenScope, token, szFQName, FQNameCapacity);
 }
 
-BOOL ZapInfo::isValidToken (
+bool ZapInfo::isValidToken (
             CORINFO_MODULE_HANDLE       tokenScope,
             unsigned                    token)
 {
     return m_pEEJitInfo->isValidToken(tokenScope, token);
 }
 
-BOOL ZapInfo::isValidStringRef (
+bool ZapInfo::isValidStringRef (
             CORINFO_MODULE_HANDLE       tokenScope,
             unsigned                    token)
 {
@@ -4051,7 +4052,7 @@ CorInfoUnmanagedCallConv ZapInfo::getUnmanagedCallConv(CORINFO_METHOD_HANDLE met
     return m_pEEJitInfo->getUnmanagedCallConv(method);
 }
 
-BOOL ZapInfo::pInvokeMarshalingRequired(CORINFO_METHOD_HANDLE method,
+bool ZapInfo::pInvokeMarshalingRequired(CORINFO_METHOD_HANDLE method,
                                                        CORINFO_SIG_INFO* sig)
 {
 #if defined(TARGET_X86) && defined(TARGET_UNIX)
@@ -4082,7 +4083,7 @@ bool ZapInfo::canGetCookieForPInvokeCalliSig(CORINFO_SIG_INFO* szMetaSig)
     return canGetVarArgsHandle(szMetaSig);
 }
 
-BOOL ZapInfo::satisfiesMethodConstraints(
+bool ZapInfo::satisfiesMethodConstraints(
             CORINFO_CLASS_HANDLE        parent,
             CORINFO_METHOD_HANDLE       method)
 {
@@ -4090,12 +4091,12 @@ BOOL ZapInfo::satisfiesMethodConstraints(
 }
 
 
-BOOL ZapInfo::isCompatibleDelegate(
+bool ZapInfo::isCompatibleDelegate(
             CORINFO_CLASS_HANDLE objCls,
             CORINFO_CLASS_HANDLE methodParentCls,
             CORINFO_METHOD_HANDLE method,
             CORINFO_CLASS_HANDLE delegateCls,
-            BOOL* pfIsOpenDelegate)
+            bool* pfIsOpenDelegate)
 {
     return m_pEEJitInfo->isCompatibleDelegate(objCls, methodParentCls, method, delegateCls, pfIsOpenDelegate);
 }

@@ -1003,21 +1003,16 @@ namespace Internal.JitInterface
             return true;
         }
 
-        private CORINFO_METHOD_STRUCT_* getUnboxedEntry(CORINFO_METHOD_STRUCT_* ftn, byte* requiresInstMethodTableArg)
+        private CORINFO_METHOD_STRUCT_* getUnboxedEntry(CORINFO_METHOD_STRUCT_* ftn, ref bool requiresInstMethodTableArg)
         {
             MethodDesc result = null;
-            bool requiresInstMTArg = false;
+            requiresInstMethodTableArg = false;
 
             MethodDesc method = HandleToObject(ftn);
             if (method.IsUnboxingThunk())
             {
                 result = method.GetUnboxedMethod();
-                requiresInstMTArg = method.RequiresInstMethodTableArg();
-            }
-
-            if (requiresInstMethodTableArg != null)
-            {
-                *requiresInstMethodTableArg = requiresInstMTArg ? (byte)1 : (byte)0;
+                requiresInstMethodTableArg = method.RequiresInstMethodTableArg();
             }
 
             return result != null ? ObjectToHandle(result) : null;
@@ -1059,7 +1054,7 @@ namespace Internal.JitInterface
 
         private bool satisfiesMethodConstraints(CORINFO_CLASS_STRUCT_* parent, CORINFO_METHOD_STRUCT_* method)
         { throw new NotImplementedException("satisfiesMethodConstraints"); }
-        private bool isCompatibleDelegate(CORINFO_CLASS_STRUCT_* objCls, CORINFO_CLASS_STRUCT_* methodParentCls, CORINFO_METHOD_STRUCT_* method, CORINFO_CLASS_STRUCT_* delegateCls, BOOL* pfIsOpenDelegate)
+        private bool isCompatibleDelegate(CORINFO_CLASS_STRUCT_* objCls, CORINFO_CLASS_STRUCT_* methodParentCls, CORINFO_METHOD_STRUCT_* method, CORINFO_CLASS_STRUCT_* delegateCls, ref bool pfIsOpenDelegate)
         { throw new NotImplementedException("isCompatibleDelegate"); }
         private void setPatchpointInfo(PatchpointInfo* patchpointInfo)
         { throw new NotImplementedException("setPatchpointInfo"); }
@@ -2733,7 +2728,7 @@ namespace Internal.JitInterface
             ppIndirection = null;
             return null;
         }
-        private void GetProfilingHandle(BOOL* pbHookFunction, ref void* pProfilerHandle, BOOL* pbIndirectedHandles)
+        private void GetProfilingHandle(ref bool pbHookFunction, ref void* pProfilerHandle, ref bool pbIndirectedHandles)
         { throw new NotImplementedException("GetProfilingHandle"); }
 
         /// <summary>

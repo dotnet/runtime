@@ -738,13 +738,13 @@ public:
     void dmpAsCorInfoType(DWORDLONG key, DWORD value);
     CorInfoType repAsCorInfoType(CORINFO_CLASS_HANDLE cls);
 
-    void recIsValueClass(CORINFO_CLASS_HANDLE cls, BOOL result);
+    void recIsValueClass(CORINFO_CLASS_HANDLE cls, bool result);
     void dmpIsValueClass(DWORDLONG key, DWORD value);
-    BOOL repIsValueClass(CORINFO_CLASS_HANDLE cls);
+    bool repIsValueClass(CORINFO_CLASS_HANDLE cls);
 
-    void recIsStructRequiringStackAllocRetBuf(CORINFO_CLASS_HANDLE cls, BOOL result);
+    void recIsStructRequiringStackAllocRetBuf(CORINFO_CLASS_HANDLE cls, bool result);
     void dmpIsStructRequiringStackAllocRetBuf(DWORDLONG key, DWORD value);
-    BOOL repIsStructRequiringStackAllocRetBuf(CORINFO_CLASS_HANDLE cls);
+    bool repIsStructRequiringStackAllocRetBuf(CORINFO_CLASS_HANDLE cls);
 
     void recGetClassSize(CORINFO_CLASS_HANDLE cls, unsigned result);
     void dmpGetClassSize(DWORDLONG key, DWORD val);
@@ -754,9 +754,9 @@ public:
     void dmpGetHeapClassSize(DWORDLONG key, DWORD val);
     unsigned repGetHeapClassSize(CORINFO_CLASS_HANDLE cls);
 
-    void recCanAllocateOnStack(CORINFO_CLASS_HANDLE cls, BOOL result);
+    void recCanAllocateOnStack(CORINFO_CLASS_HANDLE cls, bool result);
     void dmpCanAllocateOnStack(DWORDLONG key, DWORD val);
-    BOOL repCanAllocateOnStack(CORINFO_CLASS_HANDLE cls);
+    bool repCanAllocateOnStack(CORINFO_CLASS_HANDLE cls);
 
     void recGetClassNumInstanceFields(CORINFO_CLASS_HANDLE cls, unsigned result);
     void dmpGetClassNumInstanceFields(DWORDLONG key, DWORD value);
@@ -794,13 +794,13 @@ public:
     void dmpGetParentType(DWORDLONG key, DWORDLONG value);
     CORINFO_CLASS_HANDLE repGetParentType(CORINFO_CLASS_HANDLE cls);
 
-    void recIsSDArray(CORINFO_CLASS_HANDLE cls, BOOL result);
+    void recIsSDArray(CORINFO_CLASS_HANDLE cls, bool result);
     void dmpIsSDArray(DWORDLONG key, DWORD value);
-    BOOL repIsSDArray(CORINFO_CLASS_HANDLE cls);
+    bool repIsSDArray(CORINFO_CLASS_HANDLE cls);
 
-    void recIsIntrinsicType(CORINFO_CLASS_HANDLE cls, BOOL result);
+    void recIsIntrinsicType(CORINFO_CLASS_HANDLE cls, bool result);
     void dmpIsIntrinsicType(DWORDLONG key, DWORD value);
-    BOOL repIsIntrinsicType(CORINFO_CLASS_HANDLE cls);
+    bool repIsIntrinsicType(CORINFO_CLASS_HANDLE cls);
 
     void recGetFieldClass(CORINFO_FIELD_HANDLE field, CORINFO_CLASS_HANDLE result);
     void dmpGetFieldClass(DWORDLONG key, DWORDLONG value);
@@ -913,12 +913,12 @@ public:
     CorInfoHelpFunc repGetNewHelper(CORINFO_RESOLVED_TOKEN* pResolvedToken, CORINFO_METHOD_HANDLE callerHandle, bool * pHasSideEffects);
 
     void recEmbedGenericHandle(CORINFO_RESOLVED_TOKEN*       pResolvedToken,
-                               BOOL                          fEmbedParent,
+                               bool                          fEmbedParent,
                                CORINFO_GENERICHANDLE_RESULT* pResult);
     void dmpEmbedGenericHandle(const Agnostic_EmbedGenericHandle&           key,
                                const Agnostic_CORINFO_GENERICHANDLE_RESULT& value);
     void repEmbedGenericHandle(CORINFO_RESOLVED_TOKEN*       pResolvedToken,
-                               BOOL                          fEmbedParent,
+                               bool                          fEmbedParent,
                                CORINFO_GENERICHANDLE_RESULT* pResult);
 
     void recGetEHinfo(CORINFO_METHOD_HANDLE ftn, unsigned EHnumber, CORINFO_EH_CLAUSE* clause);
@@ -977,9 +977,9 @@ public:
     void dmpGetClassGClayout(DWORDLONG key, const Agnostic_GetClassGClayout& value);
     unsigned repGetClassGClayout(CORINFO_CLASS_HANDLE cls, BYTE* gcPtrs);
 
-    void recGetClassAlignmentRequirement(CORINFO_CLASS_HANDLE cls, BOOL fDoubleAlignHint, unsigned result);
+    void recGetClassAlignmentRequirement(CORINFO_CLASS_HANDLE cls, bool fDoubleAlignHint, unsigned result);
     void dmpGetClassAlignmentRequirement(DLD key, DWORD value);
-    unsigned repGetClassAlignmentRequirement(CORINFO_CLASS_HANDLE cls, BOOL fDoubleAlignHint);
+    unsigned repGetClassAlignmentRequirement(CORINFO_CLASS_HANDLE cls, bool fDoubleAlignHint);
 
     void recCanAccessClass(CORINFO_RESOLVED_TOKEN*      pResolvedToken,
                            CORINFO_METHOD_HANDLE        callerHandle,
@@ -1002,9 +1002,9 @@ public:
     void dmpEmbedClassHandle(DWORDLONG key, DLDL value);
     CORINFO_CLASS_HANDLE repEmbedClassHandle(CORINFO_CLASS_HANDLE handle, void** ppIndirection);
 
-    void recPInvokeMarshalingRequired(CORINFO_METHOD_HANDLE method, CORINFO_SIG_INFO* callSiteSig, BOOL result);
+    void recPInvokeMarshalingRequired(CORINFO_METHOD_HANDLE method, CORINFO_SIG_INFO* callSiteSig, bool result);
     void dmpPInvokeMarshalingRequired(const PInvokeMarshalingRequiredValue& key, DWORD value);
-    BOOL repPInvokeMarshalingRequired(CORINFO_METHOD_HANDLE method, CORINFO_SIG_INFO* callSiteSig);
+    bool repPInvokeMarshalingRequired(CORINFO_METHOD_HANDLE method, CORINFO_SIG_INFO* callSiteSig);
 
     void recFindSig(CORINFO_MODULE_HANDLE  module,
                     unsigned               sigTOK,
@@ -1095,13 +1095,13 @@ public:
     void dmpCanInlineTypeCheck(DLD key, DWORD value);
     CorInfoInlineTypeCheck repCanInlineTypeCheck(CORINFO_CLASS_HANDLE cls, CorInfoInlineTypeCheckSource source);
 
-    void recSatisfiesMethodConstraints(CORINFO_CLASS_HANDLE parent, CORINFO_METHOD_HANDLE method, BOOL result);
+    void recSatisfiesMethodConstraints(CORINFO_CLASS_HANDLE parent, CORINFO_METHOD_HANDLE method, bool result);
     void dmpSatisfiesMethodConstraints(DLDL key, DWORD value);
-    BOOL repSatisfiesMethodConstraints(CORINFO_CLASS_HANDLE parent, CORINFO_METHOD_HANDLE method);
+    bool repSatisfiesMethodConstraints(CORINFO_CLASS_HANDLE parent, CORINFO_METHOD_HANDLE method);
 
-    void recIsValidStringRef(CORINFO_MODULE_HANDLE module, unsigned metaTOK, BOOL result);
+    void recIsValidStringRef(CORINFO_MODULE_HANDLE module, unsigned metaTOK, bool result);
     void dmpIsValidStringRef(DLD key, DWORD value);
-    BOOL repIsValidStringRef(CORINFO_MODULE_HANDLE module, unsigned metaTOK);
+    bool repIsValidStringRef(CORINFO_MODULE_HANDLE module, unsigned metaTOK);
 
     void recGetStringLiteral(CORINFO_MODULE_HANDLE module, unsigned metaTOK, int length, LPCWSTR result);
     void dmpGetStringLiteral(DLD key, DD value);
@@ -1111,9 +1111,9 @@ public:
     void dmpGetHelperName(DWORD key, DWORD value);
     const char* repGetHelperName(CorInfoHelpFunc funcNum);
 
-    void recCanCast(CORINFO_CLASS_HANDLE child, CORINFO_CLASS_HANDLE parent, BOOL result);
+    void recCanCast(CORINFO_CLASS_HANDLE child, CORINFO_CLASS_HANDLE parent, bool result);
     void dmpCanCast(DLDL key, DWORD value);
-    BOOL repCanCast(CORINFO_CLASS_HANDLE child, CORINFO_CLASS_HANDLE parent);
+    bool repCanCast(CORINFO_CLASS_HANDLE child, CORINFO_CLASS_HANDLE parent);
 
     void recGetChildType(CORINFO_CLASS_HANDLE clsHnd, CORINFO_CLASS_HANDLE* clsRet, CorInfoType result);
     void dmpGetChildType(DWORDLONG key, DLD value);
@@ -1134,9 +1134,9 @@ public:
     void dmpGetAddressOfPInvokeTarget(DWORDLONG key, DLD value);
     void repGetAddressOfPInvokeTarget(CORINFO_METHOD_HANDLE method, CORINFO_CONST_LOOKUP* pLookup);
 
-    void recSatisfiesClassConstraints(CORINFO_CLASS_HANDLE cls, BOOL result);
+    void recSatisfiesClassConstraints(CORINFO_CLASS_HANDLE cls, bool result);
     void dmpSatisfiesClassConstraints(DWORDLONG key, DWORD value);
-    BOOL repSatisfiesClassConstraints(CORINFO_CLASS_HANDLE cls);
+    bool repSatisfiesClassConstraints(CORINFO_CLASS_HANDLE cls);
 
     void recGetMethodHash(CORINFO_METHOD_HANDLE ftn, unsigned result);
     void dmpGetMethodHash(DWORDLONG key, DWORD value);
@@ -1157,18 +1157,18 @@ public:
                                  CORINFO_CLASS_HANDLE  methodParentCls,
                                  CORINFO_METHOD_HANDLE method,
                                  CORINFO_CLASS_HANDLE  delegateCls,
-                                 BOOL*                 pfIsOpenDelegate,
-                                 BOOL                  result);
+                                 bool*                 pfIsOpenDelegate,
+                                 bool                  result);
     void dmpIsCompatibleDelegate(const Agnostic_IsCompatibleDelegate& key, DD value);
-    BOOL repIsCompatibleDelegate(CORINFO_CLASS_HANDLE  objCls,
+    bool repIsCompatibleDelegate(CORINFO_CLASS_HANDLE  objCls,
                                  CORINFO_CLASS_HANDLE  methodParentCls,
                                  CORINFO_METHOD_HANDLE method,
                                  CORINFO_CLASS_HANDLE  delegateCls,
-                                 BOOL*                 pfIsOpenDelegate);
+                                 bool*                 pfIsOpenDelegate);
 
-    void recIsDelegateCreationAllowed(CORINFO_CLASS_HANDLE delegateHnd, CORINFO_METHOD_HANDLE calleeHnd, BOOL result);
+    void recIsDelegateCreationAllowed(CORINFO_CLASS_HANDLE delegateHnd, CORINFO_METHOD_HANDLE calleeHnd, bool result);
     void dmpIsDelegateCreationAllowed(DLDL key, DWORD value);
-    BOOL repIsDelegateCreationAllowed(CORINFO_CLASS_HANDLE delegateHnd, CORINFO_METHOD_HANDLE calleeHnd);
+    bool repIsDelegateCreationAllowed(CORINFO_CLASS_HANDLE delegateHnd, CORINFO_METHOD_HANDLE calleeHnd);
 
     void recFindCallSiteSig(CORINFO_MODULE_HANDLE  module,
                             unsigned               methTOK,
@@ -1219,9 +1219,9 @@ public:
     void dmpMergeClasses(DLDL key, DWORDLONG value);
     CORINFO_CLASS_HANDLE repMergeClasses(CORINFO_CLASS_HANDLE cls1, CORINFO_CLASS_HANDLE cls2);
 
-    void recIsMoreSpecificType(CORINFO_CLASS_HANDLE cls1, CORINFO_CLASS_HANDLE cls2, BOOL result);
+    void recIsMoreSpecificType(CORINFO_CLASS_HANDLE cls1, CORINFO_CLASS_HANDLE cls2, bool result);
     void dmpIsMoreSpecificType(DLDL key, DWORD value);
-    BOOL repIsMoreSpecificType(CORINFO_CLASS_HANDLE cls1, CORINFO_CLASS_HANDLE cls2);
+    bool repIsMoreSpecificType(CORINFO_CLASS_HANDLE cls1, CORINFO_CLASS_HANDLE cls2);
 
     void recGetCookieForPInvokeCalliSig(CORINFO_SIG_INFO* szMetaSig, void** ppIndirection, LPVOID result);
     void dmpGetCookieForPInvokeCalliSig(const GetCookieForPInvokeCalliSigValue& key, DLDL value);
@@ -1231,24 +1231,24 @@ public:
     void dmpCanGetCookieForPInvokeCalliSig(const CanGetCookieForPInvokeCalliSigValue& key, DWORD value);
     bool repCanGetCookieForPInvokeCalliSig(CORINFO_SIG_INFO* szMetaSig);
 
-    void recCanAccessFamily(CORINFO_METHOD_HANDLE hCaller, CORINFO_CLASS_HANDLE hInstanceType, BOOL result);
+    void recCanAccessFamily(CORINFO_METHOD_HANDLE hCaller, CORINFO_CLASS_HANDLE hInstanceType, bool result);
     void dmpCanAccessFamily(DLDL key, DWORD value);
-    BOOL repCanAccessFamily(CORINFO_METHOD_HANDLE hCaller, CORINFO_CLASS_HANDLE hInstanceType);
+    bool repCanAccessFamily(CORINFO_METHOD_HANDLE hCaller, CORINFO_CLASS_HANDLE hInstanceType);
 
     void recErrorList(const char* error);
     void dmpErrorList(DWORD key, DWORD value);
 
-    void recGetProfilingHandle(BOOL* pbHookFunction, void** pProfilerHandle, BOOL* pbIndirectedHandles);
+    void recGetProfilingHandle(bool* pbHookFunction, void** pProfilerHandle, bool* pbIndirectedHandles);
     void dmpGetProfilingHandle(DWORD key, const Agnostic_GetProfilingHandle& value);
-    void repGetProfilingHandle(BOOL* pbHookFunction, void** pProfilerHandle, BOOL* pbIndirectedHandles);
+    void repGetProfilingHandle(bool* pbHookFunction, void** pProfilerHandle, bool* pbIndirectedHandles);
 
     void recEmbedFieldHandle(CORINFO_FIELD_HANDLE handle, void** ppIndirection, CORINFO_FIELD_HANDLE result);
     void dmpEmbedFieldHandle(DWORDLONG key, DLDL value);
     CORINFO_FIELD_HANDLE repEmbedFieldHandle(CORINFO_FIELD_HANDLE handle, void** ppIndirection);
 
-    void recAreTypesEquivalent(CORINFO_CLASS_HANDLE cls1, CORINFO_CLASS_HANDLE cls2, BOOL result);
+    void recAreTypesEquivalent(CORINFO_CLASS_HANDLE cls1, CORINFO_CLASS_HANDLE cls2, bool result);
     void dmpAreTypesEquivalent(DLDL key, DWORD value);
-    BOOL repAreTypesEquivalent(CORINFO_CLASS_HANDLE cls1, CORINFO_CLASS_HANDLE cls2);
+    bool repAreTypesEquivalent(CORINFO_CLASS_HANDLE cls1, CORINFO_CLASS_HANDLE cls2);
 
     void recCompareTypesForCast(CORINFO_CLASS_HANDLE fromClass, CORINFO_CLASS_HANDLE toClass, TypeCompareState result);
     void dmpCompareTypesForCast(DLDL key, DWORD value);
@@ -1276,9 +1276,9 @@ public:
     void dmpGetRelocTypeHint(DWORDLONG key, DWORD value);
     WORD repGetRelocTypeHint(void* target);
 
-    void recIsValidToken(CORINFO_MODULE_HANDLE module, unsigned metaTOK, BOOL result);
+    void recIsValidToken(CORINFO_MODULE_HANDLE module, unsigned metaTOK, bool result);
     void dmpIsValidToken(DLD key, DWORD value);
-    BOOL repIsValidToken(CORINFO_MODULE_HANDLE module, unsigned metaTOK);
+    bool repIsValidToken(CORINFO_MODULE_HANDLE module, unsigned metaTOK);
 
     void recGetClassName(CORINFO_CLASS_HANDLE cls, const char* result);
     void dmpGetClassName(DWORDLONG key, DWORD value);
@@ -1293,9 +1293,9 @@ public:
     CORINFO_CLASS_HANDLE repGetTypeInstantiationArgument(CORINFO_CLASS_HANDLE cls, unsigned index);
 
     void recAppendClassName(
-        CORINFO_CLASS_HANDLE cls, BOOL fNamespace, BOOL fFullInst, BOOL fAssembly, const WCHAR* result);
+        CORINFO_CLASS_HANDLE cls, bool fNamespace, bool fFullInst, bool fAssembly, const WCHAR* result);
     void dmpAppendClassName(const Agnostic_AppendClassName& key, DWORD value);
-    const WCHAR* repAppendClassName(CORINFO_CLASS_HANDLE cls, BOOL fNamespace, BOOL fFullInst, BOOL fAssembly);
+    const WCHAR* repAppendClassName(CORINFO_CLASS_HANDLE cls, bool fNamespace, bool fFullInst, bool fAssembly);
 
     void recGetTailCallHelpers(
         CORINFO_RESOLVED_TOKEN* callToken,
@@ -1313,9 +1313,9 @@ public:
     void dmpGetMethodDefFromMethod(DWORDLONG key, DWORD value);
     mdMethodDef repGetMethodDefFromMethod(CORINFO_METHOD_HANDLE hMethod);
 
-    void recCheckMethodModifier(CORINFO_METHOD_HANDLE hMethod, LPCSTR modifier, BOOL fOptional, BOOL result);
+    void recCheckMethodModifier(CORINFO_METHOD_HANDLE hMethod, LPCSTR modifier, bool fOptional, bool result);
     void dmpCheckMethodModifier(const Agnostic_CheckMethodModifier& key, DWORD value);
-    BOOL repCheckMethodModifier(CORINFO_METHOD_HANDLE hMethod, LPCSTR modifier, BOOL fOptional);
+    bool repCheckMethodModifier(CORINFO_METHOD_HANDLE hMethod, LPCSTR modifier, bool fOptional);
 
     void recGetArrayRank(CORINFO_CLASS_HANDLE cls, unsigned result);
     void dmpGetArrayRank(DWORDLONG key, DWORD value);

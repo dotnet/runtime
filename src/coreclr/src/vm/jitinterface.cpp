@@ -742,7 +742,7 @@ static bool CallerAndCalleeInSystemVersionBubble(MethodDesc* pCaller, MethodDesc
 
 /*********************************************************************/
 // Checks if the given metadata token is valid
-BOOL CEEInfo::isValidToken (
+bool CEEInfo::isValidToken (
         CORINFO_MODULE_HANDLE       module,
         mdToken                     metaTOK)
 {
@@ -752,7 +752,7 @@ BOOL CEEInfo::isValidToken (
         MODE_ANY;
     } CONTRACTL_END;
 
-    BOOL result = FALSE;
+    bool result = false;
 
     JIT_TO_EE_TRANSITION_LEAF();
 
@@ -760,7 +760,7 @@ BOOL CEEInfo::isValidToken (
     {
         // No explicit token validation for dynamic code. Validation is
         // side-effect of token resolution.
-        result = TRUE;
+        result = true;
     }
     else
     {
@@ -774,7 +774,7 @@ BOOL CEEInfo::isValidToken (
 
 /*********************************************************************/
 // Checks if the given metadata token is valid StringRef
-BOOL CEEInfo::isValidStringRef (
+bool CEEInfo::isValidStringRef (
         CORINFO_MODULE_HANDLE       module,
         mdToken                     metaTOK)
 {
@@ -784,7 +784,7 @@ BOOL CEEInfo::isValidStringRef (
         MODE_PREEMPTIVE;
     } CONTRACTL_END;
 
-    BOOL result = FALSE;
+    bool result = true;
 
     JIT_TO_EE_TRANSITION();
 
@@ -1996,7 +1996,7 @@ CEEInfo::getHeapClassSize(
 //---------------------------------------------------------------------------------------
 //
 // Return TRUE if an object of this type can be allocated on the stack.
-BOOL CEEInfo::canAllocateOnStack(CORINFO_CLASS_HANDLE clsHnd)
+bool CEEInfo::canAllocateOnStack(CORINFO_CLASS_HANDLE clsHnd)
 {
     CONTRACTL{
         NOTHROW;
@@ -2004,7 +2004,7 @@ BOOL CEEInfo::canAllocateOnStack(CORINFO_CLASS_HANDLE clsHnd)
         MODE_PREEMPTIVE;
     } CONTRACTL_END;
 
-    BOOL result = FALSE;
+    bool result = false;
 
     JIT_TO_EE_TRANSITION_LEAF();
 
@@ -2026,7 +2026,7 @@ BOOL CEEInfo::canAllocateOnStack(CORINFO_CLASS_HANDLE clsHnd)
     return result;
 }
 
-unsigned CEEInfo::getClassAlignmentRequirement(CORINFO_CLASS_HANDLE type, BOOL fDoubleAlignHint)
+unsigned CEEInfo::getClassAlignmentRequirement(CORINFO_CLASS_HANDLE type, bool fDoubleAlignHint)
 {
     CONTRACTL {
         NOTHROW;
@@ -2164,9 +2164,9 @@ CEEInfo::getMethodDefFromMethod(CORINFO_METHOD_HANDLE hMethod)
     return result;
 }
 
-BOOL CEEInfo::checkMethodModifier(CORINFO_METHOD_HANDLE hMethod,
+bool CEEInfo::checkMethodModifier(CORINFO_METHOD_HANDLE hMethod,
                                   LPCSTR modifier,
-                                  BOOL fOptional)
+                                  bool fOptional)
 {
     CONTRACTL {
         THROWS;
@@ -2174,7 +2174,7 @@ BOOL CEEInfo::checkMethodModifier(CORINFO_METHOD_HANDLE hMethod,
         MODE_PREEMPTIVE;
     } CONTRACTL_END;
 
-    BOOL result = FALSE;
+    bool result = false;
 
     JIT_TO_EE_TRANSITION();
 
@@ -2593,7 +2593,7 @@ void CEEInfo::MethodCompileComplete(CORINFO_METHOD_HANDLE methHnd)
 //
 void CEEInfo::embedGenericHandle(
             CORINFO_RESOLVED_TOKEN * pResolvedToken,
-            BOOL                     fEmbedParent,
+            bool                     fEmbedParent,
             CORINFO_GENERICHANDLE_RESULT *pResult)
 {
     CONTRACTL {
@@ -2784,7 +2784,7 @@ void CEEInfo::ScanMethodSpec(Module * pModule, PCCOR_SIGNATURE pMethodSpec, ULON
     }
 }
 
-BOOL CEEInfo::ScanTypeSpec(Module * pModule, PCCOR_SIGNATURE pTypeSpec, ULONG cbTypeSpec)
+bool CEEInfo::ScanTypeSpec(Module * pModule, PCCOR_SIGNATURE pTypeSpec, ULONG cbTypeSpec)
 {
     STANDARD_VM_CONTRACT;
 
@@ -2813,7 +2813,7 @@ BOOL CEEInfo::ScanTypeSpec(Module * pModule, PCCOR_SIGNATURE pTypeSpec, ULONG cb
         IfFailThrow(sp.SkipExactlyOne());
     }
 
-    return TRUE;
+    return true;
 }
 
 void CEEInfo::ScanInstantiation(Module * pModule, Instantiation inst)
@@ -2986,7 +2986,7 @@ MethodDesc * CEEInfo::GetMethodForSecurity(CORINFO_METHOD_HANDLE callerHandle)
 }
 
 // Check that the instantation is <!/!!0, ..., !/!!(n-1)>
-static BOOL IsSignatureForTypicalInstantiation(SigPointer sigptr, CorElementType varType, ULONG ntypars)
+static bool IsSignatureForTypicalInstantiation(SigPointer sigptr, CorElementType varType, ULONG ntypars)
 {
     STANDARD_VM_CONTRACT;
 
@@ -2995,20 +2995,20 @@ static BOOL IsSignatureForTypicalInstantiation(SigPointer sigptr, CorElementType
         CorElementType type;
         IfFailThrow(sigptr.GetElemType(&type));
         if (type != varType)
-            return FALSE;
+            return false;
 
         ULONG data;
         IfFailThrow(sigptr.GetData(&data));
 
         if (data != i)
-             return FALSE;
+             return false;
     }
 
-    return TRUE;
+    return true;
 }
 
 // Check that methodSpec instantiation is <!!0, ..., !!(n-1)>
-static BOOL IsMethodSpecForTypicalInstantation(SigPointer sigptr)
+static bool IsMethodSpecForTypicalInstantation(SigPointer sigptr)
 {
     STANDARD_VM_CONTRACT;
 
@@ -3023,14 +3023,14 @@ static BOOL IsMethodSpecForTypicalInstantation(SigPointer sigptr)
 }
 
 // Check that typeSpec instantiation is <!0, ..., !(n-1)>
-static BOOL IsTypeSpecForTypicalInstantiation(SigPointer sigptr)
+static bool IsTypeSpecForTypicalInstantiation(SigPointer sigptr)
 {
     STANDARD_VM_CONTRACT;
 
     CorElementType type;
     IfFailThrow(sigptr.GetElemType(&type));
     if (type != ELEMENT_TYPE_GENERICINST)
-        return FALSE;
+        return false;
 
     IfFailThrow(sigptr.SkipExactlyOne());
 
@@ -3622,9 +3622,9 @@ const char* CEEInfo::getHelperName (CorInfoHelpFunc ftnNum)
 int CEEInfo::appendClassName(__deref_inout_ecount(*pnBufLen) WCHAR** ppBuf,
                              int* pnBufLen,
                              CORINFO_CLASS_HANDLE    clsHnd,
-                             BOOL fNamespace,
-                             BOOL fFullInst,
-                             BOOL fAssembly)
+                             bool fNamespace,
+                             bool fFullInst,
+                             bool fAssembly)
 {
     CONTRACTL {
         MODE_PREEMPTIVE;
@@ -3782,7 +3782,7 @@ size_t CEEInfo::getClassModuleIdForStatics(CORINFO_CLASS_HANDLE clsHnd, CORINFO_
 }
 
 /*********************************************************************/
-BOOL CEEInfo::isValueClass(CORINFO_CLASS_HANDLE clsHnd)
+bool CEEInfo::isValueClass(CORINFO_CLASS_HANDLE clsHnd)
 {
     CONTRACTL {
         NOTHROW;
@@ -3790,7 +3790,7 @@ BOOL CEEInfo::isValueClass(CORINFO_CLASS_HANDLE clsHnd)
         MODE_PREEMPTIVE;
     } CONTRACTL_END;
 
-    BOOL ret = FALSE;
+    bool ret = false;
 
     JIT_TO_EE_TRANSITION_LEAF();
 
@@ -3800,7 +3800,7 @@ BOOL CEEInfo::isValueClass(CORINFO_CLASS_HANDLE clsHnd)
     // for corner cases like ELEMENT_TYPE_FNPTR
     TypeHandle VMClsHnd(clsHnd);
     MethodTable * pMT = VMClsHnd.GetMethodTable();
-    ret = (pMT != NULL) ? pMT->IsValueType() : 0;
+    ret = (pMT != NULL) ? pMT->IsValueType() : false;
 
     EE_TO_JIT_TRANSITION_LEAF();
 
@@ -3843,7 +3843,7 @@ DWORD CEEInfo::getClassAttribs (CORINFO_CLASS_HANDLE clsHnd)
 
 
 /*********************************************************************/
-BOOL CEEInfo::isStructRequiringStackAllocRetBuf(CORINFO_CLASS_HANDLE clsHnd)
+bool CEEInfo::isStructRequiringStackAllocRetBuf(CORINFO_CLASS_HANDLE clsHnd)
 {
     CONTRACTL {
         THROWS;
@@ -3851,7 +3851,7 @@ BOOL CEEInfo::isStructRequiringStackAllocRetBuf(CORINFO_CLASS_HANDLE clsHnd)
         MODE_PREEMPTIVE;
     } CONTRACTL_END;
 
-    BOOL ret = 0;
+    bool ret = 0;
 
     JIT_TO_EE_TRANSITION_LEAF();
 
@@ -4451,7 +4451,7 @@ void CEEInfo::getGSCookie(GSCookie * pCookieVal, GSCookie ** ppCookieVal)
 /*********************************************************************/
 // TRUE if child is a subtype of parent
 // if parent is an interface, then does child implement / extend parent
-BOOL CEEInfo::canCast(
+bool CEEInfo::canCast(
         CORINFO_CLASS_HANDLE        child,
         CORINFO_CLASS_HANDLE        parent)
 {
@@ -4461,11 +4461,11 @@ BOOL CEEInfo::canCast(
         MODE_PREEMPTIVE;
     } CONTRACTL_END;
 
-    BOOL result = FALSE;
+    bool result = false;
 
     JIT_TO_EE_TRANSITION();
 
-    result = ((TypeHandle)child).CanCastTo((TypeHandle)parent);
+    result = !!((TypeHandle)child).CanCastTo((TypeHandle)parent);
 
     EE_TO_JIT_TRANSITION();
 
@@ -4474,7 +4474,7 @@ BOOL CEEInfo::canCast(
 
 /*********************************************************************/
 // TRUE if cls1 and cls2 are considered equivalent types.
-BOOL CEEInfo::areTypesEquivalent(
+bool CEEInfo::areTypesEquivalent(
         CORINFO_CLASS_HANDLE        cls1,
         CORINFO_CLASS_HANDLE        cls2)
 {
@@ -4484,11 +4484,11 @@ BOOL CEEInfo::areTypesEquivalent(
         MODE_PREEMPTIVE;
     } CONTRACTL_END;
 
-    BOOL result = FALSE;
+    bool result = false;
 
     JIT_TO_EE_TRANSITION();
 
-    result = ((TypeHandle)cls1).IsEquivalentTo((TypeHandle)cls2);
+    result = !!((TypeHandle)cls1).IsEquivalentTo((TypeHandle)cls2);
 
     EE_TO_JIT_TRANSITION();
 
@@ -4770,7 +4770,7 @@ static BOOL isMoreSpecificTypeHelper(
 
 // Returns true if cls2 is known to be a more specific type
 // than cls1 (a subtype or more restrictive shared type).
-BOOL CEEInfo::isMoreSpecificType(
+bool CEEInfo::isMoreSpecificType(
         CORINFO_CLASS_HANDLE        cls1,
         CORINFO_CLASS_HANDLE        cls2)
 {
@@ -4780,7 +4780,7 @@ BOOL CEEInfo::isMoreSpecificType(
         MODE_PREEMPTIVE;
     } CONTRACTL_END;
 
-    BOOL result = FALSE;
+    bool result = false;
 
     JIT_TO_EE_TRANSITION();
 
@@ -4880,7 +4880,7 @@ CorInfoType CEEInfo::getChildType (
 
 /*********************************************************************/
 // Check any constraints on class type arguments
-BOOL CEEInfo::satisfiesClassConstraints(CORINFO_CLASS_HANDLE cls)
+bool CEEInfo::satisfiesClassConstraints(CORINFO_CLASS_HANDLE cls)
 {
     CONTRACTL {
         THROWS;
@@ -4888,7 +4888,7 @@ BOOL CEEInfo::satisfiesClassConstraints(CORINFO_CLASS_HANDLE cls)
         MODE_PREEMPTIVE;
     } CONTRACTL_END;
 
-    BOOL result = FALSE;
+    bool result = false;
 
     JIT_TO_EE_TRANSITION();
 
@@ -4902,7 +4902,7 @@ BOOL CEEInfo::satisfiesClassConstraints(CORINFO_CLASS_HANDLE cls)
 
 /*********************************************************************/
 // Check if this is a single dimensional array type
-BOOL CEEInfo::isSDArray(CORINFO_CLASS_HANDLE  cls)
+bool CEEInfo::isSDArray(CORINFO_CLASS_HANDLE  cls)
 {
     CONTRACTL {
         THROWS;
@@ -4910,7 +4910,7 @@ BOOL CEEInfo::isSDArray(CORINFO_CLASS_HANDLE  cls)
         MODE_PREEMPTIVE;
     } CONTRACTL_END;
 
-    BOOL result = FALSE;
+    bool result = false;
 
     JIT_TO_EE_TRANSITION();
 
@@ -5759,12 +5759,12 @@ void CEEInfo::getCallInfo(
     EE_TO_JIT_TRANSITION();
 }
 
-BOOL CEEInfo::canAccessFamily(CORINFO_METHOD_HANDLE hCaller,
+bool CEEInfo::canAccessFamily(CORINFO_METHOD_HANDLE hCaller,
                               CORINFO_CLASS_HANDLE hInstanceType)
 {
     WRAPPER_NO_CONTRACT;
 
-    BOOL ret = FALSE;
+    bool ret = false;
 
     //Since this is only for verification, I don't need to do the demand.
     JIT_TO_EE_TRANSITION();
@@ -5795,11 +5795,11 @@ BOOL CEEInfo::canAccessFamily(CORINFO_METHOD_HANDLE hCaller,
 
     if (doCheck)
     {
-        ret = ClassLoader::CanAccessFamilyVerification(accessingType, targetType);
+        ret = !!ClassLoader::CanAccessFamilyVerification(accessingType, targetType);
     }
     else
     {
-        ret = TRUE;
+        ret = true;
     }
 
     EE_TO_JIT_TRANSITION();
@@ -5849,7 +5849,7 @@ void CEEInfo::ThrowExceptionForHelper(const CORINFO_HELPER_DESC * throwHelper)
 }
 
 
-BOOL CEEInfo::isRIDClassDomainID(CORINFO_CLASS_HANDLE cls)
+bool CEEInfo::isRIDClassDomainID(CORINFO_CLASS_HANDLE cls)
 {
     CONTRACTL {
         THROWS;
@@ -5857,7 +5857,7 @@ BOOL CEEInfo::isRIDClassDomainID(CORINFO_CLASS_HANDLE cls)
         MODE_PREEMPTIVE;
     } CONTRACTL_END;
 
-    BOOL result = FALSE;
+    bool result = FALSE;
 
     JIT_TO_EE_TRANSITION();
 
@@ -5989,23 +5989,20 @@ CorInfoHelpFunc CEEInfo::getNewHelperStatic(MethodTable * pMT, bool * pHasSideEf
     BOOL hasFinalizer = pMT->HasFinalizer();
     BOOL isComObjectType = pMT->IsComObjectType();
 
-    if (pHasSideEffects != nullptr)
+    if (isComObjectType)
     {
-        if (isComObjectType)
-        {
-            *pHasSideEffects = true;
-        }
-        else
+        *pHasSideEffects = true;
+    }
+    else
 #ifdef FEATURE_READYTORUN_COMPILER
-        if (IsReadyToRunCompilation())
-        {
-            *pHasSideEffects = hasFinalizer || !pMT->IsInheritanceChainFixedInCurrentVersionBubble();
-        }
-        else
+    if (IsReadyToRunCompilation())
+    {
+        *pHasSideEffects = hasFinalizer || !pMT->IsInheritanceChainFixedInCurrentVersionBubble();
+    }
+    else
 #endif
-        {
-            *pHasSideEffects = !!hasFinalizer;
-        }
+    {
+        *pHasSideEffects = !!hasFinalizer;
     }
 
     if (isComObjectType)
@@ -9089,10 +9086,7 @@ CORINFO_METHOD_HANDLE CEEInfo::getUnboxedEntry(
         requiresInstMTArg = !!pUnboxedMD->RequiresInstMethodTableArg();
     }
 
-    if (requiresInstMethodTableArg != NULL)
-    {
-        *requiresInstMethodTableArg = requiresInstMTArg;
-    }
+    *requiresInstMethodTableArg = requiresInstMTArg;
 
     EE_TO_JIT_TRANSITION();
 
@@ -9856,7 +9850,7 @@ CorInfoUnmanagedCallConv CEEInfo::getUnmanagedCallConv(CORINFO_METHOD_HANDLE met
 }
 
 /*********************************************************************/
-BOOL CEEInfo::pInvokeMarshalingRequired(CORINFO_METHOD_HANDLE method, CORINFO_SIG_INFO* callSiteSig)
+bool CEEInfo::pInvokeMarshalingRequired(CORINFO_METHOD_HANDLE method, CORINFO_SIG_INFO* callSiteSig)
 {
     CONTRACTL {
         THROWS;
@@ -9864,7 +9858,7 @@ BOOL CEEInfo::pInvokeMarshalingRequired(CORINFO_METHOD_HANDLE method, CORINFO_SI
         MODE_PREEMPTIVE;
     } CONTRACTL_END;
 
-    BOOL result = FALSE;
+    bool result = false;
 
     JIT_TO_EE_TRANSITION();
 
@@ -9931,7 +9925,7 @@ bool CEEInfo::canGetCookieForPInvokeCalliSig(CORINFO_SIG_INFO* szMetaSig)
 
 
 // Check any constraints on method type arguments
-BOOL CEEInfo::satisfiesMethodConstraints(
+bool CEEInfo::satisfiesMethodConstraints(
     CORINFO_CLASS_HANDLE        parent,
     CORINFO_METHOD_HANDLE       method)
 {
@@ -9941,13 +9935,13 @@ BOOL CEEInfo::satisfiesMethodConstraints(
         MODE_PREEMPTIVE;
     } CONTRACTL_END;
 
-    BOOL result = FALSE;
+    bool result = false;
 
     JIT_TO_EE_TRANSITION();
 
     _ASSERTE(parent != NULL);
     _ASSERTE(method != NULL);
-    result = GetMethod(method)->SatisfiesMethodConstraints(TypeHandle(parent));
+    result = !!GetMethod(method)->SatisfiesMethodConstraints(TypeHandle(parent));
 
     EE_TO_JIT_TRANSITION();
 
@@ -9963,12 +9957,12 @@ BOOL CEEInfo::satisfiesMethodConstraints(
 //
 // objCls should be NULL if the target object is NULL
 //@GENERICSVER: new (suitable for generics)
-BOOL CEEInfo::isCompatibleDelegate(
+bool CEEInfo::isCompatibleDelegate(
             CORINFO_CLASS_HANDLE        objCls,
             CORINFO_CLASS_HANDLE        methodParentCls,
             CORINFO_METHOD_HANDLE       method,
             CORINFO_CLASS_HANDLE        delegateCls,
-            BOOL*                       pfIsOpenDelegate)
+            bool*                       pfIsOpenDelegate)
 {
     CONTRACTL {
         THROWS;
@@ -9976,7 +9970,7 @@ BOOL CEEInfo::isCompatibleDelegate(
         MODE_PREEMPTIVE;
     } CONTRACTL_END;
 
-    BOOL result = FALSE;
+    bool result = false;
 
     JIT_TO_EE_TRANSITION();
 
@@ -10765,14 +10759,14 @@ void CEEInfo::reportFatalError(CorJitResult result)
     EE_TO_JIT_TRANSITION_LEAF();
 }
 
-BOOL CEEInfo::logMsg(unsigned level, const char* fmt, va_list args)
+bool CEEInfo::logMsg(unsigned level, const char* fmt, va_list args)
 {
     STATIC_CONTRACT_THROWS;
     STATIC_CONTRACT_GC_TRIGGERS;
     STATIC_CONTRACT_MODE_PREEMPTIVE;
     STATIC_CONTRACT_DEBUG_ONLY;
 
-    BOOL result = FALSE;
+    bool result = false;
 
     JIT_TO_EE_TRANSITION_LEAF();
 
@@ -10780,7 +10774,7 @@ BOOL CEEInfo::logMsg(unsigned level, const char* fmt, va_list args)
     if (LoggingOn(LF_JIT, level))
     {
         LogSpewValist(LF_JIT, level, (char*) fmt, args);
-        result = TRUE;
+        result = true;
     }
 #endif // LOGGING
 
@@ -10908,9 +10902,9 @@ void CEEJitInfo::addActiveDependency(CORINFO_MODULE_HANDLE moduleFrom,CORINFO_MO
 // result in CEEJitInfo::GetProfilingHandleCache.  Thereafter, this wrapper regurgitates the cached values
 // rather than calling into CEEInfo::GetProfilingHandle each time.  This avoids
 // making duplicate calls into the profiler's FunctionIDMapper callback.
-void CEEJitInfo::GetProfilingHandle(BOOL                      *pbHookFunction,
+void CEEJitInfo::GetProfilingHandle(bool                      *pbHookFunction,
                                     void                     **pProfilerHandle,
-                                    BOOL                      *pbIndirectedHandles)
+                                    bool                      *pbIndirectedHandles)
 {
     CONTRACTL {
         THROWS;
@@ -10954,7 +10948,7 @@ void CEEJitInfo::GetProfilingHandle(BOOL                      *pbHookFunction,
     }
 
     // Our cache of these values are bitfield bools, but the interface requires
-    // BOOL.  So to avoid setting aside a staging area on the stack for these
+    // bool.  So to avoid setting aside a staging area on the stack for these
     // values, we filled them in directly in the if (not cached yet) case.
     *pbHookFunction = (m_gphCache.m_bGphHookFunction != false);
 
@@ -10964,7 +10958,7 @@ void CEEJitInfo::GetProfilingHandle(BOOL                      *pbHookFunction,
     //
     // This is the JIT case, which is never indirected.
     //
-    *pbIndirectedHandles = FALSE;
+    *pbIndirectedHandles = false;
 }
 
 /*********************************************************************/
@@ -11147,7 +11141,7 @@ void reservePersonalityRoutineSpace(ULONG &unwindSize)
 // For prejitted code we split up the unwinding information into
 // separate sections .rdata and .pdata.
 //
-void CEEJitInfo::reserveUnwindInfo(BOOL isFunclet, BOOL isColdCode, ULONG unwindSize)
+void CEEJitInfo::reserveUnwindInfo(bool isFunclet, bool isColdCode, ULONG unwindSize)
 {
 #ifdef FEATURE_EH_FUNCLETS
     CONTRACTL {
@@ -14106,8 +14100,8 @@ void CEEInfo::allocMem (
 }
 
 void CEEInfo::reserveUnwindInfo (
-        BOOL                isFunclet,             /* IN */
-        BOOL                isColdCode,            /* IN */
+        bool                isFunclet,             /* IN */
+        bool                isColdCode,            /* IN */
         ULONG               unwindSize             /* IN */
         )
 {
@@ -14326,9 +14320,9 @@ void CEEInfo::addActiveDependency(CORINFO_MODULE_HANDLE moduleFrom,CORINFO_MODUL
     UNREACHABLE();      // only called on derived class.
 }
 
-void CEEInfo::GetProfilingHandle(BOOL                      *pbHookFunction,
+void CEEInfo::GetProfilingHandle(bool                      *pbHookFunction,
                                  void                     **pProfilerHandle,
-                                 BOOL                      *pbIndirectedHandles)
+                                 bool                      *pbIndirectedHandles)
 {
     LIMITED_METHOD_CONTRACT;
     UNREACHABLE();      // only called on derived class.

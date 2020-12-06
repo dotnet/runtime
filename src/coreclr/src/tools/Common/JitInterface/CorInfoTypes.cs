@@ -1009,13 +1009,13 @@ namespace Internal.JitInterface
 
         public CORINFO_CALL_KIND kind;
 
-        public uint _nullInstanceCheck;
+        public byte _nullInstanceCheck;
         public bool nullInstanceCheck { get { return _nullInstanceCheck != 0; } set { _nullInstanceCheck = value ? (byte)1 : (byte)0; } }
 
         // Context for inlining and hidden arg
         public CORINFO_CONTEXT_STRUCT* contextHandle;
 
-        public uint _exactContextNeedsRuntimeLookup; // Set if contextHandle is approx handle. Runtime lookup is required to get the exact handle.
+        public byte _exactContextNeedsRuntimeLookup; // Set if contextHandle is approx handle. Runtime lookup is required to get the exact handle.
         public bool exactContextNeedsRuntimeLookup { get { return _exactContextNeedsRuntimeLookup != 0; } set { _exactContextNeedsRuntimeLookup = value ? (byte)1 : (byte)0; } }
 
         // If kind.CORINFO_VIRTUALCALL_STUB then stubLookup will be set.
@@ -1025,7 +1025,7 @@ namespace Internal.JitInterface
         // Used by Ready-to-Run
         public CORINFO_CONST_LOOKUP instParamLookup;
 
-        public uint _wrapperDelegateInvoke;
+        public byte _wrapperDelegateInvoke;
         public bool wrapperDelegateInvoke { get { return _wrapperDelegateInvoke != 0; } set { _wrapperDelegateInvoke = value ? (byte)1 : (byte)0; } }
     }
 

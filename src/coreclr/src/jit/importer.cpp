@@ -5795,7 +5795,7 @@ void Compiler::verVerifyCall(OPCODE                  opcode,
                 eeGetCallInfo(&delegateResolvedToken, nullptr /* constraint typeRef */,
                               addVerifyFlag(CORINFO_CALLINFO_SECURITYCHECKS), &delegateCallInfo);
 
-                BOOL isOpenDelegate = FALSE;
+                bool isOpenDelegate = false;
                 VerifyOrReturn(info.compCompHnd->isCompatibleDelegate(objTypeHandle, delegateResolvedToken.hClass,
                                                                       tiActualFtn.GetMethod(), pResolvedToken->hClass,
                                                                       &isOpenDelegate),

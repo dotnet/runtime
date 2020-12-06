@@ -134,17 +134,17 @@ public:
     static MethodDesc* FindDelegateInvokeMethod(MethodTable *pMT);
     static BOOL IsDelegateInvokeMethod(MethodDesc *pMD);
 
-    static BOOL IsMethodDescCompatible(TypeHandle   thFirstArg,
+    static bool IsMethodDescCompatible(TypeHandle   thFirstArg,
                                        TypeHandle   thExactMethodType,
                                        MethodDesc  *pTargetMethod,
                                        TypeHandle   thDelegate,
                                        MethodDesc  *pInvokeMethod,
                                        int          flags,
-                                       BOOL        *pfIsOpenDelegate);
+                                       bool        *pfIsOpenDelegate);
     static MethodDesc* GetDelegateCtor(TypeHandle delegateType, MethodDesc *pTargetMethod, DelegateCtorArgs *pCtorData);
     //@GENERICSVER: new (suitable for generics)
     // Method to do static validation of delegate .ctor
-    static BOOL ValidateCtor(TypeHandle objHnd, TypeHandle ftnParentHnd, MethodDesc *pFtn, TypeHandle dlgtHnd, BOOL *pfIsOpenDelegate);
+    static bool ValidateCtor(TypeHandle objHnd, TypeHandle ftnParentHnd, MethodDesc *pFtn, TypeHandle dlgtHnd, bool *pfIsOpenDelegate);
 
 private:
     static void BindToMethod(DELEGATEREF   *pRefThis,
