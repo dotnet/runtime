@@ -57,7 +57,15 @@ namespace Microsoft.DotNet.CoreSetup.Test
         {
             if (!PreserveTestRuns() && Directory.Exists(Location))
             {
-                Directory.Delete(Location, true);
+                try
+                {
+                    Directory.Delete(Location, true);
+
+                    // Delete lock file last
+                    Debug.Assert(!Directory.Exists(Location));
+                    var lockPath = Directory.GetParent(Location) + ".lock";
+                    File.Delete(lockPath);
+                } catch {}
             }
 
             foreach (TestArtifact copy in _copies)
@@ -70,22 +78,23 @@ namespace Microsoft.DotNet.CoreSetup.Test
 
         protected static string GetNewTestArtifactPath(string artifactName)
         {
-            var rand = new Random();
-
-            string path;
             while (true)
             {
-                path = Path.Combine(TestArtifactsPath, Path.GetRandomFileName(), artifactName);
-                Directory.CreateDirectory(path);
-                var lockPath = Path.Combine(path, ".lock");
+                var parentPath = Path.Combine(TestArtifactsPath, Path.GetRandomFileName());
+                // Create a lock file next to the target folder
+                var lockPath = parentPath + ".lock";
+                var artifactPath = Path.Combine(parentPath, artifactName);
                 try
                 {
                     File.Open(lockPath, FileMode.CreateNew, FileAccess.Write).Dispose();
-                    return path;
-                } catch
+                }
+                catch
                 {
                     // Lock file cannot be created, potential collision
+                    continue;
                 }
+                Directory.CreateDirectory(artifactPath);
+                return artifactPath;
             }
         }
 
