@@ -1,6 +1,6 @@
 MAKEFLAGS := $(MAKEFLAGS) --no-builtin-rules
 
-SUBDIRS = gc-descriptors . testing_gac assembly-load-reference llvmonly-mixed fullaot-mixed enc
+SUBDIRS = gc-descriptors . testing_gac assembly-load-reference llvmonly-mixed fullaot-mixed
 
 check-local:
 	ok=:; \

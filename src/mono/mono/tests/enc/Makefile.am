@@ -80,3 +80,10 @@ EncHelper.dll: EncHelper.cs
 	bash -x -c "$(ROSLYNILDIFF_RUN) $(ROSLYNILDIFF_ARGS) -l:EncHelper.dll $< $(basename $<)_v?.cs"
 
 CLEANFILES += *.dll.*.dil *.dll.*.dmeta *.dll.*.dpdb
+
+all-local:
+	true
+
+# TODO: run the tests on CI
+check-local:
+	true

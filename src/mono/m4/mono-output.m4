@@ -28,6 +28,5 @@ AC_DEFUN([AC_MONO_OUTPUT], [
 		mono/eglib/Makefile
 		mono/eglib/eglib-config.h
 		mono/eglib/test/Makefile
- 		mono/tests/enc/Makefile
 	])
 ])
