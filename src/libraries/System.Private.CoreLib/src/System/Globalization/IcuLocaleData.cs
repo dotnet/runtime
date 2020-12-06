@@ -2203,7 +2203,7 @@ namespace System.Globalization
             (byte)'E', (byte)'N', (byte)'W',  // en-zw
             (byte)'Z', (byte)'Z', (byte)'Z',  // eo
             (byte)'Z', (byte)'Z', (byte)'Z',  // eo-001
-            (byte)'E', (byte)'S', (byte)'N',  // es
+            (byte)'E', (byte)'S', (byte)'P',  // es
             (byte)'E', (byte)'S', (byte)'J',  // es-419
             (byte)'E', (byte)'S', (byte)'S',  // es-ar
             (byte)'E', (byte)'S', (byte)'B',  // es-bo
@@ -2479,7 +2479,7 @@ namespace System.Globalization
             (byte)'M', (byte)'K', (byte)'I',  // mk-mk
             (byte)'M', (byte)'Y', (byte)'M',  // ml
             (byte)'M', (byte)'Y', (byte)'M',  // ml-in
-            (byte)'M', (byte)'N', (byte)'N',  // mn
+            (byte)'M', (byte)'O', (byte)'N',  // mn
             (byte)'M', (byte)'N', (byte)'N',  // mn-cyrl
             (byte)'M', (byte)'N', (byte)'N',  // mn-mn
             (byte)'M', (byte)'N', (byte)'G',  // mn-mong
@@ -2582,7 +2582,7 @@ namespace System.Globalization
             (byte)'E', (byte)'N', (byte)'U',  // qps-ploc
             (byte)'J', (byte)'P', (byte)'N',  // qps-ploca
             (byte)'A', (byte)'R', (byte)'A',  // qps-plocm
-            (byte)'Q', (byte)'U', (byte)'T',  // quc
+            (byte)'Q', (byte)'U', (byte)'C',  // quc
             (byte)'Q', (byte)'U', (byte)'T',  // quc-latn
             (byte)'Q', (byte)'U', (byte)'T',  // quc-latn-gt
             (byte)'Q', (byte)'U', (byte)'B',  // quz
@@ -2665,7 +2665,7 @@ namespace System.Globalization
             (byte)'S', (byte)'Q', (byte)'I',  // sq-al
             (byte)'Z', (byte)'Z', (byte)'Z',  // sq-mk
             (byte)'Z', (byte)'Z', (byte)'Z',  // sq-xk
-            (byte)'S', (byte)'R', (byte)'M',  // sr
+            (byte)'S', (byte)'R', (byte)'B',  // sr
             (byte)'S', (byte)'R', (byte)'O',  // sr-cyrl
             (byte)'S', (byte)'R', (byte)'N',  // sr-cyrl-ba
             (byte)'S', (byte)'R', (byte)'B',  // sr-cyrl-cs
