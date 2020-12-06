@@ -1225,12 +1225,12 @@ bool interceptor_ICJI::convertPInvokeCalliToCall(
     return original_ICorJitInfo->convertPInvokeCalliToCall(pResolvedToken, mustConvert);
 }
 
-void interceptor_ICJI::notifyInstructionSetUsage(
+bool interceptor_ICJI::notifyInstructionSetUsage(
           CORINFO_InstructionSet instructionSet,
           bool supportEnabled)
 {
     mcs->AddCall("notifyInstructionSetUsage");
-    original_ICorJitInfo->notifyInstructionSetUsage(instructionSet, supportEnabled);
+    return original_ICorJitInfo->notifyInstructionSetUsage(instructionSet, supportEnabled);
 }
 
 void interceptor_ICJI::allocMem(

@@ -311,7 +311,7 @@ FUNCTIONS
     void MethodCompileComplete(CORINFO_METHOD_HANDLE methHnd);
     bool getTailCallHelpers(CORINFO_RESOLVED_TOKEN* callToken, CORINFO_SIG_INFO* sig, CORINFO_GET_TAILCALL_HELPERS_FLAGS flags, CORINFO_TAILCALL_HELPERS* pResult);
     bool convertPInvokeCalliToCall(CORINFO_RESOLVED_TOKEN * pResolvedToken, bool mustConvert);
-    void notifyInstructionSetUsage(CORINFO_InstructionSet instructionSet,bool supportEnabled);
+    bool notifyInstructionSetUsage(CORINFO_InstructionSet instructionSet,bool supportEnabled);
     void allocMem(        ULONG               hotCodeSize,    ULONG               coldCodeSize,     ULONG               roDataSize,             ULONG               xcptnsCount,            CorJitAllocMemFlag  flag,        void**             hotCodeBlock,           void**             coldCodeBlock,          void**             roDataBlock             );
     void reserveUnwindInfo(bool isFunclet, bool isColdCode, ULONG unwindSize)
     void allocUnwindInfo(BYTE* pHotCode, BYTE* pColdCode, ULONG startOffset, ULONG endOffset, ULONG unwindSize, BYTE* pUnwindBlock, CorJitFuncKind funcKind)

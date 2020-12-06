@@ -163,7 +163,7 @@ struct JitInterfaceCallbacks
     void (* MethodCompileComplete)(void * thisHandle, CorInfoExceptionClass** ppException, void* methHnd);
     bool (* getTailCallHelpers)(void * thisHandle, CorInfoExceptionClass** ppException, void* callToken, void* sig, int flags, void* pResult);
     bool (* convertPInvokeCalliToCall)(void * thisHandle, CorInfoExceptionClass** ppException, void* pResolvedToken, bool mustConvert);
-    void (* notifyInstructionSetUsage)(void * thisHandle, CorInfoExceptionClass** ppException, int instructionSet, bool supportEnabled);
+    bool (* notifyInstructionSetUsage)(void * thisHandle, CorInfoExceptionClass** ppException, int instructionSet, bool supportEnabled);
     void (* allocMem)(void * thisHandle, CorInfoExceptionClass** ppException, unsigned int hotCodeSize, unsigned int coldCodeSize, unsigned int roDataSize, unsigned int xcptnsCount, int flag, void** hotCodeBlock, void** coldCodeBlock, void** roDataBlock);
     void (* reserveUnwindInfo)(void * thisHandle, CorInfoExceptionClass** ppException, bool isFunclet, bool isColdCode, unsigned int unwindSize);
     void (* allocUnwindInfo)(void * thisHandle, CorInfoExceptionClass** ppException, unsigned char* pHotCode, unsigned char* pColdCode, unsigned int startOffset, unsigned int endOffset, unsigned int unwindSize, unsigned char* pUnwindBlock, int funcKind);
@@ -1662,13 +1662,14 @@ public:
     return temp;
 }
 
-    virtual void notifyInstructionSetUsage(
+    virtual bool notifyInstructionSetUsage(
           int instructionSet,
           bool supportEnabled)
 {
     CorInfoExceptionClass* pException = nullptr;
-    _callbacks->notifyInstructionSetUsage(_thisHandle, &pException, instructionSet, supportEnabled);
+    bool temp = _callbacks->notifyInstructionSetUsage(_thisHandle, &pException, instructionSet, supportEnabled);
     if (pException != nullptr) throw pException;
+    return temp;
 }
 
     virtual void allocMem(

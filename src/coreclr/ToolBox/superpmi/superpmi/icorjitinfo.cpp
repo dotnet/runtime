@@ -1548,9 +1548,10 @@ bool MyICJI::convertPInvokeCalliToCall(CORINFO_RESOLVED_TOKEN* pResolvedToken, b
     return jitInstance->mc->repConvertPInvokeCalliToCall(pResolvedToken, fMustConvert);
 }
 
-void MyICJI::notifyInstructionSetUsage(CORINFO_InstructionSet instructionSet, bool supported)
+bool MyICJI::notifyInstructionSetUsage(CORINFO_InstructionSet instructionSet, bool supported)
 {
     jitInstance->mc->cr->AddCall("notifyInstructionSetUsage");
+    return supported;
 }
 
 // Stuff directly on ICorJitInfo

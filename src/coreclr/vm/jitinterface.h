@@ -916,7 +916,7 @@ public:
     bool convertPInvokeCalliToCall(CORINFO_RESOLVED_TOKEN * pResolvedToken,
                                    bool fMustConvert);
 
-    void notifyInstructionSetUsage(CORINFO_InstructionSet instructionSet, 
+    bool notifyInstructionSetUsage(CORINFO_InstructionSet instructionSet, 
                                    bool supportEnabled);
 
     void getFunctionEntryPoint(CORINFO_METHOD_HANDLE   ftn,                 /* IN  */

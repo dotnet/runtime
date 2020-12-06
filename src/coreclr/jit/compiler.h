@@ -8665,24 +8665,22 @@ private:
     }
 #endif // DEBUG
 
-    void notifyInstructionSetUsage(CORINFO_InstructionSet isa, bool supported) const;
+    bool notifyInstructionSetUsage(CORINFO_InstructionSet isa, bool supported) const;
 
-    // Answer the question: Is a particular ISA supported?
+    // Answer the question: Is a particular ISA allowed to be used implicitly by optimizations?
     // The result of this api call will exactly match the target machine
     // on which the function is executed (except for CoreLib, where there are special rules)
     bool compExactlyDependsOn(CORINFO_InstructionSet isa) const
     {
-
 #if defined(TARGET_XARCH) || defined(TARGET_ARM64)
-        uint64_t isaBit       = (1ULL << isa);
-        bool     isaSupported = (opts.compSupportsISA & (1ULL << isa)) != 0;
+        uint64_t isaBit = (1ULL << isa);
         if ((opts.compSupportsISAReported & isaBit) == 0)
         {
-            notifyInstructionSetUsage(isa, isaSupported);
+            if (notifyInstructionSetUsage(isa, (opts.compSupportsISA & isaBit) != 0))
+                ((Compiler*)this)->opts.compSupportsISAExactly |= isaBit;
             ((Compiler*)this)->opts.compSupportsISAReported |= isaBit;
         }
-
-        return isaSupported;
+        return (opts.compSupportsISAExactly & isaBit) != 0;
 #else
         return false;
 #endif
@@ -8699,7 +8697,7 @@ private:
         assert(!isaUseable);
     }
 
-    // Answer the question: Is a particular ISA supported?
+    // Answer the question: Is a particular ISA allowed to be used implicitly by optimizations?
     // The result of this api call will match the target machine if the result is true
     // If the result is false, then the target machine may have support for the instruction
     bool compOpportunisticallyDependsOn(CORINFO_InstructionSet isa) const
@@ -8707,6 +8705,21 @@ private:
         if ((opts.compSupportsISA & (1ULL << isa)) != 0)
         {
             return compExactlyDependsOn(isa);
+        }
+        else
+        {
+            return false;
+        }
+    }
+
+    // Answer the question: Is a particular ISA supported for explicit hardware intrinsics?
+    bool compHWIntrinsicDependsOn(CORINFO_InstructionSet isa) const
+    {
+        if ((opts.compSupportsISA & (1ULL << isa)) != 0)
+        {
+            // Report intent to use the ISA to the EE
+            compExactlyDependsOn(isa);
+            return true;
         }
         else
         {
@@ -8813,8 +8826,17 @@ public:
     {
         JitFlags* jitFlags; // all flags passed from the EE
 
+        // The instruction sets that the compiler is allowed to emit.
         uint64_t compSupportsISA;
+        // The instruction sets that were reported to the VM as being used by the current method. Subset of
+        // compSupportsISA.
         uint64_t compSupportsISAReported;
+        // The instruction sets that the compiler is allowed to take advantage of implicitly during optimizations.
+        // Subset of compSupportsISA.
+        // The instruction sets available in compSupportsISA and not available in compSupportsISAExactly can be only
+        // used via explicit hardware intrinsics.
+        uint64_t compSupportsISAExactly;
+
         void setSupportedISAs(CORINFO_InstructionSetFlags isas)
         {
             compSupportsISA = isas.GetFlagsRaw();
@@ -8913,7 +8935,7 @@ public:
 #endif
 
         // true if we should use the PINVOKE_{BEGIN,END} helpers instead of generating
-        // PInvoke transitions inline (e.g. when targeting CoreRT).
+        // PInvoke transitions inline.
         bool ShouldUsePInvokeHelpers()
         {
             return jitFlags->IsSet(JitFlags::JIT_FLAG_USE_PINVOKE_HELPERS);

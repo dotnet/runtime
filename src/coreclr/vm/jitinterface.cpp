@@ -14328,12 +14328,13 @@ void CEEInfo::GetProfilingHandle(bool                      *pbHookFunction,
     UNREACHABLE();      // only called on derived class.
 }
 
-void CEEInfo::notifyInstructionSetUsage(CORINFO_InstructionSet instructionSet,
+bool CEEInfo::notifyInstructionSetUsage(CORINFO_InstructionSet instructionSet,
                                         bool supportEnabled)
 {
     LIMITED_METHOD_CONTRACT;
     // Do nothing. This api does not provide value in JIT scenarios and
     // crossgen does not utilize the api either.
+    return supportEnabled;
 }
 
 #endif // !DACCESS_COMPILE

@@ -3111,7 +3111,8 @@ public:
                     bool fMustConvert
                     ) = 0;
 
-    virtual void notifyInstructionSetUsage(
+    // Notify EE about intent to use or not to use instruction set in the method. Returns true if the instruction set is supported unconditionally.
+    virtual bool notifyInstructionSetUsage(
                 CORINFO_InstructionSet instructionSet,
                 bool supportEnabled
             ) = 0;

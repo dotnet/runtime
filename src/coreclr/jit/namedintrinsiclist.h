@@ -49,6 +49,7 @@ enum NamedIntrinsic : unsigned short
 
     NI_IsSupported_True,
     NI_IsSupported_False,
+    NI_IsSupported_Dynamic,
     NI_Throw_PlatformNotSupportedException,
 
 #ifdef FEATURE_HW_INTRINSICS

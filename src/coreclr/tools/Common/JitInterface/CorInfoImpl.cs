@@ -394,9 +394,9 @@ namespace Internal.JitInterface
 #if READYTORUN
             _profileDataNode = null;
             _inlinedMethods = new ArrayBuilder<MethodDesc>();
-#endif
             _actualInstructionSetSupported = default(InstructionSetFlags);
             _actualInstructionSetUnsupported = default(InstructionSetFlags);
+#endif
         }
 
         private Dictionary<Object, IntPtr> _objectToHandle = new Dictionary<Object, IntPtr>();
@@ -843,17 +843,7 @@ namespace Internal.JitInterface
             // Check for hardware intrinsics
             if (HardwareIntrinsicHelpers.IsHardwareIntrinsic(method))
             {
-#if !READYTORUN
-                // Do not report the get_IsSupported method as an intrinsic - RyuJIT would expand it to
-                // a constant depending on the code generation flags passed to it, but we would like to
-                // do a dynamic check instead.
-                if (
-                    !HardwareIntrinsicHelpers.IsIsSupportedMethod(method)
-                    || !_compilation.IsHardwareIntrinsicWithRuntimeDeterminedSupport(method))
-#endif
-                {
-                    result |= CorInfoFlag.CORINFO_FLG_JIT_INTRINSIC;
-                }
+                result |= CorInfoFlag.CORINFO_FLG_JIT_INTRINSIC;
             }
 
             return (uint)result;
@@ -3228,10 +3218,11 @@ namespace Internal.JitInterface
         }
 
 
+#if READYTORUN
         InstructionSetFlags _actualInstructionSetSupported;
         InstructionSetFlags _actualInstructionSetUnsupported;
 
-        private void notifyInstructionSetUsage(InstructionSet instructionSet, bool supportEnabled)
+        private bool notifyInstructionSetUsage(InstructionSet instructionSet, bool supportEnabled)
         {
             if (supportEnabled)
             {
@@ -3239,15 +3230,20 @@ namespace Internal.JitInterface
             }
             else
             {
-#if READYTORUN
                 // By policy we code review all changes into corelib, such that failing to use an instruction
                 // set is not a reason to not support usage of it.
                 if (!isMethodDefinedInCoreLib())
-#endif
                 {
                     _actualInstructionSetUnsupported.AddInstructionSet(instructionSet);
                 }
             }
+            return supportEnabled;
         }
+#else
+        private bool notifyInstructionSetUsage(InstructionSet instructionSet, bool supportEnabled)
+        {
+            return supportEnabled ? _compilation.InstructionSetSupport.IsInstructionSetSupported(instructionSet) : false;
+        }
+#endif
     }
 }
