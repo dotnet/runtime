@@ -15,7 +15,7 @@
                                '$(MSBuildProjectFile)' != 'System.Reflection.Emit.Lightweight.Tests.csproj' And
                                '$(MSBuildProjectFile)' != 'System.Reflection.Tests.csproj' And
                                '$(MSBuildProjectFile)' != 'System.ComponentModel.TypeConverter.Tests.csproj' And
-                               '$(MSBuildProjectFile)' != 'System.Runtime.Tests'">true</PublishTrimmed>
+                               '$(MSBuildProjectFile)' != 'System.Runtime.Tests.csproj'">true</PublishTrimmed>
     <TrimMode>copyused</TrimMode>
   </PropertyGroup>
 
