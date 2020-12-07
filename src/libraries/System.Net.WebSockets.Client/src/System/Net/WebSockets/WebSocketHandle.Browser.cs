@@ -16,7 +16,6 @@ namespace System.Net.WebSockets
 
         public static ClientWebSocketOptions CreateDefaultOptions()
         {
-            BrowserWebSocket.ThrowIfPlatformNotSupported();
             return new ClientWebSocketOptions();
         }
 
