@@ -263,43 +263,47 @@ namespace System.Diagnostics
                 // Get the cached buffer.
                 byte[] buffer = ArrayPool<byte>.Shared.Rent(bufferSize);
 
-                unsafe
+                try
                 {
-                    // Note that the buffer will contain pointers to itself and it needs to be pinned while it is being processed
-                    // by GetProcessInfos below
-                    fixed (byte* bufferPtr = buffer)
+                    unsafe
                     {
-                        // some platforms require the buffer to be 64-bit aligned.
-                        // ArrayPool does not guarantee 64-byte alignment, so we take the address of first 64-byte aligned element
-                        // we round up the address of the pinned array to the nearest multiple of 64
-                        Debug.Assert(bufferSize > 64);
-                        byte* alignedBufferPtr = (byte*)(((nint)bufferPtr + 63) & ~63);
-                        int firstAlignedElementIndex = (int)(alignedBufferPtr - bufferPtr);
-
-                        uint status = Interop.NtDll.NtQuerySystemInformation(
-                            Interop.NtDll.SystemProcessInformation,
-                            alignedBufferPtr,
-                            (uint)(buffer.Length - firstAlignedElementIndex),
-                            &requiredSize);
-
-                        if (status != Interop.NtDll.STATUS_INFO_LENGTH_MISMATCH)
+                        // Note that the buffer will contain pointers to itself and it needs to be pinned while it is being processed
+                        // by GetProcessInfos below
+                        fixed (byte* bufferPtr = buffer)
                         {
-                            // see definition of NT_SUCCESS(Status) in SDK
-                            if ((int)status < 0)
+                            // some platforms require the buffer to be 64-bit aligned.
+                            // ArrayPool does not guarantee 64-byte alignment, so we take the address of first 64-byte aligned element
+                            // we round up the address of the pinned array to the nearest multiple of 64
+                            Debug.Assert(bufferSize > 64);
+                            byte* alignedBufferPtr = (byte*)(((nint)bufferPtr + 63) & ~63);
+                            int firstAlignedElementIndex = (int)(alignedBufferPtr - bufferPtr);
+
+                            uint status = Interop.NtDll.NtQuerySystemInformation(
+                                Interop.NtDll.SystemProcessInformation,
+                                alignedBufferPtr,
+                                (uint)(buffer.Length - firstAlignedElementIndex),
+                                &requiredSize);
+
+                            if (status != Interop.NtDll.STATUS_INFO_LENGTH_MISMATCH)
                             {
-                                ArrayPool<byte>.Shared.Return(buffer);
+                                // see definition of NT_SUCCESS(Status) in SDK
+                                if ((int)status < 0)
+                                {
+                                    throw new InvalidOperationException(SR.CouldntGetProcessInfos, new Win32Exception((int)status));
+                                }
 
-                                throw new InvalidOperationException(SR.CouldntGetProcessInfos, new Win32Exception((int)status));
+                                // Parse the data block to get process information
+                                processInfos = GetProcessInfos(buffer.AsSpan(firstAlignedElementIndex), processIdFilter);
+                                break;
                             }
-
-                            // Parse the data block to get process information
-                            processInfos = GetProcessInfos(buffer.AsSpan(firstAlignedElementIndex), processIdFilter);
-                            break;
                         }
                     }
                 }
+                finally
+                {
+                    ArrayPool<byte>.Shared.Return(buffer);
+                }
 
-                ArrayPool<byte>.Shared.Return(buffer);
                 bufferSize = GetNewBufferSize(bufferSize, (int)requiredSize);
             }
 
