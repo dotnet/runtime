@@ -844,7 +844,7 @@ namespace System.Net.Sockets
                 }
             }
 
-            public AsyncOperation? ProcessSyncEventOrGetAsyncEvent(SocketAsyncContext context, bool skipAsyncEvents = false, bool processAsyncEvents = true)
+            public AsyncOperation? ProcessSyncEventOrGetAsyncEvent(SocketAsyncContext context, bool skipAsyncEvents = false, bool processAsyncEvents = false)
             {
                 AsyncOperation op;
                 using (Lock())
