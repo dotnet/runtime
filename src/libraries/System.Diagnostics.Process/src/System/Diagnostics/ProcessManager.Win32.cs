@@ -242,9 +242,6 @@ namespace System.Diagnostics
 
     internal static class NtProcessInfoHelper
     {
-        // Cache a single buffer for use in GetProcessInfos().
-        private static long[]? CachedBuffer;
-
         // Use a smaller buffer size on debug to ensure we hit the retry path.
 #if DEBUG
         private const int DefaultCachedBufferSize = 1024;
@@ -257,58 +254,53 @@ namespace System.Diagnostics
             ProcessInfo[] processInfos;
 
             // Start with the default buffer size.
-            int bufferSize = DefaultCachedBufferSize;
+            int bufferSize = DefaultCachedBufferSize * sizeof(long);
 
             // Get the cached buffer.
-            long[]? buffer = Interlocked.Exchange(ref CachedBuffer, null);
+            byte[] buffer = ArrayPool<byte>.Shared.Rent(bufferSize);
 
-            try
+            while (true)
             {
-                while (true)
+                uint requiredSize = 0;
+
+                unsafe
                 {
-                    if (buffer == null)
+                    // Note that the buffer will contain pointers to itself and it needs to be pinned while it is being processed
+                    // by GetProcessInfos below
+                    fixed (byte* bufferPtr = buffer)
                     {
-                        // Allocate buffer of longs since some platforms require the buffer to be 64-bit aligned.
-                        buffer = new long[(bufferSize + 7) / 8];
-                    }
+                        // some platforms require the buffer to be 64-bit aligned.
+                        // ArrayPool does not guarantee 64-byte alignment, so we take the address of first 64-byte aligned element
+                        // we round up the address of the pinned array to the nearest multiple of 64
+                        Debug.Assert(bufferSize > 64);
+                        byte* alignedBufferPtr = (byte*)(((nint)bufferPtr + 63) & ~63);
+                        int firstAlignedElementIndex = (int)(alignedBufferPtr - bufferPtr);
 
-                    uint requiredSize = 0;
+                        uint status = Interop.NtDll.NtQuerySystemInformation(
+                            Interop.NtDll.SystemProcessInformation,
+                            alignedBufferPtr,
+                            (uint)(buffer.Length - firstAlignedElementIndex),
+                            &requiredSize);
 
-                    unsafe
-                    {
-                        // Note that the buffer will contain pointers to itself and it needs to be pinned while it is being processed
-                        // by GetProcessInfos below
-                        fixed (long* bufferPtr = buffer)
+                        if (status != Interop.NtDll.STATUS_INFO_LENGTH_MISMATCH)
                         {
-                            uint status = Interop.NtDll.NtQuerySystemInformation(
-                                Interop.NtDll.SystemProcessInformation,
-                                bufferPtr,
-                                (uint)(buffer.Length * sizeof(long)),
-                                &requiredSize);
-
-                            if (status != Interop.NtDll.STATUS_INFO_LENGTH_MISMATCH)
+                            // see definition of NT_SUCCESS(Status) in SDK
+                            if ((int)status < 0)
                             {
-                                // see definition of NT_SUCCESS(Status) in SDK
-                                if ((int)status < 0)
-                                {
-                                    throw new InvalidOperationException(SR.CouldntGetProcessInfos, new Win32Exception((int)status));
-                                }
+                                ArrayPool<byte>.Shared.Return(buffer);
 
-                                // Parse the data block to get process information
-                                processInfos = GetProcessInfos(MemoryMarshal.AsBytes<long>(buffer), processIdFilter);
-                                break;
+                                throw new InvalidOperationException(SR.CouldntGetProcessInfos, new Win32Exception((int)status));
                             }
+
+                            // Parse the data block to get process information
+                            processInfos = GetProcessInfos(buffer.AsSpan(firstAlignedElementIndex), processIdFilter);
+                            break;
                         }
                     }
-
-                    buffer = null;
-                    bufferSize = GetNewBufferSize(bufferSize, (int)requiredSize);
                 }
-            }
-            finally
-            {
-                // Cache the final buffer for use on the next call.
-                Interlocked.Exchange(ref CachedBuffer, buffer);
+
+                ArrayPool<byte>.Shared.Return(buffer);
+                bufferSize = GetNewBufferSize(bufferSize, (int)requiredSize);
             }
 
             return processInfos;
