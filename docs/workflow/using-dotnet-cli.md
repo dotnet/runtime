@@ -56,12 +56,12 @@ Please run `dotnet new console` in the app folder and update the created `.cspro
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <TargetFramework>net5.0</TargetFramework>
+    <TargetFramework>net6.0</TargetFramework>
     <RuntimeIdentifier>win-x64</RuntimeIdentifier>
   </PropertyGroup>
 
   <ItemGroup>
-    <FrameworkReference Update="Microsoft.NETCore.App" RuntimeFrameworkVersion="5.0.0-dev" />
+    <FrameworkReference Update="Microsoft.NETCore.App" RuntimeFrameworkVersion="6.0.0-dev" />
   </ItemGroup>
 
 </Project>
@@ -70,10 +70,10 @@ Please run `dotnet new console` in the app folder and update the created `.cspro
 **You have to set the correct values for `RuntimeIdentifier` (RI) and `RuntimeFrameworkVersion`.**
 
 You can generally figure that out by looking at the packages you found in your output.
-In our example you will see there is a package with the name `Microsoft.NETCore.App.Runtime.win-x64.5.0.0-dev.nupkg`
+In our example you will see there is a package with the name `Microsoft.NETCore.App.Runtime.win-x64.6.0.0-dev.nupkg`
 
 ```
-Microsoft.NETCore.App.Runtime.win-x64.5.0.0-dev.nupkg
+Microsoft.NETCore.App.Runtime.win-x64.6.0.0-dev.nupkg
                               ^-RI--^ ^version^
 ```
 
@@ -109,8 +109,8 @@ Copyright (C) Microsoft Corporation. All rights reserved.
   Determining projects to restore...
   Restored c:\runtime\helloworld\helloworld.csproj (in 114 ms).
   You are using a preview version of .NET. See: https://aka.ms/dotnet-core-preview
-  helloworld -> c:\runtime\helloworld\bin\Debug\net5.0\win-x64\helloworld.dll
-  helloworld -> c:\runtime\helloworld\bin\Debug\net5.0\win-x64\publish\
+  helloworld -> c:\runtime\helloworld\bin\Debug\net6.0\win-x64\helloworld.dll
+  helloworld -> c:\runtime\helloworld\bin\Debug\net6.0\win-x64\publish\
 ```
 
 If you see something like the message below it means that it has failed to restore your local runtime packages. In such case double check your `NuGet.config` file and paths used in it.
@@ -121,29 +121,29 @@ Microsoft (R) Build Engine version 16.7.0-preview-20360-03+188921e2f for .NET
 Copyright (C) Microsoft Corporation. All rights reserved.
 
   Determining projects to restore...
-c:\runtime\helloworld\helloworld.csproj : error NU1102: Unable to find package Microsoft.NETCore.App.Runtime.win-x64 with version (= 5.0.0-does-not-exist)
-c:\runtime\helloworld\helloworld.csproj : error NU1102:   - Found 25 version(s) in nuget [ Nearest version: 5.0.0-preview.1.20120.5 ]
-c:\runtime\helloworld\helloworld.csproj : error NU1102:   - Found 1 version(s) in local runtime [ Nearest version: 5.0.0-dev ]
-c:\runtime\helloworld\helloworld.csproj : error NU1102: Unable to find package Microsoft.NETCore.App.Host.win-x64 with version (= 5.0.0-does-not-exist)
-c:\runtime\helloworld\helloworld.csproj : error NU1102:   - Found 27 version(s) in nuget [ Nearest version: 5.0.0-preview.1.20120.5 ]
-c:\runtime\helloworld\helloworld.csproj : error NU1102:   - Found 1 version(s) in local runtime [ Nearest version: 5.0.0-dev ]
+c:\runtime\helloworld\helloworld.csproj : error NU1102: Unable to find package Microsoft.NETCore.App.Runtime.win-x64 with version (= 6.0.0-does-not-exist)
+c:\runtime\helloworld\helloworld.csproj : error NU1102:   - Found 25 version(s) in nuget [ Nearest version: 6.0.0-preview.1.20120.5 ]
+c:\runtime\helloworld\helloworld.csproj : error NU1102:   - Found 1 version(s) in local runtime [ Nearest version: 6.0.0-dev ]
+c:\runtime\helloworld\helloworld.csproj : error NU1102: Unable to find package Microsoft.NETCore.App.Host.win-x64 with version (= 6.0.0-does-not-exist)
+c:\runtime\helloworld\helloworld.csproj : error NU1102:   - Found 27 version(s) in nuget [ Nearest version: 6.0.0-preview.1.20120.5 ]
+c:\runtime\helloworld\helloworld.csproj : error NU1102:   - Found 1 version(s) in local runtime [ Nearest version: 6.0.0-dev ]
   Failed to restore c:\runtime\helloworld\helloworld.csproj (in 519 ms).
 ```
 
 ### 6. Run the app
 
-After you publish you will find all the binaries needed to run your application under `bin\Debug\net5.0\win-x64\publish\`.
+After you publish you will find all the binaries needed to run your application under `bin\Debug\net6.0\win-x64\publish\`.
 To run the application simply run the EXE that is in this publish directory (it is the name of the app, or specified in the project file).
 
 ```
-.\bin\Debug\net5.0\win-x64\publish\HelloWorld.exe
+.\bin\Debug\net6.0\win-x64\publish\HelloWorld.exe
 ```
 
 Running the app should tell you the version and where the location of System.Private.CoreLib in the publish directory:
 
 ```
-Hello World from .NET 5.0.0-dev
-The location is c:\runtime\helloworld\bin\Debug\net5.0\win-x64\publish\System.Private.CoreLib.dll
+Hello World from .NET 6.0.0-dev
+The location is c:\runtime\helloworld\bin\Debug\net6.0\win-x64\publish\System.Private.CoreLib.dll
 ```
 
 **Congratulations! You have just run your first app against your local build of this repo**
@@ -170,7 +170,7 @@ before packaging. You should see this number show up in the version number (e.g.
 As an alternative you can delete the existing copy of the package from the Nuget cache.   For example on
 windows (on Linux substitute ~/ for %HOMEPATH%) you could delete
 ```bat
-     %HOMEPATH%\.nuget\packages\runtime.win-x64.Microsoft.NETCore.Runtime.CoreCLR\3.0.0-preview1-26210-0
+     %HOMEPATH%\.nuget\packages\runtime.win-x64.Microsoft.NETCore.Runtime.CoreCLR\6.0.0-preview1-26210-0
 ```
 which should make things work (but is fragile, confirm file timestamps that you are getting the version you expect)
 
@@ -185,10 +185,10 @@ Get this by simply listing the name of the `runtime.win-x64.Microsoft.NETCore.Ru
 and you will get name of the which looks something like this
 
 ```
-    runtime.win-x64.Microsoft.NETCore.Runtime.CoreCLR.3.0.0-preview1-26210-3.nupkg
+    runtime.win-x64.Microsoft.NETCore.Runtime.CoreCLR.6.0.0-preview1-26210-3.nupkg
 ```
 
-This gets us the version number, in the above case it is 3.0.0-preview1-26210-3. We will
+This gets us the version number, in the above case it is 6.0.0-preview1-26210-3. We will
 use this in the next step.
 
 #### 3. Update the references to your runtime package
@@ -197,12 +197,12 @@ Edit your `.csproj` file and change the versions:
 
 ```
 <PropertyGroup>
-    <RuntimeFrameworkVersion>3.0.0-preview1-26210-3</RuntimeFrameworkVersion>
+    <RuntimeFrameworkVersion>6.0.0-preview1-26210-3</RuntimeFrameworkVersion>
 </PropertyGroup>
 
 <ItemGroup>
-  <PackageReference Include="runtime.win-x64.Microsoft.NETCore.Runtime.CoreCLR" Version="3.0.0-preview1-26210-3" />
-  <PackageReference Include="runtime.win-x64.Microsoft.NETCore.Jit" Version="3.0.0-preview1-26210-3" />
+  <PackageReference Include="runtime.win-x64.Microsoft.NETCore.Runtime.CoreCLR" Version="6.0.0-preview1-26210-3" />
+  <PackageReference Include="runtime.win-x64.Microsoft.NETCore.Jit" Version="6.0.0-preview1-26210-3" />
 </ItemGroup>
 ```
 
