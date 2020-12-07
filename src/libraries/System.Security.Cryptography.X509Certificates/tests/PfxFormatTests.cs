@@ -157,12 +157,12 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             }
         }
 
-        [Theory]
+        [ConditionalTheory(nameof(PlatformSupportsEphemeralKeys))]
         [InlineData(false, false)]
         [InlineData(false, true)]
         [InlineData(true, false)]
         [InlineData(true, true)]
-        public void OneCert_EncryptedEmptyPassword_OneKey_EncryptedNullPassword_NoMac(bool encryptKeySafe, bool associateKey)
+        public void OneCert_EncryptedEmptyPassword_OneKey_EncryptedNullPassword_NoMac_Ephemeral(bool encryptKeySafe, bool associateKey)
         {
             // This test shows that while a null or empty password will result in both
             // types being tested, the PFX contents have to be the same throughout.
@@ -189,14 +189,14 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 if (s_loaderFailsKeysEarly || associateKey || encryptKeySafe)
                 {
                     // NTE_FAIL, falling back to CRYPT_E_BAD_ENCODE if padding happened to work out.
-                    ReadUnreadablePfx(pfxBytes, null, altWin32Error: -2146885630);
-                    ReadUnreadablePfx(pfxBytes, string.Empty, altWin32Error: -2146885630);
+                    ReadUnreadablePfx(pfxBytes, null, altWin32Error: -2146885630, requiredFlags: X509KeyStorageFlags.EphemeralKeySet);
+                    ReadUnreadablePfx(pfxBytes, string.Empty, altWin32Error: -2146885630, requiredFlags: X509KeyStorageFlags.EphemeralKeySet);
                 }
                 else
                 {
                     using (var publicOnlyCert = new X509Certificate2(cert.RawData))
                     {
-                        ReadPfx(pfxBytes, string.Empty, publicOnlyCert);
+                        ReadPfx(pfxBytes, string.Empty, publicOnlyCert, requiredFlags: X509KeyStorageFlags.EphemeralKeySet);
                     }
                 }
             }
