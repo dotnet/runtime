@@ -41,143 +41,143 @@ namespace DllImportGenerator.IntegrationTests
 
         public partial class Unicode
         {
-            [GeneratedDllImport(nameof(NativeExportsNE), EntryPoint = EntryPoints.UShort.ReturnLength, CharSet = CharSet.Unicode)]
+            [GeneratedDllImport(NativeExportsNE_Binary, EntryPoint = EntryPoints.UShort.ReturnLength, CharSet = CharSet.Unicode)]
             public static partial int ReturnLength(string s);
 
-            [GeneratedDllImport(nameof(NativeExportsNE), EntryPoint = EntryPoints.UShort.ReverseReturn, CharSet = CharSet.Unicode)]
+            [GeneratedDllImport(NativeExportsNE_Binary, EntryPoint = EntryPoints.UShort.ReverseReturn, CharSet = CharSet.Unicode)]
             public static partial string Reverse_Return(string s);
 
-            [GeneratedDllImport(nameof(NativeExportsNE), EntryPoint = EntryPoints.UShort.ReverseOut, CharSet = CharSet.Unicode)]
+            [GeneratedDllImport(NativeExportsNE_Binary, EntryPoint = EntryPoints.UShort.ReverseOut, CharSet = CharSet.Unicode)]
             public static partial void Reverse_Out(string s, out string ret);
 
-            [GeneratedDllImport(nameof(NativeExportsNE), EntryPoint = EntryPoints.UShort.ReverseInplace, CharSet = CharSet.Unicode)]
+            [GeneratedDllImport(NativeExportsNE_Binary, EntryPoint = EntryPoints.UShort.ReverseInplace, CharSet = CharSet.Unicode)]
             public static partial void Reverse_Ref(ref string s);
 
-            [GeneratedDllImport(nameof(NativeExportsNE), EntryPoint = EntryPoints.UShort.ReverseInplace, CharSet = CharSet.Unicode)]
+            [GeneratedDllImport(NativeExportsNE_Binary, EntryPoint = EntryPoints.UShort.ReverseInplace, CharSet = CharSet.Unicode)]
             public static partial void Reverse_In(in string s);
 
-            [GeneratedDllImport(nameof(NativeExportsNE), EntryPoint = EntryPoints.UShort.ReverseReplace, CharSet = CharSet.Unicode)]
+            [GeneratedDllImport(NativeExportsNE_Binary, EntryPoint = EntryPoints.UShort.ReverseReplace, CharSet = CharSet.Unicode)]
             public static partial void Reverse_Replace_Ref(ref string s);
         }
 
         public partial class LPTStr
         {
-            [GeneratedDllImport(nameof(NativeExportsNE), EntryPoint = EntryPoints.UShort.ReturnLength)]
+            [GeneratedDllImport(NativeExportsNE_Binary, EntryPoint = EntryPoints.UShort.ReturnLength)]
             public static partial int ReturnLength([MarshalAs(UnmanagedType.LPTStr)] string s);
 
-            [GeneratedDllImport(nameof(NativeExportsNE), EntryPoint = EntryPoints.UShort.ReturnLength, CharSet = CharSet.None)]
+            [GeneratedDllImport(NativeExportsNE_Binary, EntryPoint = EntryPoints.UShort.ReturnLength, CharSet = CharSet.None)]
             public static partial int ReturnLength_IgnoreCharSet([MarshalAs(UnmanagedType.LPTStr)] string s);
 
-            [GeneratedDllImport(nameof(NativeExportsNE), EntryPoint = EntryPoints.UShort.ReverseReturn)]
+            [GeneratedDllImport(NativeExportsNE_Binary, EntryPoint = EntryPoints.UShort.ReverseReturn)]
             [return: MarshalAs(UnmanagedType.LPTStr)]
             public static partial string Reverse_Return([MarshalAs(UnmanagedType.LPTStr)] string s);
 
-            [GeneratedDllImport(nameof(NativeExportsNE), EntryPoint = EntryPoints.UShort.ReverseOut)]
+            [GeneratedDllImport(NativeExportsNE_Binary, EntryPoint = EntryPoints.UShort.ReverseOut)]
             public static partial void Reverse_Out([MarshalAs(UnmanagedType.LPTStr)] string s, [MarshalAs(UnmanagedType.LPTStr)] out string ret);
 
-            [GeneratedDllImport(nameof(NativeExportsNE), EntryPoint = EntryPoints.UShort.ReverseInplace)]
+            [GeneratedDllImport(NativeExportsNE_Binary, EntryPoint = EntryPoints.UShort.ReverseInplace)]
             public static partial void Reverse_Ref([MarshalAs(UnmanagedType.LPTStr)] ref string s);
 
-            [GeneratedDllImport(nameof(NativeExportsNE), EntryPoint = EntryPoints.UShort.ReverseInplace)]
+            [GeneratedDllImport(NativeExportsNE_Binary, EntryPoint = EntryPoints.UShort.ReverseInplace)]
             public static partial void Reverse_In([MarshalAs(UnmanagedType.LPTStr)] in string s);
 
-            [GeneratedDllImport(nameof(NativeExportsNE), EntryPoint = EntryPoints.UShort.ReverseInplace)]
+            [GeneratedDllImport(NativeExportsNE_Binary, EntryPoint = EntryPoints.UShort.ReverseInplace)]
             public static partial void Reverse_Replace_Ref([MarshalAs(UnmanagedType.LPTStr)] ref string s);
         }
 
         public partial class LPWStr
         {
-            [GeneratedDllImport(nameof(NativeExportsNE), EntryPoint = EntryPoints.UShort.ReturnLength)]
+            [GeneratedDllImport(NativeExportsNE_Binary, EntryPoint = EntryPoints.UShort.ReturnLength)]
             public static partial int ReturnLength([MarshalAs(UnmanagedType.LPWStr)] string s);
 
-            [GeneratedDllImport(nameof(NativeExportsNE), EntryPoint = EntryPoints.UShort.ReturnLength, CharSet = CharSet.None)]
+            [GeneratedDllImport(NativeExportsNE_Binary, EntryPoint = EntryPoints.UShort.ReturnLength, CharSet = CharSet.None)]
             public static partial int ReturnLength_IgnoreCharSet([MarshalAs(UnmanagedType.LPWStr)] string s);
 
-            [GeneratedDllImport(nameof(NativeExportsNE), EntryPoint = EntryPoints.UShort.ReverseReturn)]
+            [GeneratedDllImport(NativeExportsNE_Binary, EntryPoint = EntryPoints.UShort.ReverseReturn)]
             [return: MarshalAs(UnmanagedType.LPWStr)]
             public static partial string Reverse_Return([MarshalAs(UnmanagedType.LPWStr)] string s);
 
-            [GeneratedDllImport(nameof(NativeExportsNE), EntryPoint = EntryPoints.UShort.ReverseOut)]
+            [GeneratedDllImport(NativeExportsNE_Binary, EntryPoint = EntryPoints.UShort.ReverseOut)]
             public static partial void Reverse_Out([MarshalAs(UnmanagedType.LPWStr)] string s, [MarshalAs(UnmanagedType.LPWStr)] out string ret);
 
-            [GeneratedDllImport(nameof(NativeExportsNE), EntryPoint = EntryPoints.UShort.ReverseInplace)]
+            [GeneratedDllImport(NativeExportsNE_Binary, EntryPoint = EntryPoints.UShort.ReverseInplace)]
             public static partial void Reverse_Ref([MarshalAs(UnmanagedType.LPWStr)] ref string s);
 
-            [GeneratedDllImport(nameof(NativeExportsNE), EntryPoint = EntryPoints.UShort.ReverseInplace)]
+            [GeneratedDllImport(NativeExportsNE_Binary, EntryPoint = EntryPoints.UShort.ReverseInplace)]
             public static partial void Reverse_In([MarshalAs(UnmanagedType.LPWStr)] in string s);
 
-            [GeneratedDllImport(nameof(NativeExportsNE), EntryPoint = EntryPoints.UShort.ReverseInplace)]
+            [GeneratedDllImport(NativeExportsNE_Binary, EntryPoint = EntryPoints.UShort.ReverseInplace)]
             public static partial void Reverse_Replace_Ref([MarshalAs(UnmanagedType.LPWStr)] ref string s);
         }
 
         public partial class LPUTF8Str
         {
-            [GeneratedDllImport(nameof(NativeExportsNE), EntryPoint = EntryPoints.Byte.ReturnLength)]
+            [GeneratedDllImport(NativeExportsNE_Binary, EntryPoint = EntryPoints.Byte.ReturnLength)]
             public static partial int ReturnLength([MarshalAs(UnmanagedType.LPUTF8Str)] string s);
 
-            [GeneratedDllImport(nameof(NativeExportsNE), EntryPoint = EntryPoints.Byte.ReturnLength, CharSet = CharSet.None)]
+            [GeneratedDllImport(NativeExportsNE_Binary, EntryPoint = EntryPoints.Byte.ReturnLength, CharSet = CharSet.None)]
             public static partial int ReturnLength_IgnoreCharSet([MarshalAs(UnmanagedType.LPUTF8Str)] string s);
 
-            [GeneratedDllImport(nameof(NativeExportsNE), EntryPoint = EntryPoints.Byte.ReverseReturn)]
+            [GeneratedDllImport(NativeExportsNE_Binary, EntryPoint = EntryPoints.Byte.ReverseReturn)]
             [return: MarshalAs(UnmanagedType.LPUTF8Str)]
             public static partial string Reverse_Return([MarshalAs(UnmanagedType.LPUTF8Str)] string s);
 
-            [GeneratedDllImport(nameof(NativeExportsNE), EntryPoint = EntryPoints.Byte.ReverseOut)]
+            [GeneratedDllImport(NativeExportsNE_Binary, EntryPoint = EntryPoints.Byte.ReverseOut)]
             public static partial void Reverse_Out([MarshalAs(UnmanagedType.LPUTF8Str)] string s, [MarshalAs(UnmanagedType.LPUTF8Str)] out string ret);
 
-            [GeneratedDllImport(nameof(NativeExportsNE), EntryPoint = EntryPoints.Byte.ReverseInplace)]
+            [GeneratedDllImport(NativeExportsNE_Binary, EntryPoint = EntryPoints.Byte.ReverseInplace)]
             public static partial void Reverse_In([MarshalAs(UnmanagedType.LPUTF8Str)] in string s);
 
-            [GeneratedDllImport(nameof(NativeExportsNE), EntryPoint = EntryPoints.Byte.ReverseInplace)]
+            [GeneratedDllImport(NativeExportsNE_Binary, EntryPoint = EntryPoints.Byte.ReverseInplace)]
             public static partial void Reverse_Ref([MarshalAs(UnmanagedType.LPUTF8Str)] ref string s);
 
-            [GeneratedDllImport(nameof(NativeExportsNE), EntryPoint = EntryPoints.Byte.ReverseInplace)]
+            [GeneratedDllImport(NativeExportsNE_Binary, EntryPoint = EntryPoints.Byte.ReverseInplace)]
             public static partial void Reverse_Replace_Ref([MarshalAs(UnmanagedType.LPUTF8Str)] ref string s);
         }
 
         public partial class Ansi
         {
-            [GeneratedDllImport(nameof(NativeExportsNE), EntryPoint = EntryPoints.Byte.ReturnLength, CharSet = CharSet.Ansi)]
+            [GeneratedDllImport(NativeExportsNE_Binary, EntryPoint = EntryPoints.Byte.ReturnLength, CharSet = CharSet.Ansi)]
             public static partial int ReturnLength(string s);
 
-            [GeneratedDllImport(nameof(NativeExportsNE), EntryPoint = EntryPoints.Byte.ReverseReturn, CharSet = CharSet.Ansi)]
+            [GeneratedDllImport(NativeExportsNE_Binary, EntryPoint = EntryPoints.Byte.ReverseReturn, CharSet = CharSet.Ansi)]
             public static partial string Reverse_Return(string s);
 
-            [GeneratedDllImport(nameof(NativeExportsNE), EntryPoint = EntryPoints.Byte.ReverseOut, CharSet = CharSet.Ansi)]
+            [GeneratedDllImport(NativeExportsNE_Binary, EntryPoint = EntryPoints.Byte.ReverseOut, CharSet = CharSet.Ansi)]
             public static partial void Reverse_Out(string s, out string ret);
 
-            [GeneratedDllImport(nameof(NativeExportsNE), EntryPoint = EntryPoints.Byte.ReverseInplace, CharSet = CharSet.Ansi)]
+            [GeneratedDllImport(NativeExportsNE_Binary, EntryPoint = EntryPoints.Byte.ReverseInplace, CharSet = CharSet.Ansi)]
             public static partial void Reverse_Ref(ref string s);
 
-            [GeneratedDllImport(nameof(NativeExportsNE), EntryPoint = EntryPoints.Byte.ReverseInplace, CharSet = CharSet.Ansi)]
+            [GeneratedDllImport(NativeExportsNE_Binary, EntryPoint = EntryPoints.Byte.ReverseInplace, CharSet = CharSet.Ansi)]
             public static partial void Reverse_In(in string s);
 
-            [GeneratedDllImport(nameof(NativeExportsNE), EntryPoint = EntryPoints.Byte.ReverseInplace, CharSet = CharSet.Ansi)]
+            [GeneratedDllImport(NativeExportsNE_Binary, EntryPoint = EntryPoints.Byte.ReverseInplace, CharSet = CharSet.Ansi)]
             public static partial void Reverse_Replace_Ref(ref string s);
         }
 
         public partial class LPStr
         {
-            [GeneratedDllImport(nameof(NativeExportsNE), EntryPoint = EntryPoints.Byte.ReturnLength)]
+            [GeneratedDllImport(NativeExportsNE_Binary, EntryPoint = EntryPoints.Byte.ReturnLength)]
             public static partial int ReturnLength([MarshalAs(UnmanagedType.LPStr)] string s);
 
-            [GeneratedDllImport(nameof(NativeExportsNE), EntryPoint = EntryPoints.Byte.ReturnLength, CharSet = CharSet.None)]
+            [GeneratedDllImport(NativeExportsNE_Binary, EntryPoint = EntryPoints.Byte.ReturnLength, CharSet = CharSet.None)]
             public static partial int ReturnLength_IgnoreCharSet([MarshalAs(UnmanagedType.LPStr)] string s);
 
-            [GeneratedDllImport(nameof(NativeExportsNE), EntryPoint = EntryPoints.Byte.ReverseReturn)]
+            [GeneratedDllImport(NativeExportsNE_Binary, EntryPoint = EntryPoints.Byte.ReverseReturn)]
             [return: MarshalAs(UnmanagedType.LPStr)]
             public static partial string Reverse_Return([MarshalAs(UnmanagedType.LPStr)] string s);
 
-            [GeneratedDllImport(nameof(NativeExportsNE), EntryPoint = EntryPoints.Byte.ReverseOut)]
+            [GeneratedDllImport(NativeExportsNE_Binary, EntryPoint = EntryPoints.Byte.ReverseOut)]
             public static partial void Reverse_Out([MarshalAs(UnmanagedType.LPStr)] string s, [MarshalAs(UnmanagedType.LPStr)] out string ret);
 
-            [GeneratedDllImport(nameof(NativeExportsNE), EntryPoint = EntryPoints.Byte.ReverseInplace)]
+            [GeneratedDllImport(NativeExportsNE_Binary, EntryPoint = EntryPoints.Byte.ReverseInplace)]
             public static partial void Reverse_Ref([MarshalAs(UnmanagedType.LPStr)] ref string s);
 
-            [GeneratedDllImport(nameof(NativeExportsNE), EntryPoint = EntryPoints.Byte.ReverseInplace)]
+            [GeneratedDllImport(NativeExportsNE_Binary, EntryPoint = EntryPoints.Byte.ReverseInplace)]
             public static partial void Reverse_In([MarshalAs(UnmanagedType.LPStr)] in string s);
 
-            [GeneratedDllImport(nameof(NativeExportsNE), EntryPoint = EntryPoints.Byte.ReverseInplace)]
+            [GeneratedDllImport(NativeExportsNE_Binary, EntryPoint = EntryPoints.Byte.ReverseInplace)]
             public static partial void Reverse_Replace_Ref([MarshalAs(UnmanagedType.LPStr)] ref string s);
         }
 
@@ -185,43 +185,43 @@ namespace DllImportGenerator.IntegrationTests
         {
             public partial class Unix
             {
-                [GeneratedDllImport(nameof(NativeExportsNE), EntryPoint = EntryPoints.Byte.ReturnLength, CharSet = CharSet.Auto)]
+                [GeneratedDllImport(NativeExportsNE_Binary, EntryPoint = EntryPoints.Byte.ReturnLength, CharSet = CharSet.Auto)]
                 public static partial int ReturnLength(string s);
 
-                [GeneratedDllImport(nameof(NativeExportsNE), EntryPoint = EntryPoints.Byte.ReverseReturn, CharSet = CharSet.Auto)]
+                [GeneratedDllImport(NativeExportsNE_Binary, EntryPoint = EntryPoints.Byte.ReverseReturn, CharSet = CharSet.Auto)]
                 public static partial string Reverse_Return(string s);
 
-                [GeneratedDllImport(nameof(NativeExportsNE), EntryPoint = EntryPoints.Byte.ReverseOut, CharSet = CharSet.Auto)]
+                [GeneratedDllImport(NativeExportsNE_Binary, EntryPoint = EntryPoints.Byte.ReverseOut, CharSet = CharSet.Auto)]
                 public static partial void Reverse_Out(string s, out string ret);
 
-                [GeneratedDllImport(nameof(NativeExportsNE), EntryPoint = EntryPoints.Byte.ReverseInplace, CharSet = CharSet.Auto)]
+                [GeneratedDllImport(NativeExportsNE_Binary, EntryPoint = EntryPoints.Byte.ReverseInplace, CharSet = CharSet.Auto)]
                 public static partial void Reverse_Ref(ref string s);
 
-                [GeneratedDllImport(nameof(NativeExportsNE), EntryPoint = EntryPoints.Byte.ReverseInplace, CharSet = CharSet.Auto)]
+                [GeneratedDllImport(NativeExportsNE_Binary, EntryPoint = EntryPoints.Byte.ReverseInplace, CharSet = CharSet.Auto)]
                 public static partial void Reverse_In(in string s);
 
-                [GeneratedDllImport(nameof(NativeExportsNE), EntryPoint = EntryPoints.Byte.ReverseInplace, CharSet = CharSet.Auto)]
+                [GeneratedDllImport(NativeExportsNE_Binary, EntryPoint = EntryPoints.Byte.ReverseInplace, CharSet = CharSet.Auto)]
                 public static partial void Reverse_Replace_Ref(ref string s);
             }
 
             public partial class Windows
             {
-                [GeneratedDllImport(nameof(NativeExportsNE), EntryPoint = EntryPoints.UShort.ReturnLength, CharSet = CharSet.Auto)]
+                [GeneratedDllImport(NativeExportsNE_Binary, EntryPoint = EntryPoints.UShort.ReturnLength, CharSet = CharSet.Auto)]
                 public static partial int ReturnLength(string s);
 
-                [GeneratedDllImport(nameof(NativeExportsNE), EntryPoint = EntryPoints.UShort.ReverseReturn, CharSet = CharSet.Auto)]
+                [GeneratedDllImport(NativeExportsNE_Binary, EntryPoint = EntryPoints.UShort.ReverseReturn, CharSet = CharSet.Auto)]
                 public static partial string Reverse_Return(string s);
 
-                [GeneratedDllImport(nameof(NativeExportsNE), EntryPoint = EntryPoints.UShort.ReverseOut, CharSet = CharSet.Auto)]
+                [GeneratedDllImport(NativeExportsNE_Binary, EntryPoint = EntryPoints.UShort.ReverseOut, CharSet = CharSet.Auto)]
                 public static partial void Reverse_Out(string s, out string ret);
 
-                [GeneratedDllImport(nameof(NativeExportsNE), EntryPoint = EntryPoints.UShort.ReverseInplace, CharSet = CharSet.Auto)]
+                [GeneratedDllImport(NativeExportsNE_Binary, EntryPoint = EntryPoints.UShort.ReverseInplace, CharSet = CharSet.Auto)]
                 public static partial void Reverse_Ref(ref string s);
 
-                [GeneratedDllImport(nameof(NativeExportsNE), EntryPoint = EntryPoints.UShort.ReverseInplace, CharSet = CharSet.Auto)]
+                [GeneratedDllImport(NativeExportsNE_Binary, EntryPoint = EntryPoints.UShort.ReverseInplace, CharSet = CharSet.Auto)]
                 public static partial void Reverse_In(in string s);
 
-                [GeneratedDllImport(nameof(NativeExportsNE), EntryPoint = EntryPoints.UShort.ReverseInplace, CharSet = CharSet.Auto)]
+                [GeneratedDllImport(NativeExportsNE_Binary, EntryPoint = EntryPoints.UShort.ReverseInplace, CharSet = CharSet.Auto)]
                 public static partial void Reverse_Replace_Ref(ref string s);
             }
         }

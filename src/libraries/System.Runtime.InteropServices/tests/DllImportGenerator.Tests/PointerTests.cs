@@ -8,13 +8,13 @@ namespace DllImportGenerator.IntegrationTests
 {
     partial class NativeExportsNE
     {
-        [GeneratedDllImport(nameof(NativeExportsNE), EntryPoint = "subtract_ref_int")]
+        [GeneratedDllImport(NativeExportsNE_Binary, EntryPoint = "subtract_ref_int")]
         public static unsafe partial void Subtract_Int_Ptr(int a, int* b);
 
-        [GeneratedDllImport(nameof(NativeExportsNE), EntryPoint = "subtract_ref_byte")]
+        [GeneratedDllImport(NativeExportsNE_Binary, EntryPoint = "subtract_ref_byte")]
         public static unsafe partial void Subtract_Byte_Ptr(byte a, byte* b);
 
-        [GeneratedDllImport(nameof(NativeExportsNE), EntryPoint = "blittablestructs_double_intfields_byref")]
+        [GeneratedDllImport(NativeExportsNE_Binary, EntryPoint = "blittablestructs_double_intfields_byref")]
         public static unsafe partial void DoubleIntFields_Ptr(IntFields* result);
     }
 

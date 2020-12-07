@@ -9,31 +9,31 @@ namespace DllImportGenerator.IntegrationTests
     {
         public partial class IntEnum
         {
-            [GeneratedDllImport(nameof(NativeExportsNE), EntryPoint = "subtract_return_int")]
+            [GeneratedDllImport(NativeExportsNE_Binary, EntryPoint = "subtract_return_int")]
             public static partial EnumTests.IntEnum Subtract_Return(EnumTests.IntEnum a, EnumTests.IntEnum b);
 
-            [GeneratedDllImport(nameof(NativeExportsNE), EntryPoint = "subtract_out_int")]
+            [GeneratedDllImport(NativeExportsNE_Binary, EntryPoint = "subtract_out_int")]
             public static partial void Subtract_Out(EnumTests.IntEnum a, EnumTests.IntEnum b, out EnumTests.IntEnum c);
 
-            [GeneratedDllImport(nameof(NativeExportsNE), EntryPoint = "subtract_ref_int")]
+            [GeneratedDllImport(NativeExportsNE_Binary, EntryPoint = "subtract_ref_int")]
             public static partial void Subtract_Ref(EnumTests.IntEnum a, ref EnumTests.IntEnum b);
 
-            [GeneratedDllImport(nameof(NativeExportsNE), EntryPoint = "subtract_ref_int")]
+            [GeneratedDllImport(NativeExportsNE_Binary, EntryPoint = "subtract_ref_int")]
             public static partial void Subtract_In(EnumTests.IntEnum a, in EnumTests.IntEnum b);
         }
 
         public partial class ByteEnum
         {
-            [GeneratedDllImport(nameof(NativeExportsNE), EntryPoint = "subtract_return_byte")]
+            [GeneratedDllImport(NativeExportsNE_Binary, EntryPoint = "subtract_return_byte")]
             public static partial EnumTests.ByteEnum Subtract_Return(EnumTests.ByteEnum a, EnumTests.ByteEnum b);
 
-            [GeneratedDllImport(nameof(NativeExportsNE), EntryPoint = "subtract_out_byte")]
+            [GeneratedDllImport(NativeExportsNE_Binary, EntryPoint = "subtract_out_byte")]
             public static partial void Subtract_Out(EnumTests.ByteEnum a, EnumTests.ByteEnum b, out EnumTests.ByteEnum c);
 
-            [GeneratedDllImport(nameof(NativeExportsNE), EntryPoint = "subtract_ref_byte")]
+            [GeneratedDllImport(NativeExportsNE_Binary, EntryPoint = "subtract_ref_byte")]
             public static partial void Subtract_Ref(EnumTests.ByteEnum a, ref EnumTests.ByteEnum b);
 
-            [GeneratedDllImport(nameof(NativeExportsNE), EntryPoint = "subtract_ref_byte")]
+            [GeneratedDllImport(NativeExportsNE_Binary, EntryPoint = "subtract_ref_byte")]
             public static partial void Subtract_In(EnumTests.ByteEnum a, in EnumTests.ByteEnum b);
         }
     }

@@ -27,14 +27,14 @@ namespace DllImportGenerator.IntegrationTests
     {
         public partial class SetLastError
         {
-            [GeneratedDllImport(nameof(NativeExportsNE), EntryPoint = "set_error", SetLastError = true)]
+            [GeneratedDllImport(NativeExportsNE_Binary, EntryPoint = "set_error", SetLastError = true)]
             public static partial int SetError(int error, byte shouldSetError);
 
-            [GeneratedDllImport(nameof(NativeExportsNE), EntryPoint = "set_error_return_string", SetLastError = true)]
+            [GeneratedDllImport(NativeExportsNE_Binary, EntryPoint = "set_error_return_string", SetLastError = true)]
             [return: MarshalUsing(typeof(SetLastErrorMarshaller))]
             public static partial int SetError_CustomMarshallingSetsError(int error, byte shouldSetError);
 
-            [GeneratedDllImport(nameof(NativeExportsNE), EntryPoint = "set_error_return_string", SetLastError = true)]
+            [GeneratedDllImport(NativeExportsNE_Binary, EntryPoint = "set_error_return_string", SetLastError = true)]
             [return: MarshalAs(UnmanagedType.LPWStr)]
             public static partial string SetError_NonBlittableSignature(int error, [MarshalAs(UnmanagedType.U1)] bool shouldSetError, [MarshalAs(UnmanagedType.LPWStr)] string errorString);
         }

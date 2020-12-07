@@ -20,18 +20,18 @@ namespace DllImportGenerator.IntegrationTests
             }
         }
 
-        [GeneratedDllImport(nameof(NativeExportsNE), EntryPoint = "alloc_handle")]
+        [GeneratedDllImport(NativeExportsNE_Binary, EntryPoint = "alloc_handle")]
         public static partial NativeExportsSafeHandle AllocateHandle();
 
-        [GeneratedDllImport(nameof(NativeExportsNE), EntryPoint = "release_handle")]
+        [GeneratedDllImport(NativeExportsNE_Binary, EntryPoint = "release_handle")]
         [return:MarshalAs(UnmanagedType.I1)]
         private static partial bool ReleaseHandle(nint handle);
 
-        [GeneratedDllImport(nameof(NativeExportsNE), EntryPoint = "is_handle_alive")]
+        [GeneratedDllImport(NativeExportsNE_Binary, EntryPoint = "is_handle_alive")]
         [return:MarshalAs(UnmanagedType.I1)]
         public static partial bool IsHandleAlive(NativeExportsSafeHandle handle);
 
-        [GeneratedDllImport(nameof(NativeExportsNE), EntryPoint = "modify_handle")]
+        [GeneratedDllImport(NativeExportsNE_Binary, EntryPoint = "modify_handle")]
         public static partial void ModifyHandle(ref NativeExportsSafeHandle handle, [MarshalAs(UnmanagedType.I1)] bool newHandle);
     }
 

@@ -12,30 +12,30 @@ namespace DllImportGenerator.IntegrationTests
     {
         public partial class Arrays
         {
-            [GeneratedDllImport(nameof(NativeExportsNE), EntryPoint = "sum_int_array")]
+            [GeneratedDllImport(NativeExportsNE_Binary, EntryPoint = "sum_int_array")]
             public static partial int Sum(int[] values, int numValues);
 
-            [GeneratedDllImport(nameof(NativeExportsNE), EntryPoint = "sum_int_array_ref")]
+            [GeneratedDllImport(NativeExportsNE_Binary, EntryPoint = "sum_int_array_ref")]
             public static partial int SumInArray(in int[] values, int numValues);
 
-            [GeneratedDllImport(nameof(NativeExportsNE), EntryPoint = "duplicate_int_array")]
+            [GeneratedDllImport(NativeExportsNE_Binary, EntryPoint = "duplicate_int_array")]
             public static partial void Duplicate([MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 1)] ref int[] values, int numValues);
 
-            [GeneratedDllImport(nameof(NativeExportsNE), EntryPoint = "create_range_array")]
+            [GeneratedDllImport(NativeExportsNE_Binary, EntryPoint = "create_range_array")]
             [return:MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 2)]
             public static partial int[] CreateRange(int start, int end, out int numValues);
 
-            [GeneratedDllImport(nameof(NativeExportsNE), EntryPoint = "sum_string_lengths")]
+            [GeneratedDllImport(NativeExportsNE_Binary, EntryPoint = "sum_string_lengths")]
             public static partial int SumStringLengths([MarshalAs(UnmanagedType.LPArray, ArraySubType = UnmanagedType.LPWStr)] string[] strArray);
 
-            [GeneratedDllImport(nameof(NativeExportsNE), EntryPoint = "reverse_strings")]
+            [GeneratedDllImport(NativeExportsNE_Binary, EntryPoint = "reverse_strings")]
             public static partial void ReverseStrings([MarshalAs(UnmanagedType.LPArray, ArraySubType = UnmanagedType.LPWStr, SizeParamIndex = 1)] ref string[] strArray, out int numElements);
 
-            [GeneratedDllImport(nameof(NativeExportsNE), EntryPoint = "get_long_bytes")]
+            [GeneratedDllImport(NativeExportsNE_Binary, EntryPoint = "get_long_bytes")]
             [return:MarshalAs(UnmanagedType.LPArray, SizeConst = sizeof(long))]
             public static partial byte[] GetLongBytes(long l);
 
-            [GeneratedDllImport(nameof(NativeExportsNE), EntryPoint = "append_int_to_array")]
+            [GeneratedDllImport(NativeExportsNE_Binary, EntryPoint = "append_int_to_array")]
             public static partial void Append([MarshalAs(UnmanagedType.LPArray, SizeConst = 1, SizeParamIndex = 1)] ref int[] values, int numOriginalValues, int newValue);
         }
     }

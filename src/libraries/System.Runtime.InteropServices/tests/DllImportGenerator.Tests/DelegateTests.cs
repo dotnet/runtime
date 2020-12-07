@@ -8,12 +8,12 @@ namespace DllImportGenerator.IntegrationTests
     {
         public delegate void VoidVoid();
 
-        [GeneratedDllImport(nameof(NativeExportsNE), EntryPoint = "invoke_callback_after_gc")]
+        [GeneratedDllImport(NativeExportsNE_Binary, EntryPoint = "invoke_callback_after_gc")]
         public static partial void InvokeAfterGC(VoidVoid cb);
 
         public delegate int IntIntInt(int a, int b);
 
-        [GeneratedDllImport(nameof(NativeExportsNE), EntryPoint = "invoke_callback_blittable_args")]
+        [GeneratedDllImport(NativeExportsNE_Binary, EntryPoint = "invoke_callback_blittable_args")]
         public static partial int InvokeWithBlittableArgument(IntIntInt cb, int a, int b);
     }
 

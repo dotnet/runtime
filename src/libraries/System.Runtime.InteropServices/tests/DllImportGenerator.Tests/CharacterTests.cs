@@ -7,23 +7,23 @@ namespace DllImportGenerator.IntegrationTests
 {
     partial class NativeExportsNE
     {
-        [GeneratedDllImport(nameof(NativeExportsNE), EntryPoint = "unicode_return_as_uint", CharSet = CharSet.Unicode)]
+        [GeneratedDllImport(NativeExportsNE_Binary, EntryPoint = "unicode_return_as_uint", CharSet = CharSet.Unicode)]
         public static partial uint ReturnUnicodeAsUInt(char input);
 
-        [GeneratedDllImport(nameof(NativeExportsNE), EntryPoint = "char_return_as_uint", CharSet = CharSet.Unicode)]
+        [GeneratedDllImport(NativeExportsNE_Binary, EntryPoint = "char_return_as_uint", CharSet = CharSet.Unicode)]
         public static partial char ReturnUIntAsUnicode(uint input);
 
-        [GeneratedDllImport(nameof(NativeExportsNE), EntryPoint = "char_return_as_refuint", CharSet = CharSet.Unicode)]
+        [GeneratedDllImport(NativeExportsNE_Binary, EntryPoint = "char_return_as_refuint", CharSet = CharSet.Unicode)]
         public static partial void ReturnUIntAsRefUnicode(uint input, ref char res);
 
-        [GeneratedDllImport(nameof(NativeExportsNE), EntryPoint = "char_return_as_refuint", CharSet = CharSet.Unicode)]
+        [GeneratedDllImport(NativeExportsNE_Binary, EntryPoint = "char_return_as_refuint", CharSet = CharSet.Unicode)]
         public static partial void ReturnUIntAsOutUnicode(uint input, out char res);
 
-        [GeneratedDllImport(nameof(NativeExportsNE), EntryPoint = "char_return_as_uint", CharSet = CharSet.None)]
+        [GeneratedDllImport(NativeExportsNE_Binary, EntryPoint = "char_return_as_uint", CharSet = CharSet.None)]
         [return: MarshalAs(UnmanagedType.U2)]
         public static partial char ReturnU2AsU2IgnoreCharSet([MarshalAs(UnmanagedType.U2)] char input);
 
-        [GeneratedDllImport(nameof(NativeExportsNE), EntryPoint = "char_return_as_uint", CharSet = CharSet.Ansi)]
+        [GeneratedDllImport(NativeExportsNE_Binary, EntryPoint = "char_return_as_uint", CharSet = CharSet.Ansi)]
         [return: MarshalAs(UnmanagedType.I2)]
         public static partial char ReturnI2AsI2IgnoreCharSet([MarshalAs(UnmanagedType.I2)] char input);
     }

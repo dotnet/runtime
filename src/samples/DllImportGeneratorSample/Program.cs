@@ -5,13 +5,15 @@ namespace Demo
 {
     partial class NativeExportsNE
     {
-        [GeneratedDllImport(nameof(NativeExportsNE), EntryPoint = "sumi")]
+        public const string NativeExportsNE_Binary = "Microsoft.Interop.Tests." + nameof(NativeExportsNE);
+
+        [GeneratedDllImport(NativeExportsNE_Binary, EntryPoint = "sumi")]
         public static partial int Sum(int a, int b);
 
-        [GeneratedDllImport(nameof(NativeExportsNE), EntryPoint = "sumouti")]
+        [GeneratedDllImport(NativeExportsNE_Binary, EntryPoint = "sumouti")]
         public static partial void Sum(int a, int b, out int c);
 
-        [GeneratedDllImport(nameof(NativeExportsNE), EntryPoint = "sumrefi")]
+        [GeneratedDllImport(NativeExportsNE_Binary, EntryPoint = "sumrefi")]
         public static partial void Sum(int a, ref int b);
     }
 
