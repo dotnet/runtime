@@ -106,12 +106,21 @@ namespace System.Buffers.Tests
             output.Advance(initialCapacity);
 
             // Validate we can't double the buffer size, but can grow
-            Memory<byte> memory = output.GetMemory(1);
+            Memory<byte> memory;
+            try
+            {
+                memory = output.GetMemory(1);
 
-            // The buffer should grow more than the 1 byte requested otherwise performance will not be usable
-            // between 1GB and 2GB. The current implementation maxes out the buffer size to MaxArrayLength.
-            Assert.Equal(MaxArrayLength - initialCapacity, memory.Length);
+                // The buffer should grow more than the 1 byte requested otherwise performance will not be usable
+                // between 1GB and 2GB. The current implementation maxes out the buffer size to MaxArrayLength.
+                Assert.Equal(MaxArrayLength - initialCapacity, memory.Length);
+            }
+            catch (OutOfMemoryException)
+            {
+                // On memory constrained devices, we can get an OutOfMemoryException, which we can safely ignore.
+            }
 
+            // Validate > MaxArrayLength.
             Assert.Throws<OutOfMemoryException>(() => output.GetMemory(int.MaxValue));
         }
     }
