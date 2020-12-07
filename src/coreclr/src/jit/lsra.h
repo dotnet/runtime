@@ -976,7 +976,9 @@ private:
     bool isSecondHalfReg(RegRecord* regRec, Interval* interval);
     RegRecord* getSecondHalfRegRec(RegRecord* regRec);
     RegRecord* findAnotherHalfRegRec(RegRecord* regRec);
-    bool canSpillDoubleReg(RegRecord* physRegRecord, LsraLocation refLocation, unsigned* recentAssignedRefWeight);
+    bool canSpillDoubleReg(RegRecord*            physRegRecord,
+                           LsraLocation          refLocation,
+                           BasicBlock::weight_t* recentAssignedRefWeight);
     void unassignDoublePhysReg(RegRecord* doubleRegRecord);
 #endif
     void updateAssignedInterval(RegRecord* reg, Interval* interval, RegisterType regType);
@@ -984,7 +986,7 @@ private:
     bool canRestorePreviousInterval(RegRecord* regRec, Interval* assignedInterval);
     bool isAssignedToInterval(Interval* interval, RegRecord* regRec);
     bool isRefPositionActive(RefPosition* refPosition, LsraLocation refLocation);
-    bool canSpillReg(RegRecord* physRegRecord, LsraLocation refLocation, unsigned* recentAssignedRefWeight);
+    bool canSpillReg(RegRecord* physRegRecord, LsraLocation refLocation, BasicBlock::weight_t* recentAssignedRefWeight);
     bool isRegInUse(RegRecord* regRec, RefPosition* refPosition);
 
     // insert refpositions representing prolog zero-inits which will be added later
@@ -1135,7 +1137,7 @@ private:
 
     void associateRefPosWithInterval(RefPosition* rp);
 
-    unsigned getWeight(RefPosition* refPos);
+    BasicBlock::weight_t getWeight(RefPosition* refPos);
 
     /*****************************************************************************
      * Register management

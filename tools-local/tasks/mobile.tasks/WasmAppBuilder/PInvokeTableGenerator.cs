@@ -218,13 +218,13 @@ public class PInvokeTableGenerator : Task
             foreach (var p in method.GetParameters()) {
                 if (pindex > 0)
                     sb.Append(',');
-                sb.Append("int");
+                sb.Append("int*");
                 pindex++;
             }
             if (pindex > 0)
                 sb.Append(',');
             // Extra arg
-            sb.Append("int");
+            sb.Append("int*");
             sb.Append(");\n");
 
             bool is_void = method.ReturnType.Name == "Void";

@@ -58,12 +58,15 @@ void GCHeap::UpdatePreGCCounters()
 
 void GCHeap::ReportGenerationBounds()
 {
-    g_theGCHeap->DiagDescrGenerations([](void*, int generation, uint8_t* rangeStart, uint8_t* rangeEnd, uint8_t* rangeEndReserved)
+    if (EVENT_ENABLED(GCGenerationRange))
     {
-        uint64_t range = static_cast<uint64_t>(rangeEnd - rangeStart);
-        uint64_t rangeReserved = static_cast<uint64_t>(rangeEndReserved - rangeStart);
-        FIRE_EVENT(GCGenerationRange, generation, rangeStart, range, rangeReserved);
-    }, nullptr);
+        g_theGCHeap->DiagDescrGenerations([](void*, int generation, uint8_t* rangeStart, uint8_t* rangeEnd, uint8_t* rangeEndReserved)
+        {
+            uint64_t range = static_cast<uint64_t>(rangeEnd - rangeStart);
+            uint64_t rangeReserved = static_cast<uint64_t>(rangeEndReserved - rangeStart);
+            FIRE_EVENT(GCGenerationRange, generation, rangeStart, range, rangeReserved);
+        }, nullptr);
+    }
 }
 
 void GCHeap::UpdatePostGCCounters()

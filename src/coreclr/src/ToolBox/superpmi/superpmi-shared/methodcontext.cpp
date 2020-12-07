@@ -3073,49 +3073,51 @@ void MethodContext::repGetMethodVTableOffset(CORINFO_METHOD_HANDLE method,
     DEBUG_REP(dmpGetMethodVTableOffset((DWORDLONG)method, value));
 }
 
-void MethodContext::recResolveVirtualMethod(CORINFO_METHOD_HANDLE  virtMethod,
-                                            CORINFO_CLASS_HANDLE   implClass,
-                                            CORINFO_CONTEXT_HANDLE ownerType,
-                                            CORINFO_METHOD_HANDLE  result)
+void MethodContext::recResolveVirtualMethod(CORINFO_DEVIRTUALIZATION_INFO * info, bool returnValue)
 {
     if (ResolveVirtualMethod == nullptr)
     {
-        ResolveVirtualMethod = new LightWeightMap<Agnostic_ResolveVirtualMethod, DWORDLONG>();
+        ResolveVirtualMethod = new LightWeightMap<Agnostic_ResolveVirtualMethodKey, Agnostic_ResolveVirtualMethodResult>();
     }
 
-    Agnostic_ResolveVirtualMethod key;
-    key.virtualMethod     = (DWORDLONG)virtMethod;
-    key.implementingClass = (DWORDLONG)implClass;
-    key.ownerType         = (DWORDLONG)ownerType;
-    ResolveVirtualMethod->Add(key, (DWORDLONG)result);
-    DEBUG_REC(dmpResolveVirtualMethod(key, (DWORDLONG)result));
+    Agnostic_ResolveVirtualMethodKey key;
+    key.virtualMethod  = (DWORDLONG)info->virtualMethod;
+    key.objClass       = (DWORDLONG)info->objClass;
+    key.context        = (DWORDLONG)info->context;
+    Agnostic_ResolveVirtualMethodResult result;
+    result.returnValue = returnValue;
+    result.devirtualizedMethod = (DWORDLONG)info->devirtualizedMethod;    
+    result.requiresInstMethodTableArg = info->requiresInstMethodTableArg;
+    result.exactContext = (DWORDLONG)info->exactContext;
+    ResolveVirtualMethod->Add(key, result);
+    DEBUG_REC(dmpResolveVirtualMethod(key, result));
 }
 
-void MethodContext::dmpResolveVirtualMethod(const Agnostic_ResolveVirtualMethod& key, DWORDLONG value)
+void MethodContext::dmpResolveVirtualMethod(const Agnostic_ResolveVirtualMethodKey& key, const Agnostic_ResolveVirtualMethodResult& result)
 {
-    printf("ResolveVirtualMethod virtMethod-%016llX, implClass-%016llX, ownerType--%016llX, result-%016llX",
-           key.virtualMethod, key.implementingClass, key.ownerType, value);
+    printf("ResolveVirtualMethod virtMethod-%016llX, objClass-%016llX, context-%016llX :: returnValue-%d, devirtMethod-%016llX, requiresInstArg-%d, exactContext-%016llX",
+        key.virtualMethod, key.objClass, key.context, result.returnValue, result.devirtualizedMethod, result.requiresInstMethodTableArg, result.exactContext);
 }
 
-CORINFO_METHOD_HANDLE MethodContext::repResolveVirtualMethod(CORINFO_METHOD_HANDLE  virtMethod,
-                                                             CORINFO_CLASS_HANDLE   implClass,
-                                                             CORINFO_CONTEXT_HANDLE ownerType)
+bool MethodContext::repResolveVirtualMethod(CORINFO_DEVIRTUALIZATION_INFO * info)
 {
-    Agnostic_ResolveVirtualMethod key;
-    key.virtualMethod     = (DWORDLONG)virtMethod;
-    key.implementingClass = (DWORDLONG)implClass;
-    key.ownerType         = (DWORDLONG)ownerType;
+    Agnostic_ResolveVirtualMethodKey key;
+    key.virtualMethod  = (DWORDLONG)info->virtualMethod;
+    key.objClass       = (DWORDLONG)info->objClass;
+    key.context        = (DWORDLONG)info->context;
 
     AssertCodeMsg(ResolveVirtualMethod != nullptr, EXCEPTIONCODE_MC,
-                  "No ResolveVirtualMap map for %016llX-%016llX-%016llX", key.virtualMethod, key.implementingClass,
-                  key.ownerType);
+        "No ResolveVirtualMap map for %016llX-%016llX-%016llX", key.virtualMethod, key.objClass, key.context);
     AssertCodeMsg(ResolveVirtualMethod->GetIndex(key) != -1, EXCEPTIONCODE_MC, "Didn't find %016llX-%016llx-%016llX",
-                  key.virtualMethod, key.implementingClass, key.ownerType);
-    DWORDLONG result = ResolveVirtualMethod->Get(key);
+        key.virtualMethod, key.objClass, key.context);
 
+    Agnostic_ResolveVirtualMethodResult result = ResolveVirtualMethod->Get(key);
     DEBUG_REP(dmpResolveVirtualMethod(key, result));
+    info->devirtualizedMethod = (CORINFO_METHOD_HANDLE) result.devirtualizedMethod;
+    info->requiresInstMethodTableArg = result.requiresInstMethodTableArg;
+    info->exactContext = (CORINFO_CONTEXT_HANDLE) result.exactContext;
 
-    return (CORINFO_METHOD_HANDLE)result;
+    return result.returnValue;
 }
 
 void MethodContext::recGetUnboxedEntry(CORINFO_METHOD_HANDLE ftn,
@@ -5263,6 +5265,48 @@ HRESULT MethodContext::repGetMethodBlockCounts(CORINFO_METHOD_HANDLE        ftnH
     *pNumRuns      = (UINT32)tempValue.numRuns;
     HRESULT result = (HRESULT)tempValue.result;
     return result;
+}
+
+void MethodContext::recGetLikelyClass(CORINFO_METHOD_HANDLE ftnHnd, CORINFO_CLASS_HANDLE baseHnd, UINT32 ilOffset, CORINFO_CLASS_HANDLE result, UINT32* pLikelihood, UINT32* pNumberOfClasses)
+{
+    if (GetLikelyClass == nullptr)
+        GetLikelyClass = new LightWeightMap<Agnostic_GetLikelyClass, Agnostic_GetLikelyClassResult>();
+
+    Agnostic_GetLikelyClass key;
+    ZeroMemory(&key, sizeof(Agnostic_GetLikelyClass));
+
+    key.ftnHnd = (DWORDLONG) ftnHnd;
+    key.baseHnd = (DWORDLONG) baseHnd;
+    key.ilOffset = (DWORD) ilOffset;
+
+    Agnostic_GetLikelyClassResult value;
+    ZeroMemory(&value, sizeof(Agnostic_GetLikelyClassResult));
+    value.classHnd = (DWORDLONG) result;
+    value.likelihood = *pLikelihood;
+    value.numberOfClasses = *pNumberOfClasses;
+
+    GetLikelyClass->Add(key, value);
+    DEBUG_REC(dmpGetLikelyClass(key, value));
+}
+void MethodContext::dmpGetLikelyClass(const Agnostic_GetLikelyClass& key, const Agnostic_GetLikelyClassResult& value)
+{
+    printf("GetLikelyClass key ftn-%016llX base-%016llX il-%u, class-%016llX likelihood-%u numberOfClasses-%u", 
+        key.ftnHnd, key.baseHnd, key.ilOffset, value.classHnd, value.likelihood, value.numberOfClasses);
+}
+CORINFO_CLASS_HANDLE MethodContext::repGetLikelyClass(CORINFO_METHOD_HANDLE ftnHnd, CORINFO_CLASS_HANDLE baseHnd, UINT32 ilOffset, UINT32* pLikelihood, UINT32* pNumberOfClasses)
+{
+    Agnostic_GetLikelyClass key;
+    ZeroMemory(&key, sizeof(Agnostic_GetLikelyClass));
+    key.ftnHnd = (DWORDLONG) ftnHnd;
+    key.baseHnd = (DWORDLONG) baseHnd;
+    key.ilOffset = (DWORD) ilOffset;
+
+    Agnostic_GetLikelyClassResult value = GetLikelyClass->Get(key);
+    DEBUG_REP(dmpGetLikelyClass(key, value));
+
+    *pLikelihood = value.likelihood;
+    *pNumberOfClasses = value.numberOfClasses;
+    return (CORINFO_CLASS_HANDLE) value.classHnd;
 }
 
 void MethodContext::recMergeClasses(CORINFO_CLASS_HANDLE cls1, CORINFO_CLASS_HANDLE cls2, CORINFO_CLASS_HANDLE result)

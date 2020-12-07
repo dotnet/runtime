@@ -129,7 +129,7 @@ void Compiler::optAddCopies()
         }
 
         // We require that the weighted ref count be significant.
-        if (varDsc->lvRefCntWtd() <= (BB_LOOP_WEIGHT * BB_UNITY_WEIGHT / 2))
+        if (varDsc->lvRefCntWtd() <= (BB_LOOP_WEIGHT_SCALE * BB_UNITY_WEIGHT / 2))
         {
             continue;
         }
@@ -143,7 +143,8 @@ void Compiler::optAddCopies()
         BlockSet paramImportantUseDom(BlockSetOps::MakeFull(this));
 
         // This will be threshold for determining heavier-than-average uses
-        unsigned paramAvgWtdRefDiv2 = (varDsc->lvRefCntWtd() + varDsc->lvRefCnt() / 2) / (varDsc->lvRefCnt() * 2);
+        BasicBlock::weight_t paramAvgWtdRefDiv2 =
+            (varDsc->lvRefCntWtd() + varDsc->lvRefCnt() / 2) / (varDsc->lvRefCnt() * 2);
 
         bool paramFoundImportantUse = false;
 
@@ -306,9 +307,9 @@ void Compiler::optAddCopies()
             /* dominates all the uses of the local variable         */
 
             /* Our default is to use the first block */
-            BasicBlock* bestBlock  = fgFirstBB;
-            unsigned    bestWeight = bestBlock->getBBWeight(this);
-            BasicBlock* block      = bestBlock;
+            BasicBlock*          bestBlock  = fgFirstBB;
+            BasicBlock::weight_t bestWeight = bestBlock->getBBWeight(this);
+            BasicBlock*          block      = bestBlock;
 
 #ifdef DEBUG
             if (verbose)
@@ -1625,7 +1626,8 @@ void Compiler::optDebugCheckAssertion(AssertionDsc* assertion)
                     assert(assertion->op2.u1.iconFlags != 0);
                     break;
                 case O1K_LCLVAR:
-                    assert((lvaTable[assertion->op1.lcl.lclNum].lvType != TYP_REF) || (assertion->op2.u1.iconVal == 0));
+                    assert((lvaTable[assertion->op1.lcl.lclNum].lvType != TYP_REF) ||
+                           (assertion->op2.u1.iconVal == 0) || doesMethodHaveFrozenString());
                     break;
                 case O1K_VALUE_NUMBER:
                     assert((vnStore->TypeOfVN(assertion->op1.vn) != TYP_REF) || (assertion->op2.u1.iconVal == 0));

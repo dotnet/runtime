@@ -15,7 +15,7 @@ runtimepack:
 
 run: clean appbuilder
 	$(DOTNET) publish -c $(MONO_CONFIG) /p:TargetArchitecture=$(MONO_ARCH) \
-	/p:UseLLVM=$(USE_LLVM) /p:UseAotForSimulator=false
+	/p:UseLLVM=$(USE_LLVM) /p:ForceAOT=false
 
 clean:
 	rm -rf bin

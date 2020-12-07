@@ -2662,9 +2662,14 @@ void Compiler::fgInitArgInfo(GenTreeCall* call)
     // If/when we change that, the following code needs to be changed to correctly support the (TBD) managed calling
     // convention for x86/SSE.
 
-    // If we have a Fixed Return Buffer argument register then we setup a non-standard argument for it
+    // If we have a Fixed Return Buffer argument register then we setup a non-standard argument for it.
     //
-    if (hasFixedRetBuffReg() && call->HasRetBufArg())
+    // We don't use the fixed return buffer argument if we have the special unmanaged instance call convention.
+    // That convention doesn't use the fixed return buffer register.
+    //
+    CLANG_FORMAT_COMMENT_ANCHOR;
+
+    if (call->HasFixedRetBufArg())
     {
         args = call->gtCallArgs;
         assert(args != nullptr);
@@ -2719,7 +2724,7 @@ void Compiler::fgInitArgInfo(GenTreeCall* call)
         *insertionPoint = gtNewCallArgs(arg);
 #else  // !defined(TARGET_X86)
         // All other architectures pass the cookie in a register.
-        call->gtCallArgs       = gtPrependNewCallArg(arg, call->gtCallArgs);
+        call->gtCallArgs = gtPrependNewCallArg(arg, call->gtCallArgs);
 #endif // defined(TARGET_X86)
 
         nonStandardArgs.Add(arg, REG_PINVOKE_COOKIE_PARAM);
@@ -2830,10 +2835,11 @@ void Compiler::fgInitArgInfo(GenTreeCall* call)
         {
             maxRegArgs = 0;
         }
-
+#ifdef UNIX_X86_ABI
         // Add in the ret buff arg
         if (callHasRetBuffArg)
             maxRegArgs++;
+#endif
     }
 #endif // TARGET_X86
 
@@ -2883,9 +2889,60 @@ void Compiler::fgInitArgInfo(GenTreeCall* call)
     SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR structDesc;
 #endif // UNIX_AMD64_ABI
 
+#if defined(DEBUG)
+    // Check that we have valid information about call's argument types.
+    // For example:
+    // load byte; call(int) -> CALL(PUTARG_TYPE byte(IND byte));
+    // load int; call(byte) -> CALL(PUTARG_TYPE int (IND int));
+    // etc.
+    if (call->callSig != nullptr)
+    {
+        CORINFO_SIG_INFO* sig          = call->callSig;
+        const unsigned    sigArgsCount = sig->numArgs;
+
+        GenTreeCall::Use* nodeArgs = call->gtCallArgs;
+        // It could include many arguments not included in `sig->numArgs`, for example, `this`, runtime lookup, cookie
+        // etc.
+        unsigned nodeArgsCount = call->NumChildren();
+
+        if (call->gtCallThisArg != nullptr)
+        {
+            // Handle the most common argument not in the `sig->numArgs`.
+            // so the following check works on more methods.
+            nodeArgsCount--;
+        }
+
+        assert(nodeArgsCount >= sigArgsCount);
+        if ((nodeArgsCount == sigArgsCount) &&
+            ((Target::g_tgtArgOrder == Target::ARG_ORDER_R2L) || (nodeArgsCount == 1)))
+        {
+            CORINFO_ARG_LIST_HANDLE sigArg = sig->args;
+            for (unsigned i = 0; i < sig->numArgs; ++i)
+            {
+                CORINFO_CLASS_HANDLE argClass;
+                const CorInfoType    corType = strip(info.compCompHnd->getArgType(sig, sigArg, &argClass));
+                const var_types      sigType = JITtype2varType(corType);
+
+                assert(nodeArgs != nullptr);
+                const GenTree* nodeArg = nodeArgs->GetNode();
+                assert(nodeArg != nullptr);
+                const var_types nodeType = nodeArg->TypeGet();
+
+                assert((nodeType == sigType) || varTypeIsStruct(sigType) ||
+                       genTypeSize(nodeType) == genTypeSize(sigType));
+
+                sigArg   = info.compCompHnd->getArgNext(sigArg);
+                nodeArgs = nodeArgs->GetNext();
+            }
+            assert(nodeArgs == nullptr);
+        }
+    }
+#endif // DEBUG
+
     for (args = call->gtCallArgs; args != nullptr; args = args->GetNext(), argIndex++)
     {
-        argx                    = args->GetNode();
+        argx = args->GetNode()->gtSkipPutArgType();
+
         fgArgTabEntry* argEntry = nullptr;
 
         // Change the node to TYP_I_IMPL so we don't report GC info
@@ -2907,8 +2964,6 @@ void Compiler::fgInitArgInfo(GenTreeCall* call)
         bool passUsingFloatRegs;
 #if !defined(OSX_ARM64_ABI)
         unsigned argAlignBytes = TARGET_POINTER_SIZE;
-#else
-        unsigned argAlignBytes = TARGET_POINTER_SIZE; // TODO-OSX-ARM64: change it after other changes are merged.
 #endif
         unsigned             size          = 0;
         unsigned             byteSize      = 0;
@@ -3150,9 +3205,30 @@ void Compiler::fgInitArgInfo(GenTreeCall* call)
             }
         }
 
+        if (args->GetNode()->OperIs(GT_PUTARG_TYPE))
+        {
+            const GenTreeUnOp* putArgType = args->GetNode()->AsUnOp();
+            byteSize                      = genTypeSize(putArgType->TypeGet());
+        }
+
         // The 'size' value has now must have been set. (the original value of zero is an invalid value)
         assert(size != 0);
         assert(byteSize != 0);
+
+#if defined(OSX_ARM64_ABI)
+        // Arm64 Apple has a special ABI for passing small size arguments on stack,
+        // bytes are aligned to 1-byte, shorts to 2-byte, int/float to 4-byte, etc.
+        // It means passing 8 1-byte arguments on stack can take as small as 8 bytes.
+        unsigned argAlignBytes;
+        if (isStructArg)
+        {
+            argAlignBytes = TARGET_POINTER_SIZE;
+        }
+        else
+        {
+            argAlignBytes = byteSize;
+        }
+#endif
 
         //
         // Figure out if the argument will be passed in a register.
@@ -3161,6 +3237,8 @@ void Compiler::fgInitArgInfo(GenTreeCall* call)
         if (isRegParamType(genActualType(argx->TypeGet()))
 #ifdef UNIX_AMD64_ABI
             && (!isStructArg || structDesc.passedInRegisters)
+#elif defined(TARGET_X86)
+            || (isStructArg && isTrivialPointerSizedStruct(objClass))
 #endif
                 )
         {
@@ -3689,8 +3767,6 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
             }
             else // This is passed by value.
             {
-
-#ifndef TARGET_X86
                 // Check to see if we can transform this into load of a primitive type.
                 // 'size' must be the number of pointer sized items
                 DEBUG_ARG_SLOTS_ASSERT(size == roundupSize / TARGET_POINTER_SIZE);
@@ -3882,7 +3958,6 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
                     assert(varTypeIsEnregisterable(argObj->TypeGet()) ||
                            ((copyBlkClass != NO_CLASS_HANDLE) && varTypeIsEnregisterable(structBaseType)));
                 }
-#endif // !TARGET_X86
 
 #ifndef UNIX_AMD64_ABI
                 // We still have a struct unless we converted the GT_OBJ into a GT_IND above...
@@ -4574,7 +4649,8 @@ GenTree* Compiler::fgMorphMultiregStructArg(GenTree* arg, fgArgTabEntry* fgEntry
                 var_types loType = loVarDsc->lvType;
                 var_types hiType = hiVarDsc->lvType;
 
-                if (varTypeIsFloating(loType) || varTypeIsFloating(hiType))
+                if ((varTypeIsFloating(loType) != genIsValidFloatReg(fgEntryPtr->GetRegNum(0))) ||
+                    (varTypeIsFloating(hiType) != genIsValidFloatReg(fgEntryPtr->GetRegNum(1))))
                 {
                     // TODO-LSRA - It currently doesn't support the passing of floating point LCL_VARS in the integer
                     // registers. So for now we will use GT_LCLFLD's to pass this struct (it won't be enregistered)
@@ -5089,7 +5165,7 @@ void Compiler::fgFixupStructReturn(GenTree* callNode)
     }
     else
     {
-        returnType = getReturnTypeForStruct(retClsHnd, &howToReturnStruct);
+        returnType = getReturnTypeForStruct(retClsHnd, call->GetUnmanagedCallConv(), &howToReturnStruct);
     }
 
     if (howToReturnStruct == SPK_ByReference)
@@ -6753,7 +6829,9 @@ bool Compiler::fgCanFastTailCall(GenTreeCall* callee, const char** failReason)
     {
         var_types retType = (compDoOldStructRetyping() ? info.compRetNativeType : info.compRetType);
         assert(impTailCallRetTypeCompatible(retType, info.compMethodInfo->args.retTypeClass,
-                                            (var_types)callee->gtReturnType, callee->gtRetClsHnd));
+                                            compMethodInfoGetEntrypointCallConv(info.compMethodInfo),
+                                            (var_types)callee->gtReturnType, callee->gtRetClsHnd,
+                                            callee->GetUnmanagedCallConv()));
     }
 #endif
 
@@ -7676,7 +7754,7 @@ GenTree* Compiler::fgMorphPotentialTailCall(GenTreeCall* call)
             {
                 CORINFO_CLASS_HANDLE        retClsHnd = call->gtRetClsHnd;
                 Compiler::structPassingKind howToReturnStruct;
-                callType = getReturnTypeForStruct(retClsHnd, &howToReturnStruct);
+                callType = getReturnTypeForStruct(retClsHnd, call->GetUnmanagedCallConv(), &howToReturnStruct);
                 assert((howToReturnStruct != SPK_Unknown) && (howToReturnStruct != SPK_ByReference));
                 if (howToReturnStruct == SPK_ByValue)
                 {
@@ -8039,7 +8117,7 @@ GenTree* Compiler::fgCreateCallDispatcherAndGetResult(GenTreeCall*          orig
 
         if (varTypeIsStruct(origCall->gtType))
         {
-            retVal = impFixupStructReturnType(retVal, origCall->gtRetClsHnd);
+            retVal = impFixupStructReturnType(retVal, origCall->gtRetClsHnd, origCall->GetUnmanagedCallConv());
         }
     }
     else
@@ -12234,7 +12312,7 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac)
                         LclVarDsc* varDsc = lvaGetDesc(lclVar);
                         if (varDsc->CanBeReplacedWithItsField(this))
                         {
-                            // We can replace the struct with its only field and allow copy propogation to replace
+                            // We can replace the struct with its only field and allow copy propagation to replace
                             // return value that was written as a field.
                             unsigned   fieldLclNum = varDsc->lvFieldLclStart;
                             LclVarDsc* fieldDsc    = lvaGetDesc(fieldLclNum);
@@ -12313,6 +12391,9 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac)
         case GT_LIST:
             // Special handling for the arg list.
             return fgMorphArgList(tree->AsArgList(), mac);
+
+        case GT_PUTARG_TYPE:
+            return fgMorphTree(tree->AsUnOp()->gtGetOp1());
 
         default:
             break;
@@ -18117,7 +18198,7 @@ void Compiler::fgRetypeImplicitByRefArgs()
                 // arguments to calls. We undo promotion unless we see enough non-call uses.
                 //
                 const unsigned totalAppearances = varDsc->lvRefCnt(RCS_EARLY);
-                const unsigned callAppearances  = varDsc->lvRefCntWtd(RCS_EARLY);
+                const unsigned callAppearances  = (unsigned)varDsc->lvRefCntWtd(RCS_EARLY);
                 assert(totalAppearances >= callAppearances);
                 const unsigned nonCallAppearances = totalAppearances - callAppearances;
 
@@ -18345,14 +18426,15 @@ bool Compiler::fgMorphImplicitByRefArgs(GenTree* tree)
     {
         for (GenTree** pTree : tree->UseEdges())
         {
-            GenTree* childTree = *pTree;
+            GenTree** pTreeCopy = pTree;
+            GenTree*  childTree = *pTree;
             if (childTree->gtOper == GT_LCL_VAR)
             {
                 GenTree* newChildTree = fgMorphImplicitByRefArgs(childTree, false);
                 if (newChildTree != nullptr)
                 {
-                    changed = true;
-                    *pTree  = newChildTree;
+                    changed    = true;
+                    *pTreeCopy = newChildTree;
                 }
             }
         }

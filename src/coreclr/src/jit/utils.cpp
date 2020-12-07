@@ -646,7 +646,7 @@ const char* genES2str(BitVecTraits* traits, EXPSET_TP set)
     return temp;
 }
 
-const char* refCntWtd2str(unsigned refCntWtd)
+const char* refCntWtd2str(BasicBlock::weight_t refCntWtd)
 {
     const int    bufSize = 17;
     static char  num1[bufSize];
@@ -663,16 +663,27 @@ const char* refCntWtd2str(unsigned refCntWtd)
     }
     else
     {
-        unsigned valueInt  = refCntWtd / BB_UNITY_WEIGHT;
-        unsigned valueFrac = refCntWtd % BB_UNITY_WEIGHT;
+        float scaledWeight = refCntWtd / BB_UNITY_WEIGHT;
+        float intPart      = (float)floor(scaledWeight);
+        bool  isLarge      = intPart > 1e9;
+        bool  isSmall      = (intPart < 1e-2) && (intPart != 0);
 
-        if (valueFrac == 0)
+        // Use g format for high dynamic range counts.
+        //
+        if (isLarge || isSmall)
         {
-            sprintf_s(temp, bufSize, "%u   ", valueInt);
+            sprintf_s(temp, bufSize, "%.2g", scaledWeight);
         }
         else
         {
-            sprintf_s(temp, bufSize, "%u.%02u", valueInt, (valueFrac * 100 / BB_UNITY_WEIGHT));
+            if (intPart == scaledWeight)
+            {
+                sprintf_s(temp, bufSize, "%lld   ", (long long)intPart);
+            }
+            else
+            {
+                sprintf_s(temp, bufSize, "%.2f", scaledWeight);
+            }
         }
     }
     return temp;
@@ -1836,6 +1847,18 @@ unsigned CountDigits(unsigned num, unsigned base /* = 10 */)
     return count;
 }
 
+unsigned CountDigits(float num, unsigned base /* = 10 */)
+{
+    assert(2 <= base && base <= 16); // sanity check
+    unsigned count = 1;
+    while (num >= base)
+    {
+        num /= base;
+        ++count;
+    }
+    return count;
+}
+
 #endif // DEBUG
 
 double FloatingPointUtils::convertUInt64ToDouble(unsigned __int64 uIntVal)
@@ -2077,6 +2100,21 @@ bool FloatingPointUtils::isNormal(float x)
     int32_t bits = reinterpret_cast<int32_t&>(x);
     bits &= 0x7FFFFFFF;
     return (bits < 0x7F800000) && (bits != 0) && ((bits & 0x7F800000) != 0);
+}
+
+//------------------------------------------------------------------------
+// infinite_float: return an infinite float value
+//
+// Returns:
+//    Infinite float value.
+//
+// Notes:
+//    This is the predefined constant HUGE_VALF on many platforms.
+//
+float FloatingPointUtils::infinite_float()
+{
+    int32_t bits = 0x7F800000;
+    return *reinterpret_cast<float*>(&bits);
 }
 
 //------------------------------------------------------------------------

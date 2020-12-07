@@ -209,7 +209,7 @@ ds_server_init (void)
 		ds_rt_auto_trace_init ();
 		ds_rt_auto_trace_launch ();
 
-		ep_rt_thread_id_t thread_id = 0;
+		ep_rt_thread_id_t thread_id = ep_rt_uint64_t_to_thread_id_t (0);
 
 		if (!ep_rt_thread_create ((void *)server_thread, NULL, EP_THREAD_TYPE_SERVER, (void *)&thread_id)) {
 			// Failed to create IPC thread.

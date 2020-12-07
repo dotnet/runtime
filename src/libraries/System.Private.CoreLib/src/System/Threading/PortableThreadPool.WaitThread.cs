@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Diagnostics.Tracing;
 using Microsoft.Win32.SafeHandles;
 
 namespace System.Threading
@@ -36,7 +37,7 @@ namespace System.Threading
         /// <param name="handle">A description of the requested registration.</param>
         internal void RegisterWaitHandle(RegisteredWaitHandle handle)
         {
-            if (PortableThreadPoolEventSource.Log.IsEnabled())
+            if (PortableThreadPoolEventSource.Log.IsEnabled(EventLevel.Verbose, PortableThreadPoolEventSource.Keywords.ThreadingKeyword))
             {
                 PortableThreadPoolEventSource.Log.ThreadPoolIOEnqueue(handle);
             }
@@ -75,7 +76,7 @@ namespace System.Threading
 
         internal static void CompleteWait(RegisteredWaitHandle handle, bool timedOut)
         {
-            if (PortableThreadPoolEventSource.Log.IsEnabled())
+            if (PortableThreadPoolEventSource.Log.IsEnabled(EventLevel.Verbose, PortableThreadPoolEventSource.Keywords.ThreadingKeyword))
             {
                 PortableThreadPoolEventSource.Log.ThreadPoolIODequeue(handle);
             }

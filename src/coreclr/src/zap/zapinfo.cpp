@@ -1073,6 +1073,16 @@ HRESULT ZapInfo::getMethodBlockCounts (
     return S_OK;
 }
 
+CORINFO_CLASS_HANDLE ZapInfo::getLikelyClass(
+    CORINFO_METHOD_HANDLE ftnHnd,
+    CORINFO_CLASS_HANDLE  baseHnd,
+    UINT32                ilOffset,
+    UINT32*               pLikelihood,
+    UINT32*               pNumberOfClasses)
+{
+    return NULL;
+}
+
 void ZapInfo::allocMem(
     ULONG               hotCodeSize,    /* IN */
     ULONG               coldCodeSize,   /* IN */
@@ -4000,12 +4010,9 @@ void ZapInfo::getMethodVTableOffset(CORINFO_METHOD_HANDLE method,
     m_pEEJitInfo->getMethodVTableOffset(method, pOffsetOfIndirection, pOffsetAfterIndirection, isRelative);
 }
 
-CORINFO_METHOD_HANDLE ZapInfo::resolveVirtualMethod(
-        CORINFO_METHOD_HANDLE virtualMethod,
-        CORINFO_CLASS_HANDLE implementingClass,
-        CORINFO_CONTEXT_HANDLE ownerType)
+bool ZapInfo::resolveVirtualMethod(CORINFO_DEVIRTUALIZATION_INFO * info)
 {
-    return m_pEEJitInfo->resolveVirtualMethod(virtualMethod, implementingClass, ownerType);
+    return m_pEEJitInfo->resolveVirtualMethod(info);
 }
 
 CORINFO_METHOD_HANDLE ZapInfo::getUnboxedEntry(

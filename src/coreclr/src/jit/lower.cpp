@@ -3016,7 +3016,9 @@ void Lowering::LowerRet(GenTreeUnOp* ret)
             ReturnTypeDesc retTypeDesc;
             LclVarDsc*     varDsc = nullptr;
             varDsc                = comp->lvaGetDesc(retVal->AsLclVar()->GetLclNum());
-            retTypeDesc.InitializeStructReturnType(comp, varDsc->GetStructHnd());
+            retTypeDesc.InitializeStructReturnType(comp, varDsc->GetStructHnd(),
+                                                   comp->compMethodInfoGetEntrypointCallConv(
+                                                       comp->info.compMethodInfo));
             if (retTypeDesc.GetReturnRegCount() > 1)
             {
                 CheckMultiRegLclVar(retVal->AsLclVar(), &retTypeDesc);
@@ -3477,7 +3479,7 @@ void Lowering::LowerCallStruct(GenTreeCall* call)
     assert(!comp->compDoOldStructRetyping());
     CORINFO_CLASS_HANDLE        retClsHnd = call->gtRetClsHnd;
     Compiler::structPassingKind howToReturnStruct;
-    var_types                   returnType = comp->getReturnTypeForStruct(retClsHnd, &howToReturnStruct);
+    var_types returnType = comp->getReturnTypeForStruct(retClsHnd, call->GetUnmanagedCallConv(), &howToReturnStruct);
     assert(returnType != TYP_STRUCT && returnType != TYP_UNKNOWN);
     var_types origType = call->TypeGet();
     call->gtType       = genActualType(returnType);
@@ -5186,9 +5188,9 @@ bool Lowering::LowerUnsignedDivOrMod(GenTreeOp* divMod)
         // add == true (when divisor == 7 for example):
         //     mulhi = dividend MULHI magic
         //     div   = (((dividend SUB mulhi) RSZ 1) ADD mulhi)) RSZ (shift - 1)
-        const bool     requiresAdjustment       = add;
-        const bool     requiresDividendMultiuse = requiresAdjustment || !isDiv;
-        const unsigned curBBWeight              = m_block->getBBWeight(comp);
+        const bool                 requiresAdjustment       = add;
+        const bool                 requiresDividendMultiuse = requiresAdjustment || !isDiv;
+        const BasicBlock::weight_t curBBWeight              = m_block->getBBWeight(comp);
 
         if (requiresDividendMultiuse)
         {
@@ -5375,10 +5377,10 @@ GenTree* Lowering::LowerConstIntDivOrMod(GenTree* node)
         // For -3 we need:
         //     mulhi -= dividend                    ; requires sub adjust
         //     div = signbit(mulhi) + sar(mulhi, 1) ; requires shift adjust
-        bool     requiresAddSubAdjust     = signum(divisorValue) != signum(magic);
-        bool     requiresShiftAdjust      = shift != 0;
-        bool     requiresDividendMultiuse = requiresAddSubAdjust || !isDiv;
-        unsigned curBBWeight              = comp->compCurBB->getBBWeight(comp);
+        bool                 requiresAddSubAdjust     = signum(divisorValue) != signum(magic);
+        bool                 requiresShiftAdjust      = shift != 0;
+        bool                 requiresDividendMultiuse = requiresAddSubAdjust || !isDiv;
+        BasicBlock::weight_t curBBWeight              = comp->compCurBB->getBBWeight(comp);
 
         if (requiresDividendMultiuse)
         {

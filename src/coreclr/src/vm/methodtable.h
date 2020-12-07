@@ -823,7 +823,7 @@ public:
     BOOL HasDefaultConstructor();
     void SetHasDefaultConstructor();
     WORD GetDefaultConstructorSlot();
-    MethodDesc *GetDefaultConstructor();
+    MethodDesc *GetDefaultConstructor(BOOL forceBoxedEntryPoint = FALSE);
 
     BOOL HasExplicitOrImplicitPublicDefaultConstructor();
 

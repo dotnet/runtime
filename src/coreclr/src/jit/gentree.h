@@ -155,6 +155,7 @@ enum TargetHandleType : BYTE
 struct BasicBlock;
 struct InlineCandidateInfo;
 struct GuardedDevirtualizationCandidateInfo;
+struct ClassProfileCandidateInfo;
 
 typedef unsigned short AssertionIndex;
 
@@ -1736,7 +1737,9 @@ public:
     inline GenTree* gtEffectiveVal(bool commaOnly = false);
 
     // Tunnel through any GT_RET_EXPRs
-    inline GenTree* gtRetExprVal(unsigned __int64* pbbFlags);
+    inline GenTree* gtRetExprVal(unsigned __int64* pbbFlags = nullptr);
+
+    inline GenTree* gtSkipPutArgType();
 
     // Return the child of this node if it is a GT_RELOAD or GT_COPY; otherwise simply return the node itself
     inline GenTree* gtSkipReloadOrCopy();
@@ -3634,7 +3637,7 @@ public:
     }
 
     // Initialize the Return Type Descriptor for a method that returns a struct type
-    void InitializeStructReturnType(Compiler* comp, CORINFO_CLASS_HANDLE retClsHnd);
+    void InitializeStructReturnType(Compiler* comp, CORINFO_CLASS_HANDLE retClsHnd, CorInfoCallConvExtension callConv);
 
     // Initialize the Return Type Descriptor for a method that returns a TYP_LONG
     // Only needed for X86 and arm32.
@@ -3951,7 +3954,11 @@ struct GenTreeCall final : public GenTree
     CORINFO_SIG_INFO* callSig;
 #endif
 
-    TailCallSiteInfo* tailCallInfo;
+    union {
+        TailCallSiteInfo* tailCallInfo;
+        // Only used for unmanaged calls, which cannot be tail-called
+        CorInfoCallConvExtension unmgdCallConv;
+    };
 
 #if FEATURE_MULTIREG_RET
 
@@ -3994,10 +4001,10 @@ struct GenTreeCall final : public GenTree
 #endif
     }
 
-    void InitializeStructReturnType(Compiler* comp, CORINFO_CLASS_HANDLE retClsHnd)
+    void InitializeStructReturnType(Compiler* comp, CORINFO_CLASS_HANDLE retClsHnd, CorInfoCallConvExtension callConv)
     {
 #if FEATURE_MULTIREG_RET
-        gtReturnTypeDesc.InitializeStructReturnType(comp, retClsHnd);
+        gtReturnTypeDesc.InitializeStructReturnType(comp, retClsHnd, callConv);
 #endif
     }
 
@@ -4159,7 +4166,7 @@ struct GenTreeCall final : public GenTree
                                                       // importer has performed tail call checks
 #define GTF_CALL_M_TAILCALL                0x00000002 // GT_CALL -- the call is a tailcall
 #define GTF_CALL_M_VARARGS                 0x00000004 // GT_CALL -- the call uses varargs ABI
-#define GTF_CALL_M_RETBUFFARG              0x00000008 // GT_CALL -- first parameter is the return buffer argument
+#define GTF_CALL_M_RETBUFFARG              0x00000008 // GT_CALL -- call has a return buffer argument
 #define GTF_CALL_M_DELEGATE_INV            0x00000010 // GT_CALL -- call to Delegate.Invoke
 #define GTF_CALL_M_NOGCCHECK               0x00000020 // GT_CALL -- not a call for computing full interruptability and therefore no GC check is required.
 #define GTF_CALL_M_SPECIAL_INTRINSIC       0x00000040 // GT_CALL -- function that could be optimized as an intrinsic
@@ -4273,6 +4280,15 @@ struct GenTreeCall final : public GenTree
     //     use of register x8 to pass the RetBuf argument.
     //
     bool TreatAsHasRetBufArg(Compiler* compiler) const;
+
+    bool HasFixedRetBufArg() const
+    {
+#if defined(TARGET_WINDOWS) && !defined(TARGET_ARM)
+        return hasFixedRetBuffReg() && HasRetBufArg() && !callConvIsInstanceMethodCallConv(GetUnmanagedCallConv());
+#else
+        return hasFixedRetBuffReg() && HasRetBufArg();
+#endif
+    }
 
     //-----------------------------------------------------------------------------------------
     // HasMultiRegRetVal: whether the call node returns its value in multiple return registers.
@@ -4514,6 +4530,7 @@ struct GenTreeCall final : public GenTree
         // gtInlineCandidateInfo is only used when inlining methods
         InlineCandidateInfo*                  gtInlineCandidateInfo;
         GuardedDevirtualizationCandidateInfo* gtGuardedDevirtualizationCandidateInfo;
+        ClassProfileCandidateInfo*            gtClassProfileCandidateInfo;
         void*                                 gtStubCallStubAddr; // GTF_CALL_VIRT_STUB - these are never inlined
         CORINFO_GENERIC_HANDLE compileTimeHelperArgumentHandle; // Used to track type handle argument of dynamic helpers
         void*                  gtDirectCallAddress; // Used to pass direct call address between lower and codegen
@@ -4556,6 +4573,11 @@ struct GenTreeCall final : public GenTree
     void ReplaceCallOperand(GenTree** operandUseEdge, GenTree* replacement);
 
     bool AreArgsComplete() const;
+
+    CorInfoCallConvExtension GetUnmanagedCallConv() const
+    {
+        return IsUnmanaged() ? unmgdCallConv : CorInfoCallConvExtension::Managed;
+    }
 
     static bool Equals(GenTreeCall* c1, GenTreeCall* c2);
 
@@ -7111,14 +7133,15 @@ inline GenTree* GenTree::gtGetOp2IfPresent() const
     return op2;
 }
 
-inline GenTree* GenTree::gtEffectiveVal(bool commaOnly)
+inline GenTree* GenTree::gtEffectiveVal(bool commaOnly /* = false */)
 {
     GenTree* effectiveVal = this;
     for (;;)
     {
+        assert(!effectiveVal->OperIs(GT_PUTARG_TYPE));
         if (effectiveVal->gtOper == GT_COMMA)
         {
-            effectiveVal = effectiveVal->AsOp()->gtOp2;
+            effectiveVal = effectiveVal->AsOp()->gtGetOp2();
         }
         else if (!commaOnly && (effectiveVal->gtOper == GT_NOP) && (effectiveVal->AsOp()->gtOp1 != nullptr))
         {
@@ -7147,21 +7170,47 @@ inline GenTree* GenTree::gtEffectiveVal(bool commaOnly)
 //    Multi-level inlines can form chains of GT_RET_EXPRs.
 //    This method walks back to the root of the chain.
 
-inline GenTree* GenTree::gtRetExprVal(unsigned __int64* pbbFlags)
+inline GenTree* GenTree::gtRetExprVal(unsigned __int64* pbbFlags /* = nullptr */)
 {
     GenTree*         retExprVal = this;
     unsigned __int64 bbFlags    = 0;
 
-    assert(pbbFlags != nullptr);
+    assert(!retExprVal->OperIs(GT_PUTARG_TYPE));
 
-    for (; retExprVal->gtOper == GT_RET_EXPR; retExprVal = retExprVal->AsRetExpr()->gtInlineCandidate)
+    while (retExprVal->OperIs(GT_RET_EXPR))
     {
-        bbFlags = retExprVal->AsRetExpr()->bbFlags;
+        const GenTreeRetExpr* retExpr = retExprVal->AsRetExpr();
+        bbFlags                       = retExpr->bbFlags;
+        retExprVal                    = retExpr->gtInlineCandidate;
     }
 
-    *pbbFlags = bbFlags;
+    if (pbbFlags != nullptr)
+    {
+        *pbbFlags = bbFlags;
+    }
 
     return retExprVal;
+}
+
+//-------------------------------------------------------------------------
+// gtSkipPutArgType - skip PUTARG_TYPE if it is presented.
+//
+// Returns:
+//    the original tree or its child if it was a PUTARG_TYPE.
+//
+// Notes:
+//   PUTARG_TYPE should be skipped when we are doing transformations
+//   that are not affected by ABI, for example: inlining, implicit byref morphing.
+//
+inline GenTree* GenTree::gtSkipPutArgType()
+{
+    if (OperIs(GT_PUTARG_TYPE))
+    {
+        GenTree* res = AsUnOp()->gtGetOp1();
+        assert(!res->OperIs(GT_PUTARG_TYPE));
+        return res;
+    }
+    return this;
 }
 
 inline GenTree* GenTree::gtSkipReloadOrCopy()

@@ -142,19 +142,17 @@ namespace System
             }
             else // These are flags OR'ed together (We treat everything as unsigned types)
             {
-                return InternalFlagsFormat(enumType, enumInfo, value);
+                return InternalFlagsFormat(enumInfo, value);
             }
         }
 
         private static string? InternalFlagsFormat(RuntimeType enumType, ulong result)
         {
-            return InternalFlagsFormat(enumType, GetEnumInfo(enumType), result);
+            return InternalFlagsFormat(GetEnumInfo(enumType), result);
         }
 
-        private static string? InternalFlagsFormat(RuntimeType enumType, EnumInfo enumInfo, ulong resultValue)
+        private static string? InternalFlagsFormat(EnumInfo enumInfo, ulong resultValue)
         {
-            Debug.Assert(enumType != null);
-
             string[] names = enumInfo.Names;
             ulong[] values = enumInfo.Values;
             Debug.Assert(names.Length == values.Length);

@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics.Tracing;
+
 namespace System.Threading
 {
     internal partial class PortableThreadPool
@@ -20,7 +22,7 @@ namespace System.Threading
                     AppContextConfigHelper.GetInt32Config("System.Threading.ThreadPool.UnfairSemaphoreSpinLimit", 70, false),
                     onWait: () =>
                     {
-                        if (PortableThreadPoolEventSource.Log.IsEnabled())
+                        if (PortableThreadPoolEventSource.Log.IsEnabled(EventLevel.Informational, PortableThreadPoolEventSource.Keywords.ThreadingKeyword))
                         {
                             PortableThreadPoolEventSource.Log.ThreadPoolWorkerThreadWait(
                                 (uint)ThreadPoolInstance._separated.counts.VolatileRead().NumExistingThreads);
@@ -33,7 +35,7 @@ namespace System.Threading
 
                 PortableThreadPool threadPoolInstance = ThreadPoolInstance;
 
-                if (PortableThreadPoolEventSource.Log.IsEnabled())
+                if (PortableThreadPoolEventSource.Log.IsEnabled(EventLevel.Informational, PortableThreadPoolEventSource.Keywords.ThreadingKeyword))
                 {
                     PortableThreadPoolEventSource.Log.ThreadPoolWorkerThreadStart(
                         (uint)threadPoolInstance._separated.counts.VolatileRead().NumExistingThreads);
@@ -105,7 +107,7 @@ namespace System.Threading
                             {
                                 HillClimbing.ThreadPoolHillClimber.ForceChange(newNumThreadsGoal, HillClimbing.StateOrTransition.ThreadTimedOut);
 
-                                if (PortableThreadPoolEventSource.Log.IsEnabled())
+                                if (PortableThreadPoolEventSource.Log.IsEnabled(EventLevel.Informational, PortableThreadPoolEventSource.Keywords.ThreadingKeyword))
                                 {
                                     PortableThreadPoolEventSource.Log.ThreadPoolWorkerThreadStop((uint)newNumExistingThreads);
                                 }

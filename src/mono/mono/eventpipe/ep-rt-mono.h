@@ -313,7 +313,6 @@ prefix_name ## _rt_ ## type_name ## _ ## func_name
 
 typedef MonoThreadStart ep_rt_thread_start_func;
 typedef mono_thread_start_return_t ep_rt_thread_start_func_return_t;
-typedef MonoNativeThreadId ep_rt_thread_id_t;
 
 typedef EventPipeThreadHolder * (*ep_rt_thread_holder_alloc_func)(void);
 typedef void (*ep_rt_thread_holder_free_func)(EventPipeThreadHolder *thread_holder);
@@ -1376,13 +1375,13 @@ ep_rt_processors_get_count (void)
 
 static
 inline
-size_t
+ep_rt_thread_id_t
 ep_rt_current_thread_get_id (void)
 {
 #ifdef EP_RT_MONO_USE_STATIC_RUNTIME
-	return MONO_NATIVE_THREAD_ID_TO_UINT (mono_native_thread_id_get ());
+	return mono_native_thread_id_get ();
 #else
-	return MONO_NATIVE_THREAD_ID_TO_UINT (ep_rt_mono_func_table_get ()->ep_rt_mono_native_thread_id_get ());
+	return ep_rt_mono_func_table_get ()->ep_rt_mono_native_thread_id_get ();
 #endif
 }
 
@@ -1848,10 +1847,26 @@ ep_rt_thread_get_handle (void)
 
 static
 inline
-size_t
+ep_rt_thread_id_t
 ep_rt_thread_get_id (ep_rt_thread_handle_t thread_handle)
 {
-	return MONO_NATIVE_THREAD_ID_TO_UINT (mono_thread_info_get_tid (thread_handle));
+	return mono_thread_info_get_tid (thread_handle);
+}
+
+static
+inline
+uint64_t
+ep_rt_thread_id_t_to_uint64_t (ep_rt_thread_id_t thread_id)
+{
+	return (uint64_t)MONO_NATIVE_THREAD_ID_TO_UINT (thread_id);
+}
+
+static
+inline
+ep_rt_thread_id_t
+ep_rt_uint64_t_to_thread_id_t (uint64_t thread_id)
+{
+	return MONO_UINT_TO_NATIVE_THREAD_ID (thread_id);
 }
 
 static

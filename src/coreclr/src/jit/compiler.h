@@ -2249,7 +2249,8 @@ public:
 #endif
 
 #if FEATURE_MULTIREG_RET
-    GenTree* impAssignMultiRegTypeToVar(GenTree* op, CORINFO_CLASS_HANDLE hClass);
+    GenTree* impAssignMultiRegTypeToVar(GenTree*             op,
+                                        CORINFO_CLASS_HANDLE hClass DEBUGARG(CorInfoCallConvExtension callConv));
 #endif // FEATURE_MULTIREG_RET
 
     GenTree* impAssignSmallStructTypeToVar(GenTree* op, CORINFO_CLASS_HANDLE hClass);
@@ -2257,6 +2258,10 @@ public:
 #ifdef ARM_SOFTFP
     bool isSingleFloat32Struct(CORINFO_CLASS_HANDLE hClass);
 #endif // ARM_SOFTFP
+
+#ifdef TARGET_X86
+    bool isTrivialPointerSizedStruct(CORINFO_CLASS_HANDLE clsHnd) const;
+#endif // TARGET_X86
 
     //-------------------------------------------------------------------------
     // Functions to handle homogeneous floating-point aggregates (HFAs) in ARM/ARM64.
@@ -2276,7 +2281,7 @@ public:
     var_types GetHfaType(CORINFO_CLASS_HANDLE hClass);
     unsigned GetHfaCount(CORINFO_CLASS_HANDLE hClass);
 
-    bool IsMultiRegReturnedType(CORINFO_CLASS_HANDLE hClass);
+    bool IsMultiRegReturnedType(CORINFO_CLASS_HANDLE hClass, CorInfoCallConvExtension callConv);
 
     //-------------------------------------------------------------------------
     // The following is used for validating format of EH table
@@ -3433,8 +3438,8 @@ public:
 
     void lvaInitArgs(InitVarDscInfo* varDscInfo);
     void lvaInitThisPtr(InitVarDscInfo* varDscInfo);
-    void lvaInitRetBuffArg(InitVarDscInfo* varDscInfo);
-    void lvaInitUserArgs(InitVarDscInfo* varDscInfo);
+    void lvaInitRetBuffArg(InitVarDscInfo* varDscInfo, bool useFixedRetBufReg);
+    void lvaInitUserArgs(InitVarDscInfo* varDscInfo, unsigned skipArgs, unsigned takeArgs);
     void lvaInitGenericsCtxt(InitVarDscInfo* varDscInfo);
     void lvaInitVarArgsHandle(InitVarDscInfo* varDscInfo);
 
@@ -3779,7 +3784,8 @@ public:
                              CORINFO_CONTEXT_HANDLE* contextHandle,
                              CORINFO_CONTEXT_HANDLE* exactContextHandle,
                              bool                    isLateDevirtualization,
-                             bool                    isExplicitTailCall);
+                             bool                    isExplicitTailCall,
+                             IL_OFFSETX              ilOffset = BAD_IL_OFFSET);
 
     //=========================================================================
     //                          PROTECTED
@@ -3845,7 +3851,9 @@ protected:
 
     GenTree* impFixupCallStructReturn(GenTreeCall* call, CORINFO_CLASS_HANDLE retClsHnd);
 
-    GenTree* impFixupStructReturnType(GenTree* op, CORINFO_CLASS_HANDLE retClsHnd);
+    GenTree* impFixupStructReturnType(GenTree*                 op,
+                                      CORINFO_CLASS_HANDLE     retClsHnd,
+                                      CorInfoCallConvExtension unmgdCallConv);
 
 #ifdef DEBUG
     var_types impImportJitTestLabelMark(int numArgs);
@@ -4077,8 +4085,12 @@ public:
 
     GenTree* impOptimizeCastClassOrIsInst(GenTree* op1, CORINFO_RESOLVED_TOKEN* pResolvedToken, bool isCastClass);
 
-    bool VarTypeIsMultiByteAndCanEnreg(
-        var_types type, CORINFO_CLASS_HANDLE typeClass, unsigned* typeSize, bool forReturn, bool isVarArg);
+    bool VarTypeIsMultiByteAndCanEnreg(var_types                type,
+                                       CORINFO_CLASS_HANDLE     typeClass,
+                                       unsigned*                typeSize,
+                                       bool                     forReturn,
+                                       bool                     isVarArg,
+                                       CorInfoCallConvExtension callConv);
 
     bool IsIntrinsicImplementedByUserCall(NamedIntrinsic intrinsicName);
     bool IsTargetIntrinsic(NamedIntrinsic intrinsicName);
@@ -4356,11 +4368,10 @@ private:
                            InlineCandidateInfo**  ppInlineCandidateInfo,
                            InlineResult*          inlineResult);
 
-    void impInlineRecordArgInfo(InlineInfo*      pInlineInfo,
-                                GenTree*         curArgVal,
-                                unsigned         argNum,
-                                unsigned __int64 bbFlags,
-                                InlineResult*    inlineResult);
+    void impInlineRecordArgInfo(InlineInfo*   pInlineInfo,
+                                GenTree*      curArgVal,
+                                unsigned      argNum,
+                                InlineResult* inlineResult);
 
     void impInlineInitVars(InlineInfo* pInlineInfo);
 
@@ -4385,10 +4396,12 @@ private:
                                       bool                   exactContextNeedsRuntimeLookup,
                                       CORINFO_CALL_INFO*     callInfo);
 
-    bool impTailCallRetTypeCompatible(var_types            callerRetType,
-                                      CORINFO_CLASS_HANDLE callerRetTypeClass,
-                                      var_types            calleeRetType,
-                                      CORINFO_CLASS_HANDLE calleeRetTypeClass);
+    bool impTailCallRetTypeCompatible(var_types                callerRetType,
+                                      CORINFO_CLASS_HANDLE     callerRetTypeClass,
+                                      CorInfoCallConvExtension callerCallConv,
+                                      var_types                calleeRetType,
+                                      CORINFO_CLASS_HANDLE     calleeRetTypeClass,
+                                      CorInfoCallConvExtension calleeCallConv);
 
     bool impIsTailCallILPattern(
         bool tailPrefixed, OPCODE curOpcode, const BYTE* codeAddrOfNextOpcode, const BYTE* codeEnd, bool isRecursive);
@@ -4664,6 +4677,8 @@ public:
                                        BasicBlock* nonCanonicalBlock,
                                        BasicBlock* canonicalBlock,
                                        flowList*   predEdge);
+
+    GenTree* fgCheckCallArgUpdate(GenTree* parent, GenTree* child, var_types origType);
 
 #if defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
     // Sometimes we need to defer updating the BBF_FINALLY_TARGET bit. fgNeedToAddFinallyTargetBits signals
@@ -5055,9 +5070,10 @@ public:
 
     // Get the type that is used to return values of the given struct type.
     // If the size is unknown, pass 0 and it will be determined from 'clsHnd'.
-    var_types getReturnTypeForStruct(CORINFO_CLASS_HANDLE clsHnd,
-                                     structPassingKind*   wbPassStruct = nullptr,
-                                     unsigned             structSize   = 0);
+    var_types getReturnTypeForStruct(CORINFO_CLASS_HANDLE     clsHnd,
+                                     CorInfoCallConvExtension callConv,
+                                     structPassingKind*       wbPassStruct = nullptr,
+                                     unsigned                 structSize   = 0);
 
 #ifdef DEBUG
     // Print a representation of "vnp" or "vn" on standard output.
@@ -5526,7 +5542,7 @@ protected:
 
     bool fgHaveProfileData();
     void fgComputeProfileScale();
-    bool fgGetProfileWeightForBasicBlock(IL_OFFSET offset, unsigned* weight);
+    bool fgGetProfileWeightForBasicBlock(IL_OFFSET offset, BasicBlock::weight_t* weight);
     void fgInstrumentMethod();
 
 public:
@@ -5538,10 +5554,10 @@ public:
     }
 
     // fgProfileRunsCount - returns total number of scenario runs for the profile data
-    //                      or BB_UNITY_WEIGHT when we aren't using profile data.
+    //                      or BB_UNITY_WEIGHT_UNSIGNED when we aren't using profile data.
     unsigned fgProfileRunsCount()
     {
-        return fgIsUsingProfileWeights() ? fgNumProfileRuns : BB_UNITY_WEIGHT;
+        return fgIsUsingProfileWeights() ? fgNumProfileRuns : BB_UNITY_WEIGHT_UNSIGNED;
     }
 
 //-------- Insert a statement at the start or end of a basic block --------
@@ -6080,7 +6096,7 @@ public:
     // non-loop predecessors other than the head entry, create a new, empty block that goes (only) to the entry,
     // and redirects the preds of the entry to this new block.)  Sets the weight of the newly created block to
     // "ambientWeight".
-    void optEnsureUniqueHead(unsigned loopInd, unsigned ambientWeight);
+    void optEnsureUniqueHead(unsigned loopInd, BasicBlock::weight_t ambientWeight);
 
     void optUnrollLoops(); // Unrolls loops (needs to have cost info)
 
@@ -6485,8 +6501,8 @@ protected:
         unsigned short csdDefCount; // definition   count
         unsigned short csdUseCount; // use          count  (excluding the implicit uses at defs)
 
-        unsigned csdDefWtCnt; // weighted def count
-        unsigned csdUseWtCnt; // weighted use count  (excluding the implicit uses at defs)
+        BasicBlock::weight_t csdDefWtCnt; // weighted def count
+        BasicBlock::weight_t csdUseWtCnt; // weighted use count  (excluding the implicit uses at defs)
 
         GenTree*    csdTree;  // treenode containing the 1st occurrence
         Statement*  csdStmt;  // stmt containing the 1st occurrence
@@ -6599,13 +6615,13 @@ protected:
 #endif // FEATURE_VALNUM_CSE
 
 #if FEATURE_ANYCSE
-    bool     optDoCSE;             // True when we have found a duplicate CSE tree
-    bool     optValnumCSE_phase;   // True when we are executing the optValnumCSE_phase
-    unsigned optCSECandidateTotal; // Grand total of CSE candidates for both Lexical and ValNum
-    unsigned optCSECandidateCount; // Count of CSE's candidates, reset for Lexical and ValNum CSE's
-    unsigned optCSEstart;          // The first local variable number that is a CSE
-    unsigned optCSEcount;          // The total count of CSE's introduced.
-    unsigned optCSEweight;         // The weight of the current block when we are doing PerformCSE
+    bool                 optDoCSE;             // True when we have found a duplicate CSE tree
+    bool                 optValnumCSE_phase;   // True when we are executing the optValnumCSE_phase
+    unsigned             optCSECandidateTotal; // Grand total of CSE candidates for both Lexical and ValNum
+    unsigned             optCSECandidateCount; // Count of CSE's candidates, reset for Lexical and ValNum CSE's
+    unsigned             optCSEstart;          // The first local variable number that is a CSE
+    unsigned             optCSEcount;          // The total count of CSE's introduced.
+    BasicBlock::weight_t optCSEweight;         // The weight of the current block when we are doing PerformCSE
 
     bool optIsCSEcandidate(GenTree* tree);
 
@@ -6697,6 +6713,7 @@ public:
 #define OMF_HAS_EXPRUNTIMELOOKUP 0x00000100 // Method contains a runtime lookup to an expandable dictionary.
 #define OMF_HAS_PATCHPOINT 0x00000200       // Method contains patchpoints
 #define OMF_NEEDS_GCPOLLS 0x00000400        // Method needs GC polls
+#define OMF_HAS_FROZEN_STRING 0x00000800    // Method has a frozen string (REF constant int), currently only on CoreRT.
 
     bool doesMethodHaveFatPointer()
     {
@@ -6715,7 +6732,17 @@ public:
 
     void addFatPointerCandidate(GenTreeCall* call);
 
-    bool doesMethodHaveGuardedDevirtualization()
+    bool doesMethodHaveFrozenString() const
+    {
+        return (optMethodFlags & OMF_HAS_FROZEN_STRING) != 0;
+    }
+
+    void setMethodHasFrozenString()
+    {
+        optMethodFlags |= OMF_HAS_FROZEN_STRING;
+    }
+
+    bool doesMethodHaveGuardedDevirtualization() const
     {
         return (optMethodFlags & OMF_HAS_GUARDEDDEVIRT) != 0;
     }
@@ -6734,7 +6761,8 @@ public:
                                              CORINFO_METHOD_HANDLE methodHandle,
                                              CORINFO_CLASS_HANDLE  classHandle,
                                              unsigned              methodAttr,
-                                             unsigned              classAttr);
+                                             unsigned              classAttr,
+                                             unsigned              likelihood);
 
     bool doesMethodHaveExpRuntimeLookup()
     {
@@ -7712,11 +7740,11 @@ public:
         return codeGen->doDoubleAlign();
     }
     DWORD getCanDoubleAlign();
-    bool shouldDoubleAlign(unsigned refCntStk,
-                           unsigned refCntReg,
-                           unsigned refCntWtdReg,
-                           unsigned refCntStkParam,
-                           unsigned refCntWtdStkDbl);
+    bool shouldDoubleAlign(unsigned             refCntStk,
+                           unsigned             refCntReg,
+                           BasicBlock::weight_t refCntWtdReg,
+                           unsigned             refCntStkParam,
+                           BasicBlock::weight_t refCntWtdStkDbl);
 #endif // DOUBLE_ALIGN
 
     bool IsFullPtrRegMapRequired()
@@ -9299,6 +9327,10 @@ public:
 #define CPU_ARM64 0x0400 // The generic ARM64 CPU
 
         unsigned genCPU; // What CPU are we running on
+
+        // Number of class profile probes in this method
+        unsigned compClassProbeCount;
+
     } info;
 
     // Returns true if the method being compiled returns a non-void and non-struct value.
@@ -9318,24 +9350,36 @@ public:
         // There are cases where implicit RetBuf argument should be explicitly returned in a register.
         // In such cases the return type is changed to TYP_BYREF and appropriate IR is generated.
         // These cases are:
-        // 1. Profiler Leave calllback expects the address of retbuf as return value for
+        CLANG_FORMAT_COMMENT_ANCHOR;
+#ifdef TARGET_AMD64
+        // 1. on x64 Windows and Unix the address of RetBuf needs to be returned by
+        //    methods with hidden RetBufArg in RAX. In such case GT_RETURN is of TYP_BYREF,
+        //    returning the address of RetBuf.
+        return (info.compRetBuffArg != BAD_VAR_NUM);
+#else // TARGET_AMD64
+#ifdef PROFILING_SUPPORTED
+        // 2.  Profiler Leave callback expects the address of retbuf as return value for
         //    methods with hidden RetBuf argument.  impReturnInstruction() when profiler
         //    callbacks are needed creates GT_RETURN(TYP_BYREF, op1 = Addr of RetBuf) for
         //    methods with hidden RetBufArg.
-        //
-        // 2. As per the System V ABI, the address of RetBuf needs to be returned by
-        //    methods with hidden RetBufArg in RAX. In such case GT_RETURN is of TYP_BYREF,
-        //    returning the address of RetBuf.
-        //
-        // 3. Windows 64-bit native calling convention also requires the address of RetBuff
-        //    to be returned in RAX.
+        if (compIsProfilerHookNeeded())
+        {
+            return (info.compRetBuffArg != BAD_VAR_NUM);
+        }
+#endif
+        // 3. Windows ARM64 native instance calling convention requires the address of RetBuff
+        //    to be returned in x0.
         CLANG_FORMAT_COMMENT_ANCHOR;
+#if defined(TARGET_WINDOWS) && defined(TARGET_ARM64)
+        auto callConv = compMethodInfoGetEntrypointCallConv(info.compMethodInfo);
+        if (callConvIsInstanceMethodCallConv(callConv))
+        {
+            return (info.compRetBuffArg != BAD_VAR_NUM);
+        }
+#endif // TARGET_WINDOWS && TARGET_ARM64
 
-#ifdef TARGET_AMD64
-        return (info.compRetBuffArg != BAD_VAR_NUM);
-#else  // !TARGET_AMD64
-        return (compIsProfilerHookNeeded()) && (info.compRetBuffArg != BAD_VAR_NUM);
-#endif // !TARGET_AMD64
+        return false;
+#endif // TARGET_AMD64
     }
 
     bool compDoOldStructRetyping()
@@ -9350,8 +9394,9 @@ public:
     {
 #if FEATURE_MULTIREG_RET
 #if defined(TARGET_X86)
-        // On x86 only 64-bit longs are returned in multiple registers
-        return varTypeIsLong(info.compRetNativeType);
+        // On x86, 64-bit longs and structs are returned in multiple registers
+        return varTypeIsLong(info.compRetNativeType) ||
+               (varTypeIsStruct(info.compRetNativeType) && (info.compRetBuffArg == BAD_VAR_NUM));
 #else  // targets: X64-UNIX, ARM64 or ARM32
         // On all other targets that support multireg return values:
         // Methods returning a struct in multiple registers have a return value of TYP_STRUCT.
@@ -9375,8 +9420,9 @@ public:
     {
 #if FEATURE_MULTIREG_RET
 #if defined(TARGET_X86)
-        // On x86 only 64-bit longs are returned in multiple registers
-        return varTypeIsLong(info.compRetNativeType);
+        // On x86, 64-bit longs and structs are returned in multiple registers
+        return varTypeIsLong(info.compRetNativeType) ||
+               (varTypeIsStruct(info.compRetNativeType) && (info.compRetBuffArg == BAD_VAR_NUM));
 #else // targets: X64-UNIX, ARM64 or ARM32
 #if defined(TARGET_ARM64)
         // TYP_SIMD* are returned in one register.
@@ -9530,6 +9576,9 @@ public:
     // class handle as an out parameter if the type is a value class.  Returns the
     // size of the type these describe.
     unsigned compGetTypeSize(CorInfoType cit, CORINFO_CLASS_HANDLE clsHnd);
+
+    // Gets the calling convention the method's entry point should have.
+    CorInfoCallConvExtension compMethodInfoGetEntrypointCallConv(CORINFO_METHOD_INFO* mthInfo);
 
 #ifdef DEBUG
     // Components used by the compiler may write unit test suites, and
@@ -10436,6 +10485,7 @@ public:
             case GT_NULLCHECK:
             case GT_PUTARG_REG:
             case GT_PUTARG_STK:
+            case GT_PUTARG_TYPE:
             case GT_RETURNTRAP:
             case GT_NOP:
             case GT_RETURN:

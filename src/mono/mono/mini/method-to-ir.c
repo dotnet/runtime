@@ -3489,6 +3489,22 @@ method_needs_stack_walk (MonoCompile *cfg, MonoMethod *cmethod)
 		if (!strcmp (cmethod->name, "GetType"))
 			return TRUE;
 	}
+
+#if defined(ENABLE_NETCORE)
+	/*
+	 * In corelib code, methods which need to do a stack walk declare a StackCrawlMark local and pass it as an
+	 * arguments until it reaches an icall. Its hard to detect which methods do that especially with
+	 * StackCrawlMark.LookForMyCallersCaller, so for now, just hardcode the classes which contain the public
+	 * methods whose caller is needed.
+	 */
+	if (mono_is_corlib_image (m_class_get_image (cmethod->klass))) {
+		const char *cname = m_class_get_name (cmethod->klass);
+		if (!strcmp (cname, "Assembly") ||
+			!strcmp (cname, "AssemblyLoadContext") ||
+			(!strcmp (cname, "Activator")))
+			return TRUE;
+	}
+#endif
 	return FALSE;
 }
 

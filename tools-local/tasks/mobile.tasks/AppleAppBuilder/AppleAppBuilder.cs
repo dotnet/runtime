@@ -13,6 +13,12 @@ using Microsoft.Build.Utilities;
 public class AppleAppBuilderTask : Task
 {
     /// <summary>
+    /// The Apple OS we are targeting (iOS or tvOS)
+    /// </summary>
+    [Required]
+    public string TargetOS { get; set; } = Utils.TargetOS.iOS;
+
+    /// <summary>
     /// ProjectName is used as an app name, bundleId and xcode project name
     /// </summary>
     [Required]
@@ -99,7 +105,7 @@ public class AppleAppBuilderTask : Task
     /// <summary>
     /// Prefer FullAOT mode for Simulator over JIT
     /// </summary>
-    public bool UseAotForSimulator { get; set; }
+    public bool ForceAOT { get; set; }
 
     /// <summary>
     /// Forces the runtime to use the interpreter
@@ -154,20 +160,21 @@ public class AppleAppBuilderTask : Task
             }
         }
 
-        if (((!ForceInterpreter && (isDevice || UseAotForSimulator)) && !assemblerFiles.Any()))
+        if (((!ForceInterpreter && (isDevice || ForceAOT)) && !assemblerFiles.Any()))
         {
             throw new InvalidOperationException("Need list of AOT files for device builds.");
         }
 
-        if (ForceInterpreter && UseAotForSimulator)
+        if (ForceInterpreter && ForceAOT)
         {
             throw new InvalidOperationException("Interpreter and AOT cannot be enabled at the same time");
         }
 
         if (GenerateXcodeProject)
         {
-            XcodeProjectPath = Xcode.GenerateXCode(ProjectName, MainLibraryFileName, assemblerFiles,
-                AppDir, binDir, MonoRuntimeHeaders, !isDevice, UseConsoleUITemplate, UseAotForSimulator, ForceInterpreter, Optimized, NativeMainSource);
+            Xcode generator = new Xcode(TargetOS);
+            XcodeProjectPath = generator.GenerateXCode(ProjectName, MainLibraryFileName, assemblerFiles,
+                AppDir, binDir, MonoRuntimeHeaders, !isDevice, UseConsoleUITemplate, ForceAOT, ForceInterpreter, Optimized, NativeMainSource);
 
             if (BuildAppBundle)
             {
@@ -178,7 +185,7 @@ public class AppleAppBuilderTask : Task
                 }
                 else
                 {
-                    AppBundlePath = Xcode.BuildAppBundle(XcodeProjectPath, Arch, Optimized, DevTeamProvisioning);
+                    AppBundlePath = generator.BuildAppBundle(XcodeProjectPath, Arch, Optimized, DevTeamProvisioning);
                 }
             }
         }

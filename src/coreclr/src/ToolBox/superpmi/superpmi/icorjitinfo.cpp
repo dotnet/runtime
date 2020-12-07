@@ -171,15 +171,10 @@ void MyICJI::getMethodVTableOffset(CORINFO_METHOD_HANDLE method,                
     jitInstance->mc->repGetMethodVTableOffset(method, offsetOfIndirection, offsetAfterIndirection, isRelative);
 }
 
-// Find the virtual method in implementingClass that overrides virtualMethod.
-// Return null if devirtualization is not possible.
-CORINFO_METHOD_HANDLE MyICJI::resolveVirtualMethod(CORINFO_METHOD_HANDLE  virtualMethod,
-                                                   CORINFO_CLASS_HANDLE   implementingClass,
-                                                   CORINFO_CONTEXT_HANDLE ownerType)
+bool MyICJI::resolveVirtualMethod(CORINFO_DEVIRTUALIZATION_INFO * info)
 {
     jitInstance->mc->cr->AddCall("resolveVirtualMethod");
-    CORINFO_METHOD_HANDLE result =
-        jitInstance->mc->repResolveVirtualMethod(virtualMethod, implementingClass, ownerType);
+    bool result = jitInstance->mc->repResolveVirtualMethod(info);
     return result;
 }
 
@@ -1803,6 +1798,19 @@ HRESULT MyICJI::getMethodBlockCounts(CORINFO_METHOD_HANDLE ftnHnd,
 {
     jitInstance->mc->cr->AddCall("getMethodBlockCounts");
     return jitInstance->mc->repGetMethodBlockCounts(ftnHnd, pCount, pBlockCounts, pNumRuns);
+}
+
+// Get the likely implementing class for a virtual call or interface call made by ftnHnd
+// at the indicated IL offset. baseHnd is the interface class or base class for the method
+// being called. 
+CORINFO_CLASS_HANDLE MyICJI::getLikelyClass(CORINFO_METHOD_HANDLE ftnHnd,
+                                            CORINFO_CLASS_HANDLE  baseHnd,
+                                            UINT32                ilOffset,
+                                            UINT32*               pLikelihood,
+                                            UINT32*               pNumberOfClasses)
+{
+    jitInstance->mc->cr->AddCall("getLikelyClass");
+    return jitInstance->mc->repGetLikelyClass(ftnHnd, baseHnd, ilOffset, pLikelihood, pNumberOfClasses);
 }
 
 // Associates a native call site, identified by its offset in the native code stream, with

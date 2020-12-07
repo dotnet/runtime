@@ -5282,6 +5282,12 @@ void MethodTable::DoFullyLoad(Generics::RecursionGraph * const pVisited,  const 
     CONSISTENCY_CHECK(IsRestored_NoLogging());
     CONSISTENCY_CHECK(!HasApproxParent());
 
+    if ((level == CLASS_LOADED) && !IsSharedByGenericInstantiations())
+    {
+        _ASSERTE(GetLoadLevel() >= CLASS_DEPENDENCIES_LOADED);
+        ClassLoader::ValidateMethodsWithCovariantReturnTypes(this);
+    }
+
     if (IsArray())
     {
         Generics::RecursionGraph newVisited(pVisited, TypeHandle(this));
@@ -9150,7 +9156,7 @@ BOOL MethodTable::HasExplicitOrImplicitPublicDefaultConstructor()
 }
 
 //==========================================================================================
-MethodDesc *MethodTable::GetDefaultConstructor()
+MethodDesc *MethodTable::GetDefaultConstructor(BOOL forceBoxedEntryPoint /* = FALSE */)
 {
     WRAPPER_NO_CONTRACT;
     _ASSERTE(HasDefaultConstructor());
@@ -9161,7 +9167,7 @@ MethodDesc *MethodTable::GetDefaultConstructor()
     // returns pCanonMD immediately.
     return MethodDesc::FindOrCreateAssociatedMethodDesc(pCanonMD,
                                                         this,
-                                                        FALSE /* no BoxedEntryPointStub */,
+                                                        forceBoxedEntryPoint,
                                                         Instantiation(), /* no method instantiation */
                                                         FALSE /* no allowInstParam */);
 }

@@ -601,6 +601,9 @@
   <data name="Arg_NoAccessSpec" xml:space="preserve">
     <value>Must specify binding flags describing the invoke operation required (BindingFlags.InvokeMethod CreateInstance GetField SetField GetProperty SetProperty).</value>
   </data>
+  <data name="Arg_NoDefCTorWithoutTypeName" xml:space="preserve">
+    <value>No parameterless constructor defined.</value>
+  </data>
   <data name="Arg_NoDefCTor" xml:space="preserve">
     <value>No parameterless constructor defined for type '{0}'.</value>
   </data>
@@ -3747,5 +3750,8 @@
   </data>
   <data name="NotSupported_CodeBase" xml:space="preserve">
     <value>CodeBase is not supported on assemblies loaded from a single-file bundle.</value>
+  </data>
+  <data name="Activator_CannotCreateInstance" xml:space="preserve">
+    <value>Cannot dynamically create an instance of type '{0}'. Reason: {1}</value>
   </data>
 </root>

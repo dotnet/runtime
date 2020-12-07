@@ -732,17 +732,8 @@ public:
             unsigned * pOffsetAfterIndirection,
             bool * isRelative);
 
-    CORINFO_METHOD_HANDLE resolveVirtualMethod(
-        CORINFO_METHOD_HANDLE virtualMethod,
-        CORINFO_CLASS_HANDLE implementingClass,
-        CORINFO_CONTEXT_HANDLE ownerType
-        );
-
-    CORINFO_METHOD_HANDLE resolveVirtualMethodHelper(
-        CORINFO_METHOD_HANDLE virtualMethod,
-        CORINFO_CLASS_HANDLE implementingClass,
-        CORINFO_CONTEXT_HANDLE ownerType
-        );
+    bool resolveVirtualMethod(CORINFO_DEVIRTUALIZATION_INFO * info);
+    bool resolveVirtualMethodHelper(CORINFO_DEVIRTUALIZATION_INFO * info);
 
     CORINFO_METHOD_HANDLE getUnboxedEntry(
         CORINFO_METHOD_HANDLE ftn,
@@ -1045,6 +1036,14 @@ public:
             UINT32 *              pNumRuns
             );
 
+    CORINFO_CLASS_HANDLE getLikelyClass(
+            CORINFO_METHOD_HANDLE ftnHnd,
+            CORINFO_CLASS_HANDLE  baseHnd,
+            UINT32                ilOffset,            
+            UINT32 *              pLikelihood,
+            UINT32 *              pNumberOfClasses
+            );
+
     void recordCallSite(
             ULONG                 instrOffset,  /* IN */
             CORINFO_SIG_INFO *    callSig,      /* IN */
@@ -1246,6 +1245,14 @@ public:
         BlockCounts **                pBlockCounts,  // pointer to array of <ILOffset, ExecutionCount> tuples
         UINT32 *                      pNumRuns
     );
+
+    CORINFO_CLASS_HANDLE getLikelyClass(
+            CORINFO_METHOD_HANDLE ftnHnd,
+            CORINFO_CLASS_HANDLE  baseHnd,
+            UINT32                ilOffset,
+            UINT32 *              pLikelihood,
+            UINT32 *              pNumberOfClasses
+            );
 
     void recordCallSite(
             ULONG                     instrOffset,  /* IN */

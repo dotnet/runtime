@@ -30,7 +30,7 @@ const SString &BundleFileLocation::Path() const
     return Bundle::AppBundle->Path();
 }
 
-Bundle::Bundle(LPCSTR bundlePath, BundleProbe *probe)
+Bundle::Bundle(LPCSTR bundlePath, BundleProbeFn *probe)
 {
     STANDARD_VM_CONTRACT;
 
