@@ -34,6 +34,7 @@
 #include "strongnameholders.h"
 #include "ecall.h"
 #include "fieldmarshaler.h"
+#include "pinvokeoverride.h"
 
 #include <formattype.h>
 #include "../md/compiler/custattr.h"
@@ -4230,7 +4231,7 @@ void NDirect::PopulateNDirectMethodDesc(NDirectMethodDesc* pNMD, PInvokeStaticSi
     if (callConv == pmCallConvThiscall)
         ndirectflags |= NDirectMethodDesc::kThisCall;
 
-    if (pNMD->GetLoaderModule()->IsSystem() && strcmp(szLibName, "QCall") == 0)
+    if (pNMD->GetLoaderModule()->IsSystem() && (strcmp(szLibName, "QCall") == 0))
     {
         ndirectflags |= NDirectMethodDesc::kIsQCall;
     }
@@ -6224,7 +6225,6 @@ namespace
             // this matches exactly the names in  Interop.Libraries.cs 
             static const LPCWSTR toRedirect[] = {
                 W("libSystem.Native"),
-                W("libSystem.IO.Compression.Native"),
                 W("libSystem.Net.Security.Native"),
                 W("libSystem.Security.Cryptography.Native.OpenSsl")
             };
@@ -6508,6 +6508,15 @@ VOID NDirect::NDirectLink(NDirectMethodDesc *pMD)
 
     // Loading unmanaged dlls can trigger dllmains which certainly count as code execution!
     pMD->EnsureActive();
+
+    {
+        LPVOID pvTarget = (LPVOID)PInvokeOverride::GetMethodImpl(pMD->GetLibNameRaw(), pMD->GetEntrypointName());
+        if (pvTarget != NULL)
+        {
+            pMD->SetNDirectTarget(pvTarget);
+            return;
+        }
+    }
 
     LoadLibErrorTracker errorTracker;
 

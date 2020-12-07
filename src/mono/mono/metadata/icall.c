@@ -4610,7 +4610,7 @@ method_nonpublic (MonoMethod* method, gboolean start_klass)
 {
 	switch (method->flags & METHOD_ATTRIBUTE_MEMBER_ACCESS_MASK) {
 		case METHOD_ATTRIBUTE_ASSEM:
-			return (start_klass || mono_defaults.generic_ilist_class);
+			return TRUE;
 		case METHOD_ATTRIBUTE_PRIVATE:
 			return start_klass;
 		case METHOD_ATTRIBUTE_PUBLIC:
@@ -5153,11 +5153,7 @@ ves_icall_System_Reflection_Assembly_InternalGetType (MonoReflectionAssemblyHand
 		g_free (str);
 		mono_reflection_free_type_info (&info);
 		if (throwOnError) {
-			/* 1.0 and 2.0 throw different exceptions */
-			if (mono_defaults.generic_ilist_class)
-				mono_error_set_argument (error, NULL, "Type names passed to Assembly.GetType() must not specify an assembly.");
-			else
-				mono_error_set_type_load_name (error, g_strdup (""), g_strdup (""), "Type names passed to Assembly.GetType() must not specify an assembly.");
+			mono_error_set_argument (error, NULL, "Type names passed to Assembly.GetType() must not specify an assembly.");
 			goto fail;
 		}
 		return MONO_HANDLE_CAST (MonoReflectionType, NULL_HANDLE);

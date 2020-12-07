@@ -383,5 +383,4 @@ struct CORCOMPILE_DEPENDENCY;
 typedef GUID CORCOMPILE_NGEN_SIGNATURE;
 
 #endif  // _CORPRIV_H_
-// EOF =======================================================================
 

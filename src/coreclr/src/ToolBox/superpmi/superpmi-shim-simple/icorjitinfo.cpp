@@ -105,12 +105,10 @@ void interceptor_ICJI::getMethodVTableOffset(
     original_ICorJitInfo->getMethodVTableOffset(method, offsetOfIndirection, offsetAfterIndirection, isRelative);
 }
 
-CORINFO_METHOD_HANDLE interceptor_ICJI::resolveVirtualMethod(
-          CORINFO_METHOD_HANDLE virtualMethod,
-          CORINFO_CLASS_HANDLE implementingClass,
-          CORINFO_CONTEXT_HANDLE ownerType)
+bool interceptor_ICJI::resolveVirtualMethod(
+          CORINFO_DEVIRTUALIZATION_INFO* info)
 {
-    return original_ICorJitInfo->resolveVirtualMethod(virtualMethod, implementingClass, ownerType);
+    return original_ICorJitInfo->resolveVirtualMethod(info);
 }
 
 CORINFO_METHOD_HANDLE interceptor_ICJI::getUnboxedEntry(
