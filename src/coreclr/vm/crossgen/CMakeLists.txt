@@ -200,7 +200,7 @@ if(FEATURE_READYTORUN)
 endif(FEATURE_READYTORUN)
 
 include_directories(BEFORE ..)
-include_directories(${CLR_DIR}/src/gc)
+include_directories(${CLR_DIR}/gc)
 include_directories(../${ARCH_SOURCES_DIR})
 
 if(CLR_CMAKE_TARGET_ARCH_AMD64)

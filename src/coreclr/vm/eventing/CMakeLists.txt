@@ -22,7 +22,7 @@ if (NEED_XPLAT_HEADER)
     ${GENERATED_INCLUDE_DIR}/clrxplatevents.h)
 endif()
 
-set(GENEVENTING_SCRIPT ${CLR_DIR}/src/scripts/genEventing.py)
+set(GENEVENTING_SCRIPT ${CLR_DIR}/scripts/genEventing.py)
 
 add_custom_target(eventing_headers
   ${PYTHON_EXECUTABLE} ${GENEVENTING_SCRIPT} --man ${EVENT_MANIFEST} --inc ${GENERATED_INCLUDE_DIR} --dummy ${GENERATED_INCLUDE_DIR}/etmdummy.h ${NONEXTERN_ARG} ${NOXPLATHEADER_ARG}

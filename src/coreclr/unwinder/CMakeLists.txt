@@ -1,11 +1,11 @@
 include_directories(BEFORE ${VM_DIR})
 include_directories(BEFORE ${VM_DIR}/${ARCH_SOURCES_DIR})
 include_directories(BEFORE ${CMAKE_CURRENT_SOURCE_DIR})
-include_directories(BEFORE ${CLR_DIR}/src/unwinder)
-include_directories(${CLR_DIR}/src/debug/ee)
-include_directories(${CLR_DIR}/src/gc)
-include_directories(${CLR_DIR}/src/gcdump)
-include_directories(${CLR_DIR}/src/debug/daccess)
+include_directories(BEFORE ${CLR_DIR}/unwinder)
+include_directories(${CLR_DIR}/debug/ee)
+include_directories(${CLR_DIR}/gc)
+include_directories(${CLR_DIR}/gcdump)
+include_directories(${CLR_DIR}/debug/daccess)
 
 set(UNWINDER_SOURCES
     unwinder.cpp

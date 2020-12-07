@@ -104,7 +104,7 @@
   </PropertyGroup>
 
   <!-- Compilation options -->
-  <Import Project="../../clr.featuredefines.props" />
+  <Import Project="../clr.featuredefines.props" />
 
   <!-- Sources -->
   <ItemGroup>
@@ -320,8 +320,8 @@
 
   <!-- Setup eventing file generation -->
   <ItemGroup>
-    <EventingGenerationScript Include="$(CoreClrProjectRoot)/src/scripts/genRuntimeEventSources.py" />
-    <EventManifestFile Include="$(CoreClrProjectRoot)/src/vm/ClrEtwAll.man" />
+    <EventingGenerationScript Include="$(CoreClrProjectRoot)scripts/genRuntimeEventSources.py" />
+    <EventManifestFile Include="$(CoreClrProjectRoot)vm/ClrEtwAll.man" />
     <EventingSourceFile Include="$(IntermediateOutputPath)..\..\..\Eventing\$(TargetArchitecture)\$(Configuration)\NativeRuntimeEventSource.CoreCLR.cs" Condition="'$(FeaturePerfTracing)' == 'true' ">
       <Link>src\System\Diagnostics\Eventing\Generated\NativeRuntimeEventSource.CoreCLR.cs</Link>
     </EventingSourceFile>

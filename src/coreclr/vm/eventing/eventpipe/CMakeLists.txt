@@ -2,7 +2,7 @@ include(FindPythonInterp)
 
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
-set(GENERATE_SCRIPT ${CLR_DIR}/src/scripts/genEventPipe.py)
+set(GENERATE_SCRIPT ${CLR_DIR}/scripts/genEventPipe.py)
 set(GENERATE_COMMAND ${PYTHON_EXECUTABLE} ${GENERATE_SCRIPT} --man ${EVENT_MANIFEST} --exc ${EVENT_EXCLUSIONS} --intermediate ${CMAKE_CURRENT_BINARY_DIR} ${NONEXTERN_ARG})
 
 execute_process(

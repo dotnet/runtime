@@ -1,6 +1,6 @@
 project(COREPAL)
 
-include(../../clrfeatures.cmake)
+include(../clrfeatures.cmake)
 
 include_directories(${COREPAL_SOURCE_DIR}/inc)
 include_directories(${COREPAL_SOURCE_DIR}/src)

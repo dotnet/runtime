@@ -6,7 +6,7 @@ if(CLR_CMAKE_HOST_WIN32)
 endif(CLR_CMAKE_HOST_WIN32)
 
 if(CLR_CMAKE_HOST_WIN32 OR CLR_CMAKE_HOST_OSX)
-  include_directories(${CLR_DIR}/src/inc/llvm)
+  include_directories(${CLR_DIR}/inc/llvm)
 endif(CLR_CMAKE_HOST_WIN32 OR CLR_CMAKE_HOST_OSX)
 
 add_definitions(-DPAL_STDCPP_COMPAT)

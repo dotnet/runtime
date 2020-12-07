@@ -1,7 +1,7 @@
 add_definitions(-DFEATURE_NO_HOST)
 add_definitions(-DSELF_NO_HOST)
 
-include_directories(${CLR_DIR}/src/debug/shim)
+include_directories(${CLR_DIR}/debug/shim)
 
 set(DBGSHIM_SOURCES
     dbgshim.cpp

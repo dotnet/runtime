@@ -1,5 +1,5 @@
 include(FindPythonInterp)
-set (GENERATE_SCRIPT ${CLR_DIR}/src/scripts/genLttngProvider.py)
+set (GENERATE_SCRIPT ${CLR_DIR}/scripts/genLttngProvider.py)
 
 set(GENERATE_COMMAND ${PYTHON_EXECUTABLE} ${GENERATE_SCRIPT} --man ${EVENT_MANIFEST} --intermediate ${CMAKE_CURRENT_BINARY_DIR})
 

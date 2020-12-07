@@ -1,6 +1,6 @@
 include(FindPythonInterp)
 
-set(ETW_PROVIDER_SCRIPT ${CLR_DIR}/src/scripts/genEtwProvider.py)
+set(ETW_PROVIDER_SCRIPT ${CLR_DIR}/scripts/genEtwProvider.py)
 
 set (ETW_PROVIDER_OUTPUTS
   ${GENERATED_INCLUDE_DIR}/etw/ClrEtwAll.h

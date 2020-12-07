@@ -4,7 +4,7 @@ set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
 include_directories(BEFORE ${VM_DIR})
 if(CLR_CMAKE_HOST_OSX)
-  include_directories(${CLR_DIR}/src/inc/llvm)
+  include_directories(${CLR_DIR}/inc/llvm)
 endif(CLR_CMAKE_HOST_OSX)
 
 remove_definitions(-DUNICODE)

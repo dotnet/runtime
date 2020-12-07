@@ -4,7 +4,7 @@ set(SOURCES
 )
 
 set(EVENT_MANIFEST ${VM_DIR}/ClrEtwAll.man)
-set(TEST_GENERATOR ${CLR_DIR}/src/scripts/genEventingTests.py)
+set(TEST_GENERATOR ${CLR_DIR}/scripts/genEventingTests.py)
 
 include(FindPythonInterp)
 

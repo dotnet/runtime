@@ -19,11 +19,11 @@ endif (MSVC)
 
 # Set commonly used directory names
 set(CLR_DIR ${CMAKE_CURRENT_SOURCE_DIR})
-set(VM_DIR ${CMAKE_CURRENT_SOURCE_DIR}/src/vm)
-set(GENERATED_INCLUDE_DIR ${CMAKE_CURRENT_BINARY_DIR}/src/inc)
+set(VM_DIR ${CMAKE_CURRENT_SOURCE_DIR}/vm)
+set(GENERATED_INCLUDE_DIR ${CMAKE_CURRENT_BINARY_DIR}/inc)
 set(GENERATED_EVENTING_DIR ${CMAKE_CURRENT_BINARY_DIR}/Eventing)
 set(VERSION_FILE_PATH "${CMAKE_BINARY_DIR}/version.c")
-set(PAL_REDEFINES_FILE ${CMAKE_CURRENT_SOURCE_DIR}/src/dlls/mscordac/palredefines.S)
+set(PAL_REDEFINES_FILE ${CMAKE_CURRENT_SOURCE_DIR}/dlls/mscordac/palredefines.S)
 
 # Avoid logging when skipping up-to-date copies
 set(CMAKE_INSTALL_MESSAGE LAZY)
@@ -79,24 +79,24 @@ if(CLR_CMAKE_HOST_UNIX)
         endif()
     endif()
 
-    add_subdirectory(src/pal)
-    add_subdirectory(src/hosts)
+    add_subdirectory(pal)
+    add_subdirectory(hosts)
 else(CLR_CMAKE_HOST_UNIX)
     if(CLR_CMAKE_TARGET_UNIX)
-        add_subdirectory(src/pal/src/libunwind)
+        add_subdirectory(pal/src/libunwind)
     endif(CLR_CMAKE_TARGET_UNIX)
 endif(CLR_CMAKE_HOST_UNIX)
 
 # Add this subdir. We install the headers for the jit.
-add_subdirectory(src/pal/prebuilt/inc)
+add_subdirectory(pal/prebuilt/inc)
 
-add_subdirectory(src/debug/debug-pal)
+add_subdirectory(debug/debug-pal)
 
 if(CLR_CMAKE_TARGET_WIN32 AND CLR_CMAKE_BUILD_SUBSET_RUNTIME)
-  add_subdirectory(src/gc/sample)
+  add_subdirectory(gc/sample)
 endif()
 
-add_subdirectory(src/tools/aot/jitinterface)
+add_subdirectory(tools/aot/jitinterface)
 
 # Above projects do not build with these compile options
 # All of the compiler options are specified in file compileoptions.cmake
@@ -116,20 +116,20 @@ include(clrdefinitions.cmake)
 # Include directory directives
 #-------------------------------------
 # Include the basic prebuilt headers - required for getting fileversion resource details.
-include_directories("src/pal/prebuilt/inc")
+include_directories("pal/prebuilt/inc")
 include_directories("../../artifacts/obj/coreclr")
 
 if(FEATURE_STANDALONE_GC)
   add_definitions(-DFEATURE_STANDALONE_GC)
   if (CLR_CMAKE_BUILD_SUBSET_RUNTIME)
-    add_subdirectory(src/gc)
+    add_subdirectory(gc)
   endif (CLR_CMAKE_BUILD_SUBSET_RUNTIME)
 endif(FEATURE_STANDALONE_GC)
 
 if (CLR_CMAKE_HOST_UNIX)
-  include_directories("src/pal/inc")
-  include_directories("src/pal/inc/rt")
-  include_directories("src/pal/src/safecrt")
+  include_directories("pal/inc")
+  include_directories("pal/inc/rt")
+  include_directories("pal/src/safecrt")
 endif (CLR_CMAKE_HOST_UNIX)
 
 #------------------------------

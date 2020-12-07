@@ -3,9 +3,9 @@ add_definitions(-DFEATURE_NO_HOST)
 include_directories(BEFORE ${VM_DIR})
 include_directories(BEFORE ${VM_DIR}/${ARCH_SOURCES_DIR})
 include_directories(BEFORE ${CMAKE_CURRENT_SOURCE_DIR})
-include_directories(${CLR_DIR}/src/debug/ee)
-include_directories(${CLR_DIR}/src/gcdump)
-include_directories(${CLR_DIR}/src/interop/inc)
+include_directories(${CLR_DIR}/debug/ee)
+include_directories(${CLR_DIR}/gcdump)
+include_directories(${CLR_DIR}/interop/inc)
 
 if(CLR_CMAKE_HOST_UNIX)
   include_directories(${GENERATED_INCLUDE_DIR})
@@ -52,7 +52,7 @@ if(CLR_CMAKE_HOST_OSX OR CLR_CMAKE_HOST_FREEBSD OR CLR_CMAKE_HOST_NETBSD OR CLR_
     DEPENDS coreclr
     VERBATIM
     COMMAND_EXPAND_LISTS
-    COMMAND sh ${CLR_DIR}/src/pal/tools/gen-dactable-rva.sh ${args}
+    COMMAND sh ${CLR_DIR}/pal/tools/gen-dactable-rva.sh ${args}
     COMMENT Generating ${GENERATED_INCLUDE_DIR}/dactablerva.h
   )
 
