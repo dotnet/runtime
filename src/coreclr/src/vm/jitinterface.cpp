@@ -442,11 +442,9 @@ CEEInfo::ConvToJitSig(
     DWORD                 cbSig,
     CORINFO_MODULE_HANDLE scopeHnd,
     mdToken               token,
-    CORINFO_SIG_INFO *    sigRet,
-    MethodDesc *          pContextMD,
-    bool                  localSig,
-    TypeHandle            contextType,
-    bool                  checkUnmanagedCallersOnly)
+    SignatureContext      context,
+    ConvToJitSigFlags     flags,
+    CORINFO_SIG_INFO *    sigRet)
 {
     CONTRACTL {
         THROWS;
@@ -456,15 +454,15 @@ CEEInfo::ConvToJitSig(
     SigTypeContext typeContext;
 
     uint32_t sigRetFlags = 0;
-    if (pContextMD)
+    if (context.methodContext)
     {
-        SigTypeContext::InitTypeContext(pContextMD, contextType, &typeContext);
-        if (pContextMD->ShouldSuppressGCTransition())
+        SigTypeContext::InitTypeContext(context.methodContext, context.typeContext, &typeContext);
+        if (context.methodContext->ShouldSuppressGCTransition())
             sigRetFlags |= CORINFO_SIGFLAG_SUPPRESS_GC_TRANSITION;
     }
     else
     {
-        SigTypeContext::InitTypeContext(contextType, &typeContext);
+        SigTypeContext::InitTypeContext(context.typeContext, &typeContext);
     }
 
     static_assert_no_msg(CORINFO_CALLCONV_DEFAULT == (CorInfoCallConv) IMAGE_CEE_CS_CALLCONV_DEFAULT);
@@ -487,7 +485,7 @@ CEEInfo::ConvToJitSig(
 
     SigPointer sig(pSig, cbSig);
 
-    if (!localSig)
+    if ((flags & CONV_TO_JITSIG_FLAGS_LOCALSIG) == 0)
     {
         // This is a method signature which includes calling convention, return type,
         // arguments, etc
@@ -532,14 +530,15 @@ CEEInfo::ConvToJitSig(
             }
         }
 #if !defined(TARGET_X86)
-        else if (checkUnmanagedCallersOnly && sigRet->callConv == CORINFO_CALLCONV_DEFAULT &&
-            pContextMD && pContextMD->HasUnmanagedCallersOnlyAttribute())
+        else if ((flags & CONV_TO_JITSIG_FLAGS_CHECK_UNMANAGEDCALLERSONLY) == 0
+            && sigRet->callConv == CORINFO_CALLCONV_DEFAULT
+            && context.methodContext && context.methodContext->HasUnmanagedCallersOnlyAttribute())
         {
 #ifdef CROSSGEN_COMPILE
             _ASSERTE_MSG(false, "UnmanagedCallersOnly methods are not supported in crossgen and should be rejected before getting here.");
 #else
             CorPinvokeMap unmanagedCallConv;
-            if (TryGetCallingConventionFromUnmanagedCallersOnly(pContextMD, &unmanagedCallConv))
+            if (TryGetCallingConventionFromUnmanagedCallersOnly(context.methodContext, &unmanagedCallConv))
             {
                 switch (unmanagedCallConv)
                 {
@@ -1913,10 +1912,9 @@ CEEInfo::findCallSiteSig(
         cbSig,
         scopeHnd,
         sigMethTok,
-        sigRet,
-        GetMethodFromContext(context),
-        false,
-        GetTypeFromContext(context));
+        CEEInfo::SignatureContext(this, context),
+        CONV_TO_JITSIG_FLAGS_NONE,
+        sigRet);
     EE_TO_JIT_TRANSITION();
 } // CEEInfo::findCallSiteSig
 
@@ -1962,10 +1960,9 @@ CEEInfo::findSig(
         cbSig,
         scopeHnd,
         sigTok,
-        sigRet,
-        GetMethodFromContext(context),
-        false,
-        GetTypeFromContext(context));
+        CEEInfo::SignatureContext(this, context),
+        CONV_TO_JITSIG_FLAGS_NONE,
+        sigRet);
 
     EE_TO_JIT_TRANSITION();
 } // CEEInfo::findSig
@@ -7797,11 +7794,9 @@ getMethodInfoHelper(
         cbSig,
         GetScopeHandle(ftn),
         mdTokenNil,
-        &methInfo->args,
-        ftn,
-        false,
-        TypeHandle(),
-        true);
+        CEEInfo::SignatureContext(ftn),
+        CEEInfo::CONV_TO_JITSIG_FLAGS_CHECK_UNMANAGEDCALLERSONLY,
+        &methInfo->args);
 
     // Shared generic or static per-inst methods and shared methods on generic structs
     // take an extra argument representing their instantiation
@@ -7818,9 +7813,9 @@ getMethodInfoHelper(
         cbLocalSig,
         GetScopeHandle(ftn),
         mdTokenNil,
-        &methInfo->locals,
-        ftn,
-        true);
+        CEEInfo::SignatureContext(ftn),
+        CEEInfo::CONV_TO_JITSIG_FLAGS_LOCALSIG,
+        &methInfo->locals);
 
 } // getMethodInfoHelper
 
@@ -8660,10 +8655,9 @@ CEEInfo::getMethodSigInternal(
         cbSig,
         GetScopeHandle(ftn),
         mdTokenNil,
-        sigRet,
-        ftn,
-        false,
-        (TypeHandle)owner);
+        CEEInfo::SignatureContext(ftn, (TypeHandle)owner),
+        CONV_TO_JITSIG_FLAGS_NONE,
+        sigRet);
 
     //@GENERICS:
     // Shared generic methods and shared methods on generic structs take an extra argument representing their instantiation
