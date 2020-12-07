@@ -315,6 +315,7 @@
     <Rule Id="SA1137" Action="None" />          <!-- Elements should have the same indentation -->
     <Rule Id="SA1139" Action="None" />          <!-- Use literal suffix notation instead of casting -->
     <Rule Id="SA1141" Action="None" />          <!-- Use tuple syntax -->
+    <Rule Id="SA1142" Action="None" />          <!-- Refer to tuple elements by name -->
     <Rule Id="SA1200" Action="None" />          <!-- Using directive should appear within a namespace declaration -->
     <Rule Id="SA1201" Action="None" />          <!-- Elements should appear in the correct order -->
     <Rule Id="SA1202" Action="None" />          <!-- Elements should be ordered by access -->

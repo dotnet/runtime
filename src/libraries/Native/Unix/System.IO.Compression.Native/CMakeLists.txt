@@ -2,14 +2,12 @@ project(System.IO.Compression.Native C)
 
 if (CLR_CMAKE_TARGET_BROWSER)
     add_definitions(-s USE_ZLIB)
-elseif (CLR_CMAKE_TARGET_ANDROID)
-    # need special case here since we want to link against libz.so but find_package() would resolve libz.a
-    set(ZLIB_LIBRARIES z)
-elseif (CLR_CMAKE_TARGET_SUNOS)
-    set(ZLIB_LIBRARIES z m)
-else ()
-    find_package(ZLIB REQUIRED)
-endif ()
+endif()
+
+include(${CMAKE_CURRENT_LIST_DIR}/extra_libs.cmake)
+
+set(NATIVE_LIBS_EXTRA)
+append_extra_compression_libs(NATIVE_LIBS_EXTRA)
 
 set(NATIVECOMPRESSION_SOURCES
     ../../AnyOS/zlib/pal_zlib.c
@@ -52,6 +50,7 @@ if (NOT CLR_CMAKE_TARGET_BROWSER)
         ../../AnyOS/brotli/enc/metablock.c
         ../../AnyOS/brotli/enc/static_dict.c
         ../../AnyOS/brotli/enc/utf8_util.c
+        ../../AnyOS/System.IO.Compression.Native/entrypoints.c
     )
 
     # Disable implicit fallthrough warning for Brotli
@@ -66,7 +65,7 @@ if (GEN_SHARED_LIB)
     )
 
     target_link_libraries(System.IO.Compression.Native
-        ${ZLIB_LIBRARIES}
+        ${NATIVE_LIBS_EXTRA}
     )
     install_with_stripped_symbols (System.IO.Compression.Native PROGRAMS .)
 endif ()
@@ -78,4 +77,4 @@ add_library(System.IO.Compression.Native-Static
 
 set_target_properties(System.IO.Compression.Native-Static PROPERTIES OUTPUT_NAME System.IO.Compression.Native  CLEAN_DIRECT_OUTPUT 1)
 
-install (TARGETS System.IO.Compression.Native-Static DESTINATION .)
+install (TARGETS System.IO.Compression.Native-Static DESTINATION ${STATIC_LIB_DESTINATION})

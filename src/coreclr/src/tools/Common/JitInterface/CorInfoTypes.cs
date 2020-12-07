@@ -1029,6 +1029,27 @@ namespace Internal.JitInterface
         public bool wrapperDelegateInvoke { get { return _wrapperDelegateInvoke != 0; } set { _wrapperDelegateInvoke = value ? (byte)1 : (byte)0; } }
     }
 
+    public unsafe struct CORINFO_DEVIRTUALIZATION_INFO
+    {
+        //
+        // [In] arguments of resolveVirtualMethod
+        //
+        public CORINFO_METHOD_STRUCT_* virtualMethod;
+        public CORINFO_CLASS_STRUCT_* objClass;
+        public CORINFO_CONTEXT_STRUCT* context;
+
+        //
+        // [Out] results of resolveVirtualMethod.
+        // - devirtualizedMethod is set to MethodDesc of devirt'ed method iff we were able to devirtualize.
+        //      invariant is `resolveVirtualMethod(...) == (devirtualizedMethod != nullptr)`.
+        // - requiresInstMethodTableArg is set to TRUE if the devirtualized method requires a type handle arg.
+        // - exactContext is set to wrapped CORINFO_CLASS_HANDLE of devirt'ed method table.
+        //
+        public CORINFO_METHOD_STRUCT_* devirtualizedMethod;
+        public byte _requiresInstMethodTableArg;
+        public bool requiresInstMethodTableArg { get { return _requiresInstMethodTableArg != 0; } set { _requiresInstMethodTableArg = value ? 1 : 0; } }
+        public CORINFO_CONTEXT_STRUCT* exactContext;
+    }
 
     //----------------------------------------------------------------------------
     // getFieldInfo and CORINFO_FIELD_INFO: The EE instructs the JIT about how to access a field

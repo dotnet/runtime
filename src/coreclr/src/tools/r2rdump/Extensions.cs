@@ -250,7 +250,7 @@ namespace R2RDump
         {
             if (theThis.StackPop != GCRefMap.InvalidStackPop)
             {
-                writer.Write(@"POP(0x{StackPop:X}) ");
+                writer.Write($@"POP(0x{theThis.StackPop:X}) ");
             }
             for (int entryIndex = 0; entryIndex < theThis.Entries.Length; entryIndex++)
             {

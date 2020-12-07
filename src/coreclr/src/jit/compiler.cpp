@@ -511,6 +511,55 @@ bool Compiler::isSingleFloat32Struct(CORINFO_CLASS_HANDLE clsHnd)
 }
 #endif // ARM_SOFTFP
 
+#ifdef TARGET_X86
+//---------------------------------------------------------------------------
+// isTrivialPointerSizedStruct:
+//    Check if the given struct type contains only one pointer-sized integer value type
+//
+// Arguments:
+//    clsHnd - the handle for the struct type.
+//
+// Return Value:
+//    true if the given struct type contains only one pointer-sized integer value type,
+//    false otherwise.
+//
+bool Compiler::isTrivialPointerSizedStruct(CORINFO_CLASS_HANDLE clsHnd) const
+{
+    assert(info.compCompHnd->isValueClass(clsHnd));
+    if (info.compCompHnd->getClassSize(clsHnd) != TARGET_POINTER_SIZE)
+    {
+        return false;
+    }
+    for (;;)
+    {
+        // all of class chain must be of value type and must have only one field
+        if (!info.compCompHnd->isValueClass(clsHnd) || info.compCompHnd->getClassNumInstanceFields(clsHnd) != 1)
+        {
+            return false;
+        }
+
+        CORINFO_CLASS_HANDLE* pClsHnd   = &clsHnd;
+        CORINFO_FIELD_HANDLE  fldHnd    = info.compCompHnd->getFieldInClass(clsHnd, 0);
+        CorInfoType           fieldType = info.compCompHnd->getFieldType(fldHnd, pClsHnd);
+
+        var_types vt = JITtype2varType(fieldType);
+
+        if (fieldType == CORINFO_TYPE_VALUECLASS)
+        {
+            clsHnd = *pClsHnd;
+        }
+        else if (varTypeIsI(vt) && !varTypeIsGC(vt))
+        {
+            return true;
+        }
+        else
+        {
+            return false;
+        }
+    }
+}
+#endif // TARGET_X86
+
 //-----------------------------------------------------------------------------
 // getPrimitiveTypeForStruct:
 //     Get the "primitive" type that is is used for a struct
@@ -692,7 +741,7 @@ var_types Compiler::getArgTypeForStruct(CORINFO_CLASS_HANDLE clsHnd,
     assert(structSize != 0);
 
 // Determine if we can pass the struct as a primitive type.
-// Note that on x86 we never pass structs as primitive types (unless the VM unwraps them for us).
+// Note that on x86 we only pass specific pointer-sized structs that satisfy isTrivialPointerSizedStruct checks.
 #ifndef TARGET_X86
 #ifdef UNIX_AMD64_ABI
 
@@ -727,7 +776,11 @@ var_types Compiler::getArgTypeForStruct(CORINFO_CLASS_HANDLE clsHnd,
         // and also examine the clsHnd to see if it is an HFA of count one
         useType = getPrimitiveTypeForStruct(structSize, clsHnd, isVarArg);
     }
-
+#else
+    if (isTrivialPointerSizedStruct(clsHnd))
+    {
+        useType = TYP_I_IMPL;
+    }
 #endif // !TARGET_X86
 
     // Did we change this struct type into a simple "primitive" type?
@@ -875,6 +928,8 @@ var_types Compiler::getArgTypeForStruct(CORINFO_CLASS_HANDLE clsHnd,
 //
 // Arguments:
 //    clsHnd         - the handle for the struct type
+//    callConv       - the calling convention of the function
+//                     that returns this struct.
 //    wbReturnStruct - An "out" argument with information about how
 //                     the struct is to be returned
 //    structSize     - the size of the struct type,
@@ -909,9 +964,10 @@ var_types Compiler::getArgTypeForStruct(CORINFO_CLASS_HANDLE clsHnd,
 //        Whenever this method's return value is TYP_STRUCT it always means
 //         that multiple registers are used to return this struct.
 //
-var_types Compiler::getReturnTypeForStruct(CORINFO_CLASS_HANDLE clsHnd,
-                                           structPassingKind*   wbReturnStruct /* = nullptr */,
-                                           unsigned             structSize /* = 0 */)
+var_types Compiler::getReturnTypeForStruct(CORINFO_CLASS_HANDLE     clsHnd,
+                                           CorInfoCallConvExtension callConv,
+                                           structPassingKind*       wbReturnStruct /* = nullptr */,
+                                           unsigned                 structSize /* = 0 */)
 {
     var_types         useType             = TYP_UNKNOWN;
     structPassingKind howToReturnStruct   = SPK_Unknown; // We must change this before we return
@@ -949,9 +1005,28 @@ var_types Compiler::getReturnTypeForStruct(CORINFO_CLASS_HANDLE clsHnd,
     {
         // Return classification is not always size based...
         canReturnInRegister = structDesc.passedInRegisters;
+        if (!canReturnInRegister)
+        {
+            assert(structDesc.eightByteCount == 0);
+            howToReturnStruct = SPK_ByReference;
+            useType           = TYP_UNKNOWN;
+        }
     }
-
-#endif // UNIX_AMD64_ABI
+#elif UNIX_X86_ABI
+    if (callConv != CorInfoCallConvExtension::Managed)
+    {
+        canReturnInRegister = false;
+        howToReturnStruct   = SPK_ByReference;
+        useType             = TYP_UNKNOWN;
+    }
+#elif defined(TARGET_WINDOWS) && !defined(TARGET_ARM)
+    if (callConvIsInstanceMethodCallConv(callConv))
+    {
+        canReturnInRegister = false;
+        howToReturnStruct   = SPK_ByReference;
+        useType             = TYP_UNKNOWN;
+    }
+#endif
 
     // Check for cases where a small struct is returned in a register
     // via a primitive type.
@@ -1007,7 +1082,7 @@ var_types Compiler::getReturnTypeForStruct(CORINFO_CLASS_HANDLE clsHnd,
         // If so, we should have already set howToReturnStruct, too.
         assert(howToReturnStruct != SPK_Unknown);
     }
-    else // We can't replace the struct with a "primitive" type
+    else if (canReturnInRegister) // We can't replace the struct with a "primitive" type
     {
         // See if we can return this struct by value, possibly in multiple registers
         // or if we should return it using a return buffer register
@@ -1030,24 +1105,13 @@ var_types Compiler::getReturnTypeForStruct(CORINFO_CLASS_HANDLE clsHnd,
 
 #ifdef UNIX_AMD64_ABI
 
-                // The case of (structDesc.eightByteCount == 1) should have already been handled
-                if (structDesc.eightByteCount > 1)
-                {
-                    // setup wbPassType and useType indicate that this is returned by value in multiple registers
-                    howToReturnStruct = SPK_ByValue;
-                    useType           = TYP_STRUCT;
-                    assert(structDesc.passedInRegisters == true);
-                }
-                else
-                {
-                    assert(structDesc.eightByteCount == 0);
-                    // Otherwise we return this struct using a return buffer
-                    // setup wbPassType and useType indicate that this is return using a return buffer register
-                    //  (reference to a return buffer)
-                    howToReturnStruct = SPK_ByReference;
-                    useType           = TYP_UNKNOWN;
-                    assert(structDesc.passedInRegisters == false);
-                }
+                // The cases of (structDesc.eightByteCount == 1) and (structDesc.eightByteCount == 0)
+                // should have already been handled
+                assert(structDesc.eightByteCount > 1);
+                // setup wbPassType and useType indicate that this is returned by value in multiple registers
+                howToReturnStruct = SPK_ByValue;
+                useType           = TYP_STRUCT;
+                assert(structDesc.passedInRegisters == true);
 
 #elif defined(TARGET_ARM64)
 
@@ -1070,8 +1134,26 @@ var_types Compiler::getReturnTypeForStruct(CORINFO_CLASS_HANDLE clsHnd,
                     howToReturnStruct = SPK_ByReference;
                     useType           = TYP_UNKNOWN;
                 }
+#elif defined(TARGET_X86)
 
-#elif defined(TARGET_ARM) || defined(TARGET_X86)
+                // Only 8-byte structs are return in multiple registers.
+                // We also only support multireg struct returns on x86 to match the native calling convention.
+                // So return 8-byte structs only when the calling convention is a native calling convention.
+                if (structSize == MAX_RET_MULTIREG_BYTES && callConv != CorInfoCallConvExtension::Managed)
+                {
+                    // setup wbPassType and useType indicate that this is return by value in multiple registers
+                    howToReturnStruct = SPK_ByValue;
+                    useType           = TYP_STRUCT;
+                }
+                else
+                {
+                    // Otherwise we return this struct using a return buffer
+                    // setup wbPassType and useType indicate that this is returned using a return buffer register
+                    //  (reference to a return buffer)
+                    howToReturnStruct = SPK_ByReference;
+                    useType           = TYP_UNKNOWN;
+                }
+#elif defined(TARGET_ARM)
 
                 // Otherwise we return this struct using a return buffer
                 // setup wbPassType and useType indicate that this is returned using a return buffer register
@@ -1973,6 +2055,22 @@ unsigned Compiler::compGetTypeSize(CorInfoType cit, CORINFO_CLASS_HANDLE clsHnd)
     return sigSize;
 }
 
+CorInfoCallConvExtension Compiler::compMethodInfoGetEntrypointCallConv(CORINFO_METHOD_INFO* mthInfo)
+{
+    CorInfoCallConv callConv = mthInfo->args.getCallConv();
+    if (callConv == CORINFO_CALLCONV_DEFAULT || callConv == CORINFO_CALLCONV_VARARG)
+    {
+        // Both the default and the varargs calling conventions represent a managed callconv.
+        return CorInfoCallConvExtension::Managed;
+    }
+
+    static_assert_no_msg((unsigned)CorInfoCallConvExtension::C == (unsigned)CORINFO_CALLCONV_C);
+    static_assert_no_msg((unsigned)CorInfoCallConvExtension::Stdcall == (unsigned)CORINFO_CALLCONV_STDCALL);
+    static_assert_no_msg((unsigned)CorInfoCallConvExtension::Thiscall == (unsigned)CORINFO_CALLCONV_THISCALL);
+
+    return (CorInfoCallConvExtension)callConv;
+}
+
 #ifdef DEBUG
 static bool DidComponentUnitTests = false;
 
@@ -2207,7 +2305,7 @@ void Compiler::compSetProcessor()
 #elif defined(TARGET_ARM64)
     info.genCPU      = CPU_ARM64;
 #elif defined(TARGET_AMD64)
-    info.genCPU                   = CPU_X64;
+    info.genCPU = CPU_X64;
 #elif defined(TARGET_X86)
     if (jitFlags.IsSet(JitFlags::JIT_FLAG_TARGET_P4))
         info.genCPU = CPU_X86_PENTIUM_4;
@@ -6015,6 +6113,9 @@ int Compiler::compCompileHelper(CORINFO_MODULE_HANDLE classPtr,
         case CORINFO_CALLCONV_NATIVEVARARG:
             info.compIsVarArgs = true;
             break;
+        case CORINFO_CALLCONV_C:
+        case CORINFO_CALLCONV_STDCALL:
+        case CORINFO_CALLCONV_THISCALL:
         case CORINFO_CALLCONV_DEFAULT:
             info.compIsVarArgs = false;
             break;

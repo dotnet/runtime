@@ -2388,4 +2388,3 @@ inline ULONG CorSigUncompressPointer(   // return number of bytes of that compre
 #endif  // __cplusplus
 
 #endif // _COR_H_
-// EOF =======================================================================
