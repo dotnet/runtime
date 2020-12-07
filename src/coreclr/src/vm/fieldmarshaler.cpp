@@ -70,7 +70,6 @@ VOID ParseNativeType(Module*                     pModule,
         FALSE, // We only need validation of the native signature and the MARSHAL_TYPE_*
         FALSE, // so we don't need to accurately get the BestFitCustomAttribute data for this construction.
         FALSE, /* fEmitsIL */
-        FALSE, /* onInstanceMethod */
         nullptr,
         FALSE /* fUseCustomMarshal */
 #ifdef _DEBUG

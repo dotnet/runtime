@@ -102,6 +102,7 @@ set(VM_SOURCES_DAC_AND_WKS_COMMON
     perfmap.cpp
     perfinfo.cpp
     pgo.cpp
+    pinvokeoverride.cpp
     precode.cpp
     prestub.cpp
     profilerdiagnosticprotocolhelper.cpp

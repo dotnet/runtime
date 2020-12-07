@@ -1684,8 +1684,11 @@ namespace Internal.JitInterface
 
         private void classMustBeLoadedBeforeCodeIsRun(TypeDesc type)
         {
-            ISymbolNode node = _compilation.SymbolNodeFactory.CreateReadyToRunHelper(ReadyToRunHelperId.TypeHandle, type);
-            _methodCodeNode.Fixups.Add(node);
+            if (!type.IsPrimitive)
+            {
+                ISymbolNode node = _compilation.SymbolNodeFactory.CreateReadyToRunHelper(ReadyToRunHelperId.TypeHandle, type);
+                _methodCodeNode.Fixups.Add(node);
+            }
         }
 
         private static bool MethodSignatureIsUnstable(MethodSignature methodSig, out string unstableMessage)

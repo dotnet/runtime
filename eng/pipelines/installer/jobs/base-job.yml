@@ -378,13 +378,13 @@ jobs:
   - ${{ if ne(parameters.osGroup, 'OSX') }}:
     - script: $(BaseJobBuildCommand)
       displayName: Build
-      continueOnError: ${{ and(eq(variables.SkipTests, false), parameters.shouldContinueOnError) }}
+      continueOnError: ${{ and(eq(variables.SkipTests, false), eq(parameters.shouldContinueOnError, true)) }}
 
   # Build corehost, sign and add entitlements to MacOS binaries
   - ${{ if eq(parameters.osGroup, 'OSX') }}:
     - script: $(BaseJobBuildCommand) -subset host.native
       displayName: Build CoreHost
-      continueOnError: ${{ and(eq(variables.SkipTests, false), parameters.shouldContinueOnError) }}
+      continueOnError: ${{ and(eq(variables.SkipTests, false), eq(parameters.shouldContinueOnError, true)) }}
 
     - ${{ if and(ne(variables['System.TeamProject'], 'public'), notin(variables['Build.Reason'], 'PullRequest')) }}:
       - template: /eng/pipelines/common/macos-sign-with-entitlements.yml
@@ -399,7 +399,7 @@ jobs:
 
     - script: $(BaseJobBuildCommand) -subset host.pkg+host.tools+packs
       displayName: Build and Package
-      continueOnError: ${{ and(eq(variables.SkipTests, false), parameters.shouldContinueOnError) }}
+      continueOnError: ${{ and(eq(variables.SkipTests, false), eq(parameters.shouldContinueOnError, true)) }}
 
   - ${{ if in(parameters.osGroup, 'OSX', 'iOS','tvOS') }}: 
     - script: |

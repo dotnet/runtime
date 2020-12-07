@@ -57,6 +57,7 @@ namespace R2RDump
             DiffTitle();
             DiffPESections();
             DiffR2RSections();
+            DiffImportSections();
             DiffR2RMethods();
 
             DiffMethodsForModule(AllModules, AllModules);
@@ -142,6 +143,37 @@ namespace R2RDump
         private void DiffR2RSections()
         {
             ShowDiff(GetR2RSectionMap(_leftDumper.Reader), GetR2RSectionMap(_rightDumper.Reader), "R2R sections");
+        }
+
+        private void DiffImportSections()
+        {
+            Dictionary<string, ReadyToRunImportSection.ImportSectionEntry> leftImports = GetImports(_leftDumper.Reader);
+            Dictionary<string, ReadyToRunImportSection.ImportSectionEntry> rightImports = GetImports(_rightDumper.Reader);
+            HashSet<string> commonKeys = new HashSet<string>(leftImports.Keys);
+            commonKeys.IntersectWith(rightImports.Keys);
+
+            _writer.WriteLine("Import entries");
+            _writer.WriteLine("--------------");
+
+            foreach (string key in commonKeys.OrderBy(k => k))
+            {
+                ReadyToRunImportSection.ImportSectionEntry leftEntry = leftImports[key];
+                ReadyToRunImportSection.ImportSectionEntry rightEntry = rightImports[key];
+                StringWriter leftInfo = new StringWriter();
+                StringWriter rightInfo = new StringWriter();
+                leftEntry.GCRefMap?.WriteTo(leftInfo);
+                rightEntry.GCRefMap?.WriteTo(rightInfo);
+                string leftGCRefMap = leftInfo.ToString();
+                string rightGCRefMap = rightInfo.ToString();
+                if (leftGCRefMap != rightGCRefMap)
+                {
+                    _writer.WriteLine($@"Method:           {key}");
+                    _writer.WriteLine($@"Left GC ref map:  {leftGCRefMap}");
+                    _writer.WriteLine($@"Right GC ref map: {rightGCRefMap}");
+                }
+            }
+
+            _writer.WriteLine();
         }
 
         /// <summary>
@@ -347,6 +379,20 @@ namespace R2RDump
             {
                 dumper.DumpMethod(method);
             }
+        }
+
+        private static Dictionary<string, ReadyToRunImportSection.ImportSectionEntry> GetImports(ReadyToRunReader reader)
+        {
+            var result = new Dictionary<string, ReadyToRunImportSection.ImportSectionEntry>();
+            var signatureOptions = new SignatureFormattingOptions() { Naked = true };
+            foreach (ReadyToRunImportSection section in reader.ImportSections)
+            {
+                foreach (ReadyToRunImportSection.ImportSectionEntry entry in section.Entries)
+                {
+                    result[entry.Signature.ToString(signatureOptions)] = entry;
+                }
+            }
+            return result;
         }
 
         /// <summary>

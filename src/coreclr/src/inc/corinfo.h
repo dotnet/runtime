@@ -184,42 +184,9 @@ TODO: Talk about initializing strutures before use
 #ifndef _COR_INFO_H_
 #define _COR_INFO_H_
 
-#include <corhdr.h>
+#include "corhdr.h"
 #include <specstrings.h>
-
-//////////////////////////////////////////////////////////////////////////////////////////////////////////
-//
-// NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE
-//
-// #JITEEVersionIdentifier
-//
-// This GUID represents the version of the JIT/EE interface. Any time the interface between the JIT and
-// the EE changes (by adding or removing methods to any interface shared between them), this GUID should
-// be changed. This is the identifier verified by ICorJitCompiler::getVersionIdentifier().
-//
-// You can use "uuidgen.exe -s" to generate this value.
-//
-// **** NOTE TO INTEGRATORS:
-//
-// If there is a merge conflict here, because the version changed in two different places, you must
-// create a **NEW** GUID, not simply choose one or the other!
-//
-// NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE
-//
-//////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-constexpr GUID JITEEVersionIdentifier = { /* 0d235fe4-65a1-487a-8553-c845496da901 */
-    0x0d235fe4,
-    0x65a1,
-    0x487a,
-    {0x85, 0x53, 0xc8, 0x45, 0x49, 0x6d, 0xa9, 0x01}
-};
-
-//////////////////////////////////////////////////////////////////////////////////////////////////////////
-//
-// END JITEEVersionIdentifier
-//
-//////////////////////////////////////////////////////////////////////////////////////////////////////////
+#include "jiteeversionguid.h"
 
 // For System V on the CLR type system number of registers to pass in and return a struct is the same.
 // The CLR type system allows only up to 2 eightbytes to be passed in registers. There is no SSEUP classification types.
@@ -733,16 +700,24 @@ inline bool IsCallerPop(CorInfoCallConv callConv)
 }
 #endif // UNIX_X86_ABI
 
+// Represents the calling conventions supported with the extensible calling convention syntax
+// as well as the original metadata-encoded calling conventions.
 enum CorInfoUnmanagedCallConv
 {
     // These correspond to CorUnmanagedCallingConvention
-
     CORINFO_UNMANAGED_CALLCONV_UNKNOWN,
     CORINFO_UNMANAGED_CALLCONV_C,
     CORINFO_UNMANAGED_CALLCONV_STDCALL,
     CORINFO_UNMANAGED_CALLCONV_THISCALL,
     CORINFO_UNMANAGED_CALLCONV_FASTCALL
+    // New calling conventions supported with the extensible calling convention encoding go here.
 };
+
+// Determines whether or not this calling convention is an instance method calling convention.
+inline bool callConvIsInstanceMethodCallConv(CorInfoUnmanagedCallConv callConv)
+{
+    return callConv == CORINFO_UNMANAGED_CALLCONV_THISCALL;
+}
 
 // These are returned from getMethodOptions
 enum CorInfoOptions
@@ -1612,6 +1587,27 @@ struct CORINFO_CALL_INFO
     BOOL                    wrapperDelegateInvoke;
 };
 
+struct CORINFO_DEVIRTUALIZATION_INFO
+{
+    //
+    // [In] arguments of resolveVirtualMethod
+    //
+    CORINFO_METHOD_HANDLE       virtualMethod;
+    CORINFO_CLASS_HANDLE        objClass;
+    CORINFO_CONTEXT_HANDLE      context;
+
+    //
+    // [Out] results of resolveVirtualMethod.
+    // - devirtualizedMethod is set to MethodDesc of devirt'ed method iff we were able to devirtualize.
+    //      invariant is `resolveVirtualMethod(...) == (devirtualizedMethod != nullptr)`.
+    // - requiresInstMethodTableArg is set to TRUE if the devirtualized method requires a type handle arg.
+    // - exactContext is set to wrapped CORINFO_CLASS_HANDLE of devirt'ed method table.
+    //
+    CORINFO_METHOD_HANDLE       devirtualizedMethod;
+    bool                        requiresInstMethodTableArg;
+    CORINFO_CONTEXT_HANDLE      exactContext;
+};
+
 //----------------------------------------------------------------------------
 // getFieldInfo and CORINFO_FIELD_INFO: The EE instructs the JIT about how to access a field
 
@@ -2044,17 +2040,12 @@ public:
             bool*                       isRelative              /* OUT */
             ) = 0;
 
-    // Find the virtual method in implementingClass that overrides virtualMethod,
-    // or the method in implementingClass that implements the interface method
-    // represented by virtualMethod.
+    // Finds the virtual method in info->objClass that overrides info->virtualMethod,
+    // or the method in info->objClass that implements the interface method
+    // represented by info->virtualMethod.
     //
-    // Return null if devirtualization is not possible. Owner type is optional
-    // and provides additional context for shared interface devirtualization.
-    virtual CORINFO_METHOD_HANDLE resolveVirtualMethod(
-            CORINFO_METHOD_HANDLE       virtualMethod,          /* IN */
-            CORINFO_CLASS_HANDLE        implementingClass,      /* IN */
-            CORINFO_CONTEXT_HANDLE      ownerType = NULL        /* IN */
-            ) = 0;
+    // Returns false if devirtualization is not possible.
+    virtual bool resolveVirtualMethod(CORINFO_DEVIRTUALIZATION_INFO * info) = 0;
 
     // Get the unboxed entry point for a method, if possible.
     virtual CORINFO_METHOD_HANDLE getUnboxedEntry(
@@ -2758,8 +2749,9 @@ public:
     // to interface functions that may throw exceptions without needing to be aware of
     // the EH ABI, exception types, etc. Returns true if the given function completed
     // successfully and false otherwise.
+    typedef void (*errorTrapFunction)(void*);
     virtual bool runWithErrorTrap(
-        void (*function)(void*), // The function to run
+        errorTrapFunction function, // The function to run
         void* parameter          // The context parameter that will be passed to the function and the handler
         ) = 0;
 

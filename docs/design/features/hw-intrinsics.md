@@ -118,7 +118,7 @@ This is an area of the JIT that could use some redesign and refactoring (https:/
 
 ## Testing
 
-The tests for the hardware intrinsics reside in the coreclr/tests/src/JIT/HardwareIntrinsics directory.
+The tests for the hardware intrinsics reside in the src/tests/JIT/HardwareIntrinsics directory.
 
-Many of the tests are generated programmatically from templates. See `coreclr\tests\src\JIT\HardwareIntrinsics\General\Shared\GenerateTests.csx`. We would like to see most, if not all, of the remaining tests converted to use this mechanism.
+Many of the tests are generated programmatically from templates. See `src\tests\JIT\HardwareIntrinsics\General\Shared\GenerateTests.csx`. We would like to see most, if not all, of the remaining tests converted to use this mechanism.
 

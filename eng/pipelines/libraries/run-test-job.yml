@@ -17,6 +17,7 @@ parameters:
   helixQueues: []
   dependsOnTestBuildConfiguration: Debug
   dependsOnTestArchitecture: x64
+  dependsOnTestOsSubgroup: ''
   condition: true
   shouldContinueOnError: false
   variables: {}
@@ -60,8 +61,8 @@ jobs:
         - ${{ if notIn(parameters.framework, 'allConfigurations', 'net48') }}:
           - ${{ format('libraries_build_{0}{1}_{2}_{3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
           # tests are built as part of product build
-          - ${{ if or(ne(parameters.archType, parameters.dependsOnTestArchitecture), ne(parameters.buildConfig, parameters.dependsOnTestBuildConfiguration)) }}:
-            - ${{ format('libraries_build_{0}_{1}_{2}', parameters.osGroup, parameters.dependsOnTestArchitecture, parameters.dependsOnTestBuildConfiguration) }}
+          - ${{ if or(ne(parameters.archType, parameters.dependsOnTestArchitecture), ne(parameters.buildConfig, parameters.dependsOnTestBuildConfiguration), ne(parameters.osSubgroup, parameters.dependsOnTestOsSubgroup)) }}:
+            - ${{ format('libraries_build_{0}{1}_{2}_{3}', parameters.osGroup, parameters.dependsOnTestOsSubgroup, parameters.dependsOnTestArchitecture, parameters.dependsOnTestBuildConfiguration) }}
         - ${{ if ne(parameters.liveRuntimeBuildConfig, '') }}:
           - ${{ format('{0}_{1}_product_build_{2}{3}_{4}_{5}', parameters.runtimeFlavor, parameters.runtimeVariant, parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.liveRuntimeBuildConfig) }}
 

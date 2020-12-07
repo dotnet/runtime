@@ -13527,13 +13527,13 @@ void Compiler::fgComputeBlockAndEdgeWeights()
         JITDUMP(" -- no profile data, so using default called count\n");
     }
 
-    if (isOptimizing)
+    if (usingProfileWeights && isOptimizing)
     {
         fgComputeEdgeWeights();
     }
     else
     {
-        JITDUMP(" -- not optimizing, so not computing edge weights\n");
+        JITDUMP(" -- not optimizing or no profile data, so not computing edge weights\n");
     }
 }
 
@@ -23087,8 +23087,9 @@ Compiler::fgWalkResult Compiler::fgUpdateInlineReturnExpressionPlaceHolder(GenTr
     if (retClsHnd != NO_CLASS_HANDLE)
     {
         structPassingKind howToReturnStruct;
-        var_types         returnType = comp->getReturnTypeForStruct(retClsHnd, &howToReturnStruct);
-        GenTree*          parent     = data->parent;
+        var_types         returnType =
+            comp->getReturnTypeForStruct(retClsHnd, CorInfoCallConvExtension::Managed, &howToReturnStruct);
+        GenTree* parent = data->parent;
 
         switch (howToReturnStruct)
         {
@@ -23201,7 +23202,8 @@ Compiler::fgWalkResult Compiler::fgUpdateInlineReturnExpressionPlaceHolder(GenTr
             GenTree* effectiveValue = value->gtEffectiveVal(/*commaOnly*/ true);
 
             noway_assert(!varTypeIsStruct(effectiveValue) || (effectiveValue->OperGet() != GT_RET_EXPR) ||
-                         !comp->IsMultiRegReturnedType(effectiveValue->AsRetExpr()->gtRetClsHnd));
+                         !comp->IsMultiRegReturnedType(effectiveValue->AsRetExpr()->gtRetClsHnd,
+                                                       CorInfoCallConvExtension::Managed));
         }
     }
 
