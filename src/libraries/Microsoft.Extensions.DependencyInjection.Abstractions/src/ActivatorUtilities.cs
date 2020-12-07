@@ -4,31 +4,17 @@
 using System;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
 using System.Runtime.ExceptionServices;
-
-#if ActivatorUtilities_In_DependencyInjection
 using Microsoft.Extensions.Internal;
 
 namespace Microsoft.Extensions.DependencyInjection
-#else
-namespace Microsoft.Extensions.Internal
-#endif
 {
     /// <summary>
     /// Helper code for the various activator services.
     /// </summary>
-
-#if ActivatorUtilities_In_DependencyInjection
-    public
-#else
-    // Do not take a dependency on this class unless you are explicitly trying to avoid taking a
-    // dependency on Microsoft.AspNetCore.DependencyInjection.Abstractions.
-    internal
-#endif
-    static class ActivatorUtilities
+    public static class ActivatorUtilities
     {
         private static readonly MethodInfo GetServiceInfo =
             GetMethodInfo<Func<IServiceProvider, Type, Type, bool, object?>>((sp, t, r, c) => GetService(sp, t, r, c));
@@ -54,33 +40,30 @@ namespace Microsoft.Extensions.Internal
             {
                 foreach (ConstructorInfo? constructor in instanceType.GetConstructors())
                 {
-                    if (!constructor.IsStatic)
+                    var matcher = new ConstructorMatcher(constructor);
+                    bool isPreferred = constructor.IsDefined(typeof(ActivatorUtilitiesConstructorAttribute), false);
+                    int length = matcher.Match(parameters);
+
+                    if (isPreferred)
                     {
-                        var matcher = new ConstructorMatcher(constructor);
-                        bool isPreferred = constructor.IsDefined(typeof(ActivatorUtilitiesConstructorAttribute), false);
-                        int length = matcher.Match(parameters);
-
-                        if (isPreferred)
+                        if (seenPreferred)
                         {
-                            if (seenPreferred)
-                            {
-                                ThrowMultipleCtorsMarkedWithAttributeException();
-                            }
-
-                            if (length == -1)
-                            {
-                                ThrowMarkedCtorDoesNotTakeAllProvidedArguments();
-                            }
+                            ThrowMultipleCtorsMarkedWithAttributeException();
                         }
 
-                        if (isPreferred || bestLength < length)
+                        if (length == -1)
                         {
-                            bestLength = length;
-                            bestMatcher = matcher;
+                            ThrowMarkedCtorDoesNotTakeAllProvidedArguments();
                         }
-
-                        seenPreferred |= isPreferred;
                     }
+
+                    if (isPreferred || bestLength < length)
+                    {
+                        bestLength = length;
+                        bestMatcher = matcher;
+                    }
+
+                    seenPreferred |= isPreferred;
                 }
             }
 
@@ -246,11 +229,6 @@ namespace Microsoft.Extensions.Internal
         {
             foreach (ConstructorInfo? constructor in instanceType.GetConstructors())
             {
-                if (constructor.IsStatic)
-                {
-                    continue;
-                }
-
                 if (TryCreateParameterMap(constructor.GetParameters(), argumentTypes, out int?[] tempParameterMap))
                 {
                     if (matchingConstructor != null)
@@ -282,11 +260,6 @@ namespace Microsoft.Extensions.Internal
             bool seenPreferred = false;
             foreach (ConstructorInfo? constructor in instanceType.GetConstructors())
             {
-                if (constructor.IsStatic)
-                {
-                    continue;
-                }
-
                 if (constructor.IsDefined(typeof(ActivatorUtilitiesConstructorAttribute), false))
                 {
                     if (seenPreferred)

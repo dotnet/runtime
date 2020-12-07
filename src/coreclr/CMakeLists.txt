@@ -52,7 +52,13 @@ include(pgosupport.cmake)
 # Include libraries native shims
 #-------------------------------
 if(NOT CLR_CROSS_COMPONENTS_BUILD AND CLR_CMAKE_BUILD_SUBSET_RUNTIME)
-  add_subdirectory(src/libraries-native)
+    set(STATIC_LIBS_ONLY 1)
+
+    if(CLR_CMAKE_TARGET_WIN32)
+        add_subdirectory(${CLR_REPO_ROOT_DIR}/src/libraries/Native/Windows Native.Windows)
+    else()
+        add_subdirectory(${CLR_REPO_ROOT_DIR}/src/libraries/Native/Unix Native.Unix)
+    endif()
 endif(NOT CLR_CROSS_COMPONENTS_BUILD AND CLR_CMAKE_BUILD_SUBSET_RUNTIME)
 
 #-----------------------------------------

@@ -20,17 +20,13 @@ namespace Microsoft.Extensions.Caching.Memory
     /// </summary>
     public class MemoryCache : IMemoryCache
     {
-        private readonly ConcurrentDictionary<object, CacheEntry> _entries;
-        private long _cacheSize;
-        private bool _disposed;
-        private readonly ILogger _logger;
-
-        // We store the delegates locally to prevent allocations
-        // every time a new CacheEntry is created.
-        private readonly Action<CacheEntry> _setEntry;
-        private readonly Action<CacheEntry> _entryExpirationNotification;
+        internal readonly ILogger _logger;
 
         private readonly MemoryCacheOptions _options;
+        private readonly ConcurrentDictionary<object, CacheEntry> _entries;
+
+        private long _cacheSize;
+        private bool _disposed;
         private DateTimeOffset _lastExpirationScan;
 
         /// <summary>
@@ -61,8 +57,6 @@ namespace Microsoft.Extensions.Caching.Memory
             _logger = loggerFactory.CreateLogger<MemoryCache>();
 
             _entries = new ConcurrentDictionary<object, CacheEntry>();
-            _setEntry = SetEntry;
-            _entryExpirationNotification = EntryExpired;
 
             if (_options.Clock == null)
             {
@@ -75,18 +69,12 @@ namespace Microsoft.Extensions.Caching.Memory
         /// <summary>
         /// Cleans up the background collection events.
         /// </summary>
-        ~MemoryCache()
-        {
-            Dispose(false);
-        }
+        ~MemoryCache() => Dispose(false);
 
         /// <summary>
         /// Gets the count of the current entries for diagnostic purposes.
         /// </summary>
-        public int Count
-        {
-            get { return _entries.Count; }
-        }
+        public int Count => _entries.Count;
 
         // internal for testing
         internal long Size { get => Interlocked.Read(ref _cacheSize); }
@@ -97,18 +85,12 @@ namespace Microsoft.Extensions.Caching.Memory
         public ICacheEntry CreateEntry(object key)
         {
             CheckDisposed();
-
             ValidateCacheKey(key);
 
-            return new CacheEntry(
-                key,
-                _setEntry,
-                _entryExpirationNotification,
-                _logger
-            );
+            return new CacheEntry(key, this);
         }
 
-        private void SetEntry(CacheEntry entry)
+        internal void SetEntry(CacheEntry entry)
         {
             if (_disposed)
             {
@@ -124,13 +106,13 @@ namespace Microsoft.Extensions.Caching.Memory
             DateTimeOffset utcNow = _options.Clock.UtcNow;
 
             DateTimeOffset? absoluteExpiration = null;
-            if (entry._absoluteExpirationRelativeToNow.HasValue)
+            if (entry.AbsoluteExpirationRelativeToNow.HasValue)
             {
-                absoluteExpiration = utcNow + entry._absoluteExpirationRelativeToNow;
+                absoluteExpiration = utcNow + entry.AbsoluteExpirationRelativeToNow;
             }
-            else if (entry._absoluteExpiration.HasValue)
+            else if (entry.AbsoluteExpiration.HasValue)
             {
-                absoluteExpiration = entry._absoluteExpiration;
+                absoluteExpiration = entry.AbsoluteExpiration;
             }
 
             // Applying the option's absolute expiration only if it's not already smaller.
@@ -138,9 +120,9 @@ namespace Microsoft.Extensions.Caching.Memory
             // it was set by cascading it to its parent.
             if (absoluteExpiration.HasValue)
             {
-                if (!entry._absoluteExpiration.HasValue || absoluteExpiration.Value < entry._absoluteExpiration.Value)
+                if (!entry.AbsoluteExpiration.HasValue || absoluteExpiration.Value < entry.AbsoluteExpiration.Value)
                 {
-                    entry._absoluteExpiration = absoluteExpiration;
+                    entry.AbsoluteExpiration = absoluteExpiration;
                 }
             }
 
@@ -306,7 +288,7 @@ namespace Microsoft.Extensions.Caching.Memory
             }
         }
 
-        private void EntryExpired(CacheEntry entry)
+        internal void EntryExpired(CacheEntry entry)
         {
             // TODO: For efficiency consider processing these expirations in batches.
             RemoveEntry(entry);

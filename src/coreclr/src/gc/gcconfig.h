@@ -102,6 +102,7 @@ public:
     INT_CONFIG   (GCHeapHardLimit,        "GCHeapHardLimit",        "System.GC.HeapHardLimit",        0,                 "Specifies a hard limit for the GC heap")                                                 \
     INT_CONFIG   (GCHeapHardLimitPercent, "GCHeapHardLimitPercent", "System.GC.HeapHardLimitPercent", 0,                 "Specifies the GC heap usage as a percentage of the total memory")                        \
     INT_CONFIG   (GCTotalPhysicalMemory,  "GCTotalPhysicalMemory",  NULL,                             0,                 "Specifies what the GC should consider to be total physical memory")                      \
+    INT_CONFIG   (GCRegionsRange,         "GCRegionsRange",         NULL,                             0,                 "Specifies the range for the GC heap")                                                    \
     STRING_CONFIG(LogFile,                "GCLogFile",              NULL,                                                "Specifies the name of the GC log file")                                                  \
     STRING_CONFIG(ConfigLogFile,          "GCConfigLogFile",        NULL,                                                "Specifies the name of the GC config log file")                                           \
     INT_CONFIG   (BGCFLTuningEnabled,     "BGCFLTuningEnabled",     NULL,                             0,                 "Enables FL tuning")                                                                      \

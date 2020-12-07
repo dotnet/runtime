@@ -15655,7 +15655,7 @@ GenTree* Compiler::gtNewRefCOMfield(GenTree*                objPtr,
 #if FEATURE_MULTIREG_RET
     if (varTypeIsStruct(call))
     {
-        call->InitializeStructReturnType(this, structType);
+        call->InitializeStructReturnType(this, structType, call->GetUnmanagedCallConv());
     }
 #endif // FEATURE_MULTIREG_RET
 
@@ -19152,7 +19152,9 @@ GenTree* Compiler::gtNewMustThrowException(unsigned helper, var_types type, CORI
 // Return Value
 //    None
 //
-void ReturnTypeDesc::InitializeStructReturnType(Compiler* comp, CORINFO_CLASS_HANDLE retClsHnd)
+void ReturnTypeDesc::InitializeStructReturnType(Compiler*                comp,
+                                                CORINFO_CLASS_HANDLE     retClsHnd,
+                                                CorInfoCallConvExtension callConv)
 {
     assert(!m_inited);
 
@@ -19162,7 +19164,7 @@ void ReturnTypeDesc::InitializeStructReturnType(Compiler* comp, CORINFO_CLASS_HA
     unsigned structSize = comp->info.compCompHnd->getClassSize(retClsHnd);
 
     Compiler::structPassingKind howToReturnStruct;
-    var_types                   returnType = comp->getReturnTypeForStruct(retClsHnd, &howToReturnStruct, structSize);
+    var_types returnType = comp->getReturnTypeForStruct(retClsHnd, callConv, &howToReturnStruct, structSize);
 
     switch (howToReturnStruct)
     {
@@ -19226,6 +19228,18 @@ void ReturnTypeDesc::InitializeStructReturnType(Compiler* comp, CORINFO_CLASS_HA
             // a non-HFA struct returned using two registers
             //
             assert((structSize > TARGET_POINTER_SIZE) && (structSize <= (2 * TARGET_POINTER_SIZE)));
+
+            BYTE gcPtrs[2] = {TYPE_GC_NONE, TYPE_GC_NONE};
+            comp->info.compCompHnd->getClassGClayout(retClsHnd, &gcPtrs[0]);
+            for (unsigned i = 0; i < 2; ++i)
+            {
+                m_regType[i] = comp->getJitGCType(gcPtrs[i]);
+            }
+
+#elif defined(TARGET_X86)
+
+            // an 8-byte struct returned using two registers
+            assert(structSize == 8);
 
             BYTE gcPtrs[2] = {TYPE_GC_NONE, TYPE_GC_NONE};
             comp->info.compCompHnd->getClassGClayout(retClsHnd, &gcPtrs[0]);
