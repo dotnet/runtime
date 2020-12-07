@@ -244,9 +244,9 @@ namespace System.Diagnostics
     {
         // Use a smaller buffer size on debug to ensure we hit the retry path.
 #if DEBUG
-        private const int DefaultCachedBufferSize = 1024;
+        private const int DefaultCachedBufferSize = 8 * 1024;
 #else
-        private const int DefaultCachedBufferSize = 128 * 1024;
+        private const int DefaultCachedBufferSize = 8 * 128 * 1024;
 #endif
 
         internal static ProcessInfo[] GetProcessInfos(Predicate<int>? processIdFilter = null)
@@ -254,7 +254,7 @@ namespace System.Diagnostics
             ProcessInfo[] processInfos;
 
             // Start with the default buffer size.
-            int bufferSize = DefaultCachedBufferSize * sizeof(long);
+            int bufferSize = DefaultCachedBufferSize;
 
             // Get the cached buffer.
             byte[] buffer = ArrayPool<byte>.Shared.Rent(bufferSize);
