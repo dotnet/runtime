@@ -18,6 +18,7 @@
 #include "../../vm/gdbjithelpers.h"
 #endif // FEATURE_GDBJIT
 #include "bundle.h"
+#include "pinvokeoverride.h"
 
 #define ASSERTE_ALL_BUILDS(expr) _ASSERTE_ALL_BUILDS(__FILE__, (expr))
 
@@ -119,7 +120,8 @@ static void ConvertConfigPropertiesToUnicode(
     int propertyCount,
     LPCWSTR** propertyKeysWRef,
     LPCWSTR** propertyValuesWRef,
-    BundleProbe** bundleProbe,
+    BundleProbeFn** bundleProbe,
+    PInvokeOverrideFn** pinvokeOverride,
     bool* hostPolicyEmbedded)
 {
     LPCWSTR* propertyKeysW = new (nothrow) LPCWSTR[propertyCount];
@@ -137,7 +139,13 @@ static void ConvertConfigPropertiesToUnicode(
         {
             // If this application is a single-file bundle, the bundle-probe callback 
             // is passed in as the value of "BUNDLE_PROBE" property (encoded as a string).
-            *bundleProbe = (BundleProbe*)_wcstoui64(propertyValuesW[propertyIndex], nullptr, 0);
+            *bundleProbe = (BundleProbeFn*)_wcstoui64(propertyValuesW[propertyIndex], nullptr, 0);
+        }
+        else if (strcmp(propertyKeys[propertyIndex], "PINVOKE_OVERRIDE") == 0)
+        {
+            // If host provides a PInvoke override (typically in a single-file bundle),
+            // the override callback is passed in as the value of "PINVOKE_OVERRIDE" property (encoded as a string).
+            *pinvokeOverride = (PInvokeOverrideFn*)_wcstoui64(propertyValuesW[propertyIndex], nullptr, 0);
         }
         else if (strcmp(propertyKeys[propertyIndex], "HOSTPOLICY_EMBEDDED") == 0)
         {
@@ -185,8 +193,9 @@ int coreclr_initialize(
 
     LPCWSTR* propertyKeysW;
     LPCWSTR* propertyValuesW;
-    BundleProbe* bundleProbe = nullptr;
+    BundleProbeFn* bundleProbe = nullptr;
     bool hostPolicyEmbedded = false;
+    PInvokeOverrideFn* pinvokeOverride = nullptr;
 
     ConvertConfigPropertiesToUnicode(
         propertyKeys,
@@ -195,6 +204,7 @@ int coreclr_initialize(
         &propertyKeysW,
         &propertyValuesW,
         &bundleProbe,
+        &pinvokeOverride,
         &hostPolicyEmbedded);
 
 #ifdef TARGET_UNIX
@@ -210,6 +220,11 @@ int coreclr_initialize(
 #endif
 
     g_hostpolicy_embedded = hostPolicyEmbedded;
+
+    if (pinvokeOverride != nullptr)
+    {
+        PInvokeOverride::SetPInvokeOverride(pinvokeOverride);
+    }
 
     ReleaseHolder<ICLRRuntimeHost4> host;
 
