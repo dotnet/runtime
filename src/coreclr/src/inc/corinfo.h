@@ -1587,6 +1587,27 @@ struct CORINFO_CALL_INFO
     BOOL                    wrapperDelegateInvoke;
 };
 
+struct CORINFO_DEVIRTUALIZATION_INFO
+{
+    //
+    // [In] arguments of resolveVirtualMethod
+    //
+    CORINFO_METHOD_HANDLE       virtualMethod;
+    CORINFO_CLASS_HANDLE        objClass;
+    CORINFO_CONTEXT_HANDLE      context;
+
+    //
+    // [Out] results of resolveVirtualMethod.
+    // - devirtualizedMethod is set to MethodDesc of devirt'ed method iff we were able to devirtualize.
+    //      invariant is `resolveVirtualMethod(...) == (devirtualizedMethod != nullptr)`.
+    // - requiresInstMethodTableArg is set to TRUE if the devirtualized method requires a type handle arg.
+    // - exactContext is set to wrapped CORINFO_CLASS_HANDLE of devirt'ed method table.
+    //
+    CORINFO_METHOD_HANDLE       devirtualizedMethod;
+    bool                        requiresInstMethodTableArg;
+    CORINFO_CONTEXT_HANDLE      exactContext;
+};
+
 //----------------------------------------------------------------------------
 // getFieldInfo and CORINFO_FIELD_INFO: The EE instructs the JIT about how to access a field
 
@@ -2019,17 +2040,12 @@ public:
             bool*                       isRelative              /* OUT */
             ) = 0;
 
-    // Find the virtual method in implementingClass that overrides virtualMethod,
-    // or the method in implementingClass that implements the interface method
-    // represented by virtualMethod.
+    // Finds the virtual method in info->objClass that overrides info->virtualMethod,
+    // or the method in info->objClass that implements the interface method
+    // represented by info->virtualMethod.
     //
-    // Return null if devirtualization is not possible. Owner type is optional
-    // and provides additional context for shared interface devirtualization.
-    virtual CORINFO_METHOD_HANDLE resolveVirtualMethod(
-            CORINFO_METHOD_HANDLE       virtualMethod,          /* IN */
-            CORINFO_CLASS_HANDLE        implementingClass,      /* IN */
-            CORINFO_CONTEXT_HANDLE      ownerType = NULL        /* IN */
-            ) = 0;
+    // Returns false if devirtualization is not possible.
+    virtual bool resolveVirtualMethod(CORINFO_DEVIRTUALIZATION_INFO * info) = 0;
 
     // Get the unboxed entry point for a method, if possible.
     virtual CORINFO_METHOD_HANDLE getUnboxedEntry(
