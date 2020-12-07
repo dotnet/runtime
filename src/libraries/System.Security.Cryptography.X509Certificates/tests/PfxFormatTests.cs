@@ -46,7 +46,8 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             string correctPassword,
             X509Certificate2 expectedCert,
             Action<X509Certificate2> otherWork = null,
-            X509KeyStorageFlags? requiredFlags = null);
+            X509KeyStorageFlags? requiredFlags = null,
+            bool checkPrivateKey = true);
 
         protected abstract void ReadMultiPfx(
             byte[] pfxBytes,
@@ -55,7 +56,8 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             X509Certificate2[] expectedOrder,
             Action<X509Certificate2> perCertOtherWork = null,
             Action<X509Certificate2Collection> collectionWork = null,
-            X509KeyStorageFlags? requiredFlags = null);
+            X509KeyStorageFlags? requiredFlags = null,
+            bool checkPrivateKey = true);
 
         protected abstract void ReadEmptyPfx(byte[] pfxBytes, string correctPassword);
         protected abstract void ReadWrongPassword(byte[] pfxBytes, string wrongPassword);
@@ -655,10 +657,10 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             }
         }
 
-        [Fact]
-        public void TwoCerts_CrossedKeys()
+        [ConditionalFact(nameof(PlatformSupportsEphemeralKeys))]
+        public void TwoCerts_CrossedKeys_Ephemeral()
         {
-            string pw = nameof(SameCertTwice_NoKeys);
+            string pw = nameof(TwoCerts_CrossedKeys_Ephemeral);
 
             using (var cert = new X509Certificate2(TestData.PfxData, TestData.PfxDataPassword, s_exportableImportFlags))
             using (var cert2 = new X509Certificate2(TestData.MsCertificate))
@@ -686,7 +688,48 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                     pfxBytes,
                     pw,
                     // NTE_BAD_DATA
-                    -2146893819);
+                    -2146893819,
+                    requiredFlags: X509KeyStorageFlags.EphemeralKeySet);
+            }
+        }
+
+        [Fact]
+        public void TwoCerts_CrossedKeys_Persisted()
+        {
+            string pw = nameof(TwoCerts_CrossedKeys_Persisted);
+
+            using (var cert = new X509Certificate2(TestData.PfxData, TestData.PfxDataPassword, s_exportableImportFlags))
+            using (var cert2 = new X509Certificate2(TestData.MsCertificate))
+            using (RSA key = cert.GetRSAPrivateKey())
+            {
+                Pkcs12Builder builder = new Pkcs12Builder();
+                Pkcs12SafeContents keyContents = new Pkcs12SafeContents();
+                Pkcs12SafeContents certContents = new Pkcs12SafeContents();
+
+                Pkcs12SafeBag keyBag = keyContents.AddShroudedKey(key, pw, s_windowsPbe);
+                Pkcs12SafeBag certBag = certContents.AddCertificate(cert);
+                Pkcs12SafeBag certBag2 = certContents.AddCertificate(cert2);
+
+                keyBag.Attributes.Add(s_keyIdOne);
+                certBag2.Attributes.Add(s_keyIdOne);
+
+                AddContents(keyContents, builder, pw, encrypt: false);
+                AddContents(certContents, builder, pw, encrypt: true);
+                builder.SealWithMac(pw, s_digestAlgorithm, MacCount);
+                byte[] pfxBytes = builder.Encode();
+
+                // A certificate and a key with a matching LocalKeyId will always
+                // match up on Windows, ragardless of the certificate's public key.
+                // We skip the private key check since cert2 doesn't have a private
+                // key but the loaded one ends up being forced to use the one provided
+                // by the LocalKeyId.
+                ReadMultiPfx(
+                    pfxBytes,
+                    pw,
+                    cert2,
+                    new [] { cert2, cert },
+                    requiredFlags: X509KeyStorageFlags.PersistKeySet,
+                    checkPrivateKey: false);
             }
         }
 
@@ -1059,15 +1102,18 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             }
         }
 
-        protected static void AssertCertEquals(X509Certificate2 expectedCert, X509Certificate2 actual)
+        protected static void AssertCertEquals(X509Certificate2 expectedCert, X509Certificate2 actual, bool checkPrivateKey)
         {
-            if (expectedCert.HasPrivateKey)
+            if (checkPrivateKey)
             {
-                Assert.True(actual.HasPrivateKey, "actual.HasPrivateKey");
-            }
-            else
-            {
-                Assert.False(actual.HasPrivateKey, "actual.HasPrivateKey");
+                if (expectedCert.HasPrivateKey)
+                {
+                    Assert.True(actual.HasPrivateKey, "actual.HasPrivateKey");
+                }
+                else
+                {
+                    Assert.False(actual.HasPrivateKey, "actual.HasPrivateKey");
+                }
             }
 
             Assert.Equal(expectedCert.RawData.ByteArrayToHex(), actual.RawData.ByteArrayToHex());

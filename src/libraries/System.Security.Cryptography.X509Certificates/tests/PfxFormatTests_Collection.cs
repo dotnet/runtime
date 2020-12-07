@@ -13,13 +13,30 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             string correctPassword,
             X509Certificate2 expectedCert,
             Action<X509Certificate2> otherWork,
-            X509KeyStorageFlags? requiredFlags)
+            X509KeyStorageFlags? requiredFlags,
+            bool checkPrivateKey)
         {
-            ReadPfx(pfxBytes, correctPassword, expectedCert, null, otherWork, null, requiredFlags ?? s_importFlags);
+            ReadPfx(
+                pfxBytes,
+                correctPassword,
+                expectedCert,
+                null,
+                otherWork,
+                null,
+                requiredFlags ?? s_importFlags,
+                checkPrivateKey);
 
             if (requiredFlags is null)
             {
-                ReadPfx(pfxBytes, correctPassword, expectedCert, null, otherWork, null, s_exportableImportFlags);
+                ReadPfx(
+                    pfxBytes,
+                    correctPassword,
+                    expectedCert,
+                    null,
+                    otherWork,
+                    null,
+                    s_exportableImportFlags,
+                    checkPrivateKey);
             }
         }
 
@@ -30,7 +47,8 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             X509Certificate2[] expectedOrder,
             Action<X509Certificate2> perCertOtherWork,
             Action<X509Certificate2Collection> collectionWork,
-            X509KeyStorageFlags? requiredFlags)
+            X509KeyStorageFlags? requiredFlags,
+            bool checkPrivateKey)
         {
             ReadPfx(
                 pfxBytes,
@@ -39,7 +57,8 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 expectedOrder,
                 perCertOtherWork,
                 collectionWork,
-                requiredFlags ?? s_importFlags);
+                requiredFlags ?? s_importFlags,
+                checkPrivateKey);
 
             if (requiredFlags is null)
             {
@@ -50,7 +69,8 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                     expectedOrder,
                     perCertOtherWork,
                     collectionWork,
-                    s_exportableImportFlags);
+                    s_exportableImportFlags,
+                    checkPrivateKey);
             }
         }
 
@@ -61,7 +81,8 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             X509Certificate2[] expectedOrder,
             Action<X509Certificate2> otherWork,
             Action<X509Certificate2Collection> collectionWork,
-            X509KeyStorageFlags flags)
+            X509KeyStorageFlags flags,
+            bool checkPrivateKey)
         {
             using (ImportedCollection imported = Cert.Import(pfxBytes, correctPassword, flags))
             {
@@ -75,7 +96,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 for (int i = 0; i < testOrder.Length; i++)
                 {
                     X509Certificate2 actual = coll[i];
-                    AssertCertEquals(testOrder[i], actual);
+                    AssertCertEquals(testOrder[i], actual, checkPrivateKey);
                     otherWork?.Invoke(actual);
                 }
 
