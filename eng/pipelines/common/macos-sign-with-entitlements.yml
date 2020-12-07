@@ -2,12 +2,6 @@ parameters:
   filesToSign: []
 
 steps:
-  - task: UseDotNet@2
-    displayName: 'Use .NET Core SDK 2.1.808'
-    inputs:
-      packageType: sdk
-      version: 2.1.808
-
   - ${{ each file in parameters.filesToSign }}:
     - script: codesign -s - -f --entitlements ${{ file.entitlementsFile }} ${{ file.path }}/${{ file.name }}
       displayName: 'Add entitlements to ${{ file.name }}'
