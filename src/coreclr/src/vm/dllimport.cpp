@@ -3227,7 +3227,10 @@ BOOL NDirect::MarshalingRequired(
                         return TRUE;
                 }
 #endif
-                dwStackSize += StackElemSize(hndArgType.GetSize());
+                if (i > 0)
+                {
+                    dwStackSize += StackElemSize(hndArgType.GetSize());
+                }
                 break;
             }
 
