@@ -3665,35 +3665,6 @@ static void CreateNDirectStubWorker(StubState*         pss,
         }
     }
 
-    if (marshalType == MarshalInfo::MARSHAL_TYPE_DATE ||
-        marshalType == MarshalInfo::MARSHAL_TYPE_CURRENCY ||
-        marshalType == MarshalInfo::MARSHAL_TYPE_ARRAYWITHOFFSET ||
-        marshalType == MarshalInfo::MARSHAL_TYPE_HANDLEREF ||
-        marshalType == MarshalInfo::MARSHAL_TYPE_ARGITERATOR
-#ifdef FEATURE_COMINTEROP
-        || marshalType == MarshalInfo::MARSHAL_TYPE_OLECOLOR
-#endif // FEATURE_COMINTEROP
-        )
-    {
-        // These are special non-blittable types returned by-ref in managed,
-        // but marshaled as primitive values returned by-value in unmanaged.
-    }
-    else
-    {
-        // This is an ordinary value type - see if it is returned by-ref.
-        TypeHandle retType = msig.GetRetTypeHandleThrowing();
-        if (retType.IsValueType() && !retType.IsEnum() && IsUnmanagedValueTypeReturnedByRef(retType.MakeNativeValueType().GetSize()))
-        {
-            nativeStackSize += sizeof(LPVOID);
-        }
-#if defined(TARGET_WINDOWS) && !defined(TARGET_ARM)
-        else if (fThisCall && !retType.IsEnum())
-        {
-            nativeStackSize += sizeof(LPVOID);
-        }
-#endif
-    }
-
     if (SF_IsHRESULTSwapping(dwStubFlags))
     {
         if (msig.GetReturnType() != ELEMENT_TYPE_VOID)
@@ -4228,27 +4199,6 @@ void NDirect::PopulateNDirectMethodDesc(NDirectMethodDesc* pNMD, PInvokeStaticSi
         pNMD->ndirect.m_pszLibName.SetValueMaybeNull(szLibName);
         pNMD->ndirect.m_pszEntrypointName.SetValueMaybeNull(szEntryPointName);
     }
-
-#ifdef TARGET_X86
-    if (ndirectflags & NDirectMethodDesc::kStdCall)
-    {
-        // Compute the kStdCallWithRetBuf flag which is needed at link time for entry point mangling.
-        MetaSig msig(pNMD);
-        ArgIterator argit(&msig);
-        if (argit.HasRetBuffArg())
-        {
-            MethodTable *pRetMT = msig.GetRetTypeHandleThrowing().AsMethodTable();
-            // The System.DateTime type itself technically doesn't have a native representation,
-            // so we have to special-case it here.
-            // If a type doesn't have a native representation, we won't set this flag.
-            // We'll throw an exception later when setting up the marshalling.
-            if (pRetMT != CoreLibBinder::GetClass(CLASS__DATE_TIME) && pRetMT->HasLayout() && IsUnmanagedValueTypeReturnedByRef(pRetMT->GetNativeSize()))
-            {
-                ndirectflags |= NDirectMethodDesc::kStdCallWithRetBuf;
-            }
-        }
-    }
-#endif // TARGET_X86
 
     // Call this exactly ONCE per thread. Do not publish incomplete prestub flags
     // or you will introduce a race condition.
