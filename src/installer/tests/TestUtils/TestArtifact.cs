@@ -67,7 +67,10 @@ namespace Microsoft.DotNet.CoreSetup.Test
                     Debug.Assert(!Directory.Exists(Location));
                     var lockPath = Directory.GetParent(Location) + ".lock";
                     File.Delete(lockPath);
-                } catch {}
+                } catch (Exception e)
+                {
+                    Console.WriteLine("delete failed" + e);
+                }
             }
 
             foreach (TestArtifact copy in _copies)
