@@ -733,13 +733,13 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             }
         }
 
-        [Theory]
+        [ConditionalTheory(nameof(PlatformSupportsEphemeralKeys))]
         [InlineData(false, false)]
         [InlineData(true, false)]
         [InlineData(true, true)]
-        public void CertAndKeyTwice(bool addLocalKeyId, bool crossIdentifiers)
+        public void CertAndKeyTwice_Ephemeral(bool addLocalKeyId, bool crossIdentifiers)
         {
-            string pw = nameof(CertAndKeyTwice);
+            string pw = nameof(CertAndKeyTwice_Ephemeral);
 
             using (var cert = new X509Certificate2(TestData.PfxData, TestData.PfxDataPassword, s_exportableImportFlags))
             using (RSA key = cert.GetRSAPrivateKey())
@@ -775,7 +775,8 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                         pw,
                         cert,
                         new[] { cert, cert },
-                        CheckKeyConsistency);
+                        CheckKeyConsistency,
+                        requiredFlags: X509KeyStorageFlags.EphemeralKeySet);
                 }
                 else
                 {
@@ -783,15 +784,48 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                         pfxBytes,
                         pw,
                         // NTE_BAD_DATA
-                        -2146893819);
+                        -2146893819,
+                        requiredFlags: X509KeyStorageFlags.EphemeralKeySet);
                 }
+            }
+        }
+
+        [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/45715", TestPlatforms.Windows)]
+        public void CertAndKeyTwice_Persist()
+        {
+            string pw = nameof(CertAndKeyTwice_Persist);
+
+            using (var cert = new X509Certificate2(TestData.PfxData, TestData.PfxDataPassword, s_exportableImportFlags))
+            using (RSA key = cert.GetRSAPrivateKey())
+            {
+                Pkcs12Builder builder = new Pkcs12Builder();
+                Pkcs12SafeContents keyContents = new Pkcs12SafeContents();
+                Pkcs12SafeContents certContents = new Pkcs12SafeContents();
+
+                Pkcs12SafeBag key1 = keyContents.AddShroudedKey(key, pw, s_windowsPbe);
+                Pkcs12SafeBag key2 = keyContents.AddShroudedKey(key, pw, s_windowsPbe);
+                Pkcs12SafeBag cert1 = certContents.AddCertificate(cert);
+                Pkcs12SafeBag cert2 = certContents.AddCertificate(cert);
+
+                AddContents(keyContents, builder, pw, encrypt: false);
+                AddContents(certContents, builder, pw, encrypt: true);
+                builder.SealWithMac(pw, s_digestAlgorithm, MacCount);
+                byte[] pfxBytes = builder.Encode();
+
+                ReadMultiPfx(
+                    pfxBytes,
+                    pw,
+                    cert,
+                    new[] { cert, cert },
+                    requiredFlags: X509KeyStorageFlags.PersistKeySet);
             }
         }
 
         [ConditionalFact(nameof(PlatformSupportsEphemeralKeys))]
         public void CertAndKeyTwice_KeysUntagged_Ephemeral()
         {
-            string pw = nameof(CertAndKeyTwice);
+            string pw = nameof(CertAndKeyTwice_KeysUntagged_Ephemeral);
 
             using (var cert = new X509Certificate2(TestData.PfxData, TestData.PfxDataPassword, s_exportableImportFlags))
             using (RSA key = cert.GetRSAPrivateKey())
@@ -830,7 +864,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         [Fact]
         public void CertAndKeyTwice_KeysUntagged_Persisted()
         {
-            string pw = nameof(CertAndKeyTwice);
+            string pw = nameof(CertAndKeyTwice_KeysUntagged_Persisted);
 
             using (var cert = new X509Certificate2(TestData.PfxData, TestData.PfxDataPassword, s_exportableImportFlags))
             using (RSA key = cert.GetRSAPrivateKey())
