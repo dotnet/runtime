@@ -14,10 +14,7 @@ namespace System.Net.WebSockets
         public WebSocket? WebSocket { get; private set; }
         public WebSocketState State => WebSocket?.State ?? _state;
 
-        public static ClientWebSocketOptions CreateDefaultOptions()
-        {
-            return new ClientWebSocketOptions();
-        }
+        public static ClientWebSocketOptions CreateDefaultOptions() => new ClientWebSocketOptions();
 
         public void Dispose()
         {
