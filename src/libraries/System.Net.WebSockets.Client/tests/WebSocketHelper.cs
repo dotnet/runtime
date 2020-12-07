@@ -13,6 +13,7 @@ namespace System.Net.WebSockets.Client.Tests
     {
         private static readonly Lazy<bool> s_WebSocketSupported = new Lazy<bool>(InitWebSocketSupported);
         public static bool WebSocketsSupported { get { return s_WebSocketSupported.Value; } }
+
         public static async Task TestEcho(
             Uri server,
             WebSocketMessageType type,
