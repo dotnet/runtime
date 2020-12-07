@@ -436,7 +436,7 @@ public:
         {
             foreach (FunctionDecl decl in functionData)
             {
-                tw.Write($"\n");
+                tw.WriteLine("");
                 if (addVirtualPrefix)
                 {
                     tw.Write("    virtual ");
@@ -453,7 +453,7 @@ public:
                     {
                         tw.Write(",");
                     }
-                    tw.Write("\n          " + GetNativeType(param.Type) + " " + param.Name);
+                    tw.Write(Environment.NewLine + "          " + GetNativeType(param.Type) + " " + param.Name);
                 }
                 tw.Write(')');
                 if (skipManualWrapper && decl.ManualNativeWrapper)
@@ -461,7 +461,7 @@ public:
                     tw.WriteLine(";");
                     continue;
                 }
-                tw.Write('\n');
+                tw.WriteLine("");
                 tw.WriteLine("{");
                 string beforeCall = beforeCallFunc(decl) ?? null;
                 string afterCall = afterCallFunc(decl) ?? null;
@@ -573,7 +573,7 @@ public:
 
             foreach (FunctionDecl decl in functionData)
             {
-                tw.Write($"\n{decl.ReturnType.NativeTypeName2} { decl.FunctionName}(");
+                tw.Write($"{Environment.NewLine}{decl.ReturnType.NativeTypeName2} { decl.FunctionName}(");
                 bool isFirst = true;
                 foreach (Parameter param in decl.Parameters)
                 {
@@ -585,7 +585,7 @@ public:
                     {
                         tw.Write(",");
                     }
-                    tw.Write("\n          " + param.Type.NativeTypeName2 + " " + param.Name);
+                    tw.Write(Environment.NewLine + "          " + param.Type.NativeTypeName2 + " " + param.Name);
                 }
                 tw.WriteLine(");");
             }
@@ -609,7 +609,7 @@ public:
 #include ""spmiutil.h""
 
 ", 
-                                footer: "\n",
+                                footer: Environment.NewLine,
                                 cppType: "interceptor_ICJI",
                                 beforeCallFunc: (FunctionDecl decl)=> $"    mcs->AddCall(\"{decl.FunctionName}\");",
                                 afterCallFunc: (FunctionDecl decl)=> null,
@@ -627,7 +627,7 @@ public:
 #include ""spmiutil.h""
 
 ", 
-                                footer: "\n",
+                                footer: Environment.NewLine,
                                 cppType: "interceptor_ICJI",
                                 beforeCallFunc: (FunctionDecl decl)=> null,
                                 afterCallFunc: (FunctionDecl decl)=> null,

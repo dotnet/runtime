@@ -1027,7 +1027,7 @@ namespace Internal.JitInterface
             return fThrowing ? CorInfoHelpFunc.CORINFO_HELP_CHKCASTANY : CorInfoHelpFunc.CORINFO_HELP_ISINSTANCEOFANY;
         }
 
-        private CorInfoHelpFunc getNewHelper(ref CORINFO_RESOLVED_TOKEN pResolvedToken, CORINFO_METHOD_STRUCT_* callerHandle, byte* pHasSideEffects = null)
+        private CorInfoHelpFunc getNewHelper(ref CORINFO_RESOLVED_TOKEN pResolvedToken, CORINFO_METHOD_STRUCT_* callerHandle, ref bool pHasSideEffects)
         {
             TypeDesc type = HandleToObject(pResolvedToken.hClass);
             MetadataType metadataType = type as MetadataType;
@@ -1036,10 +1036,7 @@ namespace Internal.JitInterface
                 ThrowHelper.ThrowInvalidProgramException(ExceptionStringID.InvalidProgramSpecific, HandleToObject(callerHandle));
             }
 
-            if (pHasSideEffects != null)
-            {
-                *pHasSideEffects = (byte)(type.HasFinalizer ? 1 : 0);
-            }
+            pHasSideEffects = type.HasFinalizer;
 
             return CorInfoHelpFunc.CORINFO_HELP_NEWFAST;
         }

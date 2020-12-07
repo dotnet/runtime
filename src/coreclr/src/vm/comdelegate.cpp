@@ -880,7 +880,7 @@ FCIMPL5(FC_BOOL_RET, COMDelegate::BindToMethodName,
                                                                  pCurMethod->GetMethodInstantiation(),
                                                                  false /* do not allow code with a shared-code calling convention to be returned */,
                                                                  true /* Ensure that methods on generic interfaces are returned as instantiated method descs */);
-                BOOL fIsOpenDelegate;
+                bool fIsOpenDelegate;
                 if (!COMDelegate::IsMethodDescCompatible((gc.target == NULL) ? TypeHandle() : gc.target->GetTypeHandle(),
                                                         methodType,
                                                         pCurMethod,
@@ -960,7 +960,7 @@ FCIMPL5(FC_BOOL_RET, COMDelegate::BindToMethodInfo, Object* refThisUNSAFE, Objec
                                                      false /* do not allow code with a shared-code calling convention to be returned */,
                                                      true /* Ensure that methods on generic interfaces are returned as instantiated method descs */);
 
-    BOOL fIsOpenDelegate;
+    bool fIsOpenDelegate;
     if (COMDelegate::IsMethodDescCompatible((gc.refFirstArg == NULL) ? TypeHandle() : gc.refFirstArg->GetTypeHandle(),
                                             TypeHandle(pMethMT),
                                             method,
@@ -2420,7 +2420,7 @@ PCODE COMDelegate::GetWrapperInvoke(MethodDesc* pMD)
 #endif // CROSSGEN_COMPILE
 
 
-static BOOL IsLocationAssignable(TypeHandle fromHandle, TypeHandle toHandle, BOOL relaxedMatch, BOOL fromHandleIsBoxed)
+static bool IsLocationAssignable(TypeHandle fromHandle, TypeHandle toHandle, bool relaxedMatch, bool fromHandleIsBoxed)
 {
     CONTRACTL
     {
@@ -2431,13 +2431,13 @@ static BOOL IsLocationAssignable(TypeHandle fromHandle, TypeHandle toHandle, BOO
     CONTRACTL_END;
     // Identical types are obviously compatible.
     if (fromHandle == toHandle)
-        return TRUE;
+        return true;
 
     // Byref parameters can never be allowed relaxed matching since type safety will always be violated in one
     // of the two directions (in or out). Checking one of the types is enough since a byref type is never
     // compatible with a non-byref type.
     if (fromHandle.IsByRef())
-        relaxedMatch = FALSE;
+        relaxedMatch = false;
 
     // If we allow relaxed matching then any subtype of toHandle is probably
     // compatible (definitely so if we know fromHandle is coming from a boxed
@@ -2520,7 +2520,7 @@ static BOOL IsLocationAssignable(TypeHandle fromHandle, TypeHandle toHandle, BOO
                         {
                             // It was not possible to prove that the variables are both reference types
                             // or both value types.
-                            return FALSE;
+                            return false;
                         }
                     }
                 }
@@ -2535,12 +2535,12 @@ static BOOL IsLocationAssignable(TypeHandle fromHandle, TypeHandle toHandle, BOO
                     if (CorTypeInfo::IsObjRef_NoThrow(toHandle.GetInternalCorElementType()))
                     {
                         if (!fromHandleVar->ConstrainedAsObjRef())
-                            return FALSE;
+                            return false;
                     }
                     else
                     {
                         if (!fromHandleVar->ConstrainedAsValueType())
-                            return FALSE;
+                            return false;
                     }
                 }
             }
@@ -2551,22 +2551,22 @@ static BOOL IsLocationAssignable(TypeHandle fromHandle, TypeHandle toHandle, BOO
                 // The COR element types have all the information we need.
                 if (CorTypeInfo::IsObjRef_NoThrow(fromHandle.GetInternalCorElementType()) !=
                     CorTypeInfo::IsObjRef_NoThrow(toHandle.GetInternalCorElementType()))
-                    return FALSE;
+                    return false;
             }
         }
 
-        return TRUE;
+        return true;
     }
     else
     {
         // they are not compatible yet enums can go into each other if their underlying element type is the same
         if (toHandle.GetVerifierCorElementType() == fromHandle.GetVerifierCorElementType()
             && (toHandle.IsEnum() || fromHandle.IsEnum()))
-            return TRUE;
+            return true;
 
     }
 
-    return FALSE;
+    return false;
 }
 
 MethodDesc* COMDelegate::FindDelegateInvokeMethod(MethodTable *pMT)
@@ -2597,13 +2597,13 @@ BOOL COMDelegate::IsDelegateInvokeMethod(MethodDesc *pMD)
     return (pMD == ((DelegateEEClass *)pMT->GetClass())->GetInvokeMethod());
 }
 
-BOOL COMDelegate::IsMethodDescCompatible(TypeHandle   thFirstArg,
+bool COMDelegate::IsMethodDescCompatible(TypeHandle   thFirstArg,
                                          TypeHandle   thExactMethodType,
                                          MethodDesc  *pTargetMethod,
                                          TypeHandle   thDelegate,
                                          MethodDesc  *pInvokeMethod,
                                          int          flags,
-                                         BOOL        *pfIsOpenDelegate)
+                                         bool        *pfIsOpenDelegate)
 {
     CONTRACTL
     {
@@ -2616,14 +2616,14 @@ BOOL COMDelegate::IsMethodDescCompatible(TypeHandle   thFirstArg,
     // Handle easy cases first -- if there's a constraint on whether the target method is static or instance we can check that very
     // quickly.
     if (flags & DBF_StaticMethodOnly && !pTargetMethod->IsStatic())
-        return FALSE;
+        return false;
     if (flags & DBF_InstanceMethodOnly && pTargetMethod->IsStatic())
-        return FALSE;
+        return false;
 
     // we don't allow you to bind to methods on Nullable<T> because the unboxing stubs don't know how to
     // handle this case.
     if (!pTargetMethod->IsStatic() && Nullable::IsNullableType(pTargetMethod->GetMethodTable()))
-        return FALSE;
+        return false;
 
     // Get signatures for the delegate invoke and target methods.
     MetaSig sigInvoke(pInvokeMethod, thDelegate);
@@ -2631,7 +2631,7 @@ BOOL COMDelegate::IsMethodDescCompatible(TypeHandle   thFirstArg,
 
     // Check that there is no vararg mismatch.
     if (sigInvoke.IsVarArg() != sigTarget.IsVarArg())
-        return FALSE;
+        return false;
 
     // The relationship between the number of arguments on the delegate invoke and target methods tells us a lot about the type of
     // delegate we'll create (open or closed over the first argument). We're getting the fixed argument counts here, which are all
@@ -2647,31 +2647,31 @@ BOOL COMDelegate::IsMethodDescCompatible(TypeHandle   thFirstArg,
 
     // Determine whether the match (if it is otherwise compatible) would result in an open or closed delegate or is just completely
     // out of whack.
-    BOOL fIsOpenDelegate;
+    bool fIsOpenDelegate;
     if (numTotalTargetArgs == numFixedInvokeArgs)
         // All arguments provided by invoke, delegate must be open.
-        fIsOpenDelegate = TRUE;
+        fIsOpenDelegate = true;
     else if (numTotalTargetArgs == numFixedInvokeArgs + 1)
         // One too few arguments provided by invoke, delegate must be closed.
-        fIsOpenDelegate = FALSE;
+        fIsOpenDelegate = false;
     else
         // Target method cannot possibly match the invoke method.
-        return FALSE;
+        return false;
 
     // Deal with cases where the caller wants a specific type of delegate.
     if (flags & DBF_OpenDelegateOnly && !fIsOpenDelegate)
-        return FALSE;
+        return false;
     if (flags & DBF_ClosedDelegateOnly && fIsOpenDelegate)
-        return FALSE;
+        return false;
 
     // If the target (or first argument) is null, the delegate type would be closed and the caller explicitly doesn't want to allow
     // closing over null then filter that case now.
     if (flags & DBF_NeverCloseOverNull && thFirstArg.IsNull() && !fIsOpenDelegate)
-        return FALSE;
+        return false;
 
     // If, on the other hand, we're looking at an open delegate but the caller has provided a target it's also not a match.
     if (fIsOpenDelegate && !thFirstArg.IsNull())
-        return FALSE;
+        return false;
 
     // **********OLD COMMENT**********
     // We don't allow open delegates over virtual value type methods. That's because we currently have no way to allow the first
@@ -2713,7 +2713,7 @@ BOOL COMDelegate::IsMethodDescCompatible(TypeHandle   thFirstArg,
     {
         // No bound arguments, take first type from invoke signature.
         if (sigInvoke.NextArgNormalized() == ELEMENT_TYPE_END)
-            return FALSE;
+            return false;
         thFirstInvokeArg = sigInvoke.GetLastTypeHandleThrowing();
     }
     else
@@ -2725,7 +2725,7 @@ BOOL COMDelegate::IsMethodDescCompatible(TypeHandle   thFirstArg,
     {
         // The first argument for a static method is the first fixed arg.
         if (sigTarget.NextArgNormalized() == ELEMENT_TYPE_END)
-            return FALSE;
+            return false;
         thFirstTargetArg = sigTarget.GetLastTypeHandleThrowing();
 
         // Delegates closed over static methods have a further constraint: the first argument of the target must be an object
@@ -2737,14 +2737,14 @@ BOOL COMDelegate::IsMethodDescCompatible(TypeHandle   thFirstArg,
                 // If the first argument of the target is a generic variable, it must be constrained to be an object reference.
                 TypeVarTypeDesc *varFirstTargetArg = thFirstTargetArg.AsGenericVariable();
                 if (!varFirstTargetArg->ConstrainedAsObjRef())
-                    return FALSE;
+                    return false;
             }
             else
             {
                 // Otherwise the code:CorElementType of the argument must be classified as an object reference.
                 CorElementType etFirstTargetArg = thFirstTargetArg.GetInternalCorElementType();
                 if (!CorTypeInfo::IsObjRef(etFirstTargetArg))
-                    return FALSE;
+                    return false;
             }
         }
     }
@@ -2780,7 +2780,7 @@ BOOL COMDelegate::IsMethodDescCompatible(TypeHandle   thFirstArg,
                                   thFirstTargetArg,
                                   !pTargetMethod->IsStatic() || flags & DBF_RelaxedSignature,
                                   !fIsOpenDelegate))
-            return FALSE;
+            return false;
 
         // Loop over the remaining fixed args, the list should be one to one at this point.
     while (TRUE)
@@ -2791,7 +2791,7 @@ BOOL COMDelegate::IsMethodDescCompatible(TypeHandle   thFirstArg,
         {
             // We've reached the end of one signature. We better be at the end of the other or it's not a match.
             if (etInvokeArg != etTargetArg)
-                return FALSE;
+                return false;
             break;
         }
         else
@@ -2799,8 +2799,8 @@ BOOL COMDelegate::IsMethodDescCompatible(TypeHandle   thFirstArg,
             TypeHandle thInvokeArg = sigInvoke.GetLastTypeHandleThrowing();
             TypeHandle thTargetArg = sigTarget.GetLastTypeHandleThrowing();
 
-            if (!IsLocationAssignable(thInvokeArg, thTargetArg, flags & DBF_RelaxedSignature, FALSE))
-                return FALSE;
+            if (!IsLocationAssignable(thInvokeArg, thTargetArg, flags & DBF_RelaxedSignature, false))
+                return false;
         }
     }
 
@@ -2812,13 +2812,13 @@ BOOL COMDelegate::IsMethodDescCompatible(TypeHandle   thFirstArg,
     if (!IsLocationAssignable(sigTarget.GetRetTypeHandleThrowing(),
                               sigInvoke.GetRetTypeHandleThrowing(),
                               flags & DBF_RelaxedSignature,
-                              FALSE))
-        return FALSE;
+                              false))
+        return false;
 
     // We must have a match.
     if (pfIsOpenDelegate)
         *pfIsOpenDelegate = fIsOpenDelegate;
-    return TRUE;
+    return true;
 }
 
 MethodDesc* COMDelegate::GetDelegateCtor(TypeHandle delegateType, MethodDesc *pTargetMethod, DelegateCtorArgs *pCtorData)
@@ -3066,11 +3066,11 @@ MethodDesc* COMDelegate::GetDelegateCtor(TypeHandle delegateType, MethodDesc *pT
         will *only* verify a constructor application at the typical (ie. formal) instantiation.
 */
 /* static */
-BOOL COMDelegate::ValidateCtor(TypeHandle instHnd,
+bool COMDelegate::ValidateCtor(TypeHandle instHnd,
                                TypeHandle ftnParentHnd,
                                MethodDesc *pFtn,
                                TypeHandle dlgtHnd,
-                               BOOL       *pfIsOpenDelegate)
+                               bool       *pfIsOpenDelegate)
 
 {
     CONTRACTL
@@ -3091,7 +3091,7 @@ BOOL COMDelegate::ValidateCtor(TypeHandle instHnd,
     PREFIX_ASSUME(pdlgEEClass != NULL);
     MethodDesc *pDlgtInvoke = pdlgEEClass->GetInvokeMethod();
     if (pDlgtInvoke == NULL)
-        return FALSE;
+        return false;
     return IsMethodDescCompatible(instHnd, ftnParentHnd, pFtn, dlgtHnd, pDlgtInvoke, DBF_RelaxedSignature, pfIsOpenDelegate);
 }
 

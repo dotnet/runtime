@@ -279,8 +279,8 @@ public:
             );
 
     void    reserveUnwindInfo(
-            BOOL isFunclet,               /* IN */
-            BOOL isColdCode,              /* IN */
+            bool isFunclet,               /* IN */
+            bool isColdCode,              /* IN */
             ULONG unwindSize              /* IN */
             );
 
@@ -299,7 +299,7 @@ public:
     void setEHinfo(unsigned EHnumber, const CORINFO_EH_CLAUSE *clause);
 
     int  canHandleException(struct _EXCEPTION_POINTERS *pExceptionPointers);
-    BOOL logMsg(unsigned level,  const char *fmt, va_list args);
+    bool logMsg(unsigned level,  const char *fmt, va_list args);
     int  doAssert(const char* szFile, int iLine, const char* szExpr);
     void reportFatalError(CorJitResult result);
 
@@ -348,7 +348,7 @@ public:
                         void **ppIndirection);
     void
       embedGenericHandle(CORINFO_RESOLVED_TOKEN * pResolvedToken,
-                         BOOL                     fEmbedParent,
+                         bool                     fEmbedParent,
                          CORINFO_GENERICHANDLE_RESULT *pResult);
 
     void getLocationOfThisType(CORINFO_METHOD_HANDLE context, CORINFO_LOOKUP_KIND* pLookupKind);
@@ -392,9 +392,9 @@ public:
     ZapImport * GetProfilingHandleImport();
 
     void GetProfilingHandle(
-                    BOOL                      *pbHookFunction,
+                    bool                      *pbHookFunction,
                     void                     **pProfilerHandle,
-                    BOOL                      *pbIndirectedHandles
+                    bool                      *pbIndirectedHandles
                     );
 
     void getCallInfo(
@@ -409,11 +409,11 @@ public:
                         //out params
                         CORINFO_CALL_INFO       *pResult);
 
-    BOOL canAccessFamily(CORINFO_METHOD_HANDLE hCaller,
+    bool canAccessFamily(CORINFO_METHOD_HANDLE hCaller,
                                    CORINFO_CLASS_HANDLE hInstanceType);
 
 
-    BOOL isRIDClassDomainID(CORINFO_CLASS_HANDLE cls);
+    bool isRIDClassDomainID(CORINFO_CLASS_HANDLE cls);
 
     unsigned getClassDomainID(CORINFO_CLASS_HANDLE cls,
                                         void **ppIndirection);
@@ -515,13 +515,13 @@ public:
     const char* getHelperName(CorInfoHelpFunc ftnNum);
     int appendClassName(__deref_inout_ecount(*pnBufLen) WCHAR** ppBuf, int* pnBufLen,
                                   CORINFO_CLASS_HANDLE    cls,
-                                  BOOL fNamespace,
-                                  BOOL fFullInst,
-                                  BOOL fAssembly);
-    BOOL isValueClass(CORINFO_CLASS_HANDLE clsHnd);
+                                  bool fNamespace,
+                                  bool fFullInst,
+                                  bool fAssembly);
+    bool isValueClass(CORINFO_CLASS_HANDLE clsHnd);
     CorInfoInlineTypeCheck canInlineTypeCheck(CORINFO_CLASS_HANDLE cls, CorInfoInlineTypeCheckSource source);
     DWORD getClassAttribs(CORINFO_CLASS_HANDLE cls);
-    BOOL isStructRequiringStackAllocRetBuf(CORINFO_CLASS_HANDLE cls);
+    bool isStructRequiringStackAllocRetBuf(CORINFO_CLASS_HANDLE cls);
     CORINFO_MODULE_HANDLE getClassModule(CORINFO_CLASS_HANDLE cls);
     CORINFO_ASSEMBLY_HANDLE getModuleAssembly(CORINFO_MODULE_HANDLE mod);
     const char* getAssemblyName(CORINFO_ASSEMBLY_HANDLE assem);
@@ -531,13 +531,13 @@ public:
 
     unsigned getClassSize(CORINFO_CLASS_HANDLE cls);
     unsigned getHeapClassSize(CORINFO_CLASS_HANDLE cls);
-    BOOL canAllocateOnStack(CORINFO_CLASS_HANDLE cls);
-    unsigned getClassAlignmentRequirement(CORINFO_CLASS_HANDLE cls, BOOL fDoubleAlignHint);
+    bool canAllocateOnStack(CORINFO_CLASS_HANDLE cls);
+    unsigned getClassAlignmentRequirement(CORINFO_CLASS_HANDLE cls, bool fDoubleAlignHint);
 
     CORINFO_FIELD_HANDLE getFieldInClass(CORINFO_CLASS_HANDLE clsHnd, INT num);
 
     mdMethodDef getMethodDefFromMethod(CORINFO_METHOD_HANDLE hMethod);
-    BOOL checkMethodModifier(CORINFO_METHOD_HANDLE hMethod, LPCSTR modifier, BOOL fOptional);
+    bool checkMethodModifier(CORINFO_METHOD_HANDLE hMethod, LPCSTR modifier, bool fOptional);
 
     unsigned getClassGClayout(CORINFO_CLASS_HANDLE cls, BYTE *gcPtrs);
 
@@ -547,7 +547,7 @@ public:
 
     unsigned getClassNumInstanceFields(CORINFO_CLASS_HANDLE cls);
 
-    CorInfoHelpFunc getNewHelper(CORINFO_RESOLVED_TOKEN * pResolvedToken, CORINFO_METHOD_HANDLE callerHandle, bool * pHasSideEffects = NULL);
+    CorInfoHelpFunc getNewHelper(CORINFO_RESOLVED_TOKEN * pResolvedToken, CORINFO_METHOD_HANDLE callerHandle, bool * pHasSideEffects);
     CorInfoHelpFunc getCastingHelper(CORINFO_RESOLVED_TOKEN * pResolvedToken, bool fThrowing);
     CorInfoHelpFunc getNewArrHelper(CORINFO_CLASS_HANDLE arrayCls);
     CorInfoHelpFunc getSharedCCtorHelper(CORINFO_CLASS_HANDLE clsHnd);
@@ -579,22 +579,22 @@ public:
     CORINFO_CLASS_HANDLE getBuiltinClass(CorInfoClassId classId);
     CorInfoType getTypeForPrimitiveValueClass(CORINFO_CLASS_HANDLE cls);
     CorInfoType getTypeForPrimitiveNumericClass(CORINFO_CLASS_HANDLE cls);
-    BOOL canCast(CORINFO_CLASS_HANDLE child, CORINFO_CLASS_HANDLE parent);
-    BOOL areTypesEquivalent(CORINFO_CLASS_HANDLE cls1, CORINFO_CLASS_HANDLE cls2);
+    bool canCast(CORINFO_CLASS_HANDLE child, CORINFO_CLASS_HANDLE parent);
+    bool areTypesEquivalent(CORINFO_CLASS_HANDLE cls1, CORINFO_CLASS_HANDLE cls2);
     TypeCompareState compareTypesForCast(CORINFO_CLASS_HANDLE fromClass, CORINFO_CLASS_HANDLE toClass);
     TypeCompareState compareTypesForEquality(CORINFO_CLASS_HANDLE cls1, CORINFO_CLASS_HANDLE cls2);
 
     CORINFO_CLASS_HANDLE mergeClasses(CORINFO_CLASS_HANDLE cls1,
                                 CORINFO_CLASS_HANDLE cls2);
-    BOOL isMoreSpecificType(CORINFO_CLASS_HANDLE cls1,
+    bool isMoreSpecificType(CORINFO_CLASS_HANDLE cls1,
                                 CORINFO_CLASS_HANDLE cls2);
 
     CORINFO_CLASS_HANDLE getParentType(CORINFO_CLASS_HANDLE  cls);
     CorInfoType getChildType (CORINFO_CLASS_HANDLE       clsHnd,
                               CORINFO_CLASS_HANDLE       *clsRet);
-    BOOL satisfiesClassConstraints(CORINFO_CLASS_HANDLE cls);
+    bool satisfiesClassConstraints(CORINFO_CLASS_HANDLE cls);
 
-    BOOL     isSDArray   (CORINFO_CLASS_HANDLE  cls);
+    bool     isSDArray   (CORINFO_CLASS_HANDLE  cls);
     unsigned getArrayRank(CORINFO_CLASS_HANDLE  cls);
     void * getArrayInitializationData(CORINFO_FIELD_HANDLE field, DWORD size);
     CorInfoIsAccessAllowedResult canAccessClass(CORINFO_RESOLVED_TOKEN * pResolvedToken,
@@ -618,9 +618,9 @@ public:
                            unsigned metaTOK,
                            __out_ecount (FQNameCapacity) char * szFQName,
                            size_t FQNameCapacity);
-    BOOL isValidToken(CORINFO_MODULE_HANDLE module,
+    bool isValidToken(CORINFO_MODULE_HANDLE module,
                       unsigned metaTOK);
-    BOOL isValidStringRef(CORINFO_MODULE_HANDLE module,
+    bool isValidStringRef(CORINFO_MODULE_HANDLE module,
                           unsigned metaTOK);
     LPCWSTR getStringLiteral(CORINFO_MODULE_HANDLE module,
                                  unsigned metaTOK,
@@ -692,18 +692,18 @@ public:
                                      bool * pMustExpand = NULL);
     bool isIntrinsicType(CORINFO_CLASS_HANDLE classHnd);
     CorInfoUnmanagedCallConv getUnmanagedCallConv(CORINFO_METHOD_HANDLE method);
-    BOOL pInvokeMarshalingRequired(CORINFO_METHOD_HANDLE method, CORINFO_SIG_INFO* sig);
+    bool pInvokeMarshalingRequired(CORINFO_METHOD_HANDLE method, CORINFO_SIG_INFO* sig);
     LPVOID GetCookieForPInvokeCalliSig(CORINFO_SIG_INFO* szMetaSig,
                                        void ** ppIndirecton);
     bool canGetCookieForPInvokeCalliSig(CORINFO_SIG_INFO* szMetaSig);
-    BOOL satisfiesMethodConstraints(CORINFO_CLASS_HANDLE parent,
+    bool satisfiesMethodConstraints(CORINFO_CLASS_HANDLE parent,
                                               CORINFO_METHOD_HANDLE method);
 
-    BOOL isCompatibleDelegate(CORINFO_CLASS_HANDLE objCls,
+    bool isCompatibleDelegate(CORINFO_CLASS_HANDLE objCls,
                               CORINFO_CLASS_HANDLE methodParentCls,
                               CORINFO_METHOD_HANDLE method,
                               CORINFO_CLASS_HANDLE delegateCls,
-                              BOOL* pfIsOpenDelegate);
+                              bool* pfIsOpenDelegate);
 
     void getGSCookie(GSCookie * pCookieVal,
                      GSCookie** ppCookieVal);

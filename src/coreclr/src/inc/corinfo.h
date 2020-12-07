@@ -1567,11 +1567,11 @@ struct CORINFO_CALL_INFO
     CORINFO_THIS_TRANSFORM  thisTransform;
 
     CORINFO_CALL_KIND       kind;
-    BOOL                    nullInstanceCheck;
+    bool                    nullInstanceCheck;
 
     // Context for inlining and hidden arg
     CORINFO_CONTEXT_HANDLE  contextHandle;
-    BOOL                    exactContextNeedsRuntimeLookup; // Set if contextHandle is approx handle. Runtime lookup is required to get the exact handle.
+    bool                    exactContextNeedsRuntimeLookup; // Set if contextHandle is approx handle. Runtime lookup is required to get the exact handle.
 
     // If kind.CORINFO_VIRTUALCALL_STUB then stubLookup will be set.
     // If kind.CORINFO_CALL_CODE_POINTER then entryPointLookup will be set.
@@ -1584,7 +1584,7 @@ struct CORINFO_CALL_INFO
 
     CORINFO_CONST_LOOKUP    instParamLookup;    // Used by Ready-to-Run
 
-    BOOL                    wrapperDelegateInvoke;
+    bool                    wrapperDelegateInvoke;
 };
 
 struct CORINFO_DEVIRTUALIZATION_INFO
@@ -2050,7 +2050,7 @@ public:
     // Get the unboxed entry point for a method, if possible.
     virtual CORINFO_METHOD_HANDLE getUnboxedEntry(
         CORINFO_METHOD_HANDLE ftn,
-        bool* requiresInstMethodTableArg = NULL /* OUT */
+        bool* requiresInstMethodTableArg
         ) = 0;
 
     // Given T, return the type of the default EqualityComparer<T>.
@@ -2089,14 +2089,14 @@ public:
 
     // return if any marshaling is required for PInvoke methods.  Note that
     // method == 0 => calli.  The call site sig is only needed for the varargs or calli case
-    virtual BOOL pInvokeMarshalingRequired(
+    virtual bool pInvokeMarshalingRequired(
             CORINFO_METHOD_HANDLE       method,
             CORINFO_SIG_INFO*           callSiteSig
             ) = 0;
 
     // Check constraints on method type arguments (only).
     // The parent class should be checked separately using satisfiesClassConstraints(parent).
-    virtual BOOL satisfiesMethodConstraints(
+    virtual bool satisfiesMethodConstraints(
             CORINFO_CLASS_HANDLE        parent, // the exact parent of the method
             CORINFO_METHOD_HANDLE       method
             ) = 0;
@@ -2104,12 +2104,12 @@ public:
     // Given a delegate target class, a target method parent class,  a  target method,
     // a delegate class, check if the method signature is compatible with the Invoke method of the delegate
     // (under the typical instantiation of any free type variables in the memberref signatures).
-    virtual BOOL isCompatibleDelegate(
+    virtual bool isCompatibleDelegate(
             CORINFO_CLASS_HANDLE        objCls,           /* type of the delegate target, if any */
             CORINFO_CLASS_HANDLE        methodParentCls,  /* exact parent of the target method, if any */
             CORINFO_METHOD_HANDLE       method,           /* (representative) target method, if any */
             CORINFO_CLASS_HANDLE        delegateCls,      /* exact type of the delegate */
-            BOOL                        *pfIsOpenDelegate /* is the delegate open */
+            bool                        *pfIsOpenDelegate /* is the delegate open */
             ) = 0;
 
     // load and restore the method
@@ -2177,13 +2177,13 @@ public:
             CORINFO_RESOLVED_TOKEN *    pResolvedToken /* IN  */) = 0;
 
     // Checks if the given metadata token is valid
-    virtual BOOL isValidToken (
+    virtual bool isValidToken (
             CORINFO_MODULE_HANDLE       module,     /* IN  */
             unsigned                    metaTOK     /* IN  */
             ) = 0;
 
     // Checks if the given metadata token is valid StringRef
-    virtual BOOL isValidStringRef (
+    virtual bool isValidStringRef (
             CORINFO_MODULE_HANDLE       module,     /* IN  */
             unsigned                    metaTOK     /* IN  */
             ) = 0;
@@ -2237,13 +2237,13 @@ public:
             __deref_inout_ecount(*pnBufLen) WCHAR** ppBuf,
             int* pnBufLen,
             CORINFO_CLASS_HANDLE    cls,
-            BOOL fNamespace,
-            BOOL fFullInst,
-            BOOL fAssembly
+            bool fNamespace,
+            bool fFullInst,
+            bool fAssembly
             ) = 0;
 
     // Quick check whether the type is a value class. Returns the same value as getClassAttribs(cls) & CORINFO_FLG_VALUECLASS, except faster.
-    virtual BOOL isValueClass(CORINFO_CLASS_HANDLE cls) = 0;
+    virtual bool isValueClass(CORINFO_CLASS_HANDLE cls) = 0;
 
     // Decides how the JIT should do the optimization to inline the check for
     //     GetTypeFromHandle(handle) == obj.GetType() (for CORINFO_INLINE_TYPECHECK_SOURCE_VTABLE)
@@ -2261,7 +2261,7 @@ public:
     // an optimization: the JIT may assume that return buffer pointers for return types for which this predicate
     // returns TRUE are always stack allocated, and thus, that stores to the GC-pointer fields of such return
     // buffers do not require GC write barriers.
-    virtual BOOL isStructRequiringStackAllocRetBuf(CORINFO_CLASS_HANDLE cls) = 0;
+    virtual bool isStructRequiringStackAllocRetBuf(CORINFO_CLASS_HANDLE cls) = 0;
 
     virtual CORINFO_MODULE_HANDLE getClassModule (
             CORINFO_CLASS_HANDLE    cls
@@ -2300,13 +2300,13 @@ public:
         CORINFO_CLASS_HANDLE        cls
     ) = 0;
 
-    virtual BOOL canAllocateOnStack(
+    virtual bool canAllocateOnStack(
         CORINFO_CLASS_HANDLE cls
     ) = 0;
 
     virtual unsigned getClassAlignmentRequirement (
             CORINFO_CLASS_HANDLE        cls,
-            BOOL                        fDoubleAlignHint = FALSE
+            bool                        fDoubleAlignHint = false
             ) = 0;
 
     // This is only called for Value classes.  It returns a boolean array
@@ -2333,17 +2333,17 @@ public:
             INT num
             ) = 0;
 
-    virtual BOOL checkMethodModifier(
+    virtual bool checkMethodModifier(
             CORINFO_METHOD_HANDLE hMethod,
             LPCSTR modifier,
-            BOOL fOptional
+            bool fOptional
             ) = 0;
 
     // returns the "NEW" helper optimized for "newCls."
     virtual CorInfoHelpFunc getNewHelper(
             CORINFO_RESOLVED_TOKEN * pResolvedToken,
             CORINFO_METHOD_HANDLE    callerHandle,
-            bool *                   pHasSideEffects = NULL /* OUT */
+            bool *                   pHasSideEffects
             ) = 0;
 
     // returns the newArr (1-Dim array) helper optimized for "arrayCls."
@@ -2455,13 +2455,13 @@ public:
 
     // TRUE if child is a subtype of parent
     // if parent is an interface, then does child implement / extend parent
-    virtual BOOL canCast(
+    virtual bool canCast(
             CORINFO_CLASS_HANDLE        child,  // subtype (extends parent)
             CORINFO_CLASS_HANDLE        parent  // base type
             ) = 0;
 
     // TRUE if cls1 and cls2 are considered equivalent types.
-    virtual BOOL areTypesEquivalent(
+    virtual bool areTypesEquivalent(
             CORINFO_CLASS_HANDLE        cls1,
             CORINFO_CLASS_HANDLE        cls2
             ) = 0;
@@ -2491,7 +2491,7 @@ public:
     // for purposes of jit type tracking. This is a hint to the
     // jit for optimization; it does not have correctness
     // implications.
-    virtual BOOL isMoreSpecificType(
+    virtual bool isMoreSpecificType(
             CORINFO_CLASS_HANDLE        cls1,
             CORINFO_CLASS_HANDLE        cls2
             ) = 0;
@@ -2513,12 +2513,12 @@ public:
             ) = 0;
 
     // Check constraints on type arguments of this class and parent classes
-    virtual BOOL satisfiesClassConstraints(
+    virtual bool satisfiesClassConstraints(
             CORINFO_CLASS_HANDLE cls
             ) = 0;
 
     // Check if this is a single dimensional array type
-    virtual BOOL isSDArray(
+    virtual bool isSDArray(
             CORINFO_CLASS_HANDLE        cls
             ) = 0;
 
@@ -2930,7 +2930,7 @@ public:
     //
     virtual void embedGenericHandle(
                         CORINFO_RESOLVED_TOKEN *        pResolvedToken,
-                        BOOL                            fEmbedParent, // TRUE - embeds parent type handle of the field/method handle
+                        bool                            fEmbedParent, // TRUE - embeds parent type handle of the field/method handle
                         CORINFO_GENERICHANDLE_RESULT *  pResult) = 0;
 
     // Return information used to locate the exact enclosing type of the current method.
@@ -2976,9 +2976,9 @@ public:
     // This is the IP of a native method, or the address of the descriptor struct
     // for IL.  Always guaranteed to be unique per process, and not to move. */
     virtual void GetProfilingHandle(
-                    BOOL                      *pbHookFunction,
+                    bool                      *pbHookFunction,
                     void                     **pProfilerHandle,
-                    BOOL                      *pbIndirectedHandles
+                    bool                      *pbIndirectedHandles
                     ) = 0;
 
     // Returns instructions on how to make the call. See code:CORINFO_CALL_INFO for possible return values.
@@ -2999,12 +2999,12 @@ public:
                         CORINFO_CALL_INFO       *pResult
                         ) = 0;
 
-    virtual BOOL canAccessFamily(CORINFO_METHOD_HANDLE hCaller,
+    virtual bool canAccessFamily(CORINFO_METHOD_HANDLE hCaller,
                                            CORINFO_CLASS_HANDLE hInstanceType) = 0;
 
     // Returns TRUE if the Class Domain ID is the RID of the class (currently true for every class
     // except reflection emitted classes and generics)
-    virtual BOOL isRIDClassDomainID(CORINFO_CLASS_HANDLE cls) = 0;
+    virtual bool isRIDClassDomainID(CORINFO_CLASS_HANDLE cls) = 0;
 
     // returns the class's domain ID for accessing shared statics
     virtual unsigned getClassDomainID (

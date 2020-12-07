@@ -200,35 +200,35 @@ CorInfoUnmanagedCallConv WrapICorJitInfo::getUnmanagedCallConv(
     return temp;
 }
 
-BOOL WrapICorJitInfo::pInvokeMarshalingRequired(
+bool WrapICorJitInfo::pInvokeMarshalingRequired(
           CORINFO_METHOD_HANDLE method,
           CORINFO_SIG_INFO* callSiteSig)
 {
     API_ENTER(pInvokeMarshalingRequired);
-    BOOL temp = wrapHnd->pInvokeMarshalingRequired(method, callSiteSig);
+    bool temp = wrapHnd->pInvokeMarshalingRequired(method, callSiteSig);
     API_LEAVE(pInvokeMarshalingRequired);
     return temp;
 }
 
-BOOL WrapICorJitInfo::satisfiesMethodConstraints(
+bool WrapICorJitInfo::satisfiesMethodConstraints(
           CORINFO_CLASS_HANDLE parent,
           CORINFO_METHOD_HANDLE method)
 {
     API_ENTER(satisfiesMethodConstraints);
-    BOOL temp = wrapHnd->satisfiesMethodConstraints(parent, method);
+    bool temp = wrapHnd->satisfiesMethodConstraints(parent, method);
     API_LEAVE(satisfiesMethodConstraints);
     return temp;
 }
 
-BOOL WrapICorJitInfo::isCompatibleDelegate(
+bool WrapICorJitInfo::isCompatibleDelegate(
           CORINFO_CLASS_HANDLE objCls,
           CORINFO_CLASS_HANDLE methodParentCls,
           CORINFO_METHOD_HANDLE method,
           CORINFO_CLASS_HANDLE delegateCls,
-          BOOL* pfIsOpenDelegate)
+          bool* pfIsOpenDelegate)
 {
     API_ENTER(isCompatibleDelegate);
-    BOOL temp = wrapHnd->isCompatibleDelegate(objCls, methodParentCls, method, delegateCls, pfIsOpenDelegate);
+    bool temp = wrapHnd->isCompatibleDelegate(objCls, methodParentCls, method, delegateCls, pfIsOpenDelegate);
     API_LEAVE(isCompatibleDelegate);
     return temp;
 }
@@ -324,22 +324,22 @@ CORINFO_CLASS_HANDLE WrapICorJitInfo::getTokenTypeAsHandle(
     return temp;
 }
 
-BOOL WrapICorJitInfo::isValidToken(
+bool WrapICorJitInfo::isValidToken(
           CORINFO_MODULE_HANDLE module,
           unsigned metaTOK)
 {
     API_ENTER(isValidToken);
-    BOOL temp = wrapHnd->isValidToken(module, metaTOK);
+    bool temp = wrapHnd->isValidToken(module, metaTOK);
     API_LEAVE(isValidToken);
     return temp;
 }
 
-BOOL WrapICorJitInfo::isValidStringRef(
+bool WrapICorJitInfo::isValidStringRef(
           CORINFO_MODULE_HANDLE module,
           unsigned metaTOK)
 {
     API_ENTER(isValidStringRef);
-    BOOL temp = wrapHnd->isValidStringRef(module, metaTOK);
+    bool temp = wrapHnd->isValidStringRef(module, metaTOK);
     API_LEAVE(isValidStringRef);
     return temp;
 }
@@ -397,9 +397,9 @@ int WrapICorJitInfo::appendClassName(
           WCHAR** ppBuf,
           int* pnBufLen,
           CORINFO_CLASS_HANDLE cls,
-          BOOL fNamespace,
-          BOOL fFullInst,
-          BOOL fAssembly)
+          bool fNamespace,
+          bool fFullInst,
+          bool fAssembly)
 {
     API_ENTER(appendClassName);
     int temp = wrapHnd->appendClassName(ppBuf, pnBufLen, cls, fNamespace, fFullInst, fAssembly);
@@ -407,11 +407,11 @@ int WrapICorJitInfo::appendClassName(
     return temp;
 }
 
-BOOL WrapICorJitInfo::isValueClass(
+bool WrapICorJitInfo::isValueClass(
           CORINFO_CLASS_HANDLE cls)
 {
     API_ENTER(isValueClass);
-    BOOL temp = wrapHnd->isValueClass(cls);
+    bool temp = wrapHnd->isValueClass(cls);
     API_LEAVE(isValueClass);
     return temp;
 }
@@ -435,11 +435,11 @@ DWORD WrapICorJitInfo::getClassAttribs(
     return temp;
 }
 
-BOOL WrapICorJitInfo::isStructRequiringStackAllocRetBuf(
+bool WrapICorJitInfo::isStructRequiringStackAllocRetBuf(
           CORINFO_CLASS_HANDLE cls)
 {
     API_ENTER(isStructRequiringStackAllocRetBuf);
-    BOOL temp = wrapHnd->isStructRequiringStackAllocRetBuf(cls);
+    bool temp = wrapHnd->isStructRequiringStackAllocRetBuf(cls);
     API_LEAVE(isStructRequiringStackAllocRetBuf);
     return temp;
 }
@@ -517,18 +517,18 @@ unsigned WrapICorJitInfo::getHeapClassSize(
     return temp;
 }
 
-BOOL WrapICorJitInfo::canAllocateOnStack(
+bool WrapICorJitInfo::canAllocateOnStack(
           CORINFO_CLASS_HANDLE cls)
 {
     API_ENTER(canAllocateOnStack);
-    BOOL temp = wrapHnd->canAllocateOnStack(cls);
+    bool temp = wrapHnd->canAllocateOnStack(cls);
     API_LEAVE(canAllocateOnStack);
     return temp;
 }
 
 unsigned WrapICorJitInfo::getClassAlignmentRequirement(
           CORINFO_CLASS_HANDLE cls,
-          BOOL fDoubleAlignHint)
+          bool fDoubleAlignHint)
 {
     API_ENTER(getClassAlignmentRequirement);
     unsigned temp = wrapHnd->getClassAlignmentRequirement(cls, fDoubleAlignHint);
@@ -565,13 +565,13 @@ CORINFO_FIELD_HANDLE WrapICorJitInfo::getFieldInClass(
     return temp;
 }
 
-BOOL WrapICorJitInfo::checkMethodModifier(
+bool WrapICorJitInfo::checkMethodModifier(
           CORINFO_METHOD_HANDLE hMethod,
           LPCSTR modifier,
-          BOOL fOptional)
+          bool fOptional)
 {
     API_ENTER(checkMethodModifier);
-    BOOL temp = wrapHnd->checkMethodModifier(hMethod, modifier, fOptional);
+    bool temp = wrapHnd->checkMethodModifier(hMethod, modifier, fOptional);
     API_LEAVE(checkMethodModifier);
     return temp;
 }
@@ -719,22 +719,22 @@ CorInfoType WrapICorJitInfo::getTypeForPrimitiveNumericClass(
     return temp;
 }
 
-BOOL WrapICorJitInfo::canCast(
+bool WrapICorJitInfo::canCast(
           CORINFO_CLASS_HANDLE child,
           CORINFO_CLASS_HANDLE parent)
 {
     API_ENTER(canCast);
-    BOOL temp = wrapHnd->canCast(child, parent);
+    bool temp = wrapHnd->canCast(child, parent);
     API_LEAVE(canCast);
     return temp;
 }
 
-BOOL WrapICorJitInfo::areTypesEquivalent(
+bool WrapICorJitInfo::areTypesEquivalent(
           CORINFO_CLASS_HANDLE cls1,
           CORINFO_CLASS_HANDLE cls2)
 {
     API_ENTER(areTypesEquivalent);
-    BOOL temp = wrapHnd->areTypesEquivalent(cls1, cls2);
+    bool temp = wrapHnd->areTypesEquivalent(cls1, cls2);
     API_LEAVE(areTypesEquivalent);
     return temp;
 }
@@ -769,12 +769,12 @@ CORINFO_CLASS_HANDLE WrapICorJitInfo::mergeClasses(
     return temp;
 }
 
-BOOL WrapICorJitInfo::isMoreSpecificType(
+bool WrapICorJitInfo::isMoreSpecificType(
           CORINFO_CLASS_HANDLE cls1,
           CORINFO_CLASS_HANDLE cls2)
 {
     API_ENTER(isMoreSpecificType);
-    BOOL temp = wrapHnd->isMoreSpecificType(cls1, cls2);
+    bool temp = wrapHnd->isMoreSpecificType(cls1, cls2);
     API_LEAVE(isMoreSpecificType);
     return temp;
 }
@@ -798,20 +798,20 @@ CorInfoType WrapICorJitInfo::getChildType(
     return temp;
 }
 
-BOOL WrapICorJitInfo::satisfiesClassConstraints(
+bool WrapICorJitInfo::satisfiesClassConstraints(
           CORINFO_CLASS_HANDLE cls)
 {
     API_ENTER(satisfiesClassConstraints);
-    BOOL temp = wrapHnd->satisfiesClassConstraints(cls);
+    bool temp = wrapHnd->satisfiesClassConstraints(cls);
     API_LEAVE(satisfiesClassConstraints);
     return temp;
 }
 
-BOOL WrapICorJitInfo::isSDArray(
+bool WrapICorJitInfo::isSDArray(
           CORINFO_CLASS_HANDLE cls)
 {
     API_ENTER(isSDArray);
-    BOOL temp = wrapHnd->isSDArray(cls);
+    bool temp = wrapHnd->isSDArray(cls);
     API_LEAVE(isSDArray);
     return temp;
 }
@@ -1260,7 +1260,7 @@ CORINFO_FIELD_HANDLE WrapICorJitInfo::embedFieldHandle(
 
 void WrapICorJitInfo::embedGenericHandle(
           CORINFO_RESOLVED_TOKEN* pResolvedToken,
-          BOOL fEmbedParent,
+          bool fEmbedParent,
           CORINFO_GENERICHANDLE_RESULT* pResult)
 {
     API_ENTER(embedGenericHandle);
@@ -1316,9 +1316,9 @@ CORINFO_JUST_MY_CODE_HANDLE WrapICorJitInfo::getJustMyCodeHandle(
 }
 
 void WrapICorJitInfo::GetProfilingHandle(
-          BOOL* pbHookFunction,
+          bool* pbHookFunction,
           void** pProfilerHandle,
-          BOOL* pbIndirectedHandles)
+          bool* pbIndirectedHandles)
 {
     API_ENTER(GetProfilingHandle);
     wrapHnd->GetProfilingHandle(pbHookFunction, pProfilerHandle, pbIndirectedHandles);
@@ -1337,21 +1337,21 @@ void WrapICorJitInfo::getCallInfo(
     API_LEAVE(getCallInfo);
 }
 
-BOOL WrapICorJitInfo::canAccessFamily(
+bool WrapICorJitInfo::canAccessFamily(
           CORINFO_METHOD_HANDLE hCaller,
           CORINFO_CLASS_HANDLE hInstanceType)
 {
     API_ENTER(canAccessFamily);
-    BOOL temp = wrapHnd->canAccessFamily(hCaller, hInstanceType);
+    bool temp = wrapHnd->canAccessFamily(hCaller, hInstanceType);
     API_LEAVE(canAccessFamily);
     return temp;
 }
 
-BOOL WrapICorJitInfo::isRIDClassDomainID(
+bool WrapICorJitInfo::isRIDClassDomainID(
           CORINFO_CLASS_HANDLE cls)
 {
     API_ENTER(isRIDClassDomainID);
-    BOOL temp = wrapHnd->isRIDClassDomainID(cls);
+    bool temp = wrapHnd->isRIDClassDomainID(cls);
     API_LEAVE(isRIDClassDomainID);
     return temp;
 }
@@ -1520,8 +1520,8 @@ void WrapICorJitInfo::allocMem(
 }
 
 void WrapICorJitInfo::reserveUnwindInfo(
-          BOOL isFunclet,
-          BOOL isColdCode,
+          bool isFunclet,
+          bool isColdCode,
           ULONG unwindSize)
 {
     API_ENTER(reserveUnwindInfo);
@@ -1569,13 +1569,13 @@ void WrapICorJitInfo::setEHinfo(
     API_LEAVE(setEHinfo);
 }
 
-BOOL WrapICorJitInfo::logMsg(
+bool WrapICorJitInfo::logMsg(
           unsigned level,
           const char* fmt,
           va_list args)
 {
     API_ENTER(logMsg);
-    BOOL temp = wrapHnd->logMsg(level, fmt, args);
+    bool temp = wrapHnd->logMsg(level, fmt, args);
     API_LEAVE(logMsg);
     return temp;
 }

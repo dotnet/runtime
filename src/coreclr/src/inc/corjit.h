@@ -177,8 +177,8 @@ public:
     // separate sections .rdata and .pdata.
     //
     virtual void reserveUnwindInfo (
-            BOOL                isFunclet,             /* IN */
-            BOOL                isColdCode,            /* IN */
+            bool                isFunclet,             /* IN */
+            bool                isColdCode,            /* IN */
             ULONG               unwindSize             /* IN */
             ) = 0;
 
@@ -237,7 +237,7 @@ public:
     // Level -> fatalError, Level 2 -> Error, Level 3 -> Warning
     // Level 4 means happens 10 times in a run, level 5 means 100, level 6 means 1000 ...
     // returns non-zero if the logging succeeded
-    virtual BOOL logMsg(unsigned level, const char* fmt, va_list args) = 0;
+    virtual bool logMsg(unsigned level, const char* fmt, va_list args) = 0;
 
     // do an assert.  will return true if the code should retry (DebugBreak)
     // returns false, if the assert should be igored.
