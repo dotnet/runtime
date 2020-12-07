@@ -5,6 +5,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
+using System.Runtime.ExceptionServices;
 
 namespace System.Text.RegularExpressions
 {
@@ -26,6 +27,8 @@ namespace System.Text.RegularExpressions
         private Hashtable? _caps;
         private int _trackCount;
 
+        public List<string>? ahoCorasickWords;
+
         private RegexWriter(Span<int> emittedSpan, Span<int> intStackSpan)
         {
             _emitted = new ValueListBuilder<int>(emittedSpan);
@@ -33,6 +36,7 @@ namespace System.Text.RegularExpressions
             _stringTable = new Dictionary<string, int>();
             _caps = null;
             _trackCount = 0;
+            ahoCorasickWords = null!;
         }
 
         /// <summary>
@@ -43,6 +47,10 @@ namespace System.Text.RegularExpressions
         {
             var writer = new RegexWriter(stackalloc int[EmittedSize], stackalloc int[IntStackSize]);
             RegexCode code = writer.RegexCodeFromRegexTree(tree);
+            if (writer.ahoCorasickWords != null)
+            {
+                code.ahoCorasickWords = writer.ahoCorasickWords;
+            }
             writer.Dispose();
 
 #if DEBUG
@@ -79,55 +87,50 @@ namespace System.Text.RegularExpressions
             }
         }
 
-        private bool EffectiveParentIsAnAlternateNode(RegexNode node)
+        private bool EffectiveChildIsAnAlternateNode(RegexNode node, int child)
         {
-            Debug.Assert(node.Type == RegexNode.Multi, "Currently only used to analyze Multi nodes.");
-            if (node == null || node.Next == null)
-            {
-                return false;
-            }
-            if (node.Next.Type == RegexNode.Alternate)
+            Debug.Assert(node.Type == RegexNode.Concatenate, "Should only be called for concatenate node. Which node is calling this");
+            Debug.Assert(child < node.ChildCount());
+            RegexNode childNode = node.Child(child);
+            if (childNode.Type == RegexNode.Alternate)
             {
                 return true;
             }
-            if (node.Next.Type == RegexNode.Capture && node.Next.Next != null && node.Next.Next.Type == RegexNode.Alternate)
+            else if (childNode.Type == RegexNode.Capture)
             {
-                return true;
+                Debug.Assert(childNode.ChildCount() > 0, "Assuming at least 1 child");
+                childNode = childNode.Child(0);
+                if (childNode.Type == RegexNode.Alternate)
+                {
+                    return true;
+                }
             }
+
             return false;
         }
 
-        private bool ConcatenateNodeHasOnlyOneMultiNodeChild(RegexNode concatenateNode)
+        private bool EffectiveChildIsAMultiNode(RegexNode node, int child, out RegexNode multiNode)
         {
-            Debug.Assert(concatenateNode.Type == RegexNode.Concatenate);
-            int countOfMultiNodes = 0;
-            for (int i = 0; i < concatenateNode.ChildCount(); i++)
+            Debug.Assert(node.Type == RegexNode.Concatenate, "Should only be called for concatenate node. Which node is calling this");
+            Debug.Assert(child < node.ChildCount());
+            RegexNode childNode = node.Child(child);
+            if (childNode.Type == RegexNode.Multi)
             {
-                if (concatenateNode.Child(i).Type == RegexNode.Multi)
+                multiNode = childNode;
+                return true;
+            }
+            else if (childNode.Type == RegexNode.Capture)
+            {
+                Debug.Assert(childNode.ChildCount() > 0, "Assuming at least 1 child");
+                childNode = childNode.Child(0);
+                if (childNode.Type == RegexNode.Multi)
                 {
-                    countOfMultiNodes++;
+                    multiNode = childNode;
+                    return true;
                 }
             }
-            return countOfMultiNodes == 1;
-        }
 
-        private bool EffectiveParentIsAConcatenateNode(RegexNode node)
-        {
-            Debug.Assert(node.Type == RegexNode.Multi, "Currently only used to analyze Multi nodes.");
-            if (node == null || node.Next == null)
-            {
-                return false;
-            }
-            if (node.Next.Type == RegexNode.Concatenate)
-            {
-                //Debug.Assert(node.Next.ChildCount() == 1, "Algorithm assumes a concatenate node has only 1 child of type Multi");
-                return true;
-            }
-            if (node.Next.Type == RegexNode.Capture && node.Next.Next != null && node.Next.Next.Type == RegexNode.Concatenate)
-            {
-                //Debug.Assert(node.Next.Next.ChildCount() == 1, "Algorithm assumes a concatenate node has only 1 child of type Multi");
-                return true;
-            }
+            multiNode = null!;
             return false;
         }
 
@@ -165,7 +168,6 @@ namespace System.Text.RegularExpressions
             List<string> words = new List<string>() { string.Empty };
             // Local stack to populate the words list correctly
             ValueListBuilder<int> concatenateStack = new ValueListBuilder<int>(stackalloc int[IntStackSize]);
-            int indexForConcatenateWords = 0;
             bool useAhoCorasick = true;
 
             // Emit every node.
@@ -186,17 +188,8 @@ namespace System.Text.RegularExpressions
                     {
                         if (curNode.Type == RegexNode.Multi)
                         {
-                            if (EffectiveParentIsAnAlternateNode(curNode))
-                            {
-                                words.Add(curNode.Str!);
-                            }
-                            else if (EffectiveParentIsAConcatenateNode(curNode))
-                            {
-                                for (int i = indexForConcatenateWords; i < words.Count; i++)
-                                {
-                                    words[i] = words[i] + curNode.Str!;
-                                }
-                            }
+                            words.Add(curNode.Str!);
+                            curNode.cumulativeNumberOfChildren = 1;
                         }
                     }
                 }
@@ -206,17 +199,6 @@ namespace System.Text.RegularExpressions
                     if (useAhoCorasick)
                     {
                         useAhoCorasick = ContinueUsingAhoCorasick(curNode);
-                    }
-                    if (useAhoCorasick)
-                    {
-                        if (curChild == 0)
-                        {
-                            concatenateStack.Append(words.Count);
-                        }
-                        else
-                        {
-                            indexForConcatenateWords = concatenateStack.Pop();
-                        }
                     }
 
                     curNode = curNode.Child(curChild);
@@ -234,9 +216,73 @@ namespace System.Text.RegularExpressions
                 curNode = curNode.Next!;
 
                 EmitFragment(curNode.Type | AfterChild, curNode, curChild);
+                if (useAhoCorasick)
+                {
+                    if (curNode.Type == RegexNode.Capture)
+                    {
+                        curNode.cumulativeNumberOfChildren += curNode.Child(curChild).cumulativeNumberOfChildren;
+                    }
+                    if (curNode.Type == RegexNode.Alternate)
+                    {
+                        curNode.cumulativeNumberOfChildren += curNode.Child(curChild).cumulativeNumberOfChildren;
+                        // Because the current node is an alternate node, we expand our words.
+                        if (curChild == curNode.ChildCount() - 1)
+                        {
+                            int numberOfCurrentWords = words.Count - curNode.cumulativeNumberOfChildren;
+                            if (numberOfCurrentWords > 0)
+                            {
+                                List<string> newWords = new List<string>(numberOfCurrentWords * curNode.cumulativeNumberOfChildren);
+                                for (int i = 0; i < numberOfCurrentWords; i++)
+                                {
+                                    string concatenateWord = words[i];
+                                    for (int j = numberOfCurrentWords; j < words.Count; j++)
+                                    {
+                                        newWords.Add(concatenateWord + words[j]);
+                                    }
+                                }
+                                words = newWords;
+                                curNode.cumulativeNumberOfChildren = words.Count;
+                            }
+
+                        }
+                    }
+                    if (curNode.Type == RegexNode.Concatenate)
+                    {
+                        RegexNode childNode = curNode.Child(curChild);
+                        if (EffectiveChildIsAnAlternateNode(curNode, curChild))
+                        {
+                            curNode.cumulativeNumberOfChildren = words.Count;
+                        }
+                        else if (EffectiveChildIsAMultiNode(curNode, curChild, out RegexNode multiNode))
+                        {
+                            string multiStr = multiNode.Str!;
+                            int numberOfCurrentWords = words.Count - multiNode.cumulativeNumberOfChildren;
+                            if (numberOfCurrentWords > 0)
+                            {
+                                for (int i = 0; i < numberOfCurrentWords; i++)
+                                {
+                                    words[i] += multiStr;
+                                }
+                                for (int i = words.Count - 1; i >= numberOfCurrentWords; i--)
+                                {
+                                    words.RemoveAt(i);
+                                }
+                            }
+                            curNode.cumulativeNumberOfChildren = words.Count;
+                        }
+                    }
+                }
                 curChild++;
             }
 
+            if (useAhoCorasick)
+            {
+                ahoCorasickWords = words;
+            }
+            else
+            {
+                words = null!;
+            }
             // Patch the starting Lazybranch, emit the final Stop, and get the resulting code array.
             PatchJump(0, _emitted.Length);
             Emit(RegexCode.Stop);

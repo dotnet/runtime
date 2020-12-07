@@ -14,6 +14,7 @@
 // Strings and sets are indices into a string table.
 
 using System.Collections;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 
@@ -21,6 +22,7 @@ namespace System.Text.RegularExpressions
 {
     internal sealed class RegexCode
     {
+        public List<string>? ahoCorasickWords;
         // The following primitive operations come directly from the parser
 
                                                   // lef/back operands        description

@@ -31,8 +31,10 @@ namespace System.Text.RegularExpressions
 
         internal WeakReference<RegexReplacement?>? _replref;  // cached parsed replacement pattern
         private volatile RegexRunner? _runner;                // cached runner
-        private RegexCode? _code;                             // if interpreted, this is the code for RegexInterpreter
+        internal RegexCode? _code;                             // if interpreted, this is the code for RegexInterpreter
         private bool _refsInitialized;
+
+        internal RegexAhoCorasick? aho;
 
         protected Regex()
         {
@@ -110,6 +112,16 @@ namespace System.Text.RegularExpressions
             capnames = tree.CapNames;
             capslist = tree.CapsList;
             _code = RegexWriter.Write(tree);
+            if (!this.RightToLeft && _code.ahoCorasickWords != null)
+            {
+                aho = new RegexAhoCorasick();
+                for (int i = 0; i < _code.ahoCorasickWords.Count; i++)
+                {
+                    aho.AddString(_code.ahoCorasickWords[i], i);
+                }
+
+                aho.Initialize();
+            }
             caps = _code.Caps;
             capsize = _code.CapSize;
 

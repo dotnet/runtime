@@ -1143,12 +1143,10 @@ namespace System.Text.RegularExpressions.Tests
         [Fact]
         public void Explore()
         {
-            var regex2 = new Regex("abc(efg|hij)xyz");
-            //var regex1 = new Regex("((abc|def)mno|(xyz|abc)ghi)rst");
+            //var regex2 = new Regex("abc(efg|hij)xyz");
+            //var regex1 = new Regex("((abc|def)mno|(xyz|abc)ghi)rst"); // AC word list still has a bug
             var regex = new Regex("(efg|xyz|hij)abcd");
-            //var matches = regex.Matches("hijabcd");
-            var match = regex.Match("hijabcd");
-            var match1 = regex.Match("ababcd");
+            var match = regex.Match("hhhhhhhhhhhhijabcd");
             Console.WriteLine("BH");
         }
     }

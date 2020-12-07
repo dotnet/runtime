@@ -136,6 +136,32 @@ namespace System.Text.RegularExpressions
             runtextbeg = textbeg;
             runtextend = textend;
 
+            if (!regex.RightToLeft && regex.aho != null)
+            {
+                bool initialized1 = false;
+                foreach ((int indexOfMatch, int lengthOfMatch) result in regex.aho.ProcessString(runtext))
+                {
+                    if (!initialized1)
+                    {
+                        InitializeForGo();
+                        initialized1 = true;
+                    }
+                    Match match = runmatch!;
+                    if (result.indexOfMatch != -1)
+                    {
+                        runmatch!.AddMatch(0, result.indexOfMatch, result.lengthOfMatch);
+                        runmatch!.Tidy(result.indexOfMatch + result.lengthOfMatch);
+                        return match;
+                    }
+                    else
+                    {
+                        runtext = null; // drop reference to text to avoid keeping it alive in a cache
+                        if (runmatch != null) runmatch.Text = null!;
+                        return Match.Empty;
+                    }
+                }
+            }
+
             // Main loop: FindFirstChar/Go + bump until the ending position.
             bool initialized = false;
             while (true)

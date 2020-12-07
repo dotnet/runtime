@@ -114,10 +114,16 @@ namespace System.Text.RegularExpressions
         public RegexOptions Options;
         public RegexNode? Next;
 
+        internal int cumulativeNumberOfChildren;
+
         public RegexNode(int type, RegexOptions options)
         {
             Type = type;
             Options = options;
+            if (Type == RegexNode.Concatenate)
+            {
+                cumulativeNumberOfChildren = 1;
+            }
         }
 
         public RegexNode(int type, RegexOptions options, char ch)
