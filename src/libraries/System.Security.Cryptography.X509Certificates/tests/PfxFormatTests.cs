@@ -745,8 +745,8 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             }
         }
 
-        [Fact]
-        public void CertAndKeyTwice_KeysUntagged()
+        [ConditionalFact(nameof(PlatformSupportsEphemeralKeys))]
+        public void CertAndKeyTwice_KeysUntagged_Ephemeral()
         {
             string pw = nameof(CertAndKeyTwice);
 
@@ -779,7 +779,48 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                     pfxBytes,
                     pw,
                     // NTE_BAD_DATA
-                    -2146893819);
+                    -2146893819,
+                    requiredFlags: X509KeyStorageFlags.EphemeralKeySet);
+            }
+        }
+
+        [Fact]
+        public void CertAndKeyTwice_KeysUntagged_Persisted()
+        {
+            string pw = nameof(CertAndKeyTwice);
+
+            using (var cert = new X509Certificate2(TestData.PfxData, TestData.PfxDataPassword, s_exportableImportFlags))
+            using (RSA key = cert.GetRSAPrivateKey())
+            {
+                Pkcs12Builder builder = new Pkcs12Builder();
+                Pkcs12SafeContents keyContents = new Pkcs12SafeContents();
+                Pkcs12SafeContents certContents = new Pkcs12SafeContents();
+
+                Pkcs12SafeBag key1 = keyContents.AddShroudedKey(key, pw, s_windowsPbe);
+                Pkcs12SafeBag key2 = keyContents.AddShroudedKey(key, pw, s_windowsPbe);
+                Pkcs12SafeBag cert1 = certContents.AddCertificate(cert);
+                Pkcs12SafeBag cert2 = certContents.AddCertificate(cert);
+
+                Pkcs9LocalKeyId id2 = new Pkcs9LocalKeyId(cert.GetCertHash());
+                Pkcs9LocalKeyId id3 = new Pkcs9LocalKeyId(BitConverter.GetBytes(3));
+                Pkcs9LocalKeyId id4 = new Pkcs9LocalKeyId(BitConverter.GetBytes(4));
+                cert1.Attributes.Add(s_keyIdOne);
+                cert2.Attributes.Add(id2);
+                key1.Attributes.Add(id3);
+                key2.Attributes.Add(id4);
+
+                AddContents(keyContents, builder, pw, encrypt: false);
+                AddContents(certContents, builder, pw, encrypt: true);
+                builder.SealWithMac(pw, s_digestAlgorithm, MacCount);
+                byte[] pfxBytes = builder.Encode();
+
+                ReadMultiPfx(
+                    pfxBytes,
+                    pw,
+                    cert,
+                    new [] { cert, cert },
+                    collectionWork: SharedKeyValidation,
+                    requiredFlags: X509KeyStorageFlags.UserKeySet | X509KeyStorageFlags.PersistKeySet);
             }
         }
 
@@ -865,26 +906,6 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                     new [] { cert, cert },
                     collectionWork: SharedKeyValidation,
                     requiredFlags: X509KeyStorageFlags.UserKeySet | X509KeyStorageFlags.PersistKeySet);
-            }
-
-            static void SharedKeyValidation(X509Certificate2Collection collection)
-            {
-                X509Certificate2 cert1 = collection[0];
-                X509Certificate2 cert2 = collection[1];
-                using RSA key1 = cert1.GetRSAPrivateKey();
-                using RSA key2 = cert2.GetRSAPrivateKey();
-                byte[] spki1 = key1.ExportSubjectPublicKeyInfo();
-                byte[] spki2 = key2.ExportSubjectPublicKeyInfo();
-
-                Assert.Equal(1024, key1.KeySize);
-                Assert.Equal(spki1, spki2);
-
-                // Changing the key size and exporting forces generate a new key.
-                key1.KeySize = 2048;
-                Assert.NotEqual(spki1, key1.ExportSubjectPublicKeyInfo());
-
-                // Make sure it didn't mutate key2.
-                Assert.Equal(spki2, key2.ExportSubjectPublicKeyInfo());
             }
         }
 
@@ -1058,6 +1079,26 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             {
                 Assert.Contains(expectedSubstring, ex.Message);
             }
+        }
+
+        private static void SharedKeyValidation(X509Certificate2Collection collection)
+        {
+            X509Certificate2 cert1 = collection[0];
+            X509Certificate2 cert2 = collection[1];
+            using RSA key1 = cert1.GetRSAPrivateKey();
+            using RSA key2 = cert2.GetRSAPrivateKey();
+            byte[] spki1 = key1.ExportSubjectPublicKeyInfo();
+            byte[] spki2 = key2.ExportSubjectPublicKeyInfo();
+
+            Assert.Equal(1024, key1.KeySize);
+            Assert.Equal(spki1, spki2);
+
+            // Changing the key size and exporting forces generate a new key.
+            key1.KeySize = 2048;
+            Assert.NotEqual(spki1, key1.ExportSubjectPublicKeyInfo());
+
+            // Make sure it didn't mutate key2.
+            Assert.Equal(spki2, key2.ExportSubjectPublicKeyInfo());
         }
     }
 }
