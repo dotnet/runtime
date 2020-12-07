@@ -6,7 +6,7 @@ using System.Threading;
 
 namespace Microsoft.Extensions.Caching.Memory
 {
-    internal class CacheEntryHelper
+    internal static class CacheEntryHelper
     {
         private static readonly AsyncLocal<CacheEntry> _current = new AsyncLocal<CacheEntry>();
 
