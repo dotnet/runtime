@@ -13,6 +13,9 @@
   <UsingTask TaskName="WasmAppBuilder" 
       AssemblyFile="$(CORE_ROOT)/WasmAppBuilder/WasmAppBuilder.dll"/>
 
+  <UsingTask TaskName="WasmLoadAssembliesAndReferences"
+      AssemblyFile="$(CORE_ROOT)/WasmAppBuilder/WasmAppBuilder.dll"/>
+
   <Target Name="BuildApp">
     <ItemGroup>
       <MainAssembly Include="$(TestAssembly)" />
