@@ -423,7 +423,7 @@ namespace System.Net.Http
         /// If enabled, the values of <see cref="TcpKeepAliveInterval" /> and <see cref="TcpKeepAliveTime"/> will be forwarded
         /// to set WINHTTP_OPTION_TCP_KEEPALIVE, enabling and configuring TCP keep-alive for the backing TCP socket.
         /// </remarks>
-        [SupportedOSPlatform("windows10.0.2004")]
+        [SupportedOSPlatform("windows10.0.19041")]
         public bool TcpKeepAliveEnabled
         {
             get
@@ -445,7 +445,7 @@ namespace System.Net.Http
         /// Has no effect if <see cref="TcpKeepAliveEnabled"/> is <see langword="false" />.
         /// The default value of this property is 2 hours.
         /// </remarks>
-        [SupportedOSPlatform("windows10.0.2004")]
+        [SupportedOSPlatform("windows10.0.19041")]
         public TimeSpan TcpKeepAliveTime
         {
             get
@@ -468,7 +468,7 @@ namespace System.Net.Http
         /// Has no effect if <see cref="TcpKeepAliveEnabled"/> is <see langword="false" />.
         /// The default value of this property is 1 second.
         /// </remarks>
-        [SupportedOSPlatform("windows10.0.2004")]
+        [SupportedOSPlatform("windows10.0.19041")]
         public TimeSpan TcpKeepAliveInterval
         {
             get
