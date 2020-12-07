@@ -226,6 +226,8 @@ void StressLog::Initialize(unsigned facilities, unsigned level, unsigned maxByte
     hdr->memoryMapBaseAddress = (uint8_t*)(void*)theLog.hMapView;
     hdr->corClrBaseAddress = (uint8_t*)moduleBase;
     hdr->logs = nullptr;
+    hdr->tickFrequency = theLog.tickFrequency;
+    hdr->startTimeStamp = theLog.startTimeStamp;
     theLog.stressLogHeader = hdr;
 
     // copy the regions of coreclr
@@ -240,8 +242,9 @@ void StressLog::Initialize(unsigned facilities, unsigned level, unsigned maxByte
         if (mbi.AllocationBase != moduleBase)
             break;
         ptrdiff_t offs = (uint8_t*)mbi.BaseAddress - (uint8_t*)mbi.AllocationBase;
-        memcpy(&hdr->coreclrimage[offs], mbi.BaseAddress, mbi.RegionSize);
+        memcpy(&hdr->coreClrImage[offs], mbi.BaseAddress, mbi.RegionSize);
         addr += mbi.RegionSize;
+        hdr->corClrSize = (size_t)(addr - (uint8_t*)moduleBase);
     }
 #endif
 }

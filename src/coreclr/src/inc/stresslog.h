@@ -323,8 +323,11 @@ public:
     {
         uint8_t* memoryMapBaseAddress;
         uint8_t* corClrBaseAddress;
+        size_t corClrSize;
         Volatile<ThreadStressLog*> logs;        // the list of logs for every thread.
-        uint8_t                    coreclrimage[64 * 1024 * 1024];
+        unsigned __int64 tickFrequency;         // number of ticks per second
+        unsigned __int64 startTimeStamp;        // start time from when tick counter started
+        uint8_t                    coreClrImage[64 * 1024 * 1024];
     };
 
     StressLogHeader* stressLogHeader;       // header to find things in the memory mapped file
