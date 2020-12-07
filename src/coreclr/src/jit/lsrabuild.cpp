@@ -345,6 +345,7 @@ void LinearScan::resolveConflictingDefAndUse(Interval* interval, RefPosition* de
                (getRegisterType(interval, useRefPosition) == regType));
         regMaskTP candidates               = allRegs(regType);
         defRefPosition->registerAssignment = candidates;
+        defRefPosition->isFixedRegRef      = false;
         return;
     }
     INDEBUG(dumpLsraAllocationEvent(LSRA_EVENT_DEFUSE_CASE6, interval));
@@ -1791,16 +1792,32 @@ void LinearScan::buildRefPositionsForNode(GenTree* tree, BasicBlock* block, Lsra
     JITDUMP("\n");
 }
 
+static const regNumber lsraRegOrder[]      = {REG_VAR_ORDER};
+const unsigned         lsraRegOrderSize    = ArrLen(lsraRegOrder);
+static const regNumber lsraRegOrderFlt[]   = {REG_VAR_ORDER_FLT};
+const unsigned         lsraRegOrderFltSize = ArrLen(lsraRegOrderFlt);
+
 //------------------------------------------------------------------------
 // buildPhysRegRecords: Make an interval for each physical register
 //
 void LinearScan::buildPhysRegRecords()
 {
-    RegisterType regType = IntRegisterType;
     for (regNumber reg = REG_FIRST; reg < ACTUAL_REG_COUNT; reg = REG_NEXT(reg))
     {
         RegRecord* curr = &physRegs[reg];
         curr->init(reg);
+    }
+    for (unsigned int i = 0; i < lsraRegOrderSize; i++)
+    {
+        regNumber  reg  = lsraRegOrder[i];
+        RegRecord* curr = &physRegs[reg];
+        curr->regOrder  = (unsigned char)i;
+    }
+    for (unsigned int i = 0; i < lsraRegOrderFltSize; i++)
+    {
+        regNumber  reg  = lsraRegOrderFlt[i];
+        RegRecord* curr = &physRegs[reg];
+        curr->regOrder  = (unsigned char)i;
     }
 }
 
@@ -2139,6 +2156,7 @@ void LinearScan::buildIntervals()
                 assert(inArgReg < REG_COUNT);
                 mask = genRegMask(inArgReg);
                 assignPhysReg(inArgReg, interval);
+                INDEBUG(registersToDump |= getRegMask(inArgReg, interval->registerType));
             }
             RefPosition* pos = newRefPosition(interval, MinLocation, RefTypeParamDef, nullptr, mask);
             pos->setRegOptional(true);
@@ -3029,45 +3047,65 @@ void LinearScan::setDelayFree(RefPosition* use)
 
 //------------------------------------------------------------------------
 // BuildDelayFreeUses: Build Use RefPositions for an operand that might be contained,
-//                     and which need to be marked delayRegFree
+//                     and which may need to be marked delayRegFree
 //
 // Arguments:
-//    node      - The node of interest
+//    node       - The node of interest
+//    rmwNode    - The node that has RMW semantics (if applicable)
+//    candidates - The set of candidates for the uses
 //
 // Return Value:
 //    The number of source registers used by the *parent* of this node.
 //
-int LinearScan::BuildDelayFreeUses(GenTree* node, regMaskTP candidates)
+int LinearScan::BuildDelayFreeUses(GenTree* node, GenTree* rmwNode, regMaskTP candidates)
 {
-    RefPosition* use;
+    RefPosition* use          = nullptr;
+    Interval*    rmwInterval  = nullptr;
+    bool         rmwIsLastUse = false;
+    GenTree*     addr         = nullptr;
+    if ((rmwNode != nullptr) && isCandidateLocalRef(rmwNode))
+    {
+        rmwInterval = getIntervalForLocalVarNode(rmwNode->AsLclVar());
+        // Note: we don't handle multi-reg vars here. It's not clear that there are any cases
+        // where we'd encounter a multi-reg var in an RMW context.
+        assert(!rmwNode->AsLclVar()->IsMultiReg());
+        rmwIsLastUse = rmwNode->AsLclVar()->IsLastUse(0);
+    }
     if (!node->isContained())
     {
         use = BuildUse(node, candidates);
-        setDelayFree(use);
-        return 1;
     }
-    if (node->OperIsHWIntrinsic())
+    else if (node->OperIsHWIntrinsic())
     {
         use = BuildUse(node->gtGetOp1(), candidates);
-        setDelayFree(use);
-        return 1;
     }
-    if (!node->OperIsIndir())
+    else if (!node->OperIsIndir())
     {
         return 0;
     }
-    GenTreeIndir* indirTree = node->AsIndir();
-    GenTree*      addr      = indirTree->gtOp1;
-    if (!addr->isContained())
+    else
     {
-        use = BuildUse(addr, candidates);
-        setDelayFree(use);
+        GenTreeIndir* indirTree = node->AsIndir();
+        addr                    = indirTree->gtOp1;
+        if (!addr->isContained())
+        {
+            use = BuildUse(addr, candidates);
+        }
+        else if (!addr->OperIs(GT_LEA))
+        {
+            return 0;
+        }
+    }
+    if (use != nullptr)
+    {
+        if ((use->getInterval() != rmwInterval) || (!rmwIsLastUse && !use->lastUse))
+        {
+            setDelayFree(use);
+        }
         return 1;
     }
-    if (!addr->OperIs(GT_LEA))
-    {
-        return 0;
-    }
+
+    // If we reach here we have a contained LEA in 'addr'.
 
     GenTreeAddrMode* const addrMode = addr->AsAddrMode();
 
@@ -3075,13 +3113,19 @@ int LinearScan::BuildDelayFreeUses(GenTree* node, regMaskTP candidates)
     if ((addrMode->Base() != nullptr) && !addrMode->Base()->isContained())
     {
         use = BuildUse(addrMode->Base(), candidates);
-        setDelayFree(use);
+        if ((use->getInterval() != rmwInterval) || (!rmwIsLastUse && !use->lastUse))
+        {
+            setDelayFree(use);
+        }
         srcCount++;
     }
     if ((addrMode->Index() != nullptr) && !addrMode->Index()->isContained())
     {
         use = BuildUse(addrMode->Index(), candidates);
-        setDelayFree(use);
+        if ((use->getInterval() != rmwInterval) || (!rmwIsLastUse && !use->lastUse))
+        {
+            setDelayFree(use);
+        }
         srcCount++;
     }
     return srcCount;
