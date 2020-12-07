@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+#nullable enable
+
 using Microsoft.DotNet.CoreSetup.Test.HostActivation;
 using System;
 using System.Collections.Generic;
@@ -32,7 +34,7 @@ namespace Microsoft.DotNet.CoreSetup.Test
 
         private readonly List<TestArtifact> _copies = new List<TestArtifact>();
 
-        public TestArtifact(string location, string name = null)
+        public TestArtifact(string location, string? name = null)
         {
             Location = location;
             Name = name ?? Path.GetFileName(Location);
@@ -78,7 +80,8 @@ namespace Microsoft.DotNet.CoreSetup.Test
 
         protected static string GetNewTestArtifactPath(string artifactName)
         {
-            while (true)
+            Exception? lastException = null;
+            for (int i = 0; i < 10; i++)
             {
                 var parentPath = Path.Combine(TestArtifactsPath, Path.GetRandomFileName());
                 // Create a lock file next to the target folder
@@ -88,14 +91,17 @@ namespace Microsoft.DotNet.CoreSetup.Test
                 {
                     File.Open(lockPath, FileMode.CreateNew, FileAccess.Write).Dispose();
                 }
-                catch
+                catch (Exception e)
                 {
                     // Lock file cannot be created, potential collision
+                    lastException = e;
                     continue;
                 }
                 Directory.CreateDirectory(artifactPath);
                 return artifactPath;
             }
+            Debug.Assert(lastException != null);
+            throw lastException;
         }
 
         protected static void CopyRecursive(string sourceDirectory, string destinationDirectory, bool overwrite = false)
