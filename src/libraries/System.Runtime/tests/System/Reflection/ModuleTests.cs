@@ -191,7 +191,8 @@ namespace System.Reflection.Tests
             {
                 new object[] { 1234 },
                 new object[] { typeof(ModuleTests).GetMethod("ResolveType").MetadataToken },
-            };
+            }
+            .Union(NullTokens);
 
         [Theory]
         [MemberData(nameof(BadResolveTypes))]
@@ -219,7 +220,8 @@ namespace System.Reflection.Tests
                 new object[] { 1234 },
                 new object[] { typeof(ModuleTests).MetadataToken },
                 new object[] { typeof(ModuleTests).MetadataToken + 1000 },
-            };
+            }
+            .Union(NullTokens);
 
         [Theory]
         [MemberData(nameof(BadResolveMethods))]
@@ -247,7 +249,8 @@ namespace System.Reflection.Tests
                 new object[] { 1234 },
                 new object[] { typeof(ModuleTests).MetadataToken },
                 new object[] { typeof(ModuleTests).MetadataToken + 1000 },
-            };
+            }
+            .Union(NullTokens);
 
         [Theory]
         [MemberData(nameof(BadResolveFields))]
@@ -265,7 +268,8 @@ namespace System.Reflection.Tests
                 new object[] { 1234 },
                 new object[] { typeof(ModuleTests).MetadataToken },
                 new object[] { typeof(ModuleTests).MetadataToken + 1000 },
-            };
+            }
+            .Union(NullTokens);
 
         [Theory]
         [MemberData(nameof(BadResolveStrings))]
@@ -303,6 +307,38 @@ namespace System.Reflection.Tests
             Assert.Equal(1, types.Count);
             Assert.Equal("System.Reflection.TestModule.Dummy, System.Reflection.TestModule, Version=1.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a", types[0].AssemblyQualifiedName);
         }
+
+        private static object[][] NullTokens =>
+            new[]
+            {
+                new object[] { 0x00000000 }, // mdtModule
+                new object[] { 0x01000000 }, // mdtTypeRef
+                new object[] { 0x02000000 }, // mdtTypeDef
+                new object[] { 0x04000000 }, // mdtFieldDef
+                new object[] { 0x06000000 }, // mdtMethodDef
+                new object[] { 0x08000000 }, // mdtParamDef
+                new object[] { 0x09000000 }, // mdtInterfaceImpl
+                new object[] { 0x0a000000 }, // mdtMemberRef
+                new object[] { 0x0c000000 }, // mdtCustomAttribute
+                new object[] { 0x0e000000 }, // mdtPermission
+                new object[] { 0x11000000 }, // mdtSignature
+                new object[] { 0x14000000 }, // mdtEvent
+                new object[] { 0x17000000 }, // mdtProperty
+                new object[] { 0x19000000 }, // mdtMethodImpl
+                new object[] { 0x1a000000 }, // mdtModuleRef
+                new object[] { 0x1b000000 }, // mdtTypeSpec
+                new object[] { 0x20000000 }, // mdtAssembly
+                new object[] { 0x23000000 }, // mdtAssemblyRef
+                new object[] { 0x26000000 }, // mdtFile
+                new object[] { 0x27000000 }, // mdtExportedType
+                new object[] { 0x28000000 }, // mdtManifestResource
+                new object[] { 0x2a000000 }, // mdtGenericParam
+                new object[] { 0x2b000000 }, // mdtMethodSpec
+                new object[] { 0x2c000000 }, // mdtGenericParamConstraint
+                new object[] { 0x70000000 }, // mdtString
+                new object[] { 0x71000000 }, // mdtName
+                new object[] { 0x72000000 }  // mdtBaseType
+            };
     }
 
     public class Foo<T>

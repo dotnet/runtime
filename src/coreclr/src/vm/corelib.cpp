@@ -371,9 +371,6 @@ const USHORT c_nCoreLibFieldDescriptions = NumItems(c_rgCoreLibFieldDescriptions
 // ECalls
 //
 
-// ECalls defined by libraries-native shims
-EXTERN_C const LPVOID gPalGlobalizationNative[];
-
 // When compiling crossgen, we only need the target version of the ecall tables
 #if !defined(CROSSGEN_COMPILE) || defined(CROSSGEN_CORELIB)
 

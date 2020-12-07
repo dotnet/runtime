@@ -31,7 +31,7 @@ bool JitInterfaceWrapper::runWithErrorTrap(void* function, void* parameter)
     {
         (*(pfn)function)(parameter);
     }
-    catch (CorInfoException *)
+    catch (CorInfoExceptionClass *)
     {
         return false;
     }

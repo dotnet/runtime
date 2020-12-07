@@ -37,6 +37,10 @@ if (CLR_CMAKE_TARGET_UNIX)
 
 endif(CLR_CMAKE_TARGET_UNIX)
 
+if (CLR_CMAKE_TARGET_OSX AND CLR_CMAKE_TARGET_ARCH_ARM64)
+  add_compile_definitions($<$<NOT:$<BOOL:$<TARGET_PROPERTY:IGNORE_DEFAULT_TARGET_ARCH>>>:OSX_ARM64_ABI>)
+endif(CLR_CMAKE_TARGET_OSX AND CLR_CMAKE_TARGET_ARCH_ARM64)
+
 if(CLR_CMAKE_TARGET_ALPINE_LINUX)
   # Alpine Linux doesn't have fixed stack limit, this define disables some stack pointer
   # sanity checks in debug / checked build that rely on a fixed stack limit
@@ -234,7 +238,7 @@ function(set_target_definitions_to_custom_os_and_arch)
   set_target_properties(${TARGETDETAILS_TARGET} PROPERTIES IGNORE_DEFAULT_TARGET_ARCH TRUE)
   set_target_properties(${TARGETDETAILS_TARGET} PROPERTIES IGNORE_DEFAULT_TARGET_OS TRUE)
 
-  if ((TARGETDETAILS_OS STREQUAL "unix"))
+  if ((TARGETDETAILS_OS MATCHES "^unix"))
     target_compile_definitions(${TARGETDETAILS_TARGET} PRIVATE TARGET_UNIX)
     if (TARGETDETAILS_ARCH STREQUAL "x64")
       target_compile_definitions(${TARGETDETAILS_TARGET} PRIVATE UNIX_AMD64_ABI)
@@ -245,9 +249,12 @@ function(set_target_definitions_to_custom_os_and_arch)
       target_compile_definitions(${TARGETDETAILS_TARGET} PRIVATE UNIX_X86_ABI)
     elseif (TARGETDETAILS_ARCH STREQUAL "arm64")
     endif()
+    if ((TARGETDETAILS_ARCH STREQUAL "arm64") AND (TARGETDETAILS_OS STREQUAL "unix_osx"))
+      target_compile_definitions(${TARGETDETAILS_TARGET} PRIVATE OSX_ARM64_ABI)
+    endif()
   else()
     target_compile_definitions(${TARGETDETAILS_TARGET} PRIVATE TARGET_WINDOWS)
-  endif((TARGETDETAILS_OS STREQUAL "unix"))
+  endif((TARGETDETAILS_OS MATCHES "^unix"))
 
   if (TARGETDETAILS_ARCH STREQUAL "x86")
     target_compile_definitions(${TARGETDETAILS_TARGET} PRIVATE TARGET_X86)
@@ -262,7 +269,7 @@ function(set_target_definitions_to_custom_os_and_arch)
     target_compile_definitions(${TARGETDETAILS_TARGET} PRIVATE TARGET_ARM)
   endif()
 
-  if (NOT (TARGETDETAILS_ARCH STREQUAL "x86") OR (TARGETDETAILS_OS STREQUAL "unix"))
+  if (NOT (TARGETDETAILS_ARCH STREQUAL "x86") OR (TARGETDETAILS_OS MATCHES "^unix"))
     target_compile_definitions(${TARGETDETAILS_TARGET} PRIVATE FEATURE_EH_FUNCLETS)
-  endif (NOT (TARGETDETAILS_ARCH STREQUAL "x86") OR (TARGETDETAILS_OS STREQUAL "unix"))
+  endif (NOT (TARGETDETAILS_ARCH STREQUAL "x86") OR (TARGETDETAILS_OS MATCHES "^unix"))
 endfunction()

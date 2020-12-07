@@ -2919,8 +2919,6 @@ void QCALLTYPE ModuleHandle::ResolveType(QCall::ModuleHandle pModule, INT32 tkTy
 
     BEGIN_QCALL;
 
-    _ASSERTE(!IsNilToken(tkType));
-
     SigTypeContext typeContext(Instantiation(typeArgs, typeArgsCount), Instantiation(methodArgs, methodArgsCount));
         typeHandle = ClassLoader::LoadTypeDefOrRefOrSpecThrowing(pModule, tkType, &typeContext,
                                                           ClassLoader::ThrowIfNotFound,
@@ -2942,8 +2940,6 @@ MethodDesc *QCALLTYPE ModuleHandle::ResolveMethod(QCall::ModuleHandle pModule, I
 
     BEGIN_QCALL;
 
-    _ASSERTE(!IsNilToken(tkMemberRef));
-
     BOOL strictMetadataChecks = (TypeFromToken(tkMemberRef) == mdtMethodSpec);
 
     SigTypeContext typeContext(Instantiation(typeArgs, typeArgsCount), Instantiation(methodArgs, methodArgsCount));
@@ -2964,8 +2960,6 @@ void QCALLTYPE ModuleHandle::ResolveField(QCall::ModuleHandle pModule, INT32 tkM
     FieldDesc* pField = NULL;
 
     BEGIN_QCALL;
-
-    _ASSERTE(!IsNilToken(tkMemberRef));
 
     SigTypeContext typeContext(Instantiation(typeArgs, typeArgsCount), Instantiation(methodArgs, methodArgsCount));
     pField = MemberLoader::GetFieldDescFromMemberDefOrRef(pModule, tkMemberRef, &typeContext, FALSE);

@@ -53,7 +53,7 @@ there is the `superpmi-shim-collector` binary (`.dll` or `.so` or `.dylib`).
 
 To harness collection, there is a .NET Core C# program that is built as
 part of the coreclr tests build called superpmicollect.exe
-(source: src/coreclr/tests/src/JIT/superpmi in https://github.com/dotnet/runtime repository).
+(source: src/tests/JIT/superpmi in https://github.com/dotnet/runtime repository).
 This tool also functions as a SuperPMI collection and playback unit test.
 
 The superpmicollect tool is also being moved to the jitutils repository

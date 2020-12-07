@@ -10,8 +10,6 @@ using Internal.IL.Stubs;
 
 namespace Internal.IL
 {
-    using Workarounds;
-
     public sealed class ReadyToRunILProvider : ILProvider
     {
         private MethodIL TryGetIntrinsicMethodILForActivator(MethodDesc method)
@@ -99,7 +97,7 @@ namespace Internal.IL
         {
             if (method is EcmaMethod ecmaMethod)
             {
-                if (method.IsIntrinsicWorkaround())
+                if (method.IsIntrinsic)
                 {
                     MethodIL result = TryGetIntrinsicMethodIL(method);
                     if (result != null)
@@ -115,7 +113,7 @@ namespace Internal.IL
             else if (method is MethodForInstantiatedType || method is InstantiatedMethod)
             {
                 // Intrinsics specialized per instantiation
-                if (method.IsIntrinsicWorkaround())
+                if (method.IsIntrinsic)
                 {
                     MethodIL methodIL = TryGetPerInstantiationIntrinsicMethodIL(method);
                     if (methodIL != null)
@@ -131,19 +129,6 @@ namespace Internal.IL
             {
                 return null;
             }
-        }
-    }
-}
-
-namespace Internal.IL.Workarounds
-{
-    static class IntrinsicExtensions
-    {
-        // We should ideally mark interesting methods a [Intrinsic] to avoid having to
-        // name match everything in CoreLib.
-        public static bool IsIntrinsicWorkaround(this MethodDesc method)
-        {
-            return method.OwningType is MetadataType mdType && mdType.Module == method.Context.SystemModule;
         }
     }
 }
