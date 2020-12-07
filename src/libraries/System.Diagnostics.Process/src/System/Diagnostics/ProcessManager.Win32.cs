@@ -256,12 +256,12 @@ namespace System.Diagnostics
             // Start with the default buffer size.
             int bufferSize = DefaultCachedBufferSize;
 
-            // Get the cached buffer.
-            byte[] buffer = ArrayPool<byte>.Shared.Rent(bufferSize);
-
             while (true)
             {
                 uint requiredSize = 0;
+
+                // Get the cached buffer.
+                byte[] buffer = ArrayPool<byte>.Shared.Rent(bufferSize);
 
                 unsafe
                 {
