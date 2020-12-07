@@ -291,9 +291,9 @@ namespace System.Reflection
         }
 
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2075:UnrecognizedReflectionPattern",
-            Justification = "property setters and fiels which are accessed by any attribute instantiation which is present in the code linker has analyzed." +
-                            "As such enumerating all fields and properties may return different results fater trimming" +
-                            "but all those which are needed to actually have data should be there.")]
+            Justification = "Property setters and fields which are accessed by any attribute instantiation which is present in the code linker has analyzed." +
+                            "As such enumerating all fields and properties may return different results after trimming" +
+                            "but all those which are needed to actually have data will be there.")]
         private CustomAttributeData(RuntimeModule scope, MetadataToken caCtorToken, in ConstArray blob)
         {
             m_scope = scope;
@@ -416,9 +416,21 @@ namespace System.Reflection
             CustomAttributeNamedArgument[] namedArgs = Array.Empty<CustomAttributeNamedArgument>();
             m_namedArgs = Array.AsReadOnly(namedArgs);
         }
+
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2075:UnrecognizedReflectionPattern",
+            Justification = "The pca object had to be created by the single ctor on the Type. So the ctor couldn't have been trimmed.")]
         private void Init(object pca)
         {
-            m_ctor = pca.GetType().GetConstructors(BindingFlags.Public | BindingFlags.Instance)[0];
+            Type type = pca.GetType();
+
+#if DEBUG
+            // Ensure there is only a single constructor for 'pca', so it is safe to suppress IL2075
+            ConstructorInfo[] allCtors = type.GetConstructors(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
+            Debug.Assert(allCtors.Length == 1);
+            Debug.Assert(allCtors[0].GetParameters().Length == 0);
+#endif
+
+            m_ctor = type.GetConstructors(BindingFlags.Public | BindingFlags.Instance)[0];
             m_typedCtorArgs = Array.AsReadOnly(Array.Empty<CustomAttributeTypedArgument>());
             m_namedArgs = Array.AsReadOnly(Array.Empty<CustomAttributeNamedArgument>());
         }
@@ -1183,9 +1195,9 @@ namespace System.Reflection
         }
 
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2065:UnrecognizedReflectionPattern",
-            Justification = "Linker guarantees presence of all the constructor parameters, property setters and fiels which are accessed by any " +
+            Justification = "Linker guarantees presence of all the constructor parameters, property setters and fields which are accessed by any " +
                             "attribute instantiation which is present in the code linker has analyzed." +
-                            "As such the reflection usage in this method should never fail as those methods/fields should always be present.")]
+                            "As such the reflection usage in this method will never fail as those methods/fields will be present.")]
         private static void AddCustomAttributes(
             ref RuntimeType.ListBuilder<object> attributes,
             RuntimeModule decoratedModule, int decoratedMetadataToken,
@@ -1322,8 +1334,8 @@ namespace System.Reflection
 
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
             Justification = "Module.ResolveMethod and Module.ResolveType are marked as RequiresUnreferencedCode because they rely on tokens" +
-                            "which are not guaranteed to be stable across trimming. So if somebody harcodes a token it could break." +
-                            "The usage here is not like that as all these tokes come from existing metadata loaded from some IL" +
+                            "which are not guaranteed to be stable across trimming. So if somebody hardcodes a token it could break." +
+                            "The usage here is not like that as all these tokens come from existing metadata loaded from some IL" +
                             "and so trimming has no effect (the tokens are read AFTER trimming occured).")]
         private static bool FilterCustomAttributeRecord(
             MetadataToken caCtorToken,
@@ -1459,8 +1471,8 @@ namespace System.Reflection
 
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
             Justification = "Module.ResolveType is marked as RequiresUnreferencedCode because it relies on tokens" +
-                            "which are not guaranteed to be stable across trimming. So if somebody harcodes a token it could break." +
-                            "The usage here is not like that as all these tokes come from existing metadata loaded from some IL" +
+                            "which are not guaranteed to be stable across trimming. So if somebody hardcodes a token it could break." +
+                            "The usage here is not like that as all these tokens come from existing metadata loaded from some IL" +
                             "and so trimming has no effect (the tokens are read AFTER trimming occured).")]
         internal static AttributeUsageAttribute GetAttributeUsage(RuntimeType decoratedAttribute)
         {

@@ -275,6 +275,8 @@ namespace System.Reflection
 
         [DebuggerStepThroughAttribute]
         [Diagnostics.DebuggerHidden]
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2059:RunClassConstructor",
+            Justification = "This ConstructorInfo instance represents the static constructor itself, so if this object was created, the static constructor exists.")]
         public override object? Invoke(
             object? obj, BindingFlags invokeAttr, Binder? binder, object?[]? parameters, CultureInfo? culture)
         {
