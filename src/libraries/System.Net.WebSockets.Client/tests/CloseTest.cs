@@ -67,7 +67,6 @@ namespace System.Net.WebSockets.Client.Tests
 
         [OuterLoop("Uses external server")]
         [ConditionalTheory(nameof(WebSocketsSupported)), MemberData(nameof(EchoServers))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/45538", TestPlatforms.Browser)]
         public async Task CloseAsync_ClientInitiatedClose_Success(Uri server)
         {
             using (ClientWebSocket cws = await WebSocketHelper.GetConnectedWebSocket(server, TimeOutMilliseconds, _output))
@@ -75,7 +74,9 @@ namespace System.Net.WebSockets.Client.Tests
                 var cts = new CancellationTokenSource(TimeOutMilliseconds);
                 Assert.Equal(WebSocketState.Open, cws.State);
 
-                var closeStatus = WebSocketCloseStatus.InvalidMessageType;
+                // See issue for Browser websocket differences https://github.com/dotnet/runtime/issues/45538
+                var closeStatus = PlatformDetection.IsBrowser ? WebSocketCloseStatus.NormalClosure : WebSocketCloseStatus.InvalidMessageType;
+
                 string closeDescription = "CloseAsync_InvalidMessageType";
 
                 await cws.CloseAsync(closeStatus, closeDescription, cts.Token);
