@@ -1319,7 +1319,6 @@ GenTree* Compiler::impAssignStructPtr(GenTree*             destAddr,
                     // The argument list has already been reversed.
                     // Insert the return buffer as the last node so it will be pushed on to the stack last
                     // as required by the native ABI.
-                    assert(srcCall->gtCallType == CT_INDIRECT);
                     GenTreeCall::Use* lastArg = srcCall->gtCallArgs;
                     if (lastArg == nullptr)
                     {
