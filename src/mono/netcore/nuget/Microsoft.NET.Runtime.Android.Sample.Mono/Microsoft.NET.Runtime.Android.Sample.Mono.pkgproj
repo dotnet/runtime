@@ -7,9 +7,9 @@
   </ItemGroup>
 
   <ItemGroup>
-    <_AndroidSampleFiles Include="$(ArtifactsDir)bin\AndroidAppBuilder\$(Configuration)\$(NetCoreAppCurrent)\AndroidAppBuilder.dll" />
+    <_AndroidSampleFiles Include="$(ArtifactsDir)bin\AndroidAppBuilder\$(Configuration)\$(NetCoreAppToolCurrent)\AndroidAppBuilder.dll" />
 
-    <PackageFile Include="@(_AndroidSampleFiles)" TargetPath="tools\$(NetCoreAppCurrent)\" />
+    <PackageFile Include="@(_AndroidSampleFiles)" TargetPath="tools\$(NetCoreAppToolCurrent)\" />
   </ItemGroup>
 
   <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.targets))" />

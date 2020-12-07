@@ -560,7 +560,7 @@ BOOL TypeHandle::IsBoxedAndCanCastTo(TypeHandle type, TypeHandlePairList *pPairL
         GC_TRIGGERS;
         INJECT_FAULT(COMPlusThrowOM());
 
-        LOADS_TYPE(CLASS_LOAD_EXACTPARENTS);
+        LOADS_TYPE(CLASS_DEPENDENCIES_LOADED);
 
         // The caller should check for an exact match.
         // That will cover the cast of a (unboxed) valuetype to itself.
@@ -607,7 +607,7 @@ BOOL TypeHandle::CanCastTo(TypeHandle type, TypeHandlePairList *pVisited)  const
         MODE_ANY;
         INJECT_FAULT(COMPlusThrowOM());
 
-        LOADS_TYPE(CLASS_LOAD_EXACTPARENTS);
+        LOADS_TYPE(CLASS_DEPENDENCIES_LOADED);
     }
     CONTRACTL_END
 

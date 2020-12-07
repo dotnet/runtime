@@ -21,9 +21,14 @@ struct IntWrapper
     int i;
 };
 
+enum E : unsigned int
+{
+    Value = 42
+};
+
 class C
 {
-    int dummy = 0xcccccccc;
+    E dummy = E::Value;
     float width;
     float height;
 
@@ -47,10 +52,35 @@ public:
     {
         return {(int)height};
     }
+
+    virtual E GetE()
+    {
+        return dummy;
+    }
 };
 
 
 extern "C" DLL_EXPORT C* STDMETHODCALLTYPE CreateInstanceOfC(float width, float height)
 {
     return new C(width, height);
+}
+
+extern "C" DLL_EXPORT SizeF STDMETHODCALLTYPE GetSizeFromManaged(C* c)
+{
+    return c->GetSize();
+}
+
+extern "C" DLL_EXPORT Width STDMETHODCALLTYPE GetWidthFromManaged(C* c)
+{
+    return c->GetWidth();
+}
+
+extern "C" DLL_EXPORT IntWrapper STDMETHODCALLTYPE GetHeightAsIntFromManaged(C* c)
+{
+    return c->GetHeightAsInt();
+}
+
+extern "C" DLL_EXPORT E STDMETHODCALLTYPE GetEFromManaged(C* c)
+{
+    return c->GetE();
 }

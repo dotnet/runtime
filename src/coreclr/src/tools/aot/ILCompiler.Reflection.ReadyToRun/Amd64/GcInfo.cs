@@ -194,7 +194,6 @@ namespace ILCompiler.Reflection.ReadyToRun.Amd64
                 else
                 {
                     // Fully interruptible code
-                    Debug.Assert(NumInterruptibleRanges > 0);
                     Transitions = GetTransitions(image, ref bitOffset);
                 }
             }

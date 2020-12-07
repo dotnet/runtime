@@ -8857,9 +8857,7 @@ void CEEInfo::getMethodVTableOffset (CORINFO_METHOD_HANDLE methodHnd,
 }
 
 /*********************************************************************/
-CORINFO_METHOD_HANDLE CEEInfo::resolveVirtualMethodHelper(CORINFO_METHOD_HANDLE baseMethod,
-                                                          CORINFO_CLASS_HANDLE derivedClass,
-                                                          CORINFO_CONTEXT_HANDLE ownerType)
+bool CEEInfo::resolveVirtualMethodHelper(CORINFO_DEVIRTUALIZATION_INFO * info)
 {
     CONTRACTL {
         THROWS;
@@ -8867,7 +8865,12 @@ CORINFO_METHOD_HANDLE CEEInfo::resolveVirtualMethodHelper(CORINFO_METHOD_HANDLE 
         MODE_PREEMPTIVE;
     } CONTRACTL_END;
 
-    MethodDesc* pBaseMD = GetMethod(baseMethod);
+    // Initialize OUT fields
+    info->devirtualizedMethod = NULL;
+    info->requiresInstMethodTableArg = false;
+    info->exactContext = NULL;
+
+    MethodDesc* pBaseMD = GetMethod(info->virtualMethod);
     MethodTable* pBaseMT = pBaseMD->GetMethodTable();
 
     // Method better be from a fully loaded class
@@ -8881,14 +8884,14 @@ CORINFO_METHOD_HANDLE CEEInfo::resolveVirtualMethodHelper(CORINFO_METHOD_HANDLE 
 
     MethodDesc* pDevirtMD = nullptr;
 
-    TypeHandle DerivedClsHnd(derivedClass);
-    MethodTable* pDerivedMT = DerivedClsHnd.GetMethodTable();
-    _ASSERTE(pDerivedMT->IsRestored() && pDerivedMT->IsFullyLoaded());
+    TypeHandle ObjClassHnd(info->objClass);
+    MethodTable* pObjMT = ObjClassHnd.GetMethodTable();
+    _ASSERTE(pObjMT->IsRestored() && pObjMT->IsFullyLoaded());
 
     // Can't devirtualize from __Canon.
-    if (DerivedClsHnd == TypeHandle(g_pCanonMethodTableClass))
+    if (ObjClassHnd == TypeHandle(g_pCanonMethodTableClass))
     {
-        return nullptr;
+        return false;
     }
 
     if (pBaseMT->IsInterface())
@@ -8896,7 +8899,7 @@ CORINFO_METHOD_HANDLE CEEInfo::resolveVirtualMethodHelper(CORINFO_METHOD_HANDLE 
 
 #ifdef FEATURE_COMINTEROP
         // Don't try and devirtualize com interface calls.
-        if (pDerivedMT->IsComObjectType())
+        if (pObjMT->IsComObjectType())
         {
             return nullptr;
         }
@@ -8904,37 +8907,37 @@ CORINFO_METHOD_HANDLE CEEInfo::resolveVirtualMethodHelper(CORINFO_METHOD_HANDLE 
 
         // Interface call devirtualization.
         //
-        // We must ensure that pDerivedMT actually implements the
+        // We must ensure that pObjMT actually implements the
         // interface corresponding to pBaseMD.
-        if (!pDerivedMT->CanCastToInterface(pBaseMT))
+        if (!pObjMT->CanCastToInterface(pBaseMT))
         {
-            return nullptr;
+            return false;
         }
 
-        // For generic interface methods we must have an ownerType to
+        // For generic interface methods we must have context to 
         // safely devirtualize.
-        if (ownerType != nullptr)
+        if (info->context != nullptr)
         {
-            TypeHandle OwnerClsHnd = GetTypeFromContext(ownerType);
+            TypeHandle OwnerClsHnd = GetTypeFromContext(info->context);
             MethodTable* pOwnerMT = OwnerClsHnd.GetMethodTable();
 
             // If the derived class is a shared class, make sure the
             // owner class is too.
-            if (pDerivedMT->IsSharedByGenericInstantiations())
+            if (pObjMT->IsSharedByGenericInstantiations())
             {
                 pOwnerMT = pOwnerMT->GetCanonicalMethodTable();
             }
 
-            pDevirtMD = pDerivedMT->GetMethodDescForInterfaceMethod(TypeHandle(pOwnerMT), pBaseMD, FALSE /* throwOnConflict */);
+            pDevirtMD = pObjMT->GetMethodDescForInterfaceMethod(TypeHandle(pOwnerMT), pBaseMD, FALSE /* throwOnConflict */);
         }
         else if (!pBaseMD->HasClassOrMethodInstantiation())
         {
-            pDevirtMD = pDerivedMT->GetMethodDescForInterfaceMethod(pBaseMD, FALSE /* throwOnConflict */);
+            pDevirtMD = pObjMT->GetMethodDescForInterfaceMethod(pBaseMD, FALSE /* throwOnConflict */);
         }
 
         if (pDevirtMD == nullptr)
         {
-            return nullptr;
+            return false;
         }
 
         // If we devirtualized into a default interface method on a generic type, we should actually return an
@@ -8942,7 +8945,7 @@ CORINFO_METHOD_HANDLE CEEInfo::resolveVirtualMethodHelper(CORINFO_METHOD_HANDLE 
         // Making this work is tracked by https://github.com/dotnet/runtime/issues/9588
         if (pDevirtMD->GetMethodTable()->IsInterface() && pDevirtMD->HasClassInstantiation())
         {
-            return nullptr;
+            return false;
         }
     }
     else
@@ -8950,7 +8953,7 @@ CORINFO_METHOD_HANDLE CEEInfo::resolveVirtualMethodHelper(CORINFO_METHOD_HANDLE 
         // Virtual call devirtualization.
         //
         // The derived class should be a subclass of the the base class.
-        MethodTable* pCheckMT = pDerivedMT;
+        MethodTable* pCheckMT = pObjMT;
 
         while (pCheckMT != nullptr)
         {
@@ -8964,7 +8967,7 @@ CORINFO_METHOD_HANDLE CEEInfo::resolveVirtualMethodHelper(CORINFO_METHOD_HANDLE 
 
         if (pCheckMT == nullptr)
         {
-            return nullptr;
+            return false;
         }
 
         // The base method should be in the base vtable
@@ -8974,7 +8977,7 @@ CORINFO_METHOD_HANDLE CEEInfo::resolveVirtualMethodHelper(CORINFO_METHOD_HANDLE 
         // Fetch the method that would be invoked if the class were
         // exactly derived class. It is up to the jit to determine whether
         // directly calling this method is correct.
-        pDevirtMD = pDerivedMT->GetMethodDescForSlot(slot);
+        pDevirtMD = pObjMT->GetMethodDescForSlot(slot);
 
         // If the derived method's slot does not match the vtable slot,
         // bail on devirtualization, as the method was installed into
@@ -8987,11 +8990,31 @@ CORINFO_METHOD_HANDLE CEEInfo::resolveVirtualMethodHelper(CORINFO_METHOD_HANDLE 
 
         if (dslot != slot)
         {
-            return nullptr;
+            return false;
         }
     }
 
     _ASSERTE(pDevirtMD->IsRestored());
+
+    // Determine the exact class.
+    //
+    // We may fail to get an exact context if the method is a default
+    // interface method. If so, we'll use the method's class.
+    //
+    MethodTable* pApproxMT = pDevirtMD->GetMethodTable();
+    MethodTable* pExactMT = pApproxMT;
+
+    if (pApproxMT->IsInterface())
+    {
+        // As noted above, we can't yet handle generic interfaces
+        // with default methods.
+        _ASSERTE(!pDevirtMD->HasClassInstantiation());
+
+    }
+    else
+    {
+        pExactMT = pDevirtMD->GetExactDeclaringType(pObjMT);
+    }
 
 #ifdef FEATURE_READYTORUN_COMPILER
     // Check if devirtualization is dependent upon cross-version
@@ -9002,21 +9025,25 @@ CORINFO_METHOD_HANDLE CEEInfo::resolveVirtualMethodHelper(CORINFO_METHOD_HANDLE 
         Assembly* pCallerAssembly = callerMethod->GetModule()->GetAssembly();
         bool allowDevirt =
             IsInSameVersionBubble(pCallerAssembly , pDevirtMD->GetModule()->GetAssembly())
-            && IsInSameVersionBubble(pCallerAssembly , pDerivedMT->GetAssembly());
+            && IsInSameVersionBubble(pCallerAssembly, pObjMT->GetAssembly());
 
         if (!allowDevirt)
         {
-            return nullptr;
+            return false;
         }
     }
 #endif
 
-    return (CORINFO_METHOD_HANDLE) pDevirtMD;
+    // Success! Pass back the results.
+    //
+    info->devirtualizedMethod = (CORINFO_METHOD_HANDLE) pDevirtMD;
+    info->exactContext = MAKE_CLASSCONTEXT((CORINFO_CLASS_HANDLE) pExactMT);
+    info->requiresInstMethodTableArg = false;
+
+    return true;
 }
 
-CORINFO_METHOD_HANDLE CEEInfo::resolveVirtualMethod(CORINFO_METHOD_HANDLE methodHnd,
-                                                    CORINFO_CLASS_HANDLE derivedClass,
-                                                    CORINFO_CONTEXT_HANDLE ownerType)
+bool CEEInfo::resolveVirtualMethod(CORINFO_DEVIRTUALIZATION_INFO * info)
 {
     CONTRACTL {
         THROWS;
@@ -9024,11 +9051,11 @@ CORINFO_METHOD_HANDLE CEEInfo::resolveVirtualMethod(CORINFO_METHOD_HANDLE method
         MODE_PREEMPTIVE;
     } CONTRACTL_END;
 
-    CORINFO_METHOD_HANDLE result = nullptr;
+    bool result = false;
 
     JIT_TO_EE_TRANSITION();
 
-    result = resolveVirtualMethodHelper(methodHnd, derivedClass, ownerType);
+    result = resolveVirtualMethodHelper(info);
 
     EE_TO_JIT_TRANSITION();
 

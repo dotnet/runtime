@@ -23,6 +23,17 @@ if("${CMAKE_SOURCE_DIR}" STREQUAL "${CMAKE_BINARY_DIR}")
     message(FATAL_ERROR "Binary directory isn't being correctly set before calling Cmake. Tree must be built in separate directory from source.")
 endif()
 
+if(STATIC_LIBS_ONLY)
+    # Suppress exporting of the PAL APIs
+    add_definitions(-DPALEXPORT=EXTERN_C)
+
+    set(GEN_SHARED_LIB 0)
+    set(STATIC_LIB_DESTINATION lib)
+else()
+    set(GEN_SHARED_LIB 1)
+    set(STATIC_LIB_DESTINATION .)
+endif()
+
 project(CoreFX)
 
 # The following options are set by the razzle build
@@ -112,5 +123,10 @@ endif ()
 # such as on bad user-provided inputs.  We leave NDEBUG defined, however,
 # as other asserts should still be included.
 add_compile_definitions($<$<CONFIG:RELEASE>:NDEBUG>)
+
+# we only need to build System.Globalization.Native when building static libs.
+if(STATIC_LIBS_ONLY)
+    add_subdirectory(../Unix/System.Globalization.Native System.Globalization.Native)
+endif()
 
 add_subdirectory(clrcompression)

@@ -15,6 +15,7 @@ set(SOURCES
     getappdomainstaticaddress/getappdomainstaticaddress.cpp
     eltprofiler/slowpatheltprofiler.cpp
     releaseondetach/releaseondetach.cpp
+    transitions/transitions.cpp
     profiler.def
     profiler.cpp
     classfactory.cpp

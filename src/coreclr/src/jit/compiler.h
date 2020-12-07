@@ -2249,7 +2249,8 @@ public:
 #endif
 
 #if FEATURE_MULTIREG_RET
-    GenTree* impAssignMultiRegTypeToVar(GenTree* op, CORINFO_CLASS_HANDLE hClass);
+    GenTree* impAssignMultiRegTypeToVar(GenTree*             op,
+                                        CORINFO_CLASS_HANDLE hClass DEBUGARG(CorInfoCallConvExtension callConv));
 #endif // FEATURE_MULTIREG_RET
 
     GenTree* impAssignSmallStructTypeToVar(GenTree* op, CORINFO_CLASS_HANDLE hClass);
@@ -2257,6 +2258,10 @@ public:
 #ifdef ARM_SOFTFP
     bool isSingleFloat32Struct(CORINFO_CLASS_HANDLE hClass);
 #endif // ARM_SOFTFP
+
+#ifdef TARGET_X86
+    bool isTrivialPointerSizedStruct(CORINFO_CLASS_HANDLE clsHnd) const;
+#endif // TARGET_X86
 
     //-------------------------------------------------------------------------
     // Functions to handle homogeneous floating-point aggregates (HFAs) in ARM/ARM64.
@@ -2276,7 +2281,7 @@ public:
     var_types GetHfaType(CORINFO_CLASS_HANDLE hClass);
     unsigned GetHfaCount(CORINFO_CLASS_HANDLE hClass);
 
-    bool IsMultiRegReturnedType(CORINFO_CLASS_HANDLE hClass);
+    bool IsMultiRegReturnedType(CORINFO_CLASS_HANDLE hClass, CorInfoCallConvExtension callConv);
 
     //-------------------------------------------------------------------------
     // The following is used for validating format of EH table
@@ -3433,8 +3438,8 @@ public:
 
     void lvaInitArgs(InitVarDscInfo* varDscInfo);
     void lvaInitThisPtr(InitVarDscInfo* varDscInfo);
-    void lvaInitRetBuffArg(InitVarDscInfo* varDscInfo);
-    void lvaInitUserArgs(InitVarDscInfo* varDscInfo);
+    void lvaInitRetBuffArg(InitVarDscInfo* varDscInfo, bool useFixedRetBufReg);
+    void lvaInitUserArgs(InitVarDscInfo* varDscInfo, unsigned skipArgs, unsigned takeArgs);
     void lvaInitGenericsCtxt(InitVarDscInfo* varDscInfo);
     void lvaInitVarArgsHandle(InitVarDscInfo* varDscInfo);
 
@@ -3846,7 +3851,9 @@ protected:
 
     GenTree* impFixupCallStructReturn(GenTreeCall* call, CORINFO_CLASS_HANDLE retClsHnd);
 
-    GenTree* impFixupStructReturnType(GenTree* op, CORINFO_CLASS_HANDLE retClsHnd);
+    GenTree* impFixupStructReturnType(GenTree*                 op,
+                                      CORINFO_CLASS_HANDLE     retClsHnd,
+                                      CorInfoCallConvExtension unmgdCallConv);
 
 #ifdef DEBUG
     var_types impImportJitTestLabelMark(int numArgs);
@@ -4078,8 +4085,12 @@ public:
 
     GenTree* impOptimizeCastClassOrIsInst(GenTree* op1, CORINFO_RESOLVED_TOKEN* pResolvedToken, bool isCastClass);
 
-    bool VarTypeIsMultiByteAndCanEnreg(
-        var_types type, CORINFO_CLASS_HANDLE typeClass, unsigned* typeSize, bool forReturn, bool isVarArg);
+    bool VarTypeIsMultiByteAndCanEnreg(var_types                type,
+                                       CORINFO_CLASS_HANDLE     typeClass,
+                                       unsigned*                typeSize,
+                                       bool                     forReturn,
+                                       bool                     isVarArg,
+                                       CorInfoCallConvExtension callConv);
 
     bool IsIntrinsicImplementedByUserCall(NamedIntrinsic intrinsicName);
     bool IsTargetIntrinsic(NamedIntrinsic intrinsicName);
@@ -4385,10 +4396,12 @@ private:
                                       bool                   exactContextNeedsRuntimeLookup,
                                       CORINFO_CALL_INFO*     callInfo);
 
-    bool impTailCallRetTypeCompatible(var_types            callerRetType,
-                                      CORINFO_CLASS_HANDLE callerRetTypeClass,
-                                      var_types            calleeRetType,
-                                      CORINFO_CLASS_HANDLE calleeRetTypeClass);
+    bool impTailCallRetTypeCompatible(var_types                callerRetType,
+                                      CORINFO_CLASS_HANDLE     callerRetTypeClass,
+                                      CorInfoCallConvExtension callerCallConv,
+                                      var_types                calleeRetType,
+                                      CORINFO_CLASS_HANDLE     calleeRetTypeClass,
+                                      CorInfoCallConvExtension calleeCallConv);
 
     bool impIsTailCallILPattern(
         bool tailPrefixed, OPCODE curOpcode, const BYTE* codeAddrOfNextOpcode, const BYTE* codeEnd, bool isRecursive);
@@ -5057,9 +5070,10 @@ public:
 
     // Get the type that is used to return values of the given struct type.
     // If the size is unknown, pass 0 and it will be determined from 'clsHnd'.
-    var_types getReturnTypeForStruct(CORINFO_CLASS_HANDLE clsHnd,
-                                     structPassingKind*   wbPassStruct = nullptr,
-                                     unsigned             structSize   = 0);
+    var_types getReturnTypeForStruct(CORINFO_CLASS_HANDLE     clsHnd,
+                                     CorInfoCallConvExtension callConv,
+                                     structPassingKind*       wbPassStruct = nullptr,
+                                     unsigned                 structSize   = 0);
 
 #ifdef DEBUG
     // Print a representation of "vnp" or "vn" on standard output.
@@ -9336,24 +9350,36 @@ public:
         // There are cases where implicit RetBuf argument should be explicitly returned in a register.
         // In such cases the return type is changed to TYP_BYREF and appropriate IR is generated.
         // These cases are:
-        // 1. Profiler Leave calllback expects the address of retbuf as return value for
+        CLANG_FORMAT_COMMENT_ANCHOR;
+#ifdef TARGET_AMD64
+        // 1. on x64 Windows and Unix the address of RetBuf needs to be returned by
+        //    methods with hidden RetBufArg in RAX. In such case GT_RETURN is of TYP_BYREF,
+        //    returning the address of RetBuf.
+        return (info.compRetBuffArg != BAD_VAR_NUM);
+#else // TARGET_AMD64
+#ifdef PROFILING_SUPPORTED
+        // 2.  Profiler Leave callback expects the address of retbuf as return value for
         //    methods with hidden RetBuf argument.  impReturnInstruction() when profiler
         //    callbacks are needed creates GT_RETURN(TYP_BYREF, op1 = Addr of RetBuf) for
         //    methods with hidden RetBufArg.
-        //
-        // 2. As per the System V ABI, the address of RetBuf needs to be returned by
-        //    methods with hidden RetBufArg in RAX. In such case GT_RETURN is of TYP_BYREF,
-        //    returning the address of RetBuf.
-        //
-        // 3. Windows 64-bit native calling convention also requires the address of RetBuff
-        //    to be returned in RAX.
+        if (compIsProfilerHookNeeded())
+        {
+            return (info.compRetBuffArg != BAD_VAR_NUM);
+        }
+#endif
+        // 3. Windows ARM64 native instance calling convention requires the address of RetBuff
+        //    to be returned in x0.
         CLANG_FORMAT_COMMENT_ANCHOR;
+#if defined(TARGET_WINDOWS) && defined(TARGET_ARM64)
+        auto callConv = compMethodInfoGetEntrypointCallConv(info.compMethodInfo);
+        if (callConvIsInstanceMethodCallConv(callConv))
+        {
+            return (info.compRetBuffArg != BAD_VAR_NUM);
+        }
+#endif // TARGET_WINDOWS && TARGET_ARM64
 
-#ifdef TARGET_AMD64
-        return (info.compRetBuffArg != BAD_VAR_NUM);
-#else  // !TARGET_AMD64
-        return (compIsProfilerHookNeeded()) && (info.compRetBuffArg != BAD_VAR_NUM);
-#endif // !TARGET_AMD64
+        return false;
+#endif // TARGET_AMD64
     }
 
     bool compDoOldStructRetyping()
@@ -9368,8 +9394,9 @@ public:
     {
 #if FEATURE_MULTIREG_RET
 #if defined(TARGET_X86)
-        // On x86 only 64-bit longs are returned in multiple registers
-        return varTypeIsLong(info.compRetNativeType);
+        // On x86, 64-bit longs and structs are returned in multiple registers
+        return varTypeIsLong(info.compRetNativeType) ||
+               (varTypeIsStruct(info.compRetNativeType) && (info.compRetBuffArg == BAD_VAR_NUM));
 #else  // targets: X64-UNIX, ARM64 or ARM32
         // On all other targets that support multireg return values:
         // Methods returning a struct in multiple registers have a return value of TYP_STRUCT.
@@ -9393,8 +9420,9 @@ public:
     {
 #if FEATURE_MULTIREG_RET
 #if defined(TARGET_X86)
-        // On x86 only 64-bit longs are returned in multiple registers
-        return varTypeIsLong(info.compRetNativeType);
+        // On x86, 64-bit longs and structs are returned in multiple registers
+        return varTypeIsLong(info.compRetNativeType) ||
+               (varTypeIsStruct(info.compRetNativeType) && (info.compRetBuffArg == BAD_VAR_NUM));
 #else // targets: X64-UNIX, ARM64 or ARM32
 #if defined(TARGET_ARM64)
         // TYP_SIMD* are returned in one register.
@@ -9548,6 +9576,9 @@ public:
     // class handle as an out parameter if the type is a value class.  Returns the
     // size of the type these describe.
     unsigned compGetTypeSize(CorInfoType cit, CORINFO_CLASS_HANDLE clsHnd);
+
+    // Gets the calling convention the method's entry point should have.
+    CorInfoCallConvExtension compMethodInfoGetEntrypointCallConv(CORINFO_METHOD_INFO* mthInfo);
 
 #ifdef DEBUG
     // Components used by the compiler may write unit test suites, and

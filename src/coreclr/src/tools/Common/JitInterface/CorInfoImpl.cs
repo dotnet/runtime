@@ -684,21 +684,6 @@ namespace Internal.JitInterface
                         throw new RequiresRuntimeJitException(type);
                     }
 #endif
-#if READYTORUN
-                    if (elementSize.AsInt == 4)
-                    {
-                        var normalizedCategory = _compilation.TypeSystemContext.NormalizedCategoryFor4ByteStructOnX86(type);
-                        if (normalizedCategory != type.Category)
-                        {
-                            if (NeedsTypeLayoutCheck(type))
-                            {
-                                ISymbolNode node = _compilation.SymbolNodeFactory.CheckTypeLayout(type);
-                                _methodCodeNode.Fixups.Add(node);
-                            }
-                            return (CorInfoType)normalizedCategory;
-                        }
-                    }
-#endif
                 }
                 return CorInfoType.CORINFO_TYPE_VALUECLASS;
             }
@@ -969,22 +954,27 @@ namespace Internal.JitInterface
             return (CORINFO_MODULE_STRUCT_*)ObjectToHandle(methodIL);
         }
 
-        private CORINFO_METHOD_STRUCT_* resolveVirtualMethod(CORINFO_METHOD_STRUCT_* baseMethod, CORINFO_CLASS_STRUCT_* derivedClass, CORINFO_CONTEXT_STRUCT* ownerType)
+        private bool resolveVirtualMethod(CORINFO_DEVIRTUALIZATION_INFO* info)
         {
-            TypeDesc implType = HandleToObject(derivedClass);
+            // Initialize OUT fields
+            info->devirtualizedMethod = null;
+            info->requiresInstMethodTableArg = false;
+            info->exactContext = null;
+
+            TypeDesc objType = HandleToObject(info->objClass);
 
             // __Canon cannot be devirtualized
-            if (implType.IsCanonicalDefinitionType(CanonicalFormKind.Any))
+            if (objType.IsCanonicalDefinitionType(CanonicalFormKind.Any))
             {
-                return null;
+                return false;
             }
 
-            MethodDesc decl = HandleToObject(baseMethod);
+            MethodDesc decl = HandleToObject(info->virtualMethod);
             Debug.Assert(!decl.HasInstantiation);
 
-            if (ownerType != null)
+            if (info->context != null)
             {
-                TypeDesc ownerTypeDesc = typeFromContext(ownerType);
+                TypeDesc ownerTypeDesc = typeFromContext(info->context);
                 if (decl.OwningType != ownerTypeDesc)
                 {
                     Debug.Assert(ownerTypeDesc is InstantiatedType);
@@ -992,19 +982,25 @@ namespace Internal.JitInterface
                 }
             }
 
-            MethodDesc impl = _compilation.ResolveVirtualMethod(decl, implType);
+            MethodDesc impl = _compilation.ResolveVirtualMethod(decl, objType);
 
-            if (impl != null)
+            if (impl == null)
             {
-                if (impl.OwningType.IsValueType)
-                {
-                    impl = getUnboxingThunk(impl);
-                }
-
-                return ObjectToHandle(impl);
+                return false;
             }
 
-            return null;
+            if (impl.OwningType.IsValueType)
+            {
+                impl = getUnboxingThunk(impl);
+            }
+
+            MethodDesc exactImpl = TypeSystemHelpers.FindMethodOnTypeWithMatchingTypicalMethod(objType, impl);
+
+            info->devirtualizedMethod = ObjectToHandle(impl);
+            info->requiresInstMethodTableArg = false;
+            info->exactContext = contextFromType(exactImpl.OwningType);
+
+            return true;
         }
 
         private CORINFO_METHOD_STRUCT_* getUnboxedEntry(CORINFO_METHOD_STRUCT_* ftn, byte* requiresInstMethodTableArg)

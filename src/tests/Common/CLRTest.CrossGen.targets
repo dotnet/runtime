@@ -220,7 +220,7 @@ if defined RunCrossGen2 (
     if exist "IL-CG2" (
       REM We may have come in the middle of a concurrent CG2 compilation, wait for it to finish
       :ProbeCompilationFinished
-      if exist "%%compilationDoneFlagFile%%" goto :DoneCrossgen2OperationsNoRelease
+      if exist "!compilationDoneFlagFile!" goto :DoneCrossgen2OperationsNoRelease
       echo Waiting for concurrent Crossgen2 compilation^: !compilationDoneFlagFile!
       timeout /t 5 /nobreak
       goto :ProbeCompilationFinished

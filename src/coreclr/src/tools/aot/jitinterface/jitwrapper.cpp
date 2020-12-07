@@ -26,12 +26,7 @@ private:
     uint64_t corJitFlags;
 };
 
-static const GUID JITEEVersionIdentifier = { /* 0d235fe4-65a1-487a-8553-c845496da901 */
-    0x0d235fe4,
-    0x65a1,
-    0x487a,
-    {0x85, 0x53, 0xc8, 0x45, 0x49, 0x6d, 0xa9, 0x01}
-};
+#include "../../../inc/jiteeversionguid.h"
 
 class Jit
 {
@@ -58,7 +53,7 @@ public:
 };
 
 DLL_EXPORT int JitCompileMethod(
-    CorInfoException **ppException,
+    CorInfoExceptionClass **ppException,
     Jit * pJit,
     void * thisHandle,
     void ** callbacks,
@@ -84,7 +79,7 @@ DLL_EXPORT int JitCompileMethod(
         JitInterfaceWrapper jitInterfaceWrapper(thisHandle, callbacks);
         return pJit->compileMethod(&jitInterfaceWrapper, methodInfo, flags, entryAddress, nativeSizeOfCode);
     }
-    catch (CorInfoException *pException)
+    catch (CorInfoExceptionClass *pException)
     {
         *ppException = pException;
     }
