@@ -2,10 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
-using System.Diagnostics;
 
 namespace System.Runtime.InteropServices.JavaScript
 {
@@ -336,6 +337,9 @@ namespace System.Runtime.InteropServices.JavaScript
             else
                 task.GetAwaiter().OnCompleted(Complete);
 
+            [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2075:UnrecognizedReflectionPattern",
+                Justification = "The DynamicDependency ensures Task<T>.Result is always preserved.")]
+            [DynamicDependency("get_Result", typeof(Task<>))]
             void Complete()
             {
                 try
@@ -348,10 +352,15 @@ namespace System.Runtime.InteropServices.JavaScript
                         {
                             result = System.Array.Empty<object>();
                         }
+                        else if (IsAssignableToGenericTaskType(task_type))
+                        {
+                            result = task_type.GetMethod("get_Result")?.Invoke(task, null);
+                        }
                         else
                         {
-                            result = task_type.GetMethod("get_Result")?.Invoke(task, System.Array.Empty<object>());
+                            result = null;
                         }
+
                         continuationObj.Invoke("resolve", result);
                     }
                     else
@@ -369,6 +378,21 @@ namespace System.Runtime.InteropServices.JavaScript
                     FreeObject(task);
                 }
             }
+        }
+
+        private static bool IsAssignableToGenericTaskType(Type? t)
+        {
+            while (t != null)
+            {
+                if (t.IsGenericType && t.GetGenericTypeDefinition() == typeof(Task<>))
+                {
+                    return true;
+                }
+
+                t = t.BaseType;
+            }
+
+            return false;
         }
 
         private static string ObjectToString(object o)
