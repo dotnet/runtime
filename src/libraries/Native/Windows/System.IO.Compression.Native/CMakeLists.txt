@@ -96,7 +96,7 @@ add_library(System.IO.Compression.Native-static
 )
 
 SET_TARGET_PROPERTIES(System.IO.Compression.Native-static PROPERTIES PREFIX "")
-SET_TARGET_PROPERTIES(System.IO.Compression.Native-static PROPERTIES OUTPUT_NAME libSystem.IO.Compression.Native)
+SET_TARGET_PROPERTIES(System.IO.Compression.Native-static PROPERTIES OUTPUT_NAME System.IO.Compression.Native)
 
 # Allow specification of arguments that should be passed to the linker
 if (GEN_SHARED_LIB)
