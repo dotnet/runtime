@@ -42,7 +42,7 @@ Please run `dotnet new nugetconfig` in the app folder and update the created `Nu
     <!--To inherit the global NuGet package sources remove the <clear/> line below -->
     <clear />
 
-    <add key="local runtime" value="C:\runtime\artifacts\artifacts\packages\Release\Shipping\" /> <!-- CHANGE THIS PATH to your local output path -->
+    <add key="local runtime" value="C:\runtime\artifacts\packages\Release\Shipping\" /> <!-- CHANGE THIS PATH to your local output path -->
   </packageSources>
 </configuration>
 ```
