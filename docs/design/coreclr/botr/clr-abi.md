@@ -1,6 +1,6 @@
 # CLR ABI
 
-This document describes the .NET Common Language Runtime (CLR) software conventions (or ABI, "Application Binary Interface"). It focusses on the ABI for the x64 (aka, AMD64), ARM (aka, ARM32 or Thumb-2), and ARM64 processor architectures. Documentation for the x86 ABI is somewhat scant.
+This document describes the .NET Common Language Runtime (CLR) software conventions (or ABI, "Application Binary Interface"). It focusses on the ABI for the x64 (aka, AMD64), ARM (aka, ARM32 or Thumb-2), and ARM64 processor architectures. Documentation for the x86 ABI is somewhat scant, but information on the basics of the calling convention are included at the bottom of this document.
 
 It describes requirements that the Just-In-Time (JIT) compiler imposes on the VM and vice-versa.
 
@@ -705,3 +705,7 @@ The general rules outlined in the [System V x86_64 ABI](https://software.intel.c
 | %xmm2-%xmm7  | used to pass floating point arguments   | No                |
 | %xmm8-%xmm15 | temporary registers                     | No                |
 ```
+
+# x86 Calling convention specifics
+
+The managed x86 calling convention uses a variant of the Windows x86 "fastcall" calling convention. The first two register-eligible arguments are passed in ecx and edx respectively. 1, 2, or 4 byte integer primitives and structs that trivially wrap a 4-byte primitive integer are eligible for registers. Structs that do not trivially wrap a 4-byte primitive integer or a register-eligible struct are passed on the stack. The this argument and the hidden arguments mentioned earlier in this document are also eligible for registers. All non-register eligible arguments are pushed on the stack in argument order. This is in contrast to the unmanaged calling conventions, cdecl, stdcall, thiscall, and fastcall, which push the arguments in reverse order onto the stack.
