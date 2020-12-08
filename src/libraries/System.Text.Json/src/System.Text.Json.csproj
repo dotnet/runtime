@@ -175,6 +175,7 @@
     <Compile Include="System\Text\Json\Serialization\PreserveReferenceHandler.cs" />
     <Compile Include="System\Text\Json\Serialization\PreserveReferenceResolver.cs" />
     <Compile Include="System\Text\Json\Serialization\PropertyRef.cs" />
+    <Compile Include="System\Text\Json\Serialization\ReadAsyncState.cs" />
     <Compile Include="System\Text\Json\Serialization\ReadStack.cs" />
     <Compile Include="System\Text\Json\Serialization\ReadStackFrame.cs" />
     <Compile Include="System\Text\Json\Serialization\ReferenceHandler.cs" />
@@ -183,6 +184,8 @@
     <Compile Include="System\Text\Json\Serialization\ReferenceResolver.cs" />
     <Compile Include="System\Text\Json\Serialization\ReflectionEmitMemberAccessor.cs" />
     <Compile Include="System\Text\Json\Serialization\ReflectionMemberAccessor.cs" />
+    <Compile Include="System\Text\Json\Serialization\SerializerReadAsyncEnumerable.cs" />
+    <Compile Include="System\Text\Json\Serialization\SerializerReadAsyncEnumerator.cs" />
     <Compile Include="System\Text\Json\Serialization\StackFrameObjectState.cs" />
     <Compile Include="System\Text\Json\Serialization\StackFramePropertyState.cs" />
     <Compile Include="System\Text\Json\Serialization\WriteStack.cs" />
