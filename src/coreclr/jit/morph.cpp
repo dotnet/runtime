@@ -1129,6 +1129,7 @@ fgArgTabEntry* fgArgInfo::AddStkArg(unsigned          argNum,
     DEBUG_ARG_SLOTS_ONLY(nextSlotNum += numSlots;)
     nextStackByteOffset += curArgTabEntry->GetByteSize();
     assert(nextStackByteOffset % curArgTabEntry->GetByteAlignment() == 0);
+
     return curArgTabEntry;
 }
 
@@ -3204,10 +3205,10 @@ void Compiler::fgInitArgInfo(GenTreeCall* call)
             }
         }
 
+        const var_types argType = args->GetNode()->TypeGet();
         if (args->GetNode()->OperIs(GT_PUTARG_TYPE))
         {
-            const GenTreeUnOp* putArgType = args->GetNode()->AsUnOp();
-            byteSize                      = genTypeSize(putArgType->TypeGet());
+            byteSize = genTypeSize(argType);
         }
 
         // The 'size' value has now must have been set. (the original value of zero is an invalid value)
@@ -3218,15 +3219,7 @@ void Compiler::fgInitArgInfo(GenTreeCall* call)
         // Arm64 Apple has a special ABI for passing small size arguments on stack,
         // bytes are aligned to 1-byte, shorts to 2-byte, int/float to 4-byte, etc.
         // It means passing 8 1-byte arguments on stack can take as small as 8 bytes.
-        unsigned argAlignBytes;
-        if (isStructArg)
-        {
-            argAlignBytes = TARGET_POINTER_SIZE;
-        }
-        else
-        {
-            argAlignBytes = byteSize;
-        }
+        unsigned argAlignBytes = eeGetArgAlignment(argType, (hfaType == TYP_FLOAT));
 #endif
 
         //
