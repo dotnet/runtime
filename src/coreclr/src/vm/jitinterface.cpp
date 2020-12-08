@@ -530,7 +530,7 @@ CEEInfo::ConvToJitSig(
             }
         }
 #if !defined(TARGET_X86)
-        else if ((flags & CONV_TO_JITSIG_FLAGS_CHECK_UNMANAGEDCALLERSONLY) == 0
+        else if ((flags & CONV_TO_JITSIG_FLAGS_CHECK_UNMANAGEDCALLERSONLY) != 0
             && sigRet->callConv == CORINFO_CALLCONV_DEFAULT
             && context.methodContext && context.methodContext->HasUnmanagedCallersOnlyAttribute())
         {
