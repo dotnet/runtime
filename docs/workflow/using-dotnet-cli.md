@@ -3,7 +3,7 @@
 
 This walkthrough explains how to run your own app against your local build using only the .NET SDK. 
 
-Testing your local build this way is quite realistic - more like a real user. However it takes longer because you have to build the package.
+Testing your local build this way is quite realistic - more like a real user. However it takes longer because you have to build the package. Each build can take 10 minutes altogether.
 
 If you want to use a faster method, you may want to use one of these walkthroughs instead:
 
