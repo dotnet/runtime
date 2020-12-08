@@ -371,7 +371,7 @@ jobs:
       - name: timeoutPerTestInMinutes
         value: 60
       - name: timeoutPerTestCollectionInMinutes
-        value: 120
+        value: 180
     jobParameters:
       testGroup: innerloop
       nameSuffix: AllSubsets_Mono_RuntimeTests
