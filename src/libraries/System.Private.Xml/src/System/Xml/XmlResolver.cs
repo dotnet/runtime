@@ -1,8 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
-#nullable enable
 namespace System.Xml
 {
     using System;
@@ -73,16 +71,18 @@ namespace System.Xml
             set { }
         }
 
-        public virtual bool SupportsType(Uri absoluteUri, Type type)
+        public virtual bool SupportsType(Uri absoluteUri, Type? type)
         {
             if (absoluteUri == null)
             {
                 throw new ArgumentNullException(nameof(absoluteUri));
             }
+
             if (type == null || type == typeof(Stream))
             {
                 return true;
             }
+
             return false;
         }
     }

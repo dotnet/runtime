@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 //
 
 //
@@ -469,13 +468,13 @@ void EEPolicy::LogFatalError(UINT exitCode, UINT_PTR address, LPCWSTR pszMessage
                 addressString.Printf(W("%p"), pExceptionInfo? (UINT_PTR)pExceptionInfo->ExceptionRecord->ExceptionAddress : address);
 
                 // We should always have the reference to the runtime's instance
-                _ASSERTE(g_hThisInst != NULL);
+                _ASSERTE(GetClrModuleBase() != NULL);
 
                 // Setup the string to contain the runtime's base address. Thus, when customers report FEEE with just
                 // the event log entry containing this string, we can use the absolute and base addresses to determine
                 // where the fault happened inside the runtime.
                 SmallStackSString runtimeBaseAddressString;
-                runtimeBaseAddressString.Printf(W("%p"), g_hThisInst);
+                runtimeBaseAddressString.Printf(W("%p"), GetClrModuleBase());
 
                 SmallStackSString exitCodeString;
                 exitCodeString.Printf(W("%x"), exitCode);
@@ -537,7 +536,9 @@ void EEPolicy::LogFatalError(UINT exitCode, UINT_PTR address, LPCWSTR pszMessage
                 // Though we would like to remove the usage of ExecutionEngineException in any manner,
                 // we cannot. Its okay to use it in the case below since the process is terminating
                 // and this will serve as an exception object for debugger.
-                ohException = CLRException::GetPreallocatedExecutionEngineExceptionHandle();
+                // We avoid calling CLRException::GetPreallocatedExecutionEngineExceptionHandle to avoid
+                // an assertion in case the exception has not been allocated yet.
+                ohException = g_pPreallocatedExecutionEngineException;
             }
 
             // Preallocated exception handles can be null if FailFast is invoked before LoadBaseSystemClasses

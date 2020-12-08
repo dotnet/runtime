@@ -1,8 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
+using System.Diagnostics;
 using System.Xml;
 using System.Xml.XPath;
 using System.Xml.Xsl;
@@ -11,7 +11,7 @@ namespace MS.Internal.Xml.XPath
 {
     internal sealed class VariableQuery : ExtensionQuery
     {
-        private IXsltContextVariable _variable;
+        private IXsltContextVariable? _variable;
 
         public VariableQuery(string name, string prefix) : base(prefix, name) { }
         private VariableQuery(VariableQuery other) : base(other)
@@ -45,7 +45,12 @@ namespace MS.Internal.Xml.XPath
                 throw XPathException.Create(SR.Xp_NoContext);
             }
 
-            return ProcessResult(_variable.Evaluate(xsltContext));
+            Debug.Assert(_variable != null);
+            object? retVal = ProcessResult(_variable.Evaluate(xsltContext));
+
+            // ProcessResult may return null when the input value is XmlNode and here doesn't seem to be the case.
+            Debug.Assert(retVal != null);
+            return retVal;
         }
 
         public override XPathResultType StaticType
@@ -54,7 +59,7 @@ namespace MS.Internal.Xml.XPath
             {
                 if (_variable != null)
                 {  // Temp. fix to overcome dependency on static type
-                    return GetXPathType(Evaluate(null));
+                    return GetXPathType(Evaluate(null!));
                 }
                 XPathResultType result = _variable != null ? _variable.VariableType : XPathResultType.Any;
                 if (result == XPathResultType.Error)

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Buffers;
 using System.Diagnostics;
@@ -289,10 +288,7 @@ namespace System.Text
 
         public override int Read(byte[] buffer, int offset, int count)
         {
-            if (buffer is null)
-            {
-                throw new ArgumentNullException(nameof(buffer));
-            }
+            ValidateBufferArguments(buffer, offset, count);
 
             return Read(new Span<byte>(buffer, offset, count));
         }
@@ -353,10 +349,7 @@ namespace System.Text
 
         public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
         {
-            if (buffer is null)
-            {
-                throw new ArgumentNullException(nameof(buffer));
-            }
+            ValidateBufferArguments(buffer, offset, count);
 
             return ReadAsync(new Memory<byte>(buffer, offset, count), cancellationToken).AsTask();
         }
@@ -367,7 +360,7 @@ namespace System.Text
 
             if (cancellationToken.IsCancellationRequested)
             {
-                return new ValueTask<int>(Task.FromCanceled<int>(cancellationToken));
+                return ValueTask.FromCanceled<int>(cancellationToken);
             }
 
             return ReadAsyncCore(buffer, cancellationToken);
@@ -457,10 +450,7 @@ namespace System.Text
 
         public override void Write(byte[] buffer, int offset, int count)
         {
-            if (buffer is null)
-            {
-                throw new ArgumentNullException(nameof(buffer));
-            }
+            ValidateBufferArguments(buffer, offset, count);
 
             Write(new ReadOnlySpan<byte>(buffer, offset, count));
         }
@@ -468,6 +458,11 @@ namespace System.Text
         public override void Write(ReadOnlySpan<byte> buffer)
         {
             EnsurePreWriteConditions();
+
+            if (buffer.IsEmpty)
+            {
+                return;
+            }
 
             int rentalLength = Math.Clamp(buffer.Length, MinWriteRentedArraySize, MaxWriteRentedArraySize);
 
@@ -523,10 +518,7 @@ namespace System.Text
 
         public override Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
         {
-            if (buffer is null)
-            {
-                throw new ArgumentNullException(nameof(buffer));
-            }
+            ValidateBufferArguments(buffer, offset, count);
 
             return WriteAsync(new ReadOnlyMemory<byte>(buffer, offset, count), cancellationToken).AsTask();
         }
@@ -537,7 +529,12 @@ namespace System.Text
 
             if (cancellationToken.IsCancellationRequested)
             {
-                return new ValueTask(Task.FromCanceled(cancellationToken));
+                return ValueTask.FromCanceled(cancellationToken);
+            }
+
+            if (buffer.IsEmpty)
+            {
+                return ValueTask.CompletedTask;
             }
 
             return WriteAsyncCore(buffer, cancellationToken);

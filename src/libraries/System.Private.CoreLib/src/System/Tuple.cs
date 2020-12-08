@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections;
 using System.Collections.Generic;
@@ -115,10 +114,15 @@ namespace System
 
         public override bool Equals(object? obj)
         {
-            return ((IStructuralEquatable)this).Equals(obj, EqualityComparer<object>.Default);
+            return Equals(obj, EqualityComparer<object>.Default);
         }
 
         bool IStructuralEquatable.Equals(object? other, IEqualityComparer comparer)
+        {
+            return Equals(other, comparer);
+        }
+
+        private bool Equals(object? other, IEqualityComparer comparer)
         {
             if (other == null) return false;
 
@@ -132,10 +136,15 @@ namespace System
 
         int IComparable.CompareTo(object? obj)
         {
-            return ((IStructuralComparable)this).CompareTo(obj, Comparer<object>.Default);
+            return CompareTo(obj, Comparer<object>.Default);
         }
 
         int IStructuralComparable.CompareTo(object? other, IComparer comparer)
+        {
+            return CompareTo(other, comparer);
+        }
+
+        private int CompareTo(object? other, IComparer comparer)
         {
             if (other == null) return 1;
 
@@ -149,26 +158,37 @@ namespace System
 
         public override int GetHashCode()
         {
-            return ((IStructuralEquatable)this).GetHashCode(EqualityComparer<object>.Default);
+            return GetHashCode(EqualityComparer<object>.Default);
         }
 
         int IStructuralEquatable.GetHashCode(IEqualityComparer comparer)
         {
-            return comparer.GetHashCode(m_Item1!);
+            return GetHashCode(comparer);
         }
 
         int ITupleInternal.GetHashCode(IEqualityComparer comparer)
         {
-            return ((IStructuralEquatable)this).GetHashCode(comparer);
+            return GetHashCode(comparer);
         }
+
+        private int GetHashCode(IEqualityComparer comparer)
+        {
+            return comparer.GetHashCode(m_Item1!);
+        }
+
         public override string ToString()
         {
             StringBuilder sb = new StringBuilder();
             sb.Append('(');
-            return ((ITupleInternal)this).ToString(sb);
+            return ToString(sb);
         }
 
         string ITupleInternal.ToString(StringBuilder sb)
+        {
+            return ToString(sb);
+        }
+
+        private string ToString(StringBuilder sb)
         {
             sb.Append(m_Item1);
             sb.Append(')');
@@ -214,10 +234,15 @@ namespace System
 
         public override bool Equals(object? obj)
         {
-            return ((IStructuralEquatable)this).Equals(obj, EqualityComparer<object>.Default);
+            return Equals(obj, EqualityComparer<object>.Default);
         }
 
         bool IStructuralEquatable.Equals(object? other, IEqualityComparer comparer)
+        {
+            return Equals(other, comparer);
+        }
+
+        private bool Equals(object? other, IEqualityComparer comparer)
         {
             if (other == null) return false;
 
@@ -231,10 +256,15 @@ namespace System
 
         int IComparable.CompareTo(object? obj)
         {
-            return ((IStructuralComparable)this).CompareTo(obj, Comparer<object>.Default);
+            return CompareTo(obj, Comparer<object>.Default);
         }
 
         int IStructuralComparable.CompareTo(object? other, IComparer comparer)
+        {
+            return CompareTo(other, comparer);
+        }
+
+        private int CompareTo(object? other, IComparer comparer)
         {
             if (other == null) return 1;
 
@@ -252,26 +282,37 @@ namespace System
 
         public override int GetHashCode()
         {
-            return ((IStructuralEquatable)this).GetHashCode(EqualityComparer<object>.Default);
+            return GetHashCode(EqualityComparer<object>.Default);
         }
 
         int IStructuralEquatable.GetHashCode(IEqualityComparer comparer)
         {
-            return Tuple.CombineHashCodes(comparer.GetHashCode(m_Item1!), comparer.GetHashCode(m_Item2!));
+            return GetHashCode(comparer);
         }
 
         int ITupleInternal.GetHashCode(IEqualityComparer comparer)
         {
-            return ((IStructuralEquatable)this).GetHashCode(comparer);
+            return GetHashCode(comparer);
         }
+
+        private int GetHashCode(IEqualityComparer comparer)
+        {
+            return Tuple.CombineHashCodes(comparer.GetHashCode(m_Item1!), comparer.GetHashCode(m_Item2!));
+        }
+
         public override string ToString()
         {
             StringBuilder sb = new StringBuilder();
             sb.Append('(');
-            return ((ITupleInternal)this).ToString(sb);
+            return ToString(sb);
         }
 
         string ITupleInternal.ToString(StringBuilder sb)
+        {
+            return ToString(sb);
+        }
+
+        private string ToString(StringBuilder sb)
         {
             sb.Append(m_Item1);
             sb.Append(", ");
@@ -318,10 +359,15 @@ namespace System
 
         public override bool Equals(object? obj)
         {
-            return ((IStructuralEquatable)this).Equals(obj, EqualityComparer<object>.Default);
+            return Equals(obj, EqualityComparer<object>.Default);
         }
 
         bool IStructuralEquatable.Equals(object? other, IEqualityComparer comparer)
+        {
+            return Equals(other, comparer);
+        }
+
+        private bool Equals(object? other, IEqualityComparer comparer)
         {
             if (other == null) return false;
 
@@ -335,10 +381,15 @@ namespace System
 
         int IComparable.CompareTo(object? obj)
         {
-            return ((IStructuralComparable)this).CompareTo(obj, Comparer<object>.Default);
+            return CompareTo(obj, Comparer<object>.Default);
         }
 
         int IStructuralComparable.CompareTo(object? other, IComparer comparer)
+        {
+            return CompareTo(other, comparer);
+        }
+
+        private int CompareTo(object? other, IComparer comparer)
         {
             if (other == null) return 1;
 
@@ -360,26 +411,37 @@ namespace System
 
         public override int GetHashCode()
         {
-            return ((IStructuralEquatable)this).GetHashCode(EqualityComparer<object>.Default);
+            return GetHashCode(EqualityComparer<object>.Default);
         }
 
         int IStructuralEquatable.GetHashCode(IEqualityComparer comparer)
         {
-            return Tuple.CombineHashCodes(comparer.GetHashCode(m_Item1!), comparer.GetHashCode(m_Item2!), comparer.GetHashCode(m_Item3!));
+            return GetHashCode(comparer);
         }
 
         int ITupleInternal.GetHashCode(IEqualityComparer comparer)
         {
-            return ((IStructuralEquatable)this).GetHashCode(comparer);
+            return GetHashCode(comparer);
         }
+
+        private int GetHashCode(IEqualityComparer comparer)
+        {
+            return Tuple.CombineHashCodes(comparer.GetHashCode(m_Item1!), comparer.GetHashCode(m_Item2!), comparer.GetHashCode(m_Item3!));
+        }
+
         public override string ToString()
         {
             StringBuilder sb = new StringBuilder();
             sb.Append('(');
-            return ((ITupleInternal)this).ToString(sb);
+            return ToString(sb);
         }
 
         string ITupleInternal.ToString(StringBuilder sb)
+        {
+            return ToString(sb);
+        }
+
+        private string ToString(StringBuilder sb)
         {
             sb.Append(m_Item1);
             sb.Append(", ");
@@ -432,10 +494,15 @@ namespace System
 
         public override bool Equals(object? obj)
         {
-            return ((IStructuralEquatable)this).Equals(obj, EqualityComparer<object>.Default);
+            return Equals(obj, EqualityComparer<object>.Default);
         }
 
         bool IStructuralEquatable.Equals(object? other, IEqualityComparer comparer)
+        {
+            return Equals(other, comparer);
+        }
+
+        private bool Equals(object? other, IEqualityComparer comparer)
         {
             if (other == null) return false;
 
@@ -449,10 +516,15 @@ namespace System
 
         int IComparable.CompareTo(object? obj)
         {
-            return ((IStructuralComparable)this).CompareTo(obj, Comparer<object>.Default);
+            return CompareTo(obj, Comparer<object>.Default);
         }
 
         int IStructuralComparable.CompareTo(object? other, IComparer comparer)
+        {
+            return CompareTo(other, comparer);
+        }
+
+        private int CompareTo(object? other, IComparer comparer)
         {
             if (other == null) return 1;
 
@@ -478,26 +550,37 @@ namespace System
 
         public override int GetHashCode()
         {
-            return ((IStructuralEquatable)this).GetHashCode(EqualityComparer<object>.Default);
+            return GetHashCode(EqualityComparer<object>.Default);
         }
 
         int IStructuralEquatable.GetHashCode(IEqualityComparer comparer)
         {
-            return Tuple.CombineHashCodes(comparer.GetHashCode(m_Item1!), comparer.GetHashCode(m_Item2!), comparer.GetHashCode(m_Item3!), comparer.GetHashCode(m_Item4!));
+            return GetHashCode(comparer);
         }
 
         int ITupleInternal.GetHashCode(IEqualityComparer comparer)
         {
-            return ((IStructuralEquatable)this).GetHashCode(comparer);
+            return GetHashCode(comparer);
         }
+
+        private int GetHashCode(IEqualityComparer comparer)
+        {
+            return Tuple.CombineHashCodes(comparer.GetHashCode(m_Item1!), comparer.GetHashCode(m_Item2!), comparer.GetHashCode(m_Item3!), comparer.GetHashCode(m_Item4!));
+        }
+
         public override string ToString()
         {
             StringBuilder sb = new StringBuilder();
             sb.Append('(');
-            return ((ITupleInternal)this).ToString(sb);
+            return ToString(sb);
         }
 
         string ITupleInternal.ToString(StringBuilder sb)
+        {
+            return ToString(sb);
+        }
+
+        private string ToString(StringBuilder sb)
         {
             sb.Append(m_Item1);
             sb.Append(", ");
@@ -556,10 +639,15 @@ namespace System
 
         public override bool Equals(object? obj)
         {
-            return ((IStructuralEquatable)this).Equals(obj, EqualityComparer<object>.Default);
+            return Equals(obj, EqualityComparer<object>.Default);
         }
 
         bool IStructuralEquatable.Equals(object? other, IEqualityComparer comparer)
+        {
+            return Equals(other, comparer);
+        }
+
+        private bool Equals(object? other, IEqualityComparer comparer)
         {
             if (other == null) return false;
 
@@ -573,10 +661,15 @@ namespace System
 
         int IComparable.CompareTo(object? obj)
         {
-            return ((IStructuralComparable)this).CompareTo(obj, Comparer<object>.Default);
+            return CompareTo(obj, Comparer<object>.Default);
         }
 
         int IStructuralComparable.CompareTo(object? other, IComparer comparer)
+        {
+            return CompareTo(other, comparer);
+        }
+
+        private int CompareTo(object? other, IComparer comparer)
         {
             if (other == null) return 1;
 
@@ -606,26 +699,37 @@ namespace System
 
         public override int GetHashCode()
         {
-            return ((IStructuralEquatable)this).GetHashCode(EqualityComparer<object>.Default);
+            return GetHashCode(EqualityComparer<object>.Default);
         }
 
         int IStructuralEquatable.GetHashCode(IEqualityComparer comparer)
         {
-            return Tuple.CombineHashCodes(comparer.GetHashCode(m_Item1!), comparer.GetHashCode(m_Item2!), comparer.GetHashCode(m_Item3!), comparer.GetHashCode(m_Item4!), comparer.GetHashCode(m_Item5!));
+            return GetHashCode(comparer);
         }
 
         int ITupleInternal.GetHashCode(IEqualityComparer comparer)
         {
-            return ((IStructuralEquatable)this).GetHashCode(comparer);
+            return GetHashCode(comparer);
         }
+
+        private int GetHashCode(IEqualityComparer comparer)
+        {
+            return Tuple.CombineHashCodes(comparer.GetHashCode(m_Item1!), comparer.GetHashCode(m_Item2!), comparer.GetHashCode(m_Item3!), comparer.GetHashCode(m_Item4!), comparer.GetHashCode(m_Item5!));
+        }
+
         public override string ToString()
         {
             StringBuilder sb = new StringBuilder();
             sb.Append('(');
-            return ((ITupleInternal)this).ToString(sb);
+            return ToString(sb);
         }
 
         string ITupleInternal.ToString(StringBuilder sb)
+        {
+            return ToString(sb);
+        }
+
+        private string ToString(StringBuilder sb)
         {
             sb.Append(m_Item1);
             sb.Append(", ");
@@ -690,10 +794,15 @@ namespace System
 
         public override bool Equals(object? obj)
         {
-            return ((IStructuralEquatable)this).Equals(obj, EqualityComparer<object>.Default);
+            return Equals(obj, EqualityComparer<object>.Default);
         }
 
         bool IStructuralEquatable.Equals(object? other, IEqualityComparer comparer)
+        {
+            return Equals(other, comparer);
+        }
+
+        private bool Equals(object? other, IEqualityComparer comparer)
         {
             if (other == null) return false;
 
@@ -707,10 +816,15 @@ namespace System
 
         int IComparable.CompareTo(object? obj)
         {
-            return ((IStructuralComparable)this).CompareTo(obj, Comparer<object>.Default);
+            return CompareTo(obj, Comparer<object>.Default);
         }
 
         int IStructuralComparable.CompareTo(object? other, IComparer comparer)
+        {
+            return CompareTo(other, comparer);
+        }
+
+        private int CompareTo(object? other, IComparer comparer)
         {
             if (other == null) return 1;
 
@@ -744,26 +858,37 @@ namespace System
 
         public override int GetHashCode()
         {
-            return ((IStructuralEquatable)this).GetHashCode(EqualityComparer<object>.Default);
+            return GetHashCode(EqualityComparer<object>.Default);
         }
 
         int IStructuralEquatable.GetHashCode(IEqualityComparer comparer)
         {
-            return Tuple.CombineHashCodes(comparer.GetHashCode(m_Item1!), comparer.GetHashCode(m_Item2!), comparer.GetHashCode(m_Item3!), comparer.GetHashCode(m_Item4!), comparer.GetHashCode(m_Item5!), comparer.GetHashCode(m_Item6!));
+            return GetHashCode(comparer);
         }
 
         int ITupleInternal.GetHashCode(IEqualityComparer comparer)
         {
-            return ((IStructuralEquatable)this).GetHashCode(comparer);
+            return GetHashCode(comparer);
         }
+
+        private int GetHashCode(IEqualityComparer comparer)
+        {
+            return Tuple.CombineHashCodes(comparer.GetHashCode(m_Item1!), comparer.GetHashCode(m_Item2!), comparer.GetHashCode(m_Item3!), comparer.GetHashCode(m_Item4!), comparer.GetHashCode(m_Item5!), comparer.GetHashCode(m_Item6!));
+        }
+
         public override string ToString()
         {
             StringBuilder sb = new StringBuilder();
             sb.Append('(');
-            return ((ITupleInternal)this).ToString(sb);
+            return ToString(sb);
         }
 
         string ITupleInternal.ToString(StringBuilder sb)
+        {
+            return ToString(sb);
+        }
+
+        private string ToString(StringBuilder sb)
         {
             sb.Append(m_Item1);
             sb.Append(", ");
@@ -834,10 +959,15 @@ namespace System
 
         public override bool Equals(object? obj)
         {
-            return ((IStructuralEquatable)this).Equals(obj, EqualityComparer<object>.Default);
+            return Equals(obj, EqualityComparer<object>.Default);
         }
 
         bool IStructuralEquatable.Equals(object? other, IEqualityComparer comparer)
+        {
+            return Equals(other, comparer);
+        }
+
+        private bool Equals(object? other, IEqualityComparer comparer)
         {
             if (other == null) return false;
 
@@ -855,6 +985,11 @@ namespace System
         }
 
         int IStructuralComparable.CompareTo(object? other, IComparer comparer)
+        {
+            return CompareTo(other, comparer);
+        }
+
+        private int CompareTo(object? other, IComparer comparer)
         {
             if (other == null) return 1;
 
@@ -892,26 +1027,37 @@ namespace System
 
         public override int GetHashCode()
         {
-            return ((IStructuralEquatable)this).GetHashCode(EqualityComparer<object>.Default);
+            return GetHashCode(EqualityComparer<object>.Default);
         }
 
         int IStructuralEquatable.GetHashCode(IEqualityComparer comparer)
         {
-            return Tuple.CombineHashCodes(comparer.GetHashCode(m_Item1!), comparer.GetHashCode(m_Item2!), comparer.GetHashCode(m_Item3!), comparer.GetHashCode(m_Item4!), comparer.GetHashCode(m_Item5!), comparer.GetHashCode(m_Item6!), comparer.GetHashCode(m_Item7!));
+            return GetHashCode(comparer);
         }
 
         int ITupleInternal.GetHashCode(IEqualityComparer comparer)
         {
-            return ((IStructuralEquatable)this).GetHashCode(comparer);
+            return GetHashCode(comparer);
         }
+
+        private int GetHashCode(IEqualityComparer comparer)
+        {
+            return Tuple.CombineHashCodes(comparer.GetHashCode(m_Item1!), comparer.GetHashCode(m_Item2!), comparer.GetHashCode(m_Item3!), comparer.GetHashCode(m_Item4!), comparer.GetHashCode(m_Item5!), comparer.GetHashCode(m_Item6!), comparer.GetHashCode(m_Item7!));
+        }
+
         public override string ToString()
         {
             StringBuilder sb = new StringBuilder();
             sb.Append('(');
-            return ((ITupleInternal)this).ToString(sb);
+            return ToString(sb);
         }
 
         string ITupleInternal.ToString(StringBuilder sb)
+        {
+            return ToString(sb);
+        }
+
+        private string ToString(StringBuilder sb)
         {
             sb.Append(m_Item1);
             sb.Append(", ");
@@ -993,10 +1139,15 @@ namespace System
 
         public override bool Equals(object? obj)
         {
-            return ((IStructuralEquatable)this).Equals(obj, EqualityComparer<object>.Default);
+            return Equals(obj, EqualityComparer<object>.Default);
         }
 
         bool IStructuralEquatable.Equals(object? other, IEqualityComparer comparer)
+        {
+            return Equals(other, comparer);
+        }
+
+        private bool Equals(object? other, IEqualityComparer comparer)
         {
             if (other == null) return false;
 
@@ -1010,10 +1161,15 @@ namespace System
 
         int IComparable.CompareTo(object? obj)
         {
-            return ((IStructuralComparable)this).CompareTo(obj, Comparer<object>.Default);
+            return CompareTo(obj, Comparer<object>.Default);
         }
 
         int IStructuralComparable.CompareTo(object? other, IComparer comparer)
+        {
+            return CompareTo(other, comparer);
+        }
+
+        private int CompareTo(object? other, IComparer comparer)
         {
             if (other == null) return 1;
 
@@ -1055,10 +1211,15 @@ namespace System
 
         public override int GetHashCode()
         {
-            return ((IStructuralEquatable)this).GetHashCode(EqualityComparer<object>.Default);
+            return GetHashCode(EqualityComparer<object>.Default);
         }
 
         int IStructuralEquatable.GetHashCode(IEqualityComparer comparer)
+        {
+            return GetHashCode(comparer);
+        }
+
+        private int GetHashCode(IEqualityComparer comparer)
         {
             // We want to have a limited hash in this case.  We'll use the last 8 elements of the tuple
             ITupleInternal t = (ITupleInternal)m_Rest;
@@ -1089,16 +1250,22 @@ namespace System
 
         int ITupleInternal.GetHashCode(IEqualityComparer comparer)
         {
-            return ((IStructuralEquatable)this).GetHashCode(comparer);
+            return GetHashCode(comparer);
         }
+
         public override string ToString()
         {
             StringBuilder sb = new StringBuilder();
             sb.Append('(');
-            return ((ITupleInternal)this).ToString(sb);
+            return ToString(sb);
         }
 
         string ITupleInternal.ToString(StringBuilder sb)
+        {
+            return ToString(sb);
+        }
+
+        private string ToString(StringBuilder sb)
         {
             sb.Append(m_Item1);
             sb.Append(", ");

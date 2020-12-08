@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 /*============================================================
 **
@@ -52,7 +51,7 @@
 //    internal BCL helpful function doing permission check.  From bucketing perspetive it is
 //    more preferable to report the user managed code that invokes Debugger.Break instead.
 //
-//    User managed code is managed code in non-system assembly.   Currently, only mscorlib.dll
+//    User managed code is managed code in non-system assembly.   Currently, only CoreLib
 //    is marked as system assembly.
 //
 //----------------------------------------------------------------------------
@@ -579,7 +578,7 @@ FCIMPL4(void, DebugStackTrace::GetStackFramesInternal,
                     if (pISymUnmanagedReader != NULL)
                     {
                         // Found a ISymUnmanagedReader for the regular PDB so don't attempt to
-                        // read it as a portable PDB in mscorlib's StackFrameHelper.
+                        // read it as a portable PDB in CoreLib's StackFrameHelper.
                         fPortablePDB = FALSE;
 
                         ReleaseHolder<ISymUnmanagedMethod> pISymUnmanagedMethod;

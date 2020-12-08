@@ -1,16 +1,17 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using Microsoft.Win32.SafeHandles;
 
 namespace System.Security.Cryptography
 {
     public sealed partial class AesGcm
     {
-        private SafeEvpCipherCtxHandle _ctxHandle = null!;
+        private SafeEvpCipherCtxHandle _ctxHandle;
 
+        [MemberNotNull(nameof(_ctxHandle))]
         private void ImportKey(ReadOnlySpan<byte> key)
         {
             _ctxHandle = Interop.Crypto.EvpCipherCreatePartial(GetCipher(key.Length * 8));

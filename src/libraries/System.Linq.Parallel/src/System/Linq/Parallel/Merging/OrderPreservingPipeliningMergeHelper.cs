@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 // =+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+
 //
@@ -167,7 +166,7 @@ namespace System.Linq.Parallel
         // Returns the results as an array.
         //
 
-        [ExcludeFromCodeCoverage]
+        [ExcludeFromCodeCoverage(Justification = "An ordered pipelining merge is not intended to be used this way")]
         public TOutput[] GetResultsAsArray()
         {
             Debug.Fail("An ordered pipelining merge is not intended to be used this way.");
@@ -239,7 +238,7 @@ namespace System.Linq.Parallel
             /// <summary>
             /// Tracks whether MoveNext() has already been called previously.
             /// </summary>
-            private bool _initialized = false;
+            private bool _initialized;
 
             /// <summary>
             /// Constructor

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 /*XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
@@ -147,14 +146,9 @@ void GCInfo::gcDspByrefSetChanges(regMaskTP gcRegByrefSetNew DEBUGARG(bool force
 
 void GCInfo::gcMarkRegSetGCref(regMaskTP regMask DEBUGARG(bool forceOutput))
 {
-#ifdef DEBUG
-    if (compiler->compRegSetCheckLevel == 0)
-    {
-        // This set of registers are going to hold REFs.
-        // Make sure they were not holding BYREFs.
-        assert((gcRegByrefSetCur & regMask) == 0);
-    }
-#endif
+    // This set of registers are going to hold REFs.
+    // Make sure they were not holding BYREFs.
+    assert((gcRegByrefSetCur & regMask) == 0);
 
     regMaskTP gcRegByrefSetNew = gcRegByrefSetCur & ~regMask; // Clear it if set in Byref mask
     regMaskTP gcRegGCrefSetNew = gcRegGCrefSetCur | regMask;  // Set it in GCref mask
@@ -395,7 +389,7 @@ void GCInfo::gcCountForHeader(UNALIGNED unsigned int* pUntrackedCount, UNALIGNED
 #ifdef DEBUG
             if (compiler->verbose)
             {
-                int offs = varDsc->lvStkOffs;
+                int offs = varDsc->GetStackOffset();
 
                 printf("GCINFO: untrckd %s lcl at [%s", varTypeGCstring(varDsc->TypeGet()),
                        compiler->GetEmitter()->emitGetFrameReg());

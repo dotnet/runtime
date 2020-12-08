@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 //
 // switches.h switch configuration of common runtime features
 //
@@ -81,9 +80,6 @@
 // Note that if ALLOW_SXS_JIT_NGEN is defined, then ALLOW_SXS_JIT must be defined.
 #define ALLOW_SXS_JIT
 #define ALLOW_SXS_JIT_NGEN
-
-//master switch for gc suspension not based on hijacking
-#define FEATURE_ENABLE_GCPOLL
 
 #if !defined(TARGET_UNIX)
 // PLATFORM_SUPPORTS_THREADSUSPEND is defined for platforms where it is safe to call

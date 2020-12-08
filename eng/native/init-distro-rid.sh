@@ -70,6 +70,25 @@ initNonPortableDistroRid()
     elif getprop ro.product.system.model 2>&1 | grep -qi android; then
         __android_sdk_version=$(getprop ro.build.version.sdk)
         nonPortableBuildID="android.$__android_sdk_version-${buildArch}"
+    elif [ "$targetOs" = "illumos" ]; then
+        __uname_version=$(uname -v)
+        case "$__uname_version" in
+            omnios-*)
+                __omnios_major_version=$(echo "${__uname_version:8:2}")
+                nonPortableBuildID=omnios."$__omnios_major_version"-"$buildArch"
+            ;;
+            joyent_*)
+                __smartos_major_version=$(echo "${__uname_version:7:4}")
+                nonPortableBuildID=smartos."$__smartos_major_version"-"$buildArch"
+            ;;
+            illumos_*)
+                nonPortableBuildID=openindiana-"$buildArch"
+            ;;
+        esac
+    elif [ "$targetOs" = "Solaris" ]; then
+        __uname_version=$(uname -v)
+        __solaris_major_version=$(echo "${__uname_version%.*}")
+        nonPortableBuildID=solaris."$__solaris_major_version"-"$buildArch"
     fi
 
     if [ -n "${nonPortableBuildID}" ]; then
@@ -100,7 +119,6 @@ initNonPortableDistroRid()
 #
 #   __DistroRid
 #   __PortableBuild
-#   __RuntimeId
 #
 initDistroRidGlobal()
 {
@@ -125,13 +143,6 @@ initDistroRidGlobal()
             echo "Error rootfsDir has been passed, but the location is not valid."
             exit 1
         fi
-    fi
-
-    if [ "$buildArch" = "armel" ]; then
-        # Armel cross build is Tizen specific and does not support Portable RID build
-        __PortableBuild=0
-        export __PortableBuild
-        isPortable=0
     fi
 
     initNonPortableDistroRid "${targetOs}" "${buildArch}" "${isPortable}" "${rootfsDir}"
@@ -169,8 +180,10 @@ initDistroRidGlobal()
                 distroRid="browser-$buildArch"
             elif [ "$targetOs" = "FreeBSD" ]; then
                 distroRid="freebsd-$buildArch"
-            elif [ "$targetOs" = "SunOS" ]; then
-                distroRid="sunos-$buildArch"
+            elif [ "$targetOs" = "illumos" ]; then
+                distroRid="illumos-$buildArch"
+            elif [ "$targetOs" = "Solaris" ]; then
+                distroRid="solaris-$buildArch"
             fi
         fi
 
@@ -180,13 +193,8 @@ initDistroRidGlobal()
 
     if [ -z "$__DistroRid" ]; then
         echo "DistroRid is not set. This is almost certainly an error"
-
         exit 1
-    else
-        echo "__DistroRid: ${__DistroRid}"
-        echo "__RuntimeId: ${__DistroRid}"
-
-        __RuntimeId="${__DistroRid}"
-        export __RuntimeId
     fi
+
+    echo "__DistroRid: ${__DistroRid}"
 }

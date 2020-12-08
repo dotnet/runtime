@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections;
 using System.Xml;
@@ -14,9 +13,9 @@ namespace System.Security.Cryptography.Xml
         private string _signatureMethod;
         private string _signatureLength;
         private readonly ArrayList _references;
-        private XmlElement _cachedXml = null;
-        private SignedXml _signedXml = null;
-        private Transform _canonicalizationMethodTransform = null;
+        private XmlElement _cachedXml;
+        private SignedXml _signedXml;
+        private Transform _canonicalizationMethodTransform;
 
         internal SignedXml SignedXml
         {

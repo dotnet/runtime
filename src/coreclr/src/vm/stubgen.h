@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 //
 // File: StubGen.h
 //
@@ -874,9 +873,9 @@ protected:
     SArray<ILStubEHClauseBuilder> m_buildingEHClauses;
     SArray<ILStubEHClauseBuilder> m_finishedEHClauses;
 
-#ifndef HOST_64BIT
+#ifndef TARGET_64BIT
     const static UINT32 SPECIAL_VALUE_NAN_64_ON_32 = 0xFFFFFFFF;
-#endif // HOST_64BIT
+#endif // TARGET_64BIT
 };
 #endif // DACCESS_COMPILE
 

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 //
 // common.h - precompiled headers include for the COM+ Execution Engine
 //
@@ -112,6 +111,7 @@ typedef DPTR(class ArrayBase)           PTR_ArrayBase;
 typedef DPTR(class Assembly)            PTR_Assembly;
 typedef DPTR(class AssemblyBaseObject)  PTR_AssemblyBaseObject;
 typedef DPTR(class AssemblyLoadContextBaseObject) PTR_AssemblyLoadContextBaseObject;
+typedef DPTR(class AssemblyLoadContext) PTR_AssemblyLoadContext;
 typedef DPTR(class AssemblyNameBaseObject) PTR_AssemblyNameBaseObject;
 typedef VPTR(class BaseDomain)          PTR_BaseDomain;
 typedef DPTR(class ClassLoader)         PTR_ClassLoader;
@@ -144,7 +144,7 @@ typedef DPTR(class MethodDesc)          PTR_MethodDesc;
 typedef DPTR(class MethodDescChunk)     PTR_MethodDescChunk;
 typedef DPTR(class MethodImpl)          PTR_MethodImpl;
 typedef DPTR(class MethodTable)         PTR_MethodTable;
-typedef DPTR(class MscorlibBinder)      PTR_MscorlibBinder;
+typedef DPTR(class CoreLibBinder)      PTR_CoreLibBinder;
 typedef VPTR(class Module)              PTR_Module;
 typedef DPTR(class NDirectMethodDesc)   PTR_NDirectMethodDesc;
 typedef DPTR(class Thread)              PTR_Thread;
@@ -162,9 +162,6 @@ typedef DPTR(class ReJitManager)        PTR_ReJitManager;
 typedef DPTR(struct ReJitInfo)          PTR_ReJitInfo;
 typedef DPTR(struct SharedReJitInfo)    PTR_SharedReJitInfo;
 typedef DPTR(class StringObject)        PTR_StringObject;
-#ifdef FEATURE_UTF8STRING
-typedef DPTR(class Utf8StringObject)    PTR_Utf8StringObject;
-#endif // FEATURE_UTF8STRING
 typedef DPTR(class TypeHandle)          PTR_TypeHandle;
 typedef VPTR(class VirtualCallStubManager) PTR_VirtualCallStubManager;
 typedef VPTR(class VirtualCallStubManagerManager) PTR_VirtualCallStubManagerManager;
@@ -347,10 +344,6 @@ namespace Loader
 #include "codeman.h"
 #include "threads.h"
 #include "clrex.inl"
-#ifdef FEATURE_COMINTEROP
-    #include "windowsruntime.h"
-    #include "windowsstring.h"
-#endif
 #include "loaderallocator.hpp"
 #include "appdomain.hpp"
 #include "appdomain.inl"
@@ -372,7 +365,9 @@ namespace Loader
 #include "gcstress.h"
 
 HRESULT EnsureRtlFunctions();
-HINSTANCE GetModuleInst();
+
+// Helper function returns the base of clr module.
+void* GetClrModuleBase();
 
 #if defined(TARGET_X86) || defined(TARGET_AMD64)
 //
@@ -424,10 +419,6 @@ extern DummyGlobalContract ___contract;
 #include "syncblk.inl"
 #include "threads.inl"
 #include "eehash.inl"
-#ifdef FEATURE_COMINTEROP
-#include "WinRTRedirector.h"
-#include "winrtredirector.inl"
-#endif // FEATURE_COMINTEROP
 #include "eventtrace.inl"
 
 #if defined(COMMON_TURNED_FPO_ON)

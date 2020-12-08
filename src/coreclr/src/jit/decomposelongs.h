@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 /*XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
@@ -26,7 +25,7 @@ public:
     void PrepareForDecomposition();
     void DecomposeBlock(BasicBlock* block);
 
-    static void DecomposeRange(Compiler* compiler, unsigned blockWeight, LIR::Range& range);
+    static void DecomposeRange(Compiler* compiler, LIR::Range& range);
 
 private:
     inline LIR::Range& Range() const
@@ -70,7 +69,6 @@ private:
 
     // Data
     Compiler*   m_compiler;
-    unsigned    m_blockWeight;
     LIR::Range* m_range;
 };
 

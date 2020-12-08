@@ -1,17 +1,15 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Data
 {
-
     /// <summary>
     /// This static class defines the DataRow extension methods.
     /// </summary>
     public static class DataRowExtensions
     {
-
         /// <summary>
         /// This method provides access to the values in each of the columns in a given row.
         /// This method makes casts unnecessary when accessing columns.
@@ -21,7 +19,7 @@ namespace System.Data
         /// <param name="row">The input DataRow</param>
         /// <param name="columnName">The input column name specifying which row value to retrieve.</param>
         /// <returns>The DataRow value for the column specified.</returns>
-        public static T Field<T>(this DataRow row, string columnName)
+        public static T? Field<T>(this DataRow row, string columnName)
         {
             DataSetUtil.CheckArgumentNull(row, nameof(row));
             return UnboxT<T>.s_unbox(row[columnName]);
@@ -36,7 +34,7 @@ namespace System.Data
         /// <param name="row">The input DataRow</param>
         /// <param name="column">The input DataColumn specifying which row value to retrieve.</param>
         /// <returns>The DataRow value for the column specified.</returns>
-        public static T Field<T>(this DataRow row, DataColumn column)
+        public static T? Field<T>(this DataRow row, DataColumn column)
         {
             DataSetUtil.CheckArgumentNull(row, nameof(row));
             return UnboxT<T>.s_unbox(row[column]);
@@ -51,7 +49,7 @@ namespace System.Data
         /// <param name="row">The input DataRow</param>
         /// <param name="columnIndex">The input ordinal specifying which row value to retrieve.</param>
         /// <returns>The DataRow value for the column specified.</returns>
-        public static T Field<T>(this DataRow row, int columnIndex)
+        public static T? Field<T>(this DataRow row, int columnIndex)
         {
             DataSetUtil.CheckArgumentNull(row, nameof(row));
             return UnboxT<T>.s_unbox(row[columnIndex]);
@@ -67,7 +65,7 @@ namespace System.Data
         /// <param name="columnIndex">The input ordinal specifying which row value to retrieve.</param>
         /// <param name="version">The DataRow version for which row value to retrieve.</param>
         /// <returns>The DataRow value for the column specified.</returns>
-        public static T Field<T>(this DataRow row, int columnIndex, DataRowVersion version)
+        public static T? Field<T>(this DataRow row, int columnIndex, DataRowVersion version)
         {
             DataSetUtil.CheckArgumentNull(row, nameof(row));
             return UnboxT<T>.s_unbox(row[columnIndex, version]);
@@ -83,7 +81,7 @@ namespace System.Data
         /// <param name="columnName">The input column name specifying which row value to retrieve.</param>
         /// <param name="version">The DataRow version for which row value to retrieve.</param>
         /// <returns>The DataRow value for the column specified.</returns>
-        public static T Field<T>(this DataRow row, string columnName, DataRowVersion version)
+        public static T? Field<T>(this DataRow row, string columnName, DataRowVersion version)
         {
             DataSetUtil.CheckArgumentNull(row, nameof(row));
             return UnboxT<T>.s_unbox(row[columnName, version]);
@@ -99,7 +97,7 @@ namespace System.Data
         /// <param name="column">The input DataColumn specifying which row value to retrieve.</param>
         /// <param name="version">The DataRow version for which row value to retrieve.</param>
         /// <returns>The DataRow value for the column specified.</returns>
-        public static T Field<T>(this DataRow row, DataColumn column, DataRowVersion version)
+        public static T? Field<T>(this DataRow row, DataColumn column, DataRowVersion version)
         {
             DataSetUtil.CheckArgumentNull(row, nameof(row));
             return UnboxT<T>.s_unbox(row[column, version]);
@@ -111,10 +109,10 @@ namespace System.Data
         /// <param name="row">The input DataRow.</param>
         /// <param name="columnIndex">The input ordinal specifying which row value to set.</param>
         /// <param name="value">The new row value for the specified column.</param>
-        public static void SetField<T>(this DataRow row, int columnIndex, T value)
+        public static void SetField<T>(this DataRow row, int columnIndex, T? value)
         {
             DataSetUtil.CheckArgumentNull(row, nameof(row));
-            row[columnIndex] = (object)value ?? DBNull.Value;
+            row[columnIndex] = (object?)value ?? DBNull.Value;
         }
 
         /// <summary>
@@ -123,10 +121,10 @@ namespace System.Data
         /// <param name="row">The input DataRow.</param>
         /// <param name="columnName">The input column name specifying which row value to retrieve.</param>
         /// <param name="value">The new row value for the specified column.</param>
-        public static void SetField<T>(this DataRow row, string columnName, T value)
+        public static void SetField<T>(this DataRow row, string columnName, T? value)
         {
             DataSetUtil.CheckArgumentNull(row, nameof(row));
-            row[columnName] = (object)value ?? DBNull.Value;
+            row[columnName] = (object?)value ?? DBNull.Value;
         }
 
         /// <summary>
@@ -135,17 +133,17 @@ namespace System.Data
         /// <param name="row">The input DataRow.</param>
         /// <param name="column">The input DataColumn specifying which row value to retrieve.</param>
         /// <param name="value">The new row value for the specified column.</param>
-        public static void SetField<T>(this DataRow row, DataColumn column, T value)
+        public static void SetField<T>(this DataRow row, DataColumn column, T? value)
         {
             DataSetUtil.CheckArgumentNull(row, nameof(row));
-            row[column] = (object)value ?? DBNull.Value;
+            row[column] = (object?)value ?? DBNull.Value;
         }
 
         private static class UnboxT<T>
         {
-            internal static readonly Converter<object, T> s_unbox = Create();
+            internal static readonly Converter<object, T?> s_unbox = Create();
 
-            private static Converter<object, T> Create()
+            private static Converter<object, T?> Create()
             {
                 if (typeof(T).IsValueType)
                 {
@@ -153,7 +151,7 @@ namespace System.Data
                         ? (Converter<object, T>)Delegate.CreateDelegate(
                             typeof(Converter<object, T>),
                                 typeof(UnboxT<T>)
-                                    .GetMethod("NullableField", System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.NonPublic)
+                                    .GetMethod("NullableField", System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.NonPublic)!
                                     .MakeGenericMethod(typeof(T).GetGenericArguments()[0]))
                         : ValueField;
                 }
@@ -161,7 +159,7 @@ namespace System.Data
                 return ReferenceField;
             }
 
-            private static T ReferenceField(object value)
+            private static T? ReferenceField(object value)
                 => value == DBNull.Value ? default : (T)value;
 
             private static T ValueField(object value)

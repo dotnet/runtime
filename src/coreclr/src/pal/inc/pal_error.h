@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 /*++
 
@@ -134,7 +133,6 @@
 #define ERROR_PALINIT_INITIALIZE_MACH_EXCEPTION 65280L
 #define ERROR_PALINIT_PROCABORT_INITIALIZE 65281L
 #define ERROR_PALINIT_INITIALIZE_FLUSH_PROCESS_WRITE_BUFFERS 65282L
-#define ERROR_PALINIT_TIME 65283L
 #define ERROR_PALINIT_MAP 65284L
 #define ERROR_PALINIT_VIRTUAL 65285L
 #define ERROR_PALINIT_SEH 65286L

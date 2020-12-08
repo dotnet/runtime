@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 //
 // APIs for hosting CoreCLR
@@ -14,6 +13,8 @@
 #else
 #define CORECLR_CALLING_CONVENTION
 #endif
+
+#include <stdint.h>
 
 // For each hosting API, we define a function prototype and a function pointer
 // The prototype is useful for implicit linking against the dynamic coreclr
@@ -121,5 +122,12 @@ CORECLR_HOSTING_API(coreclr_execute_assembly,
             unsigned int* exitCode);
 
 #undef CORECLR_HOSTING_API
+
+//
+// Callback types used by the hosts
+//
+typedef bool(CORECLR_CALLING_CONVENTION BundleProbeFn)(const char* path, int64_t* offset, int64_t* size);
+typedef const void* (CORECLR_CALLING_CONVENTION PInvokeOverrideFn)(const char* libraryName, const char* entrypointName);
+
 
 #endif // __CORECLR_HOST_H__

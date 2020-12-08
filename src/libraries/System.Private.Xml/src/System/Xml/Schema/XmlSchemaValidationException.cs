@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.IO;
@@ -15,7 +14,7 @@ namespace System.Xml.Schema
     [System.Runtime.CompilerServices.TypeForwardedFrom("System.Xml, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public class XmlSchemaValidationException : XmlSchemaException
     {
-        private object _sourceNodeObject;
+        private object? _sourceNodeObject;
 
         protected XmlSchemaValidationException(SerializationInfo info, StreamingContext context) : base(info, context)
         {
@@ -30,46 +29,46 @@ namespace System.Xml.Schema
         {
         }
 
-        public XmlSchemaValidationException(string message) : base(message, ((Exception)null), 0, 0)
+        public XmlSchemaValidationException(string? message) : base(message, ((Exception?)null), 0, 0)
         {
         }
 
-        public XmlSchemaValidationException(string message, Exception innerException) : base(message, innerException, 0, 0)
+        public XmlSchemaValidationException(string? message, Exception? innerException) : base(message, innerException, 0, 0)
         {
         }
 
-        public XmlSchemaValidationException(string message, Exception innerException, int lineNumber, int linePosition) :
+        public XmlSchemaValidationException(string? message, Exception? innerException, int lineNumber, int linePosition) :
             base(message, innerException, lineNumber, linePosition)
         {
         }
 
-        internal XmlSchemaValidationException(string res, string arg, string sourceUri, int lineNumber, int linePosition) :
-            base(res, new string[] { arg }, null, sourceUri, lineNumber, linePosition, null)
+        internal XmlSchemaValidationException(string? res, string? arg, string? sourceUri, int lineNumber, int linePosition) :
+            base(res, new string?[] { arg }, null, sourceUri, lineNumber, linePosition, null)
         {
         }
 
-        internal XmlSchemaValidationException(string res, string[] args, string sourceUri, int lineNumber, int linePosition) :
+        internal XmlSchemaValidationException(string? res, string?[]? args, string? sourceUri, int lineNumber, int linePosition) :
             base(res, args, null, sourceUri, lineNumber, linePosition, null)
         {
         }
 
-        internal XmlSchemaValidationException(string res, string[] args, Exception innerException, string sourceUri, int lineNumber, int linePosition) :
+        internal XmlSchemaValidationException(string? res, string?[]? args, Exception? innerException, string? sourceUri, int lineNumber, int linePosition) :
             base(res, args, innerException, sourceUri, lineNumber, linePosition, null)
         {
         }
 
-        internal XmlSchemaValidationException(string res, string[] args, object sourceNode) :
+        internal XmlSchemaValidationException(string? res, string?[]? args, object sourceNode) :
             base(res, args, null, null, 0, 0, null)
         {
             _sourceNodeObject = sourceNode;
         }
 
-        public object SourceObject
+        public object? SourceObject
         {
             get { return _sourceNodeObject; }
         }
 
-        protected internal void SetSourceObject(object sourceObject)
+        protected internal void SetSourceObject(object? sourceObject)
         {
             _sourceNodeObject = sourceObject;
         }

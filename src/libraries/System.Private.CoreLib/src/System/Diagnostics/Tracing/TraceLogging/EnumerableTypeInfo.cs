@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #if ES_BUILD_STANDALONE
 using System;
@@ -37,9 +36,9 @@ namespace System.Diagnostics.Tracing
             collector.EndBufferedArray();
         }
 
-        public override void WriteData(TraceLoggingDataCollector collector, PropertyValue value)
+        public override void WriteData(PropertyValue value)
         {
-            int bookmark = collector.BeginBufferedArray();
+            int bookmark = TraceLoggingDataCollector.BeginBufferedArray();
 
             int count = 0;
             IEnumerable? enumerable = (IEnumerable?)value.ReferenceValue;
@@ -47,12 +46,12 @@ namespace System.Diagnostics.Tracing
             {
                 foreach (object? element in enumerable)
                 {
-                    this.elementInfo.WriteData(collector, elementInfo.PropertyValueFactory(element));
+                    this.elementInfo.WriteData(elementInfo.PropertyValueFactory(element));
                     count++;
                 }
             }
 
-            collector.EndBufferedArray(bookmark, count);
+            TraceLoggingDataCollector.EndBufferedArray(bookmark, count);
         }
 
         public override object? GetData(object? value)

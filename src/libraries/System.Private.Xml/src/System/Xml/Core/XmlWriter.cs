@@ -1,8 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
-#nullable enable
 using System;
 using System.IO;
 using System.Text;
@@ -101,7 +99,7 @@ namespace System.Xml
         public abstract void WriteFullEndElement();
 
         // Writes out the attribute with the specified LocalName, value, and NamespaceURI.
-        public void WriteAttributeString(string localName, string? ns, string value)
+        public void WriteAttributeString(string localName, string? ns, string? value)
         {
             WriteStartAttribute(null, localName, ns);
             WriteString(value);
@@ -109,7 +107,7 @@ namespace System.Xml
         }
 
         // Writes out the attribute with the specified LocalName and value.
-        public void WriteAttributeString(string localName, string value)
+        public void WriteAttributeString(string localName, string? value)
         {
             WriteStartAttribute(null, localName, (string?)null);
             WriteString(value);
@@ -117,7 +115,7 @@ namespace System.Xml
         }
 
         // Writes out the attribute with the specified prefix, LocalName, NamespaceURI and value.
-        public void WriteAttributeString(string? prefix, string localName, string? ns, string value)
+        public void WriteAttributeString(string? prefix, string localName, string? ns, string? value)
         {
             WriteStartAttribute(prefix, localName, ns);
             WriteString(value);
@@ -150,11 +148,11 @@ namespace System.Xml
 
         // Writes out a comment <!--...-->; containing the specified text.
 
-        public abstract void WriteComment(string text);
+        public abstract void WriteComment(string? text);
 
         // Writes out a processing instruction with a space between the name and text as follows: <?name text?>
 
-        public abstract void WriteProcessingInstruction(string name, string text);
+        public abstract void WriteProcessingInstruction(string name, string? text);
 
         // Writes out an entity reference as follows: "&"+name+";".
 
@@ -166,7 +164,7 @@ namespace System.Xml
 
         // Writes out the given whitespace.
 
-        public abstract void WriteWhitespace(string ws);
+        public abstract void WriteWhitespace(string? ws);
 
         // Writes out the specified text content.
 
@@ -491,7 +489,7 @@ namespace System.Xml
                         {
                             do
                             {
-                                IXmlSchemaInfo schemaInfo = navigator.SchemaInfo;
+                                IXmlSchemaInfo? schemaInfo = navigator.SchemaInfo;
                                 if (defattr || (schemaInfo == null || !schemaInfo.IsDefault))
                                 {
                                     WriteStartAttribute(navigator.Prefix, navigator.LocalName, navigator.NamespaceURI);

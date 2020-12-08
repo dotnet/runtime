@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Concurrent;
@@ -137,7 +136,7 @@ namespace Internal.Cryptography
 
         private static void InitializeLookupDictionaries()
         {
-            void AddEntry(string oid, string primaryFriendlyName, string[]? additionalFriendlyNames = null)
+            static void AddEntry(string oid, string primaryFriendlyName, string[]? additionalFriendlyNames = null)
             {
                 s_oidToFriendlyName.Add(oid, primaryFriendlyName);
                 s_friendlyNameToOid.Add(primaryFriendlyName, oid);

@@ -1,12 +1,11 @@
-<#@ template debug="false" hostspecific="false" language="C#" #>
-<#@ import namespace="System" #>
-<#@ include file="RawTextWriter.ttinclude" #>// Licensed to the .NET Foundation under one or more agreements.
+<#@ import namespace="System"
+#><#@ include file="RawTextWriter.ttinclude" #>// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 // WARNING: This file is generated and should not be modified directly.
 // Instead, modify XmlRawTextWriterGeneratorAsync.ttinclude
 
+#nullable disable
 using System;
 using System.IO;
 using System.Xml;
@@ -53,7 +52,7 @@ namespace System.Xml
                 }
 
                 // Standalone
-                if (_standalone != XmlStandalone.Omit)
+                if (standalone != XmlStandalone.Omit)
                 {
                     await RawTextAsync("\" standalone=\"").ConfigureAwait(false);
                     await RawTextAsync(standalone == XmlStandalone.Yes ? "yes" : "no").ConfigureAwait(false);
@@ -107,8 +106,8 @@ namespace System.Xml
                         }
                     }
                 }
-<# if (WriterType == RawTextWriterType.Encoded) { #>
-                else if (_writer != null)
+<# if (WriterType == RawTextWriterType.Encoded) {
+#>                else if (_writer != null)
                 {
                     try
                     {
@@ -129,8 +128,8 @@ namespace System.Xml
                         }
                     }
                 }
-<# } #>
-            }
+<# }
+#>            }
         }
 
         // Serialize the document type declaration.
@@ -682,8 +681,8 @@ namespace System.Xml
                     _bufBytes[2] = _bufBytes[_bufPos + 1];
                     _bufBytes[3] = _bufBytes[_bufPos + 2];
                 }
-<# } #>
 
+<# } #>
                 // Reset buffer position
                 _textPos = (_textPos == _bufPos) ? 1 : 0;
                 _attrEndPos = (_attrEndPos == _bufPos) ? 1 : 0;
@@ -693,6 +692,7 @@ namespace System.Xml
                                    // close an empty element or in CDATA section detection of double ]; _BUFFER[0] will always be 0
             }
         }
+
 <# if (WriterType == RawTextWriterType.Encoded) { #>
         private async Task EncodeCharsAsync(int startOffset, int endOffset, bool writeAllToStream)
         {
@@ -740,8 +740,8 @@ namespace System.Xml
 
             return Task.CompletedTask;
         }
-<# } #>
 
+<# } #>
         // Serialize text that is part of an attribute value.  The '&', '<', '>', and '"' characters
         // are entitized.
         protected unsafe int WriteAttributeTextBlockNoFlush(char* pSrc, char* pSrcEnd)
@@ -961,6 +961,7 @@ namespace System.Xml
                         pDst++;
                         pSrc++;
                     }
+
                     Debug.Assert(pSrc <= pSrcEnd);
 
                     // end of value

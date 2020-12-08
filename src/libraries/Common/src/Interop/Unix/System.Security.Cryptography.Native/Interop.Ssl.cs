@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #nullable enable
 using System;
@@ -18,8 +17,6 @@ internal static partial class Interop
         internal const int OPENSSL_NPN_NEGOTIATED = 1;
         internal const int SSL_TLSEXT_ERR_ALERT_FATAL = 2;
         internal const int SSL_TLSEXT_ERR_NOACK = 3;
-
-        internal delegate int SslCtxSetVerifyCallback(int preverify_ok, IntPtr x509_ctx);
 
         [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EnsureLibSslInitialized")]
         internal static extern void EnsureLibSslInitialized();
@@ -73,7 +70,7 @@ internal static partial class Interop
         }
 
         [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslWrite")]
-        internal static extern unsafe int SslWrite(SafeSslHandle ssl, ref byte buf, int num);
+        internal static extern int SslWrite(SafeSslHandle ssl, ref byte buf, int num);
 
         [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslRead")]
         internal static extern unsafe int SslRead(SafeSslHandle ssl, byte* buf, int num);
@@ -103,7 +100,7 @@ internal static partial class Interop
         internal static extern unsafe int BioWrite(SafeBioHandle b, byte* data, int len);
 
         [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_BioWrite")]
-        internal static extern unsafe int BioWrite(SafeBioHandle b, ref byte data, int len);
+        internal static extern int BioWrite(SafeBioHandle b, ref byte data, int len);
 
         [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslGetPeerCertificate")]
         internal static extern SafeX509Handle SslGetPeerCertificate(SafeSslHandle ssl);
@@ -193,6 +190,25 @@ internal static partial class Interop
             return true;
         }
 
+        internal static bool AddExtraChainCertificates(SafeSslHandle sslContext, X509Certificate2[] chain)
+        {
+            // send pre-computed list of intermediates.
+            for (int i = 0; i < chain.Length; i++)
+            {
+                SafeX509Handle dupCertHandle = Crypto.X509UpRef(chain[i].Handle);
+                Crypto.CheckValidOpenSslHandle(dupCertHandle);
+                if (!SslAddExtraChainCert(sslContext, dupCertHandle))
+                {
+                    Crypto.ErrClearError();
+                    dupCertHandle.Dispose(); // we still own the safe handle; clean it up
+                    return false;
+                }
+                dupCertHandle.SetHandleAsInvalid(); // ownership has been transferred to sslHandle; do not free via this safe handle
+            }
+
+            return true;
+        }
+
         internal static class SslMethods
         {
             internal static readonly IntPtr SSLv23_method = SslV2_3Method();
@@ -223,7 +239,7 @@ namespace Microsoft.Win32.SafeHandles
         private SafeBioHandle? _readBio;
         private SafeBioHandle? _writeBio;
         private bool _isServer;
-        private bool _handshakeCompleted = false;
+        private bool _handshakeCompleted;
 
         public GCHandle AlpnHandle;
 

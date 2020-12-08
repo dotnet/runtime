@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 /*============================================================
 **
@@ -629,7 +628,7 @@ namespace System.Diagnostics.Contracts
             Assembly? probablyNotRewritten = null;
             for (int i = 0; i < stack.FrameCount; i++)
             {
-                Assembly? caller = stack.GetFrame(i)!.GetMethod()?.DeclaringType!.Assembly;
+                Assembly? caller = stack.GetFrame(i)!.GetMethod()?.DeclaringType?.Assembly;
                 if (caller != null && caller != thisAssembly)
                 {
                     probablyNotRewritten = caller;

@@ -2,7 +2,7 @@
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
-    <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppCurrent)-Windows_NT</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppCurrent)-windows</TargetFrameworks>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="CancelKeyPress.cs" />
@@ -30,7 +30,7 @@
     <Compile Include="WindowAndCursorProps.cs" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="$(MSBuildThisFileDirectory)TestData\**\*"
+    <Content Include="$(MSBuildThisFileDirectory)TestData\**\*"
           Link="%(RecursiveDir)%(Filename)%(Extension)"
           CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>

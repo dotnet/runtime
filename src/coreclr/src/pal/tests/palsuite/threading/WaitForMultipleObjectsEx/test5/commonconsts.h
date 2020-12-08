@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 /*=============================================================
 **
@@ -16,9 +15,9 @@
 
 const int TIMEOUT = 60 * 5 * 1000;
 
-char *szcHelperProcessStartEvName =  "start";
-char *szcHelperProcessReadyEvName =  "ready";
-char *szcHelperProcessFinishEvName =  "finish";
+#define szcHelperProcessStartEvName  "start"
+#define szcHelperProcessReadyEvName  "ready"
+#define szcHelperProcessFinishEvName  "finish"
 
 /* PEDANTIC and PEDANTIC0 is a helper macro that just grumps about any
  * zero return codes in a generic way. with little typing */

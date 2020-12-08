@@ -1,18 +1,18 @@
 # Note
 Starting with System.Diagnostics.DiagnosticSource 4.6.0 (that ships with .Net Core 3.0), we are moving towards [W3C Trace-Context](https://www.w3.org/TR/trace-context/) standard. We still support Request-Id ([hierarchical](HierarchicalRequestId.md) version) and it is still the default format for `System.Diagnostics.Activity`.
 
-This specification for `Flat Request-Id` is **deprecated**. 
+This specification for `Flat Request-Id` is **deprecated**.
 
 There is no corresponding implementation in .NET and if you are looking into 'flat' correlation protocol - we recommend following [W3C Trace-Context](https://www.w3.org/TR/trace-context/).
 
 # Flat Request-Ids
-This document provide guidance for implementations of [HTTP Correlation Protocol](HttpCorrelationProtocol.md) without [Hierarchical Request-Id](HierarchicalRequestId.md) support or interoperability with services that do not support it. 
+This document provide guidance for implementations of [HTTP Correlation Protocol](HttpCorrelationProtocol.md) without [Hierarchical Request-Id](HierarchicalRequestId.md) support or interoperability with services that do not support it.
 
 We strongly recommend every implementation to support [Hierarchical Request-Id](HierarchicalRequestId.md) wherever possible. If implementation do not support it, it still MUST ensure essential requirements are met:
 * `Request-Id` uniquely identifies every HTTP request involved in operation processing and MUST be generated for every incoming and outgoing request
 * `Correlation-Context` has `Id` property serving as single unique identifier of the whole operation and implementation MUST generate one if it is missing.
 
-It is important to log `Request-Id` received from the upstream service along with the incoming request. It ensures that parent-child relationships between requests are retained and the whole tree of the requests could be restored. 
+It is important to log `Request-Id` received from the upstream service along with the incoming request. It ensures that parent-child relationships between requests are retained and the whole tree of the requests could be restored.
 Therefore implementations MUST provide access to the 'parent' Request-Id for logging system.
 
 [Root Request Id](HierarchicalRequestId.md#root-request-id-generation) requirements and generation considerations must be used for flat Request-Id
@@ -29,7 +29,7 @@ If implementation needs to add `Id` property to `Correlation-Context`:
 * MUST follow [Root Request Id Generation](HierarchicalRequestId.md#root-request-id-generation) rules otherwise
 
 ## Non-hierarchical Request-Id example
-1. A: service-a receives request 
+1. A: service-a receives request
   * scans through its headers does not find Request-Id.
   * generates a new one: `abc`
   * adds extra property to CorrelationContext `Id=123`
@@ -72,7 +72,7 @@ Requirements listed [Request-Id](HttpCorrelationProtocol.md#request-id) help to 
 
 Let's imagine service-a supports hierarchical Request-Id and service-b does not:
 
-1. A: service-a receives request 
+1. A: service-a receives request
   * scans through its headers and does not find `Request-Id`.
   * generates a new one: `|Guid.`
   * logs event that operation was started along with `Request-Id: |Guid.`
@@ -82,7 +82,7 @@ Let's imagine service-a supports hierarchical Request-Id and service-b does not:
   * sends request to service-b
 3. B: service-b receives request
   * scans through its headers and finds `Request-Id: |Guid.1_`
-  * generates a new Request-Id: `def`   
+  * generates a new Request-Id: `def`
   * does not see `Correlation-Context`. It parses parent Request-Id, extracts root node: `Guid` and adds `Id` property to `CorrelationContext : Id=abc`
   * logs event that operation was started
   * processes request and responds to service-a

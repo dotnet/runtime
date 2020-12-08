@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 namespace System.Xml
 {
@@ -13,12 +12,12 @@ namespace System.Xml
         private readonly string _prefix;
         private readonly string _localName;
         private readonly string _ns;
-        private string _name;
+        private string? _name;
         private readonly int _hashCode;
         internal XmlDocument ownerDoc;
         internal XmlName next;
 
-        public static XmlName Create(string prefix, string localName, string ns, int hashCode, XmlDocument ownerDoc, XmlName next, IXmlSchemaInfo schemaInfo)
+        public static XmlName Create(string prefix, string localName, string ns, int hashCode, XmlDocument ownerDoc, XmlName next, IXmlSchemaInfo? schemaInfo)
         {
             if (schemaInfo == null)
             {
@@ -140,7 +139,7 @@ namespace System.Xml
             }
         }
 
-        public virtual XmlSchemaSimpleType MemberType
+        public virtual XmlSchemaSimpleType? MemberType
         {
             get
             {
@@ -148,7 +147,7 @@ namespace System.Xml
             }
         }
 
-        public virtual XmlSchemaType SchemaType
+        public virtual XmlSchemaType? SchemaType
         {
             get
             {
@@ -156,7 +155,7 @@ namespace System.Xml
             }
         }
 
-        public virtual XmlSchemaElement SchemaElement
+        public virtual XmlSchemaElement? SchemaElement
         {
             get
             {
@@ -164,7 +163,7 @@ namespace System.Xml
             }
         }
 
-        public virtual XmlSchemaAttribute SchemaAttribute
+        public virtual XmlSchemaAttribute? SchemaAttribute
         {
             get
             {
@@ -172,7 +171,7 @@ namespace System.Xml
             }
         }
 
-        public virtual bool Equals(IXmlSchemaInfo schemaInfo)
+        public virtual bool Equals(IXmlSchemaInfo? schemaInfo)
         {
             return schemaInfo == null;
         }
@@ -191,9 +190,9 @@ namespace System.Xml
     internal sealed class XmlNameEx : XmlName
     {
         private byte _flags;
-        private readonly XmlSchemaSimpleType _memberType;
-        private readonly XmlSchemaType _schemaType;
-        private readonly object _decl;
+        private readonly XmlSchemaSimpleType? _memberType;
+        private readonly XmlSchemaType? _schemaType;
+        private readonly object? _decl;
 
         // flags
         // 0,1  : Validity
@@ -212,7 +211,7 @@ namespace System.Xml
             _schemaType = schemaInfo.SchemaType;
             _decl = schemaInfo.SchemaElement != null
                    ? (object)schemaInfo.SchemaElement
-                   : (object)schemaInfo.SchemaAttribute;
+                   : (object?)schemaInfo.SchemaAttribute;
         }
 
         public override XmlSchemaValidity Validity
@@ -239,7 +238,7 @@ namespace System.Xml
             }
         }
 
-        public override XmlSchemaSimpleType MemberType
+        public override XmlSchemaSimpleType? MemberType
         {
             get
             {
@@ -247,7 +246,7 @@ namespace System.Xml
             }
         }
 
-        public override XmlSchemaType SchemaType
+        public override XmlSchemaType? SchemaType
         {
             get
             {
@@ -255,7 +254,7 @@ namespace System.Xml
             }
         }
 
-        public override XmlSchemaElement SchemaElement
+        public override XmlSchemaElement? SchemaElement
         {
             get
             {
@@ -263,7 +262,7 @@ namespace System.Xml
             }
         }
 
-        public override XmlSchemaAttribute SchemaAttribute
+        public override XmlSchemaAttribute? SchemaAttribute
         {
             get
             {
@@ -288,16 +287,16 @@ namespace System.Xml
             else _flags = (byte)(_flags & ~IsNilBit);
         }
 
-        public override bool Equals(IXmlSchemaInfo schemaInfo)
+        public override bool Equals(IXmlSchemaInfo? schemaInfo)
         {
             if (schemaInfo != null
                 && schemaInfo.Validity == (XmlSchemaValidity)(_flags & ValidityMask)
                 && schemaInfo.IsDefault == ((_flags & IsDefaultBit) != 0)
                 && schemaInfo.IsNil == ((_flags & IsNilBit) != 0)
-                && (object)schemaInfo.MemberType == (object)_memberType
-                && (object)schemaInfo.SchemaType == (object)_schemaType
-                && (object)schemaInfo.SchemaElement == (object)(_decl as XmlSchemaElement)
-                && (object)schemaInfo.SchemaAttribute == (object)(_decl as XmlSchemaAttribute))
+                && (object?)schemaInfo.MemberType == (object?)_memberType
+                && (object?)schemaInfo.SchemaType == (object?)_schemaType
+                && (object?)schemaInfo.SchemaElement == (object?)(_decl as XmlSchemaElement)
+                && (object?)schemaInfo.SchemaAttribute == (object?)(_decl as XmlSchemaAttribute))
             {
                 return true;
             }

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 //
 // --------------------------------------------------------------------------------------------------
 // CLRConfig.h
@@ -42,16 +41,6 @@ public:
         IgnoreEnv = 0x1,
         // If set, do not prepend "COMPlus_" when doing environment variable lookup.
         DontPrependCOMPlus_ = 0x2,
-        // If set, don't look in HKLM in the registry.
-        IgnoreHKLM = 0x4,
-        // If set, don't look in HKCU in the registry.
-        IgnoreHKCU = 0x8,
-        // If set, look only in the system config file, ignoring other config files.
-        // (This option does not affect environment variable and registry lookups)
-        ConfigFile_SystemOnly = 0x40,
-        // If set, reverse the order of config file lookups (application config file first).
-        // (This option does not affect environment variable and registry lookups)
-        ConfigFile_ApplicationFirst = 0x80,
         // Remove any whitespace at beginning and end of value.  (Only applicable for
         // *string* configuration values.)
         TrimWhiteSpaceFromStringValue = 0x100,

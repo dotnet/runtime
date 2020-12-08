@@ -83,6 +83,8 @@
                              message="$(string.RuntimePublisher.CompilationDiagnosticKeywordMessage)" symbol="CLR_COMPILATIONDIAGNOSTIC_KEYWORD" />
                     <keyword name="MethodDiagnosticKeyword" mask="0x4000000000"
                              message="$(string.RuntimePublisher.MethodDiagnosticKeywordMessage)" symbol="CLR_METHODDIAGNOSTIC_KEYWORD" />
+                    <keyword name="TypeDiagnosticKeyword" mask="0x8000000000"
+                             message="$(string.RuntimePublisher.TypeDiagnosticKeywordMessage)" symbol="CLR_TYPEDIAGNOSTIC_KEYWORD" />
                 </keywords>
                 <!--Tasks-->
                 <tasks>
@@ -131,6 +133,8 @@
                             <opcode name="GCJoin" message="$(string.RuntimePublisher.GCJoinOpcodeMessage)" symbol="CLR_GC_JOIN_OPCODE" value="203"> </opcode>
                             <opcode name="GCPerHeapHistory" message="$(string.RuntimePublisher.GCPerHeapHistoryOpcodeMessage)" symbol="CLR_GC_GCPERHEAPHISTORY_OPCODE" value="204"> </opcode>
                             <opcode name="GCGlobalHeapHistory" message="$(string.RuntimePublisher.GCGlobalHeapHistoryOpcodeMessage)" symbol="CLR_GC_GCGLOBALHEAPHISTORY_OPCODE" value="205"> </opcode>
+                            <opcode name="GenAwareBegin" message="$(string.RuntimePublisher.GenAwareBeginOpcodeMessage)" symbol="CLR_GC_GENAWAREBEGIN_OPCODE" value="206"> </opcode>
+                            <opcode name="GenAwareEnd" message="$(string.RuntimePublisher.GenAwareEndOpcodeMessage)" symbol="CLR_GC_GENAWAREEND_OPCODE" value="207"> </opcode>
                         </opcodes>
                     </task>
 
@@ -223,6 +227,7 @@
                             <opcode name="MethodDCStartVerbose" message="$(string.RuntimePublisher.MethodDCStartVerboseOpcodeMessage)" symbol="CLR_METHOD_METHODDCSTARTVERBOSE_OPCODE" value="39"> </opcode>
                             <opcode name="MethodDCEndVerbose" message="$(string.RuntimePublisher.MethodDCEndVerboseOpcodeMessage)" symbol="CLR_METHOD_METHODDCENDVERBOSE_OPCODE" value="40"> </opcode>
                             <opcode name="MethodJittingStarted" message="$(string.RuntimePublisher.MethodJittingStartedOpcodeMessage)" symbol="CLR_METHOD_METHODJITTINGSTARTED_OPCODE" value="42"> </opcode>
+                            <opcode name="MemoryAllocatedForJitCode" message="$(string.RuntimePublisher.MemoryAllocatedForJitCodeOpcodeMessage)" symbol="CLR_METHOD_MEMORY_ALLOCATED_FOR_JIT_CODE_OPCODE" value="103"> </opcode>
                             <opcode name="JitInliningSucceeded" message="$(string.RuntimePublisher.JitInliningSucceededOpcodeMessage)" symbol="CLR_JITINLININGSUCCEEDED_OPCODE" value="83"> </opcode>
                             <opcode name="JitInliningFailed" message="$(string.RuntimePublisher.JitInliningFailedOpcodeMessage)" symbol="CLR_JITINLININGFAILED_OPCODE" value="84"> </opcode>
                             <opcode name="JitTailCallSucceeded" message="$(string.RuntimePublisher.JitTailCallSucceededOpcodeMessage)" symbol="CLR_JITTAILCALLSUCCEEDED_OPCODE" value="85"> </opcode>
@@ -401,7 +406,14 @@
                             <opcode name="KnownPathProbed" message="$(string.RuntimePublisher.KnownPathProbedOpcodeMessage)" symbol="CLR_BINDING_PATH_PROBED_OPCODE" value="15"/>
                         </opcodes>
                     </task>
-                <!--Next available ID is 33-->
+                    <task name="TypeLoad" symbol="CLR_TYPELOAD_TASK"
+                          value="33" eventGUID="{9DB1562B-512F-475D-8D4C-0C6D97C1E73C}"
+                          message="$(string.RuntimePublisher.TypeLoadTaskMessage)">
+                        <opcodes>
+                        </opcodes>
+                    </task>
+
+                <!--Next available ID is 34-->
                 </tasks>
                 <!--Maps-->
                 <maps>
@@ -980,6 +992,17 @@
                             <GCNoUserData xmlns="myNs">
                                 <ClrInstanceID> %1 </ClrInstanceID>
                             </GCNoUserData>
+                        </UserData>
+                    </template>
+
+                    <template tid="GenAwareTemplate">
+                        <data name="Count" inType="win:UInt32" />
+                        <data name="ClrInstanceID" inType="win:UInt16" />
+                        <UserData>
+                            <GenAwareTemplate xmlns="myNs">
+                                <Count> %1 </Count>
+                                <ClrInstanceID> %2 </ClrInstanceID>
+                            </GenAwareTemplate>
                         </UserData>
                     </template>
 
@@ -1895,6 +1918,34 @@
                         </UserData>
                     </template>
 
+                    <template tid="TypeLoadStart">
+                        <data name="TypeLoadStartID" inType="win:UInt32" />
+                        <data name="ClrInstanceID" inType="win:UInt16" />
+                        <UserData>
+                            <TypeLoadStart xmlns="myNs">
+                                <TypeLoadStartID> %1 </TypeLoadStartID>
+                                <ClrInstanceID> %2 </ClrInstanceID>
+                            </TypeLoadStart>
+                        </UserData>
+                    </template>
+
+                    <template tid="TypeLoadStop">
+                        <data name="TypeLoadStartID" inType="win:UInt32" />
+                        <data name="ClrInstanceID" inType="win:UInt16" />
+                        <data name="LoadLevel" inType="win:UInt16" />
+                        <data name="TypeID" inType="win:UInt64" outType="win:HexInt64" />
+                        <data name="TypeName" inType="win:UnicodeString" />
+                        <UserData>
+                            <TypeLoadStop xmlns="myNs">
+                                <TypeLoadStartID> %1 </TypeLoadStartID>
+                                <ClrInstanceID> %2 </ClrInstanceID>
+                                <LoadLevel> %3 </LoadLevel>
+                                <TypeID> %4 </TypeID>
+                                <TypeName> %5 </TypeName>
+                            </TypeLoadStop>
+                        </UserData>
+                    </template>
+
                     <template tid="MethodLoadUnload">
                         <data name="MethodID" inType="win:UInt64" outType="win:HexInt64" />
                         <data name="ModuleID" inType="win:UInt64" outType="win:HexInt64" />
@@ -1977,6 +2028,17 @@
                                 <EntryPoint> %5 </EntryPoint>
                                 <ClrInstanceID> %6 </ClrInstanceID>
                             </R2RGetEntryPoint>
+                        </UserData>
+                    </template>
+
+                    <template tid="R2RGetEntryPointStart">
+                        <data name="MethodID" inType="win:UInt64" outType="win:HexInt64" />
+                        <data name="ClrInstanceID" inType="win:UInt16" />
+                        <UserData>
+                            <R2RGetEntryPointStart xmlns="myNs">
+                                <MethodID> %1 </MethodID>
+                                <ClrInstanceID> %2 </ClrInstanceID>
+                            </R2RGetEntryPointStart>
                         </UserData>
                     </template>
 
@@ -2292,6 +2354,28 @@
                                 <FailReason> %11 </FailReason>
                                 <ClrInstanceID> %12 </ClrInstanceID>
                             </MethodJitTailCallFailedAnsi>
+                        </UserData>
+                    </template>
+
+                    <template tid="MethodJitMemoryAllocatedForCode">
+                        <data name="MethodID" inType="win:UInt64" outType="win:HexInt64" />
+                        <data name="ModuleID" inType="win:UInt64" outType="win:HexInt64" />
+                        <data name="JitHotCodeRequestSize" inType="win:UInt64" />
+                        <data name="JitRODataRequestSize" inType="win:UInt64" />
+                        <data name="AllocatedSizeForJitCode" inType="win:UInt64" />
+                        <data name="JitAllocFlag" inType="win:UInt32" />
+                        <data name="ClrInstanceID" inType="win:UInt16" />
+
+                        <UserData>
+                            <MethodJitMemoryAllocatedForCode xmlns="myNs">
+                                <MethodID> %1 </MethodID>
+                                <ModuleID> %2 </ModuleID>
+                                <JitHotCodeRequestSize> %3 </JitHotCodeRequestSize>
+                                <JitRODataRequestSize> %4 </JitRODataRequestSize>
+                                <AllocatedSizeForJitCode> %5 </AllocatedSizeForJitCode>
+                                <JitAllocFlag> %6 </JitAllocFlag>
+                                <ClrInstanceID> %7 </ClrInstanceID>
+                            </MethodJitMemoryAllocatedForCode>
                         </UserData>
                     </template>
 
@@ -3200,12 +3284,27 @@
                            opcode="Running"
                            symbol="ThreadRunning"
                            message="$(string.RuntimePublisher.ThreadRunningEventMessage)"/>
+
                     <event value="72" version="0" level="win:Informational"  template="MethodDetails"
                            keywords="MethodDiagnosticKeyword"
                            task="CLRMethod"
                            opcode="MethodDetails"
                            symbol="MethodDetails"
                            message="$(string.RuntimePublisher.MethodDetailsEventMessage)"/>
+
+                    <event value="73" version="0" level="win:Informational"  template="TypeLoadStart"
+                           keywords="TypeDiagnosticKeyword"
+                           task="TypeLoad"
+                           opcode="win:Start"
+                           symbol="TypeLoadStart"
+                           message="$(string.RuntimePublisher.TypeLoadStartEventMessage)"/>
+
+                    <event value="74" version="0" level="win:Informational"  template="TypeLoadStop"
+                           keywords="TypeDiagnosticKeyword"
+                           task="TypeLoad"
+                           opcode="win:Stop"
+                           symbol="TypeLoadStop"
+                           message="$(string.RuntimePublisher.TypeLoadStopEventMessage)"/>
 
                     <!-- CLR Exception events -->
                     <event value="80" version="0" level="win:Informational"
@@ -3364,10 +3463,15 @@
                            task="CLRMethod"
                            symbol="MethodLoad_V2" message="$(string.RuntimePublisher.MethodLoad_V2EventMessage)"/>
 
-                    <event value="159" version="0" level="win:Verbose" template="R2RGetEntryPoint"
+                    <event value="159" version="0" level="win:Informational" template="R2RGetEntryPoint"
                            keywords ="CompilationDiagnosticKeyword" opcode="MethodLoad"
                            task="CLRMethod"
                            symbol="R2RGetEntryPoint" message="$(string.RuntimePublisher.R2RGetEntryPointEventMessage)"/>
+
+                    <event value="160" version="0" level="win:Informational" template="R2RGetEntryPointStart"
+                           keywords ="CompilationDiagnosticKeyword" opcode="MethodLoad"
+                           task="CLRMethod"
+                           symbol="R2RGetEntryPointStart" message="$(string.RuntimePublisher.R2RGetEntryPointStartEventMessage)"/>
 
                     <event value="142" version="0" level="win:Informational"  template="MethodLoadUnload"
                            keywords ="JitKeyword NGenKeyword" opcode="MethodUnload"
@@ -3423,6 +3527,11 @@
                            keywords ="JitKeyword" opcode="MethodJittingStarted"
                            task="CLRMethod"
                            symbol="MethodJittingStarted_V1" message="$(string.RuntimePublisher.MethodJittingStarted_V1EventMessage)"/>
+
+                    <event value="146" version="0" level="win:Verbose"  template="MethodJitMemoryAllocatedForCode"
+                           keywords ="JitKeyword" opcode="MemoryAllocatedForJitCode"
+                           task="CLRMethod"
+                           symbol="MethodJitMemoryAllocatedForCode" message="$(string.RuntimePublisher.MethodJitMemoryAllocatedForCodeEventMessage)"/>
 
                     <event value="185" version="0" level="win:Verbose"  template="MethodJitInliningSucceeded"
                            keywords ="JitTracingKeyword" opcode="JitInliningSucceeded"
@@ -3646,6 +3755,16 @@
                            task="GarbageCollection"
                            symbol="GCGlobalHeapHistory_V3" message="$(string.RuntimePublisher.GCGlobalHeap_V3EventMessage)"/>
 
+                    <event value="206" version="0" level="win:Informational"  template="GenAwareTemplate"
+                           keywords ="GCHeapDumpKeyword"  opcode="GenAwareBegin"
+                           task="GarbageCollection"
+                           symbol="GenAwareBegin" message="$(string.RuntimePublisher.GenAwareBeginEventMessage)"/>
+
+                    <event value="207" version="0" level="win:Informational"  template="GenAwareTemplate"
+                           keywords ="GCHeapDumpKeyword"  opcode="GenAwareEnd"
+                           task="GarbageCollection"
+                           symbol="GenAwareEnd" message="$(string.RuntimePublisher.GenAwareEndEventMessage)"/>
+
                     <!-- CLR Debugger events 240-249 -->
                     <event value="240" version="0" level="win:Informational"
                            keywords="DebuggerKeyword" opcode="win:Start"
@@ -3726,7 +3845,6 @@
                            keywords ="AssemblyLoaderKeyword" opcode="KnownPathProbed"
                            task="AssemblyLoader"
                            symbol="KnownPathProbed" message="$(string.RuntimePublisher.KnownPathProbedEventMessage)"/>
-
                 </events>
             </provider>
 
@@ -6899,6 +7017,8 @@
                 <string id="RuntimePublisher.ThreadCreatingEventMessage" value="ID=%1;%nClrInstanceID=%s" />
                 <string id="RuntimePublisher.ThreadRunningEventMessage" value="ID=%1;%nClrInstanceID=%s" />
                 <string id="RuntimePublisher.MethodDetailsEventMessage" value="MethodID=%1;%TypeID=%2;MethodToken=%3;TypeParameterCount=%4;LoaderModuleID=%5" />
+                <string id="RuntimePublisher.TypeLoadStartEventMessage" value="TypeLoadStartID=%1;ClrInstanceID=%2" />
+                <string id="RuntimePublisher.TypeLoadStopEventMessage" value="TypeLoadStartID=%1;ClrInstanceID=%2;LoadLevel=%3;TypeID=%4;TypeName=%5" />
                 <string id="RuntimePublisher.ExceptionExceptionThrownEventMessage" value="NONE" />
                 <string id="RuntimePublisher.ExceptionExceptionThrown_V1EventMessage" value="ExceptionType=%1;%nExceptionMessage=%2;%nExceptionEIP=%3;%nExceptionHRESULT=%4;%nExceptionFlags=%5;%nClrInstanceID=%6" />
                 <string id="RuntimePublisher.ExceptionExceptionHandlingEventMessage" value="EntryEIP=%1;%nMethodID=%2;%nMethodName=%3;%nClrInstanceID=%4" />
@@ -6917,6 +7037,7 @@
                 <string id="RuntimePublisher.MethodLoad_V1EventMessage" value="MethodID=%1;%nModuleID=%2;%nMethodStartAddress=%3;%nMethodSize=%4;%nMethodToken=%5;%nMethodFlags=%6;%nClrInstanceID=%7" />
                 <string id="RuntimePublisher.MethodLoad_V2EventMessage" value="MethodID=%1;%nModuleID=%2;%nMethodStartAddress=%3;%nMethodSize=%4;%nMethodToken=%5;%nMethodFlags=%6;%nClrInstanceID=%7;%nReJITID=%8" />
                 <string id="RuntimePublisher.R2RGetEntryPointEventMessage" value="MethodID=%1;%nMethodName=%2;%nEntryPoint=%3;%nClrInstanceID=%4" />
+                <string id="RuntimePublisher.R2RGetEntryPointStartEventMessage" value="MethodID=%1;%nClrInstanceID=%2" />
                 <string id="RuntimePublisher.MethodLoadVerboseEventMessage" value="MethodID=%1;%nModuleID=%2;%nMethodStartAddress=%3;%nMethodSize=%4;%nMethodToken=%5;%nMethodFlags=%6;%nMethodNamespace=%7;%nMethodName=%8;%nMethodSignature=%9" />
                 <string id="RuntimePublisher.MethodLoadVerbose_V1EventMessage" value="MethodID=%1;%nModuleID=%2;%nMethodStartAddress=%3;%nMethodSize=%4;%nMethodToken=%5;%nMethodFlags=%6;%nMethodNamespace=%7;%nMethodName=%8;%nMethodSignature=%9;%nClrInstanceID=%10" />
                 <string id="RuntimePublisher.MethodLoadVerbose_V2EventMessage" value="MethodID=%1;%nModuleID=%2;%nMethodStartAddress=%3;%nMethodSize=%4;%nMethodToken=%5;%nMethodFlags=%6;%nMethodNamespace=%7;%nMethodName=%8;%nMethodSignature=%9;%nClrInstanceID=%10;%nReJITID=%11" />
@@ -6978,6 +7099,7 @@
                 <string id="RuntimePublisher.MethodJitInliningSucceededEventMessage" value="MethodBeingCompiledNamespace=%1;%nMethodBeingCompiledName=%2;%nMethodBeingCompiledNameSignature=%3;%nInlinerNamespace=%4;%nInlinerName=%5;%nInlinerNameSignature=%6;%nInlineeNamespace=%7;%nInlineeName=%8;%nInlineeNameSignature=%9;%nClrInstanceID=%10" />
                 <string id="RuntimePublisher.MethodJitTailCallFailedEventMessage" value="MethodBeingCompiledNamespace=%1;%nMethodBeingCompiledName=%2;%nMethodBeingCompiledNameSignature=%3;%nCallerNamespace=%4;%nCallerName=%5;%nCallerNameSignature=%6;%nCalleeNamespace=%7;%nCalleeName=%8;%nCalleeNameSignature=%9;%nTailPrefix=%10;%nFailReason=%11;%nClrInstanceID=%12" />
                 <string id="RuntimePublisher.MethodJitTailCallSucceededEventMessage" value="MethodBeingCompiledNamespace=%1;%nMethodBeingCompiledName=%2;%nMethodBeingCompiledNameSignature=%3;%nCallerNamespace=%4;%nCallerName=%5;%nCallerNameSignature=%6;%nCalleeNamespace=%7;%nCalleeName=%8;%nCalleeNameSignature=%9;%nTailPrefix=%10;%nTailCallType=%11;%nClrInstanceID=%12" />
+                <string id="RuntimePublisher.MethodJitMemoryAllocatedForCodeEventMessage" value="MethodID=%1;%nModuleID=%2;%nJitHotCodeRequestSize=%3;%nJitRODataRequestSize=%4;%nAllocatedSizeForJitCode=%5;%nJitAllocFlag=%6;%nClrInstanceID=%7" />
                 <string id="RuntimePublisher.SetGCHandleEventMessage" value="HandleID=%1;%nObjectID=%2;%nKind=%3;%nGeneration=%4;%nAppDomainID=%5;%nClrInstanceID=%6" />
                 <string id="RuntimePublisher.DestroyGCHandleEventMessage" value="HandleID=%1;%nClrInstanceID=%2" />
                 <string id="RuntimePublisher.CodeSymbolsEventMessage" value="%nClrInstanceId=%1;%nModuleId=%2;%nTotalChunks=%3;%nChunkNumber=%4;%nChunkLength=%5;%nChunk=%6" />
@@ -7149,6 +7271,7 @@
                 <string id="RuntimePublisher.CodeSymbolsTaskMessage" value="CodeSymbols" />
                 <string id="RuntimePublisher.TieredCompilationTaskMessage" value="TieredCompilation" />
                 <string id="RuntimePublisher.AssemblyLoaderTaskMessage" value="AssemblyLoader" />
+                <string id="RuntimePublisher.TypeLoadTaskMessage" value="TypeLoad" />
 
                 <string id="RundownPublisher.EEStartupTaskMessage" value="Runtime" />
                 <string id="RundownPublisher.MethodTaskMessage" value="Method" />
@@ -7475,6 +7598,9 @@
                 <string id="RuntimePublisher.CompilationKeywordMessage" value="Compilation" />
                 <string id="RuntimePublisher.CompilationDiagnosticKeywordMessage" value="CompilationDiagnostic" />
                 <string id="RuntimePublisher.MethodDiagnosticKeywordMessage" value="MethodDiagnostic" />
+                <string id="RuntimePublisher.TypeDiagnosticKeywordMessage" value="TypeDiagnostic" />
+                <string id="RuntimePublisher.GenAwareBeginEventMessage" value="NONE" />
+                <string id="RuntimePublisher.GenAwareEndEventMessage" value="NONE" />
                 <string id="RundownPublisher.LoaderKeywordMessage" value="Loader" />
                 <string id="RundownPublisher.JitKeywordMessage" value="Jit" />
                 <string id="RundownPublisher.JittedMethodILToNativeMapRundownKeywordMessage" value="JittedMethodILToNativeMapRundown" />
@@ -7537,6 +7663,8 @@
                 <string id="RuntimePublisher.GCJoinOpcodeMessage" value="GCJoin" />
                 <string id="RuntimePublisher.GCPerHeapHistoryOpcodeMessage" value="PerHeapHistory" />
                 <string id="RuntimePublisher.GCGlobalHeapHistoryOpcodeMessage" value="GlobalHeapHistory" />
+                <string id="RuntimePublisher.GenAwareBeginOpcodeMessage" value="GenAwareBegin" />
+                <string id="RuntimePublisher.GenAwareEndOpcodeMessage" value="GenAwareEnd" />
                 <string id="RuntimePublisher.FinalizeObjectOpcodeMessage" value="FinalizeObject" />
                 <string id="RuntimePublisher.BulkTypeOpcodeMessage" value="BulkType" />
                 <string id="RuntimePublisher.MethodDetailsOpcodeMessage" value="MethodDetails" />
@@ -7555,6 +7683,7 @@
                 <string id="RuntimePublisher.JitInliningFailedOpcodeMessage" value="InliningFailed" />
                 <string id="RuntimePublisher.JitTailCallSucceededOpcodeMessage" value="TailCallSucceeded" />
                 <string id="RuntimePublisher.JitTailCallFailedOpcodeMessage" value="TailCallFailed" />
+                <string id="RuntimePublisher.MemoryAllocatedForJitCodeOpcodeMessage" value="MemoryAllocatedForJitCode" />
                 <string id="RuntimePublisher.MethodILToNativeMapOpcodeMessage" value="MethodILToNativeMap" />
                 <string id="RuntimePublisher.DomainModuleLoadOpcodeMessage" value="DomainModuleLoad" />
                 <string id="RuntimePublisher.ModuleLoadOpcodeMessage" value="ModuleLoad" />

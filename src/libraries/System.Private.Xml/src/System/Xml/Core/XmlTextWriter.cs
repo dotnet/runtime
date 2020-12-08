@@ -1,8 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
-#nullable enable
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -176,9 +174,6 @@ namespace System.Xml
         private Dictionary<string, int>? _nsHashtable;
         private bool _useNsHashtable;
 
-        // char types
-        private XmlCharType _xmlCharType = XmlCharType.Instance;
-
         //
         // Constants and constant tables
         //
@@ -294,7 +289,7 @@ namespace System.Xml
         }
 
         // Creates an instance of the XmlTextWriter class using the specified file.
-        public XmlTextWriter(string filename, Encoding encoding)
+        public XmlTextWriter(string filename, Encoding? encoding)
         : this(new FileStream(filename, FileMode.Create,
                               FileAccess.Write, FileShare.Read), encoding)
         {
@@ -742,7 +737,7 @@ namespace System.Xml
             try
             {
                 AutoComplete(Token.CData);
-                if (null != text && text.IndexOf("]]>", StringComparison.Ordinal) >= 0)
+                if (null != text && text.Contains("]]>"))
                 {
                     throw new ArgumentException(SR.Xml_InvalidCDataChars);
                 }
@@ -764,11 +759,11 @@ namespace System.Xml
         }
 
         // Writes out a comment <!--...--> containing the specified text.
-        public override void WriteComment(string text)
+        public override void WriteComment(string? text)
         {
             try
             {
-                if (null != text && (text.IndexOf("--", StringComparison.Ordinal) >= 0 || (text.Length != 0 && text[text.Length - 1] == '-')))
+                if (null != text && (text.Contains("--") || (text.Length != 0 && text[text.Length - 1] == '-')))
                 {
                     throw new ArgumentException(SR.Xml_InvalidCommentChars);
                 }
@@ -792,7 +787,7 @@ namespace System.Xml
         {
             try
             {
-                if (null != text && text.IndexOf("?>", StringComparison.Ordinal) >= 0)
+                if (null != text && text.Contains("?>"))
                 {
                     throw new ArgumentException(SR.Xml_InvalidPiChars);
                 }
@@ -844,7 +839,7 @@ namespace System.Xml
         }
 
         // Writes out the given whitespace.
-        public override void WriteWhitespace(string ws)
+        public override void WriteWhitespace(string? ws)
         {
             try
             {
@@ -853,7 +848,7 @@ namespace System.Xml
                     ws = string.Empty;
                 }
 
-                if (!_xmlCharType.IsOnlyWhitespace(ws))
+                if (!XmlCharType.IsOnlyWhitespace(ws))
                 {
                     throw new ArgumentException(SR.Xml_NonWhitespace);
                 }

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -37,10 +36,7 @@ namespace System.Net.Sockets.Tests
                 int receiverPort = receiver.BindToAnonymousPort(IPAddress.Loopback);
                 var receiverEndpoint = new IPEndPoint(IPAddress.Loopback, receiverPort);
 
-                for (int i = 0; i < TestSettings.UDPRedundancy; i++)
-                {
-                    sender.SendTo(new byte[1], SocketFlags.None, receiverEndpoint);
-                }
+                sender.SendTo(new byte[1], SocketFlags.None, receiverEndpoint);
 
                 var list = new List<Socket> { receiver };
                 Socket.Select(list, null, null, SelectSuccessTimeoutMicroseconds);
@@ -77,11 +73,8 @@ namespace System.Net.Sockets.Tests
                 int secondReceiverPort = secondReceiver.BindToAnonymousPort(IPAddress.Loopback);
                 var secondReceiverEndpoint = new IPEndPoint(IPAddress.Loopback, secondReceiverPort);
 
-                for (int i = 0; i < TestSettings.UDPRedundancy; i++)
-                {
-                    sender.SendTo(new byte[1], SocketFlags.None, firstReceiverEndpoint);
-                    sender.SendTo(new byte[1], SocketFlags.None, secondReceiverEndpoint);
-                }
+                sender.SendTo(new byte[1], SocketFlags.None, firstReceiverEndpoint);
+                sender.SendTo(new byte[1], SocketFlags.None, secondReceiverEndpoint);
 
                 var sw = Stopwatch.StartNew();
                 Assert.True(SpinWait.SpinUntil(() =>
@@ -128,10 +121,7 @@ namespace System.Net.Sockets.Tests
                 int secondReceiverPort = secondReceiver.BindToAnonymousPort(IPAddress.Loopback);
                 var secondReceiverEndpoint = new IPEndPoint(IPAddress.Loopback, secondReceiverPort);
 
-                for (int i = 0; i < TestSettings.UDPRedundancy; i++)
-                {
-                    sender.SendTo(new byte[1], SocketFlags.None, secondReceiverEndpoint);
-                }
+                sender.SendTo(new byte[1], SocketFlags.None, secondReceiverEndpoint);
 
                 var list = new List<Socket> { firstReceiver, secondReceiver };
                 Socket.Select(list, null, null, SelectSuccessTimeoutMicroseconds);
@@ -277,10 +267,7 @@ namespace System.Net.Sockets.Tests
                 int receiverPort = receiver.BindToAnonymousPort(IPAddress.Loopback);
                 var receiverEndpoint = new IPEndPoint(IPAddress.Loopback, receiverPort);
 
-                for (int i = 0; i < TestSettings.UDPRedundancy; i++)
-                {
-                    sender.SendTo(new byte[1], SocketFlags.None, receiverEndpoint);
-                }
+                sender.SendTo(new byte[1], SocketFlags.None, receiverEndpoint);
 
                 Assert.True(receiver.Poll(SelectSuccessTimeoutMicroseconds, SelectMode.SelectRead));
             }

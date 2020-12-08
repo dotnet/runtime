@@ -2,12 +2,15 @@
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <TargetFramework>netcoreapp3.0</TargetFramework>
+    <TargetFramework>net5.0</TargetFramework>
     <LangVersion>preview</LangVersion>
     <Nullable>enable</Nullable>
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="Serilog.AspNetCore" Version="3.4.0" />
+    <PackageReference Include="Serilog.Extensions.Logging.File" Version="2.0.0" />
+    <PackageReference Include="Serilog.Sinks.File" Version="4.1.0" />
     <PackageReference Include="System.CommandLine.Experimental" Version="0.3.0-alpha.19577.1" />
     <PackageReference Include="System.Net.Http.WinHttpHandler" Version="4.5.4" />
   </ItemGroup>

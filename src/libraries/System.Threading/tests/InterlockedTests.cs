@@ -1,6 +1,5 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -92,7 +91,7 @@ namespace System.Threading.Tests
             Assert.Equal(43u, value);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public void InterlockedDecrement_Int32()
         {
             int value = 42;
@@ -118,7 +117,7 @@ namespace System.Threading.Tests
             Assert.Equal(41u, value);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public void InterlockedDecrement_Int64()
         {
             long value = 42;
@@ -302,7 +301,7 @@ namespace System.Threading.Tests
             Assert.Equal(0x17755771u, value);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public void MemoryBarrierProcessWide()
         {
             // Stress MemoryBarrierProcessWide correctness using a simple AsymmetricLock
@@ -358,6 +357,8 @@ namespace System.Threading.Tests
 
             // Returning LockCookie to call Exit on is the fastest implementation because of it works naturally with the RCU pattern.
             // The traditional Enter/Exit lock interface would require thread local storage or some other scheme to reclaim the cookie.
+            // Returning LockCookie to call Exit on is the fastest implementation because of it works naturally with the RCU pattern.
+            // The traditional Enter/Exit lock interface would require thread local storage or some other scheme to reclaim the cookie
             public LockCookie Enter()
             {
                 int currentThreadId = Environment.CurrentManagedThreadId;
@@ -378,7 +379,6 @@ namespace System.Threading.Tests
                     //
                     if (VolatileReadWithoutBarrier(ref _current) == entry)
                     {
-                        // at this point we know for sure that we own the lock.
                         return entry;
                     }
 
@@ -397,19 +397,23 @@ namespace System.Threading.Tests
                     var oldEntry = _current;
                     _current = new LockCookie(Environment.CurrentManagedThreadId);
 
-                    // MemoryBarrierProcessWide ensures, process-wide, that our write to _current becomes visible
-                    // to every thread, and all writes by other threads become visible to us before we can continue.
-                    // As a result any other thread that sets Taken to true either:
-                    //    a) made it past the read of _current and owns the lock OR
-                    //    b) will see that _current has changed and will revert Taken without taking the lock
-                    // Thus we only need to wait for 'Taken' to become false and claim the lock for ourselves.
-                    // 'Taken' may yet switch to true after that, but that cannot result in other thread owning the lock.
+                    // After MemoryBarrierProcessWide, we can be sure that the Volatile.Read done by the fast thread will see that it is not a fast
+                    // thread anymore, and thus it will not attempt to enter the lock.
                     Interlocked.MemoryBarrierProcessWide();
 
                     // Keep looping as long as the lock is taken by other thread
                     SpinWait sw = new SpinWait();
                     while (oldEntry.Taken)
                         sw.SpinOnce();
+
+                    // We have seen that the other thread released the lock by setting Taken to false.
+                    // However, on platforms with weak memory ordering (ex: ARM32, ARM64) observing that does not guarantee that the writes executed by that
+                    // thread prior to releasing the lock are all committed to the shared memory.
+                    // We could fix that by doing the release via Volatile.Write, but we do not want to add expense to every release on the fast path.
+                    // Instead we will do another MemoryBarrierProcessWide here.
+
+                    // NOTE: not needed on x86/x64
+                    Interlocked.MemoryBarrierProcessWide();
 
                     _current.Taken = true;
                     return _current;

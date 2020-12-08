@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 // =============================================================================================
 // Definitions for tracking method inlinings in NGen and R2R images.
 // The only information stored is "who" got inlined "where", no offsets or inlining depth tracking.

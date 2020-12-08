@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 
 #ifndef CLRNT_H_
@@ -838,6 +837,7 @@ RtlVirtualUnwind_Unsafe(
 //
 // x86 ABI does not define RUNTIME_FUNCTION. Define our own to allow unification between x86 and other platforms.
 //
+#ifdef HOST_X86
 typedef struct _RUNTIME_FUNCTION {
     DWORD BeginAddress;
     DWORD UnwindData;
@@ -846,7 +846,7 @@ typedef struct _RUNTIME_FUNCTION {
 typedef struct _DISPATCHER_CONTEXT {
     _EXCEPTION_REGISTRATION_RECORD* RegistrationPointer;
 } DISPATCHER_CONTEXT, *PDISPATCHER_CONTEXT;
-
+#endif // HOST_X86
 #endif // !TARGET_UNIX
 
 #define RUNTIME_FUNCTION__BeginAddress(prf)             (prf)->BeginAddress
@@ -873,6 +873,7 @@ RtlpGetFunctionEndAddress (
 #define RUNTIME_FUNCTION__GetUnwindInfoAddress(prf)    (prf)->UnwindData
 #define RUNTIME_FUNCTION__SetUnwindInfoAddress(prf, addr) do { (prf)->UnwindData = (addr); } while(0)
 
+#ifdef HOST_X86
 EXTERN_C
 NTSYSAPI
 PEXCEPTION_ROUTINE
@@ -887,6 +888,7 @@ RtlVirtualUnwind (
     __out PDWORD EstablisherFrame,
     __inout_opt PT_KNONVOLATILE_CONTEXT_POINTERS ContextPointers
     );
+#endif // HOST_X86
 #endif // FEATURE_EH_FUNCLETS
 
 #endif // TARGET_X86
@@ -934,7 +936,7 @@ typedef struct _UNWIND_INFO {
     // dummy
 } UNWIND_INFO, *PUNWIND_INFO;
 
-#if defined(TARGET_UNIX) || defined(HOST_X86)
+#if defined(HOST_UNIX) || defined(HOST_X86)
 
 EXTERN_C
 NTSYSAPI
@@ -950,7 +952,7 @@ RtlVirtualUnwind (
     __out PDWORD EstablisherFrame,
     __inout_opt PT_KNONVOLATILE_CONTEXT_POINTERS ContextPointers
     );
-#endif // TARGET_UNIX || HOST_X86
+#endif // HOST_UNIX || HOST_X86
 
 #define UNW_FLAG_NHANDLER 0x0
 

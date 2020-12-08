@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -162,7 +161,14 @@ namespace System.Collections.ObjectModel
                     return null;
                 }
 
-                return this[(TKey)key];
+                if (m_dictionary.TryGetValue((TKey)key, out TValue? value))
+                {
+                    return value;
+                }
+                else
+                {
+                    return null;
+                }
             }
             set => throw new NotSupportedException(SR.NotSupported_ReadOnlyCollection);
         }

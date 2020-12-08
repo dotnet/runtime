@@ -1,11 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Net;
 using System.Net.Sockets;
 using System.Net.Test.Common;
-using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 
 using Xunit;
@@ -37,7 +35,7 @@ namespace System.Net.NetworkInformation.Tests
             Assert.NotNull(gp.GetActiveUdpListeners());
 
             Assert.NotNull(gp.GetIPv4GlobalStatistics());
-            if (!RuntimeInformation.IsOSPlatform(OSPlatform.OSX) && !RuntimeInformation.IsOSPlatform(OSPlatform.Create("FREEBSD")))
+            if (!OperatingSystem.IsMacOS() && !OperatingSystem.IsFreeBSD())
             {
                 // OSX and FreeBSD do not provide IPv6  stats.
                 Assert.NotNull(gp.GetIPv6GlobalStatistics());

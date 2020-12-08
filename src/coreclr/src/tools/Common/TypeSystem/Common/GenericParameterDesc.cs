@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Generic;
@@ -19,7 +18,7 @@ namespace Internal.TypeSystem
     public enum GenericVariance
     {
         None = 0,
-        
+
         /// <summary>
         /// The generic type parameter is covariant. A covariant type parameter can appear
         /// as the result type of a method, the type of a read-only field, a declared base
@@ -46,10 +45,10 @@ namespace Internal.TypeSystem
         /// A type can be substituted for the generic type parameter only if it is a reference type.
         /// </summary>
         ReferenceTypeConstraint = 0x04,
-        
+
         /// <summary>
-        // A type can be substituted for the generic type parameter only if it is a value
-        // type and is not nullable.
+        /// A type can be substituted for the generic type parameter only if it is a value
+        /// type and is not nullable.
         /// </summary>
         NotNullableValueTypeConstraint = 0x08,
 
@@ -69,7 +68,7 @@ namespace Internal.TypeSystem
         {
             get
             {
-                return String.Concat("T", Index.ToStringInvariant());
+                return string.Concat("T", Index.ToStringInvariant());
             }
         }
 
@@ -77,7 +76,7 @@ namespace Internal.TypeSystem
         /// Gets a value indicating whether this is a type or method generic parameter.
         /// </summary>
         public abstract GenericParameterKind Kind { get; }
-        
+
         /// <summary>
         /// Gets the zero based index of the generic parameter within the declaring type or method.
         /// </summary>
@@ -104,7 +103,7 @@ namespace Internal.TypeSystem
                 return GenericConstraints.None;
             }
         }
-        
+
         /// <summary>
         /// Gets type constraints imposed on substitutions.
         /// </summary>

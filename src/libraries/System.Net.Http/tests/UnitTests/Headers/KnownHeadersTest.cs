@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Linq;
 using System.Net.Http.Headers;
@@ -223,11 +222,11 @@ namespace System.Net.Http.Tests
             {
                 Assert.NotNull(knownHeader);
 
-                string v1 = knownHeader.Descriptor.GetHeaderValue(value.Select(c => (byte)c).ToArray());
+                string v1 = knownHeader.Descriptor.GetHeaderValue(value.Select(c => (byte)c).ToArray(), valueEncoding: null);
                 Assert.NotNull(v1);
                 Assert.Equal(value, v1, StringComparer.OrdinalIgnoreCase);
 
-                string v2 = knownHeader.Descriptor.GetHeaderValue(value.Select(c => (byte)c).ToArray());
+                string v2 = knownHeader.Descriptor.GetHeaderValue(value.Select(c => (byte)c).ToArray(), valueEncoding: null);
                 Assert.Same(v1, v2);
             }
         }
@@ -240,8 +239,8 @@ namespace System.Net.Http.Tests
             KnownHeader knownHeader = KnownHeaders.TryGetKnownHeader(name);
             Assert.NotNull(knownHeader);
 
-            string v1 = knownHeader.Descriptor.GetHeaderValue(value.Select(c => (byte)c).ToArray());
-            string v2 = knownHeader.Descriptor.GetHeaderValue(value.Select(c => (byte)c).ToArray());
+            string v1 = knownHeader.Descriptor.GetHeaderValue(value.Select(c => (byte)c).ToArray(), valueEncoding: null);
+            string v2 = knownHeader.Descriptor.GetHeaderValue(value.Select(c => (byte)c).ToArray(), valueEncoding: null);
             Assert.Equal(value, v1);
             Assert.Equal(value, v2);
             Assert.NotSame(v1, v2);

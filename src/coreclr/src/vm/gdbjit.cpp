@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 //*****************************************************************************
 // File: gdbjit.cpp
 //
@@ -172,7 +171,7 @@ GetTypeInfoFromTypeHandle(TypeHandle typeHandle,
             refTypeInfo.SuppressRelease();
 
             TypeInfoBase* lengthTypeInfo = GetTypeInfoFromTypeHandle(
-                TypeHandle(MscorlibBinder::GetElementType(ELEMENT_TYPE_I4)), pTypeMap, method);
+                TypeHandle(CoreLibBinder::GetElementType(ELEMENT_TYPE_I4)), pTypeMap, method);
 
             TypeInfoBase* valTypeInfo = GetTypeInfoFromTypeHandle(typeHandle.GetArrayElementTypeHandle(), pTypeMap, method);
             info->m_array_type = new ArrayTypeInfo(typeHandle, 1, valTypeInfo);
@@ -189,7 +188,7 @@ GetTypeInfoFromTypeHandle(TypeHandle typeHandle,
 
             if (pMT->GetRank() != 1)
             {
-                TypeHandle dwordArray(MscorlibBinder::GetElementType(ELEMENT_TYPE_I4));
+                TypeHandle dwordArray(CoreLibBinder::GetElementType(ELEMENT_TYPE_I4));
                 info->m_array_bounds_type = new ArrayTypeInfo(dwordArray.MakeSZArray(), pMT->GetRank(), lengthTypeInfo);
                 info->members[2].m_member_name = new char[9];
                 strcpy(info->members[2].m_member_name, "m_Bounds");
@@ -1791,16 +1790,6 @@ void VarDebugInfo::DumpDebugInfo(char* ptr, int& offset)
     offset += sizeof(DebugInfoVar);
     offset += len;
 }
-
-/* static data for symbol strings */
-struct Elf_Symbol {
-    const char* m_name;
-    int m_off;
-    TADDR m_value;
-    int m_section, m_size;
-    NewArrayHolder<char> m_symbol_name;
-    Elf_Symbol() : m_name(nullptr), m_off(0), m_value(0), m_section(0), m_size(0) {}
-};
 
 template <class T>
 static int countFuncs(T &arr, int n)

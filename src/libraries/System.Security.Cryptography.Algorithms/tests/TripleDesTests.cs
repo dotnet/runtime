@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.IO;
@@ -10,7 +9,7 @@ using Xunit;
 
 namespace System.Security.Cryptography.Encryption.TripleDes.Tests
 {
-
+    [SkipOnMono("Not supported on Browser", TestPlatforms.Browser)]
     public static partial class TripleDesTests
     {
         [Fact]
@@ -20,6 +19,20 @@ namespace System.Security.Cryptography.Encryption.TripleDes.Tests
             {
                 Assert.Equal(192, tdes.KeySize);
                 Assert.Equal(64, tdes.BlockSize);
+                Assert.Equal(64, tdes.FeedbackSize);
+                Assert.Equal(CipherMode.CBC, tdes.Mode);
+                Assert.Equal(PaddingMode.PKCS7, tdes.Padding);
+            }
+        }
+
+        [Fact]
+        public static void TripleDesInternalDefault()
+        {
+            using (TripleDES tdes = TripleDES.Create())
+            {
+                Assert.Equal(192, tdes.KeySize);
+                Assert.Equal(64, tdes.BlockSize);
+                Assert.Equal(8, tdes.FeedbackSize);
                 Assert.Equal(CipherMode.CBC, tdes.Mode);
                 Assert.Equal(PaddingMode.PKCS7, tdes.Padding);
             }

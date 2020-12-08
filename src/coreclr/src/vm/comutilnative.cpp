@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 //
 
 //
@@ -679,15 +678,46 @@ UINT64   GCInterface::m_remPressure[MEM_PRESSURE_COUNT] = {0, 0, 0, 0};   // his
 // (m_iteration % MEM_PRESSURE_COUNT) is used as an index into m_addPressure and m_remPressure
 UINT     GCInterface::m_iteration = 0;
 
-FCIMPL6(void, GCInterface::GetMemoryInfo, UINT64* highMemLoadThreshold, UINT64* totalAvailableMemoryBytes, UINT64* lastRecordedMemLoadBytes, UINT32* lastRecordedMemLoadPct, size_t* lastRecordedHeapSizeBytes, size_t* lastRecordedFragmentationBytes)
+FCIMPL2(void, GCInterface::GetMemoryInfo, Object* objUNSAFE, int kind)
 {
     FCALL_CONTRACT;
 
     FC_GC_POLL_NOT_NEEDED();
 
-    return GCHeapUtilities::GetGCHeap()->GetMemoryInfo(highMemLoadThreshold, totalAvailableMemoryBytes,
-                                                       lastRecordedMemLoadBytes, lastRecordedMemLoadPct,
-                                                       lastRecordedHeapSizeBytes, lastRecordedFragmentationBytes);
+    GCMEMORYINFODATAREF objGCMemoryInfo = (GCMEMORYINFODATAREF)(ObjectToOBJECTREF (objUNSAFE));
+
+    UINT64* genInfoRaw = (UINT64*)&(objGCMemoryInfo->generationInfo0);
+    UINT64* pauseInfoRaw = (UINT64*)&(objGCMemoryInfo->pauseDuration0);
+
+    return GCHeapUtilities::GetGCHeap()->GetMemoryInfo(
+        &(objGCMemoryInfo->highMemLoadThresholdBytes),
+        &(objGCMemoryInfo->totalAvailableMemoryBytes),
+        &(objGCMemoryInfo->lastRecordedMemLoadBytes),
+        &(objGCMemoryInfo->lastRecordedHeapSizeBytes),
+        &(objGCMemoryInfo->lastRecordedFragmentationBytes),
+        &(objGCMemoryInfo->totalCommittedBytes),
+        &(objGCMemoryInfo->promotedBytes),
+        &(objGCMemoryInfo->pinnedObjectCount),
+        &(objGCMemoryInfo->finalizationPendingCount),
+        &(objGCMemoryInfo->index),
+        &(objGCMemoryInfo->generation),
+        &(objGCMemoryInfo->pauseTimePercent),
+        (bool*)&(objGCMemoryInfo->isCompaction),
+        (bool*)&(objGCMemoryInfo->isConcurrent),
+        genInfoRaw,
+        pauseInfoRaw,
+        kind);
+}
+FCIMPLEND
+
+FCIMPL0(UINT32, GCInterface::GetMemoryLoad)
+{
+    FCALL_CONTRACT;
+
+    FC_GC_POLL_NOT_NEEDED();
+
+    int result = (INT32)GCHeapUtilities::GetGCHeap()->GetMemoryLoad();
+    return result;
 }
 FCIMPLEND
 
@@ -1382,7 +1412,7 @@ void GCInterface::AddMemoryPressure(UINT64 bytesAllocated)
             if (newMemValue >= budget)
             {
                 // last check - if we would exceed 20% of GC "duty cycle", do not trigger GC at this time
-                if ((pGCHeap->GetNow() - pGCHeap->GetLastGCStartTime(2)) > (pGCHeap->GetLastGCDuration(2) * 5))
+                if ((size_t)(pGCHeap->GetNow() - pGCHeap->GetLastGCStartTime(2)) > (pGCHeap->GetLastGCDuration(2) * 5))
                 {
                     STRESS_LOG6(LF_GCINFO, LL_INFO10000, "AMP Budget: pressure=%I64u ? budget=%I64u (total_added=%I64u, total_removed=%I64u, mng_heap=%I64u) pos=%d",
                         newMemValue, budget, add, rem, heapOver3 * 3, m_iteration);
@@ -1720,7 +1750,7 @@ static BOOL HasOverriddenMethod(MethodTable* mt, MethodTable* classMT, WORD meth
 
     if (!classMT->IsZapped())
     {
-        // If mscorlib is JITed, the slots can be patched and thus we need to compare the actual MethodDescs
+        // If CoreLib is JITed, the slots can be patched and thus we need to compare the actual MethodDescs
         // to detect match reliably
         if (MethodTable::GetMethodDescForSlotAddress(actual) == MethodTable::GetMethodDescForSlotAddress(base))
         {
@@ -1754,9 +1784,9 @@ static BOOL CanCompareBitsOrUseFastGetHashCode(MethodTable* mt)
         return FALSE;
     }
 
-    MethodTable* valueTypeMT = MscorlibBinder::GetClass(CLASS__VALUE_TYPE);
-    WORD slotEquals = MscorlibBinder::GetMethod(METHOD__VALUE_TYPE__EQUALS)->GetSlot();
-    WORD slotGetHashCode = MscorlibBinder::GetMethod(METHOD__VALUE_TYPE__GET_HASH_CODE)->GetSlot();
+    MethodTable* valueTypeMT = CoreLibBinder::GetClass(CLASS__VALUE_TYPE);
+    WORD slotEquals = CoreLibBinder::GetMethod(METHOD__VALUE_TYPE__EQUALS)->GetSlot();
+    WORD slotGetHashCode = CoreLibBinder::GetMethod(METHOD__VALUE_TYPE__GET_HASH_CODE)->GetSlot();
 
     // Check the input type.
     if (HasOverriddenMethod(mt, valueTypeMT, slotEquals)
@@ -2086,7 +2116,7 @@ static bool HasOverriddenStreamMethod(MethodTable * pMT, WORD slot)
 
     if (!g_pStreamMT->IsZapped())
     {
-        // If mscorlib is JITed, the slots can be patched and thus we need to compare the actual MethodDescs
+        // If CoreLib is JITed, the slots can be patched and thus we need to compare the actual MethodDescs
         // to detect match reliably
         if (MethodTable::GetMethodDescForSlotAddress(actual) == MethodTable::GetMethodDescForSlotAddress(base))
             return false;
@@ -2105,9 +2135,9 @@ FCIMPL1(FC_BOOL_RET, StreamNative::HasOverriddenBeginEndRead, Object *stream)
     if (g_pStreamMT == NULL || g_slotBeginRead == 0 || g_slotEndRead == 0)
     {
         HELPER_METHOD_FRAME_BEGIN_RET_1(stream);
-        g_pStreamMT = MscorlibBinder::GetClass(CLASS__STREAM);
-        g_slotBeginRead = MscorlibBinder::GetMethod(METHOD__STREAM__BEGIN_READ)->GetSlot();
-        g_slotEndRead = MscorlibBinder::GetMethod(METHOD__STREAM__END_READ)->GetSlot();
+        g_pStreamMT = CoreLibBinder::GetClass(CLASS__STREAM);
+        g_slotBeginRead = CoreLibBinder::GetMethod(METHOD__STREAM__BEGIN_READ)->GetSlot();
+        g_slotEndRead = CoreLibBinder::GetMethod(METHOD__STREAM__END_READ)->GetSlot();
         HELPER_METHOD_FRAME_END();
     }
 
@@ -2127,9 +2157,9 @@ FCIMPL1(FC_BOOL_RET, StreamNative::HasOverriddenBeginEndWrite, Object *stream)
     if (g_pStreamMT == NULL || g_slotBeginWrite == 0 || g_slotEndWrite == 0)
     {
         HELPER_METHOD_FRAME_BEGIN_RET_1(stream);
-        g_pStreamMT = MscorlibBinder::GetClass(CLASS__STREAM);
-        g_slotBeginWrite = MscorlibBinder::GetMethod(METHOD__STREAM__BEGIN_WRITE)->GetSlot();
-        g_slotEndWrite = MscorlibBinder::GetMethod(METHOD__STREAM__END_WRITE)->GetSlot();
+        g_pStreamMT = CoreLibBinder::GetClass(CLASS__STREAM);
+        g_slotBeginWrite = CoreLibBinder::GetMethod(METHOD__STREAM__BEGIN_WRITE)->GetSlot();
+        g_slotEndWrite = CoreLibBinder::GetMethod(METHOD__STREAM__END_WRITE)->GetSlot();
         HELPER_METHOD_FRAME_END();
     }
 

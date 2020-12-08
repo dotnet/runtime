@@ -1,16 +1,18 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using Internal.NativeCrypto;
-using Microsoft.Win32.SafeHandles;
+using System.Runtime.Versioning;
+
+#pragma warning disable CA5373 // Call to obsolete key derivation function PasswordDeriveBytes.*
 
 namespace System.Security.Cryptography
 {
     public partial class PasswordDeriveBytes : DeriveBytes
     {
-        private SafeProvHandle? _safeProvHandle = null;
+        private SafeProvHandle? _safeProvHandle;
 
+        [SupportedOSPlatform("windows")]
         public byte[] CryptDeriveKey(string? algname, string? alghashname, int keySize, byte[] rgbIV)
         {
             if (keySize < 0)

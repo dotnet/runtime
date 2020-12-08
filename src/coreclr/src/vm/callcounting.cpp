@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #include "common.h"
 
@@ -149,7 +148,7 @@ FORCEINLINE void CallCountingManager::CallCountingInfo::SetStage(Stage stage)
 
         case Stage::StubMayBeActive:
             _ASSERTE(m_callCountingStub != nullptr);
-            // fall through
+            FALLTHROUGH;
 
         case Stage::PendingCompletion:
             _ASSERTE(m_stage == Stage::StubIsNotActive || m_stage == Stage::StubMayBeActive);
@@ -251,6 +250,10 @@ const CallCountingStub *CallCountingManager::CallCountingStubAllocator::Allocate
         MODE_ANY;
     }
     CONTRACTL_END;
+
+#if defined(HOST_OSX) && defined(HOST_ARM64)
+    auto jitWriteEnableHolder = PAL_JITWriteEnable(true);
+#endif // defined(HOST_OSX) && defined(HOST_ARM64)
 
     LoaderHeap *heap = m_heap;
     if (heap == nullptr)
@@ -475,7 +478,16 @@ void CallCountingManager::DisableCallCounting(NativeCodeVersion codeVersion)
 
     CodeVersionManager::LockHolder codeVersioningLockHolder;
 
-    _ASSERTE(m_callCountingInfoByCodeVersionHash.Lookup(codeVersion) == nullptr);
+    CallCountingInfo *callCountingInfo = m_callCountingInfoByCodeVersionHash.Lookup(codeVersion);
+    if (callCountingInfo != nullptr)
+    {
+        // Call counting may already have been disabled due to the possibility of concurrent or reentering JIT of the same
+        // native code version of a method. The call counting info is created with call counting enabled or disabled and it
+        // cannot be changed thereafter for consistency in dependents of the info.
+        _ASSERTE(callCountingInfo->GetStage() == CallCountingInfo::Stage::Disabled);
+        return;
+    }
+
     NewHolder<CallCountingInfo> callCountingInfoHolder = CallCountingInfo::CreateWithCallCountingDisabled(codeVersion);
     m_callCountingInfoByCodeVersionHash.Add(callCountingInfoHolder);
     callCountingInfoHolder.SuppressRelease();
@@ -816,8 +828,7 @@ void CallCountingManager::CompleteCallCounting()
     {
         CodeVersionManager *codeVersionManager = appDomain->GetCodeVersionManager();
 
-        MethodDescBackpatchInfoTracker::PollForDebuggerSuspension();
-        MethodDescBackpatchInfoTracker::ConditionalLockHolder slotBackpatchLockHolder;
+        MethodDescBackpatchInfoTracker::ConditionalLockHolderForGCCoop slotBackpatchLockHolder;
 
         // Backpatching entry point slots requires cooperative GC mode, see
         // MethodDescBackpatchInfoTracker::Backpatch_Locked(). The code version manager's table lock is an unsafe lock that
@@ -948,8 +959,7 @@ void CallCountingManager::StopAndDeleteAllCallCountingStubs()
     TieredCompilationManager *tieredCompilationManager = GetAppDomain()->GetTieredCompilationManager();
     bool scheduleTieringBackgroundWork = false;
     {
-        MethodDescBackpatchInfoTracker::PollForDebuggerSuspension();
-        MethodDescBackpatchInfoTracker::ConditionalLockHolder slotBackpatchLockHolder;
+        MethodDescBackpatchInfoTracker::ConditionalLockHolderForGCCoop slotBackpatchLockHolder;
 
         ThreadSuspend::SuspendEE(ThreadSuspend::SUSPEND_OTHER);
         struct AutoRestartEE

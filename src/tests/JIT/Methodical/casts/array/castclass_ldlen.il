@@ -1,0 +1,99 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
+// ldlen.il
+.assembly extern mscorlib { }
+.assembly extern System.Console
+{
+  .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
+  .ver 4:0:0:0
+}
+.assembly 'ldlen'
+{
+  
+  
+}
+.namespace JitTest
+{
+  .class private auto ansi beforefieldinit Test
+         extends [mscorlib]System.Object
+  {
+    .method private hidebysig static int32
+            Main() cil managed
+    {
+      .entrypoint
+      .maxstack  4
+      .locals (class [mscorlib]System.Array)
+      ldc.i4.6
+      newarr [mscorlib]System.Int32
+      castclass [mscorlib]System.Array
+      stloc.0
+      
+      ldloc.0
+      castclass	int32[]
+      ldlen
+      conv.i4
+      ldc.i4.6
+      beq.s      continue_1
+      newobj     instance void [mscorlib]System.Exception::.ctor()
+      throw
+      
+   continue_1:
+      ldc.i4.6
+      newarr  [mscorlib]System.Single
+      castclass  [mscorlib]System.Array
+      stloc.0
+      
+      ldloc.0
+      castclass float32[]
+      ldlen
+      conv.i4
+      ldc.i4.6
+      beq.s      continue_2
+      newobj     instance void [mscorlib]System.Exception::.ctor()
+      throw
+
+	continue_2:  
+      ldc.i4.6
+      newarr     [mscorlib]System.Double
+      castclass    [mscorlib]System.Array
+      stloc.0 
+     
+      ldloc.0
+      castclass float64[]
+      ldlen
+      conv.i4
+      ldc.i4.6
+      beq.s      continue_3
+      newobj     instance void [mscorlib]System.Exception::.ctor()
+      throw
+      
+	continue_3:
+      ldc.i4.6
+      newarr [mscorlib]System.IntPtr
+      castclass [mscorlib]System.Array
+      stloc.0
+      
+      ldloc.0
+      castclass	native int[]
+      ldlen
+      conv.i4
+      ldc.i4.6
+      beq.s      continue_4
+      newobj     instance void [mscorlib]System.Exception::.ctor()
+      throw
+
+    continue_4:
+      ldc.i4 100
+      ret
+    }
+    .method public hidebysig specialname rtspecialname 
+            instance void .ctor() cil managed
+    {
+      .maxstack  8
+      IL_0000:  ldarg.0
+      IL_0001:  call       instance void [mscorlib]System.Object::.ctor()
+      IL_0006:  ret
+    }
+  }
+}

@@ -1,10 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 /*++
-
-
 
 Module Name:
 
@@ -13,8 +10,6 @@ Module Name:
 Abstract:
 
     Implementation of PAL exported functions not part of the Win32 API.
-
-
 
 --*/
 
@@ -44,6 +39,7 @@ SET_DEFAULT_DEBUG_CHANNEL(PAL); // some headers have code with asserts, so do th
 #include "pal/numa.h"
 #include "pal/stackstring.hpp"
 #include "pal/cgroup.h"
+#include <getexepath.h>
 
 #if HAVE_MACH_EXCEPTIONS
 #include "../exception/machexception.h"
@@ -81,6 +77,15 @@ int CacheLineSize;
 #include <sys/param.h>
 #include <sys/sysctl.h>
 #include <kvm.h>
+#elif defined(__sun)
+#ifndef _KERNEL
+#define _KERNEL
+#define UNDEF_KERNEL
+#endif
+#include <sys/procfs.h>
+#ifdef UNDEF_KERNEL
+#undef _KERNEL
+#endif
 #endif
 
 #include <algorithm>
@@ -93,6 +98,8 @@ using namespace CorUnix;
 //
 
 extern "C" BOOL CRTInitStdStreams( void );
+
+extern bool g_running_in_exe;
 
 Volatile<INT> init_count = 0;
 Volatile<BOOL> shutdown_intent = 0;
@@ -115,7 +122,7 @@ static DWORD g_initializeDLLFlags = PAL_INITIALIZE_DLL;
 static int Initialize(int argc, const char *const argv[], DWORD flags);
 static BOOL INIT_IncreaseDescriptorLimit(void);
 static LPWSTR INIT_FormatCommandLine (int argc, const char * const *argv);
-static LPWSTR INIT_ConvertEXEPath(LPCSTR exe_name);
+static LPWSTR INIT_GetCurrentEXEPath();
 static BOOL INIT_SharedFilesPath(void);
 
 #ifdef _DEBUG
@@ -359,7 +366,7 @@ Initialize(
         gPID = getpid();
         gSID = getsid(gPID);
 
-        // Initialize the thread local storage  
+        // Initialize the thread local storage
         if (FALSE == TLSInitialize())
         {
             palError = ERROR_PALINIT_TLS;
@@ -550,7 +557,7 @@ Initialize(
         }
 
         /* find out the application's full path */
-        exe_path = INIT_ConvertEXEPath(argv[0]);
+        exe_path = INIT_GetCurrentEXEPath();
         if (NULL == exe_path)
         {
             ERROR("Unable to find exe path\n");
@@ -606,13 +613,6 @@ Initialize(
         }
 
         palError = ERROR_GEN_FAILURE;
-
-        if (FALSE == TIMEInitialize())
-        {
-            ERROR("Unable to initialize TIME support\n");
-            palError = ERROR_PALINIT_TIME;
-            goto CLEANUP6;
-        }
 
         /* Initialize the File mapping critical section. */
         if (FALSE == MAPInitialize())
@@ -764,8 +764,7 @@ Function:
 
 Abstract:
   A replacement for PAL_Initialize when loading CoreCLR. Instead of taking a command line (which CoreCLR
-  instances aren't given anyway) the path into which the CoreCLR is installed is supplied instead. This is
-  cached so that PAL_GetPALDirectoryW can return it later.
+  instances aren't given anyway) the path into which the CoreCLR is installed is supplied instead.
 
   This routine also makes sure the psuedo dynamic libraries PALRT and mscorwks have their initialization
   methods called.
@@ -777,8 +776,10 @@ Return:
 --*/
 PAL_ERROR
 PALAPI
-PAL_InitializeCoreCLR(const char *szExePath)
+PAL_InitializeCoreCLR(const char *szExePath, BOOL runningInExe)
 {
+    g_running_in_exe = runningInExe;
+
     // Fake up a command line to call PAL initialization with.
     int result = Initialize(1, &szExePath, PAL_INITIALIZE_CORECLR);
     if (result != 0)
@@ -888,6 +889,25 @@ PAL_IsDebuggerPresent()
         return TRUE;
     else
         return FALSE;
+#elif defined(__sun)
+    int readResult;
+    char statusFilename[64];
+    snprintf(statusFilename, sizeof(statusFilename), "/proc/%d/status", getpid());
+    int fd = open(statusFilename, O_RDONLY);
+    if (fd == -1)
+    {
+        return FALSE;
+    }
+
+    pstatus_t status;
+    do
+    {
+        readResult = read(fd, &status, sizeof(status));
+    }
+    while ((readResult == -1) && (errno == EINTR));
+
+    close(fd);
+    return status.pr_flttrace.word[0] != 0;
 #else
     return FALSE;
 #endif
@@ -1236,45 +1256,31 @@ static LPWSTR INIT_FormatCommandLine (int argc, const char * const *argv)
 
 /*++
 Function:
-  INIT_ConvertEXEPath
+  INIT_GetCurrentEXEPath
 
 Abstract:
-    Check whether the executable path is valid, and convert its type (LPCSTR -> LPWSTR)
-
-Parameters:
-    LPCSTR exe_name : full path of the current executable
+    Get the current exe path
 
 Return:
     pointer to buffer containing the full path. This buffer must be released
     by the caller using free()
 
-Notes :
-    this function assumes that "exe_name" is in Unix style (no \)
 --*/
-static LPWSTR INIT_ConvertEXEPath(LPCSTR exe_path)
+static LPWSTR INIT_GetCurrentEXEPath()
 {
-    PathCharString real_path;
     LPWSTR return_value;
     INT return_size;
-    struct stat theStats;
 
-    if (!strchr(exe_path, '/'))
+    char* path = getexepath();
+    if (!path)
     {
-        ERROR( "The exe path is not fully specified\n" );
+        ERROR( "Cannot get current exe path\n" );
         return NULL;
     }
 
-    if (-1 == stat(exe_path, &theStats))
-    {
-        ERROR( "The file does not exist\n" );
-        return NULL;
-    }
-
-    if (!CorUnix::RealPathHelper(exe_path, real_path))
-    {
-        ERROR("realpath() failed!\n");
-        return NULL;
-    }
+    PathCharString real_path;
+    real_path.Set(path, strlen(path));
+    free(path);
 
     return_size = MultiByteToWideChar(CP_ACP, 0, real_path, -1, NULL, 0);
     if (0 == return_size)

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 //*****************************************************************************
 // EventRedirectionPipeline.h
 //
@@ -118,7 +117,7 @@ protected:
 
     // Command parameters for create case.
     // Note that we must always physically call CreateProcess on the debuggee so that we get the proper out-parameters
-    // from create-processs (eg, target's handle, startup info, etc). So we always attach the auxillary debugger
+    // from create-process (eg, target's handle, startup info, etc). So we always attach the auxillary debugger
     // even in the create case. Use "-pr -pb" in Windbg to attach to a create-suspended process.
     //
     // Common Windbg options:

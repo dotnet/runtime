@@ -1,10 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using Microsoft.Extensions.Primitives;
 
 namespace Microsoft.Extensions.Configuration
@@ -78,12 +76,15 @@ namespace Microsoft.Extensions.Configuration
             IEnumerable<string> earlierKeys,
             string parentPath)
         {
-            var section = parentPath == null ? _config : _config.GetSection(parentPath);
-            var children = section.GetChildren();
+            IConfiguration section = parentPath == null ? _config : _config.GetSection(parentPath);
             var keys = new List<string>();
-            keys.AddRange(children.Select(c => c.Key));
-            return keys.Concat(earlierKeys)
-                .OrderBy(k => k, ConfigurationKeyComparer.Instance);
+            foreach (IConfigurationSection child in section.GetChildren())
+            {
+                keys.Add(child.Key);
+            }
+            keys.AddRange(earlierKeys);
+            keys.Sort(ConfigurationKeyComparer.Comparison);
+            return keys;
         }
 
         /// <inheritdoc />

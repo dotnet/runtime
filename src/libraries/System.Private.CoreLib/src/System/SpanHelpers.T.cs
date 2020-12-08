@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
 
@@ -50,7 +49,7 @@ namespace System
         {
             Debug.Assert(length >= 0);
 
-            IntPtr index = (IntPtr)0; // Use IntPtr for arithmetic to avoid unnecessary 64->32->64 truncations
+            nint index = 0; // Use nint for arithmetic to avoid unnecessary 64->32->64 truncations
 
             if (default(T) != null || (object)value != null)
             {
@@ -100,8 +99,8 @@ namespace System
             }
             else
             {
-                byte* len = (byte*)length;
-                for (index = (IntPtr)0; index.ToPointer() < len; index += 1)
+                nint len = length;
+                for (index = 0; index < len; index++)
                 {
                     if ((object)Unsafe.Add(ref searchSpace, index) is null)
                     {
@@ -120,7 +119,7 @@ namespace System
         {
             Debug.Assert(length >= 0);
 
-            IntPtr index = (IntPtr)0; // Use IntPtr for arithmetic to avoid unnecessary 64->32->64 truncations
+            nint index = 0; // Use nint for arithmetic to avoid unnecessary 64->32->64 truncations
             if (default(T) != null || (object)value != null)
             {
                 while (length >= 8)
@@ -174,8 +173,8 @@ namespace System
             }
             else
             {
-                byte* len = (byte*)length;
-                for (index = (IntPtr)0; index.ToPointer() < len; index += 1)
+                nint len = (nint)length;
+                for (index = 0; index < len; index++)
                 {
                     if ((object)Unsafe.Add(ref searchSpace, index) is null)
                     {
@@ -186,21 +185,21 @@ namespace System
             return -1;
 
         Found: // Workaround for https://github.com/dotnet/runtime/issues/8795
-            return (int)(byte*)index;
+            return (int)index;
         Found1:
-            return (int)(byte*)(index + 1);
+            return (int)(index + 1);
         Found2:
-            return (int)(byte*)(index + 2);
+            return (int)(index + 2);
         Found3:
-            return (int)(byte*)(index + 3);
+            return (int)(index + 3);
         Found4:
-            return (int)(byte*)(index + 4);
+            return (int)(index + 4);
         Found5:
-            return (int)(byte*)(index + 5);
+            return (int)(index + 5);
         Found6:
-            return (int)(byte*)(index + 6);
+            return (int)(index + 6);
         Found7:
-            return (int)(byte*)(index + 7);
+            return (int)(index + 7);
         }
 
         public static int IndexOfAny<T>(ref T searchSpace, T value0, T value1, int length) where T : IEquatable<T>
@@ -781,7 +780,7 @@ namespace System
             if (Unsafe.AreSame(ref first, ref second))
                 goto Equal;
 
-            IntPtr index = (IntPtr)0; // Use IntPtr for arithmetic to avoid unnecessary 64->32->64 truncations
+            nint index = 0; // Use nint for arithmetic to avoid unnecessary 64->32->64 truncations
             T lookUp0;
             T lookUp1;
             while (length >= 8)

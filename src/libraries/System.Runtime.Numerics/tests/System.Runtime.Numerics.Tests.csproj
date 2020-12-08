@@ -17,6 +17,7 @@
     <Compile Include="BigInteger\divrem.cs" />
     <Compile Include="BigInteger\Driver.cs" />
     <Compile Include="BigInteger\gcd.cs" />
+    <Compile Include="BigInteger\GetBitLengthTests.cs" />
     <Compile Include="BigInteger\IsEven.cs" />
     <Compile Include="BigInteger\IsOne.cs" />
     <Compile Include="BigInteger\IsPowerOfTwo.cs" />

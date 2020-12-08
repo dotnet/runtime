@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 // ===========================================================================
 // File: JITinterface.H
 //
@@ -204,11 +203,6 @@ extern FCDECL1(StringObject*, AllocateString_MP_FastPortable, DWORD stringLength
 extern FCDECL1(StringObject*, UnframedAllocateString, DWORD stringLength);
 extern FCDECL1(StringObject*, FramedAllocateString, DWORD stringLength);
 
-#ifdef FEATURE_UTF8STRING
-extern FCDECL1(Utf8StringObject*, AllocateUtf8String_MP_FastPortable, DWORD stringLength);
-extern FCDECL1(Utf8StringObject*, FramedAllocateUtf8String, DWORD stringLength);
-#endif // FEATURE_UTF8STRING
-
 extern FCDECL2(Object*, JIT_NewArr1VC_MP_FastPortable, CORINFO_CLASS_HANDLE arrayMT, INT_PTR size);
 extern FCDECL2(Object*, JIT_NewArr1OBJ_MP_FastPortable, CORINFO_CLASS_HANDLE arrayMT, INT_PTR size);
 extern FCDECL2(Object*, JIT_NewArr1, CORINFO_CLASS_HANDLE arrayMT, INT_PTR size);
@@ -226,9 +220,8 @@ EXTERN_C FCDECL2(void*, JIT_GetSharedGCStaticBase_Helper, DomainLocalModule *pLo
 
 EXTERN_C void DoJITFailFast ();
 EXTERN_C FCDECL0(void, JIT_FailFast);
-extern FCDECL3(void, JIT_ThrowAccessException, RuntimeExceptionKind, CORINFO_METHOD_HANDLE caller, void * callee);
 
-FCDECL1(void*, JIT_SafeReturnableByref, void* byref);
+FCDECL0(int, JIT_GetCurrentManagedThreadId);
 
 #if !defined(FEATURE_USE_ASM_GC_WRITE_BARRIERS) && defined(FEATURE_COUNT_GC_WRITE_BARRIERS)
 // Extra argument for the classification of the checked barriers.
@@ -420,17 +413,11 @@ class CEEInfo : public ICorJitInfo
 {
     friend class CEEDynamicCodeInfo;
 
-    const char * __stdcall ICorMethodInfo_Hack_getMethodName(CORINFO_METHOD_HANDLE ftnHnd, const char** scopeName)
-    {
-        WRAPPER_NO_CONTRACT;
-        return getMethodName(ftnHnd, scopeName);
-    }
-
-    mdMethodDef __stdcall ICorClassInfo_Hack_getMethodDefFromMethod(CORINFO_METHOD_HANDLE hMethod)
-    {
-        WRAPPER_NO_CONTRACT;
-        return getMethodDefFromMethod(hMethod);
-    }
+    void GetTypeContext(const CORINFO_SIG_INST* info, SigTypeContext* pTypeContext);
+    MethodDesc* GetMethodFromContext(CORINFO_CONTEXT_HANDLE context);
+    TypeHandle GetTypeFromContext(CORINFO_CONTEXT_HANDLE context);
+    void GetTypeContext(CORINFO_CONTEXT_HANDLE context, SigTypeContext* pTypeContext);
+    BOOL ContextIsInstantiated(CORINFO_CONTEXT_HANDLE context);
 
 public:
     // ICorClassInfo stuff
@@ -525,8 +512,7 @@ public:
     CorInfoInitClassResult initClass(
             CORINFO_FIELD_HANDLE    field,
             CORINFO_METHOD_HANDLE   method,
-            CORINFO_CONTEXT_HANDLE  context,
-            BOOL                    speculative = FALSE);
+            CORINFO_CONTEXT_HANDLE  context);
 
     void classMustBeLoadedBeforeCodeIsRun (CORINFO_CLASS_HANDLE cls);
     void methodMustBeLoadedBeforeCodeIsRun (CORINFO_METHOD_HANDLE meth);
@@ -746,17 +732,8 @@ public:
             unsigned * pOffsetAfterIndirection,
             bool * isRelative);
 
-    CORINFO_METHOD_HANDLE resolveVirtualMethod(
-        CORINFO_METHOD_HANDLE virtualMethod,
-        CORINFO_CLASS_HANDLE implementingClass,
-        CORINFO_CONTEXT_HANDLE ownerType
-        );
-
-    CORINFO_METHOD_HANDLE resolveVirtualMethodHelper(
-        CORINFO_METHOD_HANDLE virtualMethod,
-        CORINFO_CLASS_HANDLE implementingClass,
-        CORINFO_CONTEXT_HANDLE ownerType
-        );
+    bool resolveVirtualMethod(CORINFO_DEVIRTUALIZATION_INFO * info);
+    bool resolveVirtualMethodHelper(CORINFO_DEVIRTUALIZATION_INFO * info);
 
     CORINFO_METHOD_HANDLE getUnboxedEntry(
         CORINFO_METHOD_HANDLE ftn,
@@ -848,7 +825,7 @@ public:
             CORINFO_ARG_LIST_HANDLE    args
             );
 
-    CorInfoType getHFAType (
+    CorInfoHFAElemType getHFAType (
             CORINFO_CLASS_HANDLE hClass
             );
 
@@ -1059,6 +1036,14 @@ public:
             UINT32 *              pNumRuns
             );
 
+    CORINFO_CLASS_HANDLE getLikelyClass(
+            CORINFO_METHOD_HANDLE ftnHnd,
+            CORINFO_CLASS_HANDLE  baseHnd,
+            UINT32                ilOffset,            
+            UINT32 *              pLikelihood,
+            UINT32 *              pNumberOfClasses
+            );
+
     void recordCallSite(
             ULONG                 instrOffset,  /* IN */
             CORINFO_SIG_INFO *    callSig,      /* IN */
@@ -1260,6 +1245,14 @@ public:
         BlockCounts **                pBlockCounts,  // pointer to array of <ILOffset, ExecutionCount> tuples
         UINT32 *                      pNumRuns
     );
+
+    CORINFO_CLASS_HANDLE getLikelyClass(
+            CORINFO_METHOD_HANDLE ftnHnd,
+            CORINFO_CLASS_HANDLE  baseHnd,
+            UINT32                ilOffset,
+            UINT32 *              pLikelihood,
+            UINT32 *              pNumberOfClasses
+            );
 
     void recordCallSite(
             ULONG                     instrOffset,  /* IN */

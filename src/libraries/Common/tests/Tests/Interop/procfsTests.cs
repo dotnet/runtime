@@ -1,6 +1,5 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.IO;
 using System.Text;
@@ -46,7 +45,7 @@ namespace Common.Tests
                 File.WriteAllText(path, statFileText);
 
                 Interop.procfs.ParsedStat result;
-                Assert.True(Interop.procfs.TryParseStatFile(path, out result, new ReusableTextReader()));
+                Assert.True(Interop.procfs.TryParseStatFile(path, out result));
 
                 Assert.Equal(expectedPid, result.pid);
                 Assert.Equal(expectedComm, result.comm);

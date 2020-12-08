@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 /*============================================================
 **
@@ -15,13 +14,13 @@
 
 #include <palsuite.h>
 
-/* Milliseconds of error which are acceptable Function execution time, etc.
-   FreeBSD has a "standard" resolution of 50ms for waiting operations, so we
-   must take that into account as well */
-DWORD AcceptableTimeError = 15; 
 
-int __cdecl main(int argc, char *argv[])
+PALTEST(miscellaneous_queryperformancecounter_test1_paltest_queryperformancecounter_test1, "miscellaneous/queryperformancecounter/test1/paltest_queryperformancecounter_test1")
 {
+    /* Milliseconds of error which are acceptable Function execution time, etc.
+    FreeBSD has a "standard" resolution of 50ms for waiting operations, so we
+    must take that into account as well */
+    DWORD AcceptableTimeError = 15; 
 
     int           i;
     int           NumIterations = 100;

@@ -1,6 +1,5 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Generic;
@@ -121,7 +120,7 @@ namespace Microsoft.Diagnostics.JitTrace
                     int signatureLen = int.Parse(methodStrComponents[2]);
                     string[] methodInstantiationArgComponents = SplitAndUnescape(methodStrComponents[3], innerCsvEscapeChar, innerCsvEscapeCharArray);
                     int genericMethodArgCount = int.Parse(methodInstantiationArgComponents[0]);
-                    Type[] methodArgs = genericMethodArgCount != 0 ? new Type[genericMethodArgCount] : Array.Empty<Type>();
+                    Type[] methodArgs = genericMethodArgCount != 0 ? new Type[genericMethodArgCount] : Type.EmptyTypes;
                     bool abortMethodDiscovery = false;
                     for (int iMethodArg = 0; iMethodArg < genericMethodArgCount; iMethodArg++)
                     {

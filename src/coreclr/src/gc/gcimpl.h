@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 
 #ifndef GCIMPL_H_
@@ -32,7 +31,7 @@ inline void deleteGCShadow() {}
 inline void checkGCWriteBarrier() {}
 #endif
 
-void GCProfileWalkHeap();
+void GCProfileWalkHeap(bool etwOnly);
 
 class gc_heap;
 class CFinalize;
@@ -58,7 +57,7 @@ protected:
     friend void EnterAllocLock();
     friend void LeaveAllocLock();
     friend void ProfScanRootsHelper(Object** object, ScanContext *pSC, uint32_t dwFlags);
-    friend void GCProfileWalkHeap();
+    friend void GCProfileWalkHeap(bool etwOnly);
 
 public:
     //In order to keep gc.cpp cleaner, ugly EE specific code is relegated to methods.
@@ -168,9 +167,22 @@ public:
     void GetMemoryInfo(uint64_t* highMemLoadThresholdBytes,
                        uint64_t* totalAvailableMemoryBytes,
                        uint64_t* lastRecordedMemLoadBytes,
-                       uint32_t* lastRecordedMemLoadPct,
-                       size_t* lastRecordedHeapSizeBytes,
-                       size_t* lastRecordedFragmentationBytes);
+                       uint64_t* lastRecordedHeapSizeBytes,
+                       uint64_t* lastRecordedFragmentationBytes,
+                       uint64_t* totalCommittedBytes,
+                       uint64_t* promotedBytes,
+                       uint64_t* pinnedObjectCount,
+                       uint64_t* finalizationPendingCount,
+                       uint64_t* index,
+                       uint32_t* generation,
+                       uint32_t* pauseTimePct,
+                       bool* isCompaction,
+                       bool* isConcurrent,
+                       uint64_t* genInfoRaw,
+                       uint64_t* pauseInfoRaw,
+                       int kind);;
+
+    uint32_t GetMemoryLoad();
 
     int GetGcLatencyMode();
     int SetGcLatencyMode(int newLatencyMode);
@@ -202,12 +214,8 @@ public:
     PER_HEAP_ISOLATED size_t GetNumberFinalizableObjects();
     PER_HEAP_ISOLATED size_t GetFinalizablePromotedCount();
 
-    void SetFinalizeQueueForShutdown(bool fHasLock);
-    bool ShouldRestartFinalizerWatchDog();
-
     void DiagWalkObject (Object* obj, walk_fn fn, void* context);
     void DiagWalkObject2 (Object* obj, walk_fn2 fn, void* context);
-    void SetFinalizeRunOnShutdown(bool value);
 
 public:	// FIX
 
@@ -307,6 +315,8 @@ public:
     size_t GetLastGCGenerationSize(int gen);
 
     virtual void Shutdown();
+
+    static void ReportGenerationBounds();
 };
 
 #endif  // GCIMPL_H_

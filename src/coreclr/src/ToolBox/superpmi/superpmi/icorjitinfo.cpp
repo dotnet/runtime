@@ -156,9 +156,7 @@ CORINFO_CLASS_HANDLE MyICJI::getMethodClass(CORINFO_METHOD_HANDLE method)
 CORINFO_MODULE_HANDLE MyICJI::getMethodModule(CORINFO_METHOD_HANDLE method)
 {
     jitInstance->mc->cr->AddCall("getMethodModule");
-    LogError("Hit unimplemented getMethodModule");
-    DebugBreakorAV(7);
-    return 0;
+    return jitInstance->mc->repGetMethodModule(method);
 }
 
 // This function returns the offset of the specified method in the
@@ -173,15 +171,10 @@ void MyICJI::getMethodVTableOffset(CORINFO_METHOD_HANDLE method,                
     jitInstance->mc->repGetMethodVTableOffset(method, offsetOfIndirection, offsetAfterIndirection, isRelative);
 }
 
-// Find the virtual method in implementingClass that overrides virtualMethod.
-// Return null if devirtualization is not possible.
-CORINFO_METHOD_HANDLE MyICJI::resolveVirtualMethod(CORINFO_METHOD_HANDLE  virtualMethod,
-                                                   CORINFO_CLASS_HANDLE   implementingClass,
-                                                   CORINFO_CONTEXT_HANDLE ownerType)
+bool MyICJI::resolveVirtualMethod(CORINFO_DEVIRTUALIZATION_INFO * info)
 {
     jitInstance->mc->cr->AddCall("resolveVirtualMethod");
-    CORINFO_METHOD_HANDLE result =
-        jitInstance->mc->repResolveVirtualMethod(virtualMethod, implementingClass, ownerType);
+    bool result = jitInstance->mc->repResolveVirtualMethod(info);
     return result;
 }
 
@@ -702,12 +695,11 @@ CorInfoInitClassResult MyICJI::initClass(CORINFO_FIELD_HANDLE field, // Non-null
                                                                      // static field access nullptr - inquire about
                                                                      // cctor trigger in method prolog
                                          CORINFO_METHOD_HANDLE  method,     // Method referencing the field or prolog
-                                         CORINFO_CONTEXT_HANDLE context,    // Exact context of method
-                                         BOOL                   speculative // TRUE means don't actually run it
+                                         CORINFO_CONTEXT_HANDLE context     // Exact context of method
                                          )
 {
     jitInstance->mc->cr->AddCall("initClass");
-    return jitInstance->mc->repInitClass(field, method, context, speculative);
+    return jitInstance->mc->repInitClass(field, method, context);
 }
 
 // This used to be called "loadClass".  This records the fact
@@ -1088,10 +1080,10 @@ CORINFO_CLASS_HANDLE MyICJI::getArgClass(CORINFO_SIG_INFO*       sig, /* IN */
 }
 
 // Returns type of HFA for valuetype
-CorInfoType MyICJI::getHFAType(CORINFO_CLASS_HANDLE hClass)
+CorInfoHFAElemType MyICJI::getHFAType(CORINFO_CLASS_HANDLE hClass)
 {
     jitInstance->mc->cr->AddCall("getHFAType");
-    CorInfoType value = jitInstance->mc->repGetHFAType(hClass);
+    CorInfoHFAElemType value = jitInstance->mc->repGetHFAType(hClass);
     return value;
 }
 
@@ -1567,7 +1559,16 @@ void MyICJI::notifyInstructionSetUsage(CORINFO_InstructionSet instructionSet, bo
 DWORD MyICJI::getJitFlags(CORJIT_FLAGS* jitFlags, DWORD sizeInBytes)
 {
     jitInstance->mc->cr->AddCall("getJitFlags");
-    return jitInstance->mc->repGetJitFlags(jitFlags, sizeInBytes);
+    DWORD ret = jitInstance->mc->repGetJitFlags(jitFlags, sizeInBytes);
+    if (jitInstance->forceClearAltJitFlag)
+    {
+        jitFlags->Clear(CORJIT_FLAGS::CORJIT_FLAG_ALT_JIT);
+    }
+    else if (jitInstance->forceSetAltJitFlag)
+    {
+        jitFlags->Set(CORJIT_FLAGS::CORJIT_FLAG_ALT_JIT);
+    }
+    return ret;
 }
 
 // Runs the given function with the given parameter under an error trap
@@ -1785,7 +1786,7 @@ HRESULT MyICJI::allocMethodBlockCounts(UINT32          count, // The number of b
                                        BlockCounts**   pBlockCounts)
 {
     jitInstance->mc->cr->AddCall("allocMethodBlockCounts");
-    return jitInstance->mc->cr->repAllocMethodBlockCounts(count, pBlockCounts);
+    return jitInstance->mc->repAllocMethodBlockCounts(count, pBlockCounts);
 }
 
 // get profile information to be used for optimizing the current method.  The format
@@ -1797,6 +1798,19 @@ HRESULT MyICJI::getMethodBlockCounts(CORINFO_METHOD_HANDLE ftnHnd,
 {
     jitInstance->mc->cr->AddCall("getMethodBlockCounts");
     return jitInstance->mc->repGetMethodBlockCounts(ftnHnd, pCount, pBlockCounts, pNumRuns);
+}
+
+// Get the likely implementing class for a virtual call or interface call made by ftnHnd
+// at the indicated IL offset. baseHnd is the interface class or base class for the method
+// being called. 
+CORINFO_CLASS_HANDLE MyICJI::getLikelyClass(CORINFO_METHOD_HANDLE ftnHnd,
+                                            CORINFO_CLASS_HANDLE  baseHnd,
+                                            UINT32                ilOffset,
+                                            UINT32*               pLikelihood,
+                                            UINT32*               pNumberOfClasses)
+{
+    jitInstance->mc->cr->AddCall("getLikelyClass");
+    return jitInstance->mc->repGetLikelyClass(ftnHnd, baseHnd, ilOffset, pLikelihood, pNumberOfClasses);
 }
 
 // Associates a native call site, identified by its offset in the native code stream, with

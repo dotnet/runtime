@@ -1,8 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Runtime.CompilerServices;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Collections.Generic
 {
@@ -20,13 +20,14 @@ namespace System.Collections.Generic
 
         public static IArraySortHelper<T> Default => s_defaultArraySortHelper;
 
+        [DynamicDependency("#ctor", typeof(GenericArraySortHelper<>))]
         private static IArraySortHelper<T> CreateArraySortHelper()
         {
             IArraySortHelper<T> defaultArraySortHelper;
 
             if (typeof(IComparable<T>).IsAssignableFrom(typeof(T)))
             {
-                defaultArraySortHelper = (IArraySortHelper<T>)RuntimeTypeHandle.Allocate(typeof(GenericArraySortHelper<string>).TypeHandle.Instantiate(new Type[] { typeof(T) }));
+                defaultArraySortHelper = (IArraySortHelper<T>)RuntimeTypeHandle.CreateInstanceForAnotherGenericParameter((RuntimeType)typeof(GenericArraySortHelper<string>), (RuntimeType)typeof(T));
             }
             else
             {
@@ -54,13 +55,14 @@ namespace System.Collections.Generic
 
         public static IArraySortHelper<TKey, TValue> Default => s_defaultArraySortHelper;
 
+        [DynamicDependency("#ctor", typeof(GenericArraySortHelper<,>))]
         private static IArraySortHelper<TKey, TValue> CreateArraySortHelper()
         {
             IArraySortHelper<TKey, TValue> defaultArraySortHelper;
 
             if (typeof(IComparable<TKey>).IsAssignableFrom(typeof(TKey)))
             {
-                defaultArraySortHelper = (IArraySortHelper<TKey, TValue>)RuntimeTypeHandle.Allocate(typeof(GenericArraySortHelper<string, string>).TypeHandle.Instantiate(new Type[] { typeof(TKey), typeof(TValue) }));
+                defaultArraySortHelper = (IArraySortHelper<TKey, TValue>)RuntimeTypeHandle.CreateInstanceForAnotherGenericParameter((RuntimeType)typeof(GenericArraySortHelper<string, string>), (RuntimeType)typeof(TKey), (RuntimeType)typeof(TValue));
             }
             else
             {

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -9,7 +8,7 @@ using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace System.IO.Tests
+namespace System.IO
 {
     public class CallTrackingStream : Stream
     {
@@ -21,6 +20,22 @@ namespace System.IO.Tests
 
             Inner = inner;
             _callCounts = new Dictionary<string, int>();
+        }
+
+        protected override void Dispose(bool disposing)
+        {
+            UpdateCallCount();
+            DisposeDisposing = disposing;
+            if (disposing)
+            {
+                Inner.Dispose();
+            }
+        }
+
+        public override ValueTask DisposeAsync()
+        {
+            UpdateCallCount();
+            return Inner.DisposeAsync();
         }
 
         public Stream Inner { get; }

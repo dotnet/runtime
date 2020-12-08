@@ -1,6 +1,5 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -63,8 +62,7 @@ namespace System.Linq
                 return new RepeatIterator<TResult>(_current, count);
             }
 
-            [return: MaybeNull]
-            public TResult TryGetElementAt(int index, out bool found)
+            public TResult? TryGetElementAt(int index, out bool found)
             {
                 if ((uint)index < (uint)_count)
                 {
@@ -73,7 +71,7 @@ namespace System.Linq
                 }
 
                 found = false;
-                return default!;
+                return default;
             }
 
             public TResult TryGetFirst(out bool found)

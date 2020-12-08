@@ -25,7 +25,7 @@ pe-section-headers {
 	#VirtualSize = file size + PointerToRawData + 32
 	invalid offset section-table + 16 set-uint file-size - read.uint ( section-table + 20 ) + 32
 	invalid offset section-table + 56 set-uint file-size - read.uint ( section-table + 60 ) + 32
-	
+
 	invalid offset section-table + 60 set-uint 90000
 
 	#FIXME add section relocation tests
@@ -35,11 +35,11 @@ pe-section-header-flags {
 	#Simple assembly has 2 sections since it doesn't have any resources
 	assembly simple-assembly.exe
 
-	#first section is always text 
+	#first section is always text
 	valid offset section-table + 36 set-uint 0x60000020
 
 	valid offset section-table + 76 set-uint 0x42000040
-	
+
 	invalid offset section-table + 36 set-uint 0
 
 	invalid offset section-table + 36 set-uint 0xFFFFFFFF

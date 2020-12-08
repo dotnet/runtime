@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 //
 // File: typehandle.inl
 //
@@ -142,12 +141,6 @@ inline BOOL TypeHandle::IsTypicalTypeDefinition() const
     return !HasInstantiation() || IsGenericTypeDefinition();
 }
 
-inline BOOL TypeHandle::SupportsGenericInterop(InteropKind interopKind) const
-{
-    LIMITED_METHOD_CONTRACT;
-    return (!IsTypeDesc() && AsMethodTable()->SupportsGenericInterop(interopKind));
-}
-
 inline BOOL TypeHandle::HasTypeEquivalence() const
 {
     LIMITED_METHOD_CONTRACT;
@@ -284,7 +277,7 @@ FORCEINLINE OBJECTREF TypeHandle::GetManagedClassObjectFast() const
 
         case ELEMENT_TYPE_FNPTR:
             // A function pointer is mapped into typeof(IntPtr). It results in a loss of information.
-            o = MscorlibBinder::GetElementType(ELEMENT_TYPE_I)->GetManagedClassObjectIfExists();
+            o = CoreLibBinder::GetElementType(ELEMENT_TYPE_I)->GetManagedClassObjectIfExists();
             break;
 
         default:

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using Microsoft.Extensions.Internal;
@@ -43,7 +42,7 @@ namespace Microsoft.Extensions.Logging
         }
 
         /// <inheritdoc />
-        void ILogger.Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception exception, Func<TState, Exception, string> formatter)
+        void ILogger.Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception? exception, Func<TState, Exception?, string> formatter)
         {
             _logger.Log(logLevel, eventId, state, exception, formatter);
         }

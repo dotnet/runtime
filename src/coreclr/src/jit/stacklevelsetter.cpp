@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #include "jitpch.h"
 #ifdef _MSC_VER
@@ -250,8 +249,9 @@ unsigned StackLevelSetter::PopArgumentsFromCall(GenTreeCall* call)
     {
         for (unsigned i = 0; i < argInfo->ArgCount(); ++i)
         {
-            fgArgTabEntry* argTab = argInfo->ArgTable()[i];
-            if (argTab->numSlots != 0)
+            const fgArgTabEntry* argTab    = argInfo->ArgTable()[i];
+            const unsigned       slotCount = argTab->GetStackSlotsNumber();
+            if (slotCount != 0)
             {
                 GenTree* node = argTab->GetNode();
                 assert(node->OperIsPutArgStkOrSplit());
@@ -259,13 +259,13 @@ unsigned StackLevelSetter::PopArgumentsFromCall(GenTreeCall* call)
                 GenTreePutArgStk* putArg = node->AsPutArgStk();
 
 #if !FEATURE_FIXED_OUT_ARGS
-                assert(argTab->numSlots == putArg->gtNumSlots);
+                assert(slotCount == putArg->gtNumSlots);
 #endif // !FEATURE_FIXED_OUT_ARGS
 
-                putArgNumSlots.Set(putArg, argTab->numSlots);
+                putArgNumSlots.Set(putArg, slotCount);
 
-                usedStackSlotsCount += argTab->numSlots;
-                AddStackLevel(argTab->numSlots);
+                usedStackSlotsCount += slotCount;
+                AddStackLevel(slotCount);
             }
         }
     }

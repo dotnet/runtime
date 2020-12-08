@@ -147,7 +147,7 @@ error with a suitable message rather than a stack overflow.
 Related issues:
 
 * https://github.com/dotnet/roslyn/issues/7971
-* https://github.com/dotnet/coreclr/issues/2674
+* https://github.com/dotnet/runtime/issues/4945
 
 #### Proposed specification change
 
@@ -195,13 +195,13 @@ c) In section II.23.2.6 LocalVarSig, replace the diagram with production rules:
 ```ebnf
 LocalVarSig ::=
   LOCAL_SIG Count LocalVarType+
-  
+
 LocalVarType ::=
   Type
   CustomMod* Constraint BYREF? Type
   CustomMod* BYREF Type
   CustomMod* TYPEDBYREF
-  
+
 ```
 
 d) In section II.23.2.10 Param, replace the diagram with production rules:
@@ -227,7 +227,7 @@ f) In section II.23.2.12 Type, add a production rule to the definition of `Type`
 
 ```ebnf
 Type ::= CustomMod* Type
-  
+
 ```
 
 g) In sections II.23.2.12 Type and II.23.2.14 TypeSpec replace production rule

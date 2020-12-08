@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections;
 using System.Collections.Generic;
@@ -51,7 +50,7 @@ namespace System
             if (newSize < 0)
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.newSize, ExceptionResource.ArgumentOutOfRange_NeedNonNegNum);
 
-            T[]? larray = array;
+            T[]? larray = array; // local copy
             if (larray == null)
             {
                 array = new T[newSize];
@@ -60,8 +59,17 @@ namespace System
 
             if (larray.Length != newSize)
             {
+                // Due to array variance, it's possible that the incoming array is
+                // actually of type U[], where U:T; or that an int[] <-> uint[] or
+                // similar cast has occurred. In any case, since it's always legal
+                // to reinterpret U as T in this scenario (but not necessarily the
+                // other way around), we can use Buffer.Memmove here.
+
                 T[] newArray = new T[newSize];
-                Copy(larray, 0, newArray, 0, larray.Length > newSize ? newSize : larray.Length);
+                Buffer.Memmove<T>(
+                    ref MemoryMarshal.GetArrayDataReference(newArray),
+                    ref MemoryMarshal.GetArrayDataReference(larray),
+                    (uint)Math.Min(newSize, larray.Length));
                 array = newArray;
             }
 
@@ -744,8 +752,7 @@ namespace System
             }
         }
 
-        [return: MaybeNull]
-        public static T Find<T>(T[] array, Predicate<T> match)
+        public static T? Find<T>(T[] array, Predicate<T> match)
         {
             if (array == null)
             {
@@ -764,7 +771,7 @@ namespace System
                     return array[i];
                 }
             }
-            return default!;
+            return default;
         }
 
         public static T[] FindAll<T>(T[] array, Predicate<T> match)
@@ -841,8 +848,7 @@ namespace System
             return -1;
         }
 
-        [return: MaybeNull]
-        public static T FindLast<T>(T[] array, Predicate<T> match)
+        public static T? FindLast<T>(T[] array, Predicate<T> match)
         {
             if (array == null)
             {
@@ -861,7 +867,7 @@ namespace System
                     return array[i];
                 }
             }
-            return default!;
+            return default;
         }
 
         public static int FindLastIndex<T>(T[] array, Predicate<T> match)

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 /*++
 
@@ -556,7 +555,7 @@ typedef LONG_PTR SSIZE_T, *PSSIZE_T;
 #endif
 
 #ifndef SSIZE_T_MIN
-#define SSIZE_T_MIN I64(0x8000000000000000)
+#define SSIZE_T_MIN (ssize_t)I64(0x8000000000000000)
 #endif
 
 #ifndef PAL_STDCPP_COMPAT

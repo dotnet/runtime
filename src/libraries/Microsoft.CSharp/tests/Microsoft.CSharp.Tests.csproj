@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <TargetFrameworks>$(NetCoreAppCurrent);$(NetFrameworkCurrent)</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent);net48</TargetFrameworks>
     <!-- 
     We wish to test operations that would result in
     "Operator '-' cannot be applied to operands of type 'ushort' and 'EnumArithmeticTests.UInt16Enum'"
@@ -26,6 +26,7 @@
     <Compile Include="IntegerBinaryOperationTests.cs" />
     <Compile Include="IntegerUnaryOperationTests.cs" />
     <Compile Include="IsEventTests.cs" />
+    <Compile Include="IsExternalInit.cs" />
     <Compile Include="NamedArgumentTests.cs" />
     <Compile Include="NullableEnumUnaryOperationTest.cs" />
     <Compile Include="RuntimeBinderExceptionTests.cs" />
@@ -36,5 +37,8 @@
   </ItemGroup>
   <ItemGroup Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)'">
     <Compile Include="AccessTests.netcoreapp.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetFramework)' == 'net48'">
+    <Reference Include="Microsoft.CSharp" />
   </ItemGroup>
 </Project>

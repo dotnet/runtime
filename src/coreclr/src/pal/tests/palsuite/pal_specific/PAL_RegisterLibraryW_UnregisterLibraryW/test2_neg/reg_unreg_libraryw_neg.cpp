@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 /*=============================================================
 **
@@ -15,7 +14,7 @@
 #define UNICODE
 #include <palsuite.h>
 
-int __cdecl main(int argc, char *argv[])
+PALTEST(pal_specific_PAL_RegisterLibraryW_UnregisterLibraryW_test2_neg_paltest_reg_unreg_libraryw_neg, "pal_specific/PAL_RegisterLibraryW_UnregisterLibraryW/test2_neg/paltest_reg_unreg_libraryw_neg")
 {
     HMODULE ModuleHandle;
     char ModuleName[64];

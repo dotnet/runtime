@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 // --------------------------------------------------------------------------------
 // PEFile.inl
 //
@@ -137,14 +136,7 @@ inline void PEFile::ValidateForExecution()
     {
         if (IsMarkedAsNoPlatform())
         {
-            if (IsMarkedAsContentTypeWindowsRuntime())
-            {
-                ThrowHR(COR_E_LOADING_WINMD_REFERENCE_ASSEMBLY);
-            }
-            else
-            {
-                ThrowHR(COR_E_BADIMAGEFORMAT);
-            }
+            ThrowHR(COR_E_BADIMAGEFORMAT);
         }
     }
 }
@@ -154,12 +146,6 @@ inline BOOL PEFile::IsMarkedAsNoPlatform()
 {
     WRAPPER_NO_CONTRACT;
     return (IsAfPA_NoPlatform(GetFlags()));
-}
-
-inline BOOL PEFile::IsMarkedAsContentTypeWindowsRuntime()
-{
-    WRAPPER_NO_CONTRACT;
-    return (IsAfContentType_WindowsRuntime(GetFlags()));
 }
 
 
@@ -194,7 +180,7 @@ inline const SString &PEFile::GetPath()
     }
     CONTRACTL_END;
 
-    if (IsDynamic())
+    if (IsDynamic() || m_identity->IsInBundle ())
     {
         return SString::Empty();
     }
@@ -1445,34 +1431,4 @@ inline PEFile* PEFile::Dummy()
 {
     return (PEFile*)(-1);
 }
-
-inline bool PEAssembly::HasBindableIdentity()
-{
-    CONTRACTL
-    {
-        INSTANCE_CHECK;
-        if (FORBIDGC_LOADER_USE_ENABLED()) NOTHROW; else THROWS;
-        if (FORBIDGC_LOADER_USE_ENABLED()) GC_NOTRIGGER; else GC_TRIGGERS;
-        if (FORBIDGC_LOADER_USE_ENABLED()) FORBID_FAULT; else { INJECT_FAULT(COMPlusThrowOM()); }
-        MODE_ANY;
-        SUPPORTS_DAC;
-    }
-    CONTRACTL_END
-
-    return !IsAfContentType_WindowsRuntime(GetFlags());
-}
-
-inline bool PEAssembly::IsWindowsRuntime()
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-    return IsAfContentType_WindowsRuntime(GetFlags());
-}
-
 #endif  // PEFILE_INL_

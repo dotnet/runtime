@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using Xunit;
 
@@ -112,6 +111,7 @@ namespace System.IO.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/40065", TestPlatforms.Browser)]
         public void FileInUse()
         {
             DirectoryInfo testDir = Directory.CreateDirectory(GetTestFilePath());
@@ -145,7 +145,12 @@ namespace System.IO.Tests
             Assert.True(File.Exists(testFile));
         }
 
+        #endregion
+
+        #region PlatformSpecific
+
         [Fact]
+        [PlatformSpecific(~TestPlatforms.Browser)] // Browser platform volume does not limit segments
         public void LongPathSegment()
         {
             DirectoryInfo testDir = Directory.CreateDirectory(GetTestFilePath());
@@ -153,10 +158,6 @@ namespace System.IO.Tests
             AssertExtensions.ThrowsAny<IOException, DirectoryNotFoundException, PathTooLongException>(() =>
               Create(Path.Combine(testDir.FullName, new string('a', 300))));
         }
-
-        #endregion
-
-        #region PlatformSpecific
 
         [Fact]
         [PlatformSpecific(TestPlatforms.AnyUnix)]

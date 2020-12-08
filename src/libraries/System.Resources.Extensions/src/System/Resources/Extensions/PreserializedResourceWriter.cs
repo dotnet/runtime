@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #nullable enable
 using System.Collections.Generic;
@@ -16,7 +15,7 @@ namespace System.Resources.Extensions
     {
         // indicates if the types of resources saved will require the DeserializingResourceReader
         // in order to read them.
-        private bool _requiresDeserializingResourceReader = false;
+        private bool _requiresDeserializingResourceReader;
 
         // use hard-coded strings rather than typeof so that the version doesn't leak into resources files
         internal const string DeserializingResourceReaderFullyQualifiedName = "System.Resources.Extensions.DeserializingResourceReader, System.Resources.Extensions, Version=4.0.0.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51";
@@ -25,7 +24,7 @@ namespace System.Resources.Extensions
         // an internal type name used to represent an unknown resource type, explicitly omit version to save
         // on size and avoid changes in user resources.  This works since we only ever load this type name
         // from calls to GetType from this assembly.
-        private static readonly string UnknownObjectTypeName = typeof(UnknownType).FullName;
+        private static readonly string UnknownObjectTypeName = typeof(UnknownType).FullName!;
 
         private string ResourceReaderTypeName => _requiresDeserializingResourceReader ?
             DeserializingResourceReaderFullyQualifiedName :
@@ -40,22 +39,22 @@ namespace System.Resources.Extensions
         // is done by reflection
         private static readonly IReadOnlyDictionary<string, Type> s_primitiveTypes = new Dictionary<string, Type>(16, TypeNameComparer.Instance)
         {
-            { typeof(string).FullName, typeof(string) },
-            { typeof(int).FullName, typeof(int) },
-            { typeof(bool).FullName, typeof(bool) },
-            { typeof(char).FullName, typeof(char) },
-            { typeof(byte).FullName, typeof(byte) },
-            { typeof(sbyte).FullName, typeof(sbyte) },
-            { typeof(short).FullName, typeof(short) },
-            { typeof(long).FullName, typeof(long) },
-            { typeof(ushort).FullName, typeof(ushort) },
-            { typeof(uint).FullName, typeof(uint) },
-            { typeof(ulong).FullName, typeof(ulong) },
-            { typeof(float).FullName, typeof(float) },
-            { typeof(double).FullName, typeof(double) },
-            { typeof(decimal).FullName, typeof(decimal) },
-            { typeof(DateTime).FullName, typeof(DateTime) },
-            { typeof(TimeSpan).FullName, typeof(TimeSpan) }
+            { typeof(string).FullName!, typeof(string) },
+            { typeof(int).FullName!, typeof(int) },
+            { typeof(bool).FullName!, typeof(bool) },
+            { typeof(char).FullName!, typeof(char) },
+            { typeof(byte).FullName!, typeof(byte) },
+            { typeof(sbyte).FullName!, typeof(sbyte) },
+            { typeof(short).FullName!, typeof(short) },
+            { typeof(long).FullName!, typeof(long) },
+            { typeof(ushort).FullName!, typeof(ushort) },
+            { typeof(uint).FullName!, typeof(uint) },
+            { typeof(ulong).FullName!, typeof(ulong) },
+            { typeof(float).FullName!, typeof(float) },
+            { typeof(double).FullName!, typeof(double) },
+            { typeof(decimal).FullName!, typeof(decimal) },
+            { typeof(DateTime).FullName!, typeof(DateTime) },
+            { typeof(TimeSpan).FullName!, typeof(TimeSpan) }
             // byte[] and Stream are primitive types but do not define a conversion from string
         };
 
@@ -80,7 +79,7 @@ namespace System.Resources.Extensions
                 throw new ArgumentNullException(nameof(typeName));
 
             // determine if the type is a primitive type
-            if (s_primitiveTypes.TryGetValue(typeName, out Type primitiveType))
+            if (s_primitiveTypes.TryGetValue(typeName, out Type? primitiveType))
             {
                 // directly add strings
                 if (primitiveType == typeof(string))

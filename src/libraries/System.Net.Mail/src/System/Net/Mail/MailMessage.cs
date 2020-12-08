@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Specialized;
@@ -25,15 +24,15 @@ namespace System.Net.Mail
         private string? _body = string.Empty;
         private Encoding? _bodyEncoding;
         private TransferEncoding _bodyTransferEncoding = TransferEncoding.Unknown;
-        private bool _isBodyHtml = false;
-        private bool _disposed = false;
+        private bool _isBodyHtml;
+        private bool _disposed;
         private readonly Message _message;
         private DeliveryNotificationOptions _deliveryStatusNotification = DeliveryNotificationOptions.None;
 
         public MailMessage()
         {
             _message = new Message();
-            if (NetEventSource.IsEnabled) NetEventSource.Associate(this, _message);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Associate(this, _message);
         }
 
         public MailMessage(string from, string to)
@@ -51,7 +50,7 @@ namespace System.Net.Mail
                 throw new ArgumentException(SR.Format(SR.net_emptystringcall, nameof(to)), nameof(to));
 
             _message = new Message(from, to);
-            if (NetEventSource.IsEnabled) NetEventSource.Associate(this, _message);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Associate(this, _message);
         }
 
 

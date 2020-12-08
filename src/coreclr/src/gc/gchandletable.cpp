@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 //
 
 #include "common.h"
@@ -100,7 +99,7 @@ IGCHandleStore* GCHandleManager::CreateHandleStore()
 
     return store;
 #else
-    assert("CreateHandleStore is not implemented when FEATURE_REDHAWK is defined!");
+    assert(!"CreateHandleStore is not implemented when FEATURE_REDHAWK is defined!");
     return nullptr;
 #endif
 }

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using Xunit;
 using Xunit.Sdk;
@@ -177,6 +176,24 @@ namespace System.Tests
             {
                 return $"{value,10:G9}";
             }
+        }
+
+        [Fact]
+        public static void E()
+        {
+            Assert.Equal(0x402DF854, BitConverter.SingleToInt32Bits(MathF.E));
+        }
+
+        [Fact]
+        public static void Pi()
+        {
+            Assert.Equal(0x40490FDB, BitConverter.SingleToInt32Bits(MathF.PI));
+        }
+
+        [Fact]
+        public static void Tau()
+        {
+            Assert.Equal(0x40C90FDB, BitConverter.SingleToInt32Bits(MathF.Tau));
         }
 
         [Theory]

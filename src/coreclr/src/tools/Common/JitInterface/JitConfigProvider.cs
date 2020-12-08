@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Generic;
@@ -8,6 +7,7 @@ using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Threading;
 using ILCompiler;
+using Internal.TypeSystem;
 using NumberStyles = System.Globalization.NumberStyles;
 
 namespace Internal.JitInterface
@@ -27,9 +27,12 @@ namespace Internal.JitInterface
 
         private CorJitFlag[] _jitFlags;
         private Dictionary<string, string> _config = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
-        private object _keepAlive; // Keeps callback delegates alive
 
-        public static void Initialize(IEnumerable<CorJitFlag> jitFlags, IEnumerable<KeyValuePair<string, string>> parameters, string jitPath = null)
+        public static void Initialize(
+            TargetDetails target,
+            IEnumerable<CorJitFlag> jitFlags,
+            IEnumerable<KeyValuePair<string, string>> parameters,
+            string jitPath = null)
         {
             var config = new JitConfigProvider(jitFlags, parameters);
 
@@ -39,18 +42,26 @@ namespace Internal.JitInterface
                 throw new InvalidOperationException();
 
 #if READYTORUN
-            if (jitPath != null)
+            NativeLibrary.SetDllImportResolver(typeof(CorInfoImpl).Assembly, (libName, assembly, searchPath) =>
             {
-                NativeLibrary.SetDllImportResolver(typeof(CorInfoImpl).Assembly, (libName, assembly, searchPath) =>
+                IntPtr libHandle = IntPtr.Zero;
+                if (libName == CorInfoImpl.JitLibrary)
                 {
-                    IntPtr libHandle = IntPtr.Zero;
-                    if (libName == CorInfoImpl.JitLibrary)
+                    if (!string.IsNullOrEmpty(jitPath))
                     {
-                        libHandle = NativeLibrary.Load(jitPath, assembly, searchPath);
+                        libHandle = NativeLibrary.Load(jitPath);
                     }
-                    return libHandle;
-                });
-            }
+                    else
+                    {
+                        libHandle = NativeLibrary.Load("clrjit_" + GetTargetSpec(target), assembly, searchPath);
+                    }
+                }
+                if (libName == CorInfoImpl.JitSupportLibrary)
+                {
+                    libHandle = NativeLibrary.Load("jitinterface_" + RuntimeInformation.ProcessArchitecture.ToString().ToLowerInvariant(), assembly, searchPath);
+                }
+                return libHandle;
+            });
 #else
             Debug.Assert(jitPath == null);
 #endif
@@ -122,45 +133,51 @@ namespace Internal.JitInterface
             return String.Empty;
         }
 
+        private static string GetTargetSpec(TargetDetails target)
+        {
+            string targetOSComponent = (target.OperatingSystem == TargetOS.Windows ? "win" : "unix");
+            string targetArchComponent = target.Architecture switch
+            {
+                TargetArchitecture.X86 => "x86",
+                TargetArchitecture.X64 => "x64",
+                TargetArchitecture.ARM => "arm",
+                TargetArchitecture.ARM64 => "arm64",
+                _ => throw new NotImplementedException(target.Architecture.ToString())
+            };
+
+            return targetOSComponent + '_' + targetArchComponent + "_" + RuntimeInformation.ProcessArchitecture.ToString().ToLowerInvariant();
+        }
+
         #region Unmanaged instance
 
-        private unsafe IntPtr CreateUnmanagedInstance()
+        private static unsafe IntPtr CreateUnmanagedInstance()
         {
-            // TODO: this potentially leaks memory, but since we only expect to have one per compilation,
+            // This potentially leaks memory, but since we only expect to have one per compilation,
             // it shouldn't matter...
 
             const int numCallbacks = 2;
 
-            IntPtr* callbacks = (IntPtr*)Marshal.AllocCoTaskMem(sizeof(IntPtr) * numCallbacks);
-            object[] delegates = new object[numCallbacks];
+            void** callbacks = (void**)Marshal.AllocCoTaskMem(sizeof(IntPtr) * numCallbacks);
 
-            var d0 = new __getIntConfigValue(getIntConfigValue);
-            callbacks[0] = Marshal.GetFunctionPointerForDelegate(d0);
-            delegates[0] = d0;
+            callbacks[0] = (delegate* unmanaged<IntPtr, char*, int, int>)&getIntConfigValue;
+            callbacks[1] = (delegate* unmanaged<IntPtr, char*, char*, int, int>)&getStringConfigValue;
 
-            var d1 = new __getStringConfigValue(getStringConfigValue);
-            callbacks[1] = Marshal.GetFunctionPointerForDelegate(d1);
-            delegates[1] = d1;
-
-            _keepAlive = delegates;
             IntPtr instance = Marshal.AllocCoTaskMem(sizeof(IntPtr));
-            *(IntPtr**)instance = callbacks;
+            *(IntPtr*)instance = (IntPtr)callbacks;
 
             return instance;
         }
 
-        [UnmanagedFunctionPointer(default(CallingConvention))]
-        private unsafe delegate int __getIntConfigValue(IntPtr thisHandle, [MarshalAs(UnmanagedType.LPWStr)] string name, int defaultValue);
-        private unsafe int getIntConfigValue(IntPtr thisHandle, string name, int defaultValue)
+        [UnmanagedCallersOnly]
+        private static unsafe int getIntConfigValue(IntPtr thisHandle, char* name, int defaultValue)
         {
-            return GetIntConfigValue(name, defaultValue);
+            return s_instance.GetIntConfigValue(new string(name), defaultValue);
         }
 
-        [UnmanagedFunctionPointer(default(CallingConvention))]
-        private unsafe delegate int __getStringConfigValue(IntPtr thisHandle, [MarshalAs(UnmanagedType.LPWStr)] string name, char* retBuffer, int retBufferLength);
-        private unsafe int getStringConfigValue(IntPtr thisHandle, string name, char* retBuffer, int retBufferLength)
+        [UnmanagedCallersOnly]
+        private static unsafe int getStringConfigValue(IntPtr thisHandle, char* name, char* retBuffer, int retBufferLength)
         {
-            string result = GetStringConfigValue(name);
+            string result = s_instance.GetStringConfigValue(new string(name));
 
             for (int i = 0; i < Math.Min(retBufferLength, result.Length); i++)
                 retBuffer[i] = result[i];

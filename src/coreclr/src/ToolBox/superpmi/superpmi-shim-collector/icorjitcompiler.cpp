@@ -41,7 +41,6 @@ CorJitResult __stdcall interceptor_ICJC::compileMethod(ICorJitInfo*             
     our_ICorJitInfo.getBuiltinClass(CLASSID_FIELD_HANDLE);
     our_ICorJitInfo.getBuiltinClass(CLASSID_METHOD_HANDLE);
     our_ICorJitInfo.getBuiltinClass(CLASSID_STRING);
-    our_ICorJitInfo.getBuiltinClass(CLASSID_ARGUMENT_HANDLE);
     our_ICorJitInfo.getBuiltinClass(CLASSID_RUNTIME_TYPE);
 
 #ifdef fatMC

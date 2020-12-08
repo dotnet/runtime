@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <CLRTestPriority>1</CLRTestPriority>
+    <DefineConstants>TARGET_32BIT;$(DefineConstants)</DefineConstants>
+    <!-- There is a 32 and 64 version of this test to allow it to be compiled for all targets -->
+    <CLRTestTargetUnsupported Condition="'$(TargetBits)' != '32'">true</CLRTestTargetUnsupported>
+    <DebugType>None</DebugType>
+    <Optimize>True</Optimize>
+    <CLRTestBatchPreCommands><![CDATA[
+$(CLRTestBatchPreCommands)
+set COMPlus_GcStressOnDirectCalls=1
+]]></CLRTestBatchPreCommands>
+    <BashCLRTestPreCommands><![CDATA[
+$(BashCLRTestPreCommands)
+export COMPlus_GcStressOnDirectCalls=1
+]]></BashCLRTestPreCommands>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="GitHub_23199.cs" />
+  </ItemGroup>
+</Project>

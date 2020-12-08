@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
@@ -89,11 +88,13 @@ namespace System.Collections
             return GetPrime(newSize);
         }
 
-#if TARGET_64BIT
-        // Returns approximate reciprocal of the divisor: ceil(2**64 / divisor)
-        public static ulong GetFastModMultiplier(uint divisor)
-            => ulong.MaxValue / divisor + 1;
+        /// <summary>Returns approximate reciprocal of the divisor: ceil(2**64 / divisor).</summary>
+        /// <remarks>This should only be used on 64-bit.</remarks>
+        public static ulong GetFastModMultiplier(uint divisor) =>
+            ulong.MaxValue / divisor + 1;
 
+        /// <summary>Performs a mod operation using the multiplier pre-computed with <see cref="GetFastModMultiplier"/>.</summary>
+        /// <remarks>This should only be used on 64-bit.</remarks>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static uint FastMod(uint value, uint divisor, ulong multiplier)
         {
@@ -108,6 +109,5 @@ namespace System.Collections
             Debug.Assert(highbits == value % divisor);
             return highbits;
         }
-#endif
     }
 }

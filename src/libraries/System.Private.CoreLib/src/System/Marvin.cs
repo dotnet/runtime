@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
 using System.Numerics;
@@ -218,6 +217,7 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static void Block(ref uint rp0, ref uint rp1)
         {
+            // Intrinsified in mono interpreter
             uint p0 = rp0;
             uint p1 = rp1;
 

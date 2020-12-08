@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 //
 // ProfilingHelper.cpp
 //
@@ -175,7 +174,7 @@ BOOL CORProfilerBypassSecurityChecks()
         if (!(&g_profControlBlock)->pProfInterface->IsCallback3Supported())
             return TRUE;
 
-        // V4 profiler binaries must opt in to bypasssing transparency checks in full trust
+        // V4 profiler binaries must opt in to bypassing transparency checks in full trust
         // assemblies.
         if (((&g_profControlBlock)->dwEventMask & COR_PRF_DISABLE_TRANSPARENCY_CHECKS_UNDER_FULL_TRUST) != 0)
             return TRUE;

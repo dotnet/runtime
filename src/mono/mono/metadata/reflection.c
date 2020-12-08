@@ -184,36 +184,22 @@ mono_reflected_hash (gconstpointer a) {
 static void
 clear_cached_object (MonoDomain *domain, gpointer o, MonoClass *klass)
 {
-	mono_domain_lock (domain);
-	if (domain->refobject_hash) {
-        ReflectedEntry pe;
-		gpointer orig_pe, orig_value;
+	MonoMemoryManager *memory_manager = mono_domain_ambient_memory_manager (domain);
 
-		pe.item = o;
-		pe.refclass = klass;
+	mono_mem_manager_lock (memory_manager);
 
-		if (mono_conc_g_hash_table_lookup_extended (domain->refobject_hash, &pe, &orig_pe, &orig_value)) {
-			mono_conc_g_hash_table_remove (domain->refobject_hash, &pe);
-			free_reflected_entry ((ReflectedEntry*)orig_pe);
-		}
+	gpointer orig_pe, orig_value;
+	ReflectedEntry pe;
+	pe.item = o;
+	pe.refclass = klass;
+
+
+	if (mono_conc_g_hash_table_lookup_extended (memory_manager->refobject_hash, &pe, &orig_pe, &orig_value)) {
+		mono_conc_g_hash_table_remove (memory_manager->refobject_hash, &pe);
+		free_reflected_entry ((ReflectedEntry *)orig_pe);
 	}
-	mono_domain_unlock (domain);
-}
 
-static void
-cleanup_refobject_hash (gpointer key, gpointer value, gpointer user_data)
-{
-	free_reflected_entry ((ReflectedEntry*)key);
-}
-
-void
-mono_reflection_cleanup_domain (MonoDomain *domain)
-{
-	if (domain->refobject_hash) {
-		mono_conc_g_hash_table_foreach (domain->refobject_hash, cleanup_refobject_hash, NULL);
-		mono_conc_g_hash_table_destroy (domain->refobject_hash);
-		domain->refobject_hash = NULL;
-	}
+	mono_mem_manager_unlock (memory_manager);
 }
 
 /**
@@ -459,6 +445,7 @@ mono_type_get_object_checked (MonoDomain *domain, MonoType *type, MonoError *err
 
 	g_assert (type != NULL);
 	klass = mono_class_from_mono_type_internal (type);
+	MonoMemoryManager *memory_manager = mono_domain_ambient_memory_manager (domain);
 
 	/*we must avoid using @type as it might have come
 	 * from a mono_metadata_type_dup and the caller
@@ -500,15 +487,9 @@ mono_type_get_object_checked (MonoDomain *domain, MonoType *type, MonoError *err
 	}
 
 	mono_loader_lock (); /*FIXME mono_class_init_internal and mono_class_vtable acquire it*/
-	mono_domain_lock (domain);
-	if (!domain->type_hash)
-		domain->type_hash = mono_g_hash_table_new_type_internal ((GHashFunc)mono_metadata_type_hash, 
-				(GCompareFunc)mono_metadata_type_equal, MONO_HASH_VALUE_GC, MONO_ROOT_SOURCE_DOMAIN, domain, "Domain Reflection Type Table");
-	if ((res = (MonoReflectionType *)mono_g_hash_table_lookup (domain->type_hash, type))) {
-		mono_domain_unlock (domain);
-		mono_loader_unlock ();
-		return res;
-	}
+	mono_mem_manager_lock (memory_manager);
+	if ((res = (MonoReflectionType *)mono_g_hash_table_lookup (memory_manager->type_hash, type)))
+		goto leave;
 
 	/*Types must be normalized so a generic instance of the GTD get's the same inner type.
 	 * For example in: Foo<A,B>; Bar<A> : Foo<A, Bar<A>>
@@ -520,15 +501,10 @@ mono_type_get_object_checked (MonoDomain *domain, MonoType *type, MonoError *err
 	norm_type = mono_type_normalize (type);
 	if (norm_type != type) {
 		res = mono_type_get_object_checked (domain, norm_type, error);
-		if (!is_ok (error)) {
-			mono_domain_unlock (domain);
-			mono_loader_unlock ();
-			return NULL;
-		}
-		mono_g_hash_table_insert_internal (domain->type_hash, type, res);
-		mono_domain_unlock (domain);
-		mono_loader_unlock ();
-		return res;
+		goto_if_nok (error, leave);
+
+		mono_g_hash_table_insert_internal (memory_manager->type_hash, type, res);
+		goto leave;
 	}
 
 	if ((type->type == MONO_TYPE_GENERICINST) && type->data.generic_class->is_dynamic && !m_class_was_typebuilder (type->data.generic_class->container_class)) {
@@ -549,31 +525,26 @@ mono_type_get_object_checked (MonoDomain *domain, MonoType *type, MonoError *err
 		/* I would have expected ReflectionTypeLoadException, but evidently .NET throws TLE in this case. */
 		mono_error_set_type_load_class (error, klass, "TypeBuilder.CreateType() not called for generic class %s", full_name);
 		g_free (full_name);
-		mono_domain_unlock (domain);
-		mono_loader_unlock ();
-		return NULL;
+		res = NULL;
+		goto leave;
 	}
 
 	if (mono_class_has_ref_info (klass) && !m_class_was_typebuilder (klass) && !type->byref) {
-		mono_domain_unlock (domain);
-		mono_loader_unlock ();
-		return &mono_class_get_ref_info_raw (klass)->type; /* FIXME use handles */
+		res = &mono_class_get_ref_info_raw (klass)->type; /* FIXME use handles */
+		goto leave;
 	}
 	/* This is stored in vtables/JITted code so it has to be pinned */
 	res = (MonoReflectionType *)mono_object_new_pinned (domain, mono_defaults.runtimetype_class, error);
-	if (!is_ok (error)) {
-		mono_domain_unlock (domain);
-		mono_loader_unlock ();
-		return NULL;
-	}
+	goto_if_nok (error, leave);
 
 	res->type = type;
-	mono_g_hash_table_insert_internal (domain->type_hash, type, res);
+	mono_g_hash_table_insert_internal (memory_manager->type_hash, type, res);
 
-	if (type->type == MONO_TYPE_VOID)
+	if (type->type == MONO_TYPE_VOID && !type->byref)
 		domain->typeof_void = (MonoObject*)res;
 
-	mono_domain_unlock (domain);
+leave:
+	mono_mem_manager_unlock (memory_manager);
 	mono_loader_unlock ();
 	return res;
 }
@@ -3131,7 +3102,11 @@ mono_reflection_call_is_assignable_to (MonoClass *klass, MonoClass *oklass, Mono
 	error_init (error);
 
 	if (method == NULL) {
+#ifdef ENABLE_NETCORE
+		method = mono_class_get_method_from_name_checked (mono_class_get_type_builder_class (), "IsAssignableToInternal", 1, 0, error);
+#else
 		method = mono_class_get_method_from_name_checked (mono_class_get_type_builder_class (), "IsAssignableTo", 1, 0, error);
+#endif		
 		mono_error_assert_ok (error);
 		g_assert (method);
 	}

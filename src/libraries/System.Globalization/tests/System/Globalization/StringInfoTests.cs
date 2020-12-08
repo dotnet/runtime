@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using Xunit;
@@ -165,6 +164,28 @@ namespace System.Globalization.Tests
 
             AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => StringInfo.GetNextTextElement("abc", -1)); // Index < 0
             AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => StringInfo.GetNextTextElement("abc", 4)); // Index > str.Length
+        }
+
+        [Theory]
+        [MemberData(nameof(GetNextTextElement_TestData))]
+        public void GetNextTextElementLength(string str, int index, string expected)
+        {
+            if (index == 0)
+            {
+                Assert.Equal(expected.Length, StringInfo.GetNextTextElementLength(str));
+            }
+            Assert.Equal(expected.Length, StringInfo.GetNextTextElementLength(str, index));
+            Assert.Equal(expected.Length, StringInfo.GetNextTextElementLength(str.AsSpan(index)));
+        }
+
+        [Fact]
+        public void GetNextTextElementLength_Invalid()
+        {
+            AssertExtensions.Throws<ArgumentNullException>("str", () => StringInfo.GetNextTextElementLength(null)); // Str is null
+            AssertExtensions.Throws<ArgumentNullException>("str", () => StringInfo.GetNextTextElementLength(null, 0)); // Str is null
+
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => StringInfo.GetNextTextElementLength("abc", -1)); // Index < 0
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => StringInfo.GetNextTextElementLength("abc", 4)); // Index > str.Length
         }
 
         public static IEnumerable<object[]> GetTextElementEnumerator_TestData()

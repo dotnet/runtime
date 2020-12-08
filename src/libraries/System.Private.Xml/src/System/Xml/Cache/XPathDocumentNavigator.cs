@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
 using System.Text;
@@ -16,10 +15,10 @@ namespace MS.Internal.Xml.Cache
     internal sealed class XPathDocumentNavigator : XPathNavigator, IXmlLineInfo
     {
         private XPathNode[] _pageCurrent;
-        private XPathNode[] _pageParent;
+        private XPathNode[]? _pageParent;
         private int _idxCurrent;
         private int _idxParent;
-        private string _atomizedLocalName;
+        private string? _atomizedLocalName;
 
 
         //-----------------------------------------------
@@ -30,7 +29,7 @@ namespace MS.Internal.Xml.Cache
         /// Create a new navigator positioned on the specified current node.  If the current node is a namespace or a collapsed
         /// text node, then the parent is a virtualized parent (may be different than .Parent on the current node).
         /// </summary>
-        public XPathDocumentNavigator(XPathNode[] pageCurrent, int idxCurrent, XPathNode[] pageParent, int idxParent)
+        public XPathDocumentNavigator(XPathNode[]? pageCurrent, int idxCurrent, XPathNode[]? pageParent, int idxParent)
         {
             Debug.Assert(pageCurrent != null && idxCurrent != 0);
             Debug.Assert((pageParent == null) == (idxParent == 0));
@@ -63,8 +62,9 @@ namespace MS.Internal.Xml.Cache
         {
             get
             {
-                string value;
-                XPathNode[] page, pageEnd;
+                string? value;
+                XPathNode[] page;
+                XPathNode[]? pageEnd;
                 int idx, idxEnd;
 
                 // Try to get the pre-computed string value of the node
@@ -83,7 +83,7 @@ namespace MS.Internal.Xml.Cache
                         break;
 
                     case XPathNodeType.Text:
-                        Debug.Assert(_idxParent != 0 && _pageParent[_idxParent].HasCollapsedText,
+                        Debug.Assert(_idxParent != 0 && _pageParent![_idxParent].HasCollapsedText,
                                      "ReadStringValue() should have taken care of anything but collapsed text.");
                         break;
                 }
@@ -93,12 +93,16 @@ namespace MS.Internal.Xml.Cache
                 if (_idxParent != 0)
                 {
                     Debug.Assert(_pageCurrent[_idxCurrent].NodeType == XPathNodeType.Text);
-                    return _pageParent[_idxParent].Value;
+
+                    value = _pageParent![_idxParent].Value;
+                    Debug.Assert(value != null);
+
+                    return value;
                 }
 
                 // Must be node with complex content, so concatenate the string values of all text descendants
                 string s = string.Empty;
-                StringBuilder bldr = null;
+                StringBuilder? bldr = null;
 
                 // Get all text nodes which follow the current node in document order, but which are still descendants
                 page = pageEnd = _pageCurrent;
@@ -112,10 +116,12 @@ namespace MS.Internal.Xml.Cache
                 while (XPathNodeHelper.GetTextFollowing(ref page, ref idx, pageEnd, idxEnd))
                 {
                     Debug.Assert(page[idx].NodeType == XPathNodeType.Element || page[idx].IsText);
+                    value = page[idx].Value;
+                    Debug.Assert(value != null);
 
                     if (s.Length == 0)
                     {
-                        s = page[idx].Value;
+                        s = value;
                     }
                     else
                     {
@@ -124,7 +130,7 @@ namespace MS.Internal.Xml.Cache
                             bldr = new StringBuilder();
                             bldr.Append(s);
                         }
-                        bldr.Append(page[idx].Value);
+                        bldr.Append(value);
                     }
                 }
 
@@ -192,13 +198,13 @@ namespace MS.Internal.Xml.Cache
         {
             get
             {
-                XPathNode[] page;
+                XPathNode[]? page;
                 int idx;
 
                 if (_idxParent != 0)
                 {
                     // Get BaseUri of parent for attribute, namespace, and collapsed text nodes
-                    page = _pageParent;
+                    page = _pageParent!;
                     idx = _idxParent;
                 }
                 else
@@ -209,7 +215,7 @@ namespace MS.Internal.Xml.Cache
 
                 do
                 {
-                    switch (page[idx].NodeType)
+                    switch (page![idx].NodeType)
                     {
                         case XPathNodeType.Element:
                         case XPathNodeType.Root:
@@ -286,12 +292,12 @@ namespace MS.Internal.Xml.Cache
         /// attribute can be found, return false.  Don't assume the name parts are atomized with respect
         /// to this document.
         /// </summary>
-        public override bool MoveToAttribute(string localName, string namespaceURI)
+        public override bool MoveToAttribute(string? localName, string namespaceURI)
         {
             XPathNode[] page = _pageCurrent;
             int idx = _idxCurrent;
 
-            if ((object)localName != (object)_atomizedLocalName)
+            if ((object?)localName != (object?)_atomizedLocalName)
                 _atomizedLocalName = (localName != null) ? NameTable.Get(localName) : null;
 
             if (XPathNodeHelper.GetAttribute(ref _pageCurrent, ref _idxCurrent, _atomizedLocalName, namespaceURI))
@@ -311,7 +317,7 @@ namespace MS.Internal.Xml.Cache
         /// </summary>
         public override bool MoveToFirstNamespace(XPathNamespaceScope namespaceScope)
         {
-            XPathNode[] page;
+            XPathNode[]? page;
             int idx;
 
             if (namespaceScope == XPathNamespaceScope.Local)
@@ -328,11 +334,11 @@ namespace MS.Internal.Xml.Cache
             while (idx != 0)
             {
                 // Don't include the xmlns:xml namespace node if scope is ExcludeXml
-                if (namespaceScope != XPathNamespaceScope.ExcludeXml || !page[idx].IsXmlNamespaceNode)
+                if (namespaceScope != XPathNamespaceScope.ExcludeXml || !page![idx].IsXmlNamespaceNode)
                 {
                     _pageParent = _pageCurrent;
                     _idxParent = _idxCurrent;
-                    _pageCurrent = page;
+                    _pageCurrent = page!;
                     _idxCurrent = idx;
                     return true;
                 }
@@ -350,7 +356,7 @@ namespace MS.Internal.Xml.Cache
         /// </summary>
         public override bool MoveToNextNamespace(XPathNamespaceScope scope)
         {
-            XPathNode[] page = _pageCurrent, pageParent;
+            XPathNode[]? page = _pageCurrent, pageParent;
             int idx = _idxCurrent, idxParent;
 
             // If current node is not a namespace node, return false
@@ -366,12 +372,13 @@ namespace MS.Internal.Xml.Cache
                 if (idx == 0)
                     return false;
 
+                Debug.Assert(page != null);
                 switch (scope)
                 {
                     case XPathNamespaceScope.Local:
                         // Once parent changes, there are no longer any local namespaces
                         idxParent = page[idx].GetParent(out pageParent);
-                        if (idxParent != _idxParent || (object)pageParent != (object)_pageParent)
+                        if (idxParent != _idxParent || (object?)pageParent != (object?)_pageParent)
                             return false;
                         break;
 
@@ -425,7 +432,8 @@ namespace MS.Internal.Xml.Cache
                 // Virtualize collapsed text nodes
                 _pageParent = _pageCurrent;
                 _idxParent = _idxCurrent;
-                _idxCurrent = _pageCurrent[_idxCurrent].Document.GetCollapsedTextNode(out _pageCurrent);
+                _idxCurrent = _pageCurrent[_idxCurrent].Document.GetCollapsedTextNode(out _pageCurrent!);
+                Debug.Assert(_pageCurrent != null);
                 return true;
             }
 
@@ -462,7 +470,7 @@ namespace MS.Internal.Xml.Cache
         /// </summary>
         public override bool MoveTo(XPathNavigator other)
         {
-            XPathDocumentNavigator that = other as XPathDocumentNavigator;
+            XPathDocumentNavigator? that = other as XPathDocumentNavigator;
             if (that != null)
             {
                 _pageCurrent = that._pageCurrent;
@@ -479,12 +487,13 @@ namespace MS.Internal.Xml.Cache
         /// </summary>
         public override bool MoveToId(string id)
         {
-            XPathNode[] page;
+            XPathNode[]? page;
             int idx;
 
             idx = _pageCurrent[_idxCurrent].Document.LookupIdElement(id, out page);
             if (idx != 0)
             {
+                Debug.Assert(page != null);
                 // Move to ID element and clear parent state
                 Debug.Assert(page[idx].NodeType == XPathNodeType.Element);
                 _pageCurrent = page;
@@ -503,7 +512,7 @@ namespace MS.Internal.Xml.Cache
         /// </summary>
         public override bool IsSamePosition(XPathNavigator other)
         {
-            XPathDocumentNavigator that = other as XPathDocumentNavigator;
+            XPathDocumentNavigator? that = other as XPathDocumentNavigator;
             if (that != null)
             {
                 return _idxCurrent == that._idxCurrent && _pageCurrent == that._pageCurrent &&
@@ -538,9 +547,9 @@ namespace MS.Internal.Xml.Cache
         /// Move to the first element child of the current node with the specified name.  Return false
         /// if the current node has no matching element children.
         /// </summary>
-        public override bool MoveToChild(string localName, string namespaceURI)
+        public override bool MoveToChild(string? localName, string namespaceURI)
         {
-            if ((object)localName != (object)_atomizedLocalName)
+            if ((object?)localName != (object?)_atomizedLocalName)
                 _atomizedLocalName = (localName != null) ? NameTable.Get(localName) : null;
 
             return XPathNodeHelper.GetElementChild(ref _pageCurrent, ref _idxCurrent, _atomizedLocalName, namespaceURI);
@@ -550,9 +559,9 @@ namespace MS.Internal.Xml.Cache
         /// Move to the first element sibling of the current node with the specified name.  Return false
         /// if the current node has no matching element siblings.
         /// </summary>
-        public override bool MoveToNext(string localName, string namespaceURI)
+        public override bool MoveToNext(string? localName, string namespaceURI)
         {
-            if ((object)localName != (object)_atomizedLocalName)
+            if ((object?)localName != (object?)_atomizedLocalName)
                 _atomizedLocalName = (localName != null) ? NameTable.Get(localName) : null;
 
             return XPathNodeHelper.GetElementSibling(ref _pageCurrent, ref _idxCurrent, _atomizedLocalName, namespaceURI);
@@ -573,7 +582,8 @@ namespace MS.Internal.Xml.Cache
                 // Virtualize collapsed text nodes
                 _pageParent = _pageCurrent;
                 _idxParent = _idxCurrent;
-                _idxCurrent = _pageCurrent[_idxCurrent].Document.GetCollapsedTextNode(out _pageCurrent);
+                _idxCurrent = _pageCurrent[_idxCurrent].Document.GetCollapsedTextNode(out _pageCurrent!);
+                Debug.Assert(_pageCurrent != null);
                 return true;
             }
 
@@ -596,12 +606,12 @@ namespace MS.Internal.Xml.Cache
         ///   3. Has the specified QName
         /// Return false if the current node has no matching following elements.
         /// </summary>
-        public override bool MoveToFollowing(string localName, string namespaceURI, XPathNavigator end)
+        public override bool MoveToFollowing(string? localName, string namespaceURI, XPathNavigator? end)
         {
-            XPathNode[] pageEnd;
+            XPathNode[]? pageEnd;
             int idxEnd;
 
-            if ((object)localName != (object)_atomizedLocalName)
+            if ((object?)localName != (object?)_atomizedLocalName)
                 _atomizedLocalName = (localName != null) ? NameTable.Get(localName) : null;
 
             // Get node on which scan ends (null if rest of document should be scanned)
@@ -610,7 +620,7 @@ namespace MS.Internal.Xml.Cache
             // If this navigator is positioned on a virtual node, then compute following of parent
             if (_idxParent != 0)
             {
-                if (!XPathNodeHelper.GetElementFollowing(ref _pageParent, ref _idxParent, pageEnd, idxEnd, _atomizedLocalName, namespaceURI))
+                if (!XPathNodeHelper.GetElementFollowing(ref _pageParent!, ref _idxParent, pageEnd, idxEnd, _atomizedLocalName, namespaceURI))
                     return false;
 
                 _pageCurrent = _pageParent;
@@ -630,10 +640,11 @@ namespace MS.Internal.Xml.Cache
         ///   3. Has the specified XPathNodeType
         /// Return false if the current node has no matching following nodes.
         /// </summary>
-        public override bool MoveToFollowing(XPathNodeType type, XPathNavigator end)
+        public override bool MoveToFollowing(XPathNodeType type, XPathNavigator? end)
         {
-            XPathDocumentNavigator endTiny = end as XPathDocumentNavigator;
-            XPathNode[] page, pageEnd;
+            XPathDocumentNavigator? endTiny = end as XPathDocumentNavigator;
+            XPathNode[] page;
+            XPathNode[]? pageEnd;
             int idx, idxEnd;
 
             // If searching for text, make sure to handle collapsed text nodes correctly
@@ -650,7 +661,8 @@ namespace MS.Internal.Xml.Cache
 
                     _pageParent = _pageCurrent;
                     _idxParent = _idxCurrent;
-                    _idxCurrent = _pageCurrent[_idxCurrent].Document.GetCollapsedTextNode(out _pageCurrent);
+                    _idxCurrent = _pageCurrent[_idxCurrent].Document.GetCollapsedTextNode(out _pageCurrent!);
+                    Debug.Assert(_pageCurrent != null);
                     return true;
                 }
 
@@ -662,7 +674,7 @@ namespace MS.Internal.Xml.Cache
                     // If this navigator is positioned on a virtual node, then compute following of parent
                     if (_idxParent != 0)
                     {
-                        page = _pageParent;
+                        page = _pageParent!;
                         idx = _idxParent;
                     }
                     else
@@ -683,7 +695,8 @@ namespace MS.Internal.Xml.Cache
                     {
                         // Virtualize collapsed text nodes
                         Debug.Assert(page[idx].HasCollapsedText);
-                        _idxCurrent = page[idx].Document.GetCollapsedTextNode(out _pageCurrent);
+                        _idxCurrent = page[idx].Document.GetCollapsedTextNode(out _pageCurrent!);
+                        Debug.Assert(_pageCurrent != null);
                         _pageParent = page;
                         _idxParent = idx;
                     }
@@ -706,7 +719,7 @@ namespace MS.Internal.Xml.Cache
             // If this navigator is positioned on a virtual node, then compute following of parent
             if (_idxParent != 0)
             {
-                if (!XPathNodeHelper.GetContentFollowing(ref _pageParent, ref _idxParent, pageEnd, idxEnd, type))
+                if (!XPathNodeHelper.GetContentFollowing(ref _pageParent!, ref _idxParent, pageEnd, idxEnd, type))
                     return false;
 
                 _pageCurrent = _pageParent;
@@ -733,7 +746,7 @@ namespace MS.Internal.Xml.Cache
         public override XPathNodeIterator SelectChildren(string name, string namespaceURI)
         {
             // If local name is wildcard, then call XPathNavigator.SelectChildren
-            if (name == null || name.Length == 0)
+            if (name.Length == 0)
                 return base.SelectChildren(name, namespaceURI);
 
             return new XPathDocumentElementChildIterator(this, name, namespaceURI);
@@ -755,7 +768,7 @@ namespace MS.Internal.Xml.Cache
         public override XPathNodeIterator SelectDescendants(string name, string namespaceURI, bool matchSelf)
         {
             // If local name is wildcard, then call XPathNavigator.SelectDescendants
-            if (name == null || name.Length == 0)
+            if (name.Length == 0)
                 return base.SelectDescendants(name, namespaceURI, matchSelf);
 
             return new XPathDocumentElementDescendantIterator(this, name, namespaceURI, matchSelf);
@@ -771,9 +784,9 @@ namespace MS.Internal.Xml.Cache
         ///                           in document order.
         ///     XmlNodeOrder.Same -- This navigator is positioned on the same node as the "other" navigator.
         /// </summary>
-        public override XmlNodeOrder ComparePosition(XPathNavigator other)
+        public override XmlNodeOrder ComparePosition(XPathNavigator? other)
         {
-            XPathDocumentNavigator that = other as XPathDocumentNavigator;
+            XPathDocumentNavigator? that = other as XPathDocumentNavigator;
             if (that != null)
             {
                 XPathDocument thisDoc = _pageCurrent[_idxCurrent].Document;
@@ -800,18 +813,18 @@ namespace MS.Internal.Xml.Cache
         /// <summary>
         /// Return true if the "other" navigator's current node is a descendant of this navigator's current node.
         /// </summary>
-        public override bool IsDescendant(XPathNavigator other)
+        public override bool IsDescendant(XPathNavigator? other)
         {
-            XPathDocumentNavigator that = other as XPathDocumentNavigator;
+            XPathDocumentNavigator? that = other as XPathDocumentNavigator;
             if (that != null)
             {
-                XPathNode[] pageThat;
+                XPathNode[]? pageThat;
                 int idxThat;
 
                 // If that current node's parent is virtualized, then start with the virtual parent
                 if (that._idxParent != 0)
                 {
-                    pageThat = that._pageParent;
+                    pageThat = that._pageParent!;
                     idxThat = that._idxParent;
                 }
                 else
@@ -823,7 +836,7 @@ namespace MS.Internal.Xml.Cache
                 {
                     if (idxThat == _idxCurrent && pageThat == _pageCurrent)
                         return true;
-                    idxThat = pageThat[idxThat].GetParent(out pageThat);
+                    idxThat = pageThat![idxThat].GetParent(out pageThat);
                 }
             }
             return false;
@@ -845,7 +858,7 @@ namespace MS.Internal.Xml.Cache
             }
 
             // Yes, so primary location should be derived from parent node
-            return XPathNodeHelper.GetLocation(_pageParent, _idxParent);
+            return XPathNodeHelper.GetLocation(_pageParent!, _idxParent);
         }
 
         /// <summary>
@@ -894,7 +907,7 @@ namespace MS.Internal.Xml.Cache
                 // If the current node is virtualized, code its parent
                 if (_idxParent != 0)
                 {
-                    loc = (_pageParent[0].PageInfo.PageNumber - 1) << 16 | (_idxParent - 1);
+                    loc = (_pageParent![0].PageInfo!.PageNumber - 1) << 16 | (_idxParent - 1);
                     do
                     {
                         buf[idx++] = UniqueIdTbl[loc & 0x1f];
@@ -904,7 +917,7 @@ namespace MS.Internal.Xml.Cache
                 }
 
                 // Code the node itself
-                loc = (_pageCurrent[0].PageInfo.PageNumber - 1) << 16 | (_idxCurrent - 1);
+                loc = (_pageCurrent[0].PageInfo!.PageNumber - 1) << 16 | (_idxCurrent - 1);
                 do
                 {
                     buf[idx++] = UniqueIdTbl[loc & 0x1f];
@@ -948,7 +961,7 @@ namespace MS.Internal.Xml.Cache
             {
                 // If the current node is a collapsed text node, then return parent element's line number
                 if (_idxParent != 0 && NodeType == XPathNodeType.Text)
-                    return _pageParent[_idxParent].LineNumber;
+                    return _pageParent![_idxParent].LineNumber;
 
                 return _pageCurrent[_idxCurrent].LineNumber;
             }
@@ -963,7 +976,7 @@ namespace MS.Internal.Xml.Cache
             {
                 // If the current node is a collapsed text node, then get position from parent element
                 if (_idxParent != 0 && NodeType == XPathNodeType.Text)
-                    return _pageParent[_idxParent].CollapsedLinePosition;
+                    return _pageParent![_idxParent].CollapsedLinePosition;
 
                 return _pageCurrent[_idxCurrent].LinePosition;
             }
@@ -985,9 +998,9 @@ namespace MS.Internal.Xml.Cache
         /// <summary>
         /// Return true if navigator is positioned to an element having the specified name.
         /// </summary>
-        public bool IsElementMatch(string localName, string namespaceURI)
+        public bool IsElementMatch(string? localName, string namespaceURI)
         {
-            if ((object)localName != (object)_atomizedLocalName)
+            if ((object?)localName != (object?)_atomizedLocalName)
                 _atomizedLocalName = (localName != null) ? NameTable.Get(localName) : null;
 
             // Cannot be an element if parent is stored
@@ -1012,7 +1025,7 @@ namespace MS.Internal.Xml.Cache
         ///    1. If useParentOfVirtual is true, then return the page and index of the virtual node's parent
         ///    2. If useParentOfVirtual is false, then return the page and index of the virtual node's parent + 1.
         /// </summary>
-        private int GetFollowingEnd(XPathDocumentNavigator end, bool useParentOfVirtual, out XPathNode[] pageEnd)
+        private int GetFollowingEnd(XPathDocumentNavigator? end, bool useParentOfVirtual, out XPathNode[]? pageEnd)
         {
             // If ending navigator is positioned to a node in another document, then return null
             if (end != null && _pageCurrent[_idxCurrent].Document == end._pageCurrent[end._idxCurrent].Document)

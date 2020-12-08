@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
 using System.Text;
@@ -54,16 +53,15 @@ namespace System.Net
             });
         }
 
-        internal static int GetByteCount(string myString)
-        {
-            return myString.Length;
-        }
+        internal static int GetByteCount(string myString) => myString.Length;
+
         internal static unsafe void GetBytes(string myString, int charIndex, int charCount, byte[] bytes, int byteIndex)
         {
             if (myString.Length == 0)
             {
                 return;
             }
+
             fixed (byte* bufferPointer = bytes)
             {
                 byte* newBufferPointer = bufferPointer + byteIndex;
@@ -74,7 +72,7 @@ namespace System.Net
                 }
             }
         }
-        internal static unsafe byte[] GetBytes(string myString)
+        internal static byte[] GetBytes(string myString)
         {
             byte[] bytes = new byte[myString.Length];
             if (myString.Length != 0)

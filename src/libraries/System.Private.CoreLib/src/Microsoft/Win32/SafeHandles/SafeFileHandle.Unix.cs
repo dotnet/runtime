@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Diagnostics;
@@ -93,19 +92,9 @@ namespace Microsoft.Win32.SafeHandles
             return ((fileinfo.Mode & Interop.Sys.FileTypes.S_IFMT) == Interop.Sys.FileTypes.S_IFDIR);
         }
 
-        /// <summary>Opens a SafeFileHandle for a file descriptor created by a provided delegate.</summary>
-        /// <param name="fdFunc">
-        /// The function that creates the file descriptor. Returns the file descriptor on success, or an invalid
-        /// file descriptor on error with Marshal.GetLastWin32Error() set to the error code.
-        /// </param>
-        /// <returns>The created SafeFileHandle.</returns>
-        internal static SafeFileHandle Open(Func<SafeFileHandle> fdFunc)
-        {
-            SafeFileHandle handle = Interop.CheckIo(fdFunc());
-
-            Debug.Assert(!handle.IsInvalid, "File descriptor is invalid");
-            return handle;
-        }
+        // Each thread will have its own copy. This prevents race conditions if the handle had the last error.
+        [ThreadStatic]
+        internal static Interop.ErrorInfo? t_lastCloseErrorInfo;
 
         protected override bool ReleaseHandle()
         {
@@ -121,7 +110,10 @@ namespace Microsoft.Win32.SafeHandles
             // to retry, as the descriptor could actually have been closed, been subsequently reassigned, and
             // be in use elsewhere in the process.  Instead, we simply check whether the call was successful.
             int result = Interop.Sys.Close(handle);
-            Debug.Assert(result == 0, $"Close failed with result {result} and error {Interop.Sys.GetLastErrorInfo()}");
+            if (result != 0)
+            {
+                t_lastCloseErrorInfo = Interop.Sys.GetLastErrorInfo();
+            }
             return result == 0;
         }
 

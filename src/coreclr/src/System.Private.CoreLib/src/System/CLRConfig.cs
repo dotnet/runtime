@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -29,7 +28,7 @@ namespace System
             // abstractions where reasonably possible.
 
             Span<char> buffer = stackalloc char[32];
-            int length = Interop.Kernel32.GetEnvironmentVariable(environmentName, buffer);
+            uint length = Interop.Kernel32.GetEnvironmentVariable(environmentName, ref buffer.GetPinnableReference(), (uint)buffer.Length);
             switch (length)
             {
                 case 1:

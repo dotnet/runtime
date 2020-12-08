@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
@@ -347,7 +346,7 @@ namespace System.Reflection.Emit
                 // Compile the method since accessibility checks are done as part of compilation.
                 GetMethodDescriptor();
                 IRuntimeMethodInfo? methodHandle = m_methodHandle;
-                System.Runtime.CompilerServices.RuntimeHelpers._CompileMethod(methodHandle != null ? methodHandle.Value : RuntimeMethodHandleInternal.EmptyHandle);
+                System.Runtime.CompilerServices.RuntimeHelpers.CompileMethod(methodHandle != null ? methodHandle.Value : RuntimeMethodHandleInternal.EmptyHandle);
                 GC.KeepAlive(methodHandle);
             }
 
@@ -364,7 +363,7 @@ namespace System.Reflection.Emit
                 // Compile the method since accessibility checks are done as part of compilation
                 GetMethodDescriptor();
                 IRuntimeMethodInfo? methodHandle = m_methodHandle;
-                System.Runtime.CompilerServices.RuntimeHelpers._CompileMethod(methodHandle != null ? methodHandle.Value : RuntimeMethodHandleInternal.EmptyHandle);
+                System.Runtime.CompilerServices.RuntimeHelpers.CompileMethod(methodHandle != null ? methodHandle.Value : RuntimeMethodHandleInternal.EmptyHandle);
                 GC.KeepAlive(methodHandle);
             }
 

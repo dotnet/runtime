@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 //*****************************************************************************
 // File: primitives.h
 //
@@ -64,7 +63,7 @@ inline T _ClearThumbBit(T addr)
     CORDbgInsertBreakpointExImpl((CORDB_ADDRESS_TYPE *)((_buffer) + (_ClearThumbBit(_patchAddr) - (_requestedAddr))));
 
 
-SELECTANY const CorDebugRegister g_JITToCorDbgReg[] =
+constexpr CorDebugRegister g_JITToCorDbgReg[] =
 {
     REGISTER_ARM_R0,
     REGISTER_ARM_R1,

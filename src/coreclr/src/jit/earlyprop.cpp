@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 //
 //                                    Early Value Propagation
 //
@@ -445,6 +444,14 @@ GenTree* Compiler::optEarlyPropRewriteTree(GenTree* tree, LocalNumberToNullCheck
 
         // actualValClone has small tree node size, it is safe to use CopyFrom here.
         tree->ReplaceWith(actualValClone, this);
+
+        // Propagating a constant may create an opportunity to use a division by constant optimization
+        //
+        if ((tree->gtNext != nullptr) && tree->gtNext->OperIsBinary())
+        {
+            // We need to mark the parent divide/mod operation when this occurs
+            tree->gtNext->AsOp()->CheckDivideByConstOptimized(this);
+        }
 
 #ifdef DEBUG
         if (verbose)

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 
 #include "common.h"
@@ -379,49 +378,6 @@ FCIMPLEND
 
 #include <optdefault.h>
 
-
-
-
-#ifdef FEATURE_COMINTEROP
-FCIMPL1(FC_BOOL_RET, RuntimeTypeHandle::IsWindowsRuntimeObjectType, ReflectClassBaseObject *rtTypeUNSAFE)
-{
-    FCALL_CONTRACT;
-
-    BOOL isWindowsRuntimeType = FALSE;
-
-    TypeHandle typeHandle = rtTypeUNSAFE->GetType();
-    MethodTable *pMT = typeHandle.GetMethodTable();
-
-    if (pMT != NULL)
-    {
-        isWindowsRuntimeType = pMT->IsWinRTObjectType();
-    }
-
-    FC_RETURN_BOOL(isWindowsRuntimeType);
-}
-FCIMPLEND
-
-#ifdef FEATURE_COMINTEROP_WINRT_MANAGED_ACTIVATION
-FCIMPL1(FC_BOOL_RET, RuntimeTypeHandle::IsTypeExportedToWindowsRuntime, ReflectClassBaseObject *rtTypeUNSAFE)
-{
-    FCALL_CONTRACT;
-
-    BOOL isExportedToWinRT = FALSE;
-
-    TypeHandle typeHandle = rtTypeUNSAFE->GetType();
-    MethodTable *pMT = typeHandle.GetMethodTable();
-
-    if (pMT != NULL)
-    {
-        isExportedToWinRT = pMT->IsExportedToWinRT();
-    }
-
-    FC_RETURN_BOOL(isExportedToWinRT);
-}
-FCIMPLEND
-#endif
-#endif // FEATURE_COMINTEROP
-
 NOINLINE static MethodDesc * RestoreMethodHelper(MethodDesc * pMethod, LPVOID __me)
 {
     FC_INNER_PROLOG_NO_ME_SETUP();
@@ -780,7 +736,7 @@ PTRARRAYREF CopyRuntimeTypeHandles(TypeHandle * prgTH, FixupPointer<TypeHandle> 
     }
 
     GCPROTECT_BEGIN(refArray);
-    TypeHandle thRuntimeType = TypeHandle(MscorlibBinder::GetClass(arrayElemType));
+    TypeHandle thRuntimeType = TypeHandle(CoreLibBinder::GetClass(arrayElemType));
     TypeHandle arrayHandle = ClassLoader::LoadArrayTypeThrowing(thRuntimeType, ELEMENT_TYPE_SZARRAY);
     refArray = (PTRARRAYREF)AllocateSzArray(arrayHandle, numTypeHandles);
 
@@ -1417,7 +1373,7 @@ void QCALLTYPE RuntimeTypeHandle::GetTypeByNameUsingCARules(LPCWSTR pwzClassName
 void QCALLTYPE RuntimeTypeHandle::GetTypeByName(LPCWSTR pwzClassName, BOOL bThrowOnError, BOOL bIgnoreCase,
                                                 QCall::StackCrawlMarkHandle pStackMark,
                                                 QCall::ObjectHandleOnStack pAssemblyLoadContext,
-                                                BOOL bLoadTypeFromPartialNameHack, QCall::ObjectHandleOnStack retType,
+                                                QCall::ObjectHandleOnStack retType,
                                                 QCall::ObjectHandleOnStack keepAlive)
 {
     QCALL_CONTRACT;
@@ -1445,7 +1401,7 @@ void QCALLTYPE RuntimeTypeHandle::GetTypeByName(LPCWSTR pwzClassName, BOOL bThro
 
         typeHandle = TypeName::GetTypeManaged(pwzClassName, NULL, bThrowOnError, bIgnoreCase, /*bProhibitAsmQualifiedName =*/ FALSE,
                                               SystemDomain::GetCallersAssembly(pStackMark),
-                                              bLoadTypeFromPartialNameHack, (OBJECTREF*)keepAlive.m_ppObject,
+                                              (OBJECTREF*)keepAlive.m_ppObject,
                                               pPrivHostBinder);
     }
 
@@ -1998,7 +1954,7 @@ FCIMPL3(Object *, SignatureNative::GetCustomModifiers, SignatureNative* pSignatu
         // modifiers now that we know how long they should be.
         sp = argument;
 
-        MethodTable *pMT = MscorlibBinder::GetClass(CLASS__TYPE);
+        MethodTable *pMT = CoreLibBinder::GetClass(CLASS__TYPE);
         TypeHandle arrayHandle = ClassLoader::LoadArrayTypeThrowing(TypeHandle(pMT), ELEMENT_TYPE_SZARRAY);
 
         gc.retVal = (PTRARRAYREF) AllocateSzArray(arrayHandle, cMods);
@@ -2188,7 +2144,8 @@ FCIMPL2(FC_BOOL_RET, SignatureNative::CompareSig, SignatureNative* pLhsUNSAFE, S
     {
         ret = MetaSig::CompareMethodSigs(
             gc.pLhs->GetCorSig(), gc.pLhs->GetCorSigSize(), gc.pLhs->GetModule(), NULL,
-            gc.pRhs->GetCorSig(), gc.pRhs->GetCorSigSize(), gc.pRhs->GetModule(), NULL);
+            gc.pRhs->GetCorSig(), gc.pRhs->GetCorSigSize(), gc.pRhs->GetModule(), NULL,
+            FALSE);
     }
     HELPER_METHOD_FRAME_END();
     FC_RETURN_BOOL(ret);
@@ -2509,10 +2466,10 @@ FCIMPL2(RuntimeMethodBody *, RuntimeMethodHandle::GetMethodBody, ReflectMethodOb
 
         if (pILHeader)
         {
-            MethodTable * pExceptionHandlingClauseMT = MscorlibBinder::GetClass(CLASS__RUNTIME_EH_CLAUSE);
+            MethodTable * pExceptionHandlingClauseMT = CoreLibBinder::GetClass(CLASS__RUNTIME_EH_CLAUSE);
             TypeHandle thEHClauseArray = ClassLoader::LoadArrayTypeThrowing(TypeHandle(pExceptionHandlingClauseMT), ELEMENT_TYPE_SZARRAY);
 
-            MethodTable * pLocalVariableMT = MscorlibBinder::GetClass(CLASS__RUNTIME_LOCAL_VARIABLE_INFO);
+            MethodTable * pLocalVariableMT = CoreLibBinder::GetClass(CLASS__RUNTIME_LOCAL_VARIABLE_INFO);
             TypeHandle thLocalVariableArray = ClassLoader::LoadArrayTypeThrowing(TypeHandle(pLocalVariableMT), ELEMENT_TYPE_SZARRAY);
 
             Module* pModule = pMethod->GetModule();
@@ -2532,7 +2489,7 @@ FCIMPL2(RuntimeMethodBody *, RuntimeMethodHandle::GetMethodBody, ReflectMethodOb
                 }
             }
 
-            gc.MethodBodyObj = (RUNTIMEMETHODBODYREF)AllocateObject(MscorlibBinder::GetClass(CLASS__RUNTIME_METHOD_BODY));
+            gc.MethodBodyObj = (RUNTIMEMETHODBODYREF)AllocateObject(CoreLibBinder::GetClass(CLASS__RUNTIME_METHOD_BODY));
 
             gc.MethodBodyObj->_maxStackSize = header.GetMaxStack();
             gc.MethodBodyObj->_initLocals = !!(header.GetFlags() & CorILMethod_InitLocals);
@@ -2962,8 +2919,6 @@ void QCALLTYPE ModuleHandle::ResolveType(QCall::ModuleHandle pModule, INT32 tkTy
 
     BEGIN_QCALL;
 
-    _ASSERTE(!IsNilToken(tkType));
-
     SigTypeContext typeContext(Instantiation(typeArgs, typeArgsCount), Instantiation(methodArgs, methodArgsCount));
         typeHandle = ClassLoader::LoadTypeDefOrRefOrSpecThrowing(pModule, tkType, &typeContext,
                                                           ClassLoader::ThrowIfNotFound,
@@ -2985,8 +2940,6 @@ MethodDesc *QCALLTYPE ModuleHandle::ResolveMethod(QCall::ModuleHandle pModule, I
 
     BEGIN_QCALL;
 
-    _ASSERTE(!IsNilToken(tkMemberRef));
-
     BOOL strictMetadataChecks = (TypeFromToken(tkMemberRef) == mdtMethodSpec);
 
     SigTypeContext typeContext(Instantiation(typeArgs, typeArgsCount), Instantiation(methodArgs, methodArgsCount));
@@ -3007,8 +2960,6 @@ void QCALLTYPE ModuleHandle::ResolveField(QCall::ModuleHandle pModule, INT32 tkM
     FieldDesc* pField = NULL;
 
     BEGIN_QCALL;
-
-    _ASSERTE(!IsNilToken(tkMemberRef));
 
     SigTypeContext typeContext(Instantiation(typeArgs, typeArgsCount), Instantiation(methodArgs, methodArgsCount));
     pField = MemberLoader::GetFieldDescFromMemberDefOrRef(pModule, tkMemberRef, &typeContext, FALSE);

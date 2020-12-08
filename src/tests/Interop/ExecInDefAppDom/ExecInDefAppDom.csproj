@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="$(MSBuildProjectName).cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="InjectedCode\InjectedCode.csproj">
+      <Project>{FD322A4C-EBCD-4322-90B7-35333EF2FE92}</Project>
+      <Name>InjectedCode</Name>
+    </ProjectReference>
+    <!-- This is needed to make sure native binary gets installed in the right location -->
+    <ProjectReference Include="CMakeLists.txt" />
+  </ItemGroup>
+</Project>

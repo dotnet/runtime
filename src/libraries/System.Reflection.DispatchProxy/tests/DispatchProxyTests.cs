@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Generic;
@@ -414,7 +413,7 @@ namespace DispatchProxyTests
             List<MethodInfo> invokedMethods = new List<MethodInfo>();
             object proxy =
                 typeof(DispatchProxy)
-                .GetRuntimeMethod("Create", Array.Empty<Type>()).MakeGenericMethod(ieventServiceTypeInfo.AsType(), typeof(TestDispatchProxy))
+                .GetRuntimeMethod("Create", Type.EmptyTypes).MakeGenericMethod(ieventServiceTypeInfo.AsType(), typeof(TestDispatchProxy))
                 .Invoke(null, null);
             ((TestDispatchProxy)proxy).CallOnInvoke = (method, args) =>
             {

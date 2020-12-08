@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 /*============================================================
 **
@@ -21,17 +20,17 @@ typedef struct tag_TEST_DATA
     UCHAR expectedReturnValue;
 } TEST_DATA;
 
-TEST_DATA test_data[] =
+PALTEST(miscellaneous_InterlockedBit_test2_paltest_interlockedbit_test2, "miscellaneous/InterlockedBit/test2/paltest_interlockedbit_test2")
 {
-    { (LONG)0x00000000,  2, (LONG)0x00000004, 0 },
-    { (LONG)0x12341234,  2, (LONG)0x12341234, 1 },
-    { (LONG)0x12341234,  3, (LONG)0x1234123c, 0 },
-    { (LONG)0x12341234, 31, (LONG)0x92341234, 0 },
-    { (LONG)0x12341234, 28, (LONG)0x12341234, 1 },
-    { (LONG)0xffffffff, 28, (LONG)0xffffffff, 1 }
-};
-
-int __cdecl main(int argc, char *argv[]) {
+    TEST_DATA test_data[] =
+    {
+        { (LONG)0x00000000,  2, (LONG)0x00000004, 0 },
+        { (LONG)0x12341234,  2, (LONG)0x12341234, 1 },
+        { (LONG)0x12341234,  3, (LONG)0x1234123c, 0 },
+        { (LONG)0x12341234, 31, (LONG)0x92341234, 0 },
+        { (LONG)0x12341234, 28, (LONG)0x12341234, 1 },
+        { (LONG)0xffffffff, 28, (LONG)0xffffffff, 1 }
+    };
 
     /*
      * Initialize the PAL and return FAILURE if this fails

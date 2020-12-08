@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -67,7 +66,7 @@ ULONGLONG getPerfCallibrationValue(void);
 
 
 
-extern int main(int argc, char **argv)
+PALTEST(composite_synchronization_nativecs_interlocked_paltest_synchronization_nativecs_interlocked, "composite/synchronization/nativecs_interlocked/paltest_synchronization_nativecs_interlocked")
  {
 	//Variable Declaration
 	pthread_t pthreads[640];

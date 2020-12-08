@@ -19,7 +19,7 @@
     PrivateKey ::= OCTET STRING
     Attributes ::= SET OF Attribute
   -->
-  <asn:Integer name="Version" backingType="byte" />
+  <asn:Integer name="Version" backingType="int" />
   <asn:AsnType name="PrivateKeyAlgorithm" typeName="System.Security.Cryptography.Asn1.AlgorithmIdentifierAsn" />
   <asn:OctetString name="PrivateKey" />
   <asn:SetOf name="Attributes" implicitTag="0" optional="true">

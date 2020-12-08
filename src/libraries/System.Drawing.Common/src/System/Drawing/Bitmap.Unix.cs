@@ -1,5 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
-// See the LICENSE file in the project root for more information.
+// The .NET Foundation licenses this file to you under the MIT license.
+
 //
 // System.Drawing.Bitmap.cs
 //
@@ -67,13 +68,13 @@ namespace System.Drawing
         public Bitmap(Type type, string resource)
         {
             if (resource == null)
-                throw new ArgumentException(nameof(resource));
+                throw new ArgumentNullException(nameof(resource));
 
             // For compatibility with the .NET Framework
             if (type == null)
                 throw new NullReferenceException();
 
-            Stream? s = type.GetTypeInfo().Assembly.GetManifestResourceStream(type, resource);
+            Stream? s = type.Assembly.GetManifestResourceStream(type, resource);
             if (s == null)
             {
                 string msg = string.Format("Resource '{0}' was not found.", resource);

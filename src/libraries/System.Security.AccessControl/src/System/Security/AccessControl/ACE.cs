@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 /*============================================================
 **
@@ -649,7 +648,7 @@ namespace System.Security.AccessControl
         //
 
         private int _accessMask;
-        private SecurityIdentifier _sid = null!; // Initialized in constructor using property
+        private SecurityIdentifier _sid;
 
         #endregion
 
@@ -711,7 +710,7 @@ namespace System.Security.AccessControl
             {
                 return _sid;
             }
-
+            [MemberNotNull(nameof(_sid))]
             set
             {
                 if (value == null)

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
@@ -72,6 +71,13 @@ namespace System
 
         // GetDefaultMembers
         // This will return a MemberInfo that has been marked with the [DefaultMemberAttribute]
+        [DynamicallyAccessedMembers(
+            DynamicallyAccessedMemberTypes.PublicFields
+            | DynamicallyAccessedMemberTypes.PublicMethods
+            | DynamicallyAccessedMemberTypes.PublicEvents
+            | DynamicallyAccessedMemberTypes.PublicProperties
+            | DynamicallyAccessedMemberTypes.PublicConstructors
+            | DynamicallyAccessedMemberTypes.PublicNestedTypes)]
         public override MemberInfo[] GetDefaultMembers()
         {
             // See if we have cached the default member name
@@ -188,23 +194,36 @@ namespace System
                     typeCode = TypeCode.Single; break;
                 case CorElementType.ELEMENT_TYPE_R8:
                     typeCode = TypeCode.Double; break;
+#if !CORECLR
+                case CorElementType.ELEMENT_TYPE_STRING:
+                    typeCode = TypeCode.String; break;
+#endif
                 case CorElementType.ELEMENT_TYPE_VALUETYPE:
-                    if (this == Convert.ConvertTypes[(int)TypeCode.Decimal])
+                    if (ReferenceEquals(this, typeof(decimal)))
                         typeCode = TypeCode.Decimal;
-                    else if (this == Convert.ConvertTypes[(int)TypeCode.DateTime])
+                    else if (ReferenceEquals(this, typeof(DateTime)))
                         typeCode = TypeCode.DateTime;
                     else if (IsEnum)
-                        typeCode = GetTypeCode(Enum.GetUnderlyingType(this));
+                        typeCode = GetTypeCode(Enum.InternalGetUnderlyingType(this));
                     else
                         typeCode = TypeCode.Object;
                     break;
                 default:
-                    if (this == Convert.ConvertTypes[(int)TypeCode.DBNull])
-                        typeCode = TypeCode.DBNull;
-                    else if (this == Convert.ConvertTypes[(int)TypeCode.String])
+#if CORECLR
+                    // GetSignatureCorElementType returns E_T_CLASS for E_T_STRING
+                    if (ReferenceEquals(this, typeof(string)))
+                    {
                         typeCode = TypeCode.String;
-                    else
-                        typeCode = TypeCode.Object;
+                        break;
+                    }
+#endif
+                    if (ReferenceEquals(this, typeof(DBNull)))
+                    {
+                        typeCode = TypeCode.DBNull;
+                        break;
+                    }
+
+                    typeCode = TypeCode.Object;
                     break;
             }
 

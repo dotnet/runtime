@@ -459,7 +459,10 @@ mini_emit_memory_load (MonoCompile *cfg, MonoType *type, MonoInst *src, int offs
 {
 	MonoInst *ins;
 
-	if (ins_flag & MONO_INST_UNALIGNED) {
+	/* LLVM can handle unaligned loads and stores, so there's no reason to
+	 * manually decompose an unaligned load here into a memcpy if we're
+	 * using LLVM. */
+	if ((ins_flag & MONO_INST_UNALIGNED) && !COMPILE_LLVM (cfg)) {
 		MonoInst *addr, *tmp_var;
 		int align;
 		int size = mono_type_size (type, &align);
@@ -496,10 +499,10 @@ mini_emit_memory_store (MonoCompile *cfg, MonoType *type, MonoInst *dest, MonoIn
 	if (ins_flag & MONO_INST_VOLATILE) {
 		/* Volatile stores have release semantics, see 12.6.7 in Ecma 335 */
 		mini_emit_memory_barrier (cfg, MONO_MEMORY_BARRIER_REL);
-	} else if (!mini_debug_options.weak_memory_model && mini_type_is_reference (type))
+	} else if (!mini_debug_options.weak_memory_model && mini_type_is_reference (type) && cfg->method->wrapper_type != MONO_WRAPPER_WRITE_BARRIER)
 		mini_emit_memory_barrier (cfg, MONO_MEMORY_BARRIER_REL);
 
-	if (ins_flag & MONO_INST_UNALIGNED) {
+	if ((ins_flag & MONO_INST_UNALIGNED) && !COMPILE_LLVM (cfg)) {
 		MonoInst *addr, *mov, *tmp_var;
 
 		tmp_var = mono_compile_create_var (cfg, type, OP_LOCAL);

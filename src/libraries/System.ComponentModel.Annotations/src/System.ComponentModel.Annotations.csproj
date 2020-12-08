@@ -1,6 +1,12 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFrameworks>netstandard2.1</TargetFrameworks>
+    <Nullable>enable</Nullable>
+    <!--
+      Since many resource strings in this library are shown to an end-user,
+      always generate default resource string values which will be used when UseSystemResourceKeys is true in trimmed apps.
+    -->
+    <GenerateResxSourceIncludeDefaultValues>true</GenerateResxSourceIncludeDefaultValues>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System\ComponentModel\DataAnnotations\AssociatedMetadataTypeTypeDescriptor.cs" />

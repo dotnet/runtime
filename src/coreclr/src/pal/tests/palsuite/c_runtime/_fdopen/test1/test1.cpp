@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 /*=====================================================================
 **
@@ -22,9 +21,9 @@
 
 #include <palsuite.h>
 
-const char* cTestString = "one fish, two fish, read fish, blue fish.";
+#define cTestString "one fish, two fish, read fish, blue fish."
 
-int __cdecl main(int argc, char **argv)
+PALTEST(c_runtime__fdopen_test1_paltest_fdopen_test1, "c_runtime/_fdopen/test1/paltest_fdopen_test1")
 {
     HANDLE  hReadPipe   = NULL;
     HANDLE  hWritePipe  = NULL;

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Buffers;
 using System.Diagnostics;
@@ -71,7 +70,7 @@ namespace System
             char[]? borrowedArr = null;
             Span<char> scratch = (uint)count <= 64 ? stackalloc char[64] : (borrowedArr = ArrayPool<char>.Shared.Rent(count));
 
-            int charsWritten = new ReadOnlySpan<char>(ref data, count).ToUpperInvariant(scratch);
+            int charsWritten = System.Globalization.Ordinal.ToUpperOrdinal(new ReadOnlySpan<char>(ref data, count), scratch);
             Debug.Assert(charsWritten == count); // invariant case conversion should involve simple folding; preserve code unit count
 
             // Slice the array to the size returned by ToUpperInvariant.

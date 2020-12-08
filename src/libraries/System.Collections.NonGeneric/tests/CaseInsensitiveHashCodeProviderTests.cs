@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Globalization;
 using System.Diagnostics;
@@ -40,14 +39,7 @@ namespace System.Collections.Tests
         [InlineData(5, 10, false)]
         public void Ctor_Empty_ChangeCurrentCulture_GetHashCodeCompare(object a, object b, bool expected)
         {
-            var cultureNames = new string[]
-            {
-                "cs-CZ","da-DK","de-DE","el-GR","en-US",
-                "es-ES","fi-FI","fr-FR","hu-HU","it-IT",
-                "ja-JP","ko-KR","nb-NO","nl-NL","pl-PL",
-                "pt-BR","pt-PT","ru-RU","sv-SE","tr-TR",
-                "zh-CN","zh-HK","zh-TW"
-            };
+            var cultureNames = Helpers.TestCultureNames;
 
             foreach (string cultureName in cultureNames)
             {
@@ -81,14 +73,7 @@ namespace System.Collections.Tests
         [InlineData(5, 10, false)]
         public void Ctor_CultureInfo_ChangeCurrentCulture_GetHashCodeCompare(object a, object b, bool expected)
         {
-            var cultureNames = new string[]
-            {
-                "cs-CZ","da-DK","de-DE","el-GR","en-US",
-                "es-ES","fi-FI","fr-FR","hu-HU","it-IT",
-                "ja-JP","ko-KR","nb-NO","nl-NL","pl-PL",
-                "pt-BR","pt-PT","ru-RU","sv-SE","tr-TR",
-                "zh-CN","zh-HK","zh-TW"
-            };
+            var cultureNames = Helpers.TestCultureNames;
 
             foreach (string cultureName in cultureNames)
             {
@@ -112,14 +97,7 @@ namespace System.Collections.Tests
         [Fact]
         public void Ctor_CultureInfo_GetHashCodeCompare_TurkishI()
         {
-            var cultureNames = new string[]
-            {
-                "cs-CZ","da-DK","de-DE","el-GR","en-US",
-                "es-ES","fi-FI","fr-FR","hu-HU","it-IT",
-                "ja-JP","ko-KR","nb-NO","nl-NL","pl-PL",
-                "pt-BR","pt-PT","ru-RU","sv-SE","tr-TR",
-                "zh-CN","zh-HK","zh-TW"
-            };
+            var cultureNames = Helpers.TestCultureNames;
 
             foreach (string cultureName in cultureNames)
             {
@@ -171,7 +149,7 @@ namespace System.Collections.Tests
                 CaseInsensitiveHashCodeProvider.DefaultInvariant.GetHashCode(a) == CaseInsensitiveHashCodeProvider.DefaultInvariant.GetHashCode(b));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotInvariantGlobalization))]
         public void Default_Compare_TurkishI()
         {
             // Turkish has lower-case and upper-case version of the dotted "i", so the upper case of "i" (U+0069) isn't "I" (U+0049)

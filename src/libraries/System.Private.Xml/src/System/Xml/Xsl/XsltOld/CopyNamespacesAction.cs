@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
 using System.Xml.XPath;
@@ -30,7 +29,7 @@ namespace System.Xml.Xsl.XsltOld
                 switch (frame.State)
                 {
                     case Initialized:
-                        if (frame.Node.MoveToFirstNamespace(XPathNamespaceScope.ExcludeXml) == false)
+                        if (frame.Node!.MoveToFirstNamespace(XPathNamespaceScope.ExcludeXml) == false)
                         {
                             frame.Finished();
                             break;
@@ -41,7 +40,7 @@ namespace System.Xml.Xsl.XsltOld
 
                     case BeginEvent:
                         Debug.Assert(frame.State == BeginEvent);
-                        Debug.Assert(frame.Node.NodeType == XPathNodeType.Namespace);
+                        Debug.Assert(frame.Node!.NodeType == XPathNodeType.Namespace);
 
                         if (processor.BeginEvent(XPathNodeType.Namespace, null, frame.Node.LocalName, frame.Node.Value, false) == false)
                         {
@@ -53,7 +52,7 @@ namespace System.Xml.Xsl.XsltOld
 
                     case EndEvent:
                         Debug.Assert(frame.State == EndEvent);
-                        Debug.Assert(frame.Node.NodeType == XPathNodeType.Namespace);
+                        Debug.Assert(frame.Node!.NodeType == XPathNodeType.Namespace);
 
                         if (processor.EndEvent(XPathNodeType.Namespace) == false)
                         {
@@ -65,7 +64,7 @@ namespace System.Xml.Xsl.XsltOld
 
                     case Advance:
                         Debug.Assert(frame.State == Advance);
-                        Debug.Assert(frame.Node.NodeType == XPathNodeType.Namespace);
+                        Debug.Assert(frame.Node!.NodeType == XPathNodeType.Namespace);
 
                         if (frame.Node.MoveToNextNamespace(XPathNamespaceScope.ExcludeXml))
                         {

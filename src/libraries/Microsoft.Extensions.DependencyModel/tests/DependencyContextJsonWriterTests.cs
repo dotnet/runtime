@@ -1,6 +1,5 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.IO;
@@ -298,6 +297,68 @@ namespace Microsoft.Extensions.DependencyModel.Tests
             library.Should().HavePropertyValue("runtimeStoreManifestName", "placeHolderManifest.xml");
 
             return runtimeAssembly;
+        }
+
+        [Fact]
+        public void WritesRuntimePackLibrariesWithFrameworkName()
+        {
+            var result = Save(Create(
+                "Target",
+                "win-x86",
+                false,
+                runtimeLibraries: new[]
+                {
+                    new RuntimeLibrary(
+                        "runtimepack",
+                        "RuntimePackName",
+                        "1.2.3",
+                        "HASH",
+                        new [] {
+                            new RuntimeAssetGroup(
+                                string.Empty,
+                                new []
+                                {
+                                    new RuntimeFile("System.Private.CoreLib.dll", "2.3.4", "3.4.5"),
+                                }),
+                        },
+                        new [] {
+                            new RuntimeAssetGroup(
+                                string.Empty,
+                                new []
+                                {
+                                    new RuntimeFile("coreclr.dll", "4.5.6", "5.6.7"),
+                                }),
+                        },
+                        new ResourceAssembly[0],
+                        new Dependency[0],
+                        false,
+                        "PackagePath",
+                        "PackageHashPath",
+                        "placeHolderManifest.xml"
+                    ),
+                }));
+
+            // targets
+            var targets = result.Should().HavePropertyAsObject("targets").Subject;
+            var target = targets.Should().HavePropertyAsObject("Target/win-x86").Subject;
+            var library = target.Should().HavePropertyAsObject("RuntimePackName/1.2.3").Subject;
+            library.Should().NotHaveProperty("dependencies");
+            library.Should().NotHaveProperty("resources");
+
+            library.Should().HavePropertyAsObject("runtime")
+                .Subject.Should().HaveProperty("System.Private.CoreLib.dll");
+            library.Should().HavePropertyAsObject("native")
+                .Subject.Should().HaveProperty("coreclr.dll");
+
+            //libraries
+            var libraries = result.Should().HavePropertyAsObject("libraries").Subject;
+            library = libraries.Should().HavePropertyAsObject("RuntimePackName/1.2.3").Subject;
+            library.Should().HavePropertyValue("sha512", "HASH");
+            library.Should().HavePropertyValue("type", "runtimepack");
+            library.Should().HavePropertyValue("serviceable", false);
+            library.Should().HavePropertyValue("path", "PackagePath");
+            library.Should().HavePropertyValue("hashPath", "PackageHashPath");
+            library.Should().HavePropertyValue("runtimeStoreManifestName", "placeHolderManifest.xml");
         }
 
         [Fact]
@@ -646,6 +707,40 @@ namespace Microsoft.Extensions.DependencyModel.Tests
             options.Should().HavePropertyValue("keyFile", "Key.snk");
             options.Should().HaveProperty("defines")
                 .Subject.Values<string>().Should().BeEquivalentTo(new[] { "MY", "DEFINES" });
+        }
+
+        [Fact]
+        public void WriteDoesNotDisposeStream()
+        {
+            DependencyContext context = Create(
+                "Target",
+                "Target/runtime",
+                runtimeGraph: new[]
+                {
+                    new RuntimeFallbacks("win7-x64", new [] { "win6", "win5"}),
+                    new RuntimeFallbacks("win8-x64", new [] { "win7-x64"}),
+                });
+
+            DisposeAwareMemoryStream stream = new DisposeAwareMemoryStream();
+            using (stream)
+            {
+                new DependencyContextWriter().Write(context, stream);
+                Assert.False(stream.IsDisposed);
+            }
+
+            Assert.True(stream.IsDisposed);
+        }
+
+        private class DisposeAwareMemoryStream : MemoryStream
+        {
+            public bool IsDisposed { get; set; }
+
+            protected override void Dispose(bool disposing)
+            {
+                IsDisposed = true;
+
+                base.Dispose(disposing);
+            }
         }
     }
 }

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 /*=====================================================================
 **
@@ -27,7 +26,7 @@
 #include <sys/stat.h>
 
 
-int __cdecl main(int argc, char *argv[])
+PALTEST(file_io_DeleteFileA_test1_paltest_deletefilea_test1, "file_io/DeleteFileA/test1/paltest_deletefilea_test1")
 {
     FILE *tempFile = NULL;
     BOOL bRc = FALSE;

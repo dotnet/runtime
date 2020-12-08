@@ -1,5 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
-// See the LICENSE file in the project root for more information.
+// The .NET Foundation licenses this file to you under the MIT license.
 
 //
 //
@@ -988,8 +988,8 @@ namespace MonoTests.System.Runtime.Caching
 
             Assert.Equal(numItems, mc.GetCount());
 
-            // Trimming 75% for such a small number of items (supposedly each in its cache store) will end up trimming all of them
-            long trimmed = mc.Trim(75);
+            // Trimming 76% for such a small number of items (supposedly each in its cache store) will end up trimming all of them
+            long trimmed = mc.Trim(76);
             Assert.Equal(numItems, trimmed);
             Assert.Equal(0, mc.GetCount());
 

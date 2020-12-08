@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 
 /*++
@@ -16,6 +15,8 @@ Module Name:
 
 #include "gcinterface.h"
 #include "env/gcenv.os.h"
+
+#include "gchandletableimpl.h"
 
 #ifdef BUILD_AS_STANDALONE
 #include "gcenv.ee.standalone.inl"

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 
 //*****************************************************************************
@@ -18,11 +17,19 @@
 #ifdef FEATURE_GDBJIT
 #include "../../vm/gdbjithelpers.h"
 #endif // FEATURE_GDBJIT
+#include "bundle.h"
+#include "pinvokeoverride.h"
 
 #define ASSERTE_ALL_BUILDS(expr) _ASSERTE_ALL_BUILDS(__FILE__, (expr))
 
 // Holder for const wide strings
 typedef NewArrayHolder<const WCHAR> ConstWStringHolder;
+
+// Specifies whether coreclr is embedded or standalone
+extern bool g_coreclr_embedded;
+
+// Specifies whether hostpolicy is embedded in executable or standalone
+extern bool g_hostpolicy_embedded;
 
 // Holder for array of wide strings
 class ConstWStringArrayHolder : public NewArrayHolder<LPCWSTR>
@@ -112,7 +119,10 @@ static void ConvertConfigPropertiesToUnicode(
     const char** propertyValues,
     int propertyCount,
     LPCWSTR** propertyKeysWRef,
-    LPCWSTR** propertyValuesWRef)
+    LPCWSTR** propertyValuesWRef,
+    BundleProbeFn** bundleProbe,
+    PInvokeOverrideFn** pinvokeOverride,
+    bool* hostPolicyEmbedded)
 {
     LPCWSTR* propertyKeysW = new (nothrow) LPCWSTR[propertyCount];
     ASSERTE_ALL_BUILDS(propertyKeysW != nullptr);
@@ -124,6 +134,24 @@ static void ConvertConfigPropertiesToUnicode(
     {
         propertyKeysW[propertyIndex] = StringToUnicode(propertyKeys[propertyIndex]);
         propertyValuesW[propertyIndex] = StringToUnicode(propertyValues[propertyIndex]);
+
+        if (strcmp(propertyKeys[propertyIndex], "BUNDLE_PROBE") == 0)
+        {
+            // If this application is a single-file bundle, the bundle-probe callback 
+            // is passed in as the value of "BUNDLE_PROBE" property (encoded as a string).
+            *bundleProbe = (BundleProbeFn*)_wcstoui64(propertyValuesW[propertyIndex], nullptr, 0);
+        }
+        else if (strcmp(propertyKeys[propertyIndex], "PINVOKE_OVERRIDE") == 0)
+        {
+            // If host provides a PInvoke override (typically in a single-file bundle),
+            // the override callback is passed in as the value of "PINVOKE_OVERRIDE" property (encoded as a string).
+            *pinvokeOverride = (PInvokeOverrideFn*)_wcstoui64(propertyValuesW[propertyIndex], nullptr, 0);
+        }
+        else if (strcmp(propertyKeys[propertyIndex], "HOSTPOLICY_EMBEDDED") == 0)
+        {
+            // The HOSTPOLICY_EMBEDDED property indicates if the executable has hostpolicy statically linked in
+            *hostPolicyEmbedded = (wcscmp(propertyValuesW[propertyIndex], W("true")) == 0);
+        }
     }
 
     *propertyKeysWRef = propertyKeysW;
@@ -162,8 +190,25 @@ int coreclr_initialize(
             unsigned int* domainId)
 {
     HRESULT hr;
+
+    LPCWSTR* propertyKeysW;
+    LPCWSTR* propertyValuesW;
+    BundleProbeFn* bundleProbe = nullptr;
+    bool hostPolicyEmbedded = false;
+    PInvokeOverrideFn* pinvokeOverride = nullptr;
+
+    ConvertConfigPropertiesToUnicode(
+        propertyKeys,
+        propertyValues,
+        propertyCount,
+        &propertyKeysW,
+        &propertyValuesW,
+        &bundleProbe,
+        &pinvokeOverride,
+        &hostPolicyEmbedded);
+
 #ifdef TARGET_UNIX
-    DWORD error = PAL_InitializeCoreCLR(exePath);
+    DWORD error = PAL_InitializeCoreCLR(exePath, g_coreclr_embedded);
     hr = HRESULT_FROM_WIN32(error);
 
     // If PAL initialization failed, then we should return right away and avoid
@@ -174,6 +219,13 @@ int coreclr_initialize(
     }
 #endif
 
+    g_hostpolicy_embedded = hostPolicyEmbedded;
+
+    if (pinvokeOverride != nullptr)
+    {
+        PInvokeOverride::SetPInvokeOverride(pinvokeOverride);
+    }
+
     ReleaseHolder<ICLRRuntimeHost4> host;
 
     hr = CorHost2::CreateObject(IID_ICLRRuntimeHost4, (void**)&host);
@@ -181,14 +233,11 @@ int coreclr_initialize(
 
     ConstWStringHolder appDomainFriendlyNameW = StringToUnicode(appDomainFriendlyName);
 
-    LPCWSTR* propertyKeysW;
-    LPCWSTR* propertyValuesW;
-    ConvertConfigPropertiesToUnicode(
-        propertyKeys,
-        propertyValues,
-        propertyCount,
-        &propertyKeysW,
-        &propertyValuesW);
+    if (bundleProbe != nullptr)
+    {
+        static Bundle bundle(exePath, bundleProbe);
+        Bundle::AppBundle = &bundle;
+    }
 
     // This will take ownership of propertyKeysWTemp and propertyValuesWTemp
     Configuration::InitializeConfigurationKnobs(propertyCount, propertyKeysW, propertyValuesW);

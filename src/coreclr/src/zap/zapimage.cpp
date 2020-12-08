@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 //
 // ZapImage.cpp
 //
@@ -166,11 +165,8 @@ void ZapImage::InitializeSections()
 
     m_pHelperThunks = new (GetHeap()) ZapNode * [CORINFO_HELP_COUNT];
 
-    if (!m_zapper->m_pOpt->m_fNoMetaData)
-    {
-        m_pILMetaData = new (GetHeap()) ZapILMetaData(this);
-        m_pILMetaDataSection->Place(m_pILMetaData);
-    }
+    m_pILMetaData = new (GetHeap()) ZapILMetaData(this);
+    m_pILMetaDataSection->Place(m_pILMetaData);
 
     m_pDebugInfoTable = new (GetHeap()) ZapDebugInfoTable(this);
     m_pDebugSection->Place(m_pDebugInfoTable);
@@ -1898,7 +1894,6 @@ void ZapImage::TryCompileMethodStub(LPVOID pContext, CORINFO_METHOD_HANDLE hStub
 //-----------------------------------------------------------------------------
 BOOL ZapImage::IsVTableGapMethod(mdMethodDef md)
 {
-#ifdef FEATURE_COMINTEROP
     HRESULT hr;
     DWORD dwAttributes;
 
@@ -1920,9 +1915,6 @@ BOOL ZapImage::IsVTableGapMethod(mdMethodDef md)
 
     // If we make it to here we have a vtable gap method.
     return TRUE;
-#else
-    return FALSE;
-#endif // FEATURE_COMINTEROP
 }
 
 //-----------------------------------------------------------------------------
@@ -2214,10 +2206,7 @@ ZapImage::CompileStatus ZapImage::TryCompileMethodWorker(CORINFO_METHOD_HANDLE h
 BOOL ZapImage::ShouldCompileMethodDef(mdMethodDef md)
 {
     DWORD partialNGenStressVal = PartialNGenStressPercentage();
-    if (partialNGenStressVal &&
-        // Module::AddCerListToRootTable has problems if mscorlib.dll is
-        // a partial ngen image
-        m_hModule != m_zapper->m_pEECompileInfo->GetLoaderModuleForMscorlib())
+    if (partialNGenStressVal)
     {
         _ASSERTE(partialNGenStressVal <= 100);
         DWORD methodPercentageVal = (md % 100) + 1;
@@ -2319,10 +2308,7 @@ BOOL ZapImage::ShouldCompileMethodDef(mdMethodDef md)
 BOOL ZapImage::ShouldCompileInstantiatedMethod(CORINFO_METHOD_HANDLE handle)
 {
     DWORD partialNGenStressVal = PartialNGenStressPercentage();
-    if (partialNGenStressVal &&
-        // Module::AddCerListToRootTable has problems if mscorlib.dll is
-        // a partial ngen image
-        m_hModule != m_zapper->m_pEECompileInfo->GetLoaderModuleForMscorlib())
+    if (partialNGenStressVal)
     {
         _ASSERTE(partialNGenStressVal <= 100);
         DWORD methodPercentageVal = (m_zapper->m_pEEJitInfo->getMethodHash(handle) % 100) + 1;

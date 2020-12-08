@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.IO;
 using System.Threading;
@@ -23,12 +22,12 @@ namespace System.Net.Http
         public override int Read(Span<byte> buffer) => 0;
 
         public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken) =>
-            cancellationToken.IsCancellationRequested ? new ValueTask<int>(Task.FromCanceled<int>(cancellationToken)) :
+            cancellationToken.IsCancellationRequested ? ValueTask.FromCanceled<int>(cancellationToken) :
             new ValueTask<int>(0);
 
         public override Task CopyToAsync(Stream destination, int bufferSize, CancellationToken cancellationToken)
         {
-            ValidateCopyToArgs(this, destination, bufferSize);
+            ValidateCopyToArguments(destination, bufferSize);
             return NopAsync(cancellationToken);
         }
 

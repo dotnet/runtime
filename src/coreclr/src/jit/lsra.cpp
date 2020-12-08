@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 /*
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
@@ -153,6 +152,17 @@ void lsraAssignRegToTree(GenTree* tree, regNumber reg, unsigned regIdx)
         putArg->SetRegNumByIdx(reg, regIdx);
     }
 #endif // FEATURE_ARG_SPLIT
+#if defined(TARGET_XARCH) && defined(FEATURE_HW_INTRINSICS)
+    else if (tree->OperIs(GT_HWINTRINSIC))
+    {
+        assert(regIdx == 1);
+        tree->AsHWIntrinsic()->SetOtherReg(reg);
+    }
+#endif
+    else if (tree->OperIs(GT_LCL_VAR, GT_STORE_LCL_VAR))
+    {
+        tree->AsLclVar()->SetRegNumByIdx(reg, regIdx);
+    }
     else
     {
         assert(tree->IsMultiRegCall());
@@ -169,10 +179,10 @@ void lsraAssignRegToTree(GenTree* tree, regNumber reg, unsigned regIdx)
 //
 // Returns:
 //    Weight of ref position.
-unsigned LinearScan::getWeight(RefPosition* refPos)
+BasicBlock::weight_t LinearScan::getWeight(RefPosition* refPos)
 {
-    unsigned weight;
-    GenTree* treeNode = refPos->treeNode;
+    BasicBlock::weight_t weight;
+    GenTree*             treeNode = refPos->treeNode;
 
     if (treeNode != nullptr)
     {
@@ -1027,8 +1037,8 @@ int LinearScan::compareBlocksForSequencing(BasicBlock* block1, BasicBlock* block
 {
     if (useBlockWeights)
     {
-        unsigned weight1 = block1->getBBWeight(compiler);
-        unsigned weight2 = block2->getBBWeight(compiler);
+        BasicBlock::weight_t weight1 = block1->getBBWeight(compiler);
+        BasicBlock::weight_t weight2 = block2->getBBWeight(compiler);
 
         if (weight1 > weight2)
         {
@@ -1610,13 +1620,13 @@ void LinearScan::identifyCandidates()
     // This is defined as thresholdLargeVectorRefCntWtd, as we are likely to use the same mechanism
     // for vectors on Arm64, though the actual value may differ.
 
-    unsigned int floatVarCount        = 0;
-    unsigned int thresholdFPRefCntWtd = 4 * BB_UNITY_WEIGHT;
-    unsigned int maybeFPRefCntWtd     = 2 * BB_UNITY_WEIGHT;
-    VARSET_TP    fpMaybeCandidateVars(VarSetOps::UninitVal());
+    unsigned int         floatVarCount        = 0;
+    BasicBlock::weight_t thresholdFPRefCntWtd = 4 * BB_UNITY_WEIGHT;
+    BasicBlock::weight_t maybeFPRefCntWtd     = 2 * BB_UNITY_WEIGHT;
+    VARSET_TP            fpMaybeCandidateVars(VarSetOps::UninitVal());
 #if FEATURE_PARTIAL_SIMD_CALLEE_SAVE
-    unsigned int largeVectorVarCount           = 0;
-    unsigned int thresholdLargeVectorRefCntWtd = 4 * BB_UNITY_WEIGHT;
+    unsigned int         largeVectorVarCount           = 0;
+    BasicBlock::weight_t thresholdLargeVectorRefCntWtd = 4 * BB_UNITY_WEIGHT;
 #endif // FEATURE_PARTIAL_SIMD_CALLEE_SAVE
     if (enregisterLocalVars)
     {
@@ -1628,13 +1638,13 @@ void LinearScan::identifyCandidates()
 #endif // FEATURE_PARTIAL_SIMD_CALLEE_SAVE
     }
 #if DOUBLE_ALIGN
-    unsigned refCntStk       = 0;
-    unsigned refCntReg       = 0;
-    unsigned refCntWtdReg    = 0;
-    unsigned refCntStkParam  = 0; // sum of     ref counts for all stack based parameters
-    unsigned refCntWtdStkDbl = 0; // sum of wtd ref counts for stack based doubles
-    doDoubleAlign            = false;
-    bool checkDoubleAlign    = true;
+    unsigned             refCntStk       = 0;
+    unsigned             refCntReg       = 0;
+    BasicBlock::weight_t refCntWtdReg    = 0;
+    unsigned             refCntStkParam  = 0; // sum of     ref counts for all stack based parameters
+    BasicBlock::weight_t refCntWtdStkDbl = 0; // sum of wtd ref counts for stack based doubles
+    doDoubleAlign                        = false;
+    bool checkDoubleAlign                = true;
     if (compiler->codeGen->isFramePointerRequired() || compiler->opts.MinOpts())
     {
         checkDoubleAlign = false;
@@ -1725,6 +1735,34 @@ void LinearScan::identifyCandidates()
             {
                 localVarIntervals[varDsc->lvVarIndex] = nullptr;
             }
+            // The current implementation of multi-reg structs that are referenced collectively
+            // (i.e. by refering to the parent lclVar rather than each field separately) relies
+            // on all or none of the fields being candidates.
+            if (varDsc->lvIsStructField)
+            {
+                LclVarDsc* parentVarDsc = compiler->lvaGetDesc(varDsc->lvParentLcl);
+                if (parentVarDsc->lvIsMultiRegRet && !parentVarDsc->lvDoNotEnregister)
+                {
+                    JITDUMP("Setting multi-reg struct V%02u as not enregisterable:", varDsc->lvParentLcl);
+                    compiler->lvaSetVarDoNotEnregister(varDsc->lvParentLcl DEBUGARG(Compiler::DNER_BlockOp));
+                    for (unsigned int i = 0; i < parentVarDsc->lvFieldCnt; i++)
+                    {
+                        LclVarDsc* fieldVarDsc = compiler->lvaGetDesc(parentVarDsc->lvFieldLclStart + i);
+                        JITDUMP(" V%02u", parentVarDsc->lvFieldLclStart + i);
+                        if (fieldVarDsc->lvTracked)
+                        {
+                            fieldVarDsc->lvLRACandidate                = 0;
+                            localVarIntervals[fieldVarDsc->lvVarIndex] = nullptr;
+                            VarSetOps::RemoveElemD(compiler, registerCandidateVars, fieldVarDsc->lvVarIndex);
+                            JITDUMP("*");
+                        }
+                        // This is not accurate, but we need a non-zero refCnt for the parent so that it will
+                        // be allocated to the stack.
+                        parentVarDsc->setLvRefCnt(parentVarDsc->lvRefCnt() + fieldVarDsc->lvRefCnt());
+                    }
+                    JITDUMP("\n");
+                }
+            }
             continue;
         }
 
@@ -1764,7 +1802,7 @@ void LinearScan::identifyCandidates()
             {
                 largeVectorVarCount++;
                 VarSetOps::AddElemD(compiler, largeVectorVars, varDsc->lvVarIndex);
-                unsigned refCntWtd = varDsc->lvRefCntWtd();
+                BasicBlock::weight_t refCntWtd = varDsc->lvRefCntWtd();
                 if (refCntWtd >= thresholdLargeVectorRefCntWtd)
                 {
                     VarSetOps::AddElemD(compiler, largeVectorCalleeSaveCandidateVars, varDsc->lvVarIndex);
@@ -1775,7 +1813,7 @@ void LinearScan::identifyCandidates()
                 if (regType(type) == FloatRegisterType)
             {
                 floatVarCount++;
-                unsigned refCntWtd = varDsc->lvRefCntWtd();
+                BasicBlock::weight_t refCntWtd = varDsc->lvRefCntWtd();
                 if (varDsc->lvIsRegArg)
                 {
                     // Don't count the initial reference for register params.  In those cases,
@@ -1823,8 +1861,8 @@ void LinearScan::identifyCandidates()
         // the lclVars allocated to the frame pointer.
         // => Here, estimate of the EBP refCnt and weighted refCnt is a wild guess.
         //
-        unsigned refCntEBP    = refCntReg / 8;
-        unsigned refCntWtdEBP = refCntWtdReg / 8;
+        unsigned             refCntEBP    = refCntReg / 8;
+        BasicBlock::weight_t refCntWtdEBP = refCntWtdReg / 8;
 
         doDoubleAlign =
             compiler->shouldDoubleAlign(refCntStk, refCntEBP, refCntWtdEBP, refCntStkParam, refCntWtdStkDbl);
@@ -2148,14 +2186,14 @@ void LinearScan::checkLastUses(BasicBlock* block)
                 {
                     // NOTE: this is a bit of a hack. When extending lifetimes, the "last use" bit will be clear.
                     // This bit, however, would normally be used during resolveLocalRef to set the value of
-                    // GTF_VAR_DEATH on the node for a ref position. If this bit is not set correctly even when
+                    // LastUse on the node for a ref position. If this bit is not set correctly even when
                     // extending lifetimes, the code generator will assert as it expects to have accurate last
-                    // use information. To avoid these asserts, set the GTF_VAR_DEATH bit here.
+                    // use information. To avoid these asserts, set the LastUse bit here.
                     // Note also that extendLifetimes() is an LSRA stress mode, so it will only be true for
                     // Checked or Debug builds, for which this method will be executed.
                     if (tree != nullptr)
                     {
-                        tree->gtFlags |= GTF_VAR_DEATH;
+                        tree->AsLclVar()->SetLastUse(currentRefPosition->multiRegIdx);
                     }
                 }
                 else if (!currentRefPosition->lastUse)
@@ -2174,7 +2212,7 @@ void LinearScan::checkLastUses(BasicBlock* block)
             else if (extendLifetimes() && tree != nullptr)
             {
                 // NOTE: see the comment above re: the extendLifetimes hack.
-                tree->gtFlags &= ~GTF_VAR_DEATH;
+                tree->AsLclVar()->ClearLastUse(currentRefPosition->multiRegIdx);
             }
 
             if (currentRefPosition->refType == RefTypeDef || currentRefPosition->refType == RefTypeDummyDef)
@@ -2694,8 +2732,10 @@ bool LinearScan::isMatchingConstant(RegRecord* physRegRecord, RefPosition* refPo
         switch (otherTreeNode->OperGet())
         {
             case GT_CNS_INT:
-                if ((refPosition->treeNode->AsIntCon()->IconValue() == otherTreeNode->AsIntCon()->IconValue()) &&
-                    (varTypeGCtype(refPosition->treeNode) == varTypeGCtype(otherTreeNode)))
+            {
+                ssize_t v1 = refPosition->treeNode->AsIntCon()->IconValue();
+                ssize_t v2 = otherTreeNode->AsIntCon()->IconValue();
+                if ((v1 == v2) && (varTypeGCtype(refPosition->treeNode) == varTypeGCtype(otherTreeNode) || v1 == 0))
                 {
 #ifdef TARGET_64BIT
                     // If the constant is negative, only reuse registers of the same type.
@@ -2704,14 +2744,14 @@ bool LinearScan::isMatchingConstant(RegRecord* physRegRecord, RefPosition* refPo
                     // This doesn't apply to a 32-bit system, on which long values occupy multiple registers.
                     // (We could sign-extend, but we would have to always sign-extend, because if we reuse more
                     // than once, we won't have access to the instruction that originally defines the constant).
-                    if ((refPosition->treeNode->TypeGet() == otherTreeNode->TypeGet()) ||
-                        (refPosition->treeNode->AsIntCon()->IconValue() >= 0))
+                    if ((refPosition->treeNode->TypeGet() == otherTreeNode->TypeGet()) || (v1 >= 0))
 #endif // TARGET_64BIT
                     {
                         return true;
                     }
                 }
                 break;
+            }
             case GT_CNS_DBL:
             {
                 // For floating point constants, the values must be identical, not simply compare
@@ -3257,7 +3297,9 @@ regNumber LinearScan::tryAllocateFreeReg(Interval* currentInterval, RefPosition*
 //
 // Note: This helper is designed to be used only from allocateBusyReg() and canSpillDoubleReg()
 //
-bool LinearScan::canSpillReg(RegRecord* physRegRecord, LsraLocation refLocation, unsigned* recentAssignedRefWeight)
+bool LinearScan::canSpillReg(RegRecord*            physRegRecord,
+                             LsraLocation          refLocation,
+                             BasicBlock::weight_t* recentAssignedRefWeight)
 {
     assert(physRegRecord->assignedInterval != nullptr);
     RefPosition* recentAssignedRef = physRegRecord->assignedInterval->recentRefPosition;
@@ -3295,14 +3337,14 @@ bool LinearScan::canSpillReg(RegRecord* physRegRecord, LsraLocation refLocation,
 //    This helper is designed to be used only from allocateBusyReg() and canSpillDoubleReg().
 //    The recentAssignedRefWeight is not updated if either register cannot be spilled.
 //
-bool LinearScan::canSpillDoubleReg(RegRecord*   physRegRecord,
-                                   LsraLocation refLocation,
-                                   unsigned*    recentAssignedRefWeight)
+bool LinearScan::canSpillDoubleReg(RegRecord*            physRegRecord,
+                                   LsraLocation          refLocation,
+                                   BasicBlock::weight_t* recentAssignedRefWeight)
 {
     assert(genIsValidDoubleReg(physRegRecord->regNum));
-    bool     retVal  = true;
-    unsigned weight  = BB_ZERO_WEIGHT;
-    unsigned weight2 = BB_ZERO_WEIGHT;
+    bool                 retVal  = true;
+    BasicBlock::weight_t weight  = BB_ZERO_WEIGHT;
+    BasicBlock::weight_t weight2 = BB_ZERO_WEIGHT;
 
     RegRecord* physRegRecord2 = findAnotherHalfRegRec(physRegRecord);
 
@@ -3646,9 +3688,9 @@ regNumber LinearScan::allocateBusyReg(Interval* current, RefPosition* refPositio
 #ifdef TARGET_ARM
     RegRecord* farthestRefPhysRegRecord2 = nullptr;
 #endif
-    LsraLocation farthestLocation = MinLocation;
-    LsraLocation refLocation      = refPosition->nodeLocation;
-    unsigned     farthestRefPosWeight;
+    LsraLocation         farthestLocation = MinLocation;
+    LsraLocation         refLocation      = refPosition->nodeLocation;
+    BasicBlock::weight_t farthestRefPosWeight;
     if (allocateIfProfitable)
     {
         // If allocating a reg is optional, we will consider those ref positions
@@ -3663,7 +3705,7 @@ regNumber LinearScan::allocateBusyReg(Interval* current, RefPosition* refPositio
         // initialized to MinLocation, the first available ref position
         // will be selected as spill candidate and its weight as the
         // fathestRefPosWeight.
-        farthestRefPosWeight = BB_MAX_WEIGHT;
+        farthestRefPosWeight = FloatingPointUtils::infinite_float();
     }
 
     for (regNumber regNum : Registers(regType))
@@ -3685,10 +3727,10 @@ regNumber LinearScan::allocateBusyReg(Interval* current, RefPosition* refPositio
 
         // We've passed the preliminary checks for a spill candidate.
         // Now, if we have a recentAssignedRef, check that it is going to be OK to spill it.
-        Interval*    assignedInterval        = physRegRecord->assignedInterval;
-        unsigned     recentAssignedRefWeight = BB_ZERO_WEIGHT;
-        RefPosition* recentAssignedRef       = nullptr;
-        RefPosition* recentAssignedRef2      = nullptr;
+        Interval*            assignedInterval        = physRegRecord->assignedInterval;
+        BasicBlock::weight_t recentAssignedRefWeight = BB_ZERO_WEIGHT;
+        RefPosition*         recentAssignedRef       = nullptr;
+        RefPosition*         recentAssignedRef2      = nullptr;
 #ifdef TARGET_ARM
         if (current->registerType == TYP_DOUBLE)
         {
@@ -4139,9 +4181,10 @@ void LinearScan::setIntervalAsSpilled(Interval* interval)
 }
 
 //------------------------------------------------------------------------
-// spill: Spill this Interval between "fromRefPosition" and "toRefPosition"
+// spill: Spill the "interval" starting from "fromRefPosition" (upto "toRefPosition")
 //
 // Arguments:
+//    interval        - The interval that contains the RefPosition to be spilled
 //    fromRefPosition - The RefPosition at which the Interval is to be spilled
 //    toRefPosition   - The RefPosition at which it must be reloaded (debug only arg)
 //
@@ -4200,7 +4243,7 @@ void LinearScan::spillInterval(Interval* interval, RefPosition* fromRefPosition 
 //                         an active interval, without spilling.
 //
 // Arguments:
-//    regRec           - the RegRecord to be unasssigned
+//    regRec           - the RegRecord to be unassigned
 //
 // Return Value:
 //    None.
@@ -4226,7 +4269,7 @@ void LinearScan::unassignPhysRegNoSpill(RegRecord* regRec)
 //                        physical register record
 //
 // Arguments:
-//    regRec           - the physical RegRecord to be unasssigned
+//    regRec           - the physical RegRecord to be unassigned
 //    spillRefPosition - The RefPosition at which the assignedInterval is to be spilled
 //                       or nullptr if we aren't spilling
 //
@@ -4264,7 +4307,7 @@ void LinearScan::checkAndClearInterval(RegRecord* regRec, RefPosition* spillRefP
 //                  assignedInterval at the given spillRefPosition, if any.
 //
 // Arguments:
-//    regRec           - The RegRecord to be unasssigned
+//    regRec           - The RegRecord to be unassigned
 //    newRegType       - The RegisterType of interval that would be assigned
 //
 // Return Value:
@@ -4316,7 +4359,7 @@ void LinearScan::unassignPhysReg(RegRecord* regRec ARM_ARG(RegisterType newRegTy
 //                  assignedInterval at the given spillRefPosition, if any.
 //
 // Arguments:
-//    regRec           - the RegRecord to be unasssigned
+//    regRec           - the RegRecord to be unassigned
 //    spillRefPosition - The RefPosition at which the assignedInterval is to be spilled
 //
 // Return Value:
@@ -4332,6 +4375,7 @@ void LinearScan::unassignPhysReg(RegRecord* regRec, RefPosition* spillRefPositio
 {
     Interval* assignedInterval = regRec->assignedInterval;
     assert(assignedInterval != nullptr);
+    assert(spillRefPosition == nullptr || spillRefPosition->getInterval() == assignedInterval);
     regNumber thisRegNum = regRec->regNum;
 
     // Is assignedInterval actually still assigned to this register?
@@ -4421,7 +4465,8 @@ void LinearScan::unassignPhysReg(RegRecord* regRec, RefPosition* spillRefPositio
         // it would be messy and undesirably cause the "bleeding" of LSRA stress modes outside
         // of LSRA.
         if (extendLifetimes() && assignedInterval->isLocalVar && RefTypeIsUse(spillRefPosition->refType) &&
-            spillRefPosition->treeNode != nullptr && (spillRefPosition->treeNode->gtFlags & GTF_VAR_DEATH) != 0)
+            spillRefPosition->treeNode != nullptr &&
+            spillRefPosition->treeNode->AsLclVar()->IsLastUse(spillRefPosition->multiRegIdx))
         {
             dumpLsraAllocationEvent(LSRA_EVENT_SPILL_EXTENDED_LIFETIME, assignedInterval);
             assignedInterval->isActive = false;
@@ -5555,8 +5600,13 @@ void LinearScan::allocateRegisters()
             {
                 allocate = false;
             }
-            else if (refType == RefTypeParamDef && varDsc->lvRefCntWtd() <= BB_UNITY_WEIGHT)
+            else if (refType == RefTypeParamDef && (varDsc->lvRefCntWtd() <= BB_UNITY_WEIGHT) &&
+                     (!currentRefPosition->lastUse || (currentInterval->physReg == REG_STK)))
             {
+                // If this is a low ref-count parameter, and either it is used (def is not the last use) or it's
+                // passed on the stack, don't allocate a register.
+                // Note that if this is an unused register parameter we don't want to set allocate to false because that
+                // will cause us to allocate stack space to spill it.
                 allocate = false;
             }
             else if ((currentInterval->physReg == REG_STK) && nextRefPosition->treeNode->OperIs(GT_BITCAST))
@@ -6162,7 +6212,7 @@ void LinearScan::allocateRegisters()
     if (getLsraExtendLifeTimes())
     {
         // If we have extended lifetimes, we need to make sure all the registers are freed.
-        for (int regNumIndex = 0; regNumIndex <= REG_FP_LAST; regNumIndex++)
+        for (size_t regNumIndex = 0; regNumIndex <= REG_FP_LAST; regNumIndex++)
         {
             RegRecord& regRecord = physRegs[regNumIndex];
             Interval*  interval  = regRecord.assignedInterval;
@@ -6295,12 +6345,25 @@ void LinearScan::updatePreviousInterval(RegRecord* reg, Interval* interval, Regi
 // Return Value:
 //    None
 //
+// Note:
+//    For a multireg node, 'varNum' will be the field local for the given register.
+//
 void LinearScan::writeLocalReg(GenTreeLclVar* lclNode, unsigned varNum, regNumber reg)
 {
-    // We don't yet support multireg locals.
-    assert((lclNode->GetLclNum() == varNum) && !lclNode->IsMultiReg());
-    assert(lclNode->GetLclNum() == varNum);
-    lclNode->SetRegNum(reg);
+    assert((lclNode->GetLclNum() == varNum) == !lclNode->IsMultiReg());
+    if (lclNode->GetLclNum() == varNum)
+    {
+        lclNode->SetRegNum(reg);
+    }
+    else
+    {
+        assert(compiler->lvaEnregMultiRegVars);
+        LclVarDsc* parentVarDsc = compiler->lvaGetDesc(lclNode->GetLclNum());
+        assert(parentVarDsc->lvPromoted);
+        unsigned regIndex = varNum - parentVarDsc->lvFieldLclStart;
+        assert(regIndex < MAX_MULTIREG_COUNT);
+        lclNode->SetRegNumByIdx(reg, regIndex);
+    }
 }
 
 //-----------------------------------------------------------------------------
@@ -6353,7 +6416,7 @@ void LinearScan::resolveLocalRef(BasicBlock* block, GenTreeLclVar* treeNode, Ref
     interval->recentRefPosition = currentRefPosition;
     LclVarDsc* varDsc           = interval->getLocalVar(compiler);
 
-    // NOTE: we set the GTF_VAR_DEATH flag here unless we are extending lifetimes, in which case we write
+    // NOTE: we set the LastUse flag here unless we are extending lifetimes, in which case we write
     // this bit in checkLastUses. This is a bit of a hack, but is necessary because codegen requires
     // accurate last use info that is not reflected in the lastUse bit on ref positions when we are extending
     // lifetimes. See also the comments in checkLastUses.
@@ -6392,7 +6455,9 @@ void LinearScan::resolveLocalRef(BasicBlock* block, GenTreeLclVar* treeNode, Ref
         }
         interval->assignedReg = nullptr;
         interval->physReg     = REG_NA;
-        if (currentRefPosition->refType == RefTypeUse)
+        // Set this as contained if it is not a multi-reg (we could potentially mark it s contained
+        // if all uses are from spill, but that adds complexity.
+        if ((currentRefPosition->refType == RefTypeUse) && !treeNode->IsMultiReg())
         {
             assert(treeNode != nullptr);
             treeNode->SetContained();
@@ -6454,6 +6519,10 @@ void LinearScan::resolveLocalRef(BasicBlock* block, GenTreeLclVar* treeNode, Ref
         if (treeNode != nullptr)
         {
             treeNode->gtFlags |= GTF_SPILLED;
+            if (treeNode->IsMultiReg())
+            {
+                treeNode->SetRegSpillFlagByIdx(GTF_SPILLED, currentRefPosition->getMultiRegIdx());
+            }
             if (spillAfter)
             {
                 if (currentRefPosition->RegOptional())
@@ -6476,6 +6545,10 @@ void LinearScan::resolveLocalRef(BasicBlock* block, GenTreeLclVar* treeNode, Ref
                 else
                 {
                     treeNode->gtFlags |= GTF_SPILL;
+                    if (treeNode->IsMultiReg())
+                    {
+                        treeNode->SetRegSpillFlagByIdx(GTF_SPILL, currentRefPosition->getMultiRegIdx());
+                    }
                 }
             }
         }
@@ -6484,10 +6557,13 @@ void LinearScan::resolveLocalRef(BasicBlock* block, GenTreeLclVar* treeNode, Ref
             assert(currentRefPosition->refType == RefTypeExpUse);
         }
     }
-    else if (spillAfter && !RefTypeIsUse(currentRefPosition->refType))
+    else if (spillAfter && !RefTypeIsUse(currentRefPosition->refType) &&
+             (!treeNode->IsMultiReg() || treeNode->gtGetOp1()->IsMultiRegNode()))
     {
         // In the case of a pure def, don't bother spilling - just assign it to the
         // stack.  However, we need to remember that it was spilled.
+        // We can't do this in the case of a multi-reg node with a non-multireg source as
+        // we need the register to extract into.
 
         assert(interval->isSpilled);
         varDsc->SetRegNum(REG_STK);
@@ -6557,6 +6633,10 @@ void LinearScan::resolveLocalRef(BasicBlock* block, GenTreeLclVar* treeNode, Ref
             if (treeNode != nullptr)
             {
                 treeNode->gtFlags |= GTF_SPILL;
+                if (treeNode->IsMultiReg())
+                {
+                    treeNode->SetRegSpillFlagByIdx(GTF_SPILL, currentRefPosition->getMultiRegIdx());
+                }
             }
             assert(interval->isSpilled);
             interval->physReg = REG_NA;
@@ -6574,6 +6654,10 @@ void LinearScan::resolveLocalRef(BasicBlock* block, GenTreeLclVar* treeNode, Ref
             if (!currentRefPosition->lastUse)
             {
                 treeNode->gtFlags |= GTF_SPILLED;
+                if (treeNode->IsMultiReg())
+                {
+                    treeNode->SetRegSpillFlagByIdx(GTF_SPILLED, currentRefPosition->getMultiRegIdx());
+                }
             }
         }
     }
@@ -6624,9 +6708,9 @@ void LinearScan::writeRegisters(RefPosition* currentRefPosition, GenTree* tree)
 //                                   |       GT_ADD (3)   |
 //                                   +---------+----------+
 //                                             |
-//                                           /   \
-//                                         /       \
-//                                       /           \
+//                                           /   '\'
+//                                         /       '\'
+//                                       /           '\'
 //                   +-------------------+           +----------------------+
 //                   |         x (1)     | "tree"    |         y (2)        |
 //                   +-------------------+           +----------------------+
@@ -6637,9 +6721,9 @@ void LinearScan::writeRegisters(RefPosition* currentRefPosition, GenTree* tree)
 //                                   |       GT_ADD (4)   |
 //                                   +---------+----------+
 //                                             |
-//                                           /   \
-//                                         /       \
-//                                       /           \
+//                                           /   '\'
+//                                         /       '\'
+//                                       /           '\'
 //                   +-------------------+           +----------------------+
 //                   |  GT_RELOAD (3)    |           |         y (2)        |
 //                   +-------------------+           +----------------------+
@@ -6714,8 +6798,8 @@ void LinearScan::insertCopyOrReload(BasicBlock* block, GenTree* tree, unsigned m
         if (refPosition->copyReg)
         {
             // This is a TEMPORARY copy
-            assert(isCandidateLocalRef(tree));
-            newNode->gtFlags |= GTF_VAR_DEATH;
+            assert(isCandidateLocalRef(tree) || tree->IsMultiRegLclVar());
+            newNode->SetLastUse(multiRegIdx);
         }
 
         // Insert the copy/reload after the spilled node and replace the use of the original node with a use
@@ -9094,13 +9178,13 @@ void LinearScan::updateLsraStat(LsraStat stat, unsigned bbNum)
 //
 void LinearScan::dumpLsraStats(FILE* file)
 {
-    unsigned sumSpillCount         = 0;
-    unsigned sumCopyRegCount       = 0;
-    unsigned sumResolutionMovCount = 0;
-    unsigned sumSplitEdgeCount     = 0;
-    UINT64   wtdSpillCount         = 0;
-    UINT64   wtdCopyRegCount       = 0;
-    UINT64   wtdResolutionMovCount = 0;
+    unsigned             sumSpillCount         = 0;
+    unsigned             sumCopyRegCount       = 0;
+    unsigned             sumResolutionMovCount = 0;
+    unsigned             sumSplitEdgeCount     = 0;
+    BasicBlock::weight_t wtdSpillCount         = 0;
+    BasicBlock::weight_t wtdCopyRegCount       = 0;
+    BasicBlock::weight_t wtdResolutionMovCount = 0;
 
     fprintf(file, "----------\n");
     fprintf(file, "LSRA Stats");
@@ -9145,18 +9229,18 @@ void LinearScan::dumpLsraStats(FILE* file)
         sumResolutionMovCount += resolutionMovCount;
         sumSplitEdgeCount += splitEdgeCount;
 
-        wtdSpillCount += (UINT64)spillCount * block->bbWeight;
-        wtdCopyRegCount += (UINT64)copyRegCount * block->bbWeight;
-        wtdResolutionMovCount += (UINT64)resolutionMovCount * block->bbWeight;
+        wtdSpillCount += spillCount * block->bbWeight;
+        wtdCopyRegCount += copyRegCount * block->bbWeight;
+        wtdResolutionMovCount += resolutionMovCount * block->bbWeight;
     }
 
     fprintf(file, "Total Tracked Vars:  %d\n", compiler->lvaTrackedCount);
     fprintf(file, "Total Reg Cand Vars: %d\n", regCandidateVarCount);
     fprintf(file, "Total number of Intervals: %d\n", static_cast<unsigned>(intervals.size() - 1));
     fprintf(file, "Total number of RefPositions: %d\n", static_cast<unsigned>(refPositions.size() - 1));
-    fprintf(file, "Total Spill Count: %d    Weighted: %I64u\n", sumSpillCount, wtdSpillCount);
-    fprintf(file, "Total CopyReg Count: %d   Weighted: %I64u\n", sumCopyRegCount, wtdCopyRegCount);
-    fprintf(file, "Total ResolutionMov Count: %d    Weighted: %I64u\n", sumResolutionMovCount, wtdResolutionMovCount);
+    fprintf(file, "Total Spill Count: %d    Weighted: %f\n", sumSpillCount, wtdSpillCount);
+    fprintf(file, "Total CopyReg Count: %d   Weighted: %f\n", sumCopyRegCount, wtdCopyRegCount);
+    fprintf(file, "Total ResolutionMov Count: %d    Weighted: %f\n", sumResolutionMovCount, wtdResolutionMovCount);
     fprintf(file, "Total number of split edges: %d\n", sumSplitEdgeCount);
 
     // compute total number of spill temps created
@@ -9236,12 +9320,15 @@ void RefPosition::dump()
     {
         this->getInterval()->tinyDump();
     }
-
     if (this->treeNode)
     {
-        printf("%s ", treeNode->OpName(treeNode->OperGet()));
+        printf("%s", treeNode->OpName(treeNode->OperGet()));
+        if (this->treeNode->IsMultiRegNode())
+        {
+            printf("[%d]", this->multiRegIdx);
+        }
     }
-    printf(FMT_BB " ", this->bbNum);
+    printf(" " FMT_BB " ", this->bbNum);
 
     printf("regmask=");
     dumpRegMask(registerAssignment);
@@ -9498,7 +9585,9 @@ void LinearScan::lsraGetOperandString(GenTree*          tree,
 
                 if (tree->IsMultiRegNode())
                 {
-                    unsigned regCount = tree->GetMultiRegCount();
+                    unsigned regCount = tree->IsMultiRegLclVar()
+                                            ? compiler->lvaGetDesc(tree->AsLclVar()->GetLclNum())->lvFieldCnt
+                                            : tree->GetMultiRegCount();
                     for (unsigned regIndex = 1; regIndex < regCount; regIndex++)
                     {
                         regNumber reg = tree->GetRegByIndex(regIndex);
@@ -10918,6 +11007,8 @@ void LinearScan::verifyFinalAllocation()
                 }
                 if (currentRefPosition->spillAfter || currentRefPosition->lastUse)
                 {
+                    assert(!currentRefPosition->spillAfter || currentRefPosition->IsActualRef());
+
                     interval->physReg     = REG_NA;
                     interval->assignedReg = nullptr;
 

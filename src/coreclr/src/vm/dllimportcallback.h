@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 //
 // File: DllImportCallback.h
 //
@@ -19,13 +18,15 @@
 
 enum UMThunkStubFlags
 {
-    umtmlIsStatic           = 0x0001,
-    umtmlThisCall           = 0x0002,
-    umtmlThisCallHiddenArg  = 0x0004,
-    umtmlFpu                = 0x0008,
+    umtmlIsStatic            = 0x0001,
+    umtmlThisCall            = 0x0002,
+    umtmlThisCallHiddenArg   = 0x0004,
+    umtmlFpu                 = 0x0008,
+    umtmlEnregRetValToBuf    = 0x0010,
+    umtmlBufRetValToEnreg    = 0x0020,
 #ifdef TARGET_X86
     // the signature is trivial so stub need not be generated and the target can be called directly
-    umtmlSkipStub           = 0x0080,
+    umtmlSkipStub            = 0x0080,
 #endif // TARGET_X86
 };
 
@@ -268,6 +269,10 @@ public:
         }
         CONTRACTL_END;
 
+#if defined(HOST_OSX) && defined(HOST_ARM64)
+        auto jitWriteEnableHolder = PAL_JITWriteEnable(true);
+#endif // defined(HOST_OSX) && defined(HOST_ARM64)
+
         m_pManagedTarget = pManagedTarget;
         m_pObjectHandle     = pObjectHandle;
         m_pUMThunkMarshInfo = pUMThunkMarshInfo;
@@ -299,8 +304,12 @@ public:
         m_code.Encode((BYTE*)m_pUMThunkMarshInfo->GetExecStubEntryPoint(), this);
 
 #ifdef _DEBUG
+#if defined(HOST_OSX) && defined(HOST_ARM64)
+    auto jitWriteEnableHolder = PAL_JITWriteEnable(true);
+#endif // defined(HOST_OSX) && defined(HOST_ARM64)
+
         m_state = kRunTimeInited;
-#endif
+#endif // _DEBUG
     }
 
     // asm entrypoint

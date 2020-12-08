@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>$(NetCoreAppCurrent);$(NetFrameworkCurrent)</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent);net48</TargetFrameworks>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="$(CommonTestPath)System\Net\WebSockets\WebSocketCreateTest.cs"
@@ -12,5 +12,8 @@
     <Compile Include="$(CommonPath)System\Net\HttpKnownHeaderNames.cs"
              Link="Common\System\Net\HttpKnownHeaderNames.cs" />
     <Compile Include="WebSocketProtocolTests.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\src\System.Net.WebSockets.WebSocketProtocol.csproj" />
   </ItemGroup>
 </Project>

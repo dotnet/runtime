@@ -1,9 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using CultureInfo = System.Globalization.CultureInfo;
 using System.IO;
 using System.Configuration.Assemblies;
@@ -69,19 +69,33 @@ namespace System.Reflection
         }
 
         [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
-        private static extern void GetCodeBase(QCallAssembly assembly,
-                                               bool copiedName,
+        private static extern bool GetCodeBase(QCallAssembly assembly,
                                                StringHandleOnStack retString);
 
-        internal string? GetCodeBase(bool copiedName)
+        internal string? GetCodeBase()
         {
             string? codeBase = null;
             RuntimeAssembly runtimeAssembly = this;
-            GetCodeBase(new QCallAssembly(ref runtimeAssembly), copiedName, new StringHandleOnStack(ref codeBase));
-            return codeBase;
+            if (GetCodeBase(new QCallAssembly(ref runtimeAssembly), new StringHandleOnStack(ref codeBase)))
+            {
+                return codeBase;
+            }
+            return null;
         }
 
-        public override string? CodeBase => GetCodeBase(false);
+        public override string? CodeBase
+        {
+            get
+            {
+                var codeBase = GetCodeBase();
+                if (codeBase is null)
+                {
+                    // Not supported if the assembly was loaded from memory
+                    throw new NotSupportedException(SR.NotSupported_CodeBase);
+                }
+                return codeBase;
+            }
+        }
 
         internal RuntimeAssembly GetNativeHandle() => this;
 
@@ -90,7 +104,7 @@ namespace System.Reflection
         // is returned.
         public override AssemblyName GetName(bool copiedName)
         {
-            string? codeBase = GetCodeBase(copiedName);
+            string? codeBase = GetCodeBase();
 
             var an = new AssemblyName(GetSimpleName(),
                     GetPublicKey(),
@@ -159,6 +173,7 @@ namespace System.Reflection
                                             ObjectHandleOnStack keepAlive,
                                             ObjectHandleOnStack assemblyLoadContext);
 
+        [RequiresUnreferencedCode("Types might be removed")]
         public override Type? GetType(string name, bool throwOnError, bool ignoreCase)
         {
             // throw on null strings regardless of the value of "throwOnError"
@@ -185,6 +200,7 @@ namespace System.Reflection
         [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
         private static extern void GetExportedTypes(QCallAssembly assembly, ObjectHandleOnStack retTypes);
 
+        [RequiresUnreferencedCode("Types might be removed")]
         public override Type[] GetExportedTypes()
         {
             Type[]? types = null;
@@ -195,6 +211,7 @@ namespace System.Reflection
 
         public override IEnumerable<TypeInfo> DefinedTypes
         {
+            [RequiresUnreferencedCode("Types might be removed")]
             get
             {
                 RuntimeModule[] modules = GetModulesInternal(true, false);
@@ -357,6 +374,12 @@ namespace System.Reflection
         // given name.  (Name should not include path.)
         public override FileStream? GetFile(string name)
         {
+            if (Location.Length == 0)
+            {
+                // Throw if the assembly was loaded from memory, indicated by Location returning an empty string
+                throw new FileNotFoundException(SR.IO_NoFileTableInInMemoryAssemblies);
+            }
+
             RuntimeModule? m = (RuntimeModule?)GetModule(name);
             if (m == null)
                 return null;
@@ -368,6 +391,12 @@ namespace System.Reflection
 
         public override FileStream[] GetFiles(bool getResourceModules)
         {
+            if (Location.Length == 0)
+            {
+                // Throw if the assembly was loaded from memory, indicated by Location returning an empty string
+                throw new FileNotFoundException(SR.IO_NoFileTableInInMemoryAssemblies);
+            }
+
             Module[] m = GetModules(getResourceModules);
             FileStream[] fs = new FileStream[m.Length];
 
@@ -395,6 +424,7 @@ namespace System.Reflection
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern AssemblyName[] GetReferencedAssemblies(RuntimeAssembly assembly);
 
+        [RequiresUnreferencedCode("Assembly references might be removed")]
         public override AssemblyName[] GetReferencedAssemblies()
         {
             return GetReferencedAssemblies(GetNativeHandle());
@@ -452,6 +482,7 @@ namespace System.Reflection
             }
         }
 
+        [Obsolete(Obsoletions.GlobalAssemblyCacheMessage, DiagnosticId = Obsoletions.GlobalAssemblyCacheDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public override bool GlobalAssemblyCache => false;
 
         public override long HostContext => 0;
@@ -607,6 +638,7 @@ namespace System.Reflection
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern int GetToken(RuntimeAssembly assembly);
 
+        [RequiresUnreferencedCode("Types might be removed")]
         public sealed override Type[] GetForwardedTypes()
         {
             List<Type> types = new List<Type>();

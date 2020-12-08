@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -338,6 +337,22 @@ namespace System.Collections.Tests
             AssertExtensions.Throws<ArgumentException>(null, () => new Dictionary<string, int>(source, StringComparer.OrdinalIgnoreCase));
         }
 
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotInvariantGlobalization))]
+        // https://github.com/dotnet/runtime/issues/44681
+        public void DictionaryOrdinalIgnoreCaseCyrillicKeys()
+        {
+            const string Lower = "абвгдеёжзийклмнопрстуфхцчшщьыъэюя";
+            const string Higher = "АБВГДЕЁЖЗИЙКЛМНОПРСТУФХЦЧШЩЬЫЪЭЮЯ";
+
+            var dictionary = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+
+            for (int i = 0; i < Lower.Length; i++)
+            {
+                dictionary[Lower[i].ToString()] = i;
+                Assert.Equal(i, dictionary[Higher[i].ToString()]);
+            }
+        }
+
         public static IEnumerable<object[]> CopyConstructorStringComparerData
         {
             get
@@ -400,7 +415,7 @@ namespace System.Collections.Tests
             return dict;
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsBinaryFormatterSupported))]
         public void ComparerSerialization()
         {
             // Strings switch between randomized and non-randomized comparers,

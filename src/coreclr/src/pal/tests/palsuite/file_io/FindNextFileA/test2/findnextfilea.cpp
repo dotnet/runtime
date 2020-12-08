@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 /*=====================================================================
 **
@@ -89,7 +88,7 @@ static void DoTest(const char* szDir,
     }
 }
 
-int __cdecl main(int argc, char *argv[])
+PALTEST(file_io_FindNextFileA_test2_paltest_findnextfilea_test2, "file_io/FindNextFileA/test2/paltest_findnextfilea_test2")
 {
 
     if (0 != PAL_Initialize(argc,argv))

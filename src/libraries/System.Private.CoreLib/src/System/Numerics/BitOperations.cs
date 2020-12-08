@@ -1,6 +1,5 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -8,9 +7,7 @@ using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.Arm;
 using System.Runtime.Intrinsics.X86;
 
-#if SYSTEM_PRIVATE_CORELIB
 using Internal.Runtime.CompilerServices;
-#endif
 
 // Some routines inspired by the Stanford Bit Twiddling Hacks by Sean Eron Anderson:
 // http://graphics.stanford.edu/~seander/bithacks.html
@@ -22,12 +19,7 @@ namespace System.Numerics
     /// The methods use hardware intrinsics when available on the underlying platform,
     /// otherwise they use optimized software fallbacks.
     /// </summary>
-#if SYSTEM_PRIVATE_CORELIB
-    public
-#else
-    internal
-#endif
-        static class BitOperations
+    public static class BitOperations
     {
         // C# no-alloc optimization that directly wraps the data section of the dll (similar to string constants)
         // https://github.com/dotnet/roslyn/pull/24621
@@ -228,6 +220,7 @@ namespace System.Numerics
         /// Similar in behavior to the x86 instruction POPCNT.
         /// </summary>
         /// <param name="value">The value.</param>
+        [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [CLSCompliant(false)]
         public static int PopCount(uint value)
@@ -241,11 +234,7 @@ namespace System.Numerics
             {
                 // PopCount works on vector so convert input value to vector first.
 
-                // Vector64.CreateScalar(uint) generates suboptimal code by storing and
-                // loading the result to memory.
-                // See https://github.com/dotnet/runtime/issues/35976 for details.
-                // Hence use Vector64.Create(ulong) to create Vector64<ulong> and operate on that.
-                Vector64<ulong> input = Vector64.Create((ulong)value);
+                Vector64<uint> input = Vector64.CreateScalar(value);
                 Vector64<byte> aggregated = AdvSimd.Arm64.AddAcross(AdvSimd.PopCount(input.AsByte()));
                 return aggregated.ToScalar();
             }
@@ -272,6 +261,7 @@ namespace System.Numerics
         /// Similar in behavior to the x86 instruction POPCNT.
         /// </summary>
         /// <param name="value">The value.</param>
+        [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [CLSCompliant(false)]
         public static int PopCount(ulong value)

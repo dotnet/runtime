@@ -37,6 +37,14 @@ ICU (International Components for Unicode) is also required to build and run. It
 brew install icu4c
 ```
 
+pkg-config
+----------
+pkg-config is also required to build. It can be obtained via [Homebrew](https://brew.sh/).
+
+```sh
+brew install pkg-config
+```
+
 Build the Runtime and System.Private.CoreLib
 ============================================
 
@@ -58,7 +66,7 @@ Create the Core_Root
 The Core_Root folder will have the built binaries, from `src/coreclr/build.sh` and it will also include the CoreFX packages required to run tests.
 
 ```
-./src/coreclr/build-test.sh generatelayoutonly
+./src/tests/build.sh generatelayoutonly
 ```
 
 After the build is complete you will be able to find the output in the `artifacts/tests/coreclr/OSX.x64.Debug/Tests/Core_Root` folder.
@@ -66,7 +74,7 @@ After the build is complete you will be able to find the output in the `artifact
 Running a single test
 ===================
 
-After `src/coreclr/build-test.sh` is run, corerun from the Core_Root folder is ready to be run. This can be done by using the full absolute path to corerun, or by setting
+After `src/tests/build.sh` is run, corerun from the Core_Root folder is ready to be run. This can be done by using the full absolute path to corerun, or by setting
 an environment variable to the Core_Root folder.
 
 ```sh

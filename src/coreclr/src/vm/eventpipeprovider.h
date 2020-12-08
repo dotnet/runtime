@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #ifndef __EVENTPIPE_PROVIDER_H__
 #define __EVENTPIPE_PROVIDER_H__
@@ -114,7 +113,7 @@ private:
         LPCWSTR pFilterData);
 
     // Invoke the provider callback.
-    static void InvokeCallback(EventPipeProviderCallbackData eventPipeProviderCallbackData);
+    static void InvokeCallback(EventPipeProviderCallbackData *pEventPipeProviderCallbackData);
 
     // Specifies whether or not the provider was deleted, but that deletion
     // was deferred until after tracing is stopped.

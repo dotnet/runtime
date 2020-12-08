@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
 using Microsoft.Win32.SafeHandles;
@@ -112,11 +111,15 @@ namespace System.Security.Cryptography
 
             ECParameters otherPartyParameters = otherPartyPublicKey.ExportParameters();
 
-            using (ECDiffieHellmanCng otherPartyCng = (ECDiffieHellmanCng)Create(otherPartyParameters))
-            using (otherKey = (ECDiffieHellmanCngPublicKey)otherPartyCng.PublicKey)
-            using (CngKey importedKey = otherKey.Import())
+            using (ECDiffieHellmanCng otherPartyCng = new ECDiffieHellmanCng())
             {
-                return DeriveSecretAgreementHandle(importedKey);
+                otherPartyCng.ImportParameters(otherPartyParameters);
+
+                using (otherKey = (ECDiffieHellmanCngPublicKey)otherPartyCng.PublicKey)
+                using (CngKey importedKey = otherKey.Import())
+                {
+                    return DeriveSecretAgreementHandle(importedKey);
+                }
             }
         }
 

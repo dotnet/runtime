@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 // StubMgr.h
 //
 
@@ -48,6 +47,7 @@
 #define __stubmgr_h__
 
 #include "simplerwlock.hpp"
+#include "lockedrangelist.h"
 
 // When 'TraceStub' returns, it gives the address of where the 'target' is for a stub'
 // TraceType indicates what this 'target' is
@@ -338,53 +338,6 @@ private:
 
     static CrstStatic s_StubManagerListCrst;
 #endif // !CROSSGEN_COMPILE
-};
-
-// -------------------------------------------------------
-// This just wraps the RangeList methods in a read or
-// write lock depending on the operation.
-// -------------------------------------------------------
-
-class LockedRangeList : public RangeList
-{
-  public:
-    VPTR_VTABLE_CLASS(LockedRangeList, RangeList)
-
-    LockedRangeList() : RangeList(), m_RangeListRWLock(COOPERATIVE_OR_PREEMPTIVE, LOCK_TYPE_DEFAULT)
-    {
-        LIMITED_METHOD_CONTRACT;
-    }
-
-    ~LockedRangeList()
-    {
-        LIMITED_METHOD_CONTRACT;
-    }
-
-  protected:
-
-    virtual BOOL AddRangeWorker(const BYTE *start, const BYTE *end, void *id)
-    {
-        WRAPPER_NO_CONTRACT;
-        SimpleWriteLockHolder lh(&m_RangeListRWLock);
-        return RangeList::AddRangeWorker(start,end,id);
-    }
-
-    virtual void RemoveRangesWorker(void *id, const BYTE *start = NULL, const BYTE *end = NULL)
-    {
-        WRAPPER_NO_CONTRACT;
-        SimpleWriteLockHolder lh(&m_RangeListRWLock);
-        RangeList::RemoveRangesWorker(id,start,end);
-    }
-
-    virtual BOOL IsInRangeWorker(TADDR address, TADDR *pID = NULL)
-    {
-        WRAPPER_NO_CONTRACT;
-        SUPPORTS_DAC;
-        SimpleReadLockHolder lh(&m_RangeListRWLock);
-        return RangeList::IsInRangeWorker(address, pID);
-    }
-
-    SimpleRWLock m_RangeListRWLock;
 };
 
 #ifndef CROSSGEN_COMPILE
@@ -714,7 +667,6 @@ class ILStubManager : public StubManager
 #ifndef DACCESS_COMPILE
 #ifdef FEATURE_COMINTEROP
     static PCODE GetCOMTarget(Object *pThis, ComPlusCallInfo *pComPlusCallInfo);
-    static PCODE GetWinRTFactoryTarget(ComPlusCallMethodDesc *pCMD);
 #endif // FEATURE_COMINTEROP
 
     virtual BOOL TraceManager(Thread *thread,

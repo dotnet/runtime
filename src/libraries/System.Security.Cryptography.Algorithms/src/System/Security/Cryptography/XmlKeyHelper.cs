@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Buffers.Binary;
 using System.Collections;
@@ -278,7 +277,7 @@ namespace System.Security.Cryptography
                         "Elements",
                         BindingFlags.Instance | BindingFlags.Public,
                         null,
-                        Array.Empty<Type>(),
+                        Type.EmptyTypes,
                         null)!;
                 private static readonly PropertyInfo s_elementNameProperty = s_docRootProperty.PropertyType.GetProperty("Name")!;
                 private static readonly PropertyInfo s_nameNameProperty = s_elementNameProperty.PropertyType.GetProperty("LocalName")!;

@@ -1,12 +1,11 @@
-<#@ template debug="false" hostspecific="false" language="C#" #>
-<#@ import namespace="System" #>
-<#@ include file="RawTextWriter.ttinclude" #>// Licensed to the .NET Foundation under one or more agreements.
+<#@ import namespace="System"
+#><#@ include file="RawTextWriter.ttinclude" #>// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 // WARNING: This file is generated and should not be modified directly.
 // Instead, modify XmlRawTextWriterGenerator.ttinclude
 
+#nullable disable
 using System;
 using System.IO;
 using System.Xml;
@@ -52,7 +51,6 @@ namespace System.Xml
         protected bool _writeToNull;
         protected bool _hadDoubleBracket;
         protected bool _inAttributeValue;
-
 <# if (WriterType == RawTextWriterType.Encoded) { #>
         protected int _bufBytesUsed;
         protected char[] _bufChars;
@@ -69,7 +67,7 @@ namespace System.Xml
         private int _lastMarkPos;
         private int[] _textContentMarks;   // even indices contain text content start positions
                                            // odd indices contain markup start positions
-        private CharEntityEncoderFallback _charEntityFallback;
+        private readonly CharEntityEncoderFallback _charEntityFallback;
 <# } #>
 
         // writer settings
@@ -91,7 +89,9 @@ namespace System.Xml
         private const int BUFSIZE = 2048 * 3;       // Should be greater than default FileStream size (4096), otherwise the FileStream will try to cache the data
         private const int ASYNCBUFSIZE = 64 * 1024; // Set async buffer size to 64KB
         private const int OVERFLOW = 32;            // Allow overflow in order to reduce checks when writing out constant size markup
+<# if (WriterType != RawTextWriterType.Utf8) { #>
         private const int INIT_MARKS_COUNT = 64;
+<# } #>
 
         //
         // Constructors
@@ -193,7 +193,7 @@ namespace System.Xml
 
             _encoder = _encoding.GetEncoder();
 
-            if (!_stream.CanSeek || _stream.Position == 0)
+            if (!stream.CanSeek || stream.Position == 0)
             {
                 if (bom.Length != 0)
                 {
@@ -791,6 +791,7 @@ namespace System.Xml
         {
             FlushBuffer();
             FlushEncoder();
+
 <# if (WriterType == RawTextWriterType.Utf8) { #>
             if (_stream != null)
             {
@@ -871,6 +872,7 @@ namespace System.Xml
             {
                 // Move last buffer character to the beginning of the buffer (so that previous character can always be determined)
                 <#= BufferName #>[0] = <#= BufferName #>[_bufPos - 1];
+
 <# if (WriterType == RawTextWriterType.Utf8) { #>
                 if (IsSurrogateByte(<#= BufferName #>[0]))
                 {
@@ -880,8 +882,8 @@ namespace System.Xml
                     <#= BufferName #>[2] = <#= BufferName #>[_bufPos + 1];
                     <#= BufferName #>[3] = <#= BufferName #>[_bufPos + 2];
                 }
-<# } #>
 
+<# } #>
                 // Reset buffer position
                 _textPos = (_textPos == _bufPos) ? 1 : 0;
                 _attrEndPos = (_attrEndPos == _bufPos) ? 1 : 0;
@@ -954,7 +956,7 @@ namespace System.Xml
                 <#= BufferType #>* pDst = pDstBegin + _bufPos;
 
                 int ch = 0;
-                for (;;)
+                while (true)
                 {
                     <#= BufferType #>* pDstEnd = pDst + (pSrcEnd - pSrc);
                     if (pDstEnd > pDstBegin + _bufLen)
@@ -972,6 +974,7 @@ namespace System.Xml
                         pDst++;
                         pSrc++;
                     }
+
                     Debug.Assert(pSrc <= pSrcEnd);
 
                     // end of value
@@ -1063,7 +1066,7 @@ namespace System.Xml
                 <#= BufferType #>* pDst = pDstBegin + _bufPos;
 
                 int ch = 0;
-                for (;;)
+                while (true)
                 {
                     <#= BufferType #>* pDstEnd = pDst + (pSrcEnd - pSrc);
                     if (pDstEnd > pDstBegin + _bufLen)
@@ -1180,7 +1183,7 @@ namespace System.Xml
                 char* pSrc = pSrcBegin;
 
                 int ch = 0;
-                for (;;)
+                while (true)
                 {
                     <#= BufferType #>* pDstEnd = pDst + (pSrcEnd - pSrc);
                     if (pDstEnd > pDstBegin + _bufLen)
@@ -1192,7 +1195,7 @@ namespace System.Xml
                     while (pDst < pDstEnd && ((ch = *pSrc) <= 0x7F))
 <# } else { #>
                     while (pDst < pDstEnd && ((ch = *pSrc) < XmlCharType.SurHighStart))
-<# } #>
+<# }#>
                     {
                         pSrc++;
                         *pDst = (<#= BufferType #>)ch;
@@ -1230,7 +1233,7 @@ namespace System.Xml
                 <#= BufferType #>* pDst = pDstBegin + _bufPos;
 
                 int ch = 0;
-                for (;;)
+                while (true)
                 {
                     <#= BufferType #>* pDstEnd = pDst + (pSrcEnd - pSrc);
                     if (pDstEnd > pDstBegin + _bufLen)
@@ -1336,7 +1339,7 @@ namespace System.Xml
                 <#= BufferType #>* pDst = pDstBegin + _bufPos;
 
                 int ch = 0;
-                for (;;)
+                while (true)
                 {
                     <#= BufferType #>* pDstEnd = pDst + (pSrcEnd - pSrc);
                     if (pDstEnd > pDstBegin + _bufLen)
@@ -1473,7 +1476,7 @@ namespace System.Xml
                 <#= BufferType #>* pDst = pDstBegin + _bufPos;
 
                 int ch = 0;
-                for (;;)
+                while (true)
                 {
                     <#= BufferType #>* pDstEnd = pDst + (pSrcEnd - pSrc);
                     if (pDstEnd > pDstBegin + _bufLen)
@@ -1587,8 +1590,8 @@ namespace System.Xml
         {
             return (b & 0xF8) == 0xF0;
         }
-<# } #>
 
+<# } #>
         private static unsafe <#= BufferType #>* EncodeSurrogate(char* pSrc, char* pSrcEnd, <#= BufferType #>* pDst)
         {
             Debug.Assert(XmlCharType.IsSurrogate(*pSrc));
@@ -1649,16 +1652,18 @@ namespace System.Xml
 <# if (WriterType == RawTextWriterType.Utf8) { #>
                     if (ch < 0x80)
                     {
-<# } #>
                         *pDst = (<#= BufferType #>)ch;
                         pDst++;
-<# if (WriterType == RawTextWriterType.Utf8) { #>
                     }
                     else
                     {
                         pDst = EncodeMultibyteUTF8(ch, pDst);
                     }
+<# } else { #>
+                    *pDst = (<#= BufferType #>)ch;
+                    pDst++;
 <# } #>
+
                     return pDst;
                 }
             }
@@ -1719,8 +1724,8 @@ namespace System.Xml
                 pSrc++;
             }
         }
-<# } #>
 
+<# } #>
 <# if (WriterType == RawTextWriterType.Encoded) { #>
         protected void ChangeTextContentMark(bool value)
         {
@@ -1741,6 +1746,7 @@ namespace System.Xml
             Array.Copy(_textContentMarks, newTextContentMarks, _textContentMarks.Length);
             _textContentMarks = newTextContentMarks;
         }
+
 <# } #>
         // Write NewLineChars to the specified buffer position and return an updated position.
         protected unsafe <#= BufferType #>* WriteNewLine(<#= BufferType #>* pDst)
@@ -1884,7 +1890,7 @@ namespace System.Xml
             return pDst + 3;
         }
 
-        protected unsafe void ValidateContentChars(string chars, string propertyName, bool allowOnlyWhitespace)
+        protected void ValidateContentChars(string chars, string propertyName, bool allowOnlyWhitespace)
         {
             if (allowOnlyWhitespace)
             {
@@ -1961,13 +1967,12 @@ namespace System.Xml
         // Constructors
         //
 <# if (WriterType == RawTextWriterType.Encoded) { #>
-
         public <#= ClassNameIndent #>(TextWriter writer, XmlWriterSettings settings) : base(writer, settings)
         {
             Init(settings);
         }
-<# } #>
 
+<# } #>
         public <#= ClassNameIndent #>(Stream stream, XmlWriterSettings settings) : base(stream, settings)
         {
             Init(settings);

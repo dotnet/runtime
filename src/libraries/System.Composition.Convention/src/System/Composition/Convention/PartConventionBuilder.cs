@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Composition.Diagnostics;
@@ -14,7 +13,7 @@ namespace System.Composition.Convention
     /// </summary>
     public class PartConventionBuilder
     {
-        private readonly Type[] _emptyTypeArray = Array.Empty<Type>();
+        private readonly Type[] _emptyTypeArray = Type.EmptyTypes;
         private static List<Attribute> s_onImportsSatisfiedAttributeList;
         private static readonly List<Attribute> s_importingConstructorList = new List<Attribute>() { new ImportingConstructorAttribute() };
         private static readonly Type s_exportAttributeType = typeof(ExportAttribute);

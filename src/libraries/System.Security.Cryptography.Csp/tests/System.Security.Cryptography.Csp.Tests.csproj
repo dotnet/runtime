@@ -1,8 +1,9 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;$(NetCoreAppCurrent)-Unix</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-Unix;$(NetCoreAppCurrent)-Browser</TargetFrameworks>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="AssemblyInfo.cs" />
     <Compile Include="CreateTransformCompat.cs" />
     <Compile Include="CspParametersTests.cs" />
     <Compile Include="RSAImportExportCspBlobTests.cs" />
@@ -90,5 +91,8 @@
              Link="CommonTest\System\Security\Cryptography\AlgorithmImplementations\RSA\RSAKeyPemTests.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\AlgorithmImplementations\RSA\SignVerify.netcoreapp.cs"
              Link="CommonTest\System\Security\Cryptography\AlgorithmImplementations\RSA\SignVerify.netcoreapp.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Security.Cryptography.Cng\src\System.Security.Cryptography.Cng.csproj" />
   </ItemGroup>
 </Project>

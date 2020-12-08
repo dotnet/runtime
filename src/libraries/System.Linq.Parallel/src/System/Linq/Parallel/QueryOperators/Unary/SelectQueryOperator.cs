@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 // =+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+
 //
@@ -112,7 +111,7 @@ namespace System.Linq.Parallel
             // Straightforward IEnumerator<T> methods.
             //
 
-            internal override bool MoveNext([MaybeNullWhen(false), AllowNull] ref TOutput currentElement, ref TKey currentKey)
+            internal override bool MoveNext([MaybeNullWhen(false), AllowNull] ref TOutput currentElement, [AllowNull] ref TKey currentKey)
             {
                 // So long as the source has a next element, we have an element.
                 TInput element = default(TInput)!;

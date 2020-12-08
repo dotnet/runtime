@@ -1,6 +1,5 @@
 ; Licensed to the .NET Foundation under one or more agreements.
 ; The .NET Foundation licenses this file to you under the MIT license.
-; See the LICENSE file in the project root for more information.
 
 ; ==++==
 ;
@@ -29,7 +28,7 @@
 _FuncEvalHijack@0 proc public
         push eax       ; the ptr to the DebuggerEval
         call _FuncEvalHijackWorker@4
-        jmp  eax       ; return is the patch addresss to jmp to
+        jmp  eax       ; return is the patch address to jmp to
 _FuncEvalHijack@0 endp
 
 

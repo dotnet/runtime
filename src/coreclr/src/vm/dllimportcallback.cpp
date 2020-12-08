@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 //
 // File: DllImportCallback.cpp
 //
@@ -23,6 +22,7 @@
 #include "appdomain.inl"
 #include "callingconvention.h"
 #include "customattribute.h"
+#include "typeparse.h"
 
 #ifndef CROSSGEN_COMPILE
 
@@ -77,6 +77,10 @@ public:
         CONTRACTL_END;
 
         CrstHolder ch(&m_crst);
+
+#if defined(HOST_OSX) && defined(HOST_ARM64)
+        auto jitWriteEnableHolder = PAL_JITWriteEnable(true);
+#endif // defined(HOST_OSX) && defined(HOST_ARM64)
 
         if (m_pHead == NULL)
         {
@@ -165,13 +169,32 @@ VOID UMEntryThunk::CompileUMThunkWorker(UMThunkStubInfo *pInfo,
         {
             // exchange ecx ( "this") with the hidden structure return buffer
             //  xchg ecx, [esp]
-            pcpusl->X86EmitOp(0x87, kECX, (X86Reg)4 /*ESP*/);
+            pcpusl->X86EmitOp(0x87, kECX, (X86Reg)kESP_Unsafe);
         }
 
         // jam ecx (the "this" param onto stack. Now it looks like a normal stdcall.)
         pcpusl->X86EmitPushReg(kECX);
 
         // push edx - repush the return address
+        pcpusl->X86EmitPushReg(kEDX);
+    }
+    
+    // The native signature doesn't have a return buffer
+    // but the managed signature does.
+    // Set up the return buffer address here.
+    if (pInfo->m_wFlags & umtmlBufRetValToEnreg)
+    {
+        // Calculate the return buffer address
+        // Calculate the offset to the return buffer we establish for EAX:EDX below.
+        // lea edx [esp - offset to EAX:EDX return buffer]
+        pcpusl->X86EmitEspOffset(0x8d, kEDX, -0xc /* skip return addr, EBP, EBX */ -0x8 /* point to start of EAX:EDX return buffer */ );
+        
+        // exchange edx (which has the return buffer address)
+        // with the return address
+        // xchg edx, [esp]
+        pcpusl->X86EmitOp(0x87, kEDX, (X86Reg)kESP_Unsafe);   
+     
+        // push edx
         pcpusl->X86EmitPushReg(kEDX);
     }
 
@@ -253,6 +276,9 @@ VOID UMEntryThunk::CompileUMThunkWorker(UMThunkStubInfo *pInfo,
     // push fs:[0]
     const static BYTE codeSEH1[] = { 0x64, 0xFF, 0x35, 0x0, 0x0, 0x0, 0x0};
     pcpusl->EmitBytes(codeSEH1, sizeof(codeSEH1));
+    // EmitBytes doesn't know to increase the stack size
+    // so we do so manually
+    pcpusl->SetStackSize(pcpusl->GetStackSize() + 4);
 
     // link in the exception frame
     // mov dword ptr fs:[0], esp
@@ -288,9 +314,9 @@ VOID UMEntryThunk::CompileUMThunkWorker(UMThunkStubInfo *pInfo,
     //
     //            |                         |
     //            +-------------------------+
-    //   EBX - 20 | Saved Result: EDX/ST(0) |
+    //   EBX - 20 | Saved Result: EAX/ST(0) |
     //            +- - - - - - - - - - - - -+
-    //   EBX - 16 | Saved Result: EAX/ST(0) |
+    //   EBX - 16 | Saved Result: EDX/ST(0) |
     //            +-------------------------+
     //   EBX - 12 |      Caller's EBX       |
     //            +-------------------------+
@@ -467,11 +493,26 @@ VOID UMEntryThunk::CompileUMThunkWorker(UMThunkStubInfo *pInfo,
         // save EDX:EAX
         if (retbufofs == UNUSED_STACK_OFFSET)
         {
-            pcpusl->X86EmitIndexRegStore(kEBX, -0x8 /* to outer EBP */ -0x8 /* skip saved EBP, EBX */, kEAX);
-            pcpusl->X86EmitIndexRegStore(kEBX, -0x8 /* to outer EBP */ -0xc /* skip saved EBP, EBX, EAX */, kEDX);
+            pcpusl->X86EmitIndexRegStore(kEBX, -0x8 /* to outer EBP */ -0xc /* skip saved EBP, EBX, EDX */, kEAX);
+            pcpusl->X86EmitIndexRegStore(kEBX, -0x8 /* to outer EBP */ -0x8 /* skip saved EBP, EBX */, kEDX);
         }
-        else
+        // In the umtmlBufRetValToEnreg case,
+        // we set up the return buffer to output 
+        // into the EDX:EAX buffer we set up for the register return case.
+        // So we don't need to do more work here.
+        else if ((pInfo->m_wFlags & umtmlBufRetValToEnreg) == 0)
         {
+            if (pInfo->m_wFlags & umtmlEnregRetValToBuf)
+            {
+                pcpusl->X86EmitPushReg(kEDI); // Save EDI register
+                // Move the return value from the enregistered return from the JIT
+                // to the return buffer that the native calling convention expects.
+                // NOTE: Since the managed calling convention does not enregister 8-byte
+                // struct returns on x86, we only need to handle the single-register 4-byte case.
+                pcpusl->X86EmitIndexRegLoad(kEDI, kEBX, retbufofs);
+                pcpusl->X86EmitIndexRegStore(kEDI, 0x0, kEAX);
+                pcpusl->X86EmitPopReg(kEDI); // Restore EDI register
+            }
             // pretend that the method returned the ret buf hidden argument
             // (the structure ptr); C++ compiler seems to rely on this
 
@@ -479,7 +520,7 @@ VOID UMEntryThunk::CompileUMThunkWorker(UMThunkStubInfo *pInfo,
             pcpusl->X86EmitIndexRegLoad(kEAX, kEBX, retbufofs);
 
             // save it as the return value
-            pcpusl->X86EmitIndexRegStore(kEBX, -0x8 /* to outer EBP */ -0x8 /* skip saved EBP, EBX */, kEAX);
+            pcpusl->X86EmitIndexRegStore(kEBX, -0x8 /* to outer EBP */ -0xc /* skip saved EBP, EBX, EDX */, kEAX);
         }
     }
 
@@ -551,8 +592,8 @@ VOID UMEntryThunk::CompileUMThunkWorker(UMThunkStubInfo *pInfo,
     }
     else
     {
-        pcpusl->X86EmitPopReg(kEDX);
         pcpusl->X86EmitPopReg(kEAX);
+        pcpusl->X86EmitPopReg(kEDX);
     }
 
     // Restore EBX, which was saved in prolog
@@ -614,6 +655,22 @@ VOID UMEntryThunk::CompileUMThunkWorker(UMThunkStubInfo *pInfo,
     pcpusl->X86EmitNearJump(pEnableRejoin);
 }
 
+namespace
+{
+    // Templated function to compute if a char string begins with a constant string.
+    template<size_t S2LEN>
+    bool BeginsWith(ULONG s1Len, const char* s1, const char (&s2)[S2LEN])
+    {
+        WRAPPER_NO_CONTRACT;
+
+        ULONG s2Len = (ULONG)S2LEN - 1; // Remove null
+        if (s1Len < s2Len)
+            return false;
+
+        return (0 == strncmp(s1, s2, s2Len));
+    }
+}
+
 VOID UMThunkMarshInfo::SetUpForUnmanagedCallersOnly()
 {
     STANDARD_VM_CONTRACT;
@@ -621,34 +678,103 @@ VOID UMThunkMarshInfo::SetUpForUnmanagedCallersOnly()
     MethodDesc* pMD = GetMethod();
     _ASSERTE(pMD != NULL && pMD->HasUnmanagedCallersOnlyAttribute());
 
-    // Validate UnmanagedCallersOnlyAttribute usage
+    // Validate usage
     COMDelegate::ThrowIfInvalidUnmanagedCallersOnlyUsage(pMD);
 
     BYTE* pData = NULL;
     LONG cData = 0;
-    CorPinvokeMap callConv = (CorPinvokeMap)0;
 
+    bool nativeCallableInternalData = false;
     HRESULT hr = pMD->GetCustomAttribute(WellKnownAttribute::UnmanagedCallersOnly, (const VOID **)(&pData), (ULONG *)&cData);
+    if (hr == S_FALSE)
+    {
+        hr = pMD->GetCustomAttribute(WellKnownAttribute::NativeCallableInternal, (const VOID **)(&pData), (ULONG *)&cData);
+        nativeCallableInternalData = SUCCEEDED(hr);
+    }
+
     IfFailThrow(hr);
 
     _ASSERTE(cData > 0);
 
     CustomAttributeParser ca(pData, cData);
-    // UnmanagedCallersOnly has two optional named arguments CallingConvention and EntryPoint.
+
+    // UnmanagedCallersOnly and NativeCallableInternal each
+    // have optional named arguments.
     CaNamedArg namedArgs[2];
-    CaTypeCtor caType(SERIALIZATION_TYPE_STRING);
-    // First, the void constructor.
-    IfFailThrow(ParseKnownCaArgs(ca, NULL, 0));
 
-    // Now the optional named properties
-    namedArgs[0].InitI4FieldEnum("CallingConvention", "System.Runtime.InteropServices.CallingConvention", (ULONG)callConv);
-    namedArgs[1].Init("EntryPoint", SERIALIZATION_TYPE_STRING, caType);
-    IfFailThrow(ParseKnownCaNamedArgs(ca, namedArgs, lengthof(namedArgs)));
+    // For the UnmanagedCallersOnly scenario.
+    CaType caCallConvs;
 
-    callConv = (CorPinvokeMap)(namedArgs[0].val.u4 << 8);
-    // Let UMThunkMarshalInfo choose the default if calling convension not definied.
-    if (namedArgs[0].val.type.tag != SERIALIZATION_TYPE_UNDEFINED)
-        m_callConv = (UINT16)callConv;
+    // Define attribute specific optional named properties
+    if (nativeCallableInternalData)
+    {
+        namedArgs[0].InitI4FieldEnum("CallingConvention", "System.Runtime.InteropServices.CallingConvention", (ULONG)(CorPinvokeMap)0);
+    }
+    else
+    {
+        caCallConvs.Init(SERIALIZATION_TYPE_SZARRAY, SERIALIZATION_TYPE_TYPE, SERIALIZATION_TYPE_UNDEFINED, NULL, 0);
+        namedArgs[0].Init("CallConvs", SERIALIZATION_TYPE_SZARRAY, caCallConvs);
+    }
+
+    // Define common optional named properties
+    CaTypeCtor caEntryPoint(SERIALIZATION_TYPE_STRING);
+    namedArgs[1].Init("EntryPoint", SERIALIZATION_TYPE_STRING, caEntryPoint);
+
+    InlineFactory<SArray<CaValue>, 4> caValueArrayFactory;
+    DomainAssembly* domainAssembly = pMD->GetLoaderModule()->GetDomainAssembly();
+    IfFailThrow(Attribute::ParseAttributeArgumentValues(
+        pData,
+        cData,
+        &caValueArrayFactory,
+        NULL,
+        0,
+        namedArgs,
+        lengthof(namedArgs),
+        domainAssembly));
+
+    // If the value isn't defined, then return without setting anything.
+    if (namedArgs[0].val.type.tag == SERIALIZATION_TYPE_UNDEFINED)
+        return;
+
+    CorPinvokeMap callConvLocal = (CorPinvokeMap)0;
+    if (nativeCallableInternalData)
+    {
+        callConvLocal = (CorPinvokeMap)(namedArgs[0].val.u4 << 8);
+    }
+    else
+    {
+        // Set WinAPI as the default
+        callConvLocal = CorPinvokeMap::pmCallConvWinapi;
+
+        CaValue* arrayOfTypes = &namedArgs[0].val;
+        for (ULONG i = 0; i < arrayOfTypes->arr.length; i++)
+        {
+            CaValue& typeNameValue = arrayOfTypes->arr[i];
+
+            // According to ECMA-335, type name strings are UTF-8. Since we are
+            // looking for type names that are equivalent in ASCII and UTF-8,
+            // using a const char constant is acceptable. Type name strings are
+            // in Fully Qualified form, so we include the ',' delimiter.
+            if (BeginsWith(typeNameValue.str.cbStr, typeNameValue.str.pStr, "System.Runtime.CompilerServices.CallConvCdecl,"))
+            {
+                callConvLocal = CorPinvokeMap::pmCallConvCdecl;
+            }
+            else if (BeginsWith(typeNameValue.str.cbStr, typeNameValue.str.pStr, "System.Runtime.CompilerServices.CallConvStdcall,"))
+            {
+                callConvLocal = CorPinvokeMap::pmCallConvStdcall;
+            }
+            else if (BeginsWith(typeNameValue.str.cbStr, typeNameValue.str.pStr, "System.Runtime.CompilerServices.CallConvFastcall,"))
+            {
+                callConvLocal = CorPinvokeMap::pmCallConvFastcall;
+            }
+            else if (BeginsWith(typeNameValue.str.cbStr, typeNameValue.str.pStr, "System.Runtime.CompilerServices.CallConvThiscall,"))
+            {
+                callConvLocal = CorPinvokeMap::pmCallConvThiscall;
+            }
+        }
+    }
+
+    m_callConv = (UINT16)callConvLocal;
 }
 
 // Compiles an unmanaged to managed thunk for the given signature.
@@ -680,6 +806,13 @@ Stub *UMThunkMarshInfo::CompileNExportThunk(LoaderHeap *pLoaderHeap, PInvokeStat
     UINT nOffset = 0;
     int numRegistersUsed = 0;
     int numStackSlotsIndex = nStackBytes / STACK_ELEM_SIZE;
+    
+    // This could have been set in the UnmanagedCallersOnly scenario.
+    if (m_callConv == UINT16_MAX)
+        m_callConv = static_cast<UINT16>(pSigInfo->GetCallConv());
+
+    UMThunkStubInfo stubInfo;
+    memset(&stubInfo, 0, sizeof(stubInfo));
 
     // process this
     if (!fIsStatic)
@@ -689,13 +822,27 @@ Stub *UMThunkMarshInfo::CompileNExportThunk(LoaderHeap *pLoaderHeap, PInvokeStat
     }
 
     // process the return buffer parameter
-    if (argit.HasRetBuffArg())
+    if (argit.HasRetBuffArg() || (m_callConv == pmCallConvThiscall && argit.HasValueTypeReturn()))
     {
-        numRegistersUsed++;
-        _ASSERTE(numRegistersUsed - 1 < NUM_ARGUMENT_REGISTERS);
-        psrcofsregs[NUM_ARGUMENT_REGISTERS - numRegistersUsed] = nOffset;
+        // Only copy the retbuf arg from the src call when both the managed call and native call
+        // have a return buffer.
+        if (argit.HasRetBuffArg())
+        {
+            // managed has a return buffer
+            if (m_callConv != pmCallConvThiscall &&
+                argit.HasValueTypeReturn() &&
+                pMetaSig->GetReturnTypeSize() == ENREGISTERED_RETURNTYPE_MAXSIZE)
+            {
+                // Only managed has a return buffer.
+                // Native returns in registers.
+                // We add a flag so the stub correctly sets up the return buffer.
+                stubInfo.m_wFlags |= umtmlBufRetValToEnreg;
+            }
+            numRegistersUsed++;
+            _ASSERTE(numRegistersUsed - 1 < NUM_ARGUMENT_REGISTERS);
+            psrcofsregs[NUM_ARGUMENT_REGISTERS - numRegistersUsed] = nOffset;
+        }
         retbufofs = nOffset;
-
         nOffset += StackElemSize(sizeof(LPVOID));
     }
 
@@ -721,7 +868,7 @@ Stub *UMThunkMarshInfo::CompileNExportThunk(LoaderHeap *pLoaderHeap, PInvokeStat
             fPassPointer = TRUE;
         }
 
-        if (ArgIterator::IsArgumentInRegister(&numRegistersUsed, type))
+        if (ArgIterator::IsArgumentInRegister(&numRegistersUsed, type, thValueType))
         {
             _ASSERTE(numRegistersUsed - 1 < NUM_ARGUMENT_REGISTERS);
             psrcofsregs[NUM_ARGUMENT_REGISTERS - numRegistersUsed] =
@@ -760,20 +907,13 @@ Stub *UMThunkMarshInfo::CompileNExportThunk(LoaderHeap *pLoaderHeap, PInvokeStat
 
     m_cbActualArgSize = cbActualArgSize;
 
-    // This could have been set in the UnmanagedCallersOnly scenario.
-    if (m_callConv == UINT16_MAX)
-        m_callConv = static_cast<UINT16>(pSigInfo->GetCallConv());
-
-    UMThunkStubInfo stubInfo;
-    memset(&stubInfo, 0, sizeof(stubInfo));
-
     if (!FitsInU2(m_cbActualArgSize))
         COMPlusThrow(kMarshalDirectiveException, IDS_EE_SIGTOOCOMPLEX);
 
     stubInfo.m_cbSrcStack = static_cast<UINT16>(m_cbActualArgSize);
     stubInfo.m_cbDstStack = nStackBytes;
 
-    if (pSigInfo->GetCallConv() == pmCallConvCdecl)
+    if (m_callConv == pmCallConvCdecl)
     {
         // caller pop
         m_cbRetPop = 0;
@@ -783,15 +923,24 @@ Stub *UMThunkMarshInfo::CompileNExportThunk(LoaderHeap *pLoaderHeap, PInvokeStat
         // callee pop
         m_cbRetPop = static_cast<UINT16>(m_cbActualArgSize);
 
-        if (pSigInfo->GetCallConv() == pmCallConvThiscall)
+        if (m_callConv == pmCallConvThiscall)
         {
             stubInfo.m_wFlags |= umtmlThisCall;
             if (argit.HasRetBuffArg())
             {
                 stubInfo.m_wFlags |= umtmlThisCallHiddenArg;
             }
+            else if (argit.HasValueTypeReturn())
+            {
+                stubInfo.m_wFlags |= umtmlThisCallHiddenArg | umtmlEnregRetValToBuf;
+                // When the native signature has a return buffer but the
+                // managed one does not, we need to handle popping the
+                // the return buffer of the stack manually, which we do here.
+                m_cbRetPop += 4;
+            }
         }
     }
+
     stubInfo.m_cbRetPop = m_cbRetPop;
 
     if (fIsStatic) stubInfo.m_wFlags |= umtmlIsStatic;
@@ -1026,6 +1175,10 @@ void UMEntryThunk::Terminate()
 
     if (GetObjectHandle())
     {
+#if defined(HOST_OSX) && defined(HOST_ARM64)
+        auto jitWriteEnableHolder = PAL_JITWriteEnable(true);
+#endif // defined(HOST_OSX) && defined(HOST_ARM64)
+
         DestroyLongWeakHandle(GetObjectHandle());
         m_pObjectHandle = 0;
     }
@@ -1303,7 +1456,7 @@ VOID UMThunkMarshInfo::RunTimeInit()
         TypeHandle thValueType;
         CorElementType type = sig.NextArgNormalized(&thValueType);
         int cbSize = sig.GetElemSize(type, thValueType);
-        if (ArgIterator::IsArgumentInRegister(&numRegistersUsed, type))
+        if (ArgIterator::IsArgumentInRegister(&numRegistersUsed, type, thValueType))
         {
             offs += STACK_ELEM_SIZE;
         }
@@ -1388,7 +1541,7 @@ VOID UMThunkMarshInfo::SetupArguments(char *pSrc, ArgumentRegisters *pArgRegs, c
         int cbSize = sig.GetElemSize(type, thValueType);
         int elemSize = StackElemSize(cbSize);
 
-        if (ArgIterator::IsArgumentInRegister(&numRegistersUsed, type))
+        if (ArgIterator::IsArgumentInRegister(&numRegistersUsed, type, thValueType))
         {
             _ASSERTE(elemSize == STACK_ELEM_SIZE);
 

@@ -1,6 +1,5 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Generic;
@@ -164,7 +163,7 @@ namespace Microsoft.Extensions.DependencyModel
 
         private static AssemblyName GetAssemblyName(string assetPath)
         {
-            var name = Path.GetFileNameWithoutExtension(assetPath);
+            string name = Path.GetFileNameWithoutExtension(assetPath);
             if (name == null)
             {
                 throw new ArgumentException($"Provided path has empty file name '{assetPath}'", nameof(assetPath));
@@ -179,12 +178,12 @@ namespace Microsoft.Extensions.DependencyModel
         }
 
         private static IEnumerable<string> ResolveAssets(
-            DependencyContext context, 
-            string runtimeIdentifier, 
+            DependencyContext context,
+            string runtimeIdentifier,
             IEnumerable<RuntimeAssetGroup> assets)
         {
-            var fallbacks = context.RuntimeGraph.FirstOrDefault(f => f.Runtime == runtimeIdentifier);
-            var rids = Enumerable.Concat(new[] { runtimeIdentifier }, fallbacks?.Fallbacks ?? Enumerable.Empty<string>());
+            RuntimeFallbacks fallbacks = context.RuntimeGraph.FirstOrDefault(f => f.Runtime == runtimeIdentifier);
+            IEnumerable<string> rids = Enumerable.Concat(new[] { runtimeIdentifier }, fallbacks?.Fallbacks ?? Enumerable.Empty<string>());
             return SelectAssets(rids, assets);
         }
 
@@ -193,16 +192,16 @@ namespace Microsoft.Extensions.DependencyModel
             string runtimeIdentifier,
             IEnumerable<RuntimeAssetGroup> assets)
         {
-            var fallbacks = context.RuntimeGraph.FirstOrDefault(f => f.Runtime == runtimeIdentifier);
-            var rids = Enumerable.Concat(new[] { runtimeIdentifier }, fallbacks?.Fallbacks ?? Enumerable.Empty<string>());
+            RuntimeFallbacks fallbacks = context.RuntimeGraph.FirstOrDefault(f => f.Runtime == runtimeIdentifier);
+            IEnumerable<string> rids = Enumerable.Concat(new[] { runtimeIdentifier }, fallbacks?.Fallbacks ?? Enumerable.Empty<string>());
             return SelectRuntimeFiles(rids, assets);
         }
 
         private static IEnumerable<string> SelectAssets(IEnumerable<string> rids, IEnumerable<RuntimeAssetGroup> groups)
         {
-            foreach (var rid in rids)
+            foreach (string rid in rids)
             {
-                var group = groups.FirstOrDefault(g => g.Runtime == rid);
+                RuntimeAssetGroup group = groups.FirstOrDefault(g => g.Runtime == rid);
                 if (group != null)
                 {
                     return group.AssetPaths;
@@ -215,9 +214,9 @@ namespace Microsoft.Extensions.DependencyModel
 
         private static IEnumerable<RuntimeFile> SelectRuntimeFiles(IEnumerable<string> rids, IEnumerable<RuntimeAssetGroup> groups)
         {
-            foreach (var rid in rids)
+            foreach (string rid in rids)
             {
-                var group = groups.FirstOrDefault(g => g.Runtime == rid);
+                RuntimeAssetGroup group = groups.FirstOrDefault(g => g.Runtime == rid);
                 if (group != null)
                 {
                     return group.RuntimeFiles;

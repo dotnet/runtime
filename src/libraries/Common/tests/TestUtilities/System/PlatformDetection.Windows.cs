@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.IO;
 using System.Runtime.InteropServices;
@@ -31,12 +30,10 @@ namespace System
         public static bool IsNotWindows8x => !IsWindows8x;
         public static bool IsNotWindowsNanoServer => !IsWindowsNanoServer;
         public static bool IsNotWindowsServerCore => !IsWindowsServerCore;
+        public static bool IsNotWindowsNanoNorServerCore => IsNotWindowsNanoServer && IsNotWindowsServerCore;
         public static bool IsNotWindowsIoTCore => !IsWindowsIoTCore;
         public static bool IsNotWindowsHomeEdition => !IsWindowsHomeEdition;
         public static bool IsNotInAppContainer => !IsInAppContainer;
-        public static bool IsWinRTSupported => IsWindows && IsNotWindows7;
-        public static bool IsWinUISupported => IsWinRTSupported && IsNotWindows8x && IsNotWindowsNanoServer && IsNotWindowsServerCore && IsNotWindowsIoTCore;
-        public static bool IsNotWinRTSupported => !IsWinRTSupported;
         public static bool IsSoundPlaySupported => IsWindows && IsNotWindowsNanoServer;
 
         // >= Windows 10 Anniversary Update
@@ -63,7 +60,7 @@ namespace System
         // Per https://docs.microsoft.com/en-us/windows-insider/flight-hub/ the first 20H1 build is 18836.
         public static bool IsWindows10Version2004OrGreater => IsWindows &&
             GetWindowsVersion() == 10 && GetWindowsMinorVersion() == 0 && GetWindowsBuildNumber() >= 18836;
-        
+
         public static bool IsWindows10Version2004Build19573OrGreater => IsWindows10Version2004OrGreater && GetWindowsBuildNumber() >= 19573;
 
         public static bool IsWindowsIoTCore

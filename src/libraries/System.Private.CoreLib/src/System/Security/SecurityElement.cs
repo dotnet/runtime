@@ -1,6 +1,5 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.s
 
 using System.Collections;
 using System.Diagnostics;
@@ -43,7 +42,6 @@ namespace System.Security
                 throw new ArgumentException(SR.Format(SR.Argument_InvalidElementTag, tag));
 
             _tag = tag;
-            _text = null;
         }
 
         public SecurityElement(string tag, string? text)

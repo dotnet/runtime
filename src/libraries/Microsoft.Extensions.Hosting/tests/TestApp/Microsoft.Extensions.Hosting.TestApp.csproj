@@ -1,7 +1,14 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>$(NetCoreAppCurrent);$(NetFrameworkCurrent)</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent);net461</TargetFrameworks>
     <EnableDefaultItems>true</EnableDefaultItems>
     <OutputType>Exe</OutputType>
   </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Extensions.Configuration.CommandLine\src\Microsoft.Extensions.Configuration.CommandLine.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Extensions.Configuration.EnvironmentVariables\src\Microsoft.Extensions.Configuration.EnvironmentVariables.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Extensions.Hosting\src\Microsoft.Extensions.Hosting.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Extensions.Logging.Console\src\Microsoft.Extensions.Logging.Console.csproj" />
+  </ItemGroup>
 </Project>

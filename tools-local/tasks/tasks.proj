@@ -1,11 +1,13 @@
 <Project Sdk="Microsoft.Build.Traversal">
   <ItemGroup>
-    <ProjectReference Include="$(MSBuildThisFileDirectory)**\*.csproj" Exclude="$(MSBuildProjectFullPath)" />
+    <ProjectReference Include="$(MSBuildThisFileDirectory)**\*.csproj" />
     <ProjectReference Remove="$(MSBuildThisFileDirectory)mobile.tasks\AndroidAppBuilder\AndroidAppBuilder.csproj"
                       Condition="'$(TargetOS)' != 'Android'" />
     <ProjectReference Remove="$(MSBuildThisFileDirectory)mobile.tasks\AppleAppBuilder\AppleAppBuilder.csproj"
                       Condition="'$(TargetOS)' != 'iOS' and '$(TargetOS)' != 'tvOS'" />
     <ProjectReference Remove="$(MSBuildThisFileDirectory)mobile.tasks\WasmAppBuilder\WasmAppBuilder.csproj"
+                      Condition="'$(TargetOS)' != 'Browser'" />
+    <ProjectReference Remove="$(MSBuildThisFileDirectory)mobile.tasks\WasmBuildTasks\WasmBuildTasks.csproj"
                       Condition="'$(TargetOS)' != 'Browser'" />
     <ProjectReference Remove="$(MSBuildThisFileDirectory)mobile.tasks\AotCompilerTask\MonoAOTCompiler.csproj"
                       Condition="'$(TargetsMobile)' != 'true'" />
@@ -38,13 +40,16 @@
                       Overwrite="true" />
   </Target>
 
-  <Target Name="GetTasksSrc">
+  <Target Name="GetTasksSrc"
+          DependsOnTargets="PrepareProjectReferences">
     <PropertyGroup>
       <TasksIntermediateFile>$([MSBuild]::NormalizePath('$(ArtifactsObjDir)', '$(MSBuildProjectName)', 'Debug', 'build-semaphore.txt'))</TasksIntermediateFile>
     </PropertyGroup>
 
+    <!-- Include both the project file and its sources as an input. -->
     <ItemGroup>
-      <TasksSrc Include="$(MSBuildThisFileDirectory)**\*.cs*;$(MSBuildThisFileDirectory)**\*.*proj" />
+      <TasksSrc Include="%(ProjectReferenceWithConfiguration.Identity)" />
+      <TasksSrc Include="%(ProjectReferenceWithConfiguration.RelativeDir)%(ProjectReferenceWithConfiguration.RecursiveDir)**\*.cs" />
     </ItemGroup>
   </Target>
 </Project>

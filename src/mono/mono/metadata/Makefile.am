@@ -5,23 +5,16 @@ if !ENABLE_MSVC_ONLY
 if HOST_WIN32
 win32_sources = \
 	console-win32.c \
-	console-win32-internals.h \
-	cominterop-win32-internals.h \
 	w32file-win32.c \
-	w32file-win32-internals.h \
 	icall-windows.c \
-	icall-windows-internals.h \
 	marshal-windows.c \
-	marshal-windows-internals.h \
 	mono-security-windows.c \
-	mono-security-windows-internals.h \
 	w32mutex-win32.c \
 	w32semaphore-win32.c \
 	w32event-win32.c \
 	w32process-win32.c \
 	w32socket-win32.c \
-	w32error-win32.c \
-	w32subset.h
+	w32error-win32.c
 
 platform_sources = $(win32_sources)
 
@@ -142,22 +135,38 @@ libmonoruntime_support_la_CFLAGS = $(filter-out @CXX_REMOVE_CFLAGS@, @CFLAGS@) @
 
 if ENABLE_NETCORE
 if HAVE_SYS_ICU
+
+# symlink ICU sources to a local dir so automake puts intermediates into the target-specific folder
+icushim/%.c: @ICU_SHIM_PATH@/%.c
+	$(LN_S) $^ $@
+
 shim_libraries = libmonoruntime-shimglobalization.la
 
 nodist_libmonoruntime_shimglobalization_la_SOURCES = \
-									@ICU_SHIM_PATH@/pal_calendarData.c \
-									@ICU_SHIM_PATH@/pal_casing.c \
-									@ICU_SHIM_PATH@/pal_collation.c \
-									@ICU_SHIM_PATH@/pal_idna.c \
-									@ICU_SHIM_PATH@/pal_locale.c \
-									@ICU_SHIM_PATH@/pal_localeNumberData.c \
-									@ICU_SHIM_PATH@/pal_localeStringData.c \
-									@ICU_SHIM_PATH@/pal_normalization.c \
-									@ICU_SHIM_PATH@/pal_timeZoneInfo.c \
-									@ICU_SHIM_PATH@/pal_icushim.c
+									icushim/pal_calendarData.c \
+									icushim/pal_casing.c \
+									icushim/pal_collation.c \
+									icushim/pal_idna.c \
+									icushim/pal_locale.c \
+									icushim/pal_localeNumberData.c \
+									icushim/pal_localeStringData.c \
+									icushim/pal_normalization.c \
+									icushim/pal_timeZoneInfo.c \
+									icushim/entrypoints.c
 
-libmonoruntime_shimglobalization_la_CFLAGS = @ICU_CFLAGS@ -I$(top_srcdir)/../libraries/Native/Unix/Common/
-endif
+libmonoruntime_shimglobalization_la_CFLAGS = @ICU_CFLAGS@ -I$(top_srcdir)/../libraries/Native/Unix/System.Globalization.Native/ -I$(top_srcdir)/../libraries/Native/Unix/Common/
+
+if STATIC_ICU
+nodist_libmonoruntime_shimglobalization_la_SOURCES += icushim/pal_icushim_static.c
+else
+nodist_libmonoruntime_shimglobalization_la_SOURCES += icushim/pal_icushim.c
+endif # STATIC_ICU
+
+endif # HAVE_SYS_ICU
+endif # ENABLE_NETCORE
+
+if !ENABLE_NETCORE
+culture_libraries = ../culture/libmono-culture.la
 endif
 
 #
@@ -244,9 +253,11 @@ common_sources = \
 	class-getters.h		\
 	class-init.h		\
 	class-init.c		\
+	class-init-internals.h	\
 	class-internals.h	\
 	class-inlines.h		\
 	class-private-definition.h	\
+	class-setup-vtable.c	\
 	class-accessors.c	\
 	cominterop.c		\
 	cominterop.h		\
@@ -254,8 +265,6 @@ common_sources = \
 	coree.c 		\
 	coree.h 		\
 	coree-internals.h \
-	culture-info.h  	\
-	culture-info-tables.h	\
 	debug-helpers.c		\
 	debug-mono-symfile.h	\
 	debug-mono-symfile.c	\
@@ -264,6 +273,7 @@ common_sources = \
 	domain-internals.h	\
 	environment.c		\
 	environment.h		\
+	environment-internals.h		\
 	icall-eventpipe.c	\
 	exception.c		\
 	exception.h		\
@@ -292,7 +302,6 @@ common_sources = \
 	loaded-images.c		\
 	loaded-images-global.c	\
 	loaded-images-netcore.c	\
-	locales.c		\
 	locales.h		\
 	lock-tracer.c		\
 	lock-tracer.h		\
@@ -412,7 +421,11 @@ common_sources = \
 	callspec.h	\
 	callspec.c	\
 	abi.c	\
-	native-library.c
+	memory-manager.c \
+	native-library.c \
+	native-library.h \
+	native-library-qcall.c \
+	qcall-def.h 
 
 # These source files have compile time dependencies on GC code
 gc_dependent_sources = \
@@ -448,13 +461,13 @@ if !ENABLE_MSVC_ONLY
 
 libmonoruntime_la_SOURCES = $(common_sources) $(icall_tables_sources) $(ilgen_sources) $(gc_dependent_sources) $(null_gc_sources) $(boehm_sources)
 # Add CXX_ADD_CFLAGS per-library until/unless https://github.com/dotnet/corefx/pull/31342.
-libmonoruntime_la_CFLAGS = $(BOEHM_DEFINES) @CXX_ADD_CFLAGS@
-libmonoruntime_la_LIBADD = libmonoruntime-config.la $(support_libraries) $(shim_libraries)
+libmonoruntime_la_CFLAGS = $(BOEHM_DEFINES) $(GLOBALIZATION_SHIM_DEFINES) @CXX_ADD_CFLAGS@
+libmonoruntime_la_LIBADD = libmonoruntime-config.la $(culture_libraries) $(support_libraries) $(shim_libraries)
 
 libmonoruntimesgen_la_SOURCES = $(common_sources) $(icall_tables_sources) $(ilgen_sources) $(gc_dependent_sources) $(sgen_sources)
 # Add CXX_ADD_CFLAGS per-library until/unless https://github.com/dotnet/corefx/pull/31342.
-libmonoruntimesgen_la_CFLAGS = $(SGEN_DEFINES) @CXX_ADD_CFLAGS@
-libmonoruntimesgen_la_LIBADD = libmonoruntime-config.la $(support_libraries) $(shim_libraries)
+libmonoruntimesgen_la_CFLAGS = $(SGEN_DEFINES) $(GLOBALIZATION_SHIM_DEFINES) @CXX_ADD_CFLAGS@
+libmonoruntimesgen_la_LIBADD = libmonoruntime-config.la $(culture_libraries) $(support_libraries) $(shim_libraries)
 
 endif # !ENABLE_MSVC_ONLY
 
@@ -491,7 +504,7 @@ libmonoruntimeinclude_HEADERS = \
 	sgen-bridge.h		\
 	threads.h		\
 	tokentype.h		\
-	verify.h		
+	verify.h
 
 if !ENABLE_MSVC_ONLY
 

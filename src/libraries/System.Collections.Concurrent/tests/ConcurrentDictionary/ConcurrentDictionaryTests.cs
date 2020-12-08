@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -14,7 +13,7 @@ namespace System.Collections.Concurrent.Tests
 {
     public class ConcurrentDictionaryTests
     {
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void TestBasicScenarios()
         {
             ConcurrentDictionary<int, int> cd = new ConcurrentDictionary<int, int>();
@@ -124,7 +123,7 @@ namespace System.Collections.Concurrent.Tests
             Assert.Throws<ArgumentException>(action);
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [InlineData(1, 1, 1, 10000)]
         [InlineData(5, 1, 1, 10000)]
         [InlineData(1, 1, 2, 5000)]
@@ -189,7 +188,7 @@ namespace System.Collections.Concurrent.Tests
             Assert.Equal(expectedCount, dictConcurrent.ToArray().Length);
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [InlineData(1, 1, 10000)]
         [InlineData(5, 1, 10000)]
         [InlineData(1, 2, 5000)]
@@ -253,7 +252,7 @@ namespace System.Collections.Concurrent.Tests
             }
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [InlineData(1, 1, 10000)]
         [InlineData(5, 1, 10000)]
         [InlineData(1, 2, 5000)]
@@ -297,7 +296,7 @@ namespace System.Collections.Concurrent.Tests
             }
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [InlineData(1, 1, 10000)]
         [InlineData(5, 1, 1000)]
         [InlineData(1, 5, 2001)]
@@ -365,7 +364,7 @@ namespace System.Collections.Concurrent.Tests
             Assert.Equal(expectKeys.Count, dict.ToArray().Length);
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [InlineData(1)]
         [InlineData(10)]
         [InlineData(5000)]
@@ -483,7 +482,7 @@ namespace System.Collections.Concurrent.Tests
             Assert.True(dict.TryRemove(KeyValuePair.Create("KEY", "value")));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void TestGetOrAdd()
         {
             TestGetOrAddOrUpdate(1, 1, 1, 10000, true);
@@ -496,7 +495,7 @@ namespace System.Collections.Concurrent.Tests
             TestGetOrAddOrUpdate(5, 5, 5, 25000, true);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void TestAddOrUpdate()
         {
             TestGetOrAddOrUpdate(1, 1, 1, 10000, false);
@@ -951,7 +950,7 @@ namespace System.Collections.Concurrent.Tests
             Assert.True(dictionary.IsEmpty, "TestClear: FAILED.  IsEmpty returned false after Clear");
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void TestTryUpdate()
         {
             var dictionary = new ConcurrentDictionary<string, int>();

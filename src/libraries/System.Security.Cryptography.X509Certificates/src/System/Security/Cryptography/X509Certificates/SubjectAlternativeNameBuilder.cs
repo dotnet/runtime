@@ -1,13 +1,12 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
+using System.Formats.Asn1;
 using System.Globalization;
 using System.Net;
 using System.Security.Cryptography.Asn1;
 using System.Text;
-using Internal.Cryptography;
 
 namespace System.Security.Cryptography.X509Certificates
 {
@@ -55,12 +54,9 @@ namespace System.Security.Cryptography.X509Certificates
             if (string.IsNullOrEmpty(upn))
                 throw new ArgumentOutOfRangeException(nameof(upn), SR.Arg_EmptyOrNullString);
 
-            byte[] otherNameValue;
-            using (AsnWriter writer = new AsnWriter(AsnEncodingRules.DER))
-            {
-                writer.WriteCharacterString(UniversalTagNumber.UTF8String, upn);
-                otherNameValue = writer.Encode();
-            }
+            AsnWriter writer = new AsnWriter(AsnEncodingRules.DER);
+            writer.WriteCharacterString(UniversalTagNumber.UTF8String, upn);
+            byte[] otherNameValue = writer.Encode();
 
             OtherNameAsn otherName = new OtherNameAsn
             {
@@ -73,20 +69,20 @@ namespace System.Security.Cryptography.X509Certificates
 
         public X509Extension Build(bool critical = false)
         {
-            using (AsnWriter writer = new AsnWriter(AsnEncodingRules.DER))
+            AsnWriter writer = new AsnWriter(AsnEncodingRules.DER);
+
+            using (writer.PushSequence())
             {
-                writer.PushSequence();
                 foreach (byte[] encodedName in _encodedNames)
                 {
                     writer.WriteEncodedValue(encodedName);
                 }
-                writer.PopSequence();
-
-                return new X509Extension(
-                    Oids.SubjectAltName,
-                    writer.Encode(),
-                    critical);
             }
+
+            return new X509Extension(
+                Oids.SubjectAltName,
+                writer.Encode(),
+                critical);
         }
 
         private void AddGeneralName(GeneralNameAsn generalName)
@@ -94,11 +90,9 @@ namespace System.Security.Cryptography.X509Certificates
             try
             {
                 // Verify that the general name can be serialized and store it.
-                using (AsnWriter writer = new AsnWriter(AsnEncodingRules.DER))
-                {
-                    generalName.Encode(writer);
-                    _encodedNames.Add(writer.Encode());
-                }
+                AsnWriter writer = new AsnWriter(AsnEncodingRules.DER);
+                generalName.Encode(writer);
+                _encodedNames.Add(writer.Encode());
             }
             catch (EncoderFallbackException)
             {

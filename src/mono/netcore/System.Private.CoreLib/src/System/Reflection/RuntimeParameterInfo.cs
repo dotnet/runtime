@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Reflection.Emit;
 using System.Runtime.CompilerServices;
@@ -192,7 +191,7 @@ namespace System.Reflection
             return CustomAttribute.GetCustomAttributes(this, attributeType, inherit);
         }
 
-        internal object? GetDefaultValueImpl(ParameterInfo pinfo)
+        internal static object? GetDefaultValueImpl(ParameterInfo pinfo)
         {
             FieldInfo field = typeof(ParameterInfo).GetField("DefaultValueImpl", BindingFlags.Instance | BindingFlags.NonPublic)!;
             return field.GetValue(pinfo);

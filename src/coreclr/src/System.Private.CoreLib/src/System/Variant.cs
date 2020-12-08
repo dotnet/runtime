@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 /*============================================================
 **
@@ -104,7 +103,7 @@ namespace System
             typeof(System.DBNull),
         };
 
-        internal static readonly Variant Empty = default;
+        internal static readonly Variant Empty;
         internal static readonly Variant Missing = new Variant(Variant.CV_MISSING, Type.Missing, 0);
         internal static readonly Variant DBNull = new Variant(Variant.CV_NULL, System.DBNull.Value, 0);
 
@@ -280,6 +279,7 @@ namespace System
             else if (obj is DispatchWrapper)
             {
                 vt = VarEnum.VT_DISPATCH;
+                Debug.Assert(OperatingSystem.IsWindows());
                 obj = ((DispatchWrapper)obj).WrappedObject;
             }
             else if (obj is ErrorWrapper)
@@ -402,6 +402,7 @@ namespace System
                 switch (vt)
                 {
                     case 9: /*VT_DISPATCH*/
+                        Debug.Assert(OperatingSystem.IsWindows());
                         v = new Variant(new DispatchWrapper(pValue));
                         break;
 
@@ -443,7 +444,9 @@ namespace System
                     6 => /*VT_CY*/ new Variant(new CurrencyWrapper(iv.ToDecimal(provider))),
                     7 => /*VT_DATE*/ new Variant(iv.ToDateTime(provider)),
                     8 => /*VT_BSTR*/ new Variant(iv.ToString(provider)),
+#pragma warning disable CA1416 // Validate platform compatibility
                     9 => /*VT_DISPATCH*/ new Variant(new DispatchWrapper((object)iv)),
+#pragma warning restore CA1416
                     10 => /*VT_ERROR*/ new Variant(new ErrorWrapper(iv.ToInt32(provider))),
                     11 => /*VT_BOOL*/ new Variant(iv.ToBoolean(provider)),
                     12 => /*VT_VARIANT*/ new Variant((object)iv),

@@ -54,7 +54,12 @@ mono_ldftn (MonoMethod *method)
 		return addr;
 	}
 
-	addr = mono_create_jump_trampoline (mono_domain_get (), method, FALSE, error);
+	/* if we need the address of a native-to-managed wrapper, just compile it now, trampoline needs thread local
+	 * variables that won't be there if we run on a thread that's not attached yet. */
+	if (method->wrapper_type == MONO_WRAPPER_NATIVE_TO_MANAGED)
+		addr = mono_compile_method_checked (method, error);
+	else
+		addr = mono_create_jump_trampoline (mono_domain_get (), method, FALSE, error);
 	if (!is_ok (error)) {
 		mono_error_set_pending_exception (error);
 		return NULL;
@@ -1415,6 +1420,20 @@ mono_gsharedvt_constrained_call (gpointer mp, MonoMethod *cmethod, MonoClass *kl
 	gpointer this_arg;
 	gpointer new_args [16];
 
+#ifdef ENABLE_NETCORE
+	/* Object.GetType () is an intrinsic under netcore */
+	if (!mono_class_is_ginst (cmethod->klass) && !cmethod->is_inflated && !strcmp (cmethod->name, "GetType")) {
+		MonoVTable *vt;
+
+		vt = mono_class_vtable_checked (mono_domain_get (), klass, error);
+		if (!is_ok (error)) {
+			mono_error_set_pending_exception (error);
+			return NULL;
+		}
+		return vt->type;
+	}
+#endif
+
 	m = constrained_gsharedvt_call_setup (mp, cmethod, klass, &this_arg, error);
 	if (!is_ok (error)) {
 		mono_error_set_pending_exception (error);
@@ -1517,6 +1536,10 @@ mono_fill_class_rgctx (MonoVTable *vtable, int index)
 	ERROR_DECL (error);
 	gpointer res;
 
+	/*
+	 * This is perf critical.
+	 * fill_runtime_generic_context () contains a fallpath.
+	 */
 	res = mono_class_fill_runtime_generic_context (vtable, index, error);
 	if (!is_ok (error)) {
 		mono_error_set_pending_exception (error);
@@ -1583,6 +1606,22 @@ mono_throw_bad_image ()
 {
 	ERROR_DECL (error);
 	mono_error_set_generic_error (error, "System", "BadImageFormatException", "Bad IL format.");
+	mono_error_set_pending_exception (error);
+}
+
+void
+mono_throw_not_supported ()
+{
+	ERROR_DECL (error);
+	mono_error_set_generic_error (error, "System", "NotSupportedException", "");
+	mono_error_set_pending_exception (error);
+}
+
+void
+mono_throw_invalid_program (const char *msg)
+{
+	ERROR_DECL (error);
+	mono_error_set_invalid_program (error, "Invalid IL due to: %s", msg);
 	mono_error_set_pending_exception (error);
 }
 

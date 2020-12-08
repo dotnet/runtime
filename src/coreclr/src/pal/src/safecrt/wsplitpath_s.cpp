@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 /***
 *wsplitpath_s.c - break down path name into components
@@ -25,6 +24,5 @@
 #define _CHAR char16_t
 #define _TCSNCPY_S wcsncpy_s
 #define _T(_Character) L##_Character
-#define _MBS_SUPPORT 0
 
 #include "tsplitpath_s.inl"

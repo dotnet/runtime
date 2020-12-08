@@ -1,7 +1,7 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
+using System.Diagnostics.CodeAnalysis;
 using Internal.Cryptography;
 using Internal.NativeCrypto;
 
@@ -9,9 +9,10 @@ namespace System.Security.Cryptography
 {
     public partial class AesGcm
     {
-        private static readonly SafeAlgorithmHandle s_aesGcm = AesBCryptModes.OpenAesAlgorithm(Cng.BCRYPT_CHAIN_MODE_GCM);
-        private SafeKeyHandle _keyHandle = null!; // Always initialized in helper
+        private static readonly SafeAlgorithmHandle s_aesGcm = AesBCryptModes.OpenAesAlgorithm(Cng.BCRYPT_CHAIN_MODE_GCM).Value;
+        private SafeKeyHandle _keyHandle;
 
+        [MemberNotNull(nameof(_keyHandle))]
         private void ImportKey(ReadOnlySpan<byte> key)
         {
             _keyHandle = Interop.BCrypt.BCryptImportKey(s_aesGcm, key);

@@ -1,18 +1,11 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
-
-
-// Licensed to the .NET Foundation under one or more agreements.
-// The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 // WARNING: This file is generated and should not be modified directly.
 // Instead, modify XmlRawTextWriterGenerator.ttinclude
 
-using System;
+#nullable disable
 using System.IO;
-using System.Xml;
 using System.Text;
 using System.Diagnostics;
 using System.Globalization;
@@ -39,12 +32,9 @@ namespace System.Xml
         // encoding of the stream or text writer
         protected Encoding _encoding;
 
-        // char type tables
-        protected XmlCharType _xmlCharType = XmlCharType.Instance;
-
         // buffer positions
         protected int _bufPos = 1;     // buffer position starts at 1, because we need to be able to safely step back -1 in case we need to
-                                       // close an empty element or in CDATA section detection of double ]; bufChars[0] will always be 0
+                                       // close an empty element or in CDATA section detection of double ]; _bufChars[0] will always be 0
         protected int _textPos = 1;    // text end position; don't indent first element, pi, or comment
         protected int _contentPos;     // element content end position
         protected int _cdataPos;       // cdata end position
@@ -55,7 +45,6 @@ namespace System.Xml
         protected bool _writeToNull;
         protected bool _hadDoubleBracket;
         protected bool _inAttributeValue;
-
         protected int _bufBytesUsed;
         protected char[] _bufChars;
 
@@ -229,7 +218,6 @@ namespace System.Xml
             if (!_omitXmlDeclaration && !_autoXmlDeclaration)
             {
                 if (_trackTextContent && _inTextContent != false) { ChangeTextContentMark(false); }
-
                 RawText("<?xml version=\"");
 
                 // Version
@@ -574,7 +562,7 @@ namespace System.Xml
         {
             string strVal = ((int)ch).ToString("X", NumberFormatInfo.InvariantInfo);
 
-            if (_checkCharacters && !_xmlCharType.IsCharData(ch))
+            if (_checkCharacters && !XmlCharType.IsCharData(ch))
             {
                 // we just have a single char, not a surrogate, therefore we have to pass in '\0' for the second char
                 throw XmlConvert.CreateInvalidCharException(ch, '\0');
@@ -776,6 +764,7 @@ namespace System.Xml
         {
             FlushBuffer();
             FlushEncoder();
+
             if (_stream != null)
             {
                 _stream.Flush();
@@ -848,7 +837,7 @@ namespace System.Xml
                 _contentPos = 0;    // Needs to be zero, since overwriting '>' character is no longer possible
                 _cdataPos = 0;      // Needs to be zero, since overwriting ']]>' characters is no longer possible
                 _bufPos = 1;        // Buffer position starts at 1, because we need to be able to safely step back -1 in case we need to
-                                   // close an empty element or in CDATA section detection of double ]; bufChars[0] will always be 0
+                                   // close an empty element or in CDATA section detection of double ]; _bufChars[0] will always be 0
             }
         }
 
@@ -914,12 +903,13 @@ namespace System.Xml
                         pDstEnd = pDstBegin + _bufLen;
                     }
 
-                    while (pDst < pDstEnd && _xmlCharType.IsAttributeValueChar((char)(ch = *pSrc)))
+                    while (pDst < pDstEnd && XmlCharType.IsAttributeValueChar((char)(ch = *pSrc)))
                     {
                         *pDst = (char)ch;
                         pDst++;
                         pSrc++;
                     }
+
                     Debug.Assert(pSrc <= pSrcEnd);
 
                     // end of value
@@ -1037,7 +1027,7 @@ namespace System.Xml
                         pDstEnd = pDstBegin + _bufLen;
                     }
 
-                    while (pDst < pDstEnd && _xmlCharType.IsAttributeValueChar((char)(ch = *pSrc)))
+                    while (pDst < pDstEnd && XmlCharType.IsAttributeValueChar((char)(ch = *pSrc)))
                     {
                         *pDst = (char)ch;
                         pDst++;
@@ -1232,7 +1222,7 @@ namespace System.Xml
                         pDstEnd = pDstBegin + _bufLen;
                     }
 
-                    while (pDst < pDstEnd && _xmlCharType.IsTextChar((char)(ch = *pSrc)))
+                    while (pDst < pDstEnd && XmlCharType.IsTextChar((char)(ch = *pSrc)))
                     {
                         *pDst = (char)ch;
                         pDst++;
@@ -1352,7 +1342,7 @@ namespace System.Xml
                         pDstEnd = pDstBegin + _bufLen;
                     }
 
-                    while (pDst < pDstEnd && (_xmlCharType.IsTextChar((char)(ch = *pSrc)) && ch != stopChar))
+                    while (pDst < pDstEnd && (XmlCharType.IsTextChar((char)(ch = *pSrc)) && ch != stopChar))
                     {
                         *pDst = (char)ch;
                         pDst++;
@@ -1503,7 +1493,7 @@ namespace System.Xml
                         pDstEnd = pDstBegin + _bufLen;
                     }
 
-                    while (pDst < pDstEnd && (_xmlCharType.IsAttributeValueChar((char)(ch = *pSrc)) && ch != ']'))
+                    while (pDst < pDstEnd && (XmlCharType.IsAttributeValueChar((char)(ch = *pSrc)) && ch != ']'))
                     {
                         *pDst = (char)ch;
                         pDst++;
@@ -1532,7 +1522,7 @@ namespace System.Xml
                     {
                         case '>':
                             if (_hadDoubleBracket && pDst[-1] == (char)']')
-                            {   // pDst[-1] will always correct - there is a padding character at bufChars[0]
+                            {   // pDst[-1] will always correct - there is a padding character at _bufChars[0]
                                 // The characters "]]>" were found within the CData text
                                 pDst = RawEndCData(pDst);
                                 pDst = RawStartCData(pDst);
@@ -1542,7 +1532,7 @@ namespace System.Xml
                             break;
                         case ']':
                             if (pDst[-1] == (char)']')
-                            {   // pDst[-1] will always correct - there is a padding character at bufChars[0]
+                            {   // pDst[-1] will always correct - there is a padding character at _bufChars[0]
                                 _hadDoubleBracket = true;
                             }
                             else
@@ -1616,7 +1606,6 @@ namespace System.Xml
             }
         }
 
-
         private static unsafe char* EncodeSurrogate(char* pSrc, char* pSrcEnd, char* pDst)
         {
             Debug.Assert(XmlCharType.IsSurrogate(*pSrc));
@@ -1645,8 +1634,8 @@ namespace System.Xml
 
         private unsafe char* InvalidXmlChar(int ch, char* pDst, bool entitize)
         {
-            Debug.Assert(!_xmlCharType.IsWhiteSpace((char)ch));
-            Debug.Assert(!_xmlCharType.IsAttributeValueChar((char)ch));
+            Debug.Assert(!XmlCharType.IsWhiteSpace((char)ch));
+            Debug.Assert(!XmlCharType.IsAttributeValueChar((char)ch));
 
             if (_checkCharacters)
             {
@@ -1663,6 +1652,7 @@ namespace System.Xml
                 {
                     *pDst = (char)ch;
                     pDst++;
+
                     return pDst;
                 }
             }
@@ -1692,7 +1682,6 @@ namespace System.Xml
             }
         }
 
-
         protected void ChangeTextContentMark(bool value)
         {
             Debug.Assert(_inTextContent != value);
@@ -1712,6 +1701,7 @@ namespace System.Xml
             Array.Copy(_textContentMarks, newTextContentMarks, _textContentMarks.Length);
             _textContentMarks = newTextContentMarks;
         }
+
         // Write NewLineChars to the specified buffer position and return an updated position.
         protected unsafe char* WriteNewLine(char* pDst)
         {
@@ -1854,11 +1844,11 @@ namespace System.Xml
             return pDst + 3;
         }
 
-        protected unsafe void ValidateContentChars(string chars, string propertyName, bool allowOnlyWhitespace)
+        protected void ValidateContentChars(string chars, string propertyName, bool allowOnlyWhitespace)
         {
             if (allowOnlyWhitespace)
             {
-                if (!_xmlCharType.IsOnlyWhitespace(chars))
+                if (!XmlCharType.IsOnlyWhitespace(chars))
                 {
                     throw new ArgumentException(SR.Format(SR.Xml_IndentCharsNotWhitespace, propertyName));
                 }
@@ -1868,7 +1858,7 @@ namespace System.Xml
                 string error = null;
                 for (int i = 0; i < chars.Length; i++)
                 {
-                    if (!_xmlCharType.IsTextChar(chars[i]))
+                    if (!XmlCharType.IsTextChar(chars[i]))
                     {
                         switch (chars[i])
                         {

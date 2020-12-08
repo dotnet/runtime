@@ -1,9 +1,10 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFrameworks>netstandard2.0</TargetFrameworks>
-    <TargetFrameworks Condition="'$(OS)' == 'Windows_NT'">$(TargetFrameworks);net46</TargetFrameworks>
+    <TargetFrameworks Condition="'$(OS)' == 'Windows_NT'">$(TargetFrameworks);net461</TargetFrameworks>
     <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
     <IsShipping>false</IsShipping>
+    <RunAnalyzers>false</RunAnalyzers>
   </PropertyGroup>
 
   <ItemGroup>

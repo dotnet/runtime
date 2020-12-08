@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
@@ -193,6 +192,7 @@ namespace System.IO.Tests
         /// <summary>
         /// EndInit will begin EnableRaisingEvents if we previously set EnableRaisingEvents=true
         /// </summary>
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/24181", TestPlatforms.OSX)]
         [Theory]
         [InlineData(true)]
         [InlineData(false)]

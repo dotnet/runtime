@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using Microsoft.CSharp;
 using Microsoft.VisualBasic;
@@ -11,6 +10,7 @@ using System.Runtime.Serialization;
 
 namespace System.CodeDom.Compiler
 {
+    [ToolboxItem(false)]
     public abstract class CodeDomProvider : Component
     {
         private static readonly Dictionary<string, CompilerInfo> s_compilerLanguages = new Dictionary<string, CompilerInfo>(StringComparer.OrdinalIgnoreCase);

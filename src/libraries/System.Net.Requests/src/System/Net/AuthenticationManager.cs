@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections;
 using System.Collections.Specialized;
@@ -15,9 +14,11 @@ namespace System.Net
 
         public static StringDictionary CustomTargetNameDictionary { get; } = new StringDictionary();
 
+        [Obsolete(Obsoletions.AuthenticationManagerMessage, DiagnosticId = Obsoletions.AuthenticationManagerDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public static Authorization? Authenticate(string challenge, WebRequest request, ICredentials credentials) =>
             throw new PlatformNotSupportedException();
 
+        [Obsolete(Obsoletions.AuthenticationManagerMessage, DiagnosticId = Obsoletions.AuthenticationManagerDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public static Authorization? PreAuthenticate(WebRequest request, ICredentials credentials) =>
             throw new PlatformNotSupportedException();
 

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 
 /*============================================================
@@ -72,6 +71,7 @@ public:
 #undef Sleep
     static FCDECL1(void,    Sleep,             INT32 iTime);
 #define Sleep(a) Dont_Use_Sleep(a)
+    static void QCALLTYPE   UninterruptibleSleep0();
     static FCDECL3(void,    SetStart,          ThreadBaseObject* pThisUNSAFE, Object* pDelegateUNSAFE, INT32 iRequestedStackSize);
     static FCDECL2(void,    SetBackground,     ThreadBaseObject* pThisUNSAFE, CLR_BOOL isBackground);
     static FCDECL1(FC_BOOL_RET, IsBackground,  ThreadBaseObject* pThisUNSAFE);
@@ -79,7 +79,7 @@ public:
     static FCDECL1(INT32,   GetThreadContext,  ThreadBaseObject* pThisUNSAFE);
 #ifdef FEATURE_COMINTEROP_APARTMENT_SUPPORT
     static FCDECL1(INT32,   GetApartmentState, ThreadBaseObject* pThis);
-    static FCDECL3(INT32,   SetApartmentState, ThreadBaseObject* pThisUNSAFE, INT32 iState, CLR_BOOL fireMDAOnMismatch);
+    static FCDECL2(INT32,   SetApartmentState, ThreadBaseObject* pThisUNSAFE, INT32 iState);
     static FCDECL1(void,    StartupSetApartmentState, ThreadBaseObject* pThis);
 #endif // FEATURE_COMINTEROP_APARTMENT_SUPPORT
 
@@ -99,7 +99,8 @@ public:
 #ifdef FEATURE_COMINTEROP
     static FCDECL1(void,    DisableComObjectEagerCleanup,   ThreadBaseObject* pThis);
 #endif //FEATURE_COMINTEROP
-    static FCDECL1(FC_BOOL_RET,IsThreadpoolThread,             ThreadBaseObject* thread);
+    static FCDECL1(FC_BOOL_RET,IsThreadpoolThread,          ThreadBaseObject* thread);
+    static FCDECL1(void,    SetIsThreadpoolThread,          ThreadBaseObject* thread);
     static FCDECL1(Object*, GetThreadDeserializationTracker, StackCrawlMark* stackMark);
 
     static FCDECL0(INT32,   GetCurrentProcessorNumber);

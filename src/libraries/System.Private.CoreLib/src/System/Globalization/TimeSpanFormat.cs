@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Buffers.Text;
 using System.Diagnostics;
@@ -130,7 +129,8 @@ namespace System.Globalization
                     }
                 }
 
-                totalSecondsRemaining = Math.DivRem((ulong)ticks, TimeSpan.TicksPerSecond, out ulong fraction64);
+                ulong fraction64;
+                (totalSecondsRemaining, fraction64) = Math.DivRem((ulong)ticks, TimeSpan.TicksPerSecond);
                 fraction = (uint)fraction64;
             }
 
@@ -171,7 +171,7 @@ namespace System.Globalization
             if (totalSecondsRemaining > 0)
             {
                 // Only compute minutes if the TimeSpan has an absolute value of >= 1 minute.
-                totalMinutesRemaining = Math.DivRem(totalSecondsRemaining, 60 /* seconds per minute */, out seconds);
+                (totalMinutesRemaining, seconds) = Math.DivRem(totalSecondsRemaining, 60 /* seconds per minute */);
                 Debug.Assert(seconds < 60);
             }
 
@@ -179,7 +179,7 @@ namespace System.Globalization
             if (totalMinutesRemaining > 0)
             {
                 // Only compute hours if the TimeSpan has an absolute value of >= 1 hour.
-                totalHoursRemaining = Math.DivRem(totalMinutesRemaining, 60 /* minutes per hour */, out minutes);
+                (totalHoursRemaining, minutes) = Math.DivRem(totalMinutesRemaining, 60 /* minutes per hour */);
                 Debug.Assert(minutes < 60);
             }
 
@@ -190,7 +190,7 @@ namespace System.Globalization
             if (totalHoursRemaining > 0)
             {
                 // Only compute days if the TimeSpan has an absolute value of >= 1 day.
-                days = Math.DivRem((uint)totalHoursRemaining, 24 /* hours per day */, out hours);
+                (days, hours) = Math.DivRem((uint)totalHoursRemaining, 24 /* hours per day */);
                 Debug.Assert(hours < 24);
             }
 

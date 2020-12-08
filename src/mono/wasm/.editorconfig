@@ -1,0 +1,13 @@
+# editorconfig.org
+
+# top-most EditorConfig file
+root = false
+
+# Default settings:
+# A newline ending every file
+# Use 4 spaces as indentation
+[*]
+insert_final_newline = true
+indent_style = tabs
+indent_size = 4
+trim_trailing_whitespace = true

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using Xunit;
 
@@ -12,21 +11,21 @@ namespace System.Reflection.Tests
         public void GetExportedTypesTest()
         {
             Assembly executingAssembly = GetType().GetTypeInfo().Assembly;
-            Assert.True(executingAssembly.GetExportedTypes().Length >= 60);
+            Assert.True(AssemblyExtensions.GetExportedTypes(executingAssembly).Length >= 60);
         }
 
         [Fact]
         public void GetModulesTest()
         {
             Assembly executingAssembly = GetType().GetTypeInfo().Assembly;
-            Assert.Equal(1, executingAssembly.GetModules().Length);
+            Assert.Equal(1, AssemblyExtensions.GetModules(executingAssembly).Length);
         }
 
         [Fact]
         public void GetTypes()
         {
             Assembly executingAssembly = GetType().GetTypeInfo().Assembly;
-            Assert.True(executingAssembly.GetTypes().Length >= 140);
+            Assert.True(AssemblyExtensions.GetTypes(executingAssembly).Length >= 140);
         }
     }
 }

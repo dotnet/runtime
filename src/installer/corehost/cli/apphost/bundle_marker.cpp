@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #include "bundle_marker.h"
 #include "pal.h"
@@ -10,9 +9,8 @@
 int64_t bundle_marker_t::header_offset()
 {
     // Contains the bundle_placeholder default value at compile time.
-    // If this is a single-file bundle, the last 8 bytes are replaced 
-    // bundle-header replaced by "dotnet publish" with the offset 
-    // where the bundle_header is located.
+    // If this is a single-file bundle, the first 8 bytes are replaced 
+    // by "dotnet publish" with the offset where the bundle_header is located.
     static volatile uint8_t placeholder[] = 
     {
         // 8 bytes represent the bundle header-offset 

@@ -1,15 +1,15 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 namespace System.Xml.Serialization
 {
     using System;
+    using System.Diagnostics.CodeAnalysis;
 
     [AttributeUsage(AttributeTargets.Field)]
     public class SoapEnumAttribute : System.Attribute
     {
-        private string _name;
+        private string? _name;
 
         public SoapEnumAttribute()
         {
@@ -20,6 +20,7 @@ namespace System.Xml.Serialization
             _name = name;
         }
 
+        [AllowNull]
         public string Name
         {
             get { return _name == null ? string.Empty : _name; }

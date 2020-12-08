@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 //
 // SYNCBLK.CPP
 //
@@ -2255,7 +2254,7 @@ SyncBlock *ObjHeader::GetSyncBlock()
     RETURN syncBlock;
 }
 
-BOOL ObjHeader::Wait(INT32 timeOut, BOOL exitContext)
+BOOL ObjHeader::Wait(INT32 timeOut)
 {
     CONTRACTL
     {
@@ -2278,7 +2277,7 @@ BOOL ObjHeader::Wait(INT32 timeOut, BOOL exitContext)
     if (!pSB->DoesCurrentThreadOwnMonitor())
         COMPlusThrow(kSynchronizationLockException);
 
-    return pSB->Wait(timeOut,exitContext);
+    return pSB->Wait(timeOut);
 }
 
 void ObjHeader::Pulse()
@@ -2790,7 +2789,7 @@ BOOL AwareLock::OwnedByCurrentThread()
 //    When we pulse a thread, we find the event from this queue to set, and we also
 //    or in a 1 bit in the syncblock value saved in the queue, so that we can return
 //    immediately from SyncBlock::Wait if the syncblock has been pulsed.
-BOOL SyncBlock::Wait(INT32 timeOut, BOOL exitContext)
+BOOL SyncBlock::Wait(INT32 timeOut)
 {
     CONTRACTL
     {

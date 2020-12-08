@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -328,9 +327,10 @@ namespace System.Net.WebSockets.Client.Tests
 
         [ConditionalFact(nameof(WebSocketsSupported))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/34690", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/42852", TestPlatforms.Browser)]
         public async Task CloseAsync_CancelableEvenWhenPendingReceive_Throws()
         {
-            var tcs = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+            var tcs = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
 
             await LoopbackServer.CreateClientAndServerAsync(async uri =>
             {
@@ -356,7 +356,7 @@ namespace System.Net.WebSockets.Client.Tests
                 }
                 finally
                 {
-                    tcs.SetResult(true);
+                    tcs.SetResult();
                 }
             }, server => server.AcceptConnectionAsync(async connection =>
             {

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #include "common.h"
 #include "eventpipeblock.h"
@@ -149,6 +148,7 @@ void EventPipeFile::InitializeFile()
     }
     if (fSuccess)
     {
+        m_isInitialized = fSuccess;
         // Create the file stream and write the FastSerialization header.
         m_pSerializer = new FastSerializer(m_pStreamWriter);
 
@@ -174,6 +174,9 @@ EventPipeFile::~EventPipeFile()
     {
         delete *pCur;
     }
+
+    if (!m_isInitialized)
+        delete m_pStreamWriter;
 
     delete m_pBlock;
     delete m_pMetadataBlock;

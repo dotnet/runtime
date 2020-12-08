@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #pragma warning disable 1634, 1691
 
@@ -875,9 +874,7 @@ namespace System.ServiceModel.Syndication
 
             // if there's a single author with an email address, then serialize as the managingEditor
             // else serialize the authors as Atom extensions
-#pragma warning disable 56506 // tvish: this.Feed.Authors is never null
             if ((Feed.Authors.Count == 1) && (Feed.Authors[0].Email != null))
-#pragma warning restore 56506
             {
                 WritePerson(writer, Rss20Constants.ManagingEditorTag, Feed.Authors[0]);
             }
@@ -896,9 +893,7 @@ namespace System.ServiceModel.Syndication
                 writer.WriteEndElement();
             }
 
-#pragma warning disable 56506 // tvish: this.Feed.Categories is never null
             for (int i = 0; i < Feed.Categories.Count; ++i)
-#pragma warning restore 56506
             {
                 WriteCategory(writer, Feed.Categories[i]);
             }
@@ -908,9 +903,7 @@ namespace System.ServiceModel.Syndication
                 writer.WriteElementString(Rss20Constants.GeneratorTag, Feed.Generator);
             }
 
-#pragma warning disable 56506 // tvish: this.Feed.Contributors is never null
             if (Feed.Contributors.Count > 0)
-#pragma warning restore 56506
             {
                 if (SerializeExtensionsAsAtom)
                 {
@@ -1042,9 +1035,7 @@ namespace System.ServiceModel.Syndication
                 WriteAlternateLink(writer, firstAlternateLink, (item.BaseUri ?? feedBaseUri));
             }
 
-#pragma warning disable 56506 // tvish, item.Authors is never null
             if (item.Authors.Count == 1 && !string.IsNullOrEmpty(item.Authors[0].Email))
-#pragma warning restore 56506
             {
                 WritePerson(writer, Rss20Constants.AuthorTag, item.Authors[0]);
             }
@@ -1056,9 +1047,7 @@ namespace System.ServiceModel.Syndication
                 }
             }
 
-#pragma warning disable 56506 // tvish, item.Categories is never null
             for (int i = 0; i < item.Categories.Count; ++i)
-#pragma warning restore 56506
             {
                 WriteCategory(writer, item.Categories[i]);
             }
@@ -1163,9 +1152,7 @@ namespace System.ServiceModel.Syndication
                 }
             }
 
-#pragma warning disable 56506 // tvish, item.COntributors is never null
             if (item.Contributors.Count > 0)
-#pragma warning restore 56506
             {
                 if (SerializeExtensionsAsAtom)
                 {

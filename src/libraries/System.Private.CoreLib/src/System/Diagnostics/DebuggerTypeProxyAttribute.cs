@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
+
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Diagnostics
 {
@@ -9,7 +10,8 @@ namespace System.Diagnostics
     {
         private Type? _target;
 
-        public DebuggerTypeProxyAttribute(Type type)
+        public DebuggerTypeProxyAttribute(
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type type)
         {
             if (type == null)
             {
@@ -19,11 +21,15 @@ namespace System.Diagnostics
             ProxyTypeName = type.AssemblyQualifiedName!;
         }
 
-        public DebuggerTypeProxyAttribute(string typeName)
+        public DebuggerTypeProxyAttribute(
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] string typeName)
         {
             ProxyTypeName = typeName;
         }
 
+        // The Proxy is only invoked by the debugger, so it needs to have its
+        // members preserved
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
         public string ProxyTypeName { get; }
 
         public Type? Target

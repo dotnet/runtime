@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 //
 // ZapReadyToRun.cpp
 //
@@ -742,7 +741,7 @@ void ZapImage::OutputAttributePresenceFilter(IMDInternalImport * pMDImport)
     // present. Other assemblies *MAY* benefit from this feature, but it doesn't show
     // as useful at this time.
 
-    if (m_hModule != m_zapper->m_pEECompileInfo->GetLoaderModuleForMscorlib())
+    if (m_hModule != m_zapper->m_pEECompileInfo->GetLoaderModuleForCoreLib())
         return;
 
     SArray<UINT16> table;
@@ -844,8 +843,21 @@ static_assert_no_msg((int)READYTORUN_FIXUP_PInvokeTarget             == (int)ENC
 
 static_assert_no_msg((int)READYTORUN_FIXUP_Check_InstructionSetSupport== (int)ENCODE_CHECK_INSTRUCTION_SET_SUPPORT);
 
+static_assert_no_msg((int)READYTORUN_FIXUP_Verify_FieldOffset         == (int)ENCODE_VERIFY_FIELD_OFFSET);
+static_assert_no_msg((int)READYTORUN_FIXUP_Verify_TypeLayout          == (int)ENCODE_VERIFY_TYPE_LAYOUT);
+
 //
 // READYTORUN_EXCEPTION
 //
 static_assert_no_msg(sizeof(READYTORUN_EXCEPTION_LOOKUP_TABLE_ENTRY) == sizeof(CORCOMPILE_EXCEPTION_LOOKUP_TABLE_ENTRY));
 static_assert_no_msg(sizeof(READYTORUN_EXCEPTION_CLAUSE) == sizeof(CORCOMPILE_EXCEPTION_CLAUSE));
+
+//
+// ReadyToRunHFAElemType
+//
+static_assert_no_msg((int)READYTORUN_HFA_ELEMTYPE_None      == (int)CORINFO_HFA_ELEM_NONE);
+static_assert_no_msg((int)READYTORUN_HFA_ELEMTYPE_Float32   == (int)CORINFO_HFA_ELEM_FLOAT);
+static_assert_no_msg((int)READYTORUN_HFA_ELEMTYPE_Float64   == (int)CORINFO_HFA_ELEM_DOUBLE);
+static_assert_no_msg((int)READYTORUN_HFA_ELEMTYPE_Vector64  == (int)CORINFO_HFA_ELEM_VECTOR64);
+static_assert_no_msg((int)READYTORUN_HFA_ELEMTYPE_Vector128 == (int)CORINFO_HFA_ELEM_VECTOR128);
+

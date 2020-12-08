@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #ifndef _GCINTERFACE_EE_H_
 #define _GCINTERFACE_EE_H_
@@ -415,7 +414,7 @@ public:
     bool AnalyzeSurvivorsRequested(int condemnedGeneration) = 0;
 
     virtual
-    void AnalyzeSurvivorsFinished(int condemnedGeneration) = 0;
+    void AnalyzeSurvivorsFinished(size_t gcIndex, int condemnedGeneration, uint64_t promoted_bytes, void (*reportGenerationBounds)()) = 0;
 
     virtual
     void VerifySyncTableEntry() = 0;

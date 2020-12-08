@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
 using System.Globalization;
@@ -136,7 +135,7 @@ namespace System.Net.Http.Tests
             Assert.Equal("must-revalidate, proxy-revalidate, private=\"token2, token3\"", cacheControl.ToString());
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void ToString_NegativeValues_UsesMinusSignRegardlessOfCurrentCulture()
         {
             RemoteExecutor.Invoke(() =>

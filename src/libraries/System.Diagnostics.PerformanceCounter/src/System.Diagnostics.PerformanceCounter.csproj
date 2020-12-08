@@ -1,10 +1,8 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;netcoreapp2.0-Windows_NT;netstandard2.0;net461;$(NetFrameworkCurrent)</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent)-windows;netcoreapp2.0-windows;netstandard2.0;net461</TargetFrameworks>
     <ExcludeCurrentNetCoreAppFromPackage>true</ExcludeCurrentNetCoreAppFromPackage>
-    <ExcludeCurrentFullFrameworkFromPackage>true</ExcludeCurrentFullFrameworkFromPackage>
   </PropertyGroup>
   <!-- DesignTimeBuild requires all the TargetFramework Derived Properties to not be present in the first property group. -->
   <PropertyGroup>
@@ -74,13 +72,13 @@
              Link="Common\Interop\Windows\Kernel32\Interop.Constants.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.CreateFileMapping.cs"
              Link="Common\Interop\Windows\Kernel32\Interop.CreateFileMapping.cs" />
-    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.DuplicateHandle_SafeProcessHandle.cs"
-             Link="Common\Interop\Windows\kernel32\Interop.DuplicateHandle.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.DuplicateHandle_SafeWaitHandle.cs"
+             Link="Common\Interop\Windows\kernel32\Interop.DuplicateHandle_SafeWaitHandle.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.FreeLibrary.cs"
              Link="Common\Interop\Windows\Kernel32\Interop.FreeLibrary.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetComputerName.cs"
              Link="Common\Interop\Windows\Kernel32\Interop.GetComputerName.cs" />
-    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetCurrentProcess_SafeProcessHandle.cs"
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetCurrentProcess.cs"
              Link="Common\Interop\Windows\kernel32\Interop.GetCurrentProcess.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetCurrentProcessId.cs"
              Link="Common\Interop\Windows\Kernel32\Interop.GetCurrentProcessId.cs" />
@@ -112,8 +110,8 @@
              Link="Common\Interop\Windows\Kernel32\Interop.VirtualQuery.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.WaitForSingleObject.cs"
              Link="Common\Interop\Windows\Kernel32\Interop.WaitForSingleObject.cs" />
-    <Compile Include="$(CommonPath)Interop\Windows\PerfCounter\Interop.FormatFromRawValue.cs"
-             Link="Common\Interop\Windows\PerfCounter\Interop.FormatFromRawValue.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Pdh\Interop.PdhFormatFromRawValue.cs"
+             Link="Common\Interop\Windows\Pdh\Interop.PdhFormatFromRawValue.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\PerfCounter\Interop.PerformanceData.cs"
              Link="Common\Interop\Windows\PerfCounter\Interop.PerformanceData.cs" />
     <Compile Include="$(CommonPath)Microsoft\Win32\SafeHandles\SafeLocalAllocHandle.cs"
@@ -123,20 +121,16 @@
     <Compile Include="$(CommonPath)System\Diagnostics\NetFrameworkUtils.cs"
              Link="Common\System\Diagnostics\NetFrameworkUtils.cs" />
   </ItemGroup>
-  <ItemGroup Condition="$(TargetFramework.StartsWith('net4'))">
-    <Reference Include="mscorlib" />
-    <Reference Include="System" />
-    <Reference Include="System.Core" />
-  </ItemGroup>
-  <ItemGroup Condition="!$(TargetFramework.StartsWith('net4'))">
-    <Reference Include="Microsoft.Win32.Registry" />
+  <ItemGroup Condition="$(TargetFramework.StartsWith('$(NetCoreAppCurrent)')) or $(TargetFramework.StartsWith('netcoreapp2.0'))">
+    <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Win32.Registry\src\Microsoft.Win32.Registry.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Configuration.ConfigurationManager\src\System.Configuration.ConfigurationManager.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Security.Principal.Windows\src\System.Security.Principal.Windows.csproj" />
     <Reference Include="Microsoft.Win32.Primitives" />
     <Reference Include="System.Buffers" />
     <Reference Include="System.Collections" />
     <Reference Include="System.Collections.NonGeneric" />
     <Reference Include="System.ComponentModel.Primitives" />
     <Reference Include="System.ComponentModel.TypeConverter" />
-    <Reference Include="System.Configuration.ConfigurationManager" />
     <Reference Include="System.Diagnostics.Debug" />
     <Reference Include="System.Diagnostics.Process" />
     <Reference Include="System.Diagnostics.Tools" />
@@ -148,9 +142,13 @@
     <Reference Include="System.Runtime.Extensions" />
     <Reference Include="System.Runtime.InteropServices" />
     <Reference Include="System.Security.Claims" />
-    <Reference Include="System.Security.Principal.Windows" />
     <Reference Include="System.Security.Principal" />
     <Reference Include="System.Threading" />
     <Reference Include="System.Threading.Thread" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0' or $(TargetFramework.StartsWith('netcoreapp2.0'))">
+    <PackageReference Include="System.Buffers" Version="$(SystemBuffersVersion)" />
+    <PackageReference Include="System.Memory" Version="$(SystemMemoryVersion)" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime.CompilerServices.Unsafe\src\System.Runtime.CompilerServices.Unsafe.ilproj" />
   </ItemGroup>
 </Project>

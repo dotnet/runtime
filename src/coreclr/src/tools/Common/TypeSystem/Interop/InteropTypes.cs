@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using Internal.IL;
 
@@ -28,11 +27,6 @@ namespace Internal.TypeSystem.Interop
         public static MetadataType GetHandleRef(TypeSystemContext context)
         {
             return context.SystemModule.GetKnownType("System.Runtime.InteropServices", "HandleRef");
-        }
-
-        public static MetadataType GetMissingMemberException(TypeSystemContext context)
-        {
-            return context.SystemModule.GetKnownType("System", "MissingMemberException");
         }
 
         public static MetadataType GetPInvokeMarshal(TypeSystemContext context)

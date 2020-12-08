@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 /*XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
@@ -117,7 +116,7 @@ int LinearScan::BuildIndir(GenTreeIndir* indirTree)
     int srcCount = BuildIndirUses(indirTree);
     buildInternalRegisterUses();
 
-    if (indirTree->gtOper != GT_STOREIND)
+    if (!indirTree->OperIs(GT_STOREIND, GT_NULLCHECK))
     {
         BuildDef(indirTree);
     }
@@ -182,12 +181,10 @@ int LinearScan::BuildCall(GenTreeCall* call)
             ctrlExprCandidates = RBM_FASTTAILCALL_TARGET;
         }
     }
-#if defined(FEATURE_READYTORUN_COMPILER) && defined(TARGET_ARMARCH)
-    else if (call->IsR2RRelativeIndir())
+    else if (call->IsR2ROrVirtualStubRelativeIndir())
     {
         buildInternalIntRegisterDefForNode(call);
     }
-#endif // FEATURE_READYTORUN_COMPILER && TARGET_ARMARCH
 #ifdef TARGET_ARM
     else
     {

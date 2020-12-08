@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.IO;
@@ -31,10 +30,10 @@ namespace System.Xml
         public const int MaxUInt64Chars = 32;
         public const int MaxPrimitiveChars = MaxDateTimeChars;
 
-        private static UTF8Encoding s_utf8Encoding;
-        private static UnicodeEncoding s_unicodeEncoding;
+        private static UTF8Encoding? s_utf8Encoding;
+        private static UnicodeEncoding? s_unicodeEncoding;
 
-        private static Base64Encoding s_base64Encoding;
+        private static Base64Encoding? s_base64Encoding;
 
         public static Base64Encoding Base64Encoding
         {
@@ -457,7 +456,7 @@ namespace System.Xml
             else if (value is bool)
                 return ToString((bool)value);
             else
-                return value.ToString();
+                return value.ToString()!; // value can only be an object created by ToList()
         }
 
         public static string ToString(object[] objects)

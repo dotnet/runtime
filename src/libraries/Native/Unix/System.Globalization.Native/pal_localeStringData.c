@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 //
 
 #include <assert.h>
@@ -244,8 +243,6 @@ int32_t GlobalizationNative_GetLocaleInfoString(const UChar* localeName,
         case LocaleString_NativeCountryName:
             uloc_getDisplayCountry(locale, locale, value, valueLength, &status);
             break;
-        case LocaleString_ListSeparator:
-        // fall through
         case LocaleString_ThousandSeparator:
             status = GetLocaleInfoDecimalFormatSymbol(locale, UNUM_GROUPING_SEPARATOR_SYMBOL, value, valueLength);
             break;

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 
 
@@ -123,13 +122,16 @@ class RuntimeTypeHandle {
 public:
 
     // Static method on RuntimeTypeHandle
-    static FCDECL1(Object*, Allocate, ReflectClassBaseObject *refType) ; //A.CI work
-    static FCDECL6(Object*, CreateInstance, ReflectClassBaseObject* refThisUNSAFE,
-                                            CLR_BOOL publicOnly,
-                                            CLR_BOOL wrapExceptions,
-                                            CLR_BOOL *pbCanBeCached,
-                                            MethodDesc** pConstructor,
-                                            CLR_BOOL *pbHasNoDefaultCtor);
+
+    static
+    void QCALLTYPE GetActivationInfo(
+        QCall::ObjectHandleOnStack pRuntimeType,
+        PCODE* ppfnAllocator,
+        void** pvAllocatorFirstArg,
+        PCODE* ppfnCtor,
+        BOOL* pfCtorIsPublic);
+
+    static FCDECL1(Object*, AllocateComObject, void* pClassFactory);
 
     static
     void QCALLTYPE MakeByRef(QCall::TypeHandle pTypeHandle, QCall::ObjectHandleOnStack retType);
@@ -155,14 +157,6 @@ public:
     static FCDECL2(FC_BOOL_RET, TypeEQ, Object* left, Object* right);
     static FCDECL2(FC_BOOL_RET, TypeNEQ, Object* left, Object* right);
 
-
-#ifdef FEATURE_COMINTEROP
-    static FCDECL1(FC_BOOL_RET, IsWindowsRuntimeObjectType, ReflectClassBaseObject *rtTypeUNSAFE);
-#ifdef FEATURE_COMINTEROP_WINRT_MANAGED_ACTIVATION
-    static FCDECL1(FC_BOOL_RET, IsTypeExportedToWindowsRuntime, ReflectClassBaseObject *rtTypeUNSAFE);
-#endif
-#endif //FEATURE_COMINTEROP
-
     static
     void QCALLTYPE PrepareMemberInfoCache(QCall::TypeHandle pMemberInfoCache);
 
@@ -176,7 +170,7 @@ public:
     void QCALLTYPE GetTypeByName(LPCWSTR pwzClassName, BOOL bThrowOnError, BOOL bIgnoreCase,
                                  QCall::StackCrawlMarkHandle pStackMark,
                                  QCall::ObjectHandleOnStack pAssemblyLoadContext,
-                                 BOOL bLoadTypeFromPartialNameHack, QCall::ObjectHandleOnStack retType,
+                                 QCall::ObjectHandleOnStack retType,
                                  QCall::ObjectHandleOnStack keepAlive);
 
     static FCDECL1(AssemblyBaseObject*, GetAssembly, ReflectClassBaseObject *pType);
@@ -202,6 +196,7 @@ public:
     static FCDECL2(FC_BOOL_RET, IsInstanceOfType, ReflectClassBaseObject *pType, Object *object);
 
     static FCDECL6(FC_BOOL_RET, SatisfiesConstraints, PTR_ReflectClassBaseObject pGenericParameter, TypeHandle *typeContextArgs, INT32 typeContextCount, TypeHandle *methodContextArgs, INT32 methodContextCount, PTR_ReflectClassBaseObject pGenericArgument);
+
     static
     FCDECL1(FC_BOOL_RET, HasInstantiation, PTR_ReflectClassBaseObject pType);
 
@@ -256,14 +251,18 @@ public:
     static FCDECL1(MethodDesc *, GetFirstIntroducedMethod, ReflectClassBaseObject* pType);
     static FCDECL1(void, GetNextIntroducedMethod, MethodDesc **ppMethod);
 
-    static FCDECL2(Object*, CreateInstanceForGenericType, ReflectClassBaseObject* pType
-        , ReflectClassBaseObject* parameterType );
+    static
+    void QCALLTYPE CreateInstanceForAnotherGenericParameter(QCall::TypeHandle pTypeHandle, TypeHandle *pInstArray, INT32 cInstArray, QCall::ObjectHandleOnStack pInstantiatedObject);
 
     static
     FCDECL1(IMDInternalImport*, GetMetadataImport, ReflectClassBaseObject * pModuleUNSAFE);
 
     static
     PVOID QCALLTYPE AllocateTypeAssociatedMemory(QCall::TypeHandle type, UINT32 size);
+
+    // Helper methods not called by managed code
+
+    static void ValidateTypeAbleToBeInstantiated(TypeHandle typeHandle, bool fGetUninitializedObject);
 };
 
 class RuntimeMethodHandle {

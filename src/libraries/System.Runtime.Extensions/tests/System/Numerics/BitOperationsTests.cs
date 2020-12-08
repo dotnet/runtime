@@ -1,6 +1,5 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Numerics;
@@ -251,6 +250,30 @@ namespace System.Numerics.Tests
         {
             int actual = BitOperations.PopCount(n);
             Assert.Equal(expected, actual);
+        }
+
+        [Fact]
+        public static void BitOps_PopCount_Constant()
+        {
+            // PopCount returns constant for constant input
+
+            Assert.Equal(0,  BitOperations.PopCount(0U));
+            Assert.Equal(1,  BitOperations.PopCount(1U));
+            Assert.Equal(1,  BitOperations.PopCount(2U));
+            Assert.Equal(6,  BitOperations.PopCount(1111U));
+            Assert.Equal(29, BitOperations.PopCount(unchecked((uint)-101)));
+            Assert.Equal(31, BitOperations.PopCount(4294967294U));
+            Assert.Equal(32, BitOperations.PopCount(4294967295U));
+
+            Assert.Equal(0,  BitOperations.PopCount(0UL));
+            Assert.Equal(1,  BitOperations.PopCount(1UL));
+            Assert.Equal(1,  BitOperations.PopCount(2UL));
+            Assert.Equal(6,  BitOperations.PopCount(1111UL));
+            Assert.Equal(31, BitOperations.PopCount(4294967294UL));
+            Assert.Equal(32, BitOperations.PopCount(4294967295UL));
+            Assert.Equal(61, BitOperations.PopCount(unchecked((ulong)-101)));
+            Assert.Equal(63, BitOperations.PopCount(18446744073709551614UL));
+            Assert.Equal(64, BitOperations.PopCount(18446744073709551615UL));
         }
 
         [Theory]

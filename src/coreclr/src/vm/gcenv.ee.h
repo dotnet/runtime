@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #ifndef _GCENV_EE_H_
 #define _GCENV_EE_H_
@@ -78,7 +77,7 @@ public:
     uint32_t GetTotalNumSizedRefHandles();
 
     bool AnalyzeSurvivorsRequested(int condemnedGeneration);
-    void AnalyzeSurvivorsFinished(int condemnedGeneration);
+    void AnalyzeSurvivorsFinished(size_t gcIndex, int condemnedGeneration, uint64_t promoted_bytes, void (*reportGenerationBounds)());
 
     void VerifySyncTableEntry();
 

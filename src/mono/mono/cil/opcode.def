@@ -325,6 +325,8 @@ OPDEF(CEE_MONO_LDPTR_PROFILER_ALLOCATION_COUNT, "mono_ldptr_profiler_allocation_
 OPDEF(CEE_MONO_LD_DELEGATE_METHOD_PTR, "mono_ld_delegate_method_ptr", Pop1, PushI, InlineNone, 0, 2, 0xF0, 0x1E, NEXT)
 OPDEF(CEE_MONO_RETHROW, "mono_rethrow", PopRef, Push0, InlineNone, 0, 2, 0xF0, 0x1F, ERROR)
 OPDEF(CEE_MONO_GET_SP, "mono_get_sp", Pop0, PushI, InlineNone, 0, 2, 0xF0, 0x20, NEXT)
+OPDEF(CEE_MONO_METHODCONST, "mono_methodconst", Pop0, PushI, InlineI, 0, 2, 0xF0, 0x21, NEXT)
+OPDEF(CEE_MONO_PINVOKE_ADDR_CACHE, "mono_pinvoke_addr_cache", Pop0, PushI, InlineI, 0, 2, 0xF0, 0x22, NEXT)
 #ifndef OPALIAS
 #define _MONO_CIL_OPALIAS_DEFINED_
 #define OPALIAS(a,s,r)

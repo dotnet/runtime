@@ -1,11 +1,11 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.IO;
 using System.Runtime.Serialization;
 using System.Security.Principal;
+using System.Threading;
 
 namespace System.Security.Claims
 {
@@ -26,6 +26,23 @@ namespace System.Security.Claims
 
         private static Func<IEnumerable<ClaimsIdentity>, ClaimsIdentity?> s_identitySelector = SelectPrimaryIdentity;
         private static Func<ClaimsPrincipal> s_principalSelector = ClaimsPrincipalSelector;
+
+        private static ClaimsPrincipal? SelectClaimsPrincipal()
+        {
+            // Diverging behavior from .NET Framework: In Framework, the default PrincipalPolicy is
+            // UnauthenticatedPrincipal. In .NET Core, the default is NoPrincipal. .NET Framework
+            // would throw an ArgumentNullException when constructing the ClaimsPrincipal with a
+            // null principal from the thread if it were set to use NoPrincipal. In .NET Core, since
+            // NoPrincipal is the default, we return null instead of throw.
+
+            IPrincipal? threadPrincipal = Thread.CurrentPrincipal;
+
+            return threadPrincipal switch {
+                ClaimsPrincipal claimsPrincipal => claimsPrincipal,
+                not null => new ClaimsPrincipal(threadPrincipal),
+                null => null
+            };
+        }
 
         protected ClaimsPrincipal(SerializationInfo info, StreamingContext context)
         {
@@ -281,12 +298,7 @@ namespace System.Security.Claims
             // just accesses the current selected principal selector, doesn't set
             get
             {
-                if (s_principalSelector != null)
-                {
-                    return s_principalSelector();
-                }
-
-                return null;
+                return s_principalSelector is not null ? s_principalSelector() : SelectClaimsPrincipal();
             }
         }
 

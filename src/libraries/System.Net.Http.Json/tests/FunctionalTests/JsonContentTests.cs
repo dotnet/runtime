@@ -1,9 +1,9 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Net.Http.Headers;
 using System.Net.Test.Common;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
@@ -11,8 +11,9 @@ using Xunit;
 
 namespace System.Net.Http.Json.Functional.Tests
 {
-    public class JsonContentTests
+    public abstract class JsonContentTestsBase
     {
+        protected abstract Task<HttpResponseMessage> SendAsync(HttpClient client, HttpRequestMessage request);
 
         private class Foo { }
         private class Bar { }
@@ -71,18 +72,17 @@ namespace System.Net.Http.Json.Functional.Tests
         [Fact]
         public async Task SendQuotedCharsetAsync()
         {
-
-            await LoopbackServer.CreateClientAndServerAsync(
-                async uri =>
+            await HttpMessageHandlerLoopbackServer.CreateClientAndServerAsync(
+                async (handler, uri) =>
                 {
-                    using (HttpClient client = new HttpClient())
+                    using (HttpClient client = new HttpClient(handler))
                     {
                         JsonContent content = JsonContent.Create<Foo>(null);
                         content.Headers.ContentType.CharSet = "\"utf-8\"";
 
                         var request = new HttpRequestMessage(HttpMethod.Post, uri);
                         request.Content = content;
-                        await client.SendAsync(request);
+                        await SendAsync(client, request);
                     }
                 },
                 async server => {
@@ -106,15 +106,15 @@ namespace System.Net.Http.Json.Functional.Tests
         [Fact]
         public async Task JsonContentMediaTypeValidateOnServerAsync()
         {
-            await LoopbackServer.CreateClientAndServerAsync(
-                async uri =>
+            await HttpMessageHandlerLoopbackServer.CreateClientAndServerAsync(
+                async (handler, uri) =>
                 {
-                    using (HttpClient client = new HttpClient())
+                    using (HttpClient client = new HttpClient(handler))
                     {
                         var request = new HttpRequestMessage(HttpMethod.Post, uri);
                         MediaTypeHeaderValue mediaType = MediaTypeHeaderValue.Parse("foo/bar; charset=utf-8");
                         request.Content = JsonContent.Create(Person.Create(), mediaType: mediaType);
-                        await client.SendAsync(request);
+                        await SendAsync(client, request);
                     }
                 },
                 async server => {
@@ -161,18 +161,18 @@ namespace System.Net.Http.Json.Functional.Tests
         }
 
         [Fact]
-        public static async Task ValidateUtf16IsTranscodedAsync()
+        public async Task ValidateUtf16IsTranscodedAsync()
         {
-            await LoopbackServer.CreateClientAndServerAsync(
-                async uri =>
+            await HttpMessageHandlerLoopbackServer.CreateClientAndServerAsync(
+                async (handler, uri) =>
                 {
-                    using (HttpClient client = new HttpClient())
+                    using (HttpClient client = new HttpClient(handler))
                     {
                         var request = new HttpRequestMessage(HttpMethod.Post, uri);
                         MediaTypeHeaderValue mediaType = MediaTypeHeaderValue.Parse("application/json; charset=utf-16");
                         // Pass new options to avoid using the Default Web Options that use camelCase.
                         request.Content = JsonContent.Create(Person.Create(), mediaType: mediaType, options: new JsonSerializerOptions());
-                        await client.SendAsync(request);
+                        await SendAsync(client, request);
                     }
                 },
                 async server => {
@@ -186,16 +186,16 @@ namespace System.Net.Http.Json.Functional.Tests
         [Fact]
         public async Task EnsureDefaultJsonSerializerOptionsAsync()
         {
-            await LoopbackServer.CreateClientAndServerAsync(
-                async uri =>
+            await HttpMessageHandlerLoopbackServer.CreateClientAndServerAsync(
+                async (handler, uri) =>
                 {
-                    using (HttpClient client = new HttpClient())
+                    using (HttpClient client = new HttpClient(handler))
                     {
                         // EnsureDefaultOptions uses a JsonConverter where we validate the JsonSerializerOptions when not provided to JsonContent.Create.
                         EnsureDefaultOptions dummyObj = new EnsureDefaultOptions();
                         var request = new HttpRequestMessage(HttpMethod.Post, uri);
                         request.Content = JsonContent.Create(dummyObj);
-                        await client.SendAsync(request);
+                        await SendAsync(client, request);
                     }
                 },
                 server => server.HandleRequestAsync());
@@ -204,10 +204,10 @@ namespace System.Net.Http.Json.Functional.Tests
         [Fact]
         public async Task TestJsonContentNullContentTypeAsync()
         {
-            await LoopbackServer.CreateClientAndServerAsync(
-                async uri =>
+            await HttpMessageHandlerLoopbackServer.CreateClientAndServerAsync(
+                async (handler, uri) =>
                 {
-                    using (HttpClient client = new HttpClient())
+                    using (HttpClient client = new HttpClient(handler))
                     {
                         var request = new HttpRequestMessage(HttpMethod.Post, uri);
                         MediaTypeHeaderValue mediaType = MediaTypeHeaderValue.Parse("application/json; charset=utf-16");
@@ -215,7 +215,7 @@ namespace System.Net.Http.Json.Functional.Tests
                         content.Headers.ContentType = null;
 
                         request.Content = content;
-                        await client.SendAsync(request);
+                        await SendAsync(client, request);
                     }
                 },
                 async server => {
@@ -223,5 +223,10 @@ namespace System.Net.Http.Json.Functional.Tests
                     Assert.Equal(0, req.GetHeaderValueCount("Content-Type"));
                 });
         }
+    }
+
+    public class JsonContentTests_Async : JsonContentTestsBase
+    {
+        protected override Task<HttpResponseMessage> SendAsync(HttpClient client, HttpRequestMessage request) => client.SendAsync(request);
     }
 }

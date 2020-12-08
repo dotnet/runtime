@@ -1,8 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
-#nullable enable
 using System.Threading;
 using System.Net;
 using System.Net.Cache;
@@ -24,11 +22,13 @@ namespace System.Xml
 
         public XmlUrlResolver() { }
 
+        [UnsupportedOSPlatform("browser")]
         public override ICredentials? Credentials
         {
             set { _credentials = value; }
         }
 
+        [UnsupportedOSPlatform("browser")]
         public IWebProxy? Proxy
         {
             set { _proxy = value; }

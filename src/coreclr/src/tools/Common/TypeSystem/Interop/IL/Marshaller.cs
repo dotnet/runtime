@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Runtime.InteropServices;
@@ -51,6 +50,7 @@ namespace Internal.TypeSystem.Interop
         AsAnyA,
         AsAnyW,
         ComInterface,
+        BlittableValueClassWithCopyCtor,
         Invalid
     }
     public enum MarshalDirection
@@ -272,6 +272,8 @@ namespace Internal.TypeSystem.Interop
         /// <param name="parameterType">type of the parameter to marshal</param>
         /// <returns>The created Marshaller</returns>
         public static Marshaller CreateMarshaller(TypeDesc parameterType,
+            int? parameterIndex,
+            EmbeddedSignatureData[] customModifierData,
             MarshallerType marshallerType,
             MarshalAsDescriptor marshalAs,
             MarshalDirection direction,
@@ -285,13 +287,22 @@ namespace Internal.TypeSystem.Interop
             bool isOut,
             bool isReturn)
         {
-            MarshallerKind elementMarshallerKind;
+            bool isAnsi = flags.CharSet switch
+            {
+                CharSet.Ansi => true,
+                CharSet.Unicode => false,
+                CharSet.Auto => !parameterType.Context.Target.IsWindows,
+                _ => true
+            };
+
             MarshallerKind marshallerKind = MarshalHelpers.GetMarshallerKind(parameterType,
+                                                parameterIndex,
+                                                customModifierData,
                                                 marshalAs,
                                                 isReturn,
-                                                flags.CharSet == CharSet.Ansi,
+                                                isAnsi,
                                                 marshallerType,
-                                                out elementMarshallerKind);
+                                                out MarshallerKind elementMarshallerKind);
 
             TypeSystemContext context = parameterType.Context;
             // Create the marshaller based on MarshallerKind
@@ -1080,7 +1091,7 @@ namespace Internal.TypeSystem.Interop
             codeStream.Emit(ILOpcode.brfalse, lNullArray);
 
             // allocate memory
-            // nativeParameter = (byte**)CoTaskMemAllocAndZeroMemory((IntPtr)(checked(managedParameter.Length * sizeof(byte*))));
+            // nativeParameter = AllocCoTaskMem(checked(managedParameter.Length * sizeof(NativeElementType)));
 
             // loads the number of elements
             EmitElementCount(codeStream, MarshalDirection.Forward);
@@ -1448,31 +1459,44 @@ namespace Internal.TypeSystem.Interop
             if (ShouldBePinned)
             {
                 //
-                // Pin the string and push a pointer to the first character on the stack.
+                // Pin the char& and push a pointer to the first character on the stack.
                 //
-                TypeDesc stringType = Context.GetWellKnownType(WellKnownType.String);
+                TypeDesc charRefType = Context.GetWellKnownType(WellKnownType.Char).MakeByRefType();
 
-                ILLocalVariable vPinnedString = emitter.NewLocal(stringType, true);
-                ILCodeLabel lNullString = emitter.NewCodeLabel();
+                ILLocalVariable vPinnedCharRef = emitter.NewLocal(charRefType, true);
+
+                ILCodeLabel lNonNullString = emitter.NewCodeLabel();
+                ILCodeLabel lCommonExit = emitter.NewCodeLabel();
 
                 LoadManagedValue(codeStream);
-                codeStream.EmitStLoc(vPinnedString);
-                codeStream.EmitLdLoc(vPinnedString);
+                codeStream.Emit(ILOpcode.brtrue, lNonNullString);
 
-                codeStream.Emit(ILOpcode.conv_i);
-                codeStream.Emit(ILOpcode.dup);
+                //
+                // Null input case
+                // Don't pin anything - load a zero-value nuint (void*) onto the stack
+                //
+                codeStream.Emit(ILOpcode.ldc_i4_0);
+                codeStream.Emit(ILOpcode.conv_u);
+                codeStream.Emit(ILOpcode.br, lCommonExit);
 
-                // Marshalling a null string?
-                codeStream.Emit(ILOpcode.brfalse, lNullString);
-
+                //
+                // Non-null input case
+                // Extract the char& from the string, pin it, then convert it to a nuint (void*)
+                //
+                codeStream.EmitLabel(lNonNullString);
+                LoadManagedValue(codeStream);
                 codeStream.Emit(ILOpcode.call, emitter.NewToken(
-                    Context.SystemModule.
-                        GetKnownType("System.Runtime.CompilerServices", "RuntimeHelpers").
-                            GetKnownMethod("get_OffsetToStringData", null)));
+                    Context.GetWellKnownType(WellKnownType.String).
+                        GetKnownMethod("GetPinnableReference", null)));
+                codeStream.EmitStLoc(vPinnedCharRef);
+                codeStream.EmitLdLoc(vPinnedCharRef);
+                codeStream.Emit(ILOpcode.conv_u);
 
-                codeStream.Emit(ILOpcode.add);
-
-                codeStream.EmitLabel(lNullString);
+                //
+                // Common exit
+                // Top of stack contains a nuint (void*) pointing to start of char data, or nullptr
+                //
+                codeStream.EmitLabel(lCommonExit);
                 StoreNativeValue(codeStream);
             }
             else
@@ -1669,25 +1693,9 @@ namespace Internal.TypeSystem.Interop
             var ctor = ManagedType.GetParameterlessConstructor();
             if (ctor == null || ((MetadataType)ManagedType).IsAbstract)
             {
-#if READYTORUN
-                // Let the runtime generate the proper MissingMemberException for this.
-                throw new NotSupportedException();
-#else
-                var emitter = _ilCodeStreams.Emitter;
-
-                MethodSignature ctorSignature = new MethodSignature(0, 0, Context.GetWellKnownType(WellKnownType.Void),
-                      new TypeDesc[] {
-                          Context.GetWellKnownType(WellKnownType.String)
-                      });
-                MethodDesc exceptionCtor = InteropTypes.GetMissingMemberException(Context).GetKnownMethod(".ctor", ctorSignature);
-
-                string name = ((MetadataType)ManagedType).Name;
-                codeStream.Emit(ILOpcode.ldstr, emitter.NewToken(String.Format("'{0}' does not have a default constructor. Subclasses of SafeHandle must have a default constructor to support marshaling a Windows HANDLE into managed code.", name)));
-                codeStream.Emit(ILOpcode.newobj, emitter.NewToken(exceptionCtor));
-                codeStream.Emit(ILOpcode.throw_);
-
-                return;
-#endif
+                ThrowHelper.ThrowMissingMethodException(ManagedType, ".ctor",
+                    new MethodSignature(MethodSignatureFlags.None, genericParameterCount: 0,
+                    ManagedType.Context.GetWellKnownType(WellKnownType.Void), TypeDesc.EmptyTypes));
             }
 
             codeStream.Emit(ILOpcode.newobj, _ilCodeStreams.Emitter.NewToken(ctor));

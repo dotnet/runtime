@@ -1,6 +1,5 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Generic;
@@ -65,6 +64,8 @@ namespace ILCompiler
             }
             else if (architecture == TargetArchitecture.X86)
             {
+                if (potentialType.Name == "X64")
+                    potentialType = (MetadataType)potentialType.ContainingType;
                 if (potentialType.Namespace != "System.Runtime.Intrinsics.X86")
                     return "";
             }
@@ -230,6 +231,9 @@ namespace ILCompiler
             }
             unsupportedInstructionSets.ExpandInstructionSetByReverseImplication(_architecture);
             unsupportedInstructionSets.Set64BitInstructionSetVariants(_architecture);
+
+            if ((_architecture == TargetArchitecture.X86) || (_architecture == TargetArchitecture.ARM))
+                unsupportedInstructionSets.Set64BitInstructionSetVariantsUnconditionally(_architecture);
 
             foreach (string supported in _supportedInstructionSets)
             {

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 /*============================================================
 **
@@ -199,7 +198,7 @@ LPVOID MngStdItfBase::ForwardCallToManagedView(
         OBJECTREF   Result;
     } Lr;
 
-    // Retrieve the object that the IExpando call was made on.
+    // Retrieve the object that the call was made on.
     Lr.Obj = ArgSlotToObj(pArgs[0]);
     Lr.Result = NULL;
     GCPROTECT_BEGIN(Lr);
@@ -408,123 +407,6 @@ FCIMPL1(void, StdMngIEnumerator::Reset, Object* refThisUNSAFE)
     HELPER_METHOD_FRAME_END_POLL();
 }
 FCIMPLEND
-
-
-FCIMPL2(Object*, StdMngIExpando::AddField, Object* refThisUNSAFE, StringObject* refNameUNSAFE)
-{
-    CONTRACTL
-    {
-        FCALL_CHECK;
-        PRECONDITION(CheckPointer(refThisUNSAFE));
-    }
-    CONTRACTL_END;
-
-    OBJECTREF   retVal = NULL;
-    ARG_SLOT    args[2] =
-        {
-            ObjToArgSlot(ObjectToOBJECTREF(refThisUNSAFE)),
-            ObjToArgSlot(ObjectToOBJECTREF(refNameUNSAFE))
-        };
-
-    HELPER_METHOD_FRAME_BEGIN_RET_NOPOLL();
-
-    GCPROTECT_ARRAY_BEGIN(args[0], 2);
-
-    retVal = ObjectToOBJECTREF((Object*)AddFieldWorker(args));
-
-    GCPROTECT_END();
-    HELPER_METHOD_FRAME_END();
-
-    FC_GC_POLL_AND_RETURN_OBJREF(retVal);
-}
-FCIMPLEND
-
-FCIMPL2(Object*, StdMngIExpando::AddProperty, Object* refThisUNSAFE, StringObject* refNameUNSAFE)
-{
-    CONTRACTL
-    {
-        FCALL_CHECK;
-        PRECONDITION(CheckPointer(refThisUNSAFE));
-    }
-    CONTRACTL_END;
-
-    OBJECTREF   retVal = NULL;
-    ARG_SLOT    args[2] =
-        {
-            ObjToArgSlot(ObjectToOBJECTREF(refThisUNSAFE)),
-            ObjToArgSlot(ObjectToOBJECTREF(refNameUNSAFE))
-        };
-
-    HELPER_METHOD_FRAME_BEGIN_RET_NOPOLL();
-
-    GCPROTECT_ARRAY_BEGIN(args[0], 2);
-
-    retVal = ObjectToOBJECTREF((Object*)AddPropertyWorker(args));
-
-    GCPROTECT_END();
-    HELPER_METHOD_FRAME_END();
-
-    FC_GC_POLL_AND_RETURN_OBJREF(retVal);
-}
-FCIMPLEND
-
-FCIMPL3(Object*, StdMngIExpando::AddMethod, Object* refThisUNSAFE, StringObject* refNameUNSAFE, Object* refDelegateUNSAFE)
-{
-    CONTRACTL
-    {
-        FCALL_CHECK;
-        PRECONDITION(CheckPointer(refThisUNSAFE));
-    }
-    CONTRACTL_END;
-
-    OBJECTREF   retVal = NULL;
-    ARG_SLOT    args[3] =
-        {
-            ObjToArgSlot(ObjectToOBJECTREF(refThisUNSAFE)),
-            ObjToArgSlot(ObjectToOBJECTREF(refNameUNSAFE)),
-            ObjToArgSlot(ObjectToOBJECTREF(refDelegateUNSAFE))
-        };
-
-    HELPER_METHOD_FRAME_BEGIN_RET_NOPOLL();
-
-    GCPROTECT_ARRAY_BEGIN(args[0], 3);
-
-    retVal = ObjectToOBJECTREF((Object*)AddMethodWorker(args));
-
-    GCPROTECT_END();
-    HELPER_METHOD_FRAME_END();
-
-    FC_GC_POLL_AND_RETURN_OBJREF(retVal);
-}
-FCIMPLEND
-
-
-FCIMPL2(void, StdMngIExpando::RemoveMember, Object* refThisUNSAFE, Object* refMemberInfoUNSAFE)
-{
-    CONTRACTL
-    {
-        FCALL_CHECK;
-        PRECONDITION(CheckPointer(refThisUNSAFE));
-    }
-    CONTRACTL_END;
-
-    ARG_SLOT    args[2] =
-        {
-            ObjToArgSlot(ObjectToOBJECTREF(refThisUNSAFE)),
-            ObjToArgSlot(ObjectToOBJECTREF(refMemberInfoUNSAFE))
-        };
-
-    HELPER_METHOD_FRAME_BEGIN_NOPOLL();
-
-    GCPROTECT_ARRAY_BEGIN(args[0], 2);
-
-    RemoveMemberWorker(args);
-
-    GCPROTECT_END();
-    HELPER_METHOD_FRAME_END_POLL();
-}
-FCIMPLEND
-
 
 FCIMPL6(Object*, StdMngIReflect::GetMethod, Object* refThisUNSAFE, Object* refNameUNSAFE, INT32 enumBindingAttr, Object* refBinderUNSAFE, Object* refTypesArrayUNSAFE, Object* refModifiersArrayUNSAFE)
 {
@@ -920,76 +802,9 @@ FCIMPL1(Object*, StdMngIEnumerable::GetEnumerator, Object* refThisUNSAFE)
 
     GCPROTECT_ARRAY_BEGIN(args[0], 1);
 
-    // There are three ways to handle calls via IEnumerable::GetEnumerator on an RCW:
-    // 1. Use BindableIterableToEnumerableAdapter (Jupiter data-binding scenario)
-    // 2. Use IterableToEnumerableAdapter if the object is known to implement IIterable<T> (WinRT)
-    // 3. Use EnumerableToDispatchMarshaler in CustomMarshalers.dll (legacy COM interop)
-    SyncBlock *pSB = (*porefThis)->GetSyncBlock();
-    if (pSB->GetInteropInfoNoCreate() != NULL && pSB->GetInteropInfoNoCreate()->GetRawRCW() != NULL)
-    {
-        RCWHolder pRCW(GetThread());
-        RCWPROTECT_BEGIN(pRCW, pSB);
-
-        if (pRCW->SupportsIInspectable())
-        {
-            //
-            // Test which IEnumerable implementation we want
-            // Prefer WinRT case as WinRT is new scenario
-            //
-            if (pRCW->SupportsWinRTInteropInterface(MscorlibBinder::GetExistingClass(CLASS__IENUMERABLE)))
-            {
-                //
-                // Supports WinRT IEnumerable
-                // Could be either IIterable<T>, IBindableIterable, or IDispatch+DISPID_NEWENUM
-                //
-                MethodDesc *pGetEnumeratorMethod = pRCW->GetGetEnumeratorMethod();
-                if (pGetEnumeratorMethod)
-                {
-                    //
-                    // IIterable<T>/IDispatch+DISPID_NEWENUM - The right enumerator method is saved in pGetEnumeratorMethod
-                    //
-                    MethodDescCallSite callSite(pGetEnumeratorMethod, porefThis);
-
-                    retVal = callSite.Call_RetOBJECTREF(args);
-                }
-                else
-                {
-                    //
-                    // IBindableIterable
-                    //
-                    MethodDescCallSite callSite(MscorlibBinder::GetMethod(METHOD__BINDABLEITERABLE_TO_ENUMERABLE_ADAPTER__GET_ENUMERATOR_STUB));
-                    retVal = callSite.Call_RetOBJECTREF(args);
-                }
-            }
-            else if (!pRCW->SupportsLegacyEnumerableInterface())
-            {
-                // The object does not support IBindableEnumerable nor IDispatch DISPID_NEWENUM enumeration.
-                // Try to use IIterable<T>, throw exception if it fails.
-                MethodDesc *pGetEnumeratorMethod = pRCW->GetGetEnumeratorMethod();
-                if (pGetEnumeratorMethod != NULL)
-                {
-                    // make a virtual call through the generic IEnumerable<T>
-                    MethodDescCallSite callSite(pGetEnumeratorMethod, porefThis);
-
-                    retVal = callSite.Call_RetOBJECTREF(args);
-                }
-                else
-                {
-                    // If we haven't seen a cast to a generic IEnumerable<T> and haven't been able to infer
-                    // the interface statically, we have to throw an exception, suggesting a workaround.
-                    // (This is an inherent limitation, we can't know what to do without type information.)
-                    COMPlusThrow(kInvalidCastException, IDS_EE_WINRT_IENUMERABLE_BAD_CALL);
-                }
-            }
-        }
-
-        RCWPROTECT_END(pRCW);
-    }
-
-    if (retVal == NULL)
-    {
-        retVal = ObjectToOBJECTREF((Object*)GetEnumeratorWorker(args));
-    }
+    // To handle calls via IEnumerable::GetEnumerator on an RCW we use
+    // EnumerableToDispatchMarshaler (legacy COM interop)
+    retVal = ObjectToOBJECTREF((Object*)GetEnumeratorWorker(args));
 
     GCPROTECT_END();
     HELPER_METHOD_FRAME_END();

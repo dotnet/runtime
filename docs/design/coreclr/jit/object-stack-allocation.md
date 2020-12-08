@@ -21,7 +21,7 @@ various Java runtimes.  This optimization is more important for Java since it do
 
 [roslyn #2104](https://github.com/dotnet/roslyn/issues/2104) Compiler should optimize "alloc temporary small object" to "alloc on stack"
 
-[coreclr #1784](https://github.com/dotnet/coreclr/issues/1784) CLR/JIT should optimize "alloc temporary small object" to "alloc on stack" automatically
+[runtime #4584](https://github.com/dotnet/runtime/issues/4584) CLR/JIT should optimize "alloc temporary small object" to "alloc on stack" automatically
 
 ## Escape Analysis
 
@@ -157,7 +157,7 @@ So the upper bound from this experiment is 22.2%.
 @AndyAyersMS recently resurrected @echesakovMSFT work and used it to [prototype stack allocation of a simple delegate that's
 directly invoked](https://github.com/dotnet/coreclr/compare/master...AndyAyersMS:NonNullPlusStackAlloc). It exposed a number of things that need to be
 done in the jit to generate better code for stack-allocated objects. The details are in comments of
-[coreclr #1784](https://github.com/dotnet/coreclr/issues/1784).
+[runtime #4584](https://github.com/dotnet/runtime/issues/4584).
 
 We did some analysis of Roslyn csc self-build to see where this optimization may be beneficial. One hot place was found in [GreenNode.WriteTo](https://github.com/dotnet/roslyn/blob/fab7134296816fc80019c60b0f5bef7400cf23ea/src/Compilers/Core/Portable/Syntax/GreenNode.cs#L647).
 This object allocation accounts for 8.17% of all object allocations in this scenario. The number is not as impressive as a percentage

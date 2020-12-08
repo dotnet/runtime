@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 // TypedReference is basically only ever seen on the call stack, and in param arrays.
 //  These are blob that must be dealt with by the compiler.

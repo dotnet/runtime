@@ -1,0 +1,134 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="12.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+
+  <Target Name="BuildAllProjects">
+    <PropertyGroup>
+      <DefaultBuildAllTarget Condition="'$(DefaultBuildAllTarget)'==''">$(MSBuildProjectDefaultTargets)</DefaultBuildAllTarget>
+    </PropertyGroup>
+
+    <!-- To Serialize we use msbuild's batching functionality '%' to force it to batch all similar projects with the same identity 
+         however since the project names are unique it will essentially force each to run in its own batch -->
+    <MSBuild Targets="$(DefaultBuildAllTarget)"
+             Projects="@(Project)"
+             Condition="'$(SerializeProjects)'=='true'"
+             Properties="Dummy=%(Identity);DefaultBuildAllTarget=$(DefaultBuildAllTarget);BuildAllProjects=true"
+             ContinueOnError="ErrorAndContinue" />
+
+    <MSBuild Targets="$(DefaultBuildAllTarget)"
+             Projects="@(Project)"
+             Condition="'$(SerializeProjects)'!='true'"
+             Properties="DefaultBuildAllTarget=$(DefaultBuildAllTarget);BuildAllProjects=true"
+             BuildInParallel="true"
+             ContinueOnError="ErrorAndContinue" />
+
+    <!-- Given we ErrorAndContinue we need to propagate the error if the overall task failed -->
+    <Error Condition="'$(MSBuildLastTaskResult)'=='false'" />
+  </Target>
+
+  <Target Name="CleanAllProjects">
+    <PropertyGroup>
+      <DefaultCleanAllTarget Condition="'$(DefaultCleanAllTarget)'==''">Clean</DefaultCleanAllTarget>
+    </PropertyGroup>
+
+    <!-- To Serialize we use msbuild's batching functionality '%' to force it to batch all similar projects with the same identity 
+         however since the project names are unique it will essentially force each to run in its own batch -->
+    <MSBuild Targets="$(DefaultCleanAllTarget)"
+             Projects="@(Project)"
+             Condition="'$(SerializeProjects)'=='true'"
+             Properties="Dummy=%(Identity);CleanAllProjects=true"
+             ContinueOnError="ErrorAndContinue" />
+
+    <MSBuild Targets="$(DefaultCleanAllTarget)"
+             Projects="@(Project)"
+             Condition="'$(SerializeProjects)'!='true'"
+             Properties="CleanAllProjects=true"
+             BuildInParallel="true"
+             ContinueOnError="ErrorAndContinue" />
+
+    <!-- Given we ErrorAndContinue we need to propagate the error if the overall task failed -->
+    <Error Condition="'$(MSBuildLastTaskResult)'=='false'" />
+  </Target>
+
+  <Target Name="RestoreAllProjectPackages">
+    <Message Importance="High" Text="Restoring project packages..." />
+
+    <PropertyGroup>
+      <DefaultRestoreAllPackagesTarget Condition="'$(DefaultRestoreAllPackagesTarget)'==''">RestorePackages</DefaultRestoreAllPackagesTarget>
+    </PropertyGroup>
+
+    <!-- To Serialize we use msbuild's batching functionality '%' to force it to batch all similar projects with the same identity 
+      however since the project names are unique it will essentially force each to run in its own batch -->
+    <MSBuild Targets="$(DefaultRestoreAllPackagesTarget)"
+             Projects="@(Project)"
+             Condition="'$(SerializeProjects)'=='true'"
+             Properties="Dummy=%(Identity);RestoreAllPackages=true"
+             ContinueOnError="ErrorAndContinue" />
+
+    <MSBuild Targets="$(DefaultRestoreAllPackagesTarget)"
+             Projects="@(Project)"
+             Condition="'$(SerializeProjects)'!='true'"
+             Properties="RestoreAllPackages=true"
+             BuildInParallel="true"
+             ContinueOnError="ErrorAndContinue" />
+
+    <!-- Given we ErrorAndContinue we need to propagate the error if the overall task failed -->
+    <Error Condition="'$(MSBuildLastTaskResult)'=='false'" />
+  </Target>
+  
+  <Target Name="CopyAllNativeTestProjectBinaries">
+    <Message Importance="High" Text="Copying native test binaries..." />
+
+    <PropertyGroup>
+      <DefaultCopyAllNativeTestProjectBinariesTarget Condition="'$(DefaultCopyAllNativeTestProjectBinariesTarget)'==''">CopyAllNativeProjectReferenceBinaries</DefaultCopyAllNativeTestProjectBinariesTarget>
+    </PropertyGroup>
+
+    <!-- To Serialize we use msbuild's batching functionality '%' to force it to batch all similar projects with the same identity 
+      however since the project names are unique it will essentially force each to run in its own batch -->
+    <MSBuild Targets="$(DefaultCopyAllNativeTestProjectBinariesTarget)"
+             Projects="@(Project)"
+             Condition="'$(SerializeProjects)'=='true'"
+             Properties="Dummy=%(Identity);BuildAllProjects=true"
+             ContinueOnError="ErrorAndContinue" />
+
+    <MSBuild Targets="$(DefaultCopyAllNativeTestProjectBinariesTarget)"
+             Projects="@(Project)"
+             Condition="'$(SerializeProjects)'!='true'"
+             Properties="BuildAllProjects=true"
+             BuildInParallel="true"
+             ContinueOnError="ErrorAndContinue" />
+
+    <!-- Given we ErrorAndContinue we need to propagate the error if the overall task failed -->
+    <Error Condition="'$(MSBuildLastTaskResult)'=='false'" />
+  </Target>
+
+  <PropertyGroup>
+    <TraversalBuildDependsOn>
+      BuildAllProjects;
+      $(TraversalBuildDependsOn);
+    </TraversalBuildDependsOn>
+
+    <TraversalCleanDependsOn>
+      CleanAllProjects;
+      $(TraversalCleanDependsOn);
+    </TraversalCleanDependsOn>
+
+    <TraversalRestorePackagesDependsOn>
+      RestoreAllProjectPackages;
+      $(TraversalRestorePackagesDependsOn)
+    </TraversalRestorePackagesDependsOn>
+    <TraversalCopyAllNativeProjectReferenceBinariesDependsOn>
+      CopyAllNativeTestProjectBinaries;
+      $(TraversalCopyAllNativeProjectReferenceBinariesDependsOn)
+    </TraversalCopyAllNativeProjectReferenceBinariesDependsOn>
+  </PropertyGroup>
+
+  <Target Name="Build" DependsOnTargets="$(TraversalBuildDependsOn)" />
+
+  <Target Name="Clean" DependsOnTargets="$(TraversalCleanDependsOn)" />
+
+  <Target Name="Rebuild" DependsOnTargets="Clean;Build" />
+
+  <Target Name="RestorePackages" DependsOnTargets="$(TraversalRestorePackagesDependsOn)" />
+
+  <Target Name="CopyAllNativeProjectReferenceBinaries" DependsOnTargets="$(TraversalCopyAllNativeProjectReferenceBinariesDependsOn)" />
+</Project>

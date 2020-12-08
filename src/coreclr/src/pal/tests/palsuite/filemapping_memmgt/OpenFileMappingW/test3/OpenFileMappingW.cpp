@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 /*=============================================================
 **
@@ -15,7 +14,7 @@
 #define UNICODE
 #include <palsuite.h>
 
-int __cdecl main(int argc, char *argv[])
+PALTEST(filemapping_memmgt_OpenFileMappingW_test3_paltest_openfilemappingw_test3, "filemapping_memmgt/OpenFileMappingW/test3/paltest_openfilemappingw_test3")
 {
     char    buf[] = "this is a test";
     char    ch[1024];

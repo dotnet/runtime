@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #pragma once
 
@@ -124,6 +123,7 @@ typedef enum
 
     // Error codes to track errors beyond kernel.
     Error_EHOSTNOTFOUND = 0x20001,   // Name lookup failed.
+    Error_ESOCKETERROR = 0x20002,    // Unidentified socket error.
 
     // POSIX permits these to have the same value and we make them
     // always equal so that we cannot introduce a dependency on
@@ -136,6 +136,17 @@ typedef enum
     // where we cannot convert the raw errno value to something above.
     Error_ENONSTANDARD = 0x1FFFF,
 } Error;
+
+/*
+  Some pal errors don't have a corresponding errno value.
+  We define values for these errors.
+  We want these values to be distinct from real errno values.
+  We base of the Error enum values which are chosen to be out of the
+  typical errno range, and make them negative because POSIX
+  requires errno values to be positive.
+*/
+#define EHOSTNOTFOUND (-Error_EHOSTNOTFOUND)
+#define ESOCKETERROR  (-Error_ESOCKETERROR)
 
 inline static int32_t ConvertErrorPlatformToPal(int32_t platformErrno)
 {
@@ -500,7 +511,10 @@ inline static int32_t ConvertErrorPalToPlatform(int32_t error)
         case Error_ENODATA:
             return ENODATA;
         case Error_EHOSTNOTFOUND:
-            return -(Error_EHOSTNOTFOUND);
+            return EHOSTNOTFOUND;
+        case Error_ESOCKETERROR:
+            return ESOCKETERROR;
+
         case Error_ENONSTANDARD:
             break; // fall through to assert
     }
@@ -518,16 +532,19 @@ inline static int32_t ConvertErrorPalToPlatform(int32_t error)
     return -1;
 }
 
-static int32_t ConvertErrorPalToGai(int32_t error)
+static bool TryConvertErrorToGai(int32_t error, int32_t* gaiError)
 {
+    assert(gaiError != NULL);
+
     switch (error)
     {
-        case -(Error_EHOSTNOTFOUND):
-            return EAI_NONAME;
+        case EHOSTNOTFOUND:
+            *gaiError = EAI_NONAME;
+            return true;
+        default:
+            *gaiError = error;
+            return false;
     }
-    // Fall-through for unknown codes. gai_strerror() will handle that.
-
-    return error;
 }
 
 
@@ -543,8 +560,17 @@ inline static const char* StrErrorR(int32_t platformErrno, char* buffer, int32_t
     if (platformErrno < 0)
     {
         // Not a system error
-        SafeStringCopy(buffer, (size_t)bufferSize, gai_strerror(ConvertErrorPalToGai(platformErrno)));
-        return buffer;
+        int32_t gaiError;
+        if (TryConvertErrorToGai(platformErrno, &gaiError))
+        {
+            SafeStringCopy(buffer, (size_t)bufferSize, gai_strerror(gaiError));
+            return buffer;
+        }
+        else if (platformErrno == ESOCKETERROR)
+        {
+            SafeStringCopy(buffer, (size_t)bufferSize, "Unknown socket error");
+            return buffer;
+        }
     }
 
 // Note that we must use strerror_r because plain strerror is not

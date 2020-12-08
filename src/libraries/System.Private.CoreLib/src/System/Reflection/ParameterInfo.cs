@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Runtime.Serialization;
@@ -47,8 +46,8 @@ namespace System.Reflection
             return Array.Empty<object>();
         }
 
-        public virtual Type[] GetOptionalCustomModifiers() => Array.Empty<Type>();
-        public virtual Type[] GetRequiredCustomModifiers() => Array.Empty<Type>();
+        public virtual Type[] GetOptionalCustomModifiers() => Type.EmptyTypes;
+        public virtual Type[] GetRequiredCustomModifiers() => Type.EmptyTypes;
 
         public virtual int MetadataToken => MetadataToken_ParamDef;
 

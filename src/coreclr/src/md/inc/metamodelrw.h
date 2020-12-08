@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 //*****************************************************************************
 // MetaModelRW.h -- header file for Read/Write compressed COM+ metadata.
@@ -381,6 +380,18 @@ public:
     AddTblRecord(GenericParam)
     AddTblRecord(MethodSpec)
     AddTblRecord(GenericParamConstraint)
+
+#ifdef FEATURE_METADATA_EMIT_PORTABLE_PDB
+    AddTblRecord(Document)
+    AddTblRecord(MethodDebugInformation)
+    AddTblRecord(LocalScope)
+    AddTblRecord(LocalVariable)
+    AddTblRecord(LocalConstant)
+    AddTblRecord(ImportScope)
+    // TODO:
+    // AddTblRecord(StateMachineMethod)
+    // AddTblRecord(CustomDebugInformation)
+#endif // FEATURE_METADATA_EMIT_PORTABLE_PDB
 
     // Specialized AddXxxToYyy() functions.
     __checkReturn HRESULT AddMethodToTypeDef(RID td, RID md);

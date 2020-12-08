@@ -98,7 +98,6 @@ monoutils_sources = \
 	mono-mmap-wasm.c  		\
 	mono-mmap.h  		\
 	mono-mmap-internals.h	\
-	mono-mmap-windows-internals.h	\
 	mono-os-mutex.h		\
 	mono-os-mutex.c		\
 	mono-flight-recorder.h		\
@@ -186,6 +185,7 @@ monoutils_sources = \
 	mono-threads-haiku.c	\
 	mono-threads-aix.c	\
 	mono-threads-wasm.c	\
+	mono-threads-sunos.c	\
 	mono-threads.h	\
 	mono-threads-debug.h	\
 	mono-threads-api.h	\
@@ -231,8 +231,12 @@ monoutils_sources = \
 	os-event.h \
 	refcount.h	\
 	w32api.h	\
+	w32subset.h	\
 	unlocked.h	\
-	ward.h
+	ward.h \
+	options.h \
+	options-def.h \
+	options.c
 
 arch_sources = 
 

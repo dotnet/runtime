@@ -1,10 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
+using System.Formats.Asn1;
 using System.Security.Cryptography.Asn1;
 using System.Security.Cryptography.X509Certificates.Asn1;
 using Internal.Cryptography;
@@ -54,7 +54,7 @@ namespace System.Security.Cryptography.X509Certificates
             }
 
             SubjectPublicKeyInfoAsn spki = default;
-            spki.Algorithm = new AlgorithmIdentifierAsn { Algorithm = PublicKey.Oid, Parameters = PublicKey.EncodedParameters.RawData };
+            spki.Algorithm = new AlgorithmIdentifierAsn { Algorithm = PublicKey.Oid!.Value!, Parameters = PublicKey.EncodedParameters.RawData };
             spki.SubjectPublicKey = PublicKey.EncodedKeyValue.RawData;
 
             var attributes = new AttributeAsn[Attributes.Count];
@@ -71,22 +71,20 @@ namespace System.Security.Cryptography.X509Certificates
                 Attributes = attributes
             };
 
-            using (AsnWriter writer = new AsnWriter(AsnEncodingRules.DER))
-            using (AsnWriter signedWriter = new AsnWriter(AsnEncodingRules.DER))
+            AsnWriter writer = new AsnWriter(AsnEncodingRules.DER);
+            requestInfo.Encode(writer);
+            byte[] encodedRequestInfo = writer.Encode();
+            writer.Reset();
+
+            CertificationRequestAsn certificationRequest = new CertificationRequestAsn
             {
-                requestInfo.Encode(writer);
+                CertificationRequestInfo = requestInfo,
+                SignatureAlgorithm = signatureAlgorithmAsn,
+                SignatureValue = signatureGenerator.SignData(encodedRequestInfo, hashAlgorithm),
+            };
 
-                byte[] encodedRequestInfo = writer.Encode();
-                CertificationRequestAsn certificationRequest = new CertificationRequestAsn
-                {
-                    CertificationRequestInfo = requestInfo,
-                    SignatureAlgorithm = signatureAlgorithmAsn,
-                    SignatureValue = signatureGenerator.SignData(encodedRequestInfo, hashAlgorithm),
-                };
-
-                certificationRequest.Encode(signedWriter);
-                return signedWriter.Encode();
-            }
+            certificationRequest.Encode(writer);
+            return writer.Encode();
         }
     }
 }

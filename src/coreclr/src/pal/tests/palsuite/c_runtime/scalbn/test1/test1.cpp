@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 /*=====================================================================
 **
@@ -42,11 +41,11 @@ struct test
 };
 
 /**
- * validate
+ * scalbn_test1_validate
  *
  * test validation function
  */
-void __cdecl validate(double value, int exponent, double expected, double variance)
+void __cdecl scalbn_test1_validate(double value, int exponent, double expected, double variance)
 {
     double result = scalbn(value, exponent);
 
@@ -64,11 +63,11 @@ void __cdecl validate(double value, int exponent, double expected, double varian
 }
 
 /**
- * validate
+ * scalbn_test1_validate
  *
  * test validation function for values returning NaN
  */
-void __cdecl validate_isnan(double value, int exponent)
+void __cdecl scalbn_test1_validate_isnan(double value, int exponent)
 {
     double result = scalbn(value, exponent);
 
@@ -84,7 +83,7 @@ void __cdecl validate_isnan(double value, int exponent)
  * 
  * executable entry point
  */
-int __cdecl main(int argc, char **argv)
+PALTEST(c_runtime_scalbn_test1_paltest_scalbn_test1, "c_runtime/scalbn/test1/paltest_scalbn_test1")
 {
     struct test tests[] = 
     {
@@ -130,10 +129,10 @@ int __cdecl main(int argc, char **argv)
 
     for (int i = 0; i < (sizeof(tests) / sizeof(struct test)); i++)
     {
-        validate(tests[i].value, tests[i].exponent, tests[i].expected, tests[i].variance);
+        scalbn_test1_validate(tests[i].value, tests[i].exponent, tests[i].expected, tests[i].variance);
     }
 
-    validate_isnan(PAL_NAN, 2147483647);
+    scalbn_test1_validate_isnan(PAL_NAN, 2147483647);
 
     PAL_Terminate();
     return PASS;

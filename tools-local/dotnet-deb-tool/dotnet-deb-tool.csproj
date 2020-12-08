@@ -8,7 +8,7 @@
 
   <ItemGroup>
     <Compile Remove="tool\**\*" />
-    <Compile Include="$(InstallerProjectRoot)test\TestUtils\ArgumentEscaper.cs" />
+    <Compile Include="$(InstallerProjectRoot)tests\TestUtils\ArgumentEscaper.cs" />
 
     <Content Include="tool\**" CopyToOutputDirectory="PreserveNewest">
       <PackagePath>lib/$(TargetFramework)/tool</PackagePath>

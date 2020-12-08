@@ -1,13 +1,12 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 // ------------------------------------------------------------------------------
 // Changes to this file must follow the https://aka.ms/api-review process.
 // ------------------------------------------------------------------------------
 
 namespace Microsoft.DotNet.PlatformAbstractions
 {
-    [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
+    [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
     [System.ObsoleteAttribute("This type is obsolete and will be removed in a future version. The recommended alternative is System.HashCode.")]
     public partial struct HashCodeCombiner
     {

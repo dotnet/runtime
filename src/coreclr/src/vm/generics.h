@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 //
 // File: generics.cpp
 //
@@ -168,13 +167,6 @@ namespace Generics
         /* in */  PTR_VOID pExactGenericArgsToken,
         /* out*/  TypeHandle *pSpecificClass,
         /* out*/  MethodDesc** pSpecificMethod);
-
-    inline void DetermineCCWTemplateAndGUIDPresenceOnNonCanonicalMethodTable(
-        // Input
-        MethodTable *pOldMT,
-        BOOL fNewMTContainsGenericVariables,
-        // Output
-        BOOL *pfHasGuidInfo, BOOL *pfHasCCWTemplate);
 };
 
 #endif

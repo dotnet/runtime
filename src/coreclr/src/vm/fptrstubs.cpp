@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 
 
@@ -152,10 +151,12 @@ PCODE FuncPtrStubs::GetFuncPtrStub(MethodDesc * pMD, PrecodeType type)
 
     if (setTargetAfterAddingToHashTable)
     {
+        GCX_PREEMP();
+
         _ASSERTE(pMD->IsVersionableWithVtableSlotBackpatch());
 
         PCODE temporaryEntryPoint = pMD->GetTemporaryEntryPoint();
-        MethodDescBackpatchInfoTracker::ConditionalLockHolder slotBackpatchLockHolder;
+        MethodDescBackpatchInfoTracker::ConditionalLockHolderForGCPreemp slotBackpatchLockHolder;
 
         // Set the funcptr stub's entry point to the current entry point inside the lock and after the funcptr stub is exposed,
         // to synchronize with backpatching in MethodDesc::BackpatchEntryPointSlots()

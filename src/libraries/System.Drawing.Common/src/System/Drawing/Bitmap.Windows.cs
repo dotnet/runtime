@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Drawing.Internal;
 using System.IO;
@@ -12,6 +11,9 @@ namespace System.Drawing
     {
         public Bitmap(Type type, string resource)
         {
+            if (resource == null)
+                throw new ArgumentNullException(nameof(resource));
+
             Stream? stream = type.Module.Assembly.GetManifestResourceStream(type, resource);
             if (stream == null)
             {

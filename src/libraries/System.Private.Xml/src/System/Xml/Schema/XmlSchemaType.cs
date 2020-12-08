@@ -1,10 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
-#nullable enable
 using System.Collections;
 using System.ComponentModel;
+using System.Diagnostics.CodeAnalysis;
 using System.Xml.Serialization;
 
 namespace System.Xml.Schema
@@ -30,7 +29,7 @@ namespace System.Xml.Schema
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
-        public static XmlSchemaSimpleType GetBuiltInSimpleType(XmlQualifiedName qualifiedName)
+        public static XmlSchemaSimpleType? GetBuiltInSimpleType(XmlQualifiedName qualifiedName)
         {
             if (qualifiedName == null)
             {
@@ -210,7 +209,8 @@ namespace System.Xml.Schema
             }
         }
 
-        internal XmlReader? Validate(XmlReader reader, XmlResolver resolver, XmlSchemaSet schemaSet, ValidationEventHandler valEventHandler)
+        [return: NotNullIfNotNull("schemaSet")]
+        internal XmlReader? Validate(XmlReader reader, XmlResolver? resolver, XmlSchemaSet schemaSet, ValidationEventHandler valEventHandler)
         {
             if (schemaSet != null)
             {
@@ -242,7 +242,7 @@ namespace System.Xml.Schema
             _finalResolved = value;
         }
 
-        internal void SetBaseSchemaType(XmlSchemaType value)
+        internal void SetBaseSchemaType(XmlSchemaType? value)
         {
             _baseSchemaType = value;
         }
@@ -252,7 +252,7 @@ namespace System.Xml.Schema
             _derivedBy = value;
         }
 
-        internal void SetDatatype(XmlSchemaDatatype value)
+        internal void SetDatatype(XmlSchemaDatatype? value)
         {
             _datatype = value;
         }
@@ -308,7 +308,7 @@ namespace System.Xml.Schema
                         return true;
                     }
 
-                    if ((except & derivedType.DerivedBy) != 0 || !dt.Datatype!.IsDerivedFrom(bt.Datatype))
+                    if ((except & derivedType.DerivedBy) != 0 || !dt.Datatype!.IsDerivedFrom(bt.Datatype!))
                     {
                         return false;
                     }

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 /*============================================================================
 **
@@ -15,7 +14,7 @@
 
 #include <palsuite.h>
 
-int __cdecl main(int argc, char *argv[])
+PALTEST(locale_info_GetLocaleInfoW_test2_paltest_getlocaleinfow_test2, "locale_info/GetLocaleInfoW/test2/paltest_getlocaleinfow_test2")
 {    
     WCHAR buffer[256] = { 0 };
     int ret;

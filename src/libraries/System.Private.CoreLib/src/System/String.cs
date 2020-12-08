@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Buffers;
 using System.Collections;
@@ -46,8 +45,10 @@ namespace System
          */
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        [PreserveDependency("Ctor(System.Char[])", "System.String")]
+        [DynamicDependency("Ctor(System.Char[])")]
         public extern String(char[]? value);
+
+#pragma warning disable CA1822 // Mark members as static
 
         private
 #if !CORECLR
@@ -69,7 +70,7 @@ namespace System
         }
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        [PreserveDependency("Ctor(System.Char[],System.Int32,System.Int32)", "System.String")]
+        [DynamicDependency("Ctor(System.Char[],System.Int32,System.Int32)")]
         public extern String(char[] value, int startIndex, int length);
 
         private
@@ -105,7 +106,7 @@ namespace System
 
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.InternalCall)]
-        [PreserveDependency("Ctor(System.Char*)", "System.String")]
+        [DynamicDependency("Ctor(System.Char*)")]
         public extern unsafe String(char* value);
 
         private
@@ -133,7 +134,7 @@ namespace System
 
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.InternalCall)]
-        [PreserveDependency("Ctor(System.Char*,System.Int32,System.Int32)", "System.String")]
+        [DynamicDependency("Ctor(System.Char*,System.Int32,System.Int32)")]
         public extern unsafe String(char* value, int startIndex, int length);
 
         private
@@ -172,7 +173,7 @@ namespace System
 
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.InternalCall)]
-        [PreserveDependency("Ctor(System.SByte*)", "System.String")]
+        [DynamicDependency("Ctor(System.SByte*)")]
         public extern unsafe String(sbyte* value);
 
         private
@@ -192,7 +193,7 @@ namespace System
 
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.InternalCall)]
-        [PreserveDependency("Ctor(System.SByte*,System.Int32,System.Int32)", "System.String")]
+        [DynamicDependency("Ctor(System.SByte*,System.Int32,System.Int32)")]
         public extern unsafe String(sbyte* value, int startIndex, int length);
 
         private
@@ -253,7 +254,7 @@ namespace System
 
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.InternalCall)]
-        [PreserveDependency("Ctor(System.SByte*,System.Int32,System.Int32,System.Text.Encoding)", "System.String")]
+        [DynamicDependency("Ctor(System.SByte*,System.Int32,System.Int32,System.Text.Encoding)")]
         public extern unsafe String(sbyte* value, int startIndex, int length, Encoding enc);
 
         private
@@ -289,7 +290,7 @@ namespace System
         }
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        [PreserveDependency("Ctor(System.Char,System.Int32)", "System.String")]
+        [DynamicDependency("Ctor(System.Char,System.Int32)")]
         public extern String(char c, int count);
 
         private
@@ -340,7 +341,7 @@ namespace System
         }
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        [PreserveDependency("Ctor(System.ReadOnlySpan`1<System.Char>)", "System.String")]
+        [DynamicDependency("Ctor(System.ReadOnlySpan{System.Char})")]
         public extern String(ReadOnlySpan<char> value);
 
         private
@@ -356,6 +357,8 @@ namespace System
             Buffer.Memmove(ref result._firstChar, ref MemoryMarshal.GetReference(value), (uint)value.Length);
             return result;
         }
+
+#pragma warning restore CA1822
 
         public static string Create<TState>(int length, TState state, SpanAction<char, TState> action)
         {
@@ -488,13 +491,9 @@ namespace System
         [NonVersionable]
         public static bool IsNullOrEmpty([NotNullWhen(false)] string? value)
         {
-            // Using 0u >= (uint)value.Length rather than
-            // value.Length == 0 as it will elide the bounds check to
-            // the first char: value[0] if that is performed following the test
-            // for the same test cost.
             // Ternary operator returning true/false prevents redundant asm generation:
             // https://github.com/dotnet/runtime/issues/4207
-            return (value == null || 0u >= (uint)value.Length) ? true : false;
+            return (value == null || 0 == value.Length) ? true : false;
         }
 
         public static bool IsNullOrWhiteSpace([NotNullWhen(false)] string? value)
@@ -564,12 +563,6 @@ namespace System
             return result;
         }
 
-        internal static unsafe void wstrcpy(char* dmem, char* smem, int charCount)
-        {
-            Buffer.Memmove((byte*)dmem, (byte*)smem, ((uint)charCount) * 2);
-        }
-
-
         // Returns this string.
         public override string ToString()
         {
@@ -612,6 +605,7 @@ namespace System
         internal static unsafe int wcslen(char* ptr)
         {
             // IndexOf processes memory in aligned chunks, and thus it won't crash even if it accesses memory beyond the null terminator.
+            // This IndexOf behavior is an implementation detail of the runtime and callers outside System.Private.CoreLib must not depend on it.
             int length = SpanHelpers.IndexOf(ref *ptr, '\0', int.MaxValue);
             if (length < 0)
             {
@@ -625,6 +619,7 @@ namespace System
         internal static unsafe int strlen(byte* ptr)
         {
             // IndexOf processes memory in aligned chunks, and thus it won't crash even if it accesses memory beyond the null terminator.
+            // This IndexOf behavior is an implementation detail of the runtime and callers outside System.Private.CoreLib must not depend on it.
             int length = SpanHelpers.IndexOf(ref *ptr, (byte)'\0', int.MaxValue);
             if (length < 0)
             {

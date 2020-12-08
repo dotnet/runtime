@@ -30,6 +30,8 @@
 #include <fcntl.h>
 #endif
 
+#ifndef DISABLE_SGEN_BINARY_PROTOCOL
+
 #if defined(HOST_WIN32)
 static const HANDLE invalid_file_value = INVALID_HANDLE_VALUE;
 /* If valid, dump binary protocol to this file */
@@ -487,5 +489,7 @@ protocol_entry (unsigned char type, gpointer data, int size)
 #undef TYPE_SIZE
 #undef TYPE_POINTER
 #undef TYPE_BOOL
+
+#endif
 
 #endif /* HAVE_SGEN_GC */

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Generic;
@@ -10,9 +9,18 @@ using System.Text;
 
 internal class Xcode
 {
-    public static string Sysroot { get; } = Utils.RunProcess("xcrun", "--sdk iphoneos --show-sdk-path");
+    private string SysRoot { get; set; }
+    private string Target { get; set; }
 
-    public static string GenerateXCode(
+    public Xcode(string target)
+    {
+        Target = target;
+        SysRoot = (Target == Utils.TargetOS.iOS) ?
+            Utils.RunProcess("xcrun", "--sdk iphoneos --show-sdk-path") :
+            Utils.RunProcess("xcrun", "--sdk appletvos --show-sdk-path");
+    }
+
+    public string GenerateXCode(
         string projectName,
         string entryPointLib,
         IEnumerable<string> asmFiles,
@@ -21,11 +29,17 @@ internal class Xcode
         string monoInclude,
         bool preferDylibs,
         bool useConsoleUiTemplate,
-        bool useAotForSimulator,
+        bool forceAOT,
+        bool forceInterpreter,
+        bool stripDebugSymbols,
         string? nativeMainSource = null)
     {
         // bundle everything as resources excluding native files
-        string[] excludes = {".dll.o", ".dll.s", ".dwarf", ".m", ".h", ".a", ".bc"};
+        var excludes = new List<string> { ".dll.o", ".dll.s", ".dwarf", ".m", ".h", ".a", ".bc", "libmonosgen-2.0.dylib" };
+        if (stripDebugSymbols)
+        {
+            excludes.Add(".pdb");
+        }
 
         string[] resources = Directory.GetFiles(workspace)
             .Where(f => !excludes.Any(e => f.EndsWith(e, StringComparison.InvariantCultureIgnoreCase)))
@@ -54,6 +68,7 @@ internal class Xcode
             .Replace("%MainSource%", nativeMainSource)
             .Replace("%MonoInclude%", monoInclude);
 
+
         string[] dylibs = Directory.GetFiles(workspace, "*.dylib");
         string toLink = "";
         foreach (string lib in Directory.GetFiles(workspace, "*.a"))
@@ -79,10 +94,27 @@ internal class Xcode
             toLink += $"    {name}{Environment.NewLine}";
         }
 
+        string frameworks = "";
+        if (Target == Utils.TargetOS.iOS)
+        {
+            frameworks = "\"-framework GSS\"";
+        }
+
+        cmakeLists = cmakeLists.Replace("%FrameworksToLink%", frameworks);
         cmakeLists = cmakeLists.Replace("%NativeLibrariesToLink%", toLink);
         cmakeLists = cmakeLists.Replace("%AotSources%", aotSources);
-        cmakeLists = cmakeLists.Replace("%Defines%", 
-            useAotForSimulator ? "add_definitions(-DUSE_AOT_FOR_SIMULATOR=1)" : "");
+        cmakeLists = cmakeLists.Replace("%AotModulesSource%", string.IsNullOrEmpty(aotSources) ? "" : "modules.m");
+
+        string defines = "";
+        if (forceInterpreter)
+        {
+            defines = "add_definitions(-DFORCE_INTERPRETER=1)";
+        }
+        else if (forceAOT)
+        {
+            defines = "add_definitions(-DFORCE_AOT=1)";
+        }
+        cmakeLists = cmakeLists.Replace("%Defines%", defines);
 
         string plist = Utils.GetEmbeddedResource("Info.plist.template")
             .Replace("%BundleIdentifier%", projectName);
@@ -95,10 +127,8 @@ internal class Xcode
             .Append("-S.")
             .Append(" -B").Append(projectName)
             .Append(" -GXcode")
-            .Append(" -DCMAKE_SYSTEM_NAME=iOS")
-            .Append(" \"-DCMAKE_OSX_ARCHITECTURES=arm64;x86_64\"")
-            .Append(" -DCMAKE_OSX_DEPLOYMENT_TARGET=10.1")
-            .Append(" -DCMAKE_XCODE_ATTRIBUTE_ONLY_ACTIVE_ARCH=NO");
+            .Append(" -DCMAKE_SYSTEM_NAME=" + Target.ToString())
+            .Append(" -DCMAKE_OSX_DEPLOYMENT_TARGET=10.1");
 
         File.WriteAllText(Path.Combine(binDir, "runtime.h"),
             Utils.GetEmbeddedResource("runtime.h"));
@@ -125,32 +155,42 @@ internal class Xcode
         return Path.Combine(binDir, projectName, projectName + ".xcodeproj");
     }
 
-    public static string BuildAppBundle(
+    public string BuildAppBundle(
         string xcodePrjPath, string architecture, bool optimized, string? devTeamProvisioning = null)
     {
         string sdk = "";
         var args = new StringBuilder();
-        args.Append("ONLY_ACTIVE_ARCH=NO");
+        args.Append("ONLY_ACTIVE_ARCH=YES");
+
         if (architecture == "arm64")
         {
-            sdk = "iphoneos";
+            sdk = (Target == Utils.TargetOS.iOS) ? "iphoneos" : "appletvos";
             args.Append(" -arch arm64")
-                .Append(" -sdk iphoneos")
+                .Append(" -sdk " + sdk)
                 .Append(" -allowProvisioningUpdates")
                 .Append(" DEVELOPMENT_TEAM=").Append(devTeamProvisioning);
         }
         else
         {
-            sdk = "iphonesimulator";
+            sdk = (Target == Utils.TargetOS.iOS) ? "iphonesimulator" : "appletvsimulator";
             args.Append(" -arch x86_64")
-                .Append(" -sdk iphonesimulator");
+                .Append(" -sdk " + sdk);
         }
 
         string config = optimized ? "Release" : "Debug";
         args.Append(" -configuration ").Append(config);
 
         Utils.RunProcess("xcodebuild", args.ToString(), workingDir: Path.GetDirectoryName(xcodePrjPath));
-        return Path.Combine(Path.GetDirectoryName(xcodePrjPath)!, config + "-" + sdk,
+
+        string appPath = Path.Combine(Path.GetDirectoryName(xcodePrjPath)!, config + "-" + sdk,
             Path.GetFileNameWithoutExtension(xcodePrjPath) + ".app");
+
+        long appSize = new DirectoryInfo(appPath)
+            .EnumerateFiles("*", SearchOption.AllDirectories)
+            .Sum(file => file.Length);
+
+        Utils.LogInfo($"\nAPP size: {(appSize / 1000_000.0):0.#} Mb.\n");
+
+        return appPath;
     }
 }

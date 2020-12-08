@@ -77,7 +77,6 @@
 #include <string.h>
 #include <ctype.h>
 #include "trace.h"
-#include "version.h"
 #include "debugger-agent.h"
 #include "mini-runtime.h"
 #include "jit-icalls.h"
@@ -523,6 +522,7 @@ static clock_serv_t sampling_clock;
 static void
 clock_init_for_profiler (MonoProfilerSampleMode mode)
 {
+	mono_clock_init (&sampling_clock);
 }
 
 static void
@@ -691,7 +691,6 @@ init:
 		goto init;
 	}
 
-	mono_clock_init (&sampling_clock);
 	clock_init_for_profiler (mode);
 
 	for (guint64 sleep = mono_clock_get_time_ns (sampling_clock); mono_atomic_load_i32 (&sampling_thread_running); clock_sleep_ns_abs (sleep)) {

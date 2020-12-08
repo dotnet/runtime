@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #ifndef _GCHEAPUTILITIES_H_
 #define _GCHEAPUTILITIES_H_
@@ -199,8 +198,8 @@ public:
 #endif // FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
 
 #ifndef DACCESS_COMPILE
-    // Gets the module that contains the GC.
-    static HMODULE GetGCModule();
+    // Gets a pointer to the module that contains the GC.
+    static PTR_VOID GetGCModuleBase();
 
     // Loads (if using a standalone GC) and initializes the GC.
     static HRESULT LoadAndInitialize();

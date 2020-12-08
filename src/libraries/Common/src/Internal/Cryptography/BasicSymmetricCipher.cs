@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #nullable enable
 using System;
@@ -23,17 +22,19 @@ namespace Internal.Cryptography
     //
     internal abstract class BasicSymmetricCipher : IDisposable
     {
-        protected BasicSymmetricCipher(byte[]? iv, int blockSizeInBytes)
+        protected BasicSymmetricCipher(byte[]? iv, int blockSizeInBytes, int paddingSizeInBytes)
         {
             IV = iv;
             BlockSizeInBytes = blockSizeInBytes;
+            PaddingSizeInBytes = paddingSizeInBytes > 0 ? paddingSizeInBytes : blockSizeInBytes;
         }
 
-        public abstract int Transform(byte[] input, int inputOffset, int count, byte[] output, int outputOffset);
+        public abstract int Transform(ReadOnlySpan<byte> input, Span<byte> output);
 
-        public abstract byte[] TransformFinal(byte[] input, int inputOffset, int count);
+        public abstract int TransformFinal(ReadOnlySpan<byte> input, Span<byte> output);
 
         public int BlockSizeInBytes { get; private set; }
+        public int PaddingSizeInBytes { get; private set; }
 
         public void Dispose()
         {

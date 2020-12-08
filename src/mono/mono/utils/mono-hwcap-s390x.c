@@ -148,7 +148,7 @@ mono_hwcap_arch_init (void)
 	int lFacs = sizeof (facs) / 8;
 
 	__asm__ __volatile__ (
-		"lgfr\t0,%1\n\t"
+		"lgfr\t%%r0,%1\n\t"
 		".insn\ts,0xb2b00000,%0\n\t"
 		: "=m" (facs)
 		: "r" (lFacs)

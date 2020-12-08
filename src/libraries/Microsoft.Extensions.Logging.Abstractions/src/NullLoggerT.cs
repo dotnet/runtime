@@ -1,6 +1,5 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 
@@ -20,7 +19,7 @@ namespace Microsoft.Extensions.Logging.Abstractions
         /// <inheritdoc />
         public IDisposable BeginScope<TState>(TState state)
         {
-            return NullDisposable.Instance;
+            return NullScope.Instance;
         }
 
         /// <inheritdoc />
@@ -31,8 +30,8 @@ namespace Microsoft.Extensions.Logging.Abstractions
             LogLevel logLevel,
             EventId eventId,
             TState state,
-            Exception exception,
-            Func<TState, Exception, string> formatter)
+            Exception? exception,
+            Func<TState, Exception?, string> formatter)
         {
         }
 
@@ -40,16 +39,6 @@ namespace Microsoft.Extensions.Logging.Abstractions
         public bool IsEnabled(LogLevel logLevel)
         {
             return false;
-        }
-
-        private class NullDisposable : IDisposable
-        {
-            public static readonly NullDisposable Instance = new NullDisposable();
-
-            public void Dispose()
-            {
-                // intentionally does nothing
-            }
         }
     }
 }

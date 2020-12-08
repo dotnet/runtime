@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -12,7 +11,7 @@ namespace System.Net.NetworkInformation
     // Linux implementation of NetworkChange
     public partial class NetworkChange
     {
-        private static volatile int s_socket = 0;
+        private static volatile int s_socket;
         // Lock controlling access to delegate subscriptions, socket initialization, availability-changed state and timer.
         private static readonly object s_gate = new object();
         private static readonly Interop.Sys.NetworkChangeEvent s_networkChangeCallback = ProcessEvent;

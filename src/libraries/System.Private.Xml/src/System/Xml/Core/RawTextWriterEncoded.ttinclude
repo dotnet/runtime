@@ -1,7 +1,6 @@
-<#@ template debug="false" hostspecific="false" language="C#" #>
-<#@ assembly name="System.Core" #>
-<#@ output extension=".cs" #>
-<#@ import namespace="System" #><#
+<#@ assembly name="System.Core"
+#><#@ import namespace="System"
+#><#
     WriterType = RawTextWriterType.Encoded;
     ClassName = "XmlEncodedRawTextWriter";
     ClassNameIndent = "XmlEncodedRawTextWriterIndent";
@@ -14,7 +13,7 @@ if (XmlCharType.IsSurrogate(ch))
     pSrc += 2;
 }
 /* Invalid XML character */
-else  if (ch <= 0x7F || ch >= 0xFFFE)
+else if (ch <= 0x7F || ch >= 0xFFFE)
 {
     pDst = InvalidXmlChar(ch, pDst, _entitizeInvalidChars_);
     pSrc++;
@@ -26,5 +25,5 @@ else
     pDst++;
     pSrc++;
 }";
-    SetTextContentMarkBody = @"if (trackTextContent && inTextContent != _value_) { ChangeTextContentMark(_value_); }";
+    SetTextContentMarkBody = @"if (_trackTextContent && _inTextContent != _value_) { ChangeTextContentMark(_value_); }";
 #>

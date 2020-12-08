@@ -1,7 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>netstandard2.0;$(NetFrameworkCurrent);net461</TargetFrameworks>
-    <ExcludeCurrentFullFrameworkFromPackage>true</ExcludeCurrentFullFrameworkFromPackage>
+    <TargetFrameworks>netstandard2.0;net461</TargetFrameworks>
     <Nullable>enable</Nullable>
   </PropertyGroup>
   <!-- DesignTimeBuild requires all the TargetFramework Derived Properties to not be present in the first property group. -->
@@ -10,9 +9,6 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System.IO.FileSystem.AccessControl.cs" />
-  </ItemGroup>
-  <ItemGroup Condition="$(TargetFramework.StartsWith('net4'))">
-    <Reference Include="mscorlib" />
   </ItemGroup>
   <ItemGroup Condition="!$(TargetFramework.StartsWith('net4'))">
     <ProjectReference Include="..\..\System.Security.AccessControl\ref\System.Security.AccessControl.csproj" />

@@ -1,8 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
-
-#pragma warning disable BCL0015
 
 using System.Drawing.Drawing2D;
 using System.Drawing.Imaging;
@@ -13,9 +10,9 @@ namespace System.Drawing
 {
     // Raw function imports for gdiplus
     // Functions are loaded manually in order to accomodate different shared library names on Unix.
-    internal static unsafe partial class SafeNativeMethods
+    internal static partial class SafeNativeMethods
     {
-        internal static partial class Gdip
+        internal static unsafe partial class Gdip
         {
             // Shared function imports (all platforms)
             [DllImport(LibraryName, ExactSpelling = true)]

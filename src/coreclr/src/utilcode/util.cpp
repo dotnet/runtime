@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 //*****************************************************************************
 //  util.cpp
 //
@@ -417,7 +416,7 @@ void InitCodeAllocHint(SIZE_T base, SIZE_T size, int randomPageOffset)
         pStart = (BYTE *)(base + size);
     }
 
-    // Randomize the adddress space
+    // Randomize the address space
     pStart += GetOsPageSize() * randomPageOffset;
 
     s_CodeAllocStart = pStart;
@@ -851,6 +850,7 @@ BYTE * ClrVirtualAllocWithinRange(const BYTE *pMinAddr,
 
 /*static*/ BOOL CPUGroupInfo::m_enableGCCPUGroups = FALSE;
 /*static*/ BOOL CPUGroupInfo::m_threadUseAllCpuGroups = FALSE;
+/*static*/ BOOL CPUGroupInfo::m_threadAssignCpuGroups = FALSE;
 /*static*/ WORD CPUGroupInfo::m_nGroups = 0;
 /*static*/ WORD CPUGroupInfo::m_nProcessors = 0;
 /*static*/ WORD CPUGroupInfo::m_initialGroup = 0;
@@ -992,6 +992,7 @@ DWORD LCM(DWORD u, DWORD v)
 #if !defined(FEATURE_REDHAWK) && (defined(TARGET_AMD64) || defined(TARGET_ARM64))
     BOOL enableGCCPUGroups     = CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_GCCpuGroup) != 0;
     BOOL threadUseAllCpuGroups = CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_Thread_UseAllCpuGroups) != 0;
+    BOOL threadAssignCpuGroups = CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_Thread_AssignCpuGroups) != 0;
 
     if (!enableGCCPUGroups)
         return;
@@ -1007,10 +1008,11 @@ DWORD LCM(DWORD u, DWORD v)
     CPUGroupInfo::GetThreadGroupAffinity(GetCurrentThread(), &groupAffinity);
     m_initialGroup = groupAffinity.Group;
 
-	// only enable CPU groups if more than one group exists
-	BOOL hasMultipleGroups = m_nGroups > 1;
-	m_enableGCCPUGroups = enableGCCPUGroups && hasMultipleGroups;
-	m_threadUseAllCpuGroups = threadUseAllCpuGroups && hasMultipleGroups;
+    // only enable CPU groups if more than one group exists
+    BOOL hasMultipleGroups = m_nGroups > 1;
+    m_enableGCCPUGroups = enableGCCPUGroups && hasMultipleGroups;
+    m_threadUseAllCpuGroups = threadUseAllCpuGroups && hasMultipleGroups;
+    m_threadAssignCpuGroups = threadAssignCpuGroups && hasMultipleGroups;
 #endif // TARGET_AMD64 || TARGET_ARM64
 
     // Determine if the process is affinitized to a single processor (or if the system has a single processor)
@@ -1165,8 +1167,8 @@ retry:
     WORD i, minGroup = 0;
     DWORD minWeight = 0;
 
-    // m_enableGCCPUGroups and m_threadUseAllCpuGroups must be TRUE
-    _ASSERTE(m_enableGCCPUGroups && m_threadUseAllCpuGroups);
+    // m_enableGCCPUGroups, m_threadUseAllCpuGroups, and m_threadAssignCpuGroups must be TRUE
+    _ASSERTE(m_enableGCCPUGroups && m_threadUseAllCpuGroups && m_threadAssignCpuGroups);
 
     for (i = 0; i < m_nGroups; i++)
     {
@@ -1205,8 +1207,8 @@ found:
 {
     LIMITED_METHOD_CONTRACT;
 #if (defined(TARGET_AMD64) || defined(TARGET_ARM64))
-    // m_enableGCCPUGroups and m_threadUseAllCpuGroups must be TRUE
-    _ASSERTE(m_enableGCCPUGroups && m_threadUseAllCpuGroups);
+    // m_enableGCCPUGroups, m_threadUseAllCpuGroups, and m_threadAssignCpuGroups must be TRUE
+    _ASSERTE(m_enableGCCPUGroups && m_threadUseAllCpuGroups && m_threadAssignCpuGroups);
 
     WORD group = gf->Group;
     m_CPUGroupInfoArray[group].activeThreadWeight -= m_CPUGroupInfoArray[group].groupWeight;
@@ -1238,6 +1240,12 @@ BOOL CPUGroupInfo::GetCPUGroupRange(WORD group_number, WORD* group_begin, WORD* 
 {
     LIMITED_METHOD_CONTRACT;
     return m_threadUseAllCpuGroups;
+}
+
+/*static*/ BOOL CPUGroupInfo::CanAssignCpuGroupsToThreads()
+{
+    LIMITED_METHOD_CONTRACT;
+    return m_threadAssignCpuGroups;
 }
 #endif // HOST_WINDOWS
 
@@ -1894,6 +1902,7 @@ HRESULT validateOneArg(
         {
             case ELEMENT_TYPE_VOID:
                 if(bNoVoidAllowed) IfFailGo(VLDTR_E_SIG_BADVOID);
+                FALLTHROUGH;
 
             case ELEMENT_TYPE_BOOLEAN:
             case ELEMENT_TYPE_CHAR:
@@ -1919,6 +1928,7 @@ HRESULT validateOneArg(
                 break;
             case ELEMENT_TYPE_BYREF:  //fallthru
                 if(TypeFromToken(tk)==mdtFieldDef) IfFailGo(VLDTR_E_SIG_BYREFINFIELD);
+                FALLTHROUGH;
             case ELEMENT_TYPE_PINNED:
             case ELEMENT_TYPE_SZARRAY:
                 // Validate the referenced type.
@@ -1927,6 +1937,7 @@ HRESULT validateOneArg(
             case ELEMENT_TYPE_CMOD_OPT:
             case ELEMENT_TYPE_CMOD_REQD:
                 bRepeat = TRUE; // go on validating, we're not done with this arg
+                FALLTHROUGH;
             case ELEMENT_TYPE_VALUETYPE: //fallthru
             case ELEMENT_TYPE_CLASS:
                 // See if the token is missing.
@@ -2112,6 +2123,7 @@ HRESULT validateTokenSig(
             if (!(ulCallConv & IMAGE_CEE_CS_CALLCONV_HASTHIS) &&
                 !IsMdStatic(dwFlags)) return VLDTR_E_MD_NOTTHISNOTSTATIC;
             // fall thru to callconv check;
+            FALLTHROUGH;
 
         case mdtMemberRef:
             if(i == IMAGE_CEE_CS_CALLCONV_FIELD) return validateOneArg(tk, &sig, NULL, pImport, TRUE);
@@ -2939,20 +2951,18 @@ LPWSTR *SegmentCommandLine(LPCWSTR lpCmdLine, DWORD *pNumArgs)
 //======================================================================
 // This function returns true, if it can determine that the instruction pointer
 // refers to a code address that belongs in the range of the given image.
-// <TODO>@TODO: Merge with IsIPInModule from vm\util.hpp</TODO>
-
-BOOL IsIPInModule(HMODULE_TGT hModule, PCODE ip)
+BOOL IsIPInModule(PTR_VOID pModuleBaseAddress, PCODE ip)
 {
     STATIC_CONTRACT_LEAF;
     SUPPORTS_DAC;
 
     struct Param
     {
-        HMODULE_TGT hModule;
+        PTR_VOID pModuleBaseAddress;
         PCODE ip;
         BOOL fRet;
     } param;
-    param.hModule = hModule;
+    param.pModuleBaseAddress = pModuleBaseAddress;
     param.ip = ip;
     param.fRet = FALSE;
 
@@ -2960,7 +2970,7 @@ BOOL IsIPInModule(HMODULE_TGT hModule, PCODE ip)
 #ifdef HOST_WINDOWS
     PAL_TRY(Param *, pParam, &param)
     {
-        PTR_BYTE pBase = dac_cast<PTR_BYTE>(pParam->hModule);
+        PTR_BYTE pBase = dac_cast<PTR_BYTE>(pParam->pModuleBaseAddress);
 
         PTR_IMAGE_DOS_HEADER pDOS = NULL;
         PTR_IMAGE_NT_HEADERS pNT  = NULL;

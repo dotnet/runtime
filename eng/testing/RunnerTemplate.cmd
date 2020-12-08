@@ -41,12 +41,6 @@ set EXECUTION_DIR=%~dp0
 
 :argparser_end
 
-if not defined RUNTIME_PATH (
-  echo error: -r^|--runtime-path argument is required.
-  call :usage
-  exit /b -1
-)
-
 :: Don't use a globally installed SDK.
 set DOTNET_MULTILEVEL_LOOKUP=0
 
@@ -62,7 +56,13 @@ pushd %EXECUTION_DIR%
 @echo off
 popd
 echo ----- end %DATE% %TIME% ----- exit code %ERRORLEVEL% ----------------------------------------------------------
-exit /b %ERRORLEVEL%
+:: The helix work item should not exit with non-zero if tests ran and produced results
+:: The special console runner for runtime returns 1 when tests fail
+if %ERRORLEVEL%==1 (
+  exit /b 0
+) else (
+  exit /b %ERRORLEVEL%
+)
 :: ========================= END Test Execution =================================
 
 :usage

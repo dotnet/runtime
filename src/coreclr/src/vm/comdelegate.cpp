@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 //
 // File: COMDelegate.cpp
 //
@@ -342,7 +341,7 @@ BOOL GenerateShuffleArrayPortable(MethodDesc* pMethodSrc, MethodDesc *pMethodDst
 
     unsigned int argSlots = NUM_ARGUMENT_REGISTERS
 #ifdef NUM_FLOAT_ARGUMENT_REGISTERS
-                    + NUM_FLOAT_ARGUMENT_REGISTERS 
+                    + NUM_FLOAT_ARGUMENT_REGISTERS
 #endif
                     + sArgPlacerSrc.SizeOfArgStack() / sizeof(size_t);
 
@@ -430,10 +429,10 @@ BOOL GenerateShuffleArrayPortable(MethodDesc* pMethodSrc, MethodDesc *pMethodDst
             pGraphNodes[i].isSource = false;
         }
 
-        // Build the directed graph representing register and stack slot shuffling. 
+        // Build the directed graph representing register and stack slot shuffling.
         // The links are directed from destination to source.
         // During the build also set isSource flag for nodes that are sources of data.
-        // The ones that don't have the isSource flag set are beginnings of non-cyclic 
+        // The ones that don't have the isSource flag set are beginnings of non-cyclic
         // segments of the graph.
         for (unsigned int i = 0; i < pShuffleEntryArray->GetCount(); i++)
         {
@@ -448,7 +447,7 @@ BOOL GenerateShuffleArrayPortable(MethodDesc* pMethodSrc, MethodDesc *pMethodDst
             // Unmark the node to indicate that it was not processed yet
             pGraphNodes[srcIndex].isMarked = false;
             // The node contains a register / stack slot that is a source from which we move data to a destination one
-            pGraphNodes[srcIndex].isSource = true; 
+            pGraphNodes[srcIndex].isSource = true;
             pGraphNodes[srcIndex].ofs = entry.srcofs;
 
             // Unmark the node to indicate that it was not processed yet
@@ -970,6 +969,10 @@ FCIMPL5(FC_BOOL_RET, COMDelegate::BindToMethodInfo, Object* refThisUNSAFE, Objec
                                             flags,
                                             &fIsOpenDelegate))
     {
+#if defined(HOST_OSX) && defined(HOST_ARM64)
+        auto jitWriteEnableHolder = PAL_JITWriteEnable(true);
+#endif // defined(HOST_OSX) && defined(HOST_ARM64)
+
         // Initialize the delegate to point to the target method.
         BindToMethod(&gc.refThis,
                      &gc.refFirstArg,
@@ -1392,85 +1395,6 @@ OBJECTREF COMDelegate::ConvertToDelegate(LPVOID pCallback, MethodTable* pMT)
     return delObj;
 }
 
-#ifdef FEATURE_COMINTEROP
-// Marshals a WinRT delegate interface pointer to a managed Delegate
-//static
-OBJECTREF COMDelegate::ConvertWinRTInterfaceToDelegate(IUnknown *pIdentity, MethodTable* pMT)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_COOPERATIVE;
-        PRECONDITION(CheckPointer(pIdentity));
-        PRECONDITION(CheckPointer(pMT));
-    }
-    CONTRACTL_END;
-
-    MethodDesc*         pMD         = FindDelegateInvokeMethod(pMT);
-
-    if (pMD->IsSharedByGenericInstantiations())
-    {
-        // we need an exact MD to represent the call
-        pMD = InstantiatedMethodDesc::FindOrCreateExactClassMethod(pMT, pMD);
-    }
-    else
-    {
-        // set up ComPlusCallInfo
-        PopulateComPlusCallInfo(pMT);
-    }
-
-    ComPlusCallInfo *pComInfo = ComPlusCallInfo::FromMethodDesc(pMD);
-    PCODE pMarshalStub = (pComInfo == NULL ? NULL : pComInfo->m_pILStub);
-
-    if (pMarshalStub == NULL)
-    {
-        GCX_PREEMP();
-
-        DWORD dwStubFlags = NDIRECTSTUB_FL_COM | NDIRECTSTUB_FL_WINRT | NDIRECTSTUB_FL_WINRTDELEGATE;
-
-        pMarshalStub = GetStubForInteropMethod(pMD, dwStubFlags);
-
-        // At this point we must have a non-NULL ComPlusCallInfo
-        pComInfo = ComPlusCallInfo::FromMethodDesc(pMD);
-        _ASSERTE(pComInfo != NULL);
-
-        // Save this new stub on the ComPlusCallInfo
-        InterlockedCompareExchangeT<PCODE>(&pComInfo->m_pILStub, pMarshalStub, NULL);
-
-        pMarshalStub = pComInfo->m_pILStub;
-    }
-
-    _ASSERTE(pMarshalStub != NULL);
-
-    //////////////////////////////////////////////////////////////////////////////////////////////////////////
-    // Wire up the stub to the new delegate instance.
-    //
-
-    LOG((LF_INTEROP, LL_INFO10000, "Created delegate for WinRT interface: pUnk: %p\n", pIdentity));
-
-    // Create the new delegate
-    DELEGATEREF delObj = (DELEGATEREF) pMT->Allocate();
-
-    {
-        // delObj is not protected
-        GCX_NOTRIGGER();
-
-        // Wire up the unmanaged call stub to the delegate.
-        delObj->SetTarget(delObj);              // We are the "this" object
-
-        // We save the entry point in the delegate's method pointer and the identity pUnk in the aux pointer.
-        delObj->SetMethodPtr(pMarshalStub);
-        delObj->SetMethodPtrAux((PCODE)pIdentity);
-
-        // Also, mark this delegate as an unmanaged function pointer wrapper.
-        delObj->SetInvocationCount(DELEGATE_MARKER_UNMANAGEDFPTR);
-    }
-
-    return delObj;
-}
-#endif // FEATURE_COMINTEROP
-
 void COMDelegate::ValidateDelegatePInvoke(MethodDesc* pMD)
 {
     CONTRACTL
@@ -1519,16 +1443,7 @@ MethodDesc* COMDelegate::GetILStubMethodDesc(EEImplMethodDesc* pDelegateMD, DWOR
 
     MethodTable *pMT = pDelegateMD->GetMethodTable();
 
-#ifdef FEATURE_COMINTEROP
-    if (pMT->IsWinRTDelegate())
-    {
-        dwStubFlags |= NDIRECTSTUB_FL_COM | NDIRECTSTUB_FL_WINRT | NDIRECTSTUB_FL_WINRTDELEGATE;
-    }
-    else
-#endif // FEATURE_COMINTEROP
-    {
-        dwStubFlags |= NDIRECTSTUB_FL_DELEGATE;
-    }
+    dwStubFlags |= NDIRECTSTUB_FL_DELEGATE;
 
     PInvokeStaticSigInfo sigInfo(pDelegateMD);
     return NDirect::CreateCLRToNativeILStub(&sigInfo, dwStubFlags, pDelegateMD);
@@ -1677,6 +1592,10 @@ FCIMPL3(void, COMDelegate::DelegateConstruct, Object* refThisUNSAFE, Object* tar
     // try to catch the easy garbage.
     _ASSERTE(isMemoryReadable(method, 1));
 
+#if defined(HOST_OSX) && defined(HOST_ARM64)
+    auto jitWriteEnableHolder = PAL_JITWriteEnable(true);
+#endif // defined(HOST_OSX) && defined(HOST_ARM64)
+
     MethodTable *pMTTarg = NULL;
 
     if (gc.target != NULL)
@@ -1806,6 +1725,7 @@ FCIMPL3(void, COMDelegate::DelegateConstruct, Object* refThisUNSAFE, Object* tar
         gc.refThis->SetTarget(gc.target);
         gc.refThis->SetMethodPtr((PCODE)(void *)method);
     }
+
     HELPER_METHOD_FRAME_END();
 }
 FCIMPLEND
@@ -2119,8 +2039,9 @@ void COMDelegate::ThrowIfInvalidUnmanagedCallersOnlyUsage(MethodDesc* pMD)
     if (pMD->HasClassOrMethodInstantiation())
         EX_THROW(EEResourceException, (kInvalidProgramException, W("InvalidProgram_GenericMethod")));
 
-    // Arguments
-    if (NDirect::MarshalingRequired(pMD, pMD->GetSig(), pMD->GetModule()))
+    // Arguments - Scenarios involving UnmanagedCallersOnly are handled during the jit.
+    bool unmanagedCallersOnlyRequiresMarshalling = false;
+    if (NDirect::MarshalingRequired(pMD, NULL, NULL, unmanagedCallersOnlyRequiresMarshalling))
         EX_THROW(EEResourceException, (kInvalidProgramException, W("InvalidProgram_NonBlittableTypes")));
 }
 
@@ -2285,7 +2206,7 @@ FCIMPL1(PCODE, COMDelegate::GetMulticastInvoke, Object* refThisIn)
 
         // Get count of delegates
         pCode->EmitLoadThis();
-        pCode->EmitLDFLD(pCode->GetToken(MscorlibBinder::GetField(FIELD__MULTICAST_DELEGATE__INVOCATION_COUNT)));
+        pCode->EmitLDFLD(pCode->GetToken(CoreLibBinder::GetField(FIELD__MULTICAST_DELEGATE__INVOCATION_COUNT)));
         pCode->EmitSTLOC(dwInvocationCountNum);
 
         // initialize counter
@@ -2308,7 +2229,7 @@ FCIMPL1(PCODE, COMDelegate::GetMulticastInvoke, Object* refThisIn)
 
         // Load next delegate from array using LoopCounter as index
         pCode->EmitLoadThis();
-        pCode->EmitLDFLD(pCode->GetToken(MscorlibBinder::GetField(FIELD__MULTICAST_DELEGATE__INVOCATION_LIST)));
+        pCode->EmitLDFLD(pCode->GetToken(CoreLibBinder::GetField(FIELD__MULTICAST_DELEGATE__INVOCATION_LIST)));
         pCode->EmitLDLOC(dwLoopCounterNum);
         pCode->EmitLDELEM_REF();
 
@@ -2459,7 +2380,7 @@ PCODE COMDelegate::GetWrapperInvoke(MethodDesc* pMD)
 
         // Load the "real" delegate
         pCode->EmitLoadThis();
-        pCode->EmitLDFLD(pCode->GetToken(MscorlibBinder::GetField(FIELD__MULTICAST_DELEGATE__INVOCATION_LIST)));
+        pCode->EmitLDFLD(pCode->GetToken(CoreLibBinder::GetField(FIELD__MULTICAST_DELEGATE__INVOCATION_LIST)));
 
         // Load the arguments
         UINT paramCount = 0;
@@ -2989,8 +2910,7 @@ MethodDesc* COMDelegate::GetDelegateCtor(TypeHandle delegateType, MethodDesc *pT
 
 #ifdef FEATURE_COMINTEROP
     // We'll always force classic COM types to go down the slow path for security checks.
-    if ((pMT->IsComObjectType() && !pMT->IsWinRTObjectType()) ||
-        (pMT->IsComImport() && !pMT->IsProjectedFromWinRT()))
+    if (pMT->IsComObjectType() || pMT->IsComImport())
     {
         return NULL;
     }
@@ -3044,17 +2964,17 @@ MethodDesc* COMDelegate::GetDelegateCtor(TypeHandle delegateType, MethodDesc *pT
         {
             // case 3
             if (isCollectible)
-                pRealCtor = MscorlibBinder::GetMethod(METHOD__MULTICAST_DELEGATE__CTOR_COLLECTIBLE_VIRTUAL_DISPATCH);
+                pRealCtor = CoreLibBinder::GetMethod(METHOD__MULTICAST_DELEGATE__CTOR_COLLECTIBLE_VIRTUAL_DISPATCH);
             else
-                pRealCtor = MscorlibBinder::GetMethod(METHOD__MULTICAST_DELEGATE__CTOR_VIRTUAL_DISPATCH);
+                pRealCtor = CoreLibBinder::GetMethod(METHOD__MULTICAST_DELEGATE__CTOR_VIRTUAL_DISPATCH);
         }
         else
         {
             // case 2, 6
             if (isCollectible)
-                pRealCtor = MscorlibBinder::GetMethod(METHOD__MULTICAST_DELEGATE__CTOR_COLLECTIBLE_OPENED);
+                pRealCtor = CoreLibBinder::GetMethod(METHOD__MULTICAST_DELEGATE__CTOR_COLLECTIBLE_OPENED);
             else
-                pRealCtor = MscorlibBinder::GetMethod(METHOD__MULTICAST_DELEGATE__CTOR_OPENED);
+                pRealCtor = CoreLibBinder::GetMethod(METHOD__MULTICAST_DELEGATE__CTOR_OPENED);
         }
         Stub *pShuffleThunk = NULL;
         if (!pTargetMethod->IsStatic() && pTargetMethod->HasRetBuffArg() && IsRetBuffPassedAsFirstArg())
@@ -3089,21 +3009,21 @@ MethodDesc* COMDelegate::GetDelegateCtor(TypeHandle delegateType, MethodDesc *pT
                     pTargetMethod->GetMethodTable()->IsValueType() && !pTargetMethod->IsUnboxingStub();
 
         if (needsRuntimeInfo)
-            pRealCtor = MscorlibBinder::GetMethod(METHOD__MULTICAST_DELEGATE__CTOR_RT_CLOSED);
+            pRealCtor = CoreLibBinder::GetMethod(METHOD__MULTICAST_DELEGATE__CTOR_RT_CLOSED);
         else
         {
             if (!isStatic)
-                pRealCtor = MscorlibBinder::GetMethod(METHOD__MULTICAST_DELEGATE__CTOR_CLOSED);
+                pRealCtor = CoreLibBinder::GetMethod(METHOD__MULTICAST_DELEGATE__CTOR_CLOSED);
             else
             {
                 if (isCollectible)
                 {
-                    pRealCtor = MscorlibBinder::GetMethod(METHOD__MULTICAST_DELEGATE__CTOR_COLLECTIBLE_CLOSED_STATIC);
+                    pRealCtor = CoreLibBinder::GetMethod(METHOD__MULTICAST_DELEGATE__CTOR_COLLECTIBLE_CLOSED_STATIC);
                     pCtorData->pArg3 = pTargetMethodLoaderAllocator->GetLoaderAllocatorObjectHandle();
                 }
                 else
                 {
-                    pRealCtor = MscorlibBinder::GetMethod(METHOD__MULTICAST_DELEGATE__CTOR_CLOSED_STATIC);
+                    pRealCtor = CoreLibBinder::GetMethod(METHOD__MULTICAST_DELEGATE__CTOR_CLOSED_STATIC);
                 }
             }
         }
@@ -3238,7 +3158,7 @@ static void TryConstructUnhandledExceptionArgs(OBJECTREF *pThrowable,
 
     EX_TRY
     {
-        MethodTable *pMT = MscorlibBinder::GetClass(CLASS__UNHANDLED_EVENTARGS);
+        MethodTable *pMT = CoreLibBinder::GetClass(CLASS__UNHANDLED_EVENTARGS);
         *pOutEventArgs = AllocateObject(pMT);
 
         MethodDescCallSite ctor(METHOD__UNHANDLED_EVENTARGS__CTOR, pOutEventArgs);

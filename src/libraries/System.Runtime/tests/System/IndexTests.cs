@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Generic;
@@ -127,7 +126,7 @@ namespace System.Tests
                 Assert.Equal(i, array[Index.FromStart(i)]);
                 Assert.Equal(list.Count - i - 1, array[^(i + 1)]);
 
-                Assert.Equal(array.AsSpan().Slice(i, array.Length - i).ToArray(), array[i..]);
+                Assert.Equal(array.AsSpan(i, array.Length - i).ToArray(), array[i..]);
             }
         }
     }

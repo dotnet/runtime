@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <RestorePackages>false</RestorePackages>
+    <CLRTestPriority>1</CLRTestPriority>
+    <!-- Test unsupported outside of windows -->
+    <CLRTestTargetUnsupported Condition="'$(TargetsWindows)' != 'true'">true</CLRTestTargetUnsupported>
+  </PropertyGroup>
+  <PropertyGroup>
+    <Optimize>True</Optimize>
+    <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
+    <DebugType>Full</DebugType>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="loop2.cs" />
+  </ItemGroup>
+</Project>

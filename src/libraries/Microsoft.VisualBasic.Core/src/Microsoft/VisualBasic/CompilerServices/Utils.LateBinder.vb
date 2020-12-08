@@ -1,6 +1,5 @@
 ' Licensed to the .NET Foundation under one or more agreements.
 ' The .NET Foundation licenses this file to you under the MIT license.
-' See the LICENSE file in the project root for more information.
 
 Imports System
 Imports System.Text
@@ -80,8 +79,6 @@ Namespace Microsoft.VisualBasic.CompilerServices
                 Throw ex
             Catch ex As OutOfMemoryException
                 Throw ex
-            Catch ex As System.Threading.ThreadAbortException
-                Throw ex
             Catch
                 s = ResourceMsgDefault
             End Try
@@ -113,8 +110,6 @@ Namespace Microsoft.VisualBasic.CompilerServices
             Catch ex As StackOverflowException
                 Throw ex
             Catch ex As OutOfMemoryException
-                Throw ex
-            Catch ex As System.Threading.ThreadAbortException
                 Throw ex
 
             Catch ex As Exception
@@ -152,8 +147,6 @@ Namespace Microsoft.VisualBasic.CompilerServices
             Catch ex As StackOverflowException
                 Throw ex
             Catch ex As OutOfMemoryException
-                Throw ex
-            Catch ex As System.Threading.ThreadAbortException
                 Throw ex
             Catch
                 'Ignore, should default to 0 values
@@ -350,6 +343,10 @@ GetSpecialValue:
         End Function
 
         Friend Shared Function VBFriendlyName(ByVal typ As System.Type, ByVal o As Object) As String
+            If typ.IsCOMObject AndAlso (typ.FullName = "System.__ComObject") Then
+                Return TypeNameOfCOMObject(o, False)
+            End If
+
             Return VBFriendlyNameOfType(typ)
         End Function
 

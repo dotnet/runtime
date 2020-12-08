@@ -21,7 +21,7 @@ with all needed prerequisites to build. As the example bellow may become stale, 
 
 ```sh
 TAG=mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-18.04-cross-freebsd-11-20200430154008-a84b0d2
-docker run --rm --volume $(pwd):$(pwd) --workdir $(pwd) --env ROOTFS_DIR=/crossrootfs/x64 -ti  $TAG ./build.sh -cross -FreeBSD
+docker run --rm --volume $(pwd):$(pwd) --workdir $(pwd) --env ROOTFS_DIR=/crossrootfs/x64 -ti  $TAG ./build.sh -cross -os FreeBSD
 ```
 
 Build using Toolchain Setup
@@ -57,11 +57,12 @@ Install the following packages:
 - lttng-ust
 - krb5
 - openssl (optional)
+- ninja (optional, enables building native code with ninja instead of make)
 
 The lines to install all the packages above using package manager.
 
 ```sh
-sudo pkg install --yes libunwind icu libinotify lttng-ust krb5 cmake autoconf automake openssl
+sudo pkg install --yes libunwind icu libinotify lttng-ust krb5 cmake autoconf automake openssl ninja
 ```
 
 Additionally, working dotnet cli with SDK is needed. On other platforms this would be downloaded automatically during build but it is not currently available for FreeBSD.

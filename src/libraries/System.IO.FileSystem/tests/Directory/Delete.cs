@@ -1,8 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
-using System.Runtime.InteropServices;
 using System.Text;
 using Xunit;
 using Microsoft.DotNet.XUnitExtensions;
@@ -11,7 +9,7 @@ namespace System.IO.Tests
 {
     public class Directory_Delete_str : FileSystemTest
     {
-        static bool IsBindMountSupported => RuntimeInformation.IsOSPlatform(OSPlatform.Linux) && !PlatformDetection.IsInContainer;
+        static bool IsBindMountSupported => OperatingSystem.IsLinux() && !PlatformDetection.IsInContainer;
 
         #region Utilities
 
@@ -246,6 +244,7 @@ namespace System.IO.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/40536", TestPlatforms.Browser)]
         public void RecursiveDeleteWithTrailingSlash()
         {
             DirectoryInfo testDir = Directory.CreateDirectory(GetTestFilePath());

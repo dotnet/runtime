@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Generic;
@@ -32,8 +31,6 @@ namespace R2RTest
         {
             new FrameworkExclusion(ExclusionType.Ignore, "CommandLine", "Not a framework assembly"),
             new FrameworkExclusion(ExclusionType.Ignore, "R2RDump", "Not a framework assembly"),
-            new FrameworkExclusion(ExclusionType.Ignore, "System.Runtime.WindowsRuntime", "WinRT is currently not supported"),
-            new FrameworkExclusion(ExclusionType.Ignore, "xunit.performance.api", "Not a framework assembly"),
 
             // TODO (DavidWr): IBC-related failures
             new FrameworkExclusion(ExclusionType.DontCrossgen2, "Microsoft.CodeAnalysis.CSharp", "Ibc TypeToken 6200019a has type token which resolves to a nil token"),
@@ -67,11 +64,15 @@ namespace R2RTest
                 reason = exclusion.Reason;
                 return true;
             }
-            else
+
+            if (simpleName.StartsWith("xunit.", StringComparison.OrdinalIgnoreCase))
             {
-                reason = null;
-                return false;
+                reason = "XUnit";
+                return true;
             }
+
+            reason = null;
+            return false;
         }
     }
 
@@ -84,9 +85,12 @@ namespace R2RTest
 
         protected readonly BuildOptions _options;
         protected readonly List<string> _referenceFolders = new List<string>();
-        public CompilerRunner(BuildOptions options, IEnumerable<string> references)
+        protected readonly string _overrideOutputPath;
+
+        public CompilerRunner(BuildOptions options, IEnumerable<string> references, string overrideOutputPath = null)
         {
             _options = options;
+            _overrideOutputPath = overrideOutputPath;
 
             foreach (var reference in references)
             {
@@ -300,7 +304,7 @@ namespace R2RTest
             }
         }
 
-        public string GetOutputPath(string outputRoot) => Path.Combine(outputRoot, CompilerName + _options.ConfigurationSuffix);
+        public string GetOutputPath(string outputRoot) => _overrideOutputPath ?? Path.Combine(outputRoot, CompilerName + _options.ConfigurationSuffix);
 
         // <input>\a.dll -> <output>\a.dll
         public string GetOutputFileName(string outputRoot, string fileName) =>

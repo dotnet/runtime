@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #import <UIKit/UIKit.h>
 #import "runtime.h"
@@ -32,7 +31,7 @@ UITextView* logLabel;
 - (void)viewDidLoad {
     [super viewDidLoad];
 
-    CGRect applicationFrame = [[UIScreen mainScreen] applicationFrame];
+    CGRect applicationFrame = [[UIScreen mainScreen] bounds];
     logLabel = [[UITextView alloc] initWithFrame:
         CGRectMake(2.0, 50.0, applicationFrame.size.width - 2.0, applicationFrame.size.height - 50.0)];
     logLabel.font = [UIFont systemFontOfSize:9.0];
@@ -40,7 +39,9 @@ UITextView* logLabel;
     logLabel.textColor = [UIColor greenColor];
     logLabel.scrollEnabled = YES;
     logLabel.alwaysBounceVertical = YES;
+#ifndef TARGET_OS_TV
     logLabel.editable = NO;
+#endif
     logLabel.clipsToBounds = YES;
 
     summaryLabel = [[UILabel alloc] initWithFrame: CGRectMake(10.0, 0.0, applicationFrame.size.width - 10.0, 50)];
@@ -48,7 +49,7 @@ UITextView* logLabel;
     summaryLabel.font = [UIFont boldSystemFontOfSize: 12];
     summaryLabel.numberOfLines = 2;
     summaryLabel.textAlignment = NSTextAlignmentLeft;
-#ifdef TARGET_OS_IPHONE && (!TARGET_IPHONE_SIMULATOR || USE_AOT_FOR_SIMULATOR)
+#if !TARGET_OS_SIMULATOR || FORCE_AOT
     summaryLabel.text = @"Loading...";
 #else
     summaryLabel.text = @"Jitting...";

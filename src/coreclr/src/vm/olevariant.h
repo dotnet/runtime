@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 //
 // File: OleVariant.h
 //
@@ -18,7 +17,6 @@
 // the COM interop marshaler.
 #define VTHACK_INSPECTABLE     247
 #define VTHACK_HSTRING         248
-#define VTHACK_REDIRECTEDTYPE  249
 #define VTHACK_CBOOL           250
 #define VTHACK_NONBLITTABLERECORD 251
 #define VTHACK_BLITTABLERECORD 252
@@ -77,7 +75,7 @@ inline TypeHandle GetTypeHandleForCVType(CVTypes elemType)
     }
     CONTRACT_END;
 
-    RETURN TypeHandle(MscorlibBinder::GetClass(CVTypeToBinderClassID[elemType]));
+    RETURN TypeHandle(CoreLibBinder::GetClass(CVTypeToBinderClassID[elemType]));
 }
 
 // Use this very carefully.  There is not a direct mapping between
@@ -118,7 +116,7 @@ extern CVTypes CorElementTypeToCVTypes(CorElementType type);
 
 struct VariantData
 {
-    friend class MscorlibBinder;
+    friend class CoreLibBinder;
 
 public:
     static void NewVariant(VariantData * const& dest, const CVTypes type, INT64 data
@@ -601,7 +599,7 @@ private:
     static void MarshalDecimalVariantComToOle(VariantData* pComVariant, VARIANT* pOleVariant);
     static void MarshalDecimalVariantOleRefToCom(VARIANT* pOleVariant, VariantData* pComVariant);
 
-#ifdef FEATURE_CLASSIC_COMINTEROP
+#ifdef FEATURE_COMINTEROP
     static void MarshalRecordVariantOleToCom(VARIANT* pOleVariant, VariantData* pComVariant);
     static void MarshalRecordVariantComToOle(VariantData* pComVariant, VARIANT* pOleVariant);
     static void MarshalRecordVariantOleRefToCom(VARIANT* pOleVariant, VariantData* pComVariant);
@@ -625,7 +623,7 @@ private:
                                             SIZE_T cElements, PCODE pManagedMarshalerCode);
     static void ClearVariantArray(void* oleArray, SIZE_T cElements, MethodTable* pInterfaceMT, PCODE pManagedMarshalerCode);
 
-#ifdef FEATURE_CLASSIC_COMINTEROP
+#ifdef FEATURE_COMINTEROP
     static void MarshalArrayVariantOleToCom(VARIANT* pOleVariant, VariantData* pComVariant);
     static void MarshalArrayVariantComToOle(VariantData* pComVariant, VARIANT* pOleVariant);
     static void MarshalArrayVariantOleRefToCom(VARIANT* pOleVariant, VariantData* pComVariant);

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 /*=====================================================================
 **
@@ -13,11 +12,12 @@
 
 #include <palsuite.h>
 
-const char* szFileName = "blah";
 
 
-int __cdecl main(int argc, char *argv[])
+PALTEST(file_io_GetCurrentDirectoryA_test1_paltest_getcurrentdirectorya_test1, "file_io/GetCurrentDirectoryA/test1/paltest_getcurrentdirectorya_test1")
 {
+    const char* szFileName = "blah";
+
     DWORD dwRc = 0;
     DWORD dwRc2 = 0;
     char szReturnedPath[_MAX_PATH+1];

@@ -1,7 +1,6 @@
 /*
  * Licensed to the .NET Foundation under one or more agreements.
  * The .NET Foundation licenses this file to you under the MIT license.
- * See the LICENSE file in the project root for more information.
  */
 
 #include <config.h>
@@ -364,9 +363,6 @@ gpointer
 mini_profiler_context_get_result (MonoProfilerCallContext *ctx)
 {
 	MonoType *ret = mono_method_signature_internal (ctx->method)->ret;
-
-	if (ctx->interp_frame)
-		ctx->return_value = mini_get_interp_callbacks ()->frame_get_res (ctx->interp_frame);
 
 	if (!ctx->return_value)
 		return NULL;

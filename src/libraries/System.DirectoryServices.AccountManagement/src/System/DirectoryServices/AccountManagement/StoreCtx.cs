@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Generic;
@@ -25,7 +24,7 @@ namespace System.DirectoryServices.AccountManagement
 
         // The PrincipalContext object to which this StoreCtx belongs.  Initialized by PrincipalContext after it creates
         // this StoreCtx instance.
-        private PrincipalContext _owningContext = null;
+        private PrincipalContext _owningContext;
         internal PrincipalContext OwningContext
         {
             get

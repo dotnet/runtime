@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 // ------------------------------------------------------------------------------
 // Changes to this file must follow the https://aka.ms/api-review process.
 // ------------------------------------------------------------------------------
@@ -21,7 +20,7 @@ namespace System.Security.Claims
         protected virtual byte[]? CustomSerializationData { get { throw null; } }
         public string Issuer { get { throw null; } }
         public string OriginalIssuer { get { throw null; } }
-        public System.Collections.Generic.IDictionary<string, string?> Properties { get { throw null; } }
+        public System.Collections.Generic.IDictionary<string, string> Properties { get { throw null; } }
         public System.Security.Claims.ClaimsIdentity? Subject { get { throw null; } }
         public string Type { get { throw null; } }
         public string Value { get { throw null; } }

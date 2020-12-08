@@ -1,6 +1,18 @@
 <Project>
+  
+  <PropertyGroup>
+    <TargetPlatformSupported>true</TargetPlatformSupported>
+    <TargetPlatformVersionSupported>true</TargetPlatformVersionSupported>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(TargetFrameworkSuffix)' != '' and '$(TargetFrameworkSuffix)' != 'windows'">
+    <TargetPlatformIdentifier>$(TargetFrameworkSuffix)</TargetPlatformIdentifier>
+    <TargetPlatformVersion>0.0</TargetPlatformVersion>
+    <TargetPlatformMoniker>$(TargetFrameworkSuffix),Version=$(TargetPlatformVersion)</TargetPlatformMoniker>
+  </PropertyGroup>
+  
   <Choose>
-    <When Condition="'$(TargetFrameworkSuffix)' == 'Windows_NT'">
+    <When Condition="'$(TargetFrameworkSuffix)' == 'windows'">
       <PropertyGroup>
         <TargetsWindows>true</TargetsWindows>
         <PackageTargetRuntime>win</PackageTargetRuntime>
@@ -62,17 +74,24 @@
         <PackageTargetRuntime>netbsd</PackageTargetRuntime>
       </PropertyGroup>
     </When>
-    <When Condition="'$(TargetFrameworkSuffix)' == 'SunOS'">
+    <When Condition="'$(TargetFrameworkSuffix)' == 'illumos'">
       <PropertyGroup>
         <TargetsUnix>true</TargetsUnix>
-        <TargetsSunOS>true</TargetsSunOS>
-        <PackageTargetRuntime>sunos</PackageTargetRuntime>
+        <Targetsillumos>true</Targetsillumos>
+        <PackageTargetRuntime>illumos</PackageTargetRuntime>
+      </PropertyGroup>
+    </When>
+    <When Condition="'$(TargetFrameworkSuffix)' == 'Solaris'">
+      <PropertyGroup>
+        <TargetsUnix>true</TargetsUnix>
+        <TargetsSolaris>true</TargetsSolaris>
+        <PackageTargetRuntime>solaris</PackageTargetRuntime>
       </PropertyGroup>
     </When>
     <When Condition="'$(TargetFrameworkSuffix)' == 'Browser'">
       <PropertyGroup>
-        <TargetsLinux>true</TargetsLinux>
         <TargetsBrowser>true</TargetsBrowser>
+        <PackageTargetRuntime>browser</PackageTargetRuntime>
       </PropertyGroup>
     </When>
     <When Condition="'$(TargetFrameworkSuffix)' == ''">

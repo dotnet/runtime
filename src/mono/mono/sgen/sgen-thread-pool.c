@@ -15,6 +15,8 @@
 #include "mono/sgen/sgen-client.h"
 #include "mono/utils/mono-os-mutex.h"
 
+
+#ifndef DISABLE_SGEN_MAJOR_MARKSWEEP_CONC
 static mono_mutex_t lock;
 static mono_cond_t work_cond;
 static mono_cond_t done_cond;
@@ -402,5 +404,71 @@ sgen_thread_pool_is_thread_pool_thread (MonoNativeThreadId some_thread)
 
 	return 0;
 }
+#else
+
+int
+sgen_thread_pool_create_context (int num_threads, SgenThreadPoolThreadInitFunc init_func, SgenThreadPoolIdleJobFunc idle_func, SgenThreadPoolContinueIdleJobFunc continue_idle_func, SgenThreadPoolShouldWorkFunc should_work_func, void **thread_datas)
+{
+	return 0;
+}
+
+void
+sgen_thread_pool_start (void)
+{
+}
+
+void
+sgen_thread_pool_shutdown (void)
+{
+}
+
+SgenThreadPoolJob*
+sgen_thread_pool_job_alloc (const char *name, SgenThreadPoolJobFunc func, size_t size)
+{
+	SgenThreadPoolJob *job = (SgenThreadPoolJob *)sgen_alloc_internal_dynamic (size, INTERNAL_MEM_THREAD_POOL_JOB, TRUE);
+	job->name = name;
+	job->size = size;
+	job->func = func;
+	return job;
+}
+
+void
+sgen_thread_pool_job_free (SgenThreadPoolJob *job)
+{
+	sgen_free_internal_dynamic (job, job->size, INTERNAL_MEM_THREAD_POOL_JOB);
+}
+
+void
+sgen_thread_pool_job_enqueue (int context_id, SgenThreadPoolJob *job)
+{
+}
+
+void
+sgen_thread_pool_job_wait (int context_id, SgenThreadPoolJob *job)
+{
+}
+
+void
+sgen_thread_pool_idle_signal (int context_id)
+{
+}
+
+void
+sgen_thread_pool_idle_wait (int context_id, SgenThreadPoolContinueIdleWaitFunc continue_wait)
+{
+}
+
+void
+sgen_thread_pool_wait_for_all_jobs (int context_id)
+{
+}
+
+int
+sgen_thread_pool_is_thread_pool_thread (MonoNativeThreadId some_thread)
+{
+	return 0;
+}
+
+#endif
 
 #endif

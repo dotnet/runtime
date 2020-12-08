@@ -1,6 +1,5 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 namespace System.Text.Json.Serialization
 {
@@ -8,7 +7,7 @@ namespace System.Text.Json.Serialization
     /// Specifies the property name that is present in the JSON when serializing and deserializing.
     /// This overrides any naming policy specified by <see cref="JsonNamingPolicy"/>.
     /// </summary>
-    [AttributeUsage(AttributeTargets.Property, AllowMultiple = false)]
+    [AttributeUsage(AttributeTargets.Property | AttributeTargets.Field, AllowMultiple = false)]
     public sealed class JsonPropertyNameAttribute : JsonAttribute
     {
         /// <summary>

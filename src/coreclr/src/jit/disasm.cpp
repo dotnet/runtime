@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 /***********************************************************************
 *
 * File: dis.cpp
@@ -965,7 +964,7 @@ size_t DisAssembler::CbDisassemble(DIS*        pdis,
                 }
             }
 
-                __fallthrough;
+                FALLTHROUGH;
 
             case DISX86::trmtaJmpShort:
             case DISX86::trmtaJmpNear:
@@ -1023,7 +1022,7 @@ size_t DisAssembler::CbDisassemble(DIS*        pdis,
                 }
             }
 
-                __fallthrough;
+                FALLTHROUGH;
 
             case DISARM64::TRMTA::trmtaBra:
             case DISARM64::TRMTA::trmtaBraCase:

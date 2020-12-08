@@ -109,7 +109,7 @@ mono_arch_get_call_filter (MonoTrampInfo **info, gboolean aot)
 	static guint8 *start;
 	static int inited = 0;
 	guint8 *code;
-	int alloc_size, pos, i;
+	int gr_offset, alloc_size, pos, i;
 	GSList *unwind_ops = NULL;
 	MonoJumpInfo *ji = NULL;
 
@@ -122,10 +122,17 @@ mono_arch_get_call_filter (MonoTrampInfo **info, gboolean aot)
 	/* call_filter (MonoContext *ctx, unsigned long eip, gpointer exc) */
 	code = start = mono_global_codeman_reserve (512);
 
-	s390_stmg (code, s390_r6, s390_r14, STK_BASE, S390_REG_SAVE_OFFSET);
+	mono_add_unwind_op_def_cfa (unwind_ops, code, start, STK_BASE, S390_CFA_OFFSET);
+	s390_stmg (code, s390_r6, s390_r15, STK_BASE, S390_REG_SAVE_OFFSET);
+	gr_offset = S390_REG_SAVE_OFFSET - S390_CFA_OFFSET;
+	for (i = s390_r6; i <= s390_r15; i++) {
+		mono_add_unwind_op_offset (unwind_ops, code, start, i, gr_offset);
+		gr_offset += sizeof(uintptr_t);
+	}
 	s390_lgr  (code, s390_r14, STK_BASE);
 	alloc_size = S390_ALIGN(S390_CALLFILTER_SIZE, S390_STACK_ALIGNMENT);
 	s390_aghi (code, STK_BASE, -alloc_size);
+	mono_add_unwind_op_def_cfa_offset (unwind_ops, code, start, alloc_size + S390_CFA_OFFSET);
 	s390_stg  (code, s390_r14, 0, STK_BASE, 0);
 
 	/*------------------------------------------------------*/
@@ -304,16 +311,23 @@ mono_arch_get_throw_exception_generic (int size, MonoTrampInfo **info, int corli
 				       gboolean rethrow, gboolean aot, gboolean preserve_ips)
 {
 	guint8 *code, *start;
-	int alloc_size, pos, i;
+	int gr_offset, alloc_size, pos, i;
 	MonoJumpInfo *ji = NULL;
 	GSList *unwind_ops = NULL;
 
 	code = start = mono_global_codeman_reserve(size);
 
-	s390_stmg (code, s390_r6, s390_r14, STK_BASE, S390_REG_SAVE_OFFSET);
+	mono_add_unwind_op_def_cfa (unwind_ops, code, start, STK_BASE, S390_CFA_OFFSET);
+	s390_stmg (code, s390_r6, s390_r15, STK_BASE, S390_REG_SAVE_OFFSET);
+	gr_offset = S390_REG_SAVE_OFFSET - S390_CFA_OFFSET;
+	for (i = s390_r6; i <= s390_r15; i++) {
+		mono_add_unwind_op_offset (unwind_ops, code, start, i, gr_offset);
+		gr_offset += sizeof(uintptr_t);
+	}
 	alloc_size = S390_ALIGN(S390_THROWSTACK_SIZE, S390_STACK_ALIGNMENT);
 	s390_lgr  (code, s390_r14, STK_BASE);
 	s390_aghi (code, STK_BASE, -alloc_size);
+	mono_add_unwind_op_def_cfa_offset (unwind_ops, code, start, alloc_size + S390_CFA_OFFSET);
 	s390_stg  (code, s390_r14, 0, STK_BASE, 0);
 	s390_lgr  (code, s390_r3, s390_r2);
 	if (corlib) {
@@ -533,7 +547,8 @@ mono_arch_unwind_frame (MonoDomain *domain, MonoJitTlsData *jit_tls,
 
 		memcpy (&new_ctx->uc_mcontext.gregs, &regs, sizeof(regs));
 		MONO_CONTEXT_SET_IP(new_ctx, regs[14] - 2);
-		MONO_CONTEXT_SET_BP(new_ctx, cfa);
+		MONO_CONTEXT_SET_BP(new_ctx, regs[15]);
+		MONO_CONTEXT_SET_SP(new_ctx, regs[15]);
 	
 		return TRUE;
 	} else if (*lmf) {
@@ -564,7 +579,7 @@ mono_arch_unwind_frame (MonoDomain *domain, MonoJitTlsData *jit_tls,
 /*========================= End of Function ========================*/
 
 static void
-altstack_handle_and_restore (MonoContext *ctx, gpointer obj, guint32 flags)
+altstack_handle_and_restore (MonoContext *ctx, MONO_SIG_HANDLER_INFO_TYPE *siginfo, gpointer obj, guint32 flags)
 {
 	MonoContext mctx;
 	MonoJitInfo *ji = mini_jit_info_table_find (mono_domain_get (), MONO_CONTEXT_GET_IP (ctx), NULL);
@@ -573,7 +588,7 @@ altstack_handle_and_restore (MonoContext *ctx, gpointer obj, guint32 flags)
 
 	if (!ji || (!stack_ovf && !nullref)) {
 		if (mono_dump_start ())
-			mono_handle_native_crash (mono_get_signame (SIGSEGV), ctx, NULL);
+			mono_handle_native_crash (mono_get_signame (SIGSEGV), ctx, siginfo);
 		/* if couldn't dump or if mono_handle_native_crash returns, abort */
 		abort ();
 	}
@@ -635,8 +650,9 @@ mono_arch_handle_altstack_exception (void *sigctx, MONO_SIG_HANDLER_INFO_TYPE *s
 	UCONTEXT_IP(uc)         = (uintptr_t) altstack_handle_and_restore;
 	UCONTEXT_REG_Rn(uc, 1)  = (uintptr_t) sp;
 	UCONTEXT_REG_Rn(uc, S390_FIRST_ARG_REG) = (uintptr_t) uc_copy;
-	UCONTEXT_REG_Rn(uc, S390_FIRST_ARG_REG + 1) = (uintptr_t) exc;
-	UCONTEXT_REG_Rn(uc, S390_FIRST_ARG_REG + 2) = (stack_ovf ? 1 : 0) | (nullref ? 2 : 0);
+	UCONTEXT_REG_Rn(uc, S390_FIRST_ARG_REG + 1) = (uintptr_t) siginfo;
+	UCONTEXT_REG_Rn(uc, S390_FIRST_ARG_REG + 2) = (uintptr_t) exc;
+	UCONTEXT_REG_Rn(uc, S390_FIRST_ARG_REG + 3) = (stack_ovf ? 1 : 0) | (nullref ? 2 : 0);
 #endif
 }
 

@@ -1,6 +1,5 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using Microsoft.VisualBasic.Tests;
 using System;
@@ -35,13 +34,6 @@ namespace Microsoft.VisualBasic.CompilerServices.Tests
         }
 
         [Theory]
-        [MemberData(nameof(FromObject_Overflow_TestData))]
-        public void FromObject_ThrowsOverflowException(object value)
-        {
-            Assert.Throws<OverflowException>(() => DateType.FromObject(value));
-        }
-
-        [Theory]
         [MemberData(nameof(FromString_TestData))]
         public void FromString(string value, DateTime expected)
         {
@@ -62,13 +54,6 @@ namespace Microsoft.VisualBasic.CompilerServices.Tests
         public void FromString_ThrowsInvalidCastException(string value)
         {
             Assert.Throws<InvalidCastException>(() => DateType.FromString(value));
-        }
-
-        [Theory]
-        [MemberData(nameof(FromString_Overflow_TestData))]
-        public void FromString_ThrowsOverflowException(string value)
-        {
-            Assert.Throws<OverflowException>(() => DateType.FromString(value));
         }
 
         public static IEnumerable<object[]> FromObject_TestData()
@@ -173,12 +158,7 @@ namespace Microsoft.VisualBasic.CompilerServices.Tests
 
         public static IEnumerable<object[]> FromObject_Invalid_TestData()
         {
-            yield break;
-        }
-
-        public static IEnumerable<object[]> FromObject_Overflow_TestData()
-        {
-            yield break;
+            yield return new object[] { new object() };
         }
 
         public static IEnumerable<object[]> FromString_TestData()
@@ -208,11 +188,6 @@ namespace Microsoft.VisualBasic.CompilerServices.Tests
             yield return new object[] { "true" };
             yield return new object[] { "false" };
             yield return new object[] { "invalid" };
-        }
-
-        public static IEnumerable<object[]> FromString_Overflow_TestData()
-        {
-            yield break;
         }
     }
 }

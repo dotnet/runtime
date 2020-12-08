@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>$(NetCoreAppCurrent);$(NetFrameworkCurrent)</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent);net461-windows</TargetFrameworks>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="BasicScenarioTests.cs" />
@@ -51,11 +51,17 @@
     </Content>
   </ItemGroup>
   <ItemGroup>
-    <None Include="$(MSBuildThisFileDirectory)\TestFeeds\atom_feeds.dat">
+    <Content Include="$(MSBuildThisFileDirectory)\TestFeeds\atom_feeds.dat">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Include="$(MSBuildThisFileDirectory)\TestFeeds\rss_feeds.dat">
+    </Content>
+    <Content Include="$(MSBuildThisFileDirectory)\TestFeeds\rss_feeds.dat">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
+    </Content>
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\src\System.ServiceModel.Syndication.csproj" />
+  </ItemGroup>
+  <ItemGroup Condition="$(TargetFramework.StartsWith('net4'))">
+    <Reference Include="System.ServiceModel" />
   </ItemGroup>
 </Project>

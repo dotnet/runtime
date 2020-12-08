@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 /*=============================================================================
 **
@@ -24,7 +23,7 @@
  * 
  * executable entry point
  */
-INT __cdecl main(INT argc, CHAR **argv)
+PALTEST(miscellaneous_IsBadCodePtr_test1_paltest_isbadcodeptr_test1, "miscellaneous/IsBadCodePtr/test1/paltest_isbadcodeptr_test1")
 {
     BOOL ResultValue = 0;
   

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 namespace System.Data.Common
 {
@@ -57,7 +56,7 @@ namespace System.Data.Common
 
         internal DataTable _dataTable;
         private readonly DataColumnCollection _columns;
-        private readonly DataColumn[] _columnCache = new DataColumn[s_DBCOLUMN_NAME.Length];
+        private readonly DataColumn?[] _columnCache = new DataColumn[s_DBCOLUMN_NAME.Length];
         private readonly bool _returnProviderSpecificTypes;
 
         internal DbSchemaTable(DataTable dataTable, bool returnProviderSpecificTypes)
@@ -67,27 +66,27 @@ namespace System.Data.Common
             _returnProviderSpecificTypes = returnProviderSpecificTypes;
         }
 
-        internal DataColumn ColumnName { get { return CachedDataColumn(ColumnEnum.ColumnName); } }
-        internal DataColumn Size { get { return CachedDataColumn(ColumnEnum.ColumnSize); } }
-        internal DataColumn BaseServerName { get { return CachedDataColumn(ColumnEnum.BaseServerName); } }
-        internal DataColumn BaseColumnName { get { return CachedDataColumn(ColumnEnum.BaseColumnName); } }
-        internal DataColumn BaseTableName { get { return CachedDataColumn(ColumnEnum.BaseTableName); } }
-        internal DataColumn BaseCatalogName { get { return CachedDataColumn(ColumnEnum.BaseCatalogName); } }
-        internal DataColumn BaseSchemaName { get { return CachedDataColumn(ColumnEnum.BaseSchemaName); } }
-        internal DataColumn IsAutoIncrement { get { return CachedDataColumn(ColumnEnum.IsAutoIncrement); } }
-        internal DataColumn IsUnique { get { return CachedDataColumn(ColumnEnum.IsUnique); } }
-        internal DataColumn IsKey { get { return CachedDataColumn(ColumnEnum.IsKey); } }
-        internal DataColumn IsRowVersion { get { return CachedDataColumn(ColumnEnum.IsRowVersion); } }
+        internal DataColumn? ColumnName { get { return CachedDataColumn(ColumnEnum.ColumnName); } }
+        internal DataColumn? Size { get { return CachedDataColumn(ColumnEnum.ColumnSize); } }
+        internal DataColumn? BaseServerName { get { return CachedDataColumn(ColumnEnum.BaseServerName); } }
+        internal DataColumn? BaseColumnName { get { return CachedDataColumn(ColumnEnum.BaseColumnName); } }
+        internal DataColumn? BaseTableName { get { return CachedDataColumn(ColumnEnum.BaseTableName); } }
+        internal DataColumn? BaseCatalogName { get { return CachedDataColumn(ColumnEnum.BaseCatalogName); } }
+        internal DataColumn? BaseSchemaName { get { return CachedDataColumn(ColumnEnum.BaseSchemaName); } }
+        internal DataColumn? IsAutoIncrement { get { return CachedDataColumn(ColumnEnum.IsAutoIncrement); } }
+        internal DataColumn? IsUnique { get { return CachedDataColumn(ColumnEnum.IsUnique); } }
+        internal DataColumn? IsKey { get { return CachedDataColumn(ColumnEnum.IsKey); } }
+        internal DataColumn? IsRowVersion { get { return CachedDataColumn(ColumnEnum.IsRowVersion); } }
 
-        internal DataColumn AllowDBNull { get { return CachedDataColumn(ColumnEnum.AllowDBNull); } }
-        internal DataColumn IsExpression { get { return CachedDataColumn(ColumnEnum.IsExpression); } }
-        internal DataColumn IsHidden { get { return CachedDataColumn(ColumnEnum.IsHidden); } }
-        internal DataColumn IsLong { get { return CachedDataColumn(ColumnEnum.IsLong); } }
-        internal DataColumn IsReadOnly { get { return CachedDataColumn(ColumnEnum.IsReadOnly); } }
+        internal DataColumn? AllowDBNull { get { return CachedDataColumn(ColumnEnum.AllowDBNull); } }
+        internal DataColumn? IsExpression { get { return CachedDataColumn(ColumnEnum.IsExpression); } }
+        internal DataColumn? IsHidden { get { return CachedDataColumn(ColumnEnum.IsHidden); } }
+        internal DataColumn? IsLong { get { return CachedDataColumn(ColumnEnum.IsLong); } }
+        internal DataColumn? IsReadOnly { get { return CachedDataColumn(ColumnEnum.IsReadOnly); } }
 
-        internal DataColumn UnsortedIndex { get { return CachedDataColumn(ColumnEnum.SchemaMappingUnsortedIndex); } }
+        internal DataColumn? UnsortedIndex { get { return CachedDataColumn(ColumnEnum.SchemaMappingUnsortedIndex); } }
 
-        internal DataColumn DataType
+        internal DataColumn? DataType
         {
             get
             {
@@ -99,14 +98,14 @@ namespace System.Data.Common
             }
         }
 
-        private DataColumn CachedDataColumn(ColumnEnum column)
+        private DataColumn? CachedDataColumn(ColumnEnum column)
         {
             return CachedDataColumn(column, column);
         }
 
-        private DataColumn CachedDataColumn(ColumnEnum column, ColumnEnum column2)
+        private DataColumn? CachedDataColumn(ColumnEnum column, ColumnEnum column2)
         {
-            DataColumn dataColumn = _columnCache[(int)column];
+            DataColumn? dataColumn = _columnCache[(int)column];
             if (null == dataColumn)
             {
                 int index = _columns.IndexOf(s_DBCOLUMN_NAME[(int)column]);

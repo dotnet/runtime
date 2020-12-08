@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 /*++
 
@@ -293,8 +292,6 @@ CorUnix::InternalCanonicalizeRealPath(LPCSTR lpUnixPath, PathCharString& lpBuffe
     StringHolder lpExistingPath;
     LPSTR pchSeparator = NULL;
     LPSTR lpFilename = NULL;
-    DWORD cchBuffer = 0;
-    DWORD cchFilename = 0;
 #endif // !REALPATH_SUPPORTS_NONEXISTENT_FILES
 
     if (lpUnixPath == NULL)
@@ -1935,8 +1932,6 @@ CorUnix::InternalWriteFile(
     CFileProcessLocalData *pLocalData = NULL;
     IDataLock *pLocalDataLock = NULL;
     int ifd;
-
-    LONG writeOffsetStartLow = 0, writeOffsetStartHigh = 0;
     int res;
 
     if (NULL != lpNumberOfBytesWritten)
@@ -2109,8 +2104,6 @@ CorUnix::InternalReadFile(
     CFileProcessLocalData *pLocalData = NULL;
     IDataLock *pLocalDataLock = NULL;
     int ifd;
-
-    LONG readOffsetStartLow = 0, readOffsetStartHigh = 0;
     int res;
 
     if (NULL != lpNumberOfBytesRead)

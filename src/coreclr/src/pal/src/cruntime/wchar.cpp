@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 /*++
 
@@ -36,7 +35,6 @@ Abstract:
 #include <algorithm>
 
 SET_DEFAULT_DEBUG_CHANNEL(CRT);
-
 
 /*--
 Function:
@@ -193,48 +191,6 @@ _wcsicmp(
     PERF_EXIT(_wcsicmp);
     return ret;
 }
-
-
-/*++
-Function:
-  _wcslwr
-
-Convert a string to lowercase.
-
-Return Value
-
-Returns a pointer to the converted string. Because the modification is
-done in place, the pointer returned is the same as the pointer passed
-as the input argument. No return value is reserved to indicate an
-error.
-
-Parameter
-
-string   Null-terminated string to convert to lowercase
-
-Remarks
-
---*/
-wchar_16 *
-__cdecl
-_wcslwr(
-        wchar_16 *string)
-{
-    int i;
-
-    PERF_ENTRY(_wcslwr);
-    ENTRY("_wcslwr (string=%p (%S))\n", string?string:W16_NULLSTRING, string?string:W16_NULLSTRING);
-
-    for (i=0 ; string[i] != 0; i++)
-    {
-        string[i] = towlower(string[i]);
-    }
-
-    LOGEXIT("_wcslwr returning wchar_t %p (%S)\n", string?string:W16_NULLSTRING, string?string:W16_NULLSTRING);
-    PERF_EXIT(_wcslwr);
-    return string;
-}
-
 
 /*++
 Function:

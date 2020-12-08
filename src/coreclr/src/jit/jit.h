@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 /*****************************************************************************/
 #ifndef _JIT_H_
@@ -183,12 +182,6 @@
 #endif
 #endif
 
-#if (defined(ALT_JIT) && (defined(UNIX_AMD64_ABI) || defined(UNIX_X86_ABI)) && !defined(TARGET_UNIX))
-// If we are building an ALT_JIT targeting Unix, override the TARGET_<os> to TARGET_UNIX
-#undef TARGET_WINDOWS
-#define TARGET_UNIX
-#endif
-
 // --------------------------------------------------------------------------------
 // IMAGE_FILE_MACHINE_TARGET
 // --------------------------------------------------------------------------------
@@ -245,6 +238,23 @@
 #define UNIX_AMD64_ABI_ONLY_ARG(x)
 #define UNIX_AMD64_ABI_ONLY(x)
 #endif // defined(UNIX_AMD64_ABI)
+
+#if defined(DEBUG) && !defined(OSX_ARM64_ABI)
+// On all platforms except Arm64 OSX arguments on the stack are taking
+// register size slots. On these platforms we could check that stack slots count
+// matchs out new byte size calculations.
+#define DEBUG_ARG_SLOTS
+#endif
+
+#if defined(DEBUG_ARG_SLOTS)
+#define DEBUG_ARG_SLOTS_ARG(x) , x
+#define DEBUG_ARG_SLOTS_ONLY(x) x
+#define DEBUG_ARG_SLOTS_ASSERT(x) assert(x)
+#else
+#define DEBUG_ARG_SLOTS_ARG(x)
+#define DEBUG_ARG_SLOTS_ONLY(x)
+#define DEBUG_ARG_SLOTS_ASSERT(x)
+#endif
 
 #if defined(UNIX_AMD64_ABI) || !defined(TARGET_64BIT) || defined(TARGET_ARM64)
 #define FEATURE_PUT_STRUCT_ARG_STK 1

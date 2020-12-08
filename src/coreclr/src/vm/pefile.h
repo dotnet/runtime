@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 // --------------------------------------------------------------------------------
 // PEFile.h
 //
@@ -195,7 +194,6 @@ public:
     CHECK CheckLoaded(BOOL allowNativeSkip = TRUE);
     void ValidateForExecution();
     BOOL IsMarkedAsNoPlatform();
-    BOOL IsMarkedAsContentTypeWindowsRuntime();
 
 
     // ------------------------------------------------------------
@@ -381,9 +379,7 @@ public:
 
     PEAssembly * LoadAssembly(
             mdAssemblyRef       kAssemblyRef,
-            IMDInternalImport * pImport = NULL,
-            LPCUTF8             szWinRtTypeNamespace = NULL,
-            LPCUTF8             szWinRtTypeClassName = NULL);
+            IMDInternalImport * pImport = NULL);
 
     // ------------------------------------------------------------
     // Logging
@@ -482,7 +478,10 @@ protected:
     IMetaDataEmit           *m_pEmitter;
     SimpleRWLock            *m_pMetadataLock;
     Volatile<LONG>           m_refCount;
-    int                     m_flags;
+    int                      m_flags;
+
+    // AssemblyLoadContext that this PEFile is associated with
+    PTR_AssemblyLoadContext  m_pAssemblyLoadContext;
 
 #ifdef DEBUGGING_SUPPORTED
 #ifdef FEATURE_PREJIT
@@ -569,19 +568,32 @@ public:
     // Returns the ICLRPrivBinder* instance associated with the PEFile
     PTR_ICLRPrivBinder GetBindingContext();
 
-    AssemblyLoadContext* GetAssemblyLoadContext();
+#ifndef DACCESS_COMPILE
+    void SetupAssemblyLoadContext();
+
+    void SetFallbackLoadContextBinder(PTR_ICLRPrivBinder pFallbackLoadContextBinder)
+    {
+        LIMITED_METHOD_CONTRACT;
+        m_pFallbackLoadContextBinder = pFallbackLoadContextBinder;
+        SetupAssemblyLoadContext();
+    }
+
+#endif //!DACCESS_COMPILE
+
+    // Returns AssemblyLoadContext into which the current PEFile was loaded.
+    PTR_AssemblyLoadContext GetAssemblyLoadContext()
+    {
+        LIMITED_METHOD_CONTRACT;
+
+        _ASSERTE(m_pAssemblyLoadContext != NULL);
+        return m_pAssemblyLoadContext;
+    }
 
     bool HasHostAssembly()
     { STATIC_CONTRACT_WRAPPER; return GetHostAssembly() != nullptr; }
 
     bool CanUseWithBindingCache()
     { LIMITED_METHOD_CONTRACT; return !HasHostAssembly(); }
-
-    void SetFallbackLoadContextBinder(PTR_ICLRPrivBinder pFallbackLoadContextBinder)
-    {
-        LIMITED_METHOD_CONTRACT;
-        m_pFallbackLoadContextBinder = pFallbackLoadContextBinder;
-    }
 
     PTR_ICLRPrivBinder GetFallbackLoadContextBinder()
     {
@@ -614,7 +626,7 @@ class PEAssembly : public PEFile
         PEImage *          pPEImageNI,
         ICLRPrivAssembly * pHostAssembly);
 
-    // This opens the canonical mscorlib.dll
+    // This opens the canonical System.Private.CoreLib.dll
     static PEAssembly *OpenSystem(IUnknown *pAppCtx);
 #ifdef DACCESS_COMPILE
     virtual void EnumMemoryRegions(CLRDataEnumMemoryFlags flags);
@@ -651,9 +663,7 @@ class PEAssembly : public PEFile
     // Codebase is the fusion codebase or path for the assembly.  It is in URL format.
     // Note this may be obtained from the parent PEFile if we don't have a path or fusion
     // assembly.
-    //
-    // fCopiedName means to get the "shadow copied" path rather than the original path, if applicable
-    void GetCodeBase(SString &result, BOOL fCopiedName = FALSE);
+    BOOL GetCodeBase(SString &result);
 
     // Display name is the fusion binding name for an assembly
     void GetDisplayName(SString &result, DWORD flags = 0);
@@ -720,20 +730,11 @@ class PEAssembly : public PEFile
     PTR_PEFile GetCreator()
     { LIMITED_METHOD_CONTRACT; return m_creator; }
 
-    // Returns TRUE if the assembly is .winmd file (WinRT assembly)
-    bool IsWindowsRuntime();
-
-    // Used to determine if this assembly has an identity that may be used for
-    // binding purposes. Currently this is true for standard .NET assemblies
-    // and false for WinRT assemblies (where assemblies are identified by their
-    // member types).
-    bool HasBindableIdentity();
-
     // Indicates if the assembly can be cached in a binding cache such as AssemblySpecBindingCache.
     inline bool CanUseWithBindingCache()
     {
         STATIC_CONTRACT_WRAPPER;
-        return (HasBindableIdentity());
+        return true;
     }
 };
 

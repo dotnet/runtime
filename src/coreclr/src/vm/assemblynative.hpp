@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 /*============================================================
 **
@@ -61,7 +60,7 @@ public:
     void QCALLTYPE GetLocation(QCall::AssemblyHandle pAssembly, QCall::StringHandleOnStack retString);
 
     static
-    void QCALLTYPE GetCodeBase(QCall::AssemblyHandle pAssembly, BOOL fCopiedName, QCall::StringHandleOnStack retString);
+    BOOL QCALLTYPE GetCodeBase(QCall::AssemblyHandle pAssembly, QCall::StringHandleOnStack retString);
 
     static
     BYTE * QCALLTYPE GetResource(QCall::AssemblyHandle pAssembly, LPCWSTR wszName, DWORD * length);
@@ -121,9 +120,6 @@ public:
     static void QCALLTYPE LoadFromInMemoryModule(INT_PTR ptrNativeAssemblyLoadContext, INT_PTR hModule, QCall::ObjectHandleOnStack retLoadedAssembly);
 #endif
     static Assembly* LoadFromPEImage(ICLRPrivBinder* pBinderContext, PEImage *pILImage, PEImage *pNIImage);
-#ifdef FEATURE_COMINTEROP_WINRT_MANAGED_ACTIVATION
-    static void QCALLTYPE LoadTypeForWinRTTypeNameInContext(INT_PTR ptrAssemblyLoadContext, LPCWSTR pwzTypeName, QCall::ObjectHandleOnStack retType);
-#endif
     static INT_PTR QCALLTYPE GetLoadContextForAssembly(QCall::AssemblyHandle pAssembly);
 
     static BOOL QCALLTYPE InternalTryGetRawMetadata(QCall::AssemblyHandle assembly, UINT8 **blobRef, INT32 *lengthRef);

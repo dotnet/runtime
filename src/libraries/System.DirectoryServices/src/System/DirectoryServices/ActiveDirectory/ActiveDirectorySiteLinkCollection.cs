@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Runtime.InteropServices;
 using System.Collections;
@@ -9,9 +8,9 @@ namespace System.DirectoryServices.ActiveDirectory
 {
     public class ActiveDirectorySiteLinkCollection : CollectionBase
     {
-        internal DirectoryEntry de = null;
-        internal bool initialized = false;
-        internal DirectoryContext context = null;
+        internal DirectoryEntry de;
+        internal bool initialized;
+        internal DirectoryContext context;
 
         internal ActiveDirectorySiteLinkCollection() { }
 

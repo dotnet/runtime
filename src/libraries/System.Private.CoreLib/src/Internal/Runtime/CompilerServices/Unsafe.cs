@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #pragma warning disable IDE0060 // implementations provided by the JIT
 using System;
@@ -153,7 +152,7 @@ namespace Internal.Runtime.CompilerServices
         [Intrinsic]
         [NonVersionable]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static bool AreSame<T>(ref T left, ref T right)
+        public static bool AreSame<T>([AllowNull] ref T left, [AllowNull] ref T right)
         {
             throw new PlatformNotSupportedException();
 
@@ -173,7 +172,7 @@ namespace Internal.Runtime.CompilerServices
         [Intrinsic]
         [NonVersionable]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static bool IsAddressGreaterThan<T>(ref T left, ref T right)
+        public static bool IsAddressGreaterThan<T>([AllowNull] ref T left, [AllowNull] ref T right)
         {
             throw new PlatformNotSupportedException();
 
@@ -193,7 +192,7 @@ namespace Internal.Runtime.CompilerServices
         [Intrinsic]
         [NonVersionable]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static bool IsAddressLessThan<T>(ref T left, ref T right)
+        public static bool IsAddressLessThan<T>([AllowNull] ref T left, [AllowNull] ref T right)
         {
             throw new PlatformNotSupportedException();
 
@@ -369,7 +368,7 @@ namespace Internal.Runtime.CompilerServices
         [Intrinsic]
         [NonVersionable]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static IntPtr ByteOffset<T>(ref T origin, ref T target)
+        public static IntPtr ByteOffset<T>([AllowNull] ref T origin, [AllowNull] ref T target)
         {
             throw new PlatformNotSupportedException();
         }

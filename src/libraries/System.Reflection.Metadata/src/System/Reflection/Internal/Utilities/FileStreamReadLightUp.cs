@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
 using System.IO;
@@ -12,7 +11,7 @@ namespace System.Reflection.Internal
     {
         // internal for testing
         internal static bool readFileNotAvailable = Path.DirectorySeparatorChar != '\\'; // Available on Windows only
-        internal static bool safeFileHandleNotAvailable = false;
+        internal static bool safeFileHandleNotAvailable;
 
         internal static bool IsFileStream(Stream stream) => stream is FileStream;
 

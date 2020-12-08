@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Generic;
@@ -14,7 +13,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Xunit;
 
-namespace Microsoft.Extensions.Hosting
+namespace Microsoft.Extensions.Hosting.Tests
 {
     public class HostBuilderTests
     {
@@ -144,7 +143,7 @@ namespace Microsoft.Extensions.Hosting
                     Assert.Equal(Environments.Production, env.EnvironmentName);
 #if NETCOREAPP
                     Assert.NotNull(env.ApplicationName);
-#elif NET472
+#elif NETFRAMEWORK
                     // Note GetEntryAssembly returns null for the net4x console test runner.
                     Assert.Null(env.ApplicationName);
 #else
@@ -160,7 +159,7 @@ namespace Microsoft.Extensions.Hosting
                 Assert.Equal(Environments.Production, env.EnvironmentName);
 #if NETCOREAPP
                 Assert.NotNull(env.ApplicationName);
-#elif NET472
+#elif NETFRAMEWORK
                 // Note GetEntryAssembly returns null for the net4x console test runner.
                 Assert.Null(env.ApplicationName);
 #else
@@ -530,6 +529,19 @@ namespace Microsoft.Extensions.Hosting
             Assert.Equal("value", hostBuilder.Properties["key"]);
 
             using (hostBuilder.Build()) { }
+        }
+
+        [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34580", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
+        public void HostServicesSameServiceProviderAsInHostBuilder()
+        {
+            var hostBuilder = Host.CreateDefaultBuilder();
+            var host = hostBuilder.Build();
+            
+            var type = hostBuilder.GetType();
+            var field = type.GetField("_appServices", BindingFlags.Instance | BindingFlags.NonPublic)!;
+            var appServicesFromHostBuilder = (IServiceProvider)field.GetValue(hostBuilder)!;
+            Assert.Same(appServicesFromHostBuilder, host.Services);
         }
 
         private class ServiceC

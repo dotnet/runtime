@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 /*=====================================================================
 **
@@ -33,7 +32,7 @@ static int IsFileTimeOk(FILETIME FirstTime, FILETIME SecondTime)
     return(TimeOne <= TimeTwo);
 }
 
-int __cdecl main(int argc, char **argv)
+PALTEST(file_io_GetFileAttributesExW_test2_paltest_getfileattributesexw_test2, "file_io/GetFileAttributesExW/test2/paltest_getfileattributesexw_test2")
 {
     DWORD res;
     char fileName[MAX_PATH] = "test_file";

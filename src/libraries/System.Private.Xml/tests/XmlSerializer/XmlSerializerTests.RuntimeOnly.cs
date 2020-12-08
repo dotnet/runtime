@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using SerializationTypes;
 using System;
@@ -1918,7 +1917,6 @@ public static partial class XmlSerializerTests
         XmlReflectionMember member = members[0] = new XmlReflectionMember();
         member.MemberType = typeof(TypeWithQNameArrayAsXmlAttributeInvalidDefaultValue);
         XmlMembersMapping mappings = importer.ImportMembersMapping("root", "", members, true);
-        XmlMemberMapping xmp = mappings[0];
         XmlSchemas schema = new XmlSchemas();
         XmlSchemaExporter exporter = new XmlSchemaExporter(schema);
         AssertExtensions.Throws<XmlException,Exception>(() => exporter.ExportMembersMapping(mappings));
@@ -1960,7 +1958,7 @@ public static partial class XmlSerializerTests
         string xmlFileContent = @"<root><date>2003-01-08T15:00:00-00:00</date></root>";
         Stream sm = GenerateStreamFromString(xmlFileContent);
         XmlTextReader reader = new XmlTextReader(sm);
-        MyXmlTextParser text = new MyXmlTextParser(reader);
+        new MyXmlTextParser(reader);
     }
 
     [Fact]
@@ -2187,9 +2185,6 @@ public static partial class XmlSerializerTests
     public static void XmlMembersMapping_TypeWithXmlAttributes()
     {
         string memberName = "data";
-        string ns = s_defaultNs;
-        XmlReflectionMember member = GetReflectionMember<TypeWithXmlAttributes>(memberName, ns);
-        var members = new XmlReflectionMember[] { member };
 
         TypeWithXmlAttributes value = new TypeWithXmlAttributes { MyName = "fooname", Today = DateTime.Now };
         var actual = RoundTripWithXmlMembersMapping<TypeWithXmlAttributes>(value,

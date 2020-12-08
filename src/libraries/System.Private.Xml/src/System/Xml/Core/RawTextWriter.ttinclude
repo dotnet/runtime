@@ -1,7 +1,6 @@
-﻿<#@ template debug="false" hostspecific="false" language="C#" #>
-<#@ import namespace="System" #>
-<#@ import namespace="System.Text" #>
-<#
+﻿<#@ import namespace="System"
+#><#@ import namespace="System.Text"
+#><#
 switch (WriterType)
 {
     case RawTextWriterType.Utf8:
@@ -12,8 +11,7 @@ switch (WriterType)
             "WriterType", WriterType,
             "Unknown value for WriterType.");
 }
-#>
-<#+
+#><#+
     private const string newline = "\r\n";
 
     public enum RawTextWriterType {
@@ -92,7 +90,7 @@ switch (WriterType)
         }
 
         StringBuilder sb = new StringBuilder(code.Length);
-        string[] lines = code.Split(new string[] { newline }, StringSplitOptions.None);
+        string[] lines = code.Replace(newline , "\n").Split(new string[] { "\n" }, StringSplitOptions.None);
         string indentation = new string(' ', indentAmount * 4);
 
         for (int i = 0; i < lines.Length; ++i)

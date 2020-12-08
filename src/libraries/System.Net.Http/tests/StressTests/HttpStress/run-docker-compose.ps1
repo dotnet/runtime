@@ -57,7 +57,17 @@ if ($useWindowsContainers)
     $env:DOCKERFILE="windows.Dockerfile"
 }
 
-docker-compose --file "$COMPOSE_FILE" build $BUILD_ARGS.Split()
+$originalErrorPreference = $ErrorActionPreference
+$ErrorActionPreference = 'Continue'
+try {
+	docker-compose --log-level DEBUG --file "$COMPOSE_FILE" build $BUILD_ARGS.Split() 2>&1 | ForEach-Object { "$_" }
+	if ($LASTEXITCODE -ne 0) {
+		throw "docker-compose exited with error code $LASTEXITCODE"
+	}
+}
+finally {
+	$ErrorActionPreference = $originalErrorPreference
+}
 
 # Run the stress app
 

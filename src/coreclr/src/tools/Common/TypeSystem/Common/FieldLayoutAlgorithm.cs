@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 namespace Internal.TypeSystem
 {
@@ -77,6 +76,7 @@ namespace Internal.TypeSystem
         public LayoutInt FieldAlignment;
         public LayoutInt ByteCountUnaligned;
         public LayoutInt ByteCountAlignment;
+        public bool LayoutAbiStable; // Is the layout stable such that it can safely be used in function calling conventions
 
         /// <summary>
         /// If Offsets is non-null, then all field based layout is complete.

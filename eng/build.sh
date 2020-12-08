@@ -17,74 +17,144 @@ scriptroot="$( cd -P "$( dirname "$source" )" && pwd )"
 usage()
 {
   echo "Common settings:"
-  echo "  --subset                   Build a subset, print available subsets with -subset help (short: -s)"
-  echo "  --os                       Build operating system: Windows_NT, Linux, FreeBSD, OSX, tvOS, iOS, Android, Browser, NetBSD or SunOS"
-  echo "  --arch                     Build platform: x86, x64, arm, armel, arm64 or wasm"
-  echo "  --configuration            Build configuration: Debug, Release or [CoreCLR]Checked (short: -c)"
-  echo "  --runtimeConfiguration     Runtime build configuration: Debug, Release or [CoreCLR]Checked (short: -rc)"
-  echo "  --librariesConfiguration   Libraries build configuration: Debug or Release (short: -lc)"
-  echo "  --projects <value>         Project or solution file(s) to build"
-  echo "  --verbosity                MSBuild verbosity: q[uiet], m[inimal], n[ormal], d[etailed], and diag[nostic] (short: -v)"
-  echo "  --binaryLog                Output binary log (short: -bl)"
-  echo "  --cross                    Optional argument to signify cross compilation"
-  echo "  --help                     Print help and exit (short: -h)"
+  echo "  --arch                          Target platform: x86, x64, arm, armel, arm64 or wasm."
+  echo "                                  [Default: Your machine's architecture.]"
+  echo "  --binaryLog (-bl)               Output binary log."
+  echo "  --cross                         Optional argument to signify cross compilation."
+  echo "  --configuration (-c)            Build configuration: Debug, Release or Checked."
+  echo "                                  Checked is exclusive to the CLR subset. It is the same as Debug, except code is"
+  echo "                                  compiled with optimizations enabled."
+  echo "                                  [Default: Debug]"
+  echo "  --help (-h)                     Print help and exit."
+  echo "  --librariesConfiguration (-lc)  Libraries build configuration: Debug or Release."
+  echo "                                  [Default: Debug]"
+  echo "  --os                            Target operating system: windows, Linux, FreeBSD, OSX, tvOS, iOS, Android,"
+  echo "                                  Browser, NetBSD, illumos or Solaris."
+  echo "                                  [Default: Your machine's OS.]"
+  echo "  --projects <value>              Project or solution file(s) to build."
+  echo "  --runtimeConfiguration (-rc)    Runtime build configuration: Debug, Release or Checked."
+  echo "                                  Checked is exclusive to the CLR runtime. It is the same as Debug, except code is"
+  echo "                                  compiled with optimizations enabled."
+  echo "                                  [Default: Debug]"
+  echo "  -runtimeFlavor (-rf)            Runtime flavor: CoreCLR or Mono."
+  echo "                                  [Default: CoreCLR]"
+  echo "  --subset (-s)                   Build a subset, print available subsets with -subset help."
+  echo "                                 '--subset' can be omitted if the subset is given as the first argument."
+  echo "                                  [Default: Builds the entire repo.]"
+  echo "  --verbosity (-v)                MSBuild verbosity: q[uiet], m[inimal], n[ormal], d[etailed], and diag[nostic]."
+  echo "                                  [Default: Minimal]"
   echo ""
 
   echo "Actions (defaults to --restore --build):"
-  echo "  --restore                  Restore dependencies (short: -r)"
-  echo "  --build                    Build all source projects (short: -b)"
-  echo "  --rebuild                  Rebuild all source projects"
-  echo "  --test                     Build and run tests (short: -t)"
-  echo "  --pack                     Package build outputs into NuGet packages"
-  echo "  --sign                     Sign build outputs"
-  echo "  --publish                  Publish artifacts (e.g. symbols)"
-  echo "  --clean                    Clean the solution"
+  echo "  --build (-b)               Build all source projects."
+  echo "                             This assumes --restore has been run already."
+  echo "  --clean                    Clean the solution."
+  echo "  --pack                     Package build outputs into NuGet packages."
+  echo "  --publish                  Publish artifacts (e.g. symbols)."
+  echo "                             This assumes --build has been run already."
+  echo "  --rebuild                  Rebuild all source projects."
+  echo "  --restore (-r)             Restore dependencies."
+  echo "  --sign                     Sign build outputs."
+  echo "  --test (-t)                Incrementally builds and runs tests."
+  echo "                             Use in conjuction with --testnobuild to only run tests."
   echo ""
 
   echo "Libraries settings:"
-  echo "  --framework                Build framework: net5.0 or net472 (short: -f)"
-  echo "  --coverage                 Collect code coverage when testing"
-  echo "  --testscope                Test scope, allowed values: innerloop, outerloop, all"
-  echo "  --testnobuild              Skip building tests when invoking -test"
-  echo "  --allconfigurations        Build packages for all build configurations"
+  echo "  --allconfigurations        Build packages for all build configurations."
+  echo "  --coverage                 Collect code coverage when testing."
+  echo "  --framework (-f)           Build framework: net6.0 or net48."
+  echo "                             [Default: net6.0]"
+  echo "  --testnobuild              Skip building tests when invoking -test."
+  echo "  --testscope                Test scope, allowed values: innerloop, outerloop, all."
   echo ""
 
   echo "Native build settings:"
-  echo "  --clang                    Optional argument to build using clang in PATH (default)"
-  echo "  --clangx.y                 Optional argument to build using clang version x.y"
+  echo "  --clang                    Optional argument to build using clang in PATH (default)."
+  echo "  --clangx                   Optional argument to build using clang version x (used for Clang 7 and newer)."
+  echo "  --clangx.y                 Optional argument to build using clang version x.y (used for Clang 6 and older)."
   echo "  --cmakeargs                User-settable additional arguments passed to CMake."
-  echo "  --gcc                      Optional argument to build using gcc in PATH (default)"
-  echo "  --gccx.y                   Optional argument to build using gcc version x.y"
+  echo "  --gcc                      Optional argument to build using gcc in PATH (default)."
+  echo "  --gccx.y                   Optional argument to build using gcc version x.y."
+  echo "  --portablebuild            Optional argument: set to false to force a non-portable build."
+  echo "  --keepnativesymbols        Optional argument: set to true to keep native symbols/debuginfo in generated binaries."
+  echo "  --ninja                    Optional argument: set to true to use Ninja instead of Make to run the native build."
+  echo ""
 
   echo "Command line arguments starting with '/p:' are passed through to MSBuild."
   echo "Arguments can also be passed in with a single hyphen."
+  echo ""
+
+  echo "Here are some quick examples. These assume you are on a Linux x64 machine:"
+  echo ""
+  echo "* Build CoreCLR for Linux x64 on Release configuration:"
+  echo "./build.sh clr -c release"
+  echo ""
+  echo "* Build Debug libraries with a Release runtime for Linux x64."
+  echo "./build.sh clr+libs -rc release"
+  echo ""
+  echo "* Build Release libraries and their tests with a Checked runtime for Linux x64, and run the tests."
+  echo "./build.sh clr+libs+libs.tests -rc checked -lc release -test"
+  echo ""
+  echo "* Build CoreCLR for Linux x64 on Debug configuration using Clang 9."
+  echo "./build.sh clr -clang9"
+  echo ""
+  echo "* Build CoreCLR for Linux x64 on Debug configuration using GCC 8.4."
+  echo "./build.sh clr -gcc8.4"
+  echo ""
+  echo "* Build CoreCLR for Linux x64 using extra compiler flags (-fstack-clash-protection)."
+  echo "EXTRA_CFLAGS=-fstack-clash-protection EXTRA_CXXFLAGS=-fstack-clash-protection ./build.sh clr"
+  echo ""
+  echo "* Cross-compile CoreCLR runtime for Linux ARM64 on Release configuration."
+  echo "./build.sh clr.runtime -arch arm64 -c release -cross"
+  echo ""
+  echo "However, for this example, you need to already have ROOTFS_DIR set up."
+  echo "Further information on this can be found here:"
+  echo "https://github.com/dotnet/runtime/blob/master/docs/workflow/building/coreclr/linux-instructions.md"
+  echo ""
+  echo "* Build Mono runtime for Linux x64 on Release configuration."
+  echo "./build.sh mono -c release"
+  echo ""
+  echo "* Build Release coreclr corelib, crossgen corelib and update Debug libraries testhost to run test on an updated corelib."
+  echo "./build.sh clr.corelib+clr.nativecorelib+libs.pretest -rc release"
+  echo ""
+  echo "* Build Debug mono corelib and update Release libraries testhost to run test on an updated corelib."
+  echo "./build.sh mono.corelib+libs.pretest -rc debug -c release"
+  echo ""
+  echo ""
+  echo "For more general information, check out https://github.com/dotnet/runtime/blob/master/docs/workflow/README.md"
 }
 
 initDistroRid()
 {
-    source $scriptroot/native/init-distro-rid.sh
+    source "$scriptroot"/native/init-distro-rid.sh
 
     local passedRootfsDir=""
     local targetOs="$1"
     local buildArch="$2"
     local isCrossBuild="$3"
-    # For RID calculation purposes, say we are always a portable build
-    # All of our packages that use the distro rid (CoreCLR packages) are portable.
-    local isPortableBuild=1
+    local isPortableBuild="$4"
 
-    # Only pass ROOTFS_DIR if __DoCrossArchBuild is specified.
-    if (( isCrossBuild == 1 )); then
+    # Only pass ROOTFS_DIR if __DoCrossArchBuild is specified and the current platform is not OSX that doesn't use rootfs
+    if [[ $isCrossBuild == 1 && "$targetOs" != "OSX" ]]; then
         passedRootfsDir=${ROOTFS_DIR}
     fi
     initDistroRidGlobal ${targetOs} ${buildArch} ${isPortableBuild} ${passedRootfsDir}
+}
+
+showSubsetHelp()
+{
+  "$scriptroot/common/build.sh" "-restore" "-build" "/p:Subset=help" "/clp:nosummary"
 }
 
 arguments=''
 cmakeargs=''
 extraargs=''
 crossBuild=0
+portableBuild=1
 
 source $scriptroot/native/init-os-and-arch.sh
+
+hostArch=$arch
 
 # Check if an action is passed in
 declare -a actions=("b" "build" "r" "restore" "rebuild" "testnobuild" "sign" "publish" "clean")
@@ -95,6 +165,11 @@ while [[ $# > 0 ]]; do
   opt="$(echo "${1/#--/-}" | awk '{print tolower($0)}')"
 
   if [[ $firstArgumentChecked -eq 0 && $opt =~ ^[a-zA-Z.+]+$ ]]; then
+    if [ $opt == "help" ]; then
+      showSubsetHelp
+      exit 0
+    fi
+
     arguments="$arguments /p:Subset=$1"
     shift 1
     continue
@@ -103,16 +178,21 @@ while [[ $# > 0 ]]; do
   firstArgumentChecked=1
 
   case "$opt" in
-     -help|-h)
+     -help|-h|-\?|/?)
       usage
       exit 0
       ;;
 
      -subset|-s)
       if [ -z ${2+x} ]; then
-        arguments="$arguments /p:Subset=help"
-        shift 1
+        showSubsetHelp
+        exit 0
       else
+        passedSubset="$(echo "$2" | awk '{print tolower($0)}')"
+        if [ $passedSubset == "help" ]; then
+          showSubsetHelp
+          exit 0
+        fi
         arguments="$arguments /p:Subset=$2"
         shift 2
       fi
@@ -138,7 +218,7 @@ while [[ $# > 0 ]]; do
       ;;
 
      -configuration|-c)
-      if [ -z ${2+x} ]; then 
+      if [ -z ${2+x} ]; then
         echo "No configuration supplied. See help (--help) for supported configurations." 1>&2
         exit 1
       fi
@@ -174,8 +254,8 @@ while [[ $# > 0 ]]; do
       fi
       passedOS="$(echo "$2" | awk '{print tolower($0)}')"
       case "$passedOS" in
-        windows_nt)
-          os="Windows_NT" ;;
+        windows)
+          os="windows" ;;
         linux)
           os="Linux" ;;
         freebsd)
@@ -190,11 +270,13 @@ while [[ $# > 0 ]]; do
           os="Android" ;;
         browser)
           os="Browser" ;;
-        sunos)
-          os="SunOS" ;;
+        illumos)
+          os="illumos" ;;
+        solaris)
+          os="Solaris" ;;
         *)
           echo "Unsupported target OS '$2'."
-          echo "The allowed values are Windows_NT, Linux, FreeBSD, OSX, tvOS, iOS, Android, Browser, and SunOS."
+          echo "The allowed values are windows, Linux, FreeBSD, OSX, tvOS, iOS, Android, Browser, illumos and Solaris."
           exit 1
           ;;
       esac
@@ -246,6 +328,26 @@ while [[ $# > 0 ]]; do
       shift 2
       ;;
 
+     -runtimeflavor|-rf)
+      if [ -z ${2+x} ]; then
+        echo "No runtime flavor supplied. See help (--help) for supported runtime flavors." 1>&2
+        exit 1
+      fi
+      passedRuntimeFlav="$(echo "$2" | awk '{print tolower($0)}')"
+      case "$passedRuntimeFlav" in
+        coreclr|mono)
+          val="$(tr '[:lower:]' '[:upper:]' <<< ${passedRuntimeFlav:0:1})${passedRuntimeFlav:1}"
+          ;;
+        *)
+          echo "Unsupported runtime flavor '$2'."
+          echo "The allowed values are CoreCLR and Mono."
+          exit 1
+          ;;
+      esac
+      arguments="$arguments /p:RuntimeFlavor=$val"
+      shift 2
+      ;;
+
      -librariesconfiguration|-lc)
       if [ -z ${2+x} ]; then
         echo "No libraries configuration supplied. See help (--help) for supported libraries configurations." 1>&2
@@ -291,6 +393,51 @@ while [[ $# > 0 ]]; do
       shift 1
       ;;
 
+     -portablebuild)
+      if [ -z ${2+x} ]; then
+        echo "No value for portablebuild is supplied. See help (--help) for supported values." 1>&2
+        exit 1
+      fi
+      passedPortable="$(echo "$2" | awk '{print tolower($0)}')"
+      if [ "$passedPortable" = false ]; then
+        portableBuild=0
+        arguments="$arguments /p:PortableBuild=false"
+      fi
+      shift 2
+      ;;
+
+     -keepnativesymbols)
+      if [ -z ${2+x} ]; then
+        echo "No value for keepNativeSymbols is supplied. See help (--help) for supported values." 1>&2
+        exit 1
+      fi
+      passedKeepNativeSymbols="$(echo "$2" | awk '{print tolower($0)}')"
+      if [ "$passedKeepNativeSymbols" = true ]; then
+        arguments="$arguments /p:KeepNativeSymbols=true"
+      fi
+      shift 2
+      ;;
+
+
+      -ninja)
+      if [ -z ${2+x} ]; then
+        arguments="$arguments /p:Ninja=true"
+        shift 1
+      else
+        ninja="$(echo "$2" | awk '{print tolower($0)}')"
+        if [ "$ninja" = true ]; then
+          arguments="$arguments /p:Ninja=true"
+          shift 2
+        elif [ "$ninja" = false ]; then
+          arguments="$arguments /p:Ninja=false"
+          shift 2
+        else
+          arguments="$arguments /p:Ninja=true"
+          shift 1
+        fi
+      fi
+      ;;
+
       *)
       extraargs="$extraargs $1"
       shift 1
@@ -302,11 +449,16 @@ if [ ${#actInt[@]} -eq 0 ]; then
     arguments="-restore -build $arguments"
 fi
 
-initDistroRid $os $arch $crossBuild
+if [ "$os" = "Browser" ] && [ "$arch" != "wasm" ]; then
+    # override default arch for Browser, we only support wasm
+    arch=wasm
+fi
+
+initDistroRid $os $arch $crossBuild $portableBuild
 
 # URL-encode space (%20) to avoid quoting issues until the msbuild call in /eng/common/tools.sh.
 # In *proj files (XML docs), URL-encoded string are rendered in their decoded form.
 cmakeargs="${cmakeargs// /%20}"
-arguments="$arguments /p:TargetArchitecture=$arch"
+arguments="$arguments /p:TargetArchitecture=$arch /p:BuildArchitecture=$hostArch"
 arguments="$arguments /p:CMakeArgs=\"$cmakeargs\" $extraargs"
 "$scriptroot/common/build.sh" $arguments

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Text;
@@ -29,7 +28,7 @@ namespace Internal.TypeSystem
 
         public override void AppendName(StringBuilder sb, SignatureTypeVariable type)
         {
-            sb.Append("!");
+            sb.Append('!');
             sb.Append(type.Index.ToStringInvariant());
         }
 
@@ -115,4 +114,3 @@ namespace Internal.TypeSystem
         }
     }
 }
-

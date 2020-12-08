@@ -1,0 +1,59 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <TargetFrameworks>$(NetCoreAppCurrent);net461</TargetFrameworks>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="Asn1TagTests.cs" />
+    <Compile Include="Reader\ComprehensiveReadTests.cs" />
+    <Compile Include="Reader\OverlappedReads.cs" />
+    <Compile Include="Reader\ParseTag.cs" />
+    <Compile Include="Reader\PeekTests.cs" />
+    <Compile Include="Reader\ReadBitString.cs" />
+    <Compile Include="Reader\ReadBMPString.cs" />
+    <Compile Include="Reader\ReadBoolean.cs" />
+    <Compile Include="Reader\ReadEnumerated.cs" />
+    <Compile Include="Reader\ReadGeneralizedTime.cs" />
+    <Compile Include="Reader\ReadIA5String.cs" />
+    <Compile Include="Reader\ReadInteger.cs" />
+    <Compile Include="Reader\ReadLength.cs" />
+    <Compile Include="Reader\ReadNull.cs" />
+    <Compile Include="Reader\ReadNamedBitList.cs" />
+    <Compile Include="Reader\ReadObjectIdentifier.cs" />
+    <Compile Include="Reader\ReadOctetString.cs" />
+    <Compile Include="Reader\ReadSequence.cs" />
+    <Compile Include="Reader\ReadSetOf.cs" />
+    <Compile Include="Reader\ReadT61String.cs" />
+    <Compile Include="Reader\ReadUtcTime.cs" />
+    <Compile Include="Reader\ReadUTF8String.cs" />
+    <Compile Include="Reader\ReaderStateTests.cs" />
+    <Compile Include="Writer\Asn1WriterTests.cs" />
+    <Compile Include="Writer\ComprehensiveWriteTest.cs" />
+    <Compile Include="Writer\PushPopOctetString.cs" />
+    <Compile Include="Writer\SimpleWriterTests.cs" />
+    <Compile Include="Writer\PushPopSequence.cs" />
+    <Compile Include="Writer\PushPopSetOf.cs" />
+    <Compile Include="Writer\WriteBitString.cs" />
+    <Compile Include="Writer\WriteBMPString.cs" />
+    <Compile Include="Writer\WriteBoolean.cs" />
+    <Compile Include="Writer\WriteCharacterString.cs" />
+    <Compile Include="Writer\WriteEncodedValue.cs" />
+    <Compile Include="Writer\WriteEnumerated.cs" />
+    <Compile Include="Writer\WriteGeneralizedTime.cs" />
+    <Compile Include="Writer\WriteIA5String.cs" />
+    <Compile Include="Writer\WriteInteger.cs" />
+    <Compile Include="Writer\WriteNamedBitList.cs" />
+    <Compile Include="Writer\WriteNull.cs" />
+    <Compile Include="Writer\WriteOctetString.cs" />
+    <Compile Include="Writer\WriteObjectIdentifier.cs" />
+    <Compile Include="Writer\WriteUtcTime.cs" />
+    <Compile Include="Writer\WriteUtf8String.cs" />
+    <Compile Include="$(CommonTestPath)System\Security\Cryptography\ByteUtils.cs">
+      <Link>CommonTest\System\Security\Cryptography\ByteUtils.cs</Link>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetFramework)' == 'net461'">
+    <ProjectReference Include="..\src\System.Formats.Asn1.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Reflection.Metadata\src\System.Reflection.Metadata.csproj" />
+  </ItemGroup>
+</Project>

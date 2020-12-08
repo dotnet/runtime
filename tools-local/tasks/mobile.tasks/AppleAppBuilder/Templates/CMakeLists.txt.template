@@ -12,7 +12,7 @@ add_executable(
     %MainSource%
     runtime.h
     runtime.m
-    modules.m
+    %AotModulesSource%
     ${APP_RESOURCES}
 )
 
@@ -37,7 +37,7 @@ target_link_libraries(
     "-framework Foundation"
     "-framework Security"
     "-framework UIKit"
-    "-framework GSS"
+    %FrameworksToLink%
     "-lz"
     "-liconv"
 %NativeLibrariesToLink%

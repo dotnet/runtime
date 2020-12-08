@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 /*++
 
@@ -275,7 +274,7 @@ CSharedMemoryObjectManager::RegisterObject(
         _ASSERTE(fShared);
 
         //
-        // Check if an object by this name alredy exists
+        // Check if an object by this name already exists
         //
 
         palError = LocateObject(

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 //*****************************************************************************
 // File: daccess.cpp
 //
@@ -41,7 +40,6 @@ extern bool TryGetSymbol(ICorDebugDataTarget* dataTarget, uint64_t baseAddress, 
 
 CRITICAL_SECTION g_dacCritSec;
 ClrDataAccess* g_dacImpl;
-HINSTANCE g_thisModule;
 
 EXTERN_C
 #ifdef TARGET_UNIX
@@ -76,9 +74,6 @@ BOOL WINAPI DllMain(HANDLE instance, DWORD reason, LPVOID reserved)
 #endif
         InitializeCriticalSection(&g_dacCritSec);
 
-        // Save the module handle.
-        g_thisModule = (HINSTANCE)instance;
-
         g_procInitialized = true;
         break;
     }
@@ -94,12 +89,6 @@ BOOL WINAPI DllMain(HANDLE instance, DWORD reason, LPVOID reserved)
     }
 
     return TRUE;
-}
-
-HINSTANCE
-GetModuleInst(void)
-{
-    return g_thisModule;
 }
 
 HRESULT
@@ -3290,6 +3279,18 @@ ClrDataAccess::QueryInterface(THIS_
     {
         ifaceRet = static_cast<ISOSDacInterface7*>(this);
     }
+    else if (IsEqualIID(interfaceId, __uuidof(ISOSDacInterface8)))
+    {
+        ifaceRet = static_cast<ISOSDacInterface8*>(this);
+    }
+    else if (IsEqualIID(interfaceId, __uuidof(ISOSDacInterface9)))
+    {
+        ifaceRet = static_cast<ISOSDacInterface9*>(this);
+    }
+    else if (IsEqualIID(interfaceId, __uuidof(ISOSDacInterface10)))
+    {
+        ifaceRet = static_cast<ISOSDacInterface10*>(this);
+    }
     else
     {
         *iface = NULL;
@@ -5611,16 +5612,6 @@ ClrDataAccess::Initialize(void)
     // Do some validation
     IfFailRet(VerifyDlls());
 
-    // To support EH SxS, utilcode requires the base address of the runtime
-    // as part of its initialization so that functions like "WasThrownByUs" work correctly since
-    // they use the CLR base address to check if an exception was raised by a given instance of the runtime
-    // or not.
-    //
-    // Thus, when DAC is initialized, initialize utilcode with the base address of the runtime loaded in the
-    // target process. This is similar to work done in CorDB::SetTargetCLR for mscordbi.
-
-    g_hmodCoreCLR = (HINSTANCE)m_globalBase; // Base address of the runtime in the target process
-
     return S_OK;
 }
 
@@ -6604,7 +6595,7 @@ bool ClrDataAccess::GetILImageInfoFromNgenPEFile(PEFile *peFile,
 
 #if defined(FEATURE_CORESYSTEM)
 /* static */
-// We extract "ni.dll or .ni.winmd" from the NGEM image name to obtain the IL image name.
+// We extract "ni.dll from the NGEN image name to obtain the IL image name.
 // In the end we add given ilExtension.
 // This dependecy is based on Apollo installer behavior.
 bool ClrDataAccess::GetILImageNameFromNgenImage( LPCWSTR ilExtension,
@@ -6617,35 +6608,29 @@ bool ClrDataAccess::GetILImageNameFromNgenImage( LPCWSTR ilExtension,
     }
 
     _wcslwr_s(wszFilePath, cchFilePath);
-    // Find the "ni.dll" or "ni.winmd" extension (check for PEFile isWinRT something to know when is winmd or not.
+    // Find the "ni.dll" extension.
     // If none exists use NGEN image name.
     //
-    const WCHAR* ngenExtension[] = {W("ni.dll"), W("ni.winmd")};
+    const WCHAR* ngenExtension = W("ni.dll");
 
-    for (unsigned i = 0; i < COUNTOF(ngenExtension); ++i)
+    if (wcslen(ilExtension) <= wcslen(ngenExtension))
     {
-        if (wcslen(ilExtension) > wcslen(ngenExtension[i]))
-        {
-            // We should not have IL image name bigger than NGEN image.
-            // It will not fit inside wszFilePath.
-            continue;
-        }
-        LPWSTR  wszFileExtension = wcsstr(wszFilePath, ngenExtension[i]);
+        LPWSTR  wszFileExtension = wcsstr(wszFilePath, ngenExtension);
         if (wszFileExtension != 0)
         {
             LPWSTR  wszNextFileExtension = wszFileExtension;
-            // Find last occurence
+            // Find last occurrence
             do
             {
                 wszFileExtension = wszNextFileExtension;
-                wszNextFileExtension = wcsstr(wszFileExtension + 1, ngenExtension[i]);
+                wszNextFileExtension = wcsstr(wszFileExtension + 1, ngenExtension);
             } while (wszNextFileExtension != 0);
 
-            // Overwrite ni.dll or ni.winmd with ilExtension(.dll, .winmd)
+            // Overwrite ni.dll with ilExtension
             if (!memcpy_s(wszFileExtension,
-                           wcslen(ngenExtension[i])*sizeof(WCHAR),
-                           ilExtension,
-                           wcslen(ilExtension)*sizeof(WCHAR)))
+                            wcslen(ngenExtension)*sizeof(WCHAR),
+                            ilExtension,
+                            wcslen(ilExtension)*sizeof(WCHAR)))
             {
                 wszFileExtension[wcslen(ilExtension)] = '\0';
                 return true;
@@ -6772,63 +6757,54 @@ ClrDataAccess::GetMetaDataFromHost(PEFile* peFile,
         }
 
 #if defined(FEATURE_CORESYSTEM)
-        const WCHAR* ilExtension[] = {W("dll"), W("winmd")};
+        const WCHAR* ilExtension = W("dll");
         WCHAR ngenImageName[MAX_LONGPATH] = {0};
         if (wcscpy_s(ngenImageName, NumItems(ngenImageName), uniPath) != 0)
         {
             goto ErrExit;
         }
-        for (unsigned i = 0; i < COUNTOF(ilExtension); i++)
+        if (wcscpy_s(uniPath, NumItems(uniPath), ngenImageName) != 0)
         {
-            if (wcscpy_s(uniPath, NumItems(uniPath), ngenImageName) != 0)
-            {
-                goto ErrExit;
-            }
-            // Transform NGEN image name into IL Image name
-            if (!GetILImageNameFromNgenImage(ilExtension[i], uniPath, NumItems(uniPath)))
-            {
-                goto ErrExit;
-            }
+            goto ErrExit;
+        }
+        // Transform NGEN image name into IL Image name
+        if (!GetILImageNameFromNgenImage(ilExtension, uniPath, NumItems(uniPath)))
+        {
+            goto ErrExit;
+        }
 #endif//FEATURE_CORESYSTEM
 
-            // RVA size in ngen image and IL image is the same. Because the only
-            // different is in RVA. That is 4 bytes column fixed.
-            //
+        // RVA size in ngen image and IL image is the same. Because the only
+        // different is in RVA. That is 4 bytes column fixed.
+        //
 
-            // try again
-            if (m_legacyMetaDataLocator)
-            {
-                hr = m_legacyMetaDataLocator->GetMetadata(
-                    uniPath,
-                    imageTimestamp,
-                    imageSize,
-                    NULL,           // MVID - not used yet
-                    0,              // pass zero hint here... important
-                    0,              // flags - reserved for future.
-                    dataSize,
-                    (BYTE*)buffer,
-                    NULL);
-            }
-            else
-            {
-                hr = m_target3->GetMetaData(
-                    uniPath,
-                    imageTimestamp,
-                    imageSize,
-                    NULL,           // MVID - not used yet
-                    0,              // pass zero hint here... important
-                    0,              // flags - reserved for future.
-                    dataSize,
-                    (BYTE*)buffer,
-                    NULL);
-            }
-#if defined(FEATURE_CORESYSTEM)
-            if (SUCCEEDED(hr))
-            {
-                break;
-            }
+        // try again
+        if (m_legacyMetaDataLocator)
+        {
+            hr = m_legacyMetaDataLocator->GetMetadata(
+                uniPath,
+                imageTimestamp,
+                imageSize,
+                NULL,           // MVID - not used yet
+                0,              // pass zero hint here... important
+                0,              // flags - reserved for future.
+                dataSize,
+                (BYTE*)buffer,
+                NULL);
         }
-#endif // FEATURE_CORESYSTEM
+        else
+        {
+            hr = m_target3->GetMetaData(
+                uniPath,
+                imageTimestamp,
+                imageSize,
+                NULL,           // MVID - not used yet
+                0,              // pass zero hint here... important
+                0,              // flags - reserved for future.
+                dataSize,
+                (BYTE*)buffer,
+                NULL);
+        }
     }
 
     if (FAILED(hr))
@@ -8174,6 +8150,12 @@ void DacHandleWalker::GetRefCountedHandleInfo(
 {
     SUPPORTS_DAC;
 
+    if (pJupiterRefCount)
+        *pJupiterRefCount = 0;
+
+    if (pIsPegged)
+        *pIsPegged = FALSE;
+
 #ifdef FEATURE_COMINTEROP
     if (uType == HNDTYPE_REFCOUNTED)
     {
@@ -8183,12 +8165,6 @@ void DacHandleWalker::GetRefCountedHandleInfo(
         {
             if (pRefCount)
                 *pRefCount = (unsigned int)pWrap->GetRefCount();
-
-            if (pJupiterRefCount)
-                *pJupiterRefCount = (unsigned int)pWrap->GetJupiterRefCount();
-
-            if (pIsPegged)
-                *pIsPegged = pWrap->IsConsideredPegged();
 
             if (pIsStrong)
                 *pIsStrong = pWrap->IsWrapperActive();
@@ -8200,12 +8176,6 @@ void DacHandleWalker::GetRefCountedHandleInfo(
 
     if (pRefCount)
         *pRefCount = 0;
-
-    if (pJupiterRefCount)
-        *pJupiterRefCount = 0;
-
-    if (pIsPegged)
-        *pIsPegged = FALSE;
 
     if (pIsStrong)
         *pIsStrong = FALSE;

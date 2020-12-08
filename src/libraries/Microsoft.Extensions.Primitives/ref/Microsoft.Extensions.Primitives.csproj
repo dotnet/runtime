@@ -1,11 +1,12 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>netstandard2.0;netstandard2.1</TargetFrameworks>
+    <TargetFrameworks>netstandard2.0;netstandard2.1;net461</TargetFrameworks>
   </PropertyGroup>
-  <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0'">
-    <Reference Include="System.Memory"  />
-  </ItemGroup>
   <ItemGroup>
     <Compile Include="Microsoft.Extensions.Primitives.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0' or
+                        '$(TargetFramework)' == 'net461'">
+    <PackageReference Include="System.Memory" Version="$(SystemMemoryVersion)" />
   </ItemGroup>
 </Project>

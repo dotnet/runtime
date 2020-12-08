@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 namespace System.Security.Cryptography
 {
@@ -12,5 +11,6 @@ namespace System.Security.Cryptography
         internal const string RsaPublicKey = "RSA PUBLIC KEY";
         internal const string RsaPrivateKey = "RSA PRIVATE KEY";
         internal const string EcPrivateKey = "EC PRIVATE KEY";
+        internal const string X509Certificate = "CERTIFICATE";
     }
 }

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -147,20 +146,6 @@ namespace System.Globalization
             return ConvertIcuTimeFormatString(span.Slice(0, span.IndexOf('\0')));
         }
 
-        private int IcuGetFirstDayOfWeek() => IcuGetLocaleInfo(LocaleNumberData.FirstDayOfWeek);
-
-        private string[] IcuGetTimeFormats()
-        {
-            string format = IcuGetTimeFormatString(false);
-            return new string[] { format };
-        }
-
-        private string[] IcuGetShortTimeFormats()
-        {
-            string format = IcuGetTimeFormatString(true);
-            return new string[] { format };
-        }
-
         private static CultureData? IcuGetCultureDataFromRegionName(string? regionName)
         {
             // no support to lookup by region name, other than the hard-coded list in CultureData
@@ -234,14 +219,6 @@ namespace System.Globalization
             return result.Slice(0, resultPos).ToString();
         }
 
-        private static string? IcuLCIDToLocaleName(int culture)
-        {
-            Debug.Assert(!GlobalizationMode.Invariant);
-            Debug.Assert(!GlobalizationMode.UseNls);
-
-            return IcuLocaleData.LCIDToLocaleName(culture);
-        }
-
         private static int IcuLocaleNameToLCID(string cultureName)
         {
             Debug.Assert(!GlobalizationMode.Invariant);
@@ -251,34 +228,6 @@ namespace System.Globalization
             return lcid == -1 ? CultureInfo.LOCALE_CUSTOM_UNSPECIFIED : lcid;
         }
 
-        private static int IcuGetAnsiCodePage(string cultureName)
-        {
-            Debug.Assert(!GlobalizationMode.UseNls);
-            int ansiCodePage = IcuLocaleData.GetLocaleDataNumericPart(cultureName, IcuLocaleDataParts.AnsiCodePage);
-            return ansiCodePage == -1 ? CultureData.Invariant.ANSICodePage : ansiCodePage;
-        }
-
-        private static int IcuGetOemCodePage(string cultureName)
-        {
-            Debug.Assert(!GlobalizationMode.UseNls);
-            int oemCodePage = IcuLocaleData.GetLocaleDataNumericPart(cultureName, IcuLocaleDataParts.OemCodePage);
-            return oemCodePage == -1 ? CultureData.Invariant.OEMCodePage : oemCodePage;
-        }
-
-        private static int IcuGetMacCodePage(string cultureName)
-        {
-            Debug.Assert(!GlobalizationMode.UseNls);
-            int macCodePage = IcuLocaleData.GetLocaleDataNumericPart(cultureName, IcuLocaleDataParts.MacCodePage);
-            return macCodePage == -1 ? CultureData.Invariant.MacCodePage : macCodePage;
-        }
-
-        private static int IcuGetEbcdicCodePage(string cultureName)
-        {
-            Debug.Assert(!GlobalizationMode.UseNls);
-            int ebcdicCodePage = IcuLocaleData.GetLocaleDataNumericPart(cultureName, IcuLocaleDataParts.EbcdicCodePage);
-            return ebcdicCodePage == -1 ? CultureData.Invariant.EBCDICCodePage : ebcdicCodePage;
-        }
-
         private static int IcuGetGeoId(string cultureName)
         {
             Debug.Assert(!GlobalizationMode.UseNls);
@@ -286,11 +235,48 @@ namespace System.Globalization
             return geoId == -1 ? CultureData.Invariant.GeoId : geoId;
         }
 
+        private const uint DigitSubstitutionMask = 0x0000FFFF;
+        private const uint ListSeparatorMask     = 0xFFFF0000;
+
         private static int IcuGetDigitSubstitution(string cultureName)
         {
             Debug.Assert(!GlobalizationMode.UseNls);
-            int digitSubstitution = IcuLocaleData.GetLocaleDataNumericPart(cultureName, IcuLocaleDataParts.DigitSubstitution);
-            return digitSubstitution == -1 ? (int) DigitShapes.None : digitSubstitution;
+            int digitSubstitution = IcuLocaleData.GetLocaleDataNumericPart(cultureName, IcuLocaleDataParts.DigitSubstitutionOrListSeparator);
+            return digitSubstitution == -1 ? (int) DigitShapes.None : (int)(digitSubstitution & DigitSubstitutionMask);
+        }
+
+        private static string IcuGetListSeparator(string? cultureName)
+        {
+            Debug.Assert(!GlobalizationMode.UseNls);
+            Debug.Assert(cultureName != null);
+
+            int separator = IcuLocaleData.GetLocaleDataNumericPart(cultureName, IcuLocaleDataParts.DigitSubstitutionOrListSeparator);
+            if (separator != -1)
+            {
+                switch (separator & ListSeparatorMask)
+                {
+                    case IcuLocaleData.CommaSep:
+                        return ",";
+
+                    case IcuLocaleData.SemicolonSep:
+                        return ";";
+
+                    case IcuLocaleData.ArabicCommaSep:
+                        return "\u060C";
+
+                    case IcuLocaleData.ArabicSemicolonSep:
+                        return "\u061B";
+
+                    case IcuLocaleData.DoubleCommaSep:
+                        return ",,";
+
+                    default:
+                        Debug.Assert(false, "[CultureData.IcuGetListSeparator] Unexpected ListSeparator value.");
+                        break;
+                }
+            }
+
+            return ","; // default separator
         }
 
         private static string IcuGetThreeLetterWindowsLanguageName(string cultureName)

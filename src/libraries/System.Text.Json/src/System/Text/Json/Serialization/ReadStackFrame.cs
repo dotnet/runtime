@@ -1,9 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Text.Json.Serialization;
 
 namespace System.Text.Json
 {
@@ -15,9 +15,14 @@ namespace System.Text.Json
         public StackFramePropertyState PropertyState;
         public bool UseExtensionProperty;
 
-        // Support JSON Path on exceptions.
-        public byte[]? JsonPropertyName; // This is Utf8 since we don't want to convert to string until an exception is thown.
-        public string? JsonPropertyNameAsString; // This is used for dictionary keys and re-entry cases that specify a property name.
+        // Support JSON Path on exceptions and non-string Dictionary keys.
+        // This is Utf8 since we don't want to convert to string until an exception is thown.
+        // For dictionary keys we don't want to convert to TKey until we have both key and value when parsing the dictionary elements on stream cases.
+        public byte[]? JsonPropertyName;
+        public string? JsonPropertyNameAsString; // This is used for string dictionary keys and re-entry cases that specify a property name.
+
+        // Stores the non-string dictionary keys for continuation.
+        public object? DictionaryKey;
 
         // Validation state.
         public int OriginalDepth;
@@ -28,19 +33,19 @@ namespace System.Text.Json
         public JsonClassInfo JsonClassInfo;
         public StackFrameObjectState ObjectState; // State tracking the current object.
 
-        // Preserve reference.
-        public string? MetadataId;
+        // Validate EndObject token on array with preserve semantics.
+        public bool ValidateEndTokenOnArray;
 
         // For performance, we order the properties by the first deserialize and PropertyIndex helps find the right slot quicker.
         public int PropertyIndex;
         public List<PropertyRef>? PropertyRefCache;
 
-        // Add method delegate for Non-generic Stack and Queue; and types that derive from them.
-        public object? AddMethodDelegate;
-
         // Holds relevant state when deserializing objects with parameterized constructors.
         public int CtorArgumentStateIndex;
         public ArgumentState? CtorArgumentState;
+
+        // Whether to use custom number handling.
+        public JsonNumberHandling? NumberHandling;
 
         public void EndConstructorParameter()
         {
@@ -55,9 +60,10 @@ namespace System.Text.Json
             JsonPropertyName = null;
             JsonPropertyNameAsString = null;
             PropertyState = StackFramePropertyState.None;
-            MetadataId = null;
+            ValidateEndTokenOnArray = false;
 
             // No need to clear these since they are overwritten each time:
+            //  NumberHandling
             //  UseExtensionProperty
         }
 
@@ -65,17 +71,6 @@ namespace System.Text.Json
         {
             JsonPropertyNameAsString = null;
             PropertyState = StackFramePropertyState.None;
-        }
-
-        public void InitializeReEntry(Type type, JsonSerializerOptions options, string? propertyName)
-        {
-            JsonClassInfo jsonClassInfo = options.GetOrAddClass(type);
-
-            // The initial JsonPropertyInfo will be used to obtain the converter.
-            JsonPropertyInfo = jsonClassInfo.PropertyInfoForClassInfo;
-
-            // Set for exception handling calculation of JsonPath.
-            JsonPropertyNameAsString = propertyName;
         }
 
         /// <summary>
@@ -96,7 +91,6 @@ namespace System.Text.Json
 
         public void Reset()
         {
-            AddMethodDelegate = null;
             CtorArgumentStateIndex = 0;
             CtorArgumentState = null;
             JsonClassInfo = null!;

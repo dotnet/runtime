@@ -1,6 +1,5 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Buffers;
 using System.Buffers.Text;
@@ -19,10 +18,8 @@ namespace System.Text.Json
         /// Thrown if this would result in invalid JSON being written (while validation is enabled).
         /// </exception>
         public void WriteBase64String(JsonEncodedText propertyName, ReadOnlySpan<byte> bytes)
-            => WriteBase64StringHelper(propertyName.EncodedUtf8Bytes, bytes);
-
-        private void WriteBase64StringHelper(ReadOnlySpan<byte> utf8PropertyName, ReadOnlySpan<byte> bytes)
         {
+            ReadOnlySpan<byte> utf8PropertyName = propertyName.EncodedUtf8Bytes;
             Debug.Assert(utf8PropertyName.Length <= JsonConstants.MaxUnescapedTokenSize);
 
             JsonWriterHelper.ValidateBytes(bytes);

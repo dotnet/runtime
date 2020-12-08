@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 namespace System.IO
 {
@@ -11,7 +10,7 @@ namespace System.IO
         /// <param name="length">The range to be locked.</param>
         private void LockInternal(long position, long length)
         {
-            CheckFileCall(Interop.Sys.LockFileRegion(_fileHandle, position, length, Interop.Sys.LockType.F_WRLCK));
+            CheckFileCall(Interop.Sys.LockFileRegion(_fileHandle, position, length, CanWrite ? Interop.Sys.LockType.F_WRLCK : Interop.Sys.LockType.F_RDLCK));
         }
 
         /// <summary>Allows access by other processes to all or part of a file that was previously locked.</summary>

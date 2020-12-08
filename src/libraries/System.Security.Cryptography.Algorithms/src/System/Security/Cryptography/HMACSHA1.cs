@@ -1,9 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using Internal.Cryptography;
 using System.ComponentModel;
+using System.Runtime.Versioning;
 
 namespace System.Security.Cryptography
 {
@@ -12,10 +12,11 @@ namespace System.Security.Cryptography
     // preexisting contract from the .NET Framework locks all of these into deriving directly from HMAC, it can't be helped.
     //
 
+    [UnsupportedOSPlatform("browser")]
     public class HMACSHA1 : HMAC
     {
         public HMACSHA1()
-            : this(Helpers.GenerateRandom(BlockSize))
+            : this(RandomNumberGenerator.GetBytes(BlockSize))
         {
         }
 

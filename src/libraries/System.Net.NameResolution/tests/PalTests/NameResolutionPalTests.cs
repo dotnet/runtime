@@ -1,10 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.IO;
 using System.Net.Sockets;
-using System.Runtime.InteropServices;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -16,7 +14,6 @@ namespace System.Net.NameResolution.PalTests
 
         public NameResolutionPalTests(ITestOutputHelper output)
         {
-            NameResolutionPal.EnsureSocketsAreInitialized();
             _output = output;
         }
 
@@ -40,7 +37,7 @@ namespace System.Net.NameResolution.PalTests
         [InlineData(true)]
         public void TryGetAddrInfo_LocalHost(bool justAddresses)
         {
-            SocketError error = NameResolutionPal.TryGetAddrInfo("localhost", justAddresses, out string hostName, out string[] aliases, out IPAddress[] addresses, out int nativeErrorCode);
+            SocketError error = NameResolutionPal.TryGetAddrInfo("localhost", justAddresses, AddressFamily.Unspecified, out string hostName, out string[] aliases, out IPAddress[] addresses, out int nativeErrorCode);
             Assert.Equal(SocketError.Success, error);
             if (!justAddresses)
             {
@@ -59,8 +56,8 @@ namespace System.Net.NameResolution.PalTests
             string hostName = NameResolutionPal.GetHostName();
             Assert.NotNull(hostName);
 
-            SocketError error = NameResolutionPal.TryGetAddrInfo(hostName, justAddresses, out hostName, out string[] aliases, out IPAddress[] addresses, out int nativeErrorCode);
-            if (error == SocketError.HostNotFound && (RuntimeInformation.IsOSPlatform(OSPlatform.Linux) || RuntimeInformation.IsOSPlatform(OSPlatform.OSX)))
+            SocketError error = NameResolutionPal.TryGetAddrInfo(hostName, justAddresses, AddressFamily.Unspecified, out hostName, out string[] aliases, out IPAddress[] addresses, out int nativeErrorCode);
+            if (error == SocketError.HostNotFound && (OperatingSystem.IsLinux() || OperatingSystem.IsMacOS()))
             {
                 // On Unix, we are not guaranteed to be able to resove the local host. The ability to do so depends on the
                 // machine configurations, which varies by distro and is often inconsistent.
@@ -104,7 +101,7 @@ namespace System.Net.NameResolution.PalTests
         [Fact]
         public void TryGetAddrInfo_LocalHost_TryGetNameInfo()
         {
-            SocketError error = NameResolutionPal.TryGetAddrInfo("localhost", justAddresses: false, out string hostName, out string[] aliases, out IPAddress[] addresses, out int nativeErrorCode);
+            SocketError error = NameResolutionPal.TryGetAddrInfo("localhost", justAddresses: false, AddressFamily.Unspecified, out string hostName, out string[] aliases, out IPAddress[] addresses, out int nativeErrorCode);
             Assert.Equal(SocketError.Success, error);
             Assert.NotNull(hostName);
             Assert.NotNull(aliases);
@@ -122,7 +119,7 @@ namespace System.Net.NameResolution.PalTests
             string hostName = NameResolutionPal.GetHostName();
             Assert.NotNull(hostName);
 
-            SocketError error = NameResolutionPal.TryGetAddrInfo(hostName, justAddresses: false, out hostName, out string[] aliases, out IPAddress[] addresses, out int nativeErrorCode);
+            SocketError error = NameResolutionPal.TryGetAddrInfo(hostName, justAddresses: false, AddressFamily.Unspecified, out hostName, out string[] aliases, out IPAddress[] addresses, out int nativeErrorCode);
             if (error == SocketError.HostNotFound)
             {
                 // On Unix, getaddrinfo returns host not found, if all the machine discovery settings on the local network
@@ -156,7 +153,7 @@ namespace System.Net.NameResolution.PalTests
         {
             string hostName = "microsoft.com";
 
-            SocketError error = NameResolutionPal.TryGetAddrInfo(hostName, justAddresses, out hostName, out string[] aliases, out IPAddress[] addresses, out _);
+            SocketError error = NameResolutionPal.TryGetAddrInfo(hostName, justAddresses, AddressFamily.Unspecified, out hostName, out string[] aliases, out IPAddress[] addresses, out _);
             Assert.Equal(SocketError.Success, error);
             Assert.NotNull(aliases);
             Assert.NotNull(addresses);
@@ -171,7 +168,7 @@ namespace System.Net.NameResolution.PalTests
             Assert.Equal(SocketError.Success, error);
             Assert.NotNull(name);
 
-            error = NameResolutionPal.TryGetAddrInfo(name, justAddresses, out string hostName, out string[] aliases, out IPAddress[] addresses, out _);
+            error = NameResolutionPal.TryGetAddrInfo(name, justAddresses, AddressFamily.Unspecified, out string hostName, out string[] aliases, out IPAddress[] addresses, out _);
             Assert.Equal(SocketError.Success, error);
             Assert.NotNull(aliases);
             Assert.NotNull(addresses);
@@ -193,7 +190,7 @@ namespace System.Net.NameResolution.PalTests
             Assert.Equal(SocketError.Success, error);
             Assert.NotNull(name);
 
-            error = NameResolutionPal.TryGetAddrInfo(name, justAddresses, out string hostName, out string[] aliases, out IPAddress[] addresses, out _);
+            error = NameResolutionPal.TryGetAddrInfo(name, justAddresses, AddressFamily.Unspecified, out string hostName, out string[] aliases, out IPAddress[] addresses, out _);
             if (SocketError.Success != error && Environment.OSVersion.Platform == PlatformID.Unix)
             {
                 LogUnixInfo();

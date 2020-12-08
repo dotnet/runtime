@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 //
 
 //
@@ -54,12 +53,20 @@ void GCHeap::UpdatePreGCCounters()
 #endif // BACKGROUND_GC
 
     FIRE_EVENT(GCStart_V2, count, depth, reason, static_cast<uint32_t>(type));
-    g_theGCHeap->DiagDescrGenerations([](void*, int generation, uint8_t* rangeStart, uint8_t* rangeEnd, uint8_t* rangeEndReserved)
+    ReportGenerationBounds();
+}
+
+void GCHeap::ReportGenerationBounds()
+{
+    if (EVENT_ENABLED(GCGenerationRange))
     {
-        uint64_t range = static_cast<uint64_t>(rangeEnd - rangeStart);
-        uint64_t rangeReserved = static_cast<uint64_t>(rangeEndReserved - rangeStart);
-        FIRE_EVENT(GCGenerationRange, generation, rangeStart, range, rangeReserved);
-    }, nullptr);
+        g_theGCHeap->DiagDescrGenerations([](void*, int generation, uint8_t* rangeStart, uint8_t* rangeEnd, uint8_t* rangeEndReserved)
+        {
+            uint64_t range = static_cast<uint64_t>(rangeEnd - rangeStart);
+            uint64_t rangeReserved = static_cast<uint64_t>(rangeEndReserved - rangeStart);
+            FIRE_EVENT(GCGenerationRange, generation, rangeStart, range, rangeReserved);
+        }, nullptr);
+    }
 }
 
 void GCHeap::UpdatePostGCCounters()
@@ -149,12 +156,7 @@ void GCHeap::UpdatePostGCCounters()
 #endif //FEATURE_EVENT_TRACE
 
 #ifdef FEATURE_EVENT_TRACE
-    g_theGCHeap->DiagDescrGenerations([](void*, int generation, uint8_t* rangeStart, uint8_t* rangeEnd, uint8_t* rangeEndReserved)
-    {
-        uint64_t range = static_cast<uint64_t>(rangeEnd - rangeStart);
-        uint64_t rangeReserved = static_cast<uint64_t>(rangeEndReserved - rangeStart);
-        FIRE_EVENT(GCGenerationRange, generation, rangeStart, range, rangeReserved);
-    }, nullptr);
+    ReportGenerationBounds();
 
     FIRE_EVENT(GCEnd_V1, static_cast<uint32_t>(pSettings->gc_index), condemned_gen);
 
@@ -229,7 +231,7 @@ size_t GCHeap::GetLastGCStartTime(int generation)
     gc_heap* hp = pGenGCHeap;
 #endif //MULTIPLE_HEAPS
 
-    return dd_time_clock (hp->dynamic_data_of (generation));
+    return (size_t)(dd_time_clock (hp->dynamic_data_of (generation)) / 1000);
 }
 
 size_t GCHeap::GetLastGCDuration(int generation)
@@ -240,14 +242,14 @@ size_t GCHeap::GetLastGCDuration(int generation)
     gc_heap* hp = pGenGCHeap;
 #endif //MULTIPLE_HEAPS
 
-    return dd_gc_elapsed_time (hp->dynamic_data_of (generation));
+    return (size_t)(dd_gc_elapsed_time (hp->dynamic_data_of (generation)) / 1000);
 }
 
-size_t GetHighPrecisionTimeStamp();
+uint64_t GetHighPrecisionTimeStamp();
 
 size_t GCHeap::GetNow()
 {
-    return GetHighPrecisionTimeStamp();
+    return (size_t)(GetHighPrecisionTimeStamp() / 1000);
 }
 
 bool GCHeap::IsGCInProgressHelper (bool bConsiderGCStart)

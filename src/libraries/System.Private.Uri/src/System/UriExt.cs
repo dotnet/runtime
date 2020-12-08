@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Globalization;
 using System.Diagnostics;
@@ -26,6 +25,8 @@ namespace System
             }
 
             _string = uri ?? string.Empty;
+
+            Debug.Assert(_originalUnicodeString is null && _info is null && _syntax is null && _flags == Flags.Zero);
 
             if (dontEscape)
                 _flags |= Flags.UserEscaped;
@@ -84,8 +85,7 @@ namespace System
 
             bool hasUnicode = false;
 
-            if (IriParsing &&
-                (CheckForUnicode(_string) || CheckForEscapedUnreserved(_string)))
+            if (IriParsing && CheckForUnicodeOrEscapedUnreserved(_string))
             {
                 _flags |= Flags.HasUnicode;
                 hasUnicode = true;
@@ -213,49 +213,30 @@ namespace System
             }
         }
 
-        //
         // Unescapes entire string and checks if it has unicode chars
-        //
-        private bool CheckForUnicode(string data)
+        // Also checks for sequences that are 3986 Unreserved characters as these should be un-escaped
+        private static bool CheckForUnicodeOrEscapedUnreserved(string data)
         {
             for (int i = 0; i < data.Length; i++)
             {
                 char c = data[i];
                 if (c == '%')
                 {
-                    if (i + 2 < data.Length)
+                    if ((uint)(i + 2) < (uint)data.Length)
                     {
-                        if (UriHelper.EscapedAscii(data[i + 1], data[i + 2]) > 0x7F)
+                        char value = UriHelper.DecodeHexChars(data[i + 1], data[i + 2]);
+
+                        if (value >= UriHelper.UnreservedTable.Length || UriHelper.UnreservedTable[value])
                         {
                             return true;
                         }
+
                         i += 2;
                     }
                 }
                 else if (c > 0x7F)
                 {
                     return true;
-                }
-            }
-            return false;
-        }
-
-        // Does this string have any %6A sequences that are 3986 Unreserved characters?  These should be un-escaped.
-        private unsafe bool CheckForEscapedUnreserved(string data)
-        {
-            fixed (char* tempPtr = data)
-            {
-                for (int i = 0; i < data.Length - 2; ++i)
-                {
-                    if (tempPtr[i] == '%' && IsHexDigit(tempPtr[i + 1]) && IsHexDigit(tempPtr[i + 2])
-                        && tempPtr[i + 1] >= '0' && tempPtr[i + 1] <= '7') // max 0x7F
-                    {
-                        char ch = UriHelper.EscapedAscii(tempPtr[i + 1], tempPtr[i + 2]);
-                        if (ch != c_DummyChar && UriHelper.IsUnreserved(ch))
-                        {
-                            return true;
-                        }
-                    }
                 }
             }
             return false;
@@ -357,13 +338,14 @@ namespace System
         public static int Compare(Uri? uri1, Uri? uri2, UriComponents partsToCompare, UriFormat compareFormat,
             StringComparison comparisonType)
         {
-            if ((object?)uri1 == null)
+            if (uri1 is null)
             {
-                if (uri2 == null)
+                if (uri2 is null)
                     return 0; // Equal
                 return -1;    // null < non-null
             }
-            if ((object?)uri2 == null)
+
+            if (uri2 is null)
                 return 1;     // non-null > null
 
             // a relative uri is always less than an absolute one
@@ -542,7 +524,7 @@ namespace System
 
         public static string UnescapeDataString(string stringToUnescape)
         {
-            if ((object)stringToUnescape == null)
+            if (stringToUnescape is null)
                 throw new ArgumentNullException(nameof(stringToUnescape));
 
             if (stringToUnescape.Length == 0)
@@ -567,6 +549,7 @@ namespace System
 
         // Where stringToEscape is intended to be a completely unescaped URI string.
         // This method will escape any character that is not a reserved or unreserved character, including percent signs.
+        [Obsolete(Obsoletions.EscapeUriStringMessage, DiagnosticId = Obsoletions.EscapeUriStringDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public static string EscapeUriString(string stringToEscape) =>
             UriHelper.EscapeString(stringToEscape, checkExistingEscaped: false, UriHelper.UnreservedReservedTable);
 
@@ -670,7 +653,7 @@ namespace System
 
             string relativeStr;
 
-            if ((object?)relativeUri != null)
+            if (relativeUri is not null)
             {
                 if (relativeUri.IsAbsoluteUri)
                     return relativeUri;
@@ -679,7 +662,9 @@ namespace System
                 userEscaped = relativeUri.UserEscaped;
             }
             else
+            {
                 relativeStr = string.Empty;
+            }
 
             // Here we can assert that passed "relativeUri" is indeed a relative one
 
@@ -839,7 +824,7 @@ namespace System
 
         public bool IsBaseOf(Uri uri)
         {
-            if ((object)uri == null)
+            if (uri is null)
                 throw new ArgumentNullException(nameof(uri));
 
             if (!IsAbsoluteUri)

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 //
 
 // Enable calling ICU functions through shims to enable support for
@@ -20,11 +19,13 @@
 
 // All ICU headers need to be included here so that all function prototypes are
 // available before the function pointers are declared below.
+#include <unicode/uclean.h>
 #include <unicode/ucurr.h>
 #include <unicode/ucal.h>
 #include <unicode/uchar.h>
 #include <unicode/ucol.h>
 #include <unicode/udat.h>
+#include <unicode/udata.h>
 #include <unicode/udatpg.h>
 #include <unicode/uenum.h>
 #include <unicode/uidna.h>
@@ -45,10 +46,6 @@
 
 #include "icu.h"
 
-#ifndef __typeof
-#define __typeof decltype
-#endif
-
 #define HAVE_SET_MAX_VARIABLE 1
 #define UDAT_STANDALONE_SHORTER_WEEKDAYS 1
 
@@ -56,6 +53,7 @@
 
 #include "pal_compiler.h"
 
+#if !defined(STATIC_ICU)
 // List of all functions from the ICU libraries that are used in the System.Globalization.Native.so
 #define FOR_ALL_UNCONDITIONAL_ICU_FUNCTIONS \
     PER_FUNCTION_BLOCK(u_charsToUChars, libicuuc) \
@@ -75,6 +73,7 @@
     PER_FUNCTION_BLOCK(ucal_set, libicui18n) \
     PER_FUNCTION_BLOCK(ucol_close, libicui18n) \
     PER_FUNCTION_BLOCK(ucol_closeElements, libicui18n) \
+    PER_FUNCTION_BLOCK(ucol_getOffset, libicui18n) \
     PER_FUNCTION_BLOCK(ucol_getRules, libicui18n) \
     PER_FUNCTION_BLOCK(ucol_getSortKey, libicui18n) \
     PER_FUNCTION_BLOCK(ucol_getStrength, libicui18n) \
@@ -143,7 +142,9 @@
     PER_FUNCTION_BLOCK(usearch_first, libicui18n) \
     PER_FUNCTION_BLOCK(usearch_getMatchedLength, libicui18n) \
     PER_FUNCTION_BLOCK(usearch_last, libicui18n) \
-    PER_FUNCTION_BLOCK(usearch_openFromCollator, libicui18n)
+    PER_FUNCTION_BLOCK(usearch_openFromCollator, libicui18n) \
+    PER_FUNCTION_BLOCK(usearch_setPattern, libicui18n) \
+    PER_FUNCTION_BLOCK(usearch_setText, libicui18n)
 
 #if HAVE_SET_MAX_VARIABLE
 #define FOR_ALL_SET_VARIABLE_ICU_FUNCTIONS \
@@ -178,7 +179,7 @@
     FOR_ALL_OS_CONDITIONAL_ICU_FUNCTIONS
 
 // Declare pointers to all the used ICU functions
-#define PER_FUNCTION_BLOCK(fn, lib) EXTERN_C __typeof(fn)* fn##_ptr;
+#define PER_FUNCTION_BLOCK(fn, lib) EXTERN_C TYPEOF(fn)* fn##_ptr;
 FOR_ALL_ICU_FUNCTIONS
 #undef PER_FUNCTION_BLOCK
 
@@ -201,6 +202,7 @@ FOR_ALL_ICU_FUNCTIONS
 #define ucal_set(...) ucal_set_ptr(__VA_ARGS__)
 #define ucol_close(...) ucol_close_ptr(__VA_ARGS__)
 #define ucol_closeElements(...) ucol_closeElements_ptr(__VA_ARGS__)
+#define ucol_getOffset(...) ucol_getOffset_ptr(__VA_ARGS__)
 #define ucol_getRules(...) ucol_getRules_ptr(__VA_ARGS__)
 #define ucol_getSortKey(...) ucol_getSortKey_ptr(__VA_ARGS__)
 #define ucol_getStrength(...) ucol_getStrength_ptr(__VA_ARGS__)
@@ -280,3 +282,8 @@ FOR_ALL_ICU_FUNCTIONS
 #define usearch_getMatchedLength(...) usearch_getMatchedLength_ptr(__VA_ARGS__)
 #define usearch_last(...) usearch_last_ptr(__VA_ARGS__)
 #define usearch_openFromCollator(...) usearch_openFromCollator_ptr(__VA_ARGS__)
+#define usearch_reset(...) usearch_reset_ptr(__VA_ARGS__)
+#define usearch_setPattern(...) usearch_setPattern_ptr(__VA_ARGS__)
+#define usearch_setText(...) usearch_setText_ptr(__VA_ARGS__)
+
+#endif // !defined(STATIC_ICU)

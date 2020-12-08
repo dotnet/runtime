@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Runtime.CompilerServices;
 
@@ -18,10 +17,12 @@ namespace System.Runtime.Intrinsics.X86
         public static new bool IsSupported { get => IsSupported; }
 
         [Intrinsic]
-        public new abstract class X64 : Sse41.X64
+        public new abstract class X64 : Sse42.X64
         {
             internal X64() { }
+
             public static new bool IsSupported { get => IsSupported; }
+
             /// <summary>
             /// __int64 _mm_popcnt_u64 (unsigned __int64 a)
             ///   POPCNT reg64, reg/m64

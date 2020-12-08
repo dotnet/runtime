@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #ifndef DEPS_RESOLVER_H
 #define DEPS_RESOLVER_H
@@ -161,7 +160,7 @@ public:
         return get_app(m_fx_definitions).get_deps_file();
     }
 
-    void get_app_fx_definition_range(fx_definition_vector_t::iterator *begin, fx_definition_vector_t::iterator *end) const;
+    void get_app_context_deps_files_range(fx_definition_vector_t::iterator *begin, fx_definition_vector_t::iterator *end) const;
 
     const fx_definition_vector_t& get_fx_definitions() const
     {
@@ -173,13 +172,15 @@ public:
         return m_is_framework_dependent;
     }
 
-    const pal::string_t &get_app_dir() const
+    void get_app_dir(pal::string_t *app_dir) const
     {
         if (m_host_mode == host_mode_t::libhost)
         {
             static const pal::string_t s_empty;
-            return s_empty;
+            *app_dir = s_empty;
+            return;
         }
+        *app_dir = m_app_dir;
         if (m_host_mode == host_mode_t::apphost)
         {
             if (bundle::info_t::is_single_file_bundle())
@@ -187,12 +188,18 @@ public:
                 const bundle::runner_t* app = bundle::runner_t::app();
                 if (app->is_netcoreapp3_compat_mode())
                 {
-                    return app->extraction_path();
+                    *app_dir = app->extraction_path();
                 }
             }
         }
 
-        return m_app_dir;
+        // Make sure the path ends with a directory separator
+        // This has been the behavior for a long time, and we should make it consistent
+        // for all cases.
+        if (app_dir->back() != DIR_SEPARATOR)
+        {
+            app_dir->append(1, DIR_SEPARATOR);
+        }
     }
 
 private:
@@ -228,7 +235,8 @@ private:
         const deps_entry_t& entry,
         const pal::string_t& deps_dir,
         int fx_level,
-        pal::string_t* candidate);
+        pal::string_t* candidate,
+        bool &found_in_bundle);
 
     fx_definition_vector_t& m_fx_definitions;
 

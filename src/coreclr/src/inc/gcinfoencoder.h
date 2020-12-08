@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 /*****************************************************************
  *
  * GC Information Encoding API
@@ -469,8 +468,8 @@ public:
 
 private:
 
-    friend int __cdecl CompareLifetimeTransitionsByOffsetThenSlot(const void*, const void*);
-    friend int CompareLifetimeTransitionsByChunk(const void*, const void*);
+    friend struct CompareLifetimeTransitionsByOffsetThenSlot;
+    friend struct CompareLifetimeTransitionsByChunk;
 
 
     struct InterruptibleRange

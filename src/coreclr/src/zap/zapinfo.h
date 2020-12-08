@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 //
 // ZapInfo.h
 //
@@ -314,6 +313,13 @@ public:
             ICorJitInfo::BlockCounts ** pBlockCounts,
             UINT32 * pNumRuns);
 
+    CORINFO_CLASS_HANDLE getLikelyClass(
+            CORINFO_METHOD_HANDLE ftnHnd,
+            CORINFO_CLASS_HANDLE  baseHnd,
+            UINT32                ilOffset,
+            UINT32 *              pLikelihood,
+            UINT32 *              pNumberOfClasses);
+
     DWORD getJitFlags(CORJIT_FLAGS* jitFlags, DWORD sizeInBytes);
 
     bool runWithErrorTrap(void (*function)(void*), void* param);
@@ -467,7 +473,7 @@ public:
                                      CORINFO_CLASS_HANDLE *vcTypeRet);
     CORINFO_CLASS_HANDLE getArgClass(CORINFO_SIG_INFO* sig,
                                                CORINFO_ARG_LIST_HANDLE args);
-    CorInfoType getHFAType(CORINFO_CLASS_HANDLE hClass);
+    CorInfoHFAElemType getHFAType(CORINFO_CLASS_HANDLE hClass);
 
     // ICorDebugInfo
 
@@ -565,8 +571,7 @@ public:
     CorInfoInitClassResult initClass(
             CORINFO_FIELD_HANDLE    field,
             CORINFO_METHOD_HANDLE   method,
-            CORINFO_CONTEXT_HANDLE  context,
-            BOOL                    speculative = FALSE);
+            CORINFO_CONTEXT_HANDLE  context);
 
     void classMustBeLoadedBeforeCodeIsRun(CORINFO_CLASS_HANDLE cls);
     void methodMustBeLoadedBeforeCodeIsRun(CORINFO_METHOD_HANDLE meth);
@@ -670,10 +675,7 @@ public:
                                unsigned * pOffsetAfterIndirection,
                                bool * isRelative);
 
-    CORINFO_METHOD_HANDLE resolveVirtualMethod(
-        CORINFO_METHOD_HANDLE virtualMethod,
-        CORINFO_CLASS_HANDLE implementingClass,
-        CORINFO_CONTEXT_HANDLE ownerType);
+    bool resolveVirtualMethod(CORINFO_DEVIRTUALIZATION_INFO * info);
 
     CORINFO_METHOD_HANDLE getUnboxedEntry(
         CORINFO_METHOD_HANDLE ftn,

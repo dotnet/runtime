@@ -1,6 +1,5 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Globalization;
@@ -41,6 +40,10 @@ namespace System.Tests
         [InlineData(float.NaN, float.NaN, 0)]
         [InlineData(float.NaN, 0.0f, -1)]
         [InlineData(234.0f, null, 1)]
+        [InlineData(float.MinValue, float.NegativeInfinity, 1)]
+        [InlineData(float.NegativeInfinity, float.MinValue, -1)]
+        [InlineData(-0f, float.NegativeInfinity, 1)]
+        [InlineData(float.NegativeInfinity, -0f, -1)]
         public static void CompareTo_Other_ReturnsExpected(float f1, object value, int expected)
         {
             if (value is float f2)

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections;
 using System.Runtime.InteropServices;
@@ -64,7 +63,7 @@ namespace System.Management
         internal ManagementScope scope;
         internal EnumerationOptions options;
         private readonly IEnumWbemClassObject enumWbem; //holds WMI enumerator for this collection
-        private bool isDisposed = false;
+        private bool isDisposed;
 
         //Constructor
         internal ManagementObjectCollection(
@@ -407,7 +406,7 @@ namespace System.Management
             private int cacheIndex; //used to walk the enumeration cache
             private IWbemClassObjectFreeThreaded[] cachedObjects; //points to objects currently available in enumeration cache
             private bool atEndOfCollection;
-            private bool isDisposed = false;
+            private bool isDisposed;
 
             //constructor
             internal ManagementObjectEnumerator(

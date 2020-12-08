@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.ComponentModel;
 using System.Numerics.Hashing;
@@ -38,7 +37,7 @@ namespace Microsoft.CSharp.RuntimeBinder
         /// </summary>
         /// <param name="flags">The flags for the argument.</param>
         /// <param name="name">The name of the argument, if named; otherwise null.</param>
-        public static CSharpArgumentInfo Create(CSharpArgumentInfoFlags flags, string name)
+        public static CSharpArgumentInfo Create(CSharpArgumentInfoFlags flags, string? name)
         {
             return new CSharpArgumentInfo(flags, name);
         }

@@ -1,6 +1,5 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using Xunit;
 
@@ -45,7 +44,7 @@ namespace System.DirectoryServices.AccountManagement.Tests
             AssertExtensions.Throws<ArgumentException>(null, () => new ComputerPrincipal(context, "samAccountName", null, enabled: true));
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer), nameof(PlatformDetection.IsNotWindowsIoTCore))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoNorServerCore), nameof(PlatformDetection.IsNotWindowsIoTCore))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/34442", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         public void Ctor_MachineContext_NoException()
         {

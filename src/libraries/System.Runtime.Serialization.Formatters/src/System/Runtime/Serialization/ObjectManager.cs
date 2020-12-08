@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
 using System.Reflection;
@@ -20,7 +19,7 @@ namespace System.Runtime.Serialization
         private SerializationEventHandler? _onDeserializedHandler;
 
         internal ObjectHolder[] _objects;
-        internal object? _topObject = null;
+        internal object? _topObject;
         internal ObjectHolderList? _specialFixupObjects; //This is IObjectReference, ISerializable, or has a Surrogate.
         internal long _fixupCount;
         internal readonly ISurrogateSelector? _selector;
@@ -1017,8 +1016,8 @@ namespace System.Runtime.Serialization
         internal int _flags;
         private bool _markForFixupWhenAvailable;
         private ValueTypeFixupInfo? _valueFixup;
-        private TypeLoadExceptionHolder? _typeLoad = null;
-        private bool _reachable = false;
+        private TypeLoadExceptionHolder? _typeLoad;
+        private bool _reachable;
 
         internal ObjectHolder(long objID) : this(null, objID, null, null, 0, null, null)
         {
@@ -1123,6 +1122,7 @@ namespace System.Runtime.Serialization
         /// is added.
         /// </summary>
         /// <param name="fixup">The fixup holder containing enough information to complete the fixup.</param>
+        /// <param name="manager">The associated object manager.</param>
         internal void AddFixup(FixupHolder fixup, ObjectManager manager)
         {
             if (_missingElements == null)
@@ -1181,11 +1181,13 @@ namespace System.Runtime.Serialization
         /// object and other associated data.  We take this opportunity to set the flags
         /// so that we can do some faster processing in the future.
         /// </summary>
+        /// <param name="info">The optional serialization info.</param>
         /// <param name="obj">The object being held by this object holder. (This should no longer be null).</param>
         /// <param name="field">The SerializationInfo associated with this object, only required if we're doing delayed fixups.</param>
-        /// <param name="manager">the ObjectManager being used to track these ObjectHolders.</param>
         /// <param name="surrogate">The surrogate handling this object.  May be null.</param>
         /// <param name="idOfContainer">The id of the object containing this one if this is a valuetype.</param>
+        /// <param name="arrayIndex">The array index.</param>
+        /// <param name="manager">the ObjectManager being used to track these ObjectHolders.</param>
         internal void UpdateData(
             object obj, SerializationInfo? info, ISerializationSurrogate? surrogate, long idOfContainer,
             FieldInfo? field, int[]? arrayIndex, ObjectManager manager)

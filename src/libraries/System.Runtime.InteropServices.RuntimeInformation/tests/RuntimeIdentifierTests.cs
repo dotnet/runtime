@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.IO;
 using System.Linq;
@@ -19,7 +18,7 @@ namespace System.Runtime.InteropServices.RuntimeInformationTests
             Assert.EndsWith(RuntimeInformation.ProcessArchitecture.ToString(), RuntimeInformation.RuntimeIdentifier, StringComparison.OrdinalIgnoreCase);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void VerifyEnvironmentVariable()
         {
             RemoteInvokeOptions options = new RemoteInvokeOptions();
@@ -31,7 +30,7 @@ namespace System.Runtime.InteropServices.RuntimeInformationTests
             }, options).Dispose();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void VerifyAppContextVariable()
         {
             RemoteExecutor.Invoke(() =>
@@ -42,7 +41,7 @@ namespace System.Runtime.InteropServices.RuntimeInformationTests
             }).Dispose();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void VerifyAppContextVariableUnknown()
         {
             RemoteExecutor.Invoke(() =>

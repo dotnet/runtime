@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Linq;
@@ -262,120 +261,198 @@ namespace System.Tests
             }
         }
 
-        public static IEnumerable<object[]> GetName_TestData()
+        [Theory]
+        [InlineData(SByteEnum.Min, "Min")]
+        [InlineData(SByteEnum.One, "One")]
+        [InlineData(SByteEnum.Two, "Two")]
+        [InlineData(SByteEnum.Max, "Max")]
+        [InlineData(sbyte.MinValue, "Min")]
+        [InlineData((sbyte)1, "One")]
+        [InlineData((sbyte)2, "Two")]
+        [InlineData(sbyte.MaxValue, "Max")]
+        [InlineData((sbyte)3, null)]
+        public void GetName_InvokeSByteEnum_ReturnsExpected(object value, string expected)
         {
-            // SByte
-            yield return new object[] { typeof(SByteEnum), SByteEnum.Min, "Min" };
-            yield return new object[] { typeof(SByteEnum), SByteEnum.One, "One" };
-            yield return new object[] { typeof(SByteEnum), SByteEnum.Two, "Two" };
-            yield return new object[] { typeof(SByteEnum), SByteEnum.Max, "Max" };
-            yield return new object[] { typeof(SByteEnum), sbyte.MinValue, "Min" };
-            yield return new object[] { typeof(SByteEnum), (sbyte)1, "One" };
-            yield return new object[] { typeof(SByteEnum), (sbyte)2, "Two" };
-            yield return new object[] { typeof(SByteEnum), sbyte.MaxValue, "Max" };
-            yield return new object[] { typeof(SByteEnum), (sbyte)3, null };
-
-            // Byte
-            yield return new object[] { typeof(ByteEnum), ByteEnum.Min, "Min" };
-            yield return new object[] { typeof(ByteEnum), ByteEnum.One, "One" };
-            yield return new object[] { typeof(ByteEnum), ByteEnum.Two, "Two" };
-            yield return new object[] { typeof(ByteEnum), ByteEnum.Max, "Max" };
-            yield return new object[] { typeof(ByteEnum), byte.MinValue, "Min" };
-            yield return new object[] { typeof(ByteEnum), (byte)1, "One" };
-            yield return new object[] { typeof(ByteEnum), (byte)2, "Two" };
-            yield return new object[] { typeof(ByteEnum), byte.MaxValue, "Max" };
-            yield return new object[] { typeof(ByteEnum), (byte)3, null };
-
-            // Int16
-            yield return new object[] { typeof(Int16Enum), Int16Enum.Min, "Min" };
-            yield return new object[] { typeof(Int16Enum), Int16Enum.One, "One" };
-            yield return new object[] { typeof(Int16Enum), Int16Enum.Two, "Two" };
-            yield return new object[] { typeof(Int16Enum), Int16Enum.Max, "Max" };
-            yield return new object[] { typeof(Int16Enum), short.MinValue, "Min" };
-            yield return new object[] { typeof(Int16Enum), (short)1, "One" };
-            yield return new object[] { typeof(Int16Enum), (short)2, "Two" };
-            yield return new object[] { typeof(Int16Enum), short.MaxValue, "Max" };
-            yield return new object[] { typeof(Int16Enum), (short)3, null };
-
-            // UInt16
-            yield return new object[] { typeof(UInt16Enum), UInt16Enum.Min, "Min" };
-            yield return new object[] { typeof(UInt16Enum), UInt16Enum.One, "One" };
-            yield return new object[] { typeof(UInt16Enum), UInt16Enum.Two, "Two" };
-            yield return new object[] { typeof(UInt16Enum), UInt16Enum.Max, "Max" };
-            yield return new object[] { typeof(UInt16Enum), ushort.MinValue, "Min" };
-            yield return new object[] { typeof(UInt16Enum), (ushort)1, "One" };
-            yield return new object[] { typeof(UInt16Enum), (ushort)2, "Two" };
-            yield return new object[] { typeof(UInt16Enum), ushort.MaxValue, "Max" };
-            yield return new object[] { typeof(UInt16Enum), (ushort)3, null };
-
-            // Int32
-            yield return new object[] { typeof(Int32Enum), Int32Enum.Min, "Min" };
-            yield return new object[] { typeof(Int32Enum), Int32Enum.One, "One" };
-            yield return new object[] { typeof(Int32Enum), Int32Enum.Two, "Two" };
-            yield return new object[] { typeof(Int32Enum), Int32Enum.Max, "Max" };
-            yield return new object[] { typeof(Int32Enum), int.MinValue, "Min" };
-            yield return new object[] { typeof(Int32Enum), 1, "One" };
-            yield return new object[] { typeof(Int32Enum), 2, "Two" };
-            yield return new object[] { typeof(Int32Enum), int.MaxValue, "Max" };
-            yield return new object[] { typeof(Int32Enum), 3, null };
-
-            yield return new object[] { typeof(SimpleEnum), 99, null };
-            yield return new object[] { typeof(SimpleEnum), SimpleEnum.Red, "Red" };
-            yield return new object[] { typeof(SimpleEnum), 1, "Red" };
-
-            // UInt32
-            yield return new object[] { typeof(UInt32Enum), UInt32Enum.Min, "Min" };
-            yield return new object[] { typeof(UInt32Enum), UInt32Enum.One, "One" };
-            yield return new object[] { typeof(UInt32Enum), UInt32Enum.Two, "Two" };
-            yield return new object[] { typeof(UInt32Enum), UInt32Enum.Max, "Max" };
-            yield return new object[] { typeof(UInt32Enum), uint.MinValue, "Min" };
-            yield return new object[] { typeof(UInt32Enum), (uint)1, "One" };
-            yield return new object[] { typeof(UInt32Enum), (uint)2, "Two" };
-            yield return new object[] { typeof(UInt32Enum), uint.MaxValue, "Max" };
-            yield return new object[] { typeof(UInt32Enum), (uint)3, null };
-
-            // Int64
-            yield return new object[] { typeof(Int64Enum), Int64Enum.Min, "Min" };
-            yield return new object[] { typeof(Int64Enum), Int64Enum.One, "One" };
-            yield return new object[] { typeof(Int64Enum), Int64Enum.Two, "Two" };
-            yield return new object[] { typeof(Int64Enum), Int64Enum.Max, "Max" };
-            yield return new object[] { typeof(Int64Enum), long.MinValue, "Min" };
-            yield return new object[] { typeof(Int64Enum), (long)1, "One" };
-            yield return new object[] { typeof(Int64Enum), (long)2, "Two" };
-            yield return new object[] { typeof(Int64Enum), long.MaxValue, "Max" };
-            yield return new object[] { typeof(Int64Enum), (long)3, null };
-
-            // UInt64
-            yield return new object[] { typeof(UInt64Enum), UInt64Enum.Min, "Min" };
-            yield return new object[] { typeof(UInt64Enum), UInt64Enum.One, "One" };
-            yield return new object[] { typeof(UInt64Enum), UInt64Enum.Two, "Two" };
-            yield return new object[] { typeof(UInt64Enum), UInt64Enum.Max, "Max" };
-            yield return new object[] { typeof(UInt64Enum), ulong.MinValue, "Min" };
-            yield return new object[] { typeof(UInt64Enum), 1UL, "One" };
-            yield return new object[] { typeof(UInt64Enum), 2UL, "Two" };
-            yield return new object[] { typeof(UInt64Enum), ulong.MaxValue, "Max" };
-            yield return new object[] { typeof(UInt64Enum), 3UL, null };
-
-            if (PlatformDetection.IsReflectionEmitSupported)
+            TestGetName(typeof(SByteEnum), value, expected);
+            if (!(value is SByteEnum enumValue))
             {
-                // Char
-                yield return new object[] { s_charEnumType, Enum.Parse(s_charEnumType, "Value1"), "Value1" };
-                yield return new object[] { s_charEnumType, Enum.Parse(s_charEnumType, "Value2"), "Value2" };
-                yield return new object[] { s_charEnumType, (char)1, "Value1" };
-                yield return new object[] { s_charEnumType, (char)2, "Value2" };
-                yield return new object[] { s_charEnumType, (char)4, null };
-
-                // Bool
-                yield return new object[] { s_boolEnumType, Enum.Parse(s_boolEnumType, "Value1"), "Value1" };
-                yield return new object[] { s_boolEnumType, Enum.Parse(s_boolEnumType, "Value2"), "Value2" };
-                yield return new object[] { s_boolEnumType, true, "Value1" };
-                yield return new object[] { s_boolEnumType, false, "Value2" };
+                enumValue = (SByteEnum)(sbyte)value;
             }
+            Assert.Equal(expected, Enum.GetName<SByteEnum>(enumValue));
         }
 
         [Theory]
-        [MemberData(nameof(GetName_TestData))]
-        public static void GetName(Type enumType, object value, string expected)
+        [InlineData(ByteEnum.Min, "Min")]
+        [InlineData(ByteEnum.One, "One")]
+        [InlineData(ByteEnum.Two, "Two")]
+        [InlineData(ByteEnum.Max, "Max")]
+        [InlineData(byte.MinValue, "Min")]
+        [InlineData((byte)1, "One")]
+        [InlineData((byte)2, "Two")]
+        [InlineData(byte.MaxValue, "Max")]
+        [InlineData((byte)3, null)]
+        public void GetName_InvokeByteEnum_ReturnsExpected(object value, string expected)
+        {
+            TestGetName(typeof(ByteEnum), value, expected);
+            if (!(value is ByteEnum enumValue))
+            {
+                enumValue = (ByteEnum)(byte)value;
+            }
+            Assert.Equal(expected, Enum.GetName<ByteEnum>(enumValue));
+        }
+
+        [Theory]
+        [InlineData(Int16Enum.Min, "Min")]
+        [InlineData(Int16Enum.One, "One")]
+        [InlineData(Int16Enum.Two, "Two")]
+        [InlineData(Int16Enum.Max, "Max")]
+        [InlineData(short.MinValue, "Min")]
+        [InlineData((short)1, "One")]
+        [InlineData((short)2, "Two")]
+        [InlineData(short.MaxValue, "Max")]
+        [InlineData((short)3, null)]
+        public void GetName_InvokeInt16Enum_ReturnsExpected(object value, string expected)
+        {
+            TestGetName(typeof(Int16Enum), value, expected);
+            if (!(value is Int16Enum enumValue))
+            {
+                enumValue = (Int16Enum)(short)value;
+            }
+            Assert.Equal(expected, Enum.GetName<Int16Enum>(enumValue));
+        }
+
+        [Theory]
+        [InlineData(UInt16Enum.Min, "Min")]
+        [InlineData(UInt16Enum.One, "One")]
+        [InlineData(UInt16Enum.Two, "Two")]
+        [InlineData(UInt16Enum.Max, "Max")]
+        [InlineData(ushort.MinValue, "Min")]
+        [InlineData((ushort)1, "One")]
+        [InlineData((ushort)2, "Two")]
+        [InlineData(ushort.MaxValue, "Max")]
+        [InlineData((ushort)3, null)]
+        public void GetName_InvokeUInt16Enum_ReturnsExpected(object value, string expected)
+        {
+            TestGetName(typeof(UInt16Enum), value, expected);
+            if (!(value is UInt16Enum enumValue))
+            {
+                enumValue = (UInt16Enum)(ushort)value;
+            }
+            Assert.Equal(expected, Enum.GetName<UInt16Enum>(enumValue));
+        }
+
+        [Theory]
+        [InlineData(Int32Enum.Min, "Min")]
+        [InlineData(Int32Enum.One, "One")]
+        [InlineData(Int32Enum.Two, "Two")]
+        [InlineData(Int32Enum.Max, "Max")]
+        [InlineData(int.MinValue, "Min")]
+        [InlineData(1, "One")]
+        [InlineData(2, "Two")]
+        [InlineData(int.MaxValue, "Max")]
+        [InlineData(3, null)]
+        public void GetName_InvokeInt32Enum_ReturnsExpected(object value, string expected)
+        {
+            TestGetName(typeof(Int32Enum), value, expected);
+            if (!(value is Int32Enum enumValue))
+            {
+                enumValue = (Int32Enum)(int)value;
+            }
+            Assert.Equal(expected, Enum.GetName<Int32Enum>(enumValue));
+        }
+
+        [Theory]
+        [InlineData(UInt32Enum.Min, "Min")]
+        [InlineData(UInt32Enum.One, "One")]
+        [InlineData(UInt32Enum.Two, "Two")]
+        [InlineData(UInt32Enum.Max, "Max")]
+        [InlineData(uint.MinValue, "Min")]
+        [InlineData((uint)1, "One")]
+        [InlineData((uint)2, "Two")]
+        [InlineData(uint.MaxValue, "Max")]
+        [InlineData((uint)3, null)]
+        public void GetName_InvokeUInt32Enum_ReturnsExpected(object value, string expected)
+        {
+            TestGetName(typeof(UInt32Enum), value, expected);
+            if (!(value is UInt32Enum enumValue))
+            {
+                enumValue = (UInt32Enum)(uint)value;
+            }
+            Assert.Equal(expected, Enum.GetName<UInt32Enum>(enumValue));
+        }
+
+        [Theory]
+        [InlineData(Int64Enum.Min, "Min")]
+        [InlineData(Int64Enum.One, "One")]
+        [InlineData(Int64Enum.Two, "Two")]
+        [InlineData(Int64Enum.Max, "Max")]
+        [InlineData(long.MinValue, "Min")]
+        [InlineData((long)1, "One")]
+        [InlineData((long)2, "Two")]
+        [InlineData(long.MaxValue, "Max")]
+        [InlineData((long)3, null)]
+        public void GetName_InvokeInt64Enum_ReturnsExpected(object value, string expected)
+        {
+            TestGetName(typeof(Int64Enum), value, expected);
+            if (!(value is Int64Enum enumValue))
+            {
+                enumValue = (Int64Enum)(long)value;
+            }
+            Assert.Equal(expected, Enum.GetName<Int64Enum>(enumValue));
+        }
+
+        [Theory]
+        [InlineData(UInt64Enum.Min, "Min")]
+        [InlineData(UInt64Enum.One, "One")]
+        [InlineData(UInt64Enum.Two, "Two")]
+        [InlineData(UInt64Enum.Max, "Max")]
+        [InlineData(ulong.MinValue, "Min")]
+        [InlineData(1UL, "One")]
+        [InlineData(2UL, "Two")]
+        [InlineData(ulong.MaxValue, "Max")]
+        [InlineData(3UL, null)]
+        public void GetName_InvokeUInt64Enum_ReturnsExpected(object value, string expected)
+        {
+            TestGetName(typeof(UInt64Enum), value, expected);
+            if (!(value is UInt64Enum enumValue))
+            {
+                enumValue = (UInt64Enum)(ulong)value;
+            }
+            Assert.Equal(expected, Enum.GetName<UInt64Enum>(enumValue));
+        }
+
+        public static IEnumerable<object[]> GetName_CharEnum_TestData()
+        {
+            yield return new object[] { Enum.Parse(s_charEnumType, "Value1"), "Value1" };
+            yield return new object[] { Enum.Parse(s_charEnumType, "Value2"), "Value2" };
+            yield return new object[] { (char)1, "Value1" };
+            yield return new object[] { (char)2, "Value2" };
+            yield return new object[] { (char)4, null };
+        }
+        
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
+        [MemberData(nameof(GetName_CharEnum_TestData))]
+        public void GetName_InvokeCharEnum_ReturnsExpected(object value, string expected)
+        {
+            TestGetName(s_charEnumType, value, expected);
+        }
+
+        public static IEnumerable<object[]> GetName_BoolEnum_TestData()
+        {
+            yield return new object[] { Enum.Parse(s_boolEnumType, "Value1"), "Value1" };
+            yield return new object[] { Enum.Parse(s_boolEnumType, "Value2"), "Value2" };
+            yield return new object[] { true, "Value1" };
+            yield return new object[] { false, "Value2" };
+        }
+        
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
+        [MemberData(nameof(GetName_BoolEnum_TestData))]
+        public void GetName_InvokeBoolEnum_ReturnsExpected(object value, string expected)
+        {
+            TestGetName(s_boolEnumType, value, expected);
+        }
+
+        private void TestGetName(Type enumType, object value, string expected)
         {
             Assert.Equal(expected, Enum.GetName(enumType, value));
 
@@ -399,15 +476,38 @@ namespace System.Tests
         }
 
         [Fact]
-        public static void GetName_Invalid()
+        public void GetName_NullEnumType_ThrowsArgumentNullException()
         {
-            Type t = typeof(SimpleEnum);
-            AssertExtensions.Throws<ArgumentNullException>("enumType", () => Enum.GetName(null, 1)); // Enum type is null
-            AssertExtensions.Throws<ArgumentNullException>("value", () => Enum.GetName(t, null)); // Value is null
+            AssertExtensions.Throws<ArgumentNullException>("enumType", () => Enum.GetName(null, 1));
+        }
 
-            AssertExtensions.Throws<ArgumentException>(null, () => Enum.GetName(typeof(object), 1)); // Enum type is not an enum
-            AssertExtensions.Throws<ArgumentException>("value", () => Enum.GetName(t, "Red")); // Value is not the type of the enum's raw data
-            AssertExtensions.Throws<ArgumentException>("value", () => Enum.GetName(t, (IntPtr)0)); // Value is out of range
+        [Theory]
+        [InlineData(typeof(object))]
+        [InlineData(typeof(int))]
+        [InlineData(typeof(ValueType))]
+        [InlineData(typeof(Enum))]
+        public void GetName_EnumTypeNotEnum_ThrowsArgumentException(Type enumType)
+        {
+            AssertExtensions.Throws<ArgumentException>(null, () => Enum.GetName(enumType, 1));
+        }
+
+        [Fact]
+        public void GetName_NullValue_ThrowsArgumentNullException()
+        {
+            AssertExtensions.Throws<ArgumentNullException>("value", () => Enum.GetName(typeof(SimpleEnum), null));
+        }
+
+        public static IEnumerable<object[]> GetName_InvalidValue_TestData()
+        {
+            yield return new object[] { "Red" };
+            yield return new object[] { IntPtr.Zero };
+        }
+
+        [Theory]
+        [MemberData(nameof(GetName_InvalidValue_TestData))]
+        public void GetName_InvalidValue_ThrowsArgumentException(object value)
+        {
+            AssertExtensions.Throws<ArgumentException>("value", () => Enum.GetName(typeof(SimpleEnum), value));
         }
 
         [Theory]
@@ -417,7 +517,7 @@ namespace System.Tests
         [InlineData(typeof(SByteEnum), true, "One")]
         [InlineData(typeof(SByteEnum), (char)1, "One")]
         [InlineData(typeof(SByteEnum), SimpleEnum.Red, "One")] // API doesn't care if you pass in a completely different enum
-        public static void GetName_NonIntegralTypes(Type enumType, object value, string expected)
+        public static void GetName_NonIntegralTypes_ReturnsExpected(Type enumType, object value, string expected)
         {
             // Despite what MSDN says, GetName() does not require passing in the exact integral type.
             // For the purposes of comparison:
@@ -446,120 +546,203 @@ namespace System.Tests
             Assert.Equal(expected, e.GetTypeCode());
         }
 
-        public static IEnumerable<object[]> IsDefined_TestData()
+        [Theory]
+        [InlineData("One", true)]
+        [InlineData("None", false)]
+        [InlineData(SByteEnum.One, true)]
+        [InlineData((SByteEnum)99, false)]
+        [InlineData((sbyte)1, true)]
+        [InlineData((sbyte)99, false)]
+        public static void IsDefined_InvokeSByteEnum_ReturnsExpected(object value, bool expected)
         {
-            // SByte
-            yield return new object[] { typeof(SByteEnum), "One", true };
-            yield return new object[] { typeof(SByteEnum), "None", false };
-            yield return new object[] { typeof(SByteEnum), SByteEnum.One, true };
-            yield return new object[] { typeof(SByteEnum), (SByteEnum)99, false };
-            yield return new object[] { typeof(SByteEnum), (sbyte)1, true };
-            yield return new object[] { typeof(SByteEnum), (sbyte)99, false };
-
-            // Byte
-            yield return new object[] { typeof(ByteEnum), "One", true };
-            yield return new object[] { typeof(ByteEnum), "None", false };
-            yield return new object[] { typeof(ByteEnum), ByteEnum.One, true };
-            yield return new object[] { typeof(ByteEnum), (ByteEnum)99, false };
-            yield return new object[] { typeof(ByteEnum), (byte)1, true };
-            yield return new object[] { typeof(ByteEnum), (byte)99, false };
-
-            // Int16
-            yield return new object[] { typeof(Int16Enum), "One", true };
-            yield return new object[] { typeof(Int16Enum), "None", false };
-            yield return new object[] { typeof(Int16Enum), Int16Enum.One, true };
-            yield return new object[] { typeof(Int16Enum), (Int16Enum)99, false };
-            yield return new object[] { typeof(Int16Enum), (short)1, true };
-            yield return new object[] { typeof(Int16Enum), (short)99, false };
-
-            // UInt16
-            yield return new object[] { typeof(UInt16Enum), "One", true };
-            yield return new object[] { typeof(UInt16Enum), "None", false };
-            yield return new object[] { typeof(UInt16Enum), UInt16Enum.One, true };
-            yield return new object[] { typeof(UInt16Enum), (UInt16Enum)99, false };
-            yield return new object[] { typeof(UInt16Enum), (ushort)1, true };
-            yield return new object[] { typeof(UInt16Enum), (ushort)99, false };
-
-            // Int32
-            yield return new object[] { typeof(SimpleEnum), "Red", true };
-            yield return new object[] { typeof(SimpleEnum), "Green", true };
-            yield return new object[] { typeof(SimpleEnum), "Blue", true };
-            yield return new object[] { typeof(SimpleEnum), " Blue ", false };
-            yield return new object[] { typeof(SimpleEnum), " blue ", false };
-            yield return new object[] { typeof(SimpleEnum), SimpleEnum.Red, true };
-            yield return new object[] { typeof(SimpleEnum), (SimpleEnum)99, false };
-            yield return new object[] { typeof(SimpleEnum), 1, true };
-            yield return new object[] { typeof(SimpleEnum), 99, false };
-            yield return new object[] { typeof(Int32Enum), 0x1 | 0x02, false };
-
-            // UInt32
-            yield return new object[] { typeof(UInt32Enum), "One", true };
-            yield return new object[] { typeof(UInt32Enum), "None", false };
-            yield return new object[] { typeof(UInt32Enum), UInt32Enum.One, true };
-            yield return new object[] { typeof(UInt32Enum), (UInt32Enum)99, false };
-            yield return new object[] { typeof(UInt32Enum), (uint)1, true };
-            yield return new object[] { typeof(UInt32Enum), (uint)99, false };
-
-            // Int64
-            yield return new object[] { typeof(Int64Enum), "One", true };
-            yield return new object[] { typeof(Int64Enum), "None", false };
-            yield return new object[] { typeof(Int64Enum), Int64Enum.One, true };
-            yield return new object[] { typeof(Int64Enum), (Int64Enum)99, false };
-            yield return new object[] { typeof(Int64Enum), (long)1, true };
-            yield return new object[] { typeof(Int64Enum), (long)99, false };
-
-            // UInt64
-            yield return new object[] { typeof(UInt64Enum), "One", true };
-            yield return new object[] { typeof(UInt64Enum), "None", false };
-            yield return new object[] { typeof(UInt64Enum), UInt64Enum.One, true };
-            yield return new object[] { typeof(UInt64Enum), (UInt64Enum)99, false };
-            yield return new object[] { typeof(UInt64Enum), (ulong)1, true };
-            yield return new object[] { typeof(UInt64Enum), (ulong)99, false };
-
-            if (PlatformDetection.IsReflectionEmitSupported)
+            Assert.Equal(expected, Enum.IsDefined(typeof(SByteEnum), value));
+            if (value is SByteEnum enumValue)
             {
-                // Char
-                yield return new object[] { s_charEnumType, "Value1", true };
-                yield return new object[] { s_charEnumType, "None", false };
-                yield return new object[] { s_charEnumType, Enum.Parse(s_charEnumType, "Value1"), true };
-                yield return new object[] { s_charEnumType, (char)1, true };
-                yield return new object[] { s_charEnumType, (char)99, false };
-
-                // Boolean
-                yield return new object[] { s_boolEnumType, "Value1", true };
-                yield return new object[] { s_boolEnumType, "None", false };
-                yield return new object[] { s_boolEnumType, Enum.Parse(s_boolEnumType, "Value1"), true };
-                yield return new object[] { s_boolEnumType, "Value1", true };
-                yield return new object[] { s_boolEnumType, true, true };
-                yield return new object[] { s_boolEnumType, false, true };
+                Assert.Equal(expected, Enum.IsDefined<SByteEnum>(enumValue));
             }
         }
 
         [Theory]
-        [MemberData(nameof(IsDefined_TestData))]
-        public static void IsDefined(Type enumType, object value, bool expected)
+        [InlineData("One", true)]
+        [InlineData("None", false)]
+        [InlineData(ByteEnum.One, true)]
+        [InlineData((ByteEnum)99, false)]
+        [InlineData((byte)1, true)]
+        [InlineData((byte)99, false)]
+        public static void IsDefined_InvokeByteEnum_ReturnsExpected(object value, bool expected)
         {
-            Assert.Equal(expected, Enum.IsDefined(enumType, value));
+            Assert.Equal(expected, Enum.IsDefined(typeof(ByteEnum), value));
+            if (value is ByteEnum enumValue)
+            {
+                Assert.Equal(expected, Enum.IsDefined<ByteEnum>(enumValue));
+            }
+        }
+
+        [Theory]
+        [InlineData("One", true)]
+        [InlineData("None", false)]
+        [InlineData(Int16Enum.One, true)]
+        [InlineData((Int16Enum)99, false)]
+        [InlineData((short)1, true)]
+        [InlineData((short)99, false)]
+        public static void IsDefined_InvokeInt16Enum_ReturnsExpected(object value, bool expected)
+        {
+            Assert.Equal(expected, Enum.IsDefined(typeof(Int16Enum), value));
+            if (value is Int16Enum enumValue)
+            {
+                Assert.Equal(expected, Enum.IsDefined<Int16Enum>(enumValue));
+            }
+        }
+
+        [Theory]
+        [InlineData("One", true)]
+        [InlineData("None", false)]
+        [InlineData(UInt16Enum.One, true)]
+        [InlineData((UInt16Enum)99, false)]
+        [InlineData((ushort)1, true)]
+        [InlineData((ushort)99, false)]
+        public static void IsDefined_InvokeUInt16Enum_ReturnsExpected(object value, bool expected)
+        {
+            Assert.Equal(expected, Enum.IsDefined(typeof(UInt16Enum), value));
+            if (value is UInt16Enum enumValue)
+            {
+                Assert.Equal(expected, Enum.IsDefined<UInt16Enum>(enumValue));
+            }
+        }
+
+        [Theory]
+        [InlineData("Red", true)]
+        [InlineData("Green", true)]
+        [InlineData("Blue", true)]
+        [InlineData(" Blue ", false)]
+        [InlineData(" blue ", false)]
+        [InlineData(SimpleEnum.Red, true)]
+        [InlineData((SimpleEnum)99, false)]
+        [InlineData(1, true)]
+        [InlineData(99, false)]
+        public static void IsDefined_InvokeInt32Enum_ReturnsExpected(object value, bool expected)
+        {
+            Assert.Equal(expected, Enum.IsDefined(typeof(SimpleEnum), value));
+            if (value is SimpleEnum enumValue)
+            {
+                Assert.Equal(expected, Enum.IsDefined<SimpleEnum>(enumValue));
+            }
+        }
+
+        [Theory]
+        [InlineData("One", true)]
+        [InlineData("None", false)]
+        [InlineData(UInt32Enum.One, true)]
+        [InlineData((UInt32Enum)99, false)]
+        [InlineData((uint)1, true)]
+        [InlineData((uint)99, false)]
+        public static void IsDefined_InvokeUInt32Enum_ReturnsExpected(object value, bool expected)
+        {
+            Assert.Equal(expected, Enum.IsDefined(typeof(UInt32Enum), value));
+            if (value is UInt32Enum enumValue)
+            {
+                Assert.Equal(expected, Enum.IsDefined<UInt32Enum>(enumValue));
+            }
+        }
+
+        [Theory]
+        [InlineData("One", true)]
+        [InlineData("None", false)]
+        [InlineData(Int64Enum.One, true)]
+        [InlineData((Int64Enum)99, false)]
+        [InlineData((long)1, true)]
+        [InlineData((long)99, false)]
+        public static void IsDefined_InvokeInt64Enum_ReturnsExpected(object value, bool expected)
+        {
+            Assert.Equal(expected, Enum.IsDefined(typeof(Int64Enum), value));
+            if (value is Int64Enum enumValue)
+            {
+                Assert.Equal(expected, Enum.IsDefined<Int64Enum>(enumValue));
+            }
+        }
+
+        [Theory]
+        [InlineData("One", true)]
+        [InlineData("None", false)]
+        [InlineData(UInt64Enum.One, true)]
+        [InlineData((UInt64Enum)99, false)]
+        [InlineData((ulong)1, true)]
+        [InlineData((ulong)99, false)]
+        public static void IsDefined_InvokeUInt64Enum_ReturnsExpected(object value, bool expected)
+        {
+            Assert.Equal(expected, Enum.IsDefined(typeof(UInt64Enum), value));
+            if (value is UInt64Enum enumValue)
+            {
+                Assert.Equal(expected, Enum.IsDefined<UInt64Enum>(enumValue));
+            }
+        }
+
+        public static IEnumerable<object[]> IsDefined_CharEnum_TestData()
+        {
+            yield return new object[] { "Value1", true };
+            yield return new object[] { "None", false };
+            yield return new object[] { Enum.Parse(s_charEnumType, "Value1"), true };
+            yield return new object[] { (char)1, true };
+            yield return new object[] { (char)99, false };
+        }
+
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
+        [MemberData(nameof(IsDefined_CharEnum_TestData))]
+        public void IsDefined_InvokeCharEnum_ReturnsExpected(object value, bool expected)
+        {
+            Assert.Equal(expected, Enum.IsDefined(s_charEnumType, value));
+        }
+
+        public static IEnumerable<object[]> IsDefined_BoolEnum_TestData()
+        {
+            yield return new object[] { "Value1", true };
+            yield return new object[] { "None", false };
+            yield return new object[] { Enum.Parse(s_boolEnumType, "Value1"), true };
+            yield return new object[] { "Value1", true };
+            yield return new object[] { true, true };
+            yield return new object[] { false, true };
+        }
+
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
+        [MemberData(nameof(IsDefined_BoolEnum_TestData))]
+        public void IsDefined_InvokeBoolEnum_ReturnsExpected(object value, bool expected)
+        {
+            Assert.Equal(expected, Enum.IsDefined(s_boolEnumType, value));
         }
 
         [Fact]
-        public static void IsDefined_Invalid()
+        public void IsDefined_NullEnumType_ThrowsArgumentNullException()
         {
-            Type t = typeof(SimpleEnum);
+            AssertExtensions.Throws<ArgumentNullException>("enumType", () => Enum.IsDefined(null, 1));
+        }
 
-            AssertExtensions.Throws<ArgumentNullException>("enumType", () => Enum.IsDefined(null, 1)); // Enum type is null
-            AssertExtensions.Throws<ArgumentNullException>("value", () => Enum.IsDefined(t, null)); // Value is null
+        [Fact]
+        public void IsDefined_NullValue_ThrowsArgumentNullException()
+        {
+            AssertExtensions.Throws<ArgumentNullException>("value", () => Enum.IsDefined(typeof(SimpleEnum), null));
+        }
 
-            AssertExtensions.Throws<ArgumentException>(null, () => Enum.IsDefined(t, Int32Enum.One)); // Value is different enum type
+        [Theory]
+        [InlineData(Int32Enum.One)]
+        [InlineData(true)]
+        [InlineData('a')]
+        public void IsDefined_InvalidValue_ThrowsArgumentException(object value)
+        {
+            AssertExtensions.Throws<ArgumentException>(null, () => Enum.IsDefined(typeof(SimpleEnum), value));
+        }
 
-            // Value is not a valid type (MSDN claims this should throw InvalidOperationException)
-            AssertExtensions.Throws<ArgumentException>(null, () => Enum.IsDefined(t, true));
-            AssertExtensions.Throws<ArgumentException>(null, () => Enum.IsDefined(t, 'a'));
+        public static IEnumerable<object[]> IsDefined_NonIntegerValue_TestData()
+        {
+            yield return new object[] { IntPtr.Zero };
+            yield return new object[] { 5.5 };
+            yield return new object[] { 5.5f };
+        }
 
-            // Non-integers throw InvalidOperationException prior to Win8P.
-            Assert.Throws<InvalidOperationException>(() => Enum.IsDefined(t, (IntPtr)0));
-            Assert.Throws<InvalidOperationException>(() => Enum.IsDefined(t, 5.5));
-            Assert.Throws<InvalidOperationException>(() => Enum.IsDefined(t, 5.5f));
+        [Theory]
+        [MemberData(nameof(IsDefined_NonIntegerValue_TestData))]
+        public void IsDefined_NonIntegerValue_ThrowsThrowsInvalidOperationException(object value)
+        {
+            Assert.Throws<InvalidOperationException>(() => Enum.IsDefined(typeof(SimpleEnum), value));
         }
 
         public static IEnumerable<object[]> HasFlag_TestData()
@@ -1091,152 +1274,294 @@ namespace System.Tests
             AssertExtensions.Throws<ArgumentException>("enumType", () => Enum.GetUnderlyingType(typeof(Enum))); // Enum type is simply an enum
         }
 
-        public static IEnumerable<object[]> GetNames_GetValues_TestData()
+        [Fact]
+        public void GetNames_InvokeSimpleEnum_ReturnsExpected()
         {
-            // SimpleEnum
-            yield return new object[]
-            {
-                typeof(SimpleEnum),
-                new string[] { "Red", "Blue", "Green", "Green_a", "Green_b", "B" },
-                new object[] { SimpleEnum.Red, SimpleEnum.Blue, SimpleEnum.Green, SimpleEnum.Green_a, SimpleEnum.Green_b, SimpleEnum.B }
-            };
+            var expected = new string[] { "Red", "Blue", "Green", "Green_a", "Green_b", "B" };
+            Assert.Equal(expected, Enum.GetNames(typeof(SimpleEnum)));
+            Assert.NotSame(Enum.GetNames(typeof(SimpleEnum)), Enum.GetNames(typeof(SimpleEnum)));
+            Assert.Equal(expected, Enum.GetNames<SimpleEnum>());
+        }
 
-            // SByte
-            yield return new object[]
-            {
-                typeof(SByteEnum),
-                new string[] { "One", "Two", "Max", "Min" },
-                new object[] { SByteEnum.One, SByteEnum.Two, SByteEnum.Max, SByteEnum.Min }
-            };
+        [Fact]
+        public void GetNames_InvokeSByteEnum_ReturnsExpected()
+        {
+            var expected = new string[] { "One", "Two", "Max", "Min" };
+            Assert.Equal(expected, Enum.GetNames(typeof(SByteEnum)));
+            Assert.NotSame(Enum.GetNames(typeof(SByteEnum)), Enum.GetNames(typeof(SByteEnum)));
+            Assert.Equal(expected, Enum.GetNames<SByteEnum>());
+        }
 
-            // Byte
-            yield return new object[]
-            {
-                typeof(ByteEnum),
-                new string[] { "Min", "One", "Two", "Max" },
-                new object[] { ByteEnum.Min, ByteEnum.One, ByteEnum.Two, ByteEnum.Max }
-            };
+        [Fact]
+        public void GetNames_InvokeByteEnum_ReturnsExpected()
+        {
+            var expected = new string[] { "Min", "One", "Two", "Max" };
+            Assert.Equal(expected, Enum.GetNames(typeof(ByteEnum)));
+            Assert.NotSame(Enum.GetNames(typeof(ByteEnum)), Enum.GetNames(typeof(ByteEnum)));
+            Assert.Equal(expected, Enum.GetNames<ByteEnum>());
+        }
 
-            // Int16
-            yield return new object[]
-            {
-                typeof(Int16Enum),
-                new string[] { "One", "Two", "Max", "Min" },
-                new object[] { Int16Enum.One, Int16Enum.Two, Int16Enum.Max, Int16Enum.Min }
-            };
+        [Fact]
+        public void GetNames_InvokeInt16Enum_ReturnsExpected()
+        {
+            var expected = new string[] { "One", "Two", "Max", "Min" };
+            Assert.Equal(expected, Enum.GetNames(typeof(Int16Enum)));
+            Assert.NotSame(Enum.GetNames(typeof(Int16Enum)), Enum.GetNames(typeof(Int16Enum)));
+            Assert.Equal(expected, Enum.GetNames<Int16Enum>());
+        }
 
-            // UInt16
-            yield return new object[]
-            {
-                typeof(UInt16Enum),
-                new string[] { "Min", "One", "Two", "Max" },
-                new object[] { UInt16Enum.Min, UInt16Enum.One, UInt16Enum.Two, UInt16Enum.Max }
-            };
+        [Fact]
+        public void GetNames_InvokeUInt16Enum_ReturnsExpected()
+        {
+            var expected = new string[] { "Min", "One", "Two", "Max" };
+            Assert.Equal(expected, Enum.GetNames(typeof(UInt16Enum)));
+            Assert.NotSame(Enum.GetNames(typeof(UInt16Enum)), Enum.GetNames(typeof(UInt16Enum)));
+            Assert.Equal(expected, Enum.GetNames<UInt16Enum>());
+        }
 
-            // Int32
-            yield return new object[]
-            {
-                typeof(Int32Enum),
-                new string[] { "One", "Two", "Max", "Min" },
-                new object[] { Int32Enum.One, Int32Enum.Two, Int32Enum.Max, Int32Enum.Min }
-            };
+        [Fact]
+        public void GetNames_InvokeInt32Enum_ReturnsExpected()
+        {
+            var expected = new string[] { "One", "Two", "Max", "Min" };
+            Assert.Equal(expected, Enum.GetNames(typeof(Int32Enum)));
+            Assert.NotSame(Enum.GetNames(typeof(Int32Enum)), Enum.GetNames(typeof(Int32Enum)));
+            Assert.Equal(expected, Enum.GetNames<Int32Enum>());
+        }
 
-            // UInt32
-            yield return new object[]
-            {
-                typeof(UInt32Enum),
-                new string[] { "Min", "One", "Two", "Max" },
-                new object[] { UInt32Enum.Min, UInt32Enum.One, UInt32Enum.Two, UInt32Enum.Max }
-            };
+        [Fact]
+        public void GetNames_InvokeUInt32Enum_ReturnsExpected()
+        {
+            var expected = new string[] { "Min", "One", "Two", "Max" };
+            Assert.Equal(expected, Enum.GetNames(typeof(UInt32Enum)));
+            Assert.NotSame(Enum.GetNames(typeof(UInt32Enum)), Enum.GetNames(typeof(UInt32Enum)));
+            Assert.Equal(expected, Enum.GetNames<UInt32Enum>());
+        }
 
-            // Int64
-            yield return new object[]
-            {
-                typeof(Int64Enum),
-                new string[] { "One", "Two", "Max", "Min" },
-                new object[] { Int64Enum.One, Int64Enum.Two, Int64Enum.Max, Int64Enum.Min }
-            };
+        [Fact]
+        public void GetNames_InvokeInt64Enum_ReturnsExpected()
+        {
+            var expected = new string[] { "One", "Two", "Max", "Min" };
+            Assert.Equal(expected, Enum.GetNames(typeof(Int64Enum)));
+            Assert.NotSame(Enum.GetNames(typeof(Int64Enum)), Enum.GetNames(typeof(Int64Enum)));
+            Assert.Equal(expected, Enum.GetNames<Int64Enum>());
+        }
 
-            // UInt64
-            yield return new object[]
-            {
-                typeof(UInt64Enum),
-                new string[] { "Min", "One", "Two", "Max" },
-                new object[] { UInt64Enum.Min, UInt64Enum.One, UInt64Enum.Two, UInt64Enum.Max }
-            };
+        [Fact]
+        public void GetNames_InvokeUInt64Enum_ReturnsExpected()
+        {
+            var expected = new string[] { "Min", "One", "Two", "Max" };
+            Assert.Equal(expected, Enum.GetNames(typeof(UInt64Enum)));
+            Assert.NotSame(Enum.GetNames(typeof(UInt64Enum)), Enum.GetNames(typeof(UInt64Enum)));
+            Assert.Equal(expected, Enum.GetNames<UInt64Enum>());
+        }
 
-            if (PlatformDetection.IsReflectionEmitSupported)
-            {
-                // Char
-                yield return new object[]
-                {
-                    s_charEnumType,
-                    new string[] { "Value0x0000", "Value1", "Value2", "Value0x0010", "Value0x0f06", "Value0x1000", "Value0x3000", "Value0x3f06", "Value0x3f16" },
-                    new object[] { Enum.Parse(s_charEnumType, "Value0x0000"), Enum.Parse(s_charEnumType, "Value1"), Enum.Parse(s_charEnumType, "Value2"), Enum.Parse(s_charEnumType, "Value0x0010"), Enum.Parse(s_charEnumType, "Value0x0f06"), Enum.Parse(s_charEnumType, "Value0x1000"), Enum.Parse(s_charEnumType, "Value0x3000"), Enum.Parse(s_charEnumType, "Value0x3f06"), Enum.Parse(s_charEnumType, "Value0x3f16") }
-                };
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
+        public void GetNames_InvokeCharEnum_ReturnsExpected()
+        {
+            var expected = new string[] { "Value0x0000", "Value1", "Value2", "Value0x0010", "Value0x0f06", "Value0x1000", "Value0x3000", "Value0x3f06", "Value0x3f16" };
+            Assert.Equal(expected, Enum.GetNames(s_charEnumType));
+            Assert.NotSame(Enum.GetNames(s_charEnumType), Enum.GetNames(s_charEnumType));
+        }
 
-                // Bool
-                yield return new object[]
-                {
-                    s_boolEnumType,
-                    new string[] { "Value2", "Value1" },
-                    new object[] { Enum.Parse(s_boolEnumType, "Value2"), Enum.Parse(s_boolEnumType, "Value1") }
-                };
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
+        public void GetNames_InvokeBoolEnum_ReturnsExpected()
+        {
+            var expected = new string[] { "Value2", "Value1" };
+            Assert.Equal(expected, Enum.GetNames(s_boolEnumType));
+            Assert.NotSame(Enum.GetNames(s_boolEnumType), Enum.GetNames(s_boolEnumType));
+        }
 
-                // Single
-                yield return new object[]
-                {
-                    s_floatEnumType,
-                    new string[] { "Value1", "Value2", "Value0x3f06", "Value0x3000", "Value0x0f06", "Value0x1000", "Value0x0000", "Value0x0010", "Value0x3f16" },
-                    new object[] { Enum.Parse(s_floatEnumType, "Value1"), Enum.Parse(s_floatEnumType, "Value2"), Enum.Parse(s_floatEnumType, "Value0x3f06"), Enum.Parse(s_floatEnumType, "Value0x3000"), Enum.Parse(s_floatEnumType, "Value0x0f06"), Enum.Parse(s_floatEnumType, "Value0x1000"), Enum.Parse(s_floatEnumType, "Value0x0000"), Enum.Parse(s_floatEnumType, "Value0x0010"), Enum.Parse(s_floatEnumType, "Value0x3f16") }
-                };
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
+        public void GetNames_InvokeSingleEnum_ReturnsExpected()
+        {
+            var expected = new string[] { "Value1", "Value2", "Value0x3f06", "Value0x3000", "Value0x0f06", "Value0x1000", "Value0x0000", "Value0x0010", "Value0x3f16" };
+            Assert.Equal(expected, Enum.GetNames(s_floatEnumType));
+            Assert.NotSame(Enum.GetNames(s_floatEnumType), Enum.GetNames(s_floatEnumType));
+        }
 
-                // Double
-                yield return new object[]
-                {
-                    s_doubleEnumType,
-                    new string[] { "Value1", "Value2", "Value0x3f06", "Value0x3000", "Value0x0f06", "Value0x1000", "Value0x0000", "Value0x0010", "Value0x3f16" },
-                    new object[] { Enum.Parse(s_doubleEnumType, "Value1"), Enum.Parse(s_doubleEnumType, "Value2"), Enum.Parse(s_doubleEnumType, "Value0x3f06"), Enum.Parse(s_doubleEnumType, "Value0x3000"), Enum.Parse(s_doubleEnumType, "Value0x0f06"), Enum.Parse(s_doubleEnumType, "Value0x1000"), Enum.Parse(s_doubleEnumType, "Value0x0000"), Enum.Parse(s_doubleEnumType, "Value0x0010"), Enum.Parse(s_doubleEnumType, "Value0x3f16") }
-                };
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
+        public void GetNames_InvokeDoubleEnum_ReturnsExpected()
+        {
+            var expected = new string[] { "Value1", "Value2", "Value0x3f06", "Value0x3000", "Value0x0f06", "Value0x1000", "Value0x0000", "Value0x0010", "Value0x3f16" };
+            Assert.Equal(expected, Enum.GetNames(s_doubleEnumType));
+            Assert.NotSame(Enum.GetNames(s_doubleEnumType), Enum.GetNames(s_doubleEnumType));
+        }
 
-                // IntPtr
-                yield return new object[]
-                {
-                    s_intPtrEnumType,
-                    new string[0],
-                    new object[0]
-                };
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
+        public void GetNames_InvokeIntPtrEnum_ReturnsExpected()
+        {
+            var expected = new string[0];
+            Assert.Equal(expected, Enum.GetNames(s_intPtrEnumType));
+            Assert.Same(Enum.GetNames(s_intPtrEnumType), Enum.GetNames(s_intPtrEnumType));
+        }
 
-                // UIntPtr
-                yield return new object[]
-                {
-                    s_uintPtrEnumType,
-                    new string[0],
-                    new object[0]
-                };
-            }
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
+        public void GetNames_InvokeUIntPtrEnum_ReturnsExpected()
+        {
+            var expected = new string[0];
+            Assert.Equal(expected, Enum.GetNames(s_uintPtrEnumType));
+            Assert.Same(Enum.GetNames(s_uintPtrEnumType), Enum.GetNames(s_uintPtrEnumType));
+        }
+
+        [Fact]
+        public static void GetNames_NullEnumType_ThrowsArgumentNullException()
+        {
+            AssertExtensions.Throws<ArgumentNullException>("enumType", () => Enum.GetNames(null));
+        }
+        
+        [Theory]
+        [InlineData(typeof(object))]
+        [InlineData(typeof(int))]
+        [InlineData(typeof(ValueType))]
+        [InlineData(typeof(Enum))]
+        public void GetNames_EnumTypeNotEnum_ThrowsArgumentException(Type enumType)
+        {
+            AssertExtensions.Throws<ArgumentException>("enumType", () => Enum.GetNames(enumType));
+        }
+
+        [Fact]
+        public void GetValues_InvokeSimpleEnumEnum_ReturnsExpected()
+        {
+            var expected = new SimpleEnum[] { SimpleEnum.Red, SimpleEnum.Blue, SimpleEnum.Green, SimpleEnum.Green_a, SimpleEnum.Green_b, SimpleEnum.B };
+            Assert.Equal(expected, Enum.GetValues(typeof(SimpleEnum)));
+            Assert.NotSame(Enum.GetValues(typeof(SimpleEnum)), Enum.GetValues(typeof(SimpleEnum)));
+            Assert.Equal(expected, Enum.GetValues<SimpleEnum>());
+        }
+
+        [Fact]
+        public void GetValues_InvokeSByteEnum_ReturnsExpected()
+        {
+            var expected = new SByteEnum[] { SByteEnum.One, SByteEnum.Two, SByteEnum.Max, SByteEnum.Min };
+            Assert.Equal(expected, Enum.GetValues(typeof(SByteEnum)));
+            Assert.NotSame(Enum.GetValues(typeof(SByteEnum)), Enum.GetValues(typeof(SByteEnum)));
+            Assert.Equal(expected, Enum.GetValues<SByteEnum>());
+        }
+
+        [Fact]
+        public void GetValues_InvokeByteEnum_ReturnsExpected()
+        {
+            var expected = new ByteEnum[] { ByteEnum.Min, ByteEnum.One, ByteEnum.Two, ByteEnum.Max };
+            Assert.Equal(expected, Enum.GetValues(typeof(ByteEnum)));
+            Assert.NotSame(Enum.GetValues(typeof(ByteEnum)), Enum.GetValues(typeof(ByteEnum)));
+            Assert.Equal(expected, Enum.GetValues<ByteEnum>());
+        }
+
+        [Fact]
+        public void GetValues_InvokeInt16Enum_ReturnsExpected()
+        {
+            var expected = new Int16Enum[] { Int16Enum.One, Int16Enum.Two, Int16Enum.Max, Int16Enum.Min };
+            Assert.Equal(expected, Enum.GetValues(typeof(Int16Enum)));
+            Assert.NotSame(Enum.GetValues(typeof(Int16Enum)), Enum.GetValues(typeof(Int16Enum)));
+            Assert.Equal(expected, Enum.GetValues<Int16Enum>());
+        }
+
+        [Fact]
+        public void GetValues_InvokeUInt16Enum_ReturnsExpected()
+        {
+            var expected = new UInt16Enum[] { UInt16Enum.Min, UInt16Enum.One, UInt16Enum.Two, UInt16Enum.Max };
+            Assert.Equal(expected, Enum.GetValues(typeof(UInt16Enum)));
+            Assert.NotSame(Enum.GetValues(typeof(UInt16Enum)), Enum.GetValues(typeof(UInt16Enum)));
+            Assert.Equal(expected, Enum.GetValues<UInt16Enum>());
+        }
+
+        [Fact]
+        public void GetValues_InvokeInt32Enum_ReturnsExpected()
+        {
+            var expected = new Int32Enum[] { Int32Enum.One, Int32Enum.Two, Int32Enum.Max, Int32Enum.Min };
+            Assert.Equal(expected, Enum.GetValues(typeof(Int32Enum)));
+            Assert.NotSame(Enum.GetValues(typeof(Int32Enum)), Enum.GetValues(typeof(Int32Enum)));
+            Assert.Equal(expected, Enum.GetValues<Int32Enum>());
+        }
+
+        [Fact]
+        public void GetValues_InvokeUInt32Enum_ReturnsExpected()
+        {
+            var expected = new UInt32Enum[] { UInt32Enum.Min, UInt32Enum.One, UInt32Enum.Two, UInt32Enum.Max };
+            Assert.Equal(expected, Enum.GetValues(typeof(UInt32Enum)));
+            Assert.NotSame(Enum.GetValues(typeof(UInt32Enum)), Enum.GetValues(typeof(UInt32Enum)));
+            Assert.Equal(expected, Enum.GetValues<UInt32Enum>());
+        }
+
+        [Fact]
+        public void GetValues_InvokeInt64Enum_ReturnsExpected()
+        {
+            var expected = new Int64Enum[] { Int64Enum.One, Int64Enum.Two, Int64Enum.Max, Int64Enum.Min };
+            Assert.Equal(expected, Enum.GetValues(typeof(Int64Enum)));
+            Assert.NotSame(Enum.GetValues(typeof(Int64Enum)), Enum.GetValues(typeof(Int64Enum)));
+            Assert.Equal(expected, Enum.GetValues<Int64Enum>());
+        }
+
+        [Fact]
+        public void GetValues_InvokeUInt64Enum_ReturnsExpected()
+        {
+            var expected = new UInt64Enum[] { UInt64Enum.Min, UInt64Enum.One, UInt64Enum.Two, UInt64Enum.Max };
+            Assert.Equal(expected, Enum.GetValues(typeof(UInt64Enum)));
+            Assert.NotSame(Enum.GetValues(typeof(UInt64Enum)), Enum.GetValues(typeof(UInt64Enum)));
+            Assert.Equal(expected, Enum.GetValues<UInt64Enum>());
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
+        public void GetValues_InvokeCharEnum_ReturnsExpected()
+        {
+            var expected = new object[] { Enum.Parse(s_charEnumType, "Value0x0000"), Enum.Parse(s_charEnumType, "Value1"), Enum.Parse(s_charEnumType, "Value2"), Enum.Parse(s_charEnumType, "Value0x0010"), Enum.Parse(s_charEnumType, "Value0x0f06"), Enum.Parse(s_charEnumType, "Value0x1000"), Enum.Parse(s_charEnumType, "Value0x3000"), Enum.Parse(s_charEnumType, "Value0x3f06"), Enum.Parse(s_charEnumType, "Value0x3f16") };
+            Assert.Equal(expected, Enum.GetValues(s_charEnumType));
+            Assert.NotSame(Enum.GetValues(s_charEnumType), Enum.GetValues(s_charEnumType));
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
+        public void GetValues_InvokeBoolEnum_ReturnsExpected()
+        {
+            var expected = new object[] { Enum.Parse(s_boolEnumType, "Value2"), Enum.Parse(s_boolEnumType, "Value1") };
+            Assert.Equal(expected, Enum.GetValues(s_boolEnumType));
+            Assert.NotSame(Enum.GetValues(s_boolEnumType), Enum.GetValues(s_boolEnumType));
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
+        public void GetValues_InvokeSingleEnum_ReturnsExpected()
+        {
+            var expected = new object[] { Enum.Parse(s_floatEnumType, "Value1"), Enum.Parse(s_floatEnumType, "Value2"), Enum.Parse(s_floatEnumType, "Value0x3f06"), Enum.Parse(s_floatEnumType, "Value0x3000"), Enum.Parse(s_floatEnumType, "Value0x0f06"), Enum.Parse(s_floatEnumType, "Value0x1000"), Enum.Parse(s_floatEnumType, "Value0x0000"), Enum.Parse(s_floatEnumType, "Value0x0010"), Enum.Parse(s_floatEnumType, "Value0x3f16") };
+            Assert.Equal(expected, Enum.GetValues(s_floatEnumType));
+            Assert.NotSame(Enum.GetValues(s_floatEnumType), Enum.GetValues(s_floatEnumType));
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
+        public void GetValues_InvokeDoubleEnum_ReturnsExpected()
+        {
+            var expected = new object[] { Enum.Parse(s_doubleEnumType, "Value1"), Enum.Parse(s_doubleEnumType, "Value2"), Enum.Parse(s_doubleEnumType, "Value0x3f06"), Enum.Parse(s_doubleEnumType, "Value0x3000"), Enum.Parse(s_doubleEnumType, "Value0x0f06"), Enum.Parse(s_doubleEnumType, "Value0x1000"), Enum.Parse(s_doubleEnumType, "Value0x0000"), Enum.Parse(s_doubleEnumType, "Value0x0010"), Enum.Parse(s_doubleEnumType, "Value0x3f16") };
+            Assert.Equal(expected, Enum.GetValues(s_doubleEnumType));
+            Assert.NotSame(Enum.GetValues(s_doubleEnumType), Enum.GetValues(s_doubleEnumType));
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
+        public void GetValues_InvokeIntPtrEnum_ReturnsExpected()
+        {
+            var expected = new object[0];
+            Assert.Equal(expected, Enum.GetValues(s_intPtrEnumType));
+            Assert.NotSame(Enum.GetValues(s_intPtrEnumType), Enum.GetValues(s_intPtrEnumType));
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
+        public void GetValues_InvokeUIntPtrEnum_ReturnsExpected()
+        {
+            var expected = new object[0];
+            Assert.Equal(expected, Enum.GetValues(s_uintPtrEnumType));
+            Assert.NotSame(Enum.GetValues(s_uintPtrEnumType), Enum.GetValues(s_uintPtrEnumType));
+        }
+
+        [Fact]
+        public static void GetValues_NullEnumType_ThrowsArgumentNullException()
+        {
+            AssertExtensions.Throws<ArgumentNullException>("enumType", () => Enum.GetValues(null));
         }
 
         [Theory]
-        [MemberData(nameof(GetNames_GetValues_TestData))]
-        public static void GetNames_GetValues(Type enumType, string[] expectedNames, object[] expectedValues)
+        [InlineData(typeof(object))]
+        [InlineData(typeof(int))]
+        [InlineData(typeof(ValueType))]
+        [InlineData(typeof(Enum))]
+        public void GetValues_EnumTypeNotEnum_ThrowsArgumentException(Type enumType)
         {
-            Assert.Equal(expectedNames, Enum.GetNames(enumType));
-            Assert.Equal(expectedValues, Enum.GetValues(enumType).Cast<object>().ToArray());
-        }
-
-        [Fact]
-        public static void GetNames_Invalid()
-        {
-            AssertExtensions.Throws<ArgumentNullException>("enumType", () => Enum.GetNames(null)); // Enum type is null
-            AssertExtensions.Throws<ArgumentException>("enumType", () => Enum.GetNames(typeof(object))); // Enum type is not an enum
-        }
-
-        [Fact]
-        public static void GetValues_Invalid()
-        {
-            AssertExtensions.Throws<ArgumentNullException>("enumType", () => Enum.GetValues(null)); // Enum type is null
-            AssertExtensions.Throws<ArgumentException>("enumType", () => Enum.GetValues(typeof(object))); // Enum type is not an enum
+            AssertExtensions.Throws<ArgumentException>("enumType", () => Enum.GetValues(enumType));
         }
 
         public static IEnumerable<object[]> ToString_Format_TestData()

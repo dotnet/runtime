@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using Xunit;
 using System;
@@ -11,7 +10,7 @@ namespace System.Threading.Tasks.Tests.CancelWait
     {
         #region Test Methods
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void TaskCancelWait1()
         {
             TaskInfo node = new TaskInfo(null, "node", WorkloadType.Heavy, string.Empty, true);
@@ -24,7 +23,7 @@ namespace System.Threading.Tasks.Tests.CancelWait
             TaskCancelWaitTest test = new TaskCancelWaitTest(parameters);
             test.RealRun();
         }
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void TaskCancelWait2()
         {
             TaskInfo node = new TaskInfo(null, "node", WorkloadType.Light, "AttachedToParent");
@@ -39,7 +38,7 @@ namespace System.Threading.Tasks.Tests.CancelWait
             TaskCancelWaitTest test = new TaskCancelWaitTest(parameters);
             test.RealRun();
         }
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void TaskCancelWait3()
         {
             TaskInfo node = new TaskInfo(null, "node", WorkloadType.VeryHeavy, "LongRunning, AttachedToParent");
@@ -60,7 +59,7 @@ namespace System.Threading.Tasks.Tests.CancelWait
             TaskCancelWaitTest test = new TaskCancelWaitTest(parameters);
             test.RealRun();
         }
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void TaskCancelWait4()
         {
             TaskInfo node = new TaskInfo(null, "node", WorkloadType.Light, "AttachedToParent");
@@ -85,7 +84,7 @@ namespace System.Threading.Tasks.Tests.CancelWait
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void TaskCancelWait6()
         {
             TaskInfo node = new TaskInfo(null, "node", WorkloadType.Medium, "RespectParentCancellation");
@@ -131,7 +130,7 @@ namespace System.Threading.Tasks.Tests.CancelWait
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void TaskCancelWait8()
         {
             TaskInfo node = new TaskInfo(null, "node", WorkloadType.Heavy, "LongRunning, RespectParentCancellation");
@@ -157,7 +156,7 @@ namespace System.Threading.Tasks.Tests.CancelWait
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void TaskCancelWait9()
         {
             TaskInfo node = new TaskInfo(null, "node", WorkloadType.Heavy, "None");
@@ -171,7 +170,7 @@ namespace System.Threading.Tasks.Tests.CancelWait
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void TaskCancelWait10()
         {
             TaskInfo node = new TaskInfo(null, "node", WorkloadType.VeryHeavy, "RespectParentCancellation");
@@ -211,7 +210,7 @@ namespace System.Threading.Tasks.Tests.CancelWait
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void TaskCancelWait12()
         {
             TaskInfo node = new TaskInfo(null, "node", WorkloadType.Medium, "AttachedToParent");
@@ -253,7 +252,7 @@ namespace System.Threading.Tasks.Tests.CancelWait
             TaskCancelWaitTest test = new TaskCancelWaitTest(parameters);
             test.RealRun();
         }
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void TaskCancelWait14()
         {
             TaskInfo node = new TaskInfo(null, "node", WorkloadType.VeryLight, "AttachedToParent");
@@ -285,7 +284,7 @@ namespace System.Threading.Tasks.Tests.CancelWait
             TaskCancelWaitTest test = new TaskCancelWaitTest(parameters);
             test.RealRun();
         }
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void TaskCancelWait16()
         {
             TaskInfo node = new TaskInfo(null, "node", WorkloadType.Heavy, "LongRunning, AttachedToParent");
@@ -295,7 +294,7 @@ namespace System.Threading.Tasks.Tests.CancelWait
             TaskCancelWaitTest test = new TaskCancelWaitTest(parameters);
             test.RealRun();
         }
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void TaskCancelWait17()
         {
             TaskInfo node = new TaskInfo(null, "node", WorkloadType.Light, "LongRunning, AttachedToParent");
@@ -343,7 +342,7 @@ namespace System.Threading.Tasks.Tests.CancelWait
             TaskCancelWaitTest test = new TaskCancelWaitTest(parameters);
             test.RealRun();
         }
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void TaskCancelWait19()
         {
             TaskInfo node = new TaskInfo(null, "node", WorkloadType.Medium, "LongRunning, AttachedToParent");
@@ -376,7 +375,7 @@ namespace System.Threading.Tasks.Tests.CancelWait
             TaskCancelWaitTest test = new TaskCancelWaitTest(parameters);
             test.RealRun();
         }
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void TaskCancelWait21()
         {
             TaskInfo node = new TaskInfo(null, "node", WorkloadType.Heavy, "LongRunning");
@@ -401,7 +400,7 @@ namespace System.Threading.Tasks.Tests.CancelWait
             TaskCancelWaitTest test = new TaskCancelWaitTest(parameters);
             test.RealRun();
         }
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void TaskCancelWait22()
         {
             TaskInfo node = new TaskInfo(null, "node", WorkloadType.Light, "RespectParentCancellation");
@@ -415,7 +414,7 @@ namespace System.Threading.Tasks.Tests.CancelWait
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void TaskCancelWait23()
         {
             TaskInfo node = new TaskInfo(null, "node", WorkloadType.VeryHeavy, "LongRunning, RespectParentCancellation");
@@ -428,7 +427,7 @@ namespace System.Threading.Tasks.Tests.CancelWait
             TaskCancelWaitTest test = new TaskCancelWaitTest(parameters);
             test.RealRun();
         }
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void TaskCancelWait24()
         {
             TaskInfo node = new TaskInfo(null, "node", WorkloadType.Medium, "LongRunning");
@@ -443,7 +442,7 @@ namespace System.Threading.Tasks.Tests.CancelWait
             TaskCancelWaitTest test = new TaskCancelWaitTest(parameters);
             test.RealRun();
         }
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void TaskCancelWait25()
         {
             TaskInfo node = new TaskInfo(null, "node", WorkloadType.Heavy, "RespectParentCancellation");

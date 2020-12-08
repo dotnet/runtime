@@ -1,6 +1,5 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -19,7 +18,7 @@ namespace System.Threading.Channels
     internal sealed class SingleConsumerUnboundedChannel<T> : Channel<T>, IDebugEnumerable<T>
     {
         /// <summary>Task that indicates the channel has completed.</summary>
-        private readonly TaskCompletionSource<VoidResult> _completion;
+        private readonly TaskCompletionSource _completion;
         /// <summary>
         /// A concurrent queue to hold the items for this channel.  The queue itself supports at most
         /// one writer and one reader at a time; as a result, since this channel supports multiple writers,
@@ -32,20 +31,18 @@ namespace System.Threading.Channels
         /// <summary>non-null if the channel has been marked as complete for writing.</summary>
         private volatile Exception? _doneWriting;
 
-#pragma warning disable CA1823 // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/38195
         /// <summary>An <see cref="AsyncOperation{T}"/> if there's a blocked reader.</summary>
         private AsyncOperation<T>? _blockedReader;
 
         /// <summary>A waiting reader (e.g. WaitForReadAsync) if there is one.</summary>
         private AsyncOperation<bool>? _waitingReader;
-#pragma warning restore CA1823
 
         /// <summary>Initialize the channel.</summary>
         /// <param name="runContinuationsAsynchronously">Whether to force continuations to be executed asynchronously.</param>
         internal SingleConsumerUnboundedChannel(bool runContinuationsAsynchronously)
         {
             _runContinuationsAsynchronously = runContinuationsAsynchronously;
-            _completion = new TaskCompletionSource<VoidResult>(runContinuationsAsynchronously ? TaskCreationOptions.RunContinuationsAsynchronously : TaskCreationOptions.None);
+            _completion = new TaskCompletionSource(runContinuationsAsynchronously ? TaskCreationOptions.RunContinuationsAsynchronously : TaskCreationOptions.None);
 
             Reader = new UnboundedChannelReader(this);
             Writer = new UnboundedChannelWriter(this);
@@ -75,7 +72,7 @@ namespace System.Threading.Channels
                     return new ValueTask<T>(Task.FromCanceled<T>(cancellationToken));
                 }
 
-                if (TryRead(out T item))
+                if (TryRead(out T? item))
                 {
                     return new ValueTask<T>(item);
                 }
@@ -117,7 +114,7 @@ namespace System.Threading.Channels
                     parent._blockedReader = newBlockedReader;
                 }
 
-                oldBlockedReader?.TrySetCanceled();
+                oldBlockedReader?.TrySetCanceled(default);
                 return newBlockedReader.ValueTaskOfT;
             }
 
@@ -186,7 +183,7 @@ namespace System.Threading.Channels
                     parent._waitingReader = newWaitingReader;
                 }
 
-                oldWaitingReader?.TrySetCanceled();
+                oldWaitingReader?.TrySetCanceled(default);
                 return newWaitingReader.ValueTaskOfT;
             }
 

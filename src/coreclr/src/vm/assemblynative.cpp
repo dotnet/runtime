@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 /*============================================================
 **
@@ -171,7 +170,7 @@ Assembly* AssemblyNative::LoadFromPEImage(ICLRPrivBinder* pBinderContext, PEImag
 
     DWORD dwMessageID = IDS_EE_FILELOAD_ERROR_GENERIC;
 
-    // Set the caller's assembly to be mscorlib
+    // Set the caller's assembly to be CoreLib
     DomainAssembly *pCallersAssembly = SystemDomain::System()->SystemAssembly()->GetDomainAssembly();
     PEAssembly *pParentAssembly = pCallersAssembly->GetFile();
 
@@ -239,7 +238,9 @@ void QCALLTYPE AssemblyNative::LoadFromPath(INT_PTR ptrNativeAssemblyLoadContext
 
     if (pwzILPath != NULL)
     {
-        pILImage = PEImage::OpenImage(pwzILPath);
+        pILImage = PEImage::OpenImage(pwzILPath,
+                                      MDInternalImport_Default,
+                                      BundleFileLocation::Invalid());
 
         // Need to verify that this is a valid CLR assembly.
         if (!pILImage->CheckILFormat())
@@ -257,7 +258,9 @@ void QCALLTYPE AssemblyNative::LoadFromPath(INT_PTR ptrNativeAssemblyLoadContext
     // Form the PEImage for the NI assembly, if specified
     if (pwzNIPath != NULL)
     {
-        pNIImage = PEImage::OpenImage(pwzNIPath, MDInternalImport_TrustedNativeImage);
+        pNIImage = PEImage::OpenImage(pwzNIPath,
+                                      MDInternalImport_TrustedNativeImage,
+                                      BundleFileLocation::Invalid());
 
         if (pNIImage->HasReadyToRunHeader())
         {
@@ -408,26 +411,6 @@ void QCALLTYPE AssemblyNative::GetLocation(QCall::AssemblyHandle pAssembly, QCal
     END_QCALL;
 }
 
-
-#ifdef FEATURE_COMINTEROP_WINRT_MANAGED_ACTIVATION
-void QCALLTYPE AssemblyNative::LoadTypeForWinRTTypeNameInContext(INT_PTR ptrAssemblyLoadContext, LPCWSTR pwzTypeName, QCall::ObjectHandleOnStack retType)
-{
-    QCALL_CONTRACT;
-
-    BEGIN_QCALL;
-
-    TypeHandle loadedType = WinRTTypeNameConverter::LoadManagedTypeForWinRTTypeName(pwzTypeName, (ICLRPrivBinder*)ptrAssemblyLoadContext, /* pbIsPrimitive */ nullptr);
-
-    if (!loadedType.IsNull())
-    {
-         GCX_COOP();
-         retType.Set(loadedType.GetManagedClassObject());
-    }
-
-    END_QCALL;
-}
-#endif
-
 void QCALLTYPE AssemblyNative::GetType(QCall::AssemblyHandle pAssembly,
                                        LPCWSTR wszName,
                                        BOOL bThrowOnError,
@@ -465,7 +448,7 @@ void QCALLTYPE AssemblyNative::GetType(QCall::AssemblyHandle pAssembly,
     }
 
     // Load the class from this assembly (fail if it is in a different one).
-    retTypeHandle = TypeName::GetTypeManaged(wszName, pAssembly, bThrowOnError, bIgnoreCase, prohibitAsmQualifiedName, pAssembly->GetAssembly(), FALSE, (OBJECTREF*)keepAlive.m_ppObject, pPrivHostBinder);
+    retTypeHandle = TypeName::GetTypeManaged(wszName, pAssembly, bThrowOnError, bIgnoreCase, prohibitAsmQualifiedName, pAssembly->GetAssembly(), (OBJECTREF*)keepAlive.m_ppObject, pPrivHostBinder);
 
     if (!retTypeHandle.IsNull())
     {
@@ -579,21 +562,24 @@ void QCALLTYPE AssemblyNative::GetLocale(QCall::AssemblyHandle pAssembly, QCall:
     END_QCALL;
 }
 
-void QCALLTYPE AssemblyNative::GetCodeBase(QCall::AssemblyHandle pAssembly, BOOL fCopiedName, QCall::StringHandleOnStack retString)
+BOOL QCALLTYPE AssemblyNative::GetCodeBase(QCall::AssemblyHandle pAssembly, QCall::StringHandleOnStack retString)
 {
     QCALL_CONTRACT;
+
+    BOOL ret = TRUE;
 
     BEGIN_QCALL;
 
     StackSString codebase;
 
     {
-        pAssembly->GetFile()->GetCodeBase(codebase);
+        ret = pAssembly->GetFile()->GetCodeBase(codebase);
     }
 
     retString.Set(codebase);
-
     END_QCALL;
+
+    return ret;
 }
 
 INT32 QCALLTYPE AssemblyNative::GetHashAlgorithm(QCall::AssemblyHandle pAssembly)
@@ -722,7 +708,7 @@ void QCALLTYPE AssemblyNative::GetModules(QCall::AssemblyHandle pAssembly, BOOL 
         GCPROTECT_BEGIN(orModules);
 
         // Return the modules
-        orModules = (PTRARRAYREF)AllocateObjectArray(modules.GetCount(), MscorlibBinder::GetClass(CLASS__MODULE));
+        orModules = (PTRARRAYREF)AllocateObjectArray(modules.GetCount(), CoreLibBinder::GetClass(CLASS__MODULE));
 
         for(COUNT_T i = 0; i < modules.GetCount(); i++)
         {
@@ -906,7 +892,7 @@ void QCALLTYPE AssemblyNative::GetExportedTypes(QCall::AssemblyHandle pAssembly,
         GCPROTECT_BEGIN(orTypes);
 
         // Return the types
-        orTypes = (PTRARRAYREF)AllocateObjectArray(types.GetCount(), MscorlibBinder::GetClass(CLASS__TYPE));
+        orTypes = (PTRARRAYREF)AllocateObjectArray(types.GetCount(), CoreLibBinder::GetClass(CLASS__TYPE));
 
         for(COUNT_T i = 0; i < types.GetCount(); i++)
         {
@@ -977,7 +963,7 @@ void QCALLTYPE AssemblyNative::GetForwardedTypes(QCall::AssemblyHandle pAssembly
         GCPROTECT_BEGIN(orTypes);
 
         // Return the types
-        orTypes = (PTRARRAYREF)AllocateObjectArray(types.GetCount(), MscorlibBinder::GetClass(CLASS__TYPE));
+        orTypes = (PTRARRAYREF)AllocateObjectArray(types.GetCount(), CoreLibBinder::GetClass(CLASS__TYPE));
 
         for(COUNT_T i = 0; i < types.GetCount(); i++)
         {
@@ -1068,7 +1054,7 @@ FCIMPL1(Object*, AssemblyNative::GetReferencedAssemblies, AssemblyBaseObject * p
 
     IMDInternalImport *pImport = pAssembly->GetAssembly()->GetManifestImport();
 
-    MethodTable* pAsmNameClass = MscorlibBinder::GetClass(CLASS__ASSEMBLY_NAME);
+    MethodTable* pAsmNameClass = CoreLibBinder::GetClass(CLASS__ASSEMBLY_NAME);
 
     HENUMInternalHolder phEnum(pImport);
     DWORD dwCount = 0;

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 /*****************************************************************************/
 
 #ifndef _LSRA_H_
@@ -45,13 +44,7 @@ typedef var_types RegisterType;
 template <class T>
 RegisterType regType(T type)
 {
-#ifdef FEATURE_SIMD
-    if (varTypeIsSIMD(type))
-    {
-        return FloatRegisterType;
-    }
-#endif // FEATURE_SIMD
-    return varTypeIsFloating(TypeGet(type)) ? FloatRegisterType : IntRegisterType;
+    return varTypeUsesFloatReg(TypeGet(type)) ? FloatRegisterType : IntRegisterType;
 }
 
 //------------------------------------------------------------------------
@@ -378,7 +371,7 @@ class RefInfoListNodePool final
 
 public:
     RefInfoListNodePool(Compiler* compiler, unsigned preallocate = defaultPreallocation);
-    RefInfoListNode* GetNode(RefPosition* r, GenTree* t, unsigned regIdx = 0);
+    RefInfoListNode* GetNode(RefPosition* r, GenTree* t);
     void ReturnNode(RefInfoListNode* listNode);
 };
 
@@ -527,7 +520,7 @@ public:
 
     // interval to which this register is currently allocated.
     // If the interval is inactive (isActive == false) then it is not currently live,
-    // and the register call be unassigned (i.e. setting assignedInterval to nullptr)
+    // and the register can be unassigned (i.e. setting assignedInterval to nullptr)
     // without spilling the register.
     Interval* assignedInterval;
     // Interval to which this register was previously allocated, and which was unassigned
@@ -983,7 +976,9 @@ private:
     bool isSecondHalfReg(RegRecord* regRec, Interval* interval);
     RegRecord* getSecondHalfRegRec(RegRecord* regRec);
     RegRecord* findAnotherHalfRegRec(RegRecord* regRec);
-    bool canSpillDoubleReg(RegRecord* physRegRecord, LsraLocation refLocation, unsigned* recentAssignedRefWeight);
+    bool canSpillDoubleReg(RegRecord*            physRegRecord,
+                           LsraLocation          refLocation,
+                           BasicBlock::weight_t* recentAssignedRefWeight);
     void unassignDoublePhysReg(RegRecord* doubleRegRecord);
 #endif
     void updateAssignedInterval(RegRecord* reg, Interval* interval, RegisterType regType);
@@ -991,7 +986,7 @@ private:
     bool canRestorePreviousInterval(RegRecord* regRec, Interval* assignedInterval);
     bool isAssignedToInterval(Interval* interval, RegRecord* regRec);
     bool isRefPositionActive(RefPosition* refPosition, LsraLocation refLocation);
-    bool canSpillReg(RegRecord* physRegRecord, LsraLocation refLocation, unsigned* recentAssignedRefWeight);
+    bool canSpillReg(RegRecord* physRegRecord, LsraLocation refLocation, BasicBlock::weight_t* recentAssignedRefWeight);
     bool isRegInUse(RegRecord* regRec, RefPosition* refPosition);
 
     // insert refpositions representing prolog zero-inits which will be added later
@@ -1142,7 +1137,7 @@ private:
 
     void associateRefPosWithInterval(RefPosition* rp);
 
-    unsigned getWeight(RefPosition* refPos);
+    BasicBlock::weight_t getWeight(RefPosition* refPos);
 
     /*****************************************************************************
      * Register management
@@ -1501,11 +1496,11 @@ private:
     // i.e. whose consuming node has not yet been handled.
     RefInfoListNodePool listNodePool;
 
-    // The defList is used for the transient RefInfo that is computed by
-    // the Build methods, and used in building RefPositions.
-    // When Def RefPositions are built for a node, their NodeInfo is placed
-    // in the defList. As the consuming node is handled, it moves the NodeInfo
-    // into an ordered useList corresponding to the uses for that node.
+    // When Def RefPositions are built for a node, their RefInfoListNode
+    // (GenTree* to RefPosition* mapping) is placed in the defList.
+    // As the consuming node is handled, it removes the RefInfoListNode from the
+    // defList, use the interval associated with the corresponding Def RefPosition and
+    // use it to build the Use RefPosition.
     RefInfoList defList;
 
     // As we build uses, we may want to preference the next definition (i.e. the register produced
@@ -1536,6 +1531,9 @@ private:
         setInternalRegsDelayFree = false;
         pendingDelayFree         = false;
     }
+
+    bool isCandidateMultiRegLclVar(GenTreeLclVar* lclNode);
+    bool checkContainedOrCandidateLclVar(GenTreeLclVar* lclNode);
 
     RefPosition* BuildUse(GenTree* operand, regMaskTP candidates = RBM_NONE, int multiRegIdx = 0);
 
@@ -1577,6 +1575,7 @@ private:
     int BuildModDiv(GenTree* tree);
     int BuildIntrinsic(GenTree* tree);
     void BuildStoreLocDef(GenTreeLclVarCommon* storeLoc, LclVarDsc* varDsc, RefPosition* singleUseRef, int index);
+    int BuildMultiRegStoreLoc(GenTreeLclVar* storeLoc);
     int BuildStoreLoc(GenTreeLclVarCommon* tree);
     int BuildIndir(GenTreeIndir* indirTree);
     int BuildGCWriteBarrier(GenTree* tree);
@@ -1928,13 +1927,12 @@ public:
     GenTree*     treeNode;
     unsigned int bbNum;
 
-    // Prior to the allocation pass, registerAssignment captures the valid registers
-    // for this RefPosition. An empty set means that any register is valid.  A non-empty
-    // set means that it must be one of the given registers (may be the full set if the
-    // only constraint is that it must reside in SOME register)
-    // After the allocation pass, this contains the actual assignment
     LsraLocation nodeLocation;
-    regMaskTP    registerAssignment;
+
+    // Prior to the allocation pass, registerAssignment captures the valid registers
+    // for this RefPosition.
+    // After the allocation pass, this contains the actual assignment
+    regMaskTP registerAssignment;
 
     RefType refType;
 

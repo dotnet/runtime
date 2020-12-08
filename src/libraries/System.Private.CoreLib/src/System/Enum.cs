@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
+using System.Buffers.Binary;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
@@ -64,26 +64,38 @@ namespace System
         private string ValueToHexString()
         {
             ref byte data = ref this.GetRawData();
+            Span<byte> bytes = stackalloc byte[8];
+            int length;
             switch (InternalGetCorElementType())
             {
                 case CorElementType.ELEMENT_TYPE_I1:
                 case CorElementType.ELEMENT_TYPE_U1:
-                    return data.ToString("X2", null);
+                    bytes[0] = data;
+                    length = 1;
+                    break;
                 case CorElementType.ELEMENT_TYPE_BOOLEAN:
-                    return Convert.ToByte(Unsafe.As<byte, bool>(ref data)).ToString("X2", null);
+                    return data != 0 ? "01" : "00";
                 case CorElementType.ELEMENT_TYPE_I2:
                 case CorElementType.ELEMENT_TYPE_U2:
                 case CorElementType.ELEMENT_TYPE_CHAR:
-                    return Unsafe.As<byte, ushort>(ref data).ToString("X4", null);
+                    BinaryPrimitives.WriteUInt16BigEndian(bytes, Unsafe.As<byte, ushort>(ref data));
+                    length = 2;
+                    break;
                 case CorElementType.ELEMENT_TYPE_I4:
                 case CorElementType.ELEMENT_TYPE_U4:
-                    return Unsafe.As<byte, uint>(ref data).ToString("X8", null);
+                    BinaryPrimitives.WriteUInt32BigEndian(bytes, Unsafe.As<byte, uint>(ref data));
+                    length = 4;
+                    break;
                 case CorElementType.ELEMENT_TYPE_I8:
                 case CorElementType.ELEMENT_TYPE_U8:
-                    return Unsafe.As<byte, ulong>(ref data).ToString("X16", null);
+                    BinaryPrimitives.WriteUInt64BigEndian(bytes, Unsafe.As<byte, ulong>(ref data));
+                    length = 8;
+                    break;
                 default:
                     throw new InvalidOperationException(SR.InvalidOperation_UnknownEnumType);
             }
+
+            return HexConverter.ToString(bytes.Slice(0, length), HexConverter.Casing.Upper);
         }
 
         private static string ValueToHexString(object value)
@@ -92,7 +104,7 @@ namespace System
             {
                 TypeCode.SByte => ((byte)(sbyte)value).ToString("X2", null),
                 TypeCode.Byte => ((byte)value).ToString("X2", null),
-                TypeCode.Boolean => Convert.ToByte((bool)value).ToString("X2", null), // direct cast from bool to byte is not allowed
+                TypeCode.Boolean => ((bool)value) ? "01" : "00",
                 TypeCode.Int16 => ((ushort)(short)value).ToString("X4", null),
                 TypeCode.UInt16 => ((ushort)value).ToString("X4", null),
                 TypeCode.Char => ((ushort)(char)value).ToString("X4", null),
@@ -130,19 +142,17 @@ namespace System
             }
             else // These are flags OR'ed together (We treat everything as unsigned types)
             {
-                return InternalFlagsFormat(enumType, enumInfo, value);
+                return InternalFlagsFormat(enumInfo, value);
             }
         }
 
         private static string? InternalFlagsFormat(RuntimeType enumType, ulong result)
         {
-            return InternalFlagsFormat(enumType, GetEnumInfo(enumType), result);
+            return InternalFlagsFormat(GetEnumInfo(enumType), result);
         }
 
-        private static string? InternalFlagsFormat(RuntimeType enumType, EnumInfo enumInfo, ulong resultValue)
+        private static string? InternalFlagsFormat(EnumInfo enumInfo, ulong resultValue)
         {
-            Debug.Assert(enumType != null);
-
             string[] names = enumInfo.Names;
             ulong[] values = enumInfo.Values;
             Debug.Assert(names.Length == values.Length);
@@ -246,10 +256,10 @@ namespace System
             {
                 TypeCode.SByte => (ulong)(sbyte)value,
                 TypeCode.Byte => (byte)value,
-                TypeCode.Boolean => Convert.ToByte((bool)value), // direct cast from bool to byte is not allowed
+                TypeCode.Boolean => (bool)value ? 1UL : 0UL,
                 TypeCode.Int16 => (ulong)(short)value,
                 TypeCode.UInt16 => (ushort)value,
-                TypeCode.Char => (ushort)(char)value,
+                TypeCode.Char => (char)value,
                 TypeCode.UInt32 => (uint)value,
                 TypeCode.Int32 => (ulong)(int)value,
                 TypeCode.UInt64 => (ulong)value,
@@ -259,9 +269,105 @@ namespace System
             return result;
         }
 
+        private static ulong ToUInt64<TEnum>(TEnum value) where TEnum : struct, Enum =>
+            Type.GetTypeCode(typeof(TEnum)) switch
+            {
+                TypeCode.SByte => (ulong)Unsafe.As<TEnum, sbyte>(ref value),
+                TypeCode.Byte => Unsafe.As<TEnum, byte>(ref value),
+                TypeCode.Boolean => Unsafe.As<TEnum, bool>(ref value) ? 1UL : 0UL,
+                TypeCode.Int16 => (ulong)Unsafe.As<TEnum, short>(ref value),
+                TypeCode.UInt16 => Unsafe.As<TEnum, ushort>(ref value),
+                TypeCode.Char => Unsafe.As<TEnum, char>(ref value),
+                TypeCode.UInt32 => Unsafe.As<TEnum, uint>(ref value),
+                TypeCode.Int32 => (ulong)Unsafe.As<TEnum, int>(ref value),
+                TypeCode.UInt64 => Unsafe.As<TEnum, ulong>(ref value),
+                TypeCode.Int64 => (ulong)Unsafe.As<TEnum, long>(ref value),
+                _ => throw new InvalidOperationException(SR.InvalidOperation_UnknownEnumType),
+            };
         #endregion
 
         #region Public Static Methods
+        public static string? GetName<TEnum>(TEnum value) where TEnum : struct, Enum
+            => GetEnumName((RuntimeType)typeof(TEnum), ToUInt64(value));
+
+        public static string? GetName(Type enumType, object value)
+        {
+            if (enumType is null)
+                throw new ArgumentNullException(nameof(enumType));
+
+            return enumType.GetEnumName(value);
+        }
+
+        public static string[] GetNames<TEnum>() where TEnum : struct, Enum
+            => new ReadOnlySpan<string>(InternalGetNames((RuntimeType)typeof(TEnum))).ToArray();
+
+        public static string[] GetNames(Type enumType)
+        {
+            if (enumType is null)
+                throw new ArgumentNullException(nameof(enumType));
+
+            return enumType.GetEnumNames();
+        }
+
+        internal static string[] InternalGetNames(RuntimeType enumType)
+        {
+            // Get all of the names
+            return GetEnumInfo(enumType, true).Names;
+        }
+
+        public static Type GetUnderlyingType(Type enumType)
+        {
+            if (enumType == null)
+                throw new ArgumentNullException(nameof(enumType));
+
+            return enumType.GetEnumUnderlyingType();
+        }
+
+        public static TEnum[] GetValues<TEnum>() where TEnum : struct, Enum
+            => (TEnum[])GetValues(typeof(TEnum));
+
+        public static Array GetValues(Type enumType)
+        {
+            if (enumType is null)
+                throw new ArgumentNullException(nameof(enumType));
+
+            return enumType.GetEnumValues();
+        }
+
+        [Intrinsic]
+        public bool HasFlag(Enum flag)
+        {
+            if (flag is null)
+                throw new ArgumentNullException(nameof(flag));
+            if (!GetType().IsEquivalentTo(flag.GetType()))
+                throw new ArgumentException(SR.Format(SR.Argument_EnumTypeDoesNotMatch, flag.GetType(), GetType()));
+
+            return InternalHasFlag(flag);
+        }
+
+        internal static ulong[] InternalGetValues(RuntimeType enumType)
+        {
+            // Get all of the values
+            return GetEnumInfo(enumType, false).Values;
+        }
+
+        public static bool IsDefined<TEnum>(TEnum value) where TEnum : struct, Enum
+        {
+            RuntimeType enumType = (RuntimeType)typeof(TEnum);
+            ulong[] ulValues = Enum.InternalGetValues(enumType);
+            ulong ulValue = Enum.ToUInt64(value);
+
+            return Array.BinarySearch(ulValues, ulValue) >= 0;
+        }
+
+        public static bool IsDefined(Type enumType, object value)
+        {
+            if (enumType is null)
+                throw new ArgumentNullException(nameof(enumType));
+
+            return enumType.IsEnumDefined(value);
+        }
+
         public static object Parse(Type enumType, string value) =>
             Parse(enumType, value, ignoreCase: false);
 
@@ -839,7 +945,7 @@ namespace System
                 case CorElementType.ELEMENT_TYPE_U1:
                     return data;
                 case CorElementType.ELEMENT_TYPE_BOOLEAN:
-                    return Convert.ToUInt64(Unsafe.As<byte, bool>(ref data), CultureInfo.InvariantCulture);
+                    return data != 0 ? 1UL : 0UL;
                 case CorElementType.ELEMENT_TYPE_I2:
                     return (ulong)Unsafe.As<byte, short>(ref data);
                 case CorElementType.ELEMENT_TYPE_U2:
@@ -1032,67 +1138,67 @@ namespace System
 
         bool IConvertible.ToBoolean(IFormatProvider? provider)
         {
-            return Convert.ToBoolean(GetValue(), CultureInfo.CurrentCulture);
+            return Convert.ToBoolean(GetValue());
         }
 
         char IConvertible.ToChar(IFormatProvider? provider)
         {
-            return Convert.ToChar(GetValue(), CultureInfo.CurrentCulture);
+            return Convert.ToChar(GetValue());
         }
 
         sbyte IConvertible.ToSByte(IFormatProvider? provider)
         {
-            return Convert.ToSByte(GetValue(), CultureInfo.CurrentCulture);
+            return Convert.ToSByte(GetValue());
         }
 
         byte IConvertible.ToByte(IFormatProvider? provider)
         {
-            return Convert.ToByte(GetValue(), CultureInfo.CurrentCulture);
+            return Convert.ToByte(GetValue());
         }
 
         short IConvertible.ToInt16(IFormatProvider? provider)
         {
-            return Convert.ToInt16(GetValue(), CultureInfo.CurrentCulture);
+            return Convert.ToInt16(GetValue());
         }
 
         ushort IConvertible.ToUInt16(IFormatProvider? provider)
         {
-            return Convert.ToUInt16(GetValue(), CultureInfo.CurrentCulture);
+            return Convert.ToUInt16(GetValue());
         }
 
         int IConvertible.ToInt32(IFormatProvider? provider)
         {
-            return Convert.ToInt32(GetValue(), CultureInfo.CurrentCulture);
+            return Convert.ToInt32(GetValue());
         }
 
         uint IConvertible.ToUInt32(IFormatProvider? provider)
         {
-            return Convert.ToUInt32(GetValue(), CultureInfo.CurrentCulture);
+            return Convert.ToUInt32(GetValue());
         }
 
         long IConvertible.ToInt64(IFormatProvider? provider)
         {
-            return Convert.ToInt64(GetValue(), CultureInfo.CurrentCulture);
+            return Convert.ToInt64(GetValue());
         }
 
         ulong IConvertible.ToUInt64(IFormatProvider? provider)
         {
-            return Convert.ToUInt64(GetValue(), CultureInfo.CurrentCulture);
+            return Convert.ToUInt64(GetValue());
         }
 
         float IConvertible.ToSingle(IFormatProvider? provider)
         {
-            return Convert.ToSingle(GetValue(), CultureInfo.CurrentCulture);
+            return Convert.ToSingle(GetValue());
         }
 
         double IConvertible.ToDouble(IFormatProvider? provider)
         {
-            return Convert.ToDouble(GetValue(), CultureInfo.CurrentCulture);
+            return Convert.ToDouble(GetValue());
         }
 
         decimal IConvertible.ToDecimal(IFormatProvider? provider)
         {
-            return Convert.ToDecimal(GetValue(), CultureInfo.CurrentCulture);
+            return Convert.ToDecimal(GetValue());
         }
 
         DateTime IConvertible.ToDateTime(IFormatProvider? provider)
@@ -1102,7 +1208,7 @@ namespace System
 
         object IConvertible.ToType(Type type, IFormatProvider? provider)
         {
-            return Convert.DefaultToType((IConvertible)this, type, provider);
+            return Convert.DefaultToType(this, type, provider);
         }
         #endregion
 
@@ -1139,8 +1245,19 @@ namespace System
             InternalBoxEnum(ValidateRuntimeType(enumType), value);
 
         private static object ToObject(Type enumType, bool value) =>
-            InternalBoxEnum(ValidateRuntimeType(enumType), value ? 1 : 0);
+            InternalBoxEnum(ValidateRuntimeType(enumType), value ? 1L : 0L);
 
         #endregion
+
+        private static RuntimeType ValidateRuntimeType(Type enumType)
+        {
+            if (enumType == null)
+                throw new ArgumentNullException(nameof(enumType));
+            if (!enumType.IsEnum)
+                throw new ArgumentException(SR.Arg_MustBeEnum, nameof(enumType));
+            if (!(enumType is RuntimeType rtType))
+                throw new ArgumentException(SR.Arg_MustBeType, nameof(enumType));
+            return rtType;
+        }
     }
 }

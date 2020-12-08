@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 // ============================================================
 //
 // Variables.cpp
@@ -41,7 +40,7 @@ namespace BINDER_SPACE
 
             // AssemblyName string constants
             cultureNeutral.SetLiteral(W("neutral"));
-            mscorlib.SetLiteral(CoreLibName_W);
+            corelib.SetLiteral(CoreLibName_W);
         }
         EX_CATCH_HRESULT(hr);
 

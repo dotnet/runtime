@@ -10,10 +10,10 @@
           AfterTargets="Build"
           Condition="Exists(@(BuiltBinary -> '%(RootDir)%(Directory)%(Filename).pdb'))"
           Inputs="@(BuiltBinary -> '%(RootDir)%(Directory)%(Filename).pdb')"
-          Outputs="@(BuiltBinary -> '$(BinDir)PDB/%(Filename).pdb')">
+          Outputs="@(BuiltBinary -> '$(RuntimeBinDir)PDB/%(Filename).pdb')">
 
     <Move SourceFiles="@(BuiltBinary -> '%(RootDir)%(Directory)%(Filename).pdb')"
-          DestinationFolder="$(BinDir)PDB" />
+          DestinationFolder="$(RuntimeBinDir)PDB" />
 
   </Target>
 

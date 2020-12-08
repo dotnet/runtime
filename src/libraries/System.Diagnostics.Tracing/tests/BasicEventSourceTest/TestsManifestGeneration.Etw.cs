@@ -1,6 +1,5 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Generic;
@@ -28,11 +27,11 @@ namespace BasicEventSourceTests
         // Specifies whether the process is elevated or not.
         private static readonly Lazy<bool> s_isElevated = new Lazy<bool>(AdminHelpers.IsProcessElevated);
         private static bool IsProcessElevated => s_isElevated.Value;
-        private static bool IsProcessElevatedAndNotWindowsNanoServer =>
-            IsProcessElevated && PlatformDetection.IsNotWindowsNanoServer;
+        private static bool IsProcessElevatedAndNotWindowsNanoServerAndRemoteExecutorSupported =>
+            IsProcessElevated && PlatformDetection.IsNotWindowsNanoServer && RemoteExecutor.IsSupported;
 
         /// ETW only works with elevated process
-        [ConditionalFact(nameof(IsProcessElevatedAndNotWindowsNanoServer))]
+        [ConditionalFact(nameof(IsProcessElevatedAndNotWindowsNanoServerAndRemoteExecutorSupported))]
         public void Test_EventSource_EtwManifestGeneration()
         {
             RemoteExecutor.Invoke(() =>
@@ -63,7 +62,7 @@ namespace BasicEventSourceTests
             }).Dispose();
         }
 
-        [ConditionalFact(nameof(IsProcessElevatedAndNotWindowsNanoServer))]
+        [ConditionalFact(nameof(IsProcessElevatedAndNotWindowsNanoServerAndRemoteExecutorSupported))]
         public void Test_EventSource_EtwManifestGenerationRollover()
         {
             RemoteExecutor.Invoke(() =>

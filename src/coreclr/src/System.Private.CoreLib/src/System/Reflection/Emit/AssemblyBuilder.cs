@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 // For each dynamic assembly there will be two AssemblyBuilder objects: the "internal"
 // AssemblyBuilder object and the "external" AssemblyBuilder object.
@@ -106,6 +105,7 @@ namespace System.Reflection.Emit
 
         public override string? CodeBase => throw new NotSupportedException(SR.NotSupported_DynamicAssembly);
 
+        [RequiresUnreferencedCode("Types might be removed")]
         public override Type[] GetExportedTypes()
         {
             throw new NotSupportedException(SR.NotSupported_DynamicAssembly);
@@ -152,8 +152,6 @@ namespace System.Reflection.Emit
         internal object SyncRoot => InternalAssembly.SyncRoot;
 
         internal InternalAssemblyBuilder InternalAssembly => _internalAssemblyBuilder;
-
-        internal RuntimeAssembly GetNativeHandle() => InternalAssembly.GetNativeHandle();
 
         #endregion
 
@@ -212,7 +210,7 @@ namespace System.Reflection.Emit
         [MemberNotNull(nameof(_manifestModuleBuilder))]
         private void InitManifestModule()
         {
-            InternalModuleBuilder modBuilder = (InternalModuleBuilder)GetInMemoryAssemblyModule(GetNativeHandle());
+            InternalModuleBuilder modBuilder = (InternalModuleBuilder)GetInMemoryAssemblyModule(InternalAssembly);
 
             // Note that this ModuleBuilder cannot be used for RefEmit yet
             // because it hasn't been initialized.
@@ -478,12 +476,14 @@ namespace System.Reflection.Emit
         /// <sumary>
         /// Get an array of all the public types defined in this assembly.
         /// </sumary>
+        [RequiresUnreferencedCode("Types might be removed")]
         public override Type[] GetExportedTypes() => InternalAssembly.GetExportedTypes();
 
         public override AssemblyName GetName(bool copiedName) => InternalAssembly.GetName(copiedName);
 
         public override string? FullName => InternalAssembly.FullName;
 
+        [RequiresUnreferencedCode("Types might be removed")]
         public override Type? GetType(string name, bool throwOnError, bool ignoreCase)
         {
             return InternalAssembly.GetType(name, throwOnError, ignoreCase);
@@ -495,11 +495,13 @@ namespace System.Reflection.Emit
 
         public override Module? GetModule(string name) => InternalAssembly.GetModule(name);
 
+        [RequiresUnreferencedCode("Assembly references might be removed")]
         public override AssemblyName[] GetReferencedAssemblies()
         {
             return InternalAssembly.GetReferencedAssemblies();
         }
 
+        [Obsolete(Obsoletions.GlobalAssemblyCacheMessage, DiagnosticId = Obsoletions.GlobalAssemblyCacheDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public override bool GlobalAssemblyCache => InternalAssembly.GlobalAssemblyCache;
 
         public override long HostContext => InternalAssembly.HostContext;
@@ -591,7 +593,7 @@ namespace System.Reflection.Emit
             TypeBuilder.DefineCustomAttribute(
                 _manifestModuleBuilder,     // pass in the in-memory assembly module
                 AssemblyBuilderData.AssemblyDefToken,
-                _manifestModuleBuilder.GetConstructorToken(con).Token,
+                _manifestModuleBuilder.GetConstructorToken(con),
                 binaryAttribute,
                 false,
                 typeof(DebuggableAttribute) == con.DeclaringType);
