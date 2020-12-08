@@ -41,7 +41,7 @@ setup_dirs_local()
 
 restore_optdata()
 {
-    local OptDataProjectFilePath="$__ProjectRoot/src/.nuget/optdata/optdata.csproj"
+    local OptDataProjectFilePath="$__ProjectRoot/.nuget/optdata/optdata.csproj"
     if [[ "$__SkipRestoreOptData" == 0 && "$__IsMSBuildOnNETCoreSupported" == 1 ]]; then
         echo "Restoring the OptimizationData package"
         "$__RepoRootDir/eng/common/msbuild.sh" /clp:nosummary $__ArcadeScriptArgs \

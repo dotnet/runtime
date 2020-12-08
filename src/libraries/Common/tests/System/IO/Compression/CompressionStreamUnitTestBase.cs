@@ -271,7 +271,7 @@ namespace System.IO.Compression
             {
                 yield return new Func<Stream, Stream>((stream) => CreateStream(stream, CompressionMode.Compress));
 
-                foreach (CompressionLevel level in new[] { CompressionLevel.Optimal, CompressionLevel.Fastest, CompressionLevel.NoCompression })
+                foreach (CompressionLevel level in new[] { CompressionLevel.Optimal, CompressionLevel.Fastest, CompressionLevel.NoCompression, CompressionLevel.SmallestSize })
                 {
                     yield return new Func<Stream, Stream>((stream) => CreateStream(stream, level));
 
@@ -440,6 +440,31 @@ namespace System.IO.Compression
                 baseStream.Write(bytes, 0, size);
             else
                 baseStream.Read(bytes, 0, size);
+        }
+
+        [Theory]
+        [MemberData(nameof(UncompressedTestFiles))]
+        public async Task CompressionLevel_SizeInOrder(string testFile)
+        {
+            using var uncompressedStream = await LocalMemoryStream.readAppFileAsync(testFile);
+
+            async Task<long> GetLengthAsync(CompressionLevel compressionLevel)
+            {
+                using var mms = new MemoryStream();
+                using var compressor = CreateStream(mms, compressionLevel);
+                await uncompressedStream.CopyToAsync(compressor);
+                compressor.Flush();
+                return mms.Length;
+            }
+
+            long noCompressionLength = await GetLengthAsync(CompressionLevel.NoCompression);
+            long fastestLength = await GetLengthAsync(CompressionLevel.Fastest);
+            long optimalLength = await GetLengthAsync(CompressionLevel.Optimal);
+            long smallestLength = await GetLengthAsync(CompressionLevel.SmallestSize);
+
+            Assert.True(noCompressionLength >= fastestLength);
+            Assert.True(fastestLength >= optimalLength);
+            Assert.True(optimalLength >= smallestLength);
         }
     }
 

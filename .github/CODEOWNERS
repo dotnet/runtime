@@ -3,7 +3,7 @@
 
 /src/libraries/Common/src/System/Net/Http/aspnetcore/               @dotnet/http
 /src/libraries/Common/tests/Tests/System/Net/aspnetcore/            @dotnet/http
-/src/libraries/System.Text.Json/                                    @ahsonkhan @steveharter @layomia @Jozkee
+/src/libraries/System.Text.Json/                                    @ahsonkhan @steveharter @layomia @Jozkee @eiriktsarpalis
 /src/libraries/System.Buffers/                                      @ahsonkhan
 /src/libraries/System.Memory/                                       @ahsonkhan
 
