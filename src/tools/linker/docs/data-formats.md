@@ -4,7 +4,21 @@ IL linker uses several data formats to control or influence the linking process.
 
 ## Descriptor Format
 
-The `fullname` attribute specifies the fullname of the type in the format specified by ECMA-335. This is in certain cases not the same as the one reported by Type.FullName for example for nested types.
+Descriptors are used to direct the linker to always keep some items in the assembly, regardless of if the linker can find any references to them.
+
+Descriptor XML can be embedded in an assembly. In that case it must be stored as an embedded resource with logical name `ILLink.Descriptors.xml`. To achieve this when building an assembly use this in the project file to include the XML:
+
+```xml
+  <ItemGroup>
+    <EmbeddedResource Include="ILLink.Descriptors.xml">
+      <LogicalName>ILLink.Descriptors.xml</LogicalName>
+    </EmbeddedResource>
+  </ItemGroup>
+```
+
+Embedded descriptors only take effect if the containing assembly is included in the linker output, so if something from that assembly is marked to be kept.
+
+Descriptor XML can also be passed to the linker on the command via the [`-x` parameter](illink-options.md#linking-from-an-xml-descriptor).
 
 ### XML Examples
 
@@ -166,6 +180,24 @@ The `required` attribute specifies that if the type is not marked, during the ma
 
 ## Substitution Format
 
+Substitutions direct the linker to replace specific method's body with either a throw or return constant statements.
+
+Substitutions have effect only on assemblies which are linked with assembly action `link`, any other assembly will not be affected. That said it is possible to have a `copy` assembly with the substitution on a method in it, and then a separate `link` assembly which calls such method. The `link` assembly will see the constant value of the method after the substitution and potentially remove unused branches and such.
+
+Substitutions XML can be embedded in an assembly by including it as an embedded resource with logical name `ILLink.Substitutions.xml`. To include an XML file in an assembly this way, use this in the project file:
+
+```xml
+  <ItemGroup>
+    <EmbeddedResource Include="ILLink.Substitutions.xml">
+      <LogicalName>ILLink.Substitutions.xml</LogicalName>
+    </EmbeddedResource>
+  </ItemGroup>
+```
+
+Embedded substitutions only take effect if the containing assembly is included in the linker output. Embedded substitutions should only address methods from the containing assembly.
+
+Substitutions XML can be specified on the command line via the [`--substitutions` parameter](illink-options.md#using-custom-substitutions). Using substitutions with `ipconstprop` optimization (enabled by default) can help reduce output size as any dependencies under conditional logic which will be evaluated as unreachable will be removed.
+
 ### Substitute method body with a constant
 
 The `value` attribute is optional and only required when the method should be hardcoded to return a non-default value and the return type is not `void`.
@@ -256,6 +288,24 @@ Note that this will only have an effect where it is applied - the default value 
 
 ## Custom Attributes Annotations Format
 
+Attribute annotations direct the linker to behave as if the specified item has the specified attribute.
+
+Attribute annotations can only be used to add attributes which have effect on linker behavior, all other attributes will be ignored. Attributes added via attribute annotations only influence linker behavior, they are never added to the output assembly.
+
+Attribute annotation XML can be embedded in an assembly by including it as an embedded resource with logical name `ILLink.LinkAttributes.xml`. To include an XML file in an assembly this way, use this in the project file:
+
+```xml
+  <ItemGroup>
+    <EmbeddedResource Include="ILLink.LinkAttributes.xml">
+      <LogicalName>ILLink.LinkAttributes.xml</LogicalName>
+    </EmbeddedResource>
+  </ItemGroup>
+```
+
+Embedded attribute annotations should only address methods from the containing assembly.
+
+Attribute annotations XML can be specified on the command line via the [`--link-attributes` parameter](illink-options.md#supplementary-custom-attributes).
+
 ### Custom attribute on assembly
 
 ```xml
@@ -270,7 +320,7 @@ Note that this will only have an effect where it is applied - the default value 
 
 ### Custom attribute on type
 
-This allows to add a custom attribute to a class, interface, delegate, struct or enum 
+This allows to add a custom attribute to a class, interface, delegate, struct or enum.
 
 ```xml
 <linker>
@@ -427,13 +477,13 @@ This allows to add a custom attribute to a class, interface, delegate, struct or
 ### Conditional custom attributes
 
 The `feature` and `featurevalue` attributes are optional, but must be used together when used.
-They can be applied to any element to specify conditions under which the contained custom 
+They can be applied to any element to specify conditions under which the contained custom
 attributes are applied.
 
 ```xml
 <linker>
   <assembly fullname="Assembly">
-    <!-- The substitution will apply only if "--feature EnableOptionalFeature false" are also used -->
+    <!-- The attribute will apply only if "EnableOptionalFeature" is set to "false" -->
     <type fullname="Assembly.A" feature="EnableOptionalFeature" featurevalue="false">
       <method signature="System.String TestMethod()">
         <return>
@@ -451,11 +501,11 @@ attributes are applied.
 
 The attribute element requires 'fullname' attribute without it linker will generate a warning and skip
 the attribute. Optionally you can use the 'assembly' attribute to point to certain assembly to look
-for the attribute, if not specified the linker will look the attribute in any loaded assembly.
-Inside an attribute element in the xml you can define argument, field and property elements. 
-An attribute could have several arguments, several fields or several properties. When writing 
-custom attribute with multiple arguments you need to write the xml elements in an order dependent 
-form. That is, the first xml argument element corresponds to the first custom attribute argument, 
+for the attribute, if not specified the linker will look up the attribute in any loaded assembly.
+Inside an attribute element in the xml you can define argument, field and property elements.
+An attribute could have several arguments, several fields or several properties. When writing
+custom attribute with multiple arguments you need to write the xml elements in an order dependent
+form. That is, the first xml argument element corresponds to the first custom attribute argument,
 second xml argument element correspond to the second custom attribute argument and so on.
 For fields and properties, you need to include the name since they are not order dependent.
 
@@ -470,13 +520,13 @@ For fields and properties, you need to include the name since they are not order
 ```
 
 Additionally the attribute element also supports the usage of the feature switch
+
 ```xml
 <attribute fullname="SomecustomAttribute" feature="EnableOptionalFeature" featurevalue="false"/>
 ```
 
 Also if the attribute is used in a type, a special property can be used to specify that the type
-is a Custom Attribute an it's instances should be removed by the linker. To do this the word "internal" 
-and value "RemoveAttributeInstances" should be included in the attribute as described in the following
+is a Custom Attribute and it's instances should be removed by the linker. To do this use `internal="RemoveAttributeInstances"` instead of specifying `fullname` in the attribute as described in the following
 example:
 
 ```xml
@@ -488,6 +538,7 @@ example:
   </assembly>
 </linker>
 ```
+
 Notice that a descriptor file containing the custom attribute type overrides this behavior. In case the
-custom attribute type is being referenced in a descriptor xml file and in the linkattributes xml file
-for removal, the custom attribute will not be removed
+custom attribute type is being referenced in a descriptor file and in the attribute annotations file
+for removal, the custom attribute will not be removed.
