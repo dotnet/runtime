@@ -16,6 +16,9 @@ namespace Internal.Cryptography.Pal
     {
         internal ApplePkcs12Reader(ReadOnlySpan<byte> data)
         {
+            // MacOS does not permit ephemeral key imports, so key reuse can
+            // always be permitted.
+            PermitKeyReuse = true;
             ParsePkcs12(data);
         }
 
