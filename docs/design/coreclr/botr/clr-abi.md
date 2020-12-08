@@ -710,4 +710,15 @@ The general rules outlined in the [System V x86_64 ABI](https://software.intel.c
 
 Unlike the other architectures that RyuJIT supports, the managed x86 calling convention is different than the default native calling convention. This is true for both Windows and Unix x86.
 
-The managed x86 calling convention uses a variant of the Windows x86 "fastcall" calling convention. The first two register-eligible arguments are passed in ecx and edx respectively. 1, 2, or 4 byte integer primitives and structs that trivially wrap a 4-byte primitive integer are eligible for registers. Structs that do not trivially wrap a 4-byte primitive integer or a register-eligible struct are passed on the stack. The this argument and the hidden arguments mentioned earlier in this document are also eligible for registers. All non-register eligible arguments are pushed on the stack in argument order. This is in contrast to the unmanaged calling conventions, cdecl, stdcall, thiscall, and fastcall, which push the arguments in reverse order onto the stack.
+The standard managed calling convention is a variation on the Windows x86 fastcall convention. It differs primarily in the order in which arguments are pushed on the stack.
+The only values that can be passed in registers are managed and unmanaged pointers, object references, and the built-in integer types int8, unsigned int8, int16, unsigned int16, int32, unsigned it32, native int, native unsigned int, and enums and value types with only one 4-byte integer primitive-type field. Enums are passed as their underlying type. All floating-point values and 8-byte integer values are passed on the stack. When the return type is a value type that cannot be passed in a register, the caller shall create a buffer to hold the result and pass the address of this buffer as a hidden parameter.
+Arguments are passed in left-to-right order, starting with the this pointer (for instance and virtual methods), followed by the return buffer pointer if needed, followed by the user-specified argument values.  The first of these that can be placed in a register is put into ECX, the next in EDX, and all subsequent ones are passed on the stack. This is in contrast with the x86 native calling conventions, which push arguments onto the stack in right-to-left order.
+
+The return value is handled as follows:
+
+1. Floating-point values are returned on the top of the hardware FP stack.
+2. Integers up to 32 bits long are returned in EAX.
+3. 64-bit integers are passed with EAX holding the least significant 32 bits and EDX holding the most significant 32 bits.
+4. All other cases require the use of a return buffer, through which the value is returned.
+
+In addition, there is a guarantee that if a return buffer is used a value is stored there only upon ordinary exit from the method. The buffer is not allowed to be used for temporary storage within the method and its contents will be unaltered if an exception occurs while executing the method.
