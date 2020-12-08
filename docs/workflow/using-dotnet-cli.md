@@ -1,9 +1,11 @@
 
 # Using your .NET Runtime build with .NET SDK
 
-This walkthrough explains how to run your own app against your local build using only the .NET SDK.
+This walkthrough explains how to run your own app against your local build using only the .NET SDK. 
 
-For other walkthroughs see:
+Testing your local build this way is quite realistic - more like a real user. However it takes longer because you have to build the package.
+
+If you want to use a faster method, you may want to use one of these walkthroughs instead:
 
 - [Using Your Build - Update from raw build output](./testing/using-your-build.md)
 - [Using CoreRun To Run .NET Application](./testing/using-corerun.md)
@@ -19,7 +21,7 @@ All paths in examples below are Windows-style but the procedure is otherwise exa
     <your-repo-root>\artifacts\packages\<configuration>\Shipping\
 ```
 
-If you don't have this folder, you may have built binaries but not packages. Try building from the root with a command like `build.cmd clr+libs+host+packs -rc release`.
+If you don't have this folder, you may have built binaries but not packages. Try building from the root with a command like `build.cmd clr+libs+host+packs -c release`.
 
 2. Acquired the latest nightly .NET SDK from [here](https://github.com/dotnet/installer) and added its root folder to your [path](requirements/windows-requirements.md#adding-to-the-default-path-variable)
 
@@ -41,7 +43,7 @@ Please run `dotnet new nugetconfig` in the app folder and replace the created `N
 <configuration>
   <config>
     <!-- CHANGE THIS PATH BELOW to any empty folder. NuGet will cache things here, and that's convenient because you can delete it to reset things -->
-    <add key="globalPackagesFolder" value="c:\packages" />
+    <add key="globalPackagesFolder" value="c:\localcache" />
   </config>
   <packageSources>
     <!--To inherit the global NuGet package sources remove the <clear/> line below -->
@@ -171,6 +173,28 @@ The location is c:\runtime\helloworld\bin\Debug\net6.0\win-x64\publish\System.Pr
 
 ## How to then consume updated packages
 
-Once you have successfully consumed a package, you probably want to make changes, update the package, and have your app consume it again.
+Once you have successfully consumed a package, you probably want to make changes, update the package, and have your app consume it again. Normally NuGet would ignore your updated package, because its version number hasn't changed. The easiest way to avoid that is to simply delete your NuGet cache. To make this easy, in the `NuGet.config` file above, we used `globalPackagesFolder` to set a local package cache. Simply delete that folder and publish again and your app will pick up the new package.
 
-Normally NuGet would ignore your updated package, because its version number hasn't changed. The easiest way to avoid that is to delete your NuGet cache. In the `NuGet.config` file above, we used `globalPackagesFolder` to set a local package cache. Simply delete that folder and publish again and your app will pick up the new package.
+So the steps are:
+
+### 1. Build the package again
+
+```bat
+build.cmd clr+libs+host+packs -c release
+``` 
+
+If you only changed libraries, `build.cmd libs+host+packs -c release` is a little faster; if you only changed clr, then `build.cmd clr+host+packs -c release` 
+
+### 2. Delete your local package cache
+
+```bat
+rd /s /q c:\localcache
+```
+
+### 3. Publish again
+
+```bat
+dotnet publish
+```
+
+Now your app will use your updated package. 
