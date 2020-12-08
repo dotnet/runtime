@@ -708,4 +708,6 @@ The general rules outlined in the [System V x86_64 ABI](https://software.intel.c
 
 # x86 Calling convention specifics
 
+Unlike the other architectures that RyuJIT supports, the managed x86 calling convention is different than the default native calling convention. This is true for both Windows and Unix x86.
+
 The managed x86 calling convention uses a variant of the Windows x86 "fastcall" calling convention. The first two register-eligible arguments are passed in ecx and edx respectively. 1, 2, or 4 byte integer primitives and structs that trivially wrap a 4-byte primitive integer are eligible for registers. Structs that do not trivially wrap a 4-byte primitive integer or a register-eligible struct are passed on the stack. The this argument and the hidden arguments mentioned earlier in this document are also eligible for registers. All non-register eligible arguments are pushed on the stack in argument order. This is in contrast to the unmanaged calling conventions, cdecl, stdcall, thiscall, and fastcall, which push the arguments in reverse order onto the stack.
