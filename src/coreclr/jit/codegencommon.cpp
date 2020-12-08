@@ -11828,8 +11828,8 @@ void CodeGen::genMultiRegStoreToLocal(GenTreeLclVar* lclNode)
     }
     for (unsigned i = 0; i < regCount; ++i)
     {
-        regNumber reg  = genConsumeReg(op1, i);
-        var_types type = actualOp1->GetRegTypeByIndex(i);
+        regNumber reg     = genConsumeReg(op1, i);
+        var_types srcType = actualOp1->GetRegTypeByIndex(i);
         // genConsumeReg will return the valid register, either from the COPY
         // or from the original source.
         assert(reg != REG_NA);
@@ -11841,12 +11841,12 @@ void CodeGen::genMultiRegStoreToLocal(GenTreeLclVar* lclNode)
             LclVarDsc* fieldVarDsc = compiler->lvaGetDesc(fieldLclNum);
             if (varReg != REG_NA)
             {
-                var_types type = fieldVarDsc->TypeGet();
+                var_types destType = fieldVarDsc->TypeGet();
                 hasRegs = true;
                 if (varReg != reg)
                 {
                     // We may need a cross register-file copy here.
-                    inst_RV_RV(ins_Copy(reg, type), varReg, reg, type);
+                    inst_RV_RV(ins_Copy(reg, destType), varReg, reg, destType);
                 }
                 fieldVarDsc->SetRegNum(varReg);
             }
@@ -11858,15 +11858,15 @@ void CodeGen::genMultiRegStoreToLocal(GenTreeLclVar* lclNode)
             {
                 if (!lclNode->AsLclVar()->IsLastUse(i))
                 {
-                    GetEmitter()->emitIns_S_R(ins_Store(type), emitTypeSize(type), reg, fieldLclNum, 0);
+                    GetEmitter()->emitIns_S_R(ins_Store(srcType), emitTypeSize(srcType), reg, fieldLclNum, 0);
                 }
             }
             fieldVarDsc->SetRegNum(varReg);
         }
         else
         {
-            GetEmitter()->emitIns_S_R(ins_Store(type), emitTypeSize(type), reg, lclNum, offset);
-            offset += genTypeSize(type);
+            GetEmitter()->emitIns_S_R(ins_Store(srcType), emitTypeSize(srcType), reg, lclNum, offset);
+            offset += genTypeSize(srcType);
         }
     }
 
