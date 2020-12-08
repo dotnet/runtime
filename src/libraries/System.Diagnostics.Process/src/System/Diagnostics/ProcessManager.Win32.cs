@@ -249,12 +249,14 @@ namespace System.Diagnostics
         private const int DefaultCachedBufferSize = 8 * 128 * 1024;
 #endif
 
+        private static int MostRecentSize = DefaultCachedBufferSize;
+
         internal static ProcessInfo[] GetProcessInfos(Predicate<int>? processIdFilter = null)
         {
             ProcessInfo[] processInfos;
 
             // Start with the default buffer size.
-            int bufferSize = DefaultCachedBufferSize;
+            int bufferSize = MostRecentSize;
 
             while (true)
             {
@@ -294,6 +296,7 @@ namespace System.Diagnostics
 
                                 // Parse the data block to get process information
                                 processInfos = GetProcessInfos(buffer.AsSpan(firstAlignedElementIndex), processIdFilter);
+                                MostRecentSize = buffer.Length;
                                 break;
                             }
                         }
