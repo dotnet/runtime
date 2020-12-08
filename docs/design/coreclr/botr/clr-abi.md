@@ -1,6 +1,6 @@
 # CLR ABI
 
-This document describes the .NET Common Language Runtime (CLR) software conventions (or ABI, "Application Binary Interface"). It focusses on the ABI for the x64 (aka, AMD64), ARM (aka, ARM32 or Thumb-2), and ARM64 processor architectures. Documentation for the x86 ABI is somewhat scant, but information on the basics of the calling convention are included at the bottom of this document.
+This document describes the .NET Common Language Runtime (CLR) software conventions (or ABI, "Application Binary Interface"). It focusses on the ABI for the x64 (aka, AMD64), ARM (aka, ARM32 or Thumb-2), and ARM64 processor architectures. Documentation for the x86 ABI is somewhat scant, but information on the basics of the calling convention is included at the bottom of this document.
 
 It describes requirements that the Just-In-Time (JIT) compiler imposes on the VM and vice-versa.
 
