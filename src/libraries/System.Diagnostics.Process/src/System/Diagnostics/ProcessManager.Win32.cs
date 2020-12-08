@@ -246,7 +246,7 @@ namespace System.Diagnostics
 #if DEBUG
         private const int DefaultCachedBufferSize = 8 * 1024;
 #else
-        private const int DefaultCachedBufferSize = 8 * 128 * 1024;
+        private const int DefaultCachedBufferSize = 1024 * 1024;
 #endif
 
         private static int MostRecentSize = DefaultCachedBufferSize;
