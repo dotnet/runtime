@@ -9,9 +9,9 @@
 
 # CoreCLR Code Owners
 
-/src/coreclr/src/inc/corinfo.h @dotnet/jit-contrib
-/src/coreclr/src/inc/corjit.h @dotnet/jit-contrib
-/src/coreclr/src/jit/ @dotnet/jit-contrib
+/src/coreclr/inc/corinfo.h @dotnet/jit-contrib
+/src/coreclr/inc/corjit.h @dotnet/jit-contrib
+/src/coreclr/jit/ @dotnet/jit-contrib
 
 # Mono Code Owners
 
