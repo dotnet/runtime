@@ -22,50 +22,52 @@ namespace Mono.Linker.Tests.Cases.TypeForwarding
 
 	[RemovedAssembly ("Forwarder.dll")]
 	[KeptMemberInAssembly ("Implementation.dll", typeof (ImplementationLibrary))]
+	[KeptMemberInAssembly ("Implementation.dll", typeof (ImplementationStruct))]
 	class AttributeArgumentForwarded
 	{
 		static void Main ()
 		{
-			Test_1 ();
-			Test_1b ();
-			Test_1c ();
-			Test_2 ();
-			Test_3 ();
-			Test_3a ();
+			Test_Parameter_TypeRef ();
+			Test_Parameter_TypeRefMDArray ();
+			Test_Parameter_PointerTypeRef ();
+			Test_Property_ArrayOfTypeRefs ();
+			Test_Field_GenericOfTypeRefArray ();
+			Test_Field_OpenGeneric ();
+			Test_Field_ArrayOfPointerTypeRef ();
 		}
 
 		[Kept]
 		[KeptAttributeAttribute (typeof (TestTypeAttribute))]
 		[TestType (typeof (ImplementationLibrary))]
-		public static void Test_1 ()
+		public static void Test_Parameter_TypeRef ()
 		{
 		}
 
 		[Kept]
 		[KeptAttributeAttribute (typeof (TestTypeAttribute))]
 		[TestType (typeof (ImplementationLibrary[,][]))]
-		public static void Test_1b ()
+		public static void Test_Parameter_TypeRefMDArray ()
 		{
 		}
 
 		[Kept]
 		[KeptAttributeAttribute (typeof (TestTypeAttribute))]
-		[TestType (typeof (ImplementationLibrary[,][]))]
-		public static void Test_1c ()
+		[TestType (typeof (ImplementationStruct*))]
+		public static void Test_Parameter_PointerTypeRef ()
 		{
 		}
 
 		[Kept]
 		[KeptAttributeAttribute (typeof (TestTypeAttribute))]
 		[TestType (TestProperty = new object[] { typeof (ImplementationLibrary) })]
-		public static void Test_2 ()
+		public static void Test_Property_ArrayOfTypeRefs ()
 		{
 		}
 
 		[Kept]
 		[KeptAttributeAttribute (typeof (TestTypeAttribute))]
 		[TestType (TestField = typeof (SomeGenericType<ImplementationLibrary[]>))]
-		public static void Test_3 ()
+		public static void Test_Field_GenericOfTypeRefArray ()
 		{
 		}
 
@@ -73,9 +75,24 @@ namespace Mono.Linker.Tests.Cases.TypeForwarding
 		[Kept]
 		[KeptAttributeAttribute (typeof (TestTypeAttribute))]
 		[TestType (TestField = typeof (SomeGenericType<>))]
-		public static void Test_3a ()
+		public static void Test_Field_OpenGeneric ()
 		{
 		}
+
+		[Kept]
+		[KeptAttributeAttribute (typeof (TestTypeAttribute))]
+		[TestType (TestField = new object[] { typeof (ImplementationStruct*) })]
+		public static void Test_Field_ArrayOfPointerTypeRef ()
+		{
+		}
+
+		// This hits Roslyn bug https://github.com/dotnet/roslyn/issues/48765
+		//[Kept]
+		//[KeptAttributeAttribute (typeof (TestTypeAttribute))]
+		//[TestType (TestField = new object[] { typeof (delegate*<int, void>) })]
+		//public static void Test_Field_ArrayOfFunctionPointer ()
+		//{
+		//}
 	}
 
 	[KeptBaseType (typeof (Attribute))]
