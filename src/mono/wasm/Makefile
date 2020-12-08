@@ -158,10 +158,10 @@ test-runner:
 	$(DOTNET) build $(TOP)/src/libraries/Common/tests/WasmTestRunner /p:Configuration=$(CONFIG)
 
 app-builder:
-	$(DOTNET) build $(TOP)/tools-local/tasks/mobile.tasks/WasmAppBuilder
+	$(DOTNET) build $(TOP)/src/tasks/WasmAppBuilder
 
 build-tasks:
-	$(DOTNET) build $(TOP)/tools-local/tasks/mobile.tasks/WasmBuildTasks
+	$(DOTNET) build $(TOP)/src/tasks/WasmBuildTasks
 
 run-tests-v8-%:
 	PATH="$(JSVU):$(PATH)" $(DOTNET) build $(TOP)/src/libraries/$*/tests/ /t:Test /p:TargetOS=Browser /p:TargetArchitecture=wasm /p:Configuration=$(CONFIG) /p:JSEngine=V8 $(MSBUILD_ARGS)

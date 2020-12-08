@@ -10,7 +10,7 @@ git clean -xdf
 git pull upstream master & git push origin master
 :: Build Debug libraries on top of Release runtime:
 build.cmd clr+libs -rc Release
-:: The above you may only perform once in a day, or when you pull down significant new changes.
+:: Performing the above is usually only needed once in a day, or when you pull down significant new changes.
 
 :: If you use Visual Studio, you might open System.Text.RegularExpressions.sln here.
 build.cmd -vs System.Text.RegularExpressions
@@ -34,7 +34,7 @@ git clean -xdf
 git pull upstream master & git push origin master
 # Build Debug libraries on top of Release runtime:
 ./build.sh clr+libs -rc Release
-# The above you may only perform once in a day, or when you pull down significant new changes.
+# Performing the above is usually only needed once in a day, or when you pull down significant new changes.
 
 # Switch to working on a given library (RegularExpressions in this case)
 cd src/libraries/System.Text.RegularExpressions
