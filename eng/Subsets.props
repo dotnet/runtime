@@ -136,12 +136,12 @@
 
   <!-- CoreClr sets -->
   <ItemGroup Condition="$(_subset.Contains('+clr.corelib+'))">
-    <ProjectToBuild Include="$(CoreClrProjectRoot)src\System.Private.CoreLib\System.Private.CoreLib.csproj" Category="clr" />
+    <ProjectToBuild Include="$(CoreClrProjectRoot)System.Private.CoreLib\System.Private.CoreLib.csproj" Category="clr" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetOS)' == 'windows' and ($(_subset.Contains('+clr.dactools+')) or $(_subset.Contains('+clr.runtime+')))">
-    <ProjectToBuild Include="$(CoreClrProjectRoot)src\ToolBox\SOS\DacTableGen\DacTableGen.csproj;
-                             $(CoreClrProjectRoot)src\ToolBox\SOS\DIALib\DIALib.ilproj"
+    <ProjectToBuild Include="$(CoreClrProjectRoot)ToolBox\SOS\DacTableGen\DacTableGen.csproj;
+                             $(CoreClrProjectRoot)ToolBox\SOS\DIALib\DIALib.ilproj"
                     Category="clr"/>
   </ItemGroup>
 
@@ -166,7 +166,7 @@
   </ItemGroup>
 
   <ItemGroup Condition="$(_subset.Contains('+clr.paltestlist+'))">
-    <ProjectToBuild Include="$(CoreClrProjectRoot)src/pal/tests/palsuite/producepaltestlist.proj" />
+    <ProjectToBuild Include="$(CoreClrProjectRoot)pal/tests/palsuite/producepaltestlist.proj" />
   </ItemGroup>
 
   <ItemGroup Condition="$(_subset.Contains('+linuxdac+')) and $([MSBuild]::IsOsPlatform(Windows)) and '$(TargetArchitecture)' != 'x86'">
@@ -178,17 +178,17 @@
   </ItemGroup>
 
   <ItemGroup Condition="$(_subset.Contains('+crossdacpack+'))">
-    <ProjectToBuild Include="$(CoreClrProjectRoot)src\.nuget\Microsoft.CrossOsDiag.Private.CoreCLR\Microsoft.CrossOsDiag.Private.CoreCLR.proj" Category="clr" />
+    <ProjectToBuild Include="$(CoreClrProjectRoot).nuget\Microsoft.CrossOsDiag.Private.CoreCLR\Microsoft.CrossOsDiag.Private.CoreCLR.proj" Category="clr" />
   </ItemGroup>
 
   <ItemGroup Condition="$(_subset.Contains('+clr.tools+'))">
-    <ProjectToBuild Include="$(CoreClrProjectRoot)src\tools\runincontext\runincontext.csproj;
-                             $(CoreClrProjectRoot)src\tools\r2rdump\R2RDump.csproj;
-                             $(CoreClrProjectRoot)src\tools\dotnet-pgo\dotnet-pgo.csproj;
-                             $(CoreClrProjectRoot)src\tools\r2rtest\R2RTest.csproj;
-                             $(CoreClrProjectRoot)src\tools\aot\crossgen2\crossgen2.csproj" Category="clr" />
+    <ProjectToBuild Include="$(CoreClrProjectRoot)tools\runincontext\runincontext.csproj;
+                             $(CoreClrProjectRoot)tools\r2rdump\R2RDump.csproj;
+                             $(CoreClrProjectRoot)tools\dotnet-pgo\dotnet-pgo.csproj;
+                             $(CoreClrProjectRoot)tools\r2rtest\R2RTest.csproj;
+                             $(CoreClrProjectRoot)tools\aot\crossgen2\crossgen2.csproj" Category="clr" />
 
-    <ProjectToBuild Include="$(CoreClrProjectRoot)src\tools\aot\ILCompiler.TypeSystem.ReadyToRun.Tests\ILCompiler.TypeSystem.ReadyToRun.Tests.csproj"
+    <ProjectToBuild Include="$(CoreClrProjectRoot)tools\aot\ILCompiler.TypeSystem.ReadyToRun.Tests\ILCompiler.TypeSystem.ReadyToRun.Tests.csproj"
       Test="true" Category="clr" Condition="'$(__DistroRid)' != 'linux-musl-x64'"/>
   </ItemGroup>
 
@@ -197,7 +197,7 @@
   </ItemGroup>
 
   <ItemGroup Condition="$(_subset.Contains('+clr.packages+'))">
-    <ProjectToBuild Include="$(CoreClrProjectRoot)src\.nuget\coreclr-packages.proj" Pack="true" Category="clr" />
+    <ProjectToBuild Include="$(CoreClrProjectRoot).nuget\coreclr-packages.proj" Pack="true" Category="clr" />
   </ItemGroup>
 
   <!-- Mono sets -->
