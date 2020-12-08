@@ -272,10 +272,10 @@ namespace System.Diagnostics
                         fixed (byte* bufferPtr = buffer)
                         {
                             // some platforms require the buffer to be 64-bit aligned.
-                            // ArrayPool does not guarantee 64-byte alignment, so we take the address of first 64-byte aligned element
+                            // ArrayPool does not guarantee 64-bit alignment, so we take the address of first 64-bit aligned element
                             // we round up the address of the pinned array to the nearest multiple of 64
-                            Debug.Assert(bufferSize > 64);
-                            byte* alignedBufferPtr = (byte*)(((nint)bufferPtr + 63) & ~63);
+                            Debug.Assert(bufferSize > 8);
+                            byte* alignedBufferPtr = (byte*)(((nint)bufferPtr + 7) & ~7);
                             int firstAlignedElementIndex = (int)(alignedBufferPtr - bufferPtr);
 
                             uint status = Interop.NtDll.NtQuerySystemInformation(
