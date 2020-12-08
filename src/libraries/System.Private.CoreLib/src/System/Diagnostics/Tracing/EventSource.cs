@@ -2760,7 +2760,7 @@ namespace System.Diagnostics.Tracing
             if (!member.Module.Assembly.ReflectionOnly && (flags & EventManifestOptions.AllowEventSourceOverride) == 0)
             {
                 // Let the runtime to the work for us, since we can execute code in this context.
-                return member.IsDefined(attributeType);
+                return member.IsDefined(attributeType, inherit: false);
             }
 
             foreach (CustomAttributeData data in CustomAttributeData.GetCustomAttributes(member))
