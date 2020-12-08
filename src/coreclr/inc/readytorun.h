@@ -14,7 +14,7 @@
 
 #define READYTORUN_SIGNATURE 0x00525452 // 'RTR'
 
-// Keep these in sync with src/coreclr/src/tools/Common/Internal/Runtime/ModuleHeaders.cs
+// Keep these in sync with src/coreclr/tools/Common/Internal/Runtime/ModuleHeaders.cs
 #define READYTORUN_MAJOR_VERSION 0x0004
 #define READYTORUN_MINOR_VERSION 0x0002
 
