@@ -449,16 +449,21 @@ namespace Mono.Linker.Steps
 			if (type.IsWindowsRuntimeProjection)
 				return;
 
-			if (type is GenericInstanceType git && git.HasGenericArguments) {
+			switch (type) {
+			case GenericInstanceType git:
 				UpdateTypeScope (git.ElementType, assembly);
 				foreach (var ga in git.GenericArguments)
 					UpdateTypeScope (ga, assembly);
 				return;
-			}
-
-			if (type is ArrayType at) {
+			case ArrayType at:
 				UpdateTypeScope (at.ElementType, assembly);
 				return;
+			case PointerType pt:
+				UpdateTypeScope (pt.ElementType, assembly);
+				return;
+			case FunctionPointerType fpt:
+				// Currently not possible with C#: https://github.com/dotnet/roslyn/issues/48765
+				throw new InternalErrorException ($"Function pointer type in custom attribute argument '{fpt}' - currently not supported.");
 			}
 
 			TypeDefinition td = type.Resolve ();

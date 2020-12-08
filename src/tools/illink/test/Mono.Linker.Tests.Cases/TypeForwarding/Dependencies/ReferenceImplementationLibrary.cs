@@ -15,5 +15,10 @@ namespace Mono.Linker.Tests.Cases.TypeForwarding.Dependencies
 			return null;
 		}
 	}
+
+	public struct ImplementationStruct
+	{
+		public int Field;
+	}
 #endif
 }
