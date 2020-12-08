@@ -6,6 +6,8 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Linq;
+using System.Text;
 using Mono.Cecil;
 using Mono.Cecil.Cil;
 using Mono.Linker.Steps;
@@ -1392,175 +1394,184 @@ namespace Mono.Linker.Dataflow
 					reflectionContext.RecordHandledPattern ();
 				} else if (uniqueValue is LeafValueWithDynamicallyAccessedMemberNode valueWithDynamicallyAccessedMember) {
 					if (!valueWithDynamicallyAccessedMember.DynamicallyAccessedMemberTypes.HasFlag (requiredMemberTypes)) {
+						string missingMemberTypes = $"'{nameof (DynamicallyAccessedMemberTypes.All)}'";
+						if (requiredMemberTypes != DynamicallyAccessedMemberTypes.All) {
+							var missingMemberTypesList = Enum.GetValues (typeof (DynamicallyAccessedMemberTypes))
+								.Cast<DynamicallyAccessedMemberTypes> ()
+								.Where (damt => (requiredMemberTypes & ~valueWithDynamicallyAccessedMember.DynamicallyAccessedMemberTypes & damt) == damt && damt != DynamicallyAccessedMemberTypes.None)
+								.Select (damt => damt.ToString ()).ToList ();
+
+							if (missingMemberTypesList.Contains (nameof (DynamicallyAccessedMemberTypes.PublicConstructors)) &&
+								missingMemberTypesList.SingleOrDefault (x => x == nameof (DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)) is var ppc &&
+								ppc != null)
+								missingMemberTypesList.Remove (ppc);
+
+							missingMemberTypes = string.Join (", ", missingMemberTypesList.Select (mmt => $"'DynamicallyAccessedMemberTypes.{mmt}'"));
+						}
+
 						switch ((valueWithDynamicallyAccessedMember.SourceContext, targetContext)) {
 						case (ParameterDefinition sourceParameter, ParameterDefinition targetParameter):
-							reflectionContext.RecordUnrecognizedPattern (
-								2067,
-								$"The requirements declared via the 'DynamicallyAccessedMembersAttribute' on the parameter '{DiagnosticUtilities.GetParameterNameForErrorMessage (sourceParameter)}' of method '{DiagnosticUtilities.GetMethodSignatureDisplayName (sourceParameter.Method)}' " +
-								$"don't match those on the parameter '{DiagnosticUtilities.GetParameterNameForErrorMessage (targetParameter)}' of method '{DiagnosticUtilities.GetMethodSignatureDisplayName (targetParameter.Method)}'. " +
-								$"The source value must declare at least the same requirements as those declared on the target location it's assigned to");
+							reflectionContext.RecordUnrecognizedPattern (2067, string.Format (Resources.Strings.IL2067,
+								DiagnosticUtilities.GetParameterNameForErrorMessage (targetParameter),
+								DiagnosticUtilities.GetMethodSignatureDisplayName (targetParameter.Method),
+								DiagnosticUtilities.GetParameterNameForErrorMessage (sourceParameter),
+								DiagnosticUtilities.GetMethodSignatureDisplayName (sourceParameter.Method),
+								missingMemberTypes));
 							break;
 						case (ParameterDefinition sourceParameter, MethodReturnType targetMethodReturnType):
-							reflectionContext.RecordUnrecognizedPattern (
-								2068,
-								$"The requirements declared via the 'DynamicallyAccessedMembersAttribute' on the parameter '{DiagnosticUtilities.GetParameterNameForErrorMessage (sourceParameter)}' of method '{DiagnosticUtilities.GetMethodSignatureDisplayName (sourceParameter.Method)}' " +
-								$"don't match those on the return value of method '{DiagnosticUtilities.GetMethodSignatureDisplayName (targetMethodReturnType.Method)}'. " +
-								$"The source value must declare at least the same requirements as those declared on the target location it's assigned to");
+							reflectionContext.RecordUnrecognizedPattern (2068, string.Format (Resources.Strings.IL2068,
+								DiagnosticUtilities.GetMethodSignatureDisplayName (targetMethodReturnType.Method),
+								DiagnosticUtilities.GetParameterNameForErrorMessage (sourceParameter),
+								DiagnosticUtilities.GetMethodSignatureDisplayName (sourceParameter.Method),
+								missingMemberTypes));
 							break;
 						case (ParameterDefinition sourceParameter, FieldDefinition targetField):
-							reflectionContext.RecordUnrecognizedPattern (
-								2069,
-								$"The requirements declared via the 'DynamicallyAccessedMembersAttribute' on the parameter '{DiagnosticUtilities.GetParameterNameForErrorMessage (sourceParameter)}' of method '{DiagnosticUtilities.GetMethodSignatureDisplayName (sourceParameter.Method)}' " +
-								$"don't match those on the field '{targetField.GetDisplayName ()}'. " +
-								$"The source value must declare at least the same requirements as those declared on the target location it's assigned to");
+							reflectionContext.RecordUnrecognizedPattern (2069, string.Format (Resources.Strings.IL2069,
+								targetField.GetDisplayName (),
+								DiagnosticUtilities.GetParameterNameForErrorMessage (sourceParameter),
+								DiagnosticUtilities.GetMethodSignatureDisplayName (sourceParameter.Method),
+								missingMemberTypes));
 							break;
 						case (ParameterDefinition sourceParameter, MethodDefinition targetMethod):
-							reflectionContext.RecordUnrecognizedPattern (
-								2070,
-								$"The requirements declared via the 'DynamicallyAccessedMembersAttribute' on the parameter '{DiagnosticUtilities.GetParameterNameForErrorMessage (sourceParameter)}' of method '{DiagnosticUtilities.GetMethodSignatureDisplayName (sourceParameter.Method)}' " +
-								$"don't match those on the implicit 'this' parameter of method '{targetMethod.GetDisplayName ()}'. " +
-								$"The source value must declare at least the same requirements as those declared on the target location it's assigned to");
+							reflectionContext.RecordUnrecognizedPattern (2070, string.Format (Resources.Strings.IL2070,
+								targetMethod.GetDisplayName (),
+								DiagnosticUtilities.GetParameterNameForErrorMessage (sourceParameter),
+								DiagnosticUtilities.GetMethodSignatureDisplayName (sourceParameter.Method),
+								missingMemberTypes));
 							break;
 						case (ParameterDefinition sourceParameter, GenericParameter targetGenericParameter):
 							// Currently this is never generated, once ILLink supports full analysis of MakeGenericType/MakeGenericMethod this will be used
-							reflectionContext.RecordUnrecognizedPattern (
-								2071,
-								$"The requirements declared via the 'DynamicallyAccessedMembersAttribute' on the parameter '{DiagnosticUtilities.GetParameterNameForErrorMessage (sourceParameter)}' of method '{DiagnosticUtilities.GetMethodSignatureDisplayName (sourceParameter.Method)}' " +
-								$"don't match those on the generic parameter '{targetGenericParameter.Name}' of '{DiagnosticUtilities.GetGenericParameterDeclaringMemberDisplayName (targetGenericParameter)}'. " +
-								$"The source value must declare at least the same requirements as those declared on the target location it's assigned to");
+							reflectionContext.RecordUnrecognizedPattern (2071, string.Format (Resources.Strings.IL2071,
+								targetGenericParameter.Name,
+								DiagnosticUtilities.GetGenericParameterDeclaringMemberDisplayName (targetGenericParameter),
+								DiagnosticUtilities.GetParameterNameForErrorMessage (sourceParameter),
+								DiagnosticUtilities.GetMethodSignatureDisplayName (sourceParameter.Method),
+								missingMemberTypes));
 							break;
 
 						case (MethodReturnType sourceMethodReturnType, ParameterDefinition targetParameter):
-							reflectionContext.RecordUnrecognizedPattern (
-								2072,
-								$"The requirements declared via the 'DynamicallyAccessedMembersAttribute' on the return value of method '{DiagnosticUtilities.GetMethodSignatureDisplayName (sourceMethodReturnType.Method)}' " +
-								$"don't match those on the parameter '{DiagnosticUtilities.GetParameterNameForErrorMessage (targetParameter)}' of method '{DiagnosticUtilities.GetMethodSignatureDisplayName (targetParameter.Method)}'. " +
-								$"The source value must declare at least the same requirements as those declared on the target location it's assigned to");
+							reflectionContext.RecordUnrecognizedPattern (2072, string.Format (Resources.Strings.IL2072,
+								DiagnosticUtilities.GetParameterNameForErrorMessage (targetParameter),
+								DiagnosticUtilities.GetMethodSignatureDisplayName (targetParameter.Method),
+								DiagnosticUtilities.GetMethodSignatureDisplayName (sourceMethodReturnType.Method),
+								missingMemberTypes));
 							break;
 						case (MethodReturnType sourceMethodReturnType, MethodReturnType targetMethodReturnType):
-							reflectionContext.RecordUnrecognizedPattern (
-								2073,
-								$"The requirements declared via the 'DynamicallyAccessedMembersAttribute' on the return value of method '{DiagnosticUtilities.GetMethodSignatureDisplayName (sourceMethodReturnType.Method)}' " +
-								$"don't match those on the return value of method '{DiagnosticUtilities.GetMethodSignatureDisplayName (targetMethodReturnType.Method)}'. " +
-								$"The source value must declare at least the same requirements as those declared on the target location it's assigned to");
+							reflectionContext.RecordUnrecognizedPattern (2073, string.Format (Resources.Strings.IL2073,
+								DiagnosticUtilities.GetMethodSignatureDisplayName (targetMethodReturnType.Method),
+								DiagnosticUtilities.GetMethodSignatureDisplayName (sourceMethodReturnType.Method),
+								missingMemberTypes));
 							break;
 						case (MethodReturnType sourceMethodReturnType, FieldDefinition targetField):
-							reflectionContext.RecordUnrecognizedPattern (
-								2074,
-								$"The requirements declared via the 'DynamicallyAccessedMembersAttribute' on the return value of method '{DiagnosticUtilities.GetMethodSignatureDisplayName (sourceMethodReturnType.Method)}' " +
-								$"don't match those on the field '{targetField.GetDisplayName ()}'. " +
-								$"The source value must declare at least the same requirements as those declared on the target location it's assigned to");
+							reflectionContext.RecordUnrecognizedPattern (2074, string.Format (Resources.Strings.IL2074,
+								targetField.GetDisplayName (),
+								DiagnosticUtilities.GetMethodSignatureDisplayName (sourceMethodReturnType.Method),
+								missingMemberTypes));
 							break;
 						case (MethodReturnType sourceMethodReturnType, MethodDefinition targetMethod):
-							reflectionContext.RecordUnrecognizedPattern (
-								2075,
-								$"The requirements declared via the 'DynamicallyAccessedMembersAttribute' on the return value of method '{DiagnosticUtilities.GetMethodSignatureDisplayName (sourceMethodReturnType.Method)}' " +
-								$"don't match those on the implicit 'this' parameter of method '{targetMethod.GetDisplayName ()}'. " +
-								$"The source value must declare at least the same requirements as those declared on the target location it's assigned to");
+							reflectionContext.RecordUnrecognizedPattern (2075, string.Format (Resources.Strings.IL2075,
+								targetMethod.GetDisplayName (),
+								DiagnosticUtilities.GetMethodSignatureDisplayName (sourceMethodReturnType.Method),
+								missingMemberTypes));
 							break;
 						case (MethodReturnType sourceMethodReturnType, GenericParameter targetGenericParameter):
 							// Currently this is never generated, once ILLink supports full analysis of MakeGenericType/MakeGenericMethod this will be used
-							reflectionContext.RecordUnrecognizedPattern (
-								2076,
-								$"The requirements declared via the 'DynamicallyAccessedMembersAttribute' on the return value of method '{DiagnosticUtilities.GetMethodSignatureDisplayName (sourceMethodReturnType.Method)}' " +
-								$"don't match those on the generic parameter '{targetGenericParameter.Name}' of '{DiagnosticUtilities.GetGenericParameterDeclaringMemberDisplayName (targetGenericParameter)}'. " +
-								$"The source value must declare at least the same requirements as those declared on the target location it's assigned to");
+							reflectionContext.RecordUnrecognizedPattern (2076, string.Format (Resources.Strings.IL2076,
+								targetGenericParameter.Name,
+								DiagnosticUtilities.GetGenericParameterDeclaringMemberDisplayName (targetGenericParameter),
+								DiagnosticUtilities.GetMethodSignatureDisplayName (sourceMethodReturnType.Method),
+								missingMemberTypes));
 							break;
 
 						case (FieldDefinition sourceField, ParameterDefinition targetParameter):
-							reflectionContext.RecordUnrecognizedPattern (
-								2077,
-								$"The requirements declared via the 'DynamicallyAccessedMembersAttribute' on the field '{sourceField.GetDisplayName ()}' " +
-								$"don't match those on the parameter '{DiagnosticUtilities.GetParameterNameForErrorMessage (targetParameter)}' of method '{DiagnosticUtilities.GetMethodSignatureDisplayName (targetParameter.Method)}'. " +
-								$"The source value must declare at least the same requirements as those declared on the target location it's assigned to");
+							reflectionContext.RecordUnrecognizedPattern (2077, string.Format (Resources.Strings.IL2077,
+								DiagnosticUtilities.GetParameterNameForErrorMessage (targetParameter),
+								DiagnosticUtilities.GetMethodSignatureDisplayName (targetParameter.Method),
+								sourceField.GetDisplayName (),
+								missingMemberTypes));
 							break;
 						case (FieldDefinition sourceField, MethodReturnType targetMethodReturnType):
-							reflectionContext.RecordUnrecognizedPattern (
-								2078,
-								$"The requirements declared via the 'DynamicallyAccessedMembersAttribute' on the field '{sourceField.GetDisplayName ()}' " +
-								$"don't match those on the return value of method '{DiagnosticUtilities.GetMethodSignatureDisplayName (targetMethodReturnType.Method)}'. " +
-								$"The source value must declare at least the same requirements as those declared on the target location it's assigned to");
+							reflectionContext.RecordUnrecognizedPattern (2078, string.Format (Resources.Strings.IL2078,
+								DiagnosticUtilities.GetMethodSignatureDisplayName (targetMethodReturnType.Method),
+								sourceField.GetDisplayName (),
+								missingMemberTypes));
 							break;
 						case (FieldDefinition sourceField, FieldDefinition targetField):
-							reflectionContext.RecordUnrecognizedPattern (
-								2079,
-								$"The requirements declared via the 'DynamicallyAccessedMembersAttribute' on the field '{sourceField.GetDisplayName ()}' " +
-								$"don't match those on the field '{targetField.GetDisplayName ()}'. " +
-								$"The source value must declare at least the same requirements as those declared on the target location it's assigned to");
+							reflectionContext.RecordUnrecognizedPattern (2079, string.Format (Resources.Strings.IL2079,
+								targetField.GetDisplayName (),
+								sourceField.GetDisplayName (),
+								missingMemberTypes));
 							break;
 						case (FieldDefinition sourceField, MethodDefinition targetMethod):
-							reflectionContext.RecordUnrecognizedPattern (
-								2080,
-								$"The requirements declared via the 'DynamicallyAccessedMembersAttribute' on the field '{sourceField.GetDisplayName ()}' " +
-								$"don't match those on the implicit 'this' parameter of method '{targetMethod.GetDisplayName ()}'. " +
-								$"The source value must declare at least the same requirements as those declared on the target location it's assigned to");
+							reflectionContext.RecordUnrecognizedPattern (2080, string.Format (Resources.Strings.IL2080,
+								targetMethod.GetDisplayName (),
+								sourceField.GetDisplayName (),
+								missingMemberTypes));
 							break;
 						case (FieldDefinition sourceField, GenericParameter targetGenericParameter):
 							// Currently this is never generated, once ILLink supports full analysis of MakeGenericType/MakeGenericMethod this will be used
-							reflectionContext.RecordUnrecognizedPattern (
-								2081,
-								$"The requirements declared via the 'DynamicallyAccessedMembersAttribute' on the field '{sourceField.GetDisplayName ()}' " +
-								$"don't match those on the generic parameter '{targetGenericParameter.Name}' of '{DiagnosticUtilities.GetGenericParameterDeclaringMemberDisplayName (targetGenericParameter)}'. " +
-								$"The source value must declare at least the same requirements as those declared on the target location it's assigned to");
+							reflectionContext.RecordUnrecognizedPattern (2081, string.Format (Resources.Strings.IL2081,
+								targetGenericParameter.Name,
+								DiagnosticUtilities.GetGenericParameterDeclaringMemberDisplayName (targetGenericParameter),
+								sourceField.GetDisplayName (),
+								missingMemberTypes));
 							break;
 
 						case (MethodDefinition sourceMethod, ParameterDefinition targetParameter):
-							reflectionContext.RecordUnrecognizedPattern (
-								2082,
-								$"The requirements declared via the 'DynamicallyAccessedMembersAttribute' on the implicit 'this' parameter of method '{sourceMethod.GetDisplayName ()}' " +
-								$"don't match those on the parameter '{DiagnosticUtilities.GetParameterNameForErrorMessage (targetParameter)}' of method '{DiagnosticUtilities.GetMethodSignatureDisplayName (targetParameter.Method)}'. " +
-								$"The source value must declare at least the same requirements as those declared on the target location it's assigned to");
+							reflectionContext.RecordUnrecognizedPattern (2082, string.Format (Resources.Strings.IL2082,
+								DiagnosticUtilities.GetParameterNameForErrorMessage (targetParameter),
+								DiagnosticUtilities.GetMethodSignatureDisplayName (targetParameter.Method),
+								sourceMethod.GetDisplayName (),
+								missingMemberTypes));
 							break;
 						case (MethodDefinition sourceMethod, MethodReturnType targetMethodReturnType):
-							reflectionContext.RecordUnrecognizedPattern (
-								2083,
-								$"The requirements declared via the 'DynamicallyAccessedMembersAttribute' on the implicit 'this' parameter of method '{sourceMethod.GetDisplayName ()}' " +
-								$"don't match those on the return value of method '{DiagnosticUtilities.GetMethodSignatureDisplayName (targetMethodReturnType.Method)}'. " +
-								$"The source value must declare at least the same requirements as those declared on the target location it's assigned to");
+							reflectionContext.RecordUnrecognizedPattern (2083, string.Format (Resources.Strings.IL2083,
+								DiagnosticUtilities.GetMethodSignatureDisplayName (targetMethodReturnType.Method),
+								sourceMethod.GetDisplayName (),
+								missingMemberTypes));
 							break;
 						case (MethodDefinition sourceMethod, FieldDefinition targetField):
-							reflectionContext.RecordUnrecognizedPattern (
-								2084,
-								$"The requirements declared via the 'DynamicallyAccessedMembersAttribute' on the implicit 'this' parameter of method '{sourceMethod.GetDisplayName ()}' " +
-								$"don't match those on the field '{targetField.GetDisplayName ()}'. " +
-								$"The source value must declare at least the same requirements as those declared on the target location it's assigned to");
+							reflectionContext.RecordUnrecognizedPattern (2084, string.Format (Resources.Strings.IL2084,
+								targetField.GetDisplayName (),
+								sourceMethod.GetDisplayName (),
+								missingMemberTypes));
 							break;
 						case (MethodDefinition sourceMethod, MethodDefinition targetMethod):
-							reflectionContext.RecordUnrecognizedPattern (
-								2085,
-								$"The requirements declared via the 'DynamicallyAccessedMembersAttribute' on the implicit 'this' parameter of method '{sourceMethod.GetDisplayName ()}' " +
-								$"don't match those on the implicit 'this' parameter of method '{targetMethod.GetDisplayName ()}'. " +
-								$"The source value must declare at least the same requirements as those declared on the target location it's assigned to");
+							reflectionContext.RecordUnrecognizedPattern (2085, string.Format (Resources.Strings.IL2085,
+								targetMethod.GetDisplayName (),
+								sourceMethod.GetDisplayName (),
+								missingMemberTypes));
 							break;
 						case (MethodDefinition sourceMethod, GenericParameter targetGenericParameter):
 							// Currently this is never generated, once ILLink supports full analysis of MakeGenericType/MakeGenericMethod this will be used
-							reflectionContext.RecordUnrecognizedPattern (
-								2086,
-								$"The requirements declared via the 'DynamicallyAccessedMembersAttribute' on the implicit 'this' parameter of method '{sourceMethod.GetDisplayName ()}' " +
-								$"don't match those on the generic parameter '{targetGenericParameter.Name}' of '{DiagnosticUtilities.GetGenericParameterDeclaringMemberDisplayName (targetGenericParameter)}'. " +
-								$"The source value must declare at least the same requirements as those declared on the target location it's assigned to");
+							reflectionContext.RecordUnrecognizedPattern (2086, string.Format (Resources.Strings.IL2086,
+								targetGenericParameter.Name,
+								DiagnosticUtilities.GetGenericParameterDeclaringMemberDisplayName (targetGenericParameter),
+								sourceMethod.GetDisplayName (),
+								missingMemberTypes));
 							break;
 
 						case (GenericParameter sourceGenericParameter, ParameterDefinition targetParameter):
-							reflectionContext.RecordUnrecognizedPattern (
-								2087,
-								$"The requirements declared via the 'DynamicallyAccessedMembersAttribute' on the generic parameter '{sourceGenericParameter.Name}' of '{DiagnosticUtilities.GetGenericParameterDeclaringMemberDisplayName (sourceGenericParameter)}' " +
-								$"don't match those on the parameter '{DiagnosticUtilities.GetParameterNameForErrorMessage (targetParameter)}' of method '{DiagnosticUtilities.GetMethodSignatureDisplayName (targetParameter.Method)}'. " +
-								$"The source value must declare at least the same requirements as those declared on the target location it's assigned to");
+							reflectionContext.RecordUnrecognizedPattern (2087, string.Format (Resources.Strings.IL2087,
+								DiagnosticUtilities.GetParameterNameForErrorMessage (targetParameter),
+								DiagnosticUtilities.GetMethodSignatureDisplayName (targetParameter.Method),
+								sourceGenericParameter.Name,
+								DiagnosticUtilities.GetGenericParameterDeclaringMemberDisplayName (sourceGenericParameter),
+								missingMemberTypes));
 							break;
 						case (GenericParameter sourceGenericParameter, MethodReturnType targetMethodReturnType):
-							reflectionContext.RecordUnrecognizedPattern (
-								2088,
-								$"The requirements declared via the 'DynamicallyAccessedMembersAttribute' on the generic parameter '{sourceGenericParameter.Name}' of '{DiagnosticUtilities.GetGenericParameterDeclaringMemberDisplayName (sourceGenericParameter)}' " +
-								$"don't match those on the return value of method '{DiagnosticUtilities.GetMethodSignatureDisplayName (targetMethodReturnType.Method)}'. " +
-								$"The source value must declare at least the same requirements as those declared on the target location it's assigned to");
+							reflectionContext.RecordUnrecognizedPattern (2088, string.Format (Resources.Strings.IL2088,
+								DiagnosticUtilities.GetMethodSignatureDisplayName (targetMethodReturnType.Method),
+								sourceGenericParameter.Name,
+								DiagnosticUtilities.GetGenericParameterDeclaringMemberDisplayName (sourceGenericParameter),
+								missingMemberTypes));
 							break;
 						case (GenericParameter sourceGenericParameter, FieldDefinition targetField):
-							reflectionContext.RecordUnrecognizedPattern (
-								2089,
-								$"The requirements declared via the 'DynamicallyAccessedMembersAttribute' on the generic parameter '{sourceGenericParameter.Name}' of '{DiagnosticUtilities.GetGenericParameterDeclaringMemberDisplayName (sourceGenericParameter)}' " +
-								$"don't match those on the field '{targetField.GetDisplayName ()}'. " +
-								$"The source value must declare at least the same requirements as those declared on the target location it's assigned to");
+							reflectionContext.RecordUnrecognizedPattern (2089, string.Format (Resources.Strings.IL2089,
+								targetField.GetDisplayName (),
+								sourceGenericParameter.Name,
+								DiagnosticUtilities.GetGenericParameterDeclaringMemberDisplayName (sourceGenericParameter),
+								missingMemberTypes));
 							break;
 						case (GenericParameter sourceGenericParameter, MethodDefinition targetMethod):
 							// Currently this is never generated, it might be possible one day if we try to validate annotations on results of reflection
@@ -1570,18 +1581,19 @@ namespace Mono.Linker.Dataflow
 							//    // This passes the T as the "this" parameter to Type.GetMethods()
 							//    typeof(Type).GetMethod("GetMethods").Invoke(typeof(T), new object[] {});
 							// }
-							reflectionContext.RecordUnrecognizedPattern (
-								2090,
-								$"The requirements declared via the 'DynamicallyAccessedMembersAttribute' on the generic parameter '{sourceGenericParameter.Name}' of '{DiagnosticUtilities.GetGenericParameterDeclaringMemberDisplayName (sourceGenericParameter)}' " +
-								$"don't match those on the implicit 'this' parameter of method '{targetMethod.GetDisplayName ()}'. " +
-								$"The source value must declare at least the same requirements as those declared on the target location it's assigned to");
+							reflectionContext.RecordUnrecognizedPattern (2090, string.Format (Resources.Strings.IL2090,
+								targetMethod.GetDisplayName (),
+								sourceGenericParameter.Name,
+								DiagnosticUtilities.GetGenericParameterDeclaringMemberDisplayName (sourceGenericParameter),
+								missingMemberTypes));
 							break;
 						case (GenericParameter sourceGenericParameter, GenericParameter targetGenericParameter):
-							reflectionContext.RecordUnrecognizedPattern (
-								2091,
-								$"The requirements declared via the 'DynamicallyAccessedMembersAttribute' on the generic parameter '{sourceGenericParameter.Name}' of '{DiagnosticUtilities.GetGenericParameterDeclaringMemberDisplayName (sourceGenericParameter)}' " +
-								$"don't match those on the generic parameter '{targetGenericParameter.Name}' of '{DiagnosticUtilities.GetGenericParameterDeclaringMemberDisplayName (targetGenericParameter)}'. " +
-								$"The source value must declare at least the same requirements as those declared on the target location it's assigned to");
+							reflectionContext.RecordUnrecognizedPattern (2091, string.Format (Resources.Strings.IL2091,
+								targetGenericParameter.Name,
+								DiagnosticUtilities.GetGenericParameterDeclaringMemberDisplayName (targetGenericParameter),
+								sourceGenericParameter.Name,
+								DiagnosticUtilities.GetGenericParameterDeclaringMemberDisplayName (sourceGenericParameter),
+								missingMemberTypes));
 							break;
 
 						default:
