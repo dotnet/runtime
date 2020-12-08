@@ -11842,7 +11842,7 @@ void CodeGen::genMultiRegStoreToLocal(GenTreeLclVar* lclNode)
             if (varReg != REG_NA)
             {
                 var_types destType = fieldVarDsc->TypeGet();
-                hasRegs = true;
+                hasRegs            = true;
                 if (varReg != reg)
                 {
                     // We may need a cross register-file copy here.
