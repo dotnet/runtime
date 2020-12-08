@@ -2,13 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Linq;
 using System.Net.Http;
 using System.Reflection;
 using System.Threading;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Options;
-using Moq;
 using Xunit;
 
 namespace Microsoft.Extensions.Http
@@ -292,7 +289,7 @@ namespace Microsoft.Extensions.Http
 
         private (HttpMessageHandler TopHandler, HttpMessageHandler PrimaryHandler) GetTopAndPrimaryHandlers(string name, HttpClient client, DefaultHttpClientFactory factory)
         {
-            var entry = factory._activeHandlers[name].Value;
+            var entry = factory._activeHandlers[name];
 
             HttpMessageHandler topHandler;
             HttpMessageHandler primaryHandler;
