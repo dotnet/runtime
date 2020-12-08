@@ -35,8 +35,6 @@ elif [ "$1" = "OSX" ] || [ "$1" = "tvOS" ] || [ "$1" = "iOS" ]; then
         # workaround for old osx images on hosted agents
         # piped in case we get an agent without these values installed
         brew uninstall openssl@1.0.2t 2>&1 | true
-        rm -rf /usr/local/etc/openssl 2>&1 | true
-        rm -rf /usr/local/etc/openssl@1.1 2>&1 | true
     fi
 
     brew update --preinstall
