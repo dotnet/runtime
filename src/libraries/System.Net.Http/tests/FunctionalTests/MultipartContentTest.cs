@@ -331,12 +331,12 @@ namespace System.Net.Http.Functional.Tests
                 AssertExtensions.Throws<ArgumentNullException>("buffer", null, () => s.Read(null, 0, 0));
                 AssertExtensions.Throws<ArgumentOutOfRangeException>("offset", () => s.Read(new byte[1], -1, 0));
                 AssertExtensions.Throws<ArgumentOutOfRangeException>("count", () => s.Read(new byte[1], 0, -1));
-                AssertExtensions.Throws<ArgumentException>("buffer", null, () => s.Read(new byte[1], 1, 1));
+                AssertExtensions.Throws<ArgumentOutOfRangeException>("count", null, () => s.Read(new byte[1], 1, 1));
 
                 AssertExtensions.Throws<ArgumentNullException>("buffer", null, () => { s.ReadAsync(null, 0, 0); });
                 AssertExtensions.Throws<ArgumentOutOfRangeException>("offset", () => { s.ReadAsync(new byte[1], -1, 0); });
                 AssertExtensions.Throws<ArgumentOutOfRangeException>("count", () => { s.ReadAsync(new byte[1], 0, -1); });
-                AssertExtensions.Throws<ArgumentException>("buffer", null, () => { s.ReadAsync(new byte[1], 1, 1); });
+                AssertExtensions.Throws<ArgumentOutOfRangeException>("count", null, () => { s.ReadAsync(new byte[1], 1, 1); });
 
                 AssertExtensions.Throws<ArgumentOutOfRangeException>("value", () => s.Position = -1);
                 AssertExtensions.Throws<ArgumentOutOfRangeException>("value", () => s.Seek(-1, SeekOrigin.Begin));

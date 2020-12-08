@@ -79,6 +79,11 @@ namespace System.Threading
         internal ExecutionContext? _executionContext;
         internal SynchronizationContext? _synchronizationContext;
 
+        // This is used for a quick check on thread pool threads after running a work item to determine if the name, background
+        // state, or priority were changed by the work item, and if so to reset it. Other threads may also change some of those,
+        // but those types of changes may race with the reset anyway, so this field doesn't need to be synchronized.
+        private bool _mayNeedResetForThreadPool;
+
         private Thread()
         {
             InitInternal(this);
@@ -123,6 +128,7 @@ namespace System.Threading
                 else
                 {
                     ClrState(this, ThreadState.Background);
+                    _mayNeedResetForThreadPool = true;
                 }
             }
         }
@@ -162,6 +168,10 @@ namespace System.Threading
             {
                 // TODO: arguments check
                 SetPriority(this, (int)value);
+                if (value != ThreadPriority.Normal)
+                {
+                    _mayNeedResetForThreadPool = true;
+                }
             }
         }
 
@@ -207,18 +217,6 @@ namespace System.Threading
             return JoinInternal(this, millisecondsTimeout);
         }
 
-        internal void ResetThreadPoolThread()
-        {
-            if (_name != null)
-                Name = null;
-
-            if ((state & ThreadState.Background) == 0)
-                IsBackground = true;
-
-            if ((ThreadPriority)priority != ThreadPriority.Normal)
-                Priority = ThreadPriority.Normal;
-        }
-
         private void SetCultureOnUnstartedThreadNoCheck(CultureInfo value, bool uiCulture)
         {
             if (uiCulture)
@@ -252,6 +250,7 @@ namespace System.Threading
 
         internal static void UninterruptibleSleep0() => SleepInternal(0, false);
 
+#if !TARGET_BROWSER
         [UnsupportedOSPlatform("browser")]
         public void Start()
         {
@@ -290,6 +289,15 @@ namespace System.Threading
             }
         }
 
+        // Called from the runtime
+        internal static void ThrowThreadStartException(Exception ex) => throw new ThreadStartException(ex);
+
+        [DynamicDependency(nameof(StartCallback))]
+        [DynamicDependency(nameof(ThrowThreadStartException))]
+        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        private static extern void StartInternal(Thread runtime_thread);
+#endif
+
         partial void ThreadNameChanged(string? value)
         {
             // TODO: Should only raise the events
@@ -301,7 +309,20 @@ namespace System.Threading
             return YieldInternal();
         }
 
-        private bool TrySetApartmentStateUnchecked(ApartmentState state) => state == ApartmentState.Unknown;
+        private static bool SetApartmentStateUnchecked(ApartmentState state, bool throwOnError)
+        {
+             if (state != ApartmentState.Unknown)
+             {
+                if (throwOnError)
+                {
+                    throw new PlatformNotSupportedException(SR.PlatformNotSupported_ComInterop);
+                }
+
+                return false;
+             }
+
+             return true;
+        }
 
         private ThreadState ValidateThreadState()
         {
@@ -365,10 +386,6 @@ namespace System.Threading
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private static extern Thread CreateInternal();
-
-        [DynamicDependency(nameof(StartCallback))]
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        private static extern void StartInternal(Thread runtime_thread);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private static extern bool JoinInternal(Thread thread, int millisecondsTimeout);

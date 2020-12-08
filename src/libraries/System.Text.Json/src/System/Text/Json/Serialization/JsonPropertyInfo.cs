@@ -435,5 +435,8 @@ namespace System.Text.Json
         public bool IsIgnored { get; private set; }
 
         public JsonNumberHandling? NumberHandling { get; private set; }
+
+        //  Whether the property type can be null.
+        public bool PropertyTypeCanBeNull { get; protected set; }
     }
 }

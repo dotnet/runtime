@@ -12,6 +12,7 @@ using Xunit.Abstractions;
 
 namespace System.Net.Http.Functional.Tests
 {
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
     public class HttpRequestMessageTest : HttpClientHandlerTestBase
     {
         private readonly Version _expectedRequestMessageVersion = HttpVersion.Version11;

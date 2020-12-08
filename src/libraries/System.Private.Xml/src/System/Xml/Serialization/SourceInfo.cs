@@ -216,7 +216,7 @@ namespace System.Xml.Serialization
                 MethodInfo Nullable_get_Value = nullableType.GetMethod(
                     "get_Value",
                     CodeGenerator.InstanceBindingFlags,
-                    Array.Empty<Type>()
+                    Type.EmptyTypes
                     )!;
                 ILG.Call(Nullable_get_Value);
                 if (targetType != null)

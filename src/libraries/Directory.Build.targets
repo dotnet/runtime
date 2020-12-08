@@ -124,6 +124,7 @@
   <Import Project="$(RepositoryEngineeringDir)testing\runtimeConfiguration.targets" />
   <Import Project="$(RepositoryEngineeringDir)testing\runsettings.targets" Condition="'$(EnableRunSettingsSupport)' == 'true'" />
   <Import Project="$(RepositoryEngineeringDir)testing\coverage.targets" Condition="'$(EnableRunSettingsSupport)' == 'true' or '$(EnableCoverageSupport)' == 'true'" />
+  <Import Project="$(RepositoryEngineeringDir)slngen.targets" />
 
   <Import Sdk="Microsoft.DotNet.Build.Tasks.TargetFramework.Sdk" Project="Sdk.targets" />
   <Import Project="$(RepositoryEngineeringDir)restore\repoRestore.targets" Condition="'$(DisableProjectRestore)' == 'true'" />
@@ -169,9 +170,6 @@
 
   <Target Name="UpdateProjectReferencesWithAttributes" Condition="'@(ProjectReference)' != ''">
     <ItemGroup>
-      <ProjectReference>
-        <SkipGetTargetFrameworkProperties>true</SkipGetTargetFrameworkProperties>
-      </ProjectReference>
       <ProjectReference Condition="'%(Filename)' == 'System.Private.CoreLib'">
         <!-- Don't flow TargetFramework and Platform to use same inputs and outputs as the CoreLib's build as part of the runtime. -->
         <UndefineProperties>$(UndefineProperties);TargetFramework;Platform</UndefineProperties>
@@ -238,7 +236,7 @@
   </Choose>
 
   <PropertyGroup>
-    <ExcludeFromPackage Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)' and '$(ExcludeCurrentNetCoreAppFromPackage)' == 'true'">true</ExcludeFromPackage>
+    <ExcludeFromPackage Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', '$(NetCoreAppCurrent)')) and '$(ExcludeCurrentNetCoreAppFromPackage)' == 'true'">true</ExcludeFromPackage>
   </PropertyGroup>
 
   <!-- Adds System.Runtime.Versioning*Platform* annotation attributes to < .NET 5 builds -->
@@ -271,7 +269,7 @@
   </ItemGroup>
 
   <PropertyGroup>
-    <SkipLocalsInit Condition="'$(SkipLocalsInit)' == '' and '$(MSBuildProjectExtension)' == '.csproj' and '$(IsNETCoreAppSrc)' == 'true' and '$(TargetFramework)' == '$(NetCoreAppCurrent)'">true</SkipLocalsInit>
+    <SkipLocalsInit Condition="'$(SkipLocalsInit)' == '' and '$(MSBuildProjectExtension)' == '.csproj' and '$(IsNETCoreAppSrc)' == 'true' and ($([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', '$(NetCoreAppCurrent)')))">true</SkipLocalsInit>
   </PropertyGroup>
 
   <!--Instructs compiler not to emit .locals init, using SkipLocalsInitAttribute.-->

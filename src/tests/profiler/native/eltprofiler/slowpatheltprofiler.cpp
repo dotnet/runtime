@@ -8,11 +8,14 @@
 #include <cctype>
 #include <iomanip>
 #include <algorithm>
+#include <thread>
+#include <chrono>
 
 using std::shared_ptr;
 using std::vector;
 using std::wcout;
 using std::endl;
+using std::atomic;
 
 shared_ptr<SlowPathELTProfiler> SlowPathELTProfiler::s_profiler;
 
@@ -24,18 +27,81 @@ shared_ptr<SlowPathELTProfiler> SlowPathELTProfiler::s_profiler;
 #define PROFILER_STUB EXTERN_C void STDMETHODCALLTYPE
 #endif // WIN32
 
+class ELTGuard
+{
+private:
+    static atomic<bool> s_preventHooks;
+    static atomic<int> s_hooksInProgress;
+
+public:
+    ELTGuard()
+    {
+        ++s_hooksInProgress;
+    }
+
+    ~ELTGuard()
+    {
+        --s_hooksInProgress;
+    }
+
+    static void Initialize()
+    {
+        s_preventHooks = false;
+        s_hooksInProgress = 0;
+    }
+
+    static bool HasShutdownStarted()
+    {
+        return s_preventHooks.load();
+    }
+
+    static void WaitForInProgressHooks()
+    {
+        s_preventHooks = true;
+
+        while (s_hooksInProgress.load() > 0)
+        {
+            std::this_thread::sleep_for(std::chrono::milliseconds(10));
+        }
+    }
+};
+
+atomic<bool> ELTGuard::s_preventHooks;
+atomic<int> ELTGuard::s_hooksInProgress;
+
 PROFILER_STUB EnterStub(FunctionIDOrClientID functionId, COR_PRF_ELT_INFO eltInfo)
 {
+    ELTGuard();
+
+    if (ELTGuard::HasShutdownStarted())
+    {
+        return;
+    }
+
     SlowPathELTProfiler::s_profiler->EnterCallback(functionId, eltInfo);
 }
 
 PROFILER_STUB LeaveStub(FunctionIDOrClientID functionId, COR_PRF_ELT_INFO eltInfo)
 {
+    ELTGuard();
+
+    if (ELTGuard::HasShutdownStarted())
+    {
+        return;
+    }
+
     SlowPathELTProfiler::s_profiler->LeaveCallback(functionId, eltInfo);
 }
 
 PROFILER_STUB TailcallStub(FunctionIDOrClientID functionId, COR_PRF_ELT_INFO eltInfo)
 {
+    ELTGuard();
+
+    if (ELTGuard::HasShutdownStarted())
+    {
+        return;
+    }
+
     SlowPathELTProfiler::s_profiler->TailcallCallback(functionId, eltInfo);
 }
 
@@ -49,6 +115,8 @@ GUID SlowPathELTProfiler::GetClsid()
 HRESULT SlowPathELTProfiler::Initialize(IUnknown* pICorProfilerInfoUnk)
 {
     Profiler::Initialize(pICorProfilerInfoUnk);
+
+    ELTGuard::Initialize();
 
     HRESULT hr = S_OK;
     constexpr ULONG bufferSize = 1024;
@@ -109,6 +177,8 @@ HRESULT SlowPathELTProfiler::Initialize(IUnknown* pICorProfilerInfoUnk)
 
 HRESULT SlowPathELTProfiler::Shutdown()
 {
+    ELTGuard::WaitForInProgressHooks();
+
     Profiler::Shutdown();
 
     if (_testType == TestType::EnterHooks)

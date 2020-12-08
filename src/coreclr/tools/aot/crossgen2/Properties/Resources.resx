@@ -1,0 +1,306 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <!-- 
+    Microsoft ResX Schema 
+    
+    Version 2.0
+    
+    The primary goals of this format is to allow a simple XML format 
+    that is mostly human readable. The generation and parsing of the 
+    various data types are done through the TypeConverter classes 
+    associated with the data types.
+    
+    Example:
+    
+    ... ado.net/XML headers & schema ...
+    <resheader name="resmimetype">text/microsoft-resx</resheader>
+    <resheader name="version">2.0</resheader>
+    <resheader name="reader">System.Resources.ResXResourceReader, System.Windows.Forms, ...</resheader>
+    <resheader name="writer">System.Resources.ResXResourceWriter, System.Windows.Forms, ...</resheader>
+    <data name="Name1"><value>this is my long string</value><comment>this is a comment</comment></data>
+    <data name="Color1" type="System.Drawing.Color, System.Drawing">Blue</data>
+    <data name="Bitmap1" mimetype="application/x-microsoft.net.object.binary.base64">
+        <value>[base64 mime encoded serialized .NET Framework object]</value>
+    </data>
+    <data name="Icon1" type="System.Drawing.Icon, System.Drawing" mimetype="application/x-microsoft.net.object.bytearray.base64">
+        <value>[base64 mime encoded string representing a byte array form of the .NET Framework object]</value>
+        <comment>This is a comment</comment>
+    </data>
+                
+    There are any number of "resheader" rows that contain simple 
+    name/value pairs.
+    
+    Each data row contains a name, and value. The row also contains a 
+    type or mimetype. Type corresponds to a .NET class that support 
+    text/value conversion through the TypeConverter architecture. 
+    Classes that don't support this are serialized and stored with the 
+    mimetype set.
+    
+    The mimetype is used for serialized objects, and tells the 
+    ResXResourceReader how to depersist the object. This is currently not 
+    extensible. For a given mimetype the value must be set accordingly:
+    
+    Note - application/x-microsoft.net.object.binary.base64 is the format 
+    that the ResXResourceWriter will generate, however the reader can 
+    read any of the formats listed below.
+    
+    mimetype: application/x-microsoft.net.object.binary.base64
+    value   : The object must be serialized with 
+            : System.Runtime.Serialization.Formatters.Binary.BinaryFormatter
+            : and then encoded with base64 encoding.
+    
+    mimetype: application/x-microsoft.net.object.soap.base64
+    value   : The object must be serialized with 
+            : System.Runtime.Serialization.Formatters.Soap.SoapFormatter
+            : and then encoded with base64 encoding.
+
+    mimetype: application/x-microsoft.net.object.bytearray.base64
+    value   : The object must be serialized into a byte array 
+            : using a System.ComponentModel.TypeConverter
+            : and then encoded with base64 encoding.
+    -->
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="BubbleGenericsOption" xml:space="preserve">
+    <value>Compile instantiations from reference modules used in the current module</value>
+  </data>
+  <data name="CodeGenOptions" xml:space="preserve">
+    <value>Define a codegen option</value>
+  </data>
+  <data name="DumpReproInstructions" xml:space="preserve">
+    <value>To repro, add following arguments to the command line:</value>
+  </data>
+  <data name="EmittingPEFile" xml:space="preserve">
+    <value>Emitting R2R PE file: {0}</value>
+  </data>
+  <data name="EnableOptimizationsOption" xml:space="preserve">
+    <value>Enable optimizations</value>
+  </data>
+  <data name="GenericArgCountMismatch" xml:space="preserve">
+    <value>Expected {0} generic arguments for method '{1}' on type '{2}'</value>
+  </data>
+  <data name="HelpOption" xml:space="preserve">
+    <value>Display this usage message</value>
+  </data>
+  <data name="InputBubbleOption" xml:space="preserve">
+    <value>True when the entire input forms a version bubble (default = per-assembly bubble)</value>
+  </data>
+  <data name="InvalidFileLayout" xml:space="preserve">
+    <value>Method layout must be either DefaultSort or MethodOrder.</value>
+  </data>
+  <data name="InvalidMethodLayout" xml:space="preserve">
+    <value>Method layout must be either DefaultSort, ExclusiveWeight, HotCold, or HotWarmCold.</value>
+  </data>
+  <data name="CompileNoMethodsOption" xml:space="preserve">
+    <value>True to skip compiling methods into the R2R image (default = false)</value>
+  </data>
+  <data name="CompositeBuildMode" xml:space="preserve">
+    <value>Emit a composite R2R image comprising a number of input assemblies</value>
+  </data>
+  <data name="InputFilesToCompile" xml:space="preserve">
+    <value>Input file(s) to compile</value>
+  </data>
+  <data name="InstructionSets" xml:space="preserve">
+    <value>Instruction set(s) to use for compilation</value>
+  </data>
+  <data name="InstructionSetMustNotBe" xml:space="preserve">
+    <value>Instruction set must not be '{0}' for this architecture and operating system</value>
+  </data>
+  <data name="InstructionSetWithoutInputBubble" xml:space="preserve">
+    <value>Instruction set(s) specified without also specifying input-bubble</value>
+  </data>
+  <data name="InstructionSetInvalidImplication" xml:space="preserve">
+    <value>Instruction set '{0}' implies support for instruction set '{1}'</value>
+  </data>
+  <data name="UnrootedInputFilesToCompile" xml:space="preserve">
+    <value>Input files without automatic rooting of all methods</value>
+  </data>
+  <data name="JitPathOption" xml:space="preserve">
+    <value>Path to JIT compiler library</value>
+  </data>
+  <data name="MapFileOption" xml:space="preserve">
+    <value>Generate the map file</value>
+  </data>
+  <data name="MethodNotFoundOnType" xml:space="preserve">
+    <value>Method '{0}' not found in '{1}'</value>
+  </data>
+  <data name="MibcFiles" xml:space="preserve">
+    <value>Mibc file(s) for profile guided optimization</value>
+  </data>
+  <data name="MissingOutputFile" xml:space="preserve">
+    <value>Output filename must be specified (--out &lt;file&gt;)</value>
+  </data>
+  <data name="InputWasNotLoadable" xml:space="preserve">
+    <value>No input files are loadable</value>
+  </data>
+  <data name="NoInputFiles" xml:space="preserve">
+    <value>No input files specified</value>
+  </data>
+  <data name="OptimizeSpaceOption" xml:space="preserve">
+    <value>Enable optimizations, favor code space</value>
+  </data>
+  <data name="OptimizeSpeedOption" xml:space="preserve">
+    <value>Enable optimizations, favor code speed</value>
+  </data>
+  <data name="OutputFilePath" xml:space="preserve">
+    <value>Output file path</value>
+  </data>
+  <data name="ParalellismOption" xml:space="preserve">
+    <value>Maximum number of threads to use during compilation</value>
+  </data>
+  <data name="PartialImageOption" xml:space="preserve">
+    <value>Generate partial image driven by profile</value>
+  </data>
+  <data name="ProgramError" xml:space="preserve">
+    <value>Error: {0}</value>
+  </data>
+  <data name="ReferenceFiles" xml:space="preserve">
+    <value>Reference file(s) for compilation</value>
+  </data>
+  <data name="ResilientOption" xml:space="preserve">
+    <value>Disable behavior where unexpected compilation failures cause overall compilation failure</value>
+  </data>
+  <data name="SaveDependencyLogOption" xml:space="preserve">
+    <value>Save result of dependency analysis as DGML</value>
+  </data>
+  <data name="SaveDetailedLogOption" xml:space="preserve">
+    <value>Save detailed log of dependency analysis</value>
+  </data>
+  <data name="SingleMethodGenericArgs" xml:space="preserve">
+    <value>Single method compilation: generic arguments to the method</value>
+  </data>
+  <data name="SingleMethodMethodName" xml:space="preserve">
+    <value>Single method compilation: method name</value>
+  </data>
+  <data name="SingleMethodIndex" xml:space="preserve">
+    <value>Single method compilation: Index of method if there are multiple with the same name</value>
+  </data>
+  <data name="SingleMethodTypeName" xml:space="preserve">
+    <value>Single method compilation: name of the owning type</value>
+  </data>
+  <data name="SystemModuleOverrideOption" xml:space="preserve">
+    <value>System module name (default: System.Private.CoreLib)</value>
+  </data>
+  <data name="TargetArchitectureUnsupported" xml:space="preserve">
+    <value>Target architecture is not supported</value>
+  </data>
+  <data name="TargetArchOption" xml:space="preserve">
+    <value>Target architecture for cross compilation</value>
+  </data>
+  <data name="TargetOSOption" xml:space="preserve">
+    <value>Target OS for cross compilation</value>
+  </data>
+  <data name="TargetOSUnsupported" xml:space="preserve">
+    <value>Target OS is not supported</value>
+  </data>
+  <data name="TuningImageOption" xml:space="preserve">
+    <value>Generate IBC tuning image</value>
+  </data>
+  <data name="TypeAndMethodNameNeeded" xml:space="preserve">
+    <value>Both method name and type name are required parameters for single method mode</value>
+  </data>
+  <data name="SingleMethodIndexNeeded" xml:space="preserve">
+    <value>There are multiple methods with the same name. Specify --singlemethodindex [index] with the correct index.</value>
+  </data>
+  <data name="TypeNotFound" xml:space="preserve">
+    <value>Type '{0}' not found</value>
+  </data>
+  <data name="VerboseLoggingOption" xml:space="preserve">
+    <value>Enable verbose logging</value>
+  </data>
+  <data name="WaitForDebuggerOption" xml:space="preserve">
+    <value>Pause to give opportunity to attach debugger</value>
+  </data>
+  <data name="WaitingForDebuggerAttach" xml:space="preserve">
+    <value>Waiting for debugger to attach. Press ENTER to continue</value>
+  </data>
+  <data name="WarningIgnoringBubbleGenerics" xml:space="preserve">
+    <value>Warning: ignoring --compilebubblegenerics because --inputbubble was not specified</value>
+  </data>
+  <data name="WarningOverridingOptimizeSpace" xml:space="preserve">
+    <value>Warning: overriding -Ot with -Os</value>
+  </data>
+  <data name="CustomPESectionAlignmentOption" xml:space="preserve">
+    <value>Use custom alignment for PE sections in generated PE file</value>
+  </data>
+  <data name="InvalidCustomPESectionAlignment" xml:space="preserve">
+    <value>Custom PE Section Alignment must be a power of two greater or equal to 4096.</value>
+  </data>
+  <data name="ErrorMultipleInputFilesCompositeModeOnly" xml:space="preserve">
+    <value>Error: multiple input files are only supported in composite build mode: {0}</value>
+  </data>
+  <data name="MethodLayoutOption" xml:space="preserve">
+    <value>Layout algorithm used by profile-driven optimization for arranging methods in a file: DefaultSort, ExclusiveWeight, HotCold, or HotWarmCold). The default value is DefaultSort, which indicates that complex layout is disabled.</value>
+  </data>
+  <data name="FileLayoutOption" xml:space="preserve">
+    <value>Layout algorithm used by profile-driven optimization for arranging non-method contents in a file: DefaultSort or MethodOrder. The default value is DefaultSort, which indicates that complex layout is disabled.</value>
+  </data>
+  <data name="CompositeRootPath" xml:space="preserve">
+    <value>Logical root folder for composite builds; defaults to directory of 1st input file.</value>
+  </data>
+  <data name="ManagedCppNotSupported" xml:space="preserve">
+    <value>Error: managed C++ is not supported: '{0}'</value>
+  </data>
+  <data name="VerifyTypeAndFieldLayoutOption" xml:space="preserve">
+    <value>Verify that struct type layout and field offsets match between compile time and runtime. Use only for diagnostic purposes.</value>
+  </data>
+  <data name="MapCsvFileOption" xml:space="preserve">
+    <value>Generate a CSV formatted map file</value>
+  </data>
+</root>

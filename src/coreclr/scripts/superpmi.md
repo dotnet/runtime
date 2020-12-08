@@ -58,7 +58,7 @@ If you want to use a specific MCH file collection, use the `-mch_files` argument
 one or more MCH files on your machine:
 
 ```
-python f:\gh\runtime\src\coreclr\scripts\superpmi.py replay -mch_files f:\spmi\collections\tests.pmi.Windows_NT.x64.Release.mch
+python f:\gh\runtime\src\coreclr\scripts\superpmi.py replay -mch_files f:\spmi\collections\tests.pmi.windows.x64.Release.mch
 ```
 
 The `-mch_files` argument takes a list of one or more directories or files to use. For
@@ -109,7 +109,7 @@ Example commands to create a collection (on Linux, by running the tests):
 
 ```
 # First, build the product, possibly the tests, and create a Core_Root directory.
-/Users/jashoo/runtime/src/coreclr/scripts/superpmi.py collect bash "/Users/jashoo/runtime/src/coreclr/tests/runtest.sh x64 checked"
+/Users/jashoo/runtime/src/coreclr/scripts/superpmi.py collect bash "/Users/jashoo/runtime/src/tests/runtest.sh x64 checked"
 ```
 
 The above command collects over all of the managed code called by the

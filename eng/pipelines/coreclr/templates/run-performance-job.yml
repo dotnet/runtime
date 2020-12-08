@@ -60,31 +60,31 @@ jobs:
     - Interpreter: ''
 
     - ${{ if and(ne(variables['System.TeamProject'], 'public'), notin(variables['Build.Reason'], 'PullRequest')) }}:
-      - ${{ if eq( parameters.osGroup, 'Windows_NT') }}:
+      - ${{ if eq( parameters.osGroup, 'windows') }}:
         - HelixPreCommand: $(HelixPreCommandStemWindows);$(ExtraMSBuildLogsWindows)
         - IsInternal: -Internal
-      - ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
+      - ${{ if ne(parameters.osGroup, 'windows') }}:
         - HelixPreCommand: $(HelixPreCommandStemLinux);$(ExtraMSBuildLogsLinux)
         - IsInternal: --internal
       - group: DotNet-HelixApi-Access
       - group: dotnet-benchview
 
     - ${{ if not(and(ne(variables['System.TeamProject'], 'public'), notin(variables['Build.Reason'], 'PullRequest'))) }}:
-      - ${{ if eq( parameters.osGroup, 'Windows_NT') }}:
+      - ${{ if eq( parameters.osGroup, 'windows') }}:
         - HelixPreCommand: $(ExtraMSBuildLogsWindows)
-      - ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
+      - ${{ if ne(parameters.osGroup, 'windows') }}:
           - HelixPreCommand: $(ExtraMSBuildLogsLinux);npm install --prefix $HELIX_WORKITEM_PAYLOAD jsvu -g;$HELIX_WORKITEM_PAYLOAD/bin/jsvu --os=linux64 --engines=v8
     
 
     - ${{ if and(eq(parameters.codeGenType, 'Interpreter'), eq(parameters.runtimeType, 'mono')) }}:
-      - ${{ if eq( parameters.osGroup, 'Windows_NT') }}:
+      - ${{ if eq( parameters.osGroup, 'windows') }}:
         - ${{ if and(ne(variables['System.TeamProject'], 'public'), notin(variables['Build.Reason'], 'PullRequest')) }}:
           - HelixPreCommand: '$(HelixPreCommandStemWindows);set MONO_ENV_OPTIONS="--interpreter";$(ExtraMSBuildLogsWindows)'
           - Interpreter: ' -MonoInterpreter'
         - ${{ if not(and(ne(variables['System.TeamProject'], 'public'), notin(variables['Build.Reason'], 'PullRequest'))) }}:
           - HelixPreCommand: 'set MONO_ENV_OPTIONS="--interpreter";$(ExtraMSBuildLogsWindows)'
           - Interpreter: ' -MonoInterpreter'
-      - ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
+      - ${{ if ne(parameters.osGroup, 'windows') }}:
         - ${{ if and(ne(variables['System.TeamProject'], 'public'), notin(variables['Build.Reason'], 'PullRequest')) }}:
           - HelixPreCommand: '$(HelixPreCommandStemLinux);export MONO_ENV_OPTIONS="--interpreter";$(ExtraMSBuildLogsLinux)'
           - Interpreter: ' --monointerpreter'

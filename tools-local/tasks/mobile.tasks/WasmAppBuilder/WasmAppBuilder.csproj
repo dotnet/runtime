@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
+    <TargetFramework>$(NetCoreAppToolCurrent)</TargetFramework>
     <OutputType>Library</OutputType>
     <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
     <Nullable>enable</Nullable>
@@ -21,4 +21,7 @@
   <Target Name="PublishBuilder"
           AfterTargets="Build"
           DependsOnTargets="Publish" />
+
+  <Target Name="GetFilesToPackage" />
+
 </Project>

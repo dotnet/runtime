@@ -50,14 +50,6 @@ namespace System.Reflection
         private FieldAttributes attrs;
 #pragma warning restore 649
 
-        internal BindingFlags BindingFlags
-        {
-            get
-            {
-                return 0;
-            }
-        }
-
         public override Module Module
         {
             get

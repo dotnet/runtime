@@ -90,15 +90,8 @@ namespace System.Net.Security
 
         public SecurityBuffer(byte[]? data, int offset, int size, SecurityBufferType tokentype)
         {
-            if (offset < 0 || offset > (data == null ? 0 : data.Length))
-            {
-                NetEventSource.Fail(typeof(SecurityBuffer), $"'offset' out of range.  [{offset}]");
-            }
-
-            if (size < 0 || size > (data == null ? 0 : data.Length - offset))
-            {
-                NetEventSource.Fail(typeof(SecurityBuffer), $"'size' out of range.  [{size}]");
-            }
+            Debug.Assert(offset >= 0 && offset <= (data == null ? 0 : data.Length), $"'offset' out of range.  [{offset}]");
+            Debug.Assert(size >= 0 && size <= (data == null ? 0 : data.Length - offset), $"'size' out of range.  [{size}]");
 
             this.offset = data == null || offset < 0 ? 0 : Math.Min(offset, data.Length);
             this.size = data == null || size < 0 ? 0 : Math.Min(size, data.Length - this.offset);
@@ -118,10 +111,7 @@ namespace System.Net.Security
 
         public SecurityBuffer(int size, SecurityBufferType tokentype)
         {
-            if (size < 0)
-            {
-                NetEventSource.Fail(typeof(SecurityBuffer), $"'size' out of range.  [{size}]");
-            }
+            Debug.Assert(size >= 0, $"'size' out of range.  [{size}]");
 
             this.offset = 0;
             this.size = size;

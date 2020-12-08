@@ -428,12 +428,6 @@ void CryptoNative_SslCtxSetVerify(SSL_CTX* ctx, SslCtxSetVerifyCallback callback
     SSL_CTX_set_verify(ctx, mode, callback);
 }
 
-void
-CryptoNative_SslCtxSetCertVerifyCallback(SSL_CTX* ctx, SslCtxSetCertVerifyCallbackCallback callback, void* arg)
-{
-    SSL_CTX_set_cert_verify_callback(ctx, callback, arg);
-}
-
 int32_t CryptoNative_SetEncryptionPolicy(SSL_CTX* ctx, EncryptionPolicy policy)
 {
     switch (policy)
@@ -545,11 +539,6 @@ int32_t CryptoNative_Tls13Supported()
 #else
     return false;
 #endif
-}
-
-void CryptoNative_SslCtxSetClientCertCallback(SSL_CTX* ctx, SslClientCertCallback callback)
-{
-    SSL_CTX_set_client_cert_cb(ctx, callback);
 }
 
 int32_t CryptoNative_SslAddExtraChainCert(SSL* ssl, X509* x509)

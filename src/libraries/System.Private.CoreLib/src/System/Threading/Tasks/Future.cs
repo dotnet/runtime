@@ -58,10 +58,13 @@ namespace System.Threading.Tasks
     [DebuggerDisplay("Id = {Id}, Status = {Status}, Method = {DebuggerDisplayMethodDescription}, Result = {DebuggerDisplayResultDescription}")]
     public class Task<TResult> : Task
     {
+        /// <summary>A cached task for default(TResult).</summary>
+        internal static readonly Task<TResult> s_defaultResultTask = TaskCache.CreateCacheableTask<TResult>(default);
+
+        private static TaskFactory<TResult>? s_Factory;
+
         // The value itself, if set.
         internal TResult? m_result;
-
-        private static readonly TaskFactory<TResult> s_Factory = new TaskFactory<TResult>();
 
         // Extract rarely used helper for a static method in a separate type so that the Func<Task<Task>, Task<TResult>>
         // generic instantiations don't contribute to all Task instantiations, but only those where WhenAny is used.
@@ -483,7 +486,10 @@ namespace System.Threading.Tasks
         /// of <see cref="System.Threading.Tasks.TaskFactory{TResult}"/>, as would result from using
         /// the default constructor on the factory type.
         /// </remarks>
-        public static new TaskFactory<TResult> Factory => s_Factory;
+        public static new TaskFactory<TResult> Factory =>
+            Volatile.Read(ref s_Factory) ??
+            Interlocked.CompareExchange(ref s_Factory, new TaskFactory<TResult>(), null) ??
+            s_Factory;
 
         /// <summary>
         /// Evaluates the value selector of the Task which is passed in as an object and stores the result.

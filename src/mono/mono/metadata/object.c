@@ -7178,7 +7178,7 @@ mono_value_box_handle (MonoDomain *domain, MonoClass *klass, gpointer value, Mon
 	g_assert (value != NULL);
 	if (G_UNLIKELY (m_class_is_byreflike (klass))) {
 		char *full_name = mono_type_get_full_name (klass);
-		mono_error_set_execution_engine (error, "Cannot box IsByRefLike type %s", full_name);
+		mono_error_set_not_supported (error, "Cannot box IsByRefLike type %s", full_name);
 		g_free (full_name);
 		return NULL_HANDLE;
 	}
@@ -8454,7 +8454,7 @@ mono_async_result_new (MonoDomain *domain, HANDLE handle, MonoObject *state, gpo
 }
 
 static MonoObject*
-mono_message_invoke (MonoThreadInfo* mono_thread_info_current_var,
+mono_message_invoke (MonoThreadInfo* thread_info_current_var,
 		     MonoObject* target, MonoMethodMessage* msg,
 		     MonoObject** exc, MonoArray** out_args, MonoError* error);
 
@@ -8614,7 +8614,7 @@ mono_remoting_invoke (MonoObject *real_proxy, MonoMethodMessage *msg, MonoObject
 
 // FIXME inline in the only caller
 static MonoObject*
-mono_message_invoke (MonoThreadInfo *mono_thread_info_current_var,
+mono_message_invoke (MonoThreadInfo *thread_info_current_var,
 		     MonoObject *target, MonoMethodMessage *msg,
 		     MonoObject **exc, MonoArray **out_args, MonoError *error) 
 {

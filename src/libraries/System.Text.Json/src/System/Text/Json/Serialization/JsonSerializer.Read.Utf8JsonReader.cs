@@ -316,7 +316,7 @@ namespace System.Text.Json
                 var newReader = new Utf8JsonReader(rentedSpan, originalReaderOptions);
 
                 JsonConverter jsonConverter = state.Current.JsonPropertyInfo!.ConverterBase;
-                TValue value = ReadCore<TValue>(jsonConverter, ref newReader, options, ref state);
+                TValue? value = ReadCore<TValue>(jsonConverter, ref newReader, options, ref state);
 
                 // The reader should have thrown if we have remaining bytes.
                 Debug.Assert(newReader.BytesConsumed == length);

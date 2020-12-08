@@ -7,17 +7,17 @@
 # Title:               run.py
 #
 # Notes:
-#  
-# Universal script to setup and run the xunit console runner. The script relies 
-# on run.proj and the bash and batch wrappers. All test excludes will also 
-# come from issues.targets. If there is a jit stress or gc stress exclude, 
-# please add GCStressIncompatible or JitOptimizationSensitive to the test's 
+#
+# Universal script to setup and run the xunit console runner. The script relies
+# on run.proj and the bash and batch wrappers. All test excludes will also
+# come from issues.targets. If there is a jit stress or gc stress exclude,
+# please add GCStressIncompatible or JitOptimizationSensitive to the test's
 # ilproj or csproj.
 #
 # The xunit runner currently relies on tests being built on the same host as the
 # target platform. This requires all tests run on linux x64 to be built by the
 # same platform and arch. If this is not done, the tests will run correctly;
-# however, expect failures due to incorrect exclusions in the xunit 
+# however, expect failures due to incorrect exclusions in the xunit
 # wrappers setup at build time.
 #
 # Note that for linux targets the native components to the tests are still built
@@ -32,8 +32,8 @@
 # standard please pass the -test_native_bin_location flag to the script.
 #
 # Use the instructions here:
-#    https://github.com/dotnet/runtime/blob/master/docs/workflow/testing/windows-test-instructions.md
-#    https://github.com/dotnet/runtime/blob/master/docs/workflow/testing/unix-test-instructions.md
+#    https://github.com/dotnet/runtime/blob/master/docs/workflow/testing/coreclr/windows-test-instructions.md
+#    https://github.com/dotnet/runtime/blob/master/docs/workflow/testing/coreclr/unix-test-instructions.md
 #
 ################################################################################
 ################################################################################
@@ -73,16 +73,16 @@ from coreclr_arguments import *
 # Argument Parser
 ################################################################################
 
-description = ("""Universal script to setup and run the xunit console runner. The script relies 
-on run.proj and the bash and batch wrappers. All test excludes will also 
-come from issues.targets. If there is a jit stress or gc stress exclude, 
-please add GCStressIncompatible or JitOptimizationSensitive to the test's 
+description = ("""Universal script to setup and run the xunit console runner. The script relies
+on run.proj and the bash and batch wrappers. All test excludes will also
+come from issues.targets. If there is a jit stress or gc stress exclude,
+please add GCStressIncompatible or JitOptimizationSensitive to the test's
 ilproj or csproj.
 
 The xunit runner currently relies on tests being built on the same host as the
 target platform. This requires all tests run on linux x64 to be built by the
 same platform and arch. If this is not done, the tests will run correctly;
-however, expect failures due to incorrect exclusions in the xunit 
+however, expect failures due to incorrect exclusions in the xunit
 wrappers setup at build time.
 
 Note that for linux targets the native components to the tests are still built
@@ -167,7 +167,7 @@ class TempFile:
             print("Error failed to delete: {}.".format(self.file_name))
 
 class DebugEnv:
-    def __init__(self, 
+    def __init__(self,
                  args,
                  env,
                  test):
@@ -177,7 +177,7 @@ class DebugEnv:
             args
             env                     : env for the repro
             test ({})               : The test metadata
-        
+
         """
         self.unique_name = "%s_%s_%s_%s" % (test["name"],
                                             args.host_os,
@@ -193,7 +193,7 @@ class DebugEnv:
 
         self.path = None
         
-        if self.args.host_os == "Windows_NT":
+        if self.args.host_os == "windows":
             self.path = self.unique_name + ".cmd"
         else:
             self.path = self.unique_name + ".sh"
@@ -204,7 +204,7 @@ class DebugEnv:
         self.repro_location = repro_location
 
         self.path = os.path.join(repro_location, self.path)
-        
+
         exe_location = os.path.splitext(self.test_location)[0] + ".exe"
         if os.path.isfile(exe_location):
             self.exe_location = exe_location
@@ -233,8 +233,8 @@ class DebugEnv:
                 "configurations": []
             }
 
-            json_str = json.dumps(initial_json, 
-                                  indent=4, 
+            json_str = json.dumps(initial_json,
+                                  indent=4,
                                   separators=(',', ': '))
 
             with open(launch_json_location, 'w') as file_handle:
@@ -243,12 +243,12 @@ class DebugEnv:
         launch_json = None
         with open(launch_json_location) as file_handle:
             launch_json = file_handle.read()
-        
+
         launch_json = json.loads(launch_json)
 
         configurations = launch_json["configurations"]
 
-        dbg_type = "cppvsdbg" if self.host_os == "Windows_NT" else ""
+        dbg_type = "cppvsdbg" if self.host_os == "windows" else ""
 
         env = {
             "COMPlus_AssertOnNYI": "1",
@@ -260,7 +260,7 @@ class DebugEnv:
             self.env = defaultdict(lambda: None, self.env)
             for key, value in env.items():
                 self.env[key] = value
-            
+
         else:
             self.env = env
 
@@ -299,7 +299,7 @@ class DebugEnv:
         if not config_exists:
             configurations.append(configuration)
         json_str = json.dumps(launch_json,
-                              indent=4, 
+                              indent=4,
                               separators=(',', ': '))
 
         with open(launch_json_location, 'w') as file_handle:
@@ -309,7 +309,7 @@ class DebugEnv:
         """ Create the repro wrapper
         """
 
-        if self.args.host_os == "Windows_NT":
+        if self.args.host_os == "windows":
             self.__create_batch_wrapper__()
         else:
             self.__create_bash_wrapper__()
@@ -317,14 +317,14 @@ class DebugEnv:
     def __create_batch_wrapper__(self):
         """ Create a windows batch wrapper
         """
-    
+
         wrapper = \
 """@echo off
 REM ============================================================================
 REM Repro environment for %s
-REM 
+REM
 REM Notes:
-REM 
+REM
 REM This wrapper is automatically generated by run.py. It includes the
 REM necessary environment to reproduce a failure that occured during running
 REM the tests.
@@ -352,20 +352,20 @@ echo Core_Root is set to: "%%CORE_ROOT%%"
                 wrapper += "set %s=%s%s" % (key, value, line_sep)
 
         wrapper += "%s" % line_sep
-        wrapper += "echo call %s%s" % (self.test_location, line_sep) 
-        wrapper += "call %s%s" % (self.test_location, line_sep) 
+        wrapper += "echo call %s%s" % (self.test_location, line_sep)
+        wrapper += "call %s%s" % (self.test_location, line_sep)
 
         self.wrapper = wrapper
-    
+
     def __create_bash_wrapper__(self):
         """ Create a unix bash wrapper
         """
-    
+
         wrapper = \
 """
 #============================================================================
 # Repro environment for %s
-# 
+#
 # Notes:
 #
 # This wrapper is automatically generated by run.py. It includes the
@@ -381,9 +381,9 @@ echo Core_Root is set to: "%%CORE_ROOT%%"
 # ============================================================================
 
 # Set Core_Root if it has not been already set.
-if [ \"${CORE_ROOT}\" = \"\" ] || [ ! -z \"${CORE_ROOT}\" ]; then 
-    export CORE_ROOT=%s 
-else 
+if [ \"${CORE_ROOT}\" = \"\" ] || [ ! -z \"${CORE_ROOT}\" ]; then
+    export CORE_ROOT=%s
+else
     echo \"CORE_ROOT set to ${CORE_ROOT}\"
 fi
 
@@ -397,8 +397,8 @@ fi
                 wrapper += "export %s=%s%s" % (key, value, line_sep)
 
         wrapper += "%s" % line_sep
-        wrapper += "echo bash %s%s" % (self.test_location, line_sep) 
-        wrapper += "bash %s%s" % (self.test_location, line_sep) 
+        wrapper += "echo bash %s%s" % (self.test_location, line_sep)
+        wrapper += "bash %s%s" % (self.test_location, line_sep)
 
         self.wrapper = wrapper
 
@@ -419,14 +419,14 @@ fi
 ################################################################################
 # Helper Functions
 ################################################################################
-   
+
 def create_and_use_test_env(_os, env, func):
     """ Create a test env based on the env passed
 
     Args:
         _os(str)                        : OS name
         env(defaultdict(lambda: None))  : complus variables, key,value dict
-        func(lambda)                    : lambda to call, after creating the 
+        func(lambda)                    : lambda to call, after creating the
                                         : test_env
 
     Notes:
@@ -464,12 +464,12 @@ def create_and_use_test_env(_os, env, func):
         #
         # errors.
 
-        tempfile_suffix = ".bat" if _os == "Windows_NT" else ""
+        tempfile_suffix = ".bat" if _os == "windows" else ""
         test_env = tempfile.NamedTemporaryFile(mode="w", suffix=tempfile_suffix, delete=False)
         try:
             file_header = None
 
-            if _os == "Windows_NT":
+            if _os == "windows":
                 file_header = \
 """@REM Temporary test env for test run.
 @echo on
@@ -481,11 +481,11 @@ def create_and_use_test_env(_os, env, func):
 
             test_env.write(file_header)
             contents += file_header
-            
+
             for key in complus_vars:
                 value = complus_vars[key]
                 command = None
-                if _os == "Windows_NT":
+                if _os == "windows":
                     command = "set"
                 else:
                     command = "export"
@@ -503,7 +503,7 @@ def create_and_use_test_env(_os, env, func):
 
                 contents += line
 
-            if _os == "Windows_NT":
+            if _os == "windows":
                 file_suffix = \
 """@echo off
 """
@@ -532,7 +532,7 @@ def create_and_use_test_env(_os, env, func):
 
 def get_environment(test_env=None):
     """ Get all the COMPlus_* Environment variables
-    
+
     Notes:
         All COMPlus variables need to be captured as a test_env script to avoid
         influencing the test runner.
@@ -543,7 +543,7 @@ def get_environment(test_env=None):
     global gc_stress
 
     complus_vars = defaultdict(lambda: "")
-    
+
     for key in os.environ:
         if "complus" in key.lower():
             complus_vars[key] = os.environ[key]
@@ -686,7 +686,7 @@ def setup_coredump_generation(host_os):
     if isinstance(coredump_pattern, bytes):
         print("Binary data found. Decoding.")
         coredump_pattern = coredump_pattern.decode('ascii')
-        
+
     print("CoreDump Pattern: {}".format(coredump_pattern))
 
     # resource is only available on Unix platforms
@@ -826,16 +826,16 @@ def inspect_and_delete_coredump_files(host_os, arch, test_location):
     """
     # This function prints some basic information from core files in the current
     # directory and deletes them immediately.
-    
+
     # Depending on distro/configuration, the core files may either be named "core"
-    # or "core.<PID>" by default. We will read /proc/sys/kernel/core_uses_pid to 
+    # or "core.<PID>" by default. We will read /proc/sys/kernel/core_uses_pid to
     # determine which one it is.
     # On OS X/macOS, we checked the kern.corefile value before enabling core dump
     # generation, so we know it always includes the PID.
     coredump_name_uses_pid=False
 
     print("Looking for coredumps...")
-    
+
     if "%P" in coredump_pattern:
         coredump_name_uses_pid=True
     elif host_os == "Linux" and os.path.isfile("/proc/sys/kernel/core_uses_pid"):
@@ -866,7 +866,7 @@ def inspect_and_delete_coredump_files(host_os, arch, test_location):
 def run_tests(args,
               test_env_script_path=None):
     """ Run the coreclr tests
-    
+
     Args:
         args
         test_env_script_path  : Path to script to use to set the test environment, if any.
@@ -887,7 +887,7 @@ def run_tests(args,
         per_test_timeout = 20*60*1000
         print("Setting RunningLongGCTests=1")
         os.environ["RunningLongGCTests"] = "1"
-    
+
     if args.gcsimulator:
         print("Running GCSimulator tests, extending timeout to one hour.")
         per_test_timeout = 60*60*1000
@@ -927,7 +927,7 @@ def run_tests(args,
         per_test_timeout = 20*60*1000
 
     # Set __TestTimeout environment variable, which is the per-test timeout in milliseconds.
-    # This is read by the test wrapper invoker, in src\coreclr\tests\src\Common\Coreclr.TestWrapper\CoreclrTestWrapperLib.cs.
+    # This is read by the test wrapper invoker, in src\tests\Common\Coreclr.TestWrapper\CoreclrTestWrapperLib.cs.
     print("Setting __TestTimeout=%s" % str(per_test_timeout))
     os.environ["__TestTimeout"] = str(per_test_timeout)
 
@@ -984,7 +984,7 @@ def run_tests(args,
     urlretrieve(url, zipfilename)
 
     with zipfile.ZipFile(zipfilename,"r") as ziparch:
-        ziparch.extractall(args.core_root)
+        ziparch.extractall(os.path.join(args.core_root, "xunit"))
 
     os.remove(zipfilename)
     assert not os.path.isfile(zipfilename)
@@ -1002,10 +1002,10 @@ def setup_args(args):
         location using the build type and the arch.
     """
 
-    requires_coreroot = args.arch.lower() != "wasm"
-    coreclr_setup_args = CoreclrArguments(args, 
+    requires_coreroot = args.host_os != "Browser" and args.host_os != "Android"
+    coreclr_setup_args = CoreclrArguments(args,
                                           require_built_test_dir=True,
-                                          require_built_core_root=requires_coreroot, 
+                                          require_built_core_root=requires_coreroot,
                                           require_built_product_dir=False)
 
     normal_location = os.path.join(coreclr_setup_args.artifacts_location, "tests", "coreclr", "%s.%s.%s" % (coreclr_setup_args.host_os, coreclr_setup_args.arch, coreclr_setup_args.build_type))
@@ -1057,7 +1057,7 @@ def setup_args(args):
                               "long_gc",
                               lambda arg: True,
                               "Error setting long_gc")
-    
+
     coreclr_setup_args.verify(args,
                               "gcsimulator",
                               lambda arg: True,
@@ -1072,7 +1072,7 @@ def setup_args(args):
                               "large_version_bubble",
                               lambda arg: True,
                               "Error setting large_version_bubble")
-    
+
     coreclr_setup_args.verify(args,
                               "run_crossgen_tests",
                               lambda arg: True,
@@ -1097,7 +1097,7 @@ def setup_args(args):
                               "sequential",
                               lambda arg: True,
                               "Error setting sequential")
-    
+
     coreclr_setup_args.verify(args,
                               "verbose",
                               lambda arg: True,
@@ -1107,7 +1107,7 @@ def setup_args(args):
                               "limited_core_dumps",
                               lambda arg: True,
                               "Error setting limited_core_dumps")
-    
+
     coreclr_setup_args.verify(args,
                               "test_native_bin_location",
                               lambda arg: True,
@@ -1131,13 +1131,13 @@ def setup_args(args):
         is_same_arch = build_info["build_arch"] == coreclr_setup_args.arch
         is_same_build_type = build_info["build_type"] == coreclr_setup_args.build_type
 
-    if coreclr_setup_args.host_os != "Windows_NT" and not (is_same_os and is_same_arch and is_same_build_type):
+    if coreclr_setup_args.host_os != "windows" and not (is_same_os and is_same_arch and is_same_build_type):
         test_native_bin_location = None
         if args.test_native_bin_location is None:
             test_native_bin_location = os.path.join(os.path.join(coreclr_setup_args.artifacts_location, "tests", "coreclr", "obj", "%s.%s.%s" % (coreclr_setup_args.host_os, coreclr_setup_args.arch, coreclr_setup_args.build_type)))
         else:
             test_native_bin_location = args.test_native_bin_location
-        
+
         coreclr_setup_args.verify(test_native_bin_location,
                                   "test_native_bin_location",
                                   lambda test_native_bin_location: os.path.isdir(test_native_bin_location),
@@ -1154,12 +1154,12 @@ def setup_args(args):
     print("test_location            : %s" % coreclr_setup_args.test_location)
     print("test_native_bin_location : %s" % coreclr_setup_args.test_native_bin_location)
 
-    coreclr_setup_args.crossgen_path = os.path.join(coreclr_setup_args.core_root, "crossgen%s" % (".exe" if coreclr_setup_args.host_os == "Windows_NT" else ""))
-    coreclr_setup_args.corerun_path = os.path.join(coreclr_setup_args.core_root, "corerun%s" % (".exe" if coreclr_setup_args.host_os == "Windows_NT" else ""))
-    coreclr_setup_args.dotnetcli_script_path = os.path.join(coreclr_setup_args.runtime_repo_location, "dotnet%s" % (".cmd" if coreclr_setup_args.host_os == "Windows_NT" else ".sh"))
+    coreclr_setup_args.crossgen_path = os.path.join(coreclr_setup_args.core_root, "crossgen%s" % (".exe" if coreclr_setup_args.host_os == "windows" else ""))
+    coreclr_setup_args.corerun_path = os.path.join(coreclr_setup_args.core_root, "corerun%s" % (".exe" if coreclr_setup_args.host_os == "windows" else ""))
+    coreclr_setup_args.dotnetcli_script_path = os.path.join(coreclr_setup_args.runtime_repo_location, "dotnet%s" % (".cmd" if coreclr_setup_args.host_os == "windows" else ".sh"))
     coreclr_setup_args.coreclr_tests_dir = os.path.join(coreclr_setup_args.coreclr_dir, "tests")
     coreclr_setup_args.coreclr_tests_src_dir = os.path.join(coreclr_setup_args.runtime_repo_location, "src", "tests")
-    coreclr_setup_args.runincontext_script_path = os.path.join(coreclr_setup_args.coreclr_tests_dir, "scripts", "runincontext%s" % (".cmd" if coreclr_setup_args.host_os == "Windows_NT" else ".sh"))
+    coreclr_setup_args.runincontext_script_path = os.path.join(coreclr_setup_args.coreclr_tests_src_dir, "Common", "scripts", "runincontext%s" % (".cmd" if coreclr_setup_args.host_os == "windows" else ".sh"))
     coreclr_setup_args.logs_dir = os.path.join(coreclr_setup_args.artifacts_location, "log")
 
     return coreclr_setup_args
@@ -1192,9 +1192,9 @@ def precompile_core_root(args):
         ".*System.Net.Primitives.*"
     ]
 
-    if args.host_os != "Windows_NT":
+    if args.host_os != "windows":
         skip_list += unix_skip_list
-    
+
         if args.arch == "arm64":
             skip_list += arm64_unix_skip_list
 
@@ -1238,8 +1238,8 @@ def precompile_core_root(args):
 
     def in_skip_list(item):
         found = False
-        for skip_re in skip_list: 
-            if re.match(skip_re, item.lower()) is not None: 
+        for skip_re in skip_list:
+            if re.match(skip_re, item.lower()) is not None:
                 found = True
         return found
 
@@ -1265,7 +1265,7 @@ def find_test_from_name(host_os, test_location, test_name):
         test_location (str) :path to the coreclr tests
         test_name (str)     : Name of the test, all special characters will have
                             : been replaced with underscores.
-    
+
     Return:
         test_path (str): Path of the test based on its name
     """
@@ -1323,7 +1323,7 @@ def find_test_from_name(host_os, test_location, test_name):
         for item in dir_contents:
             if test_item in item:
                 count += 1
-        
+
         return count > 1
 
     # Find the test by searching down the directory list.
@@ -1354,13 +1354,14 @@ def find_test_from_name(host_os, test_location, test_name):
                         break
                     elif size_of_largest_name_file < len(os.path.basename(added_path)):
                         break
-        
+
         starting_path = test_path
 
     location = starting_path
     if not os.path.isfile(location):
-        pass
-    
+        print("Warning: couldn't find test: %s" % test_name)
+        return None
+
     assert(os.path.isfile(location))
 
     return location
@@ -1426,19 +1427,19 @@ def parse_test_results(args):
                     test_output = failure_info.text
 
                 test_location_on_filesystem = find_test_from_name(args.host_os, args.test_location, test_name)
+                if test_location_on_filesystem is not None:
+                    assert os.path.isfile(test_location_on_filesystem)
 
-                assert os.path.isfile(test_location_on_filesystem)
-                
-                assert tests[test_name] == None
-                tests[test_name] = defaultdict(lambda: None, {
-                    "name": test_name,
-                    "test_path": test_location_on_filesystem,
-                    "failed": failed,
-                    "skipped": skipped,
-                    "passed": passed,
-                    "time": time,
-                    "test_output": test_output
-                })
+                    assert tests[test_name] == None
+                    tests[test_name] = defaultdict(lambda: None, {
+                        "name": test_name,
+                        "test_path": test_location_on_filesystem,
+                        "failed": failed,
+                        "skipped": skipped,
+                        "passed": passed,
+                        "time": time,
+                        "test_output": test_output
+                    })
 
     return tests
 
@@ -1446,9 +1447,9 @@ def print_summary(tests):
     """ Print a summary of the test results
 
     Args:
-        tests (defaultdict[String]: { }): The tests that were reported by 
+        tests (defaultdict[String]: { }): The tests that were reported by
                                         : xunit
-    
+
     """
 
     assert tests is not None
@@ -1510,7 +1511,7 @@ def print_summary(tests):
         print("%d failed tests:" % len(failed_tests))
         print("")
         print_tests_helper(failed_tests, None)
-        
+
     # The following code is currently disabled, as it produces too much verbosity in a normal
     # test run. It could be put under a switch, or else just enabled as needed when investigating
     # test slowness.
@@ -1530,7 +1531,7 @@ def print_summary(tests):
         for item in failed_tests:
             print("[%s]: " % item["test_path"])
             print("")
-            
+
             test_output = item["test_output"]
 
             # XUnit results are captured as escaped characters.
@@ -1576,16 +1577,16 @@ def create_repro(args, env, tests):
     Args:
         args
         env
-        tests (defaultdict[String]: { }): The tests that were reported by 
+        tests (defaultdict[String]: { }): The tests that were reported by
                                         : xunit
-    
+
     """
     assert tests is not None
 
     failed_tests = [tests[item] for item in tests if tests[item]["failed"] == "1"]
     if len(failed_tests) == 0:
         return
-    
+
     repro_location = os.path.join(args.artifacts_location, "repro", "%s.%s.%s" % (args.host_os, args.arch, args.build_type))
     if os.path.isdir(repro_location):
         shutil.rmtree(repro_location)
@@ -1620,8 +1621,8 @@ def main(args):
         if args.test_env is not None:
             ret_code = run_tests(args, args.test_env)
         else:
-            ret_code = create_and_use_test_env(args.host_os, 
-                                               env, 
+            ret_code = create_and_use_test_env(args.host_os,
+                                               env,
                                                lambda test_env_script_path: run_tests(args, test_env_script_path))
         print("Test run finished.")
 

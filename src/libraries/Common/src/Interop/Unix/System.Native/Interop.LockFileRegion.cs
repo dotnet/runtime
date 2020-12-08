@@ -9,6 +9,7 @@ internal static partial class Interop
     {
         internal enum LockType : short
         {
+            F_RDLCK = 0,    // shared or read lock
             F_WRLCK = 1,    // exclusive or write lock
             F_UNLCK = 2     // unlock
         }

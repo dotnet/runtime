@@ -29,7 +29,7 @@ namespace Microsoft.Win32.SystemEventsTests
             var invoked = new AutoResetEvent(false);
             EventHandler handler = (sender, args) =>
             {
-                expectedThreadId = Thread.CurrentThread.ManagedThreadId;
+                expectedThreadId = Environment.CurrentManagedThreadId;
             };
 
             try
@@ -41,7 +41,7 @@ namespace Microsoft.Win32.SystemEventsTests
 
                 SystemEvents.InvokeOnEventsThread(new Action(() =>
                 {
-                    actualThreadId = Thread.CurrentThread.ManagedThreadId;
+                    actualThreadId = Environment.CurrentManagedThreadId;
                     invoked.Set();
                 }));
                 Assert.True(invoked.WaitOne(PostMessageWait));

@@ -100,10 +100,6 @@ namespace System.Reflection.Emit
         {
             get { return name; }
         }
-        public PropertyToken PropertyToken
-        {
-            get { return default; }
-        }
         public override Type PropertyType
         {
             get { return type; }
@@ -229,7 +225,7 @@ namespace System.Reflection.Emit
             }
         }
 
-        private Exception not_supported()
+        private static Exception not_supported()
         {
             return new NotSupportedException("The invoked member is not supported in a dynamic module.");
         }

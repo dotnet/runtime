@@ -7,6 +7,7 @@ using System.Net.Internals;
 using System.Net.Sockets;
 using System.Runtime.InteropServices;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace System.Net
@@ -15,9 +16,7 @@ namespace System.Net
     {
         public const bool SupportsGetAddrInfoAsync = false;
 
-        public static void EnsureSocketsAreInitialized() { } // No-op for Unix
-
-        internal static Task GetAddrInfoAsync(string hostName, bool justAddresses) =>
+        internal static Task GetAddrInfoAsync(string hostName, bool justAddresses, AddressFamily family, CancellationToken cancellationToken) =>
             throw new NotSupportedException();
 
         private static SocketError GetSocketErrorForNativeError(int error)
@@ -118,7 +117,7 @@ namespace System.Net
             }
         }
 
-        public static unsafe SocketError TryGetAddrInfo(string name, bool justAddresses, out string? hostName, out string[] aliases, out IPAddress[] addresses, out int nativeErrorCode)
+        public static unsafe SocketError TryGetAddrInfo(string name, bool justAddresses, AddressFamily addressFamily, out string? hostName, out string[] aliases, out IPAddress[] addresses, out int nativeErrorCode)
         {
             if (name == "")
             {
@@ -127,7 +126,7 @@ namespace System.Net
             }
 
             Interop.Sys.HostEntry entry;
-            int result = Interop.Sys.GetHostEntryForName(name, &entry);
+            int result = Interop.Sys.GetHostEntryForName(name, addressFamily, &entry);
             if (result != 0)
             {
                 nativeErrorCode = result;

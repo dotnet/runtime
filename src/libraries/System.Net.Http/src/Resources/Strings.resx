@@ -562,7 +562,7 @@
     <value>Connection aborted by peer ({0}).</value>
   </data>
   <data name="net_quic_notsupported" xml:space="preserve">
-    <value>QUIC is not supported on this platform. See http://aka.ms/dotnetquic</value>
+    <value>QUIC is not supported on this platform. See https://aka.ms/dotnetquic</value>
   </data>
   <data name="net_quic_operationaborted" xml:space="preserve">
     <value>Operation aborted.</value>
@@ -591,12 +591,6 @@
   <data name="net_http_requested_version_server_refused" xml:space="preserve">
     <value>Requesting HTTP version {0} with version policy {1} while server offers only version fallback.</value>
   </data>
-  <data name="net_http_sync_operations_not_allowed_with_connect_callback" xml:space="preserve">
-    <value>Synchronous operation is not supported when a ConnectCallback is specified on the SocketsHttpHandler instance.</value>
-  </data>
-  <data name="net_http_sync_operations_not_allowed_with_plaintext_filter" xml:space="preserve">
-    <value>Synchronous operation is not supported when a PlaintextStreamFilter is specified on the SocketsHttpHandler instance.</value>
-  </data>
   <data name="net_http_exception_during_plaintext_filter" xml:space="preserve">
     <value>An exception occurred while invoking the PlaintextStreamFilter.</value>
   </data>
@@ -605,5 +599,11 @@
   </data>
   <data name="net_http_null_from_plaintext_filter" xml:space="preserve">
     <value>The user-supplied PlaintextStreamFilter returned null.</value>
+  </data>
+  <data name="net_http_marshalling_response_promise_from_fetch" xml:space="preserve">
+    <value>Internal error marshalling the response Promise from `fetch`.</value>
+  </data>
+  <data name="net_http_synchronous_reads_not_supported" xml:space="preserve">
+    <value>Synchronous reads are not supported, use ReadAsync instead.</value>
   </data>
 </root>

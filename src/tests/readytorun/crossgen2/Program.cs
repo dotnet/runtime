@@ -956,7 +956,7 @@ internal class Program
         return success;
     }
 
-    private enum ByteEnum : byte
+    public enum ByteEnum : byte
     {
         Value0,
         Value1,
@@ -964,7 +964,7 @@ internal class Program
         Value3,
     }
     
-    private enum IntEnum : int
+    public enum IntEnum : int
     {
         Value0,
         Value1,
@@ -1932,6 +1932,231 @@ internal class Program
         return true;
     }
 
+    public enum ShortEnum : short
+    {
+    }
+    public enum LongEnum : long
+    {
+    }
+
+    public struct LongIntEnumStruct
+    {
+        public LongEnum _1;
+        public IntEnum _2;
+        public LongEnum _3;
+        public IntEnum _4;
+    }
+
+    public struct LongIntEnumStructFieldStruct
+    {
+        public byte _0;
+        public LongIntEnumStruct _struct;
+    }
+
+    public struct IntShortEnumStruct
+    {
+        public IntEnum _1;
+        public ShortEnum _2;
+        public IntEnum _3;
+        public ShortEnum _4;
+    }
+
+    public struct IntShortEnumStructFieldStruct
+    {
+        public byte _0;
+        public IntShortEnumStruct _struct;
+    }
+
+    public struct ShortByteEnumStruct
+    {
+        public ShortEnum _1;
+        public ByteEnum _2;
+        public ShortEnum _3;
+        public ByteEnum _4;
+    }
+
+    public struct ShortByteEnumStructFieldStruct
+    {
+        public byte _0;
+        public ShortByteEnumStruct _struct;
+    }
+
+    [StructLayout(LayoutKind.Auto)]
+    public struct LongIntEnumStructAuto
+    {
+        public LongEnum _1;
+        public IntEnum _2;
+        public LongEnum _3;
+        public IntEnum _4;
+    }
+
+    public struct LongIntEnumStructAutoFieldStruct
+    {
+        public byte _0;
+        public LongIntEnumStructAuto _struct;
+    }
+
+    [StructLayout(LayoutKind.Auto)]
+    public struct IntShortEnumStructAuto
+    {
+        public IntEnum _1;
+        public ShortEnum _2;
+        public IntEnum _3;
+        public ShortEnum _4;
+    }
+
+    public struct IntShortEnumStructAutoFieldStruct
+    {
+        public byte _0;
+        public IntShortEnumStructAuto _struct;
+    }
+
+    [StructLayout(LayoutKind.Auto)]
+    public struct ShortByteEnumStructAuto
+    {
+        public ShortEnum _1;
+        public ByteEnum _2;
+        public ShortEnum _3;
+        public ByteEnum _4;
+    }
+
+    public struct ShortByteEnumStructAutoFieldStruct
+    {
+        public byte _0;
+        public ShortByteEnumStructAuto _struct;
+    }
+
+    public static void SetFieldOnStruct<T>(object obj, string name, int value)
+    {
+        var field = typeof(T).GetField(name);
+        object setValueObject = value;
+        if (Marshal.SizeOf(field.FieldType.GetEnumUnderlyingType()) == 1)
+        {
+            setValueObject = (byte)value;
+        }
+        if (Marshal.SizeOf(field.FieldType.GetEnumUnderlyingType()) == 2)
+        {
+            setValueObject = (short)value;
+        }
+        if (Marshal.SizeOf(field.FieldType.GetEnumUnderlyingType()) == 8)
+        {
+            setValueObject = (long)value;
+        }
+
+        field.SetValue(obj, setValueObject);
+    }
+
+    public static T GetStructWithValues<T>()
+    {
+        object obj = Activator.CreateInstance(typeof(T));
+        SetFieldOnStruct<T>(obj, "_1", 1);
+        SetFieldOnStruct<T>(obj, "_2", 2);
+        SetFieldOnStruct<T>(obj, "_3", 3);
+        SetFieldOnStruct<T>(obj, "_4", 4);
+        return (T)obj;
+    }
+
+    public static bool TestEnumLayoutAlignments()
+    {
+        {
+            var val = GetStructWithValues<LongIntEnumStruct>();
+            if (((int)val._1) != 1)
+                throw new Exception();
+            if (((int)val._2) != 2)
+                throw new Exception();
+            if (((int)val._3) != 3)
+                throw new Exception();
+            if (((int)val._4) != 4)
+                throw new Exception();
+
+            var valStruct = default(LongIntEnumStructFieldStruct);
+            valStruct._struct = val;
+            Console.WriteLine(valStruct.ToString());
+        }
+
+        {
+            var val = GetStructWithValues<IntShortEnumStruct>();
+            if (((int)val._1) != 1)
+                throw new Exception();
+            if (((int)val._2) != 2)
+                throw new Exception();
+            if (((int)val._3) != 3)
+                throw new Exception();
+            if (((int)val._4) != 4)
+                throw new Exception();
+
+            var valStruct = default(IntShortEnumStructFieldStruct);
+            valStruct._struct = val;
+            Console.WriteLine(valStruct.ToString());
+        }
+
+        {
+            var val = GetStructWithValues<ShortByteEnumStruct>();
+            if (((int)val._1) != 1)
+                throw new Exception();
+            if (((int)val._2) != 2)
+                throw new Exception();
+            if (((int)val._3) != 3)
+                throw new Exception();
+            if (((int)val._4) != 4)
+                throw new Exception();
+
+            var valStruct = default(ShortByteEnumStructFieldStruct);
+            valStruct._struct = val;
+            Console.WriteLine(valStruct.ToString());
+        }
+
+        {
+            var val = GetStructWithValues<LongIntEnumStructAuto>();
+            if (((int)val._1) != 1)
+                throw new Exception();
+            if (((int)val._2) != 2)
+                throw new Exception();
+            if (((int)val._3) != 3)
+                throw new Exception();
+            if (((int)val._4) != 4)
+                throw new Exception();
+
+            var valStruct = default(LongIntEnumStructAutoFieldStruct);
+            valStruct._struct = val;
+            Console.WriteLine(valStruct.ToString());
+        }
+
+        {
+            var val = GetStructWithValues<IntShortEnumStructAuto>();
+            if (((int)val._1) != 1)
+                throw new Exception();
+            if (((int)val._2) != 2)
+                throw new Exception();
+            if (((int)val._3) != 3)
+                throw new Exception();
+            if (((int)val._4) != 4)
+                throw new Exception();
+
+            var valStruct = default(IntShortEnumStructAutoFieldStruct);
+            valStruct._struct = val;
+            Console.WriteLine(valStruct.ToString());
+        }
+
+        {
+            var val = GetStructWithValues<ShortByteEnumStructAuto>();
+            if (((int)val._1) != 1)
+                throw new Exception();
+            if (((int)val._2) != 2)
+                throw new Exception();
+            if (((int)val._3) != 3)
+                throw new Exception();
+            if (((int)val._4) != 4)
+                throw new Exception();
+
+            var valStruct = default(ShortByteEnumStructAutoFieldStruct);
+            valStruct._struct = val;
+            Console.WriteLine(valStruct.ToString());
+        }
+
+        return true;
+    }
+
     public static int Main(string[] args)
     {
         _passedTests = new List<string>();
@@ -1939,6 +2164,11 @@ internal class Program
 
         TextFileName = EmitTextFileForTesting();
 
+        RunTest("CallMethodUsingMemberRefToDerivedWhereMethodIsActuallyOnBase_NonGenericCaller", HelperILDllTests.CallMethodUsingMemberRefToDerivedWhereMethodIsActuallyOnBase_NonGenericCaller());
+        RunTest("CallMethodUsingMemberRefToDerivedWhereMethodIsActuallyOnBase_GenericCaller", HelperILDllTests.CallMethodUsingMemberRefToDerivedWhereMethodIsActuallyOnBase_GenericCaller());
+        RunTest("CallMethodUsingMemberRefToDerivedWhereMethodIsActuallyOnBase_GenericCreateDelegate", HelperILDllTests.CallMethodUsingMemberRefToDerivedWhereMethodIsActuallyOnBase_GenericCreateDelegate());
+        RunTest("CallGenMethodUsingMemberRefToDerivedWhereMethodIsActuallyOnBase_NonGenericCaller", HelperILDllTests.CallGenMethodUsingMemberRefToDerivedWhereMethodIsActuallyOnBase_NonGenericCaller());
+        RunTest("CallGenMethodUsingMemberRefToDerivedWhereMethodIsActuallyOnBase_GenericCaller", HelperILDllTests.CallGenMethodUsingMemberRefToDerivedWhereMethodIsActuallyOnBase_GenericCaller());
         RunTest("NewString", NewString());
         RunTest("WriteLine", WriteLine());
         RunTest("IsInstanceOf", IsInstanceOf());
@@ -2001,7 +2231,7 @@ internal class Program
         RunTest("TestGenericMDArrayBehavior", TestGenericMDArrayBehavior());
         RunTest("TestWithStructureNonBlittableFieldDueToGenerics", TestWithStructureNonBlittableFieldDueToGenerics());
         RunTest("TestSingleElementStructABI", TestSingleElementStructABI());
-
+        RunTest("TestEnumLayoutAlignments", TestEnumLayoutAlignments());
         File.Delete(TextFileName);
 
         Console.WriteLine($@"{_passedTests.Count} tests pass:");

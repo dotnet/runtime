@@ -41,7 +41,7 @@ setup_dirs_local()
 
 restore_optdata()
 {
-    local OptDataProjectFilePath="$__ProjectRoot/src/.nuget/optdata/optdata.csproj"
+    local OptDataProjectFilePath="$__ProjectRoot/.nuget/optdata/optdata.csproj"
     if [[ "$__SkipRestoreOptData" == 0 && "$__IsMSBuildOnNETCoreSupported" == 1 ]]; then
         echo "Restoring the OptimizationData package"
         "$__RepoRootDir/eng/common/msbuild.sh" /clp:nosummary $__ArcadeScriptArgs \
@@ -99,7 +99,7 @@ build_cross_architecture_components()
     export __CMakeBinDir CROSSCOMPILE
 
     __CMakeArgs="-DCLR_CMAKE_TARGET_ARCH=$__BuildArch -DCLR_CROSS_COMPONENTS_BUILD=1 $__CMakeArgs"
-    build_native "$__CrossArch" "$__ProjectRoot" "$__ProjectRoot" "$intermediatesForBuild" "cross-architecture components"
+    build_native "$__TargetOS" "$__CrossArch" "$__ProjectRoot" "$intermediatesForBuild" "$__CMakeArgs" "cross-architecture components"
 
     CROSSCOMPILE=1
     export CROSSCOMPILE
@@ -198,10 +198,6 @@ __BuildRuntime=1
 
 source "$__ProjectRoot"/_build-commons.sh
 
-if [[ "${__BuildArch}" != "${__HostArch}" ]]; then
-    __CrossBuild=1
-fi
-
 # Set dependent variables
 
 # Set the remaining variables based upon the determined build configuration
@@ -250,7 +246,7 @@ check_prereqs
 restore_optdata
 
 # Build the coreclr (native) components.
-__CMakeArgs="-DCLR_CMAKE_PGO_INSTRUMENT=$__PgoInstrument -DCLR_CMAKE_OPTDATA_PATH=$__PgoOptDataPath -DCLR_CMAKE_PGO_OPTIMIZE=$__PgoOptimize -DCLR_REPO_ROOT_DIR=\"$__RepoRootDir\" $__CMakeArgs"
+__CMakeArgs="-DCLR_CMAKE_PGO_INSTRUMENT=$__PgoInstrument -DCLR_CMAKE_OPTDATA_PATH=$__PgoOptDataPath -DCLR_CMAKE_PGO_OPTIMIZE=$__PgoOptimize $__CMakeArgs"
 __CMakeArgs="-DCLR_CMAKE_BUILD_SUBSET_JIT=$__BuildJit -DCLR_CMAKE_BUILD_SUBSET_ALLJITS=$__BuildAllJits -DCLR_CMAKE_BUILD_SUBSET_RUNTIME=$__BuildRuntime $__CMakeArgs"
 __CMakeArgs="-DCLR_CMAKE_BUILD_TESTS=$__BuildPALTests $__CMakeArgs"
 
@@ -261,7 +257,7 @@ fi
 if [[ "$__SkipNative" == 1 ]]; then
     echo "Skipping CoreCLR component build."
 else
-    build_native "$__BuildArch" "$__ProjectRoot" "$__ProjectRoot" "$__IntermediatesDir" "CoreCLR component"
+    build_native "$__TargetOS" "$__BuildArch" "$__ProjectRoot" "$__IntermediatesDir" "$__CMakeArgs" "CoreCLR component"
 
     # Build cross-architecture components
     if [[ "$__SkipCrossArchNative" != 1 ]]; then

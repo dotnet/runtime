@@ -138,7 +138,7 @@ namespace System.Xml.Linq
         /// <exception cref="InvalidOperationException">
         /// Thrown if the parent is null.
         /// </exception>
-        public void AddAfterSelf(params object[] content)
+        public void AddAfterSelf(params object?[] content)
         {
             AddAfterSelf((object)content);
         }
@@ -185,7 +185,7 @@ namespace System.Xml.Linq
         /// <exception cref="InvalidOperationException">
         /// Thrown if the parent is null.
         /// </exception>
-        public void AddBeforeSelf(params object[] content)
+        public void AddBeforeSelf(params object?[] content)
         {
             AddBeforeSelf((object)content);
         }
@@ -567,7 +567,7 @@ namespace System.Xml.Linq
         /// Replaces this node with the specified content.
         /// </summary>
         /// <param name="content">Content that replaces this node.</param>
-        public void ReplaceWith(params object[] content)
+        public void ReplaceWith(params object?[] content)
         {
             ReplaceWith((object)content);
         }

@@ -4,6 +4,8 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Net.Quic;
+using System.Net.Quic.Implementations;
 using System.Net.Security;
 using System.Runtime.Versioning;
 using System.Threading;
@@ -391,6 +393,21 @@ namespace System.Net.Http
             }
         }
 
+        /// <summary>
+        /// Gets or sets the QUIC implementation to be used for HTTP3 requests.
+        /// </summary>
+        public QuicImplementationProvider? QuicImplementationProvider
+        {
+            // !!! NOTE !!!
+            // This is temporary and will not ship.
+            get => _settings._quicImplementationProvider;
+            set
+            {
+                CheckDisposedOrStarted();
+                _settings._quicImplementationProvider = value;
+            }
+        }
+
         public IDictionary<string, object?> Properties =>
             _settings._properties ?? (_settings._properties = new Dictionary<string, object?>());
 
@@ -495,11 +512,6 @@ namespace System.Net.Http
 
             CheckDisposed();
             HttpMessageHandlerStage handler = _handler ?? SetupHandlerChain();
-
-            if (_settings._plaintextStreamFilter is not null)
-            {
-                throw new NotSupportedException(SR.net_http_sync_operations_not_allowed_with_plaintext_filter);
-            }
 
             Exception? error = ValidateAndNormalizeRequest(request);
             if (error != null)

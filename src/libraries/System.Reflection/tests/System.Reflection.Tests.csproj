@@ -17,6 +17,7 @@
     <Compile Include="AssemblyNameTests.cs" />
     <Compile Include="AssemblyTests.cs" />
     <Compile Include="ConstructorInfoTests.cs" />
+    <Compile Include="CustomAttributeTests.cs" />
     <Compile Include="EventInfoTests.cs" />
     <Compile Include="FieldInfoTests.cs" />
     <Compile Include="GetTypeTests.cs" />
@@ -30,6 +31,7 @@
     <Compile Include="TypeDerivedTests.cs" />
     <Compile Include="TypeInfoTests.cs" />
     <Compile Include="ExceptionTests.cs" />
+    <Compile Include="PointerTests.cs" />
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="Resources\EmbeddedImage.png">

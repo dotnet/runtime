@@ -12,28 +12,21 @@ public class AndroidAppBuilderTask : Task
     [Required]
     public string SourceDir { get; set; } = ""!;
 
-    public ITaskItem[]? AssemblySearchPaths { get; set; }
-
-    public ITaskItem[]? ExtraAssemblies { get; set; }
-
     [Required]
     public string MonoRuntimeHeaders { get; set; } = ""!;
 
     /// <summary>
     /// This library will be used as an entry-point (e.g. TestRunner.dll)
     /// </summary>
-    [Required]
     public string MainLibraryFileName { get; set; } = ""!;
 
-    /// <summary>
-    /// Target arch, can be 'x86', 'x86_64', 'armeabi-v7a' or 'arm64-v8a'
-    /// </summary>
     [Required]
-    public string Abi { get; set; } = ""!;
+    public string RuntimeIdentifier { get; set; } = ""!;
+
+    [Required]
+    public string OutputDir { get; set; } = ""!;
 
     public string? ProjectName { get; set; }
-
-    public string? OutputDir { get; set; }
 
     public string? AndroidSdk { get; set; }
 
@@ -47,6 +40,16 @@ public class AndroidAppBuilderTask : Task
 
     public bool StripDebugSymbols { get; set; }
 
+    /// <summary>
+    /// Path to a custom MainActivity.java with custom UI
+    /// A default one is used if it's not set
+    /// </summary>
+    public string? NativeMainSource { get; set; }
+
+    public string? KeyStorePath { get; set; }
+
+    public bool ForceInterpreter { get; set; }
+
     [Output]
     public string ApkBundlePath { get; set; } = ""!;
 
@@ -57,6 +60,8 @@ public class AndroidAppBuilderTask : Task
     {
         Utils.Logger = Log;
 
+        string abi = DetermineAbi();
+
         var apkBuilder = new ApkBuilder();
         apkBuilder.ProjectName = ProjectName;
         apkBuilder.OutputDir = OutputDir;
@@ -66,10 +71,21 @@ public class AndroidAppBuilderTask : Task
         apkBuilder.BuildApiLevel = BuildApiLevel;
         apkBuilder.BuildToolsVersion = BuildToolsVersion;
         apkBuilder.StripDebugSymbols = StripDebugSymbols;
-        apkBuilder.AssemblySearchPaths = AssemblySearchPaths?.Select(a => a.ItemSpec)?.ToArray();
-        apkBuilder.ExtraAssemblies = ExtraAssemblies?.Select(a => a.ItemSpec)?.ToArray();
-        (ApkBundlePath, ApkPackageId) = apkBuilder.BuildApk(SourceDir, Abi, MainLibraryFileName, MonoRuntimeHeaders);
+        apkBuilder.NativeMainSource = NativeMainSource;
+        apkBuilder.KeyStorePath = KeyStorePath;
+        apkBuilder.ForceInterpreter = ForceInterpreter;
+        (ApkBundlePath, ApkPackageId) = apkBuilder.BuildApk(SourceDir, abi, MainLibraryFileName, MonoRuntimeHeaders);
 
         return true;
     }
+
+    private string DetermineAbi() =>
+        RuntimeIdentifier switch
+        {
+            "android-x86" => "x86",
+            "android-x64" => "x86_64",
+            "android-arm" => "armeabi-v7a",
+            "android-arm64" => "arm64-v8a",
+            _ => throw new ArgumentException($"{RuntimeIdentifier} is not supported for Android"),
+        };
 }

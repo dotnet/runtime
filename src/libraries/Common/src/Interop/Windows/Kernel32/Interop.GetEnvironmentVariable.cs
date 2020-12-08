@@ -9,6 +9,6 @@ internal static partial class Interop
     internal static partial class Kernel32
     {
         [DllImport(Libraries.Kernel32, EntryPoint = "GetEnvironmentVariableW", SetLastError = true, CharSet = CharSet.Unicode, ExactSpelling = true)]
-        internal static extern unsafe uint GetEnvironmentVariable(string lpName, ref char lpBuffer, uint nSize);
+        internal static extern uint GetEnvironmentVariable(string lpName, ref char lpBuffer, uint nSize);
     }
 }

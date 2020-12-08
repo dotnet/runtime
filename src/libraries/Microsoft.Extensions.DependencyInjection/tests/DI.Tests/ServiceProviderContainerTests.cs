@@ -4,11 +4,13 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.DependencyInjection.Fakes;
 using Microsoft.Extensions.DependencyInjection.Specification;
 using Microsoft.Extensions.DependencyInjection.Specification.Fakes;
 using Microsoft.Extensions.DependencyInjection.Tests.Fakes;
+using Microsoft.Extensions.Internal;
 using Xunit;
 
 namespace Microsoft.Extensions.DependencyInjection.Tests
@@ -265,7 +267,147 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
             Assert.NotNull(provider.CreateScope());
         }
 
-        [Theory(Skip = "https://github.com/dotnet/runtime/issues/42160 - We don't support value task services currently")]
+        [Fact]
+        public void GetService_DisposeOnSameThread_Throws()
+        {
+            var services = new ServiceCollection();
+            services.AddSingleton<DisposeServiceProviderInCtor>();
+            IServiceProvider sp = services.BuildServiceProvider();
+            Assert.Throws<ObjectDisposedException>(() =>
+            {
+                // ctor disposes ServiceProvider
+                var service = sp.GetRequiredService<DisposeServiceProviderInCtor>();
+            });
+        }
+
+        [Fact]
+        public void GetAsyncService_DisposeAsyncOnSameThread_ThrowsAndDoesNotHangAndDisposeAsyncGetsCalled()
+        {
+            // Arrange
+            var services = new ServiceCollection();
+            var asyncDisposableResource = new AsyncDisposable();
+            services.AddSingleton<DisposeServiceProviderInCtorAsyncDisposable>(sp =>
+                new DisposeServiceProviderInCtorAsyncDisposable(asyncDisposableResource, sp));
+
+            var sp = services.BuildServiceProvider();
+            bool doesNotHang = Task.Run(() =>
+            {
+                SingleThreadedSynchronizationContext.Run(() =>
+                {
+                    // Act
+                    Assert.Throws<ObjectDisposedException>(() =>
+                    {
+                        // ctor disposes ServiceProvider
+                        var service = sp.GetRequiredService<DisposeServiceProviderInCtorAsyncDisposable>();
+                    });
+                });
+            }).Wait(TimeSpan.FromSeconds(10));
+
+            Assert.True(doesNotHang);
+            Assert.True(asyncDisposableResource.DisposeAsyncCalled);
+        }
+
+        [Fact]
+        public void GetService_DisposeOnSameThread_ThrowsAndDoesNotHangAndDisposeGetsCalled()
+        {
+            // Arrange
+            var services = new ServiceCollection();
+            var disposableResource = new Disposable();
+            services.AddSingleton<DisposeServiceProviderInCtorDisposable>(sp =>
+                new DisposeServiceProviderInCtorDisposable(disposableResource, sp));
+
+            var sp = services.BuildServiceProvider();
+            bool doesNotHang = Task.Run(() =>
+            {
+                SingleThreadedSynchronizationContext.Run(() =>
+                {
+                    // Act
+                    Assert.Throws<ObjectDisposedException>(() =>
+                    {
+                        // ctor disposes ServiceProvider
+                        var service = sp.GetRequiredService<DisposeServiceProviderInCtorDisposable>();
+                    });
+                });
+            }).Wait(TimeSpan.FromSeconds(10));
+
+            Assert.True(doesNotHang);
+            Assert.True(disposableResource.Disposed);
+        }
+
+        private class DisposeServiceProviderInCtor : IDisposable
+        {
+            public DisposeServiceProviderInCtor(IServiceProvider sp)
+            {
+                (sp as IDisposable).Dispose();
+            }
+            public void Dispose() { }
+        }
+
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task AddDisposablesAndAsyncDisposables_DisposeAsync_AllDisposed(bool includeDelayedAsyncDisposable)
+        {
+            var services = new ServiceCollection();
+            services.AddSingleton<AsyncDisposable>();
+            services.AddSingleton<Disposable>();
+            if (includeDelayedAsyncDisposable)
+            {
+                //forces Dispose ValueTask to be asynchronous and not be immediately completed
+                services.AddSingleton<DelayedAsyncDisposableService>();
+            }
+            ServiceProvider sp = services.BuildServiceProvider();
+            var disposable = sp.GetRequiredService<Disposable>();
+            var asyncDisposable = sp.GetRequiredService<AsyncDisposable>();
+            DelayedAsyncDisposableService delayedAsyncDisposableService = null;
+            if (includeDelayedAsyncDisposable)
+            {
+                delayedAsyncDisposableService = sp.GetRequiredService<DelayedAsyncDisposableService>();
+            }
+
+            await sp.DisposeAsync();
+            
+            Assert.True(disposable.Disposed);
+            Assert.True(asyncDisposable.DisposeAsyncCalled);
+            if (includeDelayedAsyncDisposable)
+            {
+                Assert.Equal(1, delayedAsyncDisposableService.DisposeCount);
+            }
+        }
+
+        private class DisposeServiceProviderInCtorAsyncDisposable : IFakeService, IAsyncDisposable
+        {
+            private readonly AsyncDisposable _asyncDisposable;
+
+            public DisposeServiceProviderInCtorAsyncDisposable(AsyncDisposable asyncDisposable, IServiceProvider sp)
+            {
+                _asyncDisposable = asyncDisposable;
+                (sp as IAsyncDisposable).DisposeAsync();
+            }
+            public async ValueTask DisposeAsync()
+            {
+                await _asyncDisposable.DisposeAsync();
+                await Task.Yield();
+            }
+        }
+
+        private class DisposeServiceProviderInCtorDisposable : IFakeService, IDisposable
+        {
+            private readonly Disposable _disposable;
+
+            public DisposeServiceProviderInCtorDisposable(Disposable disposable, IServiceProvider sp)
+            {
+                _disposable = disposable;
+                (sp as IDisposable).Dispose();
+            }
+            public void Dispose()
+            {
+                _disposable.Dispose();
+            }
+        }
+
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/42160")] // We don't support value task services currently
+        [Theory]
         [InlineData(ServiceLifetime.Transient)]
         [InlineData(ServiceLifetime.Scoped)]
         [InlineData(ServiceLifetime.Singleton)]
@@ -463,6 +605,20 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
             Assert.False(service.IsDisposed);
         }
 
+        [Fact]
+        public async Task ProviderDisposeAsyncCallsDisposeAsyncOnceOnServices()
+        {
+            var serviceCollection = new ServiceCollection();
+            serviceCollection.AddTransient<DelayedAsyncDisposableService>();
+
+            var serviceProvider = CreateServiceProvider(serviceCollection);
+            var disposable = serviceProvider.GetService<DelayedAsyncDisposableService>();
+
+            await (serviceProvider as IAsyncDisposable).DisposeAsync();
+
+            Assert.Equal(1, disposable.DisposeCount);
+        }
+
         private class FakeDisposable : IDisposable
         {
             public bool IsDisposed { get; private set; }
@@ -520,6 +676,17 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
             {
                 DisposeAsyncCalled = true;
                 return new ValueTask(Task.CompletedTask);
+            }
+        }
+
+        private class DelayedAsyncDisposableService : IAsyncDisposable
+        {
+            public int DisposeCount { get; private set; }
+            public async ValueTask DisposeAsync()
+            {
+                //forces ValueTask to be asynchronous and not be immediately completed
+                await Task.Yield();
+                DisposeCount++;
             }
         }
     }

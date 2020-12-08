@@ -26,9 +26,6 @@ OPDEF(MINT_RET_LOCALLOC, "ret.localloc", 1, Pop1, Push0, MintOpNoArgs)
 OPDEF(MINT_RET_VOID_LOCALLOC, "ret.void.localloc", 1, Pop0, Push0, MintOpNoArgs)
 OPDEF(MINT_RET_VT_LOCALLOC, "ret.vt.localloc", 3, Pop1, Push0, MintOpInt)
 
-/* FIXME if ret_size != null it clobbers sp [-1] */
-OPDEF(MINT_VTRESULT, "vtresult", 4, Pop0, Push0, MintOpShortAndInt) /*FIX should be unsigned*/
-
 OPDEF(MINT_LDC_I4_M1, "ldc.i4.m1", 1, Pop0, Push1, MintOpNoArgs)
 OPDEF(MINT_LDC_I4_0, "ldc.i4.0", 1, Pop0, Push1, MintOpNoArgs)
 OPDEF(MINT_LDC_I4_1, "ldc.i4.1", 1, Pop0, Push1, MintOpNoArgs)
@@ -48,11 +45,7 @@ OPDEF(MINT_LDC_I8_S, "ldc.i8.s", 2, Pop0, Push1, MintOpShortInt)
 OPDEF(MINT_LDC_R4, "ldc.r4", 3, Pop0, Push1, MintOpFloat)
 OPDEF(MINT_LDC_R8, "ldc.r8", 5, Pop0, Push1, MintOpDouble)
 
-OPDEF(MINT_ARGLIST, "arglist", 1, Pop0, Push1, MintOpNoArgs)
-
-OPDEF(MINT_LDARG_VT, "ldarg.vt", 4, Pop0, Push1, MintOpShortAndInt)
-OPDEF(MINT_STARG_VT, "starg.vt", 4, Pop1, Push0, MintOpShortAndInt)
-OPDEF(MINT_LDARGA_VT, "ldarga.vt", 2, Pop0, Push1, MintOpUShortInt)
+OPDEF(MINT_INIT_ARGLIST, "init_arglist", 3, Pop0, Push0, MintOpNoArgs)
 
 OPDEF(MINT_LDFLD_VT_I1, "ldfld.vt.i1", 3, Pop1, Push1, MintOpTwoShorts)
 OPDEF(MINT_LDFLD_VT_U1, "ldfld.vt.u1", 3, Pop1, Push1, MintOpTwoShorts)
@@ -356,12 +349,11 @@ OPDEF(MINT_JMP, "jmp", 2, Pop0, Push0, MintOpMethodToken)
 
 OPDEF(MINT_ENDFILTER, "endfilter", 1, Pop0, Push0, MintOpNoArgs)
 
-OPDEF(MINT_NEWOBJ, "newobj", 2, VarPop, Push1, MintOpMethodToken)
+OPDEF(MINT_NEWOBJ, "newobj", 3, VarPop, Push1, MintOpMethodToken)
 OPDEF(MINT_NEWOBJ_ARRAY, "newobj_array", 3, VarPop, Push1, MintOpMethodToken)
 OPDEF(MINT_NEWOBJ_STRING, "newobj_string", 3, VarPop, Push1, MintOpMethodToken)
-OPDEF(MINT_NEWOBJ_FAST, "newobj_fast", 4, VarPop, Push1, MintOpMethodToken)
-OPDEF(MINT_NEWOBJ_VT_FAST, "newobj_vt_fast", 3, VarPop, Push1, MintOpMethodToken)
-OPDEF(MINT_NEWOBJ_VTST_FAST, "newobj_vtst_fast", 4, VarPop, Push1, MintOpMethodToken)
+OPDEF(MINT_NEWOBJ_FAST, "newobj_fast", 5, VarPop, Push1, MintOpMethodToken)
+OPDEF(MINT_NEWOBJ_VT_FAST, "newobj_vt_fast", 5, VarPop, Push1, MintOpMethodToken)
 OPDEF(MINT_NEWOBJ_MAGIC, "newobj_magic", 2, Pop0, Push0, MintOpMethodToken)
 OPDEF(MINT_INITOBJ, "initobj", 3, Pop1, Push0, MintOpInt)
 OPDEF(MINT_CASTCLASS, "castclass", 2, Pop0, Push0, MintOpClassToken)
@@ -371,9 +363,10 @@ OPDEF(MINT_ISINST_INTERFACE, "isinst.interface", 2, Pop1, Push1, MintOpClassToke
 OPDEF(MINT_CASTCLASS_COMMON, "castclass.common", 2, Pop0, Push0, MintOpClassToken)
 OPDEF(MINT_ISINST_COMMON, "isinst.common", 2, Pop1, Push1, MintOpClassToken)
 OPDEF(MINT_NEWARR, "newarr", 2, Pop1, Push1, MintOpClassToken)
-OPDEF(MINT_BOX, "box", 3, Pop0, Push0, MintOpTwoShorts)
-OPDEF(MINT_BOX_VT, "box.vt", 4, Pop0, Push0, MintOpTwoShorts)
-OPDEF(MINT_BOX_NULLABLE, "box.nullable", 4, Pop0, Push0, MintOpTwoShorts)
+OPDEF(MINT_BOX, "box", 2, Pop1, Push1, MintOpShortInt)
+OPDEF(MINT_BOX_VT, "box.vt", 2, Pop1, Push1, MintOpShortInt)
+OPDEF(MINT_BOX_PTR, "box.ptr", 3, Pop0, Push0, MintOpTwoShorts)
+OPDEF(MINT_BOX_NULLABLE_PTR, "box.nullable.ptr", 3, Pop0, Push0, MintOpTwoShorts)
 OPDEF(MINT_UNBOX, "unbox", 2, Pop1, Push1, MintOpClassToken)
 OPDEF(MINT_LDTOKEN, "ldtoken", 2, Pop0, Push1, MintOpClassToken) /* not really */
 OPDEF(MINT_LDFTN, "ldftn", 2, Pop0, Push1, MintOpMethodToken)
@@ -677,12 +670,12 @@ OPDEF(MINT_ARRAY_ELEMENT_SIZE, "array_element_size", 1, Pop1, Push1, MintOpNoArg
 OPDEF(MINT_ARRAY_IS_PRIMITIVE, "array_is_primitive", 1, Pop1, Push1, MintOpNoArgs)
 
 /* Calls */
-OPDEF(MINT_CALL, "call", 4, VarPop, Push1, MintOpMethodToken)
-OPDEF(MINT_CALLVIRT, "callvirt", 4, VarPop, Push1, MintOpMethodToken)
+OPDEF(MINT_CALL, "call", 3, VarPop, Push1, MintOpMethodToken)
+OPDEF(MINT_CALLVIRT, "callvirt", 3, VarPop, Push1, MintOpMethodToken)
 OPDEF(MINT_CALLVIRT_FAST, "callvirt.fast", 4, VarPop, Push1, MintOpMethodToken)
-OPDEF(MINT_CALL_DELEGATE, "call.delegate", 3, VarPop, VarPush, MintOpMethodToken)
+OPDEF(MINT_CALL_DELEGATE, "call.delegate", 3, VarPop, VarPush, MintOpTwoShorts)
 OPDEF(MINT_CALLI, "calli", 3, VarPop, VarPush, MintOpMethodToken)
-OPDEF(MINT_CALLI_NAT, "calli.nat", 6, VarPop, VarPush, MintOpMethodToken)
+OPDEF(MINT_CALLI_NAT, "calli.nat", 7, VarPop, VarPush, MintOpMethodToken)
 OPDEF(MINT_CALLI_NAT_DYNAMIC, "calli.nat.dynamic", 3, VarPop, VarPush, MintOpMethodToken)
 OPDEF(MINT_CALLI_NAT_FAST, "calli.nat.fast", 4, VarPop, VarPush, MintOpMethodToken)
 OPDEF(MINT_CALL_VARARG, "call.vararg", 4, VarPop, VarPush, MintOpMethodToken)
@@ -712,6 +705,7 @@ OPDEF(MINT_MONO_NEWOBJ, "mono_newobj", 2, Pop0, Push1, MintOpClassToken)
 OPDEF(MINT_MONO_RETOBJ, "mono_retobj", 1, Pop1, Push0, MintOpNoArgs)
 OPDEF(MINT_MONO_ATOMIC_STORE_I4, "mono_atomic.store.i4", 1, Pop2, Push0, MintOpNoArgs)
 OPDEF(MINT_MONO_MEMORY_BARRIER, "mono_memory_barrier", 1, Pop0, Push0, MintOpNoArgs)
+OPDEF(MINT_MONO_EXCHANGE_I8, "mono_interlocked.xchg.i8", 1, Pop2, Push1, MintOpNoArgs)
 OPDEF(MINT_MONO_LDDOMAIN, "mono_lddomain", 1, Pop0, Push1, MintOpNoArgs)
 OPDEF(MINT_MONO_GET_SP, "mono_get_sp", 1, Pop0, Push1, MintOpNoArgs)
 
@@ -719,7 +713,6 @@ OPDEF(MINT_SDB_INTR_LOC, "sdb_intr_loc", 1, Pop0, Push0, MintOpNoArgs)
 OPDEF(MINT_SDB_SEQ_POINT, "sdb_seq_point", 1, Pop0, Push0, MintOpNoArgs)
 OPDEF(MINT_SDB_BREAKPOINT, "sdb_breakpoint", 1, Pop0, Push0, MintOpNoArgs)
 OPDEF(MINT_LD_DELEGATE_METHOD_PTR, "ld_delegate_method_ptr", 1, Pop1, Push1, MintOpNoArgs)
-OPDEF(MINT_LD_DELEGATE_INVOKE_IMPL, "ld_delegate_invoke_impl", 2, Pop0, Push1, MintOpNoArgs)
 
 OPDEF(MINT_START_ABORT_PROT, "start_abort_protected", 1, Pop0, Push0, MintOpNoArgs)
 
@@ -788,7 +781,6 @@ OPDEF(MINT_PROF_COVERAGE_STORE, "prof_coverage_store", 5, Pop0, Push0, MintOpLon
 OPDEF(MINT_INTRINS_ENUM_HASFLAG, "intrins_enum_hasflag", 2, Pop2, Push1, MintOpClassToken)
 OPDEF(MINT_INTRINS_GET_HASHCODE, "intrins_get_hashcode", 1, Pop1, Push1, MintOpNoArgs)
 OPDEF(MINT_INTRINS_GET_TYPE, "intrins_get_type", 1, Pop1, Push1, MintOpNoArgs)
-OPDEF(MINT_INTRINS_BYREFERENCE_CTOR, "intrins_byreference_ctor", 1, Pop1, Push1, MintOpNoArgs)
 OPDEF(MINT_INTRINS_SPAN_CTOR, "intrins_span_ctor", 1, Pop2, Push1, MintOpNoArgs)
 OPDEF(MINT_INTRINS_BYREFERENCE_GET_VALUE, "intrins_byreference_get_value", 1, Pop1, Push1, MintOpNoArgs)
 OPDEF(MINT_INTRINS_UNSAFE_ADD_BYTE_OFFSET, "intrins_unsafe_add_byte_offset", 1, Pop2, Push1, MintOpNoArgs)

@@ -11,6 +11,9 @@ namespace System.Text.Json
 {
     internal static partial class JsonHelpers
     {
+        // Copy of Array.MaxArrayLength. For byte arrays the limit is slightly larger
+        private const int MaxArrayLength = 0X7FEFFFFF;
+
         /// <summary>
         /// Returns the span for the given reader.
         /// </summary>
@@ -143,5 +146,14 @@ namespace System.Text.Json
                 JsonNumberHandling.AllowReadingFromString |
                 JsonNumberHandling.WriteAsString |
                 JsonNumberHandling.AllowNamedFloatingPointLiterals));
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void ValidateInt32MaxArrayLength(uint length)
+        {
+            if (length > MaxArrayLength)
+            {
+                ThrowHelper.ThrowOutOfMemoryException(length);
+            }
+        }
     }
 }

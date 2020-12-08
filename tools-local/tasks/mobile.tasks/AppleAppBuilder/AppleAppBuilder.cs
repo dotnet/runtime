@@ -13,6 +13,12 @@ using Microsoft.Build.Utilities;
 public class AppleAppBuilderTask : Task
 {
     /// <summary>
+    /// The Apple OS we are targeting (iOS or tvOS)
+    /// </summary>
+    [Required]
+    public string TargetOS { get; set; } = Utils.TargetOS.iOS;
+
+    /// <summary>
     /// ProjectName is used as an app name, bundleId and xcode project name
     /// </summary>
     [Required]
@@ -99,7 +105,12 @@ public class AppleAppBuilderTask : Task
     /// <summary>
     /// Prefer FullAOT mode for Simulator over JIT
     /// </summary>
-    public bool UseAotForSimulator { get; set; }
+    public bool ForceAOT { get; set; }
+
+    /// <summary>
+    /// Forces the runtime to use the interpreter
+    /// </summary>
+    public bool ForceInterpreter { get; set; }
 
     /// <summary>
     /// Path to xcode project
@@ -149,20 +160,21 @@ public class AppleAppBuilderTask : Task
             }
         }
 
-        if ((isDevice || UseAotForSimulator) && !assemblerFiles.Any())
+        if (((!ForceInterpreter && (isDevice || ForceAOT)) && !assemblerFiles.Any()))
         {
             throw new InvalidOperationException("Need list of AOT files for device builds.");
         }
 
-        // generate modules.m
-        GenerateLinkAllFile(
-            assemblerFiles,
-            Path.Combine(binDir, "modules.m"));
+        if (ForceInterpreter && ForceAOT)
+        {
+            throw new InvalidOperationException("Interpreter and AOT cannot be enabled at the same time");
+        }
 
         if (GenerateXcodeProject)
         {
-            XcodeProjectPath = Xcode.GenerateXCode(ProjectName, MainLibraryFileName, assemblerFiles,
-                AppDir, binDir, MonoRuntimeHeaders, !isDevice, UseConsoleUITemplate, UseAotForSimulator, Optimized, NativeMainSource);
+            Xcode generator = new Xcode(TargetOS);
+            XcodeProjectPath = generator.GenerateXCode(ProjectName, MainLibraryFileName, assemblerFiles,
+                AppDir, binDir, MonoRuntimeHeaders, !isDevice, UseConsoleUITemplate, ForceAOT, ForceInterpreter, Optimized, NativeMainSource);
 
             if (BuildAppBundle)
             {
@@ -173,66 +185,11 @@ public class AppleAppBuilderTask : Task
                 }
                 else
                 {
-                    AppBundlePath = Xcode.BuildAppBundle(
-                        Path.Combine(binDir, ProjectName, ProjectName + ".xcodeproj"),
-                        Arch, Optimized, DevTeamProvisioning);
+                    AppBundlePath = generator.BuildAppBundle(XcodeProjectPath, Arch, Optimized, DevTeamProvisioning);
                 }
             }
         }
 
         return true;
-    }
-
-    private static void GenerateLinkAllFile(IEnumerable<string> asmFiles, string outputFile)
-    {
-        //  Generates 'modules.m' in order to register all managed libraries
-        //
-        //
-        // extern void *mono_aot_module_Lib1_info;
-        // extern void *mono_aot_module_Lib2_info;
-        // ...
-        //
-        // void mono_ios_register_modules (void)
-        // {
-        //     mono_aot_register_module (mono_aot_module_Lib1_info);
-        //     mono_aot_register_module (mono_aot_module_Lib2_info);
-        //     ...
-        // }
-
-        Utils.LogInfo("Generating 'modules.m'...");
-
-        var lsDecl = new StringBuilder();
-        lsDecl
-            .AppendLine("#include <mono/jit/jit.h>")
-            .AppendLine("#include <TargetConditionals.h>")
-            .AppendLine()
-            .AppendLine("#if TARGET_OS_IPHONE && (!TARGET_IPHONE_SIMULATOR || USE_AOT_FOR_SIMULATOR)")
-            .AppendLine();
-
-        var lsUsage = new StringBuilder();
-        lsUsage
-            .AppendLine("void mono_ios_register_modules (void)")
-            .AppendLine("{");
-        foreach (string asmFile in asmFiles)
-        {
-            string symbol = "mono_aot_module_" +
-                            Path.GetFileName(asmFile)
-                                .Replace(".dll.s", "")
-                                .Replace(".", "_")
-                                .Replace("-", "_") + "_info";
-
-            lsDecl.Append("extern void *").Append(symbol).Append(';').AppendLine();
-            lsUsage.Append("\tmono_aot_register_module (").Append(symbol).Append(");").AppendLine();
-        }
-        lsDecl
-            .AppendLine()
-            .Append(lsUsage)
-            .AppendLine("}")
-            .AppendLine()
-            .AppendLine("#endif")
-            .AppendLine();
-
-        File.WriteAllText(outputFile, lsDecl.ToString());
-        Utils.LogInfo($"Saved to {outputFile}.");
     }
 }

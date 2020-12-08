@@ -92,11 +92,6 @@ namespace System.Reflection.Emit
             get { return position; }
         }
 
-        public virtual ParameterToken GetToken()
-        {
-            return new ParameterToken(0x08 | table_idx);
-        }
-
         public virtual void SetConstant(object? defaultValue)
         {
             if (position > 0)

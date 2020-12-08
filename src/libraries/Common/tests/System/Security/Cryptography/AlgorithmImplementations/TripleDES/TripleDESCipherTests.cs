@@ -42,13 +42,15 @@ namespace System.Security.Cryptography.Encryption.TripleDes.Tests
             }
         }
 
-        [Fact]
-        public static void VerifyKnownTransform_CFB8_NoPadding_0()
+        [Theory]
+        [InlineData(PaddingMode.None)]
+        [InlineData(PaddingMode.Zeros)]
+        public static void VerifyKnownTransform_CFB8_NoOrZeroPadding_0(PaddingMode paddingMode)
         {
             // NIST CAVS TDESMMT.ZIP TCFB8MMT2.rsp, [DECRYPT] COUNT=0
             TestTripleDESTransformDirectKey(
                 CipherMode.CFB,
-                PaddingMode.None,
+                paddingMode,
                 key: "fb978a0b6dc2c467e3cb52329de95161fb978a0b6dc2c467".HexToByteArray(),
                 iv: "8b97579ea5ac300f".HexToByteArray(),
                 plainBytes: "80".HexToByteArray(),
@@ -57,13 +59,15 @@ namespace System.Security.Cryptography.Encryption.TripleDes.Tests
             );
         }
 
-        [Fact]
-        public static void VerifyKnownTransform_CFB8_NoPadding_1()
+        [Theory]
+        [InlineData(PaddingMode.None)]
+        [InlineData(PaddingMode.Zeros)]
+        public static void VerifyKnownTransform_CFB8_NoOrZeroPadding_1(PaddingMode paddingMode)
         {
             // NIST CAVS TDESMMT.ZIP TCFB8MMT2.rsp, [DECRYPT] COUNT=1
             TestTripleDESTransformDirectKey(
                 CipherMode.CFB,
-                PaddingMode.None,
+                paddingMode,
                 key: "9b04c86dd31a8a589876101549d6e0109b04c86dd31a8a58".HexToByteArray(),
                 iv: "52cd77d49fc72347".HexToByteArray(),
                 plainBytes: "2fef".HexToByteArray(),
@@ -72,13 +76,15 @@ namespace System.Security.Cryptography.Encryption.TripleDes.Tests
             );
         }
 
-        [Fact]
-        public static void VerifyKnownTransform_CFB8_NoPadding_2()
+        [Theory]
+        [InlineData(PaddingMode.None)]
+        [InlineData(PaddingMode.Zeros)]
+        public static void VerifyKnownTransform_CFB8_NoOrZeroPadding_2(PaddingMode paddingMode)
         {
             // NIST CAVS TDESMMT.ZIP TCFB8MMT2.rsp, [DECRYPT] COUNT=2
             TestTripleDESTransformDirectKey(
                 CipherMode.CFB,
-                PaddingMode.None,
+                paddingMode,
                 key: "fbb667e340586b5b5ef7c87049b93257fbb667e340586b5b".HexToByteArray(),
                 iv: "459e8b8736715791".HexToByteArray(),
                 plainBytes: "061704".HexToByteArray(),
@@ -117,13 +123,15 @@ namespace System.Security.Cryptography.Encryption.TripleDes.Tests
             );
         }
 
-        [Fact]
-        public static void VerifyKnownTransform_CFB8_NoPadding_3()
+        [Theory]
+        [InlineData(PaddingMode.None)]
+        [InlineData(PaddingMode.Zeros)]
+        public static void VerifyKnownTransform_CFB8_NoOrZeroPadding_3(PaddingMode paddingMode)
         {
             // NIST CAVS TDESMMT.ZIP TCFB8MMT2.rsp, [DECRYPT] COUNT=3
             TestTripleDESTransformDirectKey(
                 CipherMode.CFB,
-                PaddingMode.None,
+                paddingMode,
                 key: "4a575d02515d40b0a40d830bd9b315134a575d02515d40b0".HexToByteArray(),
                 iv: "ab27e9f02affa532".HexToByteArray(),
                 plainBytes: "55f75b95".HexToByteArray(),
@@ -132,13 +140,15 @@ namespace System.Security.Cryptography.Encryption.TripleDes.Tests
             );
         }
 
-        [Fact]
-        public static void VerifyKnownTransform_CFB8_NoPadding_4()
+        [Theory]
+        [InlineData(PaddingMode.None)]
+        [InlineData(PaddingMode.Zeros)]
+        public static void VerifyKnownTransform_CFB8_NoOrZeroPadding_4(PaddingMode paddingMode)
         {
             // NIST CAVS TDESMMT.ZIP TCFB8MMT2.rsp, [DECRYPT] COUNT=4
             TestTripleDESTransformDirectKey(
                 CipherMode.CFB,
-                PaddingMode.None,
+                paddingMode,
                 key: "91a834855e6bab31c7fd6be657ceb9ec91a834855e6bab31".HexToByteArray(),
                 iv: "7838aaad4e64640b".HexToByteArray(),
                 plainBytes: "c3851c0ab4".HexToByteArray(),
@@ -147,13 +157,15 @@ namespace System.Security.Cryptography.Encryption.TripleDes.Tests
             );
         }
 
-        [Fact]
-        public static void VerifyKnownTransform_CFB8_NoPadding_5()
+        [Theory]
+        [InlineData(PaddingMode.None)]
+        [InlineData(PaddingMode.Zeros)]
+        public static void VerifyKnownTransform_CFB8_NoOrZeroPadding_5(PaddingMode paddingMode)
         {
             // NIST CAVS TDESMMT.ZIP TCFB8MMT2.rsp, [DECRYPT] COUNT=5
             TestTripleDESTransformDirectKey(
                 CipherMode.CFB,
-                PaddingMode.None,
+                paddingMode,
                 key: "04d923abd9291c3e4954a8b52fdabcc804d923abd9291c3e".HexToByteArray(),
                 iv: "191f8794944e601c".HexToByteArray(),
                 plainBytes: "6fe8f67d2af1".HexToByteArray(),
@@ -162,13 +174,15 @@ namespace System.Security.Cryptography.Encryption.TripleDes.Tests
             );
         }
 
-        [Fact]
-        public static void VerifyKnownTransform_CFB8_NoPadding_6()
+        [Theory]
+        [InlineData(PaddingMode.None)]
+        [InlineData(PaddingMode.Zeros)]
+        public static void VerifyKnownTransform_CFB8_NoOrZeroPadding_6(PaddingMode paddingMode)
         {
             // NIST CAVS TDESMMT.ZIP TCFB8MMT2.rsp, [DECRYPT] COUNT=6
             TestTripleDESTransformDirectKey(
                 CipherMode.CFB,
-                PaddingMode.None,
+                paddingMode,
                 key: "a7799e7f5dfe54ce13376401e96de075a7799e7f5dfe54ce".HexToByteArray(),
                 iv: "370184c749d04a20".HexToByteArray(),
                 plainBytes: "2b4228b769795b".HexToByteArray(),
@@ -177,13 +191,15 @@ namespace System.Security.Cryptography.Encryption.TripleDes.Tests
             );
         }
 
-        [Fact]
-        public static void VerifyKnownTransform_CFB8_NoPadding_7()
+        [Theory]
+        [InlineData(PaddingMode.None)]
+        [InlineData(PaddingMode.Zeros)]
+        public static void VerifyKnownTransform_CFB8_NoOrZeroPadding_7(PaddingMode paddingMode)
         {
             // NIST CAVS TDESMMT.ZIP TCFB8MMT2.rsp, [DECRYPT] COUNT=7
             TestTripleDESTransformDirectKey(
                 CipherMode.CFB,
-                PaddingMode.None,
+                paddingMode,
                 key: "6bfe3d3df8c1e0d34ffe0dbf854c940e6bfe3d3df8c1e0d3".HexToByteArray(),
                 iv: "51e4c5c29e858da6".HexToByteArray(),
                 plainBytes: "4cb3554fd0b9ec82".HexToByteArray(),
@@ -192,13 +208,15 @@ namespace System.Security.Cryptography.Encryption.TripleDes.Tests
             );
         }
 
-        [Fact]
-        public static void VerifyKnownTransform_CFB8_NoPadding_8()
+        [Theory]
+        [InlineData(PaddingMode.None)]
+        [InlineData(PaddingMode.Zeros)]
+        public static void VerifyKnownTransform_CFB8_NoOrZeroPadding_8(PaddingMode paddingMode)
         {
             // NIST CAVS TDESMMT.ZIP TCFB8MMT2.rsp, [DECRYPT] COUNT=8
             TestTripleDESTransformDirectKey(
                 CipherMode.CFB,
-                PaddingMode.None,
+                paddingMode,
                 key: "e0264aec13e63db991f8c120c4b9b6dae0264aec13e63db9".HexToByteArray(),
                 iv: "bd8795dba79930d6".HexToByteArray(),
                 plainBytes: "79068e2943f02914af".HexToByteArray(),
@@ -207,13 +225,15 @@ namespace System.Security.Cryptography.Encryption.TripleDes.Tests
             );
         }
 
-        [Fact]
-        public static void VerifyKnownTransform_CFB8_NoPadding_9()
+        [Theory]
+        [InlineData(PaddingMode.None)]
+        [InlineData(PaddingMode.Zeros)]
+        public static void VerifyKnownTransform_CFB8_NoOrZeroPadding_9(PaddingMode paddingMode)
         {
             // NIST CAVS TDESMMT.ZIP TCFB8MMT2.rsp, [DECRYPT] COUNT=9
             TestTripleDESTransformDirectKey(
                 CipherMode.CFB,
-                PaddingMode.None,
+                paddingMode,
                 key: "7ca28938ba6bec1ffec78f7cd69761947ca28938ba6bec1f".HexToByteArray(),
                 iv: "953896586e49d38f".HexToByteArray(),
                 plainBytes: "2ea956d4a211db6859b7".HexToByteArray(),
@@ -826,6 +846,28 @@ namespace System.Security.Cryptography.Encryption.TripleDes.Tests
 
             string decrypted = Encoding.ASCII.GetString(outputBytes, 0, outputOffset);
             Assert.Equal(ExpectedOutput, decrypted);
+        }
+
+        [Fact]
+        public static void VerifyNetFxCompat_CFB8_PKCS7Padding()
+        {
+            // .NET Framework would always pad to the nearest block
+            // with CFB8 and PKCS7 padding even though the shortest possible
+            // padding is always 1 byte. This ensures we can continue to decrypt
+            // .NET Framework encrypted data with the excessive padding.
+
+            byte[] key = "531bd715cbf785c10169b6e4926562b8e1e5c4c8884ed791".HexToByteArray();
+            byte[] iv = "dbeba40532a5304a".HexToByteArray();
+            byte[] plaintext = "70656e6e79".HexToByteArray();
+            byte[] ciphertext = "8798c2da055c9ea0".HexToByteArray();
+
+            using TripleDES tdes = TripleDESFactory.Create();
+            tdes.Mode = CipherMode.CFB;
+            tdes.Padding = PaddingMode.PKCS7;
+            tdes.FeedbackSize = 8;
+
+            byte[] decrypted = TripleDESDecryptDirectKey(tdes, key, iv, ciphertext);
+            Assert.Equal(plaintext, decrypted);
         }
     }
 }

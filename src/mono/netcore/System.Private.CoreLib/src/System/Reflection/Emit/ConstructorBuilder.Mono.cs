@@ -81,7 +81,7 @@ namespace System.Reflection.Emit
             this.paramModOpt = paramModOpt;
             table_idx = get_next_table_index(this, 0x06, 1);
 
-            ((ModuleBuilder)tb.Module).RegisterToken(this, GetToken().Token);
+            ((ModuleBuilder)tb.Module).RegisterToken(this, MetadataToken);
         }
 
         // FIXME:
@@ -167,6 +167,8 @@ namespace System.Reflection.Emit
         {
             throw not_supported();
         }
+
+        public override int MetadataToken => 0x06000000 | table_idx;
 
         public override RuntimeMethodHandle MethodHandle
         {
@@ -317,11 +319,6 @@ namespace System.Reflection.Emit
             return type.Module;
         }
 
-        public MethodToken GetToken()
-        {
-            return new MethodToken(0x06000000 | table_idx);
-        }
-
         public override Module Module
         {
             get
@@ -387,17 +384,17 @@ namespace System.Reflection.Emit
                 throw new InvalidOperationException("Type definition of the method is complete.");
         }
 
-        private Exception not_supported()
+        private static Exception not_supported()
         {
             return new NotSupportedException("The invoked member is not supported in a dynamic module.");
         }
 
-        private Exception not_after_created()
+        private static Exception not_after_created()
         {
             return new InvalidOperationException("Unable to change after type has been created.");
         }
 
-        private Exception not_created()
+        private static Exception not_created()
         {
             return new NotSupportedException("The type is not yet created.");
         }

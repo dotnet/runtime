@@ -1218,7 +1218,7 @@ namespace System.Diagnostics
             {
                 throw new InvalidOperationException(SR.StandardErrorEncodingNotAllowed);
             }
-            if (!string.IsNullOrEmpty(startInfo.Arguments) && startInfo.ArgumentList.Count > 0)
+            if (!string.IsNullOrEmpty(startInfo.Arguments) && startInfo.HasArgumentList)
             {
                 throw new InvalidOperationException(SR.ArgumentAndArgumentListInitialized);
             }
@@ -1459,9 +1459,9 @@ namespace System.Diagnostics
                 throw;
             }
 
-            var tcs = new TaskCompletionSourceWithCancellation<bool>();
+            var tcs = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
 
-            EventHandler handler = (_, _) => tcs.TrySetResult(true);
+            EventHandler handler = (_, _) => tcs.TrySetResult();
             Exited += handler;
 
             try
@@ -1473,7 +1473,10 @@ namespace System.Diagnostics
                 else
                 {
                     // CASE 1.1 & CASE 3.1: Process exits or is canceled here
-                    await tcs.WaitWithCancellationAsync(cancellationToken).ConfigureAwait(false);
+                    using (cancellationToken.UnsafeRegister(static (s, cancellationToken) => ((TaskCompletionSource)s!).TrySetCanceled(cancellationToken), tcs))
+                    {
+                        await tcs.Task.ConfigureAwait(false);
+                    }
                 }
 
                 // Wait until output streams have been drained

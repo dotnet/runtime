@@ -50,8 +50,17 @@ namespace System.Drawing
         private bool disposed;
         private static float defDpiX;
         private static float defDpiY;
+        private Metafile.MetafileHolder? _metafileHolder;
 
         internal Graphics(IntPtr nativeGraphics) => NativeGraphics = nativeGraphics;
+
+        internal Graphics(IntPtr nativeGraphics, Image image) : this(nativeGraphics)
+        {
+            if (image is Metafile mf)
+            {
+                _metafileHolder = mf.AddMetafileHolder();
+            }
+        }
 
         ~Graphics()
         {
@@ -226,6 +235,14 @@ namespace System.Drawing
                 status = Gdip.GdipDeleteGraphics(new HandleRef(this, NativeGraphics));
                 NativeGraphics = IntPtr.Zero;
                 Gdip.CheckStatus(status);
+
+                if (_metafileHolder != null)
+                {
+                    var mh = _metafileHolder;
+                    _metafileHolder = null;
+                    mh.GraphicsDisposed();
+                }
+
                 disposed = true;
             }
 
@@ -488,7 +505,7 @@ namespace System.Drawing
 
             int status = Gdip.GdipGetImageGraphicsContext(image.nativeImage, out graphics);
             Gdip.CheckStatus(status);
-            Graphics result = new Graphics(graphics);
+            Graphics result = new Graphics(graphics, image);
 
             Rectangle rect = new Rectangle(0, 0, image.Width, image.Height);
             Gdip.GdipSetVisibleClip_linux(result.NativeGraphics, ref rect);

@@ -4,6 +4,8 @@
 using System.Collections.Generic;
 using System.Net.Security;
 using System.IO;
+using System.Net.Quic;
+using System.Net.Quic.Implementations;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -58,6 +60,9 @@ namespace System.Net.Http
 
         internal Func<SocketsHttpConnectionContext, CancellationToken, ValueTask<Stream>>? _connectCallback;
         internal Func<SocketsHttpPlaintextStreamFilterContext, CancellationToken, ValueTask<Stream>>? _plaintextStreamFilter;
+
+        // !!! NOTE !!! This is temporary and will not ship.
+        internal QuicImplementationProvider? _quicImplementationProvider;
 
         internal IDictionary<string, object?>? _properties;
 
@@ -114,6 +119,7 @@ namespace System.Net.Http
                 _enableMultipleHttp2Connections = _enableMultipleHttp2Connections,
                 _connectCallback = _connectCallback,
                 _plaintextStreamFilter = _plaintextStreamFilter,
+                _quicImplementationProvider = _quicImplementationProvider
             };
         }
 
@@ -147,8 +153,8 @@ namespace System.Net.Http
         {
             get
             {
-                // Default to not allowing draft HTTP/3, but enable that to be overridden
-                // by an AppContext switch, or by an environment variable being to to true/1.
+                // Default to allowing draft HTTP/3, but enable that to be overridden
+                // by an AppContext switch, or by an environment variable being set to false/0.
 
                 // First check for the AppContext switch, giving it priority over the environment variable.
                 if (AppContext.TryGetSwitch(Http3DraftSupportAppCtxSettingName, out bool allowHttp3))
@@ -158,14 +164,14 @@ namespace System.Net.Http
 
                 // AppContext switch wasn't used. Check the environment variable.
                 string? envVar = Environment.GetEnvironmentVariable(Http3DraftSupportEnvironmentVariableSettingName);
-                if (envVar != null && (envVar.Equals("true", StringComparison.OrdinalIgnoreCase) || envVar.Equals("1")))
+                if (envVar != null && (envVar.Equals("false", StringComparison.OrdinalIgnoreCase) || envVar.Equals("0")))
                 {
-                    // Allow HTTP/3 protocol for HTTP endpoints.
-                    return true;
+                    // Disallow HTTP/3 protocol for HTTP endpoints.
+                    return false;
                 }
 
-                // Default to disallow.
-                return false;
+                // Default to allow.
+                return true;
             }
         }
 
