@@ -14,7 +14,7 @@
 
   <Target Name="ResolveDIALibToCopy" BeforeTargets="AssignTargetPaths">
     <PropertyGroup>
-      <VSWherePath>$([MSBuild]::NormalizePath('$(Pkgvswhere)','tools','vswhere.exe'))</VSWherePath>
+      <VSWherePath>"$([MSBuild]::NormalizePath('$(Pkgvswhere)','tools','vswhere.exe'))"</VSWherePath>
     </PropertyGroup>
     <Exec
       Command="$(VSWherePath) -latest -prerelease -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath"
