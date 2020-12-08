@@ -984,9 +984,12 @@ void EventPipeBufferManager::SuspendWriteEvent(uint32_t sessionIndex)
             threadList.Push(pThread);
             pElem = m_pThreadSessionStateList->GetNext(pElem);
 
-            // Once EventPipeSession::SuspendWriteEvent completes, we shouldn't have any
-            // in progress writes left.
-            _ASSERTE(pThread->GetSessionWriteInProgress() != sessionIndex);
+            // By the time we get here, most threads should have already been marked as done but it is
+            // still possible (while pretty unlikely) for some threads to race with EventPipeSession::SuspendWriteEvent
+            // if they were already in the WriteEvent() call and got preemptied before setting themselves as
+            // write in progress. Apart from these threads, the check below should be a single cmp op. For threads
+            // who do end up writing, we block for that duration.
+            YIELD_WHILE(pThread->GetSessionWriteInProgress() == sessionIndex);
         }
     }
 
