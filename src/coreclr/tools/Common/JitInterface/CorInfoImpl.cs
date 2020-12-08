@@ -984,11 +984,9 @@ namespace Internal.JitInterface
                 impl = getUnboxingThunk(impl);
             }
 
-            MethodDesc exactImpl = TypeSystemHelpers.FindMethodOnTypeWithMatchingTypicalMethod(objType, impl);
-
             info->devirtualizedMethod = ObjectToHandle(impl);
             info->requiresInstMethodTableArg = false;
-            info->exactContext = contextFromType(exactImpl.OwningType);
+            info->exactContext = contextFromType(impl.OwningType);
 
             return true;
         }

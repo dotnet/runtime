@@ -95,6 +95,6 @@ All ILVerify issues are labeled with [area-ILVerification](https://github.com/se
 
 Useful sources:
  - [PEVerify source code](https://github.com/lewischeng-ms/sscli/blob/master/clr/src/jit64/newverify.cpp)
- - [RyuJIT source code](https://github.com/dotnet/runtime/tree/master/src/coreclr/src/jit), specifically: [exception handling specific part](https://github.com/dotnet/runtime/blob/master/src/coreclr/src/jit/jiteh.cpp), [importer.cpp](https://github.com/dotnet/runtime/blob/master/src/coreclr/src/jit/importer.cpp) (look for `Compiler::ver`, `Verify`, `VerifyOrReturn`, and `VerifyOrReturnSpeculative`), [_typeinfo.h](https://github.com/dotnet/runtime/blob/master/src/coreclr/src/jit/_typeinfo.h), [typeinfo.cpp](https://github.com/dotnet/runtime/blob/master/src/coreclr/src/jit/typeinfo.cpp)
+ - [RyuJIT source code](https://github.com/dotnet/runtime/tree/master/src/coreclr/jit), specifically: [exception handling specific part](https://github.com/dotnet/runtime/blob/master/src/coreclr/jit/jiteh.cpp), [importer.cpp](https://github.com/dotnet/runtime/blob/master/src/coreclr/jit/importer.cpp) (look for `Compiler::ver`, `Verify`, `VerifyOrReturn`, and `VerifyOrReturnSpeculative`), [_typeinfo.h](https://github.com/dotnet/runtime/blob/master/src/coreclr/jit/_typeinfo.h), [typeinfo.cpp](https://github.com/dotnet/runtime/blob/master/src/coreclr/jit/typeinfo.cpp)
  - [ECMA-335 standard](https://www.ecma-international.org/publications/standards/Ecma-335.htm)
  - [Expert .NET 2.0 IL Assembler book](http://www.apress.com/us/book/9781590596463) by Serge Lidin
