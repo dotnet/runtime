@@ -2784,6 +2784,7 @@ namespace System.Diagnostics.Tracing
             Type attributeType,
             EventManifestOptions flags = EventManifestOptions.None)
         {
+            Debug.Assert(attributeType == typeof(EventAttribute) || attributeType == typeof(EventSourceAttribute));
             // AllowEventSourceOverride is an option that allows either Microsoft.Diagnostics.Tracing or
             // System.Diagnostics.Tracing EventSource to be considered valid.  This should not mattter anywhere but in Microsoft.Diagnostics.Tracing (nuget package).
             if (!member.Module.Assembly.ReflectionOnly && (flags & EventManifestOptions.AllowEventSourceOverride) == 0)
