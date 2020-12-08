@@ -11,11 +11,15 @@ For other walkthroughs see:
 
 ## Prerequisites
 
-1. Successfully built this repository and thus have files of the form shown below. From now on we call this folder NuGet package folder.
+All paths in examples below are Windows-style but the procedure is otherwise exactly the same on Unix.
+
+1. Successfully built this repository including the shared framework package and thus have files of the form shown below. From now on we call this folder your NuGet package folder.
 
 ```
-    artifacts\packages\<configuration>\Shipping\
+    <your-repo-root>\artifacts\packages\<configuration>\Shipping\
 ```
+
+If you don't have this folder, you may have built binaries but not packages. Try building from the root with a command like `build.cmd clr+libs+host+packs -rc release`.
 
 2. Acquired the latest nightly .NET SDK from [here](https://github.com/dotnet/installer) and added its root folder to your [path](requirements/windows-requirements.md#adding-to-the-default-path-variable)
 
@@ -31,18 +35,21 @@ From now on all instructions relate to this folder as "app folder".
 
 The build script creates NuGet packages and puts them to `artifacts\packages\<configuration>\Shipping\`. .NET SDK has no idea about its existence and we need to tell it where to search for the packages.
 
-Please run `dotnet new nugetconfig` in the app folder and update the created `NuGet.Config` file:
-
-* ** adjust path below to point to your in-repo NuGet folder**
+Please run `dotnet new nugetconfig` in the app folder and replace the created `NuGet.Config` file content with:
 
 ```xml
-<?xml version="1.0" encoding="utf-8"?>
 <configuration>
+  <config>
+    <!-- CHANGE THIS PATH BELOW to any empty folder. NuGet will cache things here, and that's convenient because you can delete it to reset things -->
+    <add key="globalPackagesFolder" value="c:\packages" />
+  </config>
   <packageSources>
     <!--To inherit the global NuGet package sources remove the <clear/> line below -->
     <clear />
-
-    <add key="local runtime" value="C:\runtime\artifacts\packages\Release\Shipping\" /> <!-- CHANGE THIS PATH to your local output path -->
+    <!-- This feed is for any packages you didn't build. See https://github.com/dotnet/installer#installers-and-binaries -->
+    <add key="dotnet6" value="https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet6/nuget/v3/index.json" />
+    <!-- CHANGE THIS PATH BELOW to your local output path -->
+    <add key="local runtime" value="C:\runtime\artifacts\packages\Release\Shipping\" />
   </packageSources>
 </configuration>
 ```
@@ -113,7 +120,9 @@ Copyright (C) Microsoft Corporation. All rights reserved.
   helloworld -> c:\runtime\helloworld\bin\Debug\net6.0\win-x64\publish\
 ```
 
-If you see something like the message below it means that it has failed to restore your local runtime packages. In such case double check your `NuGet.config` file and paths used in it.
+#### Troubleshooting Publish
+
+If you see something like the message below it means that it has failed to restore your local runtime packages. Check your `NuGet.config` file and paths used in it.
 
 ```
 c:\runtime\helloworld>dotnet publish
@@ -128,6 +137,18 @@ c:\runtime\helloworld\helloworld.csproj : error NU1102: Unable to find package M
 c:\runtime\helloworld\helloworld.csproj : error NU1102:   - Found 27 version(s) in nuget [ Nearest version: 6.0.0-preview.1.20120.5 ]
 c:\runtime\helloworld\helloworld.csproj : error NU1102:   - Found 1 version(s) in local runtime [ Nearest version: 6.0.0-dev ]
   Failed to restore c:\runtime\helloworld\helloworld.csproj (in 519 ms).
+```
+
+If you see error messages like these below, it means it has failed to restore other packages you need that you didn't build. Check your `NuGet.config` file includes the other feed.
+```
+c:\runtime\helloworld\helloworld.csproj : error NU1101: Unable to find package Microsoft.WindowsDesktop.App.Runtime.win-x64. No packages exist with this id in source(s): local runtime
+c:\runtime\helloworld\helloworld.csproj : error NU1101: Unable to find package Microsoft.AspNetCore.App.Runtime.win-x64. No packages exist with this id in source(s): local runtime
+```
+
+If you see error messages like this, it means you do not have a new enough SDK. Please visit https://github.com/dotnet/installer#installers-and-binaries and install a newer SDK.
+
+```
+C:\Program Files\dotnet\sdk\5.0.100\Sdks\Microsoft.NET.Sdk\targets\Microsoft.NET.TargetFrameworkInference.targets(141,5): error NETSDK1045: The current .NET SDK does not support targeting .NET Core 6.0.  Either target .NET Core 5.0 or lower, or use a version of the .NET SDK that supports .NET Core 6.0. [c:\runtime\helloworld\helloworld.csproj]
 ```
 
 ### 6. Run the app
@@ -148,26 +169,23 @@ The location is c:\runtime\helloworld\bin\Debug\net6.0\win-x64\publish\System.Pr
 
 **Congratulations! You have just run your first app against your local build of this repo**
 
-## Update using runtime nuget package
+## How to then consume updated packages
 
-Updating the runtime from raw binary output is easier for quick one-off testing but using the nuget package is better
-for referencing your build in your actual application because of it does not require manual copying of files
-around each time the application is built and plugs into the rest of the tool chain. This set of instructions will cover
-the further steps needed to consume the runtime nuget package.
+Once you have successfully consumed a package, you probably want to make changes, update the package, and have your app consume it again.
 
 #### 1. Update BuildNumberMinor Environment Variable
 
-One possible problem with this technique is that Nuget assumes that distinct builds have distinct version numbers.
-Thus if you modify the source and create a new NuGet package you must give it a new version number and use that in your
+For NuGet to get the updated package it needs to have a distinct version number. 
+When you modify the source and create a new NuGet package you must give it a new version number and use that in your
 application's project. Otherwise the dotnet.exe tool will assume that the existing version is fine and you
-won't get the updated bits. This is what the Minor Build number is all about. By default it is 0, but you can
+won't get the updated bits. We use the minor build number for this. By default it is 0, but you can
 give it a value by setting the BuildNumberMinor environment variable.
 ```bat
     set BuildNumberMinor=3
 ```
 before packaging. You should see this number show up in the version number (e.g. 3.0.0-preview1-26210-03).
 
-As an alternative you can delete the existing copy of the package from the Nuget cache.   For example on
+As an alternative you can delete the existing copy of the package from the Nuget cache. For example on
 windows (on Linux substitute ~/ for %HOMEPATH%) you could delete
 ```bat
      %HOMEPATH%\.nuget\packages\runtime.win-x64.Microsoft.NETCore.Runtime.CoreCLR\6.0.0-preview1-26210-0
