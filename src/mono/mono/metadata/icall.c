@@ -9202,6 +9202,44 @@ add_internal_call_with_flags (const char *name, gconstpointer method, guint32 fl
 }
 
 /**
+* mono_dangerous_add_internal_call_coop:
+* \param name method specification to surface to the managed world
+* \param method pointer to a C method to invoke when the method is called
+*
+* Similar to \c mono_dangerous_add_raw_internal_call.
+*
+*/
+void
+mono_dangerous_add_internal_call_coop (const char *name, gconstpointer method)
+{
+	add_internal_call_with_flags (name, method, MONO_ICALL_FLAGS_COOPERATIVE);
+}
+
+/**
+* mono_dangerous_add_internal_call_no_wrapper:
+* \param name method specification to surface to the managed world
+* \param method pointer to a C method to invoke when the method is called
+*
+* Similar to \c mono_dangerous_add_raw_internal_call but with more requirements for correct
+* operation.
+*
+* The \p method must NOT:
+*
+* Run for an unbounded amount of time without calling the mono runtime.
+* Additionally, the method must switch to GC Safe mode to perform all blocking
+* operations: performing blocking I/O, taking locks, etc. The method can't throw or raise
+* exceptions or call other methods that will throw or raise exceptions since the runtime won't
+* be able to detect exeptions and unwinder won't be able to correctly find last managed frame in callstack.
+* This registration method is for icalls that needs very low overhead and follow all rules in their implementation.
+*
+*/
+void
+mono_dangerous_add_internal_call_no_wrapper (const char *name, gconstpointer method)
+{
+	add_internal_call_with_flags (name, method, MONO_ICALL_FLAGS_NO_WRAPPER);
+}
+
+/**
  * mono_add_internal_call:
  * \param name method specification to surface to the managed world
  * \param method pointer to a C method to invoke when the method is called
@@ -9241,7 +9279,7 @@ add_internal_call_with_flags (const char *name, gconstpointer method, guint32 fl
 void
 mono_add_internal_call (const char *name, gconstpointer method)
 {
-	mono_add_internal_call_with_flags (name, method, FALSE);
+	add_internal_call_with_flags (name, method, MONO_ICALL_FLAGS_FOREIGN);
 }
 
 /**
@@ -9266,7 +9304,7 @@ mono_add_internal_call (const char *name, gconstpointer method)
 void
 mono_dangerous_add_raw_internal_call (const char *name, gconstpointer method)
 {
-	mono_add_internal_call_with_flags (name, method, TRUE);
+	add_internal_call_with_flags (name, method, MONO_ICALL_FLAGS_COOPERATIVE);
 }
 
 /**
@@ -9296,7 +9334,7 @@ mono_add_internal_call_with_flags (const char *name, gconstpointer method, gbool
 void
 mono_add_internal_call_internal (const char *name, gconstpointer method)
 {
-	mono_add_internal_call_with_flags (name, method, TRUE);
+	add_internal_call_with_flags (name, method, MONO_ICALL_FLAGS_COOPERATIVE);
 }
 
 /* 
