@@ -817,7 +817,8 @@ public:
             if (FastInterlockCompareExchangePointer((ManagedObjectComWrapperByIdMap**)&m_managedObjectComWrapperMap, (ManagedObjectComWrapperByIdMap *)map, NULL) == NULL)
             {
                 map.SuppressRelease();
-                m_managedObjectComWrapperLock.Init(CrstLeafLock);
+                // The GC thread does enumerate these objects so add CRST_UNSAFE_COOPGC.
+                m_managedObjectComWrapperLock.Init(CrstInteropData, CRST_UNSAFE_COOPGC);
             }
 
             _ASSERTE(m_managedObjectComWrapperMap != NULL);
@@ -832,8 +833,8 @@ public:
         return true;
     }
 
-    using EnumWrappersCallback = void(void* mocw);
-    void ClearManagedObjectComWrappers(EnumWrappersCallback* callback)
+    using ClearWrappersCallback = void(void* mocw);
+    void ClearManagedObjectComWrappers(ClearWrappersCallback* callback)
     {
         LIMITED_METHOD_CONTRACT;
 
@@ -853,6 +854,27 @@ public:
         }
 
         m_managedObjectComWrapperMap->RemoveAll();
+    }
+
+    using EnumWrappersCallback = bool(void* mocw, void* cxt);
+    void EnumManagedObjectComWrappers(EnumWrappersCallback* callback, void* cxt)
+    {
+        LIMITED_METHOD_CONTRACT;
+
+        _ASSERTE(callback != NULL);
+
+        if (m_managedObjectComWrapperMap == NULL)
+            return;
+
+        CrstHolder lock(&m_managedObjectComWrapperLock);
+
+        ManagedObjectComWrapperByIdMap::Iterator iter = m_managedObjectComWrapperMap->Begin();
+        while (iter != m_managedObjectComWrapperMap->End())
+        {
+            if (!callback(iter->Value(), cxt))
+                break;
+            ++iter;
+        }
     }
 #endif // !DACCESS_COMPILE
 
