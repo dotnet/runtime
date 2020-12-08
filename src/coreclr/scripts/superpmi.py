@@ -108,7 +108,7 @@ Utility command to merge MCH files. This is a thin wrapper around
 spmi_log_file_help = "Write SuperPMI tool output to a log file. Requires --sequential."
 
 jit_ee_version_help = """\
-JIT/EE interface version (the JITEEVersionIdentifier GUID from corinfo.h in the format
+JIT/EE interface version (the JITEEVersionIdentifier GUID from jiteeversionguid.h in the format
 'a5eec3a4-4176-43a7-8c2b-a05b551d4f49'). Default: if the mcs tool is found, assume it
 was built with the same JIT/EE version as the JIT we are using, and run "mcs -printJITEEVersion"
 to get that version. Otherwise, use "unknown-jit-ee-version".
@@ -1817,9 +1817,9 @@ def determine_jit_ee_version(coreclr_args):
     """ Determine the JIT-EE version to use.
 
         The JIT-EE version is used for determining which MCH files to download and use. It is determined as follows:
-        1. Try to parse it out of the source code. If we can find src\\coreclr\\src\\inc\\corinfo.h in the source
+        1. Try to parse it out of the source code. If we can find src\\coreclr\\inc\\jiteeversionguid.h in the source
            tree (and we're already assuming we can find the repo root from the relative path of this script),
-           then the JIT-EE version lives in corinfo.h as follows:
+           then the JIT-EE version lives in jiteeversionguid.h as follows:
 
            constexpr GUID JITEEVersionIdentifier = { /* a5eec3a4-4176-43a7-8c2b-a05b551d4f49 */
                0xa5eec3a4,
@@ -1845,17 +1845,17 @@ def determine_jit_ee_version(coreclr_args):
         (str) The JIT-EE version to use
     """
 
-    corinfo_h_path = os.path.join(coreclr_args.coreclr_dir, "src", "inc", "corinfo.h")
-    if os.path.isfile(corinfo_h_path):
+    jiteeversionguid_h_path = os.path.join(coreclr_args.coreclr_dir, "inc", "jiteeversionguid.h")
+    if os.path.isfile(jiteeversionguid_h_path):
         # The string is near the beginning of the somewhat large file, so just read a line at a time when searching.
-        with open(corinfo_h_path, 'r') as file_handle:
+        with open(jiteeversionguid_h_path, 'r') as file_handle:
             for line in file_handle:
                 match_obj = re.search(r'JITEEVersionIdentifier *= *{ */\* *([^ ]*) *\*/', line)
                 if match_obj is not None:
-                    corinfo_h_jit_ee_version = match_obj.group(1)
-                    logging.info("Using JIT/EE Version from corinfo.h: %s", corinfo_h_jit_ee_version)
-                    return corinfo_h_jit_ee_version
-            logging.warning("Warning: couldn't find JITEEVersionIdentifier in %s; is the file corrupt?", corinfo_h_path)
+                    jiteeversionguid_h_jit_ee_version = match_obj.group(1)
+                    logging.info("Using JIT/EE Version from jiteeversionguid.h: %s", jiteeversionguid_h_jit_ee_version)
+                    return jiteeversionguid_h_jit_ee_version
+            logging.warning("Warning: couldn't find JITEEVersionIdentifier in %s; is the file corrupt?", jiteeversionguid_h_path)
 
     mcs_path = determine_mcs_tool_path(coreclr_args)
     command = [mcs_path, "-printJITEEVersion"]
@@ -2403,7 +2403,7 @@ def process_base_jit_path_arg(coreclr_args):
         3. If the `-base_git_hash` argument is used, use that directly as the exact git
            hash of the baseline JIT to use.
         4. Otherwise, figure out the latest hash, starting with `base_git_hash`, that contains any changes to
-           the src\\coreclr\\src\\jit directory. (We do this because the JIT rolling build only includes
+           the src\\coreclr\\jit directory. (We do this because the JIT rolling build only includes
            builds for changes to this directory. So, this logic needs to stay in sync with the logic
            that determines what causes the JIT directory to be rebuilt. E.g., it should also get
            rebuilt if the JIT-EE interface GUID changes. Alternatively, we can take the entire list
@@ -2468,7 +2468,7 @@ def process_base_jit_path_arg(coreclr_args):
 
         if coreclr_args.base_git_hash is None:
             # Enumerate the last 20 changes, starting with the baseline, that included JIT changes.
-            command = [ "git", "log", "--pretty=format:%H", baseline_hash, "-20", "--", "src/coreclr/src/jit/*" ]
+            command = [ "git", "log", "--pretty=format:%H", baseline_hash, "-20", "--", "src/coreclr/jit/*" ]
             logging.debug("Invoking: %s", " ".join(command))
             proc = subprocess.Popen(command, stdout=subprocess.PIPE)
             stdout_change_list, _ = proc.communicate()

@@ -92,7 +92,7 @@ namespace AppHost.Bundle.Tests
                 TestFrameworkDependentFixture = new TestProjectFixture("AppWithSubDirs", RepoDirectories);
                 BundleHelper.AddLongNameContentToAppWithSubDirs(TestFrameworkDependentFixture);
                 TestFrameworkDependentFixture
-                    .EnsureRestoredForRid(TestFrameworkDependentFixture.CurrentRid, RepoDirectories.CorehostPackages)
+                    .EnsureRestoredForRid(TestFrameworkDependentFixture.CurrentRid)
                     .PublishProject(runtime: TestFrameworkDependentFixture.CurrentRid,
                                     selfContained: false,
                                     outputDirectory: BundleHelper.GetPublishPath(TestFrameworkDependentFixture));
@@ -100,7 +100,7 @@ namespace AppHost.Bundle.Tests
                 TestSelfContainedFixture = new TestProjectFixture("AppWithSubDirs", RepoDirectories);
                 BundleHelper.AddLongNameContentToAppWithSubDirs(TestSelfContainedFixture);
                 TestSelfContainedFixture
-                    .EnsureRestoredForRid(TestSelfContainedFixture.CurrentRid, RepoDirectories.CorehostPackages)
+                    .EnsureRestoredForRid(TestSelfContainedFixture.CurrentRid)
                     .PublishProject(runtime: TestSelfContainedFixture.CurrentRid,
                                     outputDirectory: BundleHelper.GetPublishPath(TestSelfContainedFixture));
 
@@ -108,7 +108,7 @@ namespace AppHost.Bundle.Tests
                 BundleHelper.AddLongNameContentToAppWithSubDirs(TestAppWithEmptyFileFixture);
                 BundleHelper.AddEmptyContentToApp(TestAppWithEmptyFileFixture);
                 TestAppWithEmptyFileFixture
-                    .EnsureRestoredForRid(TestAppWithEmptyFileFixture.CurrentRid, RepoDirectories.CorehostPackages)
+                    .EnsureRestoredForRid(TestAppWithEmptyFileFixture.CurrentRid)
                     .PublishProject(runtime: TestAppWithEmptyFileFixture.CurrentRid,
                                     outputDirectory: BundleHelper.GetPublishPath(TestAppWithEmptyFileFixture));
             }

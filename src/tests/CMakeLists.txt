@@ -10,7 +10,7 @@ include(../../eng/native/configurepaths.cmake)
 include(${CLR_ENG_NATIVE_DIR}/configurecompiler.cmake)
 
 # Add this subdir. We install the headers for the jit.
-add_subdirectory(../coreclr/src/pal/prebuilt/inc ../coreclr/src/pal/prebuilt/inc)
+add_subdirectory(../coreclr/pal/prebuilt/inc ../coreclr/pal/prebuilt/inc)
 
 set(INC_PLATFORM_DIR ${CMAKE_CURRENT_SOURCE_DIR}/Common/Platform)
 if (CLR_CMAKE_TARGET_WIN32)
