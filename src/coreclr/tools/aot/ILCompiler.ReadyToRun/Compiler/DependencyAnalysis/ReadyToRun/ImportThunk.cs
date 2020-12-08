@@ -23,17 +23,18 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         private readonly Import _helperCell;
 
-        private readonly Import _instanceCell;
-
-        private readonly ISymbolNode _moduleImport;
-
         private readonly Kind _thunkKind;
 
-        public ImportThunk(ReadyToRunHelper helperId, NodeFactory factory, Import instanceCell, bool useVirtualCall)
+        private readonly ImportSectionNode _containingImportSection;
+
+        /// <summary>
+        /// Import thunks are used to call a runtime-provided helper which fixes up an indirection cell in a particular
+        /// import section. Optionally they may also contain a relocation for a specific indirection cell to fix up.
+        /// </summary>
+        public ImportThunk(NodeFactory factory, ReadyToRunHelper helperId, ImportSectionNode containingImportSection, bool useVirtualCall)
         {
             _helperCell = factory.GetReadyToRunHelperCell(helperId);
-            _instanceCell = instanceCell;
-            _moduleImport = factory.ModuleImport;
+            _containingImportSection = containingImportSection;
 
             if (useVirtualCall)
             {
@@ -59,7 +60,8 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         public override void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
             sb.Append("DelayLoadHelper->");
-            _instanceCell.AppendMangledName(nameMangler, sb);
+            _helperCell.AppendMangledName(nameMangler, sb);
+            sb.Append($"(ImportSection:{_containingImportSection.Name})");
         }
 
         protected override string GetName(NodeFactory factory)
@@ -78,11 +80,11 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             if (result != 0)
                 return result;
 
-            result = comparer.Compare(_helperCell, otherNode._helperCell);
+            result = ((ImportSectionNode)_containingImportSection).CompareToImpl((ImportSectionNode)otherNode._containingImportSection, comparer);
             if (result != 0)
                 return result;
 
-            return comparer.Compare(_instanceCell, otherNode._instanceCell);
+            return comparer.Compare(_helperCell, otherNode._helperCell);
         }
 
         protected override DependencyList ComputeNonRelocationBasedDependencies(NodeFactory factory)

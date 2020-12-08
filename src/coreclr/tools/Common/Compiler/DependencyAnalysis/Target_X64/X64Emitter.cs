@@ -174,6 +174,15 @@ namespace ILCompiler.DependencyAnalysis.X64
             Builder.EmitByte(0xC3);
         }
 
+        public void EmitXOR(Register regDst, Register regSrc)
+        {
+            // High 32 bits get cleared automatically when using 32bit registers
+            AddrMode rexAddrMode = new AddrMode(regSrc, null, 0, 0, AddrModeSize.Int32);
+            EmitRexPrefix(regDst, ref rexAddrMode);
+            Builder.EmitByte(0x33);
+            Builder.EmitByte((byte)(0xC0 | (((int)regDst & 0x07) << 3) | ((int)regSrc & 0x07)));
+        }
+
         private bool InSignedByteRange(int i)
         {
             return i == (int)(sbyte)i;
