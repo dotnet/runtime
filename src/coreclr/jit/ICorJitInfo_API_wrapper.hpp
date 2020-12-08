@@ -1495,13 +1495,14 @@ bool WrapICorJitInfo::convertPInvokeCalliToCall(
     return temp;
 }
 
-void WrapICorJitInfo::notifyInstructionSetUsage(
+bool WrapICorJitInfo::notifyInstructionSetUsage(
           CORINFO_InstructionSet instructionSet,
           bool supportEnabled)
 {
     API_ENTER(notifyInstructionSetUsage);
-    wrapHnd->notifyInstructionSetUsage(instructionSet, supportEnabled);
+    bool temp = wrapHnd->notifyInstructionSetUsage(instructionSet, supportEnabled);
     API_LEAVE(notifyInstructionSetUsage);
+    return temp;
 }
 
 void WrapICorJitInfo::allocMem(

@@ -273,11 +273,12 @@ NamedIntrinsic HWIntrinsicInfo::lookupId(Compiler*         comp,
         return NI_Illegal;
     }
 
-    bool isIsaSupported = comp->compExactlyDependsOn(isa) && comp->compSupportsHWIntrinsic(isa);
+    bool isIsaSupported = comp->compHWIntrinsicDependsOn(isa) && comp->compSupportsHWIntrinsic(isa);
 
     if (strcmp(methodName, "get_IsSupported") == 0)
     {
-        return isIsaSupported ? NI_IsSupported_True : NI_IsSupported_False;
+        return isIsaSupported ? (comp->compExactlyDependsOn(isa) ? NI_IsSupported_True : NI_IsSupported_Dynamic)
+                              : NI_IsSupported_False;
     }
     else if (!isIsaSupported)
     {
@@ -606,13 +607,13 @@ GenTree* Compiler::addRangeCheckIfNeeded(
 }
 
 //------------------------------------------------------------------------
-// compSupportsHWIntrinsic: check whether a given instruction set is supported
+// compSupportsHWIntrinsic: check whether a given instruction is enabled via configuration
 //
 // Arguments:
 //    isa - Instruction set
 //
 // Return Value:
-//    true iff the given instruction set is supported in the current compilation.
+//    true iff the given instruction set is enabled via configuration (environment variables, etc.).
 bool Compiler::compSupportsHWIntrinsic(CORINFO_InstructionSet isa)
 {
     return JitConfig.EnableHWIntrinsic() && (featureSIMD || HWIntrinsicInfo::isScalarIsa(isa)) &&

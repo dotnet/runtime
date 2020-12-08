@@ -2272,16 +2272,17 @@ namespace Internal.JitInterface
         }
 
         [UnmanagedCallersOnly]
-        static void _notifyInstructionSetUsage(IntPtr thisHandle, IntPtr* ppException, InstructionSet instructionSet, byte supportEnabled)
+        static byte _notifyInstructionSetUsage(IntPtr thisHandle, IntPtr* ppException, InstructionSet instructionSet, byte supportEnabled)
         {
             var _this = GetThis(thisHandle);
             try
             {
-                _this.notifyInstructionSetUsage(instructionSet, supportEnabled != 0);
+                return _this.notifyInstructionSetUsage(instructionSet, supportEnabled != 0) ? 1 : 0;
             }
             catch (Exception ex)
             {
                 *ppException = _this.AllocException(ex);
+                return default;
             }
         }
 
@@ -2690,7 +2691,7 @@ namespace Internal.JitInterface
             callbacks[150] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_METHOD_STRUCT_*, void>)&_MethodCompileComplete;
             callbacks[151] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_RESOLVED_TOKEN*, CORINFO_SIG_INFO*, CORINFO_GET_TAILCALL_HELPERS_FLAGS, CORINFO_TAILCALL_HELPERS*, byte>)&_getTailCallHelpers;
             callbacks[152] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_RESOLVED_TOKEN*, byte, byte>)&_convertPInvokeCalliToCall;
-            callbacks[153] = (delegate* unmanaged<IntPtr, IntPtr*, InstructionSet, byte, void>)&_notifyInstructionSetUsage;
+            callbacks[153] = (delegate* unmanaged<IntPtr, IntPtr*, InstructionSet, byte, byte>)&_notifyInstructionSetUsage;
             callbacks[154] = (delegate* unmanaged<IntPtr, IntPtr*, uint, uint, uint, uint, CorJitAllocMemFlag, void**, void**, void**, void>)&_allocMem;
             callbacks[155] = (delegate* unmanaged<IntPtr, IntPtr*, byte, byte, uint, void>)&_reserveUnwindInfo;
             callbacks[156] = (delegate* unmanaged<IntPtr, IntPtr*, byte*, byte*, uint, uint, uint, byte*, CorJitFuncKind, void>)&_allocUnwindInfo;

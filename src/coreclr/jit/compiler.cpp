@@ -2335,6 +2335,7 @@ void Compiler::compSetProcessor()
     CORINFO_InstructionSetFlags instructionSetFlags = jitFlags.GetInstructionSetFlags();
     opts.compSupportsISA                            = 0;
     opts.compSupportsISAReported                    = 0;
+    opts.compSupportsISAExactly                     = 0;
 
 #ifdef TARGET_XARCH
     if (JitConfig.EnableHWIntrinsic())
@@ -2504,11 +2505,11 @@ void Compiler::compSetProcessor()
 #endif // TARGET_XARCH
 }
 
-void Compiler::notifyInstructionSetUsage(CORINFO_InstructionSet isa, bool supported) const
+bool Compiler::notifyInstructionSetUsage(CORINFO_InstructionSet isa, bool supported) const
 {
     const char* isaString = InstructionSetToString(isa);
     JITDUMP("Notify VM instruction set (%s) %s be supported.\n", isaString, supported ? "must" : "must not");
-    info.compCompHnd->notifyInstructionSetUsage(isa, supported);
+    return info.compCompHnd->notifyInstructionSetUsage(isa, supported);
 }
 
 #ifdef PROFILING_SUPPORTED
