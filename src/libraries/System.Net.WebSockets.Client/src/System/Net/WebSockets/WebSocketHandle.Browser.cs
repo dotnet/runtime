@@ -64,7 +64,6 @@ namespace System.Net.WebSockets
 
                 switch (exc) {
                     case WebSocketException:
-                    case PlatformNotSupportedException:
                     case OperationCanceledException _ when cancellationToken.IsCancellationRequested:
                         throw;
                     default:
