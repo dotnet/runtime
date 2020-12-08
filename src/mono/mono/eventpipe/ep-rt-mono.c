@@ -1,9 +1,9 @@
 #include <config.h>
 
 #ifdef ENABLE_PERFTRACING
-#include "ep-rt-config.h"
-#include "ep-types.h"
-#include "ep-rt.h"
+#include <eventpipe/ep-rt-config.h>
+#include <eventpipe/ep-types.h>
+#include <eventpipe/ep-rt.h>
 #include <mono/utils/mono-lazy-init.h>
 
 ep_rt_spin_lock_handle_t _ep_rt_mono_config_lock = {0};

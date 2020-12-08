@@ -35,8 +35,8 @@
   </ItemGroup>
   <!-- Windows imports -->
   <ItemGroup>
-    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetCurrentProcess_IntPtr.cs"
-             Link="Common\Interop\Windows\Kernel32\Interop.GetCurrentProcess_IntPtr.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetCurrentProcess.cs"
+             Link="Common\Interop\Windows\Kernel32\Interop.GetCurrentProcess.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\NtDll\Interop.RtlGetVersion.cs"
              Link="Common\Interop\Windows\NtDll\Interop.RtlGetVersion.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.OpenProcessToken_SafeAccessTokenHandle.cs"
@@ -70,7 +70,7 @@
   </ItemGroup>
   <ItemGroup Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)'">
     <!-- Upgrade the NetStandard.Library transitive xunit dependency to avoid 1.x NS dependencies. -->
-    <PackageReference Include="NETStandard.Library" Version="$(NetStandardLibrary20Version)" />
+    <PackageReference Include="NETStandard.Library" Version="$(NetStandardLibraryVersion)" />
     <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Win32.Registry\ref\Microsoft.Win32.Registry.csproj" PrivateAssets="all" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.Security.Principal.Windows\ref\System.Security.Principal.Windows.csproj" PrivateAssets="all" />
   </ItemGroup>

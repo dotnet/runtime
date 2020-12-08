@@ -131,7 +131,7 @@ bit vectors.
 ### Example of Post-Import IR
 
 For this snippet of code (extracted from
-[tests/src/JIT/CodeGenBringUpTests/DblRoots.cs](https://github.com/dotnet/runtime/blob/master/src/coreclr/tests/src/JIT/CodeGenBringUpTests/DblRoots.cs)), with `COMPlus_TieredCompilation=0` and using the DblRoots_ro.csproj project to compile it:
+[src/tests/JIT/CodeGenBringUpTests/DblRoots.cs](https://github.com/dotnet/runtime/blob/master/src/tests/JIT/CodeGenBringUpTests/DblRoots.cs)), with `COMPlus_TieredCompilation=0` and using the DblRoots_ro.csproj project to compile it:
 
        r1 = (-b + Math.Sqrt(b*b - 4*a*c))/(2*a);
 

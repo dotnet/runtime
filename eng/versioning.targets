@@ -29,6 +29,15 @@
     </AssemblyAttribute>
   </ItemGroup>
 
+  <PropertyGroup Condition="'$(TargetsAnyOS)' == 'true' and !$(TargetFrameworks.Contains('$(TargetFramework)-Browser'))">
+      <CrossPlatformAndHasNoBrowserTarget>true</CrossPlatformAndHasNoBrowserTarget>
+  </PropertyGroup>
+  
+  <!-- Enables browser warnings for cross platform or Brwoser targeted builds -->
+  <ItemGroup Condition="('$(TargetsBrowser)' == 'true' or '$(CrossPlatformAndHasNoBrowserTarget)' == 'true') and '$(IsTestProject)' != 'true'">
+    <SupportedPlatform Include="browser"/>
+  </ItemGroup>
+
   <ItemGroup>
     <_unsupportedOSPlatforms Include="$(UnsupportedOSPlatforms)" />
   </ItemGroup>

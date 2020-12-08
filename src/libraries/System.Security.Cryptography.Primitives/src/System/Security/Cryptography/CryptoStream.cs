@@ -3,6 +3,7 @@
 
 using System.Buffers;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
@@ -218,15 +219,14 @@ namespace System.Security.Cryptography
             // async requests outstanding, we will block the application's main
             // thread if it does a second IO request until the first one completes.
 
-            SemaphoreSlim semaphore = AsyncActiveSemaphore;
-            await semaphore.WaitAsync(cancellationToken).ForceAsync();
+            await AsyncActiveSemaphore.WaitAsync(cancellationToken).ConfigureAwait(false);
             try
             {
                 return await ReadAsyncCore(buffer, offset, count, cancellationToken, useAsync: true).ConfigureAwait(false);
             }
             finally
             {
-                semaphore.Release();
+                _lazyAsyncActiveSemaphore.Release();
             }
         }
 
@@ -495,15 +495,14 @@ namespace System.Security.Cryptography
             // async requests outstanding, we will block the application's main
             // thread if it does a second IO request until the first one completes.
 
-            SemaphoreSlim semaphore = AsyncActiveSemaphore;
-            await semaphore.WaitAsync(cancellationToken).ForceAsync();
+            await AsyncActiveSemaphore.WaitAsync(cancellationToken).ConfigureAwait(false);
             try
             {
                 await WriteAsyncCore(buffer, offset, count, cancellationToken, useAsync: true).ConfigureAwait(false);
             }
             finally
             {
-                semaphore.Release();
+                _lazyAsyncActiveSemaphore.Release();
             }
         }
 
@@ -748,6 +747,7 @@ namespace System.Security.Cryptography
             }
         }
 
+        [MemberNotNull(nameof(_lazyAsyncActiveSemaphore))]
         private SemaphoreSlim AsyncActiveSemaphore
         {
             get

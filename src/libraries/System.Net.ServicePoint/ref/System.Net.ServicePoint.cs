@@ -48,6 +48,7 @@ namespace System.Net
         public static int DefaultConnectionLimit { get { throw null; } set { } }
         public static int DnsRefreshTimeout { get { throw null; } set { } }
         public static bool EnableDnsRoundRobin { get { throw null; } set { } }
+        [System.Runtime.Versioning.UnsupportedOSPlatform("browser")]
         public static System.Net.Security.EncryptionPolicy EncryptionPolicy { get { throw null; } }
         public static bool Expect100Continue { get { throw null; } set { } }
         public static int MaxServicePointIdleTime { get { throw null; } set { } }

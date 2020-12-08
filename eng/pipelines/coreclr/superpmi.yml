@@ -1,4 +1,15 @@
-trigger: none
+# This job definition automates the SuperPMI collection process.
+
+# Trigger this job if the JIT-EE GUID changes, which invalidates previous SuperPMI
+# collections.
+trigger:
+  batch: true
+  branches:
+    include:
+    - master
+  paths:
+    include:
+    - src/coreclr/src/inc/jiteeversionguid.h
 
 pr: none
 

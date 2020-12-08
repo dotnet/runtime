@@ -218,7 +218,7 @@ def main(argv):
     if returncode != 0:
         # Create a patch file
         print("Creating patch file " + patchFilePath)
-        jitSrcPath = os.path.join(coreclr, "src", "jit")
+        jitSrcPath = os.path.join(coreclr, "jit")
         patchFile = open(patchFilePath, "w")
         proc = subprocess.Popen(["git", "diff", "--patch", "-U20", "--", jitSrcPath], env=my_env, stdout=patchFile)
         output,error = proc.communicate()

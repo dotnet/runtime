@@ -126,7 +126,7 @@ namespace System.Tests
                 Assert.Equal(i, array[Index.FromStart(i)]);
                 Assert.Equal(list.Count - i - 1, array[^(i + 1)]);
 
-                Assert.Equal(array.AsSpan().Slice(i, array.Length - i).ToArray(), array[i..]);
+                Assert.Equal(array.AsSpan(i, array.Length - i).ToArray(), array[i..]);
             }
         }
     }

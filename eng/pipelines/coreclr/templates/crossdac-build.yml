@@ -2,7 +2,6 @@ parameters:
   archType: ''
   osGroup: ''
   osSubgroup: ''
-  signCrossDac: false
 
 steps:
   # Always build the crossdac, that way we know in CI/PR if things break to build.
@@ -30,23 +29,6 @@ steps:
           **/*
           !**/sharedFramework/**/*
         TargetFolder: '$(buildMuslDacStagingPath)'
-
-    # Sign diagnostic files on Windows
-    - ${{ if eq(parameters.signCrossDac, true) }}:
-      - powershell: >-
-          eng\common\build.ps1 -ci -sign -restore -configuration:$(buildConfig) -warnaserror:0
-          /p:DiagnosticsFilesRoot="$(buildLinuxDacStagingPath)"
-          /p:SignDiagnostics=true
-          /p:DotNetSignType=$(SignType)
-          -projects $(Build.SourcesDirectory)\eng\empty.csproj
-        displayName: Sign Linux CrossDac
-      - powershell: >-
-          eng\common\build.ps1 -ci -sign -restore -configuration:$(buildConfig) -warnaserror:0
-          /p:DiagnosticsFilesRoot="$(buildMuslDacStagingPath)"
-          /p:SignDiagnostics=true
-          /p:DotNetSignType=$(SignType)
-          -projects $(Build.SourcesDirectory)\eng\empty.csproj
-        displayName: Sign Linux-musl CrossDac
 
   - ${{ if eq(parameters.osGroup, 'Linux') }}:
     - task: CopyFiles@2
