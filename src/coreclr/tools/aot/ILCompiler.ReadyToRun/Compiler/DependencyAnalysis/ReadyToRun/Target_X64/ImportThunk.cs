@@ -24,7 +24,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
                 case Kind.DelayLoadHelper:
                     // xor eax, eax
-                    instructionEncoder.EmitXOR(Register.RAX, Register.RAX);
+                    instructionEncoder.EmitZeroReg(Register.RAX);
 
                     if (!relocsOnly)
                     {
