@@ -1,4 +1,4 @@
-<Project>
+<Project  DefaultTargets="Pack">
   <Import Sdk="Microsoft.Build.Traversal" Project="Sdk.props" />
 
   <PropertyGroup>
@@ -16,8 +16,7 @@
 
   <ItemGroup>
     <ProjectReference Include="$(PkgDir)*\*.proj" Exclude="$(PkgDir)test\*" />
-    <ProjectReference Include="$(MSBuildThisFileDirectory)*\src\**\*.csproj" Condition="('$(BuildAllConfigurations)' == 'true' or '$(DotNetBuildFromSource)' == 'true') And '$(BuildAllOOBPackages)' == 'true'" />
-    <ProjectReference Include="$(MSBuildThisFileDirectory)*\src\**\*.ilproj" Condition="('$(BuildAllConfigurations)' == 'true' or '$(DotNetBuildFromSource)' == 'true') And '$(BuildAllOOBPackages)' == 'true'" />
+    <ProjectReference Include="$(MSBuildThisFileDirectory)*\src\**\*.*sproj" Condition="('$(BuildAllConfigurations)' == 'true' or '$(DotNetBuildFromSource)' == 'true') And '$(BuildAllOOBPackages)' == 'true'" />
     <!-- If setting BuildAllOOBPackages to false, add bellow the individual OOB packages you want to continue to build -->
   </ItemGroup>
 
@@ -85,8 +84,5 @@
   </Target>
 
   <Import Sdk="Microsoft.Build.Traversal" Project="Sdk.targets" />
-
-  <!-- Build is a no-op and should just invoke Pack. -->
-  <Target Name="Build" DependsOnTargets="Pack" />
 
 </Project>
