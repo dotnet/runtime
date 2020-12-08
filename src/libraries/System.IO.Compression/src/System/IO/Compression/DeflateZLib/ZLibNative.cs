@@ -8,7 +8,7 @@ namespace System.IO.Compression
 {
     /// <summary>
     /// This class provides declaration for constants and PInvokes as well as some basic tools for exposing the
-    /// native CLRCompression.dll (effectively, ZLib) library to managed code.
+    /// native System.IO.Compression.Native.dll (effectively, ZLib) library to managed code.
     ///
     /// See also: How to choose a compression level (in comments to <code>CompressionLevel</code>.
     /// </summary>
@@ -159,12 +159,12 @@ namespace System.IO.Compression
          * This was done on purpose to:
          *
          * - Achieve the right encapsulation in a situation where <code>ZLibNative</code> may be compiled division-wide
-         *   into different assemblies that wish to consume <code>CLRCompression</code>. Since <code>internal</code>
+         *   into different assemblies that wish to consume <code>System.IO.Compression.Native</code>. Since <code>internal</code>
          *   scope is effectively like <code>public</code> scope when compiling <code>ZLibNative</code> into a higher
          *   level assembly, we need a combination of inner types and <code>private</code>-scope members to achieve
          *   the right encapsulation.
          *
-         * - Achieve late dynamic loading of <code>CLRCompression.dll</code> at the right time.
+         * - Achieve late dynamic loading of <code>System.IO.Compression.Native.dll</code> at the right time.
          *   The native assembly will not be loaded unless it is actually used since the loading is performed by a static
          *   constructor of an inner type that is not directly referenced by user code.
          *
