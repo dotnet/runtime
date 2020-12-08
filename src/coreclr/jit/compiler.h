@@ -1480,7 +1480,6 @@ public:
         return roundUp(GetStackByteSize(), TARGET_POINTER_SIZE) / TARGET_POINTER_SIZE;
     }
 
-    unsigned byteAlignment; // usually 8 or 16 bytes (slots/registers).
 private:
     unsigned _lateArgInx; // index into gtCallLateArgs list; UINT_MAX if this is not a late arg.
 public:
@@ -1643,10 +1642,8 @@ public:
         assert(!IsHfaArg() || !IsSplit());
 
         assert(GetByteSize() > TARGET_POINTER_SIZE * numRegs);
-        unsigned stackByteSize = GetByteSize() - TARGET_POINTER_SIZE * numRegs;
-#if !defined(OSX_ARM64_ABI)
-        stackByteSize = roundUp(stackByteSize, TARGET_POINTER_SIZE);
-#endif
+        const unsigned stackByteSize = GetByteSize() - TARGET_POINTER_SIZE * numRegs;
+        assert(stackByteSize % m_byteAlignment == 0);
         return stackByteSize;
     }
 
@@ -1809,7 +1806,13 @@ public:
 
 private:
     unsigned m_byteOffset;
+
+    // byte size that this argument takes including the padding after.
+    // For example, 1-byte arg on x64 with 8-byte alignment
+    // will have `m_byteSize == 8`, the same arg on apple arm64 will have `m_byteSize == 1`.
     unsigned m_byteSize;
+
+    unsigned m_byteAlignment; // usually 4 or 8 bytes (slots/registers).
 
 public:
     void SetByteOffset(unsigned byteOffset)
@@ -1824,22 +1827,29 @@ public:
         return m_byteOffset;
     }
 
-    void SetByteSize(unsigned byteSize)
+    void SetByteSize(unsigned byteSize, unsigned byteAlignment)
     {
-#if defined(DEBUG_ARG_SLOTS)
         assert(byteAlignment != 0);
+        const unsigned alignedByteSize = roundUp(byteSize, byteAlignment);
+
+#if defined(DEBUG_ARG_SLOTS)
         if (!isStruct)
         {
-            const unsigned alignedByteSize = roundUp(byteSize, byteAlignment);
             assert(alignedByteSize == getSlotCount() * TARGET_POINTER_SIZE);
         }
 #endif
-        m_byteSize = byteSize;
+        m_byteSize      = alignedByteSize;
+        m_byteAlignment = byteAlignment;
     }
 
     unsigned GetByteSize() const
     {
         return m_byteSize;
+    }
+
+    unsigned GetByteAlignment() const
+    {
+        return m_byteAlignment;
     }
 
     // Set the register numbers for a multireg argument.

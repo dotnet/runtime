@@ -792,7 +792,7 @@ void fgArgTabEntry::Dump() const
 
 #endif
     }
-    printf(", byteAlignment=%u", byteAlignment);
+    printf(", byteAlignment=%u", m_byteAlignment);
     if (isLateArg())
     {
         printf(", lateArgInx=%u", GetLateArgInx());
@@ -1012,7 +1012,6 @@ fgArgTabEntry* fgArgInfo::AddRegArg(unsigned          argNum,
     curArgTabEntry->numSlots = 0;
 #endif
 
-    curArgTabEntry->byteAlignment = byteAlignment;
     curArgTabEntry->SetLateArgInx(UINT_MAX);
     curArgTabEntry->tmpNum = BAD_VAR_NUM;
     curArgTabEntry->SetSplit(false);
@@ -1027,7 +1026,7 @@ fgArgTabEntry* fgArgInfo::AddRegArg(unsigned          argNum,
     curArgTabEntry->isNonStandard = false;
     curArgTabEntry->isStruct      = isStruct;
     curArgTabEntry->SetIsVararg(isVararg);
-    curArgTabEntry->SetByteSize(byteSize);
+    curArgTabEntry->SetByteSize(byteSize, byteAlignment);
     curArgTabEntry->SetByteOffset(0);
 
     hasRegArgs = true;
@@ -1107,7 +1106,6 @@ fgArgTabEntry* fgArgInfo::AddStkArg(unsigned          argNum,
     curArgTabEntry->structIntRegs   = 0;
     curArgTabEntry->structFloatRegs = 0;
 #endif // defined(UNIX_AMD64_ABI)
-    curArgTabEntry->byteAlignment = byteAlignment;
     curArgTabEntry->SetLateArgInx(UINT_MAX);
     curArgTabEntry->tmpNum = BAD_VAR_NUM;
     curArgTabEntry->SetSplit(false);
@@ -1123,13 +1121,14 @@ fgArgTabEntry* fgArgInfo::AddStkArg(unsigned          argNum,
     curArgTabEntry->isStruct      = isStruct;
     curArgTabEntry->SetIsVararg(isVararg);
 
-    curArgTabEntry->SetByteSize(byteSize);
+    curArgTabEntry->SetByteSize(byteSize, byteAlignment);
     curArgTabEntry->SetByteOffset(nextStackByteOffset);
 
     hasStackArgs = true;
     AddArg(curArgTabEntry);
     DEBUG_ARG_SLOTS_ONLY(nextSlotNum += numSlots;)
-    nextStackByteOffset += byteSize;
+    nextStackByteOffset += curArgTabEntry->GetByteSize();
+    assert(nextStackByteOffset % curArgTabEntry->GetByteAlignment() == 0);
     return curArgTabEntry;
 }
 
@@ -1183,12 +1182,12 @@ void fgArgInfo::UpdateStkArg(fgArgTabEntry* curArgTabEntry, GenTree* node, bool 
     assert((curArgTabEntry->GetRegNum() == REG_STK) || curArgTabEntry->IsSplit());
     assert(curArgTabEntry->use->GetNode() == node);
 #if defined(DEBUG_ARG_SLOTS)
-    nextSlotNum = roundUp(nextSlotNum, curArgTabEntry->byteAlignment / TARGET_POINTER_SIZE);
+    nextSlotNum = roundUp(nextSlotNum, curArgTabEntry->GetByteAlignment() / TARGET_POINTER_SIZE);
     assert(curArgTabEntry->slotNum == nextSlotNum);
     nextSlotNum += curArgTabEntry->numSlots;
 #endif
 
-    nextStackByteOffset = roundUp(nextStackByteOffset, curArgTabEntry->byteAlignment);
+    nextStackByteOffset = roundUp(nextStackByteOffset, curArgTabEntry->GetByteAlignment());
     assert(curArgTabEntry->GetByteOffset() == nextStackByteOffset);
     nextStackByteOffset += curArgTabEntry->GetStackByteSize();
 }
@@ -3691,7 +3690,7 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
         CORINFO_CLASS_HANDLE copyBlkClass = NO_CLASS_HANDLE;
 
 #if defined(DEBUG_ARG_SLOTS)
-        if (argEntry->byteAlignment == 2 * TARGET_POINTER_SIZE)
+        if (argEntry->GetByteAlignment() == 2 * TARGET_POINTER_SIZE)
         {
             if (argSlots % 2 == 1)
             {
@@ -6851,7 +6850,7 @@ bool Compiler::fgCanFastTailCall(GenTreeCall* callee, const char** failReason)
     {
         fgArgTabEntry* arg = argInfo->GetArgEntry(index, false);
 
-        calleeArgStackSize = roundUp(calleeArgStackSize, arg->byteAlignment);
+        calleeArgStackSize = roundUp(calleeArgStackSize, arg->GetByteAlignment());
         calleeArgStackSize += arg->GetStackByteSize();
     }
     calleeArgStackSize = GetOutgoingArgByteSize(calleeArgStackSize);
