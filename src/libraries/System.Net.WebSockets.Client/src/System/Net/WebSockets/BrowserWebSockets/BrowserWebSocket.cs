@@ -482,7 +482,7 @@ namespace System.Net.WebSockets
             return CloseAsyncCore(closeStatus, statusDescription, cancellationToken);
         }
 
-        private async Task CloseAsyncCore(WebSocketCloseStatus closeStatus, string? statusDescription, CancellationToken cancellationToken)
+        private Task CloseAsyncCore(WebSocketCloseStatus closeStatus, string? statusDescription, CancellationToken cancellationToken)
         {
             try
             {
