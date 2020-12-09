@@ -85,7 +85,6 @@ internal static partial class Interop
 
                 // Parse the permissions
                 bool lineHasReadAndExecFlags = parser.ParseRaw(HasReadAndExecFlags);
-                moduleHasReadAndExecFlags |= lineHasReadAndExecFlags;
 
                 // Skip past the offset, dev, and inode fields
                 parser.MoveNext();
@@ -109,6 +108,7 @@ internal static partial class Interop
                 }
 
                 Commit();
+                moduleHasReadAndExecFlags |= lineHasReadAndExecFlags;
 
                 module = new ProcessModule
                 {
