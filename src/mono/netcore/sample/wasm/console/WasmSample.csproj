@@ -92,6 +92,10 @@
         <Output TaskParameter="Lines" PropertyName="RuntimeEmccVersion" />
     </ReadLinesFromFile>
 
+    <PropertyGroup>
+      <EmccFlags>$(EmccFlags) -s DISABLE_EXCEPTION_CATCHING=0</EmccFlags>
+    </PropertyGroup>
+
     <Exec Condition="'$(RunAOTCompilation)' == 'true'" Command="bash -c 'source $(EMSDK_PATH)/emsdk_env.sh &amp;&amp; emcc --version | head -1 > emcc-version.txt'" ConsoleToMsBuild="true" IgnoreStandardErrorWarningFormat="true" WorkingDirectory="$(MSBuildThisFileDirectory)$(PublishDir)" />
     <ReadLinesFromFile Condition="'$(RunAOTCompilation)' == 'true'" File="$(MSBuildThisFileDirectory)$(PublishDir)\emcc-version.txt">
         <Output TaskParameter="Lines" PropertyName="EmccVersion" />
