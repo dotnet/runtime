@@ -4,7 +4,6 @@
 
 using System;
 using System.Collections.Immutable;
-using System.Diagnostics;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Diagnostics;
 using Microsoft.CodeAnalysis.Operations;
@@ -16,21 +15,13 @@ namespace ILLink.RoslynAnalyzer
 	{
 		public const string DiagnosticId = "IL2026";
 
-		private static readonly LocalizableString s_title = new LocalizableResourceString (
-			nameof (RequiresUnreferencedCodeAnalyzer) + "Title",
-			Resources.ResourceManager,
-			typeof (Resources));
-		private static readonly LocalizableString s_messageFormat = new LocalizableResourceString (
-			nameof (RequiresUnreferencedCodeAnalyzer) + "Message",
-			Resources.ResourceManager,
-			typeof (Resources));
-		private const string s_category = "Trimming";
-
 		private static readonly DiagnosticDescriptor s_rule = new DiagnosticDescriptor (
 			DiagnosticId,
-			s_title,
-			s_messageFormat,
-			s_category,
+			new LocalizableResourceString (nameof (Resources.RequiresUnreferencedCodeAnalyzerTitle),
+			Resources.ResourceManager, typeof (Resources)),
+			new LocalizableResourceString (nameof (Resources.RequiresUnreferencedCodeAnalyzerMessage),
+			Resources.ResourceManager, typeof (Resources)),
+			DiagnosticCategory.Trimming,
 			DiagnosticSeverity.Warning,
 			isEnabledByDefault: true);
 
@@ -44,8 +35,16 @@ namespace ILLink.RoslynAnalyzer
 			context.RegisterCompilationStartAction (context => {
 				var compilation = context.Compilation;
 
+				var isPublishTrimmed = context.Options.GetMSBuildPropertyValue (MSBuildPropertyOptionNames.PublishTrimmed, compilation);
+				if (!string.Equals (isPublishTrimmed?.Trim (), "true", StringComparison.OrdinalIgnoreCase)) {
+					return;
+				}
+
 				context.RegisterOperationAction (operationContext => {
 					var call = (IInvocationOperation) operationContext.Operation;
+					if (call.IsVirtual && call.TargetMethod.OverriddenMethod != null)
+						return;
+
 					CheckMethodOrCtorCall (operationContext, call.TargetMethod, call.Syntax.GetLocation ());
 				}, OperationKind.Invocation);
 

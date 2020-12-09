@@ -71,9 +71,9 @@ namespace ILLink.RoslynAnalyzer.Tests
 		}
 
 		/// <inheritdoc cref="AnalyzerVerifier{TAnalyzer, TTest, TVerifier}.VerifyAnalyzerAsync(string, DiagnosticResult[])"/>
-		public static async Task VerifyAnalyzerAsync (string src, params DiagnosticResult[] expected)
+		public static async Task VerifyAnalyzerAsync (string src, (string, string)[]? analyzerOptions = null, params DiagnosticResult[] expected)
 		{
-			var diags = await (await CreateCompilation (src)).GetAllDiagnosticsAsync ();
+			var diags = await (await CreateCompilation (src, analyzerOptions)).GetAllDiagnosticsAsync ();
 
 			var analyzers = ImmutableArray.Create<DiagnosticAnalyzer> (new TAnalyzer ());
 			VerifyDiagnosticResults (diags, analyzers, expected, DefaultVerifier);

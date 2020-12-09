@@ -123,4 +123,16 @@
   <data name="RequiresUnreferencedCodeAnalyzerMessage" xml:space="preserve">
     <value>Calling '{0}' which has `RequiresUnreferencedCodeAttribute` can break functionality when trimming application code. {1}. {2}</value>
   </data>
+  <data name="AvoidAssemblyLocationInSingleFileTitle" xml:space="preserve">
+    <value>Avoid accessing Assembly file path when publishing as a single file</value>
+  </data>
+  <data name="AvoidAssemblyLocationInSingleFileMessage" xml:space="preserve">
+    <value>'{0}' always returns an empty string for assemblies embedded in a single-file app. If the path to the app directory is needed, consider calling 'System.AppContext.BaseDirectory'.</value>
+  </data>
+  <data name="AvoidAssemblyGetFilesInSingleFileTitle" xml:space="preserve">
+    <value>Avoid accessing Assembly file path when publishing as a single file</value>
+  </data>
+  <data name="AvoidAssemblyGetFilesInSingleFileMessage" xml:space="preserve">
+    <value>'{0}' will throw for assemblies embedded in a single-file app</value>
+  </data>
 </root>
