@@ -9311,7 +9311,7 @@ public:
         UNATIVE_OFFSET compTotalColdCodeSize; // Total number of bytes of Cold Code in the method
 
         unsigned compUnmanagedCallCountWithGCTransition; // count of unmanaged calls with GC transition.
-        
+
         CorInfoCallConvExtension compCallConv; // The entry-point calling convention for this method.
 
         unsigned compLvFrameListRoot; // lclNum for the Frame root
