@@ -126,7 +126,7 @@
 
 //#define MONO_DEBUG_ICALLARRAY
 
-// Inline with CoreCLR heuristics, https://github.com/dotnet/runtime/blob/385b4d4296f9c5cb82363565aa210a1a37f92d90/src/coreclr/src/vm/threads.cpp#L6344.
+// Inline with CoreCLR heuristics, https://github.com/dotnet/runtime/blob/69e114c1abf91241a0eeecf1ecceab4711b8aa62/src/coreclr/vm/threads.cpp#L6408.
 // Minimum stack size should be sufficient to allow a typical non-recursive call chain to execute,
 // including potential exception handling and garbage collection. Used for probing for available
 // stack space through RuntimeHelpers.EnsureSufficientExecutionStack.

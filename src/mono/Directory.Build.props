@@ -86,10 +86,10 @@
 
   <!-- Paths for Mobile App Projects  -->
   <PropertyGroup>
-    <AppleAppBuilderProjDirectory>$([MSBuild]::NormalizeDirectory('$(RepoTasksDir)', 'mobile.tasks', 'AppleAppBuilder'))</AppleAppBuilderProjDirectory>
+    <AppleAppBuilderProjDirectory>$([MSBuild]::NormalizeDirectory('$(RepoTasksDir)', 'AppleAppBuilder'))</AppleAppBuilderProjDirectory>
     <AppleTestRunnerProjDirectory>$([MSBuild]::NormalizeDirectory('$(LibrariesProjectRoot)', 'Common', tests, 'AppleTestRunner'))</AppleTestRunnerProjDirectory>
-    <AndroidAppBuilderProjDirectory>$([MSBuild]::NormalizeDirectory('$(RepoTasksDir)', 'mobile.tasks', 'AndroidAppBuilder'))</AndroidAppBuilderProjDirectory>
+    <AndroidAppBuilderProjDirectory>$([MSBuild]::NormalizeDirectory('$(RepoTasksDir)', 'AndroidAppBuilder'))</AndroidAppBuilderProjDirectory>
     <AndroidTestRunnerProjDirectory>$([MSBuild]::NormalizeDirectory('$(LibrariesProjectRoot)', 'Common', tests, 'AndroidTestRunner'))</AndroidTestRunnerProjDirectory>
-    <MonoAOTCompilerProjDirectory>$([MSBuild]::NormalizeDirectory('$(RepoTasksDir)', 'mobile.tasks', 'AotCompilerTask'))</MonoAOTCompilerProjDirectory>
+    <MonoAOTCompilerProjDirectory>$([MSBuild]::NormalizeDirectory('$(RepoTasksDir)', 'AotCompilerTask'))</MonoAOTCompilerProjDirectory>
   </PropertyGroup>
 </Project>

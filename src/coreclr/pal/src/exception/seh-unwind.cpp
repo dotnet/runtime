@@ -529,7 +529,7 @@ Parameters:
 Note:
     The name of this function and the name of the ExceptionRecord
     parameter is used in the sos lldb plugin code to read the exception
-    record. See coreclr\src\ToolBox\SOS\lldbplugin\services.cpp.
+    record. See coreclr\ToolBox\SOS\lldbplugin\services.cpp.
 
     This function must not be inlined or optimized so the below PAL_VirtualUnwind
     calls end up with RaiseException caller's context and so the above debugger

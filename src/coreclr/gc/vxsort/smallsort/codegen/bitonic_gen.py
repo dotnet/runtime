@@ -10,7 +10,7 @@
 # usage: bitonic_gen.py [-h] [--vector-isa VECTOR_ISA [VECTOR_ISA ...]]
 #                     [--break-inline BREAK_INLINE] [--output-dir OUTPUT_DIR]
 #
-# the files in src/coreclr/src/gc/vxsort/smallsort that are currently checked in can be generated with:
+# the files in src/coreclr/gc/vxsort/smallsort that are currently checked in can be generated with:
 #   python bitonic_gen.py --output-dir c:\temp --vector-isa AVX2 AVX512  --break-inline 4
 #
 import argparse

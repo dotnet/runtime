@@ -3266,7 +3266,12 @@ emit_gc_safepoint_poll (MonoLLVMModule *module, LLVMModuleRef lmodule, MonoCompi
 	LLVMValueRef func = mono_llvm_get_or_insert_gc_safepoint_poll (lmodule);
 	mono_llvm_add_func_attr (func, LLVM_ATTR_NO_UNWIND);
 	if (is_aot) {
-		LLVMSetLinkage (func, LLVMWeakODRLinkage);
+#if TARGET_WIN32
+		if (module->static_link)
+			LLVMSetLinkage (func, LLVMInternalLinkage);
+		else
+#endif
+			LLVMSetLinkage (func, LLVMWeakODRLinkage);
 	} else {
 		mono_llvm_add_func_attr (func, LLVM_ATTR_OPTIMIZE_NONE); // no need to waste time here, the function is already optimized and will be inlined.
 		mono_llvm_add_func_attr (func, LLVM_ATTR_NO_INLINE); // optnone attribute requires noinline (but it will be inlined anyway)

@@ -20,7 +20,7 @@
 
   <Target Name="RebuildWasmAppBuilder">
     <ItemGroup>
-      <WasmAppBuildProject Include="$(RepoTasksDir)mobile.tasks\WasmAppBuilder\WasmAppBuilder.csproj" />
+      <WasmAppBuildProject Include="$(RepoTasksDir)WasmAppBuilder\WasmAppBuilder.csproj" />
     </ItemGroup>
 
     <MSBuild Projects="@(WasmAppBuildProject)"

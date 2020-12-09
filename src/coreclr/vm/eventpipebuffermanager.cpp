@@ -983,10 +983,6 @@ void EventPipeBufferManager::SuspendWriteEvent(uint32_t sessionIndex)
             EventPipeThread *pThread = pElem->GetValue()->GetThread();
             threadList.Push(pThread);
             pElem = m_pThreadSessionStateList->GetNext(pElem);
-
-            // Once EventPipeSession::SuspendWriteEvent completes, we shouldn't have any
-            // in progress writes left.
-            _ASSERTE(pThread->GetSessionWriteInProgress() != sessionIndex);
         }
     }
 

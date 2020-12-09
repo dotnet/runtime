@@ -14,10 +14,16 @@ extern "C" const void* GlobalizationResolveDllImport(const char* name);
 
 static PInvokeOverrideFn* s_overrideImpl = nullptr;
 
+#if defined(_WIN32)
+#define GLOBALIZATION_DLL_NAME "System.Globalization.Native"
+#else
+#define GLOBALIZATION_DLL_NAME "libSystem.Globalization.Native"
+#endif
+
 // here we handle PInvokes whose implementation is always statically linked (even in .so/.dll case)
 static const void* DefaultResolveDllImport(const char* libraryName, const char* entrypointName)
 {
-    if (strcmp(libraryName, "libSystem.Globalization.Native") == 0)
+    if (strcmp(libraryName, GLOBALIZATION_DLL_NAME) == 0)
     {
         return GlobalizationResolveDllImport(entrypointName);
     }
