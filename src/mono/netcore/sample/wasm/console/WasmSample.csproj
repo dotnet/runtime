@@ -53,10 +53,10 @@
 
   <Import Project="$(RepoTasksDir)AotCompilerTask\MonoAOTCompiler.props" />
   <UsingTask TaskName="WasmAppBuilder" 
-             AssemblyFile="$(ArtifactsBinDir)WasmAppBuilder\Debug\$(NetCoreAppToolCurrent)\publish\WasmAppBuilder.dll"/>
+             AssemblyFile="$(WasmAppBuilderTasksAssemblyPath)"/>
 
   <UsingTask TaskName="MonoAOTCompiler"
-             AssemblyFile="$(ArtifactsBinDir)MonoAOTCompiler\Debug\$(NetCoreAppToolCurrent)\MonoAOTCompiler.dll" />
+             AssemblyFile="$(MonoAOTCompilerTasksAssemblyPath)" />
 
   <Target Name="BuildApp" AfterTargets="CopyFilesToPublishDirectory" DependsOnTargets="RebuildWasmAppBuilder;Build">
     <RemoveDir Directories="$(AppDir)" />
