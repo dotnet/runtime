@@ -1755,13 +1755,10 @@ bool GCToEEInterface::GetBooleanConfigValue(char const*, char const*, bool*)
 
 size_t GCToEEInterface::GetObjectSize(Object* obj) 
 {
-
-
 	printf("coregc-mono.cpp: GetObjectsize: obj: %p\n", obj);
 
-	MonoObject* mono_obj = (MonoObject*)obj;
-
-	MethodTable* mT = (MethodTable*)mono_obj->vtable;
+	MethodTable* mT = obj->GetMethodTable();
+	MonoVTable* mono_vtable = (MonoVTable*)mT;
 
     size_t obj_size = (mT->GetBaseSize() +
                     (mT->HasComponentSize() ?
@@ -1774,13 +1771,13 @@ size_t GCToEEInterface::GetObjectSize(Object* obj)
 	   Is there a better way to check for them? */
 
 	char* debug_class_name = "array_fill";
-	if (mono_obj->vtable != array_fill_vtable)
+	if (mono_vtable != array_fill_vtable)
 	{
-		debug_class_name = mono_type_get_full_name (mono_obj->vtable->klass);
-		bounds_size = m_class_get_rank(mono_obj->vtable->klass) * sizeof (MonoArrayBounds);
+		debug_class_name = mono_type_get_full_name (mono_vtable->klass);
+		bounds_size = m_class_get_rank(mono_vtable->klass) * sizeof (MonoArrayBounds);
 
 		// Why do I need this? where are these extra bytes coming from?
-		if (m_class_get_rank(mono_obj->vtable->klass) > 1 )
+		if (m_class_get_rank(mono_vtable->klass) > 1 )
 		{
 			bounds_size += sizeof (mono_array_size_t);
 		}

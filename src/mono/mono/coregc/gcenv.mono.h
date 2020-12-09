@@ -15,6 +15,16 @@
 #define FEATURE_64BIT_ALIGNMENT
 #endif
 
+
+// TODO: These are duplicated in gc.cpp; refactor.
+#define GC_MARKED       (size_t)0x1
+#ifdef DOUBLY_LINKED_FL
+// This bit indicates that we'll need to set the bgc mark bit for this object during an FGC.
+// We only do this when we decide to compact.
+#define BGC_MARKED_BY_FGC (size_t)0x2
+#define MAKE_FREE_OBJ_IN_COMPACT (size_t)0x4
+#endif //DOUBLY_LINKED_FL
+
 //-------------------------------------------------------------------------------------------------
 //
 // Low-level types describing GC object layouts.
@@ -156,6 +166,15 @@ public:
     MethodTable * RawGetMethodTable() const
     {
         return m_pMethTab;
+    }
+
+    MethodTable    *GetMethodTable() const
+    {
+        return( (MethodTable *) (((size_t) RawGetMethodTable()) & (~(GC_MARKED
+#ifdef DOUBLY_LINKED_FL
+            | BGC_MARKED_BY_FGC | MAKE_FREE_OBJ_IN_COMPACT
+#endif //DOUBLY_LINKED_FL
+            ))));
     }
 
     MethodTable * GetGCSafeMethodTable() const
