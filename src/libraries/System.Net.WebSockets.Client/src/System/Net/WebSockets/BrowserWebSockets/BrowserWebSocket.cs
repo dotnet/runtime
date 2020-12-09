@@ -232,7 +232,7 @@ namespace System.Net.WebSockets
                     case OperationCanceledException:
                         throw;
                     default:
-                        throw new WebSocketException(SR.net_webstatus_ConnectFailure, wse);
+                        throw new WebSocketException(WebSocketError.Faulted, SR.net_webstatus_ConnectFailure, wse);
                 }
             }
             finally
