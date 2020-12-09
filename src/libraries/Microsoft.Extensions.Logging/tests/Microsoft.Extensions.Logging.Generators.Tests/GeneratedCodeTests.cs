@@ -1,12 +1,12 @@
 // © Microsoft Corporation. All rights reserved.
 
+using System;
+using System.Collections.Generic;
+using Microsoft.Extensions.Logging;
+using Xunit;
+
 namespace Microsoft.Extensions.Logging.Generators.Tests
 {
-    using Microsoft.Extensions.Logging;
-    using System;
-    using System.Collections.Generic;
-    using Xunit;
-
     public class GeneratedCodeTests
     {
         [Fact]

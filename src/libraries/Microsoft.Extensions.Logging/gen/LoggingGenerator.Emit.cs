@@ -1,11 +1,11 @@
 // © Microsoft Corporation. All rights reserved.
 
+using System.Collections.Generic;
+using System.Text;
+using System.Threading;
+
 namespace Microsoft.Extensions.Logging.Generators
 {
-    using System.Collections.Generic;
-    using System.Text;
-    using System.Threading;
-
     public partial class LoggingGenerator
     {
         internal class Emitter

@@ -1,17 +1,17 @@
 // © Microsoft Corporation. All rights reserved.
 
+using System;
+using System.IO;
+using System.Reflection;
+using System.Threading;
+using System.Threading.Tasks;
+using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp;
+using Microsoft.CodeAnalysis.Text;
+using Xunit;
+
 namespace Microsoft.Extensions.Logging.Generators.Tests
 {
-    using Microsoft.CodeAnalysis;
-    using Microsoft.CodeAnalysis.CSharp;
-    using Microsoft.CodeAnalysis.Text;
-    using System;
-    using System.IO;
-    using System.Reflection;
-    using System.Threading;
-    using System.Threading.Tasks;
-    using Xunit;
-
     static class RoslynTestUtils
     {
         public static Project CreateTestProject()

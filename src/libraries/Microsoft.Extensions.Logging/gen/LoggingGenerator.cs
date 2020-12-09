@@ -1,13 +1,13 @@
 // © Microsoft Corporation. All rights reserved.
 
+using System.Collections.Generic;
+using System.Text;
+using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
+using Microsoft.CodeAnalysis.Text;
+
 namespace Microsoft.Extensions.Logging.Generators
 {
-    using Microsoft.CodeAnalysis;
-    using Microsoft.CodeAnalysis.CSharp.Syntax;
-    using Microsoft.CodeAnalysis.Text;
-    using System.Collections.Generic;
-    using System.Text;
-
     [Generator]
     public partial class LoggingGenerator : ISourceGenerator
     {

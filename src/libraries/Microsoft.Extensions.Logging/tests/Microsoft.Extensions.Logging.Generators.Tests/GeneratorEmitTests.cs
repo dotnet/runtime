@@ -1,16 +1,16 @@
 // © Microsoft Corporation. All rights reserved.
 
+using System.IO;
+using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
+using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
+using Xunit;
+
 namespace Microsoft.Extensions.Logging.Generators.Tests
 {
-    using Microsoft.CodeAnalysis;
-    using Microsoft.CodeAnalysis.CSharp;
-    using Microsoft.CodeAnalysis.CSharp.Syntax;
-    using System.IO;
-    using System.Linq;
-    using System.Threading;
-    using System.Threading.Tasks;
-    using Xunit;
-
     public class GeneratorEmitTests
     {
         [Fact]
