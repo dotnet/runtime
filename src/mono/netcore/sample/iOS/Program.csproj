@@ -24,10 +24,10 @@
 
   <Import Project="$(RepoTasksDir)AotCompilerTask\MonoAOTCompiler.props" />
   <UsingTask TaskName="AppleAppBuilderTask"
-             AssemblyFile="$(ArtifactsBinDir)AppleAppBuilder\$(Configuration)\$(NetCoreAppToolCurrent)\AppleAppBuilder.dll" />
+             AssemblyFile="$(AppleAppBuilderTasksAssemblyPath)" />
 
   <UsingTask TaskName="MonoAOTCompiler"
-             AssemblyFile="$(ArtifactsBinDir)MonoAOTCompiler\$(Configuration)\$(NetCoreAppToolCurrent)\MonoAOTCompiler.dll" />
+             AssemblyFile="$(MonoAOTCompilerTasksAssemblyPath)" />
 
   <Target Name="BuildAppBundle" AfterTargets="CopyFilesToPublishDirectory">
     <PropertyGroup>
