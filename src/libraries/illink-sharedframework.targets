@@ -30,11 +30,13 @@
       <ILLinkArgs>$(ILLinkArgs) --nowarn $(LinkerNoWarn)</ILLinkArgs>
     </PropertyGroup>
 
-     <!-- Retrieve CoreLib's targetpath via GetTargetPath as it isn't binplaced yet. -->
-    <MSBuild Projects="$(CoreLibProject)"
-             Targets="GetTargetPath">
-      <Output TaskParameter="TargetOutputs" PropertyName="SystemPrivateCoreLibPath" />
-    </MSBuild>
+    <!-- Retrieve CoreLib's path as it isn't binplaced alongside the libraries. -->
+    <PropertyGroup>
+      <SystemPrivateCoreLibDllFileName>System.Private.CoreLib.dll</SystemPrivateCoreLibDllFileName>
+      <SystemPrivateCoreLibDir>$(CoreCLRArtifactsPath)</SystemPrivateCoreLibDir>
+      <SystemPrivateCoreLibDir Condition="'$(RuntimeFlavor)' != 'mono'">$(SystemPrivateCoreLibDir)IL\</SystemPrivateCoreLibDir>
+      <SystemPrivateCoreLibPath>$(SystemPrivateCoreLibDir)$(SystemPrivateCoreLibDllFileName)</SystemPrivateCoreLibPath>
+    </PropertyGroup>
 
     <PropertyGroup>
       <_AssemblyPaths>$(MicrosoftNetCoreAppRuntimePackRidLibTfmDir);$(SystemPrivateCoreLibPath)</_AssemblyPaths>
