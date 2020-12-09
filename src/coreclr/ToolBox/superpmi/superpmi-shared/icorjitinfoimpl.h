@@ -104,6 +104,10 @@ bool isIntrinsicType(
 CorInfoUnmanagedCallConv getUnmanagedCallConv(
           CORINFO_METHOD_HANDLE method);
 
+CorInfoCallConvExtension getEntryPointCallConv(
+          CORINFO_METHOD_HANDLE method,
+          CORINFO_SIG_INFO* callSiteSig);
+
 bool pInvokeMarshalingRequired(
           CORINFO_METHOD_HANDLE method,
           CORINFO_SIG_INFO* callSiteSig);

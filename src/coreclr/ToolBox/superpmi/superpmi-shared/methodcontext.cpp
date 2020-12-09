@@ -3771,10 +3771,10 @@ void MethodContext::recPInvokeMarshalingRequired(CORINFO_METHOD_HANDLE method,
                                                  bool                  result)
 {
     if (PInvokeMarshalingRequired == nullptr)
-        PInvokeMarshalingRequired = new LightWeightMap<PInvokeMarshalingRequiredValue, DWORD>();
+        PInvokeMarshalingRequired = new LightWeightMap<MethodSigInfoPairValue, DWORD>();
 
-    PInvokeMarshalingRequiredValue key;
-    ZeroMemory(&key, sizeof(PInvokeMarshalingRequiredValue)); // We use the input structs as a key and use memcmp to
+    MethodSigInfoPairValue key;
+    ZeroMemory(&key, sizeof(MethodSigInfoPairValue)); // We use the input structs as a key and use memcmp to
                                                               // compare.. so we need to zero out padding too
 
     key.method     = (DWORDLONG)method;
@@ -3785,7 +3785,7 @@ void MethodContext::recPInvokeMarshalingRequired(CORINFO_METHOD_HANDLE method,
     PInvokeMarshalingRequired->Add(key, (DWORD)result);
     DEBUG_REC(dmpPInvokeMarshalingRequired(key, (DWORD)result));
 }
-void MethodContext::dmpPInvokeMarshalingRequired(const PInvokeMarshalingRequiredValue& key, DWORD value)
+void MethodContext::dmpPInvokeMarshalingRequired(const MethodSigInfoPairValue& key, DWORD value)
 {
     printf("PInvokeMarshalingRequired key mth-%016llX scp-%016llX sig-%u, value res-%u", key.method, key.scope,
            key.pSig_Index, value);
@@ -3796,9 +3796,9 @@ bool MethodContext::repPInvokeMarshalingRequired(CORINFO_METHOD_HANDLE method, C
     if (PInvokeMarshalingRequired == nullptr) // so when we replay checked on free, we throw from lwm
         return TRUE;                          // TODO-Cleanup: hackish...
 
-    PInvokeMarshalingRequiredValue key;
-    ZeroMemory(&key, sizeof(PInvokeMarshalingRequiredValue)); // We use the input structs as a key and use memcmp to
-                                                              // compare.. so we need to zero out padding too
+    MethodSigInfoPairValue key;
+    ZeroMemory(&key, sizeof(MethodSigInfoPairValue)); // We use the input structs as a key and use memcmp to
+                                                      // compare.. so we need to zero out padding too
 
     key.method     = (DWORDLONG)method;
     key.pSig_Index = (DWORD)PInvokeMarshalingRequired->Contains((unsigned char*)callSiteSig->pSig, callSiteSig->cbSig);
@@ -3808,6 +3808,58 @@ bool MethodContext::repPInvokeMarshalingRequired(CORINFO_METHOD_HANDLE method, C
     DWORD value = PInvokeMarshalingRequired->Get(key);
     DEBUG_REP(dmpPInvokeMarshalingRequired(key, value));
     return value;
+}
+
+void MethodContext::recGetEntryPointCallConv(CORINFO_METHOD_HANDLE    method,
+                                             CORINFO_SIG_INFO*        callSiteSig,
+                                             CorInfoCallConvExtension result)
+{
+    if (GetEntryPointCallConv == nullptr)
+        GetEntryPointCallConv = new LightWeightMap<MethodSigInfoPairValue, DWORD>();
+
+    MethodSigInfoPairValue key;
+    ZeroMemory(&key, sizeof(MethodSigInfoPairValue)); // We use the input structs as a key and use memcmp to
+                                                              // compare.. so we need to zero out padding too
+
+    key.method     = (DWORDLONG)method;
+    key.pSig_Index = (DWORD)PInvokeMarshalingRequired->AddBuffer((unsigned char*)callSiteSig->pSig, callSiteSig->cbSig);
+    key.cbSig      = (DWORD)callSiteSig->cbSig;
+    key.scope      = (DWORDLONG)callSiteSig->scope;
+
+    GetEntryPointCallConv->Add(key, (DWORD)result);
+    DEBUG_REC(dmpGetEntryPointCallConv(key, (DWORD)result));
+}
+void MethodContext::dmpGetEntryPointCallConv(const MethodSigInfoPairValue& key, DWORD value)
+{
+    printf("GetEntryPointCallConv key mth-%016llX scp-%016llX sig-%u, value res-%u", key.method, key.scope,
+           key.pSig_Index, value);
+}
+// Note the jit interface implementation seems to only care about scope and pSig from callSiteSig
+CorInfoCallConvExtension MethodContext::repGetEntryPointCallConv(CORINFO_METHOD_HANDLE method, CORINFO_SIG_INFO* callSiteSig)
+{
+    if (GetEntryPointCallConv == nullptr)
+    {
+#ifdef sparseMC
+        LogDebug("Sparse - repGetEntryPointCallConv returning CorInfoCallConvExtension::Managed");
+        return CorInfoCallConvExtension::Managed;
+#else
+        LogException(EXCEPTIONCODE_MC, "Found a null GetUnmGetEntryPointCallConvanagedCallConv.  Probably missing a fatTrigger for %016llX.",
+                     (DWORDLONG)method);
+#endif
+    }
+
+    MethodSigInfoPairValue key;
+    ZeroMemory(&key, sizeof(MethodSigInfoPairValue)); // We use the input structs as a key and use memcmp to
+                                                      // compare.. so we need to zero out padding too
+
+    key.method     = (DWORDLONG)method;
+    key.pSig_Index = (DWORD)GetEntryPointCallConv->Contains((unsigned char*)callSiteSig->pSig, callSiteSig->cbSig);
+    key.cbSig      = (DWORD)callSiteSig->cbSig;
+    key.scope      = (DWORDLONG)callSiteSig->scope;
+
+    DWORD value = GetEntryPointCallConv->Get(key);
+    DEBUG_REP(dmpGetEntryPointCallConv(key, value));
+    return (CorInfoCallConvExtension)value;
 }
 
 void MethodContext::recFindSig(CORINFO_MODULE_HANDLE  module,

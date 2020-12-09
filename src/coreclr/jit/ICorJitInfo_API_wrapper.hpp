@@ -200,6 +200,16 @@ CorInfoUnmanagedCallConv WrapICorJitInfo::getUnmanagedCallConv(
     return temp;
 }
 
+CorInfoCallConvExtension WrapICorJitInfo::getEntryPointCallConv(
+          CORINFO_METHOD_HANDLE method,
+          CORINFO_SIG_INFO* callSiteSig)
+{
+    API_ENTER(getEntryPointCallConv);
+    CorInfoCallConvExtension temp = wrapHnd->getEntryPointCallConv(method, callSiteSig);
+    API_LEAVE(getEntryPointCallConv);
+    return temp;
+}
+
 bool WrapICorJitInfo::pInvokeMarshalingRequired(
           CORINFO_METHOD_HANDLE method,
           CORINFO_SIG_INFO* callSiteSig)

@@ -298,6 +298,18 @@ CorInfoUnmanagedCallConv interceptor_ICJI::getUnmanagedCallConv(CORINFO_METHOD_H
     return temp;
 }
 
+// return the entry point calling convention for any of the following
+// - a P/Invoke
+// - a method marked with UnmanagedCallersOnly 
+// - a function pointer with the CORINFO_CALLCONV_UNMANAGED calling convention.
+CorInfoCallConvExtension interceptor_ICJI::getEntryPointCallConv(CORINFO_METHOD_HANDLE method, CORINFO_SIG_INFO* callSiteSig)
+{
+    mc->cr->AddCall("getUnmanagedCallConv");
+    CorInfoCallConvExtension temp = original_ICorJitInfo->getEntryPointCallConv(method, callSiteSig);
+    mc->recGetEntryPointCallConv(method, callSiteSig, temp);
+    return temp;
+}
+
 // return if any marshaling is required for PInvoke methods.  Note that
 // method == 0 => calli.  The call site sig is only needed for the varargs or calli case
 bool interceptor_ICJI::pInvokeMarshalingRequired(CORINFO_METHOD_HANDLE method, CORINFO_SIG_INFO* callSiteSig)

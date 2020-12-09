@@ -7025,7 +7025,7 @@ bool Compiler::impCanPInvokeInlineCallSite(BasicBlock* block)
 void Compiler::impCheckForPInvokeCall(
     GenTreeCall* call, CORINFO_METHOD_HANDLE methHnd, CORINFO_SIG_INFO* sig, unsigned mflags, BasicBlock* block)
 {
-    CorInfoUnmanagedCallConv unmanagedCallConv;
+    CorInfoCallConvExtension unmanagedCallConv;
 
     // If VM flagged it as Pinvoke, flag the call node accordingly
     if ((mflags & CORINFO_FLG_PINVOKE) != 0)
@@ -7045,26 +7045,17 @@ void Compiler::impCheckForPInvokeCall(
             return;
         }
 
-        unmanagedCallConv = info.compCompHnd->getUnmanagedCallConv(methHnd);
+        unmanagedCallConv = info.compCompHnd->getEntryPointCallConv(methHnd, nullptr);
     }
     else
     {
-        CorInfoCallConv callConv = CorInfoCallConv(sig->callConv & CORINFO_CALLCONV_MASK);
-        if (callConv == CORINFO_CALLCONV_NATIVEVARARG)
-        {
-            // Used by the IL Stubs.
-            callConv = CORINFO_CALLCONV_C;
-        }
-        static_assert_no_msg((unsigned)CORINFO_CALLCONV_C == (unsigned)CORINFO_UNMANAGED_CALLCONV_C);
-        static_assert_no_msg((unsigned)CORINFO_CALLCONV_STDCALL == (unsigned)CORINFO_UNMANAGED_CALLCONV_STDCALL);
-        static_assert_no_msg((unsigned)CORINFO_CALLCONV_THISCALL == (unsigned)CORINFO_UNMANAGED_CALLCONV_THISCALL);
-        unmanagedCallConv = CorInfoUnmanagedCallConv(callConv);
+        unmanagedCallConv = info.compCompHnd->getEntryPointCallConv(nullptr, sig);
 
         assert(!call->gtCallCookie);
     }
 
-    if (unmanagedCallConv != CORINFO_UNMANAGED_CALLCONV_C && unmanagedCallConv != CORINFO_UNMANAGED_CALLCONV_STDCALL &&
-        unmanagedCallConv != CORINFO_UNMANAGED_CALLCONV_THISCALL)
+    if (unmanagedCallConv != CorInfoCallConvExtension::C && unmanagedCallConv != CorInfoCallConvExtension::Stdcall &&
+        unmanagedCallConv != CorInfoCallConvExtension::Thiscall)
     {
         return;
     }
@@ -7120,24 +7111,20 @@ void Compiler::impCheckForPInvokeCall(
 
     JITLOG((LL_INFO1000000, "\nInline a CALLI PINVOKE call from method %s", info.compFullName));
 
-    static_assert_no_msg((unsigned)CorInfoCallConvExtension::C == (unsigned)CORINFO_UNMANAGED_CALLCONV_C);
-    static_assert_no_msg((unsigned)CorInfoCallConvExtension::Stdcall == (unsigned)CORINFO_UNMANAGED_CALLCONV_STDCALL);
-    static_assert_no_msg((unsigned)CorInfoCallConvExtension::Thiscall == (unsigned)CORINFO_UNMANAGED_CALLCONV_THISCALL);
-
     call->gtFlags |= GTF_CALL_UNMANAGED;
-    call->unmgdCallConv = CorInfoCallConvExtension(unmanagedCallConv);
+    call->unmgdCallConv = unmanagedCallConv;
     if (!call->IsSuppressGCTransition())
     {
         info.compUnmanagedCallCountWithGCTransition++;
     }
 
     // AMD64 convention is same for native and managed
-    if (unmanagedCallConv == CORINFO_UNMANAGED_CALLCONV_C)
+    if (unmanagedCallConv == CorInfoCallConvExtension::C)
     {
         call->gtFlags |= GTF_CALL_POP_ARGS;
     }
 
-    if (unmanagedCallConv == CORINFO_UNMANAGED_CALLCONV_THISCALL)
+    if (unmanagedCallConv == CorInfoCallConvExtension::Thiscall)
     {
         call->gtCallMoreFlags |= GTF_CALL_M_UNMGD_THISCALL;
     }
@@ -8913,7 +8900,7 @@ DONE:
 
         if (canTailCall &&
             !impTailCallRetTypeCompatible(info.compRetType, info.compMethodInfo->args.retTypeClass,
-                                          compMethodInfoGetEntrypointCallConv(info.compMethodInfo), callRetTyp,
+                                          info.compCallConv, callRetTyp,
                                           sig->retTypeClass, call->AsCall()->GetUnmanagedCallConv()))
         {
             canTailCall             = false;
@@ -16985,7 +16972,7 @@ bool Compiler::impReturnInstruction(int prefixFlags, OPCODE& opcode)
                     // adjust the type away from struct to integral
                     // and no normalizing
                     op2 = impFixupStructReturnType(op2, retClsHnd,
-                                                   compMethodInfoGetEntrypointCallConv(info.compMethodInfo));
+                                                   info.compCallConv);
                 }
                 else
                 {
@@ -17186,7 +17173,7 @@ bool Compiler::impReturnInstruction(int prefixFlags, OPCODE& opcode)
 #else  // defined(UNIX_AMD64_ABI)
                 ReturnTypeDesc retTypeDesc;
                 retTypeDesc.InitializeStructReturnType(this, retClsHnd,
-                                                       compMethodInfoGetEntrypointCallConv(info.compMethodInfo));
+                                                       info.compCallConv);
                 unsigned retRegCount = retTypeDesc.GetReturnRegCount();
 
                 if (retRegCount != 0)
@@ -17221,7 +17208,7 @@ bool Compiler::impReturnInstruction(int prefixFlags, OPCODE& opcode)
 #elif defined(TARGET_ARM64)
                 ReturnTypeDesc retTypeDesc;
                 retTypeDesc.InitializeStructReturnType(this, retClsHnd,
-                                                       compMethodInfoGetEntrypointCallConv(info.compMethodInfo));
+                                                       info.compCallConv);
                 unsigned retRegCount = retTypeDesc.GetReturnRegCount();
 
                 if (retRegCount != 0)
@@ -17246,7 +17233,7 @@ bool Compiler::impReturnInstruction(int prefixFlags, OPCODE& opcode)
 #elif defined(TARGET_X86)
                 ReturnTypeDesc retTypeDesc;
                 retTypeDesc.InitializeStructReturnType(this, retClsHnd,
-                                                       compMethodInfoGetEntrypointCallConv(info.compMethodInfo));
+                                                       info.compCallConv);
                 unsigned retRegCount = retTypeDesc.GetReturnRegCount();
 
                 if (retRegCount != 0)
@@ -17335,7 +17322,7 @@ bool Compiler::impReturnInstruction(int prefixFlags, OPCODE& opcode)
 #if defined(TARGET_WINDOWS) && defined(TARGET_ARM64)
         // On ARM64, the native instance calling convention variant
         // requires the implicit ByRef to be explicitly returned.
-        else if (callConvIsInstanceMethodCallConv(compMethodInfoGetEntrypointCallConv(info.compMethodInfo)))
+        else if (callConvIsInstanceMethodCallConv(info.compCallConv))
         {
             op1 = gtNewOperNode(GT_RETURN, TYP_BYREF, gtNewLclvNode(info.compRetBuffArg, TYP_BYREF));
         }
@@ -17354,7 +17341,7 @@ bool Compiler::impReturnInstruction(int prefixFlags, OPCODE& opcode)
         // Also on System V AMD64 the multireg structs returns are also left as structs.
         noway_assert(info.compRetNativeType != TYP_STRUCT);
 #endif
-        op2 = impFixupStructReturnType(op2, retClsHnd, compMethodInfoGetEntrypointCallConv(info.compMethodInfo));
+        op2 = impFixupStructReturnType(op2, retClsHnd, info.compCallConv);
         // return op2
         var_types returnType;
         if (compDoOldStructRetyping())

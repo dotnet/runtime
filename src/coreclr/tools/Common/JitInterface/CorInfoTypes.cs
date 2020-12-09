@@ -342,6 +342,18 @@ namespace Internal.JitInterface
         CORINFO_UNMANAGED_CALLCONV_THISCALL,
         CORINFO_UNMANAGED_CALLCONV_FASTCALL
     }
+    
+    // Represents the calling conventions supported with the extensible calling convention syntax
+    // as well as the original metadata-encoded calling conventions.
+    enum CorInfoCallConvExtension
+    {
+        Managed,
+        C,
+        Stdcall,
+        Thiscall,
+        Fastcall
+        // New calling conventions supported with the extensible calling convention encoding go here.
+    }
 
     public enum CORINFO_CALLINFO_FLAGS
     {

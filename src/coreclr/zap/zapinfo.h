@@ -692,6 +692,7 @@ public:
                                      bool * pMustExpand = NULL);
     bool isIntrinsicType(CORINFO_CLASS_HANDLE classHnd);
     CorInfoUnmanagedCallConv getUnmanagedCallConv(CORINFO_METHOD_HANDLE method);
+    CorInfoCallConvExtension getEntryPointCallConv(CORINFO_METHOD_HANDLE method, CORINFO_SIG_INFO* sig);
     bool pInvokeMarshalingRequired(CORINFO_METHOD_HANDLE method, CORINFO_SIG_INFO* sig);
     LPVOID GetCookieForPInvokeCalliSig(CORINFO_SIG_INFO* szMetaSig,
                                        void ** ppIndirecton);

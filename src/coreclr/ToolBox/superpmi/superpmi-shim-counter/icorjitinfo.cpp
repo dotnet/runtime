@@ -169,6 +169,14 @@ CorInfoUnmanagedCallConv interceptor_ICJI::getUnmanagedCallConv(
     return original_ICorJitInfo->getUnmanagedCallConv(method);
 }
 
+CorInfoCallConvExtension interceptor_ICJI::getEntryPointCallConv(
+          CORINFO_METHOD_HANDLE method,
+          CORINFO_SIG_INFO* callSiteSig)
+{
+    mcs->AddCall("getEntryPointCallConv");
+    return original_ICorJitInfo->getEntryPointCallConv(method, callSiteSig);
+}
+
 bool interceptor_ICJI::pInvokeMarshalingRequired(
           CORINFO_METHOD_HANDLE method,
           CORINFO_SIG_INFO* callSiteSig)

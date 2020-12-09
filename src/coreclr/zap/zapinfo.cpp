@@ -4050,6 +4050,11 @@ CorInfoUnmanagedCallConv ZapInfo::getUnmanagedCallConv(CORINFO_METHOD_HANDLE met
     return m_pEEJitInfo->getUnmanagedCallConv(method);
 }
 
+CorInfoCallConvExtension ZapInfo::getEntryPointCallConv(CORINFO_METHOD_HANDLE method, CORINFO_SIG_INFO* sig)
+{
+    return m_pEEJitInfo->getEntryPointCallConv(method, sig);
+}
+
 bool ZapInfo::pInvokeMarshalingRequired(CORINFO_METHOD_HANDLE method,
                                                        CORINFO_SIG_INFO* sig)
 {

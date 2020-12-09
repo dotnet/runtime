@@ -11534,8 +11534,7 @@ void CodeGen::genReturn(GenTree* treeNode)
             }
             else // we must have a struct return type
             {
-                CorInfoCallConvExtension callConv =
-                    compiler->compMethodInfoGetEntrypointCallConv(compiler->info.compMethodInfo);
+                CorInfoCallConvExtension callConv = compiler->info.compCallConv;
 
                 retTypeDesc.InitializeStructReturnType(compiler, compiler->info.compMethodInfo->args.retTypeClass,
                                                        callConv);
@@ -11664,8 +11663,7 @@ void CodeGen::genStructReturn(GenTree* treeNode)
     {
         varDsc = compiler->lvaGetDesc(actualOp1->AsLclVar()->GetLclNum());
         retTypeDesc.InitializeStructReturnType(compiler, varDsc->GetStructHnd(),
-                                               compiler->compMethodInfoGetEntrypointCallConv(
-                                                   compiler->info.compMethodInfo));
+                                               compiler->info.compCallConv);
         assert(varDsc->lvIsMultiRegRet);
     }
     else

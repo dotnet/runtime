@@ -149,12 +149,13 @@ LWM(IsValidToken, DLD, DWORD)
 LWM(IsValueClass, DWORDLONG, DWORD)
 LWM(MergeClasses, DLDL, DWORDLONG)
 LWM(IsMoreSpecificType, DLDL, DWORD)
-LWM(PInvokeMarshalingRequired, PInvokeMarshalingRequiredValue, DWORD)
+LWM(PInvokeMarshalingRequired, MethodSigInfoPairValue, DWORD)
 LWM(ResolveToken, Agnostic_CORINFO_RESOLVED_TOKENin, ResolveTokenValue)
 LWM(ResolveVirtualMethod, Agnostic_ResolveVirtualMethodKey, Agnostic_ResolveVirtualMethodResult)
 LWM(TryResolveToken, Agnostic_CORINFO_RESOLVED_TOKENin, TryResolveTokenValue)
 LWM(SatisfiesClassConstraints, DWORDLONG, DWORD)
 LWM(SatisfiesMethodConstraints, DLDL, DWORD)
+LWM(GetEntryPointCallConv, MethodSigInfoPairValue, DWORD)
 
 
 #undef LWM

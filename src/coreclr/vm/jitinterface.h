@@ -758,6 +758,9 @@ public:
     bool isIntrinsicType(CORINFO_CLASS_HANDLE classHnd);
 
     CorInfoUnmanagedCallConv getUnmanagedCallConv(CORINFO_METHOD_HANDLE method);
+    
+    CorInfoCallConvExtension getEntryPointCallConv(CORINFO_METHOD_HANDLE method, CORINFO_SIG_INFO* callSiteSig);
+    
     bool pInvokeMarshalingRequired(CORINFO_METHOD_HANDLE method, CORINFO_SIG_INFO* callSiteSig);
 
     // Generate a cookie based on the signature that would needs to be passed
@@ -1138,7 +1141,6 @@ public:
     {
         CONV_TO_JITSIG_FLAGS_NONE                       = 0x0,
         CONV_TO_JITSIG_FLAGS_LOCALSIG                   = 0x1,
-        CONV_TO_JITSIG_FLAGS_CHECK_UNMANAGEDCALLERSONLY = 0x2,
     };
 
     //@GENERICS:

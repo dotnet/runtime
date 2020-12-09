@@ -529,41 +529,6 @@ CEEInfo::ConvToJitSig(
                 sigRet->callConv = (CorInfoCallConv)MetaSig::GetDefaultUnmanagedCallingConvention();
             }
         }
-#if !defined(TARGET_X86)
-        else if ((flags & CONV_TO_JITSIG_FLAGS_CHECK_UNMANAGEDCALLERSONLY) == CONV_TO_JITSIG_FLAGS_CHECK_UNMANAGEDCALLERSONLY
-            && sigRet->callConv == CORINFO_CALLCONV_DEFAULT
-            && context.methodContext && context.methodContext->HasUnmanagedCallersOnlyAttribute())
-        {
-#ifdef CROSSGEN_COMPILE
-            _ASSERTE_MSG(false, "UnmanagedCallersOnly methods are not supported in crossgen and should be rejected before getting here.");
-#else
-            CorPinvokeMap unmanagedCallConv;
-            if (TryGetCallingConventionFromUnmanagedCallersOnly(context.methodContext, &unmanagedCallConv))
-            {
-                switch (unmanagedCallConv)
-                {
-                case pmCallConvWinapi:
-                    sigRet->callConv = (CorInfoCallConv)MetaSig::GetDefaultUnmanagedCallingConvention();
-                    break;
-                case pmCallConvCdecl:
-                    sigRet->callConv = CORINFO_CALLCONV_C;
-                    break;
-                case pmCallConvStdcall:
-                    sigRet->callConv = CORINFO_CALLCONV_STDCALL;
-                    break;
-                case pmCallConvThiscall:
-                    sigRet->callConv = CORINFO_CALLCONV_THISCALL;
-                    break;
-                case pmCallConvFastcall:
-                    sigRet->callConv = CORINFO_CALLCONV_FASTCALL;
-                    break;
-                default:
-                    break;
-                }
-            }
-#endif
-        }
-#endif
 
         // Skip number of type arguments
         if (sigRet->callConv & IMAGE_CEE_CS_CALLCONV_GENERIC)
@@ -7792,7 +7757,7 @@ getMethodInfoHelper(
         GetScopeHandle(ftn),
         mdTokenNil,
         CEEInfo::SignatureContext(ftn),
-        CEEInfo::CONV_TO_JITSIG_FLAGS_CHECK_UNMANAGEDCALLERSONLY,
+        CEEInfo::CONV_TO_JITSIG_FLAGS_NONE,
         &methInfo->args);
 
     // Shared generic or static per-inst methods and shared methods on generic structs
@@ -9879,6 +9844,125 @@ CorInfoUnmanagedCallConv CEEInfo::getUnmanagedCallConv(CORINFO_METHOD_HANDLE met
     EE_TO_JIT_TRANSITION();
 
     return result;
+}
+
+/*********************************************************************/
+
+    // return the entry point calling convention for any of the following
+    // - a P/Invoke
+    // - a method marked with UnmanagedCallersOnly 
+    // - a function pointer with the CORINFO_CALLCONV_UNMANAGED calling convention.
+CorInfoCallConvExtension CEEInfo::getEntryPointCallConv(CORINFO_METHOD_HANDLE method, CORINFO_SIG_INFO* callSiteSig)
+{
+    CONTRACTL {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_PREEMPTIVE;
+    } CONTRACTL_END;
+
+    CorInfoCallConvExtension callConv = CorInfoCallConvExtension::Managed;
+
+    JIT_TO_EE_TRANSITION();
+
+    _ASSERTE(method != nullptr || callSiteSig != nullptr);
+
+    if (method)
+    {
+        MethodDesc* pMD = GetMethod(method);
+        if(pMD->IsNDirect())
+        {
+            EX_TRY
+            {
+                PInvokeStaticSigInfo sigInfo(pMD, PInvokeStaticSigInfo::NO_THROW_ON_ERROR);
+
+                switch (sigInfo.GetCallConv()) {
+                    case pmCallConvCdecl:
+                        callConv = CorInfoCallConvExtension::C;
+                        break;
+                    case pmCallConvStdcall:
+                        callConv = CorInfoCallConvExtension::Stdcall;
+                        break;
+                    case pmCallConvThiscall:
+                        callConv = CorInfoCallConvExtension::Thiscall;
+                        break;
+                    default:
+                        callConv = CorInfoCallConvExtension::Managed;
+                        break;
+                }
+            }
+            EX_CATCH
+            {
+                callConv = CorInfoCallConvExtension::Managed;
+            }
+            EX_END_CATCH(SwallowAllExceptions)
+        }
+#if !defined(TARGET_X86)
+        else if (pMD->HasUnmanagedCallersOnlyAttribute())
+        {
+#ifdef CROSSGEN_COMPILE
+            _ASSERTE_MSG(false, "UnmanagedCallersOnly methods are not supported in crossgen and should be rejected before getting here.");
+#else
+            CorPinvokeMap unmanagedCallConv;
+            if (TryGetCallingConventionFromUnmanagedCallersOnly(pMD, &unmanagedCallConv))
+            {
+                switch (unmanagedCallConv)
+                {
+                case pmCallConvWinapi:
+                    callConv = (CorInfoCallConvExtension)MetaSig::GetDefaultUnmanagedCallingConvention();
+                    break;
+                case pmCallConvCdecl:
+                    callConv = CorInfoCallConvExtension::C;
+                    break;
+                case pmCallConvStdcall:
+                    callConv = CorInfoCallConvExtension::Stdcall;
+                    break;
+                case pmCallConvThiscall:
+                    callConv = CorInfoCallConvExtension::Thiscall;
+                    break;
+                case pmCallConvFastcall:
+                    callConv = CorInfoCallConvExtension::Fastcall;
+                    break;
+                default:
+                    break;
+                }
+            }
+#endif // CROSSGEN_COMPILE
+        }
+#endif // !defined(TARGET_X86)
+    }
+    else if (callSiteSig->callConv == CORINFO_CALLCONV_UNMANAGED)
+    {
+        CorUnmanagedCallingConvention callConvMaybe;
+        UINT errorResID;
+        HRESULT hr = MetaSig::TryGetUnmanagedCallingConventionFromModOpt(GetModule(callSiteSig->scope), callSiteSig->pSig, callSiteSig->cbSig, &callConvMaybe, &errorResID);
+        if (FAILED(hr))
+            COMPlusThrowHR(hr, errorResID);
+
+        if (hr == S_OK)
+        {
+            callConv = (CorInfoCallConvExtension)callConvMaybe;
+        }
+        else
+        {
+            callConv = (CorInfoCallConvExtension)MetaSig::GetDefaultUnmanagedCallingConvention();
+        }
+    }
+    else if ((callSiteSig->callConv & CORINFO_CALLCONV_MASK) == CORINFO_CALLCONV_NATIVEVARARG)
+    {
+        callConv = CorInfoCallConvExtension::C;
+    }
+    else if ((callSiteSig->callConv & CORINFO_CALLCONV_MASK) == CORINFO_CALLCONV_VARARG)
+    {
+        callConv = CorInfoCallConvExtension::Managed;
+    }
+    else
+    {
+        callConv = (CorInfoCallConvExtension)(callSiteSig->callConv & CORINFO_CALLCONV_MASK);
+    }
+
+    EE_TO_JIT_TRANSITION();
+
+    return callConv;
 }
 
 /*********************************************************************/

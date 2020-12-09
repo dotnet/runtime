@@ -2057,18 +2057,34 @@ unsigned Compiler::compGetTypeSize(CorInfoType cit, CORINFO_CLASS_HANDLE clsHnd)
 
 CorInfoCallConvExtension Compiler::compMethodInfoGetEntrypointCallConv(CORINFO_METHOD_INFO* mthInfo)
 {
-    CorInfoCallConv callConv = mthInfo->args.getCallConv();
-    if (callConv == CORINFO_CALLCONV_DEFAULT || callConv == CORINFO_CALLCONV_VARARG)
+    switch (mthInfo->args.getCallConv())
     {
-        // Both the default and the varargs calling conventions represent a managed callconv.
-        return CorInfoCallConvExtension::Managed;
+        case CORINFO_CALLCONV_NATIVEVARARG:
+            return CorInfoCallConvExtension::C;
+            break;
+        case CORINFO_CALLCONV_VARARG:
+        {
+            CorInfoCallConvExtension callConv = info.compCompHnd->getEntryPointCallConv(mthInfo->ftn, nullptr);
+            if (callConv != CorInfoCallConvExtension::Managed)
+            {
+                callConv = CorInfoCallConvExtension::C;
+            }
+            return callConv;
+            break;
+        }
+        case CORINFO_CALLCONV_C:
+            return CorInfoCallConvExtension::C;
+        case CORINFO_CALLCONV_STDCALL:
+            return CorInfoCallConvExtension::Stdcall;
+        case CORINFO_CALLCONV_THISCALL:
+            return CorInfoCallConvExtension::Thiscall;
+        case CORINFO_CALLCONV_UNMANAGED:
+        case CORINFO_CALLCONV_DEFAULT:
+            return info.compCompHnd->getEntryPointCallConv(mthInfo->ftn, nullptr);
+        default:
+            BADCODE("bad calling convention");
     }
-
-    static_assert_no_msg((unsigned)CorInfoCallConvExtension::C == (unsigned)CORINFO_CALLCONV_C);
-    static_assert_no_msg((unsigned)CorInfoCallConvExtension::Stdcall == (unsigned)CORINFO_CALLCONV_STDCALL);
-    static_assert_no_msg((unsigned)CorInfoCallConvExtension::Thiscall == (unsigned)CORINFO_CALLCONV_THISCALL);
-
-    return (CorInfoCallConvExtension)callConv;
+    return CorInfoCallConvExtension::Managed;
 }
 
 #ifdef DEBUG
@@ -6108,21 +6124,25 @@ int Compiler::compCompileHelper(CORINFO_MODULE_HANDLE classPtr,
 
     info.compHasNextCallRetAddr = false;
 
+    info.compCallConv = compMethodInfoGetEntrypointCallConv(methodInfo);
+
     switch (methodInfo->args.getCallConv())
     {
-        case CORINFO_CALLCONV_VARARG:
         case CORINFO_CALLCONV_NATIVEVARARG:
+        case CORINFO_CALLCONV_VARARG:
             info.compIsVarArgs = true;
             break;
         case CORINFO_CALLCONV_C:
         case CORINFO_CALLCONV_STDCALL:
         case CORINFO_CALLCONV_THISCALL:
+        case CORINFO_CALLCONV_UNMANAGED:
         case CORINFO_CALLCONV_DEFAULT:
             info.compIsVarArgs = false;
             break;
         default:
             BADCODE("bad calling convention");
     }
+
     info.compRetNativeType = info.compRetType = JITtype2varType(methodInfo->args.retType);
 
     info.compUnmanagedCallCountWithGCTransition = 0;

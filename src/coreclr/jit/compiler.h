@@ -9313,6 +9313,8 @@ public:
         UNATIVE_OFFSET compTotalColdCodeSize; // Total number of bytes of Cold Code in the method
 
         unsigned compUnmanagedCallCountWithGCTransition; // count of unmanaged calls with GC transition.
+        
+        CorInfoCallConvExtension compCallConv; // The entry-point calling convention for this method.
 
         unsigned compLvFrameListRoot; // lclNum for the Frame root
         unsigned compXcptnsCount;     // Number of exception-handling clauses read in the method's IL.
@@ -9393,7 +9395,7 @@ public:
         //    to be returned in x0.
         CLANG_FORMAT_COMMENT_ANCHOR;
 #if defined(TARGET_WINDOWS) && defined(TARGET_ARM64)
-        auto callConv = compMethodInfoGetEntrypointCallConv(info.compMethodInfo);
+        auto callConv = info.compCallConv;
         if (callConvIsInstanceMethodCallConv(callConv))
         {
             return (info.compRetBuffArg != BAD_VAR_NUM);

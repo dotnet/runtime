@@ -476,13 +476,13 @@ namespace Internal.JitInterface
                 methodInfo->options |= CorInfoOptions.CORINFO_GENERICS_CTXT_FROM_METHODTABLE;
             }
             methodInfo->regionKind = CorInfoRegionKind.CORINFO_REGION_NONE;
-            Get_CORINFO_SIG_INFO(method, &methodInfo->args, checkUnmanagedCallersOnly: true);
+            Get_CORINFO_SIG_INFO(method, &methodInfo->args);
             Get_CORINFO_SIG_INFO(methodIL.GetLocals(), &methodInfo->locals);
 
             return true;
         }
 
-        private void Get_CORINFO_SIG_INFO(MethodDesc method, CORINFO_SIG_INFO* sig, bool suppressHiddenArgument = false, bool checkUnmanagedCallersOnly = false)
+        private void Get_CORINFO_SIG_INFO(MethodDesc method, CORINFO_SIG_INFO* sig, bool suppressHiddenArgument = false)
         {
             Get_CORINFO_SIG_INFO(method.Signature, sig);
 
@@ -522,16 +522,11 @@ namespace Internal.JitInterface
             {
                 sig->callConv |= CorInfoCallConv.CORINFO_CALLCONV_PARAMTYPE;
             }
-            else if (checkUnmanagedCallersOnly && method.IsUnmanagedCallersOnly)
-            {
-                CustomAttributeValue<TypeDesc> unmanagedCallersOnlyAttribute = ((EcmaMethod)method).GetDecodedCustomAttribute("System.Runtime.InteropServices", "UnmanagedCallersOnlyAttribute").Value;
-                sig->callConv = GetUnmanagedCallingConventionFromAttribute(unmanagedCallersOnlyAttribute);
-            }
         }
 
-        private CorInfoCallConv GetUnmanagedCallingConventionFromAttribute(CustomAttributeValue<TypeDesc> unmanagedCallersOnlyAttribute)
+        private CorInfoCallConvExtension GetUnmanagedCallingConventionFromAttribute(CustomAttributeValue<TypeDesc> unmanagedCallersOnlyAttribute)
         {
-            CorInfoCallConv callConv = (CorInfoCallConv)PlatformDefaultUnmanagedCallingConvention();
+            CorInfoCallConvExtension callConv = (CorInfoCallConvExtension)PlatformDefaultUnmanagedCallingConvention();
 
             ImmutableArray<CustomAttributeTypedArgument<TypeDesc>> callConvArray = default;
             foreach (var arg in unmanagedCallersOnlyAttribute.NamedArguments)
@@ -557,7 +552,7 @@ namespace Internal.JitInterface
                 if (defType.Namespace != "System.Runtime.CompilerServices")
                     continue;
 
-                CorInfoCallConv? callConvLocal = GetCallingConventionForCallConvType(defType);
+                CorInfoCallConvExtension? callConvLocal = GetCallingConventionForCallConvType(defType);
 
                 if (callConvLocal.HasValue)
                 {
@@ -572,9 +567,9 @@ namespace Internal.JitInterface
             return callConv;
         }
 
-        private bool TryGetUnmanagedCallingConventionFromModOpt(MethodSignature signature, out CorInfoCallConv callConv)
+        private bool TryGetUnmanagedCallingConventionFromModOpt(MethodSignature signature, out CorInfoCallConvExtension callConv)
         {
-            callConv = CorInfoCallConv.CORINFO_CALLCONV_UNMANAGED;
+            callConv = CorInfoCallConvExtension.Managed;
             if (!signature.HasEmbeddedSignatureData || signature.GetEmbeddedSignatureData() == null)
                 return false;
 
@@ -595,7 +590,7 @@ namespace Internal.JitInterface
                 if (defType.Namespace != "System.Runtime.CompilerServices")
                     continue;
 
-                CorInfoCallConv? callConvLocal = GetCallingConventionForCallConvType(defType);
+                CorInfoCallConvExtension? callConvLocal = GetCallingConventionForCallConvType(defType);
 
                 if (callConvLocal.HasValue)
                 {
@@ -611,14 +606,14 @@ namespace Internal.JitInterface
             return found;
         }
 
-        private static CorInfoCallConv? GetCallingConventionForCallConvType(DefType defType) =>
+        private static CorInfoCallConvExtension? GetCallingConventionForCallConvType(DefType defType) =>
             // Look for a recognized calling convention in metadata.
             defType.Name switch
             {
-                "CallConvCdecl" => CorInfoCallConv.CORINFO_CALLCONV_C,
-                "CallConvStdcall" => CorInfoCallConv.CORINFO_CALLCONV_STDCALL,
-                "CallConvFastcall" => CorInfoCallConv.CORINFO_CALLCONV_FASTCALL,
-                "CallConvThiscall" => CorInfoCallConv.CORINFO_CALLCONV_THISCALL,
+                "CallConvCdecl" => CorInfoCallConvExtension.C,
+                "CallConvStdcall" => CorInfoCallConvExtension.Stdcall,
+                "CallConvFastcall" => CorInfoCallConvExtension.Fastcall,
+                "CallConvThiscall" => CorInfoCallConvExtension.Thiscall,
                 _ => null
             };
 
@@ -631,19 +626,6 @@ namespace Internal.JitInterface
                 ThrowHelper.ThrowBadImageFormatException();
 
             if (!signature.IsStatic) sig->callConv |= CorInfoCallConv.CORINFO_CALLCONV_HASTHIS;
-
-            // Unmanaged calling convention indicates modopt should be read
-            if (sig->callConv == CorInfoCallConv.CORINFO_CALLCONV_UNMANAGED)
-            {
-                if (TryGetUnmanagedCallingConventionFromModOpt(signature, out CorInfoCallConv callConvMaybe))
-                {
-                    sig->callConv = callConvMaybe;
-                }
-                else
-                {
-                    sig->callConv = (CorInfoCallConv)PlatformDefaultUnmanagedCallingConvention();
-                }
-            }
 
             TypeDesc returnType = signature.ReturnType;
 
@@ -1095,6 +1077,60 @@ namespace Internal.JitInterface
             return (CorInfoUnmanagedCallConv)unmanagedCallConv;
         }
 
+        private CorInfoCallConvExtension getEntryPointCallConv(CORINFO_METHOD_STRUCT_* method, CORINFO_SIG_INFO* sig)
+        {
+            Debug.Assert(method != null || sig != null);
+            if (method != null)
+            {
+                MethodDesc methodDesc = HandleToObject(method);
+                if (methodDesc.IsPInvoke)
+                {
+                    MethodSignatureFlags unmanagedCallConv = HandleToObject(method).GetPInvokeMethodMetadata().Flags.UnmanagedCallingConvention;
+
+                    if (unmanagedCallConv == MethodSignatureFlags.None)
+                        unmanagedCallConv = PlatformDefaultUnmanagedCallingConvention();
+
+                    // Verify that it is safe to convert MethodSignatureFlags.UnmanagedCallingConvention to CorInfoCallConvExtension via a simple cast
+                    Debug.Assert((int)CorInfoCallConvExtension.C == (int)MethodSignatureFlags.UnmanagedCallingConventionCdecl);
+                    Debug.Assert((int)CorInfoCallConvExtension.Stdcall == (int)MethodSignatureFlags.UnmanagedCallingConventionStdCall);
+                    Debug.Assert((int)CorInfoCallConvExtension.Thiscall == (int)MethodSignatureFlags.UnmanagedCallingConventionThisCall);
+
+                    return (CorInfoCallConvExtension)unmanagedCallConv;
+                }
+                else if (methodDesc.IsUnmanagedCallersOnly)
+                {
+                    CustomAttributeValue<TypeDesc> unmanagedCallersOnlyAttribute = ((EcmaMethod)methodDesc).GetDecodedCustomAttribute("System.Runtime.InteropServices", "UnmanagedCallersOnlyAttribute").Value;
+                    return GetUnmanagedCallingConventionFromAttribute(unmanagedCallersOnlyAttribute);
+                }
+                return CorInfoCallConvExtension.Managed;
+            }                // Unmanaged calling convention indicates modopt should be read
+            else if (sig->callConv == CorInfoCallConv.CORINFO_CALLCONV_UNMANAGED)
+            {
+                if (TryGetUnmanagedCallingConventionFromModOpt((MethodSignature)HandleToObject((IntPtr)sig->pSig), out CorInfoCallConvExtension callConvMaybe))
+                {
+                    return callConvMaybe;
+                }
+                else
+                {
+                    return (CorInfoCallConvExtension)PlatformDefaultUnmanagedCallingConvention();
+                }
+            }
+            else if ((sig->callConv & CorInfoCallConv.CORINFO_CALLCONV_MASK) == CorInfoCallConv.CORINFO_CALLCONV_NATIVEVARARG)
+            {
+                return CorInfoCallConvExtension.C;
+            }
+            else if ((sig->callConv & CorInfoCallConv.CORINFO_CALLCONV_MASK) == CorInfoCallConv.CORINFO_CALLCONV_VARARG)
+            {
+                return CorInfoCallConvExtension.Managed;
+            }
+
+            // Verify that it is safe to convert CORINFO_CALLCONV_* for unmanaged calling conventions to CorInfoCallConvExtension via a simple cast
+            Debug.Assert((int)CorInfoCallConvExtension.C == (int)CorInfoCallConv.CORINFO_CALLCONV_C);
+            Debug.Assert((int)CorInfoCallConvExtension.Stdcall == (int)CorInfoCallConv.CORINFO_CALLCONV_STDCALL);
+            Debug.Assert((int)CorInfoCallConvExtension.Thiscall == (int)CorInfoCallConv.CORINFO_CALLCONV_THISCALL);
+            return (CorInfoCallConvExtension)(sig->callConv & CorInfoCallConv.CORINFO_CALLCONV_MASK);
+        }
+
         private bool satisfiesMethodConstraints(CORINFO_CLASS_STRUCT_* parent, CORINFO_METHOD_STRUCT_* method)
         { throw new NotImplementedException("satisfiesMethodConstraints"); }
         private bool isCompatibleDelegate(CORINFO_CLASS_STRUCT_* objCls, CORINFO_CLASS_STRUCT_* methodParentCls, CORINFO_METHOD_STRUCT_* method, CORINFO_CLASS_STRUCT_* delegateCls, ref bool pfIsOpenDelegate)
@@ -1341,9 +1377,6 @@ namespace Internal.JitInterface
             var methodSig = (MethodSignature)methodIL.GetObject((int)sigTOK);
 
             Get_CORINFO_SIG_INFO(methodSig, sig);
-
-            // CORINFO_CALLCONV_UNMANAGED is handled by Get_CORINFO_SIG_INFO
-            Debug.Assert(sig->callConv != CorInfoCallConv.CORINFO_CALLCONV_UNMANAGED);
 
             // TODO: Replace this with a public mechanism to mark calli with SuppressGCTransition once it becomes available.
             if (methodIL is PInvokeILStubMethodIL stubIL)

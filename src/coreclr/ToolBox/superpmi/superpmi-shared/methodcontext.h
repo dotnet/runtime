@@ -318,7 +318,7 @@ public:
         DWORD     sigTOK;
         DWORDLONG context;
     };
-    struct PInvokeMarshalingRequiredValue
+    struct MethodSigInfoPairValue
     {
         DWORDLONG method;
         DWORD     pSig_Index;
@@ -1003,8 +1003,12 @@ public:
     CORINFO_CLASS_HANDLE repEmbedClassHandle(CORINFO_CLASS_HANDLE handle, void** ppIndirection);
 
     void recPInvokeMarshalingRequired(CORINFO_METHOD_HANDLE method, CORINFO_SIG_INFO* callSiteSig, bool result);
-    void dmpPInvokeMarshalingRequired(const PInvokeMarshalingRequiredValue& key, DWORD value);
+    void dmpPInvokeMarshalingRequired(const MethodSigInfoPairValue& key, DWORD value);
     bool repPInvokeMarshalingRequired(CORINFO_METHOD_HANDLE method, CORINFO_SIG_INFO* callSiteSig);
+    
+    void recGetEntryPointCallConv(CORINFO_METHOD_HANDLE method, CORINFO_SIG_INFO* callSiteSig, CorInfoCallConvExtension result);
+    void dmpGetEntryPointCallConv(const MethodSigInfoPairValue& key, DWORD value);
+    CorInfoCallConvExtension repGetEntryPointCallConv(CORINFO_METHOD_HANDLE method, CORINFO_SIG_INFO* callSiteSig);
 
     void recFindSig(CORINFO_MODULE_HANDLE  module,
                     unsigned               sigTOK,
@@ -1514,6 +1518,7 @@ enum mcPackets
     Packet_GetReadyToRunHelper                           = 150, // Added 10/10/2014
     Packet_GetReadyToRunDelegateCtorHelper               = 157, // Added 3/30/2016
     Packet_GetUnmanagedCallConv                          = 94,
+    Packet_GetEntryPointCallConv                         = 183, // Added 12/8/2020
     Packet_GetVarArgsHandle                              = 95,
     Packet_GetVars                                       = 96,
     Packet_HandleException                               = 135,

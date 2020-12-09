@@ -700,8 +700,7 @@ inline bool IsCallerPop(CorInfoCallConv callConv)
 }
 #endif // UNIX_X86_ABI
 
-// Represents the calling conventions supported with the extensible calling convention syntax
-// as well as the original metadata-encoded calling conventions.
+// Represents the original metadata-encoded calling conventions.
 enum CorInfoUnmanagedCallConv
 {
     // These correspond to CorUnmanagedCallingConvention
@@ -713,10 +712,22 @@ enum CorInfoUnmanagedCallConv
     // New calling conventions supported with the extensible calling convention encoding go here.
 };
 
-// Determines whether or not this calling convention is an instance method calling convention.
-inline bool callConvIsInstanceMethodCallConv(CorInfoUnmanagedCallConv callConv)
+// Represents the calling conventions supported with the extensible calling convention syntax
+// as well as the original metadata-encoded calling conventions.
+enum class CorInfoCallConvExtension
 {
-    return callConv == CORINFO_UNMANAGED_CALLCONV_THISCALL;
+    Managed,
+    C,
+    Stdcall,
+    Thiscall,
+    Fastcall
+    // New calling conventions supported with the extensible calling convention encoding go here.
+};
+
+// Determines whether or not this calling convention is an instance method calling convention.
+inline bool callConvIsInstanceMethodCallConv(CorInfoCallConvExtension callConv)
+{
+    return callConv == CorInfoCallConvExtension::Thiscall;
 }
 
 // These are returned from getMethodOptions
@@ -2085,6 +2096,15 @@ public:
     // return the unmanaged calling convention for a PInvoke
     virtual CorInfoUnmanagedCallConv getUnmanagedCallConv(
             CORINFO_METHOD_HANDLE       method
+            ) = 0;
+
+    // return the entry point calling convention for any of the following
+    // - a P/Invoke
+    // - a method marked with UnmanagedCallersOnly 
+    // - a function pointer with the CORINFO_CALLCONV_UNMANAGED calling convention.
+    virtual CorInfoCallConvExtension getEntryPointCallConv(
+            CORINFO_METHOD_HANDLE       method,
+            CORINFO_SIG_INFO*           callSiteSig
             ) = 0;
 
     // return if any marshaling is required for PInvoke methods.  Note that
