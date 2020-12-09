@@ -59,6 +59,7 @@ namespace System.Net.WebSockets
             Disposed = 3
         }
 
+        private bool _disposed;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="System.Net.WebSockets.BrowserWebSocket"/> class.
@@ -318,23 +319,27 @@ namespace System.Net.WebSockets
 
         public override void Dispose()
         {
-            int priorState = Interlocked.Exchange(ref _state, (int)InternalState.Disposed);
-            if (priorState == (int)InternalState.Disposed)
+            if (!_disposed)
             {
-                // No cleanup required.
-                return;
+                if (_state < (int)InternalState.Aborted) {
+                    Interlocked.Exchange(ref _state, (int)InternalState.Disposed);
+                }
+                _disposed = true;
+
+                if (!_cts.IsCancellationRequested)
+                {
+                    // registered by the CancellationTokenSource cts in the connect method
+                    _cts.Cancel(false);
+                    _cts.Dispose();
+                }
+
+                _writeBuffer?.Dispose();
+                _receiveMessageQueue.Writer.TryComplete();
+
+                NativeCleanup();
+
+                _innerWebSocket?.Dispose();
             }
-
-            // registered by the CancellationTokenSource cts in the connect method
-            _cts.Cancel(false);
-            _cts.Dispose();
-
-            _writeBuffer?.Dispose();
-            _receiveMessageQueue.Writer.Complete();
-
-            NativeCleanup();
-
-            _innerWebSocket?.Dispose();
         }
 
         // This method is registered by the CancellationTokenSource cts in the connect method
