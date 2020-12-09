@@ -191,7 +191,7 @@ namespace System.Diagnostics.Tests
 
         [OuterLoop]
         [Fact]
-        public async Task TestW3CHeadersTraceStateAndCorrelationContext()
+        public async Task TestW3CHeadersTraceStateAndBaggage()
         {
             try
             {
@@ -219,13 +219,51 @@ namespace System.Diagnostics.Tests
 
                     var traceparent = startRequest.Headers["traceparent"];
                     var tracestate = startRequest.Headers["tracestate"];
-                    var correlationContext = startRequest.Headers["Correlation-Context"];
+                    var baggage = startRequest.Headers["baggage"];
                     Assert.NotNull(traceparent);
                     Assert.Equal("some=state", tracestate);
-                    Assert.Equal("k=v", correlationContext);
+                    Assert.Equal("k=v", baggage);
                     Assert.StartsWith($"00-{parent.TraceId.ToHexString()}-", traceparent);
                     Assert.Matches("^[0-9a-f]{2}-[0-9a-f]{32}-[0-9a-f]{16}-[0-9a-f]{2}$", traceparent);
                     Assert.Null(startRequest.Headers["Request-Id"]);
+                }
+            }
+            finally
+            {
+                CleanUp();
+            }
+        }
+
+        [OuterLoop]
+        [Fact]
+        public async Task TestW3CHeadersBaggageAndLegacyCorrelationContext()
+        {
+            try
+            {
+                using (var eventRecords = new EventObserverAndRecorder())
+                {
+                    var parent = new Activity("w3c activity");
+                    parent.SetParentId(ActivityTraceId.CreateRandom(), ActivitySpanId.CreateRandom());
+                    parent.AddBaggage("k", "v");
+                    parent.Start();
+
+                    // Send a random Http request to generate some events
+                    using (var client = new HttpClient())
+                    {
+                        (await client.GetAsync(Configuration.Http.RemoteEchoServer)).Dispose();
+                    }
+
+                    parent.Stop();
+
+                    // Check to make sure: The first record must be a request, the next record must be a response.
+                    Assert.True(eventRecords.Records.TryDequeue(out var evnt));
+                    Assert.Equal("System.Net.Http.Desktop.HttpRequestOut.Start", evnt.Key);
+                    HttpWebRequest startRequest = ReadPublicProperty<HttpWebRequest>(evnt.Value, "Request");
+                    Assert.NotNull(startRequest);
+
+                    var correlationContext = startRequest.Headers["Correlation-Context"];
+                    var baggage = startRequest.Headers["baggage"];
+                    Assert.Equal("k=v", correlationContext);
                 }
             }
             finally

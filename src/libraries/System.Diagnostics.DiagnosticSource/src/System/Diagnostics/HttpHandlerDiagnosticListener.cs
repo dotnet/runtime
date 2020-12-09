@@ -627,7 +627,7 @@ namespace System.Diagnostics
                     }
                 }
 
-                if (request.Headers.Get(CorrelationContextHeaderName) == null)
+                if (request.Headers.Get(CorrelationContextHeaderName) == null && request.Headers.Get(BaggageHeaderName) == null)
                 {
                     // we expect baggage to be empty or contain a few items
                     using (IEnumerator<KeyValuePair<string, string>> e = activity.Baggage.GetEnumerator())
@@ -642,7 +642,11 @@ namespace System.Diagnostics
                             }
                             while (e.MoveNext());
                             baggage.Remove(baggage.Length - 1, 1);
+
+                            // preserve legacy baggage header name for backwards compatibility
                             request.Headers.Add(CorrelationContextHeaderName, baggage.ToString());
+
+                            request.Headers.Add(BaggageHeaderName, baggage.ToString());
                         }
                     }
                 }
@@ -804,6 +808,7 @@ namespace System.Diagnostics
         private const string CorrelationContextHeaderName = "Correlation-Context";
         private const string TraceParentHeaderName = "traceparent";
         private const string TraceStateHeaderName = "tracestate";
+        private const string BaggageHeaderName = "baggage";
 
         // Fields for controlling initialization of the HttpHandlerDiagnosticListener singleton
         private bool initialized;
