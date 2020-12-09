@@ -24,10 +24,10 @@ uint64_t CryptoNative_ErrPeekLastError()
 
 const char* CryptoNative_ErrReasonErrorString(uint64_t error)
 {
-    return "Check logcat for more details.";
+    return "See logcat for more details.";
 }
 
 void CryptoNative_ErrErrorStringN(uint64_t e, char* buf, int32_t len)
 {
-    buf = "Check logcat for more details.";
+    buf = "See logcat for more details.";
 }
