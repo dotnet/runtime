@@ -166,9 +166,19 @@ internal class Xcode
         {
             sdk = (Target == Utils.TargetOS.iOS) ? "iphoneos" : "appletvos";
             args.Append(" -arch arm64")
-                .Append(" -sdk " + sdk)
-                .Append(" -allowProvisioningUpdates")
-                .Append(" DEVELOPMENT_TEAM=").Append(devTeamProvisioning);
+                .Append(" -sdk " + sdk);
+
+            if (devTeamProvisioning == "-")
+            {
+                args.Append(" CODE_SIGN_IDENTITY=\"\"")
+                    .Append(" CODE_SIGNING_REQUIRED=NO")
+                    .Append(" CODE_SIGNING_ALLOWED=NO");
+            }
+            else
+            {
+                args.Append(" -allowProvisioningUpdates")
+                    .Append(" DEVELOPMENT_TEAM=").Append(devTeamProvisioning);
+            }
         }
         else
         {
