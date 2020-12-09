@@ -331,17 +331,6 @@ namespace Internal.JitInterface
         CORINFO_CALLCONV_EXPLICITTHIS = 0x40,
         CORINFO_CALLCONV_PARAMTYPE = 0x80,     // Passed last. Same as CORINFO_GENERICS_CTXT_FROM_PARAMTYPEARG
     }
-
-    public enum CorInfoUnmanagedCallConv
-    {
-        // These correspond to CorUnmanagedCallingConvention
-
-        CORINFO_UNMANAGED_CALLCONV_UNKNOWN,
-        CORINFO_UNMANAGED_CALLCONV_C,
-        CORINFO_UNMANAGED_CALLCONV_STDCALL,
-        CORINFO_UNMANAGED_CALLCONV_THISCALL,
-        CORINFO_UNMANAGED_CALLCONV_FASTCALL
-    }
     
     // Represents the calling conventions supported with the extensible calling convention syntax
     // as well as the original metadata-encoded calling conventions.

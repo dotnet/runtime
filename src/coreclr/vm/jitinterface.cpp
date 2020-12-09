@@ -9793,61 +9793,6 @@ CorInfoHFAElemType CEEInfo::getHFAType(CORINFO_CLASS_HANDLE hClass)
 
 /*********************************************************************/
 
-    // return the unmanaged calling convention for a PInvoke
-CorInfoUnmanagedCallConv CEEInfo::getUnmanagedCallConv(CORINFO_METHOD_HANDLE method)
-{
-    CONTRACTL {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_PREEMPTIVE;
-    } CONTRACTL_END;
-
-    CorInfoUnmanagedCallConv result = CORINFO_UNMANAGED_CALLCONV_UNKNOWN;
-
-    JIT_TO_EE_TRANSITION();
-
-    MethodDesc* pMD = NULL;
-    pMD = GetMethod(method);
-    _ASSERTE(pMD->IsNDirect());
-
-#ifdef TARGET_X86
-    EX_TRY
-    {
-        PInvokeStaticSigInfo sigInfo(pMD, PInvokeStaticSigInfo::NO_THROW_ON_ERROR);
-
-        switch (sigInfo.GetCallConv()) {
-            case pmCallConvCdecl:
-                result = CORINFO_UNMANAGED_CALLCONV_C;
-                break;
-            case pmCallConvStdcall:
-                result = CORINFO_UNMANAGED_CALLCONV_STDCALL;
-                break;
-            case pmCallConvThiscall:
-                result = CORINFO_UNMANAGED_CALLCONV_THISCALL;
-                break;
-            default:
-                result = CORINFO_UNMANAGED_CALLCONV_UNKNOWN;
-        }
-    }
-    EX_CATCH
-    {
-        result = CORINFO_UNMANAGED_CALLCONV_UNKNOWN;
-    }
-    EX_END_CATCH(SwallowAllExceptions)
-#else // !TARGET_X86
-    //
-    // we have only one calling convention
-    //
-    result = CORINFO_UNMANAGED_CALLCONV_STDCALL;
-#endif // !TARGET_X86
-
-    EE_TO_JIT_TRANSITION();
-
-    return result;
-}
-
-/*********************************************************************/
-
     // return the entry point calling convention for any of the following
     // - a P/Invoke
     // - a method marked with UnmanagedCallersOnly 

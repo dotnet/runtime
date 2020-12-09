@@ -4045,11 +4045,6 @@ bool ZapInfo::isIntrinsicType(CORINFO_CLASS_HANDLE classHnd)
     return m_pEEJitInfo->isIntrinsicType(classHnd);
 }
 
-CorInfoUnmanagedCallConv ZapInfo::getUnmanagedCallConv(CORINFO_METHOD_HANDLE method)
-{
-    return m_pEEJitInfo->getUnmanagedCallConv(method);
-}
-
 CorInfoCallConvExtension ZapInfo::getEntryPointCallConv(CORINFO_METHOD_HANDLE method, CORINFO_SIG_INFO* sig)
 {
     return m_pEEJitInfo->getEntryPointCallConv(method, sig);

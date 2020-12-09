@@ -700,18 +700,6 @@ inline bool IsCallerPop(CorInfoCallConv callConv)
 }
 #endif // UNIX_X86_ABI
 
-// Represents the original metadata-encoded calling conventions.
-enum CorInfoUnmanagedCallConv
-{
-    // These correspond to CorUnmanagedCallingConvention
-    CORINFO_UNMANAGED_CALLCONV_UNKNOWN,
-    CORINFO_UNMANAGED_CALLCONV_C,
-    CORINFO_UNMANAGED_CALLCONV_STDCALL,
-    CORINFO_UNMANAGED_CALLCONV_THISCALL,
-    CORINFO_UNMANAGED_CALLCONV_FASTCALL
-    // New calling conventions supported with the extensible calling convention encoding go here.
-};
-
 // Represents the calling conventions supported with the extensible calling convention syntax
 // as well as the original metadata-encoded calling conventions.
 enum class CorInfoCallConvExtension
@@ -2092,11 +2080,6 @@ public:
     virtual bool isIntrinsicType(
             CORINFO_CLASS_HANDLE        classHnd
             ) { return false; }
-
-    // return the unmanaged calling convention for a PInvoke
-    virtual CorInfoUnmanagedCallConv getUnmanagedCallConv(
-            CORINFO_METHOD_HANDLE       method
-            ) = 0;
 
     // return the entry point calling convention for any of the following
     // - a P/Invoke

@@ -132,7 +132,6 @@ LWM(GetTypeForPrimitiveValueClass, DWORDLONG, DWORD)
 LWM(GetTypeForPrimitiveNumericClass, DWORDLONG, DWORD)
 LWM(GetUnboxedEntry, DWORDLONG, DLD);
 LWM(GetUnBoxHelper, DWORDLONG, DWORD)
-LWM(GetUnmanagedCallConv, DWORDLONG, DWORD)
 LWM(GetVarArgsHandle, GetVarArgsHandleValue, DLDL)
 LWM(GetVars, DWORDLONG, Agnostic_GetVars)
 DENSELWM(HandleException, DWORD)

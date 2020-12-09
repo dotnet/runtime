@@ -123,7 +123,6 @@ CorInfoTailCall,,int
 CorInfoType,,int
 CorInfoHFAElemType,,int
 CorInfoTypeWithMod,,int
-CorInfoUnmanagedCallConv,,int
 CorInfoCallConvExtension,,int
 InfoAccessType,,int
 CORINFO_LOOKUP_KIND
@@ -177,7 +176,6 @@ FUNCTIONS
     void expandRawHandleIntrinsic(CORINFO_RESOLVED_TOKEN *        pResolvedToken, CORINFO_GENERICHANDLE_RESULT *  pResult);
     CorInfoIntrinsics getIntrinsicID(        CORINFO_METHOD_HANDLE       method        , BoolStar pMustExpand);
     bool isIntrinsicType(           CORINFO_CLASS_HANDLE        classHnd );
-    CorInfoUnmanagedCallConv getUnmanagedCallConv(        CORINFO_METHOD_HANDLE       method        );
     CorInfoCallConvExtension getEntryPointCallConv(            CORINFO_METHOD_HANDLE       method,            CORINFO_SIG_INFO*           callSiteSig);
     bool pInvokeMarshalingRequired(        CORINFO_METHOD_HANDLE       method,        CORINFO_SIG_INFO*           callSiteSig        );
     bool satisfiesMethodConstraints(        CORINFO_CLASS_HANDLE        parent,        CORINFO_METHOD_HANDLE       method        );

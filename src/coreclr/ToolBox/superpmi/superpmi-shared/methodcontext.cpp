@@ -1624,35 +1624,6 @@ bool MethodContext::repIsIntrinsicType(CORINFO_CLASS_HANDLE cls)
     return result;
 }
 
-void MethodContext::recGetUnmanagedCallConv(CORINFO_METHOD_HANDLE method, CorInfoUnmanagedCallConv result)
-{
-    if (GetUnmanagedCallConv == nullptr)
-        GetUnmanagedCallConv = new LightWeightMap<DWORDLONG, DWORD>();
-
-    GetUnmanagedCallConv->Add((DWORDLONG)method, result);
-    DEBUG_REC(dmpGetUnmanagedCallConv((DWORDLONG)method, (DWORD)result));
-}
-void MethodContext::dmpGetUnmanagedCallConv(DWORDLONG key, DWORD result)
-{
-    printf("GetUnmanagedCallConv key ftn-%016llX, value res-%u", key, result);
-}
-CorInfoUnmanagedCallConv MethodContext::repGetUnmanagedCallConv(CORINFO_METHOD_HANDLE method)
-{
-    if ((GetUnmanagedCallConv == nullptr) || (GetUnmanagedCallConv->GetIndex((DWORDLONG)method) == -1))
-    {
-#ifdef sparseMC
-        LogDebug("Sparse - repGetUnmanagedCallConv returning CORINFO_UNMANAGED_CALLCONV_STDCALL");
-        return CORINFO_UNMANAGED_CALLCONV_STDCALL;
-#else
-        LogException(EXCEPTIONCODE_MC, "Found a null GetUnmanagedCallConv.  Probably missing a fatTrigger for %016llX.",
-                     (DWORDLONG)method);
-#endif
-    }
-    CorInfoUnmanagedCallConv result = (CorInfoUnmanagedCallConv)GetUnmanagedCallConv->Get((DWORDLONG)method);
-    DEBUG_REP(dmpGetUnmanagedCallConv((DWORDLONG)method, (DWORD)result));
-    return result;
-}
-
 void MethodContext::recAsCorInfoType(CORINFO_CLASS_HANDLE cls, CorInfoType result)
 {
     if (AsCorInfoType == nullptr)

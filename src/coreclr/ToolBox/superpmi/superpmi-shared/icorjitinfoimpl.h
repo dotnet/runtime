@@ -101,9 +101,6 @@ CorInfoIntrinsics getIntrinsicID(
 bool isIntrinsicType(
           CORINFO_CLASS_HANDLE classHnd);
 
-CorInfoUnmanagedCallConv getUnmanagedCallConv(
-          CORINFO_METHOD_HANDLE method);
-
 CorInfoCallConvExtension getEntryPointCallConv(
           CORINFO_METHOD_HANDLE method,
           CORINFO_SIG_INFO* callSiteSig);

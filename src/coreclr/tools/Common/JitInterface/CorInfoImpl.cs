@@ -1062,21 +1062,6 @@ namespace Internal.JitInterface
                 MethodSignatureFlags.UnmanagedCallingConventionStdCall : MethodSignatureFlags.UnmanagedCallingConventionCdecl;
         }
 
-        private CorInfoUnmanagedCallConv getUnmanagedCallConv(CORINFO_METHOD_STRUCT_* method)
-        {
-            MethodSignatureFlags unmanagedCallConv = HandleToObject(method).GetPInvokeMethodMetadata().Flags.UnmanagedCallingConvention;
-
-            if (unmanagedCallConv == MethodSignatureFlags.None)
-                unmanagedCallConv = PlatformDefaultUnmanagedCallingConvention();
-
-            // Verify that it is safe to convert MethodSignatureFlags.UnmanagedCallingConvention to CorInfoUnmanagedCallConv via a simple cast
-            Debug.Assert((int)CorInfoUnmanagedCallConv.CORINFO_UNMANAGED_CALLCONV_C == (int)MethodSignatureFlags.UnmanagedCallingConventionCdecl);
-            Debug.Assert((int)CorInfoUnmanagedCallConv.CORINFO_UNMANAGED_CALLCONV_STDCALL == (int)MethodSignatureFlags.UnmanagedCallingConventionStdCall);
-            Debug.Assert((int)CorInfoUnmanagedCallConv.CORINFO_UNMANAGED_CALLCONV_THISCALL == (int)MethodSignatureFlags.UnmanagedCallingConventionThisCall);
-
-            return (CorInfoUnmanagedCallConv)unmanagedCallConv;
-        }
-
         private CorInfoCallConvExtension getEntryPointCallConv(CORINFO_METHOD_STRUCT_* method, CORINFO_SIG_INFO* sig)
         {
             Debug.Assert(method != null || sig != null);

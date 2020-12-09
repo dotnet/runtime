@@ -28,7 +28,6 @@ struct JitInterfaceCallbacks
     void (* expandRawHandleIntrinsic)(void * thisHandle, CorInfoExceptionClass** ppException, void* pResolvedToken, void* pResult);
     int (* getIntrinsicID)(void * thisHandle, CorInfoExceptionClass** ppException, void* method, bool* pMustExpand);
     bool (* isIntrinsicType)(void * thisHandle, CorInfoExceptionClass** ppException, void* classHnd);
-    int (* getUnmanagedCallConv)(void * thisHandle, CorInfoExceptionClass** ppException, void* method);
     int (* getEntryPointCallConv)(void * thisHandle, CorInfoExceptionClass** ppException, void* method, void* callSiteSig);
     bool (* pInvokeMarshalingRequired)(void * thisHandle, CorInfoExceptionClass** ppException, void* method, void* callSiteSig);
     bool (* satisfiesMethodConstraints)(void * thisHandle, CorInfoExceptionClass** ppException, void* parent, void* method);
@@ -372,15 +371,6 @@ public:
 {
     CorInfoExceptionClass* pException = nullptr;
     bool temp = _callbacks->isIntrinsicType(_thisHandle, &pException, classHnd);
-    if (pException != nullptr) throw pException;
-    return temp;
-}
-
-    virtual int getUnmanagedCallConv(
-          void* method)
-{
-    CorInfoExceptionClass* pException = nullptr;
-    int temp = _callbacks->getUnmanagedCallConv(_thisHandle, &pException, method);
     if (pException != nullptr) throw pException;
     return temp;
 }

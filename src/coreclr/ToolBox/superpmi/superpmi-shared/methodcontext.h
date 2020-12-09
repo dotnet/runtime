@@ -730,10 +730,6 @@ public:
     void dmpGetIntrinsicID(DWORDLONG key, DD value);
     CorInfoIntrinsics repGetIntrinsicID(CORINFO_METHOD_HANDLE method, bool* pMustExpand);
 
-    void recGetUnmanagedCallConv(CORINFO_METHOD_HANDLE method, CorInfoUnmanagedCallConv result);
-    void dmpGetUnmanagedCallConv(DWORDLONG key, DWORD result);
-    CorInfoUnmanagedCallConv repGetUnmanagedCallConv(CORINFO_METHOD_HANDLE method);
-
     void recAsCorInfoType(CORINFO_CLASS_HANDLE cls, CorInfoType result);
     void dmpAsCorInfoType(DWORDLONG key, DWORD value);
     CorInfoType repAsCorInfoType(CORINFO_CLASS_HANDLE cls);
@@ -1517,7 +1513,7 @@ enum mcPackets
     Packet_GetUnBoxHelper                                = 92,
     Packet_GetReadyToRunHelper                           = 150, // Added 10/10/2014
     Packet_GetReadyToRunDelegateCtorHelper               = 157, // Added 3/30/2016
-    Packet_GetUnmanagedCallConv                          = 94,
+    Packet_GetUnmanagedCallConv                          = 94,  // Retired 12/9/2020
     Packet_GetEntryPointCallConv                         = 183, // Added 12/8/2020
     Packet_GetVarArgsHandle                              = 95,
     Packet_GetVars                                       = 96,

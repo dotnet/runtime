@@ -289,22 +289,13 @@ bool interceptor_ICJI::isIntrinsicType(CORINFO_CLASS_HANDLE classHnd)
     return temp;
 }
 
-// return the unmanaged calling convention for a PInvoke
-CorInfoUnmanagedCallConv interceptor_ICJI::getUnmanagedCallConv(CORINFO_METHOD_HANDLE method)
-{
-    mc->cr->AddCall("getUnmanagedCallConv");
-    CorInfoUnmanagedCallConv temp = original_ICorJitInfo->getUnmanagedCallConv(method);
-    mc->recGetUnmanagedCallConv(method, temp);
-    return temp;
-}
-
 // return the entry point calling convention for any of the following
 // - a P/Invoke
 // - a method marked with UnmanagedCallersOnly 
 // - a function pointer with the CORINFO_CALLCONV_UNMANAGED calling convention.
 CorInfoCallConvExtension interceptor_ICJI::getEntryPointCallConv(CORINFO_METHOD_HANDLE method, CORINFO_SIG_INFO* callSiteSig)
 {
-    mc->cr->AddCall("getUnmanagedCallConv");
+    mc->cr->AddCall("getEntryPointCallConv");
     CorInfoCallConvExtension temp = original_ICorJitInfo->getEntryPointCallConv(method, callSiteSig);
     mc->recGetEntryPointCallConv(method, callSiteSig, temp);
     return temp;

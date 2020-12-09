@@ -144,12 +144,6 @@ bool interceptor_ICJI::isIntrinsicType(
     return original_ICorJitInfo->isIntrinsicType(classHnd);
 }
 
-CorInfoUnmanagedCallConv interceptor_ICJI::getUnmanagedCallConv(
-          CORINFO_METHOD_HANDLE method)
-{
-    return original_ICorJitInfo->getUnmanagedCallConv(method);
-}
-
 CorInfoCallConvExtension interceptor_ICJI::getEntryPointCallConv(
           CORINFO_METHOD_HANDLE method,
           CORINFO_SIG_INFO* callSiteSig)

@@ -218,13 +218,6 @@ bool MyICJI::isIntrinsicType(CORINFO_CLASS_HANDLE classHnd)
     return jitInstance->mc->repIsIntrinsicType(classHnd) ? true : false;
 }
 
-// return the unmanaged calling convention for a PInvoke
-CorInfoUnmanagedCallConv MyICJI::getUnmanagedCallConv(CORINFO_METHOD_HANDLE method)
-{
-    jitInstance->mc->cr->AddCall("getUnmanagedCallConv");
-    return jitInstance->mc->repGetUnmanagedCallConv(method);
-}
-
 // return the entry point calling convention for any of the following
 // - a P/Invoke
 // - a method marked with UnmanagedCallersOnly 
