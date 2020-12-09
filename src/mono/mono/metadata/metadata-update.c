@@ -23,6 +23,9 @@
 #include "mono/utils/mono-logger-internals.h"
 #include "mono/utils/mono-path.h"
 
+/* TLS value is a uint32_t of the latest published generation that the thread can see */
+static MonoNativeTlsKey exposed_generation_id;
+
 #if 1
 #define UPDATE_DEBUG(stmt) do { stmt; } while (0)
 #else
@@ -118,6 +121,13 @@ void
 mono_metadata_update_init (void)
 {
 	table_to_image_init ();
+	mono_native_tls_alloc (&exposed_generation_id, NULL);
+}
+
+void
+mono_metadata_update_cleanup (void)
+{
+	mono_native_tls_free (exposed_generation_id);
 }
 
 /* Inform the execution engine that updates are coming */
@@ -164,6 +174,12 @@ initialize (void)
 	mono_coop_mutex_init (&publish_mutex);
 }
 
+static void
+thread_set_exposed_generation (uint32_t value)
+{
+	mono_native_tls_set_value (exposed_generation_id, GUINT_TO_POINTER((guint)value));
+}
+
 uint32_t
 mono_metadata_update_prepare (MonoDomain *domain) {
 	mono_lazy_initialize (&metadata_update_lazy_init, initialize);
@@ -171,12 +187,44 @@ mono_metadata_update_prepare (MonoDomain *domain) {
 	 * TODO: assert that the updater isn't depending on current metadata, else publishing might block.
 	 */
 	publish_lock ();
-	return ++update_alloc_frontier;
+	uint32_t alloc_gen = ++update_alloc_frontier;
+	/* Expose the alloc frontier to the updater thread */
+	thread_set_exposed_generation (alloc_gen);
+	return alloc_gen;
 }
 
 gboolean
 mono_metadata_update_available (void) {
 	return update_published < update_alloc_frontier;
+}
+
+/**
+ * mono_metadata_update_thread_expose_published:
+ *
+ * Allow the current thread to see the latest published deltas.
+ *
+ * Returns the current published generation that the thread will see.
+ */
+uint32_t
+mono_metadata_update_thread_expose_published (void)
+{
+	mono_memory_read_barrier ();
+	uint32_t thread_current_gen = update_published;
+	thread_set_exposed_generation (thread_current_gen);
+	return thread_current_gen;
+}
+
+/**
+ * mono_metadata_update_get_thread_generation:
+ *
+ * Return the published generation that the current thread is allowed to see.
+ * May be behind the latest published generation if the thread hasn't called
+ * \c mono_metadata_update_thread_expose_published in a while.
+ */
+uint32_t
+mono_metadata_update_get_thread_generation (void)
+{
+	return (uint32_t)GPOINTER_TO_UINT(mono_native_tls_get_value(exposed_generation_id));
 }
 
 gboolean
@@ -192,6 +240,7 @@ mono_metadata_update_publish (MonoDomain *domain, MonoAssemblyLoadContext *alc, 
 	/* TODO: wait for all threads that are using old metadata to update. */
 	mono_metadata_update_invoke_hook (domain, alc, generation);
 	update_published = update_alloc_frontier;
+	mono_memory_write_barrier ();
 	publish_unlock ();
 }
 
@@ -202,6 +251,8 @@ mono_metadata_update_cancel (uint32_t generation)
 	g_assert (update_alloc_frontier > 0);
 	g_assert (update_alloc_frontier - 1 >= update_published);
 	--update_alloc_frontier;
+	/* Roll back exposed generation to the last published one */
+	thread_set_exposed_generation (update_published);
 	publish_unlock ();
 }
 

@@ -1003,11 +1003,13 @@ mono_metadata_table_bounds_check (MonoImage *image, int table_index, int token_i
 	MonoTableInfo *table;
 	int ridx;
 
-	/* FIXME: Only lookup upto the latest published image, not all images. */
+	uint32_t exposed_gen = mono_metadata_update_get_thread_generation ();
 	do {
 		if (!list)
 			return TRUE;
 		dmeta = list->data;
+		if (dmeta->generation > exposed_gen)
+			return TRUE;
 		list = list->next;
 		table = &dmeta->tables [table_index];
 		ridx = mono_image_relative_delta_index (dmeta, mono_metadata_make_token (table_index, token_index + 1)) - 1;
@@ -1109,10 +1111,14 @@ mono_delta_heap_lookup (MonoImage *base_image, MetadataHeapGetterFunc get_heap, 
 
 	guint32 prev_size = heap->size;
 
+	uint32_t current_gen = mono_metadata_update_get_thread_generation ();
 	GSList *cur;
 	for (cur = base_image->delta_image; cur; cur = cur->next) {
 		*image_out = (MonoImage*)cur->data;
 		heap = get_heap (*image_out);
+
+		if ((*image_out)->generation > current_gen)
+			return FALSE;
 
 		/* FIXME: for non-minimal deltas we should just look in the last published image. */
 		if (G_LIKELY ((*image_out)->minimal_delta))
@@ -2010,6 +2016,9 @@ mono_metadata_init (void)
 void
 mono_metadata_cleanup (void)
 {
+#ifdef ENABLE_METADATA_UPDATE
+	mono_metadata_update_cleanup ();
+#endif
 	g_hash_table_destroy (type_cache);
 	type_cache = NULL;
 	g_ptr_array_free (image_sets, TRUE);
