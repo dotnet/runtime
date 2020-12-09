@@ -109,7 +109,7 @@ Example commands to create a collection (on Linux, by running the tests):
 
 ```
 # First, build the product, possibly the tests, and create a Core_Root directory.
-/Users/jashoo/runtime/src/coreclr/scripts/superpmi.py collect bash "/Users/jashoo/runtime/src/coreclr/tests/runtest.sh x64 checked"
+/Users/jashoo/runtime/src/coreclr/scripts/superpmi.py collect bash "/Users/jashoo/runtime/src/tests/runtest.sh x64 checked"
 ```
 
 The above command collects over all of the managed code called by the

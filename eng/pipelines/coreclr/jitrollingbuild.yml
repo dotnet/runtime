@@ -5,7 +5,7 @@ trigger:
     - master
   paths:
     include:
-    - src/coreclr/src/jit/*
+    - src/coreclr/jit/*
 
 pr: none
 

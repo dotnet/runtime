@@ -1955,7 +1955,7 @@ ep_rt_mono_thread_yield (void)
 #endif
 }
 
-// See src/coreclr/src/vm/spinlock.h for details.
+// See src/coreclr/vm/spinlock.h for details.
 #if defined(TARGET_ARM) || defined(TARGET_ARM64)
 	#define EP_SLEEP_START_THRESHOLD (5 * 1024)
 #else

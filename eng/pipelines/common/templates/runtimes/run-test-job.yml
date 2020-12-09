@@ -21,6 +21,7 @@ parameters:
   pool: ''
   runtimeFlavor: 'coreclr'
   runtimeFlavorDisplayName: 'CoreCLR'
+  shouldContinueOnError: false
   dependsOn: []
 
 ### Test run job
@@ -305,6 +306,7 @@ jobs:
         osGroup: ${{ parameters.osGroup }}
         osSubgroup: ${{ parameters.osSubgroup}}
         runtimeFlavorDisplayName: ${{ parameters.runtimeFlavorDisplayName }}
+        shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
 
         ${{ if eq(variables['System.TeamProject'], 'public') }}:
           creator: $(Build.DefinitionName)

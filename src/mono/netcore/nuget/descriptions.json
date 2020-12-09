@@ -10,13 +10,18 @@
         "CommonTypes": [ ]
     },
     {
-        "Name": "Microsoft.NETCore.BrowserDebugHost.Transport",
-        "Description": "Internal package for sharing BrowserDebugHost.",
+        "Name": "Microsoft.NET.Runtime.iOS.Sample.Mono",
+        "Description": "Internal package for sharing embedded Mono runtime and iOS App Builder.",
         "CommonTypes": [ ]
     },
     {
-        "Name": "Microsoft.NET.Runtime.iOS.Sample.Mono",
-        "Description": "Internal package for sharing embedded Mono runtime and iOS App Builder.",
+        "Name": "Microsoft.NET.Runtime.wasm.Sample.Mono",
+        "Description": "Internal package for sharing wasm App Builder.",
+        "CommonTypes": [ ]
+    },
+    {
+        "Name": "Microsoft.NETCore.BrowserDebugHost.Transport",
+        "Description": "Internal package for sharing BrowserDebugHost.",
         "CommonTypes": [ ]
     }
 ]

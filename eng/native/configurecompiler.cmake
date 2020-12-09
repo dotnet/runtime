@@ -451,7 +451,6 @@ endif(CLR_CMAKE_HOST_UNIX)
 if (MSVC)
   # Compile options for targeting windows
 
-  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/TP>) # compile all files as C++
   add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/nologo>) # Suppress Startup Banner
   add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/W3>) # set warning level to 3
   add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/WX>) # treat warnings as errors
@@ -654,7 +653,7 @@ else (CLR_CMAKE_HOST_WIN32)
         ERROR_QUIET
         OUTPUT_VARIABLE ldVersionOutput)
 
-    if("${ldVersionOutput}" MATCHES "GNU ld" OR "${ldVersionOutput}" MATCHES "GNU gold")
+    if("${ldVersionOutput}" MATCHES "GNU ld" OR "${ldVersionOutput}" MATCHES "GNU gold" OR "${ldVersionOutput}" MATCHES "GNU linkers")
         set(LD_GNU 1)
     elseif("${ldVersionOutput}" MATCHES "Solaris Link")
         set(LD_SOLARIS 1)

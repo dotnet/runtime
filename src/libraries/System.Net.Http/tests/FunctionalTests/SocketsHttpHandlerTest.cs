@@ -2372,6 +2372,7 @@ namespace System.Net.Http.Functional.Tests
                         else
                         {
                             await s.ConnectAsync(context.DnsEndPoint, token);
+                            await Task.Delay(1); // to increase the chances of the whole operation completing asynchronously, without consuming too much additional time
                         }
                         return new NetworkStream(s, ownsSocket: true);
                     };
@@ -2626,24 +2627,22 @@ namespace System.Net.Http.Functional.Tests
     {
         public SocketsHttpHandlerTest_PlaintextStreamFilter(ITestOutputHelper output) : base(output) { }
 
-        [Fact]
-        public void PlaintextStreamFilter_SyncRequest_Fails()
-        {
-            using SocketsHttpHandler handler = new SocketsHttpHandler
-            {
-                PlaintextStreamFilter = (context, token) => default,
-            };
-
-            using HttpClient client = CreateHttpClient(handler);
-
-            Assert.ThrowsAny<NotSupportedException>(() => client.Send(new HttpRequestMessage(HttpMethod.Get, "http://bing.com")));
-        }
+        public static IEnumerable<object> PlaintextStreamFilter_ContextHasCorrectProperties_Success_MemberData() =>
+            from useSsl in new[] { false, true }
+            from syncRequest in new[] { false, true }
+            from syncCallback in new[] { false, true }
+            select new object[] { useSsl, syncRequest, syncCallback };
 
         [Theory]
-        [InlineData(true)]
-        [InlineData(false)]
-        public async Task PlaintextStreamFilter_ContextHasCorrectProperties_Success(bool useSsl)
+        [MemberData(nameof(PlaintextStreamFilter_ContextHasCorrectProperties_Success_MemberData))]
+        public async Task PlaintextStreamFilter_ContextHasCorrectProperties_Success(bool useSsl, bool syncRequest, bool syncCallback)
         {
+            if (syncRequest && UseVersion > HttpVersion.Version11)
+            {
+                // Sync requests are only supported on 1.x
+                return;
+            }
+
             GenericLoopbackOptions options = new GenericLoopbackOptions() { UseSsl = useSsl };
             await LoopbackServerFactory.CreateClientAndServerAsync(
                 async uri =>
@@ -2655,17 +2654,24 @@ namespace System.Net.Http.Functional.Tests
                     using HttpClientHandler handler = CreateHttpClientHandler();
                     handler.ServerCertificateCustomValidationCallback = TestHelper.AllowAllCertificates;
                     var socketsHandler = (SocketsHttpHandler)GetUnderlyingSocketsHttpHandler(handler);
-                    socketsHandler.PlaintextStreamFilter = (context, token) =>
+                    socketsHandler.PlaintextStreamFilter = async (context, token) =>
                     {
                         Assert.Equal(UseVersion, context.NegotiatedHttpVersion);
                         Assert.Equal(requestMessage, context.InitialRequestMessage);
 
-                        return ValueTask.FromResult(context.PlaintextStream);
+                        if (!syncCallback)
+                        {
+                            await Task.Delay(1); // to increase the chances of the whole operation completing asynchronously, without consuming too much additional time
+                        }
+
+                        return context.PlaintextStream;
                     };
 
                     using HttpClient client = CreateHttpClient(handler);
 
-                    HttpResponseMessage response = await client.SendAsync(requestMessage);
+                    HttpResponseMessage response = await (syncRequest ?
+                        Task.Run(() => client.Send(requestMessage)) :
+                        client.SendAsync(requestMessage));
                     Assert.Equal("foo", await response.Content.ReadAsStringAsync());
                 },
                 async server =>
