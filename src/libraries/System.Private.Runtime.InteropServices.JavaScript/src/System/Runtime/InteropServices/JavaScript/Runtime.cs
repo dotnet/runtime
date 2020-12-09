@@ -387,7 +387,7 @@ namespace System.Runtime.InteropServices.JavaScript
         /// The reason for this restriction is to make this use of Reflection trim-compatible,
         /// ensuring that trimming doesn't change the application's behavior.
         /// </remarks>
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2075:UnrecognizedReflectionPattern",
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2070:UnrecognizedReflectionPattern",
             Justification = "Task<T>.Result is preserved by the ILLinker because _taskGetResultMethodInfo was initialized with it.")]
         private static MethodInfo? GetTaskResultMethodInfo(Type taskType)
         {
