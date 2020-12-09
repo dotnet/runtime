@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Threading.Tasks;
 
@@ -53,6 +54,7 @@ namespace System.Text.Json.Serialization
             if (_doneProcessing)
             {
                 return false;
+                // todo: throw InvalidOperationException if MoveNext is called again?
             }
 
             if (HasLocalDataToReturn())
@@ -60,29 +62,32 @@ namespace System.Text.Json.Serialization
                 return true;
             }
 
+            // Read additional data.
             await ContinueRead().ConfigureAwait(false);
-            HasLocalDataToReturn();
-            return true;
+            return ApplyReturnValue();
 
             bool HasLocalDataToReturn()
             {
-                if (_valuesToReturn?.Count > 1)
+                if (ApplyReturnValue())
                 {
-                    _current = _valuesToReturn.Dequeue();
                     return true;
                 }
 
                 if (_isFinalBlock)
                 {
-                    if (_valuesToReturn?.Count >= 1)
-                    {
-                        _current = _valuesToReturn.Dequeue();
-                    }
-
                     _doneProcessing = true;
                     _asyncState.Dispose();
                     _asyncState = null!;
+                }
 
+                return false;
+            }
+
+            bool ApplyReturnValue()
+            {
+                if (_valuesToReturn?.Count > 0)
+                {
+                    _current = _valuesToReturn.Dequeue();
                     return true;
                 }
 
@@ -100,9 +105,7 @@ namespace System.Text.Json.Serialization
 
             return true;
 
-            // If .Count is 1, the item may be a partial object.
-            // todo: if feasible, have a better way to detect that the item is finished.
-            bool HaveDataToReturn() => _isFinalBlock || _valuesToReturn?.Count > 1;
+            bool HaveDataToReturn() => _isFinalBlock || _valuesToReturn?.Count > 0;
         }
     }
 }

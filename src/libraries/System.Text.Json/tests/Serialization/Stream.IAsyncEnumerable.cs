@@ -1,7 +1,6 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Collections.Generic;
 using System.IO;
 using System.Threading.Tasks;
 using Xunit;
@@ -30,6 +29,7 @@ namespace System.Text.Json.Serialization.Tests
             {
                 var obj = new SimpleTestClass();
                 obj.Initialize();
+                obj.MyInt32 = i; // verify order correctness
                 collection[i] = obj;
             }
 
@@ -43,7 +43,11 @@ namespace System.Text.Json.Serialization.Tests
                 await foreach(SimpleTestClass item in
                         JsonSerializer.DeserializeAsyncEnumerable<SimpleTestClass>(stream, options))
                 {
+                    Assert.Equal(callbackCount, item.MyInt32);
+
+                    item.MyInt32 = 2; // Put correct value back for Verify()
                     item.Verify();
+
                     callbackCount++;
                 }
 
