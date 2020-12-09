@@ -72,7 +72,7 @@ namespace DebuggerTests
                     break;
                 case "Runtime.consoleAPICalled":
                     String type = args?["type"]?.Value<string>();
-                    List<string> consoleArgs = new List<string>();
+                    List<string> consoleArgs = new();
                     foreach (var arg in args?["args"])
                     {
                         consoleArgs.Add(arg?["value"].ToString());
