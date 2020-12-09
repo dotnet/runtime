@@ -56,7 +56,8 @@ namespace System.Net.WebSockets
             Created = 0,
             Connecting = 1,
             Connected = 2,
-            Disposed = 3
+            Disposed = 3,
+            Aborted = 4
         }
 
         private bool _disposed;
@@ -87,6 +88,8 @@ namespace System.Net.WebSockets
                 {
                     InternalState.Created => WebSocketState.None,
                     InternalState.Connecting => WebSocketState.Connecting,
+                    InternalState.Aborted => WebSocketState.Aborted,
+                    InternalState.Disposed => WebSocketState.Closed,
                     _ => WebSocketState.Closed
                 };
             }
@@ -164,8 +167,9 @@ namespace System.Net.WebSockets
                         _innerWebSocketCloseStatusDescription = closeEvt.GetObjectProperty("reason")?.ToString();
                         _receiveMessageQueue.Writer.TryWrite(new ReceivePayload(Array.Empty<byte>(), WebSocketMessageType.Close));
                         NativeCleanup();
-                        if ((InternalState)_state == InternalState.Connecting)
+                        if ((InternalState)_state == InternalState.Connecting || (InternalState)_state == InternalState.Aborted)
                         {
+                            _state = (int)InternalState.Disposed;
                             if (cancellationToken.IsCancellationRequested)
                             {
                                 tcsConnect.TrySetCanceled(cancellationToken);
@@ -440,10 +444,10 @@ namespace System.Net.WebSockets
 
             ThrowIfDisposed();
             ThrowOnInvalidState(State, WebSocketState.Open, WebSocketState.CloseSent);
-            _bufferedPayload ??= await _receiveMessageQueue.Reader.ReadAsync(cancellationToken).ConfigureAwait(continueOnCapturedContext: true);
 
             try
             {
+                _bufferedPayload ??= await _receiveMessageQueue.Reader.ReadAsync(cancellationToken).ConfigureAwait(continueOnCapturedContext: true);
                 bool endOfMessage = _bufferedPayload.BufferPayload(buffer, out WebSocketReceiveResult receiveResult);
                 if (endOfMessage)
                     _bufferedPayload = null;
@@ -466,12 +470,13 @@ namespace System.Net.WebSockets
         /// </summary>
         public override void Abort()
         {
-            if (_state == (int)InternalState.Disposed)
+            if (_state != (int)InternalState.Disposed)
             {
-                return;
+                if (Interlocked.Exchange(ref _state, (int)InternalState.Aborted) != (int)InternalState.Aborted)
+                {
+                    _cts.Cancel(true);
+                }
             }
-            _state = (int)WebSocketState.Aborted;
-            Dispose();
         }
 
         public override async Task CloseAsync(WebSocketCloseStatus closeStatus, string? statusDescription, CancellationToken cancellationToken)
