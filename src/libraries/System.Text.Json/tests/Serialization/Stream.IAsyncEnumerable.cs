@@ -11,15 +11,17 @@ namespace System.Text.Json.Serialization.Tests
     public static partial class StreamTests_IAsyncEnumerable
     {
         [Theory]
-        [InlineData(1)]
-        [InlineData(10)]
-        [InlineData(100)]
-        [InlineData(1000)]
-        public static async Task ReadSimpleObjectAsync(int count)
+        [InlineData(1, 1)]
+        [InlineData(10, 1)]
+        [InlineData(100, 1)]
+        [InlineData(1000, 1)]
+        [InlineData(1000, 1000)]
+        [InlineData(1000, 32000)]
+        public static async Task ReadSimpleObjectAsync(int count, int bufferSize)
         {
             JsonSerializerOptions options = new JsonSerializerOptions
             {
-                DefaultBufferSize = 1
+                DefaultBufferSize = bufferSize
             };
 
             // Produce the JSON

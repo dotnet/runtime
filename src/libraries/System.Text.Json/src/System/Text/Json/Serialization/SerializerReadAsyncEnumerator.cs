@@ -1,7 +1,6 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Buffers;
 using System.Collections.Generic;
 using System.IO;
 using System.Threading.Tasks;
@@ -17,7 +16,7 @@ namespace System.Text.Json.Serialization
     {
         private Stream _utf8Json;
         private ReadAsyncState _asyncState;
-        private List<TValue>? _list;
+        private Queue<TValue>? _valuesToReturn;
         private TValue? _current;
         private bool _isFinalBlock;
         private bool _doneProcessing;
@@ -25,7 +24,7 @@ namespace System.Text.Json.Serialization
         public SerializerReadAsyncEnumerator(Stream utf8Json, JsonSerializerOptions? options)
         {
             _utf8Json = utf8Json;
-            _asyncState = new ReadAsyncState(typeof(List<TValue>), cancellationToken: default, options);
+            _asyncState = new ReadAsyncState(typeof(Queue<TValue>), cancellationToken: default, options);
         }
 
         public TValue Current
@@ -67,19 +66,17 @@ namespace System.Text.Json.Serialization
 
             bool HasLocalDataToReturn()
             {
-                if (_list?.Count > 1)
+                if (_valuesToReturn?.Count > 1)
                 {
-                    _current = _list[0];
-                    _list.RemoveAt(0);
+                    _current = _valuesToReturn.Dequeue();
                     return true;
                 }
 
                 if (_isFinalBlock)
                 {
-                    if (_list?.Count >= 1)
+                    if (_valuesToReturn?.Count >= 1)
                     {
-                        _current = _list[0];
-                        _list.RemoveAt(0);
+                        _current = _valuesToReturn.Dequeue();
                     }
 
                     _doneProcessing = true;
@@ -98,13 +95,14 @@ namespace System.Text.Json.Serialization
             while (!HaveDataToReturn())
             {
                 _isFinalBlock = await JsonSerializer.ReadFromStream(_utf8Json, _asyncState).ConfigureAwait(false);
-                _list = JsonSerializer.ContinueDeserialize<List<TValue>>(_asyncState, _isFinalBlock);
+                _valuesToReturn = JsonSerializer.ContinueDeserialize<Queue<TValue>>(_asyncState, _isFinalBlock);
             }
 
             return true;
 
-            // If .Count is 1, we may still be processing the item.
-            bool HaveDataToReturn() => _isFinalBlock || _list?.Count > 1;
+            // If .Count is 1, the item may be a partial object.
+            // todo: if feasible, have a better way to detect that the item is finished.
+            bool HaveDataToReturn() => _isFinalBlock || _valuesToReturn?.Count > 1;
         }
     }
 }
