@@ -12,7 +12,8 @@ if [ "$1" = "Linux" ]; then
 elif [ "$1" = "OSX" ] || [ "$1" = "tvOS" ] || [ "$1" = "iOS" ]; then
     engdir=$(dirname "${BASH_SOURCE[0]}")
 
-    if [ "$3" = "azDO" ]; then
+    # run this only on AzDo
+    if [ "$BUILD_BUILDNUMBER" != "" ]; then
         # workaround for old osx images on hosted agents
         # piped in case we get an agent without these values installed
         brew uninstall openssl@1.0.2t 2>&1 | true
