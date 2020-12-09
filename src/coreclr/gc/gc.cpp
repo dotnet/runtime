@@ -10349,7 +10349,7 @@ retry:
 
 size_t my_get_size (Object* ob)
 {
-    return GCToEEInterface::GetObjectSize(Object* obj);
+    return GCToEEInterface::GetObjectSize(Object* ob);
 }
 
 //#define size(i) header(i)->GetSize()
@@ -21554,6 +21554,8 @@ gc_heap::mark_object_simple (uint8_t** po THREAD_NUMBER_DCL)
 #else  //MULTIPLE_HEAPS
     const int thread = 0;
 #endif //MULTIPLE_HEAPS
+
+    printf("naricc: mark_object_simple: %p\n", o);
     {
 #ifdef SNOOP_STATS
         snoop_stat.objects_checked_count++;
