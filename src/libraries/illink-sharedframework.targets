@@ -31,11 +31,12 @@
     </PropertyGroup>
 
     <!-- Retrieve CoreLib's path as it isn't binplaced alongside the libraries. -->
-    <PropertyGroup>
-      <SystemPrivateCoreLibDllFileName>System.Private.CoreLib.dll</SystemPrivateCoreLibDllFileName>
-      <SystemPrivateCoreLibDir>$(CoreCLRArtifactsPath)IL\</SystemPrivateCoreLibDir>
-      <SystemPrivateCoreLibPath>$(SystemPrivateCoreLibDir)$(SystemPrivateCoreLibDllFileName)</SystemPrivateCoreLibPath>
-    </PropertyGroup>
+    <MSBuild Projects="$(CoreLibProject)"
+             Properties="Configuration=$(RuntimeConfiguration)"
+             RemoveProperties="Platform;TargetFramework"
+             Targets="GetTargetPath">
+      <Output TaskParameter="TargetOutputs" PropertyName="SystemPrivateCoreLibPath" />
+    </MSBuild>
 
     <PropertyGroup>
       <_AssemblyPaths>$(MicrosoftNetCoreAppRuntimePackRidLibTfmDir);$(SystemPrivateCoreLibPath)</_AssemblyPaths>
