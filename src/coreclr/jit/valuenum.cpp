@@ -8596,6 +8596,20 @@ void Compiler::fgValueNumberHWIntrinsic(GenTree* tree)
         fgMutateGcHeap(tree DEBUGARG("HWIntrinsic - MemoryStore"));
     }
 
+    // Check for any intrintics that have variable number of args or more than 2 args
+    // For now we will generate a unique value number for these cases.
+    //
+    if ((HWIntrinsicInfo::lookupNumArgs(hwIntrinsicNode->gtHWIntrinsicId) == -1) ||
+        ((tree->AsOp()->gtOp1 != nullptr) && (tree->AsOp()->gtOp1->OperIs(GT_LIST))))
+    {
+        // We have a HWINTRINSIC node in the GT_LIST form with 3 or more args
+        // Or the numArgs was specified as -1 in the numArgs column
+
+        // Generate unique VN
+        tree->gtVNPair.SetBoth(vnStore->VNForExpr(compCurBB, tree->TypeGet()));
+        return;
+    }
+
     VNFunc func         = GetVNFuncForNode(tree);
     bool   isMemoryLoad = hwIntrinsicNode->OperIsMemoryLoad();
 
@@ -8625,7 +8639,6 @@ void Compiler::fgValueNumberHWIntrinsic(GenTree* tree)
         return;
     }
 
-    int  lookupNumArgs    = HWIntrinsicInfo::lookupNumArgs(hwIntrinsicNode->gtHWIntrinsicId);
     bool encodeResultType = vnEncodesResultTypeForHWIntrinsic(hwIntrinsicNode->gtHWIntrinsicId);
 
     ValueNumPair excSetPair = ValueNumStore::VNPForEmptyExcSet();
@@ -8663,16 +8676,6 @@ void Compiler::fgValueNumberHWIntrinsic(GenTree* tree)
             normalPair = vnStore->VNPairForFunc(tree->TypeGet(), func);
             assert(vnStore->VNFuncArity(func) == 0);
         }
-    }
-    else if (tree->AsOp()->gtOp1->OperIs(GT_LIST) || (lookupNumArgs == -1))
-    {
-        // We have a HWINTRINSIC node in the GT_LIST form with 3 or more args
-        // Or the numArgs was specified as -1 in the numArgs column in "hwintrinsiclistxarch.h"
-        // For now we will generate a unique value number for this case.
-
-        // Generate unique VN
-        tree->gtVNPair.SetBoth(vnStore->VNForExpr(compCurBB, tree->TypeGet()));
-        return;
     }
     else // HWINTRINSIC unary or binary operator.
     {
