@@ -33,8 +33,7 @@
     <!-- Retrieve CoreLib's path as it isn't binplaced alongside the libraries. -->
     <PropertyGroup>
       <SystemPrivateCoreLibDllFileName>System.Private.CoreLib.dll</SystemPrivateCoreLibDllFileName>
-      <SystemPrivateCoreLibDir>$(CoreCLRArtifactsPath)</SystemPrivateCoreLibDir>
-      <SystemPrivateCoreLibDir Condition="'$(RuntimeFlavor)' != 'mono'">$(SystemPrivateCoreLibDir)IL\</SystemPrivateCoreLibDir>
+      <SystemPrivateCoreLibDir>$(CoreCLRArtifactsPath)IL\</SystemPrivateCoreLibDir>
       <SystemPrivateCoreLibPath>$(SystemPrivateCoreLibDir)$(SystemPrivateCoreLibDllFileName)</SystemPrivateCoreLibPath>
     </PropertyGroup>
 
