@@ -124,8 +124,9 @@ internal static partial class Interop
                     module.BaseAddress = new IntPtr(unchecked((void*)addressRange.Start));
                 }
             }
-
+            // Commit last line.
             Commit();
+
             return modules;
 
             void Commit()
