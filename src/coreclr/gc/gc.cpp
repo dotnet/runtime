@@ -10349,7 +10349,7 @@ retry:
 
 size_t my_get_size (Object* ob)
 {
-    return GCToEEInterface::GetObjectSize(Object* ob);
+    return GCToEEInterface::GetObjectSize(ob);
 }
 
 //#define size(i) header(i)->GetSize()
