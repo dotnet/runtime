@@ -123,20 +123,21 @@ internal static partial class Interop
                 {
                     module.BaseAddress = new IntPtr(unchecked((void*)addressRange.Start));
                 }
-
-                void Commit()
-                {
-                    // we only add module to collection, if at least one row had 'r' and 'x' set.
-                    if (moduleHasReadAndExecFlags && module is not null)
-                    {
-                        modules.Add(module);
-                        module = null;
-                        moduleHasReadAndExecFlags = false;
-                    }
-                }
             }
 
+            Commit();
             return modules;
+
+            void Commit()
+            {
+                // we only add module to collection, if at least one row had 'r' and 'x' set.
+                if (moduleHasReadAndExecFlags && module is not null)
+                {
+                    modules.Add(module);
+                    module = null;
+                    moduleHasReadAndExecFlags = false;
+                }
+            }
         }
     }
 }
