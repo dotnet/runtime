@@ -553,7 +553,7 @@ namespace System.Net
                     {
                         return t;
                     }
-                    // If we failed with InvalidOperationException fall-throgh and use synchronous lookup on threadpool.
+                    // If we failed with InvalidOperationException fall-through and use synchronous lookup on threadpool.
                 }
 
                 asyncState = family == AddressFamily.Unspecified ? (object)hostName : new KeyValuePair<string, AddressFamily>(hostName, family);
