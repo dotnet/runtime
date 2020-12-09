@@ -10349,25 +10349,7 @@ retry:
 
 size_t my_get_size (Object* ob)
 {
-    /*
-    MethodTable* mT = header(ob)->GetMethodTable();
-
-    printf("gc.cpp: my_get_size: ob: %p MIN_OBJECT_SIZE: %d\n", ob, MIN_OBJECT_SIZE);
-
-    size_t size = (mT->GetBaseSize() +
-                    (mT->HasComponentSize() ?
-                    ((size_t)((CObjectHeader*)ob)->GetNumComponents() * mT->RawGetComponentSize()) : 0));
-    
-    if (size < MIN_OBJECT_SIZE)
-    {
-        size = MIN_OBJECT_SIZE;
-    }
-
-    // Add thing about bounded arrays here
-
-    printf("gc.cpp: my_get_size: returning %d\n", size);*/
-
-    return GCToEEInterface::GetObjectSize(ob);
+    return GCToEEInterface::GetObjectSize(Object* obj);
 }
 
 //#define size(i) header(i)->GetSize()
