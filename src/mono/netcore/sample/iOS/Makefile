@@ -5,7 +5,7 @@ USE_LLVM=True
 
 all: runtimepack run
 
-TOOLS_DIR=../../../../../tools-local/tasks/mobile.tasks
+TOOLS_DIR=../../../../tasks
 appbuilder:
 	$(DOTNET) build -c Release $(TOOLS_DIR)/AotCompilerTask/MonoAOTCompiler.csproj
 	$(DOTNET) build -c Release $(TOOLS_DIR)/AppleAppBuilder/AppleAppBuilder.csproj
@@ -15,7 +15,7 @@ runtimepack:
 
 run: clean appbuilder
 	$(DOTNET) publish -c $(MONO_CONFIG) /p:TargetArchitecture=$(MONO_ARCH) \
-	/p:UseLLVM=$(USE_LLVM) /p:UseAotForSimulator=false
+	/p:UseLLVM=$(USE_LLVM) /p:ForceAOT=false
 
 clean:
 	rm -rf bin

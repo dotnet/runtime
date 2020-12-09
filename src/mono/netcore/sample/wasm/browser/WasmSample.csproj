@@ -13,7 +13,7 @@
 
   <Target Name="RebuildWasmAppBuilder">
     <ItemGroup>
-      <WasmAppBuildProject Include="$(RepoTasksDir)mobile.tasks\WasmAppBuilder\WasmAppBuilder.csproj" />
+      <WasmAppBuildProject Include="$(RepoTasksDir)WasmAppBuilder\WasmAppBuilder.csproj" />
     </ItemGroup>
 
     <MSBuild Projects="@(WasmAppBuildProject)"
@@ -26,7 +26,7 @@
   </Target>
 
   <UsingTask TaskName="WasmAppBuilder" 
-             AssemblyFile="$(ArtifactsBinDir)WasmAppBuilder\Debug\$(NetCoreAppCurrent)\publish\WasmAppBuilder.dll"/>
+             AssemblyFile="$(ArtifactsBinDir)WasmAppBuilder\Debug\$(NetCoreAppToolCurrent)\publish\WasmAppBuilder.dll"/>
 
   <Target Name="BuildApp" DependsOnTargets="RebuildWasmAppBuilder;Build">
     <ItemGroup>

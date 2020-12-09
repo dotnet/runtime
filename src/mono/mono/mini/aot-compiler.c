@@ -465,6 +465,9 @@ add_gsharedvt_wrappers (MonoAotCompile *acfg, MonoMethodSignature *sig, gboolean
 static void
 add_profile_instances (MonoAotCompile *acfg, ProfileData *data);
 
+static void
+encode_signature (MonoAotCompile *acfg, MonoMethodSignature *sig, guint8 *buf, guint8 **endbuf);
+
 static gboolean
 ignore_cfg (MonoCompile *cfg)
 {
@@ -3532,6 +3535,9 @@ encode_type (MonoAotCompile *acfg, MonoType *t, guint8 *buf, guint8 **endbuf)
 		break;
 	case MONO_TYPE_PTR:
 		encode_type (acfg, t->data.type, p, &p);
+		break;
+	case MONO_TYPE_FNPTR:
+		encode_signature (acfg, t->data.method, p, &p);
 		break;
 	case MONO_TYPE_GENERICINST: {
 		MonoClass *gclass = t->data.generic_class->container_class;
@@ -13825,7 +13831,10 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options,
 		return 1;
 	}
 #else
-	if (acfg->aot_opts.llvm_only || mono_aot_mode_is_full (&acfg->aot_opts) || mono_aot_mode_is_hybrid (&acfg->aot_opts))
+	if (acfg->aot_opts.llvm_only) {
+		if (!mono_aot_mode_is_interp (&acfg->aot_opts))
+			acfg->jit_opts |= MONO_OPT_GSHAREDVT;
+	} else if (mono_aot_mode_is_full (&acfg->aot_opts) || mono_aot_mode_is_hybrid (&acfg->aot_opts))
 		acfg->jit_opts |= MONO_OPT_GSHAREDVT;
 #endif
 

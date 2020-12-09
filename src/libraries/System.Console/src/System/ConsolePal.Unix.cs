@@ -725,7 +725,7 @@ namespace System
             Encoding? enc = EncodingHelper.GetEncodingFromCharset();
             return enc != null ?
                 enc.RemovePreamble() :
-                new UTF8Encoding(encoderShouldEmitUTF8Identifier: false);
+                Encoding.Default;
         }
 
         public static void SetConsoleInputEncoding(Encoding enc)

@@ -41,7 +41,7 @@ internal static partial class Interop
 ### File organization
 
 - The Interop partial class definitions should live in Interop.*.cs files. These Interop.*.cs files should all live under Common rather than within a given assembly's folder.
- - The only exception to this should be when an assembly P/Invokes to its own native library that isn't available to or consumed by anyone else, e.g. System.IO.Compression P/Invoking to clrcompression.dll. In such cases, System.IO.Compression should have its own Interop folder which follows a similar scheme as outlined in this proposal, but just for these private P/Invokes.
+ - The only exception to this should be when an assembly P/Invokes to its own native library that isn't available to or consumed by anyone else, e.g. System.IO.Compression P/Invoking to System.IO.Compression.Native.dll. In such cases, System.IO.Compression should have its own Interop folder which follows a similar scheme as outlined in this proposal, but just for these private P/Invokes.
 - Under Common\src\Interop, we'll have a folder for each target platform, and within each platform, for each library from which functionality is being consumed. The Interop.*.cs files will live within those library folders, e.g.
 
 ```
