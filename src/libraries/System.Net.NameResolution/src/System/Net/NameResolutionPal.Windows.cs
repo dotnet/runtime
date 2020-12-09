@@ -164,6 +164,15 @@ namespace System.Net
             {
                 state.RegisterForCancellation(cancellationToken);
             }
+            else if (errorCode == SocketError.TryAgain)
+            {
+                // WSATRY_AGAIN indicates possible problem with reachability according to docs.
+                // However, if servers are really unreachable, we would still get IOPenfing here
+                // and final result would be posted via overlapped IO.
+                // synchronouse failure here may signal issue when GetAddrInfoExW does not work from
+                // impersonificated context.
+                return Task.FromException(new InvalidOperationException());
+            }
             else
             {
                 ProcessResult(errorCode, context);
@@ -206,7 +215,6 @@ namespace System.Net
                     Exception ex = (errorCode == (SocketError)Interop.Winsock.WSA_E_CANCELLED && cancellationToken.IsCancellationRequested)
                         ? (Exception)new OperationCanceledException(cancellationToken)
                         : new SocketException((int)errorCode);
-
                     state.SetResult(ExceptionDispatchInfo.SetCurrentStackTrace(ex));
                 }
             }

@@ -525,28 +525,37 @@ namespace System.Net
 
                 asyncState = family == AddressFamily.Unspecified ? (object)ipAddress : new KeyValuePair<IPAddress, AddressFamily>(ipAddress, family);
             }
-            else if (NameResolutionPal.SupportsGetAddrInfoAsync)
-            {
-#pragma warning disable CS0162 // Unreachable code detected -- SupportsGetAddrInfoAsync is a constant on *nix.
-
-                // If the OS supports it and 'hostName' is not an IP Address, resolve the name asynchronously
-                // instead of calling the synchronous version in the ThreadPool.
-
-                ValidateHostName(hostName);
-
-                if (NameResolutionTelemetry.Log.IsEnabled())
-                {
-                    return justAddresses
-                        ? (Task)GetAddrInfoWithTelemetryAsync<IPAddress[]>(hostName, justAddresses, family, cancellationToken)
-                        : (Task)GetAddrInfoWithTelemetryAsync<IPHostEntry>(hostName, justAddresses, family, cancellationToken);
-                }
-                else
-                {
-                    return NameResolutionPal.GetAddrInfoAsync(hostName, justAddresses, family, cancellationToken);
-                }
-            }
             else
             {
+                if (NameResolutionPal.SupportsGetAddrInfoAsync)
+                {
+#pragma warning disable CS0162 // Unreachable code detected -- SupportsGetAddrInfoAsync is a constant on *nix.
+
+                    // If the OS supports it and 'hostName' is not an IP Address, resolve the name asynchronously
+                    // instead of calling the synchronous version in the ThreadPool.
+
+                    ValidateHostName(hostName);
+
+                    Task t;
+                    if (NameResolutionTelemetry.Log.IsEnabled())
+                    {
+                        t = justAddresses
+                            ? (Task)GetAddrInfoWithTelemetryAsync<IPAddress[]>(hostName, justAddresses, family, cancellationToken)
+                            : (Task)GetAddrInfoWithTelemetryAsync<IPHostEntry>(hostName, justAddresses, family, cancellationToken);
+                    }
+                    else
+                    {
+                        t = NameResolutionPal.GetAddrInfoAsync(hostName, justAddresses, family, cancellationToken);
+                    }
+
+
+                    if (!t.IsFaulted || !(t.Exception?.InnerException is InvalidOperationException))
+                    {
+                        return t;
+                    }
+                    // If we failed with InvalidOperationException fall-throgh and use synchronous lookup on threadpool.
+                }
+
                 asyncState = family == AddressFamily.Unspecified ? (object)hostName : new KeyValuePair<string, AddressFamily>(hostName, family);
             }
 
