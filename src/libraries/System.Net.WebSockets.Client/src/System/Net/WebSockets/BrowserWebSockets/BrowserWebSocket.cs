@@ -446,7 +446,13 @@ namespace System.Net.WebSockets
             }
             catch (Exception exc)
             {
-                throw new WebSocketException(WebSocketError.NativeError, exc);
+                switch (exc)
+                {
+                    case OperationCanceledException:
+                        throw;
+                    default:
+                        throw new WebSocketException(WebSocketError.InvalidState, exc);
+                }
             }
         }
 
