@@ -2084,7 +2084,6 @@ CorInfoCallConvExtension Compiler::compMethodInfoGetEntrypointCallConv(CORINFO_M
         default:
             BADCODE("bad calling convention");
     }
-    return CorInfoCallConvExtension::Managed;
 }
 
 #ifdef DEBUG
