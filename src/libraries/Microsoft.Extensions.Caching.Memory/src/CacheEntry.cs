@@ -24,7 +24,7 @@ namespace Microsoft.Extensions.Caching.Memory
         private TimeSpan? _absoluteExpirationRelativeToNow;
         private TimeSpan? _slidingExpiration;
         private long? _size;
-        private IDisposable _scope;
+        private CacheEntry _previous; // this field is not null only before the entry is added to the cache
         private object _value;
         private int _state; // actually a [Flag] enum called "State"
 
@@ -32,7 +32,7 @@ namespace Microsoft.Extensions.Caching.Memory
         {
             Key = key ?? throw new ArgumentNullException(nameof(key));
             _cache = memoryCache ?? throw new ArgumentNullException(nameof(memoryCache));
-            _scope = CacheEntryHelper.EnterScope(this);
+            _previous = CacheEntryHelper.EnterScope(this);
         }
 
         /// <summary>
@@ -145,11 +145,6 @@ namespace Microsoft.Extensions.Caching.Memory
             {
                 IsDisposed = true;
 
-                // Ensure the _scope reference is cleared because it can reference other CacheEntry instances.
-                // This CacheEntry is going to be put into a MemoryCache, and we don't want to root unnecessary objects.
-                _scope.Dispose();
-                _scope = null;
-
                 // Don't commit or propagate options if the CacheEntry Value was never set.
                 // We assume an exception occurred causing the caller to not set the Value successfully,
                 // so don't use this entry.
@@ -157,11 +152,14 @@ namespace Microsoft.Extensions.Caching.Memory
                 {
                     _cache.SetEntry(this);
 
-                    if (CanPropagateOptions())
+                    if (_previous != null && CanPropagateOptions())
                     {
-                        PropagateOptions(CacheEntryHelper.Current);
+                        PropagateOptions(_previous);
                     }
                 }
+
+                CacheEntryHelper.ExitScope(this, _previous);
+                _previous = null; // we don't want to root unnecessary objects
             }
         }
 
