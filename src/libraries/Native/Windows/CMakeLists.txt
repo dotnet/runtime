@@ -129,4 +129,4 @@ if(STATIC_LIBS_ONLY)
     add_subdirectory(../Unix/System.Globalization.Native System.Globalization.Native)
 endif()
 
-add_subdirectory(clrcompression)
+add_subdirectory(System.IO.Compression.Native)

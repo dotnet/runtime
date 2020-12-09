@@ -39,7 +39,7 @@
 
   <Target Name="RebuildWasmAppBuilder">
     <ItemGroup>
-      <WasmAppBuildProject Include="$(RepoTasksDir)mobile.tasks\WasmAppBuilder\WasmAppBuilder.csproj" />
+      <WasmAppBuildProject Include="$(RepoTasksDir)WasmAppBuilder\WasmAppBuilder.csproj" />
     </ItemGroup>
 
     <MSBuild Projects="@(WasmAppBuildProject)"
@@ -51,7 +51,7 @@
              Targets="Build;Publish"/>
   </Target>
 
-  <Import Project="$(RepoTasksDir)mobile.tasks\AotCompilerTask\MonoAOTCompiler.props" />
+  <Import Project="$(RepoTasksDir)AotCompilerTask\MonoAOTCompiler.props" />
   <UsingTask TaskName="WasmAppBuilder" 
              AssemblyFile="$(ArtifactsBinDir)WasmAppBuilder\Debug\$(NetCoreAppToolCurrent)\publish\WasmAppBuilder.dll"/>
 

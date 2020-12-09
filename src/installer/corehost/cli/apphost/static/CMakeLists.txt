@@ -119,7 +119,7 @@ if(CLR_CMAKE_TARGET_WIN32)
     set(CORECLR_LIBRARIES
         ${CORECLR_STATIC_LIB_LOCATION}/coreclr_static.lib
         ${CORECLR_STATIC_LIB_LOCATION}/System.Globalization.Native.lib
-        ${CORECLR_STATIC_LIB_LOCATION}/libclrcompression.lib
+        ${CORECLR_STATIC_LIB_LOCATION}/System.IO.Compression.Native.lib
         kernel32.lib
         advapi32.lib
         ole32.lib

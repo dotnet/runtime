@@ -7,6 +7,7 @@ using System.IO;
 using System.Net.Http.Headers;
 using System.Net.Security;
 using System.Runtime.InteropServices;
+using System.Runtime.Versioning;
 using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
@@ -418,9 +419,11 @@ namespace System.Net.Http
         /// Gets or sets a value indicating whether TCP keep-alive is enabled.
         /// </summary>
         /// <remarks>
+        /// Only supported on Windows 10 version 2004 or newer.
         /// If enabled, the values of <see cref="TcpKeepAliveInterval" /> and <see cref="TcpKeepAliveTime"/> will be forwarded
         /// to set WINHTTP_OPTION_TCP_KEEPALIVE, enabling and configuring TCP keep-alive for the backing TCP socket.
         /// </remarks>
+        [SupportedOSPlatform("windows10.0.19041")]
         public bool TcpKeepAliveEnabled
         {
             get
@@ -438,9 +441,11 @@ namespace System.Net.Http
         /// Gets or sets the TCP keep-alive timeout.
         /// </summary>
         /// <remarks>
+        /// Only supported on Windows 10 version 2004 or newer.
         /// Has no effect if <see cref="TcpKeepAliveEnabled"/> is <see langword="false" />.
         /// The default value of this property is 2 hours.
         /// </remarks>
+        [SupportedOSPlatform("windows10.0.19041")]
         public TimeSpan TcpKeepAliveTime
         {
             get
@@ -459,9 +464,11 @@ namespace System.Net.Http
         /// Gets or sets the TCP keep-alive interval.
         /// </summary>
         /// <remarks>
+        /// Only supported on Windows 10 version 2004 or newer.
         /// Has no effect if <see cref="TcpKeepAliveEnabled"/> is <see langword="false" />.
         /// The default value of this property is 1 second.
         /// </remarks>
+        [SupportedOSPlatform("windows10.0.19041")]
         public TimeSpan TcpKeepAliveInterval
         {
             get

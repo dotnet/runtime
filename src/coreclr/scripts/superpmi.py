@@ -1817,7 +1817,7 @@ def determine_jit_ee_version(coreclr_args):
     """ Determine the JIT-EE version to use.
 
         The JIT-EE version is used for determining which MCH files to download and use. It is determined as follows:
-        1. Try to parse it out of the source code. If we can find src\\coreclr\\src\\inc\\jiteeversionguid.h in the source
+        1. Try to parse it out of the source code. If we can find src\\coreclr\\inc\\jiteeversionguid.h in the source
            tree (and we're already assuming we can find the repo root from the relative path of this script),
            then the JIT-EE version lives in jiteeversionguid.h as follows:
 
@@ -1845,7 +1845,7 @@ def determine_jit_ee_version(coreclr_args):
         (str) The JIT-EE version to use
     """
 
-    jiteeversionguid_h_path = os.path.join(coreclr_args.coreclr_dir, "src", "inc", "jiteeversionguid.h")
+    jiteeversionguid_h_path = os.path.join(coreclr_args.coreclr_dir, "inc", "jiteeversionguid.h")
     if os.path.isfile(jiteeversionguid_h_path):
         # The string is near the beginning of the somewhat large file, so just read a line at a time when searching.
         with open(jiteeversionguid_h_path, 'r') as file_handle:
@@ -2403,7 +2403,7 @@ def process_base_jit_path_arg(coreclr_args):
         3. If the `-base_git_hash` argument is used, use that directly as the exact git
            hash of the baseline JIT to use.
         4. Otherwise, figure out the latest hash, starting with `base_git_hash`, that contains any changes to
-           the src\\coreclr\\src\\jit directory. (We do this because the JIT rolling build only includes
+           the src\\coreclr\\jit directory. (We do this because the JIT rolling build only includes
            builds for changes to this directory. So, this logic needs to stay in sync with the logic
            that determines what causes the JIT directory to be rebuilt. E.g., it should also get
            rebuilt if the JIT-EE interface GUID changes. Alternatively, we can take the entire list
@@ -2468,7 +2468,7 @@ def process_base_jit_path_arg(coreclr_args):
 
         if coreclr_args.base_git_hash is None:
             # Enumerate the last 20 changes, starting with the baseline, that included JIT changes.
-            command = [ "git", "log", "--pretty=format:%H", baseline_hash, "-20", "--", "src/coreclr/src/jit/*" ]
+            command = [ "git", "log", "--pretty=format:%H", baseline_hash, "-20", "--", "src/coreclr/jit/*" ]
             logging.debug("Invoking: %s", " ".join(command))
             proc = subprocess.Popen(command, stdout=subprocess.PIPE)
             stdout_change_list, _ = proc.communicate()
