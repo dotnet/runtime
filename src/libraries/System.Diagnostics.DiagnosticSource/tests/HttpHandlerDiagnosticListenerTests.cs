@@ -264,6 +264,7 @@ namespace System.Diagnostics.Tests
                     var correlationContext = startRequest.Headers["Correlation-Context"];
                     var baggage = startRequest.Headers["baggage"];
                     Assert.Equal("k=v", correlationContext);
+                    Assert.Equal("k=v", baggage);
                 }
             }
             finally
