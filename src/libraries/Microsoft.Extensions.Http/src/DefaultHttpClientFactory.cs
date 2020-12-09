@@ -156,7 +156,9 @@ namespace Microsoft.Extensions.Http
                     {
                         activeHandlersLock.EnterWriteLock();
 
-                        (entry, topHandler) = CreateHandlerEntry(name, services);
+                        var createEntryResult = CreateHandlerEntry(name, services);
+                        entry = createEntryResult.Entry;
+                        topHandler = createEntryResult.TopHandler;
                         _activeHandlers.Add(name, entry);
                     }
                     finally
@@ -192,7 +194,7 @@ namespace Microsoft.Extensions.Http
             }
         }
 
-        internal (ActiveHandlerTrackingEntry, LifetimeTrackingHttpMessageHandler?) CreateHandlerEntry(string name, IServiceProvider? scopedServices)
+        internal CreateEntryResult CreateHandlerEntry(string name, IServiceProvider? scopedServices)
         {
             HttpClientFactoryOptions options = _optionsMonitor.Get(name);
             if (!options.PreserveExistingScope || options.SuppressHandlerScope || scopedServices == null)
@@ -204,7 +206,7 @@ namespace Microsoft.Extensions.Http
         }
 
         // Internal for tests
-        internal (ActiveHandlerTrackingEntry, LifetimeTrackingHttpMessageHandler?) CreateHandlerEntryInManualScope(string name)
+        internal CreateEntryResult CreateHandlerEntryInManualScope(string name)
         {
             IServiceProvider services = _services;
             var scope = (IServiceScope)null;
@@ -228,7 +230,7 @@ namespace Microsoft.Extensions.Http
             }
         }
 
-        private (ActiveHandlerTrackingEntry, LifetimeTrackingHttpMessageHandler?) CreateHandlerEntryInternal(string name, IServiceProvider services, IServiceScope? scope, HttpClientFactoryOptions options)
+        private CreateEntryResult CreateHandlerEntryInternal(string name, IServiceProvider services, IServiceScope? scope, HttpClientFactoryOptions options)
         {
             if (options.PreserveExistingScope && options.SuppressHandlerScope)
             {
@@ -240,7 +242,7 @@ namespace Microsoft.Extensions.Http
             {
                 var primaryHandler = new LifetimeTrackingHttpMessageHandler(new HttpClientHandler());
                 var activeEntry = new ActiveHandlerTrackingEntry(name, primaryHandler, true, scope, options.HandlerLifetime);
-                return (activeEntry, null);
+                return new CreateEntryResult(activeEntry);
             }
 
             HttpMessageHandlerBuilder builder = services.GetRequiredService<HttpMessageHandlerBuilder>();
@@ -293,7 +295,7 @@ namespace Microsoft.Extensions.Http
             // timer) and then dispose it without ever creating a client. That would be bad. It's unlikely
             // this would happen, but we want to be sure.
             var entry = new ActiveHandlerTrackingEntry(name, handler, isPrimary, scope, options.HandlerLifetime);
-            return (entry, topHandler);
+            return new CreateEntryResult(entry, topHandler);
 
             void Configure(HttpMessageHandlerBuilder b)
             {
@@ -344,11 +346,14 @@ namespace Microsoft.Extensions.Http
             try
             {
                 activeHandlersLock.EnterWriteLock();
+
                 // The timer callback should be the only one removing from the active collection. If we can't find
                 // our entry in the collection, then this is a bug.
-                bool removed = _activeHandlers.Remove(active.Name, out ActiveHandlerTrackingEntry found);
-                Debug.Assert(removed, "Entry not found. We should always be able to remove the entry");
+                bool entryExists = _activeHandlers.TryGetValue(active.Name, out ActiveHandlerTrackingEntry found);
+                Debug.Assert(entryExists, "Entry not found. We should always be able to remove the entry");
                 Debug.Assert(object.ReferenceEquals(active, found), "Different entry found. The entry should not have been replaced");
+
+                 _activeHandlers.Remove(active.Name);
             }
             finally
             {
@@ -520,6 +525,22 @@ namespace Microsoft.Extensions.Http
             public static void HandlerExpired(ILogger logger, string clientName, TimeSpan lifetime)
             {
                 _handlerExpired(logger, lifetime.TotalMilliseconds, clientName, null);
+            }
+        }
+
+        internal class CreateEntryResult
+        {
+            public ActiveHandlerTrackingEntry Entry { get; }
+            public LifetimeTrackingHttpMessageHandler? TopHandler { get; }
+
+            public CreateEntryResult(ActiveHandlerTrackingEntry entry) : this(entry, null)
+            {
+            }
+
+            public CreateEntryResult(ActiveHandlerTrackingEntry entry, LifetimeTrackingHttpMessageHandler? topHandler)
+            {
+                Entry = entry;
+                TopHandler = topHandler;
             }
         }
     }
