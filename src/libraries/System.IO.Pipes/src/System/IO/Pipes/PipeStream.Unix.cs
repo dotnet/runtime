@@ -243,7 +243,8 @@ namespace System.IO.Pipes
         }
 
         /// <summary>Initializes the handle to be used asynchronously.</summary>
-        private void InitializeAsyncHandle(SafePipeHandle handle, bool isAsync)
+        /// <param name="handle">The handle.</param>
+        private void InitializeAsyncHandle(SafePipeHandle handle)
         { }
 
         internal virtual void DisposeCore(bool disposing)
