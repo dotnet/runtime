@@ -3116,7 +3116,7 @@ void emitter::emitInsStoreInd(instruction ins, emitAttr attr, GenTreeStoreInd* m
         }
 
         // Updating variable liveness after instruction was emitted
-        codeGen->genUpdateLife(varNode);
+        codeGen->genUpdateLife(mem);
         return;
     }
 
