@@ -12995,8 +12995,6 @@ GenTree* Compiler::gtFoldTypeCompare(GenTree* tree)
 
     // Update various flags
     objMT->gtFlags |= GTF_EXCEPT;
-    compCurBB->bbFlags |= BBF_HAS_VTABREF;
-    optMethodFlags |= OMF_HAS_VTABLEREF;
 
     // Compare the two method tables
     GenTree* const compare = gtCreateHandleCompare(oper, objMT, knownMT, typeCheckInliningResult);

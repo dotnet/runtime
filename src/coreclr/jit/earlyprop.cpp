@@ -4,7 +4,7 @@
 //                                    Early Value Propagation
 //
 // This phase performs an SSA-based value propagation optimization that currently only applies to array
-// lengths, runtime type handles, and explicit null checks. An SSA-based backwards tracking of local variables
+// lengths and explicit null checks. An SSA-based backwards tracking of local variables
 // is performed at each point of interest, e.g., an array length reference site, a method table reference site, or
 // an indirection.
 // The tracking continues until an interesting value is encountered. The value is then used to rewrite
@@ -18,17 +18,15 @@
 bool Compiler::optDoEarlyPropForFunc()
 {
     bool propArrayLen  = (optMethodFlags & OMF_HAS_NEWARRAY) && (optMethodFlags & OMF_HAS_ARRAYREF);
-    bool propGetType   = (optMethodFlags & (OMF_HAS_NEWOBJ | OMF_HAS_NEWARRAY)) && (optMethodFlags & OMF_HAS_VTABLEREF);
     bool propNullCheck = (optMethodFlags & OMF_HAS_NULLCHECK) != 0;
-    return propArrayLen || propGetType || propNullCheck;
+    return propArrayLen || propNullCheck;
 }
 
 bool Compiler::optDoEarlyPropForBlock(BasicBlock* block)
 {
     bool bbHasArrayRef  = (block->bbFlags & BBF_HAS_IDX_LEN) != 0;
-    bool bbHasVtableRef = (block->bbFlags & BBF_HAS_VTABREF) != 0;
     bool bbHasNullCheck = (block->bbFlags & BBF_HAS_NULLCHECK) != 0;
-    return bbHasArrayRef || bbHasVtableRef || bbHasNullCheck;
+    return bbHasArrayRef || bbHasNullCheck;
 }
 
 //--------------------------------------------------------------------
@@ -321,26 +319,7 @@ GenTree* Compiler::optEarlyPropRewriteTree(GenTree* tree, LocalNumberToNullCheck
     }
     else
     {
-        assert(tree->OperIsIndir());
-        if (gtIsVtableRef(tree))
-        {
-            // Don't propagate type handles that are used as null checks, which are usually in
-            // form of
-            //      *  stmtExpr  void  (top level)
-            //      \--*  indir     int
-            //          \--*  lclVar    ref    V02 loc0
-            if (compCurStmt->GetRootNode() == tree)
-            {
-                return nullptr;
-            }
-
-            objectRefPtr = tree->AsIndir()->Addr();
-            propKind     = optPropKind::OPK_OBJ_GETTYPE;
-        }
-        else
-        {
-            return nullptr;
-        }
+        return nullptr;
     }
 
     if (!objectRefPtr->OperIsScalarLocal() || !lvaInSsa(objectRefPtr->AsLclVarCommon()->GetLclNum()))
@@ -355,11 +334,6 @@ GenTree* Compiler::optEarlyPropRewriteTree(GenTree* tree, LocalNumberToNullCheck
             optCheckFlagsAreSet(OMF_HAS_ARRAYREF, "OMF_HAS_ARRAYREF", BBF_HAS_IDX_LEN, "BBF_HAS_IDX_LEN", tree,
                                 compCurBB);
         }
-        else
-        {
-            optCheckFlagsAreSet(OMF_HAS_VTABLEREF, "OMF_HAS_VTABLEREF", BBF_HAS_VTABREF, "BBF_HAS_VTABREF", tree,
-                                compCurBB);
-        }
     }
 #endif
 
@@ -369,7 +343,7 @@ GenTree* Compiler::optEarlyPropRewriteTree(GenTree* tree, LocalNumberToNullCheck
 
     if (actualVal != nullptr)
     {
-        assert((propKind == optPropKind::OPK_ARRAYLEN) || (propKind == optPropKind::OPK_OBJ_GETTYPE));
+        assert(propKind == optPropKind::OPK_ARRAYLEN);
         assert(actualVal->IsCnsIntOrI());
         assert(actualVal->GetNodeSize() == TREE_NODE_SZ_SMALL);
 
@@ -548,14 +522,6 @@ GenTree* Compiler::optPropGetValueRec(unsigned lclNum, unsigned ssaNum, optPropK
                         // Leave out non-constant-sized array
                         value = nullptr;
                     }
-                }
-            }
-            else if (valueKind == optPropKind::OPK_OBJ_GETTYPE)
-            {
-                value = getObjectHandleNodeFromAllocation(treeRhs DEBUGARG(ssaVarDsc->GetBlock()));
-                if (value != nullptr)
-                {
-                    assert(value->IsCnsIntOrI());
                 }
             }
         }
