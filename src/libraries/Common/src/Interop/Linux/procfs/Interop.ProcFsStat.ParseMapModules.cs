@@ -65,8 +65,9 @@ internal static partial class Interop
         {
             Debug.Assert(lines != null);
 
-            ProcessModule? previous = null;
+            ProcessModule? module = null;
             ProcessModuleCollection modules = new(capacity: 0);
+            bool moduleHasReadAndExecFlags = false;
 
             foreach (string line in lines)
             {
@@ -78,11 +79,13 @@ internal static partial class Interop
 
                 if (addressRange == default)
                 {
+                    Commit();
                     continue;
                 }
 
                 // Parse the permissions
-                bool hasReadAndExecFlags = parser.ParseRaw(HasReadAndExecFlags);
+                bool lineHasReadAndExecFlags = parser.ParseRaw(HasReadAndExecFlags);
+                moduleHasReadAndExecFlags |= lineHasReadAndExecFlags;
 
                 // Skip past the offset, dev, and inode fields
                 parser.MoveNext();
@@ -92,25 +95,22 @@ internal static partial class Interop
                 // Parse the pathname
                 if (!parser.MoveNext())
                 {
+                    Commit();
                     continue;
                 }
 
                 string pathname = parser.ExtractCurrentToEnd();
-                bool isContinuation = previous?.FileName == pathname && (long)previous.BaseAddress + previous.ModuleMemorySize == addressRange.Start;
+                bool isContinuation = module?.FileName == pathname && (long)module.BaseAddress + module.ModuleMemorySize == addressRange.Start;
 
                 if (isContinuation)
                 {
-                    previous!.ModuleMemorySize += addressRange.Size;
+                    module!.ModuleMemorySize += addressRange.Size;
                     continue;
                 }
 
-                // we only care about entries with 'r' and 'x' set.
-                if (!hasReadAndExecFlags)
-                {
-                    continue;
-                }
+                Commit();
 
-                var module = new ProcessModule
+                module = new ProcessModule
                 {
                     FileName = pathname,
                     ModuleName = Path.GetFileName(pathname),
@@ -124,8 +124,16 @@ internal static partial class Interop
                     module.BaseAddress = new IntPtr(unchecked((void*)addressRange.Start));
                 }
 
-                modules.Add(module);
-                previous = module;
+                void Commit()
+                {
+                    // we only add module to collection, if at least one row had 'r' and 'x' set.
+                    if (moduleHasReadAndExecFlags && module is not null)
+                    {
+                        modules.Add(module);
+                        module = null;
+                        moduleHasReadAndExecFlags = false;
+                    }
+                }
             }
 
             return modules;
