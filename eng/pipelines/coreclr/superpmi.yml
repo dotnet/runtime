@@ -9,7 +9,7 @@ trigger:
     - master
   paths:
     include:
-    - src/coreclr/src/inc/jiteeversionguid.h
+    - src/coreclr/inc/jiteeversionguid.h
 
 pr: none
 

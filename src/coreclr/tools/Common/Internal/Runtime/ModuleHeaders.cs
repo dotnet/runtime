@@ -7,7 +7,7 @@ namespace Internal.Runtime
 {
     //
     // Please keep the data structures in this file in sync with the native version at
-    //  src/coreclr/src/inc/readytorun.h
+    //  src/coreclr/inc/readytorun.h
     //
 
     internal struct ReadyToRunHeaderConstants

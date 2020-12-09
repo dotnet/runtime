@@ -1944,9 +1944,9 @@ PVOID ZapInfo::embedDirectCall(CORINFO_METHOD_HANDLE ftn,
     return pEntryPointOrThunkToEmbed;
 }
 
-void ZapInfo::notifyInstructionSetUsage(CORINFO_InstructionSet instructionSet, bool supportEnabled)
+bool ZapInfo::notifyInstructionSetUsage(CORINFO_InstructionSet instructionSet, bool supportEnabled)
 {
-    m_pEEJitInfo->notifyInstructionSetUsage(instructionSet, supportEnabled);
+    return m_pEEJitInfo->notifyInstructionSetUsage(instructionSet, supportEnabled);
 }
 
 void ZapInfo::getFunctionEntryPoint(

@@ -12,7 +12,7 @@
     <ProjectTypeGuids>{888888a0-9f3d-457c-b088-3a5042f75d52}</ProjectTypeGuids>
     <LaunchProvider>Standard Python launcher</LaunchProvider>
     <InterpreterId>Global|PythonCore|2.7</InterpreterId>
-    <CommandLineArguments>--man c:\src\coreclr\src\vm\clretwall.man --intermediate c:\work\runtimeeventsource</CommandLineArguments>
+    <CommandLineArguments>--man c:\src\coreclr\vm\clretwall.man --intermediate c:\work\runtimeeventsource</CommandLineArguments>
     <EnableNativeCodeDebugging>False</EnableNativeCodeDebugging>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)' == 'Debug'" />

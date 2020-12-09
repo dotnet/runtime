@@ -412,14 +412,13 @@ struct BasicBlock : private LIR::Range
                                                 // cases, because the BB occurs in a loop, and we've determined that all
                                                 // paths in the loop body leading to BB include a call.
 
-#define BBF_HAS_VTABREF         MAKE_BBFLAG(20) // BB contains reference of vtable
-#define BBF_HAS_IDX_LEN         MAKE_BBFLAG(21) // BB contains simple index or length expressions on an array local var.
-#define BBF_HAS_NEWARRAY        MAKE_BBFLAG(22) // BB contains 'new' of an array
-#define BBF_HAS_NEWOBJ          MAKE_BBFLAG(23) // BB contains 'new' of an object type.
+#define BBF_HAS_IDX_LEN         MAKE_BBFLAG(20) // BB contains simple index or length expressions on an array local var.
+#define BBF_HAS_NEWARRAY        MAKE_BBFLAG(21) // BB contains 'new' of an array
+#define BBF_HAS_NEWOBJ          MAKE_BBFLAG(22) // BB contains 'new' of an object type.
 
 #if defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
 
-#define BBF_FINALLY_TARGET      MAKE_BBFLAG(24) // BB is the target of a finally return: where a finally will return during
+#define BBF_FINALLY_TARGET      MAKE_BBFLAG(23) // BB is the target of a finally return: where a finally will return during
                                                 // non-exceptional flow. Because the ARM calling sequence for calling a
                                                 // finally explicitly sets the return address to the finally target and jumps
                                                 // to the finally, instead of using a call instruction, ARM needs this to
@@ -428,27 +427,27 @@ struct BasicBlock : private LIR::Range
 
 #endif // defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
 
-#define BBF_BACKWARD_JUMP       MAKE_BBFLAG(25) // BB is surrounded by a backward jump/switch arc
-#define BBF_RETLESS_CALL        MAKE_BBFLAG(26) // BBJ_CALLFINALLY that will never return (and therefore, won't need a paired
+#define BBF_BACKWARD_JUMP       MAKE_BBFLAG(24) // BB is surrounded by a backward jump/switch arc
+#define BBF_RETLESS_CALL        MAKE_BBFLAG(25) // BBJ_CALLFINALLY that will never return (and therefore, won't need a paired
                                                 // BBJ_ALWAYS); see isBBCallAlwaysPair().
-#define BBF_LOOP_PREHEADER      MAKE_BBFLAG(27) // BB is a loop preheader block
+#define BBF_LOOP_PREHEADER      MAKE_BBFLAG(26) // BB is a loop preheader block
+#define BBF_COLD                MAKE_BBFLAG(27) // BB is cold
 
-#define BBF_COLD                MAKE_BBFLAG(28) // BB is cold
-#define BBF_PROF_WEIGHT         MAKE_BBFLAG(29) // BB weight is computed from profile data
-#define BBF_IS_LIR              MAKE_BBFLAG(30) // Set if the basic block contains LIR (as opposed to HIR)
-#define BBF_KEEP_BBJ_ALWAYS     MAKE_BBFLAG(31) // A special BBJ_ALWAYS block, used by EH code generation. Keep the jump kind
+#define BBF_PROF_WEIGHT         MAKE_BBFLAG(28) // BB weight is computed from profile data
+#define BBF_IS_LIR              MAKE_BBFLAG(29) // Set if the basic block contains LIR (as opposed to HIR)
+#define BBF_KEEP_BBJ_ALWAYS     MAKE_BBFLAG(30) // A special BBJ_ALWAYS block, used by EH code generation. Keep the jump kind
                                                 // as BBJ_ALWAYS. Used for the paired BBJ_ALWAYS block following the
                                                 // BBJ_CALLFINALLY block, as well as, on x86, the final step block out of a
                                                 // finally.
+#define BBF_CLONED_FINALLY_BEGIN           MAKE_BBFLAG(31) // First block of a cloned finally region
 
-#define BBF_CLONED_FINALLY_BEGIN           MAKE_BBFLAG(32) // First block of a cloned finally region
-#define BBF_CLONED_FINALLY_END             MAKE_BBFLAG(33) // Last block of a cloned finally region
-#define BBF_HAS_CALL                       MAKE_BBFLAG(34) // BB contains a call
-#define BBF_DOMINATED_BY_EXCEPTIONAL_ENTRY MAKE_BBFLAG(35) // Block is dominated by exceptional entry.
+#define BBF_CLONED_FINALLY_END             MAKE_BBFLAG(32) // Last block of a cloned finally region
+#define BBF_HAS_CALL                       MAKE_BBFLAG(33) // BB contains a call
+#define BBF_DOMINATED_BY_EXCEPTIONAL_ENTRY MAKE_BBFLAG(34) // Block is dominated by exceptional entry.
+#define BBF_BACKWARD_JUMP_TARGET           MAKE_BBFLAG(35) // Block is a target of a backward jump
 
-#define BBF_BACKWARD_JUMP_TARGET           MAKE_BBFLAG(36) // Block is a target of a backward jump
-#define BBF_PATCHPOINT                     MAKE_BBFLAG(37) // Block is a patchpoint
-#define BBF_HAS_CLASS_PROFILE              MAKE_BBFLAG(38) // BB contains a call needing a class profile
+#define BBF_PATCHPOINT                     MAKE_BBFLAG(36) // Block is a patchpoint
+#define BBF_HAS_CLASS_PROFILE              MAKE_BBFLAG(37) // BB contains a call needing a class profile
 
 // clang-format on
 
@@ -469,7 +468,7 @@ struct BasicBlock : private LIR::Range
 
 #define BBF_COMPACT_UPD                                                                                                \
     (BBF_CHANGED | BBF_GC_SAFE_POINT | BBF_HAS_JMP | BBF_HAS_IDX_LEN | BBF_BACKWARD_JUMP | BBF_HAS_NEWARRAY |          \
-     BBF_HAS_NEWOBJ | BBF_HAS_NULLCHECK | BBF_HAS_VTABREF)
+     BBF_HAS_NEWOBJ | BBF_HAS_NULLCHECK)
 
 // Flags a block should not have had before it is split.
 
@@ -493,7 +492,7 @@ struct BasicBlock : private LIR::Range
 #define BBF_SPLIT_GAINED                                                                                               \
     (BBF_DONT_REMOVE | BBF_HAS_LABEL | BBF_HAS_JMP | BBF_BACKWARD_JUMP | BBF_HAS_IDX_LEN | BBF_HAS_NEWARRAY |          \
      BBF_PROF_WEIGHT | BBF_HAS_NEWOBJ | BBF_KEEP_BBJ_ALWAYS | BBF_CLONED_FINALLY_END | BBF_HAS_NULLCHECK |             \
-     BBF_HAS_VTABREF | BBF_HAS_CLASS_PROFILE)
+     BBF_HAS_CLASS_PROFILE)
 
 #ifndef __GNUC__ // GCC doesn't like C_ASSERT at global scope
     static_assert_no_msg((BBF_SPLIT_NONEXIST & BBF_SPLIT_LOST) == 0);

@@ -53,7 +53,7 @@ namespace Internal.JitInterface
         /*
            Changes to the following types may require revisiting the above layout.
 
-            In coreclr\src\inc\cordebuginfo.h
+            In coreclr\inc\cordebuginfo.h
 
             enum VarLocType
             {

@@ -4602,7 +4602,7 @@ static BOOL CanSatisfyConstraints(Instantiation typicalInst, Instantiation candi
 
 
 //
-// This method has duplicated logic from coreclr\src\System.Private.CoreLib\src\System\Collections\Generic\ComparerHelpers.cs
+// This method has duplicated logic from coreclr\System.Private.CoreLib\src\System\Collections\Generic\ComparerHelpers.cs
 //
 static void SpecializeComparer(SString& ss, Instantiation& inst)
 {
@@ -4656,7 +4656,7 @@ static void SpecializeComparer(SString& ss, Instantiation& inst)
 }
 
 //
-// This method has duplicated logic from coreclr\src\System.Private.CoreLib\src\System\Collections\Generic\ComparerHelpers.cs
+// This method has duplicated logic from coreclr\System.Private.CoreLib\src\System\Collections\Generic\ComparerHelpers.cs
 // and matching logic in jitinterface.cpp
 //
 static void SpecializeEqualityComparer(SString& ss, Instantiation& inst)

@@ -56,7 +56,7 @@ parser.add_argument("-input_directory", help="directory containing assemblies fo
 parser.add_argument("-max_size", help="Max size of each partition in MB")
 is_windows = platform.system() == "Windows"
 native_binaries_to_ignore = [
-    "clrcompression.dll",
+    "System.IO.Compression.Native.dll",
     "clretwrc.dll",
     "clrgc.dll",
     "clrjit.dll",

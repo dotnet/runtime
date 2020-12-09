@@ -3,13 +3,13 @@
   <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.props))" />
 
   <ItemGroup>
-    <ProjectReference Include="$(RepoToolsLocalDir)tasks\mobile.tasks\AppleAppBuilder\AppleAppBuilder.csproj" />
+    <ProjectReference Include="$(RepoTasksDir)AppleAppBuilder\AppleAppBuilder.csproj" />
   </ItemGroup>
 
   <ItemGroup>
     <_iOSSampleFiles Include="$(ArtifactsDir)bin\AppleAppBuilder\$(Configuration)\$(NetCoreAppToolCurrent)\AppleAppBuilder.dll" />
-    <_iOSSampleFiles Include="$(RepoToolsLocalDir)tasks\mobile.tasks\AppleAppBuilder\Templates\runtime.m" />
-    <_iOSSampleFiles Include="$(RepoToolsLocalDir)tasks\mobile.tasks\AppleAppBuilder\Templates\runtime.h" />
+    <_iOSSampleFiles Include="$(RepoTasksDir)AppleAppBuilder\Templates\runtime.m" />
+    <_iOSSampleFiles Include="$(RepoTasksDir)AppleAppBuilder\Templates\runtime.h" />
 
     <PackageFile Include="@(_iOSSampleFiles)" TargetPath="tools\$(NetCoreAppToolCurrent)\" />
   </ItemGroup>
