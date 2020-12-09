@@ -20,6 +20,9 @@ namespace System.Runtime.InteropServices.JavaScript
         // No need to lock as it is thread safe.
         private static readonly ConditionalWeakTable<Delegate, JSObject> _weakDelegateTable = new ConditionalWeakTable<Delegate, JSObject>();
 
+        private const string TaskGetResultName = "get_Result";
+        private static readonly MethodInfo _taskGetResultMethodInfo = typeof(Task<>).GetMethod(TaskGetResultName)!;
+
         // <summary>
         // Execute the provided string in the JavaScript context
         // </summary>
@@ -337,9 +340,6 @@ namespace System.Runtime.InteropServices.JavaScript
             else
                 task.GetAwaiter().OnCompleted(Complete);
 
-            [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2075:UnrecognizedReflectionPattern",
-                Justification = "The DynamicDependency ensures Task<T>.Result is always preserved.")]
-            [DynamicDependency("get_Result", typeof(Task<>))]
             void Complete()
             {
                 try
@@ -352,13 +352,9 @@ namespace System.Runtime.InteropServices.JavaScript
                         {
                             result = System.Array.Empty<object>();
                         }
-                        else if (IsAssignableToGenericTaskType(task_type))
-                        {
-                            result = task_type.GetMethod("get_Result")?.Invoke(task, null);
-                        }
                         else
                         {
-                            result = null;
+                            result = GetTaskResultMethodInfo(task_type)?.Invoke(task, null);
                         }
 
                         continuationObj.Invoke("resolve", result);
@@ -380,19 +376,28 @@ namespace System.Runtime.InteropServices.JavaScript
             }
         }
 
-        private static bool IsAssignableToGenericTaskType(Type? t)
+        /// <summary>
+        /// Gets the MethodInfo for the Task{T}.Result property getter.
+        /// </summary>
+        /// <remarks>
+        /// This ensures the returned MethodInfo is strictly for the Task{T} type, and not
+        /// a "Result" property on some other class that derives from Task or a "new Result"
+        /// property on a class that derives from Task{T}.
+        ///
+        /// The reason for this restriction is to make this use of Reflection trim-compatible,
+        /// ensuring that trimming doesn't change the application's behavior.
+        /// </remarks>
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2075:UnrecognizedReflectionPattern",
+            Justification = "Task<T>.Result is preserved by the ILLinker because _taskGetResultMethodInfo was initialized with it.")]
+        private static MethodInfo? GetTaskResultMethodInfo(Type taskType)
         {
-            while (t != null)
+            MethodInfo? result = taskType.GetMethod(TaskGetResultName);
+            if (result != null && result.HasSameMetadataDefinitionAs(_taskGetResultMethodInfo))
             {
-                if (t.IsGenericType && t.GetGenericTypeDefinition() == typeof(Task<>))
-                {
-                    return true;
-                }
-
-                t = t.BaseType;
+                return result;
             }
 
-            return false;
+            return null;
         }
 
         private static string ObjectToString(object o)
