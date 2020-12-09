@@ -373,6 +373,9 @@ mono_gc_make_descr_for_string (gsize *bitmap, int numbits, GPtrArray **gc_descr_
 	gc_descr.struct_gc_descr.m_componentSize = 2;
 	gc_descr.struct_gc_descr.m_flags = MTFlag_IsArray | MTFlag_IsString | MTFlag_HasComponentSize;
 	gc_descr.struct_gc_descr.m_baseSize = MONO_SIZEOF_MONO_STRING + 8;
+
+
+
 	return gc_descr.ptr_gc_descr;
 }
 
@@ -382,7 +385,7 @@ mono_gc_make_descr_for_array (int vector, gsize *elem_bitmap, int numbits, size_
 	mono_gc_descr_union gc_descr;
 	gc_descr.struct_gc_descr.m_componentSize = elem_size;
 	gc_descr.struct_gc_descr.m_flags = MTFlag_IsArray | MTFlag_HasComponentSize;
-	gc_descr.struct_gc_descr.m_baseSize = MONO_SIZEOF_MONO_ARRAY + 8;
+	gc_descr.struct_gc_descr.m_baseSize = MONO_SIZEOF_MONO_ARRAY;
 
 	if (numbits == 1 && elem_size == sizeof (gpointer) && *elem_bitmap == 1) {
 		// Array of references. We don't handle array of value types yet.
@@ -390,7 +393,7 @@ mono_gc_make_descr_for_array (int vector, gsize *elem_bitmap, int numbits, size_
 		GPtrArray *full = g_ptr_array_new ();
 		// The series size will be added with the entire array size, resulting
 		// in scanning everything
-		g_ptr_array_add (full, (gpointer) (-8 - MONO_SIZEOF_MONO_ARRAY));
+		g_ptr_array_add (full, (gpointer) (-1 * MONO_SIZEOF_MONO_ARRAY));
 		// Add start offset
 		g_ptr_array_add (full, (gpointer)MONO_SIZEOF_MONO_ARRAY);
 		g_ptr_array_add (full, (gpointer)1);
@@ -606,7 +609,6 @@ mono_gc_alloc_obj (MonoVTable *vtable, size_t size)
 
 	// Deubgging
 	MethodTable* mt = (MethodTable*)(o->vtable);
-	// g_assert(mt->GetBaseSize() + mt-> == size);
 	printf("mono_gc_alloc_obj: %p o->vtable: %p, o->vtable->gc_descr: %llu, size: %ld, o->vtable->gc_descr.m_baseSize: %d\n", o, o->vtable, o->vtable->gc_descr, size, mt->GetBaseSize());
 	
 	return o;
@@ -625,7 +627,7 @@ mono_gc_alloc_array (MonoVTable *vtable, size_t size, uintptr_t max_length, uint
 {
 	MonoArray *arr = (MonoArray*) mono_gc_alloc_obj (vtable, size);
 	arr->max_length = max_length;
-        arr->bounds = (MonoArrayBounds*)((char*)arr + size - bounds_size);
+    arr->bounds = (MonoArrayBounds*)((char*)arr + size - bounds_size);
 	return arr;
 }
 
@@ -1693,9 +1695,6 @@ MethodTable* GCToEEInterface::GetFreeObjectMethodTable()
 		bmap = 0;
 		mono_gc_descr_union desc;
 		desc.ptr_gc_descr = mono_gc_make_descr_for_array (TRUE, &bmap, 0, 1, &gc_descr_full);
-		// Remove bounds from the reported size, since coreclr gc expects this object
-		// to the size of ArrayBase
-		desc.struct_gc_descr.m_baseSize -= 8;
 		vtable->gc_descr = desc.ptr_gc_descr;
 		vtable->rank = 1;
 
@@ -1754,6 +1753,52 @@ bool GCToEEInterface::GetBooleanConfigValue(char const*, char const*, bool*)
 	return false;
 }
 
+size_t GCToEEInterface::GetObjectSize(Object* obj) 
+{
+
+
+	printf("coregc-mono.cpp: GetObjectsize: obj: %p\n", obj);
+
+	MonoObject* mono_obj = (MonoObject*)obj;
+
+	MethodTable* mT = (MethodTable*)mono_obj->vtable;
+
+    size_t obj_size = (mT->GetBaseSize() +
+                    (mT->HasComponentSize() ?
+                    ((size_t)((ArrayBase*)obj)->GetNumComponents() * mT->RawGetComponentSize()) : 0));
+
+
+	size_t bounds_size = 0; 
+
+	/* array_fill objects are arrays, but do not have bounds data. 
+	   Is there a better way to check for them? */
+
+	char* debug_class_name = "array_fill";
+	if (mono_obj->vtable != array_fill_vtable)
+	{
+		debug_class_name = mono_type_get_full_name (mono_obj->vtable->klass);
+		bounds_size = m_class_get_rank(mono_obj->vtable->klass) * sizeof (MonoArrayBounds);
+
+		// Why do I need this? where are these extra bytes coming from?
+		if (m_class_get_rank(mono_obj->vtable->klass) > 1 )
+		{
+			bounds_size += sizeof (mono_array_size_t);
+		}
+	}
+
+	size_t total_size = obj_size + bounds_size;
+
+	if (total_size > MIN_OBJECT_SIZE)
+	{
+		printf("coregc-mono.cpp: GetObjectSize: obj: %p::%s obj_size: %d bounds_size %d returning %d\n", obj, debug_class_name, obj_size, bounds_size, total_size);
+		return total_size;
+	}
+	else
+	{
+		printf("gc.cpp: my_get_size: returning %d\n", obj, MIN_OBJECT_SIZE);
+		return MIN_OBJECT_SIZE;
+	}
+}
 
 Volatile<GCEventLevel> GCEventStatus::enabledLevels[2] = {GCEventLevel_None, GCEventLevel_None};
 Volatile<GCEventKeyword> GCEventStatus::enabledKeywords[2] = {GCEventKeyword_None, GCEventKeyword_None};

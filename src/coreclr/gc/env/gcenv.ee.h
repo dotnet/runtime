@@ -90,6 +90,7 @@ public:
 
     static void VerifySyncTableEntry();
     static void UpdateGCEventStatus(int publicLevel, int publicKeywords, int privateLevel, int privateKeywords);
+    static size_t GetObjectSize(Object* obj);
 };
 
 #endif // __GCENV_EE_H__
