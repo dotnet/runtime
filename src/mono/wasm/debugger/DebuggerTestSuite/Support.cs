@@ -58,7 +58,7 @@ namespace DebuggerTests
         }
 
         // https://console.spec.whatwg.org/#formatting-specifiers
-        static Regex _consoleArgsRegex = new Regex(@"(%[sdifoOc])", RegexOptions.Compiled);
+        static Regex _consoleArgsRegex = new(@"(%[sdifoOc])", RegexOptions.Compiled);
 
         async Task OnMessage(string method, JObject args, CancellationToken token)
         {
