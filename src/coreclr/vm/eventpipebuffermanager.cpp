@@ -986,7 +986,7 @@ void EventPipeBufferManager::SuspendWriteEvent(uint32_t sessionIndex)
 
             // By the time we get here, most threads should have already been marked as done but it is
             // still possible (while pretty unlikely) for some threads to race with EventPipeSession::SuspendWriteEvent
-            // if they were already in the WriteEvent() call and got preemptied before setting themselves as
+            // if they were already in the WriteEvent() call and got preempted before setting themselves as
             // write in progress. Apart from these threads, the check below should be a single cmp op. For threads
             // who do end up in that state, we block for at most one check (pSession != nullptr).
             YIELD_WHILE(pThread->GetSessionWriteInProgress() == sessionIndex);
