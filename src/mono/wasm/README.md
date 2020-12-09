@@ -10,6 +10,9 @@ This depends on `emsdk` to be installed.
 
 `EMSDK_PATH` is set to `$reporoot/src/mono/wasm/emsdk` by default, by the Makefile.
 
+Note: `EMSDK_PATH` is set by default in `src/mono/wasm/Makefile`, so building targets from that should have it set. But you might need to set it manually if
+you are directly using the `dotnet build`, or `build.sh`.
+
 ## Building
 
 * To build the whole thing, with libraries:
