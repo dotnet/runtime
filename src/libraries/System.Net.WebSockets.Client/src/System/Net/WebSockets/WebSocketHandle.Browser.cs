@@ -67,7 +67,7 @@ namespace System.Net.WebSockets
                     case OperationCanceledException _ when cancellationToken.IsCancellationRequested:
                         throw;
                     default:
-                        throw new WebSocketException(SR.net_webstatus_ConnectFailure, exc);
+                        throw new WebSocketException(WebSocketError.Faulted, SR.net_webstatus_ConnectFailure, exc);
                 }
             }
         }
