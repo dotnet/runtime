@@ -3657,11 +3657,6 @@ size_t emitter::emitIssue1Instr(insGroup* ig, instrDesc* id, BYTE** dp)
     {
         // It is fatal to under-estimate the instruction size, except for alignment instructions
         bool validCodeSize = id->idCodeSize() >= csz;
-
-#ifdef FEATURE_LOOP_ALIGN
-        validCodeSize |= (!emitComp->opts.compJitAlignLoopAdaptive && (id->idIns() == INS_align) &&
-                          (emitComp->opts.compJitAlignLoopBoundary > 16));
-#endif
         noway_assert(validCodeSize);
 
 #if DEBUG_EMIT
