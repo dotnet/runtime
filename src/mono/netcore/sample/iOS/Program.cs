@@ -51,6 +51,6 @@ public static class Program
 
         await Task.Delay(5000);
 
-        return 0;
+        return 42;
     }
 }

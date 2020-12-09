@@ -198,6 +198,8 @@
         <LaunchTimeout>$(_workItemTimeout)</LaunchTimeout>
         <!-- The sample app doesn't need test runner -->
         <IncludesTestRunner>false</IncludesTestRunner>
+        <!-- The sample's C# Main method returns 42 so it should be considered by xharness as a success -->
+        <ExpectedExitCode>42</ExpectedExitCode>
       </XHarnessAppBundleToTest>
     </ItemGroup>
 
