@@ -26,18 +26,32 @@ This depends on `emsdk` to be installed.
 
 ## Libraries tests
 
-Library tests can be run with `v8`, `SpiderMonkey`, or `JavaScriptCore`:
+Library tests can be run with js engines: `v8`, `SpiderMonkey`,or `JavaScriptCore`:
 
 * `v8`: `make run-tests-v8-$(lib_name)`
+* SpiderMonkey: `make run-tests-sm-$(lib_name)`
+* JavaScriptCore: `make run-tests-jsc-$(lib_name)`
+* Or default: `make run-tests-$(lib_name)`. This runs the tests with `v8`.
+
 For example, for `System.Collections.Concurrent`: `make run-tests-v8-System.Collections.Concurrent`
 
-* SpiderMonkey: `make run-tests-sm-$(lib_name)`
-For example, for `System.Collections.Concurrent`: `make run-tests-sm-System.Collections.Concurrent`
+Or they can be run with a browser (Chrome):
 
-* JavaScriptCore: `make run-tests-jsc-$(lib_name)`
-For example, for `System.Collections.Concurrent`: `make run-tests-jsc-System.Collections.Concurrent`
+`make run-browser-tests-$(lib_name)`
 
-* Or default: `make run-tests-$(lib_name)`. This runs the tests with `v8`.
+Note: this needs `chromedriver`, and `Google Chrome` to be installed.
+
+For example, for `System.Collections.Concurrent`: `make run-browser-tests-System.Collections.Concurrent`
+
+These tests are run with `xharness wasm test-browser`, for running on the browser. And `xharness wasm test` for others.
+The wrapper script used to actually run these tests, accepts:
+
+`$XHARNESS_COMMAND`, which defaults to `test`.
+`$XHARNESS_CLI_COMMAND` (see next section)
+
+### Using a local build of xharness
+
+* set `XHARNESS_CLI_COMMAND=/path/to/xharness/artifacts/bin/Microsoft.DotNet.XHarness.CLI/Debug/netcoreapp3.1/Microsoft.DotNet.XHarness.CLI.dll`
 
 ### Note: Additional msbuild arguments can be passed with: `make ..  MSBUILD_ARGS="/p:a=b"`
 
