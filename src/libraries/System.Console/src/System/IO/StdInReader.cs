@@ -16,8 +16,8 @@ namespace System.IO
     internal sealed class StdInReader : TextReader
     {
 
-        private static int _readLineIndex; //int that keeps track of current index in string oof _readLineSB
-        private static int _linesFromTop; //int that tells us how far from the top we are so we don't overwrite console text when home is pressed
+        private static int _readLineIndex; // int that keeps track of current index in string oof _readLineSB
+        private static int _linesFromTop; // int that tells us how far from the top we are so we don't overwrite console text when home is pressed
         private static int _linesFromLeft;
         private readonly StringBuilder _readLineSB; // SB that holds readLine output.  This is a field simply to enable reuse; it's only used in ReadLine.
         private readonly Stack<ConsoleKeyInfo> _tmpKeys = new Stack<ConsoleKeyInfo>(); // temporary working stack; should be empty outside of ReadLine
@@ -29,6 +29,17 @@ namespace System.IO
         private const int BytesToBeRead = 1024; // No. of bytes to be read from the stream at a time.
         private int _startIndex; // First unprocessed index in the buffer;
         private int _endIndex; // Index after last unprocessed index in the buffer;
+
+        private ConsoleKey[] denyList = new ConsoleKey[]
+        {
+            ConsoleKey.Backspace,
+            ConsoleKey.LeftArrow,
+            ConsoleKey.RightArrow,
+            ConsoleKey.Home,
+            ConsoleKey.End,
+            ConsoleKey.LeftArrow,
+            ConsoleKey.RightArrow
+        };
 
         internal StdInReader(Encoding encoding, int bufferSize)
         {
@@ -154,17 +165,8 @@ namespace System.IO
                     // unprocessed data, or from an actual stdin read.
                     bool previouslyProcessed;
                     ConsoleKeyInfo keyInfo = ReadKey(out previouslyProcessed);
-                    List<ConsoleKey> denyList = new List<ConsoleKey>
-                    {
-                       ConsoleKey.Backspace,
-                       ConsoleKey.LeftArrow,
-                       ConsoleKey.RightArrow,
-                       ConsoleKey.Home,
-                       ConsoleKey.End,
-                       ConsoleKey.LeftArrow,
-                       ConsoleKey.RightArrow
-                    };
-                    if (!consumeKeys && !denyList.Contains(keyInfo.Key)) // keys here are the only characters not written out in the below if/elses.
+
+                    if (!consumeKeys && (Array.IndexOf(denyList, keyInfo.Key) == -1)) // keys here are the only characters not written out in the below if/elses.
                     {
                         _tmpKeys.Push(keyInfo);
                     }
@@ -188,7 +190,7 @@ namespace System.IO
                         return false;
                     }
                     // Alt + B/F is what macOS will send in place of Alt + Left/Right
-                    else if ((keyInfo.Key == ConsoleKey.B || keyInfo.Key == ConsoleKey.LeftArrow) && keyInfo.Modifiers == ConsoleModifiers.Alt)
+                    else if (keyInfo.Modifiers == ConsoleModifiers.Alt && (OperatingSystem.IsMacOS() ? keyInfo.Key == ConsoleKey.B : keyInfo.Key == ConsoleKey.LeftArrow))
                     {
                         if (_readLineIndex == 0)
                             continue;
@@ -206,7 +208,7 @@ namespace System.IO
                         ConsolePal.SetCursorPosition(leftover, lines);
 
                     }
-                    else if ((keyInfo.Key == ConsoleKey.F || keyInfo.Key == ConsoleKey.RightArrow) && keyInfo.Modifiers == ConsoleModifiers.Alt)
+                    else if (keyInfo.Modifiers == ConsoleModifiers.Alt && (OperatingSystem.IsMacOS() ? keyInfo.Key == ConsoleKey.F : keyInfo.Key == ConsoleKey.RightArrow))
                     {
                         if (_readLineIndex == _readLineSB.Length)
                              continue;
