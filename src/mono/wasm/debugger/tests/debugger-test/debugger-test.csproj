@@ -33,7 +33,7 @@
   </Target>
 
   <UsingTask TaskName="WasmAppBuilder"
-             AssemblyFile="$(ArtifactsBinDir)WasmAppBuilder\Debug\$(NetCoreAppToolCurrent)\publish\WasmAppBuilder.dll"/>
+             AssemblyFile="$(WasmAppBuilderTasksAssemblyPath)"/>
 
   <Target Name="BuildApp" DependsOnTargets="RebuildWasmAppBuilder;Build">
     <PropertyGroup>

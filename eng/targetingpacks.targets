@@ -4,6 +4,7 @@
                             $([MSBuild]::VersionGreaterThanOrEquals($(TargetFrameworkVersion), '$(NETCoreAppCurrentVersion)'))">
     <_UseLocalTargetingRuntimePack>true</_UseLocalTargetingRuntimePack>
     <EnableTargetingPackDownload>false</EnableTargetingPackDownload>
+    <GenerateErrorForMissingTargetingPacks>false</GenerateErrorForMissingTargetingPacks>
   </PropertyGroup>
 
   <!-- .NETCoreApp 2.x DisableImplicitAssemblyReferences support. -->

@@ -1,4 +1,4 @@
-project(clrcompression)
+project(System.IO.Compression.Native)
 
 if("${CMAKE_SOURCE_DIR}" STREQUAL "${CMAKE_BINARY_DIR}")
     message(FATAL_ERROR "Binary directory isn't being correctly set before calling Cmake. Tree must be built in separate directory from source.")
@@ -81,46 +81,46 @@ set (NATIVECOMPRESSION_SOURCES
 include_directories("../../AnyOS/brotli/include")
 
 if (GEN_SHARED_LIB)
-    add_library(clrcompression
+    add_library(System.IO.Compression.Native
         SHARED
         ${NATIVECOMPRESSION_SOURCES}
-        clrcompression.def
+        System.IO.Compression.Native.def
         # This will add versioning to the library
         ${CMAKE_REPO_ROOT}/artifacts/obj/NativeVersion.rc
     )
 endif()
 
-add_library(clrcompression-static
+add_library(System.IO.Compression.Native-static
     STATIC
     ${NATIVECOMPRESSION_SOURCES}
 )
 
-SET_TARGET_PROPERTIES(clrcompression-static PROPERTIES PREFIX "")
-SET_TARGET_PROPERTIES(clrcompression-static PROPERTIES OUTPUT_NAME libclrcompression)
+SET_TARGET_PROPERTIES(System.IO.Compression.Native-static PROPERTIES PREFIX "")
+SET_TARGET_PROPERTIES(System.IO.Compression.Native-static PROPERTIES OUTPUT_NAME System.IO.Compression.Native)
 
 # Allow specification of arguments that should be passed to the linker
 if (GEN_SHARED_LIB)
-    SET_TARGET_PROPERTIES(clrcompression PROPERTIES LINK_OPTIONS "${__LinkArgs};${__SharedLinkArgs}")
+    SET_TARGET_PROPERTIES(System.IO.Compression.Native PROPERTIES LINK_OPTIONS "${__LinkArgs};${__SharedLinkArgs}")
 endif()
-SET_TARGET_PROPERTIES(clrcompression-static PROPERTIES STATIC_LIBRARY_OPTIONS "${__LinkArgs}")
+SET_TARGET_PROPERTIES(System.IO.Compression.Native-static PROPERTIES STATIC_LIBRARY_OPTIONS "${__LinkArgs}")
 
 # Allow specification of libraries that should be linked against
 if (GEN_SHARED_LIB)
-    target_link_libraries(clrcompression ${__LinkLibraries})
+    target_link_libraries(System.IO.Compression.Native ${__LinkLibraries})
 endif()
-target_link_libraries(clrcompression-static ${__LinkLibraries})
+target_link_libraries(System.IO.Compression.Native-static ${__LinkLibraries})
 
 if (GEN_SHARED_LIB)
-    GENERATE_EXPORT_HEADER( clrcompression
-         BASE_NAME clrcompression
-         EXPORT_MACRO_NAME clrcompression_EXPORT
-         EXPORT_FILE_NAME clrcompression_Export.h
-         STATIC_DEFINE clrcompression_BUILT_AS_STATIC
+    GENERATE_EXPORT_HEADER( System.IO.Compression.Native
+         BASE_NAME System.IO.Compression.Native
+         EXPORT_MACRO_NAME System.IO.Compression.Native_EXPORT
+         EXPORT_FILE_NAME System.IO.Compression.Native_Export.h
+         STATIC_DEFINE System.IO.Compression.Native_BUILT_AS_STATIC
     )
 
-    install (TARGETS clrcompression DESTINATION .)
-    install (FILES $<TARGET_PDB_FILE:clrcompression> DESTINATION .)
+    install (TARGETS System.IO.Compression.Native DESTINATION .)
+    install (FILES $<TARGET_PDB_FILE:System.IO.Compression.Native> DESTINATION .)
 endif()
 
-install (TARGETS clrcompression-static DESTINATION ${STATIC_LIB_DESTINATION})
+install (TARGETS System.IO.Compression.Native-static DESTINATION ${STATIC_LIB_DESTINATION})
 
