@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Reflection;
 using System.Runtime.CompilerServices;
@@ -53,6 +54,7 @@ namespace System
         #endregion
 
         #region Static Members
+        [RequiresUnreferencedCode("The type might be removed")]
         internal static Type? GetType(
             string typeName,
             Func<AssemblyName, Assembly?>? assemblyResolver,
@@ -102,6 +104,7 @@ namespace System
         #endregion
 
         #region private Members
+        [RequiresUnreferencedCode("The type might be removed")]
         private unsafe Type? ConstructType(
             Func<AssemblyName, Assembly?>? assemblyResolver,
             Func<Assembly?, string, bool, Type?>? typeResolver,
@@ -216,6 +219,7 @@ namespace System
             return assembly;
         }
 
+        [RequiresUnreferencedCode("The type might be removed")]
         private static Type? ResolveType(Assembly? assembly, string[] names, Func<Assembly?, string, bool, Type?>? typeResolver, bool throwOnError, bool ignoreCase, ref StackCrawlMark stackMark)
         {
             Debug.Assert(names != null && names.Length > 0);

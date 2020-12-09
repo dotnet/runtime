@@ -4029,6 +4029,7 @@ namespace System
         #endregion
 
 #if FEATURE_COMINTEROP
+        [RequiresUnreferencedCode("The member might be removed")]
         private object? ForwardCallToInvokeMember(
             string memberName,
             BindingFlags flags,
