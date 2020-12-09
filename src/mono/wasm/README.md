@@ -20,6 +20,8 @@ This depends on `emsdk` to be installed.
 
 `make runtime`
 
+### Note: Additional msbuild arguments can be passed with: `make build-all MSBUILD_ARGS="/p:a=b"`
+
 # Running tests
 
 ## Libraries tests
@@ -36,6 +38,8 @@ For example, for `System.Collections.Concurrent`: `make run-tests-sm-System.Coll
 For example, for `System.Collections.Concurrent`: `make run-tests-jsc-System.Collections.Concurrent`
 
 * Or default: `make run-tests-$(lib_name)`. This runs the tests with `v8`.
+
+### Note: Additional msbuild arguments can be passed with: `make ..  MSBUILD_ARGS="/p:a=b"`
 
 ## Debugger tests
 
