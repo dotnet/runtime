@@ -53,9 +53,9 @@ namespace ILLink.RoslynAnalyzer.Tests
 			}
 		}
 
-		internal static void RunTest (MethodDeclarationSyntax m, List<AttributeSyntax> attrs)
+		internal static void RunTest (MethodDeclarationSyntax m, List<AttributeSyntax> attrs, params (string, string)[] MSBuildProperties)
 		{
-			var comp = CSharpAnalyzerVerifier<RequiresUnreferencedCodeAnalyzer>.CreateCompilation (m.SyntaxTree).Result;
+			var comp = CSharpAnalyzerVerifier<RequiresUnreferencedCodeAnalyzer>.CreateCompilation (m.SyntaxTree, MSBuildProperties).Result;
 			var diags = comp.GetAnalyzerDiagnosticsAsync ().Result;
 
 			var filtered = diags.Where (d => d.Location.SourceSpan.IntersectsWith (m.Span))
@@ -179,6 +179,11 @@ In diagnostics:
 					yield return file;
 				}
 			}
+		}
+
+		internal static (string, string)[] UseMSBuildProperties (params string[] MSBuildProperties)
+		{
+			return MSBuildProperties.Select (msbp => ($"build_property.{msbp}", "true")).ToArray ();
 		}
 
 		internal static void GetDirectoryPaths (out string rootSourceDirectory, out string testAssemblyPath, [CallerFilePath] string thisFile = null)
