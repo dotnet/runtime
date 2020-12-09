@@ -255,20 +255,16 @@ namespace System.Diagnostics
 
         internal static ProcessInfo[] GetProcessInfos(Predicate<int>? processIdFilter = null)
         {
-            ProcessInfo[] processInfos;
-
             // Start with the default buffer size.
             int bufferSize = MostRecentSize;
 
             while (true)
             {
-                uint requiredSize = 0;
-
                 (byte[]? managed, IntPtr unmanaged) = bufferSize < RentSizeLimit
                     ? (ArrayPool<byte>.Shared.Rent(bufferSize), IntPtr.Zero)
                     : (null, Marshal.AllocHGlobal(bufferSize));
 
-                Debug.Assert(managed != null || unmanaged != IntPtr.Zero);
+                Debug.Assert((managed != null && unmanaged == IntPtr.Zero) || (managed == null && unmanaged != IntPtr.Zero));
 
                 try
                 {
@@ -287,6 +283,7 @@ namespace System.Diagnostics
                             byte* alignedBufferPtr = (byte*)(((nint)bufferPtr + 7) & ~7);
                             int firstAlignedElementIndex = (int)(alignedBufferPtr - bufferPtr);
 
+                            uint requiredSize = 0;
                             uint status = Interop.NtDll.NtQuerySystemInformation(
                                 Interop.NtDll.SystemProcessInformation,
                                 alignedBufferPtr,
@@ -301,11 +298,12 @@ namespace System.Diagnostics
                                     throw new InvalidOperationException(SR.CouldntGetProcessInfos, new Win32Exception((int)status));
                                 }
 
-                                // Parse the data block to get process information
-                                processInfos = GetProcessInfos(buffer.Slice(firstAlignedElementIndex), processIdFilter);
                                 MostRecentSize = buffer.Length;
-                                break;
+                                // Parse the data block to get process information
+                                return GetProcessInfos(buffer.Slice(firstAlignedElementIndex), processIdFilter);
                             }
+
+                            bufferSize = GetNewBufferSize(bufferSize, (int)requiredSize);
                         }
                     }
                 }
@@ -320,11 +318,7 @@ namespace System.Diagnostics
                         Marshal.FreeHGlobal(unmanaged);
                     }
                 }
-
-                bufferSize = GetNewBufferSize(bufferSize, (int)requiredSize);
             }
-
-            return processInfos;
         }
 
         private static int GetNewBufferSize(int existingBufferSize, int requiredSize)
@@ -333,10 +327,8 @@ namespace System.Diagnostics
 
             if (requiredSize == 0)
             {
-                //
                 // On some old OS like win2000, requiredSize will not be set if the buffer
                 // passed to NtQuerySystemInformation is not enough.
-                //
                 newSize = existingBufferSize * 2;
             }
             else
