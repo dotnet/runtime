@@ -91,7 +91,7 @@ internal static partial class Interop
                 parser.MoveNext();
                 parser.MoveNext();
 
-                // Parse the pathname
+                // we only care about the named modules
                 if (!parser.MoveNext())
                 {
                     Commit();
