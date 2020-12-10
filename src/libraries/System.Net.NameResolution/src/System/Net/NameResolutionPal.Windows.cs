@@ -169,7 +169,7 @@ namespace System.Net
                 // WSATRY_AGAIN indicates possible problem with reachability according to docs.
                 // However, if servers are really unreachable, we would still get IOPenfing here
                 // and final result would be posted via overlapped IO.
-                // synchronouse failure here may signal issue when GetAddrInfoExW does not work from
+                // synchronous failure here may signal issue when GetAddrInfoExW does not work from
                 // impersonificated context.
                 return Task.FromException(new InvalidOperationException());
             }
