@@ -4,7 +4,6 @@
 using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
@@ -12,7 +11,7 @@ using Microsoft.Extensions.Primitives;
 
 namespace Microsoft.Extensions.Caching.Memory
 {
-    internal class CacheEntry : ICacheEntry
+    internal partial class CacheEntry : ICacheEntry
     {
         private static readonly Action<object> ExpirationCallback = ExpirationTokensExpired;
 
@@ -285,170 +284,6 @@ namespace Microsoft.Extensions.Caching.Memory
 
             Tokens result = new Tokens();
             return Interlocked.CompareExchange(ref _tokens, result, null) ?? result;
-        }
-
-        [StructLayout(LayoutKind.Explicit)]
-        private struct State
-        {
-            [FieldOffset(0)]
-            private int _state;
-
-            [FieldOffset(0)]
-            private byte _flags;
-            [FieldOffset(1)]
-            private byte _evictionReason;
-            [FieldOffset(2)]
-            private byte _priority;
-            [FieldOffset(3)]
-            private byte _reserved; // for future use
-
-            internal State(CacheItemPriority priority) : this() => _priority = (byte)priority;
-
-            internal bool IsDisposed { get => ((Flags)_flags).HasFlag(Flags.IsDisposed); set => SetFlag(Flags.IsDisposed, value); }
-
-            internal bool IsExpired { get => ((Flags)_flags).HasFlag(Flags.IsExpired); set => SetFlag(Flags.IsExpired, value); }
-
-            internal bool IsValueSet { get => ((Flags)_flags).HasFlag(Flags.IsValueSet); set => SetFlag(Flags.IsValueSet, value); }
-
-            internal EvictionReason EvictionReason
-            {
-                get => (EvictionReason)_evictionReason;
-                set
-                {
-                    State before, after;
-                    do
-                    {
-                        before = this;
-                        after = this;
-                        after._evictionReason = (byte)value;
-                    } while (Interlocked.CompareExchange(ref _state, after._state, before._state) != before._state);
-                }
-            }
-
-            internal CacheItemPriority Priority
-            {
-                get => (CacheItemPriority)_priority;
-                set
-                {
-                    State before, after;
-                    do
-                    {
-                        before = this;
-                        after = this;
-                        after._priority = (byte)value;
-                    } while (Interlocked.CompareExchange(ref _state, after._state, before._state) != before._state);
-                }
-            }
-
-            private void SetFlag(Flags option, bool value)
-            {
-                State before, after;
-
-                do
-                {
-                    before = this;
-                    after = this;
-                    after._flags = (byte)(value ? (after._flags | (byte)option) : (after._flags & ~(byte)option));
-                } while (Interlocked.CompareExchange(ref _state, after._state, before._state) != before._state);
-            }
-
-            [Flags]
-            private enum Flags : byte
-            {
-                Default = 0,
-                IsValueSet = 1 << 0,
-                IsExpired = 1 << 1,
-                IsDisposed = 1 << 2,
-            }
-        }
-
-        private sealed class Tokens
-        {
-            internal List<IChangeToken> _expirationTokens;
-            internal List<IDisposable> _expirationTokenRegistrations;
-            internal List<PostEvictionCallbackRegistration> _postEvictionCallbacks; // this is not really related to tokens, but was moved here to shrink typicall CacheEntry size
-
-            internal List<IChangeToken> ExpirationTokens => _expirationTokens ??= new List<IChangeToken>();
-            internal List<PostEvictionCallbackRegistration> PostEvictionCallbacks => _postEvictionCallbacks ??= new List<PostEvictionCallbackRegistration>();
-
-            internal void AttachTokens()
-            {
-                if (_expirationTokens != null)
-                {
-                    lock (this)
-                    {
-                        for (int i = 0; i < _expirationTokens.Count; i++)
-                        {
-                            IChangeToken expirationToken = _expirationTokens[i];
-                            if (expirationToken.ActiveChangeCallbacks)
-                            {
-                                if (_expirationTokenRegistrations == null)
-                                {
-                                    _expirationTokenRegistrations = new List<IDisposable>(1);
-                                }
-                                IDisposable registration = expirationToken.RegisterChangeCallback(ExpirationCallback, this);
-                                _expirationTokenRegistrations.Add(registration);
-                            }
-                        }
-                    }
-                }
-            }
-
-            internal bool CheckForExpiredTokens(CacheEntry cacheEntry)
-            {
-                if (_expirationTokens != null)
-                {
-                    for (int i = 0; i < _expirationTokens.Count; i++)
-                    {
-                        IChangeToken expiredToken = _expirationTokens[i];
-                        if (expiredToken.HasChanged)
-                        {
-                            cacheEntry.SetExpired(EvictionReason.TokenExpired);
-                            return true;
-                        }
-                    }
-                }
-                return false;
-            }
-
-            internal void CopyTokens(CacheEntry parentEntry)
-            {
-                if (_expirationTokens != null)
-                {
-                    lock (this)
-                    {
-                        lock (parentEntry.GetOrCreateTokens())
-                        {
-                            foreach (IChangeToken expirationToken in _expirationTokens)
-                            {
-                                parentEntry.AddExpirationToken(expirationToken);
-                            }
-                        }
-                    }
-                }
-            }
-
-            internal void DetachTokens()
-            {
-                // _expirationTokenRegistrations is not checked for null, because AttachTokens might initialize it under lock
-                // instead we are checking for _expirationTokens, because if they are not null, then _expirationTokenRegistrations might also be not null
-                if (_expirationTokens != null)
-                {
-                    lock (this)
-                    {
-                        IList<IDisposable> registrations = _expirationTokenRegistrations;
-                        if (registrations != null)
-                        {
-                            _expirationTokenRegistrations = null;
-                            for (int i = 0; i < registrations.Count; i++)
-                            {
-                                IDisposable registration = registrations[i];
-                                registration.Dispose();
-                            }
-                        }
-                    }
-                }
-            }
         }
     }
 }
