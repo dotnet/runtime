@@ -181,7 +181,7 @@ namespace System.Net.WebSockets
                         }
                         else
                         {
-                            _tcsClose?.SetResult();
+                            _tcsClose?.TrySetResult();
                         }
                     }
                 };
@@ -470,11 +470,13 @@ namespace System.Net.WebSockets
         /// </summary>
         public override void Abort()
         {
+            System.Diagnostics.Debug.WriteLine($"BrowserWebSocket::Abort() {_tcsClose}");
             if (_state != (int)InternalState.Disposed)
             {
                 if (Interlocked.Exchange(ref _state, (int)InternalState.Aborted) != (int)InternalState.Aborted)
                 {
                     _cts.Cancel(true);
+                    _tcsClose?.TrySetResult();
                 }
             }
         }
