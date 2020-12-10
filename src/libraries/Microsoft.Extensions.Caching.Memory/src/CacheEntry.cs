@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
@@ -26,13 +27,14 @@ namespace Microsoft.Extensions.Caching.Memory
         private long? _size;
         private CacheEntry _previous; // this field is not null only before the entry is added to the cache
         private object _value;
-        private int _state; // actually a [Flag] enum called "State"
+        private State _state;
 
         internal CacheEntry(object key, MemoryCache memoryCache)
         {
             Key = key ?? throw new ArgumentNullException(nameof(key));
             _cache = memoryCache ?? throw new ArgumentNullException(nameof(memoryCache));
             _previous = CacheEntryHelper.EnterScope(this);
+            _state = new State(CacheItemPriority.Normal);
         }
 
         /// <summary>
@@ -98,7 +100,7 @@ namespace Microsoft.Extensions.Caching.Memory
         /// Gets or sets the priority for keeping the cache entry in the cache during a
         /// memory pressure triggered cleanup. The default is <see cref="CacheItemPriority.Normal"/>.
         /// </summary>
-        public CacheItemPriority Priority { get; set; } = CacheItemPriority.Normal;
+        public CacheItemPriority Priority { get => _state.Priority; set => _state.Priority = value; }
 
         /// <summary>
         /// Gets or sets the size of the cache entry value.
@@ -131,13 +133,13 @@ namespace Microsoft.Extensions.Caching.Memory
 
         internal DateTimeOffset LastAccessed { get; set; }
 
-        internal EvictionReason EvictionReason { get; private set; }
+        internal EvictionReason EvictionReason { get => _state.EvictionReason; private set => _state.EvictionReason = value; }
 
-        private bool IsDisposed { get => ((State)_state).HasFlag(State.IsDisposed); set => Set(State.IsDisposed, value); }
+        private bool IsDisposed { get => _state.IsDisposed; set => _state.IsDisposed = value; }
 
-        private bool IsExpired { get => ((State)_state).HasFlag(State.IsExpired); set => Set(State.IsExpired, value); }
+        private bool IsExpired { get => _state.IsExpired; set => _state.IsExpired = value; }
 
-        private bool IsValueSet { get => ((State)_state).HasFlag(State.IsValueSet); set => Set(State.IsValueSet, value); }
+        private bool IsValueSet { get => _state.IsValueSet; set => _state.IsValueSet = value; }
 
         public void Dispose()
         {
@@ -349,24 +351,79 @@ namespace Microsoft.Extensions.Caching.Memory
             }
         }
 
-        private void Set(State option, bool value)
+        [StructLayout(LayoutKind.Explicit)]
+        private struct State
         {
-            int before, after;
+            [FieldOffset(0)]
+            private int _state;
 
-            do
+            [FieldOffset(0)]
+            private byte _flags;
+            [FieldOffset(1)]
+            private byte _evictionReason;
+            [FieldOffset(2)]
+            private byte _priority;
+            [FieldOffset(3)]
+            private byte _reserved; // for future use
+
+            internal State(CacheItemPriority priority) : this() => _priority = (byte)priority;
+
+            internal bool IsDisposed { get => ((Flags)_flags).HasFlag(Flags.IsDisposed); set => SetFlag(Flags.IsDisposed, value); }
+
+            internal bool IsExpired { get => ((Flags)_flags).HasFlag(Flags.IsExpired); set => SetFlag(Flags.IsExpired, value); }
+
+            internal bool IsValueSet { get => ((Flags)_flags).HasFlag(Flags.IsValueSet); set => SetFlag(Flags.IsValueSet, value); }
+
+            internal EvictionReason EvictionReason
             {
-                before = _state;
-                after = value ? (_state | (int)option) : (_state & ~(int)option);
-            } while (Interlocked.CompareExchange(ref _state, after, before) != before);
-        }
+                get => (EvictionReason)_evictionReason;
+                set
+                {
+                    State before, after;
+                    do
+                    {
+                        before = this;
+                        after = this;
+                        after._evictionReason = (byte)value;
+                    } while (Interlocked.CompareExchange(ref _state, after._state, before._state) != before._state);
+                }
+            }
 
-        [Flags]
-        private enum State
-        {
-            Default = 0,
-            IsValueSet = 1 << 0,
-            IsExpired = 1 << 1,
-            IsDisposed = 1 << 2,
+            internal CacheItemPriority Priority
+            {
+                get => (CacheItemPriority)_priority;
+                set
+                {
+                    State before, after;
+                    do
+                    {
+                        before = this;
+                        after = this;
+                        after._priority = (byte)value;
+                    } while (Interlocked.CompareExchange(ref _state, after._state, before._state) != before._state);
+                }
+            }
+
+            private void SetFlag(Flags option, bool value)
+            {
+                State before, after;
+
+                do
+                {
+                    before = this;
+                    after = this;
+                    after._flags = (byte)(value ? (after._flags | (byte)option) : (after._flags & ~(byte)option));
+                } while (Interlocked.CompareExchange(ref _state, after._state, before._state) != before._state);
+            }
+
+            [Flags]
+            private enum Flags : byte
+            {
+                Default = 0,
+                IsValueSet = 1 << 0,
+                IsExpired = 1 << 1,
+                IsDisposed = 1 << 2,
+            }
         }
     }
 }
