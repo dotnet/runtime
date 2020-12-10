@@ -104,12 +104,13 @@ internal static partial class Interop
                 if (isContinuation)
                 {
                     module!.ModuleMemorySize += addressRange.Size;
+                    moduleHasReadAndExecFlags |= lineHasReadAndExecFlags;
                     continue;
                 }
 
                 Commit();
-                moduleHasReadAndExecFlags |= lineHasReadAndExecFlags;
 
+                moduleHasReadAndExecFlags = lineHasReadAndExecFlags;
                 module = new ProcessModule
                 {
                     FileName = pathname,
@@ -137,7 +138,6 @@ internal static partial class Interop
                 {
                     modules.Add(module);
                     module = null;
-                    moduleHasReadAndExecFlags = false;
                 }
             }
         }
