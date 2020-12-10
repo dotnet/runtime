@@ -44,7 +44,7 @@ namespace System.IO.MemoryMappedFiles.Tests
         /// Tests that external code can use SafeMemoryMappedViewHandle as the result of a P/Invoke on Unix.
         /// </summary>
         [Fact]
-        [PlatformSpecific(TestPlatforms.AnyUnix)]
+        [PlatformSpecific(TestPlatforms.AnyUnix & ~TestPlatforms.Browser)]
         public void SafeMemoryMappedViewHandle_CanUseInPInvoke_Unix()
         {
             const int MAP_PRIVATE = 0x02;
