@@ -9,9 +9,11 @@ namespace Microsoft.Extensions.Caching.Memory
 {
     internal partial class CacheEntry
     {
+        // this type exists just to reduce CacheEntry size by replacing many enum & boolean fields with one of a size of Int32
         [StructLayout(LayoutKind.Explicit)]
-        private struct State
+        private struct CacheEntryState
         {
+            // this field overlaps with the 4 other byte fields, it exists to allow for atomic updates
             [FieldOffset(0)]
             private int _state;
 
@@ -24,7 +26,7 @@ namespace Microsoft.Extensions.Caching.Memory
             [FieldOffset(3)]
             private byte _reserved; // for future use
 
-            internal State(CacheItemPriority priority) : this() => _priority = (byte)priority;
+            internal CacheEntryState(CacheItemPriority priority) : this() => _priority = (byte)priority;
 
             internal bool IsDisposed { get => ((Flags)_flags).HasFlag(Flags.IsDisposed); set => SetFlag(Flags.IsDisposed, value); }
 
@@ -37,7 +39,7 @@ namespace Microsoft.Extensions.Caching.Memory
                 get => (EvictionReason)_evictionReason;
                 set
                 {
-                    State before, after;
+                    CacheEntryState before, after;
                     do
                     {
                         before = this;
@@ -52,7 +54,7 @@ namespace Microsoft.Extensions.Caching.Memory
                 get => (CacheItemPriority)_priority;
                 set
                 {
-                    State before, after;
+                    CacheEntryState before, after;
                     do
                     {
                         before = this;
@@ -64,7 +66,7 @@ namespace Microsoft.Extensions.Caching.Memory
 
             private void SetFlag(Flags option, bool value)
             {
-                State before, after;
+                CacheEntryState before, after;
 
                 do
                 {

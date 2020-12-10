@@ -17,20 +17,20 @@ namespace Microsoft.Extensions.Caching.Memory
 
         private readonly MemoryCache _cache;
 
-        private Tokens _tokens; // might be null if user is not using the tokens or callbacks
+        private CacheEntryTokens _tokens; // might be null if user is not using the tokens or callbacks
         private TimeSpan? _absoluteExpirationRelativeToNow;
         private TimeSpan? _slidingExpiration;
         private long? _size;
         private CacheEntry _previous; // this field is not null only before the entry is added to the cache
         private object _value;
-        private State _state;
+        private CacheEntryState _state;
 
         internal CacheEntry(object key, MemoryCache memoryCache)
         {
             Key = key ?? throw new ArgumentNullException(nameof(key));
             _cache = memoryCache ?? throw new ArgumentNullException(nameof(memoryCache));
             _previous = CacheEntryHelper.EnterScope(this);
-            _state = new State(CacheItemPriority.Normal);
+            _state = new CacheEntryState(CacheItemPriority.Normal);
         }
 
         /// <summary>
@@ -275,14 +275,14 @@ namespace Microsoft.Extensions.Caching.Memory
             }
         }
 
-        private Tokens GetOrCreateTokens()
+        private CacheEntryTokens GetOrCreateTokens()
         {
             if (_tokens != null)
             {
                 return _tokens;
             }
 
-            Tokens result = new Tokens();
+            CacheEntryTokens result = new CacheEntryTokens();
             return Interlocked.CompareExchange(ref _tokens, result, null) ?? result;
         }
     }
