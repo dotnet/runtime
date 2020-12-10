@@ -288,6 +288,7 @@ asm_diff_parser.add_argument("--diff_with_code_only", action="store_true", help=
 asm_diff_parser.add_argument("--diff_jit_dump", action="store_true", help="Generate JitDump output for diffs. Default: only generate asm, not JitDump.")
 asm_diff_parser.add_argument("--diff_jit_dump_only", action="store_true", help="Only diff JitDump output, not asm.")
 asm_diff_parser.add_argument("-temp_dir", help="Specify a temporary directory used for a previous ASM diffs run (for which --skip_cleanup was used) to view the results. The replay command is skipped.")
+asm_diff_parser.add_argument("--gcinfo", action="store_true", help="Include GC info in disassembly (sets COMPlus_JitGCDump/COMPlus_NgenGCDump; requires instructions to be prefixed by offsets).")
 
 # subparser for upload
 upload_parser = subparsers.add_parser("upload", description=upload_description, parents=[core_root_parser, target_parser])
@@ -1255,20 +1256,15 @@ class SuperPMIReplayAsmDiffs:
             "COMPlus_JitRequired": "1",
             "COMPlus_TieredCompilation": "0" }
 
-        jit_dump_complus_vars = {
-            "COMPlus_JitDisasm": "*",
-            "COMPlus_JitUnwindDump": "*",
-            "COMPlus_JitEHDump": "*",
-            "COMPlus_NgenDisasm": "*",
-            "COMPlus_NgenUnwindDump": "*",
-            "COMPlus_NgenEHDump": "*",
-            "COMPlus_JitDiffableDasm": "1",
-            "COMPlus_JitEnableNoWayAssert": "1",
-            "COMPlus_JitNoForceFallback": "1",
-            "COMPlus_JitRequired": "1",
-            "COMPlus_TieredCompilation": "0",
+        if self.coreclr_args.gcinfo:
+            asm_complus_vars.update({
+                "COMPlus_JitGCDump": "*",
+                "COMPlus_NgenGCDump": "*" })
+
+        jit_dump_complus_vars = asm_complus_vars.copy()
+        jit_dump_complus_vars.update({
             "COMPlus_JitDump": "*",
-            "COMPlus_NgenDump": "*" }
+            "COMPlus_NgenDump": "*" })
 
         target_flags = []
         if self.coreclr_args.arch != self.coreclr_args.target_arch:
@@ -1528,12 +1524,13 @@ class SuperPMIReplayAsmDiffs:
                     except:
                         current_text_diff = None
 
+                    logging.info("Generated asm is located under %s %s", base_asm_location, diff_asm_location)
+
                     if current_text_diff is not None:
-                        logging.info("Textual differences found. Asm is located under %s %s", base_asm_location, diff_asm_location)
-                        logging.info("Generate a diff analysis report by building jit-analyze from https://github.com/dotnet/jitutils and running:")
-                        logging.info("    jit-analyze -r --base %s --diff %s", base_asm_location, diff_asm_location)
+                        logging.info("Textual differences found in generated asm.")
 
                         # Find jit-analyze.bat/sh on PATH, if it exists, then invoke it.
+                        ran_jit_analyze = False
                         path_var = os.environ.get("PATH")
                         if path_var is not None:
                             jit_analyze_file = "jit-analyze.bat" if platform.system() == "Windows" else "jit-analyze.sh"
@@ -1542,6 +1539,11 @@ class SuperPMIReplayAsmDiffs:
                                 # It appears we have a built jit-analyze on the path, so try to run it.
                                 command = [ jit_analyze_path, "-r", "--base", base_asm_location, "--diff", diff_asm_location ]
                                 run_and_log(command, logging.INFO)
+                                ran_jit_analyze = True
+
+                        if not ran_jit_analyze:
+                            logging.info("jit-analyze not found on PATH. Generate a diff analysis report by building jit-analyze from https://github.com/dotnet/jitutils and running:")
+                            logging.info("    jit-analyze -r --base %s --diff %s", base_asm_location, diff_asm_location)
 
                         if self.coreclr_args.diff_with_code and not self.coreclr_args.diff_jit_dump_only:
                             # Open VS Code on the diffs.
@@ -1567,35 +1569,38 @@ class SuperPMIReplayAsmDiffs:
                     else:
                         logging.warning("No textual differences. Is this an issue with coredistools?")
 
-                    try:
-                        current_jit_dump_diff = jit_dump_differences.get_nowait()
-                    except:
-                        current_jit_dump_diff = None
+                    if self.coreclr_args.diff_jit_dump:
+                        try:
+                            current_jit_dump_diff = jit_dump_differences.get_nowait()
+                        except:
+                            current_jit_dump_diff = None
 
-                    if current_jit_dump_diff is not None:
-                        logging.info("Textual differences found in JitDump. JitDump is located under %s %s", base_dump_location, diff_dump_location)
+                        logging.info("Generated JitDump is located under %s %s", base_dump_location, diff_dump_location)
 
-                        if self.coreclr_args.diff_with_code:
-                            # Open VS Code on the diffs. Only do this for the first 6.
-                            batch_command = ["cmd", "/c"] if platform.system() == "Windows" else []
-                            index = 1
-                            while current_jit_dump_diff is not None:
-                                command = batch_command + [
-                                    "code",
-                                    "-d",
-                                    os.path.join(base_dump_location, "{}.txt".format(current_jit_dump_diff)),
-                                    os.path.join(diff_dump_location, "{}.txt".format(current_jit_dump_diff))
-                                ]
-                                run_and_log(command)
+                        if current_jit_dump_diff is not None:
+                            logging.info("Textual differences found in generated JitDump.")
 
-                                if index >= max_vscode_diff_file_display:
-                                    break
+                            if self.coreclr_args.diff_with_code:
+                                # Open VS Code on the diffs. Only do this for the first 6.
+                                batch_command = ["cmd", "/c"] if platform.system() == "Windows" else []
+                                index = 1
+                                while current_jit_dump_diff is not None:
+                                    command = batch_command + [
+                                        "code",
+                                        "-d",
+                                        os.path.join(base_dump_location, "{}.txt".format(current_jit_dump_diff)),
+                                        os.path.join(diff_dump_location, "{}.txt".format(current_jit_dump_diff))
+                                    ]
+                                    run_and_log(command)
 
-                                try:
-                                    current_jit_dump_diff = jit_dump_differences.get_nowait()
-                                except:
-                                    current_jit_dump_diff = None
-                                index += 1
+                                    if index >= max_vscode_diff_file_display:
+                                        break
+
+                                    try:
+                                        current_jit_dump_diff = jit_dump_differences.get_nowait()
+                                    except:
+                                        current_jit_dump_diff = None
+                                    index += 1
                 ################################################################################################ end of processing asm diffs (if is_nonzero_length_file(diff_mcl_file)...
 
                 if not self.coreclr_args.skip_cleanup:
@@ -2929,6 +2934,11 @@ def setup_args(args):
                             "temp_dir",
                             lambda unused: True,
                             "Unable to set temp_dir.")
+
+        coreclr_args.verify(args,
+                            "gcinfo",
+                            lambda unused: True,
+                            "Unable to set gcinfo.")
 
         if coreclr_args.diff_with_code_only:
             # Set diff with code if we are not running SuperPMI to regenerate diffs.
