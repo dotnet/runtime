@@ -1975,7 +1975,7 @@ put_unwind_info(unw_addr_space_t as, unw_proc_info_t *pip, void *arg)
 {
 }
 
-static unw_accessors_t init_unwind_accessors()
+static constexpr unw_accessors_t init_unwind_accessors()
 {
     unw_accessors_t a = {0};
 
