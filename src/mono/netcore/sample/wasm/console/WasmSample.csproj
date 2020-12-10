@@ -113,6 +113,10 @@
       MainAssembly="$(PublishDir)\WasmSample.dll"
       MainJS="$(MonoProjectRoot)wasm\runtime-test.js"
       Assemblies="@(BundleAssemblies)"/>
+    <WriteLinesToFile
+      File="$(AppDir)run-v8.sh"
+      Lines="v8 --expose_wasm runtime.js -- --run WasmSample.dll $*"
+      Overwrite="true"/>
     <Exec Command="chmod a+x $(AppDir)run-v8.sh" />
 
     <!-- Run mono-cil-strip on the assemblies -->

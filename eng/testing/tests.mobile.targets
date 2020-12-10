@@ -178,6 +178,10 @@
       Assemblies="@(Assemblies)"
       SatelliteAssemblies="@(WasmSatelliteAssemblies)"
       FilesToIncludeInFileSystem="@(WasmFilesToIncludeInFileSystem)" />
+    <WriteLinesToFile
+      File="$(BundleDir)run-v8.sh"
+      Lines="v8 --expose_wasm runtime.js -- --run WasmTestRunner.dll $*"
+      Overwrite="true"/>
   </Target>
 
   <Target Name="AddTestRunnersToPublishedFiles"

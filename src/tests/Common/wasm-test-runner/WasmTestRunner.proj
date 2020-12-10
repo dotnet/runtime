@@ -44,6 +44,10 @@
       MainJS="$(CORE_ROOT)\runtime-test\runtime-test.js"
       Assemblies="@(ReferencedAssemblies)" />
 
+    <WriteLinesToFile
+      File="$(AppDir)/run-v8.sh"
+      Lines="v8 --expose_wasm runtime.js -- --run $(TestAssembly) $*"
+      Overwrite="true"/>
     <Exec Command="chmod a+x $(AppDir)/run-v8.sh" />
   </Target>
 </Project>

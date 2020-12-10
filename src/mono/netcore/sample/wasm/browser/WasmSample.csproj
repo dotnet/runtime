@@ -51,6 +51,10 @@
       Assemblies="@(ReferencedAssemblies)">
       <Output TaskParameter="FileWrites" ItemName="FileWrites" />
     </WasmAppBuilder>
+    <WriteLinesToFile
+      File="$(AppDir)/run-v8.sh"
+      Lines="v8 --expose_wasm runtime.js -- --run WasmSample.dll $*"
+      Overwrite="true"/>
     <Exec Command="chmod a+x $(AppDir)/run-v8.sh" />
     <Copy SourceFiles="bin\index.html;bin\server.py" DestinationFolder="$(AppDir)" />
   </Target>

@@ -65,6 +65,10 @@
       Assemblies="@(ReferencedAssemblies)">
       <Output TaskParameter="FileWrites" ItemName="FileWrites" />
     </WasmAppBuilder>
+    <WriteLinesToFile
+      File="$(AppDir)/run-v8.sh"
+      Lines="v8 --expose_wasm runtime.js -- --run debugger-test.dll $*"
+      Overwrite="true"/>
 
     <Copy SourceFiles="@(ExtraFileForPublish)" DestinationFolder="$(AppDir)" />
   </Target>
