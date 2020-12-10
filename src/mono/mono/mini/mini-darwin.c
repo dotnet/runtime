@@ -56,7 +56,6 @@
 #include <string.h>
 #include <ctype.h>
 #include "trace.h"
-#include "version.h"
 
 #include "jit-icalls.h"
 

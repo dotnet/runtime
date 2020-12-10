@@ -1,8 +1,14 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-.assembly extern System.Runtime { }
-.assembly extern System.Runtime.InteropServices { }
+.assembly extern System.Runtime
+{
+  .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
+}
+.assembly extern System.Runtime.InteropServices
+{
+  .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
+}
 
 .assembly InvalidCSharp { }
 
@@ -10,7 +16,7 @@
     extends [System.Runtime]System.Object
 {
     .method public hidebysig static 
-        void CallbackMethod (
+        int32 CallbackMethod (
             int32 n
         ) cil managed preservesig 
     {
@@ -62,6 +68,15 @@
         IL_0000: ldstr "Instance functions with attribute UnmanagedCallersOnlyAttribute are invalid"
         IL_0005: newobj instance void [System.Runtime]System.Exception::.ctor(string)
         IL_000a: throw
+    }
+
+    .method public hidebysig static
+        native int GetNonStaticCallbackFunctionPointer (
+        ) cil managed preservesig
+    {
+        .maxstack 8
+        ldftn instance int32 InvalidCSharp.Callbacks::CallbackNonStatic(int32)
+        ret
     }
 
     .method public hidebysig specialname rtspecialname 

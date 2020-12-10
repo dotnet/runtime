@@ -4,6 +4,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Net.Sockets;
+using System.Threading;
 using System.Threading.Tasks;
 
 using Xunit;
@@ -227,6 +228,56 @@ namespace System.Net.NameResolution.Tests
 
             Assert.Equal(ipEntry.HostName, stringEntry.HostName);
             Assert.Equal(ipEntry.AddressList, stringEntry.AddressList);
+        }
+
+        [OuterLoop]
+        [Theory]
+        [MemberData(nameof(AddressFamilySpecificTestData))]
+        public async Task DnsGetHostEntry_LocalHost_AddressFamilySpecific(bool useAsync, string host, AddressFamily addressFamily)
+        {
+            IPHostEntry entry =
+                useAsync ? await Dns.GetHostEntryAsync(host, addressFamily) :
+                Dns.GetHostEntry(host, addressFamily);
+
+            Assert.All(entry.AddressList, address => Assert.Equal(addressFamily, address.AddressFamily));
+        }
+
+        public static TheoryData<bool, string, AddressFamily> AddressFamilySpecificTestData =>
+            new TheoryData<bool, string, AddressFamily>()
+            {
+                // async, hostname, af
+                { false, TestSettings.IPv4Host, AddressFamily.InterNetwork },
+                { false, TestSettings.IPv6Host, AddressFamily.InterNetworkV6 },
+                { true, TestSettings.IPv4Host, AddressFamily.InterNetwork },
+                { true, TestSettings.IPv6Host, AddressFamily.InterNetworkV6 }
+            };
+
+        [Fact]
+        public async Task DnsGetHostEntry_PreCancelledToken_Throws()
+        {
+            using var cts = new CancellationTokenSource();
+            cts.Cancel();
+
+            OperationCanceledException oce = await Assert.ThrowsAnyAsync<OperationCanceledException>(() => Dns.GetHostEntryAsync(TestSettings.LocalHost, cts.Token));
+            Assert.Equal(cts.Token, oce.CancellationToken);
+        }
+
+        [OuterLoop]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/43816")] // Race condition outlined below.
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/33378", TestPlatforms.AnyUnix)] // Cancellation of an outstanding getaddrinfo is not supported on *nix.
+        [Fact]
+        public async Task DnsGetHostEntry_PostCancelledToken_Throws()
+        {
+            using var cts = new CancellationTokenSource();
+
+            Task task = Dns.GetHostEntryAsync(TestSettings.UncachedHost, cts.Token);
+
+            // This test might flake if the cancellation token takes too long to trigger:
+            // It's a race between the DNS server getting back to us and the cancellation processing.
+            cts.Cancel();
+
+            OperationCanceledException oce = await Assert.ThrowsAnyAsync<OperationCanceledException>(() => task);
+            Assert.Equal(cts.Token, oce.CancellationToken);
         }
     }
 }

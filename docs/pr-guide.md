@@ -74,13 +74,16 @@ If you have determined the failure is definitely not caused by changes in your P
 * Search for an [existing issue](https://github.com/dotnet/runtime/issues). Usually the test method name or (if a crash/hang) the test assembly name are good search parameters.
   * If there's an existing issue, add a comment with
     * a) the link to the build
-    * b) the affected configuration (ie `netcoreapp-Windows_NT-Release-x64-Windows.81.Amd64.Open`)
+    * b) the affected configuration (ie `net6.0-windows-Release-x64-Windows.81.Amd64.Open`)
     * c) all console output including the error message and stack trace from the Azure DevOps tab (This is necessary as retention policies are in place that recycle old builds.)
     * d) if there's a dump file (see Attachments tab in Azure DevOps) include that
     * If the issue is already closed, reopen it and update the labels to reflect the current failure state.
   * If there's no existing issue, create an issue with the same information listed above.
   * Update the original pull request with a comment linking to the new or existing issue.
-* In a follow-up Pull Request, disable the failing test(s) with the corresponding issue link, e.g. `[ActiveIssue(x)]`, and update the tracking issue with the label `disabled-test`.
+* In a follow-up Pull Request, disable the failing test(s) with the corresponding issue link tracking the disable.
+  * Update the tracking issue with the label `disabled-test`.
+  * For libraries tests add a [`[ActiveIssue(link)]`](https://github.com/dotnet/arcade/blob/master/src/Microsoft.DotNet.XUnitExtensions/src/Attributes/ActiveIssueAttribute.cs) attribute on the test method. You can narrow the disabling down to runtime variant, flavor, and platform. For an example see [File_AppendAllLinesAsync_Encoded](https://github.com/dotnet/runtime/blob/a259ec2e967d502f82163beba6b84da5319c5e08/src/libraries/System.IO.FileSystem/tests/File/AppendAsync.cs#L899)
+  * For runtime tests found under `src/tests`, please edit [`issues.targets`](https://github.com/dotnet/runtime/blob/master/src/tests/issues.targets). There are several groups for different types of disable (mono vs. coreclr, different platforms, different scenarios). Add the folder containing the test and issue mimicking any of the samples in the file. 
 
 There are plenty of possible bugs, e.g. race conditions, where a failure might highlight a real problem and it won't manifest again on a retry. Therefore these steps should be followed for every iteration of the PR build, e.g. before retrying/rebuilding.
 

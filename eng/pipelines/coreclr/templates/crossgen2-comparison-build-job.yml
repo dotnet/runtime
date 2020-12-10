@@ -63,7 +63,7 @@ jobs:
       value: $(artifactsDirectory)$(dir)tests$(dir)coreclr$(dir)$(targetFlavor)$(dir)Tests$(dir)CrossCompileRoot
     - name: crossgencompare_build_artifact
       value: crossgen_comparison_build_$(osGroup)$(osSubgroup)_$(archType)
-    - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
+    - ${{ if eq(parameters.osGroup, 'windows') }}:
       - name: target_crossgen2_os
         value: windows
     - ${{ if eq(parameters.osGroup, 'Linux') }}:
@@ -118,7 +118,7 @@ jobs:
       displayName: Populate Core_Root
 
     # Create work item directory and populate with assemblies
-    - ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
+    - ${{ if ne(parameters.osGroup, 'windows') }}:
       - script: |
           mkdir -p $(workItemDirectory)
           mkdir -p $(workItemDirectory)/log
@@ -127,7 +127,7 @@ jobs:
           cp $(productDirectory)/$(targetFlavor)/IL/System.Private.CoreLib.dll $(workItemDirectory)/dlls
         displayName: Create directories
         failOnStderr: true
-    - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
+    - ${{ if eq(parameters.osGroup, 'windows') }}:
       - script: |
           md $(workItemDirectory)\log
           md $(workItemDirectory)\dlls
@@ -144,7 +144,7 @@ jobs:
       inputs:
         scriptSource: 'filePath'
         scriptPath: $(Build.SourcesDirectory)/src/tests/Common/scripts/crossgen2_comparison.py
-        ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
+        ${{ if ne(parameters.osGroup, 'windows') }}:
           pythonInterpreter: /usr/bin/python3
           arguments:
             crossgen_framework
@@ -154,7 +154,7 @@ jobs:
             --result_dir  $(workItemDirectory)/log
             --target_os   $(target_crossgen2_os)
             --target_arch $(archType)
-        ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
+        ${{ if eq(parameters.osGroup, 'windows') }}:
           arguments:
             crossgen_framework
             --crossgen    $(crossgen2location)

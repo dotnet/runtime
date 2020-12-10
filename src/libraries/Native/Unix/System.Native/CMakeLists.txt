@@ -4,6 +4,8 @@ if (NOT CLR_CMAKE_TARGET_IOS AND NOT CLR_CMAKE_TARGET_TVOS)
     add_definitions(-DHAS_CONSOLE_SIGNALS)
 endif ()
 
+include_directories("${CLR_SRC_NATIVE_DIR}/common")
+
 set(NATIVE_SOURCES
     pal_errno.c
     pal_interfaceaddresses.c
@@ -51,23 +53,22 @@ elseif (CLR_CMAKE_TARGET_FREEBSD)
     endif ()
 endif ()
 
+include(${CMAKE_CURRENT_LIST_DIR}/extra_libs.cmake)
+
+set(NATIVE_LIBS_EXTRA)
+append_extra_system_libs(NATIVE_LIBS_EXTRA)
+
 if (GEN_SHARED_LIB)
     add_library(System.Native
         SHARED
         ${NATIVE_SOURCES}
         ${VERSION_FILE_PATH}
     )
-    if (CLR_CMAKE_TARGET_LINUX AND NOT CLR_CMAKE_TARGET_ANDROID)
-        target_link_libraries(System.Native rt)
-    elseif (CLR_CMAKE_TARGET_FREEBSD)
-        target_link_libraries(System.Native pthread)
-        if (HAVE_INOTIFY)
-            find_library(INOTIFY_LIBRARY inotify HINTS /usr/local/lib)
-            target_link_libraries(System.Native ${INOTIFY_LIBRARY})
-        endif ()
-    elseif (CLR_CMAKE_TARGET_SUNOS)
-        target_link_libraries(System.Native socket)
-    endif ()
+
+    target_link_libraries(System.Native
+        ${NATIVE_LIBS_EXTRA}
+    )
+
     install_with_stripped_symbols (System.Native PROGRAMS .)
 endif ()
 
@@ -76,10 +77,6 @@ add_library(System.Native-Static
     ${NATIVE_SOURCES}
 )
 
-if (CLR_CMAKE_TARGET_IOS OR CLR_CMAKE_TARGET_TVOS)
-    target_link_libraries(System.Native "-framework Foundation")
-endif ()
-
 set_target_properties(System.Native-Static PROPERTIES OUTPUT_NAME System.Native CLEAN_DIRECT_OUTPUT 1)
 
-install (TARGETS System.Native-Static DESTINATION .)
+install (TARGETS System.Native-Static DESTINATION ${STATIC_LIB_DESTINATION})

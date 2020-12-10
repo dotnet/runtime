@@ -18,7 +18,7 @@ namespace System.Threading.Channels
     internal sealed class SingleConsumerUnboundedChannel<T> : Channel<T>, IDebugEnumerable<T>
     {
         /// <summary>Task that indicates the channel has completed.</summary>
-        private readonly TaskCompletionSource<VoidResult> _completion;
+        private readonly TaskCompletionSource _completion;
         /// <summary>
         /// A concurrent queue to hold the items for this channel.  The queue itself supports at most
         /// one writer and one reader at a time; as a result, since this channel supports multiple writers,
@@ -42,7 +42,7 @@ namespace System.Threading.Channels
         internal SingleConsumerUnboundedChannel(bool runContinuationsAsynchronously)
         {
             _runContinuationsAsynchronously = runContinuationsAsynchronously;
-            _completion = new TaskCompletionSource<VoidResult>(runContinuationsAsynchronously ? TaskCreationOptions.RunContinuationsAsynchronously : TaskCreationOptions.None);
+            _completion = new TaskCompletionSource(runContinuationsAsynchronously ? TaskCreationOptions.RunContinuationsAsynchronously : TaskCreationOptions.None);
 
             Reader = new UnboundedChannelReader(this);
             Writer = new UnboundedChannelWriter(this);
@@ -72,7 +72,7 @@ namespace System.Threading.Channels
                     return new ValueTask<T>(Task.FromCanceled<T>(cancellationToken));
                 }
 
-                if (TryRead(out T item))
+                if (TryRead(out T? item))
                 {
                     return new ValueTask<T>(item);
                 }

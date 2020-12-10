@@ -58,93 +58,68 @@ namespace System
 
         public static unsafe IDictionary GetEnvironmentVariables()
         {
-            char* pStrings = Interop.Kernel32.GetEnvironmentStrings();
-            if (pStrings == null)
+            // Format for GetEnvironmentStrings is:
+            //     [=HiddenVar=value\0]* [Variable=value\0]* \0
+            // See the description of Environment Blocks in MSDN's CreateProcess
+            // page (null-terminated array of null-terminated strings). Note
+            // the =HiddenVar's aren't always at the beginning.
+
+            // Copy strings out, parsing into pairs and inserting into the table.
+            // The first few environment variable entries start with an '='.
+            // The current working directory of every drive (except for those drives
+            // you haven't cd'ed into in your DOS window) are stored in the
+            // environment block (as =C:=pwd) and the program's exit code is
+            // as well (=ExitCode=00000000).
+
+            char* stringPtr = Interop.Kernel32.GetEnvironmentStringsW();
+            if (stringPtr == null)
             {
                 throw new OutOfMemoryException();
             }
 
             try
             {
-                // Format for GetEnvironmentStrings is:
-                // [=HiddenVar=value\0]* [Variable=value\0]* \0
-                // See the description of Environment Blocks in MSDN's
-                // CreateProcess page (null-terminated array of null-terminated strings).
-
-                // Search for terminating \0\0 (two unicode \0's).
-                char* p = pStrings;
-                while (!(*p == '\0' && *(p + 1) == '\0'))
-                {
-                    p++;
-                }
-                Span<char> block = new Span<char>(pStrings, (int)(p - pStrings + 1));
-
-                // Format for GetEnvironmentStrings is:
-                // (=HiddenVar=value\0 | Variable=value\0)* \0
-                // See the description of Environment Blocks in MSDN's
-                // CreateProcess page (null-terminated array of null-terminated strings).
-                // Note the =HiddenVar's aren't always at the beginning.
-
-                // Copy strings out, parsing into pairs and inserting into the table.
-                // The first few environment variable entries start with an '='.
-                // The current working directory of every drive (except for those drives
-                // you haven't cd'ed into in your DOS window) are stored in the
-                // environment block (as =C:=pwd) and the program's exit code is
-                // as well (=ExitCode=00000000).
-
                 var results = new Hashtable();
-                for (int i = 0; i < block.Length; i++)
+
+                char* currentPtr = stringPtr;
+                while (true)
                 {
-                    int startKey = i;
-
-                    // Skip to key. On some old OS, the environment block can be corrupted.
-                    // Some will not have '=', so we need to check for '\0'.
-                    while (block[i] != '=' && block[i] != '\0')
+                    int variableLength = string.wcslen(currentPtr);
+                    if (variableLength == 0)
                     {
-                        i++;
+                        break;
                     }
 
-                    if (block[i] == '\0')
-                    {
-                        continue;
-                    }
+                    var variable = new ReadOnlySpan<char>(currentPtr, variableLength);
 
-                    // Skip over environment variables starting with '='
-                    if (i - startKey == 0)
+                    // Find the = separating the key and value. We skip entries that begin with =.  We also skip entries that don't
+                    // have =, which can happen on some older OSes when the environment block gets corrupted.
+                    int i = variable.IndexOf('=');
+                    if (i > 0)
                     {
-                        while (block[i] != 0)
+                        // Add the key and value.
+                        string key = new string(variable.Slice(0, i));
+                        string value = new string(variable.Slice(i + 1));
+                        try
                         {
-                            i++;
+                            // Add may throw if the environment block was corrupted leading to duplicate entries.
+                            // We allow such throws and eat them (rather than proactively checking for duplication)
+                            // to provide a non-fatal notification about the corruption.
+                            results.Add(key, value);
                         }
-
-                        continue;
+                        catch (ArgumentException) { }
                     }
 
-                    string key = new string(block.Slice(startKey, i - startKey));
-                    i++;  // skip over '='
-
-                    int startValue = i;
-                    while (block[i] != 0)
-                    {
-                        i++; // Read to end of this entry
-                    }
-
-                    string value = new string(block.Slice(startValue, i - startValue)); // skip over 0 handled by for loop's i++
-                    try
-                    {
-                        results.Add(key, value);
-                    }
-                    catch (ArgumentException)
-                    {
-                        // Throw and catch intentionally to provide non-fatal notification about corrupted environment block
-                    }
+                    // Move to the end of this variable, after its terminator.
+                    currentPtr += variableLength + 1;
                 }
+
                 return results;
             }
             finally
             {
-                bool success = Interop.Kernel32.FreeEnvironmentStrings(pStrings);
-                Debug.Assert(success);
+                Interop.BOOL success = Interop.Kernel32.FreeEnvironmentStringsW(stringPtr);
+                Debug.Assert(success != Interop.BOOL.FALSE);
             }
         }
     }

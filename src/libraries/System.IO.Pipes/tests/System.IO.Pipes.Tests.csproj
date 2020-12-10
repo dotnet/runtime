@@ -2,64 +2,52 @@
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
-    <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;$(NetCoreAppCurrent)-Unix;$(NetCoreAppCurrent)</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-Unix;$(NetCoreAppCurrent)</TargetFrameworks>
     <IgnoreForCI Condition="'$(TargetOS)' == 'Browser'">true</IgnoreForCI>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="AssemblyInfo.cs" />
+    <Compile Include="XunitAssemblyAttributes.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsAnyOS)' != 'true'">
     <Compile Include="AnonymousPipeTests\AnonymousPipeTest.CreateServer.cs" />
     <Compile Include="AnonymousPipeTests\AnonymousPipeTest.CreateClient.cs" />
     <Compile Include="AnonymousPipeTests\AnonymousPipeTest.CrossProcess.cs" />
-    <Compile Include="AnonymousPipeTests\AnonymousPipeTestBase.cs" />
-    <Compile Include="AnonymousPipeTests\AnonymousPipeTest.Read.cs" />
     <Compile Include="AnonymousPipeTests\AnonymousPipeTest.Specific.cs" />
-    <Compile Include="AnonymousPipeTests\AnonymousPipeTest.Write.cs" />
-    <Compile Include="NamedPipeTests\NamedPipeTest.cs" />
     <Compile Include="NamedPipeTests\NamedPipeTest.CreateServer.cs" />
     <Compile Include="NamedPipeTests\NamedPipeTest.CreateClient.cs" />
     <Compile Include="NamedPipeTests\NamedPipeTest.CrossProcess.cs" />
-    <Compile Include="NamedPipeTests\NamedPipeTestBase.cs" />
-    <Compile Include="NamedPipeTests\NamedPipeTest.Read.cs" />
-    <Compile Include="NamedPipeTests\NamedPipeTest.Write.cs" />
     <Compile Include="NamedPipeTests\NamedPipeTest.Specific.cs" />
-    <Compile Include="NamedPipeTests\NamedPipeTest.Simple.cs" />
-    <Compile Include="PipeTest.cs" />
-    <Compile Include="PipeTestBase.cs" />
-    <Compile Include="PipeTest.Read.cs" />
-    <Compile Include="PipeTest.Write.cs" />
-    <Compile Include="XunitAssemblyAttributes.cs" />
-    <Compile Include="$(CommonTestPath)System\Threading\Tasks\TaskTimeoutExtensions.cs"
-             Link="Common\System\Threading\Tasks\TaskTimeoutExtensions.cs" />
+    <Compile Include="PipeStream.ProtectedMethods.Tests.cs" />
+    <Compile Include="PipeStreamConformanceTests.cs" />
+    <Compile Include="$(CommonTestPath)System\Threading\Tasks\TaskTimeoutExtensions.cs" Link="Common\System\Threading\Tasks\TaskTimeoutExtensions.cs" />
+    <Compile Include="$(CommonTestPath)Tests\System\IO\StreamConformanceTests.cs" Link="Common\System\IO\StreamConformanceTests.cs" />
+    <Compile Include="$(CommonTestPath)System\IO\ConnectedStreams.cs" Link="Common\System\IO\ConnectedStreams.cs" />
+    <Compile Include="$(CommonPath)System\Net\ArrayBuffer.cs" Link="ProductionCode\Common\System\Net\ArrayBuffer.cs" />
+    <Compile Include="$(CommonPath)System\Net\StreamBuffer.cs" Link="ProductionCode\Common\System\Net\StreamBuffer.cs" />
+    <Compile Include="$(CommonPath)System\Threading\Tasks\TaskToApm.cs" Link="Common\System\Threading\Tasks\TaskToApm.cs" />
+    <Compile Include="$(CommonTestPath)System\IO\CallTrackingStream.cs" Link="Common\System\IO\CallTrackingStream.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
-    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.CancelIoEx.cs"
-             Link="Common\Interop\Windows\Interop.CancelIoEx.cs" />
-    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.LoadLibraryEx_IntPtr.cs"
-             Link="Common\Interop\Windows\Interop.LoadLibraryEx_IntPtr.cs" />
-    <Compile Include="$(CommonPath)Interop\Windows\Interop.Errors.cs"
-             Link="Common\Interop\Windows\Interop.Errors.cs" />
-    <Compile Include="$(CommonPath)Interop\Windows\Interop.Libraries.cs"
-             Link="Common\Interop\Windows\Interop.Libraries.cs" />
-    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetNamedPipeHandleState.cs"
-             Link="Common\Interop\Windows\Interop.GetNamedPipeHandleState.cs" />
-    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.MaxLengths.cs"
-             Link="Common\Interop\Windows\Interop.MaxLengths.cs" />
     <Compile Include="NamedPipeTests\NamedPipeTest.CurrentUserOnly.cs" />
     <Compile Include="NamedPipeTests\NamedPipeTest.CurrentUserOnly.Windows.cs" />
-    <Compile Include="InteropTest.Windows.cs" />
     <Compile Include="NamedPipeTests\NamedPipeTest.RunAsClient.Windows.cs" />
-    <Compile Include="InteropTest.Windows.Win32.cs" />
+    <Compile Include="InteropTest.Windows.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.CancelIoEx.cs" Link="Common\Interop\Windows\Interop.CancelIoEx.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.LoadLibraryEx_IntPtr.cs" Link="Common\Interop\Windows\Interop.LoadLibraryEx_IntPtr.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Interop.Errors.cs" Link="Common\Interop\Windows\Interop.Errors.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Interop.Libraries.cs" Link="Common\Interop\Windows\Interop.Libraries.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetNamedPipeHandleState.cs" Link="Common\Interop\Windows\Interop.GetNamedPipeHandleState.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.MaxLengths.cs" Link="Common\Interop\Windows\Interop.MaxLengths.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsUnix)' == 'true'">
     <Compile Include="NamedPipeTests\NamedPipeTest.CurrentUserOnly.Unix.cs" />
     <Compile Include="NamedPipeTests\NamedPipeTest.UnixDomainSockets.cs" />
-    <Compile Include="InteropTest.Unix.cs" />
     <Compile Include="NamedPipeTests\NamedPipeTest.RunAsClient.Unix.cs" />
+    <Compile Include="InteropTest.Unix.cs" />
     <Compile Include="NativeOverlapped.unix.cs" />
   </ItemGroup>
-  <ItemGroup Condition="$(TargetFramework.StartsWith('$(NetCoreAppCurrent)'))">
+  <ItemGroup>
     <ProjectReference Include="$(LibrariesProjectRoot)System.DirectoryServices\src\System.DirectoryServices.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.DirectoryServices.AccountManagement\src\System.DirectoryServices.AccountManagement.csproj" />
   </ItemGroup>

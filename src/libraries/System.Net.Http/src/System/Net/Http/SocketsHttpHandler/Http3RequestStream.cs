@@ -743,7 +743,7 @@ namespace System.Net.Http
 
                 _recvBuffer.Discard(bytesRead);
 
-                if (NetEventSource.IsEnabled)
+                if (NetEventSource.Log.IsEnabled())
                 {
                     Trace($"Received frame {frameType} of length {payloadLength}.");
                 }
@@ -1171,7 +1171,7 @@ namespace System.Net.Http
             private Http3RequestStream? _stream;
             private HttpResponseMessage? _response;
 
-            public override bool CanRead => true;
+            public override bool CanRead => _stream != null;
 
             public override bool CanWrite => false;
 
@@ -1256,7 +1256,7 @@ namespace System.Net.Http
 
             public override bool CanRead => false;
 
-            public override bool CanWrite => true;
+            public override bool CanWrite => _stream != null;
 
             public Http3WriteStream(Http3RequestStream stream)
             {

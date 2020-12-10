@@ -2321,6 +2321,50 @@ namespace System.Tests
 
         }
 
+        [Theory]
+        [PlatformSpecific(TestPlatforms.Browser)]
+        [InlineData("America/Buenos_Aires", "America/Argentina/Buenos_Aires")]
+        [InlineData("America/Catamarca", "America/Argentina/Catamarca")]
+        [InlineData("America/Cordoba", "America/Argentina/Cordoba")]
+        [InlineData("America/Jujuy", "America/Argentina/Jujuy")]
+        [InlineData("America/Mendoza", "America/Argentina/Mendoza")]
+        [InlineData("America/Indianapolis", "America/Indiana/Indianapolis")]
+        public static void TestTimeZoneIdBackwardCompatibility(string oldId, string currentId)
+        {
+            TimeZoneInfo oldtz = TimeZoneInfo.FindSystemTimeZoneById(oldId);
+            TimeZoneInfo currenttz = TimeZoneInfo.FindSystemTimeZoneById(currentId);
+
+            Assert.Equal(oldtz.StandardName, currenttz.StandardName);
+            Assert.Equal(oldtz.DisplayName, currenttz.DisplayName);
+        }
+
+        [Theory]
+        [PlatformSpecific(TestPlatforms.Browser)]
+        [InlineData("America/Buenos_Aires")]
+        [InlineData("America/Catamarca")]
+        [InlineData("America/Cordoba")]
+        [InlineData("America/Jujuy")]
+        [InlineData("America/Mendoza")]
+        [InlineData("America/Indianapolis")]
+        public static void ChangeLocalTimeZone(string id) 
+        {
+            string originalTZ = Environment.GetEnvironmentVariable("TZ");
+            try {
+                TimeZoneInfo.ClearCachedData();
+                Environment.SetEnvironmentVariable("TZ", id);
+
+                TimeZoneInfo localtz = TimeZoneInfo.Local;
+                TimeZoneInfo tz = TimeZoneInfo.FindSystemTimeZoneById(id);
+
+                Assert.Equal(tz.StandardName, localtz.StandardName);
+                Assert.Equal(tz.DisplayName, localtz.DisplayName); 
+            }
+            finally {
+                TimeZoneInfo.ClearCachedData();
+                Environment.SetEnvironmentVariable("TZ", originalTZ);
+            }
+        }
+
         private static bool IsEnglishUILanguageAndRemoteExecutorSupported => (CultureInfo.CurrentUICulture.Name == "en" || CultureInfo.CurrentUICulture.Name.StartsWith("en-", StringComparison.Ordinal)) && RemoteExecutor.IsSupported;
 
         private static void VerifyConvertException<TException>(DateTimeOffset inputTime, string destinationTimeZoneId) where TException : Exception

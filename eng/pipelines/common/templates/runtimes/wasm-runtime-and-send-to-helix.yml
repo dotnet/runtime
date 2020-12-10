@@ -28,10 +28,11 @@ parameters:
   timeoutInMinutes: ''
   enableMicrobuild: ''
   gatherAssetManifests: false
+  shouldContinueOnError: false
 
 
 steps:
-  - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) /p:LibrariesConfiguration=${{ parameters.buildConfig }} -ci -skipstressdependencies -excludemonofailures os Browser wasm $(buildConfigUpper)
+  - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) /p:LibrariesConfiguration=${{ parameters.buildConfig }} -ci -excludemonofailures os Browser wasm $(buildConfigUpper)
     displayName: Build Tests
 
   #  Send tests to Helix
@@ -44,6 +45,7 @@ steps:
       osSubgroup: ${{ parameters.osSubgroup}}
       coreClrRepoRoot: $(Build.SourcesDirectory)/src/coreclr
       runtimeFlavorDisplayName: ${{ parameters.runtimeFlavorDisplayName }}
+      shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
 
       ${{ if eq(variables['System.TeamProject'], 'public') }}:
         creator: $(Build.DefinitionName)
@@ -51,10 +53,6 @@ steps:
         helixBuild: $(Build.BuildNumber)
         helixSource: $(_HelixSource)
 
-        # REVIEW: not sure why "cli" is part of the names here. Leave it for the ones that already had it,
-        # but don't add it to new ones.
-        ${{ if eq(parameters.readyToRun, true) }}:
-          helixType: 'test/functional/r2r/cli/'
         ${{ if ne(parameters.readyToRun, true) }}:
           helixType: 'test/functional/cli/'
 

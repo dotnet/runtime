@@ -131,7 +131,8 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
                         hasSecondProperty ? SharedTestState.ConfigMultiPropertyValue : null);
                     break;
                 case Scenario.Mixed:
-                case Scenario.NonContextMixed:
+                case Scenario.NonContextMixedAppHost:
+                case Scenario.NonContextMixedDotnet:
                     properties = GetPropertiesTestData(
                         SharedTestState.AppPropertyName,
                         SharedTestState.AppPropertyValue,

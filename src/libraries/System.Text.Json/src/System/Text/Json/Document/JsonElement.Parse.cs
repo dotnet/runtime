@@ -58,7 +58,7 @@ namespace System.Text.Json
         /// <param name="reader">The reader to read.</param>
         /// <param name="element">Receives the parsed element.</param>
         /// <returns>
-        ///   <see langword="true"/> if a value was read and parsed into a JsonElement,
+        ///   <see langword="true"/> if a value was read and parsed into a JsonElement;
         ///   <see langword="false"/> if the reader ran out of data while parsing.
         ///   All other situations result in an exception being thrown.
         /// </returns>

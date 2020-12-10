@@ -231,7 +231,7 @@ namespace System.Net.Security
 
                     return task.ContinueWith((t, s) =>
                         {
-                            var tuple = (Tuple<SslStream, ValueStopwatch>)s!;
+                            var tuple = ((SslStream, ValueStopwatch))s!;
                             SslStream thisRef = tuple.Item1;
                             ValueStopwatch stopwatch = tuple.Item2;
 
@@ -247,7 +247,7 @@ namespace System.Net.Security
                                 t.GetAwaiter().GetResult();
                             }
                         },
-                        state: Tuple.Create(this, stopwatch),
+                        state: (this, stopwatch),
                         cancellationToken: default,
                         TaskContinuationOptions.ExecuteSynchronously,
                         TaskScheduler.Current);
@@ -728,32 +728,6 @@ namespace System.Net.Security
                 {
                     ArrayPool<byte>.Shared.Return(bufferToReturn);
                 }
-            }
-        }
-
-        //
-        // Validates user parameters for all Read/Write methods.
-        //
-        private void ValidateParameters(byte[] buffer, int offset, int count)
-        {
-            if (buffer == null)
-            {
-                throw new ArgumentNullException(nameof(buffer));
-            }
-
-            if (offset < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(offset));
-            }
-
-            if (count < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(count));
-            }
-
-            if (count > buffer.Length - offset)
-            {
-                throw new ArgumentOutOfRangeException(nameof(count), SR.net_offset_plus_count);
             }
         }
 

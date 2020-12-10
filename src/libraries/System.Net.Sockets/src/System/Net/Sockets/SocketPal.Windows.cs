@@ -11,6 +11,10 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Threading;
 
+#if BIGENDIAN
+using System.Buffers.Binary;
+#endif
+
 namespace System.Net.Sockets
 {
     internal static class SocketPal
@@ -648,17 +652,11 @@ namespace System.Net.Sockets
             }
 
 #if BIGENDIAN
-            ipmr.MulticastAddress = (int) (((uint) ipmr.MulticastAddress << 24) |
-                                           (((uint) ipmr.MulticastAddress & 0x0000FF00) << 8) |
-                                           (((uint) ipmr.MulticastAddress >> 8) & 0x0000FF00) |
-                                           ((uint) ipmr.MulticastAddress >> 24));
+            ipmr.MulticastAddress = BinaryPrimitives.ReverseEndianness(ipmr.MulticastAddress);
 
             if (optionValue.LocalAddress != null)
             {
-                ipmr.InterfaceAddress = (int) (((uint) ipmr.InterfaceAddress << 24) |
-                                           (((uint) ipmr.InterfaceAddress & 0x0000FF00) << 8) |
-                                           (((uint) ipmr.InterfaceAddress >> 8) & 0x0000FF00) |
-                                           ((uint) ipmr.InterfaceAddress >> 24));
+                ipmr.InterfaceAddress = BinaryPrimitives.ReverseEndianness(ipmr.InterfaceAddress);
             }
 #endif
 
@@ -791,14 +789,8 @@ namespace System.Net.Sockets
             }
 
 #if BIGENDIAN
-            ipmr.MulticastAddress = (int) (((uint) ipmr.MulticastAddress << 24) |
-                                           (((uint) ipmr.MulticastAddress & 0x0000FF00) << 8) |
-                                           (((uint) ipmr.MulticastAddress >> 8) & 0x0000FF00) |
-                                           ((uint) ipmr.MulticastAddress >> 24));
-            ipmr.InterfaceAddress = (int) (((uint) ipmr.InterfaceAddress << 24) |
-                                           (((uint) ipmr.InterfaceAddress & 0x0000FF00) << 8) |
-                                           (((uint) ipmr.InterfaceAddress >> 8) & 0x0000FF00) |
-                                           ((uint) ipmr.InterfaceAddress >> 24));
+            ipmr.MulticastAddress = BinaryPrimitives.ReverseEndianness(ipmr.MulticastAddress);
+            ipmr.InterfaceAddress = BinaryPrimitives.ReverseEndianness(ipmr.InterfaceAddress);
 #endif  // BIGENDIAN
 
             IPAddress multicastAddr = new IPAddress(ipmr.MulticastAddress);
@@ -1026,81 +1018,6 @@ namespace System.Net.Sockets
             return err;
         }
 
-        public static unsafe SocketError ConnectAsync(Socket socket, SafeSocketHandle handle, byte[] socketAddress, int socketAddressLen, ConnectOverlappedAsyncResult asyncResult)
-        {
-            // This will pin the socketAddress buffer.
-            asyncResult.SetUnmanagedStructures(socketAddress);
-            try
-            {
-                int ignoreBytesSent;
-                bool success = socket.ConnectEx(
-                    handle,
-                    Marshal.UnsafeAddrOfPinnedArrayElement(socketAddress, 0),
-                    socketAddressLen,
-                    IntPtr.Zero,
-                    0,
-                    out ignoreBytesSent,
-                    asyncResult.DangerousOverlappedPointer); // SafeHandle was just created in SetUnmanagedStructures
-
-                return asyncResult.ProcessOverlappedResult(success, 0);
-            }
-            catch
-            {
-                asyncResult.ReleaseUnmanagedStructures();
-                throw;
-            }
-        }
-
-        public static unsafe SocketError SendAsync(SafeSocketHandle handle, byte[] buffer, int offset, int count, SocketFlags socketFlags, OverlappedAsyncResult asyncResult)
-        {
-            // Set up unmanaged structures for overlapped WSASend.
-            asyncResult.SetUnmanagedStructures(buffer, offset, count, null);
-            try
-            {
-                int bytesTransferred;
-                SocketError errorCode = Interop.Winsock.WSASend(
-                    handle,
-                    ref asyncResult._singleBuffer,
-                    1, // There is only ever 1 buffer being sent.
-                    out bytesTransferred,
-                    socketFlags,
-                    asyncResult.DangerousOverlappedPointer, // SafeHandle was just created in SetUnmanagedStructures
-                    IntPtr.Zero);
-
-                return asyncResult.ProcessOverlappedResult(errorCode == SocketError.Success, bytesTransferred);
-            }
-            catch
-            {
-                asyncResult.ReleaseUnmanagedStructures();
-                throw;
-            }
-        }
-
-        public static unsafe SocketError SendAsync(SafeSocketHandle handle, IList<ArraySegment<byte>> buffers, SocketFlags socketFlags, OverlappedAsyncResult asyncResult)
-        {
-            // Set up asyncResult for overlapped WSASend.
-            asyncResult.SetUnmanagedStructures(buffers);
-            try
-            {
-                int bytesTransferred;
-                SocketError errorCode = Interop.Winsock.WSASend(
-                    handle,
-                    asyncResult._wsaBuffers,
-                    asyncResult._wsaBuffers!.Length,
-                    out bytesTransferred,
-                    socketFlags,
-                    asyncResult.DangerousOverlappedPointer, // SafeHandle was just created in SetUnmanagedStructures
-                    IntPtr.Zero);
-
-                return asyncResult.ProcessOverlappedResult(errorCode == SocketError.Success, bytesTransferred);
-            }
-            catch
-            {
-                asyncResult.ReleaseUnmanagedStructures();
-                throw;
-            }
-        }
-
         // This assumes preBuffer/postBuffer are pinned already
 
         private static unsafe bool TransmitFileHelper(
@@ -1188,31 +1105,6 @@ namespace System.Net.Sockets
                     socketFlags,
                     asyncResult.GetSocketAddressPtr(),
                     asyncResult.SocketAddress!.Size,
-                    asyncResult.DangerousOverlappedPointer, // SafeHandle was just created in SetUnmanagedStructures
-                    IntPtr.Zero);
-
-                return asyncResult.ProcessOverlappedResult(errorCode == SocketError.Success, bytesTransferred);
-            }
-            catch
-            {
-                asyncResult.ReleaseUnmanagedStructures();
-                throw;
-            }
-        }
-
-        public static unsafe SocketError ReceiveAsync(SafeSocketHandle handle, byte[] buffer, int offset, int count, SocketFlags socketFlags, OverlappedAsyncResult asyncResult)
-        {
-            // Set up asyncResult for overlapped WSARecv.
-            asyncResult.SetUnmanagedStructures(buffer, offset, count, null);
-            try
-            {
-                int bytesTransferred;
-                SocketError errorCode = Interop.Winsock.WSARecv(
-                    handle,
-                    ref asyncResult._singleBuffer,
-                    1,
-                    out bytesTransferred,
-                    ref socketFlags,
                     asyncResult.DangerousOverlappedPointer, // SafeHandle was just created in SetUnmanagedStructures
                     IntPtr.Zero);
 

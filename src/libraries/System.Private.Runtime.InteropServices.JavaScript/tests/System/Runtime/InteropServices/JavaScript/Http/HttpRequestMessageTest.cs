@@ -383,6 +383,32 @@ namespace System.Runtime.InteropServices.JavaScript.Http.Tests
                 "}", rm.ToString());
         }
 
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsBrowserDomSupported))]
+        public async Task BlobUri_Marshal_CorrectValues_Browser()
+        {
+            Runtime.InvokeJS(@"
+                function typedArrayToURL(typedArray, mimeType) {
+                    return URL.createObjectURL(new Blob([typedArray.buffer], {type: mimeType}))
+                }
+                const bytes = new Uint8Array(59);
+                for(let i = 0; i < 59; i++) {
+                    bytes[i] = 32 + i;
+                }
+                const url = typedArrayToURL(bytes, 'text/plain');
+                // Calls method with string that will be marshaled as valid URI
+                App.call_test_method  (""InvokeString"", [ url ]);
+            ");
+
+            var client = new HttpClient ();
+            Assert.StartsWith ("blob:", HelperMarshal._stringResource);
+
+            HttpRequestMessage rm = new HttpRequestMessage(HttpMethod.Get, new Uri (HelperMarshal._stringResource));
+            HttpResponseMessage resp = await client.SendAsync (rm);
+            Assert.NotNull (resp.Content);
+            string content = await resp.Content.ReadAsStringAsync();
+            Assert.Equal (59, content.Length);
+        }
+
         [Fact]
         public void BlobStringUri_Marshal_CorrectValues()
         {

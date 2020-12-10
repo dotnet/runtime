@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
-using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -17,8 +16,6 @@ namespace System.IO.Compression
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public virtual void FlushAsync_DuringWriteAsync()
         {
-            if (FlushNoOps)
-                return;
             byte[] buffer = new byte[100000];
             Random rand = new Random();
             rand.NextBytes(buffer);
@@ -52,8 +49,6 @@ namespace System.IO.Compression
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public async Task FlushAsync_DuringReadAsync()
         {
-            if (FlushNoOps)
-                return;
             byte[] buffer = new byte[32];
             string testFilePath = CompressedTestFile(UncompressedTestFile());
             using (var readStream = await ManualSyncMemoryStream.GetStreamFromFileAsync(testFilePath, false))
@@ -81,8 +76,6 @@ namespace System.IO.Compression
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public async Task FlushAsync_DuringFlushAsync()
         {
-            if (FlushNoOps)
-                return;
             byte[] buffer = null;
             string testFilePath = CompressedTestFile(UncompressedTestFile());
             using (var origStream = await LocalMemoryStream.readAppFileAsync(testFilePath))
@@ -117,64 +110,6 @@ namespace System.IO.Compression
                     Assert.True(task.Wait(TaskTimeout), "Original write Task did not complete in time");
                     Assert.True(writeStream.WriteHit, "Underlying Writesync function was not called.");
 
-                }
-            }
-        }
-
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
-        public virtual void WriteAsync_DuringWriteAsync()
-        {
-            byte[] buffer = new byte[100000];
-            Random rand = new Random();
-            rand.NextBytes(buffer);
-
-            using (var writeStream = new ManualSyncMemoryStream(false))
-            using (var compressor = CreateStream(writeStream, CompressionMode.Compress))
-            {
-                Task task = null;
-                try
-                {
-                    // Write needs to be big enough to trigger a write to the underlying base stream so the WriteAsync call doesn't immediately complete.
-                    task = compressor.WriteAsync(buffer, 0, buffer.Length);
-                    while (task.IsCompleted)
-                    {
-                        rand.NextBytes(buffer);
-                        task = compressor.WriteAsync(buffer, 0, buffer.Length);
-                    }
-                    Assert.Throws<InvalidOperationException>(() => { compressor.WriteAsync(buffer, 32, 32); }); // "overlapping write"
-                }
-                finally
-                {
-                    // Unblock Async operations
-                    writeStream.manualResetEvent.Set();
-                    // The original WriteAsync should be able to complete
-                    Assert.True(task.Wait(TaskTimeout), "Original WriteAsync Task did not complete in time");
-                    Assert.True(writeStream.WriteHit, "BaseStream Write function was not called");
-                }
-            }
-        }
-
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
-        public async Task ReadAsync_DuringReadAsync()
-        {
-            byte[] buffer = new byte[32];
-            string testFilePath = CompressedTestFile(UncompressedTestFile());
-            using (var readStream = await ManualSyncMemoryStream.GetStreamFromFileAsync(testFilePath, false))
-            using (var decompressor = CreateStream(readStream, CompressionMode.Decompress, true))
-            {
-                Task<int> task = null;
-                try
-                {
-                    task = decompressor.ReadAsync(buffer, 0, 32);
-                    Assert.Throws<InvalidOperationException>(() => { decompressor.ReadAsync(buffer, 0, 32); }); // "overlapping read"
-                }
-                finally
-                {
-                    // Unblock Async operations
-                    readStream.manualResetEvent.Set();
-                    // The original ReadAsync should be able to complete
-                    Assert.True(task.Wait(TaskTimeout), "The original ReadAsync should be able to complete");
-                    Assert.True(readStream.ReadHit, "BaseStream ReadAsync should have been called");
                 }
             }
         }
@@ -290,20 +225,6 @@ namespace System.IO.Compression
         [Theory]
         [InlineData(CompressionMode.Compress)]
         [InlineData(CompressionMode.Decompress)]
-        public void CanReadCanWrite(CompressionMode mode)
-        {
-            var ms = new MemoryStream();
-            var compressor = CreateStream(ms, mode);
-            Assert.True(mode == CompressionMode.Compress ? compressor.CanWrite : compressor.CanRead);
-
-            compressor.Dispose();
-            Assert.False(compressor.CanRead);
-            Assert.False(compressor.CanWrite);
-        }
-
-        [Theory]
-        [InlineData(CompressionMode.Compress)]
-        [InlineData(CompressionMode.Decompress)]
         public void CanDisposeBaseStream(CompressionMode mode)
         {
             var ms = new MemoryStream();
@@ -332,7 +253,7 @@ namespace System.IO.Compression
         [Theory]
         [InlineData(CompressionMode.Compress)]
         [InlineData(CompressionMode.Decompress)]
-        public void Ctor_InvalidStreamCanReadCanWrite(CompressionMode mode)
+        public void Ctor_InvalidStream_Throws(CompressionMode mode)
         {
             LocalMemoryStream ms = new LocalMemoryStream();
             ms.SetCanRead(mode == CompressionMode.Compress);
@@ -341,27 +262,26 @@ namespace System.IO.Compression
             AssertExtensions.Throws<ArgumentException>("stream", () => CreateStream(ms, mode));
         }
 
-        public IEnumerable<Func<Stream, Stream>> CtorFunctions()
-        {
-            CompressionLevel[] legalValues = new CompressionLevel[] { CompressionLevel.Optimal, CompressionLevel.Fastest, CompressionLevel.NoCompression };
-            yield return new Func<Stream, Stream>((stream) => CreateStream(stream, CompressionMode.Compress));
 
-            foreach (CompressionLevel level in legalValues)
-            {
-                yield return new Func<Stream, Stream>((stream) => CreateStream(stream, level));
-
-                bool[] boolValues = new bool[] { true, false };
-
-                foreach (bool remainsOpen in boolValues)
-                {
-                    yield return new Func<Stream, Stream>((stream) => CreateStream(stream, level, remainsOpen));
-                }
-            }
-        }
 
         [Fact]
         public void TestCompressCtor()
         {
+            IEnumerable<Func<Stream, Stream>> CtorFunctions()
+            {
+                yield return new Func<Stream, Stream>((stream) => CreateStream(stream, CompressionMode.Compress));
+
+                foreach (CompressionLevel level in new[] { CompressionLevel.Optimal, CompressionLevel.Fastest, CompressionLevel.NoCompression, CompressionLevel.SmallestSize })
+                {
+                    yield return new Func<Stream, Stream>((stream) => CreateStream(stream, level));
+
+                    foreach (bool remainsOpen in new[] { true, false })
+                    {
+                        yield return new Func<Stream, Stream>((stream) => CreateStream(stream, level, remainsOpen));
+                    }
+                }
+            }
+
             Assert.All(CtorFunctions(), (create) =>
             {
                 //Create the Stream
@@ -400,41 +320,6 @@ namespace System.IO.Compression
             });
         }
 
-        [Theory]
-        [InlineData(CompressionMode.Compress)]
-        [InlineData(CompressionMode.Decompress)]
-        public void TestLeaveOpen(CompressionMode mode)
-        {
-            //Create the Stream
-            var baseStream = new MemoryStream();
-            Stream compressor = CreateStream(baseStream, mode, leaveOpen: false);
-            compressor.Dispose();
-
-            //Check that Close has really closed the underlying stream
-            Assert.Throws<ObjectDisposedException>(() => baseStream.Write(new byte[] { }, 0, 0));
-        }
-
-        [Fact]
-        public void TestLeaveOpenAfterValidCompress()
-        {
-            //Create the Stream
-            int _bufferSize = 1024;
-            var bytes = new byte[_bufferSize];
-            var baseStream = new MemoryStream(bytes, writable: true);
-            Stream compressor = CreateStream(baseStream, CompressionMode.Compress, leaveOpen: false);
-
-            //Write some data and Close the stream
-            string strData = "Test Data";
-            var encoding = Encoding.UTF8;
-            byte[] data = encoding.GetBytes(strData);
-            compressor.Write(data, 0, data.Length);
-            compressor.Flush();
-            compressor.Dispose();
-
-            //Check that Close has really closed the underlying stream
-            Assert.Throws<ObjectDisposedException>(() => baseStream.Write(bytes, 0, bytes.Length));
-        }
-
         [Fact]
         public async Task TestLeaveOpenAfterValidDecompress()
         {
@@ -470,619 +355,6 @@ namespace System.IO.Compression
             AssertExtensions.Throws<ArgumentException>("stream", () => CreateStream(new MemoryStream(new byte[1], writable: false), CompressionLevel.Optimal));
         }
 
-        [Theory]
-        [InlineData(CompressionMode.Compress)]
-        [InlineData(CompressionMode.Decompress)]
-        public async Task Flush(CompressionMode mode)
-        {
-            var ms = new MemoryStream();
-            var compressor = CreateStream(ms, mode);
-            compressor.Flush();
-            await compressor.FlushAsync();
-        }
-
-        [Theory]
-        [InlineData(CompressionMode.Compress)]
-        [InlineData(CompressionMode.Decompress)]
-        public void Flush_Double(CompressionMode mode)
-        {
-            var ms = new MemoryStream();
-            var compressor = CreateStream(ms, mode);
-            compressor.Flush();
-            compressor.Flush();
-        }
-
-        [Theory]
-        [InlineData(CompressionMode.Compress)]
-        [InlineData(CompressionMode.Decompress)]
-        public void Dispose_Double(CompressionMode mode)
-        {
-            var ms = new MemoryStream();
-            var compressor = CreateStream(ms, mode);
-            compressor.Dispose();
-            compressor.Dispose();
-        }
-
-        [Theory]
-        [InlineData(CompressionMode.Compress)]
-        [InlineData(CompressionMode.Decompress)]
-        public void Flush_FollowedByDispose(CompressionMode mode)
-        {
-            var ms = new MemoryStream();
-            var compressor = CreateStream(ms, mode);
-            compressor.Flush();
-            compressor.Dispose();
-        }
-
-        [Theory]
-        [InlineData(CompressionMode.Compress)]
-        [InlineData(CompressionMode.Decompress)]
-        public void Dispose_FollowedBySyncOperations(CompressionMode mode)
-        {
-            var ms = new MemoryStream();
-            var compressor = CreateStream(ms, mode);
-            compressor.Dispose();
-
-            if (mode == CompressionMode.Compress)
-                Assert.Throws<ObjectDisposedException>(() => compressor.Write(new byte[1], 0, 1));
-            else
-                Assert.Throws<ObjectDisposedException>(() => compressor.Read(new byte[1], 0, 1));
-            Assert.Throws<ObjectDisposedException>(() => compressor.Flush());
-            Assert.Throws<ObjectDisposedException>(() => compressor.CopyTo(new MemoryStream()));
-        }
-
-        [Theory]
-        [InlineData(CompressionMode.Compress)]
-        [InlineData(CompressionMode.Decompress)]
-        public virtual async Task Dispose_FollowedByAsyncOperations(CompressionMode mode)
-        {
-            var ms = new MemoryStream();
-            var compressor = CreateStream(ms, mode);
-            compressor.Dispose();
-
-            if (mode == CompressionMode.Compress)
-                await Assert.ThrowsAsync<ObjectDisposedException>(async () => await compressor.WriteAsync(new byte[1], 0, 1));
-            else
-                await Assert.ThrowsAsync<ObjectDisposedException>(async () => await compressor.ReadAsync(new byte[1], 0, 1));
-            await Assert.ThrowsAsync<ObjectDisposedException>(async () => await compressor.FlushAsync());
-            await Assert.ThrowsAsync<ObjectDisposedException>(async () => await compressor.CopyToAsync(new MemoryStream()));
-        }
-
-        [Theory]
-        [InlineData(CompressionMode.Compress)]
-        [InlineData(CompressionMode.Decompress)]
-        public void TestSeekMethods(CompressionMode mode)
-        {
-            var ms = new MemoryStream();
-            var decompressor = CreateStream(ms, mode);
-            Assert.False(decompressor.CanSeek, "CanSeek should be false");
-            Assert.Throws<NotSupportedException>(() => decompressor.Length);
-            Assert.Throws<NotSupportedException>(() => decompressor.SetLength(1));
-            Assert.Throws<NotSupportedException>(() => decompressor.Position);
-            Assert.Throws<NotSupportedException>(() => decompressor.Position = 100L);
-            Assert.Throws<NotSupportedException>(() => decompressor.Seek(100L, SeekOrigin.Begin));
-        }
-
-        [Theory]
-        [InlineData(false)]
-        [InlineData(true)]
-        public virtual void Write_ArgumentValidation(bool useAsync)
-        {
-            using (var decompressor = CreateStream(new MemoryStream(), CompressionMode.Compress))
-            {
-                Assert.Throws<ArgumentNullException>(() => { if (useAsync) { decompressor.WriteAsync(null, 0, 0).Wait(); } else { decompressor.Write(null, 0, 0); } });
-                Assert.Throws<ArgumentOutOfRangeException>(() => { if (useAsync) { decompressor.WriteAsync(new byte[1], -1, 0).Wait(); } else { decompressor.Write(new byte[1], -1, 0); } });
-                Assert.Throws<ArgumentOutOfRangeException>(() => { if (useAsync) { decompressor.WriteAsync(new byte[1], 0, -1).Wait(); } else { decompressor.Write(new byte[1], 0, -1); } });
-                Assert.Throws<ArgumentException>(null, () => { if (useAsync) { decompressor.WriteAsync(new byte[1], 0, 2).Wait(); } else { decompressor.Write(new byte[1], 0, 2); } });
-                Assert.Throws<ArgumentException>(null, () => { if (useAsync) { decompressor.WriteAsync(new byte[1], 1, 1).Wait(); } else { decompressor.Write(new byte[1], 1, 1); } });
-                Assert.Throws<InvalidOperationException>(() => useAsync ? decompressor.ReadAsync(new byte[1], 0, 1).Result : decompressor.Read(new byte[1], 0, 1));
-                Assert.Throws<ArgumentException>(null, () => useAsync ? decompressor.ReadAsync(new byte[1], 1, 1).Result : decompressor.Read(new byte[1], 1, 1));
-                if (useAsync)
-                { decompressor.WriteAsync(new byte[1], 0, 1).Wait(); }
-                else
-                { decompressor.Write(new byte[1], 0, 1); }
-            }
-        }
-
-        [Theory]
-        [InlineData(false)]
-        [InlineData(true)]
-        public virtual void Read_ArgumentValidation(bool useAsync)
-        {
-            using (var decompressor = CreateStream(new MemoryStream(), CompressionMode.Decompress))
-            {
-                Assert.Throws<ArgumentNullException>(() => useAsync ? decompressor.ReadAsync(null, 0, 0).Result : decompressor.Read(null, 0, 0));
-                Assert.Throws<ArgumentOutOfRangeException>(() => useAsync ? decompressor.ReadAsync(new byte[1], -1, 0).Result : decompressor.Read(new byte[1], -1, 0));
-                Assert.Throws<ArgumentOutOfRangeException>(() => useAsync ? decompressor.ReadAsync(new byte[1], 0, -1).Result : decompressor.Read(new byte[1], 0, -1));
-                AssertExtensions.Throws<ArgumentException>(null, () => useAsync ? decompressor.ReadAsync(new byte[1], 0, 2).Result : decompressor.Read(new byte[1], 0, 2));
-                AssertExtensions.Throws<ArgumentException>(null, () => useAsync ? decompressor.ReadAsync(new byte[1], 1, 1).Result : decompressor.Read(new byte[1], 1, 1));
-                Assert.Throws<InvalidOperationException>(() => { if (useAsync) { decompressor.WriteAsync(new byte[1], 0, 1).Wait(); } else { decompressor.Write(new byte[1], 0, 1); } });
-                Assert.Throws<ArgumentException>(null, () => { if (useAsync) { decompressor.WriteAsync(new byte[1], 1, 1).Wait(); } else { decompressor.Write(new byte[1], 1, 1); } });
-
-                var data = new byte[1] { 42 };
-                Assert.Equal(0, useAsync ? decompressor.ReadAsync(data, 0, 0).Result : decompressor.Read(data, 0, 0));
-                Assert.Equal(42, data[0]);
-            }
-        }
-
-        [Theory]
-        [InlineData(CompressionMode.Compress)]
-        [InlineData(CompressionMode.Decompress)]
-        public void CopyToAsync_ArgumentValidation(CompressionMode mode)
-        {
-            using (Stream compressor = CreateStream(new MemoryStream(), mode))
-            {
-                AssertExtensions.Throws<ArgumentNullException>("destination", () => { compressor.CopyToAsync(null); });
-                AssertExtensions.Throws<ArgumentOutOfRangeException>("bufferSize", () => { compressor.CopyToAsync(new MemoryStream(), 0); });
-                Assert.Throws<NotSupportedException>(() => { compressor.CopyToAsync(new MemoryStream(new byte[1], writable: false)); });
-                compressor.Dispose();
-                Assert.Throws<ObjectDisposedException>(() => { compressor.CopyToAsync(new MemoryStream()); });
-            }
-        }
-
-        [Theory]
-        [InlineData(CompressionMode.Compress)]
-        [InlineData(CompressionMode.Decompress)]
-        public void CopyTo_ArgumentValidation(CompressionMode mode)
-        {
-            using (Stream compressor = CreateStream(new MemoryStream(), mode))
-            {
-                AssertExtensions.Throws<ArgumentNullException>("destination", () => { compressor.CopyTo(null); });
-                AssertExtensions.Throws<ArgumentOutOfRangeException>("bufferSize", () => { compressor.CopyTo(new MemoryStream(), 0); });
-                Assert.Throws<NotSupportedException>(() => { compressor.CopyTo(new MemoryStream(new byte[1], writable: false)); });
-                compressor.Dispose();
-                Assert.Throws<ObjectDisposedException>(() => { compressor.CopyTo(new MemoryStream()); });
-            }
-        }
-
-        public enum ReadWriteMode
-        {
-            SyncArray,
-            SyncSpan,
-            AsyncArray,
-            AsyncMemory,
-            AsyncBeginEnd
-        }
-
-        public static IEnumerable<object[]> RoundtripCompressDecompressOuterData
-        {
-            get
-            {
-                foreach (ReadWriteMode readWriteMode in new[] { ReadWriteMode.SyncArray, ReadWriteMode.SyncSpan, ReadWriteMode.AsyncArray, ReadWriteMode.AsyncMemory, ReadWriteMode.AsyncBeginEnd })
-                {
-                    foreach (var level in new[] { CompressionLevel.Fastest, CompressionLevel.Optimal, CompressionLevel.NoCompression }) // compression level
-                    {
-                        yield return new object[] { readWriteMode, 1, 5, level }; // smallest possible writes
-                        yield return new object[] { readWriteMode, 1023, 1023 * 10, level }; // overflowing internal buffer
-                        yield return new object[] { readWriteMode, 1024 * 1024, 1024 * 1024, level }; // large single write
-                    }
-                }
-            }
-        }
-
-        [Fact]
-        public async Task CompressDecompress_RoundTrip()
-        {
-            await CompressDecompress_RoundTrip_OuterLoop(ReadWriteMode.SyncArray, chunkSize: 1, totalSize: 10, level: CompressionLevel.Fastest);
-            await CompressDecompress_RoundTrip_OuterLoop(ReadWriteMode.SyncSpan, chunkSize: 1, totalSize: 10, level: CompressionLevel.Fastest);
-            await CompressDecompress_RoundTrip_OuterLoop(ReadWriteMode.AsyncArray, chunkSize: 1, totalSize: 10, level: CompressionLevel.Fastest);
-            await CompressDecompress_RoundTrip_OuterLoop(ReadWriteMode.AsyncMemory, chunkSize: 1, totalSize: 10, level: CompressionLevel.Fastest);
-            await CompressDecompress_RoundTrip_OuterLoop(ReadWriteMode.AsyncBeginEnd, chunkSize: 1, totalSize: 10, level: CompressionLevel.Fastest);
-            await CompressDecompress_RoundTrip_OuterLoop(ReadWriteMode.AsyncArray, chunkSize: 1024, totalSize: 8192, level: CompressionLevel.Optimal);
-        }
-
-        [OuterLoop]
-        [Theory]
-        [MemberData(nameof(RoundtripCompressDecompressOuterData))]
-        public async Task CompressDecompress_RoundTrip_OuterLoop(ReadWriteMode readWriteMode, int chunkSize, int totalSize, CompressionLevel level)
-        {
-            byte[] data = new byte[totalSize];
-            new Random(42).NextBytes(data);
-
-            var compressed = new MemoryStream();
-            using (var compressor = CreateStream(compressed, level, true))
-            {
-                for (int i = 0; i < data.Length; i += chunkSize) // not using CopyTo{Async} due to optimizations in MemoryStream's implementation that avoid what we're trying to test
-                {
-                    switch (readWriteMode)
-                    {
-                        case ReadWriteMode.AsyncArray:
-                            await compressor.WriteAsync(data, i, chunkSize);
-                            break;
-                        case ReadWriteMode.SyncArray:
-                            compressor.Write(data, i, chunkSize);
-                            break;
-                        case ReadWriteMode.SyncSpan:
-                            compressor.Write(new ReadOnlySpan<byte>(data, i, chunkSize));
-                            break;
-                        case ReadWriteMode.AsyncMemory:
-                            await compressor.WriteAsync(new ReadOnlyMemory<byte>(data, i, chunkSize));
-                            break;
-                        case ReadWriteMode.AsyncBeginEnd:
-                            await Task.Factory.FromAsync(compressor.BeginWrite, compressor.EndWrite, data, i, chunkSize, null);
-                            break;
-                    }
-                }
-            }
-            compressed.Position = 0;
-            await ReadAndValidateCompressedData(readWriteMode, chunkSize, compressed, data);
-            compressed.Dispose();
-        }
-
-        [Fact]
-        public async Task Flush_RoundTrip()
-        {
-            if (FlushNoOps)
-                return;
-            await Flush_RoundTrip_OuterLoop(ReadWriteMode.SyncArray, chunkSize: 1, totalSize: 10, level: CompressionLevel.Fastest);
-            await Flush_RoundTrip_OuterLoop(ReadWriteMode.AsyncArray, chunkSize: 1024, totalSize: 8192, level: CompressionLevel.Optimal);
-        }
-
-        [OuterLoop]
-        [Theory]
-        [MemberData(nameof(RoundtripCompressDecompressOuterData))]
-        public async Task Flush_RoundTrip_OuterLoop(ReadWriteMode readWriteMode, int chunkSize, int totalSize, CompressionLevel level)
-        {
-            if (FlushNoOps)
-                return;
-            byte[] data = new byte[totalSize];
-            new Random(42).NextBytes(data);
-
-            using (var compressed = new MemoryStream())
-            using (var compressor = CreateStream(compressed, level, true))
-            {
-                for (int i = 0; i < data.Length; i += chunkSize) // not using CopyTo{Async} due to optimizations in MemoryStream's implementation that avoid what we're trying to test
-                {
-                    switch (readWriteMode)
-                    {
-                        case ReadWriteMode.AsyncArray:
-                            await compressor.WriteAsync(data, i, chunkSize);
-                            break;
-                        case ReadWriteMode.SyncArray:
-                            compressor.Write(data, i, chunkSize);
-                            break;
-                        case ReadWriteMode.SyncSpan:
-                            compressor.Write(new ReadOnlySpan<byte>(data, i, chunkSize));
-                            break;
-                        case ReadWriteMode.AsyncMemory:
-                            await compressor.WriteAsync(new ReadOnlyMemory<byte>(data, i, chunkSize));
-                            break;
-                        case ReadWriteMode.AsyncBeginEnd:
-                            await Task.Factory.FromAsync(compressor.BeginWrite, compressor.EndWrite, data, i, chunkSize, null);
-                            break;
-                    }
-                }
-                switch (readWriteMode)
-                {
-                    case ReadWriteMode.AsyncArray:
-                    case ReadWriteMode.AsyncMemory:
-                    case ReadWriteMode.AsyncBeginEnd:
-                        await compressor.FlushAsync();
-                        break;
-                    case ReadWriteMode.SyncSpan:
-                    case ReadWriteMode.SyncArray:
-                        compressor.Flush();
-                        break;
-                }
-                if (!FlushCompletes)
-                    compressor.Dispose();
-                compressed.Position = 0;
-                await ReadAndValidateCompressedData(readWriteMode, chunkSize, compressed, data);
-            }
-        }
-
-        [Fact]
-        public async Task Flush_Consecutive()
-        {
-            if (FlushNoOps)
-                return;
-            await Flush_Consecutive_OuterLoop(ReadWriteMode.SyncArray, chunkSize: 1, totalSize: 10, level: CompressionLevel.Fastest);
-            await Flush_Consecutive_OuterLoop(ReadWriteMode.AsyncArray, chunkSize: 1024, totalSize: 8192, level: CompressionLevel.Optimal);
-        }
-
-        [OuterLoop]
-        [Theory]
-        [MemberData(nameof(RoundtripCompressDecompressOuterData))]
-        public async Task Flush_Consecutive_OuterLoop(ReadWriteMode readWriteMode, int chunkSize, int totalSize, CompressionLevel level)
-        {
-            if (FlushNoOps)
-                return;
-            byte[] data = new byte[totalSize];
-            List<byte> expected = new List<byte>();
-            new Random(42).NextBytes(data);
-
-            using (var compressed = new MemoryStream())
-            using (var compressor = CreateStream(compressed, level, true))
-            {
-                for (int i = 0; i < data.Length; i += chunkSize) // not using CopyTo{Async} due to optimizations in MemoryStream's implementation that avoid what we're trying to test
-                {
-                    switch (readWriteMode)
-                    {
-                        case ReadWriteMode.AsyncArray:
-                            await compressor.WriteAsync(data, i, chunkSize);
-                            break;
-                        case ReadWriteMode.SyncArray:
-                            compressor.Write(data, i, chunkSize);
-                            break;
-                        case ReadWriteMode.SyncSpan:
-                            compressor.Write(new ReadOnlySpan<byte>(data, i, chunkSize));
-                            break;
-                        case ReadWriteMode.AsyncMemory:
-                            await compressor.WriteAsync(new ReadOnlyMemory<byte>(data, i, chunkSize));
-                            break;
-                        case ReadWriteMode.AsyncBeginEnd:
-                            await Task.Factory.FromAsync(compressor.BeginWrite, compressor.EndWrite, data, i, chunkSize, null);
-                            break;
-                    }
-                    for (int j = i; j < i + chunkSize; j++)
-                        expected.Insert(j, data[j]);
-
-                    switch (readWriteMode)
-                    {
-                        case ReadWriteMode.AsyncArray:
-                        case ReadWriteMode.AsyncMemory:
-                        case ReadWriteMode.AsyncBeginEnd:
-                            await compressor.FlushAsync();
-                            break;
-                        case ReadWriteMode.SyncSpan:
-                        case ReadWriteMode.SyncArray:
-                            compressor.Flush();
-                            break;
-                    }
-
-                    if (FlushCompletes)
-                    {
-                        MemoryStream partiallyCompressed = new MemoryStream(compressed.ToArray());
-                        partiallyCompressed.Position = 0;
-                        await ReadAndValidateCompressedData(readWriteMode, chunkSize, partiallyCompressed, expected.ToArray());
-                    }
-                }
-                if (!FlushCompletes)
-                    compressor.Dispose();
-                MemoryStream fullyCompressed = new MemoryStream(compressed.ToArray());
-                fullyCompressed.Position = 0;
-                await ReadAndValidateCompressedData(readWriteMode, chunkSize, fullyCompressed, expected.ToArray());
-            }
-        }
-
-        [Fact]
-        public async Task Flush_BeforeFirstWrites()
-        {
-            if (FlushNoOps)
-                return;
-            await Flush_BeforeFirstWrites_OuterLoop(ReadWriteMode.SyncArray, chunkSize: 1, totalSize: 10, level: CompressionLevel.Fastest);
-            await Flush_BeforeFirstWrites_OuterLoop(ReadWriteMode.AsyncArray, chunkSize: 1024, totalSize: 8192, level: CompressionLevel.Optimal);
-        }
-
-        [OuterLoop]
-        [Theory]
-        [MemberData(nameof(RoundtripCompressDecompressOuterData))]
-        public async Task Flush_BeforeFirstWrites_OuterLoop(ReadWriteMode readWriteMode, int chunkSize, int totalSize, CompressionLevel level)
-        {
-            if (FlushNoOps)
-                return;
-            byte[] data = new byte[totalSize];
-            new Random(42).NextBytes(data);
-
-            using (var compressed = new MemoryStream())
-            using (var compressor = CreateStream(compressed, level, true))
-            {
-                switch (readWriteMode)
-                {
-                    case ReadWriteMode.AsyncArray:
-                    case ReadWriteMode.AsyncMemory:
-                    case ReadWriteMode.AsyncBeginEnd:
-                        await compressor.FlushAsync();
-                        break;
-                    case ReadWriteMode.SyncSpan:
-                    case ReadWriteMode.SyncArray:
-                        compressor.Flush();
-                        break;
-                }
-
-                for (int i = 0; i < data.Length; i += chunkSize) // not using CopyTo{Async} due to optimizations in MemoryStream's implementation that avoid what we're trying to test
-                {
-                    switch (readWriteMode)
-                    {
-                        case ReadWriteMode.AsyncArray:
-                            await compressor.WriteAsync(data, i, chunkSize);
-                            break;
-                        case ReadWriteMode.SyncArray:
-                            compressor.Write(data, i, chunkSize);
-                            break;
-                        case ReadWriteMode.SyncSpan:
-                            compressor.Write(new ReadOnlySpan<byte>(data, i, chunkSize));
-                            break;
-                        case ReadWriteMode.AsyncMemory:
-                            await compressor.WriteAsync(new ReadOnlyMemory<byte>(data, i, chunkSize));
-                            break;
-                        case ReadWriteMode.AsyncBeginEnd:
-                            await Task.Factory.FromAsync(compressor.BeginWrite, compressor.EndWrite, data, i, chunkSize, null);
-                            break;
-                    }
-                }
-
-                switch (readWriteMode)
-                {
-                    case ReadWriteMode.AsyncArray:
-                    case ReadWriteMode.AsyncMemory:
-                    case ReadWriteMode.AsyncBeginEnd:
-                        await compressor.FlushAsync();
-                        break;
-                    case ReadWriteMode.SyncSpan:
-                    case ReadWriteMode.SyncArray:
-                        compressor.Flush();
-                        break;
-                }
-                if (!FlushCompletes)
-                    compressor.Dispose();
-                compressed.Position = 0;
-                await ReadAndValidateCompressedData(readWriteMode, chunkSize, compressed, data);
-            }
-        }
-
-        /// <summary>
-        /// Given a MemoryStream of compressed data and a byte array of desired output, decompresses
-        /// the stream and validates that it is equal to the expected array.
-        /// </summary>
-        private async Task ReadAndValidateCompressedData(ReadWriteMode readWriteMode, int chunkSize, MemoryStream compressed, byte[] expected)
-        {
-            using (MemoryStream decompressed = new MemoryStream())
-            using (Stream decompressor = CreateStream(compressed, CompressionMode.Decompress, true))
-            {
-                int bytesRead;
-                var buffer = new byte[chunkSize];
-                switch (readWriteMode)
-                {
-                    case ReadWriteMode.SyncSpan:
-                        while ((bytesRead = decompressor.Read(new Span<byte>(buffer))) != 0)
-                        {
-                            decompressed.Write(buffer, 0, bytesRead);
-                        }
-                        break;
-                    case ReadWriteMode.SyncArray:
-                        while ((bytesRead = decompressor.Read(buffer, 0, buffer.Length)) != 0)
-                        {
-                            decompressed.Write(buffer, 0, bytesRead);
-                        }
-                        break;
-                    case ReadWriteMode.AsyncArray:
-                        while ((bytesRead = await decompressor.ReadAsync(buffer, 0, buffer.Length)) != 0)
-                        {
-                            decompressed.Write(buffer, 0, bytesRead);
-                        }
-                        break;
-                    case ReadWriteMode.AsyncMemory:
-                        while ((bytesRead = await decompressor.ReadAsync(new Memory<byte>(buffer))) != 0)
-                        {
-                            decompressed.Write(buffer, 0, bytesRead);
-                        }
-                        break;
-                    case ReadWriteMode.AsyncBeginEnd:
-                        while ((bytesRead = await Task<int>.Factory.FromAsync(decompressor.BeginRead, decompressor.EndRead, buffer, 0, buffer.Length, null)) != 0)
-                        {
-                            decompressed.Write(buffer, 0, bytesRead);
-                        }
-                        break;
-                }
-                Assert.Equal<byte>(expected, decompressed.ToArray());
-            }
-        }
-
-        [Theory]
-        [InlineData(ReadWriteMode.SyncArray)]
-        [InlineData(ReadWriteMode.AsyncArray)]
-        [InlineData(ReadWriteMode.SyncSpan)]
-        [InlineData(ReadWriteMode.AsyncMemory)]
-        [InlineData(ReadWriteMode.AsyncBeginEnd)]
-        public async Task Read_SequentialReadsOnMemoryStream_Return_SameBytes(ReadWriteMode readWriteMode)
-        {
-            byte[] data = new byte[1024 * 10];
-            new Random(42).NextBytes(data);
-
-            var compressed = new MemoryStream();
-            using (var compressor = CreateStream(compressed, CompressionMode.Compress, true))
-            {
-                for (int i = 0; i < data.Length; i += 1024)
-                {
-                    switch (readWriteMode)
-                    {
-                        case ReadWriteMode.SyncArray:
-                            compressor.Write(data, i, 1024);
-                            break;
-                        case ReadWriteMode.AsyncArray:
-                            await compressor.WriteAsync(data, i, 1024);
-                            break;
-                        case ReadWriteMode.SyncSpan:
-                            compressor.Write(new Span<byte>(data, i, 1024));
-                            break;
-                        case ReadWriteMode.AsyncMemory:
-                            await compressor.WriteAsync(new ReadOnlyMemory<byte>(data, i, 1024));
-                            break;
-                        case ReadWriteMode.AsyncBeginEnd:
-                            await Task.Factory.FromAsync(compressor.BeginWrite, compressor.EndWrite, data, i, 1024, null);
-                            break;
-                    }
-                }
-            }
-            compressed.Position = 0;
-
-            using (var decompressor = CreateStream(compressed, CompressionMode.Decompress, true))
-            {
-                int i, j;
-                byte[] array = new byte[100];
-                byte[] array2 = new byte[100];
-
-                // only read in the first 100 bytes
-                switch (readWriteMode)
-                {
-                    case ReadWriteMode.SyncArray:
-                        decompressor.Read(array, 0, array.Length);
-                        break;
-                    case ReadWriteMode.AsyncArray:
-                        await decompressor.ReadAsync(array, 0, array.Length);
-                        break;
-                    case ReadWriteMode.SyncSpan:
-                        decompressor.Read(new Span<byte>(array));
-                        break;
-                    case ReadWriteMode.AsyncMemory:
-                        await decompressor.ReadAsync(new Memory<byte>(array));
-                        break;
-                    case ReadWriteMode.AsyncBeginEnd:
-                        await Task<int>.Factory.FromAsync(decompressor.BeginRead, decompressor.EndRead, array, 0, array.Length, null);
-                        break;
-                }
-                for (i = 0; i < array.Length; i++)
-                {
-                    Assert.Equal(data[i], array[i]);
-                }
-
-                // read in the next 100 bytes and make sure nothing is missing
-                switch (readWriteMode)
-                {
-                    case ReadWriteMode.SyncArray:
-                        decompressor.Read(array2, 0, array2.Length);
-                        break;
-                    case ReadWriteMode.AsyncArray:
-                        await decompressor.ReadAsync(array2, 0, array2.Length);
-                        break;
-                    case ReadWriteMode.SyncSpan:
-                        decompressor.Read(new Span<byte>(array2));
-                        break;
-                    case ReadWriteMode.AsyncMemory:
-                        await decompressor.ReadAsync(new Memory<byte>(array2));
-                        break;
-                    case ReadWriteMode.AsyncBeginEnd:
-                        await Task<int>.Factory.FromAsync(decompressor.BeginRead, decompressor.EndRead, array2, 0, array2.Length, null);
-                        break;
-                }
-                for (j = 0; j < array2.Length; j++)
-                {
-                    Assert.Equal(data[j], array[j]);
-                }
-            }
-        }
-
-        [Fact]
-        public void WriteByte_RountTrip()
-        {
-            byte[] data = new byte[1024 * 10];
-            new Random(42).NextBytes(data);
-
-            var compressed = new MemoryStream();
-            using (var compressor = CreateStream(compressed, CompressionMode.Compress, true))
-            {
-                compressor.Write(data, 0, data.Length);
-            }
-            compressed.Position = 0;
-
-            using (var decompressor = CreateStream(compressed, CompressionMode.Decompress, true))
-            {
-                for (int i = 0; i < data.Length; i++)
-                    Assert.Equal(data[i], decompressor.ReadByte());
-            }
-        }
-
         [Fact]
         public async Task WrapNullReturningTasksStream()
         {
@@ -1100,68 +372,12 @@ namespace System.IO.Compression
             using (var decompressor = CreateStream(new BadWrappedStream(BadWrappedStream.Mode.ReturnTooLargeCounts), CompressionMode.Decompress))
                 await Assert.ThrowsAsync<InvalidDataException>(async () => { await decompressor.ReadAsync(new Memory<byte>(new byte[1024])); });
 
-            if (!FlushNoOps)
-            {
-                using (var decompressor = CreateStream(new BadWrappedStream(BadWrappedStream.Mode.ReturnTooSmallCounts), CompressionMode.Decompress))
-                    Assert.Equal(0, decompressor.Read(new byte[1024], 0, 1024));
-                using (var decompressor = CreateStream(new BadWrappedStream(BadWrappedStream.Mode.ReturnTooSmallCounts), CompressionMode.Decompress))
-                    Assert.Equal(0, await decompressor.ReadAsync(new byte[1024], 0, 1024));
-                using (var decompressor = CreateStream(new BadWrappedStream(BadWrappedStream.Mode.ReturnTooSmallCounts), CompressionMode.Decompress))
-                    Assert.Equal(0, await decompressor.ReadAsync(new Memory<byte>(new byte[1024])));
-            }
-        }
-
-        [Theory]
-        [OuterLoop]
-        [InlineData(true)]
-        [InlineData(false)]
-        public async Task CopyTo_Roundtrip_OutputMatchesInput(bool useAsync)
-        {
-            var rand = new Random();
-            foreach (int dataSize in new[] { 1, 1024, 4095, 1024 * 1024 })
-            {
-                var data = new byte[dataSize];
-                rand.NextBytes(data);
-
-                var compressed = new MemoryStream();
-                using (var ds = CreateStream(compressed, CompressionMode.Compress, leaveOpen: true))
-                {
-                    ds.Write(data, 0, data.Length);
-                }
-                byte[] compressedData = compressed.ToArray();
-
-                foreach (int copyBufferSize in new[] { 1, 4096, 80 * 1024 })
-                {
-                    // Memory source
-                    var m = new MemoryStream(compressedData, writable: false);
-                    await CopyTo_Roundtrip_OutputMatchesInput_Verify(data, copyBufferSize, m, useAsync);
-
-                    // File sources, sync and async
-                    foreach (bool useAsyncFileOptions in new[] { true, false })
-                    {
-                        string path = Path.GetTempFileName();
-                        File.WriteAllBytes(path, compressedData);
-
-                        FileOptions options = FileOptions.DeleteOnClose;
-                        if (useAsyncFileOptions)
-                            options |= FileOptions.Asynchronous;
-                        await CopyTo_Roundtrip_OutputMatchesInput_Verify(data, copyBufferSize, new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read, 0x1000, options), useAsync);
-                    }
-                }
-            }
-        }
-
-        private async Task CopyTo_Roundtrip_OutputMatchesInput_Verify(byte[] expectedDecrypted, int copyBufferSize, Stream source, bool useAsync)
-        {
-            var m = new MemoryStream();
-            using (Stream ds = CreateStream(source, CompressionMode.Decompress))
-            {
-                if (useAsync)
-                    await ds.CopyToAsync(m);
-                else
-                    ds.CopyTo(m, copyBufferSize);
-            }
-            Assert.Equal(expectedDecrypted, m.ToArray());
+            using (var decompressor = CreateStream(new BadWrappedStream(BadWrappedStream.Mode.ReturnTooSmallCounts), CompressionMode.Decompress))
+                Assert.Equal(0, decompressor.Read(new byte[1024], 0, 1024));
+            using (var decompressor = CreateStream(new BadWrappedStream(BadWrappedStream.Mode.ReturnTooSmallCounts), CompressionMode.Decompress))
+                Assert.Equal(0, await decompressor.ReadAsync(new byte[1024], 0, 1024));
+            using (var decompressor = CreateStream(new BadWrappedStream(BadWrappedStream.Mode.ReturnTooSmallCounts), CompressionMode.Decompress))
+                Assert.Equal(0, await decompressor.ReadAsync(new Memory<byte>(new byte[1024])));
         }
 
         [Theory]
@@ -1226,86 +442,29 @@ namespace System.IO.Compression
                 baseStream.Read(bytes, 0, size);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
-        public async Task Parallel_CompressDecompressMultipleStreamsConcurrently()
-        {
-            const int ParallelOperations = 20;
-            const int DataSize = 10 * 1024;
-
-            var sourceData = new byte[DataSize];
-            new Random().NextBytes(sourceData);
-
-            await Task.WhenAll(Enumerable.Range(0, ParallelOperations).Select(_ => Task.Run(async () =>
-            {
-                var compressedStream = new MemoryStream();
-                using (Stream ds = CreateStream(compressedStream, CompressionMode.Compress, leaveOpen: true))
-                {
-                    await ds.WriteAsync(sourceData, 0, sourceData.Length);
-                }
-
-                compressedStream.Position = 0;
-
-                var decompressedStream = new MemoryStream();
-                using (Stream ds = CreateStream(compressedStream, CompressionMode.Decompress, leaveOpen: true))
-                {
-                    await ds.CopyToAsync(decompressedStream);
-                }
-
-                Assert.Equal(sourceData, decompressedStream.ToArray());
-            })));
-        }
-
-        [Fact]
-        public void Precancellation()
-        {
-            var ms = new MemoryStream();
-            using (Stream compressor = CreateStream(ms, CompressionMode.Compress, leaveOpen: true))
-            {
-                Assert.True(compressor.WriteAsync(new byte[1], 0, 1, new CancellationToken(true)).IsCanceled);
-                Assert.True(compressor.FlushAsync(new CancellationToken(true)).IsCanceled);
-            }
-            using (Stream decompressor = CreateStream(ms, CompressionMode.Decompress, leaveOpen: true))
-            {
-                Assert.True(decompressor.ReadAsync(new byte[1], 0, 1, new CancellationToken(true)).IsCanceled);
-            }
-        }
-
         [Theory]
-        [InlineData(false)]
-        [InlineData(true)]
-        public async Task DisposeAsync_Flushes(bool leaveOpen)
+        [MemberData(nameof(UncompressedTestFiles))]
+        public async Task CompressionLevel_SizeInOrder(string testFile)
         {
-            var ms = new MemoryStream();
-            var cs = CreateStream(ms, CompressionMode.Compress, leaveOpen);
-            cs.WriteByte(1);
-            await cs.FlushAsync();
+            using var uncompressedStream = await LocalMemoryStream.readAppFileAsync(testFile);
 
-            long pos = ms.Position;
-            cs.WriteByte(1);
-            Assert.Equal(pos, ms.Position);
+            async Task<long> GetLengthAsync(CompressionLevel compressionLevel)
+            {
+                using var mms = new MemoryStream();
+                using var compressor = CreateStream(mms, compressionLevel);
+                await uncompressedStream.CopyToAsync(compressor);
+                compressor.Flush();
+                return mms.Length;
+            }
 
-            await cs.DisposeAsync();
-            Assert.InRange(ms.ToArray().Length, pos + 1, int.MaxValue);
-            if (leaveOpen)
-            {
-                Assert.InRange(ms.Position, pos + 1, int.MaxValue);
-            }
-            else
-            {
-                Assert.Throws<ObjectDisposedException>(() => ms.Position);
-            }
-        }
+            long noCompressionLength = await GetLengthAsync(CompressionLevel.NoCompression);
+            long fastestLength = await GetLengthAsync(CompressionLevel.Fastest);
+            long optimalLength = await GetLengthAsync(CompressionLevel.Optimal);
+            long smallestLength = await GetLengthAsync(CompressionLevel.SmallestSize);
 
-        [Theory]
-        [InlineData(false)]
-        [InlineData(true)]
-        public async Task DisposeAsync_MultipleCallsAllowed(bool leaveOpen)
-        {
-            using (var cs = CreateStream(new MemoryStream(), CompressionMode.Compress, leaveOpen))
-            {
-                await cs.DisposeAsync();
-                await cs.DisposeAsync();
-            }
+            Assert.True(noCompressionLength >= fastestLength);
+            Assert.True(fastestLength >= optimalLength);
+            Assert.True(optimalLength >= smallestLength);
         }
     }
 
@@ -1386,7 +545,7 @@ namespace System.IO.Compression
         public override IAsyncResult BeginWrite(byte[] buffer, int offset, int count, AsyncCallback callback, object state) => TaskToApm.Begin(WriteAsync(buffer, offset, count), callback, state);
         public override void EndWrite(IAsyncResult asyncResult) => TaskToApm.End(asyncResult);
 
-        public override async Task<int> ReadAsync(byte[] array, int offset, int count, CancellationToken cancellationToken)
+        public override async Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
         {
             ReadHit = true;
             if (isSync)
@@ -1398,10 +557,10 @@ namespace System.IO.Compression
                 await Task.Run(() => manualResetEvent.Wait(cancellationToken)).ConfigureAwait(false);
             }
 
-            return await base.ReadAsync(array, offset, count, cancellationToken);
+            return await base.ReadAsync(buffer, offset, count, cancellationToken);
         }
 
-        public override async Task WriteAsync(byte[] array, int offset, int count, CancellationToken cancellationToken)
+        public override async Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
         {
             WriteHit = true;
             if (isSync)
@@ -1413,7 +572,7 @@ namespace System.IO.Compression
                 await Task.Run(() => manualResetEvent.Wait(cancellationToken)).ConfigureAwait(false);
             }
 
-            await base.WriteAsync(array, offset, count, cancellationToken);
+            await base.WriteAsync(buffer, offset, count, cancellationToken);
         }
 
         public override async ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken)

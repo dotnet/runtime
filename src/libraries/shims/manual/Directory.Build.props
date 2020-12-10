@@ -20,7 +20,9 @@
     <ReferencePath Include="$(NetCoreAppCurrentRuntimePath)System.*.dll;
                             $(NetCoreAppCurrentRuntimePath)Microsoft.Win32.*.dll;
                             $(NetCoreAppCurrentRuntimePath)netstandard.dll"
-                   Exclude="$(NetCoreAppCurrentRuntimePath)$(MSBuildProjectName).dll" />
+                   Exclude="$(NetCoreAppCurrentRuntimePath)$(MSBuildProjectName).dll;
+                            $(NetCoreAppCurrentRuntimePath)System.*.Native.dll"
+    />
     <ProjectReference Include="$(CoreLibProject)" />
   </ItemGroup>
 </Project>

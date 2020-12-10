@@ -176,9 +176,6 @@
   <data name="Argument_InvalidFileModeAndAccessCombo" xml:space="preserve">
     <value>Combining FileMode: {0} with FileAccess: {1} is invalid.</value>
   </data>
-  <data name="Argument_InvalidOffLen" xml:space="preserve">
-    <value>Offset and length were out of bounds for the array or count is greater than the number of elements from index to the end of the source collection.</value>
-  </data>
   <data name="Argument_InvalidPathChars" xml:space="preserve">
     <value>Illegal characters in path '{0}'.</value>
   </data>

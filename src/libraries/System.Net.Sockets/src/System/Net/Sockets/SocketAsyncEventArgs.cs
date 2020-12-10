@@ -3,9 +3,10 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Diagnostics.Tracing;
 using System.Runtime.InteropServices;
 using System.Threading;
+using System.Threading.Tasks;
+using System.Threading.Tasks.Sources;
 
 namespace System.Net.Sockets
 {
@@ -73,6 +74,7 @@ namespace System.Net.Sockets
         private Socket? _currentSocket;
         private bool _userSocket; // if false when performing Connect, _currentSocket should be disposed
         private bool _disposeCalled;
+        private protected bool _disableTelemetry;
 
         // Controls thread safety via Interlocked.
         private const int Configuring = -1;
@@ -81,7 +83,7 @@ namespace System.Net.Sockets
         private const int Disposed = 2;
         private int _operating;
 
-        private MultipleConnectAsync? _multipleConnect;
+        private CancellationTokenSource? _multipleConnectCancellation;
 
         public SocketAsyncEventArgs() : this(unsafeSuppressExecutionContextFlow: false)
         {
@@ -200,10 +202,7 @@ namespace System.Net.Sockets
 
         private void OnCompletedInternal()
         {
-            if (SocketsTelemetry.Log.IsEnabled())
-            {
-                AfterConnectAcceptTelemetry();
-            }
+            if (SocketsTelemetry.Log.IsEnabled() && !_disableTelemetry) AfterConnectAcceptTelemetry();
 
             OnCompleted(this);
         }
@@ -222,10 +221,7 @@ namespace System.Net.Sockets
                     break;
 
                 case SocketAsyncOperation.Connect:
-                    if (_multipleConnect is null)
-                    {
-                        SocketsTelemetry.Log.AfterConnect(SocketError);
-                    }
+                    SocketsTelemetry.Log.AfterConnect(SocketError);
                     break;
             }
         }
@@ -578,9 +574,9 @@ namespace System.Net.Sockets
             }
         }
 
-        internal void StartOperationConnect(MultipleConnectAsync? multipleConnect, bool userSocket)
+        internal void StartOperationConnect(bool saeaMultiConnectCancelable, bool userSocket)
         {
-            _multipleConnect = multipleConnect;
+            _multipleConnectCancellation = saeaMultiConnectCancelable ? new CancellationTokenSource() : null;
             _connectSocket = null;
             _userSocket = userSocket;
         }
@@ -589,11 +585,11 @@ namespace System.Net.Sockets
         {
             if (_operating == InProgress && _completedOperation == SocketAsyncOperation.Connect)
             {
-                MultipleConnectAsync? multipleConnect = _multipleConnect;
-                if (multipleConnect != null)
+                CancellationTokenSource? multipleConnectCancellation = _multipleConnectCancellation;
+                if (multipleConnectCancellation != null)
                 {
                     // If a multiple connect is in progress, abort it.
-                    multipleConnect.Cancel();
+                    multipleConnectCancellation.Cancel();
                 }
                 else
                 {
@@ -635,15 +631,6 @@ namespace System.Net.Sockets
             Complete();
         }
 
-        internal void FinishConnectByNameSyncFailure(Exception exception, int bytesTransferred, SocketFlags flags)
-        {
-            SetResults(exception, bytesTransferred, flags);
-
-            _currentSocket?.UpdateStatusAfterSocketError(_socketError);
-
-            Complete();
-        }
-
         internal void FinishOperationAsyncFailure(SocketError socketError, int bytesTransferred, SocketFlags flags)
         {
             ExecutionContext? context = _context; // store context before it's cleared as part of finishing the operation
@@ -660,48 +647,218 @@ namespace System.Net.Sockets
             }
         }
 
-        internal void FinishConnectByNameAsyncFailure(Exception exception, int bytesTransferred, SocketFlags flags)
+        /// <summary>Performs an asynchronous connect involving a DNS lookup.</summary>
+        /// <param name="endPoint">The DNS end point to which to connect.</param>
+        /// <param name="socketType">The SocketType to use to construct new sockets, if necessary.</param>
+        /// <param name="protocolType">The ProtocolType to use to construct new sockets, if necessary.</param>
+        /// <returns>true if the operation is pending; otherwise, false if it's already completed.</returns>
+        internal bool DnsConnectAsync(DnsEndPoint endPoint, SocketType socketType, ProtocolType protocolType)
         {
-            ExecutionContext? context = _context; // store context before it's cleared as part of finishing the operation
+            Debug.Assert(endPoint.AddressFamily == AddressFamily.Unspecified ||
+                         endPoint.AddressFamily == AddressFamily.InterNetwork ||
+                         endPoint.AddressFamily == AddressFamily.InterNetworkV6);
 
-            FinishConnectByNameSyncFailure(exception, bytesTransferred, flags);
+            CancellationToken cancellationToken = _multipleConnectCancellation?.Token ?? default;
 
-            if (context == null)
+            // In .NET 5 and earlier, the APM implementation allowed for synchronous exceptions from this to propagate
+            // synchronously.  This call is made here rather than in the Core async method below to preserve that behavior.
+            Task<IPAddress[]> addressesTask = Dns.GetHostAddressesAsync(endPoint.Host, endPoint.AddressFamily, cancellationToken);
+
+            // Initialize the internal event args instance.  It needs to be initialized with `this` instance's buffer
+            // so that it may be used as part of receives during a connect.
+            // TODO https://github.com/dotnet/runtime/issues/30252#issuecomment-511231055: Try to avoid this extra level of SAEA.
+            var internalArgs = new MultiConnectSocketAsyncEventArgs();
+            internalArgs.CopyBufferFrom(this);
+
+            // Delegate to the actual implementation.  The returned Task is unused and ignored, as the whole body is surrounded
+            // by a try/catch.  Thus we ignore the result.  We avoid an "async void" method so as to skip the implicit SynchronizationContext
+            // interactions async void methods entail.
+            _ = Core(internalArgs, addressesTask, endPoint.Port, socketType, protocolType, cancellationToken);
+
+            // Determine whether the async operation already completed and stored the results into `this`.
+            // If we reached this point and the operation hasn't yet stored the results, then it's considered
+            // pending.  If by the time we get here it has stored the results, it's considered completed.
+            // The callback won't invoke the Completed event if it gets there first.
+            return internalArgs.ReachedCoordinationPointFirst();
+
+            async Task Core(MultiConnectSocketAsyncEventArgs internalArgs, Task<IPAddress[]> addressesTask, int port, SocketType socketType, ProtocolType protocolType, CancellationToken cancellationToken)
             {
-                OnCompletedInternal();
-            }
-            else
-            {
-                ExecutionContext.Run(context, s_executionCallback, this);
+                Socket? tempSocketIPv4 = null, tempSocketIPv6 = null;
+                Exception? caughtException = null;
+                try
+                {
+                    // Try each address in turn.  We store the last error received, such that if we fail to connect to all addresses,
+                    // we can use the last error to represent the entire operation.
+                    SocketError lastError = SocketError.NoData;
+                    foreach (IPAddress address in await addressesTask.ConfigureAwait(false))
+                    {
+                        Socket? attemptSocket = null;
+                        if (_currentSocket != null)
+                        {
+                            // If this SocketAsyncEventArgs was configured with a socket, then use it.
+                            // If that instance doesn't support this address, move on to the next.
+                            if (!_currentSocket.CanTryAddressFamily(address.AddressFamily))
+                            {
+                                continue;
+                            }
+
+                            attemptSocket = _currentSocket;
+                        }
+                        else
+                        {
+                            // If this SocketAsyncEventArgs doesn't have a socket, then we need to create a temporary one, which we do
+                            // based on this address' address family (and then reuse for subsequent addresses for the same family).
+                            if (address.AddressFamily == AddressFamily.InterNetworkV6)
+                            {
+                                attemptSocket = tempSocketIPv6 ??= (Socket.OSSupportsIPv6 ? new Socket(AddressFamily.InterNetworkV6, socketType, protocolType) : null);
+                            }
+                            else if (address.AddressFamily == AddressFamily.InterNetwork)
+                            {
+                                attemptSocket = tempSocketIPv4 ??= (Socket.OSSupportsIPv4 ? new Socket(AddressFamily.InterNetwork, socketType, protocolType) : null);
+                            }
+
+                            // If we were unable to get a socket to use for this address, move on to the next address.
+                            if (attemptSocket is null)
+                            {
+                                continue;
+                            }
+                        }
+
+                        // Reset the socket if necessary to support another connect.  This is necessary on Unix in particular where
+                        // the same socket handle can't be used for another connect, so we swap in a new handle under the covers if
+                        // possible.  We do this not just for the 2nd+ address but also for the first in case the Socket was already
+                        // used for a connection attempt outside of this call.
+                        attemptSocket.ReplaceHandleIfNecessaryAfterFailedConnect();
+
+                        // Reconfigure the internal event args for the new address.
+                        if (internalArgs.RemoteEndPoint is IPEndPoint existing)
+                        {
+                            existing.Address = address;
+                            Debug.Assert(existing.Port == port);
+                        }
+                        else
+                        {
+                            internalArgs.RemoteEndPoint = new IPEndPoint(address, port);
+                        }
+
+                        // Issue the connect.  If it pends, wait for it to complete.
+                        if (attemptSocket.ConnectAsync(internalArgs))
+                        {
+                            using (cancellationToken.UnsafeRegister(s => Socket.CancelConnectAsync((SocketAsyncEventArgs)s!), internalArgs))
+                            {
+                                await new ValueTask(internalArgs, internalArgs.Version).ConfigureAwait(false);
+                            }
+                        }
+
+                        // If it completed successfully, we're done; cleanup will be handled by the finally.
+                        if (internalArgs.SocketError == SocketError.Success)
+                        {
+                            return;
+                        }
+
+                        // If the operation was canceled, simulate the appropriate SocketError.
+                        if (cancellationToken.IsCancellationRequested)
+                        {
+                            throw new SocketException((int)SocketError.OperationAborted);
+                        }
+
+                        lastError = internalArgs.SocketError;
+                        internalArgs.Reset();
+                    }
+
+                    caughtException = new SocketException((int)lastError);
+                }
+                catch (ObjectDisposedException)
+                {
+                    // This can happen if the user closes the socket and is equivalent to a call to CancelConnectAsync.
+                    caughtException = new SocketException((int)SocketError.OperationAborted);
+                }
+                catch (Exception exc)
+                {
+                    caughtException = exc;
+                }
+                finally
+                {
+                    // Close the sockets as needed.
+                    if (tempSocketIPv4 != null && !tempSocketIPv4.Connected)
+                    {
+                        tempSocketIPv4.Dispose();
+                    }
+                    if (tempSocketIPv6 != null && !tempSocketIPv6.Connected)
+                    {
+                        tempSocketIPv6.Dispose();
+                    }
+                    if (_currentSocket != null)
+                    {
+                        // If the caller-provided socket was a temporary and isn't connected now, or if the failed with an abortive exception,
+                        // dispose of the socket.
+                        if ((!_userSocket && !_currentSocket.Connected) ||
+                            caughtException is OperationCanceledException ||
+                            (caughtException is SocketException se && se.SocketErrorCode == SocketError.OperationAborted))
+                        {
+                            _currentSocket.Dispose();
+                        }
+                    }
+
+                    // Store the results.
+                    if (caughtException != null)
+                    {
+                        SetResults(caughtException, 0, SocketFlags.None);
+                        _currentSocket?.UpdateStatusAfterSocketError(_socketError);
+                    }
+                    else
+                    {
+                        SetResults(SocketError.Success, internalArgs.BytesTransferred, internalArgs.SocketFlags);
+                        _connectSocket = _currentSocket = internalArgs.ConnectSocket!;
+                    }
+
+                    // Complete the operation.
+                    if (SocketsTelemetry.Log.IsEnabled() && !_disableTelemetry)
+                    {
+                        LogBytesTransferEvents(_connectSocket?.SocketType, SocketAsyncOperation.Connect, internalArgs.BytesTransferred);
+                        AfterConnectAcceptTelemetry();
+                    }
+                    Complete();
+
+                    // Clean up after our temporary arguments.
+                    internalArgs.Dispose();
+
+                    // If the caller is treating this operation as pending, own the completion.
+                    if (!internalArgs.ReachedCoordinationPointFirst())
+                    {
+                        // Regardless of _flowExecutionContext, context will have been flown through this async method, as that's part
+                        // of what async methods do.  As such, we're already on whatever ExecutionContext is the right one to invoke
+                        // the completion callback.  This method may have even mutated the ExecutionContext, in which case for telemetry
+                        // we need those mutations to be surfaced as part of this callback, so that logging performed here sees those
+                        // mutations (e.g. to the current Activity).
+                        OnCompleted(this);
+                    }
+                }
             }
         }
 
-        internal void FinishWrapperConnectSyncSuccess(Socket? connectSocket, int bytesTransferred, SocketFlags flags)
+        private sealed class MultiConnectSocketAsyncEventArgs : SocketAsyncEventArgs, IValueTaskSource
         {
-            SetResults(SocketError.Success, bytesTransferred, flags);
-            _currentSocket = connectSocket;
-            _connectSocket = connectSocket;
+            private ManualResetValueTaskSourceCore<bool> _mrvtsc;
+            private int _isCompleted;
 
-            if (SocketsTelemetry.Log.IsEnabled()) LogBytesTransferEvents(connectSocket?.SocketType, SocketAsyncOperation.Connect, bytesTransferred);
-
-            // Complete the operation and raise the event.
-            Complete();
-        }
-
-        internal void FinishWrapperConnectAsyncSuccess(Socket? connectSocket, int bytesTransferred, SocketFlags flags)
-        {
-            ExecutionContext? context = _context; // store context before it's cleared as part of completing the operation
-
-            FinishWrapperConnectSyncSuccess(connectSocket, bytesTransferred, flags);
-
-            if (context == null)
+            public MultiConnectSocketAsyncEventArgs() : base(unsafeSuppressExecutionContextFlow: false)
             {
-                OnCompletedInternal();
+                // Instances of this type are an implementation detail of an overarching connect operation.
+                // We don't want to emit telemetry specific to operations on this inner instance.
+                _disableTelemetry = true;
             }
-            else
-            {
-                ExecutionContext.Run(context, s_executionCallback, this);
-            }
+
+            public void GetResult(short token) => _mrvtsc.GetResult(token);
+            public ValueTaskSourceStatus GetStatus(short token) => _mrvtsc.GetStatus(token);
+            public void OnCompleted(Action<object?> continuation, object? state, short token, ValueTaskSourceOnCompletedFlags flags) => _mrvtsc.OnCompleted(continuation, state, token, flags);
+
+            public short Version => _mrvtsc.Version;
+            public void Reset() => _mrvtsc.Reset();
+
+            protected override void OnCompleted(SocketAsyncEventArgs e) => _mrvtsc.SetResult(true);
+
+            public bool ReachedCoordinationPointFirst() => Interlocked.Exchange(ref _isCompleted, 1) == 0;
         }
 
         internal void FinishOperationSyncSuccess(int bytesTransferred, SocketFlags flags)
@@ -811,7 +968,7 @@ namespace System.Net.Sockets
                     break;
             }
 
-            if (SocketsTelemetry.Log.IsEnabled()) LogBytesTransferEvents(_currentSocket?.SocketType, _completedOperation, bytesTransferred);
+            if (SocketsTelemetry.Log.IsEnabled() && !_disableTelemetry) LogBytesTransferEvents(_currentSocket?.SocketType, _completedOperation, bytesTransferred);
 
             Complete();
         }
@@ -846,7 +1003,7 @@ namespace System.Net.Sockets
                 FinishOperationSyncFailure(socketError, bytesTransferred, flags);
             }
 
-            if (SocketsTelemetry.Log.IsEnabled()) AfterConnectAcceptTelemetry();
+            if (SocketsTelemetry.Log.IsEnabled() && !_disableTelemetry) AfterConnectAcceptTelemetry();
         }
 
         private static void LogBytesTransferEvents(SocketType? socketType, SocketAsyncOperation operation, int bytesTransferred)

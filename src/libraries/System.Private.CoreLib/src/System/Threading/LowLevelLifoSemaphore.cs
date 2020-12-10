@@ -36,11 +36,11 @@ namespace System.Threading
             Create(maximumSignalCount);
         }
 
-        public bool Wait(int timeoutMs)
+        public bool Wait(int timeoutMs, bool spinWait)
         {
             Debug.Assert(timeoutMs >= -1);
 
-            int spinCount = _spinCount;
+            int spinCount = spinWait ? _spinCount : 0;
 
             // Try to acquire the semaphore or
             // a) register as a spinner if spinCount > 0 and timeoutMs > 0
@@ -118,7 +118,7 @@ namespace System.Threading
                 }
             }
 
-            // Unregister as spinner and acquire the semaphore or register as a waiter
+            // Unregister as spinner, and acquire the semaphore or register as a waiter
             counts = _separated._counts;
             while (true)
             {
@@ -142,7 +142,6 @@ namespace System.Threading
                 counts = countsBeforeUpdate;
             }
         }
-
 
         public void Release(int releaseCount)
         {

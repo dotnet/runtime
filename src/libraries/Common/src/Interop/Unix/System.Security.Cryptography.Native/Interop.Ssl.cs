@@ -18,8 +18,6 @@ internal static partial class Interop
         internal const int SSL_TLSEXT_ERR_ALERT_FATAL = 2;
         internal const int SSL_TLSEXT_ERR_NOACK = 3;
 
-        internal delegate int SslCtxSetVerifyCallback(int preverify_ok, IntPtr x509_ctx);
-
         [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EnsureLibSslInitialized")]
         internal static extern void EnsureLibSslInitialized();
 

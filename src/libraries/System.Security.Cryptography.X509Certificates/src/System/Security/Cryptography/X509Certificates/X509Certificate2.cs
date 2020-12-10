@@ -936,7 +936,7 @@ namespace System.Security.Cryptography.X509Certificates
         /// </remarks>
         public static X509Certificate2 CreateFromPem(ReadOnlySpan<char> certPem, ReadOnlySpan<char> keyPem)
         {
-            using (X509Certificate2 certificate = ExtractCertificateFromPem(certPem))
+            using (X509Certificate2 certificate = CreateFromPem(certPem))
             {
                 string keyAlgorithm = certificate.GetKeyAlgorithm();
 
@@ -1001,12 +1001,12 @@ namespace System.Security.Cryptography.X509Certificates
         ///   PEM-encoded values and apply any custom loading behavior.
         /// </para>
         /// <para>
-        /// For PEM-encoded keys without a password, use <see cref="CreateFromPem" />.
+        /// For PEM-encoded keys without a password, use <see cref="CreateFromPem(ReadOnlySpan{char}, ReadOnlySpan{char})" />.
         /// </para>
         /// </remarks>
         public static X509Certificate2 CreateFromEncryptedPem(ReadOnlySpan<char> certPem, ReadOnlySpan<char> keyPem, ReadOnlySpan<char> password)
         {
-            using (X509Certificate2 certificate = ExtractCertificateFromPem(certPem))
+            using (X509Certificate2 certificate = CreateFromPem(certPem))
             {
                 string keyAlgorithm = certificate.GetKeyAlgorithm();
 
@@ -1047,7 +1047,28 @@ namespace System.Security.Cryptography.X509Certificates
             }
         }
 
-        private static X509Certificate2 ExtractCertificateFromPem(ReadOnlySpan<char> certPem)
+        /// <summary>
+        /// Creates a new X509 certificate from the contents of an RFC 7468 PEM-encoded
+        /// certificate.
+        /// </summary>
+        /// <param name="certPem">The text of the PEM-encoded X509 certificate.</param>
+        /// <returns>A new X509 certificate.</returns>
+        /// <exception cref="CryptographicException">
+        /// The contents of <paramref name="certPem" /> do not contain a PEM-encoded certificate, or it is malformed.
+        /// </exception>
+        /// <remarks>
+        /// <para>
+        /// This loads the first well-formed PEM found with a CERTIFICATE label.
+        /// </para>
+        /// <para>
+        /// For PEM-encoded certificates with a private key, use
+        /// <see cref="CreateFromPem(ReadOnlySpan{char}, ReadOnlySpan{char})" />.
+        /// </para>
+        /// <para>
+        /// For PEM-encoded certificates in a file, use <see cref="X509Certificate2(string)" />.
+        /// </para>
+        /// </remarks>
+        public static X509Certificate2 CreateFromPem(ReadOnlySpan<char> certPem)
         {
             foreach ((ReadOnlySpan<char> contents, PemFields fields) in new PemEnumerator(certPem))
             {
