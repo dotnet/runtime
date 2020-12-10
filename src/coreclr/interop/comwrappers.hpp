@@ -82,10 +82,6 @@ private:
 
     ~ManagedObjectWrapper();
 
-    // Represents a single implementation of how to release
-    // the wrapper. Supplied with a decrementing value.
-    ULONGLONG UniversalRelease(_In_ ULONGLONG dec);
-
     // Query the runtime defined tables.
     void* AsRuntimeDefined(_In_ REFIID riid);
 
@@ -102,8 +98,8 @@ public:
     void SetFlag(_In_ CreateComInterfaceFlagsEx flag);
     void ResetFlag(_In_ CreateComInterfaceFlagsEx flag);
 
-    // Used while validating wrapper is active.
-    ULONG IsActiveAddRef();
+    // Indicate if the wrapper should be considered a GC root.
+    bool IsRooted() const;
 
 public: // IReferenceTrackerTarget
     ULONG AddRefFromReferenceTracker();
@@ -139,7 +135,9 @@ class NativeObjectWrapperContext
 {
     IReferenceTracker* _trackerObject;
     void* _runtimeContext;
-    Volatile<BOOL> _isValidTracker;
+    Volatile<BOOL> _trackerObjectDisconnected;
+    int _trackerObjectState;
+    IUnknown* _nativeObjectAsInner;
 
 #ifdef _DEBUG
     size_t _sentinel;
@@ -151,6 +149,7 @@ public: // static
     // Create a NativeObjectWrapperContext instance
     static HRESULT NativeObjectWrapperContext::Create(
         _In_ IUnknown* external,
+        _In_opt_ IUnknown* nativeObjectAsInner,
         _In_ InteropLib::Com::CreateObjectFlags flags,
         _In_ size_t runtimeContextSize,
         _Outptr_ NativeObjectWrapperContext** context);
@@ -159,7 +158,7 @@ public: // static
     static void Destroy(_In_ NativeObjectWrapperContext* wrapper);
 
 private:
-    NativeObjectWrapperContext(_In_ void* runtimeContext, _In_opt_ IReferenceTracker* trackerObject);
+    NativeObjectWrapperContext(_In_ void* runtimeContext, _In_opt_ IReferenceTracker* trackerObject, _In_opt_ IUnknown* nativeObjectAsInner);
     ~NativeObjectWrapperContext();
 
 public:
@@ -171,6 +170,9 @@ public:
 
     // Disconnect reference tracker instance.
     void DisconnectTracker() noexcept;
+
+private:
+    void HandleReferenceTrackerAggregation() noexcept;
 };
 
 // Manage native object wrappers that support IReferenceTracker.
