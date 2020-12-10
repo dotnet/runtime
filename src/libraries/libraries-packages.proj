@@ -15,7 +15,7 @@
 
   <ItemGroup>
     <ProjectReference Include="$(PkgDir)*\*.proj" Exclude="$(PkgDir)test\*" />
-    <ProjectReference Include="$(MSBuildThisFileDirectory)*\src\**\*.*proj" Condition="('$(BuildAllConfigurations)' == 'true' or '$(DotNetBuildFromSource)' == 'true') And '$(BuildAllOOBPackages)' == 'true'" Exclude="$(MSBuildThisFileDirectory)*\src\**\*.shproj"/>
+    <ProjectReference Include="$(MSBuildThisFileDirectory)*\src\*.*proj" Condition="('$(BuildAllConfigurations)' == 'true' or '$(DotNetBuildFromSource)' == 'true') And '$(BuildAllOOBPackages)' == 'true'" Exclude="$(MSBuildThisFileDirectory)*\src\**\*.shproj"/>
     <!-- If setting BuildAllOOBPackages to false, add bellow the individual OOB packages you want to continue to build -->
   </ItemGroup>
 
