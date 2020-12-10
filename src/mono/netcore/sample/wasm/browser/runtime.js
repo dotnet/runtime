@@ -23,4 +23,5 @@ var Module = {
             throw(error);
         }
     },
+    runProfiler: true,
 };

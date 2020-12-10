@@ -4,6 +4,8 @@
 using System;
 using System.Runtime.CompilerServices;
 
+[assembly: CLSCompliant(false)]
+
 namespace Sample
 {
     public class Test

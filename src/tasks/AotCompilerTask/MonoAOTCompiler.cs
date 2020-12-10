@@ -58,6 +58,8 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
     /// </summary>
     public bool UseAotDataFile { get; set; } = true;
 
+    public string? AotProfilePath { get; set; }
+
     /// <summary>
     /// Generate a file containing mono_aot_register_module() calls for each AOT module
     /// Defaults to false.
@@ -285,6 +287,16 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
             aotAssembly.SetMetadata("AotDataFile", aotDataFile);
         }
 
+        if (!string.IsNullOrEmpty(AotProfilePath))
+        {
+            aotArgs.Add($"profile={AotProfilePath},profile-only");
+        }
+
+        foreach (var profiler in Profilers!)
+        {
+            aotProfileArgs.Add($"--profile={profiler}");
+        }
+
         // we need to quote the entire --aot arguments here to make sure it is parsed
         // on Windows as one argument. Otherwise it will be split up into multiple
         // values, which wont work.
@@ -341,6 +353,11 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
                     writer.WriteLine($"\tmono_aot_register_module ({symbol});");
                 }
                 writer.WriteLine("}");
+
+                foreach (var profiler in profilers) {
+                    writer.WriteLine ($"void mono_profiler_init_{profiler} (const char *desc);");
+                    writer.WriteLine ("EMSCRIPTEN_KEEPALIVE void mono_wasm_load_profiler_" + profiler + " (const char *desc) { mono_profiler_init_" + profiler + " (desc); }");
+                }
 
                 if (parsedAotMode == MonoAotMode.LLVMOnly)
                 {
