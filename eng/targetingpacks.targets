@@ -87,6 +87,16 @@
     </PropertyGroup>
   </Target>
 
+  <!-- SDK tries to download runtime packs when RuntimeIdentifier is set, remove them from PackageDownload item. -->
+  <Target Name="RemoveRuntimePackFromDownloadItem"
+          Condition="'$(_UseLocalTargetingRuntimePack)' == 'true' and '$(RuntimeIdentifier)' != ''"
+          AfterTargets="ProcessFrameworkReferences">
+    <ItemGroup>
+      <PackageDownload Remove="@(PackageDownload)"
+                       Condition="$([System.String]::Copy('%(Identity)').StartsWith('Microsoft.NETCore.App.Runtime'))" />
+    </ItemGroup>
+  </Target>
+
   <!-- Use local targeting pack for NetCoreAppCurrent. -->
   <Target Name="UpdateTargetingAndRuntimePack"
           Condition="'$(_UseLocalTargetingRuntimePack)' == 'true'"
