@@ -150,6 +150,10 @@
              AssemblyFile="$(WasmAppBuilderTasksAssemblyPath)" />
 
   <Target Condition="'$(TargetOS)' == 'Browser'" Name="BundleTestWasmApp">
+    <PropertyGroup>
+      <AppDir>$(BundleDir)</AppDir>
+      <MainAssembly>WasmTestRunner.dll</MainAssembly>
+    </PropertyGroup>
     <ItemGroup>
       <WasmSatelliteAssemblies Include="$(PublishDir)*\*.resources.dll" />
       <WasmSatelliteAssemblies>
@@ -170,17 +174,17 @@
     </ItemGroup>
     <Error Condition="!Exists('$(MicrosoftNetCoreAppRuntimePackRidDir)')" Text="MicrosoftNetCoreAppRuntimePackRidDir=$(MicrosoftNetCoreAppRuntimePackRidDir) doesn't exist" />
     <WasmAppBuilder
-      AppDir="$(BundleDir)"
+      AppDir="$(AppDir)"
       InvariantGlobalization="$(InvariantGlobalization)"
       MicrosoftNetCoreAppRuntimePackDir="$(MicrosoftNetCoreAppRuntimePackRidDir)"
-      MainAssembly="$(PublishDir)WasmTestRunner.dll"
+      MainAssembly="$(PublishDir)$(MainAssembly)"
       MainJS="$(MonoProjectRoot)\wasm\runtime-test.js"
       Assemblies="@(Assemblies)"
       SatelliteAssemblies="@(WasmSatelliteAssemblies)"
       FilesToIncludeInFileSystem="@(WasmFilesToIncludeInFileSystem)" />
     <WriteLinesToFile
-      File="$(BundleDir)run-v8.sh"
-      Lines="v8 --expose_wasm runtime.js -- --run WasmTestRunner.dll $*"
+      File="$(AppDir)run-v8.sh"
+      Lines="v8 --expose_wasm runtime.js -- --run $(MainAssembly) $*"
       Overwrite="true"/>
   </Target>
 

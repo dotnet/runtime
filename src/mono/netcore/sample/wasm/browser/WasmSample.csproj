@@ -12,6 +12,10 @@
   </PropertyGroup>
 
   <Target Name="RebuildWasmAppBuilder">
+    <PropertyGroup>
+      <MainAssembly>WasmSample.dll</MainAssembly>
+      <_JavaScriptDllPath>$(MicrosoftNetCoreAppRuntimePackDir)lib\$(NetCoreAppCurrent)\System.Private.Runtime.InteropServices.JavaScript.dll</_JavaScriptDllPath>
+    </PropertyGroup>
     <ItemGroup>
       <WasmAppBuildProject Include="$(RepoTasksDir)WasmAppBuilder\WasmAppBuilder.csproj" />
     </ItemGroup>
@@ -38,7 +42,7 @@
     </ItemGroup>
 
     <WasmLoadAssembliesAndReferences
-      Assemblies="bin\WasmSample.dll;$(MicrosoftNetCoreAppRuntimePackDir)lib\$(NetCoreAppCurrent)\System.Private.Runtime.InteropServices.JavaScript.dll"
+      Assemblies="bin\$(MainAssembly);$(_JavaScriptDllPath)"
       AssemblySearchPaths="@(AssemblySearchPaths)">
       <Output TaskParameter="ReferencedAssemblies" ItemName="ReferencedAssemblies" />
     </WasmLoadAssembliesAndReferences>
@@ -46,14 +50,14 @@
     <WasmAppBuilder
       AppDir="$(AppDir)"
       MicrosoftNetCoreAppRuntimePackDir="$(MicrosoftNetCoreAppRuntimePackDir)"
-      MainAssembly="bin\WasmSample.dll"
+      MainAssembly="bin\$(MainAssembly)"
       MainJS="runtime.js"
       Assemblies="@(ReferencedAssemblies)">
       <Output TaskParameter="FileWrites" ItemName="FileWrites" />
     </WasmAppBuilder>
     <WriteLinesToFile
       File="$(AppDir)/run-v8.sh"
-      Lines="v8 --expose_wasm runtime.js -- --run WasmSample.dll $*"
+      Lines="v8 --expose_wasm runtime.js -- --run $(MainAssembly) $*"
       Overwrite="true"/>
     <Exec Command="chmod a+x $(AppDir)/run-v8.sh" />
     <Copy SourceFiles="bin\index.html;bin\server.py" DestinationFolder="$(AppDir)" />

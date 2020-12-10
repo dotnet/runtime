@@ -61,6 +61,10 @@
   <Target Name="BuildApp" AfterTargets="CopyFilesToPublishDirectory" DependsOnTargets="RebuildWasmAppBuilder;Build">
     <RemoveDir Directories="$(AppDir)" />
 
+    <PropertyGroup>
+      <MainAssembly>WasmSample.dll</MainAssembly>
+    </PropertyGroup>
+
     <ItemGroup>
       <BundleAssemblies Condition="'$(RunAOTCompilation)' != 'true'" Include="$(MSBuildThisFileDirectory)$(PublishDir)\*.dll" />
       <AotInputAssemblies Condition="'$(RunAOTCompilation)' == 'true'" Include="$(MSBuildThisFileDirectory)$(PublishDir)\*.dll">
@@ -110,12 +114,12 @@
     <WasmAppBuilder
       AppDir="$(AppDir)"
       MicrosoftNetCoreAppRuntimePackDir="$(MicrosoftNetCoreAppRuntimePackDir)"
-      MainAssembly="$(PublishDir)\WasmSample.dll"
+      MainAssembly="$(PublishDir)\$(MainAssembly)"
       MainJS="$(MonoProjectRoot)wasm\runtime-test.js"
       Assemblies="@(BundleAssemblies)"/>
     <WriteLinesToFile
       File="$(AppDir)run-v8.sh"
-      Lines="v8 --expose_wasm runtime.js -- --run WasmSample.dll $*"
+      Lines="v8 --expose_wasm runtime.js -- --run $(MainAssembly) $*"
       Overwrite="true"/>
     <Exec Command="chmod a+x $(AppDir)run-v8.sh" />
 

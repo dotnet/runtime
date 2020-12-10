@@ -17,9 +17,11 @@
       AssemblyFile="$(CORE_ROOT)/WasmAppBuilder/WasmAppBuilder.dll"/>
 
   <Target Name="BuildApp">
+    <PropertyGroup>
+      <MainAssembly>$(TestAssembly)</MainAssembly>
+      <_JavaScriptDllPath>$(CORE_ROOT)\System.Private.Runtime.InteropServices.JavaScript.dll</_JavaScriptDllPath>
+    </PropertyGroup>
     <ItemGroup>
-      <MainAssembly Include="$(TestAssembly)" />
-      <ExtraAssemblies Include="$(CORE_ROOT)\System.Private.Runtime.InteropServices.JavaScript.dll" />
       <AssemblySearchPaths Include="$(MicrosoftNetCoreAppRuntimePackDir)\native"/>
       <AssemblySearchPaths Include="$(MicrosoftNetCoreAppRuntimePackDir)"/>
       <AssemblySearchPaths Include="$(CORE_ROOT)/TargetingPack" />
@@ -31,7 +33,7 @@
     <Message Importance="High" Text="ArtifactsBinDir: $(ArtifactsBinDir)" />
 
     <WasmLoadAssembliesAndReferences
-      Assemblies="@(MainAssembly);@(ExtraAssemblies)"
+      Assemblies="$(MainAssembly);$(_JavaScriptDllPath)"
       AssemblySearchPaths="@(AssemblySearchPaths)"
       SkipMissingAssemblies="true">
       <Output TaskParameter="ReferencedAssemblies" ItemName="ReferencedAssemblies" />
@@ -40,13 +42,13 @@
     <WasmAppBuilder
       AppDir="$(AppDir)"
       MicrosoftNetCoreAppRuntimePackDir="$(MicrosoftNetCoreAppRuntimePackDir)"
-      MainAssembly="$(TestAssembly)"
+      MainAssembly="$(MainAssembly)"
       MainJS="$(CORE_ROOT)\runtime-test\runtime-test.js"
       Assemblies="@(ReferencedAssemblies)" />
 
     <WriteLinesToFile
       File="$(AppDir)/run-v8.sh"
-      Lines="v8 --expose_wasm runtime.js -- --run $(TestAssembly) $*"
+      Lines="v8 --expose_wasm runtime.js -- --run $(MainAssembly) $*"
       Overwrite="true"/>
     <Exec Command="chmod a+x $(AppDir)/run-v8.sh" />
   </Target>
