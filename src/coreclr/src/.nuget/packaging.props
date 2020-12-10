@@ -25,6 +25,14 @@
     <VersionTxtFile Condition="'$(VersionTxtFile)' == ''">$(ArtifactsObjDir)version.txt</VersionTxtFile>
   </PropertyGroup>
 
+  <PropertyGroup>
+    <!-- Set the boolean below to true to generate packages with stabilized versions -->
+    <IsShipping>false</IsShipping>
+    <StabilizePackageVersion Condition="'$(StabilizePackageVersion)' == ''">false</StabilizePackageVersion>
+    <StableVersion Condition="'$(StabilizePackageVersion)' == 'true' and '$(StableVersion)' == ''">$(PackageVersion)</StableVersion>
+    <StableVersion Condition="$(MSBuildProjectName.Contains('Private')) or $(MSBuildProjectName.Contains('Transport'))" />
+  </PropertyGroup>
+
   <ItemGroup Condition="'$(MSBuildProjectExtension)' == '.pkgproj'">
     <!-- Add required legal files to packages -->
     <File Condition="Exists('$(PackageLicenseFile)')"
