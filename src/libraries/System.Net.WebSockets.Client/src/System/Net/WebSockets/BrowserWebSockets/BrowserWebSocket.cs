@@ -432,6 +432,16 @@ namespace System.Net.WebSockets
             return Task.CompletedTask;
         }
 
+        // This method is registered by the CancellationTokenSource in the receive async method
+        private async void CancelRequest()
+        {
+            _receiveMessageQueue.Writer.TryComplete();
+            if (State == WebSocketState.Open || State == WebSocketState.Connecting)
+            {
+                await CloseAsyncCore(WebSocketCloseStatus.NormalClosure, SR.net_WebSockets_Connection_Aborted, CancellationToken.None).ConfigureAwait(continueOnCapturedContext: true);
+            }
+        }
+
         /// <summary>
         /// Receives data on <see cref="System.Net.WebSockets.ClientWebSocket"/> as an asynchronous operation.
         /// </summary>
@@ -440,15 +450,19 @@ namespace System.Net.WebSockets
         /// <param name="cancellationToken">Cancellation token.</param>
         public override async Task<WebSocketReceiveResult> ReceiveAsync(ArraySegment<byte> buffer, CancellationToken cancellationToken)
         {
-            WebSocketValidate.ValidateArraySegment(buffer, nameof(buffer));
 
-            ThrowIfDisposed();
-            ThrowOnInvalidState(State, WebSocketState.Open, WebSocketState.CloseSent);
+            CancellationTokenSource _receiveCTS = new CancellationTokenSource();
+            CancellationTokenRegistration receiveRegistration = cancellationToken.Register(cts => ((CancellationTokenSource)cts!).Cancel(), _receiveCTS);
+            _receiveCTS.Token.Register(s => ((BrowserWebSocket)s!).CancelRequest(), this);
 
             try
             {
+                WebSocketValidate.ValidateArraySegment(buffer, nameof(buffer));
+
+                ThrowIfDisposed();
+                ThrowOnInvalidState(State, WebSocketState.Open, WebSocketState.CloseSent);
                 _bufferedPayload ??= await _receiveMessageQueue.Reader.ReadAsync(cancellationToken).ConfigureAwait(continueOnCapturedContext: true);
-                bool endOfMessage = _bufferedPayload.BufferPayload(buffer, out WebSocketReceiveResult receiveResult);
+                bool endOfMessage = _bufferedPayload!.BufferPayload(buffer, out WebSocketReceiveResult receiveResult);
                 if (endOfMessage)
                     _bufferedPayload = null;
                 return receiveResult;
@@ -458,10 +472,16 @@ namespace System.Net.WebSockets
                 switch (exc)
                 {
                     case OperationCanceledException:
-                        throw;
+                        return await Task.FromException<WebSocketReceiveResult>(exc).ConfigureAwait(continueOnCapturedContext: true);
+                    case ChannelClosedException:
+                        return await Task.FromException<WebSocketReceiveResult>(new WebSocketException(WebSocketError.InvalidState, SR.Format(SR.net_WebSockets_InvalidState, "Aborted", "Open, CloseSent"))).ConfigureAwait(continueOnCapturedContext: true);
                     default:
-                        throw new WebSocketException(WebSocketError.InvalidState, exc);
+                        return await Task.FromException<WebSocketReceiveResult>(new WebSocketException(WebSocketError.InvalidState, SR.Format(SR.net_WebSockets_InvalidState, State, "Open, CloseSent"))).ConfigureAwait(continueOnCapturedContext: true);
                 }
+            }
+            finally
+            {
+                receiveRegistration.Unregister();
             }
         }
 
@@ -470,7 +490,6 @@ namespace System.Net.WebSockets
         /// </summary>
         public override void Abort()
         {
-            System.Diagnostics.Debug.WriteLine($"BrowserWebSocket::Abort() {_tcsClose}");
             if (_state != (int)InternalState.Disposed)
             {
                 if (Interlocked.Exchange(ref _state, (int)InternalState.Aborted) != (int)InternalState.Aborted)
