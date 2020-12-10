@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Globalization;
 using System.Linq;
 using System.Text.RegularExpressions;
@@ -7,6 +7,14 @@ using Mono.Cecil;
 
 namespace Mono.Linker.Steps
 {
+	[Flags]
+	public enum AllowedAssemblies
+	{
+		ContainingAssembly = 0x1,
+		AnyAssembly = 0x2 | ContainingAssembly,
+		AllAssemblies = 0x4 | AnyAssembly
+	}
+
 	public abstract class ProcessLinkerXmlStepBase : LoadReferencesStep
 	{
 		const string FullNameAttributeName = "fullname";
@@ -25,7 +33,7 @@ namespace Mono.Linker.Steps
 		protected readonly string _xmlDocumentLocation;
 		readonly XPathDocument _document;
 		readonly EmbeddedResource _resource;
-		readonly AssemblyDefinition _resourceAssembly;
+		protected readonly AssemblyDefinition _resourceAssembly;
 
 		protected ProcessLinkerXmlStepBase (XPathDocument document, string xmlDocumentLocation)
 		{
@@ -44,6 +52,9 @@ namespace Mono.Linker.Steps
 
 		protected virtual void ProcessXml (bool stripResource, bool ignoreResource)
 		{
+			if (!AllowedAssemblySelector.HasFlag (AllowedAssemblies.AnyAssembly) && _resourceAssembly == null)
+				throw new InvalidOperationException ("The containing assembly must be specified for XML which is restricted to modifying that assembly only.");
+
 			try {
 				XPathNavigator nav = _document.CreateNavigator ();
 
@@ -63,48 +74,65 @@ namespace Mono.Linker.Steps
 
 				ProcessAssemblies (nav.SelectChildren ("assembly", ""));
 
+				// For embedded XML, allow not specifying the assembly explicitly in XML.
+				if (_resourceAssembly != null)
+					ProcessAssembly (_resourceAssembly, nav, warnOnUnresolvedTypes: true);
+
 			} catch (Exception ex) when (!(ex is LinkerFatalErrorException)) {
 				throw new LinkerFatalErrorException (MessageContainer.CreateErrorMessage ($"Error processing '{_xmlDocumentLocation}'", 1013), ex);
 			}
 		}
 
-		protected virtual bool AllowAllAssembliesSelector { get => false; }
+		protected virtual AllowedAssemblies AllowedAssemblySelector { get => _resourceAssembly != null ? AllowedAssemblies.ContainingAssembly : AllowedAssemblies.AnyAssembly; }
 
 		protected virtual void ProcessAssemblies (XPathNodeIterator iterator)
 		{
 			while (iterator.MoveNext ()) {
-				bool processAllAssemblies = AllowAllAssembliesSelector && GetFullName (iterator.Current) == AllAssembliesFullName;
+				bool processAllAssemblies = GetFullName (iterator.Current) == AllAssembliesFullName;
+				if (processAllAssemblies && AllowedAssemblySelector != AllowedAssemblies.AllAssemblies) {
+					Context.LogWarning ($"XML contains unsupported wildcard for assembly \"fullname\" attribute", 2100, _xmlDocumentLocation);
+					continue;
+				}
 
 				// Errors for invalid assembly names should show up even if this element will be
 				// skipped due to feature conditions.
 				var name = processAllAssemblies ? null : GetAssemblyName (iterator.Current);
+
+				AssemblyDefinition assemblyToProcess = null;
+				if (!AllowedAssemblySelector.HasFlag (AllowedAssemblies.AnyAssembly)) {
+					if (_resourceAssembly.Name.Name != name.Name) {
+						Context.LogWarning ($"Embedded XML in assembly '{_resourceAssembly.Name.Name}' contains assembly \"fullname\" attribute for another assembly '{name}'", 2101, _xmlDocumentLocation);
+						continue;
+					}
+					assemblyToProcess = _resourceAssembly;
+				}
 
 				if (!ShouldProcessElement (iterator.Current))
 					continue;
 
 				if (processAllAssemblies) {
 					foreach (AssemblyDefinition assembly in Context.GetAssemblies ())
-						ProcessAssembly (assembly, iterator, warnOnUnresolvedTypes: false);
+						ProcessAssembly (assembly, iterator.Current, warnOnUnresolvedTypes: false);
 				} else {
-					AssemblyDefinition assembly = GetAssembly (Context, name);
+					AssemblyDefinition assembly = assemblyToProcess ?? GetAssembly (Context, name);
 
 					if (assembly == null) {
 						Context.LogWarning ($"Could not resolve assembly '{name.Name}'", 2007, _xmlDocumentLocation);
 						continue;
 					}
 
-					ProcessAssembly (assembly, iterator, warnOnUnresolvedTypes: true);
+					ProcessAssembly (assembly, iterator.Current, warnOnUnresolvedTypes: true);
 				}
 			}
 		}
 
-		protected abstract void ProcessAssembly (AssemblyDefinition assembly, XPathNodeIterator iterator, bool warnOnUnresolvedTypes);
+		protected abstract void ProcessAssembly (AssemblyDefinition assembly, XPathNavigator nav, bool warnOnUnresolvedTypes);
 
-		protected virtual void ProcessTypes (AssemblyDefinition assembly, XPathNodeIterator iterator, bool warnOnUnresolvedTypes)
+		protected virtual void ProcessTypes (AssemblyDefinition assembly, XPathNavigator nav, bool warnOnUnresolvedTypes)
 		{
-			iterator = iterator.Current.SelectChildren (TypeElementName, XmlNamespace);
+			var iterator = nav.SelectChildren (TypeElementName, XmlNamespace);
 			while (iterator.MoveNext ()) {
-				XPathNavigator nav = iterator.Current;
+				nav = iterator.Current;
 
 				if (!ShouldProcessElement (nav))
 					continue;

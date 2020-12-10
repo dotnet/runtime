@@ -24,10 +24,10 @@ namespace Mono.Linker.Steps
 			ProcessXml (Context.StripSubstitutions, Context.IgnoreSubstitutions);
 		}
 
-		protected override void ProcessAssembly (AssemblyDefinition assembly, XPathNodeIterator iterator, bool warnOnUnresolvedTypes)
+		protected override void ProcessAssembly (AssemblyDefinition assembly, XPathNavigator nav, bool warnOnUnresolvedTypes)
 		{
-			ProcessTypes (assembly, iterator, warnOnUnresolvedTypes);
-			ProcessResources (assembly, iterator.Current.SelectChildren ("resource", ""));
+			ProcessTypes (assembly, nav, warnOnUnresolvedTypes);
+			ProcessResources (assembly, nav.SelectChildren ("resource", ""));
 		}
 
 		protected override TypeDefinition ProcessExportedType (ExportedType exported, AssemblyDefinition assembly) => null;

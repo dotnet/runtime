@@ -708,7 +708,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 		{
 			foreach (var typeWithRemoveInAssembly in original.AllDefinedTypes ()) {
 				foreach (var attr in typeWithRemoveInAssembly.CustomAttributes) {
-					if (attr.AttributeType.Resolve ().Name == nameof (DependencyRecordedAttribute)) {
+					if (attr.AttributeType.Resolve ()?.Name == nameof (DependencyRecordedAttribute)) {
 						var expectedSource = (string) attr.ConstructorArguments[0].Value;
 						var expectedTarget = (string) attr.ConstructorArguments[1].Value;
 						var expectedMarked = (string) attr.ConstructorArguments[2].Value;
@@ -758,7 +758,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			foreach (var expectedSourceMemberDefinition in original.MainModule.AllDefinedTypes ().SelectMany (t => t.AllMembers ().Append (t)).Distinct ()) {
 				bool foundAttributesToVerify = false;
 				foreach (var attr in expectedSourceMemberDefinition.CustomAttributes) {
-					if (attr.AttributeType.Resolve ().Name == nameof (RecognizedReflectionAccessPatternAttribute)) {
+					if (attr.AttributeType.Resolve ()?.Name == nameof (RecognizedReflectionAccessPatternAttribute)) {
 						foundAttributesToVerify = true;
 
 						// Special case for default .ctor - just trigger the overall verification on the method
@@ -800,7 +800,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 								$"Potential patterns matching the reflection member: {Environment.NewLine}{reflectionMemberCandidates}{Environment.NewLine}" +
 								$"If there's no matches, try to specify just a part of the source member or reflection member name and rerun the test to get potential matches.");
 						}
-					} else if (attr.AttributeType.Resolve ().Name == nameof (UnrecognizedReflectionAccessPatternAttribute) &&
+					} else if (attr.AttributeType.Resolve ()?.Name == nameof (UnrecognizedReflectionAccessPatternAttribute) &&
 						attr.ConstructorArguments[0].Type.MetadataType != MetadataType.String) {
 						foundAttributesToVerify = true;
 						string expectedSourceMember = GetFullMemberNameFromDefinition (expectedSourceMemberDefinition);
@@ -881,7 +881,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
 			foreach (var typeToVerify in original.MainModule.AllDefinedTypes ()) {
 				foreach (var attr in typeToVerify.CustomAttributes) {
-					if (attr.AttributeType.Resolve ().Name == nameof (VerifyAllReflectionAccessPatternsAreValidatedAttribute)) {
+					if (attr.AttributeType.Resolve ()?.Name == nameof (VerifyAllReflectionAccessPatternsAreValidatedAttribute)) {
 						// By now all verified recorded patterns were removed from the test recorder lists, so validate
 						// that there are no remaining patterns for this type.
 						var recognizedPatternsForType = reflectionPatternRecorder.RecognizedPatterns
@@ -1071,7 +1071,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
 		bool IsTypeInOtherAssemblyAssertion (CustomAttribute attr)
 		{
-			return attr.AttributeType.Resolve ().DerivesFrom (nameof (BaseInAssemblyAttribute));
+			return attr.AttributeType.Resolve ()?.DerivesFrom (nameof (BaseInAssemblyAttribute)) ?? false;
 		}
 
 		bool HasAttribute (ICustomAttributeProvider caProvider, string attributeName)

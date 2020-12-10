@@ -8,4 +8,11 @@
       </field>
     </type>
   </assembly>
+  <type fullname="Mono.Linker.Tests.Cases.LinkAttributes.EmbeddedLinkAttributes">
+    <field name="_typeWithPublicFields">
+      <attribute fullname="System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute">
+        <argument>PublicFields</argument>
+      </attribute>
+    </field>
+  </type>
 </linker>

@@ -3,9 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
-using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
-using System.Text;
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
 using Mono.Linker.Tests.Cases.Expectations.Metadata;
 
@@ -22,6 +20,7 @@ namespace Mono.Linker.Tests.Cases.LinkAttributes
 			var instance = new EmbeddedLinkAttributes ();
 
 			instance.ReadFromInstanceField ();
+			instance.ReadFromInstanceField2 ();
 		}
 
 		Type _typeWithPublicParameterlessConstructor;
@@ -49,6 +48,22 @@ namespace Mono.Linker.Tests.Cases.LinkAttributes
 
 		private static void RequireNonPublicConstructors (
 			[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.NonPublicConstructors)]
+			Type type)
+		{
+		}
+
+		Type _typeWithPublicFields;
+
+		[UnrecognizedReflectionAccessPattern (typeof (EmbeddedLinkAttributes), nameof (RequirePublicConstructors), new Type[] { typeof (Type) })]
+		[RecognizedReflectionAccessPattern]
+		private void ReadFromInstanceField2 ()
+		{
+			RequirePublicConstructors (_typeWithPublicFields);
+			RequirePublicFields (_typeWithPublicFields);
+		}
+
+		private static void RequirePublicFields (
+			[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields)]
 			Type type)
 		{
 		}

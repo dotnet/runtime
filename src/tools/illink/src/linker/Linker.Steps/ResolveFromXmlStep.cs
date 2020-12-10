@@ -67,25 +67,27 @@ namespace Mono.Linker.Steps
 			ProcessXml (Context.StripDescriptors, Context.IgnoreDescriptors);
 		}
 
-		protected override void ProcessAssembly (AssemblyDefinition assembly, XPathNodeIterator iterator, bool warnOnUnresolvedTypes)
+		protected override AllowedAssemblies AllowedAssemblySelector { get => AllowedAssemblies.AnyAssembly; }
+
+		protected override void ProcessAssembly (AssemblyDefinition assembly, XPathNavigator nav, bool warnOnUnresolvedTypes)
 		{
 #if !FEATURE_ILLINK
-			if (IsExcluded (iterator.Current))
+			if (IsExcluded (nav))
 				return;
 #endif
 
-			if (GetTypePreserve (iterator.Current) == TypePreserve.All) {
+			if (GetTypePreserve (nav) == TypePreserve.All) {
 				foreach (var type in assembly.MainModule.Types)
 					MarkAndPreserveAll (type);
 			} else {
-				ProcessTypes (assembly, iterator, warnOnUnresolvedTypes);
-				ProcessNamespaces (assembly, iterator);
+				ProcessTypes (assembly, nav, warnOnUnresolvedTypes);
+				ProcessNamespaces (assembly, nav);
 			}
 		}
 
-		void ProcessNamespaces (AssemblyDefinition assembly, XPathNodeIterator iterator)
+		void ProcessNamespaces (AssemblyDefinition assembly, XPathNavigator nav)
 		{
-			iterator = iterator.Current.SelectChildren (NamespaceElementName, XmlNamespace);
+			var iterator = nav.SelectChildren (NamespaceElementName, XmlNamespace);
 			while (iterator.MoveNext ()) {
 				if (!ShouldProcessElement (iterator.Current))
 					continue;

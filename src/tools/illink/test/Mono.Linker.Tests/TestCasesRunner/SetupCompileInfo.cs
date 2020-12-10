@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using Mono.Linker.Tests.Extensions;
 
 namespace Mono.Linker.Tests.TestCasesRunner
@@ -9,7 +9,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 		public NPath[] SourceFiles;
 		public string[] Defines;
 		public string[] References;
-		public NPath[] Resources;
+		public SourceAndDestinationPair[] Resources;
 		public string AdditionalArguments;
 		public string CompilerToUse;
 		public bool AddAsReference;

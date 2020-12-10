@@ -1,4 +1,4 @@
-﻿using Mono.Linker.Tests.Cases.Expectations.Assertions;
+using Mono.Linker.Tests.Cases.Expectations.Assertions;
 using Mono.Linker.Tests.Cases.Expectations.Metadata;
 using Mono.Linker.Tests.Cases.Resources.Dependencies;
 
@@ -7,7 +7,7 @@ namespace Mono.Linker.Tests.Cases.Resources
 	[SetupCompileBefore (
 		"EmbeddedLinkXmlFileInReferencedAssemblyIsProcessedIfActionIsLink_Lib1.dll",
 		new[] { "Dependencies/EmbeddedLinkXmlFileInReferencedAssemblyIsProcessedIfActionIsLink_Lib1.cs" },
-		resources: new[] { "Dependencies/EmbeddedLinkXmlFileInReferencedAssemblyIsProcessedIfActionIsLink_Lib1.xml" })]
+		resources: new object[] { "Dependencies/EmbeddedLinkXmlFileInReferencedAssemblyIsProcessedIfActionIsLink_Lib1.xml" })]
 	[SetupLinkerAction ("link", "EmbeddedLinkXmlFileInReferencedAssemblyIsProcessedIfActionIsLink_Lib1")]
 	[IgnoreDescriptors (false)]
 

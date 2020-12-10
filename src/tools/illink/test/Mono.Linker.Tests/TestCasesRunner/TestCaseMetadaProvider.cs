@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -329,7 +329,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 				SourceFiles = SourceFilesForAttributeArgument (ctorArguments[1]),
 				References = ((CustomAttributeArgument[]) ctorArguments[2].Value)?.Select (arg => arg.Value.ToString ()).ToArray (),
 				Defines = ((CustomAttributeArgument[]) ctorArguments[3].Value)?.Select (arg => arg.Value.ToString ()).ToArray (),
-				Resources = ((CustomAttributeArgument[]) ctorArguments[4].Value)?.Select (arg => MakeSourceTreeFilePathAbsolute (arg.Value.ToString ())).ToArray (),
+				Resources = ResourcesForAttributeArgument (ctorArguments[4]),
 				AdditionalArguments = (string) ctorArguments[5].Value,
 				CompilerToUse = (string) ctorArguments[6].Value,
 				AddAsReference = ctorArguments.Count >= 8 ? (bool) ctorArguments[7].Value : true,
@@ -348,6 +348,27 @@ namespace Mono.Linker.Tests.TestCasesRunner
 				.Select (attributeArg => SourceFileForAttributeArgumentValue (attributeArg.Value))
 				.Distinct ()
 				.ToArray ();
+		}
+
+		protected SourceAndDestinationPair[] ResourcesForAttributeArgument (CustomAttributeArgument attributeArgument)
+		{
+			return ((CustomAttributeArgument[]) attributeArgument.Value)
+				?.Select (arg => {
+					var referenceArg = (CustomAttributeArgument) arg.Value;
+					if (referenceArg.Value is string source) {
+						var fullSource = MakeSourceTreeFilePathAbsolute (source);
+						return new SourceAndDestinationPair {
+							Source = fullSource,
+							DestinationFileName = fullSource.FileName
+						};
+					}
+					var sourceAndDestination = (CustomAttributeArgument[]) referenceArg.Value;
+					return new SourceAndDestinationPair {
+						Source = MakeSourceTreeFilePathAbsolute (sourceAndDestination[0].Value.ToString ()),
+						DestinationFileName = sourceAndDestination[1].Value.ToString ()
+					};
+				})
+				?.ToArray ();
 		}
 
 		protected virtual NPath SourceFileForAttributeArgumentValue (object value)

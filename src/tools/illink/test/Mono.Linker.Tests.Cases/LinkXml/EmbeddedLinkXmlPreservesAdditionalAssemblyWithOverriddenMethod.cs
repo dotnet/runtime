@@ -1,4 +1,4 @@
-﻿using Mono.Linker.Tests.Cases.Expectations.Assertions;
+using Mono.Linker.Tests.Cases.Expectations.Assertions;
 using Mono.Linker.Tests.Cases.Expectations.Metadata;
 using Mono.Linker.Tests.Cases.LinkXml.Dependencies.EmbeddedLinkXmlPreservesAdditionalAssemblyWithOverriddenMethod;
 
@@ -9,7 +9,7 @@ namespace Mono.Linker.Tests.Cases.LinkXml
 	[SetupCompileBefore ("Library1.dll",
 		new[] { "Dependencies/EmbeddedLinkXmlPreservesAdditionalAssemblyWithOverriddenMethod/Library1.cs" },
 		new[] { "Base.dll" },
-		resources: new[] { "Dependencies/EmbeddedLinkXmlPreservesAdditionalAssemblyWithOverriddenMethod/Library1.xml" })]
+		resources: new object[] { "Dependencies/EmbeddedLinkXmlPreservesAdditionalAssemblyWithOverriddenMethod/Library1.xml" })]
 	[SetupCompileBefore ("Library2.dll",
 		new[] { "Dependencies/EmbeddedLinkXmlPreservesAdditionalAssemblyWithOverriddenMethod/Library2.cs" },
 		new[] { "Base.dll" },

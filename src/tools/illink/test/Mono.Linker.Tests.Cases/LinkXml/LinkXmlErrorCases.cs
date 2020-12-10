@@ -20,6 +20,7 @@ namespace Mono.Linker.Tests.Cases.LinkXml
 	[ExpectedWarning ("IL2025", "Event", FileName = "LinkXmlErrorCases.xml")]
 	[ExpectedWarning ("IL2025", "Field", FileName = "LinkXmlErrorCases.xml")]
 	[ExpectedWarning ("IL2025", "Property", FileName = "LinkXmlErrorCases.xml")]
+	[ExpectedWarning ("IL2100", FileName = "LinkXmlErrorCases.xml")]
 	class LinkXmlErrorCases
 	{
 		public static void Main ()

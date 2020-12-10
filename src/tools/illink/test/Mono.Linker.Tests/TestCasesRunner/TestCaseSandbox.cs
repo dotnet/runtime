@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
@@ -113,7 +113,12 @@ namespace Mono.Linker.Tests.TestCasesRunner
 				compileRefInfo.SourceFiles.Copy (destination);
 
 				destination = BeforeReferenceResourceDirectoryFor (compileRefInfo.OutputName).EnsureDirectoryExists ();
-				compileRefInfo.Resources?.Copy (destination);
+
+				if (compileRefInfo.Resources == null)
+					continue;
+
+				foreach (var res in compileRefInfo.Resources)
+					res.Source.FileMustExist ().Copy (destination.Combine (res.DestinationFileName));
 			}
 
 			foreach (var compileRefInfo in metadataProvider.GetSetupCompileAssembliesAfter ()) {
@@ -121,7 +126,12 @@ namespace Mono.Linker.Tests.TestCasesRunner
 				compileRefInfo.SourceFiles.Copy (destination);
 
 				destination = AfterReferenceResourceDirectoryFor (compileRefInfo.OutputName).EnsureDirectoryExists ();
-				compileRefInfo.Resources?.Copy (destination);
+
+				if (compileRefInfo.Resources == null)
+					continue;
+
+				foreach (var res in compileRefInfo.Resources)
+					res.Source.FileMustExist ().Copy (destination.Combine (res.DestinationFileName));
 			}
 		}
 

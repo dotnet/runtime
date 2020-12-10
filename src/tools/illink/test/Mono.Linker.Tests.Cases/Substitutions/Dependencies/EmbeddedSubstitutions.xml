@@ -4,4 +4,7 @@
       <method signature="System.Void ConvertToThrowMethod()" body="remove" />
     </type>
   </assembly>
+  <type fullname="Mono.Linker.Tests.Cases.Substitutions.EmbeddedSubstitutions">
+    <method signature="System.Void ConvertToThrowMethod2()" body="remove" />
+  </type>
 </linker>

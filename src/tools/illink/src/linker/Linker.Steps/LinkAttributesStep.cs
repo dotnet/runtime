@@ -197,14 +197,30 @@ namespace Mono.Linker.Steps
 			ProcessXml (Context.StripLinkAttributes, Context.IgnoreLinkAttributes);
 		}
 
-		protected override bool AllowAllAssembliesSelector { get => true; }
+		protected override AllowedAssemblies AllowedAssemblySelector {
+			get {
+				if (_resourceAssembly == null)
+					return AllowedAssemblies.AllAssemblies;
 
-		protected override void ProcessAssembly (AssemblyDefinition assembly, XPathNodeIterator iterator, bool warnOnUnresolvedTypes)
+				// Corelib XML may contain assembly wildcard to support compiler-injected attribute types
+#if NETCOREAPP
+				const string coreLib = "System.Private.CoreLib";
+#else
+				const string coreLib = "mscorlib";
+#endif
+				if (_resourceAssembly.Name.Name == coreLib)
+					return AllowedAssemblies.AllAssemblies;
+
+				return AllowedAssemblies.ContainingAssembly;
+			}
+		}
+
+		protected override void ProcessAssembly (AssemblyDefinition assembly, XPathNavigator nav, bool warnOnUnresolvedTypes)
 		{
-			IEnumerable<CustomAttribute> attributes = ProcessAttributes (iterator.Current, assembly);
+			IEnumerable<CustomAttribute> attributes = ProcessAttributes (nav, assembly);
 			if (attributes.Any ())
 				Context.CustomAttributes.AddCustomAttributes (assembly, attributes);
-			ProcessTypes (assembly, iterator, warnOnUnresolvedTypes);
+			ProcessTypes (assembly, nav, warnOnUnresolvedTypes);
 		}
 
 		protected override void ProcessType (TypeDefinition type, XPathNavigator nav)
