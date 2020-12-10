@@ -98,6 +98,7 @@ internal static partial class Interop
                     continue;
                 }
 
+                // Parse the pathname
                 string pathname = parser.ExtractCurrentToEnd();
                 bool isContinuation = module?.FileName == pathname && (long)module.BaseAddress + module.ModuleMemorySize == addressRange.Start;
 
