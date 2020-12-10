@@ -183,6 +183,7 @@
       SatelliteAssemblies="@(WasmSatelliteAssemblies)"
       FilesToIncludeInFileSystem="@(WasmFilesToIncludeInFileSystem)" />
     <WriteLinesToFile
+      Condition="'$(Scenario)' != 'WasmTestOnBrowser'"
       File="$(AppDir)run-v8.sh"
       Lines="v8 --expose_wasm runtime.js -- --run $(MainAssembly) $*"
       Overwrite="true"/>
