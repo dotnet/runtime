@@ -99,5 +99,20 @@ internal static partial class Interop
             return globalHandle;
         }
 
+        [MethodImplAttribute (MethodImplOptions.NoInlining)]
+        public static void StopProfile () {
+        }
+        
+        // Called by the AOT profiler to save profile data into Module.aot_profile_data
+        [MethodImplAttribute (MethodImplOptions.NoInlining)]
+        public static unsafe void DumpAotProfileData (ref byte buf, int len, string s) {
+            var arr = new byte [len];
+            fixed (void *p = &buf) {
+                var span = new ReadOnlySpan<byte> (p, len);
+                // Send it to JS
+                var js_dump = (JSObject)Runtime.GetGlobalObject ("Module");
+                js_dump.SetObjectProperty ("aot_profile_data", Uint8Array.From (span));
+            }
+        }
     }
 }

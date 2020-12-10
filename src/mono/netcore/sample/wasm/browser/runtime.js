@@ -9,7 +9,8 @@ var Module = {
         config.fetch_file_cb = function (asset) {
             return fetch (asset, { credentials: 'same-origin' });
         }
-
+        MONO.mono_wasm_init_aot_profiler();
         MONO.mono_load_runtime_and_bcl_args (config);
     },
+    runProfiler: true,
 };
