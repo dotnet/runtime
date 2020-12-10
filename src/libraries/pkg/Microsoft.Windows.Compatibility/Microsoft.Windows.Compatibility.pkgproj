@@ -1,16 +1,18 @@
 ﻿<Project DefaultTargets="Build">
   <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.props))" />
   <PropertyGroup>
+    <_PreReleasePackageVersion>$(PackageVersion)</_PreReleasePackageVersion>
+    <PackageVersion>5.0.1</PackageVersion>
     <ServiceModelVersion>4.8.0</ServiceModelVersion>
     <!-- We don't need to harvest the stable packages to build this -->
     <HarvestStablePackage>false</HarvestStablePackage>
   </PropertyGroup>
   <ItemDefinitionGroup>
     <PrereleaseLibraryPackage>
-      <Version>$(PackageVersion)</Version>
+      <Version>$(_PreReleasePackageVersion)</Version>
     </PrereleaseLibraryPackage>
     <NS21PrereleaseLibraryPackage>
-      <Version>$(PackageVersion)</Version>
+      <Version>$(_PreReleasePackageVersion)</Version>
     </NS21PrereleaseLibraryPackage>
   </ItemDefinitionGroup>
   <ItemGroup>
