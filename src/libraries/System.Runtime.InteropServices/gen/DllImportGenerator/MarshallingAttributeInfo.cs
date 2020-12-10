@@ -60,20 +60,11 @@ namespace Microsoft.Interop
     /// </summary>
     internal sealed record ArrayMarshalAsInfo(
         UnmanagedArrayType UnmanagedArrayType,
-        UnmanagedType UnmanagedArraySubType,
         int ArraySizeConst,
         short ArraySizeParamIndex,
-        CharEncoding CharEncoding) : MarshalAsInfo((UnmanagedType)UnmanagedArrayType, CharEncoding)
-    {
-        public MarshallingInfo CreateArraySubTypeMarshalAsInfo()
-        {
-            if (UnmanagedArraySubType == (UnmanagedType)UnspecifiedData)
-            {
-                return NoMarshallingInfo.Instance;
-            }
-            return new MarshalAsInfo(UnmanagedArraySubType, CharEncoding);
-        }
-        
+        CharEncoding CharEncoding,
+        MarshallingInfo ElementMarshallingInfo) : MarshalAsInfo((UnmanagedType)UnmanagedArrayType, CharEncoding)
+    {        
         public const short UnspecifiedData = -1;
     }
 
@@ -113,5 +104,10 @@ namespace Microsoft.Interop
     /// The type of the element is a SafeHandle-derived type with no marshalling attributes.
     /// </summary>
     internal sealed record SafeHandleMarshallingInfo : MarshallingInfo;
-        
+
+
+    /// <summary>
+    /// Default marshalling for arrays
+    /// </summary>
+    internal sealed record ArrayMarshallingInfo(MarshallingInfo ElementMarshallingInfo) : MarshallingInfo;
 }

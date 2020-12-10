@@ -62,10 +62,26 @@ namespace Microsoft.Interop
 
         public Stage CurrentStage { get; protected set; } = Stage.Invalid;
 
+        /// <summary>
+        /// A <code>fixed</code> statement can be used on an individual value and the pointer
+        /// can be passed to native code.
+        /// </summary>
         public abstract bool PinningSupported { get; }
 
+        /// <summary>
+        /// Memory can be allocated via the <code>stackalloc</code> keyword and will live through
+        /// the full native context of the call.
+        /// </summary>
         public abstract bool StackSpaceUsable { get; }
 
+        /// <summary>
+        /// Additional variables other than the {managedIdentifier} and {nativeIdentifier} variables
+        /// can be added to the stub to track additional state for the marshaller in the stub.
+        /// </summary>
+        /// <remarks>
+        /// In scenarios where the stub is defined within a single function, additional local variables
+        /// can be defined.
+        /// </remarks>
         public abstract bool CanUseAdditionalTemporaryState { get; }
 
         protected const string GeneratedNativeIdentifierSuffix = "_gen_native";

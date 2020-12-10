@@ -105,7 +105,7 @@ namespace Microsoft.Interop
                 if (SymbolEqualityComparer.Default.Equals(compilation.GetTypeByMetadataName(TypeNames.System_Runtime_InteropServices_MarshalAsAttribute), attributeClass))
                 {
                     // https://docs.microsoft.com/dotnet/api/system.runtime.interopservices.marshalasattribute
-                    return CreateMarshalAsInfo(attrData, defaultInfo, diagnostics);
+                    return CreateMarshalAsInfo(type, attrData, defaultInfo, compilation, diagnostics);
                 }
                 else if (SymbolEqualityComparer.Default.Equals(compilation.GetTypeByMetadataName(TypeNames.MarshalUsingAttribute), attributeClass))
                 {
@@ -135,7 +135,7 @@ namespace Microsoft.Interop
 
             // If the type doesn't have custom attributes that dictate marshalling,
             // then consider the type itself.
-            if (TryCreateTypeBasedMarshallingInfo(type, compilation, out MarshallingInfo infoMaybe))
+            if (TryCreateTypeBasedMarshallingInfo(type, defaultInfo, compilation, diagnostics, out MarshallingInfo infoMaybe))
             {
                 return infoMaybe;
             }
@@ -151,7 +151,7 @@ namespace Microsoft.Interop
 
             return NoMarshallingInfo.Instance;
 
-            static MarshalAsInfo CreateMarshalAsInfo(AttributeData attrData, DefaultMarshallingInfo defaultInfo, GeneratorDiagnostics diagnostics)
+            static MarshalAsInfo CreateMarshalAsInfo(ITypeSymbol type, AttributeData attrData, DefaultMarshallingInfo defaultInfo, Compilation compilation, GeneratorDiagnostics diagnostics)
             {
                 object unmanagedTypeObj = attrData.ConstructorArguments[0].Value!;
                 UnmanagedType unmanagedType = unmanagedTypeObj is short
@@ -208,15 +208,28 @@ namespace Microsoft.Interop
                     }
                 }
 
-                return isArrayType
-                    ? new ArrayMarshalAsInfo(
-                        UnmanagedArrayType: (UnmanagedArrayType)unmanagedType,
-                        UnmanagedArraySubType: unmanagedArraySubType,
-                        ArraySizeConst: arraySizeConst,
-                        ArraySizeParamIndex: arraySizeParamIndex,
-                        CharEncoding: defaultInfo.CharEncoding
-                    )
-                    : new MarshalAsInfo(unmanagedType, defaultInfo.CharEncoding);
+                if (!isArrayType)
+                {
+                    return new MarshalAsInfo(unmanagedType, defaultInfo.CharEncoding);
+                }
+
+                MarshallingInfo elementMarshallingInfo = NoMarshallingInfo.Instance;
+                if (unmanagedArraySubType != (UnmanagedType)ArrayMarshalAsInfo.UnspecifiedData)
+                {
+                    elementMarshallingInfo = new MarshalAsInfo(unmanagedArraySubType, defaultInfo.CharEncoding);
+                }
+                else if (type is IArrayTypeSymbol { ElementType: ITypeSymbol elementType })
+                {
+                    elementMarshallingInfo = GetMarshallingInfo(elementType, Array.Empty<AttributeData>(), defaultInfo, compilation, diagnostics);
+                }
+
+                return new ArrayMarshalAsInfo(
+                    UnmanagedArrayType: (UnmanagedArrayType)unmanagedType,
+                    ArraySizeConst: arraySizeConst,
+                    ArraySizeParamIndex: arraySizeParamIndex,
+                    CharEncoding: defaultInfo.CharEncoding,
+                    ElementMarshallingInfo: elementMarshallingInfo
+                );
             }
 
             static NativeMarshallingAttributeInfo CreateNativeMarshallingInfo(ITypeSymbol type, Compilation compilation, AttributeData attrData, bool allowGetPinnableReference)
@@ -262,7 +275,7 @@ namespace Microsoft.Interop
                     NativeTypePinnable: ManualTypeMarshallingHelper.FindGetPinnableReference(nativeType) is not null);
             }
 
-            static bool TryCreateTypeBasedMarshallingInfo(ITypeSymbol type, Compilation compilation, out MarshallingInfo marshallingInfo)
+            static bool TryCreateTypeBasedMarshallingInfo(ITypeSymbol type, DefaultMarshallingInfo defaultInfo, Compilation compilation, GeneratorDiagnostics diagnostics, out MarshallingInfo marshallingInfo)
             {
                 var conversion = compilation.ClassifyCommonConversion(type, compilation.GetTypeByMetadataName(TypeNames.System_Runtime_InteropServices_SafeHandle)!);
                 if (conversion.Exists 
@@ -271,6 +284,12 @@ namespace Microsoft.Interop
                     && !type.IsAbstract)
                 {
                     marshallingInfo = new SafeHandleMarshallingInfo();
+                    return true;
+                }
+
+                if (type is IArrayTypeSymbol { ElementType: ITypeSymbol elementType })
+                {
+                    marshallingInfo = new ArrayMarshallingInfo(GetMarshallingInfo(elementType, Array.Empty<AttributeData>(), defaultInfo, compilation, diagnostics));
                     return true;
                 }
                 marshallingInfo = NoMarshallingInfo.Instance;

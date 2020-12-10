@@ -22,6 +22,15 @@ namespace Microsoft.Interop
 
         public override bool StackSpaceUsable => false;
 
+        /// <summary>
+        /// Additional variables other than the {managedIdentifier} and {nativeIdentifier} variables
+        /// can be added to the stub to track additional state for the marshaller in the stub.
+        /// </summary>
+        /// <remarks>
+        /// Currently, array scenarios do not support declaring additional temporary variables to support
+        /// marshalling. This can be accomplished in the future with some additional infrastructure to support
+        /// declaring arrays additional arrays in the stub to support the temporary state.
+        /// </remarks>
         public override bool CanUseAdditionalTemporaryState => false;
 
         /// <summary>

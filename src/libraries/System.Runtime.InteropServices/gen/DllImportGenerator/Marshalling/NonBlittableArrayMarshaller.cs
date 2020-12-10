@@ -95,16 +95,47 @@ namespace Microsoft.Interop
                             yield return statement;
                         }
 
+                        TypeSyntax spanElementTypeSyntax = GetNativeElementTypeSyntax(info);
+                        if (spanElementTypeSyntax is PointerTypeSyntax)
+                        {
+                            // Pointers cannot be passed to generics, so use IntPtr for this case.
+                            spanElementTypeSyntax = ParseTypeName("System.IntPtr");
+                        }
+
                         // Iterate through the elements of the array to marshal them
                         var arraySubContext = new ArrayMarshallingCodeContext(context.CurrentStage, IndexerIdentifier, context, appendLocalManagedIdentifierSuffix: cacheManagedValue);
                         yield return IfStatement(BinaryExpression(SyntaxKind.NotEqualsExpression,
                             IdentifierName(managedLocal),
                             LiteralExpression(SyntaxKind.NullLiteralExpression)),
+                            Block(
+                                // new Span<T>(<nativeIdentifier>, <managedIdentifier>.Length).Clear();
+                                ExpressionStatement(
+                                    InvocationExpression(
+                                        MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
+                                            ObjectCreationExpression(
+                                                        GenericName(TypeNames.System_Span)
+                                                        .WithTypeArgumentList(
+                                                            TypeArgumentList(
+                                                                SingletonSeparatedList(spanElementTypeSyntax))))
+                                                    .WithArgumentList(
+                                                        ArgumentList(
+                                                            SeparatedList(
+                                                                new []{
+                                                                    Argument(
+                                                                        CastExpression(
+                                                                            PointerType(spanElementTypeSyntax),
+                                                                            IdentifierName(nativeIdentifier))),
+                                                                    Argument(
+                                                                        MemberAccessExpression(
+                                                                            SyntaxKind.SimpleMemberAccessExpression,
+                                                                            IdentifierName(managedIdentifer),
+                                                                            IdentifierName("Length")))
+                                                                }))),
+                                            IdentifierName("Clear")),
+                                        ArgumentList())),
                             MarshallerHelpers.GetForLoop(managedLocal, IndexerIdentifier)
                                 .WithStatement(Block(
-                                    List(_elementMarshaller.Generate(
-                                        info with { ManagedType = GetElementTypeSymbol(info) },
-                                        arraySubContext)))));
+                                    List(_elementMarshaller.Generate(info with { ManagedType = GetElementTypeSymbol(info) }, arraySubContext))))));
                     }
                     break;
                 case StubCodeContext.Stage.Unmarshal:

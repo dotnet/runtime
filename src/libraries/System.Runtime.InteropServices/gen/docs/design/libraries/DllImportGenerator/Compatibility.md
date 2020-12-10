@@ -54,6 +54,8 @@ Specifying array-specific marshalling members on the `MarshalAsAttribute` such a
 
 Only single-dimensional arrays are supported for source generated marshalling.
 
+Jagged arrays (arrays of arrays) are technically unsupported as was the case in the built-in marshalling system, but currently are not explicitly blocked by the source generator since they are not blocked at an architectural level, which was the case in the built-in system.
+
 In the source-generated marshalling, arrays will be allocated on the stack (instead of through [`AllocCoTaskMem`](https://docs.microsoft.com/dotnet/api/system.runtime.interopservices.marshal.alloccotaskmem)) if they are passed by value or by read-only reference if they contain at most 256 bytes of data. The built-in system does not support this optimization for arrays.
 
 ### `LCIDConversion` support

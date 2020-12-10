@@ -75,6 +75,13 @@ namespace Microsoft.Interop
                 }
                 yield break;
             }
+            
+            TypeSyntax spanElementTypeSyntax = GetElementTypeSyntax(info);
+            if (spanElementTypeSyntax is PointerTypeSyntax)
+            {
+                // Pointers cannot be passed to generics, so use IntPtr for this case.
+                spanElementTypeSyntax = ParseTypeName("System.IntPtr");
+            }
 
             switch (context.CurrentStage)
             {
@@ -116,14 +123,15 @@ namespace Microsoft.Interop
                                                 GenericName(TypeNames.System_Span)
                                                 .WithTypeArgumentList(
                                                     TypeArgumentList(
-                                                        SingletonSeparatedList(
-                                                            GetElementTypeSyntax(info)))))
+                                                        SingletonSeparatedList(spanElementTypeSyntax))))
                                             .WithArgumentList(
                                                 ArgumentList(
                                                     SeparatedList(
                                                         new []{
                                                             Argument(
-                                                                IdentifierName(nativeIdentifier)),
+                                                                CastExpression(
+                                                                    PointerType(spanElementTypeSyntax),
+                                                                    IdentifierName(nativeIdentifier))),
                                                             Argument(
                                                                 MemberAccessExpression(
                                                                     SyntaxKind.SimpleMemberAccessExpression,
@@ -156,13 +164,15 @@ namespace Microsoft.Interop
                                                         GenericName(Identifier(TypeNames.System_Span),
                                                             TypeArgumentList(
                                                                 SingletonSeparatedList(
-                                                                    GetElementTypeSyntax(info)))))
+                                                                    spanElementTypeSyntax))))
                                                     .WithArgumentList(
                                                         ArgumentList(
                                                             SeparatedList(
                                                                 new[]{
                                                                     Argument(
-                                                                        IdentifierName(nativeIdentifier)),
+                                                                        CastExpression(
+                                                                            PointerType(spanElementTypeSyntax),
+                                                                            IdentifierName(nativeIdentifier))),
                                                                     Argument(
                                                                         MemberAccessExpression(
                                                                             SyntaxKind.SimpleMemberAccessExpression,

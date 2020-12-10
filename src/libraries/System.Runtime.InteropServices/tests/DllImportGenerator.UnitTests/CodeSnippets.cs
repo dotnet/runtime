@@ -865,5 +865,45 @@ struct Native
     public S ToManaged() => new S { b = i != 0 };
 }
 ";
+
+        public static string ArrayMarshallingWithCustomStructElementWithValueProperty => ArrayParametersAndModifiers("IntStructWrapper") + @"
+[NativeMarshalling(typeof(IntStructWrapperNative))]
+public struct IntStructWrapper
+{
+    public int Value;
+}
+
+public struct IntStructWrapperNative
+{
+    public IntStructWrapperNative(IntStructWrapper managed)
+    {
+        Value = managed.Value;
+    }
+
+    public int Value { get; set; }
+
+    public IntStructWrapper ToManaged() => new IntStructWrapper { Value = Value };
+}
+";
+
+        public static string ArrayMarshallingWithCustomStructElement => ArrayParametersAndModifiers("IntStructWrapper") + @"
+[NativeMarshalling(typeof(IntStructWrapperNative))]
+public struct IntStructWrapper
+{
+    public int Value;
+}
+
+public struct IntStructWrapperNative
+{
+    private int value;
+
+    public IntStructWrapperNative(IntStructWrapper managed)
+    {
+        value = managed.Value;
+    }
+
+    public IntStructWrapper ToManaged() => new IntStructWrapper { Value = value };
+}
+";
     }
 }

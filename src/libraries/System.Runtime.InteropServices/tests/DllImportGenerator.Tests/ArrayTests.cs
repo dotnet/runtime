@@ -1,4 +1,5 @@
-﻿using System;
+﻿using SharedTypes;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.InteropServices;
@@ -37,6 +38,10 @@ namespace DllImportGenerator.IntegrationTests
 
             [GeneratedDllImport(NativeExportsNE_Binary, EntryPoint = "append_int_to_array")]
             public static partial void Append([MarshalAs(UnmanagedType.LPArray, SizeConst = 1, SizeParamIndex = 1)] ref int[] values, int numOriginalValues, int newValue);
+
+            [GeneratedDllImport(NativeExportsNE_Binary, EntryPoint = "and_all_members")]
+            [return:MarshalAs(UnmanagedType.U1)]
+            public static partial bool AndAllMembers(BoolStruct[] pArray, int length);
         }
     }
 
@@ -149,6 +154,36 @@ namespace DllImportGenerator.IntegrationTests
             var newArray = array;
             NativeExportsNE.Arrays.Append(ref newArray, array.Length, newValue);
             Assert.Equal(array.Concat(new [] { newValue }), newArray);
+        }
+
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public void ArrayWithSimpleNonBlittableTypeMarshalling(bool result)
+        {
+            var boolValues = new[]
+            {
+                new BoolStruct
+                {
+                    b1 = true,
+                    b2 = true,
+                    b3 = true,
+                },
+                new BoolStruct
+                {
+                    b1 = true,
+                    b2 = true,
+                    b3 = true,
+                },
+                new BoolStruct
+                {
+                    b1 = true,
+                    b2 = true,
+                    b3 = result,
+                },
+            };
+
+            Assert.Equal(result, NativeExportsNE.Arrays.AndAllMembers(boolValues, boolValues.Length));
         }
 
         private static string ReverseChars(string value)
