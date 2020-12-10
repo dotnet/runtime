@@ -1736,7 +1736,7 @@ public:
 
     inline GenTree* gtEffectiveVal(bool commaOnly = false);
 
-    inline GenTree* gtUnwrapCSE();
+    inline GenTree* gtCommaAssignVal();
 
     // Tunnel through any GT_RET_EXPRs
     inline GenTree* gtRetExprVal(unsigned __int64* pbbFlags = nullptr);
@@ -7157,15 +7157,15 @@ inline GenTree* GenTree::gtEffectiveVal(bool commaOnly /* = false */)
 }
 
 //-------------------------------------------------------------------------
-// gtUnwrapCSE - find value being CSE'd
+// gtCommaAssignVal - find value being assigned to a comma wrapped assigment
 //
 // Returns:
-//    tree representing value being CSE'd, if this tree represents a
-//    comma-wrapped CSE definition and use.
+//    tree representing value being assigned if this tree represents a
+//    comma-wrapped local definition and use.
 //
 //    original tree, of not.
 //
-inline GenTree* GenTree::gtUnwrapCSE()
+inline GenTree* GenTree::gtCommaAssignVal()
 {
     GenTree* result = this;
 
