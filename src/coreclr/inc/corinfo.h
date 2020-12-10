@@ -2083,9 +2083,11 @@ public:
 
     // return the entry point calling convention for any of the following
     // - a P/Invoke
-    // - a method marked with UnmanagedCallersOnly 
+    // - a method marked with UnmanagedCallersOnly
     // - a function pointer with the CORINFO_CALLCONV_UNMANAGED calling convention.
-    virtual CorInfoCallConvExtension getEntryPointCallConv(
+    // May return CorInfoCallConvExtension::Managed when the method or call site doesn't
+    // use an unmanaged calling convention as an entry point.
+    virtual CorInfoCallConvExtension getUnmanagedCallConv(
             CORINFO_METHOD_HANDLE       method,
             CORINFO_SIG_INFO*           callSiteSig
             ) = 0;

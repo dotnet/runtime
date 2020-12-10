@@ -281,7 +281,7 @@ namespace Internal.JitInterface
             var _this = GetThis(thisHandle);
             try
             {
-                return _this.getEntryPointCallConv(method, callSiteSig);
+                return _this.getUnmanagedCallConv(method, callSiteSig);
             }
             catch (Exception ex)
             {

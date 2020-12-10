@@ -144,11 +144,11 @@ bool interceptor_ICJI::isIntrinsicType(
     return original_ICorJitInfo->isIntrinsicType(classHnd);
 }
 
-CorInfoCallConvExtension interceptor_ICJI::getEntryPointCallConv(
+CorInfoCallConvExtension interceptor_ICJI::getUnmanagedCallConv(
           CORINFO_METHOD_HANDLE method,
           CORINFO_SIG_INFO* callSiteSig)
 {
-    return original_ICorJitInfo->getEntryPointCallConv(method, callSiteSig);
+    return original_ICorJitInfo->getUnmanagedCallConv(method, callSiteSig);
 }
 
 bool interceptor_ICJI::pInvokeMarshalingRequired(

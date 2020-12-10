@@ -399,7 +399,7 @@ void ZapInfo::CompileMethod()
         // only do it when we are truely logging
         m_zapper->Info(W("Compiling method %s\n"), m_currentMethodName.GetUnicode());
     }
-    
+
     if (GetCompileInfo()->IsUnmanagedCallersOnlyMethod(m_currentMethodHandle))
     {
         if (m_zapper->m_pOpt->m_verbose)
@@ -2206,7 +2206,7 @@ DWORD FilterNamedIntrinsicMethodAttribs(ZapInfo* pZapInfo, DWORD attribs, CORINF
         }
 #else
         fTreatAsRegularMethodCall |= !fIsPlatformHWIntrinsic && fIsHWIntrinsic;
-#endif 
+#endif
 
         if (fIsPlatformHWIntrinsic)
         {
@@ -4045,9 +4045,9 @@ bool ZapInfo::isIntrinsicType(CORINFO_CLASS_HANDLE classHnd)
     return m_pEEJitInfo->isIntrinsicType(classHnd);
 }
 
-CorInfoCallConvExtension ZapInfo::getEntryPointCallConv(CORINFO_METHOD_HANDLE method, CORINFO_SIG_INFO* sig)
+CorInfoCallConvExtension ZapInfo::getUnmanagedCallConv(CORINFO_METHOD_HANDLE method, CORINFO_SIG_INFO* sig)
 {
-    return m_pEEJitInfo->getEntryPointCallConv(method, sig);
+    return m_pEEJitInfo->getUnmanagedCallConv(method, sig);
 }
 
 bool ZapInfo::pInvokeMarshalingRequired(CORINFO_METHOD_HANDLE method,

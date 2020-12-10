@@ -135,7 +135,7 @@ void Compiler::lvaInitTypeRef()
 
     // Are we returning a struct using a return buffer argument?
     //
-    const bool hasRetBuffArg = impMethodInfo_hasRetBuffArg(info.compMethodInfo);
+    const bool hasRetBuffArg = impMethodInfo_hasRetBuffArg(info.compMethodInfo, info.compCallConv);
 
     // Possibly change the compRetNativeType from TYP_STRUCT to a "primitive" type
     // when we are returning a struct by value and it fits in one register
@@ -503,7 +503,7 @@ void Compiler::lvaInitThisPtr(InitVarDscInfo* varDscInfo)
 void Compiler::lvaInitRetBuffArg(InitVarDscInfo* varDscInfo, bool useFixedRetBufReg)
 {
     LclVarDsc* varDsc        = varDscInfo->varDsc;
-    bool       hasRetBuffArg = impMethodInfo_hasRetBuffArg(info.compMethodInfo);
+    bool       hasRetBuffArg = impMethodInfo_hasRetBuffArg(info.compMethodInfo, info.compCallConv);
 
     // These two should always match
     noway_assert(hasRetBuffArg == varDscInfo->hasRetBufArg);

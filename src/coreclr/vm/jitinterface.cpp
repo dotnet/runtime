@@ -8908,7 +8908,7 @@ bool CEEInfo::resolveVirtualMethodHelper(CORINFO_DEVIRTUALIZATION_INFO * info)
             return false;
         }
 
-        // For generic interface methods we must have context to 
+        // For generic interface methods we must have context to
         // safely devirtualize.
         if (info->context != nullptr)
         {
@@ -9795,9 +9795,9 @@ CorInfoHFAElemType CEEInfo::getHFAType(CORINFO_CLASS_HANDLE hClass)
 
     // return the entry point calling convention for any of the following
     // - a P/Invoke
-    // - a method marked with UnmanagedCallersOnly 
+    // - a method marked with UnmanagedCallersOnly
     // - a function pointer with the CORINFO_CALLCONV_UNMANAGED calling convention.
-CorInfoCallConvExtension CEEInfo::getEntryPointCallConv(CORINFO_METHOD_HANDLE method, CORINFO_SIG_INFO* callSiteSig)
+CorInfoCallConvExtension CEEInfo::getUnmanagedCallConv(CORINFO_METHOD_HANDLE method, CORINFO_SIG_INFO* callSiteSig)
 {
     CONTRACTL {
         THROWS;
@@ -9814,35 +9814,27 @@ CorInfoCallConvExtension CEEInfo::getEntryPointCallConv(CORINFO_METHOD_HANDLE me
     if (method)
     {
         MethodDesc* pMD = GetMethod(method);
+        _ASSERTE(pMD->IsNDirect() || pMD->HasUnmanagedCallersOnlyAttribute());
         if(pMD->IsNDirect())
         {
-            EX_TRY
+            PInvokeStaticSigInfo sigInfo(pMD, PInvokeStaticSigInfo::NO_THROW_ON_ERROR);
+            switch (sigInfo.GetCallConv())
             {
-                PInvokeStaticSigInfo sigInfo(pMD, PInvokeStaticSigInfo::NO_THROW_ON_ERROR);
-
-                switch (sigInfo.GetCallConv()) {
-                    case pmCallConvCdecl:
-                        callConv = CorInfoCallConvExtension::C;
-                        break;
-                    case pmCallConvStdcall:
-                        callConv = CorInfoCallConvExtension::Stdcall;
-                        break;
-                    case pmCallConvThiscall:
-                        callConv = CorInfoCallConvExtension::Thiscall;
-                        break;
-                    default:
-                        callConv = CorInfoCallConvExtension::Managed;
-                        break;
-                }
+                case pmCallConvCdecl:
+                    callConv = CorInfoCallConvExtension::C;
+                    break;
+                case pmCallConvStdcall:
+                    callConv = CorInfoCallConvExtension::Stdcall;
+                    break;
+                case pmCallConvThiscall:
+                    callConv = CorInfoCallConvExtension::Thiscall;
+                    break;
+                default:
+                    callConv = CorInfoCallConvExtension::Managed;
+                    break;
             }
-            EX_CATCH
-            {
-                callConv = CorInfoCallConvExtension::Managed;
-            }
-            EX_END_CATCH(SwallowAllExceptions)
         }
-#if !defined(TARGET_X86)
-        else if (pMD->HasUnmanagedCallersOnlyAttribute())
+        else
         {
 #ifdef CROSSGEN_COMPILE
             _ASSERTE_MSG(false, "UnmanagedCallersOnly methods are not supported in crossgen and should be rejected before getting here.");
@@ -9873,7 +9865,6 @@ CorInfoCallConvExtension CEEInfo::getEntryPointCallConv(CORINFO_METHOD_HANDLE me
             }
 #endif // CROSSGEN_COMPILE
         }
-#endif // !defined(TARGET_X86)
     }
     else if (callSiteSig->callConv == CORINFO_CALLCONV_UNMANAGED)
     {

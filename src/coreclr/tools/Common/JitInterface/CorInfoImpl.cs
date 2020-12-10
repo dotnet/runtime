@@ -699,7 +699,7 @@ namespace Internal.JitInterface
                 typeIfNotPrimitive = null;
                 return CorInfoType.CORINFO_TYPE_PTR;
             }
-            
+
             typeIfNotPrimitive = type;
 
             if (type.IsByRef)
@@ -1060,7 +1060,7 @@ namespace Internal.JitInterface
                 MethodSignatureFlags.UnmanagedCallingConventionStdCall : MethodSignatureFlags.UnmanagedCallingConventionCdecl;
         }
 
-        private CorInfoCallConvExtension getEntryPointCallConv(CORINFO_METHOD_STRUCT_* method, CORINFO_SIG_INFO* sig)
+        private CorInfoCallConvExtension getUnmanagedCallConv(CORINFO_METHOD_STRUCT_* method, CORINFO_SIG_INFO* sig)
         {
             Debug.Assert(method != null || sig != null);
             if (method != null)
@@ -1086,7 +1086,8 @@ namespace Internal.JitInterface
                     return GetUnmanagedCallingConventionFromAttribute(unmanagedCallersOnlyAttribute);
                 }
                 return CorInfoCallConvExtension.Managed;
-            }                // Unmanaged calling convention indicates modopt should be read
+            }
+            // Unmanaged calling convention indicates modopt should be read
             else if (sig->callConv == CorInfoCallConv.CORINFO_CALLCONV_UNMANAGED)
             {
                 if (TryGetUnmanagedCallingConventionFromModOpt((MethodSignature)HandleToObject((IntPtr)sig->pSig), out CorInfoCallConvExtension callConvMaybe))
@@ -1716,7 +1717,7 @@ namespace Internal.JitInterface
             {
                 if (field.IsStatic)
                     continue;
-                
+
                 instanceFields++;
 
                 if (field.FieldType == doubleType)
@@ -3069,7 +3070,7 @@ namespace Internal.JitInterface
                     length = _roData.Length;
                     return ref _roDataRelocs;
                 default:
-                    throw new NotImplementedException("Arbitrary relocs"); 
+                    throw new NotImplementedException("Arbitrary relocs");
             }
         }
 

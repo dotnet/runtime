@@ -3847,7 +3847,7 @@ protected:
 
     CORINFO_CLASS_HANDLE impGetSpecialIntrinsicExactReturnType(CORINFO_METHOD_HANDLE specialIntrinsicHandle);
 
-    bool impMethodInfo_hasRetBuffArg(CORINFO_METHOD_INFO* methInfo);
+    bool impMethodInfo_hasRetBuffArg(CORINFO_METHOD_INFO* methInfo, CorInfoCallConvExtension callConv);
 
     GenTree* impFixupCallStructReturn(GenTreeCall* call, CORINFO_CLASS_HANDLE retClsHnd);
 
@@ -9601,6 +9601,9 @@ public:
 
     // Gets the calling convention the method's entry point should have.
     CorInfoCallConvExtension compMethodInfoGetEntrypointCallConv(CORINFO_METHOD_INFO* mthInfo);
+
+    // Returns true if the method being compiled has a return buffer.
+    bool compHasRetBuffArg();
 
 #ifdef DEBUG
     // Components used by the compiler may write unit test suites, and

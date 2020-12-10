@@ -756,9 +756,9 @@ public:
                                      bool * pMustExpand = NULL);
 
     bool isIntrinsicType(CORINFO_CLASS_HANDLE classHnd);
-    
-    CorInfoCallConvExtension getEntryPointCallConv(CORINFO_METHOD_HANDLE method, CORINFO_SIG_INFO* callSiteSig);
-    
+
+    CorInfoCallConvExtension getUnmanagedCallConv(CORINFO_METHOD_HANDLE method, CORINFO_SIG_INFO* callSiteSig);
+
     bool pInvokeMarshalingRequired(CORINFO_METHOD_HANDLE method, CORINFO_SIG_INFO* callSiteSig);
 
     // Generate a cookie based on the signature that would needs to be passed
@@ -917,7 +917,7 @@ public:
     bool convertPInvokeCalliToCall(CORINFO_RESOLVED_TOKEN * pResolvedToken,
                                    bool fMustConvert);
 
-    bool notifyInstructionSetUsage(CORINFO_InstructionSet instructionSet, 
+    bool notifyInstructionSetUsage(CORINFO_InstructionSet instructionSet,
                                    bool supportEnabled);
 
     void getFunctionEntryPoint(CORINFO_METHOD_HANDLE   ftn,                 /* IN  */
@@ -1040,7 +1040,7 @@ public:
     CORINFO_CLASS_HANDLE getLikelyClass(
             CORINFO_METHOD_HANDLE ftnHnd,
             CORINFO_CLASS_HANDLE  baseHnd,
-            UINT32                ilOffset,            
+            UINT32                ilOffset,
             UINT32 *              pLikelihood,
             UINT32 *              pNumberOfClasses
             );

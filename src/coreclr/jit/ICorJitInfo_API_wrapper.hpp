@@ -191,13 +191,13 @@ bool WrapICorJitInfo::isIntrinsicType(
     return temp;
 }
 
-CorInfoCallConvExtension WrapICorJitInfo::getEntryPointCallConv(
+CorInfoCallConvExtension WrapICorJitInfo::getUnmanagedCallConv(
           CORINFO_METHOD_HANDLE method,
           CORINFO_SIG_INFO* callSiteSig)
 {
-    API_ENTER(getEntryPointCallConv);
-    CorInfoCallConvExtension temp = wrapHnd->getEntryPointCallConv(method, callSiteSig);
-    API_LEAVE(getEntryPointCallConv);
+    API_ENTER(getUnmanagedCallConv);
+    CorInfoCallConvExtension temp = wrapHnd->getUnmanagedCallConv(method, callSiteSig);
+    API_LEAVE(getUnmanagedCallConv);
     return temp;
 }
 

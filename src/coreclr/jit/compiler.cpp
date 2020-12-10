@@ -2064,7 +2064,7 @@ CorInfoCallConvExtension Compiler::compMethodInfoGetEntrypointCallConv(CORINFO_M
             break;
         case CORINFO_CALLCONV_VARARG:
         {
-            CorInfoCallConvExtension callConv = info.compCompHnd->getEntryPointCallConv(mthInfo->ftn, nullptr);
+            CorInfoCallConvExtension callConv = info.compCompHnd->getUnmanagedCallConv(mthInfo->ftn, nullptr);
             if (callConv != CorInfoCallConvExtension::Managed)
             {
                 callConv = CorInfoCallConvExtension::C;
@@ -2078,9 +2078,12 @@ CorInfoCallConvExtension Compiler::compMethodInfoGetEntrypointCallConv(CORINFO_M
             return CorInfoCallConvExtension::Stdcall;
         case CORINFO_CALLCONV_THISCALL:
             return CorInfoCallConvExtension::Thiscall;
+        // UNMANAGED calling convention means we need to read the calling convention
+        // from the signature, not from the method's metadata.
         case CORINFO_CALLCONV_UNMANAGED:
+            return info.compCompHnd->getUnmanagedCallConv(nullptr, &mthInfo->args);
         case CORINFO_CALLCONV_DEFAULT:
-            return info.compCompHnd->getEntryPointCallConv(mthInfo->ftn, nullptr);
+            return info.compCompHnd->getUnmanagedCallConv(mthInfo->ftn, nullptr);
         default:
             BADCODE("bad calling convention");
     }
@@ -6123,7 +6126,14 @@ int Compiler::compCompileHelper(CORINFO_MODULE_HANDLE classPtr,
 
     info.compHasNextCallRetAddr = false;
 
-    info.compCallConv = compMethodInfoGetEntrypointCallConv(methodInfo);
+    if (opts.IsReversePInvoke())
+    {
+        info.compCallConv = compMethodInfoGetEntrypointCallConv(methodInfo);
+    }
+    else
+    {
+        info.compCallConv = CorInfoCallConvExtension::Managed;
+    }
 
     switch (methodInfo->args.getCallConv())
     {

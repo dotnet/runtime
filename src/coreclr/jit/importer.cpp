@@ -7045,11 +7045,11 @@ void Compiler::impCheckForPInvokeCall(
             return;
         }
 
-        unmanagedCallConv = info.compCompHnd->getEntryPointCallConv(methHnd, nullptr);
+        unmanagedCallConv = info.compCompHnd->getUnmanagedCallConv(methHnd, nullptr);
     }
     else
     {
-        unmanagedCallConv = info.compCompHnd->getEntryPointCallConv(nullptr, sig);
+        unmanagedCallConv = info.compCompHnd->getUnmanagedCallConv(nullptr, sig);
 
         assert(!call->gtCallCookie);
     }
@@ -9243,7 +9243,7 @@ DONE_CALL:
 #pragma warning(pop)
 #endif
 
-bool Compiler::impMethodInfo_hasRetBuffArg(CORINFO_METHOD_INFO* methInfo)
+bool Compiler::impMethodInfo_hasRetBuffArg(CORINFO_METHOD_INFO* methInfo, CorInfoCallConvExtension callConv)
 {
     CorInfoType corType = methInfo->args.retType;
 
@@ -9253,7 +9253,7 @@ bool Compiler::impMethodInfo_hasRetBuffArg(CORINFO_METHOD_INFO* methInfo)
         structPassingKind howToReturnStruct = SPK_Unknown;
 
         var_types returnType =
-            getReturnTypeForStruct(methInfo->args.retTypeClass, compMethodInfoGetEntrypointCallConv(methInfo),
+            getReturnTypeForStruct(methInfo->args.retTypeClass, callConv,
                                    &howToReturnStruct);
 
         if (howToReturnStruct == SPK_ByReference)
@@ -19455,7 +19455,8 @@ void Compiler::impInlineInitVars(InlineInfo* pInlineInfo)
     InlLclVarInfo*       lclVarInfo   = pInlineInfo->lclVarInfo;
     InlineResult*        inlineResult = pInlineInfo->inlineResult;
 
-    const bool hasRetBuffArg = impMethodInfo_hasRetBuffArg(methInfo);
+    // Inlined methods always use the managed calling convention
+    const bool hasRetBuffArg = impMethodInfo_hasRetBuffArg(methInfo, CorInfoCallConvExtension::Managed);
 
     /* init the argument stuct */
 
