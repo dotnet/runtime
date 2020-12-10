@@ -3,6 +3,7 @@
 
 
 using System.Threading;
+using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
 
 namespace System.Net.Sockets.Tests
@@ -205,6 +206,32 @@ namespace System.Net.Sockets.Tests
                     }
                 }
             }
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void DisableIpv6(bool appContextOrEnvironmentVariable)
+        {
+            RemoteInvokeOptions options = null;
+            if (!appContextOrEnvironmentVariable)
+            {
+                options = new RemoteInvokeOptions();
+                options.StartInfo.EnvironmentVariables.Add("DOTNET_SYSTEM_NET_SOCKETS_DISABLEIPV6", "1");
+            }
+
+            RemoteExecutor.Invoke(static appContextOrEnvironmentVariableInner =>
+            {
+                if (bool.Parse(appContextOrEnvironmentVariableInner))
+                {
+                    AppContext.SetSwitch("System.Net.Sockets.DisableIPv6", true);
+                }
+
+                Assert.False(Socket.OSSupportsIPv6);
+
+                using Socket socket = new Socket(SocketType.Stream, ProtocolType.Tcp);
+                Assert.Equal(AddressFamily.InterNetwork, socket.AddressFamily);
+            }, appContextOrEnvironmentVariable.ToString(), options).Dispose();
         }
     }
 }
