@@ -38,11 +38,8 @@ namespace InteropLib
         // Destroy the supplied wrapper
         void DestroyWrapperForObject(_In_ void* wrapper) noexcept;
 
-        // Check if a wrapper is active.
-        HRESULT IsActiveWrapper(_In_ IUnknown* wrapper) noexcept;
-
-        // Reactivate the supplied wrapper.
-        HRESULT ReactivateWrapper(_In_ IUnknown* wrapper, _In_ InteropLib::OBJECTHANDLE handle) noexcept;
+        // Check if a wrapper is considered a GC root.
+        HRESULT IsWrapperRooted(_In_ IUnknown* wrapper) noexcept;
 
         // Get the object for the supplied wrapper
         HRESULT GetObjectForWrapper(_In_ IUnknown* wrapper, _Outptr_result_maybenull_ OBJECTHANDLE* object) noexcept;
@@ -58,6 +55,9 @@ namespace InteropLib
             // See https://docs.microsoft.com/windows/win32/api/windows.ui.xaml.hosting.referencetracker/
             // for details.
             bool FromTrackerRuntime;
+
+            // The supplied external object is wrapping a managed object.
+            bool ManagedObjectWrapper;
         };
 
         // See CreateObjectFlags in ComWrappers.cs
@@ -66,13 +66,21 @@ namespace InteropLib
             CreateObjectFlags_None = 0,
             CreateObjectFlags_TrackerObject = 1,
             CreateObjectFlags_UniqueInstance = 2,
+            CreateObjectFlags_Aggregated = 4,
         };
+
+        // Get the true identity for the supplied IUnknown.
+        HRESULT GetIdentityForCreateWrapperForExternal(
+            _In_ IUnknown* external,
+            _In_ enum CreateObjectFlags flags,
+            _Outptr_ IUnknown** identity) noexcept;
 
         // Allocate a wrapper context for an external object.
         // The runtime supplies the external object, flags, and a memory
         // request in order to bring the object into the runtime.
         HRESULT CreateWrapperForExternal(
             _In_ IUnknown* external,
+            _In_opt_ IUnknown* inner,
             _In_ enum CreateObjectFlags flags,
             _In_ size_t contextSize,
             _Out_ ExternalWrapperResult* result) noexcept;

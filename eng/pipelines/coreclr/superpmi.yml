@@ -3,7 +3,7 @@
 # Trigger this job if the JIT-EE GUID changes, which invalidates previous SuperPMI
 # collections.
 trigger:
-  batch: true
+  batch: false
   branches:
     include:
     - master

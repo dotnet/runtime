@@ -4,6 +4,7 @@
                             $([MSBuild]::VersionGreaterThanOrEquals($(TargetFrameworkVersion), '$(NETCoreAppCurrentVersion)'))">
     <_UseLocalTargetingRuntimePack>true</_UseLocalTargetingRuntimePack>
     <EnableTargetingPackDownload>false</EnableTargetingPackDownload>
+    <GenerateErrorForMissingTargetingPacks>false</GenerateErrorForMissingTargetingPacks>
   </PropertyGroup>
 
   <!-- .NETCoreApp 2.x DisableImplicitAssemblyReferences support. -->
@@ -36,7 +37,8 @@
           Condition="'$(DisableImplicitAssemblyReferences)' == 'true' and
                      '$(TargetFrameworkIdentifier)' == '.NETCoreApp' and
                      $([MSBuild]::VersionGreaterThanOrEquals($(TargetFrameworkVersion), '3.0'))">
-    <PropertyGroup>
+    <!-- Point MicrosoftNetCoreAppRefPackRefDir to the acquired targeting pack to use it later for AssemblySearchPaths resolution. -->
+    <PropertyGroup Condition="'$(_UseLocalTargetingRuntimePack)' != 'true'">
       <_NetCoreAppTargetFrameworkIdentifier Condition="$([MSBuild]::VersionLessThan($(TargetFrameworkVersion), '5.0'))">netcoreapp</_NetCoreAppTargetFrameworkIdentifier>
       <_NetCoreAppTargetFrameworkIdentifier Condition="$([MSBuild]::VersionGreaterThanOrEquals($(TargetFrameworkVersion), '5.0'))">net</_NetCoreAppTargetFrameworkIdentifier>
       <MicrosoftNetCoreAppRefPackRefDir>%(ResolvedFrameworkReference.TargetingPackPath)\ref\$(_NetCoreAppTargetFrameworkIdentifier)$(TargetFrameworkVersion.TrimStart('v'))\</MicrosoftNetCoreAppRefPackRefDir>

@@ -296,7 +296,8 @@ HRESULT TrackerObjectManager::AfterWrapperCreated(_In_ IReferenceTracker* obj)
     // Send out AddRefFromTrackerSource callbacks to notify tracker runtime we've done AddRef()
     // for certain interfaces. We should do this *after* we made a AddRef() because we should never
     // be in a state where report refs > actual refs
-    RETURN_IF_FAILED(obj->AddRefFromTrackerSource());
+    RETURN_IF_FAILED(obj->AddRefFromTrackerSource()); // IUnknown
+    RETURN_IF_FAILED(obj->AddRefFromTrackerSource()); // IReferenceTracker
 
     return S_OK;
 }
