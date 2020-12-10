@@ -1,4 +1,4 @@
-﻿using Mono.Linker.Tests.Cases.Expectations.Assertions;
+using Mono.Linker.Tests.Cases.Expectations.Assertions;
 using Mono.Linker.Tests.Cases.Expectations.Metadata;
 using Mono.Linker.Tests.Cases.TestFramework.Dependencies;
 
@@ -6,13 +6,13 @@ namespace Mono.Linker.Tests.Cases.TestFramework
 {
 	[SetupCompileBefore ("library.dll",
 		new[] { "Dependencies/CanCompileReferencesWithResources_Lib1.cs" },
-		resources: new[] { "Dependencies/CanCompileReferencesWithResources_Lib1.txt" },
+		resources: new object[] { "Dependencies/CanCompileReferencesWithResources_Lib1.txt" },
 		compilerToUse: "csc")]
 
 	// Compile the same assembly again with another resource to get coverage on SetupCompileAfter
 	[SetupCompileAfter ("library.dll",
 		new[] { "Dependencies/CanCompileReferencesWithResources_Lib1.cs" },
-		resources: new[] { "Dependencies/CanCompileReferencesWithResources_Lib1.txt", "Dependencies/CanCompileReferencesWithResources_Lib1.log" },
+		resources: new object[] { "Dependencies/CanCompileReferencesWithResources_Lib1.txt", "Dependencies/CanCompileReferencesWithResources_Lib1.log" },
 		compilerToUse: "csc")]
 
 	[KeptResourceInAssembly ("library.dll", "CanCompileReferencesWithResources_Lib1.txt")]

@@ -1,14 +1,15 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Text;
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
 using Mono.Linker.Tests.Cases.Expectations.Metadata;
+using Mono.Linker.Tests.Cases.LinkAttributes.Dependencies;
 
 namespace Mono.Linker.Tests.Cases.LinkAttributes
 {
 	[SetupLinkAttributesFile ("LinkAttributeErrorCases.xml")]
 	[IgnoreLinkAttributes (false)]
 	[SetupLinkerArgument ("--skip-unresolved", "true")]
+	[SetupCompileBefore ("library.dll", new string[] { "Dependencies/EmbeddedAttributeErrorCases.cs" },
+		resources: new object[] { new string[] { "Dependencies/EmbeddedAttributeErrorCases.xml", "ILLink.LinkAttributes.xml" } })]
 
 	[ExpectedWarning ("IL2007", "NonExistentAssembly2", FileName = "LinkAttributeErrorCases.xml")]
 	[ExpectedWarning ("IL2030", "NonExistentAssembly1", FileName = "LinkAttributeErrorCases.xml")]
@@ -24,11 +25,13 @@ namespace Mono.Linker.Tests.Cases.LinkAttributes
 	[ExpectedWarning ("IL2051", FileName = "LinkAttributeErrorCases.xml")]
 	[ExpectedWarning ("IL2052", "NonExistentPropertyName", FileName = "LinkAttributeErrorCases.xml")]
 	[ExpectedWarning ("IL2053", "StringValue", "IntProperty", FileName = "LinkAttributeErrorCases.xml")]
+	[ExpectedWarning ("IL2100", FileName = "ILLink.LinkAttributes.xml")]
+	[ExpectedWarning ("IL2101", "library", "test", FileName = "ILLink.LinkAttributes.xml")]
 	class LinkAttributeErrorCases
 	{
 		public static void Main ()
 		{
-
+			var _ = new EmbeddedAttributeErrorCases ();
 		}
 
 		public enum AttributeEnum
@@ -72,5 +75,9 @@ namespace Mono.Linker.Tests.Cases.LinkAttributes
 		public Type GetTypeMethod () => null;
 
 		public void MethodWithParameter (int methodParameter) { }
+
+		public class ReferencedFromOtherAssembly
+		{
+		}
 	}
 }

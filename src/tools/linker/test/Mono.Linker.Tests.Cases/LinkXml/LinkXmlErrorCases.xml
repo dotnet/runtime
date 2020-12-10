@@ -43,4 +43,7 @@
   </assembly>
 
   <assembly fullname="NonExistentAssembly"/>
+
+  <!-- IL2100 -->
+  <assembly fullname="*" />
 </linker>

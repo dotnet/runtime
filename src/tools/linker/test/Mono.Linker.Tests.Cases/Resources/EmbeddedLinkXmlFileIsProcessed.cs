@@ -19,5 +19,11 @@ namespace Mono.Linker.Tests.Cases.Resources
 		public class Unused
 		{
 		}
+
+		[Kept]
+		[KeptMember (".ctor()")]
+		public class Unused2
+		{
+		}
 	}
 }

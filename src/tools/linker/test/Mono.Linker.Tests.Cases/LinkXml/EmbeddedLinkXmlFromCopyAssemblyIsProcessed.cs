@@ -8,7 +8,7 @@ namespace Mono.Linker.Tests.Cases.LinkXml
 		new[] { "Dependencies/EmbeddedLinkXmlFromCopyAssemblyIsProcessed/OtherLibrary.cs" })]
 	[SetupCompileBefore ("CopyLibrary.dll",
 		new[] { "Dependencies/EmbeddedLinkXmlFromCopyAssemblyIsProcessed/CopyLibrary.cs" },
-		resources: new[] { "Dependencies/EmbeddedLinkXmlFromCopyAssemblyIsProcessed/CopyLibrary.xml" })]
+		resources: new object[] { "Dependencies/EmbeddedLinkXmlFromCopyAssemblyIsProcessed/CopyLibrary.xml" })]
 	[IgnoreDescriptors (false)]
 	[SetupLinkerAction ("copy", "CopyLibrary")]
 

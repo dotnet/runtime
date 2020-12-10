@@ -1,0 +1,10 @@
+<linker>
+  <!-- IL2100 -->
+  <assembly fullname="*" />
+  <!-- IL2101 -->
+  <assembly fullname="test">
+    <type fullname="Mono.Linker.Tests.Cases.LinkAttributes.LinkAttributeErrorCases/ReferencedFromOtherAssembly">
+      <attribute fullname="Mono.Linker.Tests.Cases.LinkAttributes.LinkAttributeErrorCases/FirstAttribute" />
+    </type>
+  </assembly>
+</linker>

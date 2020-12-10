@@ -11,6 +11,7 @@ namespace Mono.Linker.Tests.Cases.Substitutions
 		public static void Main ()
 		{
 			ConvertToThrowMethod ();
+			ConvertToThrowMethod2 ();
 		}
 
 		[Kept]
@@ -20,6 +21,16 @@ namespace Mono.Linker.Tests.Cases.Substitutions
 			"throw"
 		})]
 		public static void ConvertToThrowMethod ()
+		{
+		}
+
+		[Kept]
+		[ExpectedInstructionSequence (new[] {
+			"ldstr",
+			"newobj",
+			"throw"
+		})]
+		public static void ConvertToThrowMethod2 ()
 		{
 		}
 	}
