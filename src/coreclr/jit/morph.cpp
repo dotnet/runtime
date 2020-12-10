@@ -7882,8 +7882,8 @@ GenTree* Compiler::fgMorphTailCallViaHelpers(GenTreeCall* call, CORINFO_TAILCALL
 
         // JIT will need one or two copies of "this" in the following cases:
         //   1) the call needs null check;
-        //   2) StoreArgs stub needs the target function pointer address and the call is virtual,
-        //      the stub needs "this" in order to evalute the target and.
+        //   2) StoreArgs stub needs the target function pointer address and if the call is virtual
+        //      the stub also needs "this" in order to evalute the target.
 
         const bool callNeedsNullCheck = call->NeedsNullCheck();
         const bool stubNeedsThisPtr   = stubNeedsTargetFnPtr && virtualCall;
