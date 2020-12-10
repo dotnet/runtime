@@ -15487,7 +15487,7 @@ GenTree* Compiler::gtNewTempAssign(
         if (!ok)
         {
             gtDispTree(val);
-            assert(!"Incompatible types for gtNewTempAssign");
+            noway_assert(!"Incompatible types for gtNewTempAssign");
         }
     }
 #endif
