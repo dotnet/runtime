@@ -97,12 +97,13 @@ namespace Generators
             }
         }
 
-        private class EventSourceClass
+        // Can change to terse record syntax as isn't supported by netstandard 2.0
+        private record EventSourceClass
         {
-            public string Namespace = string.Empty;
-            public string ClassName = string.Empty;
-            public string SourceName = string.Empty;
-            public Guid Guid = Guid.Empty;
+            public string Namespace { get; set; } = string.Empty;
+            public string ClassName { get; set; } = string.Empty;
+            public string SourceName { get; set; } = string.Empty;
+            public Guid Guid { get; set; } = Guid.Empty;
         }
     }
 }
