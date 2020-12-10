@@ -27,6 +27,8 @@
 
   <UsingTask TaskName="WasmAppBuilder" 
              AssemblyFile="$(WasmAppBuilderTasksAssemblyPath)"/>
+  <UsingTask TaskName="WasmLoadAssembliesAndReferences"
+             AssemblyFile="$(WasmAppBuilderTasksAssemblyPath)"/>
 
   <Target Name="BuildApp" DependsOnTargets="RebuildWasmAppBuilder;Build">
     <ItemGroup>
@@ -34,13 +36,21 @@
       <AssemblySearchPaths Include="$(MicrosoftNetCoreAppRuntimePackDir)native"/>
       <AssemblySearchPaths Include="$(MicrosoftNetCoreAppRuntimePackDir)lib\$(NetCoreAppCurrent)"/>
     </ItemGroup>
+
+    <WasmLoadAssembliesAndReferences
+      Assemblies="bin\WasmSample.dll;$(MicrosoftNetCoreAppRuntimePackDir)lib\$(NetCoreAppCurrent)\System.Private.Runtime.InteropServices.JavaScript.dll"
+      AssemblySearchPaths="@(AssemblySearchPaths)">
+      <Output TaskParameter="ReferencedAssemblies" ItemName="ReferencedAssemblies" />
+    </WasmLoadAssembliesAndReferences>
+
     <WasmAppBuilder
       AppDir="$(AppDir)"
-      ExtraAssemblies="$(MicrosoftNetCoreAppRuntimePackDir)lib\$(NetCoreAppCurrent)\System.Private.Runtime.InteropServices.JavaScript.dll"
       MicrosoftNetCoreAppRuntimePackDir="$(MicrosoftNetCoreAppRuntimePackDir)"
       MainAssembly="bin\WasmSample.dll"
       MainJS="runtime.js"
-      AssemblySearchPaths="@(AssemblySearchPaths)"/>
+      Assemblies="@(ReferencedAssemblies)">
+      <Output TaskParameter="FileWrites" ItemName="FileWrites" />
+    </WasmAppBuilder>
     <Exec Command="chmod a+x $(AppDir)/run-v8.sh" />
     <Copy SourceFiles="bin\index.html;bin\server.py" DestinationFolder="$(AppDir)" />
   </Target>
