@@ -7888,6 +7888,11 @@ GenTree* Compiler::fgMorphTailCallViaHelpers(GenTreeCall* call, CORINFO_TAILCALL
         const bool callNeedsNullCheck = call->NeedsNullCheck();
         const bool stubNeedsThisPtr   = stubNeedsTargetFnPtr && virtualCall;
 
+        // TODO-Review: The following transformation is implemented under assumption that
+        // both conditions can be true. However, I could not construct such example
+        // where a virtual tail call would require null check. In case, if the conditions
+        // are mutually exclusive the following could be simplified.
+
         if (callNeedsNullCheck || stubNeedsThisPtr)
         {
             // Clone "this" if "this" has no side effects.
