@@ -34,7 +34,11 @@
     <Compile Include="SendPacketsElementTest.cs" />
     <Compile Include="SendFile.cs" />
     <Compile Include="OSSupport.cs" />
-    <Compile Include="SendReceive.cs" />
+    <Compile Include="SendReceive\SendReceive.cs" />
+    <Compile Include="SendReceive\SendReceiveMisc.cs" />
+    <Compile Include="SendReceive\SendReceiveNonParallel.cs" />
+    <Compile Include="SendReceive\SendReceiveTcpClient.cs" />
+    <Compile Include="SendReceive\SendReceiveUdpClient.cs" />
     <Compile Include="SendTo.cs" />
     <Compile Include="SocketDuplicationTests.cs" />
     <Compile Include="SocketTestHelper.cs" />

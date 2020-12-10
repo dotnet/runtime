@@ -818,7 +818,6 @@ namespace System.Data.OleDb
             RuntimeHelpers.PrepareConstrainedRegions();
             try
             {
-                // TODO-NULLABLE: Code below seems to assume that bindings will always be non-null
                 if (null != bindings)
                 { // parameters may be suppressed
                     rowbinding = bindings.RowBinding();

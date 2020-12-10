@@ -72,7 +72,6 @@
       <!-- Collate CoreLib suppression XML files not bin-placed in earlier per-library linker run. CoreLib doesn't use bin-place logic. -->
       <_SuppressionsXmls Include="$(CoreLibSharedILLinkSuppressionsFilesPrefix).xml" />
       <_SuppressionsXmls Condition="'$(TargetOS)' != 'windows'" Include="$(CoreLibSharedILLinkSuppressionsFilesPrefix).NonWindows.xml" />
-      <_SuppressionsXmls Condition="'$(RuntimeFlavor)' == 'Mono'" Include="$(MonoProjectRoot)netcore\System.Private.CoreLib\$(ProjectILLinkSuppressionsFile).xml" />
 
       <!-- netstandard2.1-only System.ComponentModel.Annotations XML file is not bin-placed during -allConfigurations builds
            due to the linker not being run on the assembly (eng\illink.targets). Manually include it. -->

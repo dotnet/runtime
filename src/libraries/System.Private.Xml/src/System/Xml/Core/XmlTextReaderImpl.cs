@@ -210,7 +210,7 @@ namespace System.Xml
         private int _parsingStatesStackTop = -1;
 
         // current node base uri and encoding
-        private string? _reportedBaseUri;
+        private string _reportedBaseUri = string.Empty;
         private Encoding? _reportedEncoding;
 
         // DTD
@@ -712,7 +712,7 @@ namespace System.Xml
                 }
             }
 
-            _reportedBaseUri = baseUriStr;
+            _reportedBaseUri = baseUriStr ?? string.Empty;
             _closeInput = closeInput;
 
             _laterInitParam = new LaterInitParam();
@@ -764,7 +764,7 @@ namespace System.Xml
 
         // Initializes a new instance of the XmlTextReaderImpl class with the specified arguments.
         // This constructor is used when creating XmlTextReaderImpl via XmlReader.Create
-        internal XmlTextReaderImpl(TextReader input, XmlReaderSettings settings, string? baseUriStr, XmlParserContext? context)
+        internal XmlTextReaderImpl(TextReader input, XmlReaderSettings settings, string baseUriStr, XmlParserContext? context)
             : this(settings.GetXmlResolver(), settings, context)
         {
             ConvertAbsoluteUnixPathToAbsoluteUri(ref baseUriStr, settings.GetXmlResolver());
@@ -941,7 +941,7 @@ namespace System.Xml
         }
 
         // Returns the base URI of the current node.
-        public override string? BaseURI
+        public override string BaseURI
         {
             get
             {
@@ -9912,6 +9912,6 @@ namespace System.Xml
             Buffer.BlockCopy(src, srcOffset, dst, dstOffset, count);
         }
 
-        static partial void ConvertAbsoluteUnixPathToAbsoluteUri(ref string? url, XmlResolver? resolver);
+        static partial void ConvertAbsoluteUnixPathToAbsoluteUri([NotNullIfNotNull("url")] ref string? url, XmlResolver? resolver);
     }
 }

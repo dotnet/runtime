@@ -318,7 +318,7 @@ namespace System.Xml
         public bool PreserveWhitespace { get { throw null; } set { } }
         public override System.Xml.Schema.IXmlSchemaInfo SchemaInfo { get { throw null; } }
         public System.Xml.Schema.XmlSchemaSet Schemas { get { throw null; } set { } }
-        public virtual System.Xml.XmlResolver XmlResolver { set { } }
+        public virtual System.Xml.XmlResolver? XmlResolver { set { } }
         public event System.Xml.XmlNodeChangedEventHandler NodeChanged { add { } remove { } }
         public event System.Xml.XmlNodeChangedEventHandler NodeChanging { add { } remove { } }
         public event System.Xml.XmlNodeChangedEventHandler NodeInserted { add { } remove { } }
@@ -773,7 +773,7 @@ namespace System.Xml
     {
         protected XmlReader() { }
         public abstract int AttributeCount { get; }
-        public abstract string? BaseURI { get; }
+        public abstract string BaseURI { get; }
         public virtual bool CanReadBinaryContent { get { throw null; } }
         public virtual bool CanReadValueChunk { get { throw null; } }
         public virtual bool CanResolveEntity { get { throw null; } }
@@ -1012,7 +1012,7 @@ namespace System.Xml
         public XmlTextReader(string xmlFragment, System.Xml.XmlNodeType fragType, System.Xml.XmlParserContext? context) { }
         protected XmlTextReader(System.Xml.XmlNameTable nt) { }
         public override int AttributeCount { get { throw null; } }
-        public override string? BaseURI { get { throw null; } }
+        public override string BaseURI { get { throw null; } }
         public override bool CanReadBinaryContent { get { throw null; } }
         public override bool CanReadValueChunk { get { throw null; } }
         public override bool CanResolveEntity { get { throw null; } }
@@ -1138,7 +1138,9 @@ namespace System.Xml
     {
         public XmlUrlResolver() { }
         public System.Net.Cache.RequestCachePolicy CachePolicy { set { } }
+        [System.Runtime.Versioning.UnsupportedOSPlatform("browser")]
         public override System.Net.ICredentials? Credentials { set { } }
+        [System.Runtime.Versioning.UnsupportedOSPlatform("browser")]
         public System.Net.IWebProxy? Proxy { set { } }
         public override object? GetEntity(System.Uri absoluteUri, string? role, System.Type? ofObjectToReturn) { throw null; }
         public override System.Threading.Tasks.Task<object> GetEntityAsync(System.Uri absoluteUri, string? role, System.Type? ofObjectToReturn) { throw null; }
@@ -1151,7 +1153,7 @@ namespace System.Xml
         public XmlValidatingReader(string xmlFragment, System.Xml.XmlNodeType fragType, System.Xml.XmlParserContext context) { }
         public XmlValidatingReader(System.Xml.XmlReader reader) { }
         public override int AttributeCount { get { throw null; } }
-        public override string? BaseURI { get { throw null; } }
+        public override string BaseURI { get { throw null; } }
         public override bool CanReadBinaryContent { get { throw null; } }
         public override bool CanResolveEntity { get { throw null; } }
         public override int Depth { get { throw null; } }

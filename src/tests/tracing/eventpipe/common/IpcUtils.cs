@@ -67,6 +67,9 @@ namespace Tracing.Tests.Common
 
                 process.StartInfo.UseShellExecute = false;
                 process.StartInfo.CreateNoWindow = true;
+                process.StartInfo.Environment.Add("COMPlus_StressLog",   "1");    // Turn on stresslog for subprocess
+                process.StartInfo.Environment.Add("COMPlus_LogFacility", "1000"); // Diagnostics Server Log Facility
+                process.StartInfo.Environment.Add("COMPlus_LogLevel",    "10");   // Log everything
                 foreach ((string key, string value) in environment)
                     process.StartInfo.Environment.Add(key, value);
                 process.StartInfo.FileName = Process.GetCurrentProcess().MainModule.FileName;

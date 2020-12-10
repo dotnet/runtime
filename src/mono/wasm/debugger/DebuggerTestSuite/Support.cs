@@ -8,6 +8,7 @@ using System.Linq;
 using System.Net.WebSockets;
 using System.Reflection;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
@@ -56,9 +57,11 @@ namespace DebuggerTests
                 tcs.SetException(new ArgumentException(exception.ToString()));
         }
 
+        // https://console.spec.whatwg.org/#formatting-specifiers
+        static Regex _consoleArgsRegex = new(@"(%[sdifoOc])", RegexOptions.Compiled);
+
         async Task OnMessage(string method, JObject args, CancellationToken token)
         {
-            //System.Console.WriteLine("OnMessage " + method + args);
             switch (method)
             {
                 case "Debugger.paused":
@@ -68,7 +71,31 @@ namespace DebuggerTests
                     NotifyOf(READY, args);
                     break;
                 case "Runtime.consoleAPICalled":
-                    Console.WriteLine("CWL: {0}", args?["args"]?[0]?["value"]);
+                    String type = args?["type"]?.Value<string>();
+                    List<string> consoleArgs = new();
+                    foreach (var arg in args?["args"])
+                    {
+                        consoleArgs.Add(arg?["value"].ToString());
+                    }
+
+                    int position = 1;
+                    string first = consoleArgs[0];
+                    string output = _consoleArgsRegex.Replace(first, (_) => $"{consoleArgs[position++]}");
+                    if (position == 1)
+                    {
+                        // first arg wasn't a format string so concat things together
+                        // with a space instead.
+                        StringBuilder builder = new StringBuilder(first);
+                        for (position = 1; position < consoleArgs.Count(); position++)
+                        {
+                            builder.Append(" ");
+                            builder.Append(consoleArgs[position]);
+                        }
+                        builder.Append("\n");
+                        output = builder.ToString();
+                    }
+                    Console.Write("console.{0}: {1}", type, output);
+
                     break;
             }
             if (eventListeners.ContainsKey(method))

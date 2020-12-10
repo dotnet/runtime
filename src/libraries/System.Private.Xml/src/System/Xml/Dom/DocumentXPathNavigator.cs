@@ -180,10 +180,6 @@ namespace System.Xml
                         return ValueText;
                     default:
                         Debug.Assert(_source.Value != null);
-                        // TODO-NULLABLE: Consider switching this.Value to nullable even if that implies switching it in the base type.
-                        // Also consider the following:
-                        //   * this.SetValue() does not accept null.
-                        //   * _source.Value is nullable.
                         return _source.Value;
                 }
             }
@@ -223,8 +219,7 @@ namespace System.Xml
                            && nextSibling.IsText);
                     value = builder.ToString();
                 }
-                // TODO-NULLABLE: Consider making this nullable given that _source.Value is nullable,
-                // OR we could change this getter to return string.Empty if _source.Value == null.
+
                 Debug.Assert(value != null);
                 return value;
             }

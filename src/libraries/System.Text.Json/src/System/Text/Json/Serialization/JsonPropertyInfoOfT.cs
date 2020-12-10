@@ -243,7 +243,7 @@ namespace System.Text.Json
 
                 if (!IgnoreDefaultValuesOnRead)
                 {
-                    T value = default;
+                    T? value = default;
                     Set!(obj, value!);
                 }
 
@@ -257,7 +257,7 @@ namespace System.Text.Json
                 if (!isNullToken || !IgnoreDefaultValuesOnRead || !PropertyTypeCanBeNull)
                 {
                     // Optimize for internal converters by avoiding the extra call to TryRead.
-                    T fastValue = Converter.Read(ref reader, RuntimePropertyType!, Options);
+                    T? fastValue = Converter.Read(ref reader, RuntimePropertyType!, Options);
                     Set!(obj, fastValue!);
                 }
 
@@ -268,7 +268,7 @@ namespace System.Text.Json
                 success = true;
                 if (!isNullToken || !IgnoreDefaultValuesOnRead || !PropertyTypeCanBeNull || state.IsContinuation)
                 {
-                    success = Converter.TryRead(ref reader, RuntimePropertyType!, Options, ref state, out T value);
+                    success = Converter.TryRead(ref reader, RuntimePropertyType!, Options, ref state, out T? value);
                     if (success)
                     {
 #if !DEBUG
@@ -324,7 +324,7 @@ namespace System.Text.Json
                 }
                 else
                 {
-                    success = Converter.TryRead(ref reader, RuntimePropertyType!, Options, ref state, out T typedValue);
+                    success = Converter.TryRead(ref reader, RuntimePropertyType!, Options, ref state, out T? typedValue);
                     value = typedValue;
                 }
             }

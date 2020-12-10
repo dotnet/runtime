@@ -190,7 +190,7 @@ namespace System.Threading.Threads.Tests
             RemoteExecutor.Invoke(() =>
             {
                 Assert.Equal(ApartmentState.MTA, Thread.CurrentThread.GetApartmentState());
-                Assert.Throws<InvalidOperationException>(() => Thread.CurrentThread.SetApartmentState(ApartmentState.STA));
+                AssertExtensions.ThrowsContains<InvalidOperationException>(() => Thread.CurrentThread.SetApartmentState(ApartmentState.STA), "MTA");
                 Thread.CurrentThread.SetApartmentState(ApartmentState.MTA);
             }).Dispose();
         }
