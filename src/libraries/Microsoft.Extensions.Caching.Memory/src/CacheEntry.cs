@@ -16,7 +16,6 @@ namespace Microsoft.Extensions.Caching.Memory
     {
         private static readonly Action<object> ExpirationCallback = ExpirationTokensExpired;
 
-        private readonly object _lock = new object();
         private readonly MemoryCache _cache;
 
         private IList<IDisposable> _expirationTokenRegistrations;
@@ -234,7 +233,7 @@ namespace Microsoft.Extensions.Caching.Memory
         {
             if (_expirationTokens != null)
             {
-                lock (_lock)
+                lock (this)
                 {
                     for (int i = 0; i < _expirationTokens.Count; i++)
                     {
@@ -267,7 +266,7 @@ namespace Microsoft.Extensions.Caching.Memory
         private void DetachTokens()
         {
             // _expirationTokenRegistrations is not checked for null, because AttachTokens might initialize it under lock
-            lock (_lock)
+            lock (this)
             {
                 IList<IDisposable> registrations = _expirationTokenRegistrations;
                 if (registrations != null)
@@ -330,9 +329,9 @@ namespace Microsoft.Extensions.Caching.Memory
             // We do this regardless of it gets cached because the tokens are associated with the value we'll return.
             if (_expirationTokens != null)
             {
-                lock (_lock)
+                lock (this)
                 {
-                    lock (parent._lock)
+                    lock (parent)
                     {
                         foreach (IChangeToken expirationToken in _expirationTokens)
                         {
