@@ -2,6 +2,10 @@
 # It overwrites the one found in upstream
 project(unwind)
 
+# Disable C11 compat
+unset(CMAKE_C_STANDARD)
+unset(CMAKE_C_STANDARD_REQUIRED)
+
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
 # define variables for the configure_file below
