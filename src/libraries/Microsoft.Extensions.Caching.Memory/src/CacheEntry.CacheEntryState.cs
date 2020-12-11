@@ -3,7 +3,6 @@
 
 using System;
 using System.Runtime.InteropServices;
-using System.Threading;
 
 namespace Microsoft.Extensions.Caching.Memory
 {
@@ -13,10 +12,6 @@ namespace Microsoft.Extensions.Caching.Memory
         [StructLayout(LayoutKind.Explicit)]
         private struct CacheEntryState
         {
-            // this field overlaps with the 4 other byte fields, it exists to allow for atomic updates
-            [FieldOffset(0)]
-            private int _state;
-
             [FieldOffset(0)]
             private byte _flags;
             [FieldOffset(1)]
@@ -49,44 +44,16 @@ namespace Microsoft.Extensions.Caching.Memory
             internal EvictionReason EvictionReason
             {
                 get => (EvictionReason)_evictionReason;
-                set
-                {
-                    CacheEntryState before, after;
-                    do
-                    {
-                        before = this;
-                        after = this;
-                        after._evictionReason = (byte)value;
-                    } while (Interlocked.CompareExchange(ref _state, after._state, before._state) != before._state);
-                }
+                set => _evictionReason = (byte)value;
             }
 
             internal CacheItemPriority Priority
             {
                 get => (CacheItemPriority)_priority;
-                set
-                {
-                    CacheEntryState before, after;
-                    do
-                    {
-                        before = this;
-                        after = this;
-                        after._priority = (byte)value;
-                    } while (Interlocked.CompareExchange(ref _state, after._state, before._state) != before._state);
-                }
+                set => _priority = (byte)value;
             }
 
-            private void SetFlag(Flags option, bool value)
-            {
-                CacheEntryState before, after;
-
-                do
-                {
-                    before = this;
-                    after = this;
-                    after._flags = (byte)(value ? (after._flags | (byte)option) : (after._flags & ~(byte)option));
-                } while (Interlocked.CompareExchange(ref _state, after._state, before._state) != before._state);
-            }
+            private void SetFlag(Flags option, bool value) => _flags = (byte)(value ? (_flags | (byte)option) : (_flags & ~(byte)option));
 
             [Flags]
             private enum Flags : byte
