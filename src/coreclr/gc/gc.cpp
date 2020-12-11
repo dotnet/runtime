@@ -38234,9 +38234,8 @@ void gc_heap::descr_generations (const char* msg)
                       (settings.heap_expansion ? "(EX)" : " "),
                       (settings.promotion ? "Promotion" : "NoPromotion")));
 #else
-        dprintf (2, ( "Generation %d: gap size: %d, generation size: %Id, fragmentation: %Id",
+        dprintf (2, ( "Generation %d: generation size: %Id, fragmentation: %Id",
                       curr_gen_number,
-                      size (generation_allocation_start (generation_of (curr_gen_number))),
                       total_gen_size,
                       dd_fragmentation (dynamic_data_of (curr_gen_number))));
 #endif //SIMPLE_DPRINTF

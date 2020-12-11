@@ -519,6 +519,7 @@ struct StressLogChunk
 {
     StressLogChunk * prev;
     StressLogChunk * next;
+    uint64_t threadId;
     char buf[STRESSLOG_CHUNK_SIZE];
     DWORD dwSig1;
     DWORD dwSig2;
@@ -568,8 +569,8 @@ struct StressLogChunk
 #endif
 #endif //!STRESS_LOG_READONLY
 
-    StressLogChunk (StressLogChunk * p = NULL, StressLogChunk * n = NULL)
-        :prev (p), next (n), dwSig1 (0xCFCFCFCF), dwSig2 (0xCFCFCFCF)
+    StressLogChunk(uint64_t tId, StressLogChunk* p = NULL, StressLogChunk* n = NULL)
+        : prev (p), next (n), threadId(tId), dwSig1 (0xCFCFCFCF), dwSig2 (0xCFCFCFCF)
     {}
 
     char * StartPtr ()
@@ -637,11 +638,12 @@ class ThreadStressLog {
         {
             return FALSE;
         }
-        StressLogChunk * newChunk = new StressLogChunk (chunkListTail, chunkListHead);
+        StressLogChunk * newChunk = new StressLogChunk (threadId, chunkListTail, chunkListHead);
         if (newChunk == NULL)
         {
             return FALSE;
         }
+
         StressLog::NewChunk ();
         chunkListLength++;
         chunkListHead->prev = newChunk;
@@ -657,7 +659,7 @@ public:
     ThreadStressLog ()
     {
         chunkListHead = chunkListTail = curWriteChunk = NULL;
-        StressLogChunk * newChunk =new StressLogChunk;
+        StressLogChunk * newChunk = new StressLogChunk (GetCurrentThreadId());
         //OOM or in cantalloc region
         if (newChunk == NULL)
         {
@@ -717,6 +719,7 @@ public:
         threadId = GetCurrentThreadId ();
         isDead = FALSE;
         curWriteChunk = chunkListTail;
+        _ASSERTE (curWriteChunk->threadId == threadId);
         curPtr = (StressMsg *)curWriteChunk->EndPtr ();
         writeHasWrapped = FALSE;
 #else //STRESS_LOG_READONLY
@@ -901,6 +904,7 @@ inline StressMsg* ThreadStressLog::AdvWritePastBoundary(int cArgs) {
 #endif //!STRESS_LOG_READONLY
 
     curWriteChunk = curWriteChunk->prev;
+    _ASSERTE (curWriteChunk->threadId == threadId);
 #ifndef STRESS_LOG_READONLY
    if (curWriteChunk == chunkListTail)
    {

@@ -206,7 +206,7 @@ void StressLog::Initialize(unsigned facilities,  unsigned level, unsigned maxByt
         return;
     }
 
-    size_t fileSize = 0x200000000i64;
+    size_t fileSize = 0x800000000i64;
     HandleHolder hMap = WszCreateFileMapping(hFile, NULL, PAGE_READWRITE, (DWORD)(fileSize >> 32), (DWORD)fileSize, NULL);
     if (hMap == NULL)
     {
@@ -456,6 +456,19 @@ ThreadStressLog* StressLog::CreateThreadStressLogHelper() {
             goto LEAVE;
         }
     }
+    else
+    {
+        // recycle old thread msg
+        msgs->threadId = GetCurrentThreadId();
+        StressLogChunk* slc = msgs->chunkListHead;
+        while (true)
+        {
+            slc->threadId = msgs->threadId;
+            if (slc == msgs->chunkListTail)
+                break;
+            slc = slc->next;
+        }
+    }
 
     msgs->Activate ();
 
@@ -529,7 +542,7 @@ BOOL StressLog::AllowNewChunk (LONG numChunksInCurThread)
         return FALSE;
     }
 
-    return (DWORD)theLog.totalChunk * STRESSLOG_CHUNK_SIZE < theLog.MaxSizeTotal;
+    return theLog.MaxSizeTotal == 0xffffffff || (DWORD)theLog.totalChunk * STRESSLOG_CHUNK_SIZE < theLog.MaxSizeTotal;
 }
 
 BOOL StressLog::ReserveStressLogChunks (unsigned chunksToReserve)
@@ -742,13 +755,13 @@ void  StressLog::LogCallStack(const char *const callTag){
 
 void* StressLog::AllocMemoryMapped(size_t n)
 {
-    StressLogLockHolder lockh(StressLog::theLog.lock, FALSE);
-
-    uint8_t* result = StressLog::theLog.memoryCur;
-    if ((ptrdiff_t)n > 0 && StressLog::theLog.memoryLimit - result >= (ptrdiff_t)n)
+    if ((ptrdiff_t)n > 0)
     {
-        StressLog::theLog.memoryCur += n;
-        return result;
+        uint8_t* newMemValue = (uint8_t*)InterlockedAdd64((LONG64*)&theLog.memoryCur, n);
+        if (newMemValue < theLog.memoryLimit)
+            return newMemValue - n;
+        // when we run out, we just can't allocate anymore
+        theLog.memoryCur = theLog.memoryLimit;
     }
     return nullptr;
 }
