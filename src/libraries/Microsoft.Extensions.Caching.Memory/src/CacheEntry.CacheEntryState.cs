@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Threading;
 
@@ -29,7 +28,11 @@ namespace Microsoft.Extensions.Caching.Memory
 
             internal CacheEntryState(CacheItemPriority priority) : this() => _priority = (byte)priority;
 
-            internal bool IsDisposed { get => ((Flags)_flags).HasFlag(Flags.IsDisposed); set => SetFlag(Flags.IsDisposed, value); }
+            internal bool IsDisposed
+            {
+                get => ((Flags)_flags & Flags.IsDisposed) != 0;
+                set => SetFlag(Flags.IsDisposed, value);
+            }
 
             internal bool IsExpired
             {
@@ -37,7 +40,11 @@ namespace Microsoft.Extensions.Caching.Memory
                 set => SetFlag(Flags.IsExpired, value);
             }
 
-            internal bool IsValueSet { get => ((Flags)_flags).HasFlag(Flags.IsValueSet); set => SetFlag(Flags.IsValueSet, value); }
+            internal bool IsValueSet
+            {
+                get => ((Flags)_flags & Flags.IsValueSet) != 0;
+                set => SetFlag(Flags.IsValueSet, value);
+            }
 
             internal EvictionReason EvictionReason
             {
