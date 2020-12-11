@@ -38,7 +38,8 @@ namespace System.Collections.Generic
             var keyValuePairComparer = new KeyValuePairComparer(comparer);
 
             if (dictionary is SortedDictionary<TKey, TValue> sortedDictionary &&
-                sortedDictionary._set.Comparer.Equals(keyValuePairComparer))
+                sortedDictionary._set.Comparer is KeyValuePairComparer kv &&
+                kv.keyComparer.Equals(keyValuePairComparer.keyComparer))
             {
                 _set = new TreeSet<KeyValuePair<TKey, TValue>>(sortedDictionary._set, keyValuePairComparer);
             }
@@ -948,14 +949,6 @@ namespace System.Collections.Generic
             {
                 return keyComparer.Compare(x.Key, y.Key);
             }
-
-            public override bool Equals(object? obj)
-            {
-                return obj is KeyValuePairComparer otherComparer &&
-                    otherComparer.keyComparer == this.keyComparer;
-            }
-
-            public override int GetHashCode() => this.keyComparer.GetHashCode();
         }
     }
 
