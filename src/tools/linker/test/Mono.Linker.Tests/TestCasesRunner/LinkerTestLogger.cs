@@ -1,34 +1,24 @@
-using System;
 using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Text;
 
 namespace Mono.Linker.Tests.TestCasesRunner
 {
 	public class LinkerTestLogger : ILogger
 	{
-		StringWriter _stringWriter;
-		public List<MessageContainer> MessageContainers { get; private set; }
+		readonly List<MessageContainer> MessageContainers;
 
 		public LinkerTestLogger ()
 		{
 			MessageContainers = new List<MessageContainer> ();
-			StringBuilder sb = new StringBuilder ();
-			_stringWriter = new StringWriter (sb);
-			Console.SetOut (_stringWriter);
 		}
 
-		public List<string> GetLoggedMessages ()
+		public List<MessageContainer> GetLoggedMessages ()
 		{
-			string allWarningsAsOneString = _stringWriter.GetStringBuilder ().ToString ();
-			return allWarningsAsOneString.Split (Environment.NewLine.ToCharArray (), StringSplitOptions.RemoveEmptyEntries).ToList ();
+			return MessageContainers;
 		}
 
 		public void LogMessage (MessageContainer message)
 		{
 			MessageContainers.Add (message);
-			Console.WriteLine (message.ToString ());
 		}
 	}
 }

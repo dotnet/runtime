@@ -13,7 +13,6 @@ using NUnit.Framework;
 namespace Mono.Linker.Tests.Tests
 {
 	[TestFixture]
-	[Parallelizable (ParallelScope.All)]
 	public class TestFrameworkRulesAndConventions
 	{
 		[Test]

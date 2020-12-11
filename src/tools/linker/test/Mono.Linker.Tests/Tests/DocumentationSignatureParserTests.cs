@@ -10,7 +10,6 @@ using NUnit.Framework;
 namespace Mono.Linker.Tests
 {
 	[TestFixture]
-	[Parallelizable]
 	public class DocumentationSignatureParserTests
 	{
 		[TestCaseSource (nameof (GetMemberAssertions), new object[] { typeof (DocumentationSignatureParserTests) })]

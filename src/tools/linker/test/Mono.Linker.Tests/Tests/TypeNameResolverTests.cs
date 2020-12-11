@@ -4,7 +4,6 @@ using NUnit.Framework;
 namespace Mono.Linker.Tests
 {
 	[TestFixture]
-	[Parallelizable]
 	public class TypeNameResolverTests
 	{
 		[Test]

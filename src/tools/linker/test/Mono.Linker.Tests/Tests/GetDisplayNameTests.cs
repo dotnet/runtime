@@ -9,7 +9,6 @@ using NUnit.Framework;
 namespace Mono.Linker.Tests
 {
 	[TestFixture]
-	[Parallelizable]
 	public class GetDisplayNameTests
 	{
 		[TestCaseSource (nameof (GetMemberAssertions), new object[] { typeof (GetDisplayNameTests) })]
