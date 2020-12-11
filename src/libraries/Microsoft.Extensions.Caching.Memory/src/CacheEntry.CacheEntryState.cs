@@ -33,8 +33,7 @@ namespace Microsoft.Extensions.Caching.Memory
 
             internal bool IsExpired
             {
-                [MethodImpl(MethodImplOptions.AggressiveInlining)] // added based on profiling
-                get => ((Flags)_flags).HasFlag(Flags.IsExpired);
+                get => ((Flags)_flags & Flags.IsExpired) != 0;
                 set => SetFlag(Flags.IsExpired, value);
             }
 
