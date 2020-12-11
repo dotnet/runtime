@@ -155,7 +155,7 @@ namespace Microsoft.Extensions.Caching.Memory
             }
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)] // added based on profiling
         internal bool CheckExpired(in DateTimeOffset now)
             => _state.IsExpired
                 || CheckForExpiredTime(now)
@@ -171,6 +171,7 @@ namespace Microsoft.Extensions.Caching.Memory
             _tokens?.DetachTokens();
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)] // added based on profiling
         private bool CheckForExpiredTime(in DateTimeOffset now)
         {
             if (!AbsoluteExpiration.HasValue && !_slidingExpiration.HasValue)
@@ -247,6 +248,7 @@ namespace Microsoft.Extensions.Caching.Memory
         }
 
         // this simple check very often allows us to avoid expensive call to PropagateOptions(CacheEntryHelper.Current)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)] // added based on profiling
         internal bool CanPropagateOptions() => _tokens?._expirationTokens != null || AbsoluteExpiration.HasValue;
 
         internal void PropagateOptions(CacheEntry parent)

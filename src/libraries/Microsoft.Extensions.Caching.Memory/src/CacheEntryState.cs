@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Threading;
 
@@ -30,7 +31,12 @@ namespace Microsoft.Extensions.Caching.Memory
 
             internal bool IsDisposed { get => ((Flags)_flags).HasFlag(Flags.IsDisposed); set => SetFlag(Flags.IsDisposed, value); }
 
-            internal bool IsExpired { get => ((Flags)_flags).HasFlag(Flags.IsExpired); set => SetFlag(Flags.IsExpired, value); }
+            internal bool IsExpired
+            {
+                [MethodImpl(MethodImplOptions.AggressiveInlining)] // added based on profiling
+                get => ((Flags)_flags).HasFlag(Flags.IsExpired);
+                set => SetFlag(Flags.IsExpired, value);
+            }
 
             internal bool IsValueSet { get => ((Flags)_flags).HasFlag(Flags.IsValueSet); set => SetFlag(Flags.IsValueSet, value); }
 
