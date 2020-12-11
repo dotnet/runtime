@@ -128,7 +128,7 @@
   </ItemGroup>
 
   <!-- Ensure we run ResolveProjectReferences to add the message DLL to the package.
-       We do this here rather than in the pkgpro to ensure the package paths are in sync -->
+       We do this here rather than in the pkgproj to ensure the package paths are in sync -->
   <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
     <ProjectReference Include="Messages\System.Diagnostics.EventLog.Messages.csproj" ReferenceOutputAssembly="false" OutputItemType="AdditionalFileToPackage"  />
   </ItemGroup>

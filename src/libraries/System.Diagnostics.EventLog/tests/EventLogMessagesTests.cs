@@ -30,10 +30,9 @@ namespace System.Diagnostics.Tests
             Assert.True(File.Exists(messageDllPath));
             using SafeLibraryHandle hMessageDll = Interop.Kernel32.LoadLibraryExW(messageDllPath, IntPtr.Zero, Interop.Kernel32.LOAD_LIBRARY_AS_DATAFILE);
 
-
             string messageString = "hello message";
             char[] buffer = new char[1024];
-            GCHandle pinnedString = pinnedString = GCHandle.Alloc(messageString, GCHandleType.Pinned);
+            GCHandle pinnedString = GCHandle.Alloc(messageString, GCHandleType.Pinned);
             try
             {
                 IntPtr[] insertion = new[] { pinnedString.AddrOfPinnedObject() };
