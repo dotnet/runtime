@@ -20,8 +20,6 @@ trigger:
     - SECURITY.md
     - THIRD-PARTY-NOTICES.TXT
 
-pr: none
-
 variables:
 - template: /eng/pipelines/common/variables.yml
 # TODO: (Consolidation) Switch away from old signing/validation variables from former Core-Setup. https://github.com/dotnet/runtime/issues/1027
