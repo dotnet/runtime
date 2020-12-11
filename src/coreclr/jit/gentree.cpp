@@ -15492,6 +15492,13 @@ GenTree* Compiler::gtNewTempAssign(
     }
 #endif
 
+    // Added this noway_assert for runtime\issue 44895, to protect against silent bad codegen
+    //
+    if ((dstTyp == TYP_STRUCT) && (valTyp == TYP_REF))
+    {
+        noway_assert(!"Incompatible types for gtNewTempAssign");
+    }
+
     // Floating Point assignments can be created during inlining
     // see "Zero init inlinee locals:" in fgInlinePrependStatements
     // thus we may need to set compFloatingPointUsed to true here.

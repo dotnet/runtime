@@ -17951,16 +17951,38 @@ void Compiler::fgMorphStructField(GenTree* tree, GenTree* parent)
                         }
                         // Access the promoted field as a field of a non-promoted struct with the same class handle.
                     }
-#ifdef DEBUG
-                    else if (tree->TypeGet() == TYP_STRUCT)
+                    else
                     {
-                        // The field tree accesses it as a struct, but the promoted lcl var for the field
-                        // says that it has another type. It can happen only if struct promotion faked
-                        // field type for a struct of single field of scalar type aligned at their natural boundary.
+                        // As we already checked this above, we must have a tree with a TYP_STRUCT type
+                        //
+                        assert(tree->TypeGet() == TYP_STRUCT);
+
+                        // The field tree accesses it as a struct, but the promoted LCL_VAR field
+                        // says that it has another type. This happens when struct promotion unwraps
+                        // a single field struct to get to its ultimate type.
+                        //
+                        // Note that currently, we cannot have a promoted LCL_VAR field with a struct type.
+                        //
+                        // This mismatch in types can lead to problems for some parent node type like GT_RETURN.
+                        // So we check the parent node and only allow this optimization when we have
+                        // a GT_ADDR or a GT_ASG.
+                        //
+                        // Note that for a GT_ASG we have to do some additional work,
+                        // see below after the SetOper(GT_LCL_VAR)
+                        //
+                        if (!parent->OperIs(GT_ADDR, GT_ASG))
+                        {
+                            // Don't transform other operations such as GT_RETURN
+                            //
+                            return;
+                        }
+#ifdef DEBUG
+                        // This is an additional DEBUG-only sanity check
+                        //
                         assert(structPromotionHelper != nullptr);
                         structPromotionHelper->CheckRetypedAsScalar(field->gtFldHnd, fieldType);
-                    }
 #endif // DEBUG
+                    }
                 }
 
                 tree->SetOper(GT_LCL_VAR);
@@ -17970,6 +17992,9 @@ void Compiler::fgMorphStructField(GenTree* tree, GenTree* parent)
 
                 if (parent->gtOper == GT_ASG)
                 {
+                    // If we are changing the left side of an assignment, we need to set
+                    // these two flags:
+                    //
                     if (parent->AsOp()->gtOp1 == tree)
                     {
                         tree->gtFlags |= GTF_VAR_DEF;
