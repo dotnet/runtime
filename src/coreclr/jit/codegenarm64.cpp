@@ -2947,8 +2947,6 @@ void CodeGen::genCodeForCmpXchg(GenTreeCmpXchg* treeNode)
             noway_assert(dataReg != targetReg);
         }
         GetEmitter()->emitIns_R_R_R(INS_casal, dataSize, targetReg, dataReg, addrReg);
-
-        instGen_MemoryBarrier();
     }
     else
     {
