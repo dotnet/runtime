@@ -123,7 +123,7 @@ namespace Microsoft.Extensions.Caching.Memory
             set
             {
                 _value = value;
-                IsValueSet = true;
+                _state.IsValueSet = true;
             }
         }
 
@@ -131,22 +131,16 @@ namespace Microsoft.Extensions.Caching.Memory
 
         internal EvictionReason EvictionReason { get => _state.EvictionReason; private set => _state.EvictionReason = value; }
 
-        private bool IsDisposed { get => _state.IsDisposed; set => _state.IsDisposed = value; }
-
-        private bool IsExpired { get => _state.IsExpired; set => _state.IsExpired = value; }
-
-        private bool IsValueSet { get => _state.IsValueSet; set => _state.IsValueSet = value; }
-
         public void Dispose()
         {
-            if (!IsDisposed)
+            if (!_state.IsDisposed)
             {
-                IsDisposed = true;
+                _state.IsDisposed = true;
 
                 // Don't commit or propagate options if the CacheEntry Value was never set.
                 // We assume an exception occurred causing the caller to not set the Value successfully,
                 // so don't use this entry.
-                if (IsValueSet)
+                if (_state.IsValueSet)
                 {
                     _cache.SetEntry(this);
 
@@ -163,7 +157,7 @@ namespace Microsoft.Extensions.Caching.Memory
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal bool CheckExpired(in DateTimeOffset now)
-            => IsExpired
+            => _state.IsExpired
                 || CheckForExpiredTime(now)
                 || (_tokens != null && _tokens.CheckForExpiredTokens(this));
 
@@ -173,7 +167,7 @@ namespace Microsoft.Extensions.Caching.Memory
             {
                 EvictionReason = reason;
             }
-            IsExpired = true;
+            _state.IsExpired = true;
             _tokens?.DetachTokens();
         }
 
