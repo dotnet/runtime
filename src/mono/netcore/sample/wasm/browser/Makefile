@@ -5,14 +5,6 @@ ifeq ($(V),)
 DOTNET_Q_ARGS=--nologo -v:q -consoleloggerparameters:NoSummary
 else
 DOTNET_Q_ARGS=--nologo
-DOTNET_MONO_LOG_LEVEL=--setenv=MONO_LOG_LEVEL=debug
-endif
-
-ifneq ($(AOT),)
-DOTNET_RUN_AOT_COMPILATION_ARGS=/p:RunAOTCompilation=true
-ifneq ($(PROFILE),)
-DOTNET_PROFILE_ARGS=/p:ProfileAOT=true
-endif
 endif
 
 ifneq ($(AOT),)

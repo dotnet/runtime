@@ -11,6 +11,7 @@ namespace Sample
         public static void Main(string[] args)
         {
             Console.WriteLine ("Hello, World!");
+            StopProfile();
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
@@ -18,5 +19,8 @@ namespace Sample
         {
             return 42;
         }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public static void StopProfile(){}
     }
 }

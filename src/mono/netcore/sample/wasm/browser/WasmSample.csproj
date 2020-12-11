@@ -9,26 +9,7 @@
     <MicrosoftNetCoreAppRuntimePackDir>$(ArtifactsBinDir)microsoft.netcore.app.runtime.browser-wasm\$(Configuration)\runtimes\browser-wasm\</MicrosoftNetCoreAppRuntimePackDir>
     <BuildDir>$(MSBuildThisFileDirectory)obj\$(Configuration)\wasm</BuildDir>
     <AppDir>$(MSBuildThisFileDirectory)bin\$(Configuration)\publish</AppDir>
-    <PublishTrimmed>true</PublishTrimmed>
-    <TrimMode>link</TrimMode>
-    <EnableTargetingPackDownload>false</EnableTargetingPackDownload>
-    <SelfContained>true</SelfContained>
-    <RuntimeIdentifier>browser-wasm</RuntimeIdentifier>
-    <nullable>enable</nullable>
-    <RunAOTCompilation Condition="'$(RunAOTCompilation)' == ''">false</RunAOTCompilation>
-    <ProfileAOT Condition="'$(ProfileAOT)' == ''">false</ProfileAOT>
-    <AOTProfilePath></AOTProfilePath>
-    <SystemRuntimeInteropServicesJavaScriptLibPath>$(LibrariesProjectRoot)System.Private.Runtime.InteropServices.JavaScript/src/System/Runtime/InteropServices/JavaScript/</SystemRuntimeInteropServicesJavaScriptLibPath>
   </PropertyGroup>
-
-  <Target Name="TrickRuntimePackLocation" AfterTargets="ProcessFrameworkReferences">
-    <ItemGroup>
-      <RuntimePack>
-        <PackageDirectory>$(ArtifactsBinDir)microsoft.netcore.app.runtime.browser-wasm\$(Configuration)</PackageDirectory>
-      </RuntimePack>
-    </ItemGroup>
-    <Message Text="Packaged ID: %(RuntimePack.PackageDirectory)" Importance="high" />
-  </Target>
 
   <Target Name="RebuildWasmAppBuilder">
     <ItemGroup>
@@ -44,61 +25,10 @@
              Targets="Build;Publish"/>
   </Target>
 
-  <Import Project="$(RepoTasksDir)mobile.tasks\AotCompilerTask\MonoAOTCompiler.props" />
   <UsingTask TaskName="WasmAppBuilder" 
              AssemblyFile="$(ArtifactsBinDir)WasmAppBuilder\Debug\$(NetCoreAppCurrent)\publish\WasmAppBuilder.dll"/>
 
-  <UsingTask TaskName="MonoAOTCompiler"
-             AssemblyFile="$(ArtifactsBinDir)MonoAOTCompiler\Debug\$(NetCoreAppCurrent)\MonoAOTCompiler.dll" />
-
-  <Target Name="BuildApp" AfterTargets="CopyFilesToPublishDirectory" DependsOnTargets="RebuildWasmAppBuilder;Build">
-  <RemoveDir Directories="$(AppDir)" />
-    <ItemGroup>
-      <BundleAssemblies Condition="'$(RunAOTCompilation)' != 'true'" Include="$(MSBuildThisFileDirectory)$(PublishDir)\*.dll" />
-      <AotInputAssemblies Condition="'$(RunAOTCompilation)' == 'true'" Include="$(MSBuildThisFileDirectory)$(PublishDir)\*.dll">
-        <AotArguments>@(MonoAOTCompilerDefaultAotArguments, ';')</AotArguments>
-        <ProcessArguments>@(MonoAOTCompilerDefaultProcessArguments, ';')</ProcessArguments>
-      </AotInputAssemblies>
-    </ItemGroup>
-
-    <ItemGroup Condition="'$(RunAOTCompilation)' == 'true'">
-      <AotProfilers Include="aot" />
-    </ItemGroup>
-    <Error Condition="'$(RunAOTCompilation)' == 'true' and '$(EMSDK_PATH)' == ''" Text="The EMSDK_PATH environment variable should be set pointing to the emscripten SDK root dir when using AOT."/>
-    <MonoAOTCompiler
-        Condition="'$(RunAOTCompilation)' == 'true'"
-        CompilerBinaryPath="$(MicrosoftNetCoreAppRuntimePackDir)native\cross\mono-aot-cross"
-        Mode="LLVMOnly"
-        OutputType="AsmOnly"
-        Assemblies="@(AotInputAssemblies)"
-        Profilers="@(AotProfilers)"
-        UseAotDataFile="false"
-        AotProfilePath="$(AOTProfilePath)"
-        AotModulesTablePath="$(MSBuildThisFileDirectory)$(PublishDir)driver-gen.c"
-        UseLLVM="true"
-        LLVMPath="$(EMSDK_PATH)\upstream\bin">
-        <Output TaskParameter="CompiledAssemblies" ItemName="BundleAssemblies" />
-    </MonoAOTCompiler>
-
-    <ReadLinesFromFile File="$(MicrosoftNetCoreAppRuntimePackDir)native\src\emcc-flags.txt">
-        <Output TaskParameter="Lines" PropertyName="EmccFlags" />
-    </ReadLinesFromFile>
-
-    <ReadLinesFromFile File="$(MicrosoftNetCoreAppRuntimePackDir)native\src\emcc-version.txt">
-        <Output TaskParameter="Lines" PropertyName="RuntimeEmccVersion" />
-    </ReadLinesFromFile>
-
-    <Exec Condition="'$(RunAOTCompilation)' == 'true'" Command="source $(EMSDK_PATH)/emsdk_env.sh &amp;&amp; emcc --version | head -1 > emcc-version.txt" ConsoleToMsBuild="true" IgnoreStandardErrorWarningFormat="true" WorkingDirectory="$(MSBuildThisFileDirectory)$(PublishDir)" />
-    <ReadLinesFromFile Condition="'$(RunAOTCompilation)' == 'true'" File="$(MSBuildThisFileDirectory)$(PublishDir)\emcc-version.txt">
-        <Output TaskParameter="Lines" PropertyName="EmccVersion" />
-    </ReadLinesFromFile>
-    <Error Condition="'$(RunAOTCompilation)' == 'true' and '$(RuntimeEmccVersion)' != '$(EmccVersion)'" Text="Emscripten version mismatch, expected '$(RuntimeEmccVersion)', got '$(EmccVersion)'"/>
-
-    <Exec Condition="'$(RunAOTCompilation)' == 'true'" Command="source $(EMSDK_PATH)/emsdk_env.sh &amp;&amp; emcc $(EmccFlags) -DDEBUG=1 -DCORE_BINDINGS -DENABLE_AOT=1 -DDRIVER_GEN=1 -I$(MicrosoftNetCoreAppRuntimePackDir)native/include/mono-2.0 -I$(MicrosoftNetCoreAppRuntimePackDir)native/include/wasm -I$(MSBuildThisFileDirectory)$(PublishDir) $(MicrosoftNetCoreAppRuntimePackDir)native/src/driver.c -c -o driver.o" IgnoreStandardErrorWarningFormat="true" WorkingDirectory="$(MSBuildThisFileDirectory)$(PublishDir)" />
-    <Exec Condition="'$(RunAOTCompilation)' == 'true'" Command="source $(EMSDK_PATH)/emsdk_env.sh &amp;&amp; emcc $(EmccFlags) -I$(MicrosoftNetCoreAppRuntimePackDir)native/include/mono-2.0 $(MicrosoftNetCoreAppRuntimePackDir)native/src/corebindings.c -c -o corebindings.o" IgnoreStandardErrorWarningFormat="true" WorkingDirectory="$(MSBuildThisFileDirectory)$(PublishDir)" />
-    <Exec Condition="'$(RunAOTCompilation)' == 'true'" Command="source $(EMSDK_PATH)/emsdk_env.sh &amp;&amp; emcc $(EmccFlags) -DGEN_PINVOKE=1 -I$(MicrosoftNetCoreAppRuntimePackDir)native/include/wasm $(MicrosoftNetCoreAppRuntimePackDir)native/src/pinvoke.c -c -o pinvoke.o" IgnoreStandardErrorWarningFormat="true" WorkingDirectory="$(MSBuildThisFileDirectory)$(PublishDir)" />
-    <Exec Condition="'$(RunAOTCompilation)' == 'true'" Command="source $(EMSDK_PATH)/emsdk_env.sh &amp;&amp; emcc $(EmccFlags) --js-library $(MicrosoftNetCoreAppRuntimePackDir)native/src/library_mono.js --js-library $(MicrosoftNetCoreAppRuntimePackDir)native/src/binding_support.js --js-library $(MicrosoftNetCoreAppRuntimePackDir)native/src/dotnet_support.js --js-library $(MicrosoftNetCoreAppRuntimePackDir)native/src/pal_random.js driver.o pinvoke.o corebindings.o @(BundleAssemblies->'%(LlvmBitcodeFile)', ' ') libmono-ee-interp.a libmonosgen-2.0.a libmono-ilgen.a libmono-icall-table.a libmono-profiler-aot.a libSystem.Native.a libSystem.IO.Compression.Native.a libicuuc.a libicui18n.a -o dotnet.js" IgnoreStandardErrorWarningFormat="true" WorkingDirectory="$(MSBuildThisFileDirectory)$(PublishDir)" />
-
+  <Target Name="BuildApp" DependsOnTargets="RebuildWasmAppBuilder;Build">
     <ItemGroup>
       <AssemblySearchPaths Include="bin"/>
       <AssemblySearchPaths Include="$(MicrosoftNetCoreAppRuntimePackDir)native"/>
@@ -108,38 +38,15 @@
       AppDir="$(AppDir)"
       ExtraAssemblies="$(MicrosoftNetCoreAppRuntimePackDir)lib\$(NetCoreAppCurrent)\System.Private.Runtime.InteropServices.JavaScript.dll"
       MicrosoftNetCoreAppRuntimePackDir="$(MicrosoftNetCoreAppRuntimePackDir)"
-      MainAssembly="$(PublishDir)\WasmSample.dll"
+      MainAssembly="bin\WasmSample.dll"
       MainJS="runtime.js"
-      Assemblies="@(BundleAssemblies)"/>
+      AssemblySearchPaths="@(AssemblySearchPaths)"/>
     <Exec Command="chmod a+x $(AppDir)/run-v8.sh" />
-    <Copy SourceFiles="$(PublishDir)\index.html;$(PublishDir)\server.py" DestinationFolder="$(AppDir)" />
+    <Copy SourceFiles="bin\index.html;bin\server.py" DestinationFolder="$(AppDir)" />
   </Target>
 
   <ItemGroup>
     <Compile Include="Program.cs" />
-    <Compile Include="$(LibrariesProjectRoot)Common/src/Interop/Browser/Interop.Runtime.cs" Condition="'$(ProfileAOT)' == 'true'"/>
-    <Compile Include="$(SystemRuntimeInteropServicesJavaScriptLibPath)Runtime.cs" Condition="'$(ProfileAOT)' == 'true'"/>
-    <Compile Include="$(SystemRuntimeInteropServicesJavaScriptLibPath)JSException.cs" Condition="'$(ProfileAOT)' == 'true'"/>
-    <Compile Include="$(SystemRuntimeInteropServicesJavaScriptLibPath)JSObject.cs" Condition="'$(ProfileAOT)' == 'true'"/>
-    <Compile Include="$(SystemRuntimeInteropServicesJavaScriptLibPath)Function.cs" Condition="'$(ProfileAOT)' == 'true'"/>
-    <Compile Include="$(SystemRuntimeInteropServicesJavaScriptLibPath)Uint8Array.cs" Condition="'$(ProfileAOT)' == 'true'"/>
-    <Compile Include="$(SystemRuntimeInteropServicesJavaScriptLibPath)AnyRef.cs" Condition="'$(ProfileAOT)' == 'true'"/>
-    <Compile Include="$(SystemRuntimeInteropServicesJavaScriptLibPath)DataView.cs" Condition="'$(ProfileAOT)' == 'true'"/>
-    <Compile Include="$(SystemRuntimeInteropServicesJavaScriptLibPath)Float32Array.cs" Condition="'$(ProfileAOT)' == 'true'"/>
-    <Compile Include="$(SystemRuntimeInteropServicesJavaScriptLibPath)Float64Array.cs" Condition="'$(ProfileAOT)' == 'true'"/>
-    <Compile Include="$(SystemRuntimeInteropServicesJavaScriptLibPath)Int8Array.cs" Condition="'$(ProfileAOT)' == 'true'"/>
-    <Compile Include="$(SystemRuntimeInteropServicesJavaScriptLibPath)Int16Array.cs" Condition="'$(ProfileAOT)' == 'true'"/>
-    <Compile Include="$(SystemRuntimeInteropServicesJavaScriptLibPath)Int32Array.cs" Condition="'$(ProfileAOT)' == 'true'"/>
-    <Compile Include="$(SystemRuntimeInteropServicesJavaScriptLibPath)Uint16Array.cs" Condition="'$(ProfileAOT)' == 'true'"/>
-    <Compile Include="$(SystemRuntimeInteropServicesJavaScriptLibPath)Uint32Array.cs" Condition="'$(ProfileAOT)' == 'true'"/>
-    <Compile Include="$(SystemRuntimeInteropServicesJavaScriptLibPath)Uint8ClampedArray.cs" Condition="'$(ProfileAOT)' == 'true'"/>
-    <Compile Include="$(SystemRuntimeInteropServicesJavaScriptLibPath)TypedArray.cs" Condition="'$(ProfileAOT)' == 'true'"/>
-    <Compile Include="$(SystemRuntimeInteropServicesJavaScriptLibPath)Array.cs" Condition="'$(ProfileAOT)' == 'true'"/>
-    <Compile Include="$(SystemRuntimeInteropServicesJavaScriptLibPath)ArrayBuffer.cs" Condition="'$(ProfileAOT)' == 'true'"/>
-    <Compile Include="$(SystemRuntimeInteropServicesJavaScriptLibPath)SharedArrayBuffer.cs" Condition="'$(ProfileAOT)' == 'true'"/>
-    <Compile Include="$(SystemRuntimeInteropServicesJavaScriptLibPath)Map.cs" Condition="'$(ProfileAOT)' == 'true'"/>
-    <Compile Include="$(SystemRuntimeInteropServicesJavaScriptLibPath)CoreObject.cs" Condition="'$(ProfileAOT)' == 'true'"/>
-    <Compile Include="$(SystemRuntimeInteropServicesJavaScriptLibPath)HostObject.cs" Condition="'$(ProfileAOT)' == 'true'"/>
     <Content Include="index.html">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
