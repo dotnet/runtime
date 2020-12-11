@@ -321,4 +321,7 @@
   <data name="PerfMapFilePathOption" xml:space="preserve">
     <value>Explicit specification of the PerfMap file path</value>
   </data>
+  <data name="CallChainProfileFile" xml:space="preserve">
+    <value>Json file(s) for predictive profile guided optimization</value>
+  </data>
 </root>
