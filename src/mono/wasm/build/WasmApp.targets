@@ -36,7 +36,7 @@
     <WriteLinesToFile
       Condition="'$(WasmRunV8ScriptPath)' != ''"
       File="$(WasmRunV8ScriptPath)"
-      Lines="v8 --expose_wasm runtime.js -- --run $(MainAssembly) $*"
+      Lines="v8 --expose_wasm runtime.js -- --run $(WasmMainAssemblyPath) $*"
       Overwrite="true">
     </WriteLinesToFile>
 
