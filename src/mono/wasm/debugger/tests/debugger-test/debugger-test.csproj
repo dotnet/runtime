@@ -39,13 +39,13 @@
 
   <Target Name="BuildApp" DependsOnTargets="RebuildWasmAppBuilder;Build">
     <PropertyGroup>
-      <MicrosoftNetCoreAppRuntimePackDir>$(ArtifactsBinDir)microsoft.netcore.app.runtime.browser-wasm\Release\runtimes\browser-wasm\</MicrosoftNetCoreAppRuntimePackDir>
+      <MicrosoftNetCoreAppRuntimePackRidDir>$(ArtifactsBinDir)microsoft.netcore.app.runtime.browser-wasm\Release\runtimes\browser-wasm\</MicrosoftNetCoreAppRuntimePackRidDir>
       <MainAssembly>$(OutDir)debugger-test.dll</MainAssembly>
       <_JavaScriptDllPath>$(ArtifactsBinDir)\System.Private.Runtime.InteropServices.JavaScript\$(NetCoreAppCurrent)-Browser-$(RuntimeConfiguration)\System.Private.Runtime.InteropServices.JavaScript.dll</_JavaScriptDllPath>
     </PropertyGroup>
     <ItemGroup>
-      <AssemblySearchPaths Include="$(MicrosoftNetCoreAppRuntimePackDir)native"/>
-      <AssemblySearchPaths Include="$(MicrosoftNetCoreAppRuntimePackDir)lib\$(NetCoreAppCurrent)"/>
+      <AssemblySearchPaths Include="$(MicrosoftNetCoreAppRuntimePackRidDir)native"/>
+      <AssemblySearchPaths Include="$(MicrosoftNetCoreAppRuntimePackRidDir)lib\$(NetCoreAppCurrent)"/>
 
       <ExtraFileForPublish Include="@(ReferenceCopyLocalPaths)" />
     </ItemGroup>
@@ -58,7 +58,7 @@
 
     <WasmAppBuilder
       AppDir="$(AppDir)"
-      MicrosoftNetCoreAppRuntimePackDir="$(MicrosoftNetCoreAppRuntimePackDir)"
+      MicrosoftNetCoreAppRuntimePackDir="$(MicrosoftNetCoreAppRuntimePackRidDir)"
       MainAssembly="$(OutDir)debugger-test.dll"
       MainJS="$(MonoProjectRoot)wasm\runtime-test.js"
       DebugLevel="1"

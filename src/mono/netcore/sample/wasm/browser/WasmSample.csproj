@@ -6,7 +6,7 @@
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
     <TargetArchitecture>wasm</TargetArchitecture>
     <TargetOS>Browser</TargetOS>
-    <MicrosoftNetCoreAppRuntimePackDir>$(ArtifactsBinDir)microsoft.netcore.app.runtime.browser-wasm\$(Configuration)\runtimes\browser-wasm\</MicrosoftNetCoreAppRuntimePackDir>
+    <MicrosoftNetCoreAppRuntimePackRidDir>$(ArtifactsBinDir)microsoft.netcore.app.runtime.browser-wasm\$(Configuration)\runtimes\browser-wasm\</MicrosoftNetCoreAppRuntimePackRidDir>
     <BuildDir>$(MSBuildThisFileDirectory)obj\$(Configuration)\wasm</BuildDir>
     <AppDir>$(MSBuildThisFileDirectory)bin\$(Configuration)\publish</AppDir>
   </PropertyGroup>
@@ -33,19 +33,19 @@
   <Target Name="BuildApp" DependsOnTargets="RebuildWasmAppBuilder;Build">
     <ItemGroup>
       <AssemblySearchPaths Include="bin"/>
-      <AssemblySearchPaths Include="$(MicrosoftNetCoreAppRuntimePackDir)native"/>
-      <AssemblySearchPaths Include="$(MicrosoftNetCoreAppRuntimePackDir)lib\$(NetCoreAppCurrent)"/>
+      <AssemblySearchPaths Include="$(MicrosoftNetCoreAppRuntimePackRidDir)native"/>
+      <AssemblySearchPaths Include="$(MicrosoftNetCoreAppRuntimePackRidDir)lib\$(NetCoreAppCurrent)"/>
     </ItemGroup>
 
     <WasmLoadAssembliesAndReferences
-      Assemblies="bin\WasmSample.dll;$(MicrosoftNetCoreAppRuntimePackDir)lib\$(NetCoreAppCurrent)\System.Private.Runtime.InteropServices.JavaScript.dll"
+      Assemblies="bin\WasmSample.dll;$(MicrosoftNetCoreAppRuntimePackRidDir)lib\$(NetCoreAppCurrent)\System.Private.Runtime.InteropServices.JavaScript.dll"
       AssemblySearchPaths="@(AssemblySearchPaths)">
       <Output TaskParameter="ReferencedAssemblies" ItemName="ReferencedAssemblies" />
     </WasmLoadAssembliesAndReferences>
 
     <WasmAppBuilder
       AppDir="$(AppDir)"
-      MicrosoftNetCoreAppRuntimePackDir="$(MicrosoftNetCoreAppRuntimePackDir)"
+      MicrosoftNetCoreAppRuntimePackDir="$(MicrosoftNetCoreAppRuntimePackRidDir)"
       MainAssembly="bin\WasmSample.dll"
       MainJS="runtime.js"
       Assemblies="@(ReferencedAssemblies)">
