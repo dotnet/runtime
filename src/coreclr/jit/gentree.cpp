@@ -15491,7 +15491,7 @@ GenTree* Compiler::gtNewTempAssign(
         }
     }
 #endif
-    
+
     // Added this noway_assert for runtime\issue 44895, to protect against silent bad codegen
     //
     if ((dstTyp == TYP_STRUCT) && (valTyp == TYP_REF))
