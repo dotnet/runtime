@@ -364,7 +364,7 @@ REM === Restore optimization profile data
 REM ===
 REM =========================================================================================
 
-set OptDataProjectFilePath=%__ProjectDir%\src\.nuget\optdata\optdata.csproj
+set OptDataProjectFilePath=%__ProjectDir%\.nuget\optdata\optdata.csproj
 if %__RestoreOptData% EQU 1 (
     echo %__MsgPrefix%Restoring the OptimizationData Package
     set "__BinLog=\"%__LogsDir%\OptRestore_%__TargetOS%__%__BuildArch%__%__BuildType%.binlog\""

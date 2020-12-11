@@ -134,7 +134,7 @@
 
         <!-- Wasm App Builder always builds in Debug -->
         <RunTimeDependencyCopyLocal
-          Include="$(ArtifactsBinDir)\WasmAppBuilder\Debug\$(NetCoreAppCurrent)\publish\**"
+          Include="$(ArtifactsBinDir)\WasmAppBuilder\Debug\$(NetCoreAppToolCurrent)\publish\**"
           TargetDir="WasmAppBuilder/"/>
 
         <RunTimeDependencyCopyLocal

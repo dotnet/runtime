@@ -7,6 +7,11 @@ include(CheckStructHasMember)
 include(CheckSymbolExists)
 include(CheckTypeSize)
 
+# CMP0075 Include file check macros honor CMAKE_REQUIRED_LIBRARIES.
+if(POLICY CMP0075)
+    cmake_policy(SET CMP0075 NEW)
+endif()
+
 if (CLR_CMAKE_TARGET_ANDROID)
     set(PAL_UNIX_NAME \"ANDROID\")
 elseif (CLR_CMAKE_TARGET_BROWSER)
