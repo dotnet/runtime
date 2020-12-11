@@ -3,7 +3,8 @@
   <UsingTask TaskName="WasmLoadAssembliesAndReferences" AssemblyFile="$(WasmAppBuilderTasksAssemblyPath)" />
 
   <Target Name="WasmBuildApp" AfterTargets="Publish">
-    <!-- FIXME: TArgetOS check -->
+    <Error Condition="'$(TargetOS)' != 'Browser'" Text="%24(TargetOS) != Browser. Actual value: $(TargetOS)" />
+
     <Error Condition="'$(WasmMainAssemblyPath)' == ''" Text="%24(WasmMainAssemblyPath) property needs to be set" />
     <Error Condition="'$(WasmAppDir)' == ''" Text="%24(WasmAppDir) property needs to be set" />
     <Error Condition="!Exists('$(MicrosoftNetCoreAppRuntimePackRidDir)')" Text="MicrosoftNetCoreAppRuntimePackRidDir=$(MicrosoftNetCoreAppRuntimePackRidDir) doesn't exist" />
