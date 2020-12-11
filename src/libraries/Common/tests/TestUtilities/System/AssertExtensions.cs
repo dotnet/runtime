@@ -418,12 +418,12 @@ namespace System
                 T currentExpectedItem = expectedArray[i];
                 if (!actualItemCountMapping.TryGetValue(currentExpectedItem, out ItemCount countInfo))
                 {
-                    throw new XunitException($"Expected: {currentExpectedItem} but Not found");
+                    throw new XunitException($"Expected: {currentExpectedItem} but not found");
                 }
 
                 if (countInfo.Remain == 0)
                 {
-                    throw new XunitException($"Expected more: {currentExpectedItem}{Environment.NewLine}Actual: totally {countInfo.Original} {currentExpectedItem}");
+                    throw new XunitException($"Collections are not equal.{Environment.NewLine}Totally {countInfo.Original} {currentExpectedItem} in actual collection but expect more {currentExpectedItem}");
                 }
 
                 countInfo.Remain--;
