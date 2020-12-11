@@ -30,6 +30,8 @@
       InvariantGlobalization="$(WasmInvariantGlobalization)"
       SatelliteAssemblies="@(WasmSatelliteAssemblies)"
       FilesToIncludeInFileSystem="@(WasmFilesToIncludeInFileSystem)"
+      IcuDataFileName="$(WasmIcuDataFileName)"
+      RemoteSources="@(WasmRemoteSources)"
       DebugLevel="$(WasmDebugLevel)">
       <Output TaskParameter="FileWrites" ItemName="FileWrites" />
     </WasmAppBuilder>
