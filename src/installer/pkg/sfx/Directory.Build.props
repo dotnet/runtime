@@ -1,10 +1,12 @@
 <Project>
   <PropertyGroup>
     <EnsureRuntimeIdentifierSet>true</EnsureRuntimeIdentifierSet>
+    <DisableImplicitFrameworkReferences>true</DisableImplicitFrameworkReferences>
   </PropertyGroup>
   <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.props, $(MSBuildThisFileDirectory)..))" />
 
   <PropertyGroup>
+    <!-- Using the latest TargetFramework that is supported by the SDK until we can build against the live targeting pack. -->
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
     <!-- The built-in packaging targets make PackageLicenseFile and PackageLicenseExpression
          mututally exclusive. Use PackageLicenseExpression if it's available. -->
