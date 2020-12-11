@@ -3666,8 +3666,8 @@ public:
         GcSlotId newSlotId = m_gcInfoEncoder->GetStackSlotId(spOffset, flags, spBase);
         if (m_doLogging)
         {
-            printf("Stack slot id for offset %d (0x%x) (%s) %s= %d.\n", spOffset, spOffset,
-                   JitGcStackSlotBaseNames[spBase], GcSlotFlagsNames[flags & 7], newSlotId);
+            printf("Stack slot id for offset %d (%s0x%x) (%s) %s= %d.\n", spOffset, spOffset < 0 ? "-" : "",
+                   abs(spOffset), JitGcStackSlotBaseNames[spBase], GcSlotFlagsNames[flags & 7], newSlotId);
         }
         return newSlotId;
     }
