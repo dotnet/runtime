@@ -3054,7 +3054,12 @@ void emitter::emitInsLoadInd(instruction ins, emitAttr attr, regNumber dstReg, G
         unsigned             offset  = varNode->GetLclOffs();
         emitIns_R_S(ins, attr, dstReg, varNode->GetLclNum(), offset);
 
-        // Updating variable liveness after instruction was emitted
+        // Updating variable liveness after instruction was emitted.
+        // TODO-Review: it appears that this call to genUpdateLife does nothing because it
+        // returns quickly when passed GT_LCL_VAR_ADDR or GT_LCL_FLD_ADDR. Below, emitInsStoreInd
+        // had similar code that replaced `varNode` with `mem` (to fix a GC hole). It might be
+        // appropriate to do that here as well, but doing so showed no asm diffs, so it's not
+        // clear when this scenario gets hit, at least for GC refs.
         codeGen->genUpdateLife(varNode);
         return;
     }
@@ -3116,7 +3121,7 @@ void emitter::emitInsStoreInd(instruction ins, emitAttr attr, GenTreeStoreInd* m
         }
 
         // Updating variable liveness after instruction was emitted
-        codeGen->genUpdateLife(varNode);
+        codeGen->genUpdateLife(mem);
         return;
     }
 
