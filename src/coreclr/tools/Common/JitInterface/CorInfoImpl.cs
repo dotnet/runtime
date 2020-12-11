@@ -476,15 +476,15 @@ namespace Internal.JitInterface
                 methodInfo->options |= CorInfoOptions.CORINFO_GENERICS_CTXT_FROM_METHODTABLE;
             }
             methodInfo->regionKind = CorInfoRegionKind.CORINFO_REGION_NONE;
-            Get_CORINFO_SIG_INFO(method, &methodInfo->args);
+            Get_CORINFO_SIG_INFO(method, methodIL, sig: &methodInfo->args);
             Get_CORINFO_SIG_INFO(methodIL.GetLocals(), &methodInfo->locals);
 
             return true;
         }
 
-        private void Get_CORINFO_SIG_INFO(MethodDesc method, CORINFO_SIG_INFO* sig, bool suppressHiddenArgument = false)
+        private void Get_CORINFO_SIG_INFO(MethodDesc method, MethodIL methodIL, CORINFO_SIG_INFO* sig, bool suppressHiddenArgument = false)
         {
-            Get_CORINFO_SIG_INFO(method.Signature, sig);
+            Get_CORINFO_SIG_INFO(method.Signature, methodIL, sig);
 
             // Does the method have a hidden parameter?
             bool hasHiddenParameter = !suppressHiddenArgument && method.RequiresInstArg();
@@ -612,7 +612,7 @@ namespace Internal.JitInterface
                 _ => null
             };
 
-        private void Get_CORINFO_SIG_INFO(MethodSignature signature, CORINFO_SIG_INFO* sig)
+        private void Get_CORINFO_SIG_INFO(MethodSignature signature, MethodIL methodIL, CORINFO_SIG_INFO* sig)
         {
             sig->callConv = (CorInfoCallConv)(signature.Flags & MethodSignatureFlags.UnmanagedCallingConventionMask);
 
@@ -641,7 +641,7 @@ namespace Internal.JitInterface
 
             sig->pSig = (byte*)ObjectToHandle(signature);
             sig->cbSig = 0; // Not used by the JIT
-            sig->scope = null; // Not used by the JIT
+            sig->scope = (CORINFO_MODULE_STRUCT_*)ObjectToHandle(methodIL);
             sig->token = 0; // Not used by the JIT
         }
 
@@ -907,7 +907,7 @@ namespace Internal.JitInterface
                 }
             }
 
-            Get_CORINFO_SIG_INFO(method, sig);
+            Get_CORINFO_SIG_INFO(method, _compilation.GetMethodIL(method), sig: sig);
         }
 
         private bool getMethodInfo(CORINFO_METHOD_STRUCT_* ftn, CORINFO_METHOD_INFO* info)
@@ -1064,6 +1064,7 @@ namespace Internal.JitInterface
 
             if (method != null)
             {
+                MethodDesc methodDesc = HandleToObject(method);
                 CorInfoCallConvExtension callConv = GetUnmanagedCallConv(HandleToObject(method), out bool suppressGCTransition);
                 if (pSuppressGCTransition != null)
                 {
@@ -1075,7 +1076,7 @@ namespace Internal.JitInterface
             {
                 Debug.Assert(sig != null);
 
-                CorInfoCallConvExtension callConv = GetUnmanagedCallConv((MethodSignature)HandleToObject((IntPtr)sig->pSig), out bool suppressGCTransition);
+                CorInfoCallConvExtension callConv = GetUnmanagedCallConv((MethodSignature)HandleToObject((IntPtr)sig->pSig), (MethodIL)HandleToObject((IntPtr)sig->scope), out bool suppressGCTransition);
                 if (pSuppressGCTransition != null)
                 {
                     *pSuppressGCTransition = suppressGCTransition ? 1 : 0;
@@ -1111,12 +1112,21 @@ namespace Internal.JitInterface
                     return GetUnmanagedCallingConventionFromAttribute(unmanagedCallersOnlyAttribute);
                 }
             }
-            return GetUnmanagedCallConv(methodDesc.Signature, out suppressGCTransition);
+            // We don't want to do any additional resolution based on what method we're in,
+            // so don't pass the current method's IL context for when we process the signature.
+            return GetUnmanagedCallConv(methodDesc.Signature, null, out suppressGCTransition);
         }
 
-        private CorInfoCallConvExtension GetUnmanagedCallConv(MethodSignature signature, out bool suppressGCTransition)
+        private CorInfoCallConvExtension GetUnmanagedCallConv(MethodSignature signature, MethodIL methodIL, out bool suppressGCTransition)
         {
             suppressGCTransition = false;
+            // TODO: Remove when we have a public way to represent SuppressGCTransition on a calli.
+            if (methodIL is PInvokeILStubMethodIL stubIL &&
+                stubIL.OwningMethod.IsPInvoke &&
+                stubIL.OwningMethod.IsSuppressGCTransition())
+            {
+                suppressGCTransition = true;
+            }
             switch (signature.Flags & MethodSignatureFlags.UnmanagedCallingConventionMask)
             {
                 case MethodSignatureFlags.None:
@@ -1388,7 +1398,7 @@ namespace Internal.JitInterface
             var methodIL = (MethodIL)HandleToObject((IntPtr)module);
             var methodSig = (MethodSignature)methodIL.GetObject((int)sigTOK);
 
-            Get_CORINFO_SIG_INFO(methodSig, sig);
+            Get_CORINFO_SIG_INFO(methodSig, methodIL, sig);
 
 #if !READYTORUN
             // Check whether we need to report this as a fat pointer call
@@ -1404,7 +1414,7 @@ namespace Internal.JitInterface
         private void findCallSiteSig(CORINFO_MODULE_STRUCT_* module, uint methTOK, CORINFO_CONTEXT_STRUCT* context, CORINFO_SIG_INFO* sig)
         {
             var methodIL = (MethodIL)HandleToObject((IntPtr)module);
-            Get_CORINFO_SIG_INFO(((MethodDesc)methodIL.GetObject((int)methTOK)), sig);
+            Get_CORINFO_SIG_INFO(((MethodDesc)methodIL.GetObject((int)methTOK)), methodIL, sig: sig);
         }
 
         private CORINFO_CLASS_STRUCT_* getTokenTypeAsHandle(ref CORINFO_RESOLVED_TOKEN pResolvedToken)
