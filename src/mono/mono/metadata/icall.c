@@ -3294,6 +3294,28 @@ leave:
 	HANDLE_FUNCTION_RETURN_VAL (is_ok (error));
 }
 
+#ifndef ENABLE_NETCORE
+void
+ves_icall_RuntimeType_GetGUID (MonoReflectionTypeHandle type_handle, MonoArrayHandle guid_handle, MonoError *error)
+{
+	error_init (error);
+
+	g_assert (mono_array_handle_length (guid_handle) == 16);
+	if (MONO_HANDLE_IS_NULL (type_handle)) {
+		mono_error_set_argument_null (error, "type", "");
+		return;
+	}
+
+	MonoType *type = MONO_HANDLE_GETVAL (type_handle, type);
+	MonoClass *klass = mono_class_from_mono_type_internal (type);
+	if (!mono_class_init_checked (klass, error))
+		return;
+
+	guint8 *data = (guint8*) mono_array_addr_with_size_internal (MONO_HANDLE_RAW (guid_handle), 1, 0);
+	mono_metadata_get_class_guid (klass, data, error);
+}
+#endif
+
 MonoArrayHandle
 ves_icall_RuntimeType_GetGenericArguments (MonoReflectionTypeHandle ref_type, MonoBoolean runtimeTypeArray, MonoError *error)
 {
