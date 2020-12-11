@@ -2151,6 +2151,7 @@ namespace System.Transactions.Tests
         [Theory]
         [InlineData(false)]
         [InlineData(true)]
+        [PlatformSpecific(~TestPlatforms.Browser)] // Cannot wait on monitors on this runtime.
         public void PSPENonMsdtcBlockingCloneCompletedAfterCommit(bool promote)
         {
             // Blocking clone that isn't completed before commit
@@ -2164,6 +2165,7 @@ namespace System.Transactions.Tests
         [Theory]
         [InlineData(false)]
         [InlineData(true)]
+        [PlatformSpecific(~TestPlatforms.Browser)] // Cannot wait on monitors on this runtime.
         public void PSPENonMsdtcTimeout(bool promote)
         {
             // tx timeout

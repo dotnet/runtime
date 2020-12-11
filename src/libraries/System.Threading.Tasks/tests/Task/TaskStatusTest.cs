@@ -432,6 +432,7 @@ namespace System.Threading.Tasks.Tests.Status
 
         [Fact]
         [OuterLoop]
+        [PlatformSpecific(~TestPlatforms.Browser)] // Cannot wait on monitors on this runtime.
         public static void TaskStatus2()
         {
             TestParameters parameters = new TestParameters(TestAction.CompletedTask)
@@ -444,6 +445,7 @@ namespace System.Threading.Tasks.Tests.Status
 
         [Fact]
         [OuterLoop]
+        [PlatformSpecific(~TestPlatforms.Browser)] // Cannot wait on monitors on this runtime.
         public static void TaskStatus3()
         {
             TestParameters parameters = new TestParameters(TestAction.CompletedTask)
@@ -505,6 +507,7 @@ namespace System.Threading.Tasks.Tests.Status
 
         [Fact]
         [OuterLoop]
+        [PlatformSpecific(~TestPlatforms.Browser)] // Cannot wait on monitors on this runtime.
         public static void TaskStatus8()
         {
             TestParameters parameters = new TestParameters(TestAction.CancelTask)
@@ -517,6 +520,7 @@ namespace System.Threading.Tasks.Tests.Status
 
         [Fact]
         [OuterLoop]
+        [PlatformSpecific(~TestPlatforms.Browser)] // Cannot wait on monitors on this runtime.
         public static void TaskStatus9()
         {
             TestParameters parameters = new TestParameters(TestAction.CancelTask)
@@ -557,6 +561,7 @@ namespace System.Threading.Tasks.Tests.Status
 
         [Fact]
         [OuterLoop]
+        [PlatformSpecific(~TestPlatforms.Browser)] // Cannot wait on monitors on this runtime.
         public static void TaskStatus12()
         {
             TestParameters parameters = new TestParameters(TestAction.FailedTask)
@@ -572,6 +577,7 @@ namespace System.Threading.Tasks.Tests.Status
 
         [Fact]
         [OuterLoop]
+        [PlatformSpecific(~TestPlatforms.Browser)] // Cannot wait on monitors on this runtime.
         public static void TaskStatus13()
         {
             TestParameters parameters = new TestParameters(TestAction.FailedTask)
@@ -613,6 +619,7 @@ namespace System.Threading.Tasks.Tests.Status
 
         [Fact]
         [OuterLoop]
+        [PlatformSpecific(~TestPlatforms.Browser)] // Cannot wait on monitors on this runtime.
         public static void TaskStatus16()
         {
             TestParameters parameters = new TestParameters(TestAction.CancelTaskAndAcknowledge)

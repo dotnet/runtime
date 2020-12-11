@@ -14,6 +14,7 @@ namespace System.Threading.Tasks.Tests
     {
         [Fact]
         [OuterLoop]
+        [PlatformSpecific(~TestPlatforms.Browser)] // Cannot wait on monitors on this runtime.
         public static void RunRunTests()
         {
             //
@@ -130,6 +131,7 @@ namespace System.Threading.Tasks.Tests
 
         [Fact]
         [OuterLoop]
+        [PlatformSpecific(~TestPlatforms.Browser)] // Cannot wait on monitors on this runtime.
         public static void RunRunTests_Cancellation_Negative()
         {
             CancellationTokenSource cts = new CancellationTokenSource();

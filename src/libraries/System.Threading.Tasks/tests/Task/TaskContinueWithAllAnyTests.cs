@@ -803,6 +803,7 @@ namespace System.Threading.Tasks.Tests.ContinueWithAllAny
 
         [Fact]
         [OuterLoop]
+        [PlatformSpecific(~TestPlatforms.Browser)] // Cannot wait on monitors on this runtime.
         public static void TaskContinueWithAllAnyTest2()
         {
             TaskInfo node1 = new TaskInfo(WorkloadType.Light);
@@ -819,6 +820,7 @@ namespace System.Threading.Tasks.Tests.ContinueWithAllAny
 
         [Fact]
         [OuterLoop]
+        [PlatformSpecific(~TestPlatforms.Browser)] // Cannot wait on monitors on this runtime.
         public static void TaskContinueWithAllAnyTest3()
         {
             TaskInfo node1 = new TaskInfo(WorkloadType.Heavy);
@@ -844,6 +846,7 @@ namespace System.Threading.Tasks.Tests.ContinueWithAllAny
 
         [Fact]
         [OuterLoop]
+        [PlatformSpecific(~TestPlatforms.Browser)] // Cannot wait on monitors on this runtime.
         public static void TaskContinueWithAllAnyTest5()
         {
             TaskInfo node1 = new TaskInfo(WorkloadType.VeryHeavy);
@@ -873,6 +876,7 @@ namespace System.Threading.Tasks.Tests.ContinueWithAllAny
 
         [Fact]
         [OuterLoop]
+        [PlatformSpecific(~TestPlatforms.Browser)] // Cannot wait on monitors on this runtime.
         public static void TaskContinueWithAllAnyTest7()
         {
             TaskInfo node1 = new TaskInfo(WorkloadType.VeryHeavy);
@@ -900,6 +904,7 @@ namespace System.Threading.Tasks.Tests.ContinueWithAllAny
 
         [Fact]
         [OuterLoop]
+        [PlatformSpecific(~TestPlatforms.Browser)] // Cannot wait on monitors on this runtime.
         public static void TaskContinueWithAllAnyTest9()
         {
             TaskInfo node1 = new TaskInfo(WorkloadType.VeryHeavy);
@@ -914,6 +919,7 @@ namespace System.Threading.Tasks.Tests.ContinueWithAllAny
 
         [Fact]
         [OuterLoop]
+        [PlatformSpecific(~TestPlatforms.Browser)] // Cannot wait on monitors on this runtime.
         public static void TaskContinueWithAllAnyTest10()
         {
             TaskInfo node1 = new TaskInfo(WorkloadType.VeryHeavy);
@@ -930,6 +936,7 @@ namespace System.Threading.Tasks.Tests.ContinueWithAllAny
 
         [Fact]
         [OuterLoop]
+        [PlatformSpecific(~TestPlatforms.Browser)] // Cannot wait on monitors on this runtime.
         public static void TaskContinueWithAllAnyTest11()
         {
             TaskInfo node1 = new TaskInfo(WorkloadType.Exceptional);
@@ -970,6 +977,7 @@ namespace System.Threading.Tasks.Tests.ContinueWithAllAny
 
         [Fact]
         [OuterLoop]
+        [PlatformSpecific(~TestPlatforms.Browser)] // Cannot wait on monitors on this runtime.
         public static void TaskContinueWithAllAnyTest14()
         {
             TaskInfo node1 = new TaskInfo(WorkloadType.Light);
@@ -1010,6 +1018,7 @@ namespace System.Threading.Tasks.Tests.ContinueWithAllAny
 
         [Fact]
         [OuterLoop]
+        [PlatformSpecific(~TestPlatforms.Browser)] // Cannot wait on monitors on this runtime.
         public static void TaskContinueWithAllAnyTest17()
         {
             TaskInfo node1 = new TaskInfo(WorkloadType.VeryHeavy);
@@ -1074,6 +1083,7 @@ namespace System.Threading.Tasks.Tests.ContinueWithAllAny
 
         [Fact]
         [OuterLoop]
+        [PlatformSpecific(~TestPlatforms.Browser)] // Cannot wait on monitors on this runtime.
         public static void TaskContinueWithAllAnyTest22()
         {
             TaskInfo node1 = new TaskInfo(WorkloadType.VeryHeavy);
@@ -1101,6 +1111,7 @@ namespace System.Threading.Tasks.Tests.ContinueWithAllAny
 
         [Fact]
         [OuterLoop]
+        [PlatformSpecific(~TestPlatforms.Browser)] // Cannot wait on monitors on this runtime.
         public static void TaskContinueWithAllAnyTest24()
         {
             TaskInfo node1 = new TaskInfo(WorkloadType.VeryHeavy);
@@ -1128,6 +1139,7 @@ namespace System.Threading.Tasks.Tests.ContinueWithAllAny
 
         [Fact]
         [OuterLoop]
+        [PlatformSpecific(~TestPlatforms.Browser)] // Cannot wait on monitors on this runtime.
         public static void TaskContinueWithAllAnyTest26()
         {
             TaskInfo node1 = new TaskInfo(WorkloadType.VeryHeavy);
@@ -1166,6 +1178,7 @@ namespace System.Threading.Tasks.Tests.ContinueWithAllAny
 
         [Fact]
         [OuterLoop]
+        [PlatformSpecific(~TestPlatforms.Browser)] // Cannot wait on monitors on this runtime.
         public static void TaskContinueWithAllAnyTest28()
         {
             TaskInfo node1 = new TaskInfo(WorkloadType.VeryHeavy);
@@ -1187,6 +1200,7 @@ namespace System.Threading.Tasks.Tests.ContinueWithAllAny
 
         [Fact]
         [OuterLoop]
+        [PlatformSpecific(~TestPlatforms.Browser)] // Cannot wait on monitors on this runtime.
         public static void TaskContinueWithAllAnyTest29()
         {
             TaskInfo node1 = new TaskInfo(WorkloadType.VeryHeavy);
@@ -1208,6 +1222,7 @@ namespace System.Threading.Tasks.Tests.ContinueWithAllAny
 
         [Fact]
         [OuterLoop]
+        [PlatformSpecific(~TestPlatforms.Browser)] // Cannot wait on monitors on this runtime.
         public static void TaskContinueWithAllAnyTest30()
         {
             TaskInfo node1 = new TaskInfo(WorkloadType.VeryHeavy);
@@ -1312,6 +1327,7 @@ namespace System.Threading.Tasks.Tests.ContinueWithAllAny
 
         [Fact]
         [OuterLoop]
+        [PlatformSpecific(~TestPlatforms.Browser)] // Cannot wait on monitors on this runtime.
         public static void TaskContinueWithAllAnyTest38()
         {
             TaskInfo node1 = new TaskInfo(WorkloadType.VeryHeavy);
@@ -1325,6 +1341,7 @@ namespace System.Threading.Tasks.Tests.ContinueWithAllAny
 
         [Fact]
         [OuterLoop]
+        [PlatformSpecific(~TestPlatforms.Browser)] // Cannot wait on monitors on this runtime.
         public static void TaskContinueWithAllAnyTest39()
         {
             TaskInfo node1 = new TaskInfo(WorkloadType.VeryHeavy);

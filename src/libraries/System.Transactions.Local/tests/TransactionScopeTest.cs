@@ -507,6 +507,7 @@ namespace System.Transactions.Tests
 
         [Fact]
         [OuterLoop] // 30 second timeout
+        [PlatformSpecific(~TestPlatforms.Browser)] // Cannot wait on monitors on this runtime.
         public void RMFail2()
         {
             IntResourceManager irm = new IntResourceManager(1);

@@ -373,6 +373,7 @@ namespace System.Threading.Tests
 
         [Fact]
         [OuterLoop]
+        [PlatformSpecific(~TestPlatforms.Browser)] // Cannot wait on monitors on this runtime.
         public static void RunBarrierTest10a()
         {
             // Regression test for Barrier race condition

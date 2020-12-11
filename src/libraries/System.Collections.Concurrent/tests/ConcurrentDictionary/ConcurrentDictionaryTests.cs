@@ -1033,6 +1033,7 @@ namespace System.Collections.Concurrent.Tests
 
         [OuterLoop("Runs for several seconds")]
         [Fact]
+        [PlatformSpecific(~TestPlatforms.Browser)] // Cannot wait on monitors on this runtime.
         public void ConcurrentWriteRead_NoTornValues()
         {
             var cd = new ConcurrentDictionary<int, KeyValuePair<long, long>>();

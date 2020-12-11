@@ -165,6 +165,7 @@ namespace System.Transactions.Tests
         [InlineData(CloneType.BlockingDependent, IsolationLevel.Snapshot, false, TransactionStatus.Aborted)]
         [InlineData(CloneType.BlockingDependent, IsolationLevel.Chaos, false, TransactionStatus.Aborted)]
         [InlineData(CloneType.BlockingDependent, IsolationLevel.Unspecified, false, TransactionStatus.Aborted)]
+        [PlatformSpecific(~TestPlatforms.Browser)] // Cannot wait on monitors on this runtime.
         public void RunOuterLoop(CloneType cloneType, IsolationLevel isoLevel, bool forcePromote, TransactionStatus expectedStatus)
         {
             Run(cloneType, isoLevel, forcePromote, expectedStatus);

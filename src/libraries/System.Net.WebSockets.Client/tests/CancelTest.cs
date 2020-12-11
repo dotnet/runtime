@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 using Xunit;
 using Xunit.Abstractions;
-
+[PlatformSpecific(~TestPlatforms.Browser)] // Cannot wait on monitors on this runtime.
 namespace System.Net.WebSockets.Client.Tests
 {
     public class CancelTest : ClientWebSocketTestBase

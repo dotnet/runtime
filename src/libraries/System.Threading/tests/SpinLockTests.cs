@@ -76,6 +76,7 @@ namespace System.Threading.Tests
         [InlineData(2, true)]
         [InlineData(128, true)]
         [InlineData(256, true)]
+        [PlatformSpecific(~TestPlatforms.Browser)] // Cannot wait on monitors on this runtime.
         public static void RunSpinLockTest0_Enter(int threadsCount, bool enableThreadIDs)
         {
             // threads array
@@ -146,6 +147,7 @@ namespace System.Threading.Tests
         [InlineData(2, true)]
         [InlineData(128, true)]
         [InlineData(256, true)]
+        [PlatformSpecific(~TestPlatforms.Browser)] // Cannot wait on monitors on this runtime.
         public static void RunSpinLockTest1_TryEnter(int threadsCount, bool enableThreadIDs)
         {
             for (int j = 0; j < 2; j++)
@@ -200,6 +202,7 @@ namespace System.Threading.Tests
         [InlineData(2, true)]
         [InlineData(128, true)]
         [InlineData(256, true)]
+        [PlatformSpecific(~TestPlatforms.Browser)] // Cannot wait on monitors on this runtime.
         public static void RunSpinLockTest2_TryEnter(int threadsCount, bool enableThreadIDs)
         {
             for (int j = 0; j < 2; j++)

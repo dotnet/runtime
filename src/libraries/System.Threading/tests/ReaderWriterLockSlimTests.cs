@@ -382,6 +382,7 @@ namespace System.Threading.Tests
 
         [Fact]
         [OuterLoop]
+        [PlatformSpecific(~TestPlatforms.Browser)] // Cannot wait on monitors on this runtime.
         public static void ReleaseReadersWhenWaitingWriterTimesOut()
         {
             using (var rwls = new ReaderWriterLockSlim())
@@ -451,6 +452,7 @@ namespace System.Threading.Tests
 
         [Fact]
         [OuterLoop]
+        [PlatformSpecific(~TestPlatforms.Browser)] // Cannot wait on monitors on this runtime.
         public static void DontReleaseWaitingReadersWhenThereAreWaitingWriters()
         {
             using(var rwls = new ReaderWriterLockSlim())

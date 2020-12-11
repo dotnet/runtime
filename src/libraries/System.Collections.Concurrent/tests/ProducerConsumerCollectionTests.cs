@@ -737,6 +737,7 @@ namespace System.Collections.Concurrent.Tests
 
         [Fact]
         [OuterLoop]
+        [PlatformSpecific(~TestPlatforms.Browser)] // Cannot wait on monitors on this runtime.
         public void ManyConcurrentAddsTakes_CollectionRemainsConsistent()
         {
             IProducerConsumerCollection<int> c = CreateProducerConsumerCollection();

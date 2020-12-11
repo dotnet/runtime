@@ -46,6 +46,7 @@ namespace System.Threading.Tasks.Tests
         [OuterLoop]
         [InlineData(true)]
         [InlineData(false)]
+        [PlatformSpecific(~TestPlatforms.Browser)] // Cannot wait on monitors on this runtime.
         public void WaitUntilCompleteTechnique(bool hasReturnType)
         {
             _hasReturnType = hasReturnType;
@@ -114,6 +115,7 @@ namespace System.Threading.Tasks.Tests
         [OuterLoop]
         [InlineData(true)]
         [InlineData(false)]
+        [PlatformSpecific(~TestPlatforms.Browser)] // Cannot wait on monitors on this runtime.
         public void CallbackTechnique(bool hasReturnType)
         {
             _hasReturnType = hasReturnType;

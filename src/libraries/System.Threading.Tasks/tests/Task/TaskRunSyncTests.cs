@@ -434,6 +434,7 @@ namespace System.Threading.Tasks.Tests
         }
         [Fact]
         [OuterLoop]
+        [PlatformSpecific(~TestPlatforms.Browser)] // Cannot wait on monitors on this runtime.
         public static void TaskRunSyncTest3()
         {
             TestParameters_RunSync parameters = new TestParameters_RunSync(PreTaskStatus.Completed, PostRunSyncAction.Wait, WorkloadType.CreateChildTask, TaskCreationOptions.None, TaskSchedulerType.CustomWithInlineExecution);
@@ -525,6 +526,7 @@ namespace System.Threading.Tasks.Tests
 
         [Fact]
         [OuterLoop]
+        [PlatformSpecific(~TestPlatforms.Browser)] // Cannot wait on monitors on this runtime.
         public static void TaskRunSyncTest15()
         {
             TestParameters_RunSync parameters = new TestParameters_RunSync(PreTaskStatus.Created, PostRunSyncAction.ContinueWith, WorkloadType.ContinueInside, TaskCreationOptions.None, TaskSchedulerType.CustomWithInlineExecution);
@@ -542,6 +544,7 @@ namespace System.Threading.Tasks.Tests
 
         [Fact]
         [OuterLoop]
+        [PlatformSpecific(~TestPlatforms.Browser)] // Cannot wait on monitors on this runtime.
         public static void TaskRunSyncTest17()
         {
             TestParameters_RunSync parameters = new TestParameters_RunSync(PreTaskStatus.Created, PostRunSyncAction.ContinueWith, WorkloadType.CreateDetachedChildTask, TaskCreationOptions.AttachedToParent, TaskSchedulerType.CustomWithInlineExecution);
@@ -551,6 +554,7 @@ namespace System.Threading.Tasks.Tests
 
         [Fact]
         [OuterLoop]
+        [PlatformSpecific(~TestPlatforms.Browser)] // Cannot wait on monitors on this runtime.
         public static void TaskRunSyncTest18()
         {
             TestParameters_RunSync parameters = new TestParameters_RunSync(PreTaskStatus.Created, PostRunSyncAction.ContinueWith, WorkloadType.RunWithUserScheduler, TaskCreationOptions.LongRunning, TaskSchedulerType.CustomWithInlineExecution);
@@ -559,6 +563,7 @@ namespace System.Threading.Tasks.Tests
         }
         [Fact]
         [OuterLoop]
+        [PlatformSpecific(~TestPlatforms.Browser)] // Cannot wait on monitors on this runtime.
         public static void TaskRunSyncTest19()
         {
             TestParameters_RunSync parameters = new TestParameters_RunSync(PreTaskStatus.Created, PostRunSyncAction.ContinueWith, WorkloadType.ThrowException, TaskCreationOptions.LongRunning, TaskSchedulerType.CustomWithoutInlineExecution);
@@ -568,6 +573,7 @@ namespace System.Threading.Tasks.Tests
 
         [Fact]
         [OuterLoop]
+        [PlatformSpecific(~TestPlatforms.Browser)] // Cannot wait on monitors on this runtime.
         public static void TaskRunSyncTest20()
         {
             TestParameters_RunSync parameters = new TestParameters_RunSync(PreTaskStatus.Created, PostRunSyncAction.Wait, WorkloadType.ContinueInside, TaskCreationOptions.AttachedToParent, TaskSchedulerType.CustomWithoutInlineExecution);
@@ -592,6 +598,7 @@ namespace System.Threading.Tasks.Tests
 
         [Fact]
         [OuterLoop]
+        [PlatformSpecific(~TestPlatforms.Browser)] // Cannot wait on monitors on this runtime.
         public static void TaskRunSyncTest23()
         {
             TestParameters_RunSync parameters = new TestParameters_RunSync(PreTaskStatus.Created, PostRunSyncAction.Wait, WorkloadType.RunWithUserScheduler, TaskCreationOptions.AttachedToParent, TaskSchedulerType.CustomWithoutInlineExecution);
@@ -600,6 +607,7 @@ namespace System.Threading.Tasks.Tests
         }
         [Fact]
         [OuterLoop]
+        [PlatformSpecific(~TestPlatforms.Browser)] // Cannot wait on monitors on this runtime.
         public static void TaskRunSyncTest24()
         {
             TestParameters_RunSync parameters = new TestParameters_RunSync(PreTaskStatus.Created, PostRunSyncAction.Wait, WorkloadType.ThrowException, TaskCreationOptions.None, TaskSchedulerType.Default);

@@ -744,6 +744,7 @@ namespace System.Collections.Concurrent.Tests
         [Theory]
         [InlineData(4, 2048, 2, 64)]
         [OuterLoop]
+        [PlatformSpecific(~TestPlatforms.Browser)] // Cannot wait on monitors on this runtime.
         private static void TestConcurrentAddAnyTakeAny(int numOfThreads, int numOfElementsPerThread, int numOfCollections, int boundOfCollections)
         {
             //If numOfThreads is not an even number, make it even.
