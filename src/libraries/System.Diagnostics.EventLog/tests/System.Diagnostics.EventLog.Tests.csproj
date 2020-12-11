@@ -4,7 +4,6 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="EventInstanceTests.cs" />
-    <Compile Include="EventLogMessagesTests.cs" />
     <Compile Include="EventLogEntryCollectionTests.cs" />
     <Compile Include="EventLogTests\EventLogEntryWrittenTest.cs" />
     <Compile Include="EventLogTests\EventLogSourceCreationTests.cs" />
@@ -20,8 +19,11 @@
     <Compile Include="System\Diagnostics\Reader\EventLogReaderTests.cs" />
     <Compile Include="System\Diagnostics\Reader\EventLogRecordTests.cs" />
     <Compile Include="System\Diagnostics\Reader\EventLogSessionTests.cs" />
-    <Compile Include="System\Diagnostics\Reader\EventLogWatcherTests.cs" /> 
+    <Compile Include="System\Diagnostics\Reader\EventLogWatcherTests.cs" />
     <Compile Include="System\Diagnostics\Reader\ProviderMetadataTests.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="$(TargetFramework.StartsWith('$(NetCoreAppCurrent)'))">
+    <Compile Include="EventLogMessagesTests.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.CloseHandle.cs"
              Link="Common\Interop\Windows\Kernel32\Interop.CloseHandle.cs" />
     <Compile Include="$(CommonPath)Microsoft\Win32\SafeHandles\SafeLibraryHandle.cs"
