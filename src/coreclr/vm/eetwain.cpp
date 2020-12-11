@@ -3128,9 +3128,9 @@ unsigned SKIP_ALLOC_FRAME(int size, PTR_CBYTE base, unsigned offset)
         return (SKIP_PUSH_REG(base, offset));
     }
 
-    const int pageSize = (int)GetOsPageSize();
+    const int sizeProbingRequired = 0x1000;
 
-    if (size < pageSize)
+    if (size < sizeProbingRequired)
     {
         // sub esp, size
         offset = SKIP_ARITH_REG(size, base, offset);
@@ -3139,7 +3139,7 @@ unsigned SKIP_ALLOC_FRAME(int size, PTR_CBYTE base, unsigned offset)
 
         unsigned delta = 0;
 
-        if (size + STACK_PROBE_BOUNDARY_THRESHOLD_BYTES > pageSize)
+        if (size + STACK_PROBE_BOUNDARY_THRESHOLD_BYTES > sizeProbingRequired)
         {
 #ifdef _DEBUG
             WORD wOpcode = *(PTR_WORD)(base+offset);
