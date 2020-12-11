@@ -343,7 +343,7 @@ namespace $([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").
                     }
 
                     // Add Android app running log to testOutput
-                    if (ret == CoreclrTestWrapperLib.EXIT_SUCCESS_CODE)
+                    if (ret != CoreclrTestWrapperLib.EXIT_SUCCESS_CODE)
                     {
                         string androidLogFile = System.IO.Path.Combine(System.IO.Path.GetDirectoryName(testExecutable), "adb-logcat-net.dot." + _Global.category + ".log")%3B
                         if(File.Exists(androidLogFile))
@@ -352,7 +352,7 @@ namespace $([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").
                         }
                     }
 
-                    Assert.True(ret != CoreclrTestWrapperLib.EXIT_SUCCESS_CODE, string.Join(Environment.NewLine, testOutput))%3B
+                    Assert.True(ret == CoreclrTestWrapperLib.EXIT_SUCCESS_CODE, string.Join(Environment.NewLine, testOutput))%3B
                 }
             }
         }
