@@ -100,6 +100,9 @@ namespace System.Text.Json
             }
 
             _converterIsExternalAndPolymorphic = !converter.IsInternalConverter && DeclaredPropertyType != converter.TypeToConvert;
+            PropertyTypeCanBeNull = !DeclaredPropertyType.IsValueType ||
+                (DeclaredPropertyType.IsGenericType && DeclaredPropertyType.GetGenericTypeDefinition() == typeof(Nullable<>));
+
             GetPolicies(ignoreCondition, parentTypeNumberHandling, defaultValueIsNull: Converter.CanBeNull);
         }
 

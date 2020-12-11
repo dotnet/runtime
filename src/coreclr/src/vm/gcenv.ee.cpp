@@ -309,10 +309,16 @@ bool GCToEEInterface::RefCountedHandleCallbacks(Object * pObject)
     //<REVISIT_TODO>@todo optimize the access to the ref-count
     ComCallWrapper* pWrap = ComCallWrapper::GetWrapperForObject((OBJECTREF)pObject);
 
-    return pWrap != NULL && pWrap->IsWrapperActive();
-#else
-    return false;
+    if (pWrap != NULL && pWrap->IsWrapperActive())
+        return true;
 #endif
+#ifdef FEATURE_COMWRAPPERS
+    bool isRooted = false;
+    if (ComWrappersNative::HasManagedObjectComWrapper((OBJECTREF)pObject, &isRooted))
+        return isRooted;
+#endif
+
+    return false;
 }
 
 void GCToEEInterface::GcBeforeBGCSweepWork()
