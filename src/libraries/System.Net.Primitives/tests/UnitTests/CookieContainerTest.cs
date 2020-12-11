@@ -377,7 +377,7 @@ namespace System.Net.Primitives.Unit.Tests
         }
 
         [Fact]
-        public void SetCookies_ExpiryMaxValue_TimeZoneKind()
+        public void SetCookies_ExpiresMaxValue_Success()
         {
             // Expiry can be 9999-12-31 23:59:59 UTC, but if this is converted to Local time, it might exceed DateTime.MaxValue and become invalid
             // This test ensures that the DateTime in expiry has the correct kind, thereby ensuring it was interpreted as a UTC timezone
