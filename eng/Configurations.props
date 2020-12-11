@@ -86,9 +86,9 @@
 
     <_runtimeOSVersionIndex>$(_runtimeOS.IndexOfAny(".-0123456789"))</_runtimeOSVersionIndex>
     <_runtimeOSFamily Condition="'$(_runtimeOSVersionIndex)' != '-1'">$(_runtimeOS.SubString(0, $(_runtimeOSVersionIndex)))</_runtimeOSFamily>
-    <_runtimeOSFamily Condition="'$(_runtimeOSVersionIndex)' == '-1'">$(_runtimeOS)</_runtimeOSFamily>
 
     <_portableOS>linux</_portableOS>
+    <_portableOS Condition="'$(_runtimeOS)' == 'win'">win</_portableOS>
     <_portableOS Condition="'$(_runtimeOS)' == 'linux-musl'">linux-musl</_portableOS>
     <_portableOS Condition="$([MSBuild]::IsOSPlatform('OSX'))">osx</_portableOS>
     <_portableOS Condition="'$(_runtimeOSFamily)' == 'win' or '$(TargetOS)' == 'windows'">win</_portableOS>
