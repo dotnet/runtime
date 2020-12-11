@@ -389,7 +389,7 @@ namespace System
         public static void CollectionEqual<T>(IEnumerable<T> expected, IEnumerable<T> actual, IEqualityComparer<T> comparer)
         {
             var actualItemCountMapping = new Dictionary<T, ItemCount>(comparer);
-            var actualCount = 0;
+            int actualCount = 0;
             foreach (T actualItem in actual)
             {
                 if (actualItemCountMapping.TryGetValue(actualItem, out ItemCount countInfo))
