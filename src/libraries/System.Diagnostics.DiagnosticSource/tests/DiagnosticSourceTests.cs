@@ -506,6 +506,7 @@ namespace System.Diagnostics.Tests
         [InlineData(100, 102)]
         [InlineData(100, 103)]
         [InlineData(100, 104)]
+        [PlatformSpecific(~TestPlatforms.Browser)] // Cannot wait on monitors on this runtime.
         public void AllSubscriberStress(int numThreads, int numListenersPerThread)
         {
             // No listeners have been created yet
