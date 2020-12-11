@@ -2814,7 +2814,8 @@ void CodeGen::genLockedInstructions(GenTreeOp* treeNode)
                 GetEmitter()->emitIns_R_R_R(INS_swpal, dataSize, dataReg, targetReg, addrReg);
                 break;
             case GT_XADD:
-                GetEmitter()->emitIns_R_R_R(INS_ldaddal, dataSize, dataReg, (targetReg == REG_NA) ? REG_ZR : targetReg, addrReg);
+                GetEmitter()->emitIns_R_R_R(INS_ldaddal, dataSize, dataReg, (targetReg == REG_NA) ? REG_ZR : targetReg,
+                                            addrReg);
                 break;
             default:
                 assert(!"Unexpected treeNode->gtOper");
