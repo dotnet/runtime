@@ -214,7 +214,15 @@ core_root_parser.add_argument("-log_level", help=log_level_help)
 core_root_parser.add_argument("-log_file", help=log_file_help)
 core_root_parser.add_argument("-spmi_location", help=spmi_location_help)
 
-# Create a set of argument common to all commands that run SuperPMI.
+# Create a set of arguments common to target specification. Used for replay, upload, download, list-collections.
+
+target_parser = argparse.ArgumentParser(add_help=False)
+
+target_parser.add_argument("-target_arch", help=target_arch_help)
+target_parser.add_argument("-target_os", help=target_os_help)
+target_parser.add_argument("-mch_arch", help=mch_arch_help)
+
+# Create a set of arguments common to all commands that run SuperPMI.
 
 superpmi_common_parser = argparse.ArgumentParser(add_help=False)
 
@@ -223,14 +231,11 @@ superpmi_common_parser.add_argument("--break_on_error", action="store_true", hel
 superpmi_common_parser.add_argument("--skip_cleanup", action="store_true", help=skip_cleanup_help)
 superpmi_common_parser.add_argument("--sequential", action="store_true", help="Run SuperPMI in sequential mode. Default is to run in parallel for faster runs.")
 superpmi_common_parser.add_argument("-spmi_log_file", help=spmi_log_file_help)
-superpmi_common_parser.add_argument("-jit", help="Specify the filename of the jit to use, e.g., 'clrjit_win_arm64_x64.dll'. Default is clrjit.dll/libclrjit.so")
+superpmi_common_parser.add_argument("-jit_name", help="Specify the filename of the jit to use, e.g., 'clrjit_win_arm64_x64.dll'. Default is clrjit.dll/libclrjit.so")
 superpmi_common_parser.add_argument("--altjit", action="store_true", help="Set the altjit variables on replay.")
-superpmi_common_parser.add_argument("-target_arch", help=target_arch_help)
-superpmi_common_parser.add_argument("-target_os", help=target_os_help)
-superpmi_common_parser.add_argument("-mch_arch", help=mch_arch_help)
 
 # subparser for collect
-collect_parser = subparsers.add_parser("collect", description=collect_description, parents=[core_root_parser, superpmi_common_parser])
+collect_parser = subparsers.add_parser("collect", description=collect_description, parents=[core_root_parser, target_parser, superpmi_common_parser])
 
 # Add required arguments
 collect_parser.add_argument("collection_command", nargs='?', help=superpmi_collect_help)
@@ -251,9 +256,9 @@ collect_parser.add_argument("--skip_merge_step", action="store_true", help="Do n
 collect_parser.add_argument("--skip_clean_and_verify_step", action="store_true", help="Do not run the collection cleaning, TOC creation, and verifying step.")
 collect_parser.add_argument("--skip_collect_mc_files", action="store_true", help="Do not collect .MC files")
 
-# Create a set of argument common to all SuperPMI replay commands, namely basic replay and ASM diffs.
+# Create a set of arguments common to all SuperPMI replay commands, namely basic replay and ASM diffs.
 # Note that SuperPMI collection also runs a replay to verify the final MCH file, so many arguments
-# common to replay are also applicable that that replay as well.
+# common to replay are also applicable to that replay as well.
 
 replay_common_parser = argparse.ArgumentParser(add_help=False)
 
@@ -264,13 +269,13 @@ replay_common_parser.add_argument("--force_download", action="store_true", help=
 replay_common_parser.add_argument("-jit_ee_version", help=jit_ee_version_help)
 
 # subparser for replay
-replay_parser = subparsers.add_parser("replay", description=replay_description, parents=[core_root_parser, superpmi_common_parser, replay_common_parser])
+replay_parser = subparsers.add_parser("replay", description=replay_description, parents=[core_root_parser, target_parser, superpmi_common_parser, replay_common_parser])
 
 # Add required arguments
 replay_parser.add_argument("-jit_path", help="Path to clrjit. Defaults to Core_Root JIT.")
 
-# subparser for asmDiffs
-asm_diff_parser = subparsers.add_parser("asmdiffs", description=asm_diff_description, parents=[core_root_parser, superpmi_common_parser, replay_common_parser])
+# subparser for asmdiffs
+asm_diff_parser = subparsers.add_parser("asmdiffs", description=asm_diff_description, parents=[core_root_parser, target_parser, superpmi_common_parser, replay_common_parser])
 
 # Add required arguments
 asm_diff_parser.add_argument("-base_jit_path", help="Path to baseline clrjit. Defaults to baseline JIT from rolling build, by computing baseline git hash.")
@@ -285,7 +290,7 @@ asm_diff_parser.add_argument("--diff_jit_dump_only", action="store_true", help="
 asm_diff_parser.add_argument("-temp_dir", help="Specify a temporary directory used for a previous ASM diffs run (for which --skip_cleanup was used) to view the results. The replay command is skipped.")
 
 # subparser for upload
-upload_parser = subparsers.add_parser("upload", description=upload_description, parents=[core_root_parser])
+upload_parser = subparsers.add_parser("upload", description=upload_description, parents=[core_root_parser, target_parser])
 
 upload_parser.add_argument("-mch_files", metavar="MCH_FILE", required=True, nargs='+', help=upload_mch_files_help)
 upload_parser.add_argument("-az_storage_key", help="Key for the clrjit Azure Storage location. Default: use the value of the CLRJIT_AZ_KEY environment variable.")
@@ -294,7 +299,7 @@ upload_parser.add_argument("-jit_ee_version", help=jit_ee_version_help)
 upload_parser.add_argument("--skip_cleanup", action="store_true", help=skip_cleanup_help)
 
 # subparser for download
-download_parser = subparsers.add_parser("download", description=download_description, parents=[core_root_parser])
+download_parser = subparsers.add_parser("download", description=download_description, parents=[core_root_parser, target_parser])
 
 download_parser.add_argument("-filter", nargs='+', help=filter_help)
 download_parser.add_argument("-jit_ee_version", help=jit_ee_version_help)
@@ -303,7 +308,7 @@ download_parser.add_argument("--force_download", action="store_true", help=force
 download_parser.add_argument("-mch_files", metavar="MCH_FILE", nargs='+', help=replay_mch_files_help)
 
 # subparser for list-collections
-list_collections_parser = subparsers.add_parser("list-collections", description=list_collections_description, parents=[core_root_parser])
+list_collections_parser = subparsers.add_parser("list-collections", description=list_collections_description, parents=[core_root_parser, target_parser])
 
 list_collections_parser.add_argument("-jit_ee_version", help=jit_ee_version_help)
 list_collections_parser.add_argument("--all", action="store_true", help="Show all MCH files, not just those for the specified (or default) JIT-EE version, OS, and architecture")
@@ -1707,20 +1712,20 @@ def determine_pmi_location(coreclr_args):
 
 
 def determine_jit_name(coreclr_args):
-    """ Determine the jit based on the OS. If "-jit" is specified, then use the specified jit.
-        This function is called for cases where the "-jit" flag is not used, so be careful not
-        to depend on the "jit" attribute existing.
+    """ Determine the jit based on the OS. If "-jit_name" is specified, then use the specified jit.
+        This function is called for cases where the "-jit_name" flag is not used, so be careful not
+        to depend on the "jit_name" attribute existing.
 
     Args:
         coreclr_args (CoreclrArguments): parsed args
 
     Return:
-        jit_name(str) : name of the jit for this OS
+        (str) : name of the jit for this OS
     """
 
-    # If `-jit` is used, it must be given a full filename, not just a "base name", so use it without additional processing.
-    if hasattr(coreclr_args, "jit") and coreclr_args.jit is not None:
-        return coreclr_args.jit
+    # If `-jit_name` is used, it must be given a full filename, not just a "base name", so use it without additional processing.
+    if hasattr(coreclr_args, "jit_name") and coreclr_args.jit_name is not None:
+        return coreclr_args.jit_name
 
     jit_base_name = "clrjit"
     if coreclr_args.host_os == "OSX":
@@ -2647,6 +2652,34 @@ def setup_args(args):
             return os.path.abspath(jit_path)
         return find_tool(coreclr_args, determine_jit_name(coreclr_args), search_path=False)  # It doesn't make sense to search PATH for the JIT dll.
 
+    def verify_jit_ee_version_arg():
+
+        coreclr_args.verify(args,
+                            "jit_ee_version",
+                            lambda unused: True,
+                            "Invalid JIT-EE Version.",
+                            modify_arg=setup_jit_ee_version_arg)
+
+    def verify_target_args():
+
+        coreclr_args.verify(args,
+                            "target_os",
+                            lambda target_os: check_target_os(coreclr_args, target_os),
+                            lambda target_os: "Unknown target_os {}\nSupported OS: {}".format(target_os, (", ".join(coreclr_args.valid_host_os))),
+                            modify_arg=lambda target_os: target_os if target_os is not None else coreclr_args.host_os) # Default to `host_os`
+
+        coreclr_args.verify(args,
+                            "target_arch",
+                            lambda target_arch: check_target_arch(coreclr_args, target_arch),
+                            lambda target_arch: "Unknown target_arch {}\nSupported architectures: {}".format(target_arch, (", ".join(coreclr_args.valid_arches))),
+                            modify_arg=lambda target_arch: target_arch if target_arch is not None else coreclr_args.arch) # Default to `arch`
+
+        coreclr_args.verify(args,
+                            "mch_arch",
+                            lambda mch_arch: check_mch_arch(coreclr_args, mch_arch),
+                            lambda mch_arch: "Unknown mch_arch {}\nSupported architectures: {}".format(mch_arch, (", ".join(coreclr_args.valid_arches))),
+                            modify_arg=lambda mch_arch: mch_arch if mch_arch is not None else coreclr_args.target_arch) # Default to `target_arch`
+
     def verify_superpmi_common_args():
 
         coreclr_args.verify(args,
@@ -2680,44 +2713,22 @@ def setup_args(args):
 
     def verify_replay_common_args():
 
+        verify_jit_ee_version_arg()
+
         coreclr_args.verify(args,
                             "force_download",
                             lambda unused: True,
                             "Unable to set force_download")
 
         coreclr_args.verify(args,
-                            "jit",
+                            "jit_name",
                             lambda unused: True,
-                            "Unable to set jit.")
+                            "Unable to set jit_name.")
 
         coreclr_args.verify(args,
                             "altjit",                   # Must be set before `jit_path` (determine_jit_name() depends on it)
                             lambda unused: True,
                             "Unable to set altjit.")
-
-        coreclr_args.verify(args,
-                            "target_os",
-                            lambda target_os: check_target_os(coreclr_args, target_os),
-                            lambda target_os: "Unknown target_os {}\nSupported OS: {}".format(target_os, (", ".join(coreclr_args.valid_host_os))),
-                            modify_arg=lambda target_os: target_os if target_os is not None else coreclr_args.host_os) # Default to `host_os`
-
-        coreclr_args.verify(args,
-                            "target_arch",
-                            lambda target_arch: check_target_arch(coreclr_args, target_arch),
-                            lambda target_arch: "Unknown target_arch {}\nSupported architectures: {}".format(target_arch, (", ".join(coreclr_args.valid_arches))),
-                            modify_arg=lambda target_arch: target_arch if target_arch is not None else coreclr_args.arch) # Default to `arch`
-
-        coreclr_args.verify(args,
-                            "mch_arch",
-                            lambda mch_arch: check_mch_arch(coreclr_args, mch_arch),
-                            lambda mch_arch: "Unknown mch_arch {}\nSupported architectures: {}".format(mch_arch, (", ".join(coreclr_args.valid_arches))),
-                            modify_arg=lambda mch_arch: mch_arch if mch_arch is not None else coreclr_args.target_arch) # Default to `target_arch`
-
-        coreclr_args.verify(args,
-                            "jit_ee_version",
-                            lambda unused: True,
-                            "Invalid JIT-EE Version.",
-                            modify_arg=setup_jit_ee_version_arg)
 
         coreclr_args.verify(args,
                             "filter",
@@ -2731,38 +2742,18 @@ def setup_args(args):
 
     if coreclr_args.mode == "collect":
 
+        verify_target_args()
         verify_superpmi_common_args()
 
         coreclr_args.verify(args,
-                            "jit",  # The replay code checks this, so make sure it's set
+                            "jit_name",  # The replay code checks this, so make sure it's set
                             lambda unused: True,
-                            "Unable to set jit.")
+                            "Unable to set jit_name.")
 
         coreclr_args.verify(args,
                             "altjit",  # The replay code checks this, so make sure it's set
                             lambda unused: True,
                             "Unable to set altjit.")
-
-        # For collection replays, target_os is expected to just default to host_os
-        coreclr_args.verify(args,
-                            "target_os",
-                            lambda target_os: check_target_os(coreclr_args, target_os),
-                            lambda target_os: "Unknown target_os {}\nSupported OS: {}".format(target_os, (", ".join(coreclr_args.valid_host_os))),
-                            modify_arg=lambda target_os: target_os if target_os is not None else coreclr_args.host_os) # Default to `host_os`
-
-        # For collection replays, target_arch is expected to just default to the host arch.
-        coreclr_args.verify(args,
-                            "target_arch",
-                            lambda target_arch: check_target_arch(coreclr_args, target_arch),
-                            lambda target_arch: "Unknown target_arch {}\nSupported architectures: {}".format(target_arch, (", ".join(coreclr_args.valid_arches))),
-                            modify_arg=lambda target_arch: target_arch if target_arch is not None else coreclr_args.arch) # Default to `arch`
-
-        # For collection replays, mch_arch is expected to just default to the host arch.
-        coreclr_args.verify(args,
-                            "mch_arch",
-                            lambda mch_arch: check_mch_arch(coreclr_args, mch_arch),
-                            lambda mch_arch: "Unknown mch_arch {}\nSupported architectures: {}".format(mch_arch, (", ".join(coreclr_args.valid_arches))),
-                            modify_arg=lambda mch_arch: mch_arch if mch_arch is not None else coreclr_args.target_arch) # Default to `target_arch`
 
         coreclr_args.verify(args,
                             "collection_command",
@@ -2848,6 +2839,7 @@ def setup_args(args):
 
     elif coreclr_args.mode == "replay":
 
+        verify_target_args()
         verify_superpmi_common_args()
         verify_replay_common_args()
 
@@ -2898,6 +2890,7 @@ def setup_args(args):
 
     elif coreclr_args.mode == "asmdiffs":
 
+        verify_target_args()
         verify_superpmi_common_args()
         verify_replay_common_args()
 
@@ -3010,6 +3003,9 @@ def setup_args(args):
 
     elif coreclr_args.mode == "upload":
 
+        verify_target_args()
+        verify_jit_ee_version_arg()
+
         coreclr_args.verify(args,
                             "az_storage_key",
                             lambda item: item is not None,
@@ -3022,28 +3018,19 @@ def setup_args(args):
                             "Unable to set jit_location.")
 
         coreclr_args.verify(args,
-                            "jit_ee_version",
-                            lambda unused: True,
-                            "Invalid JIT-EE Version.",
-                            modify_arg=setup_jit_ee_version_arg)
-
-        coreclr_args.verify(args,
                             "mch_files",
                             lambda unused: True,
                             "Unable to set mch_files")
 
     elif coreclr_args.mode == "download":
 
+        verify_target_args()
+        verify_jit_ee_version_arg()
+
         coreclr_args.verify(args,
                             "force_download",
                             lambda unused: True,
                             "Unable to set force_download")
-
-        coreclr_args.verify(args,
-                            "jit_ee_version",
-                            lambda unused: True,
-                            "Invalid JIT-EE Version.",
-                            modify_arg=setup_jit_ee_version_arg)
 
         coreclr_args.verify(args,
                             "filter",
@@ -3057,11 +3044,8 @@ def setup_args(args):
 
     elif coreclr_args.mode == "list-collections":
 
-        coreclr_args.verify(args,
-                            "jit_ee_version",
-                            lambda unused: True,
-                            "Invalid JIT-EE Version.",
-                            modify_arg=setup_jit_ee_version_arg)
+        verify_target_args()
+        verify_jit_ee_version_arg()
 
         coreclr_args.verify(args,
                             "all",
