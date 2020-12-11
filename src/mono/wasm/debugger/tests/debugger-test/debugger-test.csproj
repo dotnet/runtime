@@ -35,7 +35,7 @@
       <WasmAssemblySearchPaths Include="$(MicrosoftNetCoreAppRuntimePackRidDir)native"/>
       <WasmAssemblySearchPaths Include="$(MicrosoftNetCoreAppRuntimePackRidDir)lib\$(NetCoreAppCurrent)"/>
 
-      <WasmAssembliesToBundle Include="$(WasmMainAssemblyPath);$(_JavaScriptDllPath)" />
+      <WasmAssembliesToBundle Include="$(_JavaScriptDllPath)" />
 
       <ExtraFileForPublish Include="@(ReferenceCopyLocalPaths)" />
     </ItemGroup>

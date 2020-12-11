@@ -20,7 +20,6 @@
         <WasmResolveAssembliesBeforeBuild>true</WasmResolveAssembliesBeforeBuild>
     </PropertyGroup>
     <ItemGroup>
-      <WasmAssembliesToBundle Include="$(WasmMainAssemblyPath)" />
       <WasmAssembliesToBundle Include="$(MicrosoftNetCoreAppRuntimePackRidDir)lib\$(NetCoreAppCurrent)\System.Private.Runtime.InteropServices.JavaScript.dll" />
 
       <WasmAssemblySearchPaths Include="bin"/>

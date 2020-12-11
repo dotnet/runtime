@@ -12,7 +12,7 @@
 
     <WasmLoadAssembliesAndReferences
       Condition="'$(WasmResolveAssembliesBeforeBuild)' == 'true'"
-      Assemblies="@(WasmAssembliesToBundle)"
+      Assemblies="$(WasmMainAssemblyPath);@(WasmAssembliesToBundle)"
       AssemblySearchPaths="@(WasmAssemblySearchPaths)">
       <Output TaskParameter="ReferencedAssemblies" ItemName="_WasmAssembliesFullSet" />
     </WasmLoadAssembliesAndReferences>
