@@ -177,7 +177,7 @@
     <Message Importance="High" Text="Using Timeout: $(_workItemTimeout)" />
 
     <ItemGroup Condition="'$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'tvOS'">
-      <!-- Find all directories named *.app -->
+      <!-- Create work items for test apps -->
       <XHarnessAppBundleToTest Include="$([System.IO.Directory]::GetDirectories('$(TestArchiveTestsRoot)', '*.app', System.IO.SearchOption.AllDirectories))">
         <Targets Condition="'$(TargetArchitecture)' == 'arm'">ios-device</Targets>
         <Targets Condition="'$(TargetArchitecture)' == 'arm64'">ios-device</Targets>
@@ -186,6 +186,20 @@
 
         <TestTimeout>$(_workItemTimeout)</TestTimeout>
         <LaunchTimeout>$(_workItemTimeout)</LaunchTimeout>
+      </XHarnessAppBundleToTest>
+
+      <!-- Create work items for run-only apps -->
+      <XHarnessAppBundleToTest Include="$([System.IO.Directory]::GetDirectories('$(TestArchiveRoot)runonly', '*.app', System.IO.SearchOption.AllDirectories))" >
+        <Targets Condition="'$(TargetArchitecture)' == 'arm'">ios-device</Targets>
+        <Targets Condition="'$(TargetArchitecture)' == 'arm64'">ios-device</Targets>
+        <Targets Condition="'$(TargetArchitecture)' == 'x64'">ios-simulator-64</Targets>
+        <Targets Condition="'$(TargetArchitecture)' == 'x86'">ios-simulator-32</Targets>
+
+        <LaunchTimeout>$(_workItemTimeout)</LaunchTimeout>
+        <!-- The sample app doesn't need test runner -->
+        <IncludesTestRunner>false</IncludesTestRunner>
+        <!-- The sample's C# Main method returns 42 so it should be considered by xharness as a success -->
+        <ExpectedExitCode>42</ExpectedExitCode>
       </XHarnessAppBundleToTest>
     </ItemGroup>
 
