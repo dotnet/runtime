@@ -144,6 +144,7 @@ namespace System.Reflection
             }
         }
 
+        [RequiresUnreferencedCode("Trimming changes metadata tokens")]
         private FieldInfo? ResolveLiteralField(int metadataToken, Type[]? genericTypeArguments, Type[]? genericMethodArguments)
         {
             MetadataToken tk = new MetadataToken(metadataToken);
@@ -360,6 +361,7 @@ namespace System.Reflection
             return GetMethodInternal(name, bindingAttr, binder, callConvention, types, modifiers);
         }
 
+        [RequiresUnreferencedCode("Methods might be removed")]
         internal MethodInfo? GetMethodInternal(string name, BindingFlags bindingAttr, Binder? binder,
             CallingConventions callConvention, Type[]? types, ParameterModifier[]? modifiers)
         {
