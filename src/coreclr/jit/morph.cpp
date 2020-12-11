@@ -7867,9 +7867,102 @@ GenTree* Compiler::fgMorphTailCallViaHelpers(GenTreeCall* call, CORINFO_TAILCALL
         call->fgArgInfo = nullptr;
     }
 
+    const bool stubNeedsTargetFnPtr = (help.flags & CORINFO_TAILCALL_STORE_TARGET) != 0;
+
+    GenTree* doBeforeStoreArgsStub = nullptr;
+    GenTree* thisPtrStubArg        = nullptr;
+
+    // Put 'this' in normal param list
+    if (call->gtCallThisArg != nullptr)
+    {
+        JITDUMP("Moving this pointer into arg list\n");
+        GenTree* objp       = call->gtCallThisArg->GetNode();
+        GenTree* thisPtr    = nullptr;
+        call->gtCallThisArg = nullptr;
+
+        // JIT will need one or two copies of "this" in the following cases:
+        //   1) the call needs null check;
+        //   2) StoreArgs stub needs the target function pointer address and if the call is virtual
+        //      the stub also needs "this" in order to evalute the target.
+
+        const bool callNeedsNullCheck = call->NeedsNullCheck();
+        const bool stubNeedsThisPtr   = stubNeedsTargetFnPtr && virtualCall;
+
+        // TODO-Review: The following transformation is implemented under assumption that
+        // both conditions can be true. However, I could not construct such example
+        // where a virtual tail call would require null check. In case, if the conditions
+        // are mutually exclusive the following could be simplified.
+
+        if (callNeedsNullCheck || stubNeedsThisPtr)
+        {
+            // Clone "this" if "this" has no side effects.
+            if ((objp->gtFlags & GTF_SIDE_EFFECT) == 0)
+            {
+                thisPtr = gtClone(objp, true);
+            }
+
+            // Create a temp and spill "this" to the temp if "this" has side effects or "this" was too complex to clone.
+            if (thisPtr == nullptr)
+            {
+                const unsigned lclNum = lvaGrabTemp(true DEBUGARG("tail call thisptr"));
+
+                // tmp = "this"
+                doBeforeStoreArgsStub = gtNewTempAssign(lclNum, objp);
+
+                if (callNeedsNullCheck)
+                {
+                    // COMMA(tmp = "this", deref(tmp))
+                    GenTree* tmp          = gtNewLclvNode(lclNum, objp->TypeGet());
+                    GenTree* nullcheck    = gtNewNullCheck(tmp, compCurBB);
+                    doBeforeStoreArgsStub = gtNewOperNode(GT_COMMA, TYP_VOID, doBeforeStoreArgsStub, nullcheck);
+                }
+
+                thisPtr = gtNewLclvNode(lclNum, objp->TypeGet());
+
+                if (stubNeedsThisPtr)
+                {
+                    thisPtrStubArg = gtNewLclvNode(lclNum, objp->TypeGet());
+                }
+            }
+            else
+            {
+                if (callNeedsNullCheck)
+                {
+                    // deref("this")
+                    doBeforeStoreArgsStub = gtNewNullCheck(objp, compCurBB);
+
+                    if (stubNeedsThisPtr)
+                    {
+                        thisPtrStubArg = gtClone(objp, true);
+                    }
+                }
+                else
+                {
+                    assert(stubNeedsThisPtr);
+
+                    thisPtrStubArg = objp;
+                }
+            }
+
+            call->gtFlags &= ~GTF_CALL_NULLCHECK;
+
+            assert((thisPtrStubArg != nullptr) == stubNeedsThisPtr);
+        }
+        else
+        {
+            thisPtr = objp;
+        }
+
+        // During rationalization tmp="this" and null check will be materialized
+        // in the right execution order.
+        assert(thisPtr != nullptr);
+        call->gtCallArgs = gtPrependNewCallArg(thisPtr, call->gtCallArgs);
+        call->fgArgInfo  = nullptr;
+    }
+
     // We may need to pass the target, for instance for calli or generic methods
     // where we pass instantiating stub.
-    if ((help.flags & CORINFO_TAILCALL_STORE_TARGET) != 0)
+    if (stubNeedsTargetFnPtr)
     {
         JITDUMP("Adding target since VM requested it\n");
         GenTree* target;
@@ -7912,11 +8005,7 @@ GenTree* Compiler::fgMorphTailCallViaHelpers(GenTreeCall* call, CORINFO_TAILCALL
             }
 
             eeGetCallInfo(call->tailCallInfo->GetToken(), nullptr, (CORINFO_CALLINFO_FLAGS)flags, &callInfo);
-
-            assert(call->gtCallThisArg != nullptr);
-            // TODO: Proper cloning of the this pointer.
-            target = getVirtMethodPointerTree(gtCloneExpr(call->gtCallThisArg->GetNode()),
-                                              call->tailCallInfo->GetToken(), &callInfo);
+            target = getVirtMethodPointerTree(thisPtrStubArg, call->tailCallInfo->GetToken(), &callInfo);
         }
 
         // Insert target as last arg
@@ -7931,60 +8020,6 @@ GenTree* Compiler::fgMorphTailCallViaHelpers(GenTreeCall* call, CORINFO_TAILCALL
         call->fgArgInfo = nullptr;
     }
 
-    // Put 'this' in normal param list
-    if (call->gtCallThisArg != nullptr)
-    {
-        JITDUMP("Moving this pointer into arg list\n");
-        GenTree* thisPtr    = nullptr;
-        GenTree* objp       = call->gtCallThisArg->GetNode();
-        call->gtCallThisArg = nullptr;
-
-        if (call->NeedsNullCheck())
-        {
-            // clone "this" if "this" has no side effects.
-            if ((objp->gtFlags & GTF_SIDE_EFFECT) == 0)
-            {
-                thisPtr = gtClone(objp, true);
-            }
-
-            var_types vt = objp->TypeGet();
-            if (thisPtr == nullptr)
-            {
-                // create a temp if either "this" has side effects or "this" is too complex to clone.
-
-                // tmp = "this"
-                unsigned lclNum = lvaGrabTemp(true DEBUGARG("tail call thisptr"));
-                GenTree* asg    = gtNewTempAssign(lclNum, objp);
-
-                // COMMA(tmp = "this", deref(tmp))
-                GenTree* tmp       = gtNewLclvNode(lclNum, vt);
-                GenTree* nullcheck = gtNewNullCheck(tmp, compCurBB);
-                asg                = gtNewOperNode(GT_COMMA, TYP_VOID, asg, nullcheck);
-
-                // COMMA(COMMA(tmp = "this", deref(tmp)), tmp)
-                thisPtr = gtNewOperNode(GT_COMMA, vt, asg, gtNewLclvNode(lclNum, vt));
-            }
-            else
-            {
-                // thisPtr = COMMA(deref("this"), "this")
-                GenTree* nullcheck = gtNewNullCheck(thisPtr, compCurBB);
-                thisPtr            = gtNewOperNode(GT_COMMA, vt, nullcheck, gtClone(objp, true));
-            }
-
-            call->gtFlags &= ~GTF_CALL_NULLCHECK;
-        }
-        else
-        {
-            thisPtr = objp;
-        }
-
-        // During rationalization tmp="this" and null check will be materialized
-        // in the right execution order.
-        assert(thisPtr != nullptr);
-        call->gtCallArgs = gtPrependNewCallArg(thisPtr, call->gtCallArgs);
-        call->fgArgInfo  = nullptr;
-    }
-
     // This is now a direct call to the store args stub and not a tailcall.
     call->gtCallType    = CT_USER_FUNC;
     call->gtCallMethHnd = help.hStoreArgs;
@@ -7996,8 +8031,15 @@ GenTree* Compiler::fgMorphTailCallViaHelpers(GenTreeCall* call, CORINFO_TAILCALL
     call->gtType       = TYP_VOID;
     call->gtReturnType = TYP_VOID;
 
+    GenTree* callStoreArgsStub = call;
+
+    if (doBeforeStoreArgsStub != nullptr)
+    {
+        callStoreArgsStub = gtNewOperNode(GT_COMMA, TYP_VOID, doBeforeStoreArgsStub, callStoreArgsStub);
+    }
+
     GenTree* finalTree =
-        gtNewOperNode(GT_COMMA, callDispatcherAndGetResult->TypeGet(), call, callDispatcherAndGetResult);
+        gtNewOperNode(GT_COMMA, callDispatcherAndGetResult->TypeGet(), callStoreArgsStub, callDispatcherAndGetResult);
 
     finalTree = fgMorphTree(finalTree);
 

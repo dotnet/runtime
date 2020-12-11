@@ -127,6 +127,9 @@
         <ExcludeList Include="$(XunitTestBinBase)/Interop/COM/NativeClients/Dispatch/*">
             <Issue>https://github.com/dotnet/runtime/issues/44186</Issue>
         </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/tracing/eventpipe/diagnosticport/diagnosticport/*">
+            <Issue>https://github.com/dotnet/runtime/issues/44072</Issue>
+        </ExcludeList>
     </ItemGroup>
 
     <!-- All Unix targets on all runtimes -->

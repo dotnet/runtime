@@ -52,15 +52,12 @@
       <Output TaskParameter="FileWrites" ItemName="FileWrites" />
     </WasmAppBuilder>
     <Exec Command="chmod a+x $(AppDir)/run-v8.sh" />
-    <Copy SourceFiles="bin\index.html;bin\server.py" DestinationFolder="$(AppDir)" />
+    <Copy SourceFiles="bin\index.html" DestinationFolder="$(AppDir)" />
   </Target>
 
   <ItemGroup>
     <Compile Include="Program.cs" />
     <Content Include="index.html">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-    <Content Include="server.py">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
   </ItemGroup>
