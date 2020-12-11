@@ -26,7 +26,6 @@
       <WasmAppDir>$(AppDir)</WasmAppDir>
       <WasmMainJSPath>$(MonoProjectRoot)wasm\runtime-test.js</WasmMainJSPath>
       <WasmDebugLevel>1</WasmDebugLevel>
-      <WasmRunV8ScriptPath>$(WasmAppDir)\run-v8.sh</WasmRunV8ScriptPath>
 
       <WasmResolveAssembliesBeforeBuild>true</WasmResolveAssembliesBeforeBuild>
     </PropertyGroup>
