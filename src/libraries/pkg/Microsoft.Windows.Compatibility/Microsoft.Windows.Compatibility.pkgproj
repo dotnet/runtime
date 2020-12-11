@@ -1,7 +1,7 @@
 ﻿<Project DefaultTargets="Build">
   <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.props))" />
   <PropertyGroup>
-    <_PreReleasePackageVersion>$(PackageVersion)</_PreReleasePackageVersion>
+    <_PreReleasePackageVersion>5.0.0</_PreReleasePackageVersion>
     <PackageVersion>5.0.1</PackageVersion>
     <ServiceModelVersion>4.8.0</ServiceModelVersion>
     <!-- We don't need to harvest the stable packages to build this -->
@@ -38,7 +38,9 @@
     <PrereleaseLibraryPackage Include="System.Runtime.Caching" />
     <PrereleaseLibraryPackage Include="System.Security.AccessControl" />
     <PrereleaseLibraryPackage Include="System.Security.Cryptography.Cng" />
-    <PrereleaseLibraryPackage Include="System.Security.Cryptography.Pkcs" />
+    <PrereleaseLibraryPackage Include="System.Security.Cryptography.Pkcs">
+      <Version>5.0.1</Version>
+    </PrereleaseLibraryPackage>
     <PrereleaseLibraryPackage Include="System.Security.Cryptography.ProtectedData" />
     <PrereleaseLibraryPackage Include="System.Security.Cryptography.Xml" />
     <PrereleaseLibraryPackage Include="System.Security.Permissions" />
