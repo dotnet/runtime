@@ -1,7 +1,9 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
 using System.IO;
+using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
 
@@ -52,6 +54,75 @@ namespace System.Text.Json.Serialization.Tests
                 }
 
                 Assert.Equal(count, callbackCount);
+            }
+        }
+
+        private class SimpleObjectProvider : IAsyncEnumerable<SimpleTestClass>
+        {
+            private int _count;
+
+            public SimpleObjectProvider(int count)
+            {
+                _count = count;
+            }
+
+            public async IAsyncEnumerator<SimpleTestClass> GetAsyncEnumerator(CancellationToken cancellationToken = default)
+            {
+                for (int i = 0; i < _count; i++)
+                {
+                    await Task.Delay(1);
+                    var obj = new SimpleTestClass();
+                    obj.Initialize();
+                    yield return obj;
+                }
+            }
+        }
+
+        [Theory]
+        [InlineData(1, 1)]
+        [InlineData(10, 1)]
+        [InlineData(100, 1)]
+        [InlineData(100, 1000)]
+        [InlineData(100, 32000)]
+        public static async Task WriteSimpleObjectAsync(int count, int bufferSize)
+        {
+            JsonSerializerOptions options = new JsonSerializerOptions
+            {
+                DefaultBufferSize = bufferSize
+            };
+
+            long singleLength = 0;
+            using (MemoryStream singleObjectStream = new MemoryStream())
+            {
+                var obj = new SimpleTestClass();
+                obj.Initialize();
+
+                await JsonSerializer.SerializeAsync<SimpleTestClass>(singleObjectStream, obj, options);
+                singleLength = singleObjectStream.Length;
+            }
+
+            long allLength = 0;
+            using (MemoryStream stream = new MemoryStream())
+            {
+                await JsonSerializer.SerializeAsyncEnumerable(
+                    stream,
+                    new SimpleObjectProvider(count),
+                    options);
+
+                allLength = stream.Length;
+                allLength -= 1; // account for start array token.
+                allLength -= count; // account for commas; includes end array token since there is no trailing comma.
+
+                Assert.Equal(singleLength * count, allLength);
+
+                // Verify the contents.
+                stream.Position = 0;
+                SimpleTestClass[] result = await JsonSerializer.DeserializeAsync<SimpleTestClass[]>(stream);
+                Assert.Equal(count, result.Length);
+                for (int i = 0; i < count; i++)
+                {
+                    result[i].Verify();
+                }
             }
         }
     }

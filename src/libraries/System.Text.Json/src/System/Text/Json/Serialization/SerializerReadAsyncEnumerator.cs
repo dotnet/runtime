@@ -100,7 +100,10 @@ namespace System.Text.Json.Serialization
             while (!HaveDataToReturn())
             {
                 _isFinalBlock = await JsonSerializer.ReadFromStream(_utf8Json, _asyncState).ConfigureAwait(false);
-                _valuesToReturn = JsonSerializer.ContinueDeserialize<Queue<TValue>>(_asyncState, _isFinalBlock);
+                JsonSerializer.ContinueDeserialize<Queue<TValue>>(_asyncState, _isFinalBlock);
+
+                // Obtain the partial collection.
+                _valuesToReturn = (Queue<TValue>?)_asyncState.ReadStack.Current.ReturnValue;
             }
 
             return true;

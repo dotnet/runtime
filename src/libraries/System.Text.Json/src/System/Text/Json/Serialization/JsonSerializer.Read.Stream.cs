@@ -46,12 +46,7 @@ namespace System.Text.Json
                 throw new ArgumentNullException(nameof(utf8Json));
             }
 
-            if (utf8Json == null)
-                throw new ArgumentNullException(nameof(utf8Json));
-
-            ReadAsyncState asyncState = new ReadAsyncState(typeof(TValue), cancellationToken, options);
-
-            return ReadAllAsync<TValue>(utf8Json, asyncState);
+            return ReadAllAsync<TValue>(utf8Json, typeof(TValue), options, cancellationToken);
         }
 
         /// <summary>
@@ -89,9 +84,7 @@ namespace System.Text.Json
             if (returnType == null)
                 throw new ArgumentNullException(nameof(returnType));
 
-            ReadAsyncState asyncState = new ReadAsyncState(returnType, cancellationToken, options);
-
-            return ReadAllAsync<object?>(utf8Json, asyncState);
+            return ReadAllAsync<object>(utf8Json, returnType, options, cancellationToken);
         }
 
         /// <summary>
@@ -115,24 +108,24 @@ namespace System.Text.Json
             return new SerializerReadAsyncEnumerable<TValue>(utf8Json, options);
         }
 
-        internal static async ValueTask<TValue?> ReadAllAsync<TValue>(Stream utf8Json, ReadAsyncState asyncState)
+        internal static async ValueTask<TValue?> ReadAllAsync<TValue>(
+            Stream utf8Json,
+            Type inputType,
+            JsonSerializerOptions? options,
+            CancellationToken cancellationToken)
         {
-            try
+            using (var asyncState = new ReadAsyncState(inputType, cancellationToken, options))
             {
                 while (true)
                 {
                     bool isFinalBlock = await ReadFromStream(utf8Json, asyncState).ConfigureAwait(false);
-
                     TValue value = ContinueDeserialize<TValue>(asyncState, isFinalBlock);
+
                     if (isFinalBlock)
                     {
                         return value!;
                     }
                 }
-            }
-            finally
-            {
-                asyncState.Dispose();
             }
         }
 
@@ -207,35 +200,34 @@ namespace System.Text.Json
 
             asyncState.BytesInBuffer -= bytesConsumed;
 
-            if (isFinalBlock)
+            // The reader should have thrown if we have remaining bytes.
+            Debug.Assert(!isFinalBlock || asyncState.BytesInBuffer == 0);
+
+            if (!isFinalBlock)
             {
-                // The reader should have thrown if we have remaining bytes.
-                Debug.Assert(asyncState.BytesInBuffer == 0);
-                return value;
+                // Check if we need to shift or expand the buffer because there wasn't enough data to complete deserialization.
+                if ((uint)asyncState.BytesInBuffer > ((uint)asyncState.Buffer.Length / 2))
+                {
+                    // We have less than half the buffer available, double the buffer size.
+                    byte[] dest = ArrayPool<byte>.Shared.Rent((asyncState.Buffer.Length < (int.MaxValue / 2)) ? asyncState.Buffer.Length * 2 : int.MaxValue);
+
+                    // Copy the unprocessed data to the new buffer while shifting the processed bytes.
+                    Buffer.BlockCopy(asyncState.Buffer, bytesConsumed + start, dest, 0, asyncState.BytesInBuffer);
+
+                    new Span<byte>(asyncState.Buffer, 0, asyncState.ClearMax).Clear();
+                    ArrayPool<byte>.Shared.Return(asyncState.Buffer);
+
+                    asyncState.ClearMax = asyncState.BytesInBuffer;
+                    asyncState.Buffer = dest;
+                }
+                else if (asyncState.BytesInBuffer != 0)
+                {
+                    // Shift the processed bytes to the beginning of buffer to make more room.
+                    Buffer.BlockCopy(asyncState.Buffer, bytesConsumed + start, asyncState.Buffer, 0, asyncState.BytesInBuffer);
+                }
             }
 
-            // Check if we need to shift or expand the buffer because there wasn't enough data to complete deserialization.
-            if ((uint)asyncState.BytesInBuffer > ((uint)asyncState.Buffer.Length / 2))
-            {
-                // We have less than half the buffer available, double the buffer size.
-                byte[] dest = ArrayPool<byte>.Shared.Rent((asyncState.Buffer.Length < (int.MaxValue / 2)) ? asyncState.Buffer.Length * 2 : int.MaxValue);
-
-                // Copy the unprocessed data to the new buffer while shifting the processed bytes.
-                Buffer.BlockCopy(asyncState.Buffer, bytesConsumed + start, dest, 0, asyncState.BytesInBuffer);
-
-                new Span<byte>(asyncState.Buffer, 0, asyncState.ClearMax).Clear();
-                ArrayPool<byte>.Shared.Return(asyncState.Buffer);
-
-                asyncState.ClearMax = asyncState.BytesInBuffer;
-                asyncState.Buffer = dest;
-            }
-            else if (asyncState.BytesInBuffer != 0)
-            {
-                // Shift the processed bytes to the beginning of buffer to make more room.
-                Buffer.BlockCopy(asyncState.Buffer, bytesConsumed + start, asyncState.Buffer, 0, asyncState.BytesInBuffer);
-            }
-
-            return value!; // Return the partial value.
+            return value;
         }
 
         private static TValue ReadCore<TValue>(
@@ -255,19 +247,7 @@ namespace System.Text.Json
             state.ReadAhead = !isFinalBlock;
             state.BytesConsumed = 0;
 
-            TValue? value;
-            if (isFinalBlock)
-            {
-                value = ReadCore<TValue>(converterBase, ref reader, options, ref state);
-            }
-            else
-            {
-                ReadCore<TValue>(converterBase, ref reader, options, ref state);
-
-                // Obtain the partial value.
-                value = (TValue)state.Current.ReturnValue!;
-            }
-
+            TValue? value = ReadCore<TValue>(converterBase, ref reader, options, ref state);
             readerState = reader.CurrentState;
             return value!;
         }
