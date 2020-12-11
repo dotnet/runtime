@@ -1,0 +1,8 @@
+<linker>
+  <assembly fullname="System.Net.Sockets">
+    <type fullname="System.Net.Sockets.SafeSocketHandle">
+      <!-- don't trim the default constructor, since it is necessary for p/invokes made by external code -->
+      <method name=".ctor" />
+    </type>
+  </assembly>
+</linker>
