@@ -1,6 +1,5 @@
 trigger: none
 
-pr: none
 
 schedules:
 - cron: "0 19 * * 6,0"
