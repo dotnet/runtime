@@ -20,6 +20,10 @@ trigger:
     - SECURITY.md
     - THIRD-PARTY-NOTICES.TXT
 
+# This is an official pipeline that should not be triggerable from a PR,
+# there is no public pipeline assosiated with it.
+pr: none
+
 variables:
 - template: /eng/pipelines/common/variables.yml
 # TODO: (Consolidation) Switch away from old signing/validation variables from former Core-Setup. https://github.com/dotnet/runtime/issues/1027
