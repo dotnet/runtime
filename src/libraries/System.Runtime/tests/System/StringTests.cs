@@ -1846,28 +1846,35 @@ namespace System.Tests
             {
                 for (int j = 0; j < 128; j++)
                 {
-                    bool expectedEqualOrdinal = i == j;
-                    bool expectedEqualOrdinalIgnoreCase = (i == j) || ((i | 0x20) >= 'a' && (i | 0x20) <= 'z' && ((i | 0x20) == (j | 0x20)));
-
-                    string s1 = "aaaaaaa" + (char)i + "bbbbbbb";
-                    string s2 = "aaaaaaa" + (char)j + "bbbbbbb";
-
-                    bool actualEqualOrdinal = string.Equals(s1, s2, StringComparison.Ordinal);
-                    bool actualEqualOrdinalIgnoreCase = string.Equals(s1, s2, StringComparison.OrdinalIgnoreCase);
-
-                    int actualCompareToOrdinal = string.Compare(s1, s2, StringComparison.Ordinal);
-                    int actualCompareToOrdinalIgnoreCase = string.Compare(s1, s2, StringComparison.OrdinalIgnoreCase);
-
-                    try
+                    for (int len = 0; len < 8; len++)
                     {
-                        Assert.Equal(expectedEqualOrdinal, actualEqualOrdinal);
-                        Assert.Equal(expectedEqualOrdinal, actualCompareToOrdinal == 0);
-                        Assert.Equal(expectedEqualOrdinalIgnoreCase, actualEqualOrdinalIgnoreCase);
-                        Assert.Equal(expectedEqualOrdinalIgnoreCase, actualCompareToOrdinalIgnoreCase == 0);
-                    }
-                    catch (Exception ex)
-                    {
-                        throw new Exception($"Chars U+{i:X4} ('{(char)i}') and U+{j:X4} ('{(char)j}') did not compare as expected. Expected: Ordinal = {expectedEqualOrdinal}, OrdinalIgnoreCase = {expectedEqualOrdinalIgnoreCase}.", ex);
+                        bool expectedEqualOrdinal = i == j;
+                        bool expectedEqualOrdinalIgnoreCase = (i == j) || ((i | 0x20) >= 'a' && (i | 0x20) <= 'z' && ((i | 0x20) == (j | 0x20)));
+
+                        // optimization might vary based on string length, so we use 'len' to vary the string length
+                        // in order to hit as many code paths as possible
+                        string prefix = new string('a', len);
+                        string suffix = new string('b', len);
+                        string s1 = prefix + (char)i + suffix;
+                        string s2 = prefix + (char)j + suffix;
+
+                        bool actualEqualOrdinal = string.Equals(s1, s2, StringComparison.Ordinal);
+                        bool actualEqualOrdinalIgnoreCase = string.Equals(s1, s2, StringComparison.OrdinalIgnoreCase);
+
+                        int actualCompareToOrdinal = string.Compare(s1, s2, StringComparison.Ordinal);
+                        int actualCompareToOrdinalIgnoreCase = string.Compare(s1, s2, StringComparison.OrdinalIgnoreCase);
+
+                        try
+                        {
+                            Assert.Equal(expectedEqualOrdinal, actualEqualOrdinal);
+                            Assert.Equal(expectedEqualOrdinal, actualCompareToOrdinal == 0);
+                            Assert.Equal(expectedEqualOrdinalIgnoreCase, actualEqualOrdinalIgnoreCase);
+                            Assert.Equal(expectedEqualOrdinalIgnoreCase, actualCompareToOrdinalIgnoreCase == 0);
+                        }
+                        catch (Exception ex)
+                        {
+                            throw new Exception($"Chars U+{i:X4} ('{(char)i}') and U+{j:X4} ('{(char)j}') did not compare as expected. Iteration: len = {len}.", ex);
+                        }
                     }
                 }
             }
