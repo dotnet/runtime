@@ -30,7 +30,7 @@ Will be converted by the compiler to the C style signature of:
 int b = ((int(*)(id,SEL,int))&objc_msgSend)(obj, doubleNumberSel, a);
 ```
 
-The Objective-C runtime adheres to the [`cdecl`](https://en.wikipedia.org/wiki/X86_calling_conventions#cdecl) calling convention for all function calls. It should be noted that variadic arguments are supported in Objective-C.
+The Objective-C runtime adheres to the [`cdecl`](https://en.wikipedia.org/wiki/X86_calling_conventions#cdecl) calling convention for all function calls. Note that method signatures with variadic arguments are supported in Objective-C.
 
 The dispatching of messages to the target method can be impacted by the concept of "method swizzling". This is a mechanism in Objective-C where one can change the implementation of a type's method. This changing of the target method implementation is typically done in the type's `+load` or `+initialize` methods but could conceivably be done at any time. The usefulness of this feature for interoperability is presently unknown, but the technique should be kept in mind during investigations into unexpected behavior.
 
@@ -58,14 +58,14 @@ Objective-C lifetime semantics are handled through [manual or automatic referenc
 
 _Note_: In the following illustrations, a strong reference is depicted as a solid line (`===`) and a weak reference is depicted as a dashed line (`= = =`).
 
-When a projected .NET object enters an Objective-C environment, the Objective-C proxy is subject to reference counting and ensuring it extends the lifetime of the managed object it wraps. This can be accomplished in CoreCLR through use of the internal `HNDTYPE_REFCOUNTED` GC handle type. This handle, coupled with a reference count, can be used to transition a GC handle between a weak and strong reference.
+When a projected .NET object enters an Objective-C environment, the Objective-C proxy is subject to reference counting and ensuring it extends the lifetime of the managed object it wraps. This can be accomplished in CoreCLR through use of the internal `HNDTYPE_REFCOUNTED` GC handle type. This handle, coupled with a reference count, can be used to transition a GC handle between a weak and strong reference. The transition between weak and strong reference is particularly important during the collection of the managed object. During collection the super class may call methods the derived class has overridden which means the managed object must be 'alive' during collection for at least the collection of the Objective-C super class instance.
 
-Projecting a .NET type into Objective-C will require overriding the built-in [`alloc`](https://developer.apple.com/documentation/objectivec/nsobject/1571958-alloc), [`retain`](https://developer.apple.com/documentation/objectivec/1418956-nsobject/1571946-retain), and [`release`](https://developer.apple.com/documentation/objectivec/1418956-nsobject/1571957-release) methods provided by the Objective-C runtime. Overriding of these methods will not be needed when activating an Objective-C type in .NET as that type's existing methods will be used.
+Projecting a .NET type into Objective-C will require overriding the built-in [`alloc`](https://developer.apple.com/documentation/objectivec/nsobject/1571958-alloc), [`dealloc`](https://developer.apple.com/documentation/objectivec/nsobject/1571947-dealloc), [`retain`](https://developer.apple.com/documentation/objectivec/1418956-nsobject/1571946-retain), and [`release`](https://developer.apple.com/documentation/objectivec/1418956-nsobject/1571957-release) methods provided by the Objective-C runtime. Overriding of these methods will not be needed when activating an Objective-C type in .NET as that type's existing methods will be used.
 
 ```
  --------------------                  ----------------------
 |   Managed object   |                |   Objective-C proxy  |
-|                    |                | Ref count: 1         |
+|                    |                | Ref count: !(0 | 1)  |
 |  ----------------  |                |  ------------------  |
 | | Weak reference |=| = = = = = = = >| | REFCOUNTED handle| |
 | |    to proxy    | |<===============|=|    to object     | |
@@ -75,8 +75,8 @@ Projecting a .NET type into Objective-C will require overriding the built-in [`a
 
 When an Objective-C object enters a .NET environment, its lifetime must be extended by the managed proxy. The managed proxy needs only to retain a reference count to extend the Objective-C object's lifetime. When the managed proxy is finalized, it will release its reference count on the Objective-C object.
 
-There is additional complexity in this case and there is a need
-to ensure the managed proxy's life also extends to that of the Objective-C object. In order to achieve this the managed proxy creates a REFCOUNT handle to itself. This handle strength is based on the reference count of the
+There is additional complexity in this case with the need
+to ensure the managed proxy's life also extends that of the Objective-C object. This dual extension is needed because managed proxies may contain state. In order to achieve this in CoreCLR, the managed proxy creates a `HNDTYPE_REFCOUNTED` handle to itself. Handle strength is based on the reference count of the
 Objective-C object - which is determined by calling [`retainCount`](https://developer.apple.com/documentation/objectivec/1418956-nsobject/1571952-retaincount). The handle is a weak reference when the count `= 1` and strong when the count is `> 1`.
 
 ```
