@@ -136,6 +136,7 @@ else()
         ${CORECLR_STATIC_LIB_LOCATION}/libcoreclr_static.a
         ${CORECLR_STATIC_LIB_LOCATION}/libSystem.Globalization.Native.a
         ${CORECLR_STATIC_LIB_LOCATION}/libSystem.IO.Compression.Native.a
+        ${CORECLR_STATIC_LIB_LOCATION}/libSystem.Net.Security.Native.a
         ${CORECLR_STATIC_LIB_LOCATION}/libpalrt.a
         ${CORECLR_STATIC_LIB_LOCATION}/libcoreclrpal.a
         ${CORECLR_STATIC_LIB_LOCATION}/libeventprovider.a
@@ -145,6 +146,10 @@ else()
     # additional requirements for System.IO.Compression.Native
     include(${CLR_REPO_ROOT_DIR}/src/libraries/Native/Unix/System.IO.Compression.Native/extra_libs.cmake)
     append_extra_compression_libs(NATIVE_LIBS_EXTRA)
+
+    # Additional requirements for System.Net.Security.Native
+    include(${CLR_REPO_ROOT_DIR}/src/libraries/Native/Unix/System.Net.Security.Native/extra_libs.cmake)
+    append_extra_security_libs(NATIVE_LIBS_EXTRA)
 endif()
 
 if(CLR_CMAKE_TARGET_OSX)
@@ -192,17 +197,12 @@ message ("Looking for native libs at location: '${NATIVE_LIBS_LOCATION}'.")
 if(CLR_CMAKE_TARGET_LINUX)
     set(NATIVE_LIBS
       ${NATIVE_LIBS_LOCATION}/libSystem.Native.a
-      ${NATIVE_LIBS_LOCATION}/libSystem.Net.Security.Native.a
       ${NATIVE_LIBS_LOCATION}/libSystem.Security.Cryptography.Native.OpenSsl.a
     )
 
     # Additional requirements for System.Native
     include(${CLR_REPO_ROOT_DIR}/src/libraries/Native/Unix/System.Native/extra_libs.cmake)
     append_extra_system_libs(NATIVE_LIBS_EXTRA)
-
-    # Additional requirements for System.Net.Security.Native
-    include(${CLR_REPO_ROOT_DIR}/src/libraries/Native/Unix/System.Net.Security.Native/extra_libs.cmake)
-    append_extra_security_libs(NATIVE_LIBS_EXTRA)
 
     # Additional requirements for System.Security.Cryptography.Native.OpenSsl
     include(${CLR_REPO_ROOT_DIR}/src/libraries/Native/Unix/System.Security.Cryptography.Native/extra_libs.cmake)

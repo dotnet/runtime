@@ -45,22 +45,28 @@ namespace
 
 #if defined(NATIVE_LIBS_EMBEDDED)
     extern "C" const void* CompressionResolveDllImport(const char* name);
-
-#if defined(_WIN32)
-#define COMPRESSION_DLL_NAME "System.IO.Compression.Native"
-#else
-#define COMPRESSION_DLL_NAME "libSystem.IO.Compression.Native"
-#endif
+    extern "C" const void* SecurityResolveDllImport(const char* name);
 
     // pinvoke_override:
     // Check if given function belongs to one of statically linked libraries and return a pointer if found.
     const void* STDMETHODCALLTYPE pinvoke_override(const char* libraryName, const char* entrypointName)
     {
-        if (strcmp(libraryName, COMPRESSION_DLL_NAME) == 0)
+#if defined(_WIN32)
+        if (strcmp(libraryName, "System.IO.Compression.Native") == 0)
+        {
+            return CompressionResolveDllImport(entrypointName);
+        }
+#else
+        if (strcmp(libraryName, "libSystem.IO.Compression.Native") == 0)
         {
             return CompressionResolveDllImport(entrypointName);
         }
 
+        if (strcmp(libraryName, "libSystem.Net.Security.Native") == 0)
+        {
+            return SecurityResolveDllImport(entrypointName);
+        }
+#endif
         return nullptr;
     }
 #endif
