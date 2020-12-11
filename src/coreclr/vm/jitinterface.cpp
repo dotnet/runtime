@@ -457,8 +457,6 @@ CEEInfo::ConvToJitSig(
     if (context.methodContext)
     {
         SigTypeContext::InitTypeContext(context.methodContext, context.typeContext, &typeContext);
-        if (context.methodContext->ShouldSuppressGCTransition())
-            sigRetFlags |= CORINFO_SIGFLAG_SUPPRESS_GC_TRANSITION;
     }
     else
     {
@@ -9797,7 +9795,7 @@ CorInfoHFAElemType CEEInfo::getHFAType(CORINFO_CLASS_HANDLE hClass)
     // - a P/Invoke
     // - a method marked with UnmanagedCallersOnly
     // - a function pointer with the CORINFO_CALLCONV_UNMANAGED calling convention.
-CorInfoCallConvExtension CEEInfo::getUnmanagedCallConv(CORINFO_METHOD_HANDLE method, CORINFO_SIG_INFO* callSiteSig)
+CorInfoCallConvExtension CEEInfo::getUnmanagedCallConv(CORINFO_METHOD_HANDLE method, CORINFO_SIG_INFO* callSiteSig, bool* pSuppressGCTransition)
 {
     CONTRACTL {
         THROWS;
@@ -9809,6 +9807,11 @@ CorInfoCallConvExtension CEEInfo::getUnmanagedCallConv(CORINFO_METHOD_HANDLE met
 
     JIT_TO_EE_TRANSITION();
 
+    if (pSuppressGCTransition)
+    {
+        *pSuppressGCTransition = false;
+    }
+
     _ASSERTE(method != nullptr || callSiteSig != nullptr);
 
     if (method)
@@ -9817,6 +9820,11 @@ CorInfoCallConvExtension CEEInfo::getUnmanagedCallConv(CORINFO_METHOD_HANDLE met
         _ASSERTE(pMD->IsNDirect() || pMD->HasUnmanagedCallersOnlyAttribute());
         if(pMD->IsNDirect())
         {
+            if (pSuppressGCTransition)
+            {
+                *pSuppressGCTransition = pMD->ShouldSuppressGCTransition();
+            }
+
             PInvokeStaticSigInfo sigInfo(pMD, PInvokeStaticSigInfo::NO_THROW_ON_ERROR);
             switch (sigInfo.GetCallConv())
             {

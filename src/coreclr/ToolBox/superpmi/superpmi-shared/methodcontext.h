@@ -1001,10 +1001,10 @@ public:
     void recPInvokeMarshalingRequired(CORINFO_METHOD_HANDLE method, CORINFO_SIG_INFO* callSiteSig, bool result);
     void dmpPInvokeMarshalingRequired(const MethodSigInfoPairValue& key, DWORD value);
     bool repPInvokeMarshalingRequired(CORINFO_METHOD_HANDLE method, CORINFO_SIG_INFO* callSiteSig);
-    
-    void recGetEntryPointCallConv(CORINFO_METHOD_HANDLE method, CORINFO_SIG_INFO* callSiteSig, CorInfoCallConvExtension result);
-    void dmpGetEntryPointCallConv(const MethodSigInfoPairValue& key, DWORD value);
-    CorInfoCallConvExtension repGetEntryPointCallConv(CORINFO_METHOD_HANDLE method, CORINFO_SIG_INFO* callSiteSig);
+
+    void recGetUnmanagedCallConv(CORINFO_METHOD_HANDLE method, CORINFO_SIG_INFO* callSiteSig, CorInfoCallConvExtension result, bool suppressGCTransitionResult);
+    void dmpGetUnmanagedCallConv(const MethodSigInfoPairValue& key, DD value);
+    CorInfoCallConvExtension repGetUnmanagedCallConv(CORINFO_METHOD_HANDLE method, CORINFO_SIG_INFO* callSiteSig, bool* pSuppressGCTransition);
 
     void recFindSig(CORINFO_MODULE_HANDLE  module,
                     unsigned               sigTOK,
@@ -1513,8 +1513,7 @@ enum mcPackets
     Packet_GetUnBoxHelper                                = 92,
     Packet_GetReadyToRunHelper                           = 150, // Added 10/10/2014
     Packet_GetReadyToRunDelegateCtorHelper               = 157, // Added 3/30/2016
-    Packet_GetUnmanagedCallConv                          = 94,  // Retired 12/9/2020
-    Packet_GetEntryPointCallConv                         = 183, // Added 12/8/2020
+    Packet_GetUnmanagedCallConv                          = 94,
     Packet_GetVarArgsHandle                              = 95,
     Packet_GetVars                                       = 96,
     Packet_HandleException                               = 135,

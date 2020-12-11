@@ -28,7 +28,7 @@ struct JitInterfaceCallbacks
     void (* expandRawHandleIntrinsic)(void * thisHandle, CorInfoExceptionClass** ppException, void* pResolvedToken, void* pResult);
     int (* getIntrinsicID)(void * thisHandle, CorInfoExceptionClass** ppException, void* method, bool* pMustExpand);
     bool (* isIntrinsicType)(void * thisHandle, CorInfoExceptionClass** ppException, void* classHnd);
-    int (* getUnmanagedCallConv)(void * thisHandle, CorInfoExceptionClass** ppException, void* method, void* callSiteSig);
+    int (* getUnmanagedCallConv)(void * thisHandle, CorInfoExceptionClass** ppException, void* method, void* callSiteSig, bool* pSuppressGCTransition);
     bool (* pInvokeMarshalingRequired)(void * thisHandle, CorInfoExceptionClass** ppException, void* method, void* callSiteSig);
     bool (* satisfiesMethodConstraints)(void * thisHandle, CorInfoExceptionClass** ppException, void* parent, void* method);
     bool (* isCompatibleDelegate)(void * thisHandle, CorInfoExceptionClass** ppException, void* objCls, void* methodParentCls, void* method, void* delegateCls, bool* pfIsOpenDelegate);
@@ -377,10 +377,11 @@ public:
 
     virtual int getUnmanagedCallConv(
           void* method,
-          void* callSiteSig)
+          void* callSiteSig,
+          bool* pSuppressGCTransition)
 {
     CorInfoExceptionClass* pException = nullptr;
-    int temp = _callbacks->getUnmanagedCallConv(_thisHandle, &pException, method, callSiteSig);
+    int temp = _callbacks->getUnmanagedCallConv(_thisHandle, &pException, method, callSiteSig, pSuppressGCTransition);
     if (pException != nullptr) throw pException;
     return temp;
 }

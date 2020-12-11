@@ -103,7 +103,8 @@ bool isIntrinsicType(
 
 CorInfoCallConvExtension getUnmanagedCallConv(
           CORINFO_METHOD_HANDLE method,
-          CORINFO_SIG_INFO* callSiteSig);
+          CORINFO_SIG_INFO* callSiteSig,
+          bool* pSuppressGCTransition);
 
 bool pInvokeMarshalingRequired(
           CORINFO_METHOD_HANDLE method,

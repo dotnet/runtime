@@ -3057,7 +3057,7 @@ void MethodContext::recResolveVirtualMethod(CORINFO_DEVIRTUALIZATION_INFO * info
     key.context        = (DWORDLONG)info->context;
     Agnostic_ResolveVirtualMethodResult result;
     result.returnValue = returnValue;
-    result.devirtualizedMethod = (DWORDLONG)info->devirtualizedMethod;    
+    result.devirtualizedMethod = (DWORDLONG)info->devirtualizedMethod;
     result.requiresInstMethodTableArg = info->requiresInstMethodTableArg;
     result.exactContext = (DWORDLONG)info->exactContext;
     ResolveVirtualMethod->Add(key, result);
@@ -3781,12 +3781,13 @@ bool MethodContext::repPInvokeMarshalingRequired(CORINFO_METHOD_HANDLE method, C
     return value;
 }
 
-void MethodContext::recGetEntryPointCallConv(CORINFO_METHOD_HANDLE    method,
+void MethodContext::recGetUnmanagedCallConv(CORINFO_METHOD_HANDLE    method,
                                              CORINFO_SIG_INFO*        callSiteSig,
-                                             CorInfoCallConvExtension result)
+                                             CorInfoCallConvExtension result,
+                                             bool suppressGCTransitionResult)
 {
-    if (GetEntryPointCallConv == nullptr)
-        GetEntryPointCallConv = new LightWeightMap<MethodSigInfoPairValue, DWORD>();
+    if (GetUnmanagedCallConv == nullptr)
+        GetUnmanagedCallConv = new LightWeightMap<MethodSigInfoPairValue, DD>();
 
     MethodSigInfoPairValue key;
     ZeroMemory(&key, sizeof(MethodSigInfoPairValue)); // We use the input structs as a key and use memcmp to
@@ -3797,24 +3798,24 @@ void MethodContext::recGetEntryPointCallConv(CORINFO_METHOD_HANDLE    method,
     key.cbSig      = (DWORD)callSiteSig->cbSig;
     key.scope      = (DWORDLONG)callSiteSig->scope;
 
-    GetEntryPointCallConv->Add(key, (DWORD)result);
-    DEBUG_REC(dmpGetEntryPointCallConv(key, (DWORD)result));
+    GetUnmanagedCallConv->Add(key, { (DWORD)result, (DWORD)suppressGCTransitionResult });
+    DEBUG_REC(dmpGetUnmanagedCallConv(key, { (DWORD)result, (DWORD)suppressGCTransitionResult }));
 }
-void MethodContext::dmpGetEntryPointCallConv(const MethodSigInfoPairValue& key, DWORD value)
+void MethodContext::dmpGetUnmanagedCallConv(const MethodSigInfoPairValue& key, DD value)
 {
-    printf("GetEntryPointCallConv key mth-%016llX scp-%016llX sig-%u, value res-%u", key.method, key.scope,
-           key.pSig_Index, value);
+    printf("GetUnmanagedCallConv key mth-%016llX scp-%016llX sig-%u, value res-%u,%u", key.method, key.scope,
+           key.pSig_Index, value.A, value.B);
 }
 // Note the jit interface implementation seems to only care about scope and pSig from callSiteSig
-CorInfoCallConvExtension MethodContext::repGetEntryPointCallConv(CORINFO_METHOD_HANDLE method, CORINFO_SIG_INFO* callSiteSig)
+CorInfoCallConvExtension MethodContext::repGetUnmanagedCallConv(CORINFO_METHOD_HANDLE method, CORINFO_SIG_INFO* callSiteSig, bool* pSuppressGCTransition)
 {
-    if (GetEntryPointCallConv == nullptr)
+    if (GetUnmanagedCallConv == nullptr)
     {
 #ifdef sparseMC
-        LogDebug("Sparse - repGetEntryPointCallConv returning CorInfoCallConvExtension::Managed");
+        LogDebug("Sparse - repGetUnmanagedCallConv returning CorInfoCallConvExtension::Managed");
         return CorInfoCallConvExtension::Managed;
 #else
-        LogException(EXCEPTIONCODE_MC, "Found a null GetUnmGetEntryPointCallConvanagedCallConv.  Probably missing a fatTrigger for %016llX.",
+        LogException(EXCEPTIONCODE_MC, "Found a null GetUnmGetUnmanagedCallConvanagedCallConv.  Probably missing a fatTrigger for %016llX.",
                      (DWORDLONG)method);
 #endif
     }
@@ -3824,13 +3825,14 @@ CorInfoCallConvExtension MethodContext::repGetEntryPointCallConv(CORINFO_METHOD_
                                                       // compare.. so we need to zero out padding too
 
     key.method     = (DWORDLONG)method;
-    key.pSig_Index = (DWORD)GetEntryPointCallConv->Contains((unsigned char*)callSiteSig->pSig, callSiteSig->cbSig);
+    key.pSig_Index = (DWORD)GetUnmanagedCallConv->Contains((unsigned char*)callSiteSig->pSig, callSiteSig->cbSig);
     key.cbSig      = (DWORD)callSiteSig->cbSig;
     key.scope      = (DWORDLONG)callSiteSig->scope;
 
-    DWORD value = GetEntryPointCallConv->Get(key);
-    DEBUG_REP(dmpGetEntryPointCallConv(key, value));
-    return (CorInfoCallConvExtension)value;
+    DD value = GetUnmanagedCallConv->Get(key);
+    DEBUG_REP(dmpGetUnmanagedCallConv(key, value));
+    *pSuppressGCTransition = value.B != 0;
+    return (CorInfoCallConvExtension)value.A;
 }
 
 void MethodContext::recFindSig(CORINFO_MODULE_HANDLE  module,
@@ -5313,7 +5315,7 @@ void MethodContext::recGetLikelyClass(CORINFO_METHOD_HANDLE ftnHnd, CORINFO_CLAS
 }
 void MethodContext::dmpGetLikelyClass(const Agnostic_GetLikelyClass& key, const Agnostic_GetLikelyClassResult& value)
 {
-    printf("GetLikelyClass key ftn-%016llX base-%016llX il-%u, class-%016llX likelihood-%u numberOfClasses-%u", 
+    printf("GetLikelyClass key ftn-%016llX base-%016llX il-%u, class-%016llX likelihood-%u numberOfClasses-%u",
         key.ftnHnd, key.baseHnd, key.ilOffset, value.classHnd, value.likelihood, value.numberOfClasses);
 }
 CORINFO_CLASS_HANDLE MethodContext::repGetLikelyClass(CORINFO_METHOD_HANDLE ftnHnd, CORINFO_CLASS_HANDLE baseHnd, UINT32 ilOffset, UINT32* pLikelihood, UINT32* pNumberOfClasses)

@@ -7033,11 +7033,6 @@ void Compiler::impCheckForPInvokeCall(
         call->gtCallMoreFlags |= GTF_CALL_M_PINVOKE;
     }
 
-    if ((sig->flags & CORINFO_SIGFLAG_SUPPRESS_GC_TRANSITION) != 0)
-    {
-        call->gtCallMoreFlags |= GTF_CALL_M_SUPPRESS_GC_TRANSITION;
-    }
-
     if (methHnd)
     {
         if ((mflags & CORINFO_FLG_PINVOKE) == 0)
@@ -7045,7 +7040,12 @@ void Compiler::impCheckForPInvokeCall(
             return;
         }
 
-        unmanagedCallConv = info.compCompHnd->getUnmanagedCallConv(methHnd, nullptr);
+        bool suppressGCTransition = false;
+        unmanagedCallConv = info.compCompHnd->getUnmanagedCallConv(methHnd, nullptr, &suppressGCTransition);
+        if (suppressGCTransition)
+        {
+            call->gtCallMoreFlags |= GTF_CALL_M_SUPPRESS_GC_TRANSITION;
+        }
     }
     else
     {

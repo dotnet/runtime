@@ -222,10 +222,10 @@ bool MyICJI::isIntrinsicType(CORINFO_CLASS_HANDLE classHnd)
 // - a P/Invoke
 // - a method marked with UnmanagedCallersOnly
 // - a function pointer with the CORINFO_CALLCONV_UNMANAGED calling convention.
-CorInfoCallConvExtension MyICJI::getUnmanagedCallConv(CORINFO_METHOD_HANDLE method, CORINFO_SIG_INFO* callSiteSig)
+CorInfoCallConvExtension MyICJI::getUnmanagedCallConv(CORINFO_METHOD_HANDLE method, CORINFO_SIG_INFO* callSiteSig, bool* pSuppressGCTransition)
 {
     jitInstance->mc->cr->AddCall("getUnmanagedCallConv");
-    return jitInstance->mc->repGetEntryPointCallConv(method, callSiteSig);
+    return jitInstance->mc->repGetUnmanagedCallConv(method, callSiteSig, pSuppressGCTransition);
 }
 
 // return if any marshaling is required for PInvoke methods.  Note that

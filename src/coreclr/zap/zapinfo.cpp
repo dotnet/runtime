@@ -4045,9 +4045,9 @@ bool ZapInfo::isIntrinsicType(CORINFO_CLASS_HANDLE classHnd)
     return m_pEEJitInfo->isIntrinsicType(classHnd);
 }
 
-CorInfoCallConvExtension ZapInfo::getUnmanagedCallConv(CORINFO_METHOD_HANDLE method, CORINFO_SIG_INFO* sig)
+CorInfoCallConvExtension ZapInfo::getUnmanagedCallConv(CORINFO_METHOD_HANDLE method, CORINFO_SIG_INFO* sig, bool* pSuppressGCTransition)
 {
-    return m_pEEJitInfo->getUnmanagedCallConv(method, sig);
+    return m_pEEJitInfo->getUnmanagedCallConv(method, sig, pSuppressGCTransition);
 }
 
 bool ZapInfo::pInvokeMarshalingRequired(CORINFO_METHOD_HANDLE method,

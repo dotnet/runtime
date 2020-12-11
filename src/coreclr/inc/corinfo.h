@@ -1070,7 +1070,7 @@ enum CorInfoSigInfoFlags
 {
     CORINFO_SIGFLAG_IS_LOCAL_SIG           = 0x01,
     CORINFO_SIGFLAG_IL_STUB                = 0x02,
-    CORINFO_SIGFLAG_SUPPRESS_GC_TRANSITION = 0x04,
+    // unused                              = 0x04,
     CORINFO_SIGFLAG_FAT_CALL               = 0x08,
 };
 
@@ -2089,7 +2089,8 @@ public:
     // use an unmanaged calling convention as an entry point.
     virtual CorInfoCallConvExtension getUnmanagedCallConv(
             CORINFO_METHOD_HANDLE       method,
-            CORINFO_SIG_INFO*           callSiteSig
+            CORINFO_SIG_INFO*           callSiteSig,
+            bool*                       pSuppressGCTransition = NULL /* OUT */
             ) = 0;
 
     // return if any marshaling is required for PInvoke methods.  Note that

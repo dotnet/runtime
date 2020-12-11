@@ -154,7 +154,7 @@ LWM(ResolveVirtualMethod, Agnostic_ResolveVirtualMethodKey, Agnostic_ResolveVirt
 LWM(TryResolveToken, Agnostic_CORINFO_RESOLVED_TOKENin, TryResolveTokenValue)
 LWM(SatisfiesClassConstraints, DWORDLONG, DWORD)
 LWM(SatisfiesMethodConstraints, DLDL, DWORD)
-LWM(GetEntryPointCallConv, MethodSigInfoPairValue, DWORD)
+LWM(GetUnmanagedCallConv, MethodSigInfoPairValue, DD)
 
 
 #undef LWM

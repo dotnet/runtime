@@ -486,11 +486,6 @@ namespace Internal.JitInterface
         {
             Get_CORINFO_SIG_INFO(method.Signature, sig);
 
-            if (method.IsPInvoke && method.IsSuppressGCTransition())
-            {
-                sig->flags |= CorInfoSigInfoFlags.CORINFO_SIGFLAG_SUPPRESS_GC_TRANSITION;
-            }
-
             // Does the method have a hidden parameter?
             bool hasHiddenParameter = !suppressHiddenArgument && method.RequiresInstArg();
 
@@ -1060,14 +1055,23 @@ namespace Internal.JitInterface
                 MethodSignatureFlags.UnmanagedCallingConventionStdCall : MethodSignatureFlags.UnmanagedCallingConventionCdecl;
         }
 
-        private CorInfoCallConvExtension getUnmanagedCallConv(CORINFO_METHOD_STRUCT_* method, CORINFO_SIG_INFO* sig)
+        private CorInfoCallConvExtension getUnmanagedCallConv(CORINFO_METHOD_STRUCT_* method, CORINFO_SIG_INFO* sig, byte* pSuppressGCTransition)
         {
+            if (pSuppressGCTransition != null)
+            {
+                *pSuppressGCTransition = 0;
+            }
+
             Debug.Assert(method != null || sig != null);
             if (method != null)
             {
                 MethodDesc methodDesc = HandleToObject(method);
                 if (methodDesc.IsPInvoke)
                 {
+                    if (pSuppressGCTransition != null)
+                    {
+                        *pSuppressGCTransition = methodDesc.IsSuppressGCTransition() ? 1 : 0;
+                    }
                     MethodSignatureFlags unmanagedCallConv = HandleToObject(method).GetPInvokeMethodMetadata().Flags.UnmanagedCallingConvention;
 
                     if (unmanagedCallConv == MethodSignatureFlags.None)
@@ -1361,16 +1365,6 @@ namespace Internal.JitInterface
             var methodSig = (MethodSignature)methodIL.GetObject((int)sigTOK);
 
             Get_CORINFO_SIG_INFO(methodSig, sig);
-
-            // TODO: Replace this with a public mechanism to mark calli with SuppressGCTransition once it becomes available.
-            if (methodIL is PInvokeILStubMethodIL stubIL)
-            {
-                var method = stubIL.OwningMethod;
-                if (method.IsPInvoke && method.IsSuppressGCTransition())
-                {
-                    sig->flags |= CorInfoSigInfoFlags.CORINFO_SIGFLAG_SUPPRESS_GC_TRANSITION;
-                }
-            }
 
 #if !READYTORUN
             // Check whether we need to report this as a fat pointer call
