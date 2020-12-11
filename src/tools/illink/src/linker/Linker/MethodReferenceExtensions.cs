@@ -46,7 +46,8 @@ namespace Mono.Linker
 				sb.Insert (0, method.Name);
 
 			// Insert declaring type name and namespace
-			sb.Insert (0, '.').Insert (0, method.DeclaringType.GetDisplayName ());
+			if (method.DeclaringType != null)
+				sb.Insert (0, '.').Insert (0, method.DeclaringType.GetDisplayName ());
 
 			return sb.ToString ();
 		}

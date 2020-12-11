@@ -91,7 +91,7 @@ namespace Mono.Linker.Tests.TestCases
 		{
 			var testcase = CreateIndividualCase (typeof (WarningsAreSorted));
 			var result = Run (testcase);
-			var loggedMessages = result.Logger.MessageContainers
+			var loggedMessages = result.Logger.GetLoggedMessages ()
 				.Where (lm => lm.Category != MessageCategory.Info && lm.Category != MessageCategory.Diagnostic).ToList ();
 			loggedMessages.Sort ();
 
@@ -215,23 +215,6 @@ namespace Mono.Linker.Tests.TestCases
 			var secondOutputMvid = GetMvid (result2.OutputAssemblyPath);
 			Assert.That (secondOutputMvid, Is.EqualTo (originalMvid));
 			Assert.That (secondOutputMvid, Is.EqualTo (firstOutputMvid));
-		}
-
-		[Test]
-		public void DefaultMvidBehavior ()
-		{
-			var testCase = CreateIndividualCase (typeof (NewMvidWorks));
-			var result = Run (testCase, out TestRunner runner);
-
-			var originalMvid = GetMvid (result.InputAssemblyPath);
-			var firstOutputMvid = GetMvid (result.OutputAssemblyPath);
-			Assert.That (firstOutputMvid, Is.Not.EqualTo (originalMvid));
-
-			var result2 = runner.Relink (result);
-
-			var secondOutputMvid = GetMvid (result2.OutputAssemblyPath);
-			Assert.That (secondOutputMvid, Is.Not.EqualTo (originalMvid));
-			Assert.That (secondOutputMvid, Is.Not.EqualTo (firstOutputMvid));
 		}
 
 		protected Guid GetMvid (NPath assemblyPath)

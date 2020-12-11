@@ -605,7 +605,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
 		void VerifyLoggedMessages (AssemblyDefinition original, LinkerTestLogger logger, bool checkRemainingErrors)
 		{
-			List<string> loggedMessages = logger.GetLoggedMessages ();
+			List<MessageContainer> loggedMessages = logger.GetLoggedMessages ();
 			foreach (var testType in original.AllDefinedTypes ()) {
 				foreach (var attrProvider in testType.AllMembers ().Append (testType)) {
 					foreach (var attr in attrProvider.CustomAttributes) {
@@ -614,11 +614,11 @@ namespace Mono.Linker.Tests.TestCasesRunner
 						case nameof (LogContainsAttribute): {
 								var expectedMessage = (string) attr.ConstructorArguments[0].Value;
 
-								List<string> matchedMessages;
+								List<MessageContainer> matchedMessages;
 								if ((bool) attr.ConstructorArguments[1].Value)
-									matchedMessages = loggedMessages.Where (m => Regex.IsMatch (m, expectedMessage)).ToList ();
+									matchedMessages = loggedMessages.Where (m => Regex.IsMatch (m.ToString (), expectedMessage)).ToList ();
 								else
-									matchedMessages = loggedMessages.Where (m => m.Contains (expectedMessage)).ToList (); ;
+									matchedMessages = loggedMessages.Where (m => m.ToString ().Contains (expectedMessage)).ToList (); ;
 								Assert.IsTrue (
 									matchedMessages.Count > 0,
 									$"Expected to find logged message matching `{expectedMessage}`, but no such message was found.{Environment.NewLine}Logged messages:{Environment.NewLine}{string.Join (Environment.NewLine, loggedMessages)}");
@@ -657,7 +657,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 								var actualMethod = attrProvider as MethodDefinition;
 
 								Assert.IsTrue (
-									logger.MessageContainers.Any (mc => {
+									logger.GetLoggedMessages ().Any (mc => {
 										if (mc.Category != MessageCategory.Warning || mc.Code != expectedWarningCodeNumber)
 											return false;
 
@@ -679,7 +679,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 											if (mc.Origin?.MemberDefinition?.FullName == attrProvider.FullName)
 												return true;
 
-											if (loggedMessages.Any (m => m.Contains (attrProvider.FullName)))
+											if (loggedMessages.Any (m => m.Text.Contains (attrProvider.FullName)))
 												return true;
 
 											return false;
@@ -699,7 +699,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			}
 
 			if (checkRemainingErrors) {
-				var remainingErrors = loggedMessages.Where (m => Regex.IsMatch (m, @".*(error | warning): \d{4}.*"));
+				var remainingErrors = loggedMessages.Where (m => Regex.IsMatch (m.ToString (), @".*(error | warning): \d{4}.*"));
 				Assert.IsEmpty (remainingErrors, $"Found unexpected errors:{Environment.NewLine}{string.Join (Environment.NewLine, remainingErrors)}");
 			}
 		}
