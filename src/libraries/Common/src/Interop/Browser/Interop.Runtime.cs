@@ -10,6 +10,7 @@ using System.Threading.Tasks;
 
 using JSObject = System.Runtime.InteropServices.JavaScript.JSObject;
 using JSException = System.Runtime.InteropServices.JavaScript.JSException;
+using Uint8Array = System.Runtime.InteropServices.JavaScript.Uint8Array;
 
 internal static partial class Interop
 {
@@ -100,12 +101,14 @@ internal static partial class Interop
         }
 
         [MethodImplAttribute (MethodImplOptions.NoInlining)]
-        public static void StopProfile () {
+        public static void StopProfile ()
+        {
         }
-        
+
         // Called by the AOT profiler to save profile data into Module.aot_profile_data
         [MethodImplAttribute (MethodImplOptions.NoInlining)]
-        public static unsafe void DumpAotProfileData (ref byte buf, int len, string s) {
+        public static unsafe void DumpAotProfileData (ref byte buf, int len, string s)
+        {
             var arr = new byte [len];
             fixed (void *p = &buf) {
                 var span = new ReadOnlySpan<byte> (p, len);

@@ -60,6 +60,8 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
 
     public string? AotProfilePath { get; set; }
 
+    public ITaskItem[]? Profilers { get; set; }
+
     /// <summary>
     /// Generate a file containing mono_aot_register_module() calls for each AOT module
     /// Defaults to false.
@@ -157,7 +159,7 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
 
         if (!string.IsNullOrEmpty(AotModulesTablePath))
         {
-            GenerateAotModulesTable(Assemblies);
+            GenerateAotModulesTable(Assemblies, Profilers);
         }
 
         Parallel.ForEach(Assemblies,
@@ -175,6 +177,7 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
         string directory = Path.GetDirectoryName(assembly)!;
         var aotAssembly = new TaskItem(assembly);
         var aotArgs = new List<string>();
+        var aotProfileArgs = new List<string>();
         var processArgs = new List<string>();
 
         var a = assemblyItem.GetMetadata("AotArguments");
@@ -277,6 +280,8 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
             aotProfileArgs.Add($"--profile={profiler}");
         }
 
+        processArgs.Add(string.Join(" ", aotProfileArgs));
+
         // we need to quote the entire --aot arguments here to make sure it is parsed
         // on Windows as one argument. Otherwise it will be split up into multiple
         // values, which wont work.
@@ -296,7 +301,7 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
         compiledAssemblies.Add(aotAssembly);
     }
 
-    private void GenerateAotModulesTable(ITaskItem[] assemblies)
+    private void GenerateAotModulesTable(ITaskItem[] assemblies, ITaskItem[]? profilers)
     {
         var symbols = new List<string>();
         foreach (var asm in assemblies)
@@ -323,7 +328,7 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
                 }
                 writer.WriteLine("}");
 
-                foreach (var profiler in profilers) {
+                foreach (var profiler in profilers!) {
                     writer.WriteLine ($"void mono_profiler_init_{profiler} (const char *desc);");
                     writer.WriteLine ("EMSCRIPTEN_KEEPALIVE void mono_wasm_load_profiler_" + profiler + " (const char *desc) { mono_profiler_init_" + profiler + " (desc); }");
                 }

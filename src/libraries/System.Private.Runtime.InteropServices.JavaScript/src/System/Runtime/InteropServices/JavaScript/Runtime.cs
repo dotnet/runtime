@@ -66,6 +66,11 @@ namespace System.Runtime.InteropServices.JavaScript
             return Interop.Runtime.GetGlobalObject(str);
         }
 
+        public static void DumpAotProfileData (ref byte buf, int len, string s)
+        {
+            Interop.Runtime.DumpAotProfileData(ref buf, len, s);
+        }
+
         private static int BindJSObject(int jsId, bool ownsHandle, int mappedType)
         {
             WeakReference? reference;
