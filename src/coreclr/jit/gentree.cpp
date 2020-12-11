@@ -15487,10 +15487,17 @@ GenTree* Compiler::gtNewTempAssign(
         if (!ok)
         {
             gtDispTree(val);
-            noway_assert(!"Incompatible types for gtNewTempAssign");
+            assert(!"Incompatible types for gtNewTempAssign");
         }
     }
 #endif
+    
+    // Added this noway_assert for runtime\issue 44895, to protect against silent bad codegen
+    //
+    if ((dstTyp == TYP_STRUCT) && (valTyp == TYP_REF))
+    {
+        noway_assert(!"Incompatible types for gtNewTempAssign");
+    }
 
     // Floating Point assignments can be created during inlining
     // see "Zero init inlinee locals:" in fgInlinePrependStatements
