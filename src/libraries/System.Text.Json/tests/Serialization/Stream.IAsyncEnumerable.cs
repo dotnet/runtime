@@ -91,7 +91,8 @@ namespace System.Text.Json.Serialization.Tests
                 DefaultBufferSize = bufferSize
             };
 
-            long singleLength = 0;
+            // Calculate the byte length of a single item not in a JSON array.
+            long singleLength;
             using (MemoryStream singleObjectStream = new MemoryStream())
             {
                 var obj = new SimpleTestClass();
@@ -101,7 +102,6 @@ namespace System.Text.Json.Serialization.Tests
                 singleLength = singleObjectStream.Length;
             }
 
-            long allLength = 0;
             using (MemoryStream stream = new MemoryStream())
             {
                 await JsonSerializer.SerializeAsyncEnumerable(
@@ -109,7 +109,7 @@ namespace System.Text.Json.Serialization.Tests
                     new SimpleObjectProvider(count),
                     options);
 
-                allLength = stream.Length;
+                long allLength = stream.Length;
                 allLength -= 1; // account for start array token.
                 allLength -= count; // account for commas; includes end array token since there is no trailing comma.
 
