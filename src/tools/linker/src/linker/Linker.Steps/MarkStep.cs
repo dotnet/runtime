@@ -1371,30 +1371,16 @@ namespace Mono.Linker.Steps
 			Annotations.Mark (scope, new DependencyInfo (DependencyKind.ScopeOfType, type));
 		}
 
-#if !FEATURE_ILLINK
 		protected virtual void MarkSerializable (TypeDefinition type)
 		{
 			// Keep default ctor for XmlSerializer support. See https://github.com/mono/linker/issues/957
 			MarkDefaultConstructor (type, new DependencyInfo (DependencyKind.SerializationMethodForType, type), type);
+#if !FEATURE_ILLINK
 			if (_context.IsFeatureExcluded ("deserialization"))
 				return;
-
+#endif
 			MarkMethodsIf (type.Methods, IsSpecialSerializationConstructor, new DependencyInfo (DependencyKind.SerializationMethodForType, type), type);
 		}
-
-		static bool IsSpecialSerializationConstructor (MethodDefinition method)
-		{
-			if (!method.IsInstanceConstructor ())
-				return false;
-
-			var parameters = method.Parameters;
-			if (parameters.Count != 2)
-				return false;
-
-			return parameters[0].ParameterType.Name == "SerializationInfo" &&
-				parameters[1].ParameterType.Name == "StreamingContext";
-		}
-#endif
 
 		protected internal virtual TypeDefinition MarkTypeVisibleToReflection (TypeReference reference, DependencyInfo reason, IMemberDefinition sourceLocationMember)
 		{
@@ -1490,10 +1476,8 @@ namespace Mono.Linker.Steps
 			if (type.IsClass && type.BaseType == null && type.Name == "Object" && ShouldMarkSystemObjectFinalize)
 				MarkMethodIf (type.Methods, m => m.Name == "Finalize", new DependencyInfo (DependencyKind.MethodForSpecialType, type), type);
 
-#if !FEATURE_ILLINK
 			if (type.IsSerializable ())
 				MarkSerializable (type);
-#endif
 
 			// TODO: This needs work to ensure we handle EventSource appropriately.
 			// This marks static fields of KeyWords/OpCodes/Tasks subclasses of an EventSource type.
@@ -1969,6 +1953,19 @@ namespace Mono.Linker.Steps
 			}
 
 			return false;
+		}
+
+		static bool IsSpecialSerializationConstructor (MethodDefinition method)
+		{
+			if (!method.IsInstanceConstructor ())
+				return false;
+
+			var parameters = method.Parameters;
+			if (parameters.Count != 2)
+				return false;
+
+			return parameters[0].ParameterType.Name == "SerializationInfo" &&
+				parameters[1].ParameterType.Name == "StreamingContext";
 		}
 
 		protected internal bool MarkMethodsIf (Collection<MethodDefinition> methods, Func<MethodDefinition, bool> predicate, in DependencyInfo reason, IMemberDefinition sourceLocationMember)
