@@ -12,11 +12,13 @@ namespace System
     {
         private Delegate[]? delegates;
 
+        [RequiresUnreferencedCode("The target method might be removed")]
         protected MulticastDelegate(object target, string method)
             : base(target, method)
         {
         }
 
+        [RequiresUnreferencedCode("The target method might be removed")]
         protected MulticastDelegate(Type target, string method)
             : base(target, method)
         {

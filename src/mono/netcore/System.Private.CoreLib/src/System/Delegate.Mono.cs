@@ -71,6 +71,7 @@ namespace System
         private bool method_is_virtual;
         #endregion
 
+        [RequiresUnreferencedCode("The target method might be removed")]
         protected Delegate(object target, string method)
         {
             if (target is null)
@@ -86,6 +87,7 @@ namespace System
             };
         }
 
+        [RequiresUnreferencedCode("The target method might be removed")]
         protected Delegate(Type target, string method)
         {
             if (target is null)
