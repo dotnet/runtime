@@ -919,7 +919,7 @@ void CodeGen::genPutArgStk(GenTreePutArgStk* treeNode)
                 // The dst size can be rounded up to PUTARG_STK size.
                 // The src size can be rounded up if it reads a local variable slot because the local
                 // variable stack allocation size is rounded up to be a multiple of the TARGET_POINTER_SIZE.
-                // The exception  is arm64 apple arguments because they can be packed without padding.
+                // The exception  is arm64 apple arguments because they can be passed without padding.
                 if (varNode != nullptr)
                 {
 #if defined(OSX_ARM64_ABI)
