@@ -104,7 +104,7 @@ def generateEvent(eventNode, providerNode, outputFile, stringTable):
                 break
 
     # Write the beginning of the method signature.
-    writeOutput(outputFile, "private void " + eventNode.getAttribute("symbol") + "(")
+    writeOutput(outputFile, "public void " + eventNode.getAttribute("symbol") + "(")
 
     # Write the function signature.
     argumentCount = 0
@@ -149,6 +149,25 @@ def generateEvent(eventNode, providerNode, outputFile, stringTable):
 
     # Write the call to WriteEvent.
     increaseTabLevel()
+    
+    if eventNode.getAttribute("symbol") == "ThreadPoolWorkerThreadStart":
+        writeOutput(outputFile, "if (!IsEnabled(EventLevel.Informational, Keywords.ThreadingKeyword)) return;\n\n")
+        
+    if eventNode.getAttribute("symbol") == "ThreadPoolWorkerThreadStop":
+        writeOutput(outputFile, "if (!IsEnabled(EventLevel.Informational, Keywords.ThreadingKeyword)) return;\n\n")
+        
+    if eventNode.getAttribute("symbol") == "ThreadPoolWorkerThreadAdjustmentSample":
+        writeOutput(outputFile, "if (!IsEnabled(EventLevel.Informational, Keywords.ThreadingKeyword)) return;\n\n")
+        
+    if eventNode.getAttribute("symbol") == "ThreadPoolWorkerThreadAdjustmentStats":
+        writeOutput(outputFile, "if (!IsEnabled(EventLevel.Verbose, Keywords.ThreadingKeyword)) return;\n\n")
+        
+    if eventNode.getAttribute("symbol") == "ThreadPoolWorkerThreadWait":
+        writeOutput(outputFile, "if (!IsEnabled(EventLevel.Informational, Keywords.ThreadingKeyword)) return;\n\n")
+        
+    if eventNode.getAttribute("symbol") == "ThreadPoolWorkingThreadCount":
+        writeOutput(outputFile, "if (!IsEnabled(EventLevel.Verbose, Keywords.ThreadingKeyword)) return;\n\n")
+    
     writeOutput(outputFile, "WriteEvent(" + eventNode.getAttribute("value"))
 
     # Add method parameters.

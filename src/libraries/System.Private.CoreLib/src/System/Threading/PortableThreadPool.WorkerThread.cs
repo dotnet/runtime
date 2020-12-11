@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics.Tracing;
+
 namespace System.Threading
 {
     internal partial class PortableThreadPool
@@ -20,10 +22,10 @@ namespace System.Threading
                     AppContextConfigHelper.GetInt32Config("System.Threading.ThreadPool.UnfairSemaphoreSpinLimit", 70, false),
                     onWait: () =>
                     {
-                        if (PortableThreadPoolEventSource.Log.IsEnabled())
+                        if (NativeRuntimeEventSource.Log.IsEnabled())
                         {
-                            PortableThreadPoolEventSource.Log.ThreadPoolWorkerThreadWait(
-                                (uint)ThreadPoolInstance._separated.counts.VolatileRead().NumExistingThreads);
+                            NativeRuntimeEventSource.Log.ThreadPoolWorkerThreadWait(
+                                (uint)ThreadPoolInstance._separated.counts.VolatileRead().NumExistingThreads, 0, NativeRuntimeEventSource.DefaultClrInstanceId);
                         }
                     });
 
@@ -33,10 +35,10 @@ namespace System.Threading
 
                 PortableThreadPool threadPoolInstance = ThreadPoolInstance;
 
-                if (PortableThreadPoolEventSource.Log.IsEnabled())
+                if (NativeRuntimeEventSource.Log.IsEnabled())
                 {
-                    PortableThreadPoolEventSource.Log.ThreadPoolWorkerThreadStart(
-                        (uint)threadPoolInstance._separated.counts.VolatileRead().NumExistingThreads);
+                    NativeRuntimeEventSource.Log.ThreadPoolWorkerThreadStart(
+                        (uint)threadPoolInstance._separated.counts.VolatileRead().NumExistingThreads, 0, NativeRuntimeEventSource.DefaultClrInstanceId);
                 }
 
                 LowLevelLock hillClimbingThreadAdjustmentLock = threadPoolInstance._hillClimbingThreadAdjustmentLock;
@@ -105,9 +107,9 @@ namespace System.Threading
                             {
                                 HillClimbing.ThreadPoolHillClimber.ForceChange(newNumThreadsGoal, HillClimbing.StateOrTransition.ThreadTimedOut);
 
-                                if (PortableThreadPoolEventSource.Log.IsEnabled())
+                                if (NativeRuntimeEventSource.Log.IsEnabled())
                                 {
-                                    PortableThreadPoolEventSource.Log.ThreadPoolWorkerThreadStop((uint)newNumExistingThreads);
+                                    NativeRuntimeEventSource.Log.ThreadPoolWorkerThreadStop((uint)newNumExistingThreads, 0, NativeRuntimeEventSource.DefaultClrInstanceId);
                                 }
                                 return;
                             }

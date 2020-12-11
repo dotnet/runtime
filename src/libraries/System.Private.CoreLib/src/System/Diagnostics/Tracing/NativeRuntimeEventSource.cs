@@ -1,6 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Runtime.CompilerServices;
+using System.Threading;
+
 namespace System.Diagnostics.Tracing
 {
     /// <summary>
@@ -50,6 +53,123 @@ namespace System.Diagnostics.Tracing
                 activityID: &activityId,
                 childActivityID: &childActivityId,
                 args: decodedPayloadFields);
+        }
+
+        // PortableThreadPool
+
+        public const ushort DefaultClrInstanceId = 0;
+
+        private static class Messages
+        {
+            public const string WorkerThread = "ActiveWorkerThreadCount={0};\nRetiredWorkerThreadCount={1};\nClrInstanceID={2}";
+            public const string WorkerThreadAdjustmentSample = "Throughput={0};\nClrInstanceID={1}";
+            public const string WorkerThreadAdjustmentAdjustment = "AverageThroughput={0};\nNewWorkerThreadCount={1};\nReason={2};\nClrInstanceID={3}";
+            public const string WorkerThreadAdjustmentStats = "Duration={0};\nThroughput={1};\nThreadWave={2};\nThroughputWave={3};\nThroughputErrorEstimate={4};\nAverageThroughputErrorEstimate={5};\nThroughputRatio={6};\nConfidence={7};\nNewControlSetting={8};\nNewThreadWaveMagnitude={9};\nClrInstanceID={10}";
+            public const string IOEnqueue = "NativeOverlapped={0};\nOverlapped={1};\nMultiDequeues={2};\nClrInstanceID={3}";
+            public const string IO = "NativeOverlapped={0};\nOverlapped={1};\nClrInstanceID={2}";
+            public const string WorkingThreadCount = "Count={0};\nClrInstanceID={1}";
+        }
+
+        // The task definitions for the ETW manifest
+        public static class Tasks // this name and visibility is important for EventSource
+        {
+            public const EventTask ThreadPoolWorkerThread = (EventTask)16;
+            public const EventTask ThreadPoolWorkerThreadAdjustment = (EventTask)18;
+            public const EventTask ThreadPool = (EventTask)23;
+            public const EventTask ThreadPoolWorkingThreadCount = (EventTask)22;
+        }
+
+        public static class Opcodes // this name and visibility is important for EventSource
+        {
+            public const EventOpcode IOEnqueue = (EventOpcode)13;
+            public const EventOpcode IODequeue = (EventOpcode)14;
+            public const EventOpcode Wait = (EventOpcode)90;
+            public const EventOpcode Sample = (EventOpcode)100;
+            public const EventOpcode Adjustment = (EventOpcode)101;
+            public const EventOpcode Stats = (EventOpcode)102;
+        }
+
+        public enum ThreadAdjustmentReasonMap : uint
+        {
+            Warmup,
+            Initializing,
+            RandomMove,
+            ClimbingMove,
+            ChangePoint,
+            Stabilizing,
+            Starvation,
+            ThreadTimedOut
+        }
+
+        [NonEvent]
+        private unsafe void WriteThreadEvent(int eventId, uint numExistingThreads)
+        {
+            uint retiredWorkerThreadCount = 0;
+            ushort clrInstanceId = DefaultClrInstanceId;
+
+            EventData* data = stackalloc EventData[3];
+            data[0].DataPointer = (IntPtr)(&numExistingThreads);
+            data[0].Size = sizeof(uint);
+            data[0].Reserved = 0;
+            data[1].DataPointer = (IntPtr)(&retiredWorkerThreadCount);
+            data[1].Size = sizeof(uint);
+            data[1].Reserved = 0;
+            data[2].DataPointer = (IntPtr)(&clrInstanceId);
+            data[2].Size = sizeof(ushort);
+            data[2].Reserved = 0;
+            WriteEventCore(eventId, 3, data);
+        }
+
+        [Event(55, Level = EventLevel.Informational, Message = Messages.WorkerThreadAdjustmentAdjustment, Task = Tasks.ThreadPoolWorkerThreadAdjustment, Opcode = Opcodes.Adjustment, Version = 0, Keywords = Keywords.ThreadingKeyword)]
+        public unsafe void ThreadPoolWorkerThreadAdjustmentAdjustment(
+            double AverageThroughput,
+            uint NewWorkerThreadCount,
+            ThreadAdjustmentReasonMap Reason,
+            ushort ClrInstanceID = DefaultClrInstanceId)
+        {
+            if (!IsEnabled(EventLevel.Informational, Keywords.ThreadingKeyword))
+            {
+                return;
+            }
+
+            EventData* data = stackalloc EventData[4];
+            data[0].DataPointer = (IntPtr)(&AverageThroughput);
+            data[0].Size = sizeof(double);
+            data[0].Reserved = 0;
+            data[1].DataPointer = (IntPtr)(&NewWorkerThreadCount);
+            data[1].Size = sizeof(uint);
+            data[1].Reserved = 0;
+            data[2].DataPointer = (IntPtr)(&Reason);
+            data[2].Size = sizeof(ThreadAdjustmentReasonMap);
+            data[2].Reserved = 0;
+            data[3].DataPointer = (IntPtr)(&ClrInstanceID);
+            data[3].Size = sizeof(ushort);
+            data[3].Reserved = 0;
+            WriteEventCore(55, 4, data);
+        }
+
+        // TODO: This event is fired for minor compat with CoreCLR in this case. Consider removing this method and use
+        // FrameworkEventSource's thread transfer send/receive events instead at callers.
+        [NonEvent]
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public void ThreadPoolIOEnqueue(RegisteredWaitHandle registeredWaitHandle)
+        {
+            if (IsEnabled(EventLevel.Verbose, Keywords.ThreadingKeyword | Keywords.ThreadTransferKeyword))
+            {
+                ThreadPoolIOEnqueue((IntPtr)registeredWaitHandle.GetHashCode(), IntPtr.Zero, registeredWaitHandle.Repeating, DefaultClrInstanceId);
+            }
+        }
+
+        // TODO: This event is fired for minor compat with CoreCLR in this case. Consider removing this method and use
+        // FrameworkEventSource's thread transfer send/receive events instead at callers.
+        [NonEvent]
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public void ThreadPoolIODequeue(RegisteredWaitHandle registeredWaitHandle)
+        {
+            if (IsEnabled(EventLevel.Verbose, Keywords.ThreadingKeyword | Keywords.ThreadTransferKeyword))
+            {
+                ThreadPoolIODequeue((IntPtr)registeredWaitHandle.GetHashCode(), IntPtr.Zero, DefaultClrInstanceId);
+            }
         }
     }
 }

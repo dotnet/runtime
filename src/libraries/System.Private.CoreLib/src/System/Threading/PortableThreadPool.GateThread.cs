@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Diagnostics.Tracing;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
@@ -43,10 +44,10 @@ namespace System.Threading
                     {
                         Thread.Sleep(GateThreadDelayMs);
 
-                        if (ThreadPool.EnableWorkerTracking && PortableThreadPoolEventSource.Log.IsEnabled())
+                        if (ThreadPool.EnableWorkerTracking && NativeRuntimeEventSource.Log.IsEnabled())
                         {
-                            PortableThreadPoolEventSource.Log.ThreadPoolWorkingThreadCount(
-                                (uint)threadPoolInstance.GetAndResetHighWatermarkCountOfThreadsProcessingUserCallbacks());
+                            NativeRuntimeEventSource.Log.ThreadPoolWorkingThreadCount(
+                                (uint)threadPoolInstance.GetAndResetHighWatermarkCountOfThreadsProcessingUserCallbacks(), NativeRuntimeEventSource.DefaultClrInstanceId);
                         }
 
                         int cpuUtilization = cpuUtilizationReader.CurrentUtilization;

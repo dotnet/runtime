@@ -291,6 +291,7 @@
       <Compile Include="$(BclSourcesRoot)\Mono\SafeStringMarshal.cs" />
       <Compile Include="$(BclSourcesRoot)\Mono\SafeGPtrArrayHandle.cs" />
       <Compile Include="$(BclSourcesRoot)\System\TypeSpec.cs" />
+      <Compile Include="$(BclSourcesRoot)\System\Threading\NativeRuntimeEventSource.cs" />
   </ItemGroup>
 
   <!-- Enable unsupported browser warnings -->
