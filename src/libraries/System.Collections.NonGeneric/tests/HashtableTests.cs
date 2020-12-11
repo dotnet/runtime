@@ -1009,6 +1009,7 @@ namespace System.Collections.Tests
 
         [Fact]
         [OuterLoop]
+        [PlatformSpecific(~TestPlatforms.Browser)] // Cannot wait on monitors on this runtime.
         public void GetItem_ThreadSafety()
         {
             int i1 = 0x10;
@@ -1102,6 +1103,7 @@ namespace System.Collections.Tests
 
         [Fact]
         [OuterLoop]
+        [PlatformSpecific(~TestPlatforms.Browser)] // Cannot wait on monitors on this runtime.
         public void SynchronizedThreadSafety()
         {
             const int NumberOfWorkers = 3;

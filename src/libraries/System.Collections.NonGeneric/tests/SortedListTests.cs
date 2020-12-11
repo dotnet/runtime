@@ -1539,6 +1539,7 @@ namespace System.Collections.Tests
 
         [Fact]
         [OuterLoop]
+        [PlatformSpecific(~TestPlatforms.Browser)] // Cannot wait on monitors on this runtime.
         public void GetSyncRootBasic()
         {
             // Testing SyncRoot is not as simple as its implementation looks like. This is the working
