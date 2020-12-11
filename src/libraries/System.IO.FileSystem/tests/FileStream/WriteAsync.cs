@@ -195,6 +195,7 @@ namespace System.IO.Tests
         [Theory]
         [MemberData(nameof(MemberData_FileStreamAsyncWriting))]
         [OuterLoop] // many combinations: we test just one in inner loop and the rest outer
+        [PlatformSpecific(~TestPlatforms.Browser)] // Cannot wait on monitors on this runtime.
         public async Task ManyConcurrentWriteAsyncs_OuterLoop(
             bool useAsync, bool presize, bool exposeHandle, bool cancelable, int bufferSize, int writeSize, int numWrites)
         {
