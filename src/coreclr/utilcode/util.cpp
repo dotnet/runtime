@@ -856,7 +856,6 @@ BYTE * ClrVirtualAllocWithinRange(const BYTE *pMinAddr,
 /*static*/ WORD CPUGroupInfo::m_initialGroup = 0;
 /*static*/ CPU_Group_Info *CPUGroupInfo::m_CPUGroupInfoArray = NULL;
 /*static*/ LONG CPUGroupInfo::m_initialization = 0;
-/*static*/ bool CPUGroupInfo::s_hadSingleProcessorAtStartup = false;
 
 #if !defined(FEATURE_REDHAWK) && (defined(TARGET_AMD64) || defined(TARGET_ARM64))
 // Calculate greatest common divisor
@@ -1014,18 +1013,6 @@ DWORD LCM(DWORD u, DWORD v)
     m_threadUseAllCpuGroups = threadUseAllCpuGroups && hasMultipleGroups;
     m_threadAssignCpuGroups = threadAssignCpuGroups && hasMultipleGroups;
 #endif // TARGET_AMD64 || TARGET_ARM64
-
-    // Determine if the process is affinitized to a single processor (or if the system has a single processor)
-    DWORD_PTR processAffinityMask, systemAffinityMask;
-    if (GetProcessAffinityMask(GetCurrentProcess(), &processAffinityMask, &systemAffinityMask))
-    {
-        processAffinityMask &= systemAffinityMask;
-        if (processAffinityMask != 0 && // only one CPU group is involved
-            (processAffinityMask & (processAffinityMask - 1)) == 0) // only one bit is set
-        {
-            s_hadSingleProcessorAtStartup = true;
-        }
-    }
 }
 
 /*static*/ BOOL CPUGroupInfo::IsInitialized()
