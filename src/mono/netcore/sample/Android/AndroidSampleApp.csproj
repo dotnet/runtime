@@ -22,7 +22,7 @@
 
   <UsingTask TaskName="AndroidAppBuilderTask" AssemblyFile="$(AndroidAppBuilderTasksAssemblyPath)"/>
 
-  <Target Name="BuildApp" AfterTargets="Build">
+  <Target Name="BuildApp" AfterTargets="CopyFilesToPublishDirectory">
     <PropertyGroup>
       <StripDebugSymbols>False</StripDebugSymbols>
       <StripDebugSymbols Condition="'$(Configuration)' == 'Release'">True</StripDebugSymbols>
@@ -79,7 +79,10 @@
     <Compile Include="Program.cs" />
   </ItemGroup>
 
-  <Target Name="CopySampleAppToHelixTestDir" Condition="'$(ArchiveTests)' == 'true'" AfterTargets="BuildApp">
+  <Target Name="CopySampleAppToHelixTestDir" 
+          Condition="'$(ArchiveTests)' == 'true'" 
+          AfterTargets="Build"
+          DependsOnTargets="Publish;BuildApp" >
     <PropertyGroup>
       <!-- Helix properties -->
       <!-- AnyCPU as Platform-->
