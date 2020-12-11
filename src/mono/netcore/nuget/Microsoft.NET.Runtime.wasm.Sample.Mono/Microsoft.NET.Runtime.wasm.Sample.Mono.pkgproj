@@ -7,7 +7,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <_wasmSampleFiles Include="$(ArtifactsDir)bin\WasmAppBuilder\$(Configuration)\$(NetCoreAppToolCurrent)\WasmAppBuilder.dll" />
+    <_wasmSampleFiles Include="$(WasmAppBuilderTasksAssemblyPath)" />
 
     <PackageFile Include="@(_wasmSampleFiles)" TargetPath="tools\$(NetCoreAppToolCurrent)\" />
   </ItemGroup>

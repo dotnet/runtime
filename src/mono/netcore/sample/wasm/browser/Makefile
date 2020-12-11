@@ -18,4 +18,9 @@ clean:
 	rm -rf bin
 
 run:
-	cd bin/$(CONFIG)/publish && python3 server.py
+	if ! $(DOTNET) tool list --global | grep dotnet-serve; then \
+		echo "The tool dotnet-serve could not be found. Install with: $(DOTNET) tool install --global dotnet-serve"; \
+		exit 1; \
+	else  \
+		$(DOTNET) serve -d bin/$(CONFIG)/publish -p 8000; \
+	fi

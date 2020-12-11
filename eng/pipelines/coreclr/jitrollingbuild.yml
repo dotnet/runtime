@@ -7,8 +7,6 @@ trigger:
     include:
     - src/coreclr/jit/*
 
-pr: none
-
 jobs:
 #
 # Checkout repository

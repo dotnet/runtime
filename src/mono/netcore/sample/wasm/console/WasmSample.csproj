@@ -53,10 +53,10 @@
 
   <Import Project="$(RepoTasksDir)AotCompilerTask\MonoAOTCompiler.props" />
   <UsingTask TaskName="WasmAppBuilder" 
-             AssemblyFile="$(ArtifactsBinDir)WasmAppBuilder\Debug\$(NetCoreAppToolCurrent)\publish\WasmAppBuilder.dll"/>
+             AssemblyFile="$(WasmAppBuilderTasksAssemblyPath)"/>
 
   <UsingTask TaskName="MonoAOTCompiler"
-             AssemblyFile="$(ArtifactsBinDir)MonoAOTCompiler\Debug\$(NetCoreAppToolCurrent)\MonoAOTCompiler.dll" />
+             AssemblyFile="$(MonoAOTCompilerTasksAssemblyPath)" />
 
   <Target Name="BuildApp" AfterTargets="CopyFilesToPublishDirectory" DependsOnTargets="RebuildWasmAppBuilder;Build">
     <RemoveDir Directories="$(AppDir)" />
@@ -91,6 +91,10 @@
     <ReadLinesFromFile File="$(MicrosoftNetCoreAppRuntimePackDir)native\src\emcc-version.txt">
         <Output TaskParameter="Lines" PropertyName="RuntimeEmccVersion" />
     </ReadLinesFromFile>
+
+    <PropertyGroup>
+      <EmccFlags>$(EmccFlags) -s DISABLE_EXCEPTION_CATCHING=0</EmccFlags>
+    </PropertyGroup>
 
     <Exec Condition="'$(RunAOTCompilation)' == 'true'" Command="bash -c 'source $(EMSDK_PATH)/emsdk_env.sh &amp;&amp; emcc --version | head -1 > emcc-version.txt'" ConsoleToMsBuild="true" IgnoreStandardErrorWarningFormat="true" WorkingDirectory="$(MSBuildThisFileDirectory)$(PublishDir)" />
     <ReadLinesFromFile Condition="'$(RunAOTCompilation)' == 'true'" File="$(MSBuildThisFileDirectory)$(PublishDir)\emcc-version.txt">

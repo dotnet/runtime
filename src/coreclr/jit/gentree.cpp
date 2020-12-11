@@ -19093,7 +19093,7 @@ bool GenTreeHWIntrinsic::OperIsMemoryStore() const
     return false;
 }
 
-// Returns true for the HW Intrinsic instructions that have MemoryLoad semantics, false otherwise
+// Returns true for the HW Intrinsic instructions that have MemoryLoad or MemoryStore semantics, false otherwise
 bool GenTreeHWIntrinsic::OperIsMemoryLoadOrStore() const
 {
 #if defined(TARGET_XARCH) || defined(TARGET_ARM64)

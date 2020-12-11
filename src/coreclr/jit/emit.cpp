@@ -3247,9 +3247,8 @@ void emitter::emitDispGCRegDelta(const char* title, regMaskTP prevRegs, regMaskT
 // emitDispGCVarDelta: Print a delta for GC variables
 //
 // Notes:
-//    Uses the debug-only variables 'debugThisGCrefVars', 'debugPrevGCrefVars'
-//    and 'debugPrevRegPtrDsc' to print deltas from the last time this was
-//    called.
+//    Uses the debug-only variables 'debugThisGCrefVars' and 'debugPrevGCrefVars'.
+//    to print deltas from the last time this was called.
 //
 void emitter::emitDispGCVarDelta()
 {
@@ -3272,6 +3271,17 @@ void emitter::emitDispGCVarDelta()
         VarSetOps::Assign(emitComp, debugPrevGCrefVars, debugThisGCrefVars);
         printf("\n");
     }
+}
+
+//------------------------------------------------------------------------
+// emitDispRegPtrListDelta: Print a delta for regPtrDsc GC transitions
+//
+// Notes:
+//    Uses the debug-only variable 'debugPrevRegPtrDsc' to print deltas from the last time this was
+//    called.
+//
+void emitter::emitDispRegPtrListDelta()
+{
     // Dump any deltas in regPtrDsc's for outgoing args; these aren't captured in the other sets.
     if (debugPrevRegPtrDsc != codeGen->gcInfo.gcRegPtrLast)
     {
@@ -3308,6 +3318,7 @@ void emitter::emitDispGCVarDelta()
                     break;
                 default:
                     printf(" arg ??? %u", dsc->rpdPtrArg);
+                    break;
             }
             printf("\n");
         }
@@ -3325,6 +3336,7 @@ void emitter::emitDispGCInfoDelta()
     debugPrevGCrefRegs = emitThisGCrefRegs;
     debugPrevByrefRegs = emitThisByrefRegs;
     emitDispGCVarDelta();
+    emitDispRegPtrListDelta();
 }
 
 /*****************************************************************************
