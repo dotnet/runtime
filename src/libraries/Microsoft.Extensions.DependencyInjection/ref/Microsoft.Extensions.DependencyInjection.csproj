@@ -1,6 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFrameworks>netstandard2.0;netstandard2.1;net461</TargetFrameworks>
+    <AssemblyVersion>5.0.0.0</AssemblyVersion>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="Microsoft.Extensions.DependencyInjection.cs" />

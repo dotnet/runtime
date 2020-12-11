@@ -19,6 +19,7 @@
     <ProjectReference Include="$(MSBuildThisFileDirectory)*\pkg\**\*.pkgproj" Condition="('$(BuildAllConfigurations)' == 'true' or '$(DotNetBuildFromSource)' == 'true') And '$(BuildAllOOBPackages)' == 'true'" />
     <!-- If setting BuildAllOOBPackages to false, add bellow the individual OOB packages you want to continue to build -->
     <ProjectReference Include="$(LibrariesProjectRoot)\System.Text.Json\pkg\System.Text.Json.pkgproj" Condition="'$(BuildAllConfigurations)' == 'true'" />
+    <ProjectReference Include="$(LibrariesProjectRoot)\System.Diagnostics.DiagnosticSource\pkg\System.Diagnostics.DiagnosticSource.pkgproj" Condition="'$(BuildAllConfigurations)' == 'true'" />
   </ItemGroup>
 
   <!-- Need the PackageIndexFile file property from baseline.props -->
