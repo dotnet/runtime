@@ -3959,12 +3959,15 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
                            ((copyBlkClass != NO_CLASS_HANDLE) && varTypeIsEnregisterable(structBaseType)));
                 }
 
-#ifndef UNIX_AMD64_ABI
+#if !defined(UNIX_AMD64_ABI) && !defined(TARGET_ARMARCH)
+                // TODO-CQ-XARCH: there is no need for a temp copy if we improve our code generation in
+                // `genPutStructArgStk` for xarch like we did it for Arm/Arm64.
+
                 // We still have a struct unless we converted the GT_OBJ into a GT_IND above...
                 if (isHfaArg && passUsingFloatRegs)
                 {
                 }
-                else if ((!isHfaArg || !passUsingFloatRegs) && (structBaseType == TYP_STRUCT))
+                else if (structBaseType == TYP_STRUCT)
                 {
                     // If the valuetype size is not a multiple of TARGET_POINTER_SIZE,
                     // we must copyblk to a temp before doing the obj to avoid
