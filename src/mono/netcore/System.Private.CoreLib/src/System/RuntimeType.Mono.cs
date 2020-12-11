@@ -2257,7 +2257,10 @@ namespace System
         internal static object CreateInstanceForAnotherGenericParameter(Type genericType, RuntimeType genericArgument)
         {
             var gt = (RuntimeType)MakeGenericType(genericType, new Type[] { genericArgument });
-            RuntimeConstructorInfo ctor = gt.GetDefaultConstructor()!;
+            RuntimeConstructorInfo? ctor = gt.GetDefaultConstructor();
+            if (ctor is null)
+                throw new MissingMethodException(SR.Format(SR.Arg_NoDefCTor, gt.FullName));
+
             return ctor.InternalInvoke(null, null, wrapExceptions: true)!;
         }
 
