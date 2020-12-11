@@ -17,7 +17,7 @@
     "Microsoft.DotNet.Build.Tasks.SharedFramework.Sdk": "6.0.0-beta.20608.21",
     "Microsoft.DotNet.Helix.Sdk": "6.0.0-beta.20608.21",
     "Microsoft.DotNet.SharedFramework.Sdk": "6.0.0-beta.20608.21",
-    "Microsoft.NET.Sdk.IL": "6.0.0-alpha.1.20609.15",
+    "Microsoft.NET.Sdk.IL": "6.0.0-alpha.1.20611.2",
     "Microsoft.Build.NoTargets": "2.0.1",
     "Microsoft.Build.Traversal": "2.1.1"
   }

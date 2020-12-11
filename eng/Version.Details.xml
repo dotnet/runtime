@@ -170,29 +170,29 @@
       <Uri>https://github.com/dotnet/runtime</Uri>
       <Sha>38017c3935de95d0335bac04f4901ddfc2718656</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.NETCore.DotNetHost" Version="6.0.0-alpha.1.20609.15">
+    <Dependency Name="Microsoft.NETCore.DotNetHost" Version="6.0.0-alpha.1.20611.2">
       <Uri>https://github.com/dotnet/runtime</Uri>
-      <Sha>34cae7461f96a9c1a7574c72c436e309bf4031f4</Sha>
+      <Sha>5e34c00f387d248ad963fecd8c5b6db5ca3b517e</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.NETCore.DotNetHostPolicy" Version="6.0.0-alpha.1.20609.15">
+    <Dependency Name="Microsoft.NETCore.DotNetHostPolicy" Version="6.0.0-alpha.1.20611.2">
       <Uri>https://github.com/dotnet/runtime</Uri>
-      <Sha>34cae7461f96a9c1a7574c72c436e309bf4031f4</Sha>
+      <Sha>5e34c00f387d248ad963fecd8c5b6db5ca3b517e</Sha>
     </Dependency>
-    <Dependency Name="runtime.native.System.IO.Ports" Version="6.0.0-alpha.1.20609.15">
+    <Dependency Name="runtime.native.System.IO.Ports" Version="6.0.0-alpha.1.20611.2">
       <Uri>https://github.com/dotnet/runtime</Uri>
-      <Sha>34cae7461f96a9c1a7574c72c436e309bf4031f4</Sha>
+      <Sha>5e34c00f387d248ad963fecd8c5b6db5ca3b517e</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.NETCore.ILAsm" Version="6.0.0-alpha.1.20609.15">
+    <Dependency Name="Microsoft.NETCore.ILAsm" Version="6.0.0-alpha.1.20611.2">
       <Uri>https://github.com/dotnet/runtime</Uri>
-      <Sha>34cae7461f96a9c1a7574c72c436e309bf4031f4</Sha>
+      <Sha>5e34c00f387d248ad963fecd8c5b6db5ca3b517e</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.NET.Sdk.IL" Version="6.0.0-alpha.1.20609.15">
+    <Dependency Name="Microsoft.NET.Sdk.IL" Version="6.0.0-alpha.1.20611.2">
       <Uri>https://github.com/dotnet/runtime</Uri>
-      <Sha>34cae7461f96a9c1a7574c72c436e309bf4031f4</Sha>
+      <Sha>5e34c00f387d248ad963fecd8c5b6db5ca3b517e</Sha>
     </Dependency>
-    <Dependency Name="System.Text.Json" Version="6.0.0-alpha.1.20609.15">
+    <Dependency Name="System.Text.Json" Version="6.0.0-alpha.1.20611.2">
       <Uri>https://github.com/dotnet/runtime</Uri>
-      <Sha>34cae7461f96a9c1a7574c72c436e309bf4031f4</Sha>
+      <Sha>5e34c00f387d248ad963fecd8c5b6db5ca3b517e</Sha>
     </Dependency>
     <Dependency Name="Microsoft.NET.ILLink.Tasks" Version="6.0.0-alpha.1.20608.3">
       <Uri>https://github.com/mono/linker</Uri>
