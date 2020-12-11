@@ -182,7 +182,7 @@ public:
     {
         _ASSERTE (ptrdiff_t(GetNumSeries()) > 0);
 #ifdef HAVE_CORE_GC
-        return PTR_CGCDescSeries(PTR_uint8_t(PTR_CGCDesc(this) - MONO_IMT_SIZE)
+        return PTR_CGCDescSeries(PTR_uint8_t(PTR_size_t(this) - MONO_IMT_SIZE)
                                  - ComputeSize(GetNumSeries()));
 #else
         return PTR_CGCDescSeries(PTR_uint8_t(PTR_CGCDesc(this))
