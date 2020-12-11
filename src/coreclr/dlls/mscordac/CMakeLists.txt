@@ -35,6 +35,13 @@ else(CLR_CMAKE_HOST_WIN32)
         generate_exports_file(${DEF_SOURCES} ${EXPORTS_FILE})
     endif(CLR_CMAKE_HOST_OSX OR CLR_CMAKE_HOST_FREEBSD OR CLR_CMAKE_HOST_NETBSD OR CLR_CMAKE_HOST_SUNOS)
 
+    if(CORECLR_SET_RPATH)
+      if(CLR_CMAKE_HOST_OSX)
+        set(CMAKE_BUILD_WITH_INSTALL_NAME_DIR ON)
+        set(CMAKE_INSTALL_NAME_DIR "@rpath")
+      endif(CLR_CMAKE_HOST_OSX)
+    endif(CORECLR_SET_RPATH)
+
     if(CLR_CMAKE_HOST_LINUX)
 
         # Generate DAC export file with the DAC_ prefix
