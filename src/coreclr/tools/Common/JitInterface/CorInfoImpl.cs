@@ -1035,7 +1035,7 @@ namespace Internal.JitInterface
                 DefType owningDefType = method.OwningType as DefType;
                 if (owningDefType != null && VectorOfTFieldLayoutAlgorithm.IsVectorOfTType(owningDefType))
                 {
-                    throw new RequiresRuntimeJitException("This function is using SIMD intrinsics, their size is machine specific");
+                    VerifyMethodSignatureIsStable(method.Signature);
                 }
             }
 #endif
