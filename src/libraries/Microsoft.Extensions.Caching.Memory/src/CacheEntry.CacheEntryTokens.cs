@@ -10,7 +10,7 @@ namespace Microsoft.Extensions.Caching.Memory
     internal partial class CacheEntry
     {
         // this type exists just to reduce average CacheEntry size
-        // which typicall is not using expiration tokens or callbacks
+        // which typically is not using expiration tokens or callbacks
         private sealed class CacheEntryTokens
         {
             internal List<IChangeToken> _expirationTokens;
