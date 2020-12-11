@@ -2055,40 +2055,6 @@ unsigned Compiler::compGetTypeSize(CorInfoType cit, CORINFO_CLASS_HANDLE clsHnd)
     return sigSize;
 }
 
-CorInfoCallConvExtension Compiler::compMethodInfoGetEntrypointCallConv(CORINFO_METHOD_INFO* mthInfo)
-{
-    switch (mthInfo->args.getCallConv())
-    {
-        case CORINFO_CALLCONV_NATIVEVARARG:
-            return CorInfoCallConvExtension::C;
-            break;
-        case CORINFO_CALLCONV_VARARG:
-        {
-            CorInfoCallConvExtension callConv = info.compCompHnd->getUnmanagedCallConv(mthInfo->ftn, nullptr);
-            if (callConv != CorInfoCallConvExtension::Managed)
-            {
-                callConv = CorInfoCallConvExtension::C;
-            }
-            return callConv;
-            break;
-        }
-        case CORINFO_CALLCONV_C:
-            return CorInfoCallConvExtension::C;
-        case CORINFO_CALLCONV_STDCALL:
-            return CorInfoCallConvExtension::Stdcall;
-        case CORINFO_CALLCONV_THISCALL:
-            return CorInfoCallConvExtension::Thiscall;
-        // UNMANAGED calling convention means we need to read the calling convention
-        // from the signature, not from the method's metadata.
-        case CORINFO_CALLCONV_UNMANAGED:
-            return info.compCompHnd->getUnmanagedCallConv(nullptr, &mthInfo->args);
-        case CORINFO_CALLCONV_DEFAULT:
-            return info.compCompHnd->getUnmanagedCallConv(mthInfo->ftn, nullptr);
-        default:
-            BADCODE("bad calling convention");
-    }
-}
-
 #ifdef DEBUG
 static bool DidComponentUnitTests = false;
 
@@ -6128,12 +6094,14 @@ int Compiler::compCompileHelper(CORINFO_MODULE_HANDLE classPtr,
 
     if (opts.IsReversePInvoke())
     {
-        info.compCallConv = compMethodInfoGetEntrypointCallConv(methodInfo);
+        info.compCallConv = info.compCompHnd->getUnmanagedCallConv(methodInfo->ftn, nullptr);
     }
     else
     {
         info.compCallConv = CorInfoCallConvExtension::Managed;
     }
+
+    info.compIsVarArgs = false;
 
     switch (methodInfo->args.getCallConv())
     {
@@ -6141,15 +6109,6 @@ int Compiler::compCompileHelper(CORINFO_MODULE_HANDLE classPtr,
         case CORINFO_CALLCONV_VARARG:
             info.compIsVarArgs = true;
             break;
-        case CORINFO_CALLCONV_C:
-        case CORINFO_CALLCONV_STDCALL:
-        case CORINFO_CALLCONV_THISCALL:
-        case CORINFO_CALLCONV_UNMANAGED:
-        case CORINFO_CALLCONV_DEFAULT:
-            info.compIsVarArgs = false;
-            break;
-        default:
-            BADCODE("bad calling convention");
     }
 
     info.compRetNativeType = info.compRetType = JITtype2varType(methodInfo->args.retType);

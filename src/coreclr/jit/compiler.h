@@ -9599,9 +9599,6 @@ public:
     // size of the type these describe.
     unsigned compGetTypeSize(CorInfoType cit, CORINFO_CLASS_HANDLE clsHnd);
 
-    // Gets the calling convention the method's entry point should have.
-    CorInfoCallConvExtension compMethodInfoGetEntrypointCallConv(CORINFO_METHOD_INFO* mthInfo);
-
     // Returns true if the method being compiled has a return buffer.
     bool compHasRetBuffArg();
 

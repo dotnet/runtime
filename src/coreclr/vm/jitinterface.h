@@ -1109,31 +1109,6 @@ private:
 
 public:
 
-    struct SignatureContext
-    {
-        MethodDesc* methodContext = NULL;
-        TypeHandle typeContext = TypeHandle();
-
-        SignatureContext() = default;
-
-        SignatureContext(MethodDesc* pMD)
-        {
-            methodContext = pMD;
-        }
-
-        SignatureContext(MethodDesc* pMD, TypeHandle type)
-        {
-            methodContext = pMD;
-            typeContext = type;
-        }
-
-        SignatureContext(CEEInfo* pEEInfo, CORINFO_CONTEXT_HANDLE jitContext)
-        {
-            methodContext = pEEInfo->GetMethodFromContext(jitContext);
-            typeContext = pEEInfo->GetTypeFromContext(jitContext);
-        }
-    };
-
     enum ConvToJitSigFlags : int
     {
         CONV_TO_JITSIG_FLAGS_NONE                       = 0x0,
@@ -1150,7 +1125,7 @@ public:
         DWORD                 cbSig,
         CORINFO_MODULE_HANDLE scopeHnd,
         mdToken               token,
-        SignatureContext      context,
+        SigTypeContext        context,
         ConvToJitSigFlags     flags,
         CORINFO_SIG_INFO *    sigRet);
 
