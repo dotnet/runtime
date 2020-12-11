@@ -1540,8 +1540,8 @@ mono_class_set_nonblittable (MonoClass *klass);
 gboolean
 mono_class_publish_gc_descriptor (MonoClass *klass, MonoGCDescriptor gc_descr);
 
-void
-mono_class_compute_gc_descriptor (MonoClass *klass);
+gboolean
+mono_class_compute_gc_descriptor (MonoClass *klass, MonoError *error);
 
 #ifndef DISABLE_REMOTING
 void

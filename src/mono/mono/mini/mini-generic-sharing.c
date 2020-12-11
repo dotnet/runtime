@@ -2148,7 +2148,7 @@ instantiate_info (MonoDomain *domain, MonoRuntimeGenericContextInfoTemplate *oti
 		   mono_value_copy(), which requires that its GC
 		   descriptor has been computed. */
 		if (oti->info_type == MONO_RGCTX_INFO_KLASS)
-			mono_class_compute_gc_descriptor (arg_class);
+			mono_class_compute_gc_descriptor (arg_class, error);
 
 		return class_type_info (domain, arg_class, oti->info_type, error);
 	}

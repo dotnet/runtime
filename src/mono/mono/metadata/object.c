@@ -850,7 +850,7 @@ mono_runtime_free_method (MonoDomain *domain, MonoMethod *method)
 #define MONO_OBJECT_HEADER_BITS (MONO_ABI_SIZEOF (MonoObject) / MONO_ABI_SIZEOF (gpointer))
 
 static gsize*
-compute_class_bitmap (MonoClass *klass, gsize *bitmap, int size, int offset, int *max_set, gboolean static_fields)
+compute_class_bitmap (MonoClass *klass, gsize *bitmap, int size, int offset, int *max_set, gboolean static_fields, MonoError* error)
 {
 	MONO_REQ_GC_NEUTRAL_MODE;
 
@@ -860,6 +860,8 @@ compute_class_bitmap (MonoClass *klass, gsize *bitmap, int size, int offset, int
 	int max_size, wordsize;
 
 	wordsize = TARGET_SIZEOF_VOID_P;
+
+	error_init (error);
 
 	if (static_fields)
 		max_size = mono_class_data_size (klass) / wordsize;
@@ -935,7 +937,7 @@ compute_class_bitmap (MonoClass *klass, gsize *bitmap, int size, int offset, int
 				MonoClass *fclass = mono_class_from_mono_type_internal (field->type);
 				if (m_class_has_references (fclass)) {
 					/* remove the object header */
-					compute_class_bitmap (fclass, bitmap, size, pos - MONO_OBJECT_HEADER_BITS, max_set, FALSE);
+					compute_class_bitmap (fclass, bitmap, size, pos - MONO_OBJECT_HEADER_BITS, max_set, FALSE, error);
 				}
 				break;
 			}
@@ -953,7 +955,7 @@ compute_class_bitmap (MonoClass *klass, gsize *bitmap, int size, int offset, int
 			case MONO_TYPE_CHAR:
 				break;
 			default:
-				g_error ("compute_class_bitmap: Invalid type %x for field %s:%s\n", type->type, mono_type_get_full_name (field->parent), field->name);
+				mono_error_set_invalid_operation (error, "compute_class_bitmap: Invalid type %x for field %s:%s\n", type->type, mono_type_get_full_name (field->parent), field->name);
 				break;
 			}
 		}
@@ -969,11 +971,11 @@ compute_class_bitmap (MonoClass *klass, gsize *bitmap, int size, int offset, int
  * Mono internal function to compute a bitmap of reference fields in a class.
  */
 gsize*
-mono_class_compute_bitmap (MonoClass *klass, gsize *bitmap, int size, int offset, int *max_set, gboolean static_fields)
+mono_class_compute_bitmap (MonoClass *klass, gsize *bitmap, int size, int offset, int *max_set, gboolean static_fields, MonoError* error)
 {
 	MONO_REQ_GC_NEUTRAL_MODE;
-
-	return compute_class_bitmap (klass, bitmap, size, offset, max_set, static_fields);
+	error_init (error);
+	return compute_class_bitmap (klass, bitmap, size, offset, max_set, static_fields, error);
 }
 
 #if 0
@@ -982,12 +984,13 @@ mono_class_compute_bitmap (MonoClass *klass, gsize *bitmap, int size, int offset
  * and ignores static fields
  */
 static gsize*
-compute_class_non_ref_bitmap (MonoClass *klass, gsize *bitmap, int size, int offset)
+compute_class_non_ref_bitmap (MonoClass *klass, gsize *bitmap, int size, int offset, MonoError* error)
 {
 	MonoClassField *field;
 	MonoClass *p;
 	guint32 pos, pos2;
 	int max_size, wordsize;
+	error_init (error);
 
 	wordsize = TARGET_SIZEOF_VOID_P;
 
@@ -1097,7 +1100,7 @@ mono_class_insecure_overlapping (MonoClass *klass)
 	int i, insecure = FALSE;
 		return FALSE;
 
-	bitmap = compute_class_bitmap (klass, default_bitmap, sizeof (default_bitmap) * 8, 0, &max_set, FALSE);
+	bitmap = compute_class_bitmap (klass, default_bitmap, sizeof (default_bitmap) * 8, 0, &max_set, FALSE, error);
 	nrbitmap = compute_class_non_ref_bitmap (klass, default_nrbitmap, sizeof (default_nrbitmap) * 8, 0);
 
 	for (i = 0; i <= max_set; i += sizeof (bitmap [0]) * 8) {
@@ -1135,8 +1138,8 @@ ves_icall_string_alloc_impl (int length, MonoError *error)
  * - gc_desc
  * - gc_descr_inited
  */
-void
-mono_class_compute_gc_descriptor (MonoClass *klass)
+gboolean
+mono_class_compute_gc_descriptor (MonoClass *klass, MonoError *error)
 {
 	MONO_REQ_GC_NEUTRAL_MODE;
 
@@ -1145,18 +1148,20 @@ mono_class_compute_gc_descriptor (MonoClass *klass)
 	gsize default_bitmap [4] = {0};
 	MonoGCDescriptor gc_descr;
 
+	error_init (error);
+
 	if (!m_class_is_inited (klass))
 		mono_class_init_internal (klass);
 
 	if (m_class_is_gc_descr_inited (klass))
-		return;
+		return is_ok (error);
 
 	bitmap = default_bitmap;
 	if (klass == mono_defaults.string_class) {
 		gc_descr = mono_gc_make_descr_for_string (bitmap, 2);
 	} else if (m_class_get_rank (klass)) {
 		MonoClass *klass_element_class = m_class_get_element_class (klass);
-		mono_class_compute_gc_descriptor (klass_element_class);
+		mono_class_compute_gc_descriptor (klass_element_class, error);
 		if (MONO_TYPE_IS_REFERENCE (m_class_get_byval_arg (klass_element_class))) {
 			gsize abm = 1;
 			gc_descr = mono_gc_make_descr_for_array (m_class_get_byval_arg (klass)->type == MONO_TYPE_SZARRAY, &abm, 1, sizeof (gpointer));
@@ -1164,7 +1169,7 @@ mono_class_compute_gc_descriptor (MonoClass *klass)
 				class->name_space, class->name);*/
 		} else {
 			/* remove the object header */
-			bitmap = mono_class_compute_bitmap (klass_element_class, default_bitmap, sizeof (default_bitmap) * 8, - (int)(MONO_OBJECT_HEADER_BITS), &max_set, FALSE);
+			bitmap = mono_class_compute_bitmap (klass_element_class, default_bitmap, sizeof (default_bitmap) * 8, - (int)(MONO_OBJECT_HEADER_BITS), &max_set, FALSE, error);
 			gc_descr = mono_gc_make_descr_for_array (m_class_get_byval_arg (klass)->type == MONO_TYPE_SZARRAY, bitmap, mono_array_element_size (klass) / sizeof (gpointer), mono_array_element_size (klass));
 			/*printf ("new vt array descriptor: 0x%x for %s.%s\n", class->gc_descr,
 				class->name_space, class->name);*/
@@ -1173,7 +1178,7 @@ mono_class_compute_gc_descriptor (MonoClass *klass)
 		/*static int count = 0;
 		if (count++ > 58)
 			return;*/
-		bitmap = mono_class_compute_bitmap (klass, default_bitmap, sizeof (default_bitmap) * 8, 0, &max_set, FALSE);
+		bitmap = mono_class_compute_bitmap (klass, default_bitmap, sizeof (default_bitmap) * 8, 0, &max_set, FALSE, error);
 		/*
 		if (class->gc_descr == MONO_GC_DESCRIPTOR_NULL)
 			g_print ("disabling typed alloc (%d) for %s.%s\n", max_set, class->name_space, class->name);
@@ -1225,6 +1230,7 @@ mono_class_compute_gc_descriptor (MonoClass *klass)
 
 	/* Publish the data */
 	mono_class_publish_gc_descriptor (klass, gc_descr);
+	return is_ok (error);
 }
 
 /**
@@ -2114,7 +2120,13 @@ mono_class_create_runtime_vtable (MonoDomain *domain, MonoClass *klass, MonoErro
 
 	MONO_PROFILER_RAISE (vtable_loading, (vt));
 
-	mono_class_compute_gc_descriptor (klass);
+	if (!mono_class_compute_gc_descriptor (klass, error)) {
+		mono_domain_unlock (domain);
+		mono_loader_unlock ();
+		MONO_PROFILER_RAISE (vtable_failed, (vt));
+		goto return_null;
+	}
+
 	/*
 	 * For Boehm:
 	 * We can't use typed allocation in the non-root domains, since the
@@ -2146,7 +2158,7 @@ mono_class_create_runtime_vtable (MonoDomain *domain, MonoClass *klass, MonoErro
 			gsize default_bitmap [4] = {0};
 			gsize *bitmap;
 
-			bitmap = compute_class_bitmap (klass, default_bitmap, sizeof (default_bitmap) * 8, 0, &max_set, TRUE);
+			bitmap = compute_class_bitmap (klass, default_bitmap, sizeof (default_bitmap) * 8, 0, &max_set, TRUE, error);
 			/*g_print ("bitmap 0x%x for %s.%s (size: %d)\n", bitmap [0], klass->name_space, klass->name, class_size);*/
 			statics_gc_descr = mono_gc_make_descr_from_bitmap (bitmap, max_set + 1);
 			vt->vtable [m_class_get_vtable_size (klass)] = mono_gc_alloc_fixed (class_size, statics_gc_descr, MONO_ROOT_SOURCE_STATIC, vt, "Static Fields");
@@ -2182,7 +2194,7 @@ mono_class_create_runtime_vtable (MonoDomain *domain, MonoClass *klass, MonoErro
 					bitmap = default_bitmap;
 				} else if (mono_type_is_struct (field->type)) {
 					fclass = mono_class_from_mono_type_internal (field->type);
-					bitmap = compute_class_bitmap (fclass, default_bitmap, sizeof (default_bitmap) * 8, - (int)(MONO_OBJECT_HEADER_BITS), &max_set, FALSE);
+					bitmap = compute_class_bitmap (fclass, default_bitmap, sizeof (default_bitmap) * 8, - (int)(MONO_OBJECT_HEADER_BITS), &max_set, FALSE, error);
 					numbits = max_set + 1;
 				} else {
 					default_bitmap [0] = 0;

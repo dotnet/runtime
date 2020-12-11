@@ -1946,7 +1946,7 @@ void
 mono_method_clear_object (MonoDomain *domain, MonoMethod *method);
 
 gsize*
-mono_class_compute_bitmap (MonoClass *klass, gsize *bitmap, int size, int offset, int *max_set, gboolean static_fields);
+mono_class_compute_bitmap (MonoClass *klass, gsize *bitmap, int size, int offset, int *max_set, gboolean static_fields, MonoError *error);
 
 MonoObjectHandle
 mono_object_xdomain_representation (MonoObjectHandle obj, MonoDomain *target_domain, MonoError *error);

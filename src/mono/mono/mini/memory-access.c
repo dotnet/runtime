@@ -425,7 +425,12 @@ mini_emit_memory_copy_internal (MonoCompile *cfg, MonoInst *dest, MonoInst *src,
 				}  else {
 					iargs [2] = mini_emit_runtime_constant (cfg, MONO_PATCH_INFO_CLASS, klass);
 					if (!cfg->compile_aot)
-						mono_class_compute_gc_descriptor (klass);
+					{
+						// FIXME: Propagate error up instead of squashing.
+						ERROR_DECL (error);
+						mono_class_compute_gc_descriptor (klass, error);
+						mono_error_cleanup (error);
+					}
 				}
 				if (size_ins)
 					mono_emit_jit_icall (cfg, mono_gsharedvt_value_copy, iargs);
