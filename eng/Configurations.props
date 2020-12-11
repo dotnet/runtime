@@ -86,6 +86,7 @@
 
     <_runtimeOSVersionIndex>$(_runtimeOS.IndexOfAny(".-0123456789"))</_runtimeOSVersionIndex>
     <_runtimeOSFamily Condition="'$(_runtimeOSVersionIndex)' != '-1'">$(_runtimeOS.SubString(0, $(_runtimeOSVersionIndex)))</_runtimeOSFamily>
+    <_runtimeOSFamily Condition="'$(_runtimeOSVersionIndex)' == '-1'">$(_runtimeOS)</_runtimeOSFamily>
 
     <_portableOS>linux</_portableOS>
     <_portableOS Condition="'$(_runtimeOS)' == 'linux-musl'">linux-musl</_portableOS>
