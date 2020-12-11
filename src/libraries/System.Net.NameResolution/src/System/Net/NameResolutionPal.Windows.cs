@@ -133,7 +133,7 @@ namespace System.Net
             return new string((sbyte*)buffer);
         }
 
-        public static unsafe Task GetAddrInfoAsync(string hostName, bool justAddresses, AddressFamily family, CancellationToken cancellationToken)
+        public static unsafe bool TryGetAddrInfoAsync(string hostName, bool justAddresses, AddressFamily family, CancellationToken cancellationToken, out Task task)
         {
             Interop.Winsock.EnsureInitialized();
 
@@ -171,14 +171,18 @@ namespace System.Net
                 // and final result would be posted via overlapped IO.
                 // synchronous failure here may signal issue when GetAddrInfoExW does not work from
                 // impersonificated context.
-                return Task.FromException(new InvalidOperationException());
+                GetAddrInfoExContext.FreeContext(context);
+                task = Task.CompletedTask;
+                return false;
             }
             else
             {
                 ProcessResult(errorCode, context);
             }
 
-            return state.Task;
+
+            task = state.Task;
+            return true;
         }
 
         [UnmanagedCallersOnly]
