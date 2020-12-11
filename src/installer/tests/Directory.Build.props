@@ -9,7 +9,7 @@
     <TestRestoreNuGetConfigFile>$(ArtifactsObjDir)TestNuGetConfig\NuGet.config</TestRestoreNuGetConfigFile>
     <InternalNupkgCacheDir>$(ArtifactsObjDir)ExtraNupkgsForTestRestore\</InternalNupkgCacheDir>
     <TestArchitectures>$(TargetArchitecture)</TestArchitectures>
-    <TestInfraTargetFramework>$(NetCoreAppCurrent)</TestInfraTargetFramework>
+    <TestInfraTargetFramework>$(NetCoreAppToolCurrent)</TestInfraTargetFramework>
     <TestRunnerAdditionalArguments>-notrait category=failing</TestRunnerAdditionalArguments>
     <RunAnalyzers>false</RunAnalyzers>
   </PropertyGroup>
