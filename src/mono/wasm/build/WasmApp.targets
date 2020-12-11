@@ -1,0 +1,65 @@
+<Project>
+  <UsingTask TaskName="WasmAppBuilder" AssemblyFile="$(WasmAppBuilderTasksAssemblyPath)" />
+  <UsingTask TaskName="WasmLoadAssembliesAndReferences" AssemblyFile="$(WasmAppBuilderTasksAssemblyPath)" />
+
+  <Target Name="WasmBuildApp" AfterTargets="Publish">
+    <!-- FIXME: TArgetOS check -->
+    <Error Condition="'$(WasmMainAssemblyPath)' == ''" Text="%24(WasmMainAssemblyPath) property needs to be set" />
+    <Error Condition="'$(WasmAppDir)' == ''" Text="%24(WasmAppDir) property needs to be set" />
+    <Error Condition="!Exists('$(MicrosoftNetCoreAppRuntimePackRidDir)')" Text="MicrosoftNetCoreAppRuntimePackRidDir=$(MicrosoftNetCoreAppRuntimePackRidDir) doesn't exist" />
+    <Error Condition="'$(WasmMainJSPath)' == ''" Text="%24(WasmMainJSPath) property needs to be set" />
+
+    <WasmLoadAssembliesAndReferences
+      Condition="'$(WasmResolveAssembliesBeforeBuild)' == 'true'"
+      Assemblies="@(WasmAssembliesToBundle)"
+      AssemblySearchPaths="@(WasmAssemblySearchPaths)">
+      <Output TaskParameter="ReferencedAssemblies" ItemName="_WasmAssembliesFullSet" />
+    </WasmLoadAssembliesAndReferences>
+
+    <ItemGroup>
+      <_WasmAssembliesFullSet Condition="'$(WasmResolveAssembliesBeforeBuild)' != 'true'" Include="@(WasmAssembliesToBundle)" />
+    </ItemGroup>
+
+    <WasmAppBuilder
+      AppDir="$(WasmAppDir)"
+      MicrosoftNetCoreAppRuntimePackDir="$(MicrosoftNetCoreAppRuntimePackRidDir)"
+      MainAssembly="$(WasmMainAssemblyPath)"
+      MainJS="$(WasmMainJSPath)"
+      Assemblies="@(_WasmAssembliesFullSet)"
+      InvariantGlobalization="$(WasmInvariantGlobalization)"
+      SatelliteAssemblies="@(WasmSatelliteAssemblies)"
+      FilesToIncludeInFileSystem="@(WasmFilesToIncludeInFileSystem)"
+      DebugLevel="$(WasmDebugLevel)">
+      <Output TaskParameter="FileWrites" ItemName="FileWrites" />
+    </WasmAppBuilder>
+
+    <WriteLinesToFile
+      Condition="'$(WasmRunV8ScriptPath)' != ''"
+      File="$(WasmRunV8ScriptPath)"
+      Lines="v8 --expose_wasm runtime.js -- --run $(MainAssembly) $*"
+      Overwrite="true">
+    </WriteLinesToFile>
+
+    <ItemGroup>
+      <FileWrites Include="$(WasmRunV8ScriptPath)" Condition="'$(WasmRunV8ScriptPath)' != ''" />
+    </ItemGroup>
+
+    <Exec
+      Condition="'$(WasmRunV8ScriptPath)' != ''"
+      Command="chmod a+x $(WasmRunV8ScriptPath)" />
+  </Target>
+
+  <Target Name="RebuildWasmAppBuilder">
+    <ItemGroup>
+      <WasmAppBuildProject Include="$(RepoTasksDir)WasmAppBuilder\WasmAppBuilder.csproj" />
+    </ItemGroup>
+
+    <MSBuild Projects="@(WasmAppBuildProject)"
+         Properties="Configuration=Debug;MSBuildRestoreSessionId=$([System.Guid]::NewGuid())"
+         Targets="Restore"/>
+
+    <MSBuild Projects="@(WasmAppBuildProject)"
+         Properties="Configuration=Debug"
+         Targets="Build;Publish"/>
+  </Target>
+</Project>

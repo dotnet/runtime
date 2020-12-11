@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk" DefaultTargets="BuildApp">
+<Project Sdk="Microsoft.NET.Sdk" DefaultTargets="WasmBuildApp">
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <OutputPath>bin</OutputPath>
@@ -37,29 +37,14 @@
     <Message Text="Packaged ID: %(RuntimePack.PackageDirectory)" Importance="high" />
   </Target>
 
-  <Target Name="RebuildWasmAppBuilder">
-    <ItemGroup>
-      <WasmAppBuildProject Include="$(RepoTasksDir)WasmAppBuilder\WasmAppBuilder.csproj" />
-    </ItemGroup>
-
-    <MSBuild Projects="@(WasmAppBuildProject)"
-             Properties="Configuration=Debug;MSBuildRestoreSessionId=$([System.Guid]::NewGuid())"
-             Targets="Restore"/>
-
-    <MSBuild Projects="@(WasmAppBuildProject)"
-             Properties="Configuration=Debug"
-             Targets="Build;Publish"/>
-  </Target>
-
   <Import Project="$(RepoTasksDir)AotCompilerTask\MonoAOTCompiler.props" />
-  <UsingTask TaskName="WasmAppBuilder" 
-             AssemblyFile="$(WasmAppBuilderTasksAssemblyPath)"/>
 
-  <UsingTask TaskName="MonoAOTCompiler"
-             AssemblyFile="$(MonoAOTCompilerTasksAssemblyPath)" />
-
-  <Target Name="BuildApp" AfterTargets="CopyFilesToPublishDirectory" DependsOnTargets="RebuildWasmAppBuilder;Build">
+  <Target Name="PrepareForWasmBuildApp" BeforeTargets="WasmBuildApp" DependsOnTargets="RebuildWasmAppBuilder;Build">
     <RemoveDir Directories="$(AppDir)" />
+
+    <PropertyGroup>
+      <WasmMainAssemblyPath>$(PublishDir)WasmSample.dll</WasmMainAssemblyPath>
+    </PropertyGroup>
 
     <ItemGroup>
       <BundleAssemblies Condition="'$(RunAOTCompilation)' != 'true'" Include="$(MSBuildThisFileDirectory)$(PublishDir)\*.dll" />
@@ -107,14 +92,19 @@
     <Exec Condition="'$(RunAOTCompilation)' == 'true'" Command="bash -c 'source $(EMSDK_PATH)/emsdk_env.sh &amp;&amp; emcc $(EmccFlags) -DGEN_PINVOKE=1 -I$(MicrosoftNetCoreAppRuntimePackRidDir)native/include/wasm $(MicrosoftNetCoreAppRuntimePackRidDir)native/src/pinvoke.c -c -o pinvoke.o'" IgnoreStandardErrorWarningFormat="true" WorkingDirectory="$(MSBuildThisFileDirectory)$(PublishDir)" />
     <Exec Condition="'$(RunAOTCompilation)' == 'true'" Command="bash -c 'source $(EMSDK_PATH)/emsdk_env.sh &amp;&amp; emcc $(EmccFlags) --js-library $(MicrosoftNetCoreAppRuntimePackRidDir)native/src/library_mono.js --js-library $(MicrosoftNetCoreAppRuntimePackRidDir)native/src/binding_support.js --js-library $(MicrosoftNetCoreAppRuntimePackRidDir)native/src/dotnet_support.js --js-library $(MicrosoftNetCoreAppRuntimePackRidDir)native/src/pal_random.js driver.o pinvoke.o corebindings.o @(BundleAssemblies->'%(LlvmBitcodeFile)', ' ') libmono-ee-interp.a libmonosgen-2.0.a libmono-ilgen.a libmono-icall-table.a libSystem.Native.a libSystem.IO.Compression.Native.a libicuuc.a libicui18n.a -o dotnet.js'" IgnoreStandardErrorWarningFormat="true" WorkingDirectory="$(MSBuildThisFileDirectory)$(PublishDir)" />
 
-    <WasmAppBuilder
-      AppDir="$(AppDir)"
-      MicrosoftNetCoreAppRuntimePackDir="$(MicrosoftNetCoreAppRuntimePackRidDir)"
-      MainAssembly="$(PublishDir)\WasmSample.dll"
-      MainJS="$(MonoProjectRoot)wasm\runtime-test.js"
-      Assemblies="@(BundleAssemblies)"/>
-    <Exec Command="chmod a+x $(AppDir)run-v8.sh" />
+    <PropertyGroup>
+      <WasmAppDir>$(AppDir)</WasmAppDir>
+      <WasmMainJSPath>$(MonoProjectRoot)\wasm\runtime-test.js</WasmMainJSPath>
 
+      <WasmRunV8ScriptPath>$(AppDir)run-v8.sh</WasmRunV8ScriptPath>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <WasmAssembliesToBundle Include="@(BundleAssemblies)" />
+    </ItemGroup>
+  </Target>
+
+  <Target Name="AfterWasmBuildApp" AfterTargets="WasmBuildApp">
     <!-- Run mono-cil-strip on the assemblies -->
     <!-- TODO: replace this with a linker task -->
     <ItemGroup>
@@ -126,4 +116,6 @@
   <ItemGroup>
     <Compile Include="Program.cs" />
   </ItemGroup>
+
+  <Import Project="$(MonoProjectRoot)\wasm\build\WasmApp.targets" />
 </Project>
