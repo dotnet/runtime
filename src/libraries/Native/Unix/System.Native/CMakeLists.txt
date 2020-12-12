@@ -35,6 +35,7 @@ if (CLR_CMAKE_TARGET_IOS OR CLR_CMAKE_TARGET_TVOS)
         pal_searchpath.m)
 else ()
     set(NATIVE_SOURCES ${NATIVE_SOURCES}
+        pal_searchpath.c
         pal_console.c
         pal_log.c)
 endif ()
@@ -75,6 +76,7 @@ endif ()
 add_library(System.Native-Static
     STATIC
     ${NATIVE_SOURCES}
+    entrypoints.c
 )
 
 set_target_properties(System.Native-Static PROPERTIES OUTPUT_NAME System.Native CLEAN_DIRECT_OUTPUT 1)

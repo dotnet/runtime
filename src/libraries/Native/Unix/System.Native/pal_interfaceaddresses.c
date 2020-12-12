@@ -565,4 +565,13 @@ int32_t SystemNative_EnumerateGatewayAddressesForInterface(uint32_t interfaceInd
     free(buffer);
     return 0;
 }
+#else
+int32_t SystemNative_EnumerateGatewayAddressesForInterface(uint32_t interfaceIndex, GatewayAddressFound onGatewayFound)
+{
+    // NOTSUPPORTEDAPI
+    (void)interfaceIndex;
+    (void)onGatewayFound;
+    errno = ENOTSUP;
+    return -1;
+}
 #endif // HAVE_RT_MSGHDR

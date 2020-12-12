@@ -162,4 +162,12 @@ void SystemNative_ReadEvents(int32_t sock, NetworkChangeEvent onNetworkChange)
         }
     }
 }
+#else
+void SystemNative_ReadEvents(int32_t sock, NetworkChangeEvent onNetworkChange)
+{
+    // NOTSUPPORTEDAPI
+    (void)sock;
+    (void)onNetworkChange;
+    __builtin_unreachable();
+}
 #endif

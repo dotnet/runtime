@@ -46,6 +46,7 @@ namespace
 #if defined(NATIVE_LIBS_EMBEDDED)
     extern "C" const void* CompressionResolveDllImport(const char* name);
     extern "C" const void* SecurityResolveDllImport(const char* name);
+    extern "C" const void* SystemResolveDllImport(const char* name);
 
     // pinvoke_override:
     // Check if given function belongs to one of statically linked libraries and return a pointer if found.
@@ -65,6 +66,11 @@ namespace
         if (strcmp(libraryName, "libSystem.Net.Security.Native") == 0)
         {
             return SecurityResolveDllImport(entrypointName);
+        }
+
+        if (strcmp(libraryName, "libSystem.Native") == 0)
+        {
+            return SystemResolveDllImport(entrypointName);
         }
 #endif
         return nullptr;
