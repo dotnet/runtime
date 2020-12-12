@@ -17,7 +17,11 @@
 #if HAVE_LINUX_RTNETLINK_H
 #include <linux/rtnetlink.h>
 #elif HAVE_RT_MSGHDR
+#if HAVE_IOS_NET_ROUTE_H
+#include "ios/net/route.h"
+#else
 #include <net/route.h>
+#endif
 #endif
 
 #pragma clang diagnostic ignored "-Wcast-align" // NLMSG_* macros trigger this
