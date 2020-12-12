@@ -18,8 +18,6 @@
 #include <linux/rtnetlink.h>
 #elif HAVE_RT_MSGHDR
 #include <net/route.h>
-#else
-#error System must have linux/rtnetlink.h or net/route.h.
 #endif
 
 #pragma clang diagnostic ignored "-Wcast-align" // NLMSG_* macros trigger this

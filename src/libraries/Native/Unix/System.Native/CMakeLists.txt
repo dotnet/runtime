@@ -40,18 +40,8 @@ else ()
         pal_log.c)
 endif ()
 
-if (CLR_CMAKE_TARGET_LINUX AND NOT CLR_CMAKE_TARGET_BROWSER)
+if (NOT CLR_CMAKE_TARGET_BROWSER)
     set(NATIVE_SOURCES ${NATIVE_SOURCES} pal_networkchange.c)
-
-    if (!HAVE_LINUX_RTNETLINK_H)
-        message(FATAL_ERROR "Could not find linux/rtnetlink.h")
-    endif ()
-elseif (CLR_CMAKE_TARGET_FREEBSD)
-    set(NATIVE_SOURCES ${NATIVE_SOURCES} pal_networkchange.c)
-
-    if (!HAVE_RT_MSGHDR)
-        message(FATAL_ERROR "Could not find net/route.h")
-    endif ()
 endif ()
 
 include(${CMAKE_CURRENT_LIST_DIR}/extra_libs.cmake)
