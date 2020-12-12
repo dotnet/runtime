@@ -21,65 +21,65 @@ namespace Tracing.Tests.DiagnosticPortValidation
     public class DiagnosticPortValidation
     {
         private static readonly int s_NumberOfPorts = 4;
-        public static async Task<bool> TEST_MultipleConnectPortsNoSuspend()
-        {
-            bool fSuccess = true;
-            var serverAndNames = new List<(ReverseServer, string)>();
-            string dotnetDiagnosticPorts = "";
-            for (int i = 0; i < s_NumberOfPorts; i++)
-            {
-                string serverName = ReverseServer.MakeServerAddress();
-                var server = new ReverseServer(serverName);
-                Logger.logger.Log($"Server {i} address is '{serverName}'");
-                serverAndNames.Add((server, serverName));
-                dotnetDiagnosticPorts += $"{serverName},nosuspend;";
-            }
-            Logger.logger.Log($"export DOTNET_DiagnosticPorts={dotnetDiagnosticPorts}");
-            var advertisements = new List<IpcAdvertise>();
-            Object sync = new Object();
-            int subprocessId = -1;
-            Task<bool> subprocessTask = Utils.RunSubprocess(
-                currentAssembly: Assembly.GetExecutingAssembly(),
-                environment: new Dictionary<string,string> 
-                { 
-                    { Utils.DiagnosticPortsEnvKey, dotnetDiagnosticPorts } 
-                },
-                duringExecution: async (int pid) =>
-                {
-                    subprocessId = pid;
-                    var tasks = new List<Task>();
-                    for (int i = 0; i < s_NumberOfPorts; i++)
-                    {
-                        var (server, _) = serverAndNames[i];
-                        int serverIndex = i;
-                        tasks.Add(Task.Run(async () => 
-                        {
-                            Stream stream = await server.AcceptAsync();
-                            IpcAdvertise advertise = IpcAdvertise.Parse(stream);
-                            lock(sync)
-                                advertisements.Add(advertise);
-                            Logger.logger.Log($"Server {serverIndex} got advertise {advertise.ToString()}");
-                        }));
-                    }
+        // public static async Task<bool> TEST_MultipleConnectPortsNoSuspend()
+        // {
+        //     bool fSuccess = true;
+        //     var serverAndNames = new List<(ReverseServer, string)>();
+        //     string dotnetDiagnosticPorts = "";
+        //     for (int i = 0; i < s_NumberOfPorts; i++)
+        //     {
+        //         string serverName = ReverseServer.MakeServerAddress();
+        //         var server = new ReverseServer(serverName);
+        //         Logger.logger.Log($"Server {i} address is '{serverName}'");
+        //         serverAndNames.Add((server, serverName));
+        //         dotnetDiagnosticPorts += $"{serverName},nosuspend;";
+        //     }
+        //     Logger.logger.Log($"export DOTNET_DiagnosticPorts={dotnetDiagnosticPorts}");
+        //     var advertisements = new List<IpcAdvertise>();
+        //     Object sync = new Object();
+        //     int subprocessId = -1;
+        //     Task<bool> subprocessTask = Utils.RunSubprocess(
+        //         currentAssembly: Assembly.GetExecutingAssembly(),
+        //         environment: new Dictionary<string,string> 
+        //         { 
+        //             { Utils.DiagnosticPortsEnvKey, dotnetDiagnosticPorts } 
+        //         },
+        //         duringExecution: async (int pid) =>
+        //         {
+        //             subprocessId = pid;
+        //             var tasks = new List<Task>();
+        //             for (int i = 0; i < s_NumberOfPorts; i++)
+        //             {
+        //                 var (server, _) = serverAndNames[i];
+        //                 int serverIndex = i;
+        //                 tasks.Add(Task.Run(async () => 
+        //                 {
+        //                     Stream stream = await server.AcceptAsync();
+        //                     IpcAdvertise advertise = IpcAdvertise.Parse(stream);
+        //                     lock(sync)
+        //                         advertisements.Add(advertise);
+        //                     Logger.logger.Log($"Server {serverIndex} got advertise {advertise.ToString()}");
+        //                 }));
+        //             }
 
-                    await Task.WhenAll(tasks);
-                }
-            );
+        //             await Task.WhenAll(tasks);
+        //         }
+        //     );
 
-            fSuccess &= await subprocessTask;
+        //     fSuccess &= await subprocessTask;
 
-            foreach (var (server, _) in serverAndNames)
-                server.Shutdown();
+        //     foreach (var (server, _) in serverAndNames)
+        //         server.Shutdown();
 
-            Guid referenceCookie = advertisements[0].RuntimeInstanceCookie;
-            foreach (var adv in advertisements)
-            {
-                fSuccess &= (int)adv.ProcessId == subprocessId;
-                fSuccess &= adv.RuntimeInstanceCookie.Equals(referenceCookie);
-            }
+        //     Guid referenceCookie = advertisements[0].RuntimeInstanceCookie;
+        //     foreach (var adv in advertisements)
+        //     {
+        //         fSuccess &= (int)adv.ProcessId == subprocessId;
+        //         fSuccess &= adv.RuntimeInstanceCookie.Equals(referenceCookie);
+        //     }
 
-            return fSuccess;
-        }
+        //     return fSuccess;
+        // }
 
         public static async Task<bool> TEST_MultipleConnectPortsSuspend()
         {
@@ -121,16 +121,18 @@ namespace Tracing.Tests.DiagnosticPortValidation
                         });
                     Logger.logger.Log("Starting EventPipeSession over standard connection");
                     using Stream eventStream = EventPipeClient.CollectTracing(pid, config, out var sessionId);
+                    using var proxiedStream = new StreamProxy(eventStream);
                     Logger.logger.Log($"Started EventPipeSession over standard connection with session id: 0x{sessionId:x}");
 
-                    var mre = new ManualResetEvent(false);
+                    var tcs = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+                    Task<bool> resultTask = tcs.Task;
 
                     Task readerTask = Task.Run(async () => 
                     {
                         Logger.logger.Log($"Creating EventPipeEventSource");
-                        using var source = new EventPipeEventSource(eventStream);
+                        using var source = new EventPipeEventSource(proxiedStream);
                         var parser = new ClrPrivateTraceEventParser(source);
-                        parser.StartupEEStartupStart += (eventData) => mre.Set();
+                        parser.StartupEEStartupStart += (eventData) => tcs.SetResult(true);
                         Logger.logger.Log($"Created EventPipeEventSource");
                         Logger.logger.Log($"Starting processing");
                         await Task.Run(() => source.Process());
@@ -139,7 +141,7 @@ namespace Tracing.Tests.DiagnosticPortValidation
 
                     for (int i = 0; i < s_NumberOfPorts; i++)
                     {
-                        fSuccess &= !mre.WaitOne(0);
+                        fSuccess &= !resultTask.IsCompleted;
                         Logger.logger.Log($"Runtime HAS NOT resumed (expects: true): {fSuccess}");
                         var (server, _) = serverAndNames[i];
                         int serverIndex = i;
@@ -157,16 +159,24 @@ namespace Tracing.Tests.DiagnosticPortValidation
                     }
 
                     Logger.logger.Log($"Waiting on EEStartupStarted event");
-                    mre.WaitOne();
+                    Task result = await Task.WhenAny(resultTask, Task.Delay(TimeSpan.FromSeconds(30)));
+                    if (resultTask != result)
+                    {
+                        // we've hit the issue!  Dump the stream to disk for collection and fail test!
+                        proxiedStream.DumpStreamToDisk();
+                        throw new Exception("Encountered the issue!");
+                    }
                     Logger.logger.Log($"Saw EEStartupStarted Event");
 
                     Logger.logger.Log($"Stopping EventPipeSession");
+                    Logger.logger.Log($"Sending stop command");
                     EventPipeClient.StopTracing(pid, sessionId);
+                    Logger.logger.Log($"Stop command sent");
                     await readerTask;
                     Logger.logger.Log($"Stopped EventPipeSession");
 
                     // runtime should have resumed now
-                    fSuccess &= mre.WaitOne(0);
+                    fSuccess &= resultTask.Result;
                     Logger.logger.Log($"Runtime HAS resumed (expects: true): {fSuccess}");
 
                 }
@@ -220,16 +230,18 @@ namespace Tracing.Tests.DiagnosticPortValidation
                         });
                     Logger.logger.Log("Starting EventPipeSession over standard connection");
                     using Stream eventStream = EventPipeClient.CollectTracing(pid, config, out var sessionId);
+                    using var proxiedStream = new StreamProxy(eventStream);
                     Logger.logger.Log($"Started EventPipeSession over standard connection with session id: 0x{sessionId:x}");
 
-                    var mre = new ManualResetEvent(false);
+                    var tcs = new TaskCompletionSource<bool>(TaskContinuationOptions.RunContinuationsAsynchronously);
+                    Task<bool> resultTask = tcs.Task;
 
                     Task readerTask = Task.Run(async () => 
                     {
                         Logger.logger.Log($"Creating EventPipeEventSource");
                         using var source = new EventPipeEventSource(eventStream);
                         var parser = new ClrPrivateTraceEventParser(source);
-                        parser.StartupEEStartupStart += (eventData) => mre.Set();
+                        parser.StartupEEStartupStart += (eventData) => tcs.SetResult(true);
                         Logger.logger.Log($"Created EventPipeEventSource");
                         Logger.logger.Log($"Starting processing");
                         await Task.Run(() => source.Process());
@@ -237,7 +249,7 @@ namespace Tracing.Tests.DiagnosticPortValidation
                     });
 
 
-                    fSuccess &= !mre.WaitOne(0);
+                    fSuccess &= !resultTask.IsCompletedSuccessfully;
                     Logger.logger.Log($"Runtime HAS NOT resumed (expects: true): {fSuccess}");
 
                     // send resume command on this connection
@@ -247,7 +259,13 @@ namespace Tracing.Tests.DiagnosticPortValidation
                     Logger.logger.Log($"Received: {response.ToString()}");
 
                     Logger.logger.Log($"Waiting for EEStartupStarted event");
-                    mre.WaitOne();
+                    Task result = await Task.WhenAny(resultTask, Task.Delay(TimeSpan.FromSeconds(30)));
+                    if (resultTask != result)
+                    {
+                        // we've hit the issue!  Dump the stream to disk for collection and fail test!
+                        proxiedStream.DumpStreamToDisk();
+                        throw new Exception("Encountered the issue!");
+                    }
                     Logger.logger.Log($"Saw EEStartupStarted event!");
 
                     Logger.logger.Log($"Stopping EventPipeSession");
@@ -256,7 +274,7 @@ namespace Tracing.Tests.DiagnosticPortValidation
                     Logger.logger.Log($"Stopped EventPipeSession");
 
                     // runtime should have resumed now
-                    fSuccess &= mre.WaitOne(0);
+                    fSuccess &= resultTask.Result;
                     Logger.logger.Log($"Runtime HAS resumed (expects: true): {fSuccess}");
 
                 }
@@ -268,113 +286,113 @@ namespace Tracing.Tests.DiagnosticPortValidation
             return fSuccess;
         }
 
-        public static async Task<bool> TEST_AdvertiseAndProcessInfoCookiesMatch()
-        {
-            bool fSuccess = true;
-            string serverName = ReverseServer.MakeServerAddress();
-            Logger.logger.Log($"Server name is '{serverName}'");
-            var server = new ReverseServer(serverName);
-            using var memoryStream = new MemoryStream();
-            Task<bool> subprocessTask = Utils.RunSubprocess(
-                currentAssembly: Assembly.GetExecutingAssembly(),
-                environment: new Dictionary<string,string> { { Utils.DiagnosticPortsEnvKey, $"{serverName},nosuspend" } },
-                duringExecution: async (pid) =>
-                {
-                    Stream stream = await server.AcceptAsync();
-                    IpcAdvertise advertise = IpcAdvertise.Parse(stream);
-                    Logger.logger.Log(advertise.ToString());
+        // public static async Task<bool> TEST_AdvertiseAndProcessInfoCookiesMatch()
+        // {
+        //     bool fSuccess = true;
+        //     string serverName = ReverseServer.MakeServerAddress();
+        //     Logger.logger.Log($"Server name is '{serverName}'");
+        //     var server = new ReverseServer(serverName);
+        //     using var memoryStream = new MemoryStream();
+        //     Task<bool> subprocessTask = Utils.RunSubprocess(
+        //         currentAssembly: Assembly.GetExecutingAssembly(),
+        //         environment: new Dictionary<string,string> { { Utils.DiagnosticPortsEnvKey, $"{serverName},nosuspend" } },
+        //         duringExecution: async (pid) =>
+        //         {
+        //             Stream stream = await server.AcceptAsync();
+        //             IpcAdvertise advertise = IpcAdvertise.Parse(stream);
+        //             Logger.logger.Log(advertise.ToString());
 
-                    Logger.logger.Log($"Send ProcessInfo Diagnostics IPC Command");
-                    // send ProcessInfo command (0x04=ProcessCommandSet, 0x00=ProcessInfo commandid)
-                    var message = new IpcMessage(0x04,0x00);
-                    Logger.logger.Log($"Sent: {message.ToString()}");
-                    IpcMessage response = IpcClient.SendMessage(stream, message);
-                    Logger.logger.Log($"received: {response.ToString()}");
-                    ProcessInfo info = ProcessInfo.TryParse(response.Payload);
-                    Logger.logger.Log($"ProcessInfo: {{ id={info.ProcessId}, cookie={info.RuntimeCookie}, cmdline={info.Commandline}, OS={info.OS}, arch={info.Arch} }}");
+        //             Logger.logger.Log($"Send ProcessInfo Diagnostics IPC Command");
+        //             // send ProcessInfo command (0x04=ProcessCommandSet, 0x00=ProcessInfo commandid)
+        //             var message = new IpcMessage(0x04,0x00);
+        //             Logger.logger.Log($"Sent: {message.ToString()}");
+        //             IpcMessage response = IpcClient.SendMessage(stream, message);
+        //             Logger.logger.Log($"received: {response.ToString()}");
+        //             ProcessInfo info = ProcessInfo.TryParse(response.Payload);
+        //             Logger.logger.Log($"ProcessInfo: {{ id={info.ProcessId}, cookie={info.RuntimeCookie}, cmdline={info.Commandline}, OS={info.OS}, arch={info.Arch} }}");
 
-                    Utils.Assert(info.RuntimeCookie.Equals(advertise.RuntimeInstanceCookie), $"The runtime cookie reported by ProcessInfo and Advertise must match.  ProcessInfo: {info.RuntimeCookie.ToString()}, Advertise: {advertise.RuntimeInstanceCookie.ToString()}");
-                    Logger.logger.Log($"ProcessInfo and Advertise Cookies are equal");
-                }
-            );
+        //             Utils.Assert(info.RuntimeCookie.Equals(advertise.RuntimeInstanceCookie), $"The runtime cookie reported by ProcessInfo and Advertise must match.  ProcessInfo: {info.RuntimeCookie.ToString()}, Advertise: {advertise.RuntimeInstanceCookie.ToString()}");
+        //             Logger.logger.Log($"ProcessInfo and Advertise Cookies are equal");
+        //         }
+        //     );
 
-            fSuccess &= await subprocessTask;
+        //     fSuccess &= await subprocessTask;
 
-            return fSuccess;
-        }
+        //     return fSuccess;
+        // }
 
-        public static async Task<bool> TEST_ConfigValidation()
-        {
-            // load the env var with good and bad configs.  Operation of good configs shouldn't be impeded by bad ones.
-            // This test assumes all good configs have a server at the other end of the specified path.
-            // Note that while a bad config might not crash the application, it may still degrade the process, e.g.,
-            // a bad configuration that specifies at least a path, will most likely still be built and consume resources polling
-            // for a server that won't exist.
-            bool fSuccess = true;
-            var serverAndNames = new List<(ReverseServer, string)>();
-            string dotnetDiagnosticPorts = "";
-            // TODO: Make sure these don't hang the test when the default is suspend
-            dotnetDiagnosticPorts += ";;;;;;"; // empty configs shouldn't cause a crash
-            dotnetDiagnosticPorts += "  ; ; ; ; ; ; ; ; ;"; // whitespace only configs shouldn't cause a crash
-            dotnetDiagnosticPorts += " , , , , , ,;,,,,,;;"; // whitespace configs and empty tags with no path shouldn't cause a crash
-            dotnetDiagnosticPorts += "connect,connect,connect,nosuspend,nosuspend,nosuspend,,,;"; // path that is the same as a tag name and duplicate tags shouldn't cause a crash
-            dotnetDiagnosticPorts += "SomeRandomPath,nosuspend,suspend,suspend,suspend,suspend;"; // only the first tag from a pair is respected (this should result in a nosuspend port)
-            dotnetDiagnosticPorts += "%%bad_Path^* fasdf----##2~~,bad tag$$@#@%_)*)@!#(&%.>,   , , , ,nosuspend,:::;"; // invalid path chars and tag chars won't cause a crash
-            for (int i = 0; i < s_NumberOfPorts; i++)
-            {
-                string serverName = ReverseServer.MakeServerAddress();
-                var server = new ReverseServer(serverName);
-                Logger.logger.Log($"Server {i} address is '{serverName}'");
-                serverAndNames.Add((server, serverName));
-                dotnetDiagnosticPorts += $"{serverName},nosuspend;";
-                dotnetDiagnosticPorts += $"{serverName},nosuspend;"; // duplicating port configs shouldn't cause issues
-            }
-            Logger.logger.Log($"export DOTNET_DiagnosticPorts={dotnetDiagnosticPorts}");
-            var advertisements = new List<IpcAdvertise>();
-            Object sync = new Object();
-            int subprocessId = -1;
-            Task<bool> subprocessTask = Utils.RunSubprocess(
-                currentAssembly: Assembly.GetExecutingAssembly(),
-                environment: new Dictionary<string,string> 
-                { 
-                    { Utils.DiagnosticPortsEnvKey, dotnetDiagnosticPorts } 
-                },
-                duringExecution: async (int pid) =>
-                {
-                    subprocessId = pid;
-                    var tasks = new List<Task>();
-                    for (int i = 0; i < s_NumberOfPorts; i++)
-                    {
-                        var (server, _) = serverAndNames[i];
-                        int serverIndex = i;
-                        tasks.Add(Task.Run(async () => 
-                        {
-                            Stream stream = await server.AcceptAsync();
-                            IpcAdvertise advertise = IpcAdvertise.Parse(stream);
-                            lock(sync)
-                                advertisements.Add(advertise);
-                            Logger.logger.Log($"Server {serverIndex} got advertise {advertise.ToString()}");
-                        }));
-                    }
+        // public static async Task<bool> TEST_ConfigValidation()
+        // {
+        //     // load the env var with good and bad configs.  Operation of good configs shouldn't be impeded by bad ones.
+        //     // This test assumes all good configs have a server at the other end of the specified path.
+        //     // Note that while a bad config might not crash the application, it may still degrade the process, e.g.,
+        //     // a bad configuration that specifies at least a path, will most likely still be built and consume resources polling
+        //     // for a server that won't exist.
+        //     bool fSuccess = true;
+        //     var serverAndNames = new List<(ReverseServer, string)>();
+        //     string dotnetDiagnosticPorts = "";
+        //     // TODO: Make sure these don't hang the test when the default is suspend
+        //     dotnetDiagnosticPorts += ";;;;;;"; // empty configs shouldn't cause a crash
+        //     dotnetDiagnosticPorts += "  ; ; ; ; ; ; ; ; ;"; // whitespace only configs shouldn't cause a crash
+        //     dotnetDiagnosticPorts += " , , , , , ,;,,,,,;;"; // whitespace configs and empty tags with no path shouldn't cause a crash
+        //     dotnetDiagnosticPorts += "connect,connect,connect,nosuspend,nosuspend,nosuspend,,,;"; // path that is the same as a tag name and duplicate tags shouldn't cause a crash
+        //     dotnetDiagnosticPorts += "SomeRandomPath,nosuspend,suspend,suspend,suspend,suspend;"; // only the first tag from a pair is respected (this should result in a nosuspend port)
+        //     dotnetDiagnosticPorts += "%%bad_Path^* fasdf----##2~~,bad tag$$@#@%_)*)@!#(&%.>,   , , , ,nosuspend,:::;"; // invalid path chars and tag chars won't cause a crash
+        //     for (int i = 0; i < s_NumberOfPorts; i++)
+        //     {
+        //         string serverName = ReverseServer.MakeServerAddress();
+        //         var server = new ReverseServer(serverName);
+        //         Logger.logger.Log($"Server {i} address is '{serverName}'");
+        //         serverAndNames.Add((server, serverName));
+        //         dotnetDiagnosticPorts += $"{serverName},nosuspend;";
+        //         dotnetDiagnosticPorts += $"{serverName},nosuspend;"; // duplicating port configs shouldn't cause issues
+        //     }
+        //     Logger.logger.Log($"export DOTNET_DiagnosticPorts={dotnetDiagnosticPorts}");
+        //     var advertisements = new List<IpcAdvertise>();
+        //     Object sync = new Object();
+        //     int subprocessId = -1;
+        //     Task<bool> subprocessTask = Utils.RunSubprocess(
+        //         currentAssembly: Assembly.GetExecutingAssembly(),
+        //         environment: new Dictionary<string,string> 
+        //         { 
+        //             { Utils.DiagnosticPortsEnvKey, dotnetDiagnosticPorts } 
+        //         },
+        //         duringExecution: async (int pid) =>
+        //         {
+        //             subprocessId = pid;
+        //             var tasks = new List<Task>();
+        //             for (int i = 0; i < s_NumberOfPorts; i++)
+        //             {
+        //                 var (server, _) = serverAndNames[i];
+        //                 int serverIndex = i;
+        //                 tasks.Add(Task.Run(async () => 
+        //                 {
+        //                     Stream stream = await server.AcceptAsync();
+        //                     IpcAdvertise advertise = IpcAdvertise.Parse(stream);
+        //                     lock(sync)
+        //                         advertisements.Add(advertise);
+        //                     Logger.logger.Log($"Server {serverIndex} got advertise {advertise.ToString()}");
+        //                 }));
+        //             }
 
-                    await Task.WhenAll(tasks);
-                }
-            );
+        //             await Task.WhenAll(tasks);
+        //         }
+        //     );
 
-            fSuccess &= await subprocessTask;
+        //     fSuccess &= await subprocessTask;
 
-            foreach (var (server, _) in serverAndNames)
-                server.Shutdown();
+        //     foreach (var (server, _) in serverAndNames)
+        //         server.Shutdown();
 
-            Guid referenceCookie = advertisements[0].RuntimeInstanceCookie;
-            foreach (var adv in advertisements)
-            {
-                fSuccess &= (int)adv.ProcessId == subprocessId;
-                fSuccess &= adv.RuntimeInstanceCookie.Equals(referenceCookie);
-            }
+        //     Guid referenceCookie = advertisements[0].RuntimeInstanceCookie;
+        //     foreach (var adv in advertisements)
+        //     {
+        //         fSuccess &= (int)adv.ProcessId == subprocessId;
+        //         fSuccess &= adv.RuntimeInstanceCookie.Equals(referenceCookie);
+        //     }
 
-            return fSuccess;
-        }
+        //     return fSuccess;
+        // }
 
         public static async Task<int> Main(string[] args)
         {
@@ -390,23 +408,28 @@ namespace Tracing.Tests.DiagnosticPortValidation
             if (!IpcTraceTest.EnsureCleanEnvironment())
                 return -1;
             IEnumerable<MethodInfo> tests = typeof(DiagnosticPortValidation).GetMethods().Where(mi => mi.Name.StartsWith("TEST_"));
-            foreach (var test in tests)
+            // run these tests 100 times to try and hit the failure!
+            for (int i = 0; i < 100; i++)
             {
-                Logger.logger.Log($"::== Running test: {test.Name}");
-                bool result = true;
-                try
+                foreach (var test in tests)
                 {
-                    result = await (Task<bool>)test.Invoke(null, new object[] {});
+                    Logger.logger.Log($"::== Running test: {test.Name}");
+                    bool result = true;
+                    try
+                    {
+                        result = await (Task<bool>)test.Invoke(null, new object[] {});
+                    }
+                    catch (Exception e)
+                    {
+                        result = false;
+                        Logger.logger.Log(e.ToString());
+                    }
+                    fSuccess &= result;
+                    Logger.logger.Log($"Test passed: {result}");
+                    Logger.logger.Log($"");
+                    if (!fSuccess)
+                        return -1;
                 }
-                catch (Exception e)
-                {
-                    result = false;
-                    Logger.logger.Log(e.ToString());
-                }
-                fSuccess &= result;
-                Logger.logger.Log($"Test passed: {result}");
-                Logger.logger.Log($"");
-
             }
             return fSuccess ? 100 : -1;
         }
