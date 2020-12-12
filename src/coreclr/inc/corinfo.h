@@ -595,6 +595,8 @@ enum CorInfoHelpFunc
     CORINFO_HELP_COUNT,
 };
 
+#define CORINFO_HELP_READYTORUN_ATYPICAL_CALLSITE 0x40000000
+
 //This describes the signature for a helper method.
 enum CorInfoHelpSig
 {
@@ -621,7 +623,7 @@ enum CorInfoType
 {
     CORINFO_TYPE_UNDEF           = 0x0,
     CORINFO_TYPE_VOID            = 0x1,
-    CORINFO_TYPE_BOOL            = 0x2,
+    CORINFO_TYPE_bool            = 0x2,
     CORINFO_TYPE_CHAR            = 0x3,
     CORINFO_TYPE_BYTE            = 0x4,
     CORINFO_TYPE_UBYTE           = 0x5,
@@ -698,24 +700,16 @@ inline bool IsCallerPop(CorInfoCallConv callConv)
 }
 #endif // UNIX_X86_ABI
 
-// Represents the calling conventions supported with the extensible calling convention syntax
-// as well as the original metadata-encoded calling conventions.
 enum CorInfoUnmanagedCallConv
 {
     // These correspond to CorUnmanagedCallingConvention
+
     CORINFO_UNMANAGED_CALLCONV_UNKNOWN,
     CORINFO_UNMANAGED_CALLCONV_C,
     CORINFO_UNMANAGED_CALLCONV_STDCALL,
     CORINFO_UNMANAGED_CALLCONV_THISCALL,
     CORINFO_UNMANAGED_CALLCONV_FASTCALL
-    // New calling conventions supported with the extensible calling convention encoding go here.
 };
-
-// Determines whether or not this calling convention is an instance method calling convention.
-inline bool callConvIsInstanceMethodCallConv(CorInfoUnmanagedCallConv callConv)
-{
-    return callConv == CORINFO_UNMANAGED_CALLCONV_THISCALL;
-}
 
 // These are returned from getMethodOptions
 enum CorInfoOptions
@@ -824,7 +818,7 @@ enum CORINFO_ACCESS_FLAGS
     CORINFO_ACCESS_SET        = 0x0200, // Field set (stfld)
     CORINFO_ACCESS_ADDRESS    = 0x0400, // Field address (ldflda)
     CORINFO_ACCESS_INIT_ARRAY = 0x0800, // Field use for InitializeArray
-    // UNUSED                 = 0x4000,
+    CORINFO_ACCESS_ATYPICAL_CALLSITE = 0x4000, // Atypical callsite that cannot be disassembled by delay loading helper
     CORINFO_ACCESS_INLINECHECK= 0x8000, // Return fieldFlags and fieldAccessor only. Used by JIT64 during inlining.
 };
 
@@ -1465,7 +1459,7 @@ enum CORINFO_CALLINFO_FLAGS
     CORINFO_CALLINFO_VERIFICATION   = 0x0008,   // Gets extra verification information.
     CORINFO_CALLINFO_SECURITYCHECKS = 0x0010,   // Perform security checks.
     CORINFO_CALLINFO_LDFTN          = 0x0020,   // Resolving target of LDFTN
-    // UNUSED                       = 0x0040,
+    CORINFO_CALLINFO_ATYPICAL_CALLSITE = 0x0040, // Atypical callsite that cannot be disassembled by delay loading helper
 };
 
 enum CorInfoIsAccessAllowedResult
@@ -1535,29 +1529,6 @@ struct CORINFO_RESOLVED_TOKEN
     ULONG                   cbTypeSpec;
     PCCOR_SIGNATURE         pMethodSpec;
     ULONG                   cbMethodSpec;
-};
-
-struct CORINFO_VIRTUAL_METHOD_CALLER_CONTEXT
-{
-    //
-    // [In] arguments of tryResolveVirtualMethod
-    //
-    CORINFO_METHOD_HANDLE       virtualMethod;
-    CORINFO_CLASS_HANDLE        implementingClass;
-    CORINFO_CONTEXT_HANDLE      ownerType;
-
-
-    //
-    // [Out] arguments of tryResolveVirtualMethod.
-    // - devirtualizedMethod is set to MethodDesc of devirt'ed method iff we were able to devirtualize.
-    //      invariant is `tryResolveVirtualMethod(...) == (devirtualizedMethod != nullptr)`.
-    // - requiresInstMethodTableArg is set to TRUE iff jit has to pass "secret" type handle arg.
-    // - patchedOwnerType is set to wrapped CORINFO_CLASS_HANDLE of devirt'ed method table.
-    // - (!) two last out params have their meaning only when we devirt'ed into DIM.
-    //
-    CORINFO_METHOD_HANDLE       devirtualizedMethod;
-    bool                        requiresInstMethodTableArg;
-    CORINFO_CONTEXT_HANDLE      patchedOwnerType;
 };
 
 struct CORINFO_CALL_INFO
@@ -2065,18 +2036,13 @@ public:
     // or the method in info->objClass that implements the interface method
     // represented by info->virtualMethod.
     //
-    // Return true if devirtualization is possible. `virtualMethodContext.ownerType` is optional
-    // and provides additional context for shared interface devirtualization.
-    virtual bool tryResolveVirtualMethod(
-        CORINFO_VIRTUAL_METHOD_CALLER_CONTEXT * virtualMethodContext /* IN, OUT */
-        ) = 0;
-
-    
+    // Returns false if devirtualization is not possible.
+    virtual bool resolveVirtualMethod(CORINFO_DEVIRTUALIZATION_INFO * info) = 0;
 
     // Get the unboxed entry point for a method, if possible.
     virtual CORINFO_METHOD_HANDLE getUnboxedEntry(
         CORINFO_METHOD_HANDLE ftn,
-        bool* requiresInstMethodTableArg
+        bool* requiresInstMethodTableArg = NULL /* OUT */
         ) = 0;
 
     // Given T, return the type of the default EqualityComparer<T>.
@@ -2332,7 +2298,7 @@ public:
 
     virtual unsigned getClassAlignmentRequirement (
             CORINFO_CLASS_HANDLE        cls,
-            bool                        fDoubleAlignHint = false
+            bool                        fDoubleAlignHint = FALSE
             ) = 0;
 
     // This is only called for Value classes.  It returns a boolean array
@@ -2369,7 +2335,7 @@ public:
     virtual CorInfoHelpFunc getNewHelper(
             CORINFO_RESOLVED_TOKEN * pResolvedToken,
             CORINFO_METHOD_HANDLE    callerHandle,
-            bool *                   pHasSideEffects
+            bool *                   pHasSideEffects = NULL /* OUT */
             ) = 0;
 
     // returns the newArr (1-Dim array) helper optimized for "arrayCls."
@@ -3137,8 +3103,7 @@ public:
                     bool fMustConvert
                     ) = 0;
 
-    // Notify EE about intent to use or not to use instruction set in the method. Returns true if the instruction set is supported unconditionally.
-    virtual bool notifyInstructionSetUsage(
+    virtual void notifyInstructionSetUsage(
                 CORINFO_InstructionSet instructionSet,
                 bool supportEnabled
             ) = 0;

@@ -20921,10 +20921,12 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
         }
 
         // Ask the runtime to determine the method that would be called based on the guessed-for type.
-        CORINFO_CONTEXT_HANDLE ownerType                  = *contextHandle;
-        bool                   requiresInstMethodTableArg = false;
-        CORINFO_METHOD_HANDLE  likelyMethod               =
-            impResolveVirtualMethod(baseMethod, likelyClass, &requiresInstMethodTableArg, &ownerType);
+        CORINFO_DEVIRTUALIZATION_INFO dvInfo;
+        dvInfo.virtualMethod = baseMethod;
+        dvInfo.objClass      = likelyClass;
+        dvInfo.context       = *pContextHandle;
+
+        bool canResolve = info.compCompHnd->resolveVirtualMethod(&dvInfo);  
 
         if (!canResolve)
         {
@@ -20955,15 +20957,8 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
         JITDUMP("--- base class is interface\n");
     }
 
-    // Fetch the method that would be called based on the declared type of 'this'
-    CORINFO_CONTEXT_HANDLE ownerType                  = *contextHandle;
-    bool                   requiresInstMethodTableArg = false;
-    CORINFO_METHOD_HANDLE  derivedMethod              =
-        impResolveVirtualMethod(baseMethod, objClass, &requiresInstMethodTableArg, &ownerType);
-
-    // If we failed to get a handle, we can't devirtualize.  This can
-    // happen when prejitting, if the devirtualization crosses
-    // servicing bubble boundaries.
+    // Fetch the method that would be called based on the declared type of 'this',
+    // and prepare to fetch the method attributes.
     //
     CORINFO_DEVIRTUALIZATION_INFO dvInfo;
     dvInfo.virtualMethod = baseMethod;
@@ -21109,10 +21104,12 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
 
         // Figure out which method will be called.
         //
-        CORINFO_CONTEXT_HANDLE ownerType                  = *contextHandle;
-        bool                   requiresInstMethodTableArg = false;
-        CORINFO_METHOD_HANDLE  likelyMethod               =
-            impResolveVirtualMethod(baseMethod, likelyClass, &requiresInstMethodTableArg, &ownerType);
+        CORINFO_DEVIRTUALIZATION_INFO dvInfo;
+        dvInfo.virtualMethod = baseMethod;
+        dvInfo.objClass      = likelyClass;
+        dvInfo.context       = *pContextHandle;
+
+        bool canResolve = info.compCompHnd->resolveVirtualMethod(&dvInfo);
 
         if (!canResolve)
         {
@@ -21281,7 +21278,7 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
             }
         }
         // there is no unboxed entry when we got devirtualized to DIM
-        else if (requiresInstMethodTableArg)
+        else if (dvInfo.requiresInstMethodTableArg)
         {
             passExtraArgForValueType = true;
         }
@@ -21296,7 +21293,7 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
         }
     }
     // check wheter we have returned an instantiating stub for generic DIM
-    if ((isInterface && requiresInstMethodTableArg) || passExtraArgForValueType)
+    if ((isInterface && dvInfo.requiresInstMethodTableArg) || passExtraArgForValueType)
     {
         assert(((SIZE_T)ownerType & CORINFO_CONTEXTFLAGS_MASK) == CORINFO_CONTEXTFLAGS_CLASS);
         CORINFO_CLASS_HANDLE exactClassHandle = eeGetClassFromContext(ownerType);
@@ -21340,7 +21337,7 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
     }
 #endif // defined(DEBUG)
 
-    // Fetch the class that introduced the derived method.
+    // Need to update call info too.
     //
     *method      = derivedMethod;
     *methodFlags = derivedMethodAttribs;
@@ -21382,29 +21379,6 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
         call->setEntryPoint(derivedCallInfo.codePointerLookup.constLookup);
     }
 #endif // FEATURE_READYTORUN_COMPILER
-}
-
-CORINFO_METHOD_HANDLE Compiler::impResolveVirtualMethod(CORINFO_METHOD_HANDLE   virtualMethod,
-                                                        CORINFO_CLASS_HANDLE    implementingClass,
-                                                        bool*                   requiresInstMethodTableArg,
-                                                        CORINFO_CONTEXT_HANDLE* ownerType)
-{
-    CORINFO_VIRTUAL_METHOD_CALLER_CONTEXT virtualMethodContext{};
-    virtualMethodContext.virtualMethod     = virtualMethod;
-    virtualMethodContext.implementingClass = implementingClass;
-    virtualMethodContext.ownerType         = *ownerType;
-
-    bool wasResolved = info.compCompHnd->tryResolveVirtualMethod(&virtualMethodContext);
-
-    assert((wasResolved && (virtualMethodContext.devirtualizedMethod != nullptr)) || !wasResolved);
-    assert(((virtualMethodContext.patchedOwnerType != nullptr) && wasResolved) ||
-           (virtualMethodContext.patchedOwnerType == nullptr));
-    assert((virtualMethodContext.requiresInstMethodTableArg && wasResolved) ||
-           !virtualMethodContext.requiresInstMethodTableArg);
-
-    *requiresInstMethodTableArg = virtualMethodContext.requiresInstMethodTableArg;
-    *ownerType                  = virtualMethodContext.patchedOwnerType;
-    return virtualMethodContext.devirtualizedMethod;
 }
 
 //------------------------------------------------------------------------

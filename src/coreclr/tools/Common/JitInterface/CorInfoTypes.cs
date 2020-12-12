@@ -295,29 +295,7 @@ namespace Internal.JitInterface
         public byte* pMethodSpec;
         public uint cbMethodSpec;
     }
-    
-    public unsafe struct CORINFO_VIRTUAL_METHOD_CALLER_CONTEXT
-    {
-        //
-        // [In] arguments of tryResolveVirtualMethod
-        //
-        public CORINFO_METHOD_STRUCT_* virtualMethod;
-        public CORINFO_CLASS_STRUCT_* implementingClass;
-        public CORINFO_CONTEXT_STRUCT* ownerType;
 
-        //
-        // [Out] arguments of tryResolveVirtualMethod.
-        // - devirtualizedMethod is set to MethodDesc of devirt'ed method iff we were able to devirtualize.
-        //      invariant is `tryResolveVirtualMethod(...) == (devirtualizedMethod != nullptr)`.
-        // - requiresInstMethodTableArg is set to TRUE iff jit has to pass "secret" type handle arg.
-        // - patchedOwnerType is set to wrapped CORINFO_CLASS_HANDLE of devirt'ed method table.
-        // - (!) two last out params have their meaning only when we devirt'ed into DIM.
-        //
-        public CORINFO_METHOD_STRUCT_* devirtualizedMethod;
-        public byte _requiresInstMethodTableArg;
-        public bool requiresInstMethodTableArg { get { return _requiresInstMethodTableArg != 0; } set { _requiresInstMethodTableArg = value ? (byte)1 : (byte)0; } }
-        public CORINFO_CONTEXT_STRUCT* patchedOwnerType;
-    }
 
     // Flags computed by a runtime compiler
     public enum CorInfoMethodRuntimeFlags
@@ -374,7 +352,7 @@ namespace Internal.JitInterface
         CORINFO_CALLINFO_VERIFICATION = 0x0008,   // Gets extra verification information.
         CORINFO_CALLINFO_SECURITYCHECKS = 0x0010,   // Perform security checks.
         CORINFO_CALLINFO_LDFTN = 0x0020,   // Resolving target of LDFTN
-        // UNUSED = 0x0040,
+        CORINFO_CALLINFO_ATYPICAL_CALLSITE = 0x0040, // Atypical callsite that cannot be disassembled by delay loading helper
     }
 
     // Bit-twiddling of contexts assumes word-alignment of method handles and type handles
@@ -557,7 +535,7 @@ namespace Internal.JitInterface
         CORINFO_ACCESS_SET = 0x0200, // Field set (stfld)
         CORINFO_ACCESS_ADDRESS = 0x0400, // Field address (ldflda)
         CORINFO_ACCESS_INIT_ARRAY = 0x0800, // Field use for InitializeArray
-        // UNUSED = 0x4000,
+        CORINFO_ACCESS_ATYPICAL_CALLSITE = 0x4000, // Atypical callsite that cannot be disassembled by delay loading helper
         CORINFO_ACCESS_INLINECHECK = 0x8000, // Return fieldFlags and fieldAccessor only. Used by JIT64 during inlining.
     }
 
@@ -1031,13 +1009,13 @@ namespace Internal.JitInterface
 
         public CORINFO_CALL_KIND kind;
 
-        public byte _nullInstanceCheck;
+        public uint _nullInstanceCheck;
         public bool nullInstanceCheck { get { return _nullInstanceCheck != 0; } set { _nullInstanceCheck = value ? (byte)1 : (byte)0; } }
 
         // Context for inlining and hidden arg
         public CORINFO_CONTEXT_STRUCT* contextHandle;
 
-        public byte _exactContextNeedsRuntimeLookup; // Set if contextHandle is approx handle. Runtime lookup is required to get the exact handle.
+        public uint _exactContextNeedsRuntimeLookup; // Set if contextHandle is approx handle. Runtime lookup is required to get the exact handle.
         public bool exactContextNeedsRuntimeLookup { get { return _exactContextNeedsRuntimeLookup != 0; } set { _exactContextNeedsRuntimeLookup = value ? (byte)1 : (byte)0; } }
 
         // If kind.CORINFO_VIRTUALCALL_STUB then stubLookup will be set.
@@ -1047,7 +1025,7 @@ namespace Internal.JitInterface
         // Used by Ready-to-Run
         public CORINFO_CONST_LOOKUP instParamLookup;
 
-        public byte _wrapperDelegateInvoke;
+        public uint _wrapperDelegateInvoke;
         public bool wrapperDelegateInvoke { get { return _wrapperDelegateInvoke != 0; } set { _wrapperDelegateInvoke = value ? (byte)1 : (byte)0; } }
     }
 

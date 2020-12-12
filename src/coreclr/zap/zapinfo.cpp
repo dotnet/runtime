@@ -560,12 +560,12 @@ void ZapInfo::CompileMethod()
 #ifndef FEATURE_FULL_NGEN
 class MethodCodeComparer
 {
-    static BOOL NodeEquals(ZapNode * k1, ZapNode * k2)
+    static bool NodeEquals(ZapNode * k1, ZapNode * k2)
     {
         return k1 == k2;
     }
 
-    static BOOL BlobEquals(ZapBlob * k1, ZapBlob * k2)
+    static bool BlobEquals(ZapBlob * k1, ZapBlob * k2)
     {
         if (k1 == NULL && k2 == NULL)
             return TRUE;
@@ -582,7 +582,7 @@ class MethodCodeComparer
 
     typedef ZapNode * EquivalentNodes[4][2];
 
-    static BOOL EquivalentNode(ZapNode * k1, ZapNode * k2, EquivalentNodes & equivalentNodes)
+    static bool EquivalentNode(ZapNode * k1, ZapNode * k2, EquivalentNodes & equivalentNodes)
     {
         if (k1 == k2)
             return TRUE;
@@ -596,7 +596,7 @@ class MethodCodeComparer
         return FALSE;
     }
 
-    static BOOL BlobWithRelocsEquals(ZapBlobWithRelocs * k1, ZapBlobWithRelocs * k2, EquivalentNodes & equivalentNodes)
+    static bool BlobWithRelocsEquals(ZapBlobWithRelocs * k1, ZapBlobWithRelocs * k2, EquivalentNodes & equivalentNodes)
     {
         if (k1 == NULL && k2 == NULL)
             return TRUE;
@@ -630,7 +630,7 @@ class MethodCodeComparer
         return TRUE;
     }
 
-    static BOOL UnwindInfoEquals(ZapUnwindInfo * k1, ZapUnwindInfo * k2, EquivalentNodes & equivalentNodes)
+    static bool UnwindInfoEquals(ZapUnwindInfo * k1, ZapUnwindInfo * k2, EquivalentNodes & equivalentNodes)
     {
         if (k1 == NULL && k2 == NULL)
             return TRUE;
@@ -643,7 +643,7 @@ class MethodCodeComparer
                EquivalentNode(k1->GetCode(), k2->GetCode(), equivalentNodes);
     }
 
-    static BOOL UnwindInfoFragmentsEquals(ZapUnwindInfo * k1, ZapUnwindInfo * k2, EquivalentNodes & equivalentNodes)
+    static bool UnwindInfoFragmentsEquals(ZapUnwindInfo * k1, ZapUnwindInfo * k2, EquivalentNodes & equivalentNodes)
     {
         if (k1 == NULL && k2 == NULL)
             return TRUE;
@@ -661,7 +661,7 @@ class MethodCodeComparer
         return TRUE;
     }
 
-    static BOOL FixupListEquals(ZapImport ** k1, ZapImport ** k2)
+    static bool FixupListEquals(ZapImport ** k1, ZapImport ** k2)
     {
         if (k1 == NULL && k2 == NULL)
             return TRUE;
@@ -679,7 +679,7 @@ class MethodCodeComparer
     }
 
 public:
-    static BOOL MethodCodeEquals(ZapMethodHeader * k1, ZapMethodHeader * k2)
+    static bool MethodCodeEquals(ZapMethodHeader * k1, ZapMethodHeader * k2)
     {
         LIMITED_METHOD_CONTRACT;
 
@@ -730,9 +730,9 @@ public:
     }
 };
 
-extern BOOL CanDeduplicateCode(CORINFO_METHOD_HANDLE method, CORINFO_METHOD_HANDLE duplicateMethod);
+extern bool CanDeduplicateCode(CORINFO_METHOD_HANDLE method, CORINFO_METHOD_HANDLE duplicateMethod);
 
-BOOL ZapImage::MethodCodeTraits::Equals(key_t k1, key_t k2)
+bool ZapImage::MethodCodeTraits::Equals(key_t k1, key_t k2)
 {
     if (!MethodCodeComparer::MethodCodeEquals(k1, k2))
         return FALSE;
@@ -1139,7 +1139,7 @@ void ZapInfo::allocMem(
         m_pImage->m_stats->m_nativeColdCodeSize += coldCodeSize;
         m_pImage->m_stats->m_nativeRODataSize   += roDataSize;
 
-        BOOL haveProfileData = CurrentMethodHasProfileData();
+        bool haveProfileData = CurrentMethodHasProfileData();
 
         if (haveProfileData)
         {
@@ -1484,7 +1484,7 @@ CORINFO_MODULE_HANDLE ZapInfo::embedModuleHandle(CORINFO_MODULE_HANDLE handle,
         ThrowHR(E_NOTIMPL);
     }
 
-    BOOL fHardbound = m_pImage->m_pPreloader->CanEmbedModuleHandle(handle);
+    bool fHardbound = m_pImage->m_pPreloader->CanEmbedModuleHandle(handle);
     if (fHardbound)
     {
         if (handle == m_pImage->m_hModule)
@@ -1528,7 +1528,7 @@ CORINFO_CLASS_HANDLE ZapInfo::embedClassHandle(CORINFO_CLASS_HANDLE handle,
 
     m_pImage->m_pPreloader->AddTypeToTransitiveClosureOfInstantiations(handle);
 
-    BOOL fHardbound = m_pImage->m_pPreloader->CanEmbedClassHandle(handle);
+    bool fHardbound = m_pImage->m_pPreloader->CanEmbedClassHandle(handle);
     if (fHardbound)
     {
         CORINFO_MODULE_HANDLE moduleHandle = m_pEECompileInfo->GetLoaderModuleForEmbeddableType(handle);
@@ -1567,7 +1567,7 @@ CORINFO_FIELD_HANDLE ZapInfo::embedFieldHandle(CORINFO_FIELD_HANDLE handle,
 
     m_pImage->m_pPreloader->AddTypeToTransitiveClosureOfInstantiations(m_pEEJitInfo->getFieldClass(handle));
 
-    BOOL fHardbound = m_pImage->m_pPreloader->CanEmbedFieldHandle(handle);
+    bool fHardbound = m_pImage->m_pPreloader->CanEmbedFieldHandle(handle);
     if (fHardbound)
     {
         CORINFO_MODULE_HANDLE moduleHandle = m_pEECompileInfo->GetLoaderModuleForEmbeddableField(handle);
@@ -1909,7 +1909,7 @@ void ZapInfo::AppendImport(ZapImport * pImport)
 //
 PVOID ZapInfo::embedDirectCall(CORINFO_METHOD_HANDLE ftn,
                                CORINFO_ACCESS_FLAGS accessFlags,
-                               BOOL fAllowThunk)
+                               bool fAllowThunk)
 {
     if (!m_pImage->m_pPreloader->CanEmbedFunctionEntryPoint(ftn, m_currentMethodHandle, accessFlags))
     {
@@ -1944,9 +1944,9 @@ PVOID ZapInfo::embedDirectCall(CORINFO_METHOD_HANDLE ftn,
     return pEntryPointOrThunkToEmbed;
 }
 
-bool ZapInfo::notifyInstructionSetUsage(CORINFO_InstructionSet instructionSet, bool supportEnabled)
+void ZapInfo::notifyInstructionSetUsage(CORINFO_InstructionSet instructionSet, bool supportEnabled)
 {
-    return m_pEEJitInfo->notifyInstructionSetUsage(instructionSet, supportEnabled);
+    m_pEEJitInfo->notifyInstructionSetUsage(instructionSet, supportEnabled);
 }
 
 void ZapInfo::getFunctionEntryPoint(
@@ -2457,7 +2457,7 @@ void ZapInfo::getCallInfo(CORINFO_RESOLVED_TOKEN * pResolvedToken,
 
             ZapImport * pImport;
 
-            if (flags & CORINFO_CALLINFO_LDFTN)
+            if (flags & (CORINFO_CALLINFO_LDFTN | CORINFO_CALLINFO_ATYPICAL_CALLSITE))
             {
                 pImport = m_pImage->GetImportTable()->GetMethodImport(ENCODE_METHOD_ENTRY, pResult->hMethod, pResolvedToken, pConstrainedResolvedToken);
 
@@ -2495,7 +2495,10 @@ void ZapInfo::getCallInfo(CORINFO_RESOLVED_TOKEN * pResolvedToken,
 #ifdef FEATURE_READYTORUN_COMPILER
 		if (IsReadyToRunCompilation() && !pResult->exactContextNeedsRuntimeLookup)
 		{
-            ZapImport * pImport = m_pImage->GetImportTable()->GetDynamicHelperCell(ENCODE_VIRTUAL_ENTRY, pResult->hMethod, pResolvedToken);
+			DWORD fAtypicalCallsite = (flags & CORINFO_CALLINFO_ATYPICAL_CALLSITE) ? CORINFO_HELP_READYTORUN_ATYPICAL_CALLSITE : 0;
+
+			ZapImport * pImport = m_pImage->GetImportTable()->GetDynamicHelperCell(
+				(CORCOMPILE_FIXUP_BLOB_KIND)(ENCODE_VIRTUAL_ENTRY | fAtypicalCallsite), pResult->hMethod, pResolvedToken);
 
 			pResult->codePointerLookup.constLookup.accessType = IAT_PVALUE;
 			pResult->codePointerLookup.constLookup.addr = pImport;
@@ -3143,6 +3146,8 @@ void ZapInfo::getFieldInfo (CORINFO_RESOLVED_TOKEN * pResolvedToken,
             ThrowHR(E_NOTIMPL);
         }
 
+        DWORD fAtypicalCallsite = (flags & CORINFO_ACCESS_ATYPICAL_CALLSITE) ? CORINFO_HELP_READYTORUN_ATYPICAL_CALLSITE : 0;
+
         switch (pResult->fieldAccessor)
         {
         case CORINFO_FIELD_INSTANCE:
@@ -3250,7 +3255,8 @@ void ZapInfo::getFieldInfo (CORINFO_RESOLVED_TOKEN * pResolvedToken,
                         UNREACHABLE_MSG("Unexpected static helper");
                     }
 
-                    ZapImport * pImport = m_pImage->GetImportTable()->GetDynamicHelperCell(kind, pResolvedToken->hClass);
+                    ZapImport * pImport = m_pImage->GetImportTable()->GetDynamicHelperCell(
+                        (CORCOMPILE_FIXUP_BLOB_KIND)(kind | fAtypicalCallsite), pResolvedToken->hClass);
 
                     pResult->fieldLookup.accessType = IAT_PVALUE;
                     pResult->fieldLookup.addr = pImport;
@@ -3259,7 +3265,8 @@ void ZapInfo::getFieldInfo (CORINFO_RESOLVED_TOKEN * pResolvedToken,
                 }
                 else
                 {
-                    ZapImport * pImport = m_pImage->GetImportTable()->GetDynamicHelperCell(ENCODE_FIELD_ADDRESS, pResolvedToken->hField, pResolvedToken);
+                    ZapImport * pImport = m_pImage->GetImportTable()->GetDynamicHelperCell(
+                        (CORCOMPILE_FIXUP_BLOB_KIND)(ENCODE_FIELD_ADDRESS | fAtypicalCallsite), pResolvedToken->hField, pResolvedToken);
 
                     pResult->fieldLookup.accessType = IAT_PVALUE;
                     pResult->fieldLookup.addr = pImport;
@@ -3718,34 +3725,40 @@ bool ZapInfo::getReadyToRunHelper(CORINFO_RESOLVED_TOKEN * pResolvedToken,
 
     ZapImport * pImport = NULL;
 
-    bool ignoredSideEffects = false;
+    DWORD fAtypicalCallsite = (id & CORINFO_HELP_READYTORUN_ATYPICAL_CALLSITE);
+    id = (CorInfoHelpFunc)(id & ~CORINFO_HELP_READYTORUN_ATYPICAL_CALLSITE);
+
     switch (id)
     {
     case CORINFO_HELP_READYTORUN_NEW:
         // Call CEEInfo::getNewHelper to validate the request (e.g., check for abstract class).
-        m_pEEJitInfo->getNewHelper(pResolvedToken, m_currentMethodHandle, &ignoredSideEffects);
+        m_pEEJitInfo->getNewHelper(pResolvedToken, m_currentMethodHandle);
 
         if ((getClassAttribs(pResolvedToken->hClass) & CORINFO_FLG_SHAREDINST) != 0)
             return false;   // Requires runtime lookup.
-        pImport = m_pImage->GetImportTable()->GetDynamicHelperCell(ENCODE_NEW_HELPER, pResolvedToken->hClass);
+        pImport = m_pImage->GetImportTable()->GetDynamicHelperCell(
+            (CORCOMPILE_FIXUP_BLOB_KIND)(ENCODE_NEW_HELPER | fAtypicalCallsite), pResolvedToken->hClass);
         break;
 
     case CORINFO_HELP_READYTORUN_NEWARR_1:
         if ((getClassAttribs(pResolvedToken->hClass) & CORINFO_FLG_SHAREDINST) != 0)
             return false;   // Requires runtime lookup.
-        pImport = m_pImage->GetImportTable()->GetDynamicHelperCell(ENCODE_NEW_ARRAY_HELPER, pResolvedToken->hClass);
+        pImport = m_pImage->GetImportTable()->GetDynamicHelperCell(
+            (CORCOMPILE_FIXUP_BLOB_KIND)(ENCODE_NEW_ARRAY_HELPER | fAtypicalCallsite), pResolvedToken->hClass);
         break;
 
     case CORINFO_HELP_READYTORUN_ISINSTANCEOF:
         if ((getClassAttribs(pResolvedToken->hClass) & CORINFO_FLG_SHAREDINST) != 0)
             return false;   // Requires runtime lookup.
-        pImport = m_pImage->GetImportTable()->GetDynamicHelperCell(ENCODE_ISINSTANCEOF_HELPER, pResolvedToken->hClass);
+        pImport = m_pImage->GetImportTable()->GetDynamicHelperCell(
+            (CORCOMPILE_FIXUP_BLOB_KIND)(ENCODE_ISINSTANCEOF_HELPER | fAtypicalCallsite), pResolvedToken->hClass);
         break;
 
     case CORINFO_HELP_READYTORUN_CHKCAST:
         if ((getClassAttribs(pResolvedToken->hClass) & CORINFO_FLG_SHAREDINST) != 0)
             return false;   // Requires runtime lookup.
-        pImport = m_pImage->GetImportTable()->GetDynamicHelperCell(ENCODE_CHKCAST_HELPER, pResolvedToken->hClass);
+        pImport = m_pImage->GetImportTable()->GetDynamicHelperCell(
+            (CORCOMPILE_FIXUP_BLOB_KIND)(ENCODE_CHKCAST_HELPER | fAtypicalCallsite), pResolvedToken->hClass);
         break;
 
     case CORINFO_HELP_READYTORUN_STATIC_BASE:
@@ -3753,7 +3766,8 @@ bool ZapInfo::getReadyToRunHelper(CORINFO_RESOLVED_TOKEN * pResolvedToken,
             return false;   // Requires runtime lookup.
         if (m_pImage->GetCompileInfo()->IsInCurrentVersionBubble(m_pEEJitInfo->getClassModule(pResolvedToken->hClass)))
         {
-            pImport = m_pImage->GetImportTable()->GetDynamicHelperCell(ENCODE_CCTOR_TRIGGER, pResolvedToken->hClass);
+            pImport = m_pImage->GetImportTable()->GetDynamicHelperCell(
+                (CORCOMPILE_FIXUP_BLOB_KIND)(ENCODE_CCTOR_TRIGGER | fAtypicalCallsite), pResolvedToken->hClass);
         }
         else
         {
@@ -3769,18 +3783,18 @@ bool ZapInfo::getReadyToRunHelper(CORINFO_RESOLVED_TOKEN * pResolvedToken,
         if (pGenericLookupKind->runtimeLookupKind == CORINFO_LOOKUP_METHODPARAM)
         {
             pImport = m_pImage->GetImportTable()->GetDictionaryLookupCell(
-                ENCODE_DICTIONARY_LOOKUP_METHOD, m_currentMethodHandle, pResolvedToken, pGenericLookupKind);
+                (CORCOMPILE_FIXUP_BLOB_KIND)(ENCODE_DICTIONARY_LOOKUP_METHOD | fAtypicalCallsite), m_currentMethodHandle, pResolvedToken, pGenericLookupKind);
         }
         else if (pGenericLookupKind->runtimeLookupKind == CORINFO_LOOKUP_THISOBJ)
         {
             pImport = m_pImage->GetImportTable()->GetDictionaryLookupCell(
-                ENCODE_DICTIONARY_LOOKUP_THISOBJ, m_currentMethodHandle, pResolvedToken, pGenericLookupKind);
+                (CORCOMPILE_FIXUP_BLOB_KIND)(ENCODE_DICTIONARY_LOOKUP_THISOBJ | fAtypicalCallsite), m_currentMethodHandle, pResolvedToken, pGenericLookupKind);
         }
         else
         {
             _ASSERTE(pGenericLookupKind->runtimeLookupKind == CORINFO_LOOKUP_CLASSPARAM);
             pImport = m_pImage->GetImportTable()->GetDictionaryLookupCell(
-                ENCODE_DICTIONARY_LOOKUP_TYPE, m_currentMethodHandle, pResolvedToken, pGenericLookupKind);
+                (CORCOMPILE_FIXUP_BLOB_KIND)(ENCODE_DICTIONARY_LOOKUP_TYPE | fAtypicalCallsite), m_currentMethodHandle, pResolvedToken, pGenericLookupKind);
         }
         break;
 
@@ -3996,9 +4010,9 @@ void ZapInfo::getMethodVTableOffset(CORINFO_METHOD_HANDLE method,
     m_pEEJitInfo->getMethodVTableOffset(method, pOffsetOfIndirection, pOffsetAfterIndirection, isRelative);
 }
 
-bool ZapInfo::tryResolveVirtualMethod(CORINFO_VIRTUAL_METHOD_CALLER_CONTEXT* virtualMethodContext)
+bool ZapInfo::resolveVirtualMethod(CORINFO_DEVIRTUALIZATION_INFO * info)
 {
-    return m_pEEJitInfo->tryResolveVirtualMethod(virtualMethodContext);
+    return m_pEEJitInfo->resolveVirtualMethod(info);
 }
 
 CORINFO_METHOD_HANDLE ZapInfo::getUnboxedEntry(
@@ -4205,7 +4219,7 @@ template<> void LoadTable<CORINFO_METHOD_HANDLE>::EmitLoadFixups(CORINFO_METHOD_
     }
 }
 
-BOOL ZapInfo::CurrentMethodHasProfileData()
+bool ZapInfo::CurrentMethodHasProfileData()
 {
     WRAPPER_NO_CONTRACT;
     UINT32 size;

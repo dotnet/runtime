@@ -154,7 +154,7 @@ unsigned __int64 genFindHighestBit(unsigned __int64 mask)
 */
 
 template <typename T>
-inline BOOL genMaxOneBit(T value)
+inline bool genMaxOneBit(T value)
 {
     return (value & (value - 1)) == 0;
 }
@@ -164,7 +164,7 @@ inline BOOL genMaxOneBit(T value)
 *  Return true if the given 32-bit value has exactly zero or one bits set.
 */
 
-inline BOOL genMaxOneBit(unsigned value)
+inline bool genMaxOneBit(unsigned value)
 {
     return (value & (value - 1)) == 0;
 }
@@ -2265,11 +2265,11 @@ inline bool Compiler::lvaIsRegArgument(unsigned varNum)
     return varDsc->lvIsRegArg;
 }
 
-inline BOOL Compiler::lvaIsOriginalThisArg(unsigned varNum)
+inline bool Compiler::lvaIsOriginalThisArg(unsigned varNum)
 {
     assert(varNum < lvaCount);
 
-    BOOL isOriginalThisArg = (varNum == info.compThisArg) && (info.compIsStatic == false);
+    bool isOriginalThisArg = (varNum == info.compThisArg) && (info.compIsStatic == false);
 
 #ifdef DEBUG
     if (isOriginalThisArg)
@@ -2294,7 +2294,7 @@ inline BOOL Compiler::lvaIsOriginalThisArg(unsigned varNum)
     return isOriginalThisArg;
 }
 
-inline BOOL Compiler::lvaIsOriginalThisReadOnly()
+inline bool Compiler::lvaIsOriginalThisReadOnly()
 {
     return lvaArg0Var == info.compThisArg;
 }

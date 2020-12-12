@@ -510,7 +510,7 @@ const char* toString(CorInfoType cit)
             return "undef";
         case CORINFO_TYPE_VOID:
             return "void";
-        case CORINFO_TYPE_BOOL:
+        case CORINFO_TYPE_bool:
             return "bool";
         case CORINFO_TYPE_CHAR:
             return "char";
@@ -561,7 +561,7 @@ unsigned int toCorInfoSize(CorInfoType cit)
 {
     switch (cit)
     {
-        case CORINFO_TYPE_BOOL:
+        case CORINFO_TYPE_bool:
         case CORINFO_TYPE_BYTE:
         case CORINFO_TYPE_UBYTE:
             return 1;
@@ -1273,7 +1273,7 @@ void MethodContext::recResolveToken(CORINFO_RESOLVED_TOKEN* pResolvedToken, DWOR
     key = SpmiRecordsHelper::CreateAgnostic_CORINFO_RESOLVED_TOKENin(pResolvedToken);
 
     ResolveTokenValue value;
-    value.tokenOut      = SpmiRecordsHelper::StoreAgnostic_CORINFO_RESOLVED_TOKENout(pResolvedToken, ResolveToken);
+    value.tokenOut      = SpmiRecordsHelper::StoreAgnostic_CORINFO_RESOLVED_TOKENout(pResolvedToken, TryResolveToken);
     value.exceptionCode = (DWORD)exceptionCode;
 
     ResolveToken->Add(key, value);
@@ -1296,7 +1296,7 @@ void MethodContext::repResolveToken(CORINFO_RESOLVED_TOKEN* pResolvedToken, DWOR
 
     ResolveTokenValue value = ResolveToken->Get(key);
 
-    SpmiRecordsHelper::Restore_CORINFO_RESOLVED_TOKENout(pResolvedToken, value.tokenOut, ResolveToken);
+    SpmiRecordsHelper::Restore_CORINFO_RESOLVED_TOKENout(pResolvedToken, value.tokenOut, TryResolveToken);
     *exceptionCode = (DWORD)value.exceptionCode;
     DEBUG_REP(dmpResolveToken(key, value));
 }
@@ -1313,7 +1313,7 @@ void MethodContext::recTryResolveToken(CORINFO_RESOLVED_TOKEN* pResolvedToken, b
 
     TryResolveTokenValue value;
 
-    value.tokenOut = SpmiRecordsHelper::StoreAgnostic_CORINFO_RESOLVED_TOKENout(pResolvedToken, TryResolveToken);
+    value.tokenOut = SpmiRecordsHelper::StoreAgnostic_CORINFO_RESOLVED_TOKENout(pResolvedToken, ResolveToken);
     value.success  = success ? 0 : 1;
 
     TryResolveToken->Add(key, value);
@@ -1335,7 +1335,7 @@ bool MethodContext::repTryResolveToken(CORINFO_RESOLVED_TOKEN* pResolvedToken)
 
     TryResolveTokenValue value = TryResolveToken->Get(key);
 
-    SpmiRecordsHelper::Restore_CORINFO_RESOLVED_TOKENout(pResolvedToken, value.tokenOut, TryResolveToken);
+    SpmiRecordsHelper::Restore_CORINFO_RESOLVED_TOKENout(pResolvedToken, value.tokenOut, ResolveToken);
 
     DEBUG_REP(dmpTryResolveToken(key, value));
     return (DWORD)value.success == 0;
@@ -1474,9 +1474,9 @@ void MethodContext::repGetCallInfo(CORINFO_RESOLVED_TOKEN* pResolvedToken,
     }
     pResult->thisTransform                            = (CORINFO_THIS_TRANSFORM)value.thisTransform;
     pResult->kind                                     = (CORINFO_CALL_KIND)value.kind;
-    pResult->nullInstanceCheck                        = (BOOL)value.nullInstanceCheck;
+    pResult->nullInstanceCheck                        = (bool)value.nullInstanceCheck;
     pResult->contextHandle                            = (CORINFO_CONTEXT_HANDLE)value.contextHandle;
-    pResult->exactContextNeedsRuntimeLookup           = (BOOL)value.exactContextNeedsRuntimeLookup;
+    pResult->exactContextNeedsRuntimeLookup           = (bool)value.exactContextNeedsRuntimeLookup;
     pResult->stubLookup.lookupKind.needsRuntimeLookup = value.stubLookup.lookupKind.needsRuntimeLookup != 0;
     pResult->stubLookup.lookupKind.runtimeLookupKind =
         (CORINFO_RUNTIME_LOOKUP_KIND)value.stubLookup.lookupKind.runtimeLookupKind;
@@ -1496,7 +1496,7 @@ void MethodContext::repGetCallInfo(CORINFO_RESOLVED_TOKEN* pResolvedToken,
     }
     pResult->instParamLookup.accessType = (InfoAccessType)value.instParamLookup.accessType;
     pResult->instParamLookup.handle     = (CORINFO_GENERIC_HANDLE)value.instParamLookup.handle;
-    pResult->wrapperDelegateInvoke       = (BOOL)value.wrapperDelegateInvoke;
+    pResult->wrapperDelegateInvoke       = (bool)value.wrapperDelegateInvoke;
     *exceptionCode                      = (DWORD)value.exceptionCode;
 
     DEBUG_REP(dmpGetCallInfo(key, value));
@@ -1619,7 +1619,7 @@ bool MethodContext::repIsIntrinsicType(CORINFO_CLASS_HANDLE cls)
     AssertCodeMsg(IsIntrinsicType != nullptr, EXCEPTIONCODE_MC, "Didn't find anything for %016llX", (DWORDLONG)cls);
     AssertCodeMsg(IsIntrinsicType->GetIndex((DWORDLONG)cls) != -1, EXCEPTIONCODE_MC, "Didn't find %016llX",
                   (DWORDLONG)cls);
-    bool result = (BOOL)IsIntrinsicType->Get((DWORDLONG)cls);
+    bool result = (bool)IsIntrinsicType->Get((DWORDLONG)cls);
     DEBUG_REP(dmpIsIntrinsicType((DWORDLONG)cls, (DWORD)result));
     return result;
 }
@@ -1691,7 +1691,7 @@ bool MethodContext::repIsValueClass(CORINFO_CLASS_HANDLE cls)
     AssertCodeMsg((IsValueClass != nullptr) && (IsValueClass->GetIndex((DWORDLONG)cls) != -1), EXCEPTIONCODE_MC,
                   "Didn't find %016llX", (DWORDLONG)cls);
 
-    bool result = (BOOL)IsValueClass->Get((DWORDLONG)cls);
+    bool result = (bool)IsValueClass->Get((DWORDLONG)cls);
     DEBUG_REP(dmpIsValueClass((DWORDLONG)cls, (DWORD)result));
     return result;
 }
@@ -1715,7 +1715,7 @@ bool MethodContext::repIsStructRequiringStackAllocRetBuf(CORINFO_CLASS_HANDLE cl
                   (DWORDLONG)cls);
     AssertCodeMsg(IsStructRequiringStackAllocRetBuf->GetIndex((DWORDLONG)cls) != -1, EXCEPTIONCODE_MC,
                   "Didn't find %016llX", (DWORDLONG)cls);
-    bool result = (BOOL)IsStructRequiringStackAllocRetBuf->Get((DWORDLONG)cls);
+    bool result = (bool)IsStructRequiringStackAllocRetBuf->Get((DWORDLONG)cls);
     DEBUG_REP(dmpIsStructRequiringStackAllocRetBuf((DWORDLONG)cls, (DWORD)result));
     return result;
 }
@@ -1781,7 +1781,7 @@ bool MethodContext::repCanAllocateOnStack(CORINFO_CLASS_HANDLE cls)
     AssertCodeMsg(CanAllocateOnStack != nullptr, EXCEPTIONCODE_MC, "Didn't find %016llX", (DWORDLONG)cls);
     AssertCodeMsg(CanAllocateOnStack->GetIndex((DWORDLONG)cls) != -1, EXCEPTIONCODE_MC, "Didn't find %016llX",
                   (DWORDLONG)cls);
-    bool result = (BOOL)CanAllocateOnStack->Get((DWORDLONG)cls);
+    bool result = (bool)CanAllocateOnStack->Get((DWORDLONG)cls);
     DEBUG_REP(dmpCanAllocateOnStack((DWORDLONG)cls, (DWORD)result));
     return result;
 }
@@ -1989,7 +1989,7 @@ bool MethodContext::repIsSDArray(CORINFO_CLASS_HANDLE cls)
 {
     AssertCodeMsg(IsSDArray != nullptr, EXCEPTIONCODE_MC, "Didn't find anything for %016llX", (DWORDLONG)cls);
     AssertCodeMsg(IsSDArray->GetIndex((DWORDLONG)cls) != -1, EXCEPTIONCODE_MC, "Didn't find %016llX", (DWORDLONG)cls);
-    bool temp = (BOOL)IsSDArray->Get((DWORDLONG)cls);
+    bool temp = (bool)IsSDArray->Get((DWORDLONG)cls);
     DEBUG_REP(dmpIsSDArray((DWORDLONG)cls, (DWORD)temp));
     return temp;
 }
@@ -3073,56 +3073,51 @@ void MethodContext::repGetMethodVTableOffset(CORINFO_METHOD_HANDLE method,
     DEBUG_REP(dmpGetMethodVTableOffset((DWORDLONG)method, value));
 }
 
-void MethodContext::recTryResolveVirtualMethod(CORINFO_VIRTUAL_METHOD_CALLER_CONTEXT* pResolvedMethod, bool success)
+void MethodContext::recResolveVirtualMethod(CORINFO_DEVIRTUALIZATION_INFO * info, bool returnValue)
 {
-    if (TryResolveVirtualMethod == nullptr)
+    if (ResolveVirtualMethod == nullptr)
     {
-        TryResolveVirtualMethod =
-            new LightWeightMap<Agnostic_CORINFO_VIRTUAL_METHOD_CALLER_CONTEXTin, TryResolveVirtualMethodValue>();
+        ResolveVirtualMethod = new LightWeightMap<Agnostic_ResolveVirtualMethodKey, Agnostic_ResolveVirtualMethodResult>();
     }
 
-    Agnostic_CORINFO_VIRTUAL_METHOD_CALLER_CONTEXTin key;
-    ZeroMemory(&key, sizeof(Agnostic_CORINFO_VIRTUAL_METHOD_CALLER_CONTEXTin)); // We use the input structs as a key and
-                                                                                // use memcmp to compare..
-                                                                                // so we need to zero out padding too
-
-    key = SpmiRecordsHelper::CreateAgnostic_CORINFO_VIRTUAL_METHOD_CALLER_CONTEXTin(pResolvedMethod);
-
-    TryResolveVirtualMethodValue value;
-
-    value.contextOut =
-        SpmiRecordsHelper::StoreAgnostic_CORINFO_VIRTUAL_METHOD_CALLER_CONTEXTout(pResolvedMethod,
-                                                                                  TryResolveVirtualMethod);
-    value.success  = success ? 0 : 1;
-
-    TryResolveVirtualMethod->Add(key, value);
-    DEBUG_REC(dmpTryResolveVirtualMethod(key, value));
+    Agnostic_ResolveVirtualMethodKey key;
+    key.virtualMethod  = (DWORDLONG)info->virtualMethod;
+    key.objClass       = (DWORDLONG)info->objClass;
+    key.context        = (DWORDLONG)info->context;
+    Agnostic_ResolveVirtualMethodResult result;
+    result.returnValue = returnValue;
+    result.devirtualizedMethod = (DWORDLONG)info->devirtualizedMethod;    
+    result.requiresInstMethodTableArg = info->requiresInstMethodTableArg;
+    result.exactContext = (DWORDLONG)info->exactContext;
+    ResolveVirtualMethod->Add(key, result);
+    DEBUG_REC(dmpResolveVirtualMethod(key, result));
 }
-void MethodContext::dmpTryResolveVirtualMethod(const Agnostic_CORINFO_VIRTUAL_METHOD_CALLER_CONTEXTin& key,
-                                               const TryResolveVirtualMethodValue&                     value)
+
+void MethodContext::dmpResolveVirtualMethod(const Agnostic_ResolveVirtualMethodKey& key, const Agnostic_ResolveVirtualMethodResult& result)
 {
-    printf("TryResolveVirtualMethod key: %s\n",
-           SpmiDumpHelper::DumpAgnostic_CORINFO_VIRTUAL_METHOD_CALLER_CONTEXTin(key).c_str());
-    printf(", value: %s failed-%u",
-           SpmiDumpHelper::DumpAgnostic_CORINFO_VIRTUAL_METHOD_CALLER_CONTEXTout(value.contextOut).c_str(),
-           value.success);
+    printf("ResolveVirtualMethod virtMethod-%016llX, objClass-%016llX, context-%016llX :: returnValue-%d, devirtMethod-%016llX, requiresInstArg-%d, exactContext-%016llX",
+        key.virtualMethod, key.objClass, key.context, result.returnValue, result.devirtualizedMethod, result.requiresInstMethodTableArg, result.exactContext);
 }
-bool MethodContext::repTryResolveVirtualMethod(CORINFO_VIRTUAL_METHOD_CALLER_CONTEXT* pResolvedMethod)
+
+bool MethodContext::repResolveVirtualMethod(CORINFO_DEVIRTUALIZATION_INFO * info)
 {
-    Agnostic_CORINFO_VIRTUAL_METHOD_CALLER_CONTEXTin key;
-    ZeroMemory(&key, sizeof(Agnostic_CORINFO_VIRTUAL_METHOD_CALLER_CONTEXTin)); // We use the input structs as a key and
-                                                                                // use memcmp to compare..
-                                                                                // so we need to zero out padding too
+    Agnostic_ResolveVirtualMethodKey key;
+    key.virtualMethod  = (DWORDLONG)info->virtualMethod;
+    key.objClass       = (DWORDLONG)info->objClass;
+    key.context        = (DWORDLONG)info->context;
 
-    key = SpmiRecordsHelper::CreateAgnostic_CORINFO_VIRTUAL_METHOD_CALLER_CONTEXTin(pResolvedMethod);
+    AssertCodeMsg(ResolveVirtualMethod != nullptr, EXCEPTIONCODE_MC,
+        "No ResolveVirtualMap map for %016llX-%016llX-%016llX", key.virtualMethod, key.objClass, key.context);
+    AssertCodeMsg(ResolveVirtualMethod->GetIndex(key) != -1, EXCEPTIONCODE_MC, "Didn't find %016llX-%016llx-%016llX",
+        key.virtualMethod, key.objClass, key.context);
 
-    TryResolveVirtualMethodValue value = TryResolveVirtualMethod->Get(key);
+    Agnostic_ResolveVirtualMethodResult result = ResolveVirtualMethod->Get(key);
+    DEBUG_REP(dmpResolveVirtualMethod(key, result));
+    info->devirtualizedMethod = (CORINFO_METHOD_HANDLE) result.devirtualizedMethod;
+    info->requiresInstMethodTableArg = result.requiresInstMethodTableArg;
+    info->exactContext = (CORINFO_CONTEXT_HANDLE) result.exactContext;
 
-    SpmiRecordsHelper::Restore_CORINFO_VIRTUAL_METHOD_CALLER_CONTEXTout(pResolvedMethod, value.contextOut,
-                                                                        TryResolveVirtualMethod);
-
-    DEBUG_REP(dmpTryResolveVirtualMethod(key, value));
-    return (DWORD)value.success == 0;
+    return result.returnValue;
 }
 
 void MethodContext::recGetUnboxedEntry(CORINFO_METHOD_HANDLE ftn,
@@ -3414,7 +3409,7 @@ void MethodContext::recGetFieldAddress(CORINFO_FIELD_HANDLE field, void** ppIndi
         DWORDLONG scratch = 0x4242424242424242;
         switch (cit)
         {
-            case CORINFO_TYPE_BOOL:
+            case CORINFO_TYPE_bool:
             case CORINFO_TYPE_BYTE:
             case CORINFO_TYPE_UBYTE:
                 value.fieldValue =
@@ -4523,7 +4518,7 @@ bool MethodContext::repSatisfiesMethodConstraints(CORINFO_CLASS_HANDLE parent, C
     key.A = (DWORDLONG)parent;
     key.B = (DWORDLONG)method;
 
-    bool value = (BOOL)SatisfiesMethodConstraints->Get(key);
+    bool value = (bool)SatisfiesMethodConstraints->Get(key);
     return value;
 }
 
@@ -4554,7 +4549,7 @@ bool MethodContext::repIsValidStringRef(CORINFO_MODULE_HANDLE module, unsigned m
     key.A = (DWORDLONG)module;
     key.B = (DWORD)metaTOK;
 
-    bool value = (BOOL)IsValidStringRef->Get(key);
+    bool value = (bool)IsValidStringRef->Get(key);
     return value;
 }
 
@@ -4684,7 +4679,7 @@ bool MethodContext::repCanCast(CORINFO_CLASS_HANDLE child, CORINFO_CLASS_HANDLE 
                   (DWORDLONG)child, (DWORDLONG)parent);
     AssertCodeMsg(CanCast->GetIndex(key) != -1, EXCEPTIONCODE_MC, "Didn't find %016llX, %016llX %u in map",
                   (DWORDLONG)child, (DWORDLONG)parent, CanCast->GetCount());
-    bool value = (BOOL)CanCast->Get(key);
+    bool value = (bool)CanCast->Get(key);
     DEBUG_REP(dmpCanCast(key, (DWORD)value));
     return value;
 }
@@ -4825,7 +4820,7 @@ void MethodContext::dmpSatisfiesClassConstraints(DWORDLONG key, DWORD value)
 }
 bool MethodContext::repSatisfiesClassConstraints(CORINFO_CLASS_HANDLE cls)
 {
-    return (BOOL)SatisfiesClassConstraints->Get((DWORDLONG)cls);
+    return (bool)SatisfiesClassConstraints->Get((DWORDLONG)cls);
 }
 
 void MethodContext::recGetMethodHash(CORINFO_METHOD_HANDLE ftn, unsigned result)
@@ -4946,8 +4941,8 @@ bool MethodContext::repIsCompatibleDelegate(CORINFO_CLASS_HANDLE  objCls,
 
     value = IsCompatibleDelegate->Get(key);
 
-    *pfIsOpenDelegate = (BOOL)value.A;
-    return (BOOL)value.B;
+    *pfIsOpenDelegate = (bool)value.A;
+    return (bool)value.B;
 }
 
 void MethodContext::recIsDelegateCreationAllowed(CORINFO_CLASS_HANDLE  delegateHnd,
@@ -4983,7 +4978,7 @@ bool MethodContext::repIsDelegateCreationAllowed(CORINFO_CLASS_HANDLE delegateHn
 
     value = IsDelegateCreationAllowed->Get(key);
 
-    return (BOOL)value;
+    return (bool)value;
 }
 
 void MethodContext::recFindCallSiteSig(CORINFO_MODULE_HANDLE  module,
@@ -5385,7 +5380,7 @@ bool MethodContext::repIsMoreSpecificType(CORINFO_CLASS_HANDLE cls1, CORINFO_CLA
     value = IsMoreSpecificType->Get(key);
 
     DEBUG_REP(dmpIsMoreSpecificType(key, value));
-    return (BOOL)value;
+    return (bool)value;
 }
 
 void MethodContext::recGetCookieForPInvokeCalliSig(CORINFO_SIG_INFO* szMetaSig, void** ppIndirection, LPVOID result)
@@ -5491,7 +5486,7 @@ bool MethodContext::repCanAccessFamily(CORINFO_METHOD_HANDLE hCaller, CORINFO_CL
     key.B = (DWORDLONG)hInstanceType;
 
     DWORD temp = CanAccessFamily->Get(key);
-    return (BOOL)temp;
+    return (bool)temp;
 }
 
 void MethodContext::recErrorList(const char* error)
@@ -5537,9 +5532,9 @@ void MethodContext::repGetProfilingHandle(bool* pbHookFunction, void** pProfiler
 
     value = GetProfilingHandle->Get((DWORD)0);
 
-    *pbHookFunction      = (BOOL)value.bHookFunction;
+    *pbHookFunction      = (bool)value.bHookFunction;
     *pProfilerHandle     = (void*)value.ProfilerHandle;
-    *pbIndirectedHandles = (BOOL)value.bIndirectedHandles;
+    *pbIndirectedHandles = (bool)value.bIndirectedHandles;
     DEBUG_REP(dmpGetProfilingHandle(0, value));
 }
 
@@ -5600,7 +5595,7 @@ bool MethodContext::repAreTypesEquivalent(CORINFO_CLASS_HANDLE cls1, CORINFO_CLA
 
     AssertCodeMsg(AreTypesEquivalent->GetIndex(key) != -1, EXCEPTIONCODE_MC, "Didn't find %016llX %016llX",
                   (DWORDLONG)cls1, (DWORDLONG)cls2);
-    bool value = (BOOL)AreTypesEquivalent->Get(key);
+    bool value = (bool)AreTypesEquivalent->Get(key);
     return value;
 }
 
@@ -5882,7 +5877,7 @@ bool MethodContext::repIsValidToken(CORINFO_MODULE_HANDLE module, unsigned metaT
 
     key.A      = (DWORDLONG)module;
     key.B      = (DWORD)metaTOK;
-    bool value = (BOOL)IsValidToken->Get(key);
+    bool value = (bool)IsValidToken->Get(key);
     return value;
 }
 
@@ -6214,7 +6209,7 @@ bool MethodContext::repCheckMethodModifier(CORINFO_METHOD_HANDLE hMethod, LPCSTR
 
     key.fOptional = (DWORD)fOptional;
 
-    bool value = (BOOL)CheckMethodModifier->Get(key);
+    bool value = (bool)CheckMethodModifier->Get(key);
     return value;
 }
 
@@ -6251,7 +6246,7 @@ bool MethodContext::repIsFieldStatic(CORINFO_FIELD_HANDLE fhld)
     AssertCodeMsg(IsFieldStatic != nullptr, EXCEPTIONCODE_MC, "Didn't find anything for %016llX", (DWORDLONG)fhld);
     AssertCodeMsg(IsFieldStatic->GetIndex((DWORDLONG)fhld) != -1, EXCEPTIONCODE_MC, "Didn't find %016llX",
                   (DWORDLONG)fhld);
-    bool result = (BOOL)(IsFieldStatic->Get((DWORDLONG)fhld) != 0);
+    bool result = (bool)(IsFieldStatic->Get((DWORDLONG)fhld) != 0);
     DEBUG_REP(dmpIsFieldStatic((DWORDLONG)fhld, (DWORD)result));
     return result;
 }

@@ -123,18 +123,6 @@ public:
         DWORD     pMethodSpec_Index;
         DWORD     cbMethodSpec;
     };
-    struct Agnostic_CORINFO_VIRTUAL_METHOD_CALLER_CONTEXTin
-    {
-        DWORDLONG virtualMethod;
-        DWORDLONG implementingClass;
-        DWORDLONG ownerType;
-    };
-    struct Agnostic_CORINFO_VIRTUAL_METHOD_CALLER_CONTEXTout
-    {
-        DWORDLONG devirtualizedMethod;
-        DWORD     requiresInstMethodTableArg;
-        DWORDLONG patchedOwnerType;
-    };
     struct GetArgTypeValue
     {
         DWORD     flags;
@@ -207,12 +195,6 @@ public:
 
         Agnostic_CORINFO_RESOLVED_TOKENout outValue;
     };
-    struct Agnostic_CORINFO_VIRTUAL_METHOD_CALLER_CONTEXT
-    {
-        Agnostic_CORINFO_VIRTUAL_METHOD_CALLER_CONTEXTin inValue;
-
-        Agnostic_CORINFO_VIRTUAL_METHOD_CALLER_CONTEXTout outValue;
-    };    
     struct Agnostic_GetFieldInfo
     {
         Agnostic_CORINFO_RESOLVED_TOKEN ResolvedToken;
@@ -525,6 +507,21 @@ public:
         DWORD result;
     };
 
+    struct Agnostic_ResolveVirtualMethodKey
+    {
+        DWORDLONG virtualMethod;
+        DWORDLONG objClass;
+        DWORDLONG context;
+    };
+
+    struct Agnostic_ResolveVirtualMethodResult
+    {
+        bool      returnValue;
+        DWORDLONG devirtualizedMethod;
+        bool      requiresInstMethodTableArg;
+        DWORDLONG exactContext;
+    };
+
     struct ResolveTokenValue
     {
         Agnostic_CORINFO_RESOLVED_TOKENout tokenOut;
@@ -535,12 +532,6 @@ public:
     {
         Agnostic_CORINFO_RESOLVED_TOKENout tokenOut;
         DWORD                              success;
-    };
-
-    struct TryResolveVirtualMethodValue
-    {
-        Agnostic_CORINFO_VIRTUAL_METHOD_CALLER_CONTEXTout contextOut;
-        DWORD                                             success;
     };
 
     struct GetTokenTypeAsHandleValue
@@ -944,10 +935,9 @@ public:
                                   unsigned*             offsetAfterIndirection,
                                   bool*                 isRelative);
 
-    void recTryResolveVirtualMethod(CORINFO_VIRTUAL_METHOD_CALLER_CONTEXT* pResolvedMethod, bool success);
-    void dmpTryResolveVirtualMethod(const Agnostic_CORINFO_VIRTUAL_METHOD_CALLER_CONTEXTin& key,
-                                    const TryResolveVirtualMethodValue&                     value);
-    bool repTryResolveVirtualMethod(CORINFO_VIRTUAL_METHOD_CALLER_CONTEXT* pResolvedMethod);
+    void recResolveVirtualMethod(CORINFO_DEVIRTUALIZATION_INFO * info, bool returnValue);
+    void dmpResolveVirtualMethod(const Agnostic_ResolveVirtualMethodKey& key, const Agnostic_ResolveVirtualMethodResult& value);
+    bool repResolveVirtualMethod(CORINFO_DEVIRTUALIZATION_INFO * info);
 
     void recGetUnboxedEntry(CORINFO_METHOD_HANDLE ftn, bool* requiresInstMethodTableArg, CORINFO_METHOD_HANDLE result);
     void dmpGetUnboxedEntry(DWORDLONG key, DLD value);
@@ -1391,7 +1381,7 @@ private:
 };
 
 // ********************* Please keep this up-to-date to ease adding more ***************
-// Highest packet number: 181
+// Highest packet number: 184
 // *************************************************************************************
 enum mcPackets
 {
@@ -1546,7 +1536,7 @@ enum mcPackets
     Packet_IsMoreSpecificType                            = 174, // Added 2/14/2019
     Packet_PInvokeMarshalingRequired                     = 108,
     Packet_ResolveToken                                  = 109,
-    Packet_TryResolveVirtualMethod                       = 160, // Added 2/13/17 // compatibility-wise is it safe to rename?
+    Packet_ResolveVirtualMethod                          = 160, // Added 2/13/17
     Packet_TryResolveToken                               = 158, // Added 4/26/2016
     Packet_SatisfiesClassConstraints                     = 110,
     Packet_SatisfiesMethodConstraints                    = 111,

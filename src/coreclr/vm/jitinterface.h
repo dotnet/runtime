@@ -87,7 +87,7 @@ void getMethodInfoILMethodHeaderHelper(
     );
 
 
-BOOL LoadDynamicInfoEntry(Module *currentModule,
+bool LoadDynamicInfoEntry(Module *currentModule,
                           RVA fixupRva,
                           SIZE_T *entry);
 
@@ -417,7 +417,7 @@ class CEEInfo : public ICorJitInfo
     MethodDesc* GetMethodFromContext(CORINFO_CONTEXT_HANDLE context);
     TypeHandle GetTypeFromContext(CORINFO_CONTEXT_HANDLE context);
     void GetTypeContext(CORINFO_CONTEXT_HANDLE context, SigTypeContext* pTypeContext);
-    BOOL ContextIsInstantiated(CORINFO_CONTEXT_HANDLE context);
+    bool ContextIsInstantiated(CORINFO_CONTEXT_HANDLE context);
 
 public:
     // ICorClassInfo stuff
@@ -482,8 +482,8 @@ public:
     // considered when checking visibility rules.
 
 
-    CorInfoHelpFunc getNewHelper(CORINFO_RESOLVED_TOKEN * pResolvedToken, CORINFO_METHOD_HANDLE callerHandle, bool * pHasSideEffects);
-    static CorInfoHelpFunc getNewHelperStatic(MethodTable * pMT, bool * pHasSideEffects);
+    CorInfoHelpFunc getNewHelper(CORINFO_RESOLVED_TOKEN * pResolvedToken, CORINFO_METHOD_HANDLE callerHandle, bool * pHasSideEffects = NULL);
+    static CorInfoHelpFunc getNewHelperStatic(MethodTable * pMT, bool * pHasSideEffects = NULL);
 
     CorInfoHelpFunc getNewArrHelper(CORINFO_CLASS_HANDLE arrayCls);
     static CorInfoHelpFunc getNewArrHelperStatic(TypeHandle clsHnd);
@@ -732,9 +732,8 @@ public:
             unsigned * pOffsetAfterIndirection,
             bool * isRelative);
 
-    bool tryResolveVirtualMethod(CORINFO_VIRTUAL_METHOD_CALLER_CONTEXT* virtualMethodContext);
-
-    bool tryResolveVirtualMethodHelper(CORINFO_VIRTUAL_METHOD_CALLER_CONTEXT* virtualMethodContext);
+    bool resolveVirtualMethod(CORINFO_DEVIRTUALIZATION_INFO * info);
+    bool resolveVirtualMethodHelper(CORINFO_DEVIRTUALIZATION_INFO * info);
 
     CORINFO_METHOD_HANDLE getUnboxedEntry(
         CORINFO_METHOD_HANDLE ftn,
@@ -917,7 +916,7 @@ public:
     bool convertPInvokeCalliToCall(CORINFO_RESOLVED_TOKEN * pResolvedToken,
                                    bool fMustConvert);
 
-    bool notifyInstructionSetUsage(CORINFO_InstructionSet instructionSet, 
+    void notifyInstructionSetUsage(CORINFO_InstructionSet instructionSet, 
                                    bool supportEnabled);
 
     void getFunctionEntryPoint(CORINFO_METHOD_HANDLE   ftn,                 /* IN  */
@@ -1324,7 +1323,7 @@ public:
     }
 
 #ifdef TARGET_AMD64
-    void SetAllowRel32(BOOL fAllowRel32)
+    void SetAllowRel32(bool fAllowRel32)
     {
         LIMITED_METHOD_CONTRACT;
         m_fAllowRel32 = fAllowRel32;
@@ -1332,19 +1331,19 @@ public:
 #endif
 
 #if defined(TARGET_AMD64) || defined(TARGET_ARM64)
-    void SetJumpStubOverflow(BOOL fJumpStubOverflow)
+    void SetJumpStubOverflow(bool fJumpStubOverflow)
     {
         LIMITED_METHOD_CONTRACT;
         m_fJumpStubOverflow = fJumpStubOverflow;
     }
 
-    BOOL IsJumpStubOverflow()
+    bool IsJumpStubOverflow()
     {
         LIMITED_METHOD_CONTRACT;
         return m_fJumpStubOverflow;
     }
 
-    BOOL JitAgain()
+    bool JitAgain()
     {
         LIMITED_METHOD_CONTRACT;
         return m_fJumpStubOverflow;
@@ -1362,7 +1361,7 @@ public:
         m_reserveForJumpStubs = value;
     }
 #else
-    BOOL JitAgain()
+    bool JitAgain()
     {
         LIMITED_METHOD_CONTRACT;
         return FALSE;
@@ -1502,10 +1501,10 @@ protected :
 #endif
 
 #ifdef TARGET_AMD64
-    BOOL                    m_fAllowRel32;      // Use 32-bit PC relative address modes
+    bool                    m_fAllowRel32;      // Use 32-bit PC relative address modes
 #endif
 #if defined(TARGET_AMD64) || defined(TARGET_ARM64)
-    BOOL                    m_fJumpStubOverflow;   // Overflow while trying to alocate jump stub slot within PC relative branch region
+    bool                    m_fJumpStubOverflow;   // Overflow while trying to alocate jump stub slot within PC relative branch region
                                                    // The code will need to be regenerated (with m_fRel32Allowed == FALSE for AMD64).
     size_t                  m_reserveForJumpStubs; // Space to reserve for jump stubs when allocating code
 #endif
@@ -1610,7 +1609,7 @@ void *GenFastGetSharedStaticBase(bool bCheckCCtor);
 #ifdef HAVE_GCCOVER
 void SetupGcCoverage(NativeCodeVersion nativeCodeVersion, BYTE* nativeCode);
 void SetupGcCoverageForNativeImage(Module* module);
-BOOL OnGcCoverageInterrupt(PT_CONTEXT regs);
+bool OnGcCoverageInterrupt(PT_CONTEXT regs);
 void DoGcStress (PT_CONTEXT regs, NativeCodeVersion nativeCodeVersion);
 #endif //HAVE_GCCOVER
 
@@ -1621,8 +1620,8 @@ OBJECTHANDLE ConstructStringLiteral(CORINFO_MODULE_HANDLE scopeHnd, mdToken meta
 FCDECL2(Object*, JIT_Box, CORINFO_CLASS_HANDLE type, void* data);
 FCDECL0(VOID, JIT_PollGC);
 
-BOOL ObjIsInstanceOf(Object *pObject, TypeHandle toTypeHnd, BOOL throwCastException = FALSE);
-BOOL ObjIsInstanceOfCore(Object* pObject, TypeHandle toTypeHnd, BOOL throwCastException = FALSE);
+bool ObjIsInstanceOf(Object *pObject, TypeHandle toTypeHnd, bool throwCastException = FALSE);
+bool ObjIsInstanceOfCore(Object* pObject, TypeHandle toTypeHnd, bool throwCastException = FALSE);
 
 EXTERN_C TypeHandle::CastResult STDCALL ObjIsInstanceOfCached(Object *pObject, TypeHandle toTypeHnd);
 

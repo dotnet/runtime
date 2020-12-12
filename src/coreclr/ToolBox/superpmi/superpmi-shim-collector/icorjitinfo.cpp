@@ -230,14 +230,12 @@ void interceptor_ICJI::getMethodVTableOffset(CORINFO_METHOD_HANDLE method,      
     mc->recGetMethodVTableOffset(method, offsetOfIndirection, offsetAfterIndirection, isRelative);
 }
 
-// Find the virtual method in implementingClass that overrides virtualMethod.
-// Return false if devirtualization is not possible.
-bool interceptor_ICJI::tryResolveVirtualMethod(CORINFO_VIRTUAL_METHOD_CALLER_CONTEXT* virtualMethodContext /* IN, OUT */)
+bool interceptor_ICJI::resolveVirtualMethod(CORINFO_DEVIRTUALIZATION_INFO * info)
 {
-    mc->cr->AddCall("tryResolveVirtualMethod");
-    bool success = original_ICorJitInfo->tryResolveVirtualMethod(virtualMethodContext);
-    mc->recTryResolveVirtualMethod(virtualMethodContext, success);
-    return success;
+    mc->cr->AddCall("resolveVirtualMethod");
+    bool result = original_ICorJitInfo->resolveVirtualMethod(info);
+    mc->recResolveVirtualMethod(info, result);
+    return result;
 }
 
 // Get the unboxed entry point for a method, if possible.
@@ -2107,7 +2105,7 @@ DWORD interceptor_ICJI::getExpectedTargetArchitecture()
     return original_ICorJitInfo->getExpectedTargetArchitecture();
 }
 
-bool interceptor_ICJI::notifyInstructionSetUsage(CORINFO_InstructionSet instructionSet, bool supported)
+void interceptor_ICJI::notifyInstructionSetUsage(CORINFO_InstructionSet instructionSet, bool supported)
 {
-    return original_ICorJitInfo->notifyInstructionSetUsage(instructionSet, supported);
+    original_ICorJitInfo->notifyInstructionSetUsage(instructionSet, supported);
 }

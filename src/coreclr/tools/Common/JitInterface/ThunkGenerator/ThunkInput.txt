@@ -52,6 +52,7 @@ unsigned int, uint
 size_t,UIntPtr
 SIZE_T,UIntPtr,size_t
 WORD,ushort,unsigned short
+bool,[MarshalAs(UnmanagedType.Bool)]bool,int
 bool,[MarshalAs(UnmanagedType.I1)]bool
 const char *,byte*
 mdMethodDef,mdToken,unsigned int
@@ -60,6 +61,7 @@ BYTE*,byte*,unsigned char*
 GSCookie*,IntPtr*,void*
 GSCookie**,IntPtr**,void**
 
+bool*,bool*,int*
 bool*,ref bool
 BoolStar,byte*,bool*,bool*
 UINT32*,ref uint,unsigned int*
@@ -170,7 +172,7 @@ FUNCTIONS
     CORINFO_CLASS_HANDLE getMethodClass(        CORINFO_METHOD_HANDLE       method        );
     CORINFO_MODULE_HANDLE getMethodModule(        CORINFO_METHOD_HANDLE       method        );
     void getMethodVTableOffset(        CORINFO_METHOD_HANDLE       method,        unsigned*                   offsetOfIndirection,        unsigned*                   offsetAfterIndirection, bool*                       isRelative);
-    bool tryResolveVirtualMethod(CORINFO_VIRTUAL_METHOD_CALLER_CONTEXT * virtualMethodContext);
+    bool resolveVirtualMethod(CORINFO_DEVIRTUALIZATION_INFO* info);
     CORINFO_METHOD_HANDLE getUnboxedEntry(CORINFO_METHOD_HANDLE ftn, BoolStar requiresInstMethodTableArg);
     CORINFO_CLASS_HANDLE getDefaultEqualityComparerClass(CORINFO_CLASS_HANDLE elemType);
     void expandRawHandleIntrinsic(CORINFO_RESOLVED_TOKEN *        pResolvedToken, CORINFO_GENERICHANDLE_RESULT *  pResult);
@@ -216,7 +218,7 @@ FUNCTIONS
     unsigned getClassNumInstanceFields(CORINFO_CLASS_HANDLE cls)
     CORINFO_FIELD_HANDLE getFieldInClass(CORINFO_CLASS_HANDLE clsHnd, INT num)
     bool checkMethodModifier(CORINFO_METHOD_HANDLE hMethod, LPCSTR modifier, bool fOptional)
-    CorInfoHelpFunc getNewHelper(CORINFO_RESOLVED_TOKEN* pResolvedToken, CORINFO_METHOD_HANDLE callerHandle, bool* pHasSideEffects)
+    CorInfoHelpFunc getNewHelper(CORINFO_RESOLVED_TOKEN* pResolvedToken, CORINFO_METHOD_HANDLE callerHandle, BoolStar pHasSideEffects)
     CorInfoHelpFunc getNewArrHelper(CORINFO_CLASS_HANDLE arrayCls)
     CorInfoHelpFunc getCastingHelper(CORINFO_RESOLVED_TOKEN* pResolvedToken, bool fThrowing)
     CorInfoHelpFunc getSharedCCtorHelper(CORINFO_CLASS_HANDLE clsHnd)
@@ -293,7 +295,7 @@ FUNCTIONS
     LPVOID GetCookieForPInvokeCalliSig(CORINFO_SIG_INFO* szMetaSig, void           ** ppIndirection);
     bool canGetCookieForPInvokeCalliSig(CORINFO_SIG_INFO* szMetaSig);
     CORINFO_JUST_MY_CODE_HANDLE getJustMyCodeHandle(CORINFO_METHOD_HANDLE       method, CORINFO_JUST_MY_CODE_HANDLE**ppIndirection);
-    void GetProfilingHandle(bool* pbHookFunction, void **pProfilerHandle, bool* pbIndirectedHandles);
+    void GetProfilingHandle(bool *pbHookFunction, void **pProfilerHandle, bool *pbIndirectedHandles);
     void getCallInfo(CORINFO_RESOLVED_TOKEN * pResolvedToken, CORINFO_RESOLVED_TOKEN_PTR pConstrainedResolvedToken, CORINFO_METHOD_HANDLE   callerHandle, CORINFO_CALLINFO_FLAGS  flags, CORINFO_CALL_INFO       *pResult);
     bool canAccessFamily(CORINFO_METHOD_HANDLE hCaller, CORINFO_CLASS_HANDLE hInstanceType);
     bool isRIDClassDomainID(CORINFO_CLASS_HANDLE cls);
@@ -311,7 +313,7 @@ FUNCTIONS
     void MethodCompileComplete(CORINFO_METHOD_HANDLE methHnd);
     bool getTailCallHelpers(CORINFO_RESOLVED_TOKEN* callToken, CORINFO_SIG_INFO* sig, CORINFO_GET_TAILCALL_HELPERS_FLAGS flags, CORINFO_TAILCALL_HELPERS* pResult);
     bool convertPInvokeCalliToCall(CORINFO_RESOLVED_TOKEN * pResolvedToken, bool mustConvert);
-    bool notifyInstructionSetUsage(CORINFO_InstructionSet instructionSet,bool supportEnabled);
+    void notifyInstructionSetUsage(CORINFO_InstructionSet instructionSet,bool supportEnabled);
     void allocMem(        ULONG               hotCodeSize,    ULONG               coldCodeSize,     ULONG               roDataSize,             ULONG               xcptnsCount,            CorJitAllocMemFlag  flag,        void**             hotCodeBlock,           void**             coldCodeBlock,          void**             roDataBlock             );
     void reserveUnwindInfo(bool isFunclet, bool isColdCode, ULONG unwindSize)
     void allocUnwindInfo(BYTE* pHotCode, BYTE* pColdCode, ULONG startOffset, ULONG endOffset, ULONG unwindSize, BYTE* pUnwindBlock, CorJitFuncKind funcKind)
