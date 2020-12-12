@@ -592,7 +592,7 @@ namespace System
                 {
                     uint result = Interop.Errors.ERROR_SUCCESS;
 
-                    fixed (char* c = &builder.GetPinnableReference())
+                    fixed (char* c = builder)
                     {
                         result = Interop.Kernel32.GetConsoleTitleW(c, (uint)builder.Capacity);
                     }
