@@ -242,7 +242,8 @@ collect_parser.add_argument("collection_command", nargs='?', help=superpmi_colle
 collect_parser.add_argument("collection_args", nargs='?', help="Arguments to pass to the SuperPMI collect command.")
 
 collect_parser.add_argument("--pmi", action="store_true", help="Run PMI on a set of directories or assemblies.")
-collect_parser.add_argument("-pmi_assemblies", dest="pmi_assemblies", nargs="+", default=[], help="Pass a sequence of managed dlls or directories to recursively run PMI over while collecting. Required if --pmi is specified.")
+collect_parser.add_argument("--crossgen", action="store_true", help="Run crossgen on a set of directories or assemblies.")
+collect_parser.add_argument("-assemblies", dest="assemblies", nargs="+", default=[], help="Pass a sequence of managed dlls or directories to recursively use while collecting with PMI or crossgen. Required if --pmi or --crossgen is specified.")
 collect_parser.add_argument("-pmi_location", help="Path to pmi.dll to use during PMI run. Optional; pmi.dll will be downloaded from Azure Storage if necessary.")
 collect_parser.add_argument("-output_mch_path", help="Location to place the final MCH file.")
 collect_parser.add_argument("--merge_mch_files", action="store_true", help="Merge multiple MCH files. Use the -mch_files flag to pass a list of MCH files to merge.")
@@ -652,12 +653,15 @@ class SuperPMICollect:
         if coreclr_args.host_os == "OSX":
             self.collection_shim_name = "libsuperpmi-shim-collector.dylib"
             self.corerun_tool_name = "corerun"
+            self.crossgen_tool_name = "crossgen"
         elif coreclr_args.host_os == "Linux":
             self.collection_shim_name = "libsuperpmi-shim-collector.so"
             self.corerun_tool_name = "corerun"
+            self.crossgen_tool_name = "crossgen"
         elif coreclr_args.host_os == "windows":
             self.collection_shim_name = "superpmi-shim-collector.dll"
             self.corerun_tool_name = "corerun.exe"
+            self.crossgen_tool_name = "crossgen.exe"
         else:
             raise RuntimeError("Unsupported OS.")
 
@@ -672,8 +676,13 @@ class SuperPMICollect:
 
         if coreclr_args.pmi:
             self.pmi_location = determine_pmi_location(coreclr_args)
-            self.pmi_assemblies = coreclr_args.pmi_assemblies
             self.corerun = os.path.join(self.core_root, self.corerun_tool_name)
+
+        if coreclr_args.crossgen:
+            self.crossgen_tool = os.path.join(self.core_root, self.crossgen_tool_name)
+
+        if coreclr_args.pmi or coreclr_args.crossgen:
+            self.assemblies = coreclr_args.assemblies
 
         self.coreclr_args = coreclr_args
 
@@ -813,6 +822,11 @@ class SuperPMICollect:
                 for line in stdout_output.decode('utf-8').splitlines():  # There won't be any stderr output since it was piped to stdout
                     logging.debug(line)
 
+            if self.coreclr_args.pmi is True or self.coreclr_args.crossgen is True:
+                assemblies = []
+                for item in self.assemblies:
+                    assemblies += get_files_from_path(item, match_func=lambda file: any(file.endswith(extension) for extension in [".dll", ".exe"]))
+
             if self.coreclr_args.pmi is True:
                 async def run_pmi(print_prefix, assembly, self):
                     """ Run pmi over all dlls
@@ -840,7 +854,7 @@ class SuperPMICollect:
                         os.close(stdout_file_handle)
                         os.close(stderr_file_handle)
 
-                    # No need to keep zero-length files
+                        # No need to keep zero-length files
                         if is_zero_length_file(stdout_filepath):
                             os.remove(stdout_filepath)
                         if is_zero_length_file(stderr_filepath):
@@ -852,10 +866,6 @@ class SuperPMICollect:
                         else:
                             raise ose
 
-                assemblies = []
-                for item in self.pmi_assemblies:
-                    assemblies += get_files_from_path(item, match_func=lambda file: any(file.endswith(extension) for extension in [".dll", ".exe"]))
-
                 # Set environment variables.
                 old_env = os.environ.copy()
                 os.environ.update(env_copy)
@@ -864,6 +874,69 @@ class SuperPMICollect:
                 helper.run_to_completion(run_pmi, self)
 
                 os.environ.update(old_env)
+            ################################################################################################ end of "self.coreclr_args.pmi is True"
+
+            if self.coreclr_args.crossgen is True:
+                async def run_crossgen(print_prefix, assembly, self):
+                    """ Run crossgen over all dlls
+                    """
+
+                    root_crossgen_output_filename = make_safe_filename("crossgen_" + assembly) + ".out.dll"
+                    crossgen_output_assembly_filename = os.path.join(self.temp_location, root_crossgen_output_filename)
+                    try:
+                        if os.path.exists(crossgen_output_assembly_filename):
+                            os.remove(crossgen_output_assembly_filename)
+                    except OSError as ose:
+                        if "[WinError 32] The process cannot access the file because it is being used by another " \
+                           "process:" in format(ose):
+                            logging.warning("Skipping file %s. Got error: %s".format(root_output_filename, format(ose)))
+                            return
+                        else:
+                            raise ose
+
+                    command = [self.crossgen_tool, "/Platform_Assemblies_Paths", self.core_root, "/in", assembly, "/out", crossgen_output_assembly_filename]
+                    command_string = " ".join(command)
+                    logging.debug("%s%s", print_prefix, command_string)
+
+                    # Save the stdout and stderr to files, so we can see if crossgen wrote any interesting messages.
+                    # Use the name of the assembly as the basename of the file. mkstemp() will ensure the file
+                    # is unique.
+                    root_output_filename = make_safe_filename("crossgen_" + assembly + "_")
+                    try:
+                        stdout_file_handle, stdout_filepath = tempfile.mkstemp(suffix=".stdout", prefix=root_output_filename, dir=self.temp_location)
+                        stderr_file_handle, stderr_filepath = tempfile.mkstemp(suffix=".stderr", prefix=root_output_filename, dir=self.temp_location)
+
+                        proc = await asyncio.create_subprocess_shell(
+                            command_string,
+                            stdout=stdout_file_handle,
+                            stderr=stderr_file_handle)
+
+                        await proc.communicate()
+
+                        os.close(stdout_file_handle)
+                        os.close(stderr_file_handle)
+
+                        # No need to keep zero-length files
+                        if is_zero_length_file(stdout_filepath):
+                            os.remove(stdout_filepath)
+                        if is_zero_length_file(stderr_filepath):
+                            os.remove(stderr_filepath)
+                    except OSError as ose:
+                        if "[WinError 32] The process cannot access the file because it is being used by another " \
+                           "process:" in format(ose):
+                            logging.warning("Skipping file %s. Got error: %s".format(root_output_filename, format(ose)))
+                        else:
+                            raise ose
+
+                # Set environment variables.
+                old_env = os.environ.copy()
+                os.environ.update(env_copy)
+
+                helper = AsyncSubprocessHelper(assemblies, verbose=True)
+                helper.run_to_completion(run_crossgen, self)
+
+                os.environ.update(old_env)
+            ################################################################################################ end of "self.coreclr_args.crossgen is True"
 
         mc_files = [os.path.join(self.temp_location, item) for item in os.listdir(self.temp_location) if item.endswith(".mc")]
         if len(mc_files) == 0:
@@ -2676,9 +2749,14 @@ def setup_args(args):
                             "Unable to set pmi")
 
         coreclr_args.verify(args,
-                            "pmi_assemblies",
-                            lambda items: args.pmi is False or len(items) > 0,
-                            "Unable to set pmi_assemblies",
+                            "crossgen",
+                            lambda unused: True,
+                            "Unable to set crossgen")
+
+        coreclr_args.verify(args,
+                            "assemblies",
+                            lambda unused: True,
+                            "Unable to set assemblies",
                             modify_arg=lambda items: [item for item in items if os.path.isdir(item) or os.path.isfile(item)])
 
         coreclr_args.verify(args,
@@ -2732,10 +2810,22 @@ def setup_args(args):
                             lambda unused: True,
                             "Unable to set use_zapdisable")
 
+        if (args.collection_command is None) and (args.pmi is False) and (args.crossgen is False):
+            print("Either a collection command or `--pmi` or `--crossgen` must be specified")
+            sys.exit(1)
+
+        if (args.collection_command is not None) and (len(args.assemblies) > 0):
+            print("Don't specify `-assemblies` if a collection command is given")
+            sys.exit(1)
+
+        if ((args.pmi is True) or (args.crossgen is True)) and (len(args.assemblies) == 0):
+            print("Specify `-assemblies` if `--pmi` or `--crossgen` is given")
+            sys.exit(1)
+
         if args.collection_command is None and args.merge_mch_files is not True:
             assert args.collection_args is None
-            assert args.pmi is True
-            assert len(args.pmi_assemblies) > 0
+            assert (args.pmi is True) or (args.crossgen is True)
+            assert len(args.assemblies) > 0
 
         if coreclr_args.merge_mch_files:
             assert len(coreclr_args.mch_files) > 0
