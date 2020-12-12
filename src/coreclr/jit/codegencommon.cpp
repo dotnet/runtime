@@ -8933,7 +8933,7 @@ void CodeGen::genFnEpilog(BasicBlock* block)
             fCalleePop = false;
 
 #ifdef UNIX_X86_ABI
-        if (IsCallerPop(compiler->info.compMethodInfo->args.callConv))
+        if (IsCallerPop(compiler->info.compCallConv))
             fCalleePop = false;
 #endif // UNIX_X86_ABI
 

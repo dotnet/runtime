@@ -8397,12 +8397,6 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
     }
 #endif // !FEATURE_VARARG
 
-#ifdef UNIX_X86_ABI
-    // On Unix x86 we usually use caller-cleaned convention.
-    if (!call->AsCall()->IsUnmanaged() && IsCallerPop(sig->callConv))
-        call->gtFlags |= GTF_CALL_POP_ARGS;
-#endif // UNIX_X86_ABI
-
     if ((sig->callConv & CORINFO_CALLCONV_MASK) == CORINFO_CALLCONV_VARARG ||
         (sig->callConv & CORINFO_CALLCONV_MASK) == CORINFO_CALLCONV_NATIVEVARARG)
     {
@@ -8477,6 +8471,12 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
         BasicBlock* block = compIsForInlining() ? impInlineInfo->iciBlock : compCurBB;
         impCheckForPInvokeCall(call->AsCall(), methHnd, sig, mflags, block);
     }
+
+#ifdef UNIX_X86_ABI
+    // On Unix x86 we usually use caller-cleaned convention.
+    if ((call->gtFlags & GTF_CALL_UNMANAGED) == 0)
+        call->gtFlags |= GTF_CALL_POP_ARGS;
+#endif // UNIX_X86_ABI
 
     if (call->gtFlags & GTF_CALL_UNMANAGED)
     {

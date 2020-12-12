@@ -314,10 +314,11 @@ namespace Internal.JitInterface
         // These correspond to CorCallingConvention
 
         CORINFO_CALLCONV_DEFAULT = 0x0,
-        CORINFO_CALLCONV_C = 0x1,
-        CORINFO_CALLCONV_STDCALL = 0x2,
-        CORINFO_CALLCONV_THISCALL = 0x3,
-        CORINFO_CALLCONV_FASTCALL = 0x4,
+        // Instead of using the below values, use the CorInfoCallConvExtension enum for unmanaged calling conventions.
+        // CORINFO_CALLCONV_C = 0x1,
+        // CORINFO_CALLCONV_STDCALL = 0x2,
+        // CORINFO_CALLCONV_THISCALL = 0x3,
+        // CORINFO_CALLCONV_FASTCALL = 0x4,
         CORINFO_CALLCONV_VARARG = 0x5,
         CORINFO_CALLCONV_FIELD = 0x6,
         CORINFO_CALLCONV_LOCAL_SIG = 0x7,

@@ -1598,7 +1598,7 @@ void NDirectStubLinker::SetCallingConvention(CorPinvokeMap unmngCallConv, BOOL f
     {
         // The JIT has to use a different calling convention for unmanaged vararg targets on 64-bit and ARM:
         // any float values must be duplicated in the corresponding general-purpose registers.
-        uNativeCallingConv = CORINFO_CALLCONV_NATIVEVARARG;
+        uNativeCallingConv = IMAGE_CEE_CS_CALLCONV_NATIVEVARARG;
     }
     else
 #endif // !TARGET_X86
@@ -1606,17 +1606,17 @@ void NDirectStubLinker::SetCallingConvention(CorPinvokeMap unmngCallConv, BOOL f
         switch (unmngCallConv)
         {
             case pmCallConvCdecl:
-                uNativeCallingConv = CORINFO_CALLCONV_C;
+                uNativeCallingConv = IMAGE_CEE_CS_CALLCONV_C;
                 break;
             case pmCallConvStdcall:
-                uNativeCallingConv = CORINFO_CALLCONV_STDCALL;
+                uNativeCallingConv = IMAGE_CEE_CS_CALLCONV_STDCALL;
                 break;
             case pmCallConvThiscall:
-                uNativeCallingConv = CORINFO_CALLCONV_THISCALL;
+                uNativeCallingConv = IMAGE_CEE_CS_CALLCONV_THISCALL;
                 break;
             default:
                 _ASSERTE(!"Invalid calling convention.");
-                uNativeCallingConv = CORINFO_CALLCONV_STDCALL;
+                uNativeCallingConv = IMAGE_CEE_CS_CALLCONV_STDCALL;
                 break;
         }
     }
@@ -2980,7 +2980,7 @@ namespace
         HRESULT hr = MetaSig::TryGetUnmanagedCallingConventionFromModOpt(pModule, pSig, cSig, &callConvMaybe, errorResID);
         if (hr != S_OK)
             return hr;
-        
+
         if (!TryConvertCallConvValueToPInvokeCallConv(callConvMaybe, pPinvokeMapOut))
             return S_FALSE;
 
@@ -6161,7 +6161,7 @@ namespace
 #if defined(TARGET_LINUX)
         if (g_coreclr_embedded)
         {
-            // this matches exactly the names in  Interop.Libraries.cs 
+            // this matches exactly the names in  Interop.Libraries.cs
             static const LPCWSTR toRedirect[] = {
                 W("libSystem.Native"),
                 W("libSystem.Net.Security.Native"),

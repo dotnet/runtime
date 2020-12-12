@@ -9765,20 +9765,20 @@ namespace
         {
             COMPlusThrowHR(COR_E_BADIMAGEFORMAT);
         }
-        switch ((CorInfoCallConv)rawCallConv)
+        switch ((CorCallingConvention)rawCallConv)
         {
-        case CORINFO_CALLCONV_DEFAULT:
+        case IMAGE_CEE_CS_CALLCONV_DEFAULT:
             _ASSERTE_MSG(false, "bad callconv");
             return CorInfoCallConvExtension::Managed;
-        case CORINFO_CALLCONV_C:
+        case IMAGE_CEE_CS_CALLCONV_C:
             return CorInfoCallConvExtension::C;
-        case CORINFO_CALLCONV_STDCALL:
+        case IMAGE_CEE_CS_CALLCONV_STDCALL:
             return CorInfoCallConvExtension::Stdcall;
-        case CORINFO_CALLCONV_THISCALL:
+        case IMAGE_CEE_CS_CALLCONV_THISCALL:
             return CorInfoCallConvExtension::Thiscall;
-        case CORINFO_CALLCONV_FASTCALL:
+        case IMAGE_CEE_CS_CALLCONV_FASTCALL:
             return CorInfoCallConvExtension::Fastcall;
-        case CORINFO_CALLCONV_UNMANAGED:
+        case IMAGE_CEE_CS_CALLCONV_UNMANAGED:
         {
             CorUnmanagedCallingConvention callConvMaybe;
             UINT errorResID;
@@ -9795,7 +9795,7 @@ namespace
                 return (CorInfoCallConvExtension)MetaSig::GetDefaultUnmanagedCallingConvention();
             }
         }
-        case CORINFO_CALLCONV_NATIVEVARARG:
+        case IMAGE_CEE_CS_CALLCONV_NATIVEVARARG:
             return CorInfoCallConvExtension::C;
         default:
             _ASSERTE_MSG(false, "bad callconv");
@@ -9854,7 +9854,7 @@ namespace
                 CorPinvokeMap unmanagedCallConv;
                 if (TryGetCallingConventionFromUnmanagedCallersOnly(pMD, &unmanagedCallConv))
                 {
-                    if (methodCallConv == CORINFO_CALLCONV_VARARG)
+                    if (methodCallConv == IMAGE_CEE_CS_CALLCONV_VARARG)
                     {
                         return CorInfoCallConvExtension::C;
                     }

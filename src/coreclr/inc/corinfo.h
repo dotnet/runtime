@@ -671,10 +671,11 @@ enum CorInfoCallConv
     // These correspond to CorCallingConvention
 
     CORINFO_CALLCONV_DEFAULT    = 0x0,
-    CORINFO_CALLCONV_C          = 0x1,
-    CORINFO_CALLCONV_STDCALL    = 0x2,
-    CORINFO_CALLCONV_THISCALL   = 0x3,
-    CORINFO_CALLCONV_FASTCALL   = 0x4,
+    // Instead of using the below values, use the CorInfoCallConvExtension enum for unmanaged calling conventions.
+    // CORINFO_CALLCONV_C          = 0x1,
+    // CORINFO_CALLCONV_STDCALL    = 0x2,
+    // CORINFO_CALLCONV_THISCALL   = 0x3,
+    // CORINFO_CALLCONV_FASTCALL   = 0x4,
     CORINFO_CALLCONV_VARARG     = 0x5,
     CORINFO_CALLCONV_FIELD      = 0x6,
     CORINFO_CALLCONV_LOCAL_SIG  = 0x7,
@@ -689,17 +690,6 @@ enum CorInfoCallConv
     CORINFO_CALLCONV_PARAMTYPE  = 0x80,     // Passed last. Same as CORINFO_GENERICS_CTXT_FROM_PARAMTYPEARG
 };
 
-#ifdef UNIX_X86_ABI
-inline bool IsCallerPop(CorInfoCallConv callConv)
-{
-    unsigned int umask = CORINFO_CALLCONV_STDCALL
-                       | CORINFO_CALLCONV_THISCALL
-                       | CORINFO_CALLCONV_FASTCALL;
-
-    return !(callConv & umask);
-}
-#endif // UNIX_X86_ABI
-
 // Represents the calling conventions supported with the extensible calling convention syntax
 // as well as the original metadata-encoded calling conventions.
 enum class CorInfoCallConvExtension
@@ -711,6 +701,13 @@ enum class CorInfoCallConvExtension
     Fastcall
     // New calling conventions supported with the extensible calling convention encoding go here.
 };
+
+#ifdef UNIX_X86_ABI
+inline bool IsCallerPop(CorInfoCallConvExtension callConv)
+{
+    return callConv == CorInfoCallConvExtension::Managed || callConv == CorInfoCallConvExtension::C;
+}
+#endif // UNIX_X86_ABI
 
 // Determines whether or not this calling convention is an instance method calling convention.
 inline bool callConvIsInstanceMethodCallConv(CorInfoCallConvExtension callConv)
@@ -2085,8 +2082,6 @@ public:
     // - a P/Invoke
     // - a method marked with UnmanagedCallersOnly
     // - a function pointer with the CORINFO_CALLCONV_UNMANAGED calling convention.
-    // May return CorInfoCallConvExtension::Managed when the method or call site doesn't
-    // use an unmanaged calling convention as an entry point.
     virtual CorInfoCallConvExtension getUnmanagedCallConv(
             CORINFO_METHOD_HANDLE       method,
             CORINFO_SIG_INFO*           callSiteSig,
