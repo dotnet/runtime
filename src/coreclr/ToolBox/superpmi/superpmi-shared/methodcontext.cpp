@@ -3742,10 +3742,10 @@ void MethodContext::recPInvokeMarshalingRequired(CORINFO_METHOD_HANDLE method,
                                                  bool                  result)
 {
     if (PInvokeMarshalingRequired == nullptr)
-        PInvokeMarshalingRequired = new LightWeightMap<MethodSigInfoPairValue, DWORD>();
+        PInvokeMarshalingRequired = new LightWeightMap<MethodOrSigInfoValue, DWORD>();
 
-    MethodSigInfoPairValue key;
-    ZeroMemory(&key, sizeof(MethodSigInfoPairValue)); // We use the input structs as a key and use memcmp to
+    MethodOrSigInfoValue key;
+    ZeroMemory(&key, sizeof(MethodOrSigInfoValue)); // We use the input structs as a key and use memcmp to
                                                               // compare.. so we need to zero out padding too
 
     key.method     = (DWORDLONG)method;
@@ -3756,7 +3756,7 @@ void MethodContext::recPInvokeMarshalingRequired(CORINFO_METHOD_HANDLE method,
     PInvokeMarshalingRequired->Add(key, (DWORD)result);
     DEBUG_REC(dmpPInvokeMarshalingRequired(key, (DWORD)result));
 }
-void MethodContext::dmpPInvokeMarshalingRequired(const MethodSigInfoPairValue& key, DWORD value)
+void MethodContext::dmpPInvokeMarshalingRequired(const MethodOrSigInfoValue& key, DWORD value)
 {
     printf("PInvokeMarshalingRequired key mth-%016llX scp-%016llX sig-%u, value res-%u", key.method, key.scope,
            key.pSig_Index, value);
@@ -3767,8 +3767,8 @@ bool MethodContext::repPInvokeMarshalingRequired(CORINFO_METHOD_HANDLE method, C
     if (PInvokeMarshalingRequired == nullptr) // so when we replay checked on free, we throw from lwm
         return TRUE;                          // TODO-Cleanup: hackish...
 
-    MethodSigInfoPairValue key;
-    ZeroMemory(&key, sizeof(MethodSigInfoPairValue)); // We use the input structs as a key and use memcmp to
+    MethodOrSigInfoValue key;
+    ZeroMemory(&key, sizeof(MethodOrSigInfoValue)); // We use the input structs as a key and use memcmp to
                                                       // compare.. so we need to zero out padding too
 
     key.method     = (DWORDLONG)method;
@@ -3787,10 +3787,10 @@ void MethodContext::recGetUnmanagedCallConv(CORINFO_METHOD_HANDLE    method,
                                              bool suppressGCTransitionResult)
 {
     if (GetUnmanagedCallConv == nullptr)
-        GetUnmanagedCallConv = new LightWeightMap<MethodSigInfoPairValue, DD>();
+        GetUnmanagedCallConv = new LightWeightMap<MethodOrSigInfoValue, DD>();
 
-    MethodSigInfoPairValue key;
-    ZeroMemory(&key, sizeof(MethodSigInfoPairValue)); // We use the input structs as a key and use memcmp to
+    MethodOrSigInfoValue key;
+    ZeroMemory(&key, sizeof(MethodOrSigInfoValue)); // We use the input structs as a key and use memcmp to
                                                               // compare.. so we need to zero out padding too
 
     key.method     = (DWORDLONG)method;
@@ -3801,7 +3801,7 @@ void MethodContext::recGetUnmanagedCallConv(CORINFO_METHOD_HANDLE    method,
     GetUnmanagedCallConv->Add(key, { (DWORD)result, (DWORD)suppressGCTransitionResult });
     DEBUG_REC(dmpGetUnmanagedCallConv(key, { (DWORD)result, (DWORD)suppressGCTransitionResult }));
 }
-void MethodContext::dmpGetUnmanagedCallConv(const MethodSigInfoPairValue& key, DD value)
+void MethodContext::dmpGetUnmanagedCallConv(const MethodOrSigInfoValue& key, DD value)
 {
     printf("GetUnmanagedCallConv key mth-%016llX scp-%016llX sig-%u, value res-%u,%u", key.method, key.scope,
            key.pSig_Index, value.A, value.B);
@@ -3820,8 +3820,8 @@ CorInfoCallConvExtension MethodContext::repGetUnmanagedCallConv(CORINFO_METHOD_H
 #endif
     }
 
-    MethodSigInfoPairValue key;
-    ZeroMemory(&key, sizeof(MethodSigInfoPairValue)); // We use the input structs as a key and use memcmp to
+    MethodOrSigInfoValue key;
+    ZeroMemory(&key, sizeof(MethodOrSigInfoValue)); // We use the input structs as a key and use memcmp to
                                                       // compare.. so we need to zero out padding too
 
     key.method     = (DWORDLONG)method;
