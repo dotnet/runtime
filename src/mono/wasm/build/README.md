@@ -34,4 +34,7 @@ The various task inputs correspond to properties as:
   MicrosoftNetCoreAppRuntimePackDir : $(MicrosoftNetCoreAppRuntimePackRidDir)
 ```
 
+- `run-v8.sh` script is emitted to `$(WasmRunV8ScriptPath)` which defaults to `$(WasmAppDir)`.
+    - To control it's generation use `$(WasmGenerateRunV8Script)` (false by default)
+
 This should be a step towards eventually having this build as a sdk.
