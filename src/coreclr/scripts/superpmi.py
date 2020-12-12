@@ -280,13 +280,9 @@ asm_diff_parser = subparsers.add_parser("asmdiffs", description=asm_diff_descrip
 # Add required arguments
 asm_diff_parser.add_argument("-base_jit_path", help="Path to baseline clrjit. Defaults to baseline JIT from rolling build, by computing baseline git hash.")
 asm_diff_parser.add_argument("-diff_jit_path", help="Path to diff clrjit. Defaults to Core_Root JIT.")
-asm_diff_parser.add_argument("-git_hash", help="Use this git hash as the current to use to find a baseline JIT. Defaults to current git hash of source tree.")
+asm_diff_parser.add_argument("-git_hash", help="Use this git hash as the current hash for use to find a baseline JIT. Defaults to current git hash of source tree.")
 asm_diff_parser.add_argument("-base_git_hash", help="Use this git hash as the baseline JIT hash. Default: search for the baseline hash.")
-
-asm_diff_parser.add_argument("--diff_with_code", action="store_true", help="Invoke Visual Studio Code to view any diffs.")
-asm_diff_parser.add_argument("--diff_with_code_only", action="store_true", help="Invoke Visual Studio Code to view any diffs. Only run the diff command, do not run SuperPMI to regenerate diffs.")
 asm_diff_parser.add_argument("--diff_jit_dump", action="store_true", help="Generate JitDump output for diffs. Default: only generate asm, not JitDump.")
-asm_diff_parser.add_argument("--diff_jit_dump_only", action="store_true", help="Only diff JitDump output, not asm.")
 asm_diff_parser.add_argument("-temp_dir", help="Specify a temporary directory used for a previous ASM diffs run (for which --skip_cleanup was used) to view the results. The replay command is skipped.")
 asm_diff_parser.add_argument("--gcinfo", action="store_true", help="Include GC info in disassembly (sets COMPlus_JitGCDump/COMPlus_NgenGCDump; requires instructions to be prefixed by offsets).")
 
@@ -1309,9 +1305,9 @@ class SuperPMIReplayAsmDiffs:
                 fail_mcl_file = os.path.join(temp_location, os.path.basename(mch_file) + "_fail.mcl")
                 diff_mcl_file = os.path.join(temp_location, os.path.basename(mch_file) + "_diff.mcl")
 
-                # If the user passed -temp_dir or --diff_with_code_only, we skip the SuperPMI replay process,
+                # If the user passed -temp_dir, we skip the SuperPMI replay process,
                 # and rely on what we find from a previous run.
-                if self.coreclr_args.temp_dir is not None or self.coreclr_args.diff_with_code_only:
+                if self.coreclr_args.temp_dir is not None:
                     return_code = 1
                 else:
                     flags = [
@@ -1359,7 +1355,7 @@ class SuperPMIReplayAsmDiffs:
                 # There were diffs. Go through each method that created diffs and
                 # create a base/diff asm file with diffable asm. In addition, create
                 # a standalone .mc for easy iteration.
-                if is_nonzero_length_file(diff_mcl_file) or self.coreclr_args.diff_with_code_only:
+                if is_nonzero_length_file(diff_mcl_file):
                     # AsmDiffs. Save the contents of the fail.mcl file to dig into failures.
 
                     if return_code == 0:
@@ -1368,36 +1364,25 @@ class SuperPMIReplayAsmDiffs:
                     # This file had asm diffs; keep track of that.
                     files_with_asm_diffs.append(mch_file)
 
-                    if not self.coreclr_args.diff_with_code_only:
-                        self.diff_mcl_contents = None
-                        with open(diff_mcl_file) as file_handle:
-                            mcl_lines = file_handle.readlines()
-                            mcl_lines = [item.strip() for item in mcl_lines]
-                            self.diff_mcl_contents = mcl_lines
+                    self.diff_mcl_contents = None
+                    with open(diff_mcl_file) as file_handle:
+                        mcl_lines = file_handle.readlines()
+                        mcl_lines = [item.strip() for item in mcl_lines]
+                        self.diff_mcl_contents = mcl_lines
 
                     asm_root_dir = create_unique_directory_name(self.coreclr_args.spmi_location, "asm.{}.{}.{}".format(self.coreclr_args.host_os, self.coreclr_args.arch, self.coreclr_args.build_type))
                     base_asm_location = os.path.join(asm_root_dir, "base")
                     diff_asm_location = os.path.join(asm_root_dir, "diff")
+                    os.makedirs(base_asm_location)
+                    os.makedirs(diff_asm_location)
 
-                    if not self.coreclr_args.diff_with_code_only:
-                        # Create a diff and baseline directory
-                        assert not os.path.isdir(base_asm_location)
-                        assert not os.path.isdir(diff_asm_location)
-
-                        os.makedirs(base_asm_location)
-                        os.makedirs(diff_asm_location)
-
-                        if self.coreclr_args.diff_jit_dump:
-                            # If JIT dumps are requested, create a diff and baseline directory for JIT dumps
-                            jitdump_root_dir = create_unique_directory_name(self.coreclr_args.spmi_location, "jitdump.{}.{}.{}".format(self.coreclr_args.host_os, self.coreclr_args.arch, self.coreclr_args.build_type))
-                            base_dump_location = os.path.join(jitdump_root_dir, "base")
-                            diff_dump_location = os.path.join(jitdump_root_dir, "diff")
-
-                            assert not os.path.isdir(base_dump_location)
-                            assert not os.path.isdir(diff_dump_location)
-
-                            os.makedirs(base_dump_location)
-                            os.makedirs(diff_dump_location)
+                    if self.coreclr_args.diff_jit_dump:
+                        # If JIT dumps are requested, create a diff and baseline directory for JIT dumps
+                        jitdump_root_dir = create_unique_directory_name(self.coreclr_args.spmi_location, "jitdump.{}.{}.{}".format(self.coreclr_args.host_os, self.coreclr_args.arch, self.coreclr_args.build_type))
+                        base_dump_location = os.path.join(jitdump_root_dir, "base")
+                        diff_dump_location = os.path.join(jitdump_root_dir, "diff")
+                        os.makedirs(base_dump_location)
+                        os.makedirs(diff_dump_location)
 
                     text_differences = queue.Queue()
                     jit_dump_differences = queue.Queue()
@@ -1441,83 +1426,37 @@ class SuperPMIReplayAsmDiffs:
                                 jit_differences_queue.put_nowait(item)
                     ################################################################################################ end of create_replay_artifacts()
 
-                    if not self.coreclr_args.diff_with_code_only:
-                        diff_items = []
-                        for item in self.diff_mcl_contents:
-                            diff_items.append(item)
+                    diff_items = []
+                    for item in self.diff_mcl_contents:
+                        diff_items.append(item)
 
-                        logging.info("Creating dasm files")
-                        subproc_helper = AsyncSubprocessHelper(diff_items, verbose=True)
-                        subproc_helper.run_to_completion(create_replay_artifacts, self, mch_file, asm_complus_vars, text_differences, base_asm_location, diff_asm_location, ".dasm")
+                    logging.info("Creating dasm files")
+                    subproc_helper = AsyncSubprocessHelper(diff_items, verbose=True)
+                    subproc_helper.run_to_completion(create_replay_artifacts, self, mch_file, asm_complus_vars, text_differences, base_asm_location, diff_asm_location, ".dasm")
 
-                        if self.coreclr_args.diff_jit_dump:
-                            logging.info("Creating JitDump files")
-                            subproc_helper.run_to_completion(create_replay_artifacts, self, mch_file, jit_dump_complus_vars, jit_dump_differences, base_dump_location, diff_dump_location, ".txt")
+                    if self.coreclr_args.diff_jit_dump:
+                        logging.info("Creating JitDump files")
+                        subproc_helper.run_to_completion(create_replay_artifacts, self, mch_file, jit_dump_complus_vars, jit_dump_differences, base_dump_location, diff_dump_location, ".txt")
 
-                        logging.info("Differences found. To replay SuperPMI use:")
+                    logging.info("Differences found. To replay SuperPMI use:")
+                    logging.info("")
+                    for var, value in asm_complus_vars.items():
+                        print_platform_specific_environment_vars(logging.INFO, self.coreclr_args, var, value)
+                    logging.info("%s %s -c ### %s %s", self.superpmi_path, " ".join(altjit_replay_flags), self.diff_jit_path, mch_file)
+                    logging.info("")
+
+                    if self.coreclr_args.diff_jit_dump:
+                        logging.info("To generate JitDump with SuperPMI use:")
                         logging.info("")
-                        for var, value in asm_complus_vars.items():
+                        for var, value in jit_dump_complus_vars.items():
                             print_platform_specific_environment_vars(logging.INFO, self.coreclr_args, var, value)
                         logging.info("%s %s -c ### %s %s", self.superpmi_path, " ".join(altjit_replay_flags), self.diff_jit_path, mch_file)
                         logging.info("")
 
-                        if self.coreclr_args.diff_jit_dump:
-                            logging.info("To generate JitDump with SuperPMI use:")
-                            logging.info("")
-                            for var, value in jit_dump_complus_vars.items():
-                                print_platform_specific_environment_vars(logging.INFO, self.coreclr_args, var, value)
-                            logging.info("%s %s -c ### %s %s", self.superpmi_path, " ".join(altjit_replay_flags), self.diff_jit_path, mch_file)
-                            logging.info("")
-
-                        logging.debug("Method numbers with binary differences:")
-                        for item in self.diff_mcl_contents:
-                            logging.debug(item)
-                        logging.debug("")
-
-                    else:
-                        # This is the `--diff_with_code_only` path.
-                        # We have already generated asm under <coreclr_bin_path>/asm/base and <coreclr_bin_path>/asm/diff
-                        for item in os.listdir(base_asm_location):
-                            base_asm_file = os.path.join(base_asm_location, item)
-                            diff_asm_file = os.path.join(diff_asm_location, item)
-
-                            base_txt = None
-                            diff_txt = None
-
-                            # Every file should have a diff asm file.
-                            assert os.path.isfile(diff_asm_file)
-
-                            with open(base_asm_file) as file_handle:
-                                base_txt = file_handle.read()
-
-                            with open(diff_asm_file) as file_handle:
-                                diff_txt = file_handle.read()
-
-                            if base_txt != diff_txt:
-                                text_differences.put_nowait(item[:-4])
-
-                        if self.coreclr_args.diff_jit_dump:
-                            for item in os.listdir(base_dump_location):
-                                base_dump_file = os.path.join(base_dump_location, item)
-                                diff_dump_file = os.path.join(diff_dump_location, item)
-
-                                base_txt = None
-                                diff_txt = None
-
-                                # Every file should have a diff asm file.
-                                assert os.path.isfile(diff_dump_file)
-
-                                with open(base_dump_file) as file_handle:
-                                    base_txt = file_handle.read()
-
-                                with open(diff_dump_file) as file_handle:
-                                    diff_txt = file_handle.read()
-
-                                if base_txt != diff_txt:
-                                    jit_dump_differences.put_nowait(item[:-4])
-
-                    # Limit the number of diffs we'll show in VS Code.
-                    max_vscode_diff_file_display = 3
+                    logging.debug("Method numbers with binary differences:")
+                    for item in self.diff_mcl_contents:
+                        logging.debug(item)
+                    logging.debug("")
 
                     try:
                         current_text_diff = text_differences.get_nowait()
@@ -1545,27 +1484,6 @@ class SuperPMIReplayAsmDiffs:
                             logging.info("jit-analyze not found on PATH. Generate a diff analysis report by building jit-analyze from https://github.com/dotnet/jitutils and running:")
                             logging.info("    jit-analyze -r --base %s --diff %s", base_asm_location, diff_asm_location)
 
-                        if self.coreclr_args.diff_with_code and not self.coreclr_args.diff_jit_dump_only:
-                            # Open VS Code on the diffs.
-                            batch_command = ["cmd", "/c"] if platform.system() == "Windows" else []
-                            index = 1
-                            while current_text_diff is not None:
-                                command = batch_command + [
-                                    "code",
-                                    "-d",
-                                    os.path.join(base_asm_location, "{}.dasm".format(current_text_diff)),
-                                    os.path.join(diff_asm_location, "{}.dasm".format(current_text_diff))
-                                ]
-                                run_and_log(command)
-
-                                if index >= max_vscode_diff_file_display:
-                                    break
-
-                                try:
-                                    current_text_diff = text_differences.get_nowait()
-                                except:
-                                    current_text_diff = None
-                                index += 1
                     else:
                         logging.warning("No textual differences. Is this an issue with coredistools?")
 
@@ -1579,28 +1497,9 @@ class SuperPMIReplayAsmDiffs:
 
                         if current_jit_dump_diff is not None:
                             logging.info("Textual differences found in generated JitDump.")
+                        else:
+                            logging.warning("No textual differences found in generated JitDump. Is this an issue with coredistools?")
 
-                            if self.coreclr_args.diff_with_code:
-                                # Open VS Code on the diffs. Only do this for the first 6.
-                                batch_command = ["cmd", "/c"] if platform.system() == "Windows" else []
-                                index = 1
-                                while current_jit_dump_diff is not None:
-                                    command = batch_command + [
-                                        "code",
-                                        "-d",
-                                        os.path.join(base_dump_location, "{}.txt".format(current_jit_dump_diff)),
-                                        os.path.join(diff_dump_location, "{}.txt".format(current_jit_dump_diff))
-                                    ]
-                                    run_and_log(command)
-
-                                    if index >= max_vscode_diff_file_display:
-                                        break
-
-                                    try:
-                                        current_jit_dump_diff = jit_dump_differences.get_nowait()
-                                    except:
-                                        current_jit_dump_diff = None
-                                    index += 1
                 ################################################################################################ end of processing asm diffs (if is_nonzero_length_file(diff_mcl_file)...
 
                 if not self.coreclr_args.skip_cleanup:
@@ -2921,16 +2820,6 @@ def setup_args(args):
                             "Unable to set base_git_hash")
 
         coreclr_args.verify(args,
-                            "diff_with_code",
-                            lambda unused: True,
-                            "Unable to set diff_with_code.")
-
-        coreclr_args.verify(args,
-                            "diff_with_code_only",
-                            lambda unused: True,
-                            "Unable to set diff_with_code_only.")
-
-        coreclr_args.verify(args,
                             "temp_dir",
                             lambda unused: True,
                             "Unable to set temp_dir.")
@@ -2940,29 +2829,10 @@ def setup_args(args):
                             lambda unused: True,
                             "Unable to set gcinfo.")
 
-        if coreclr_args.diff_with_code_only:
-            # Set diff with code if we are not running SuperPMI to regenerate diffs.
-            # This avoids having to re-run generating asm diffs.
-            coreclr_args.verify(True,
-                                "diff_with_code",
-                                lambda unused: True,
-                                "Unable to set diff_with_code.")
-
         coreclr_args.verify(args,
                             "diff_jit_dump",
                             lambda unused: True,
                             "Unable to set diff_jit_dump.")
-
-        coreclr_args.verify(args,
-                            "diff_jit_dump_only",
-                            lambda unused: True,
-                            "Unable to set diff_jit_dump_only.")
-
-        if coreclr_args.diff_jit_dump_only:
-            coreclr_args.verify(True,                          # force `diff_jit_dump` to True
-                                "diff_jit_dump",
-                                lambda unused: True,
-                                "Unable to set diff_jit_dump.")
 
         process_base_jit_path_arg(coreclr_args)
 
