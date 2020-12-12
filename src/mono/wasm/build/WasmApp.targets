@@ -36,20 +36,25 @@
       <Output TaskParameter="FileWrites" ItemName="FileWrites" />
     </WasmAppBuilder>
 
+    <CallTarget Targets="_GenerateRunV8Script" Condition="'$(WasmGenerateRunV8Script)' == 'true'" />
+  </Target>
+
+  <Target Name="_GenerateRunV8Script">
+    <PropertyGroup>
+      <WasmRunV8ScriptPath Condition="'$(WasmRunV8ScriptPath)' == ''">$(WasmAppDir)\run-v8.sh</WasmRunV8ScriptPath>
+    </PropertyGroup>
+
     <WriteLinesToFile
-      Condition="'$(WasmRunV8ScriptPath)' != ''"
       File="$(WasmRunV8ScriptPath)"
       Lines="v8 --expose_wasm runtime.js -- --run $(WasmMainAssemblyPath) $*"
       Overwrite="true">
     </WriteLinesToFile>
 
     <ItemGroup>
-      <FileWrites Include="$(WasmRunV8ScriptPath)" Condition="'$(WasmRunV8ScriptPath)' != ''" />
+      <FileWrites Include="$(WasmRunV8ScriptPath)" />
     </ItemGroup>
 
-    <Exec
-      Condition="'$(WasmRunV8ScriptPath)' != ''"
-      Command="chmod a+x $(WasmRunV8ScriptPath)" />
+    <Exec Command="chmod a+x $(WasmRunV8ScriptPath)" />
   </Target>
 
   <Target Name="RebuildWasmAppBuilder">
