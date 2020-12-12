@@ -46,7 +46,7 @@
 
     <WriteLinesToFile
       File="$(WasmRunV8ScriptPath)"
-      Lines="v8 --expose_wasm runtime.js -- --run $(WasmMainAssemblyPath) $*"
+      Lines="v8 --expose_wasm runtime.js -- --run $([System.IO.Path]::GetFileName('$(WasmMainAssemblyPath)')) $*"
       Overwrite="true">
     </WriteLinesToFile>
 
