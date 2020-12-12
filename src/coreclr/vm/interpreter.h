@@ -142,16 +142,6 @@ enum CorInfoTypeShifted
     CORINFO_TYPE_SHIFTED_VAR        = unsigned(CORINFO_TYPE_VAR)        << 2,    //0x16 << 2 = 0x58
 };
 
-enum CorInfoUnmanagedCallConv
-{
-    // Corresponds to the unmanaged calling conventions specified in metadata.
-    // Equivalent to the CorUnmanagedCallingConvention enum
-    CORINFO_CALLCONV_C          = 0x1,
-    CORINFO_CALLCONV_STDCALL    = 0x2,
-    CORINFO_CALLCONV_THISCALL   = 0x3,
-    CORINFO_CALLCONV_FASTCALL   = 0x4,
-};
-
 class InterpreterType
 {
     // We use this typedef, but the InterpreterType is actually encoded.  We assume that the two
