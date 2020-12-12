@@ -154,6 +154,7 @@
       <WasmMainAssemblyPath>$(PublishDir)WasmTestRunner.dll</WasmMainAssemblyPath>
       <WasmMainJSPath>$(MonoProjectRoot)\wasm\runtime-test.js</WasmMainJSPath>
       <WasmInvariantGlobalization>$(InvariantGlobalization)</WasmInvariantGlobalization>
+      <WasmRunV8ScriptPath Condition="'$(JSEngine)' == 'V8'">$(WasmAppDir)run-v8.sh</WasmRunV8ScriptPath>
     </PropertyGroup>
 
     <ItemGroup>

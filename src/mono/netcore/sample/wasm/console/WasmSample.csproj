@@ -95,6 +95,7 @@
     <PropertyGroup>
       <WasmAppDir>$(AppDir)</WasmAppDir>
       <WasmMainJSPath>$(MonoProjectRoot)\wasm\runtime-test.js</WasmMainJSPath>
+      <WasmRunV8ScriptPath>$(AppDir)run-v8.sh</WasmRunV8ScriptPath>
     </PropertyGroup>
 
     <ItemGroup>
