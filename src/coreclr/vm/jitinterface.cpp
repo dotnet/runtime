@@ -8916,7 +8916,7 @@ bool CEEInfo::resolveVirtualMethodHelper(CORINFO_DEVIRTUALIZATION_INFO * info)
             TypeHandle OwnerClsHnd = GetTypeFromContext(info->context);
             pOwnerMT = OwnerClsHnd.GetMethodTable();
 
-            if (!canCastStraightForward && !(pOwnerMT->IsInterface() && pDerivedMT->CanCastToInterface(pOwnerMT)))
+            if (!canCastStraightForward && !(pOwnerMT->IsInterface() && pObjMT->CanCastToInterface(pOwnerMT)))
             {
                 return false;
             }

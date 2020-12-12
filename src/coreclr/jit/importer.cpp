@@ -21295,8 +21295,8 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
     // check wheter we have returned an instantiating stub for generic DIM
     if ((isInterface && dvInfo.requiresInstMethodTableArg) || passExtraArgForValueType)
     {
-        assert(((SIZE_T)ownerType & CORINFO_CONTEXTFLAGS_MASK) == CORINFO_CONTEXTFLAGS_CLASS);
-        CORINFO_CLASS_HANDLE exactClassHandle = eeGetClassFromContext(ownerType);
+        assert(((SIZE_T)dvInfo.context & CORINFO_CONTEXTFLAGS_MASK) == CORINFO_CONTEXTFLAGS_CLASS);
+        CORINFO_CLASS_HANDLE exactClassHandle = eeGetClassFromContext(dvInfo.context);
         GenTree*             instParam        = gtNewIconEmbClsHndNode(exactClassHandle);
         call->gtCallMethHnd                   = derivedMethod;
         if ((Target::g_tgtArgOrder == Target::ARG_ORDER_R2L) || (call->gtCallArgs == nullptr))

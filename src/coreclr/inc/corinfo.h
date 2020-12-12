@@ -698,6 +698,8 @@ inline bool IsCallerPop(CorInfoCallConv callConv)
 }
 #endif // UNIX_X86_ABI
 
+// Represents the calling conventions supported with the extensible calling convention syntax
+// as well as the original metadata-encoded calling conventions.
 enum CorInfoUnmanagedCallConv
 {
     // These correspond to CorUnmanagedCallingConvention
@@ -3107,6 +3109,7 @@ public:
                     bool fMustConvert
                     ) = 0;
 
+    // Notify EE about intent to use or not to use instruction set in the method. Returns true if the instruction set is supported unconditionally.
     virtual bool notifyInstructionSetUsage(
                 CORINFO_InstructionSet instructionSet,
                 bool supportEnabled

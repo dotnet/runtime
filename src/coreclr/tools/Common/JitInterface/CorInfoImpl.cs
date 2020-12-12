@@ -2720,7 +2720,7 @@ namespace Internal.JitInterface
             ppIndirection = null;
             return null;
         }
-        private void GetProfilingHandle(ref bool pbHookFunction, ref void* pProfilerHandle, BOOL* pbIndirectedHandles)
+        private void GetProfilingHandle(ref bool pbHookFunction, ref void* pProfilerHandle, ref bool pbIndirectedHandles)
         { throw new NotImplementedException("GetProfilingHandle"); }
 
         /// <summary>

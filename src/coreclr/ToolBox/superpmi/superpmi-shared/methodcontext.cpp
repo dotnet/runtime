@@ -1474,9 +1474,9 @@ void MethodContext::repGetCallInfo(CORINFO_RESOLVED_TOKEN* pResolvedToken,
     }
     pResult->thisTransform                            = (CORINFO_THIS_TRANSFORM)value.thisTransform;
     pResult->kind                                     = (CORINFO_CALL_KIND)value.kind;
-    pResult->nullInstanceCheck                        = (bool)value.nullInstanceCheck;
+    pResult->nullInstanceCheck                        = (BOOL)value.nullInstanceCheck;
     pResult->contextHandle                            = (CORINFO_CONTEXT_HANDLE)value.contextHandle;
-    pResult->exactContextNeedsRuntimeLookup           = (bool)value.exactContextNeedsRuntimeLookup;
+    pResult->exactContextNeedsRuntimeLookup           = (BOOL)value.exactContextNeedsRuntimeLookup;
     pResult->stubLookup.lookupKind.needsRuntimeLookup = value.stubLookup.lookupKind.needsRuntimeLookup != 0;
     pResult->stubLookup.lookupKind.runtimeLookupKind =
         (CORINFO_RUNTIME_LOOKUP_KIND)value.stubLookup.lookupKind.runtimeLookupKind;
@@ -1496,7 +1496,7 @@ void MethodContext::repGetCallInfo(CORINFO_RESOLVED_TOKEN* pResolvedToken,
     }
     pResult->instParamLookup.accessType = (InfoAccessType)value.instParamLookup.accessType;
     pResult->instParamLookup.handle     = (CORINFO_GENERIC_HANDLE)value.instParamLookup.handle;
-    pResult->wrapperDelegateInvoke       = (bool)value.wrapperDelegateInvoke;
+    pResult->wrapperDelegateInvoke       = (BOOL)value.wrapperDelegateInvoke;
     *exceptionCode                      = (DWORD)value.exceptionCode;
 
     DEBUG_REP(dmpGetCallInfo(key, value));
@@ -1619,7 +1619,7 @@ bool MethodContext::repIsIntrinsicType(CORINFO_CLASS_HANDLE cls)
     AssertCodeMsg(IsIntrinsicType != nullptr, EXCEPTIONCODE_MC, "Didn't find anything for %016llX", (DWORDLONG)cls);
     AssertCodeMsg(IsIntrinsicType->GetIndex((DWORDLONG)cls) != -1, EXCEPTIONCODE_MC, "Didn't find %016llX",
                   (DWORDLONG)cls);
-    bool result = (bool)IsIntrinsicType->Get((DWORDLONG)cls);
+    bool result = (BOOL)IsIntrinsicType->Get((DWORDLONG)cls);
     DEBUG_REP(dmpIsIntrinsicType((DWORDLONG)cls, (DWORD)result));
     return result;
 }
@@ -1691,7 +1691,7 @@ bool MethodContext::repIsValueClass(CORINFO_CLASS_HANDLE cls)
     AssertCodeMsg((IsValueClass != nullptr) && (IsValueClass->GetIndex((DWORDLONG)cls) != -1), EXCEPTIONCODE_MC,
                   "Didn't find %016llX", (DWORDLONG)cls);
 
-    bool result = (bool)IsValueClass->Get((DWORDLONG)cls);
+    bool result = (BOOL)IsValueClass->Get((DWORDLONG)cls);
     DEBUG_REP(dmpIsValueClass((DWORDLONG)cls, (DWORD)result));
     return result;
 }
@@ -1715,7 +1715,7 @@ bool MethodContext::repIsStructRequiringStackAllocRetBuf(CORINFO_CLASS_HANDLE cl
                   (DWORDLONG)cls);
     AssertCodeMsg(IsStructRequiringStackAllocRetBuf->GetIndex((DWORDLONG)cls) != -1, EXCEPTIONCODE_MC,
                   "Didn't find %016llX", (DWORDLONG)cls);
-    bool result = (bool)IsStructRequiringStackAllocRetBuf->Get((DWORDLONG)cls);
+    bool result = (BOOL)IsStructRequiringStackAllocRetBuf->Get((DWORDLONG)cls);
     DEBUG_REP(dmpIsStructRequiringStackAllocRetBuf((DWORDLONG)cls, (DWORD)result));
     return result;
 }
@@ -1781,7 +1781,7 @@ bool MethodContext::repCanAllocateOnStack(CORINFO_CLASS_HANDLE cls)
     AssertCodeMsg(CanAllocateOnStack != nullptr, EXCEPTIONCODE_MC, "Didn't find %016llX", (DWORDLONG)cls);
     AssertCodeMsg(CanAllocateOnStack->GetIndex((DWORDLONG)cls) != -1, EXCEPTIONCODE_MC, "Didn't find %016llX",
                   (DWORDLONG)cls);
-    bool result = (bool)CanAllocateOnStack->Get((DWORDLONG)cls);
+    bool result = (BOOL)CanAllocateOnStack->Get((DWORDLONG)cls);
     DEBUG_REP(dmpCanAllocateOnStack((DWORDLONG)cls, (DWORD)result));
     return result;
 }
@@ -1989,7 +1989,7 @@ bool MethodContext::repIsSDArray(CORINFO_CLASS_HANDLE cls)
 {
     AssertCodeMsg(IsSDArray != nullptr, EXCEPTIONCODE_MC, "Didn't find anything for %016llX", (DWORDLONG)cls);
     AssertCodeMsg(IsSDArray->GetIndex((DWORDLONG)cls) != -1, EXCEPTIONCODE_MC, "Didn't find %016llX", (DWORDLONG)cls);
-    bool temp = (bool)IsSDArray->Get((DWORDLONG)cls);
+    bool temp = (BOOL)IsSDArray->Get((DWORDLONG)cls);
     DEBUG_REP(dmpIsSDArray((DWORDLONG)cls, (DWORD)temp));
     return temp;
 }
@@ -4518,7 +4518,7 @@ bool MethodContext::repSatisfiesMethodConstraints(CORINFO_CLASS_HANDLE parent, C
     key.A = (DWORDLONG)parent;
     key.B = (DWORDLONG)method;
 
-    bool value = (bool)SatisfiesMethodConstraints->Get(key);
+    bool value = (BOOL)SatisfiesMethodConstraints->Get(key);
     return value;
 }
 
@@ -4679,7 +4679,7 @@ bool MethodContext::repCanCast(CORINFO_CLASS_HANDLE child, CORINFO_CLASS_HANDLE 
                   (DWORDLONG)child, (DWORDLONG)parent);
     AssertCodeMsg(CanCast->GetIndex(key) != -1, EXCEPTIONCODE_MC, "Didn't find %016llX, %016llX %u in map",
                   (DWORDLONG)child, (DWORDLONG)parent, CanCast->GetCount());
-    bool value = (bool)CanCast->Get(key);
+    bool value = (BOOL)CanCast->Get(key);
     DEBUG_REP(dmpCanCast(key, (DWORD)value));
     return value;
 }
@@ -4820,7 +4820,7 @@ void MethodContext::dmpSatisfiesClassConstraints(DWORDLONG key, DWORD value)
 }
 bool MethodContext::repSatisfiesClassConstraints(CORINFO_CLASS_HANDLE cls)
 {
-    return (bool)SatisfiesClassConstraints->Get((DWORDLONG)cls);
+    return (BOOL)SatisfiesClassConstraints->Get((DWORDLONG)cls);
 }
 
 void MethodContext::recGetMethodHash(CORINFO_METHOD_HANDLE ftn, unsigned result)
@@ -4941,8 +4941,8 @@ bool MethodContext::repIsCompatibleDelegate(CORINFO_CLASS_HANDLE  objCls,
 
     value = IsCompatibleDelegate->Get(key);
 
-    *pfIsOpenDelegate = (bool)value.A;
-    return (bool)value.B;
+    *pfIsOpenDelegate = (BOOL)value.A;
+    return (BOOL)value.B;
 }
 
 void MethodContext::recIsDelegateCreationAllowed(CORINFO_CLASS_HANDLE  delegateHnd,
@@ -4978,7 +4978,7 @@ bool MethodContext::repIsDelegateCreationAllowed(CORINFO_CLASS_HANDLE delegateHn
 
     value = IsDelegateCreationAllowed->Get(key);
 
-    return (bool)value;
+    return (BOOL)value;
 }
 
 void MethodContext::recFindCallSiteSig(CORINFO_MODULE_HANDLE  module,
@@ -5380,7 +5380,7 @@ bool MethodContext::repIsMoreSpecificType(CORINFO_CLASS_HANDLE cls1, CORINFO_CLA
     value = IsMoreSpecificType->Get(key);
 
     DEBUG_REP(dmpIsMoreSpecificType(key, value));
-    return (bool)value;
+    return (BOOL)value;
 }
 
 void MethodContext::recGetCookieForPInvokeCalliSig(CORINFO_SIG_INFO* szMetaSig, void** ppIndirection, LPVOID result)
@@ -5486,7 +5486,7 @@ bool MethodContext::repCanAccessFamily(CORINFO_METHOD_HANDLE hCaller, CORINFO_CL
     key.B = (DWORDLONG)hInstanceType;
 
     DWORD temp = CanAccessFamily->Get(key);
-    return (bool)temp;
+    return (BOOL)temp;
 }
 
 void MethodContext::recErrorList(const char* error)
@@ -5532,9 +5532,9 @@ void MethodContext::repGetProfilingHandle(bool* pbHookFunction, void** pProfiler
 
     value = GetProfilingHandle->Get((DWORD)0);
 
-    *pbHookFunction      = (bool)value.bHookFunction;
+    *pbHookFunction      = (BOOL)value.bHookFunction;
     *pProfilerHandle     = (void*)value.ProfilerHandle;
-    *pbIndirectedHandles = (bool)value.bIndirectedHandles;
+    *pbIndirectedHandles = (BOOL)value.bIndirectedHandles;
     DEBUG_REP(dmpGetProfilingHandle(0, value));
 }
 
@@ -5595,7 +5595,7 @@ bool MethodContext::repAreTypesEquivalent(CORINFO_CLASS_HANDLE cls1, CORINFO_CLA
 
     AssertCodeMsg(AreTypesEquivalent->GetIndex(key) != -1, EXCEPTIONCODE_MC, "Didn't find %016llX %016llX",
                   (DWORDLONG)cls1, (DWORDLONG)cls2);
-    bool value = (bool)AreTypesEquivalent->Get(key);
+    bool value = (BOOL)AreTypesEquivalent->Get(key);
     return value;
 }
 
@@ -5877,7 +5877,7 @@ bool MethodContext::repIsValidToken(CORINFO_MODULE_HANDLE module, unsigned metaT
 
     key.A      = (DWORDLONG)module;
     key.B      = (DWORD)metaTOK;
-    bool value = (bool)IsValidToken->Get(key);
+    bool value = (BOOL)IsValidToken->Get(key);
     return value;
 }
 
@@ -6209,7 +6209,7 @@ bool MethodContext::repCheckMethodModifier(CORINFO_METHOD_HANDLE hMethod, LPCSTR
 
     key.fOptional = (DWORD)fOptional;
 
-    bool value = (bool)CheckMethodModifier->Get(key);
+    bool value = (BOOL)CheckMethodModifier->Get(key);
     return value;
 }
 
@@ -6246,7 +6246,7 @@ bool MethodContext::repIsFieldStatic(CORINFO_FIELD_HANDLE fhld)
     AssertCodeMsg(IsFieldStatic != nullptr, EXCEPTIONCODE_MC, "Didn't find anything for %016llX", (DWORDLONG)fhld);
     AssertCodeMsg(IsFieldStatic->GetIndex((DWORDLONG)fhld) != -1, EXCEPTIONCODE_MC, "Didn't find %016llX",
                   (DWORDLONG)fhld);
-    bool result = (bool)(IsFieldStatic->Get((DWORDLONG)fhld) != 0);
+    bool result = (BOOL)(IsFieldStatic->Get((DWORDLONG)fhld) != 0);
     DEBUG_REP(dmpIsFieldStatic((DWORDLONG)fhld, (DWORD)result));
     return result;
 }
