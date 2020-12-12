@@ -132,7 +132,7 @@ namespace Tracing.Tests.DiagnosticPortValidation
                         Logger.logger.Log($"Creating EventPipeEventSource");
                         using var source = new EventPipeEventSource(proxiedStream);
                         var parser = new ClrPrivateTraceEventParser(source);
-                        parser.StartupEEStartupStart += (eventData) => tcs.SetResult(true);
+                        parser.StartupEEStartupStart += (eventData) => Task.Run(() => tcs.SetResult(true));
                         Logger.logger.Log($"Created EventPipeEventSource");
                         Logger.logger.Log($"Starting processing");
                         await Task.Run(() => source.Process());
@@ -241,7 +241,7 @@ namespace Tracing.Tests.DiagnosticPortValidation
                         Logger.logger.Log($"Creating EventPipeEventSource");
                         using var source = new EventPipeEventSource(eventStream);
                         var parser = new ClrPrivateTraceEventParser(source);
-                        parser.StartupEEStartupStart += (eventData) => tcs.SetResult(true);
+                        parser.StartupEEStartupStart += (eventData) => Task.Run(() => tcs.SetResult(true));
                         Logger.logger.Log($"Created EventPipeEventSource");
                         Logger.logger.Log($"Starting processing");
                         await Task.Run(() => source.Process());
@@ -408,8 +408,8 @@ namespace Tracing.Tests.DiagnosticPortValidation
             if (!IpcTraceTest.EnsureCleanEnvironment())
                 return -1;
             IEnumerable<MethodInfo> tests = typeof(DiagnosticPortValidation).GetMethods().Where(mi => mi.Name.StartsWith("TEST_"));
-            // run these tests 100 times to try and hit the failure!
-            for (int i = 0; i < 100; i++)
+            // run these tests 25 times to try and hit the failure!
+            for (int i = 0; i < 25; i++)
             {
                 foreach (var test in tests)
                 {
