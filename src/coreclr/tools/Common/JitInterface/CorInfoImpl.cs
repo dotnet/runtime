@@ -1055,32 +1055,21 @@ namespace Internal.JitInterface
                 MethodSignatureFlags.UnmanagedCallingConventionStdCall : MethodSignatureFlags.UnmanagedCallingConventionCdecl;
         }
 
-        private CorInfoCallConvExtension getUnmanagedCallConv(CORINFO_METHOD_STRUCT_* method, CORINFO_SIG_INFO* sig, byte* pSuppressGCTransition)
+        private CorInfoCallConvExtension getUnmanagedCallConv(CORINFO_METHOD_STRUCT_* method, CORINFO_SIG_INFO* sig, ref bool pSuppressGCTransition)
         {
-            if (pSuppressGCTransition != null)
-            {
-                *pSuppressGCTransition = 0;
-            }
+            pSuppressGCTransition = false;
 
             if (method != null)
             {
                 MethodDesc methodDesc = HandleToObject(method);
-                CorInfoCallConvExtension callConv = GetUnmanagedCallConv(HandleToObject(method), out bool suppressGCTransition);
-                if (pSuppressGCTransition != null)
-                {
-                    *pSuppressGCTransition = suppressGCTransition ? 1 : 0;
-                }
+                CorInfoCallConvExtension callConv = GetUnmanagedCallConv(HandleToObject(method), out pSuppressGCTransition);
                 return callConv;
             }
             else
             {
                 Debug.Assert(sig != null);
 
-                CorInfoCallConvExtension callConv = GetUnmanagedCallConv((MethodSignature)HandleToObject((IntPtr)sig->pSig), (MethodIL)HandleToObject((IntPtr)sig->scope), out bool suppressGCTransition);
-                if (pSuppressGCTransition != null)
-                {
-                    *pSuppressGCTransition = suppressGCTransition ? 1 : 0;
-                }
+                CorInfoCallConvExtension callConv = GetUnmanagedCallConv((MethodSignature)HandleToObject((IntPtr)sig->pSig), (MethodIL)HandleToObject((IntPtr)sig->scope), out pSuppressGCTransition);
                 return callConv;
             }
         }

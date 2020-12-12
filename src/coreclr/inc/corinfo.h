@@ -2085,7 +2085,7 @@ public:
     virtual CorInfoCallConvExtension getUnmanagedCallConv(
             CORINFO_METHOD_HANDLE       method,
             CORINFO_SIG_INFO*           callSiteSig,
-            bool*                       pSuppressGCTransition = NULL /* OUT */
+            bool*                       pSuppressGCTransition /* OUT */
             ) = 0;
 
     // return if any marshaling is required for PInvoke methods.  Note that

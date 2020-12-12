@@ -6094,7 +6094,8 @@ int Compiler::compCompileHelper(CORINFO_MODULE_HANDLE classPtr,
 
     if (opts.IsReversePInvoke())
     {
-        info.compCallConv = info.compCompHnd->getUnmanagedCallConv(methodInfo->ftn, nullptr);
+        bool unused;
+        info.compCallConv = info.compCompHnd->getUnmanagedCallConv(methodInfo->ftn, nullptr, &unused);
     }
     else
     {
