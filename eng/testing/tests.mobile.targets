@@ -154,7 +154,7 @@
       <WasmMainAssemblyPath>$(PublishDir)WasmTestRunner.dll</WasmMainAssemblyPath>
       <WasmMainJSPath>$(MonoProjectRoot)\wasm\runtime-test.js</WasmMainJSPath>
       <WasmInvariantGlobalization>$(InvariantGlobalization)</WasmInvariantGlobalization>
-      <WasmGenerateRunV8Script Condition="'$(JSEngine)' == 'V8'">true</WasmGenerateRunV8Script>
+      <WasmGenerateRunV8Script Condition="'$(Scenario)' != 'WasmTestOnBrowser'">true</WasmGenerateRunV8Script>
     </PropertyGroup>
 
     <ItemGroup>
