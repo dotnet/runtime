@@ -8,6 +8,8 @@
     <BuildDir>$(MSBuildThisFileDirectory)\obj\$(Configuration)\wasm</BuildDir>
     <AppDir>$(TestBinDir)/WasmApp/</AppDir>
     <NETCoreAppMaximumVersion>99.0</NETCoreAppMaximumVersion>
+
+    <WasmAppBuilderTasksAssemblyPath>$(CORE_ROOT)\WasmAppBuilder\WasmAppBuilder.dll</WasmAppBuilderTasksAssemblyPath>
   </PropertyGroup>
 
   <Target Name="BuildApp" BeforeTargets="WasmBuildApp">
@@ -32,5 +34,5 @@
     <Message Importance="High" Text="ArtifactsBinDir: $(ArtifactsBinDir)" />
   </Target>
 
-  <Import Project="$(MonoProjectRoot)\wasm\build\WasmApp.targets" />
+  <Import Project="$(CORE_ROOT)\build\WasmApp.targets" />
 </Project>
