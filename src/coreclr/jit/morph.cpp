@@ -17185,8 +17185,7 @@ GenTree* Compiler::fgInitThisClass()
                 GenTree* vtTree = gtNewLclvNode(info.compThisArg, TYP_REF);
                 vtTree->gtFlags |= GTF_VAR_CONTEXT;
                 // Vtable pointer of this object
-                vtTree = gtNewOperNode(GT_IND, TYP_I_IMPL, vtTree);
-                vtTree->gtFlags |= GTF_EXCEPT; // Null-pointer exception
+                vtTree             = gtNewMethodTableLookup(vtTree);
                 GenTree* methodHnd = gtNewIconEmbMethHndNode(info.compMethodHnd);
 
                 return gtNewHelperCallNode(CORINFO_HELP_INITINSTCLASS, TYP_VOID, gtNewCallArgs(vtTree, methodHnd));
