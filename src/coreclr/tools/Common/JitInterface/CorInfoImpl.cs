@@ -394,9 +394,9 @@ namespace Internal.JitInterface
 #if READYTORUN
             _profileDataNode = null;
             _inlinedMethods = new ArrayBuilder<MethodDesc>();
-#endif
             _actualInstructionSetSupported = default(InstructionSetFlags);
             _actualInstructionSetUnsupported = default(InstructionSetFlags);
+#endif
         }
 
         private Dictionary<Object, IntPtr> _objectToHandle = new Dictionary<Object, IntPtr>();
@@ -684,21 +684,6 @@ namespace Internal.JitInterface
                         throw new RequiresRuntimeJitException(type);
                     }
 #endif
-#if READYTORUN
-                    if (elementSize.AsInt == 4)
-                    {
-                        var normalizedCategory = _compilation.TypeSystemContext.NormalizedCategoryFor4ByteStructOnX86(type);
-                        if (normalizedCategory != type.Category)
-                        {
-                            if (NeedsTypeLayoutCheck(type))
-                            {
-                                ISymbolNode node = _compilation.SymbolNodeFactory.CheckTypeLayout(type);
-                                _methodCodeNode.Fixups.Add(node);
-                            }
-                            return (CorInfoType)normalizedCategory;
-                        }
-                    }
-#endif
                 }
                 return CorInfoType.CORINFO_TYPE_VALUECLASS;
             }
@@ -858,17 +843,7 @@ namespace Internal.JitInterface
             // Check for hardware intrinsics
             if (HardwareIntrinsicHelpers.IsHardwareIntrinsic(method))
             {
-#if !READYTORUN
-                // Do not report the get_IsSupported method as an intrinsic - RyuJIT would expand it to
-                // a constant depending on the code generation flags passed to it, but we would like to
-                // do a dynamic check instead.
-                if (
-                    !HardwareIntrinsicHelpers.IsIsSupportedMethod(method)
-                    || !_compilation.IsHardwareIntrinsicWithRuntimeDeterminedSupport(method))
-#endif
-                {
-                    result |= CorInfoFlag.CORINFO_FLG_JIT_INTRINSIC;
-                }
+                result |= CorInfoFlag.CORINFO_FLG_JIT_INTRINSIC;
             }
 
             return (uint)result;
@@ -1020,21 +995,16 @@ namespace Internal.JitInterface
             return true;
         }
 
-        private CORINFO_METHOD_STRUCT_* getUnboxedEntry(CORINFO_METHOD_STRUCT_* ftn, byte* requiresInstMethodTableArg)
+        private CORINFO_METHOD_STRUCT_* getUnboxedEntry(CORINFO_METHOD_STRUCT_* ftn, ref bool requiresInstMethodTableArg)
         {
             MethodDesc result = null;
-            bool requiresInstMTArg = false;
+            requiresInstMethodTableArg = false;
 
             MethodDesc method = HandleToObject(ftn);
             if (method.IsUnboxingThunk())
             {
                 result = method.GetUnboxedMethod();
-                requiresInstMTArg = method.RequiresInstMethodTableArg();
-            }
-
-            if (requiresInstMethodTableArg != null)
-            {
-                *requiresInstMethodTableArg = requiresInstMTArg ? (byte)1 : (byte)0;
+                requiresInstMethodTableArg = method.RequiresInstMethodTableArg();
             }
 
             return result != null ? ObjectToHandle(result) : null;
@@ -1076,7 +1046,7 @@ namespace Internal.JitInterface
 
         private bool satisfiesMethodConstraints(CORINFO_CLASS_STRUCT_* parent, CORINFO_METHOD_STRUCT_* method)
         { throw new NotImplementedException("satisfiesMethodConstraints"); }
-        private bool isCompatibleDelegate(CORINFO_CLASS_STRUCT_* objCls, CORINFO_CLASS_STRUCT_* methodParentCls, CORINFO_METHOD_STRUCT_* method, CORINFO_CLASS_STRUCT_* delegateCls, BOOL* pfIsOpenDelegate)
+        private bool isCompatibleDelegate(CORINFO_CLASS_STRUCT_* objCls, CORINFO_CLASS_STRUCT_* methodParentCls, CORINFO_METHOD_STRUCT_* method, CORINFO_CLASS_STRUCT_* delegateCls, ref bool pfIsOpenDelegate)
         { throw new NotImplementedException("isCompatibleDelegate"); }
         private void setPatchpointInfo(PatchpointInfo* patchpointInfo)
         { throw new NotImplementedException("setPatchpointInfo"); }
@@ -2750,7 +2720,7 @@ namespace Internal.JitInterface
             ppIndirection = null;
             return null;
         }
-        private void GetProfilingHandle(BOOL* pbHookFunction, ref void* pProfilerHandle, BOOL* pbIndirectedHandles)
+        private void GetProfilingHandle(ref bool pbHookFunction, ref void* pProfilerHandle, BOOL* pbIndirectedHandles)
         { throw new NotImplementedException("GetProfilingHandle"); }
 
         /// <summary>
@@ -3250,10 +3220,11 @@ namespace Internal.JitInterface
         }
 
 
+#if READYTORUN
         InstructionSetFlags _actualInstructionSetSupported;
         InstructionSetFlags _actualInstructionSetUnsupported;
 
-        private void notifyInstructionSetUsage(InstructionSet instructionSet, bool supportEnabled)
+        private bool notifyInstructionSetUsage(InstructionSet instructionSet, bool supportEnabled)
         {
             if (supportEnabled)
             {
@@ -3261,15 +3232,20 @@ namespace Internal.JitInterface
             }
             else
             {
-#if READYTORUN
                 // By policy we code review all changes into corelib, such that failing to use an instruction
                 // set is not a reason to not support usage of it.
                 if (!isMethodDefinedInCoreLib())
-#endif
                 {
                     _actualInstructionSetUnsupported.AddInstructionSet(instructionSet);
                 }
             }
+            return supportEnabled;
         }
+#else
+        private bool notifyInstructionSetUsage(InstructionSet instructionSet, bool supportEnabled)
+        {
+            return supportEnabled ? _compilation.InstructionSetSupport.IsInstructionSetSupported(instructionSet) : false;
+        }
+#endif
     }
 }

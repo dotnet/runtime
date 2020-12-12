@@ -4817,7 +4817,7 @@ void Compiler::compCompile(void** methodCodePtr, ULONG* methodCodeSize, JitFlags
     {
         // Optimize boolean conditions
         //
-        DoPhase(this, PHASE_OPTIMIZE_boolS, &Compiler::optOptimizeBools);
+        DoPhase(this, PHASE_OPTIMIZE_BOOLS, &Compiler::optOptimizeBools);
 
         // optOptimizeBools() might have changed the number of blocks; the dominators/reachability might be bad.
     }
@@ -9334,9 +9334,9 @@ void cTreeFlags(Compiler* comp, GenTree* tree)
         {
             chars += printf("[DONT_CSE]");
         }
-        if (tree->gtFlags & GTF_boolEAN)
+        if (tree->gtFlags & GTF_BOOLEAN)
         {
-            chars += printf("[boolEAN]");
+            chars += printf("[BOOLEAN]");
         }
         if (tree->gtFlags & GTF_UNSIGNED)
         {

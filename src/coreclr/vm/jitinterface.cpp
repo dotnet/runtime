@@ -139,7 +139,7 @@ inline CORINFO_MODULE_HANDLE GetScopeHandle(MethodDesc* method)
 }
 
 //This is common refactored code from within several of the access check functions.
-bool ModifyCheckForDynamicMethod(DynamicResolver *pResolver,
+BOOL ModifyCheckForDynamicMethod(DynamicResolver *pResolver,
                                  TypeHandle *pOwnerTypeForSecurity,
                                  AccessCheckOptions::AccessCheckType *pAccessCheckType,
                                  DynamicResolver** ppAccessContext)
@@ -153,7 +153,7 @@ bool ModifyCheckForDynamicMethod(DynamicResolver *pResolver,
         PRECONDITION(*pAccessCheckType == AccessCheckOptions::kNormalAccessibilityChecks);
     } CONTRACTL_END;
 
-    bool doAccessCheck = TRUE;
+    BOOL doAccessCheck = TRUE;
 
     //Do not blindly initialize fields, since they've already got important values.
     DynamicResolver::SecurityControlFlags dwSecurityFlags = DynamicResolver::Default;
@@ -250,7 +250,7 @@ void CEEInfo::GetTypeContext(CORINFO_CONTEXT_HANDLE context, SigTypeContext *pTy
 }
 
 // Returns true if context is providing any generic variables
-bool CEEInfo::ContextIsInstantiated(CORINFO_CONTEXT_HANDLE context)
+BOOL CEEInfo::ContextIsInstantiated(CORINFO_CONTEXT_HANDLE context)
 {
     LIMITED_METHOD_CONTRACT;
     MethodDesc* pMD = GetMethodFromContext(context);
@@ -1644,7 +1644,7 @@ void CEEInfo::getFieldInfo (CORINFO_RESOLVED_TOKEN * pResolvedToken,
     }
     else
     {
-        bool fInstanceHelper = FALSE;
+        BOOL fInstanceHelper = FALSE;
 
         if (fInstanceHelper)
         {
@@ -1722,7 +1722,7 @@ void CEEInfo::getFieldInfo (CORINFO_RESOLVED_TOKEN * pResolvedToken,
             }
         }
 
-        bool doAccessCheck = TRUE;
+        BOOL doAccessCheck = TRUE;
         AccessCheckOptions::AccessCheckType accessCheckType = AccessCheckOptions::kNormalAccessibilityChecks;
 
         DynamicResolver * pAccessContext = NULL;
@@ -1752,7 +1752,7 @@ void CEEInfo::getFieldInfo (CORINFO_RESOLVED_TOKEN * pResolvedToken,
             _ASSERTE(pCallerForSecurity != NULL && callerTypeForSecurity != NULL);
             AccessCheckContext accessContext(pCallerForSecurity, callerTypeForSecurity.GetMethodTable());
 
-            bool canAccess = ClassLoader::CanAccess(
+            BOOL canAccess = ClassLoader::CanAccess(
                 &accessContext,
                 fieldTypeForSecurity.GetMethodTable(),
                 fieldTypeForSecurity.GetAssembly(),
@@ -2287,7 +2287,7 @@ unsigned CEEInfo::getClassGClayoutStatic(TypeHandle VMClsHnd, BYTE* gcPtrs)
     {
         _ASSERTE(sizeof(BYTE) == 1);
 
-        bool isValueClass = pMT->IsValueType();
+        BOOL isValueClass = pMT->IsValueType();
 
 #ifdef FEATURE_READYTORUN_COMPILER
         _ASSERTE(isValueClass || !IsReadyToRunCompilation() || pMT->IsInheritanceChainLayoutFixedInCurrentVersionBubble());
@@ -2606,7 +2606,7 @@ void CEEInfo::embedGenericHandle(
 
     JIT_TO_EE_TRANSITION();
 
-    bool fRuntimeLookup;
+    BOOL fRuntimeLookup;
     MethodDesc * pTemplateMD = NULL;
 
     if (!fEmbedParent && pResolvedToken->hMethod != NULL)
@@ -3084,7 +3084,7 @@ void CEEInfo::ComputeRuntimeLookupForSharedGenericToken(DictionaryEntryKind entr
     if (!pContextMD->IsSharedByGenericInstantiations())
         COMPlusThrow(kInvalidProgramException);
 
-    bool fInstrument = FALSE;
+    BOOL fInstrument = FALSE;
 
 #ifdef FEATURE_NATIVE_IMAGE_GENERATION
     // This will make sure that when IBC logging is turned on we will go through a version
@@ -3388,7 +3388,7 @@ NoSpecialCase:
 
             // Check for non-NULL method spec first. We can encode the method instantiation only if we have one in method spec to start with. Note that there are weird cases
             // like instantiating stub for generic method definition that do not have method spec but that won't be caught by the later conditions either.
-            bool fMethodNeedsInstantiation = (pResolvedToken->pMethodSpec != NULL) && pTemplateMD->HasMethodInstantiation() && !pTemplateMD->IsGenericMethodDefinition();
+            BOOL fMethodNeedsInstantiation = (pResolvedToken->pMethodSpec != NULL) && pTemplateMD->HasMethodInstantiation() && !pTemplateMD->IsGenericMethodDefinition();
 
             if (pTemplateMD->IsUnboxingStub())
                 methodFlags |= ENCODE_METHOD_SIG_UnboxingStub;
@@ -4004,7 +4004,7 @@ CorInfoInitClassResult CEEInfo::initClass(
 
     MethodDesc *methodBeingCompiled = m_pMethodBeingCompiled;
 
-    bool fMethodZappedOrNGen = methodBeingCompiled->IsZapped() || IsCompilingForNGen();
+    BOOL fMethodZappedOrNGen = methodBeingCompiled->IsZapped() || IsCompilingForNGen();
 
     MethodTable *pTypeToInitMT = typeToInitTH.AsMethodTable();
 
@@ -4546,7 +4546,7 @@ TypeCompareState CEEInfo::compareTypesForCast(
         if (toHnd.IsInterface())
         {
             // Do a preliminary check.
-            bool canCast = fromHnd.CanCastTo(toHnd);
+            BOOL canCast = fromHnd.CanCastTo(toHnd);
 
             // Pass back positive results unfiltered. The unknown type
             // parameters in fromClass did not come into play.
@@ -4729,7 +4729,7 @@ CORINFO_CLASS_HANDLE CEEInfo::mergeClasses(
 }
 
 /*********************************************************************/
-static bool isMoreSpecificTypeHelper(
+static BOOL isMoreSpecificTypeHelper(
        CORINFO_CLASS_HANDLE        cls1,
        CORINFO_CLASS_HANDLE        cls2)
 {
@@ -4751,8 +4751,8 @@ static bool isMoreSpecificTypeHelper(
 
     // If we have a mixture of shared and unshared types,
     // consider the unshared type as more specific.
-    bool isHnd1CanonSubtype = hnd1.IsCanonicalSubtype();
-    bool isHnd2CanonSubtype = hnd2.IsCanonicalSubtype();
+    BOOL isHnd1CanonSubtype = hnd1.IsCanonicalSubtype();
+    BOOL isHnd2CanonSubtype = hnd2.IsCanonicalSubtype();
     if (isHnd1CanonSubtype != isHnd2CanonSubtype)
     {
         // Only one of hnd1 and hnd2 is shared.
@@ -5026,7 +5026,7 @@ CorInfoIsAccessAllowedResult CEEInfo::canAccessClass(
 
     INDEBUG(memset(pAccessHelper, 0xCC, sizeof(*pAccessHelper)));
 
-    bool doAccessCheck = TRUE;
+    BOOL doAccessCheck = TRUE;
     AccessCheckOptions::AccessCheckType accessCheckType = AccessCheckOptions::kNormalAccessibilityChecks;
     DynamicResolver * pAccessContext = NULL;
 
@@ -5075,7 +5075,7 @@ CorInfoIsAccessAllowedResult CEEInfo::canAccessClass(
         _ASSERTE(pCallerForSecurity != NULL && callerTypeForSecurity != NULL);
         AccessCheckContext accessContext(pCallerForSecurity, callerTypeForSecurity.GetMethodTable());
 
-        bool canAccessType = ClassLoader::CanAccessClass(&accessContext,
+        BOOL canAccessType = ClassLoader::CanAccessClass(&accessContext,
                                                          pCalleeForSecurity.GetMethodTable(),
                                                          pCalleeForSecurity.GetAssembly(),
                                                          accessCheckOptions);
@@ -5151,8 +5151,8 @@ void CEEInfo::getCallInfo(
         constrainedType = TypeHandle(pConstrainedResolvedToken->hClass);
     }
 
-    bool fResolvedConstraint = FALSE;
-    bool fForceUseRuntimeLookup = FALSE;
+    BOOL fResolvedConstraint = FALSE;
+    BOOL fForceUseRuntimeLookup = FALSE;
 
     MethodDesc * pMDAfterConstraintResolution = pMD;
     if (constrainedType.IsNull())
@@ -5639,8 +5639,8 @@ void CEEInfo::getCallInfo(
 
         //Passed various link-time checks.  Now do access checks.
 
-        bool doAccessCheck = TRUE;
-        bool canAccessMethod = TRUE;
+        BOOL doAccessCheck = TRUE;
+        BOOL canAccessMethod = TRUE;
         AccessCheckOptions::AccessCheckType accessCheckType = AccessCheckOptions::kNormalAccessibilityChecks;
         DynamicResolver * pAccessContext = NULL;
 
@@ -5773,7 +5773,7 @@ bool CEEInfo::canAccessFamily(CORINFO_METHOD_HANDLE hCaller,
     TypeHandle accessingType = TypeHandle(GetMethod(hCaller)->GetMethodTable());
     AccessCheckOptions::AccessCheckType accessCheckOptions = AccessCheckOptions::kNormalAccessibilityChecks;
     DynamicResolver* pIgnored;
-    bool doCheck = TRUE;
+    BOOL doCheck = TRUE;
     if (GetMethod(hCaller)->IsDynamicMethod())
     {
         //If this is a DynamicMethod, perform the check from the type to which the DynamicMethod was
@@ -5986,8 +5986,8 @@ CorInfoHelpFunc CEEInfo::getNewHelperStatic(MethodTable * pMT, bool * pHasSideEf
 
     // Slow helper is the default
     CorInfoHelpFunc helper = CORINFO_HELP_NEWFAST;
-    bool hasFinalizer = pMT->HasFinalizer();
-    bool isComObjectType = pMT->IsComObjectType();
+    BOOL hasFinalizer = pMT->HasFinalizer();
+    BOOL isComObjectType = pMT->IsComObjectType();
 
     if (isComObjectType)
     {
@@ -6256,7 +6256,7 @@ CorInfoHelpFunc CEEInfo::getCastingHelperStatic(TypeHandle clsHnd, bool fThrowin
     }
 
 #ifdef FEATURE_PREJIT
-    bool t1, t2, forceInstr;
+    BOOL t1, t2, forceInstr;
     SystemDomain::GetCompilationOverrides(&t1, &t2, &forceInstr);
     if (forceInstr)
     {
@@ -6800,7 +6800,7 @@ void CEEInfo::setMethodAttribs (
 
     if (attribs & CORINFO_FLG_BAD_INLINEE)
     {
-        bool fCacheInliningHint = TRUE;
+        BOOL fCacheInliningHint = TRUE;
 
 #ifdef FEATURE_NATIVE_IMAGE_GENERATION
         if (IsCompilationProcess())
@@ -7688,7 +7688,7 @@ getMethodInfoHelper(
     if (methInfo->options & CORINFO_GENERICS_CTXT_MASK)
     {
 #if defined(PROFILING_SUPPORTED)
-        bool fProfilerRequiresGenericsContextForEnterLeave = FALSE;
+        BOOL fProfilerRequiresGenericsContextForEnterLeave = FALSE;
         {
             BEGIN_PIN_PROFILER(CORProfilerPresent());
             if (g_profControlBlock.pProfInterface->RequiresGenericsContextForEnterLeave())
@@ -8091,7 +8091,7 @@ CorInfoInline CEEInfo::canInline (CORINFO_METHOD_HANDLE hCaller,
             }
             else
             {
-                bool fShouldInline;
+                BOOL fShouldInline;
                 HRESULT hr = g_profControlBlock.pProfInterface->JITInlining(
                     (FunctionID)pCaller,
                     (FunctionID)pCallee,
@@ -8634,7 +8634,7 @@ CEEInfo::getMethodSigInternal(
         // JIT should not generate shared generics aware call code and insert the secret argument again at the callsite.
         // Otherwise we would end up with two secret generic dictionary arguments (since the stub also provides one).
         //
-        bool isCallSiteThatGoesThroughInstantiatingStub =
+        BOOL isCallSiteThatGoesThroughInstantiatingStub =
             signatureKind == SK_VIRTUAL_CALLSITE &&
             !ftn->IsStatic() &&
             ftn->GetMethodTable()->IsInterface();
@@ -9071,7 +9071,7 @@ bool CEEInfo::resolveVirtualMethod(CORINFO_DEVIRTUALIZATION_INFO * info)
 
     JIT_TO_EE_TRANSITION();
 
-    result = resolveVirtualMethod(info);
+    result = resolveVirtualMethodHelper(info);
 
     EE_TO_JIT_TRANSITION();
 
@@ -10949,7 +10949,7 @@ void CEEJitInfo::GetProfilingHandle(bool                      *pbHookFunction,
         // We pass in the typical method definition to the function mapper because in
         // Whidbey all the profiling API transactions are done in terms of typical
         // method definitions not instantiations.
-        bool bHookFunction = TRUE;
+        BOOL bHookFunction = TRUE;
         void * profilerHandle = m_pMethodBeingCompiled;
 
         {
@@ -12813,7 +12813,7 @@ void ThrowExceptionForJit(HRESULT res)
 // ********************************************************************
 //#define PERF_TRACK_METHOD_JITTIMES
 #ifdef TARGET_AMD64
-bool g_fAllowRel32 = TRUE;
+BOOL g_fAllowRel32 = TRUE;
 #endif
 
 
@@ -12973,7 +12973,7 @@ PCODE UnsafeJitFunction(PrepareCodeConfig* config,
 #endif //_DEBUG
 
 #if defined(TARGET_AMD64) || defined(TARGET_ARM64)
-    bool fForceJumpStubOverflow = FALSE;
+    BOOL fForceJumpStubOverflow = FALSE;
 
 #ifdef _DEBUG
     // Always exercise the overflow codepath with force relocs
@@ -12982,7 +12982,7 @@ PCODE UnsafeJitFunction(PrepareCodeConfig* config,
 #endif
 
 #if defined(TARGET_AMD64)
-    bool fAllowRel32 = (g_fAllowRel32 | fForceJumpStubOverflow);
+    BOOL fAllowRel32 = (g_fAllowRel32 | fForceJumpStubOverflow);
 #endif
 
     size_t reserveForJumpStubs = 0;
@@ -13024,7 +13024,7 @@ PCODE UnsafeJitFunction(PrepareCodeConfig* config,
         AccessCheckOptions::AccessCheckType accessCheckType = AccessCheckOptions::kNormalAccessibilityChecks;
         TypeHandle ownerTypeForSecurity = TypeHandle(pMethodForSecurity->GetMethodTable());
         DynamicResolver *pAccessContext = NULL;
-        bool doAccessCheck = TRUE;
+        BOOL doAccessCheck = TRUE;
         if (pMethodForSecurity->IsDynamicMethod())
         {
             doAccessCheck = ModifyCheckForDynamicMethod(pMethodForSecurity->AsDynamicMethodDesc()->GetResolver(),
@@ -13187,7 +13187,7 @@ PCODE UnsafeJitFunction(PrepareCodeConfig* config,
     }
 
 #ifdef _DEBUG
-    static bool fHeartbeat = -1;
+    static BOOL fHeartbeat = -1;
 
     if (fHeartbeat == -1)
         fHeartbeat = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_JitHeartbeat);
@@ -13360,7 +13360,7 @@ void ComputeGCRefMap(MethodTable * pMT, BYTE * pGCRefMap, size_t cbGCRefMap)
 // - Alignment
 // - Position of GC references
 //
-bool TypeLayoutCheck(MethodTable * pMT, PCCOR_SIGNATURE pBlob)
+BOOL TypeLayoutCheck(MethodTable * pMT, PCCOR_SIGNATURE pBlob)
 {
     STANDARD_VM_CONTRACT;
 
@@ -13443,7 +13443,7 @@ bool IsInstructionSetSupported(CORJIT_FLAGS jitFlags, ReadyToRunInstructionSet r
     return jitFlags.IsSet(instructionSet);
 }
 
-bool LoadDynamicInfoEntry(Module *currentModule,
+BOOL LoadDynamicInfoEntry(Module *currentModule,
                           RVA fixupRva,
                           SIZE_T *entry)
 {
@@ -13691,7 +13691,7 @@ bool LoadDynamicInfoEntry(Module *currentModule,
 
             FunctionID funId = (FunctionID)pMethod;
 
-            bool bHookFunction = TRUE;
+            BOOL bHookFunction = TRUE;
             CORINFO_PROFILING_HANDLE profilerHandle = (CORINFO_PROFILING_HANDLE)funId;
 
             {
@@ -14517,14 +14517,14 @@ PTR_RUNTIME_FUNCTION EECodeInfo::GetFunctionEntry()
 
 #if defined(TARGET_AMD64)
 
-bool EECodeInfo::HasFrameRegister()
+BOOL EECodeInfo::HasFrameRegister()
 {
     LIMITED_METHOD_CONTRACT;
 
     PTR_RUNTIME_FUNCTION pFuncEntry = GetFunctionEntry();
     _ASSERTE(pFuncEntry != NULL);
 
-    bool fHasFrameRegister = FALSE;
+    BOOL fHasFrameRegister = FALSE;
     PUNWIND_INFO pUnwindInfo = (PUNWIND_INFO)(GetModuleBase() + pFuncEntry->UnwindData);
     if (pUnwindInfo->FrameRegister != 0)
     {

@@ -595,8 +595,6 @@ enum CorInfoHelpFunc
     CORINFO_HELP_COUNT,
 };
 
-#define CORINFO_HELP_READYTORUN_ATYPICAL_CALLSITE 0x40000000
-
 //This describes the signature for a helper method.
 enum CorInfoHelpSig
 {
@@ -623,7 +621,7 @@ enum CorInfoType
 {
     CORINFO_TYPE_UNDEF           = 0x0,
     CORINFO_TYPE_VOID            = 0x1,
-    CORINFO_TYPE_bool            = 0x2,
+    CORINFO_TYPE_BOOL            = 0x2,
     CORINFO_TYPE_CHAR            = 0x3,
     CORINFO_TYPE_BYTE            = 0x4,
     CORINFO_TYPE_UBYTE           = 0x5,
@@ -703,13 +701,19 @@ inline bool IsCallerPop(CorInfoCallConv callConv)
 enum CorInfoUnmanagedCallConv
 {
     // These correspond to CorUnmanagedCallingConvention
-
     CORINFO_UNMANAGED_CALLCONV_UNKNOWN,
     CORINFO_UNMANAGED_CALLCONV_C,
     CORINFO_UNMANAGED_CALLCONV_STDCALL,
     CORINFO_UNMANAGED_CALLCONV_THISCALL,
     CORINFO_UNMANAGED_CALLCONV_FASTCALL
+    // New calling conventions supported with the extensible calling convention encoding go here.
 };
+
+// Determines whether or not this calling convention is an instance method calling convention.
+inline bool callConvIsInstanceMethodCallConv(CorInfoUnmanagedCallConv callConv)
+{
+    return callConv == CORINFO_UNMANAGED_CALLCONV_THISCALL;
+}
 
 // These are returned from getMethodOptions
 enum CorInfoOptions
@@ -818,7 +822,7 @@ enum CORINFO_ACCESS_FLAGS
     CORINFO_ACCESS_SET        = 0x0200, // Field set (stfld)
     CORINFO_ACCESS_ADDRESS    = 0x0400, // Field address (ldflda)
     CORINFO_ACCESS_INIT_ARRAY = 0x0800, // Field use for InitializeArray
-    CORINFO_ACCESS_ATYPICAL_CALLSITE = 0x4000, // Atypical callsite that cannot be disassembled by delay loading helper
+    // UNUSED                 = 0x4000,
     CORINFO_ACCESS_INLINECHECK= 0x8000, // Return fieldFlags and fieldAccessor only. Used by JIT64 during inlining.
 };
 
@@ -1459,7 +1463,7 @@ enum CORINFO_CALLINFO_FLAGS
     CORINFO_CALLINFO_VERIFICATION   = 0x0008,   // Gets extra verification information.
     CORINFO_CALLINFO_SECURITYCHECKS = 0x0010,   // Perform security checks.
     CORINFO_CALLINFO_LDFTN          = 0x0020,   // Resolving target of LDFTN
-    CORINFO_CALLINFO_ATYPICAL_CALLSITE = 0x0040, // Atypical callsite that cannot be disassembled by delay loading helper
+    // UNUSED                       = 0x0040,
 };
 
 enum CorInfoIsAccessAllowedResult
@@ -2042,7 +2046,7 @@ public:
     // Get the unboxed entry point for a method, if possible.
     virtual CORINFO_METHOD_HANDLE getUnboxedEntry(
         CORINFO_METHOD_HANDLE ftn,
-        bool* requiresInstMethodTableArg = NULL /* OUT */
+        bool* requiresInstMethodTableArg
         ) = 0;
 
     // Given T, return the type of the default EqualityComparer<T>.
@@ -2298,7 +2302,7 @@ public:
 
     virtual unsigned getClassAlignmentRequirement (
             CORINFO_CLASS_HANDLE        cls,
-            bool                        fDoubleAlignHint = FALSE
+            bool                        fDoubleAlignHint = false
             ) = 0;
 
     // This is only called for Value classes.  It returns a boolean array
@@ -2335,7 +2339,7 @@ public:
     virtual CorInfoHelpFunc getNewHelper(
             CORINFO_RESOLVED_TOKEN * pResolvedToken,
             CORINFO_METHOD_HANDLE    callerHandle,
-            bool *                   pHasSideEffects = NULL /* OUT */
+            bool *                   pHasSideEffects
             ) = 0;
 
     // returns the newArr (1-Dim array) helper optimized for "arrayCls."
@@ -3103,7 +3107,7 @@ public:
                     bool fMustConvert
                     ) = 0;
 
-    virtual void notifyInstructionSetUsage(
+    virtual bool notifyInstructionSetUsage(
                 CORINFO_InstructionSet instructionSet,
                 bool supportEnabled
             ) = 0;

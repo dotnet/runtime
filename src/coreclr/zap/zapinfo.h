@@ -53,7 +53,7 @@ private:
             LIMITED_METHOD_CONTRACT;
             return e.handle;
         }
-        static bool Equals(key_t k1, key_t k2)
+        static BOOL Equals(key_t k1, key_t k2)
         {
             LIMITED_METHOD_CONTRACT;
             return k1 == k2;
@@ -85,7 +85,7 @@ public:
     // fixed=FALSE if the caller needs an explicit fixup. We will emit an
     // explicit fixup for 'handle' if there are no other implicit fixups.
 
-    void Load(HandleType handle, bool fixed)
+    void Load(HandleType handle, BOOL fixed)
     {
         CONTRACTL
         {
@@ -201,7 +201,7 @@ class ZapInfo
             LIMITED_METHOD_CONTRACT;
             return e.pImport;
         }
-        static bool Equals(key_t k1, key_t k2)
+        static BOOL Equals(key_t k1, key_t k2)
         {
             LIMITED_METHOD_CONTRACT;
             return k1 == k2;
@@ -242,13 +242,13 @@ class ZapInfo
 
     void ProcessReferences();
 
-    bool CurrentMethodHasProfileData();
+    BOOL CurrentMethodHasProfileData();
 
     void embedGenericSignature(CORINFO_LOOKUP * pLookup);
 
     PVOID embedDirectCall(CORINFO_METHOD_HANDLE ftn,
                           CORINFO_ACCESS_FLAGS accessFlags,
-                          bool fAllowThunk);
+                          BOOL fAllowThunk);
 
 public:
     ZapInfo(ZapImage * pImage, mdMethodDef md, CORINFO_METHOD_HANDLE handle, CORINFO_MODULE_HANDLE module, unsigned methodProfilingDataFlags);
@@ -367,7 +367,7 @@ public:
                       CORINFO_RESOLVED_TOKEN * pResolvedToken,
                       bool fMustConvert);
 
-    void notifyInstructionSetUsage(CORINFO_InstructionSet instructionSet, bool supportEnabled);
+    bool notifyInstructionSetUsage(CORINFO_InstructionSet instructionSet, bool supportEnabled);
 
     void getFunctionEntryPoint(
                       CORINFO_METHOD_HANDLE   ftn,                 /* IN  */
@@ -547,7 +547,7 @@ public:
 
     unsigned getClassNumInstanceFields(CORINFO_CLASS_HANDLE cls);
 
-    CorInfoHelpFunc getNewHelper(CORINFO_RESOLVED_TOKEN * pResolvedToken, CORINFO_METHOD_HANDLE callerHandle, bool * pHasSideEffects = NULL);
+    CorInfoHelpFunc getNewHelper(CORINFO_RESOLVED_TOKEN * pResolvedToken, CORINFO_METHOD_HANDLE callerHandle, bool * pHasSideEffects);
     CorInfoHelpFunc getCastingHelper(CORINFO_RESOLVED_TOKEN * pResolvedToken, bool fThrowing);
     CorInfoHelpFunc getNewArrHelper(CORINFO_CLASS_HANDLE arrayCls);
     CorInfoHelpFunc getSharedCCtorHelper(CORINFO_CLASS_HANDLE clsHnd);

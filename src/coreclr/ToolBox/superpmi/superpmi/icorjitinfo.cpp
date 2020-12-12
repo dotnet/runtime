@@ -173,7 +173,7 @@ void MyICJI::getMethodVTableOffset(CORINFO_METHOD_HANDLE method,                
 
 // Find the virtual method in implementingClass that overrides virtualMethod.
 // Return null if devirtualization is not possible.
-bool MyICJI::tryResolveVirtualMethod(CORINFO_VIRTUAL_METHOD_CALLER_CONTEXT* virtualMethodContext /* IN, OUT */)
+bool MyICJI::resolveVirtualMethod(CORINFO_DEVIRTUALIZATION_INFO * info)
 {
     jitInstance->mc->cr->AddCall("tryResolveVirtualMethod");
     bool result = jitInstance->mc->repTryResolveVirtualMethod(virtualMethodContext);

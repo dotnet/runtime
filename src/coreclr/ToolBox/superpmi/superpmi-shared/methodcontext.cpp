@@ -510,7 +510,7 @@ const char* toString(CorInfoType cit)
             return "undef";
         case CORINFO_TYPE_VOID:
             return "void";
-        case CORINFO_TYPE_bool:
+        case CORINFO_TYPE_BOOL:
             return "bool";
         case CORINFO_TYPE_CHAR:
             return "char";
@@ -561,7 +561,7 @@ unsigned int toCorInfoSize(CorInfoType cit)
 {
     switch (cit)
     {
-        case CORINFO_TYPE_bool:
+        case CORINFO_TYPE_BOOL:
         case CORINFO_TYPE_BYTE:
         case CORINFO_TYPE_UBYTE:
             return 1;
@@ -3409,7 +3409,7 @@ void MethodContext::recGetFieldAddress(CORINFO_FIELD_HANDLE field, void** ppIndi
         DWORDLONG scratch = 0x4242424242424242;
         switch (cit)
         {
-            case CORINFO_TYPE_bool:
+            case CORINFO_TYPE_BOOL:
             case CORINFO_TYPE_BYTE:
             case CORINFO_TYPE_UBYTE:
                 value.fieldValue =

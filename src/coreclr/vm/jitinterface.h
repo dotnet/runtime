@@ -87,7 +87,7 @@ void getMethodInfoILMethodHeaderHelper(
     );
 
 
-bool LoadDynamicInfoEntry(Module *currentModule,
+BOOL LoadDynamicInfoEntry(Module *currentModule,
                           RVA fixupRva,
                           SIZE_T *entry);
 
@@ -417,7 +417,7 @@ class CEEInfo : public ICorJitInfo
     MethodDesc* GetMethodFromContext(CORINFO_CONTEXT_HANDLE context);
     TypeHandle GetTypeFromContext(CORINFO_CONTEXT_HANDLE context);
     void GetTypeContext(CORINFO_CONTEXT_HANDLE context, SigTypeContext* pTypeContext);
-    bool ContextIsInstantiated(CORINFO_CONTEXT_HANDLE context);
+    BOOL ContextIsInstantiated(CORINFO_CONTEXT_HANDLE context);
 
 public:
     // ICorClassInfo stuff
@@ -482,8 +482,8 @@ public:
     // considered when checking visibility rules.
 
 
-    CorInfoHelpFunc getNewHelper(CORINFO_RESOLVED_TOKEN * pResolvedToken, CORINFO_METHOD_HANDLE callerHandle, bool * pHasSideEffects = NULL);
-    static CorInfoHelpFunc getNewHelperStatic(MethodTable * pMT, bool * pHasSideEffects = NULL);
+    CorInfoHelpFunc getNewHelper(CORINFO_RESOLVED_TOKEN * pResolvedToken, CORINFO_METHOD_HANDLE callerHandle, bool * pHasSideEffects);
+    static CorInfoHelpFunc getNewHelperStatic(MethodTable * pMT, bool * pHasSideEffects);
 
     CorInfoHelpFunc getNewArrHelper(CORINFO_CLASS_HANDLE arrayCls);
     static CorInfoHelpFunc getNewArrHelperStatic(TypeHandle clsHnd);
@@ -916,7 +916,7 @@ public:
     bool convertPInvokeCalliToCall(CORINFO_RESOLVED_TOKEN * pResolvedToken,
                                    bool fMustConvert);
 
-    void notifyInstructionSetUsage(CORINFO_InstructionSet instructionSet, 
+    bool notifyInstructionSetUsage(CORINFO_InstructionSet instructionSet, 
                                    bool supportEnabled);
 
     void getFunctionEntryPoint(CORINFO_METHOD_HANDLE   ftn,                 /* IN  */
@@ -1323,7 +1323,7 @@ public:
     }
 
 #ifdef TARGET_AMD64
-    void SetAllowRel32(bool fAllowRel32)
+    void SetAllowRel32(BOOL fAllowRel32)
     {
         LIMITED_METHOD_CONTRACT;
         m_fAllowRel32 = fAllowRel32;
@@ -1331,19 +1331,19 @@ public:
 #endif
 
 #if defined(TARGET_AMD64) || defined(TARGET_ARM64)
-    void SetJumpStubOverflow(bool fJumpStubOverflow)
+    void SetJumpStubOverflow(BOOL fJumpStubOverflow)
     {
         LIMITED_METHOD_CONTRACT;
         m_fJumpStubOverflow = fJumpStubOverflow;
     }
 
-    bool IsJumpStubOverflow()
+    BOOL IsJumpStubOverflow()
     {
         LIMITED_METHOD_CONTRACT;
         return m_fJumpStubOverflow;
     }
 
-    bool JitAgain()
+    BOOL JitAgain()
     {
         LIMITED_METHOD_CONTRACT;
         return m_fJumpStubOverflow;
@@ -1361,7 +1361,7 @@ public:
         m_reserveForJumpStubs = value;
     }
 #else
-    bool JitAgain()
+    BOOL JitAgain()
     {
         LIMITED_METHOD_CONTRACT;
         return FALSE;
@@ -1501,10 +1501,10 @@ protected :
 #endif
 
 #ifdef TARGET_AMD64
-    bool                    m_fAllowRel32;      // Use 32-bit PC relative address modes
+    BOOL                    m_fAllowRel32;      // Use 32-bit PC relative address modes
 #endif
 #if defined(TARGET_AMD64) || defined(TARGET_ARM64)
-    bool                    m_fJumpStubOverflow;   // Overflow while trying to alocate jump stub slot within PC relative branch region
+    BOOL                    m_fJumpStubOverflow;   // Overflow while trying to alocate jump stub slot within PC relative branch region
                                                    // The code will need to be regenerated (with m_fRel32Allowed == FALSE for AMD64).
     size_t                  m_reserveForJumpStubs; // Space to reserve for jump stubs when allocating code
 #endif
@@ -1609,7 +1609,7 @@ void *GenFastGetSharedStaticBase(bool bCheckCCtor);
 #ifdef HAVE_GCCOVER
 void SetupGcCoverage(NativeCodeVersion nativeCodeVersion, BYTE* nativeCode);
 void SetupGcCoverageForNativeImage(Module* module);
-bool OnGcCoverageInterrupt(PT_CONTEXT regs);
+BOOL OnGcCoverageInterrupt(PT_CONTEXT regs);
 void DoGcStress (PT_CONTEXT regs, NativeCodeVersion nativeCodeVersion);
 #endif //HAVE_GCCOVER
 
@@ -1620,8 +1620,8 @@ OBJECTHANDLE ConstructStringLiteral(CORINFO_MODULE_HANDLE scopeHnd, mdToken meta
 FCDECL2(Object*, JIT_Box, CORINFO_CLASS_HANDLE type, void* data);
 FCDECL0(VOID, JIT_PollGC);
 
-bool ObjIsInstanceOf(Object *pObject, TypeHandle toTypeHnd, bool throwCastException = FALSE);
-bool ObjIsInstanceOfCore(Object* pObject, TypeHandle toTypeHnd, bool throwCastException = FALSE);
+BOOL ObjIsInstanceOf(Object *pObject, TypeHandle toTypeHnd, BOOL throwCastException = FALSE);
+BOOL ObjIsInstanceOfCore(Object* pObject, TypeHandle toTypeHnd, BOOL throwCastException = FALSE);
 
 EXTERN_C TypeHandle::CastResult STDCALL ObjIsInstanceOfCached(Object *pObject, TypeHandle toTypeHnd);
 
