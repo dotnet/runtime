@@ -146,7 +146,9 @@
 
   </Target>
 
-  <Import Project="$(MonoProjectRoot)\wasm\build\WasmApp.targets" />
+  <Import Project="$(MonoProjectRoot)\wasm\build\WasmApp.targets" Condition="'$(TargetOS)' == 'Browser'" />
+
+  <Target Condition="'$(TargetOS)' == 'Browser'" Name="BundleTestWasmApp" DependsOnTargets="WasmBuildApp" />
 
   <Target Condition="'$(TargetOS)' == 'Browser'" Name="PrepareForWasmBuildApp" BeforeTargets="WasmBuildApp">
     <PropertyGroup>
@@ -192,5 +194,5 @@
   <Target Name="PublishTestAsSelfContained"
           Condition="'$(IsCrossTargetingBuild)' != 'true'"
           AfterTargets="Build"
-          DependsOnTargets="Publish;BundleTestAppleApp;BundleTestAndroidApp;WasmBuildApp;ArchiveTests" />
+          DependsOnTargets="Publish;BundleTestAppleApp;BundleTestAndroidApp;BundleTestWasmApp;ArchiveTests" />
 </Project>
