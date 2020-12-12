@@ -146,7 +146,7 @@
 
   </Target>
 
-  <Import Condition="'$(TargetOS)' == 'Browser'" Project="$(MonoProjectRoot)\wasm\build\WasmApp.targets" />
+  <Import Project="$(MonoProjectRoot)\wasm\build\WasmApp.targets" />
 
   <Target Condition="'$(TargetOS)' == 'Browser'" Name="PrepareForWasmBuildApp" BeforeTargets="WasmBuildApp">
     <PropertyGroup>
