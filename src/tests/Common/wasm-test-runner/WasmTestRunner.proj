@@ -23,8 +23,8 @@
 
     <ItemGroup>
       <WasmAssembliesToBundle Include="$(CORE_ROOT)\System.Private.Runtime.InteropServices.JavaScript.dll" />
-      <WasmAssemblySearchPaths Include="$(MicrosoftNetCoreAppRuntimePackDir)\native"/>
-      <WasmAssemblySearchPaths Include="$(MicrosoftNetCoreAppRuntimePackDir)"/>
+      <WasmAssemblySearchPaths Include="$(MicrosoftNetCoreAppRuntimePackRidDir)\native"/>
+      <WasmAssemblySearchPaths Include="$(MicrosoftNetCoreAppRuntimePackRidDir)"/>
       <WasmAssemblySearchPaths Include="$(CORE_ROOT)/TargetingPack" />
       <WasmAssemblySearchPaths Include="$(TestBinDir)" />
     </ItemGroup>
