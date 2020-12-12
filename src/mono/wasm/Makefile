@@ -48,6 +48,8 @@ provision-wasm: .stamp-wasm-install-and-select-$(EMSCRIPTEN_VERSION)
 	@echo "Installed emsdk into EMSDK_PATH=$(TOP)/src/mono/wasm/emsdk"
 else
 provision-wasm:
+	@echo "----------------------------------------------------------"
+	@echo "Not doing anything for provision-wasm. To fix this EMSDK_PATH should either be unset, or set to $(TOP)/src/mono/wasm/emsdk"
 endif
 
 MONO_OBJ_DIR=$(OBJDIR)/mono/Browser.wasm.$(CONFIG)
