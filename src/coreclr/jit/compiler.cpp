@@ -6110,6 +6110,8 @@ int Compiler::compCompileHelper(CORINFO_MODULE_HANDLE classPtr,
         case CORINFO_CALLCONV_VARARG:
             info.compIsVarArgs = true;
             break;
+        default:
+            break;
     }
 
     info.compRetNativeType = info.compRetType = JITtype2varType(methodInfo->args.retType);
