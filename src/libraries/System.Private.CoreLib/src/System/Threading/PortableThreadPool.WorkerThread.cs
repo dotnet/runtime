@@ -288,10 +288,39 @@ namespace System.Threading
             {
                 try
                 {
-                    Thread workerThread = new Thread(WorkerThreadStart);
-                    workerThread.IsThreadPoolThread = true;
-                    workerThread.IsBackground = true;
-                    workerThread.Start();
+                    // Starting a new thread transfers the current execution context to the new thread. Worker threads must
+                    // start in the default context, so switch contexts temporarily if necessary.
+                    Thread currentThread = Thread.CurrentThread;
+                    ExecutionContext? previousExecutionContext = currentThread._executionContext;
+                    bool changeExecutionContext = previousExecutionContext != null && !previousExecutionContext.IsDefault;
+                    if (changeExecutionContext)
+                    {
+                        currentThread._executionContext = null;
+                    }
+
+                    try
+                    {
+                        Thread workerThread = new Thread(WorkerThreadStart);
+                        workerThread.IsThreadPoolThread = true;
+                        workerThread.IsBackground = true;
+                        workerThread.Start();
+                    }
+                    catch
+                    {
+                        // Note: we have a "catch" rather than a "finally" because we want to stop the first pass of EH here.
+                        // That way we can restore the previous context before any of our callers' EH filters run.
+                        if (changeExecutionContext)
+                        {
+                            currentThread._executionContext = previousExecutionContext;
+                        }
+
+                        throw;
+                    }
+
+                    if (changeExecutionContext)
+                    {
+                        currentThread._executionContext = previousExecutionContext;
+                    }
                 }
                 catch (ThreadStartException)
                 {
@@ -301,6 +330,7 @@ namespace System.Threading
                 {
                     return false;
                 }
+
                 return true;
             }
         }

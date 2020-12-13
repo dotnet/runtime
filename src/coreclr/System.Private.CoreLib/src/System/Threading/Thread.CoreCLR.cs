@@ -70,7 +70,7 @@ namespace System.Threading
             _startArg = obj;
 
             ExecutionContext? context = _executionContext;
-            if (context != null)
+            if (context != null && !context.IsDefault)
             {
                 ExecutionContext.RunInternal(context, s_threadStartContextCallback, this);
             }
@@ -87,7 +87,7 @@ namespace System.Threading
             Debug.Assert(_start is ThreadStart);
 
             ExecutionContext? context = _executionContext;
-            if (context != null)
+            if (context != null && !context.IsDefault)
             {
                 ExecutionContext.RunInternal(context, s_threadStartContextCallback, this);
             }
@@ -222,8 +222,7 @@ namespace System.Threading
                 Debug.Assert(_delegate.Target is ThreadHelper);
                 var t = (ThreadHelper)_delegate.Target;
 
-                ExecutionContext? ec = ExecutionContext.Capture();
-                t.SetExecutionContextHelper(ec);
+                t.SetExecutionContextHelper(CurrentThread._executionContext);
             }
 
             StartInternal();
