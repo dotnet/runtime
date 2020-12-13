@@ -639,7 +639,7 @@ public:
             void **             roDataBlock     /* OUT */
             ) override final;
 
-    void reserveUnwindInfo(bool isFunclet, bool isColdCode, ULONG unwindSize);
+    void reserveUnwindInfo(bool isFunclet, bool isColdCode, ULONG unwindSize) override final;
 
     void allocUnwindInfo (
             BYTE * pHotCode,              /* IN */
@@ -890,12 +890,12 @@ public:
                  ICorDebugInfo::NativeVarInfo *vars);
     void CompressDebugInfo();
 
-    void* getHelperFtn(CorInfoHelpFunc    ftnNum,                 /* IN  */
-                       void **            ppIndirection);         /* OUT */
+    void* getHelperFtn(CorInfoHelpFunc    ftnNum,                         /* IN  */
+                       void **            ppIndirection) override final;  /* OUT */
     static PCODE getHelperFtnStatic(CorInfoHelpFunc ftnNum);
 
     // Override active dependency to talk to loader
-    void addActiveDependency(CORINFO_MODULE_HANDLE moduleFrom, CORINFO_MODULE_HANDLE moduleTo);
+    void addActiveDependency(CORINFO_MODULE_HANDLE moduleFrom, CORINFO_MODULE_HANDLE moduleTo) override final;
 
     // Override of CEEInfo::GetProfilingHandle.  The first time this is called for a
     // method desc, it calls through to CEEInfo::GetProfilingHandle and caches the
@@ -906,17 +906,17 @@ public:
                     bool                      *pbHookFunction,
                     void                     **pProfilerHandle,
                     bool                      *pbIndirectedHandles
-                    );
+                    ) override final;
 
-    InfoAccessType constructStringLiteral(CORINFO_MODULE_HANDLE scopeHnd, mdToken metaTok, void **ppValue);
-    InfoAccessType emptyStringLiteral(void ** ppValue);
-    void* getFieldAddress(CORINFO_FIELD_HANDLE field, void **ppIndirection);
-    CORINFO_CLASS_HANDLE getStaticFieldCurrentClass(CORINFO_FIELD_HANDLE field, bool* pIsSpeculative);
-    void* getMethodSync(CORINFO_METHOD_HANDLE ftnHnd, void **ppIndirection);
+    InfoAccessType constructStringLiteral(CORINFO_MODULE_HANDLE scopeHnd, mdToken metaTok, void **ppValue) override final;
+    InfoAccessType emptyStringLiteral(void ** ppValue) override final;
+    void* getFieldAddress(CORINFO_FIELD_HANDLE field, void **ppIndirection) override final;
+    CORINFO_CLASS_HANDLE getStaticFieldCurrentClass(CORINFO_FIELD_HANDLE field, bool* pIsSpeculative) override final;
+    void* getMethodSync(CORINFO_METHOD_HANDLE ftnHnd, void **ppIndirection) override final;
 
     void BackoutJitData(EEJitManager * jitMgr);
 
-    void setPatchpointInfo(PatchpointInfo* patchpointInfo);
+    void setPatchpointInfo(PatchpointInfo* patchpointInfo) override final;
     PatchpointInfo* getOSRInfo(unsigned* ilOffset);
 
 protected :

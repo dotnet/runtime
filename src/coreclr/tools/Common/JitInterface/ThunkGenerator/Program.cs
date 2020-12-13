@@ -585,7 +585,7 @@ public:
                     }
                     tw.Write(Environment.NewLine + "          " + param.Type.NativeTypeName2 + " " + param.Name);
                 }
-                tw.WriteLine(");");
+                tw.WriteLine(") override;");
             }
 
             tw.Write(@"
