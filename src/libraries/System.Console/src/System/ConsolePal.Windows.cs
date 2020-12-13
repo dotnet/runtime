@@ -1186,7 +1186,7 @@ namespace System
 
             private static unsafe int WriteFileNative(IntPtr hFile, ReadOnlySpan<byte> bytes, bool useFileAPIs)
             {
-                // You can't use the fixed statement on an array of length 0.
+                // The fixed statement maps an empty ReadOnlySpan to nullptr.
                 if (bytes.IsEmpty)
                     return Interop.Errors.ERROR_SUCCESS;
 
