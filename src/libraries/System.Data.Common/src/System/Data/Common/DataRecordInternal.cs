@@ -100,7 +100,7 @@ namespace System.Data.Common
             return ((byte)_values[i]);
         }
 
-        public override long GetBytes(int i, long dataIndex, byte[] buffer, int bufferIndex, int length)
+        public override long GetBytes(int i, long dataIndex, byte[]? buffer, int bufferIndex, int length)
         {
             int cbytes = 0;
             int ndataIndex;
@@ -170,7 +170,7 @@ namespace System.Data.Common
 
         public override char GetChar(int i) => ((string)_values[i])[0];
 
-        public override long GetChars(int i, long dataIndex, char[] buffer, int bufferIndex, int length)
+        public override long GetChars(int i, long dataIndex, char[]? buffer, int bufferIndex, int length)
         {
             // if the object doesn't contain a char[] then the user will get an exception
             string s = (string)_values[i];

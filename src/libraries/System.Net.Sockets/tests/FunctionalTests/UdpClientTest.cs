@@ -505,10 +505,7 @@ namespace System.Net.Sockets.Tests
             using (var receiver = new UdpClient(new IPEndPoint(address, 0)))
             using (var sender = new UdpClient(new IPEndPoint(address, 0)))
             {
-                for (int i = 0; i < TestSettings.UDPRedundancy; i++)
-                {
-                    sender.Send(new byte[1], 1, new IPEndPoint(address, ((IPEndPoint)receiver.Client.LocalEndPoint).Port));
-                }
+                sender.Send(new byte[1], 1, new IPEndPoint(address, ((IPEndPoint)receiver.Client.LocalEndPoint).Port));
 
                 IPEndPoint remoteEP = null;
                 byte[] data = receiver.Receive(ref remoteEP);
@@ -525,10 +522,7 @@ namespace System.Net.Sockets.Tests
             using (var receiver = new UdpClient("localhost", 0))
             using (var sender = new UdpClient("localhost", ((IPEndPoint)receiver.Client.LocalEndPoint).Port))
             {
-                for (int i = 0; i < TestSettings.UDPRedundancy; i++)
-                {
-                    sender.Send(new byte[1], 1);
-                }
+                sender.Send(new byte[1], 1);
 
                 IPEndPoint remoteEP = null;
                 byte[] data = receiver.Receive(ref remoteEP);
@@ -548,10 +542,7 @@ namespace System.Net.Sockets.Tests
             using (var receiver = new UdpClient(new IPEndPoint(address, 0)))
             using (var sender = new UdpClient(new IPEndPoint(address, 0)))
             {
-                for (int i = 0; i < TestSettings.UDPRedundancy; i++)
-                {
-                    sender.Send(new byte[1], 1, new IPEndPoint(address, ((IPEndPoint)receiver.Client.LocalEndPoint).Port));
-                }
+                sender.Send(new byte[1], 1, new IPEndPoint(address, ((IPEndPoint)receiver.Client.LocalEndPoint).Port));
 
                 Assert.True(SpinWait.SpinUntil(() => receiver.Available > 0, 30000), "Expected data to be available for receive within time limit");
             }
@@ -568,10 +559,7 @@ namespace System.Net.Sockets.Tests
             using (var receiver = new UdpClient(new IPEndPoint(address, 0)))
             using (var sender = new UdpClient(new IPEndPoint(address, 0)))
             {
-                for (int i = 0; i < TestSettings.UDPRedundancy; i++)
-                {
-                    sender.EndSend(sender.BeginSend(new byte[1], 1, new IPEndPoint(address, ((IPEndPoint)receiver.Client.LocalEndPoint).Port), null, null));
-                }
+                sender.EndSend(sender.BeginSend(new byte[1], 1, new IPEndPoint(address, ((IPEndPoint)receiver.Client.LocalEndPoint).Port), null, null));
 
                 IPEndPoint remoteEP = null;
                 byte[] data = receiver.EndReceive(receiver.BeginReceive(null, null), ref remoteEP);
@@ -588,10 +576,7 @@ namespace System.Net.Sockets.Tests
             using (var receiver = new UdpClient("localhost", 0))
             using (var sender = new UdpClient("localhost", ((IPEndPoint)receiver.Client.LocalEndPoint).Port))
             {
-                for (int i = 0; i < TestSettings.UDPRedundancy; i++)
-                {
-                    sender.EndSend(sender.BeginSend(new byte[1], 1, null, null));
-                }
+                sender.EndSend(sender.BeginSend(new byte[1], 1, null, null));
 
                 IPEndPoint remoteEP = null;
                 byte[] data = receiver.EndReceive(receiver.BeginReceive(null, null), ref remoteEP);
@@ -611,10 +596,7 @@ namespace System.Net.Sockets.Tests
             using (var receiver = new UdpClient(new IPEndPoint(address, 0)))
             using (var sender = new UdpClient(new IPEndPoint(address, 0)))
             {
-                for (int i = 0; i < TestSettings.UDPRedundancy; i++)
-                {
-                    await sender.SendAsync(new byte[1], 1, new IPEndPoint(address, ((IPEndPoint)receiver.Client.LocalEndPoint).Port));
-                }
+                await sender.SendAsync(new byte[1], 1, new IPEndPoint(address, ((IPEndPoint)receiver.Client.LocalEndPoint).Port));
 
                 UdpReceiveResult result = await receiver.ReceiveAsync();
                 Assert.NotNull(result.RemoteEndPoint);
@@ -631,10 +613,7 @@ namespace System.Net.Sockets.Tests
             using (var receiver = new UdpClient("localhost", 0))
             using (var sender = new UdpClient("localhost", ((IPEndPoint)receiver.Client.LocalEndPoint).Port))
             {
-                for (int i = 0; i < TestSettings.UDPRedundancy; i++)
-                {
-                    await sender.SendAsync(new byte[1], 1);
-                }
+                await sender.SendAsync(new byte[1], 1);
 
                 UdpReceiveResult result = await receiver.ReceiveAsync();
                 Assert.NotNull(result.RemoteEndPoint);

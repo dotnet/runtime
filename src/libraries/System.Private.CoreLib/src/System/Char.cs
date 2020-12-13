@@ -170,7 +170,7 @@ namespace System
         {
             if (s == null)
             {
-                throw new ArgumentNullException(nameof(s));
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
             }
 
             if (s.Length != 1)
@@ -334,7 +334,10 @@ namespace System
         public static char ToUpper(char c, CultureInfo culture)
         {
             if (culture == null)
-                throw new ArgumentNullException(nameof(culture));
+            {
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.culture);
+            }
+
             return culture.TextInfo.ToUpper(c);
         }
 
@@ -361,7 +364,10 @@ namespace System
         public static char ToLower(char c, CultureInfo culture)
         {
             if (culture == null)
-                throw new ArgumentNullException(nameof(culture));
+            {
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.culture);
+            }
+
             return culture.TextInfo.ToLower(c);
         }
 
@@ -473,10 +479,12 @@ namespace System
         public static bool IsControl(string s, int index)
         {
             if (s == null)
-                throw new ArgumentNullException(nameof(s));
+            {
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
+            }
             if (((uint)index) >= ((uint)s.Length))
             {
-                throw new ArgumentOutOfRangeException(nameof(index));
+                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.index);
             }
 
             // Control chars are always in the BMP, so don't need to worry about surrogate handling.
@@ -486,60 +494,76 @@ namespace System
         public static bool IsDigit(string s, int index)
         {
             if (s == null)
-                throw new ArgumentNullException(nameof(s));
+            {
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
+            }
             if (((uint)index) >= ((uint)s.Length))
             {
-                throw new ArgumentOutOfRangeException(nameof(index));
+                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.index);
             }
+
             char c = s[index];
             if (IsLatin1(c))
             {
                 return IsInRange(c, '0', '9');
             }
+
             return CharUnicodeInfo.GetUnicodeCategoryInternal(s, index) == UnicodeCategory.DecimalDigitNumber;
         }
 
         public static bool IsLetter(string s, int index)
         {
             if (s == null)
-                throw new ArgumentNullException(nameof(s));
+            {
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
+            }
             if (((uint)index) >= ((uint)s.Length))
             {
-                throw new ArgumentOutOfRangeException(nameof(index));
+                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.index);
             }
+
             char c = s[index];
             if (IsAscii(c))
             {
                 // The ASCII range doesn't include letters in categories other than "upper" and "lower"
                 return (Latin1CharInfo[c] & (IsUpperCaseLetterFlag | IsLowerCaseLetterFlag)) != 0;
             }
+
             return CheckLetter(CharUnicodeInfo.GetUnicodeCategoryInternal(s, index));
         }
 
         public static bool IsLetterOrDigit(string s, int index)
         {
             if (s == null)
-                throw new ArgumentNullException(nameof(s));
+            {
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
+            }
             if (((uint)index) >= ((uint)s.Length))
             {
-                throw new ArgumentOutOfRangeException(nameof(index));
+                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.index);
             }
+
             char c = s[index];
             if (IsLatin1(c))
             {
                 return CheckLetterOrDigit(GetLatin1UnicodeCategory(c));
             }
+
             return CheckLetterOrDigit(CharUnicodeInfo.GetUnicodeCategoryInternal(s, index));
         }
 
         public static bool IsLower(string s, int index)
         {
             if (s == null)
-                throw new ArgumentNullException(nameof(s));
+            {
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
+            }
+
             if (((uint)index) >= ((uint)s.Length))
             {
-                throw new ArgumentOutOfRangeException(nameof(index));
+                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.index);
             }
+
             char c = s[index];
             if (IsLatin1(c))
             {
@@ -574,11 +598,14 @@ namespace System
         public static bool IsNumber(string s, int index)
         {
             if (s == null)
-                throw new ArgumentNullException(nameof(s));
+            {
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
+            }
             if (((uint)index) >= ((uint)s.Length))
             {
-                throw new ArgumentOutOfRangeException(nameof(index));
+                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.index);
             }
+
             char c = s[index];
             if (IsLatin1(c))
             {
@@ -586,8 +613,10 @@ namespace System
                 {
                     return IsInRange(c, '0', '9');
                 }
+
                 return CheckNumber(GetLatin1UnicodeCategory(c));
             }
+
             return CheckNumber(CharUnicodeInfo.GetUnicodeCategoryInternal(s, index));
         }
 
@@ -602,16 +631,20 @@ namespace System
         public static bool IsPunctuation(string s, int index)
         {
             if (s == null)
-                throw new ArgumentNullException(nameof(s));
+            {
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
+            }
             if (((uint)index) >= ((uint)s.Length))
             {
-                throw new ArgumentOutOfRangeException(nameof(index));
+                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.index);
             }
+
             char c = s[index];
             if (IsLatin1(c))
             {
                 return CheckPunctuation(GetLatin1UnicodeCategory(c));
             }
+
             return CheckPunctuation(CharUnicodeInfo.GetUnicodeCategoryInternal(s, index));
         }
 
@@ -643,16 +676,20 @@ namespace System
         public static bool IsSeparator(string s, int index)
         {
             if (s == null)
-                throw new ArgumentNullException(nameof(s));
+            {
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
+            }
             if (((uint)index) >= ((uint)s.Length))
             {
-                throw new ArgumentOutOfRangeException(nameof(index));
+                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.index);
             }
+
             char c = s[index];
             if (IsLatin1(c))
             {
                 return IsSeparatorLatin1(c);
             }
+
             return CheckSeparator(CharUnicodeInfo.GetUnicodeCategoryInternal(s, index));
         }
 
@@ -665,12 +702,13 @@ namespace System
         {
             if (s == null)
             {
-                throw new ArgumentNullException(nameof(s));
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
             }
             if (((uint)index) >= ((uint)s.Length))
             {
-                throw new ArgumentOutOfRangeException(nameof(index));
+                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.index);
             }
+
             return IsSurrogate(s[index]);
         }
 
@@ -695,27 +733,34 @@ namespace System
         public static bool IsSymbol(string s, int index)
         {
             if (s == null)
-                throw new ArgumentNullException(nameof(s));
+            {
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
+            }
             if (((uint)index) >= ((uint)s.Length))
             {
-                throw new ArgumentOutOfRangeException(nameof(index));
+                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.index);
             }
+
             char c = s[index];
             if (IsLatin1(c))
             {
                 return CheckSymbol(GetLatin1UnicodeCategory(c));
             }
+
             return CheckSymbol(CharUnicodeInfo.GetUnicodeCategoryInternal(s, index));
         }
 
         public static bool IsUpper(string s, int index)
         {
             if (s == null)
-                throw new ArgumentNullException(nameof(s));
+            {
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
+            }
             if (((uint)index) >= ((uint)s.Length))
             {
-                throw new ArgumentOutOfRangeException(nameof(index));
+                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.index);
             }
+
             char c = s[index];
             if (IsLatin1(c))
             {
@@ -728,10 +773,12 @@ namespace System
         public static bool IsWhiteSpace(string s, int index)
         {
             if (s == null)
-                throw new ArgumentNullException(nameof(s));
+            {
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
+            }
             if (((uint)index) >= ((uint)s.Length))
             {
-                throw new ArgumentOutOfRangeException(nameof(index));
+                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.index);
             }
 
             // All white space code points are within the BMP,
@@ -752,15 +799,19 @@ namespace System
         public static UnicodeCategory GetUnicodeCategory(string s, int index)
         {
             if (s == null)
-                throw new ArgumentNullException(nameof(s));
+            {
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
+            }
             if (((uint)index) >= ((uint)s.Length))
             {
-                throw new ArgumentOutOfRangeException(nameof(index));
+                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.index);
             }
+
             if (IsLatin1(s[index]))
             {
                 return GetLatin1UnicodeCategory(s[index]);
             }
+
             return CharUnicodeInfo.GetUnicodeCategoryInternal(s, index);
         }
 
@@ -772,11 +823,14 @@ namespace System
         public static double GetNumericValue(string s, int index)
         {
             if (s == null)
-                throw new ArgumentNullException(nameof(s));
+            {
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
+            }
             if (((uint)index) >= ((uint)s.Length))
             {
-                throw new ArgumentOutOfRangeException(nameof(index));
+                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.index);
             }
+
             return CharUnicodeInfo.GetNumericValueInternal(s, index);
         }
 
@@ -792,12 +846,13 @@ namespace System
         {
             if (s == null)
             {
-                throw new ArgumentNullException(nameof(s));
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
             }
-            if (index < 0 || index >= s.Length)
+            if (((uint)index) >= ((uint)s.Length))
             {
-                throw new ArgumentOutOfRangeException(nameof(index));
+                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.index);
             }
+
             return IsHighSurrogate(s[index]);
         }
 
@@ -813,12 +868,13 @@ namespace System
         {
             if (s == null)
             {
-                throw new ArgumentNullException(nameof(s));
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
             }
-            if (index < 0 || index >= s.Length)
+            if (((uint)index) >= ((uint)s.Length))
             {
-                throw new ArgumentOutOfRangeException(nameof(index));
+                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.index);
             }
+
             return IsLowSurrogate(s[index]);
         }
 
@@ -829,16 +885,18 @@ namespace System
         {
             if (s == null)
             {
-                throw new ArgumentNullException(nameof(s));
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
             }
-            if (index < 0 || index >= s.Length)
+            if (((uint)index) >= ((uint)s.Length))
             {
-                throw new ArgumentOutOfRangeException(nameof(index));
+                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.index);
             }
+
             if (index + 1 < s.Length)
             {
                 return IsSurrogatePair(s[index], s[index + 1]);
             }
+
             return false;
         }
 
@@ -933,7 +991,7 @@ namespace System
         {
             if (s == null)
             {
-                throw new ArgumentNullException(nameof(s));
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
             }
 
             if (index < 0 || index >= s.Length)

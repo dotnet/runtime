@@ -16,7 +16,11 @@ while true; do
     fi
 done
 
-XHARNESS_OUT="$EXECUTION_DIR/xharness-output"
+if [ -z "$HELIX_WORKITEM_UPLOAD_ROOT" ]; then
+    XHARNESS_OUT="$EXECUTION_DIR/xharness-output"
+else
+    XHARNESS_OUT="$HELIX_WORKITEM_UPLOAD_ROOT/xharness-output"
+fi
 
 if [ ! -z "$XHARNESS_CLI_PATH" ]; then
 	# When running in CI, we only have the .NET runtime available

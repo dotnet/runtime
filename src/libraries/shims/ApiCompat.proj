@@ -19,7 +19,8 @@
 
   <ItemGroup>
     <PackageDownload Include="$(PreviousNetCoreAppPackageId)" Version="[$(PreviousNetCoreAppPackageVersion)]" />
-    <PackageDownload Include="NETStandard.Library" Version="[$(NETStandardLibraryVersion)];[$(NetStandardLibrary20Version)]" />
+    <PackageDownload Include="NETStandard.Library.Ref" Version="[$(NETStandardLibraryRefVersion)]" />
+    <PackageDownload Include="NETStandard.Library" Version="[$(NetStandardLibraryVersion)]" />
   </ItemGroup>
 
   <!-- Evaluate these properties inside a Target to gain access to TargetFrameworkIdentifier. -->
@@ -78,8 +79,8 @@
     <PropertyGroup>
       <UpdateNETStandardBaseline Condition="'$(UpdateNETStandardBaseline)' == ''">False</UpdateNETStandardBaseline>
       <UpdateNETStandardBaselineLocally Condition="'$(UpdateNETStandardBaselineLocally)' == ''">False</UpdateNETStandardBaselineLocally>
-      <_netStandardLibraryRefPath>$([MSBuild]::NormalizeDirectory('$(NuGetPackageRoot)', 'netstandard.library', '$(NETStandardLibraryVersion)', 'build', 'netstandard2.1', 'ref'))</_netStandardLibraryRefPath>
-      <_netStandardLibrary20RefPath>$([MSBuild]::NormalizeDirectory('$(NuGetPackageRoot)', 'netstandard.library', '$(NetStandardLibrary20Version)', 'build', 'netstandard2.0', 'ref'))</_netStandardLibrary20RefPath>
+      <_netStandardLibraryRefPath>$([MSBuild]::NormalizeDirectory('$(NuGetPackageRoot)', 'netstandard.library.ref', '$(NETStandardLibraryRefVersion)', 'ref', 'netstandard2.1'))</_netStandardLibraryRefPath>
+      <_netStandardLibrary20RefPath>$([MSBuild]::NormalizeDirectory('$(NuGetPackageRoot)', 'netstandard.library', '$(NetStandardLibraryVersion)', 'build', 'netstandard2.0', 'ref'))</_netStandardLibrary20RefPath>
       <_netStandard21OnlyRef>$(_netStandardLibraryRefPath)netstandard.dll</_netStandard21OnlyRef>
       <_netStandard21OnlyRef Condition="$(UpdateNETStandardBaselineLocally)">$(MSBuildThisFileDirectory)..\..\..\standard\artifacts\bin\ref\netstandard\Debug\netstandard.dll</_netStandard21OnlyRef>
       <_netStandard21BaselineModifer>--baseline</_netStandard21BaselineModifer>

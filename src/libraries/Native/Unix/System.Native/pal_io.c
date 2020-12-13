@@ -40,6 +40,15 @@
 // Somehow, AIX mangles the definition for this behind a C++ def
 // Redeclare it here
 extern int     getpeereid(int, uid_t *__restrict__, gid_t *__restrict__);
+#elif defined(__sun)
+#ifndef _KERNEL
+#define _KERNEL
+#define UNDEF_KERNEL
+#endif
+#include <sys/procfs.h>
+#ifdef UNDEF_KERNEL
+#undef _KERNEL
+#endif
 #endif
 
 #if HAVE_STAT64
@@ -632,8 +641,16 @@ int32_t SystemNative_FChMod(intptr_t fd, int32_t mode)
 
 int32_t SystemNative_FSync(intptr_t fd)
 {
+    int fileDescriptor = ToFileDescriptor(fd);
+
     int32_t result;
-    while ((result = fsync(ToFileDescriptor(fd))) < 0 && errno == EINTR);
+    while ((result = 
+#if defined(TARGET_OSX) && HAVE_F_FULLFSYNC
+    fcntl(fileDescriptor, F_FULLFSYNC)
+#else
+    fsync(fileDescriptor)
+#endif
+    < 0) && errno == EINTR);
     return result;
 }
 
@@ -1288,3 +1305,31 @@ int32_t SystemNative_LChflagsCanSetHiddenFlag(void)
     return false;
 #endif
 }
+
+#ifdef __sun
+
+int32_t SystemNative_ReadProcessStatusInfo(pid_t pid, ProcessStatus* processStatus)
+{
+    char statusFilename[64];
+    snprintf(statusFilename, sizeof(statusFilename), "/proc/%d/psinfo", pid);
+
+    intptr_t fd;
+    while ((fd = open(statusFilename, O_RDONLY)) < 0 && errno == EINTR);
+    if (fd < 0)
+    {
+        return 0;
+    }
+
+    psinfo_t status;
+    int result = Common_Read(fd, &status, sizeof(psinfo_t));
+    close(fd);
+    if (result >= 0)
+    {
+        processStatus->ResidentSetSize = status.pr_rssize * 1024; // pr_rssize is in Kbytes
+        return 1;
+    }
+
+    return 0;
+}
+
+#endif // __sun
