@@ -10,6 +10,11 @@ namespace System.Linq
     {
         public static IEnumerable<TResult> OfType<TResult>(this IEnumerable source)
         {
+            if (source is IEnumerable<TResult> typedSource)
+            {
+                return typedSource;
+            }
+
             if (source == null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
