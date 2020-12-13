@@ -885,9 +885,9 @@ public:
 
     // ICorDebugInfo stuff.
     void setBoundaries(CORINFO_METHOD_HANDLE ftn,
-                       ULONG32 cMap, ICorDebugInfo::OffsetMapping *pMap);
+                       ULONG32 cMap, ICorDebugInfo::OffsetMapping *pMap) override final;
     void setVars(CORINFO_METHOD_HANDLE ftn, ULONG32 cVars,
-                 ICorDebugInfo::NativeVarInfo *vars);
+                 ICorDebugInfo::NativeVarInfo *vars) override final;
     void CompressDebugInfo();
 
     void* getHelperFtn(CorInfoHelpFunc    ftnNum,                         /* IN  */
@@ -917,7 +917,7 @@ public:
     void BackoutJitData(EEJitManager * jitMgr);
 
     void setPatchpointInfo(PatchpointInfo* patchpointInfo) override final;
-    PatchpointInfo* getOSRInfo(unsigned* ilOffset);
+    PatchpointInfo* getOSRInfo(unsigned* ilOffset) override final;
 
 protected :
     EEJitManager*           m_jitManager;   // responsible for allocating memory
