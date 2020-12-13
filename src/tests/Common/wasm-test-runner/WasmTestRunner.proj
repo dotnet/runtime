@@ -19,6 +19,7 @@
       <WasmMainJSPath>$(CORE_ROOT)\runtime-test\runtime-test.js</WasmMainJSPath>
       <WasmResolveAssembliesBeforeBuild>true</WasmResolveAssembliesBeforeBuild>
       <WasmGenerateRunV8Script>true</WasmGenerateRunV8Script>
+      <WasmSkipMissingAssemblies>true</WasmSkipMissingAssemblies>
     </PropertyGroup>
 
     <ItemGroup>

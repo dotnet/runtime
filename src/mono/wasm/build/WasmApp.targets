@@ -11,7 +11,8 @@
     <WasmLoadAssembliesAndReferences
       Condition="'$(WasmResolveAssembliesBeforeBuild)' == 'true'"
       Assemblies="$(WasmMainAssemblyPath);@(WasmAssembliesToBundle)"
-      AssemblySearchPaths="@(WasmAssemblySearchPaths)">
+      AssemblySearchPaths="@(WasmAssemblySearchPaths)"
+      SkipMissingAssemblies="$(WasmSkipMissingAssemblies)">
       <Output TaskParameter="ReferencedAssemblies" ItemName="_WasmAssembliesFullSet" />
     </WasmLoadAssembliesAndReferences>
 
