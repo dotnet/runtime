@@ -322,7 +322,6 @@ namespace System.IO.Pipes
             DebugAssertHandleValid(handle);
             Debug.Assert((_isAsync && overlapped != null) || (!_isAsync && overlapped == null), "Async IO parameter screwup in call to ReadFileNative.");
 
-            // The fixed statement maps an empty Span to nullptr.
             // Note that async callers check to avoid calling this first, so they can call user's callback.
             if (buffer.Length == 0)
             {
@@ -360,7 +359,6 @@ namespace System.IO.Pipes
             DebugAssertHandleValid(handle);
             Debug.Assert((_isAsync && overlapped != null) || (!_isAsync && overlapped == null), "Async IO parameter screwup in call to WriteFileNative.");
 
-            // The fixed statement maps an empty ReadOnlySpan to nullptr.
             // Note that async callers check to avoid calling this first, so they can call user's callback.
             if (buffer.Length == 0)
             {
