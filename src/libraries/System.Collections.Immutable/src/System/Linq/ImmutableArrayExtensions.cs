@@ -79,6 +79,14 @@ namespace System.Linq
         /// Filters a sequence of values based on a predicate.
         /// </summary>
         /// <typeparam name="T">The type of element contained by the collection.</typeparam>
+        /// <param name="immutableArray">The immutable array.</param>
+        /// <param name="predicate">The predicate.</param>
+        /// <returns>
+        /// An <see cref="IEnumerable{T}"/> whose elements are the result
+        /// of invoking the predicate function <paramref name="predicate"/> on each
+        /// element of <paramref name="immutableArray"/> and then mapping each of those sequence elements and their
+        /// corresponding source element to a result element.
+        /// </returns>
         public static IEnumerable<T> Where<T>(this ImmutableArray<T> immutableArray, Func<T, bool> predicate)
         {
             immutableArray.ThrowNullRefIfNotInitialized();
@@ -94,6 +102,9 @@ namespace System.Linq
         /// </summary>
         /// <typeparam name="T">The type of element contained by the collection.</typeparam>
         /// <param name="immutableArray"></param>
+        /// <returns>
+        /// <c>true</c> if the <paramref name="immutableArray"/> contains any element; otherwise, <c>false</c>.
+        /// </returns>
         public static bool Any<T>(this ImmutableArray<T> immutableArray)
         {
             return immutableArray.Length > 0;
@@ -106,6 +117,9 @@ namespace System.Linq
         /// <typeparam name="T">The type of element contained by the collection.</typeparam>
         /// <param name="immutableArray"></param>
         /// <param name="predicate">The predicate.</param>
+        /// <returns>
+        /// <c>true</c> if any element of the source sequence passes the test in the specified predicate, or if the sequence is empty; otherwise, <c>false</c>.
+        /// </returns>
         public static bool Any<T>(this ImmutableArray<T> immutableArray, Func<T, bool> predicate)
         {
             immutableArray.ThrowNullRefIfNotInitialized();
@@ -253,6 +267,8 @@ namespace System.Linq
         /// Applies an accumulator function over a sequence.
         /// </summary>
         /// <typeparam name="T">The type of element contained by the collection.</typeparam>
+        /// <param name="immutableArray"></param>
+        /// <param name="func"></param>
         public static T? Aggregate<T>(this ImmutableArray<T> immutableArray, Func<T, T, T> func)
         {
             Requires.NotNull(func, nameof(func));
@@ -276,6 +292,9 @@ namespace System.Linq
         /// </summary>
         /// <typeparam name="TAccumulate">The type of the accumulated value.</typeparam>
         /// <typeparam name="T">The type of element contained by the collection.</typeparam>
+        /// <param name="immutableArray"></param>
+        /// <param name="seed"></param>
+        /// <param name="func"></param>
         public static TAccumulate Aggregate<TAccumulate, T>(this ImmutableArray<T> immutableArray, TAccumulate seed, Func<TAccumulate, T, TAccumulate> func)
         {
             Requires.NotNull(func, nameof(func));
@@ -295,6 +314,10 @@ namespace System.Linq
         /// <typeparam name="TAccumulate">The type of the accumulated value.</typeparam>
         /// <typeparam name="TResult">The type of result returned by the result selector.</typeparam>
         /// <typeparam name="T">The type of element contained by the collection.</typeparam>
+        /// <param name="immutableArray"></param>
+        /// <param name="seed"></param>
+        /// <param name="func"></param>
+        /// <param name="resultSelector"></param>
         public static TResult Aggregate<TAccumulate, TResult, T>(this ImmutableArray<T> immutableArray, TAccumulate seed, Func<TAccumulate, T, TAccumulate> func, Func<TAccumulate, TResult> resultSelector)
         {
             Requires.NotNull(resultSelector, nameof(resultSelector));
@@ -468,6 +491,8 @@ namespace System.Linq
         /// Returns the only element of a sequence that satisfies a specified condition, and throws an exception if more than one such element exists.
         /// </summary>
         /// <typeparam name="T">The type of element contained by the collection.</typeparam>
+        /// <param name="immutableArray"></param>
+        /// <param name="predicate">The predicate.</param>
         public static T Single<T>(this ImmutableArray<T> immutableArray, Func<T, bool> predicate)
         {
             Requires.NotNull(predicate, nameof(predicate));
@@ -511,6 +536,8 @@ namespace System.Linq
         /// Returns the only element of a sequence that satisfies a specified condition or a default value if no such element exists; this method throws an exception if more than one element satisfies the condition.
         /// </summary>
         /// <typeparam name="T">The type of element contained by the collection.</typeparam>
+        /// <param name="immutableArray"></param>
+        /// <param name="predicate">The predicate.</param>
         public static T? SingleOrDefault<T>(this ImmutableArray<T> immutableArray, Func<T, bool> predicate)
         {
             Requires.NotNull(predicate, nameof(predicate));
@@ -614,6 +641,7 @@ namespace System.Linq
         /// </summary>
         /// <typeparam name="T">The type of element contained by the collection.</typeparam>
         /// <param name="immutableArray"></param>
+        /// <exception cref="ThrowNullRefIfNotInitialized">Thrown if the collection is empty.</exception>
         /// <returns>The newly instantiated array.</returns>
         public static T[] ToArray<T>(this ImmutableArray<T> immutableArray)
         {
@@ -633,6 +661,8 @@ namespace System.Linq
         /// <summary>
         /// Returns the first element in the collection.
         /// </summary>
+        /// <typeparam name="T">The type of element contained by the collection.</typeparam>
+        /// <param name="builder"></param>
         /// <exception cref="InvalidOperationException">Thrown if the collection is empty.</exception>
         public static T First<T>(this ImmutableArray<T>.Builder builder)
         {
@@ -649,6 +679,8 @@ namespace System.Linq
         /// <summary>
         /// Returns the first element in the collection, or the default value if the collection is empty.
         /// </summary>
+        /// <typeparam name="T">The type of element contained by the collection.</typeparam>
+        /// <param name="builder"></param>
         public static T? FirstOrDefault<T>(this ImmutableArray<T>.Builder builder)
         {
             Requires.NotNull(builder, nameof(builder));
