@@ -356,7 +356,7 @@
 
         <!-- Wasm App Builder always builds in Debug -->
         <RunTimeDependencyCopyLocal
-          Include="$(ArtifactsBinDir)\WasmAppBuilder\Debug\$(NetCoreAppCurrent)\publish\**"
+          Include="$(ArtifactsBinDir)\WasmAppBuilder\Debug\$(NetCoreAppToolCurrent)\publish\**"
           TargetDir="WasmAppBuilder/"/>
 
         <RunTimeDependencyCopyLocal
@@ -366,6 +366,10 @@
         <RunTimeDependencyCopyLocal
           Include="$(MonoProjectRoot)\wasm\runtime-test.js"
           TargetDir="runtime-test/"/>
+
+        <RunTimeDependencyCopyLocal
+          Include="$(MonoProjectRoot)\wasm\build\WasmApp.targets"
+          TargetDir="build/"/>
     </ItemGroup>
 
     <Copy

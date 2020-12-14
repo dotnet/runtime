@@ -58,7 +58,7 @@ There are several steps to follow to port the JIT (some of which can be be done 
   way, only very limited JIT functionality need to work, as the "base" JIT takes care of most functions.
 * Implement the basic instruction encodings. Test them using a method like `CodeGen::genArm64EmitterUnitTests()`.
 * Implement the bare minimum to get the compiler building and generating code for very simple operations, like addition.
-* Focus on the CodeGenBringUpTests (src\coreclr\tests\src\JIT\CodeGenBringUpTests), starting with the simple ones.
+* Focus on the CodeGenBringUpTests (src\tests\JIT\CodeGenBringUpTests), starting with the simple ones.
   These are designed such that for a test `XXX.cs`, there is a single interesting function named `XXX` to compile
   (that is, the name of the source file is the same as the name of the interesting function. This was done to make
   the scripts to invoke these tests very simple.). Set `COMPlus_AltJit=XXX` so the new JIT only attempts to

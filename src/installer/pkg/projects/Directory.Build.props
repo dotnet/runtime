@@ -151,7 +151,7 @@
     <!-- During NuGet restore, grab assets for all applicable RIDs. -->
     <RuntimeIdentifiers Condition="'$(RestoreAllBuildRids)' == 'true'">@(RestoreBuildRID)</RuntimeIdentifiers>
     <!-- When resolving assets to pack, use the target runtime (if any). -->
-    <RuntimeIdentifier>$(PackageRID)</RuntimeIdentifier>
+    <RuntimeIdentifier>$(OutputRid)</RuntimeIdentifier>
   </PropertyGroup>
 
   <ItemGroup>

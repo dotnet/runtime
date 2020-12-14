@@ -32,7 +32,7 @@ build_test_wrappers()
         __MsbuildErr="/fileloggerparameters2:\"ErrorsOnly;LogFile=${__BuildErr}\""
         __Logging="$__MsbuildLog $__MsbuildWrn $__MsbuildErr /consoleloggerparameters:$buildVerbosity"
 
-        nextCommand="\"${__DotNetCli}\" msbuild \"$__RepoRootDir/src/tests/run.proj\" /nodereuse:false /p:BuildWrappers=true /p:TestBuildMode=$__TestBuildMode /p:TargetsWindows=false $__Logging /p:TargetOS=$__TargetOS /p:Configuration=$__BuildType /p:TargetArchitecture=$__BuildArch /p:RuntimeFlavor=$__RuntimeFlavor \"/bl:${__RepoRootDir}/artifacts/log/${__BuildType}/build_test_wrappers_${__RuntimeFlavor}.binlog\" ${__UnprocessedBuildArgs[@]}"
+        nextCommand="\"${__DotNetCli}\" msbuild \"$__RepoRootDir/src/tests/run.proj\" /nodereuse:false /p:BuildWrappers=true /p:TestBuildMode=$__TestBuildMode /p:TargetsWindows=${TestWrapperTargetsWindows} $__Logging /p:TargetOS=$__TargetOS /p:Configuration=$__BuildType /p:TargetArchitecture=$__BuildArch /p:RuntimeFlavor=$__RuntimeFlavor \"/bl:${__RepoRootDir}/artifacts/log/${__BuildType}/build_test_wrappers_${__RuntimeFlavor}.binlog\" ${__UnprocessedBuildArgs[@]}"
         eval $nextCommand
         local exitCode="$?"
         if [[ "$exitCode" -ne 0 ]]; then
@@ -279,7 +279,7 @@ build_Tests()
     fi
 
     if [[ "$__SkipNative" != 1 && "$__TargetOS" != "Browser" && "$__TargetOS" != "Android" ]]; then
-        build_native "$__TargetOS" "$__BuildArch" "$__TestDir" "$__TryRunDir" "$__NativeTestIntermediatesDir" "CoreCLR test component"
+        build_native "$__TargetOS" "$__BuildArch" "$__TestDir" "$__NativeTestIntermediatesDir" "CoreCLR test component"
 
         if [[ "$?" -ne 0 ]]; then
             echo "${__ErrMsgPrefix}${__MsgPrefix}Error: native test build failed. Refer to the build log files for details (above)"
@@ -605,7 +605,6 @@ __OSPlatformConfig="$__TargetOS.$__BuildArch.$__BuildType"
 __BinDir="$__RootBinDir/bin/coreclr/$__OSPlatformConfig"
 __PackagesBinDir="$__BinDir/.nuget"
 __TestDir="$__RepoRootDir/src/tests"
-__TryRunDir="$__RepoRootDir/src/coreclr"
 __TestWorkingDir="$__RootBinDir/tests/coreclr/$__OSPlatformConfig"
 __IntermediatesDir="$__RootBinDir/obj/coreclr/$__OSPlatformConfig"
 __TestIntermediatesDir="$__RootBinDir/tests/coreclr/obj/$__OSPlatformConfig"

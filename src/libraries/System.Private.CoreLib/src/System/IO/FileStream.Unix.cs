@@ -4,6 +4,7 @@
 using Microsoft.Win32.SafeHandles;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
+using System.Runtime.Versioning;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -333,7 +334,9 @@ namespace System.IO
 
         private void FlushWriteBufferForWriteByte()
         {
+#pragma warning disable CA1416 // Validate platform compatibility, issue: https://github.com/dotnet/runtime/issues/44542
             _asyncState?.Wait();
+#pragma warning restore CA1416
             try { FlushWriteBuffer(); }
             finally { _asyncState?.Release(); }
         }
@@ -542,7 +545,9 @@ namespace System.IO
         /// <summary>Reads from the file handle into the buffer, overwriting anything in it.</summary>
         private int FillReadBufferForReadByte()
         {
+#pragma warning disable CA1416 // Validate platform compatibility, issue: https://github.com/dotnet/runtime/issues/44542
             _asyncState?.Wait();
+#pragma warning restore CA1416
             try { return ReadNative(_buffer); }
             finally { _asyncState?.Release(); }
         }
