@@ -47,7 +47,7 @@ namespace
     extern "C" const void* CompressionResolveDllImport(const char* name);
 
 #if defined(_WIN32)
-#define COMPRESSION_DLL_NAME "clrcompression"
+#define COMPRESSION_DLL_NAME "System.IO.Compression.Native"
 #else
 #define COMPRESSION_DLL_NAME "libSystem.IO.Compression.Native"
 #endif

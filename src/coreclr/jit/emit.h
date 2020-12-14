@@ -1500,6 +1500,7 @@ protected:
     void emitDispGCDeltaTitle(const char* title);
     void emitDispGCRegDelta(const char* title, regMaskTP prevRegs, regMaskTP curRegs);
     void emitDispGCVarDelta();
+    void emitDispRegPtrListDelta();
     void emitDispGCInfoDelta();
 
     void emitDispIGflags(unsigned flags);

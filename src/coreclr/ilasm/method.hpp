@@ -23,7 +23,6 @@ struct LinePC
     ULONG   LineEnd;
     ULONG   ColumnEnd;
     ULONG   PC;
-    ISymUnmanagedDocumentWriter* pWriter;
     Document* pOwnerDocument;
     BOOL    IsHidden;
 };

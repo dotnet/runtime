@@ -3,14 +3,16 @@
 # Trigger this job if the JIT-EE GUID changes, which invalidates previous SuperPMI
 # collections.
 trigger:
-  batch: true
+  batch: false
   branches:
     include:
     - master
   paths:
     include:
-    - src/coreclr/src/inc/jiteeversionguid.h
+    - src/coreclr/inc/jiteeversionguid.h
 
+# This pipeline is supposed to be run only on merged changes
+# and should not be triggerable from a PR. 
 pr: none
 
 schedules:

@@ -44,6 +44,7 @@ public: // COM activation
 
 public: // Unwrapping support
     static IUnknown* GetIdentityForObject(_In_ OBJECTREF* objectPROTECTED, _In_ REFIID riid, _Out_ INT64* wrapperId);
+    static bool HasManagedObjectComWrapper(_In_ OBJECTREF object, _Out_ bool* isActive);
 };
 
 class GlobalComWrappersForMarshalling

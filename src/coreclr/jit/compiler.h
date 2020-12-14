@@ -2830,7 +2830,7 @@ public:
 
     GenTreeArrLen* gtNewArrLen(var_types typ, GenTree* arrayOp, int lenOffset, BasicBlock* block);
 
-    GenTree* gtNewIndir(var_types typ, GenTree* addr);
+    GenTreeIndir* gtNewIndir(var_types typ, GenTree* addr);
 
     GenTree* gtNewNullCheck(GenTree* addr, BasicBlock* basicBlock);
 
@@ -2878,6 +2878,8 @@ public:
     GenTreeAllocObj* gtNewAllocObjNode(CORINFO_RESOLVED_TOKEN* pResolvedToken, BOOL useParent);
 
     GenTree* gtNewRuntimeLookup(CORINFO_GENERIC_HANDLE hnd, CorInfoGenericHandleType hndTyp, GenTree* lookupTree);
+
+    GenTreeIndir* gtNewMethodTableLookup(GenTree* obj);
 
     //------------------------------------------------------------------------
     // Other GenTree functions
@@ -6705,15 +6707,14 @@ public:
 #define OMF_HAS_NEWARRAY 0x00000001         // Method contains 'new' of an array
 #define OMF_HAS_NEWOBJ 0x00000002           // Method contains 'new' of an object type.
 #define OMF_HAS_ARRAYREF 0x00000004         // Method contains array element loads or stores.
-#define OMF_HAS_VTABLEREF 0x00000008        // Method contains method table reference.
-#define OMF_HAS_NULLCHECK 0x00000010        // Method contains null check.
-#define OMF_HAS_FATPOINTER 0x00000020       // Method contains call, that needs fat pointer transformation.
-#define OMF_HAS_OBJSTACKALLOC 0x00000040    // Method contains an object allocated on the stack.
-#define OMF_HAS_GUARDEDDEVIRT 0x00000080    // Method contains guarded devirtualization candidate
-#define OMF_HAS_EXPRUNTIMELOOKUP 0x00000100 // Method contains a runtime lookup to an expandable dictionary.
-#define OMF_HAS_PATCHPOINT 0x00000200       // Method contains patchpoints
-#define OMF_NEEDS_GCPOLLS 0x00000400        // Method needs GC polls
-#define OMF_HAS_FROZEN_STRING 0x00000800    // Method has a frozen string (REF constant int), currently only on CoreRT.
+#define OMF_HAS_NULLCHECK 0x00000008        // Method contains null check.
+#define OMF_HAS_FATPOINTER 0x00000010       // Method contains call, that needs fat pointer transformation.
+#define OMF_HAS_OBJSTACKALLOC 0x00000020    // Method contains an object allocated on the stack.
+#define OMF_HAS_GUARDEDDEVIRT 0x00000040    // Method contains guarded devirtualization candidate
+#define OMF_HAS_EXPRUNTIMELOOKUP 0x00000080 // Method contains a runtime lookup to an expandable dictionary.
+#define OMF_HAS_PATCHPOINT 0x00000100       // Method contains patchpoints
+#define OMF_NEEDS_GCPOLLS 0x00000200        // Method needs GC polls
+#define OMF_HAS_FROZEN_STRING 0x00000400    // Method has a frozen string (REF constant int), currently only on CoreRT.
 
     bool doesMethodHaveFatPointer()
     {
@@ -6813,7 +6814,6 @@ public:
     {
         OPK_INVALID,
         OPK_ARRAYLEN,
-        OPK_OBJ_GETTYPE,
         OPK_NULLCHECK
     };
 
@@ -8715,16 +8715,9 @@ private:
     // Answer the question: Is a particular ISA supported for explicit hardware intrinsics?
     bool compHWIntrinsicDependsOn(CORINFO_InstructionSet isa) const
     {
-        if ((opts.compSupportsISA & (1ULL << isa)) != 0)
-        {
-            // Report intent to use the ISA to the EE
-            compExactlyDependsOn(isa);
-            return true;
-        }
-        else
-        {
-            return false;
-        }
+        // Report intent to use the ISA to the EE
+        compExactlyDependsOn(isa);
+        return ((opts.compSupportsISA & (1ULL << isa)) != 0);
     }
 
     bool canUseVexEncoding() const
@@ -9139,6 +9132,7 @@ public:
         STRESS_MODE(CLONE_EXPR)                                                                 \
         STRESS_MODE(USE_CMOV)                                                                   \
         STRESS_MODE(FOLD)                                                                       \
+        STRESS_MODE(MERGED_RETURNS)                                                             \
         STRESS_MODE(BB_PROFILE)                                                                 \
         STRESS_MODE(OPT_BOOLS_GC)                                                               \
         STRESS_MODE(REMORPH_TREES)                                                              \

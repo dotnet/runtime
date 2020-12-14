@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
+    <TargetFramework>$(NetCoreAppToolCurrent)</TargetFramework>
     <Platform>AnyCPU</Platform>
     <OutputPath>$(RuntimeBinDir)\DacTableGen</OutputPath>
     <IsShipping>false</IsShipping>
@@ -14,7 +14,7 @@
 
   <Target Name="ResolveDIALibToCopy" BeforeTargets="AssignTargetPaths">
     <PropertyGroup>
-      <VSWherePath>$([MSBuild]::NormalizePath('$(Pkgvswhere)','tools','vswhere.exe'))</VSWherePath>
+      <VSWherePath>"$([MSBuild]::NormalizePath('$(Pkgvswhere)','tools','vswhere.exe'))"</VSWherePath>
     </PropertyGroup>
     <Exec
       Command="$(VSWherePath) -latest -prerelease -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath"

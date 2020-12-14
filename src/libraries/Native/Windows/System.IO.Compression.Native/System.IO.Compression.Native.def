@@ -1,4 +1,4 @@
-LIBRARY clrcompression.dll
+LIBRARY System.IO.Compression.Native.dll
 
 EXPORTS
     CompressionNative_Crc32

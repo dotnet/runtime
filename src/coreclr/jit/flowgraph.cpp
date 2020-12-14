@@ -9311,14 +9311,16 @@ void Compiler::fgAddInternal()
     }
     else
     {
+        bool stressMerging = compStressCompile(STRESS_MERGED_RETURNS, 50);
+
         //
         // We are allowed to have multiple individual exits
         // However we can still decide to have a single return
         //
-        if (compCodeOpt() == SMALL_CODE)
+        if ((compCodeOpt() == SMALL_CODE) || stressMerging)
         {
-            // For the Small_Code case we always generate a
-            // single return block when we have multiple
+            // Under stress or for Small_Code case we always
+            // generate a single return block when we have multiple
             // return points
             //
             merger.SetMaxReturns(1);
@@ -15442,8 +15444,7 @@ bool Compiler::fgOptimizeBranch(BasicBlock* bJump)
     gtReverseCond(condTree);
 
     // We need to update the following flags of the bJump block if they were set in the bDest block
-    bJump->bbFlags |=
-        (bDest->bbFlags & (BBF_HAS_NEWOBJ | BBF_HAS_NEWARRAY | BBF_HAS_NULLCHECK | BBF_HAS_IDX_LEN | BBF_HAS_VTABREF));
+    bJump->bbFlags |= (bDest->bbFlags & (BBF_HAS_NEWOBJ | BBF_HAS_NEWARRAY | BBF_HAS_NULLCHECK | BBF_HAS_IDX_LEN));
 
     bJump->bbJumpKind = BBJ_COND;
     bJump->bbJumpDest = bDest->bbNext;

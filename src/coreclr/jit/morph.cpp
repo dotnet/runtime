@@ -3959,12 +3959,15 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
                            ((copyBlkClass != NO_CLASS_HANDLE) && varTypeIsEnregisterable(structBaseType)));
                 }
 
-#ifndef UNIX_AMD64_ABI
+#if !defined(UNIX_AMD64_ABI) && !defined(TARGET_ARMARCH)
+                // TODO-CQ-XARCH: there is no need for a temp copy if we improve our code generation in
+                // `genPutStructArgStk` for xarch like we did it for Arm/Arm64.
+
                 // We still have a struct unless we converted the GT_OBJ into a GT_IND above...
                 if (isHfaArg && passUsingFloatRegs)
                 {
                 }
-                else if ((!isHfaArg || !passUsingFloatRegs) && (structBaseType == TYP_STRUCT))
+                else if (structBaseType == TYP_STRUCT)
                 {
                     // If the valuetype size is not a multiple of TARGET_POINTER_SIZE,
                     // we must copyblk to a temp before doing the obj to avoid
@@ -7867,9 +7870,102 @@ GenTree* Compiler::fgMorphTailCallViaHelpers(GenTreeCall* call, CORINFO_TAILCALL
         call->fgArgInfo = nullptr;
     }
 
+    const bool stubNeedsTargetFnPtr = (help.flags & CORINFO_TAILCALL_STORE_TARGET) != 0;
+
+    GenTree* doBeforeStoreArgsStub = nullptr;
+    GenTree* thisPtrStubArg        = nullptr;
+
+    // Put 'this' in normal param list
+    if (call->gtCallThisArg != nullptr)
+    {
+        JITDUMP("Moving this pointer into arg list\n");
+        GenTree* objp       = call->gtCallThisArg->GetNode();
+        GenTree* thisPtr    = nullptr;
+        call->gtCallThisArg = nullptr;
+
+        // JIT will need one or two copies of "this" in the following cases:
+        //   1) the call needs null check;
+        //   2) StoreArgs stub needs the target function pointer address and if the call is virtual
+        //      the stub also needs "this" in order to evalute the target.
+
+        const bool callNeedsNullCheck = call->NeedsNullCheck();
+        const bool stubNeedsThisPtr   = stubNeedsTargetFnPtr && virtualCall;
+
+        // TODO-Review: The following transformation is implemented under assumption that
+        // both conditions can be true. However, I could not construct such example
+        // where a virtual tail call would require null check. In case, if the conditions
+        // are mutually exclusive the following could be simplified.
+
+        if (callNeedsNullCheck || stubNeedsThisPtr)
+        {
+            // Clone "this" if "this" has no side effects.
+            if ((objp->gtFlags & GTF_SIDE_EFFECT) == 0)
+            {
+                thisPtr = gtClone(objp, true);
+            }
+
+            // Create a temp and spill "this" to the temp if "this" has side effects or "this" was too complex to clone.
+            if (thisPtr == nullptr)
+            {
+                const unsigned lclNum = lvaGrabTemp(true DEBUGARG("tail call thisptr"));
+
+                // tmp = "this"
+                doBeforeStoreArgsStub = gtNewTempAssign(lclNum, objp);
+
+                if (callNeedsNullCheck)
+                {
+                    // COMMA(tmp = "this", deref(tmp))
+                    GenTree* tmp          = gtNewLclvNode(lclNum, objp->TypeGet());
+                    GenTree* nullcheck    = gtNewNullCheck(tmp, compCurBB);
+                    doBeforeStoreArgsStub = gtNewOperNode(GT_COMMA, TYP_VOID, doBeforeStoreArgsStub, nullcheck);
+                }
+
+                thisPtr = gtNewLclvNode(lclNum, objp->TypeGet());
+
+                if (stubNeedsThisPtr)
+                {
+                    thisPtrStubArg = gtNewLclvNode(lclNum, objp->TypeGet());
+                }
+            }
+            else
+            {
+                if (callNeedsNullCheck)
+                {
+                    // deref("this")
+                    doBeforeStoreArgsStub = gtNewNullCheck(objp, compCurBB);
+
+                    if (stubNeedsThisPtr)
+                    {
+                        thisPtrStubArg = gtClone(objp, true);
+                    }
+                }
+                else
+                {
+                    assert(stubNeedsThisPtr);
+
+                    thisPtrStubArg = objp;
+                }
+            }
+
+            call->gtFlags &= ~GTF_CALL_NULLCHECK;
+
+            assert((thisPtrStubArg != nullptr) == stubNeedsThisPtr);
+        }
+        else
+        {
+            thisPtr = objp;
+        }
+
+        // During rationalization tmp="this" and null check will be materialized
+        // in the right execution order.
+        assert(thisPtr != nullptr);
+        call->gtCallArgs = gtPrependNewCallArg(thisPtr, call->gtCallArgs);
+        call->fgArgInfo  = nullptr;
+    }
+
     // We may need to pass the target, for instance for calli or generic methods
     // where we pass instantiating stub.
-    if ((help.flags & CORINFO_TAILCALL_STORE_TARGET) != 0)
+    if (stubNeedsTargetFnPtr)
     {
         JITDUMP("Adding target since VM requested it\n");
         GenTree* target;
@@ -7912,11 +8008,7 @@ GenTree* Compiler::fgMorphTailCallViaHelpers(GenTreeCall* call, CORINFO_TAILCALL
             }
 
             eeGetCallInfo(call->tailCallInfo->GetToken(), nullptr, (CORINFO_CALLINFO_FLAGS)flags, &callInfo);
-
-            assert(call->gtCallThisArg != nullptr);
-            // TODO: Proper cloning of the this pointer.
-            target = getVirtMethodPointerTree(gtCloneExpr(call->gtCallThisArg->GetNode()),
-                                              call->tailCallInfo->GetToken(), &callInfo);
+            target = getVirtMethodPointerTree(thisPtrStubArg, call->tailCallInfo->GetToken(), &callInfo);
         }
 
         // Insert target as last arg
@@ -7931,60 +8023,6 @@ GenTree* Compiler::fgMorphTailCallViaHelpers(GenTreeCall* call, CORINFO_TAILCALL
         call->fgArgInfo = nullptr;
     }
 
-    // Put 'this' in normal param list
-    if (call->gtCallThisArg != nullptr)
-    {
-        JITDUMP("Moving this pointer into arg list\n");
-        GenTree* thisPtr    = nullptr;
-        GenTree* objp       = call->gtCallThisArg->GetNode();
-        call->gtCallThisArg = nullptr;
-
-        if (call->NeedsNullCheck())
-        {
-            // clone "this" if "this" has no side effects.
-            if ((objp->gtFlags & GTF_SIDE_EFFECT) == 0)
-            {
-                thisPtr = gtClone(objp, true);
-            }
-
-            var_types vt = objp->TypeGet();
-            if (thisPtr == nullptr)
-            {
-                // create a temp if either "this" has side effects or "this" is too complex to clone.
-
-                // tmp = "this"
-                unsigned lclNum = lvaGrabTemp(true DEBUGARG("tail call thisptr"));
-                GenTree* asg    = gtNewTempAssign(lclNum, objp);
-
-                // COMMA(tmp = "this", deref(tmp))
-                GenTree* tmp       = gtNewLclvNode(lclNum, vt);
-                GenTree* nullcheck = gtNewNullCheck(tmp, compCurBB);
-                asg                = gtNewOperNode(GT_COMMA, TYP_VOID, asg, nullcheck);
-
-                // COMMA(COMMA(tmp = "this", deref(tmp)), tmp)
-                thisPtr = gtNewOperNode(GT_COMMA, vt, asg, gtNewLclvNode(lclNum, vt));
-            }
-            else
-            {
-                // thisPtr = COMMA(deref("this"), "this")
-                GenTree* nullcheck = gtNewNullCheck(thisPtr, compCurBB);
-                thisPtr            = gtNewOperNode(GT_COMMA, vt, nullcheck, gtClone(objp, true));
-            }
-
-            call->gtFlags &= ~GTF_CALL_NULLCHECK;
-        }
-        else
-        {
-            thisPtr = objp;
-        }
-
-        // During rationalization tmp="this" and null check will be materialized
-        // in the right execution order.
-        assert(thisPtr != nullptr);
-        call->gtCallArgs = gtPrependNewCallArg(thisPtr, call->gtCallArgs);
-        call->fgArgInfo  = nullptr;
-    }
-
     // This is now a direct call to the store args stub and not a tailcall.
     call->gtCallType    = CT_USER_FUNC;
     call->gtCallMethHnd = help.hStoreArgs;
@@ -7996,8 +8034,15 @@ GenTree* Compiler::fgMorphTailCallViaHelpers(GenTreeCall* call, CORINFO_TAILCALL
     call->gtType       = TYP_VOID;
     call->gtReturnType = TYP_VOID;
 
+    GenTree* callStoreArgsStub = call;
+
+    if (doBeforeStoreArgsStub != nullptr)
+    {
+        callStoreArgsStub = gtNewOperNode(GT_COMMA, TYP_VOID, doBeforeStoreArgsStub, callStoreArgsStub);
+    }
+
     GenTree* finalTree =
-        gtNewOperNode(GT_COMMA, callDispatcherAndGetResult->TypeGet(), call, callDispatcherAndGetResult);
+        gtNewOperNode(GT_COMMA, callDispatcherAndGetResult->TypeGet(), callStoreArgsStub, callDispatcherAndGetResult);
 
     finalTree = fgMorphTree(finalTree);
 
@@ -17140,8 +17185,7 @@ GenTree* Compiler::fgInitThisClass()
                 GenTree* vtTree = gtNewLclvNode(info.compThisArg, TYP_REF);
                 vtTree->gtFlags |= GTF_VAR_CONTEXT;
                 // Vtable pointer of this object
-                vtTree = gtNewOperNode(GT_IND, TYP_I_IMPL, vtTree);
-                vtTree->gtFlags |= GTF_EXCEPT; // Null-pointer exception
+                vtTree             = gtNewMethodTableLookup(vtTree);
                 GenTree* methodHnd = gtNewIconEmbMethHndNode(info.compMethodHnd);
 
                 return gtNewHelperCallNode(CORINFO_HELP_INITINSTCLASS, TYP_VOID, gtNewCallArgs(vtTree, methodHnd));
@@ -17909,16 +17953,38 @@ void Compiler::fgMorphStructField(GenTree* tree, GenTree* parent)
                         }
                         // Access the promoted field as a field of a non-promoted struct with the same class handle.
                     }
-#ifdef DEBUG
-                    else if (tree->TypeGet() == TYP_STRUCT)
+                    else
                     {
-                        // The field tree accesses it as a struct, but the promoted lcl var for the field
-                        // says that it has another type. It can happen only if struct promotion faked
-                        // field type for a struct of single field of scalar type aligned at their natural boundary.
+                        // As we already checked this above, we must have a tree with a TYP_STRUCT type
+                        //
+                        assert(tree->TypeGet() == TYP_STRUCT);
+
+                        // The field tree accesses it as a struct, but the promoted LCL_VAR field
+                        // says that it has another type. This happens when struct promotion unwraps
+                        // a single field struct to get to its ultimate type.
+                        //
+                        // Note that currently, we cannot have a promoted LCL_VAR field with a struct type.
+                        //
+                        // This mismatch in types can lead to problems for some parent node type like GT_RETURN.
+                        // So we check the parent node and only allow this optimization when we have
+                        // a GT_ADDR or a GT_ASG.
+                        //
+                        // Note that for a GT_ASG we have to do some additional work,
+                        // see below after the SetOper(GT_LCL_VAR)
+                        //
+                        if (!parent->OperIs(GT_ADDR, GT_ASG))
+                        {
+                            // Don't transform other operations such as GT_RETURN
+                            //
+                            return;
+                        }
+#ifdef DEBUG
+                        // This is an additional DEBUG-only sanity check
+                        //
                         assert(structPromotionHelper != nullptr);
                         structPromotionHelper->CheckRetypedAsScalar(field->gtFldHnd, fieldType);
-                    }
 #endif // DEBUG
+                    }
                 }
 
                 tree->SetOper(GT_LCL_VAR);
@@ -17928,6 +17994,9 @@ void Compiler::fgMorphStructField(GenTree* tree, GenTree* parent)
 
                 if (parent->gtOper == GT_ASG)
                 {
+                    // If we are changing the left side of an assignment, we need to set
+                    // these two flags:
+                    //
                     if (parent->AsOp()->gtOp1 == tree)
                     {
                         tree->gtFlags |= GTF_VAR_DEF;

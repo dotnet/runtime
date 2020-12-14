@@ -19,10 +19,6 @@ Revision History:
 
 --*/
 
-#ifndef HOST_64BIT
-#undef _LARGEFILE64_SOURCE
-#undef _FILE_OFFSET_BITS
-#endif
 
 #include "pal/dbgmsg.h"
 SET_DEFAULT_DEBUG_CHANNEL(DEBUG); // some headers have code with asserts, so do this first

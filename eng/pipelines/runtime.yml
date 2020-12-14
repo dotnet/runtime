@@ -282,7 +282,7 @@ jobs:
     runtimeFlavor: mono
     platforms:
     - Android_arm64
-    - iOS_x64
+    # - iOS_x64 moved to staging pipeline, restore when stable
     variables:
       # map dependencies variables to local variables
       - name: librariesContainsChange

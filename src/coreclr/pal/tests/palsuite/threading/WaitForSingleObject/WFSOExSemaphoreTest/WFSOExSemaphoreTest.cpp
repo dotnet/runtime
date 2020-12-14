@@ -25,6 +25,7 @@ VOID PALAPI APCFunc_WFSOExSemaphoreTest(ULONG_PTR dwParam);
 DWORD PALAPI WaiterProc_WFSOExSemaphoreTest(LPVOID lpParameter);
 
 DWORD ThreadWaitDelta_WFSOExSemaphoreTest;
+static volatile bool s_preWaitTimestampRecorded = 0;
 
 PALTEST(threading_WaitForSingleObject_WFSOExSemaphoreTest_paltest_waitforsingleobject_wfsoexsemaphoretest, "threading/WaitForSingleObject/WFSOExSemaphoreTest/paltest_waitforsingleobject_wfsoexsemaphoretest")
 {
@@ -92,6 +93,13 @@ void RunTest_WFSOExSemaphoreTest(BOOL AlertThread)
             "GetLastError returned %d\n", GetLastError());
     }
 
+    // Wait for the pre-wait timestamp to be recorded on the other thread before sleeping, since the sleep duration here will be
+    // compared against the sleep/wait duration on the other thread
+    while (!s_preWaitTimestampRecorded)
+    {
+        Sleep(0);
+    }
+
     Sleep(InterruptTime);
 
     ret = QueueUserAPC(APCFunc_WFSOExSemaphoreTest, hThread, 0);
@@ -147,6 +155,7 @@ DWORD PALAPI WaiterProc_WFSOExSemaphoreTest(LPVOID lpParameter)
     Alertable = (BOOL)(SIZE_T) lpParameter;
 
     OldTimeStamp = GetHighPrecisionTimeStamp(performanceFrequency);
+    s_preWaitTimestampRecorded = true;
 
     ret = WaitForSingleObjectEx(	hSemaphore,
 								ChildThreadWaitTime,

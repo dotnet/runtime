@@ -1,7 +1,5 @@
 trigger: none
 
-pr: none
-
 schedules:
 - cron: "0 11 * * 2,4"
   displayName: Every Tuesday and Thursday at 3:00 AM (UTC-8:00)

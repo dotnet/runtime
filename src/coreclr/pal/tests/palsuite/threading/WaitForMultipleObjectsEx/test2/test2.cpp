@@ -26,6 +26,7 @@ VOID PALAPI APCFunc_WFMO_test2(ULONG_PTR dwParam);
 DWORD PALAPI WaiterProc_WFMO_test2(LPVOID lpParameter);
 
 DWORD ThreadWaitDelta_WFMO_test2;
+static volatile bool s_preWaitTimestampRecorded = 0;
 
 PALTEST(threading_WaitForMultipleObjectsEx_test2_paltest_waitformultipleobjectsex_test2, "threading/WaitForMultipleObjectsEx/test2/paltest_waitformultipleobjectsex_test2")
 {
@@ -105,6 +106,13 @@ void RunTest_WFMO_test2(BOOL AlertThread)
             "GetLastError returned %d\n", GetLastError());
     }
 
+    // Wait for the pre-wait timestamp to be recorded on the other thread before sleeping, since the sleep duration here will be
+    // compared against the sleep/wait duration on the other thread
+    while (!s_preWaitTimestampRecorded)
+    {
+        Sleep(0);
+    }
+
     Sleep(InterruptTime);
 
     ret = QueueUserAPC(APCFunc_WFMO_test2, hThread, 0);
@@ -154,6 +162,7 @@ DWORD PALAPI WaiterProc_WFMO_test2(LPVOID lpParameter)
     }
 
     OldTimeStamp = GetHighPrecisionTimeStamp(performanceFrequency);
+    s_preWaitTimestampRecorded = true;
 
     ret = WaitForMultipleObjectsEx(1, &Semaphore, FALSE, ChildThreadWaitTime,
         Alertable);

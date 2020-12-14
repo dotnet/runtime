@@ -7,7 +7,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <_AndroidSampleFiles Include="$(ArtifactsDir)bin\AndroidAppBuilder\$(Configuration)\$(NetCoreAppToolCurrent)\AndroidAppBuilder.dll" />
+    <_AndroidSampleFiles Include="$(AndroidAppBuilderTasksAssemblyPath)" />
 
     <PackageFile Include="@(_AndroidSampleFiles)" TargetPath="tools\$(NetCoreAppToolCurrent)\" />
   </ItemGroup>
