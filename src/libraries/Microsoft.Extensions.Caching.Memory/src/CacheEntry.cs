@@ -6,7 +6,6 @@ using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
-using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Primitives;
 
 namespace Microsoft.Extensions.Caching.Memory
@@ -213,43 +212,11 @@ namespace Microsoft.Extensions.Caching.Memory
             }, obj, CancellationToken.None, TaskCreationOptions.DenyChildAttach, TaskScheduler.Default);
         }
 
-        internal void InvokeEvictionCallbacks()
-        {
-            if (_tokens?._postEvictionCallbacks != null)
-            {
-                Task.Factory.StartNew(state => InvokeCallbacks((CacheEntry)state), this,
-                    CancellationToken.None, TaskCreationOptions.DenyChildAttach, TaskScheduler.Default);
-            }
-        }
-
-        private static void InvokeCallbacks(CacheEntry entry)
-        {
-            IList<PostEvictionCallbackRegistration> callbackRegistrations = Interlocked.Exchange(ref entry._tokens._postEvictionCallbacks, null);
-
-            if (callbackRegistrations == null)
-            {
-                return;
-            }
-
-            for (int i = 0; i < callbackRegistrations.Count; i++)
-            {
-                PostEvictionCallbackRegistration registration = callbackRegistrations[i];
-
-                try
-                {
-                    registration.EvictionCallback?.Invoke(entry.Key, entry.Value, entry.EvictionReason, registration.State);
-                }
-                catch (Exception e)
-                {
-                    // This will be invoked on a background thread, don't let it throw.
-                    entry._cache._logger.LogError(e, "EvictionCallback invoked failed");
-                }
-            }
-        }
+        internal void InvokeEvictionCallbacks() => _tokens?.InvokeEvictionCallbacks(this);
 
         // this simple check very often allows us to avoid expensive call to PropagateOptions(CacheEntryHelper.Current)
         [MethodImpl(MethodImplOptions.AggressiveInlining)] // added based on profiling
-        internal bool CanPropagateOptions() => _tokens?._expirationTokens != null || AbsoluteExpiration.HasValue;
+        internal bool CanPropagateOptions() => (_tokens != null && _tokens.CanCopyTokens()) || AbsoluteExpiration.HasValue;
 
         internal void PropagateOptions(CacheEntry parent)
         {

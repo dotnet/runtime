@@ -3,6 +3,9 @@
 
 using System;
 using System.Collections.Generic;
+using System.Threading;
+using System.Threading.Tasks;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Primitives;
 
 namespace Microsoft.Extensions.Caching.Memory
@@ -13,9 +16,9 @@ namespace Microsoft.Extensions.Caching.Memory
         // which typically is not using expiration tokens or callbacks
         private sealed class CacheEntryTokens
         {
-            internal List<IChangeToken> _expirationTokens;
-            internal List<IDisposable> _expirationTokenRegistrations;
-            internal List<PostEvictionCallbackRegistration> _postEvictionCallbacks; // this is not really related to tokens, but was moved here to shrink typicall CacheEntry size
+            private List<IChangeToken> _expirationTokens;
+            private List<IDisposable> _expirationTokenRegistrations;
+            private List<PostEvictionCallbackRegistration> _postEvictionCallbacks; // this is not really related to tokens, but was moved here to shrink typicall CacheEntry size
 
             internal List<IChangeToken> ExpirationTokens => _expirationTokens ??= new List<IChangeToken>();
             internal List<PostEvictionCallbackRegistration> PostEvictionCallbacks => _postEvictionCallbacks ??= new List<PostEvictionCallbackRegistration>();
@@ -60,6 +63,8 @@ namespace Microsoft.Extensions.Caching.Memory
                 return false;
             }
 
+            internal bool CanCopyTokens() => _expirationTokens != null;
+
             internal void CopyTokens(CacheEntry parentEntry)
             {
                 if (_expirationTokens != null)
@@ -95,6 +100,40 @@ namespace Microsoft.Extensions.Caching.Memory
                                 registration.Dispose();
                             }
                         }
+                    }
+                }
+            }
+
+            internal void InvokeEvictionCallbacks(CacheEntry cacheEntry)
+            {
+                if (_postEvictionCallbacks != null)
+                {
+                    Task.Factory.StartNew(state => InvokeCallbacks((CacheEntry)state), cacheEntry,
+                        CancellationToken.None, TaskCreationOptions.DenyChildAttach, TaskScheduler.Default);
+                }
+            }
+
+            private static void InvokeCallbacks(CacheEntry entry)
+            {
+                IList<PostEvictionCallbackRegistration> callbackRegistrations = Interlocked.Exchange(ref entry._tokens._postEvictionCallbacks, null);
+
+                if (callbackRegistrations == null)
+                {
+                    return;
+                }
+
+                for (int i = 0; i < callbackRegistrations.Count; i++)
+                {
+                    PostEvictionCallbackRegistration registration = callbackRegistrations[i];
+
+                    try
+                    {
+                        registration.EvictionCallback?.Invoke(entry.Key, entry.Value, entry.EvictionReason, registration.State);
+                    }
+                    catch (Exception e)
+                    {
+                        // This will be invoked on a background thread, don't let it throw.
+                        entry._cache._logger.LogError(e, "EvictionCallback invoked failed");
                     }
                 }
             }
