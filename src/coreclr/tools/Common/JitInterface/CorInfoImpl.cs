@@ -1070,7 +1070,7 @@ namespace Internal.JitInterface
                 Debug.Assert(sig != null);
 
                 CorInfoCallConvExtension callConv = GetUnmanagedCallConv((MethodSignature)HandleToObject((IntPtr)sig->pSig), out pSuppressGCTransition);
-                if (!pSuppressGCTransition && sig->flags.HasFlag(CorInfoSigInfoFlags.CORINFO_SIGFLAG_SUPPRESS_GC_TRANSITION))
+                if (sig->flags.HasFlag(CorInfoSigInfoFlags.CORINFO_SIGFLAG_SUPPRESS_GC_TRANSITION))
                 {
                     pSuppressGCTransition = true;
                 }
