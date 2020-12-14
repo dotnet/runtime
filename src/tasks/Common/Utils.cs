@@ -11,10 +11,12 @@ using Microsoft.Build.Utilities;
 
 internal class Utils
 {
+    private static readonly object s_SyncObj = new object();
+
     public static string GetEmbeddedResource(string file)
     {
         using Stream stream = typeof(Utils).Assembly
-            .GetManifestResourceStream("AppleAppBuilder.Templates." + file)!;
+            .GetManifestResourceStream($"{typeof(Utils).Assembly.GetName().Name}.Templates.{file}")!;
         using var reader = new StreamReader(stream);
         return reader.ReadToEnd();
     }
@@ -24,7 +26,8 @@ internal class Utils
         string args = "",
         IDictionary<string, string>? envVars = null,
         string? workingDir = null,
-        bool ignoreErrors = false)
+        bool ignoreErrors = false,
+        bool silent = true)
     {
         LogInfo($"Running: {path} {args}");
         var outputBuilder = new StringBuilder();
@@ -40,39 +43,66 @@ internal class Utils
         };
 
         if (workingDir != null)
-        {
             processStartInfo.WorkingDirectory = workingDir;
-        }
 
         if (envVars != null)
         {
             foreach (KeyValuePair<string, string> envVar in envVars)
-            {
                 processStartInfo.EnvironmentVariables[envVar.Key] = envVar.Value;
-            }
         }
 
-        Process process = Process.Start(processStartInfo)!;
+        Process? process = Process.Start(processStartInfo);
+        if (process == null)
+            throw new ArgumentException($"Process.Start({path} {args}) returned null process");
+
         process.ErrorDataReceived += (sender, e) =>
         {
-            LogError(e.Data);
-            outputBuilder.AppendLine(e.Data);
-            errorBuilder.AppendLine(e.Data);
+            lock (s_SyncObj)
+            {
+                if (!silent)
+                {
+                    LogError(e.Data);
+                    outputBuilder.AppendLine(e.Data);
+                }
+                errorBuilder.AppendLine(e.Data);
+            }
         };
         process.OutputDataReceived += (sender, e) =>
         {
-            LogInfo(e.Data);
-            outputBuilder.AppendLine(e.Data);
+            lock (s_SyncObj)
+            {
+                if (!silent)
+                {
+                    LogInfo(e.Data);
+                    outputBuilder.AppendLine(e.Data);
+                }
+            }
         };
         process.BeginOutputReadLine();
         process.BeginErrorReadLine();
         process.WaitForExit();
-        if (process.ExitCode != 0)
-        {
+
+        if (!ignoreErrors && process.ExitCode != 0)
             throw new Exception("Error: " + errorBuilder);
-        }
 
         return outputBuilder.ToString().Trim('\r', '\n');
+    }
+
+    public static void DirectoryCopy(string sourceDir, string destDir, Func<string, bool> predicate)
+    {
+        string[] files = Directory.GetFiles(sourceDir, "*", SearchOption.AllDirectories);
+        foreach (string file in files)
+        {
+            if (!predicate(file))
+                continue;
+
+            string relativePath = Path.GetRelativePath(sourceDir, file);
+            string? relativeDir = Path.GetDirectoryName(relativePath);
+            if (!string.IsNullOrEmpty(relativeDir))
+                Directory.CreateDirectory(Path.Combine(destDir, relativeDir));
+
+            File.Copy(file, Path.Combine(destDir, relativePath), true);
+        }
     }
 
     public static TaskLoggingHelper? Logger { get; set; }
@@ -80,22 +110,12 @@ internal class Utils
     public static void LogInfo(string? msg)
     {
         if (msg != null)
-        {
             Logger?.LogMessage(MessageImportance.High, msg);
-        }
     }
 
     public static void LogError(string? msg)
     {
         if (msg != null)
-        {
             Logger?.LogError(msg);
-        }
-    }
-
-    internal class TargetOS
-    {
-        public const string iOS = "iOS";
-        public const string tvOS = "tvOS";
     }
 }
