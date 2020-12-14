@@ -60,7 +60,7 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
 
     public string? AotProfilePath { get; set; }
 
-    public ITaskItem[]? Profilers { get; set; }
+    public string[]? Profilers { get; set; }
 
     /// <summary>
     /// Generate a file containing mono_aot_register_module() calls for each AOT module
@@ -301,7 +301,7 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
         compiledAssemblies.Add(aotAssembly);
     }
 
-    private void GenerateAotModulesTable(ITaskItem[] assemblies, ITaskItem[]? profilers)
+    private void GenerateAotModulesTable(ITaskItem[] assemblies, string[]? profilers)
     {
         var symbols = new List<string>();
         foreach (var asm in assemblies)
