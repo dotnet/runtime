@@ -1834,12 +1834,15 @@ CEEInfo::findCallSiteSig(
         }
     }
 
+    SigTypeContext typeContext;
+    GetTypeContext(context, &typeContext);
+
     CEEInfo::ConvToJitSig(
         pSig,
         cbSig,
         scopeHnd,
         sigMethTok,
-        SigTypeContext(GetMethodFromContext(context), GetTypeFromContext(context)),
+        typeContext,
         CONV_TO_JITSIG_FLAGS_NONE,
         sigRet);
     EE_TO_JIT_TRANSITION();
@@ -1882,12 +1885,15 @@ CEEInfo::findSig(
             &pSig));
     }
 
+    SigTypeContext typeContext;
+    GetTypeContext(context, &typeContext);
+
     CEEInfo::ConvToJitSig(
         pSig,
         cbSig,
         scopeHnd,
         sigTok,
-        SigTypeContext(GetMethodFromContext(context), GetTypeFromContext(context)),
+        typeContext,
         CONV_TO_JITSIG_FLAGS_NONE,
         sigRet);
 
