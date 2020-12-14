@@ -12876,8 +12876,7 @@ GenTree* Compiler::gtFoldTypeCompare(GenTree* tree)
             arg1 = op1->AsCall()->gtCallThisArg->GetNode();
         }
 
-        arg1 = gtNewOperNode(GT_IND, TYP_I_IMPL, arg1);
-        arg1->gtFlags |= GTF_EXCEPT;
+        arg1 = gtNewMethodTableLookup(arg1);
 
         GenTree* arg2;
 
@@ -12890,8 +12889,7 @@ GenTree* Compiler::gtFoldTypeCompare(GenTree* tree)
             arg2 = op2->AsCall()->gtCallThisArg->GetNode();
         }
 
-        arg2 = gtNewOperNode(GT_IND, TYP_I_IMPL, arg2);
-        arg2->gtFlags |= GTF_EXCEPT;
+        arg2 = gtNewMethodTableLookup(arg2);
 
         CorInfoInlineTypeCheck inliningKind =
             info.compCompHnd->canInlineTypeCheck(nullptr, CORINFO_INLINE_TYPECHECK_SOURCE_VTABLE);
@@ -12991,10 +12989,8 @@ GenTree* Compiler::gtFoldTypeCompare(GenTree* tree)
         }
     }
 
-    GenTree* const objMT = gtNewOperNode(GT_IND, TYP_I_IMPL, objOp);
-
-    // Update various flags
-    objMT->gtFlags |= GTF_EXCEPT;
+    // Fetch the method table from the object
+    GenTree* const objMT = gtNewMethodTableLookup(objOp);
 
     // Compare the two method tables
     GenTree* const compare = gtCreateHandleCompare(oper, objMT, knownMT, typeCheckInliningResult);
@@ -15491,6 +15487,13 @@ GenTree* Compiler::gtNewTempAssign(
         }
     }
 #endif
+
+    // Added this noway_assert for runtime\issue 44895, to protect against silent bad codegen
+    //
+    if ((dstTyp == TYP_STRUCT) && (valTyp == TYP_REF))
+    {
+        noway_assert(!"Incompatible types for gtNewTempAssign");
+    }
 
     // Floating Point assignments can be created during inlining
     // see "Zero init inlinee locals:" in fgInlinePrependStatements
@@ -19093,7 +19096,7 @@ bool GenTreeHWIntrinsic::OperIsMemoryStore() const
     return false;
 }
 
-// Returns true for the HW Intrinsic instructions that have MemoryLoad semantics, false otherwise
+// Returns true for the HW Intrinsic instructions that have MemoryLoad or MemoryStore semantics, false otherwise
 bool GenTreeHWIntrinsic::OperIsMemoryLoadOrStore() const
 {
 #if defined(TARGET_XARCH) || defined(TARGET_ARM64)

@@ -1765,11 +1765,8 @@ void ZapImportSectionSignatures::PlaceDynamicHelperCell(ZapImport * pImport)
     }
 
     // Create the delay load helper
-    ReadyToRunHelper helperNum = GetDelayLoadHelperForDynamicHelper(
-        (CORCOMPILE_FIXUP_BLOB_KIND)(pCell->GetKind() & ~CORINFO_HELP_READYTORUN_ATYPICAL_CALLSITE));
-
-    ZapNode * pDelayLoadHelper = m_pImage->GetImportTable()->GetPlacedIndirectHelperThunk(helperNum, (PVOID)(SIZE_T)m_dwIndex,
-        (pCell->GetKind() & CORINFO_HELP_READYTORUN_ATYPICAL_CALLSITE) ? pCell : NULL);
+    ReadyToRunHelper helperNum = GetDelayLoadHelperForDynamicHelper(pCell->GetKind());
+    ZapNode * pDelayLoadHelper = m_pImage->GetImportTable()->GetPlacedIndirectHelperThunk(helperNum, (PVOID)(SIZE_T)m_dwIndex);
 
     pCell->SetDelayLoadHelper(pDelayLoadHelper);
 
@@ -1785,9 +1782,9 @@ ZapImport * ZapImportTable::GetDictionaryLookupCell(CORCOMPILE_FIXUP_BLOB_KIND k
 
     SigBuilder sigBuilder;
 
-    sigBuilder.AppendData(kind & ~CORINFO_HELP_READYTORUN_ATYPICAL_CALLSITE);
+    sigBuilder.AppendData(kind);
 
-    if ((kind & ~CORINFO_HELP_READYTORUN_ATYPICAL_CALLSITE) == ENCODE_DICTIONARY_LOOKUP_THISOBJ)
+    if (kind == ENCODE_DICTIONARY_LOOKUP_THISOBJ)
     {
         CORINFO_CLASS_HANDLE hClassContext = GetJitInfo()->getMethodClass(containingMethod);
         GetCompileInfo()->EncodeClass(m_pImage->GetModuleHandle(), hClassContext, &sigBuilder, this, EncodeModuleHelper);
@@ -1853,7 +1850,7 @@ ZapImport * ZapImportTable::GetDynamicHelperCell(CORCOMPILE_FIXUP_BLOB_KIND kind
     {
         SigBuilder sigBuilder;
 
-        sigBuilder.AppendData(kind & ~CORINFO_HELP_READYTORUN_ATYPICAL_CALLSITE);
+        sigBuilder.AppendData(kind);
 
         GetCompileInfo()->EncodeClass(m_pImage->GetModuleHandle(), handle, &sigBuilder, this, EncodeModuleHelper);
         pImport->SetBlob(GetBlob(&sigBuilder));
@@ -1867,12 +1864,11 @@ ZapImport * ZapImportTable::GetDynamicHelperCell(CORCOMPILE_FIXUP_BLOB_KIND kind
 {
     SigBuilder sigBuilder;
 
-    EncodeMethod((CORCOMPILE_FIXUP_BLOB_KIND)(kind & ~CORINFO_HELP_READYTORUN_ATYPICAL_CALLSITE),
-        handle, &sigBuilder, pResolvedToken);
+    EncodeMethod(kind, handle, &sigBuilder, pResolvedToken);
 
     if (delegateType != NULL)
     {
-        _ASSERTE((CORCOMPILE_FIXUP_BLOB_KIND)(kind & ~CORINFO_HELP_READYTORUN_ATYPICAL_CALLSITE) == ENCODE_DELEGATE_CTOR);
+        _ASSERTE(kind == ENCODE_DELEGATE_CTOR);
         GetCompileInfo()->EncodeClass(m_pImage->GetModuleHandle(), delegateType, &sigBuilder, this, EncodeModuleHelper);
     }
 
@@ -1883,8 +1879,7 @@ ZapImport * ZapImportTable::GetDynamicHelperCell(CORCOMPILE_FIXUP_BLOB_KIND kind
 {
     SigBuilder sigBuilder;
 
-    EncodeField((CORCOMPILE_FIXUP_BLOB_KIND)(kind & ~CORINFO_HELP_READYTORUN_ATYPICAL_CALLSITE),
-        handle, &sigBuilder, pResolvedToken);
+    EncodeField(kind, handle, &sigBuilder, pResolvedToken);
 
     return GetImportForSignature<ZapDynamicHelperCell, ZapNodeType_DynamicHelperCell>((void *)(uintptr_t)((kind << 1) | 1), &sigBuilder);
 }
@@ -1893,14 +1888,7 @@ class ZapIndirectHelperThunk : public ZapImport
 {
     DWORD SaveWorker(ZapWriter * pZapWriter);
 
-    ZapNode * m_pCell;
-
 public:
-    void SetCell(ZapNode * pCell)
-    {
-        m_pCell = pCell;
-    }
-
     ReadyToRunHelper GetReadyToRunHelper()
     {
         return (ReadyToRunHelper)((DWORD)(SIZE_T)GetHandle() & ~READYTORUN_HELPER_FLAG_VSD);
@@ -2020,17 +2008,6 @@ DWORD ZapIndirectHelperThunk::SaveWorker(ZapWriter * pZapWriter)
 #elif defined(TARGET_AMD64)
     if (IsDelayLoadHelper())
     {
-        if (m_pCell != NULL)
-        {
-            // lea rax, [pCell]
-            *p++ = 0x48;
-            *p++ = 0x8D;
-            *p++ = 0x05;
-            if (pImage != NULL)
-                pImage->WriteReloc(buffer, (int)(p - buffer), m_pCell, 0, IMAGE_REL_BASED_REL32);
-            p += 4;
-        }
-        else
         if (IsVSD())
         {
             // mov rax, r11
@@ -2246,21 +2223,9 @@ ZapNode * ZapImportTable::GetIndirectHelperThunk(ReadyToRunHelper helperNum, PVO
     return pImport;
 }
 
-ZapNode * ZapImportTable::GetPlacedIndirectHelperThunk(ReadyToRunHelper helperNum, PVOID pArg, ZapNode * pCell)
+ZapNode * ZapImportTable::GetPlacedIndirectHelperThunk(ReadyToRunHelper helperNum, PVOID pArg)
 {
-    ZapNode * pImport;
-    if (pCell != NULL)
-    {
-        ZapIndirectHelperThunk * pIndirectHelperThunk = new (m_pImage->GetHeap()) ZapIndirectHelperThunk();
-        pIndirectHelperThunk->SetHandle((void *)helperNum);
-        pIndirectHelperThunk->SetHandle2(pArg);
-        pIndirectHelperThunk->SetCell(pCell);
-        pImport = pIndirectHelperThunk;
-    }
-    else
-    {
-        pImport = GetImport<ZapIndirectHelperThunk, ZapNodeType_IndirectHelperThunk>((void *)helperNum, pArg);
-    }
+    ZapNode * pImport = GetImport<ZapIndirectHelperThunk, ZapNodeType_IndirectHelperThunk>((void *)helperNum, pArg);
     if (!pImport->IsPlaced())
         PlaceIndirectHelperThunk(pImport);
 #if defined(TARGET_ARM)

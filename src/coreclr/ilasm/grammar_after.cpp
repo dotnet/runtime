@@ -279,7 +279,7 @@ Instr* SetupInstr(unsigned short opcode)
     if((pVal = PASM->GetInstr()))
     {
         pVal->opcode = opcode;
-        if((pVal->pWriter = PASM->m_pSymDocument)!=NULL || PASM->IsPortablePdb())
+        if(PASM->m_fGeneratePDB)
         {
             if(PENV->bExternSource)
             {
@@ -297,10 +297,10 @@ Instr* SetupInstr(unsigned short opcode)
                 // Portable PDB rule:
                 // - If Start Line is equal to End Line then End Column is greater than Start Column.
                 // To fulfill this condition the column_end is set to 2 instead of 0
-                pVal->column_end = PASM->IsPortablePdb() ? 2 : 0;
+                pVal->column_end = 2;
                 pVal->pc = PASM->m_CurPC;
             }
-            pVal->pOwnerDocument = PASM->IsPortablePdb() ? PASM->m_pPortablePdbWriter->GetCurrentDocument() : NULL;
+            pVal->pOwnerDocument = PASM->m_pPortablePdbWriter->GetCurrentDocument();
         }
     }
     return pVal;
