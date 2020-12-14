@@ -91,7 +91,40 @@ namespace System.Diagnostics
                     while (e.MoveNext())
                     {
                         DictionaryEntry entry = e.Entry;
-                        _environmentVariables.Add((string)entry.Key, (string?)entry.Value);
+
+                        string key = (string)entry.Key;
+                        string? value = (string?)entry.Value;
+
+                        if (OperatingSystem.IsWindows()) // it returns a const, the branch will be eliminated by JIT
+                        {
+                            if (_environmentVariables.TryAdd(key, value)) // fast path, 99.999% of the cases
+                            {
+                                continue;
+                            }
+
+                            // 1. Windows API used for setting env vars (SetEnvironmentVariableW) of the current process is case-insensitive:
+                            //      SetEnvironmentVariableW("A", "b");
+                            //      SetEnvironmentVariableW("a", "c"); // overwrites "b" with "c"
+                            //      Console.WriteLine(GetEnvironmentVariableW("A") + GetEnvironmentVariableW("a")); // Prints "cc"
+                            //    However, the CreateProcess API which accepts env vars for the new process, allows for case-sensitive duplicates.
+                            //    So it's possible that a Windows process can be started with DUPLICATE env vars.
+                            // 2. Environment.GetEnvironmentVariables uses GetEnvironmentStringsW which also accepts the duplicates.
+                            // 3. We don't want to change the existing API behaviour (this would be a breaking change).
+                            //    But we can allow for duplicates that have the same VALUE. Example from: https://github.com/dotnet/runtime/issues/42029
+                            //    "NPM_CONFIG_CACHE=^"
+                            //    "npm_config_cache=^"
+                            // 4. For duplicates that have different values, we don't know which one should be used and we just call
+                            //    Add() which is going to throw the same exception as it used to do (no breaking changes).
+                            // 5. No perf hit should be observed, as this is an exceptional code path.
+                            if (_environmentVariables.TryGetValue(key, out string? existing) && existing != value) // we call Add so it throw detailed ex with an old and new key name
+                            {
+                                _environmentVariables.Add(key, existing);
+                            }
+                        }
+                        else
+                        {
+                            _environmentVariables.Add(key, value);
+                        }
                     }
                 }
                 return _environmentVariables;
