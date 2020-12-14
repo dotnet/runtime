@@ -154,6 +154,10 @@ namespace System.Text.Unicode
             // and [a-z] differ by the 0x20 bit, we'll left-shift this by 2 now so that
             // this is moved over to the 0x80 bit, which nicely aligns with the calculation
             // we're going to do on the indicator flag later.
+            //
+            // n.b. All of the logic below assumes we have at least 2 "known zero" bits leading
+            // each of the 7-bit ASCII values. This assumption won't hold if this method is
+            // ever adapted to deal with packed bytes instead of packed chars.
 
             uint differentBits = (valueA ^ valueB) << 2;
 
@@ -174,7 +178,6 @@ namespace System.Text.Unicode
             //
             // This combination of operations results in the 0x80 bit of each word being set
             // iff the original word value was *not* [A-Za-z].
-            // n.b. all other bits (including 0x100 bit) of the word are now trashed.
 
             uint indicator = valueA + 0x0005_0005u;
             indicator |= 0x00A0_00A0u;
