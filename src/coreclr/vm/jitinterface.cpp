@@ -554,8 +554,6 @@ CEEInfo::ConvToJitSig(
         sigRet->args = (CORINFO_ARG_LIST_HANDLE)sig.GetPtr();
     }
 
-    _ASSERTE(sigRet->callConv != CORINFO_CALLCONV_UNMANAGED);
-
     // Set computed flags
     sigRet->flags = sigRetFlags;
 

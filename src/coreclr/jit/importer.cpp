@@ -7045,6 +7045,11 @@ void Compiler::impCheckForPInvokeCall(
     }
     else
     {
+        if (sig->getCallConv() == CORINFO_CALLCONV_DEFAULT || sig->getCallConv() == CORINFO_CALLCONV_VARARG)
+        {
+            return;
+        }
+
         unmanagedCallConv = info.compCompHnd->getUnmanagedCallConv(nullptr, sig, &suppressGCTransition);
 
         assert(!call->gtCallCookie);
