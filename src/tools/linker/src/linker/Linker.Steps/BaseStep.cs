@@ -26,6 +26,7 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
+using System;
 using Mono.Cecil;
 
 namespace Mono.Linker.Steps
@@ -59,8 +60,13 @@ namespace Mono.Linker.Steps
 
 			Process ();
 
-			foreach (AssemblyDefinition assembly in context.GetAssemblies ())
-				ProcessAssembly (assembly);
+			foreach (AssemblyDefinition assembly in context.GetAssemblies ()) {
+				try {
+					ProcessAssembly (assembly);
+				} catch (Exception e) {
+					throw new InternalErrorException ($"Step '{GetType ().Name}' failed when processing assembly '{assembly.FullName}'.", e);
+				}
+			}
 
 			EndProcess ();
 		}
