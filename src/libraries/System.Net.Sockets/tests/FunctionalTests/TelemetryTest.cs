@@ -168,6 +168,11 @@ namespace System.Net.Sockets.Tests
         [MemberData(nameof(SocketMethods_WithBools_MemberData))]
         public void EventSource_SocketConnectFailure_LogsConnectFailed(string connectMethod, bool useDnsEndPoint)
         {
+            if (useDnsEndPoint)
+            {
+                throw new SkipTestException("https://github.com/dotnet/runtime/issues/43931");
+            }
+
             RemoteExecutor.Invoke(async (connectMethod, useDnsEndPointString) =>
             {
                 EndPoint endPoint = await GetRemoteEndPointAsync(useDnsEndPointString, port: 12345);
@@ -263,6 +268,11 @@ namespace System.Net.Sockets.Tests
         [InlineData("Eap", false)]
         public void EventSource_ConnectAsyncCanceled_LogsConnectFailed(string connectMethod, bool useDnsEndPoint)
         {
+            if (useDnsEndPoint)
+            {
+                throw new SkipTestException("https://github.com/dotnet/runtime/issues/46030");
+            }
+
             RemoteExecutor.Invoke(async (connectMethod, useDnsEndPointString) =>
             {
                 EndPoint endPoint = await GetRemoteEndPointAsync(useDnsEndPointString, port: 12345);
