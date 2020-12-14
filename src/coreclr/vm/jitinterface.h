@@ -556,7 +556,7 @@ public:
         DWORD                 cbSig,
         CORINFO_MODULE_HANDLE scopeHnd,
         mdToken               token,
-        SigTypeContext        context,
+        SigTypeContext*       context,
         ConvToJitSigFlags     flags,
         CORINFO_SIG_INFO *    sigRet);
 

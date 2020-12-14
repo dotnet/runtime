@@ -452,7 +452,7 @@ CEEInfo::ConvToJitSig(
     DWORD                 cbSig,
     CORINFO_MODULE_HANDLE scopeHnd,
     mdToken               token,
-    SigTypeContext        typeContext,
+    SigTypeContext*       typeContext,
     ConvToJitSigFlags     flags,
     CORINFO_SIG_INFO *    sigRet)
 {
@@ -476,10 +476,10 @@ CEEInfo::ConvToJitSig(
     sigRet->retTypeSigClass = 0;
     sigRet->scope = scopeHnd;
     sigRet->token = token;
-    sigRet->sigInst.classInst = (CORINFO_CLASS_HANDLE *) typeContext.m_classInst.GetRawArgs();
-    sigRet->sigInst.classInstCount = (unsigned) typeContext.m_classInst.GetNumArgs();
-    sigRet->sigInst.methInst = (CORINFO_CLASS_HANDLE *) typeContext.m_methodInst.GetRawArgs();
-    sigRet->sigInst.methInstCount = (unsigned) typeContext.m_methodInst.GetNumArgs();
+    sigRet->sigInst.classInst = (CORINFO_CLASS_HANDLE *) typeContext->m_classInst.GetRawArgs();
+    sigRet->sigInst.classInstCount = (unsigned) typeContext->m_classInst.GetNumArgs();
+    sigRet->sigInst.methInst = (CORINFO_CLASS_HANDLE *) typeContext->m_methodInst.GetRawArgs();
+    sigRet->sigInst.methInstCount = (unsigned) typeContext->m_methodInst.GetNumArgs();
 
     SigPointer sig(pSig, cbSig);
 
@@ -515,11 +515,11 @@ CEEInfo::ConvToJitSig(
 
         sigRet->numArgs = (unsigned short) numArgs;
 
-        CorElementType type = sig.PeekElemTypeClosed(module, &typeContext);
+        CorElementType type = sig.PeekElemTypeClosed(module, typeContext);
 
         if (!CorTypeInfo::IsPrimitiveType(type))
         {
-            typeHnd = sig.GetTypeHandleThrowing(module, &typeContext);
+            typeHnd = sig.GetTypeHandleThrowing(module, typeContext);
             _ASSERTE(!typeHnd.IsNull());
 
             // I believe it doesn't make any diff. if this is
@@ -1852,7 +1852,7 @@ CEEInfo::findCallSiteSig(
         cbSig,
         scopeHnd,
         sigMethTok,
-        typeContext,
+        &typeContext,
         CONV_TO_JITSIG_FLAGS_NONE,
         sigRet);
     EE_TO_JIT_TRANSITION();
@@ -1903,7 +1903,7 @@ CEEInfo::findSig(
         cbSig,
         scopeHnd,
         sigTok,
-        typeContext,
+        &typeContext,
         CONV_TO_JITSIG_FLAGS_NONE,
         sigRet);
 
@@ -7726,6 +7726,8 @@ getMethodInfoHelper(
     DWORD           cbSig = 0;
     ftn->GetSig(&pSig, &cbSig);
 
+    SigTypeContext context(ftn);
+
     /* Fetch the method signature */
     // Type parameters in the signature should be instantiated according to the
     // class/method/array instantiation of ftnHnd
@@ -7734,7 +7736,7 @@ getMethodInfoHelper(
         cbSig,
         GetScopeHandle(ftn),
         mdTokenNil,
-        SigTypeContext(ftn),
+        &context,
         CEEInfo::CONV_TO_JITSIG_FLAGS_NONE,
         &methInfo->args);
 
@@ -7753,7 +7755,7 @@ getMethodInfoHelper(
         cbLocalSig,
         GetScopeHandle(ftn),
         mdTokenNil,
-        SigTypeContext(ftn),
+        &context,
         CEEInfo::CONV_TO_JITSIG_FLAGS_LOCALSIG,
         &methInfo->locals);
 
@@ -8588,6 +8590,8 @@ CEEInfo::getMethodSigInternal(
     DWORD           cbSig = 0;
     ftn->GetSig(&pSig, &cbSig);
 
+    SigTypeContext context(ftn, (TypeHandle)owner);
+
     // Type parameters in the signature are instantiated
     // according to the class/method/array instantiation of ftnHnd and owner
     CEEInfo::ConvToJitSig(
@@ -8595,7 +8599,7 @@ CEEInfo::getMethodSigInternal(
         cbSig,
         GetScopeHandle(ftn),
         mdTokenNil,
-        SigTypeContext(ftn, (TypeHandle)owner),
+        &context,
         CONV_TO_JITSIG_FLAGS_NONE,
         sigRet);
 
