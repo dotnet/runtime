@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk" DefaultTargets="BuildApp">
+<Project Sdk="Microsoft.NET.Sdk" DefaultTargets="WasmBuildApp">
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <OutputPath>bin</OutputPath>
@@ -6,52 +6,29 @@
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
     <TargetArchitecture>wasm</TargetArchitecture>
     <TargetOS>Browser</TargetOS>
-    <MicrosoftNetCoreAppRuntimePackDir>$(ArtifactsBinDir)microsoft.netcore.app.runtime.browser-wasm\$(Configuration)\runtimes\browser-wasm\</MicrosoftNetCoreAppRuntimePackDir>
+    <MicrosoftNetCoreAppRuntimePackRidDir>$(ArtifactsBinDir)microsoft.netcore.app.runtime.browser-wasm\$(Configuration)\runtimes\browser-wasm\</MicrosoftNetCoreAppRuntimePackRidDir>
     <BuildDir>$(MSBuildThisFileDirectory)obj\$(Configuration)\wasm</BuildDir>
     <AppDir>$(MSBuildThisFileDirectory)bin\$(Configuration)\publish</AppDir>
   </PropertyGroup>
 
-  <Target Name="RebuildWasmAppBuilder">
+  <Target Name="PrepareForWasmBuild" DependsOnTargets="RebuildWasmAppBuilder;Build" BeforeTargets="WasmBuildApp">
+    <PropertyGroup>
+        <WasmAppDir>$(AppDir)</WasmAppDir>
+        <WasmMainAssemblyPath>bin\WasmSample.dll</WasmMainAssemblyPath>
+        <WasmMainJSPath>runtime.js</WasmMainJSPath>
+
+        <WasmResolveAssembliesBeforeBuild>true</WasmResolveAssembliesBeforeBuild>
+    </PropertyGroup>
     <ItemGroup>
-      <WasmAppBuildProject Include="$(RepoTasksDir)WasmAppBuilder\WasmAppBuilder.csproj" />
+      <WasmAssembliesToBundle Include="$(MicrosoftNetCoreAppRuntimePackRidDir)lib\$(NetCoreAppCurrent)\System.Private.Runtime.InteropServices.JavaScript.dll" />
+
+      <WasmAssemblySearchPaths Include="bin"/>
+      <WasmAssemblySearchPaths Include="$(MicrosoftNetCoreAppRuntimePackRidDir)native"/>
+      <WasmAssemblySearchPaths Include="$(MicrosoftNetCoreAppRuntimePackRidDir)lib\$(NetCoreAppCurrent)"/>
     </ItemGroup>
-
-    <MSBuild Projects="@(WasmAppBuildProject)"
-             Properties="Configuration=Debug;MSBuildRestoreSessionId=$([System.Guid]::NewGuid())"
-             Targets="Restore"/>
-
-    <MSBuild Projects="@(WasmAppBuildProject)"
-             Properties="Configuration=Debug"
-             Targets="Build;Publish"/>
   </Target>
 
-  <UsingTask TaskName="WasmAppBuilder" 
-             AssemblyFile="$(WasmAppBuilderTasksAssemblyPath)"/>
-  <UsingTask TaskName="WasmLoadAssembliesAndReferences"
-             AssemblyFile="$(WasmAppBuilderTasksAssemblyPath)"/>
-
-  <Target Name="BuildApp" DependsOnTargets="RebuildWasmAppBuilder;Build">
-    <ItemGroup>
-      <AssemblySearchPaths Include="bin"/>
-      <AssemblySearchPaths Include="$(MicrosoftNetCoreAppRuntimePackDir)native"/>
-      <AssemblySearchPaths Include="$(MicrosoftNetCoreAppRuntimePackDir)lib\$(NetCoreAppCurrent)"/>
-    </ItemGroup>
-
-    <WasmLoadAssembliesAndReferences
-      Assemblies="bin\WasmSample.dll;$(MicrosoftNetCoreAppRuntimePackDir)lib\$(NetCoreAppCurrent)\System.Private.Runtime.InteropServices.JavaScript.dll"
-      AssemblySearchPaths="@(AssemblySearchPaths)">
-      <Output TaskParameter="ReferencedAssemblies" ItemName="ReferencedAssemblies" />
-    </WasmLoadAssembliesAndReferences>
-
-    <WasmAppBuilder
-      AppDir="$(AppDir)"
-      MicrosoftNetCoreAppRuntimePackDir="$(MicrosoftNetCoreAppRuntimePackDir)"
-      MainAssembly="bin\WasmSample.dll"
-      MainJS="runtime.js"
-      Assemblies="@(ReferencedAssemblies)">
-      <Output TaskParameter="FileWrites" ItemName="FileWrites" />
-    </WasmAppBuilder>
-    <Exec Command="chmod a+x $(AppDir)/run-v8.sh" />
+  <Target Name="AfterWasmBuildApp" AfterTargets="WasmBuildApp">
     <Copy SourceFiles="bin\index.html" DestinationFolder="$(AppDir)" />
   </Target>
 
@@ -61,4 +38,6 @@
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
   </ItemGroup>
+
+  <Import Project="$(MonoProjectRoot)\wasm\build\WasmApp.targets" />
 </Project>

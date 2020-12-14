@@ -105,6 +105,7 @@ jobs:
     runtimeFlavor: mono
     platforms:
     - Android_x64
+    - Android_arm64
     variables:
       - ${{ if and(eq(variables['System.TeamProject'], 'public'), eq(variables['Build.Reason'], 'PullRequest')) }}:
         - name: _HelixSource
@@ -115,12 +116,12 @@ jobs:
       - name: timeoutPerTestInMinutes
         value: 60
       - name: timeoutPerTestCollectionInMinutes
-        value: 300
+        value: 180
     jobParameters:
       testGroup: innerloop
       nameSuffix: AllSubsets_Mono_RuntimeTests
       buildArgs: -s mono+libs -c $(_BuildConfig)
-      timeoutInMinutes: 300
+      timeoutInMinutes: 240
       condition: >-
         or(
           eq(dependencies.checkout.outputs['SetPathVars_runtimetests.containsChange'], true),

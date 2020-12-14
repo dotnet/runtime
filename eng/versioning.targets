@@ -22,8 +22,8 @@
     </AssemblyMetadata>
   </ItemGroup>
 
-  <!-- Adds SupportedOSPlatform attribute for Windows Specific libraries and Windows targets -->
-  <ItemGroup Condition="('$(IsWindowsSpecific)' == 'true' or '$(TargetsWindows)' == 'true') and '$(IsTestProject)' != 'true'">
+  <!-- Adds SupportedOSPlatform attribute for Windows Specific libraries -->
+  <ItemGroup Condition="'$(IsWindowsSpecific)' == 'true' and '$(IsTestProject)' != 'true'">
     <AssemblyAttribute Include="System.Runtime.Versioning.SupportedOSPlatform">
         <_Parameter1>windows</_Parameter1>
     </AssemblyAttribute>
@@ -165,9 +165,8 @@
 
   </Target>
 
-  <!-- Removes specified assembly level attributes. https://github.com/dotnet/runtime/issues/44257-->
-  <Target Name="RemoveSupportedPlatformAssemblyLevelAttribute"
-          AfterTargets="GetAssemblyAttributes">
+  <!-- Removes assembly level attributes for Browser. -->
+  <Target Name="RemoveSupportedPlatformAssemblyAttributeForBrowser" AfterTargets="GetAssemblyAttributes" Condition="'$(TargetFrameworkSuffix)' == 'Browser' or '$(IsTestProject)' == 'true'">
     <ItemGroup>
       <AssemblyAttribute Remove="System.Runtime.Versioning.SupportedOSPlatformAttribute" />
       <AssemblyAttribute Remove="System.Runtime.Versioning.TargetPlatformAttribute" />

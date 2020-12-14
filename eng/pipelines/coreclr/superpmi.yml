@@ -11,6 +11,8 @@ trigger:
     include:
     - src/coreclr/inc/jiteeversionguid.h
 
+# This pipeline is supposed to be run only on merged changes
+# and should not be triggerable from a PR. 
 pr: none
 
 schedules:

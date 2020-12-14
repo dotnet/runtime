@@ -10,6 +10,8 @@
     <RestoreSources>
       https://api.nuget.org/v3/index.json;
       https://dotnetfeed.blob.core.windows.net/dotnet-core/index.json;
+      https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet6/nuget/v3/index.json;
+      https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet6-transport/nuget/v3/index.json;
       $(LocalPackagesPath)
     </RestoreSources>
   </PropertyGroup>

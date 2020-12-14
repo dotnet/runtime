@@ -1287,11 +1287,11 @@ inline GenTreeArrLen* Compiler::gtNewArrLen(var_types typ, GenTree* arrayOp, int
 // Return Value:
 //    New GT_IND node
 
-inline GenTree* Compiler::gtNewIndir(var_types typ, GenTree* addr)
+inline GenTreeIndir* Compiler::gtNewIndir(var_types typ, GenTree* addr)
 {
     GenTree* indir = gtNewOperNode(GT_IND, typ, addr);
     indir->SetIndirExceptionFlags(this);
-    return indir;
+    return indir->AsIndir();
 }
 
 //------------------------------------------------------------------------------
@@ -1460,6 +1460,13 @@ inline GenTreeCast* Compiler::gtNewCastNodeL(var_types typ, GenTree* op1, bool f
     GenTreeCast* res =
         new (this, LargeOpOpcode()) GenTreeCast(typ, op1, fromUnsigned, castType DEBUGARG(/*largeNode*/ true));
     return res;
+}
+
+inline GenTreeIndir* Compiler::gtNewMethodTableLookup(GenTree* object)
+{
+    GenTreeIndir* result = gtNewIndir(TYP_I_IMPL, object);
+    result->gtFlags |= GTF_IND_INVARIANT;
+    return result;
 }
 
 /*****************************************************************************/
