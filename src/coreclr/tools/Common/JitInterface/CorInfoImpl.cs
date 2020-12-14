@@ -484,7 +484,7 @@ namespace Internal.JitInterface
 
         private void Get_CORINFO_SIG_INFO(MethodDesc method, MethodIL methodIL, CORINFO_SIG_INFO* sig, bool suppressHiddenArgument = false)
         {
-            Get_CORINFO_SIG_INFO(method.Signature, methodIL, sig);
+            Get_CORINFO_SIG_INFO(method.Signature, sig);
 
             // Does the method have a hidden parameter?
             bool hasHiddenParameter = !suppressHiddenArgument && method.RequiresInstArg();
@@ -612,7 +612,7 @@ namespace Internal.JitInterface
                 _ => null
             };
 
-        private void Get_CORINFO_SIG_INFO(MethodSignature signature, MethodIL methodIL, CORINFO_SIG_INFO* sig)
+        private void Get_CORINFO_SIG_INFO(MethodSignature signature, CORINFO_SIG_INFO* sig)
         {
             sig->callConv = (CorInfoCallConv)(signature.Flags & MethodSignatureFlags.UnmanagedCallingConventionMask);
 
@@ -641,7 +641,7 @@ namespace Internal.JitInterface
 
             sig->pSig = (byte*)ObjectToHandle(signature);
             sig->cbSig = 0; // Not used by the JIT
-            sig->scope = (CORINFO_MODULE_STRUCT_*)ObjectToHandle(methodIL);
+            sig->scope = null;
             sig->token = 0; // Not used by the JIT
         }
 
@@ -1069,7 +1069,11 @@ namespace Internal.JitInterface
             {
                 Debug.Assert(sig != null);
 
-                CorInfoCallConvExtension callConv = GetUnmanagedCallConv((MethodSignature)HandleToObject((IntPtr)sig->pSig), (MethodIL)HandleToObject((IntPtr)sig->scope), out pSuppressGCTransition);
+                CorInfoCallConvExtension callConv = GetUnmanagedCallConv((MethodSignature)HandleToObject((IntPtr)sig->pSig), out pSuppressGCTransition);
+                if (!pSuppressGCTransition && sig->flags.HasFlag(CorInfoSigInfoFlags.CORINFO_SIGFLAG_SUPPRESS_GC_TRANSITION))
+                {
+                    pSuppressGCTransition = true;
+                }
                 return callConv;
             }
         }
@@ -1101,21 +1105,12 @@ namespace Internal.JitInterface
                     return GetUnmanagedCallingConventionFromAttribute(unmanagedCallersOnlyAttribute);
                 }
             }
-            // We don't want to do any additional resolution based on what method we're in,
-            // so don't pass the current method's IL context for when we process the signature.
-            return GetUnmanagedCallConv(methodDesc.Signature, null, out suppressGCTransition);
+            return GetUnmanagedCallConv(methodDesc.Signature, out suppressGCTransition);
         }
 
-        private CorInfoCallConvExtension GetUnmanagedCallConv(MethodSignature signature, MethodIL methodIL, out bool suppressGCTransition)
+        private CorInfoCallConvExtension GetUnmanagedCallConv(MethodSignature signature, out bool suppressGCTransition)
         {
             suppressGCTransition = false;
-            // TODO: Remove when we have a public way to represent SuppressGCTransition on a calli.
-            if (methodIL is PInvokeILStubMethodIL stubIL &&
-                stubIL.OwningMethod.IsPInvoke &&
-                stubIL.OwningMethod.IsSuppressGCTransition())
-            {
-                suppressGCTransition = true;
-            }
             switch (signature.Flags & MethodSignatureFlags.UnmanagedCallingConventionMask)
             {
                 case MethodSignatureFlags.None:
@@ -1387,7 +1382,17 @@ namespace Internal.JitInterface
             var methodIL = (MethodIL)HandleToObject((IntPtr)module);
             var methodSig = (MethodSignature)methodIL.GetObject((int)sigTOK);
 
-            Get_CORINFO_SIG_INFO(methodSig, methodIL, sig);
+            Get_CORINFO_SIG_INFO(methodSig, sig);
+
+            // TODO: Replace this with a public mechanism to mark calli with SuppressGCTransition once it becomes available.
+            if (methodIL is PInvokeILStubMethodIL stubIL)
+            {
+                var method = stubIL.OwningMethod;
+                if (method.IsPInvoke && method.IsSuppressGCTransition())
+                {
+                    sig->flags |= CorInfoSigInfoFlags.CORINFO_SIGFLAG_SUPPRESS_GC_TRANSITION;
+                }
+            }
 
 #if !READYTORUN
             // Check whether we need to report this as a fat pointer call
