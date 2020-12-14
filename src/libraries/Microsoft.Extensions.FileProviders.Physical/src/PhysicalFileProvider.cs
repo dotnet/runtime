@@ -19,7 +19,11 @@ namespace Microsoft.Extensions.FileProviders
     /// When the environment variable "DOTNET_USE_POLLING_FILE_WATCHER" is set to "1" or "true", calls to
     /// <see cref="Watch(string)" /> will use <see cref="PollingFileChangeToken" />.
     /// </remarks>
+#if NETSTANDARD2_1
+    public class PhysicalFileProvider : IFileProvider, IDisposable, IAsyncDisposable
+#else
     public class PhysicalFileProvider : IFileProvider, IDisposable
+#endif
     {
         private const string PollingEnvironmentKey = "DOTNET_USE_POLLING_FILE_WATCHER";
         private static readonly char[] _pathSeparators = new[]
@@ -174,6 +178,20 @@ namespace Microsoft.Extensions.FileProviders
             _usePollingFileWatcher = pollForChanges;
             _useActivePolling = pollForChanges;
         }
+
+#if NETSTANDARD2_1
+        public async ValueTask DisposeAsync()
+        {
+            await DisposeAsyncCore();
+            Dispose(false);
+            GC.SuppressFinalize(this);
+        }
+
+        protected virtual async ValueTask DisposeAsyncCore()
+        {
+            await _fileWatcher?.DisposeAsync().ConfigureAwait(false);
+        }
+#endif
 
         /// <summary>
         /// Disposes the provider. Change tokens may not trigger after the provider is disposed.
