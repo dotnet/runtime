@@ -6887,32 +6887,6 @@ void gc_heap::fix_youngest_allocation_area()
     heap_segment_allocated (ephemeral_heap_segment) = alloc_allocated;
 }
 
-#define assert(expr) ((void)0)
-void gc_heap::fix_uoh_allocation_area()
-{
-    for (int i = uoh_start_generation; i < total_generation_count; i++)
-    {
-#ifdef _DEBUG
-        alloc_context* acontext =
-#endif // _DEBUG
-        generation_alloc_context (generation_of (i));
-        assert (acontext->alloc_ptr == 0);
-        assert (acontext->alloc_limit == 0);
-
-#if 0
-        dprintf (3, ("UOH alloc context: gen: %Ix, ptr: %Ix, limit %Ix",
-                     i, (size_t)acontext->alloc_ptr, (size_t)acontext->alloc_limit));
-        fix_allocation_context (acontext, FALSE, get_alignment_constant (FALSE));
-        if (for_gc_p)
-        {
-            acontext->alloc_ptr = 0;
-            acontext->alloc_limit = acontext->alloc_ptr;
-        }
-#endif //0
-
-    }
-}
-
 //for_gc_p indicates that the work is being done for GC,
 //as opposed to concurrent heap verification
 void gc_heap::fix_allocation_context (alloc_context* acontext, BOOL for_gc_p,
