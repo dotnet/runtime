@@ -173,7 +173,7 @@ public:
 
     size_t GetNumSeries ()
     {
-        return *(PTR_size_t(PTR_CGCDesc(this))-1);
+        return *(PTR_size_t(PTR_CGCDesc(this)) - MONO_IMT_SIZE - 1);
     }
 
     // Returns lowest series in memory.

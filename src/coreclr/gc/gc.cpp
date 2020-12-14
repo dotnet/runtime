@@ -19202,6 +19202,7 @@ void gc_heap::gc1()
     recover_bgc_settings();
 #endif //BACKGROUND_GC
 #endif //MULTIPLE_HEAPS
+    printf("naricc: gc1() finished\n");
 }
 
 void gc_heap::save_data_for_no_gc()
@@ -20657,11 +20658,18 @@ BOOL gc_heap::background_mark (uint8_t* o, uint8_t* low, uint8_t* high)
 #define ignore_start 0
 #define use_start 1
 
+void naricc_debug_print_gcdesc(uint8_t* o, CGCDesc* gc_desc)
+{
+    printf("naricc_debug_print_gcdesc: o: %p, gc_descr: %p, gc_descr->GetLowestSeries(): %p\n", o, gc_desc, gc_desc->GetLowestSeries() );
+}
+
 #define go_through_object(mt,o,size,parm,start,start_useful,limit,exp)      \
 {                                                                           \
     CGCDesc* map = CGCDesc::GetCGCDescFromMT((MethodTable*)(mt));           \
     CGCDescSeries* cur = map->GetHighestSeries();                           \
     ptrdiff_t cnt = (ptrdiff_t) map->GetNumSeries();                        \
+                                                                            \
+    naricc_debug_print_gcdesc(o, map);                                      \
                                                                             \
     if (cnt >= 0)                                                           \
     {                                                                       \
