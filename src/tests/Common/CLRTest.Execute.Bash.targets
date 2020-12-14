@@ -274,7 +274,7 @@ else
   __Command+=" dotnet"
 fi
 
-$__Command msbuild $CORE_ROOT/wasm-test-runner/WasmTestRunner.proj /p:NetCoreAppCurrent=$(NetCoreAppCurrent) /p:TestAssembly=`pwd`/$(MsBuildProjectName).dll /p:TestBinDir=`pwd`
+$__Command msbuild $CORE_ROOT/wasm-test-runner/WasmTestRunner.proj /p:NetCoreAppCurrent=$(NetCoreAppCurrent) /p:TestAssembly=`pwd`/$(MsBuildProjectName).dll /p:TestBinDir=`pwd` || exit $?
 
    ]]>
       </BashCLRTestPreCommands>
@@ -309,8 +309,7 @@ $(BashLinkerTestCleanupCmds)
       ]]></BashCLRTestLaunchCmds>
       <BashCLRTestLaunchCmds Condition="'$(CLRTestKind)' == 'BuildAndRun' And $(TargetOS) == 'Browser' ">
       <![CDATA[
-cd WasmApp
-./run-v8.sh
+cd WasmApp && ./run-v8.sh
 CLRTestExitCode=$?
       ]]>
       </BashCLRTestLaunchCmds>
