@@ -24,7 +24,7 @@ namespace System.Diagnostics.Tests
         [InlineData(0)]
         [InlineData(1)]
         [InlineData(65535)]
-        public void CanFormatMessage(uint messageId)
+        public unsafe void CanFormatMessage(uint messageId)
         {
             string messageDllPath = Path.Combine(Path.GetDirectoryName(typeof(EventLog).Assembly.Location), "System.Diagnostics.EventLog.Messages.dll");
             Assert.True(File.Exists(messageDllPath));
@@ -32,10 +32,9 @@ namespace System.Diagnostics.Tests
 
             string messageString = "hello message";
             char[] buffer = new char[1024];
-            GCHandle pinnedString = GCHandle.Alloc(messageString, GCHandleType.Pinned);
-            try
+            fixed (char* pMessageString = messageString)
             {
-                IntPtr[] insertion = new[] { pinnedString.AddrOfPinnedObject() };
+                IntPtr[] insertion = new[] { (IntPtr)pMessageString };
                 int messageLength = Interop.Kernel32.FormatMessage(
                     Interop.Kernel32.FORMAT_MESSAGE_FROM_HMODULE | Interop.Kernel32.FORMAT_MESSAGE_ARGUMENT_ARRAY,
                     hMessageDll,
@@ -48,10 +47,6 @@ namespace System.Diagnostics.Tests
                 Assert.True(messageLength > 0);
                 string formattedMessage = new string(buffer, 0, messageLength);
                 Assert.Equal(messageString, formattedMessage);
-            }
-            finally
-            {
-                pinnedString.Free();
             }
         }
 
