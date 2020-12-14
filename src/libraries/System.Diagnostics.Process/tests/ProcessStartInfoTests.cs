@@ -264,47 +264,6 @@ namespace System.Diagnostics.Tests
             }
         }
 
-        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        public void GetEnvironmentVariablesIsCaseSensitive()
-        {
-            const string UpperCaseKey = "NPM_CONFIG_CACHE";
-            const string UpperCaseValue = "VALUE";
-            const string LowerCaseKey = "npm_config_cache";
-            const string LowerCaseValue = "value";
-
-            Environment.SetEnvironmentVariable(UpperCaseKey, UpperCaseValue);
-            Environment.SetEnvironmentVariable(LowerCaseKey, LowerCaseValue);
-
-            try
-            {
-                const string ItemSeparator = "CAFF9451396B4EEF8A5155A15BDC2080"; // random string that shouldn't be in any env vars; used instead of newline to separate env var strings
-
-                // Schedule a process to see what env vars it gets.  Have it write out those variables
-                // to its output stream so we can read them.
-                Process p = CreateProcess(() =>
-                {
-                    Console.Write(string.Join(ItemSeparator, Environment.GetEnvironmentVariables().Cast<DictionaryEntry>().Select(e => Convert.ToBase64String(Encoding.UTF8.GetBytes(e.Key + "=" + e.Value)))));
-                    return RemoteExecutor.SuccessExitCode;
-                });
-                p.StartInfo.StandardOutputEncoding = Encoding.UTF8;
-                p.StartInfo.RedirectStandardOutput = true;
-                p.Start();
-                string output = p.StandardOutput.ReadToEnd();
-                Assert.True(p.WaitForExit(WaitInMS));
-
-                string[] printedEnvVars = output.Split(new[] { ItemSeparator }, StringSplitOptions.None).Select(s => Encoding.UTF8.GetString(Convert.FromBase64String(s))).ToArray();
-
-                Assert.Single(printedEnvVars, envVar => envVar.Equals($"{UpperCaseKey}={UpperCaseValue}", StringComparison.Ordinal));
-                Assert.Single(printedEnvVars, envVar => envVar.Equals($"{LowerCaseKey}={LowerCaseValue}", StringComparison.Ordinal));
-            }
-            finally
-            {
-                Environment.SetEnvironmentVariable(UpperCaseKey, null);
-                Environment.SetEnvironmentVariable(LowerCaseKey, null);
-            }
-        }
-
-
         [Fact]
         public void TestUseShellExecuteProperty_SetAndGet()
         {
