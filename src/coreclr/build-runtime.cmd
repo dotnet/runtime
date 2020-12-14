@@ -29,7 +29,6 @@ if defined VS160COMNTOOLS (
 ::      __TargetOS           -- default: windows
 ::      __ProjectDir        -- default: directory of the dir.props file
 ::      __RepoRootDir       -- default: directory two levels above the dir.props file
-::      __SourceDir         -- default: %__ProjectDir%\src\
 ::      __RootBinDir        -- default: %__RepoRootDir%\artifacts\
 ::      __BinDir            -- default: %__RootBinDir%\%__TargetOS%.%__BuildArch.%__BuildType%\
 ::      __IntermediatesDir
@@ -49,7 +48,6 @@ if %__ProjectDir:~-1%==\ set "__ProjectDir=%__ProjectDir:~0,-1%"
 set "__RepoRootDir=%__ProjectDir%\..\.."
 
 set "__ProjectFilesDir=%__ProjectDir%"
-set "__SourceDir=%__ProjectDir%\src"
 set "__RootBinDir=%__RepoRootDir%\artifacts"
 
 set __BuildAll=
@@ -688,7 +686,14 @@ if %__BuildNative% EQU 1 (
 
 :SkipCopyUcrt
     if %__EnforcePgo% EQU 1 (
-        "%PYTHON%" "%__ProjectDir%\src\scripts\pgocheck.py" "%__BinDir%\coreclr.dll" "%__BinDir%\clrjit.dll"
+        set PgoCheckCmd="!PYTHON!" "!__ProjectDir!\scripts\pgocheck.py" "!__BinDir!\coreclr.dll" "!__BinDir!\clrjit.dll"
+        echo !PgoCheckCmd!
+        !PgoCheckCmd!
+        if not !errorlevel! == 0 (
+            set __exitCode=!errorlevel!
+            echo !__ErrMsgPrefix!!__MsgPrefix!Error: Error running pgocheck.py on coreclr and clrjit.
+            goto ExitWithCode
+        )
     )
 
 :SkipNativeBuild
