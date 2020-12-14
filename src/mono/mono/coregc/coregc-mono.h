@@ -12,7 +12,7 @@ typedef void HINSTANCE;
 #include <cstddef>
 #include <sys/sysctl.h>
 #include "mono/coregc/gcenv.mono.h"
-#include <../coreclr/src/gc/env/gcenv.base.h>
+#include <../coreclr/gc/env/gcenv.base.h>
 #include "gcinterface.h"
 
 
