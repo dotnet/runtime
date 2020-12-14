@@ -31,7 +31,11 @@ Abstract:
 #include <errno.h>
 #include <limits>
 
+#ifdef HAVE_CORE_GC 
+#include "config.h"
+#else
 #include "config.gc.h"
+#endif
 
 #include "cgroup.h"
 
