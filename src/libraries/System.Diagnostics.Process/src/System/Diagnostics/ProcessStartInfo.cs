@@ -118,7 +118,7 @@ namespace System.Diagnostics
                             // 5. No perf hit should be observed, as this is an exceptional code path.
                             if (_environmentVariables.TryGetValue(key, out string? existing) && existing != value) // we call Add so it throw detailed ex with an old and new key name
                             {
-                                _environmentVariables.Add(key, existing);
+                                _environmentVariables.Add(key, value);
                             }
                         }
                         else
