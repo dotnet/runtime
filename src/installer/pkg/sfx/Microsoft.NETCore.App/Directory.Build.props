@@ -27,11 +27,8 @@
   </ItemGroup>
 
   <!--
-    Platform manifest needs to include all System*Native items from 3.1 release. This itemgroup adds
-    them explicitly, to fill the gap that appeared when the names of these libraries were changed
-    in 5.0 to conform to a specific Android naming convention. The library name change was a fix
-    for https://github.com/dotnet/runtime/issues/33118. For more details of the issue and fix see
-    https://github.com/dotnet/runtime/issues/33450.
+    Platform manifest needs to include all native shims from previous releases.
+    This itemgroup adds them explicitly.
   -->
   <ItemGroup>
     <_pastShimFiles Include="System.Globalization.Native.dylib" />
@@ -53,6 +50,7 @@
     <_pastShimFiles Include="System.Security.Cryptography.Native.OpenSsl.a" />
     <_pastShimFiles Include="System.Security.Cryptography.Native.OpenSsl.dylib" />
     <_pastShimFiles Include="System.Security.Cryptography.Native.OpenSsl.so" />
+    <_pastShimFiles Include="clrcompression.dll" />
     <PlatformManifestFileEntry Include="@(_pastShimFiles)" IsNative="true" />
   </ItemGroup>
 
@@ -157,7 +155,6 @@
     <PlatformManifestFileEntry Include="api-ms-win-crt-utility-l1-1-0.dll" IsNative="true" FallbackFileVersion="$(WindowsForwarderFileVersion)" />
     <PlatformManifestFileEntry Include="API-MS-Win-core-xstate-l2-1-0.dll" IsNative="true" FallbackFileVersion="$(WindowsForwarderFileVersion)" />
     <PlatformManifestFileEntry Include="ucrtbase.dll" IsNative="true" />
-    <PlatformManifestFileEntry Include="clrcompression.dll" IsNative="true" />
     <PlatformManifestFileEntry Include="createdump.exe" IsNative="true" />
     <PlatformManifestFileEntry Include="createdump" IsNative="true" />
     <PlatformManifestFileEntry Include="libcoreclrtraceptprovider.so" IsNative="true" />
@@ -209,18 +206,7 @@
 
  <ItemGroup>
     <!-- Exclude shims from the closure verification -->
-    <ExcludeFromClosure Include="mscorlib" />
-    <ExcludeFromClosure Include="System" />
-    <ExcludeFromClosure Include="System.Configuration" />
-    <ExcludeFromClosure Include="System.Core" />
-    <ExcludeFromClosure Include="System.Data" />
-    <ExcludeFromClosure Include="System.Drawing" />
-    <ExcludeFromClosure Include="System.Net" />
-    <ExcludeFromClosure Include="System.Security" />
-    <ExcludeFromClosure Include="System.ServiceModel.Web" />
-    <ExcludeFromClosure Include="System.ServiceProcess" />
-    <ExcludeFromClosure Include="System.Transactions" />
-    <ExcludeFromClosure Include="WindowsBase" />
+    <ExcludeFromClosure Include="@(NetFxReference)" />
  </ItemGroup>
 
   <ItemGroup>
