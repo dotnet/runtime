@@ -309,7 +309,8 @@ $(BashLinkerTestCleanupCmds)
       ]]></BashCLRTestLaunchCmds>
       <BashCLRTestLaunchCmds Condition="'$(CLRTestKind)' == 'BuildAndRun' And $(TargetOS) == 'Browser' ">
       <![CDATA[
-cd WasmApp && ./run-v8.sh
+cd WasmApp
+./run-v8.sh
 CLRTestExitCode=$?
       ]]>
       </BashCLRTestLaunchCmds>
