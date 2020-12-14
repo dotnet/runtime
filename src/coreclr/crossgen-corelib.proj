@@ -8,7 +8,7 @@
           AfterTargets="Build">
     <PropertyGroup>
       <!-- Default for using Crossgen2 when not set externally -->
-      <UseCrossgen2 Condition="'$(UseCrossgen2)' == ''">false</UseCrossgen2>
+      <UseCrossgen2 Condition="'$(UseCrossgen2)' == ''">true</UseCrossgen2>
 
       <OSPlatformConfig>$(TargetOS).$(TargetArchitecture).$(Configuration)</OSPlatformConfig>
       <RootBinDir>$([MSBuild]::NormalizeDirectory('$(RepoRoot)', 'artifacts'))</RootBinDir>
