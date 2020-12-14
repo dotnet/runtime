@@ -20,7 +20,7 @@
     <Compile Include="ApkBuilder.cs" />
     <Compile Include="AndroidAppBuilder.cs" />
     <Compile Include="AndroidApkFileReplacerTask.cs" />
-    <Compile Include="Utils.cs" />
+    <Compile Include="..\Common\Utils.cs" />
   </ItemGroup>
 
   <Target Name="PublishBuilder"
