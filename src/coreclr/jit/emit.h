@@ -265,7 +265,7 @@ struct insGroup
 #define IGF_PLACEHOLDER 0x0100    // this is a placeholder group, to be filled in later
 #define IGF_EXTEND 0x0200         // this block is conceptually an extension of the previous block
                                   // and the emitter should continue to track GC info as if there was no new block.
-#define IGF_ALIGN_LOOP 0x0400     // this group contains alignment instruction at the end because the next IG points
+#define IGF_LOOP_ALIGN 0x0400     // this group contains alignment instruction at the end because the next IG points
                                   // to inner loop that needs alignment.
 
 // Mask of IGF_* flags that should be propagated to new blocks when they are created.
@@ -337,6 +337,11 @@ struct insGroup
         ptr -= sizeof(unsigned);
 
         return *(unsigned*)ptr;
+    }
+
+    bool isLoopAlign()
+    {
+        return (igFlags & IGF_LOOP_ALIGN) != 0;
     }
 
 }; // end of struct insGroup

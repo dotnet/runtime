@@ -9644,7 +9644,7 @@ BasicBlock* Compiler::fgSplitBlockAtEnd(BasicBlock* curr)
     // Remove flags that the new block can't have.
     newBlock->bbFlags &=
         ~(BBF_TRY_BEG | BBF_LOOP_HEAD | BBF_LOOP_CALL0 | BBF_LOOP_CALL1 | BBF_HAS_LABEL | BBF_JMP_TARGET |
-          BBF_FUNCLET_BEG | BBF_LOOP_PREHEADER | BBF_KEEP_BBJ_ALWAYS | BBF_PATCHPOINT | BBF_BACKWARD_JUMP_TARGET);
+          BBF_FUNCLET_BEG | BBF_LOOP_PREHEADER | BBF_KEEP_BBJ_ALWAYS | BBF_PATCHPOINT | BBF_BACKWARD_JUMP_TARGET | BBF_LOOP_ALIGN);
 
     // Remove the GC safe bit on the new block. It seems clear that if we split 'curr' at the end,
     // such that all the code is left in 'curr', and 'newBlock' just gets the control flow, then
@@ -10946,12 +10946,6 @@ void Compiler::fgCompactBlocks(BasicBlock* block, BasicBlock* bNext)
             break;
     }
 
-    // Add the LOOP_ALIGN flag, if applicable
-    if (bNext->bbFlags & BBF_LOOP_ALIGN)
-    {
-        block->bbFlags |= BBF_LOOP_ALIGN;
-    }
-
     // If we're collapsing a block created after the dominators are
     // computed, copy block number the block and reuse dominator
     // information from bNext to block.
@@ -11553,7 +11547,7 @@ void Compiler::fgRemoveBlock(BasicBlock* block, bool unreachable)
             skipUnmarkLoop = true;
         }
 
-        if (block->bbFlags & BBF_LOOP_ALIGN)
+        if (block->isLoopAlign())
         {
             succBlock->bbFlags |= BBF_LOOP_ALIGN;
         }

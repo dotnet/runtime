@@ -464,6 +464,10 @@ struct BasicBlock : private LIR::Range
     {
         return ((bbFlags & BBF_LOOP_HEAD) != 0);
     }
+    bool isLoopAlign() const
+    {
+        return ((bbFlags & BBF_LOOP_ALIGN) != 0);
+    }
 
 // Flags to update when two blocks are compacted
 

@@ -349,6 +349,9 @@ void CodeGen::genCodeForBBlist()
             needLabel = true;
         }
 
+        // Make sure we did not add align instruction in the middle of IG.
+        assert(needLabel || !GetEmitter()->emitCurIG->isLoopAlign());
+
         if (needLabel)
         {
             // Mark a label and update the current set of live GC refs
@@ -748,7 +751,7 @@ void CodeGen::genCodeForBBlist()
                 // During emitter, this information will be used to calculate the loop size.
                 // Depending on the loop size, decision of whether to align a loop or not will be taken.
 
-                if (block->bbJumpDest->bbFlags & BBF_LOOP_ALIGN)
+                if (block->bbJumpDest->isLoopAlign())
                 {
                     GetEmitter()->emitSetLoopBackEdge((insGroup*)block->bbJumpDest->bbEmitCookie);
                 }
@@ -764,14 +767,14 @@ void CodeGen::genCodeForBBlist()
 
         // If next block is the first block of a loop (identified by BBF_LOOP_ALIGN),
         // then need to add align instruction in current "block". Also mark the
-        // corresponding IG with IGF_ALIGN_LOOP to know that there will be align
+        // corresponding IG with IGF_LOOP_ALIGN to know that there will be align
         // instructions at the end of that IG.
         //
         // For non-adaptive alignment, add alignment instruction of size depending on the
         // compJitAlignLoopBoundary.
         // For adaptive alignment, alignment instruction will always be of 15 bytes.
 
-        if ((block->bbNext != nullptr) && (block->bbNext->bbFlags & BBF_LOOP_ALIGN))
+        if ((block->bbNext != nullptr) && (block->bbNext->isLoopAlign()))
         {
             assert(ShouldAlignLoops());
 
@@ -786,7 +789,7 @@ void CodeGen::genCodeForBBlist()
 
             // Mark this IG as need alignment so during emitter we can check the instruction count heuristics of
             // all IGs that follows this IG and participate in a loop.
-            GetEmitter()->emitCurIG->igFlags |= IGF_ALIGN_LOOP;
+            GetEmitter()->emitCurIG->igFlags |= IGF_LOOP_ALIGN;
 
             JITDUMP("Adding 'align' instruction of %d bytes in G_M%03u_IG%02u to align loop header block.\n" FMT_BB,
                     compiler->opts.compJitAlignLoopBoundary, compiler->compMethodID, GetEmitter()->emitCurIG->igNum);
