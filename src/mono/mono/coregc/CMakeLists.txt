@@ -4,11 +4,11 @@ include_directories(
   ../../../mono
   ../../../mono/mono
   ../../../mono/mono/coregc
-  ${coreclr_root}/src/gc
-  ${coreclr_root}/src/gc/env
-  ${coreclr_root}/src/gc/unix
-  ${coreclr_root}/src/pal/inc/rt
-  ${coreclr_root}/src/pal/inc)
+  ${coreclr_root}/gc
+  ${coreclr_root}/gc/env
+  ${coreclr_root}/gc/unix
+  ${coreclr_root}/pal/inc/rt
+  ${coreclr_root}/pal/inc)
 
 
 add_definitions(-D_AMD64_ -DHAVE_CORE_GC -DBIT64 -DFEATURE_CONSERVATIVE_GC -DFEATURE_REDHAWK -DPLATFORM_UNIX -DHOST_64BIT -DHOST_AMD64 -DTARGET_UNIX -DNDEBUG -DHAVE_CLOCK_GETTIME_NSEC_NP -DHAVE_SYSCTL)
@@ -48,7 +48,7 @@ set(mono_coregc_sources_base
 	gcscan.h)
 
 addprefix(mono_coregc_sources ../coregc/ "${mono_coregc_sources_base}")
-addprefix(coreclr_coregc_sources ${coreclr_root}/src/gc "${coregc_sources_base}")
+addprefix(coreclr_coregc_sources ${coreclr_root}/gc "${coregc_sources_base}")
 set(coregc_sources ${mono_coregc_sources} ${coreclr_coregc_sources})
 
 # message(FATAL_ERROR "!!! ${coregc_sources} !!!\n")
