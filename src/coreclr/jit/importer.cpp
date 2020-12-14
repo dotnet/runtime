@@ -8499,7 +8499,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
         goto DONE;
     }
     else if ((opcode == CEE_CALLI) && ((sig->callConv & CORINFO_CALLCONV_MASK) != CORINFO_CALLCONV_DEFAULT) &&
-                                      ((sig->callConv & CORINFO_CALLCONV_MASK) != CORINFO_CALLCONV_VARARG))
+             ((sig->callConv & CORINFO_CALLCONV_MASK) != CORINFO_CALLCONV_VARARG))
     {
         if (!info.compCompHnd->canGetCookieForPInvokeCalliSig(sig))
         {
@@ -9254,9 +9254,7 @@ bool Compiler::impMethodInfo_hasRetBuffArg(CORINFO_METHOD_INFO* methInfo, CorInf
         // We have some kind of STRUCT being returned
         structPassingKind howToReturnStruct = SPK_Unknown;
 
-        var_types returnType =
-            getReturnTypeForStruct(methInfo->args.retTypeClass, callConv,
-                                   &howToReturnStruct);
+        var_types returnType = getReturnTypeForStruct(methInfo->args.retTypeClass, callConv, &howToReturnStruct);
 
         if (howToReturnStruct == SPK_ByReference)
         {
