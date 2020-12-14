@@ -60,7 +60,7 @@ namespace System
             else
             {
                 return ((value & 0xFFFF) < 0xFFFE)
-                    && ((value - 0xE0000) >= (0xE1000 - 0xE0000))
+                    && !IsInInclusiveRange(value, 0xE0000, 0xE0FFF)
                     && (isQuery || value < 0xF0000);
             }
         }
@@ -68,10 +68,6 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static bool IsInInclusiveRange(uint value, uint min, uint max)
             => (value - min) <= (max - min);
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static bool IsInInclusiveRange(char value, char min, char max)
-            => (uint)(value - min) <= (uint)(max - min);
 
         //
         // Check reserved chars according to RFC 3987 in a specific component
@@ -104,7 +100,7 @@ namespace System
                 char ch = pInput[i];
                 if (ch == '%')
                 {
-                    if (i + 2 < end)
+                    if (end - i > 2)
                     {
                         ch = UriHelper.DecodeHexChars(pInput[i + 1], pInput[i + 2]);
 

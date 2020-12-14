@@ -12,7 +12,7 @@ namespace System.Text
         {
             int pos = _pos;
             Span<char> chars = _chars;
-            if ((uint)(pos + 1) < (uint)chars.Length)
+            if ((uint)(pos + 1) < (uint)chars.Length && (uint)pos < (uint)chars.Length)
             {
                 if (rune.Value <= 0xFFFF)
                 {
