@@ -365,7 +365,11 @@ namespace System.Drawing
             object? value,
             Attribute[]? attributes)
         {
-            return value is Font ? TypeDescriptor.GetProperties(value, attributes) : base.GetProperties(context, value, attributes);
+            if (value is not Font)
+                return base.GetProperties(context, value, attributes);
+
+            PropertyDescriptorCollection props = TypeDescriptor.GetProperties(value, attributes);
+            return props.Sort(new string[] { nameof(Font.Name), nameof(Font.Size), nameof(Font.Unit) });
         }
 
         public override bool GetPropertiesSupported(ITypeDescriptorContext context) => true;

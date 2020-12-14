@@ -2830,7 +2830,7 @@ public:
 
     GenTreeArrLen* gtNewArrLen(var_types typ, GenTree* arrayOp, int lenOffset, BasicBlock* block);
 
-    GenTree* gtNewIndir(var_types typ, GenTree* addr);
+    GenTreeIndir* gtNewIndir(var_types typ, GenTree* addr);
 
     GenTree* gtNewNullCheck(GenTree* addr, BasicBlock* basicBlock);
 
@@ -2878,6 +2878,8 @@ public:
     GenTreeAllocObj* gtNewAllocObjNode(CORINFO_RESOLVED_TOKEN* pResolvedToken, BOOL useParent);
 
     GenTree* gtNewRuntimeLookup(CORINFO_GENERIC_HANDLE hnd, CorInfoGenericHandleType hndTyp, GenTree* lookupTree);
+
+    GenTreeIndir* gtNewMethodTableLookup(GenTree* obj);
 
     //------------------------------------------------------------------------
     // Other GenTree functions
@@ -8713,16 +8715,9 @@ private:
     // Answer the question: Is a particular ISA supported for explicit hardware intrinsics?
     bool compHWIntrinsicDependsOn(CORINFO_InstructionSet isa) const
     {
-        if ((opts.compSupportsISA & (1ULL << isa)) != 0)
-        {
-            // Report intent to use the ISA to the EE
-            compExactlyDependsOn(isa);
-            return true;
-        }
-        else
-        {
-            return false;
-        }
+        // Report intent to use the ISA to the EE
+        compExactlyDependsOn(isa);
+        return ((opts.compSupportsISA & (1ULL << isa)) != 0);
     }
 
     bool canUseVexEncoding() const

@@ -12530,7 +12530,7 @@ compile_asm (MonoAotCompile *acfg)
 							wrap_path (g_strdup_printf ("%s." AS_OBJECT_FILE_SUFFIX, acfg->tmpfname)), ld_flags);
 
 #if defined(TARGET_MACH)
-	g_string_append_printf (str, " -Wl,-install_name,%s%s", g_path_get_basename (acfg->image->name), MONO_SOLIB_EXT);
+	g_string_append_printf (str, " \"-Wl,-install_name,%s%s\"", g_path_get_basename (acfg->image->name), MONO_SOLIB_EXT);
 #endif
 
 	command = g_string_free (str, FALSE);

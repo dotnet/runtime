@@ -1455,16 +1455,6 @@ void Compiler::optValnumCSE_Availablity()
 
                     if (isDef)
                     {
-                        // @ToDo - Remove this block as it no longer applies
-                        if (tree->gtFlags & GTF_COLON_COND)
-                        {
-                            // We can't create CSE definitions inside QMARK-COLON trees
-                            tree->gtCSEnum = NO_CSE;
-
-                            JITDUMP(" NO_CSE - This CSE def occurs in a GTF_COLON_COND!\n");
-                            continue;
-                        }
-
                         // This is a CSE def
 
                         // Is defExcSetCurrent still set to the uninit marker value of VNForNull() ?

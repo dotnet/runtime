@@ -18,7 +18,8 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="AppleAppBuilder.cs" />
-    <Compile Include="Utils.cs" />
+    <Compile Include="..\Common\Utils.cs" />
+    <Compile Include="TargetOS.cs" />
     <Compile Include="Xcode.cs" />
   </ItemGroup>
 
