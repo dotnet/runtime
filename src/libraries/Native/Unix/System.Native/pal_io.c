@@ -1165,14 +1165,13 @@ int32_t SystemNative_CopyFile(intptr_t sourceFd, intptr_t destinationFd)
         while ((ret = futimes(outFd, origTimes)) < 0 && errno == EINTR);
 #endif
     }
-    if (ret != 0)
+    if (ret != 0 && errno != EPERM)
     {
         return -1;
     }
-
     // Then copy permissions.
     while ((ret = fchmod(outFd, sourceStat.st_mode & (S_IRWXU | S_IRWXG | S_IRWXO))) < 0 && errno == EINTR);
-    if (ret != 0)
+    if (ret != 0 && errno != EPERM)
     {
         return -1;
     }
