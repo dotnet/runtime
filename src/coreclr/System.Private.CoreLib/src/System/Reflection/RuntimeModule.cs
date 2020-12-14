@@ -354,14 +354,14 @@ namespace System.Reflection
         #endregion
 
         #region Protected Virtuals
-        [RequiresUnreferencedCode("Methods might be removed")]
+        [RequiresUnreferencedCode("Methods might be removed because Module methods can't currently be annotated for dynamic access.")]
         protected override MethodInfo? GetMethodImpl(string name, BindingFlags bindingAttr, Binder? binder,
             CallingConventions callConvention, Type[]? types, ParameterModifier[]? modifiers)
         {
             return GetMethodInternal(name, bindingAttr, binder, callConvention, types, modifiers);
         }
 
-        [RequiresUnreferencedCode("Methods might be removed")]
+        [RequiresUnreferencedCode("Methods might be removed because Module methods can't currently be annotated for dynamic access.")]
         internal MethodInfo? GetMethodInternal(string name, BindingFlags bindingAttr, Binder? binder,
             CallingConventions callConvention, Type[]? types, ParameterModifier[]? modifiers)
         {

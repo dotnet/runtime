@@ -33,8 +33,7 @@ namespace System
         // This constructor is called from a class to generate a
         // delegate based upon a static method name and the Type object
         // for the class defining the method.
-        [RequiresUnreferencedCode("The target method might be removed")]
-        protected MulticastDelegate(Type target, string method) : base(target, method)
+        protected MulticastDelegate([DynamicallyAccessedMembers(AllMethods)] Type target, string method) : base(target, method)
         {
         }
 

@@ -87,8 +87,7 @@ namespace System
             };
         }
 
-        [RequiresUnreferencedCode("The target method might be removed")]
-        protected Delegate(Type target, string method)
+        protected Delegate([DynamicallyAccessedMembers(AllMethods)] Type target, string method)
         {
             if (target is null)
                 throw new ArgumentNullException(nameof(target));
@@ -183,8 +182,7 @@ namespace System
             return CreateDelegate_internal(type, target, info, throwOnBindFailure);
         }
 
-        [RequiresUnreferencedCode("The target method might be removed")]
-        public static Delegate? CreateDelegate(Type type, Type target, string method, bool ignoreCase, bool throwOnBindFailure)
+        public static Delegate? CreateDelegate(Type type, [DynamicallyAccessedMembers(AllMethods)] Type target, string method, bool ignoreCase, bool throwOnBindFailure)
         {
             if (type is null)
                 throw new ArgumentNullException(nameof(type));

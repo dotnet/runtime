@@ -19,8 +19,7 @@ namespace System
         {
         }
 
-        [RequiresUnreferencedCode("The target method might be removed")]
-        protected MulticastDelegate(Type target, string method)
+        protected MulticastDelegate([DynamicallyAccessedMembers(AllMethods)] Type target, string method)
             : base(target, method)
         {
         }
