@@ -2194,10 +2194,8 @@ GenTree* Compiler::getRuntimeContextTree(CORINFO_RUNTIME_LOOKUP_KIND kind)
         ctxTree = gtNewLclvNode(pRoot->info.compThisArg, TYP_REF);
         ctxTree->gtFlags |= GTF_VAR_CONTEXT;
 
-        // Vtable pointer of this object
-        ctxTree = gtNewOperNode(GT_IND, TYP_I_IMPL, ctxTree);
-        ctxTree->gtFlags |= GTF_EXCEPT; // Null-pointer exception
-        ctxTree->gtFlags |= GTF_IND_INVARIANT;
+        // context is the method table pointer of the this object
+        ctxTree = gtNewMethodTableLookup(ctxTree);
     }
     else
     {
@@ -10956,8 +10954,7 @@ GenTree* Compiler::impCastClassOrIsInstToTree(GenTree*                op1,
         op2Var                                                  = fgInsertCommaFormTemp(&op2);
         lvaTable[op2Var->AsLclVarCommon()->GetLclNum()].lvIsCSE = true;
     }
-    temp = gtNewOperNode(GT_IND, TYP_I_IMPL, temp);
-    temp->gtFlags |= GTF_EXCEPT;
+    temp   = gtNewMethodTableLookup(temp);
     condMT = gtNewOperNode(GT_NE, TYP_INT, temp, op2);
 
     GenTree* condNull;
@@ -15832,7 +15829,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     GenTree* cloneOperand;
                     op1 = impCloneExpr(op1, &cloneOperand, NO_CLASS_HANDLE, (unsigned)CHECK_SPILL_ALL,
                                        nullptr DEBUGARG("inline UNBOX clone1"));
-                    op1 = gtNewOperNode(GT_IND, TYP_I_IMPL, op1);
+                    op1 = gtNewMethodTableLookup(op1);
 
                     GenTree* condBox = gtNewOperNode(GT_EQ, TYP_INT, op1, op2);
 

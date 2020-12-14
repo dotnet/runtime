@@ -300,6 +300,19 @@ void Compiler::fgPerNodeLocalVarLiveness(GenTree* tree)
             fgCurMemoryDef |= memoryKindSet(GcHeap, ByrefExposed);
             break;
 
+#ifdef FEATURE_SIMD
+        case GT_SIMD:
+        {
+            GenTreeSIMD* simdNode = tree->AsSIMD();
+            if (simdNode->OperIsMemoryLoad())
+            {
+                // This instruction loads from memory and we need to record this information
+                fgCurMemoryUse |= memoryKindSet(GcHeap, ByrefExposed);
+            }
+            break;
+        }
+#endif // FEATURE_SIMD
+
 #ifdef FEATURE_HW_INTRINSICS
         case GT_HWINTRINSIC:
         {
@@ -319,7 +332,7 @@ void Compiler::fgPerNodeLocalVarLiveness(GenTree* tree)
             }
             break;
         }
-#endif
+#endif // FEATURE_HW_INTRINSICS
 
         // For now, all calls read/write GcHeap/ByrefExposed, writes in their entirety.  Might tighten this case later.
         case GT_CALL:

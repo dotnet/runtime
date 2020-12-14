@@ -181,6 +181,16 @@ BOOL ModifyCheckForDynamicMethod(DynamicResolver *pResolver,
 
 /*****************************************************************************/
 
+void CEEInfo::setOverride(ICorDynamicInfo *pOverride, CORINFO_METHOD_HANDLE currentMethod)
+{
+    LIMITED_METHOD_CONTRACT;
+    m_pOverride = pOverride;
+    m_pMethodBeingCompiled = (MethodDesc *)currentMethod;     // method being compiled
+
+    m_hMethodForSecurity_Key = NULL;
+    m_pMethodForSecurity_Value = NULL;
+}
+
 // Initialize from data we passed across to the JIT
 void CEEInfo::GetTypeContext(const CORINFO_SIG_INST *info, SigTypeContext *pTypeContext)
 {

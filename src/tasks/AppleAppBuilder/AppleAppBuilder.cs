@@ -16,7 +16,7 @@ public class AppleAppBuilderTask : Task
     /// The Apple OS we are targeting (iOS or tvOS)
     /// </summary>
     [Required]
-    public string TargetOS { get; set; } = Utils.TargetOS.iOS;
+    public string TargetOS { get; set; } = TargetNames.iOS;
 
     /// <summary>
     /// ProjectName is used as an app name, bundleId and xcode project name

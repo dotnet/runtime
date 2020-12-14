@@ -106,8 +106,6 @@ Assembler::Assembler()
     m_ulLastDebugColumn = 0xFFFFFFFF;
     m_ulLastDebugLineEnd = 0xFFFFFFFF;
     m_ulLastDebugColumnEnd = 0xFFFFFFFF;
-    m_pSymWriter = NULL;
-    m_pSymDocument = NULL;
     m_dwIncludeDebugInfo = 0;
     m_fGeneratePDB = FALSE;
     m_fIsMscorlib = FALSE;
@@ -158,7 +156,6 @@ Assembler::Assembler()
     dummyClass = new Class(NULL);
     indexKeywords(&indxKeywords);
 
-    m_pdbFormat = CLASSIC;
     m_pPortablePdbWriter = NULL;
 }
 
@@ -199,18 +196,10 @@ Assembler::~Assembler()
     while((m_szNamespace = m_NSstack.POP())) ;
     delete [] m_szFullNS;
 
-    m_DocWriterList.RESET(true);
-
     m_MethodBodyList.RESET(true);
 
     m_TypeDefDList.RESET(true);
 
-    if (m_pSymWriter != NULL)
-    {
-        m_pSymWriter->Close();
-        m_pSymWriter->Release();
-        m_pSymWriter = NULL;
-    }
     if (m_pImporter != NULL)
     {
         m_pImporter->Release();
@@ -234,7 +223,7 @@ Assembler::~Assembler()
 }
 
 
-BOOL Assembler::Init(BOOL generatePdb, PdbFormat pdbFormat)
+BOOL Assembler::Init(BOOL generatePdb)
 {
     if (m_pCeeFileGen != NULL) {
         if (m_pCeeFile)
@@ -254,7 +243,6 @@ BOOL Assembler::Init(BOOL generatePdb, PdbFormat pdbFormat)
     if (FAILED(m_pCeeFileGen->GetSectionCreate (m_pCeeFile, ".tls", sdReadWrite, &m_pTLSSection))) return FALSE;
 
     m_fGeneratePDB = generatePdb;
-    m_pdbFormat = pdbFormat;
 
     return TRUE;
 }
@@ -527,65 +515,10 @@ BOOL Assembler::EmitMethodBody(Method* pMethod, BinStr* pbsOut)
             //--------------------------------------------------------------------------------
             if(m_fGeneratePDB)
             {
-                if (m_pSymWriter != NULL)
-                {
-                    m_pSymWriter->OpenMethod(pMethod->m_Tok);
-                    ULONG N = pMethod->m_LinePCList.COUNT();
-                    if(pMethod->m_fEntryPoint) m_pSymWriter->SetUserEntryPoint(pMethod->m_Tok);
-                    if(N)
-                    {
-                        LinePC  *pLPC;
-                        ULONG32  *offsets=new ULONG32[N], *lines = new ULONG32[N], *columns = new ULONG32[N];
-                        ULONG32  *endlines=new ULONG32[N], *endcolumns=new ULONG32[N];
-                        if(offsets && lines && columns && endlines && endcolumns)
-                        {
-                            DocWriter* pDW;
-                            unsigned j=0;
-                            while((pDW = m_DocWriterList.PEEK(j++)))
-                            {
-                                if((m_pSymDocument = pDW->pWriter))
-                                {
-                                    int i, n;
-                                    for(i=0, n=0; (pLPC = pMethod->m_LinePCList.PEEK(i)); i++)
-                                    {
-                                        if(pLPC->pWriter == m_pSymDocument)
-                                        {
-                                            offsets[n] = pLPC->PC;
-                                            lines[n] = pLPC->Line;
-                                            columns[n] = pLPC->Column;
-                                            endlines[n] = pLPC->LineEnd;
-                                            endcolumns[n] = pLPC->ColumnEnd;
-                                            n++;
-                                        }
-                                    }
-                                    if(n) m_pSymWriter->DefineSequencePoints(m_pSymDocument,n,
-                                                                       offsets,lines,columns,endlines,endcolumns);
-                                } // end if(pSymDocument)
-                            } // end while(pDW = next doc.writer)
-                            pMethod->m_LinePCList.RESET(true);
-                        }
-                        else report->error("\nOutOfMemory!\n");
-                        delete [] offsets;
-                        delete [] lines;
-                        delete [] columns;
-                        delete [] endlines;
-                        delete [] endcolumns;
-                    }//enf if(N)
-                    HRESULT hrr;
-                    if(pMethod->m_ulLines[1])
-                        hrr = m_pSymWriter->SetMethodSourceRange(m_pSymDocument,pMethod->m_ulLines[0], pMethod->m_ulColumns[0],
-                                                           m_pSymDocument,pMethod->m_ulLines[1], pMethod->m_ulColumns[1]);
-                    EmitScope(&(pMethod->m_MainScope)); // recursively emits all nested scopes
-
-                    m_pSymWriter->CloseMethod();
-                }
-                else if (IsPortablePdb())
-                {
-                    if (FAILED(m_pPortablePdbWriter->DefineSequencePoints(pMethod)))
-                        return FALSE;
-                    if (FAILED(m_pPortablePdbWriter->DefineLocalScope(pMethod)))
-                        return FALSE;
-                }
+                if (FAILED(m_pPortablePdbWriter->DefineSequencePoints(pMethod)))
+                    return FALSE;
+                if (FAILED(m_pPortablePdbWriter->DefineLocalScope(pMethod)))
+                    return FALSE;
             } // end if(fIncludeDebugInfo)
             //-----------------------------------------------------
 
@@ -730,44 +663,6 @@ HRESULT Assembler::EmitPinvokeMap(mdToken tk, PInvokeDescriptor* pDescr)
                         pDescr->dwAttrs,        // [IN] Flags used for mapping.
                         (LPCWSTR)wzAlias,       // [IN] Import name.
                         pDescr->mrDll);         // [IN] ModuleRef token for the target DLL.
-}
-
-void Assembler::EmitScope(Scope* pSCroot)
-{
-    static ULONG32          scopeID;
-    static ARG_NAME_LIST    *pVarList;
-    int                     i;
-    WCHAR*                  wzVarName=&wzUniBuf[0];
-    char*                   szPhonyName=(char*)&wzUniBuf[dwUniBuf >> 1];
-    Scope*                  pSC = pSCroot;
-    if(pSC && m_pSymWriter)
-    {
-        if(SUCCEEDED(m_pSymWriter->OpenScope(pSC->dwStart,&scopeID)))
-        {
-            if(pSC->pLocals)
-            {
-                for(pVarList = pSC->pLocals; pVarList; pVarList = pVarList->pNext)
-                {
-                    if(pVarList->pSig)
-                    {
-                        if((pVarList->szName)&&(*(pVarList->szName))) strcpy_s(szPhonyName,dwUniBuf >> 1,pVarList->szName);
-                        else sprintf_s(szPhonyName,(dwUniBuf >> 1),"V_%d",pVarList->dwAttr);
-
-                        WszMultiByteToWideChar(g_uCodePage,0,szPhonyName,-1,wzVarName,dwUniBuf >> 1);
-
-                        m_pSymWriter->DefineLocalVariable(wzVarName,0,pVarList->pSig->length(),
-                            (BYTE*)pVarList->pSig->ptr(),ADDR_IL_OFFSET,pVarList->dwAttr,0,0,0,0);
-                    }
-                    else
-                    {
-                        report->error("Local Var '%s' has no signature\n",pVarList->szName);
-                    }
-                }
-            }
-            for(i = 0; (pSC = pSCroot->SubScope.PEEK(i)); i++) EmitScope(pSC);
-            m_pSymWriter->CloseScope(pSCroot->dwEnd);
-        }
-    }
 }
 
 BOOL Assembler::EmitMethod(Method *pMethod)

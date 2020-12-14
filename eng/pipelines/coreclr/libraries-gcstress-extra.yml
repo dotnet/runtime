@@ -1,7 +1,5 @@
 trigger: none
 
-pr: none
-
 # This pipeline currently has too many failures to be enabled by schedule.
 # schedules:
 # - cron: "0 10 * * 0"
