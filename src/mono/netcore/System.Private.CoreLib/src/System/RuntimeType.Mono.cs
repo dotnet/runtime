@@ -2491,7 +2491,7 @@ namespace System
             get
             {
                 // See https://github.com/mono/mono/issues/18180 and
-                // https://github.com/dotnet/runtime/blob/f23e2796ab5f6fea71c9fdacac024822280253db/src/coreclr/src/System.Private.CoreLib/src/System/RuntimeType.CoreCLR.cs#L1468-L1472
+                // https://github.com/dotnet/runtime/blob/69e114c1abf91241a0eeecf1ecceab4711b8aa62/src/coreclr/System.Private.CoreLib/src/System/RuntimeType.CoreCLR.cs#L1505-L1509
                 if (ContainsGenericParameters && !GetRootElementType().IsGenericTypeDefinition)
                     return null;
 

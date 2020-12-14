@@ -135,4 +135,11 @@
     <NuGetTargetMoniker>$(NetCoreAppCurrentToolTargetFrameworkMoniker)</NuGetTargetMoniker>
     <NuGetTargetMonikerShort>$(NetCoreAppToolCurrent)</NuGetTargetMonikerShort>
   </PropertyGroup>
+
+  <!-- Set Test Wrapper running host OS -->
+  <PropertyGroup>
+    <TestWrapperTargetsWindows>false</TestWrapperTargetsWindows>
+    <TestWrapperTargetsWindows Condition=" ('$(TargetsWindows)' != '' And '$(TargetsWindows)' ) OR ('$(TargetOS)' == 'Android' And '$(TargetArchitecture)' == 'arm64' )">true</TestWrapperTargetsWindows>
+  </PropertyGroup>
+
 </Project>

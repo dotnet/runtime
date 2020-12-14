@@ -401,7 +401,9 @@ namespace System
 
         // TODO: Remove these DynamicDependencyAttributes when https://github.com/mono/linker/issues/943 is fixed.
         [DynamicDependency("GetDefaultInstance", "System.Security.Principal.GenericPrincipal", "System.Security.Claims")]
+#if TARGET_WINDOWS
         [DynamicDependency("GetDefaultInstance", "System.Security.Principal.WindowsPrincipal", "System.Security.Principal.Windows")]
+#endif
         internal IPrincipal? GetThreadPrincipal()
         {
             IPrincipal? principal = _defaultPrincipal;

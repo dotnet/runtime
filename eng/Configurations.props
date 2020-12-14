@@ -15,7 +15,7 @@
     <MonoProjectRoot>$([MSBuild]::NormalizeDirectory('$(RepoRoot)', 'src', 'mono'))</MonoProjectRoot>
     <InstallerProjectRoot>$([MSBuild]::NormalizeDirectory('$(RepoRoot)', 'src', 'installer'))</InstallerProjectRoot>
     <RepoToolsLocalDir>$([MSBuild]::NormalizeDirectory('$(RepoRoot)', 'tools-local'))</RepoToolsLocalDir>
-    <RepoTasksDir>$([MSBuild]::NormalizeDirectory('$(RepoToolsLocalDir)', 'tasks'))</RepoTasksDir>
+    <RepoTasksDir>$([MSBuild]::NormalizeDirectory('$(RepoRoot)', 'src', 'tasks'))</RepoTasksDir>
     <IbcOptimizationDataDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsDir)', 'ibc'))</IbcOptimizationDataDir>
     <XmlDocDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'docs'))</XmlDocDir>
   </PropertyGroup>

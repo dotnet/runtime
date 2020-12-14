@@ -311,12 +311,12 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
 
                 var buildFixture = new TestProjectFixture("StandaloneApp", RepoDirectories);
                 buildFixture
-                    .EnsureRestoredForRid(buildFixture.CurrentRid, RepoDirectories.CorehostPackages)
+                    .EnsureRestoredForRid(buildFixture.CurrentRid)
                     .BuildProject(runtime: buildFixture.CurrentRid);
 
                 var publishFixture = new TestProjectFixture("StandaloneApp", RepoDirectories);
                 publishFixture
-                    .EnsureRestoredForRid(publishFixture.CurrentRid, RepoDirectories.CorehostPackages)
+                    .EnsureRestoredForRid(publishFixture.CurrentRid)
                     .PublishProject(runtime: publishFixture.CurrentRid);
 
                 ReplaceTestProjectOutputHostInTestProjectFixture(buildFixture);

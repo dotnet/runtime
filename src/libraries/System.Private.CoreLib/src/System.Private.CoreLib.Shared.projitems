@@ -1047,9 +1047,6 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Void.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\WeakReference.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\WeakReference.T.cs" />
-    <Compile Include="$(CommonPath)Interop\Interop.Libraries.cs">
-      <Link>Common\Interop\Interop.Libraries.cs</Link>
-    </Compile>
     <Compile Include="$(CommonPath)Interop\Interop.Calendar.cs">
       <Link>Common\Interop\Interop.Calendar.cs</Link>
     </Compile>

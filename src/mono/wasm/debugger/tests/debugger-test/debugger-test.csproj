@@ -20,7 +20,7 @@
 
   <Target Name="RebuildWasmAppBuilder">
     <ItemGroup>
-      <WasmAppBuildProject Include="$(RepoTasksDir)mobile.tasks\WasmAppBuilder\WasmAppBuilder.csproj" />
+      <WasmAppBuildProject Include="$(RepoTasksDir)WasmAppBuilder\WasmAppBuilder.csproj" />
     </ItemGroup>
 
     <MSBuild Projects="@(WasmAppBuildProject)"
@@ -33,11 +33,15 @@
   </Target>
 
   <UsingTask TaskName="WasmAppBuilder"
-             AssemblyFile="$(ArtifactsBinDir)WasmAppBuilder\Debug\$(NetCoreAppCurrent)\publish\WasmAppBuilder.dll"/>
+             AssemblyFile="$(WasmAppBuilderTasksAssemblyPath)"/>
+  <UsingTask TaskName="WasmLoadAssembliesAndReferences"
+             AssemblyFile="$(WasmAppBuilderTasksAssemblyPath)"/>
 
   <Target Name="BuildApp" DependsOnTargets="RebuildWasmAppBuilder;Build">
     <PropertyGroup>
       <MicrosoftNetCoreAppRuntimePackDir>$(ArtifactsBinDir)microsoft.netcore.app.runtime.browser-wasm\Release\runtimes\browser-wasm\</MicrosoftNetCoreAppRuntimePackDir>
+      <MainAssembly>$(OutDir)debugger-test.dll</MainAssembly>
+      <_JavaScriptDllPath>$(ArtifactsBinDir)\System.Private.Runtime.InteropServices.JavaScript\$(NetCoreAppCurrent)-Browser-$(RuntimeConfiguration)\System.Private.Runtime.InteropServices.JavaScript.dll</_JavaScriptDllPath>
     </PropertyGroup>
     <ItemGroup>
       <AssemblySearchPaths Include="$(MicrosoftNetCoreAppRuntimePackDir)native"/>
@@ -46,14 +50,21 @@
       <ExtraFileForPublish Include="@(ReferenceCopyLocalPaths)" />
     </ItemGroup>
 
+    <WasmLoadAssembliesAndReferences
+      Assemblies="$(MainAssembly);$(_JavaScriptDllPath)"
+      AssemblySearchPaths="@(AssemblySearchPaths)">
+      <Output TaskParameter="ReferencedAssemblies" ItemName="ReferencedAssemblies" />
+    </WasmLoadAssembliesAndReferences>
+
     <WasmAppBuilder
       AppDir="$(AppDir)"
       MicrosoftNetCoreAppRuntimePackDir="$(MicrosoftNetCoreAppRuntimePackDir)"
       MainAssembly="$(OutDir)debugger-test.dll"
       MainJS="$(MonoProjectRoot)wasm\runtime-test.js"
       DebugLevel="1"
-      AssemblySearchPaths="@(AssemblySearchPaths)"
-      ExtraAssemblies="$(ArtifactsBinDir)\System.Private.Runtime.InteropServices.JavaScript\$(NetCoreAppCurrent)-Browser-$(RuntimeConfiguration)\System.Private.Runtime.InteropServices.JavaScript.dll"/>
+      Assemblies="@(ReferencedAssemblies)">
+      <Output TaskParameter="FileWrites" ItemName="FileWrites" />
+    </WasmAppBuilder>
 
     <Copy SourceFiles="@(ExtraFileForPublish)" DestinationFolder="$(AppDir)" />
   </Target>

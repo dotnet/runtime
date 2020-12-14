@@ -1178,7 +1178,26 @@ I have an old experimental branch where I started working on this:
 https://github.com/CarolEidt/runtime/tree/NoEdgeSplitting. It was ported from the coreclr to
 the runtime repo, but not validated in any significant way.
 Initial experience showed that this resulted in more regressions than improvements.
-Issue [\#8552](https://github.com/dotnet/runtime/issues/8552) may be related.
+
+A less aggressive approach would be to make minor modifications to reduce the
+need for split edges:
+
+* When selecting a predecessor for the fall-through block for a loop backedge,
+  instead of using the actual predecessor, use the non-backedge predecessor of
+  the loop head. This will mean that both successors of the loop will use the same
+  mapping, reducing the need to split the edge.
+
+* When a `RefTypeExpUse` is encountered, if it is at a loop backedge, the variable
+  is in a register, and the loop head has the variable on the stack, spill it.
+  Spilling preemptively will enable the spill to be performed at an actual reference,
+  rather than at the block boundary.
+
+This approach has been implemented experimentally in https://github.com/CarolEidt/runtime/tree/AvoidSplittingBackedge.
+Running crossgen diffs across frameworks and benchmarks for X64 Windows shows
+a delta of -2392 (-0.007%) with 317 methods improved and 66 regressed.
+Further analysis of the regressions is needed.
+
+Issues [\#8552](https://github.com/dotnet/runtime/issues/8552) and [\#40264](https://github.com/dotnet/runtime/issues/40264) may be related.
 
 ### Enable EHWriteThru by default
 

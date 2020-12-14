@@ -18,8 +18,6 @@ trigger:
     - README.md
     - SECURITY.md
     - THIRD-PARTY-NOTICES.TXT
-  
-pr: none
 
 jobs:
 #

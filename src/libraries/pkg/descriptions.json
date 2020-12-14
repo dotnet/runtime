@@ -1024,11 +1024,6 @@
     ]
   },
   {
-    "Name": "System.IO.Compression.clrcompression",
-    "Description": "Internal implementation package not meant for direct consumption.  Please do not reference directly.  Provides native implementation dll used for GZIP compression.",
-    "CommonTypes": []
-  },
-  {
     "Name": "System.IO.Compression.ZipFile",
     "Description": "Provides classes that support the compression and decompression of streams using file system paths.",
     "CommonTypes": [
