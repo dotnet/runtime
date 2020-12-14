@@ -42,13 +42,9 @@ EMCC=source $(EMSDK_PATH)/emsdk_env.sh && emcc
 	cd $(EMSDK_LOCAL_PATH) && ./emsdk activate $(EMSCRIPTEN_VERSION)
 	touch $@
 
-ifeq ($(EMSDK_PATH),$(TOP)/src/mono/wasm/emsdk)
 provision-wasm: .stamp-wasm-install-and-select-$(EMSCRIPTEN_VERSION)
 	@echo "----------------------------------------------------------"
 	@echo "Installed emsdk into EMSDK_PATH=$(TOP)/src/mono/wasm/emsdk"
-else
-provision-wasm:
-endif
 
 MONO_OBJ_DIR=$(OBJDIR)/mono/Browser.wasm.$(CONFIG)
 MONO_INCLUDE_DIR=$(MONO_BIN_DIR)/include/mono-2.0

@@ -185,7 +185,7 @@ void ECall::PopulateManagedCastHelpers()
 static CrstStatic gFCallLock;
 
 // This variable is used to force the compiler not to tailcall a function.
-int FC_NO_TAILCALL;
+RAW_KEYWORD(volatile) int FC_NO_TAILCALL;
 
 #endif // !DACCESS_COMPILE
 
