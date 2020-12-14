@@ -43,6 +43,13 @@ namespace Mono.Linker
 		public virtual Tracer CreateTracer (LinkContext context) => new Tracer (context);
 	}
 
+	public enum TargetRuntimeVersion
+	{
+		Unknown = 0,
+		NET5 = 5,
+		NET6 = 6,
+	}
+
 	public class LinkContext : IDisposable
 	{
 
@@ -55,6 +62,7 @@ namespace Mono.Linker
 		bool _linkSymbols;
 		bool _keepTypeForwarderOnlyAssemblies;
 		bool _ignoreUnresolved;
+		TargetRuntimeVersion? _targetRuntime;
 
 		readonly AssemblyResolver _resolver;
 		readonly TypeNameResolver _typeNameResolver;
@@ -639,6 +647,22 @@ namespace Mono.Linker
 		public void SetWarningSuppressionWriter (WarningSuppressionWriter.FileOutputKind fileOutputKind)
 		{
 			WarningSuppressionWriter = new WarningSuppressionWriter (this, fileOutputKind);
+		}
+
+		public TargetRuntimeVersion GetTargetRuntimeVersion ()
+		{
+			if (_targetRuntime != null)
+				return _targetRuntime.Value;
+
+			TypeDefinition objectType = BCL.FindPredefinedType ("System", "Object", this);
+			_targetRuntime = objectType?.Module.Assembly.Name.Version.Major switch
+			{
+				6 => TargetRuntimeVersion.NET6,
+				5 => TargetRuntimeVersion.NET5,
+				_ => TargetRuntimeVersion.Unknown,
+			};
+
+			return _targetRuntime.Value;
 		}
 	}
 
