@@ -1373,10 +1373,17 @@ namespace Mono.Linker.Steps
 
 		protected virtual void MarkSerializable (TypeDefinition type)
 		{
+#if !FEATURE_ILLINK
 			// Keep default ctor for XmlSerializer support. See https://github.com/mono/linker/issues/957
 			MarkDefaultConstructor (type, new DependencyInfo (DependencyKind.SerializationMethodForType, type), type);
-#if !FEATURE_ILLINK
+
 			if (_context.IsFeatureExcluded ("deserialization"))
+				return;
+#else
+			// TODO: move after the check once SPC is correctly annotated
+			MarkDefaultConstructor (type, new DependencyInfo (DependencyKind.SerializationMethodForType, type), type);
+
+			if (_context.GetTargetRuntimeVersion () > TargetRuntimeVersion.NET5)
 				return;
 #endif
 			MarkMethodsIf (type.Methods, IsSpecialSerializationConstructor, new DependencyInfo (DependencyKind.SerializationMethodForType, type), type);
