@@ -170,6 +170,7 @@ namespace System.Net.Sockets.Tests
         {
             if (useDnsEndPoint)
             {
+                // [ActiveIssue("https://github.com/dotnet/runtime/issues/43931")]
                 throw new SkipTestException("https://github.com/dotnet/runtime/issues/43931");
             }
 
@@ -270,6 +271,7 @@ namespace System.Net.Sockets.Tests
         {
             if (useDnsEndPoint)
             {
+                // [ActiveIssue("https://github.com/dotnet/runtime/issues/46030")]
                 throw new SkipTestException("https://github.com/dotnet/runtime/issues/46030");
             }
 
