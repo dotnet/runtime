@@ -18,8 +18,6 @@ trigger:
     - README.md
     - SECURITY.md
     - THIRD-PARTY-NOTICES.TXT
-  
-pr: none
 
 jobs:
 #
@@ -36,6 +34,7 @@ jobs:
     - Linux_x64
     - windows_x64
     - windows_x86
+    - Linux_arm64
     jobParameters:
       testGroup: perf
 
@@ -130,6 +129,7 @@ jobs:
     - Linux_x64
     - windows_x64
     - windows_x86
+    - Linux_arm64
     jobParameters:
       testGroup: perf
       liveLibrariesBuildConfig: Release

@@ -2005,7 +2005,7 @@ interp_entry (InterpEntryData *data)
 	frame.imethod = data->rmethod;
 	frame.stack = sp;
 
-	context->stack_pointer = (guchar*)(sp + sig->hasthis + sig->param_count);
+	context->stack_pointer = (guchar*)sp_args;
 
 	interp_exec_method (&frame, context, NULL);
 

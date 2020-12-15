@@ -15,6 +15,8 @@
              Link="Common\System\ShouldNotBeInvokedException.cs" />
     <Compile Include="$(CommonTestPath)Microsoft\Win32\TempRegistryKey.cs"
              Link="Common\Microsoft\Win32\TempRegistryKey.cs" />
+    <Compile Include="$(CommonPath)System\Text\ValueStringBuilder.cs"
+             Link="Common\System\Text\ValueStringBuilder.cs" />
     <Compile Include="DelegateSynchronizeInvoke.cs" />
     <Compile Include="Helpers.cs" />
     <Compile Include="Interop.cs" />

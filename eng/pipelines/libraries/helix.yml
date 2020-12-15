@@ -11,6 +11,7 @@ parameters:
   interpreter: ''
   condition: always()
   extraHelixArguments: ''
+  shouldContinueOnError: false
   scenarios: ''
 
 steps:
@@ -21,7 +22,7 @@ steps:
             /p:TargetRuntimeIdentifier=${{ parameters.targetRid }}
             /p:Configuration=${{ parameters.buildConfig }}
             /p:TargetOS=${{ parameters.osGroup }}
-            /p:MonoEnableInterpreter=${{ parameters.interpreter }}
+            /p:MonoForceInterpreter=${{ parameters.interpreter }}
             /p:TestScope=${{ parameters.testScope }}
             /p:TestRunNamePrefixSuffix=${{ parameters.testRunNamePrefixSuffix }}
             /p:HelixBuild=$(Build.BuildNumber)
@@ -30,6 +31,7 @@ steps:
             /bl:$(Build.SourcesDirectory)/artifacts/log/$(_BuildConfig)/SendToHelix.binlog
     displayName: Send to Helix
     condition: and(succeeded(), ${{ parameters.condition }})
+    continueOnError: ${{ eq(parameters.shouldContinueOnError, true) }}
     env:
       SYSTEM_ACCESSTOKEN: $(System.AccessToken) # We need to set this env var to publish helix results to Azure Dev Ops
       HelixTargetQueues: ${{ join('+', parameters.helixQueues) }} # Pass queues to MSBuild as env var to avoid need of escaping them

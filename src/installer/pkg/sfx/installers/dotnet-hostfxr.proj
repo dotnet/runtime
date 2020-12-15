@@ -29,7 +29,7 @@
   <Target Name="PublishToDisk">
     <Error Condition="'$(OutputPath)' == ''" Text="Publishing to disk requires the OutputPath to be set to the root of the path to write to." />
 
-    <Copy SourceFiles="$(DotNetHostBinDir)\$(LibraryFilePrefix)hostfxr$(LibraryFileExtension)"
+    <Copy SourceFiles="$(DotNetHostBinDir)\$(LibPrefix)hostfxr$(LibSuffix)"
           DestinationFolder="$(OutputPath)/host/fxr/$(Version)" />
   </Target>
 

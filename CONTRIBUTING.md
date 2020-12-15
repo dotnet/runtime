@@ -107,7 +107,7 @@ The following file header is the used for .NET Core. Please use it for new files
 // The .NET Foundation licenses this file to you under the MIT license.
 ```
 
-- See [class.cpp](./src/coreclr/src/vm/class.cpp) for an example of the header in a C++ file.
+- See [class.cpp](./src/coreclr/vm/class.cpp) for an example of the header in a C++ file.
 - See [List.cs](./src/libraries/System.Private.CoreLib/src/System/Collections/Generic/List.cs) for an example of the header in a C# file.
 
 ## PR - CI Process

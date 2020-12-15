@@ -23,12 +23,12 @@
 # 4.  Lastly, it sets the pipeline variables.
 
 # Below are the helix queues it sets depending on the OS/architecture:
-# | Arch  | windows       | Linux                                                                                                                                |
-# |-------|------------------|--------------------------------------------------------------------------------------------------------------------------------------|
-# | x86   | Windows.10.Amd64 | -                                                                                                                                    |
-# | x64   | Windows.10.Amd64 | Ubuntu.1804.Amd64                                                                                                                    |
-# | arm   | -                | (Ubuntu.1804.Arm32)Ubuntu.1804.Armarch@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-18.04-helix-arm32v7-bfcd90a-20200121150440 |
-# | arm64 | Windows.10.Arm64 | (Ubuntu.1804.Arm64)Ubuntu.1804.ArmArch@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-18.04-helix-arm64v8-a45aeeb-20190620155855 |
+# | Arch  | windows              | Linux                                                                                                                                |
+# |-------|----------------------|--------------------------------------------------------------------------------------------------------------------------------------|
+# | x86   | Windows.10.Amd64.X86 |                                                                                                                                      |
+# | x64   | Windows.10.Amd64.X86 | Ubuntu.1804.Amd64                                                                                                                    |
+# | arm   | -                    | (Ubuntu.1804.Arm32)Ubuntu.1804.Armarch@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-18.04-helix-arm32v7-bfcd90a-20200121150440 |
+# | arm64 | Windows.10.Arm64     | (Ubuntu.1804.Arm64)Ubuntu.1804.ArmArch@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-18.04-helix-arm64v8-a45aeeb-20190620155855 |
 ################################################################################
 ################################################################################
 
@@ -56,7 +56,7 @@ parser.add_argument("-input_directory", help="directory containing assemblies fo
 parser.add_argument("-max_size", help="Max size of each partition in MB")
 is_windows = platform.system() == "Windows"
 native_binaries_to_ignore = [
-    "clrcompression.dll",
+    "System.IO.Compression.Native.dll",
     "clretwrc.dll",
     "clrgc.dll",
     "clrjit.dll",
@@ -345,7 +345,7 @@ def main(main_args):
     creator = ""
     ci = True
     if is_windows:
-        helix_queue = "Windows.10.Arm64" if arch == "arm64" else "Windows.10.Amd64"
+        helix_queue = "Windows.10.Arm64" if arch == "arm64" else "Windows.10.Amd64.X86"
     else:
         if arch == "arm":
             helix_queue = "(Ubuntu.1804.Arm32)Ubuntu.1804.Armarch@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-18.04-helix-arm32v7-bfcd90a-20200121150440"

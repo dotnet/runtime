@@ -2243,7 +2243,7 @@ var MonoSupportLib = {
 			manifest.filter(m => {
 				var file = m[0];
 				var last = file.lastIndexOf ("/");
-				var directory = file.slice (0, last);
+				var directory = file.slice (0, last+1);
 				folders.add(directory);
 			});
 			folders.forEach(folder => {

@@ -46,7 +46,7 @@ namespace System.Reflection.TypeLoading
 
         public sealed override bool IsResource() => true;
 
-        public sealed override Type[] GetTypes() => Array.Empty<Type>();
+        public sealed override Type[] GetTypes() => Type.EmptyTypes;
         protected sealed override RoDefinitionType? GetTypeCoreNoCache(ReadOnlySpan<byte> ns, ReadOnlySpan<byte> name, out Exception? e)
         {
             e = new TypeLoadException(SR.Format(SR.TypeNotFound, ns.ToUtf16().AppendTypeName(name.ToUtf16()), Assembly));
