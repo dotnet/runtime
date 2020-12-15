@@ -7350,7 +7350,6 @@ static NativeImageDumper::EnumMnemonics g_NDirectFlags[] =
         NDF_ENTRY(kStdCall),
         NDF_ENTRY(kThisCall),
         NDF_ENTRY(kIsQCall),
-        NDF_ENTRY(kStdCallWithRetBuf),
 #undef NDF_ENTRY
 };
 NativeImageDumper::EnumMnemonics NativeImageDumper::s_IMDFlags[] =

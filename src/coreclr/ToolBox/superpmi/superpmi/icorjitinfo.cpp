@@ -218,11 +218,14 @@ bool MyICJI::isIntrinsicType(CORINFO_CLASS_HANDLE classHnd)
     return jitInstance->mc->repIsIntrinsicType(classHnd) ? true : false;
 }
 
-// return the unmanaged calling convention for a PInvoke
-CorInfoUnmanagedCallConv MyICJI::getUnmanagedCallConv(CORINFO_METHOD_HANDLE method)
+// return the entry point calling convention for any of the following
+// - a P/Invoke
+// - a method marked with UnmanagedCallersOnly
+// - a function pointer with the CORINFO_CALLCONV_UNMANAGED calling convention.
+CorInfoCallConvExtension MyICJI::getUnmanagedCallConv(CORINFO_METHOD_HANDLE method, CORINFO_SIG_INFO* callSiteSig, bool* pSuppressGCTransition)
 {
     jitInstance->mc->cr->AddCall("getUnmanagedCallConv");
-    return jitInstance->mc->repGetUnmanagedCallConv(method);
+    return jitInstance->mc->repGetUnmanagedCallConv(method, callSiteSig, pSuppressGCTransition);
 }
 
 // return if any marshaling is required for PInvoke methods.  Note that
@@ -1803,7 +1806,7 @@ HRESULT MyICJI::getMethodBlockCounts(CORINFO_METHOD_HANDLE ftnHnd,
 
 // Get the likely implementing class for a virtual call or interface call made by ftnHnd
 // at the indicated IL offset. baseHnd is the interface class or base class for the method
-// being called. 
+// being called.
 CORINFO_CLASS_HANDLE MyICJI::getLikelyClass(CORINFO_METHOD_HANDLE ftnHnd,
                                             CORINFO_CLASS_HANDLE  baseHnd,
                                             UINT32                ilOffset,

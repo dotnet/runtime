@@ -318,7 +318,7 @@ public:
         DWORD     sigTOK;
         DWORDLONG context;
     };
-    struct PInvokeMarshalingRequiredValue
+    struct MethodOrSigInfoValue
     {
         DWORDLONG method;
         DWORD     pSig_Index;
@@ -730,10 +730,6 @@ public:
     void dmpGetIntrinsicID(DWORDLONG key, DD value);
     CorInfoIntrinsics repGetIntrinsicID(CORINFO_METHOD_HANDLE method, bool* pMustExpand);
 
-    void recGetUnmanagedCallConv(CORINFO_METHOD_HANDLE method, CorInfoUnmanagedCallConv result);
-    void dmpGetUnmanagedCallConv(DWORDLONG key, DWORD result);
-    CorInfoUnmanagedCallConv repGetUnmanagedCallConv(CORINFO_METHOD_HANDLE method);
-
     void recAsCorInfoType(CORINFO_CLASS_HANDLE cls, CorInfoType result);
     void dmpAsCorInfoType(DWORDLONG key, DWORD value);
     CorInfoType repAsCorInfoType(CORINFO_CLASS_HANDLE cls);
@@ -1003,8 +999,12 @@ public:
     CORINFO_CLASS_HANDLE repEmbedClassHandle(CORINFO_CLASS_HANDLE handle, void** ppIndirection);
 
     void recPInvokeMarshalingRequired(CORINFO_METHOD_HANDLE method, CORINFO_SIG_INFO* callSiteSig, bool result);
-    void dmpPInvokeMarshalingRequired(const PInvokeMarshalingRequiredValue& key, DWORD value);
+    void dmpPInvokeMarshalingRequired(const MethodOrSigInfoValue& key, DWORD value);
     bool repPInvokeMarshalingRequired(CORINFO_METHOD_HANDLE method, CORINFO_SIG_INFO* callSiteSig);
+
+    void recGetUnmanagedCallConv(CORINFO_METHOD_HANDLE method, CORINFO_SIG_INFO* callSiteSig, CorInfoCallConvExtension result, bool suppressGCTransitionResult);
+    void dmpGetUnmanagedCallConv(const MethodOrSigInfoValue& key, DD value);
+    CorInfoCallConvExtension repGetUnmanagedCallConv(CORINFO_METHOD_HANDLE method, CORINFO_SIG_INFO* callSiteSig, bool* pSuppressGCTransition);
 
     void recFindSig(CORINFO_MODULE_HANDLE  module,
                     unsigned               sigTOK,
