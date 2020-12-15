@@ -17,8 +17,6 @@
     <nullable>enable</nullable>
     <RunAOTCompilation Condition="'$(RunAOTCompilation)' == ''">false</RunAOTCompilation>
     <ProfileAOT Condition="'$(ProfileAOT)' == ''">false</ProfileAOT>
-    <AOTProfilePath></AOTProfilePath>
-    <SystemRuntimeInteropServicesJavaScriptLibPath>$(LibrariesProjectRoot)System.Private.Runtime.InteropServices.JavaScript/src/System/Runtime/InteropServices/JavaScript/</SystemRuntimeInteropServicesJavaScriptLibPath>
   </PropertyGroup>
 
   <Target Name="TrickRuntimePackLocation" AfterTargets="ProcessFrameworkReferences">
@@ -94,16 +92,30 @@
     </ReadLinesFromFile>
     <Error Condition="'$(RunAOTCompilation)' == 'true' and '$(RuntimeEmccVersion)' != '$(EmccVersion)'" Text="Emscripten version mismatch, expected '$(RuntimeEmccVersion)', got '$(EmccVersion)'"/>
 
+<<<<<<< HEAD
     <Exec Condition="'$(RunAOTCompilation)' == 'true'" Command="source $(EMSDK_PATH)/emsdk_env.sh &amp;&amp; emcc $(EmccFlags) -DDEBUG=1 -DCORE_BINDINGS -DENABLE_AOT=1 -DDRIVER_GEN=1 -I$(MicrosoftNetCoreAppRuntimePackDir)native/include/mono-2.0 -I$(MicrosoftNetCoreAppRuntimePackDir)native/include/wasm -I$(MSBuildThisFileDirectory)$(PublishDir) $(MicrosoftNetCoreAppRuntimePackDir)native/src/driver.c -c -o driver.o" IgnoreStandardErrorWarningFormat="true" WorkingDirectory="$(MSBuildThisFileDirectory)$(PublishDir)" />
     <Exec Condition="'$(RunAOTCompilation)' == 'true'" Command="source $(EMSDK_PATH)/emsdk_env.sh &amp;&amp; emcc $(EmccFlags) -I$(MicrosoftNetCoreAppRuntimePackDir)native/include/mono-2.0 $(MicrosoftNetCoreAppRuntimePackDir)native/src/corebindings.c -c -o corebindings.o" IgnoreStandardErrorWarningFormat="true" WorkingDirectory="$(MSBuildThisFileDirectory)$(PublishDir)" />
     <Exec Condition="'$(RunAOTCompilation)' == 'true'" Command="source $(EMSDK_PATH)/emsdk_env.sh &amp;&amp; emcc $(EmccFlags) -DGEN_PINVOKE=1 -I$(MicrosoftNetCoreAppRuntimePackDir)native/include/wasm $(MicrosoftNetCoreAppRuntimePackDir)native/src/pinvoke.c -c -o pinvoke.o" IgnoreStandardErrorWarningFormat="true" WorkingDirectory="$(MSBuildThisFileDirectory)$(PublishDir)" />
     <Exec Condition="'$(RunAOTCompilation)' == 'true'" Command="source $(EMSDK_PATH)/emsdk_env.sh &amp;&amp; emcc $(EmccFlags) --js-library $(MicrosoftNetCoreAppRuntimePackDir)native/src/library_mono.js --js-library $(MicrosoftNetCoreAppRuntimePackDir)native/src/binding_support.js --js-library $(MicrosoftNetCoreAppRuntimePackDir)native/src/dotnet_support.js --js-library $(MicrosoftNetCoreAppRuntimePackDir)native/src/pal_random.js driver.o pinvoke.o corebindings.o @(BundleAssemblies->'%(LlvmBitcodeFile)', ' ') libmono-ee-interp.a libmonosgen-2.0.a libmono-ilgen.a libmono-icall-table.a libmono-profiler-aot.a libSystem.Native.a libSystem.IO.Compression.Native.a libicuuc.a libicui18n.a -o dotnet.js" IgnoreStandardErrorWarningFormat="true" WorkingDirectory="$(MSBuildThisFileDirectory)$(PublishDir)" />
+=======
+    <Exec Condition="'$(RunAOTCompilation)' == 'true'" Command="source $(EMSDK_PATH)/emsdk_env.sh &amp;&amp; emcc $(EmccFlags) -DDEBUG=1 -DCORE_BINDINGS -DENABLE_AOT=1 -DDRIVER_GEN=1 -I$(MicrosoftNetCoreAppRuntimePackRidDir)native/include/mono-2.0 -I$(MicrosoftNetCoreAppRuntimePackRidDir)native/include/wasm -I$(MSBuildThisFileDirectory)$(PublishDir) $(MicrosoftNetCoreAppRuntimePackRidDir)native/src/driver.c -c -o driver.o" IgnoreStandardErrorWarningFormat="true" WorkingDirectory="$(MSBuildThisFileDirectory)$(PublishDir)" />
+    <Exec Condition="'$(RunAOTCompilation)' == 'true'" Command="source $(EMSDK_PATH)/emsdk_env.sh &amp;&amp; emcc $(EmccFlags) -I$(MicrosoftNetCoreAppRuntimePackRidDir)native/include/mono-2.0 $(MicrosoftNetCoreAppRuntimePackRidDir)native/src/corebindings.c -c -o corebindings.o" IgnoreStandardErrorWarningFormat="true" WorkingDirectory="$(MSBuildThisFileDirectory)$(PublishDir)" />
+    <Exec Condition="'$(RunAOTCompilation)' == 'true'" Command="source $(EMSDK_PATH)/emsdk_env.sh &amp;&amp; emcc $(EmccFlags) -DGEN_PINVOKE=1 -I$(MicrosoftNetCoreAppRuntimePackRidDir)native/include/wasm $(MicrosoftNetCoreAppRuntimePackRidDir)native/src/pinvoke.c -c -o pinvoke.o" IgnoreStandardErrorWarningFormat="true" WorkingDirectory="$(MSBuildThisFileDirectory)$(PublishDir)" />
+    <Exec Condition="'$(RunAOTCompilation)' == 'true'" Command="source $(EMSDK_PATH)/emsdk_env.sh &amp;&amp; emcc $(EmccFlags) --js-library $(MicrosoftNetCoreAppRuntimePackRidDir)native/src/library_mono.js --js-library $(MicrosoftNetCoreAppRuntimePackRidDir)native/src/binding_support.js --js-library $(MicrosoftNetCoreAppRuntimePackRidDir)native/src/dotnet_support.js --js-library $(MicrosoftNetCoreAppRuntimePackRidDir)native/src/pal_random.js driver.o pinvoke.o corebindings.o @(BundleAssemblies->'%(LlvmBitcodeFile)', ' ') libmono-ee-interp.a libmonosgen-2.0.a libmono-ilgen.a libmono-icall-table.a libmono-profiler-aot.a libSystem.Native.a libSystem.IO.Compression.Native.a libicuuc.a libicui18n.a -o dotnet.js" IgnoreStandardErrorWarningFormat="true" WorkingDirectory="$(MSBuildThisFileDirectory)$(PublishDir)" />
+
+    <PropertyGroup>
+      <WasmAppDir>$(AppDir)</WasmAppDir>
+      <WasmMainJSPath>runtime.js</WasmMainJSPath>
+      <WasmGenerateRunV8Script>true</WasmGenerateRunV8Script>
+    </PropertyGroup>
+>>>>>>> remove comments from WasmSample.csproj
 
     <ItemGroup>
       <AssemblySearchPaths Include="bin"/>
       <AssemblySearchPaths Include="$(MicrosoftNetCoreAppRuntimePackDir)native"/>
       <AssemblySearchPaths Include="$(MicrosoftNetCoreAppRuntimePackDir)lib\$(NetCoreAppCurrent)"/>
     </ItemGroup>
+<<<<<<< HEAD
     <WasmAppBuilder
       AppDir="$(AppDir)"
       ExtraAssemblies="$(MicrosoftNetCoreAppRuntimePackDir)lib\$(NetCoreAppCurrent)\System.Private.Runtime.InteropServices.JavaScript.dll"
@@ -112,6 +124,17 @@
       MainJS="runtime.js"
       Assemblies="@(BundleAssemblies)"/>
     <Exec Command="chmod a+x $(AppDir)/run-v8.sh" />
+=======
+
+    <ItemGroup>
+      <WasmAssemblySearchPaths Include="bin"/>
+      <WasmAssemblySearchPaths Include="$(MicrosoftNetCoreAppRuntimePackRidDir)native"/>
+      <WasmAssemblySearchPaths Include="$(MicrosoftNetCoreAppRuntimePackRidDir)lib\$(NetCoreAppCurrent)"/>
+    </ItemGroup>
+  </Target>
+
+  <Target Name="AfterWasmBuildApp" AfterTargets="WasmBuildApp">
+>>>>>>> remove comments from WasmSample.csproj
     <Copy SourceFiles="$(PublishDir)\index.html;" DestinationFolder="$(AppDir)" />
   </Target>
 
