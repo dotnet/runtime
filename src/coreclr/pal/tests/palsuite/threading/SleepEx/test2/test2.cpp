@@ -106,7 +106,8 @@ void RunTest_SleepEx_test2(BOOL AlertThread)
     DWORD dwThreadId = 0;
     int ret;
 
-    hThread = CreateThread( NULL, 
+    s_preWaitTimestampRecorded = false;
+    hThread = CreateThread( NULL,
                             0, 
                             (LPTHREAD_START_ROUTINE)SleeperProc_SleepEx_test2,
                             (LPVOID) AlertThread,

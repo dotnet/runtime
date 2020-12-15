@@ -80,6 +80,7 @@ void RunTest_WFSOExSemaphoreTest(BOOL AlertThread)
     DWORD dwThreadId = 0;
     int ret;
 
+    s_preWaitTimestampRecorded = false;
     hThread = CreateThread( NULL,
                             0,
                             (LPTHREAD_START_ROUTINE)WaiterProc_WFSOExSemaphoreTest,

@@ -122,7 +122,8 @@ void RunTest_WFSOExMutexTest(BOOL AlertThread)
 
 	int ret=0;
 
-    hThread = CreateThread( NULL, 
+    s_preWaitTimestampRecorded = false;
+    hThread = CreateThread( NULL,
                             0, 
                             (LPTHREAD_START_ROUTINE)WaiterProc_WFSOExMutexTest,
                             (LPVOID) AlertThread,

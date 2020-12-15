@@ -81,8 +81,9 @@ void RunTest_WFSOExThreadTest(BOOL AlertThread)
     DWORD dwThreadId = 0;
     int ret;
 
-   //Create thread  
-   hThread = CreateThread( NULL, 
+    //Create thread  
+    s_preWaitTimestampRecorded = false;
+    hThread = CreateThread( NULL,
                             0, 
                             (LPTHREAD_START_ROUTINE)WaiterProc_WFSOExThreadTest,
                             (LPVOID) AlertThread,
