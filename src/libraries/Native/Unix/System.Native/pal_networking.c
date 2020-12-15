@@ -654,6 +654,7 @@ int32_t SystemNative_GetHostEntryForNameAsync(const uint8_t* address, int32_t ad
     return result;
 #else
     (void)address;
+    (void)addressFamily;
     (void)entry;
     (void)callback;
 
