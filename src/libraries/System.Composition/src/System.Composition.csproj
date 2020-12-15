@@ -1,4 +1,5 @@
 <Project Sdk="Microsoft.Build.NoTargets">
+  <!-- These are wrapper project files for packaging.-->
   <PropertyGroup>
     <TargetFrameworks>netstandard2.0</TargetFrameworks>
   </PropertyGroup>
