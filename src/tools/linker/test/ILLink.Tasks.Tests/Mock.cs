@@ -146,7 +146,6 @@ namespace ILLink.Tasks.Tests
 
 		public CodeOptimizations GetDefaultOptimizations ()
 		{
-			var context = base.GetDefaultContext (null);
 			return context.Optimizations.Global;
 		}
 

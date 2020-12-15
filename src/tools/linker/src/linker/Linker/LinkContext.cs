@@ -74,6 +74,7 @@ namespace Mono.Linker
 		readonly AnnotationStore _annotations;
 		readonly CustomAttributeSource _customAttributes;
 		readonly List<MessageContainer> _cachedWarningMessageContainers;
+		readonly ILogger _logger;
 
 		public Pipeline Pipeline {
 			get { return _pipeline; }
@@ -88,6 +89,8 @@ namespace Mono.Linker
 		}
 
 		public bool DeterministicOutput { get; set; }
+
+		public int ErrorsCount { get; private set; }
 
 		public string OutputDirectory {
 			get { return _outputDirectory; }
@@ -180,13 +183,11 @@ namespace Mono.Linker
 
 		public bool LogMessages { get; set; }
 
-		public ILogger Logger { get; set; }
-
 		public MarkingHelpers MarkingHelpers { get; private set; }
 
 		public KnownMembers MarkedKnownMembers { get; private set; }
 
-		public WarningSuppressionWriter WarningSuppressionWriter { get; private set; }
+		public WarningSuppressionWriter WarningSuppressionWriter { get; set; }
 
 		public HashSet<int> NoWarn { get; set; }
 
@@ -195,8 +196,6 @@ namespace Mono.Linker
 		public bool GeneralWarnAsError { get; set; }
 
 		public WarnVersion WarnVersion { get; set; }
-
-		public bool OutputWarningSuppressions { get; set; }
 
 		public UnconditionalSuppressMessageAttributeState Suppressions { get; set; }
 
@@ -213,36 +212,26 @@ namespace Mono.Linker
 
 		public string AssemblyListFile { get; set; }
 
-		public LinkContext (Pipeline pipeline)
-			: this (pipeline, new AssemblyResolver ())
-		{
-		}
-
-		public LinkContext (Pipeline pipeline, AssemblyResolver resolver)
-			: this (pipeline, resolver, new ReaderParameters {
-				AssemblyResolver = resolver
-			}, new UnintializedContextFactory ())
-		{
-		}
-
-		public LinkContext (Pipeline pipeline, AssemblyResolver resolver, ReaderParameters readerParameters, UnintializedContextFactory factory)
+		public LinkContext (Pipeline pipeline, ILogger logger)
 		{
 			_pipeline = pipeline;
-			_resolver = resolver;
-			_resolver.Context = this;
+			_logger = logger ?? throw new ArgumentNullException (nameof (logger));
+
+			_resolver = new AssemblyResolver () {
+				Context = this
+			};
 			_typeNameResolver = new TypeNameResolver (this);
 			_actions = new Dictionary<string, AssemblyAction> ();
 			_parameters = new Dictionary<string, string> (StringComparer.Ordinal);
-			_readerParameters = readerParameters;
+			_readerParameters = new ReaderParameters {
+				AssemblyResolver = _resolver
+			};
 			_customAttributes = new CustomAttributeSource ();
 			_cachedWarningMessageContainers = new List<MessageContainer> ();
 
 			SymbolReaderProvider = new DefaultSymbolReaderProvider (false);
-			Logger = new ConsoleLogger ();
 
-			if (factory == null)
-				throw new ArgumentNullException (nameof (factory));
-
+			var factory = new UnintializedContextFactory ();
 			_annotations = factory.CreateAnnotationStore (this);
 			MarkingHelpers = factory.CreateMarkingHelpers (this);
 			Tracer = factory.CreateTracer (this);
@@ -520,12 +509,15 @@ namespace Mono.Linker
 				message.Category == MessageCategory.Info) && !LogMessages)
 				return;
 
-			if (OutputWarningSuppressions &&
+			if (WarningSuppressionWriter != null &&
 				(message.Category == MessageCategory.Warning || message.Category == MessageCategory.WarningAsError) &&
 				message.Origin?.MemberDefinition != null)
 				WarningSuppressionWriter.AddWarning (message.Code.Value, message.Origin?.MemberDefinition);
 
-			Logger?.LogMessage (message);
+			if (message.Category == MessageCategory.Error || message.Category == MessageCategory.WarningAsError)
+				ErrorsCount++;
+
+			_logger.LogMessage (message);
 		}
 
 		public void LogMessage (string message)
@@ -642,11 +634,6 @@ namespace Mono.Linker
 		{
 			// This should return an increasing WarnVersion for new warning waves.
 			return WarnVersion.ILLink5;
-		}
-
-		public void SetWarningSuppressionWriter (WarningSuppressionWriter.FileOutputKind fileOutputKind)
-		{
-			WarningSuppressionWriter = new WarningSuppressionWriter (this, fileOutputKind);
 		}
 
 		public TargetRuntimeVersion GetTargetRuntimeVersion ()

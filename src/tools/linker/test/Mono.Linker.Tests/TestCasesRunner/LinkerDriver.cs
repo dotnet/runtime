@@ -13,9 +13,9 @@ namespace Mono.Linker.Tests.TestCasesRunner
 				_customization = customizations;
 			}
 
-			protected override LinkContext GetDefaultContext (Pipeline pipeline)
+			protected override LinkContext GetDefaultContext (Pipeline pipeline, ILogger logger)
 			{
-				LinkContext context = base.GetDefaultContext (pipeline);
+				LinkContext context = base.GetDefaultContext (pipeline, logger);
 				_customization.CustomizeLinkContext (context);
 				return context;
 			}

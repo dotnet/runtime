@@ -17,6 +17,7 @@ namespace Mono.Linker.Tests.Cases.Warnings
 	[LogContains ("error IL2010")]
 	[LogContains ("warning IL2011")]
 	[LogContains ("warning IL2012")]
+	[NoLinkedOutput]
 	public class CanDisableWarnAsError
 	{
 		public static void Main ()
