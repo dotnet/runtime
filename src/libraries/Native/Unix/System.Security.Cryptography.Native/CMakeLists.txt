@@ -97,13 +97,15 @@ if (GEN_SHARED_LIB)
         endif()
     endif()
 
-    add_custom_command(TARGET System.Security.Cryptography.Native.OpenSsl POST_BUILD
-        COMMENT "Verifying System.Security.Cryptography.Native.OpenSsl entry points against entrypoints.c "
-        COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/../verify-entrypoints.py
-            $<TARGET_FILE:System.Security.Cryptography.Native.OpenSsl>
-            ${CMAKE_CURRENT_SOURCE_DIR}/entrypoints.c
-        VERBATIM
-    )
+    if (NOT CLR_CMAKE_TARGET_IOS AND NOT CLR_CMAKE_TARGET_TVOS AND NOT CLR_CMAKE_TARGET_ANDROID)
+        add_custom_command(TARGET System.Security.Cryptography.Native.OpenSsl POST_BUILD
+            COMMENT "Verifying System.Security.Cryptography.Native.OpenSsl entry points against entrypoints.c "
+            COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/../verify-entrypoints.py
+                $<TARGET_FILE:System.Security.Cryptography.Native.OpenSsl>
+                ${CMAKE_CURRENT_SOURCE_DIR}/entrypoints.c
+            VERBATIM
+        )
+    endif()
 
     target_link_libraries(System.Security.Cryptography.Native.OpenSsl
         ${NATIVE_LIBS_EXTRA}
