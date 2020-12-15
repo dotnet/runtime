@@ -39,7 +39,7 @@ namespace Mono.Linker.Steps
 
 	public class OutputStep : BaseStep
 	{
-		private static Dictionary<UInt16, TargetArchitecture> architectureMap;
+		private Dictionary<UInt16, TargetArchitecture> architectureMap;
 
 		private enum NativeOSOverride
 		{
@@ -57,7 +57,7 @@ namespace Mono.Linker.Steps
 			assembliesWritten = new List<string> ();
 		}
 
-		static TargetArchitecture CalculateArchitecture (TargetArchitecture readyToRunArch)
+		TargetArchitecture CalculateArchitecture (TargetArchitecture readyToRunArch)
 		{
 			if (architectureMap == null) {
 				architectureMap = new Dictionary<UInt16, TargetArchitecture> ();
