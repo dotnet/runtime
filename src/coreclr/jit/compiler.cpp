@@ -2570,6 +2570,7 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
         assert(!jitFlags->IsSet(JitFlags::JIT_FLAG_PROF_ENTERLEAVE));
         assert(!jitFlags->IsSet(JitFlags::JIT_FLAG_DEBUG_EnC));
         assert(!jitFlags->IsSet(JitFlags::JIT_FLAG_DEBUG_INFO));
+        assert(!jitFlags->IsSet(JitFlags::JIT_FLAG_REVERSE_PINVOKE));
     }
 
     opts.jitFlags  = jitFlags;
