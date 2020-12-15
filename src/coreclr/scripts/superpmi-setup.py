@@ -381,7 +381,8 @@ def main(main_args):
 
     # payload
     input_artifacts = path.join(pmiassemblies_directory, coreclr_args.collection_name)
-    partition_files(coreclr_args.input_directory, input_artifacts, coreclr_args.max_size)
+    exclude_directory = ['Core_Root'] if coreclr_args.collection_name == "tests" else []
+    partition_files(coreclr_args.input_directory, input_artifacts, coreclr_args.max_size, exclude_directory)
 
     # Set variables
     print('Setting pipeline variables:')
