@@ -452,8 +452,7 @@ namespace System.Globalization
             table[0] = s_basicLatin;
 
             // Publish
-            Interlocked.MemoryBarrier();
-            Interlocked.CompareExchange(ref s_casingTable, table, null);
+            Volatile.Write(ref s_casingTable, table);
         }
 
         private static unsafe ushort [] InitOrdinalCasingPage(int pageNumber)
@@ -466,7 +465,7 @@ namespace System.Globalization
                 char* pTable = (char*)table;
                 Interop.Globalization.InitOrdinalCasingPage(pageNumber, pTable);
             }
-            s_casingTable![pageNumber] = casingTable;
+            Volatile.Write(ref s_casingTable![pageNumber], casingTable);
             return casingTable;
         }
     }
