@@ -678,17 +678,6 @@ apply_enclog_pass2 (MonoImage *image_base, MonoImage *image_dmeta, gconstpointer
 	return TRUE;
 }
 
-static void
-append_heap (MonoStreamHeader *base, MonoStreamHeader *appendix)
-{
-	int size = base->size + appendix->size;
-	char *data = (char *) g_malloc (size * sizeof (char));
-	memcpy (data, base->data, base->size);
-	memcpy (data + base->size, appendix->data, appendix->size);
-	base->data = data;
-	base->size = size;
-}
-
 /**
  *
  * LOCKING: Takes the publish_lock
