@@ -59,7 +59,7 @@ ret
 .method static int32 Main() {
 .entrypoint
 .maxstack	20
-.locals (int32)
+.locals (int32 l)
 ldc.i4.1
 stloc.0
 .try {

@@ -8,7 +8,7 @@
 
 .method public static int32 main(class [mscorlib]System.String[]) {
 .entrypoint
-.locals	(int32)
+.locals	(int32 i)
 .maxstack	2
 	ldc.i4		0x89ABCDEF
 	stloc		0

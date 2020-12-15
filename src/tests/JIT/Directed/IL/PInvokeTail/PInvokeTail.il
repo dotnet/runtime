@@ -52,7 +52,7 @@
 {
     .entrypoint
     .maxstack 4
-    .locals init (char& pinned)
+    .locals init (char& pinned c)
 
     ldstr bytearray(48 65 6C 6C 6F 20 57 6F 72 6C 64 21 00 00 00 00) // "Hello World!"
     call instance char& modreq([mscorlib]System.Runtime.InteropServices.InAttribute) [mscorlib]System.String::GetPinnableReference()

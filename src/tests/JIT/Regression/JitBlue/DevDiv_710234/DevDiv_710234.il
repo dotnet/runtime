@@ -13,7 +13,7 @@
     .method static int64 Test(int16,int32,bool,float64,int32,int32)
     {
         .maxstack  177
-        .locals init (uint16,int32,uint16,int32,int64,int8,int32,float32,int16,int16,int32,int8,int64,bool)
+        .locals init (uint16 l0,int32 l1,uint16 l2,int32 l3,int64 l4,int8 l5,int32 l6,float32 l7,int16 l8,int16 l9,int32 l10,int8 l11,int64 l12,bool l13)
 
           ldarg.s      0x1
           ldloc.s      0x7

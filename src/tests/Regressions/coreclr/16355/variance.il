@@ -40,7 +40,7 @@
 .method public hidebysig static int32 Main() cil managed
 {
   .entrypoint
-  .locals (valuetype [System.Runtime]System.RuntimeTypeHandle)
+  .locals (valuetype [System.Runtime]System.RuntimeTypeHandle r)
   newobj instance void class Fooer::.ctor()
   ldnull
   callvirt instance valuetype [System.Runtime]System.RuntimeTypeHandle class IContravariant`1<string>::Frob(!0)

@@ -5,7 +5,7 @@
 
 .class public rem_i4 {
 .method public static	int32 _rem(int32,int32) {
-.locals		(class [mscorlib]System.Exception,int32)
+.locals		(class [mscorlib]System.Exception e,int32 i)
 .maxstack		3
 try_start:
 	ldarg	0

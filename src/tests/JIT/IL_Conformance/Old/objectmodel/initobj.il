@@ -24,7 +24,7 @@
 
 	.method public static int32 main(class System.String[]) {
 	.entrypoint
-	.locals	(value class valClass, int32)
+	.locals	(value class valClass v, int32 i)
 	.maxstack	10
 	
 		ldloca	0

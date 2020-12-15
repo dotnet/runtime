@@ -107,7 +107,7 @@
     .method public hidebysig specialname rtspecialname instance void .ctor() cil managed 
     {
         .locals init (
-            [0] int32
+            [0] int32 i
         )
 
         ldc.i4.0

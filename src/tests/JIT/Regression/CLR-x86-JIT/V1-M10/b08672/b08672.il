@@ -26,7 +26,7 @@
 //-------------------------
 .method static void initialize() {
 .maxstack	10
-.locals init (int32)
+.locals init (int32 i)
 
 	ldc.i4	0x00000004
 	newarr	[mscorlib]System.Int32
@@ -80,7 +80,7 @@ END:
 .method static int32 main(class System.String[]) {
 .entrypoint
 .maxstack	10
-.locals init (int32)
+.locals init (int32 i)
 //----------------
 // begin testing -
 //----------------

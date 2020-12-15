@@ -49,7 +49,7 @@
     {
 		.entrypoint
 		.maxstack  5
-		.locals (native int)
+		.locals (native int i)
 		ldc.i4 0xabcdef
 		stloc.0
 		ldloc 0

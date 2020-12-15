@@ -14,7 +14,7 @@
 .method static int32 main() {
 .entrypoint
 .maxstack	11
-.locals ( int64)
+.locals ( int64 i)
 
  ldc.i8 0x7
  stloc 0

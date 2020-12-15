@@ -9,7 +9,7 @@
 
 
 .method public static int32 r8(float64) {
-.locals		(class [mscorlib]System.ArithmeticException,int32)
+.locals		(class [mscorlib]System.ArithmeticException e,int32 i)
 .maxstack	5
 try_start:
 	ldarg	0

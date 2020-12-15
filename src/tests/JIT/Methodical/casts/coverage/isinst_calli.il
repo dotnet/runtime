@@ -70,7 +70,7 @@
       .maxstack  2
       .locals (class JitTest.TestClass V_0,
                bool V_1,
-               method class JitTest.BaseClass*(int32))
+               method class JitTest.BaseClass*(int32) m)
       ldftn class JitTest.BaseClass JitTest.TestClass::Method_To_Call(int32)
       stloc.2
       .try

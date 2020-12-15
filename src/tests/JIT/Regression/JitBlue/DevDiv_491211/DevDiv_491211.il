@@ -9,7 +9,7 @@
     .method static unsigned int64 ILGEN_METHOD(unsigned int64, int16, int32)
     {
         .maxstack  65535
-        .locals init (unsigned int64)
+        .locals init (unsigned int64 i)
 
         ldloc.s 0x00
         brtrue IL_005c

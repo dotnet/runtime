@@ -8,7 +8,7 @@
     .method static int64 ILGEN_METHOD(unsigned int32, float32, unsigned int8, char, int64, float64)
     {
        .maxstack  65535
-       .locals init (float64, unsigned int32, int64, int32, unsigned int16, unsigned int64, char, int8, unsigned int32, bool, bool)
+       .locals init (float64 l0, unsigned int32 l1, int64 l2, int32 l3, unsigned int16 l4, unsigned int64 l5, char l6, int8 l7, unsigned int32 l8, bool l9, bool l10)
 
         ldc.i8 0xfc7246b593d3e823
         not

@@ -14,7 +14,7 @@
 .method public static	int32 main(class [mscorlib]System.String[]) {
 .entrypoint
 .maxstack		10
-.locals	(class _stloc)
+.locals	(class _stloc s)
 	newobj	instance	void _stloc::_stloc()
 	dup
 	stloc		0

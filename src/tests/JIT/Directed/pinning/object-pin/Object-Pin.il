@@ -128,7 +128,7 @@ FAILURE3:
   .method public static int32 Not_Pinned() il managed
   {
     .maxstack  10
-    .locals (class Consume, class Consume , class Consume, int32, int32 )
+    .locals (class Consume c0, class Consume c1, class Consume c2, int32 i, int32 j )
 
     call       void [mscorlib]System.GC::Collect()
     ldc.i4     256
@@ -194,7 +194,7 @@ AA_3:
   .method public static int32 Pinned() il managed
   {
     .maxstack  10
-    .locals (class Consume, class Consume, class Consume pinned, int32, int32 )
+    .locals (class Consume c0, class Consume c1, class Consume pinned c2, int32 i, int32 j )
 
     call       void [mscorlib]System.GC::Collect()
     ldc.i4     256
@@ -259,7 +259,7 @@ AA_3:
   .method public static int32 Pinned_Test_Assign() il managed
   {
     .maxstack  10
-    .locals (class Consume, class Consume, class Consume pinned, int32, int32, int32 )
+    .locals (class Consume c0, class Consume c1, class Consume pinned c2, int32 i, int32 j, int32 k )
 
     call       void [mscorlib]System.GC::Collect()
     ldc.i4     256

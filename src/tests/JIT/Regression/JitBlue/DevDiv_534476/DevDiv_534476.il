@@ -18,7 +18,7 @@
           ILGEN_METHOD(uint64 e) cil managed
   {
 	.maxstack  46
-	.locals init (native unsigned int, bool)
+	.locals init (native unsigned int i, bool b)
 	IL_0000: ldarg 0x0000
 			 ldc.i4.1
 	IL_0012: conv.ovf.u2.un

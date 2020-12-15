@@ -80,7 +80,7 @@
                 // Code size 28 (0x1c)
                 .maxstack 2
                     .locals init (
-                            [0] bool
+                            [0] bool b
                             )
 
                     IL_0000: nop

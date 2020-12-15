@@ -9,7 +9,7 @@
 
 
 .method public static		int32 conv(int32,int32) {
-.locals		(class [mscorlib]System.OverflowException,native int)
+.locals		(class [mscorlib]System.OverflowException e,native int i)
 .maxstack	2
 try_start:
 	ldarg		0
@@ -43,7 +43,7 @@ END:
 
 
 .method public static		int32 conv_un(int32,int32) {
-.locals		(class [mscorlib]System.OverflowException,native int)
+.locals		(class [mscorlib]System.OverflowException e,native int i)
 .maxstack	2
 try_start2:
 	ldarg		0

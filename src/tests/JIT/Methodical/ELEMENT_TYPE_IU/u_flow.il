@@ -30,7 +30,7 @@
 		.entrypoint
 		// Code size       134 (0x86)
 		.maxstack  8
-		.locals (class Test.AA, native unsigned int i, native unsigned int& p1, native unsigned int& p2)
+		.locals (class Test.AA a, native unsigned int i, native unsigned int& p1, native unsigned int& p2)
 		newobj instance void Test.AA::.ctor()
 		stloc.0
 		

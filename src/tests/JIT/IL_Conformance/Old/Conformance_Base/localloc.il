@@ -6,7 +6,7 @@
 
 .method public static	int32 main(class [mscorlib]System.String[]) {
 .entrypoint
-.locals	(native int)
+.locals	(native int i)
 .maxstack 10
 
 	ldc.i4 0x1

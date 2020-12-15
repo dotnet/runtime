@@ -15,8 +15,8 @@
 .method static int32 main(class System.String[]) {
 .entrypoint
 .maxstack	7
- .locals ( float32, int32, int32, int32, float32, int32,
- float32, float32, int32, int64, int64, int64, float64)
+ .locals ( float32 l0, int32 l1, int32 l2, int32 l3, float32 l4, int32 l5,
+ float32 l6, float32 l7, int32 l8, int64 l9, int64 l10, int64 l11, float64 l12)
 
 //ldc.i8 5
 //stloc 9

@@ -15,7 +15,7 @@
 .entrypoint
 .maxstack	20
 
- .locals (float64)
+ .locals (float64 f)
  ldc.r8 3.3
  stloc 0
  

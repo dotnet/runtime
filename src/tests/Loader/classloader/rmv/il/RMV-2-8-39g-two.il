@@ -16,7 +16,7 @@
 }
 
 .method public static int32 main(){
-	.locals (value class Foo)
+	.locals (value class Foo f)
 	.entrypoint
 	.maxstack 8
 	ldstr	"PASS - 2.8.39g - Was allowed to declare a class extending System.Enum with one integer instance fields."

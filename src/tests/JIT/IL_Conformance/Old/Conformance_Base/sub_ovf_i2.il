@@ -9,7 +9,7 @@
 
 
 .method public static int32 i2(int32,int32,int32) {
-.locals		(class [mscorlib]System.OverflowException,int16)
+.locals		(class [mscorlib]System.OverflowException e,int16 i)
 .maxstack	2
 try_start:
 	ldarg	0

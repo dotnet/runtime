@@ -27,7 +27,7 @@
 	{
 		.entrypoint
 		.maxstack 4
-		.locals (int32)
+		.locals (int32 l)
 
 		ldc.i4.1
 		stloc.0

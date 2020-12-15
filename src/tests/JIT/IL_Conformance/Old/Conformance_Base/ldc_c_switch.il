@@ -32,7 +32,7 @@
 .method public static  int32 main(class [mscorlib]System.String[]) {
 .entrypoint
 .maxstack               5
-.locals (int32)
+.locals (int32 l)
 //====== begin testing ======
         // -- Setup
         ldc.i4  0x0

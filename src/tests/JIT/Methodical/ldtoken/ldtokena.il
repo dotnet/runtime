@@ -59,9 +59,9 @@
       .entrypoint
       .maxstack  8
       .locals (int32 V_0,
-      		valuetype [mscorlib]System.RuntimeFieldHandle,
-      		valuetype [mscorlib]System.RuntimeMethodHandle,
-      		valuetype [mscorlib]System.RuntimeTypeHandle)
+      		valuetype [mscorlib]System.RuntimeFieldHandle r1,
+      		valuetype [mscorlib]System.RuntimeMethodHandle r2,
+      		valuetype [mscorlib]System.RuntimeTypeHandle r3)
       ldc.i4.0
       stloc.0
 

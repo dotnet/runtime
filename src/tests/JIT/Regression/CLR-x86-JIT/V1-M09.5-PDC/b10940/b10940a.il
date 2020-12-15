@@ -10,7 +10,7 @@
 .assembly b10940a { }
 .method public static int32 foo() {
   .entrypoint
-  .locals(int32,refany)
+  .locals(int32 i,refany r)
   ldc.i4 0 //initialize local 0 (not used in all tests)
   stloc 0
 

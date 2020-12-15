@@ -16,7 +16,7 @@
 .entrypoint
 .maxstack	100
 
-.locals (int32, int32, int32, int32)
+.locals (int32 l0, int32 l1, int32 l2, int32 l3)
  ldc.i4 1
  ldc.i4 1
  ldc.i4 1

@@ -21,12 +21,12 @@
 	// Code size 431 (0x1af)
 	.maxstack 2
 	.locals init (
-		[0] int32,
-		[1] char,
-		[2] valuetype [System.Globalization]System.Globalization.UnicodeCategory,
-		[3] valuetype [System.Globalization]System.Globalization.UnicodeCategory,
-		[4] int32,
-		[5] int32
+		[0] int32 l0,
+		[1] char l1,
+		[2] valuetype [System.Globalization]System.Globalization.UnicodeCategory l2,
+		[3] valuetype [System.Globalization]System.Globalization.UnicodeCategory l3,
+		[4] int32 l4,
+		[5] int32 l5
 	)
 
 	IL_0000: ldc.i4.0

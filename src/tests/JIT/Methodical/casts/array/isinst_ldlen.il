@@ -23,7 +23,7 @@
     {
       .entrypoint
       .maxstack  4
-      .locals (class [mscorlib]System.Array)
+      .locals (class [mscorlib]System.Array a)
       ldc.i4.6
       newarr [mscorlib]System.Int32
       isinst [mscorlib]System.Array

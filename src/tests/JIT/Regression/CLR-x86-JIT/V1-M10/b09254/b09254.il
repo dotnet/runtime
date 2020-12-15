@@ -13,7 +13,7 @@
 
 .method static int32 main(class System.String[]) {
 	.entrypoint
-	.locals (int32)
+	.locals (int32 l)
 	.maxstack		20
 	ldc.i4	0xABBA
 	stloc 0

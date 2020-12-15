@@ -10,7 +10,7 @@
 .assembly b11021 { }
 .method public static int32 foo() {
 	.maxstack 20
-	.locals(float32)
+	.locals(float32 f)
 	.entrypoint
 	ldc.r8 0.0
 	stloc 0

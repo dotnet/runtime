@@ -11,7 +11,7 @@
 .method public static	int32 main(class [mscorlib]System.String[]) {
 .entrypoint
 .maxstack 2
-.locals	(class [ConvDLL]ConvDLL)
+.locals	(class [ConvDLL]ConvDLL c)
 
 newobj instance void [ConvDLL]ConvDLL::.ctor()
 stloc 0

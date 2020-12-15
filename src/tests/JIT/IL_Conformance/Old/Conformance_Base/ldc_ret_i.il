@@ -34,7 +34,7 @@
 //---- MAIN -----------------
 .method public static	int32 main(class [mscorlib]System.String[]) {
 .entrypoint
-.locals		(class _ret,int32)
+.locals		(class _ret r,int32 i)
 .maxstack		5
 //====== begin testing ======
 	newobj		instance void _ret::_ret()

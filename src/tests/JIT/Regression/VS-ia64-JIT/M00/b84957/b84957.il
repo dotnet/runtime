@@ -9,7 +9,7 @@
 }
 .assembly ble.exe{}
 .method public	static int32 main(class [mscorlib]System.String[]) {
-.locals		(class [mscorlib]System.String)
+.locals		(class [mscorlib]System.String s)
 .entrypoint
 
 	ldc.r4		float32(0x7FC00000)

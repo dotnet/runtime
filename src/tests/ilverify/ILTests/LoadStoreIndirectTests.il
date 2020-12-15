@@ -156,7 +156,7 @@
 
     .method static public hidebysig void LoadIndirect.AssignInt8ToBool_Valid(bool&) cil managed
     {
-        .locals init (bool)
+        .locals init (bool b)
 
         // ref bool a;
         // bool b;
@@ -170,7 +170,7 @@
 
     .method static public hidebysig void LoadIndirect.AssignUInt8ToBool_Valid(bool&) cil managed
     {
-        .locals init (bool)
+        .locals init (bool b)
 
         // ref bool a;
         // bool b;
@@ -184,7 +184,7 @@
 
     .method static public hidebysig void LoadIndirect.AssignInt16ToChar_Valid(char&) cil managed
     {
-        .locals init (char)
+        .locals init (char c)
 
         // ref char a;
         // char b;
@@ -198,7 +198,7 @@
 
     .method static public hidebysig void LoadIndirect.AssignUInt16ToChar_Valid(char&) cil managed
     {
-        .locals init (char)
+        .locals init (char c)
 
         // ref char a;
         // char b;
@@ -212,7 +212,7 @@
 
     .method static public hidebysig void StoreIndirect.AssignInt32ToCharRef_Valid(char&) cil managed
     {
-        .locals init (char)
+        .locals init (char c)
 
         // ref char a;
         // a = 'a';
@@ -225,7 +225,7 @@
 
     .method static public hidebysig void StoreIndirect.AssignInt32ToBoolRef_Valid(bool&) cil managed
     {
-        .locals init (bool)
+        .locals init (bool b)
 
         // ref bool a;
         // a = true;

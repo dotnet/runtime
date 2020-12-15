@@ -18,7 +18,7 @@ give the loader a zero sized value class.
 
 
 .method public static int32 main(){
-	.locals	(value class Foo)
+	.locals	(value class Foo f)
 	.entrypoint
 	.maxstack 8
 	ldstr	"PASS - 2.8.20 - Was allowed to define a value class of size 0"

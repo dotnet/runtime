@@ -49,7 +49,7 @@
     .entrypoint
 
     .locals init (
-      valuetype Adder`1<object, string>
+      valuetype Adder`1<object, string> a
     )
 
     ldloca.s 0

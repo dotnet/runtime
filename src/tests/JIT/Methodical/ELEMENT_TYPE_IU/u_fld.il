@@ -24,7 +24,7 @@
     {
 		.entrypoint
 		.maxstack  8
-		.locals (class Test.AA pinned, native unsigned int[0...], native unsigned int, int32, native unsigned int[0...] pinned)
+		.locals (class Test.AA pinned l0, native unsigned int[0...] l1, native unsigned int l2, int32 l3, native unsigned int[0...] pinned l4)
 		newobj instance void Test.AA::.ctor()
 		stloc.0
 
@@ -119,7 +119,7 @@
     .method public hidebysig specialname rtspecialname instance void .ctor() il managed
 	{
 		.maxstack  8
-		.locals (int32)
+		.locals (int32 l)
 		ldarg.0
 		call       instance void [mscorlib]System.Object::.ctor()
 		ldarg.0

@@ -218,7 +218,7 @@ DONE:
   {
 	.entrypoint
 	.maxstack 10
-	.locals (int32,int32,int32)
+	.locals (int32 i,int32 j,int32 k)
 
 	ldc.i4 0
 	stsfld     int32 SideEffects::m_exitcode

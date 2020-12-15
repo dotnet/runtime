@@ -26,7 +26,7 @@
 .method public static	int32 main(class [mscorlib]System.String[]) {
 .entrypoint
 .maxstack		10
-.locals	(float32,float32,float32)
+.locals	(float32 f1,float32 f2,float32 f3)
 	call	void Stloc_r4::initialize()
 
 	ldc.r4		float32(0x80000000)

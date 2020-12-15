@@ -19,7 +19,7 @@
 		.maxstack 1
 		.entrypoint
 		.locals init (
-			[0] int32
+			[0] int32 i
 		)
 		nop
 		ldc.i4.s 100
@@ -36,7 +36,7 @@
 	{
 		.maxstack 3
 		.locals init (
-			[0] int32* pinned
+			[0] int32* pinned i
 		)
 
 		ldarg.0

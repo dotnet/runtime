@@ -38,7 +38,7 @@
             const_cpobj(int8*) cil managed
     {
       .maxstack  8
-      .locals (int8)
+      .locals (int8 i)
       ldloca.s 0
       ldarg.0
       cpobj int8

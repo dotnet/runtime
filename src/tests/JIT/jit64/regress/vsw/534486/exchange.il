@@ -22,8 +22,8 @@
 	.entrypoint
 		.locals init
 		(
-			native unsigned int,
-                        native int
+			native unsigned int i,
+                        native int j
 		)
         ldc.i4 10
         stloc.0

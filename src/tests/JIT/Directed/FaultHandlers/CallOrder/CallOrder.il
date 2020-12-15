@@ -111,7 +111,7 @@
 	.method public static int32 Main(class [mscorlib]System.String[]) il managed
 	{
 		.entrypoint
-		.locals (int32)
+		.locals (int32 l)
 
 		//	Case # 1 - no exception thrown.
 		ldc.i4  1

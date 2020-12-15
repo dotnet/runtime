@@ -35,7 +35,7 @@
 	.method public static int32 main(class [mscorlib]System.String[] A_0) il managed
 	{
 		.entrypoint
-		.locals(class test)
+		.locals(class test t)
 		
 		ldc.i4  666
 		dup

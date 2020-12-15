@@ -14,7 +14,7 @@
 .method public static	int32 main(class [mscorlib]System.String[]) {
 .entrypoint
 .maxstack		10
-.locals	(int32*)
+.locals	(int32* i)
 	ldsflda		int32 _stloc::LOADME
 	stloc	0
 

@@ -16,7 +16,7 @@
                        int16 d) cil managed
   {
 	.maxstack  215
-      .locals init (int64, int32, unsigned int8, int8, unsigned int64, unsigned int16, int16, native int, bool, float64, unsigned int8, bool, int16, bool, float32)
+      .locals init (int64 l0, int32 l1, unsigned int8 l2, int8 l3, unsigned int64 l4, unsigned int16 l5, int16 l6, native int l7, bool l8, float64 l9, unsigned int8 l10, bool l11, int16 l12, bool l13, float32 l14)
 
 	IL_0000: ldloc 0x0009
 	IL_0004: conv.ovf.i8

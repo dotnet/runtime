@@ -8,7 +8,7 @@
 
 .method public static	int32 args(float64,float64) {
 .maxstack	10
-.locals	(int32)
+.locals	(int32 i)
 	ldarg	0
 	ldarg	1
 	ldarg	0

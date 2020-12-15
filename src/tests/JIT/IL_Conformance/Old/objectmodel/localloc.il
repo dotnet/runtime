@@ -23,7 +23,7 @@
 }
 
 .method public static	int32 main(string[]) {
-.locals		(class [mscorlib]System.IO.TextWriter,int32*,int32,class [mscorlib]System.Text.StringBuilder,int32,string)
+.locals		(class [mscorlib]System.IO.TextWriter tw,int32* i,int32 j,class [mscorlib]System.Text.StringBuilder sb,int32 k,string s)
 .entrypoint
 	call		class [mscorlib]System.IO.TextWriter [System.Console]System.Console::get_Out()
 	stloc		0

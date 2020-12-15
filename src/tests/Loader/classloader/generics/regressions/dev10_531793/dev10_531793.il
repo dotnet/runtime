@@ -51,7 +51,7 @@
   {
     .entrypoint
     .maxstack  1
-    .locals init ([0] class T1 t, [1] class N`1<class T1> v, int32)
+    .locals init ([0] class T1 t, [1] class N`1<class T1> v, int32 i)
 
 	nop
     newobj     instance void T1::.ctor()

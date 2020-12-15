@@ -6,7 +6,7 @@
 .assembly bge.exe{}
 
 .method public	static int32 main(class [mscorlib]System.String[]) {
-.locals		(class [mscorlib]System.String)
+.locals		(class [mscorlib]System.String s)
 .entrypoint
 	ldc.i4		0x55555555
 	ldc.i4		0x44444444

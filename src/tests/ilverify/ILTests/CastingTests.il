@@ -248,7 +248,7 @@
     .method public hidebysig instance void Casting.AssignGenericToObject_Valid(!T v) cil managed
     {
         .locals init (
-            object
+            object o
         )
 
         ldarg.1
@@ -310,7 +310,7 @@
     .method public static void Casting.AssignPrimitiveToIComparable_Valid(int32 arg) cil managed
     {
         .locals init (
-            class [System.Runtime]System.IComparable
+            class [System.Runtime]System.IComparable c
         )
 
         ldarg.0

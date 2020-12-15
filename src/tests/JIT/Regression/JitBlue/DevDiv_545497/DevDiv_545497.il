@@ -16,7 +16,7 @@
                        uint64 c) cil managed
   {
 	.maxstack  194
-	.locals init (float64, bool, unsigned int64)
+	.locals init (float64 f, bool b, unsigned int64 i)
 	IL_0000: ldloc.s 0x01
 	IL_0002: conv.r.un
 	IL_0028: conv.ovf.u8.un

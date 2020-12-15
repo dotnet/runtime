@@ -7,7 +7,7 @@
 
 .method public	static int32 main(class [mscorlib]System.String[]) {
 .entrypoint
-.locals	(class CConv,int32,float32)
+.locals	(class CConv c,int32 i,float32 f)
 .maxstack	2
 	newobj	instance void CConv::.ctor()
 	stloc	0

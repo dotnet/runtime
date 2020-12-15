@@ -40,7 +40,7 @@
   {
     // Code size       7 (0x7)
       .maxstack  18
-      .locals init (native int, unsigned int64, unsigned int64, float32, float32, float64, int8, float32, bool, native int, unsigned int64, unsigned int64, int64)
+      .locals init (native int l0, unsigned int64 l1, unsigned int64 l2, float32 l3, float32 l4, float64 l5, int8 l6, float32 l7, bool l8, native int l9, unsigned int64 l10, unsigned int64 l11, int64 l12)
       IL_0000: ldloc 0x0006
       IL_0004: ldloc 0x0003
       IL_0008: ldc.r4 0x0 // ZERO
@@ -57,7 +57,7 @@
   {
     // Code size       7 (0x7)
       .maxstack  18
-      .locals init (native int, unsigned int64, unsigned int64, float32, float32, float64, int8, float32, bool, native int, unsigned int64, unsigned int64, int64)
+      .locals init (native int l0, unsigned int64 l1, unsigned int64 l2, float32 l3, float32 l4, float64 l5, int8 l6, float32 l7, bool l8, native int l9, unsigned int64 l10, unsigned int64 l11, int64 l12)
       IL_0000: ldloc 0x0006
       IL_0004: ldloc 0x0003
       IL_0008: ldc.r4 0x7f800000 // INF

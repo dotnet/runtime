@@ -36,7 +36,7 @@
 {
   .method public hidebysig static  int32  Main() cil managed
   {
-    .locals (object)
+    .locals (object o)
     .entrypoint
     // Store ref in supertyped local to "forget" type
     newobj     instance void Base::.ctor()

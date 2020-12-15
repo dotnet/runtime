@@ -16,7 +16,7 @@
 .method private hidebysig static native int calc(native int, native int) il managed
 {
 	.maxstack 8
-	.locals (native int)
+	.locals (native int i)
 	ldarg.1
 	stloc.0
 	ldloc.0

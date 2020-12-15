@@ -15,7 +15,7 @@
 
 .class public			heap_ovf {
 .method public static	int32 main(string[]) {
-.locals		(class [mscorlib]System.Exception)
+.locals		(class [mscorlib]System.Exception e)
 .entrypoint
 try_start:
 	call	void heap_ovf::overflow()
@@ -51,7 +51,7 @@ END:
 }
 
 .method public static void overflow(){
-.locals		(int32,int32*,class [mscorlib]System.Exception)
+.locals		(int32 i,int32* j,class [mscorlib]System.Exception e)
 	ldc.i4		0x0
 	stloc		0
 LOOP:

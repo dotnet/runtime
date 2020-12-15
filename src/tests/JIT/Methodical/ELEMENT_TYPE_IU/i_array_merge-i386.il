@@ -17,7 +17,7 @@
 {
 	.entrypoint
 	.maxstack  8
-	.locals (int32[0...], native int[0...], native int, native int)
+	.locals (int32[0...] l0, native int[0...] l1, native int l2, native int l3)
 	ldc.i4 16
 	newobj instance void native int[0...]::.ctor(int32)
 	stloc.0

@@ -30,7 +30,7 @@ END:
 }
 .method public static	int32 checkfinite(float64) {
 .maxstack		3
-.locals		(class [mscorlib]System.ArithmeticException)
+.locals		(class [mscorlib]System.ArithmeticException e)
 try_start:
 	ldarg	0
 	ckfinite

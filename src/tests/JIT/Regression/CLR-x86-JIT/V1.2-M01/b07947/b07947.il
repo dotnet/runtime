@@ -36,7 +36,7 @@
 
     .method privatescope instance void foo2() synchronized 
     {
-    	.locals init (int32)
+    	.locals init (int32 i)
 
     LOOP:
     	ldstr "."

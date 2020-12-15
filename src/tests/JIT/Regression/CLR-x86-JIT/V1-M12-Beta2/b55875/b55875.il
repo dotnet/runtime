@@ -11,7 +11,7 @@
 .method public static int32 'Perm'() il managed
     {
 	.maxstack 4
-	.locals(int32)
+	.locals(int32 i)
     	.entrypoint
 	ldc.i4.1
 	stloc.0

@@ -6,7 +6,7 @@
 .class public _rem {
 .method public static	int32 _rem(float64,float64,float64) {
 .maxstack		3
-.locals	(int32)
+.locals	(int32 i)
 	ldarg	0
 	ldarg	1
 	rem
@@ -51,7 +51,7 @@ FINISH:
 }
 .method public static	int32 checkfinite(float64) {
 .maxstack		3
-.locals	(class [mscorlib]System.ArithmeticException)
+.locals	(class [mscorlib]System.ArithmeticException e)
 
 
 try_start:

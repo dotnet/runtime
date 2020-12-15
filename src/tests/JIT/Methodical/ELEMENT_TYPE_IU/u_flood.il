@@ -23,7 +23,7 @@
     .method private hidebysig static int32 Main() il managed {
 	.entrypoint
 	.maxstack  8
-	.locals(native unsigned int)
+	.locals(native unsigned int i)
 	ldc.i4.0
 	conv.u
 	stloc.0

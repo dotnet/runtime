@@ -9,7 +9,7 @@
 .assembly tailcall.exe{}
 
 .method public static int32 main(string[]) {
-.locals     (class [mscorlib]System.IO.TextWriter,class _tailcall)
+.locals     (class [mscorlib]System.IO.TextWriter tw,class _tailcall tc)
 .entrypoint
 	call	    class [mscorlib]System.IO.TextWriter [System.Console]System.Console::get_Out()
     stloc       0
@@ -60,7 +60,7 @@ end:
 }
 
 .method public         int32 method1() {
-.locals     (int32,string)
+.locals     (int32 i,string s)
 
 	call	    class [mscorlib]System.IO.TextWriter [System.Console]System.Console::get_Out()
     ldstr       "Beginning Test."

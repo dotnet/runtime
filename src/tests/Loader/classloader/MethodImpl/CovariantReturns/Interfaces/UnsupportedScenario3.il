@@ -168,7 +168,7 @@
 {
   .method public static void RunTest1() noinlining 
   {
-    .locals init (valuetype Test1<int32,object>)
+    .locals init (valuetype Test1<int32,object> t)
     ldloca.s 0
     initobj valuetype Test1<int32,object>
     ldloc.0
@@ -179,7 +179,7 @@
 
   .method public static void RunTest2() noinlining 
   {
-    .locals init (valuetype Test2<int32,object>)
+    .locals init (valuetype Test2<int32,object> t)
     ldloca.s 0
     initobj valuetype Test2<int32,object>
     ldloc.0
@@ -190,7 +190,7 @@
 
   .method public static void RunTest3() noinlining 
   {
-    .locals init (valuetype Test3<int32,object>)
+    .locals init (valuetype Test3<int32,object> t)
     ldloca.s 0
     initobj valuetype Test3<int32,object>
     ldloc.0
@@ -201,7 +201,7 @@
 
   .method public static void RunTest4() noinlining 
   {
-    .locals init (valuetype Test4<int32,object>)
+    .locals init (valuetype Test4<int32,object> t)
     ldloca.s 0
     initobj valuetype Test4<int32,object>
     ldloc.0
@@ -212,7 +212,7 @@
 
   .method public static void RunTest5() noinlining 
   {
-    .locals init (valuetype Test5<int32,object>)
+    .locals init (valuetype Test5<int32,object> t)
     ldloca.s 0
     initobj valuetype Test5<int32,object>
     ldloc.0

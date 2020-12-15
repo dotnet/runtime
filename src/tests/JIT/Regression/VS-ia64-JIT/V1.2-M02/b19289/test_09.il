@@ -15,7 +15,7 @@
   .method public hidebysig static int32 Main() cil managed
   {
     .entrypoint
-    .locals init (float32)
+    .locals init (float32 f)
 	ldc.r4     7.9999996e+028
 	stloc.0
     .try

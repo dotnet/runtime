@@ -15,7 +15,7 @@
 .method static int32 main() {
 .entrypoint
 .maxstack	11
-.locals init ( int32, float64, int64)
+.locals init ( int32 l0, float64 l1, int64 l2)
 
 ldc.i8 1
 ldc.i8 2

@@ -23,7 +23,7 @@
 
 
 .method public static int32 r4_0(float32) {
-.locals		(class [mscorlib]System.ArithmeticException,int32)
+.locals		(class [mscorlib]System.ArithmeticException e,int32 i)
 .maxstack	5
 try_start:
 		ldc.r4		float32(0xFF800000)
@@ -56,7 +56,7 @@ FAIL:
 
 }
 .method public static int32 r4_1(float32) {
-.locals		(class [mscorlib]System.ArithmeticException,int32)
+.locals		(class [mscorlib]System.ArithmeticException e,int32 i)
 .maxstack	5
 try_start:
 		ldc.r4		float32(0xFF7FFFFF)
@@ -89,7 +89,7 @@ FAIL:
 
 }
 .method public static int32 r4_2(float32) {
-.locals		(class [mscorlib]System.ArithmeticException,int32)
+.locals		(class [mscorlib]System.ArithmeticException e,int32 i)
 .maxstack	5
 try_start:
 		ldc.r4		float32(0xBF800000)
@@ -122,7 +122,7 @@ FAIL:
 
 }
 .method public static int32 r4_3(float32) {
-.locals		(class [mscorlib]System.ArithmeticException,int32)
+.locals		(class [mscorlib]System.ArithmeticException e,int32 i)
 .maxstack	5
 try_start:
 		ldc.r4		float32(0x80000000)
@@ -155,7 +155,7 @@ FAIL:
 
 }
 .method public static int32 r4_4(float32) {
-.locals		(class [mscorlib]System.ArithmeticException,int32)
+.locals		(class [mscorlib]System.ArithmeticException e,int32 i)
 .maxstack	5
 try_start:
 		ldc.r4		float32(0x00000000)
@@ -188,7 +188,7 @@ FAIL:
 
 }
 .method public static int32 r4_5(float32) {
-.locals		(class [mscorlib]System.ArithmeticException,int32)
+.locals		(class [mscorlib]System.ArithmeticException e,int32 i)
 .maxstack	5
 try_start:
 		ldc.r4		float32(0x3F800000)
@@ -221,7 +221,7 @@ FAIL:
 
 }
 .method public static int32 r4_6(float32) {
-.locals		(class [mscorlib]System.ArithmeticException,int32)
+.locals		(class [mscorlib]System.ArithmeticException e,int32 i)
 .maxstack	5
 try_start:
 		ldc.r4		float32(0x7F7FFFFF)
@@ -254,7 +254,7 @@ FAIL:
 
 }
 .method public static int32 r4_7(float32) {
-.locals		(class [mscorlib]System.ArithmeticException,int32)
+.locals		(class [mscorlib]System.ArithmeticException e,int32 i)
 .maxstack	5
 try_start:
 		ldc.r4		float32(0x7F800000)
@@ -287,7 +287,7 @@ FAIL:
 
 }
 .method public static int32 r4_8(float32) {
-.locals		(class [mscorlib]System.ArithmeticException,int32)
+.locals		(class [mscorlib]System.ArithmeticException e,int32 i)
 .maxstack	5
 try_start:
 		ldc.r4		float32(0x7FC00000)

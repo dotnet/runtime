@@ -21,7 +21,7 @@
     .method public hidebysig static int32 Main() cil managed
     {
 	.entrypoint
-	.locals init (valuetype base017)
+	.locals init (valuetype base017 b)
 	ldloca 0
 	initobj    base017
 	ldloca 0

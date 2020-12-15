@@ -21,7 +21,7 @@
 
 .method public static	int32 main(class [mscorlib]System.String[]) {
 .entrypoint
-.locals(class _ldarg)
+.locals(class _ldarg l)
 .maxstack		2
 	newobj		instance void _ldarg::_ldarg()
 	stloc		0

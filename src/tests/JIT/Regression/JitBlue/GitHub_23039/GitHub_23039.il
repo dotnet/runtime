@@ -17,7 +17,7 @@
 {
    .method public static hidebysig int32 F() cil managed noinlining
    {
-       .locals init ([0] object)
+       .locals init ([0] object o)
        ldloc.0
        isinst class X`1<!T>
        brtrue IS

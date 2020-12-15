@@ -10,7 +10,7 @@
   .method public hidebysig static int32  Main() cil managed
   {
 	.entrypoint
-	.locals init (int32)
+	.locals init (int32 i)
 
 	ldc.i4.0
 	stloc.0

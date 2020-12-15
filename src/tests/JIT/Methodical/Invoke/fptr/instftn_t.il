@@ -57,7 +57,7 @@
             TestMain() il managed
     {
 			.maxstack  6
-			.locals (int32 V_0, int32)
+			.locals (int32 V_0, int32 V_1)
 			newobj		instance void JitTest.Test::.ctor()
 			dup
 			dup

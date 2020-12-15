@@ -12,7 +12,7 @@
 .method public static	int32 main(class [mscorlib]System.String[]) {
 .entrypoint
 .maxstack		2
-.locals	(class _ldloc)
+.locals	(class _ldloc l)
 	newobj	instance 	void _ldloc::_ldloc()
 	dup
 	stloc		0

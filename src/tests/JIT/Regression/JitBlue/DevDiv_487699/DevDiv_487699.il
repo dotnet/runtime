@@ -12,7 +12,7 @@
    .method static native int ILGEN_METHOD(unsigned int8, int64, native int, unsigned int16)
    {
         .maxstack  65535
-        .locals init (int16, native unsigned int, int16)
+        .locals init (int16 l0, native unsigned int l1, int16 l2)
         IL_0000: ldc.r8 float64(0xde9d0a0c75a00f8b)
         IL_0009: dup
         IL_000a: ckfinite
