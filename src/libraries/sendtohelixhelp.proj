@@ -256,8 +256,8 @@
 
     <ItemGroup Condition="'$(TargetOS)' == 'Browser'">
       <!-- Create a work item for run-only WASM apps  -->
-      <_WorkItem Include="$(TestArchiveRoot)runonly/**/*.zip" />
-      <HelixWorkItem Include="@(_WorkItem -> '%(FileName)')" >
+      <_RunOnlyWorkItem Include="$(TestArchiveRoot)runonly/**/*.zip" />
+      <HelixWorkItem Include="@(_RunOnlyWorkItem -> '%(FileName)')" >
         <PayloadArchive>%(Identity)</PayloadArchive>
         <!-- No RunTests script generated for the sample project so we just use the direct command -->
         <Command>dotnet exec $XHARNESS_CLI_PATH wasm $XHARNESS_COMMAND  --app=. --engine=V8  --engine-arg=--stack-trace-limit=1000 --js-file=runtime.js --output-directory=$XHARNESS_OUT -- --run WasmSample.dll</Command>
