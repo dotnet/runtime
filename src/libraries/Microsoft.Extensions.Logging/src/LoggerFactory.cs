@@ -152,6 +152,11 @@ namespace Microsoft.Extensions.Logging
                 throw new ObjectDisposedException(nameof(LoggerFactory));
             }
 
+            if (provider == null)
+            {
+                throw new ArgumentNullException(nameof(provider));
+            }
+
             lock (_sync)
             {
                 AddProviderRegistration(provider, dispose: true);
