@@ -4,6 +4,7 @@
 using Microsoft.Win32.SafeHandles;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
+using System.Runtime.Versioning;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -333,7 +334,9 @@ namespace System.IO
 
         private void FlushWriteBufferForWriteByte()
         {
+#pragma warning disable CA1416 // Validate platform compatibility, issue: https://github.com/dotnet/runtime/issues/44542
             _asyncState?.Wait();
+#pragma warning restore CA1416
             try { FlushWriteBuffer(); }
             finally { _asyncState?.Release(); }
         }
@@ -349,47 +352,6 @@ namespace System.IO
             }
         }
 
-        /// <summary>Asynchronously clears all buffers for this stream, causing any buffered data to be written to the underlying device.</summary>
-        /// <param name="cancellationToken">The token to monitor for cancellation requests.</param>
-        /// <returns>A task that represents the asynchronous flush operation.</returns>
-        private Task FlushAsyncInternal(CancellationToken cancellationToken)
-        {
-            if (cancellationToken.IsCancellationRequested)
-            {
-                return Task.FromCanceled(cancellationToken);
-            }
-            if (_fileHandle.IsClosed)
-            {
-                throw Error.GetFileNotOpen();
-            }
-
-            // As with Win32FileStream, flush the buffers synchronously to avoid race conditions.
-            try
-            {
-                FlushInternalBuffer();
-            }
-            catch (Exception e)
-            {
-                return Task.FromException(e);
-            }
-
-            // We then separately flush to disk asynchronously.  This is only
-            // necessary if we support writing; otherwise, we're done.
-            if (CanWrite)
-            {
-                return Task.Factory.StartNew(
-                    static state => ((FileStream)state!).FlushOSBuffer(),
-                    this,
-                    cancellationToken,
-                    TaskCreationOptions.DenyChildAttach,
-                    TaskScheduler.Default);
-            }
-            else
-            {
-                return Task.CompletedTask;
-            }
-        }
-
         /// <summary>Sets the length of this stream to the given value.</summary>
         /// <param name="value">The new length of the stream.</param>
         private void SetLengthInternal(long value)
@@ -401,28 +363,14 @@ namespace System.IO
                 throw new IOException(SR.IO_SetLengthAppendTruncate);
             }
 
-            long origPos = _filePosition;
-
             VerifyOSHandlePosition();
-
-            if (_filePosition != value)
-            {
-                SeekCore(_fileHandle, value, SeekOrigin.Begin);
-            }
 
             CheckFileCall(Interop.Sys.FTruncate(_fileHandle, value));
 
-            // Return file pointer to where it was before setting length
-            if (origPos != value)
+            // Set file pointer to end of file
+            if (_filePosition > value)
             {
-                if (origPos < value)
-                {
-                    SeekCore(_fileHandle, origPos, SeekOrigin.Begin);
-                }
-                else
-                {
-                    SeekCore(_fileHandle, 0, SeekOrigin.End);
-                }
+                SeekCore(_fileHandle, 0, SeekOrigin.End);
             }
         }
 
@@ -597,7 +545,9 @@ namespace System.IO
         /// <summary>Reads from the file handle into the buffer, overwriting anything in it.</summary>
         private int FillReadBufferForReadByte()
         {
+#pragma warning disable CA1416 // Validate platform compatibility, issue: https://github.com/dotnet/runtime/issues/44542
             _asyncState?.Wait();
+#pragma warning restore CA1416
             try { return ReadNative(_buffer); }
             finally { _asyncState?.Release(); }
         }

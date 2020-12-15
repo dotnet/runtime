@@ -125,12 +125,6 @@
   <data name="Enum_InvalidValue" xml:space="preserve">
     <value>Enumeration value '{0}' specified in condition mapping is not valid.</value>
   </data>
-  <data name="none" xml:space="preserve">
-    <value>(none)</value>
-  </data>
-  <data name="InvalidArgumentValue" xml:space="preserve">
-    <value>Value of '{0}' is not valid for font size unit.</value>
-  </data>
   <data name="PlatformNotSupported_System_Windows_Extensions" xml:space="preserve">
     <value>System.Windows.Extensions types are not supported on this platform.</value>
   </data>

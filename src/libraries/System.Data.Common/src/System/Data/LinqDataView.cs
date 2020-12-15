@@ -105,7 +105,7 @@ namespace System.Data
         /// </summary>
         /// <param name="key">Value of the key to find</param>
         /// <returns>Index of the first match of input key</returns>
-        internal override int FindByKey(object key)
+        internal override int FindByKey(object? key)
         {
             Debug.Assert(base.Sort != null);
             Debug.Assert(!(!string.IsNullOrEmpty(base.Sort) && base.SortComparison != null),
@@ -128,7 +128,7 @@ namespace System.Data
                 Index.ComparisonBySelector<object, DataRow> compareDelg =
                     new Index.ComparisonBySelector<object, DataRow>(comparerKeyRow!);
 
-                List<object> keyList = new List<object>();
+                List<object?> keyList = new List<object?>();
                 keyList.Add(key);
                 Range range = FindRecords<object, DataRow>(compareDelg, keyList);
 

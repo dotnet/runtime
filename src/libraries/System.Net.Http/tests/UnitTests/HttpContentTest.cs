@@ -10,7 +10,7 @@ namespace System.Net.Http.Tests
 {
     public class HttpContentTest
     {
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [Fact]
         public async Task Dispose_BufferContentThenDisposeContent_BufferedStreamGetsDisposed()
         {
             MockContent content = new MockContent();

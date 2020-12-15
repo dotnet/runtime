@@ -7,6 +7,7 @@ using System.Collections;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 
 namespace SslStress.Utils
 {
@@ -37,7 +38,7 @@ namespace SslStress.Utils
             (Type, string, string)[] key = ClassifyFailure(exception);
 
             ErrorType failureType = _failureTypes.GetOrAdd(key, _ => new ErrorType(exception.ToString()));
-            failureType.OccurencesQueue.Enqueue((timestamp.Value, metadata));
+            failureType.OccurrencesQueue.Enqueue((timestamp.Value, metadata));
 
             // classify exception according to type, message and callsite of itself and any inner exceptions
             static (Type exception, string message, string callSite)[] ClassifyFailure(Exception exn)
@@ -100,20 +101,20 @@ namespace SslStress.Utils
         private sealed class ErrorType : IErrorType
         {
             public string ErrorMessage { get; }
-            public ConcurrentQueue<(DateTime, string?)> OccurencesQueue = new ConcurrentQueue<(DateTime, string?)>();
+            public ConcurrentQueue<(DateTime, string?)> OccurrencesQueue = new ConcurrentQueue<(DateTime, string?)>();
 
             public ErrorType(string errorText)
             {
                 ErrorMessage = errorText;
             }
 
-            public IReadOnlyCollection<(DateTime timestamp, string? metadata)> Occurrences => OccurencesQueue;
+            public IReadOnlyCollection<(DateTime timestamp, string? metadata)> Occurrences => OccurrencesQueue;
         }
 
         private class StructuralEqualityComparer<T> : IEqualityComparer<T> where T : IStructuralEquatable
         {
-            public bool Equals(T left, T right) => left.Equals(right, StructuralComparisons.StructuralEqualityComparer);
-            public int GetHashCode(T value) => value.GetHashCode(StructuralComparisons.StructuralEqualityComparer);
+            public bool Equals(T? left, T? right) => left != null && left.Equals(right, StructuralComparisons.StructuralEqualityComparer);
+            public int GetHashCode([DisallowNull] T value) => value.GetHashCode(StructuralComparisons.StructuralEqualityComparer);
         }
     }
 }

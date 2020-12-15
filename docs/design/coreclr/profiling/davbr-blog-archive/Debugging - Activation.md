@@ -15,9 +15,8 @@ Environment variables --\> Registry --\> Profiler DLL on File system.
 
 The first link in this chain is to check the environment variables inside the process that should be profiled.  If you're running the process from a command-prompt, you can just try a "set co" from the command prompt:
 
-| 
 ```
-**C:\>** set co
+C:\> set co
  (blah blah, other vars beginning with "co")
 ```
 
@@ -25,7 +24,6 @@ The first link in this chain is to check the environment variables inside the pr
 Cor_Enable_Profiling=0x1
  COR_PROFILER={C5F90153-B93E-4138-9DB7-EB7156B07C4C}
 ```
- |
 
 If your scenario doesn't allow you to just run the process from a command prompt, like say an asp.net scenario, you may want to attach a debugger to the process that's supposed to be profiled, or use IFEO (HKEY\_LOCAL\_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Image File Execution Options) to force a debugger to start when the worker process starts.  In the debugger, you can then use "!peb" to view the environment block, which will include the environment variables.
 
@@ -62,4 +60,3 @@ or even set a breakpoint inside your Profiler DLL's **DllMain.**   Now go, and s
 If you're still going strong, set a breakpoint in your profiler's **Initialize** () callback.  Failures here are actually a popular cause for activation problems.  Inside your Initialize() callback, your profiler is likely calling QueryInterface for the ICorProfilerInfoX interface of your choice, and then calling SetEventMask, and doing other initialization-related tasks, like calling SetEnterLeaveFunctionHooks(2).  Do any of these fail?  Is your Initialize() callback returning a failure HRESULT?
 
 Hopefully by now you've isolated the failure point.  If not, and your Initialize() is happily returning S\_OK, then your profiler is apparently loading just fine.  At least it is when you're debugging it.  :-)
-

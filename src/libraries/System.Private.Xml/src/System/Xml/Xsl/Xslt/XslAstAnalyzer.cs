@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Xml.XPath;
 using System.Xml.Xsl.Qil;
@@ -19,29 +20,29 @@ namespace System.Xml.Xsl.Xslt
 
     internal class XslAstAnalyzer : XslVisitor<XslFlags>
     {
-        private CompilerScopeManager<VarPar> _scope;
-        private Compiler _compiler;
+        private CompilerScopeManager<VarPar>? _scope;
+        private Compiler? _compiler;
 #if DEBUG
         // List of all variables and parameters
         private readonly List<VarPar> _allVarPars = new List<VarPar>();
 #endif
         private int _forEachDepth;
-        private XPathAnalyzer _xpathAnalyzer;
-        private ProtoTemplate _currentTemplate;
+        private XPathAnalyzer? _xpathAnalyzer;
+        private ProtoTemplate? _currentTemplate;
 
         // Type donor of the last analyzed VarPar. Used for optimization of WithParam's.
-        private VarPar _typeDonor;
+        private VarPar? _typeDonor;
 
         // Template dependencies
         // rev/fwd - Callee-to-Coller/Coller-to-Callee
         // 0/1     - for-each depth
-        private Graph<ProtoTemplate> _revCall0Graph = new Graph<ProtoTemplate>();
-        private Graph<ProtoTemplate> _revCall1Graph = new Graph<ProtoTemplate>();
-        private Dictionary<Template, Stylesheet> _fwdApplyImportsGraph = new Dictionary<Template, Stylesheet>();
-        private Dictionary<QilName, List<ProtoTemplate>> _revApplyTemplatesGraph = new Dictionary<QilName, List<ProtoTemplate>>();
+        private Graph<ProtoTemplate>? _revCall0Graph = new Graph<ProtoTemplate>();
+        private Graph<ProtoTemplate>? _revCall1Graph = new Graph<ProtoTemplate>();
+        private Dictionary<Template, Stylesheet>? _fwdApplyImportsGraph = new Dictionary<Template, Stylesheet>();
+        private Dictionary<QilName, List<ProtoTemplate>>? _revApplyTemplatesGraph = new Dictionary<QilName, List<ProtoTemplate>>();
 
         // Data flow graph
-        private Graph<VarPar> _dataFlow = new Graph<VarPar>();
+        private Graph<VarPar>? _dataFlow = new Graph<VarPar>();
 
         // Mapping (mode, param name) -> helper vertex in data flow graph
         private readonly Dictionary<ModeName, VarPar> _applyTemplatesParams = new Dictionary<ModeName, VarPar>();
@@ -51,14 +52,14 @@ namespace System.Xml.Xsl.Xslt
         /// Represents a graph using hashtable of adjacency lists.
         /// </summary>
         /// <typeparam name="V">Vertex type</typeparam>
-        internal class Graph<V> : Dictionary<V, List<V>>
+        internal class Graph<V> : Dictionary<V, List<V>?>
             where V : XslNode
         {
             private static readonly IList<V> s_empty = (new List<V>()).AsReadOnly();
 
             public IEnumerable<V> GetAdjList(V v)
             {
-                List<V> adjList;
+                List<V>? adjList;
                 if (TryGetValue(v, out adjList) && adjList != null)
                 {
                     return adjList;
@@ -74,7 +75,7 @@ namespace System.Xml.Xsl.Xslt
                     return;
                 }
 
-                List<V> adjList;
+                List<V>? adjList;
                 if (!TryGetValue(v1, out adjList) || adjList == null)
                 {
                     adjList = this[v1] = new List<V>();
@@ -149,11 +150,11 @@ namespace System.Xml.Xsl.Xslt
             // Add global parameters and variables to the scope, they are visible everywhere
             foreach (VarPar par in compiler.ExternalPars)
             {
-                _scope.AddVariable(par.Name, par);
+                _scope.AddVariable(par.Name!, par);
             }
             foreach (VarPar var in compiler.GlobalVars)
             {
-                _scope.AddVariable(var.Name, var);
+                _scope.AddVariable(var.Name!, var);
             }
 
             // Visit global parameters and variables, but ignore calculated flags
@@ -205,15 +206,15 @@ namespace System.Xml.Xsl.Xslt
             // types Rtf, Nodeset, Node, Boolean, Number, String through the data flow graph.
             for (int flag = (int)XslFlags.Rtf; flag != 0; flag >>= 1)
             {
-                _dataFlow.PropagateFlag((XslFlags)flag);
+                _dataFlow!.PropagateFlag((XslFlags)flag);
             }
             _dataFlow = null;
 
             // We need to follow revCall0Graph graph to propagate focus flags. But first complete
             // dependency graph with fwdApplyImportsGraph
-            foreach (KeyValuePair<Template, Stylesheet> pair in _fwdApplyImportsGraph)
+            foreach (KeyValuePair<Template, Stylesheet> pair in _fwdApplyImportsGraph!)
             {
-                foreach (Stylesheet import in pair.Value.Imports)
+                foreach (Stylesheet import in pair.Value.Imports!)
                 {
                     AddImportDependencies(import, /*focusDonor:*/pair.Key);
                 }
@@ -222,15 +223,15 @@ namespace System.Xml.Xsl.Xslt
 
             if ((result & XslFlags.Current) != 0)
             {
-                _revCall0Graph.PropagateFlag(XslFlags.Current);
+                _revCall0Graph!.PropagateFlag(XslFlags.Current);
             }
             if ((result & XslFlags.Position) != 0)
             {
-                _revCall0Graph.PropagateFlag(XslFlags.Position);
+                _revCall0Graph!.PropagateFlag(XslFlags.Position);
             }
             if ((result & XslFlags.Last) != 0)
             {
-                _revCall0Graph.PropagateFlag(XslFlags.Last);
+                _revCall0Graph!.PropagateFlag(XslFlags.Last);
             }
             if ((result & XslFlags.SideEffects) != 0)
             {
@@ -242,7 +243,7 @@ namespace System.Xml.Xsl.Xslt
 
             // We can do this only after all flags were propagated.
             // Otherwise we can miss case when flag comes to template from attribute-set
-            FillModeFlags(compiler.Root.ModeFlags, compiler.Root.Imports[0]);
+            FillModeFlags(compiler.Root!.ModeFlags, compiler.Root.Imports![0]);
 
             return result;
         }
@@ -253,10 +254,10 @@ namespace System.Xml.Xsl.Xslt
             {
                 if (tmpl.Mode.Equals(focusDonor.Mode))
                 {
-                    _revCall0Graph.AddEdge(tmpl, focusDonor);
+                    _revCall0Graph!.AddEdge(tmpl, focusDonor);
                 }
             }
-            foreach (Stylesheet import in sheet.Imports)
+            foreach (Stylesheet import in sheet.Imports!)
             {
                 AddImportDependencies(import, focusDonor);
             }
@@ -265,7 +266,7 @@ namespace System.Xml.Xsl.Xslt
         private void FillModeFlags(Dictionary<QilName, XslFlags> parentModeFlags, Stylesheet sheet)
         {
             // Recursion: Process all imports to calculate ModeFlags for apply-import in this sheet
-            foreach (Stylesheet import in sheet.Imports)
+            foreach (Stylesheet import in sheet.Imports!)
             {
                 FillModeFlags(sheet.ModeFlags, import);
             }
@@ -299,14 +300,14 @@ namespace System.Xml.Xsl.Xslt
 
         protected override XslFlags Visit(XslNode node)
         {
-            _scope.EnterScope(node.Namespaces);
+            _scope!.EnterScope(node.Namespaces);
             XslFlags result = base.Visit(node);
             _scope.ExitScope();
 
             // Local variables and parameters must be added to the outer scope
             if (_currentTemplate != null && (node.NodeType == XslNodeType.Variable || node.NodeType == XslNodeType.Param))
             {
-                _scope.AddVariable(node.Name, (VarPar)node);
+                _scope.AddVariable(node.Name!, (VarPar)node);
             }
             Debug.Assert(
                 (result & XslFlags.TypeFilter & ~XslFlags.Rtf) == 0,
@@ -346,7 +347,7 @@ namespace System.Xml.Xsl.Xslt
         {
             Debug.Assert(_forEachDepth == 0, "xsl:apply-imports cannot be inside of xsl:for-each");
             Debug.Assert(_currentTemplate is Template, "xsl:apply-imports can only occur within xsl:template");
-            _fwdApplyImportsGraph[(Template)_currentTemplate] = (Stylesheet)node.Arg;
+            _fwdApplyImportsGraph![(Template)_currentTemplate] = (Stylesheet)node.Arg!;
             // xsl:apply-imports uses context node and is not in context of any for-each so it requires current
             return XslFlags.HasCalls | XslFlags.Current | XslFlags.Rtf;
         }
@@ -361,17 +362,17 @@ namespace System.Xml.Xsl.Xslt
                 result |= Visit(instr);
                 if (instr.NodeType == XslNodeType.WithParam)
                 {
-                    ModeName mn = new ModeName(/*mode:*/node.Name, instr.Name);
-                    VarPar modePar;
+                    ModeName mn = new ModeName(/*mode:*/node.Name!, instr.Name!);
+                    VarPar? modePar;
 
                     if (!_applyTemplatesParams.TryGetValue(mn, out modePar))
                     {
-                        modePar = _applyTemplatesParams[mn] = AstFactory.WithParam(instr.Name);
+                        modePar = _applyTemplatesParams[mn] = AstFactory.WithParam(instr.Name!);
                     }
 
                     if (_typeDonor != null)
                     {
-                        _dataFlow.AddEdge(_typeDonor, modePar);
+                        _dataFlow!.AddEdge(_typeDonor, modePar);
                     }
                     else
                     {
@@ -382,7 +383,7 @@ namespace System.Xml.Xsl.Xslt
 
             if (_currentTemplate != null)
             {
-                AddApplyTemplatesEdge(/*mode:*/node.Name, _currentTemplate);
+                AddApplyTemplatesEdge(/*mode:*/node.Name!, _currentTemplate);
             }
 
             return XslFlags.HasCalls | XslFlags.Rtf | result;
@@ -401,9 +402,9 @@ namespace System.Xml.Xsl.Xslt
         protected override XslFlags VisitCallTemplate(XslNode node)
         {
             XslFlags result = XslFlags.None;
-            Template target;
+            Template? target;
 
-            if (_compiler.NamedTemplates.TryGetValue(node.Name, out target))
+            if (_compiler!.NamedTemplates.TryGetValue(node.Name!, out target))
             {
                 Debug.Assert(target != null);
                 if (_currentTemplate != null)
@@ -411,17 +412,17 @@ namespace System.Xml.Xsl.Xslt
                     if (_forEachDepth == 0)
                     {
                         // Naked xsl:call-template, target would take its focus from currentTemplate
-                        _revCall0Graph.AddEdge(target, _currentTemplate);
+                        _revCall0Graph!.AddEdge(target, _currentTemplate);
                     }
                     else
                     {
                         // in other cases we need it as donor for side effects flag
-                        _revCall1Graph.AddEdge(target, _currentTemplate);
+                        _revCall1Graph!.AddEdge(target, _currentTemplate);
                     }
                 }
             }
 
-            VarPar[] typeDonors = new VarPar[node.Content.Count];
+            VarPar?[] typeDonors = new VarPar[node.Content.Count];
             int idx = 0;
 
             foreach (XslNode instr in node.Content)
@@ -451,12 +452,12 @@ namespace System.Xml.Xsl.Xslt
                     }
 
                     VarPar par = (VarPar)instr;
-                    VarPar found = null;
+                    VarPar? found = null;
                     idx = 0;
 
                     foreach (XslNode withPar in node.Content)
                     {
-                        if (withPar.Name.Equals(par.Name))
+                        if (withPar.Name!.Equals(par.Name))
                         {
                             found = (VarPar)withPar;
                             _typeDonor = typeDonors[idx];
@@ -471,7 +472,7 @@ namespace System.Xml.Xsl.Xslt
                         if (_typeDonor != null)
                         {
                             // add an edge from its type donor to xsl:param
-                            _dataFlow.AddEdge(_typeDonor, par);
+                            _dataFlow!.AddEdge(_typeDonor, par);
                         }
                         else
                         {
@@ -505,7 +506,7 @@ namespace System.Xml.Xsl.Xslt
 
         protected override XslFlags VisitCopyOf(XslNode node)
         {
-            return XslFlags.Rtf | ProcessExpr(node.Select);
+            return XslFlags.Rtf | ProcessExpr(node.Select!);
         }
 
         protected override XslFlags VisitElement(NodeCtor node)
@@ -527,7 +528,7 @@ namespace System.Xml.Xsl.Xslt
 
         protected override XslFlags VisitForEach(XslNode node)
         {
-            XslFlags result = ProcessExpr(node.Select);
+            XslFlags result = ProcessExpr(node.Select!);
             _forEachDepth++;
             foreach (XslNode child in node.Content)
             {
@@ -547,7 +548,7 @@ namespace System.Xml.Xsl.Xslt
 
         protected override XslFlags VisitIf(XslNode node)
         {
-            return ProcessExpr(node.Select) | VisitChildren(node);
+            return ProcessExpr(node.Select!) | VisitChildren(node);
         }
 
         /*
@@ -564,7 +565,7 @@ namespace System.Xml.Xsl.Xslt
         {
             return (
                 XslFlags.Rtf |
-                ProcessAvt(node.Select) |
+                ProcessAvt(node.Select!) |
                 VisitChildren(node)
             );
         }
@@ -602,7 +603,7 @@ namespace System.Xml.Xsl.Xslt
         {
             return (
                 XslFlags.Rtf |
-                ProcessAvt(node.Select) |
+                ProcessAvt(node.Select!) |
                 VisitChildren(node)
             );
         }
@@ -612,7 +613,7 @@ namespace System.Xml.Xsl.Xslt
             return (
                 // @select is calculated in context of xsl:for-each or xsl:apply-templates,
                 // so it does not affect focus flags
-                ProcessExpr(node.Select) & ~XslFlags.FocusFilter |
+                ProcessExpr(node.Select!) & ~XslFlags.FocusFilter |
                 ProcessAvt(node.Lang) |
                 ProcessAvt(node.DataType) |
                 ProcessAvt(node.Order) |
@@ -627,17 +628,17 @@ namespace System.Xml.Xsl.Xslt
 
         protected override XslFlags VisitUseAttributeSet(XslNode node)
         {
-            if (_compiler.AttributeSets.TryGetValue(node.Name, out AttributeSet attSet) && _currentTemplate != null)
+            if (_compiler!.AttributeSets.TryGetValue(node.Name!, out AttributeSet? attSet) && _currentTemplate != null)
             {
                 if (_forEachDepth == 0)
                 {
                     // Naked [xsl:]use-attribute-sets, attSet would take its focus from currentTemplate
-                    _revCall0Graph.AddEdge(attSet, _currentTemplate);
+                    _revCall0Graph!.AddEdge(attSet, _currentTemplate);
                 }
                 else
                 {
                     // in other cases we need it as donor for side effects flag
-                    _revCall1Graph.AddEdge(attSet, _currentTemplate);
+                    _revCall1Graph!.AddEdge(attSet, _currentTemplate);
                 }
             }
 
@@ -646,31 +647,31 @@ namespace System.Xml.Xsl.Xslt
 
         protected override XslFlags VisitValueOf(XslNode node)
         {
-            return XslFlags.Rtf | ProcessExpr(node.Select);
+            return XslFlags.Rtf | ProcessExpr(node.Select!);
         }
 
         protected override XslFlags VisitValueOfDoe(XslNode node)
         {
-            return XslFlags.Rtf | ProcessExpr(node.Select);
+            return XslFlags.Rtf | ProcessExpr(node.Select!);
         }
 
         protected override XslFlags VisitParam(VarPar node)
         {
-            Template tmpl = _currentTemplate as Template;
+            Template? tmpl = _currentTemplate as Template;
             if (tmpl != null && tmpl.Match != null)
             {
                 // This template has 'match' attribute and might be called from built-in template rules,
                 // all xsl:param's will be defaulted in that case
                 node.Flags |= XslFlags.MayBeDefault;
 
-                ModeName mn = new ModeName(tmpl.Mode, node.Name);
-                VarPar par;
+                ModeName mn = new ModeName(tmpl.Mode, node.Name!);
+                VarPar? par;
 
                 if (!_applyTemplatesParams.TryGetValue(mn, out par))
                 {
-                    par = _applyTemplatesParams[mn] = AstFactory.WithParam(node.Name);
+                    par = _applyTemplatesParams[mn] = AstFactory.WithParam(node.Name!);
                 }
-                _dataFlow.AddEdge(par, node);
+                _dataFlow!.AddEdge(par, node);
             }
             node.DefValueFlags = ProcessVarPar(node);
             return node.DefValueFlags & ~XslFlags.TypeFilter;
@@ -704,16 +705,16 @@ namespace System.Xml.Xsl.Xslt
                 {
                     // In case of incorrect stylesheet, variable or parameter may have both a 'select' attribute and non-empty content
                     // NOTE: This code must be in sync with recovery logic in QilGenerator
-                    result = _xpathAnalyzer.Analyze(node.Select) | VisitChildren(node) | XslFlags.AnyType;
+                    result = _xpathAnalyzer!.Analyze(node.Select) | VisitChildren(node) | XslFlags.AnyType;
                     _typeDonor = null;
                 }
                 else
                 {
-                    result = _xpathAnalyzer.Analyze(node.Select);
+                    result = _xpathAnalyzer!.Analyze(node.Select);
                     _typeDonor = _xpathAnalyzer.TypeDonor;
                     if (_typeDonor != null && node.NodeType != XslNodeType.WithParam)
                     {
-                        _dataFlow.AddEdge(_typeDonor, node);
+                        _dataFlow!.AddEdge(_typeDonor, node);
                     }
                 }
             }
@@ -733,26 +734,26 @@ namespace System.Xml.Xsl.Xslt
         // Ignores XPath type flags
         private XslFlags ProcessExpr(string expr)
         {
-            return _xpathAnalyzer.Analyze(expr) & ~XslFlags.TypeFilter;
+            return _xpathAnalyzer!.Analyze(expr) & ~XslFlags.TypeFilter;
         }
 
         // Ignores XPath type flags
-        private XslFlags ProcessAvt(string avt)
+        private XslFlags ProcessAvt(string? avt)
         {
-            return _xpathAnalyzer.AnalyzeAvt(avt) & ~XslFlags.TypeFilter;
+            return _xpathAnalyzer!.AnalyzeAvt(avt) & ~XslFlags.TypeFilter;
         }
 
         // Ignores XPath type flags and focus flags
-        private XslFlags ProcessPattern(string pattern)
+        private XslFlags ProcessPattern(string? pattern)
         {
             // We need to analyze using of variables in the pattern
-            return _xpathAnalyzer.Analyze(pattern) & ~XslFlags.TypeFilter & ~XslFlags.FocusFilter;
+            return _xpathAnalyzer!.Analyze(pattern) & ~XslFlags.TypeFilter & ~XslFlags.FocusFilter;
         }
 
         private void AddApplyTemplatesEdge(QilName mode, ProtoTemplate dependentTemplate)
         {
-            List<ProtoTemplate> templates;
-            if (!_revApplyTemplatesGraph.TryGetValue(mode, out templates))
+            List<ProtoTemplate>? templates;
+            if (!_revApplyTemplatesGraph!.TryGetValue(mode, out templates))
             {
                 templates = new List<ProtoTemplate>();
                 _revApplyTemplatesGraph.Add(mode, templates);
@@ -771,11 +772,11 @@ namespace System.Xml.Xsl.Xslt
         private void PropagateSideEffectsFlag()
         {
             // Clean Stop flags
-            foreach (ProtoTemplate t in _revCall0Graph.Keys)
+            foreach (ProtoTemplate t in _revCall0Graph!.Keys)
             {
                 t.Flags &= ~XslFlags.Stop;
             }
-            foreach (ProtoTemplate t in _revCall1Graph.Keys)
+            foreach (ProtoTemplate t in _revCall1Graph!.Keys)
             {
                 t.Flags &= ~XslFlags.Stop;
             }
@@ -806,8 +807,8 @@ namespace System.Xml.Xsl.Xslt
         {
             Debug.Assert((t.Flags & XslFlags.Stop) == 0, "Already visited this vertex");
             t.Flags |= (XslFlags.SideEffects | XslFlags.Stop);
-            List<ProtoTemplate> list;
-            foreach (ProtoTemplate u in _revCall0Graph.GetAdjList(t))
+            List<ProtoTemplate>? list;
+            foreach (ProtoTemplate u in _revCall0Graph!.GetAdjList(t))
             {
                 if ((u.Flags & XslFlags.Stop) == 0)
                 {
@@ -815,7 +816,7 @@ namespace System.Xml.Xsl.Xslt
                 }
                 Debug.Assert((u.Flags & XslFlags.SideEffects) == XslFlags.SideEffects, "Flag was not set on an adjacent vertex");
             }
-            foreach (ProtoTemplate u in _revCall1Graph.GetAdjList(t))
+            foreach (ProtoTemplate u in _revCall1Graph!.GetAdjList(t))
             {
                 if ((u.Flags & XslFlags.Stop) == 0)
                 {
@@ -823,10 +824,10 @@ namespace System.Xml.Xsl.Xslt
                 }
                 Debug.Assert((u.Flags & XslFlags.SideEffects) == XslFlags.SideEffects, "Flag was not set on an adjacent vertex");
             }
-            Template template = t as Template;
+            Template? template = t as Template;
             if (
                 template != null &&                                     // This ProteTemplate is Template
-                _revApplyTemplatesGraph.TryGetValue(template.Mode, out list)      // list - ProtoTemplates that have apply-templatess mode="{template.Mode}"
+                _revApplyTemplatesGraph!.TryGetValue(template.Mode, out list)      // list - ProtoTemplates that have apply-templatess mode="{template.Mode}"
             )
             {
                 _revApplyTemplatesGraph.Remove(template.Mode);                    // to prevent recursion remove this list from dictionary
@@ -846,8 +847,8 @@ namespace System.Xml.Xsl.Xslt
         // Ignores all errors and warnings
         internal readonly struct NullErrorHelper : IErrorHelper
         {
-            public void ReportError(string res, params string[] args) { }
-            public void ReportWarning(string res, params string[] args) { }
+            public void ReportError(string res, params string?[]? args) { }
+            public void ReportWarning(string res, params string?[]? args) { }
         }
 
         internal class XPathAnalyzer : IXPathBuilder<XslFlags>
@@ -861,9 +862,9 @@ namespace System.Xml.Xsl.Xslt
 
             // If the expression is just a reference to some VarPar, like "(($foo))",
             // then this field contains that VarPar, and null otherwise.
-            private VarPar _typeDonor;
+            private VarPar? _typeDonor;
 
-            public VarPar TypeDonor
+            public VarPar? TypeDonor
             {
                 get { return _typeDonor; }
             }
@@ -874,7 +875,7 @@ namespace System.Xml.Xsl.Xslt
                 _scope = scope;
             }
 
-            public XslFlags Analyze(string xpathExpr)
+            public XslFlags Analyze(string? xpathExpr)
             {
                 _typeDonor = null;
                 if (xpathExpr == null)
@@ -899,7 +900,7 @@ namespace System.Xml.Xsl.Xslt
                 }
             }
 
-            public XslFlags AnalyzeAvt(string source)
+            public XslFlags AnalyzeAvt(string? source)
             {
                 _typeDonor = null;
                 if (source == null)
@@ -944,9 +945,9 @@ namespace System.Xml.Xsl.Xslt
             }
 
             // Returns null in case of error
-            private VarPar ResolveVariable(string prefix, string name)
+            private VarPar? ResolveVariable(string prefix, string name)
             {
-                string ns = ResolvePrefix(prefix);
+                string? ns = ResolvePrefix(prefix);
                 if (ns == null)
                 {
                     return null;
@@ -955,7 +956,7 @@ namespace System.Xml.Xsl.Xslt
             }
 
             // Returns null in case of error
-            private string ResolvePrefix(string prefix)
+            private string? ResolvePrefix(string prefix)
             {
                 // ignoreDefaultNs == true
                 if (prefix.Length == 0)
@@ -1016,7 +1017,7 @@ namespace System.Xml.Xsl.Xslt
                 return result | s_operatorType[(int)op];
             }
 
-            public virtual XslFlags Axis(XPathAxis xpathAxis, XPathNodeType nodeType, string prefix, string name)
+            public virtual XslFlags Axis(XPathAxis xpathAxis, XPathNodeType nodeType, string? prefix, string? name)
             {
                 _typeDonor = null;
                 if (xpathAxis == XPathAxis.Self && nodeType == XPathNodeType.All && prefix == null && name == null)
@@ -1067,8 +1068,8 @@ namespace System.Xml.Xsl.Xslt
 
                 if (prefix.Length == 0)
                 {
-                    XPathFunctionInfo xpathFunc;
-                    XsltFunctionInfo xsltFunc;
+                    XPathFunctionInfo? xpathFunc;
+                    XsltFunctionInfo? xsltFunc;
 
                     if (XPathBuilder.FunctionTable.TryGetValue(name, out xpathFunc))
                     {
@@ -1103,7 +1104,7 @@ namespace System.Xml.Xsl.Xslt
                 }
                 else
                 {
-                    string ns = ResolvePrefix(prefix);
+                    string? ns = ResolvePrefix(prefix);
                     if (ns == XmlReservedNs.NsMsxsl)
                     {
                         switch (name)
@@ -1133,7 +1134,7 @@ namespace System.Xml.Xsl.Xslt
                         funcFlags = XslFlags.AnyType;
                         if (_compiler.Settings.EnableScript && ns != null)
                         {
-                            XmlExtensionFunction scrFunc = _compiler.Scripts.ResolveFunction(name, ns, args.Count, default(NullErrorHelper));
+                            XmlExtensionFunction? scrFunc = _compiler.Scripts.ResolveFunction(name, ns, args.Count, default(NullErrorHelper));
                             if (scrFunc != null)
                             {
                                 XmlQueryType xt = scrFunc.XmlReturnType;
@@ -1230,10 +1231,11 @@ namespace System.Xml.Xsl.Xslt
 
     internal sealed class XslAstRewriter
     {
-        private CompilerScopeManager<VarPar> _scope;
-        private Stack<Template> _newTemplates;
-        private Compiler _compiler;
+        private CompilerScopeManager<VarPar>? _scope;
+        private Stack<Template>? _newTemplates;
+        private Compiler? _compiler;
 
+        [MemberNotNull(nameof(_compiler))]
         public void Rewrite(Compiler compiler)
         {
             _compiler = compiler;
@@ -1255,7 +1257,7 @@ namespace System.Xml.Xsl.Xslt
 
                 // From Stylesheet.AddTemplate(newtemplate):
                 compiler.AllTemplates.Add(newtemplate);
-                compiler.NamedTemplates.Add(newtemplate.Name, newtemplate);
+                compiler.NamedTemplates.Add(newtemplate.Name!, newtemplate);
 
                 _scope.EnterScope();
                 CheckNodeCost(newtemplate);
@@ -1264,7 +1266,7 @@ namespace System.Xml.Xsl.Xslt
         }
 
         // Returns a cost based on an estimate of the number of locals required for the given expression
-        private static int NodeCostForXPath(string xpath)
+        private static int NodeCostForXPath(string? xpath)
         {
             int cost = 0;
             if (xpath != null)
@@ -1329,7 +1331,7 @@ namespace System.Xml.Xsl.Xslt
 
         private int CheckNodeCost(XslNode node)
         {
-            _scope.EnterScope(node.Namespaces);
+            _scope!.EnterScope(node.Namespaces);
 
             // We don't want to allow rewriting by default
             bool canRewrite = false;
@@ -1376,7 +1378,7 @@ namespace System.Xml.Xsl.Xslt
                 // Local variables and parameters must be added to the outer scope
                 if (child.NodeType == XslNodeType.Variable || child.NodeType == XslNodeType.Param)
                 {
-                    _scope.AddVariable(child.Name, (VarPar)child);
+                    _scope.AddVariable(child.Name!, (VarPar)child);
                     // Parameters will cause code generation at the call-site, not in the callee
                     if (child.NodeType == XslNodeType.Param)
                     {
@@ -1406,7 +1408,7 @@ namespace System.Xml.Xsl.Xslt
             var node = content[split];
 
             // Generate unique name for the new template
-            QilName templatename = AstFactory.QName("generated", _compiler.CreatePhantomNamespace(), "compiler");
+            QilName templatename = AstFactory.QName("generated", _compiler!.CreatePhantomNamespace(), "compiler");
 
             // Create fake ContextInfo for the new nodes, based on the context for the old node
             var fakeCtxInfo = new XsltInput.ContextInfo(node.SourceLine);
@@ -1418,19 +1420,19 @@ namespace System.Xml.Xsl.Xslt
             // Create a new template node
             Template newtemplate = AstFactory.Template(templatename, null, XsltLoader.nullMode, double.NaN, node.XslVersion);
             XsltLoader.SetInfo(newtemplate, null, fakeCtxInfo);
-            _newTemplates.Push(newtemplate);
+            _newTemplates!.Push(newtemplate);
 
             // Pre-allocate the new content list to minimize the number of resizes (adding some space for any params)
             newtemplate.SetContent(new List<XslNode>(content.Count - split + 8));
 
             // Pass parameters from the current scope into the called template
-            foreach (var scoperecord in _scope.GetActiveRecords())
+            foreach (var scoperecord in _scope!.GetActiveRecords())
             {
                 if (!scoperecord.IsVariable)
                 {
                     // The scope record is either a namespace declaration or an exclusion namespace
                     Debug.Assert(scoperecord.IsNamespace || scoperecord.ncName == null);
-                    Debug.Assert(!_compiler.IsPhantomNamespace(scoperecord.nsUri));
+                    Debug.Assert(!_compiler.IsPhantomNamespace(scoperecord.nsUri!));
                     newtemplate.Namespaces = new NsDecl(newtemplate.Namespaces, scoperecord.ncName, scoperecord.nsUri);
                 }
                 else
@@ -1439,7 +1441,7 @@ namespace System.Xml.Xsl.Xslt
                     var variable = scoperecord.value;
 
                     // Skip variables generated during errors
-                    if (_compiler.IsPhantomNamespace(variable.Name.NamespaceUri))
+                    if (_compiler.IsPhantomNamespace(variable.Name!.NamespaceUri))
                     {
                         continue;
                     }

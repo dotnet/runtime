@@ -12,6 +12,7 @@ using System.Threading.Tasks;
 
 namespace System.Media
 {
+    [ToolboxItem(false)]
     public class SoundPlayer : Component, ISerializable
     {
         private const int BlockSize = 1024;
@@ -258,7 +259,9 @@ namespace System.Media
             // setup the http stream
             if (_uri != null && !_uri.IsFile && _stream == null)
             {
+#pragma warning disable SYSLIB0014
                 WebRequest webRequest = WebRequest.Create(_uri);
+#pragma warning restore SYSLIB0014
                 webRequest.Timeout = LoadTimeout;
 
                 WebResponse webResponse;
@@ -478,7 +481,9 @@ namespace System.Media
                 // setup the http stream
                 if (_uri != null && !_uri.IsFile && _stream == null)
                 {
+#pragma warning disable SYSLIB0014
                     WebRequest webRequest = WebRequest.Create(_uri);
+#pragma warning restore SYSLIB0014
                     using (cancellationToken.Register(r => ((WebRequest)r).Abort(), webRequest))
                     {
                         WebResponse webResponse = await webRequest.GetResponseAsync().ConfigureAwait(false);

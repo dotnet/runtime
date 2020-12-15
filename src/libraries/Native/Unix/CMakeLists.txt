@@ -1,15 +1,22 @@
 cmake_minimum_required(VERSION 3.6.2)
-if(CLR_CMAKE_TARGET_IOS OR CLR_CMAKE_TARGET_TVOS) 
-     # CMake 3.14.5 contains bug fixes for iOS 
-     cmake_minimum_required(VERSION 3.14.5) 
- endif() 
+include(CheckCCompilerFlag)
+
+if(CLR_CMAKE_TARGET_IOS OR CLR_CMAKE_TARGET_TVOS)
+     # CMake 3.14.5 contains bug fixes for iOS
+     cmake_minimum_required(VERSION 3.14.5)
+ endif()
 cmake_policy(SET CMP0042 NEW)
 
 project(CoreFX C)
 
+include(../../../../eng/native/configurepaths.cmake)
 include(${CLR_ENG_NATIVE_DIR}/configuretools.cmake)
 
 set(CMAKE_MACOSX_RPATH ON)
+if(CLR_CMAKE_TARGET_IOS OR CLR_CMAKE_TARGET_TVOS)
+    set(CMAKE_BUILD_WITH_INSTALL_NAME_DIR ON)
+    set(CMAKE_INSTALL_NAME_DIR "@rpath")
+endif()
 set(CMAKE_INSTALL_PREFIX $ENV{__CMakeBinDir})
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=gnu99")
@@ -26,6 +33,12 @@ add_compile_options(-Wno-cast-align)
 add_compile_options(-Wno-typedef-redefinition)
 add_compile_options(-Wno-c11-extensions)
 add_compile_options(-Wno-unknown-pragmas)
+
+check_c_compiler_flag(-Wimplicit-fallthrough COMPILER_SUPPORTS_W_IMPLICIT_FALLTHROUGH)
+if (COMPILER_SUPPORTS_W_IMPLICIT_FALLTHROUGH)
+  add_compile_options(-Wimplicit-fallthrough)
+endif()
+
 add_compile_options(-I${CMAKE_CURRENT_SOURCE_DIR}/Common)
 add_compile_options(-I${CMAKE_CURRENT_BINARY_DIR}/Common)
 add_compile_options(-g)
@@ -41,15 +54,27 @@ if (PRERELEASE)
     add_compile_options(-Werror)
 endif()
 
+if(STATIC_LIBS_ONLY)
+    # Suppress exporting of the PAL APIs
+    add_definitions(-DPALEXPORT=EXTERN_C)
+
+    set(STATIC_LIB_DESTINATION lib)
+    set(GEN_SHARED_LIB 0)
+else()
+    set(STATIC_LIB_DESTINATION .)
+    set(GEN_SHARED_LIB 1)
+endif()
+
 if(CLR_CMAKE_TARGET_BROWSER)
     # The emscripten build has additional warnings so -Werror breaks
     add_compile_options(-Wno-unused-parameter)
     add_compile_options(-Wno-unused-function)
     add_compile_options(-Wno-alloca)
     add_compile_options(-Wno-implicit-int-float-conversion)
-else()
-  set(GEN_SHARED_LIB 1)
-endif(CLR_CMAKE_TARGET_BROWSER)
+
+    set(GEN_SHARED_LIB 0)
+    set(STATIC_LIB_DESTINATION .)
+endif()
 
 if (CLR_CMAKE_TARGET_ARCH_AMD64)
     add_definitions(-DTARGET_64BIT=1)
@@ -100,8 +125,14 @@ if(CLR_CMAKE_TARGET_ANDROID)
 endif()
 
 string(TOUPPER ${CMAKE_BUILD_TYPE} UPPERCASE_CMAKE_BUILD_TYPE)
-if (UPPERCASE_CMAKE_BUILD_TYPE STREQUAL DEBUG)
-    add_compile_options(-O0)
+
+if (UPPERCASE_CMAKE_BUILD_TYPE STREQUAL DEBUG OR UPPERCASE_CMAKE_BUILD_TYPE STREQUAL CHECKED)
+    if (UPPERCASE_CMAKE_BUILD_TYPE STREQUAL DEBUG)
+        add_compile_options(-O0)
+    elseif (UPPERCASE_CMAKE_BUILD_TYPE STREQUAL CHECKED)
+        add_compile_options(-O2)
+    endif ()
+
     add_definitions(-DDEBUG)
 
     # obtain settings from running coreclr\enablesanitizers.sh
@@ -118,10 +149,10 @@ if (UPPERCASE_CMAKE_BUILD_TYPE STREQUAL DEBUG)
         message("Undefined Behavior Sanitizer (ubsan) enabled")
       endif ()
 
-      set(CMAKE_EXE_LINKER_FLAGS_DEBUG "${CMAKE_EXE_LINKER_FLAGS_DEBUG} ${CLR_SANITIZE_LINK_FLAGS}")
+      set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${CLR_SANITIZE_LINK_FLAGS}")
 
       # -Wl and --gc-sections: drop unused sections\functions (similar to Windows /Gy function-level-linking)
-      set(CMAKE_SHARED_LINKER_FLAGS_DEBUG "${CMAKE_SHARED_LINKER_FLAGS_DEBUG} ${CLR_SANITIZE_LINK_FLAGS} -Wl,--gc-sections")
+      set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} ${CLR_SANITIZE_LINK_FLAGS} -Wl,--gc-sections")
     endif ()
 elseif (UPPERCASE_CMAKE_BUILD_TYPE STREQUAL RELEASE)
     # Use O1 option when the clang version is smaller than 3.9
@@ -149,10 +180,6 @@ endif ()
 if (CLR_CMAKE_TARGET_LINUX)
    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -D_GNU_SOURCE")
 endif ()
-
-if(CLR_CMAKE_TARGET_FREEBSD)
-    add_definitions(-D_BSD_SOURCE) # required for getline
-endif(CLR_CMAKE_TARGET_FREEBSD)
 
 # CLR_ADDITIONAL_LINKER_FLAGS - used for passing additional arguments to linker
 # CLR_ADDITIONAL_COMPILER_OPTIONS - used for passing additional arguments to compiler
@@ -212,13 +239,20 @@ elseif(CLR_CMAKE_TARGET_TVOS)
 elseif(CLR_CMAKE_TARGET_ANDROID AND NOT CROSS_ROOTFS)
     #add_subdirectory(System.Net.Security.Native) # TODO: reenable
     if (NOT "$ENV{ANDROID_OPENSSL_AAR}" STREQUAL "")
+        set(PREFER_OPENSSL_ANDROID 1)
         add_subdirectory(System.Security.Cryptography.Native)
     endif()
 else()
+    add_subdirectory(System.Globalization.Native)
     add_subdirectory(System.Net.Security.Native)
     add_subdirectory(System.Security.Cryptography.Native)
 endif()
 
 if(CLR_CMAKE_TARGET_OSX OR CLR_CMAKE_TARGET_IOS OR CLR_CMAKE_TARGET_TVOS)
     add_subdirectory(System.Security.Cryptography.Native.Apple)
+endif()
+
+# if ANDROID_OPENSSL_AAR is not set - use Android Native Crypto (it's going to replace openssl eventually)
+if(CLR_CMAKE_TARGET_ANDROID AND NOT PREFER_OPENSSL_ANDROID)
+    add_subdirectory(System.Security.Cryptography.Native.Android)
 endif()

@@ -45,7 +45,7 @@ namespace System.Diagnostics.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [Fact]
         public void TestThreadCount()
         {
             int numOfThreads = 10;
@@ -66,6 +66,27 @@ namespace System.Diagnostics.Tests
             {
                 mre.Set();
             }
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public void ThreadsAreDisposedWhenProcessIsDisposed()
+        {
+            Process process = CreateDefaultProcess();
+
+            ProcessThreadCollection threadCollection = process.Threads;
+            int expectedCount = 0;
+            int disposedCount = 0;
+            foreach (ProcessThread processThread in threadCollection)
+            {
+                expectedCount += 1;
+                processThread.Disposed += (_, __) => disposedCount += 1;
+            }
+
+            KillWait(process);
+            Assert.Equal(0, disposedCount);
+
+            process.Dispose();
+            Assert.Equal(expectedCount, disposedCount);
         }
 
         [Fact]

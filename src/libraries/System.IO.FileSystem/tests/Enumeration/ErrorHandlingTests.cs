@@ -101,40 +101,40 @@ namespace System.IO.Tests
             }
         }
 
-    [Fact]
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/40531", TestPlatforms.Browser)]
-    public void VariableLengthFileNames_AllCreatableFilesAreEnumerable()
-    {
-        DirectoryInfo testDirectory = Directory.CreateDirectory(GetTestFilePath());
-        var names = new List<string>();
-
-        for (int length = 1; length < 10_000; length++) // arbitrarily large limit for the test
+        [Fact]
+        public void VariableLengthFileNames_AllCreatableFilesAreEnumerable()
         {
-            string name = new string('a', length);
-            try { File.Create(Path.Join(testDirectory.FullName, name)).Dispose(); }
-            catch { break; }
-            names.Add(name);
+            DirectoryInfo testDirectory = Directory.CreateDirectory(GetTestFilePath());
+            var names = new List<string>();
+
+            var lengthCap = PlatformDetection.IsBrowser ? 256 : 10_000; // On Browser NAME_MAX is 255, otherwise arbitrarily large limit for the test
+            for (int length = 1; length < lengthCap; length++)
+            {
+                string name = new string('a', length);
+                try { File.Create(Path.Join(testDirectory.FullName, name)).Dispose(); }
+                catch { break; }
+                names.Add(name);
+            }
+            Assert.InRange(names.Count, 1, int.MaxValue);
+            Assert.Equal(names.OrderBy(n => n), Directory.GetFiles(testDirectory.FullName).Select(n => Path.GetFileName(n)).OrderBy(n => n));
         }
-        Assert.InRange(names.Count, 1, int.MaxValue);
-        Assert.Equal(names.OrderBy(n => n), Directory.GetFiles(testDirectory.FullName).Select(n => Path.GetFileName(n)).OrderBy(n => n));
-    }
 
-    [Fact]
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/40531", TestPlatforms.Browser)]
-    public void VariableLengthDirectoryNames_AllCreatableDirectoriesAreEnumerable()
-    {
-        DirectoryInfo testDirectory = Directory.CreateDirectory(GetTestFilePath());
-        var names = new List<string>();
-
-        for (int length = 1; length < 10_000; length++) // arbitrarily large limit for the test
+        [Fact]
+        public void VariableLengthDirectoryNames_AllCreatableDirectoriesAreEnumerable()
         {
-            string name = new string('a', length);
-            try { Directory.CreateDirectory(Path.Join(testDirectory.FullName, name)); }
-            catch { break; }
-            names.Add(name);
+            DirectoryInfo testDirectory = Directory.CreateDirectory(GetTestFilePath());
+            var names = new List<string>();
+
+            var lengthCap = PlatformDetection.IsBrowser ? 256 : 10_000; // On Browser NAME_MAX is 255, otherwise arbitrarily large limit for the test
+            for (int length = 1; length < lengthCap; length++)
+            {
+                string name = new string('a', length);
+                try { Directory.CreateDirectory(Path.Join(testDirectory.FullName, name)); }
+                catch { break; }
+                names.Add(name);
+            }
+            Assert.InRange(names.Count, 1, int.MaxValue);
+            Assert.Equal(names.OrderBy(n => n), Directory.GetDirectories(testDirectory.FullName).Select(n => Path.GetFileName(n)).OrderBy(n => n));
         }
-        Assert.InRange(names.Count, 1, int.MaxValue);
-        Assert.Equal(names.OrderBy(n => n), Directory.GetDirectories(testDirectory.FullName).Select(n => Path.GetFileName(n)).OrderBy(n => n));
-    }
     }
 }

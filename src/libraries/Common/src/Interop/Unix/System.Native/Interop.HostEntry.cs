@@ -37,7 +37,7 @@ internal static partial class Interop
         internal static extern bool PlatformSupportsGetAddrInfoAsync();
 
         [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_GetHostEntryForName")]
-        internal static extern unsafe int GetHostEntryForName(string address, HostEntry* entry);
+        internal static extern unsafe int GetHostEntryForName(string address, System.Net.Sockets.AddressFamily family, HostEntry* entry);
 
         [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_GetHostEntryForNameAsync")]
         internal static extern unsafe int GetHostEntryForNameAsync(string address, HostEntry* entry, GetHostEntryForNameCallback callback);

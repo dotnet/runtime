@@ -12,7 +12,7 @@ namespace System.Xml.Xsl
 {
     internal class XslTransformException : XsltException
     {
-        public XslTransformException(Exception inner, string res, params string[] args)
+        public XslTransformException(Exception? inner, string res, params string?[]? args)
             : base(CreateMessage(res, args), inner)
         { }
 
@@ -25,13 +25,13 @@ namespace System.Xml.Xsl
             : base(CreateMessage(message, null), null)
         { }
 
-        internal XslTransformException(string res, params string[] args)
+        internal XslTransformException(string res, params string?[]? args)
             : this(null, res, args)
         { }
 
-        internal static string CreateMessage(string res, params string[] args)
+        internal static string CreateMessage(string res, params string?[]? args)
         {
-            string message = null;
+            string? message = null;
 
             try
             {
@@ -66,6 +66,7 @@ namespace System.Xml.Xsl
                 }
                 sb.Append(')');
             }
+
             return sb.ToString();
         }
 
@@ -76,7 +77,7 @@ namespace System.Xml.Xsl
 
         public override string ToString()
         {
-            string result = this.GetType().FullName;
+            string result = this.GetType().FullName!;
             string info = FormatDetailedMessage();
             if (info != null && info.Length > 0)
             {
@@ -97,13 +98,13 @@ namespace System.Xml.Xsl
     [Serializable]
     internal class XslLoadException : XslTransformException
     {
-        private ISourceLineInfo _lineInfo;
+        private ISourceLineInfo? _lineInfo;
 
-        internal XslLoadException(string res, params string[] args)
+        internal XslLoadException(string res, params string?[]? args)
             : base(null, res, args)
         { }
 
-        internal XslLoadException(Exception inner, ISourceLineInfo lineInfo)
+        internal XslLoadException(Exception? inner, ISourceLineInfo? lineInfo)
             : base(inner, SR.Xslt_CompileError2, null)
         {
             SetSourceLineInfo(lineInfo);
@@ -112,15 +113,15 @@ namespace System.Xml.Xsl
         internal XslLoadException(SerializationInfo info, StreamingContext context)
             : base(info, context)
         {
-            bool hasLineInfo = (bool)info.GetValue("hasLineInfo", typeof(bool));
+            bool hasLineInfo = (bool)info.GetValue("hasLineInfo", typeof(bool))!;
 
             if (hasLineInfo)
             {
-                string uriString = (string)info.GetValue("Uri", typeof(string));
-                int startLine = (int)info.GetValue("StartLine", typeof(int));
-                int startPos = (int)info.GetValue("StartPos", typeof(int));
-                int endLine = (int)info.GetValue("EndLine", typeof(int));
-                int endPos = (int)info.GetValue("EndPos", typeof(int));
+                string uriString = (string)info.GetValue("Uri", typeof(string))!;
+                int startLine = (int)info.GetValue("StartLine", typeof(int))!;
+                int startPos = (int)info.GetValue("StartPos", typeof(int))!;
+                int endLine = (int)info.GetValue("EndLine", typeof(int))!;
+                int endPos = (int)info.GetValue("EndPos", typeof(int))!;
 
                 _lineInfo = new SourceLineInfo(uriString, startLine, startPos, endLine, endPos);
             }
@@ -154,7 +155,7 @@ namespace System.Xml.Xsl
             SetSourceLineInfo(new SourceLineInfo(error.FileName, errorLine, errorColumn, errorLine, errorColumn));
         }
 
-        internal void SetSourceLineInfo(ISourceLineInfo lineInfo)
+        internal void SetSourceLineInfo(ISourceLineInfo? lineInfo)
         {
             Debug.Assert(lineInfo == null || lineInfo.Uri != null);
             _lineInfo = lineInfo;
@@ -175,7 +176,7 @@ namespace System.Xml.Xsl
             }
         }
 
-        public override string SourceUri
+        public override string? SourceUri
         {
             get { return _lineInfo != null ? _lineInfo.Uri : null; }
         }
@@ -190,15 +191,15 @@ namespace System.Xml.Xsl
             get { return _lineInfo != null ? _lineInfo.Start.Pos : 0; }
         }
 
-        private static string AppendLineInfoMessage(string message, ISourceLineInfo lineInfo)
+        private static string AppendLineInfoMessage(string message, ISourceLineInfo? lineInfo)
         {
             if (lineInfo != null)
             {
-                string fileName = SourceLineInfo.GetFileName(lineInfo.Uri);
+                string fileName = SourceLineInfo.GetFileName(lineInfo.Uri!);
                 string lineInfoMessage = CreateMessage(SR.Xml_ErrorFilePosition, fileName, lineInfo.Start.Line.ToString(CultureInfo.InvariantCulture), lineInfo.Start.Pos.ToString(CultureInfo.InvariantCulture));
                 if (lineInfoMessage != null && lineInfoMessage.Length > 0)
                 {
-                    if (message.Length > 0 && !XmlCharType.Instance.IsWhiteSpace(message[message.Length - 1]))
+                    if (message.Length > 0 && !XmlCharType.IsWhiteSpace(message[message.Length - 1]))
                     {
                         message += " ";
                     }
@@ -208,7 +209,7 @@ namespace System.Xml.Xsl
             return message;
         }
 
-        internal static string CreateMessage(ISourceLineInfo lineInfo, string res, params string[] args)
+        internal static string CreateMessage(ISourceLineInfo? lineInfo, string res, params string?[]? args)
         {
             return AppendLineInfoMessage(CreateMessage(res, args), lineInfo);
         }

@@ -7,7 +7,6 @@ using System.Globalization;
 using System.Reflection;
 using System.Xml.Serialization;
 
-
 namespace System.Xml.Serialization
 {
     [Flags]
@@ -24,19 +23,19 @@ namespace System.Xml.Serialization
     /// </devdoc>
     public abstract class XmlMapping
     {
-        private readonly TypeScope _scope;
+        private readonly TypeScope? _scope;
         private bool _generateSerializer;
         private bool _isSoap;
         private readonly ElementAccessor _accessor;
-        private string _key;
+        private string? _key;
         private readonly bool _shallow;
         private readonly XmlMappingAccess _access;
 
-        internal XmlMapping(TypeScope scope, ElementAccessor accessor) : this(scope, accessor, XmlMappingAccess.Read | XmlMappingAccess.Write)
+        internal XmlMapping(TypeScope? scope, ElementAccessor accessor) : this(scope, accessor, XmlMappingAccess.Read | XmlMappingAccess.Write)
         {
         }
 
-        internal XmlMapping(TypeScope scope, ElementAccessor accessor, XmlMappingAccess access)
+        internal XmlMapping(TypeScope? scope, ElementAccessor accessor, XmlMappingAccess access)
         {
             _scope = scope;
             _accessor = accessor;
@@ -49,7 +48,7 @@ namespace System.Xml.Serialization
             get { return _accessor; }
         }
 
-        internal TypeScope Scope
+        internal TypeScope? Scope
         {
             get { return _scope; }
         }
@@ -73,7 +72,7 @@ namespace System.Xml.Serialization
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
-        public string Namespace
+        public string? Namespace
         {
             get { return _accessor.Namespace; }
         }
@@ -101,27 +100,28 @@ namespace System.Xml.Serialization
         }
 
         ///<internalonly/>
-        public void SetKey(string key)
+        public void SetKey(string? key)
         {
             SetKeyInternal(key);
         }
 
         ///<internalonly/>
-        internal void SetKeyInternal(string key)
+        internal void SetKeyInternal(string? key)
         {
             _key = key;
         }
 
-        internal static string GenerateKey(Type type, XmlRootAttribute root, string ns)
+        internal static string GenerateKey(Type type, XmlRootAttribute? root, string? ns)
         {
             if (root == null)
             {
-                root = (XmlRootAttribute)XmlAttributes.GetAttr(type, typeof(XmlRootAttribute));
+                root = (XmlRootAttribute?)XmlAttributes.GetAttr(type, typeof(XmlRootAttribute));
             }
             return type.FullName + ":" + (root == null ? string.Empty : root.GetKey()) + ":" + (ns == null ? string.Empty : ns);
         }
 
-        internal string Key { get { return _key; } }
+        internal string? Key { get { return _key; } }
+
         internal void CheckShallow()
         {
             if (_shallow)
@@ -129,6 +129,7 @@ namespace System.Xml.Serialization
                 throw new InvalidOperationException(SR.XmlMelformMapping);
             }
         }
+
         internal static bool IsShallow(XmlMapping[] mappings)
         {
             for (int i = 0; i < mappings.Length; i++)

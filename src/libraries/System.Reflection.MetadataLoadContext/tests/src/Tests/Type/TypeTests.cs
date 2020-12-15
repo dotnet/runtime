@@ -468,6 +468,29 @@ namespace System.Reflection.Tests
                 MethodInfo m = gi.GetMethod("Hoo", bf, binder, types, null);
                 Assert.Equal(11, m.GetMark());
             }
+
+            {
+                Type mgc = typeof(MyGenericClass<>).Project();
+                Type mgcClosed = mgc.MakeGenericType(typeof(int).Project());
+                Assert.Equal(mgc, mgcClosed.GetGenericTypeDefinition());
+
+                Type gi = t.MakeGenericType(typeof(int).Project());
+                Type[] types = { mgcClosed, typeof(string).Project() };
+                MethodInfo m = gi.GetMethod("Foo", bf, binder, types, null);
+                Assert.Equal(10060, m.GetMark());
+            }
+
+            {
+                Type[] types = { typeof(int).Project(), typeof(short).Project() };
+                MethodInfo m = typeof(MethodHolderDerived<>).Project().GetMethod("Foo", bf, binder, types, null);
+                Assert.Equal(10070, m.GetMark());
+            }
+
+            {
+                Type[] types = { typeof(int).Project(), typeof(int).Project() };
+                MethodInfo m = typeof(MethodHolderDerived<>).Project().GetMethod("Foo", bf, binder, types, null);
+                Assert.Equal(10070, m.GetMark());
+            }
         }
 
         [Fact]

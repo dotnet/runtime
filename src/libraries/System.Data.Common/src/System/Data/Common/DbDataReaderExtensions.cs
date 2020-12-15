@@ -73,12 +73,15 @@ namespace System.Data.Common
         private static ReadOnlyCollection<DbColumn> GetColumnSchemaCompatibility(DbDataReader reader)
         {
             var columnSchema = new List<DbColumn>();
-            DataTable schemaTable = reader.GetSchemaTable();
-            DataColumnCollection schemaTableColumns = schemaTable.Columns;
-            foreach (DataRow row in schemaTable.Rows)
+            DataTable? schemaTable = reader.GetSchemaTable();
+            if (schemaTable != null)
             {
-                Debug.Assert(row != null);
-                columnSchema.Add(new DataRowDbColumn(row, schemaTableColumns));
+                DataColumnCollection schemaTableColumns = schemaTable.Columns;
+                foreach (DataRow row in schemaTable.Rows)
+                {
+                    Debug.Assert(row != null);
+                    columnSchema.Add(new DataRowDbColumn(row, schemaTableColumns));
+                }
             }
             return new ReadOnlyCollection<DbColumn>(columnSchema);
         }

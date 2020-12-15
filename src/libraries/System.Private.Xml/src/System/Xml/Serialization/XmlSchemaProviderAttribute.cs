@@ -12,13 +12,13 @@ namespace System.Xml.Serialization
     [AttributeUsage(AttributeTargets.Class | AttributeTargets.Interface | AttributeTargets.Struct)]
     public sealed class XmlSchemaProviderAttribute : System.Attribute
     {
-        private readonly string _methodName;
+        private readonly string? _methodName;
         private bool _any;
 
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
-        public XmlSchemaProviderAttribute(string methodName)
+        public XmlSchemaProviderAttribute(string? methodName)
         {
             _methodName = methodName;
         }
@@ -26,7 +26,7 @@ namespace System.Xml.Serialization
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
-        public string MethodName
+        public string? MethodName
         {
             get { return _methodName; }
         }

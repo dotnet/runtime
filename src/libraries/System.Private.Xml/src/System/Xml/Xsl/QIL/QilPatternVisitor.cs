@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Xml.Xsl.Qil
 {
@@ -63,7 +64,8 @@ namespace System.Xml.Xsl.Qil
         /// <summary>
         /// Called when all replacements have already been made and all annotations are complete.
         /// </summary>
-        protected virtual QilNode NoReplace(QilNode node)
+        [return: NotNullIfNotNull("node")]
+        protected virtual QilNode? NoReplace(QilNode? node)
         {
             return node;
         }
@@ -79,7 +81,7 @@ namespace System.Xml.Xsl.Qil
         protected override QilNode Visit(QilNode node)
         {
             if (node == null)
-                return VisitNull();
+                return VisitNull()!;
 
             node = VisitChildren(node);
             return base.Visit(node);

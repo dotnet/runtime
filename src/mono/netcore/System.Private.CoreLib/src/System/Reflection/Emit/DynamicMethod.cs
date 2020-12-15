@@ -1,5 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
+
 //
 // System.Reflection.Emit.DynamicMethod.cs
 //
@@ -351,7 +352,7 @@ namespace System.Reflection.Emit
             sbName.Append(' ');
             sbName.Append(Name);
             sbName.Append('(');
-            AppendParameters(ref sbName, parameters ?? Array.Empty<Type>(), CallingConvention);
+            AppendParameters(ref sbName, parameters ?? Type.EmptyTypes, CallingConvention);
             sbName.Append(')');
             return sbName.ToString();
         }

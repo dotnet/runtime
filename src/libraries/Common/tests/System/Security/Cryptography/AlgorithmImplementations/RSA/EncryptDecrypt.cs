@@ -24,6 +24,7 @@ namespace System.Security.Cryptography.Rsa.Tests
         }
     }
 
+    [SkipOnMono("Not supported on Browser", TestPlatforms.Browser)]
     public abstract class EncryptDecrypt
     {
         public static bool SupportsSha2Oaep => RSAFactory.SupportsSha2Oaep;

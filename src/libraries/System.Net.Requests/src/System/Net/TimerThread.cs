@@ -3,6 +3,7 @@
 
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Threading;
 
@@ -199,10 +200,7 @@ namespace System.Net
                 bool needProd = false;
                 lock (_timers)
                 {
-                    if (!(_timers.Prev!.Next == _timers))
-                    {
-                        NetEventSource.Fail(this, $"Tail corruption.");
-                    }
+                    Debug.Assert(_timers.Prev!.Next == _timers, $"Tail corruption.");
 
                     // If this is the first timer in the list, we need to create a queue handle and prod the timer thread.
                     if (_timers.Next == _timers)

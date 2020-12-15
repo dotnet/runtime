@@ -5,7 +5,7 @@ using System.Runtime.InteropServices;
 
 internal static partial class Interop
 {
-    internal unsafe partial class Sys
+    internal partial class Sys
     {
         [StructLayout(LayoutKind.Sequential)]
         internal struct ProcessCpuInformation
@@ -16,6 +16,6 @@ internal static partial class Interop
         }
 
         [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_GetCpuUtilization")]
-        internal static extern unsafe int GetCpuUtilization(ref ProcessCpuInformation previousCpuInfo);
+        internal static extern int GetCpuUtilization(ref ProcessCpuInformation previousCpuInfo);
     }
 }

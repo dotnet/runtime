@@ -8,6 +8,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Text;
 using System.Reflection;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Xml.Xsl
 {
@@ -37,7 +38,7 @@ namespace System.Xml.Xsl
         public virtual int IndexOf(T value)
         {
             for (int i = 0; i < Count; i++)
-                if (value.Equals(this[i]))
+                if (value!.Equals(this[i]))
                     return i;
 
             return -1;
@@ -127,21 +128,21 @@ namespace System.Xml.Xsl
                 array.SetValue(this[i], index);
         }
 
-        object System.Collections.IList.this[int index]
+        object? System.Collections.IList.this[int index]
         {
             get { return this[index]; }
             set
             {
-                if (!IsCompatibleType(value.GetType()))
+                if (!IsCompatibleType(value!.GetType()))
                     throw new ArgumentException(SR.Arg_IncompatibleParamType, nameof(value));
 
                 this[index] = (T)value;
             }
         }
 
-        int System.Collections.IList.Add(object value)
+        int System.Collections.IList.Add(object? value)
         {
-            if (!IsCompatibleType(value.GetType()))
+            if (!IsCompatibleType(value!.GetType()))
                 throw new ArgumentException(SR.Arg_IncompatibleParamType, nameof(value));
 
             Add((T)value);
@@ -153,33 +154,33 @@ namespace System.Xml.Xsl
             Clear();
         }
 
-        bool System.Collections.IList.Contains(object value)
+        bool System.Collections.IList.Contains(object? value)
         {
-            if (!IsCompatibleType(value.GetType()))
+            if (!IsCompatibleType(value!.GetType()))
                 return false;
 
             return Contains((T)value);
         }
 
-        int System.Collections.IList.IndexOf(object value)
+        int System.Collections.IList.IndexOf(object? value)
         {
-            if (!IsCompatibleType(value.GetType()))
+            if (!IsCompatibleType(value!.GetType()))
                 return -1;
 
             return IndexOf((T)value);
         }
 
-        void System.Collections.IList.Insert(int index, object value)
+        void System.Collections.IList.Insert(int index, object? value)
         {
-            if (!IsCompatibleType(value.GetType()))
+            if (!IsCompatibleType(value!.GetType()))
                 throw new ArgumentException(SR.Arg_IncompatibleParamType, nameof(value));
 
             Insert(index, (T)value);
         }
 
-        void System.Collections.IList.Remove(object value)
+        void System.Collections.IList.Remove(object? value)
         {
-            if (IsCompatibleType(value.GetType()))
+            if (IsCompatibleType(value!.GetType()))
             {
                 Remove((T)value);
             }
@@ -190,7 +191,7 @@ namespace System.Xml.Xsl
         // Helper methods and classes
         //-----------------------------------------------
 
-        private static bool IsCompatibleType(object value)
+        private static bool IsCompatibleType(object? value)
         {
             if ((value == null && !typeof(T).IsValueType) || (value is T))
                 return true;
@@ -215,7 +216,7 @@ namespace System.Xml.Xsl
         {
             _sequence = sequence;
             _index = 0;
-            _current = default(T);
+            _current = default(T)!;
         }
 
         /// <summary>
@@ -246,7 +247,7 @@ namespace System.Xml.Xsl
                 if (_index > _sequence.Count)
                     throw new InvalidOperationException(SR.Format(SR.Sch_EnumFinished, string.Empty));
 
-                return _current;
+                return _current!;
             }
         }
 
@@ -262,7 +263,7 @@ namespace System.Xml.Xsl
                 return true;
             }
 
-            _current = default(T);
+            _current = default(T)!;
             return false;
         }
 
@@ -272,7 +273,7 @@ namespace System.Xml.Xsl
         void System.Collections.IEnumerator.Reset()
         {
             _index = 0;
-            _current = default(T);
+            _current = default(T)!;
         }
     }
 }

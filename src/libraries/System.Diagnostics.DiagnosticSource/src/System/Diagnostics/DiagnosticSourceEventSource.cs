@@ -14,25 +14,25 @@ namespace System.Diagnostics
     /// <summary>
     /// DiagnosticSourceEventSource serves two purposes
     ///
-    ///   1) It allows debuggers to inject code via Function evaluation.  This is the purpose of the
-    ///   BreakPointWithDebuggerFuncEval function in the 'OnEventCommand' method.   Basically even in
+    ///   1) It allows debuggers to inject code via Function evaluation. This is the purpose of the
+    ///   BreakPointWithDebuggerFuncEval function in the 'OnEventCommand' method. Basically even in
     ///   release code, debuggers can place a breakpoint in this method and then trigger the
-    ///   DiagnosticSourceEventSource via ETW.  Thus from outside the process you can get a hook that
-    ///   is guaranteed to happen BEFORE any DiangosticSource events (if the process is just starting)
+    ///   DiagnosticSourceEventSource via ETW. Thus from outside the process you can get a hook that
+    ///   is guaranteed to happen BEFORE any DiagnosticSource events (if the process is just starting)
     ///   or as soon as possible afterward if it is on attach.
     ///
     ///   2) It provides a 'bridge' that allows DiagnosticSource messages to be forwarded to EventListers
-    ///   or ETW.    You can do this by enabling the Microsoft-Diagnostics-DiagnosticSource with the
+    ///   or ETW. You can do this by enabling the Microsoft-Diagnostics-DiagnosticSource with the
     ///   'Events' keyword (for diagnostics purposes, you should also turn on the 'Messages' keyword.
     ///
     ///   This EventSource defines a EventSource argument called 'FilterAndPayloadSpecs' that defines
-    ///   what DiagnsoticSources to enable and what parts of the payload to serialize into the key-value
-    ///   list that will be forwarded to the EventSource.    If it is empty, values of properties of the
+    ///   what DiagnosticSources to enable and what parts of the payload to serialize into the key-value
+    ///   list that will be forwarded to the EventSource. If it is empty, values of properties of the
     ///   diagnostic source payload are dumped as strings (using ToString()) and forwarded to the EventSource.
     ///   For what people think of as serializable object strings, primitives this gives you want you want.
     ///   (the value of the property in string form) for what people think of as non-serializable objects
     ///   (e.g. HttpContext) the ToString() method is typically not defined, so you get the Object.ToString()
-    ///   implementation that prints the type name.  This is useful since this is the information you need
+    ///   implementation that prints the type name. This is useful since this is the information you need
     ///   (the type of the property) to discover the field names so you can create a transform specification
     ///   that will pick off the properties you desire.
     ///
@@ -50,10 +50,17 @@ namespace System.Diagnostics
     ///       * EVENT_NAME : TRANSFORM_SPECS
     ///       * EMPTY - turns on all sources with implicit payload elements.
     ///   * an EVENTNAME can be
-    ///       * DIAGNOSTIC_SOURCE_NAME / DIAGNOSTC_EVENT_NAME @ EVENT_SOURCE_EVENTNAME  - give the name as well as the EventSource event to log it under.
-    ///       * DIAGNOSTIC_SOURCE_NAME / DIAGNOSTC_EVENT_NAME
+    ///       * DIAGNOSTIC_SOURCE_NAME / DIAGNOSTIC_EVENT_NAME @ EVENT_SOURCE_EVENTNAME - give the name as well as the EventSource event to log it under.
+    ///       * DIAGNOSTIC_SOURCE_NAME / DIAGNOSTIC_EVENT_NAME
     ///       * DIAGNOSTIC_SOURCE_NAME    - which wildcards every event in the Diagnostic source or
     ///       * EMPTY                     - which turns on all sources
+    ///     Or it can be "[AS] ACTIVITY_SOURCE_NAME + ACTIVITY_NAME / ACTIVITY_EVENT_NAME - SAMPLING_RESULT"
+    ///       * All parts are optional and can be empty string.
+    ///       * ACTIVITY_SOURCE_NAME can be "*" to listen to all ActivitySources
+    ///       * ACTIVITY_SOURCE_NAME can be empty string which will listen to ActivitySource that create Activities using "new Activity(...)"
+    ///       * ACTIVITY_NAME is the activity operation name to filter with.
+    ///       * ACTIVITY_EVENT_NAME either "Start" to listen to Activity Start event, or "Stop" to listen to Activity Stop event, or empty string to listen to both Start and Stop Activity events.
+    ///       * SAMPLING_RESULT either "Propagate" to create the Activity with PropagationData, or "Record" to create the Activity with AllData, or empty string to create the Activity with AllDataAndRecorded
     ///   * TRANSFORM_SPEC is a semicolon separated list of TRANSFORM_SPEC, which can be
     ///       * - TRANSFORM_SPEC               - the '-' indicates that implicit payload elements should be suppressed
     ///       * VARIABLE_NAME = PROPERTY_SPEC  - indicates that a payload element 'VARIABLE_NAME' is created from PROPERTY_SPEC
@@ -71,10 +78,10 @@ namespace System.Diagnostics
     ///    "BridgeTestSource2/TestEvent2:-cls.Url"
     ///
     /// This indicates that two events should be turned on, The 'TestEvent1' event in BridgeTestSource1 and the
-    /// 'TestEvent2' in BridgeTestSource2.   In the first case, because the transform did not begin with a -
-    /// any primitive type/string of 'TestEvent1's payload will be serialized into the output.  In addition if
+    /// 'TestEvent2' in BridgeTestSource2. In the first case, because the transform did not begin with a -
+    /// any primitive type/string of 'TestEvent1's payload will be serialized into the output. In addition if
     /// there a property of the payload object called 'cls' which in turn has a property 'Point' which in turn
-    /// has a property 'X' then that data is also put in the output with the name cls_Point_X.   Similarly
+    /// has a property 'X' then that data is also put in the output with the name cls_Point_X. Similarly
     /// if cls.Point.Y exists, then that value will also be put in the output with the name cls_Point_Y.
     ///
     /// For the 'BridgeTestSource2/TestEvent2' event, because the - was specified NO implicit fields will be
@@ -87,7 +94,7 @@ namespace System.Diagnostics
     ///     "BridgeTestSource1\r\n" +
     ///     "BridgeTestSource2"
     ///
-    /// This will enable all events for the BridgeTestSource1 and BridgeTestSource2 sources.   Any string/primitive
+    /// This will enable all events for the BridgeTestSource1 and BridgeTestSource2 sources. Any string/primitive
     /// properties of any of the events will be serialized into the output.
     ///
     /// Example:
@@ -95,13 +102,21 @@ namespace System.Diagnostics
     ///     ""
     ///
     /// This turns on all DiagnosticSources Any string/primitive properties of any of the events will be serialized
-    /// into the output.   This is not likely to be a good idea as it will be very verbose, but is useful to quickly
+    /// into the output. This is not likely to be a good idea as it will be very verbose, but is useful to quickly
     /// discover what is available.
     ///
+    /// Example:
+    ///     "[AS]*"                      listen to all ActivitySources and all Activities events (Start/Stop). Activities will be created with AllDataAndRecorded sampling.
+    ///     "[AS]"                       listen to default ActivitySource and Activities events (Start/Stop) while the Activity is created using "new Activity(...)". Such Activities will be created with AllDataAndRecorded sampling.
+    ///     "[AS]MyLibrary/Start"        listen to `MyLibrary` ActivitySource and the 'Start' Activity event. The Activities will be created with AllDataAndRecorded sampling.
+    ///     "[AS]MyLibrary/-Propagate"   listen to `MyLibrary` ActivitySource and the 'Start and Stop' Activity events. The Activities will be created with PropagationData sampling.
+    ///     "[AS]MyLibrary/Stop-Record"  listen to `MyLibrary` ActivitySource and the 'Stop' Activity event. The Activities will be created with AllData sampling.
+    ///     "[AS]*/-"                    listen to all ActivitySources and the Start and Stop Activity events. Activities will be created with AllDataAndRecorded sampling. this equivalent to "[AS]*" too.
+    ///     "[AS]*+MyActivity"           listen to all activity sources when creating Activity with the operation name "MyActivity".
     ///
     /// * How data is logged in the EventSource
     ///
-    /// By default all data from DiagnosticSources is logged to the DiagnosticEventSouce event called 'Event'
+    /// By default all data from DiagnosticSources is logged to the DiagnosticEventSource event called 'Event'
     /// which has three fields
     ///
     ///     string SourceName,
@@ -118,7 +133,7 @@ namespace System.Diagnostics
     ///     RecursiveActivity1Stop
     ///
     /// By using the SourceName/EventName@EventSourceName syntax, you can force particular DiagnosticSource events to
-    /// be logged with one of these EventSource events.   This is useful because the events above have start-stop semantics
+    /// be logged with one of these EventSource events. This is useful because the events above have start-stop semantics
     /// which means that they create activity IDs that are attached to all logging messages between the start and
     /// the stop (see https://blogs.msdn.microsoft.com/vancem/2015/09/14/exploring-eventsource-activity-correlation-and-causation-features/)
     ///
@@ -133,13 +148,13 @@ namespace System.Diagnostics
     /// means that all events caused between these two markers will have an activity ID associated with this start event.
     /// Similarly SecurityStart is mapped to Activity2Start.
     ///
-    /// Note you can map many DiangosticSource events to the same EventSource Event (e.g. Activity1Start).  As long as the
+    /// Note you can map many DiagnosticSource events to the same EventSource Event (e.g. Activity1Start). As long as the
     /// activities don't nest, you can reuse the same event name (since the payloads have the DiagnosticSource name which can
-    /// disambiguate).   However if they nest you need to use another EventSource event because the rules of EventSource
+    /// disambiguate). However if they nest you need to use another EventSource event because the rules of EventSource
     /// activities state that a start of the same event terminates any existing activity of the same name.
     ///
     /// As its name suggests RecursiveActivity1Start, is marked as recursive and thus can be used when the activity can nest with
-    /// itself.   This should not be a 'top most' activity because it is not 'self healing' (if you miss a stop, then the
+    /// itself. This should not be a 'top most' activity because it is not 'self healing' (if you miss a stop, then the
     /// activity NEVER ends).
     ///
     /// See the DiagnosticSourceEventSourceBridgeTest.cs for more explicit examples of using this bridge.
@@ -160,10 +175,10 @@ namespace System.Diagnostics
             /// </summary>
             public const EventKeywords Events = (EventKeywords)0x2;
 
-            // Some ETW logic does not support passing arguments to the EventProvider.   To get around
-            // this in common cases, we define some keywords that basically stand in for particular common argumnents
+            // Some ETW logic does not support passing arguments to the EventProvider. To get around
+            // this in common cases, we define some keywords that basically stand in for particular common arguments
             // That way at least the common cases can be used by everyone (and it also compresses things).
-            // We start these keywords at 0x1000.   See below for the values these keywords represent
+            // We start these keywords at 0x1000. See below for the values these keywords represent
             // Because we want all keywords on to still mean 'dump everything by default' we have another keyword
             // IgnoreShorcutKeywords which must be OFF in order for the shortcuts to work thus the all 1s keyword
             // still means what you expect.
@@ -173,7 +188,7 @@ namespace System.Diagnostics
         };
 
         // Setting AspNetCoreHosting is like having this in the FilterAndPayloadSpecs string
-        // It turns on basic hostig events.
+        // It turns on basic hosting events.
         private readonly string AspNetCoreHostingKeywordValue =
             "Microsoft.AspNetCore/Microsoft.AspNetCore.Hosting.BeginRequest@Activity1Start:-" +
                 "httpContext.Request.Method;" +
@@ -290,11 +305,39 @@ namespace System.Diagnostics
             WriteEvent(10, SourceName);
         }
 
+        /// <summary>
+        /// Fires when the Activity start.
+        /// </summary>
+        /// <param name="SourceName">The ActivitySource name</param>
+        /// <param name="ActivityName">The Activity name</param>
+        /// <param name="Arguments">Name and value pairs of the Activity properties</param>
+#if NO_EVENTSOURCE_COMPLEX_TYPE_SUPPORT
+        [Event(11, Keywords = Keywords.Events)]
+#else
+        [Event(11, Keywords = Keywords.Events, ActivityOptions = EventActivityOptions.Recursive)]
+#endif
+        private void ActivityStart(string SourceName, string ActivityName, IEnumerable<KeyValuePair<string, string?>> Arguments) =>
+            WriteEvent(11, SourceName, ActivityName, Arguments);
+
+        /// <summary>
+        /// Fires when the Activity stop.
+        /// </summary>
+        /// <param name="SourceName">The ActivitySource name</param>
+        /// <param name="ActivityName">The Activity name</param>
+        /// <param name="Arguments">Name and value pairs of the Activity properties</param>
+#if NO_EVENTSOURCE_COMPLEX_TYPE_SUPPORT
+        [Event(12, Keywords = Keywords.Events)]
+#else
+        [Event(12, Keywords = Keywords.Events, ActivityOptions = EventActivityOptions.Recursive)]
+#endif
+        private void ActivityStop(string SourceName, string ActivityName, IEnumerable<KeyValuePair<string, string?>> Arguments) =>
+            WriteEvent(12, SourceName, ActivityName, Arguments);
+
         #region private
 
 #if NO_EVENTSOURCE_COMPLEX_TYPE_SUPPORT
         /// <summary>
-        /// Converts a keyvalue bag to JSON.  Only used on V4.5 EventSources.
+        /// Converts a keyvalue bag to JSON. Only used on V4.5 EventSources.
         /// </summary>
         private static string ToJson(IEnumerable<KeyValuePair<string, string>> keyValues)
         {
@@ -373,7 +416,7 @@ namespace System.Diagnostics
                 }
                 else if (command.Command == EventCommand.Update || command.Command == EventCommand.Disable)
                 {
-                    FilterAndTransform.DestroyFilterAndTransformList(ref _specs);
+                    FilterAndTransform.DestroyFilterAndTransformList(ref _specs, this);
                 }
             }
         }
@@ -392,7 +435,7 @@ namespace System.Diagnostics
 
         /// <summary>
         /// A function which is fully interruptible even in release code so we can stop here and
-        /// do function evaluation in the debugger.   Thus this is just a place that is useful
+        /// do function evaluation in the debugger. Thus this is just a place that is useful
         /// for the debugger to place a breakpoint where it can inject code with function evaluation
         /// </summary>
         [NonEvent, MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.NoOptimization)]
@@ -406,11 +449,21 @@ namespace System.Diagnostics
         }
         #endregion
 
+
+        [Flags]
+        internal enum ActivityEvents
+        {
+            None          = 0x00,
+            ActivityStart = 0x01,
+            ActivityStop  = 0x02,
+            All           = ActivityStart | ActivityStop,
+        }
+
         #region EventSource hooks
 
         /// <summary>
         /// FilterAndTransform represents on transformation specification from a DiagnosticsSource
-        /// to EventSource's 'Event' method.    (e.g.  MySource/MyEvent:out=prop1.prop2.prop3).
+        /// to EventSource's 'Event' method. (e.g. MySource/MyEvent:out=prop1.prop2.prop3).
         /// Its main method is 'Morph' which takes a DiagnosticSource object and morphs it into
         /// a list of string,string key value pairs.
         ///
@@ -429,7 +482,7 @@ namespace System.Diagnostics
             ///    OutputName=Prop1.Prop2.PropN
             ///
             /// Into linked list of FilterAndTransform that together forward events from the given
-            /// DiagnosticSource's to 'eventSource'.   Sets the 'specList' variable to this value
+            /// DiagnosticSource's to 'eventSource'. Sets the 'specList' variable to this value
             /// (destroying anything that was there previously).
             ///
             /// By default any serializable properties of the payload object are also included
@@ -438,11 +491,11 @@ namespace System.Diagnostics
             /// </summary>
             public static void CreateFilterAndTransformList(ref FilterAndTransform? specList, string? filterAndPayloadSpecs, DiagnosticSourceEventSource eventSource)
             {
-                DestroyFilterAndTransformList(ref specList);        // Stop anything that was on before.
+                DestroyFilterAndTransformList(ref specList, eventSource);        // Stop anything that was on before.
                 if (filterAndPayloadSpecs == null)
                     filterAndPayloadSpecs = "";
 
-                // Points just beyond the last point in the string that has yet to be parsed.   Thus we start with the whole string.
+                // Points just beyond the last point in the string that has yet to be parsed. Thus we start with the whole string.
                 int endIdx = filterAndPayloadSpecs.Length;
                 while (true)
                 {
@@ -459,19 +512,43 @@ namespace System.Diagnostics
                     while (startIdx < endIdx && char.IsWhiteSpace(filterAndPayloadSpecs[startIdx]))
                         startIdx++;
 
-                    specList = new FilterAndTransform(filterAndPayloadSpecs, startIdx, endIdx, eventSource, specList);
+#if EVENTSOURCE_ACTIVITY_SUPPORT
+                    if (IsActivitySourceEntry(filterAndPayloadSpecs, startIdx, endIdx))
+                    {
+                        AddNewActivitySourceTransform(filterAndPayloadSpecs, startIdx, endIdx, eventSource);
+                    }
+                    else
+#endif // EVENTSOURCE_ACTIVITY_SUPPORT
+                    {
+                        specList = new FilterAndTransform(filterAndPayloadSpecs, startIdx, endIdx, eventSource, specList);
+                    }
+
                     endIdx = newlineIdx;
                     if (endIdx < 0)
                         break;
                 }
+#if EVENTSOURCE_ACTIVITY_SUPPORT
+                if (eventSource._activitySourceSpecs != null)
+                {
+                    NormalizeActivitySourceSpecsList(eventSource);
+                    CreateActivityListener(eventSource);
+                }
+#endif // EVENTSOURCE_ACTIVITY_SUPPORT
             }
 
             /// <summary>
             /// This destroys (turns off) the FilterAndTransform stopping the forwarding started with CreateFilterAndTransformList
             /// </summary>
             /// <param name="specList"></param>
-            public static void DestroyFilterAndTransformList(ref FilterAndTransform? specList)
+            /// <param name="eventSource"></param>
+            public static void DestroyFilterAndTransformList(ref FilterAndTransform? specList, DiagnosticSourceEventSource eventSource)
             {
+#if EVENTSOURCE_ACTIVITY_SUPPORT
+                eventSource._activityListener?.Dispose();
+                eventSource._activityListener = null;
+                eventSource._activitySourceSpecs = null; // nothing to dispose inside this list.
+#endif // EVENTSOURCE_ACTIVITY_SUPPORT
+
                 var curSpec = specList;
                 specList = null;            // Null out the list
                 while (curSpec != null)     // Dispose everything in the list.
@@ -620,6 +697,320 @@ namespace System.Diagnostics
                 }));
             }
 
+#if EVENTSOURCE_ACTIVITY_SUPPORT
+            internal FilterAndTransform(string filterAndPayloadSpec, int endIdx, int colonIdx, string activitySourceName, string? activityName, ActivityEvents events, ActivitySamplingResult samplingResult, DiagnosticSourceEventSource eventSource)
+            {
+                _eventSource = eventSource;
+
+                Next = _eventSource._activitySourceSpecs;
+                _eventSource._activitySourceSpecs = this;
+
+                SourceName = activitySourceName;
+                ActivityName = activityName;
+                Events = events;
+                SamplingResult = samplingResult;
+
+                if (colonIdx >= 0)
+                {
+                    int startTransformIdx = colonIdx + 1;
+
+                    // If the transform spec begins with a - it means you don't want implicit transforms.
+                    if (startTransformIdx < endIdx && filterAndPayloadSpec[startTransformIdx] == '-')
+                    {
+                        _eventSource.Message("DiagnosticSource: suppressing implicit transforms.");
+                        _noImplicitTransforms = true;
+                        startTransformIdx++;
+                    }
+
+                    // Parse all the explicit transforms, if present
+                    if (startTransformIdx < endIdx)
+                    {
+                        while (true)
+                        {
+                            int specStartIdx = startTransformIdx;
+                            int semiColonIdx = filterAndPayloadSpec.LastIndexOf(';', endIdx - 1, endIdx - startTransformIdx);
+                            if (0 <= semiColonIdx)
+                                specStartIdx = semiColonIdx + 1;
+
+                            // Ignore empty specifications.
+                            if (specStartIdx < endIdx)
+                            {
+                                if (_eventSource.IsEnabled(EventLevel.Informational, Keywords.Messages))
+                                    _eventSource.Message("DiagnosticSource: Parsing Explicit Transform '" + filterAndPayloadSpec.Substring(specStartIdx, endIdx - specStartIdx) + "'");
+
+                                _explicitTransforms = new TransformSpec(filterAndPayloadSpec, specStartIdx, endIdx, _explicitTransforms);
+                            }
+                            if (startTransformIdx == specStartIdx)
+                                break;
+                            endIdx = semiColonIdx;
+                        }
+                    }
+                }
+            }
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            internal static bool IsActivitySourceEntry(string filterAndPayloadSpec, int startIdx, int endIdx) =>
+                            filterAndPayloadSpec.AsSpan(startIdx, endIdx - startIdx).StartsWith(c_ActivitySourcePrefix.AsSpan(), StringComparison.Ordinal);
+
+            internal static void AddNewActivitySourceTransform(string filterAndPayloadSpec, int startIdx, int endIdx, DiagnosticSourceEventSource eventSource)
+            {
+                Debug.Assert(endIdx - startIdx >= 4);
+                Debug.Assert(IsActivitySourceEntry(filterAndPayloadSpec, startIdx, endIdx));
+
+                ReadOnlySpan<char> eventName;
+                ReadOnlySpan<char> activitySourceName;
+
+                ActivityEvents supportedEvent = ActivityEvents.All; // Default events
+                ActivitySamplingResult samplingResult = ActivitySamplingResult.AllDataAndRecorded; // Default sampling results
+
+                int colonIdx = filterAndPayloadSpec.IndexOf(':', startIdx + c_ActivitySourcePrefix.Length, endIdx - startIdx - c_ActivitySourcePrefix.Length);
+
+                ReadOnlySpan<char> entry = filterAndPayloadSpec.AsSpan(
+                                                startIdx + c_ActivitySourcePrefix.Length,
+                                                (colonIdx >= 0 ? colonIdx : endIdx) - startIdx - c_ActivitySourcePrefix.Length)
+                                                .Trim();
+
+                int eventNameIndex = entry.IndexOf('/');
+                if (eventNameIndex >= 0)
+                {
+                    activitySourceName = entry.Slice(0, eventNameIndex).Trim();
+
+                    ReadOnlySpan<char> suffixPart = entry.Slice(eventNameIndex + 1, entry.Length - eventNameIndex - 1).Trim();
+                    int samplingResultIndex = suffixPart.IndexOf('-');
+                    if (samplingResultIndex >= 0)
+                    {
+                        // We have the format "[AS]SourceName/[EventName]-[SamplingResult]
+                        eventName = suffixPart.Slice(0, samplingResultIndex).Trim();
+                        suffixPart = suffixPart.Slice(samplingResultIndex + 1, suffixPart.Length - samplingResultIndex - 1).Trim();
+
+                        if (suffixPart.Length > 0)
+                        {
+                            if (suffixPart.Equals("Propagate".AsSpan(), StringComparison.OrdinalIgnoreCase))
+                            {
+                                samplingResult = ActivitySamplingResult.PropagationData;
+                            }
+                            else if (suffixPart.Equals("Record".AsSpan(), StringComparison.OrdinalIgnoreCase))
+                            {
+                                samplingResult = ActivitySamplingResult.AllData;
+                            }
+                            else
+                            {
+                                // Invalid format
+                                return;
+                            }
+                        }
+                    }
+                    else
+                    {
+                        // We have the format "[AS]SourceName/[EventName]
+                        eventName = suffixPart;
+                    }
+
+                    if (eventName.Length > 0)
+                    {
+                        if (eventName.Equals("Start".AsSpan(), StringComparison.OrdinalIgnoreCase))
+                        {
+                            supportedEvent = ActivityEvents.ActivityStart;
+                        }
+                        else if (eventName.Equals("Stop".AsSpan(), StringComparison.OrdinalIgnoreCase))
+                        {
+                            supportedEvent = ActivityEvents.ActivityStop;
+                        }
+                        else
+                        {
+                            // Invalid format
+                            return;
+                        }
+                    }
+                }
+                else
+                {
+                    // We have the format "[AS]SourceName"
+                    activitySourceName = entry;
+                }
+
+                string? activityName = null;
+                int plusSignIndex = activitySourceName.IndexOf('+');
+                if (plusSignIndex >= 0)
+                {
+                    activityName = activitySourceName.Slice(plusSignIndex + 1).Trim().ToString();
+                    activitySourceName = activitySourceName.Slice(0, plusSignIndex).Trim();
+                }
+
+                var transform = new FilterAndTransform(filterAndPayloadSpec, endIdx, colonIdx, activitySourceName.ToString(), activityName, supportedEvent, samplingResult, eventSource);
+            }
+
+            // Check if we are interested to listen to such ActivitySource
+            private static ActivitySamplingResult Sample(string activitySourceName, string activityName, DiagnosticSourceEventSource eventSource)
+            {
+                FilterAndTransform? list = eventSource._activitySourceSpecs;
+                ActivitySamplingResult specificResult = ActivitySamplingResult.None;
+                ActivitySamplingResult wildResult = ActivitySamplingResult.None;
+
+                while (list != null)
+                {
+                    if (list.ActivityName == null || list.ActivityName == activityName)
+                    {
+                        if (activitySourceName == list.SourceName)
+                        {
+                                if (list.SamplingResult > specificResult)
+                                {
+                                    specificResult = list.SamplingResult;
+                                }
+
+                                if (specificResult >= ActivitySamplingResult.AllDataAndRecorded)
+                                {
+                                    return specificResult; // highest possible value
+                                }
+                                // We don't break here as we can have more than one entry with the same source name.
+                            }
+                        else if (list.SourceName == "*")
+                        {
+                            if (specificResult != ActivitySamplingResult.None)
+                            {
+                                // We reached the '*' nodes which means there is no more specific source names in the list.
+                                // If we encountered any specific node before, then return that value.
+                                return specificResult;
+                            }
+
+                            if (list.SamplingResult > wildResult)
+                            {
+                                wildResult = list.SamplingResult;
+                            }
+                        }
+                    }
+                    list = list.Next;
+                }
+
+                // We can return None in case there is no '*' nor any entry match the source name.
+                return specificResult != ActivitySamplingResult.None ? specificResult : wildResult;
+            }
+
+            internal static void CreateActivityListener(DiagnosticSourceEventSource eventSource)
+            {
+                Debug.Assert(eventSource._activityListener == null);
+                Debug.Assert(eventSource._activitySourceSpecs != null);
+
+                eventSource._activityListener = new ActivityListener();
+
+                eventSource._activityListener.SampleUsingParentId = (ref ActivityCreationOptions<string> activityOptions) => Sample(activityOptions.Source.Name, activityOptions.Name, eventSource);
+                eventSource._activityListener.Sample = (ref ActivityCreationOptions<ActivityContext> activityOptions) => Sample(activityOptions.Source.Name, activityOptions.Name, eventSource);
+
+                eventSource._activityListener.ShouldListenTo = (activitySource) =>
+                {
+                    FilterAndTransform? list = eventSource._activitySourceSpecs;
+                    while (list != null)
+                    {
+                        if (activitySource.Name == list.SourceName || list.SourceName == "*")
+                        {
+                            return true;
+                        }
+
+                        list = list.Next;
+                    }
+
+                    return false;
+                };
+
+                eventSource._activityListener.ActivityStarted = activity =>
+                {
+                    FilterAndTransform? list = eventSource._activitySourceSpecs;
+                    while (list != null)
+                    {
+                        if ((list.Events & ActivityEvents.ActivityStart) != 0 &&
+                            (activity.Source.Name == list.SourceName || list.SourceName == "*") &&
+                            (list.ActivityName == null || list.ActivityName == activity.OperationName))
+                        {
+                            eventSource.ActivityStart(activity.Source.Name, activity.OperationName, list.Morph(activity));
+                            return;
+                        }
+
+                        list = list.Next;
+                    }
+                };
+
+                eventSource._activityListener.ActivityStopped = activity =>
+                {
+                    FilterAndTransform? list = eventSource._activitySourceSpecs;
+                    while (list != null)
+                    {
+                        if ((list.Events & ActivityEvents.ActivityStop) != 0 &&
+                            (activity.Source.Name == list.SourceName || list.SourceName == "*") &&
+                            (list.ActivityName == null || list.ActivityName == activity.OperationName))
+                        {
+                            eventSource.ActivityStop(activity.Source.Name, activity.OperationName, list.Morph(activity));
+                            return;
+                        }
+
+                        list = list.Next;
+                    }
+                };
+
+                ActivitySource.AddActivityListener(eventSource._activityListener);
+            }
+
+            // Move all wildcard nodes at the end of the list.
+            // This will give more priority to the specific nodes over the wildcards.
+            internal static void NormalizeActivitySourceSpecsList(DiagnosticSourceEventSource eventSource)
+            {
+                Debug.Assert(eventSource._activityListener == null);
+                Debug.Assert(eventSource._activitySourceSpecs != null);
+
+                FilterAndTransform? list = eventSource._activitySourceSpecs;
+
+                FilterAndTransform? firstSpecificList = null;
+                FilterAndTransform? lastSpecificList = null;
+
+                FilterAndTransform? firstWildcardList = null;
+                FilterAndTransform? lastWildcardList = null;
+
+                while (list != null)
+                {
+                    if (list.SourceName == "*")
+                    {
+                        if (firstWildcardList == null)
+                        {
+                            firstWildcardList = lastWildcardList = list;
+                        }
+                        else
+                        {
+                            Debug.Assert(lastWildcardList != null);
+                            lastWildcardList.Next = list;
+                            lastWildcardList = list;
+                        }
+                    }
+                    else
+                    {
+                        if (firstSpecificList == null)
+                        {
+                            firstSpecificList = lastSpecificList = list;
+                        }
+                        else
+                        {
+                            Debug.Assert(lastSpecificList != null);
+                            lastSpecificList.Next = list;
+                            lastSpecificList = list;
+                        }
+                    }
+
+                    list = list.Next;
+                }
+
+                if (firstSpecificList == null || firstWildcardList == null)
+                {
+                    Debug.Assert(firstSpecificList != null || firstWildcardList != null);
+                    return; // list shouldn't be chanaged.
+                }
+
+                Debug.Assert(lastWildcardList != null && lastSpecificList != null);
+
+                lastSpecificList.Next = firstWildcardList;
+                lastWildcardList.Next = null;
+
+                eventSource._activitySourceSpecs = firstSpecificList;
+            }
+#endif // EVENTSOURCE_ACTIVITY_SUPPORT
+
             private void Dispose()
             {
                 if (_diagnosticsListenersSubscription != null)
@@ -704,7 +1095,18 @@ namespace System.Diagnostics
 
             public FilterAndTransform? Next;
 
+            // Specific ActivitySource Transforms information
+
+#if EVENTSOURCE_ACTIVITY_SUPPORT
+            internal const string c_ActivitySourcePrefix = "[AS]";
+            internal string? SourceName { get; set; }
+            internal string? ActivityName { get; set; }
+            internal DiagnosticSourceEventSource.ActivityEvents Events  { get; set; }
+            internal ActivitySamplingResult SamplingResult { get; set; }
+#endif // EVENTSOURCE_ACTIVITY_SUPPORT
+
             #region private
+
             // Given a type generate all the implicit transforms for type (that is for every field
             // generate the spec that fetches it).
             private static TransformSpec? MakeImplicitTransforms(Type type)
@@ -755,14 +1157,14 @@ namespace System.Diagnostics
 
         /// <summary>
         /// Transform spec represents a string that describes how to extract a piece of data from
-        /// the DiagnosticSource payload.   An example string is OUTSTR=EVENT_VALUE.PROP1.PROP2.PROP3
+        /// the DiagnosticSource payload. An example string is OUTSTR=EVENT_VALUE.PROP1.PROP2.PROP3
         /// It has a Next field so they can be chained together in a linked list.
         /// </summary>
         internal class TransformSpec
         {
             /// <summary>
             /// parse the strings 'spec' from startIdx to endIdx (points just beyond the last considered char)
-            /// The syntax is ID1=ID2.ID3.ID4 ....   Where ID1= is optional.
+            /// The syntax is ID1=ID2.ID3.ID4 .... Where ID1= is optional.
             /// </summary>
             public TransformSpec(string transformSpec, int startIdx, int endIdx, TransformSpec? next = null)
             {
@@ -797,7 +1199,7 @@ namespace System.Diagnostics
             }
 
             /// <summary>
-            /// Given the DiagnosticSourcePayload 'obj', compute a key-value pair from it.  For example
+            /// Given the DiagnosticSourcePayload 'obj', compute a key-value pair from it. For example
             /// if the spec is OUTSTR=EVENT_VALUE.PROP1.PROP2.PROP3 and the ultimate value of PROP3 is
             /// 10 then the return key value pair is  KeyValuePair("OUTSTR","10")
             /// </summary>
@@ -820,7 +1222,7 @@ namespace System.Diagnostics
             #region private
             /// <summary>
             /// A PropertySpec represents information needed to fetch a property from
-            /// and efficiently.   Thus it represents a '.PROP' in a TransformSpec
+            /// and efficiently. Thus it represents a '.PROP' in a TransformSpec
             /// (and a transformSpec has a list of these).
             /// </summary>
             internal class PropertySpec
@@ -871,7 +1273,7 @@ namespace System.Diagnostics
 
                 #region private
                 /// <summary>
-                /// PropertyFetch is a helper class.  It takes a PropertyInfo and then knows how
+                /// PropertyFetch is a helper class. It takes a PropertyInfo and then knows how
                 /// to efficiently fetch that property from a .NET object (See Fetch method).
                 /// It hides some slightly complex generic code.
                 /// </summary>
@@ -935,7 +1337,7 @@ namespace System.Diagnostics
                                 return (PropertyFetch)Activator.CreateInstance(instantiatedTypedPropertyFetcher, type)!;
                             }
 
-                            // no implemenation of IEnumerable<T> found, return a null fetcher
+                            // no implementation of IEnumerable<T> found, return a null fetcher
                             Logger.Message($"*Enumerate applied to non-enumerable type {type}");
                             return new PropertyFetch(type);
 #endif
@@ -946,6 +1348,12 @@ namespace System.Diagnostics
                             if (propertyInfo == null)
                             {
                                 Logger.Message($"Property {propertyName} not found on {type}");
+                                return new PropertyFetch(type);
+                            }
+                            // Delegate creation below is incompatible with static properties.
+                            else if (propertyInfo.GetMethod?.IsStatic == true || propertyInfo.SetMethod?.IsStatic == true)
+                            {
+                                Logger.Message($"Property {propertyName} is static.");
                                 return new PropertyFetch(type);
                             }
                             Type typedPropertyFetcher = typeInfo.IsValueType ?
@@ -1075,7 +1483,11 @@ namespace System.Diagnostics
 
         #endregion
 
-        private FilterAndTransform? _specs;      // Transformation specifications that indicate which sources/events are forwarded.
+        private FilterAndTransform? _specs;                 // Transformation specifications that indicate which sources/events are forwarded.
+#if EVENTSOURCE_ACTIVITY_SUPPORT
+        private FilterAndTransform? _activitySourceSpecs;   // ActivitySource Transformation specifications that indicate which sources/events are forwarded.
+        private ActivityListener? _activityListener;
+#endif // EVENTSOURCE_ACTIVITY_SUPPORT
         #endregion
     }
 }

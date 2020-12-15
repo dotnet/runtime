@@ -24,7 +24,6 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
 
         internal const int E_NOINTERFACE = unchecked((int)0x80004002);
         internal const int E_FAIL = unchecked((int)0x80004005);
-        internal const int E_NOTIMPL = unchecked((int)0x80000001);
 
         internal const int TYPE_E_LIBNOTREGISTERED = unchecked((int)0x8002801D);
 

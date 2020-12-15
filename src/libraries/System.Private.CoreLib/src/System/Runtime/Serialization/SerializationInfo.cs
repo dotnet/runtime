@@ -26,7 +26,7 @@ namespace System.Runtime.Serialization
         [CLSCompliant(false)]
         public SerializationInfo(Type type, IFormatterConverter converter)
         {
-            if ((object)type == null)
+            if (type is null)
             {
                 throw new ArgumentNullException(nameof(type));
             }
@@ -91,7 +91,7 @@ namespace System.Runtime.Serialization
 
         public void SetType(Type type)
         {
-            if ((object)type == null)
+            if (type is null)
             {
                 throw new ArgumentNullException(nameof(type));
             }
@@ -145,12 +145,12 @@ namespace System.Runtime.Serialization
 
         public void AddValue(string name, object? value, Type type)
         {
-            if (null == name)
+            if (name is null)
             {
                 throw new ArgumentNullException(nameof(name));
             }
 
-            if ((object)type == null)
+            if (type is null)
             {
                 throw new ArgumentNullException(nameof(type));
             }
@@ -287,7 +287,7 @@ namespace System.Runtime.Serialization
         {
             Debug.Assert(null != name, "[SerializationInfo.UpdateValue]name!=null");
             Debug.Assert(null != value, "[SerializationInfo.UpdateValue]value!=null");
-            Debug.Assert(null != (object)type, "[SerializationInfo.UpdateValue]type!=null");
+            Debug.Assert(type is not null, "[SerializationInfo.UpdateValue]type!=null");
 
             int index = FindElement(name);
             if (index < 0)
@@ -334,7 +334,7 @@ namespace System.Runtime.Serialization
             Debug.Assert(index < _types.Length, "[SerializationInfo.GetElement]index<_types.Length");
 
             foundType = _types[index];
-            Debug.Assert((object)foundType != null, "[SerializationInfo.GetElement]foundType!=null");
+            Debug.Assert(foundType is not null, "[SerializationInfo.GetElement]foundType!=null");
             return _values[index];
         }
 
@@ -351,13 +351,13 @@ namespace System.Runtime.Serialization
             Debug.Assert(index < _types.Length, "[SerializationInfo.GetElement]index<_types.Length");
 
             foundType = _types[index];
-            Debug.Assert((object)foundType != null, "[SerializationInfo.GetElement]foundType!=null");
+            Debug.Assert(foundType is not null, "[SerializationInfo.GetElement]foundType!=null");
             return _values[index];
         }
 
         public object? GetValue(string name, Type type)
         {
-            if ((object)type == null)
+            if (type is null)
             {
                 throw new ArgumentNullException(nameof(type));
             }
@@ -378,7 +378,7 @@ namespace System.Runtime.Serialization
 
         internal object? GetValueNoThrow(string name, Type type)
         {
-            Debug.Assert((object)type != null, "[SerializationInfo.GetValue]type ==null");
+            Debug.Assert(type is not null, "[SerializationInfo.GetValue]type ==null");
             Debug.Assert(type.IsRuntimeImplemented(), "[SerializationInfo.GetValue]type is not a runtime type");
 
             object? value = GetElementNoThrow(name, out Type? foundType);

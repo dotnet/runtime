@@ -4,8 +4,12 @@
 using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.IO;
+using System.Linq;
+using System.Text;
 using System.Text.Json;
 using System.Text.RegularExpressions;
+using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Logging.Test.Console;
 using Xunit;
 
@@ -112,7 +116,7 @@ namespace Microsoft.Extensions.Logging.Console.Test
             Assert.Equal(
                 "{\"EventId\":0,\"LogLevel\":\"Critical\",\"Category\":\"test\""
                 + ",\"Message\":\"[null]\""
-                + ",\"Exception\":{\"Message\":\"Invalid value\",\"Type\":\"System.InvalidOperationException\",\"StackTrace\":[],\"HResult\":-2146233079}"
+                + ",\"Exception\":\"System.InvalidOperationException: Invalid value\""
                 + ",\"State\":{\"Message\":\"[null]\",\"{OriginalFormat}\":\"[null]\"}}"
                 + Environment.NewLine,
                 GetMessage(sink.Writes.GetRange(2 * t.WritesPerMsg, t.WritesPerMsg)));
@@ -149,7 +153,7 @@ namespace Microsoft.Extensions.Logging.Console.Test
             Assert.Equal(
                 "{\"EventId\":0,\"LogLevel\":\"Information\",\"Category\":\"test\""
                 + ",\"Message\":\"exception message with stacktrace\""
-                + ",\"Exception\":{\"Message\":\"Invalid value\",\"Type\":\"System.InvalidOperationException\",\"StackTrace\":[],\"HResult\":-2146233079}"
+                + ",\"Exception\":\"System.InvalidOperationException: Invalid value\""
                 + ",\"State\":{\"Message\":\"exception message with stacktrace\",\"0\":\"stacktrace\",\"{OriginalFormat}\":\"exception message with {0}\"}"
                 + ",\"Scopes\":[]"
                 + "}" + Environment.NewLine,
@@ -157,7 +161,7 @@ namespace Microsoft.Extensions.Logging.Console.Test
             Assert.Equal(
                 "{\"EventId\":0,\"LogLevel\":\"Information\",\"Category\":\"test\""
                 + ",\"Message\":\"exception message\""
-                + ",\"Exception\":{\"Message\":\"Invalid value\",\"Type\":\"System.InvalidOperationException\",\"StackTrace\":[],\"HResult\":-2146233079}"
+                + ",\"Exception\":\"System.InvalidOperationException: Invalid value\""
                 + ",\"State\":{\"Message\":\"exception message\"}"
                 + ",\"Scopes\":[]"
                 + "}" + Environment.NewLine,
@@ -165,7 +169,7 @@ namespace Microsoft.Extensions.Logging.Console.Test
             Assert.Equal(
                 "{\"EventId\":0,\"LogLevel\":\"Information\",\"Category\":\"test\""
                 + ",\"Message\":\"exception message\""
-                + ",\"Exception\":{\"Message\":\"Invalid value\",\"Type\":\"System.InvalidOperationException\",\"StackTrace\":[],\"HResult\":-2146233079}"
+                + ",\"Exception\":\"System.InvalidOperationException: Invalid value\""
                 + ",\"State\":{\"Message\":\"exception message\"}"
                 + ",\"Scopes\":[{\"Message\":\"scope1 123\",\"name1\":123,\"{OriginalFormat}\":\"scope1 {name1}\"},{\"Message\":\"scope2 456 789\",\"name1\":456,\"name2\":789,\"{OriginalFormat}\":\"scope2 {name1} {name2}\"}]"
                 + "}" + Environment.NewLine,
@@ -430,6 +434,92 @@ namespace Microsoft.Extensions.Logging.Console.Test
             {
                 return ((IEnumerable<KeyValuePair<string, object>>)this).GetEnumerator();
             }
+        }
+
+        private static void EnsureStackTrace(params Exception[] exceptions)
+        {
+            if (exceptions == null) return;
+
+            foreach (Exception exception in exceptions)
+            {
+                if (string.IsNullOrEmpty(exception.StackTrace))
+                {
+                    try
+                    {
+                        throw exception;
+                    }
+                    catch
+                    { }
+                }
+                Assert.False(string.IsNullOrEmpty(exception.StackTrace));
+            }
+        }
+
+        private string GetJson(Exception exception, bool indented)
+        {
+            if (exception == null) throw new ArgumentNullException(nameof(exception));
+            JsonConsoleFormatterOptions jsonOptions = new JsonConsoleFormatterOptions()
+            {
+                JsonWriterOptions = new JsonWriterOptions()
+                { 
+                    Indented = indented,
+                    Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping
+                }
+            };
+            var jsonMonitor = new TestFormatterOptionsMonitor<JsonConsoleFormatterOptions>(jsonOptions);
+            var jsonFormatter = new JsonConsoleFormatter(jsonMonitor);
+            Func<string, Exception, string> exceptionFormatter = (state, exception) => state.ToString();
+            LogEntry<string> entry = new LogEntry<string>(LogLevel.Error, string.Empty, new EventId(), string.Empty, exception, exceptionFormatter);
+            StringBuilder output = new StringBuilder();
+            using (TextWriter writer = new StringWriter(output))
+            {
+                jsonFormatter.Write<string>(entry, null, writer);
+            }
+            return output.ToString();
+        }
+
+
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void ShouldContainInnerException(bool indented)
+        {
+            Exception rootException = new Exception("root", new Exception("inner"));
+            EnsureStackTrace(rootException, rootException.InnerException);
+            string json = GetJson(rootException, indented);
+
+            Assert.Contains(rootException.Message, json);
+            Assert.Contains(rootException.InnerException.Message, json);
+            
+            Assert.Contains(GetContent(rootException, indented), json);
+            Assert.Contains(GetContent(rootException.InnerException, indented), json);
+        }
+
+        static string GetContent(Exception exception, bool indented)
+        {
+            // Depending on OS, Environment.NewLine is either '\r\n' OR '\n'
+            string newLineReplacement = indented ? (Environment.NewLine.Length == 2 ? "\\r\\n" : "\\n") : " ";
+
+            return exception.ToString()
+                .Replace(@"\", @"\\") // for paths in json content
+                .Replace(Environment.NewLine, newLineReplacement);
+        }
+
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void ShouldContainAggregateExceptions(bool indented)
+        {
+            AggregateException rootException = new AggregateException("aggregate", new Exception("leaf1"), new Exception("leaf2"), new Exception("leaf3"));
+            EnsureStackTrace(rootException);
+            EnsureStackTrace(rootException.InnerExceptions.ToArray());
+            string json = GetJson(rootException, indented);
+
+            Assert.Contains(rootException.Message, json);
+            rootException.InnerExceptions.ToList().ForEach((inner) => Assert.Contains(inner.Message, json));
+            
+            Assert.Contains(GetContent(rootException, indented), json);
+            rootException.InnerExceptions.ToList().ForEach((inner) => Assert.Contains(GetContent(inner, indented), json));
         }
     }
 }

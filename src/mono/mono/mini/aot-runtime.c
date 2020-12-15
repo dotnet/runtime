@@ -65,7 +65,6 @@
 
 #include "mini.h"
 #include "seq-points.h"
-#include "version.h"
 #include "debugger-agent.h"
 #include "aot-compiler.h"
 #include "aot-runtime.h"
@@ -257,6 +256,9 @@ init_method (MonoAotModule *amodule, gpointer info, guint32 method_index, MonoMe
 
 static MonoJumpInfo*
 decode_patches (MonoAotModule *amodule, MonoMemPool *mp, int n_patches, gboolean llvm, guint32 *got_offsets);
+
+static MonoMethodSignature*
+decode_signature (MonoAotModule *module, guint8 *buf, guint8 **endbuf);
 
 static void
 load_container_amodule (MonoAssemblyLoadContext *alc);
@@ -757,6 +759,11 @@ decode_type (MonoAotModule *module, guint8 *buf, guint8 **endbuf, MonoError *err
 		if (!t->data.type)
 			goto fail;
 		break;
+	case MONO_TYPE_FNPTR:
+		t->data.method = decode_signature (module, p, &p);
+		if (!t->data.method)
+			goto fail;
+		break;
 	case MONO_TYPE_GENERICINST: {
 		MonoClass *gclass;
 		MonoGenericContext ctx;
@@ -1156,6 +1163,16 @@ decode_method_ref_with_target (MonoAotModule *module, MethodRef *ref, MonoMethod
 					ref->method = target;
 				else
 					return FALSE;
+			} else if (subtype == WRAPPER_SUBTYPE_GENERIC_ARRAY_HELPER) {
+				MonoClass *klass = decode_klass_ref (module, p, &p, error);
+				if (!klass)
+					return FALSE;
+				MonoMethod *m = decode_resolve_method_ref (module, p, &p, error);
+				if (!m)
+					return FALSE;
+				int name_idx = decode_value (p, &p);
+				const char *name = (const char*)module->blob + name_idx;
+				ref->method = mono_marshal_get_generic_array_helper (klass, name, m);
 			}
 			break;
 		}
@@ -3691,10 +3708,14 @@ mono_aot_find_jit_info (MonoDomain *domain, MonoImage *image, gpointer addr)
 
 		code1 = (guint8 *)methods [pos];
 		if (pos + 1 == methods_len) {
+#ifdef HOST_WASM
+			code2 = code1 + 1;
+#else
 			if (code1 >= amodule->jit_code_start && code1 < amodule->jit_code_end)
 				code2 = amodule->jit_code_end;
 			else
 				code2 = amodule->llvm_code_end;
+#endif
 		} else {
 			code2 = (guint8 *)methods [pos + 1];
 		}
@@ -3706,6 +3727,11 @@ mono_aot_find_jit_info (MonoDomain *domain, MonoImage *image, gpointer addr)
 		else
 			break;
 	}
+
+#ifdef HOST_WASM
+	if (addr != methods [pos])
+		return NULL;
+#endif
 
 	g_assert (addr >= methods [pos]);
 	if (pos + 1 < methods_len)
@@ -3729,6 +3755,10 @@ mono_aot_find_jit_info (MonoDomain *domain, MonoImage *image, gpointer addr)
 	code = (guint8 *)amodule->methods [method_index];
 	ex_info = &amodule->blob [mono_aot_get_offset (amodule->ex_info_offsets, method_index)];
 
+#ifdef HOST_WASM
+	/* WASM methods have no length, can only look up the method address */
+	code_len = 1;
+#else
 	if (pos == methods_len - 1) {
 		if (code >= amodule->jit_code_start && code < amodule->jit_code_end)
 			code_len = amodule->jit_code_end - code;
@@ -3737,6 +3767,7 @@ mono_aot_find_jit_info (MonoDomain *domain, MonoImage *image, gpointer addr)
 	} else {
 		code_len = (guint8*)methods [pos + 1] - (guint8*)methods [pos];
 	}
+#endif
 
 	g_assert ((guint8*)code <= (guint8*)addr && (guint8*)addr < (guint8*)code + code_len);
 
@@ -4559,8 +4590,10 @@ mono_aot_can_dedup (MonoMethod *method)
 	if (method->is_inflated && !mono_method_is_generic_sharable_full (method, TRUE, FALSE, FALSE) &&
 		!mini_is_gsharedvt_signature (mono_method_signature_internal (method)) &&
 		!mini_is_gsharedvt_klass (method->klass)) {
-		/* No point in dedup-ing private instances */
 		MonoGenericContext *context = mono_method_get_context (method);
+		if (context->method_inst && mini_is_gsharedvt_inst (context->method_inst))
+			return FALSE;
+		/* No point in dedup-ing private instances */
 		if ((context->class_inst && inst_is_private (context->class_inst)) ||
 			(context->method_inst && inst_is_private (context->method_inst)))
 			return FALSE;
@@ -5044,10 +5077,12 @@ mono_aot_get_method (MonoDomain *domain, MonoMethod *method, MonoError *error)
 		/* Common case */
 		method_index = mono_metadata_token_index (method->token) - 1;
 
-		guint32 num_methods = amodule->info.nmethods - amodule->info.nextra_methods;
-		if (method_index >= num_methods)
-			/* method not available in AOT image */
-			return NULL;
+		if (!mono_llvm_only) {
+			guint32 num_methods = amodule->info.nmethods - amodule->info.nextra_methods;
+			if (method_index >= num_methods)
+				/* method not available in AOT image */
+				return NULL;
+		}
 	}
 
 	code = (guint8 *)load_method (domain, amodule, m_class_get_image (klass), method, method->token, method_index, error);

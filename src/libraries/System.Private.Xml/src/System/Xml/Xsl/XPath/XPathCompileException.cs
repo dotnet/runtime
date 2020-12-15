@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#nullable enable
 using System.Runtime.Serialization;
 using System.Text;
 
@@ -14,7 +13,7 @@ namespace System.Xml.Xsl.XPath
         public int startChar;
         public int endChar;
 
-        internal XPathCompileException(string queryString, int startChar, int endChar, string resId, params string[] args)
+        internal XPathCompileException(string queryString, int startChar, int endChar, string resId, params string?[]? args)
             : base(resId, args)
         {
             this.queryString = queryString;

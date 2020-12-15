@@ -4,6 +4,7 @@
 #pragma pack(push, 8)
 
 #include <comdef.h>
+#include <inspectable.h>
 
 struct HFA_4
 {
@@ -484,6 +485,17 @@ struct __declspec(uuid("9B3CE792-F063-427D-B48E-4354094BF7A0"))
 IDefaultInterfaceTesting2 : IUnknown
 {
     // Empty
+};
+
+struct __declspec(uuid("3021236a-2a9e-4a29-bf14-533842c55262"))
+IInspectableTesting : IUnknown
+{
+};
+
+struct __declspec(uuid("e9e1ccf9-8e93-4850-ac1c-a71692cb68c5"))
+IInspectableTesting2 : IInspectable
+{
+    virtual HRESULT STDMETHODCALLTYPE Add(_In_ int i, _In_ int j, _Out_ _Ret_ int* retVal) = 0;
 };
 
 #pragma pack(pop)

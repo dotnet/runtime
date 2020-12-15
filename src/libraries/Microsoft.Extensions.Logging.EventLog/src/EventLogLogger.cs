@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Runtime.InteropServices;
 using System.Text;
 
 namespace Microsoft.Extensions.Logging.EventLog
@@ -166,6 +167,10 @@ namespace Microsoft.Extensions.Logging.EventLog
 
         private EventLogEntryType GetEventLogEntryType(LogLevel level)
         {
+#if NETSTANDARD
+            Debug.Assert(RuntimeInformation.IsOSPlatform(OSPlatform.Windows));
+#endif
+
             switch (level)
             {
                 case LogLevel.Information:

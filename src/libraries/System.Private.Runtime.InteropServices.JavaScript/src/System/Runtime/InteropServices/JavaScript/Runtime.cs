@@ -2,10 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
-using System.Diagnostics;
 
 namespace System.Runtime.InteropServices.JavaScript
 {
@@ -18,6 +19,9 @@ namespace System.Runtime.InteropServices.JavaScript
         //    Once the key dies, the dictionary automatically removes the key/value entry.
         // No need to lock as it is thread safe.
         private static readonly ConditionalWeakTable<Delegate, JSObject> _weakDelegateTable = new ConditionalWeakTable<Delegate, JSObject>();
+
+        private const string TaskGetResultName = "get_Result";
+        private static readonly MethodInfo _taskGetResultMethodInfo = typeof(Task<>).GetMethod(TaskGetResultName)!;
 
         // <summary>
         // Execute the provided string in the JavaScript context
@@ -71,7 +75,16 @@ namespace System.Runtime.InteropServices.JavaScript
             WeakReference? reference;
             lock (_boundObjects)
             {
-                if (!_boundObjects.TryGetValue(jsId, out reference))
+                if (_boundObjects.TryGetValue(jsId, out reference))
+                {
+                    if ((reference.Target == null) || ((reference.Target as JSObject)?.IsDisposed == true))
+                    {
+                        _boundObjects.Remove(jsId);
+                        reference = null;
+                    }
+                }
+
+                if (reference == null)
                 {
                     IntPtr jsIntPtr = (IntPtr)jsId;
                     reference = new WeakReference(mappedType > 0 ? BindJSType(jsIntPtr, ownsHandle, mappedType) : new JSObject(jsIntPtr, ownsHandle), true);
@@ -229,21 +242,6 @@ namespace System.Runtime.InteropServices.JavaScript
                 js.GetWrappedObject() ?? h.Target : h.Target;
         }
 
-        private static object BoxInt(int i)
-        {
-            return i;
-        }
-
-        private static object BoxDouble(double d)
-        {
-            return d;
-        }
-
-        private static object BoxBool(int b)
-        {
-            return b == 0 ? false : true;
-        }
-
         private static bool IsSimpleArray(object a)
         {
             return a is System.Array arr && arr.Rank == 1 && arr.GetLowerBound(0) == 0;
@@ -356,8 +354,9 @@ namespace System.Runtime.InteropServices.JavaScript
                         }
                         else
                         {
-                            result = task_type.GetMethod("get_Result")?.Invoke(task, System.Array.Empty<object>());
+                            result = GetTaskResultMethodInfo(task_type)?.Invoke(task, null);
                         }
+
                         continuationObj.Invoke("resolve", result);
                     }
                     else
@@ -375,6 +374,30 @@ namespace System.Runtime.InteropServices.JavaScript
                     FreeObject(task);
                 }
             }
+        }
+
+        /// <summary>
+        /// Gets the MethodInfo for the Task{T}.Result property getter.
+        /// </summary>
+        /// <remarks>
+        /// This ensures the returned MethodInfo is strictly for the Task{T} type, and not
+        /// a "Result" property on some other class that derives from Task or a "new Result"
+        /// property on a class that derives from Task{T}.
+        ///
+        /// The reason for this restriction is to make this use of Reflection trim-compatible,
+        /// ensuring that trimming doesn't change the application's behavior.
+        /// </remarks>
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2070:UnrecognizedReflectionPattern",
+            Justification = "Task<T>.Result is preserved by the ILLinker because _taskGetResultMethodInfo was initialized with it.")]
+        private static MethodInfo? GetTaskResultMethodInfo(Type taskType)
+        {
+            MethodInfo? result = taskType.GetMethod(TaskGetResultName);
+            if (result != null && result.HasSameMetadataDefinitionAs(_taskGetResultMethodInfo))
+            {
+                return result;
+            }
+
+            return null;
         }
 
         private static string ObjectToString(object o)

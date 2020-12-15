@@ -52,7 +52,7 @@ namespace System.Net.Connections
         protected ConnectionListener() { }
         public abstract System.Net.Connections.IConnectionProperties ListenerProperties { get; }
         public abstract System.Net.EndPoint? LocalEndPoint { get; }
-        public abstract System.Threading.Tasks.ValueTask<System.Net.Connections.Connection> AcceptAsync(System.Net.Connections.IConnectionProperties? options = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken));
+        public abstract System.Threading.Tasks.ValueTask<System.Net.Connections.Connection?> AcceptAsync(System.Net.Connections.IConnectionProperties? options = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken));
         public void Dispose() { }
         protected virtual void Dispose(bool disposing) { }
         public System.Threading.Tasks.ValueTask DisposeAsync() { throw null; }
@@ -70,5 +70,33 @@ namespace System.Net.Connections
     public partial interface IConnectionProperties
     {
         bool TryGet(System.Type propertyKey, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out object? property);
+    }
+    public partial class SocketsConnectionFactory : System.Net.Connections.ConnectionFactory
+    {
+        public SocketsConnectionFactory(System.Net.Sockets.AddressFamily addressFamily, System.Net.Sockets.SocketType socketType, System.Net.Sockets.ProtocolType protocolType) { }
+        public SocketsConnectionFactory(System.Net.Sockets.SocketType socketType, System.Net.Sockets.ProtocolType protocolType) { }
+        public override System.Threading.Tasks.ValueTask<System.Net.Connections.Connection> ConnectAsync(System.Net.EndPoint? endPoint, System.Net.Connections.IConnectionProperties? options = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+        protected virtual System.Net.Sockets.Socket CreateSocket(System.Net.Sockets.AddressFamily addressFamily, System.Net.Sockets.SocketType socketType, System.Net.Sockets.ProtocolType protocolType, System.Net.EndPoint? endPoint, System.Net.Connections.IConnectionProperties? options) { throw null; }
+    }
+}
+namespace System.Net
+{
+    public enum NetworkError : int
+    {
+        Other = 0,
+        EndPointInUse,
+        HostNotFound,
+        TimedOut,
+        ConnectionRefused,
+        OperationAborted,
+        ConnectionAborted,
+        ConnectionReset,
+    }
+    public class NetworkException : System.IO.IOException
+    {
+        public NetworkException(NetworkError error, Exception? innerException = null) { }
+        public NetworkException(string message, NetworkError error, Exception? innerException = null) { }
+        protected NetworkException(System.Runtime.Serialization.SerializationInfo serializationInfo, System.Runtime.Serialization.StreamingContext streamingContext) { }
+        public NetworkError NetworkError { get { throw null; } }
     }
 }

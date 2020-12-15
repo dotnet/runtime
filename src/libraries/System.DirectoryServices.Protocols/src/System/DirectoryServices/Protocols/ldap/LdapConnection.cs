@@ -1604,7 +1604,7 @@ namespace System.DirectoryServices.Protocols
 
                     if (ldapResult != IntPtr.Zero)
                     {
-                        LdapPal.FreeMemory(ldapResult);
+                        LdapPal.FreeMessage(ldapResult);
                     }
                 }
             }

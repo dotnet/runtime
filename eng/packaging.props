@@ -20,7 +20,7 @@
     <SkipBaseLineCheck>true</SkipBaseLineCheck>
 
     <!-- by default all packages will use the same version which revs with respect to product version -->
-    <PackageVersion Condition="'$(PackageVersion)' == ''">5.0.0</PackageVersion>
+    <PackageVersion Condition="'$(PackageVersion)' == ''">6.0.0</PackageVersion>
     <!-- major.minor.release version of the platforms package we're currently building
          Pre-release will be appended during build -->
     <PlatformPackageVersion>$(ProductVersion)</PlatformPackageVersion>
@@ -72,5 +72,8 @@
           Include="$(PkgDir)useSharedDesignerContext.txt">
         <SkipPackageFileCheck>true</SkipPackageFileCheck>
     </File>
+
+    <!-- Make sure that NETStandard.Library package never gets added as a dependency for .NET 4.6.1 -->
+    <SuppressMetaPackage Include="NETStandard.Library" TargetFramework="net461" />
   </ItemGroup>
 </Project>

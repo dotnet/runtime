@@ -10,7 +10,7 @@
     <!-- Degree of parallelization, spawns n test hosts to run tests. -->
     <MaxCpuCount>$$MAXCPUCOUNT$$</MaxCpuCount>
     <!-- Configures the architecture of test host. -->
-    <TargetPlatform>$$TARGETPLATFORM$$</TargetPlatform>
+    $$TARGETPLATFORM$$
     <!-- If true, an adapter should disable any test case parallelization. -->
     <DisableParallelization>$$DISABLEPARALLELIZATION$$</DisableParallelization>
     <!-- If true, an adapter shouldn't create appdomains to run tests. -->

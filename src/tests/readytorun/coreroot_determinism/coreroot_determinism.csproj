@@ -5,7 +5,7 @@
     <CLRTestPriority>0</CLRTestPriority>
     <!-- Crossgen2 currently targets only x64 -->
     <CLRTestTargetUnsupported Condition="'$(TargetArchitecture)' != 'x64'">true</CLRTestTargetUnsupported>
-    <!-- Known not to work with GCStress for now: https://github.com/dotnet/coreclr/issues/26633 -->
+    <!-- Known not to work with GCStress for now: https://github.com/dotnet/runtime/issues/13394 -->
     <GCStressIncompatible>true</GCStressIncompatible>
     <!-- This is an explicit crossgen test -->
     <CrossGenTest>false</CrossGenTest>

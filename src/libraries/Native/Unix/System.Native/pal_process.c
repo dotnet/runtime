@@ -28,6 +28,17 @@
 #include <sched.h>
 #endif
 
+#ifdef __APPLE__
+#include <mach-o/dyld.h>
+#endif
+
+#ifdef __FreeBSD__
+#include <sys/types.h>
+#include <sys/param.h>
+#include <sys/sysctl.h>
+#endif
+
+#include <getexepath.h>
 
 // Validate that our SysLogPriority values are correct for the platform
 c_static_assert(PAL_LOG_EMERG == LOG_EMERG);
@@ -516,19 +527,6 @@ done:;
 #endif
 }
 
-FILE* SystemNative_POpen(const char* command, const char* type)
-{
-    assert(command != NULL);
-    assert(type != NULL);
-    return popen(command, type);
-}
-
-int32_t SystemNative_PClose(FILE* stream)
-{
-    assert(stream != NULL);
-    return pclose(stream);
-}
-
 // Each platform type has it's own RLIMIT values but the same name, so we need
 // to convert our standard types into the platform specific ones.
 static int32_t ConvertRLimitResourcesPalToPlatform(RLimitResources value)
@@ -564,6 +562,10 @@ static int32_t ConvertRLimitResourcesPalToPlatform(RLimitResources value)
 #endif
         case PAL_RLIMIT_NOFILE:
             return RLIMIT_NOFILE;
+#if !defined(RLIMIT_RSS) || !(defined(RLIMIT_MEMLOCK) || defined(RLIMIT_VMEM)) || !defined(RLIMIT_NPROC)
+        default:
+            break;
+#endif
     }
 
     assert_msg(false, "Unknown RLIMIT value", (int)value);
@@ -871,3 +873,8 @@ int32_t SystemNative_SchedGetAffinity(int32_t pid, intptr_t* mask)
     return result;
 }
 #endif
+
+char* SystemNative_GetProcessPath()
+{
+    return getexepath();
+}

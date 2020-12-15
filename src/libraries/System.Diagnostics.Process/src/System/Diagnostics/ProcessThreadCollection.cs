@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections;
-using System.Collections.Generic;
 
 namespace System.Diagnostics
 {
@@ -80,6 +79,14 @@ namespace System.Diagnostics
         public void CopyTo(ProcessThread[] array, int index)
         {
             InnerList.CopyTo(array, index);
+        }
+
+        internal void Dispose()
+        {
+            foreach (ProcessThread processThread in this)
+            {
+                processThread.Dispose();
+            }
         }
     }
 }

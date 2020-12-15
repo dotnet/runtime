@@ -533,9 +533,9 @@ namespace System.Text.Json.Serialization.Tests
         public static void PredefinedSerializerOptions_Web()
         {
             var options = new JsonSerializerOptions(JsonSerializerDefaults.Web);
-            JsonNamingPolicy policy = options.PropertyNamingPolicy;
             Assert.True(options.PropertyNameCaseInsensitive);
-            Assert.Same(JsonNamingPolicy.CamelCase, policy);
+            Assert.Same(JsonNamingPolicy.CamelCase, options.PropertyNamingPolicy);
+            Assert.Equal(JsonNumberHandling.AllowReadingFromString, options.NumberHandling);
         }
 
         [Theory]

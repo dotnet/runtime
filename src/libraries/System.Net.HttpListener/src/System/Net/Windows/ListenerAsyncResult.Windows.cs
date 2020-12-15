@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics;
 using System.Threading;
 
 namespace System.Net
@@ -8,11 +9,11 @@ namespace System.Net
     internal sealed unsafe class ListenerAsyncResult : LazyAsyncResult
     {
         private static readonly IOCompletionCallback s_ioCallback = new IOCompletionCallback(WaitCallback);
-        private AsyncRequestContext _requestContext;
+        private AsyncRequestContext? _requestContext;
 
         internal static IOCompletionCallback IOCallback => s_ioCallback;
 
-        internal ListenerAsyncResult(HttpListenerSession session, object userState, AsyncCallback callback) :
+        internal ListenerAsyncResult(HttpListenerSession session, object? userState, AsyncCallback? callback) :
             base(session, userState, callback)
         {
             _requestContext = new AsyncRequestContext(session.RequestQueueBoundHandle, this);
@@ -20,7 +21,7 @@ namespace System.Net
 
         private static void IOCompleted(ListenerAsyncResult asyncResult, uint errorCode, uint numBytes)
         {
-            object result = null;
+            object? result = null;
             try
             {
                 if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(null, $"errorCode:[{errorCode}] numBytes:[{numBytes}]");
@@ -33,7 +34,7 @@ namespace System.Net
                 }
                 else
                 {
-                    HttpListenerSession listenerSession = asyncResult.AsyncObject as HttpListenerSession;
+                    HttpListenerSession listenerSession = (asyncResult.AsyncObject! as HttpListenerSession)!;
                     if (errorCode == Interop.HttpApi.ERROR_SUCCESS)
                     {
                         // at this point we have received an unmanaged HTTP_REQUEST and memoryBlob
@@ -41,9 +42,9 @@ namespace System.Net
                         bool stoleBlob = false;
                         try
                         {
-                            if (HttpListener.ValidateRequest(listenerSession, asyncResult._requestContext))
+                            if (HttpListener.ValidateRequest(listenerSession, asyncResult._requestContext!))
                             {
-                                result = listenerSession.Listener.HandleAuthentication(listenerSession, asyncResult._requestContext, out stoleBlob);
+                                result = listenerSession.Listener.HandleAuthentication(listenerSession, asyncResult._requestContext!, out stoleBlob);
                             }
                         }
                         finally
@@ -55,13 +56,13 @@ namespace System.Net
                             }
                             else
                             {
-                                asyncResult._requestContext.Reset(listenerSession.RequestQueueBoundHandle, 0, 0);
+                                asyncResult._requestContext!.Reset(listenerSession.RequestQueueBoundHandle, 0, 0);
                             }
                         }
                     }
                     else
                     {
-                        asyncResult._requestContext.Reset(listenerSession.RequestQueueBoundHandle, asyncResult._requestContext.RequestBlob->RequestId, numBytes);
+                        asyncResult._requestContext!.Reset(listenerSession.RequestQueueBoundHandle, asyncResult._requestContext.RequestBlob->RequestId, numBytes);
                     }
 
                     // We need to issue a new request, either because auth failed, or because our buffer was too small the first time.
@@ -95,7 +96,7 @@ namespace System.Net
 
         private static unsafe void WaitCallback(uint errorCode, uint numBytes, NativeOverlapped* nativeOverlapped)
         {
-            ListenerAsyncResult asyncResult = (ListenerAsyncResult)ThreadPoolBoundHandle.GetNativeOverlappedState(nativeOverlapped);
+            ListenerAsyncResult asyncResult = (ListenerAsyncResult)ThreadPoolBoundHandle.GetNativeOverlappedState(nativeOverlapped)!;
             IOCompleted(asyncResult, errorCode, numBytes);
         }
 
@@ -104,9 +105,11 @@ namespace System.Net
             uint statusCode = Interop.HttpApi.ERROR_SUCCESS;
             while (true)
             {
+                Debug.Assert(_requestContext != null);
                 if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"Calling Interop.HttpApi.HttpReceiveHttpRequest RequestId: {_requestContext.RequestBlob->RequestId}Buffer:0x {((IntPtr)_requestContext.RequestBlob).ToString("x")} Size: {_requestContext.Size}");
                 uint bytesTransferred = 0;
-                HttpListenerSession listenerSession = (HttpListenerSession)AsyncObject;
+                Debug.Assert(AsyncObject != null);
+                HttpListenerSession listenerSession = (HttpListenerSession)AsyncObject!;
                 statusCode = Interop.HttpApi.HttpReceiveHttpRequest(
                     listenerSession.RequestQueueHandle,
                     _requestContext.RequestBlob->RequestId,

@@ -33,6 +33,18 @@ namespace System.Globalization.Tests
         }
 
         [ConditionalTheory(nameof(PlatformSupportsFakeCulture))]
+        [InlineData("en")]
+        [InlineData("en-US")]
+        [InlineData("ja-JP")]
+        [InlineData("ar-SA")]
+        public void TestGetCultureInfoWithNoneConstructedCultures(string name)
+        {
+            Assert.Equal(name, CultureInfo.GetCultureInfo(name).Name);
+            Assert.Equal(name, CultureInfo.GetCultureInfo(name, predefinedOnly: false).Name);
+            Assert.Equal(name, CultureInfo.GetCultureInfo(name, predefinedOnly: true).Name);
+        }
+
+        [ConditionalTheory(nameof(PlatformSupportsFakeCulture))]
         [InlineData("xx")]
         [InlineData("xx-XX")]
         [InlineData("xx-YY")]

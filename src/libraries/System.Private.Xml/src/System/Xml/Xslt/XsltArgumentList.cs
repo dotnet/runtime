@@ -18,16 +18,16 @@ namespace System.Xml.Xsl
         private readonly Hashtable _extensions = new Hashtable();
 
         // Used for reporting xsl:message's during execution
-        internal XsltMessageEncounteredEventHandler xsltMessageEncountered;
+        internal XsltMessageEncounteredEventHandler? xsltMessageEncountered;
 
         public XsltArgumentList() { }
 
-        public object GetParam(string name, string namespaceUri)
+        public object? GetParam(string name, string namespaceUri)
         {
             return _parameters[new XmlQualifiedName(name, namespaceUri)];
         }
 
-        public object GetExtensionObject(string namespaceUri)
+        public object? GetExtensionObject(string namespaceUri)
         {
             return _extensions[namespaceUri];
         }
@@ -50,17 +50,17 @@ namespace System.Xml.Xsl
             _extensions.Add(namespaceUri, extension);
         }
 
-        public object RemoveParam(string name, string namespaceUri)
+        public object? RemoveParam(string name, string namespaceUri)
         {
             XmlQualifiedName qname = new XmlQualifiedName(name, namespaceUri);
-            object parameter = _parameters[qname];
+            object? parameter = _parameters[qname];
             _parameters.Remove(qname);
             return parameter;
         }
 
-        public object RemoveExtensionObject(string namespaceUri)
+        public object? RemoveExtensionObject(string namespaceUri)
         {
-            object extension = _extensions[namespaceUri];
+            object? extension = _extensions[namespaceUri];
             _extensions.Remove(namespaceUri);
             return extension;
         }

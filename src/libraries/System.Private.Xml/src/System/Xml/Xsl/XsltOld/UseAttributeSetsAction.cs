@@ -11,12 +11,12 @@ namespace System.Xml.Xsl.XsltOld
 
     internal class UseAttributeSetsAction : CompiledAction
     {
-        private XmlQualifiedName[] _useAttributeSets;
-        private string _useString;
+        private XmlQualifiedName[]? _useAttributeSets;
+        private string? _useString;
 
         private const int ProcessingSets = 2;
 
-        internal XmlQualifiedName[] UsedSets
+        internal XmlQualifiedName[]? UsedSets
         {
             get { return _useAttributeSets; }
         }
@@ -69,9 +69,9 @@ namespace System.Xml.Xsl.XsltOld
                     goto case ProcessingSets;
 
                 case ProcessingSets:
-                    if (frame.Counter < _useAttributeSets.Length)
+                    if (frame.Counter < _useAttributeSets!.Length)
                     {
-                        AttributeSetAction action = processor.RootAction.GetAttributeSet(_useAttributeSets[frame.Counter]);
+                        AttributeSetAction action = processor.RootAction!.GetAttributeSet(_useAttributeSets[frame.Counter]);
                         frame.IncrementCounter();
                         processor.PushActionFrame(action, frame.NodeSet);
                     }

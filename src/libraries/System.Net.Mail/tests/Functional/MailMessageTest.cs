@@ -146,6 +146,7 @@ namespace System.Net.Mail.Tests
         }
 
         [Fact]
+        [PlatformSpecific(~TestPlatforms.Browser)] // Not passing as internal System.Net.Mail.MailWriter stripped from build
         public void SentSpecialLengthMailAttachment_Base64Decode_Success()
         {
             // The special length follows pattern: (3N - 1) * 0x4400 + 1

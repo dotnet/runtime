@@ -19,11 +19,11 @@ PE/COFF Specification defines the structure of Debug Directory in section 5.1.1.
 | Offset | Size | Field          | Description                                                    |
 |:-------|:-----|:---------------|----------------------------------------------------------------|
 | 0      | 4    | Signature      | 0x52 0x53 0x44 0x53 (ASCII string: "RSDS") |
-| 4      | 16   | Guid           | GUID (Globally Unique Identifier) of the associated PDB.  
+| 4      | 16   | Guid           | GUID (Globally Unique Identifier) of the associated PDB.
 | 20     | 4    | Age            | Iteration of the PDB. The first iteration is 1. The iteration is incremented each time the PDB content is augmented.
 | 24     |      | Path           | UTF-8 NUL-terminated path to the associated .pdb file |
 
-Guid and Age are used to match PE/COFF image with the associated PDB. 
+Guid and Age are used to match PE/COFF image with the associated PDB.
 
 The associated .pdb file may not exist at the path indicated by Path field. If it doesn't the Path, Guid and Age can be used to find the corresponding PDB file locally or on a symbol server. The exact search algorithm used by tools to locate the PDB depends on the tool and its configuration.
 
@@ -37,11 +37,11 @@ If the containing PE/COFF file is deterministic the Guid field above and DateTim
 
 The entry doesn't have any data associated with it. All fields of the entry, but Type shall be zero.
 
-Presence of this entry indicates that the containing PE/COFF file is deterministic. 
+Presence of this entry indicates that the containing PE/COFF file is deterministic.
 
 ### Embedded Portable PDB Debug Directory Entry (type 17)
 
-Declares that debugging information is embedded in the PE file at location specified by PointerToRawData. 
+Declares that debugging information is embedded in the PE file at location specified by PointerToRawData.
 
 *Version Major=any, Minor=0x0100* of the data format:
 
@@ -49,7 +49,7 @@ Declares that debugging information is embedded in the PE file at location speci
 |:-------|:---------------|:-----------------|-------------------------------------------------------|
 | 0      | 4              | Signature        | 0x4D 0x50 0x44 0x42                                   |
 | 4      | 4              | UncompressedSize | The size of decompressed Portable PDB image           |
-| 8      | SizeOfData - 8 | PortablePdbImage | Portable PDB image compressed using Deflate algorithm | 
+| 8      | SizeOfData - 8 | PortablePdbImage | Portable PDB image compressed using Deflate algorithm |
 
 
 If both CodeView and Embedded Portable PDB entries are present then they shall represent the same data.
@@ -70,9 +70,9 @@ The value of Stamp field in the entry shall be 0.
 
 Stores crypto hash of the content of the symbol file the PE/COFF file was built with.
 
-The hash can be used to validate that a given PDB file was built with the PE/COFF file and not altered in any way. 
+The hash can be used to validate that a given PDB file was built with the PE/COFF file and not altered in any way.
 
-More than one entry can be present, in case multiple PDBs were produced during the build of the PE/COFF file (e.g. private and public symbols). 
+More than one entry can be present, in case multiple PDBs were produced during the build of the PE/COFF file (e.g. private and public symbols).
 
 *Version Major=0x0001, Minor=0x0000* of the entry data format is following:
 
@@ -103,7 +103,7 @@ When validating that Portable PDB matches the debug directory record check that 
 
 If the symbol format is Windows PDB the checksum is calculated by hashing the entire content of the PDB file with the PDB signature comprising of 16B GUID and 4B timestamp zeroed.
 
-When validating that Windows PDB matches the debug directory record check that the checksums match and that the PDB signature (both GUID and timestamp values) match the data in the corresponding [CodeView record](#WindowsCodeViewEntry). 
+When validating that Windows PDB matches the debug directory record check that the checksums match and that the PDB signature (both GUID and timestamp values) match the data in the corresponding [CodeView record](#WindowsCodeViewEntry).
 
 > Note that when the debugger (or other tool) searches for the PDB only GUID and Age fields are used to match the PDB, but the timestamp of the CodeView debug directory entry does not need to match the timestamp stored in the PDB. Therefore, to verify byte-for-byte identity of the PDB, the timestamp field should also be checked.
 

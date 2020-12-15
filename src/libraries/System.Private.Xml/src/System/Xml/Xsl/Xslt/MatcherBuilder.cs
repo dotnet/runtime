@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Xml.Xsl.Qil;
 using System.Xml.Xsl.XPath;
 
@@ -92,16 +93,16 @@ namespace System.Xml.Xsl.Xslt
         private readonly Template _template;
         private readonly double _priority;
         private XmlNodeKindFlags _nodeKind;
-        private QilName _qname;
+        private QilName? _qname;
         private readonly QilIterator _iterator;
-        private QilNode _condition;    // null means f.True()
+        private QilNode? _condition;    // null means f.True()
 
         public XmlNodeKindFlags NodeKind
         {
             get { return _nodeKind; }
         }
 
-        public QilName QName
+        public QilName? QName
         {
             get { return _qname; }
         }
@@ -111,12 +112,12 @@ namespace System.Xml.Xsl.Xslt
             get { return _iterator; }
         }
 
-        public QilNode Condition
+        public QilNode? Condition
         {
             get { return _condition; }
         }
 
-        public QilFunction TemplateFunction
+        public QilFunction? TemplateFunction
         {
             get { return _template.Function; }
         }
@@ -156,7 +157,7 @@ namespace System.Xml.Xsl.Xslt
         {
             QilBinary[] leftPath = new QilBinary[4];   // Circular buffer for last 4 And nodes
             int idx = -1;                 // Index of last element in leftPath
-            QilNode node = _condition;          // Walker through left path of the tree
+            QilNode node = _condition!;          // Walker through left path of the tree
 
             _nodeKind = XmlNodeKindFlags.None;
             _qname = null;
@@ -178,7 +179,7 @@ namespace System.Xml.Xsl.Xslt
                 return;
             }
 
-            XmlNodeKindFlags nodeKinds = isType.Right.XmlType.NodeKinds;
+            XmlNodeKindFlags nodeKinds = isType.Right.XmlType!.NodeKinds;
             if (!Bits.ExactlyOne((uint)nodeKinds))
             {
                 return;
@@ -200,7 +201,7 @@ namespace System.Xml.Xsl.Xslt
                 {
                     // Recognized pattern B
                     x = lastAnd;
-                    _qname = (QilName)((QilLiteral)eq.Right).Value;
+                    _qname = (QilName?)((QilLiteral)eq.Right).Value;
                     idx--;
                 }
             }
@@ -230,10 +231,10 @@ namespace System.Xml.Xsl.Xslt
             // * x's priority is equal to y's priority, and x occurs later in the stylesheet than y.
             // Order of TemplateMatch'es from the same xsl:template/@match attribute does not matter.
 
-            public int Compare(TemplateMatch x, TemplateMatch y)
+            public int Compare(TemplateMatch? x, TemplateMatch? y)
             {
-                Debug.Assert(!double.IsNaN(x._priority));
-                Debug.Assert(!double.IsNaN(y._priority));
+                Debug.Assert(!double.IsNaN(x!._priority));
+                Debug.Assert(!double.IsNaN(y!._priority));
                 return (
                     x._priority > y._priority ? 1 :
                     x._priority < y._priority ? -1 :
@@ -272,8 +273,8 @@ namespace System.Xml.Xsl.Xslt
 
         public void Add(Pattern pattern)
         {
-            QilName qname = pattern.Match.QName;
-            List<Pattern> list;
+            QilName? qname = pattern.Match.QName;
+            List<Pattern>? list;
 
             if (qname == null)
             {
@@ -356,12 +357,12 @@ namespace System.Xml.Xsl.Xslt
         private void CollectPatternsInternal(Stylesheet sheet, QilName mode)
         {
             // Process imported stylesheets in the straight order, since their order will be reverted in the result tree
-            foreach (Stylesheet import in sheet.Imports)
+            foreach (Stylesheet import in sheet.Imports!)
             {
                 CollectPatternsInternal(import, mode);
             }
 
-            List<TemplateMatch> matchesForMode;
+            List<TemplateMatch>? matchesForMode;
             if (sheet.TemplateMatches.TryGetValue(mode, out matchesForMode))
             {
                 AddPatterns(matchesForMode);
@@ -372,7 +373,7 @@ namespace System.Xml.Xsl.Xslt
         public void CollectPatterns(StylesheetLevel sheet, QilName mode)
         {
             Clear();
-            foreach (Stylesheet import in sheet.Imports)
+            foreach (Stylesheet import in sheet.Imports!)
             {
                 CollectPatternsInternal(import, mode);
             }
@@ -380,7 +381,7 @@ namespace System.Xml.Xsl.Xslt
 
         private QilNode MatchPattern(QilIterator it, TemplateMatch match)
         {
-            QilNode cond = match.Condition;
+            QilNode? cond = match.Condition;
             if (cond == null)
             {
                 return _f.True();
@@ -515,7 +516,7 @@ namespace System.Xml.Xsl.Xslt
             {
                 foreach (TemplateMatch match in list)
                 {
-                    branches[++priority] = _invkGen.GenerateInvoke(match.TemplateFunction, actualArgs);
+                    branches[++priority] = _invkGen.GenerateInvoke(match.TemplateFunction!, actualArgs);
                 }
             }
 

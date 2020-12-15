@@ -18,7 +18,8 @@ namespace System.Net
                 SocketError.OperationAborted => NetworkError.OperationAborted,
                 SocketError.ConnectionAborted => NetworkError.ConnectionAborted,
                 SocketError.ConnectionReset => NetworkError.ConnectionReset,
-                _ => NetworkError.Unknown
+                SocketError.TimedOut => NetworkError.TimedOut,
+                _ => NetworkError.Other
             };
 
             return new NetworkException(error, socketException);

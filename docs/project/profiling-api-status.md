@@ -20,7 +20,7 @@ ReJIT feature is only available on x86/x64 for now.
 
 ### Profiler Attach/Detach
 
-We only support launch at the moment, see https://github.com/dotnet/coreclr/issues/16796
+We only support launch at the moment, see https://github.com/dotnet/runtime/issues/9886
 
 ### Any issues we missed?
 

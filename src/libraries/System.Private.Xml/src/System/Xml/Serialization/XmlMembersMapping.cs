@@ -5,7 +5,6 @@ using System.Reflection;
 using System;
 using System.Text;
 
-
 namespace System.Xml.Serialization
 {
     ///<internalonly/>
@@ -18,15 +17,15 @@ namespace System.Xml.Serialization
 
         internal XmlMembersMapping(TypeScope scope, ElementAccessor accessor, XmlMappingAccess access) : base(scope, accessor, access)
         {
-            MembersMapping mapping = (MembersMapping)accessor.Mapping;
+            MembersMapping mapping = (MembersMapping)accessor.Mapping!;
             StringBuilder key = new StringBuilder();
             key.Append(':');
-            _mappings = new XmlMemberMapping[mapping.Members.Length];
+            _mappings = new XmlMemberMapping[mapping.Members!.Length];
             for (int i = 0; i < _mappings.Length; i++)
             {
-                if (mapping.Members[i].TypeDesc.Type != null)
+                if (mapping.Members[i].TypeDesc!.Type != null)
                 {
-                    key.Append(GenerateKey(mapping.Members[i].TypeDesc.Type, null, null));
+                    key.Append(GenerateKey(mapping.Members[i].TypeDesc!.Type!, null, null));
                     key.Append(':');
                 }
                 _mappings[i] = new XmlMemberMapping(mapping.Members[i]);
@@ -37,17 +36,17 @@ namespace System.Xml.Serialization
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
-        public string TypeName
+        public string? TypeName
         {
-            get { return Accessor.Mapping.TypeName; }
+            get { return Accessor.Mapping!.TypeName; }
         }
 
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
-        public string TypeNamespace
+        public string? TypeNamespace
         {
-            get { return Accessor.Mapping.Namespace; }
+            get { return Accessor.Mapping!.Namespace; }
         }
 
         /// <devdoc>

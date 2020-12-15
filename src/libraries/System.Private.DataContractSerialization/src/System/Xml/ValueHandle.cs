@@ -5,7 +5,7 @@ using System.Runtime.Serialization;
 using System.Diagnostics;
 using System.Globalization;
 using System.Text;
-
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Xml
 {
@@ -71,7 +71,7 @@ namespace System.Xml
         private ValueHandleType _type;
         private int _offset;
         private int _length;
-        private static Base64Encoding s_base64Encoding;
+        private static Base64Encoding? s_base64Encoding;
         private static readonly string[] s_constStrings = {
                                         "string",
                                         "number",
@@ -818,7 +818,7 @@ namespace System.Xml
             return true;
         }
 
-        public bool TryGetDictionaryString(out XmlDictionaryString value)
+        public bool TryGetDictionaryString([NotNullWhen(true)] out XmlDictionaryString? value)
         {
             if (_type == ValueHandleType.Dictionary)
             {

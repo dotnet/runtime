@@ -2,9 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using Test.Cryptography;
+using Xunit;
 
 namespace System.Security.Cryptography.Hashing.Algorithms.Tests
 {
+    [SkipOnMono("Not supported on Browser", TestPlatforms.Browser)]
     public abstract class Rfc2202HmacTests : HmacTests
     {
         private static readonly byte[][] s_testData2202 =

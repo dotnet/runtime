@@ -11,6 +11,20 @@ using System.Runtime.Loader;
 
 class Program
 {
+    class TestALC : AssemblyLoadContext
+    {
+        AssemblyLoadContext m_parentALC;
+        public TestALC(AssemblyLoadContext parentALC) : base("test", isCollectible: true)
+        {
+            m_parentALC = parentALC;
+        }
+
+        protected override Assembly Load(AssemblyName name)
+        {
+            return m_parentALC.LoadFromAssemblyName(name);
+        }
+    }
+
     static int Main(string[] args)
     {
         var holdResult = HoldAssembliesAliveThroughByRefFields(out GCHandle gch1, out GCHandle gch2);
@@ -54,13 +68,17 @@ class Program
             Console.WriteLine(span2[0]);
             GC.Collect(2);
             GC.WaitForPendingFinalizers();
-            if (gch1.Target == null)
+            // The loop may be unrolled, in which case things won't be live on the final iteration.
+            if (i < 9)
             {
-                return 1;
-            }
-            if (gch2.Target == null)
-            {
-                return 2;
+                if (gch1.Target == null)
+                {
+                    return 1;
+                }
+                if (gch2.Target == null)
+                {
+                    return 2;
+                }
             }
         }
 
@@ -70,7 +88,8 @@ class Program
     [MethodImpl(MethodImplOptions.NoInlining)]
     private static ReadOnlySpan<byte> LoadAssembly(out GCHandle gchToAssembly)
     {
-        var alc = new AssemblyLoadContext("test", isCollectible: true);
+        var currentALC = AssemblyLoadContext.GetLoadContext(Assembly.GetExecutingAssembly());
+        var alc = new TestALC(currentALC);
         var a = alc.LoadFromAssemblyPath(Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), "Unloaded.dll"));
         gchToAssembly = GCHandle.Alloc(a, GCHandleType.WeakTrackResurrection);
 

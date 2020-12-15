@@ -5,7 +5,7 @@
     <GCStressIncompatible>true</GCStressIncompatible>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <CLRTestPriority>0</CLRTestPriority>
-    <!-- https://github.com/dotnet/coreclr/issues/24423 -->
+    <!-- https://github.com/dotnet/runtime/issues/12642 -->
     <JitOptimizationSensitive>True</JitOptimizationSensitive>
   </PropertyGroup>
   <ItemGroup>
