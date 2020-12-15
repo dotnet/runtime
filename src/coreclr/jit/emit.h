@@ -1369,11 +1369,13 @@ protected:
                                   // hot to cold and cold to hot jumps)
     };
 
+#ifdef FEATURE_LOOP_ALIGN
     struct instrDescAlign : instrDesc
     {
         instrDescAlign* idaNext; // next align in the group/method
         insGroup*     idaIG;   // containing group
     };
+#endif
 
 #if !defined(TARGET_ARM64) // This shouldn't be needed for ARM32, either, but I don't want to touch the ARM32 JIT.
     struct instrDescLbl : instrDescJmp
@@ -1752,9 +1754,18 @@ private:
     instrDescJmp* emitJumpLast;       // last of local jumps in method
     void          emitJumpDistBind(); // Bind all the local jumps in method
 
+#ifdef FEATURE_LOOP_ALIGN
+    instrDescAlign*   emitCurIGAlignList;     // list of align instructions in current IG
+    unsigned        emitLastInnerLoopStartIgNum; // Start IG of last inner loop
+    unsigned          emitLastInnerLoopEndIgNum; // End IG of last inner loop
+    unsigned        emitLastAlignedIgNum; // last IG that has align instruction
+    instrDescAlign* emitAlignList;    // list of local align instructions in method
+    instrDescAlign* emitAlignLast;    // last align instruction in method
     unsigned getLoopSize(insGroup* igLoopHeader, unsigned maxLoopSize); // Get the smallest loop size
     void emitSetLoopBackEdge(insGroup* dstIG);
     void emitLoopAlignAdjustments(); // Predict if loop alignment is needed and make appropriate adjustments
+    unsigned emitCalculatePaddingForLoopAlignment(insGroup* ig, size_t offset DEBUG_ARG(bool displayAlignmentDetails));
+#endif
 
     void emitCheckFuncletBranch(instrDesc* jmp, insGroup* jmpIG); // Check for illegal branches between funclets
 
@@ -1996,6 +2007,7 @@ private:
         return (instrDescCGCA*)emitAllocAnyInstr(sizeof(instrDescCGCA), attr);
     }
 
+#ifdef FEATURE_LOOP_ALIGN
     instrDescAlign* emitAllocInstrAlign()
     {
 #if EMITTER_STATS
@@ -2003,6 +2015,8 @@ private:
 #endif // EMITTER_STATS
         return (instrDescAlign*)emitAllocAnyInstr(sizeof(instrDescAlign), EA_1BYTE);
     }
+    instrDescAlign* emitNewInstrAlign();
+#endif
 
     instrDesc* emitNewInstrSmall(emitAttr attr);
     instrDesc* emitNewInstr(emitAttr attr = EA_4BYTE);
@@ -2019,7 +2033,6 @@ private:
     instrDescLbl* emitNewInstrLbl();
 #endif // !TARGET_ARM64
 
-    instrDescAlign*   emitNewInstrAlign();
     static const BYTE emitFmtToOps[];
 
 #ifdef DEBUG
@@ -2529,12 +2542,14 @@ inline emitter::instrDescJmp* emitter::emitNewInstrJmp()
     return emitAllocInstrJmp();
 }
 
+#ifdef FEATURE_LOOP_ALIGN
 inline emitter::instrDescAlign* emitter::emitNewInstrAlign()
 {
     instrDescAlign* newInstr = emitAllocInstrAlign();
     newInstr->idIns(INS_align);
     return newInstr;
 }
+#endif
 
 #if !defined(TARGET_ARM64)
 inline emitter::instrDescLbl* emitter::emitNewInstrLbl()

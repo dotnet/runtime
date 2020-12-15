@@ -5177,9 +5177,10 @@ void Compiler::optCloneLoop(unsigned loopInd, LoopCloneContext* context)
 {
     assert(loopInd < optLoopCount);
 
-    JITDUMP("\nCloning loop %d: [h: %d, f: %d, t: %d, e: %d, b: %d].\n", loopInd, optLoopTable[loopInd].lpHead->bbNum,
-            optLoopTable[loopInd].lpFirst->bbNum, optLoopTable[loopInd].lpTop->bbNum,
-            optLoopTable[loopInd].lpEntry->bbNum, optLoopTable[loopInd].lpBottom->bbNum);
+    JITDUMP("\nCloning loop %d: [h: %d, f: %d, t: %d, e: %d, b: %d, c: %d].\n", loopInd,
+            optLoopTable[loopInd].lpHead->bbNum, optLoopTable[loopInd].lpFirst->bbNum,
+            optLoopTable[loopInd].lpTop->bbNum, optLoopTable[loopInd].lpEntry->bbNum,
+            optLoopTable[loopInd].lpBottom->bbNum, optLoopTable[loopInd].lpChild);
 
     // Determine the depth of the loop, so we can properly weight blocks added (outside the cloned loop blocks).
     unsigned             depth         = optLoopDepth(loopInd);
@@ -8014,6 +8015,7 @@ void Compiler::AddContainsCallAllContainingLoops(unsigned lnum)
         lnum                              = optLoopTable[lnum].lpParent;
     }
 
+#ifdef FEATURE_LOOP_ALIGN
     // If this is the inner most loop, reset the LOOP_ALIGN flag
     // because a loop having call will not likely to benefit from
     // alignment
@@ -8024,6 +8026,7 @@ void Compiler::AddContainsCallAllContainingLoops(unsigned lnum)
         JITDUMP("Skip alignment for L%02u that starts at " FMT_BB " because loop has a call.\n", nestedLoopNum,
                 first->bbNum);
     }
+#endif
 }
 
 // Adds the variable liveness information for 'blk' to 'this' LoopDsc
