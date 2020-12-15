@@ -47,7 +47,7 @@ namespace System.Globalization
         // 1 - s_noCasingPage
         // The bits are in reverse order for readability, i.e. the highest order bit refers to
         // the lowest index.
-        private static byte[] s_casingTableInit =
+        private static ReadOnlySpan<byte> s_casingTableInit => new byte[32]
         {
             /* 0000-07FF */    0b00000000,
             /* 0800-0FFF */    0b00000000,
