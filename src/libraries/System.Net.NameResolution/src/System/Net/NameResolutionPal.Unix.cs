@@ -79,7 +79,7 @@ namespace System.Net
             return socketError == SocketError.Success ? Marshal.PtrToStringAnsi((IntPtr)buffer) : null;
         }
 
-        public static unsafe string GetHostName() => Interop.Sys.GetHostName();
+        public static string GetHostName() => Interop.Sys.GetHostName();
 
         public static unsafe Task GetAddrInfoAsync(string hostName, bool justAddresses, AddressFamily addressFamily, CancellationToken _)
         {

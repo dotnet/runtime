@@ -510,6 +510,7 @@ struct GetAddrInfoAsyncState
     struct gaicb* gai_requests;
     struct sigevent sigevent;
 
+    struct addrinfo hint;
     HostEntry* entry;
     GetHostEntryForNameCallback callback;
     char address[];
@@ -595,11 +596,6 @@ int32_t SystemNative_GetHostEntryForNameAsync(const uint8_t* address, int32_t ad
         return GetAddrInfoErrorFlags_EAI_FAMILY;
     }
 
-    struct addrinfo hint;
-    memset(&hint, 0, sizeof(struct addrinfo));
-    hint.ai_flags = AI_CANONNAME;
-    hint.ai_family = platformFamily;
-
     struct GetAddrInfoAsyncState* state = malloc(sizeof(*state) + addrlen + 1);
 
     if (state == NULL)
@@ -607,13 +603,17 @@ int32_t SystemNative_GetHostEntryForNameAsync(const uint8_t* address, int32_t ad
         return GetAddrInfoErrorFlags_EAI_MEMORY;
     }
 
+    memset(&state->hint, 0, sizeof(struct addrinfo));
+    state->hint.ai_flags = AI_CANONNAME;
+    state->hint.ai_family = platformFamily;
+
     memcpy(state->address, address, addrlen + 1);
 
     *state = (struct GetAddrInfoAsyncState) {
         .gai_request = {
             .ar_name = state->address,
             .ar_service = NULL,
-            .ar_request = &hint,
+            .ar_request = &state->hint,
             .ar_result = NULL
         },
         .gai_requests = &state->gai_request,
