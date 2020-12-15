@@ -264,7 +264,7 @@ fi
       <PropertyGroup>
       <_CLRTestRunFile Condition="'$(CLRTestIsHosted)'=='true'">"$CORE_ROOT/corerun"</_CLRTestRunFile>
 
-      <BashCLRTestPreCommands Condition="'$(TargetArchitecture)' == 'wasm'">
+      <BashCLRTestPreCommands Condition="'$(CLRTestKind)' == 'BuildAndRun' and '$(TargetArchitecture)' == 'wasm'">
    <![CDATA[
 # Build wasm app containing the test dll
 __Command=""
