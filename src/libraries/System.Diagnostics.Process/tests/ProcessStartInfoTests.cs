@@ -17,6 +17,7 @@ using Microsoft.DotNet.XUnitExtensions;
 using Microsoft.Win32;
 using Microsoft.Win32.SafeHandles;
 using Xunit;
+using System.Security.AccessControl;
 
 namespace System.Diagnostics.Tests
 {
@@ -370,6 +371,9 @@ namespace System.Diagnostics.Tests
             {
                 p = CreateProcessLong();
 
+                // ensure the new user can access the .exe (otherwise you get Access is denied exception)
+                SetAccessControl(username, p.StartInfo.FileName, AccessControlType.Allow);
+
                 p.StartInfo.LoadUserProfile = true;
                 p.StartInfo.UserName = username;
                 p.StartInfo.PasswordInClearText = password;
@@ -395,6 +399,8 @@ namespace System.Diagnostics.Tests
             }
             finally
             {
+                SetAccessControl(username, p.StartInfo.FileName, AccessControlType.Deny); // revoke the access
+
                 Assert.Equal(Interop.ExitCodes.NERR_Success, Interop.NetUserDel(null, username));
 
                 if (handle != null)
@@ -407,6 +413,14 @@ namespace System.Diagnostics.Tests
                     Assert.True(p.WaitForExit(WaitInMS));
                 }
             }
+        }
+
+        private static void SetAccessControl(string userName, string filePath, AccessControlType accessControlType)
+        {
+            FileInfo fileInfo = new FileInfo(filePath);
+            FileSecurity accessControl = fileInfo.GetAccessControl();
+            accessControl.AddAccessRule(new FileSystemAccessRule(userName, FileSystemRights.ReadAndExecute, accessControlType));
+            fileInfo.SetAccessControl(accessControl);
         }
 
         private static List<string> GetNamesOfUserProfiles()
