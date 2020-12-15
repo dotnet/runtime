@@ -1,0 +1,7 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFrameworks>netstandard2.0</TargetFrameworks>
+    <Win32Resource>EventLogMessages.res</Win32Resource>
+    <IncludePlatformAttributes>false</IncludePlatformAttributes>
+  </PropertyGroup>
+</Project>

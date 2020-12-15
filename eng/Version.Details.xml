@@ -94,9 +94,9 @@
       <Uri>https://dev.azure.com/dnceng/internal/_git/dotnet-optimization</Uri>
       <Sha>f69d7fc09c4fdb9e9427741b9a176e867dab577f</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.NET.Test.Sdk" Version="16.8.0-release-20201022-02">
+    <Dependency Name="Microsoft.NET.Test.Sdk" Version="16.9.0-preview-20201201-01">
       <Uri>https://github.com/microsoft/vstest</Uri>
-      <Sha>b195e2589980861425b331e73a859252c3f2b71a</Sha>
+      <Sha>140434f7109d357d0158ade9e5164a4861513965</Sha>
     </Dependency>
     <Dependency Name="System.ComponentModel.TypeConverter.TestData" Version="5.0.0-beta.20607.2">
       <Uri>https://github.com/dotnet/runtime-assets</Uri>
@@ -170,29 +170,33 @@
       <Uri>https://github.com/dotnet/runtime</Uri>
       <Sha>38017c3935de95d0335bac04f4901ddfc2718656</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.NETCore.DotNetHost" Version="6.0.0-alpha.1.20501.4">
+    <Dependency Name="Microsoft.NETCore.DotNetHost" Version="6.0.0-alpha.1.20602.4">
       <Uri>https://github.com/dotnet/runtime</Uri>
-      <Sha>2544c744d204c6ae0e20ba78c9cb8832a92091f3</Sha>
+      <Sha>575dae9695141b1ade423b443a41084624940818</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.NETCore.DotNetHostPolicy" Version="6.0.0-alpha.1.20501.4">
+    <Dependency Name="Microsoft.NETCore.DotNetHostPolicy" Version="6.0.0-alpha.1.20602.4">
       <Uri>https://github.com/dotnet/runtime</Uri>
-      <Sha>2544c744d204c6ae0e20ba78c9cb8832a92091f3</Sha>
+      <Sha>575dae9695141b1ade423b443a41084624940818</Sha>
     </Dependency>
-    <Dependency Name="runtime.native.System.IO.Ports" Version="5.0.0-alpha.1.19563.3">
+    <Dependency Name="runtime.native.System.IO.Ports" Version="6.0.0-alpha.1.20602.4">
       <Uri>https://github.com/dotnet/runtime</Uri>
-      <Sha>cf64918877d98577363bb40d5eafac52beb80a79</Sha>
+      <Sha>575dae9695141b1ade423b443a41084624940818</Sha>
     </Dependency>
     <Dependency Name="Microsoft.NETCore.ILAsm" Version="5.0.0-preview.8.20359.4">
       <Uri>https://github.com/dotnet/runtime</Uri>
       <Sha>bdfbf0cf85878673a80d7822cc11bde5c9fda30c</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.NET.Sdk.IL" Version="5.0.0-preview.8.20359.4">
+    <Dependency Name="Microsoft.NET.Sdk.IL" Version="6.0.0-alpha.1.20602.4">
       <Uri>https://github.com/dotnet/runtime</Uri>
-      <Sha>bdfbf0cf85878673a80d7822cc11bde5c9fda30c</Sha>
+      <Sha>575dae9695141b1ade423b443a41084624940818</Sha>
     </Dependency>
-    <Dependency Name="System.Text.Json" Version="5.0.0-rc.1.20451.14">
+    <Dependency Name="System.Text.Json" Version="6.0.0-alpha.1.20602.4">
       <Uri>https://github.com/dotnet/runtime</Uri>
-      <Sha>38017c3935de95d0335bac04f4901ddfc2718656</Sha>
+      <Sha>575dae9695141b1ade423b443a41084624940818</Sha>
+    </Dependency>
+    <Dependency Name="System.Runtime.CompilerServices.Unsafe" Version="6.0.0-alpha.1.20602.4">
+      <Uri>https://github.com/dotnet/runtime</Uri>
+      <Sha>575dae9695141b1ade423b443a41084624940818</Sha>
     </Dependency>
     <Dependency Name="Microsoft.NET.ILLink.Tasks" Version="6.0.0-alpha.1.20611.4">
       <Uri>https://github.com/mono/linker</Uri>

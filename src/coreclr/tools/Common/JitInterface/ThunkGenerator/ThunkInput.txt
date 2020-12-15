@@ -1,18 +1,18 @@
 ; Licensed to the .NET Foundation under one or more agreements.
 ; The .NET Foundation licenses this file to you under the MIT license.
 ;
-; Thunk generator input file for generating the thunks from the C++ version of the 
-; jit interface to COM, into managed, and from COM to C++. 
+; Thunk generator input file for generating the thunks from the C++ version of the
+; jit interface to COM, into managed, and from COM to C++.
 ;
-; The format of this file is as follows. 
+; The format of this file is as follows.
 ; There are NORMALTYPES, RETURNTYPES, and FUNCTIONS regions
-;  In the NORMALTYPES/RETURNTYPES region, each type is described. If a type is 
+;  In the NORMALTYPES/RETURNTYPES region, each type is described. If a type is
 ;  described in the NORMALTYPES section, but isn't described in the RETURNTYPES section
 ;  then the NORMALTYPES description can be used for a return value.
 ;
 ; TYPES have three fields
 ; ThunkDescriptionType,ManagedType,NativeType,NativeType2
-;   If either ManagedType, NativeType, or NativeType2 are missing, then that form is replaced with ThunkDescriptionType. 
+;   If either ManagedType, NativeType, or NativeType2 are missing, then that form is replaced with ThunkDescriptionType.
 ;   NativeType is used for representing the type in headers which do not include the PAL and corinfo.h
 ;   NativeType2 is used for representing the type in headers that are fully integrated with the PAL
 ;   This feature allows reduction in type for enums and other types where the same type can be used in managed an native
@@ -24,12 +24,12 @@
 ;  PointerToIntPointer,int**,int**
 ;
 ; Following the TYPES sections, there is the FUNCTIONS section
-; Each function that is to be part of the interface is written here. The format is basically the C++ format 
+; Each function that is to be part of the interface is written here. The format is basically the C++ format
 ; without support for inline comments or sal annotations.
 ;
 ; Also, note that an empty line is ignored, and a line that begins with a ; is ignored.
 ;
-; If the boilerplate around the individual functions needs adjustment, edit the thunk generator source code, and 
+; If the boilerplate around the individual functions needs adjustment, edit the thunk generator source code, and
 ;    rebuild with rebuildthunkgen.cmd in the the ThunkGenerator subdir, then rebuildthunks.cmd
 ; If this file is editted, rebuild with gen.cmd -- DO NOT RUN from within a razzle window.
 ;
@@ -123,7 +123,7 @@ CorInfoTailCall,,int
 CorInfoType,,int
 CorInfoHFAElemType,,int
 CorInfoTypeWithMod,,int
-CorInfoUnmanagedCallConv,,int
+CorInfoCallConvExtension,,int
 InfoAccessType,,int
 CORINFO_LOOKUP_KIND
 CORINFO_ACCESS_FLAGS,,int
@@ -176,7 +176,7 @@ FUNCTIONS
     void expandRawHandleIntrinsic(CORINFO_RESOLVED_TOKEN *        pResolvedToken, CORINFO_GENERICHANDLE_RESULT *  pResult);
     CorInfoIntrinsics getIntrinsicID(        CORINFO_METHOD_HANDLE       method        , BoolStar pMustExpand);
     bool isIntrinsicType(           CORINFO_CLASS_HANDLE        classHnd );
-    CorInfoUnmanagedCallConv getUnmanagedCallConv(        CORINFO_METHOD_HANDLE       method        );
+    CorInfoCallConvExtension getUnmanagedCallConv(            CORINFO_METHOD_HANDLE       method,            CORINFO_SIG_INFO*           callSiteSig, bool* pSuppressGCTransition);
     bool pInvokeMarshalingRequired(        CORINFO_METHOD_HANDLE       method,        CORINFO_SIG_INFO*           callSiteSig        );
     bool satisfiesMethodConstraints(        CORINFO_CLASS_HANDLE        parent,        CORINFO_METHOD_HANDLE       method        );
     bool isCompatibleDelegate(        CORINFO_CLASS_HANDLE        objCls,        CORINFO_CLASS_HANDLE        methodParentCls,        CORINFO_METHOD_HANDLE       method,        CORINFO_CLASS_HANDLE        delegateCls,        bool                        *pfIsOpenDelegate        );

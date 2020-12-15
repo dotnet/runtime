@@ -1,5 +1,13 @@
 include(FindPythonInterp)
 
+function(addprefix var prefix list)
+  set(f)
+  foreach(i ${list})
+    set(f ${f} ${prefix}/${i})
+  endforeach()
+  set(${var} ${f} PARENT_SCOPE)
+endfunction()
+
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
 set(GENERATE_SCRIPT ${CLR_DIR}/scripts/genEventPipe.py)
@@ -8,7 +16,7 @@ set(GENERATE_COMMAND ${PYTHON_EXECUTABLE} ${GENERATE_SCRIPT} --man ${EVENT_MANIF
 execute_process(
   COMMAND ${GENERATE_COMMAND} --dry-run
   RESULT_VARIABLE GEN_EVENTPIPE_RESULT
-  OUTPUT_VARIABLE EVENTPIPE_SOURCE_PATHS
+  OUTPUT_VARIABLE GEN_EVENTPIPE_SOURCE_PATHS
   ERROR_VARIABLE GEN_EVENTPIPE_ERRORS
 )
 
@@ -16,20 +24,147 @@ if (NOT GEN_EVENTPIPE_RESULT EQUAL 0)
   message(FATAL_ERROR "Failed to generate EventPipe: ${GEN_EVENTPIPE_ERRORS}")
 endif()
 
-string(REPLACE "\n" ";" EVENTPIPE_SOURCE_PATHS ${EVENTPIPE_SOURCE_PATHS}) # turn the outputted list of files into a CMake list
+string(REPLACE "\n" ";" GEN_EVENTPIPE_SOURCE_PATHS ${GEN_EVENTPIPE_SOURCE_PATHS}) # turn the outputted list of files into a CMake list
 
-set (EVENTPIPE_SOURCES "")
-foreach(EVENTPIPE_SOURCE_PATH ${EVENTPIPE_SOURCE_PATHS})
-  file(TO_CMAKE_PATH ${EVENTPIPE_SOURCE_PATH} EVENTPIPE_SOURCE)
-  list(APPEND EVENTPIPE_SOURCES ${EVENTPIPE_SOURCE})
+set (GEN_EVENTPIPE_SOURCES "")
+foreach(GEN_EVENTPIPE_SOURCE_PATH ${GEN_EVENTPIPE_SOURCE_PATHS})
+  file(TO_CMAKE_PATH ${GEN_EVENTPIPE_SOURCE_PATH} GEN_EVENTPIPE_SOURCE)
+  list(APPEND GEN_EVENTPIPE_SOURCES ${GEN_EVENTPIPE_SOURCE})
 endforeach()
 
-add_custom_command(OUTPUT ${EVENTPIPE_SOURCES}
+add_custom_command(OUTPUT ${GEN_EVENTPIPE_SOURCES}
   COMMAND ${GENERATE_COMMAND}
   DEPENDS ${GENERATE_SCRIPT} ${EVENT_MANIFEST} ${EVENT_EXCLUSIONS})
 
-add_library_clr(eventpipe_obj OBJECT ${EVENTPIPE_SOURCES})
-set_target_properties(eventpipe_obj PROPERTIES LINKER_LANGUAGE CXX)
-add_dependencies(eventpipe_obj eventing_headers)
+set (EVENTPIPE_SOURCES "")
+set (EVENTPIPE_HEADERS "")
+set (CORECLR_EVENTPIPE_SHIM_SOURCES "")
+set (CORECLR_EVENTPIPE_SHIM_HEADERS "")
+
+if(FEATURE_PERFTRACING_C_LIB)
+
+  set (SHARED_EVENTPIPE_SOURCE_PATH "${SHARED_EVENTPIPE_DIR}")
+  set (CORECLR_EVENTPIPE_SHIM_SOURCE_PATH "${CORECLR_EVENTPIPE_SHIM_DIR}")
+
+  include (${SHARED_EVENTPIPE_SOURCE_PATH}/CMakeLists.txt)
+
+  list(APPEND EVENTPIPE_SOURCES
+    ${SHARED_EVENTPIPE_SOURCES}
+    ${SHARED_DIAGNOSTIC_SERVER_SOURCES}
+  )
+
+  list(APPEND EVENTPIPE_HEADERS
+    ${SHARED_EVENTPIPE_HEADERS}
+    ${SHARED_DIAGNOSTIC_SERVER_HEADERS}
+  )
+
+  addprefix(EVENTPIPE_SOURCES ${SHARED_EVENTPIPE_SOURCE_PATH} "${EVENTPIPE_SOURCES}")
+  addprefix(EVENTPIPE_HEADERS ${SHARED_EVENTPIPE_SOURCE_PATH} "${EVENTPIPE_HEADERS}")
+
+  set_source_files_properties(${EVENTPIPE_SOURCES} PROPERTIES LANGUAGE CXX)
+
+  if(CLR_CMAKE_HOST_UNIX)
+    set_source_files_properties(${EVENTPIPE_SOURCES} PROPERTIES COMPILE_OPTIONS -xc++)
+  endif(CLR_CMAKE_HOST_UNIX)
+
+  list(APPEND CORECLR_EVENTPIPE_SHIM_SOURCES
+    ep-rt-coreclr.cpp
+  )
+
+  list(APPEND CORECLR_EVENTPIPE_SHIM_HEADERS
+    ds-rt-coreclr.h
+    ds-rt-types-coreclr.h
+    ep-rt-coreclr.h
+    ep-rt-config-coreclr.h
+    ep-rt-types-coreclr.h
+  )
+
+  addprefix(CORECLR_EVENTPIPE_SHIM_SOURCES ${CORECLR_EVENTPIPE_SHIM_SOURCE_PATH} "${CORECLR_EVENTPIPE_SHIM_SOURCES}")
+  addprefix(CORECLR_EVENTPIPE_SHIM_HEADERS ${CORECLR_EVENTPIPE_SHIM_SOURCE_PATH} "${CORECLR_EVENTPIPE_SHIM_HEADERS}")
+else(FEATURE_PERFTRACING_C_LIB)
+  list(APPEND EVENTPIPE_SOURCES
+    eventpipe.cpp
+    eventpipeblock.cpp
+    eventpipebuffer.cpp
+    eventpipebuffermanager.cpp
+    eventpipecommontypes.cpp
+    eventpipeconfiguration.cpp
+    eventpipeevent.cpp
+    eventpipeeventinstance.cpp
+    eventpipeeventpayload.cpp
+    eventpipeeventsource.cpp
+    eventpipefile.cpp
+    eventpipejsonfile.cpp
+    eventpipemetadatagenerator.cpp
+    eventpipeprovider.cpp
+    eventpipethread.cpp
+    eventpipesession.cpp
+    eventpipesessionprovider.cpp
+    fastserializer.cpp
+    sampleprofiler.cpp
+  )
+
+  list(APPEND EVENTPIPE_HEADERS
+    eventpipe.h
+    eventpipeblock.h
+    eventpipebuffer.h
+    eventpipebuffermanager.h
+    eventpipecommontypes.h
+    eventpipeconfiguration.h
+    eventpipeevent.h
+    eventpipeeventinstance.h
+    eventpipeeventpayload.h
+    eventpipeeventsource.h
+    eventpipefile.h
+    eventpipejsonfile.h
+    eventpipemetadatagenerator.h
+    eventpipeprovider.h
+    eventpipesession.h
+    eventpipesessionprovider.h
+    eventpipethread.h
+    fastserializer.h
+    sampleprofiler.h
+    stackcontents.h
+  )
+
+  list(APPEND EVENTPIPE_SOURCES
+    diagnosticserver.cpp
+    dumpdiagnosticprotocolhelper.cpp
+    eventpipeprotocolhelper.cpp
+    ipcstreamfactory.cpp
+    processdiagnosticsprotocolhelper.cpp
+    profilerdiagnosticprotocolhelper.cpp
+  )
+
+  list(APPEND EVENTPIPE_HEADERS
+    diagnosticserver.h
+    diagnosticsprotocol.h
+    dumpdiagnosticprotocolhelper.h
+    eventpipeprotocolhelper.h
+    ipcstreamfactory.h
+    processdiagnosticsprotocolhelper.h
+    profilerdiagnosticprotocolhelper.h
+  )
+
+  addprefix(EVENTPIPE_SOURCES ${VM_DIR} "${EVENTPIPE_SOURCES}")
+  addprefix(EVENTPIPE_HEADERS ${VM_DIR} "${EVENTPIPE_HEADERS}")
+endif(FEATURE_PERFTRACING_C_LIB)
+
+list(APPEND EVENTPIPE_SOURCES
+  ${CORECLR_EVENTPIPE_SHIM_SOURCES}
+  ${CORECLR_EVENTPIPE_SHIM_HEADERS}
+  ${EVENTPIPE_HEADERS}
+)
+
+add_library_clr(eventpipe_gen_objs OBJECT ${GEN_EVENTPIPE_SOURCES})
+target_precompile_headers(eventpipe_gen_objs PRIVATE [["common.h"]])
+set_target_properties(eventpipe_gen_objs PROPERTIES LINKER_LANGUAGE CXX)
+add_dependencies(eventpipe_gen_objs eventing_headers)
+
+add_library_clr(eventpipe_objs OBJECT ${EVENTPIPE_SOURCES})
+target_precompile_headers(eventpipe_objs PRIVATE [["common.h"]])
+set_target_properties(eventpipe_objs PROPERTIES LINKER_LANGUAGE CXX)
+add_dependencies(eventpipe_objs eventing_headers)
+
 add_library(eventpipe INTERFACE)
-target_sources(eventpipe INTERFACE $<TARGET_OBJECTS:eventpipe_obj>)
+target_sources(eventpipe INTERFACE $<TARGET_OBJECTS:eventpipe_gen_objs> $<TARGET_OBJECTS:eventpipe_objs>)

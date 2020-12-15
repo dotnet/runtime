@@ -50,10 +50,6 @@
 #include "roapi.h"
 #endif // FEATURE_COMINTEROP_APARTMENT_SUPPORT
 
-#ifdef FEATURE_PERFTRACING
-#include "eventpipebuffermanager.h"
-#endif // FEATURE_PERFTRACING
-
 static const PortableTailCallFrame g_sentinelTailCallFrame = { NULL, NULL, NULL };
 
 TailCallTls::TailCallTls()

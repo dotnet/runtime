@@ -546,6 +546,22 @@ public:
         (*this)[ix] = value;
     }
 
+    // NOTHROW: Resizes if necessary.
+    BOOL PushNoThrow(const T & value)
+    {
+        // Resize if necessary - nothow.
+        if (m_curSize + 1 >= CQuickArray<T>::Size()) {
+            if (ReSizeNoThrow((m_curSize + 1) * 2) != NOERROR)
+                return FALSE;
+        }
+
+        // Append element to end of array.
+        _ASSERTE(m_curSize + 1 < CQuickArray<T>::Size());
+        SIZE_T ix = m_curSize++;
+        (*this)[ix] = value;
+        return TRUE;
+    }
+
     T Pop()
     {
         _ASSERTE(m_curSize > 0);

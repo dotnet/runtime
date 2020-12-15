@@ -2027,24 +2027,6 @@ typedef target_ssize_t cnsval_ssize_t;
 typedef target_size_t  cnsval_size_t;
 #endif
 
-// Represents the calling conventions supported with the extensible calling convention syntax
-// as well as the original metadata-encoded calling conventions.
-enum class CorInfoCallConvExtension
-{
-    Managed,
-    C,
-    Stdcall,
-    Thiscall,
-    Fastcall
-    // New calling conventions supported with the extensible calling convention encoding go here.
-};
-
-// Determines whether or not this calling convention is an instance method calling convention.
-inline bool callConvIsInstanceMethodCallConv(CorInfoCallConvExtension callConv)
-{
-    return callConv == CorInfoCallConvExtension::Thiscall;
-}
-
 /*****************************************************************************/
 #endif // TARGET_H_
 /*****************************************************************************/
