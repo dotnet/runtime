@@ -12,12 +12,13 @@
 
   <ItemGroup>
     <Compile Include="Program.cs" />
+    <Compile Include="TestClass.cs" />
   </ItemGroup>
 
 
   <ItemGroup>
-    <DeltaBase Include="Program.cs">
-      <Deltas>Program_v1.cs</Deltas>
+    <DeltaBase Include="TestClass.cs">
+      <Deltas>TestClass_v1.cs</Deltas>
     </DeltaBase>
   </ItemGroup>
 

@@ -2,7 +2,7 @@ TOP=../../../../../../
 DOTNET:=$(TOP)./dotnet.sh
 DOTNET_Q_ARGS=--nologo -v:q -consoleloggerparameters:NoSummary
 
-MONO_CONFIG ?=Release
+CONFIG ?=Release
 MONO_ARCH=x64
 
 OS := $(shell uname -s)
@@ -15,12 +15,12 @@ endif
 MONO_ENV_OPTIONS ?=--interp=-inline
 
 publish:
-	$(DOTNET) publish -c $(MONO_CONFIG) -r $(TARGET_OS)-$(MONO_ARCH)
+	$(DOTNET) publish -c $(CONFIG) -r $(TARGET_OS)-$(MONO_ARCH)
 
 run: publish
 	COMPlus_DebugWriteToStdErr=1 \
 	MONO_ENV_OPTIONS="$(MONO_ENV_OPTIONS)" \
-	$(TOP)artifacts/bin/HelloWorld/$(MONO_ARCH)/$(MONO_CONFIG)/$(TARGET_OS)-$(MONO_ARCH)/publish/HelloWorld
+	$(TOP)artifacts/bin/ConsoleDelta/$(MONO_ARCH)/$(CONFIG)/$(TARGET_OS)-$(MONO_ARCH)/publish/ConsoleDelta
 
 clean:
 	rm -rf $(TOP)artifacts/bin/HelloWorld/
