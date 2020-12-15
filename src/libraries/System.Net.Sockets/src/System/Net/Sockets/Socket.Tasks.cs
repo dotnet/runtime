@@ -28,8 +28,17 @@ namespace System.Net.Sockets
         /// <summary>Cached instance for send operations that return <see cref="Task{Int32}"/>.</summary>
         private TaskSocketAsyncEventArgs<int>? _multiBufferSendEventArgs;
 
+        /// <summary>
+        /// Accepts an incoming connection.
+        /// </summary>
+        /// <returns>An asynchronous task that completes with the accepted Socket.</returns>
         public Task<Socket> AcceptAsync() => AcceptAsync((Socket?)null);
 
+        /// <summary>
+        /// Accepts an incoming connection.
+        /// </summary>
+        /// <param name="acceptSocket">The socket to use for accepting the connection.</param>
+        /// <returns>An asynchronous task that completes with the accepted Socket.</returns>
         public Task<Socket> AcceptAsync(Socket? acceptSocket)
         {
             // Get any cached SocketAsyncEventArg we may have.
@@ -73,8 +82,19 @@ namespace System.Net.Sockets
             return t;
         }
 
+        /// <summary>
+        /// Establishes a connection to a remote host.
+        /// </summary>
+        /// <param name="remoteEP">The endpoint to connect to.</param>
+        /// <returns>An asynchronous task that completes when the connection is established.</returns>
         public Task ConnectAsync(EndPoint remoteEP) => ConnectAsync(remoteEP, default).AsTask();
 
+        /// <summary>
+        /// Establishes a connection to a remote host.
+        /// </summary>
+        /// <param name="remoteEP">The endpoint to connect to.</param>
+        /// <param name="cancellationToken">A cancellation token that can be used to cancel the asynchronous operation.</param>
+        /// <returns>An asynchronous task that completes when the connection is established.</returns>
         public ValueTask ConnectAsync(EndPoint remoteEP, CancellationToken cancellationToken)
         {
             if (cancellationToken.IsCancellationRequested)
@@ -118,12 +138,38 @@ namespace System.Net.Sockets
             }
         }
 
+        /// <summary>
+        /// Establishes a connection to a remote host.
+        /// </summary>
+        /// <param name="address">The IPAddress of the remote host to connect to.</param>
+        /// <param name="port">The port on the remote host to connect to.</param>
+        /// <returns>An asynchronous task that completes when the connection is established.</returns>
         public Task ConnectAsync(IPAddress address, int port) => ConnectAsync(new IPEndPoint(address, port));
 
+        /// <summary>
+        /// Establishes a connection to a remote host.
+        /// </summary>
+        /// <param name="address">The IPAddress of the remote host to connect to.</param>
+        /// <param name="port">The port on the remote host to connect to.</param>
+        /// <param name="cancellationToken">A cancellation token that can be used to cancel the asynchronous operation.</param>
+        /// <returns>An asynchronous task that completes when the connection is established.</returns>
         public ValueTask ConnectAsync(IPAddress address, int port, CancellationToken cancellationToken) => ConnectAsync(new IPEndPoint(address, port), cancellationToken);
 
+        /// <summary>
+        /// Establishes a connection to a remote host.
+        /// </summary>
+        /// <param name="addresses">A list of IPAddresses for the remote host that will be used to attempt to connect to the remote host.</param>
+        /// <param name="port">The port on the remote host to connect to.</param>
+        /// <returns>An asynchronous task that completes when the connection is established.</returns>
         public Task ConnectAsync(IPAddress[] addresses, int port) => ConnectAsync(addresses, port, CancellationToken.None).AsTask();
 
+        /// <summary>
+        /// Establishes a connection to a remote host.
+        /// </summary>
+        /// <param name="addresses">A list of IPAddresses for the remote host that will be used to attempt to connect to the remote host.</param>
+        /// <param name="port">The port on the remote host to connect to.</param>
+        /// <param name="cancellationToken">A cancellation token that can be used to cancel the asynchronous operation.</param>
+        /// <returns>An asynchronous task that completes when the connection is established.</returns>
         public ValueTask ConnectAsync(IPAddress[] addresses, int port, CancellationToken cancellationToken)
         {
             ThrowIfDisposed();
@@ -189,8 +235,21 @@ namespace System.Net.Sockets
             }
         }
 
+        /// <summary>
+        /// Establishes a connection to a remote host.
+        /// </summary>
+        /// <param name="host">The hostname of the remote host to connect to.</param>
+        /// <param name="port">The port on the remote host to connect to.</param>
+        /// <returns>An asynchronous task that completes when the connection is established.</returns>
         public Task ConnectAsync(string host, int port) => ConnectAsync(host, port, default).AsTask();
 
+        /// <summary>
+        /// Establishes a connection to a remote host.
+        /// </summary>
+        /// <param name="host">The hostname of the remote host to connect to.</param>
+        /// <param name="port">The port on the remote host to connect to.</param>
+        /// <param name="cancellationToken">A cancellation token that can be used to cancel the asynchronous operation.</param>
+        /// <returns>An asynchronous task that completes when the connection is established.</returns>
         public ValueTask ConnectAsync(string host, int port, CancellationToken cancellationToken)
         {
             if (host == null)
@@ -204,6 +263,12 @@ namespace System.Net.Sockets
             return ConnectAsync(ep, cancellationToken);
         }
 
+        /// <summary>
+        /// Receives data from a connected socket.
+        /// </summary>
+        /// <param name="buffer">The buffer for the received data.</param>
+        /// <param name="socketFlags">A bitwise combination of SocketFlags values that will be used when receiving the data.</param>
+        /// <returns>An asynchronous task that completes with the number of bytes received.</returns>
         public Task<int> ReceiveAsync(ArraySegment<byte> buffer, SocketFlags socketFlags) => ReceiveAsync(buffer, socketFlags, fromNetworkStream: false);
 
         internal Task<int> ReceiveAsync(ArraySegment<byte> buffer, SocketFlags socketFlags, bool fromNetworkStream)
@@ -212,6 +277,13 @@ namespace System.Net.Sockets
             return ReceiveAsync(buffer, socketFlags, fromNetworkStream, default).AsTask();
         }
 
+        /// <summary>
+        /// Receives data from a connected socket.
+        /// </summary>
+        /// <param name="buffer">The buffer for the received data.</param>
+        /// <param name="socketFlags">A bitwise combination of SocketFlags values that will be used when receiving the data.</param>
+        /// <param name="cancellationToken">A cancellation token that can be used to cancel the asynchronous operation.</param>
+        /// <returns>An asynchronous task that completes with the number of bytes received.</returns>
         public ValueTask<int> ReceiveAsync(Memory<byte> buffer, SocketFlags socketFlags, CancellationToken cancellationToken) =>
             ReceiveAsync(buffer, socketFlags, fromNetworkStream: false, cancellationToken);
 
@@ -233,6 +305,12 @@ namespace System.Net.Sockets
             return saea.ReceiveAsync(this, cancellationToken);
         }
 
+        /// <summary>
+        /// Receives data from a connected socket.
+        /// </summary>
+        /// <param name="buffers">A list of buffers for the received data.</param>
+        /// <param name="socketFlags">A bitwise combination of SocketFlags values that will be used when receiving the data.</param>
+        /// <returns>An asynchronous task that completes with the number of bytes received.</returns>
         public Task<int> ReceiveAsync(IList<ArraySegment<byte>> buffers, SocketFlags socketFlags)
         {
             ValidateBuffersList(buffers);
@@ -249,6 +327,13 @@ namespace System.Net.Sockets
             return GetTaskForSendReceive(ReceiveAsync(saea), saea, fromNetworkStream: false, isReceive: true);
         }
 
+        /// <summary>
+        /// Receives data and returns the endpoint of the sending host.
+        /// </summary>
+        /// <param name="buffer">The buffer for the received data.</param>
+        /// <param name="socketFlags">A bitwise combination of SocketFlags values that will be used when receiving the data.</param>
+        /// <param name="remoteEndPoint">An endpoint of the same type as the endpoint of the remote host.</param>
+        /// <returns>An asynchronous task that completes with a SocketReceiveFromResult containing the number of bytes received and the endpoint of the sending host.</returns>
         public Task<SocketReceiveFromResult> ReceiveFromAsync(ArraySegment<byte> buffer, SocketFlags socketFlags, EndPoint remoteEndPoint)
         {
             var tcs = new StateTaskCompletionSource<EndPoint, SocketReceiveFromResult>(this) { _field1 = remoteEndPoint };
@@ -269,6 +354,13 @@ namespace System.Net.Sockets
             return tcs.Task;
         }
 
+        /// <summary>
+        /// Receives data and returns additional information about the sender of the message.
+        /// </summary>
+        /// <param name="buffer">The buffer for the received data.</param>
+        /// <param name="socketFlags">A bitwise combination of SocketFlags values that will be used when receiving the data.</param>
+        /// <param name="remoteEndPoint">An endpoint of the same type as the endpoint of the remote host.</param>
+        /// <returns>An asynchronous task that completes with a SocketReceiveMessageFromResult containing the number of bytes received and additional information about the sending host.</returns>
         public Task<SocketReceiveMessageFromResult> ReceiveMessageFromAsync(ArraySegment<byte> buffer, SocketFlags socketFlags, EndPoint remoteEndPoint)
         {
             var tcs = new StateTaskCompletionSource<SocketFlags, EndPoint, SocketReceiveMessageFromResult>(this) { _field1 = socketFlags, _field2 = remoteEndPoint };
@@ -292,12 +384,25 @@ namespace System.Net.Sockets
             return tcs.Task;
         }
 
+        /// <summary>
+        /// Sends data on a connected socket.
+        /// </summary>
+        /// <param name="buffer">The buffer for the data to send.</param>
+        /// <param name="socketFlags">A bitwise combination of SocketFlags values that will be used when sending the data.</param>
+        /// <returns>An asynchronous task that completes with the number of bytes sent.</returns>
         public Task<int> SendAsync(ArraySegment<byte> buffer, SocketFlags socketFlags)
         {
             ValidateBuffer(buffer);
             return SendAsync(buffer, socketFlags, default).AsTask();
         }
 
+        /// <summary>
+        /// Sends data on a connected socket.
+        /// </summary>
+        /// <param name="buffer">The buffer for the data to send.</param>
+        /// <param name="socketFlags">A bitwise combination of SocketFlags values that will be used when sending the data.</param>
+        /// <param name="cancellationToken">A cancellation token that can be used to cancel the asynchronous operation.</param>
+        /// <returns>An asynchronous task that completes with the number of bytes sent.</returns>
         public ValueTask<int> SendAsync(ReadOnlyMemory<byte> buffer, SocketFlags socketFlags, CancellationToken cancellationToken)
         {
             if (cancellationToken.IsCancellationRequested)
@@ -334,6 +439,12 @@ namespace System.Net.Sockets
             return saea.SendAsyncForNetworkStream(this, cancellationToken);
         }
 
+        /// <summary>
+        /// Sends data on a connected socket.
+        /// </summary>
+        /// <param name="buffers">A list of buffers for the data to send.</param>
+        /// <param name="socketFlags">A bitwise combination of SocketFlags values that will be used when sending the data.</param>
+        /// <returns>An asynchronous task that completes with the number of bytes sent.</returns>
         public Task<int> SendAsync(IList<ArraySegment<byte>> buffers, SocketFlags socketFlags)
         {
             ValidateBuffersList(buffers);
@@ -350,6 +461,13 @@ namespace System.Net.Sockets
             return GetTaskForSendReceive(SendAsync(saea), saea, fromNetworkStream: false, isReceive: false);
         }
 
+        /// <summary>
+        /// Sends data to the specified remote host.
+        /// </summary>
+        /// <param name="buffer">The buffer for the data to send.</param>
+        /// <param name="socketFlags">A bitwise combination of SocketFlags values that will be used when sending the data.</param>
+        /// <param name="remoteEP">The remote host to which to send the data.</param>
+        /// <returns>An asynchronous task that completes with the number of bytes sent.</returns>
         public Task<int> SendToAsync(ArraySegment<byte> buffer, SocketFlags socketFlags, EndPoint remoteEP)
         {
             var tcs = new TaskCompletionSource<int>(this);
