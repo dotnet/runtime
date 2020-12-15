@@ -541,6 +541,22 @@ static void GetHostEntryForNameAsyncComplete(sigval_t context)
 }
 #endif
 
+static bool TrySetAddressFamily(int32_t addressFamily, struct addrinfo* hint)
+{
+    sa_family_t platformFamily;
+    if (!TryConvertAddressFamilyPalToPlatform(addressFamily, &platformFamily))
+    {
+        return false;
+    }
+
+    memset(hint, 0, sizeof(struct addrinfo));
+
+    hint->ai_flags = AI_CANONNAME;
+    hint->ai_family = platformFamily;
+
+    return true;
+}
+
 int32_t SystemNative_PlatformSupportsGetAddrInfoAsync()
 {
     return HAVE_GETADDRINFO_A;
@@ -553,16 +569,11 @@ int32_t SystemNative_GetHostEntryForName(const uint8_t* address, int32_t address
         return GetAddrInfoErrorFlags_EAI_BADARG;
     }
 
-    sa_family_t platformFamily;
-    if (!TryConvertAddressFamilyPalToPlatform(addressFamily, &platformFamily))
+    struct addrinfo hint;
+    if (!TrySetAddressFamily(addressFamily, &hint))
     {
         return GetAddrInfoErrorFlags_EAI_FAMILY;
     }
-
-    struct addrinfo hint;
-    memset(&hint, 0, sizeof(struct addrinfo));
-    hint.ai_flags = AI_CANONNAME;
-    hint.ai_family = platformFamily;
 
     struct addrinfo* info = NULL;
 
@@ -603,9 +614,11 @@ int32_t SystemNative_GetHostEntryForNameAsync(const uint8_t* address, int32_t ad
         return GetAddrInfoErrorFlags_EAI_MEMORY;
     }
 
-    memset(&state->hint, 0, sizeof(struct addrinfo));
-    state->hint.ai_flags = AI_CANONNAME;
-    state->hint.ai_family = platformFamily;
+    if (!TrySetAddressFamily(addressFamily, &state->hint))
+    {
+        free(state);
+        return GetAddrInfoErrorFlags_EAI_FAMILY;
+    }
 
     memcpy(state->address, address, addrlen + 1);
 
