@@ -14,7 +14,7 @@
              Link="Common\src\Extensions\NonCapturingTimer\NonCapturingTimer.cs" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(TargetFramework)' != 'netstandard2.0' and !$(TargetFramework.StartsWith('net4'))">
+  <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.1'">
     <Compile Include="PhysicalFileProvider.netstandard21.cs" />
     <Compile Include="PhysicalFilesWatcher.netstandard21.cs" />
   </ItemGroup>
