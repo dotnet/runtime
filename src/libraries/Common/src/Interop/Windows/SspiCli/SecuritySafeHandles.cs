@@ -4,7 +4,6 @@
 #nullable enable
 using System.Diagnostics;
 using System.Globalization;
-using System.Runtime.ConstrainedExecution;
 using System.Runtime.InteropServices;
 using System.Security.Authentication.ExtendedProtection;
 using Microsoft.Win32.SafeHandles;

@@ -61,7 +61,7 @@ namespace System.Net.Security.Tests
 
             if (PlatformDetection.SupportsTls13)
             {
-                //yield return new object[] { null, SslProtocols.Tls13 };
+                yield return new object[] { null, SslProtocols.Tls13 };
                 yield return new object[] { SslProtocols.Tls13, null };
             }
 

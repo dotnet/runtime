@@ -165,7 +165,7 @@ namespace System.Net.Security
                 lock (s_cachedCreds)
                 {
                     credentials = GetCachedCredential(key);
-                    if (credentials == null || credentials.IsClosed)
+                    if (credentials == null || credentials.IsClosed || credentials.IsInvalid)
                     {
                         SafeCredentialReference? cached = SafeCredentialReference.CreateReference(creds);
 
