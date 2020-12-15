@@ -17,8 +17,6 @@
     <nullable>enable</nullable>
     <RunAOTCompilation Condition="'$(RunAOTCompilation)' == ''">false</RunAOTCompilation>
     <ProfileAOT Condition="'$(ProfileAOT)' == ''">false</ProfileAOT>
-    <AOTProfilePath></AOTProfilePath>
-    <SystemRuntimeInteropServicesJavaScriptLibPath>$(LibrariesProjectRoot)System.Private.Runtime.InteropServices.JavaScript/src/System/Runtime/InteropServices/JavaScript/</SystemRuntimeInteropServicesJavaScriptLibPath>
   </PropertyGroup>
 
   <Target Name="TrickRuntimePackLocation" AfterTargets="ProcessFrameworkReferences">
@@ -30,23 +28,7 @@
     <Message Text="Packaged ID: %(RuntimePack.PackageDirectory)" Importance="high" />
   </Target>
 
-  <!-- <Target Name="RebuildWasmAppBuilder">
-    <ItemGroup>
-      <WasmAppBuildProject Include="$(RepoTasksDir)mobile.tasks\WasmAppBuilder\WasmAppBuilder.csproj" />
-    </ItemGroup>
-
-    <MSBuild Projects="@(WasmAppBuildProject)"
-             Properties="Configuration=Debug;MSBuildRestoreSessionId=$([System.Guid]::NewGuid())"
-             Targets="Restore"/>
-
-    <MSBuild Projects="@(WasmAppBuildProject)"
-             Properties="Configuration=Debug"
-             Targets="Build;Publish"/>
-  </Target> -->
-
   <Import Project="$(RepoTasksDir)AotCompilerTask\MonoAOTCompiler.props" />
-  <!-- <UsingTask TaskName="WasmAppBuilder" 
-             AssemblyFile="$(ArtifactsBinDir)WasmAppBuilder\Debug\$(NetCoreAppCurrent)\publish\WasmAppBuilder.dll"/> -->
 
   <UsingTask TaskName="MonoAOTCompiler"
              AssemblyFile="$(MonoAOTCompilerTasksAssemblyPath)" />
@@ -112,9 +94,7 @@
     <PropertyGroup>
       <WasmAppDir>$(AppDir)</WasmAppDir>
       <WasmMainJSPath>runtime.js</WasmMainJSPath>
-      <!-- <WasmMainAssemblyPath>bin\WasmSample.dll</WasmMainAssemblyPath> -->
       <WasmGenerateRunV8Script>true</WasmGenerateRunV8Script>
-      <!-- <WasmResolveAssembliesBeforeBuild>true</WasmResolveAssembliesBeforeBuild> -->
     </PropertyGroup>
 
     <ItemGroup>
@@ -122,7 +102,6 @@
     </ItemGroup>
 
     <ItemGroup>
-      <!-- <WasmAssembliesToBundle Include="$(MicrosoftNetCoreAppRuntimePackRidDir)lib\$(NetCoreAppCurrent)\System.Private.Runtime.InteropServices.JavaScript.dll" /> -->
       <WasmAssemblySearchPaths Include="bin"/>
       <WasmAssemblySearchPaths Include="$(MicrosoftNetCoreAppRuntimePackRidDir)native"/>
       <WasmAssemblySearchPaths Include="$(MicrosoftNetCoreAppRuntimePackRidDir)lib\$(NetCoreAppCurrent)"/>
