@@ -38,7 +38,7 @@ namespace System.Net
             throw new NotImplementedException();
         }
 
-        internal static Task GetAddrInfoAsync(string hostName, bool justAddresses, AddressFamily addressFamily, CancellationToken cancellationToken)
+        internal static bool TryGetAddrInfoAsync(string hostName, bool justAddresses, AddressFamily addressFamily, CancellationToken cancellationToken, out Task t)
         {
             throw new NotImplementedException();
         }
