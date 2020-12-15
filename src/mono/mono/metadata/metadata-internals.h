@@ -588,8 +588,6 @@ struct _MonoImage {
 	GHashTable *weak_field_indexes;
 
 #ifdef ENABLE_METADATA_UPDATE
-	GHashTable *method_table_delta_index; /* EnC index for method updates */
-
 	/* List of MonoImages of deltas.  Parent image owns 1 refcount ref of the delta image */
 	GSList *delta_image;
 	/* Tail of delta_image for fast appends */
@@ -597,6 +595,13 @@ struct _MonoImage {
 
 	/* Metadata delta images only */
 	uint32_t generation;
+
+	/* Maps MethodDef token indices to something. In base images a boolean
+	 * flag that there's an update for the method; in delta images a
+	 * pointer into the RVA of the delta IL */
+	GHashTable *method_table_update;
+
+
 #endif
 
 	/*

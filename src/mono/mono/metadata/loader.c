@@ -31,6 +31,7 @@
 #include <mono/metadata/tokentype.h>
 #include <mono/metadata/tabledefs.h>
 #include <mono/metadata/metadata-internals.h>
+#include <mono/metadata/metadata-update.h>
 #include <mono/metadata/loader.h>
 #include <mono/metadata/loader-internals.h>
 #include <mono/metadata/class-init.h>
@@ -2017,6 +2018,26 @@ mono_method_has_no_body (MonoMethod *method)
 		(method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL));
 }
 
+#ifdef ENABLE_METADATA_UPDATE
+static gpointer
+get_method_update_rva (MonoImage *image_base, uint32_t idx)
+{
+	gpointer loc = NULL;
+	uint32_t cur = mono_metadata_update_get_thread_generation ();
+	GSList *ptr = image_base->delta_image;
+	/* Go through all the updates that the current thread can see and see
+	 * if they updated the method.  Keep the latest visible update */
+	for (; ptr != NULL; ptr = ptr->next) {
+		MonoImage *image_delta = (MonoImage*) ptr->data;
+		if (image_delta->generation > cur)
+			break;
+		if (image_delta->method_table_update)
+			loc = g_hash_table_lookup (image_delta->method_table_update, GUINT_TO_POINTER (idx));
+	}
+	return loc;
+}
+#endif
+
 // FIXME Replace all internal callers of mono_method_get_header_checked with
 // mono_method_get_header_internal; the difference is in error initialization.
 MonoMethodHeader*
@@ -2073,9 +2094,12 @@ mono_method_get_header_internal (MonoMethod *method, MonoError *error)
 
 #ifdef ENABLE_METADATA_UPDATE
 	/* EnC case */
-	if (G_UNLIKELY (img->method_table_delta_index)) {
+	if (G_UNLIKELY (img->method_table_update)) {
 		/* pre-computed rva pointer into delta IL image */
-		loc = g_hash_table_lookup (img->method_table_delta_index, GUINT_TO_POINTER (idx));
+		uint32_t gen = GPOINTER_TO_UINT (g_hash_table_lookup (img->method_table_update, GUINT_TO_POINTER (idx)));
+		if (G_UNLIKELY (gen > 0)) {
+			loc = get_method_update_rva (img, idx);
+		}
 	}
 #endif
 

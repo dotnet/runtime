@@ -589,9 +589,17 @@ apply_enclog_pass1 (MonoImage *image_base, MonoImage *image_dmeta, gconstpointer
 	return TRUE;
 }
 
+static void
+set_update_method (MonoImage *image_base, uint32_t generation, MonoImage *image_dmeta, uint32_t token_index, const char* il_address)
+{
+	/* FIXME: this is a race if other threads are doing a lookup. */
+	g_hash_table_insert (image_base->method_table_update, GUINT_TO_POINTER (token_index), GUINT_TO_POINTER (generation));
+	g_hash_table_insert (image_dmeta->method_table_update, GUINT_TO_POINTER (token_index), (gpointer) il_address);
+}
+
 /* do actuall enclog application */
 static gboolean
-apply_enclog_pass2 (MonoImage *image_base, MonoImage *image_dmeta, gconstpointer dil_data, uint32_t dil_length, MonoError *error)
+apply_enclog_pass2 (MonoImage *image_base, uint32_t generation, MonoImage *image_dmeta, gconstpointer dil_data, uint32_t dil_length, MonoError *error)
 {
 	MonoTableInfo *table_enclog = &image_dmeta->tables [MONO_TABLE_ENCLOG];
 	int rows = table_enclog->rows;
@@ -651,14 +659,25 @@ apply_enclog_pass2 (MonoImage *image_base, MonoImage *image_dmeta, gconstpointer
 				g_error ("EnC: new method added, should be caught by pass1");
 			}
 
-			if (!image_base->method_table_delta_index)
-				image_base->method_table_delta_index = g_hash_table_new (g_direct_hash, g_direct_equal);
+			if (!image_base->method_table_update)
+				image_base->method_table_update = g_hash_table_new (g_direct_hash, g_direct_equal);
+			if (!image_dmeta->method_table_update)
+				image_dmeta->method_table_update = g_hash_table_new (g_direct_hash, g_direct_equal);
 
 			int mapped_token = mono_image_relative_delta_index (image_dmeta, mono_metadata_make_token (token_table, token_index));
 			int rva = mono_metadata_decode_row_col (&image_dmeta->tables [MONO_TABLE_METHOD], mapped_token - 1, MONO_METHOD_RVA);
 			if (rva < dil_length) {
+				/*
+				 * FIXME: this mutates all threads' views.x Need
+				 * a pair of a delta image and a rva.
+				 *
+				 * base: token->generation
+				 * delta: token->rva ?
+				 *
+				 * if multiple updates, go through all deltas in order
+				 */
 				char *il_address = ((char *) dil_data) + rva;
-				g_hash_table_insert (image_base->method_table_delta_index, GUINT_TO_POINTER (token_index), (gpointer) il_address);
+				set_update_method (image_base, generation, image_dmeta, token_index, il_address);
 			} else {
 				/* rva points probably into image_base IL stream. can this ever happen? */
 				g_print ("TODO: this case is still a bit WTF. token=0x%08x with rva=0x%04x\n", log_token, rva);
@@ -757,7 +776,7 @@ mono_image_load_enc_delta (MonoDomain *domain, MonoImage *image_base, gconstpoin
 	if (mono_trace_is_traced (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE))
 		dump_update_summary (image_base, image_dmeta);
 
-	if (!apply_enclog_pass2 (image_base, image_dmeta, dil_bytes, dil_length, error)) {
+	if (!apply_enclog_pass2 (image_base, generation, image_dmeta, dil_bytes, dil_length, error)) {
 		mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_METADATA_UPDATE, "Error applying delta image to base=%s, due to: %s", basename, mono_error_get_message (error));
 		mono_metadata_update_cancel (generation);
 		return;
