@@ -351,11 +351,11 @@ namespace System.Diagnostics.Tests
             }, workingDirectory, new RemoteInvokeOptions { StartInfo = psi }).Dispose();
         }
 
-                [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported)), PlatformSpecific(TestPlatforms.Windows), OuterLoop] // Uses P/Invokes, Requires admin privileges
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported)), PlatformSpecific(TestPlatforms.Windows), OuterLoop] // Uses P/Invokes, Requires admin privileges
         public void TestUserCredentialsPropertiesOnWindows()
         {
             // [SuppressMessage("Microsoft.Security", "CS002:SecretInNextLine", Justification="Unit test dummy credentials.")]
-            string username = "testForDotnetRuntime", password = "PassWord123!!";
+            const string username = "testForDotnetRuntime", password = "PassWord123!!";
 
             uint removalResult = Interop.NetUserDel(null, username);
             Assert.True(removalResult == Interop.ExitCodes.NERR_Success || removalResult == Interop.ExitCodes.NERR_UserNotFound);
