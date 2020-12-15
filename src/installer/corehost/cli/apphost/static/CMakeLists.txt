@@ -102,13 +102,6 @@ if(CLR_CMAKE_TARGET_WIN32)
     add_linker_flag("/INCREMENTAL:NO")
 endif()
 
-# Specify non-default Windows libs to be used for Arm/Arm64 builds
-if (CLR_CMAKE_TARGET_WIN32 AND (CLR_CMAKE_TARGET_ARCH_ARM OR CLR_CMAKE_TARGET_ARCH_ARM64))
-    target_link_libraries(singlefilehost Advapi32.lib shell32.lib)
-endif()
-
-set(NATIVE_LIBS_EXTRA)
-
 # Path like: artifacts/bin/coreclr/windows.x64.Release/lib  or
 #            /root/runtime/artifacts/transport/coreclr/lib
 set(CORECLR_STATIC_LIB_LOCATION "${CORECLR_ARTIFACTS}/lib")
@@ -116,7 +109,7 @@ set(CORECLR_STATIC_LIB_LOCATION "${CORECLR_ARTIFACTS}/lib")
 message ("Looking for coreclr_static lib at location: '${CORECLR_STATIC_LIB_LOCATION}'.")
 
 if(CLR_CMAKE_TARGET_WIN32)
-    set(CORECLR_LIBRARIES
+    set(NATIVE_LIBS
         ${CORECLR_STATIC_LIB_LOCATION}/coreclr_static.lib
         ${CORECLR_STATIC_LIB_LOCATION}/System.Globalization.Native.lib
         ${CORECLR_STATIC_LIB_LOCATION}/System.IO.Compression.Native.lib
@@ -132,12 +125,13 @@ if(CLR_CMAKE_TARGET_WIN32)
         RuntimeObject.lib
     )
 else()
-    set(CORECLR_LIBRARIES
+    set(NATIVE_LIBS
         ${CORECLR_STATIC_LIB_LOCATION}/libcoreclr_static.a
         ${CORECLR_STATIC_LIB_LOCATION}/libSystem.Globalization.Native.a
         ${CORECLR_STATIC_LIB_LOCATION}/libSystem.IO.Compression.Native.a
         ${CORECLR_STATIC_LIB_LOCATION}/libSystem.Net.Security.Native.a
         ${CORECLR_STATIC_LIB_LOCATION}/libSystem.Native.a
+        ${CORECLR_STATIC_LIB_LOCATION}/libSystem.Security.Cryptography.Native.OpenSsl.a
         ${CORECLR_STATIC_LIB_LOCATION}/libpalrt.a
         ${CORECLR_STATIC_LIB_LOCATION}/libcoreclrpal.a
         ${CORECLR_STATIC_LIB_LOCATION}/libeventprovider.a
@@ -146,15 +140,28 @@ else()
 
     # additional requirements for System.IO.Compression.Native
     include(${CLR_REPO_ROOT_DIR}/src/libraries/Native/Unix/System.IO.Compression.Native/extra_libs.cmake)
-    append_extra_compression_libs(NATIVE_LIBS_EXTRA)
+    append_extra_compression_libs(NATIVE_LIBS)
 
     # Additional requirements for System.Net.Security.Native
     include(${CLR_REPO_ROOT_DIR}/src/libraries/Native/Unix/System.Net.Security.Native/extra_libs.cmake)
-    append_extra_security_libs(NATIVE_LIBS_EXTRA)
+    append_extra_security_libs(NATIVE_LIBS)
 
     # Additional requirements for System.Native
     include(${CLR_REPO_ROOT_DIR}/src/libraries/Native/Unix/System.Native/extra_libs.cmake)
-    append_extra_system_libs(NATIVE_LIBS_EXTRA)
+    append_extra_system_libs(NATIVE_LIBS)
+
+    # Additional requirements for System.Security.Cryptography.Native.OpenSsl
+    include(${CLR_REPO_ROOT_DIR}/src/libraries/Native/Unix/System.Security.Cryptography.Native/extra_libs.cmake)
+    append_extra_cryptography_libs(NATIVE_LIBS)
+
+endif()
+
+# Specify non-default Windows libs to be used for Arm/Arm64 builds
+if (CLR_CMAKE_TARGET_WIN32 AND (CLR_CMAKE_TARGET_ARCH_ARM OR CLR_CMAKE_TARGET_ARCH_ARM64))
+    LIST(APPEND NATIVE_LIBS
+      Advapi32.lib
+      shell32.lib
+    )
 endif()
 
 if(CLR_CMAKE_TARGET_OSX)
@@ -163,7 +170,7 @@ if(CLR_CMAKE_TARGET_OSX)
    find_library(SECURITY Security)
    find_library(SYSTEM System)
 
-   LIST(APPEND CORECLR_LIBRARIES
+   LIST(APPEND NATIVE_LIBS
      ${COREFOUNDATION}
      ${CORESERVICES}
      ${SECURITY}
@@ -172,11 +179,11 @@ if(CLR_CMAKE_TARGET_OSX)
 elseif(CLR_CMAKE_TARGET_NETBSD)
      find_library(KVM kvm)
 
-     LIST(APPEND CORECLR_LIBRARIES
+     LIST(APPEND NATIVE_LIBS
        ${KVM}
      )
 elseif (CLR_CMAKE_TARGET_SUNOS)
-     LIST(APPEND CORECLR_LIBRARIES
+     LIST(APPEND NATIVE_LIBS
          socket
      )
 endif(CLR_CMAKE_TARGET_OSX)
@@ -189,40 +196,13 @@ endif()
 if(CLR_CMAKE_USE_SYSTEM_LIBUNWIND)
     find_unwind_libs(UNWIND_LIBS)
 
-    LIST(APPEND CORECLR_LIBRARIES
+    LIST(APPEND NATIVE_LIBS
       ${UNWIND_LIBS}
     )
 endif()
 
-# Path like: artifacts/bin/native/net5.0-Linux-Release-arm/
-set(NATIVE_LIBS_LOCATION "${NATIVE_LIBS_ARTIFACTS}")
-message ("Looking for native libs at location: '${NATIVE_LIBS_LOCATION}'.")
 
-# These native libs are linked into singlefilehost only on Linux (for now).
-if(CLR_CMAKE_TARGET_LINUX)
-    set(NATIVE_LIBS
-      ${NATIVE_LIBS_LOCATION}/libSystem.Security.Cryptography.Native.OpenSsl.a
-    )
-
-    # Additional requirements for System.Security.Cryptography.Native.OpenSsl
-    include(${CLR_REPO_ROOT_DIR}/src/libraries/Native/Unix/System.Security.Cryptography.Native/extra_libs.cmake)
-    append_extra_cryptography_libs(NATIVE_LIBS_EXTRA)
-endif()
-
-if(CLR_CMAKE_TARGET_LINUX OR CLR_CMAKE_TARGET_FREEBSD OR CLR_CMAKE_TARGET_NETBSD OR CLR_CMAKE_TARGET_SUNOS)
-    # These options are used to force every object to be included even if it's unused.
-    set(START_WHOLE_ARCHIVE -Wl,--whole-archive)
-    set(END_WHOLE_ARCHIVE -Wl,--no-whole-archive)
-endif(CLR_CMAKE_TARGET_LINUX OR CLR_CMAKE_TARGET_FREEBSD OR CLR_CMAKE_TARGET_NETBSD OR CLR_CMAKE_TARGET_SUNOS)
-
-set_property(TARGET singlefilehost PROPERTY ENABLE_EXPORTS 1)
-
-target_link_libraries(singlefilehost
-    ${CORECLR_LIBRARIES}
-
-    ${START_WHOLE_ARCHIVE}
+target_link_libraries(
+    singlefilehost
     ${NATIVE_LIBS}
-    ${END_WHOLE_ARCHIVE}
-
-    ${NATIVE_LIBS_EXTRA}
 )

@@ -6158,25 +6158,6 @@ namespace
         }
 #endif // FEATURE_CORESYSTEM && !TARGET_UNIX
 
-#if defined(TARGET_LINUX)
-        if (g_coreclr_embedded)
-        {
-            // this matches exactly the names in  Interop.Libraries.cs
-            static const LPCWSTR toRedirect[] = {
-                W("libSystem.Security.Cryptography.Native.OpenSsl")
-            };
-
-            int count = lengthof(toRedirect);
-            for (int i = 0; i < count; ++i)
-            {
-                if (wcscmp(wszLibName, toRedirect[i]) == 0)
-                {
-                    return PAL_LoadLibraryDirect(NULL);
-                }
-            }
-        }
-#endif
-
         if (g_hostpolicy_embedded)
         {
 #ifdef TARGET_WINDOWS

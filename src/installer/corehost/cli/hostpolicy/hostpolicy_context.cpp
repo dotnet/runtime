@@ -47,6 +47,7 @@ namespace
     extern "C" const void* CompressionResolveDllImport(const char* name);
     extern "C" const void* SecurityResolveDllImport(const char* name);
     extern "C" const void* SystemResolveDllImport(const char* name);
+    extern "C" const void* CryptoResolveDllImport(const char* name);
 
     // pinvoke_override:
     // Check if given function belongs to one of statically linked libraries and return a pointer if found.
@@ -71,6 +72,11 @@ namespace
         if (strcmp(libraryName, "libSystem.Native") == 0)
         {
             return SystemResolveDllImport(entrypointName);
+        }
+
+        if (strcmp(libraryName, "libSystem.Security.Cryptography.Native.OpenSsl") == 0)
+        {
+            return CryptoResolveDllImport(entrypointName);
         }
 #endif
         return nullptr;

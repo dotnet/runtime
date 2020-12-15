@@ -15,7 +15,6 @@
 
     <!-- OSX -->
     <SingleFileHostIncludeFilename Include="libSystem.Security.Cryptography.Native.Apple.dylib" />
-    <SingleFileHostIncludeFilename Include="libSystem.Security.Cryptography.Native.OpenSsl.dylib" />
     
     <!-- Windows -->
     <SingleFileHostIncludeFilename Include="mscordaccore.dll" />
