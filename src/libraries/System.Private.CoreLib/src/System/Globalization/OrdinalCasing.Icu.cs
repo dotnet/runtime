@@ -45,40 +45,42 @@ namespace System.Globalization
 
         // 0 - null
         // 1 - s_noCasingPage
+        // The bits are in reverse order for readability, i.e. the highest order bit refers to
+        // the lowest index.
         private static byte[] s_casingTableInit =
         {
-            /* 0000-07FF */    0, 0, 0, 0, 0, 0, 0, 0,
-            /* 0800-0FFF */    0, 0, 0, 0, 0, 0, 0, 0,
-            /* 1000-17FF */    0, 1, 0, 0, 1, 1, 0, 0,
-            /* 1800-1FFF */    0, 0, 0, 0, 0, 0, 0, 0,
-            /* 2000-27FF */    0, 0, 1, 1, 0, 1, 1, 1,
-            /* 2800-2FFF */    1, 1, 1, 0, 0, 0, 0, 0,
-            /* 3000-37FF */    0, 0, 0, 1, 1, 1, 1, 1,
-            /* 3800-3FFF */    1, 1, 1, 1, 1, 1, 1, 1,
-            /* 4000-47FF */    1, 1, 1, 1, 1, 1, 1, 1,
-            /* 4800-4FFF */    1, 1, 1, 1, 1, 1, 1, 1,
-            /* 5000-57FF */    1, 1, 1, 1, 1, 1, 1, 1,
-            /* 5800-5FFF */    1, 1, 1, 1, 1, 1, 1, 1,
-            /* 6000-67FF */    1, 1, 1, 1, 1, 1, 1, 1,
-            /* 6800-6FFF */    1, 1, 1, 1, 1, 1, 1, 1,
-            /* 7000-77FF */    1, 1, 1, 1, 1, 1, 1, 1,
-            /* 7800-7FFF */    1, 1, 1, 1, 1, 1, 1, 1,
-            /* 8000-87FF */    1, 1, 1, 1, 1, 1, 1, 1,
-            /* 8800-8FFF */    1, 1, 1, 1, 1, 1, 1, 1,
-            /* 9000-97FF */    1, 1, 1, 1, 1, 1, 1, 1,
-            /* 9800-9FFF */    1, 1, 1, 1, 1, 1, 1, 0,
-            /* A000-A7FF */    1, 1, 1, 1, 0, 1, 0, 0,
-            /* A800-AFFF */    0, 0, 0, 0, 1, 1, 1, 1,
-            /* B000-B7FF */    1, 1, 1, 1, 1, 1, 1, 1,
-            /* B800-BFFF */    1, 1, 1, 1, 1, 1, 1, 1,
-            /* C000-C7FF */    1, 1, 1, 1, 1, 1, 1, 1,
-            /* C800-CFFF */    1, 1, 1, 1, 1, 1, 1, 1,
-            /* D000-D7FF */    1, 1, 1, 1, 1, 1, 1, 0,
-            /* D800-DFFF */    1, 1, 1, 1, 1, 1, 1, 1,
-            /* E000-E7FF */    1, 1, 1, 1, 1, 1, 1, 1,
-            /* E800-EFFF */    1, 1, 1, 1, 1, 1, 1, 1,
-            /* F000-F7FF */    1, 1, 1, 1, 1, 1, 1, 1,
-            /* F800-FFFF */    1, 1, 0, 0, 1, 0, 0, 0,
+            /* 0000-07FF */    0b00000000,
+            /* 0800-0FFF */    0b00000000,
+            /* 1000-17FF */    0b01001100,
+            /* 1800-1FFF */    0b00000000,
+            /* 2000-27FF */    0b00110111,
+            /* 2800-2FFF */    0b11100000,
+            /* 3000-37FF */    0b00011111,
+            /* 3800-3FFF */    0b11111111,
+            /* 4000-47FF */    0b11111111,
+            /* 4800-4FFF */    0b11111111,
+            /* 5000-57FF */    0b11111111,
+            /* 5800-5FFF */    0b11111111,
+            /* 6000-67FF */    0b11111111,
+            /* 6800-6FFF */    0b11111111,
+            /* 7000-77FF */    0b11111111,
+            /* 7800-7FFF */    0b11111111,
+            /* 8000-87FF */    0b11111111,
+            /* 8800-8FFF */    0b11111111,
+            /* 9000-97FF */    0b11111111,
+            /* 9800-9FFF */    0b11111110,
+            /* A000-A7FF */    0b11110100,
+            /* A800-AFFF */    0b00001111,
+            /* B000-B7FF */    0b11111111,
+            /* B800-BFFF */    0b11111111,
+            /* C000-C7FF */    0b11111111,
+            /* C800-CFFF */    0b11111111,
+            /* D000-D7FF */    0b11111110,
+            /* D800-DFFF */    0b11111111,
+            /* E000-E7FF */    0b11111111,
+            /* E800-EFFF */    0b11111111,
+            /* F000-F7FF */    0b11111111,
+            /* F800-FFFF */    0b11001000,
         };
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -439,10 +441,12 @@ namespace System.Globalization
 
         private static void InitCasingTable()
         {
-            ushort []?[] table = new ushort []?[s_casingTableInit.Length];
-            for (int i = 0; i < s_casingTableInit.Length; ++i)
+            ushort[]?[] table = new ushort[]?[s_casingTableInit.Length * 8];
+            for (int i = 0; i < s_casingTableInit.Length * 8; ++i)
             {
-                if (s_casingTableInit[i] == 1)
+                // The bits are in reverse order
+                byte val = (byte)(s_casingTableInit[i / 8] >> (7 - (i % 8)));
+                if ((val & 1) == 1)
                     table[i] = s_noCasingPage;
             }
             table[0] = s_basicLatin;
@@ -456,7 +460,7 @@ namespace System.Globalization
         {
             Debug.Assert(pageNumber >= 0 && pageNumber < 256);
 
-            ushort [] casingTable = new ushort[256];
+            ushort[] casingTable = new ushort[256];
             fixed (ushort* table = casingTable)
             {
                 char* pTable = (char*)table;
