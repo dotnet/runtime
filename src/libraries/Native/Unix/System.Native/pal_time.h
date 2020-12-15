@@ -28,11 +28,6 @@ typedef struct ProcessCpuInformation
 PALEXPORT int32_t SystemNative_UTimensat(const char* path, TimeSpec* times);
 
 /**
- * Gets the resolution of the timestamp, in counts per second.
- */
-PALEXPORT uint64_t SystemNative_GetTimestampResolution(void);
-
-/**
  * Gets a high-resolution timestamp that can be used for time-interval measurements.
  */
 PALEXPORT uint64_t SystemNative_GetTimestamp(void);

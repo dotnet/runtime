@@ -12,41 +12,6 @@
     <LibrariesTargetOSConfigurationArchitecture Condition="'$(LibrariesTargetOSConfigurationArchitecture)' == ''">$(LibrariesTargetOS)-$(LibrariesConfiguration)-$(TargetArchitecture)</LibrariesTargetOSConfigurationArchitecture>
   </PropertyGroup>
 
-  <!--
-    If this is running and the output RID is not the same as the targeted RID, resolve live assets
-    for the targeted RID, if available. This is used to gather asset metadata for the platform
-    manifest. In CI (multi-machine lab) builds, CoreCLR and Libraries artifacts are all downloaded
-    onto the current machine from all platforms for the Installer portion of the build.
-
-    Higher priority than override paths: in official builds, the overrides are passed to the build,
-    but we need to point to the AllArtifacts locations when building the platform manifest.
-  -->
-  <PropertyGroup Condition="
-    '$(RuntimeIdentifier)' != '' and
-    '$(RuntimeIdentifier)' != '$(OutputRid)' and
-    '$(AllArtifactsDownloadPath)' != ''">
-    <!-- Convert the OS component in the RID into names that match the job IDs. -->
-    <ArtifactPlatform>$(RuntimeIdentifier)</ArtifactPlatform>
-    <ArtifactPlatform>$(ArtifactPlatform.Replace('win-', 'Windows_NT-'))</ArtifactPlatform>
-    <ArtifactPlatform>$(ArtifactPlatform.Replace('unix-', 'Unix-'))</ArtifactPlatform>
-    <ArtifactPlatform>$(ArtifactPlatform.Replace('linux-', 'Linux-'))</ArtifactPlatform>
-    <ArtifactPlatform>$(ArtifactPlatform.Replace('osx-', 'OSX-'))</ArtifactPlatform>
-    <ArtifactPlatform>$(ArtifactPlatform.Replace('freebsd-', 'FreeBSD-'))</ArtifactPlatform>
-    <ArtifactPlatform>$(ArtifactPlatform.Replace('netbsd-', 'NetBSD-'))</ArtifactPlatform>
-    <!-- Artifact name uses '_' rather than '-'. -->
-    <ArtifactPlatform>$(ArtifactPlatform.Replace('-', '_'))</ArtifactPlatform>
-
-    <CoreCLRArtifactsPath>$([MSBuild]::NormalizeDirectory('$(AllArtifactsDownloadPath)', 'CoreCLRProduct_$(ArtifactPlatform)_$(CoreCLRConfiguration)'))</CoreCLRArtifactsPath>
-    <MonoArtifactsPath>$([MSBuild]::NormalizeDirectory('$(AllArtifactsDownloadPath)', 'MonoProduct_$(ArtifactPlatform)_$(MonoConfiguration)'))</MonoArtifactsPath>
-    <LibrariesArtifactsPath>$([MSBuild]::NormalizeDirectory('$(AllArtifactsDownloadPath)', 'libraries_bin_$(ArtifactPlatform)_$(LibrariesConfiguration)'))</LibrariesArtifactsPath>
-
-    <!--
-      Use '*', calculating these in a static context based on RID is hard. Note that putting '*'
-      through a dir/path normalization function makes it not work, so avoid that.
-    -->
-    <LibrariesTargetOSConfigurationArchitecture>*</LibrariesTargetOSConfigurationArchitecture>
-  </PropertyGroup>
-
   <!-- Set up default live asset paths if no overrides provided. -->
   <PropertyGroup>
     <CoreCLRArtifactsPath Condition="'$(CoreCLRArtifactsPath)' == ''">$([MSBuild]::NormalizeDirectory('$(RepoRoot)', 'artifacts', 'bin', 'coreclr', '$(CoreCLRTargetOS).$(TargetArchitecture).$(CoreCLRConfiguration)'))</CoreCLRArtifactsPath>
@@ -116,7 +81,7 @@
         Include="
           $(CoreCLRSharedFrameworkPdbDir)*.pdb;
           $(CoreCLRSharedFrameworkPdbDir)*.dbg;
-          $(CoreCLRSharedFrameworkPdbDir)*.dwarf" />
+          $(CoreCLRSharedFrameworkPdbDir)*.dwarf" IsNative="true" />
       <RuntimeFiles
         Include="$(CoreCLRArtifactsPdbDir)System.Private.CoreLib.pdb" />
       <RuntimeFiles Condition="Exists('$(CoreCLRArtifactsPdbDir)System.Private.CoreLib.ni.pdb')"
@@ -130,6 +95,7 @@
 
       <CoreCLRCrossTargetFiles>
         <TargetPath>runtime/$(CoreCLRCrossTargetComponentDirName)_$(TargetArchitecture)/native</TargetPath>
+        <IsNative>true</IsNative>
       </CoreCLRCrossTargetFiles>
     </ItemGroup>
     <ItemGroup Condition="'$(RuntimeFlavor)' == 'Mono'">
@@ -196,6 +162,19 @@
         $(LibrariesNativeArtifactsPath)dotnet.wasm;
         $(LibrariesNativeArtifactsPath)dotnet.timezones.blat;
         $(LibrariesNativeArtifactsPath)*.dat;"
+        IsNative="true" />
+      <LibrariesRuntimeFiles Condition="'$(TargetOS)' == 'Browser'"
+                             Include="
+        $(LibrariesNativeArtifactsPath)src\*.c;
+        $(LibrariesNativeArtifactsPath)src\*.js;
+        $(LibrariesNativeArtifactsPath)src\emcc-flags.txt;
+        $(LibrariesNativeArtifactsPath)src\emcc-version.txt;"
+        NativeSubDirectory="src"
+        IsNative="true" />
+      <LibrariesRuntimeFiles Condition="'$(TargetOS)' == 'Browser'"
+                             Include="
+        $(LibrariesNativeArtifactsPath)include\wasm\*.h;"
+        NativeSubDirectory="include\wasm"
         IsNative="true" />
     </ItemGroup>
 

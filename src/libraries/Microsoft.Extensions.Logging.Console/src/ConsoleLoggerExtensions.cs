@@ -3,6 +3,7 @@
 
 using System;
 using System.Diagnostics.CodeAnalysis;
+using System.Runtime.Versioning;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
@@ -12,6 +13,7 @@ using Microsoft.Extensions.Options;
 
 namespace Microsoft.Extensions.Logging
 {
+    [UnsupportedOSPlatform("browser")]
     public static class ConsoleLoggerExtensions
     {
         /// <summary>
@@ -154,6 +156,7 @@ namespace Microsoft.Extensions.Logging
         }
     }
 
+    [UnsupportedOSPlatform("browser")]
     internal class ConsoleLoggerFormatterConfigureOptions<TFormatter, TOptions> : ConfigureFromConfigurationOptions<TOptions>
         where TOptions : ConsoleFormatterOptions
         where TFormatter : ConsoleFormatter
@@ -164,6 +167,7 @@ namespace Microsoft.Extensions.Logging
         }
     }
 
+    [UnsupportedOSPlatform("browser")]
     internal class ConsoleLoggerFormatterOptionsChangeTokenSource<TFormatter, TOptions> : ConfigurationChangeTokenSource<TOptions>
         where TOptions : ConsoleFormatterOptions
         where TFormatter : ConsoleFormatter

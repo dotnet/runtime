@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.Build.NoTargets">
 
   <PropertyGroup>
-    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
+    <TargetFramework>$(NetCoreAppToolCurrent)</TargetFramework>
   </PropertyGroup>
 
   <PropertyGroup>
@@ -12,6 +12,7 @@
     <MicrosoftNetCoreAppRuntimePackRidDir>$([MSBuild]::NormalizeDirectory('$(MicrosoftNetCoreAppRuntimePackDir)', 'runtimes', '$(PackageRID)'))</MicrosoftNetCoreAppRuntimePackRidDir>
     <MicrosoftNetCoreAppRuntimePackNativeDir>$([MSBuild]::NormalizeDirectory('$(MicrosoftNetCoreAppRuntimePackRidDir)', 'native'))</MicrosoftNetCoreAppRuntimePackNativeDir>
     <WasmEnableES6 Condition="'$(WasmEnableES6)' == ''">false</WasmEnableES6>
+    <FilterSystemTimeZones Condition="'$(FilterSystemTimeZones)' == ''">false</FilterSystemTimeZones>
   </PropertyGroup>
 
   <Target Name="CheckEnv">
@@ -25,7 +26,7 @@
     <PackageReference Include="System.Runtime.TimeZoneData" PrivateAssets="all" Version="$(SystemRuntimeTimeZoneDataVersion)" GeneratePathProperty="true" />
   </ItemGroup>
 
-  <UsingTask TaskName="PInvokeTableGenerator" AssemblyFile="$([MSBuild]::NormalizePath('$(ArtifactsBinDir)', 'WasmAppBuilder', 'Debug', '$(NetCoreAppCurrent)', 'publish', 'WasmAppBuilder.dll'))"/>
+  <UsingTask TaskName="PInvokeTableGenerator" AssemblyFile="$(WasmAppBuilderTasksAssemblyPath)"/>
   <Target Name="BuildPInvokeTable" DependsOnTargets="CheckEnv;ResolveLibrariesFromLocalBuild">
     <PropertyGroup>
       <WasmPInvokeTablePath>$(ArtifactsObjDir)wasm\pinvoke-table.h</WasmPInvokeTablePath>
@@ -34,6 +35,7 @@
     <ItemGroup>
       <WasmPInvokeModule Include="libSystem.Native" />
       <WasmPInvokeModule Include="libSystem.IO.Compression.Native" />
+      <WasmPInvokeModule Include="libSystem.Globalization.Native" />
       <WasmPInvokeAssembly Include="@(LibrariesRuntimeFiles)" Condition="'%(Extension)' == '.dll' and '%(IsNative)' != 'true'" />
     </ItemGroup>
 
@@ -49,33 +51,14 @@
                            OutputPath="$(WasmPInvokeTablePath)" />
   </Target>
 
-  <UsingTask TaskName="CompileTimeZoneData"
-    AssemblyFile="$(WasmBuildTasksAssemblyPath)"/>
-  <Target Name="CompileTimeZones">
-    <ItemGroup>
-      <TimeZoneToCompile Include="africa" />
-      <TimeZoneToCompile Include="antarctica" />
-      <TimeZoneToCompile Include="asia" />
-      <TimeZoneToCompile Include="australasia" />
-      <TimeZoneToCompile Include="etcetera" />
-      <TimeZoneToCompile Include="europe" />
-      <TimeZoneToCompile Include="northamerica" />
-      <TimeZoneToCompile Include="southamerica" />
-    </ItemGroup>
-    <CompileTimeZoneData
-      TimeZones="@(TimeZoneToCompile)"
-      InputDirectory="$([MSBuild]::NormalizePath('$(PkgSystem_Runtime_TimeZoneData)', 'contentFiles', 'any', 'any', 'data'))"
-      OutputDirectory="$(ArtifactsObjDir)wasm/timezones" />
-  </Target>
-
   <UsingTask TaskName="GenerateWasmBundle"
     AssemblyFile="$(WasmBuildTasksAssemblyPath)"/>
-  <Target Name="BundleTimeZones" DependsOnTargets="CompileTimeZones">
+  <Target Name="BundleTimeZones">
     <PropertyGroup>
       <TimeZonesDataPath>$(NativeBinDir)dotnet.timezones.blat</TimeZonesDataPath>
     </PropertyGroup>
     <GenerateWasmBundle
-      InputDirectory="$(ArtifactsObjDir)wasm/timezones"
+      InputDirectory="$([MSBuild]::NormalizePath('$(PkgSystem_Runtime_TimeZoneData)', 'contentFiles', 'any', 'any', 'data'))"
       OutputFileName="$(TimeZonesDataPath)" />
   </Target>
 
@@ -84,20 +67,40 @@
           AfterTargets="Build"
           DependsOnTargets="BuildPInvokeTable;BundleTimeZones">
 
-    <Exec Command="make -C $(MonoProjectRoot)wasm all SHELL=/bin/bash BINDIR=$(ArtifactsBinDir) MONO_BIN_DIR=$(MonoArtifactsPath) OBJDIR=$(ArtifactsObjDir) NATIVE_BIN_DIR=$(NativeBinDir) CONFIG=$(Configuration) PINVOKE_TABLE=$(WasmPInvokeTablePath) ICU_LIBDIR=$(PkgMicrosoft_NETCore_Runtime_ICU_Transport)/runtimes/browser-wasm/native/lib ENABLE_ES6=$(WasmEnableES6)"
+    <PropertyGroup>
+      <_IcuLibdir>$(PkgMicrosoft_NETCore_Runtime_ICU_Transport)/runtimes/browser-wasm/native/lib</_IcuLibdir>
+    </PropertyGroup>
+
+    <Exec Command="make -C $(MonoProjectRoot)wasm all SHELL=/bin/bash BINDIR=$(ArtifactsBinDir) MONO_BIN_DIR=$(MonoArtifactsPath) OBJDIR=$(ArtifactsObjDir) NATIVE_BIN_DIR=$(NativeBinDir) CONFIG=$(Configuration) PINVOKE_TABLE=$(WasmPInvokeTablePath) ICU_LIBDIR=$(_IcuLibdir) ENABLE_ES6=$(WasmEnableES6)"
           IgnoreStandardErrorWarningFormat="true" />
+
+    <ItemGroup>
+      <IcuDataFiles Include="$(NativeBinDir)*.dat" />
+      <WasmSrcFiles Include="$(NativeBinDir)src\*.c;
+                             $(NativeBinDir)src\*.js;
+                             $(NativeBinDir)src\emcc-flags.txt;
+                             $(NativeBinDir)src\emcc-version.txt" />
+      <WasmHeaderFiles Include="$(NativeBinDir)include\wasm\*.h" />
+    </ItemGroup>
 
     <Copy SourceFiles="$(NativeBinDir)dotnet.js;
                        $(NativeBinDir)dotnet.wasm;
-                       $(NativeBinDir)dotnet.timezones.blat"
+                       $(NativeBinDir)dotnet.timezones.blat;
+                       $(NativeBinDir)libicuuc.a;
+                       $(NativeBinDir)libicui18n.a"
           DestinationFolder="$(MicrosoftNetCoreAppRuntimePackNativeDir)"
           SkipUnchangedFiles="true" />
 
-    <ItemGroup>
-      <IcuDataFiles Include="$(NativeBinDir)*.dat"/>
-    </ItemGroup>
     <Copy SourceFiles="@(IcuDataFiles)"
           DestinationFolder="$(MicrosoftNetCoreAppRuntimePackNativeDir)"
+          SkipUnchangedFiles="true" />
+
+    <Copy SourceFiles="@(WasmSrcFiles)"
+          DestinationFolder="$(MicrosoftNetCoreAppRuntimePackNativeDir)src"
+          SkipUnchangedFiles="true" />
+
+    <Copy SourceFiles="@(WasmHeaderFiles)"
+          DestinationFolder="$(MicrosoftNetCoreAppRuntimePackNativeDir)include\wasm"
           SkipUnchangedFiles="true" />
   </Target>
 

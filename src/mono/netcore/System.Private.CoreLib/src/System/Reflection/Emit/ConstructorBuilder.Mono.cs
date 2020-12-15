@@ -81,7 +81,7 @@ namespace System.Reflection.Emit
             this.paramModOpt = paramModOpt;
             table_idx = get_next_table_index(this, 0x06, 1);
 
-            ((ModuleBuilder)tb.Module).RegisterToken(this, GetToken().Token);
+            ((ModuleBuilder)tb.Module).RegisterToken(this, MetadataToken);
         }
 
         // FIXME:
@@ -167,6 +167,8 @@ namespace System.Reflection.Emit
         {
             throw not_supported();
         }
+
+        public override int MetadataToken => 0x06000000 | table_idx;
 
         public override RuntimeMethodHandle MethodHandle
         {
@@ -315,11 +317,6 @@ namespace System.Reflection.Emit
         public Module GetModule()
         {
             return type.Module;
-        }
-
-        public MethodToken GetToken()
-        {
-            return new MethodToken(0x06000000 | table_idx);
         }
 
         public override Module Module

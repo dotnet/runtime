@@ -44,12 +44,15 @@ namespace System.IO
             return _startIndex >= _endIndex; // Everything has been processed;
         }
 
-        internal unsafe void AppendExtraBuffer(byte* buffer, int bufferLength)
+        internal void AppendExtraBuffer(ReadOnlySpan<byte> buffer)
         {
+            // Ensure a reasonable upper bound applies to the stackalloc
+            Debug.Assert(buffer.Length <= 1024);
+
             // Then convert the bytes to chars
-            int charLen = _encoding.GetMaxCharCount(bufferLength);
-            char* charPtr = stackalloc char[charLen];
-            charLen = _encoding.GetChars(buffer, bufferLength, charPtr, charLen);
+            Span<char> chars = stackalloc char[_encoding.GetMaxCharCount(buffer.Length)];
+            int charLen = _encoding.GetChars(buffer, chars);
+            chars = chars.Slice(0, charLen);
 
             // Ensure our buffer is large enough to hold all of the data
             if (IsUnprocessedBufferEmpty())
@@ -60,14 +63,14 @@ namespace System.IO
             {
                 Debug.Assert(_endIndex > 0);
                 int spaceRemaining = _unprocessedBufferToBeRead.Length - _endIndex;
-                if (spaceRemaining < charLen)
+                if (spaceRemaining < chars.Length)
                 {
                     Array.Resize(ref _unprocessedBufferToBeRead, _unprocessedBufferToBeRead.Length * 2);
                 }
             }
 
             // Copy the data into our buffer
-            Marshal.Copy((IntPtr)charPtr, _unprocessedBufferToBeRead, _endIndex, charLen);
+            chars.CopyTo(_unprocessedBufferToBeRead.AsSpan(_endIndex));
             _endIndex += charLen;
         }
 
@@ -90,9 +93,9 @@ namespace System.IO
             return line;
         }
 
-        public int ReadLine(byte[] buffer, int offset, int count)
+        public int ReadLine(Span<byte> buffer)
         {
-            if (count == 0)
+            if (buffer.IsEmpty)
             {
                 return 0;
             }
@@ -111,11 +114,10 @@ namespace System.IO
             Encoder encoder = _bufferReadEncoder ??= _encoding.GetEncoder();
             int bytesUsedTotal = 0;
             int charsUsedTotal = 0;
-            Span<byte> destination = buffer.AsSpan(offset, count);
             foreach (ReadOnlyMemory<char> chunk in _readLineSB.GetChunks())
             {
-                encoder.Convert(chunk.Span, destination, flush: false, out int charsUsed, out int bytesUsed, out bool completed);
-                destination = destination.Slice(bytesUsed);
+                encoder.Convert(chunk.Span, buffer, flush: false, out int charsUsed, out int bytesUsed, out bool completed);
+                buffer = buffer.Slice(bytesUsed);
                 bytesUsedTotal += bytesUsed;
                 charsUsedTotal += charsUsed;
 
@@ -443,7 +445,7 @@ namespace System.IO
                     if (result > 0)
                     {
                         // Append them
-                        AppendExtraBuffer(bufPtr, result);
+                        AppendExtraBuffer(new ReadOnlySpan<byte>(bufPtr, result));
                     }
                     else
                     {

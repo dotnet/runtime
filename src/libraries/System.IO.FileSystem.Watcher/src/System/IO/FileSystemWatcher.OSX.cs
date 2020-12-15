@@ -577,7 +577,7 @@ namespace System.IO
                 return _includeChildren || _fullDirectory.AsSpan().StartsWith(System.IO.Path.GetDirectoryName(eventPath), StringComparison.OrdinalIgnoreCase);
             }
 
-            private unsafe int? FindRenameChangePairedChange(
+            private int? FindRenameChangePairedChange(
                 int currentIndex,
                 Span<FSEventStreamEventFlags> flags, Span<FSEventStreamEventId> ids)
             {

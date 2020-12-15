@@ -31,10 +31,9 @@ if defined VS160COMNTOOLS (
 :: Set the default arguments for build
 set __BuildArch=x64
 set __BuildType=Debug
-set __TargetOS=Windows_NT
+set __TargetOS=windows
 
 set "__ProjectFilesDir=%__TestDir%"
-set "__SourceDir=%__RepoRootDir%\src\coreclr\src"
 set "__RootBinDir=%__RepoRootDir%\artifacts"
 set "__LogsDir=%__RootBinDir%\log"
 set "__MsbuildDebugLogsDir=%__LogsDir%\MsbuildDebugLogs"
@@ -49,12 +48,10 @@ set __UnprocessedBuildArgs=
 set __CommonMSBuildArgs=
 
 set __SkipRestorePackages=
-set __SkipStressDependencies=
 set __SkipManaged=
 set __SkipTestWrappers=
 set __BuildTestWrappersOnly=
 set __SkipNative=
-set __RuntimeId=
 set __TargetsWindows=1
 set __DoCrossgen=
 set __DoCrossgen2=
@@ -97,22 +94,20 @@ if /i "%1" == "checked"               (set __BuildType=Checked&set processedArgs
 
 if /i "%1" == "ci"                    (set __ArcadeScriptArgs="-ci"&set __ErrMsgPrefix=##vso[task.logissue type=error]&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 
-if /i "%1" == "skipstressdependencies" (set __SkipStressDependencies=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "skiprestorepackages"   (set __SkipRestorePackages=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "skipmanaged"           (set __SkipManaged=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "skipnative"            (set __SkipNative=1&set __CopyNativeProjectsAfterCombinedTestBuild=false&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "skiptestwrappers"      (set __SkipTestWrappers=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "skipgeneratelayout"    (set __SkipGenerateLayout=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 
-if /i "%1" == "copynativeonly"        (set __CopyNativeTestBinaries=1&set __SkipStressDependencies=1&set __SkipNative=1&set __CopyNativeProjectsAfterCombinedTestBuild=false&set __SkipGenerateLayout=1&set __SkipTestWrappers=1&set __SkipCrossgenFramework=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
+if /i "%1" == "copynativeonly"        (set __CopyNativeTestBinaries=1&set __SkipNative=1&set __CopyNativeProjectsAfterCombinedTestBuild=false&set __SkipGenerateLayout=1&set __SkipTestWrappers=1&set __SkipCrossgenFramework=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "generatelayoutonly"    (set __SkipManaged=1&set __SkipNative=1&set __CopyNativeProjectsAfterCombinedTestBuild=false&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
-if /i "%1" == "buildtestwrappersonly" (set __SkipNative=1&set __SkipManaged=1&set __BuildTestWrappersOnly=1&set __SkipGenerateLayout=1&set __SkipStressDependencies=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
+if /i "%1" == "buildtestwrappersonly" (set __SkipNative=1&set __SkipManaged=1&set __BuildTestWrappersOnly=1&set __SkipGenerateLayout=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 
 if /i "%1" == "buildagainstpackages"  (echo error: Remove /BuildAgainstPackages switch&&exit /b1)
 if /i "%1" == "crossgen"              (set __DoCrossgen=1&set __TestBuildMode=crossgen&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "crossgen2"             (set __DoCrossgen2=1&set __TestBuildMode=crossgen2&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "composite"             (set __CompositeBuildMode=1&set __DoCrossgen2=1&set __TestBuildMode=crossgen2&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
-if /i "%1" == "runtimeid"             (set __RuntimeId=%2&set processedArgs=!processedArgs! %1 %2&shift&shift&goto Arg_Loop)
 if /i "%1" == "targetsNonWindows"     (set __TargetsWindows=0&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "Exclude"               (set __Exclude=%2&set processedArgs=!processedArgs! %1 %2&shift&shift&goto Arg_Loop)
 if /i "%1" == "-priority"             (set __Priority=%2&shift&set processedArgs=!processedArgs! %1=%2&shift&goto Arg_Loop)
@@ -187,33 +182,6 @@ set MSBUILDDEBUGPATH=%__MsbuildDebugLogsDir%
 
 REM =========================================================================================
 REM ===
-REM === Restore Build Tools
-REM ===
-REM =========================================================================================
-
-@if defined _echo @echo on
-
-set "__ToolsDir=%__ProjectDir%\Tools"
-
-REM =========================================================================================
-REM ===
-REM === Resolve runtime dependences
-REM ===
-REM =========================================================================================
-
-if defined __SkipStressDependencies goto skipstressdependencies
-
-call "%__RepoRootDir%\src\tests\Common\setup-stress-dependencies.cmd" /arch %__BuildArch% /outputdir %__BinDir%
-if errorlevel 1 (
-    echo %__ErrMsgPrefix%%__MsgPrefix%Error: setup-stress-dependencies failed.
-    goto     :Exit_Failure
-)
-
-:skipstressdependencies
-@if defined _echo @echo on
-
-REM =========================================================================================
-REM ===
 REM === Native test build section
 REM ===
 REM =========================================================================================
@@ -225,7 +193,7 @@ echo %__MsgPrefix%Commencing build of native test components for %__BuildArch%/%
 REM Set the environment for the native build
 
 REM Eval the output from set-cmake-path.ps1
-for /f "delims=" %%a in ('powershell -NoProfile -ExecutionPolicy ByPass "& ""%__SourceDir%\pal\tools\set-cmake-path.ps1"""') do %%a
+for /f "delims=" %%a in ('powershell -NoProfile -ExecutionPolicy ByPass "& ""%__RepoRootDir%\eng\native\set-cmake-path.ps1"""') do %%a
 echo %__MsgPrefix%Using CMake from !CMakePath!
 
 REM NumberOfCores is an WMI property providing number of physical cores on machine
@@ -255,8 +223,8 @@ if not defined VSINSTALLDIR (
 )
 if not exist "%VSINSTALLDIR%DIA SDK" goto NoDIA
 
-set __ExtraCmakeArgs="-DCMAKE_SYSTEM_VERSION=10.0" "-DCLR_ENG_NATIVE_DIR=%__RepoRootDir%/eng/native"
-call "%__SourceDir%\pal\tools\gen-buildsys.cmd" "%__ProjectFilesDir%" "%__NativeTestIntermediatesDir%" %__VSVersion% %__BuildArch% !__ExtraCmakeArgs!
+set __ExtraCmakeArgs="-DCMAKE_SYSTEM_VERSION=10.0"
+call "%__RepoRootDir%\eng\native\gen-buildsys.cmd" "%__ProjectFilesDir%" "%__NativeTestIntermediatesDir%" %__VSVersion% %__BuildArch% !__ExtraCmakeArgs!
 
 if not !errorlevel! == 0 (
     echo %__ErrMsgPrefix%%__MsgPrefix%Error: failed to generate native component build project!
@@ -456,11 +424,6 @@ REM ============================================================================
 
 echo %__MsgPrefix%Creating test overlay
 
-set RuntimeIdArg=
-if defined __RuntimeId (
-    set RuntimeIdArg=/p:RuntimeId="%__RuntimeId%"
-)
-
 set __BuildLogRootName=Tests_Overlay_Managed
 set __BuildLog=%__LogsDir%\%__BuildLogRootName%_%__TargetOS%__%__BuildArch%__%__BuildType%.log
 set __BuildWrn=%__LogsDir%\%__BuildLogRootName%_%__TargetOS%__%__BuildArch%__%__BuildType%.wrn
@@ -475,7 +438,7 @@ powershell -NoProfile -ExecutionPolicy ByPass -NoLogo -File "%__RepoRootDir%\eng
   /p:RestoreDefaultOptimizationDataPackage=false /p:PortableBuild=true^
   /p:UsePartialNGENOptimization=false /maxcpucount^
   %__SkipFXRestoreArg%^
-  !__Logging! %__CommonMSBuildArgs% %RuntimeIdArg% %__PriorityArg% %__BuildNeedTargetArg% %__UnprocessedBuildArgs%
+  !__Logging! %__CommonMSBuildArgs% %__PriorityArg% %__BuildNeedTargetArg% %__UnprocessedBuildArgs%
 if errorlevel 1 (
     echo %__ErrMsgPrefix%%__MsgPrefix%Error: Create Test Overlay failed. Refer to the build log files for details:
     echo     %__BuildLog%
@@ -590,20 +553,6 @@ echo Build type: one of Debug, Checked, Release ^(default: Debug^).
 echo skipmanaged: skip the managed tests build
 echo skipnative: skip the native tests build
 echo skiprestorepackages: skip package restore
-echo runtimeid ^<ID^>: Builds a test overlay for the specified OS ^(Only supported when building against packages^). Supported IDs are:
-echo     alpine.3.4.3-x64: Builds overlay for Alpine 3.4.3
-echo     debian.8-x64: Builds overlay for Debian 8
-echo     fedora.24-x64: Builds overlay for Fedora 24
-echo     linux-x64: Builds overlay for portable linux
-echo     opensuse.42.1-x64: Builds overlay for OpenSUSE 42.1
-echo     osx.10.12-x64: Builds overlay for OSX 10.12
-echo     osx-x64: Builds overlay for portable OSX
-echo     rhel.7-x64: Builds overlay for RHEL 7 or CentOS
-echo     ubuntu.14.04-x64: Builds overlay for Ubuntu 14.04
-echo     ubuntu.16.04-x64: Builds overlay for Ubuntu 16.04
-echo     ubuntu.16.10-x64: Builds overlay for Ubuntu 16.10
-echo     win-x64: Builds overlay for portable Windows
-echo     win7-x64: Builds overlay for Windows 7
 echo crossgen: Precompiles the framework managed assemblies
 echo copynativeonly: Only copy the native test binaries to the managed output. Do not build the native or managed tests.
 echo skipgeneratelayout: Do not generate the Core_Root layout
@@ -637,7 +586,7 @@ set __CrossgenCmd="%__RepoRootDir%\dotnet.cmd" "%CORE_ROOT%\R2RTest\R2RTest.dll"
 if defined __CompositeBuildMode (
     set __CrossgenCmd=%__CrossgenCmd% --composite
 ) else (
-    set __CrossgenCmd=%__CrossgenCmd% --large-bubble
+    set __CrossgenCmd=%__CrossgenCmd% --large-bubble --crossgen2-parallelism 1
 )
 
 set __CrossgenDir=%__BinDir%
@@ -659,7 +608,7 @@ if defined __DoCrossgen (
     if /i "%__BuildArch%" == "x86" (
         set __CrossgenDir=!__CrossgenDir!\x64
     )
-    set __CrossgenCmd=%__CrossgenCmd% --verify-type-and-field-layout --crossgen2-parallelism 1 --crossgen2-path "!__CrossgenDir!\crossgen2\crossgen2.dll"
+    set __CrossgenCmd=%__CrossgenCmd% --verify-type-and-field-layout --crossgen2-path "!__CrossgenDir!\crossgen2\crossgen2.dll"
 )
 
 echo Running %__CrossgenCmd%
@@ -674,3 +623,10 @@ if %__exitCode% neq 0 (
 move "%__CrossgenOutputDir%\*.dll" %CORE_ROOT% > nul
 
 exit /b 0
+
+REM Exit_Failure:
+REM This is necessary because of a(n apparent) bug in the FOR /L command.  Under certain circumstances,
+REM such as when this script is invoke with CMD /C "build.cmd", a non-zero exit directly from
+REM within the loop body will not propagate to the caller.  For some reason, goto works around it.
+:Exit_Failure
+exit /b 1

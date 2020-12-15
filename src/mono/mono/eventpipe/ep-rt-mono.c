@@ -1,9 +1,9 @@
 #include <config.h>
 
 #ifdef ENABLE_PERFTRACING
-#include "ep-rt-config.h"
-#include "ep-types.h"
-#include "ep-rt.h"
+#include <eventpipe/ep-rt-config.h>
+#include <eventpipe/ep-types.h>
+#include <eventpipe/ep-rt.h>
 #include <mono/utils/mono-lazy-init.h>
 
 ep_rt_spin_lock_handle_t _ep_rt_mono_config_lock = {0};
@@ -231,6 +231,45 @@ ep_rt_mono_system_timestamp_get (void)
 		return system_time_to_int64 (0, 0);
 }
 #endif
+
+#ifndef HOST_WIN32
+#if defined(__APPLE__)
+#if defined (TARGET_OSX)
+G_BEGIN_DECLS
+gchar ***_NSGetEnviron(void);
+G_END_DECLS
+#define environ (*_NSGetEnviron())
+#else
+static char *_ep_rt_mono_environ[1] = { NULL };
+#define environ _ep_rt_mono_environ
+#endif /* defined (TARGET_OSX) */
+#else
+G_BEGIN_DECLS
+extern char **environ;
+G_END_DECLS
+#endif /* defined (__APPLE__) */
+#endif /* !defined (HOST_WIN32) */
+
+void
+ep_rt_mono_os_environment_get_utf16 (ep_rt_env_array_utf16_t *env_array)
+{
+	EP_ASSERT (env_array != NULL);
+#ifdef HOST_WIN32
+	LPWSTR envs = GetEnvironmentStringsW ();
+	if (envs) {
+		LPWSTR next = envs;
+		while (*next) {
+			ep_rt_env_array_utf16_append (env_array, ep_rt_utf16_string_dup (next));
+			next += ep_rt_utf16_string_len (next) + 1;
+		}
+		FreeEnvironmentStringsW (envs);
+	}
+#else
+	gchar **next = NULL;
+	for (next = environ; *next != NULL; ++next)
+		ep_rt_env_array_utf16_append (env_array, ep_rt_utf8_to_utf16_string (*next, -1));
+#endif
+}
 
 #endif /* ENABLE_PERFTRACING */
 

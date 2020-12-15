@@ -64,7 +64,8 @@ namespace System.Net.NetworkInformation
 
             return connectionInformations;
         }
-        public unsafe override TcpConnectionInformation[] GetActiveTcpConnections()
+
+        public override TcpConnectionInformation[] GetActiveTcpConnections()
         {
             return GetTcpConnections(listeners:false);
         }

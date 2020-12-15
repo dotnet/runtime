@@ -339,12 +339,12 @@ def main(args):
    core_root = os.path.join(repo_root,
                             "bin",
                             "Product",
-                            "Windows_NT.%s.%s" % (arch, build_type))
+                            "windows.%s.%s" % (arch, build_type))
 
    test_location = os.path.join(repo_root,
                                 "bin",
                                 "tests",
-                                "Windows_NT.%s.%s" % (arch, build_type))
+                                "windows.%s.%s" % (arch, build_type))
 
    cli_location = setup_cli(force_update=force_update)
    add_item_to_path(cli_location)

@@ -115,7 +115,7 @@ def main(argv):
 
     if platform == 'Linux' or platform == 'OSX':
         bootstrapFilename = "bootstrap.sh"
-    elif platform == 'Windows_NT':
+    elif platform == 'windows':
         bootstrapFilename = "bootstrap.cmd"
 
     bootstrapUrl = "https://raw.githubusercontent.com/dotnet/jitutils/master/" + bootstrapFilename
@@ -132,7 +132,7 @@ def main(argv):
             print("Did not download bootstrap!")
             return -1
 
-        if platform == 'Windows_NT':
+        if platform == 'windows':
             # Need to ensure we have Windows line endings on the downloaded script file,
             # which is downloaded with Unix line endings.
             print('Convert', bootstrapPath, 'to Windows line endings')
@@ -157,7 +157,7 @@ def main(argv):
             print('Running:', 'bash', bootstrapPath)
             proc = subprocess.Popen(['bash', bootstrapPath], env=my_env)
             output,error = proc.communicate()
-        elif platform == 'Windows_NT':
+        elif platform == 'windows':
             print('Running:', bootstrapPath)
             proc = subprocess.Popen([bootstrapPath], env=my_env)
             output,error = proc.communicate()
@@ -181,7 +181,7 @@ def main(argv):
 
         if platform == 'Linux' or platform == 'OSX':
             jitformat = os.path.join(jitformat, "jit-format")
-        elif platform == 'Windows_NT':
+        elif platform == 'windows':
             jitformat = os.path.join(jitformat,"jit-format.bat")
         errorMessage = ""
 
@@ -218,7 +218,7 @@ def main(argv):
     if returncode != 0:
         # Create a patch file
         print("Creating patch file " + patchFilePath)
-        jitSrcPath = os.path.join(coreclr, "src", "jit")
+        jitSrcPath = os.path.join(coreclr, "jit")
         patchFile = open(patchFilePath, "w")
         proc = subprocess.Popen(["git", "diff", "--patch", "-U20", "--", jitSrcPath], env=my_env, stdout=patchFile)
         output,error = proc.communicate()

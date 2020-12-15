@@ -786,9 +786,9 @@ namespace Microsoft.Extensions.Configuration.Test
 
         [Fact]
         public void SectionGetRequiredSectionNullThrowException()
-        {                      
+        {
             IConfigurationRoot config = null;
-            Assert.Throws<ArgumentNullException>(() => config.GetRequiredSection("Mem1"));           
+            Assert.Throws<ArgumentNullException>(() => config.GetRequiredSection("Mem1"));
         }
 
         [Fact]
@@ -888,6 +888,30 @@ namespace Microsoft.Extensions.Configuration.Test
 
             // Assert
             Assert.False(sectionExists);
+        }
+
+        internal class NullReloadTokenConfigSource : IConfigurationSource, IConfigurationProvider
+        {
+            public IEnumerable<string> GetChildKeys(IEnumerable<string> earlierKeys, string parentPath) => throw new NotImplementedException();
+            public Primitives.IChangeToken GetReloadToken() => null;
+            public void Load() { }
+            public void Set(string key, string value) => throw new NotImplementedException();
+            public bool TryGet(string key, out string value) => throw new NotImplementedException();
+            public IConfigurationProvider Build(IConfigurationBuilder builder) => this;
+        }
+
+        [Fact]
+        public void ProviderWithNullReloadToken()
+        {
+            // Arrange
+            var builder = new ConfigurationBuilder();
+            builder.Add(new NullReloadTokenConfigSource());
+
+            // Act
+            var config = builder.Build();
+
+            // Assert
+            Assert.NotNull(config);
         }
     }
 }

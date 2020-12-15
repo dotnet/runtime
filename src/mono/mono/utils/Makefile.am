@@ -231,8 +231,12 @@ monoutils_sources = \
 	os-event.h \
 	refcount.h	\
 	w32api.h	\
+	w32subset.h	\
 	unlocked.h	\
-	ward.h
+	ward.h \
+	options.h \
+	options-def.h \
+	options.c
 
 arch_sources = 
 

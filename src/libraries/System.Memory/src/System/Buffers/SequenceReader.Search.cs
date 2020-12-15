@@ -775,7 +775,7 @@ namespace System.Buffers
             return unread.Length < next.Length && IsNextSlow(next, advancePast);
         }
 
-        private unsafe bool IsNextSlow(ReadOnlySpan<T> next, bool advancePast)
+        private bool IsNextSlow(ReadOnlySpan<T> next, bool advancePast)
         {
             ReadOnlySpan<T> currentSpan = UnreadSpan;
 

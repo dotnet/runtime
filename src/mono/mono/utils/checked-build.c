@@ -129,7 +129,7 @@ backtrace_mutex_trylock (void)
 static void
 backtrace_mutex_unlock (void)
 {
-	return mono_os_mutex_unlock (&backtrace_mutex);
+	mono_os_mutex_unlock (&backtrace_mutex);
 }
 
 static CheckState*

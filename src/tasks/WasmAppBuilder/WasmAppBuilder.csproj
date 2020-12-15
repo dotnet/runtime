@@ -1,0 +1,28 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>$(NetCoreAppToolCurrent)</TargetFramework>
+    <OutputType>Library</OutputType>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <Nullable>enable</Nullable>
+    <NoWarn>$(NoWarn),CA1050</NoWarn>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Build" Version="$(RefOnlyMicrosoftBuildVersion)" />
+    <PackageReference Include="Microsoft.Build.Framework" Version="$(RefOnlyMicrosoftBuildFrameworkVersion)" />
+    <PackageReference Include="Microsoft.Build.Tasks.Core" Version="$(RefOnlyMicrosoftBuildTasksCoreVersion)" />
+    <PackageReference Include="Microsoft.Build.Utilities.Core" Version="$(RefOnlyMicrosoftBuildUtilitiesCoreVersion)" />
+    <PackageReference Include="System.Reflection.MetadataLoadContext" Version="4.7.1" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="PInvokeTableGenerator.cs" />
+    <Compile Include="WasmAppBuilder.cs" />
+    <Compile Include="WasmLoadAssembliesAndReferences.cs" />
+  </ItemGroup>
+
+  <Target Name="PublishBuilder"
+          AfterTargets="Build"
+          DependsOnTargets="Publish" />
+
+  <Target Name="GetFilesToPackage" />
+
+</Project>

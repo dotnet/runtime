@@ -65,7 +65,6 @@
 
 #include "mini.h"
 #include "seq-points.h"
-#include "version.h"
 #include "debugger-agent.h"
 #include "aot-compiler.h"
 #include "aot-runtime.h"
@@ -257,6 +256,9 @@ init_method (MonoAotModule *amodule, gpointer info, guint32 method_index, MonoMe
 
 static MonoJumpInfo*
 decode_patches (MonoAotModule *amodule, MonoMemPool *mp, int n_patches, gboolean llvm, guint32 *got_offsets);
+
+static MonoMethodSignature*
+decode_signature (MonoAotModule *module, guint8 *buf, guint8 **endbuf);
 
 static void
 load_container_amodule (MonoAssemblyLoadContext *alc);
@@ -755,6 +757,11 @@ decode_type (MonoAotModule *module, guint8 *buf, guint8 **endbuf, MonoError *err
 	case MONO_TYPE_PTR:
 		t->data.type = decode_type (module, p, &p, error);
 		if (!t->data.type)
+			goto fail;
+		break;
+	case MONO_TYPE_FNPTR:
+		t->data.method = decode_signature (module, p, &p);
+		if (!t->data.method)
 			goto fail;
 		break;
 	case MONO_TYPE_GENERICINST: {
@@ -5070,10 +5077,12 @@ mono_aot_get_method (MonoDomain *domain, MonoMethod *method, MonoError *error)
 		/* Common case */
 		method_index = mono_metadata_token_index (method->token) - 1;
 
-		guint32 num_methods = amodule->info.nmethods - amodule->info.nextra_methods;
-		if (method_index >= num_methods)
-			/* method not available in AOT image */
-			return NULL;
+		if (!mono_llvm_only) {
+			guint32 num_methods = amodule->info.nmethods - amodule->info.nextra_methods;
+			if (method_index >= num_methods)
+				/* method not available in AOT image */
+				return NULL;
+		}
 	}
 
 	code = (guint8 *)load_method (domain, amodule, m_class_get_image (klass), method, method->token, method_index, error);

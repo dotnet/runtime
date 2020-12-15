@@ -70,6 +70,7 @@ namespace System.Text.Json
         [System.CLSCompliantAttribute(false)]
         public ulong GetUInt64() { throw null; }
         public override string? ToString() { throw null; }
+        public static System.Text.Json.JsonElement ParseValue(ref System.Text.Json.Utf8JsonReader reader) { throw null; }
         public bool TryGetByte(out byte value) { throw null; }
         public bool TryGetBytesFromBase64([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out byte[]? value) { throw null; }
         public bool TryGetDateTime(out System.DateTime value) { throw null; }
@@ -92,6 +93,7 @@ namespace System.Text.Json
         public bool TryGetUInt32(out uint value) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public bool TryGetUInt64(out ulong value) { throw null; }
+        public static bool TryParseValue(ref System.Text.Json.Utf8JsonReader reader, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out System.Text.Json.JsonElement? element) { throw null; }
         public bool ValueEquals(System.ReadOnlySpan<byte> utf8Text) { throw null; }
         public bool ValueEquals(System.ReadOnlySpan<char> text) { throw null; }
         public bool ValueEquals(string? text) { throw null; }

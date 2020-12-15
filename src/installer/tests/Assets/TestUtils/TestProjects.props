@@ -7,7 +7,6 @@
   -->
 
   <Import Project="$([MSBuild]::GetPathOfFileAbove(Configurations.props,$(MSBuildThisFileDirectory)))../../../../../eng/Configurations.props" />
-  <Import Project="$(MSBuildThisFileDirectory)MNADeprecationWorkaround.props" />
 
   <PropertyGroup>
     <!--

@@ -1,11 +1,12 @@
 <Project Sdk="Microsoft.Build.Traversal">
   <PropertyGroup>
     <!-- Hardcode version paths in a global location. -->
-    <NativeVersionFile Condition="'$(TargetOS)' == 'Windows_NT'">$(ArtifactsObjDir)_version.h</NativeVersionFile>
-    <NativeVersionFile Condition="'$(TargetOS)' != 'Windows_NT'">$(ArtifactsObjDir)_version.c</NativeVersionFile>
+    <NativeVersionFile Condition="'$(TargetOS)' == 'windows'">$(ArtifactsObjDir)_version.h</NativeVersionFile>
+    <NativeVersionFile Condition="'$(TargetOS)' != 'windows'">$(ArtifactsObjDir)_version.c</NativeVersionFile>
     <TargetFramework>$(BuildTargetFramework)</TargetFramework>
     <TargetFramework Condition="'$(TargetFramework)' == ''">$(NetCoreAppCurrent)</TargetFramework>
     <_BuildNativeArgs>$(TargetArchitecture) $(Configuration) outconfig $(TargetFramework)-$(TargetOS)-$(Configuration)-$(TargetArchitecture) -os $(TargetOS)</_BuildNativeArgs>
+    <_BuildNativeArgs Condition="'$(Ninja)' == 'true'">$(_BuildNativeArgs) ninja</_BuildNativeArgs>
   </PropertyGroup>
 
   <ItemGroup>
@@ -15,7 +16,7 @@
 
   <Target Name="BuildNativeUnix"
           BeforeTargets="Build"
-          Condition="'$(TargetOS)' != 'Windows_NT'">
+          Condition="!$([MSBuild]::IsOsPlatform(Windows))">
     <PropertyGroup>
       <!--
         MSBuildNodeCount should a good approximation for how many procs to use for native build, if we find that doesn't work
@@ -41,7 +42,7 @@
 
   <Target Name="BuildNativeWindows"
           BeforeTargets="Build"
-          Condition="'$(TargetOS)' == 'Windows_NT' and
+          Condition="$([MSBuild]::IsOsPlatform(Windows)) and
                      '$(TargetFramework)' == '$(NetCoreAppCurrent)'">
     <!-- Run script that invokes Cmake to create VS files, and then calls msbuild to compile them -->
     <Message Text="&quot;$(MSBuildThisFileDirectory)build-native.cmd&quot; $(_BuildNativeArgs)" Importance="High"/>

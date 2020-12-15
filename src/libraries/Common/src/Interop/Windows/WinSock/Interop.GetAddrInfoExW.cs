@@ -11,6 +11,9 @@ internal static partial class Interop
 {
     internal static partial class Winsock
     {
+        internal const int WSA_INVALID_HANDLE = 6;
+        internal const int WSA_E_CANCELLED = 10111;
+
         internal const string GetAddrInfoExCancelFunctionName = "GetAddrInfoExCancel";
 
         internal const int NS_ALL = 0;
@@ -27,6 +30,9 @@ internal static partial class Interop
             [In] NativeOverlapped* lpOverlapped,
             [In] delegate* unmanaged<int, int, NativeOverlapped*, void> lpCompletionRoutine,
             [Out] IntPtr* lpNameHandle);
+
+        [DllImport(Libraries.Ws2_32, ExactSpelling = true)]
+        internal static extern unsafe int GetAddrInfoExCancel([In] IntPtr* lpHandle);
 
         [DllImport(Libraries.Ws2_32, ExactSpelling = true)]
         internal static extern unsafe void FreeAddrInfoExW(AddressInfoEx* pAddrInfo);

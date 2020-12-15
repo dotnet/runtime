@@ -14,6 +14,7 @@ namespace System.Net.Http
 
         public override void Write(byte[] buffer, int offset, int count)
         {
+            ValidateBufferArguments(buffer, offset, count);
             Write(new ReadOnlySpan<byte>(buffer, offset, count));
         }
 

@@ -5,6 +5,8 @@
     <XunitTestBinBase Condition="'$(XunitTestBinBase)'==''" >$(BaseOutputPathWithConfig)</XunitTestBinBase>
     <XunitWrapperGeneratedCSDirBase>$(XunitTestBinBase)\TestWrappers\</XunitWrapperGeneratedCSDirBase>
     <MSBuildEnableAllPropertyFunctions>1</MSBuildEnableAllPropertyFunctions>
+    <TestScriptExtension Condition="'$(TestWrapperTargetsWindows)' != 'true' ">sh</TestScriptExtension>
+    <TestScriptExtension Condition="'$(TestWrapperTargetsWindows)' == 'true' ">cmd</TestScriptExtension>
   </PropertyGroup>
 
   <ItemGroup>
@@ -171,6 +173,7 @@ using System.Diagnostics%3B
 using System.Reflection%3B
 using System.Text.RegularExpressions%3B
 using CoreclrTestLib%3B
+using System.IO%3B
 
 namespace $([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").Replace("-","_"))
 {
@@ -180,12 +183,14 @@ namespace $([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").
             internal static string reportBase%3B
             internal static string testBinaryBase%3B
             internal static string coreRoot%3B
+            internal static string category%3B
 
             static _Global()
             {
                 reportBase = System.Environment.GetEnvironmentVariable(%22XunitTestReportDirBase%22)%3B
                 testBinaryBase = System.IO.Path.GetDirectoryName(new Uri(Assembly.GetExecutingAssembly().CodeBase).LocalPath)%3B
                 coreRoot = System.Environment.GetEnvironmentVariable(%22CORE_ROOT%22)%3B
+                category = "$([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").Replace("-","_"))"%3B
 
                 if (String.IsNullOrEmpty(reportBase)) {
                     reportBase = System.IO.Path.Combine(testBinaryBase, "Reports")%3B
@@ -218,12 +223,12 @@ namespace $([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").
     </PropertyGroup>
 
     <PropertyGroup>
-      <TestExecutableReplacement Condition="'$(TargetsWindows)' != 'true' ">testExecutable = testExecutable.Replace("\\", "/")%3B</TestExecutableReplacement>
+      <TestExecutableReplacement Condition="'$(TestWrapperTargetsWindows)' != 'true' ">testExecutable = testExecutable.Replace("\\", "/")%3B</TestExecutableReplacement>
     </PropertyGroup>
 
     <ItemGroup>
-      <AllCMDsPresent Include="$(_CMDDIR)\**\*.cmd" Condition="'$(RunningOnUnix)' != 'true'" />
-      <AllCMDsPresent Include="$(_CMDDIR)\**\*.sh" Condition="'$(RunningOnUnix)' == 'true'" />
+      <AllCMDsPresent Include="$(_CMDDIR)\**\*.$(TestScriptExtension)" />
+      <AllCMDsPresent Remove="$(_CMDDIR)\**\run-v8.sh" Condition="'$(TargetArchitecture)' == 'wasm'" />
       <TestGroupingDistinctWithCase Include="@(TestGrouping->Metadata('FullPath')->DistinctWithCase())" />
       <TestGroupingNotRelevant Include="@(TestGroupingDistinctWithCase)" Exclude="@(AllCMDsPresent)" />
       <GroupedCMDs Include="@(TestGroupingDistinctWithCase)" Exclude="@(TestGroupingNotRelevant)" />
@@ -237,9 +242,9 @@ namespace $([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").
       <AllCommands Include="@(AllCMDs)" Condition="@(AllCMDs->Count()) &gt; 0">
         <DisplayName>$([MSBuild]::MakeRelative($(XunitTestBinBase), %(AllCMDs.FullPath)))</DisplayName>
         <FactName Condition="'$(RunningOnUnix)' != 'true'" >_$([MSBuild]::ValueOrDefault(%(AllCMDs.RelativeToCMDDIR),"").Replace(".","_").Replace("\","_").Replace("-","_"))</FactName>
-        <ClassName Condition="'$(RunningOnUnix)' != 'true'" >_$([MSBuild]::ValueOrDefault(%(AllCMDs.RelativeToCMDDIR),"").Replace("cmd","").Replace(".","_").Replace("\","_").Replace("-","_"))</ClassName>
+        <ClassName Condition="'$(RunningOnUnix)' != 'true'" >_$([MSBuild]::ValueOrDefault(%(AllCMDs.RelativeToCMDDIR),"").Replace($(TestScriptExtension),"").Replace(".","_").Replace("\","_").Replace("-","_"))</ClassName>
         <FactName Condition="'$(RunningOnUnix)' == 'true'" >_$([MSBuild]::ValueOrDefault(%(AllCMDs.RelativeToCMDDIR),"").Replace(".","_").Replace("/","_").Replace("-","_"))</FactName>
-        <ClassName Condition="'$(RunningOnUnix)' == 'true'" >_$([MSBuild]::ValueOrDefault(%(AllCMDs.RelativeToCMDDIR), '').Replace('sh','').Replace('.','_').Replace('/','_').Replace('-','_'))</ClassName>
+        <ClassName Condition="'$(RunningOnUnix)' == 'true'" >_$([MSBuild]::ValueOrDefault(%(AllCMDs.RelativeToCMDDIR), '').Replace($(TestScriptExtension),'').Replace('.','_').Replace('/','_').Replace('-','_'))</ClassName>
         <TestGroup>%(AllCMDs.TestGroup)</TestGroup>
         <XUnitFact >
           <![CDATA[
@@ -278,7 +283,7 @@ namespace $([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").
 
                   System.IO.Directory.CreateDirectory(_Global.reportBase + testSubfolder)%3B
 
-                  ret = wrapper.RunTest(testExecutable, outputFile, errorFile)%3B
+                  ret = wrapper.RunTest(testExecutable, outputFile, errorFile, _Global.category, _Global.testBinaryBase)%3B
                 }
                 catch (Exception ex)
                 {
@@ -337,6 +342,16 @@ namespace $([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").
                         output.WriteLine(line)%3B
                     }
 
+                    // Add Android app running log to testOutput
+                    if (ret != CoreclrTestWrapperLib.EXIT_SUCCESS_CODE)
+                    {
+                        string androidLogFile = System.IO.Path.Combine(System.IO.Path.GetDirectoryName(testExecutable), "adb-logcat-net.dot." + _Global.category + ".log")%3B
+                        if(File.Exists(androidLogFile))
+                        {
+                            testOutput.AddRange(System.IO.File.ReadAllLines(androidLogFile))%3B
+                        }
+                    }
+
                     Assert.True(ret == CoreclrTestWrapperLib.EXIT_SUCCESS_CODE, string.Join(Environment.NewLine, testOutput))%3B
                 }
             }
@@ -357,19 +372,30 @@ namespace $([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").
       <TestDllPaths Include="$([System.IO.Path]::ChangeExtension('%(TestScripts.Identity)', 'dll'))" />
       <TestDlls Include="%(TestDllPaths.Identity)" Condition="Exists(%(TestDllPaths.Identity))" />
     </ItemGroup>
-    <PropertyGroup>
-      <CorerunExecutable Condition="'$(RunningOnUnix)' == 'true'">$(CORE_ROOT)\corerun</CorerunExecutable>
-      <CorerunExecutable Condition="'$(RunningOnUnix)' != 'true'">$(CORE_ROOT)\corerun.exe</CorerunExecutable>
+
+    <PropertyGroup Condition="'$(CROSSCOMPILE)' == ''">
+      <AotCompiler Condition="'$(RunningOnUnix)' == 'true'">$(CORE_ROOT)/corerun</AotCompiler>
+      <AotCompiler Condition="'$(RunningOnUnix)' != 'true'">$(CORE_ROOT)\corerun.exe</AotCompiler>
+      <MonoLlvmPath>$(MonoBinDir)</MonoLlvmPath>
     </PropertyGroup>
+    <PropertyGroup Condition="'$(CROSSCOMPILE)' != ''">
+      <AotCompiler>$(MonoBinDir)/cross/mono-aot-cross</AotCompiler>
+      <MonoLlvmPath>$(MonoBinDir)/cross</MonoLlvmPath>
+    </PropertyGroup>
+
     <ItemGroup>
-      <AotEnvVar Include="MONO_ENV_OPTIONS=--aot=llvm,llvm-path='$(MonoLlvmPath)'" />
+      <MonoAotOption Include="llvm" />
+      <MonoAotOption Include="llvm-path=$(MonoLlvmPath)" />
+      <MonoAotOption Condition="'$(__MonoToolPrefix)' != ''" Include="tool-prefix=$(__MonoToolPrefix)" />
     </ItemGroup>
     <PropertyGroup>
-      <AotEnvVars>@(AotEnvVar)</AotEnvVars>
+      <MonoAotOptions>@(MonoAotOption->'%(Identity)', ',')</MonoAotOptions>
+      <MonoPath Condition="'$(CROSSCOMPILE)' != ''">$(CORE_ROOT)</MonoPath>
     </PropertyGroup>
+
     <ItemGroup>
       <AotProject Include="../mono/msbuild/aot-compile.proj">
-        <Properties>_CorerunExecutable=$(CorerunExecutable);_TestDll=%(TestDlls.Identity);AotEnvVars=@(AotEnvVar)</Properties>
+        <Properties>_AotCompiler=$(AotCompiler);_TestDll=%(TestDlls.Identity);_MonoPath=$(MonoPath);_MonoAotOptions=$(MonoAotOptions)</Properties>
       </AotProject>
     </ItemGroup>
     <MSBuild
@@ -384,11 +410,89 @@ namespace $([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").
     <MSBuild Projects="$(MSBuildProjectFile)" Targets="CreateXunitWrapper;BuildXunitWrapper" Properties="_CMDDIR=%(TestDirectories.Identity)" />
   </Target>
 
+  <UsingTask TaskName="AndroidAppBuilderTask" AssemblyFile="$(AndroidAppBuilderTasksAssemblyPath)" Condition="'$(RunWithAndroid)'=='true'"/>
+
+  <Target Name="BuildAndroidApp">
+
+    <PropertyGroup>
+      <RuntimeIdentifier>android-$(TargetArchitecture)</RuntimeIdentifier>
+      <CMDDIR_Grandparent>$([System.IO.Path]::GetDirectoryName($([System.IO.Path]::GetDirectoryName($(_CMDDIR)))))</CMDDIR_Grandparent>
+      <CategoryWithSlash>$([System.String]::Copy('$(_CMDDIR)').Replace("$(CMDDIR_Grandparent)/",""))</CategoryWithSlash>
+      <Category>$([System.String]::Copy('$(CategoryWithSlash)').Replace('/','_'))</Category>
+      <BuildDir>$(IntermediateOutputPath)\AndroidApps\$(Category)</BuildDir>
+      <AppDir>$(BuildDir)\apk</AppDir>
+      <FinalApkPath>$(XUnitTestBinBase)$(CategoryWithSlash)\$(Category).apk</FinalApkPath>
+      <StripDebugSymbols>False</StripDebugSymbols>
+      <StripDebugSymbols Condition="'$(Configuration)' == 'Release'">True</StripDebugSymbols>
+      <MicrosoftNetCoreAppRuntimePackDir>$(ArtifactsBinDir)microsoft.netcore.app.runtime.android-$(TargetArchitecture)\$(Configuration)\runtimes\android-$(TargetArchitecture)\</MicrosoftNetCoreAppRuntimePackDir>
+      <AndroidAbi Condition="'$(TargetArchitecture)' == 'arm64'">arm64-v8a</AndroidAbi>
+      <AndroidAbi Condition="'$(TargetArchitecture)' == 'arm'">armeabi-v7a</AndroidAbi>
+      <AndroidAbi Condition="'$(TargetArchitecture)' == 'x64'">x86_64</AndroidAbi>
+      <AndroidAbi Condition="'$(TargetArchitecture)' == 'x86'">x86</AndroidAbi>
+    </PropertyGroup>
+
+    <RemoveDir Directories="$(AppDir)" />
+    <MakeDir Directories="$(BuildDir)"/>
+
+    <ItemGroup>
+      <AllCMDsPresent Include="$(_CMDDIR)\**\*.$(TestScriptExtension)"/>
+      <TestAssemblies Include="@(AllCMDsPresent->'%(RelativeDir)%(Filename).dll')" />
+      <TestAssemblyDirs Include="@(AllCMDsPresent->'%(RelativeDir)')" />
+      <AssembliesInTestDirs Include="%(AllCMDsPresent.RelativeDir)*.dll" Exclude="@(TestAssemblies)"/>
+      <RuntimePackLibs Include="$(MicrosoftNetCoreAppRuntimePackDir)lib/**/*.dll" />
+      <RuntimePackNativeLibs Include="$(MicrosoftNetCoreAppRuntimePackDir)native/**/*.dll;$(MicrosoftNetCoreAppRuntimePackDir)native/**/*.a;$(MicrosoftNetCoreAppRuntimePackDir)native/**/*.so" />
+    </ItemGroup>
+
+    <Copy
+        SourceFiles="@(TestAssemblies)"
+        DestinationFolder="$(BuildDir)" />
+
+    <Copy
+        SourceFiles="@(AssembliesInTestDirs)"
+        DestinationFolder="$(BuildDir)" />
+
+    <Copy
+        SourceFiles="@(RuntimePackNativeLibs)"
+        DestinationFolder="$(BuildDir)" />
+
+    <Copy
+        SourceFiles="@(RuntimePackLibs)"
+        DestinationFolder="$(BuildDir)" />
+
+    <!-- TEMP: consume OpenSSL binaries from external sources via env. variables.-->
+    <Copy Condition="'$(ANDROID_OPENSSL_AAR)' != ''"
+          SourceFiles="$(ANDROID_OPENSSL_AAR)\prefab\modules\crypto\libs\android.$(AndroidAbi)\libcrypto.so"
+          DestinationFolder="$(BuildDir)" SkipUnchangedFiles="true"/>
+
+    <Copy Condition="'$(ANDROID_OPENSSL_AAR)' != ''"
+          SourceFiles="$(ANDROID_OPENSSL_AAR)\prefab\modules\ssl\libs\android.$(AndroidAbi)\libssl.so"
+          DestinationFolder="$(BuildDir)" SkipUnchangedFiles="true"/>
+
+    <AndroidAppBuilderTask
+        RuntimeIdentifier="$(RuntimeIdentifier)"
+        ProjectName="$(Category)"
+        MonoRuntimeHeaders="$(MicrosoftNetCoreAppRuntimePackDir)/native/include/mono-2.0"
+        StripDebugSymbols="$(StripDebugSymbols)"
+        SourceDir="$(BuildDir)"
+        OutputDir="$(AppDir)">
+        <Output TaskParameter="ApkBundlePath" PropertyName="ApkBundlePath" />
+        <Output TaskParameter="ApkPackageId" PropertyName="ApkPackageId" />
+    </AndroidAppBuilderTask>
+    <Move SourceFiles="$(ApkBundlePath)" DestinationFiles="$(FinalApkPath)" />
+    <Message Importance="High" Text="Apk:       $(FinalApkPath)"/>
+    <Message Importance="High" Text="PackageId: $(ApkPackageId)"/>
+    <!-- delete the BuildDir in CI builds to save disk space on build agents since they're no longer needed -->
+    <RemoveDir Condition="'$(ContinuousIntegrationBuild)' == 'true'" Directories="$(BuildDir)" />
+  </Target>
+
+  <Target Name="BuildAllAndroidApp" DependsOnTargets="GetListOfTestCmds;FindCmdDirectories">
+    <MSBuild Projects="$(MSBuildProjectFile)" Targets="BuildAndroidApp" Properties="_CMDDIR=%(TestDirectories.Identity)" />
+  </Target>
+
   <Target Name="GetListOfTestCmds">
     <ItemGroup>
-      <AllRunnableTestPaths Include="$(XunitTestBinBase)\**\*.cmd" Condition="'$(TargetOS)' == 'Windows_NT'" />
-      <AllRunnableTestPaths Include="$(XunitTestBinBase)\**\*.sh" Condition="'$(TargetOS)' != 'Windows_NT'" />
-      <AllRunnableTestPaths Remove="$(XunitTestBinBase)\**\run-v8.sh" Condition="'$(TargetArchitecture)' == 'wasm'" /> 
+      <AllRunnableTestPaths Include="$(XunitTestBinBase)\**\*.$(TestScriptExtension)"/>
+      <AllRunnableTestPaths Remove="$(XunitTestBinBase)\**\run-v8.sh" Condition="'$(TargetArchitecture)' == 'wasm'" />
     </ItemGroup>
   </Target>
 
@@ -398,7 +502,7 @@ namespace $([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").
   <Target Name="CreateTestOverlay">
     <MSBuild Projects="$(MSBuildProjectFile)"
              Targets="CopyDependencyToCoreRoot"
-             Properties="Language=C#;TargetRid=$(TargetRid);RuntimeIdentifier=$(TargetRid)" />
+             Properties="Language=C#;PackageRID=$(PackageRID);RuntimeIdentifier=$(PackageRID)" />
   </Target>
 
   <Target Name="Build">
@@ -408,9 +512,8 @@ namespace $([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").
              Condition=" '$(BuildWrappers)'=='true' " />
 
     <MSBuild Projects="$(MSBuildProjectFile)"
-             Targets="MonoAotCompileTests"
-             Properties=""
-             Condition=" '$(MonoAotCompile)'=='true' " />
+             Targets="BuildAllAndroidApp"
+             Condition=" '$(RunWithAndroid)'=='true' " />
 
     <!-- Default for building -->
     <MSBuild Projects="$(MSBuildProjectFile)"

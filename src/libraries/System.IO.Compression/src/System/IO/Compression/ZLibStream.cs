@@ -95,16 +95,16 @@ namespace System.IO.Compression
         }
 
         /// <summary>Begins an asynchronous read operation.</summary>
-        /// <param name="array">The byte array to read the data into.</param>
+        /// <param name="buffer">The byte array to read the data into.</param>
         /// <param name="offset">The byte offset in array at which to begin reading data from the stream.</param>
         /// <param name="count">The maximum number of bytes to read.</param>
         /// <param name="asyncCallback">An optional asynchronous callback, to be called when the read operation is complete.</param>
         /// <param name="asyncState">A user-provided object that distinguishes this particular asynchronous read request from other requests.</param>
         /// <returns>An object that represents the asynchronous read operation, which could still be pending.</returns>
-        public override IAsyncResult BeginRead(byte[] array, int offset, int count, AsyncCallback? asyncCallback, object? asyncState)
+        public override IAsyncResult BeginRead(byte[] buffer, int offset, int count, AsyncCallback? asyncCallback, object? asyncState)
         {
             ThrowIfClosed();
-            return _deflateStream.BeginRead(array, offset, count, asyncCallback, asyncState);
+            return _deflateStream.BeginRead(buffer, offset, count, asyncCallback, asyncState);
         }
 
         /// <summary>Waits for the pending asynchronous read to complete.</summary>
@@ -114,14 +114,14 @@ namespace System.IO.Compression
             _deflateStream.EndRead(asyncResult);
 
         /// <summary>Reads a number of decompressed bytes into the specified byte array.</summary>
-        /// <param name="array">The byte array to read the data into.</param>
+        /// <param name="buffer">The byte array to read the data into.</param>
         /// <param name="offset">The byte offset in array at which to begin reading data from the stream.</param>
         /// <param name="count">The maximum number of bytes to read.</param>
         /// <returns>The number of bytes that were read into the byte array.</returns>
-        public override int Read(byte[] array, int offset, int count)
+        public override int Read(byte[] buffer, int offset, int count)
         {
             ThrowIfClosed();
-            return _deflateStream.Read(array, offset, count);
+            return _deflateStream.Read(buffer, offset, count);
         }
 
         /// <summary>Reads a number of decompressed bytes into the specified byte span.</summary>
@@ -134,15 +134,15 @@ namespace System.IO.Compression
         }
 
         /// <summary>Asynchronously reads a sequence of bytes from the current stream, advances the position within the stream by the number of bytes read, and monitors cancellation requests.</summary>
-        /// <param name="array">The byte array to read the data into.</param>
+        /// <param name="buffer">The byte array to read the data into.</param>
         /// <param name="offset">The byte offset in array at which to begin reading data from the stream.</param>
         /// <param name="count">The maximum number of bytes to read.</param>
         /// <param name="cancellationToken">The token to monitor for cancellation requests.</param>
         /// <returns>A task that represents the asynchronous completion of the operation.</returns>
-        public override Task<int> ReadAsync(byte[] array, int offset, int count, CancellationToken cancellationToken)
+        public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
         {
             ThrowIfClosed();
-            return _deflateStream.ReadAsync(array, offset, count, cancellationToken);
+            return _deflateStream.ReadAsync(buffer, offset, count, cancellationToken);
         }
 
         /// <summary>Asynchronously reads a sequence of bytes from the current stream, advances the position within the stream by the number of bytes read, and monitors cancellation requests.</summary>
@@ -156,16 +156,16 @@ namespace System.IO.Compression
         }
 
         /// <summary>Begins an asynchronous write operation.</summary>
-        /// <param name="array">The buffer to write data from.</param>
+        /// <param name="buffer">The buffer to write data from.</param>
         /// <param name="offset">The byte offset in buffer to begin writing from.</param>
         /// <param name="count">The maximum number of bytes to write.</param>
         /// <param name="asyncCallback">An optional asynchronous callback, to be called when the write operation is complete.</param>
         /// <param name="asyncState">A user-provided object that distinguishes this particular asynchronous write request from other requests.</param>
         /// <returns>An object that represents the asynchronous write operation, which could still be pending.</returns>
-        public override IAsyncResult BeginWrite(byte[] array, int offset, int count, AsyncCallback? asyncCallback, object? asyncState)
+        public override IAsyncResult BeginWrite(byte[] buffer, int offset, int count, AsyncCallback? asyncCallback, object? asyncState)
         {
             ThrowIfClosed();
-            return _deflateStream.BeginWrite(array, offset, count, asyncCallback, asyncState);
+            return _deflateStream.BeginWrite(buffer, offset, count, asyncCallback, asyncState);
         }
 
         /// <summary>Ends an asynchronous write operation.</summary>
@@ -174,13 +174,13 @@ namespace System.IO.Compression
             _deflateStream.EndWrite(asyncResult);
 
         /// <summary>Writes compressed bytes to the underlying stream from the specified byte array.</summary>
-        /// <param name="array">The buffer to write data from.</param>
+        /// <param name="buffer">The buffer to write data from.</param>
         /// <param name="offset">The byte offset in buffer to begin writing from.</param>
         /// <param name="count">The maximum number of bytes to write.</param>
-        public override void Write(byte[] array, int offset, int count)
+        public override void Write(byte[] buffer, int offset, int count)
         {
             ThrowIfClosed();
-            _deflateStream.Write(array, offset, count);
+            _deflateStream.Write(buffer, offset, count);
         }
 
         /// <summary>Writes compressed bytes to the underlying stream from the specified byte span.</summary>
@@ -192,15 +192,15 @@ namespace System.IO.Compression
         }
 
         /// <summary>Asynchronously writes a sequence of bytes to the current stream, advances the current position within this stream by the number of bytes written, and monitors cancellation requests.</summary>
-        /// <param name="array">The buffer to write data from.</param>
+        /// <param name="buffer">The buffer to write data from.</param>
         /// <param name="offset">The byte offset in buffer to begin writing from.</param>
         /// <param name="count">The maximum number of bytes to write.</param>
         /// <param name="cancellationToken">The token to monitor for cancellation requests.</param>
         /// <returns>A task that represents the asynchronous completion of the operation.</returns>
-        public override Task WriteAsync(byte[] array, int offset, int count, CancellationToken cancellationToken)
+        public override Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
         {
             ThrowIfClosed();
-            return _deflateStream.WriteAsync(array, offset, count, cancellationToken);
+            return _deflateStream.WriteAsync(buffer, offset, count, cancellationToken);
         }
 
         /// <summary>Asynchronously writes a sequence of bytes to the current stream, advances the current position within this stream by the number of bytes written, and monitors cancellation requests.</summary>

@@ -7,6 +7,7 @@ using System.IO;
 using System.Net.Http.Headers;
 using System.Net.Security;
 using System.Runtime.InteropServices;
+using System.Runtime.Versioning;
 using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
@@ -76,6 +77,13 @@ namespace System.Net.Http
         private TimeSpan _sendTimeout = TimeSpan.FromSeconds(30);
         private TimeSpan _receiveHeadersTimeout = TimeSpan.FromSeconds(30);
         private TimeSpan _receiveDataTimeout = TimeSpan.FromSeconds(30);
+
+        // Using OS defaults for "Keep-alive timeout" and "keep-alive interval"
+        // as documented in https://docs.microsoft.com/en-us/windows/win32/winsock/sio-keepalive-vals#remarks
+        private TimeSpan _tcpKeepAliveTime = TimeSpan.FromHours(2);
+        private TimeSpan _tcpKeepAliveInterval = TimeSpan.FromSeconds(1);
+        private bool _tcpKeepAliveEnabled;
+
         private int _maxResponseHeadersLength = HttpHandlerDefaults.DefaultMaxResponseHeadersLength;
         private int _maxResponseDrainSize = 64 * 1024;
         private IDictionary<string, object> _properties; // Only create dictionary when required.
@@ -187,6 +195,7 @@ namespace System.Net.Http
                 _sslProtocols = value;
             }
         }
+
 
         public Func<
             HttpRequestMessage,
@@ -369,15 +378,12 @@ namespace System.Net.Http
 
             set
             {
-                if (value != Timeout.InfiniteTimeSpan && (value <= TimeSpan.Zero || value > s_maxTimeout))
-                {
-                    throw new ArgumentOutOfRangeException(nameof(value));
-                }
-
+                CheckTimeSpanPropertyValue(value);
                 CheckDisposedOrStarted();
                 _sendTimeout = value;
             }
         }
+
 
         public TimeSpan ReceiveHeadersTimeout
         {
@@ -388,11 +394,7 @@ namespace System.Net.Http
 
             set
             {
-                if (value != Timeout.InfiniteTimeSpan && (value <= TimeSpan.Zero || value > s_maxTimeout))
-                {
-                    throw new ArgumentOutOfRangeException(nameof(value));
-                }
-
+                CheckTimeSpanPropertyValue(value);
                 CheckDisposedOrStarted();
                 _receiveHeadersTimeout = value;
             }
@@ -407,13 +409,77 @@ namespace System.Net.Http
 
             set
             {
-                if (value != Timeout.InfiniteTimeSpan && (value <= TimeSpan.Zero || value > s_maxTimeout))
-                {
-                    throw new ArgumentOutOfRangeException(nameof(value));
-                }
-
+                CheckTimeSpanPropertyValue(value);
                 CheckDisposedOrStarted();
                 _receiveDataTimeout = value;
+            }
+        }
+
+        /// <summary>
+        /// Gets or sets a value indicating whether TCP keep-alive is enabled.
+        /// </summary>
+        /// <remarks>
+        /// Only supported on Windows 10 version 2004 or newer.
+        /// If enabled, the values of <see cref="TcpKeepAliveInterval" /> and <see cref="TcpKeepAliveTime"/> will be forwarded
+        /// to set WINHTTP_OPTION_TCP_KEEPALIVE, enabling and configuring TCP keep-alive for the backing TCP socket.
+        /// </remarks>
+        [SupportedOSPlatform("windows10.0.19041")]
+        public bool TcpKeepAliveEnabled
+        {
+            get
+            {
+                return _tcpKeepAliveEnabled;
+            }
+            set
+            {
+                CheckDisposedOrStarted();
+                _tcpKeepAliveEnabled = value;
+            }
+        }
+
+        /// <summary>
+        /// Gets or sets the TCP keep-alive timeout.
+        /// </summary>
+        /// <remarks>
+        /// Only supported on Windows 10 version 2004 or newer.
+        /// Has no effect if <see cref="TcpKeepAliveEnabled"/> is <see langword="false" />.
+        /// The default value of this property is 2 hours.
+        /// </remarks>
+        [SupportedOSPlatform("windows10.0.19041")]
+        public TimeSpan TcpKeepAliveTime
+        {
+            get
+            {
+                return _tcpKeepAliveTime;
+            }
+            set
+            {
+                CheckTimeSpanPropertyValue(value);
+                CheckDisposedOrStarted();
+                _tcpKeepAliveTime = value;
+            }
+        }
+
+        /// <summary>
+        /// Gets or sets the TCP keep-alive interval.
+        /// </summary>
+        /// <remarks>
+        /// Only supported on Windows 10 version 2004 or newer.
+        /// Has no effect if <see cref="TcpKeepAliveEnabled"/> is <see langword="false" />.
+        /// The default value of this property is 1 second.
+        /// </remarks>
+        [SupportedOSPlatform("windows10.0.19041")]
+        public TimeSpan TcpKeepAliveInterval
+        {
+            get
+            {
+                return _tcpKeepAliveInterval;
+            }
+            set
+            {
+                CheckTimeSpanPropertyValue(value);
+                CheckDisposedOrStarted();
+                _tcpKeepAliveInterval = value;
             }
         }
 
@@ -903,7 +969,10 @@ namespace System.Net.Http
                 // Since the headers have been read, set the "receive" timeout to be based on each read
                 // call of the response body data. WINHTTP_OPTION_RECEIVE_TIMEOUT sets a timeout on each
                 // lower layer winsock read.
-                uint optionData = unchecked((uint)_receiveDataTimeout.TotalMilliseconds);
+                // Timeout.InfiniteTimeSpan will be converted to uint.MaxValue milliseconds (~ 50 days).
+                // The result a of double->uint cast is unspecified for -1 and may differ on ARM, returning 0 instead of uint.MaxValue.
+                // To handle Timeout.InfiniteTimespan correctly, we need to cast to int first.
+                uint optionData = (uint)(int)_receiveDataTimeout.TotalMilliseconds;
                 SetWinHttpOption(state.RequestHandle, Interop.WinHttp.WINHTTP_OPTION_RECEIVE_TIMEOUT, ref optionData);
 
                 HttpResponseMessage responseMessage =
@@ -936,6 +1005,30 @@ namespace System.Net.Http
             SetSessionHandleTlsOptions(sessionHandle);
             SetSessionHandleTimeoutOptions(sessionHandle);
             SetDisableHttp2StreamQueue(sessionHandle);
+            SetTcpKeepalive(sessionHandle);
+        }
+
+        private unsafe void SetTcpKeepalive(SafeWinHttpHandle sessionHandle)
+        {
+            if (_tcpKeepAliveEnabled)
+            {
+                var tcpKeepalive = new Interop.WinHttp.tcp_keepalive
+                {
+                    onoff = 1,
+
+                    // Timeout.InfiniteTimeSpan will be converted to uint.MaxValue milliseconds (~ 50 days)
+                    // The result a of double->uint cast is unspecified for -1 and may differ on ARM, returning 0 instead of uint.MaxValue.
+                    // To handle Timeout.InfiniteTimespan correctly, we need to cast to int first.
+                    keepaliveinterval = (uint)(int)_tcpKeepAliveInterval.TotalMilliseconds,
+                    keepalivetime = (uint)(int)_tcpKeepAliveTime.TotalMilliseconds
+                };
+
+                SetWinHttpOption(
+                    sessionHandle,
+                    Interop.WinHttp.WINHTTP_OPTION_TCP_KEEPALIVE,
+                    (IntPtr)(&tcpKeepalive),
+                    (uint)sizeof(Interop.WinHttp.tcp_keepalive));
+            }
         }
 
         private void SetSessionHandleConnectionOptions(SafeWinHttpHandle sessionHandle)
@@ -1360,6 +1453,14 @@ namespace System.Net.Http
             if (_operationStarted)
             {
                 throw new InvalidOperationException(SR.net_http_operation_started);
+            }
+        }
+
+        private static void CheckTimeSpanPropertyValue(TimeSpan timeSpan)
+        {
+            if (timeSpan != Timeout.InfiniteTimeSpan && (timeSpan <= TimeSpan.Zero || timeSpan > s_maxTimeout))
+            {
+                throw new ArgumentOutOfRangeException("value");
             }
         }
 

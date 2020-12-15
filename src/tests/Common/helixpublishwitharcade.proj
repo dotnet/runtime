@@ -40,7 +40,7 @@
       </_PropertiesToPass>
 
       
-      <_PropertiesToPass Condition="'$(TargetArchitecture)' == 'wasm' ">
+      <_PropertiesToPass Condition="'$(TargetOS)' == 'Browser' Or '$(TargetOS)' == 'Android'">
         $(_PropertiesToPass);
         IncludeDotNetCli=$(IncludeDotNetCli);
         DotNetCliRuntime=$(DotNetCliRuntime);
@@ -77,32 +77,38 @@
   <!-- Choose a suitable runtime RID for Helix to restore the dotnet cli -->
   <PropertyGroup Condition="'$(HelixRuntimeRid)' == ''">
     <TargetOSSpec>$(TargetOS)$(TargetOSSubgroup)</TargetOSSpec>
-    <HelixRuntimeRid Condition="'$(TargetOSSpec)' == 'Windows_NT'">win-$(TargetArchitecture)</HelixRuntimeRid>
+    <HelixRuntimeRid Condition="'$(TargetOSSpec)' == 'windows'">win-$(TargetArchitecture)</HelixRuntimeRid>
     <HelixRuntimeRid Condition="'$(TargetOSSpec)' == 'OSX'">osx-$(TargetArchitecture)</HelixRuntimeRid>
     <HelixRuntimeRid Condition="'$(TargetOSSpec)' == 'Linux'">linux-$(TargetArchitecture)</HelixRuntimeRid>
     <HelixRuntimeRid Condition="'$(TargetOSSpec)' == 'Linux_musl'">linux-musl-$(TargetArchitecture)</HelixRuntimeRid>
-    <HelixRuntimeRid Condition="'$(TargetArchitecture)' == 'wasm'">browser-wasm</HelixRuntimeRid>
+    <HelixRuntimeRid Condition="'$(TargetOSSpec)' == 'Browser'">browser-wasm</HelixRuntimeRid>
+    <HelixRuntimeRid Condition="'$(TargetOSSpec)' == 'Android'">android-$(TargetArchitecture)</HelixRuntimeRid>
   </PropertyGroup>
 
   <PropertyGroup>
     <CoreRootDirectory>$(TestBinDir)Tests\Core_Root\</CoreRootDirectory>
     <PayloadsRootDirectory>$(TestBinDir)Payloads\</PayloadsRootDirectory>
     <PayloadsRootDirectory>$([MSBuild]::NormalizeDirectory($(PayloadsRootDirectory)))</PayloadsRootDirectory>
-    <TestEnvFileName Condition=" '$(TargetsWindows)' == 'true' ">SetStressModes_$(Scenario).cmd</TestEnvFileName>
-    <TestEnvFileName Condition=" '$(TargetsWindows)' != 'true' ">SetStressModes_$(Scenario).sh</TestEnvFileName>
+    <TestEnvFileName Condition=" '$(TestWrapperTargetsWindows)' == 'true' ">SetStressModes_$(Scenario).cmd</TestEnvFileName>
+    <TestEnvFileName Condition=" '$(TestWrapperTargetsWindows)' != 'true' ">SetStressModes_$(Scenario).sh</TestEnvFileName>
 
     <IncludeDotNetCli>true</IncludeDotNetCli>
     <DotNetCliPackageType>runtime</DotNetCliPackageType>
-    <DotNetCliVersion>$(BundledNETCoreAppPackageVersion)</DotNetCliVersion>
+    <DotNetCliVersion>5.0.0</DotNetCliVersion>
     <DotNetCliRuntime>$(HelixRuntimeRid)</DotNetCliRuntime> 
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(TargetArchitecture)' == 'wasm'">
+  <PropertyGroup Condition="'$(TargetOS)' == 'Browser' Or '$(TargetOS)' == 'Android'">
     <DotNetCliPackageType>sdk</DotNetCliPackageType>
     <GlobalJsonContent>$([System.IO.File]::ReadAllText('$(RepoRoot)global.json'))</GlobalJsonContent>
     <DotNetCliVersion>$([System.Text.RegularExpressions.Regex]::Match($(GlobalJsonContent), '(%3F&lt;="dotnet": ").*(%3F=")'))</DotNetCliVersion>
-    <!-- wasm needs to use the host OS DotnetCliRuntime, which on its queue is linux-x64 -->
+    <!-- wasm and Android needs to use the host OS DotnetCliRuntime -->
     <DotNetCliRuntime>linux-x64</DotNetCliRuntime>
+    <DotNetCliRuntime Condition=" '$(TargetArchitecture)' == 'arm64' ">win-x64</DotNetCliRuntime>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(TargetOS)' == 'Android'">
+    <IncludeXHarnessCli>true</IncludeXHarnessCli>
   </PropertyGroup>
 
   <Import Project="testgrouping.proj" />
@@ -163,8 +169,8 @@
            This is for performance reasons to reduce our helix payload size  -->
       <ReducedPayloadFiles Include="@(_PayloadFiles)" Condition=" '%(Extension)' != '.pdb' " />
       
-      <ReducedPayloadFilesFinal Include="@(ReducedPayloadFiles)" Condition=" '%(Extension)' != '.sh' and '$(TargetsWindows)' == 'true' "/>
-      <ReducedPayloadFilesFinal Include="@(ReducedPayloadFiles)" Condition=" '%(Extension)' != '.cmd' and '$(TargetsWindows)' != 'true' "/>
+      <ReducedPayloadFilesFinal Include="@(ReducedPayloadFiles)" Condition=" '%(Extension)' != '.sh' and '$(TestWrapperTargetsWindows)' == 'true' "/>
+      <ReducedPayloadFilesFinal Include="@(ReducedPayloadFiles)" Condition=" '%(Extension)' != '.cmd' and '$(TestWrapperTargetsWindows)' != 'true' "/>
     </ItemGroup>
 
     <Copy SourceFiles="@(ReducedPayloadFilesFinal)" DestinationFiles="@(ReducedPayloadFilesFinal->'$(PayloadsRootDirectory)%(FileRelativeToPayloadsRootDirectory)')" />
@@ -177,9 +183,9 @@
       <_XUnitConsoleRunnerFiles Include="$(NuGetPackageRoot)$(MicrosoftDotNetXUnitConsoleRunnerPackage)\$(MicrosoftDotNetXUnitConsoleRunnerVersion)\**\xunit.console.*" />
     </ItemGroup>
 
-    <Copy SourceFiles="@(_XUnitConsoleRunnerFiles)" DestinationFolder="$(CoreRootDirectory)" />
-    <Copy SourceFiles="$(MSBuildThisFileDirectory)scripts\runincontext.cmd" DestinationFolder="$(CoreRootDirectory)" Condition=" '$(TargetsWindows)' == 'true' and '$(_RunInUnloadableContext)' == 'true'" />
-    <Copy SourceFiles="$(MSBuildThisFileDirectory)scripts/runincontext.sh" DestinationFolder="$(CoreRootDirectory)" Condition=" '$(TargetsWindows)' != 'true' and '$(_RunInUnloadableContext)' == 'true'" />
+    <Copy SourceFiles="@(_XUnitConsoleRunnerFiles)" DestinationFolder="$(CoreRootDirectory)\xunit" />
+    <Copy SourceFiles="$(MSBuildThisFileDirectory)scripts\runincontext.cmd" DestinationFolder="$(CoreRootDirectory)" Condition=" '$(TestWrapperTargetsWindows)' == 'true' and '$(_RunInUnloadableContext)' == 'true'" />
+    <Copy SourceFiles="$(MSBuildThisFileDirectory)scripts/runincontext.sh" DestinationFolder="$(CoreRootDirectory)" Condition=" '$(TestWrapperTargetsWindows)' != 'true' and '$(_RunInUnloadableContext)' == 'true'" />
   </Target>
 
   <Target Name="CreateTestEnvFiles">
@@ -188,7 +194,7 @@
     <ItemGroup>
       <_PayloadGroups Include="$(PayloadGroups)" />
       <_ProjectsToBuild Include="testenvironment.proj">
-        <Properties>Scenario=$(Scenario);TestEnvFileName=$(PayloadsRootDirectory)%(_PayloadGroups.Identity)\$(TestEnvFileName);TargetsWindows=$(TargetsWindows)</Properties>
+        <Properties>Scenario=$(Scenario);TestEnvFileName=$(PayloadsRootDirectory)%(_PayloadGroups.Identity)\$(TestEnvFileName);TargetsWindows=$(TestWrapperTargetsWindows)</Properties>
       </_ProjectsToBuild>
     </ItemGroup>
 
@@ -196,7 +202,7 @@
   </Target>
 
   <Target Name="PreparePALTestArchive">
-    <Exec Condition="'$(PALTestsDir)' != '' and '$(TargetsWindows)' != 'true'" 
+    <Exec Condition="'$(PALTestsDir)' != '' and '$(TestWrapperTargetsWindows)' != 'true'" 
           WorkingDirectory="$(PALTestsDir)"
           Command="tar -czvf $(PayloadsRootDirectory)paltests.tar.gz `ls -A`"/>
   </Target>
@@ -237,6 +243,7 @@
     <TimeoutPerTestInMilliseconds Condition=" '$(TimeoutPerTestInMinutes)' != '' ">$([System.TimeSpan]::FromMinutes($(TimeoutPerTestInMinutes)).TotalMilliseconds)</TimeoutPerTestInMilliseconds>
     <WaitForWorkItemCompletion>true</WaitForWorkItemCompletion>
     <_XUnitParallelMode>collections</_XUnitParallelMode>
+    <_XUnitParallelMode Condition=" '$(TargetOS)' == 'Android' ">none</_XUnitParallelMode>
     <_XUnitParallelMode Condition=" '$(LongRunningGCTests)' == 'true' ">none</_XUnitParallelMode>
     <_XUnitParallelMode Condition=" '$(GcSimulatorTests)' == 'true' ">none</_XUnitParallelMode>
     <XUnitRunnerArgs>-parallel $(_XUnitParallelMode) -nocolor -noshadow -xml testResults.xml</XUnitRunnerArgs>
@@ -244,7 +251,7 @@
 
   <!-- WARNING: HelixPreCommand ItemGroup is intentionally minimal and should be kept that way. -->
 
-  <ItemGroup Condition=" '$(TargetsWindows)' == 'true' ">
+  <ItemGroup Condition=" '$(TestWrapperTargetsWindows)' == 'true' ">
     <HelixPreCommand Include="set CORE_ROOT=%HELIX_CORRELATION_PAYLOAD%" />
     <!-- Set _NT_SYMBOL_PATH so VM _ASSERTE() asserts can find the symbol files when doing stack walks -->
     <HelixPreCommand Include="set _NT_SYMBOL_PATH=%HELIX_CORRELATION_PAYLOAD%\PDB" />
@@ -262,7 +269,7 @@
     <HelixPreCommand Include="type %__TestEnv%" />
   </ItemGroup>
 
-  <ItemGroup Condition=" '$(TargetsWindows)' != 'true' ">
+  <ItemGroup Condition=" '$(TestWrapperTargetsWindows)' != 'true' ">
     <HelixPreCommand Include="export CORE_ROOT=$HELIX_CORRELATION_PAYLOAD" />
     <HelixPreCommand Include="export RunCrossGen=1" Condition=" '$(RunCrossGen)' == 'true' " />
     <HelixPreCommand Include="export RunCrossGen2=1" Condition=" '$(RunCrossGen2)' == 'true' " />
@@ -282,12 +289,12 @@
     <HelixPreCommands>@(HelixPreCommand)</HelixPreCommands>
   </PropertyGroup>
 
-  <PropertyGroup Condition=" '$(TargetsWindows)' == 'true' ">
-    <XUnitRunnerDll>%CORE_ROOT%\xunit.console.dll</XUnitRunnerDll>
+  <PropertyGroup Condition=" '$(TestWrapperTargetsWindows)' == 'true' ">
+    <XUnitRunnerDll>%CORE_ROOT%\xunit\xunit.console.dll</XUnitRunnerDll>
   </PropertyGroup>
 
-  <PropertyGroup Condition=" '$(TargetsWindows)' != 'true' ">
-    <XUnitRunnerDll>$CORE_ROOT/xunit.console.dll</XUnitRunnerDll>
+  <PropertyGroup Condition=" '$(TestWrapperTargetsWindows)' != 'true' ">
+    <XUnitRunnerDll>$CORE_ROOT/xunit/xunit.console.dll</XUnitRunnerDll>
   </PropertyGroup>
 
   <ItemGroup Condition=" '$(UsesHelixSdk)' == 'true' ">
@@ -313,7 +320,7 @@
       <Timeout Condition=" '$(TimeoutPerTestCollectionInMinutes)' != '' ">$([System.TimeSpan]::FromMinutes($(TimeoutPerTestCollectionInMinutes)))</Timeout>
     </HelixWorkItem>
 
-    <HelixWorkItem Condition="'$(PALTestsDir)' != '' and '$(TargetsWindows)' != 'true'" Include="PALTests">
+    <HelixWorkItem Condition="'$(PALTestsDir)' != '' and '$(TestWrapperTargetsWindows)' != 'true'" Include="PALTests">
       <PayloadArchive>$(PayloadsRootDirectory)paltests.tar.gz</PayloadArchive>
       <Command>./runpaltestshelix.sh</Command>
       <Timeout Condition=" '$(TimeoutPerTestCollectionInMinutes)' != '' ">$([System.TimeSpan]::FromMinutes($(TimeoutPerTestCollectionInMinutes)))</Timeout>

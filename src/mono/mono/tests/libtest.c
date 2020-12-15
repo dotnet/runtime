@@ -8375,19 +8375,39 @@ invoke_foreign_thread (void* user_data)
 	destroy_invoke_names (names);
 	return NULL;
 }
+
+static void*
+invoke_foreign_delegate (void *user_data)
+{
+	VoidVoidCallback del = (VoidVoidCallback)user_data;
+	for (int i = 0; i < 5; ++i) {
+		del ();
+		sleep (2);
+	}
+	return NULL;
+}
+
 #endif
 
 
 LIBTEST_API mono_bool STDCALL
-mono_test_attach_invoke_foreign_thread (const char *assm_name, const char *name_space, const char *name, const char *meth_name)
+mono_test_attach_invoke_foreign_thread (const char *assm_name, const char *name_space, const char *name, const char *meth_name, VoidVoidCallback del)
 {
 #ifndef HOST_WIN32
-	struct invoke_names *names = make_invoke_names (assm_name, name_space, name, meth_name);
-	pthread_t t;
-	int res = pthread_create (&t, NULL, invoke_foreign_thread, (void*)names);
-	g_assert (res == 0);
-	pthread_join (t, NULL);
-	return 0;
+	if (!del) {
+		struct invoke_names *names = make_invoke_names (assm_name, name_space, name, meth_name);
+		pthread_t t;
+		int res = pthread_create (&t, NULL, invoke_foreign_thread, (void*)names);
+		g_assert (res == 0);
+		pthread_join (t, NULL);
+		return 0;
+	} else {
+		pthread_t t;
+		int res = pthread_create (&t, NULL, invoke_foreign_delegate, del);
+		g_assert (res == 0);
+		pthread_join (t, NULL);
+		return 0;
+	}
 #else
 	// TODO: Win32 version of this test
 	return 1;
@@ -8396,6 +8416,8 @@ mono_test_attach_invoke_foreign_thread (const char *assm_name, const char *name_
 
 #ifndef HOST_WIN32
 struct names_and_mutex {
+	/* if del is NULL, use names, otherwise just call del */
+	VoidVoidCallback del;
 	struct invoke_names *names;
         /* mutex to coordinate test and foreign thread */
         pthread_mutex_t coord_mutex;
@@ -8410,7 +8432,11 @@ invoke_block_foreign_thread (void *user_data)
 	// This thread calls into the runtime and then blocks. It should not
 	// prevent the runtime from shutting down.
 	struct names_and_mutex *nm = (struct names_and_mutex *)user_data;
-	test_invoke_by_name (nm->names);
+	if (!nm->del) {
+		test_invoke_by_name (nm->names);
+	} else {
+		nm->del ();
+	}
         pthread_mutex_lock (&nm->coord_mutex);
         /* signal the test thread that we called the runtime */
         pthread_cond_signal (&nm->coord_cond);
@@ -8422,32 +8448,77 @@ invoke_block_foreign_thread (void *user_data)
 #endif
 
 LIBTEST_API mono_bool STDCALL
-mono_test_attach_invoke_block_foreign_thread (const char *assm_name, const char *name_space, const char *name, const char *meth_name)
+mono_test_attach_invoke_block_foreign_thread (const char *assm_name, const char *name_space, const char *name, const char *meth_name, VoidVoidCallback del)
 {
 #ifndef HOST_WIN32
-	struct invoke_names *names = make_invoke_names (assm_name, name_space, name, meth_name);
 	struct names_and_mutex *nm = malloc (sizeof (struct names_and_mutex));
-	nm->names = names;
-        pthread_mutex_init (&nm->coord_mutex, NULL);
-        pthread_cond_init (&nm->coord_cond, NULL);
+	nm->del = del;
+	if (!del) {
+		struct invoke_names *names = make_invoke_names (assm_name, name_space, name, meth_name);
+		nm->names = names;
+	} else {
+		nm->names = NULL;
+	}
+	pthread_mutex_init (&nm->coord_mutex, NULL);
+	pthread_cond_init (&nm->coord_cond, NULL);
 	pthread_mutex_init (&nm->deadlock_mutex, NULL);
 
 	pthread_mutex_lock (&nm->deadlock_mutex); // lock the mutex and never unlock it.
 	pthread_t t;
 	int res = pthread_create (&t, NULL, invoke_block_foreign_thread, (void*)nm);
 	g_assert (res == 0);
-        /* wait for the foreign thread to finish calling the runtime before
-         * detaching it and returning
-         */
-        pthread_mutex_lock (&nm->coord_mutex);
-        pthread_cond_wait (&nm->coord_cond, &nm->coord_mutex);
-        pthread_mutex_unlock (&nm->coord_mutex);
+	/* wait for the foreign thread to finish calling the runtime before
+	 * detaching it and returning
+	 */
+	pthread_mutex_lock (&nm->coord_mutex);
+	pthread_cond_wait (&nm->coord_cond, &nm->coord_mutex);
+	pthread_mutex_unlock (&nm->coord_mutex);
 	pthread_detach (t);
 	return 0;
 #else
 	// TODO: Win32 version of this test
 	return 1;
 #endif
+}
+
+static const GUID IID_IDrupe = {0x9f001e6b, 0xa244, 0x3911, {0x88,0xdb, 0xbb,0x2b,0x6d,0x58,0x43,0xaa}};
+
+#ifndef HOST_WIN32
+typedef struct IUnknown IUnknown;
+
+typedef struct
+{
+	int (STDCALL *QueryInterface)(IUnknown *iface, REFIID iid, gpointer *out);
+	int (STDCALL *AddRef)(IUnknown *iface);
+	int (STDCALL *Release)(IUnknown *iface);
+} IUnknownVtbl;
+
+struct IUnknown
+{
+	const IUnknownVtbl *lpVtbl;
+};
+#endif
+
+LIBTEST_API int STDCALL
+mono_test_ccw_query_interface (IUnknown *iface)
+{
+	IUnknown *drupe;
+	int hr;
+
+#ifdef __cplusplus
+	hr = iface->QueryInterface (IID_IDrupe, (void **)&drupe);
+#else
+	hr = iface->lpVtbl->QueryInterface (iface, &IID_IDrupe, (void **)&drupe);
+#endif
+	if (hr != 0)
+		return 1;
+#ifdef __cplusplus
+	drupe->Release();
+#else
+	drupe->lpVtbl->Release(drupe);
+#endif
+
+	return 0;
 }
 
 #ifdef __cplusplus

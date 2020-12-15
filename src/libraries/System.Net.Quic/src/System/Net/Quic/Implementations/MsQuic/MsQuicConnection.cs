@@ -161,21 +161,21 @@ namespace System.Net.Quic.Implementations.MsQuic
                 _connectTcs.SetException(ExceptionDispatchInfo.SetCurrentStackTrace(ex));
             }
 
-            _acceptQueue.Writer.Complete();
-
             return MsQuicStatusCodes.Success;
         }
 
         private uint HandleEventShutdownInitiatedByPeer(ref ConnectionEvent connectionEvent)
         {
             _abortErrorCode = connectionEvent.Data.ShutdownInitiatedByPeer.ErrorCode;
-            _acceptQueue.Writer.Complete();
             return MsQuicStatusCodes.Success;
         }
 
         private uint HandleEventShutdownComplete(ref ConnectionEvent connectionEvent)
         {
             _shutdownTcs.SetResult(MsQuicStatusCodes.Success);
+
+            // Stop accepting new streams.
+            _acceptQueue?.Writer.Complete();
             return MsQuicStatusCodes.Success;
         }
 
@@ -237,7 +237,7 @@ namespace System.Net.Quic.Implementations.MsQuic
             return MsQuicParameterHelpers.GetUShortParam(MsQuicApi.Api, _ptr, (uint)QUIC_PARAM_LEVEL.CONNECTION, (uint)QUIC_PARAM_CONN.PEER_BIDI_STREAM_COUNT);
         }
 
-        private unsafe void SetIdleTimeout(TimeSpan timeout)
+        private void SetIdleTimeout(TimeSpan timeout)
         {
             MsQuicParameterHelpers.SetULongParam(MsQuicApi.Api, _ptr, (uint)QUIC_PARAM_LEVEL.CONNECTION, (uint)QUIC_PARAM_CONN.IDLE_TIMEOUT, (ulong)timeout.TotalMilliseconds);
         }
@@ -291,7 +291,7 @@ namespace System.Net.Quic.Implementations.MsQuic
 
         private void SetCallbackHandler()
         {
-            Debug.Assert(!_handle.IsAllocated);
+            Debug.Assert(!_handle.IsAllocated, "callback handler allocated already");
             _handle = GCHandle.Alloc(this);
 
             MsQuicApi.Api.SetCallbackHandlerDelegate(
@@ -309,8 +309,6 @@ namespace System.Net.Quic.Implementations.MsQuic
                 (uint)Flags,
                 ErrorCode);
             QuicExceptionHelpers.ThrowIfFailed(status, "Failed to shutdown connection.");
-
-            Debug.Assert(_shutdownTcs.Task.IsCompleted == false);
 
             return new ValueTask(_shutdownTcs.Task);
         }

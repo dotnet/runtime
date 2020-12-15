@@ -7,6 +7,7 @@
   -->
   <PropertyGroup>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
+    <IncrementalNativeBuild Condition="'$(IncrementalNativeBuild)' == ''">true</IncrementalNativeBuild>
   </PropertyGroup>
 
   <Import Project="Sdk.targets" Sdk="Microsoft.NET.Sdk" />
@@ -22,7 +23,7 @@
             BuildCoreHostWindows" />
 
   <Target Name="BuildCoreHostUnix"
-          Condition="'$(TargetOS)' != 'Windows_NT'"
+          Condition="'$(TargetOS)' != 'windows'"
           DependsOnTargets="GetLatestCommitHash;GenerateNativeVersionFile">
     <PropertyGroup>
       <CMakeBuildDir>$(IntermediateOutputRootPath)corehost\cmake\</CMakeBuildDir>
@@ -36,6 +37,8 @@
       <BuildArgs Condition="'$(CMakeArgs)' != ''">$(BuildArgs) $(CMakeArgs)</BuildArgs>
       <BuildArgs>$(BuildArgs) -coreclrartifacts $(CoreCLRArtifactsPath)</BuildArgs>
       <BuildArgs>$(BuildArgs) -nativelibsartifacts $(LibrariesArtifactsPath)/bin/native/$(NetCoreAppCurrent)-$(TargetOS)-$(LibrariesConfiguration)-$(TargetArchitecture)</BuildArgs>
+      <BuildArgs Condition="'$(Ninja)' == 'true'">$(BuildArgs) -ninja</BuildArgs>
+      <BuildArgs>$(BuildArgs) -runtimeflavor $(RuntimeFlavor)</BuildArgs>
     </PropertyGroup>
 
     <!--
@@ -47,7 +50,7 @@
   </Target>
 
   <Target Name="BuildCoreHostWindows"
-          Condition="'$(TargetOS)' == 'Windows_NT'"
+          Condition="'$(TargetOS)' == 'windows'"
           DependsOnTargets="GetLatestCommitHash">
 
     <!-- Generate Version files -->
@@ -90,6 +93,9 @@
       <BuildArgs>$(BuildArgs) rootdir $(RepoRoot)</BuildArgs>
       <BuildArgs>$(BuildArgs) coreclrartifacts $(CoreCLRArtifactsPath)</BuildArgs>
       <BuildArgs>$(BuildArgs) nativelibsartifacts $(LibrariesArtifactsPath)/bin/native/$(NetCoreAppCurrent)-$(TargetOS)-$(LibrariesConfiguration)-$(TargetArchitecture)</BuildArgs>
+      <BuildArgs Condition="'$(Ninja)' == 'true'">$(BuildArgs) ninja</BuildArgs>
+      <BuildArgs>$(BuildArgs) runtimeflavor $(RuntimeFlavor)</BuildArgs>
+      <BuildArgs>$(BuildArgs) runtimeconfiguration $(RuntimeConfiguration)</BuildArgs>
     </PropertyGroup>
 
     <!--
@@ -102,7 +108,7 @@
   </Target>
 
   <Target Name="PrependWindowsHeaderIncludeToVersionHeaderFile"
-          Condition="'$(TargetOS)' == 'Windows_NT'"
+          Condition="'$(TargetOS)' == 'windows'"
           AfterTargets="GenerateNativeVersionFile">
     <PropertyGroup>
       <IncludeStatementLine>#include &lt;Windows.h&gt;</IncludeStatementLine>

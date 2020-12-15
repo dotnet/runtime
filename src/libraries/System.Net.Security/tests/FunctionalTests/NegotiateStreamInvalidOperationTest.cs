@@ -33,15 +33,23 @@ namespace System.Net.Security.Tests
             {
                 Assert.False(client.CanSeek);
                 Assert.False(client.CanRead);
-                Assert.False(client.CanTimeout);
+                Assert.Equal(clientStream.CanTimeout, client.CanTimeout);
                 Assert.False(client.CanWrite);
                 Assert.False(server.CanSeek);
                 Assert.False(server.CanRead);
-                Assert.False(server.CanTimeout);
+                Assert.Equal(serverStream.CanTimeout, server.CanTimeout);
                 Assert.False(server.CanWrite);
 
-                Assert.Throws<InvalidOperationException>(() => client.ReadTimeout);
-                Assert.Throws<InvalidOperationException>(() => client.WriteTimeout);
+                if (!client.CanTimeout)
+                {
+                    Assert.Throws<InvalidOperationException>(() => client.ReadTimeout);
+                }
+
+                if (!server.CanTimeout)
+                {
+                    Assert.Throws<InvalidOperationException>(() => client.WriteTimeout);
+                }
+
                 Assert.Throws<NotSupportedException>(() => client.Length);
                 Assert.Throws<NotSupportedException>(() => client.Position);
                 Assert.Throws<NotSupportedException>(() => client.Seek(0, new SeekOrigin()));

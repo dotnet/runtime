@@ -48,7 +48,7 @@ internal static partial class Interop
 
         // From proc_info.h
         [StructLayout(LayoutKind.Sequential)]
-        internal unsafe struct proc_taskinfo
+        internal struct proc_taskinfo
         {
             internal ulong   pti_virtual_size;
             internal ulong   pti_resident_size;
@@ -72,7 +72,7 @@ internal static partial class Interop
 
         // From proc_info.h
         [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Ansi)]
-        internal unsafe struct proc_taskallinfo
+        internal struct proc_taskallinfo
         {
             internal proc_bsdinfo    pbsd;
             internal proc_taskinfo   ptinfo;

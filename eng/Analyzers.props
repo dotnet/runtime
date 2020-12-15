@@ -6,8 +6,8 @@
   </PropertyGroup>
   <ItemGroup Condition="'$(RunAnalyzers)' != 'false'">
     <PackageReference Include="Microsoft.DotNet.CodeAnalysis" Version="$(MicrosoftDotNetCodeAnalysisVersion)" PrivateAssets="all" IsImplicitlyDefined="true" />
-    <PackageReference Include="Microsoft.CodeAnalysis.NetAnalyzers" Version="5.0.0-rtm.20502.2" PrivateAssets="all" />
-    <PackageReference Include="Microsoft.CodeAnalysis.CSharp.CodeStyle" Version="3.8.0-4.20503.2" PrivateAssets="all" />
-    <PackageReference Include="StyleCop.Analyzers" Version="1.2.0-beta.205" PrivateAssets="all" />
+    <PackageReference Include="Microsoft.CodeAnalysis.NetAnalyzers" Version="$(MicrosoftCodeAnalysisNetAnalyzersVersion)" PrivateAssets="all" />
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp.CodeStyle" Version="$(MicrosoftCodeAnalysisCSharpCodeStyleVersion)" PrivateAssets="all" />
+    <PackageReference Include="StyleCop.Analyzers" Version="$(StyleCopAnalyzersVersion)" PrivateAssets="all" />
   </ItemGroup>
 </Project>
