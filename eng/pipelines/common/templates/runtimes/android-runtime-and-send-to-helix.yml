@@ -1,7 +1,7 @@
 parameters:
   buildConfig: ''
-  archType: 'x64'
-  osGroup: 'Android'
+  archType: ''
+  osGroup: ''
   osSubgroup: ''
   container: ''
   testGroup: ''
@@ -26,7 +26,7 @@ parameters:
   
   
 steps:
-  - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) /p:LibrariesConfiguration=${{ parameters.buildConfig }} -ci -excludemonofailures os Android x64 $(buildConfigUpper)
+  - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) /p:LibrariesConfiguration=${{ parameters.buildConfig }} -ci -excludemonofailures os ${{ parameters.osGroup }} ${{ parameters.archType }} $(buildConfigUpper)
     displayName: Build Tests
 
   #  Send tests to Helix

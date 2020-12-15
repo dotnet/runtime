@@ -169,6 +169,9 @@
                       Exclude="@(ProjectExclusions)"
                       BuildInParallel="false"
                       Condition="'$(TestTrimming)' == 'true'" />
+    <ProjectReference Include="..\mono\netcore\sample\Android\AndroidSampleApp.csproj"
+                      BuildInParallel="false"
+                      Condition="'$(ArchiveTests)' == 'true' and '$(TargetOS)' == 'Android'" />
     <ProjectReference Include="..\mono\netcore\sample\iOS\Program.csproj"
                       BuildInParallel="false"
                       Condition="'$(ArchiveTests)' == 'true' and ('$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'tvOS')" />

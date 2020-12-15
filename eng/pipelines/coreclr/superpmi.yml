@@ -11,6 +11,10 @@ trigger:
     include:
     - src/coreclr/inc/jiteeversionguid.h
 
+# This pipeline is supposed to be run only on merged changes
+# and should not be triggerable from a PR. 
+pr: none
+
 schedules:
 - cron: "0 17 * * 0"
   displayName: Sun at 9:00 AM (UTC-8:00)

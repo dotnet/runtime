@@ -215,6 +215,8 @@
         <AndroidInstrumentationName>net.dot.MonoRunner</AndroidInstrumentationName>
 
         <TestTimeout>$(_workItemTimeout)</TestTimeout>
+        <!-- The android sample returns 42 so it should be considered by xharness as a success -->
+        <ExpectedExitCode Condition="'%(Filename)' == 'HelloAndroid'">42</ExpectedExitCode>
       </XHarnessApkToTest>
     </ItemGroup>
 

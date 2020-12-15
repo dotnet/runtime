@@ -146,38 +146,37 @@
 
   </Target>
 
-  <UsingTask TaskName="WasmAppBuilder"
-             AssemblyFile="$(WasmAppBuilderTasksAssemblyPath)" />
+  <Import Project="$(MonoProjectRoot)\wasm\build\WasmApp.targets" Condition="'$(TargetOS)' == 'Browser'" />
 
-  <Target Condition="'$(TargetOS)' == 'Browser'" Name="BundleTestWasmApp">
+  <Target Condition="'$(TargetOS)' == 'Browser'" Name="BundleTestWasmApp" DependsOnTargets="WasmBuildApp" />
+
+  <Target Condition="'$(TargetOS)' == 'Browser'" Name="PrepareForWasmBuildApp" BeforeTargets="WasmBuildApp">
+    <PropertyGroup>
+      <WasmAppDir>$(BundleDir)</WasmAppDir>
+      <WasmMainAssemblyPath>$(PublishDir)WasmTestRunner.dll</WasmMainAssemblyPath>
+      <WasmMainJSPath>$(MonoProjectRoot)\wasm\runtime-test.js</WasmMainJSPath>
+      <WasmInvariantGlobalization>$(InvariantGlobalization)</WasmInvariantGlobalization>
+      <WasmGenerateRunV8Script>true</WasmGenerateRunV8Script>
+    </PropertyGroup>
+
     <ItemGroup>
       <WasmSatelliteAssemblies Include="$(PublishDir)*\*.resources.dll" />
       <WasmSatelliteAssemblies>
         <CultureName>$([System.IO.Directory]::GetParent('%(Identity)').Name)</CultureName>
       </WasmSatelliteAssemblies>
-    </ItemGroup>
-    <ItemGroup>
-      <Assemblies Include="$(PublishDir)\*.dll"/>
+
+      <WasmAssembliesToBundle Include="$(PublishDir)\*.dll"/>
+      <WasmAssembliesToBundle Include="$(PublishDir)$(AssemblyName).dll" />
+      <!-- We need these facades for some tests. -->
+      <WasmAssembliesToBundle Include="$(PublishDir)mscorlib.dll" />
+      <WasmAssembliesToBundle Include="$(PublishDir)System.Drawing.dll" />
+
       <WasmFilesToIncludeInFileSystem Include="@(ContentWithTargetPath)" />
       <WasmFilesToIncludeInFileSystem Include="@(ReferenceCopyLocalPaths)" Condition="'%(ReferenceCopyLocalPaths.BuildReference)' == 'true' and !$([System.String]::new('%(ReferenceCopyLocalPaths.Identity)').EndsWith('.resources.dll'))" />
       <WasmFilesToIncludeInFileSystem Include="@(WasmSatelliteAssemblies)" TargetPath="%(WasmSatelliteAssemblies.CultureName)\%(WasmSatelliteAssemblies.Filename)%(WasmSatelliteAssemblies.Extension)" />
       <!-- Include files specified by test projects from publish dir -->
       <WasmFilesToIncludeInFileSystem Include="@(WasmFilesToIncludeFromPublishDir -> '$(PublishDir)%(Identity)')" />
-      <Assemblies Include="$(PublishDir)$(AssemblyName).dll" />
-      <!-- We need these facades for some tests. -->
-      <Assemblies Include="$(PublishDir)mscorlib.dll" />
-      <Assemblies Include="$(PublishDir)System.Drawing.dll" />
     </ItemGroup>
-    <Error Condition="!Exists('$(MicrosoftNetCoreAppRuntimePackRidDir)')" Text="MicrosoftNetCoreAppRuntimePackRidDir=$(MicrosoftNetCoreAppRuntimePackRidDir) doesn't exist" />
-    <WasmAppBuilder
-      AppDir="$(BundleDir)"
-      InvariantGlobalization="$(InvariantGlobalization)"
-      MicrosoftNetCoreAppRuntimePackDir="$(MicrosoftNetCoreAppRuntimePackRidDir)"
-      MainAssembly="$(PublishDir)WasmTestRunner.dll"
-      MainJS="$(MonoProjectRoot)\wasm\runtime-test.js"
-      Assemblies="@(Assemblies)"
-      SatelliteAssemblies="@(WasmSatelliteAssemblies)"
-      FilesToIncludeInFileSystem="@(WasmFilesToIncludeInFileSystem)" />
   </Target>
 
   <Target Name="AddTestRunnersToPublishedFiles"
