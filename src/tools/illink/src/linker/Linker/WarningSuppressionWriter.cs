@@ -1,4 +1,8 @@
-﻿using System.Collections.Generic;
+﻿// Licensed to the.NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
+
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -10,17 +14,16 @@ namespace Mono.Linker
 {
 	public class WarningSuppressionWriter
 	{
-		private readonly LinkContext _context;
 		private readonly Dictionary<AssemblyNameDefinition, HashSet<(int Code, IMemberDefinition Member)>> _warnings;
 		private readonly FileOutputKind _fileOutputKind;
 
-		public WarningSuppressionWriter (LinkContext context,
-			FileOutputKind fileOutputKind = FileOutputKind.CSharp)
+		public WarningSuppressionWriter (FileOutputKind fileOutputKind = FileOutputKind.CSharp)
 		{
-			_context = context;
 			_warnings = new Dictionary<AssemblyNameDefinition, HashSet<(int, IMemberDefinition)>> ();
 			_fileOutputKind = fileOutputKind;
 		}
+
+		public bool IsEmpty => _warnings.Count == 0;
 
 		public void AddWarning (int code, IMemberDefinition memberDefinition)
 		{
@@ -33,18 +36,18 @@ namespace Mono.Linker
 			warnings.Add ((code, memberDefinition));
 		}
 
-		public void OutputSuppressions ()
+		public void OutputSuppressions (string directory)
 		{
 			foreach (var assemblyName in _warnings.Keys) {
 				if (_fileOutputKind == FileOutputKind.Xml) {
-					OutputSuppressionsXmlFormat (assemblyName);
+					OutputSuppressionsXmlFormat (assemblyName, directory);
 				} else {
-					OutputSuppressionsCSharpFormat (assemblyName);
+					OutputSuppressionsCSharpFormat (assemblyName, directory);
 				}
 			}
 		}
 
-		void OutputSuppressionsXmlFormat (AssemblyNameDefinition assemblyName)
+		void OutputSuppressionsXmlFormat (AssemblyNameDefinition assemblyName, string directory)
 		{
 			var xmlTree =
 				new XElement ("linker",
@@ -63,15 +66,15 @@ namespace Mono.Linker
 			}
 
 			XDocument xdoc = new XDocument (xmlTree);
-			using (var xw = XmlWriter.Create (Path.Combine (_context.OutputDirectory, $"{assemblyName.Name}.WarningSuppressions.xml"),
+			using (var xw = XmlWriter.Create (Path.Combine (directory, $"{assemblyName.Name}.WarningSuppressions.xml"),
 				new XmlWriterSettings { Indent = true })) {
 				xdoc.Save (xw);
 			}
 		}
 
-		void OutputSuppressionsCSharpFormat (AssemblyNameDefinition assemblyName)
+		void OutputSuppressionsCSharpFormat (AssemblyNameDefinition assemblyName, string directory)
 		{
-			using (var sw = new StreamWriter (Path.Combine (_context.OutputDirectory, $"{assemblyName.Name}.WarningSuppressions.cs"))) {
+			using (var sw = new StreamWriter (Path.Combine (directory, $"{assemblyName.Name}.WarningSuppressions.cs"))) {
 				StringBuilder sb = new StringBuilder ("using System.Diagnostics.CodeAnalysis;").AppendLine ().AppendLine ();
 				foreach (var warning in GetListOfWarnings (assemblyName)) {
 					sb.Append ("[assembly: UnconditionalSuppressMessage (\"")

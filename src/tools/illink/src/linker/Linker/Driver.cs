@@ -164,10 +164,7 @@ namespace Mono.Linker
 		protected int SetupContext (ILogger customLogger = null)
 		{
 			Pipeline p = GetStandardPipeline ();
-			context = GetDefaultContext (p);
-
-			if (customLogger != null)
-				context.Logger = customLogger;
+			context = GetDefaultContext (p, customLogger);
 
 #if !FEATURE_ILLINK
 			I18nAssemblies assemblies = I18nAssemblies.All;
@@ -441,8 +438,7 @@ namespace Mono.Linker
 							return -1;
 						}
 
-						context.OutputWarningSuppressions = true;
-						context.SetWarningSuppressionWriter (fileOutputKind);
+						context.WarningSuppressionWriter = new WarningSuppressionWriter (fileOutputKind);
 						continue;
 
 					case "--nowarn":
@@ -725,6 +721,7 @@ namespace Mono.Linker
 			// MarkStep
 			// ReflectionBlockedStep [optional]
 			// ProcessWarningsStep
+			// OutputWarningSuppressions
 			// SweepStep
 			// AddBypassNGenStep [optional]
 			// CodeRewriterStep
@@ -778,7 +775,7 @@ namespace Mono.Linker
 				context.Tracer.Finish ();
 			}
 
-			return 0;
+			return context.ErrorsCount > 0 ? 1 : 0;
 		}
 
 		partial void PreProcessPipeline (Pipeline pipeline);
@@ -1076,9 +1073,9 @@ namespace Mono.Linker
 			return arg;
 		}
 
-		protected virtual LinkContext GetDefaultContext (Pipeline pipeline)
+		protected virtual LinkContext GetDefaultContext (Pipeline pipeline, ILogger logger)
 		{
-			LinkContext context = new LinkContext (pipeline) {
+			return new LinkContext (pipeline, logger ?? new ConsoleLogger ()) {
 #if FEATURE_ILLINK
 				CoreAction = AssemblyAction.Link,
 #else
@@ -1087,7 +1084,6 @@ namespace Mono.Linker
 				UserAction = AssemblyAction.Link,
 				OutputDirectory = "output",
 			};
-			return context;
 		}
 
 		static void Usage ()
@@ -1220,6 +1216,7 @@ namespace Mono.Linker
 			p.AppendStep (new MarkStep ());
 			p.AppendStep (new ValidateVirtualMethodAnnotationsStep ());
 			p.AppendStep (new ProcessWarningsStep ());
+			p.AppendStep (new OutputWarningSuppressions ());
 			p.AppendStep (new SweepStep ());
 			p.AppendStep (new CodeRewriterStep ());
 			p.AppendStep (new CleanStep ());

@@ -4,7 +4,6 @@ using Mono.Linker.Tests.Cases.Warnings.Dependencies;
 
 namespace Mono.Linker.Tests.Cases.Warnings.Individual
 {
-	[SkipRemainingErrorsValidation]
 	[SetupLinkerCoreAction ("skip")]
 #if !ILLINK
 	[SetupCompileBefore ("library.dll", new[] { typeof (TriggerWarnings_Lib) }, new[] { "System.Core.dll" })]
@@ -13,7 +12,6 @@ namespace Mono.Linker.Tests.Cases.Warnings.Individual
 #endif
 	[KeptAssembly ("library.dll")]
 	[SetupLinkerAction ("link", "library.dll")]
-	[SetupLinkerArgument ("--verbose")]
 	[SetupLinkerArgument ("--generate-warning-suppressions", "xml")]
 
 	// Test that --warnaserror has no effect on --generate-warning-suppressions

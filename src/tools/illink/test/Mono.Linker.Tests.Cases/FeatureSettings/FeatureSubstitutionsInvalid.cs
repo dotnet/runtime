@@ -10,6 +10,7 @@ namespace Mono.Linker.Tests.Cases.FeatureSettings
 	[LogContains ("FeatureSubstitutionsInvalid.xml'. Unsupported value for featuredefault attribute")]
 	[LogContains ("warning IL2012: Could not find field 'NonExistentField' on type 'Mono.Linker.Tests.Cases.FeatureSettings.FeatureSubstitutionsInvalid.Foo'")]
 	[LogContains ("warning IL2009: Could not find method 'NonExistentMethod' on type 'Mono.Linker.Tests.Cases.FeatureSettings.FeatureSubstitutionsInvalid.Foo'")]
+	[NoLinkedOutput]
 	public class FeatureSubstitutionsInvalid
 	{
 		public static void Main ()
