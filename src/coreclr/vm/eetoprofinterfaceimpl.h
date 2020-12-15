@@ -22,7 +22,9 @@
 #include "eventtracebase.h"
 #include "gcinterface.h"
 
-class EventPipeProvider;
+#ifdef FEATURE_PERFTRACING
+#include "eventpipeadaptertypes.h"
+#endif // FEATURE_PERFTRACING
 
 class SimpleRWLock;
 
