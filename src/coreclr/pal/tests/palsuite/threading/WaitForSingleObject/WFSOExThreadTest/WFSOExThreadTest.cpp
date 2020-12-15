@@ -26,7 +26,7 @@ DWORD PALAPI WaiterProc_WFSOExThreadTest(LPVOID lpParameter);
 void WorkerThread_WFSOExThreadTest(void);
 
 int ThreadWaitDelta_WFSOExThreadTest;
-static volatile bool s_preWaitTimestampRecorded = 0;
+static volatile bool s_preWaitTimestampRecorded = false;
 
 PALTEST(threading_WaitForSingleObject_WFSOExThreadTest_paltest_waitforsingleobject_wfsoexthreadtest, "threading/WaitForSingleObject/WFSOExThreadTest/paltest_waitforsingleobject_wfsoexthreadtest")
 {

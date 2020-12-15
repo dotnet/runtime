@@ -26,7 +26,7 @@ VOID PALAPI APCFunc_WFMO_test2(ULONG_PTR dwParam);
 DWORD PALAPI WaiterProc_WFMO_test2(LPVOID lpParameter);
 
 DWORD ThreadWaitDelta_WFMO_test2;
-static volatile bool s_preWaitTimestampRecorded = 0;
+static volatile bool s_preWaitTimestampRecorded = false;
 
 PALTEST(threading_WaitForMultipleObjectsEx_test2_paltest_waitformultipleobjectsex_test2, "threading/WaitForMultipleObjectsEx/test2/paltest_waitformultipleobjectsex_test2")
 {

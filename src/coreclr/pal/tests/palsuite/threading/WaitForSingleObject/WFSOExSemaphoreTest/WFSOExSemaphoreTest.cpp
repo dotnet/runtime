@@ -25,7 +25,7 @@ VOID PALAPI APCFunc_WFSOExSemaphoreTest(ULONG_PTR dwParam);
 DWORD PALAPI WaiterProc_WFSOExSemaphoreTest(LPVOID lpParameter);
 
 DWORD ThreadWaitDelta_WFSOExSemaphoreTest;
-static volatile bool s_preWaitTimestampRecorded = 0;
+static volatile bool s_preWaitTimestampRecorded = false;
 
 PALTEST(threading_WaitForSingleObject_WFSOExSemaphoreTest_paltest_waitforsingleobject_wfsoexsemaphoretest, "threading/WaitForSingleObject/WFSOExSemaphoreTest/paltest_waitforsingleobject_wfsoexsemaphoretest")
 {
