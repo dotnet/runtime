@@ -17,6 +17,14 @@
     <Compile Include="PInvokeTableGenerator.cs" />
     <Compile Include="WasmAppBuilder.cs" />
     <Compile Include="WasmLoadAssembliesAndReferences.cs" />
+    <Compile Include="AotProfileToJson.cs" />
+    <Compile Include="JsonToAotProfile.cs" />
+    <Compile Include="AotProfileFilter.cs" />
+    <Compile Include="Mono.Profiler.Aot\ProfileBase.cs" />
+    <Compile Include="Mono.Profiler.Aot\ProfileData.cs" />
+    <Compile Include="Mono.Profiler.Aot\ProfileReader.cs" />
+    <Compile Include="Mono.Profiler.Aot\ProfileWriter.cs" />
+    <Compile Include="Mono.Profiler.Aot\Records.cs" />
   </ItemGroup>
 
   <Target Name="PublishBuilder"

@@ -3,7 +3,7 @@
     <OutputType>Exe</OutputType>
     <OutputPath>bin</OutputPath>
     <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
-    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
+    <TargetFramework>$(NetCoreAppToolCurrent)</TargetFramework>
     <TargetArchitecture>wasm</TargetArchitecture>
     <TargetOS>Browser</TargetOS>
     <MicrosoftNetCoreAppRuntimePackRidDir>$(ArtifactsBinDir)microsoft.netcore.app.runtime.browser-wasm\$(Configuration)\runtimes\browser-wasm\</MicrosoftNetCoreAppRuntimePackRidDir>
@@ -110,6 +110,17 @@
       <_managedAppAssemblies Include="$(AppDir)managed\*.dll"/>
     </ItemGroup>
     <Exec Condition="'$(RunAOTCompilation)' == 'true'" Command="mono-cil-strip %(_managedAppAssemblies.Identity)" />
+
+	<ItemGroup>
+	  <ExcludeMethods Include=".cctor"/>
+	</ItemGroup>
+    <AotProfileFilter
+	  Input="data.aotprofile"
+	  Output="filtered.aotprofile"
+	  ExcludeMethods="@(ExcludeMethods)"
+	  />
+    <AotProfileToJson Input="filtered.aotprofile" Output="filtered.json"/>
+    <!--<JsonToAotProfile Input="data.json" Output="data2.aotprofile"/>-->
   </Target>
 
   <ItemGroup>
