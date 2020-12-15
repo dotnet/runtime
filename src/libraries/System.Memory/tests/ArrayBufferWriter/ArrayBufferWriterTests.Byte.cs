@@ -102,13 +102,14 @@ namespace System.Buffers.Tests
 
             int initialCapacity = int.MaxValue / 2 + 1;
 
-            var output = new ArrayBufferWriter<byte>(initialCapacity);
-            output.Advance(initialCapacity);
-
-            // Validate we can't double the buffer size, but can grow
-            Memory<byte> memory;
+            ArrayBufferWriter<byte> output;
             try
             {
+                output = new ArrayBufferWriter<byte>(initialCapacity);
+                output.Advance(initialCapacity);
+
+                // Validate we can't double the buffer size, but can grow
+                Memory<byte> memory;
                 memory = output.GetMemory(1);
 
                 // The buffer should grow more than the 1 byte requested otherwise performance will not be usable
@@ -121,6 +122,7 @@ namespace System.Buffers.Tests
             }
 
             // Validate > MaxArrayLength.
+            output = new ArrayBufferWriter<byte>(1);
             Assert.Throws<OutOfMemoryException>(() => output.GetMemory(int.MaxValue));
         }
     }
