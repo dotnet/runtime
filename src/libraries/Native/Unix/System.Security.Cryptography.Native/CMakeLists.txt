@@ -49,6 +49,10 @@ set(NATIVECRYPTO_SOURCES
 # that use OpenSSL at runtime.
 if (CLR_CMAKE_TARGET_OSX)
     set(FEATURE_DISTRO_AGNOSTIC_SSL True)
+
+    # by default uninitialized variables like the shim _ptr functions, will turn into common symbols
+    # and on OSX those have linking problems in libraries (ELF vs. Mach-O difference)
+    add_compile_options(-fno-common)
 endif()
 
 if (FEATURE_DISTRO_AGNOSTIC_SSL)
