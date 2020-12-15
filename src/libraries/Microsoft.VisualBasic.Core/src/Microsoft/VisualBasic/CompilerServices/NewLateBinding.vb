@@ -2,20 +2,13 @@
 ' The .NET Foundation licenses this file to you under the MIT license.
 
 Imports System
-Imports System.Collections
 Imports System.Collections.Generic
 Imports System.Diagnostics
 Imports System.Dynamic
-Imports System.Globalization
 Imports System.Reflection
-Imports System.Runtime.InteropServices
 
 Imports Microsoft.VisualBasic.CompilerServices.Symbols
 Imports Microsoft.VisualBasic.CompilerServices.OverloadResolution
-Imports Microsoft.VisualBasic.CompilerServices.ExceptionUtils
-Imports Microsoft.VisualBasic.CompilerServices.Utils
-Imports Microsoft.VisualBasic.CompilerServices.ReflectionExtensions
-Imports System.Runtime.Versioning
 
 #Const NEW_BINDER = True
 #Const BINDING_LOG = False
@@ -814,7 +807,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
                 ByVal RValueBase As Boolean)
 
             ObjectLateSetComplex(
-                Instance, Nothing, MemberName, Arguments, New String() {},
+                Instance, Nothing, MemberName, Arguments, Array.Empty(Of String)(),
                 NoTypeArguments, OptimisticSet, RValueBase)
         End Sub 'FallbackSetComplex
 

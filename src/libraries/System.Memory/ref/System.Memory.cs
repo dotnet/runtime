@@ -318,6 +318,8 @@ namespace System.Buffers.Binary
     {
         public static double ReadDoubleBigEndian(System.ReadOnlySpan<byte> source) { throw null; }
         public static double ReadDoubleLittleEndian(System.ReadOnlySpan<byte> source) { throw null; }
+        public static System.Half ReadHalfBigEndian(System.ReadOnlySpan<byte> source) { throw null; }
+        public static System.Half ReadHalfLittleEndian(System.ReadOnlySpan<byte> source) { throw null; }
         public static short ReadInt16BigEndian(System.ReadOnlySpan<byte> source) { throw null; }
         public static short ReadInt16LittleEndian(System.ReadOnlySpan<byte> source) { throw null; }
         public static int ReadInt32BigEndian(System.ReadOnlySpan<byte> source) { throw null; }
@@ -352,6 +354,8 @@ namespace System.Buffers.Binary
         public static ulong ReverseEndianness(ulong value) { throw null; }
         public static bool TryReadDoubleBigEndian(System.ReadOnlySpan<byte> source, out double value) { throw null; }
         public static bool TryReadDoubleLittleEndian(System.ReadOnlySpan<byte> source, out double value) { throw null; }
+        public static bool TryReadHalfBigEndian(System.ReadOnlySpan<byte> source, out System.Half value) { throw null; }
+        public static bool TryReadHalfLittleEndian(System.ReadOnlySpan<byte> source, out System.Half value) { throw null; }
         public static bool TryReadInt16BigEndian(System.ReadOnlySpan<byte> source, out short value) { throw null; }
         public static bool TryReadInt16LittleEndian(System.ReadOnlySpan<byte> source, out short value) { throw null; }
         public static bool TryReadInt32BigEndian(System.ReadOnlySpan<byte> source, out int value) { throw null; }
@@ -374,6 +378,8 @@ namespace System.Buffers.Binary
         public static bool TryReadUInt64LittleEndian(System.ReadOnlySpan<byte> source, out ulong value) { throw null; }
         public static bool TryWriteDoubleBigEndian(System.Span<byte> destination, double value) { throw null; }
         public static bool TryWriteDoubleLittleEndian(System.Span<byte> destination, double value) { throw null; }
+        public static bool TryWriteHalfBigEndian(System.Span<byte> destination, System.Half value) { throw null; }
+        public static bool TryWriteHalfLittleEndian(System.Span<byte> destination, System.Half value) { throw null; }
         public static bool TryWriteInt16BigEndian(System.Span<byte> destination, short value) { throw null; }
         public static bool TryWriteInt16LittleEndian(System.Span<byte> destination, short value) { throw null; }
         public static bool TryWriteInt32BigEndian(System.Span<byte> destination, int value) { throw null; }
@@ -396,6 +402,8 @@ namespace System.Buffers.Binary
         public static bool TryWriteUInt64LittleEndian(System.Span<byte> destination, ulong value) { throw null; }
         public static void WriteDoubleBigEndian(System.Span<byte> destination, double value) { }
         public static void WriteDoubleLittleEndian(System.Span<byte> destination, double value) { }
+        public static void WriteHalfBigEndian(System.Span<byte> destination, System.Half value) { }
+        public static void WriteHalfLittleEndian(System.Span<byte> destination, System.Half value) { }
         public static void WriteInt16BigEndian(System.Span<byte> destination, short value) { }
         public static void WriteInt16LittleEndian(System.Span<byte> destination, short value) { }
         public static void WriteInt32BigEndian(System.Span<byte> destination, int value) { }

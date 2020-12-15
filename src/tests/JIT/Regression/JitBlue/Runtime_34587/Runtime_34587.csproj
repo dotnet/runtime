@@ -1,7 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <CLRTestTargetUnsupported Condition="'$(TargetArchitecture)' == 'wasm'" >True</CLRTestTargetUnsupported>
   </PropertyGroup>
   <PropertyGroup>
     <DebugType />

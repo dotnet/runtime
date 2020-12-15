@@ -7,7 +7,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
-using System.Net.Connections;
 using System.Net.Http.Headers;
 using System.Net.Http.HPack;
 using System.Net.Security;
@@ -24,7 +23,6 @@ namespace System.Net.Http
     {
         private readonly HttpConnectionPool _pool;
         private readonly Stream _stream;
-        private readonly Connection _connection;
 
         // NOTE: These are mutable structs; do not make these readonly.
         private ArrayBuffer _incomingBuffer;
@@ -119,11 +117,10 @@ namespace System.Net.Http
         private long _keepAlivePingTimeoutTimestamp;
         private volatile KeepAliveState _keepAliveState;
 
-        public Http2Connection(HttpConnectionPool pool, Connection connection)
+        public Http2Connection(HttpConnectionPool pool, Stream stream)
         {
             _pool = pool;
-            _stream = connection.Stream;
-            _connection = connection;
+            _stream = stream;
             _incomingBuffer = new ArrayBuffer(InitialConnectionBufferSize);
             _outgoingBuffer = new ArrayBuffer(InitialConnectionBufferSize);
 
@@ -847,7 +844,6 @@ namespace System.Net.Http
 
         private abstract class WriteQueueEntry : TaskCompletionSource
         {
-            private readonly CancellationToken _cancellationToken;
             private readonly CancellationTokenRegistration _cancellationRegistration;
 
             public WriteQueueEntry(int writeBytes, CancellationToken cancellationToken)
@@ -855,16 +851,14 @@ namespace System.Net.Http
             {
                 WriteBytes = writeBytes;
 
-                _cancellationToken = cancellationToken;
-                _cancellationRegistration = cancellationToken.UnsafeRegister(static s => ((WriteQueueEntry)s!).OnCancellation(), this);
+                _cancellationRegistration = cancellationToken.UnsafeRegister(static (s, cancellationToken) =>
+                {
+                    bool canceled = ((WriteQueueEntry)s!).TrySetCanceled(cancellationToken);
+                    Debug.Assert(canceled, "Callback should have been unregistered if the operation was completing successfully.");
+                }, this);
             }
 
             public int WriteBytes { get; }
-
-            private void OnCancellation()
-            {
-                SetCanceled(_cancellationToken);
-            }
 
             public bool TryDisableCancellation()
             {
@@ -1354,6 +1348,8 @@ namespace System.Net.Http
             ArrayBuffer headerBuffer = default;
             try
             {
+                if (HttpTelemetry.Log.IsEnabled()) HttpTelemetry.Log.RequestHeadersStart();
+
                 // Serialize headers to a temporary buffer, and do as much work to prepare to send the headers as we can
                 // before taking the write lock.
                 headerBuffer = new ArrayBuffer(InitialConnectionBufferSize, usePool: true);
@@ -1434,6 +1430,9 @@ namespace System.Net.Http
 
                     return s.mustFlush || s.endStream;
                 }, cancellationToken).ConfigureAwait(false);
+
+                if (HttpTelemetry.Log.IsEnabled()) HttpTelemetry.Log.RequestHeadersStop();
+
                 return http2Stream;
             }
             catch
@@ -1698,7 +1697,7 @@ namespace System.Net.Http
             GC.SuppressFinalize(this);
 
             // Do shutdown.
-            _connection.Dispose();
+            _stream.Dispose();
 
             _connectionWindow.Dispose();
             _concurrentStreams.Dispose();
@@ -1836,6 +1835,7 @@ namespace System.Net.Http
 
         public sealed override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, bool async, CancellationToken cancellationToken)
         {
+            Debug.Assert(async);
             if (NetEventSource.Log.IsEnabled()) Trace($"{request}");
 
             try

@@ -4,6 +4,7 @@
 namespace System.Runtime.Serialization
 {
     using System;
+    using System.Buffers.Binary;
     using System.Collections.Generic;
     using System.Globalization;
     using System.Reflection;
@@ -18,11 +19,7 @@ namespace System.Runtime.Serialization
     using System.Diagnostics.CodeAnalysis;
     using System.Diagnostics;
 
-#if USE_REFEMIT
-    public abstract class DataContract
-#else
     internal abstract class DataContract
-#endif
     {
         private XmlDictionaryString _name;
 
@@ -159,11 +156,7 @@ namespace System.Runtime.Serialization
             DataContractCriticalHelper.ThrowInvalidDataContractException(message, type);
         }
 
-#if USE_REFEMIT
-        internal DataContractCriticalHelper Helper
-#else
         protected DataContractCriticalHelper Helper
-#endif
         {
             get
             { return _helper; }
@@ -452,10 +445,6 @@ namespace System.Runtime.Serialization
                         }
                         catch (Exception ex)
                         {
-                            if (DiagnosticUtility.IsFatal(ex))
-                            {
-                                throw;
-                            }
                             throw DiagnosticUtility.ExceptionUtility.ThrowHelperFatal(ex.Message, ex);
                         }
                     }
@@ -939,10 +928,6 @@ namespace System.Runtime.Serialization
                     }
                     catch (Exception ex)
                     {
-                        if (DiagnosticUtility.IsFatal(ex))
-                        {
-                            throw;
-                        }
                         throw DiagnosticUtility.ExceptionUtility.ThrowHelperFatal(ex.Message, ex);
                     }
                     return key;
@@ -963,10 +948,6 @@ namespace System.Runtime.Serialization
                         }
                         catch (Exception ex)
                         {
-                            if (DiagnosticUtility.IsFatal(ex))
-                            {
-                                throw;
-                            }
                             throw DiagnosticUtility.ExceptionUtility.ThrowHelperFatal(ex.Message, ex);
                         }
                     }
@@ -980,10 +961,6 @@ namespace System.Runtime.Serialization
                     }
                     catch (Exception ex)
                     {
-                        if (DiagnosticUtility.IsFatal(ex))
-                        {
-                            throw;
-                        }
                         throw DiagnosticUtility.ExceptionUtility.ThrowHelperFatal(ex.Message, ex);
                     }
                     return value;
@@ -1004,10 +981,6 @@ namespace System.Runtime.Serialization
                         }
                         catch (Exception ex)
                         {
-                            if (DiagnosticUtility.IsFatal(ex))
-                            {
-                                throw;
-                            }
                             throw DiagnosticUtility.ExceptionUtility.ThrowHelperFatal(ex.Message, ex);
                         }
                     }
@@ -1298,12 +1271,8 @@ namespace System.Runtime.Serialization
             {
                 return false;
             }
-            catch (Exception ex)
+            catch (Exception)
             {
-                if (DiagnosticUtility.IsFatal(ex))
-                {
-                    throw;
-                }
                 return false;
             }
         }
@@ -1874,7 +1843,7 @@ namespace System.Runtime.Serialization
                     d = c;
                     c = b;
 
-                    b = unchecked(a + f + sines[j] + (uint)(block[g] + (block[g + 1] << 8) + (block[g + 2] << 16) + (block[g + 3] << 24)));
+                    b = unchecked(a + f + sines[j] + BinaryPrimitives.ReadUInt32LittleEndian(block.AsSpan(g)));
                     b = b << shifts[j & 3 | j >> 2 & ~3] | b >> 32 - shifts[j & 3 | j >> 2 & ~3];
                     b = unchecked(b + c);
 
@@ -2010,7 +1979,7 @@ namespace System.Runtime.Serialization
                             if (methodName.Length == 0)
                                 DataContract.ThrowInvalidDataContractException(SR.Format(SR.KnownTypeAttributeEmptyString, DataContract.GetClrTypeFullName(type)), type);
 
-                            MethodInfo? method = type.GetMethod(methodName, BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public, Array.Empty<Type>());
+                            MethodInfo? method = type.GetMethod(methodName, BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public, Type.EmptyTypes);
                             if (method == null)
                                 DataContract.ThrowInvalidDataContractException(SR.Format(SR.KnownTypeAttributeUnknownMethod, methodName, DataContract.GetClrTypeFullName(type)), type);
 

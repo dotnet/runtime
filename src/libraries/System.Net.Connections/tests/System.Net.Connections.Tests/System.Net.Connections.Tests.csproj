@@ -30,5 +30,9 @@
     <Compile Include="$(CommonTestPath)System\Net\Sockets\SocketImplementationType.cs" Link="SocketCommon\SocketImplementationType.cs" />
     <Compile Include="$(CommonTestPath)System\Threading\Tasks\TaskTimeoutExtensions.cs" Link="Common\System\Threading\Tasks\TaskTimeoutExtensions.cs" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\System.IO.Pipelines\src\System.IO.Pipelines.csproj" />
+    <ProjectReference Include="..\..\..\System.Net.Connections\src\System.Net.Connections.csproj" />
+  </ItemGroup>
 
 </Project>

@@ -1,13 +1,15 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-.assembly extern System.Runtime {}
+#define CORE_ASSEMBLY "System.Runtime"
+
+.assembly extern CORE_ASSEMBLY {}
 .assembly MiAggressiveOptimization {}
 .module MiAggressiveOptimization.dll
 // MVID: {B5A4E68E-19B7-4FA3-9BE2-2A0B7265233B}
 
 .class public abstract auto ansi sealed beforefieldinit Program
-       extends [System.Runtime]System.Object
+       extends [CORE_ASSEMBLY]System.Object
 {
   .method public hidebysig static void  Main() cil managed aggressiveoptimization
   {

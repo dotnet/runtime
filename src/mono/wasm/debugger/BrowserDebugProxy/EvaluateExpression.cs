@@ -21,12 +21,12 @@ namespace Microsoft.WebAssembly.Diagnostics
 
     internal class EvaluateExpression
     {
-        class FindVariableNMethodCall : CSharpSyntaxWalker
+        private class FindVariableNMethodCall : CSharpSyntaxWalker
         {
             public List<IdentifierNameSyntax> identifiers = new List<IdentifierNameSyntax>();
             public List<InvocationExpressionSyntax> methodCall = new List<InvocationExpressionSyntax>();
             public List<MemberAccessExpressionSyntax> memberAccesses = new List<MemberAccessExpressionSyntax>();
-            public List<object> argValues = new List<Object>();
+            public List<object> argValues = new List<object>();
 
             public override void Visit(SyntaxNode node)
             {
@@ -63,8 +63,8 @@ namespace Microsoft.WebAssembly.Diagnostics
                 // 1. Replace all this.a occurrences with this_a_ABDE
                 root = root.ReplaceNodes(memberAccesses, (maes, _) =>
                 {
-                    var ma_str = maes.ToString();
-                    if (!memberAccessToParamName.TryGetValue(ma_str, out var id_name))
+                    string ma_str = maes.ToString();
+                    if (!memberAccessToParamName.TryGetValue(ma_str, out string id_name))
                     {
                         // Generate a random suffix
                         string suffix = Guid.NewGuid().ToString().Substring(0, 5);
@@ -80,10 +80,10 @@ namespace Microsoft.WebAssembly.Diagnostics
                 var paramsSet = new HashSet<string>();
 
                 // 2. For every unique member ref, add a corresponding method param
-                foreach (var (maes, value) in memberAccesses.Zip(ma_values))
+                foreach ((MemberAccessExpressionSyntax maes, JObject value) in memberAccesses.Zip(ma_values))
                 {
-                    var node_str = maes.ToString();
-                    if (!memberAccessToParamName.TryGetValue(node_str, out var id_name))
+                    string node_str = maes.ToString();
+                    if (!memberAccessToParamName.TryGetValue(node_str, out string id_name))
                     {
                         throw new Exception($"BUG: Expected to find an id name for the member access string: {node_str}");
                     }
@@ -91,7 +91,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                     root = UpdateWithNewMethodParam(root, id_name, value);
                 }
 
-                foreach (var (idns, value) in identifiers.Zip(id_values))
+                foreach ((IdentifierNameSyntax idns, JObject value) in identifiers.Zip(id_values))
                 {
                     root = UpdateWithNewMethodParam(root, idns.Identifier.Text, value);
                 }
@@ -112,7 +112,7 @@ namespace Microsoft.WebAssembly.Diagnostics
 
                     argValues.Add(ConvertJSToCSharpType(value));
 
-                    var updatedMethod = method.AddParameterListParameters(
+                    MethodDeclarationSyntax updatedMethod = method.AddParameterListParameters(
                         SyntaxFactory.Parameter(
                             SyntaxFactory.Identifier(id_name))
                             .WithType(SyntaxFactory.ParseTypeName(GetTypeFullName(value))));
@@ -126,9 +126,9 @@ namespace Microsoft.WebAssembly.Diagnostics
 
             private object ConvertJSToCSharpType(JToken variable)
             {
-                var value = variable["value"];
-                var type = variable["type"].Value<string>();
-                var subType = variable["subtype"]?.Value<string>();
+                JToken value = variable["value"];
+                string type = variable["type"].Value<string>();
+                string subType = variable["subtype"]?.Value<string>();
 
                 switch (type)
                 {
@@ -148,8 +148,8 @@ namespace Microsoft.WebAssembly.Diagnostics
 
             private string GetTypeFullName(JToken variable)
             {
-                var type = variable["type"].ToString();
-                var subType = variable["subtype"]?.Value<string>();
+                string type = variable["type"].ToString();
+                string subType = variable["subtype"]?.Value<string>();
                 object value = ConvertJSToCSharpType(variable);
 
                 switch (type)
@@ -167,7 +167,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             }
         }
 
-        static SyntaxNode GetExpressionFromSyntaxTree(SyntaxTree syntaxTree)
+        private static SyntaxNode GetExpressionFromSyntaxTree(SyntaxTree syntaxTree)
         {
             CompilationUnitSyntax root = syntaxTree.GetCompilationUnitRoot();
             ClassDeclarationSyntax classDeclaration = root.Members.ElementAt(0) as ClassDeclarationSyntax;
@@ -183,10 +183,10 @@ namespace Microsoft.WebAssembly.Diagnostics
                                 MemberReferenceResolver resolver, CancellationToken token)
         {
             var memberAccessValues = new List<JObject>();
-            foreach (var maes in member_accesses)
+            foreach (MemberAccessExpressionSyntax maes in member_accesses)
             {
-                var memberAccessString = maes.ToString();
-                var value = await resolver.Resolve(memberAccessString, token);
+                string memberAccessString = maes.ToString();
+                JObject value = await resolver.Resolve(memberAccessString, token);
                 if (value == null)
                     throw new ReturnAsErrorException($"Failed to resolve member access for {memberAccessString}", "ReferenceError");
 
@@ -199,7 +199,7 @@ namespace Microsoft.WebAssembly.Diagnostics
         private static async Task<IList<JObject>> ResolveIdentifiers(IEnumerable<IdentifierNameSyntax> identifiers, MemberReferenceResolver resolver, CancellationToken token)
         {
             var values = new List<JObject>();
-            foreach (var var in identifiers)
+            foreach (IdentifierNameSyntax var in identifiers)
             {
                 JObject value = await resolver.Resolve(var.Identifier.Text, token);
                 if (value == null)
@@ -222,9 +222,9 @@ namespace Microsoft.WebAssembly.Diagnostics
                     {
                         return (" + expression + @");
                     }
-                }");
+                }", cancellationToken: token);
 
-            var expressionTree = GetExpressionFromSyntaxTree(syntaxTree);
+            SyntaxNode expressionTree = GetExpressionFromSyntaxTree(syntaxTree);
             if (expressionTree == null)
                 throw new Exception($"BUG: Unable to evaluate {expression}, could not get expression from the syntax tree");
 
@@ -236,15 +236,15 @@ namespace Microsoft.WebAssembly.Diagnostics
             // and the returned expression from GetExpressionFromSyntaxTree is `a`!
             if (expressionTree.Kind() == SyntaxKind.IdentifierName || expressionTree.Kind() == SyntaxKind.ThisExpression)
             {
-                var var_name = expressionTree.ToString();
-                var value = await resolver.Resolve(var_name, token);
+                string var_name = expressionTree.ToString();
+                JObject value = await resolver.Resolve(var_name, token);
                 if (value == null)
                     throw new ReturnAsErrorException($"Cannot find member named '{var_name}'.", "ReferenceError");
 
                 return value;
             }
 
-            var memberAccessValues = await ResolveMemberAccessExpressions(findVarNMethodCall.memberAccesses, resolver, token);
+            IList<JObject> memberAccessValues = await ResolveMemberAccessExpressions(findVarNMethodCall.memberAccesses, resolver, token);
 
             // eg. "this.dateTime", "  dateTime.TimeOfDay"
             if (expressionTree.Kind() == SyntaxKind.SimpleMemberAccessExpression && findVarNMethodCall.memberAccesses.Count == 1)
@@ -252,7 +252,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                 return memberAccessValues[0];
             }
 
-            var identifierValues = await ResolveIdentifiers(findVarNMethodCall.identifiers, resolver, token);
+            IList<JObject> identifierValues = await ResolveIdentifiers(findVarNMethodCall.identifiers, resolver, token);
 
             syntaxTree = findVarNMethodCall.ReplaceVars(syntaxTree, memberAccessValues, identifierValues);
             expressionTree = GetExpressionFromSyntaxTree(syntaxTree);
@@ -271,16 +271,16 @@ namespace Microsoft.WebAssembly.Diagnostics
                 references: references,
                 options: new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary));
 
-            var semanticModel = compilation.GetSemanticModel(syntaxTree);
-            var typeInfo = semanticModel.GetTypeInfo(expressionTree);
+            SemanticModel semanticModel = compilation.GetSemanticModel(syntaxTree);
+            CodeAnalysis.TypeInfo typeInfo = semanticModel.GetTypeInfo(expressionTree, cancellationToken: token);
 
             using (var ms = new MemoryStream())
             {
-                EmitResult result = compilation.Emit(ms);
+                EmitResult result = compilation.Emit(ms, cancellationToken: token);
                 if (!result.Success)
                 {
                     var sb = new StringBuilder();
-                    foreach (var d in result.Diagnostics)
+                    foreach (Diagnostic d in result.Diagnostics)
                         sb.Append(d.ToString());
 
                     throw new ReturnAsErrorException(sb.ToString(), "CompilationError");
@@ -290,7 +290,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                 Assembly assembly = Assembly.Load(ms.ToArray());
                 Type type = assembly.GetType("CompileAndRunTheExpression");
 
-                var ret = type.InvokeMember("Evaluate",
+                object ret = type.InvokeMember("Evaluate",
                     BindingFlags.InvokeMethod | BindingFlags.Static | BindingFlags.Public,
                     null,
                     null,
@@ -300,7 +300,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             }
         }
 
-        static readonly HashSet<Type> NumericTypes = new HashSet<Type>
+        private static readonly HashSet<Type> NumericTypes = new HashSet<Type>
         {
             typeof(decimal), typeof(byte), typeof(sbyte),
             typeof(short), typeof(ushort),
@@ -308,7 +308,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             typeof(float), typeof(double)
         };
 
-        static object ConvertCSharpToJSType(object v, ITypeSymbol type)
+        private static object ConvertCSharpToJSType(object v, ITypeSymbol type)
         {
             if (v == null)
                 return new { type = "object", subtype = "null", className = type.ToString() };
@@ -329,7 +329,7 @@ namespace Microsoft.WebAssembly.Diagnostics
 
     }
 
-    class ReturnAsErrorException : Exception
+    internal class ReturnAsErrorException : Exception
     {
         public Result Error { get; }
         public ReturnAsErrorException(JObject error)

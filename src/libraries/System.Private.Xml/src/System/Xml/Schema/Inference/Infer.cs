@@ -925,7 +925,7 @@ namespace System.Xml.Schema
                             throw new XmlSchemaInferenceException(SR.SchInf_particle, 0, 0);
                         ct.Particle = new XmlSchemaSequence();
                         bCreatingNewSequence = true;
-                        XmlSchemaElement subelement = AddElement(_xtr.LocalName, _xtr.Prefix, _xtr.NamespaceURI, parentSchema, ((XmlSchemaSequence)ct.Particle).Items, -1);
+                        AddElement(_xtr.LocalName, _xtr.Prefix, _xtr.NamespaceURI, parentSchema, ((XmlSchemaSequence)ct.Particle).Items, -1);
                         lastUsedSeqItem = 0;
                         if (!bCreatingNewType)
                             ct.Particle.MinOccurs = 0;    //previously this was simple type so subelements did not exist
@@ -934,7 +934,7 @@ namespace System.Xml.Schema
                     {
                         ct.Particle = new XmlSchemaSequence();
                         bCreatingNewSequence = true;
-                        XmlSchemaElement subelement = AddElement(_xtr.LocalName, _xtr.Prefix, _xtr.NamespaceURI, parentSchema, ((XmlSchemaSequence)ct.Particle).Items, -1);
+                        AddElement(_xtr.LocalName, _xtr.Prefix, _xtr.NamespaceURI, parentSchema, ((XmlSchemaSequence)ct.Particle).Items, -1);
                         if (!bCreatingNewType)
                         {
                             ((XmlSchemaSequence)ct.Particle).MinOccurs = decimal.Zero;
@@ -946,7 +946,7 @@ namespace System.Xml.Schema
                     else
                     {
                         bool bParticleChanged = false;
-                        XmlSchemaElement subelement = FindMatchingElement(bCreatingNewType || bCreatingNewSequence, _xtr, ct, ref lastUsedSeqItem, ref bParticleChanged, parentSchema, Maxoccursflag);
+                        FindMatchingElement(bCreatingNewType || bCreatingNewSequence, _xtr, ct, ref lastUsedSeqItem, ref bParticleChanged, parentSchema, Maxoccursflag);
                     }
                 }
                 else if (_xtr.NodeType == XmlNodeType.Text)

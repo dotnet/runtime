@@ -602,8 +602,6 @@ namespace System.Xml
                 }
                 catch (Exception e)
                 {
-                    if (DiagnosticUtility.IsFatal(e)) throw;
-
                     throw DiagnosticUtility.ExceptionUtility.ThrowHelperCallback(e);
                 }
             }

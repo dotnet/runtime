@@ -1,5 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
+
 //
 // Copyright (C) 2010 Novell, Inc (http://www.novell.com)
 //
@@ -399,9 +400,6 @@ namespace System.Reflection
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         internal static extern Type[] InternalGetTypes(IntPtr module);
-
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal static extern IntPtr GetHINSTANCE(IntPtr module);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private static extern void GetGuidInternal(IntPtr module, byte[] guid);

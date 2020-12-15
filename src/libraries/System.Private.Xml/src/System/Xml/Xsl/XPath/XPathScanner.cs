@@ -71,8 +71,6 @@ namespace System.Xml.Xsl.XPath
         private LexKind _prevKind;
         private XPathAxis _axis;
 
-        private XmlCharType _xmlCharType = XmlCharType.Instance;
-
         public XPathScanner(string xpathExpr) : this(xpathExpr, 0) { }
 
         public XPathScanner(string xpathExpr, int startFrom)
@@ -183,7 +181,7 @@ namespace System.Xml.Xsl.XPath
 
         private void SkipSpace()
         {
-            while (_xmlCharType.IsWhiteSpace(_curChar))
+            while (XmlCharType.IsWhiteSpace(_curChar))
             {
                 NextChar();
             }
@@ -334,7 +332,7 @@ namespace System.Xml.Xsl.XPath
                     ScanNumber();
                     break;
                 default:
-                    if (_xmlCharType.IsStartNCNameSingleChar(_curChar))
+                    if (XmlCharType.IsStartNCNameSingleChar(_curChar))
                     {
                         _kind = LexKind.Name;
                         _name = ScanNCName();
@@ -364,7 +362,7 @@ namespace System.Xml.Xsl.XPath
                                     _prefix = _name;
                                     _name = "*";
                                 }
-                                else if (_xmlCharType.IsStartNCNameSingleChar(_curChar))
+                                else if (XmlCharType.IsStartNCNameSingleChar(_curChar))
                                 {
                                     _prefix = _name;
                                     _name = ScanNCName();
@@ -529,11 +527,11 @@ namespace System.Xml.Xsl.XPath
 
         private string ScanNCName()
         {
-            Debug.Assert(_xmlCharType.IsStartNCNameSingleChar(_curChar));
+            Debug.Assert(XmlCharType.IsStartNCNameSingleChar(_curChar));
             int start = _curIndex;
             while (true)
             {
-                if (_xmlCharType.IsNCNameSingleChar(_curChar))
+                if (XmlCharType.IsNCNameSingleChar(_curChar))
                 {
                     NextChar();
                 }

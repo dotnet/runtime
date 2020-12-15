@@ -276,7 +276,7 @@ namespace System.Net
         public static System.Net.IPEndPoint Parse(string s) { throw null; }
         public override System.Net.SocketAddress Serialize() { throw null; }
         public override string ToString() { throw null; }
-        public static bool TryParse(System.ReadOnlySpan<char> s, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out System.Net.IPEndPoint result) { throw null; }
+        public static bool TryParse(System.ReadOnlySpan<char> s, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out System.Net.IPEndPoint? result) { throw null; }
         public static bool TryParse(string s, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out System.Net.IPEndPoint? result) { throw null; }
     }
     public partial interface IWebProxy
@@ -321,24 +321,6 @@ namespace System.Net
     {
         protected TransportContext() { }
         public abstract System.Security.Authentication.ExtendedProtection.ChannelBinding? GetChannelBinding(System.Security.Authentication.ExtendedProtection.ChannelBindingKind kind);
-    }
-    public enum NetworkError : int
-    {
-        Other = 0,
-        EndPointInUse,
-        HostNotFound,
-        TimedOut,
-        ConnectionRefused,
-        OperationAborted,
-        ConnectionAborted,
-        ConnectionReset,
-    }
-    public class NetworkException : System.IO.IOException
-    {
-        public NetworkException(NetworkError error, Exception? innerException = null) { }
-        public NetworkException(string message, NetworkError error, Exception? innerException = null) { }
-        protected NetworkException(System.Runtime.Serialization.SerializationInfo serializationInfo, System.Runtime.Serialization.StreamingContext streamingContext) { }
-        public NetworkError NetworkError { get { throw null; } }
     }
 }
 namespace System.Net.Cache

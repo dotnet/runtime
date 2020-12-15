@@ -403,7 +403,6 @@ namespace System
         private static bool FilterApplyType(
             Type type, BindingFlags bindingFlags, string? name, bool prefixLookup, string? ns)
         {
-            Debug.Assert((object)type != null);
             Debug.Assert(type is RuntimeType);
 
             bool isPublic = type.IsNestedPublic || type.IsPublic;
@@ -423,20 +422,20 @@ namespace System
             RuntimeMethodInfo method, BindingFlags bindingFlags, CallingConventions callConv, Type[]? argumentTypes)
         {
             // Optimization: Pre-Calculate the method binding flags to avoid casting.
-            return FilterApplyMethodBase(method, method.BindingFlags, bindingFlags, callConv, argumentTypes);
+            return FilterApplyMethodBase(method, bindingFlags, callConv, argumentTypes);
         }
 
         private static bool FilterApplyConstructorInfo(
             RuntimeConstructorInfo constructor, BindingFlags bindingFlags, CallingConventions callConv, Type[]? argumentTypes)
         {
             // Optimization: Pre-Calculate the method binding flags to avoid casting.
-            return FilterApplyMethodBase(constructor, constructor.BindingFlags, bindingFlags, callConv, argumentTypes);
+            return FilterApplyMethodBase(constructor, bindingFlags, callConv, argumentTypes);
         }
 
         // Used by GetMethodCandidates/GetConstructorCandidates, InvokeMember, and CreateInstanceImpl to perform the necessary filtering.
         // Should only be called by FilterApplyMethodInfo and FilterApplyConstructorInfo.
         private static bool FilterApplyMethodBase(
-            MethodBase methodBase, BindingFlags methodFlags, BindingFlags bindingFlags, CallingConventions callConv, Type[]? argumentTypes)
+            MethodBase methodBase, BindingFlags bindingFlags, CallingConventions callConv, Type[]? argumentTypes)
         {
             Debug.Assert(methodBase != null);
 
@@ -545,7 +544,7 @@ namespace System
                             for (int i = 0; i < parameterInfos.Length; i++)
                             {
                                 // a null argument type implies a null arg which is always a perfect match
-                                if ((object)argumentTypes[i] != null && !argumentTypes[i].MatchesParameterTypeExactly(parameterInfos[i]))
+                                if (argumentTypes[i] is not null && !argumentTypes[i].MatchesParameterTypeExactly(parameterInfos[i]))
                                     return false;
                             }
                         }
@@ -671,7 +670,7 @@ namespace System
             MemberListType listType;
             FilterHelper(bindingAttr, ref name, allowPrefixLookup, out prefixLookup, out ignoreCase, out listType);
 
-            RuntimeEventInfo[] cache = GetEvents_internal(name, bindingAttr, listType, this);
+            RuntimeEventInfo[] cache = GetEvents_internal(name, listType, this);
             bindingAttr ^= BindingFlags.DeclaredOnly;
 
             ListBuilder<EventInfo> candidates = new ListBuilder<EventInfo>(cache.Length);
@@ -701,8 +700,7 @@ namespace System
             for (int i = 0; i < cache.Length; i++)
             {
                 RuntimeFieldInfo fieldInfo = cache[i];
-                if ((bindingAttr & fieldInfo.BindingFlags) == fieldInfo.BindingFlags &&
-                    (!prefixLookup || FilterApplyPrefixLookup(fieldInfo, name, ignoreCase)))
+                if ((!prefixLookup || FilterApplyPrefixLookup(fieldInfo, name, ignoreCase)))
                 {
                     candidates.Add(fieldInfo);
                 }
@@ -898,7 +896,7 @@ namespace System
                 {
                     PropertyInfo firstCandidate = candidates[0];
 
-                    if ((object?)returnType != null && !returnType.IsEquivalentTo(firstCandidate.PropertyType))
+                    if (returnType is not null && !returnType.IsEquivalentTo(firstCandidate.PropertyType))
                         return null;
 
                     return firstCandidate;
@@ -929,7 +927,7 @@ namespace System
             MemberListType listType;
             FilterHelper(bindingAttr, ref name!, out ignoreCase, out listType);
 
-            RuntimeEventInfo[] cache = GetEvents_internal(name, bindingAttr, listType, this);
+            RuntimeEventInfo[] cache = GetEvents_internal(name, listType, this);
             EventInfo? match = null;
 
             bindingAttr ^= BindingFlags.DeclaredOnly;
@@ -967,7 +965,6 @@ namespace System
             for (int i = 0; i < cache.Length; i++)
             {
                 RuntimeFieldInfo fieldInfo = cache[i];
-                if ((bindingAttr & fieldInfo.BindingFlags) == fieldInfo.BindingFlags)
                 {
                     if (match != null)
                     {
@@ -1209,7 +1206,7 @@ namespace System
             Type[] types = GetGenericArgumentsInternal(false);
 
             if (types == null)
-                types = Array.Empty<Type>();
+                types = Type.EmptyTypes;
 
             return types;
         }
@@ -1729,7 +1726,7 @@ namespace System
                     if (argCnt == 0 && (bindingAttr & BindingFlags.Public) != 0 && (bindingAttr & BindingFlags.Instance) != 0
                         && (IsValueType))
                     {
-                        server = CreateInstanceDefaultCtor(publicOnly, false, true, wrapExceptions);
+                        server = CreateInstanceDefaultCtor(publicOnly, wrapExceptions);
                     }
                     else
                     {
@@ -1812,31 +1809,26 @@ namespace System
         }
 
         // Helper to invoke the default (parameterless) ctor.
-        // fillCache is set in the SL2/3 compat mode or when called from Marshal.PtrToStructure.
         [DebuggerStepThroughAttribute]
         [Diagnostics.DebuggerHidden]
-        internal object? CreateInstanceDefaultCtor(bool publicOnly, bool skipCheckThis, bool fillCache, bool wrapExceptions)
+        internal object? CreateInstanceDefaultCtor(bool publicOnly, bool wrapExceptions)
         {
             if (IsByRefLike)
                 throw new NotSupportedException(SR.NotSupported_ByRefLike);
 
-            return CreateInstanceSlow(publicOnly, wrapExceptions, skipCheckThis, fillCache);
+            CreateInstanceCheckThis();
+
+            return CreateInstanceMono(!publicOnly, wrapExceptions);
         }
 
         #endregion
 
-        private TypeCache cache;
+        private TypeCache? cache;
 
-        internal TypeCache Cache
-        {
-            get
-            {
-                if (cache == null)
-                    LazyInitializer.EnsureInitialized(ref cache, () => new TypeCache());
-
-                return cache;
-            }
-        }
+        internal TypeCache Cache =>
+            Volatile.Read(ref cache) ??
+            Interlocked.CompareExchange(ref cache, new TypeCache(), null) ??
+            cache;
 
         internal sealed class TypeCache
         {
@@ -1867,7 +1859,7 @@ namespace System
             ListBuilder<ConstructorInfo> ctors = GetConstructorCandidates(
                 null,
                 BindingFlags.Public | BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.DeclaredOnly, CallingConventions.Any,
-                Array.Empty<Type>(), false);
+                Type.EmptyTypes, false);
 
             if (ctors.Count == 1)
                 cache.default_ctor = ctor = (RuntimeConstructorInfo)ctors[0];
@@ -1930,21 +1922,6 @@ namespace System
             }
 
             return m_serializationCtor;
-        }
-
-        internal object? CreateInstanceSlow(bool publicOnly, bool wrapExceptions, bool skipCheckThis, bool fillCache)
-        {
-            //bool bNeedSecurityCheck = true;
-            //bool bCanBeCached = false;
-            //bool bSecurityCheckOff = false;
-
-            if (!skipCheckThis)
-                CreateInstanceCheckThis();
-
-            //if (!fillCache)
-            //  bSecurityCheckOff = true;
-
-            return CreateInstanceMono(!publicOnly, wrapExceptions);
         }
 
         private object? CreateInstanceMono(bool nonPublic, bool wrapExceptions)
@@ -2274,7 +2251,7 @@ namespace System
             var paramInfo = new Mono.RuntimeGenericParamInfoHandle(RuntimeTypeHandle.GetGenericParameterInfo(this));
             Type[] constraints = paramInfo.Constraints;
 
-            return constraints ?? Array.Empty<Type>();
+            return constraints ?? Type.EmptyTypes;
         }
 
         internal static object CreateInstanceForAnotherGenericParameter(Type genericType, RuntimeType genericArgument)
@@ -2441,7 +2418,7 @@ namespace System
             }
         }
 
-        private RuntimeEventInfo[] GetEvents_internal(string? name, BindingFlags bindingAttr, MemberListType listType, RuntimeType reflectedType)
+        private RuntimeEventInfo[] GetEvents_internal(string? name, MemberListType listType, RuntimeType reflectedType)
         {
             var refh = new RuntimeTypeHandle(reflectedType);
             using (var namePtr = new Mono.SafeStringMarshal(name))
@@ -2514,7 +2491,7 @@ namespace System
             get
             {
                 // See https://github.com/mono/mono/issues/18180 and
-                // https://github.com/dotnet/runtime/blob/f23e2796ab5f6fea71c9fdacac024822280253db/src/coreclr/src/System.Private.CoreLib/src/System/RuntimeType.CoreCLR.cs#L1468-L1472
+                // https://github.com/dotnet/runtime/blob/69e114c1abf91241a0eeecf1ecceab4711b8aa62/src/coreclr/System.Private.CoreLib/src/System/RuntimeType.CoreCLR.cs#L1505-L1509
                 if (ContainsGenericParameters && !GetRootElementType().IsGenericTypeDefinition)
                     return null;
 

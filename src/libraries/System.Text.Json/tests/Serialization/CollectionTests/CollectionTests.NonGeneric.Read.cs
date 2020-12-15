@@ -136,6 +136,72 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
+        public static void ReadStructIList()
+        {
+            string json = @"[""a"",20]";
+            var wrapper = JsonSerializer.Deserialize<StructWrapperForIList>(json);
+            Assert.Equal(2, wrapper.Count);
+            Assert.Equal("a", ((JsonElement)wrapper[0]).GetString());
+            Assert.Equal(20, ((JsonElement)wrapper[1]).GetInt32());
+        }
+
+        [Fact]
+        public static void ReadNullableStructIList()
+        {
+            string json = @"[""a"",20]";
+            var wrapper = JsonSerializer.Deserialize<StructWrapperForIList?>(json);
+            Assert.True(wrapper.HasValue);
+            Assert.Equal(2, wrapper.Value.Count);
+            Assert.Equal("a", ((JsonElement)wrapper.Value[0]).GetString());
+            Assert.Equal(20, ((JsonElement)wrapper.Value[1]).GetInt32());
+        }
+
+        [Fact]
+        public static void ReadNullableStructIListWithNullJson()
+        {
+            var wrapper = JsonSerializer.Deserialize<StructWrapperForIList?>("null");
+            Assert.False(wrapper.HasValue);
+        }
+
+        [Fact]
+        public static void ReadClassWithStructIListWrapper_NullJson_Throws()
+        {
+            string json = @"{ ""List"" : null }";
+            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<ClassWithStructIListWrapper>(json));
+        }
+
+        [Fact]
+        public static void ReadStructIDictionary()
+        {
+            string json = @"{""Key"":""Value""}";
+            var wrapper = JsonSerializer.Deserialize<StructWrapperForIDictionary>(json);
+            Assert.Equal("Value", wrapper["Key"].ToString());
+        }
+
+        [Fact]
+        public static void ReadNullableStructIDictionary()
+        {
+            string json = @"{""Key"":""Value""}";
+            var wrapper = JsonSerializer.Deserialize<StructWrapperForIDictionary?>(json);
+            Assert.True(wrapper.HasValue);
+            Assert.Equal("Value", wrapper.Value["Key"].ToString());
+        }
+
+        [Fact]
+        public static void ReadNullableStructIDictionaryWithNullJson()
+        {
+            var wrapper = JsonSerializer.Deserialize<StructWrapperForIDictionary?>("null");
+            Assert.False(wrapper.HasValue);
+        }
+
+        [Fact]
+        public static void ReadClassWithStructIDictionaryWrapper_NullJson_Throws()
+        {
+            string json = @"{ ""Dictionary"" : null }";
+            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<ClassWithStructIDictionaryWrapper>(json));
+        }
+
+        [Fact]
         public static void ReadPrimitiveIList()
         {
             IList result = JsonSerializer.Deserialize<IList>(Encoding.UTF8.GetBytes(@"[1,2]"));
@@ -455,6 +521,34 @@ namespace System.Text.Json.Serialization.Tests
         {
             SimpleTestClassWithNonGenericCollectionWrappers obj = JsonSerializer.Deserialize<SimpleTestClassWithNonGenericCollectionWrappers>(SimpleTestClassWithNonGenericCollectionWrappers.s_json);
             obj.Verify();
+        }
+
+        [Fact]
+        public static void ReadSimpleTestClass_StructCollectionWrappers()
+        {
+            SimpleTestClassWithStructCollectionWrappers obj = JsonSerializer.Deserialize<SimpleTestClassWithStructCollectionWrappers>(SimpleTestClassWithStructCollectionWrappers.s_json);
+            obj.Verify();
+        }
+
+        [Fact]
+        public static void ReadSimpleTestStruct_NullableStructCollectionWrappers()
+        {
+            {
+                SimpleTestStructWithNullableStructCollectionWrappers obj = JsonSerializer.Deserialize<SimpleTestStructWithNullableStructCollectionWrappers>(SimpleTestStructWithNullableStructCollectionWrappers.s_json);
+                obj.Verify();
+            }
+
+            {
+                string json =
+                        @"{" +
+                        @"""List"" : null," +
+                        @"""Dictionary"" : null" +
+                        @"}";
+
+                SimpleTestStructWithNullableStructCollectionWrappers obj = JsonSerializer.Deserialize<SimpleTestStructWithNullableStructCollectionWrappers>(json);
+                Assert.False(obj.List.HasValue);
+                Assert.False(obj.Dictionary.HasValue);
+            }
         }
 
         [Theory]

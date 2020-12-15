@@ -5,27 +5,16 @@ project(hostfxr)
 
 set(DOTNET_PROJECT_NAME "hostfxr")
 
-# Include directories
-include_directories(../../json)
-include_directories(../../fxr)
-
 # CMake does not recommend using globbing since it messes with the freshness checks
 set(SOURCES
     ./hostpolicy_resolver.cpp
-    $<TARGET_OBJECTS:libhostfxr_static>
 )
 
 set(HEADERS
-    ../command_line.h
-    ../corehost_init.h
-    ../fx_muxer.h
-    ../fx_resolver.h
-    ../framework_info.h
-    ../host_context.h
-    ../sdk_info.h
-    ../sdk_resolver.h
     ../hostpolicy_resolver.h
 )
+
+include(../files.cmake)
 
 if(CLR_CMAKE_TARGET_WIN32)
     list(APPEND SOURCES

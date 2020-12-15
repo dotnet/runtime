@@ -32,6 +32,29 @@ namespace System.Buffers.Binary
         }
 
         /// <summary>
+        /// Writes a <see cref="Half" /> into a span of bytes, as big endian.
+        /// </summary>
+        /// <param name="destination">The span of bytes where the value is to be written, as big endian.</param>
+        /// <param name="value">The value to write into the span of bytes.</param>
+        /// <remarks>Writes exactly 2 bytes to the beginning of the span.</remarks>
+        /// <exception cref="ArgumentOutOfRangeException">
+        /// <paramref name="destination" /> is too small to contain a <see cref="Half" />.
+        /// </exception>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void WriteHalfBigEndian(Span<byte> destination, Half value)
+        {
+            if (BitConverter.IsLittleEndian)
+            {
+                short tmp = ReverseEndianness(BitConverter.HalfToInt16Bits(value));
+                MemoryMarshal.Write(destination, ref tmp);
+            }
+            else
+            {
+                MemoryMarshal.Write(destination, ref value);
+            }
+        }
+
+        /// <summary>
         /// Writes an Int16 into a span of bytes as big endian.
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -150,6 +173,27 @@ namespace System.Buffers.Binary
             if (BitConverter.IsLittleEndian)
             {
                 long tmp = ReverseEndianness(BitConverter.DoubleToInt64Bits(value));
+                return MemoryMarshal.TryWrite(destination, ref tmp);
+            }
+
+            return MemoryMarshal.TryWrite(destination, ref value);
+        }
+
+        /// <summary>
+        /// Writes a <see cref="Half" /> into a span of bytes, as big endian.
+        /// </summary>
+        /// <param name="destination">The span of bytes where the value is to be written, as big endian.</param>
+        /// <param name="value">The value to write into the span of bytes.</param>
+        /// <returns>
+        /// <see langword="true" /> if the span is large enough to contain a <see cref="Half" />; otherwise, <see langword="false" />.
+        /// </returns>
+        /// <remarks>Writes exactly 2 bytes to the beginning of the span.</remarks>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool TryWriteHalfBigEndian(Span<byte> destination, Half value)
+        {
+            if (BitConverter.IsLittleEndian)
+            {
+                short tmp = ReverseEndianness(BitConverter.HalfToInt16Bits(value));
                 return MemoryMarshal.TryWrite(destination, ref tmp);
             }
 

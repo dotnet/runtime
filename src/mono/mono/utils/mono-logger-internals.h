@@ -29,7 +29,8 @@ typedef enum {
 	MONO_TRACE_TAILCALL           = 1 << 16,
 	MONO_TRACE_PROFILER           = 1 << 17,
 	MONO_TRACE_TIERED             = 1 << 18,
-	MONO_TRACE_QCALL              = 1 << 19
+	MONO_TRACE_QCALL              = 1 << 19,
+	MONO_TRACE_METADATA_UPDATE    = 1 << 20,
 } MonoTraceMask;
 
 MONO_BEGIN_DECLS

@@ -60,11 +60,10 @@ namespace System.Net.Http.Functional.Tests
                     var request = new HttpRequestMessage(HttpMethod.Post, uri) { Content = content, Version = UseVersion };
                     request.Headers.ExpectContinue = true;
 
-                    var sw = Stopwatch.StartNew();
+                    long start = Environment.TickCount64;
                     (await invoker.SendAsync(TestAsync, request, default)).Dispose();
-                    sw.Stop();
-
-                    Assert.InRange(sw.Elapsed, delay - TimeSpan.FromSeconds(.5), delay * 20); // arbitrary wiggle room
+                    long elapsed = content.Ticks - start;
+                    Assert.True(elapsed >= delay.TotalMilliseconds);
                 }
             }, async server =>
             {
@@ -80,6 +79,7 @@ namespace System.Net.Http.Functional.Tests
         private sealed class SetTcsContent : StreamContent
         {
             private readonly TaskCompletionSource<bool> _tcs;
+            public long Ticks;
 
             public SetTcsContent(Stream stream, TaskCompletionSource<bool> tcs) : base(stream) => _tcs = tcs;
 
@@ -88,6 +88,7 @@ namespace System.Net.Http.Functional.Tests
 
             protected override Task SerializeToStreamAsync(Stream stream, TransportContext context)
             {
+                Ticks = Environment.TickCount64;
                 _tcs.SetResult(true);
                 return base.SerializeToStreamAsync(stream, context);
             }

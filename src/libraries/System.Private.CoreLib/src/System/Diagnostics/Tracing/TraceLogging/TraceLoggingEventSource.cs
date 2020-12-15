@@ -452,7 +452,7 @@ namespace System.Diagnostics.Tracing
                     for (int i = 0; i < eventTypes.typeInfos.Length; i++)
                     {
                         TraceLoggingTypeInfo info = eventTypes.typeInfos[i];
-                        info.WriteData(TraceLoggingDataCollector.Instance, info.PropertyValueFactory(values[i]));
+                        info.WriteData(info.PropertyValueFactory(values[i]));
                     }
 
                     this.WriteEventRaw(
@@ -658,7 +658,7 @@ namespace System.Diagnostics.Tracing
                                 pinCount);
 
                             TraceLoggingTypeInfo info = eventTypes.typeInfos[0];
-                            info.WriteData(TraceLoggingDataCollector.Instance, info.PropertyValueFactory(data));
+                            info.WriteData(info.PropertyValueFactory(data));
 
                             this.WriteEventRaw(
                                 eventName,

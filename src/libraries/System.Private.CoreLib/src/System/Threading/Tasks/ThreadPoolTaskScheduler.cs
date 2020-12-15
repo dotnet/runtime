@@ -47,7 +47,9 @@ namespace System.Threading.Tasks
                 // Run LongRunning tasks on their own dedicated thread.
                 Thread thread = new Thread(s_longRunningThreadWork);
                 thread.IsBackground = true; // Keep this thread from blocking process shutdown
+#if !TARGET_BROWSER
                 thread.Start(task);
+#endif
             }
             else
             {
@@ -95,7 +97,7 @@ namespace System.Threading.Tasks
             return FilterTasksFromWorkItems(ThreadPool.GetQueuedWorkItems());
         }
 
-        private IEnumerable<Task> FilterTasksFromWorkItems(IEnumerable<object> tpwItems)
+        private static IEnumerable<Task> FilterTasksFromWorkItems(IEnumerable<object> tpwItems)
         {
             foreach (object tpwi in tpwItems)
             {

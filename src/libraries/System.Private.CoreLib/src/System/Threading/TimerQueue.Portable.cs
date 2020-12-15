@@ -121,7 +121,7 @@ namespace System.Threading
                 {
                     foreach (TimerQueue timerToFire in timersToFire)
                     {
-                        ThreadPool.UnsafeQueueUserWorkItemInternal(timerToFire, preferLocal: false);
+                        ThreadPool.UnsafeQueueTimeSensitiveWorkItem(timerToFire);
                     }
                     timersToFire.Clear();
                 }

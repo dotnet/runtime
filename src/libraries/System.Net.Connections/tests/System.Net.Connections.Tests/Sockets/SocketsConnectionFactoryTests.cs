@@ -225,36 +225,6 @@ namespace System.Net.Connections.Tests
             Assert.True(rr.Buffer.FirstSpan.SequenceEqual(sendData));
         }
 
-        [Fact]
-        public async Task Connection_Stream_FailingOperation_ThowsNetworkException()
-        {
-            using var server = SocketTestServer.SocketTestServerFactory(SocketImplementationType.Async, IPAddress.Loopback);
-            using SocketsConnectionFactory factory = new SocketsConnectionFactory(SocketType.Stream, ProtocolType.Tcp);
-            using Connection connection = await factory.ConnectAsync(server.EndPoint);
-
-            connection.ConnectionProperties.TryGet(out Socket socket);
-            Stream stream = connection.Stream;
-            socket.Dispose();
-
-            Assert.Throws<NetworkException>(() => stream.Read(new byte[1], 0, 1));
-            Assert.Throws<NetworkException>(() => stream.Write(new byte[1], 0, 1));
-        }
-
-        [Fact]
-        public async Task Connection_Pipe_FailingOperation_ThowsNetworkException()
-        {
-            using var server = SocketTestServer.SocketTestServerFactory(SocketImplementationType.Async, IPAddress.Loopback);
-            using SocketsConnectionFactory factory = new SocketsConnectionFactory(SocketType.Stream, ProtocolType.Tcp);
-            using Connection connection = await factory.ConnectAsync(server.EndPoint);
-
-            connection.ConnectionProperties.TryGet(out Socket socket);
-            IDuplexPipe pipe = connection.Pipe;
-            socket.Dispose();
-
-            await Assert.ThrowsAsync<NetworkException>(() =>  pipe.Input.ReadAsync().AsTask());
-            await Assert.ThrowsAsync<NetworkException>(() => pipe.Output.WriteAsync(new byte[1]).AsTask());
-        }
-
         [Theory]
         [InlineData(false, false)]
         [InlineData(false, true)]

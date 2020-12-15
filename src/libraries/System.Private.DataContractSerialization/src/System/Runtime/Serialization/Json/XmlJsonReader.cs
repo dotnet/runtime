@@ -350,11 +350,6 @@ namespace System.Runtime.Serialization.Json
                 }
                 catch (Exception e)
                 {
-                    if (DiagnosticUtility.IsFatal(e))
-                    {
-                        throw;
-                    }
-
                     throw new InvalidOperationException(SR.GenericCallbackException, e);
                 }
             }

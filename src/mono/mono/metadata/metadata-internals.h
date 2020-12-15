@@ -170,7 +170,7 @@ struct _MonoAssemblyName {
 	uint32_t hash_len;
 	uint32_t flags;
 #ifdef ENABLE_NETCORE
-	int major, minor, build, revision, arch;
+	int32_t major, minor, build, revision, arch;
 #else
 	uint16_t major, minor, build, revision, arch;
 #endif
@@ -388,6 +388,9 @@ struct _MonoImage {
 
 	/* Whenever this image is considered as platform code for the CoreCLR security model */
 	guint8 core_clr_platform_code : 1;
+
+	/* Whether a #JTD stream was present. Indicates that this image was a minimal delta and its heaps only include the new heap entries */
+	guint8 minimal_delta : 1;
 
 	/* The path to the file for this image or an arbitrary name for images loaded from data. */
 	char *name;
@@ -1178,6 +1181,9 @@ mono_type_is_valid_generic_argument (MonoType *type);
 
 MonoAssemblyContextKind
 mono_asmctx_get_kind (const MonoAssemblyContext *ctx);
+
+void
+mono_metadata_get_class_guid (MonoClass* klass, uint8_t* guid, MonoError *error);
 
 #define MONO_CLASS_IS_INTERFACE_INTERNAL(c) ((mono_class_get_flags (c) & TYPE_ATTRIBUTE_INTERFACE) || mono_type_is_generic_parameter (m_class_get_byval_arg (c)))
 

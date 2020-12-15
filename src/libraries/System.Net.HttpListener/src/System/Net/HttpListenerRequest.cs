@@ -243,7 +243,7 @@ namespace System.Net
             return ClientCertificate;
         }
 
-        public IAsyncResult BeginGetClientCertificate(AsyncCallback requestCallback, object state)
+        public IAsyncResult BeginGetClientCertificate(AsyncCallback? requestCallback, object? state)
         {
             if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this);
             if (ClientCertState == ListenerClientCertState.InProgress)

@@ -100,6 +100,7 @@ mono_create_static_rgctx_trampoline (MonoMethod *m, gpointer addr)
 	MonoDomain *domain;
 	RgctxTrampInfo tmp_info;
 	RgctxTrampInfo *info;
+	MonoMemoryManager *mem_manager;
 
 #ifdef PPC_USES_FUNCTION_DESCRIPTOR
 	g_assert (((gpointer*)addr) [2] == 0);
@@ -108,6 +109,7 @@ mono_create_static_rgctx_trampoline (MonoMethod *m, gpointer addr)
 	ctx = mini_method_get_rgctx (m);
 
 	domain = mono_domain_get ();
+	mem_manager = m_method_get_mem_manager (domain, m);
 
 	/* 
 	 * In the AOT case, addr might point to either the method, or to an unbox trampoline,
@@ -127,11 +129,11 @@ mono_create_static_rgctx_trampoline (MonoMethod *m, gpointer addr)
 	if (mono_aot_only)
 		res = mono_aot_get_static_rgctx_trampoline (ctx, addr);
 	else
-		res = mono_arch_get_static_rgctx_trampoline (ctx, addr);
+		res = mono_arch_get_static_rgctx_trampoline (mem_manager, ctx, addr);
 
 	mono_domain_lock (domain);
 	/* Duplicates inserted while we didn't hold the lock are OK */
-	info = (RgctxTrampInfo *)mono_domain_alloc (domain, sizeof (RgctxTrampInfo));
+	info = (RgctxTrampInfo *)m_method_alloc (domain, m, sizeof (RgctxTrampInfo));
 	info->m = m;
 	info->addr = addr;
 	g_hash_table_insert (domain_jit_info (domain)->static_rgctx_trampoline_hash, info, res);
@@ -158,16 +160,19 @@ gpointer
 mono_create_ftnptr_arg_trampoline (gpointer arg, gpointer addr)
 {
 	gpointer res;
+	MonoMemoryManager *mem_manager = mono_domain_ambient_memory_manager (mono_domain_get ());
+
 #ifdef MONO_ARCH_HAVE_FTNPTR_ARG_TRAMPOLINE
 	if (mono_aot_only)
 		res = mono_aot_get_ftnptr_arg_trampoline (arg, addr);
 	else
-		res = mono_arch_get_ftnptr_arg_trampoline (arg, addr);
+		res = mono_arch_get_ftnptr_arg_trampoline (mem_manager, arg, addr);
 #else
-	if (mono_aot_only)
+	if (mono_aot_only) {
 		res = mono_aot_get_static_rgctx_trampoline (arg, addr);
-	else
-		res = mono_arch_get_static_rgctx_trampoline (arg, addr);
+	} else {
+		res = mono_arch_get_static_rgctx_trampoline (mem_manager, arg, addr);
+	}
 #endif
 
 	return res;
@@ -968,23 +973,24 @@ gpointer
 mono_aot_plt_trampoline (host_mgreg_t *regs, guint8 *code, guint8 *aot_module, 
 						 guint8* tramp)
 {
-	MONO_REQ_GC_UNSAFE_MODE;
-
 	gpointer res;
 	ERROR_DECL (error);
 
+	MONO_ENTER_GC_UNSAFE;
 	UnlockedIncrement (&trampoline_calls);
 
 	res = mono_aot_plt_resolve (aot_module, regs, code, error);
 	if (!res) {
 		if (!is_ok (error)) {
 			mono_error_set_pending_exception (error);
-			return NULL;
+			res = NULL;
+		} else {
+			// FIXME: Error handling (how ?)
+			g_assert (res);
 		}
-		// FIXME: Error handling (how ?)
-		g_assert (res);
 	}
 
+	MONO_EXIT_GC_UNSAFE;
 	return res;
 }
 #endif
@@ -1323,11 +1329,12 @@ mono_create_specific_trampoline (gpointer arg1, MonoTrampolineType tramp_type, M
 {
 	gpointer code;
 	guint32 len;
+	MonoMemoryManager *mem_manager = mono_domain_ambient_memory_manager (domain);
 
 	if (mono_aot_only)
 		code = mono_aot_create_specific_trampoline (arg1, tramp_type, domain, &len);
 	else
-		code = mono_arch_create_specific_trampoline (arg1, tramp_type, domain, &len);
+		code = mono_arch_create_specific_trampoline (arg1, tramp_type, mem_manager, &len);
 	mono_lldb_save_specific_trampoline_info (arg1, tramp_type, domain, code, len);
 	if (code_len)
 		*code_len = len;
@@ -1376,7 +1383,7 @@ mono_create_jump_trampoline (MonoDomain *domain, MonoMethod *method, gboolean ad
 	code = mono_create_specific_trampoline (method, MONO_TRAMPOLINE_JUMP, mono_domain_get (), &code_size);
 	g_assert (code_size);
 
-	ji = (MonoJitInfo *)mono_domain_alloc0 (domain, MONO_SIZEOF_JIT_INFO);
+	ji = (MonoJitInfo *)m_method_alloc0 (domain, method, MONO_SIZEOF_JIT_INFO);
 	ji->code_start = code;
 	ji->code_size = code_size;
 	ji->d.method = method;

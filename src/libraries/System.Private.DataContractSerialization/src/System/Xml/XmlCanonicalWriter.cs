@@ -577,37 +577,6 @@ namespace System.Xml
             }
         }
 
-#if OLDWRITER
-        internal unsafe void WriteText(char* chars, int charCount)
-        {
-            ThrowIfClosed();
-            if (inStartElement)
-            {
-                elementWriter.WriteText(chars, charCount);
-            }
-            else
-            {
-                writer.WriteText(chars, charCount);
-            }
-        }
-        internal unsafe void WriteEscapedText(char* chars, int count)
-        {
-            ThrowIfClosed();
-            // Skip all white spaces before the start of root element.
-            if (this.depth > 0)
-            {
-                if (inStartElement)
-                {
-                    elementWriter.WriteEscapedText(chars, count);
-                }
-                else
-                {
-                    writer.WriteEscapedText(chars, count);
-                }
-            }
-        }
-#endif
-
         public void WriteText(int ch)
         {
             ThrowIfClosed();

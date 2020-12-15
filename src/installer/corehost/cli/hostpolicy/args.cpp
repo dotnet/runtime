@@ -90,7 +90,7 @@ bool parse_arguments(
         args.app_argv = &argv[2];
     }
 
-    return init_arguments(
+    bool success = init_arguments(
         managed_application_path,
         init.host_info,
         init.tfm,
@@ -100,6 +100,10 @@ bool parse_arguments(
         init.probe_paths,
         /* init_from_file_system */ false,
         args);
+    if (success)
+        args.trace();
+
+    return success;
 }
 
 bool set_root_from_app(const pal::string_t& managed_application_path,

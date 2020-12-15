@@ -106,6 +106,7 @@ namespace System.Text.Json
             {
                 _propertyNameCaseInsensitive = true;
                 _jsonPropertyNamingPolicy = JsonNamingPolicy.CamelCase;
+                _numberHandling = JsonNumberHandling.AllowReadingFromString;
             }
             else if (defaults != JsonSerializerDefaults.General)
             {
@@ -277,7 +278,7 @@ namespace System.Text.Json
             {
                 VerifyMutable();
 
-                if (!JsonSerializer.IsValidNumberHandlingValue(value))
+                if (!JsonHelpers.IsValidNumberHandlingValue(value))
                 {
                     throw new ArgumentOutOfRangeException(nameof(value));
                 }

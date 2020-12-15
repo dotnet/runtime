@@ -121,18 +121,19 @@ namespace System.Text.Unicode
                         byte* pInputBufferFinalPosAtWhichCanSafelyLoop = pFinalPosWhereCanReadDWordFromInputBuffer - 3 * sizeof(uint); // can safely read 4 DWORDs here
                         nuint trailingZeroCount;
 
-                        Vector128<byte> bitMask128 = BitConverter.IsLittleEndian ?
-                            Vector128.Create((ushort)0x1001).AsByte() :
-                            Vector128.Create((ushort)0x0110).AsByte();
-
-                        do
+                        // pInputBuffer is 32-bit aligned but not necessary 128-bit aligned, so we're
+                        // going to perform an unaligned load. We don't necessarily care about aligning
+                        // this because we pessimistically assume we'll encounter non-ASCII data at some
+                        // point in the not-too-distant future (otherwise we would've stayed entirely
+                        // within the all-ASCII vectorized code at the entry to this method).
+                        if (AdvSimd.Arm64.IsSupported && BitConverter.IsLittleEndian)
                         {
-                            // pInputBuffer is 32-bit aligned but not necessary 128-bit aligned, so we're
-                            // going to perform an unaligned load. We don't necessarily care about aligning
-                            // this because we pessimistically assume we'll encounter non-ASCII data at some
-                            // point in the not-too-distant future (otherwise we would've stayed entirely
-                            // within the all-ASCII vectorized code at the entry to this method).
-                            if (AdvSimd.Arm64.IsSupported && BitConverter.IsLittleEndian)
+                            // declare bitMask128 inside of the AdvSimd.Arm64.IsSupported check
+                            // so it gets removed on non-Arm64 builds.
+                            Vector128<byte> bitMask128 = BitConverter.IsLittleEndian ?
+                                Vector128.Create((ushort)0x1001).AsByte() :
+                                Vector128.Create((ushort)0x0110).AsByte();
+                            do
                             {
                                 ulong mask = GetNonAsciiBytes(AdvSimd.LoadVector128(pInputBuffer), bitMask128);
                                 if (mask != 0)
@@ -140,31 +141,39 @@ namespace System.Text.Unicode
                                     trailingZeroCount = (nuint)BitOperations.TrailingZeroCount(mask) >> 2;
                                     goto LoopTerminatedEarlyDueToNonAsciiData;
                                 }
-                            }
-                            else if (Sse2.IsSupported)
+
+                                pInputBuffer += 4 * sizeof(uint); // consumed 4 DWORDs
+                            } while (pInputBuffer <= pInputBufferFinalPosAtWhichCanSafelyLoop);
+                        }
+                        else
+                        {
+                            do
                             {
-                                uint mask = (uint)Sse2.MoveMask(Sse2.LoadVector128(pInputBuffer));
-                                if (mask != 0)
+                                if (Sse2.IsSupported)
                                 {
-                                    trailingZeroCount = (nuint)BitOperations.TrailingZeroCount(mask);
-                                    goto LoopTerminatedEarlyDueToNonAsciiData;
+                                    uint mask = (uint)Sse2.MoveMask(Sse2.LoadVector128(pInputBuffer));
+                                    if (mask != 0)
+                                    {
+                                        trailingZeroCount = (nuint)BitOperations.TrailingZeroCount(mask);
+                                        goto LoopTerminatedEarlyDueToNonAsciiData;
+                                    }
                                 }
-                            }
-                            else
-                            {
-                                if (!ASCIIUtility.AllBytesInUInt32AreAscii(((uint*)pInputBuffer)[0] | ((uint*)pInputBuffer)[1]))
+                                else
                                 {
-                                    goto LoopTerminatedEarlyDueToNonAsciiDataInFirstPair;
+                                    if (!ASCIIUtility.AllBytesInUInt32AreAscii(((uint*)pInputBuffer)[0] | ((uint*)pInputBuffer)[1]))
+                                    {
+                                        goto LoopTerminatedEarlyDueToNonAsciiDataInFirstPair;
+                                    }
+
+                                    if (!ASCIIUtility.AllBytesInUInt32AreAscii(((uint*)pInputBuffer)[2] | ((uint*)pInputBuffer)[3]))
+                                    {
+                                        goto LoopTerminatedEarlyDueToNonAsciiDataInSecondPair;
+                                    }
                                 }
 
-                                if (!ASCIIUtility.AllBytesInUInt32AreAscii(((uint*)pInputBuffer)[2] | ((uint*)pInputBuffer)[3]))
-                                {
-                                    goto LoopTerminatedEarlyDueToNonAsciiDataInSecondPair;
-                                }
-                            }
-
-                            pInputBuffer += 4 * sizeof(uint); // consumed 4 DWORDs
-                        } while (pInputBuffer <= pInputBufferFinalPosAtWhichCanSafelyLoop);
+                                pInputBuffer += 4 * sizeof(uint); // consumed 4 DWORDs
+                            } while (pInputBuffer <= pInputBufferFinalPosAtWhichCanSafelyLoop);
+                        }
 
                         continue; // need to perform a bounds check because we might be running out of data
 

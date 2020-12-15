@@ -2737,10 +2737,12 @@ emit_marshal_array_ilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 			mono_mb_emit_ldloc (mb, conv_arg);
 		break;
 
-	case MARSHAL_ACTION_CONV_RESULT:
-		/* fixme: we need conversions here */
-		mono_mb_emit_stloc (mb, 3);
+	case MARSHAL_ACTION_CONV_RESULT: {
+		mono_mb_emit_byte (mb, CEE_POP);
+		char *msg = g_strdup_printf ("Cannot marshal 'return value': Invalid managed/unmanaged type combination.");
+		mono_mb_emit_exception_marshal_directive (mb, msg);
 		break;
+	}
 
 	case MARSHAL_ACTION_MANAGED_CONV_IN: {
 		guint32 label1, label2, label3;
@@ -5422,7 +5424,7 @@ emit_marshal_safehandle_ilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 				 */
 				ctor = mono_class_get_method_from_name_checked (t->data.klass, ".ctor", 0, 0, local_error);
 				if (ctor == NULL || !is_ok (local_error)){
-					mono_mb_emit_exception (mb, "MissingMethodException", "paramterless constructor required");
+					mono_mb_emit_exception (mb, "MissingMethodException", "parameterless constructor required");
 					mono_error_cleanup (local_error);
 					break;
 				}
@@ -5468,7 +5470,7 @@ emit_marshal_safehandle_ilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 		if (ctor == NULL || !is_ok (error)){
 			mono_error_cleanup (error);
 			mono_mb_emit_byte (mb, CEE_POP);
-			mono_mb_emit_exception (mb, "MissingMethodException", "paramterless constructor required");
+			mono_mb_emit_exception (mb, "MissingMethodException", "parameterless constructor required");
 			break;
 		}
 		/* Store the IntPtr results into a local */

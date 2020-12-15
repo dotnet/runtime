@@ -26,6 +26,7 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Primitives;
 using Microsoft.AspNetCore.Server.Kestrel.Core;
+using Serilog;
 
 namespace HttpStress
 {
@@ -34,7 +35,6 @@ namespace HttpStress
         // Header indicating expected response content length to be returned by the server
         public const string ExpectedResponseContentLength = "Expected-Response-Content-Length";
 
-        private EventListener? _eventListener;
         private readonly IWebHost _webHost;
 
         public string ServerUri { get; }
@@ -120,9 +120,33 @@ namespace HttpStress
                 });
             };
 
-            // Output only warnings and errors from Kestrel
+            LoggerConfiguration loggerConfiguration = new LoggerConfiguration();
+            if (configuration.Trace)
+            {
+                // Clear existing logs first.                
+                foreach (var filename in Directory.GetFiles(".", "server*.log"))
+                {
+                    try
+                    {
+                        File.Delete(filename);
+                    } catch {}
+                }
+
+                loggerConfiguration = loggerConfiguration
+                    // Output diagnostics to the file
+                    .WriteTo.File("server.log", fileSizeLimitBytes: 50 << 20, rollOnFileSizeLimit: true)
+                    .MinimumLevel.Debug();
+            }
+            if (configuration.LogAspNet)
+            {
+                loggerConfiguration = loggerConfiguration
+                    // Output only warnings and errors
+                    .WriteTo.Console(Serilog.Events.LogEventLevel.Warning);
+            }
+            Log.Logger = loggerConfiguration.CreateLogger();
+
             host = host
-                .ConfigureLogging(log => log.AddFilter("Microsoft.AspNetCore", level => configuration.LogAspNet ? level >= LogLevel.Warning : false))
+                .UseSerilog()
                 // Set up how each request should be handled by the server.
                 .Configure(app =>
                 {
@@ -130,22 +154,14 @@ namespace HttpStress
                     app.UseEndpoints(MapRoutes);
                 });
 
-            // Handle command-line arguments.
-            _eventListener =
-                configuration.LogPath == null ?
-                null :
-                (configuration.LogPath == "console" ? 
-                    (EventListener)new ConsoleHttpEventListener() :
-                    (EventListener)new LogHttpEventListener(configuration.LogPath));
-
-            SetUpJustInTimeLogging();
-
             _webHost = host.Build();
             _webHost.Start();
         }
 
         private static void MapRoutes(IEndpointRouteBuilder endpoints)
         {
+            var loggerFactory = endpoints.ServiceProvider.GetService<ILoggerFactory>();
+            var logger = loggerFactory.CreateLogger<StressServer>();
             var head = new[] { "HEAD" };
 
             endpoints.MapGet("/", async context =>
@@ -299,29 +315,6 @@ namespace HttpStress
         public void Dispose()
         {
             _webHost.Dispose();
-            _eventListener?.Dispose();
-        }
-
-        private void SetUpJustInTimeLogging()
-        {
-            if (_eventListener == null && !Console.IsInputRedirected)
-            {
-                // If no command-line requested logging, enable the user to press 'L' to enable logging to the console
-                // during execution, so that it can be done just-in-time when something goes awry.
-                new Thread(() =>
-                {
-                    while (true)
-                    {
-                        if (Console.ReadKey(intercept: true).Key == ConsoleKey.L)
-                        {
-                            Console.WriteLine("Enabling console event logger");
-                            _eventListener = new ConsoleHttpEventListener();
-                            break;
-                        }
-                    }
-                })
-                { IsBackground = true }.Start();
-            }
         }
 
         private static (string scheme, string hostname, int port) ParseServerUri(string serverUri)

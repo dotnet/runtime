@@ -4,6 +4,7 @@
     <SkipPackageFileCheck>true</SkipPackageFileCheck>
     <SkipValidatePackage>true</SkipValidatePackage>
     <HarvestStablePackage>false</HarvestStablePackage>
+    <IsShipping>false</IsShipping>
   </PropertyGroup>
   <ItemGroup>
     <_libDocs Include="$(ASPNETCoreAppPackageRuntimePath)\*.xml" />

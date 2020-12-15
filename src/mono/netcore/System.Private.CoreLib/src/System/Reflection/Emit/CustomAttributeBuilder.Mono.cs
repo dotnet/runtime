@@ -1,5 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
+
 //
 // Copyright (C) 2004 Novell, Inc (http://www.novell.com)
 //
@@ -111,7 +112,7 @@ namespace System.Reflection.Emit
             Initialize(con, constructorArgs, namedProperties, propertyValues, namedFields, fieldValues);
         }
 
-        private bool IsValidType(Type t)
+        private static bool IsValidType(Type t)
         {
             /* FIXME: Add more checks */
             if (t.IsArray && t.GetArrayRank() > 1)
@@ -129,7 +130,7 @@ namespace System.Reflection.Emit
             return true;
         }
 
-        private bool IsValidParam(object o, Type paramType)
+        private static bool IsValidParam(object o, Type paramType)
         {
             Type t = o.GetType();
             if (!IsValidType(t))

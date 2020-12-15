@@ -36,7 +36,6 @@ namespace System.Xml.Xsl.XsltOld
         internal override bool CompileAttribute(Compiler compiler)
         {
             string name = compiler.Input.LocalName;
-            string value = compiler.Input.Value;
             if (Ref.Equal(name, compiler.Atoms.UseAttributeSets))
             {
                 AddAction(compiler.CreateUseAttributeSetsAction());

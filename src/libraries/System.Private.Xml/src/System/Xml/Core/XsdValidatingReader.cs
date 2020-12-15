@@ -344,7 +344,7 @@ namespace System.Xml
         }
 
         // Gets the base URI of the current node.
-        public override string? BaseURI
+        public override string BaseURI
         {
             get
             {
@@ -1511,7 +1511,6 @@ namespace System.Xml
         // Skips to the end tag of the current element.
         public override void Skip()
         {
-            int startDepth = Depth;
             switch (NodeType)
             {
                 case XmlNodeType.Element:

@@ -3,12 +3,15 @@
 
 #if SYSTEM_NET_SOCKETS_DLL
 namespace System.Net.Sockets
+{
+    public
 #else
 using System.Net.Sockets;
 namespace System.Net.Internals
-#endif
 {
-    public enum ProtocolFamily
+    internal
+#endif
+    enum ProtocolFamily
     {
         Unknown = AddressFamily.Unknown,
         Unspecified = AddressFamily.Unspecified,

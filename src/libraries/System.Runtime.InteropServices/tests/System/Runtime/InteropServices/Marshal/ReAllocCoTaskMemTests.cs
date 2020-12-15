@@ -38,5 +38,49 @@ namespace System.Runtime.InteropServices.Tests
                 Marshal.FreeCoTaskMem(p2);
             }
         }
+
+        [InlineData(0)]
+        [InlineData(1)]
+        [InlineData(100)]
+        [Theory]
+        public void ReAllocCoTaskMem_PositiveSize(int size)
+        {
+            IntPtr p = Marshal.ReAllocCoTaskMem(IntPtr.Zero, size);
+            Assert.NotEqual(IntPtr.Zero, p);
+
+            IntPtr p1 = Marshal.ReAllocCoTaskMem(p, size + 1);
+            Assert.NotEqual(IntPtr.Zero, p1);
+
+            IntPtr p2 = Marshal.ReAllocCoTaskMem(p1, 0);
+            Assert.Equal(IntPtr.Zero, p2);
+        }
+
+        [Fact]
+        [OuterLoop]
+        public void ReAllocCoTaskMem_NegativeSize_ThrowsOutOfMemoryException()
+        {
+            // -1 is treated as (uint)-1 by ReAllocCoTaskMem. The allocation may succeed on 64-bit machines.
+
+            try
+            {
+                IntPtr p1 = Marshal.ReAllocCoTaskMem(IntPtr.Zero, -1);
+                Assert.NotEqual(IntPtr.Zero, p1);
+                Marshal.FreeCoTaskMem(p1);
+            }
+            catch (OutOfMemoryException)
+            {
+            }
+
+            IntPtr p2 = Marshal.AllocCoTaskMem(1);
+            try
+            {
+                p2 = Marshal.ReAllocCoTaskMem(p2, -1);
+                Assert.NotEqual(IntPtr.Zero, p2);
+            }
+            catch (OutOfMemoryException)
+            {
+            }
+            Marshal.FreeCoTaskMem(p2);
+        }
     }
 }

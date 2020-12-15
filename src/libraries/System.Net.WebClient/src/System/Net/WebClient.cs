@@ -213,7 +213,7 @@ namespace System.Net
 
         public RequestCachePolicy? CachePolicy { get; set; }
 
-        public bool IsBusy => _asyncOp != null;
+        public bool IsBusy => Volatile.Read(ref _callNesting) > 0;
 
         protected virtual WebRequest GetWebRequest(Uri address)
         {
@@ -2009,7 +2009,7 @@ namespace System.Net
 
         [Obsolete("This API supports the .NET Framework infrastructure and is not intended to be used directly from your code.", true)]
         [EditorBrowsable(EditorBrowsableState.Never)]
-        public event WriteStreamClosedEventHandler WriteStreamClosed { add { } remove { } }
+        public event WriteStreamClosedEventHandler? WriteStreamClosed { add { } remove { } }
 
         [Obsolete("This API supports the .NET Framework infrastructure and is not intended to be used directly from your code.", true)]
         [EditorBrowsable(EditorBrowsableState.Never)]

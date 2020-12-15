@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Net.Sockets;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace System.Net
@@ -9,12 +10,6 @@ namespace System.Net
     internal static class NameResolutionPal
     {
         public static bool SupportsGetAddrInfoAsync => false;
-
-        internal static int FakesEnsureSocketsAreInitializedCallCount
-        {
-            get;
-            private set;
-        }
 
         internal static int FakesGetHostByNameCallCount
         {
@@ -24,16 +19,10 @@ namespace System.Net
 
         internal static void FakesReset()
         {
-            FakesEnsureSocketsAreInitializedCallCount = 0;
             FakesGetHostByNameCallCount = 0;
         }
 
-        internal static void EnsureSocketsAreInitialized()
-        {
-            FakesEnsureSocketsAreInitializedCallCount++;
-        }
-
-        internal static SocketError TryGetAddrInfo(string name, bool justAddresses, out string hostName, out string[] aliases, out IPAddress[] addresses, out int nativeErrorCode)
+        internal static SocketError TryGetAddrInfo(string name, bool justAddresses, AddressFamily addressFamily, out string hostName, out string[] aliases, out IPAddress[] addresses, out int nativeErrorCode)
         {
             throw new NotImplementedException();
         }
@@ -49,7 +38,7 @@ namespace System.Net
             throw new NotImplementedException();
         }
 
-        internal static Task GetAddrInfoAsync(string hostName, bool justAddresses)
+        internal static Task GetAddrInfoAsync(string hostName, bool justAddresses, AddressFamily addressFamily, CancellationToken cancellationToken)
         {
             throw new NotImplementedException();
         }

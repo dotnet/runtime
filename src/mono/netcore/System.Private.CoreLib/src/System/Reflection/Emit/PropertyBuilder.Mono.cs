@@ -1,5 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
+
 //
 // Copyright (C) 2004 Novell, Inc (http://www.novell.com)
 //
@@ -98,10 +99,6 @@ namespace System.Reflection.Emit
         public override string Name
         {
             get { return name; }
-        }
-        public PropertyToken PropertyToken
-        {
-            get { return default; }
         }
         public override Type PropertyType
         {
@@ -228,7 +225,7 @@ namespace System.Reflection.Emit
             }
         }
 
-        private Exception not_supported()
+        private static Exception not_supported()
         {
             return new NotSupportedException("The invoked member is not supported in a dynamic module.");
         }

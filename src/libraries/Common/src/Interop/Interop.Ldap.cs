@@ -96,6 +96,7 @@ namespace System.DirectoryServices.Protocols
         LDAP_OPT_AREC_EXCLUSIVE = 0x98, // Not Supported in Linux
         LDAP_OPT_SECURITY_CONTEXT = 0x99,
         LDAP_OPT_ROOTDSE_CACHE = 0x9a, // Not Supported in Linux
+        LDAP_OPT_DEBUG_LEVEL = 0x5001,
         LDAP_OPT_X_SASL_REALM = 0x6101,
         LDAP_OPT_X_SASL_AUTHCID = 0x6102,
         LDAP_OPT_X_SASL_AUTHZID = 0x6103

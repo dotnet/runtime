@@ -169,7 +169,7 @@ namespace System.Security.Cryptography
                     out bytesWritten);
             }
 
-            private static void GenerateV1DsaBlob(out byte[] blob, DSAParameters parameters, int cbKey, bool includePrivate)
+            private static unsafe void GenerateV1DsaBlob(out byte[] blob, DSAParameters parameters, int cbKey, bool includePrivate)
             {
                 // We need to build a key blob structured as follows:
                 //
@@ -180,68 +180,65 @@ namespace System.Security.Cryptography
                 //     -- Private only --
                 //     byte[Sha1HashOutputSize]  X
 
-                unsafe
-                {
-                    int blobSize =
-                        sizeof(BCRYPT_DSA_KEY_BLOB) +
-                        cbKey +
-                        cbKey +
-                        cbKey;
+                int blobSize =
+                    sizeof(BCRYPT_DSA_KEY_BLOB) +
+                    cbKey +
+                    cbKey +
+                    cbKey;
 
+                if (includePrivate)
+                {
+                    blobSize += Sha1HashOutputSize;
+                }
+
+                blob = new byte[blobSize];
+                fixed (byte* pDsaBlob = &blob[0])
+                {
+                    // Build the header
+                    BCRYPT_DSA_KEY_BLOB* pBcryptBlob = (BCRYPT_DSA_KEY_BLOB*)pDsaBlob;
+
+                    pBcryptBlob->Magic = includePrivate ? KeyBlobMagicNumber.BCRYPT_DSA_PRIVATE_MAGIC : KeyBlobMagicNumber.BCRYPT_DSA_PUBLIC_MAGIC;
+                    pBcryptBlob->cbKey = cbKey;
+
+                    int offset = sizeof(KeyBlobMagicNumber) + sizeof(int); // skip Magic and cbKey
+
+                    if (parameters.Seed != null)
+                    {
+                        // The Seed length is hardcoded into BCRYPT_DSA_KEY_BLOB, so check it now we can give a nicer error message.
+                        if (parameters.Seed.Length != Sha1HashOutputSize)
+                            throw new ArgumentException(SR.Cryptography_InvalidDsaParameters_SeedRestriction_ShortKey);
+
+                        Interop.BCrypt.EmitBigEndian(blob, ref offset, parameters.Counter);
+                        Interop.BCrypt.Emit(blob, ref offset, parameters.Seed);
+                    }
+                    else
+                    {
+                        // If Seed is not present, back fill both counter and seed with 0xff. Do not use parameters.Counter as CNG is more strict than CAPI and will reject
+                        // anything other than 0xffffffff. That could complicate efforts to switch usage of DSACryptoServiceProvider to DSACng.
+                        Interop.BCrypt.EmitByte(blob, ref offset, 0xff, Sha1HashOutputSize + sizeof(int));
+                    }
+
+                    // The Q length is hardcoded into BCRYPT_DSA_KEY_BLOB, so check it now we can give a nicer error message.
+                    if (parameters.Q!.Length != Sha1HashOutputSize)
+                        throw new ArgumentException(SR.Cryptography_InvalidDsaParameters_QRestriction_ShortKey);
+
+                    Interop.BCrypt.Emit(blob, ref offset, parameters.Q);
+
+                    Debug.Assert(offset == sizeof(BCRYPT_DSA_KEY_BLOB), $"Expected offset = sizeof(BCRYPT_DSA_KEY_BLOB), got {offset} != {sizeof(BCRYPT_DSA_KEY_BLOB)}");
+
+                    Interop.BCrypt.Emit(blob, ref offset, parameters.P!);
+                    Interop.BCrypt.Emit(blob, ref offset, parameters.G!);
+                    Interop.BCrypt.Emit(blob, ref offset, parameters.Y!);
                     if (includePrivate)
                     {
-                        blobSize += Sha1HashOutputSize;
+                        Interop.BCrypt.Emit(blob, ref offset, parameters.X!);
                     }
 
-                    blob = new byte[blobSize];
-                    fixed (byte* pDsaBlob = &blob[0])
-                    {
-                        // Build the header
-                        BCRYPT_DSA_KEY_BLOB* pBcryptBlob = (BCRYPT_DSA_KEY_BLOB*)pDsaBlob;
-
-                        pBcryptBlob->Magic = includePrivate ? KeyBlobMagicNumber.BCRYPT_DSA_PRIVATE_MAGIC : KeyBlobMagicNumber.BCRYPT_DSA_PUBLIC_MAGIC;
-                        pBcryptBlob->cbKey = cbKey;
-
-                        int offset = sizeof(KeyBlobMagicNumber) + sizeof(int); // skip Magic and cbKey
-
-                        if (parameters.Seed != null)
-                        {
-                            // The Seed length is hardcoded into BCRYPT_DSA_KEY_BLOB, so check it now we can give a nicer error message.
-                            if (parameters.Seed.Length != Sha1HashOutputSize)
-                                throw new ArgumentException(SR.Cryptography_InvalidDsaParameters_SeedRestriction_ShortKey);
-
-                            Interop.BCrypt.EmitBigEndian(blob, ref offset, parameters.Counter);
-                            Interop.BCrypt.Emit(blob, ref offset, parameters.Seed);
-                        }
-                        else
-                        {
-                            // If Seed is not present, back fill both counter and seed with 0xff. Do not use parameters.Counter as CNG is more strict than CAPI and will reject
-                            // anything other than 0xffffffff. That could complicate efforts to switch usage of DSACryptoServiceProvider to DSACng.
-                            Interop.BCrypt.EmitByte(blob, ref offset, 0xff, Sha1HashOutputSize + sizeof(int));
-                        }
-
-                        // The Q length is hardcoded into BCRYPT_DSA_KEY_BLOB, so check it now we can give a nicer error message.
-                        if (parameters.Q!.Length != Sha1HashOutputSize)
-                            throw new ArgumentException(SR.Cryptography_InvalidDsaParameters_QRestriction_ShortKey);
-
-                        Interop.BCrypt.Emit(blob, ref offset, parameters.Q);
-
-                        Debug.Assert(offset == sizeof(BCRYPT_DSA_KEY_BLOB), $"Expected offset = sizeof(BCRYPT_DSA_KEY_BLOB), got {offset} != {sizeof(BCRYPT_DSA_KEY_BLOB)}");
-
-                        Interop.BCrypt.Emit(blob, ref offset, parameters.P!);
-                        Interop.BCrypt.Emit(blob, ref offset, parameters.G!);
-                        Interop.BCrypt.Emit(blob, ref offset, parameters.Y!);
-                        if (includePrivate)
-                        {
-                            Interop.BCrypt.Emit(blob, ref offset, parameters.X!);
-                        }
-
-                        Debug.Assert(offset == blobSize, $"Expected offset = blobSize, got {offset} != {blobSize}");
-                    }
+                    Debug.Assert(offset == blobSize, $"Expected offset = blobSize, got {offset} != {blobSize}");
                 }
             }
 
-            private static void GenerateV2DsaBlob(out byte[] blob, DSAParameters parameters, int cbKey, bool includePrivateParameters)
+            private static unsafe void GenerateV2DsaBlob(out byte[] blob, DSAParameters parameters, int cbKey, bool includePrivateParameters)
             {
                 // We need to build a key blob structured as follows:
                 //     BCRYPT_DSA_KEY_BLOB_V2  header
@@ -253,76 +250,73 @@ namespace System.Security.Cryptography
                 //     -- Private only --
                 //     byte[cbGroupSize]       X
 
-                unsafe
+                int blobSize =
+                    sizeof(BCRYPT_DSA_KEY_BLOB_V2) +
+                    (parameters.Seed == null ? parameters.Q!.Length : parameters.Seed.Length) + // Use Q size if Seed is not present
+                    parameters.Q!.Length +
+                    parameters.P!.Length +
+                    parameters.G!.Length +
+                    parameters.Y!.Length +
+                    (includePrivateParameters ? parameters.X!.Length : 0);
+
+                blob = new byte[blobSize];
+                fixed (byte* pDsaBlob = &blob[0])
                 {
-                    int blobSize =
-                        sizeof(BCRYPT_DSA_KEY_BLOB_V2) +
-                        (parameters.Seed == null ? parameters.Q!.Length : parameters.Seed.Length) + // Use Q size if Seed is not present
-                        parameters.Q!.Length +
-                        parameters.P!.Length +
-                        parameters.G!.Length +
-                        parameters.Y!.Length +
-                        (includePrivateParameters ? parameters.X!.Length : 0);
+                    // Build the header
+                    BCRYPT_DSA_KEY_BLOB_V2* pBcryptBlob = (BCRYPT_DSA_KEY_BLOB_V2*)pDsaBlob;
 
-                    blob = new byte[blobSize];
-                    fixed (byte* pDsaBlob = &blob[0])
+                    pBcryptBlob->Magic = includePrivateParameters ? KeyBlobMagicNumber.BCRYPT_DSA_PRIVATE_MAGIC_V2 : KeyBlobMagicNumber.BCRYPT_DSA_PUBLIC_MAGIC_V2;
+                    pBcryptBlob->cbKey = cbKey;
+
+                    // For some reason, Windows bakes the hash algorithm into the key itself. Furthermore, it demands that the Q length match the
+                    // length of the named hash algorithm's output - otherwise, the Import fails. So we have to give it the hash algorithm that matches
+                    // the Q length - and if there is no matching hash algorithm, we throw up our hands and throw a PlatformNotSupported.
+                    //
+                    // Note that this has no bearing on the hash algorithm you pass to SignData(). The class library (not Windows) hashes that according
+                    // to the hash algorithm passed to SignData() and presents the hash result to NCryptSignHash(), truncating the hash to the Q length
+                    // if necessary (and as demanded by the NIST spec.) Windows will be no wiser and we'll get the result we want.
+                    pBcryptBlob->hashAlgorithm = parameters.Q.Length switch
                     {
-                        // Build the header
-                        BCRYPT_DSA_KEY_BLOB_V2* pBcryptBlob = (BCRYPT_DSA_KEY_BLOB_V2*)pDsaBlob;
+                        Sha1HashOutputSize => HASHALGORITHM_ENUM.DSA_HASH_ALGORITHM_SHA1,
+                        Sha256HashOutputSize => HASHALGORITHM_ENUM.DSA_HASH_ALGORITHM_SHA256,
+                        Sha512HashOutputSize => HASHALGORITHM_ENUM.DSA_HASH_ALGORITHM_SHA512,
+                        _ => throw new PlatformNotSupportedException(SR.Cryptography_InvalidDsaParameters_QRestriction_LargeKey),
+                    };
+                    pBcryptBlob->standardVersion = DSAFIPSVERSION_ENUM.DSA_FIPS186_3;
 
-                        pBcryptBlob->Magic = includePrivateParameters ? KeyBlobMagicNumber.BCRYPT_DSA_PRIVATE_MAGIC_V2 : KeyBlobMagicNumber.BCRYPT_DSA_PUBLIC_MAGIC_V2;
-                        pBcryptBlob->cbKey = cbKey;
+                    int offset = sizeof(BCRYPT_DSA_KEY_BLOB_V2) - 4; //skip to Count[4]
 
-                        // For some reason, Windows bakes the hash algorithm into the key itself. Furthermore, it demands that the Q length match the
-                        // length of the named hash algorithm's output - otherwise, the Import fails. So we have to give it the hash algorithm that matches
-                        // the Q length - and if there is no matching hash algorithm, we throw up our hands and throw a PlatformNotSupported.
-                        //
-                        // Note that this has no bearing on the hash algorithm you pass to SignData(). The class library (not Windows) hashes that according
-                        // to the hash algorithm passed to SignData() and presents the hash result to NCryptSignHash(), truncating the hash to the Q length
-                        // if necessary (and as demanded by the NIST spec.) Windows will be no wiser and we'll get the result we want.
-                        pBcryptBlob->hashAlgorithm = parameters.Q.Length switch
-                        {
-                            Sha1HashOutputSize => HASHALGORITHM_ENUM.DSA_HASH_ALGORITHM_SHA1,
-                            Sha256HashOutputSize => HASHALGORITHM_ENUM.DSA_HASH_ALGORITHM_SHA256,
-                            Sha512HashOutputSize => HASHALGORITHM_ENUM.DSA_HASH_ALGORITHM_SHA512,
-                            _ => throw new PlatformNotSupportedException(SR.Cryptography_InvalidDsaParameters_QRestriction_LargeKey),
-                        };
-                        pBcryptBlob->standardVersion = DSAFIPSVERSION_ENUM.DSA_FIPS186_3;
-
-                        int offset = sizeof(BCRYPT_DSA_KEY_BLOB_V2) - 4; //skip to Count[4]
-
-                        if (parameters.Seed != null)
-                        {
-                            Interop.BCrypt.EmitBigEndian(blob, ref offset, parameters.Counter);
-                            Debug.Assert(offset == sizeof(BCRYPT_DSA_KEY_BLOB_V2), $"Expected offset = sizeof(BCRYPT_DSA_KEY_BLOB_V2), got {offset} != {sizeof(BCRYPT_DSA_KEY_BLOB_V2)}");
-                            pBcryptBlob->cbSeedLength = parameters.Seed.Length;
-                            pBcryptBlob->cbGroupSize = parameters.Q.Length;
-                            Interop.BCrypt.Emit(blob, ref offset, parameters.Seed);
-                        }
-                        else
-                        {
-                            // If Seed is not present, back fill both counter and seed with 0xff. Do not use parameters.Counter as CNG is more strict than CAPI and will reject
-                            // anything other than 0xffffffff. That could complicate efforts to switch usage of DSACryptoServiceProvider to DSACng.
-                            Interop.BCrypt.EmitByte(blob, ref offset, 0xff, sizeof(int));
-                            Debug.Assert(offset == sizeof(BCRYPT_DSA_KEY_BLOB_V2), $"Expected offset = sizeof(BCRYPT_DSA_KEY_BLOB_V2), got {offset} != {sizeof(BCRYPT_DSA_KEY_BLOB_V2)}");
-                            int defaultSeedLength = parameters.Q.Length;
-                            pBcryptBlob->cbSeedLength = defaultSeedLength;
-                            pBcryptBlob->cbGroupSize = parameters.Q.Length;
-                            Interop.BCrypt.EmitByte(blob, ref offset, 0xff, defaultSeedLength);
-                        }
-
-                        Interop.BCrypt.Emit(blob, ref offset, parameters.Q);
-                        Interop.BCrypt.Emit(blob, ref offset, parameters.P);
-                        Interop.BCrypt.Emit(blob, ref offset, parameters.G);
-                        Interop.BCrypt.Emit(blob, ref offset, parameters.Y);
-
-                        if (includePrivateParameters)
-                        {
-                            Interop.BCrypt.Emit(blob, ref offset, parameters.X!);
-                        }
-
-                        Debug.Assert(offset == blobSize, $"Expected offset = blobSize, got {offset} != {blobSize}");
+                    if (parameters.Seed != null)
+                    {
+                        Interop.BCrypt.EmitBigEndian(blob, ref offset, parameters.Counter);
+                        Debug.Assert(offset == sizeof(BCRYPT_DSA_KEY_BLOB_V2), $"Expected offset = sizeof(BCRYPT_DSA_KEY_BLOB_V2), got {offset} != {sizeof(BCRYPT_DSA_KEY_BLOB_V2)}");
+                        pBcryptBlob->cbSeedLength = parameters.Seed.Length;
+                        pBcryptBlob->cbGroupSize = parameters.Q.Length;
+                        Interop.BCrypt.Emit(blob, ref offset, parameters.Seed);
                     }
+                    else
+                    {
+                        // If Seed is not present, back fill both counter and seed with 0xff. Do not use parameters.Counter as CNG is more strict than CAPI and will reject
+                        // anything other than 0xffffffff. That could complicate efforts to switch usage of DSACryptoServiceProvider to DSACng.
+                        Interop.BCrypt.EmitByte(blob, ref offset, 0xff, sizeof(int));
+                        Debug.Assert(offset == sizeof(BCRYPT_DSA_KEY_BLOB_V2), $"Expected offset = sizeof(BCRYPT_DSA_KEY_BLOB_V2), got {offset} != {sizeof(BCRYPT_DSA_KEY_BLOB_V2)}");
+                        int defaultSeedLength = parameters.Q.Length;
+                        pBcryptBlob->cbSeedLength = defaultSeedLength;
+                        pBcryptBlob->cbGroupSize = parameters.Q.Length;
+                        Interop.BCrypt.EmitByte(blob, ref offset, 0xff, defaultSeedLength);
+                    }
+
+                    Interop.BCrypt.Emit(blob, ref offset, parameters.Q);
+                    Interop.BCrypt.Emit(blob, ref offset, parameters.P);
+                    Interop.BCrypt.Emit(blob, ref offset, parameters.G);
+                    Interop.BCrypt.Emit(blob, ref offset, parameters.Y);
+
+                    if (includePrivateParameters)
+                    {
+                        Interop.BCrypt.Emit(blob, ref offset, parameters.X!);
+                    }
+
+                    Debug.Assert(offset == blobSize, $"Expected offset = blobSize, got {offset} != {blobSize}");
                 }
             }
 

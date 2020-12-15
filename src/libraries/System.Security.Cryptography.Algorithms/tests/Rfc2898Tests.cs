@@ -9,6 +9,7 @@ using Xunit;
 
 namespace System.Security.Cryptography.DeriveBytesTests
 {
+    [SkipOnMono("Not supported on Browser", TestPlatforms.Browser)]
     public class Rfc2898Tests
     {
         // 8 bytes is the minimum accepted value, by using it we've already assured that the minimum is acceptable.

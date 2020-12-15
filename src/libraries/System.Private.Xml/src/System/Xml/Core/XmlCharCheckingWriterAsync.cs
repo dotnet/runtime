@@ -29,7 +29,7 @@ namespace System.Xml
                 if (pubid != null)
                 {
                     int i;
-                    if ((i = _xmlCharType.IsPublicId(pubid)) >= 0)
+                    if ((i = XmlCharType.IsPublicId(pubid)) >= 0)
                     {
                         throw XmlConvert.CreateInvalidCharException(pubid, i);
                     }
@@ -180,7 +180,7 @@ namespace System.Xml
             if (_checkNames)
             {
                 int i;
-                if ((i = _xmlCharType.IsOnlyWhitespaceWithPos(ws)) != -1)
+                if ((i = XmlCharType.IsOnlyWhitespaceWithPos(ws)) != -1)
                 {
                     throw new ArgumentException(SR.Format(SR.Xml_InvalidWhitespaceCharacter, XmlException.BuildCharExceptionArgs(ws, i)));
                 }

@@ -167,7 +167,7 @@ namespace System
         }
 
         /* Based on the Boyer-Moore string search algorithm */
-        private int LastIndexOf(Delegate[] haystack, Delegate[] needle)
+        private static int LastIndexOf(Delegate[] haystack, Delegate[] needle)
         {
             if (haystack.Length < needle.Length)
                 return -1;

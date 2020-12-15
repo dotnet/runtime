@@ -40,6 +40,10 @@ On Unix like systems, arguments can be passed in with a single `-` or double hyp
 The repository currently consists of different major parts: the runtimes, the libraries, and the installer.
 To build just one part you use the root build script (build.cmd/sh), and you add the `-subset` flag.
 
+## Editing and Debugging
+
+For instructions on how to edit code and debug your changes, see [Editing and Debugging](editing-and-debugging.md).
+
 ## Configurations
 
 You may need to build the tree in a combination of configurations. This section explains why.

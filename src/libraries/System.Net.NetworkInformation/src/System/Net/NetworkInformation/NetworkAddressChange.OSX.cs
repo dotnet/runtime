@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Runtime.InteropServices;
 using Microsoft.Win32.SafeHandles;
 using System.Diagnostics;
 using System.Threading;
@@ -21,9 +22,6 @@ namespace System.Net.NetworkInformation
         // The dynamic store. We listen to changes in the IPv4 and IPv6 address keys.
         // When those keys change, our callback below is called (OnAddressChanged).
         private static SafeCreateHandle? s_dynamicStoreRef;
-
-        // The callback used when registered keys in the dynamic store change.
-        private static readonly Interop.SystemConfiguration.SCDynamicStoreCallBack s_storeCallback = OnAddressChanged;
 
         // The RunLoop source, created over the above SCDynamicStore.
         private static SafeCreateHandle? s_runLoopSource;
@@ -128,7 +126,7 @@ namespace System.Net.NetworkInformation
             {
                 s_dynamicStoreRef = Interop.SystemConfiguration.SCDynamicStoreCreate(
                     storeName.DangerousGetHandle(),
-                    s_storeCallback,
+                    &OnAddressChanged,
                     &storeContext);
             }
 
@@ -227,6 +225,7 @@ namespace System.Net.NetworkInformation
             s_runLoopEndedEvent.WaitOne();
         }
 
+        [UnmanagedCallersOnly]
         private static void OnAddressChanged(IntPtr store, IntPtr changedKeys, IntPtr info)
         {
             Dictionary<NetworkAddressChangedEventHandler, ExecutionContext?>? addressChangedSubscribers = null;

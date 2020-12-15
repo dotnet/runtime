@@ -79,3 +79,24 @@ namespace System.Net.Connections
         protected virtual System.Net.Sockets.Socket CreateSocket(System.Net.Sockets.AddressFamily addressFamily, System.Net.Sockets.SocketType socketType, System.Net.Sockets.ProtocolType protocolType, System.Net.EndPoint? endPoint, System.Net.Connections.IConnectionProperties? options) { throw null; }
     }
 }
+namespace System.Net
+{
+    public enum NetworkError : int
+    {
+        Other = 0,
+        EndPointInUse,
+        HostNotFound,
+        TimedOut,
+        ConnectionRefused,
+        OperationAborted,
+        ConnectionAborted,
+        ConnectionReset,
+    }
+    public class NetworkException : System.IO.IOException
+    {
+        public NetworkException(NetworkError error, Exception? innerException = null) { }
+        public NetworkException(string message, NetworkError error, Exception? innerException = null) { }
+        protected NetworkException(System.Runtime.Serialization.SerializationInfo serializationInfo, System.Runtime.Serialization.StreamingContext streamingContext) { }
+        public NetworkError NetworkError { get { throw null; } }
+    }
+}

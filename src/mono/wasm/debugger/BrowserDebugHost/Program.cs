@@ -16,13 +16,15 @@ namespace Microsoft.WebAssembly.Diagnostics
     public class ProxyOptions
     {
         public Uri DevToolsUrl { get; set; } = new Uri("http://localhost:9222");
+
+        public int? OwnerPid { get; set; }
     }
 
     public class Program
     {
         public static void Main(string[] args)
         {
-            var host = new WebHostBuilder()
+            IWebHost host = new WebHostBuilder()
                 .UseSetting("UseIISIntegration", false.ToString())
                 .UseKestrel()
                 .UseContentRoot(Directory.GetCurrentDirectory())
@@ -31,7 +33,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                 {
                     config.AddCommandLine(args);
                 })
-                .UseUrls("http://localhost:9300")
+                .UseUrls("http://127.0.0.1:0")
                 .Build();
 
             host.Run();

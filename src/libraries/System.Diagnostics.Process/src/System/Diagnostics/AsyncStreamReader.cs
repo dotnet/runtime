@@ -253,13 +253,22 @@ namespace System.Diagnostics
 
         // Wait until we hit EOF. This is called from Process.WaitForExit
         // We will lose some information if we don't do this.
-        internal void WaitUtilEOF()
+        internal void WaitUntilEOF()
         {
-            if (_readToBufferTask != null)
+            if (_readToBufferTask is Task task)
             {
-                _readToBufferTask.GetAwaiter().GetResult();
-                _readToBufferTask = null;
+                task.GetAwaiter().GetResult();
             }
+        }
+
+        internal Task WaitUntilEOFAsync(CancellationToken cancellationToken)
+        {
+            if (_readToBufferTask is Task task)
+            {
+                return task.WithCancellation(cancellationToken);
+            }
+
+            return Task.CompletedTask;
         }
 
         public void Dispose()

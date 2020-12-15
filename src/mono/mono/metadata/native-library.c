@@ -49,6 +49,10 @@ static GHashTable *native_library_module_map;
 static GHashTable *native_library_module_blocklist;
 #endif
 
+#if defined(ENABLE_NETCORE) && !defined(NO_GLOBALIZATION_SHIM)
+extern const void *GlobalizationResolveDllImport (const char *name);
+#endif
+
 #ifndef DISABLE_DLLMAP
 static MonoDllMap *global_dll_map;
 #endif
@@ -1256,6 +1260,27 @@ legacy_lookup_native_library (MonoImage *image, const char *scope)
 
 #endif // ENABLE_NETCORE
 
+#if defined(ENABLE_NETCORE) && !defined(NO_GLOBALIZATION_SHIM)
+
+#ifdef HOST_WIN32
+#define GLOBALIZATION_DLL_NAME "System.Globalization.Native"
+#else
+#define GLOBALIZATION_DLL_NAME "libSystem.Globalization.Native"
+#endif
+
+static gpointer
+default_resolve_dllimport (const char *dll, const char *func)
+{
+	if (strcmp (dll, GLOBALIZATION_DLL_NAME) == 0) {
+		const void *method_impl = GlobalizationResolveDllImport (func);
+		if (method_impl)
+			return (gpointer)method_impl;
+	}
+
+	return NULL;
+}
+#endif
+
 gpointer
 lookup_pinvoke_call_impl (MonoMethod *method, MonoLookupPInvokeStatus *status_out)
 {
@@ -1321,6 +1346,8 @@ lookup_pinvoke_call_impl (MonoMethod *method, MonoLookupPInvokeStatus *status_ou
 	new_import = g_strdup (orig_import);
 #endif
 
+	/* If qcalls are disabled, we fall back to the normal pinvoke code for them */
+#ifndef DISABLE_QCALLS
 	if (strcmp (new_scope, "QCall") == 0) {
 		piinfo->addr = mono_lookup_pinvoke_qcall_internal (method, status_out);
 		if (!piinfo->addr) {
@@ -1332,6 +1359,13 @@ lookup_pinvoke_call_impl (MonoMethod *method, MonoLookupPInvokeStatus *status_ou
 		}
 		return piinfo->addr;
 	}
+#endif
+
+#if defined(ENABLE_NETCORE) && !defined(NO_GLOBALIZATION_SHIM)
+	gpointer default_override = default_resolve_dllimport (new_scope, new_import);
+	if (default_override)
+		return default_override;
+#endif
 
 #ifdef ENABLE_NETCORE
 #ifndef HOST_WIN32

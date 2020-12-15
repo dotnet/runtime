@@ -18,11 +18,7 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace System.Runtime.Serialization
 {
-#if USE_REFEMIT
-    public class XmlObjectSerializerWriteContext : XmlObjectSerializerContext
-#else
     internal class XmlObjectSerializerWriteContext : XmlObjectSerializerContext
-#endif
     {
         private ObjectReferenceStack _byValObjectsInScope;
         private XmlSerializableWriter? _xmlSerializableWriter;
@@ -55,11 +51,7 @@ namespace System.Runtime.Serialization
             _unsafeTypeForwardingEnabled = true;
         }
 
-#if USE_REFEMIT
-        internal ObjectToIdCache SerializedObjects
-#else
         protected ObjectToIdCache SerializedObjects
-#endif
         {
             get
             {
@@ -85,11 +77,7 @@ namespace System.Runtime.Serialization
             get { return _unsafeTypeForwardingEnabled; }
         }
 
-#if USE_REFEMIT
-        public void StoreIsGetOnlyCollection()
-#else
         internal void StoreIsGetOnlyCollection()
-#endif
         {
             _isGetOnlyCollection = true;
         }
@@ -99,22 +87,14 @@ namespace System.Runtime.Serialization
             _isGetOnlyCollection = false;
         }
 
-#if USE_REFEMIT
-        public void InternalSerializeReference(XmlWriterDelegator xmlWriter, object obj, bool isDeclaredType, bool writeXsiType, int declaredTypeID, RuntimeTypeHandle declaredTypeHandle)
-#else
         internal void InternalSerializeReference(XmlWriterDelegator xmlWriter, object obj, bool isDeclaredType, bool writeXsiType, int declaredTypeID, RuntimeTypeHandle declaredTypeHandle)
-#endif
         {
             if (!OnHandleReference(xmlWriter, obj, true /*canContainCyclicReference*/))
                 InternalSerialize(xmlWriter, obj, isDeclaredType, writeXsiType, declaredTypeID, declaredTypeHandle);
             OnEndHandleReference(xmlWriter, obj, true /*canContainCyclicReference*/);
         }
 
-#if USE_REFEMIT
-        public virtual void InternalSerialize(XmlWriterDelegator xmlWriter, object obj, bool isDeclaredType, bool writeXsiType, int declaredTypeID, RuntimeTypeHandle declaredTypeHandle)
-#else
         internal virtual void InternalSerialize(XmlWriterDelegator xmlWriter, object obj, bool isDeclaredType, bool writeXsiType, int declaredTypeID, RuntimeTypeHandle declaredTypeHandle)
-#endif
         {
             if (writeXsiType)
             {
@@ -295,28 +275,17 @@ namespace System.Runtime.Serialization
             return false;
         }
 
-#if USE_REFEMIT
-        public virtual void WriteAnyType(XmlWriterDelegator xmlWriter, object value)
-#else
         internal virtual void WriteAnyType(XmlWriterDelegator xmlWriter, object value)
-#endif
         {
             xmlWriter.WriteAnyType(value);
         }
 
-#if USE_REFEMIT
-        public virtual void WriteString(XmlWriterDelegator xmlWriter, string value)
-#else
         internal virtual void WriteString(XmlWriterDelegator xmlWriter, string value)
-#endif
         {
             xmlWriter.WriteString(value);
         }
-#if USE_REFEMIT
-        public virtual void WriteString(XmlWriterDelegator xmlWriter, string? value, XmlDictionaryString name, XmlDictionaryString ns)
-#else
+
         internal virtual void WriteString(XmlWriterDelegator xmlWriter, string? value, XmlDictionaryString name, XmlDictionaryString? ns)
-#endif
         {
             if (value == null)
                 WriteNull(xmlWriter, typeof(string), true/*isMemberTypeSerializable*/, name, ns);
@@ -328,19 +297,12 @@ namespace System.Runtime.Serialization
             }
         }
 
-#if USE_REFEMIT
-        public virtual void WriteBase64(XmlWriterDelegator xmlWriter, byte[] value)
-#else
         internal virtual void WriteBase64(XmlWriterDelegator xmlWriter, byte[] value)
-#endif
         {
             xmlWriter.WriteBase64(value);
         }
-#if USE_REFEMIT
-        public virtual void WriteBase64(XmlWriterDelegator xmlWriter, byte[] value, XmlDictionaryString name, XmlDictionaryString ns)
-#else
+
         internal virtual void WriteBase64(XmlWriterDelegator xmlWriter, byte[] value, XmlDictionaryString name, XmlDictionaryString ns)
-#endif
         {
             if (value == null)
                 WriteNull(xmlWriter, typeof(byte[]), true/*isMemberTypeSerializable*/, name, ns);
@@ -352,19 +314,12 @@ namespace System.Runtime.Serialization
             }
         }
 
-#if USE_REFEMIT
-        public virtual void WriteUri(XmlWriterDelegator xmlWriter, Uri value)
-#else
         internal virtual void WriteUri(XmlWriterDelegator xmlWriter, Uri value)
-#endif
         {
             xmlWriter.WriteUri(value);
         }
-#if USE_REFEMIT
-        public virtual void WriteUri(XmlWriterDelegator xmlWriter, Uri value, XmlDictionaryString name, XmlDictionaryString ns)
-#else
+
         internal virtual void WriteUri(XmlWriterDelegator xmlWriter, Uri value, XmlDictionaryString name, XmlDictionaryString ns)
-#endif
         {
             if (value == null)
                 WriteNull(xmlWriter, typeof(Uri), true/*isMemberTypeSerializable*/, name, ns);
@@ -376,19 +331,12 @@ namespace System.Runtime.Serialization
             }
         }
 
-#if USE_REFEMIT
-        public virtual void WriteQName(XmlWriterDelegator xmlWriter, XmlQualifiedName value)
-#else
         internal virtual void WriteQName(XmlWriterDelegator xmlWriter, XmlQualifiedName value)
-#endif
         {
             xmlWriter.WriteQName(value);
         }
-#if USE_REFEMIT
-        public virtual void WriteQName(XmlWriterDelegator xmlWriter, XmlQualifiedName? value, XmlDictionaryString name, XmlDictionaryString ns)
-#else
+
         internal virtual void WriteQName(XmlWriterDelegator xmlWriter, XmlQualifiedName? value, XmlDictionaryString name, XmlDictionaryString? ns)
-#endif
         {
             if (value == null)
                 WriteNull(xmlWriter, typeof(XmlQualifiedName), true/*isMemberTypeSerializable*/, name, ns);
@@ -437,11 +385,7 @@ namespace System.Runtime.Serialization
             }
         }
 
-#if USE_REFEMIT
-        public void WriteNull(XmlWriterDelegator xmlWriter, Type memberType, bool isMemberTypeSerializable)
-#else
         internal void WriteNull(XmlWriterDelegator xmlWriter, Type memberType, bool isMemberTypeSerializable)
-#endif
         {
             CheckIfTypeSerializable(memberType, isMemberTypeSerializable);
             WriteNull(xmlWriter);
@@ -454,29 +398,17 @@ namespace System.Runtime.Serialization
             xmlWriter.WriteEndElement();
         }
 
-#if USE_REFEMIT
-        public void IncrementArrayCount(XmlWriterDelegator xmlWriter, Array array)
-#else
         internal void IncrementArrayCount(XmlWriterDelegator xmlWriter, Array array)
-#endif
         {
             IncrementCollectionCount(xmlWriter, array.GetLength(0));
         }
 
-#if USE_REFEMIT
-        public void IncrementCollectionCount(XmlWriterDelegator xmlWriter, ICollection collection)
-#else
         internal void IncrementCollectionCount(XmlWriterDelegator xmlWriter, ICollection collection)
-#endif
         {
             IncrementCollectionCount(xmlWriter, collection.Count);
         }
 
-#if USE_REFEMIT
-        public void IncrementCollectionCountGeneric<T>(XmlWriterDelegator xmlWriter, ICollection<T> collection)
-#else
         internal void IncrementCollectionCountGeneric<T>(XmlWriterDelegator xmlWriter, ICollection<T> collection)
-#endif
         {
             IncrementCollectionCount(xmlWriter, collection.Count);
         }
@@ -491,11 +423,7 @@ namespace System.Runtime.Serialization
         {
         }
 
-#if USE_REFEMIT
-        public static bool IsMemberTypeSameAsMemberValue(object obj, Type memberType)
-#else
         internal static bool IsMemberTypeSameAsMemberValue(object obj, Type memberType)
-#endif
         {
             if (obj == null || memberType == null)
                 return false;
@@ -503,39 +431,23 @@ namespace System.Runtime.Serialization
             return obj.GetType().TypeHandle.Equals(memberType.TypeHandle);
         }
 
-#if USE_REFEMIT
-        public static T GetDefaultValue<T>()
-#else
         internal static T GetDefaultValue<T>()
-#endif
         {
             return default(T)!;
         }
 
-#if USE_REFEMIT
-        public static T GetNullableValue<T>(Nullable<T> value)  where T : struct
-#else
         internal static T GetNullableValue<T>(Nullable<T> value) where T : struct
-#endif
         {
             // value.Value will throw if hasValue is false
             return value!.Value;
         }
 
-#if USE_REFEMIT
-        public static void ThrowRequiredMemberMustBeEmitted(string memberName, Type type)
-#else
         internal static void ThrowRequiredMemberMustBeEmitted(string memberName, Type type)
-#endif
         {
             throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(new SerializationException(SR.Format(SR.RequiredMemberMustBeEmitted, memberName, type.FullName)));
         }
 
-#if USE_REFEMIT
-        public static bool GetHasValue<T>(Nullable<T> value)  where T : struct
-#else
         internal static bool GetHasValue<T>(Nullable<T> value) where T : struct
-#endif
         {
             return value.HasValue;
         }
