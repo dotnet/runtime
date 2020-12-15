@@ -355,16 +355,12 @@ namespace System.Diagnostics.Tests
         public void TestUserCredentialsPropertiesOnWindows()
         {
             // [SuppressMessage("Microsoft.Security", "CS002:SecretInNextLine", Justification="Unit test dummy credentials.")]
-            string username = "test", password = "PassWord123!!";
-            try
-            {
-                Interop.NetUserAdd(username, password);
-            }
-            catch (Exception exc)
-            {
-                Console.Error.WriteLine("TestUserCredentialsPropertiesOnWindows: NetUserAdd failed: {0}", exc.Message);
-                return; // test is irrelevant if we can't add a user
-            }
+            string username = "testForDotnetRuntime", password = "PassWord123!!";
+
+            uint removalResult = Interop.NetUserDel(null, username);
+            Assert.True(removalResult == Interop.ExitCodes.NERR_Success || removalResult == Interop.ExitCodes.NERR_UserNotFound);
+
+            Interop.NetUserAdd(username, password);
 
             bool hasStarted = false;
             SafeProcessHandle handle = null;
@@ -399,8 +395,7 @@ namespace System.Diagnostics.Tests
             }
             finally
             {
-                IEnumerable<uint> collection = new uint[] { 0 /* NERR_Success */, 2221 /* NERR_UserNotFound */ };
-                Assert.Contains<uint>(Interop.NetUserDel(null, username), collection);
+                Assert.Equal(Interop.ExitCodes.NERR_Success, Interop.NetUserDel(null, username));
 
                 if (handle != null)
                     handle.Dispose();

@@ -94,7 +94,7 @@ namespace System.Diagnostics.Tests
             uint parm_err;
             uint result = NetUserAdd(null, 1, ref userInfo, out parm_err);
 
-            if (result != 0) // NERR_Success
+            if (result != ExitCodes.NERR_Success)
             {
                 // most likely result == ERROR_ACCESS_DENIED
                 // due to running without elevated privileges
@@ -131,6 +131,12 @@ namespace System.Diagnostics.Tests
                 if (tu != IntPtr.Zero)
                     Marshal.FreeHGlobal(tu);
             }
+        }
+
+        internal static class ExitCodes
+        {
+            internal const uint NERR_Success = 0;
+            internal const uint NERR_UserNotFound = 2221;
         }
     }
 }
