@@ -1165,14 +1165,17 @@ int32_t SystemNative_CopyFile(intptr_t sourceFd, intptr_t destinationFd)
         while ((ret = futimes(outFd, origTimes)) < 0 && errno == EINTR);
 #endif
     }
-    if (ret != 0)
+    // If we copied to a filesystem (eg EXFAT) that does not preserve POSIX ownership, all files appear
+    // to be owned by root. If we aren't running as root, then we won't be an owner of our new file, and 
+    // attempting to copy metadata to it will fail with EPERM. We have copied successfully, we just can't
+    // copy metadata. The best thing we can do is skip copying the metadata.
+    if (ret != 0 && errno != EPERM)
     {
         return -1;
     }
-
     // Then copy permissions.
     while ((ret = fchmod(outFd, sourceStat.st_mode & (S_IRWXU | S_IRWXG | S_IRWXO))) < 0 && errno == EINTR);
-    if (ret != 0)
+    if (ret != 0 && errno != EPERM) // See EPERM comment above
     {
         return -1;
     }
