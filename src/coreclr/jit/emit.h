@@ -1369,6 +1369,12 @@ protected:
                                   // hot to cold and cold to hot jumps)
     };
 
+    struct instrDescAlign : instrDesc
+    {
+        instrDescAlign* idaNext; // next align in the group/method
+        insGroup*     idaIG;   // containing group
+    };
+
 #if !defined(TARGET_ARM64) // This shouldn't be needed for ARM32, either, but I don't want to touch the ARM32 JIT.
     struct instrDescLbl : instrDescJmp
     {
@@ -1990,6 +1996,14 @@ private:
         return (instrDescCGCA*)emitAllocAnyInstr(sizeof(instrDescCGCA), attr);
     }
 
+    instrDescAlign* emitAllocInstrAlign()
+    {
+#if EMITTER_STATS
+        emitTotalIDescJmpCnt++;
+#endif // EMITTER_STATS
+        return (instrDescAlign*)emitAllocAnyInstr(sizeof(instrDescAlign), EA_1BYTE);
+    }
+
     instrDesc* emitNewInstrSmall(emitAttr attr);
     instrDesc* emitNewInstr(emitAttr attr = EA_4BYTE);
     instrDesc* emitNewInstrSC(emitAttr attr, cnsval_ssize_t cns);
@@ -2005,6 +2019,7 @@ private:
     instrDescLbl* emitNewInstrLbl();
 #endif // !TARGET_ARM64
 
+    instrDescAlign*   emitNewInstrAlign();
     static const BYTE emitFmtToOps[];
 
 #ifdef DEBUG
@@ -2311,6 +2326,7 @@ public:
 #define SMALL_CNS_TSZ 256
     static unsigned emitSmallCns[SMALL_CNS_TSZ];
     static unsigned emitLargeCnsCnt;
+    static unsigned emitTotalDescAlignCnt;
 
     static unsigned emitIFcounts[IF_COUNT];
 
@@ -2511,6 +2527,13 @@ inline emitter::instrDesc* emitter::emitNewInstr(emitAttr attr)
 inline emitter::instrDescJmp* emitter::emitNewInstrJmp()
 {
     return emitAllocInstrJmp();
+}
+
+inline emitter::instrDescAlign* emitter::emitNewInstrAlign()
+{
+    instrDescAlign* newInstr = emitAllocInstrAlign();
+    newInstr->idIns(INS_align);
+    return newInstr;
 }
 
 #if !defined(TARGET_ARM64)

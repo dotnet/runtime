@@ -160,6 +160,8 @@ unsigned emitter::emitSmallCnsCnt;
 unsigned emitter::emitLargeCnsCnt;
 unsigned emitter::emitSmallCns[SMALL_CNS_TSZ];
 
+unsigned emitter::emitTotalDescAlignCnt;
+
 void emitterStaticStats(FILE* fout)
 {
     // insGroup members
@@ -387,6 +389,9 @@ void emitterStats(FILE* fout)
         fprintf(fout, "Total instrDescReloc:  %8u (%5.2f%%)\n", emitter::emitTotalIDescRelocCnt,
                 100.0 * emitter::emitTotalIDescRelocCnt / emitter::emitTotalInsCnt);
 #endif // TARGET_ARM
+        fprintf(fout, "Total emitTotalDescAlignCnt:  %8u (%5.2f%%)\n", emitter::emitTotalDescAlignCnt,
+                100.0 * emitter::emitTotalDescAlignCnt / emitter::emitTotalInsCnt);
+
         fprintf(fout, "\n");
     }
 
@@ -932,6 +937,7 @@ void emitter::emitBegFN(bool hasFramePtr
 
     emitCurIGfreeBase = nullptr;
     emitIGbuffSize    = 0;
+    emitLastAlignedIgNum = 0;
 
     /* Record stack frame info (the temp size is just an estimate) */
 

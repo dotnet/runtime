@@ -2657,15 +2657,24 @@ emitter::instrDesc* emitter::emitNewInstrAmdCns(emitAttr size, ssize_t dsp, int 
 //  So insert a dummy instruction here to ensure that
 //  the x86 I-cache alignment rule is followed.
 //
-void emitter::emitLoopAlign()
+void emitter::emitLoopAlign(unsigned short paddingBytes)
 {
     /* Insert a pseudo-instruction to ensure that we align
        the next instruction properly */
 
-    instrDesc* id = emitNewInstrSmall(EA_1BYTE);
-    id->idIns(INS_align);
-    id->idCodeSize(15); // We may need to skip up to 15 bytes of code
-    emitCurIGsize += 15;
+    paddingBytes = min(paddingBytes, 15);  // We may need to skip up to 15 bytes of code
+    instrDescAlign* id = emitNewInstrAlign();
+    id->idCodeSize(paddingBytes);
+    emitCurIGsize += paddingBytes;
+
+    id->idaIG = emitCurIG;
+
+    /* Append this instruction to this IG's jump list */
+    id->idaNext = emitCurIGAlignList;
+    emitCurIGAlignList = id;
+
+    /* Record the last IG that has align instruction */
+    emitLastAlignedIgNum = emitCurIG->igNum;
 }
 
 //-----------------------------------------------------------------------------
@@ -2681,7 +2690,7 @@ void emitter::emitLongLoopAlign(unsigned short alignmentBoundary)
 {
     unsigned short nPaddingBytes    = alignmentBoundary - 1;
     unsigned short nAlignInstr      = (nPaddingBytes + (15 - 1)) / 15;
-    unsigned short instrDescSize    = nAlignInstr * SMALL_IDSC_SIZE;
+    unsigned short instrDescSize    = nAlignInstr * sizeof(instrDescAlign);
     unsigned short insAlignCount    = nPaddingBytes / 15;
     unsigned short lastInsAlignSize = nPaddingBytes % 15;
 
@@ -2691,22 +2700,15 @@ void emitter::emitLongLoopAlign(unsigned short alignmentBoundary)
         emitForceNewIG = true;
     }
 
+    /* Insert a pseudo-instruction to ensure that we align
+    the next instruction properly */
+
     while (insAlignCount)
     {
         emitLoopAlign();
         insAlignCount--;
     }
-
-    /* Insert a pseudo-instruction to ensure that we align
-       the next instruction properly */
-
-    if (lastInsAlignSize > 0)
-    {
-        instrDesc* id = emitNewInstrSmall(EA_1BYTE);
-        id->idIns(INS_align);
-        id->idCodeSize(lastInsAlignSize);
-        emitCurIGsize += lastInsAlignSize;
-    }
+    emitLoopAlign(lastInsAlignSize);
 }
 
 /*****************************************************************************
@@ -7381,6 +7383,12 @@ size_t emitter::emitSizeOfInsDsc(instrDesc* id)
     switch (idOp)
     {
         case ID_OP_NONE:
+#ifdef FEATURE_LOOP_ALIGN
+            if (id->idIns() == INS_align)
+            {
+                return sizeof(instrDescAlign);
+            }
+#endif
             break;
 
         case ID_OP_LBL:
@@ -12875,8 +12883,8 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             // the loop alignment pseudo instruction
             if (ins == INS_align)
             {
-                sz  = SMALL_IDSC_SIZE;
                 dst = emitOutputAlign(ig, id, sz, dst);
+                sz  = sizeof(instrDescAlign);
                 break;
             }
 
