@@ -17,8 +17,6 @@ namespace System.Net
 
         public static bool SupportsGetAddrInfoAsync { get; } = Interop.Sys.PlatformSupportsGetAddrInfoAsync();
 
-        public static void EnsureSocketsAreInitialized() { } // No-op for Unix
-
         public static unsafe SocketError TryGetAddrInfo(string name, bool justAddresses, AddressFamily addressFamily, out string? hostName, out string[] aliases, out IPAddress[] addresses, out int nativeErrorCode)
         {
             Debug.Assert(name is not null);
