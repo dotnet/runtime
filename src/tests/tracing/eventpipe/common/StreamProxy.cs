@@ -44,29 +44,23 @@ namespace Tracing.Tests.Common
                 throw new ArgumentException("Invalid input into Read");
 
             byte[] localBuffer = ArrayPool<byte>.Shared.Rent(count);
-            var readCount = ProxiedStream.Read(localBuffer, 0, count);
-            if (readCount == 0)
-                return readCount;
-
-            InternalStream.Write(localBuffer, 0, readCount);
-
-            if (buffer.Length - offset < count)
+            try
             {
-                // This is the error that EventPipeEventSource is causing,
-                // so this is when we should throw an exception, just like
-                // System.IO.PipeStream. This will result in the dispose method
-                // being called and the culprit stream data being dumped to disk
-                Logger.logger.Log($"[Error] Attempted to read {count} bytes into a buffer of length {buffer.Length} at offset {offset}");
+                var readCount = ProxiedStream.Read(localBuffer, 0, count);
+                if (readCount == 0)
+                    return readCount;
 
-                // Throw the exception like what would have happened in System.IO.PipeStream
-                throw new ArgumentException($"Attempted to read {count} bytes into a buffer of length {buffer.Length} at offset {offset}");
+                InternalStream.Write(localBuffer, 0, readCount);
+
+                // copy the data into the caller's buffer
+                Array.Copy(localBuffer, 0, buffer, offset, readCount);
+                return readCount;
+            }
+            finally
+            {
+                ArrayPool<byte>.Shared.Return(localBuffer, true);
             }
 
-            // copy the data into the caller's buffer
-            Array.Copy(localBuffer, 0, buffer, offset, readCount);
-
-            ArrayPool<byte>.Shared.Return(localBuffer, true);
-            return readCount;
         }
 
         public override long Seek(long offset, SeekOrigin origin) => ProxiedStream.Seek(offset, origin);
@@ -104,8 +98,8 @@ namespace Tracing.Tests.Common
                 using (var streamDumpFile = File.Create(filePath))
                 {
                     Logger.logger.Log($"\t Writing stream to {filePath}");
-                    InternalStream.Seek(0, SeekOrigin.Begin);
-                    InternalStream.CopyTo(streamDumpFile);
+                    Logger.logger.Log($"\t  length of data: {InternalStream.Length} Bytes");
+                    InternalStream.WriteTo(streamDumpFile);
                 }
             }
         }
