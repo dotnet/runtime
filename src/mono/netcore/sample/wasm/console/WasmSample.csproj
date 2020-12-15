@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk" DefaultTargets="WasmBuildApp">
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <OutputPath>bin</OutputPath>
