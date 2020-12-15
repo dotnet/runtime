@@ -4,12 +4,38 @@
 using System;
 using System.Reflection;
 using System.Runtime.CompilerServices;
+using System.Threading;
 using MonoDelta;
 
 namespace HelloWorld
 {
     internal class Program
     {
+	class State {
+	    public readonly ManualResetEventSlim mreIn;
+	    public readonly ManualResetEventSlim mreOut;
+	    public string res;
+	    public State() {
+		mreIn = new ManualResetEventSlim ();
+		mreOut = new ManualResetEventSlim ();
+		res = "";
+	    }
+
+	    public string ConsumerStep () {
+		mreIn.Set ();
+		mreOut.Wait ();
+		mreOut.Reset ();
+		return res;
+	    }
+
+	    public void ProducerStep (Func<string> step) {
+		mreIn.Wait ();
+		mreIn.Reset ();
+		res = step ();
+		mreOut.Set ();
+	    }
+	}
+
         private static int Main(string[] args)
         {
             bool isMono = typeof(object).Assembly.GetType("Mono.RuntimeStructs") != null;
@@ -21,17 +47,29 @@ namespace HelloWorld
 	    Assembly assm = typeof (TestClass).Assembly;
 	    var replacer = DeltaHelper.Make ();
 
-	    string res = TestClass.TargetMethod ();
+	    var st = new State ();
+	    var t = new Thread (MutatorThread);
+	    t.Start (st);
+
+	    string res = st.ConsumerStep ();
 	    if (res != "OLD STRING")
 		return 1;
 
 	    replacer.Update (assm);
 
-	    res = TestClass.TargetMethod ();
+	    res = st.ConsumerStep ();
 	    if (res != "NEW STRING")
 		return 2;
 
 	    return 0;
+	}
+
+	private static void MutatorThread (object o)
+	{
+	    var st = (State)o;
+	    static string Step () => TestClass.TargetMethod ();
+	    st.ProducerStep (Step);
+	    st.ProducerStep (Step);
 	}
 
     }
