@@ -75,7 +75,7 @@ namespace System.Diagnostics.Tests
         [DllImport("netapi32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
         internal static extern uint NetUserAdd(string servername, uint level, ref USER_INFO_1 buf, out uint parm_err);
 
-        [DllImport("netapi32.dll")]
+        [DllImport("netapi32.dll", CharSet = CharSet.Unicode)]
         internal static extern uint NetUserDel(string servername, string username);
 
         [DllImport("advapi32.dll")]
