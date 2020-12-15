@@ -22,11 +22,7 @@ namespace Microsoft.Extensions.FileProviders.Physical
     ///     Triggers events on <see cref="IChangeToken" /> when files are created, change, renamed, or deleted.
     ///     </para>
     /// </summary>
-#if NETSTANDARD2_1
-    public class PhysicalFilesWatcher : IDisposable, IAsyncDisposable
-#else
-    public class PhysicalFilesWatcher : IDisposable
-#endif
+    public partial class PhysicalFilesWatcher : IDisposable
     {
         private static readonly Action<object> _cancelTokenSource = state => ((CancellationTokenSource)state).Cancel();
 
@@ -232,31 +228,6 @@ namespace Microsoft.Extensions.FileProviders.Physical
 
             return changeToken;
         }
-
-#if NETSTANDARD2_1
-        public async ValueTask DisposeAsync()
-        {
-            await DisposeAsyncCore();
-            Dispose(false);
-            GC.SuppressFinalize(this);
-        }
-
-        protected virtual async ValueTask DisposeAsyncCore()
-        {
-            if (_timer is not null)
-            {
-                await _timer.DisposeAsync().ConfigureAwait(false);
-            }
-            if (_fileWatcher is IAsyncDisposable disposable)
-            {
-                await disposable.DisposeAsync().ConfigureAwait(false);
-            }
-            else
-            {
-                _fileWatcher.Dispose();
-            }
-        }
-#endif
 
         /// <summary>
         /// Disposes the provider. Change tokens may not trigger after the provider is disposed.
