@@ -295,9 +295,6 @@
   <data name="Arg_EmptyArray" xml:space="preserve">
     <value>Array may not be empty.</value>
   </data>
-  <data name="Arg_EmptyOrNullString" xml:space="preserve">
-    <value>String may not be empty or null.</value>
-  </data>
   <data name="Arg_EndOfStreamException" xml:space="preserve">
     <value>Attempted to read past the end of the stream.</value>
   </data>
@@ -460,9 +457,6 @@
   <data name="Arg_MethodAccessException" xml:space="preserve">
     <value>Attempt to access the method failed.</value>
   </data>
-  <data name="Arg_MethodAccessException_WithMethodName" xml:space="preserve">
-    <value>Attempt to access the method "{0}" on type "{1}" failed.</value>
-  </data>
   <data name="Arg_MissingFieldException" xml:space="preserve">
     <value>Attempted to access a non-existing field.</value>
   </data>
@@ -606,12 +600,6 @@
   </data>
   <data name="Arg_NoDefCTor" xml:space="preserve">
     <value>No parameterless constructor defined for type '{0}'.</value>
-  </data>
-  <data name="Arg_NoITypeInfo" xml:space="preserve">
-    <value>Specified TypeInfo was invalid because it did not support the ITypeInfo interface.</value>
-  </data>
-  <data name="Arg_NoITypeLib" xml:space="preserve">
-    <value>Specified TypeLib was invalid because it did not support the ITypeLib interface.</value>
   </data>
   <data name="Arg_NonZeroLowerBound" xml:space="preserve">
     <value>The lower bound of target array must be zero.</value>
@@ -798,9 +786,6 @@
   </data>
   <data name="Arg_VersionString" xml:space="preserve">
     <value>Version string portion was too short or too long.</value>
-  </data>
-  <data name="Arg_WrongAsyncResult" xml:space="preserve">
-    <value>IAsyncResult object did not come from the corresponding async method on this type.</value>
   </data>
   <data name="Arg_WrongType" xml:space="preserve">
     <value>The value "{0}" is not of type "{1}" and cannot be used in this generic collection.</value>
@@ -1089,9 +1074,6 @@
   </data>
   <data name="Argument_IndexOutOfArrayBounds" xml:space="preserve">
     <value>The specified index is out of bounds of the specified array.</value>
-  </data>
-  <data name="Argument_InsufficientSpaceToCopyCollection" xml:space="preserve">
-    <value>The specified space is not sufficient to copy the elements from this Collection.</value>
   </data>
   <data name="Argument_InterfaceMap" xml:space="preserve">
     <value>'this' type cannot be an interface itself.</value>
@@ -1513,9 +1495,6 @@
   <data name="Argument_TypeNameTooLong" xml:space="preserve">
     <value>Type name was too long. The fully qualified type name must be less than 1,024 characters.</value>
   </data>
-  <data name="Argument_TypeNotActivatableViaWindowsRuntime" xml:space="preserve">
-    <value>Type '{0}' does not have an activation factory because it is not activatable by Windows Runtime.</value>
-  </data>
   <data name="Argument_TypeNotComObject" xml:space="preserve">
     <value>The type must be __ComObject or be derived from __ComObject.</value>
   </data>
@@ -1524,9 +1503,6 @@
   </data>
   <data name="Argument_UnclosedExceptionBlock" xml:space="preserve">
     <value>The IL Generator cannot be used while there are unclosed exceptions.</value>
-  </data>
-  <data name="Argument_Unexpected_TypeSource" xml:space="preserve">
-    <value>Unexpected TypeKind when marshaling Windows.Foundation.TypeName.</value>
   </data>
   <data name="Argument_UnknownUnmanagedCallConv" xml:space="preserve">
     <value>Unknown unmanaged calling convention for function signature.</value>
@@ -1605,9 +1581,6 @@
   </data>
   <data name="ArgumentNull_Generic" xml:space="preserve">
     <value>Value cannot be null.</value>
-  </data>
-  <data name="ArgumentNull_GUID" xml:space="preserve">
-    <value>GUID cannot be null.</value>
   </data>
   <data name="ArgumentNull_Key" xml:space="preserve">
     <value>Key cannot be null.</value>
@@ -1737,9 +1710,6 @@
   </data>
   <data name="ArgumentOutOfRange_IndexCountBuffer" xml:space="preserve">
     <value>Index and count must refer to a location within the buffer.</value>
-  </data>
-  <data name="ArgumentOutOfRange_IndexLargerThanMaxValue" xml:space="preserve">
-    <value>This collection cannot work with indices larger than Int32.MaxValue - 1 (0x7FFFFFFF - 1).</value>
   </data>
   <data name="ArgumentOutOfRange_IndexLength" xml:space="preserve">
     <value>Index and length must refer to a location within the string.</value>
@@ -2422,9 +2392,6 @@
   <data name="InvalidOperation_CannotRegisterSecondResolver" xml:space="preserve">
     <value>A resolver is already set for the assembly.</value>
   </data>
-  <data name="InvalidOperation_CannotRemoveLastFromEmptyCollection" xml:space="preserve">
-    <value>Cannot remove the last element from an empty collection.</value>
-  </data>
   <data name="InvalidOperation_CannotRestoreUnsupressedFlow" xml:space="preserve">
     <value>Cannot restore context flow when it is not suppressed.</value>
   </data>
@@ -2442,12 +2409,6 @@
   </data>
   <data name="InvalidOperation_CantInstantiateFunctionPointer" xml:space="preserve">
     <value>Instances of function pointers cannot be created.</value>
-  </data>
-  <data name="InvalidOperation_CollectionBackingDictionaryTooLarge" xml:space="preserve">
-    <value>The collection backing this Dictionary contains too many elements.</value>
-  </data>
-  <data name="InvalidOperation_CollectionBackingListTooLarge" xml:space="preserve">
-    <value>The collection backing this List contains too many elements.</value>
   </data>
   <data name="InvalidOperation_CollectionCorrupted" xml:space="preserve">
     <value>A prior operation on this collection was interrupted by an exception. Collection's state is no longer trusted.</value>
@@ -2467,12 +2428,6 @@
   <data name="InvalidOperation_DefaultConstructorILGen" xml:space="preserve">
     <value>Unable to access ILGenerator on a constructor created with DefineDefaultConstructor.</value>
   </data>
-  <data name="InvalidOperation_EndReadCalledMultiple" xml:space="preserve">
-    <value>EndRead can only be called once for each asynchronous operation.</value>
-  </data>
-  <data name="InvalidOperation_EndWriteCalledMultiple" xml:space="preserve">
-    <value>EndWrite can only be called once for each asynchronous operation.</value>
-  </data>
   <data name="InvalidOperation_EnumEnded" xml:space="preserve">
     <value>Enumeration already finished.</value>
   </data>
@@ -2487,9 +2442,6 @@
   </data>
   <data name="InvalidOperation_EventInfoNotAvailable" xml:space="preserve">
     <value>This API does not support EventInfo tokens.</value>
-  </data>
-  <data name="InvalidOperation_EventTokenTableRequiresDelegate" xml:space="preserve">
-    <value>Type '{0}' is not a delegate type.  EventTokenTable may only be used with delegate types.</value>
   </data>
   <data name="InvalidOperation_GenericParametersAlreadySet" xml:space="preserve">
     <value>The generic parameters are already defined on this MethodBuilder.</value>
@@ -2770,12 +2722,6 @@
   <data name="MissingManifestResource_NoNeutralDisk" xml:space="preserve">
     <value>Could not find any resources appropriate for the specified culture (or the neutral culture) on disk.</value>
   </data>
-  <data name="MissingManifestResource_NoPRIresources" xml:space="preserve">
-    <value>Unable to open Package Resource Index.</value>
-  </data>
-  <data name="MissingManifestResource_ResWFileNotLoaded" xml:space="preserve">
-    <value>Unable to load resources for resource file "{0}" in package "{1}".</value>
-  </data>
   <data name="MissingMember" xml:space="preserve">
     <value>Member not found.</value>
   </data>
@@ -2808,9 +2754,6 @@
   </data>
   <data name="NotSupported_ActivAttr" xml:space="preserve">
     <value>Activation Attributes are not supported.</value>
-  </data>
-  <data name="NotSupported_AppX" xml:space="preserve">
-    <value>{0} is not supported in AppX.</value>
   </data>
   <data name="NotSupported_AssemblyLoadFromHash" xml:space="preserve">
     <value>Assembly.LoadFrom with hashValue is not supported.</value>
@@ -2934,9 +2877,6 @@
   </data>
   <data name="NotSupported_OutputStreamUsingTypeBuilder" xml:space="preserve">
     <value>Output streams do not support TypeBuilders.</value>
-  </data>
-  <data name="NotSupported_PIAInAppxProcess" xml:space="preserve">
-    <value>A Primary Interop Assembly is not supported in AppX.</value>
   </data>
   <data name="NotSupported_RangeCollection" xml:space="preserve">
     <value>The specified operation is not supported on Ranges.</value>
@@ -3651,30 +3591,6 @@
   </data>
   <data name="InvalidOperation_ResetGlobalComWrappersInstance" xml:space="preserve">
     <value>Attempt to update previously set global instance.</value>
-  </data>
-  <data name="Utf8String_CallbackProvidedMalformedData" xml:space="preserve">
-    <value>The callback populated its buffer with ill-formed UTF-8 data. Callbacks are required to populate the buffer only with well-formed UTF-8 data.</value>
-  </data>
-  <data name="Utf8String_InputContainedMalformedUtf16" xml:space="preserve">
-    <value>The input buffer contained ill-formed UTF-16 data.</value>
-  </data>
-  <data name="Utf8String_InputContainedMalformedUtf8" xml:space="preserve">
-    <value>The input buffer contained ill-formed UTF-8 data.</value>
-  </data>
-  <data name="Utf8String_CannotSplitMultibyteSubsequence" xml:space="preserve">
-    <value>Cannot create the desired substring because it would split a multi-byte UTF-8 subsequence.</value>
-  </data>
-  <data name="Utf8Span_CannotCallEqualsObject" xml:space="preserve">
-    <value>Cannot call Utf8Span.Equals(object). Use Equals(Utf8Span) or operator == instead.</value>
-  </data>
-  <data name="ArgumentOutOfRange_Utf16SurrogatesDisallowed" xml:space="preserve">
-    <value>UTF-16 surrogate code points (U+D800..U+DFFF) are disallowed.</value>
-  </data>
-  <data name="Argument_CannotBeEmptySpan" xml:space="preserve">
-    <value>Argument cannot be an empty span.</value>
-  </data>
-  <data name="Argument_CannotBeNullOrEmpty" xml:space="preserve">
-    <value>Argument cannot be null or empty.</value>
   </data>
   <data name="Argument_SpansMustHaveSameLength" xml:space="preserve">
     <value>Length of items must be same as length of keys.</value>
