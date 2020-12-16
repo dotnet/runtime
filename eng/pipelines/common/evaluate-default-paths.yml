@@ -1,8 +1,9 @@
 parameters:
   extraSubsets: ''
 
+
 jobs:
-- template: /eng/pipelines/common/checkout-job.yml
+- template: /eng/pipelines/common/evaluate-paths-job.yml
   parameters:
     paths:
     - subset: coreclr

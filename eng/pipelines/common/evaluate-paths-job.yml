@@ -1,7 +1,4 @@
-### Check out job creating a git bundle and publishing it
-### into an Azure artifact for reuse by the subsequent build and test execution phases.
-### If paths is specified, we will create a job using evaluate-changed-paths.yml template
-### for each path specified.
+### Job used to evaluate changed paths on a pull request to emit variables to condition jobs based on paths.
 
 parameters:
   # Object containing subset include and exclude paths in an array form.
@@ -24,30 +21,22 @@ parameters:
   #    exclude:
   #    - src/libraries/*
   #
-  #  This example will include ALL path changes except the ones under src/libraries/*!System.Private.CoreLib/*
+  #  This example will include ALL path changes under src/libraries/ except the ones under src/libraries/*!System.Private.CoreLib/*
   paths: []
 
+
 jobs:
-- job: checkout
-  displayName: Checkout
+- ${{ if eq(variables['Build.Reason'], 'PullRequest') }}:
+  - job: evaluate-paths
+    displayName: Evaluate Paths
+    pool:
+      vmImage: 'macOS-10.14'
 
-  pool:
-    vmImage: 'macOS-10.14'
+    steps:
+    - checkout: self
+      clean: true
 
-  steps:
-  - checkout: self
-    clean: true
-    fetchDepth: 20
-
-  - script: git bundle create $(Build.StagingDirectory)/Checkout.bundle HEAD
-    displayName: Create Checkout.bundle
-
-  - publish: $(Build.StagingDirectory)/Checkout.bundle
-    artifact: Checkout_bundle
-    displayName: Upload Checkout.bundle
-
-  - ${{ if and(ne(parameters.paths[0], ''), eq(variables['Build.Reason'], 'PullRequest')) }}:
-    - ${{ each path in parameters.paths }}:
+    - ${{ if ne(parameters.paths[0], '') }}:
       - template: evaluate-changed-paths.yml
         parameters:
           subsetName: ${{ path.subset }} 

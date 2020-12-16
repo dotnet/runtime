@@ -50,9 +50,9 @@ variables:
 
 jobs:
 #
-# Checkout repository and evaluate paths
+# Evaluate paths
 #
-- template: /eng/pipelines/common/checkout-and-evaluate-paths.yml
+- template: /eng/pipelines/common/evaluate-default-paths.yml
 
 #
 # Build the whole product using Mono and run libraries tests

@@ -32,8 +32,8 @@ jobs:
     container: ${{ parameters.container }}
     condition: ${{ parameters.condition }}
     dependsOn:
-      - ${{ if ne(parameters.stagedBuild, true) }}:
-        - checkout
+      - ${{ if and(ne(parameters.stagedBuild, true), eq(variables.dependOnEvaluatePaths, true)) }}:
+        - evaluate-paths
       - ${{ if ne(parameters.dependsOn, '') }}:
         - ${{ parameters.dependsOn }}
 
@@ -102,6 +102,6 @@ jobs:
       - ${{insert}}: ${{ variable }}
 
     steps:
-    - template: /eng/pipelines/common/clone-checkout-bundle-step.yml
-
+    - checkout: self
+      clean: true
     - ${{ parameters.steps }}
