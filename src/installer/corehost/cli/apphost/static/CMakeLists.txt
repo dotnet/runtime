@@ -153,8 +153,21 @@ else()
     # Additional requirements for System.Security.Cryptography.Native.OpenSsl
     include(${CLR_REPO_ROOT_DIR}/src/libraries/Native/Unix/System.Security.Cryptography.Native/extra_libs.cmake)
     append_extra_cryptography_libs(NATIVE_LIBS)
-
 endif()
+
+if(CLR_CMAKE_TARGET_OSX)
+    LIST(APPEND NATIVE_LIBS
+        ${CORECLR_STATIC_LIB_LOCATION}/libSystem.Security.Cryptography.Native.Apple.a
+    )
+
+    # Additional requirements for System.Security.Cryptography.Native.Apple
+    include(${CLR_REPO_ROOT_DIR}/src/libraries/Native/Unix/System.Security.Cryptography.Native.Apple/extra_libs.cmake)
+    append_extra_cryptography_apple_libs(NATIVE_LIBS)
+endif()
+
+#
+# Additional requirements for coreclr
+#
 
 # Specify non-default Windows libs to be used for Arm/Arm64 builds
 if (CLR_CMAKE_TARGET_WIN32 AND (CLR_CMAKE_TARGET_ARCH_ARM OR CLR_CMAKE_TARGET_ARCH_ARM64))
@@ -200,7 +213,6 @@ if(CLR_CMAKE_USE_SYSTEM_LIBUNWIND)
       ${UNWIND_LIBS}
     )
 endif()
-
 
 target_link_libraries(
     singlefilehost
