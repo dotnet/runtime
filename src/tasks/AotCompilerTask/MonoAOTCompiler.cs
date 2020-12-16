@@ -167,16 +167,27 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
             GenerateAotModulesTable(Assemblies);
         }
 
-        Parallel.ForEach(Assemblies,
-            new ParallelOptions { MaxDegreeOfParallelism = DisableParallelAot ? 1 : Environment.ProcessorCount },
-            assemblyItem => PrecompileLibrary (assemblyItem));
+        if (DisableParallelAot)
+        {
+            foreach (var assemblyItem in Assemblies)
+            {
+                if (!PrecompileLibrary(assemblyItem))
+                    return !Log.HasLoggedErrors;
+            }
+        }
+        else
+        {
+            Parallel.ForEach(Assemblies,
+                new ParallelOptions { MaxDegreeOfParallelism = Environment.ProcessorCount },
+                assemblyItem => PrecompileLibrary (assemblyItem));
+        }
 
         CompiledAssemblies = compiledAssemblies.ToArray();
 
         return !Log.HasLoggedErrors;
     }
 
-    private void PrecompileLibrary(ITaskItem assemblyItem)
+    private bool PrecompileLibrary(ITaskItem assemblyItem)
     {
         string assembly = assemblyItem.ItemSpec;
         string directory = Path.GetDirectoryName(assembly)!;
@@ -296,10 +307,11 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
         {
             Log.LogMessage(MessageImportance.Low, ex.ToString());
             Log.LogError($"Precompiling failed for {assembly}: {ex.Message}");
-            return;
+            return false;
         }
 
         compiledAssemblies.Add(aotAssembly);
+        return true;
     }
 
     private void GenerateAotModulesTable(ITaskItem[] assemblies)
