@@ -2055,6 +2055,22 @@ unsigned Compiler::compGetTypeSize(CorInfoType cit, CORINFO_CLASS_HANDLE clsHnd)
     return sigSize;
 }
 
+CorInfoCallConvExtension Compiler::compMethodInfoGetEntrypointCallConv(CORINFO_METHOD_INFO* mthInfo)
+{
+    CorInfoCallConv callConv = mthInfo->args.getCallConv();
+    if (callConv == CORINFO_CALLCONV_DEFAULT || callConv == CORINFO_CALLCONV_VARARG)
+    {
+        // Both the default and the varargs calling conventions represent a managed callconv.
+        return CorInfoCallConvExtension::Managed;
+    }
+
+    static_assert_no_msg((unsigned)CorInfoCallConvExtension::C == (unsigned)CORINFO_CALLCONV_C);
+    static_assert_no_msg((unsigned)CorInfoCallConvExtension::Stdcall == (unsigned)CORINFO_CALLCONV_STDCALL);
+    static_assert_no_msg((unsigned)CorInfoCallConvExtension::Thiscall == (unsigned)CORINFO_CALLCONV_THISCALL);
+
+    return (CorInfoCallConvExtension)callConv;
+}
+
 #ifdef DEBUG
 static bool DidComponentUnitTests = false;
 
@@ -2570,7 +2586,6 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
         assert(!jitFlags->IsSet(JitFlags::JIT_FLAG_PROF_ENTERLEAVE));
         assert(!jitFlags->IsSet(JitFlags::JIT_FLAG_DEBUG_EnC));
         assert(!jitFlags->IsSet(JitFlags::JIT_FLAG_DEBUG_INFO));
-        assert(!jitFlags->IsSet(JitFlags::JIT_FLAG_REVERSE_PINVOKE));
     }
 
     opts.jitFlags  = jitFlags;
@@ -6093,28 +6108,21 @@ int Compiler::compCompileHelper(CORINFO_MODULE_HANDLE classPtr,
 
     info.compHasNextCallRetAddr = false;
 
-    if (opts.IsReversePInvoke())
-    {
-        bool unused;
-        info.compCallConv = info.compCompHnd->getUnmanagedCallConv(methodInfo->ftn, nullptr, &unused);
-    }
-    else
-    {
-        info.compCallConv = CorInfoCallConvExtension::Managed;
-    }
-
-    info.compIsVarArgs = false;
-
     switch (methodInfo->args.getCallConv())
     {
-        case CORINFO_CALLCONV_NATIVEVARARG:
         case CORINFO_CALLCONV_VARARG:
+        case CORINFO_CALLCONV_NATIVEVARARG:
             info.compIsVarArgs = true;
             break;
-        default:
+        case CORINFO_CALLCONV_C:
+        case CORINFO_CALLCONV_STDCALL:
+        case CORINFO_CALLCONV_THISCALL:
+        case CORINFO_CALLCONV_DEFAULT:
+            info.compIsVarArgs = false;
             break;
+        default:
+            BADCODE("bad calling convention");
     }
-
     info.compRetNativeType = info.compRetType = JITtype2varType(methodInfo->args.retType);
 
     info.compUnmanagedCallCountWithGCTransition = 0;

@@ -135,7 +135,7 @@ void Compiler::lvaInitTypeRef()
 
     // Are we returning a struct using a return buffer argument?
     //
-    const bool hasRetBuffArg = impMethodInfo_hasRetBuffArg(info.compMethodInfo, info.compCallConv);
+    const bool hasRetBuffArg = impMethodInfo_hasRetBuffArg(info.compMethodInfo);
 
     // Possibly change the compRetNativeType from TYP_STRUCT to a "primitive" type
     // when we are returning a struct by value and it fits in one register
@@ -145,7 +145,9 @@ void Compiler::lvaInitTypeRef()
         CORINFO_CLASS_HANDLE retClsHnd = info.compMethodInfo->args.retTypeClass;
 
         Compiler::structPassingKind howToReturnStruct;
-        var_types returnType = getReturnTypeForStruct(retClsHnd, info.compCallConv, &howToReturnStruct);
+        var_types                   returnType =
+            getReturnTypeForStruct(retClsHnd, compMethodInfoGetEntrypointCallConv(info.compMethodInfo),
+                                   &howToReturnStruct);
 
         // We can safely widen the return type for enclosed structs.
         if ((howToReturnStruct == SPK_PrimitiveType) || (howToReturnStruct == SPK_EnclosingType))
@@ -351,7 +353,7 @@ void Compiler::lvaInitArgs(InitVarDscInfo* varDscInfo)
     unsigned numUserArgsToSkip = 0;
     unsigned numUserArgs       = info.compMethodInfo->args.numArgs;
 #if defined(TARGET_WINDOWS) && !defined(TARGET_ARM)
-    if (callConvIsInstanceMethodCallConv(info.compCallConv))
+    if (callConvIsInstanceMethodCallConv(compMethodInfoGetEntrypointCallConv(info.compMethodInfo)))
     {
         // If we are a native instance method, handle the first user arg
         // (the unmanaged this parameter) and then handle the hidden
@@ -503,7 +505,7 @@ void Compiler::lvaInitThisPtr(InitVarDscInfo* varDscInfo)
 void Compiler::lvaInitRetBuffArg(InitVarDscInfo* varDscInfo, bool useFixedRetBufReg)
 {
     LclVarDsc* varDsc        = varDscInfo->varDsc;
-    bool       hasRetBuffArg = impMethodInfo_hasRetBuffArg(info.compMethodInfo, info.compCallConv);
+    bool       hasRetBuffArg = impMethodInfo_hasRetBuffArg(info.compMethodInfo);
 
     // These two should always match
     noway_assert(hasRetBuffArg == varDscInfo->hasRetBufArg);
@@ -5347,7 +5349,7 @@ void Compiler::lvaAssignVirtualFrameOffsetsToArgs()
     // the this parameter comes before the hidden return buffer parameter.
     // So, we want to process the native "this" parameter before we process
     // the native return buffer parameter.
-    if (callConvIsInstanceMethodCallConv(info.compCallConv))
+    if (callConvIsInstanceMethodCallConv(compMethodInfoGetEntrypointCallConv(info.compMethodInfo)))
     {
         noway_assert(lvaTable[lclNum].lvIsRegArg);
 #ifndef TARGET_X86

@@ -3507,7 +3507,8 @@ int LinearScan::BuildReturn(GenTree* tree)
                     LclVarDsc*     varDsc = compiler->lvaGetDesc(op1->AsLclVar()->GetLclNum());
                     ReturnTypeDesc retTypeDesc;
                     retTypeDesc.InitializeStructReturnType(compiler, varDsc->GetStructHnd(),
-                                                           compiler->info.compCallConv);
+                                                           compiler->compMethodInfoGetEntrypointCallConv(
+                                                               compiler->info.compMethodInfo));
                     pRetTypeDesc = &retTypeDesc;
                     assert(compiler->lvaGetDesc(op1->AsLclVar()->GetLclNum())->lvFieldCnt ==
                            retTypeDesc.GetReturnRegCount());

@@ -400,13 +400,6 @@ void ZapInfo::CompileMethod()
         m_zapper->Info(W("Compiling method %s\n"), m_currentMethodName.GetUnicode());
     }
 
-    if (GetCompileInfo()->IsUnmanagedCallersOnlyMethod(m_currentMethodHandle))
-    {
-        if (m_zapper->m_pOpt->m_verbose)
-            m_zapper->Warning(W("ReadyToRun:  Methods with UnmanagedCallersOnlyAttribute not implemented\n"));
-        ThrowHR(E_NOTIMPL);
-    }
-
     m_currentMethodInfo = CORINFO_METHOD_INFO();
     if (!getMethodInfo(m_currentMethodHandle, &m_currentMethodInfo))
     {
@@ -480,6 +473,15 @@ void ZapInfo::CompileMethod()
         m_jitFlags.Clear(CORJIT_FLAGS::CORJIT_FLAG_PROCSPLIT);
     }
 #endif
+
+#ifdef TARGET_X86
+    if (GetCompileInfo()->IsUnmanagedCallersOnlyMethod(m_currentMethodHandle))
+    {
+        if (m_zapper->m_pOpt->m_verbose)
+            m_zapper->Warning(W("ReadyToRun:  Methods with UnmanagedCallersOnlyAttribute not implemented\n"));
+        ThrowHR(E_NOTIMPL);
+    }
+#endif // TARGET_X86
 
     if (m_pImage->m_stats)
     {
@@ -2206,7 +2208,7 @@ DWORD FilterNamedIntrinsicMethodAttribs(ZapInfo* pZapInfo, DWORD attribs, CORINF
         }
 #else
         fTreatAsRegularMethodCall |= !fIsPlatformHWIntrinsic && fIsHWIntrinsic;
-#endif
+#endif 
 
         if (fIsPlatformHWIntrinsic)
         {
@@ -4030,9 +4032,9 @@ bool ZapInfo::isIntrinsicType(CORINFO_CLASS_HANDLE classHnd)
     return m_pEEJitInfo->isIntrinsicType(classHnd);
 }
 
-CorInfoCallConvExtension ZapInfo::getUnmanagedCallConv(CORINFO_METHOD_HANDLE method, CORINFO_SIG_INFO* sig, bool* pSuppressGCTransition)
+CorInfoUnmanagedCallConv ZapInfo::getUnmanagedCallConv(CORINFO_METHOD_HANDLE method)
 {
-    return m_pEEJitInfo->getUnmanagedCallConv(method, sig, pSuppressGCTransition);
+    return m_pEEJitInfo->getUnmanagedCallConv(method);
 }
 
 bool ZapInfo::pInvokeMarshalingRequired(CORINFO_METHOD_HANDLE method,

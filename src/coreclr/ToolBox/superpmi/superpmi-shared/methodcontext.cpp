@@ -1625,6 +1625,35 @@ bool MethodContext::repIsIntrinsicType(CORINFO_CLASS_HANDLE cls)
     return result;
 }
 
+void MethodContext::recGetUnmanagedCallConv(CORINFO_METHOD_HANDLE method, CorInfoUnmanagedCallConv result)
+{
+    if (GetUnmanagedCallConv == nullptr)
+        GetUnmanagedCallConv = new LightWeightMap<DWORDLONG, DWORD>();
+
+    GetUnmanagedCallConv->Add((DWORDLONG)method, result);
+    DEBUG_REC(dmpGetUnmanagedCallConv((DWORDLONG)method, (DWORD)result));
+}
+void MethodContext::dmpGetUnmanagedCallConv(DWORDLONG key, DWORD result)
+{
+    printf("GetUnmanagedCallConv key ftn-%016llX, value res-%u", key, result);
+}
+CorInfoUnmanagedCallConv MethodContext::repGetUnmanagedCallConv(CORINFO_METHOD_HANDLE method)
+{
+    if ((GetUnmanagedCallConv == nullptr) || (GetUnmanagedCallConv->GetIndex((DWORDLONG)method) == -1))
+    {
+#ifdef sparseMC
+        LogDebug("Sparse - repGetUnmanagedCallConv returning CORINFO_UNMANAGED_CALLCONV_STDCALL");
+        return CORINFO_UNMANAGED_CALLCONV_STDCALL;
+#else
+        LogException(EXCEPTIONCODE_MC, "Found a null GetUnmanagedCallConv.  Probably missing a fatTrigger for %016llX.",
+                     (DWORDLONG)method);
+#endif
+    }
+    CorInfoUnmanagedCallConv result = (CorInfoUnmanagedCallConv)GetUnmanagedCallConv->Get((DWORDLONG)method);
+    DEBUG_REP(dmpGetUnmanagedCallConv((DWORDLONG)method, (DWORD)result));
+    return result;
+}
+
 void MethodContext::recAsCorInfoType(CORINFO_CLASS_HANDLE cls, CorInfoType result)
 {
     if (AsCorInfoType == nullptr)
@@ -3743,10 +3772,10 @@ void MethodContext::recPInvokeMarshalingRequired(CORINFO_METHOD_HANDLE method,
                                                  bool                  result)
 {
     if (PInvokeMarshalingRequired == nullptr)
-        PInvokeMarshalingRequired = new LightWeightMap<MethodOrSigInfoValue, DWORD>();
+        PInvokeMarshalingRequired = new LightWeightMap<PInvokeMarshalingRequiredValue, DWORD>();
 
-    MethodOrSigInfoValue key;
-    ZeroMemory(&key, sizeof(MethodOrSigInfoValue)); // We use the input structs as a key and use memcmp to
+    PInvokeMarshalingRequiredValue key;
+    ZeroMemory(&key, sizeof(PInvokeMarshalingRequiredValue)); // We use the input structs as a key and use memcmp to
                                                               // compare.. so we need to zero out padding too
 
     key.method     = CastHandle(method);
@@ -3757,7 +3786,7 @@ void MethodContext::recPInvokeMarshalingRequired(CORINFO_METHOD_HANDLE method,
     PInvokeMarshalingRequired->Add(key, (DWORD)result);
     DEBUG_REC(dmpPInvokeMarshalingRequired(key, (DWORD)result));
 }
-void MethodContext::dmpPInvokeMarshalingRequired(const MethodOrSigInfoValue& key, DWORD value)
+void MethodContext::dmpPInvokeMarshalingRequired(const PInvokeMarshalingRequiredValue& key, DWORD value)
 {
     printf("PInvokeMarshalingRequired key mth-%016llX scp-%016llX sig-%u, value res-%u", key.method, key.scope,
            key.pSig_Index, value);
@@ -3768,9 +3797,9 @@ bool MethodContext::repPInvokeMarshalingRequired(CORINFO_METHOD_HANDLE method, C
     if (PInvokeMarshalingRequired == nullptr) // so when we replay checked on free, we throw from lwm
         return TRUE;                          // TODO-Cleanup: hackish...
 
-    MethodOrSigInfoValue key;
-    ZeroMemory(&key, sizeof(MethodOrSigInfoValue)); // We use the input structs as a key and use memcmp to
-                                                      // compare.. so we need to zero out padding too
+    PInvokeMarshalingRequiredValue key;
+    ZeroMemory(&key, sizeof(PInvokeMarshalingRequiredValue)); // We use the input structs as a key and use memcmp to
+                                                              // compare.. so we need to zero out padding too
 
     key.method     = CastHandle(method);
     key.pSig_Index = (DWORD)PInvokeMarshalingRequired->Contains((unsigned char*)callSiteSig->pSig, callSiteSig->cbSig);
@@ -3782,61 +3811,7 @@ bool MethodContext::repPInvokeMarshalingRequired(CORINFO_METHOD_HANDLE method, C
     return value;
 }
 
-void MethodContext::recGetUnmanagedCallConv(CORINFO_METHOD_HANDLE     method,
-                                             CORINFO_SIG_INFO*        callSiteSig,
-                                             CorInfoCallConvExtension result,
-                                             bool                     suppressGCTransitionResult)
-{
-    if (GetUnmanagedCallConv == nullptr)
-        GetUnmanagedCallConv = new LightWeightMap<MethodOrSigInfoValue, DD>();
-
-    MethodOrSigInfoValue key;
-    ZeroMemory(&key, sizeof(MethodOrSigInfoValue)); // We use the input structs as a key and use memcmp to
-                                                              // compare.. so we need to zero out padding too
-
-    key.method     = CastHandle(method);
-    key.pSig_Index = (DWORD)PInvokeMarshalingRequired->AddBuffer((unsigned char*)callSiteSig->pSig, callSiteSig->cbSig);
-    key.cbSig      = (DWORD)callSiteSig->cbSig;
-    key.scope      = CastHandle(callSiteSig->scope);
-
-    GetUnmanagedCallConv->Add(key, { (DWORD)result, (DWORD)suppressGCTransitionResult });
-    DEBUG_REC(dmpGetUnmanagedCallConv(key, { (DWORD)result, (DWORD)suppressGCTransitionResult }));
-}
-void MethodContext::dmpGetUnmanagedCallConv(const MethodOrSigInfoValue& key, DD value)
-{
-    printf("GetUnmanagedCallConv key mth-%016llX scp-%016llX sig-%u, value res-%u,%u", key.method, key.scope,
-           key.pSig_Index, value.A, value.B);
-}
-// Note the jit interface implementation seems to only care about scope and pSig from callSiteSig
-CorInfoCallConvExtension MethodContext::repGetUnmanagedCallConv(CORINFO_METHOD_HANDLE method, CORINFO_SIG_INFO* callSiteSig, bool* pSuppressGCTransition)
-{
-    if (GetUnmanagedCallConv == nullptr)
-    {
-#ifdef sparseMC
-        LogDebug("Sparse - repGetUnmanagedCallConv returning CorInfoCallConvExtension::Managed");
-        return CorInfoCallConvExtension::Managed;
-#else
-        LogException(EXCEPTIONCODE_MC, "Found a null GetUnmGetUnmanagedCallConvanagedCallConv.  Probably missing a fatTrigger for %016llX.",
-                     CastHandle(method));
-#endif
-    }
-
-    MethodOrSigInfoValue key;
-    ZeroMemory(&key, sizeof(MethodOrSigInfoValue)); // We use the input structs as a key and use memcmp to
-                                                      // compare.. so we need to zero out padding too
-
-    key.method     = CastHandle(method);
-    key.pSig_Index = (DWORD)GetUnmanagedCallConv->Contains((unsigned char*)callSiteSig->pSig, callSiteSig->cbSig);
-    key.cbSig      = (DWORD)callSiteSig->cbSig;
-    key.scope      = CastHandle(callSiteSig->scope);
-
-    DD value = GetUnmanagedCallConv->Get(key);
-    DEBUG_REP(dmpGetUnmanagedCallConv(key, value));
-    *pSuppressGCTransition = value.B != 0;
-    return (CorInfoCallConvExtension)value.A;
-}
-
-void MethodContext::recFindSig(CORINFO_MODULE_HANDLE  moduleHandle,
+void MethodContext::recFindSig(CORINFO_MODULE_HANDLE  module,
                                unsigned               sigTOK,
                                CORINFO_CONTEXT_HANDLE context,
                                CORINFO_SIG_INFO*      sig)
@@ -5316,7 +5291,7 @@ void MethodContext::recGetLikelyClass(CORINFO_METHOD_HANDLE ftnHnd, CORINFO_CLAS
 }
 void MethodContext::dmpGetLikelyClass(const Agnostic_GetLikelyClass& key, const Agnostic_GetLikelyClassResult& value)
 {
-    printf("GetLikelyClass key ftn-%016llX base-%016llX il-%u, class-%016llX likelihood-%u numberOfClasses-%u",
+    printf("GetLikelyClass key ftn-%016llX base-%016llX il-%u, class-%016llX likelihood-%u numberOfClasses-%u", 
         key.ftnHnd, key.baseHnd, key.ilOffset, value.classHnd, value.likelihood, value.numberOfClasses);
 }
 CORINFO_CLASS_HANDLE MethodContext::repGetLikelyClass(CORINFO_METHOD_HANDLE ftnHnd, CORINFO_CLASS_HANDLE baseHnd, UINT32 ilOffset, UINT32* pLikelihood, UINT32* pNumberOfClasses)

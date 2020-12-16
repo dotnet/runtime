@@ -162,13 +162,11 @@ bool interceptor_ICJI::isIntrinsicType(
     return original_ICorJitInfo->isIntrinsicType(classHnd);
 }
 
-CorInfoCallConvExtension interceptor_ICJI::getUnmanagedCallConv(
-          CORINFO_METHOD_HANDLE method,
-          CORINFO_SIG_INFO* callSiteSig,
-          bool* pSuppressGCTransition)
+CorInfoUnmanagedCallConv interceptor_ICJI::getUnmanagedCallConv(
+          CORINFO_METHOD_HANDLE method)
 {
     mcs->AddCall("getUnmanagedCallConv");
-    return original_ICorJitInfo->getUnmanagedCallConv(method, callSiteSig, pSuppressGCTransition);
+    return original_ICorJitInfo->getUnmanagedCallConv(method);
 }
 
 bool interceptor_ICJI::pInvokeMarshalingRequired(

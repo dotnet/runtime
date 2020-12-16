@@ -289,15 +289,12 @@ bool interceptor_ICJI::isIntrinsicType(CORINFO_CLASS_HANDLE classHnd)
     return temp;
 }
 
-// return the entry point calling convention for any of the following
-// - a P/Invoke
-// - a method marked with UnmanagedCallersOnly
-// - a function pointer with the CORINFO_CALLCONV_UNMANAGED calling convention.
-CorInfoCallConvExtension interceptor_ICJI::getUnmanagedCallConv(CORINFO_METHOD_HANDLE method, CORINFO_SIG_INFO* callSiteSig, bool* pSuppressGCTransition)
+// return the unmanaged calling convention for a PInvoke
+CorInfoUnmanagedCallConv interceptor_ICJI::getUnmanagedCallConv(CORINFO_METHOD_HANDLE method)
 {
     mc->cr->AddCall("getUnmanagedCallConv");
-    CorInfoCallConvExtension temp = original_ICorJitInfo->getUnmanagedCallConv(method, callSiteSig, pSuppressGCTransition);
-    mc->recGetUnmanagedCallConv(method, callSiteSig, temp, *pSuppressGCTransition);
+    CorInfoUnmanagedCallConv temp = original_ICorJitInfo->getUnmanagedCallConv(method);
+    mc->recGetUnmanagedCallConv(method, temp);
     return temp;
 }
 
@@ -2049,7 +2046,7 @@ HRESULT interceptor_ICJI::getMethodBlockCounts(CORINFO_METHOD_HANDLE ftnHnd,
 
 // Get the likely implementing class for a virtual call or interface call made by ftnHnd
 // at the indicated IL offset. baseHnd is the interface class or base class for the method
-// being called.
+// being called. 
 CORINFO_CLASS_HANDLE interceptor_ICJI::getLikelyClass(CORINFO_METHOD_HANDLE ftnHnd,
                                                       CORINFO_CLASS_HANDLE  baseHnd,
                                                       UINT32                ilOffset,

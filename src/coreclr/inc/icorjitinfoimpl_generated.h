@@ -99,10 +99,8 @@ CorInfoIntrinsics getIntrinsicID(
 bool isIntrinsicType(
           CORINFO_CLASS_HANDLE classHnd) override;
 
-CorInfoCallConvExtension getUnmanagedCallConv(
-          CORINFO_METHOD_HANDLE method,
-          CORINFO_SIG_INFO* callSiteSig,
-          bool* pSuppressGCTransition) override;
+CorInfoUnmanagedCallConv getUnmanagedCallConv(
+          CORINFO_METHOD_HANDLE method) override;
 
 bool pInvokeMarshalingRequired(
           CORINFO_METHOD_HANDLE method,
