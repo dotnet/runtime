@@ -1629,6 +1629,42 @@ namespace System.Diagnostics.Tests
             }
         }
 
+        [PlatformSpecific(TestPlatforms.Windows)] // it tests Windows implementation
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public void RespondingIsRefreshedAfterEveryCallToRefresh()
+        {
+            // testing Process.Responding using a real unresponsive process would be very hard to do properly
+            // instead of this, we just test the implementation to ensure that #36768 is not coming back
+
+            using (Process process = CreateProcess())
+            {
+                process.Start();
+
+                Assert.False(GetHaveResponding(process));
+
+                Assert.True(process.Responding); // sets haveResponding to true
+                Assert.True(GetHaveResponding(process));
+
+                process.Refresh(); // sets haveResponding to false
+                Assert.False(GetHaveResponding(process));
+
+                Assert.True(process.Responding); // sets haveResponding to true
+                Assert.True(GetHaveResponding(process));
+
+
+                if (!process.HasExited)
+                {
+                    process.Kill();
+                }
+
+                Assert.True(process.WaitForExit(WaitInMS));
+            }
+
+            static bool GetHaveResponding(Process process)=> (bool)typeof(Process)
+                    .GetField("_haveResponding", Reflection.BindingFlags.NonPublic | Reflection.BindingFlags.Instance)
+                    .GetValue(process);
+        }
+
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void MainWindowTitle_NoWindow_ReturnsEmpty()
         {
