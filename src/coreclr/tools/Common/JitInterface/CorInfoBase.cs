@@ -276,12 +276,12 @@ namespace Internal.JitInterface
         }
 
         [UnmanagedCallersOnly]
-        static CorInfoUnmanagedCallConv _getUnmanagedCallConv(IntPtr thisHandle, IntPtr* ppException, CORINFO_METHOD_STRUCT_* method)
+        static CorInfoCallConvExtension _getUnmanagedCallConv(IntPtr thisHandle, IntPtr* ppException, CORINFO_METHOD_STRUCT_* method, CORINFO_SIG_INFO* callSiteSig, bool* pSuppressGCTransition)
         {
             var _this = GetThis(thisHandle);
             try
             {
-                return _this.getUnmanagedCallConv(method);
+                return _this.getUnmanagedCallConv(method, callSiteSig, ref *pSuppressGCTransition);
             }
             catch (Exception ex)
             {
@@ -2556,7 +2556,7 @@ namespace Internal.JitInterface
             callbacks[15] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_RESOLVED_TOKEN*, CORINFO_GENERICHANDLE_RESULT*, void>)&_expandRawHandleIntrinsic;
             callbacks[16] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_METHOD_STRUCT_*, byte*, CorInfoIntrinsics>)&_getIntrinsicID;
             callbacks[17] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_CLASS_STRUCT_*, byte>)&_isIntrinsicType;
-            callbacks[18] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_METHOD_STRUCT_*, CorInfoUnmanagedCallConv>)&_getUnmanagedCallConv;
+            callbacks[18] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_METHOD_STRUCT_*, CORINFO_SIG_INFO*, bool*, CorInfoCallConvExtension>)&_getUnmanagedCallConv;
             callbacks[19] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_METHOD_STRUCT_*, CORINFO_SIG_INFO*, byte>)&_pInvokeMarshalingRequired;
             callbacks[20] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_CLASS_STRUCT_*, CORINFO_METHOD_STRUCT_*, byte>)&_satisfiesMethodConstraints;
             callbacks[21] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_CLASS_STRUCT_*, CORINFO_CLASS_STRUCT_*, CORINFO_METHOD_STRUCT_*, CORINFO_CLASS_STRUCT_*, bool*, byte>)&_isCompatibleDelegate;

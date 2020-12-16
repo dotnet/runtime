@@ -26,7 +26,7 @@ DWORD PALAPI WaiterProc_WFSOExMutexTest(LPVOID lpParameter);
 
 DWORD ThreadWaitDelta_WFSOExMutexTest;
 HANDLE hMutex_WFSOExMutexTest;
-static volatile bool s_preWaitTimestampRecorded = 0;
+static volatile bool s_preWaitTimestampRecorded = false;
 
 PALTEST(threading_WaitForSingleObject_WFSOExMutexTest_paltest_waitforsingleobject_wfsoexmutextest, "threading/WaitForSingleObject/WFSOExMutexTest/paltest_waitforsingleobject_wfsoexmutextest")
 {
@@ -122,7 +122,8 @@ void RunTest_WFSOExMutexTest(BOOL AlertThread)
 
 	int ret=0;
 
-    hThread = CreateThread( NULL, 
+    s_preWaitTimestampRecorded = false;
+    hThread = CreateThread( NULL,
                             0, 
                             (LPTHREAD_START_ROUTINE)WaiterProc_WFSOExMutexTest,
                             (LPVOID) AlertThread,

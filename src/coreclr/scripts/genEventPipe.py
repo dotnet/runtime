@@ -94,7 +94,7 @@ def generateClrEventPipeWriteEventsImpl(
         # generate EventPipeEventEnabled function
         eventEnabledImpl = generateMethodSignatureEnabled(eventName) + """
 {
-    return EventPipeEvent%s->IsEnabled();
+    return EventPipeAdapter::EventIsEnabled(EventPipeEvent%s);
 }
 
 """ % eventName
@@ -123,7 +123,7 @@ def generateClrEventPipeWriteEventsImpl(
             WriteEventImpl.append(body)
         else:
             WriteEventImpl.append(
-                "    EventPipe::WriteEvent(*EventPipeEvent" +
+                "    EventPipeAdapter::WriteEvent(EventPipeEvent" +
                 eventName +
                 ", (BYTE*) nullptr, 0, ActivityId, RelatedActivityId);\n")
 
@@ -139,9 +139,9 @@ def generateClrEventPipeWriteEventsImpl(
     WriteEventImpl.append(
         "    EventPipeProvider" +
         providerPrettyName +
-        " = EventPipe::CreateProvider(SL(" +
+        " = EventPipeAdapter::CreateProvider(SL(" +
         providerPrettyName +
-        "Name), " + callbackName + ");\n")
+        "Name), reinterpret_cast<EventPipeCallback>(" + callbackName + "));\n")
     for eventNode in eventNodes:
         eventName = eventNode.getAttribute('symbol')
         templateName = eventNode.getAttribute('template')
@@ -150,7 +150,7 @@ def generateClrEventPipeWriteEventsImpl(
         eventValue = eventNode.getAttribute('value')
         eventVersion = eventNode.getAttribute('version')
         eventLevel = eventNode.getAttribute('level')
-        eventLevel = eventLevel.replace("win:", "EventPipeEventLevel::")
+        eventLevel = eventLevel.replace("win:", "EP_EVENT_LEVEL_").upper()
         taskName = eventNode.getAttribute('task')
 
         needStack = "true"
@@ -159,7 +159,7 @@ def generateClrEventPipeWriteEventsImpl(
             if tokens[2] == eventName:
                 needStack = "false"
 
-        initEvent = """    EventPipeEvent%s = EventPipeProvider%s->AddEvent(%s,%s,%s,%s,%s);
+        initEvent = """    EventPipeEvent%s = EventPipeAdapter::AddEvent(EventPipeProvider%s,%s,%s,%s,%s,%s);
 """ % (eventName, providerPrettyName, eventValue, eventKeywordsMask, eventVersion, eventLevel, needStack)
 
         WriteEventImpl.append(initEvent)
@@ -219,7 +219,7 @@ def generateWriteEventBody(template, providerName, eventName):
         return ERROR_WRITE_FAULT;
     }\n\n"""
 
-    body = "    EventPipe::WriteEvent(*EventPipeEvent" + \
+    body = "    EventPipeAdapter::WriteEvent(EventPipeEvent" + \
         eventName + ", (BYTE *)buffer, (unsigned int)offset, ActivityId, RelatedActivityId);\n"
 
     footer = """
@@ -393,9 +393,7 @@ def generateEventPipeImplFiles(
 
                 header = """
 #include <common.h>
-#include <eventpipeprovider.h>
-#include <eventpipeevent.h>
-#include <eventpipe.h>
+#include "eventpipeadapter.h"
 
 #if defined(TARGET_UNIX)
 #define wcslen PAL_wcslen

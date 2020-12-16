@@ -241,6 +241,7 @@
 
   <!-- Adds System.Runtime.Versioning*Platform* annotation attributes to < .NET 5 builds -->
   <Choose>
+    <When Condition="'$(IncludePlatformAttributes)' == 'false'" />
     <When Condition="('$(IncludePlatformAttributes)' == 'true' or '$(IsWindowsSpecific)' == 'true') and ('$(TargetFrameworkIdentifier)' != '.NETCoreApp' or $([MSBuild]::VersionLessThan($(TargetFrameworkVersion), '5.0')))">
       <ItemGroup>
         <Compile Include="$(CoreLibSharedDir)System\Runtime\Versioning\PlatformAttributes.cs" Link="System\Runtime\Versioning\PlatformAttributes.cs" />

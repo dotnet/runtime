@@ -6,6 +6,7 @@ using System;
 using System.Reflection;
 using System.Text;
 using TestLibrary;
+using System.Runtime.CompilerServices;
 
 unsafe class ThisCallNative
 {
@@ -86,6 +87,10 @@ unsafe class ThisCallTest
             Test4ByteHFAReverse();
             Test4ByteNonHFAReverse();
             TestEnumReverse();
+            Test8ByteHFAUnmanagedCallersOnly();
+            Test4ByteHFAUnmanagedCallersOnly();
+            Test4ByteNonHFAUnmanagedCallersOnly();
+            TestEnumUnmanagedCallersOnly();
         }
         catch (System.Exception ex)
         {
@@ -164,12 +169,55 @@ unsafe class ThisCallTest
 
         Assert.AreEqual(c.dummy, result);
     }
+    private static void Test8ByteHFAUnmanagedCallersOnly()
+    {
+        ThisCallNative.C c = CreateCWithUnmanagedCallersOnlyVTable(2.0f, 3.0f);
+        ThisCallNative.SizeF result = ThisCallNative.GetSizeFromManaged(&c);
+        
+        Assert.AreEqual(c.width, result.width);
+        Assert.AreEqual(c.height, result.height);
+    }
+    
+    private static void Test4ByteHFAUnmanagedCallersOnly()
+    {
+        ThisCallNative.C c = CreateCWithUnmanagedCallersOnlyVTable(2.0f, 3.0f);
+        ThisCallNative.Width result = ThisCallNative.GetWidthFromManaged(&c);
+
+        Assert.AreEqual(c.width, result.width);
+    }
+
+    private static void Test4ByteNonHFAUnmanagedCallersOnly()
+    {
+        ThisCallNative.C c = CreateCWithUnmanagedCallersOnlyVTable(2.0f, 3.0f);
+        ThisCallNative.IntWrapper result = ThisCallNative.GetHeightAsIntFromManaged(&c);
+
+        Assert.AreEqual((int)c.height, result.i);
+    }
+
+    private static void TestEnumUnmanagedCallersOnly()
+    {
+        ThisCallNative.C c = CreateCWithUnmanagedCallersOnlyVTable(2.0f, 3.0f);
+        ThisCallNative.E result = ThisCallNative.GetEFromManaged(&c);
+
+        Assert.AreEqual(c.dummy, result);
+    }
 
     private static ThisCallNative.C CreateCWithManagedVTable(float width, float height)
     {
         return new ThisCallNative.C
         {
             vtable = ManagedVtable,
+            dummy = ThisCallNative.E.Value,
+            width = width,
+            height = height
+        };
+    }
+
+    private static ThisCallNative.C CreateCWithUnmanagedCallersOnlyVTable(float width, float height)
+    {
+        return new ThisCallNative.C
+        {
+            vtable = UnmanagedCallersOnlyVtable,
             dummy = ThisCallNative.E.Value,
             width = width,
             height = height
@@ -196,5 +244,57 @@ unsafe class ThisCallTest
             }
             return managedVtable;
         }
+    }
+
+    private static ThisCallNative.C.VtableLayout* unmanagedCallersOnlyVtable;
+
+    private static ThisCallNative.C.VtableLayout* UnmanagedCallersOnlyVtable
+    {
+        get
+        {
+            if (unmanagedCallersOnlyVtable == null)
+            {
+                unmanagedCallersOnlyVtable = (ThisCallNative.C.VtableLayout*)Marshal.AllocHGlobal(sizeof(ThisCallNative.C.VtableLayout));
+                unmanagedCallersOnlyVtable->getSize = (IntPtr)(delegate* unmanaged[Thiscall]<ThisCallNative.C*, ThisCallNative.SizeF>)&GetSize;
+                unmanagedCallersOnlyVtable->getWidth = (IntPtr)(delegate* unmanaged[Thiscall]<ThisCallNative.C*, ThisCallNative.Width>)&GetWidth;
+                unmanagedCallersOnlyVtable->getHeightAsInt = (IntPtr)(delegate* unmanaged[Thiscall]<ThisCallNative.C*, ThisCallNative.IntWrapper>)&GetHeightAsInt;
+                unmanagedCallersOnlyVtable->getE = (IntPtr)(delegate* unmanaged[Thiscall]<ThisCallNative.C*, ThisCallNative.E>)&GetE;
+            }
+            return unmanagedCallersOnlyVtable;
+        }
+    }
+
+    [UnmanagedCallersOnly(CallConvs = new [] {typeof(CallConvThiscall)})]
+    private static ThisCallNative.SizeF GetSize(ThisCallNative.C* c)
+    {
+        return new ThisCallNative.SizeF
+        {
+            width = c->width,
+            height = c->height
+        };
+    }
+
+    [UnmanagedCallersOnly(CallConvs = new [] {typeof(CallConvThiscall)})]
+    private static ThisCallNative.Width GetWidth(ThisCallNative.C* c)
+    {
+        return new ThisCallNative.Width
+        {
+            width = c->width
+        };
+    }
+
+    [UnmanagedCallersOnly(CallConvs = new [] {typeof(CallConvThiscall)})]
+    private static ThisCallNative.IntWrapper GetHeightAsInt(ThisCallNative.C* c)
+    {
+        return new ThisCallNative.IntWrapper
+        {
+            i = (int)c->height
+        };
+    }
+
+    [UnmanagedCallersOnly(CallConvs = new [] {typeof(CallConvThiscall)})]
+    private static ThisCallNative.E GetE(ThisCallNative.C* c)
+    {
+        return c->dummy;
     }
 }

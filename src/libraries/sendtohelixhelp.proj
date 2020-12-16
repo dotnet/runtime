@@ -254,6 +254,16 @@
       </HelixWorkItem>
     </ItemGroup>
 
+    <ItemGroup Condition="'$(TargetOS)' == 'Browser'">
+      <!-- Create a work item for run-only WASM apps  -->
+      <_RunOnlyWorkItem Include="$(TestArchiveRoot)runonly/**/*.zip" />
+      <HelixWorkItem Include="@(_RunOnlyWorkItem -> '%(FileName)')" >
+        <PayloadArchive>%(Identity)</PayloadArchive>
+        <!-- No RunTests script generated for the sample project so we just use the direct command -->
+        <Command>dotnet exec $XHARNESS_CLI_PATH wasm $XHARNESS_COMMAND  --app=. --engine=V8  --engine-arg=--stack-trace-limit=1000 --js-file=runtime.js --output-directory=$XHARNESS_OUT -- --run WasmSample.dll</Command>
+      </HelixWorkItem>
+    </ItemGroup>
+
     <Message Condition="'$(Scenario)' != ''" Importance="High" Text="Done building Helix work items for scenario $(Scenario). Work item count: @(_WorkItem->Count())" />
     <Message Condition="'$(Scenario)' == '' and ('$(TargetOS)' == 'Android' or '$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'tvOS')" Importance="High" Text="Done building Helix work items. Work item count: @(XHarnessAppBundleToTest->Count())" />
     <Message Condition="'$(Scenario)' == '' and '$(TargetOS)' != 'Android' and '$(TargetOS)' != 'iOS' and '$(TargetOS)' != 'tvOS'" Importance="High" Text="Done building Helix work items. Work item count: @(_WorkItem->Count())" />

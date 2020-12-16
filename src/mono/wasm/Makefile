@@ -20,7 +20,7 @@ NATIVE_BIN_DIR?=$(BINDIR)/native/net6.0-Browser-$(CONFIG)-wasm
 ICU_LIBDIR?=
 SYSTEM_NATIVE_LIBDIR?=$(TOP)/src/libraries/Native/Unix/System.Native
 ENABLE_ES6?=false
-_MSBUILD_WASM_BUILD_ARGS="/p:TargetOS=Browser /p:TargetArchitecture=wasm /p:Configuration=$(CONFIG)"
+_MSBUILD_WASM_BUILD_ARGS=/p:TargetOS=Browser /p:TargetArchitecture=wasm /p:Configuration=$(CONFIG)
 
 all: build-native icu-files source-files header-files
 
