@@ -8932,10 +8932,8 @@ void CodeGen::genFnEpilog(BasicBlock* block)
         if (compiler->info.compIsVarArgs)
             fCalleePop = false;
 
-#ifdef UNIX_X86_ABI
         if (IsCallerPop(compiler->info.compCallConv))
             fCalleePop = false;
-#endif // UNIX_X86_ABI
 
         if (fCalleePop)
         {

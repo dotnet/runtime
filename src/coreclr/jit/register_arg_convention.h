@@ -33,15 +33,15 @@ struct InitVarDscInfo
 
 public:
     // set to initial values
-    void Init(LclVarDsc* lvaTable, bool _hasRetBufArg)
+    void Init(LclVarDsc* lvaTable, bool _hasRetBufArg, unsigned _maxIntRegArgNum, unsigned _maxFloatRegArgNum)
     {
         hasRetBufArg      = _hasRetBufArg;
         varDsc            = &lvaTable[0]; // the first argument LclVar 0
         varNum            = 0;            // the first argument varNum 0
         intRegArgNum      = 0;
         floatRegArgNum    = 0;
-        maxIntRegArgNum   = MAX_REG_ARG;
-        maxFloatRegArgNum = MAX_FLOAT_REG_ARG;
+        maxIntRegArgNum   = _maxIntRegArgNum;
+        maxFloatRegArgNum = _maxFloatRegArgNum;
 
 #ifdef TARGET_ARM
         fltArgSkippedRegMask = RBM_NONE;
