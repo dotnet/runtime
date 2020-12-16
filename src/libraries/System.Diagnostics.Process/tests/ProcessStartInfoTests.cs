@@ -23,6 +23,8 @@ namespace System.Diagnostics.Tests
 {
     public class ProcessStartInfoTests : ProcessTestBase
     {
+        private static bool IsNotWindowsNanoServerAndRemoteExecutorIsSupported => PlatformDetection.IsNotWindowsNanoServer && RemoteExecutor.IsSupported;
+
         [Fact]
         public void TestEnvironmentProperty()
         {
@@ -351,7 +353,9 @@ namespace System.Diagnostics.Tests
             }, workingDirectory, new RemoteInvokeOptions { StartInfo = psi }).Dispose();
         }
 
-        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported)), PlatformSpecific(TestPlatforms.Windows), OuterLoop] // Uses P/Invokes, Requires admin privileges
+        [ConditionalFact(nameof(IsNotWindowsNanoServerAndRemoteExecutorIsSupported))] // Nano has no "netapi32.dll"
+        [PlatformSpecific(TestPlatforms.Windows)]
+        [OuterLoop("Requires admin privileges")] 
         public void TestUserCredentialsPropertiesOnWindows()
         {
             // [SuppressMessage("Microsoft.Security", "CS002:SecretInNextLine", Justification="Unit test dummy credentials.")]
