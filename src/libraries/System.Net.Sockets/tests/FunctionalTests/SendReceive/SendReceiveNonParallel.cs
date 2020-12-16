@@ -187,5 +187,4 @@ namespace System.Net.Sockets.Tests
     {
         public SendReceiveNonParallel_MemoryNativeTask(ITestOutputHelper output) : base(output) { }
     }
-
 }
