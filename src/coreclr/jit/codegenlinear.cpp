@@ -791,10 +791,9 @@ void CodeGen::genCodeForBBlist()
             // all IGs that follows this IG and participate in a loop.
             GetEmitter()->emitCurIG->igFlags |= IGF_LOOP_ALIGN;
 
-            JITDUMP("Adding 'align' instruction of %d bytes in G_M%03u_IG%02u (" FMT_BB
-                    ") to align loop header block (" FMT_BB ").\n",
+            JITDUMP("Adding 'align' instruction of %d bytes in G_M%03u_IG%02u to align loop# %d.\n",
                     compiler->opts.compJitAlignLoopBoundary, compiler->compMethodID, GetEmitter()->emitCurIG->igNum,
-                    block->bbNum, block->bbNext->bbNum);
+                    block->bbNext->bbNatLoopNum);
         }
 #endif
 

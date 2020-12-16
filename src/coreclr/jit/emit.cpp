@@ -4877,13 +4877,7 @@ unsigned emitter::emitCalculatePaddingForLoopAlignment(insGroup* ig,
     // No padding if loop is already aligned
     if ((offset & (alignmentBoundary - 1)) == 0)
     {
-#if DEBUG
-        if (displayAlignmentDetails)
-        {
-            printf("\t\t;; Skip alignment: 'Loop already aligned at %dB boundary.' in (%s)\n", alignmentBoundary,
-                   emitComp->info.compMethodName);
-        }
-#endif
+        JITDUMP("\t\t;; Skip alignment: 'Loop already aligned at %dB boundary.'\n", alignmentBoundary);
         return 0;
     }
 
@@ -4907,6 +4901,8 @@ unsigned emitter::emitCalculatePaddingForLoopAlignment(insGroup* ig,
     // No padding if loop is big
     if (loopSize > maxLoopSize)
     {
+        JITDUMP("\t\t;; Skip alignment: 'Loop is big. LoopSize= %d, MaxLoopSize= %d.'\n", alignmentBoundary, loopSize,
+                maxLoopSize);
         return 0;
     }
 
@@ -4932,26 +4928,15 @@ unsigned emitter::emitCalculatePaddingForLoopAlignment(insGroup* ig,
             if (nPaddingBytes == 0)
             {
                 skipPadding = true;
-#if DEBUG
-                if (displayAlignmentDetails)
-                {
-                    printf("\t\t;; Skip alignment: 'Loop already aligned at 16B boundary.' in (%s)\n",
-                           emitComp->info.compMethodName);
-                }
-#endif
+                JITDUMP("\t\t;; Skip alignment: 'Loop already aligned at 16B boundary.'\n");
             }
             // Check if the alignment exceeds new maxPadding limit
             else if (nPaddingBytes > nMaxPaddingBytes)
             {
                 skipPadding = true;
-#if DEBUG
-                if (displayAlignmentDetails)
-                {
-                    printf("\t\t;; Skip alignment: 'PaddingNeeded= %d, MaxPadding= %d, LoopSize= %d, "
-                           "AlignmentBoundary= %dB.' in (%s)\n",
-                           nPaddingBytes, nMaxPaddingBytes, loopSize, alignmentBoundary, emitComp->info.compFullName);
-                }
-#endif
+                JITDUMP("\t\t;; Skip alignment: 'PaddingNeeded= %d, MaxPadding= %d, LoopSize= %d, "
+                        "AlignmentBoundary= %dB.'\n",
+                        nPaddingBytes, nMaxPaddingBytes, loopSize, alignmentBoundary);
             }
         }
 
@@ -4972,14 +4957,9 @@ unsigned emitter::emitCalculatePaddingForLoopAlignment(insGroup* ig,
             }
             else
             {
-// Otherwise, the loop just fits in minBlocksNeededForLoop and so can skip alignment.
-#if DEBUG
-                if (displayAlignmentDetails)
-                {
-                    printf("\t\t;; Skip alignment: 'Loop is aligned to fit in %d blocks of %d chunks.' in (%s)\n",
-                           minBlocksNeededForLoop, alignmentBoundary, emitComp->info.compMethodName);
-                }
-#endif
+                // Otherwise, the loop just fits in minBlocksNeededForLoop and so can skip alignment.
+                JITDUMP("\t\t;; Skip alignment: 'Loop is aligned to fit in %d blocks of %d chunks.'\n",
+                        minBlocksNeededForLoop, alignmentBoundary);
             }
         }
     }
@@ -5006,22 +4986,16 @@ unsigned emitter::emitCalculatePaddingForLoopAlignment(insGroup* ig,
         }
         else
         {
-// Otherwise, the loop just fits in minBlocksNeededForLoop and so can skip alignment.
-#if DEBUG
-            if (displayAlignmentDetails)
-            {
-                printf("\t\t;; Skip alignment: 'Loop is aligned to fit in %d blocks of %d chunks.' in (%s)\n",
-                       minBlocksNeededForLoop, alignmentBoundary, emitComp->info.compMethodName);
-            }
-#endif
+            // Otherwise, the loop just fits in minBlocksNeededForLoop and so can skip alignment.
+            JITDUMP("\t\t;; Skip alignment: 'Loop is aligned to fit in %d blocks of %d chunks.'\n",
+                    minBlocksNeededForLoop, alignmentBoundary);
         }
     }
 
 #if DEBUG
     if (displayAlignmentDetails && paddingToAdd > 0)
     {
-        printf("\t\t;; Add alignment: 'Padding= %d, AlignmentBoundary= %dB.' in (%s)\n", paddingToAdd,
-               alignmentBoundary, emitComp->info.compFullName);
+        printf("\t\t;; Add alignment: 'Padding= %d, AlignmentBoundary= %dB.'\n", paddingToAdd, alignmentBoundary);
     }
 #endif
 

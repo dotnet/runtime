@@ -11536,6 +11536,14 @@ void Compiler::fgRemoveBlock(BasicBlock* block, bool unreachable)
         if (block->isLoopHead() && (succBlock->bbNum <= block->bbNum))
         {
             succBlock->bbFlags |= BBF_LOOP_HEAD;
+
+            if (block->isLoopAlign())
+            {
+                succBlock->bbFlags |= BBF_LOOP_ALIGN;
+                JITDUMP("Propagating LOOP_ALIGN flag from " FMT_BB " to " FMT_BB " for loop# %d.", block->bbNum,
+                        succBlock->bbNum, block->bbNatLoopNum);
+            }
+
             if (fgDomsComputed && fgReachable(succBlock, block))
             {
                 /* Mark all the reachable blocks between 'succBlock' and 'block', excluding 'block' */
@@ -11545,11 +11553,6 @@ void Compiler::fgRemoveBlock(BasicBlock* block, bool unreachable)
         else if (succBlock->isLoopHead() && bPrev && (succBlock->bbNum <= bPrev->bbNum))
         {
             skipUnmarkLoop = true;
-        }
-
-        if (block->isLoopAlign())
-        {
-            succBlock->bbFlags |= BBF_LOOP_ALIGN;
         }
 
         noway_assert(succBlock);
