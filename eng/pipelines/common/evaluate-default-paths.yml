@@ -1,3 +1,4 @@
+# Template to evaluate common paths in different pipelines.
 parameters:
   extraSubsets: ''
 
