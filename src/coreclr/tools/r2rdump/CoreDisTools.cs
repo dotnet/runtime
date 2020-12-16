@@ -31,7 +31,6 @@ namespace R2RDump
         public static extern void DumpCodeBlock(IntPtr Disasm, IntPtr Address, IntPtr Bytes, int Size);
 
         [DllImport(_dll, CallingConvention = CallingConvention.Cdecl)]
-        [return: MarshalAs(UnmanagedType.I4)]
         public static extern int DumpInstruction(IntPtr Disasm, IntPtr Address, IntPtr Bytes, int Size);
 
         [DllImport(_dll, CallingConvention = CallingConvention.Cdecl)]
