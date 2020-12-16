@@ -4,7 +4,6 @@
     <RootNamespace>Microsoft.Extensions.FileProviders</RootNamespace>
     <TargetFrameworks>netstandard2.0;netstandard2.1;net461</TargetFrameworks>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <EnableDefaultItems>true</EnableDefaultItems>
   </PropertyGroup>
 
   <ItemGroup>
@@ -14,14 +13,25 @@
              Link="Common\src\Extensions\NonCapturingTimer\NonCapturingTimer.cs" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Compile Include="Internal\Clock.cs" />
+    <Compile Include="Internal\FileSystemInfoHelper.cs" />
+    <Compile Include="Internal\IClock.cs" />
+    <Compile Include="Internal\PathUtils.cs" />
+    <Compile Include="Internal\PhysicalDirectoryContents.cs" />
+    <Compile Include="ExclusionFilters.cs" />
+    <Compile Include="IPollingChangeToken.cs" />
+    <Compile Include="PhysicalDirectoryInfo.cs" />
+    <Compile Include="PhysicalFileInfo.cs" />
+    <Compile Include="PhysicalFileProvider.cs" />
+    <Compile Include="PhysicalFilesWatcher.cs" />
+    <Compile Include="PollingFileChangeToken.cs" />
+    <Compile Include="PollingWildCardChangeToken.cs" />
+  </ItemGroup>
+
   <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.1'">
     <Compile Include="PhysicalFileProvider.netstandard21.cs" />
     <Compile Include="PhysicalFilesWatcher.netstandard21.cs" />
-  </ItemGroup>
-
-  <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0' or $(TargetFramework.StartsWith('net4'))">
-    <PackageReference Include="System.Threading.Tasks.Extensions" Version="$(SystemThreadingTasksExtensionsVersion)" />
-    <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Bcl.AsyncInterfaces\src\Microsoft.Bcl.AsyncInterfaces.csproj" />
   </ItemGroup>
 
   <ItemGroup>

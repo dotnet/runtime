@@ -1,8 +1,9 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>netstandard2.0;net461</TargetFrameworks>
+    <TargetFrameworks>netstandard2.0;netstandard2.1;net461</TargetFrameworks>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="Microsoft.Extensions.FileProviders.Physical.netstandard21.cs" Condition="'$(TargetFramework)' == 'netstandard2.1'" />
     <Compile Include="Microsoft.Extensions.FileProviders.Physical.cs" />
   </ItemGroup>
   <ItemGroup>
