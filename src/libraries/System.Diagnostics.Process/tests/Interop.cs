@@ -84,6 +84,9 @@ namespace System.Diagnostics.Tests
         [DllImport("advapi32.dll")]
         internal static extern bool GetTokenInformation(SafeProcessHandle TokenHandle, uint TokenInformationClass, IntPtr TokenInformation, int TokenInformationLength, ref int ReturnLength);
 
+        [DllImport("shell32.dll")]
+        internal static extern int SHChangeNotify(int eventId, int flags, IntPtr item1, IntPtr item2);
+
         internal static void NetUserAdd(string username, string password)
         {
             USER_INFO_1 userInfo = new USER_INFO_1();
