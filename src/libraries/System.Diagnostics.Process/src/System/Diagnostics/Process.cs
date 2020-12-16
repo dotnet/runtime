@@ -1221,10 +1221,6 @@ namespace System.Diagnostics
             {
                 throw new InvalidOperationException(SR.StandardErrorEncodingNotAllowed);
             }
-            if (!string.IsNullOrEmpty(startInfo.Arguments) && startInfo.ArgumentList.Count > 0)
-            {
-                throw new InvalidOperationException(SR.ArgumentAndArgumentListInitialized);
-            }
             if (!string.IsNullOrEmpty(startInfo.Arguments) && startInfo.HasArgumentList)
             {
                 throw new InvalidOperationException(SR.ArgumentAndArgumentListInitialized);
