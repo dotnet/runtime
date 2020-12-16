@@ -28,10 +28,10 @@ namespace R2RDump
         public static extern IntPtr InitBufferedDisasm(TargetArch Target);
 
         [DllImport(_dll, CallingConvention = CallingConvention.Cdecl)]
-        public static extern void DumpCodeBlock(IntPtr Disasm, IntPtr Address, IntPtr Bytes, int Size);
+        public static extern void DumpCodeBlock(IntPtr Disasm, IntPtr Address, IntPtr Bytes, IntPtr Size);
 
         [DllImport(_dll, CallingConvention = CallingConvention.Cdecl)]
-        public static extern int DumpInstruction(IntPtr Disasm, IntPtr Address, IntPtr Bytes, int Size);
+        public static extern int DumpInstruction(IntPtr Disasm, IntPtr Address, IntPtr Bytes, IntPtr Size);
 
         [DllImport(_dll, CallingConvention = CallingConvention.Cdecl)]
         public static extern IntPtr GetOutputBuffer();
@@ -48,7 +48,7 @@ namespace R2RDump
             fixed (byte* p = image)
             {
                 IntPtr ptr = (IntPtr)(p + imageOffset + rtfOffset);
-                instrSize = DumpInstruction(Disasm, new IntPtr(rtf.StartAddress + rtfOffset), ptr, rtf.Size);
+                instrSize = DumpInstruction(Disasm, new IntPtr(rtf.StartAddress + rtfOffset), ptr, new IntPtr(rtf.Size));
             }
             IntPtr pBuffer = GetOutputBuffer();
             instr = Marshal.PtrToStringAnsi(pBuffer);
