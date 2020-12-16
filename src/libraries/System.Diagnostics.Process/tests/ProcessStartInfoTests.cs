@@ -17,12 +17,15 @@ using Microsoft.DotNet.XUnitExtensions;
 using Microsoft.Win32;
 using Microsoft.Win32.SafeHandles;
 using Xunit;
+using System.Security.AccessControl;
 
 namespace System.Diagnostics.Tests
 {
     public class ProcessStartInfoTests : ProcessTestBase
     {
         private const string ItemSeparator = "CAFF9451396B4EEF8A5155A15BDC2080"; // random string that shouldn't be in any env vars; used instead of newline to separate env var strings
+
+        private static bool IsNotWindowsNanoServerAndRemoteExecutorIsSupported => PlatformDetection.IsNotWindowsNanoServer && RemoteExecutor.IsSupported;
 
         [Fact]
         public void TestEnvironmentProperty()
@@ -447,21 +450,18 @@ namespace System.Diagnostics.Tests
             }, workingDirectory, new RemoteInvokeOptions { StartInfo = psi }).Dispose();
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/18978")]
-                [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported)), PlatformSpecific(TestPlatforms.Windows), OuterLoop] // Uses P/Invokes, Requires admin privileges
+        [ConditionalFact(nameof(IsNotWindowsNanoServerAndRemoteExecutorIsSupported))] // Nano has no "netapi32.dll"
+        [PlatformSpecific(TestPlatforms.Windows)]
+        [OuterLoop("Requires admin privileges")] 
         public void TestUserCredentialsPropertiesOnWindows()
         {
             // [SuppressMessage("Microsoft.Security", "CS002:SecretInNextLine", Justification="Unit test dummy credentials.")]
-            string username = "test", password = "PassWord123!!";
-            try
-            {
-                Interop.NetUserAdd(username, password);
-            }
-            catch (Exception exc)
-            {
-                Console.Error.WriteLine("TestUserCredentialsPropertiesOnWindows: NetUserAdd failed: {0}", exc.Message);
-                return; // test is irrelevant if we can't add a user
-            }
+            const string username = "testForDotnetRuntime", password = "PassWord123!!";
+
+            uint removalResult = Interop.NetUserDel(null, username);
+            Assert.True(removalResult == Interop.ExitCodes.NERR_Success || removalResult == Interop.ExitCodes.NERR_UserNotFound);
+
+            Interop.NetUserAdd(username, password);
 
             bool hasStarted = false;
             SafeProcessHandle handle = null;
@@ -470,6 +470,9 @@ namespace System.Diagnostics.Tests
             try
             {
                 p = CreateProcessLong();
+
+                // ensure the new user can access the .exe (otherwise you get Access is denied exception)
+                SetAccessControl(username, p.StartInfo.FileName, AccessControlType.Allow);
 
                 p.StartInfo.LoadUserProfile = true;
                 p.StartInfo.UserName = username;
@@ -496,8 +499,9 @@ namespace System.Diagnostics.Tests
             }
             finally
             {
-                IEnumerable<uint> collection = new uint[] { 0 /* NERR_Success */, 2221 /* NERR_UserNotFound */ };
-                Assert.Contains<uint>(Interop.NetUserDel(null, username), collection);
+                SetAccessControl(username, p.StartInfo.FileName, AccessControlType.Deny); // revoke the access
+
+                Assert.Equal(Interop.ExitCodes.NERR_Success, Interop.NetUserDel(null, username));
 
                 if (handle != null)
                     handle.Dispose();
@@ -509,6 +513,14 @@ namespace System.Diagnostics.Tests
                     Assert.True(p.WaitForExit(WaitInMS));
                 }
             }
+        }
+
+        private static void SetAccessControl(string userName, string filePath, AccessControlType accessControlType)
+        {
+            FileInfo fileInfo = new FileInfo(filePath);
+            FileSecurity accessControl = fileInfo.GetAccessControl();
+            accessControl.AddAccessRule(new FileSystemAccessRule(userName, FileSystemRights.ReadAndExecute, accessControlType));
+            fileInfo.SetAccessControl(accessControl);
         }
 
         private static List<string> GetNamesOfUserProfiles()
