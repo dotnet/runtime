@@ -99,12 +99,12 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        [Fact]
-        public async Task SendToRecvFrom_Datagram_UDP_CombineSyncAsync()
+        [Theory]
+        [MemberData(nameof(Loopbacks))]
+        public async Task SendToRecvFrom_Datagram_UDP_CombineSyncAsync(IPAddress address)
         {
             const int DatagramCount = 16;
             const int DatagramSize = 512;
-            IPAddress address = IPAddress.Loopback;
 
             using var leftSocket = new Socket(address.AddressFamily, SocketType.Dgram, ProtocolType.Udp);
             using var rightSocket = new Socket(address.AddressFamily, SocketType.Dgram, ProtocolType.Udp);
