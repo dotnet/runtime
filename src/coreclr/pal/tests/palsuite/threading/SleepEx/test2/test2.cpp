@@ -37,6 +37,7 @@ VOID PALAPI APCFunc_SleepEx_test2(ULONG_PTR dwParam);
 DWORD PALAPI SleeperProc_SleepEx_test2(LPVOID lpParameter);
 
 DWORD ThreadSleepDelta;
+static volatile bool s_preWaitTimestampRecorded = false;
 
 PALTEST(threading_SleepEx_test2_paltest_sleepex_test2, "threading/SleepEx/test2/paltest_sleepex_test2")
 {
@@ -105,7 +106,8 @@ void RunTest_SleepEx_test2(BOOL AlertThread)
     DWORD dwThreadId = 0;
     int ret;
 
-    hThread = CreateThread( NULL, 
+    s_preWaitTimestampRecorded = false;
+    hThread = CreateThread( NULL,
                             0, 
                             (LPTHREAD_START_ROUTINE)SleeperProc_SleepEx_test2,
                             (LPVOID) AlertThread,
@@ -116,6 +118,13 @@ void RunTest_SleepEx_test2(BOOL AlertThread)
     {
         Fail("ERROR: Was not able to create the thread to test SleepEx!\n"
             "GetLastError returned %d\n", GetLastError());
+    }
+
+    // Wait for the pre-wait timestamp to be recorded on the other thread before sleeping, since the sleep duration here will be
+    // compared against the sleep/wait duration on the other thread
+    while (!s_preWaitTimestampRecorded)
+    {
+        Sleep(0);
     }
 
     if (SleepEx(InterruptTime, FALSE) != 0)
@@ -160,6 +169,7 @@ DWORD PALAPI SleeperProc_SleepEx_test2(LPVOID lpParameter)
     }
 
     OldTimeStamp = GetHighPrecisionTimeStamp(performanceFrequency);
+    s_preWaitTimestampRecorded = true;
 
     ret = SleepEx(ChildThreadSleepTime, Alertable);
     

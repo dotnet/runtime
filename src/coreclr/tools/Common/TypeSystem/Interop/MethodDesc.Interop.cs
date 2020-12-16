@@ -326,7 +326,7 @@ namespace Internal.TypeSystem
     /// <summary>
     /// Represents details about a pinvokeimpl method import.
     /// </summary>
-    public struct PInvokeMetadata
+    public readonly struct PInvokeMetadata
     {
         public readonly string Name;
 

@@ -212,7 +212,7 @@ BOOL DacValidateMD(MethodDesc * pMD)
             }
         }
 
-        if (retval && pMD->HasNativeCode())
+        if (retval && pMD->HasNativeCode() && !pMD->IsFCall())
         {
             PCODE jitCodeAddr = pMD->GetNativeCode();
 

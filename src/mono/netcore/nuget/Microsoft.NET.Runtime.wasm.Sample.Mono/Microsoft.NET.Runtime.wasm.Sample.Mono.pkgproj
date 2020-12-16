@@ -3,11 +3,11 @@
   <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.props))" />
 
   <ItemGroup>
-    <ProjectReference Include="$(RepoToolsLocalDir)tasks\mobile.tasks\WasmAppBuilder\WasmAppBuilder.csproj" />
+    <ProjectReference Include="$(RepoTasksDir)WasmAppBuilder\WasmAppBuilder.csproj" />
   </ItemGroup>
 
   <ItemGroup>
-    <_wasmSampleFiles Include="$(ArtifactsDir)bin\WasmAppBuilder\$(Configuration)\$(NetCoreAppToolCurrent)\WasmAppBuilder.dll" />
+    <_wasmSampleFiles Include="$(WasmAppBuilderTasksAssemblyPath)" />
 
     <PackageFile Include="@(_wasmSampleFiles)" TargetPath="tools\$(NetCoreAppToolCurrent)\" />
   </ItemGroup>

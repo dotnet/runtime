@@ -61,7 +61,6 @@ bool SigInfoFlagsAreValid (CORINFO_SIG_INFO *sig)
     LIMITED_METHOD_CONTRACT;
     return !(sig->flags & ~(  CORINFO_SIGFLAG_IS_LOCAL_SIG
                             | CORINFO_SIGFLAG_IL_STUB
-                            | CORINFO_SIGFLAG_SUPPRESS_GC_TRANSITION
                             ));
 }
 
@@ -420,296 +419,29 @@ class CEEInfo : public ICorJitInfo
     BOOL ContextIsInstantiated(CORINFO_CONTEXT_HANDLE context);
 
 public:
-    // ICorClassInfo stuff
-    CorInfoType asCorInfoType (CORINFO_CLASS_HANDLE cls);
-    // This normalizes EE type information into the form expected by the JIT.
-    //
-    // If typeHnd contains exact type information, then *clsRet will contain
-    // the normalized CORINFO_CLASS_HANDLE information on return.
-    static CorInfoType asCorInfoType (CorElementType cet,
-                                      TypeHandle typeHnd = TypeHandle() /* optional in */,
-                                      CORINFO_CLASS_HANDLE *clsRet = NULL /* optional out */ );
-
-    CORINFO_MODULE_HANDLE getClassModule(CORINFO_CLASS_HANDLE clsHnd);
-    CORINFO_ASSEMBLY_HANDLE getModuleAssembly(CORINFO_MODULE_HANDLE mod);
-    const char* getAssemblyName(CORINFO_ASSEMBLY_HANDLE assem);
-    void* LongLifetimeMalloc(size_t sz);
-    void LongLifetimeFree(void* obj);
-    size_t getClassModuleIdForStatics(CORINFO_CLASS_HANDLE clsHnd, CORINFO_MODULE_HANDLE *pModuleHandle, void **ppIndirection);
-    const char* getClassName (CORINFO_CLASS_HANDLE cls);
-    const char* getClassNameFromMetadata (CORINFO_CLASS_HANDLE cls, const char** namespaceName);
-    CORINFO_CLASS_HANDLE getTypeInstantiationArgument(CORINFO_CLASS_HANDLE cls, unsigned index);
-    const char* getHelperName(CorInfoHelpFunc ftnNum);
-    int appendClassName(__deref_inout_ecount(*pnBufLen) WCHAR** ppBuf,
-                                  int* pnBufLen,
-                                  CORINFO_CLASS_HANDLE    cls,
-                                  bool fNamespace,
-                                  bool fFullInst,
-                                  bool fAssembly);
-    bool isValueClass (CORINFO_CLASS_HANDLE cls);
-    CorInfoInlineTypeCheck canInlineTypeCheck (CORINFO_CLASS_HANDLE cls, CorInfoInlineTypeCheckSource source);
-
-    DWORD getClassAttribs (CORINFO_CLASS_HANDLE cls);
-
-    // Internal version without JIT-EE transition
+#include "icorjitinfoimpl_generated.h"
     DWORD getClassAttribsInternal (CORINFO_CLASS_HANDLE cls);
 
-    bool isStructRequiringStackAllocRetBuf(CORINFO_CLASS_HANDLE cls);
-
-    unsigned getClassSize (CORINFO_CLASS_HANDLE cls);
-    unsigned getHeapClassSize(CORINFO_CLASS_HANDLE cls);
-    bool canAllocateOnStack(CORINFO_CLASS_HANDLE cls);
-    unsigned getClassAlignmentRequirement(CORINFO_CLASS_HANDLE cls, bool fDoubleAlignHint);
     static unsigned getClassAlignmentRequirementStatic(TypeHandle clsHnd);
 
-    // Used for HFA's on IA64...and later for type based disambiguation
-    CORINFO_FIELD_HANDLE getFieldInClass(CORINFO_CLASS_HANDLE clsHnd, INT num);
-
-    mdMethodDef getMethodDefFromMethod(CORINFO_METHOD_HANDLE hMethod);
-    bool checkMethodModifier(CORINFO_METHOD_HANDLE hMethod, LPCSTR modifier, bool fOptional);
-
-    unsigned getClassGClayout (CORINFO_CLASS_HANDLE cls, BYTE* gcPtrs); /* really GCType* gcPtrs */
     static unsigned getClassGClayoutStatic(TypeHandle th, BYTE* gcPtrs);
-    unsigned getClassNumInstanceFields(CORINFO_CLASS_HANDLE cls);
-
-    // returns the enregister info for a struct based on type of fields, alignment, etc.
-    bool getSystemVAmd64PassStructInRegisterDescriptor(
-        /*IN*/  CORINFO_CLASS_HANDLE _structHnd,
-        /*OUT*/ SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR* structPassInRegDescPtr);
-
-    // Check Visibility rules.
-    // For Protected (family access) members, type of the instance is also
-    // considered when checking visibility rules.
-
-
-    CorInfoHelpFunc getNewHelper(CORINFO_RESOLVED_TOKEN * pResolvedToken, CORINFO_METHOD_HANDLE callerHandle, bool * pHasSideEffects);
     static CorInfoHelpFunc getNewHelperStatic(MethodTable * pMT, bool * pHasSideEffects);
-
-    CorInfoHelpFunc getNewArrHelper(CORINFO_CLASS_HANDLE arrayCls);
     static CorInfoHelpFunc getNewArrHelperStatic(TypeHandle clsHnd);
-
-    CorInfoHelpFunc getCastingHelper(CORINFO_RESOLVED_TOKEN * pResolvedToken, bool fThrowing);
     static CorInfoHelpFunc getCastingHelperStatic(TypeHandle clsHnd, bool fThrowing, bool * pfClassMustBeRestored);
-
-    CorInfoHelpFunc getSharedCCtorHelper(CORINFO_CLASS_HANDLE clsHnd);
-    CORINFO_CLASS_HANDLE getTypeForBox(CORINFO_CLASS_HANDLE  cls);
-    CorInfoHelpFunc getBoxHelper(CORINFO_CLASS_HANDLE cls);
-    CorInfoHelpFunc getUnBoxHelper(CORINFO_CLASS_HANDLE cls);
-
-    bool getReadyToRunHelper(
-            CORINFO_RESOLVED_TOKEN * pResolvedToken,
-            CORINFO_LOOKUP_KIND *    pGenericLookupKind,
-            CorInfoHelpFunc          id,
-            CORINFO_CONST_LOOKUP *   pLookup
-            );
-
-    void getReadyToRunDelegateCtorHelper(
-            CORINFO_RESOLVED_TOKEN * pTargetMethod,
-            CORINFO_CLASS_HANDLE     delegateType,
-            CORINFO_LOOKUP *   pLookup
-            );
-
-    CorInfoInitClassResult initClass(
-            CORINFO_FIELD_HANDLE    field,
-            CORINFO_METHOD_HANDLE   method,
-            CORINFO_CONTEXT_HANDLE  context);
-
-    void classMustBeLoadedBeforeCodeIsRun (CORINFO_CLASS_HANDLE cls);
-    void methodMustBeLoadedBeforeCodeIsRun (CORINFO_METHOD_HANDLE meth);
-    CORINFO_METHOD_HANDLE mapMethodDeclToMethodImpl(CORINFO_METHOD_HANDLE methHnd);
-    CORINFO_CLASS_HANDLE getBuiltinClass(CorInfoClassId classId);
-    void getGSCookie(GSCookie * pCookieVal, GSCookie ** ppCookieVal);
-
-    void setPatchpointInfo(PatchpointInfo* patchpointInfo);
-    PatchpointInfo* getOSRInfo(unsigned* ilOffset);
-
-    // "System.Int32" ==> CORINFO_TYPE_INT..
-    CorInfoType getTypeForPrimitiveValueClass(
-            CORINFO_CLASS_HANDLE        cls
-            );
-
-    // "System.Int32" ==> CORINFO_TYPE_INT..
-    // "System.UInt32" ==> CORINFO_TYPE_UINT..
-    CorInfoType getTypeForPrimitiveNumericClass(
-            CORINFO_CLASS_HANDLE        cls
-            );
-
-    // TRUE if child is a subtype of parent
-    // if parent is an interface, then does child implement / extend parent
-    bool canCast(
-            CORINFO_CLASS_HANDLE        child,
-            CORINFO_CLASS_HANDLE        parent
-            );
-
-    // TRUE if cls1 and cls2 are considered equivalent types.
-    bool areTypesEquivalent(
-            CORINFO_CLASS_HANDLE        cls1,
-            CORINFO_CLASS_HANDLE        cls2
-            );
-
-    // See if a cast from fromClass to toClass will succeed, fail, or needs
-    // to be resolved at runtime.
-    TypeCompareState compareTypesForCast(
-            CORINFO_CLASS_HANDLE        fromClass,
-            CORINFO_CLASS_HANDLE        toClass
-            );
-
-    // See if types represented by cls1 and cls2 compare equal, not
-    // equal, or the comparison needs to be resolved at runtime.
-    TypeCompareState compareTypesForEquality(
-            CORINFO_CLASS_HANDLE        cls1,
-            CORINFO_CLASS_HANDLE        cls2
-            );
-
-    // returns is the intersection of cls1 and cls2.
-    CORINFO_CLASS_HANDLE mergeClasses(
-            CORINFO_CLASS_HANDLE        cls1,
-            CORINFO_CLASS_HANDLE        cls2
-            );
-
-    // Returns true if cls2 is known to be a more specific type
-    // than cls1 (a subtype or more restrictive shared type).
-    bool isMoreSpecificType(
-            CORINFO_CLASS_HANDLE        cls1,
-            CORINFO_CLASS_HANDLE        cls2
-            );
-
-    // Given a class handle, returns the Parent type.
-    // For COMObjectType, it returns Class Handle of System.Object.
-    // Returns 0 if System.Object is passed in.
-    CORINFO_CLASS_HANDLE getParentType (
-            CORINFO_CLASS_HANDLE        cls
-            );
-
-    // Returns the CorInfoType of the "child type". If the child type is
-    // not a primitive type, *clsRet will be set.
-    // Given an Array of Type Foo, returns Foo.
-    // Given BYREF Foo, returns Foo
-    CorInfoType getChildType (
-            CORINFO_CLASS_HANDLE       clsHnd,
-            CORINFO_CLASS_HANDLE       *clsRet
-            );
-
-    // Check constraints on type arguments of this class and parent classes
-    bool satisfiesClassConstraints(
-            CORINFO_CLASS_HANDLE cls
-            );
-
-    // Check if this is a single dimensional array type
-    bool isSDArray(
-            CORINFO_CLASS_HANDLE        cls
-            );
-
-    // Get the number of dimensions in an array
-    unsigned getArrayRank(
-            CORINFO_CLASS_HANDLE        cls
-            );
-
-    // Get static field data for an array
-    void * getArrayInitializationData(
-            CORINFO_FIELD_HANDLE        field,
-            DWORD                       size
-            );
-
-    // Check Visibility rules.
-    CorInfoIsAccessAllowedResult canAccessClass(
-            CORINFO_RESOLVED_TOKEN * pResolvedToken,
-            CORINFO_METHOD_HANDLE   callerHandle,
-            CORINFO_HELPER_DESC    *pAccessHelper /* If canAccessClass returns something other
-                                                     than ALLOWED, then this is filled in. */
-            );
 
     // Returns that compilation flags that are shared between JIT and NGen
     static CORJIT_FLAGS GetBaseCompileFlags(MethodDesc * ftn);
 
-    // Resolve metadata token into runtime method handles.
-    void resolveToken(/* IN, OUT */ CORINFO_RESOLVED_TOKEN * pResolvedToken);
-
-    // Attempt to resolve a metadata token into a runtime method handle. Returns true
-    // if resolution succeeded and false otherwise.
-    bool tryResolveToken(/* IN, OUT */ CORINFO_RESOLVED_TOKEN * pResolvedToken);
-
-    void getFieldInfo (CORINFO_RESOLVED_TOKEN * pResolvedToken,
-                       CORINFO_METHOD_HANDLE  callerHandle,
-                       CORINFO_ACCESS_FLAGS   flags,
-                       CORINFO_FIELD_INFO    *pResult
-                      );
     static CorInfoHelpFunc getSharedStaticsHelper(FieldDesc * pField, MethodTable * pFieldMT);
-
-    bool isFieldStatic(CORINFO_FIELD_HANDLE fldHnd);
-
-    // Given a signature token sigTOK, use class/method instantiation in context to instantiate any type variables in the signature and return a new signature
-    void findSig(CORINFO_MODULE_HANDLE scopeHnd, unsigned sigTOK, CORINFO_CONTEXT_HANDLE context, CORINFO_SIG_INFO* sig);
-    void findCallSiteSig(CORINFO_MODULE_HANDLE scopeHnd, unsigned methTOK, CORINFO_CONTEXT_HANDLE context, CORINFO_SIG_INFO* sig);
-    CORINFO_CLASS_HANDLE getTokenTypeAsHandle(CORINFO_RESOLVED_TOKEN * pResolvedToken);
-
-    size_t findNameOfToken (CORINFO_MODULE_HANDLE module, mdToken metaTOK,
-                                      __out_ecount (FQNameCapacity) char * szFQName, size_t FQNameCapacity);
-
-    // Checks if the given metadata token is valid
-    bool isValidToken (
-            CORINFO_MODULE_HANDLE       module,
-            mdToken                    metaTOK);
-
-    // Checks if the given metadata token is valid StringRef
-    bool isValidStringRef (
-            CORINFO_MODULE_HANDLE       module,
-            mdToken                    metaTOK);
-
-    // Get string length and content (can be null) for given metaTOK
-    LPCWSTR getStringLiteral (
-            CORINFO_MODULE_HANDLE       module,
-            mdToken                    metaTOK,
-            int*                        length);
 
     static size_t findNameOfToken (Module* module, mdToken metaTOK,
                             __out_ecount (FQNameCapacity) char * szFQName, size_t FQNameCapacity);
 
-    // ICorMethodInfo stuff
-    const char* getMethodName (CORINFO_METHOD_HANDLE ftnHnd, const char** scopeName);
-    const char* getMethodNameFromMetadata (CORINFO_METHOD_HANDLE ftnHnd, const char** className, const char** namespaceName, const char **enclosingClassName);
-    unsigned getMethodHash (CORINFO_METHOD_HANDLE ftnHnd);
-
-    DWORD getMethodAttribs (CORINFO_METHOD_HANDLE ftnHnd);
-    // Internal version without JIT-EE transition
     DWORD getMethodAttribsInternal (CORINFO_METHOD_HANDLE ftnHnd);
-
-    void setMethodAttribs (CORINFO_METHOD_HANDLE ftnHnd, CorInfoMethodRuntimeFlags attribs);
-
-    bool getMethodInfo (
-            CORINFO_METHOD_HANDLE ftnHnd,
-            CORINFO_METHOD_INFO*  methInfo);
-
-    CorInfoInline canInline (
-            CORINFO_METHOD_HANDLE  callerHnd,
-            CORINFO_METHOD_HANDLE  calleeHnd,
-            DWORD*                 pRestrictions);
-
-    void reportInliningDecision (CORINFO_METHOD_HANDLE inlinerHnd,
-                                 CORINFO_METHOD_HANDLE inlineeHnd,
-                                 CorInfoInline inlineResult,
-                                 const char * reason);
-
-    bool canTailCall (
-            CORINFO_METHOD_HANDLE  callerHnd,
-            CORINFO_METHOD_HANDLE  declaredCalleeHnd,
-            CORINFO_METHOD_HANDLE  exactCalleeHnd,
-            bool fIsTailPrefix);
-
-    void reportTailCallDecision (CORINFO_METHOD_HANDLE callerHnd,
-                                 CORINFO_METHOD_HANDLE calleeHnd,
-                                 bool fIsTailPrefix,
-                                 CorInfoTailCall tailCallResult,
-                                 const char * reason);
 
     // Given a method descriptor ftnHnd, extract signature information into sigInfo
     // Obtain (representative) instantiation information from ftnHnd's owner class
     //@GENERICSVER: added explicit owner parameter
-    void getMethodSig (
-            CORINFO_METHOD_HANDLE ftnHnd,
-            CORINFO_SIG_INFO* sigInfo,
-            CORINFO_CLASS_HANDLE owner = NULL
-            );
     // Internal version without JIT-EE transition
     void getMethodSigInternal (
             CORINFO_METHOD_HANDLE ftnHnd,
@@ -718,148 +450,13 @@ public:
             SignatureKind signatureKind = SK_NOT_CALLSITE
             );
 
-    void getEHinfo(
-            CORINFO_METHOD_HANDLE ftn,
-            unsigned      EHnumber,
-            CORINFO_EH_CLAUSE* clause);
-
-    CORINFO_CLASS_HANDLE getMethodClass (CORINFO_METHOD_HANDLE methodHnd);
-    CORINFO_MODULE_HANDLE getMethodModule (CORINFO_METHOD_HANDLE methodHnd);
-
-    void getMethodVTableOffset (
-            CORINFO_METHOD_HANDLE methodHnd,
-            unsigned * pOffsetOfIndirection,
-            unsigned * pOffsetAfterIndirection,
-            bool * isRelative);
-
-    bool resolveVirtualMethod(CORINFO_DEVIRTUALIZATION_INFO * info);
     bool resolveVirtualMethodHelper(CORINFO_DEVIRTUALIZATION_INFO * info);
-
-    CORINFO_METHOD_HANDLE getUnboxedEntry(
-        CORINFO_METHOD_HANDLE ftn,
-        bool* requiresInstMethodTableArg
-    );
-
-    CORINFO_CLASS_HANDLE getDefaultEqualityComparerClass(
-        CORINFO_CLASS_HANDLE elemType
-        );
 
     CORINFO_CLASS_HANDLE getDefaultEqualityComparerClassHelper(
         CORINFO_CLASS_HANDLE elemType
         );
 
-    void expandRawHandleIntrinsic(
-        CORINFO_RESOLVED_TOKEN *        pResolvedToken,
-        CORINFO_GENERICHANDLE_RESULT *  pResult);
-
-    CorInfoIntrinsics getIntrinsicID(CORINFO_METHOD_HANDLE method,
-                                     bool * pMustExpand = NULL);
-
-    bool isIntrinsicType(CORINFO_CLASS_HANDLE classHnd);
-
-    CorInfoUnmanagedCallConv getUnmanagedCallConv(CORINFO_METHOD_HANDLE method);
-    bool pInvokeMarshalingRequired(CORINFO_METHOD_HANDLE method, CORINFO_SIG_INFO* callSiteSig);
-
-    // Generate a cookie based on the signature that would needs to be passed
-    //  to the above generic stub
-    LPVOID GetCookieForPInvokeCalliSig(CORINFO_SIG_INFO* szMetaSig, void ** ppIndirection);
-    bool canGetCookieForPInvokeCalliSig(CORINFO_SIG_INFO* szMetaSig);
-
-    // Check constraints on method type arguments (only).
-    // The parent class should be checked separately using satisfiesClassConstraints(parent).
-    bool satisfiesMethodConstraints(
-            CORINFO_CLASS_HANDLE        parent, // the exact parent of the method
-            CORINFO_METHOD_HANDLE       method
-            );
-
-    // Given a Delegate type and a method, check if the method signature
-    // is Compatible with the Invoke method of the delegate.
-    //@GENERICSVER: new (suitable for generics)
-    bool isCompatibleDelegate(
-            CORINFO_CLASS_HANDLE        objCls,
-            CORINFO_CLASS_HANDLE        methodParentCls,
-            CORINFO_METHOD_HANDLE       method,
-            CORINFO_CLASS_HANDLE        delegateCls,
-            bool*                       pfIsOpenDelegate);
-
-    // ICorFieldInfo stuff
-    const char* getFieldName (CORINFO_FIELD_HANDLE field,
-                              const char** scopeName);
-
-    CORINFO_CLASS_HANDLE getFieldClass (CORINFO_FIELD_HANDLE field);
-
-    //@GENERICSVER: added owner parameter
-    CorInfoType getFieldType (CORINFO_FIELD_HANDLE field, CORINFO_CLASS_HANDLE* structType = NULL,CORINFO_CLASS_HANDLE owner = NULL);
-    // Internal version without JIT-EE transition
     CorInfoType getFieldTypeInternal (CORINFO_FIELD_HANDLE field, CORINFO_CLASS_HANDLE* structType = NULL,CORINFO_CLASS_HANDLE owner = NULL);
-
-    unsigned getFieldOffset (CORINFO_FIELD_HANDLE field);
-
-    void* getFieldAddress(CORINFO_FIELD_HANDLE field, void **ppIndirection);
-
-    CORINFO_CLASS_HANDLE getStaticFieldCurrentClass(CORINFO_FIELD_HANDLE field, bool* pIsSpeculative);
-
-    // ICorDebugInfo stuff
-    void * allocateArray(size_t cBytes);
-    void freeArray(void *array);
-    void getBoundaries(CORINFO_METHOD_HANDLE ftn,
-                       unsigned int *cILOffsets, DWORD **pILOffsets,
-                       ICorDebugInfo::BoundaryTypes *implictBoundaries);
-    void setBoundaries(CORINFO_METHOD_HANDLE ftn,
-                       ULONG32 cMap, ICorDebugInfo::OffsetMapping *pMap);
-    void getVars(CORINFO_METHOD_HANDLE ftn, ULONG32 *cVars,
-                 ICorDebugInfo::ILVarInfo **vars, bool *extendOthers);
-    void setVars(CORINFO_METHOD_HANDLE ftn, ULONG32 cVars,
-                 ICorDebugInfo::NativeVarInfo *vars);
-
-    // ICorArgInfo stuff
-
-    CorInfoTypeWithMod getArgType (
-            CORINFO_SIG_INFO*       sig,
-            CORINFO_ARG_LIST_HANDLE    args,
-            CORINFO_CLASS_HANDLE       *vcTypeRet
-            );
-
-    CORINFO_CLASS_HANDLE getArgClass (
-            CORINFO_SIG_INFO*       sig,
-            CORINFO_ARG_LIST_HANDLE    args
-            );
-
-    CorInfoHFAElemType getHFAType (
-            CORINFO_CLASS_HANDLE hClass
-            );
-
-    CORINFO_ARG_LIST_HANDLE getArgNext (
-            CORINFO_ARG_LIST_HANDLE args
-            );
-
-    // ICorErrorInfo stuff
-
-    HRESULT GetErrorHRESULT(struct _EXCEPTION_POINTERS *pExceptionPointers);
-    ULONG GetErrorMessage(__out_ecount(bufferLength) LPWSTR buffer,
-                          ULONG bufferLength);
-    int FilterException(struct _EXCEPTION_POINTERS *pExceptionPointers);
-    void HandleException(struct _EXCEPTION_POINTERS *pExceptionPointers);
-    void ThrowExceptionForJitResult(HRESULT result);
-    void ThrowExceptionForHelper(const CORINFO_HELPER_DESC * throwHelper);
-
-    // ICorStaticInfo stuff
-    void getEEInfo(CORINFO_EE_INFO *pEEInfoOut);
-
-    LPCWSTR getJitTimeLogFilename();
-
-    //ICorDynamicInfo stuff
-    DWORD getFieldThreadLocalStoreID (CORINFO_FIELD_HANDLE field, void **ppIndirection);
-
-    // Stub dispatch stuff
-    void getCallInfo(
-                        CORINFO_RESOLVED_TOKEN * pResolvedToken,
-                        CORINFO_RESOLVED_TOKEN * pConstrainedResolvedToken,
-                        CORINFO_METHOD_HANDLE   callerHandle,
-                        CORINFO_CALLINFO_FLAGS  flags,
-                        CORINFO_CALL_INFO      *pResult /*out */);
-    bool canAccessFamily(CORINFO_METHOD_HANDLE hCaller,
-                         CORINFO_CLASS_HANDLE hInstanceType);
 
 protected:
 
@@ -876,85 +473,13 @@ protected:
 
 public:
 
-    bool isRIDClassDomainID(CORINFO_CLASS_HANDLE cls);
-    unsigned getClassDomainID (CORINFO_CLASS_HANDLE   cls, void **ppIndirection);
-    CORINFO_VARARGS_HANDLE getVarArgsHandle(CORINFO_SIG_INFO *sig, void **ppIndirection);
-    bool canGetVarArgsHandle(CORINFO_SIG_INFO *sig);
     void* getAddressOfPInvokeFixup(CORINFO_METHOD_HANDLE method, void **ppIndirection);
-    void getAddressOfPInvokeTarget(CORINFO_METHOD_HANDLE method, CORINFO_CONST_LOOKUP *pLookup);
-    CORINFO_JUST_MY_CODE_HANDLE getJustMyCodeHandle(CORINFO_METHOD_HANDLE method, CORINFO_JUST_MY_CODE_HANDLE **ppIndirection);
-
-    void GetProfilingHandle(
-                    bool                      *pbHookFunction,
-                    void                     **pProfilerHandle,
-                    bool                      *pbIndirectedHandles
-                    );
-
-    InfoAccessType constructStringLiteral(CORINFO_MODULE_HANDLE scopeHnd, mdToken metaTok, void **ppValue);
-    InfoAccessType emptyStringLiteral(void ** ppValue);
-    void* getMethodSync(CORINFO_METHOD_HANDLE ftnHnd, void **ppIndirection);
-
-    DWORD getThreadTLSIndex(void **ppIndirection);
-    const void * getInlinedCallFrameVptr(void **ppIndirection);
-
-    LONG * getAddrOfCaptureThreadGlobal(void **ppIndirection);
-    void* getHelperFtn(CorInfoHelpFunc    ftnNum,                 /* IN  */
-                       void **            ppIndirection);         /* OUT */
 
     bool getTailCallHelpersInternal(
         CORINFO_RESOLVED_TOKEN* callToken,
         CORINFO_SIG_INFO* sig,
         CORINFO_GET_TAILCALL_HELPERS_FLAGS flags,
         CORINFO_TAILCALL_HELPERS* pResult);
-
-    bool getTailCallHelpers(
-        CORINFO_RESOLVED_TOKEN* callToken,
-        CORINFO_SIG_INFO* sig,
-        CORINFO_GET_TAILCALL_HELPERS_FLAGS flags,
-        CORINFO_TAILCALL_HELPERS* pResult);
-
-    bool convertPInvokeCalliToCall(CORINFO_RESOLVED_TOKEN * pResolvedToken,
-                                   bool fMustConvert);
-
-    bool notifyInstructionSetUsage(CORINFO_InstructionSet instructionSet, 
-                                   bool supportEnabled);
-
-    void getFunctionEntryPoint(CORINFO_METHOD_HANDLE   ftn,                 /* IN  */
-                               CORINFO_CONST_LOOKUP *  pResult,             /* OUT */
-                               CORINFO_ACCESS_FLAGS    accessFlags = CORINFO_ACCESS_ANY);
-
-    void getFunctionFixedEntryPoint(CORINFO_METHOD_HANDLE   ftn,
-                                    CORINFO_CONST_LOOKUP *  pResult);
-
-    // get slow lazy string literal helper to use (CORINFO_HELP_STRCNS*).
-    // Returns CORINFO_HELP_UNDEF if lazy string literal helper cannot be used.
-    CorInfoHelpFunc getLazyStringLiteralHelper(CORINFO_MODULE_HANDLE handle);
-
-    CORINFO_MODULE_HANDLE embedModuleHandle(CORINFO_MODULE_HANDLE handle,
-                                            void **ppIndirection);
-    CORINFO_CLASS_HANDLE embedClassHandle(CORINFO_CLASS_HANDLE handle,
-                                          void **ppIndirection);
-    CORINFO_FIELD_HANDLE embedFieldHandle(CORINFO_FIELD_HANDLE handle,
-                                          void **ppIndirection);
-    CORINFO_METHOD_HANDLE embedMethodHandle(CORINFO_METHOD_HANDLE handle,
-                                            void **ppIndirection);
-
-    void embedGenericHandle(CORINFO_RESOLVED_TOKEN * pResolvedToken,
-        bool                     fEmbedParent,
-        CORINFO_GENERICHANDLE_RESULT *pResult);
-
-    void getLocationOfThisType(CORINFO_METHOD_HANDLE context, CORINFO_LOOKUP_KIND* pLookupKind);
-
-
-    void setOverride(ICorDynamicInfo *pOverride, CORINFO_METHOD_HANDLE currentMethod)
-    {
-        LIMITED_METHOD_CONTRACT;
-        m_pOverride = pOverride;
-        m_pMethodBeingCompiled = (MethodDesc *)currentMethod;     // method being compiled
-
-        m_hMethodForSecurity_Key = NULL;
-        m_pMethodForSecurity_Value = NULL;
-    }
 
     // Returns whether we are generating code for NGen image.
     bool IsCompilingForNGen()
@@ -964,103 +489,13 @@ public:
         return this != m_pOverride;
     }
 
-    void addActiveDependency(CORINFO_MODULE_HANDLE moduleFrom, CORINFO_MODULE_HANDLE moduleTo);
-    CORINFO_METHOD_HANDLE GetDelegateCtor(
-                        CORINFO_METHOD_HANDLE       methHnd,
-                        CORINFO_CLASS_HANDLE        clsHnd,
-                        CORINFO_METHOD_HANDLE       targetMethodHnd,
-                        DelegateCtorArgs *          pCtorData);
-
-    void MethodCompileComplete(
-                CORINFO_METHOD_HANDLE methHnd);
-
+    // This normalizes EE type information into the form expected by the JIT.
     //
-    // ICorJitInfo stuff - none of this should be called on this class
-    //
-
-    void allocMem (
-            ULONG               hotCodeSize,    /* IN */
-            ULONG               coldCodeSize,   /* IN */
-            ULONG               roDataSize,     /* IN */
-            ULONG               xcptnsCount,    /* IN */
-            CorJitAllocMemFlag  flag,           /* IN */
-            void **             hotCodeBlock,   /* OUT */
-            void **             coldCodeBlock,  /* OUT */
-            void **             roDataBlock     /* OUT */
-            );
-
-    void reserveUnwindInfo (
-            bool                isFunclet,             /* IN */
-            bool                isColdCode,            /* IN */
-            ULONG               unwindSize             /* IN */
-            );
-
-    void allocUnwindInfo (
-            BYTE *              pHotCode,              /* IN */
-            BYTE *              pColdCode,             /* IN */
-            ULONG               startOffset,           /* IN */
-            ULONG               endOffset,             /* IN */
-            ULONG               unwindSize,            /* IN */
-            BYTE *              pUnwindBlock,          /* IN */
-            CorJitFuncKind      funcKind               /* IN */
-            );
-
-    void * allocGCInfo (
-            size_t                  size        /* IN */
-            );
-
-    void setEHcount (
-            unsigned		     cEH    /* IN */
-            );
-
-    void setEHinfo (
-            unsigned		     EHnumber,   /* IN  */
-            const CORINFO_EH_CLAUSE *clause      /* IN */
-            );
-
-    bool logMsg(unsigned level, const char* fmt, va_list args);
-
-    int doAssert(const char* szFile, int iLine, const char* szExpr);
-
-    void reportFatalError(CorJitResult result);
-
-    HRESULT allocMethodBlockCounts (
-            UINT32                count,           // the count of <ILOffset, ExecutionCount> tuples
-            BlockCounts **        pBlockCounts     // pointer to array of <ILOffset, ExecutionCount> tuples
-            );
-
-    HRESULT getMethodBlockCounts(
-            CORINFO_METHOD_HANDLE ftnHnd,
-            UINT32 *              pCount,          // pointer to the count of <ILOffset, ExecutionCount> tuples
-            BlockCounts **        pBlockCounts,    // pointer to array of <ILOffset, ExecutionCount> tuples
-            UINT32 *              pNumRuns
-            );
-
-    CORINFO_CLASS_HANDLE getLikelyClass(
-            CORINFO_METHOD_HANDLE ftnHnd,
-            CORINFO_CLASS_HANDLE  baseHnd,
-            UINT32                ilOffset,            
-            UINT32 *              pLikelihood,
-            UINT32 *              pNumberOfClasses
-            );
-
-    void recordCallSite(
-            ULONG                 instrOffset,  /* IN */
-            CORINFO_SIG_INFO *    callSig,      /* IN */
-            CORINFO_METHOD_HANDLE methodHandle  /* IN */
-            );
-
-    void recordRelocation(
-            void *                 location,   /* IN  */
-            void *                 target,     /* IN  */
-            WORD                   fRelocType, /* IN  */
-            WORD                   slotNum = 0,  /* IN  */
-            INT32                  addlDelta = 0 /* IN  */
-            );
-
-    WORD getRelocTypeHint(void * target);
-
-    DWORD getExpectedTargetArchitecture();
+    // If typeHnd contains exact type information, then *clsRet will contain
+    // the normalized CORINFO_CLASS_HANDLE information on return.
+    static CorInfoType asCorInfoType (CorElementType cet,
+                                      TypeHandle typeHnd = TypeHandle() /* optional in */,
+                                      CORINFO_CLASS_HANDLE *clsRet = NULL /* optional out */ );
 
     CEEInfo(MethodDesc * fd = NULL, bool fVerifyOnly = false, bool fAllowInlining = true) :
         m_pOverride(NULL),
@@ -1087,10 +522,6 @@ public:
 
     void setJitFlags(const CORJIT_FLAGS& jitFlags);
 
-    DWORD getJitFlags(CORJIT_FLAGS* jitFlags, DWORD sizeInBytes);
-
-    bool runWithErrorTrap(void (*function)(void*), void* param);
-
 private:
     // Shrinking these buffers drastically reduces the amount of stack space
     // required for each instance of the interpreter, and thereby reduces SOs.
@@ -1109,6 +540,12 @@ private:
 
 public:
 
+    enum ConvToJitSigFlags : int
+    {
+        CONV_TO_JITSIG_FLAGS_NONE                       = 0x0,
+        CONV_TO_JITSIG_FLAGS_LOCALSIG                   = 0x1,
+    };
+
     //@GENERICS:
     // The method handle is used to instantiate method and class type parameters
     // It's also used to determine whether an extra dictionary parameter is required
@@ -1119,10 +556,9 @@ public:
         DWORD                 cbSig,
         CORINFO_MODULE_HANDLE scopeHnd,
         mdToken               token,
-        CORINFO_SIG_INFO *    sigRet,
-        MethodDesc *          context,
-        bool                  localSig,
-        TypeHandle            owner = TypeHandle());
+        SigTypeContext*       context,
+        ConvToJitSigFlags     flags,
+        CORINFO_SIG_INFO *    sigRet);
 
     MethodDesc * GetMethodForSecurity(CORINFO_METHOD_HANDLE callerHandle);
 
@@ -1205,9 +641,9 @@ public:
             void **             hotCodeBlock,   /* OUT */
             void **             coldCodeBlock,  /* OUT */
             void **             roDataBlock     /* OUT */
-            );
+            ) override final;
 
-    void reserveUnwindInfo(bool isFunclet, bool isColdCode, ULONG unwindSize);
+    void reserveUnwindInfo(bool isFunclet, bool isColdCode, ULONG unwindSize) override final;
 
     void allocUnwindInfo (
             BYTE * pHotCode,              /* IN */
@@ -1217,34 +653,34 @@ public:
             ULONG  unwindSize,            /* IN */
             BYTE * pUnwindBlock,          /* IN */
             CorJitFuncKind funcKind       /* IN */
-            );
+            ) override final;
 
-    void * allocGCInfo (size_t  size);
+    void * allocGCInfo (size_t  size) override final;
 
-    void setEHcount (unsigned cEH);
+    void setEHcount (unsigned cEH) override final;
 
     void setEHinfo (
             unsigned      EHnumber,
-            const CORINFO_EH_CLAUSE* clause);
+            const CORINFO_EH_CLAUSE* clause) override final;
 
     void getEHinfo(
             CORINFO_METHOD_HANDLE ftn,              /* IN  */
             unsigned      EHnumber,                 /* IN */
             CORINFO_EH_CLAUSE* clause               /* OUT */
-            );
+            ) override final;
 
 
     HRESULT allocMethodBlockCounts (
         UINT32                        count,         // the count of <ILOffset, ExecutionCount> tuples
         ICorJitInfo::BlockCounts **   pBlockCounts   // pointer to array of <ILOffset, ExecutionCount> tuples
-    );
+    ) override final;
 
     HRESULT getMethodBlockCounts(
         CORINFO_METHOD_HANDLE         ftnHnd,
         UINT32 *                      pCount,        // pointer to the count of <ILOffset, ExecutionCount> tuples
         BlockCounts **                pBlockCounts,  // pointer to array of <ILOffset, ExecutionCount> tuples
         UINT32 *                      pNumRuns
-    );
+    ) override final;
 
     CORINFO_CLASS_HANDLE getLikelyClass(
             CORINFO_METHOD_HANDLE ftnHnd,
@@ -1252,24 +688,24 @@ public:
             UINT32                ilOffset,
             UINT32 *              pLikelihood,
             UINT32 *              pNumberOfClasses
-            );
+            ) override final;
 
     void recordCallSite(
             ULONG                     instrOffset,  /* IN */
             CORINFO_SIG_INFO *        callSig,      /* IN */
             CORINFO_METHOD_HANDLE     methodHandle  /* IN */
-            );
+            ) override final;
 
     void recordRelocation(
             void                    *location,
             void                    *target,
             WORD                     fRelocType,
             WORD                     slot,
-            INT32                    addlDelta);
+            INT32                    addlDelta) override final;
 
-    WORD getRelocTypeHint(void * target);
+    WORD getRelocTypeHint(void * target) override final;
 
-    DWORD getExpectedTargetArchitecture();
+    DWORD getExpectedTargetArchitecture() override final;
 
     CodeHeader* GetCodeHeader()
     {
@@ -1453,17 +889,17 @@ public:
 
     // ICorDebugInfo stuff.
     void setBoundaries(CORINFO_METHOD_HANDLE ftn,
-                       ULONG32 cMap, ICorDebugInfo::OffsetMapping *pMap);
+                       ULONG32 cMap, ICorDebugInfo::OffsetMapping *pMap) override final;
     void setVars(CORINFO_METHOD_HANDLE ftn, ULONG32 cVars,
-                 ICorDebugInfo::NativeVarInfo *vars);
+                 ICorDebugInfo::NativeVarInfo *vars) override final;
     void CompressDebugInfo();
 
-    void* getHelperFtn(CorInfoHelpFunc    ftnNum,                 /* IN  */
-                       void **            ppIndirection);         /* OUT */
+    void* getHelperFtn(CorInfoHelpFunc    ftnNum,                         /* IN  */
+                       void **            ppIndirection) override final;  /* OUT */
     static PCODE getHelperFtnStatic(CorInfoHelpFunc ftnNum);
 
     // Override active dependency to talk to loader
-    void addActiveDependency(CORINFO_MODULE_HANDLE moduleFrom, CORINFO_MODULE_HANDLE moduleTo);
+    void addActiveDependency(CORINFO_MODULE_HANDLE moduleFrom, CORINFO_MODULE_HANDLE moduleTo) override final;
 
     // Override of CEEInfo::GetProfilingHandle.  The first time this is called for a
     // method desc, it calls through to CEEInfo::GetProfilingHandle and caches the
@@ -1474,18 +910,18 @@ public:
                     bool                      *pbHookFunction,
                     void                     **pProfilerHandle,
                     bool                      *pbIndirectedHandles
-                    );
+                    ) override final;
 
-    InfoAccessType constructStringLiteral(CORINFO_MODULE_HANDLE scopeHnd, mdToken metaTok, void **ppValue);
-    InfoAccessType emptyStringLiteral(void ** ppValue);
-    void* getFieldAddress(CORINFO_FIELD_HANDLE field, void **ppIndirection);
-    CORINFO_CLASS_HANDLE getStaticFieldCurrentClass(CORINFO_FIELD_HANDLE field, bool* pIsSpeculative);
-    void* getMethodSync(CORINFO_METHOD_HANDLE ftnHnd, void **ppIndirection);
+    InfoAccessType constructStringLiteral(CORINFO_MODULE_HANDLE scopeHnd, mdToken metaTok, void **ppValue) override final;
+    InfoAccessType emptyStringLiteral(void ** ppValue) override final;
+    void* getFieldAddress(CORINFO_FIELD_HANDLE field, void **ppIndirection) override final;
+    CORINFO_CLASS_HANDLE getStaticFieldCurrentClass(CORINFO_FIELD_HANDLE field, bool* pIsSpeculative) override final;
+    void* getMethodSync(CORINFO_METHOD_HANDLE ftnHnd, void **ppIndirection) override final;
 
     void BackoutJitData(EEJitManager * jitMgr);
 
-    void setPatchpointInfo(PatchpointInfo* patchpointInfo);
-    PatchpointInfo* getOSRInfo(unsigned* ilOffset);
+    void setPatchpointInfo(PatchpointInfo* patchpointInfo) override final;
+    PatchpointInfo* getOSRInfo(unsigned* ilOffset) override final;
 
 protected :
     EEJitManager*           m_jitManager;   // responsible for allocating memory

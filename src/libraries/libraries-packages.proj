@@ -1,5 +1,4 @@
-<Project>
-  <Import Sdk="Microsoft.Build.Traversal" Project="Sdk.props" />
+<Project Sdk="Microsoft.Build.Traversal" DefaultTargets="Pack">
 
   <PropertyGroup>
     <TraversalGlobalProperties>BuildAllProjects=true</TraversalGlobalProperties>
@@ -16,7 +15,7 @@
 
   <ItemGroup>
     <ProjectReference Include="$(PkgDir)*\*.proj" Exclude="$(PkgDir)test\*" />
-    <ProjectReference Include="$(MSBuildThisFileDirectory)*\pkg\**\*.pkgproj" Condition="('$(BuildAllConfigurations)' == 'true' or '$(DotNetBuildFromSource)' == 'true') And '$(BuildAllOOBPackages)' == 'true'" />
+    <ProjectReference Include="$(MSBuildThisFileDirectory)*\src\*.*proj" Condition="('$(BuildAllConfigurations)' == 'true' or '$(DotNetBuildFromSource)' == 'true') And '$(BuildAllOOBPackages)' == 'true'" Exclude="$(MSBuildThisFileDirectory)*\src\**\*.shproj"/>
     <!-- If setting BuildAllOOBPackages to false, add bellow the individual OOB packages you want to continue to build -->
   </ItemGroup>
 
@@ -83,8 +82,4 @@
     <Message Condition="'@(_PackageReports)' != '' and Exists('$(ArtifactsDir)packages')" Importance="High" Text="##vso[task.setvariable variable=_librariesBuildProducedPackages]true" />
   </Target>
 
-  <Import Sdk="Microsoft.Build.Traversal" Project="Sdk.targets" />
-
-  <!-- Pack is a no-op and should just invoke build. -->
-  <Target Name="Pack" DependsOnTargets="Build" />
 </Project>

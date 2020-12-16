@@ -377,7 +377,7 @@ void SampleProfiler::EnableInternal()
         MODE_ANY;
         PRECONDITION(s_pEventPipeProvider != nullptr);
         PRECONDITION(s_pThreadTimeEvent != nullptr);
-        PRECONDITION((s_pSamplingThread == NULL && s_refCount == 0) || ((s_pSamplingThread != NULL && s_refCount > 0)));
+        PRECONDITION((!g_fEEStarted && s_refCount > 0) || (s_pSamplingThread == NULL && s_refCount == 0) || ((s_pSamplingThread != NULL && s_refCount > 0)));
         // Synchronization of multiple callers occurs in EventPipe::Enable.
         PRECONDITION(EventPipe::IsLockOwnedByCurrentThread());
     }

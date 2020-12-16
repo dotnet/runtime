@@ -1,9 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Reflection;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
+using System.Reflection;
 
 namespace System
 {
@@ -77,6 +78,9 @@ namespace System
             return false;
         }
 
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2075:UnrecognizedReflectionPattern",
+            Justification = "rtPropAccessor.DeclaringType is guaranteed to have the specified property because " +
+                "rtPropAccessor.GetParentDefinition() returned a non-null MethodInfo.")]
         private static PropertyInfo? GetParentDefinition(PropertyInfo property, Type[] propertyParameters)
         {
             Debug.Assert(property != null);
@@ -142,6 +146,9 @@ namespace System
                 return attributes;
         }
 
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2075:UnrecognizedReflectionPattern",
+            Justification = "rtAdd.DeclaringType is guaranteed to have the specified event because " +
+                "rtAdd.GetParentDefinition() returned a non-null MethodInfo.")]
         private static EventInfo? GetParentDefinition(EventInfo ev)
         {
             Debug.Assert(ev != null);

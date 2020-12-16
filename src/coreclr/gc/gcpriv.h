@@ -3114,9 +3114,11 @@ protected:
 #ifdef MARK_LIST
 #ifdef PARALLEL_MARK_LIST_SORT
     PER_HEAP
-    void sort_mark_list();
+    size_t sort_mark_list();
     PER_HEAP
-    void merge_mark_lists();
+    uint8_t** equalize_mark_lists(size_t total_mark_list_size);
+    PER_HEAP
+    void merge_mark_lists(size_t total_mark_list_size);
     PER_HEAP
     void append_to_mark_list(uint8_t **start, uint8_t **end);
 #else //PARALLEL_MARK_LIST_SORT

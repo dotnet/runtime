@@ -6,8 +6,9 @@
 #ifndef __GENANALYSIS_H__
 #define __GENANALYSIS_H__
 
-#include "eventpipe.h"
-#include "eventpipesession.h"
+#ifdef FEATURE_PERFTRACING
+#include "eventpipeadaptertypes.h"
+#endif // FEATURE_PERFTRACING
 
 enum GcGenAnalysisState
 {

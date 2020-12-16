@@ -141,8 +141,7 @@ void CodeGen::genEmitGSCookieCheck(bool pushReg)
             else // we must have a struct return type
             {
                 retTypeDesc.InitializeStructReturnType(compiler, compiler->info.compMethodInfo->args.retTypeClass,
-                                                       compiler->compMethodInfoGetEntrypointCallConv(
-                                                           compiler->info.compMethodInfo));
+                                                       compiler->info.compCallConv);
             }
 
             const unsigned regCount = retTypeDesc.GetReturnRegCount();

@@ -49,6 +49,8 @@ if(ENABLE_PERFTRACING)
             set(OS_LIBS m dl log)
         elseif(HOST_LINUX)
             set(OS_LIBS pthread m dl)
+        elseif(HOST_WIN32)
+            set(OS_LIBS bcrypt.lib ws2_32.lib version.lib winmm.lib)
         endif()
 
         set(CMAKE_SKIP_RPATH 1)

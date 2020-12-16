@@ -110,6 +110,27 @@ void SHash<TRAITS>::Add(const element_t & element)
 }
 
 template <typename TRAITS>
+BOOL SHash<TRAITS>::AddNoThrow(const element_t & element)
+{
+    CONTRACT(BOOL)
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+        INSTANCE_CHECK;
+        POSTCONDITION(TRAITS::Equals(TRAITS::GetKey(element), TRAITS::GetKey(*LookupPtr(TRAITS::GetKey(element)))));
+    }
+    CONTRACT_END;
+
+    static_assert(TRAITS::s_NoThrow, "This SHash does not support NOTHROW.");
+
+    BOOL haveSpace = CheckGrowthNoThrow();
+    if (haveSpace)
+        Add_GrowthChecked(element);
+
+    RETURN haveSpace;
+}
+
+template <typename TRAITS>
 void SHash<TRAITS>::Add_GrowthChecked(const element_t & element)
 {
     CONTRACT_VOID
@@ -310,6 +331,28 @@ BOOL SHash<TRAITS>::CheckGrowth()
 }
 
 template <typename TRAITS>
+BOOL SHash<TRAITS>::CheckGrowthNoThrow()
+{
+    CONTRACT(BOOL)
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+        INSTANCE_CHECK;
+    }
+    CONTRACT_END;
+
+    static_assert(TRAITS::s_NoThrow, "This SHash does not support NOTHROW.");
+
+    BOOL result = TRUE;
+    if (m_tableOccupied == m_tableMax)
+    {
+        result = GrowNoThrow();
+    }
+
+    RETURN result;
+}
+
+template <typename TRAITS>
 typename SHash<TRAITS>::element_t *
 SHash<TRAITS>::CheckGrowth_OnlyAllocateNewTable(count_t * pcNewSize)
 {
@@ -349,6 +392,29 @@ void SHash<TRAITS>::Grow()
 }
 
 template <typename TRAITS>
+BOOL SHash<TRAITS>::GrowNoThrow()
+{
+    CONTRACT(BOOL)
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+        INSTANCE_CHECK;
+        PRECONDITION(TRAITS::s_NoThrow);
+    }
+    CONTRACT_END;
+
+    count_t     newSize;
+    element_t * newTable = Grow_OnlyAllocateNewTableNoThrow(&newSize);
+    if (newTable)
+    {
+        element_t * oldTable = ReplaceTable(newTable, newSize);
+        DeleteOldTable(oldTable);
+    }
+
+    RETURN (newTable != NULL);
+}
+
+template <typename TRAITS>
 typename SHash<TRAITS>::element_t *
 SHash<TRAITS>::Grow_OnlyAllocateNewTable(count_t * pcNewSize)
 {
@@ -371,6 +437,32 @@ SHash<TRAITS>::Grow_OnlyAllocateNewTable(count_t * pcNewSize)
         ThrowOutOfMemory();
 
     RETURN AllocateNewTable(newSize, pcNewSize);
+}
+
+template <typename TRAITS>
+typename SHash<TRAITS>::element_t *
+SHash<TRAITS>::Grow_OnlyAllocateNewTableNoThrow(count_t * pcNewSize)
+{
+    CONTRACT(element_t *)
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+        INSTANCE_CHECK;
+        PRECONDITION(TRAITS::s_NoThrow);
+    }
+    CONTRACT_END;
+
+    count_t newSize = (count_t) (m_tableCount
+                                 * TRAITS::s_growth_factor_numerator / TRAITS::s_growth_factor_denominator
+                                 * TRAITS::s_density_factor_denominator / TRAITS::s_density_factor_numerator);
+    if (newSize < TRAITS::s_minimum_allocation)
+        newSize = TRAITS::s_minimum_allocation;
+
+    // handle potential overflow
+    if (newSize < m_tableCount)
+        return NULL;
+
+    RETURN AllocateNewTableNoThrow(newSize, pcNewSize);
 }
 
 template <typename TRAITS>
@@ -434,6 +526,40 @@ SHash<TRAITS>::AllocateNewTable(count_t requestedSize, count_t * pcNewTableSize)
     {
         *p = TRAITS::Null();
         p++;
+    }
+
+    RETURN newTable;
+}
+
+template <typename TRAITS>
+typename SHash<TRAITS>::element_t *
+SHash<TRAITS>::AllocateNewTableNoThrow(count_t requestedSize, count_t * pcNewTableSize)
+{
+    CONTRACT(element_t *)
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+        INSTANCE_CHECK;
+        PRECONDITION(requestedSize >=
+                     (count_t) (GetCount() * TRAITS::s_density_factor_denominator / TRAITS::s_density_factor_numerator));
+        PRECONDITION(TRAITS::s_NoThrow);
+    }
+    CONTRACT_END;
+
+    // Allocation size must be a prime number.  This is necessary so that hashes uniformly
+    // distribute to all indices, and so that chaining will visit all indices in the hash table.
+    *pcNewTableSize = NextPrime(requestedSize);
+
+    element_t * newTable = new (nothrow) element_t [*pcNewTableSize];
+    if (newTable)
+    {
+        element_t * p = newTable;
+        element_t * pEnd = newTable + *pcNewTableSize;
+        while (p < pEnd)
+        {
+            *p = TRAITS::Null();
+            p++;
+        }
     }
 
     RETURN newTable;

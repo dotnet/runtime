@@ -4281,8 +4281,7 @@ void Compiler::fgOptWhileLoop(BasicBlock* block)
     // Flag the block that received the copy as potentially having an array/vtable
     // reference, nullcheck, object/array allocation if the block copied from did;
     // this is a conservative guess.
-    if (auto copyFlags = bTest->bbFlags &
-                         (BBF_HAS_VTABREF | BBF_HAS_IDX_LEN | BBF_HAS_NULLCHECK | BBF_HAS_NEWOBJ | BBF_HAS_NEWARRAY))
+    if (auto copyFlags = bTest->bbFlags & (BBF_HAS_IDX_LEN | BBF_HAS_NULLCHECK | BBF_HAS_NEWOBJ | BBF_HAS_NEWARRAY))
     {
         block->bbFlags |= copyFlags;
     }

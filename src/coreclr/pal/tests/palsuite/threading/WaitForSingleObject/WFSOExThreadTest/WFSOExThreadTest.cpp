@@ -26,6 +26,7 @@ DWORD PALAPI WaiterProc_WFSOExThreadTest(LPVOID lpParameter);
 void WorkerThread_WFSOExThreadTest(void);
 
 int ThreadWaitDelta_WFSOExThreadTest;
+static volatile bool s_preWaitTimestampRecorded = false;
 
 PALTEST(threading_WaitForSingleObject_WFSOExThreadTest_paltest_waitforsingleobject_wfsoexthreadtest, "threading/WaitForSingleObject/WFSOExThreadTest/paltest_waitforsingleobject_wfsoexthreadtest")
 {
@@ -80,8 +81,9 @@ void RunTest_WFSOExThreadTest(BOOL AlertThread)
     DWORD dwThreadId = 0;
     int ret;
 
-   //Create thread  
-   hThread = CreateThread( NULL, 
+    //Create thread  
+    s_preWaitTimestampRecorded = false;
+    hThread = CreateThread( NULL,
                             0, 
                             (LPTHREAD_START_ROUTINE)WaiterProc_WFSOExThreadTest,
                             (LPVOID) AlertThread,
@@ -92,6 +94,13 @@ void RunTest_WFSOExThreadTest(BOOL AlertThread)
     {
         Fail("ERROR: Was not able to create the thread to test!\n"
             "GetLastError returned %d\n", GetLastError());
+    }
+
+    // Wait for the pre-wait timestamp to be recorded on the other thread before sleeping, since the sleep duration here will be
+    // compared against the sleep/wait duration on the other thread
+    while (!s_preWaitTimestampRecorded)
+    {
+        Sleep(0);
     }
 
     Sleep(InterruptTime);
@@ -161,6 +170,7 @@ satisfying any threads that were waiting on the object.
     }
 
     OldTimeStamp = GetHighPrecisionTimeStamp(performanceFrequency);
+    s_preWaitTimestampRecorded = true;
 
     ret = WaitForSingleObjectEx(	hWaitThread, 
 								ChildThreadWaitTime, 

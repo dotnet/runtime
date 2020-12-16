@@ -5424,7 +5424,7 @@ emit_marshal_safehandle_ilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 				 */
 				ctor = mono_class_get_method_from_name_checked (t->data.klass, ".ctor", 0, 0, local_error);
 				if (ctor == NULL || !is_ok (local_error)){
-					mono_mb_emit_exception (mb, "MissingMethodException", "paramterless constructor required");
+					mono_mb_emit_exception (mb, "MissingMethodException", "parameterless constructor required");
 					mono_error_cleanup (local_error);
 					break;
 				}
@@ -5470,7 +5470,7 @@ emit_marshal_safehandle_ilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 		if (ctor == NULL || !is_ok (error)){
 			mono_error_cleanup (error);
 			mono_mb_emit_byte (mb, CEE_POP);
-			mono_mb_emit_exception (mb, "MissingMethodException", "paramterless constructor required");
+			mono_mb_emit_exception (mb, "MissingMethodException", "parameterless constructor required");
 			break;
 		}
 		/* Store the IntPtr results into a local */

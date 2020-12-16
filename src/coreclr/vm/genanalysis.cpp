@@ -3,6 +3,7 @@
 
 #include "common.h"
 #include "genanalysis.h"
+#include "eventpipeadapter.h"
 
 GcGenAnalysisState gcGenAnalysisState = GcGenAnalysisState::Uninitialized;
 EventPipeSession* gcGenAnalysisEventPipeSession = nullptr;
@@ -58,30 +59,35 @@ uint32_t gcGenAnalysisBufferMB = 0;
 {
     LPCWSTR outputPath = nullptr;
     outputPath = GENAWARE_FILE_NAME;
-    NewHolder<EventPipeProviderConfiguration> pProviders = nullptr;
+    NewHolder<COR_PRF_EVENTPIPE_PROVIDER_CONFIG> pProviders = nullptr;
     int providerCnt = 1;
-    pProviders = new EventPipeProviderConfiguration[providerCnt];
+    pProviders = new COR_PRF_EVENTPIPE_PROVIDER_CONFIG[providerCnt];
     const uint64_t GCHeapAndTypeNamesKeyword        = 0x00001000000; // This keyword is necessary for the type names
     const uint64_t GCHeapSurvivalAndMovementKeyword = 0x00000400000; // This keyword is necessary for the generation range data.
     const uint64_t GCHeapDumpKeyword                = 0x00000100000; // This keyword is necessary for enabling walking the heap
     const uint64_t TypeKeyword                      = 0x00000080000; // This keyword is necessary for enabling BulkType events
     const uint64_t keyword                          = GCHeapAndTypeNamesKeyword|GCHeapSurvivalAndMovementKeyword|GCHeapDumpKeyword|TypeKeyword;
-    pProviders[0] = EventPipeProviderConfiguration(W("Microsoft-Windows-DotNETRuntime"), keyword, 5, nullptr);
-    gcGenAnalysisEventPipeSessionId = EventPipe::Enable(
+    pProviders[0].providerName = W("Microsoft-Windows-DotNETRuntime");
+    pProviders[0].keywords = keyword;
+    pProviders[0].loggingLevel = (uint32_t)EP_EVENT_LEVEL_VERBOSE;
+    pProviders[0].filterData = nullptr;
+
+    EventPipeProviderConfigurationAdapter configAdapter(pProviders, providerCnt);
+    gcGenAnalysisEventPipeSessionId = EventPipeAdapter::Enable(
         outputPath,
         gcGenAnalysisBufferMB,
-        pProviders,
-        providerCnt,
-        EventPipeSessionType::File,
-        EventPipeSerializationFormat::NetTraceV4,
+        configAdapter,
+        EP_SESSION_TYPE_FILE,
+        EP_SERIALIZATION_FORMAT_NETTRACE_V4,
         false,
+        nullptr,
         nullptr
     );
     if (gcGenAnalysisEventPipeSessionId > 0)
     {
-        gcGenAnalysisEventPipeSession= EventPipe::GetSession(gcGenAnalysisEventPipeSessionId);
-        gcGenAnalysisEventPipeSession->Pause();
-        EventPipe::StartStreaming(gcGenAnalysisEventPipeSessionId);
+        gcGenAnalysisEventPipeSession= EventPipeAdapter::GetSession(gcGenAnalysisEventPipeSessionId);
+        EventPipeAdapter::PauseSession(gcGenAnalysisEventPipeSession);
+        EventPipeAdapter::StartStreaming(gcGenAnalysisEventPipeSessionId);
         gcGenAnalysisState = GcGenAnalysisState::Enabled;
     }
 }

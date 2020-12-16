@@ -10,21 +10,23 @@ This role will work on a rotation basis. There are six people in the role and ea
 
 ## Prerequisites
 Please make sure that you are part of the following groups before you start the rotation:
-- Runtime Infrastructure Github group: https://github.com/orgs/dotnet/teams/runtime-infrastructure
+- Runtime Infrastructure GitHub group: https://github.com/orgs/dotnet/teams/runtime-infrastructure
 - Internal distribution list: runtimerepo-infra
 - Internal teams channel: dotnet/runtime repo -> Infrastructure Team
 
 Unfortunately, the teams channel's members need to be listed individually. Ping @ViktorHofer if you need access.
 
 ## Tracking Build Failures
-All the CI failures can be tracked through the CI Council dashboards i.e.  [Public](https://dev.azure.com/dnceng/public/_dashboards/dashboard/40ac4990-3498-4b3a-85dd-2ffde961d672), [Internal](https://dev.azure.com/dnceng/internal/_dashboards/dashboard/e1bb572d-a2b0-488f-a58a-54c73a547f0d).
-We have different dashboards for public(Rolling & PR Builds) and internal builds.
+All the CI failures can be tracked through the CI Council dashboards i.e. [Public](https://dev.azure.com/dnceng/public/_dashboards/dashboard/40ac4990-3498-4b3a-85dd-2ffde961d672), [Internal](https://dev.azure.com/dnceng/internal/_dashboards/dashboard/e1bb572d-a2b0-488f-a58a-54c73a547f0d).
+We have different dashboards for public (Rolling & PR Builds) and internal builds.
 
-In addition to the dashboards, official build failure notifications are sent to the internal runtime infrastructure alias. For every of these mail notifications, a matching issue should exist (either in the runtime repository or in core-eng or arcade). This guarantees that we are following-up on infrastructure issues immediately. If a build failure's cause isn't trivial to identify, consider looping in dnceng. 
+In addition to the dashboards, official build failure notifications are sent to the internal runtime infrastructure email alias.
 
-Tests are not run during the internal builds. Publishing and signing steps are run only during  internal builds. Rolling builds run tests for the full matrix. 
+For each of these mail notifications, a matching issue should exist (either in the dotnet/runtime repository or in dotnet/core-eng or dotnet/arcade). The person triaging build failures should reply to the email with a link to the issue to let everyone know it is triaged. This guarantees that we are following-up on infrastructure issues immediately. If a build failure's cause isn't trivial to identify, consider looping in dnceng. 
 
-For new issues, try to provide a runfo search which will make it easy to isolate repeated instances of that failure.
+Tests are not run during the internal builds. Publishing and signing steps are run only during internal builds. Rolling builds run tests for the full matrix. 
+
+For new issues, try to provide a [runfo](https://runfo.azurewebsites.net/) search which will make it easy to isolate repeated instances of that failure.
 
 Contact @chcosta if you are having any trouble accessing the dashboards.
 Contact @Chrisboh if you don't have the calendar invite for the CI Council meeting.
@@ -50,7 +52,10 @@ The main meta-bug linking to currently tracked issues is [here](https://github.c
 
 | Month | Alias  | 
 |-------|-----------|
-| September |  @directhex  |
-| October  | @jkoritzinsky |
-| November  | @aik-jahoda  |
-| December  | @akoeplinger   |
+| September 2020 | @directhex |
+| October 2020   | @jkoritzinsky |
+| November 2020  | @aik-jahoda |
+| December 2020  | @akoeplinger |
+| January 2021   | @hoyosjs |
+| February 2021  | @anipik |
+| March 2021  | @directhex |

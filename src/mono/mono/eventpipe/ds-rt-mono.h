@@ -66,6 +66,15 @@
 #define DS_RT_DEFINE_ARRAY_REVERSE_ITERATOR(array_name, array_type, iterator_type, item_type) \
 	EP_RT_DEFINE_ARRAY_REVERSE_ITERATOR_PREFIX(ds, array_name, array_type, iterator_type, item_type)
 
+bool
+ds_rt_mono_transport_get_default_name (
+	ep_char8_t *name,
+	uint32_t name_len,
+	const ep_char8_t *prefix,
+	int32_t id,
+	const ep_char8_t *group_id,
+	const ep_char8_t *suffix);
+
 /*
 * AutoTrace.
 */
@@ -168,8 +177,7 @@ ds_rt_transport_get_default_name (
 	const ep_char8_t *group_id,
 	const ep_char8_t *suffix)
 {
-	extern bool ipc_transport_get_default_name (ep_char8_t *name, uint32_t name_len, const ep_char8_t *prefix, int32_t id, const ep_char8_t *group_id, const ep_char8_t *suffix);
-	return ipc_transport_get_default_name (name, name_len, prefix, id, group_id, suffix);
+	return ds_rt_mono_transport_get_default_name (name, name_len, prefix, id, group_id, suffix);
 }
 
 /*
