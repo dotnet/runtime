@@ -75,7 +75,7 @@
     </PropertyGroup>
     
     <PropertyGroup Condition="$(BuildPdb)">
-      <CrossGenPdbCmd>$(BinDir)\r2rdump\r2rdump.exe</CrossGenPdbCmd>
+      <CrossGenPdbCmd>$(DotNetCli) $(BinDir)\r2rdump\r2rdump.dll</CrossGenPdbCmd>
       <CrossGenPdbCmd>$(CrossGenPdbCmd) --create-pdb</CrossGenPdbCmd>
       <CrossGenPdbCmd>$(CrossGenPdbCmd) --pdb-path:$(BinDir)\PDB</CrossGenPdbCmd>
       <CrossGenPdbCmd>$(CrossGenPdbCmd) --in:$(CoreLibOutputPath)</CrossGenPdbCmd>
