@@ -71,7 +71,7 @@ jobs:
     steps:
     - checkout: self
       clean: true
-      fetchDepth: 20
+      fetchDepth: $(checkoutFetchDepth)
 
     - ${{ if eq(parameters.isOfficialBuild, true) }}:
       - template: /eng/pipelines/common/restore-internal-tools.yml

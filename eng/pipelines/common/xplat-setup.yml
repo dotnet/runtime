@@ -19,6 +19,8 @@ jobs:
       runtimeFlavorDisplayName: 'Mono'
     
     shouldContinueOnError: ${{ and(endsWith(variables['Build.DefinitionName'], 'staging'), eq(variables['Build.Reason'], 'PullRequest')) }}
+
+    # keep in sync with /eng/pipelines/common/variables.yml
     dependOnEvaluatePaths: ${{ and(eq(variables['Build.Reason'], 'PullRequest'), in(variables['Build.DefinitionName'], 'runtime', 'runtime-staging')) }}
 
     variables:
@@ -30,6 +32,9 @@ jobs:
         value: true
       - name: runCodesignValidationInjection
         value: false
+
+      - name: checkoutFetchDepth
+        value: 20
 
       - name: buildConfigUpper
         ${{ if eq(parameters.jobParameters.buildConfig, 'debug') }}:

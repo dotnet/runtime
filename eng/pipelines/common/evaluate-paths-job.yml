@@ -26,7 +26,6 @@ parameters:
 
 
 jobs:
-- ${{ if eq(variables['Build.Reason'], 'PullRequest') }}:
   - job: evaluate_paths
     displayName: Evaluate Paths
     pool:
@@ -35,7 +34,7 @@ jobs:
     steps:
     - checkout: self
       clean: true
-      fetchDepth: 20
+      fetchDepth: $(checkoutFetchDepth)
 
     - ${{ if ne(parameters.paths[0], '') }}:
       - ${{ each path in parameters.paths }}:

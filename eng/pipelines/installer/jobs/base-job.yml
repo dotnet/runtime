@@ -350,7 +350,7 @@ jobs:
 
   - checkout: self
     clean: true
-    fetchDepth: 20
+    fetchDepth: $(checkoutFetchDepth)
 
   - ${{ if ne(parameters.liveRuntimeBuildConfig, '') }}:
     - template: /eng/pipelines/common/download-artifact-step.yml

@@ -98,6 +98,6 @@ jobs:
     steps:
     - checkout: self
       clean: true
-      fetchDepth: 20
+      fetchDepth: $(checkoutFetchDepth)
 
     - ${{ parameters.steps }}
