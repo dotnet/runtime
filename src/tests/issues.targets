@@ -80,40 +80,40 @@
             <Issue>https://github.com/dotnet/runtime/issues/5933</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/generics/Variance/Methods/Method002/*">
-            <Issue>https://github.com/dotnet/runtime/issues/3893</Issue>
+            <Issue>https://github.com/dotnet/runtime/issues/84</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/generics/Variance/Methods/Method003/*">
-            <Issue>https://github.com/dotnet/runtime/issues/3893</Issue>
+            <Issue>https://github.com/dotnet/runtime/issues/84</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/generics/Variance/Methods/Method004/*">
-            <Issue>https://github.com/dotnet/runtime/issues/3893</Issue>
+            <Issue>https://github.com/dotnet/runtime/issues/84</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/generics/Variance/CoreCLR/Method003/*">
-            <Issue>https://github.com/dotnet/runtime/issues/3893</Issue>
+            <Issue>https://github.com/dotnet/runtime/issues/84</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/generics/Variance/IL/IsInst001/*">
-            <Issue>https://github.com/dotnet/runtime/issues/3893</Issue>
+            <Issue>https://github.com/dotnet/runtime/issues/84</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/generics/Variance/IL/IsInst004/*">
-            <Issue>https://github.com/dotnet/runtime/issues/3893</Issue>
+            <Issue>https://github.com/dotnet/runtime/issues/84</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/generics/Variance/IL/CastClass001/*">
-            <Issue>https://github.com/dotnet/runtime/issues/3893</Issue>
+            <Issue>https://github.com/dotnet/runtime/issues/84</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/generics/Variance/IL/CastClass004/*">
-            <Issue>https://github.com/dotnet/runtime/issues/3893</Issue>
+            <Issue>https://github.com/dotnet/runtime/issues/84</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/generics/Variance/IL/Unbox001/*">
-            <Issue>https://github.com/dotnet/runtime/issues/3893</Issue>
+            <Issue>https://github.com/dotnet/runtime/issues/84</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/generics/Variance/IL/Unbox004/*">
-            <Issue>https://github.com/dotnet/runtime/issues/3893</Issue>
+            <Issue>https://github.com/dotnet/runtime/issues/84</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/generics/Variance/Delegates/Delegates002/*">
-            <Issue>https://github.com/dotnet/runtime/issues/3893</Issue>
+            <Issue>https://github.com/dotnet/runtime/issues/84</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/generics/Variance/Interfaces/Interfaces001/*">
-            <Issue>https://github.com/dotnet/runtime/issues/3893</Issue>
+            <Issue>https://github.com/dotnet/runtime/issues/84</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/readytorun/r2rdump/BasicTests/R2RDumpTest/*">
             <Issue>https://github.com/dotnet/runtime/issues/10888 https://github.com/dotnet/runtime/issues/11823 </Issue>
