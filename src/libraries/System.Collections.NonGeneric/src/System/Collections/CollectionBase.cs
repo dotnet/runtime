@@ -167,7 +167,10 @@ namespace System.Collections
         {
             OnValidate(value!);
             int index = InnerList.IndexOf(value);
-            if (index < 0) throw new ArgumentException(SR.Arg_RemoveArgNotFound);
+            if (index < 0)
+            {
+                return;
+            }
             OnRemove(index, value);
             InnerList.RemoveAt(index);
             try
