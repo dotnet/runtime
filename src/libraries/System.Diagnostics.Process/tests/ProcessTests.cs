@@ -1640,24 +1640,28 @@ namespace System.Diagnostics.Tests
             {
                 process.Start();
 
-                Assert.False(GetHaveResponding(process));
-
-                Assert.True(process.Responding); // sets haveResponding to true
-                Assert.True(GetHaveResponding(process));
-
-                process.Refresh(); // sets haveResponding to false
-                Assert.False(GetHaveResponding(process));
-
-                Assert.True(process.Responding); // sets haveResponding to true
-                Assert.True(GetHaveResponding(process));
-
-
-                if (!process.HasExited)
+                try
                 {
-                    process.Kill();
-                }
+                    Assert.False(GetHaveResponding(process));
 
-                Assert.True(process.WaitForExit(WaitInMS));
+                    Assert.True(process.Responding); // sets haveResponding to true
+                    Assert.True(GetHaveResponding(process));
+
+                    process.Refresh(); // sets haveResponding to false
+                    Assert.False(GetHaveResponding(process));
+
+                    Assert.True(process.Responding); // sets haveResponding to true
+                    Assert.True(GetHaveResponding(process));
+                }
+                finally
+                {
+                    if (!process.HasExited)
+                    {
+                        process.Kill();
+                    }
+
+                    Assert.True(process.WaitForExit(WaitInMS));
+                }
             }
 
             static bool GetHaveResponding(Process process)=> (bool)typeof(Process)
