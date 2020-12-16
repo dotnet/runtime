@@ -15,6 +15,7 @@ parameters:
   condition: ''
   continueOnError: false
   dependsOn: ''
+  dependOnEvaluatePaths: false
   displayName: ''
   timeoutInMinutes: ''
   enableMicrobuild: ''
@@ -31,7 +32,7 @@ jobs:
     container: ${{ parameters.container }}
     condition: ${{ parameters.condition }}
     dependsOn:
-      - ${{ if eq(variables.dependOnEvaluatePaths, true) }}:
+      - ${{ if eq(parameters.dependOnEvaluatePaths, true) }}:
         - evaluate_paths
       - ${{ if ne(parameters.dependsOn, '') }}:
         - ${{ parameters.dependsOn }}

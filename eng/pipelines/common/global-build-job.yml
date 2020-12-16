@@ -15,6 +15,7 @@ parameters:
   platform: ''
   condition: true
   shouldContinueOnError: false
+  dependOnEvaluatePaths: false
   isOfficialBuild: false
   runtimeFlavor: 'coreclr'
   helixQueues: ''
@@ -33,7 +34,7 @@ jobs:
     workspace:
       clean: all
 
-    ${{ if eq(variables.dependOnEvaluatePaths, true) }}:
+    ${{ if eq(parameters.dependOnEvaluatePaths, true) }}:
       dependsOn: evaluate_paths
 
     variables:

@@ -15,6 +15,7 @@ parameters:
   container: ''
   steps: []
   dependsOn: []
+  dependOnEvaluatePaths: false
   variables: {}
   name: ''
   displayName: ''
@@ -117,7 +118,7 @@ jobs:
         - _BuildConfig: ${{ parameters.buildConfig }}
 
       dependsOn:
-      - ${{ if eq(variables.dependOnEvaluatePaths, true) }}:
+      - ${{ if eq(parameters.dependOnEvaluatePaths, true) }}:
         - evaluate_paths
       - ${{ parameters.dependsOn }}
       workspace:

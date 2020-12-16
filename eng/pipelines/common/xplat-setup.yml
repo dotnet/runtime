@@ -19,6 +19,7 @@ jobs:
       runtimeFlavorDisplayName: 'Mono'
     
     shouldContinueOnError: ${{ and(endsWith(variables['Build.DefinitionName'], 'staging'), eq(variables['Build.Reason'], 'PullRequest')) }}
+    dependOnEvaluatePaths: ${{ and(eq(variables['Build.Reason'], 'PullRequest'), in(variables['Build.DefinitionName'], 'runtime', 'runtime-staging')) }}
 
     variables:
       # Disable component governance in our CI builds. These builds are not shipping nor

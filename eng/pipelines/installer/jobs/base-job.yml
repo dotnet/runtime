@@ -13,6 +13,7 @@ parameters:
   buildSteps: []
   dependsOn: []
   dependsOnGlobalBuild: false
+  dependOnEvaluatePaths: false
   globalBuildSuffix: ''
   variables: []
   name: ''
@@ -294,7 +295,7 @@ jobs:
       value: ' /p:LibrariesConfiguration=${{ parameters.liveLibrariesBuildConfig }}'
 
   dependsOn:
-  - ${{ if eq(variables.dependOnEvaluatePaths, true) }}:
+  - ${{ if eq(parameters.dependOnEvaluatePaths, true) }}:
     - evaluate_paths
   - ${{ parameters.dependsOn }}
   - ${{ if ne(parameters.liveRuntimeBuildConfig, '') }}:
