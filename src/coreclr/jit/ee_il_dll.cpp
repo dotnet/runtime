@@ -385,11 +385,13 @@ unsigned Compiler::eeGetArgSize(CORINFO_ARG_LIST_HANDLE list, CORINFO_SIG_INFO* 
     var_types            argType    = JITtype2varType(argTypeJit);
     unsigned             argSize;
 
-    var_types hfaType = GetHfaType(argClass); // set to float or double if it is an HFA, otherwise TYP_UNDEF
-    bool      isHfa   = (hfaType != TYP_UNDEF);
+    var_types hfaType = TYP_UNDEF;
+    bool      isHfa   = false;
 
     if (varTypeIsStruct(argType))
     {
+        hfaType             = GetHfaType(argClass);
+        isHfa               = (hfaType != TYP_UNDEF);
         unsigned structSize = info.compCompHnd->getClassSize(argClass);
 
         // make certain the EE passes us back the right thing for refanys
