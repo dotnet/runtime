@@ -15,7 +15,7 @@
 
 .method public static	int32 main(string[]) {
 .entrypoint
-.locals(int32 i)
+.locals(int32)
 .maxstack	5
 
 ldc.i4	0x0

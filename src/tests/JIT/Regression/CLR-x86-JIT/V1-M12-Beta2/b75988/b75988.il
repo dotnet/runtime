@@ -15,7 +15,7 @@
   {
     .entrypoint
 	.maxstack  8
-	.locals (int64 i)
+	.locals (int64)
 	.zeroinit
 	ldloc.0
 	ldloca 0

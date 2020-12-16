@@ -88,7 +88,7 @@
   .method public hidebysig newslot virtual instance valuetype A NonGen(string& res) 
   {
     .override method instance class IA class GenBaseType<!U,!V>::NonGen(string& res)
-    .locals ( valuetype A a)
+    .locals ( valuetype A )
     ldloc.0
     ret
   }
@@ -100,7 +100,7 @@
   .method public hidebysig newslot virtual instance valuetype B NonGen(string& res) 
   {
     .override method instance class IA class GenBaseType<!U,!V>::NonGen(string& res)
-    .locals ( valuetype B b)
+    .locals ( valuetype B )
     ldloc.0
     ret
   }
@@ -112,7 +112,7 @@
   .method public hidebysig newslot virtual instance valuetype RetType GenFunc(string& res) 
   {
     .override method instance class IGenRetType<int32,string> class GenBaseType<!U,!V>::GenFunc(string& res)
-    .locals ( valuetype RetType r)
+    .locals ( valuetype RetType )
     ldloc.0
     ret
   }
@@ -124,7 +124,7 @@
   .method public hidebysig newslot virtual instance valuetype DerivedRetType GenFunc(string& res) 
   {
     .override method instance class IGenRetType<int32,string> class GenBaseType<!U,!V>::GenFunc(string& res)
-    .locals ( valuetype DerivedRetType d)
+    .locals ( valuetype DerivedRetType )
     ldloc.0
     ret
   }
@@ -136,7 +136,7 @@
   .method public hidebysig newslot virtual instance valuetype GenRetType<!U,!V> GenFunc(string& res) 
   {
     .override method instance class IGenRetType<!U, class IDictionary<string,!V>> class GenBaseType<!U,!V>::GenFunc(string& res)
-    .locals ( valuetype GenRetType<!U,!V> g)
+    .locals ( valuetype GenRetType<!U,!V> )
     ldloc.0
     ret
   }
@@ -148,7 +148,7 @@
   .method public hidebysig newslot virtual instance valuetype DerivedGenRetType<!U,!V> GenFunc(string& res) 
   {
     .override method instance class IGenRetType<!U, class IDictionary<string,!V>> class GenBaseType<!U,!V>::GenFunc(string& res)
-    .locals ( valuetype DerivedGenRetType<!U,!V> d)
+    .locals ( valuetype DerivedGenRetType<!U,!V> )
     ldloc.0
     ret
   }

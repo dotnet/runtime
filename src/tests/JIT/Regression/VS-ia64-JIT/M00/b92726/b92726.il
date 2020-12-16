@@ -13,7 +13,7 @@
 //-- 
 .method public static	int32 _rem(float32,float32,float32) {
 .maxstack		3
-.locals	(int32 i)
+.locals	(int32)
 	// -- load args _and divide
 	ldarg	0
 	ldarg	1
@@ -72,7 +72,7 @@ FINISH:
 
 //-----------------------------
 .method public static	int32 checkfinite(float32) {
-.locals		(class [mscorlib]System.ArithmeticException e)
+.locals		(class [mscorlib]System.ArithmeticException)
 .maxstack		3
 // -- 0 if finite
 // -- 1 for NaN

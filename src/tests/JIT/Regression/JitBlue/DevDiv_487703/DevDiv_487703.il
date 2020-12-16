@@ -9,7 +9,7 @@
     .method static native int ILGEN_METHOD(unsigned int8, int64, native int, unsigned int16)
     {
         .maxstack 65535
-        .locals init (int16 l0, native unsigned int l1, int16 l2)
+        .locals init (int16, native unsigned int, int16)
 
         ldarg 0x0001
         not

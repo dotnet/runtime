@@ -7,7 +7,7 @@
 }
 
 .method public static int32 main(class System.String[]) {
-.locals	(int32 i, class _ldvirtftn l)
+.locals	(int32, class _ldvirtftn)
 .entrypoint
 .maxstack	4
 	ldc.i4	0x77

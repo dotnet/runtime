@@ -58,7 +58,7 @@
     {
 			.entrypoint
 			.maxstack  6
-			.locals (int32 V_0, int32 V_1)
+			.locals (int32 V_0, int32)
 			newobj		instance void JitTest.Test::.ctor()
 			dup
 			dup

@@ -5,7 +5,7 @@
    .method static unsigned int32 M(bool, bool)
    {
       .maxstack  65535
-      .locals init (unsigned int32 l0, unsigned int64 l1, unsigned int8 l2, unsigned int8 l3, native int l4, float64 l5, char l6, unsigned int16 l7, bool l8, char l9, bool l10)
+      .locals init (unsigned int32, unsigned int64, unsigned int8, unsigned int8, native int, float64, char, unsigned int16, bool, char, bool)
 
       ldloc 0x0006
       ldc.i4 0x11467af6

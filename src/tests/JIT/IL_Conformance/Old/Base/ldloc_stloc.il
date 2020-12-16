@@ -37,7 +37,7 @@
 .method public static int32 main(class [mscorlib]System.String[]) {
 .entrypoint
 .maxstack	10
-.locals	(int32 l0,int64 l1,float32 l2,float64 l3,void* l4,class ldloc_stloc l5, value class vclass l6)
+.locals	(int32,int64,float32,float64,void*,class ldloc_stloc, value class vclass)
 	ldc.i4		0x7FFFFFFF
 	stloc		0
 	ldc.i4		0x7FFFFFFF

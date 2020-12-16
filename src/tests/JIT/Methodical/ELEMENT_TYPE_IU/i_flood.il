@@ -23,7 +23,7 @@
     .method private hidebysig static int32 Main() il managed {
 	.entrypoint
 	.maxstack  8
-	.locals(native int i, native int j)
+	.locals(native int, native int)
 	ldc.i4.0
 	stloc.0
 	ldloc.0

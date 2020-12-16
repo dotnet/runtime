@@ -19,7 +19,7 @@
     {
         .entrypoint
         .maxstack 8
-        .locals(int64 i)
+        .locals(int64)
 
         ldc.i8 0x1020304050607080
         ldc.i4 64

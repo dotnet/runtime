@@ -13,7 +13,7 @@
     .method static float32 ILGEN_METHOD(int16, char, char, native int)
     {
         .maxstack  65535
-        .locals init (int8 l0, native unsigned int l1, int64 l2, int8 l3, bool l4, unsigned int64 l5, char l6, float64 l7, int64 l8, native int l9, float32 l10, int64 l11, int64 l12, unsigned int16 l13)
+        .locals init (int8, native unsigned int, int64, int8, bool, unsigned int64, char, float64, int64, native int, float32, int64, int64, unsigned int16)
 
         IL_0000: ldloc 0x000d
         IL_0004: not

@@ -19,7 +19,7 @@
   .method private hidebysig static int32 Main()
   {
     .entrypoint
-    .locals init (class Test1 t)
+    .locals init (class Test1)
     newobj instance void Test1::.ctor()
     stloc.0
 

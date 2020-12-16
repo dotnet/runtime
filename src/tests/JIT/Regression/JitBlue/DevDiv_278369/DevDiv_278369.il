@@ -18,7 +18,7 @@
 {
     .method private hidebysig static int32 N(object o) cil managed noinlining
     {
-        .locals (int32 l)
+        .locals (int32)
 
         ldc.i4.0
         stloc.0

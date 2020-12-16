@@ -20,7 +20,7 @@
 
 .method public static	int32 main(class [mscorlib]System.String[]) {
 .entrypoint
-.locals		(class _ret r,int32 i)
+.locals		(class _ret,int32)
 .maxstack		5
 	newobj		instance void _ret::_ret()
 	stloc		0

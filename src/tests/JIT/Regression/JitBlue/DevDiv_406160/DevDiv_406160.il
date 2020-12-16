@@ -23,7 +23,7 @@
   .method static char ILGEN_METHOD(int16, unsigned int16, native unsigned int)
    {
       .maxstack  65535
-      .locals init (bool l0, int64 l1, native unsigned int l2)
+      .locals init (bool, int64, native unsigned int)
     IL_0000: ldarg.s 0x00
     IL_0002: ldc.i4.1
     IL_0015: clt

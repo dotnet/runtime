@@ -28,7 +28,7 @@
 // Execution starts here
 
 .method static	int32 main(class [mscorlib]System.String[]) {
-.locals(string s)
+.locals(string)
 .entrypoint
 .maxstack	2
 

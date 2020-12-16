@@ -117,7 +117,7 @@
 .method static int32 main(class [mscorlib]System.String[]) {
 .entrypoint
 .maxstack	10
-.locals	(class field_tests f)
+.locals	(class field_tests)
 //----------------
 // begin field_testsing -
 //----------------

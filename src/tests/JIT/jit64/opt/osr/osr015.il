@@ -17,7 +17,7 @@
   .method public static int32 Main() cil managed
   {
     .entrypoint
-    .locals init (int32 i)
+    .locals init (int32)
 	
 	.try
 	{
@@ -1525,7 +1525,7 @@ add
 // use int32
 // Exceed array bounds with greater than or equals
 
-	.locals init (int32[] i, int32 j)
+	.locals init (int32[], int32)
 
 	
 	ldc.i4 100
@@ -1568,7 +1568,7 @@ FOR_END:
 // C# like loop
 // Exceed array bounds with less than
 
-	.locals init (int32[] i, int32 j)
+	.locals init (int32[], int32)
 
 	
 	ldc.i4 100
@@ -1613,7 +1613,7 @@ FOR_TEST:
 // Exceed array bounds with greater than
 
 
-	.locals init (int32[] i, int32 j)
+	.locals init (int32[], int32)
 
 	
 	ldc.i4 100
@@ -1654,7 +1654,7 @@ FOR_END:
 // Exceed array bounds with less than equals
 
 
-	.locals init (int32[] i, int32 j)
+	.locals init (int32[], int32)
 
 	
 	ldc.i4 100
@@ -1691,7 +1691,7 @@ FOR_TEST:
 // Exceed array bounds with less than equals
 
 
-	.locals init (int32[] i, int32 j)
+	.locals init (int32[], int32)
 
 	
 	ldc.i4 100
@@ -1735,7 +1735,7 @@ FOR_END:
 // Exceed array bounds with greater than
 
 
-	.locals init (int32[] i, int32 j)
+	.locals init (int32[], int32)
 
 	
 	ldc.i4 100
@@ -1775,7 +1775,7 @@ FOR_TEST:
 // Exceed array bounds with less than
 
 
-	.locals init (int32[] i, int32 j)
+	.locals init (int32[], int32)
 
 	
 	ldc.i4 100
@@ -1820,7 +1820,7 @@ FOR_END:
 // Exceed array bounds with greater than equals
 
 
-	.locals init (int32[] i, int32 j)
+	.locals init (int32[], int32)
 
 	
 	ldc.i4 100
@@ -1861,7 +1861,7 @@ FOR_TEST:
 // Exceed array bounds with greater than or equals
 // Steping 4
 
-	.locals init (int32[] i, int32 j)
+	.locals init (int32[], int32)
 
 	
 	ldc.i4 100
@@ -1901,7 +1901,7 @@ FOR_END:
 // Exceed array bounds with less than
 // Steping 4
 
-	.locals init (int32[] i, int32 j)
+	.locals init (int32[], int32)
 
 	
 	ldc.i4 100
@@ -1944,7 +1944,7 @@ FOR_TEST:
 // Steping 4
 
 
-	.locals init (int32[] i, int32 j)
+	.locals init (int32[], int32)
 
 	
 	ldc.i4 100
@@ -1989,7 +1989,7 @@ FOR_END:
 // Steping 4
 
 
-	.locals init (int32[] i, int32 j)
+	.locals init (int32[], int32)
 
 	
 	ldc.i4 100
@@ -2030,7 +2030,7 @@ FOR_TEST:
 // Steping 4
 
 
-	.locals init (int32[] i, int32 j)
+	.locals init (int32[], int32)
 
 	
 	ldc.i4 100
@@ -2075,7 +2075,7 @@ FOR_END:
 // Steping 4
 
 
-	.locals init (int32[] i, int32 j)
+	.locals init (int32[], int32)
 
 	
 	ldc.i4 100
@@ -2116,7 +2116,7 @@ FOR_TEST:
 // Steping 4
 
 
-	.locals init (int32[] i, int32 j)
+	.locals init (int32[], int32)
 
 	
 	ldc.i4 100
@@ -2162,7 +2162,7 @@ FOR_END:
 // Steping 4
 
 
-	.locals init (int32[] i, int32 j)
+	.locals init (int32[], int32)
 
 	
 	ldc.i4 100
@@ -2199,7 +2199,7 @@ FOR_TEST:
 // use int32
 // take address of local
 
-	.locals init (int32[] i, int32 j, int32* k)
+	.locals init (int32[], int32, int32*)
 	
 	ldc.i4 100
 	newarr int32
@@ -2246,7 +2246,7 @@ FOR_END:
 // C# like loop
 // take address of local
 
-	.locals init (int32[] i, int32 j, int32* k)
+	.locals init (int32[], int32, int32*)
 	
 	ldc.i4 100
 	newarr int32
@@ -2293,7 +2293,7 @@ FOR_TEST:
 // use int32
 // over write array
 
-	.locals init (int32[] i, int32 j)
+	.locals init (int32[], int32)
 
 	
 	ldc.i4 100
@@ -2341,7 +2341,7 @@ FOR_END:
 // C# like loop
 // over write array
 
-	.locals init (int32[] i, int32 j)
+	.locals init (int32[], int32)
 
 	
 	ldc.i4 100
@@ -2394,7 +2394,7 @@ FOR_TEST:
 // use int64
 // Exceed array bounds with greater than or equals
 
-	.locals init (int64[] i, int64 j)
+	.locals init (int64[], int64)
 
 	
 	ldc.i8 100
@@ -2439,7 +2439,7 @@ FOR_END:
 // C# like loop
 // Exceed array bounds with less than
 
-	.locals init (int64[] i, int64 j)
+	.locals init (int64[], int64)
 
 	
 	ldc.i8 100
@@ -2486,7 +2486,7 @@ FOR_TEST:
 // Exceed array bounds with greater than
 
 
-	.locals init (int64[] i, int64 j)
+	.locals init (int64[], int64)
 
 	
 	ldc.i8 100
@@ -2529,7 +2529,7 @@ FOR_END:
 // Exceed array bounds with less than equals
 
 
-	.locals init (int64[] i, int64 j)
+	.locals init (int64[], int64)
 
 	
 	ldc.i8 100
@@ -2568,7 +2568,7 @@ FOR_TEST:
 // Exceed array bounds with less than equals
 
 
-	.locals init (int64[] i, int64 j)
+	.locals init (int64[], int64)
 
 	
 	ldc.i8 100
@@ -2614,7 +2614,7 @@ FOR_END:
 // Exceed array bounds with greater than
 
 
-	.locals init (int64[] i, int64 j)
+	.locals init (int64[], int64)
 
 	
 	ldc.i8 100
@@ -2656,7 +2656,7 @@ FOR_TEST:
 // Exceed array bounds with less than
 
 
-	.locals init (int64[] i, int64 j)
+	.locals init (int64[], int64)
 
 	
 	ldc.i8 100
@@ -2703,7 +2703,7 @@ FOR_END:
 // Exceed array bounds with greater than equals
 
 
-	.locals init (int64[] i, int64 j)
+	.locals init (int64[], int64)
 
 	
 	ldc.i8 100
@@ -2746,7 +2746,7 @@ FOR_TEST:
 // Exceed array bounds with greater than or equals
 // Steping 4
 
-	.locals init (int64[] i, int64 j)
+	.locals init (int64[], int64)
 
 	
 	ldc.i8 100
@@ -2788,7 +2788,7 @@ FOR_END:
 // Exceed array bounds with less than
 // Steping 4
 
-	.locals init (int64[] i, int64 j)
+	.locals init (int64[], int64)
 
 	
 	ldc.i8 100
@@ -2833,7 +2833,7 @@ FOR_TEST:
 // Steping 4
 
 
-	.locals init (int64[] i, int64 j)
+	.locals init (int64[], int64)
 
 	
 	ldc.i8 100
@@ -2880,7 +2880,7 @@ FOR_END:
 // Steping 4
 
 
-	.locals init (int64[] i, int64 j)
+	.locals init (int64[], int64)
 
 	
 	ldc.i8 100
@@ -2923,7 +2923,7 @@ FOR_TEST:
 // Steping 4
 
 
-	.locals init (int64[] i, int64 j)
+	.locals init (int64[], int64)
 
 	
 	ldc.i8 100
@@ -2970,7 +2970,7 @@ FOR_END:
 // Steping 4
 
 
-	.locals init (int64[] i, int64 j)
+	.locals init (int64[], int64)
 
 	
 	ldc.i8 100
@@ -3013,7 +3013,7 @@ FOR_TEST:
 // Steping 4
 
 
-	.locals init (int64[] i, int64 j)
+	.locals init (int64[], int64)
 
 	
 	ldc.i8 100
@@ -3061,7 +3061,7 @@ FOR_END:
 // Steping 4
 
 
-	.locals init (int64[] i, int64 j)
+	.locals init (int64[], int64)
 
 	
 	ldc.i8 100
@@ -3100,7 +3100,7 @@ FOR_TEST:
 // use int64
 // take address of local
 
-	.locals init (int64[] i, int64 j, int64* k)
+	.locals init (int64[], int64, int64*)
 	
 	ldc.i8 100
 	conv.i
@@ -3149,7 +3149,7 @@ FOR_END:
 // C# like loop
 // take address of local
 
-	.locals init (int64[] i, int64 j, int64* k)
+	.locals init (int64[], int64, int64*)
 	
 	ldc.i8 100
 	conv.i
@@ -3198,7 +3198,7 @@ FOR_TEST:
 // use int64
 // over write array
 
-	.locals init (int64[] i, int64 j)
+	.locals init (int64[], int64)
 
 	
 	ldc.i8 100
@@ -3249,7 +3249,7 @@ FOR_END:
 // C# like loop
 // over write array
 
-	.locals init (int64[] i, int64 j)
+	.locals init (int64[], int64)
 
 	
 	ldc.i8 100
@@ -3301,7 +3301,7 @@ FOR_TEST:
 // use uint32
 // Exceed array bounds with greater than or equals
 
-	.locals init (uint32[] i, uint32 j)
+	.locals init (uint32[], uint32)
 
 	
 	ldc.i4 100
@@ -3344,7 +3344,7 @@ FOR_END:
 // C# like loop
 // Exceed array bounds with less than
 
-	.locals init (uint32[] i, uint32 j)
+	.locals init (uint32[], uint32)
 
 	
 	ldc.i4 100
@@ -3389,7 +3389,7 @@ FOR_TEST:
 // Exceed array bounds with greater than
 
 
-	.locals init (uint32[] i, uint32 j)
+	.locals init (uint32[], uint32)
 
 	
 	ldc.i4 100
@@ -3430,7 +3430,7 @@ FOR_END:
 // Exceed array bounds with less than equals
 
 
-	.locals init (uint32[] i, uint32 j)
+	.locals init (uint32[], uint32)
 
 	
 	ldc.i4 100
@@ -3467,7 +3467,7 @@ FOR_TEST:
 // Exceed array bounds with less than equals
 
 
-	.locals init (uint32[] i, uint32 j)
+	.locals init (uint32[], uint32)
 
 	
 	ldc.i4 100
@@ -3511,7 +3511,7 @@ FOR_END:
 // Exceed array bounds with greater than
 
 
-	.locals init (uint32[] i, uint32 j)
+	.locals init (uint32[], uint32)
 
 	
 	ldc.i4 100
@@ -3551,7 +3551,7 @@ FOR_TEST:
 // Exceed array bounds with less than
 
 
-	.locals init (uint32[] i, uint32 j)
+	.locals init (uint32[], uint32)
 
 	
 	ldc.i4 100
@@ -3596,7 +3596,7 @@ FOR_END:
 // Exceed array bounds with greater than equals
 
 
-	.locals init (uint32[] i, uint32 j)
+	.locals init (uint32[], uint32)
 
 	
 	ldc.i4 100
@@ -3637,7 +3637,7 @@ FOR_TEST:
 // Exceed array bounds with greater than or equals
 // Steping 4
 
-	.locals init (uint32[] i, uint32 j)
+	.locals init (uint32[], uint32)
 
 	
 	ldc.i4 100
@@ -3677,7 +3677,7 @@ FOR_END:
 // Exceed array bounds with less than
 // Steping 4
 
-	.locals init (uint32[] i, uint32 j)
+	.locals init (uint32[], uint32)
 
 	
 	ldc.i4 100
@@ -3720,7 +3720,7 @@ FOR_TEST:
 // Steping 4
 
 
-	.locals init (uint32[] i, uint32 j)
+	.locals init (uint32[], uint32)
 
 	
 	ldc.i4 100
@@ -3765,7 +3765,7 @@ FOR_END:
 // Steping 4
 
 
-	.locals init (uint32[] i, uint32 j)
+	.locals init (uint32[], uint32)
 
 	
 	ldc.i4 100
@@ -3806,7 +3806,7 @@ FOR_TEST:
 // Steping 4
 
 
-	.locals init (uint32[] i, uint32 j)
+	.locals init (uint32[], uint32)
 
 	
 	ldc.i4 100
@@ -3851,7 +3851,7 @@ FOR_END:
 // Steping 4
 
 
-	.locals init (uint32[] i, uint32 j)
+	.locals init (uint32[], uint32)
 
 	
 	ldc.i4 100
@@ -3892,7 +3892,7 @@ FOR_TEST:
 // Steping 4
 
 
-	.locals init (uint32[] i, uint32 j)
+	.locals init (uint32[], uint32)
 
 	
 	ldc.i4 100
@@ -3938,7 +3938,7 @@ FOR_END:
 // Steping 4
 
 
-	.locals init (uint32[] i, uint32 j)
+	.locals init (uint32[], uint32)
 
 	
 	ldc.i4 100
@@ -3975,7 +3975,7 @@ FOR_TEST:
 // use uint32
 // take address of local
 
-	.locals init (uint32[] i, uint32 j, uint32* k)
+	.locals init (uint32[], uint32, uint32*)
 	
 	ldc.i4 100
 	newarr uint32
@@ -4022,7 +4022,7 @@ FOR_END:
 // C# like loop
 // take address of local
 
-	.locals init (uint32[] i, uint32 j, uint32* k)
+	.locals init (uint32[], uint32, uint32*)
 	
 	ldc.i4 100
 	newarr uint32
@@ -4069,7 +4069,7 @@ FOR_TEST:
 // use uint32
 // over write array
 
-	.locals init (uint32[] i, uint32 j)
+	.locals init (uint32[], uint32)
 
 	
 	ldc.i4 100
@@ -4117,7 +4117,7 @@ FOR_END:
 // C# like loop
 // over write array
 
-	.locals init (uint32[] i, uint32 j)
+	.locals init (uint32[], uint32)
 
 	
 	ldc.i4 100
@@ -4170,7 +4170,7 @@ FOR_TEST:
 // to a postcondition loop.
 
 
-	.locals init (int32[] i, int32 j)
+	.locals init (int32[], int32)
 
 	
 	ldc.i4 100

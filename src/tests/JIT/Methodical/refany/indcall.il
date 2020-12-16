@@ -58,7 +58,7 @@
     {
 			.entrypoint
 			.maxstack  6
-			.locals (int32 V_0, int32 V_1)
+			.locals (int32 V_0, int32)
 			newobj		instance void JitTest.Test::.ctor()
 			ldftn 		instance int32 JitTest.Test::DummyMethod(refany)
 			ldftn		instance int32 JitTest.Test::DoStuff(method instance int32 *(refany))

@@ -27,7 +27,7 @@
 		.entrypoint
 		// Code size       48 (0x30)
 		.maxstack  5
-		.locals(native unsigned int i)
+		.locals(native unsigned int)
 		ldc.i4.0
 		stloc.0
 		ldloca 0

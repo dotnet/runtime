@@ -20,7 +20,7 @@
     {
 		.entrypoint
 		.maxstack  8
-		.locals (class Test.AA a)
+		.locals (class Test.AA)
 		
 		newobj instance void Test.AA::.ctor()
 		stloc.0

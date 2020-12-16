@@ -6,7 +6,7 @@
 
 
 .method public static int32 main(class [mscorlib]System.String[]) {
-.locals         (class [mscorlib]System.String s)
+.locals         (class [mscorlib]System.String)
 .entrypoint
 
         ldc.i4          0x55555555

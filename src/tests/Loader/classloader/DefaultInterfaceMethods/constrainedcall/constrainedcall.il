@@ -81,9 +81,9 @@
     .entrypoint
 
     .locals init (
-      valuetype Adder`1<object> a0,
-      int32 i,
-      valuetype Adder`1<valuetype Atom> a1
+      valuetype Adder`1<object>,
+      int32,
+      valuetype Adder`1<valuetype Atom>
     )
 
     // This will end up calling the implementation of IAdder<IGen1<object>>.PlusPlus

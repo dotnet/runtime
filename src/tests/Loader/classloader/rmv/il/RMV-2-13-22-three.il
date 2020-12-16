@@ -30,7 +30,7 @@
 }
 
 .method public static int32 main(){
-	.locals(value class Foo f)
+	.locals(value class Foo)
 	.entrypoint
 	.maxstack 8
 	newobj instance	void Foo::.ctor()

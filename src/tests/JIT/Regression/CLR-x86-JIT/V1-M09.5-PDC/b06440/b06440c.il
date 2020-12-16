@@ -16,7 +16,7 @@
 .entrypoint
 .maxstack	100
 
-.locals (int64 l0, float32 l1, float64 l2, float64 l3, float64 l4, float64 l5)
+.locals (int64, float32, float64, float64, float64, float64)
 
 	ldc.i8 0  stloc.0
 	ldc.r4 0  stloc.1

@@ -12,7 +12,7 @@
 .field public static int32 BAR
 .method public static	int32 args(int32,int32) {
 .maxstack	10
-.locals	(int32* i)
+.locals	(int32*)
 	ldarg		0
 	ldarg		1
 	ldarg		0

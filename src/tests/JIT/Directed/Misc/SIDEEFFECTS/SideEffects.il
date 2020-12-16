@@ -230,7 +230,7 @@ ERROR_EXIT:
   {
 	.entrypoint
 	.maxstack 10
-	.locals (int32 i,int32 j,int32 k)
+	.locals (int32,int32,int32)
 
 	ldc.i4 0
 	stsfld int32 SideEffects::s_i

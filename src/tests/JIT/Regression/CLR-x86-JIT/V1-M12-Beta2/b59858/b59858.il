@@ -22,7 +22,7 @@
 // Local 3 - an uninitialized Object handle (not used in all tests)
 // Local local_int8 - an initialized int8 (not used in all tests)
 .maxstack 20
-.locals(int32 i,int64 l,value class ['mscorlib']System.DateTime dt,class ['mscorlib']System.Object o,int8 local_int8)
+.locals(int32,int64,value class ['mscorlib']System.DateTime,class ['mscorlib']System.Object,int8 local_int8)
   ldc.i4 0 //initialize local 0 (not used in all tests)
   stloc 0
   ldc.i8 0 //initialize local 1 (not used in all tests)

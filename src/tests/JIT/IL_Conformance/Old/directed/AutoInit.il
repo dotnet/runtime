@@ -10,7 +10,7 @@
 .method public static int32 main(class [mscorlib]System.String[]) {
 .zeroinit
 .entrypoint
-.locals	(int32 l0,int32 l1,int32 l2,int32 l3,int32 l4,int32 l5,int32 l6,int32 l7,int32 l8,int32 l9,int32 l10,int32 l11,int32 l12,int32 l13,int32 l14,int32 l15)
+.locals	(int32,int32,int32,int32,int32,int32,int32,int32,int32,int32,int32,int32,int32,int32,int32,int32)
 .maxstack	2
 	ldc.i4		0x1
 	stloc	0x1

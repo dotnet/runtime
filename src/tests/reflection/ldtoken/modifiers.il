@@ -6,7 +6,7 @@
 
 .method private hidebysig static int32  Main() cil managed
 {
-  .locals init (valuetype [System.Runtime]System.RuntimeTypeHandle r)
+  .locals init (valuetype [System.Runtime]System.RuntimeTypeHandle)
   .entrypoint
 
   ldtoken string[]

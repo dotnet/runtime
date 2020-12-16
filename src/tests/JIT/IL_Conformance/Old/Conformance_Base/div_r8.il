@@ -38,7 +38,7 @@ FINISH:
 	ret
 }
 .method public static	int32 checkfinite(float64) {
-.locals		(class [mscorlib]System.Exception e)
+.locals		(class [mscorlib]System.Exception)
 .maxstack		3
 try_start:
 	ldarg	0

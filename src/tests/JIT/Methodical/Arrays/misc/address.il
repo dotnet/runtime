@@ -31,7 +31,7 @@
                       int32 expected) il managed
     {
       .maxstack  8
-      .locals (int32 l)
+      .locals (int32)
 		ldstr     "Trying index "
 		call       void [System.Console]System.Console::Write(string)
 		ldarga.s   idx

@@ -34,7 +34,7 @@
 		.entrypoint
 		// Code size       38 (0x26)
 		.maxstack  4
-		.locals (int32[0...] i, int32 j)
+		.locals (int32[0...], int32)
 		ldc.i4.2
 		stloc.1
 		.try {

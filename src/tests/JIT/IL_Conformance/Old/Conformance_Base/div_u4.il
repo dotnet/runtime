@@ -6,7 +6,7 @@
 
 .class public div_un {
 .method public static	int32 _div(int32,int32) {
-.locals		(class [mscorlib]System.Exception e,int32 i)
+.locals		(class [mscorlib]System.Exception,int32)
 .maxstack		3
 try_start:
 	ldarg	0

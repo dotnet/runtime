@@ -18,7 +18,7 @@
 
   .method public static int32 foo1(int32 a, int32 b) il managed
   {
-	.locals(int32 l)
+	.locals(int32)
 
 	call void [System.Console]System.Console::WriteLine()
 
@@ -132,7 +132,7 @@ ERR_EXIT:
   {
 	.entrypoint
 	.maxstack 10
-	.locals (int32 i,int32 j,int32 k)
+	.locals (int32,int32,int32)
 
 
 	ldc.i4 100

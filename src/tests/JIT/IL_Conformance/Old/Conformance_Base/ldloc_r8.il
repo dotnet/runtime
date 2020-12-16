@@ -22,7 +22,7 @@
 .method public static	int32 main(class [mscorlib]System.String[]) {
 .entrypoint
 .maxstack		10
-.locals	(float64 f1,float64 f2,float64 f3)
+.locals	(float64,float64,float64)
 	call	void _ldloc::initialize()
 
 	ldc.r8		float64(0x8000000000000000)

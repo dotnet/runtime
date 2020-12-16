@@ -5,7 +5,7 @@
  
 .method static void* GetValue()
 {
-    .locals init ([0] void* v)
+    .locals init ([0] void*)
     ldc.i4 100
     conv.i
     stloc.0

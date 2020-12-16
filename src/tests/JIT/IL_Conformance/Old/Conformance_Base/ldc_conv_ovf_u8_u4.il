@@ -23,7 +23,7 @@
 
 
 .method public static		int32 conv_0(int64,int32) {
-.locals		(class [mscorlib]System.OverflowException e,int32 i)
+.locals		(class [mscorlib]System.OverflowException,int32)
 .maxstack	2
 try_start:
 	ldarg		0
@@ -58,7 +58,7 @@ END:
 
 }
 .method public static		int32 conv_un_0(int64,int32) {
-.locals		(class [mscorlib]System.OverflowException e,unsigned int32 i)
+.locals		(class [mscorlib]System.OverflowException,unsigned int32)
 .maxstack	2
 try_start:
 	ldarg		0
@@ -93,7 +93,7 @@ END:
 
 }
 .method public static		int32 conv_1(int64,int32) {
-.locals		(class [mscorlib]System.OverflowException e,int32 i)
+.locals		(class [mscorlib]System.OverflowException,int32)
 .maxstack	2
 try_start:
 	ldarg		0
@@ -128,7 +128,7 @@ END:
 
 }
 .method public static		int32 conv_un_1(int64,int32) {
-.locals		(class [mscorlib]System.OverflowException e,unsigned int32 i)
+.locals		(class [mscorlib]System.OverflowException,unsigned int32)
 .maxstack	2
 try_start:
 	ldarg		0
@@ -163,7 +163,7 @@ END:
 
 }
 .method public static		int32 conv_2(int64,int32) {
-.locals		(class [mscorlib]System.OverflowException e,int32 i)
+.locals		(class [mscorlib]System.OverflowException,int32)
 .maxstack	2
 try_start:
 	ldarg		0
@@ -198,7 +198,7 @@ END:
 
 }
 .method public static		int32 conv_un_2(int64,int32) {
-.locals		(class [mscorlib]System.OverflowException e,unsigned int32 i)
+.locals		(class [mscorlib]System.OverflowException,unsigned int32)
 .maxstack	2
 try_start:
 	ldarg		0
@@ -233,7 +233,7 @@ END:
 
 }
 .method public static		int32 conv_3(int64,int32) {
-.locals		(class [mscorlib]System.OverflowException e,int32 i)
+.locals		(class [mscorlib]System.OverflowException,int32)
 .maxstack	2
 try_start:
 	ldarg		0
@@ -268,7 +268,7 @@ END:
 
 }
 .method public static		int32 conv_un_3(int64,int32) {
-.locals		(class [mscorlib]System.OverflowException e,unsigned int32 i)
+.locals		(class [mscorlib]System.OverflowException,unsigned int32)
 .maxstack	2
 try_start:
 	ldarg		0
@@ -303,7 +303,7 @@ END:
 
 }
 .method public static		int32 conv_4(int64,int32) {
-.locals		(class [mscorlib]System.OverflowException e,int32 i)
+.locals		(class [mscorlib]System.OverflowException,int32)
 .maxstack	2
 try_start:
 	ldarg		0
@@ -338,7 +338,7 @@ END:
 
 }
 .method public static		int32 conv_un_4(int64,int32) {
-.locals		(class [mscorlib]System.OverflowException e,unsigned int32 i)
+.locals		(class [mscorlib]System.OverflowException,unsigned int32)
 .maxstack	2
 try_start:
 	ldarg		0
@@ -373,7 +373,7 @@ END:
 
 }
 .method public static		int32 conv_5(int64,int32) {
-.locals		(class [mscorlib]System.OverflowException e,int32 i)
+.locals		(class [mscorlib]System.OverflowException,int32)
 .maxstack	2
 try_start:
 	ldarg		0
@@ -408,7 +408,7 @@ END:
 
 }
 .method public static		int32 conv_un_5(int64,int32) {
-.locals		(class [mscorlib]System.OverflowException e,unsigned int32 i)
+.locals		(class [mscorlib]System.OverflowException,unsigned int32)
 .maxstack	2
 try_start:
 	ldarg		0
@@ -443,7 +443,7 @@ END:
 
 }
 .method public static		int32 conv_6(int64,int32) {
-.locals		(class [mscorlib]System.OverflowException e,int32 i)
+.locals		(class [mscorlib]System.OverflowException,int32)
 .maxstack	2
 try_start:
 	ldarg		0
@@ -478,7 +478,7 @@ END:
 
 }
 .method public static		int32 conv_un_6(int64,int32) {
-.locals		(class [mscorlib]System.OverflowException e,unsigned int32 i)
+.locals		(class [mscorlib]System.OverflowException,unsigned int32)
 .maxstack	2
 try_start:
 	ldarg		0
@@ -513,7 +513,7 @@ END:
 
 }
 .method public static		int32 conv_7(int64,int32) {
-.locals		(class [mscorlib]System.OverflowException e,int32 i)
+.locals		(class [mscorlib]System.OverflowException,int32)
 .maxstack	2
 try_start:
 	ldarg		0
@@ -548,7 +548,7 @@ END:
 
 }
 .method public static		int32 conv_un_7(int64,int32) {
-.locals		(class [mscorlib]System.OverflowException e,unsigned int32 i)
+.locals		(class [mscorlib]System.OverflowException,unsigned int32)
 .maxstack	2
 try_start:
 	ldarg		0
@@ -583,7 +583,7 @@ END:
 
 }
 .method public static		int32 conv_8(int64,int32) {
-.locals		(class [mscorlib]System.OverflowException e,int32 i)
+.locals		(class [mscorlib]System.OverflowException,int32)
 .maxstack	2
 try_start:
 	ldarg		0
@@ -618,7 +618,7 @@ END:
 
 }
 .method public static		int32 conv_un_8(int64,int32) {
-.locals		(class [mscorlib]System.OverflowException e,unsigned int32 i)
+.locals		(class [mscorlib]System.OverflowException,unsigned int32)
 .maxstack	2
 try_start:
 	ldarg		0
@@ -653,7 +653,7 @@ END:
 
 }
 .method public static		int32 conv_9(int64,int32) {
-.locals		(class [mscorlib]System.OverflowException e,int32 i)
+.locals		(class [mscorlib]System.OverflowException,int32)
 .maxstack	2
 try_start:
 	ldarg		0
@@ -688,7 +688,7 @@ END:
 
 }
 .method public static		int32 conv_un_9(int64,int32) {
-.locals		(class [mscorlib]System.OverflowException e,unsigned int32 i)
+.locals		(class [mscorlib]System.OverflowException,unsigned int32)
 .maxstack	2
 try_start:
 	ldarg		0

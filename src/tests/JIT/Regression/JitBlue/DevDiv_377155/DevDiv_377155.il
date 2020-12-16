@@ -6,7 +6,7 @@
    .method static float32 M() cil managed noinlining
    {
       .maxstack  65535
-      .locals init (float64 l0, native unsigned int l1, native int l2, char l3, unsigned int64 l4, bool l5)
+      .locals init (float64, native unsigned int, native int, char, unsigned int64, bool)
 
       ldloc.s 0x04
       conv.ovf.u8.un

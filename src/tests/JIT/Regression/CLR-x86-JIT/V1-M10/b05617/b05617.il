@@ -16,7 +16,7 @@
 .entrypoint
 .maxstack	100
 
-.locals (int32 l)
+.locals (int32)
 ldc.i4 1
 stloc.0
 

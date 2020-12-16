@@ -113,7 +113,7 @@
     {
         .maxstack 1
         .locals init(
-            [0] class [System.Runtime]System.Collections.IEqualityComparer eq
+            [0] class [System.Runtime]System.Collections.IEqualityComparer
         )
 
         ldc.i4.0
@@ -135,7 +135,7 @@
     {
         .maxstack 1
         .locals init(
-            [0] class [System.Runtime]System.Collections.IEqualityComparer eq
+            [0] class [System.Runtime]System.Collections.IEqualityComparer
         )
 
         ldc.i4.0
@@ -158,7 +158,7 @@
     {
         .maxstack 1
         .locals init(
-            [0] class [System.Runtime]System.Collections.IEqualityComparer[] eq
+            [0] class [System.Runtime]System.Collections.IEqualityComparer[]
         )
 
         ldarg.0
@@ -180,7 +180,7 @@
     {
         .maxstack 1
         .locals init(
-            [0] class CustomComparer[] c
+            [0] class CustomComparer[]
         )
 
         ldarg.0
@@ -891,7 +891,7 @@
     .method static public hidebysig void Branch.IntoUnalignedInstruction_Invalid_BadJumpTarget() cil managed 
     {
         .locals init (
-            int32& i
+            int32&
         )
 
         ldloc.0
@@ -907,7 +907,7 @@
     .method static public hidebysig void Branch.IntoUnalignedVolatileInstruction_Invalid_BadJumpTarget() cil managed 
     {
         .locals init (
-            int32& i
+            int32&
         )
 
         ldloc.0

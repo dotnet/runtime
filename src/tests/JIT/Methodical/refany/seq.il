@@ -116,7 +116,7 @@
     {
 		.entrypoint
 		.maxstack  8
-		.locals (unsigned int64 i)
+		.locals (unsigned int64)
 		ldc.i4.0
 		conv.i8
 		dup

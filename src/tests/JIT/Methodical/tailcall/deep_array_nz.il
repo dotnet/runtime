@@ -878,7 +878,7 @@ REM:
       .entrypoint
       // Code size       78 (0x4e)
       .maxstack  8
-      .locals (int32[100...] i)
+      .locals (int32[100...])
       ldc.i4 100
       ldc.i4.1
       newobj instance void int32[100...]::.ctor(int32, int32)

@@ -9,7 +9,7 @@
 
 
 .method public static int32 i1(int32,int32) {
-.locals		(class [mscorlib]System.OverflowException e,int8 i)
+.locals		(class [mscorlib]System.OverflowException,int8)
 .maxstack	2
 try_start:
 	ldarg	0
@@ -47,7 +47,7 @@ END:
 .method public static	int32 main(class [mscorlib]System.String[]) {
 .entrypoint
 .maxstack		5
-.locals	(int32 i)
+.locals	(int32)
 	ldc.i4		0xFFFFFF80
 	ldc.i4		0xFFFFFF80
 	call	int32 mul_ovf_i1::i1(int32,int32)

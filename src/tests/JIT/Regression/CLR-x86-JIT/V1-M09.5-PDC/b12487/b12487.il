@@ -16,7 +16,7 @@
  {
  .entrypoint
  .maxstack	8
- .locals ( float32 f, int64 i)
+ .locals ( float32, int64)
   ldc.r4 float32(0x63e756a3)
   stloc 0
   ldc.i8 0x176646e5325931d5

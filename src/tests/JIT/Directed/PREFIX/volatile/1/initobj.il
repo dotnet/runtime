@@ -27,7 +27,7 @@
 	//-------------------------
 	.method static int32 main(class [mscorlib]System.String[]) {
 	.entrypoint
-	.locals	(value class valClass v, int32 i)
+	.locals	(value class valClass, int32)
 	.maxstack	10
 	//----------------
 	// begin testing -

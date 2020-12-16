@@ -12,7 +12,7 @@
 .method public static	int32 main(class [mscorlib]System.String[]) {
 .entrypoint
 .maxstack		10
-.locals	(int32* i,int32* j)
+.locals	(int32*,int32*)
 	ldsflda		int32 _ceq::PTR
 	stloc	0
 	ldsflda		int32 _ceq::PTR

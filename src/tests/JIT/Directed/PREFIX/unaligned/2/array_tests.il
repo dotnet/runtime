@@ -46,7 +46,7 @@
 //-------------------------
 .method static void initialize() {
 .maxstack	10
-.locals	(int32 i, value class valClass v)
+.locals	(int32, value class valClass)
 
 	ldc.i4	0x00000004
 	newarr	[mscorlib]System.SByte
@@ -198,7 +198,7 @@ END:
 .method static int32 main(class [mscorlib]System.String[]) {
 .entrypoint
 .maxstack	10
-.locals	(int32 i)
+.locals	(int32)
 //----------------
 // begin testing -
 //----------------

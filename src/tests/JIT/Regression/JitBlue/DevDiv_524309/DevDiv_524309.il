@@ -13,7 +13,7 @@
   .method private static bool  ILGEN_METHOD(uint64 a, int16 b) cil managed
   {
 	.maxstack  88
-	.locals init (char l0, native unsigned int l1, float64 l2, int16 l3, native unsigned int l4, unsigned int8 l5)
+	.locals init (char, native unsigned int, float64, int16, native unsigned int, unsigned int8)
 	IL0000: ldarg.s 0x00
 	IL0002: brtrue 
 	IL000f

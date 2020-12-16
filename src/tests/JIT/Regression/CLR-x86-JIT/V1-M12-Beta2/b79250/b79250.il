@@ -1531,7 +1531,7 @@ ldc.r8 4.4
 .method static int32 Main() {
 .entrypoint
 .maxstack	19
-.locals (int32 l)
+.locals (int32)
 ldc.i4 101
 stloc.0
 .try {

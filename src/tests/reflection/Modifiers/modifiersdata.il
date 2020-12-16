@@ -159,7 +159,7 @@
 
   .method public static hidebysig object TryBoxWithModifiedPointer()
   {
-    .locals init (valuetype GenericStruct`1<int32 modreq (BarModifier)*[]> g)
+    .locals init (valuetype GenericStruct`1<int32 modreq (BarModifier)*[]>)
     ldloc 0
     box valuetype GenericStruct`1<int32 modreq (BarModifier)*[]>
     ret

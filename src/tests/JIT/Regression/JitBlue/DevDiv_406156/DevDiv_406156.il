@@ -9,7 +9,7 @@
     .method static unsigned int8 ILGEN_METHOD(int32) noinlining
     {
         .maxstack  65535
-        .locals init (int16 i, char c)
+        .locals init (int16, char)
 
         IL_0000: ldc.r8 float64(0x2f293f1943eded91)
         IL_0009: conv.i
@@ -90,7 +90,7 @@
     .method static unsigned int8 ILGEN_METHOD_2(int32) noinlining
     {
         .maxstack  65535
-        .locals init (int16 i, char c)
+        .locals init (int16, char)
 
         IL_0000: ldarg 0x0000
         IL_0004: conv.r8

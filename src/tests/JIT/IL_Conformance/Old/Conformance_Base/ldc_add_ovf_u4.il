@@ -22,7 +22,7 @@
 
 
 .method public static int32 u4_0(int32,int32,int32) {
-.locals		(class [mscorlib]System.OverflowException e,int32 i)
+.locals		(class [mscorlib]System.OverflowException,int32)
 .maxstack	2
 try_start:
 		ldc.i4		0x00000000
@@ -55,7 +55,7 @@ END:
 
 }
 .method public static int32 u4_1(int32,int32,int32) {
-.locals		(class [mscorlib]System.OverflowException e,int32 i)
+.locals		(class [mscorlib]System.OverflowException,int32)
 .maxstack	2
 try_start:
 		ldc.i4		0x00000000
@@ -88,7 +88,7 @@ END:
 
 }
 .method public static int32 u4_2(int32,int32,int32) {
-.locals		(class [mscorlib]System.OverflowException e,int32 i)
+.locals		(class [mscorlib]System.OverflowException,int32)
 .maxstack	2
 try_start:
 		ldc.i4		0x00000000
@@ -121,7 +121,7 @@ END:
 
 }
 .method public static int32 u4_3(int32,int32,int32) {
-.locals		(class [mscorlib]System.OverflowException e,int32 i)
+.locals		(class [mscorlib]System.OverflowException,int32)
 .maxstack	2
 try_start:
 		ldc.i4		0x00000000
@@ -154,7 +154,7 @@ END:
 
 }
 .method public static int32 u4_4(int32,int32,int32) {
-.locals		(class [mscorlib]System.OverflowException e,int32 i)
+.locals		(class [mscorlib]System.OverflowException,int32)
 .maxstack	2
 try_start:
 		ldc.i4		0x00000000
@@ -187,7 +187,7 @@ END:
 
 }
 .method public static int32 u4_5(int32,int32,int32) {
-.locals		(class [mscorlib]System.OverflowException e,int32 i)
+.locals		(class [mscorlib]System.OverflowException,int32)
 .maxstack	2
 try_start:
 		ldc.i4		0x00000000
@@ -220,7 +220,7 @@ END:
 
 }
 .method public static int32 u4_6(int32,int32,int32) {
-.locals		(class [mscorlib]System.OverflowException e,int32 i)
+.locals		(class [mscorlib]System.OverflowException,int32)
 .maxstack	2
 try_start:
 		ldc.i4		0x00000001
@@ -253,7 +253,7 @@ END:
 
 }
 .method public static int32 u4_7(int32,int32,int32) {
-.locals		(class [mscorlib]System.OverflowException e,int32 i)
+.locals		(class [mscorlib]System.OverflowException,int32)
 .maxstack	2
 try_start:
 		ldc.i4		0x00000001
@@ -286,7 +286,7 @@ END:
 
 }
 .method public static int32 u4_8(int32,int32,int32) {
-.locals		(class [mscorlib]System.OverflowException e,int32 i)
+.locals		(class [mscorlib]System.OverflowException,int32)
 .maxstack	2
 try_start:
 		ldc.i4		0x00000001
@@ -319,7 +319,7 @@ END:
 
 }
 .method public static int32 u4_9(int32,int32,int32) {
-.locals		(class [mscorlib]System.OverflowException e,int32 i)
+.locals		(class [mscorlib]System.OverflowException,int32)
 .maxstack	2
 try_start:
 		ldc.i4		0x00000001
@@ -352,7 +352,7 @@ END:
 
 }
 .method public static int32 u4_10(int32,int32,int32) {
-.locals		(class [mscorlib]System.OverflowException e,int32 i)
+.locals		(class [mscorlib]System.OverflowException,int32)
 .maxstack	2
 try_start:
 		ldc.i4		0x00000001
@@ -385,7 +385,7 @@ END:
 
 }
 .method public static int32 u4_11(int32,int32,int32) {
-.locals		(class [mscorlib]System.OverflowException e,int32 i)
+.locals		(class [mscorlib]System.OverflowException,int32)
 .maxstack	2
 try_start:
 		ldc.i4		0x00000001
@@ -418,7 +418,7 @@ END:
 
 }
 .method public static int32 u4_12(int32,int32,int32) {
-.locals		(class [mscorlib]System.OverflowException e,int32 i)
+.locals		(class [mscorlib]System.OverflowException,int32)
 .maxstack	2
 try_start:
 		ldc.i4		0xFFFFFFFE
@@ -451,7 +451,7 @@ END:
 
 }
 .method public static int32 u4_13(int32,int32,int32) {
-.locals		(class [mscorlib]System.OverflowException e,int32 i)
+.locals		(class [mscorlib]System.OverflowException,int32)
 .maxstack	2
 try_start:
 		ldc.i4		0xFFFFFFFE
@@ -484,7 +484,7 @@ END:
 
 }
 .method public static int32 u4_14(int32,int32,int32) {
-.locals		(class [mscorlib]System.OverflowException e,int32 i)
+.locals		(class [mscorlib]System.OverflowException,int32)
 .maxstack	2
 try_start:
 		ldc.i4		0xFFFFFFFE
@@ -517,7 +517,7 @@ END:
 
 }
 .method public static int32 u4_15(int32,int32,int32) {
-.locals		(class [mscorlib]System.OverflowException e,int32 i)
+.locals		(class [mscorlib]System.OverflowException,int32)
 .maxstack	2
 try_start:
 		ldc.i4		0xFFFFFFFE
@@ -550,7 +550,7 @@ END:
 
 }
 .method public static int32 u4_16(int32,int32,int32) {
-.locals		(class [mscorlib]System.OverflowException e,int32 i)
+.locals		(class [mscorlib]System.OverflowException,int32)
 .maxstack	2
 try_start:
 		ldc.i4		0xFFFFFFFE
@@ -583,7 +583,7 @@ END:
 
 }
 .method public static int32 u4_17(int32,int32,int32) {
-.locals		(class [mscorlib]System.OverflowException e,int32 i)
+.locals		(class [mscorlib]System.OverflowException,int32)
 .maxstack	2
 try_start:
 		ldc.i4		0xFFFFFFFE
@@ -616,7 +616,7 @@ END:
 
 }
 .method public static int32 u4_18(int32,int32,int32) {
-.locals		(class [mscorlib]System.OverflowException e,int32 i)
+.locals		(class [mscorlib]System.OverflowException,int32)
 .maxstack	2
 try_start:
 		ldc.i4		0xFFFFFFFF
@@ -649,7 +649,7 @@ END:
 
 }
 .method public static int32 u4_19(int32,int32,int32) {
-.locals		(class [mscorlib]System.OverflowException e,int32 i)
+.locals		(class [mscorlib]System.OverflowException,int32)
 .maxstack	2
 try_start:
 		ldc.i4		0xFFFFFFFF
@@ -682,7 +682,7 @@ END:
 
 }
 .method public static int32 u4_20(int32,int32,int32) {
-.locals		(class [mscorlib]System.OverflowException e,int32 i)
+.locals		(class [mscorlib]System.OverflowException,int32)
 .maxstack	2
 try_start:
 		ldc.i4		0xFFFFFFFF
@@ -715,7 +715,7 @@ END:
 
 }
 .method public static int32 u4_21(int32,int32,int32) {
-.locals		(class [mscorlib]System.OverflowException e,int32 i)
+.locals		(class [mscorlib]System.OverflowException,int32)
 .maxstack	2
 try_start:
 		ldc.i4		0xFFFFFFFF
@@ -748,7 +748,7 @@ END:
 
 }
 .method public static int32 u4_22(int32,int32,int32) {
-.locals		(class [mscorlib]System.OverflowException e,int32 i)
+.locals		(class [mscorlib]System.OverflowException,int32)
 .maxstack	2
 try_start:
 		ldc.i4		0xFFFFFFFF
@@ -781,7 +781,7 @@ END:
 
 }
 .method public static int32 u4_23(int32,int32,int32) {
-.locals		(class [mscorlib]System.OverflowException e,int32 i)
+.locals		(class [mscorlib]System.OverflowException,int32)
 .maxstack	2
 try_start:
 		ldc.i4		0xFFFFFFFF
@@ -814,7 +814,7 @@ END:
 
 }
 .method public static int32 u4_24(int32,int32,int32) {
-.locals		(class [mscorlib]System.OverflowException e,int32 i)
+.locals		(class [mscorlib]System.OverflowException,int32)
 .maxstack	2
 try_start:
 		ldc.i4		0x55555555
@@ -847,7 +847,7 @@ END:
 
 }
 .method public static int32 u4_25(int32,int32,int32) {
-.locals		(class [mscorlib]System.OverflowException e,int32 i)
+.locals		(class [mscorlib]System.OverflowException,int32)
 .maxstack	2
 try_start:
 		ldc.i4		0x55555555
@@ -880,7 +880,7 @@ END:
 
 }
 .method public static int32 u4_26(int32,int32,int32) {
-.locals		(class [mscorlib]System.OverflowException e,int32 i)
+.locals		(class [mscorlib]System.OverflowException,int32)
 .maxstack	2
 try_start:
 		ldc.i4		0x55555555
@@ -913,7 +913,7 @@ END:
 
 }
 .method public static int32 u4_27(int32,int32,int32) {
-.locals		(class [mscorlib]System.OverflowException e,int32 i)
+.locals		(class [mscorlib]System.OverflowException,int32)
 .maxstack	2
 try_start:
 		ldc.i4		0x55555555
@@ -946,7 +946,7 @@ END:
 
 }
 .method public static int32 u4_28(int32,int32,int32) {
-.locals		(class [mscorlib]System.OverflowException e,int32 i)
+.locals		(class [mscorlib]System.OverflowException,int32)
 .maxstack	2
 try_start:
 		ldc.i4		0x55555555
@@ -979,7 +979,7 @@ END:
 
 }
 .method public static int32 u4_29(int32,int32,int32) {
-.locals		(class [mscorlib]System.OverflowException e,int32 i)
+.locals		(class [mscorlib]System.OverflowException,int32)
 .maxstack	2
 try_start:
 		ldc.i4		0x55555555
@@ -1012,7 +1012,7 @@ END:
 
 }
 .method public static int32 u4_30(int32,int32,int32) {
-.locals		(class [mscorlib]System.OverflowException e,int32 i)
+.locals		(class [mscorlib]System.OverflowException,int32)
 .maxstack	2
 try_start:
 		ldc.i4		0xAAAAAAAA
@@ -1045,7 +1045,7 @@ END:
 
 }
 .method public static int32 u4_31(int32,int32,int32) {
-.locals		(class [mscorlib]System.OverflowException e,int32 i)
+.locals		(class [mscorlib]System.OverflowException,int32)
 .maxstack	2
 try_start:
 		ldc.i4		0xAAAAAAAA
@@ -1078,7 +1078,7 @@ END:
 
 }
 .method public static int32 u4_32(int32,int32,int32) {
-.locals		(class [mscorlib]System.OverflowException e,int32 i)
+.locals		(class [mscorlib]System.OverflowException,int32)
 .maxstack	2
 try_start:
 		ldc.i4		0xAAAAAAAA
@@ -1111,7 +1111,7 @@ END:
 
 }
 .method public static int32 u4_33(int32,int32,int32) {
-.locals		(class [mscorlib]System.OverflowException e,int32 i)
+.locals		(class [mscorlib]System.OverflowException,int32)
 .maxstack	2
 try_start:
 		ldc.i4		0xAAAAAAAA
@@ -1144,7 +1144,7 @@ END:
 
 }
 .method public static int32 u4_34(int32,int32,int32) {
-.locals		(class [mscorlib]System.OverflowException e,int32 i)
+.locals		(class [mscorlib]System.OverflowException,int32)
 .maxstack	2
 try_start:
 		ldc.i4		0xAAAAAAAA
@@ -1177,7 +1177,7 @@ END:
 
 }
 .method public static int32 u4_35(int32,int32,int32) {
-.locals		(class [mscorlib]System.OverflowException e,int32 i)
+.locals		(class [mscorlib]System.OverflowException,int32)
 .maxstack	2
 try_start:
 		ldc.i4		0xAAAAAAAA

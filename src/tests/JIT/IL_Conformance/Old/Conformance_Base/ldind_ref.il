@@ -13,7 +13,7 @@
 .method public static	int32 main(class [mscorlib]System.String[]) {
 .entrypoint
 .maxstack		2
-.locals	(class ldind_ref r)
+.locals	(class ldind_ref)
 	newobj	instance 	void ldind_ref::ldind_ref()
 	stloc	0
 	ldloca		0

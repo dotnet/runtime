@@ -72,7 +72,7 @@
       .locals (class JitTest.TestClass V_0,
                class [mscorlib]System.Exception V_1,
                bool V_2,
-               method instance class JitTest.BaseClass*(int32) m
+               method instance class JitTest.BaseClass*(int32)
                )
       ldarg.0
       ldvirtftn instance class JitTest.BaseClass JitTest.TestClass::Method_To_Call(int32)

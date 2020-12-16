@@ -356,7 +356,7 @@
     // Code size 164 (0xa4)
     .maxstack 2
     .locals /* 11000002 */ init (
-        [0] bool b
+        [0] bool
     )
 
     IL_0000: ldarg.1

@@ -5,7 +5,7 @@
 
 .class public rem_un {
 .method public static	int64 _rem(int64,int64) {
-.locals		(class [mscorlib]System.Exception e, unsigned int64 i)
+.locals		(class [mscorlib]System.Exception, unsigned int64)
 .maxstack		3
 try_start:
 	ldarg	0

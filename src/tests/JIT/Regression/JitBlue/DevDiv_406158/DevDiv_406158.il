@@ -8,7 +8,7 @@
     .method static unsigned int8 ILGEN_METHOD(int32)
     {
         .maxstack  65535
-        .locals init (int16 i, char c)
+        .locals init (int16, char)
         IL_0000: ldc.r8 float64(0x7c9006f1fe68a964)
         IL_0009: conv.r4
         IL_000a: conv.ovf.u4

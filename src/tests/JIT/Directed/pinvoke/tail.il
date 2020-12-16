@@ -55,7 +55,7 @@
                              unsigned int32 uID,
                              string item) cil managed
     {
-   		.locals (bool b)
+   		.locals (bool)
     	.try {
 	    	ldarg.0
 	    	ldarg.1

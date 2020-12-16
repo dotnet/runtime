@@ -8,7 +8,7 @@
     .method static bool ILGEN_METHOD(float64, char, unsigned int32)
     {
         .maxstack  65535
-        .locals init (float64 l0, native unsigned int l1, unsigned int16 l2, native int l3, unsigned int16 l4, unsigned int8 l5, int64 l6, float64 l7)
+        .locals init (float64, native unsigned int, unsigned int16, native int, unsigned int16, unsigned int8, int64, float64)
 
         ldarg.s 0x00
         conv.ovf.u2

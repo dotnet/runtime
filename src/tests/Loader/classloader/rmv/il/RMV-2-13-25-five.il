@@ -35,7 +35,7 @@
 }
 
 .method public static int32 main(){
-	.locals (value class Foo f)
+	.locals (value class Foo)
 	.entrypoint
 	.maxstack 8
 	ldstr	"PASSED - 2.13.25 - Was allowed to declare virtual methods with and without mdFinal, mdReuseSlot, mdNewSlot, mdHideBySig"

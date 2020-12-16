@@ -32,7 +32,7 @@
 .method public static	int32 main(class [mscorlib]System.String[]) {
 .entrypoint
 .maxstack		10
-.locals	(int64 i1,int64 i2,int64 i3,int64 i4,int64 i5)
+.locals	(int64,int64,int64,int64,int64)
 	call	void Stloc_I8::initialize()
 
 	ldc.i8		0x8000000000000000

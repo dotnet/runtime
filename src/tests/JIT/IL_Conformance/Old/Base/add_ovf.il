@@ -18,7 +18,7 @@
     .data ptr = int32(0)
 
 .method public static int32 i1() {
-.locals(class [mscorlib]System.Exception e)
+.locals(class [mscorlib]System.Exception)
 .maxstack	5
 try_start:
 	ldc.i4	0x0000007E
@@ -56,7 +56,7 @@ FAIL:
 }
 
 .method public static int32 u1() {
-.locals(class [mscorlib]System.Exception e)
+.locals(class [mscorlib]System.Exception)
 .maxstack	5
 try_start:
 	ldc.i4	0x000000FE
@@ -94,7 +94,7 @@ FAIL:
 }
 
 .method public static int32 i2() {
-.locals(class [mscorlib]System.Exception e)
+.locals(class [mscorlib]System.Exception)
 .maxstack	5
 try_start:
 	ldc.i4	0x00007FFE
@@ -132,7 +132,7 @@ FAIL:
 }
 
 .method public static int32 u2() {
-.locals(class [mscorlib]System.Exception e)
+.locals(class [mscorlib]System.Exception)
 .maxstack	5
 try_start:
 	ldc.i4	0x0000FFFE
@@ -170,7 +170,7 @@ FAIL:
 }
 
 .method public static int32 i4() {
-.locals(class [mscorlib]System.Exception e)
+.locals(class [mscorlib]System.Exception)
 .maxstack	5
 try_start:
 	ldc.i4	0x7FFFFFFE
@@ -208,7 +208,7 @@ FAIL:
 }
 
 .method public static int32 u4() {
-.locals(class [mscorlib]System.Exception e)
+.locals(class [mscorlib]System.Exception)
 .maxstack	5
 try_start:
 	ldc.i4	0xFFFFFFFE
@@ -245,7 +245,7 @@ FAIL:
 }
 
 .method public static int32 i8() {
-.locals(class [mscorlib]System.Exception e)
+.locals(class [mscorlib]System.Exception)
 .maxstack	5
 try_start:
 	ldc.i8	0x7FFFFFFFFFFFFFFE
@@ -283,7 +283,7 @@ FAIL:
 }
 
 .method public static int32 u8() {
-.locals(class [mscorlib]System.Exception e)
+.locals(class [mscorlib]System.Exception)
 .maxstack	5
 try_start:
 	ldc.i8	0xFFFFFFFFFFFFFFFE

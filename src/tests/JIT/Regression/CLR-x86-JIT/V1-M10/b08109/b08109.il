@@ -15,7 +15,7 @@
 .method static int32 main() {
 .entrypoint
 .maxstack	11
- .locals ( float64 l0, int32 l1, float64 l2, float32 l3, int32 l4, float64 l5, int32 l6, int64 l7, int64 l8, int64 l9, int32 l10, int32 l11, int32 l12, float32 l13, int32 l14, int64 l15)
+ .locals ( float64, int32, float64, float32, int32, float64, int32, int64, int64, int64, int32, int32, int32, float32, int32, int64)
   ldc.r8 float64(0x11977df818424f1d)
   stloc 0
   ldc.i4 0x133f2fe1

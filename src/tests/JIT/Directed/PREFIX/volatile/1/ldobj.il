@@ -16,7 +16,7 @@
 
 .method public	static	int32 main() {
 .entrypoint
-.locals		(class [mscorlib]System.IO.TextWriter tw,value class valClass v1,value class valClass v2)
+.locals		(class [mscorlib]System.IO.TextWriter,value class valClass,value class valClass)
 .maxstack		2
 	call        class [mscorlib]System.IO.TextWriter [System.Console]System.Console::get_Out()
 	stloc	0
@@ -63,7 +63,7 @@ ldlocaTest:
 	ldobj		valClass
 
 	ldloca		2
-	call		void _ldobj::changeData(value class valClass v1,value class valClass* v2)
+	call		void _ldobj::changeData(value class valClass,value class valClass*)
 
 	ldloca		1
 	volatile.
@@ -112,7 +112,7 @@ end:
 	ret
 }
 
-.method  public	static	void changeData(value class valClass v1,value class valClass* v2) {
+.method  public	static	void changeData(value class valClass,value class valClass*) {
 .maxstack		2
 	ldarga		0
 	ldc.i4		0xBBBBBBBB

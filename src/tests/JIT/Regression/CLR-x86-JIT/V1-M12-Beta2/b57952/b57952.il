@@ -18,7 +18,7 @@
     {
       // Code size       6 (0x6)
       .maxstack  1
-      .locals (int32 l)
+      .locals (int32)
       .zeroinit
       ldc.i4 100
       localloc
@@ -31,7 +31,7 @@
     {
       // Code size       10 (0xa)
       .maxstack  8
-      .locals (unsigned int32 i)
+      .locals (unsigned int32)
       ldc.i4 11
       stloc.0
       ldc.i4 100

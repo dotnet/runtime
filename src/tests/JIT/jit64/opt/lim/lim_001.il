@@ -20,7 +20,7 @@
 .field public static int32 k
   .method public static int32 Main() cil managed
   {
-	.locals init (int32 i, int32 j, int32 k)
+	.locals init (int32, int32, int32)
     .entrypoint
 
 	ldc.i4 5

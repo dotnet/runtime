@@ -7,7 +7,7 @@
    .method static unsigned int64 M(float32, int32) cil managed noinlining
    {
       .maxstack  65535
-      .locals init (unsigned int8 l0, native unsigned int l1)
+      .locals init (unsigned int8, native unsigned int)
 
       ldc.i8 0x085d689753da3de1
       ldc.i8 0xe61597946032e570

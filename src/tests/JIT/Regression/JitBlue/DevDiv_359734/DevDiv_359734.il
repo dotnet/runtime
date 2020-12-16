@@ -19,7 +19,7 @@
     .method static char ILGEN_METHOD(bool, char, int16, int32)
     {
         .maxstack  65535
-        .locals init (int32 l0, int16 l1, int64 l2, int16 l3, unsigned int8 l4, float32 l5, unsigned int8 l6)
+        .locals init (int32, int16, int64, int16, unsigned int8, float32, unsigned int8)
 
         ldc.i8 0x80BBE1AB
         ldc.i8 0x866D9EF3

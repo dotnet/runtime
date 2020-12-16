@@ -17,7 +17,7 @@
 
 .method static	int32 main() {
 .entrypoint
-.locals		(class [mscorlib]System.IO.TextWriter tw)
+.locals		(class [mscorlib]System.IO.TextWriter)
 .maxstack		2
 	call        class [mscorlib]System.IO.TextWriter [System.Console]System.Console::get_Out()
 	stloc	0

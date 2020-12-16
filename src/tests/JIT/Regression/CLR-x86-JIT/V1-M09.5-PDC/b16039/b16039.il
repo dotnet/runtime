@@ -65,7 +65,7 @@
 	{
 		.entrypoint
 		.maxstack 8
-		.locals (int32 l)
+		.locals (int32)
 		ldc.i4.1
 		stloc.0
 		.try {

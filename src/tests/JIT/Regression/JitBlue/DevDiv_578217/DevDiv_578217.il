@@ -16,7 +16,7 @@
 	.method static int16 ILGEN_METHOD(unsigned int16, float32, native unsigned int, unsigned int16, unsigned int8, int16, unsigned int32)
 	{
 		.maxstack  142
-		.locals init (unsigned int64 i)
+		.locals init (unsigned int64)
 		IL_0000: ldc.i8 0x20fa631bf0010bd2
 		IL_0009: ldarg.s 0x00
 		IL_000b: conv.u8

@@ -111,7 +111,7 @@
         )
         .maxstack 1
         .locals init (
-            [0] int32 i
+            [0] int32
         )
 
         IL_0000: nop
@@ -131,7 +131,7 @@
     {
         .maxstack 2
         .locals init (
-            [0] int32 i
+            [0] int32
         )
 
         IL_0000: nop

@@ -42,8 +42,8 @@
     .method public hidebysig instance void LoadElement.UInt16FromCharArray_Valid() cil managed
     {
         .locals init (
-            [0] char[] c0,
-            [1] char c1
+            [0] char[],
+            [1] char
         )
 
         // char[] a = new char[];
@@ -67,8 +67,8 @@
     .method public hidebysig instance void LoadElement.UInt8FromBoolArray_Valid() cil managed
     {
         .locals init (
-            [0] bool[] b0,
-            [1] bool b1
+            [0] bool[],
+            [1] bool
         )
 
         // bool[] a = new bool[];

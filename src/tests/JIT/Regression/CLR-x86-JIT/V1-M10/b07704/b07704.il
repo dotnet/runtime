@@ -14,7 +14,7 @@
 .method static int32 main() {
 .entrypoint
 .maxstack	6
- .locals ( int64 l0, int32 l1, int32 l2, int32 l3, float64 l4, int32 l5, float32 l6, float64 l7, float64 l8, int32 l9, int32 l10, float32 l11, int32 l12, float32 l13, int32 l14, int32 l15, int32 l16, float32 l17, int32 l18, float64 l19, float32 l20, float32 l21, float32 l22, int32 l23, int32 l24, float32 l25, int32 l26, int32 l27, int64 l28, float64 l29, float64 l30, int64 l31, int32 l32, float32 l33, float64 l34, int32 l35, int32 l36, float32 l37, int32 l38, float64 l39, int32 l40, float32 l41, int32 l42, float32 l43, int32 l44, int64 l45, int64 l46, int32 l47, int32 l48, int32 l49, int64 l50, int32 l51, int32 l52, int32 l53, int64 l54, float64 l55, float32 l56, int32 l57, int32 l58, int32 l59, int32 l60, int32 l61, int32 l62, float64 l63)
+ .locals ( int64, int32, int32, int32, float64, int32, float32, float64, float64, int32, int32, float32, int32, float32, int32, int32, int32, float32, int32, float64, float32, float32, float32, int32, int32, float32, int32, int32, int64, float64, float64, int64, int32, float32, float64, int32, int32, float32, int32, float64, int32, float32, int32, float32, int32, int64, int64, int32, int32, int32, int64, int32, int32, int32, int64, float64, float32, int32, int32, int32, int32, int32, int32, float64)
 
   ldc.i8 0x5ca219a3a145ad
   stloc 0

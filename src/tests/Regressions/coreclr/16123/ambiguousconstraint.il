@@ -70,7 +70,7 @@
 .method public hidebysig static int32 Main() cil managed
 {
   .entrypoint
-  .locals init (valuetype Fooer f)
+  .locals init (valuetype Fooer)
   ldloc.0
   call int32 class Gen`1<valuetype Fooer>::Check(!0)
   ret

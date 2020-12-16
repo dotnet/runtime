@@ -59,7 +59,7 @@
             TestMain() il managed
     {
 			.maxstack  8
-			.locals (class JitTest.Test t)
+			.locals (class JitTest.Test)
 			newobj		instance void JitTest.Test::.ctor()
 			stloc.0
 			ldloc.0

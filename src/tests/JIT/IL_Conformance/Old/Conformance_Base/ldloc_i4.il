@@ -31,7 +31,7 @@
 .method public static	int32 main(class [mscorlib]System.String[]) {
 .entrypoint
 .maxstack		10
-.locals	(int32 i1,int32 i2,int32 i3,int32 i4,int32 i5)
+.locals	(int32,int32,int32,int32,int32)
 	call	void ldloc_I4::initialize()
 
 

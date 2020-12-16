@@ -72,7 +72,7 @@
             Static0(class JitTest.BaseClass co) cil managed
     {
       .maxstack  2
-      .locals (int32 l)
+      .locals (int32)
       ldc.i4.0
       ldarg.0
       castclass  JitTest.Iface1
