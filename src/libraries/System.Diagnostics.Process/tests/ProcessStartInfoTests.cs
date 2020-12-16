@@ -1045,7 +1045,7 @@ namespace System.Diagnostics.Tests
             ProcessStartInfo info = new ProcessStartInfo
             {
                 UseShellExecute = useShellExecute,
-                FileName = @"notepad.exe",
+                FileName = "notepad.exe",
                 Arguments = tempFile,
                 WindowStyle = ProcessWindowStyle.Minimized
             };
@@ -1065,17 +1065,20 @@ namespace System.Diagnostics.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer), // Nano does not support UseShellExecute
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer), // Nano does not support UseShellExecute and has not notepad
                                                     nameof(PlatformDetection.IsNotWindowsServerCore), // https://github.com/dotnet/runtime/issues/26231
                                                     nameof(PlatformDetection.IsNotWindows8x))] // https://github.com/dotnet/runtime/issues/22007
         [OuterLoop("Launches notepad")]
         [PlatformSpecific(TestPlatforms.Windows)]
         public void StartInfo_TextFile_ShellExecute()
         {
-            if (Thread.CurrentThread.CurrentCulture.ToString() != "en-US")
-                return; // [ActiveIssue(https://github.com/dotnet/runtime/issues/25823)]
+            // create a new extension that nobody else should be using
+            const string fileExtension = ".dotnetRuntimeTestExtension";
+            // associate Notepad with the new extension
+            FileAssociations.EnsureAssociationSet(fileExtension, "Used For Testing ShellExecute", "notepad.exe", "Notepad");
+            // from here we can try to open with with given extension and be sure that Notepad is going to open it (not other text file editor like Notepad++)
 
-            string tempFile = GetTestFilePath() + ".txt";
+            string tempFile = GetTestFilePath() + fileExtension;
             File.WriteAllText(tempFile, $"StartInfo_TextFile_ShellExecute");
 
             ProcessStartInfo info = new ProcessStartInfo
@@ -1254,7 +1257,7 @@ namespace System.Diagnostics.Tests
             ProcessStartInfo info = new ProcessStartInfo
             {
                 UseShellExecute = useShellExecute,
-                FileName = @"notepad.exe",
+                FileName = "notepad.exe",
                 Arguments = null,
                 WindowStyle = ProcessWindowStyle.Minimized
             };
