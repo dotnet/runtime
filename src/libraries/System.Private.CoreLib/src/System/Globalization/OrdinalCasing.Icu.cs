@@ -41,7 +41,7 @@ namespace System.Globalization
         // s_casingTable is covering the Unicode BMP plane only. Surrogate casing is handled separately.
         // Every cell in the table is covering the casing of 256 characters in the BMP.
         // Every cell is array of 512 character for uppercasing mapping.
-        private static ushort []?[]? s_casingTable = InitCasingTable();
+        private static ushort []?[] s_casingTable = InitCasingTable();
 
         /*
          The table is initialized to:
@@ -130,7 +130,7 @@ namespace System.Globalization
                 return (char) s_basicLatin[(int)c];
             }
 
-            ushort[]? casingTable = s_casingTable![pageNumber];
+            ushort[]? casingTable = s_casingTable[pageNumber];
 
             if (casingTable == s_noCasingPage)
             {
@@ -496,7 +496,7 @@ namespace System.Globalization
                 char* pTable = (char*)table;
                 Interop.Globalization.InitOrdinalCasingPage(pageNumber, pTable);
             }
-            Volatile.Write(ref s_casingTable![pageNumber], casingTable);
+            Volatile.Write(ref s_casingTable[pageNumber], casingTable);
             return casingTable;
         }
     }
