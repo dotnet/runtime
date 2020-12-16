@@ -568,7 +568,6 @@ int32_t SystemNative_EnumerateGatewayAddressesForInterface(uint32_t interfaceInd
 #else
 int32_t SystemNative_EnumerateGatewayAddressesForInterface(uint32_t interfaceIndex, GatewayAddressFound onGatewayFound)
 {
-    // NOTSUPPORTEDAPI
     (void)interfaceIndex;
     (void)onGatewayFound;
     errno = ENOTSUP;

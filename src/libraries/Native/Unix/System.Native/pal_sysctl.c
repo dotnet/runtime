@@ -32,7 +32,6 @@ int32_t SystemNative_Sysctl(int* name, unsigned int namelen, void* value, size_t
 #else
 int32_t SystemNative_Sysctl(int* name, unsigned int namelen, void* value, size_t* len)
 {
-    // NOTSUPPORTEDAPI
     (void)name;
     (void)namelen;
     (void)value;

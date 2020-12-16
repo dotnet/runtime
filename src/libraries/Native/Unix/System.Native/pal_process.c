@@ -843,7 +843,6 @@ int32_t SystemNative_SchedSetAffinity(int32_t pid, intptr_t* mask)
 #else
 int32_t SystemNative_SchedSetAffinity(int32_t pid, intptr_t* mask)
 {
-    // NOTSUPPORTEDAPI
     (void)pid;
     (void)mask;
     errno = ENOTSUP;
@@ -884,7 +883,6 @@ int32_t SystemNative_SchedGetAffinity(int32_t pid, intptr_t* mask)
 #else
 int32_t SystemNative_SchedGetAffinity(int32_t pid, intptr_t* mask)
 {
-    // NOTSUPPORTEDAPI
     (void)pid;
     (void)mask;
     errno = ENOTSUP;

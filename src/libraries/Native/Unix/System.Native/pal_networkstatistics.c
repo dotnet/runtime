@@ -695,7 +695,6 @@ int32_t SystemNative_GetNumRoutes()
 #else
 int32_t SystemNative_GetTcpGlobalStatistics(TcpGlobalStatistics* retStats)
 {
-    // NOTSUPPORTEDAPI
     (void)retStats;
     errno = ENOTSUP;
     return -1;
@@ -703,7 +702,6 @@ int32_t SystemNative_GetTcpGlobalStatistics(TcpGlobalStatistics* retStats)
 
 int32_t SystemNative_GetIPv4GlobalStatistics(IPv4GlobalStatistics* retStats)
 {
-    // NOTSUPPORTEDAPI
     (void)retStats;
     errno = ENOTSUP;
     return -1;
@@ -711,7 +709,6 @@ int32_t SystemNative_GetIPv4GlobalStatistics(IPv4GlobalStatistics* retStats)
 
 int32_t SystemNative_GetUdpGlobalStatistics(UdpGlobalStatistics* retStats)
 {
-    // NOTSUPPORTEDAPI
     (void)retStats;
     errno = ENOTSUP;
     return -1;
@@ -719,7 +716,6 @@ int32_t SystemNative_GetUdpGlobalStatistics(UdpGlobalStatistics* retStats)
 
 int32_t SystemNative_GetIcmpv4GlobalStatistics(Icmpv4GlobalStatistics* retStats)
 {
-    // NOTSUPPORTEDAPI
     (void)retStats;
     errno = ENOTSUP;
     return -1;
@@ -727,7 +723,6 @@ int32_t SystemNative_GetIcmpv4GlobalStatistics(Icmpv4GlobalStatistics* retStats)
 
 int32_t SystemNative_GetIcmpv6GlobalStatistics(Icmpv6GlobalStatistics* retStats)
 {
-    // NOTSUPPORTEDAPI
     (void)retStats;
     errno = ENOTSUP;
     return -1;
@@ -735,14 +730,12 @@ int32_t SystemNative_GetIcmpv6GlobalStatistics(Icmpv6GlobalStatistics* retStats)
 
 int32_t SystemNative_GetEstimatedTcpConnectionCount(void)
 {
-    // NOTSUPPORTEDAPI
     errno = ENOTSUP;
     return -1;
 }
 
 int32_t SystemNative_GetActiveTcpConnectionInfos(NativeTcpConnectionInformation* infos, int32_t* infoCount)
 {
-    // NOTSUPPORTEDAPI
     (void)infos;
     (void)infoCount;
     errno = ENOTSUP;
@@ -751,14 +744,12 @@ int32_t SystemNative_GetActiveTcpConnectionInfos(NativeTcpConnectionInformation*
 
 int32_t SystemNative_GetEstimatedUdpListenerCount(void)
 {
-    // NOTSUPPORTEDAPI
     errno = ENOTSUP;
     return -1;
 }
 
 int32_t SystemNative_GetActiveUdpListeners(IPEndPointInfo* infos, int32_t* infoCount)
 {
-    // NOTSUPPORTEDAPI
     (void)infos;
     (void)infoCount;
     errno = ENOTSUP;
@@ -767,7 +758,6 @@ int32_t SystemNative_GetActiveUdpListeners(IPEndPointInfo* infos, int32_t* infoC
 
 int32_t SystemNative_GetNativeIPInterfaceStatistics(char* interfaceName, NativeIPInterfaceStatistics* retStats)
 {
-    // NOTSUPPORTEDAPI
     (void)interfaceName;
     (void)retStats;
     errno = ENOTSUP;
@@ -776,7 +766,6 @@ int32_t SystemNative_GetNativeIPInterfaceStatistics(char* interfaceName, NativeI
 
 int32_t SystemNative_GetNumRoutes(void)
 {
-    // NOTSUPPORTEDAPI
     errno = ENOTSUP;
     return -1;
 }
