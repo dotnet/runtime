@@ -1,4 +1,3 @@
-
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
@@ -13,6 +12,13 @@
 // be changed. This is the identifier verified by ICorJitCompiler::getVersionIdentifier().
 //
 // You can use "uuidgen.exe -s" to generate this value.
+// 
+// Note that this file is parsed by some tools, namely superpmi.py, so make sure the first line is exactly
+// of the form:
+//
+//   constexpr GUID JITEEVersionIdentifier = { /* a7bb194e-4e7c-4850-af12-ea9f30ea5a13 */
+//
+// (without the leading slashes or spaces).
 //
 // See docs/project/updating-jitinterface.md for details
 //
@@ -25,7 +31,7 @@
 //
 //////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-constexpr GUID JITEEVersionIdentifier = { /* {a7bb194e-4e7c-4850-af12-ea9f30ea5a13} */
+constexpr GUID JITEEVersionIdentifier = { /* a7bb194e-4e7c-4850-af12-ea9f30ea5a13 */
     0xa7bb194e,
     0x4e7c,
     0x4850,
