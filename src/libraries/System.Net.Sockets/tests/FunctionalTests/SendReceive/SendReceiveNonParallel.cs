@@ -100,13 +100,8 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact(Timeout = 10000)]
-        public async Task AsyncReceiveSyncSendOnSameSocket()
+        public async Task SendToRecvFrom_Datagram_UDP_CombineSyncAsync()
         {
-            if (this.UsesSync)
-            {
-                // Only applies for async cases
-                return;
-            }
             const int DatagramCount = 16;
             const int DatagramSize = 512;
             IPAddress address = IPAddress.Loopback;
@@ -119,8 +114,6 @@ namespace System.Net.Sockets.Tests
             IPEndPoint leftEp = new IPEndPoint(address, leftPort);
             IPEndPoint rightEp = new IPEndPoint(address, rightPort);
 
-            
-
             Task leftThread = Task.Run(async () =>
             {
                 byte[] sendBuffer = new byte[DatagramSize];
@@ -128,7 +121,7 @@ namespace System.Net.Sockets.Tests
 
                 for (int i = 0; i < DatagramCount; i++)
                 {
-                    int sentBytes = await SendToAsync(leftSocket, sendBuffer, rightEp);
+                    int sentBytes = leftSocket.SendTo(sendBuffer, rightEp);
                     Assert.Equal(DatagramSize, sentBytes);
 
                     int receivedBytes = (await ReceiveFromAsync(leftSocket, receiveBuffer, rightEp)).ReceivedBytes;
@@ -139,7 +132,8 @@ namespace System.Net.Sockets.Tests
             byte[] rightBuffer = new byte[DatagramSize];
             for (int i = 0; i < DatagramCount; i++)
             {
-                int receivedBytes = (await ReceiveFromAsync(rightSocket, rightBuffer, leftEp)).ReceivedBytes;
+                EndPoint ep = leftEp;
+                int receivedBytes = rightSocket.ReceiveFrom(rightBuffer, ref ep);
                 Assert.Equal(DatagramSize, receivedBytes);
                 int sentBytes = await SendToAsync(rightSocket, rightBuffer, leftEp);
                 Assert.Equal(DatagramSize, sentBytes);
