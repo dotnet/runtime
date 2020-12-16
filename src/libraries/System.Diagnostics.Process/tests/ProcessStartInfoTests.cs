@@ -22,6 +22,8 @@ namespace System.Diagnostics.Tests
 {
     public class ProcessStartInfoTests : ProcessTestBase
     {
+        private const string ItemSeparator = "CAFF9451396B4EEF8A5155A15BDC2080"; // random string that shouldn't be in any env vars; used instead of newline to separate env var strings
+
         [Fact]
         public void TestEnvironmentProperty()
         {
@@ -219,7 +221,6 @@ namespace System.Diagnostics.Tests
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void TestEnvironmentOfChildProcess()
         {
-            const string ItemSeparator = "CAFF9451396B4EEF8A5155A15BDC2080"; // random string that shouldn't be in any env vars; used instead of newline to separate env var strings
             const string ExtraEnvVar = "TestEnvironmentOfChildProcess_SpecialStuff";
             Environment.SetEnvironmentVariable(ExtraEnvVar, "\x1234" + Environment.NewLine + "\x5678"); // ensure some Unicode characters and newlines are in the output
             try
@@ -262,6 +263,102 @@ namespace System.Diagnostics.Tests
             {
                 Environment.SetEnvironmentVariable(ExtraEnvVar, null);
             }
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public void EnvironmentGetEnvironmentVariablesIsCaseSensitive()
+        {
+            var caseSensitiveEnvVars = new Dictionary<string, string>(StringComparer.Ordinal)
+            {
+                { "NPM_CONFIG_CACHE", "VALUE" },
+                { "npm_config_cache", "value" },
+            };
+
+            string[] printedEnvVars = ExecuteProcessAndReturnParsedOutput(
+                caseSensitiveEnvVars,
+                () =>
+                {
+                    Console.Write(string.Join(ItemSeparator, Environment.GetEnvironmentVariables().Cast<DictionaryEntry>().Select(e => Convert.ToBase64String(Encoding.UTF8.GetBytes(e.Key + "=" + e.Value)))));
+                    return RemoteExecutor.SuccessExitCode;
+                });
+
+            foreach (var providedEnvVar in caseSensitiveEnvVars)
+            {
+                Assert.Single(printedEnvVars, envVar => envVar.Equals($"{providedEnvVar.Key}={providedEnvVar.Value}", StringComparison.Ordinal));
+            }
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public void ProcessStartInfoEnvironmentDoesNotThrowForCaseSensitiveDuplicates()
+        {
+            var caseSensitiveEnvVars = new Dictionary<string, string>(StringComparer.Ordinal)
+            {
+                { "NPM_CONFIG_CACHE", "^" },
+                { "npm_config_cache", "^" },
+            };
+
+            string[] printedEnvVars = ExecuteProcessAndReturnParsedOutput(
+                caseSensitiveEnvVars,
+                () =>
+                {
+                    Console.Write(string.Join(ItemSeparator, new ProcessStartInfo().Environment.Select(e => Convert.ToBase64String(Encoding.UTF8.GetBytes(e.Key + "=" + e.Value)))));
+                    return RemoteExecutor.SuccessExitCode;
+                });
+
+            StringComparison osSpecificComparison = OperatingSystem.IsWindows() ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal;
+            foreach (var providedEnvVar in caseSensitiveEnvVars)
+            {
+                Assert.Single(printedEnvVars, envVar => envVar.Equals($"{providedEnvVar.Key}={providedEnvVar.Value}", osSpecificComparison));
+            }
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public void ProcessStartInfoEnvironmentVariablesDoesNotThrowForCaseSensitiveDuplicates()
+        {
+            var caseSensitiveEnvVars = new Dictionary<string, string>(StringComparer.Ordinal)
+            {
+                { "NPM_CONFIG_CACHE", "^" },
+                { "npm_config_cache", "^" },
+            };
+
+            string[] printedEnvVars = ExecuteProcessAndReturnParsedOutput(
+                caseSensitiveEnvVars,
+                () =>
+                {
+                    Console.Write(string.Join(ItemSeparator, new ProcessStartInfo().EnvironmentVariables.Cast<DictionaryEntry>().Select(e => Convert.ToBase64String(Encoding.UTF8.GetBytes(e.Key + "=" + e.Value)))));
+                    return RemoteExecutor.SuccessExitCode;
+                });
+
+            StringComparison osSpecificComparison = OperatingSystem.IsWindows() ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal;
+            foreach (var providedEnvVar in caseSensitiveEnvVars)
+            {
+                Assert.Single(printedEnvVars, envVar => envVar.Equals($"{providedEnvVar.Key}={providedEnvVar.Value}", osSpecificComparison));
+            }
+        }
+
+        private string[] ExecuteProcessAndReturnParsedOutput(Dictionary<string, string> envVars, Func<int> processWork)
+        {
+            // Schedule a process to see what env vars it gets.  Have it write out those variables
+            // to its output stream so we can read them.
+            Process p = CreateProcess(processWork);
+            p.StartInfo.StandardOutputEncoding = Encoding.UTF8;
+            p.StartInfo.RedirectStandardOutput = true;
+
+            // Environment Variables are case-insensitive on Windows.
+            // But it's possible to start a process with duplicate case-sensitive env vars using CreateProcess API (see #42029)
+            // To mimic this behaviour, we can't use Environment.SetEnvironmentVariable here as it's case-insenstive on Windows.
+            // We also can't use p.StartInfo.Environment as it's comparer is set to OrdinalIgnoreCAse.
+            // But we can overwrite it using reflection to mimic the CreateProcess behaviour and avoid having this test call CreateProcess directly.
+            p.StartInfo.Environment
+                .GetType()
+                .GetField("_contents", Reflection.BindingFlags.NonPublic | Reflection.BindingFlags.Instance)
+                .SetValue(p.StartInfo.Environment, envVars);
+
+            p.Start();
+            string output = p.StandardOutput.ReadToEnd();
+            Assert.True(p.WaitForExit(WaitInMS));
+
+            return output.Split(new[] { ItemSeparator }, StringSplitOptions.None).Select(s => Encoding.UTF8.GetString(Convert.FromBase64String(s))).ToArray();
         }
 
         [Fact]
