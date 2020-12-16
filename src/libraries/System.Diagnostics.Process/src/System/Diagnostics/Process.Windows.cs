@@ -620,7 +620,7 @@ namespace System.Diagnostics
                     {
                         string innerMsg = errorCode == Interop.Errors.ERROR_BAD_EXE_FORMAT || errorCode == Interop.Errors.ERROR_EXE_MACHINE_TYPE_MISMATCH
                             ? SR.InvalidApplication
-                            : new Win32Exception(errorCode).Message;
+                            : GetErrorMessage(errorCode);
 
                         string msg = SR.Format(SR.FailedToStartFileDirectory, startInfo.FileName, workingDirectory, innerMsg);
                         throw new Win32Exception(errorCode, msg);
@@ -884,5 +884,7 @@ namespace System.Diagnostics
 
             return result.ToString();
         }
+
+        private static string GetErrorMessage(int error) => Interop.Kernel32.GetMessage(error);
     }
 }

@@ -93,7 +93,7 @@ namespace System.Diagnostics
                         default:
                             string innerMsg = errorCode == Interop.Errors.ERROR_BAD_EXE_FORMAT || errorCode == Interop.Errors.ERROR_EXE_MACHINE_TYPE_MISMATCH
                                 ? SR.InvalidApplication
-                                : new Win32Exception(errorCode).Message;
+                                : GetErrorMessage(errorCode);
 
                             string directoryForException = startInfo.WorkingDirectory.Length > 0 ? startInfo.WorkingDirectory : Directory.GetCurrentDirectory();
                             string msg = SR.Format(SR.FailedToStartFileDirectory, startInfo.FileName, directoryForException, innerMsg);
