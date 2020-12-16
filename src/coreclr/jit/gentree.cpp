@@ -17765,7 +17765,7 @@ CORINFO_CLASS_HANDLE Compiler::gtGetClassHandle(GenTree* tree, bool* pIsExact, b
                     break;
                 }
             }
-            else if (call->IsInlineCandidate())
+            if (call->IsInlineCandidate())
             {
                 // For inline candidates, we've already cached the return
                 // type class handle in the inline info.
