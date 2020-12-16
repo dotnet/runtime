@@ -42,7 +42,7 @@ namespace System.Net.NameResolution.Tests
                     try
                     {
                         Dns.GetHostEntry(Configuration.Sockets.InvalidHost);
-                        throw new SkipTestException("GetHostEntry() should fail but it did not.");
+                        throw new SkipTestException("GetHostEntry should fail but it did not.");
                     }
                     catch (SocketException e) when (e.SocketErrorCode == SocketError.HostNotFound)
                     {
@@ -53,7 +53,7 @@ namespace System.Net.NameResolution.Tests
                     }
                 });
 
-                Assert.True(events.Count() > 0);
+                Assert.True(events.Count > 0, "events.Count should be > 0");
                 foreach (EventWrittenEventArgs ev in events)
                 {
                     Assert.True(ev.Payload.Count >= 3);
@@ -77,18 +77,18 @@ namespace System.Net.NameResolution.Tests
                     try
                     {
                         Dns.GetHostEntryAsync(Configuration.Sockets.InvalidHost).GetAwaiter().GetResult();
-                        throw new SkipTestException("GetHostEntry() should fail but it did not.");
+                        throw new SkipTestException("GetHostEntryAsync should fail but it did not.");
                     }
                     catch (SocketException e) when (e.SocketErrorCode == SocketError.HostNotFound)
                     {
                     }
                     catch (Exception e)
                     {
-                        throw new SkipTestException($"GetHostEntry failed unexpectedly: {e.Message}");
+                        throw new SkipTestException($"GetHostEntryAsync failed unexpectedly: {e.Message}");
                     }
                 });
 
-                Assert.True(events.Count() > 0);
+                Assert.True(events.Count > 0, "events.Count should be > 0");
                 foreach (EventWrittenEventArgs ev in events)
                 {
                     Assert.True(ev.Payload.Count >= 3);

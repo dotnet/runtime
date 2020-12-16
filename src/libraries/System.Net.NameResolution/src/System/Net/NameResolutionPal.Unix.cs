@@ -144,7 +144,8 @@ namespace System.Net
                 }
                 else
                 {
-                    state.SetResult(ExceptionDispatchInfo.SetCurrentStackTrace(new SocketException((int)errorCode)));
+                    Exception ex = new SocketException((int)errorCode);
+                    state.SetResult(ExceptionDispatchInfo.SetCurrentStackTrace(ex));
                 }
             }
             finally
