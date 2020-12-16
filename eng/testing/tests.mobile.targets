@@ -168,6 +168,13 @@
       </WasmSatelliteAssemblies>
 
       <WasmAssembliesToBundle Include="$(PublishDir)\*.dll"/>
+      <!-- WasmTestRunner referenced assemblies -->
+      <WasmAssembliesToBundle Include="$(OutDir)\System.Globalization.dll" />
+      <WasmAssembliesToBundle Include="$(OutDir)\System.Reflection.dll" />
+      <WasmAssembliesToBundle Include="$(OutDir)\System.Runtime.dll" />
+      <WasmAssembliesToBundle Include="$(OutDir)\System.Runtime.Extensions.dll" />
+      <WasmAssembliesToBundle Include="$(OutDir)\System.Threading.dll" />
+      <WasmAssembliesToBundle Include="$(OutDir)\System.Xml.XDocument.dll" />
 
       <WasmFilesToIncludeInFileSystem Include="@(ContentWithTargetPath)" />
       <WasmFilesToIncludeInFileSystem Include="@(ReferenceCopyLocalPaths)" Condition="'%(ReferenceCopyLocalPaths.BuildReference)' == 'true' and !$([System.String]::new('%(ReferenceCopyLocalPaths.Identity)').EndsWith('.resources.dll'))" />
