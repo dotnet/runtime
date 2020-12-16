@@ -98,6 +98,55 @@ namespace System.Net.Sockets.Tests
                 Assert.Equal(sentChecksums[i], (uint)receivedChecksums[i]);
             }
         }
+
+        [Fact(Timeout = 10000)]
+        public async Task AsyncReceiveSyncSendOnSameSocket()
+        {
+            if (this.UsesSync)
+            {
+                // Only applies for async cases
+                return;
+            }
+            const int DatagramCount = 16;
+            const int DatagramSize = 512;
+            IPAddress address = IPAddress.Loopback;
+
+            using var leftSocket = new Socket(address.AddressFamily, SocketType.Dgram, ProtocolType.Udp);
+            using var rightSocket = new Socket(address.AddressFamily, SocketType.Dgram, ProtocolType.Udp);
+
+            int leftPort = leftSocket.BindToAnonymousPort(address);
+            int rightPort = rightSocket.BindToAnonymousPort(address);
+            IPEndPoint leftEp = new IPEndPoint(address, leftPort);
+            IPEndPoint rightEp = new IPEndPoint(address, rightPort);
+
+            
+
+            Task leftThread = Task.Run(async () =>
+            {
+                byte[] sendBuffer = new byte[DatagramSize];
+                byte[] receiveBuffer = new byte[DatagramSize];
+
+                for (int i = 0; i < DatagramCount; i++)
+                {
+                    int sentBytes = await SendToAsync(leftSocket, sendBuffer, rightEp);
+                    Assert.Equal(DatagramSize, sentBytes);
+
+                    int receivedBytes = (await ReceiveFromAsync(leftSocket, receiveBuffer, rightEp)).ReceivedBytes;
+                    Assert.Equal(DatagramSize, receivedBytes);
+                }
+            });
+
+            byte[] rightBuffer = new byte[DatagramSize];
+            for (int i = 0; i < DatagramCount; i++)
+            {
+                int receivedBytes = (await ReceiveFromAsync(rightSocket, rightBuffer, leftEp)).ReceivedBytes;
+                Assert.Equal(DatagramSize, receivedBytes);
+                int sentBytes = await SendToAsync(rightSocket, rightBuffer, leftEp);
+                Assert.Equal(DatagramSize, sentBytes);
+            }
+
+            await leftThread;
+        }
     }
 
     public sealed class SendReceiveNonParallel_Sync : SendReceiveNonParallel<SocketHelperArraySync>
@@ -144,4 +193,5 @@ namespace System.Net.Sockets.Tests
     {
         public SendReceiveNonParallel_MemoryNativeTask(ITestOutputHelper output) : base(output) { }
     }
+
 }
