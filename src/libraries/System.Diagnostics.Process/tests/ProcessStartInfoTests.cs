@@ -963,9 +963,6 @@ namespace System.Diagnostics.Tests
         [PlatformSpecific(TestPlatforms.Windows)]
         public void StartInfo_TextFile_ShellExecute()
         {
-            if (Thread.CurrentThread.CurrentCulture.ToString() != "en-US")
-                return; // [ActiveIssue(https://github.com/dotnet/runtime/issues/25823)]
-
             string tempFile = GetTestFilePath() + ".txt";
             File.WriteAllText(tempFile, $"StartInfo_TextFile_ShellExecute");
 
