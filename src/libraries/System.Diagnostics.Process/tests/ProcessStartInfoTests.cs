@@ -963,7 +963,13 @@ namespace System.Diagnostics.Tests
         [PlatformSpecific(TestPlatforms.Windows)]
         public void StartInfo_TextFile_ShellExecute()
         {
-            string tempFile = GetTestFilePath() + ".txt";
+            // create a new extension that nobody else should be using
+            const string fileExtension = ".dotnetRuntimeTestExtension";
+            // associate Notepad with the new extension
+            FileAssociations.EnsureAssociationSet(fileExtension, "Used For Testing ShellExecute", "notepad.exe", "Notepad");
+            // from here we can try to open with with given extension and be sure that Notepad is going to open it (not other text file editor like Notepad++)
+
+            string tempFile = GetTestFilePath() + fileExtension;
             File.WriteAllText(tempFile, $"StartInfo_TextFile_ShellExecute");
 
             ProcessStartInfo info = new ProcessStartInfo
