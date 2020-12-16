@@ -32,8 +32,6 @@ internal static partial class Interop
             internal int IPAddressCount;       // Number of IP addresses in the list
         }
 
-        internal unsafe delegate void GetHostEntryForNameCallback(HostEntry* entry, int status);
-
         [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_PlatformSupportsGetAddrInfoAsync")]
         internal static extern bool PlatformSupportsGetAddrInfoAsync();
 
@@ -41,7 +39,11 @@ internal static partial class Interop
         internal static extern unsafe int GetHostEntryForName(string address, AddressFamily family, HostEntry* entry);
 
         [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_GetHostEntryForNameAsync")]
-        internal static extern unsafe int GetHostEntryForNameAsync(string address, AddressFamily family, HostEntry* entry, GetHostEntryForNameCallback callback);
+        internal static extern unsafe int GetHostEntryForNameAsync(
+            string address,
+            AddressFamily family,
+            HostEntry* entry,
+            delegate* unmanaged<HostEntry*, int, void> callback);
 
         [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_FreeHostEntry")]
         internal static extern unsafe void FreeHostEntry(HostEntry* entry);

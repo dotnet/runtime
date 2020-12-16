@@ -13,8 +13,6 @@ namespace System.Net
 {
     internal static partial class NameResolutionPal
     {
-        private static readonly unsafe Interop.Sys.GetHostEntryForNameCallback s_getHostEntryForNameCallback = GetHostEntryForNameCallback;
-
         public static bool SupportsGetAddrInfoAsync { get; } = Interop.Sys.PlatformSupportsGetAddrInfoAsync();
 
         public static unsafe SocketError TryGetAddrInfo(string name, bool justAddresses, AddressFamily addressFamily, out string? hostName, out string[] aliases, out IPAddress[] addresses, out int nativeErrorCode)
@@ -105,7 +103,7 @@ namespace System.Net
                 throw;
             }
 
-            int errorCode = Interop.Sys.GetHostEntryForNameAsync(hostName, addressFamily, &context->Result, s_getHostEntryForNameCallback);
+            int errorCode = Interop.Sys.GetHostEntryForNameAsync(hostName, addressFamily, &context->Result, &GetHostEntryForNameCallback);
 
             if (errorCode != 0)
             {
@@ -115,6 +113,7 @@ namespace System.Net
             return state.Task;
         }
 
+        [UnmanagedCallersOnly]
         private static unsafe void GetHostEntryForNameCallback(Interop.Sys.HostEntry* entry, int error)
         {
             // Can be casted directly to GetHostEntryForNameContext* because the HostEntry is its first field
