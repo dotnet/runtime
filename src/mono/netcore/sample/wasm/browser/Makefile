@@ -12,7 +12,7 @@ CONFIG?=Release
 all: build
 
 build:
-	$(DOTNET) build $(DOTNET_Q_ARGS) /p:TargetArchitecture=wasm /p:TargetOS=Browser /p:Configuration=$(CONFIG) WasmSample.csproj
+	EMSDK_PATH=$(realpath $(TOP)/src/mono/wasm/emsdk) $(DOTNET) build $(DOTNET_Q_ARGS) /p:Configuration=$(CONFIG) $(MSBUILD_ARGS) WasmSample.csproj
 
 clean:
 	rm -rf bin

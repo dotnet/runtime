@@ -14,8 +14,9 @@
   <Target Name="PrepareForWasmBuild" DependsOnTargets="RebuildWasmAppBuilder;Build" BeforeTargets="WasmBuildApp">
     <PropertyGroup>
         <WasmAppDir>$(AppDir)</WasmAppDir>
-        <WasmMainAssemblyPath>bin\WasmSample.dll</WasmMainAssemblyPath>
+        <WasmMainAssemblyPath>$(MSBuildProjectDirectory)\bin\WasmSample.dll</WasmMainAssemblyPath>
         <WasmMainJSPath>runtime.js</WasmMainJSPath>
+        <WasmAOTDir>$(MSBuildProjectDirectory)\$(PublishDir)\</WasmAOTDir>
 
         <WasmResolveAssembliesBeforeBuild>true</WasmResolveAssembliesBeforeBuild>
     </PropertyGroup>
@@ -29,7 +30,7 @@
   </Target>
 
   <Target Name="AfterWasmBuildApp" AfterTargets="WasmBuildApp">
-    <Copy SourceFiles="bin\index.html" DestinationFolder="$(AppDir)" />
+    <Copy SourceFiles="$(OutDir)\index.html" DestinationFolder="$(AppDir)" />
   </Target>
 
   <ItemGroup>
