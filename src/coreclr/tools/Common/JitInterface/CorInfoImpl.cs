@@ -3270,7 +3270,7 @@ namespace Internal.JitInterface
             if (this.MethodBeingCompiled.IsUnmanagedCallersOnly)
             {
 #if READYTORUN
-                if (targetArchitecture == TargetArchitecture.X86)
+                if (targetArchitecture == TargetArchitecture.X86 && _compilation.TypeSystemContext.Target.IsWindows)
                 {
                     throw new RequiresRuntimeJitException("ReadyToRun: Methods with UnmanagedCallersOnlyAttribute not implemented");
                 }

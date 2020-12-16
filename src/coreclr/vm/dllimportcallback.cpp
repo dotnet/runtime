@@ -111,20 +111,7 @@ private:
 
 static UMEntryThunkFreeList s_thunkFreeList(DEFAULT_THUNK_FREE_LIST_THRESHOLD);
 
-#ifdef TARGET_X86
-
-#ifdef FEATURE_STUBS_AS_IL
-
-EXTERN_C void UMThunkStub(void);
-
-PCODE UMThunkMarshInfo::GetExecStubEntryPoint()
-{
-    LIMITED_METHOD_CONTRACT;
-
-    return GetEEFuncEntryPoint(UMThunkStub);
-}
-
-#else // FEATURE_STUBS_AS_IL
+#if defined(TARGET_X86) && !defined(FEATURE_STUBS_AS_IL)
 
 EXTERN_C VOID __cdecl UMThunkStubRareDisable();
 EXTERN_C Thread* __stdcall CreateThreadBlockThrow();
@@ -178,7 +165,7 @@ VOID UMEntryThunk::CompileUMThunkWorker(UMThunkStubInfo *pInfo,
         // push edx - repush the return address
         pcpusl->X86EmitPushReg(kEDX);
     }
-    
+
     // The native signature doesn't have a return buffer
     // but the managed signature does.
     // Set up the return buffer address here.
@@ -188,12 +175,12 @@ VOID UMEntryThunk::CompileUMThunkWorker(UMThunkStubInfo *pInfo,
         // Calculate the offset to the return buffer we establish for EAX:EDX below.
         // lea edx [esp - offset to EAX:EDX return buffer]
         pcpusl->X86EmitEspOffset(0x8d, kEDX, -0xc /* skip return addr, EBP, EBX */ -0x8 /* point to start of EAX:EDX return buffer */ );
-        
+
         // exchange edx (which has the return buffer address)
         // with the return address
         // xchg edx, [esp]
-        pcpusl->X86EmitOp(0x87, kEDX, (X86Reg)kESP_Unsafe);   
-     
+        pcpusl->X86EmitOp(0x87, kEDX, (X86Reg)kESP_Unsafe);
+
         // push edx
         pcpusl->X86EmitPushReg(kEDX);
     }
@@ -497,7 +484,7 @@ VOID UMEntryThunk::CompileUMThunkWorker(UMThunkStubInfo *pInfo,
             pcpusl->X86EmitIndexRegStore(kEBX, -0x8 /* to outer EBP */ -0x8 /* skip saved EBP, EBX */, kEDX);
         }
         // In the umtmlBufRetValToEnreg case,
-        // we set up the return buffer to output 
+        // we set up the return buffer to output
         // into the EDX:EAX buffer we set up for the register return case.
         // So we don't need to do more work here.
         else if ((pInfo->m_wFlags & umtmlBufRetValToEnreg) == 0)
@@ -684,7 +671,7 @@ Stub *UMThunkMarshInfo::CompileNExportThunk(LoaderHeap *pLoaderHeap, PInvokeStat
     UINT nOffset = 0;
     int numRegistersUsed = 0;
     int numStackSlotsIndex = nStackBytes / STACK_ELEM_SIZE;
-    
+
     // This could have been set in the UnmanagedCallersOnly scenario.
     if (m_callConv == UINT16_MAX)
         m_callConv = static_cast<UINT16>(pSigInfo->GetCallConv());
@@ -835,9 +822,7 @@ Stub *UMThunkMarshInfo::CompileNExportThunk(LoaderHeap *pLoaderHeap, PInvokeStat
     return pcpusl->Link(pLoaderHeap);
 }
 
-#endif // FEATURE_STUBS_AS_IL
-
-#else // TARGET_X86
+#else // defined(TARGET_X86) && !defined(FEATURE_STUBS_AS_IL)
 
 PCODE UMThunkMarshInfo::GetExecStubEntryPoint()
 {
@@ -846,7 +831,7 @@ PCODE UMThunkMarshInfo::GetExecStubEntryPoint()
     return m_pILStub;
 }
 
-#endif // TARGET_X86
+#endif // defined(TARGET_X86) && !defined(FEATURE_STUBS_AS_IL)
 
 UMEntryThunkCache::UMEntryThunkCache(AppDomain *pDomain) :
     m_crst(CrstUMEntryThunkCache),
@@ -1317,148 +1302,11 @@ VOID UMThunkMarshInfo::RunTimeInit()
         pStubMD = GetILStubMethodDesc(pMD, &sigInfo, dwStubFlags);
         pFinalILStub = JitILStub(pStubMD);
     }
-
-#if defined(TARGET_X86)
-    MetaSig sig(pMD);
-    int numRegistersUsed = 0;
-    UINT16 cbRetPop = 0;
-
-    //
-    // cbStackArgSize represents the number of arg bytes for the MANAGED signature
-    //
-    UINT32 cbStackArgSize = 0;
-
-    int offs = 0;
-
-#ifdef UNIX_X86_ABI
-    if (HasRetBuffArgUnmanagedFixup(&sig))
-    {
-        // callee should pop retbuf
-        numRegistersUsed += 1;
-        offs += STACK_ELEM_SIZE;
-        cbRetPop += STACK_ELEM_SIZE;
-    }
-#endif // UNIX_X86_ABI
-
-    for (UINT i = 0 ; i < sig.NumFixedArgs(); i++)
-    {
-        TypeHandle thValueType;
-        CorElementType type = sig.NextArgNormalized(&thValueType);
-        int cbSize = sig.GetElemSize(type, thValueType);
-        if (ArgIterator::IsArgumentInRegister(&numRegistersUsed, type, thValueType))
-        {
-            offs += STACK_ELEM_SIZE;
-        }
-        else
-        {
-            offs += StackElemSize(cbSize);
-            cbStackArgSize += StackElemSize(cbSize);
-        }
-    }
-    m_cbStackArgSize = cbStackArgSize;
-    m_cbActualArgSize = (pStubMD != NULL) ? pStubMD->AsDynamicMethodDesc()->GetNativeStackArgSize() : offs;
-
-    PInvokeStaticSigInfo sigInfo;
-    if (pMD != NULL)
-        new (&sigInfo) PInvokeStaticSigInfo(pMD);
-    else
-        new (&sigInfo) PInvokeStaticSigInfo(GetSignature(), GetModule());
-    if (sigInfo.GetCallConv() == pmCallConvCdecl)
-    {
-        m_cbRetPop = cbRetPop;
-    }
-    else
-    {
-        // For all the other calling convention except cdecl, callee pops the stack arguments
-        m_cbRetPop = cbRetPop + static_cast<UINT16>(m_cbActualArgSize);
-    }
-#endif // TARGET_X86
-
 #endif // TARGET_X86 && !FEATURE_STUBS_AS_IL
 
     // Must be the last thing we set!
     InterlockedCompareExchangeT<PCODE>(&m_pILStub, pFinalILStub, (PCODE)1);
 }
-
-#if defined(TARGET_X86) && defined(FEATURE_STUBS_AS_IL)
-VOID UMThunkMarshInfo::SetupArguments(char *pSrc, ArgumentRegisters *pArgRegs, char *pDst)
-{
-    MethodDesc *pMD = GetMethod();
-
-    _ASSERTE(pMD);
-
-    //
-    // x86 native uses the following stack layout:
-    // | saved eip |
-    // | --------- | <- CFA
-    // | stkarg 0  |
-    // | stkarg 1  |
-    // | ...       |
-    // | stkarg N  |
-    //
-    // x86 managed, however, uses a bit different stack layout:
-    // | saved eip |
-    // | --------- | <- CFA
-    // | stkarg M  | (NATIVE/MANAGE may have different number of stack arguments)
-    // | ...       |
-    // | stkarg 1  |
-    // | stkarg 0  |
-    //
-    // This stub bridges the gap between them.
-    //
-    char *pCurSrc = pSrc;
-    char *pCurDst = pDst + m_cbStackArgSize;
-
-    MetaSig sig(pMD);
-
-    int numRegistersUsed = 0;
-
-#ifdef UNIX_X86_ABI
-    if (HasRetBuffArgUnmanagedFixup(&sig))
-    {
-        // Pass retbuf via Ecx
-        numRegistersUsed += 1;
-        pArgRegs->Ecx = *((UINT32 *)pCurSrc);
-        pCurSrc += STACK_ELEM_SIZE;
-    }
-#endif // UNIX_X86_ABI
-
-    for (UINT i = 0 ; i < sig.NumFixedArgs(); i++)
-    {
-        TypeHandle thValueType;
-        CorElementType type = sig.NextArgNormalized(&thValueType);
-        int cbSize = sig.GetElemSize(type, thValueType);
-        int elemSize = StackElemSize(cbSize);
-
-        if (ArgIterator::IsArgumentInRegister(&numRegistersUsed, type, thValueType))
-        {
-            _ASSERTE(elemSize == STACK_ELEM_SIZE);
-
-            if (numRegistersUsed == 1)
-                pArgRegs->Ecx = *((UINT32 *)pCurSrc);
-            else if (numRegistersUsed == 2)
-                pArgRegs->Edx = *((UINT32 *)pCurSrc);
-        }
-        else
-        {
-            pCurDst -= elemSize;
-            memcpy(pCurDst, pCurSrc, elemSize);
-        }
-
-        pCurSrc += elemSize;
-    }
-
-    _ASSERTE(pDst == pCurDst);
-}
-
-EXTERN_C VOID STDCALL UMThunkStubSetupArgumentsWorker(UMThunkMarshInfo *pMarshInfo,
-                                                      char *pSrc,
-                                                      UMThunkMarshInfo::ArgumentRegisters *pArgRegs,
-                                                      char *pDst)
-{
-    pMarshInfo->SetupArguments(pSrc, pArgRegs, pDst);
-}
-#endif // TARGET_X86 && FEATURE_STUBS_AS_IL
 
 #ifdef _DEBUG
 void STDCALL LogUMTransition(UMEntryThunk* thunk)

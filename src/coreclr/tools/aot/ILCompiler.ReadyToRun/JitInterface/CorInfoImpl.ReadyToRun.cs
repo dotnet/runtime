@@ -1750,7 +1750,7 @@ namespace Internal.JitInterface
                 out useInstantiatingStub);
 
             var targetDetails = _compilation.TypeSystemContext.Target;
-            if (targetDetails.Architecture == TargetArchitecture.X86 && targetMethod.IsUnmanagedCallersOnly)
+            if (targetDetails.Architecture == TargetArchitecture.X86 && targetDetails.IsWindows && targetMethod.IsUnmanagedCallersOnly)
             {
                 throw new RequiresRuntimeJitException("ReadyToRun: References to methods with UnmanagedCallersOnlyAttribute not implemented");
             }

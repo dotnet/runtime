@@ -1132,7 +1132,7 @@ void COMDelegate::BindToMethod(DELEGATEREF   *pRefThis,
     GCPROTECT_END();
 }
 
-#if defined(TARGET_X86)
+#if defined(TARGET_X86) && !defined(FEATURE_STUBS_AS_IL)
 // Marshals a managed method to an unmanaged callback.
 PCODE COMDelegate::ConvertToUnmanagedCallback(MethodDesc* pMD)
 {

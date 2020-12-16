@@ -1717,7 +1717,7 @@ void * QCALLTYPE RuntimeMethodHandle::GetFunctionPointer(MethodDesc * pMethod)
     // the function pointer can be used.
     pMethod->EnsureActive();
 
-#if defined(TARGET_X86)
+#if defined(TARGET_X86) && !defined(FEATURE_STUBS_AS_IL)
     // Deferring X86 support until a need is observed or
     // time permits investigation into all the potential issues.
     // https://github.com/dotnet/runtime/issues/33582

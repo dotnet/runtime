@@ -443,7 +443,7 @@ PCODE MethodDesc::GetPrecompiledCode(PrepareCodeConfig* pConfig)
 
 #ifdef FEATURE_TIERED_COMPILATION
             bool shouldTier = pConfig->GetMethodDesc()->IsEligibleForTieredCompilation();
-#if !defined(TARGET_X86)
+#if !defined(TARGET_X86) || defined(FEATURE_STUBS_AS_IL)
             CallerGCMode callerGcMode = pConfig->GetCallerGCMode();
             // If the method is eligible for tiering but is being
             // called from a Preemptive GC Mode thread or the method
