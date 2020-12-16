@@ -309,10 +309,16 @@ bool GCToEEInterface::RefCountedHandleCallbacks(Object * pObject)
     //<REVISIT_TODO>@todo optimize the access to the ref-count
     ComCallWrapper* pWrap = ComCallWrapper::GetWrapperForObject((OBJECTREF)pObject);
 
-    return pWrap != NULL && pWrap->IsWrapperActive();
-#else
-    return false;
+    if (pWrap != NULL && pWrap->IsWrapperActive())
+        return true;
 #endif
+#ifdef FEATURE_COMWRAPPERS
+    bool isRooted = false;
+    if (ComWrappersNative::HasManagedObjectComWrapper((OBJECTREF)pObject, &isRooted))
+        return isRooted;
+#endif
+
+    return false;
 }
 
 void GCToEEInterface::GcBeforeBGCSweepWork()
@@ -1609,14 +1615,14 @@ void GCToEEInterface::AnalyzeSurvivorsFinished(size_t gcIndex, int condemnedGene
         if ((condemnedGeneration == gcGenAnalysisGen) && (promoted_bytes > (uint64_t)gcGenAnalysisBytes) && (gcIndex > (uint64_t)gcGenAnalysisIndex))
 #endif
         {
-            gcGenAnalysisEventPipeSession->Resume();
+            EventPipeAdapter::ResumeSession(gcGenAnalysisEventPipeSession);
             FireEtwGenAwareBegin((int)gcIndex, GetClrInstanceId());
             s_forcedGCInProgress = true;
             GCProfileWalkHeap(true);
             s_forcedGCInProgress = false;
             reportGenerationBounds();
             FireEtwGenAwareEnd((int)gcIndex, GetClrInstanceId());
-            gcGenAnalysisEventPipeSession->Pause();
+            EventPipeAdapter::PauseSession(gcGenAnalysisEventPipeSession);
             gcGenAnalysisState = GcGenAnalysisState::Done;
             EnableFinalization(true);
         }

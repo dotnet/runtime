@@ -182,6 +182,9 @@ class EMPTY_BASES_DECL SHash : public TRAITS
 
     void Add(const element_t &element);
 
+    // NoThrow version of Add. Returns TRUE if element was added, FALSE otherwise.
+    BOOL AddNoThrow(const element_t &element);
+
     // Add a new element to the hash table, if no element with the same key is already
     // there. Otherwise, it will replace the existing element. This has the effect of
     // updating an element rather than adding a duplicate.
@@ -248,9 +251,15 @@ class EMPTY_BASES_DECL SHash : public TRAITS
 
   private:
 
+    // NoThrow version of Grow function. Returns FALSE on failure.
+    BOOL GrowNoThrow();
+
     // See if it is OK to grow the hash table by one element.  If not, reallocate
     // the hash table.
     BOOL CheckGrowth();
+
+    // NoThrow version of CheckGrowth function. Returns FALSE on failure.
+    BOOL CheckGrowthNoThrow();
 
     // See if it is OK to grow the hash table by one element. If not, allocate new
     // hash table and return it together with its size *pcNewSize (used by code:AddPhases).
@@ -261,10 +270,16 @@ class EMPTY_BASES_DECL SHash : public TRAITS
     // The new size is computed based on the current population, growth factor, and maximum density factor.
     element_t * Grow_OnlyAllocateNewTable(count_t * pcNewSize);
 
+    // NoThrow version of Grow_OnlyAllocateNewTable. Returns NULL on failure.
+    element_t * Grow_OnlyAllocateNewTableNoThrow(count_t * pcNewSize);
+
     // Utility function to allocate new table (does not copy the values into it yet). Returns the size of new table in
     // *pcNewTableSize (finds next prime).
     // Phase 1 of code:Reallocate - it is split to support code:AddPhases.
     element_t * AllocateNewTable(count_t requestedSize, count_t * pcNewTableSize);
+
+    // NoThrow version of AllocateNewTable utility function. Returns NULL on failure.
+    element_t * AllocateNewTableNoThrow(count_t requestedSize, count_t * pcNewTableSize);
 
     // Utility function to replace old table with newly allocated table (as allocated by
     // code:AllocateNewTable). Copies all 'old' values into the new table first.

@@ -97,7 +97,12 @@
  * while the jit only sees one method, so we have to inline things ourselves.
  */
 /* Used by LLVM AOT */
+#ifdef ENABLE_NETCORE
 #define LLVM_AOT_INLINE_LENGTH_LIMIT 30
+#else
+#define LLVM_AOT_INLINE_LENGTH_LIMIT INLINE_LENGTH_LIMIT
+#endif
+
 /* Used to LLVM JIT */
 #define LLVM_JIT_INLINE_LENGTH_LIMIT 100
 
@@ -3931,7 +3936,6 @@ mono_method_check_inlining (MonoCompile *cfg, MonoMethod *method)
 		inline_limit_inited = TRUE;
 	}
 
-#ifdef ENABLE_NETCORE
 	if (COMPILE_LLVM (cfg)) {
 		if (cfg->compile_aot)
 			limit = llvm_aot_inline_limit;
@@ -3940,12 +3944,7 @@ mono_method_check_inlining (MonoCompile *cfg, MonoMethod *method)
 	} else {
 		limit = inline_limit;
 	}
-#else
-	if (COMPILE_LLVM (cfg) && !cfg->compile_aot)
-		limit = llvm_jit_inline_limit;
-	else
-		limit = inline_limit;
-#endif
+
 	if (header.code_size >= limit && !(method->iflags & METHOD_IMPL_ATTRIBUTE_AGGRESSIVE_INLINING))
 		return FALSE;
 
@@ -3960,7 +3959,7 @@ mono_method_check_inlining (MonoCompile *cfg, MonoMethod *method)
 
 	if (!(cfg->opt & MONO_OPT_SHARED)) {
 		/* The AggressiveInlining hint is a good excuse to force that cctor to run. */
-		if (method->iflags & METHOD_IMPL_ATTRIBUTE_AGGRESSIVE_INLINING) {
+		if ((cfg->opt & MONO_OPT_AGGRESSIVE_INLINING) || method->iflags & METHOD_IMPL_ATTRIBUTE_AGGRESSIVE_INLINING) {
 			if (m_class_has_cctor (method->klass)) {
 				ERROR_DECL (error);
 				vtable = mono_class_vtable_checked (cfg->domain, method->klass, error);
@@ -7947,7 +7946,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			}
 
 			/* Common call */
-			if (!(method->iflags & METHOD_IMPL_ATTRIBUTE_AGGRESSIVE_INLINING) && !(cmethod->iflags & METHOD_IMPL_ATTRIBUTE_AGGRESSIVE_INLINING))
+			if (!(cfg->opt & MONO_OPT_AGGRESSIVE_INLINING) && !(method->iflags & METHOD_IMPL_ATTRIBUTE_AGGRESSIVE_INLINING) && !(cmethod->iflags & METHOD_IMPL_ATTRIBUTE_AGGRESSIVE_INLINING))
 				INLINE_FAILURE ("call");
 			common_call = TRUE;
 

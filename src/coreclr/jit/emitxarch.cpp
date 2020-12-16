@@ -3054,7 +3054,12 @@ void emitter::emitInsLoadInd(instruction ins, emitAttr attr, regNumber dstReg, G
         unsigned             offset  = varNode->GetLclOffs();
         emitIns_R_S(ins, attr, dstReg, varNode->GetLclNum(), offset);
 
-        // Updating variable liveness after instruction was emitted
+        // Updating variable liveness after instruction was emitted.
+        // TODO-Review: it appears that this call to genUpdateLife does nothing because it
+        // returns quickly when passed GT_LCL_VAR_ADDR or GT_LCL_FLD_ADDR. Below, emitInsStoreInd
+        // had similar code that replaced `varNode` with `mem` (to fix a GC hole). It might be
+        // appropriate to do that here as well, but doing so showed no asm diffs, so it's not
+        // clear when this scenario gets hit, at least for GC refs.
         codeGen->genUpdateLife(varNode);
         return;
     }
@@ -3116,7 +3121,7 @@ void emitter::emitInsStoreInd(instruction ins, emitAttr attr, GenTreeStoreInd* m
         }
 
         // Updating variable liveness after instruction was emitted
-        codeGen->genUpdateLife(varNode);
+        codeGen->genUpdateLife(mem);
         return;
     }
 
@@ -12781,7 +12786,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
 
         DONE_CALL:
 
-            /* We update the GC info before the call as the variables cannot be
+            /* We update the variable (not register) GC info before the call as the variables cannot be
                used by the call. Killing variables before the call helps with
                boundary conditions if the call is CORINFO_HELP_THROW - see bug 50029.
                If we ever track aliased variables (which could be used by the
@@ -12789,7 +12794,18 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
              */
             assert(FitsIn<unsigned char>(dst - *dp));
             callInstrSize = static_cast<unsigned char>(dst - *dp);
+
+            // Note the use of address `*dp`, the call instruction address, instead of `dst`, the post-call-instruction
+            // address.
             emitUpdateLiveGCvars(GCvars, *dp);
+
+#ifdef DEBUG
+            // Output any delta in GC variable info, corresponding to the before-call GC var updates done above.
+            if (EMIT_GC_VERBOSE || emitComp->opts.disasmWithGC)
+            {
+                emitDispGCVarDelta();
+            }
+#endif // DEBUG
 
             // If the method returns a GC ref, mark EAX appropriately
             if (id->idGCref() == GCT_GCREF)

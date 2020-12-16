@@ -111,7 +111,7 @@ When loading information from a slot that is still NULL, the generic code will c
 - `JIT_GenericHandleClass`: Used to lookup a value in a generic type dictionary. This helper is used by all instance methods on generic types.
 - `JIT_GenericHandleMethod`: Used to lookup a value in a generic method dictionary. This helper used by all generic methods, or non-generic static methods on generic types.
 
-When generating shared generic code, the JIT knows which slots to use for the various lookups, and the kind of information contained in each slot using the help of the `DictionaryLayout` implementation ([genericdict.cpp](https://github.com/dotnet/runtime/blob/master/src/coreclr/src/vm/genericdict.cpp)).
+When generating shared generic code, the JIT knows which slots to use for the various lookups, and the kind of information contained in each slot using the help of the `DictionaryLayout` implementation ([genericdict.cpp](https://github.com/dotnet/runtime/blob/master/src/coreclr/vm/genericdict.cpp)).
 
 ### Dictionary Layouts
 
@@ -165,7 +165,7 @@ The feature is simple in concept: change dictionary layouts from a linked list o
 
 The current implementation expands the dictionary layout and the actual dictionaries separately to keep things simple:
 
- - Dictionary layouts are expanded when we are out of empty slots. See implementations of `DictionaryLayout::FindToken()` in [genericdict.cpp](https://github.com/dotnet/runtime/blob/master/src/coreclr/src/vm/genericdict.cpp).
+ - Dictionary layouts are expanded when we are out of empty slots. See implementations of `DictionaryLayout::FindToken()` in [genericdict.cpp](https://github.com/dotnet/runtime/blob/master/src/coreclr/vm/genericdict.cpp).
  - Instantiated type and method dictionaries are expanded lazily on demand whenever any code is attempting to read the value of a slot beyond the size of the dictionary of that type or method. This is done through a call to the helper functions mentioned previously (`JIT_GenericHandleClass` and `JIT_GenericHandleMethod`).
 
 The dictionary access codegen is equivalent to the following (both in JITted code and ReadyToRun code):
@@ -184,7 +184,7 @@ else
 
 This size check is **not** done unconditionally every time we need to read a value from the dictionary, otherwise this would cause a noticeable performance regression. When a dictionary layout is first allocated, we keep track of the initial number of slots that were allocated, and **only** perform the size checks if we are attempting to read the value of a slot beyond those initial number of slots.
 
-Dictionaries on types and methods are expanded by the `Dictionary::GetTypeDictionaryWithSizeCheck()` and `Dictionary::GetMethodDictionaryWithSizeCheck()` helper functions in [genericdict.cpp](https://github.com/dotnet/runtime/blob/master/src/coreclr/src/vm/genericdict.cpp).
+Dictionaries on types and methods are expanded by the `Dictionary::GetTypeDictionaryWithSizeCheck()` and `Dictionary::GetMethodDictionaryWithSizeCheck()` helper functions in [genericdict.cpp](https://github.com/dotnet/runtime/blob/master/src/coreclr/vm/genericdict.cpp).
 
 One thing to note regarding types is that they can inherit dictionary pointers from their base types. This means that if we resize the generic dictionary on any given generic type, we will need to propagate the new dictionary pointer to all of its derived types. This propagation is also done in a lazy way whenever the code calls into the `JIT_GenericHandleWorker` helper function with a derived type MethodTable pointer. In that helper, if we find that the dictionary pointer on the base type has been updated, we copy it to the derived type.
 

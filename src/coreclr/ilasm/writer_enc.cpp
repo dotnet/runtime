@@ -12,17 +12,11 @@
 int ist=0;
 #define REPT_STEP   //printf("Step %d\n",++ist);
 
-HRESULT Assembler::InitMetaDataForENC(__in __nullterminated WCHAR* wzOrigFileName, BOOL generatePdb, PdbFormat pdbFormat)
+HRESULT Assembler::InitMetaDataForENC(__in __nullterminated WCHAR* wzOrigFileName, BOOL generatePdb)
 {
     HRESULT             hr = E_FAIL;
 
     if((wzOrigFileName==NULL)||(*wzOrigFileName == 0)||(m_pDisp==NULL)) return hr;
-    if (m_pSymWriter != NULL)
-    {
-        m_pSymWriter->Close();
-        m_pSymWriter->Release();
-        m_pSymWriter = NULL;
-    }
     if (m_pImporter != NULL)
     {
         m_pImporter->Release();
@@ -68,7 +62,7 @@ HRESULT Assembler::InitMetaDataForENC(__in __nullterminated WCHAR* wzOrigFileNam
         goto exit;
 
     //WszSetEnvironmentVariable(L"COMP_ENC_EMIT", wzOrigFileName);
-    if(!Init(generatePdb, pdbFormat)) goto exit; // close and re-open CeeFileGen and CeeFile
+    if(!Init(generatePdb)) goto exit; // close and re-open CeeFileGen and CeeFile
     hr = S_OK;
 
 
@@ -434,12 +428,6 @@ REPT_STEP
 
 
     // release all interfaces
-    if (m_pSymWriter != NULL)
-    {
-        m_pSymWriter->Close();
-        m_pSymWriter->Release();
-        m_pSymWriter = NULL;
-    }
     if (m_pImporter != NULL)
     {
         m_pImporter->Release();

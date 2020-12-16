@@ -5,10 +5,10 @@ USE_LLVM=True
 
 all: runtimepack run
 
-TOOLS_DIR=../../../../../tools-local/tasks/mobile.tasks
+TOOLS_DIR=../../../../tasks
 appbuilder:
-	$(DOTNET) build -c Release $(TOOLS_DIR)/AotCompilerTask/MonoAOTCompiler.csproj
-	$(DOTNET) build -c Release $(TOOLS_DIR)/AppleAppBuilder/AppleAppBuilder.csproj
+	$(DOTNET) build -c Debug $(TOOLS_DIR)/AotCompilerTask/MonoAOTCompiler.csproj
+	$(DOTNET) build -c Debug $(TOOLS_DIR)/AppleAppBuilder/AppleAppBuilder.csproj
 
 runtimepack:
 	../../../../.././build.sh Mono+Libs -os iOS -arch $(MONO_ARCH) -c $(MONO_CONFIG)
