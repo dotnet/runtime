@@ -456,6 +456,9 @@ fi
 
 initDistroRid $os $arch $crossBuild $portableBuild
 
+# Create NuGet static graph restore binlog
+export RESTORE_TASK_BINLOG_PARAMETERS=artifacts/log/Debug/nuget.binlog
+
 # URL-encode space (%20) to avoid quoting issues until the msbuild call in /eng/common/tools.sh.
 # In *proj files (XML docs), URL-encoded string are rendered in their decoded form.
 cmakeargs="${cmakeargs// /%20}"
