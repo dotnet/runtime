@@ -532,6 +532,8 @@ apply_enclog_pass1 (MonoImage *image_base, MonoImage *image_dmeta, gconstpointer
 	MonoTableInfo *table_enclog = &image_dmeta->tables [MONO_TABLE_ENCLOG];
 	int rows = table_enclog->rows;
 
+	gboolean unsupported_edits = FALSE;
+
 	/* hack: make a pass over it, looking only for table method updates, in
 	 * order to give more meaningful error messages first */
 
@@ -545,12 +547,16 @@ apply_enclog_pass1 (MonoImage *image_base, MonoImage *image_dmeta, gconstpointer
 		int token_table = mono_metadata_token_table (log_token);
 		int token_index = mono_metadata_token_index (log_token);
 
+		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "row[0x%02x]:0x%08x (%s idx=0x%02x) (base table has 0x%04x rows)\tfunc=0x%02x\n", i, log_token, mono_meta_table_name (token_table), token_index, image_base->tables [token_table].rows, func_code);
+
+
 		if (token_table != MONO_TABLE_METHOD)
 			continue;
 
 		if (token_index > image_base->tables [token_table].rows) {
+			mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_METADATA_UPDATE, "\tcannot add new method with token 0x%08x", log_token);
 			mono_error_set_type_load_name (error, NULL, image_base->name, "EnC: cannot add new method with token 0x%08x", log_token);
-			return FALSE;
+			unsupported_edits = TRUE;
 		}
 
 		g_assert (func_code == 0); /* anything else doesn't make sense here */
@@ -572,21 +578,30 @@ apply_enclog_pass1 (MonoImage *image_base, MonoImage *image_dmeta, gconstpointer
 			/* handled above */
 		} else {
 			if (token_index <= image_base->tables [token_table].rows) {
+				mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_METADATA_UPDATE, "row[0x%02x]:0x%08x we do not support patching of existing table cols.", i, log_token);
 				mono_error_set_type_load_name (error, NULL, image_base->name, "EnC: we do not support patching of existing table cols. token=0x%08x", log_token);
-				return FALSE;
+				unsupported_edits = TRUE;
+				continue;
 			}
 		}
 
 
+		/*
+		 * So the way a non-default func_code works is that it's attached to the EnCLog
+		 * record preceeding the new member defintion (so e.g. an addMethod code will be on
+		 * the preceeding MONO_TABLE_TYPEDEF enc record that identifies the parent type).
+		 */
 		switch (func_code) {
 			case 0: /* default */
 				break;
 			default:
+				mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_METADATA_UPDATE, "row[0x%02x]:0x%08x FunCode %d (%s) not supported (token=0x%08x)", i, log_token, func_code, funccode_to_str (func_code), log_token);
 				mono_error_set_type_load_name (error, NULL, image_base->name, "EnC: FuncCode %d (%s) not supported (token=0x%08x)", func_code, funccode_to_str (func_code), log_token);
-				return FALSE;
+				unsupported_edits = TRUE;
+				continue;
 		}
 	}
-	return TRUE;
+	return !unsupported_edits;
 }
 
 static void
