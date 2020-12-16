@@ -80,7 +80,7 @@ public:
 
     uint32_t GetBaseSize()
     {
-        printf ("gcenv.mono.h: GetBaseSize (based 10): %d\n", gc_descr.m_baseSize);
+        // printf ("gcenv.mono.h: GetBaseSize (based 10): %d\n", gc_descr.m_baseSize);
         return gc_descr.m_baseSize;
     }
 

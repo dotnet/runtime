@@ -19176,7 +19176,7 @@ void gc_heap::gc1()
     recover_bgc_settings();
 #endif //BACKGROUND_GC
 #endif //MULTIPLE_HEAPS
-    printf("naricc: gc1() finished\n");
+    // printf("naricc: gc1() finished\n");
 }
 
 void gc_heap::save_data_for_no_gc()
@@ -20634,7 +20634,7 @@ BOOL gc_heap::background_mark (uint8_t* o, uint8_t* low, uint8_t* high)
 
 void naricc_debug_print_gcdesc(uint8_t* o, CGCDesc* gc_desc)
 {
-    printf("naricc_debug_print_gcdesc: o: %p, gc_descr: %p, gc_descr->GetLowestSeries(): %p\n", o, gc_desc, gc_desc->GetLowestSeries() );
+    // printf("naricc_debug_print_gcdesc: o: %p, gc_descr: %p, gc_descr->GetLowestSeries(): %p\n", o, gc_desc, gc_desc->GetLowestSeries() );
 }
 
 #define go_through_object(mt,o,size,parm,start,start_useful,limit,exp)      \
@@ -21537,7 +21537,7 @@ gc_heap::mark_object_simple (uint8_t** po THREAD_NUMBER_DCL)
     const int thread = 0;
 #endif //MULTIPLE_HEAPS
 
-    printf("naricc: mark_object_simple: %p\n", o);
+    // printf("naricc: mark_object_simple: %p\n", o);
     {
 #ifdef SNOOP_STATS
         snoop_stat.objects_checked_count++;
@@ -32773,7 +32773,7 @@ uint8_t* gc_heap::find_first_object (uint8_t* start, uint8_t* first_object)
         assert (o <= start);
     }
 
-    printf("gc.cpp: find_first_object: o: %p\n", o);
+    // printf("gc.cpp: find_first_object: o: %p\n", o);
 
     assert (Align (size (o)) >= Align (min_obj_size));
     uint8_t*  next_o = o + Align (size (o));

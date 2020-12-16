@@ -37,6 +37,8 @@ typedef struct _CoreGCThreadInfo CoreGCThreadInfo;
 #include "gceventstatus.h"
 #include "coregc-mono-mtflags.h"
 
+#define naricc_debug_printf(fmt, ...) 0
+
 struct _CoreGCThreadInfo {
 	MonoThreadInfo info;
 	gc_alloc_context alloc_context;
@@ -319,7 +321,7 @@ mono_gc_make_descr_for_object (gpointer klass, gsize *bitmap, int numbits, size_
 		gc_descr.struct_gc_descr.m_baseSize = MIN_OBJECT_SIZE;
 
 
-	printf("mono_gc_make_descr_for_object: gc_descr.struct_gc_descr.m_baseSize (dec): %d\n", gc_descr.struct_gc_descr.m_baseSize);
+	naricc_debug_printf("mono_gc_make_descr_for_object: gc_descr.struct_gc_descr.m_baseSize (dec): %d\n", gc_descr.struct_gc_descr.m_baseSize);
 
 
 
@@ -567,7 +569,7 @@ mono_gc_alloc_fixed (size_t size, MonoGCDescriptor descr, MonoGCRootSource sourc
 		res = NULL;
 	}
 
-	printf("mono_gc_alloc_fixed: %p\n", res);
+	naricc_debug_printf("mono_gc_alloc_fixed: %p\n", res);
 	return (MonoObject*)res;
 }
 
@@ -609,7 +611,7 @@ mono_gc_alloc_obj (MonoVTable *vtable, size_t size)
 
 	// Deubgging
 	MethodTable* mt = (MethodTable*)(o->vtable);
-	printf("mono_gc_alloc_obj: %p o->vtable: %p, o->vtable->gc_descr: %llu, size: %ld, o->vtable->gc_descr.m_baseSize: %d\n", o, o->vtable, o->vtable->gc_descr, size, mt->GetBaseSize());
+	naricc_debug_printf("mono_gc_alloc_obj: %p o->vtable: %p, o->vtable->gc_descr: %llu, size: %ld, o->vtable->gc_descr.m_baseSize: %d\n", o, o->vtable, o->vtable->gc_descr, size, mt->GetBaseSize());
 	
 	return o;
 }
@@ -1755,7 +1757,7 @@ bool GCToEEInterface::GetBooleanConfigValue(char const*, char const*, bool*)
 
 size_t GCToEEInterface::GetObjectSize(Object* obj) 
 {
-	printf("coregc-mono.cpp: GetObjectsize: obj: %p\n", obj);
+	naricc_debug_printf("coregc-mono.cpp: GetObjectsize: obj: %p\n", obj);
 
 	MethodTable* mT = obj->GetMethodTable();
 	MonoVTable* mono_vtable = (MonoVTable*)mT;
@@ -1787,12 +1789,12 @@ size_t GCToEEInterface::GetObjectSize(Object* obj)
 
 	if (total_size > MIN_OBJECT_SIZE)
 	{
-		printf("coregc-mono.cpp: GetObjectSize: obj: %p::%s obj_size: %d bounds_size %d returning %d\n", obj, debug_class_name, obj_size, bounds_size, total_size);
+		naricc_debug_printf("coregc-mono.cpp: GetObjectSize: obj: %p::%s obj_size: %d bounds_size %d returning %d\n", obj, debug_class_name, obj_size, bounds_size, total_size);
 		return total_size;
 	}
 	else
 	{
-		printf("gc.cpp: my_get_size: returning %d\n", obj, MIN_OBJECT_SIZE);
+		naricc_debug_printf("gc.cpp: my_get_size: returning %d\n", obj, MIN_OBJECT_SIZE);
 		return MIN_OBJECT_SIZE;
 	}
 }
