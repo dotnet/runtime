@@ -183,6 +183,9 @@ namespace Mono.Linker.Dataflow
 			case "EmptyTypes" when field.DeclaringType.IsTypeOf ("System", "Type"): {
 					return new ArrayValue (new ConstIntValue (0));
 				}
+			case "Empty" when field.DeclaringType.IsTypeOf ("System", "String"): {
+					return new KnownStringValue (string.Empty);
+				}
 
 			default: {
 					DynamicallyAccessedMemberTypes memberTypes = _context.Annotations.FlowAnnotations.GetFieldAnnotation (field);
@@ -221,6 +224,7 @@ namespace Mono.Linker.Dataflow
 			Object_GetType,
 			TypeDelegator_Ctor,
 			Array_Empty,
+			TypeInfo_AsType,
 
 			// Anything above this marker will require the method to be run through
 			// the reflection body scanner.
@@ -262,6 +266,9 @@ namespace Mono.Linker.Dataflow
 			{
 				// static System.Reflection.IntrospectionExtensions.GetTypeInfo (Type type)
 				"GetTypeInfo" when calledMethod.IsDeclaredOnType ("System.Reflection", "IntrospectionExtensions") => IntrinsicId.IntrospectionExtensions_GetTypeInfo,
+
+				// System.Reflection.TypeInfo.AsType ()
+				"AsType" when calledMethod.IsDeclaredOnType ("System.Reflection", "TypeInfo") => IntrinsicId.TypeInfo_AsType,
 
 				// System.Type.GetTypeInfo (Type type)
 				"GetTypeFromHandle" when calledMethod.IsDeclaredOnType ("System", "Type") => IntrinsicId.Type_GetTypeFromHandle,
@@ -525,6 +532,14 @@ namespace Mono.Linker.Dataflow
 				switch (GetIntrinsicIdForMethod (calledMethodDefinition)) {
 				case IntrinsicId.IntrospectionExtensions_GetTypeInfo: {
 						// typeof(Foo).GetTypeInfo()... will be commonly present in code targeting
+						// the dead-end reflection refactoring. The call doesn't do anything and we
+						// don't want to lose the annotation.
+						methodReturnValue = methodParams[0];
+					}
+					break;
+
+				case IntrinsicId.TypeInfo_AsType: {
+						// someType.AsType()... will be commonly present in code targeting
 						// the dead-end reflection refactoring. The call doesn't do anything and we
 						// don't want to lose the annotation.
 						methodReturnValue = methodParams[0];
