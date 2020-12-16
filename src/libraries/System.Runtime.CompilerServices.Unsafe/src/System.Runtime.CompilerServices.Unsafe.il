@@ -281,7 +281,7 @@
         ldarg.0
         ret
 #else
-        .locals (int32& l)
+        .locals (int32&)
         .maxstack 1
         ldarg.0
         // Roundtrip via a local to avoid type mismatch on return that the JIT inliner chokes on.
