@@ -1373,7 +1373,7 @@ protected:
     struct instrDescAlign : instrDesc
     {
         instrDescAlign* idaNext; // next align in the group/method
-        insGroup*     idaIG;   // containing group
+        insGroup*       idaIG;   // containing group
     };
 #endif
 
@@ -1755,15 +1755,15 @@ private:
     void          emitJumpDistBind(); // Bind all the local jumps in method
 
 #ifdef FEATURE_LOOP_ALIGN
-    instrDescAlign*   emitCurIGAlignList;     // list of align instructions in current IG
-    unsigned        emitLastInnerLoopStartIgNum; // Start IG of last inner loop
-    unsigned          emitLastInnerLoopEndIgNum; // End IG of last inner loop
-    unsigned        emitLastAlignedIgNum; // last IG that has align instruction
-    instrDescAlign* emitAlignList;    // list of local align instructions in method
-    instrDescAlign* emitAlignLast;    // last align instruction in method
+    instrDescAlign* emitCurIGAlignList;                                 // list of align instructions in current IG
+    unsigned        emitLastInnerLoopStartIgNum;                        // Start IG of last inner loop
+    unsigned        emitLastInnerLoopEndIgNum;                          // End IG of last inner loop
+    unsigned        emitLastAlignedIgNum;                               // last IG that has align instruction
+    instrDescAlign* emitAlignList;                                      // list of local align instructions in method
+    instrDescAlign* emitAlignLast;                                      // last align instruction in method
     unsigned getLoopSize(insGroup* igLoopHeader, unsigned maxLoopSize); // Get the smallest loop size
     void emitSetLoopBackEdge(insGroup* dstIG);
-    void emitLoopAlignAdjustments(); // Predict if loop alignment is needed and make appropriate adjustments
+    void     emitLoopAlignAdjustments(); // Predict if loop alignment is needed and make appropriate adjustments
     unsigned emitCalculatePaddingForLoopAlignment(insGroup* ig, size_t offset DEBUG_ARG(bool displayAlignmentDetails));
 #endif
 

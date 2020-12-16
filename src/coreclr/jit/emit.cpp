@@ -848,7 +848,7 @@ insGroup* emitter::emitSavIG(bool emitAdd)
 
             // Figure out the address of where the align got copied
 
-            size_t of = (BYTE*)oa - emitCurIGfreeBase;
+            size_t          of = (BYTE*)oa - emitCurIGfreeBase;
             instrDescAlign* na = (instrDescAlign*)(ig->igData + of);
 
             assert(na->idaIG == ig);
@@ -877,7 +877,7 @@ insGroup* emitter::emitSavIG(bool emitAdd)
         }
         else
         {
-            last->idaNext = nullptr;
+            last->idaNext          = nullptr;
             emitAlignLast->idaNext = list;
         }
 
@@ -998,9 +998,9 @@ void emitter::emitBegFN(bool hasFramePtr
     emitIGbuffSize    = 0;
 
 #ifdef FEATURE_LOOP_ALIGN
-    emitLastAlignedIgNum = 0;
+    emitLastAlignedIgNum        = 0;
     emitLastInnerLoopStartIgNum = 0;
-    emitLastInnerLoopEndIgNum = 0;
+    emitLastInnerLoopEndIgNum   = 0;
 #endif
 
     /* Record stack frame info (the temp size is just an estimate) */
@@ -1037,7 +1037,6 @@ void emitter::emitBegFN(bool hasFramePtr
     emitFwdJumps   = false;
     emitNoGCIG     = false;
     emitForceNewIG = false;
-
 
 #ifdef FEATURE_LOOP_ALIGN
     /* We don't have any align instructions */
@@ -4612,7 +4611,6 @@ AGAIN:
 #endif // DEBUG
 }
 
-
 #ifdef FEATURE_LOOP_ALIGN
 
 //-----------------------------------------------------------------------------
@@ -4742,14 +4740,14 @@ void emitter::emitLoopAlignAdjustments()
     else
     {
         // For non-adaptive, just take whatever is supplied using COMPlus_ variables
-        maxLoopSize     = emitComp->opts.compJitAlignLoopMaxCodeSize;
+        maxLoopSize            = emitComp->opts.compJitAlignLoopMaxCodeSize;
         estimatedPaddingNeeded = alignmentBoundary - 1;
     }
 
-    unsigned alignBytesRemoved = 0;
-    unsigned loopSize          = 0;
-    unsigned loopIGOffset      = 0;
-    instrDescAlign* alignInstr = emitAlignList;
+    unsigned        alignBytesRemoved = 0;
+    unsigned        loopSize          = 0;
+    unsigned        loopIGOffset      = 0;
+    instrDescAlign* alignInstr        = emitAlignList;
 
     // track the IG that was adjusted so we can update the offsets
     insGroup* lastIGAdj = emitAlignList->idaIG;
@@ -4801,14 +4799,14 @@ void emitter::emitLoopAlignAdjustments()
             }
             else
             {
-                unsigned paddingToAdj     = actualPaddingNeeded;
+                unsigned paddingToAdj = actualPaddingNeeded;
 
 #ifdef DEBUG
-                
+
                 int instrAdjusted = (alignmentBoundary + 14) / 15;
 #endif
                 // Adjust the padding amount in all align instructions in this IG
-                instrDescAlign *alignInstrToAdj = alignInstr, *prevAlignInstr = nullptr; 
+                instrDescAlign *alignInstrToAdj = alignInstr, *prevAlignInstr = nullptr;
                 for (; alignInstrToAdj != nullptr && alignInstrToAdj->idaIG == alignInstr->idaIG;
                      alignInstrToAdj = alignInstrToAdj->idaNext)
                 {
@@ -4828,7 +4826,7 @@ void emitter::emitLoopAlignAdjustments()
             }
 
             JITDUMP("Adjusted alignment of G_M%03u_IG%02u from %02d to %02d\n", emitComp->compMethodID, alignIG->igNum,
-                   estimatedPaddingNeeded, actualPaddingNeeded);
+                    estimatedPaddingNeeded, actualPaddingNeeded);
         }
     }
 
@@ -4870,7 +4868,8 @@ void emitter::emitLoopAlignAdjustments()
 //     3b. If the loop already fits in minimum alignmentBoundary blocks, then return 0. // already best aligned
 //     3c. return paddingNeeded.
 //
-unsigned emitter::emitCalculatePaddingForLoopAlignment(insGroup* ig, size_t offset DEBUG_ARG(bool displayAlignmentDetails))
+unsigned emitter::emitCalculatePaddingForLoopAlignment(insGroup* ig,
+                                                       size_t offset DEBUG_ARG(bool displayAlignmentDetails))
 {
     assert(ig->isLoopAlign());
     unsigned alignmentBoundary = emitComp->opts.compJitAlignLoopBoundary;
@@ -4888,8 +4887,8 @@ unsigned emitter::emitCalculatePaddingForLoopAlignment(insGroup* ig, size_t offs
         return 0;
     }
 
-    unsigned       maxLoopSize = 0;
-    int            maxLoopBlocksAllowed = 0;
+    unsigned maxLoopSize          = 0;
+    int      maxLoopBlocksAllowed = 0;
 
     if (emitComp->opts.compJitAlignLoopAdaptive)
     {
@@ -4900,7 +4899,7 @@ unsigned emitter::emitCalculatePaddingForLoopAlignment(insGroup* ig, size_t offs
     else
     {
         // For non-adaptive, just take whatever is supplied using COMPlus_ variables
-        maxLoopSize     = emitComp->opts.compJitAlignLoopMaxCodeSize;
+        maxLoopSize = emitComp->opts.compJitAlignLoopMaxCodeSize;
     }
 
     unsigned loopSize = getLoopSize(ig->igNext, maxLoopSize);
@@ -4918,8 +4917,8 @@ unsigned emitter::emitCalculatePaddingForLoopAlignment(insGroup* ig, size_t offs
     if (emitComp->opts.compJitAlignLoopAdaptive)
     {
         // adaptive loop alignment
-        unsigned nMaxPaddingBytes       = (1 << (maxLoopBlocksAllowed - minBlocksNeededForLoop + 1)) - 1;
-        unsigned nPaddingBytes          = (-(int)(size_t)offset) & (alignmentBoundary - 1);
+        unsigned nMaxPaddingBytes = (1 << (maxLoopBlocksAllowed - minBlocksNeededForLoop + 1)) - 1;
+        unsigned nPaddingBytes    = (-(int)(size_t)offset) & (alignmentBoundary - 1);
 
         // Check if the alignment exceeds maxPadding limit
         if (nPaddingBytes > nMaxPaddingBytes)
@@ -4973,7 +4972,7 @@ unsigned emitter::emitCalculatePaddingForLoopAlignment(insGroup* ig, size_t offs
             }
             else
             {
-                // Otherwise, the loop just fits in minBlocksNeededForLoop and so can skip alignment.
+// Otherwise, the loop just fits in minBlocksNeededForLoop and so can skip alignment.
 #if DEBUG
                 if (displayAlignmentDetails)
                 {
@@ -5007,7 +5006,7 @@ unsigned emitter::emitCalculatePaddingForLoopAlignment(insGroup* ig, size_t offs
         }
         else
         {
-            // Otherwise, the loop just fits in minBlocksNeededForLoop and so can skip alignment.
+// Otherwise, the loop just fits in minBlocksNeededForLoop and so can skip alignment.
 #if DEBUG
             if (displayAlignmentDetails)
             {

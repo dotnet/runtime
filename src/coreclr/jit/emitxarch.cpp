@@ -2669,7 +2669,7 @@ void emitter::emitLoopAlign(unsigned short paddingBytes)
     /* Insert a pseudo-instruction to ensure that we align
        the next instruction properly */
 
-    paddingBytes = min(paddingBytes, 15);  // We may need to skip up to 15 bytes of code
+    paddingBytes       = min(paddingBytes, 15); // We may need to skip up to 15 bytes of code
     instrDescAlign* id = emitNewInstrAlign();
     id->idCodeSize(paddingBytes);
     emitCurIGsize += paddingBytes;
@@ -2677,7 +2677,7 @@ void emitter::emitLoopAlign(unsigned short paddingBytes)
     id->idaIG = emitCurIG;
 
     /* Append this instruction to this IG's jump list */
-    id->idaNext = emitCurIGAlignList;
+    id->idaNext        = emitCurIGAlignList;
     emitCurIGAlignList = id;
 
     /* Record the last IG that has align instruction */
@@ -12694,7 +12694,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             // the loop alignment pseudo instruction
             if (ins == INS_align)
             {
-                sz  = sizeof(instrDescAlign);
+                sz = sizeof(instrDescAlign);
                 // IG can be marked as not needing alignment after emitting align instruction
                 // In such case, skip outputting alignment.
                 if (ig->isLoopAlign())
@@ -13810,7 +13810,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
     // the last IG that needs alignment.
     if (emitCurIG->igNum <= emitLastAlignedIgNum)
     {
-         unsigned diff = id->idCodeSize() - ((UNATIVE_OFFSET)(dst - *dp));
+        unsigned diff = id->idCodeSize() - ((UNATIVE_OFFSET)(dst - *dp));
         if (diff != 0)
         {
             // should never over-estimate align instruction
