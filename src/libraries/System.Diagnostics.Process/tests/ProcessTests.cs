@@ -1592,15 +1592,17 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
-        [OuterLoop]
-        [Trait(XunitConstants.Category, XunitConstants.IgnoreForCI)] // Pops UI
+        [OuterLoop("Launches notepad")]
         [PlatformSpecific(TestPlatforms.Windows)]
         public void MainWindowTitle_GetWithGui_ShouldRefresh_Windows()
         {
             const string ExePath = "notepad.exe";
             Assert.True(IsProgramInstalled(ExePath));
 
-            using (Process process = Process.Start(ExePath))
+            using (Process process = Process.Start(new ProcessStartInfo(ExePath)
+            {
+                WindowStyle = ProcessWindowStyle.Minimized
+            }))
             {
                 try
                 {
