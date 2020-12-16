@@ -156,7 +156,7 @@ namespace System.Collections.Generic
             {
                 T[] array = _items;
 
-                // doing the array boundry check on our own here improves the perf by 10%
+                // doing the array boundary check on our own here improves the perf by 10%
                 if ((uint)index < (uint)_size && (uint)index < (uint)array.Length)
                 {
                     array[index] = value;
