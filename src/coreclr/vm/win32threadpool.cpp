@@ -112,7 +112,7 @@ int ThreadpoolMgr::ThreadAdjustmentInterval;
 #define GATE_THREAD_DELAY_TOLERANCE 50 /*milliseconds*/
 #define DELAY_BETWEEN_SUSPENDS (5000 + GATE_THREAD_DELAY) // time to delay between suspensions
 
-LONG ThreadpoolMgr::Initialization=0;           // indicator of whether the threadpool is initialized.
+Volatile<LONG> ThreadpoolMgr::Initialization = 0;            // indicator of whether the threadpool is initialized.
 
 bool ThreadpoolMgr::s_usePortableThreadPool = false;
 
