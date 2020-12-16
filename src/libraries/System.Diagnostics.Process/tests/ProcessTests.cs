@@ -24,6 +24,8 @@ namespace System.Diagnostics.Tests
     [ActiveIssue("https://github.com/dotnet/runtime/issues/49568", typeof(PlatformDetection), nameof(PlatformDetection.IsMacOsAppleSilicon))]
     public partial class ProcessTests : ProcessTestBase
     {
+        private const string FailedToStartExpectedRegexPattern = "Failed to start '.*' with working directory '.*'\\.";
+
         private class FinalizingProcess : Process
         {
             public static volatile bool WasFinalized;
@@ -217,6 +219,7 @@ namespace System.Diagnostics.Tests
 
                 Win32Exception e = Assert.Throws<Win32Exception>(() => Process.Start(psi));
                 Assert.NotEqual(0, e.NativeErrorCode);
+                Assert.Matches(FailedToStartExpectedRegexPattern + " The directory name is invalid\\.", e.Message);
             }
             else
             {
@@ -229,7 +232,8 @@ namespace System.Diagnostics.Tests
         public void ProcessStart_UseShellExecute_OnWindows_OpenMissingFile_Throws()
         {
             string fileToOpen = Path.Combine(Environment.CurrentDirectory, "_no_such_file.TXT");
-            Assert.Throws<Win32Exception>(() => Process.Start(new ProcessStartInfo { UseShellExecute = true, FileName = fileToOpen }));
+            Win32Exception e = Assert.Throws<Win32Exception>(() => Process.Start(new ProcessStartInfo { UseShellExecute = true, FileName = fileToOpen }));
+            Assert.Matches(FailedToStartExpectedRegexPattern + " The system cannot find the file specified\\.", e.Message);
         }
 
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.HasWindowsShell))]
@@ -1391,6 +1395,7 @@ namespace System.Diagnostics.Tests
 
             Win32Exception e = Assert.Throws<Win32Exception>(() => Process.Start(path));
             Assert.NotEqual(0, e.NativeErrorCode);
+            Assert.Matches(FailedToStartExpectedRegexPattern + " The system cannot find the file specified\\.", e.Message);
         }
 
         [Fact]

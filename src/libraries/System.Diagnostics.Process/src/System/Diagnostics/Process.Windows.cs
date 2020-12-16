@@ -618,11 +618,12 @@ namespace System.Diagnostics
 
                     if (!retVal)
                     {
-                        if (errorCode == Interop.Errors.ERROR_BAD_EXE_FORMAT || errorCode == Interop.Errors.ERROR_EXE_MACHINE_TYPE_MISMATCH)
-                        {
-                            throw new Win32Exception(errorCode, SR.InvalidApplication);
-                        }
-                        throw new Win32Exception(errorCode);
+                        string innerMsg = errorCode == Interop.Errors.ERROR_BAD_EXE_FORMAT || errorCode == Interop.Errors.ERROR_EXE_MACHINE_TYPE_MISMATCH
+                            ? SR.InvalidApplication
+                            : new Win32Exception(errorCode).Message;
+
+                        string msg = SR.Format(SR.FailedToStartFileDirectory, startInfo.FileName, workingDirectory, innerMsg);
+                        throw new Win32Exception(errorCode, msg);
                     }
                 }
                 finally
