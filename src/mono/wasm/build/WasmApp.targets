@@ -4,6 +4,10 @@
   <UsingTask TaskName="WasmAOT" AssemblyFile="$(WasmAppBuilderTasksAssemblyPath)" />
   <UsingTask TaskName="WasmLoadAssembliesAndReferences" AssemblyFile="$(WasmAppBuilderTasksAssemblyPath)" />
 
+  <PropertyGroup>
+      <WasmBuildAppDependsOn>_BeforeWasmBuildApp;_WasmResolveReferences;_WasmAOT</WasmBuildAppDependsOn>
+  </PropertyGroup>
+
   <Target Name="WasmBuildApp" AfterTargets="Publish" />
 
   <Target Condition="'$(RunAOTCompilation)' == 'true'" Name="_WasmAotCompileApp">
@@ -68,7 +72,7 @@
       </ItemGroup>
   </Target>
 
-  <Target Name="_WasmBuildApp" BeforeTargets="WasmBuildApp" DependsOnTargets="_BeforeWasmBuildApp;_WasmResolveReferences;_WasmAOT">
+  <Target Name="_WasmBuildApp" BeforeTargets="WasmBuildApp" DependsOnTargets="$(WasmBuildAppDependsOn)">
     <WasmAppBuilder
       AppDir="$(WasmAppDir)"
       MicrosoftNetCoreAppRuntimePackDir="$(MicrosoftNetCoreAppRuntimePackRidDir)"
