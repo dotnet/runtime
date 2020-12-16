@@ -310,6 +310,10 @@ static int32_t ConvertGetAddrInfoAndGetNameInfoErrorsToPal(int32_t error)
         case EAI_NODATA:
 #endif
             return GetAddrInfoErrorFlags_EAI_NONAME;
+#if HAVE_GETADDRINFO_A
+        case EAI_CANCELED:
+            return GetAddrInfoErrorFlags_EAI_CANCELED;
+#endif
     }
 
     assert_err(0, "Unknown AddrInfo error flag", error);
@@ -586,7 +590,11 @@ int32_t SystemNative_GetHostEntryForName(const uint8_t* address, int32_t address
     return GetHostEntries(address, info, entry);
 }
 
-int32_t SystemNative_GetHostEntryForNameAsync(const uint8_t* address, int32_t addressFamily, HostEntry* entry, GetHostEntryForNameCallback callback)
+int32_t SystemNative_GetHostEntryForNameAsync(const uint8_t* address,
+                                              int32_t addressFamily,
+                                              HostEntry* entry,
+                                              GetHostEntryForNameCallback callback,
+                                              void** cancelHandle)
 {
 #if HAVE_GETADDRINFO_A
     if (address == NULL || entry == NULL)
@@ -651,6 +659,7 @@ int32_t SystemNative_GetHostEntryForNameAsync(const uint8_t* address, int32_t ad
         return ConvertGetAddrInfoAndGetNameInfoErrorsToPal(result);
     }
 
+    *cancelHandle = &state->gai_request;
     return result;
 #else
     (void)address;
@@ -674,6 +683,15 @@ void SystemNative_FreeHostEntry(HostEntry* entry)
         entry->IPAddressList = NULL;
         entry->IPAddressCount = 0;
     }
+}
+
+void SystemNative_CancelGetHostEntryForNameAsync(void* cancelHandle)
+{
+#if HAVE_GETADDRINFO_A
+    gai_cancel((struct gaicb*)cancelHandle);
+#else
+    (void)cancelHandle;
+#endif
 }
 
 // There were several versions of glibc that had the flags parameter of getnameinfo unsigned

@@ -23,6 +23,7 @@ typedef enum
     GetAddrInfoErrorFlags_EAI_BADARG = 6,   // One or more input arguments were invalid.
     GetAddrInfoErrorFlags_EAI_NOMORE = 7,   // No more entries are present in the list.
     GetAddrInfoErrorFlags_EAI_MEMORY = 8,   // Out of memory.
+    GetAddrInfoErrorFlags_EAI_CANCELED = 9  // Async name resolution canceled / removed from queue
 } GetAddrInfoErrorFlags;
 
 /**
@@ -309,19 +310,21 @@ typedef void (*GetHostEntryForNameCallback)(HostEntry* entry, int status);
 PALEXPORT int32_t SystemNative_GetHostEntryForNameAsync(const uint8_t* address,
                                                         int32_t addressFamily,
                                                         HostEntry* entry,
-                                                        GetHostEntryForNameCallback callback);
+                                                        GetHostEntryForNameCallback callback,
+                                                        void** cancelHandle);
 
 PALEXPORT void SystemNative_FreeHostEntry(HostEntry* entry);
+PALEXPORT void SystemNative_CancelGetHostEntryForNameAsync(void* cancelHandle);
 
 
 PALEXPORT int32_t SystemNative_GetNameInfo(const uint8_t* address,
-                               int32_t addressLength,
-                               int8_t isIPv6,
-                               uint8_t* host,
-                               int32_t hostLength,
-                               uint8_t* service,
-                               int32_t serviceLength,
-                               int32_t flags);
+                                           int32_t addressLength,
+                                           int8_t isIPv6,
+                                           uint8_t* host,
+                                           int32_t hostLength,
+                                           uint8_t* service,
+                                           int32_t serviceLength,
+                                           int32_t flags);
 
 PALEXPORT int32_t SystemNative_GetDomainName(uint8_t* name, int32_t nameLength);
 
