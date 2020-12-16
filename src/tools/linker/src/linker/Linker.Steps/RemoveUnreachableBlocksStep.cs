@@ -725,26 +725,30 @@ namespace Mono.Linker.Steps
 					return left != right;
 				case Code.Bge:
 				case Code.Bge_S:
+					return left >= right;
 				case Code.Bge_Un:
 				case Code.Bge_Un_S:
-					return left >= right;
+					return (uint) left >= (uint) right;
 				case Code.Bgt:
 				case Code.Bgt_S:
-				case Code.Bgt_Un:
-				case Code.Bgt_Un_S:
 				case Code.Cgt:
 					return left > right;
+				case Code.Bgt_Un:
+				case Code.Bgt_Un_S:
+					return (uint) left > (uint) right;
 				case Code.Ble:
 				case Code.Ble_S:
+					return left <= right;
 				case Code.Ble_Un:
 				case Code.Ble_Un_S:
-					return left <= right;
+					return (uint) left <= (uint) right;
 				case Code.Blt:
 				case Code.Blt_S:
-				case Code.Blt_Un:
-				case Code.Blt_Un_S:
 				case Code.Clt:
 					return left < right;
+				case Code.Blt_Un:
+				case Code.Blt_Un_S:
+					return (uint) left < (uint) right;
 				}
 
 				throw new NotImplementedException (opCode.ToString ());

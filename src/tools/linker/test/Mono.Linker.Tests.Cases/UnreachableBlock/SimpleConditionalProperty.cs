@@ -20,6 +20,8 @@ namespace Mono.Linker.Tests.Cases.UnreachableBlock
 			TestProperty_bool_3 ();
 			TestProperty_enum_1 ();
 			TestProperty_null_1 ();
+			TestProperty_SignedComparisons ();
+			TestProperty_UnsignedComparisons ();
 		}
 
 		[Kept]
@@ -154,6 +156,54 @@ namespace Mono.Linker.Tests.Cases.UnreachableBlock
 		}
 
 		[Kept]
+		[ExpectBodyModified]
+		static void TestProperty_SignedComparisons ()
+		{
+			if (PropInt == -10)
+				NeverReached_1 ();
+
+			if (PropInt != 10)
+				NeverReached_1 ();
+
+			if (PropInt < -10)
+				NeverReached_1 ();
+
+			if (PropInt <= -10)
+				NeverReached_1 ();
+
+			if (-10 > PropInt)
+				NeverReached_1 ();
+
+			if (-10 >= PropInt)
+				NeverReached_1 ();
+		}
+
+		[Kept]
+		[ExpectBodyModified]
+		static void TestProperty_UnsignedComparisons ()
+		{
+			// This is effectively comparing 10 and 4294967286
+
+			if (PropUInt == unchecked((uint) -10))
+				NeverReached_1 ();
+
+			if (PropUInt != (uint) 10)
+				NeverReached_1 ();
+
+			if (PropUInt > unchecked((uint) -10))
+				NeverReached_1 ();
+
+			if (PropUInt >= unchecked((uint) -10))
+				NeverReached_1 ();
+
+			if (unchecked((uint) -10) < PropUInt)
+				NeverReached_1 ();
+
+			if (unchecked((uint) -10) <= PropUInt)
+				NeverReached_1 ();
+		}
+
+		[Kept]
 		static int Prop {
 			[Kept]
 			get {
@@ -184,6 +234,18 @@ namespace Mono.Linker.Tests.Cases.UnreachableBlock
 			get {
 				return null;
 			}
+		}
+
+		[Kept]
+		static int PropInt {
+			[Kept]
+			get => 10;
+		}
+
+		[Kept]
+		static uint PropUInt {
+			[Kept]
+			get => 10;
 		}
 
 		static void NeverReached_1 ()
