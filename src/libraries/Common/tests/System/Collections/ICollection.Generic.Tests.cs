@@ -257,7 +257,7 @@ namespace System.Collections.Tests
                 ICollection<T> collection = GenericICollectionFactory(count);
                 List<T> itemsToRemove = collection.ToList();
                 for (int i = 0; i < count; i++)
-                    collection.Remove(itemsToRemove[i]);
+                    collection.Remove(collection.ElementAt(0));
                 collection.Add(CreateT(254));
                 Assert.Equal(1, collection.Count);
             }
