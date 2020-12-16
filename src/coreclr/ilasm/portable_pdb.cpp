@@ -336,13 +336,16 @@ BOOL PortablePdbWriter::_DefineLocalScope(mdMethodDef methodDefToken, Scope* cur
 
     while (pLocalVar != NULL)
     {
-        mdLocalVariable locVarToken = mdLocalScopeNil;
-        USHORT attribute = 0;                                       // TODO: not supported for now
-        USHORT index = pLocalVar->dwAttr & 0xffff; // slot
-        if (FAILED(m_pdbEmitter->DefineLocalVariable(attribute, index, (char*)pLocalVar->szName, &locVarToken))) goto exit;
+        if (pLocalVar->szName != NULL)
+        {
+            mdLocalVariable locVarToken = mdLocalScopeNil;
+            USHORT attribute = 0;                                       // TODO: not supported for now
+            USHORT index = pLocalVar->dwAttr & 0xffff; // slot
+            if (FAILED(m_pdbEmitter->DefineLocalVariable(attribute, index, (char*)pLocalVar->szName, &locVarToken))) goto exit;
 
-        if (firstLocVarToken == mdLocalScopeNil)
-            firstLocVarToken = locVarToken;
+            if (firstLocVarToken == mdLocalScopeNil)
+                firstLocVarToken = locVarToken;
+        }
 
         pLocalVar = pLocalVar->pNext;
     }
