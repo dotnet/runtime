@@ -81,6 +81,8 @@ namespace System.Net.NameResolution.Tests
                     }
                     catch (SocketException e) when (e.SocketErrorCode == SocketError.HostNotFound)
                     {
+                        // Wait a bit to let the event source write it's log
+                        Task.Delay(100).GetAwaiter().GetResult();
                     }
                     catch (Exception e)
                     {
