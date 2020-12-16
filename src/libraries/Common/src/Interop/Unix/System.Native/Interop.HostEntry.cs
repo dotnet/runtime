@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
 using System.Net.Sockets;
 using System.Runtime.InteropServices;
 
@@ -21,6 +22,7 @@ internal static partial class Interop
             EAI_BADARG = 6,     // One or more input arguments were invalid.
             EAI_NOMORE = 7,     // No more entries are present in the list.
             EAI_MEMORY = 8,     // Out of memory.
+            EAI_CANCELED = 9    // Async name resolution canceled / removed from queue
         }
 
         [StructLayout(LayoutKind.Sequential)]
@@ -43,9 +45,13 @@ internal static partial class Interop
             string address,
             AddressFamily family,
             HostEntry* entry,
-            delegate* unmanaged<HostEntry*, int, void> callback);
+            delegate* unmanaged<HostEntry*, int, void> callback,
+            IntPtr* cancelHandle);
 
         [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_FreeHostEntry")]
         internal static extern unsafe void FreeHostEntry(HostEntry* entry);
+
+        [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_CancelGetHostEntryForNameAsync")]
+        internal static extern void CancelGetHostEntryForNameAsync(IntPtr cancelHandle);
     }
 }
