@@ -969,12 +969,9 @@ namespace System.Diagnostics.Tests
             ProcessStartInfo info = new ProcessStartInfo
             {
                 UseShellExecute = true,
-                FileName = "notepad.exe",
-                Arguments = null,
+                FileName = tempFile,
                 WindowStyle = ProcessWindowStyle.Minimized
             };
-
-            info.ArgumentList.Add(tempFile);
 
             using (var process = Process.Start(info))
             {
