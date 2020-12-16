@@ -28,6 +28,8 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			TestMultipleConstantValues ();
 			TestMultipleMixedValues ();
 
+			TestStringEmpty ();
+
 			// TODO:
 			// Test multi-value returns
 			//    Type.GetType over a constant and a param
@@ -110,6 +112,12 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			}
 
 			Type.GetType (typeName);
+		}
+
+		[RecognizedReflectionAccessPattern]
+		static void TestStringEmpty ()
+		{
+			Type.GetType (string.Empty);
 		}
 
 		[UnrecognizedReflectionAccessPattern (typeof (GetTypeDataFlow), nameof (RequireNonPublicConstructors), new Type[] { typeof (Type) },
