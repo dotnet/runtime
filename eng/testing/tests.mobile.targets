@@ -168,10 +168,6 @@
       </WasmSatelliteAssemblies>
 
       <WasmAssembliesToBundle Include="$(PublishDir)\*.dll"/>
-      <WasmAssembliesToBundle Include="$(PublishDir)$(AssemblyName).dll" />
-      <!-- We need these facades for some tests. -->
-      <WasmAssembliesToBundle Include="$(PublishDir)mscorlib.dll" />
-      <WasmAssembliesToBundle Include="$(PublishDir)System.Drawing.dll" />
 
       <WasmFilesToIncludeInFileSystem Include="@(ContentWithTargetPath)" />
       <WasmFilesToIncludeInFileSystem Include="@(ReferenceCopyLocalPaths)" Condition="'%(ReferenceCopyLocalPaths.BuildReference)' == 'true' and !$([System.String]::new('%(ReferenceCopyLocalPaths.Identity)').EndsWith('.resources.dll'))" />
