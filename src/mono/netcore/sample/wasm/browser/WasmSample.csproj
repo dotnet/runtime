@@ -60,5 +60,19 @@
     </Content>
   </ItemGroup>
 
+  <Target Name="CopySampleAppToHelixTestDir" Condition="'$(ArchiveTests)' == 'true'" AfterTargets="WasmBuildApp" DependsOnTargets="Publish">
+    <PropertyGroup>
+      <!-- Helix properties -->
+      <!-- AnyCPU as Platform-->
+      <OSPlatformConfig>$(TargetOS).AnyCPU.$(Configuration)</OSPlatformConfig>
+      <HelixArchiveRoot>$(ArtifactsDir)helix/</HelixArchiveRoot>
+      <HelixArchiveRunOnlyRoot>$(HelixArchiveRoot)runonly/</HelixArchiveRunOnlyRoot>
+      <HelixArchiveRunOnlyAppsDir>$(HelixArchiveRunOnlyRoot)$(OSPlatformConfig)/browser/</HelixArchiveRunOnlyAppsDir>
+      <ZippedApp>$(OutputPath)/WasmBrowserSample.zip</ZippedApp>
+    </PropertyGroup>
+    <ZipDirectory SourceDirectory="$(AppDir)" DestinationFile="$(ZippedApp)" />
+    <Copy SourceFiles="$(ZippedApp)" DestinationFolder="$(HelixArchiveRunOnlyAppsDir)" />
+  </Target>
+
   <Import Project="$(MonoProjectRoot)\wasm\build\WasmApp.targets" />
 </Project>
