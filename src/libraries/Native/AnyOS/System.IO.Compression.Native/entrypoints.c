@@ -9,6 +9,9 @@
 #include "../brotli/include/brotli/encode.h"
 #include "../brotli/include/brotli/port.h"
 #include "../brotli/include/brotli/types.h"
+#include "../brotli/common/platform.h"
+#include "../brotli/common/transform.h"
+#include "../brotli/common/dictionary.h"
 
 #include "../../AnyOS/entrypoints.h"
 
@@ -25,6 +28,23 @@ static const Entry s_compressionNative[] =
     DllImportEntry(BrotliEncoderDestroyInstance)
     DllImportEntry(BrotliEncoderHasMoreOutput)
     DllImportEntry(BrotliEncoderSetParameter)
+    DllImportEntry(BrotliGetTransforms)
+    DllImportEntry(BrotliDecoderSetParameter)
+    DllImportEntry(BrotliGetDictionary)
+    DllImportEntry(BrotliDecoderTakeOutput)
+    DllImportEntry(BrotliEncoderIsFinished)
+    DllImportEntry(BrotliDecoderVersion)
+    DllImportEntry(BrotliDecoderIsUsed)
+    DllImportEntry(BrotliSetDictionaryData)
+    DllImportEntry(BrotliDecoderGetErrorCode)
+    DllImportEntry(BrotliEncoderTakeOutput)
+    DllImportEntry(BrotliEncoderVersion)
+    DllImportEntry(BrotliEncoderMaxCompressedSize)
+    DllImportEntry(BrotliDefaultAllocFunc)
+    DllImportEntry(BrotliDecoderHasMoreOutput)
+    DllImportEntry(BrotliDecoderErrorString)
+    DllImportEntry(BrotliDefaultFreeFunc)
+    DllImportEntry(BrotliTransformDictionaryWord)
     DllImportEntry(CompressionNative_Crc32)
     DllImportEntry(CompressionNative_Deflate)
     DllImportEntry(CompressionNative_DeflateEnd)

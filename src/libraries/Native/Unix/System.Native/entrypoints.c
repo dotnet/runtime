@@ -232,6 +232,7 @@ static const Entry s_sysNative[] =
     DllImportEntry(SystemNative_SetEUid)
     DllImportEntry(SystemNative_GetGroupList)
     DllImportEntry(SystemNative_GetUid)
+    DllImportEntry(SystemNative_LowLevelMonitor_Create)
 };
 
 EXTERN_C const void* SystemResolveDllImport(const char* name);
