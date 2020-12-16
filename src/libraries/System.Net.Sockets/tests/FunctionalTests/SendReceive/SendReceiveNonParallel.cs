@@ -99,11 +99,12 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        [Fact(Timeout = 10000)]
+        [Fact]
         public async Task SendToRecvFrom_Datagram_UDP_CombineSyncAsync()
         {
             const int DatagramCount = 16;
             const int DatagramSize = 512;
+            const int Tiemout = 10_000;
             IPAddress address = IPAddress.Loopback;
 
             using var leftSocket = new Socket(address.AddressFamily, SocketType.Dgram, ProtocolType.Udp);
@@ -129,17 +130,21 @@ namespace System.Net.Sockets.Tests
                 }
             });
 
-            byte[] rightBuffer = new byte[DatagramSize];
-            for (int i = 0; i < DatagramCount; i++)
+            Task rightThread = Task.Run(async () =>
             {
-                EndPoint ep = leftEp;
-                int receivedBytes = rightSocket.ReceiveFrom(rightBuffer, ref ep);
-                Assert.Equal(DatagramSize, receivedBytes);
-                int sentBytes = await SendToAsync(rightSocket, rightBuffer, leftEp);
-                Assert.Equal(DatagramSize, sentBytes);
-            }
+                byte[] rightBuffer = new byte[DatagramSize];
+                for (int i = 0; i < DatagramCount; i++)
+                {
+                    EndPoint ep = leftEp;
+                    int receivedBytes = rightSocket.ReceiveFrom(rightBuffer, ref ep);
+                    Assert.Equal(DatagramSize, receivedBytes);
+                    int sentBytes = await SendToAsync(rightSocket, rightBuffer, leftEp);
+                    Assert.Equal(DatagramSize, sentBytes);
+                }
+            });
 
-            await leftThread;
+            await leftThread.TimeoutAfter(Tiemout);
+            await rightThread.TimeoutAfter(Tiemout);
         }
     }
 
