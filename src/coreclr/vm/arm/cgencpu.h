@@ -929,17 +929,6 @@ public:
 
 extern "C" void SinglecastDelegateInvokeStub();
 
-// SEH info forward declarations
-
-inline BOOL IsUnmanagedValueTypeReturnedByRef(UINT sizeofvaluetype)
-{
-    LIMITED_METHOD_CONTRACT;
-
-    // structure that dont fit in the machine-word size are returned
-    // by reference.
-    return (sizeofvaluetype > 4);
-}
-
 #ifdef _MSC_VER
 #pragma warning(push)
 #pragma warning(disable:4359) // Prevent "warning C4359: 'UMEntryThunkCode': Alignment specifier is less than actual alignment (8), and will be ignored." in crossbitness scenario

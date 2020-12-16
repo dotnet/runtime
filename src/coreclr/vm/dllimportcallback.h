@@ -177,8 +177,6 @@ public:
     VOID SetupArguments(char *pSrc, ArgumentRegisters *pArgRegs, char *pDst);
 #else
 private:
-    VOID SetUpForUnmanagedCallersOnly();
-
     // Compiles an unmanaged to managed thunk for the given signature. The thunk
     // will call the stub or, if fNoStub == TRUE, directly the managed target.
     Stub *CompileNExportThunk(LoaderHeap *pLoaderHeap, PInvokeStaticSigInfo* pSigInfo, MetaSig *pMetaSig, BOOL fNoStub);
@@ -528,6 +526,8 @@ EXCEPTION_HANDLER_DECL(FastNExportExceptHandler);
 EXCEPTION_HANDLER_DECL(UMThunkPrestubHandler);
 
 #endif // TARGET_X86 && !FEATURE_STUBS_AS_IL
+
+bool TryGetCallingConventionFromUnmanagedCallersOnly(MethodDesc* pMD, CorPinvokeMap* pCallConv);
 
 extern "C" void TheUMEntryPrestub(void);
 extern "C" PCODE TheUMEntryPrestubWorker(UMEntryThunk * pUMEntryThunk);

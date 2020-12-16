@@ -419,20 +419,6 @@ extern "C" void getFPReturn(int fpSize, INT64 *retval);
 
 struct ComToManagedExRecord; // defined in cgencpu.cpp
 
-inline BOOL IsUnmanagedValueTypeReturnedByRef(UINT sizeofvaluetype)
-{
-    LIMITED_METHOD_CONTRACT;
-
-    if (sizeofvaluetype > ENREGISTERED_RETURNTYPE_MAXSIZE)
-    {
-        return TRUE;
-    }
-    else
-    {
-        return FALSE;
-    }
-}
-
 #include <pshpack1.h>
 struct DECLSPEC_ALIGN(8) UMEntryThunkCode
 {

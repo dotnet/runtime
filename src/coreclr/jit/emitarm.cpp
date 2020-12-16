@@ -6404,6 +6404,14 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
 
             emitUpdateLiveGCvars(GCvars, *dp);
 
+#ifdef DEBUG
+            // Output any delta in GC variable info, corresponding to the before-call GC var updates done above.
+            if (EMIT_GC_VERBOSE || emitComp->opts.disasmWithGC)
+            {
+                emitDispGCVarDelta();
+            }
+#endif // DEBUG
+
             // If the method returns a GC ref, mark R0 appropriately.
             if (id->idGCref() == GCT_GCREF)
                 gcrefRegs |= RBM_R0;

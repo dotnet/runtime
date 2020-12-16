@@ -38,7 +38,7 @@ import shutil
 import subprocess
 import tempfile
 
-from os import listdir, path, walk
+from os import linesep, listdir, path, walk
 from os.path import isfile, join, getsize
 from coreclr_arguments import *
 
@@ -282,7 +282,7 @@ def copy_files(src_path, dst_path, file_names):
 
     print('### Copying below files to {0}:'.format(dst_path))
     print('')
-    print(file_names)
+    print(os.linesep.join(file_names))
     for f in file_names:
         # Create same structure in dst so we don't clobber same files names present in different directories
         dst_path_of_file = f.replace(src_path, dst_path)
@@ -381,7 +381,8 @@ def main(main_args):
 
     # payload
     input_artifacts = path.join(pmiassemblies_directory, coreclr_args.collection_name)
-    partition_files(coreclr_args.input_directory, input_artifacts, coreclr_args.max_size)
+    exclude_directory = ['Core_Root'] if coreclr_args.collection_name == "tests" else []
+    partition_files(coreclr_args.input_directory, input_artifacts, coreclr_args.max_size, exclude_directory)
 
     # Set variables
     print('Setting pipeline variables:')

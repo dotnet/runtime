@@ -3849,7 +3849,7 @@ protected:
 
     CORINFO_CLASS_HANDLE impGetSpecialIntrinsicExactReturnType(CORINFO_METHOD_HANDLE specialIntrinsicHandle);
 
-    bool impMethodInfo_hasRetBuffArg(CORINFO_METHOD_INFO* methInfo);
+    bool impMethodInfo_hasRetBuffArg(CORINFO_METHOD_INFO* methInfo, CorInfoCallConvExtension callConv);
 
     GenTree* impFixupCallStructReturn(GenTreeCall* call, CORINFO_CLASS_HANDLE retClsHnd);
 
@@ -9308,6 +9308,8 @@ public:
 
         unsigned compUnmanagedCallCountWithGCTransition; // count of unmanaged calls with GC transition.
 
+        CorInfoCallConvExtension compCallConv; // The entry-point calling convention for this method.
+
         unsigned compLvFrameListRoot; // lclNum for the Frame root
         unsigned compXcptnsCount;     // Number of exception-handling clauses read in the method's IL.
                                       // You should generally use compHndBBtabCount instead: it is the
@@ -9387,7 +9389,7 @@ public:
         //    to be returned in x0.
         CLANG_FORMAT_COMMENT_ANCHOR;
 #if defined(TARGET_WINDOWS) && defined(TARGET_ARM64)
-        auto callConv = compMethodInfoGetEntrypointCallConv(info.compMethodInfo);
+        auto callConv = info.compCallConv;
         if (callConvIsInstanceMethodCallConv(callConv))
         {
             return (info.compRetBuffArg != BAD_VAR_NUM);
@@ -9593,8 +9595,8 @@ public:
     // size of the type these describe.
     unsigned compGetTypeSize(CorInfoType cit, CORINFO_CLASS_HANDLE clsHnd);
 
-    // Gets the calling convention the method's entry point should have.
-    CorInfoCallConvExtension compMethodInfoGetEntrypointCallConv(CORINFO_METHOD_INFO* mthInfo);
+    // Returns true if the method being compiled has a return buffer.
+    bool compHasRetBuffArg();
 
 #ifdef DEBUG
     // Components used by the compiler may write unit test suites, and
