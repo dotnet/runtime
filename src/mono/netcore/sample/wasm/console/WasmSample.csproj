@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk" DefaultTargets="WasmBuildApp">
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <OutputPath>bin</OutputPath>
@@ -115,6 +115,23 @@
   <ItemGroup>
     <Compile Include="Program.cs" />
   </ItemGroup>
+
+  <Target Name="CopySampleAppToHelixTestDir" 
+          Condition="'$(ArchiveTests)' == 'true'" 
+          AfterTargets="Build"
+          DependsOnTargets="Publish" >
+    <PropertyGroup>
+      <!-- Helix properties -->
+      <!-- AnyCPU as Platform-->
+      <OSPlatformConfig>$(TargetOS).AnyCPU.$(Configuration)</OSPlatformConfig>
+      <HelixArchiveRoot>$(ArtifactsDir)helix/</HelixArchiveRoot>
+      <HelixArchiveRunOnlyRoot>$(HelixArchiveRoot)runonly/</HelixArchiveRunOnlyRoot>
+      <HelixArchiveRunOnlyAppsDir>$(HelixArchiveRunOnlyRoot)$(OSPlatformConfig)/</HelixArchiveRunOnlyAppsDir>
+      <ZippedApp>$(OutputPath)/WasmConsoleSample.zip</ZippedApp>
+    </PropertyGroup>
+    <ZipDirectory SourceDirectory="$(AppDir)" DestinationFile="$(ZippedApp)" />
+    <Copy SourceFiles="$(ZippedApp)" DestinationFolder="$(HelixArchiveRunOnlyAppsDir)" />
+  </Target>
 
   <Import Project="$(MonoProjectRoot)\wasm\build\WasmApp.targets" />
 </Project>

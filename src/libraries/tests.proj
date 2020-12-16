@@ -175,6 +175,9 @@
     <ProjectReference Include="..\mono\netcore\sample\iOS\Program.csproj"
                       BuildInParallel="false"
                       Condition="'$(ArchiveTests)' == 'true' and ('$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'tvOS')" />
+    <ProjectReference Include="..\mono\netcore\sample\wasm\console\WasmSample.csproj"
+                      BuildInParallel="false"
+                      Condition="'$(ArchiveTests)' == 'true' and '$(TargetOS)' == 'Browser'" />
   </ItemGroup>
 
   <Target Name="GenerateMergedCoverageReport"
