@@ -79,7 +79,7 @@ namespace System.Net
 
         public static string GetHostName() => Interop.Sys.GetHostName();
 
-        public static unsafe Task? GetAddrInfoAsync(string hostName, bool justAddresses, AddressFamily addressFamily, CancellationToken _)
+        public static unsafe Task? GetAddrInfoAsync(string hostName, bool justAddresses, AddressFamily addressFamily, CancellationToken cancellationToken)
         {
             Debug.Assert(hostName is not null);
 
@@ -94,7 +94,7 @@ namespace System.Net
             GetHostEntryForNameState state;
             try
             {
-                state = new GetHostEntryForNameState(hostName, justAddresses);
+                state = new GetHostEntryForNameState(context, hostName, justAddresses);
                 context->State = state.CreateHandle();
             }
             catch
@@ -103,13 +103,14 @@ namespace System.Net
                 throw;
             }
 
-            int errorCode = Interop.Sys.GetHostEntryForNameAsync(hostName, addressFamily, &context->Result, &GetHostEntryForNameCallback);
+            int error = Interop.Sys.GetHostEntryForNameAsync(hostName, addressFamily, &context->Result, &GetHostEntryForNameCallback, &context->CancelHandle);
 
-            if (errorCode != 0)
+            if (error != 0)
             {
-                ProcessResult(GetSocketErrorForNativeError(errorCode), context);
+                ProcessResult(error, context);
             }
 
+            state.RegisterForCancellation(cancellationToken);
             return state.Task;
         }
 
@@ -119,16 +120,17 @@ namespace System.Net
             // Can be casted directly to GetHostEntryForNameContext* because the HostEntry is its first field
             GetHostEntryForNameContext* context = (GetHostEntryForNameContext*)entry;
 
-            ProcessResult(GetSocketErrorForNativeError(error), context);
+            ProcessResult(error, context);
         }
 
-        private static unsafe void ProcessResult(SocketError errorCode, GetHostEntryForNameContext* context)
+        private static unsafe void ProcessResult(int error, GetHostEntryForNameContext* context)
         {
             try
             {
                 GetHostEntryForNameState state = GetHostEntryForNameState.FromHandleAndFree(context->State);
+                CancellationToken cancellationToken = state.UnregisterAndGetCancellationToken();
 
-                if (errorCode == SocketError.Success)
+                if (error == 0)
                 {
                     ParseHostEntry(context->Result, state.JustAddresses, out string? hostName, out string[] aliases, out IPAddress[] addresses);
 
@@ -143,7 +145,10 @@ namespace System.Net
                 }
                 else
                 {
-                    Exception ex = new SocketException((int)errorCode);
+                    Exception ex = error == (int)Interop.Sys.GetAddrInfoErrorFlags.EAI_CANCELED && cancellationToken.IsCancellationRequested
+                        ? (Exception)new OperationCanceledException(cancellationToken)
+                        : new SocketException((int)GetSocketErrorForNativeError(error));
+
                     state.SetResult(ExceptionDispatchInfo.SetCurrentStackTrace(ex));
                 }
             }
@@ -251,8 +256,11 @@ namespace System.Net
             }
         }
 
-        private sealed class GetHostEntryForNameState : IThreadPoolWorkItem
+        private sealed unsafe class GetHostEntryForNameState : IThreadPoolWorkItem
         {
+            private GetHostEntryForNameContext* _cancellationContext;
+            private CancellationTokenRegistration _cancellationTokenRegistration;
+
             private AsyncTaskMethodBuilder<IPAddress[]> _ipAddressArrayBuilder;
             private AsyncTaskMethodBuilder<IPHostEntry> _ipHostEntryBuilder;
             private object? _result;
@@ -260,8 +268,9 @@ namespace System.Net
             public string HostName { get; }
             public bool JustAddresses { get; }
 
-            public GetHostEntryForNameState(string hostName, bool justAddresses)
+            public GetHostEntryForNameState(GetHostEntryForNameContext* context, string hostName, bool justAddresses)
             {
+                _cancellationContext = context;
                 HostName = hostName;
                 JustAddresses = justAddresses;
 
@@ -278,6 +287,46 @@ namespace System.Net
             }
 
             public Task Task => JustAddresses ? _ipAddressArrayBuilder.Task : _ipHostEntryBuilder.Task;
+
+            public void RegisterForCancellation(CancellationToken cancellationToken)
+            {
+                if (!cancellationToken.CanBeCanceled) return;
+
+                lock (this)
+                {
+                    if (_cancellationContext is null)
+                    {
+                        // The operation completed before registration could be done.
+                        return;
+                    }
+
+                    _cancellationTokenRegistration = cancellationToken.UnsafeRegister(o =>
+                    {
+                        var self = (GetHostEntryForNameState)o!;
+
+                        lock (self)
+                        {
+                            GetHostEntryForNameContext* context = self._cancellationContext;
+
+                            if (context is not null)
+                            {
+                                Interop.Sys.CancelGetHostEntryForNameAsync(context->CancelHandle);
+                            }
+                        }
+                    }, this);
+                }
+            }
+
+            public CancellationToken UnregisterAndGetCancellationToken()
+            {
+                lock (this)
+                {
+                    _cancellationContext = null;
+                    _cancellationTokenRegistration.Unregister();
+                }
+
+                return _cancellationTokenRegistration.Token;
+            }
 
             public void SetResult(object result)
             {
@@ -333,6 +382,7 @@ namespace System.Net
         {
             public Interop.Sys.HostEntry Result;
             public IntPtr State;
+            public IntPtr CancelHandle;
 
             public static GetHostEntryForNameContext* AllocateContext()
             {
