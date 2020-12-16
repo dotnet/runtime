@@ -34,7 +34,7 @@ jobs:
       clean: all
 
     ${{ if eq(variables.dependOnEvaluatePaths, true) }}:
-      dependsOn: evaluate-paths
+      dependsOn: evaluate_paths
 
     variables:
       - name: _osParameter

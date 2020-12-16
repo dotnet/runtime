@@ -27,7 +27,7 @@ parameters:
 
 jobs:
 - ${{ if eq(variables['Build.Reason'], 'PullRequest') }}:
-  - job: evaluate-paths
+  - job: evaluate_paths
     displayName: Evaluate Paths
     pool:
       vmImage: 'macOS-10.14'

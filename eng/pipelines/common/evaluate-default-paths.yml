@@ -2,7 +2,6 @@
 parameters:
   extraSubsets: ''
 
-
 jobs:
 - template: /eng/pipelines/common/evaluate-paths-job.yml
   parameters:

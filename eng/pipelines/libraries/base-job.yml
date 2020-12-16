@@ -118,7 +118,7 @@ jobs:
 
       dependsOn:
       - ${{ if eq(variables.dependOnEvaluatePaths, true) }}:
-        - evaluate-paths
+        - evaluate_paths
       - ${{ parameters.dependsOn }}
       workspace:
         clean: all

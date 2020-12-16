@@ -33,7 +33,7 @@ jobs:
     condition: ${{ parameters.condition }}
     dependsOn:
       - ${{ if and(ne(parameters.stagedBuild, true), eq(variables.dependOnEvaluatePaths, true)) }}:
-        - evaluate-paths
+        - evaluate_paths
       - ${{ if ne(parameters.dependsOn, '') }}:
         - ${{ parameters.dependsOn }}
 
