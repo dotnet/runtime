@@ -58,19 +58,12 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
         }
 
         private readonly ConcurrentDictionary<ServiceCacheKey, object> _perSingletonLocks = new ConcurrentDictionary<ServiceCacheKey, object>();
-        private readonly object _resolveLock = new object();
 
         protected override object VisitRootCache(ServiceCallSite callSite, RuntimeResolverContext context)
         {
             if (!_perSingletonLocks.ContainsKey(callSite.Cache.Key))
             {
-                lock (_resolveLock)
-                {
-                    if (!_perSingletonLocks.ContainsKey(callSite.Cache.Key))
-                    {
-                        _perSingletonLocks.AddOrUpdate(callSite.Cache.Key, k => (object)k, (k, v) => v);
-                    }
-                }
+                _perSingletonLocks.AddOrUpdate(callSite.Cache.Key, k => callSite, (k, v) => v);
             }
 
             object lockedOn = _perSingletonLocks[callSite.Cache.Key];
