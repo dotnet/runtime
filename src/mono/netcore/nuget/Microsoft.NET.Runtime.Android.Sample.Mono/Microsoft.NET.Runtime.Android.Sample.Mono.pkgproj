@@ -3,13 +3,13 @@
   <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.props))" />
 
   <ItemGroup>
-    <ProjectReference Include="$(RepoToolsLocalDir)tasks\mobile.tasks\AndroidAppBuilder\AndroidAppBuilder.csproj" />
+    <ProjectReference Include="$(RepoTasksDir)AndroidAppBuilder\AndroidAppBuilder.csproj" />
   </ItemGroup>
 
   <ItemGroup>
-    <_AndroidSampleFiles Include="$(ArtifactsDir)bin\AndroidAppBuilder\$(Configuration)\$(NetCoreAppCurrent)\AndroidAppBuilder.dll" />
+    <_AndroidSampleFiles Include="$(AndroidAppBuilderTasksAssemblyPath)" />
 
-    <PackageFile Include="@(_AndroidSampleFiles)" TargetPath="tools\$(NetCoreAppCurrent)\" />
+    <PackageFile Include="@(_AndroidSampleFiles)" TargetPath="tools\$(NetCoreAppToolCurrent)\" />
   </ItemGroup>
 
   <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.targets))" />

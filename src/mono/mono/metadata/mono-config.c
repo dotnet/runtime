@@ -77,10 +77,10 @@
 #elif defined(__s390__)
 #define CONFIG_CPU "s390"
 #define CONFIG_WORDSIZE "32"
-#elif defined(__arm__)
+#elif defined(__arm__) || defined(TARGET_ARM)
 #define CONFIG_CPU "arm"
 #define CONFIG_WORDSIZE "32"
-#elif defined(__aarch64__)
+#elif defined(__aarch64__) || defined(TARGET_ARM64)
 #define CONFIG_CPU "armv8"
 #define CONFIG_WORDSIZE "64"
 #elif defined(mips) || defined(__mips) || defined(_mips)

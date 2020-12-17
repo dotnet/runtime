@@ -17,6 +17,12 @@ jobs:
       runtimeFlavorDisplayName: 'CoreCLR'
     ${{ if eq(parameters.jobParameters.runtimeFlavor, 'mono') }}:
       runtimeFlavorDisplayName: 'Mono'
+    
+    shouldContinueOnError: ${{ and(endsWith(variables['Build.DefinitionName'], 'staging'), eq(variables['Build.Reason'], 'PullRequest')) }}
+
+    # keep in sync with /eng/pipelines/common/variables.yml
+    dependOnEvaluatePaths: ${{ and(eq(variables['Build.Reason'], 'PullRequest'), in(variables['Build.DefinitionName'], 'runtime', 'runtime-staging')) }}
+
     variables:
       # Disable component governance in our CI builds. These builds are not shipping nor
       # are they a service. Also the component governance jobs issue lots of inconsequential
@@ -27,10 +33,8 @@ jobs:
       - name: runCodesignValidationInjection
         value: false
 
-      # Workaround for azure devops flakiness when dowloading artifacts
-      # https://github.com/dotnet/runtime/issues/32805
-      - name: System.DisableZipDownload
-        value: true
+      - name: checkoutFetchDepth
+        value: 20
 
       - name: buildConfigUpper
         ${{ if eq(parameters.jobParameters.buildConfig, 'debug') }}:

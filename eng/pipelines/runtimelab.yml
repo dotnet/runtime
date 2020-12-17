@@ -52,10 +52,6 @@ variables:
 stages:
 - stage: Build
   jobs:
-  #
-  # Checkout repository
-  #
-  - template: /eng/pipelines/common/checkout-job.yml
 
   #
   # Build with Debug config and Checked runtimeConfiguration
@@ -71,7 +67,7 @@ stages:
         jobParameters:
           timeoutInMinutes: 100
           testGroup: innerloop
-          buildArgs: -s clr+libs+installer -c debug -runtimeConfiguration Checked
+          buildArgs: -s clr+libs+host+packs -c debug -runtimeConfiguration Checked
           extraStepsTemplate: /eng/pipelines/runtimelab/runtimelab-post-build-steps.yml
           extraStepsParameters:
             uploadRuntimeTests: true
@@ -92,9 +88,9 @@ stages:
         extraStepsTemplate: /eng/pipelines/runtimelab/runtimelab-post-build-steps.yml
         extraStepsParameters:
           uploadLibrariesTests: ${{ eq(variables.isOfficialBuild, false) }}
-          uploadUnsignedArtifacts: false
+          uploadIntermediateArtifacts: false
         ${{ if eq(variables.isOfficialBuild, false) }}:
-          buildArgs: -s clr+libs+libs.tests+installer -c $(_BuildConfig) /p:ArchiveTests=true
+          buildArgs: -s clr+libs+libs.tests+host+packs -c $(_BuildConfig) /p:ArchiveTests=true
         ${{ if eq(variables.isOfficialBuild, true) }}:
           buildArgs: -s clr+libs -c $(_BuildConfig)
 
@@ -115,7 +111,7 @@ stages:
         ${{ if eq(variables.isOfficialBuild, true) }}:
           extraStepsTemplate: /eng/pipelines/runtimelab/runtimelab-post-build-steps.yml
           extraStepsParameters:
-            uploadUnsignedArtifacts: true
+            uploadIntermediateArtifacts: true
             isOfficialBuild: true
             librariesBinArtifactName: libraries_bin_official_allconfigurations
 

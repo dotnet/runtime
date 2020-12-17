@@ -39,6 +39,7 @@
     <Compile Include="Microsoft\VisualBasic\MyGroupCollectionAttributeTests.cs" />
     <Compile Include="Microsoft\VisualBasic\VBFixedArrayAttributeTests.cs" />
     <Compile Include="Microsoft\VisualBasic\VBFixedStringAttributeTests.cs" />
+    <Compile Include="NewLateBindingTests.cs" />
     <Compile Include="ObjectTypeTests.cs" />
     <Compile Include="OperatorsTests.cs" />
     <Compile Include="OperatorsTests.Comparison.cs" />

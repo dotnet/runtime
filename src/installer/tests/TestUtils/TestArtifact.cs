@@ -1,11 +1,13 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+#nullable enable
+
 using Microsoft.DotNet.CoreSetup.Test.HostActivation;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
-using System.Threading;
 
 namespace Microsoft.DotNet.CoreSetup.Test
 {
@@ -22,7 +24,7 @@ namespace Microsoft.DotNet.CoreSetup.Test
         {
             return _repoDirectoriesProvider.Value.GetTestContextVariable(TestArtifactDirectoryEnvironmentVariable)
                    ?? Path.Combine(AppContext.BaseDirectory, TestArtifactDirectoryEnvironmentVariable);
-        });
+        }, isThreadSafe: true);
 
         public static bool PreserveTestRuns() => _preserveTestRuns.Value;
         public static string TestArtifactsPath => _testArtifactsPath.Value;
@@ -32,7 +34,7 @@ namespace Microsoft.DotNet.CoreSetup.Test
 
         private readonly List<TestArtifact> _copies = new List<TestArtifact>();
 
-        public TestArtifact(string location, string name = null)
+        public TestArtifact(string location, string? name = null)
         {
             Location = location;
             Name = name ?? Path.GetFileName(Location);
@@ -57,7 +59,18 @@ namespace Microsoft.DotNet.CoreSetup.Test
         {
             if (!PreserveTestRuns() && Directory.Exists(Location))
             {
-                Directory.Delete(Location, true);
+                try
+                {
+                    Directory.Delete(Location, true);
+
+                    // Delete lock file last
+                    Debug.Assert(!Directory.Exists(Location));
+                    var lockPath = Directory.GetParent(Location) + ".lock";
+                    File.Delete(lockPath);
+                } catch (Exception e)
+                {
+                    Console.WriteLine("delete failed" + e);
+                }
             }
 
             foreach (TestArtifact copy in _copies)
@@ -68,21 +81,30 @@ namespace Microsoft.DotNet.CoreSetup.Test
             _copies.Clear();
         }
 
-        private static readonly object _pathCountLock = new object();
         protected static string GetNewTestArtifactPath(string artifactName)
         {
-            int projectCount = 0;
-            string projectCountDir() => Path.Combine(TestArtifactsPath, projectCount.ToString(), artifactName);
-
-            for (; Directory.Exists(projectCountDir()); projectCount++);
-
-            lock (_pathCountLock)
+            Exception? lastException = null;
+            for (int i = 0; i < 10; i++)
             {
-                string projectDirectory;
-                for (; Directory.Exists(projectDirectory = projectCountDir()); projectCount++);
-                FileUtils.EnsureDirectoryExists(projectDirectory);
-                return projectDirectory;
+                var parentPath = Path.Combine(TestArtifactsPath, Path.GetRandomFileName());
+                // Create a lock file next to the target folder
+                var lockPath = parentPath + ".lock";
+                var artifactPath = Path.Combine(parentPath, artifactName);
+                try
+                {
+                    File.Open(lockPath, FileMode.CreateNew, FileAccess.Write).Dispose();
+                }
+                catch (Exception e)
+                {
+                    // Lock file cannot be created, potential collision
+                    lastException = e;
+                    continue;
+                }
+                Directory.CreateDirectory(artifactPath);
+                return artifactPath;
             }
+            Debug.Assert(lastException != null);
+            throw lastException;
         }
 
         protected static void CopyRecursive(string sourceDirectory, string destinationDirectory, bool overwrite = false)

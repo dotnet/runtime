@@ -156,7 +156,7 @@ namespace Internal.Cryptography
                 //
                 //  xx 00 00 00 00 00 00 00
                 case PaddingMode.Zeros:
-                    if (padBytes == InputBlockSize)
+                    if (padBytes == PaddingSizeBytes)
                     {
                         padBytes = 0;
                     }

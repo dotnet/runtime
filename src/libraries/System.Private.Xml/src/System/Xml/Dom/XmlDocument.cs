@@ -453,7 +453,7 @@ namespace System.Xml
             return _resolver;
         }
 
-        public virtual XmlResolver XmlResolver
+        public virtual XmlResolver? XmlResolver
         {
             set
             {

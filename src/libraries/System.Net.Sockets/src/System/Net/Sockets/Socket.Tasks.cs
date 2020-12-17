@@ -692,9 +692,9 @@ namespace System.Net.Sockets
                         _executionContext = null;
                         ExecutionContext.Run(ec, runState =>
                         {
-                            var t = (Tuple<AwaitableSocketAsyncEventArgs, Action<object?>, object>)runState!;
+                            var t = ((AwaitableSocketAsyncEventArgs, Action<object?>, object))runState!;
                             t.Item1.InvokeContinuation(t.Item2, t.Item3, forceAsync: false, requiresExecutionContextFlow: false);
-                        }, Tuple.Create(this, c, continuationState));
+                        }, (this, c, continuationState));
                     }
                 }
             }
@@ -865,9 +865,9 @@ namespace System.Net.Sockets
                     {
                         sc.Post(s =>
                         {
-                            var t = (Tuple<Action<object>, object>)s!;
+                            var t = ((Action<object>, object))s!;
                             t.Item1(t.Item2);
-                        }, Tuple.Create(continuation, state));
+                        }, (continuation, state));
                     }
                     else
                     {
