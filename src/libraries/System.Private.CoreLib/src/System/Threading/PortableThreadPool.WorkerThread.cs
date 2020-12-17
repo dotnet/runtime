@@ -300,8 +300,6 @@ namespace System.Threading
                         workerThread.IsThreadPoolThread = true;
                         workerThread.IsBackground = true;
                         workerThread.Start();
-
-                        currentThread._executionContext = previousExecutionContext;
                     }
                     catch
                     {
@@ -310,6 +308,8 @@ namespace System.Threading
                         currentThread._executionContext = previousExecutionContext;
                         throw;
                     }
+
+                    currentThread._executionContext = previousExecutionContext;
                 }
                 catch (ThreadStartException)
                 {

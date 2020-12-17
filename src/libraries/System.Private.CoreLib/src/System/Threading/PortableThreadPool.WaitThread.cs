@@ -197,8 +197,6 @@ namespace System.Threading
                     waitThread.IsBackground = true;
                     waitThread.Name = ".NET ThreadPool Wait";
                     waitThread.Start();
-
-                    currentThread._executionContext = previousExecutionContext;
                 }
                 catch
                 {
@@ -207,6 +205,8 @@ namespace System.Threading
                     currentThread._executionContext = previousExecutionContext;
                     throw;
                 }
+
+                currentThread._executionContext = previousExecutionContext;
             }
 
             /// <summary>

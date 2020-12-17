@@ -178,8 +178,6 @@ namespace System.Threading
                     gateThread.IsBackground = true;
                     gateThread.Name = ".NET ThreadPool Gate";
                     gateThread.Start();
-
-                    currentThread._executionContext = previousExecutionContext;
                 }
                 catch
                 {
@@ -189,6 +187,8 @@ namespace System.Threading
                     Interlocked.Exchange(ref threadPoolInstance._separated.gateThreadRunningState, 0);
                     throw;
                 }
+
+                currentThread._executionContext = previousExecutionContext;
             }
         }
 
