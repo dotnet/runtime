@@ -153,8 +153,6 @@
 
   </Target>
 
-  <Import Project="$(MonoProjectRoot)\wasm\build\WasmApp.targets" Condition="'$(TargetOS)' == 'Browser'" />
-
   <Target Condition="'$(TargetOS)' == 'Browser'" Name="BundleTestWasmApp" DependsOnTargets="WasmBuildApp" />
 
   <Target Condition="'$(TargetOS)' == 'Browser'" Name="PrepareForWasmBuildApp" BeforeTargets="WasmBuildApp">
@@ -206,5 +204,6 @@
           AfterTargets="Build"
           DependsOnTargets="Publish;BundleTestAppleApp;BundleTestAndroidApp;BundleTestWasmApp;ArchiveTests" />
 
+  <Import Project="$(MonoProjectRoot)\wasm\build\WasmApp.targets" Condition="'$(TargetOS)' == 'Browser'" />
   <Import Project="$(RepositoryEngineeringDir)illink.targets" Condition="'$(TargetOS)' == 'Browser'" />
 </Project>
