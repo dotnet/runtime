@@ -8,6 +8,11 @@
       <!-- Must use wildcard assembly for this type since it can come either from System.Private.CoreLib or mscorlib -->
       <attribute internal="RemoveAttributeInstances"/>
     </type>
+
+    <!-- Intentionally uses wildcard assembly to verify that lazy loading assembly still applies these attributes -->
+    <type fullname="Mono.Linker.Tests.Cases.LinkAttributes.Dependencies.EmbeddedAttributeToBeRemoved">
+      <attribute internal="RemoveAttributeInstances"/>
+    </type>
   </assembly>
   <assembly fullname="test, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null">
     <!-- IL2049 -->
