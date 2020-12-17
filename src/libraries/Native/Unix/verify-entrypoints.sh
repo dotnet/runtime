@@ -1,8 +1,37 @@
 #!/usr/bin/env bash
 
-dllList=$(nm $1 | awk '/^[0-9a-fA-F]+ T \S+/ { if ($3 != "_init" && $3 != "_fini") print $3 }')
-entriesList=$(awk 'match($0, /^\s+DllImportEntry\((\S+)\)/, m) { print m[1]}' $2)
-diffList=$(echo -n $entriesList $dllList | tr " " "\n" | sort | uniq -u)
+if (( $# != 3 )); then
+  echo "Usage:"
+  echo "verify-entrypoints.sh <path to shared library> <path to entries.c file> <path to NM command>"
+  exit 1
+fi
+
+nmCommand=$3
+
+IFS=$'\n'
+dllList=()
+for line in $($nmCommand $1); do
+  pattern='^[[:xdigit:]]+ T _?([[:alnum:]_]+)'
+  if [[ $line =~ $pattern ]]; then
+    # skip symbols that we don't want to consider
+    case ${BASH_REMATCH[1]} in
+      init) ;;
+      fini) ;;
+      *)    dllList+=(${BASH_REMATCH[1]});;
+    esac
+  fi
+done
+
+entriesList=()
+for line in $(<$2); do
+  pattern='^[[:space:]]+DllImportEntry\(([[:alnum:]_]+)\)'
+  if [[ $line =~ $pattern ]]; then
+    entriesList+=(${BASH_REMATCH[1]})
+  fi
+done
+
+diffList=$(echo -n ${entriesList[@]} ${dllList[@]} | tr " " "\n" | sort | uniq -u)
+
 if [ -n "$diffList" ]; then
   echo "ERROR: $2 file did not match entries exported from $1" >&2
   echo "DIFFERENCES FOUND: " >&2 

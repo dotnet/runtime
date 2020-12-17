@@ -66,6 +66,7 @@ if (GEN_SHARED_LIB)
             COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/../verify-entrypoints.sh
                 $<TARGET_FILE:System.Native>
                 ${CMAKE_CURRENT_SOURCE_DIR}/entrypoints.c
+                ${CMAKE_NM}
             VERBATIM
         )
     endif()

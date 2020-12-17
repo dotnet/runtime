@@ -74,6 +74,7 @@ if (GEN_SHARED_LIB)
             COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/../verify-entrypoints.sh
                 $<TARGET_FILE:System.IO.Compression.Native>
                 ${CMAKE_CURRENT_SOURCE_DIR}/../../AnyOS/System.IO.Compression.Native/entrypoints.c
+                ${CMAKE_NM}
             VERBATIM
         )
     endif()
