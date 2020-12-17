@@ -140,6 +140,9 @@
         <ExcludeList Include="$(XunitTestBinBase)/Regressions/coreclr/1514/InterlockExchange/*">
             <Issue>https://github.com/dotnet/runtime/issues/12166</Issue>
         </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/baseservices/exceptions/stackoverflow/stackoverflowtester/*">	
+            <Issue>https://github.com/dotnet/runtime/issues/46175</Issue>	
+        </ExcludeList>
     </ItemGroup>
 
     <!-- Arm32 All OS -->
@@ -963,6 +966,12 @@
 
     <!-- Known failures for mono runtime on *all* architectures/operating systems -->
     <ItemGroup Condition="'$(RuntimeFlavor)' == 'mono'" >
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/SIMD/Vector3Interop_r/*">
+            <Issue>https://github.com/dotnet/runtime/issues/46174</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/SIMD/Vector3Interop_ro/*">
+            <Issue>https://github.com/dotnet/runtime/issues/46174</Issue>
+        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Generics/ConstrainedCall/vt2_il_r/**">
             <Issue>https://github.com/dotnet/runtime/issues/46124</Issue>
         </ExcludeList>
