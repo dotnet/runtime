@@ -177,8 +177,9 @@
     <Message Importance="High" Text="Using Timeout: $(_workItemTimeout)" />
 
     <ItemGroup Condition="'$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'tvOS'">
+      <_apps Include="$([System.IO.Directory]::GetDirectories('$(TestArchiveTestsRoot)', '*.app', System.IO.SearchOption.AllDirectories))" />
       <!-- Create work items for test apps -->
-      <XHarnessAppBundleToTest Include="$([System.IO.Directory]::GetDirectories('$(TestArchiveTestsRoot)', '*.app', System.IO.SearchOption.AllDirectories))">
+      <XHarnessAppBundleToTest Include="@(_apps)">
         <Targets Condition="'$(TargetArchitecture)' == 'arm'">ios-device</Targets>
         <Targets Condition="'$(TargetArchitecture)' == 'arm64'">ios-device</Targets>
         <Targets Condition="'$(TargetArchitecture)' == 'x64'">ios-simulator-64</Targets>
@@ -186,20 +187,10 @@
 
         <TestTimeout>$(_workItemTimeout)</TestTimeout>
         <LaunchTimeout>$(_workItemTimeout)</LaunchTimeout>
-      </XHarnessAppBundleToTest>
-
-      <!-- Create work items for run-only apps -->
-      <XHarnessAppBundleToTest Include="$([System.IO.Directory]::GetDirectories('$(TestArchiveRoot)runonly', '*.app', System.IO.SearchOption.AllDirectories))" >
-        <Targets Condition="'$(TargetArchitecture)' == 'arm'">ios-device</Targets>
-        <Targets Condition="'$(TargetArchitecture)' == 'arm64'">ios-device</Targets>
-        <Targets Condition="'$(TargetArchitecture)' == 'x64'">ios-simulator-64</Targets>
-        <Targets Condition="'$(TargetArchitecture)' == 'x86'">ios-simulator-32</Targets>
-
-        <LaunchTimeout>$(_workItemTimeout)</LaunchTimeout>
         <!-- The sample app doesn't need test runner -->
-        <IncludesTestRunner>false</IncludesTestRunner>
+        <IncludesTestRunner Condition="$([System.String]::new('%(Identity)').Contains('runonly')">false</IncludesTestRunner>
         <!-- The sample's C# Main method returns 42 so it should be considered by xharness as a success -->
-        <ExpectedExitCode>42</ExpectedExitCode>
+        <ExpectedExitCode Condition="$([System.String]::new('%(Identity)').Contains('runonly')">42</ExpectedExitCode>
       </XHarnessAppBundleToTest>
     </ItemGroup>
 
