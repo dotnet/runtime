@@ -24,12 +24,13 @@
 // NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE
 //
 //////////////////////////////////////////////////////////////////////////////////////////////////////////
+//
 
-constexpr GUID JITEEVersionIdentifier = { /* {a7bb194e-4e7c-4850-af12-ea9f30ea5a13} */
-    0xa7bb194e,
-    0x4e7c,
-    0x4850,
-    {0xaf, 0x12, 0xea, 0x9f, 0x30, 0xea, 0x5a, 0x13}
+constexpr GUID JITEEVersionIdentifier = { /* {71a99045-a4fe-43b3-abd9-c1742ab020b3} */
+    0x71a99045,
+    0xa4fe,
+    0x43b3,
+    {0xab, 0xd9, 0xc1, 0x74, 0x2a, 0xb0, 0x20, 0xb3}
 };
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////

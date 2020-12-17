@@ -115,7 +115,7 @@ namespace Internal.ReadyToRunConstants
         IndirectPInvokeTarget = 0x2E,       // Target (indirect) of an inlined pinvoke
         PInvokeTarget = 0x2F,               // Target of an inlined pinvoke
 
-        Check_InstructionSetSupport = 0x30, // Define the set of instruction sets that must be supported/unsupported to use the fixup 
+        Check_InstructionSetSupport = 0x30, // Define the set of instruction sets that must be supported/unsupported to use the fixup
 
         Verify_FieldOffset = 0x31,  // Generate a runtime check to ensure that the field offset matches between compile and runtime. Unlike CheckFieldOffset, this will generate a runtime exception on failure instead of silently dropping the method
         Verify_TypeLayout = 0x32,  // Generate a runtime check to ensure that the type layout (size, alignment, HFA, reference map) matches between compile and runtime. Unlike Check_TypeLayout, this will generate a runtime failure instead of silently dropping the method
@@ -330,6 +330,6 @@ namespace Internal.ReadyToRunConstants
     public static class ReadyToRunRuntimeConstants
     {
         public const int READYTORUN_PInvokeTransitionFrameSizeInPointerUnits = 11;
-        public const int READYTORUN_ReversePInvokeTransitionFrameSizeInPointerUnits = 2;
+        public const int READYTORUN_ReversePInvokeTransitionFrameSizeInPointerUnits = 5;
     }
 }

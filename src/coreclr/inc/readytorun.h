@@ -397,7 +397,7 @@ struct READYTORUN_EXCEPTION_CLAUSE
 enum ReadyToRunRuntimeConstants : DWORD
 {
     READYTORUN_PInvokeTransitionFrameSizeInPointerUnits = 11,
-    READYTORUN_ReversePInvokeTransitionFrameSizeInPointerUnits = 2
+    READYTORUN_ReversePInvokeTransitionFrameSizeInPointerUnits = 5
 };
 
 enum ReadyToRunHFAElemType : DWORD
