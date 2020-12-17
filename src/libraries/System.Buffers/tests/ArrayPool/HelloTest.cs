@@ -7,7 +7,8 @@ namespace System.Buffers.ArrayPool.Tests
         [Fact]
         public void Test1()
         {
-
+            bool val = true;
+            Assert.True(val, "Value should be true");
         }
     }
 }

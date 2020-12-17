@@ -13,6 +13,11 @@
     <RunScriptCommand>$HARNESS_RUNNER wasm $XHARNESS_COMMAND  --app=. --engine=$(JSEngine) $(JSEngineArgs) --js-file=runtime.js --output-directory=$XHARNESS_OUT --  $(RunTestsJSArguments) --run WasmTestRunner.dll $(AssemblyName).dll</RunScriptCommand>
     <PublishTrimmed>true</PublishTrimmed>
     <TrimMode>link</TrimMode>
+    <EventSourceSupport>false</EventSourceSupport>
+    <UseSystemResourceKeys>true</UseSystemResourceKeys>
+    <EnableUnsafeUTF7Encoding>false</EnableUnsafeUTF7Encoding>
+    <HttpActivityPropagationSupport>false</HttpActivityPropagationSupport>
+    <DebuggerSupport>false</DebuggerSupport>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(TargetOS)' == 'Android'">
