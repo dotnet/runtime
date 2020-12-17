@@ -1821,6 +1821,14 @@ namespace System
             return CreateInstanceMono(!publicOnly, wrapExceptions);
         }
 
+        // Specialized version of the above for Activator.CreateInstance<T>()
+        [DebuggerStepThroughAttribute]
+        [Diagnostics.DebuggerHidden]
+        internal object? CreateInstanceOfT()
+        {
+            return CreateInstanceMono(false, true);
+        }
+
         #endregion
 
         private TypeCache? cache;
