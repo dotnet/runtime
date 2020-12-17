@@ -231,6 +231,8 @@ namespace ILCompiler
 
         private bool _generateMapFile;
         private bool _generateMapCsvFile;
+        private bool _generatePdbFile;
+        private bool _generatePerfMapFile;
 
         private ProfileDataManager _profileData;
         private ReadyToRunFileLayoutOptimizer _fileLayoutOptimizer;
@@ -257,6 +259,8 @@ namespace ILCompiler
             bool resilient,
             bool generateMapFile,
             bool generateMapCsvFile,
+            bool generatePdbFile,
+            bool generatePerfMapFile,
             int parallelism,
             ProfileDataManager profileData,
             ReadyToRunMethodLayoutAlgorithm methodLayoutAlgorithm,
@@ -277,6 +281,8 @@ namespace ILCompiler
             _parallelism = parallelism;
             _generateMapFile = generateMapFile;
             _generateMapCsvFile = generateMapCsvFile;
+            _generatePdbFile = generatePdbFile;
+            _generatePerfMapFile = generatePerfMapFile;
             _customPESectionAlignment = customPESectionAlignment;
             SymbolNodeFactory = new ReadyToRunSymbolNodeFactory(nodeFactory, verifyTypeAndFieldLayout);
             _corInfoImpls = new ConditionalWeakTable<Thread, CorInfoImpl>();
@@ -307,7 +313,16 @@ namespace ILCompiler
             using (PerfEventSource.StartStopEvents.EmittingEvents())
             {
                 NodeFactory.SetMarkingComplete();
-                ReadyToRunObjectWriter.EmitObject(outputFile, componentModule: null, nodes, NodeFactory, _generateMapFile, _generateMapCsvFile, _customPESectionAlignment);
+                ReadyToRunObjectWriter.EmitObject(
+                    outputFile,
+                    componentModule: null,
+                    nodes,
+                    NodeFactory,
+                    generateMapFile: _generateMapFile,
+                    generateMapCsvFile: _generateMapCsvFile,
+                    generatePdbFile: _generatePdbFile,
+                    generatePerfMapFile: _generatePerfMapFile,
+                    _customPESectionAlignment);
                 CompilationModuleGroup moduleGroup = _nodeFactory.CompilationModuleGroup;
 
                 if (moduleGroup.IsCompositeBuildMode)
@@ -372,7 +387,16 @@ namespace ILCompiler
             }
             componentGraph.ComputeMarkedNodes();
             componentFactory.Header.Add(Internal.Runtime.ReadyToRunSectionType.OwnerCompositeExecutable, ownerExecutableNode, ownerExecutableNode);
-            ReadyToRunObjectWriter.EmitObject(outputFile, componentModule: inputModule, componentGraph.MarkedNodeList, componentFactory, generateMapFile: false, generateMapCsvFile: false, customPESectionAlignment: 0);
+            ReadyToRunObjectWriter.EmitObject(
+                outputFile,
+                componentModule: inputModule,
+                componentGraph.MarkedNodeList,
+                componentFactory,
+                generateMapFile: false,
+                generateMapCsvFile: false,
+                generatePdbFile: false,
+                generatePerfMapFile: false,
+                customPESectionAlignment: 0);
         }
 
         public override void WriteDependencyLog(string outputFileName)

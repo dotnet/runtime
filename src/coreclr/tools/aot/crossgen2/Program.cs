@@ -582,6 +582,8 @@ namespace ILCompiler
                         .UseResilience(_commandLineOptions.Resilient)
                         .UseMapFile(_commandLineOptions.Map)
                         .UseMapCsvFile(_commandLineOptions.MapCsv)
+                        .UsePdbFile(_commandLineOptions.Pdb)
+                        .UsePerfMapFile(_commandLineOptions.PerfMap)
                         .UseParallelism(_commandLineOptions.Parallelism)
                         .UseProfileData(profileDataManager)
                         .FileLayoutAlgorithms(_methodLayout, _fileLayout)
