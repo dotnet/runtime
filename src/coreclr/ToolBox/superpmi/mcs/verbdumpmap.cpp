@@ -9,6 +9,7 @@
 #include "methodcontextiterator.h"
 #include "verbdumpmap.h"
 #include "verbildump.h"
+#include "spmiutil.h"
 
 // Dump the CSV format header for all the columns we're going to dump.
 void DumpMapHeader()
@@ -37,7 +38,7 @@ void DumpMap(int index, MethodContext* mc)
     // Also, dump the full method signature
     printf("\"");
     DumpAttributeToConsoleBare(mc->repGetMethodAttribs(cmi.ftn));
-    DumpPrimToConsoleBare(mc, cmi.args.retType, (DWORDLONG)cmi.args.retTypeClass);
+    DumpPrimToConsoleBare(mc, cmi.args.retType, CastHandle(cmi.args.retTypeClass));
     printf(" %s(", methodName);
     DumpSigToConsoleBare(mc, &cmi.args);
     printf(")\"\n");

@@ -542,14 +542,6 @@ namespace R2RDump
             return null;
         }
 
-        // TODO: Fix R2RDump issue where an R2R image cannot be dissassembled with the x86 CoreDisTools
-        // For the short term, we want to error out with a decent message explaining the unexpected error
-        // Issue https://github.com/dotnet/runtime/issues/10928
-        private static bool DisassemblerArchitectureSupported()
-        {
-            return RuntimeInformation.ProcessArchitecture != Architecture.X86;
-        }
-
         private int Run()
         {
             Disassembler disassembler = null;
@@ -576,16 +568,8 @@ namespace R2RDump
 
                     if (_options.Disasm)
                     {
-                        if (DisassemblerArchitectureSupported())
-                        {
-                            disassembler = new Disassembler(r2r, _options);
-                        }
-                        else
-                        {
-                            throw new ArgumentException($"The architecture of input file {filename} ({r2r.Machine.ToString()}) or the architecture of the disassembler tools ({System.Runtime.InteropServices.RuntimeInformation.ProcessArchitecture.ToString()}) is not supported.");
-                        }
+                        disassembler = new Disassembler(r2r, _options);
                     }
-
 
                     if (!_options.Diff)
                     {
