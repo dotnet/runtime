@@ -188,9 +188,9 @@
         <TestTimeout>$(_workItemTimeout)</TestTimeout>
         <LaunchTimeout>$(_workItemTimeout)</LaunchTimeout>
         <!-- The sample app doesn't need test runner -->
-        <IncludesTestRunner Condition="$([System.String]::new('%(Identity)').Contains('runonly')">false</IncludesTestRunner>
+        <IncludesTestRunner Condition="$([System.String]::new('%(Identity)').Contains('runonly'))">false</IncludesTestRunner>
         <!-- The sample's C# Main method returns 42 so it should be considered by xharness as a success -->
-        <ExpectedExitCode Condition="$([System.String]::new('%(Identity)').Contains('runonly')">42</ExpectedExitCode>
+        <ExpectedExitCode Condition="$([System.String]::new('%(Identity)').Contains('runonly'))">42</ExpectedExitCode>
       </XHarnessAppBundleToTest>
     </ItemGroup>
 
