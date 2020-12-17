@@ -2679,9 +2679,6 @@ void emitter::emitLoopAlign(unsigned short paddingBytes)
     /* Append this instruction to this IG's jump list */
     id->idaNext        = emitCurIGAlignList;
     emitCurIGAlignList = id;
-
-    /* Record the last IG that has align instruction */
-    emitLastAlignedIgNum = emitCurIG->igNum;
 }
 
 //-----------------------------------------------------------------------------
@@ -12494,7 +12491,7 @@ BYTE* emitter::emitOutputLJ(insGroup* ig, BYTE* dst, instrDesc* i)
 #ifdef DEBUG
             if (emitComp->verbose)
             {
-                printf("; NOTE: size of jump [%08X] mis-predicted\n", emitComp->dspPtr(id));
+                printf("; NOTE: size of jump [%08X] mis-predicted by %d bytes\n", emitComp->dspPtr(id), (id->idCodeSize() - JMP_SIZE_SMALL));
             }
 #endif
         }
@@ -12655,10 +12652,11 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
 {
     assert(emitIssuing);
 
-    BYTE*         dst           = *dp;
-    size_t        sz            = sizeof(instrDesc);
-    instruction   ins           = id->idIns();
-    unsigned char callInstrSize = 0;
+    BYTE*         dst               = *dp;
+    size_t        sz                = sizeof(instrDesc);
+    instruction   ins               = id->idIns();
+    unsigned char callInstrSize     = 0;
+    int           emitOffsAdjBefore = emitOffsAdj;
 
 #ifdef DEBUG
     bool dspOffs = emitComp->opts.dspGCtbls;
@@ -13810,7 +13808,8 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
     // the last IG that needs alignment.
     if (emitCurIG->igNum <= emitLastAlignedIgNum)
     {
-        unsigned diff = id->idCodeSize() - ((UNATIVE_OFFSET)(dst - *dp));
+        int diff = id->idCodeSize() - ((UNATIVE_OFFSET)(dst - *dp));
+        assert(diff >= 0);
         if (diff != 0)
         {
             // should never over-estimate align instruction
@@ -13818,6 +13817,18 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             JITDUMP("Added over-estimation compensation: %d\n", diff);
 
             dst = emitOutputNOP(dst, diff);
+
+            // since we compensated the over-estimation, revert the offsAdj that
+            // might have happened in the jump
+            if (emitOffsAdjBefore != emitOffsAdj)
+            {
+#ifdef DEBUG
+                insFormat format = id->idInsFmt();
+                assert((format == IF_LABEL) || (format == IF_RWR_LABEL) || (format == IF_SWR_LABEL));
+                assert(diff == (emitOffsAdj - emitOffsAdjBefore));
+#endif
+                emitOffsAdj -= diff;
+            }
         }
         assert((id->idCodeSize() - ((UNATIVE_OFFSET)(dst - *dp))) == 0);
     }

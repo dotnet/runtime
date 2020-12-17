@@ -882,7 +882,6 @@ insGroup* emitter::emitSavIG(bool emitAdd)
         }
 
         emitAlignLast = last;
-        assert(emitAlignLast->idaIG->igNum == emitLastAlignedIgNum);
     }
 
 #endif
@@ -4829,6 +4828,12 @@ void emitter::emitLoopAlignAdjustments()
 
             JITDUMP("Adjusted alignment of G_M%03u_IG%02u from %02d to %02d\n", emitComp->compMethodID, alignIG->igNum,
                     estimatedPaddingNeeded, actualPaddingNeeded);
+        }
+
+        if (actualPaddingNeeded > 0)
+        {
+            /* Record the last IG that will have non-zero align instruction */
+            emitLastAlignedIgNum = alignIG->igNum;
         }
     }
 
