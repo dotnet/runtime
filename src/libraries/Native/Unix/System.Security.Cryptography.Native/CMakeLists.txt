@@ -100,7 +100,7 @@ if (GEN_SHARED_LIB)
     if (NOT CLR_CMAKE_TARGET_IOS AND NOT CLR_CMAKE_TARGET_TVOS AND NOT CLR_CMAKE_TARGET_ANDROID)
         add_custom_command(TARGET System.Security.Cryptography.Native.OpenSsl POST_BUILD
             COMMENT "Verifying System.Security.Cryptography.Native.OpenSsl entry points against entrypoints.c "
-            COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/../verify-entrypoints.py
+            COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/../verify-entrypoints.sh
                 $<TARGET_FILE:System.Security.Cryptography.Native.OpenSsl>
                 ${CMAKE_CURRENT_SOURCE_DIR}/entrypoints.c
             VERBATIM

@@ -71,7 +71,7 @@ if (GEN_SHARED_LIB)
     if (NOT CLR_CMAKE_TARGET_IOS AND NOT CLR_CMAKE_TARGET_TVOS AND NOT CLR_CMAKE_TARGET_ANDROID)
         add_custom_command(TARGET System.IO.Compression.Native POST_BUILD
             COMMENT "Verifying System.IO.Compression.Native entry points against entrypoints.c "
-            COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/../verify-entrypoints.py
+            COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/../verify-entrypoints.sh
                 $<TARGET_FILE:System.IO.Compression.Native>
                 ${CMAKE_CURRENT_SOURCE_DIR}/../../AnyOS/System.IO.Compression.Native/entrypoints.c
             VERBATIM
