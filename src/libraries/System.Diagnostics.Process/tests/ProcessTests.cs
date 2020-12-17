@@ -1664,7 +1664,7 @@ namespace System.Diagnostics.Tests
                 }
             }
 
-            static bool GetHaveResponding(Process process)=> (bool)typeof(Process)
+            static bool GetHaveResponding(Process process) => (bool)typeof(Process)
                     .GetField("_haveResponding", Reflection.BindingFlags.NonPublic | Reflection.BindingFlags.Instance)
                     .GetValue(process);
         }
