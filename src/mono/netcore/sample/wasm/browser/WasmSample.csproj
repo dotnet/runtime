@@ -3,33 +3,54 @@
     <OutputType>Exe</OutputType>
     <OutputPath>bin</OutputPath>
     <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <EnableTargetingPackDownload>false</EnableTargetingPackDownload>
     <TargetFramework>$(NetCoreAppToolCurrent)</TargetFramework>
+    <RuntimeIdentifier>browser-wasm</RuntimeIdentifier>
     <TargetArchitecture>wasm</TargetArchitecture>
     <TargetOS>Browser</TargetOS>
+    <PublishTrimmed>true</PublishTrimmed>
+    <TrimMode>link</TrimMode>
     <MicrosoftNetCoreAppRuntimePackRidDir>$(ArtifactsBinDir)microsoft.netcore.app.runtime.browser-wasm\$(Configuration)\runtimes\browser-wasm\</MicrosoftNetCoreAppRuntimePackRidDir>
     <BuildDir>$(MSBuildThisFileDirectory)obj\$(Configuration)\wasm</BuildDir>
-    <AppDir>$(MSBuildThisFileDirectory)bin\$(Configuration)\publish</AppDir>
+    <AppDir>$(MSBuildProjectDirectory)\bin\$(Configuration)\AppBundle\</AppDir>
+    <RunAOTCompilation Condition="'$(RunAOTCompilation)' == ''">false</RunAOTCompilation>
+    <RunAnalyzers>false</RunAnalyzers>
   </PropertyGroup>
 
-  <Target Name="PrepareForWasmBuild" DependsOnTargets="RebuildWasmAppBuilder;Build" BeforeTargets="WasmBuildApp">
+  <PropertyGroup Condition="'$(Configuration)' != 'Debug'">
+    <!-- Runtime feature defaults to trim unnecessary code -->
+    <EventSourceSupport>false</EventSourceSupport>
+    <UseSystemResourceKeys>true</UseSystemResourceKeys>
+    <EnableUnsafeUTF7Encoding>false</EnableUnsafeUTF7Encoding>
+    <HttpActivityPropagationSupport>false</HttpActivityPropagationSupport>
+    <DebuggerSupport>false</DebuggerSupport>
+  </PropertyGroup>
+
+  <!-- Redirect 'dotnet publish' to in-tree runtime pack -->
+  <Target Name="TrickRuntimePackLocation" AfterTargets="ProcessFrameworkReferences">
+    <ItemGroup>
+      <RuntimePack>
+        <PackageDirectory>$(ArtifactsBinDir)microsoft.netcore.app.runtime.browser-wasm\$(Configuration)</PackageDirectory>
+      </RuntimePack>
+    </ItemGroup>
+    <Message Text="Packaged ID: %(RuntimePack.PackageDirectory)" Importance="high" />
+  </Target>
+
+  <Target Name="PrepareForWasmBuild" BeforeTargets="WasmBuildApp">
     <PropertyGroup>
         <WasmAppDir>$(AppDir)</WasmAppDir>
-        <WasmMainAssemblyPath>bin\WasmSample.dll</WasmMainAssemblyPath>
+        <WasmAOTDir>$(MSBuildProjectDirectory)\$(PublishDir)\</WasmAOTDir>
+        <WasmMainAssemblyPath>$(MSBuildProjectDirectory)\bin\WasmSample.dll</WasmMainAssemblyPath>
         <WasmMainJSPath>runtime.js</WasmMainJSPath>
-
-        <WasmResolveAssembliesBeforeBuild>true</WasmResolveAssembliesBeforeBuild>
+        <WasmMainAssemblyPath>$(WasmAotDir)WasmSample.dll</WasmMainAssemblyPath>
     </PropertyGroup>
     <ItemGroup>
-      <WasmAssembliesToBundle Include="$(MicrosoftNetCoreAppRuntimePackRidDir)lib\$(NetCoreAppCurrent)\System.Private.Runtime.InteropServices.JavaScript.dll" />
-
-      <WasmAssemblySearchPaths Include="bin"/>
-      <WasmAssemblySearchPaths Include="$(MicrosoftNetCoreAppRuntimePackRidDir)native"/>
-      <WasmAssemblySearchPaths Include="$(MicrosoftNetCoreAppRuntimePackRidDir)lib\$(NetCoreAppCurrent)"/>
+      <WasmAssembliesToBundle Include="$(TargetDir)publish\*.dll" />
     </ItemGroup>
   </Target>
 
   <Target Name="AfterWasmBuildApp" AfterTargets="WasmBuildApp">
-    <Copy SourceFiles="bin\index.html" DestinationFolder="$(AppDir)" />
+    <Copy SourceFiles="$(OutDir)\index.html" DestinationFolder="$(AppDir)" />
   </Target>
 
   <ItemGroup>

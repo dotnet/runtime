@@ -27,7 +27,8 @@ internal class Utils
         IDictionary<string, string>? envVars = null,
         string? workingDir = null,
         bool ignoreErrors = false,
-        bool silent = true)
+        bool silent = true,
+        MessageImportance outputMessageImportance=MessageImportance.High)
     {
         LogInfo($"Running: {path} {args}");
         var outputBuilder = new StringBuilder();
@@ -47,8 +48,14 @@ internal class Utils
 
         if (envVars != null)
         {
+            if (envVars.Count > 0)
+                Logger?.LogMessage(MessageImportance.Low, "Setting environment variables for execution:");
+
             foreach (KeyValuePair<string, string> envVar in envVars)
+            {
                 processStartInfo.EnvironmentVariables[envVar.Key] = envVar.Value;
+                Logger?.LogMessage(MessageImportance.Low, $"\t{envVar.Key} = {envVar.Value}");
+            }
         }
 
         Process? process = Process.Start(processStartInfo);
@@ -73,7 +80,7 @@ internal class Utils
             {
                 if (!silent)
                 {
-                    LogInfo(e.Data);
+                    LogInfo(e.Data, outputMessageImportance);
                     outputBuilder.AppendLine(e.Data);
                 }
             }
@@ -82,8 +89,12 @@ internal class Utils
         process.BeginErrorReadLine();
         process.WaitForExit();
 
-        if (!ignoreErrors && process.ExitCode != 0)
-            throw new Exception("Error: " + errorBuilder);
+        if (process.ExitCode != 0)
+        {
+            Logger?.LogMessage(MessageImportance.Low, $"Exit code: {process.ExitCode}");
+            if (!ignoreErrors)
+                throw new Exception("Error: " + errorBuilder);
+        }
 
         return outputBuilder.ToString().Trim('\r', '\n');
     }
@@ -107,10 +118,10 @@ internal class Utils
 
     public static TaskLoggingHelper? Logger { get; set; }
 
-    public static void LogInfo(string? msg)
+    public static void LogInfo(string? msg, MessageImportance importance=MessageImportance.High)
     {
         if (msg != null)
-            Logger?.LogMessage(MessageImportance.High, msg);
+            Logger?.LogMessage(importance, msg);
     }
 
     public static void LogError(string? msg)
