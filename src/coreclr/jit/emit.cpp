@@ -4727,6 +4727,8 @@ void emitter::emitLoopAlignAdjustments()
         return;
     }
 
+    JITDUMP("*************** In emitLoopAlignAdjustments()\n");
+
     unsigned short estimatedPaddingNeeded, alignmentBoundary = emitComp->opts.compJitAlignLoopBoundary;
     unsigned       maxLoopSize = 0;
 
@@ -5368,6 +5370,13 @@ unsigned emitter::emitEndCodeGen(Compiler* comp,
 #else
     emitCmpHandle->allocMem(emitTotalHotCodeSize, emitTotalColdCodeSize, emitConsDsc.dsdOffs, xcptnsCount, allocMemFlag,
                             (void**)&codeBlock, (void**)&coldCodeBlock, (void**)&consBlock);
+#endif
+
+#ifdef DEBUG
+    if ((allocMemFlag & CORJIT_ALLOCMEM_FLG_32BYTE_ALIGN) != 0)
+    {
+        assert(((size_t)codeBlock & 31) == 0);
+    }
 #endif
 
     // if (emitConsDsc.dsdOffs)
