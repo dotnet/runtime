@@ -11836,10 +11836,10 @@ void CodeGen::genMultiRegStoreToLocal(GenTreeLclVar* lclNode)
             regNumber  varReg      = lclNode->GetRegByIndex(i);
             unsigned   fieldLclNum = varDsc->lvFieldLclStart + i;
             LclVarDsc* fieldVarDsc = compiler->lvaGetDesc(fieldLclNum);
+            var_types  destType    = fieldVarDsc->TypeGet();
             if (varReg != REG_NA)
             {
-                var_types destType = fieldVarDsc->TypeGet();
-                hasRegs            = true;
+                hasRegs = true;
                 if (varReg != reg)
                 {
                     // We may need a cross register-file copy here.
@@ -11855,7 +11855,7 @@ void CodeGen::genMultiRegStoreToLocal(GenTreeLclVar* lclNode)
             {
                 if (!lclNode->AsLclVar()->IsLastUse(i))
                 {
-                    GetEmitter()->emitIns_S_R(ins_Store(srcType), emitTypeSize(srcType), reg, fieldLclNum, 0);
+                    GetEmitter()->emitIns_S_R(ins_Store(srcType), emitTypeSize(destType), reg, fieldLclNum, 0);
                 }
             }
             fieldVarDsc->SetRegNum(varReg);
