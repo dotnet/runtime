@@ -57,22 +57,15 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
 #endif
         }
 
-        private readonly ConcurrentDictionary<ServiceCacheKey, object> _perSingletonLocks = new ConcurrentDictionary<ServiceCacheKey, object>();
-
         protected override object VisitRootCache(ServiceCallSite callSite, RuntimeResolverContext context)
         {
-            if (!_perSingletonLocks.ContainsKey(callSite.Cache.Key))
-            {
-                _perSingletonLocks.AddOrUpdate(callSite.Cache.Key, k => callSite, (k, v) => v);
-            }
-
-            object lockedOn = _perSingletonLocks[callSite.Cache.Key];
             var lockType = RuntimeResolverLock.Root;
             bool lockTaken = false;
 
             if ((context.AcquiredLocks & lockType) == 0)
             {
-                Monitor.Enter(lockedOn, ref lockTaken);
+                // using more granular locking (per singleton) for the root
+                Monitor.Enter(callSite, ref lockTaken);
             }
             try
             {
@@ -82,7 +75,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
             {
                 if (lockTaken)
                 {
-                    Monitor.Exit(lockedOn);
+                    Monitor.Exit(callSite);
                 }
             }
         }
@@ -94,7 +87,6 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
             RuntimeResolverLock requiredScope = context.Scope == context.Scope.Engine.Root ?
                 RuntimeResolverLock.Root :
                 RuntimeResolverLock.Scope;
-            // treat as singleton:
             if (requiredScope == RuntimeResolverLock.Root)
                 return VisitRootCache(callSite, context);
 
