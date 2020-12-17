@@ -222,7 +222,8 @@ namespace System.Threading
                 Debug.Assert(_delegate.Target is ThreadHelper);
                 var t = (ThreadHelper)_delegate.Target;
 
-                t.SetExecutionContextHelper(CurrentThread._executionContext);
+                ExecutionContext? ec = ExecutionContext.Capture();
+                t.SetExecutionContextHelper(ec);
             }
 
             StartInternal();
