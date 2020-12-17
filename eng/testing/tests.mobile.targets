@@ -185,7 +185,11 @@
   <Target Condition="'$(TargetOS)' == 'Browser'" Name="PrepareForWasmBuildApp">
     <PropertyGroup>
       <WasmAppDir>$(BundleDir)</WasmAppDir>
+<<<<<<< HEAD
       <WasmBuildDir>$(PublishDir)</WasmBuildDir>
+=======
+      <WasmAotDir>$(PublishDir)</WasmAotDir>
+>>>>>>> Add Wasm AOT steps into WasmApp.targets (#46081)
       <WasmMainAssemblyPath>$(PublishDir)WasmTestRunner.dll</WasmMainAssemblyPath>
       <WasmMainJSPath>$(MonoProjectRoot)\wasm\runtime-test.js</WasmMainJSPath>
       <WasmInvariantGlobalization>$(InvariantGlobalization)</WasmInvariantGlobalization>
