@@ -20926,7 +20926,7 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
         dvInfo.objClass      = likelyClass;
         dvInfo.context       = *pContextHandle;
 
-        bool canResolve = info.compCompHnd->resolveVirtualMethod(&dvInfo);  
+        bool canResolve = info.compCompHnd->resolveVirtualMethod(&dvInfo);
 
         if (!canResolve)
         {
