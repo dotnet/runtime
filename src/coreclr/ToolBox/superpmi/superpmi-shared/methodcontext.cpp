@@ -3811,7 +3811,7 @@ bool MethodContext::repPInvokeMarshalingRequired(CORINFO_METHOD_HANDLE method, C
     return value;
 }
 
-void MethodContext::recFindSig(CORINFO_MODULE_HANDLE  module,
+void MethodContext::recFindSig(CORINFO_MODULE_HANDLE  moduleHandle,
                                unsigned               sigTOK,
                                CORINFO_CONTEXT_HANDLE context,
                                CORINFO_SIG_INFO*      sig)
