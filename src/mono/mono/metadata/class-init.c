@@ -2283,6 +2283,9 @@ mono_class_layout_fields (MonoClass *klass, int base_instance_size, int packing_
 		if (mono_field_is_deleted (field))
 			continue;
 
+		/* Type may not be initialized yet. Don't initialize it. If
+		   it's a reference type we can get the size without
+		   recursing */
 		if (mono_type_has_exceptions (field->type)) {
 			mono_class_set_type_load_failure (klass, "Field '%s' has an invalid type.", field->name);
 			break;
@@ -2291,6 +2294,12 @@ mono_class_layout_fields (MonoClass *klass, int base_instance_size, int packing_
 		has_static_fields = TRUE;
 
 		size = mono_type_size (field->type, &align);
+		/* Check again in case initializing the field's type caused a failure */
+		if (mono_type_has_exceptions (field->type)) {
+			mono_class_set_type_load_failure (klass, "Field '%s' has an invalid type.", field->name);
+			break;
+		}
+
 		field_offsets [i] = class_size;
 		/*align is always non-zero here*/
 		field_offsets [i] += align - 1;
