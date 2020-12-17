@@ -40,4 +40,7 @@ typedef enum {
 	TYPECHECK_CACHE_ARG_POS = 2
 } MarshalTypeCheckPositions;
 
+void
+mono_marshal_noilgen_init (void);
+
 #endif /* __MONO_METADATA_MARSHAL_INTERNALS_H__ */

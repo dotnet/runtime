@@ -304,6 +304,7 @@ common_sources = \
 	marshal.c		\
 	marshal.h		\
 	marshal-internals.h \
+	marshal-noilgen.c	\
 	mempool.c		\
 	mempool.h		\
 	mempool-internals.h	\
