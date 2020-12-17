@@ -288,8 +288,8 @@ namespace System.Threading
             {
                 try
                 {
-                    // Starting a new thread transfers the current execution context to the new thread. Worker threads must
-                    // start in the default context, so switch contexts temporarily if necessary.
+                    // Starting a new thread transfers the current execution context to the new thread. Thread pool threads must
+                    // start in the default context, so switch contexts temporarily.
                     Thread currentThread = Thread.CurrentThread;
                     ExecutionContext? previousExecutionContext = currentThread._executionContext;
                     currentThread._executionContext = null;
@@ -300,6 +300,8 @@ namespace System.Threading
                         workerThread.IsThreadPoolThread = true;
                         workerThread.IsBackground = true;
                         workerThread.Start();
+
+                        currentThread._executionContext = previousExecutionContext;
                     }
                     catch
                     {
@@ -308,8 +310,6 @@ namespace System.Threading
                         currentThread._executionContext = previousExecutionContext;
                         throw;
                     }
-
-                    currentThread._executionContext = previousExecutionContext;
                 }
                 catch (ThreadStartException)
                 {

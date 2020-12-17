@@ -165,7 +165,12 @@ namespace System.Threading
             [MethodImpl(MethodImplOptions.NoInlining)]
             private static void CreateGateThread(PortableThreadPool threadPoolInstance)
             {
-                bool created = false;
+                // Starting a new thread transfers the current execution context to the new thread. Thread pool threads must
+                // start in the default context, so switch contexts temporarily.
+                Thread currentThread = Thread.CurrentThread;
+                ExecutionContext? previousExecutionContext = currentThread._executionContext;
+                currentThread._executionContext = null;
+
                 try
                 {
                     Thread gateThread = new Thread(GateThreadStart, SmallStackSizeBytes);
@@ -173,14 +178,16 @@ namespace System.Threading
                     gateThread.IsBackground = true;
                     gateThread.Name = ".NET ThreadPool Gate";
                     gateThread.Start();
-                    created = true;
+
+                    currentThread._executionContext = previousExecutionContext;
                 }
-                finally
+                catch
                 {
-                    if (!created)
-                    {
-                        Interlocked.Exchange(ref threadPoolInstance._separated.gateThreadRunningState, 0);
-                    }
+                    // Note: we have a "catch" rather than a "finally" because we want to stop the first pass of EH here.
+                    // That way we can restore the previous context before any of our callers' EH filters run.
+                    currentThread._executionContext = previousExecutionContext;
+                    Interlocked.Exchange(ref threadPoolInstance._separated.gateThreadRunningState, 0);
+                    throw;
                 }
             }
         }
