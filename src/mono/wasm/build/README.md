@@ -11,6 +11,9 @@ the specified `@(WasmAssembliesToBundle)` are directly passed to
 `WasmAppBuilder`.
 	- If the project needs assembly dependencies to be resolved, then
 	set `$(WasmResolveAssembliesBeforeBuild) == true`.
+  - Should you need to run the AOT toolset, ensure `$(RunAOTCompilation) == true`
+  and set `$(WasmAOTDir)` to the directory that you want to AOT. Make sure that both
+  `@(WasmAssembliesToBundle)` and `$(WasmAOTDir)` are absolute paths. 
 
 - Assemblies to be bundled with the app are set via
 `@(WasmAssembliesToBundle)` (which optionally will have dependencies
