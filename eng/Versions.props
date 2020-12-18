@@ -88,6 +88,7 @@
     <SystemNetHttpVersion>4.3.4</SystemNetHttpVersion>
     <SystemNetPrimitivesVersion>4.3.1</SystemNetPrimitivesVersion>
     <SystemNumericsVectorsVersion>4.5.0</SystemNumericsVectorsVersion>
+    <SystemReflectionMetadataVersion>5.0.0</SystemReflectionMetadataVersion>
     <SystemResourcesResourceManagerVersion>4.3.0</SystemResourcesResourceManagerVersion>
     <SystemRuntimeVersion>4.3.1</SystemRuntimeVersion>
     <SystemRuntimeExtensionsVersion>4.3.1</SystemRuntimeExtensionsVersion>
