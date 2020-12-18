@@ -263,20 +263,35 @@ namespace System.Net.NameResolution.Tests
         }
 
         [OuterLoop]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/43816")] // Race condition outlined below.
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/43816")] // Race condition outlined below.
         public async Task DnsGetHostEntry_PostCancelledToken_Throws()
         {
-            using var cts = new CancellationTokenSource();
+            const int numberOfRequests = 100;
 
-            Task task = Dns.GetHostEntryAsync(TestSettings.UncachedHost, cts.Token);
+            using CancellationTokenSource cts = new();
+            List<Task> tasks = new(capacity: numberOfRequests);
 
-            // This test might flake if the cancellation token takes too long to trigger:
-            // It's a race between the DNS server getting back to us and the cancellation processing.
+            for (int i = 0; i < numberOfRequests; ++i)
+            {
+                Task task = Dns.GetHostEntryAsync(TestSettings.UncachedHost, cts.Token);
+                tasks.Add(task);
+            }
+
             cts.Cancel();
 
-            OperationCanceledException oce = await Assert.ThrowsAnyAsync<OperationCanceledException>(() => task);
-            Assert.Equal(cts.Token, oce.CancellationToken);
+            await Assert.ThrowsAnyAsync<OperationCanceledException>(async () =>
+            {
+                for (int i = 0; i < numberOfRequests; ++i)
+                {
+                    try
+                    {
+                        await tasks[i].ConfigureAwait(false);
+                    }
+                    catch (Exception ex) when (ex is SocketException)
+                    { }
+                }
+            }).ConfigureAwait(false);
         }
     }
 }
