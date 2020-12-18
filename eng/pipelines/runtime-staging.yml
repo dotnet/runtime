@@ -142,5 +142,7 @@ jobs:
     platforms:
     - Linux_x64
     jobParameters:
+      nameSuffix: Installer_Tests
       isOfficialBuild: ${{ variables.isOfficialBuild }}
       buildArgs: -s clr+libs+host+packs -c $(_BuildConfig) -lc Debug -build -test /p:PortableBuild=true /p:RunOnStaging=true
+      useContinueOnErrorDuringBuild: true
