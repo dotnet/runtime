@@ -146,3 +146,5 @@ jobs:
       isOfficialBuild: ${{ variables.isOfficialBuild }}
       buildArgs: -s clr+libs+host+packs -restore -build -test -c $(_BuildConfig) -lc Debug /p:PortableBuild=true /p:RunOnStaging=true
       useContinueOnErrorDuringBuild: true
+      enablePublisTestResults: true
+      testResultsFormat: xunit

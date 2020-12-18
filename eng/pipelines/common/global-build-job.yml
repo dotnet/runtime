@@ -20,6 +20,8 @@ parameters:
   isOfficialBuild: false
   runtimeFlavor: 'coreclr'
   helixQueues: ''
+  enablePublishTestResults: false
+  testResultsFormat: ''
   extraStepsTemplate: ''
   extraStepsParameters: {}
 
@@ -32,6 +34,12 @@ jobs:
     container: ${{ parameters.container }}
     condition: and(succeeded(), ${{ parameters.condition }})
     timeoutInMinutes: ${{ parameters.timeoutInMinutes }}
+    enablePublishTestResults: ${{ parameters.enablePublishTestResults }}
+    testResultsFormat: ${{ parameters.testResultsFormat }}
+
+    ${{ if eq(parameters.enablePublishTestResults, true) }}:
+      testRunTitle: ${{ parameters.nameSufix }}-${{ parameters.osGroup }}${{ parameters.osSubgroup }}-${{ parameters.archType }}-${{ parameters.buildConfig }}
+
     workspace:
       clean: all
 
