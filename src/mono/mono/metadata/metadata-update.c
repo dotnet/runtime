@@ -501,6 +501,8 @@ mono_image_effective_table (const MonoTableInfo **t, int *idx)
 		ridx = mono_image_relative_delta_index (dmeta, mono_metadata_make_token (tbl_index, *idx + 1)) - 1;
 	} while (ridx < 0 || ridx >= table->rows);
 
+	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "effective table for %s: 0x%08x -> 0x%08x (gen %d)", mono_meta_table_name (tbl_index), *idx, ridx, metadata_update_local_generation (base, dmeta));
+
 	*t = table;
 	*idx = ridx;
 }
