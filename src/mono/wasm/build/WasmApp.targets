@@ -14,7 +14,7 @@
 
   <PropertyGroup>
     <WasmBuildNative Condition="'$(WasmBuildNative)' == ''">false</WasmBuildNative>
-    <WasmBuildNative Condition="'$(RunAOTCompilation)' == ''">true</WasmBuildNative>
+    <WasmBuildNative Condition="'$(RunAOTCompilation)' == 'true'">true</WasmBuildNative>
     <WasmNativeStrip>true</WasmNativeStrip>
   </PropertyGroup>
 
