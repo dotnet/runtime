@@ -963,7 +963,8 @@ add_parameter_object_to_array (MonoDomain *domain, MonoMethod *method, MonoObjec
 
 	MonoObjectHandle def_value;
 
-	if (!(sig_param->attrs & PARAM_ATTRIBUTE_HAS_DEFAULT)) {
+	if (!(sig_param->attrs & PARAM_ATTRIBUTE_HAS_DEFAULT) ||
+	    (method->wrapper_type != MONO_WRAPPER_NONE && method->wrapper_type != MONO_WRAPPER_DYNAMIC_METHOD)) {
 		if (sig_param->attrs & PARAM_ATTRIBUTE_OPTIONAL)
 			def_value = get_reflection_missing (domain, missing);
 		else
@@ -1056,10 +1057,12 @@ param_objects_construct (MonoDomain *domain, MonoClass *refclass, MonoMethodSign
 
 	gboolean any_default_value;
 	any_default_value = FALSE;
-	for (i = 0; i < sig->param_count; ++i) {
-		if ((sig->params [i]->attrs & PARAM_ATTRIBUTE_HAS_DEFAULT) != 0) {
-			any_default_value = TRUE;
-			break;
+	if (method->wrapper_type == MONO_WRAPPER_NONE || method->wrapper_type == MONO_WRAPPER_DYNAMIC_METHOD ) {
+		for (i = 0; i < sig->param_count; ++i) {
+			if ((sig->params [i]->attrs & PARAM_ATTRIBUTE_HAS_DEFAULT) != 0) {
+				any_default_value = TRUE;
+				break;
+			}
 		}
 	}
 	if (any_default_value) {

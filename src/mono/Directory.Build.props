@@ -16,10 +16,10 @@
   <!-- Common properties -->
   <PropertyGroup>
     <ProjectDir>$(MSBuildThisFileDirectory)</ProjectDir>
-    <SourceDir>$(ProjectDir)src\</SourceDir>
-    <RuntimeBinDir>$(ArtifactsBinDir)mono\$(PlatformConfigPathPart)\</RuntimeBinDir>
+    <SourceDir>$([MSBuild]::NormalizeDirectory('$(ProjectDir)', 'src'))</SourceDir>
+    <RuntimeBinDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'mono', '$(PlatformConfigPathPart)'))</RuntimeBinDir>
 
-    <BaseIntermediateOutputPath>$(ArtifactsObjDir)mono\$(MSBuildProjectName)\</BaseIntermediateOutputPath>
+    <BaseIntermediateOutputPath>$([MSBuild]::NormalizeDirectory('$(ArtifactsObjDir)', 'mono', '$(MSBuildProjectName)'))</BaseIntermediateOutputPath>
   </PropertyGroup>
 
   <PropertyGroup>
@@ -79,17 +79,17 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <MonoObjDir>$(ArtifactsObjDir)mono/$(PlatformConfigPathPart)/</MonoObjDir>
-    <MonoLLVMDir Condition="'$(MonoLLVMDir)' == ''">$(MonoObjDir)llvm</MonoLLVMDir>
-    <MonoAOTLLVMDir Condition="'$(MonoAOTLLVMDir)' == ''">$(MonoObjDir)cross/llvm</MonoAOTLLVMDir>
+    <MonoObjDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsObjDir)', 'mono', '$(PlatformConfigPathPart)'))</MonoObjDir>
+    <MonoLLVMDir Condition="'$(MonoLLVMDir)' == ''">$([MSBuild]::NormalizeDirectory('$(MonoObjDir)', 'llvm'))</MonoLLVMDir>
+    <MonoAOTLLVMDir Condition="'$(MonoAOTLLVMDir)' == ''">$([MSBuild]::NormalizeDirectory('$(MonoObjDir)', 'cross', 'llvm'))</MonoAOTLLVMDir>
   </PropertyGroup>
 
   <!-- Paths for Mobile App Projects  -->
   <PropertyGroup>
-    <AppleAppBuilderProjDirectory>$([MSBuild]::NormalizeDirectory('$(RepoTasksDir)', 'mobile.tasks', 'AppleAppBuilder'))</AppleAppBuilderProjDirectory>
+    <AppleAppBuilderProjDirectory>$([MSBuild]::NormalizeDirectory('$(RepoTasksDir)', 'AppleAppBuilder'))</AppleAppBuilderProjDirectory>
     <AppleTestRunnerProjDirectory>$([MSBuild]::NormalizeDirectory('$(LibrariesProjectRoot)', 'Common', tests, 'AppleTestRunner'))</AppleTestRunnerProjDirectory>
-    <AndroidAppBuilderProjDirectory>$([MSBuild]::NormalizeDirectory('$(RepoTasksDir)', 'mobile.tasks', 'AndroidAppBuilder'))</AndroidAppBuilderProjDirectory>
+    <AndroidAppBuilderProjDirectory>$([MSBuild]::NormalizeDirectory('$(RepoTasksDir)', 'AndroidAppBuilder'))</AndroidAppBuilderProjDirectory>
     <AndroidTestRunnerProjDirectory>$([MSBuild]::NormalizeDirectory('$(LibrariesProjectRoot)', 'Common', tests, 'AndroidTestRunner'))</AndroidTestRunnerProjDirectory>
-    <MonoAOTCompilerProjDirectory>$([MSBuild]::NormalizeDirectory('$(RepoTasksDir)', 'mobile.tasks', 'AotCompilerTask'))</MonoAOTCompilerProjDirectory>
+    <MonoAOTCompilerProjDirectory>$([MSBuild]::NormalizeDirectory('$(RepoTasksDir)', 'AotCompilerTask'))</MonoAOTCompilerProjDirectory>
   </PropertyGroup>
 </Project>

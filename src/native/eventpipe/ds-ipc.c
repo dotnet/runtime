@@ -1,10 +1,10 @@
-#include <config.h>
+#include "ds-rt-config.h"
 
 #ifdef ENABLE_PERFTRACING
-#include "ds-rt-config.h"
 #if !defined(DS_INCLUDE_SOURCE_FILES) || defined(DS_FORCE_INCLUDE_SOURCE_FILES)
 
 #define DS_IMPL_IPC_GETTER_SETTER
+#define DS_IMPL_IPC_PAL_GETTER_SETTER
 #include "ds-ipc.h"
 #include "ds-protocol.h"
 #include "ds-rt.h"
@@ -41,7 +41,7 @@ store_shutting_down_state (bool state)
  */
 
 static
-int32_t
+uint32_t
 ipc_stream_factory_get_next_timeout (uint32_t current_timout_ms);
 
 static
@@ -113,15 +113,15 @@ listen_port_reset (
 
 static
 inline
-int32_t
+uint32_t
 ipc_stream_factory_get_next_timeout (uint32_t current_timeout_ms)
 {
-	if (current_timeout_ms == DS_IPC_POLL_TIMEOUT_INFINITE)
+	if (current_timeout_ms == DS_IPC_TIMEOUT_INFINITE)
 		return DS_IPC_POLL_TIMEOUT_MIN_MS;
 	else
 		return (current_timeout_ms >= DS_IPC_POLL_TIMEOUT_MAX_MS) ?
 			DS_IPC_POLL_TIMEOUT_MAX_MS :
-			(int32_t)((float)current_timeout_ms * DS_IPC_POLL_TIMEOUT_FALLOFF_FACTOR);
+			(uint32_t)((float)current_timeout_ms * DS_IPC_POLL_TIMEOUT_FALLOFF_FACTOR);
 }
 
 static
@@ -193,11 +193,11 @@ ipc_log_poll_handles (ds_rt_ipc_poll_handle_array_t *ipc_poll_handles)
 	while (!ds_rt_ipc_poll_handle_array_iterator_end (ipc_poll_handles, &ipc_poll_handles_iterator)) {
 		ipc_poll_handle = ds_rt_ipc_poll_handle_array_iterator_value (&ipc_poll_handles_iterator);
 		if (ipc_poll_handle.ipc) {
-			if (!(ds_ipc_to_string (ipc_poll_handle.ipc, buffer, EP_ARRAY_SIZE (buffer)) > 0))
+			if (!(ds_ipc_to_string (ipc_poll_handle.ipc, buffer, (uint32_t)EP_ARRAY_SIZE (buffer)) > 0))
 				buffer [0] = '\0';
 			DS_LOG_INFO_2 ("\tSERVER IpcPollHandle[%d] = %s\n", connection_id, buffer);
 		} else {
-			if (!(ds_ipc_stream_to_string (ipc_poll_handle.stream, buffer, EP_ARRAY_SIZE (buffer))))
+			if (!(ds_ipc_stream_to_string (ipc_poll_handle.stream, buffer, (uint32_t)EP_ARRAY_SIZE (buffer))))
 				buffer [0] = '\0';
 			DS_LOG_INFO_2 ("\tCLIENT IpcPollHandle[%d] = %s\n", connection_id, buffer);
 		}
@@ -314,6 +314,15 @@ ds_ipc_stream_factory_configure (ds_ipc_error_callback_func callback)
 	return result;
 }
 
+// Polling timeout semantics
+// If client connection is opted in
+//   and connection succeeds => set timeout to infinite
+//   and connection fails => set timeout to minimum and scale by falloff factor
+// else => set timeout to (uint32_t)-1 (infinite)
+//
+// If an agent closes its socket while we're still connected,
+// Poll will return and let us know which connection hung up
+
 DiagnosticsIpcStream *
 ds_ipc_stream_factory_get_next_available_stream (ds_ipc_error_callback_func callback)
 {
@@ -325,7 +334,7 @@ ds_ipc_stream_factory_get_next_available_stream (ds_ipc_error_callback_func call
 	ds_rt_port_array_t *ports = &_ds_port_array;
 	DiagnosticsPort *port = NULL;
 
-	int32_t poll_timeout_ms = DS_IPC_POLL_TIMEOUT_INFINITE;
+	uint32_t poll_timeout_ms = DS_IPC_TIMEOUT_INFINITE;
 	bool connect_success = true;
 	uint32_t poll_attempts = 0;
 
@@ -347,7 +356,7 @@ ds_ipc_stream_factory_get_next_available_stream (ds_ipc_error_callback_func call
 		}
 
 		poll_timeout_ms = connect_success ?
-			DS_IPC_POLL_TIMEOUT_INFINITE :
+			DS_IPC_TIMEOUT_INFINITE :
 			ipc_stream_factory_get_next_timeout (poll_timeout_ms);
 
 		poll_attempts++;
@@ -355,7 +364,7 @@ ds_ipc_stream_factory_get_next_available_stream (ds_ipc_error_callback_func call
 
 		ipc_log_poll_handles (&ipc_poll_handles);
 
-		int32_t ret_val = ds_ipc_poll (&ipc_poll_handles, poll_timeout_ms, callback);
+		int32_t ret_val = ds_ipc_poll (ds_rt_ipc_poll_handle_array_data (&ipc_poll_handles), ds_rt_ipc_poll_handle_array_size (&ipc_poll_handles), poll_timeout_ms, callback);
 		bool saw_error = false;
 
 		if (ret_val != 0) {
@@ -652,7 +661,7 @@ connect_port_get_ipc_poll_handle_func (
 		}
 
 		ep_char8_t buffer [DS_IPC_MAX_TO_STRING_LEN];
-		if (!(ds_ipc_stream_to_string (connection, buffer, EP_ARRAY_SIZE (buffer))))
+		if (!(ds_ipc_stream_to_string (connection, buffer, (uint32_t)EP_ARRAY_SIZE (buffer))))
 			buffer [0] = '\0';
 		DS_LOG_INFO_1 ("connect_port_get_ipc_poll_handle - returned connection %s\n", buffer);
 

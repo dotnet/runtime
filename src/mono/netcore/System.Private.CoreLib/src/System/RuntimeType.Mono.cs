@@ -1821,6 +1821,14 @@ namespace System
             return CreateInstanceMono(!publicOnly, wrapExceptions);
         }
 
+        // Specialized version of the above for Activator.CreateInstance<T>()
+        [DebuggerStepThroughAttribute]
+        [Diagnostics.DebuggerHidden]
+        internal object? CreateInstanceOfT()
+        {
+            return CreateInstanceMono(false, true);
+        }
+
         #endregion
 
         private TypeCache? cache;
@@ -2254,10 +2262,13 @@ namespace System
             return constraints ?? Type.EmptyTypes;
         }
 
-        internal static object CreateInstanceForAnotherGenericParameter(Type genericType, RuntimeType genericArgument)
+        internal static object CreateInstanceForAnotherGenericParameter([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor | DynamicallyAccessedMemberTypes.NonPublicConstructors)] Type genericType, RuntimeType genericArgument)
         {
             var gt = (RuntimeType)MakeGenericType(genericType, new Type[] { genericArgument });
-            RuntimeConstructorInfo ctor = gt.GetDefaultConstructor()!;
+            RuntimeConstructorInfo? ctor = gt.GetDefaultConstructor();
+            if (ctor is null)
+                throw new MissingMethodException(SR.Format(SR.Arg_NoDefCTor, gt.FullName));
+
             return ctor.InternalInvoke(null, null, wrapExceptions: true)!;
         }
 
@@ -2491,7 +2502,7 @@ namespace System
             get
             {
                 // See https://github.com/mono/mono/issues/18180 and
-                // https://github.com/dotnet/runtime/blob/f23e2796ab5f6fea71c9fdacac024822280253db/src/coreclr/src/System.Private.CoreLib/src/System/RuntimeType.CoreCLR.cs#L1468-L1472
+                // https://github.com/dotnet/runtime/blob/69e114c1abf91241a0eeecf1ecceab4711b8aa62/src/coreclr/System.Private.CoreLib/src/System/RuntimeType.CoreCLR.cs#L1505-L1509
                 if (ContainsGenericParameters && !GetRootElementType().IsGenericTypeDefinition)
                     return null;
 

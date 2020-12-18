@@ -13,8 +13,9 @@ parameters:
   isOfficialBuild: false
   crossBuild: false
   crossrootfsDir: ''
-  buildCross: false
+  dependOnEvaluatePaths: false
   dependsOn: ''
+  buildCross: false
 
 ### Product build
 jobs:
@@ -32,6 +33,7 @@ jobs:
     buildCross: ${{ parameters.buildCross }}
     crossrootfsDir: ${{ parameters.crossroofsDir }}
     condition: ${{ parameters.condition }}
+    dependOnEvaluatePaths: ${{ parameters.dependOnEvaluatePaths }}
 
     # Compute job name from template parameters
     name: ${{ format('mono_{0}_product_build_{1}{2}_{3}_{4}', parameters.runtimeVariant, parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}

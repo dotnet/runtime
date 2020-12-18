@@ -8,6 +8,7 @@ parameters:
   runtimeVariant: ''
   crossBuild: false
   crossrootfsDir: ''
+  dependOnEvaluatePaths: false
   stagedBuild: false
   variables: {}
   pool: ''
@@ -36,6 +37,7 @@ jobs:
     liveLibrariesBuildConfig: ${{ parameters.liveLibrariesBuildConfig }}
     helixType: 'test/crossgen-comparison/'
     pool: ${{ parameters.pool }}
+    dependOnEvaluatePaths: ${{ parameters.dependOnEvaluatePaths }}
 
     # Compute job name from template parameters
     name: ${{ format('test_crossgen_comparison_{0}{1}_{1}_{2}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
