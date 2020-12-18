@@ -12,6 +12,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Security;
 using Xunit;
+using Xunit.Sdk;
 using Microsoft.DotNet.RemoteExecutor;
 using Microsoft.DotNet.XUnitExtensions;
 
@@ -546,7 +547,16 @@ namespace System.Diagnostics.Tests
             string userName = GetCurrentRealUserName();
             string userId = GetUserId(userName);
             string userGroupId = GetUserGroupId(userName);
-            string userGroupIds = GetUserGroupIds(userName);
+            string userGroupIds = GetUserGroupIdsJoined(userName);
+
+            HashSet<uint> groupIdsFromIdGCommand = new HashSet<uint>(GetUserGroupIds(userName));
+            HashSet<uint> groupIdsFromLibc = GetGroups();
+
+            if (!groupIdsFromIdGCommand.SetEquals(groupIdsFromLibc))
+            {
+                throw new XunitException($"id -G returned: {string.Join(", ", groupIdsFromIdGCommand)}{Environment.NewLine}getgroups returned: {string.Join(", ", groupIdsFromLibc)}");
+            }
+
             // If this test runs as the user, we expect to be able to match the user groups exactly.
             // Except on OSX, where getgrouplist may return a list of groups truncated to NGROUPS_MAX.
             bool checkGroupsExact = userId == geteuid().ToString() &&
@@ -581,7 +591,7 @@ namespace System.Diagnostics.Tests
 
                 string userId = GetUserId(username);
                 string userGroupId = GetUserGroupId(username);
-                string userGroupIds = GetUserGroupIds(username);
+                string userGroupIds = GetUserGroupIdsJoined(username);
 
                 if (bool.Parse(useRootGroupsArg))
                 {
@@ -616,11 +626,16 @@ namespace System.Diagnostics.Tests
         private static string GetUserGroupId(string username)
             => StartAndReadToEnd("id", new[] { "-g", username }).Trim('\n');
 
-        private static string GetUserGroupIds(string username)
+        private static IEnumerable<uint> GetUserGroupIds(string username)
         {
             string[] groupIds = StartAndReadToEnd("id", new[] { "-G", username })
                                     .Split(new[] { ' ', '\n' }, StringSplitOptions.RemoveEmptyEntries);
-            return string.Join(",", groupIds.Select(s => uint.Parse(s)).OrderBy(id => id));
+            return groupIds.Select(s => uint.Parse(s)).OrderBy(id => id);
+        }
+
+        private static string GetUserGroupIdsJoined(string username)
+        {
+            return string.Join(",", GetUserGroupIds(username));
         }
 
         private static string GetCurrentRealUserName()
