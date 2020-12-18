@@ -339,6 +339,40 @@ namespace Microsoft.Extensions.Configuration.Xml.Test
         }
 
         [Fact]
+        public void SupportMixingRepeatedElementsWithNonRepeatedElements()
+        {
+            var xml =
+              @"<settings>
+                    <DefaultConnection>
+                        <ConnectionString>TestConnectionString1</ConnectionString>
+                        <Provider>SqlClient1</Provider>
+                    </DefaultConnection>
+                    <DefaultConnection>
+                        <ConnectionString>TestConnectionString2</ConnectionString>
+                        <Provider>SqlClient2</Provider>
+                    </DefaultConnection>
+                    <OtherValue>
+                        <Value>MyValue</Value>
+                    </OtherValue>
+                    <DefaultConnection>
+                        <ConnectionString>TestConnectionString3</ConnectionString>
+                        <Provider>SqlClient3</Provider>
+                    </DefaultConnection>
+                </settings>";
+            var xmlConfigSrc = new XmlConfigurationProvider(new XmlConfigurationSource());
+
+            xmlConfigSrc.Load(TestStreamHelpers.StringToStream(xml));
+
+            Assert.Equal("TestConnectionString1", xmlConfigSrc.Get("DefaultConnection:0:ConnectionString"));
+            Assert.Equal("TestConnectionString2", xmlConfigSrc.Get("DefaultConnection:1:ConnectionString"));
+            Assert.Equal("TestConnectionString3", xmlConfigSrc.Get("DefaultConnection:2:ConnectionString"));
+            Assert.Equal("SqlClient1", xmlConfigSrc.Get("DefaultConnection:0:Provider"));
+            Assert.Equal("SqlClient2", xmlConfigSrc.Get("DefaultConnection:1:Provider"));
+            Assert.Equal("SqlClient3", xmlConfigSrc.Get("DefaultConnection:2:Provider"));
+            Assert.Equal("MyValue", xmlConfigSrc.Get("OtherValue:Value"));
+        }
+
+        [Fact]
         public void SupportMixingNameAttributesAndCommonAttributes()
         {
             var xml =
