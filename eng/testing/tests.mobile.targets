@@ -158,6 +158,12 @@
     <ItemGroup>
       <ManagedAssemblyToLink Include="$(OutDir)\*xunit*">
         <IsTrimmable>true</IsTrimmable>
+        <TrimMode>link</TrimMode>
+      </ManagedAssemblyToLink>
+    </ItemGroup>
+    <ItemGroup>
+      <ManagedAssemblyToLink Condition="('%(ManagedAssemblyToLink.FileName).dll' != '$(MSBuildProjectName).dll')" >
+        <TrimMode>link</TrimMode>
       </ManagedAssemblyToLink>
     </ItemGroup>
   </Target>
