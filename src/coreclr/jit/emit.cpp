@@ -4884,7 +4884,7 @@ unsigned emitter::emitCalculatePaddingForLoopAlignment(insGroup* ig,
     // No padding if loop is already aligned
     if ((offset & (alignmentBoundary - 1)) == 0)
     {
-        JITDUMP("\t\t;; Skip alignment: 'Loop already aligned at %dB boundary.'\n", alignmentBoundary);
+        JITDUMP(";; Skip alignment: 'Loop already aligned at %dB boundary.'\n", alignmentBoundary);
         return 0;
     }
 
@@ -4908,7 +4908,7 @@ unsigned emitter::emitCalculatePaddingForLoopAlignment(insGroup* ig,
     // No padding if loop is big
     if (loopSize > maxLoopSize)
     {
-        JITDUMP("\t\t;; Skip alignment: 'Loop is big. LoopSize= %d, MaxLoopSize= %d.'\n", alignmentBoundary, loopSize,
+        JITDUMP(";; Skip alignment: 'Loop is big. LoopSize= %d, MaxLoopSize= %d.'\n", alignmentBoundary, loopSize,
                 maxLoopSize);
         return 0;
     }
@@ -4935,13 +4935,13 @@ unsigned emitter::emitCalculatePaddingForLoopAlignment(insGroup* ig,
             if (nPaddingBytes == 0)
             {
                 skipPadding = true;
-                JITDUMP("\t\t;; Skip alignment: 'Loop already aligned at 16B boundary.'\n");
+                JITDUMP(";; Skip alignment: 'Loop already aligned at 16B boundary.'\n");
             }
             // Check if the alignment exceeds new maxPadding limit
             else if (nPaddingBytes > nMaxPaddingBytes)
             {
                 skipPadding = true;
-                JITDUMP("\t\t;; Skip alignment: 'PaddingNeeded= %d, MaxPadding= %d, LoopSize= %d, "
+                JITDUMP(";; Skip alignment: 'PaddingNeeded= %d, MaxPadding= %d, LoopSize= %d, "
                         "AlignmentBoundary= %dB.'\n",
                         nPaddingBytes, nMaxPaddingBytes, loopSize, alignmentBoundary);
             }
@@ -4965,7 +4965,7 @@ unsigned emitter::emitCalculatePaddingForLoopAlignment(insGroup* ig,
             else
             {
                 // Otherwise, the loop just fits in minBlocksNeededForLoop and so can skip alignment.
-                JITDUMP("\t\t;; Skip alignment: 'Loop is aligned to fit in %d blocks of %d chunks.'\n",
+                JITDUMP(";; Skip alignment: 'Loop is aligned to fit in %d blocks of %d chunks.'\n",
                         minBlocksNeededForLoop, alignmentBoundary);
             }
         }
@@ -4994,17 +4994,12 @@ unsigned emitter::emitCalculatePaddingForLoopAlignment(insGroup* ig,
         else
         {
             // Otherwise, the loop just fits in minBlocksNeededForLoop and so can skip alignment.
-            JITDUMP("\t\t;; Skip alignment: 'Loop is aligned to fit in %d blocks of %d chunks.'\n",
+            JITDUMP(";; Skip alignment: 'Loop is aligned to fit in %d blocks of %d chunks.'\n",
                     minBlocksNeededForLoop, alignmentBoundary);
         }
     }
 
-#if DEBUG
-    if (displayAlignmentDetails && paddingToAdd > 0)
-    {
-        printf("\t\t;; Add alignment: 'Padding= %d, AlignmentBoundary= %dB.'\n", paddingToAdd, alignmentBoundary);
-    }
-#endif
+    JITDUMP(";; Calculated padding to add %d bytes to align at %dB boudnary.'\n", paddingToAdd, alignmentBoundary);
 
     // Either no padding is added because it is too expensive or the offset gets aligned
     // to the alignment boundary
