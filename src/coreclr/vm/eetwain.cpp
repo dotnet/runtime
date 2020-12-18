@@ -3126,7 +3126,7 @@ unsigned SKIP_ALLOC_FRAME(int size, PTR_CBYTE base, unsigned offset)
     if (size == sizeof(void*))
     {
         // JIT emits "push eax" instead of "sub esp,4"
-        return (SKIP_PUSH_REG(base, offset));
+        return SKIP_PUSH_REG(base, offset);
     }
 
     const int STACK_PROBE_PAGE_SIZE_BYTES = 4096;
@@ -3145,8 +3145,8 @@ unsigned SKIP_ALLOC_FRAME(int size, PTR_CBYTE base, unsigned offset)
 
         if (CheckInstrWord(wOpcode, X86_INSTR_w_TEST_ESP_DWORD_OFFSET_EAX))
         {
-            // In .NET 5.0 and earlier JIT inlines one or two 'test eax, [esp-dwOffset]' instruction
-            // sequence for a frame that has size smaller than 0x3000 bytes.
+            // In .NET 5.0 and earlier for frames that have size smaller than 0x3000 bytes
+            // JIT emits one or two 'test eax, [esp-dwOffset]' instructions before adjusting the stack pointer.
             _ASSERTE(size < 0x3000);
 
             // test eax, [esp-0x1000]
@@ -3180,8 +3180,8 @@ unsigned SKIP_ALLOC_FRAME(int size, PTR_CBYTE base, unsigned offset)
 
             if (CheckInstrByte(base[offset], X86_INSTR_XOR))
             {
-                // In .NET Core 3.1 and earlier JIT inlines stack probing loop
-                // for a frame that has size greater than or equal to 0x3000 bytes.
+                // In .NET Core 3.1 and earlier for frames that have size greater than or equal to 0x3000 bytes
+                // JIT emits the following loop.
                 _ASSERTE(size >= 0x3000);
 
                 offset += 2;
@@ -3193,7 +3193,7 @@ unsigned SKIP_ALLOC_FRAME(int size, PTR_CBYTE base, unsigned offset)
                 //      cmp eax, -size              5
                 //      jge loop                    2
 
-                // R2R images that support ReJIT may have extra nops we need to skip over
+                // R2R images that support ReJIT may have extra nops we need to skip over.
                 while (offset < 5)
                 {
                     if (CheckInstrByte(base[offset], X86_INSTR_NOP))
@@ -3214,7 +3214,8 @@ unsigned SKIP_ALLOC_FRAME(int size, PTR_CBYTE base, unsigned offset)
                     offset = SKIP_POP_REG(base, offset);
                 }
 
-                lastProbedLocToFinalSp = 0;
+                // sub esp, size
+                return SKIP_ARITH_REG(size, base, offset);
             }
             else
             {
