@@ -16,7 +16,8 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			Activator.CreateInstance (typeof (Test1));
 			Activator.CreateInstance (typeof (Test2), true);
 			Activator.CreateInstance (typeof (Test3), BindingFlags.NonPublic | BindingFlags.Instance, null, null, null);
-			Activator.CreateInstance (typeof (Test4), new object[] { 1, "ss" });
+			Activator.CreateInstance (typeof (Test4), GetBindingFlags (), null, null, null);
+			Activator.CreateInstance (typeof (Test5), new object[] { 1, "ss" });
 
 			var p = new ActivatorCreateInstance ();
 
@@ -96,6 +97,30 @@ namespace Mono.Linker.Tests.Cases.Reflection
 		{
 			[Kept]
 			public Test4 (int i, object o)
+			{
+			}
+
+			[Kept]
+			private Test4 (char b)
+			{
+			}
+
+			[Kept]
+			internal Test4 (int arg)
+			{
+			}
+
+			[Kept]
+			static Test4 ()
+			{
+			}
+		}
+
+		[Kept]
+		class Test5
+		{
+			[Kept]
+			public Test5 (int i, object o)
 			{
 			}
 		}
@@ -258,6 +283,12 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			private WithAssemblyNamePrivateOnly (int i, object o, int j)
 			{
 			}
+		}
+
+		[Kept]
+		private static BindingFlags GetBindingFlags ()
+		{
+			return BindingFlags.Public;
 		}
 
 		[Kept]

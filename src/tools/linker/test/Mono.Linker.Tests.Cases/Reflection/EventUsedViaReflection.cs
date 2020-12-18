@@ -16,6 +16,7 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			TestInternalByName ();
 			TestNameBindingFlags ();
 			TestNameWrongBindingFlags ();
+			TestNameUnknownBindingFlags (BindingFlags.Public);
 			TestNullName ();
 			TestEmptyName ();
 			TestNonExistingName ();
@@ -61,6 +62,13 @@ namespace Mono.Linker.Tests.Cases.Reflection
 		static void TestNameWrongBindingFlags ()
 		{
 			var eventInfo = typeof (Bar).GetEvent ("PublicEvent", BindingFlags.NonPublic);
+		}
+
+		[Kept]
+		static void TestNameUnknownBindingFlags (BindingFlags bindingFlags)
+		{
+			// Since the binding flags are not known linker should mark all events on the type
+			var eventInfo = typeof (UnknownBindingFlags).GetEvent ("PrivateEvent", bindingFlags);
 		}
 
 		[Kept]
@@ -186,6 +194,30 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			[KeptEventAddMethod]
 			[KeptEventRemoveMethod]
 			private event EventHandler<EventArgs> PrivateEvent;
+			public event EventHandler<EventArgs> PublicEvent;
+		}
+
+		class UnknownBindingFlags
+		{
+			[Kept]
+			[KeptBackingField]
+			[KeptEventAddMethod]
+			[KeptEventRemoveMethod]
+			internal event EventHandler<EventArgs> InternalEvent;
+			[Kept]
+			[KeptBackingField]
+			[KeptEventAddMethod]
+			[KeptEventRemoveMethod]
+			static event EventHandler<EventArgs> Static;
+			[Kept]
+			[KeptBackingField]
+			[KeptEventAddMethod]
+			[KeptEventRemoveMethod]
+			private event EventHandler<EventArgs> PrivateEvent;
+			[Kept]
+			[KeptBackingField]
+			[KeptEventAddMethod]
+			[KeptEventRemoveMethod]
 			public event EventHandler<EventArgs> PublicEvent;
 		}
 

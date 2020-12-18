@@ -14,6 +14,8 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			TestGetterAndSetterInternal ();
 			TestSetterOnly ();
 			TestGetterOnly ();
+			TestBindingFlags ();
+			TestUnknownBindingFlags (BindingFlags.Public);
 			TestNullName ();
 			TestEmptyName ();
 			TestNonExistingName ();
@@ -62,6 +64,27 @@ namespace Mono.Linker.Tests.Cases.Reflection
 		static void TestGetterOnly ()
 		{
 			var property = typeof (PropertyUsedViaReflection).GetProperty ("GetterOnly");
+			property.GetValue (null, new object[] { });
+		}
+
+		[Kept]
+		[RecognizedReflectionAccessPattern (
+			typeof (Type), nameof (Type.GetProperty), new Type[] { typeof (string), typeof (BindingFlags) },
+			typeof (BindingFlagsTest), nameof (BindingFlagsTest.PublicProperty), (Type[]) null)]
+		static void TestBindingFlags ()
+		{
+			var property = typeof (BindingFlagsTest).GetProperty ("PublicProperty", BindingFlags.Public);
+			property.GetValue (null, new object[] { });
+		}
+
+		[Kept]
+		[RecognizedReflectionAccessPattern (
+			typeof (Type), nameof (Type.GetProperty), new Type[] { typeof (string), typeof (BindingFlags) },
+			typeof (UnknownBindingFlags), nameof (UnknownBindingFlags.SomeProperty), (Type[]) null)]
+		static void TestUnknownBindingFlags (BindingFlags bindingFlags)
+		{
+			// Since the binding flags are not known linker should mark all properties on the type
+			var property = typeof (UnknownBindingFlags).GetProperty ("SomeProperty", bindingFlags);
 			property.GetValue (null, new object[] { });
 		}
 
@@ -263,6 +286,30 @@ namespace Mono.Linker.Tests.Cases.Reflection
 		[KeptBaseType (typeof (BaseClass))]
 		class DerivedClass : BaseClass
 		{
+		}
+
+		[Kept]
+		class BindingFlagsTest
+		{
+			[Kept]
+			public int PublicProperty {
+				[Kept]
+				get { return _field; }
+				[Kept]
+				set { _field = value; }
+			}
+		}
+
+		[Kept]
+		class UnknownBindingFlags
+		{
+			[Kept]
+			internal static int SomeProperty {
+				[Kept]
+				private get { return _field; }
+				[Kept]
+				set { _field = value; }
+			}
 		}
 
 		[Kept]

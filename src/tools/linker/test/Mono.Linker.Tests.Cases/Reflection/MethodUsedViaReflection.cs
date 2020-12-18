@@ -14,7 +14,7 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			TestName ();
 			TestNamePrivate ();
 			TestNameAndExplicitBindingFlags ();
-			// TestNameAndUnknownBindingFlags (BindingFlags.Public);
+			TestNameAndUnknownBindingFlags (BindingFlags.Public);
 			TestNameAndType ();
 			TestNameBindingFlagsAndParameterModifier ();
 			TestNameBindingFlagsCallingConventionParameterModifier ();
@@ -62,15 +62,14 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			method.Invoke (null, new object[] { });
 		}
 
-		// https://github.com/mono/linker/issues/1617
-		//[Kept]
-		//[RecognizedReflectionAccessPattern]
-		//static void TestNameAndUnknownBindingFlags (BindingFlags bindingFlags)
-		//{
-		//	// Since the binding flags are not known linker should mark all methods on the type
-		//	var method = typeof (TestNameAndUnknownBindingClass).GetMethod ("OnlyCalledViaReflection", bindingFlags);
-		//	method.Invoke (null, new object[] { });
-		//}
+		[Kept]
+		[RecognizedReflectionAccessPattern]
+		static void TestNameAndUnknownBindingFlags (BindingFlags bindingFlags)
+		{
+			// Since the binding flags are not known linker should mark all methods on the type
+			var method = typeof (TestNameAndUnknownBindingClass).GetMethod ("OnlyCalledViaReflection", bindingFlags);
+			method.Invoke (null, new object[] { });
+		}
 
 		[Kept]
 		[RecognizedReflectionAccessPattern (
@@ -294,33 +293,33 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			}
 		}
 
-		//[Kept]
-		//private class TestNameAndUnknownBindingClass
-		//{
-		//	[Kept]
-		//	private static int OnlyCalledViaReflection ()
-		//	{
-		//		return 42;
-		//	}
+		[Kept]
+		private class TestNameAndUnknownBindingClass
+		{
+			[Kept]
+			private static int OnlyCalledViaReflection ()
+			{
+				return 42;
+			}
 
-		//	[Kept]
-		//	private int OnlyCalledViaReflection (int foo)
-		//	{
-		//		return 43;
-		//	}
+			[Kept]
+			private int OnlyCalledViaReflection (int foo)
+			{
+				return 43;
+			}
 
-		//	[Kept]
-		//	public int OnlyCalledViaReflection (int foo, int bar)
-		//	{
-		//		return 44;
-		//	}
+			[Kept]
+			public int OnlyCalledViaReflection (int foo, int bar)
+			{
+				return 44;
+			}
 
-		//	[Kept]
-		//	public static int OnlyCalledViaReflection (int foo, int bar, int baz)
-		//	{
-		//		return 45;
-		//	}
-		//}
+			[Kept]
+			public static int OnlyCalledViaReflection (int foo, int bar, int baz)
+			{
+				return 45;
+			}
+		}
 
 		[Kept]
 		private class TestNameAndTypeClass

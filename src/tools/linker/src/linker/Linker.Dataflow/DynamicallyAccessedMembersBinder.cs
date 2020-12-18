@@ -153,7 +153,7 @@ namespace Mono.Linker
 			}
 		}
 
-		public static IEnumerable<FieldDefinition> GetFieldsOnTypeHierarchy (this TypeDefinition type, Func<FieldDefinition, bool> filter, BindingFlags bindingFlags = BindingFlags.Default)
+		public static IEnumerable<FieldDefinition> GetFieldsOnTypeHierarchy (this TypeDefinition type, Func<FieldDefinition, bool> filter, BindingFlags? bindingFlags = BindingFlags.Default)
 		{
 			bool onBaseType = false;
 			while (type != null) {
@@ -189,7 +189,7 @@ namespace Mono.Linker
 			}
 		}
 
-		public static IEnumerable<TypeDefinition> GetNestedTypesOnType (this TypeDefinition type, Func<TypeDefinition, bool> filter, BindingFlags bindingFlags = BindingFlags.Default)
+		public static IEnumerable<TypeDefinition> GetNestedTypesOnType (this TypeDefinition type, Func<TypeDefinition, bool> filter, BindingFlags? bindingFlags = BindingFlags.Default)
 		{
 			foreach (var nestedType in type.NestedTypes) {
 				if (filter != null && !filter (nestedType))
@@ -209,7 +209,7 @@ namespace Mono.Linker
 			}
 		}
 
-		public static IEnumerable<PropertyDefinition> GetPropertiesOnTypeHierarchy (this TypeDefinition type, Func<PropertyDefinition, bool> filter, BindingFlags bindingFlags = BindingFlags.Default)
+		public static IEnumerable<PropertyDefinition> GetPropertiesOnTypeHierarchy (this TypeDefinition type, Func<PropertyDefinition, bool> filter, BindingFlags? bindingFlags = BindingFlags.Default)
 		{
 			bool onBaseType = false;
 			while (type != null) {
@@ -254,7 +254,7 @@ namespace Mono.Linker
 			}
 		}
 
-		public static IEnumerable<EventDefinition> GetEventsOnTypeHierarchy (this TypeDefinition type, Func<EventDefinition, bool> filter, BindingFlags bindingFlags = BindingFlags.Default)
+		public static IEnumerable<EventDefinition> GetEventsOnTypeHierarchy (this TypeDefinition type, Func<EventDefinition, bool> filter, BindingFlags? bindingFlags = BindingFlags.Default)
 		{
 			bool onBaseType = false;
 			while (type != null) {
