@@ -136,11 +136,11 @@ jobs:
 
 # Run disabled installer tests on Linux x64
 - template: /eng/pipelines/common/platform-matrix.yml
-    parameters:
-      jobTemplate: /eng/pipelines/common/global-build-job.yml
-      buildConfig: Release
-      platforms:
-      - Linux_x64
-      jobParameters:
-        isOfficialBuild: ${{ variables.isOfficialBuild }}
-        buildArgs: -s clr+libs+host+packs -c $(_BuildConfig) -lc Debug -build -test /p:PortableBuild=true /p:RunOnStaging=true
+  parameters:
+    jobTemplate: /eng/pipelines/common/global-build-job.yml
+    buildConfig: Release
+    platforms:
+    - Linux_x64
+    jobParameters:
+      isOfficialBuild: ${{ variables.isOfficialBuild }}
+      buildArgs: -s clr+libs+host+packs -c $(_BuildConfig) -lc Debug -build -test /p:PortableBuild=true /p:RunOnStaging=true
