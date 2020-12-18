@@ -3971,9 +3971,6 @@ namespace System
         {
             // Get or create the cached factory. Creating the cache will fail if one
             // of our invariant checks fails; e.g., no appropriate ctor found.
-            //
-            // n.b. In coreclr we ignore 'skipCheckThis' (assumed to be false)
-            // and 'fillCache' (assumed to be true).
 
             if (GenericCache is not ActivatorCache cache)
             {
@@ -3996,6 +3993,35 @@ namespace System
                 cache.CallConstructor(obj);
             }
             catch (Exception e) when (wrapExceptions)
+            {
+                throw new TargetInvocationException(e);
+            }
+
+            return obj;
+        }
+
+        // Specialized version of the above for Activator.CreateInstance<T>()
+        [DebuggerStepThrough]
+        [DebuggerHidden]
+        internal object? CreateInstanceOfT()
+        {
+            if (GenericCache is not ActivatorCache cache)
+            {
+                cache = new ActivatorCache(this);
+                GenericCache = cache;
+            }
+
+            if (!cache.CtorIsPublic)
+            {
+                throw new MissingMethodException(SR.Format(SR.Arg_NoDefCTor, this));
+            }
+
+            object? obj = cache.CreateUninitializedObject(this);
+            try
+            {
+                cache.CallConstructor(obj);
+            }
+            catch (Exception e)
             {
                 throw new TargetInvocationException(e);
             }

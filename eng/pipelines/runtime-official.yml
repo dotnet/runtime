@@ -40,10 +40,6 @@ variables:
 stages:
 - stage: Build
   jobs:
-  #
-  # Checkout repository
-  #
-  - template: /eng/pipelines/common/checkout-job.yml
 
   #
   # Build CoreCLR

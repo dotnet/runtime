@@ -90,7 +90,7 @@
     <_portableOS>linux</_portableOS>
     <_portableOS Condition="'$(_runtimeOS)' == 'linux-musl'">linux-musl</_portableOS>
     <_portableOS Condition="$([MSBuild]::IsOSPlatform('OSX'))">osx</_portableOS>
-    <_portableOS Condition="'$(_runtimeOSFamily)' == 'win' or '$(TargetOS)' == 'windows'">win</_portableOS>
+    <_portableOS Condition="'$(_runtimeOSFamily)' == 'win' or '$(_runtimeOS)' == 'win' or '$(TargetOS)' == 'windows'">win</_portableOS>
     <_portableOS Condition="'$(_runtimeOSFamily)' == 'FreeBSD'">freebsd</_portableOS>
     <_portableOS Condition="'$(_runtimeOSFamily)' == 'illumos'">illumos</_portableOS>
     <_portableOS Condition="'$(_runtimeOSFamily)' == 'Solaris'">solaris</_portableOS>

@@ -1134,7 +1134,7 @@ namespace System.Diagnostics.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))] // ActiveIssue: https://github.com/dotnet/runtime/issues/27615
+        [Fact]
         public void GetProcessesByName_ProcessName_ReturnsExpected()
         {
             // Get the current process using its name

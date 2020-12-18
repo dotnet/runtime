@@ -1946,7 +1946,7 @@ inline UNATIVE_OFFSET emitter::emitInsSizeRR(instruction ins, regNumber reg1, re
 
     if ((code & 0xFF00) != 0)
     {
-        sz = 5;
+        sz = IsSSEOrAVXInstruction(ins) ? emitInsSize(code) : 5;
     }
     else
     {

@@ -147,12 +147,16 @@
   </Target>
 
   <Import Project="$(MonoProjectRoot)\wasm\build\WasmApp.targets" Condition="'$(TargetOS)' == 'Browser'" />
+  <PropertyGroup>
+      <WasmBuildAppDependsOn>PrepareForWasmBuildApp;$(WasmBuildAppDependsOn)</WasmBuildAppDependsOn>
+  </PropertyGroup>
 
   <Target Condition="'$(TargetOS)' == 'Browser'" Name="BundleTestWasmApp" DependsOnTargets="WasmBuildApp" />
 
-  <Target Condition="'$(TargetOS)' == 'Browser'" Name="PrepareForWasmBuildApp" BeforeTargets="WasmBuildApp">
+  <Target Condition="'$(TargetOS)' == 'Browser'" Name="PrepareForWasmBuildApp">
     <PropertyGroup>
       <WasmAppDir>$(BundleDir)</WasmAppDir>
+      <WasmAotDir>$(PublishDir)</WasmAotDir>
       <WasmMainAssemblyPath>$(PublishDir)WasmTestRunner.dll</WasmMainAssemblyPath>
       <WasmMainJSPath>$(MonoProjectRoot)\wasm\runtime-test.js</WasmMainJSPath>
       <WasmInvariantGlobalization>$(InvariantGlobalization)</WasmInvariantGlobalization>
@@ -166,10 +170,6 @@
       </WasmSatelliteAssemblies>
 
       <WasmAssembliesToBundle Include="$(PublishDir)\*.dll"/>
-      <WasmAssembliesToBundle Include="$(PublishDir)$(AssemblyName).dll" />
-      <!-- We need these facades for some tests. -->
-      <WasmAssembliesToBundle Include="$(PublishDir)mscorlib.dll" />
-      <WasmAssembliesToBundle Include="$(PublishDir)System.Drawing.dll" />
 
       <WasmFilesToIncludeInFileSystem Include="@(ContentWithTargetPath)" />
       <WasmFilesToIncludeInFileSystem Include="@(ReferenceCopyLocalPaths)" Condition="'%(ReferenceCopyLocalPaths.BuildReference)' == 'true' and !$([System.String]::new('%(ReferenceCopyLocalPaths.Identity)').EndsWith('.resources.dll'))" />

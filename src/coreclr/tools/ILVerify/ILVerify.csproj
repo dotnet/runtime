@@ -3,6 +3,7 @@
     <OutputType>Exe</OutputType>
     <TargetFramework>netcoreapp3.1</TargetFramework>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <UseAppHost>false</UseAppHost>
     <RollForward>Major</RollForward>
   </PropertyGroup>
 

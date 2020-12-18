@@ -8,6 +8,7 @@
 #include "methodcontext.h"
 #include "methodcontextiterator.h"
 #include "verbildump.h"
+#include "spmiutil.h"
 
 void DumpPrimToConsoleBare(MethodContext* mc, CorInfoType prim, DWORDLONG classHandle)
 {
@@ -94,7 +95,7 @@ void DumpSigToConsoleBare(MethodContext* mc, CORINFO_SIG_INFO* pSig)
         CorInfoTypeWithMod type = mc->repGetArgType(pSig, currentItem, (CORINFO_CLASS_HANDLE*)&dl, &exceptionCode);
         CorInfoType        cit  = strip(type);
         if (cit == CORINFO_TYPE_CLASS)
-            dl = (DWORDLONG)mc->repGetArgClass(pSig, currentItem, &exceptionCode);
+            dl = CastHandle(mc->repGetArgClass(pSig, currentItem, &exceptionCode));
         if ((type & CORINFO_TYPE_MOD_PINNED) == CORINFO_TYPE_MOD_PINNED)
             printf("pinned ");
         DumpPrimToConsoleBare(mc, cit, dl);
@@ -942,7 +943,7 @@ void DumpIL(MethodContext* mc)
     printf("{\n");
     printf("   .method ");
     DumpAttributeToConsoleBare(mc->repGetMethodAttribs(cmi.ftn));
-    DumpPrimToConsoleBare(mc, cmi.args.retType, (DWORDLONG)cmi.args.retTypeClass);
+    DumpPrimToConsoleBare(mc, cmi.args.retType, CastHandle(cmi.args.retTypeClass));
     printf(" %s(", methodName);
     DumpSigToConsoleBare(mc, &cmi.args);
     printf(")\n");

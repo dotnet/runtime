@@ -661,7 +661,7 @@ Recognize "Intrinsic" (SampleStep1 shelveset)
   - instrsxarch.h: encoding
   - codegenxarch.cpp: generate instruction
   - importer.cpp: name recognition
-- set COMPLUS_JitDump
+- set COMPlus_JitDump
 - Run & capture jitdump2.out, search for CountBits, then look at disassembly
 
 Add Pattern Recognition (SampleStep2 shelveset):
