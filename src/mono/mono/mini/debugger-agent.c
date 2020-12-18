@@ -269,7 +269,7 @@ typedef struct {
 #define HEADER_LENGTH 11
 
 #define MAJOR_VERSION 2
-#define MINOR_VERSION 57
+#define MINOR_VERSION 58
 
 typedef enum {
 	CMD_SET_VM = 1,
@@ -406,7 +406,8 @@ typedef enum {
 	CMD_ASSEMBLY_GET_PDB_BLOB = 10,
 	CMD_ASSEMBLY_GET_TYPE_FROM_TOKEN = 11,
 	CMD_ASSEMBLY_GET_METHOD_FROM_TOKEN = 12,
-	CMD_ASSEMBLY_HAS_DEBUG_INFO = 13
+	CMD_ASSEMBLY_HAS_DEBUG_INFO = 13,
+	CMD_ASSEMBLY_GET_CATTRS = 14,
 } CmdAssembly;
 
 typedef enum {
@@ -6853,6 +6854,113 @@ get_types_for_source_file (gpointer key, gpointer value, gpointer user_data)
 	}
 }
 
+static void
+buffer_add_cattr_arg (Buffer *buf, MonoType *t, MonoDomain *domain, MonoObject *val)
+{
+	if (val && val->vtable->klass == mono_defaults.runtimetype_class) {
+		/* Special case these so the client doesn't have to handle Type objects */
+
+		buffer_add_byte (buf, VALUE_TYPE_ID_TYPE);
+		buffer_add_typeid (buf, domain, mono_class_from_mono_type_internal (((MonoReflectionType*)val)->type));
+	} else if (MONO_TYPE_IS_REFERENCE (t))
+		buffer_add_value (buf, t, &val, domain);
+	else
+		buffer_add_value (buf, t, mono_object_unbox_internal (val), domain);
+}
+
+static ErrorCode
+buffer_add_cattrs (Buffer *buf, MonoDomain *domain, MonoImage *image, MonoClass *attr_klass, MonoCustomAttrInfo *cinfo)
+{
+	int i, j;
+	int nattrs = 0;
+
+	if (!cinfo) {
+		buffer_add_int (buf, 0);
+		return ERR_NONE;
+	}
+
+	SETUP_ICALL_FUNCTION;
+
+	for (i = 0; i < cinfo->num_attrs; ++i) {
+		if (!attr_klass || mono_class_has_parent (cinfo->attrs [i].ctor->klass, attr_klass))
+			nattrs ++;
+	}
+	buffer_add_int (buf, nattrs);
+
+	for (i = 0; i < cinfo->num_attrs; ++i) {
+		MonoCustomAttrEntry *attr = &cinfo->attrs [i];
+		if (!attr_klass || mono_class_has_parent (attr->ctor->klass, attr_klass)) {
+			MonoArray *typed_args, *named_args;
+			MonoArrayHandleOut typed_args_h, named_args_h;
+			MonoObjectHandle val_h;
+			MonoType *t;
+			CattrNamedArg *arginfo = NULL;
+			ERROR_DECL (error);
+
+			SETUP_ICALL_FRAME;
+			typed_args_h = MONO_HANDLE_NEW (MonoArray, NULL);
+			named_args_h = MONO_HANDLE_NEW (MonoArray, NULL);
+			val_h = MONO_HANDLE_NEW (MonoObject, NULL);
+
+			mono_reflection_create_custom_attr_data_args (image, attr->ctor, attr->data, attr->data_size, typed_args_h, named_args_h, &arginfo, error);
+			if (!is_ok (error)) {
+				PRINT_DEBUG_MSG (2, "[dbg] mono_reflection_create_custom_attr_data_args () failed with: '%s'\n", mono_error_get_message (error));
+				mono_error_cleanup (error);
+				CLEAR_ICALL_FRAME;
+				return ERR_LOADER_ERROR;
+			}
+			typed_args = MONO_HANDLE_RAW (typed_args_h);
+			named_args = MONO_HANDLE_RAW (named_args_h);
+
+			buffer_add_methodid (buf, domain, attr->ctor);
+
+			/* Ctor args */
+			if (typed_args) {
+				buffer_add_int (buf, mono_array_length_internal (typed_args));
+				for (j = 0; j < mono_array_length_internal (typed_args); ++j) {
+					MonoObject *val = mono_array_get_internal (typed_args, MonoObject*, j);
+					MONO_HANDLE_ASSIGN_RAW (val_h, val);
+
+					t = mono_method_signature_internal (attr->ctor)->params [j];
+
+					buffer_add_cattr_arg (buf, t, domain, val);
+				}
+			} else {
+				buffer_add_int (buf, 0);
+			}
+
+			/* Named args */
+			if (named_args) {
+				buffer_add_int (buf, mono_array_length_internal (named_args));
+
+				for (j = 0; j < mono_array_length_internal (named_args); ++j) {
+					MonoObject *val = mono_array_get_internal (named_args, MonoObject*, j);
+					MONO_HANDLE_ASSIGN_RAW (val_h, val);
+
+					if (arginfo [j].prop) {
+						buffer_add_byte (buf, 0x54);
+						buffer_add_propertyid (buf, domain, arginfo [j].prop);
+					} else if (arginfo [j].field) {
+						buffer_add_byte (buf, 0x53);
+						buffer_add_fieldid (buf, domain, arginfo [j].field);
+					} else {
+						g_assert_not_reached ();
+					}
+
+					buffer_add_cattr_arg (buf, arginfo [j].type, domain, val);
+				}
+			} else {
+				buffer_add_int (buf, 0);
+			}
+			g_free (arginfo);
+
+			CLEAR_ICALL_FRAME;
+		}
+	}
+
+	return ERR_NONE;
+}
+
 static void add_error_string (Buffer *buf, const char *str) 
 {
 	if (CHECK_PROTOCOL_VERSION (2, 56)) 
@@ -7786,6 +7894,27 @@ assembly_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 		buffer_add_byte (buf, !ass->dynamic && mono_debug_image_has_debug_info (ass->image));
 		break;
 	}
+	case CMD_ASSEMBLY_GET_CATTRS: {
+		ERROR_DECL (error);
+		MonoClass *attr_klass;
+		MonoCustomAttrInfo *cinfo;
+
+		attr_klass = decode_typeid (p, &p, end, NULL, &err);
+		/* attr_klass can be NULL */
+		if (err != ERR_NONE)
+			return err;
+
+		cinfo = mono_custom_attrs_from_assembly_checked (ass, FALSE, error);
+		if (!is_ok (error)) {
+			mono_error_cleanup (error); /* FIXME don't swallow the error message */
+			return ERR_LOADER_ERROR;
+		}
+
+		err = buffer_add_cattrs (buf, domain, mono_assembly_get_image_internal (ass), attr_klass, cinfo);
+		if (err != ERR_NONE)
+			return err;
+		break;
+	}
 	default:
 		return ERR_NOT_IMPLEMENTED;
 	}
@@ -7844,113 +7973,6 @@ field_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 	}
 	default:
 		return ERR_NOT_IMPLEMENTED;
-	}
-
-	return ERR_NONE;
-}
-
-static void
-buffer_add_cattr_arg (Buffer *buf, MonoType *t, MonoDomain *domain, MonoObject *val)
-{
-	if (val && val->vtable->klass == mono_defaults.runtimetype_class) {
-		/* Special case these so the client doesn't have to handle Type objects */
-		
-		buffer_add_byte (buf, VALUE_TYPE_ID_TYPE);
-		buffer_add_typeid (buf, domain, mono_class_from_mono_type_internal (((MonoReflectionType*)val)->type));
-	} else if (MONO_TYPE_IS_REFERENCE (t))
-		buffer_add_value (buf, t, &val, domain);
-	else
-		buffer_add_value (buf, t, mono_object_unbox_internal (val), domain);
-}
-
-static ErrorCode
-buffer_add_cattrs (Buffer *buf, MonoDomain *domain, MonoImage *image, MonoClass *attr_klass, MonoCustomAttrInfo *cinfo)
-{
-	int i, j;
-	int nattrs = 0;
-
-	if (!cinfo) {
-		buffer_add_int (buf, 0);
-		return ERR_NONE;
-	}
-
-	SETUP_ICALL_FUNCTION;
-
-	for (i = 0; i < cinfo->num_attrs; ++i) {
-		if (!attr_klass || mono_class_has_parent (cinfo->attrs [i].ctor->klass, attr_klass))
-			nattrs ++;
-	}
-	buffer_add_int (buf, nattrs);
-
-	for (i = 0; i < cinfo->num_attrs; ++i) {
-		MonoCustomAttrEntry *attr = &cinfo->attrs [i];
-		if (!attr_klass || mono_class_has_parent (attr->ctor->klass, attr_klass)) {
-			MonoArray *typed_args, *named_args;
-			MonoArrayHandleOut typed_args_h, named_args_h;
-			MonoObjectHandle val_h;
-			MonoType *t;
-			CattrNamedArg *arginfo = NULL;
-			ERROR_DECL (error);
-
-			SETUP_ICALL_FRAME;
-			typed_args_h = MONO_HANDLE_NEW (MonoArray, NULL);
-			named_args_h = MONO_HANDLE_NEW (MonoArray, NULL);
-			val_h = MONO_HANDLE_NEW (MonoObject, NULL);
-
-			mono_reflection_create_custom_attr_data_args (image, attr->ctor, attr->data, attr->data_size, typed_args_h, named_args_h, &arginfo, error);
-			if (!is_ok (error)) {
-				PRINT_DEBUG_MSG (2, "[dbg] mono_reflection_create_custom_attr_data_args () failed with: '%s'\n", mono_error_get_message (error));
-				mono_error_cleanup (error);
-				CLEAR_ICALL_FRAME;
-				return ERR_LOADER_ERROR;
-			}
-			typed_args = MONO_HANDLE_RAW (typed_args_h);
-			named_args = MONO_HANDLE_RAW (named_args_h);
-
-			buffer_add_methodid (buf, domain, attr->ctor);
-
-			/* Ctor args */
-			if (typed_args) {
-				buffer_add_int (buf, mono_array_length_internal (typed_args));
-				for (j = 0; j < mono_array_length_internal (typed_args); ++j) {
-					MonoObject *val = mono_array_get_internal (typed_args, MonoObject*, j);
-					MONO_HANDLE_ASSIGN_RAW (val_h, val);
-
-					t = mono_method_signature_internal (attr->ctor)->params [j];
-
-					buffer_add_cattr_arg (buf, t, domain, val);
-				}
-			} else {
-				buffer_add_int (buf, 0);
-			}
-
-			/* Named args */
-			if (named_args) {
-				buffer_add_int (buf, mono_array_length_internal (named_args));
-
-				for (j = 0; j < mono_array_length_internal (named_args); ++j) {
-					MonoObject *val = mono_array_get_internal (named_args, MonoObject*, j);
-					MONO_HANDLE_ASSIGN_RAW (val_h, val);
-
-					if (arginfo [j].prop) {
-						buffer_add_byte (buf, 0x54);
-						buffer_add_propertyid (buf, domain, arginfo [j].prop);
-					} else if (arginfo [j].field) {
-						buffer_add_byte (buf, 0x53);
-						buffer_add_fieldid (buf, domain, arginfo [j].field);
-					} else {
-						g_assert_not_reached ();
-					}
-
-					buffer_add_cattr_arg (buf, arginfo [j].type, domain, val);
-				}
-			} else {
-				buffer_add_int (buf, 0);
-			}
-			g_free (arginfo);
-
-			CLEAR_ICALL_FRAME;
-		}
 	}
 
 	return ERR_NONE;
