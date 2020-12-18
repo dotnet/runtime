@@ -174,7 +174,6 @@ namespace System.Net.NameResolution.Tests
         [OuterLoop]
         [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/43816")] // Race condition outlined below.
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/33378", TestPlatforms.AnyUnix)] // Cancellation of an outstanding getaddrinfo is not supported on *nix.
         public async Task DnsGetHostAddresses_PostCancelledToken_Throws()
         {
             using var cts = new CancellationTokenSource();
