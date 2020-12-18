@@ -144,15 +144,38 @@
       <_WasmPInvokeModules Include="libSystem.Globalization.Native" />
       <_WasmPInvokeAssemblies Include="$(WasmBuildDir)\*.dll" />
    </ItemGroup>
+   <!--This pinvoke-table.h will be used instead of the one in the runtime pack because of -I$(WasmBuildDir) -->
    <PInvokeTableGenerator
      Modules="@(_WasmPInvokeModules)"
      Assemblies="@(_WasmPInvokeAssemblies)"
      OutputPath="$(WasmBuildDir)pinvoke-table.h" />
 
-    <Exec Command="source $(EMSDK_PATH)/emsdk_env.sh &amp;&amp; emcc $(EmccFlags) -DCORE_BINDINGS -I$(MicrosoftNetCoreAppRuntimePackRidDir)native/include/mono-2.0 -I$(MicrosoftNetCoreAppRuntimePackRidDir)native/include/wasm -I$(WasmBuildDir) $(MicrosoftNetCoreAppRuntimePackRidDir)native/src/driver.c -c -o driver.o" IgnoreStandardErrorWarningFormat="true" WorkingDirectory="$(WasmBuildDir)" StandardOutputImportance="Low" />
-    <Exec Command="source $(EMSDK_PATH)/emsdk_env.sh &amp;&amp; emcc $(EmccFlags) -I$(MicrosoftNetCoreAppRuntimePackRidDir)native/include/mono-2.0 $(MicrosoftNetCoreAppRuntimePackRidDir)native/src/corebindings.c -c -o corebindings.o" IgnoreStandardErrorWarningFormat="true" WorkingDirectory="$(WasmBuildDir)" StandardOutputImportance="Low" />
-    <Exec Command="source $(EMSDK_PATH)/emsdk_env.sh &amp;&amp; emcc $(EmccFlags) -DGEN_PINVOKE=1 -I$(WasmBuildDir) -I$(MicrosoftNetCoreAppRuntimePackRidDir)native/include/wasm $(MicrosoftNetCoreAppRuntimePackRidDir)native/src/pinvoke.c -c -o pinvoke.o" IgnoreStandardErrorWarningFormat="true" WorkingDirectory="$(WasmBuildDir)" StandardOutputImportance="Low" />
-    <Exec Command="source $(EMSDK_PATH)/emsdk_env.sh &amp;&amp; emcc $(EmccFlags) -s TOTAL_MEMORY=536870912 --js-library $(MicrosoftNetCoreAppRuntimePackRidDir)native/src/library_mono.js --js-library $(MicrosoftNetCoreAppRuntimePackRidDir)native/src/binding_support.js --js-library $(MicrosoftNetCoreAppRuntimePackRidDir)native/src/dotnet_support.js --js-library $(MicrosoftNetCoreAppRuntimePackRidDir)native/src/pal_random.js driver.o pinvoke.o corebindings.o @(_WasmAssemblies->'%(LlvmBitcodeFile)', ' ') libmono-ee-interp.a libmonosgen-2.0.a libmono-ilgen.a libmono-icall-table.a libSystem.Native.a libSystem.IO.Compression.Native.a libicuuc.a libicui18n.a -o dotnet.js" IgnoreStandardErrorWarningFormat="true" WorkingDirectory="$(WasmBuildDir)" StandardOutputImportance="Low" />
+   <ItemGroup>
+     <_WasmObjects Include="libmono-ee-interp.a"/>
+     <_WasmObjects Include="libmonosgen-2.0.a"/>
+     <_WasmObjects Include="libmono-ilgen.a"/>
+     <_WasmObjects Include="libmono-icall-table.a"/>
+     <_WasmObjects Include="libSystem.Native.a"/>
+     <_WasmObjects Include="libSystem.IO.Compression.Native.a"/>
+     <_WasmObjects Include="libicuuc.a"/>
+     <_WasmObjects Include="libicui18n.a"/>
+     <_WasmObjects Include="driver.o"/>
+     <_WasmObjects Include="pinvoke.o"/>
+     <_WasmObjects Include="corebindings.o"/>
+   </ItemGroup>
+
+   <PropertyGroup>
+     <_WasmIncludeDir>$(MicrosoftNetCoreAppRuntimePackRidDir)native/include</_WasmIncludeDir>
+     <_WasmSrcDir>$(MicrosoftNetCoreAppRuntimePackRidDir)native/src</_WasmSrcDir>
+     <_WasmEmcc>source $(EMSDK_PATH)/emsdk_env.sh &amp;&amp; emcc</_WasmEmcc>
+     <EmccCFlags>$(EmccFlags) -DCORE_BINDINGS -DGEN_PINVOKE=1 -I$(WasmBuildDir) -I$(_WasmIncludeDir)/mono-2.0 -I$(_WasmIncludeDir)/wasm</EmccCFlags>
+     <EmccLDFlags>$(EmccFlags) -s TOTAL_MEMORY=536870912</EmccLDFlags>
+   </PropertyGroup>
+
+    <Exec Command="$(_WasmEmcc) $(EmccCFlags) $(_WasmSrcDir)/driver.c -c -o driver.o" IgnoreStandardErrorWarningFormat="true" WorkingDirectory="$(WasmBuildDir)" StandardOutputImportance="Low" />
+    <Exec Command="$(_WasmEmcc) $(EmccCFlags) $(_WasmSrcDir)/corebindings.c -c -o corebindings.o" IgnoreStandardErrorWarningFormat="true" WorkingDirectory="$(WasmBuildDir)" StandardOutputImportance="Low" />
+    <Exec Command="$(_WasmEmcc) $(EmccCFlags) $(_WasmSrcDir)/pinvoke.c -c -o pinvoke.o" IgnoreStandardErrorWarningFormat="true" WorkingDirectory="$(WasmBuildDir)" StandardOutputImportance="Low" />
+    <Exec Command="$(_WasmEmcc) $(EmccLDFlags) --js-library $(_WasmSrcDir)/library_mono.js --js-library $(_WasmSrcDir)/binding_support.js --js-library $(_WasmSrcDir)/dotnet_support.js --js-library $(_WasmSrcDir)/pal_random.js @(_WasmAssemblies->'%(LlvmBitcodeFile)', ' ') @(_WasmObjects, ' ') -o dotnet.js" IgnoreStandardErrorWarningFormat="true" WorkingDirectory="$(WasmBuildDir)" StandardOutputImportance="Low" />
     <Exec Condition="'$(WasmNativeStrip)' == 'true'" Command="$(EMSDK_PATH)/upstream/bin/wasm-opt --strip-dwarf dotnet.wasm -o dotnet.wasm" IgnoreStandardErrorWarningFormat="true" WorkingDirectory="$(WasmBuildDir)" />
   </Target>
 
