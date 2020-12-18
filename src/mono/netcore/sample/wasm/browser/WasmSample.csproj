@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk" DefaultTargets="WasmBuildApp">
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <OutputPath>bin</OutputPath>
@@ -60,7 +60,10 @@
     </Content>
   </ItemGroup>
 
-  <Target Name="CopySampleAppToHelixTestDir" Condition="'$(ArchiveTests)' == 'true'" AfterTargets="WasmBuildApp" DependsOnTargets="Publish">
+  <Target Name="CopySampleAppToHelixTestDir" 
+          Condition="'$(ArchiveTests)' == 'true'" 
+          AfterTargets="Build" 
+          DependsOnTargets="Publish">
     <PropertyGroup>
       <!-- Helix properties -->
       <!-- AnyCPU as Platform-->
