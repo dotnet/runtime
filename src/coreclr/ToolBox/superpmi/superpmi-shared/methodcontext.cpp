@@ -3747,7 +3747,7 @@ void MethodContext::recPInvokeMarshalingRequired(CORINFO_METHOD_HANDLE method,
 
     MethodOrSigInfoValue key;
     ZeroMemory(&key, sizeof(MethodOrSigInfoValue)); // We use the input structs as a key and use memcmp to
-                                                              // compare.. so we need to zero out padding too
+                                                    // compare.. so we need to zero out padding too
 
     key.method     = CastHandle(method);
     key.pSig_Index = (DWORD)PInvokeMarshalingRequired->AddBuffer((unsigned char*)callSiteSig->pSig, callSiteSig->cbSig);
@@ -3770,7 +3770,7 @@ bool MethodContext::repPInvokeMarshalingRequired(CORINFO_METHOD_HANDLE method, C
 
     MethodOrSigInfoValue key;
     ZeroMemory(&key, sizeof(MethodOrSigInfoValue)); // We use the input structs as a key and use memcmp to
-                                                      // compare.. so we need to zero out padding too
+                                                    // compare.. so we need to zero out padding too
 
     key.method     = CastHandle(method);
     key.pSig_Index = (DWORD)PInvokeMarshalingRequired->Contains((unsigned char*)callSiteSig->pSig, callSiteSig->cbSig);
@@ -3782,25 +3782,38 @@ bool MethodContext::repPInvokeMarshalingRequired(CORINFO_METHOD_HANDLE method, C
     return value;
 }
 
-void MethodContext::recGetUnmanagedCallConv(CORINFO_METHOD_HANDLE     method,
-                                             CORINFO_SIG_INFO*        callSiteSig,
-                                             CorInfoCallConvExtension result,
-                                             bool                     suppressGCTransitionResult)
+void MethodContext::recGetUnmanagedCallConv(CORINFO_METHOD_HANDLE    method,
+                                            CORINFO_SIG_INFO*        callSiteSig,
+                                            CorInfoCallConvExtension result,
+                                            bool                     suppressGCTransitionResult)
 {
     if (GetUnmanagedCallConv == nullptr)
         GetUnmanagedCallConv = new LightWeightMap<MethodOrSigInfoValue, DD>();
 
     MethodOrSigInfoValue key;
     ZeroMemory(&key, sizeof(MethodOrSigInfoValue)); // We use the input structs as a key and use memcmp to
-                                                              // compare.. so we need to zero out padding too
+                                                    // compare.. so we need to zero out padding too
 
-    key.method     = CastHandle(method);
-    key.pSig_Index = (DWORD)PInvokeMarshalingRequired->AddBuffer((unsigned char*)callSiteSig->pSig, callSiteSig->cbSig);
-    key.cbSig      = (DWORD)callSiteSig->cbSig;
-    key.scope      = CastHandle(callSiteSig->scope);
+    key.method = CastHandle(method);
+    if (callSiteSig != nullptr)
+    {
+        key.pSig_Index = (DWORD)GetUnmanagedCallConv->AddBuffer((unsigned char*)callSiteSig->pSig, callSiteSig->cbSig);
+        key.cbSig = (DWORD)callSiteSig->cbSig;
+        key.scope = CastHandle(callSiteSig->scope);
+    }
+    else
+    {
+        key.pSig_Index = 0;
+        key.cbSig = 0;
+        key.scope = 0;
+    }
 
-    GetUnmanagedCallConv->Add(key, { (DWORD)result, (DWORD)suppressGCTransitionResult });
-    DEBUG_REC(dmpGetUnmanagedCallConv(key, { (DWORD)result, (DWORD)suppressGCTransitionResult }));
+    DD value;
+    value.A = (DWORD)result;
+    value.B = (DWORD)suppressGCTransitionResult;
+
+    GetUnmanagedCallConv->Add(key, value);
+    DEBUG_REC(dmpGetUnmanagedCallConv(key, value));
 }
 void MethodContext::dmpGetUnmanagedCallConv(const MethodOrSigInfoValue& key, DD value)
 {
@@ -3816,19 +3829,28 @@ CorInfoCallConvExtension MethodContext::repGetUnmanagedCallConv(CORINFO_METHOD_H
         LogDebug("Sparse - repGetUnmanagedCallConv returning CorInfoCallConvExtension::Managed");
         return CorInfoCallConvExtension::Managed;
 #else
-        LogException(EXCEPTIONCODE_MC, "Found a null GetUnmGetUnmanagedCallConvanagedCallConv.  Probably missing a fatTrigger for %016llX.",
+        LogException(EXCEPTIONCODE_MC, "Found a null GetUnmanagedCallConv.  Probably missing a fatTrigger for %016llX.",
                      CastHandle(method));
 #endif
     }
 
     MethodOrSigInfoValue key;
     ZeroMemory(&key, sizeof(MethodOrSigInfoValue)); // We use the input structs as a key and use memcmp to
-                                                      // compare.. so we need to zero out padding too
+                                                    // compare.. so we need to zero out padding too
 
-    key.method     = CastHandle(method);
-    key.pSig_Index = (DWORD)GetUnmanagedCallConv->Contains((unsigned char*)callSiteSig->pSig, callSiteSig->cbSig);
-    key.cbSig      = (DWORD)callSiteSig->cbSig;
-    key.scope      = CastHandle(callSiteSig->scope);
+    key.method = CastHandle(method);
+    if (callSiteSig != nullptr)
+    {
+        key.pSig_Index = (DWORD)GetUnmanagedCallConv->Contains((unsigned char*)callSiteSig->pSig, callSiteSig->cbSig);
+        key.cbSig = (DWORD)callSiteSig->cbSig;
+        key.scope = CastHandle(callSiteSig->scope);
+    }
+    else
+    {
+        key.pSig_Index = 0;
+        key.cbSig = 0;
+        key.scope = 0;
+    }
 
     DD value = GetUnmanagedCallConv->Get(key);
     DEBUG_REP(dmpGetUnmanagedCallConv(key, value));
