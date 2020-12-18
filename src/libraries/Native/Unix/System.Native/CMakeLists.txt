@@ -35,22 +35,13 @@ if (CLR_CMAKE_TARGET_IOS OR CLR_CMAKE_TARGET_TVOS)
         pal_searchpath.m)
 else ()
     set(NATIVE_SOURCES ${NATIVE_SOURCES}
+        pal_searchpath.c
         pal_console.c
         pal_log.c)
 endif ()
 
-if (CLR_CMAKE_TARGET_LINUX AND NOT CLR_CMAKE_TARGET_BROWSER)
+if (NOT CLR_CMAKE_TARGET_BROWSER)
     set(NATIVE_SOURCES ${NATIVE_SOURCES} pal_networkchange.c)
-
-    if (!HAVE_LINUX_RTNETLINK_H)
-        message(FATAL_ERROR "Could not find linux/rtnetlink.h")
-    endif ()
-elseif (CLR_CMAKE_TARGET_FREEBSD)
-    set(NATIVE_SOURCES ${NATIVE_SOURCES} pal_networkchange.c)
-
-    if (!HAVE_RT_MSGHDR)
-        message(FATAL_ERROR "Could not find net/route.h")
-    endif ()
 endif ()
 
 include(${CMAKE_CURRENT_LIST_DIR}/extra_libs.cmake)
@@ -69,12 +60,24 @@ if (GEN_SHARED_LIB)
         ${NATIVE_LIBS_EXTRA}
     )
 
+    if (NOT CLR_CMAKE_TARGET_IOS AND NOT CLR_CMAKE_TARGET_TVOS AND NOT CLR_CMAKE_TARGET_ANDROID)
+        add_custom_command(TARGET System.Native POST_BUILD
+            COMMENT "Verifying System.Native entry points against entrypoints.c "
+            COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/../verify-entrypoints.sh
+                $<TARGET_FILE:System.Native>
+                ${CMAKE_CURRENT_SOURCE_DIR}/entrypoints.c
+                ${CMAKE_NM}
+            VERBATIM
+        )
+    endif()
+
     install_with_stripped_symbols (System.Native PROGRAMS .)
 endif ()
 
 add_library(System.Native-Static
     STATIC
     ${NATIVE_SOURCES}
+    entrypoints.c
 )
 
 set_target_properties(System.Native-Static PROPERTIES OUTPUT_NAME System.Native CLEAN_DIRECT_OUTPUT 1)
