@@ -11,7 +11,6 @@ namespace Sample
         public static void Main(string[] args)
         {
             Console.WriteLine ("Hello, World!");
-            StopProfile();
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]

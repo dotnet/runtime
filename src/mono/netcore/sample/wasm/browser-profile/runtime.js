@@ -8,8 +8,14 @@ var Module = {
         config.fetch_file_cb = function (asset) {
             return fetch (asset, { credentials: 'same-origin' });
         }
-        config.aot_profiler_options = {write_at:"Sample.Test::StopProfile", 
-                                        send_to: "System.Runtime.InteropServices.JavaScript.Runtime::DumpAotProfileData"}
+
+        if (config.enable_profiler)
+        {
+            config.aot_profiler_options = {
+                write_at:"Sample.Test::StopProfile", 
+                send_to: "System.Runtime.InteropServices.JavaScript.Runtime::DumpAotProfileData"
+            }
+        }
         MONO.mono_load_runtime_and_bcl_args (config);
     }
 };

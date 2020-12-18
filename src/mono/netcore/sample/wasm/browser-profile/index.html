@@ -16,8 +16,11 @@
           var ret = BINDING.call_static_method("[WasmSample] Sample.Test:TestMeaning", []);
           document.getElementById("out").innerHTML = ret;
           console.log ("ready");
-          BINDING.call_static_method("[WasmSample] Sample.Test:StopProfile", []);
-          saveProfile();
+
+          if (config.enable_profiler) {
+            BINDING.call_static_method("[WasmSample] Sample.Test:StopProfile", []);
+            saveProfile();
+          }
         },
       };
 
