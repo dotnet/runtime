@@ -547,15 +547,7 @@ namespace System.Diagnostics.Tests
             string userName = GetCurrentRealUserName();
             string userId = GetUserId(userName);
             string userGroupId = GetUserGroupId(userName);
-            string userGroupIds = GetUserGroupIdsJoined(userName);
-
-            HashSet<uint> groupIdsFromIdGCommand = new HashSet<uint>(GetUserGroupIds(userName));
-            HashSet<uint> groupIdsFromLibc = GetGroups();
-
-            if (!groupIdsFromIdGCommand.SetEquals(groupIdsFromLibc))
-            {
-                throw new XunitException($"id -G returned: {string.Join(", ", groupIdsFromIdGCommand)}{Environment.NewLine}getgroups returned: {string.Join(", ", groupIdsFromLibc)}");
-            }
+            string userGroupIds = GetGroupIds();
 
             // If this test runs as the user, we expect to be able to match the user groups exactly.
             // Except on OSX, where getgrouplist may return a list of groups truncated to NGROUPS_MAX.
@@ -591,7 +583,7 @@ namespace System.Diagnostics.Tests
 
                 string userId = GetUserId(username);
                 string userGroupId = GetUserGroupId(username);
-                string userGroupIds = GetUserGroupIdsJoined(username);
+                string userGroupIds = GetGroupIds();
 
                 if (bool.Parse(useRootGroupsArg))
                 {
@@ -626,17 +618,7 @@ namespace System.Diagnostics.Tests
         private static string GetUserGroupId(string username)
             => StartAndReadToEnd("id", new[] { "-g", username }).Trim('\n');
 
-        private static IEnumerable<uint> GetUserGroupIds(string username)
-        {
-            string[] groupIds = StartAndReadToEnd("id", new[] { "-G", username })
-                                    .Split(new[] { ' ', '\n' }, StringSplitOptions.RemoveEmptyEntries);
-            return groupIds.Select(s => uint.Parse(s)).OrderBy(id => id);
-        }
-
-        private static string GetUserGroupIdsJoined(string username)
-        {
-            return string.Join(",", GetUserGroupIds(username));
-        }
+        private static string GetGroupIds() => string.Join(",", GetGroups());
 
         private static string GetCurrentRealUserName()
         {
