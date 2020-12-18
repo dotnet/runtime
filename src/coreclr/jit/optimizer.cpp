@@ -2595,7 +2595,7 @@ void Compiler::optIdentifyLoopsForAlignment()
 
             // An innerloop candidate that might need alignment
             if ((optLoopTable[loopInd].lpChild == BasicBlock::NOT_IN_LOOP) &&
-                opts.compJitAlignLoopMinBlockWeight <= first->getBBWeight(this))
+                first->getBBWeight(this) >= opts.compJitAlignLoopMinBlockWeight)
             {
                 first->bbFlags |= BBF_LOOP_ALIGN;
                 JITDUMP("L%02u that starts at " FMT_BB " needs alignment.\n", loopInd, first->bbNum);
@@ -8007,26 +8007,25 @@ bool Compiler::optComputeLoopSideEffectsOfBlock(BasicBlock* blk)
 // Marks the containsCall information to "lnum" and any parent loops.
 void Compiler::AddContainsCallAllContainingLoops(unsigned lnum)
 {
-    unsigned nestedLoopNum = lnum;
+
+#ifdef FEATURE_LOOP_ALIGN
+    // If this is the inner most loop, reset the LOOP_ALIGN flag
+    // because a loop having call will not likely to benefit from
+    // alignment
+    if (optLoopTable[lnum].lpChild == BasicBlock::NOT_IN_LOOP)
+    {
+        BasicBlock* first = optLoopTable[lnum].lpFirst;
+        first->bbFlags &= ~BBF_LOOP_ALIGN;
+        JITDUMP("Skip alignment for L%02u that starts at " FMT_BB " because loop has a call.\n", lnum, first->bbNum);
+    }
+#endif
+
     assert(0 <= lnum && lnum < optLoopCount);
     while (lnum != BasicBlock::NOT_IN_LOOP)
     {
         optLoopTable[lnum].lpContainsCall = true;
         lnum                              = optLoopTable[lnum].lpParent;
     }
-
-#ifdef FEATURE_LOOP_ALIGN
-    // If this is the inner most loop, reset the LOOP_ALIGN flag
-    // because a loop having call will not likely to benefit from
-    // alignment
-    if (optLoopTable[nestedLoopNum].lpChild == BasicBlock::NOT_IN_LOOP)
-    {
-        BasicBlock* first = optLoopTable[nestedLoopNum].lpFirst;
-        first->bbFlags &= ~BBF_LOOP_ALIGN;
-        JITDUMP("Skip alignment for L%02u that starts at " FMT_BB " because loop has a call.\n", nestedLoopNum,
-                first->bbNum);
-    }
-#endif
 }
 
 // Adds the variable liveness information for 'blk' to 'this' LoopDsc

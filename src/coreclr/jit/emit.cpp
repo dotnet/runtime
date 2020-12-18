@@ -882,6 +882,7 @@ insGroup* emitter::emitSavIG(bool emitAdd)
         }
 
         emitAlignLast = last;
+        assert(emitAlignLast->idaIG->igNum == emitLastAlignedIgNum);
     }
 
 #endif
@@ -4612,6 +4613,25 @@ AGAIN:
 
 #ifdef FEATURE_LOOP_ALIGN
 
+void emitter::emitLoopAlignment()
+{
+    if ((emitComp->opts.compJitAlignLoopBoundary > 16) && (!emitComp->opts.compJitAlignLoopAdaptive))
+    {
+        emitLongLoopAlign(emitComp->opts.compJitAlignLoopBoundary);
+    }
+    else
+    {
+        emitLoopAlign();
+    }
+
+    // Mark this IG as need alignment so during emitter we can check the instruction count heuristics of
+    // all IGs that follows this IG and participate in a loop.
+    emitCurIG->igFlags |= IGF_LOOP_ALIGN;
+
+    JITDUMP("Adding 'align' instruction of %d bytes in G_M%03u_IG%02u.\n", emitComp->opts.compJitAlignLoopBoundary,
+            emitComp->compMethodID, emitCurIG->igNum);
+}
+
 //-----------------------------------------------------------------------------
 //  For loopHeaderIg, find the size of the smallest possible loop that doesn't exceed maxLoopSize.
 //
@@ -4659,8 +4679,10 @@ unsigned emitter::getLoopSize(insGroup* igLoopHeader, unsigned maxLoopSize)
 //    If the current loop covers a loop that is already marked as align, then remove
 //    the alignment flag present on IG before dstIG.
 //
-void emitter::emitSetLoopBackEdge(insGroup* dstIG)
+void emitter::emitSetLoopBackEdge(BasicBlock* loopTopBlock)
 {
+    insGroup* dstIG = (insGroup*)loopTopBlock->bbJumpDest->bbEmitCookie;
+
     // With (dstIG != nullptr), ensure that only back edges are tracked.
     // If there is forward jump, dstIG is not yet generated.
     //
@@ -4829,12 +4851,6 @@ void emitter::emitLoopAlignAdjustments()
             JITDUMP("Adjusted alignment of G_M%03u_IG%02u from %02d to %02d\n", emitComp->compMethodID, alignIG->igNum,
                     estimatedPaddingNeeded, actualPaddingNeeded);
         }
-
-        if (actualPaddingNeeded > 0)
-        {
-            /* Record the last IG that will have non-zero align instruction */
-            emitLastAlignedIgNum = alignIG->igNum;
-        }
     }
 
     // Do adjustments of remaining IGs
@@ -4994,12 +5010,13 @@ unsigned emitter::emitCalculatePaddingForLoopAlignment(insGroup* ig,
         else
         {
             // Otherwise, the loop just fits in minBlocksNeededForLoop and so can skip alignment.
-            JITDUMP(";; Skip alignment: 'Loop is aligned to fit in %d blocks of %d chunks.'\n",
-                    minBlocksNeededForLoop, alignmentBoundary);
+            JITDUMP(";; Skip alignment: 'Loop is aligned to fit in %d blocks of %d chunks.'\n", minBlocksNeededForLoop,
+                    alignmentBoundary);
         }
     }
 
-    JITDUMP(";; Calculated padding to add %d bytes to align at %dB boudnary.'\n", paddingToAdd, alignmentBoundary);
+    JITDUMP(";; Calculated padding to add %d bytes to align at %dB boundary that starts at 0x%x.'\n", paddingToAdd,
+            alignmentBoundary, offset);
 
     // Either no padding is added because it is too expensive or the offset gets aligned
     // to the alignment boundary

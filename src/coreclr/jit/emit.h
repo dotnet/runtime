@@ -250,7 +250,7 @@ struct insGroup
     unsigned int   igFuncIdx; // Which function/funclet does this belong to? (Index into Compiler::compFuncInfos array.)
     unsigned short igFlags;   // see IGF_xxx below
     unsigned short igSize;    // # of bytes of code in this group
-    insGroup*      igLoopBackEdge; // Back-edge that points to the loop head.
+    insGroup*      igLoopBackEdge; // "first" back-edge that branches back to an aligned loop head.
 
 #define IGF_GC_VARS 0x0001    // new set of live GC ref variables
 #define IGF_BYREF_REGS 0x0002 // new set of live by-ref registers
@@ -265,8 +265,8 @@ struct insGroup
 #define IGF_PLACEHOLDER 0x0100    // this is a placeholder group, to be filled in later
 #define IGF_EXTEND 0x0200         // this block is conceptually an extension of the previous block
                                   // and the emitter should continue to track GC info as if there was no new block.
-#define IGF_LOOP_ALIGN 0x0400     // this group contains alignment instruction at the end because the next IG points
-                                  // to inner loop that needs alignment.
+#define IGF_LOOP_ALIGN 0x0400     // this group contains alignment instruction(s) at the end; the next IG is the
+                                  // head of a loop that needs alignment.
 
 // Mask of IGF_* flags that should be propagated to new blocks when they are created.
 // This allows prologs and epilogs to be any number of IGs, but still be
@@ -569,6 +569,7 @@ protected:
 #if defined(TARGET_XARCH)
         static_assert_no_msg(INS_count <= 1024);
         instruction _idIns : 10;
+#define MAX_ENCODED_SIZE 15
 #elif defined(TARGET_ARM64)
         static_assert_no_msg(INS_count <= 512);
         instruction _idIns : 9;
@@ -1762,7 +1763,8 @@ private:
     instrDescAlign* emitAlignList;                                      // list of local align instructions in method
     instrDescAlign* emitAlignLast;                                      // last align instruction in method
     unsigned getLoopSize(insGroup* igLoopHeader, unsigned maxLoopSize); // Get the smallest loop size
-    void emitSetLoopBackEdge(insGroup* dstIG);
+    void emitLoopAlignment();
+    void emitSetLoopBackEdge(BasicBlock* loopTopBlock);
     void     emitLoopAlignAdjustments(); // Predict if loop alignment is needed and make appropriate adjustments
     unsigned emitCalculatePaddingForLoopAlignment(insGroup* ig, size_t offset DEBUG_ARG(bool displayAlignmentDetails));
 #endif
@@ -1932,7 +1934,7 @@ private:
     instrDescJmp* emitAllocInstrJmp()
     {
 #if EMITTER_STATS
-        emitTotalIDescJmpCnt++;
+        emitTotalDescAlignCnt++;
 #endif // EMITTER_STATS
         return (instrDescJmp*)emitAllocAnyInstr(sizeof(instrDescJmp), EA_1BYTE);
     }

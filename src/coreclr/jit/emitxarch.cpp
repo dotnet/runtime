@@ -2661,31 +2661,35 @@ emitter::instrDesc* emitter::emitNewInstrAmdCns(emitAttr size, ssize_t dsp, int 
 //-----------------------------------------------------------------------------
 //
 //  The next instruction will be a loop head entry point
-//  So insert a dummy instruction here to ensure that
-//  the x86 I-cache alignment rule is followed.
+//  So insert an alignment instruction here to ensure that
+//  we can properly align the code.
 //
 void emitter::emitLoopAlign(unsigned short paddingBytes)
 {
     /* Insert a pseudo-instruction to ensure that we align
        the next instruction properly */
 
-    paddingBytes       = min(paddingBytes, 15); // We may need to skip up to 15 bytes of code
+    assert(paddingBytes <= MAX_ENCODED_SIZE);
+    paddingBytes       = min(paddingBytes, MAX_ENCODED_SIZE); // We may need to skip up to 15 bytes of code
     instrDescAlign* id = emitNewInstrAlign();
     id->idCodeSize(paddingBytes);
     emitCurIGsize += paddingBytes;
 
     id->idaIG = emitCurIG;
 
-    /* Append this instruction to this IG's jump list */
+    /* Append this instruction to this IG's alignment list */
     id->idaNext        = emitCurIGAlignList;
     emitCurIGAlignList = id;
+
+    /* Record the last IG that has align instruction */
+    emitLastAlignedIgNum = emitCurIG->igNum;
 }
 
 //-----------------------------------------------------------------------------
 //
 //  The next instruction will be a loop head entry point
-//  So insert a dummy instruction here to ensure that
-//  the x86 I-cache alignment rule is followed.
+//  So insert alignment instruction(s) here to ensure that
+//  we can properly align the code.
 //
 //  This emits more than one `INS_align` instruction depending on the
 //  alignmentBoundary parameter.
@@ -2693,10 +2697,10 @@ void emitter::emitLoopAlign(unsigned short paddingBytes)
 void emitter::emitLongLoopAlign(unsigned short alignmentBoundary)
 {
     unsigned short nPaddingBytes    = alignmentBoundary - 1;
-    unsigned short nAlignInstr      = (nPaddingBytes + (15 - 1)) / 15;
+    unsigned short nAlignInstr      = (nPaddingBytes + (MAX_ENCODED_SIZE - 1)) / MAX_ENCODED_SIZE;
     unsigned short instrDescSize    = nAlignInstr * sizeof(instrDescAlign);
-    unsigned short insAlignCount    = nPaddingBytes / 15;
-    unsigned short lastInsAlignSize = nPaddingBytes % 15;
+    unsigned short insAlignCount    = nPaddingBytes / MAX_ENCODED_SIZE;
+    unsigned short lastInsAlignSize = nPaddingBytes % MAX_ENCODED_SIZE;
 
     // Ensure that all align instructions fall in same IG.
     if (emitCurIGfreeNext + instrDescSize >= emitCurIGfreeEndp)
@@ -2722,7 +2726,7 @@ void emitter::emitLongLoopAlign(unsigned short alignmentBoundary)
 
 void emitter::emitIns_Nop(unsigned size)
 {
-    assert(size <= 15);
+    assert(size <= MAX_ENCODED_SIZE);
 
     instrDesc* id = emitNewInstr();
     id->idIns(INS_nop);
@@ -9390,7 +9394,7 @@ static BYTE* emitOutputNOP(BYTE* dst, size_t nBytes)
 //
 // Notes:
 //   Amount of padding needed to align the loop is already calculated. This
-//   method extracts that information and insert those many NOP.
+//   method extracts that information and inserts suitable NOP instructions.
 //
 BYTE* emitter::emitOutputAlign(insGroup* ig, instrDesc* id, BYTE* dst)
 {
@@ -9411,8 +9415,10 @@ BYTE* emitter::emitOutputAlign(insGroup* ig, instrDesc* id, BYTE* dst)
     unsigned paddingNeeded           = emitCalculatePaddingForLoopAlignment(ig, (size_t)dst, displayAlignmentDetails);
 
     // For non-adaptive, padding size is spread in multiple instructions, so don't bother checking
-    // unless non-adaptive approach is ON by default
-    assert((paddingToAdd == paddingNeeded) || !emitComp->opts.compJitAlignLoopAdaptive);
+    if (emitComp->opts.compJitAlignLoopAdaptive)
+    {
+        assert(paddingToAdd == paddingNeeded);
+    }
 #endif
 
     return emitOutputNOP(dst, paddingToAdd);
@@ -12491,7 +12497,8 @@ BYTE* emitter::emitOutputLJ(insGroup* ig, BYTE* dst, instrDesc* i)
 #ifdef DEBUG
             if (emitComp->verbose)
             {
-                printf("; NOTE: size of jump [%08X] mis-predicted by %d bytes\n", emitComp->dspPtr(id), (id->idCodeSize() - JMP_SIZE_SMALL));
+                printf("; NOTE: size of jump [%08X] mis-predicted by %d bytes\n", emitComp->dspPtr(id),
+                       (id->idCodeSize() - JMP_SIZE_SMALL));
             }
 #endif
         }
@@ -12699,6 +12706,14 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
                 {
                     dst = emitOutputAlign(ig, id, dst);
                 }
+#ifdef DEBUG
+                else
+                {
+                    // If the IG is not marked as need alignment, then the code size
+                    // should be zero i.e. no padding needed.
+                    assert(id->idCodeSize() == 0);
+                }
+#endif
                 break;
             }
 
@@ -13740,7 +13755,8 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
     }
 
     // Make sure we set the instruction descriptor size correctly
-    assert((sz == emitSizeOfInsDsc(id)) || (ins == INS_align));
+    assert(sz == emitSizeOfInsDsc(id));
+// assert((sz == emitSizeOfInsDsc(id)) || (ins == INS_align));
 
 #if !FEATURE_FIXED_OUT_ARGS
     bool updateStackLevel = !emitIGisInProlog(ig) && !emitIGisInEpilog(ig);
@@ -13815,6 +13831,12 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             // should never over-estimate align instruction
             assert(id->idIns() != INS_align);
             JITDUMP("Added over-estimation compensation: %d\n", diff);
+
+            if (emitComp->opts.disAsm)
+            {
+                emitDispInsAddr(dst);
+                printf("\t\t  ;; NOP compensation instructions of %d bytes.\n", diff);
+            }
 
             dst = emitOutputNOP(dst, diff);
 

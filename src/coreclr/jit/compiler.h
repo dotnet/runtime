@@ -9049,9 +9049,8 @@ public:
 #define DEFAULT_ALIGN_LOOP_BOUNDARY 0x20
 
 // For non-adaptive loop alignment, by default, only align a loop whose size is
-// atmost 3 times of 32B chunk. If the loop is bigger than that, it is most
-// likely the loop code is complicated enough and aligning such loop will not help
-// much.
+// at most 3 times the alignment block size. If the loop is bigger than that, it is most
+// likely complicated enough that loop alignment will not impact performance.
 #define DEFAULT_MAX_LOOPSIZE_FOR_ALIGN DEFAULT_ALIGN_LOOP_BOUNDARY * 3
 
 #ifdef DEBUG

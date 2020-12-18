@@ -3932,7 +3932,7 @@ _SetMinOpts:
             codeGen->setFrameRequired(true);
 #endif
 
-        if (opts.jitFlags->IsSet(JitFlags::JIT_FLAG_RELOC))
+        if (opts.jitFlags->IsSet(JitFlags::JIT_FLAG_PREJIT))
         {
             // The JIT doesn't currently support loop alignment for prejitted images.
             // (The JIT doesn't know the final address of the code, hence

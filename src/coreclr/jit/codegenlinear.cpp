@@ -349,8 +349,11 @@ void CodeGen::genCodeForBBlist()
             needLabel = true;
         }
 
-        // Make sure we did not add align instruction in the middle of IG.
-        assert(needLabel || !GetEmitter()->emitCurIG->isLoopAlign());
+        if (GetEmitter()->emitCurIG->isLoopAlign())
+        {
+            // we had better be planning on starting a new IG
+            assert(needLabel);
+        }
 
         if (needLabel)
         {
@@ -753,7 +756,7 @@ void CodeGen::genCodeForBBlist()
 
                 if (block->bbJumpDest->isLoopAlign())
                 {
-                    GetEmitter()->emitSetLoopBackEdge((insGroup*)block->bbJumpDest->bbEmitCookie);
+                    GetEmitter()->emitSetLoopBackEdge(block->bbJumpDest);
                 }
 #endif
                 break;
@@ -778,22 +781,7 @@ void CodeGen::genCodeForBBlist()
         {
             assert(ShouldAlignLoops());
 
-            if ((compiler->opts.compJitAlignLoopBoundary > 16) && (!compiler->opts.compJitAlignLoopAdaptive))
-            {
-                GetEmitter()->emitLongLoopAlign(compiler->opts.compJitAlignLoopBoundary);
-            }
-            else
-            {
-                GetEmitter()->emitLoopAlign();
-            }
-
-            // Mark this IG as need alignment so during emitter we can check the instruction count heuristics of
-            // all IGs that follows this IG and participate in a loop.
-            GetEmitter()->emitCurIG->igFlags |= IGF_LOOP_ALIGN;
-
-            JITDUMP("Adding 'align' instruction of %d bytes in G_M%03u_IG%02u to align loop# %d.\n",
-                    compiler->opts.compJitAlignLoopBoundary, compiler->compMethodID, GetEmitter()->emitCurIG->igNum,
-                    block->bbNext->bbNatLoopNum);
+            GetEmitter()->emitLoopAlignment();
         }
 #endif
 

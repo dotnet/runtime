@@ -507,7 +507,7 @@ void BasicBlock::dspFlags()
     }
     if (bbFlags & BBF_LOOP_ALIGN)
     {
-        printf("finnerloop ");
+        printf("align ");
     }
 }
 

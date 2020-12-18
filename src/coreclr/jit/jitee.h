@@ -63,6 +63,7 @@ public:
         JIT_FLAG_BBINSTR                 = 29, // Collect basic block profile information
         JIT_FLAG_BBOPT                   = 30, // Optimize method based on profile information
         JIT_FLAG_FRAMED                  = 31, // All methods have an EBP frame
+        JIT_FLAG_UNUSED35                = 32,
         JIT_FLAG_PUBLISH_SECRET_PARAM    = 33, // JIT must place stub secret param into local 0.  (used by IL stubs)
         JIT_FLAG_UNUSED12                = 34,
         JIT_FLAG_SAMPLING_JIT_BACKGROUND = 35, // JIT is being invoked as a result of stack sampling for hot methods in the background
