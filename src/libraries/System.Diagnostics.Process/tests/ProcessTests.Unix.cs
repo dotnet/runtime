@@ -531,11 +531,11 @@ namespace System.Diagnostics.Tests
 
             if (bool.Parse(checkGroupsExact))
             {
-                AssertExtensions.Equal(expectedGroups, GetGroups());
+                AssertExtensions.Equal(expectedGroups, GetCurrentUserGroupIds());
             }
             else
             {
-                Assert.Subset(expectedGroups, GetGroups());
+                Assert.Subset(expectedGroups, GetCurrentUserGroupIds());
             }
 
             return RemoteExecutor.SuccessExitCode;
@@ -547,7 +547,7 @@ namespace System.Diagnostics.Tests
             string userName = GetCurrentRealUserName();
             string userId = GetUserId(userName);
             string userGroupId = GetUserGroupId(userName);
-            string userGroupIds = GetGroupIds();
+            string userGroupIds = GetUserGroupIds(userName);
 
             // If this test runs as the user, we expect to be able to match the user groups exactly.
             // Except on OSX, where getgrouplist may return a list of groups truncated to NGROUPS_MAX.
@@ -583,7 +583,7 @@ namespace System.Diagnostics.Tests
 
                 string userId = GetUserId(username);
                 string userGroupId = GetUserGroupId(username);
-                string userGroupIds = GetGroupIds();
+                string userGroupIds = GetUserGroupIds(username);
 
                 if (bool.Parse(useRootGroupsArg))
                 {
@@ -618,7 +618,20 @@ namespace System.Diagnostics.Tests
         private static string GetUserGroupId(string username)
             => StartAndReadToEnd("id", new[] { "-g", username }).Trim('\n');
 
-        private static string GetGroupIds() => string.Join(",", GetGroups());
+        private static string GetUserGroupIds(string username)
+        {
+            string[] groupIds = StartAndReadToEnd("id", new[] { "-G", username })
+                .Split(new[] { ' ', '\n' }, StringSplitOptions.RemoveEmptyEntries);
+            return string.Join(",", groupIds.Select(s => uint.Parse(s)).OrderBy(id => id));
+        }
+
+        private static HashSet<uint> GetCurrentUserGroupIds()
+        {
+            string[] groupIds = StartAndReadToEnd("id", new[] { "-G" })
+                .Split(new[] { ' ', '\n' }, StringSplitOptions.RemoveEmptyEntries);
+
+            return new HashSet<uint>(groupIds.Select(s => uint.Parse(s)));
+        }
 
         private static string GetCurrentRealUserName()
         {
@@ -901,27 +914,6 @@ namespace System.Diagnostics.Tests
         private static extern uint getegid();
         [DllImport("libc")]
         private static extern uint getgid();
-
-        [DllImport("libc", SetLastError = true)]
-        private static extern unsafe int getgroups(int size, uint* list);
-
-        private static unsafe HashSet<uint> GetGroups()
-        {
-            int maxSize = 128;
-            Span<uint> groups = stackalloc uint[maxSize];
-            fixed (uint* pGroups = groups)
-            {
-                int rv = getgroups(maxSize, pGroups);
-                if (rv == -1)
-                {
-                    // If this throws with EINVAL, maxSize should be increased.
-                    throw new Win32Exception();
-                }
-
-                // Return this as a HashSet to filter out duplicates.
-                return new HashSet<uint>(groups.Slice(0, rv).ToArray());
-            }
-        }
 
         [DllImport("libc")]
         private static extern int seteuid(uint euid);
