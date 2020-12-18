@@ -288,6 +288,7 @@ namespace System.Threading
         internal void StartCallback()
         {
             ExecutionContext? context = _executionContext;
+            _executionContext = null;
             if (context != null && !context.IsDefault)
             {
                 ExecutionContext.RunInternal(context, s_threadStartContextCallback, this);
