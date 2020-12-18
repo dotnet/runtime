@@ -985,12 +985,8 @@ inline
 bool
 ep_rt_config_value_get_use_portable_thread_pool (void)
 {
-	bool enable = false;
-	gchar *value = g_getenv ("COMPlus_ThreadPool_UsePortableThreadPool");
-	if (value && atoi (value) == 1)
-		enable = true;
-	g_free (value);
-	return enable;
+	// Only supports portable thread pool.
+	return true;
 }
 
 /*
