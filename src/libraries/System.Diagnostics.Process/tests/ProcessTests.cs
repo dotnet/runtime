@@ -1556,10 +1556,9 @@ namespace System.Diagnostics.Tests
             var process = new Process();
             Assert.Throws<InvalidOperationException>(() => process.MainWindowHandle);
         }
-        
-        [Fact]
-        [OuterLoop]
-        [Trait(XunitConstants.Category, XunitConstants.IgnoreForCI)] // Pops UI
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))] // it needs Notepad
+        [OuterLoop("Pops UI")]
         [PlatformSpecific(TestPlatforms.Windows)]
         public void MainWindowHandle_GetWithGui_ShouldRefresh_Windows()
         {
@@ -1591,8 +1590,8 @@ namespace System.Diagnostics.Tests
             }
         }
 
-        [Fact]
-        [OuterLoop("Launches notepad")]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))] // it needs Notepad
+        [OuterLoop("Pops UI")]
         [PlatformSpecific(TestPlatforms.Windows)]
         public void MainWindowTitle_GetWithGui_ShouldRefresh_Windows()
         {
