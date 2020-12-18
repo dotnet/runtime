@@ -12,7 +12,6 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Security;
 using Xunit;
-using Xunit.Sdk;
 using Microsoft.DotNet.RemoteExecutor;
 using Microsoft.DotNet.XUnitExtensions;
 
@@ -527,7 +526,7 @@ namespace System.Diagnostics.Tests
             Assert.Equal(groupId, getgid().ToString());
             Assert.Equal(groupId, getegid().ToString());
 
-            var expectedGroups = new HashSet<uint>(groupIdsJoined.Split(',', StringSplitOptions.RemoveEmptyEntries).Select(s => uint.Parse(s)));
+            var expectedGroups = new HashSet<uint>(groupIdsJoined.Split(',').Select(s => uint.Parse(s)));
 
             if (bool.Parse(checkGroupsExact))
             {
@@ -548,7 +547,6 @@ namespace System.Diagnostics.Tests
             string userId = GetUserId(userName);
             string userGroupId = GetUserGroupId(userName);
             string userGroupIds = GetUserGroupIds(userName);
-
             // If this test runs as the user, we expect to be able to match the user groups exactly.
             // Except on OSX, where getgrouplist may return a list of groups truncated to NGROUPS_MAX.
             bool checkGroupsExact = userId == geteuid().ToString() &&
@@ -629,7 +627,6 @@ namespace System.Diagnostics.Tests
         {
             string[] groupIds = StartAndReadToEnd("id", new[] { "-G" })
                 .Split(new[] { ' ', '\n' }, StringSplitOptions.RemoveEmptyEntries);
-
             return new HashSet<uint>(groupIds.Select(s => uint.Parse(s)));
         }
 
