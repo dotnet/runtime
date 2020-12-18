@@ -4681,7 +4681,7 @@ unsigned emitter::getLoopSize(insGroup* igLoopHeader, unsigned maxLoopSize)
 //
 void emitter::emitSetLoopBackEdge(BasicBlock* loopTopBlock)
 {
-    insGroup* dstIG = (insGroup*)loopTopBlock->bbJumpDest->bbEmitCookie;
+    insGroup* dstIG = (insGroup*)loopTopBlock->bbEmitCookie;
 
     // With (dstIG != nullptr), ensure that only back edges are tracked.
     // If there is forward jump, dstIG is not yet generated.
