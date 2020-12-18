@@ -998,7 +998,7 @@ mono_metadata_table_bounds_check (MonoImage *image, int table_index, int token_i
 	if (G_LIKELY (token_index <= image->tables [table_index].rows))
 		return FALSE;
 
-	GSList *list = image->delta_image;
+	GList *list = image->delta_image;
 	MonoImage *dmeta;
 	MonoTableInfo *table;
 	int ridx;
@@ -1112,7 +1112,7 @@ mono_delta_heap_lookup (MonoImage *base_image, MetadataHeapGetterFunc get_heap, 
 	guint32 prev_size = heap->size;
 
 	uint32_t current_gen = mono_metadata_update_get_thread_generation ();
-	GSList *cur;
+	GList *cur;
 	for (cur = base_image->delta_image; cur; cur = cur->next) {
 		*image_out = (MonoImage*)cur->data;
 		heap = get_heap (*image_out);

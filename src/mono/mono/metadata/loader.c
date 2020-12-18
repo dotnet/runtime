@@ -2024,7 +2024,7 @@ get_method_update_rva (MonoImage *image_base, uint32_t idx)
 {
 	gpointer loc = NULL;
 	uint32_t cur = mono_metadata_update_get_thread_generation ();
-	GSList *ptr = image_base->delta_image;
+	GList *ptr = image_base->delta_image;
 	/* Go through all the updates that the current thread can see and see
 	 * if they updated the method.  Keep the latest visible update */
 	for (; ptr != NULL; ptr = ptr->next) {

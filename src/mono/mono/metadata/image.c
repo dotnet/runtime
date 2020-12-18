@@ -2550,9 +2550,9 @@ mono_image_close_except_pools_all (MonoImage**images, int image_count)
 
 #ifdef ENABLE_METADATA_UPDATE
 static void
-mono_image_close_except_pools_all_list (GSList *images)
+mono_image_close_except_pools_all_list (GList *images)
 {
-	for (GSList *ptr = images; ptr; ptr = ptr->next) {
+	for (GList *ptr = images; ptr; ptr = ptr->next) {
 		MonoImage *image = (MonoImage *)ptr->data;
 		if (image) {
 			if (!mono_image_close_except_pools (image))
@@ -2765,15 +2765,15 @@ mono_image_close_all (MonoImage**images, int image_count)
 
 #ifdef ENABLE_METADATA_UPDATE
 static void
-mono_image_close_all_list (GSList *images)
+mono_image_close_all_list (GList *images)
 {
-	for (GSList *ptr = images; ptr; ptr = ptr->next) {
+	for (GList *ptr = images; ptr; ptr = ptr->next) {
 		MonoImage *image = (MonoImage *)ptr->data;
 		if (image)
 			mono_image_close_finish (image);
 	}
 
-	g_slist_free (images);
+	g_list_free (images);
 }
 #endif
 

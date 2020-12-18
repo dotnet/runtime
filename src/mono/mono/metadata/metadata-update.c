@@ -315,11 +315,12 @@ void
 mono_image_append_delta (MonoImage *base, MonoImage *delta)
 {
 	if (!base->delta_image) {
-		base->delta_image = base->delta_image_last = g_slist_prepend (NULL, delta);
+		base->delta_image = base->delta_image_last = g_list_alloc ();
+		base->delta_image->data = (gpointer)delta;
 		return;
 	}
 	g_assert (((MonoImage*)base->delta_image_last->data)->generation < delta->generation);
-	base->delta_image_last = g_slist_append (base->delta_image_last, delta);
+	base->delta_image_last = g_list_append (base->delta_image_last, delta);
 }
 
 /**
@@ -459,7 +460,7 @@ mono_image_effective_table (const MonoTableInfo **t, int *idx)
 	if (!base || !base->delta_image)
 		return;
 
-	GSList *list = base->delta_image;
+	GList *list = base->delta_image;
 	MonoImage *dmeta;
 	int ridx;
 	MonoTableInfo *table;
@@ -586,13 +587,8 @@ delta_info_init (MonoImage *image_dmeta, MonoImage *image_base)
 		 * find its predecessor
 		 */
 		MonoImage *prev_delta = NULL;
-		for (GSList *cur = image_base->delta_image; cur != NULL; cur = cur->next) {
-			if (cur->next == NULL) {
-				prev_delta = (MonoImage*)cur->data;
-				break;
-			}
-		}
-		g_assert (prev_delta);
+		g_assert (image_base->delta_image_last->prev != NULL);
+		prev_delta = (MonoImage*)image_base->delta_image_last->prev->data;
 		DeltaInfo *prev_gen_info = delta_info_lookup (prev_delta);
 		for (int i = 0; i < MONO_TABLE_NUM; ++i) {
 			delta_info->count[i].prev_gen_rows = prev_gen_info->count[i].prev_gen_rows + prev_gen_info->count[i].inserted_rows;
@@ -680,6 +676,11 @@ apply_enclog_pass1 (MonoImage *image_base, MonoImage *image_dmeta, gconstpointer
 		guint32 cols [MONO_ENCLOG_SIZE];
 		mono_metadata_decode_row (table_enclog, i, cols, MONO_ENCLOG_SIZE);
 
+		// FIXME: the top bit 0x8000000 of log_token is some kind of
+		// indicator see IsRecId in metamodelrw.cpp and
+		// MDInternalRW::EnumDeltaTokensInit which skips over those
+		// records when EditAndContinueModule::ApplyEditAndContinue is
+		// iterating.
 		int log_token = cols [MONO_ENCLOG_TOKEN];
 		int func_code = cols [MONO_ENCLOG_FUNC_CODE];
 
@@ -770,6 +771,8 @@ apply_enclog_pass2 (MonoImage *image_base, uint32_t generation, MonoImage *image
 		int token_index = mono_metadata_token_index (log_token);
 		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "enclog i=%d: token=0x%08x (table=%s): %d", i, log_token, mono_meta_table_name (token_table), func_code);
 
+		/* TODO: See CMiniMdRW::ApplyDelta for how to drive this.
+		 */
 		switch (func_code) {
 			case 0: /* default */
 				break;
@@ -786,8 +789,10 @@ apply_enclog_pass2 (MonoImage *image_base, uint32_t generation, MonoImage *image
 
 			assemblyref_updated = TRUE;
 
+			/* FIXME: use DeltaInfo:prev_gen_rows instead of looping */
+			/* TODO: do we know that there will never be modified rows in ASSEMBLYREF? */
 			int old_rows = image_base->tables [MONO_TABLE_ASSEMBLYREF].rows;
-			for (GSList *l = image_base->delta_image; l; l = l->next) {
+			for (GList *l = image_base->delta_image; l; l = l->next) {
 				MonoImage *delta_child = l->data;
 				old_rows += delta_child->tables [MONO_TABLE_ASSEMBLYREF].rows;
 			}
@@ -821,15 +826,6 @@ apply_enclog_pass2 (MonoImage *image_base, uint32_t generation, MonoImage *image
 			int mapped_token = mono_image_relative_delta_index (image_dmeta, mono_metadata_make_token (token_table, token_index));
 			int rva = mono_metadata_decode_row_col (&image_dmeta->tables [MONO_TABLE_METHOD], mapped_token - 1, MONO_METHOD_RVA);
 			if (rva < dil_length) {
-				/*
-				 * FIXME: this mutates all threads' views.x Need
-				 * a pair of a delta image and a rva.
-				 *
-				 * base: token->generation
-				 * delta: token->rva ?
-				 *
-				 * if multiple updates, go through all deltas in order
-				 */
 				char *il_address = ((char *) dil_data) + rva;
 				set_update_method (image_base, generation, image_dmeta, token_index, il_address);
 			} else {
@@ -951,7 +947,7 @@ metadata_update_local_generation (MonoImage *base, MonoImage *delta)
 {
 	if (delta == base)
 		return 0;
-	int index = g_slist_index (base->delta_image, delta);
+	int index = g_list_index (base->delta_image, delta);
 	g_assert (index != -1);
 	return 1 + index;
 }

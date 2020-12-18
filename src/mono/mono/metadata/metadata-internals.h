@@ -589,9 +589,9 @@ struct _MonoImage {
 
 #ifdef ENABLE_METADATA_UPDATE
 	/* List of MonoImages of deltas.  Parent image owns 1 refcount ref of the delta image */
-	GSList *delta_image;
+	GList *delta_image;
 	/* Tail of delta_image for fast appends */
-	GSList *delta_image_last;
+	GList *delta_image_last;
 
 	/* Metadata delta images only */
 	uint32_t generation; /* global update ID that added this delta image */
