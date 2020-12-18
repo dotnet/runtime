@@ -184,29 +184,13 @@ namespace System.Threading
             {
                 _waitHandles[0] = _changeHandlesEvent.SafeWaitHandle;
 
-                // Starting a new thread transfers the current execution context to the new thread. Thread pool threads must
-                // start in the default context, so switch contexts temporarily.
-                Thread currentThread = Thread.CurrentThread;
-                ExecutionContext? previousExecutionContext = currentThread._executionContext;
-                currentThread._executionContext = null;
-
-                try
-                {
-                    Thread waitThread = new Thread(WaitThreadStart, SmallStackSizeBytes);
-                    waitThread.IsThreadPoolThread = true;
-                    waitThread.IsBackground = true;
-                    waitThread.Name = ".NET ThreadPool Wait";
-                    waitThread.Start();
-                }
-                catch
-                {
-                    // Note: we have a "catch" rather than a "finally" because we want to stop the first pass of EH here.
-                    // That way we can restore the previous context before any of our callers' EH filters run.
-                    currentThread._executionContext = previousExecutionContext;
-                    throw;
-                }
-
-                currentThread._executionContext = previousExecutionContext;
+                // Thread pool threads must start in the default execution context without transferring the context, so
+                // using UnsafeStart() instead of Start()
+                Thread waitThread = new Thread(WaitThreadStart, SmallStackSizeBytes);
+                waitThread.IsThreadPoolThread = true;
+                waitThread.IsBackground = true;
+                waitThread.Name = ".NET ThreadPool Wait";
+                waitThread.UnsafeStart();
             }
 
             /// <summary>

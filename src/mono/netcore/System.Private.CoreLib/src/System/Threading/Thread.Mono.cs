@@ -269,6 +269,21 @@ namespace System.Threading
             Start();
         }
 
+        [UnsupportedOSPlatform("browser")]
+        internal void UnsafeStart()
+        {
+            StartInternal(this);
+        }
+
+        [UnsupportedOSPlatform("browser")]
+        internal void UnsafeStart(object parameter)
+        {
+            Debug.Assert(m_start is ThreadStart);
+
+            m_start_arg = parameter;
+            UnsafeStart();
+        }
+
         // Called from the runtime
         internal void StartCallback()
         {
