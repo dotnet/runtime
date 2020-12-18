@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Xml;
@@ -30,8 +31,6 @@ namespace Microsoft.Extensions.Configuration.Xml
         /// <returns>The <see cref="IDictionary{String, String}"/> which was read from the stream.</returns>
         public static IDictionary<string, string> Read(Stream stream, XmlDocumentDecryptor decryptor)
         {
-            var configurationValues = new List<IXmlConfigurationValue>();
-
             var readerSettings = new XmlReaderSettings()
             {
                 CloseInput = false, // caller will close the stream
@@ -40,66 +39,93 @@ namespace Microsoft.Extensions.Configuration.Xml
                 IgnoreWhitespace = true
             };
 
+            XmlConfigurationElement? root = null;
+
             using (XmlReader reader = decryptor.CreateDecryptingXmlReader(stream, readerSettings))
             {
-                // record all elements we encounter to check for repeated elements
-                var allElements = new List<XmlConfigurationElement>();
-
                 // keep track of the tree we followed to get where we are (breadcrumb style)
                 var currentPath = new Stack<XmlConfigurationElement>();
 
                 XmlNodeType preNodeType = reader.NodeType;
+
                 while (reader.Read())
                 {
                     switch (reader.NodeType)
                     {
                         case XmlNodeType.Element:
-                            XmlConfigurationElement parent = currentPath.Any() ? currentPath.Peek() : null;
-
-                            var element = new XmlConfigurationElement(parent, reader.LocalName, GetName(reader), GetLineInfo(reader));
-
-                            // check if this element has appeared before
-                            XmlConfigurationElement sibling = allElements.Where(e => e.IsSibling(element)).OrderByDescending(e => e.Index).FirstOrDefault();
-                            if (sibling != null)
                             {
-                                sibling.Multiple = element.Multiple = true;
-                                element.Index = sibling.Index + 1;
-                            }
+                                var element = new XmlConfigurationElement(reader.LocalName, GetName(reader), GetLineInfo(reader));
 
-                            currentPath.Push(element);
-                            allElements.Add(element);
+                                XmlConfigurationElement parent = currentPath.Any() ? currentPath.Peek() : null;
 
-                            ProcessAttributes(reader, currentPath, configurationValues);
+                                if (parent == null)
+                                {
+                                    root = element;
+                                }
+                                else
+                                {
+                                    if (parent.Children == null)
+                                    {
+                                        parent.Children = new List<XmlConfigurationElement>();
+                                    }
+                                    else
+                                    {
+                                        // check if this element has appeared before, elements are considered siblings if their element names match
+                                        XmlConfigurationElement sibling = parent.Children.FirstOrDefault(e => element.IsSiblingOf(e));
 
-                            // If current element is self-closing
-                            if (reader.IsEmptyElement)
-                            {
-                                currentPath.Pop();
+                                        if (sibling != null)
+                                        {
+                                            var siblings = sibling.Siblings;
+
+                                            // If this is the first sibling, we must initialize the siblings list
+                                            if (siblings == null)
+                                            {
+                                                siblings = sibling.Siblings = new List<XmlConfigurationElement> { sibling };
+                                            }
+
+                                            // Add the current element to the shared siblings list and give it access to the shared list
+                                            siblings.Add(element);
+                                            element.Siblings = siblings;
+                                        }
+                                    }
+
+                                    parent.Children.Add(element);
+                                }
+
+                                currentPath.Push(element);
+
+                                ProcessAttributes(reader, element);
+
+                                // If current element is self-closing
+                                if (reader.IsEmptyElement)
+                                {
+                                    currentPath.Pop();
+                                }
                             }
                             break;
-
                         case XmlNodeType.EndElement:
                             if (currentPath.Any())
                             {
+                                XmlConfigurationElement parent = currentPath.Pop();
+
                                 // If this EndElement node comes right after an Element node,
                                 // it means there is no text/CDATA node in current element
                                 if (preNodeType == XmlNodeType.Element)
                                 {
-                                    var configurationValue = new XmlConfigurationElementContent(currentPath, string.Empty, GetLineInfo(reader));
-                                    configurationValues.Add(configurationValue);
+                                    parent.TextContent = new XmlConfigurationElementTextContent(string.Empty, GetLineInfo(reader));
                                 }
-
-                                currentPath.Pop();
                             }
                             break;
 
                         case XmlNodeType.CDATA:
                         case XmlNodeType.Text:
+                            if (currentPath.Any())
                             {
-                                var configurationValue = new XmlConfigurationElementContent(currentPath, reader.Value, GetLineInfo(reader));
-                                configurationValues.Add(configurationValue);
-                                break;
+                                XmlConfigurationElement parent = currentPath.Peek();
+
+                                parent.TextContent = new XmlConfigurationElementTextContent(reader.Value, GetLineInfo(reader));
                             }
+                            break;
                         case XmlNodeType.XmlDeclaration:
                         case XmlNodeType.ProcessingInstruction:
                         case XmlNodeType.Comment:
@@ -108,35 +134,21 @@ namespace Microsoft.Extensions.Configuration.Xml
                             break;
 
                         default:
-                            throw new FormatException(SR.Format(SR.Error_UnsupportedNodeType, reader.NodeType,
-                                GetLineInfo(reader)));
+                            throw new FormatException(SR.Format(SR.Error_UnsupportedNodeType, reader.NodeType, GetLineInfo(reader)));
                     }
                     preNodeType = reader.NodeType;
 
                     // If this element is a self-closing element,
                     // we pretend that we just processed an EndElement node
                     // because a self-closing element contains an end within itself
-                    if (preNodeType == XmlNodeType.Element &&
-                        reader.IsEmptyElement)
+                    if (preNodeType == XmlNodeType.Element && reader.IsEmptyElement)
                     {
                         preNodeType = XmlNodeType.EndElement;
                     }
                 }
             }
 
-            var data = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
-
-            foreach (var configurationValue in configurationValues)
-            {
-                var key = configurationValue.Key;
-                if (data.ContainsKey(key))
-                {
-                    throw new FormatException(SR.Format(SR.Error_KeyIsDuplicated, key, configurationValue.LineInfo));
-                }
-                data[key] = configurationValue.Value;
-            }
-
-            return data;
+            return ProvideConfiguration(root);
         }
 
         /// <summary>
@@ -155,8 +167,13 @@ namespace Microsoft.Extensions.Configuration.Xml
                 SR.Format(SR.Msg_LineInfo, lineInfo.LineNumber, lineInfo.LinePosition);
         }
 
-        private static void ProcessAttributes(XmlReader reader, Stack<XmlConfigurationElement> elementPath, IList<IXmlConfigurationValue> data)
+        private static void ProcessAttributes(XmlReader reader, XmlConfigurationElement element)
         {
+            if (reader.AttributeCount > 0)
+            {
+                element.Attributes = new List<XmlConfigurationElementAttributeValue>();
+            }
+
             for (int i = 0; i < reader.AttributeCount; i++)
             {
                 reader.MoveToAttribute(i);
@@ -167,7 +184,7 @@ namespace Microsoft.Extensions.Configuration.Xml
                     throw new FormatException(SR.Format(SR.Error_NamespaceIsNotSupported, GetLineInfo(reader)));
                 }
 
-                data.Add(new XmlConfigurationElementAttributeValue(elementPath, reader.LocalName, reader.Value, GetLineInfo(reader)));
+                element.Attributes.Add(new XmlConfigurationElementAttributeValue(reader.LocalName, reader.Value, GetLineInfo(reader)));
             }
 
             // Go back to the element containing the attributes we just processed
@@ -199,6 +216,120 @@ namespace Microsoft.Extensions.Configuration.Xml
             reader.MoveToElement();
 
             return name;
+        }
+
+        private static IDictionary<string, string> ProvideConfiguration(XmlConfigurationElement? root)
+        {
+            var configuration = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+
+            if (root == null)
+            {
+                return configuration;
+            }
+
+            var rootPrefix = new List<string>();
+
+            // The root element only contributes to the prefix via its Name attribute
+            if (!string.IsNullOrEmpty(root.Name))
+            {
+                rootPrefix.Add(root.Name);
+            }
+
+            ProcessElementAttributes(rootPrefix, root);
+            ProcessElementContent(rootPrefix, root);
+            ProcessElementChildren(rootPrefix, root);
+
+            return configuration;
+
+            void ProcessElement(List<string> prefix, XmlConfigurationElement element)
+            {
+                // Add element name to prefix
+                prefix.Add(element.ElementName);
+
+                // Add value of name attribute to prefix
+                if (!string.IsNullOrEmpty(element.Name))
+                {
+                    prefix.Add(element.Name);
+                }
+
+                // Add sibling index to prefix
+                if (element.Siblings != null)
+                {
+                    prefix.Add(element.Siblings.IndexOf(element).ToString(CultureInfo.InvariantCulture));
+                }
+
+                ProcessElementAttributes(prefix, element);
+
+                ProcessElementContent(prefix, element);
+
+                ProcessElementChildren(prefix, element);
+
+                // Remove 'Name' attribute
+                if (!string.IsNullOrEmpty(element.Name))
+                {
+                    prefix.RemoveAt(prefix.Count - 1);
+                }
+
+                // Remove sibling index
+                if (element.Siblings != null)
+                {
+                    prefix.RemoveAt(prefix.Count - 1);
+                }
+
+                // Remove element name
+                prefix.RemoveAt(prefix.Count - 1);
+            }
+
+            void ProcessElementAttributes(List<string> prefix, XmlConfigurationElement element)
+            {
+                // Add attributes to configuration values
+                if (element.Attributes != null)
+                {
+                    for (var i = 0; i < element.Attributes.Count; i++)
+                    {
+                        var attribute = element.Attributes[i];
+
+                        prefix.Add(attribute.Attribute);
+
+                        AddToConfiguration(ConfigurationPath.Combine(prefix), attribute.Value, attribute.LineInfo);
+
+                        prefix.RemoveAt(prefix.Count - 1);
+                    }
+                }
+            }
+
+            void ProcessElementContent(List<string> prefix, XmlConfigurationElement element)
+            {
+                // Add text content to configuration values
+                if (element.TextContent != null)
+                {
+                    AddToConfiguration(ConfigurationPath.Combine(prefix), element.TextContent.TextContent, element.TextContent.LineInfo);
+                }
+            }
+
+            void ProcessElementChildren(List<string> prefix, XmlConfigurationElement element)
+            {
+                // Recursively walk through the children of this element
+                if (element.Children != null)
+                {
+                    for (var i = 0; i < element.Children.Count; i++)
+                    {
+                        var child = element.Children[i];
+
+                        ProcessElement(prefix, child);
+                    }
+                }
+            }
+
+            void AddToConfiguration(string key, string value, string lineInfo)
+            {
+                if (configuration.ContainsKey(key))
+                {
+                    throw new FormatException(SR.Format(SR.Error_KeyIsDuplicated, key, lineInfo));
+                }
+
+                configuration.Add(key, value);
+            }
         }
     }
 }

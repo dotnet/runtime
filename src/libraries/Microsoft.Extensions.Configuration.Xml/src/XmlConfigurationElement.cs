@@ -3,8 +3,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 
 namespace Microsoft.Extensions.Configuration.Xml
 {
@@ -16,55 +14,41 @@ namespace Microsoft.Extensions.Configuration.Xml
 
         public string LineInfo { get; }
 
-        public bool Multiple { get; set; }
-
-        public int Index { get; set; }
+        /// <summary>
+        /// The children of this element
+        /// </summary>
+        public List<XmlConfigurationElement>? Children { get; set; }
 
         /// <summary>
-        /// The parent element, or null if this is the root element
+        /// The siblings of this element, including itself
+        /// Elements are considered siblings if they share the same element name and name attribute
+        /// This list is shared by each sibling
         /// </summary>
-        public XmlConfigurationElement Parent { get; }
+        public List<XmlConfigurationElement>? Siblings { get; set; }
 
-        public XmlConfigurationElement(XmlConfigurationElement parent, string elementName, string name, string lineInfo)
+        public XmlConfigurationElementTextContent? TextContent { get; set; }
+
+        public List<XmlConfigurationElementAttributeValue>? Attributes { get; set; }
+
+        public XmlConfigurationElement(string elementName, string name, string lineInfo)
         {
-            Parent = parent;
             ElementName = elementName ?? throw new ArgumentNullException(nameof(elementName));
             Name = name;
             LineInfo = lineInfo;
+            Children = null;
+            Siblings = null;
+            TextContent = null;
+            Attributes = null;
         }
 
-        public string Key
-        {
-            get
-            {
-                var tokens = new List<string>(3);
-
-                // the root element does not contribute to the prefix
-                if (Parent != null) tokens.Add(ElementName);
-
-                // the name attribute always contributes to the prefix
-                if (Name != null) tokens.Add(Name);
-
-                // the index only contributes to the prefix when there are multiple elements wih the same name
-                if (Multiple) tokens.Add(Index.ToString());
-
-                // the root element without a name attribute does not contribute to prefix at all
-                if (!tokens.Any()) return null;
-
-                return string.Join(ConfigurationPath.KeyDelimiter, tokens);
-            }
-        }
-
-        public bool IsSibling(XmlConfigurationElement xmlConfigurationElement)
+        public bool IsSiblingOf(XmlConfigurationElement xmlConfigurationElement)
         {
             if (xmlConfigurationElement is null)
             {
                 throw new ArgumentNullException(nameof(xmlConfigurationElement));
             }
 
-            return Parent != null
-                && xmlConfigurationElement.Parent == Parent
-                && string.Equals(ElementName, xmlConfigurationElement.ElementName)
+            return string.Equals(ElementName, xmlConfigurationElement.ElementName)
                 && string.Equals(Name, xmlConfigurationElement.Name);
         }
     }
