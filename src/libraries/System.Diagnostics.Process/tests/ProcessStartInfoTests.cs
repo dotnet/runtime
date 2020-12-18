@@ -25,7 +25,8 @@ namespace System.Diagnostics.Tests
     {
         private const string ItemSeparator = "CAFF9451396B4EEF8A5155A15BDC2080"; // random string that shouldn't be in any env vars; used instead of newline to separate env var strings
 
-        private static bool IsNotWindowsNanoServerAndRemoteExecutorIsSupported => PlatformDetection.IsNotWindowsNanoServer && RemoteExecutor.IsSupported;
+        private static bool IsAdmin_IsNotNano_RemoteExecutorIsSupported
+            => PlatformDetection.IsWindowsAndElevated && PlatformDetection.IsNotWindowsNanoServer && RemoteExecutor.IsSupported;
 
         [Fact]
         public void TestEnvironmentProperty()
@@ -450,9 +451,9 @@ namespace System.Diagnostics.Tests
             }, workingDirectory, new RemoteInvokeOptions { StartInfo = psi }).Dispose();
         }
 
-        [ConditionalFact(nameof(IsNotWindowsNanoServerAndRemoteExecutorIsSupported))] // Nano has no "netapi32.dll"
+        [ConditionalFact(nameof(IsAdmin_IsNotNano_RemoteExecutorIsSupported))] // Nano has no "netapi32.dll", Admin rights are required
         [PlatformSpecific(TestPlatforms.Windows)]
-        [OuterLoop("Requires admin privileges")] 
+        [OuterLoop("Requires admin privileges")]
         public void TestUserCredentialsPropertiesOnWindows()
         {
             // [SuppressMessage("Microsoft.Security", "CS002:SecretInNextLine", Justification="Unit test dummy credentials.")]
