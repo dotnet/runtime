@@ -543,23 +543,23 @@ namespace Mono.Linker.Steps
 
 		protected void SweepCustomAttributes (TypeDefinition type)
 		{
-			var removed = SweepCustomAttributes (type as ICustomAttributeProvider);
+			bool removed = SweepCustomAttributes (type as ICustomAttributeProvider);
 
-			if (ShouldSetHasSecurityToFalse (type, type, type.HasSecurity, removed))
+			if (removed && type.HasSecurity && ShouldSetHasSecurityToFalse (type, type))
 				type.HasSecurity = false;
 		}
 
 		protected void SweepCustomAttributes (MethodDefinition method)
 		{
-			var removed = SweepCustomAttributes (method as ICustomAttributeProvider);
+			bool removed = SweepCustomAttributes (method as ICustomAttributeProvider);
 
-			if (ShouldSetHasSecurityToFalse (method, method, method.HasSecurity, removed))
+			if (removed && method.HasSecurity && ShouldSetHasSecurityToFalse (method, method))
 				method.HasSecurity = false;
 		}
 
-		static bool ShouldSetHasSecurityToFalse (ISecurityDeclarationProvider providerAsSecurity, ICustomAttributeProvider provider, bool existingHasSecurity, IList<CustomAttribute> removedAttributes)
+		static bool ShouldSetHasSecurityToFalse (ISecurityDeclarationProvider providerAsSecurity, ICustomAttributeProvider provider)
 		{
-			if (existingHasSecurity && removedAttributes.Count > 0 && !providerAsSecurity.HasSecurityDeclarations) {
+			if (!providerAsSecurity.HasSecurityDeclarations) {
 				// If the method or type had security before and all attributes were removed, or no remaining attributes are security attributes,
 				// then we need to set HasSecurity to false
 				if (provider.CustomAttributes.Count == 0 || provider.CustomAttributes.All (attr => !IsSecurityAttributeType (attr.AttributeType.Resolve ())))
@@ -590,9 +590,9 @@ namespace Mono.Linker.Steps
 			return IsSecurityAttributeType (definition.BaseType.Resolve ());
 		}
 
-		protected IList<CustomAttribute> SweepCustomAttributes (ICustomAttributeProvider provider)
+		protected bool SweepCustomAttributes (ICustomAttributeProvider provider)
 		{
-			var removed = new List<CustomAttribute> ();
+			bool removed = false;
 
 			for (int i = provider.CustomAttributes.Count - 1; i >= 0; i--) {
 				var attribute = provider.CustomAttributes[i];
@@ -600,8 +600,8 @@ namespace Mono.Linker.Steps
 					UpdateForwardedTypesScope (attribute);
 				} else {
 					CustomAttributeUsageRemoved (provider, attribute);
-					removed.Add (provider.CustomAttributes[i]);
 					provider.CustomAttributes.RemoveAt (i);
+					removed = true;
 				}
 			}
 
