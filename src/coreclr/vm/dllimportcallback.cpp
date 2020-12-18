@@ -571,7 +571,7 @@ namespace
     }
 }
 
-bool TryGetCallingConventionFromUnmanagedCallersOnly(MethodDesc* pMD, CorPinvokeMap* pCallConv)
+bool TryGetCallingConventionFromUnmanagedCallersOnly(MethodDesc* pMD, CorInfoCallConvExtension* pCallConv)
 {
     STANDARD_VM_CONTRACT;
     _ASSERTE(pMD != NULL && pMD->HasUnmanagedCallersOnlyAttribute());
@@ -635,15 +635,15 @@ bool TryGetCallingConventionFromUnmanagedCallersOnly(MethodDesc* pMD, CorPinvoke
     if (namedArgs[0].val.type.tag == SERIALIZATION_TYPE_UNDEFINED)
         return false;
 
-    CorPinvokeMap callConvLocal = (CorPinvokeMap)0;
+    CorInfoCallConvExtension callConvLocal;
     if (nativeCallableInternalData)
     {
-        callConvLocal = (CorPinvokeMap)(namedArgs[0].val.u4 << 8);
+        callConvLocal = (CorInfoCallConvExtension)(namedArgs[0].val.u4 << 8);
     }
     else
     {
         // Set WinAPI as the default
-        callConvLocal = CorPinvokeMap::pmCallConvWinapi;
+        callConvLocal = (CorInfoCallConvExtension)MetaSig::GetDefaultUnmanagedCallingConvention();
 
         CaValue* arrayOfTypes = &namedArgs[0].val;
         for (ULONG i = 0; i < arrayOfTypes->arr.length; i++)
@@ -656,19 +656,19 @@ bool TryGetCallingConventionFromUnmanagedCallersOnly(MethodDesc* pMD, CorPinvoke
             // in Fully Qualified form, so we include the ',' delimiter.
             if (BeginsWith(typeNameValue.str.cbStr, typeNameValue.str.pStr, "System.Runtime.CompilerServices.CallConvCdecl,"))
             {
-                callConvLocal = CorPinvokeMap::pmCallConvCdecl;
+                callConvLocal = CorInfoCallConvExtension::C;
             }
             else if (BeginsWith(typeNameValue.str.cbStr, typeNameValue.str.pStr, "System.Runtime.CompilerServices.CallConvStdcall,"))
             {
-                callConvLocal = CorPinvokeMap::pmCallConvStdcall;
+                callConvLocal = CorInfoCallConvExtension::Stdcall;
             }
             else if (BeginsWith(typeNameValue.str.cbStr, typeNameValue.str.pStr, "System.Runtime.CompilerServices.CallConvFastcall,"))
             {
-                callConvLocal = CorPinvokeMap::pmCallConvFastcall;
+                callConvLocal = CorInfoCallConvExtension::Fastcall;
             }
             else if (BeginsWith(typeNameValue.str.cbStr, typeNameValue.str.pStr, "System.Runtime.CompilerServices.CallConvThiscall,"))
             {
-                callConvLocal = CorPinvokeMap::pmCallConvThiscall;
+                callConvLocal = CorInfoCallConvExtension::Thiscall;
             }
         }
     }

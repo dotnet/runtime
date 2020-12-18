@@ -9854,34 +9854,14 @@ namespace
                 _ASSERTE_MSG(false, "UnmanagedCallersOnly methods are not supported in crossgen and should be rejected before getting here.");
                 return CorInfoCallConvExtension::Managed;
 #else
-                CorPinvokeMap unmanagedCallConv;
+                CorInfoCallConvExtension unmanagedCallConv;
                 if (TryGetCallingConventionFromUnmanagedCallersOnly(pMD, &unmanagedCallConv))
                 {
                     if (methodCallConv == IMAGE_CEE_CS_CALLCONV_VARARG)
                     {
                         return CorInfoCallConvExtension::C;
                     }
-                    switch (unmanagedCallConv)
-                    {
-                    case pmCallConvWinapi:
-                        return (CorInfoCallConvExtension)MetaSig::GetDefaultUnmanagedCallingConvention();
-                        break;
-                    case pmCallConvCdecl:
-                        return CorInfoCallConvExtension::C;
-                        break;
-                    case pmCallConvStdcall:
-                        return CorInfoCallConvExtension::Stdcall;
-                        break;
-                    case pmCallConvThiscall:
-                        return CorInfoCallConvExtension::Thiscall;
-                        break;
-                    case pmCallConvFastcall:
-                        return CorInfoCallConvExtension::Fastcall;
-                        break;
-                    default:
-                        _ASSERTE_MSG(false, "bad callconv");
-                        break;
-                    }
+                    return unmanagedCallConv;
                 }
                 return (CorInfoCallConvExtension)MetaSig::GetDefaultUnmanagedCallingConvention();
 #endif // CROSSGEN_COMPILE

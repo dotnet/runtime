@@ -16,33 +16,6 @@
 #include "class.h"
 #include "dllimport.h"
 
-enum UMThunkStubFlags
-{
-    umtmlIsStatic            = 0x0001,
-    umtmlThisCall            = 0x0002,
-    umtmlThisCallHiddenArg   = 0x0004,
-    umtmlFpu                 = 0x0008,
-    umtmlEnregRetValToBuf    = 0x0010,
-    umtmlBufRetValToEnreg    = 0x0020,
-#ifdef TARGET_X86
-    // the signature is trivial so stub need not be generated and the target can be called directly
-    umtmlSkipStub            = 0x0080,
-#endif // TARGET_X86
-};
-
-#include <pshpack1.h>
-//--------------------------------------------------------------------------
-// This structure captures basic info needed to build an UMThunk.
-//--------------------------------------------------------------------------
-struct UMThunkStubInfo
-{
-    UINT32        m_cbDstStack;         //# of bytes of stack portion of managed args
-    UINT16        m_cbSrcStack;         //# of bytes of stack portion of unmanaged args
-    UINT16        m_cbRetPop;           //# of bytes to pop on return to unmanaged
-    UINT16        m_wFlags;             // UMThunkStubFlags enum
-};
-#include <poppack.h>
-
 //----------------------------------------------------------------------
 // This structure collects all information needed to marshal an
 // unmanaged->managed thunk. The only information missing is the
@@ -439,7 +412,7 @@ EXCEPTION_HANDLER_DECL(UMThunkPrestubHandler);
 
 #endif // TARGET_X86 && !FEATURE_STUBS_AS_IL
 
-bool TryGetCallingConventionFromUnmanagedCallersOnly(MethodDesc* pMD, CorPinvokeMap* pCallConv);
+bool TryGetCallingConventionFromUnmanagedCallersOnly(MethodDesc* pMD, CorInfoCallConvExtension* pCallConv);
 
 extern "C" void TheUMEntryPrestub(void);
 extern "C" PCODE TheUMEntryPrestubWorker(UMEntryThunk * pUMEntryThunk);
