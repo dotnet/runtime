@@ -527,7 +527,7 @@ namespace System.Diagnostics.Tests
             Assert.Equal(groupId, getgid().ToString());
             Assert.Equal(groupId, getegid().ToString());
 
-            var expectedGroups = new HashSet<uint>(groupIdsJoined.Split(',').Select(s => uint.Parse(s)));
+            var expectedGroups = new HashSet<uint>(groupIdsJoined.Split(',', StringSplitOptions.RemoveEmptyEntries).Select(s => uint.Parse(s)));
 
             if (bool.Parse(checkGroupsExact))
             {
