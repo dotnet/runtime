@@ -1821,6 +1821,14 @@ namespace System
             return CreateInstanceMono(!publicOnly, wrapExceptions);
         }
 
+        // Specialized version of the above for Activator.CreateInstance<T>()
+        [DebuggerStepThroughAttribute]
+        [Diagnostics.DebuggerHidden]
+        internal object? CreateInstanceOfT()
+        {
+            return CreateInstanceMono(false, true);
+        }
+
         #endregion
 
         private TypeCache? cache;
@@ -2254,10 +2262,13 @@ namespace System
             return constraints ?? Type.EmptyTypes;
         }
 
-        internal static object CreateInstanceForAnotherGenericParameter(Type genericType, RuntimeType genericArgument)
+        internal static object CreateInstanceForAnotherGenericParameter([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor | DynamicallyAccessedMemberTypes.NonPublicConstructors)] Type genericType, RuntimeType genericArgument)
         {
             var gt = (RuntimeType)MakeGenericType(genericType, new Type[] { genericArgument });
-            RuntimeConstructorInfo ctor = gt.GetDefaultConstructor()!;
+            RuntimeConstructorInfo? ctor = gt.GetDefaultConstructor();
+            if (ctor is null)
+                throw new MissingMethodException(SR.Format(SR.Arg_NoDefCTor, gt.FullName));
+
             return ctor.InternalInvoke(null, null, wrapExceptions: true)!;
         }
 

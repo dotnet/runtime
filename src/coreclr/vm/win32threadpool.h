@@ -1038,7 +1038,7 @@ private:
 #endif // #ifndef DACCESS_COMPILE
     // Private variables
 
-    static LONG Initialization;                         // indicator of whether the threadpool is initialized.
+    static Volatile<LONG> Initialization;                         // indicator of whether the threadpool is initialized.
 
     static bool s_usePortableThreadPool;
 

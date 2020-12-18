@@ -36,7 +36,7 @@
   <Target Name="AddLinuxPackageInformation" BeforeTargets="GetDebInstallerJsonProperties;GetRpmInstallerJsonProperties">
     <ItemGroup Condition="'$(GenerateDeb)' == 'true'">
       <LinuxPackageDependency Include="libc6;libgcc1;libstdc++6" />
-      <LinuxPackageDependency Include="dotnet-host" Version="$(Version)" />
+      <LinuxPackageDependency Include="dotnet-host" Version="$(InstallerPackageVersion)" />
     </ItemGroup>
     <ItemGroup>
       <RpmJsonProperty Include="directories" Object="[ &quot;/usr/share/dotnet&quot;, &quot;/usr/share/doc/$(VersionedInstallerName)&quot; ]" />

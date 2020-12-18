@@ -278,6 +278,33 @@ LOCAL_LABEL(EphemeralCheckEnabled):
     EPILOG_RETURN
 WRITE_BARRIER_END JIT_UpdateWriteBarrierState
 
+// ------------------------// ------------------------------------------------------------------
+// __declspec(naked) void F_CALL_CONV JIT_WriteBarrier_Callable(Object **dst, Object* val)
+LEAF_ENTRY  JIT_WriteBarrier_Callable, _TEXT
+
+    // Setup args for JIT_WriteBarrier. x14 = dst ; x15 = val
+    mov     x14, x0                     // x14 = dst
+    mov     x15, x1                     // x15 = val
+
+#ifdef FEATURE_WRITEBARRIER_COPY
+LOCAL_LABEL(Branch_JIT_WriteBarrier_Copy):
+    // Branch to the write barrier
+    PREPARE_EXTERNAL_VAR JIT_WriteBarrier_Loc, x17
+    ldr     x17, [x17]
+    br      x17
+#else // FEATURE_WRITEBARRIER_COPY
+    // Branch to the write barrier
+    b       C_FUNC(JIT_WriteBarrier)
+#endif // FEATURE_WRITEBARRIER_COPY
+LEAF_END JIT_WriteBarrier_Callable, _TEXT
+
+.balign 64  // Align to power of two at least as big as patchable literal pool so that it fits optimally in cache line
+//------------------------------------------
+// Start of the writeable code region
+LEAF_ENTRY JIT_PatchedCodeStart, _TEXT
+    ret  lr
+LEAF_END JIT_PatchedCodeStart, _TEXT
+
 // void JIT_ByRefWriteBarrier
 // On entry:
 //   x13  : the source address (points to object reference to write)
@@ -322,43 +349,12 @@ WRITE_BARRIER_ENTRY JIT_CheckedWriteBarrier
     // branch below is not taken.
     ccmp x14, x12, #0x2, hs
 
-#ifdef FEATURE_WRITEBARRIER_COPY
-    blo  LOCAL_LABEL(Branch_JIT_WriteBarrier_Copy)
-#else // FEATURE_WRITEBARRIER_COPY
     blo  C_FUNC(JIT_WriteBarrier)
-#endif // FEATURE_WRITEBARRIER_COPY
 
 LOCAL_LABEL(NotInHeap):
     str  x15, [x14], 8
     ret  lr
 WRITE_BARRIER_END JIT_CheckedWriteBarrier
-
-// ------------------------// ------------------------------------------------------------------
-// __declspec(naked) void F_CALL_CONV JIT_WriteBarrier_Callable(Object **dst, Object* val)
-LEAF_ENTRY  JIT_WriteBarrier_Callable, _TEXT
-
-    // Setup args for JIT_WriteBarrier. x14 = dst ; x15 = val
-    mov     x14, x0                     // x14 = dst
-    mov     x15, x1                     // x15 = val
-
-#ifdef FEATURE_WRITEBARRIER_COPY
-LOCAL_LABEL(Branch_JIT_WriteBarrier_Copy):
-    // Branch to the write barrier
-    PREPARE_EXTERNAL_VAR JIT_WriteBarrier_Loc, x17
-    ldr     x17, [x17]
-    br      x17
-#else // FEATURE_WRITEBARRIER_COPY
-    // Branch to the write barrier
-    b       C_FUNC(JIT_WriteBarrier)
-#endif // FEATURE_WRITEBARRIER_COPY
-LEAF_END JIT_WriteBarrier_Callable, _TEXT
-
-.balign 64  // Align to power of two at least as big as patchable literal pool so that it fits optimally in cache line
-//------------------------------------------
-// Start of the writeable code region
-LEAF_ENTRY JIT_PatchedCodeStart, _TEXT
-    ret  lr
-LEAF_END JIT_PatchedCodeStart, _TEXT
 
 // void JIT_WriteBarrier(Object** dst, Object* src)
 // On entry:

@@ -844,7 +844,7 @@ namespace System.Net.Sockets
                 }
             }
 
-            public AsyncOperation? ProcessSyncEventOrGetAsyncEvent(SocketAsyncContext context, bool skipAsyncEvents = false, bool processAsyncEvents = true)
+            public AsyncOperation? ProcessSyncEventOrGetAsyncEvent(SocketAsyncContext context, bool skipAsyncEvents = false)
             {
                 AsyncOperation op;
                 using (Lock())
@@ -865,7 +865,6 @@ namespace System.Net.Sockets
                             Debug.Assert(_isNextOperationSynchronous == (op.Event != null));
                             if (skipAsyncEvents && !_isNextOperationSynchronous)
                             {
-                                Debug.Assert(!processAsyncEvents);
                                 // Return the operation to indicate that the async operation was not processed, without making
                                 // any state changes because async operations are being skipped
                                 return op;
@@ -903,11 +902,6 @@ namespace System.Net.Sockets
                 {
                     // Async operation.  The caller will figure out how to process the IO.
                     Debug.Assert(!skipAsyncEvents);
-                    if (processAsyncEvents)
-                    {
-                        op.Process();
-                        return null;
-                    }
                     return op;
                 }
             }
@@ -2079,12 +2073,14 @@ namespace System.Net.Sockets
 
             if ((events & Interop.Sys.SocketEvents.Read) != 0)
             {
-                _receiveQueue.ProcessSyncEventOrGetAsyncEvent(this, processAsyncEvents: true);
+                AsyncOperation? receiveOperation = _receiveQueue.ProcessSyncEventOrGetAsyncEvent(this);
+                receiveOperation?.Process();
             }
 
             if ((events & Interop.Sys.SocketEvents.Write) != 0)
             {
-                _sendQueue.ProcessSyncEventOrGetAsyncEvent(this, processAsyncEvents: true);
+                AsyncOperation? sendOperation = _sendQueue.ProcessSyncEventOrGetAsyncEvent(this);
+                sendOperation?.Process();
             }
         }
 

@@ -37,7 +37,7 @@ VOID PALAPI APCFunc_SleepEx_test2(ULONG_PTR dwParam);
 DWORD PALAPI SleeperProc_SleepEx_test2(LPVOID lpParameter);
 
 DWORD ThreadSleepDelta;
-static volatile bool s_preWaitTimestampRecorded = 0;
+static volatile bool s_preWaitTimestampRecorded = false;
 
 PALTEST(threading_SleepEx_test2_paltest_sleepex_test2, "threading/SleepEx/test2/paltest_sleepex_test2")
 {
@@ -106,7 +106,8 @@ void RunTest_SleepEx_test2(BOOL AlertThread)
     DWORD dwThreadId = 0;
     int ret;
 
-    hThread = CreateThread( NULL, 
+    s_preWaitTimestampRecorded = false;
+    hThread = CreateThread( NULL,
                             0, 
                             (LPTHREAD_START_ROUTINE)SleeperProc_SleepEx_test2,
                             (LPVOID) AlertThread,

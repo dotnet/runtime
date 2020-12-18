@@ -111,9 +111,6 @@ inline void FATAL_GC_ERROR()
 #ifdef SERVER_GC
 #define MH_SC_MARK //scalable marking
 //#define SNOOP_STATS //diagnostic
-#ifdef MARK_LIST
-#define PARALLEL_MARK_LIST_SORT //do the sorting and merging of the multiple mark lists in server gc in parallel
-#endif //MARK_LIST
 #endif //SERVER_GC
 
 //This is used to mark some type volatile only when the scalable marking is used.
@@ -1969,10 +1966,6 @@ protected:
                                 short* old_brick_table,
                                 uint8_t* start, uint8_t* end);
     PER_HEAP
-    void init_brick_card_range (heap_segment* seg);
-    PER_HEAP
-    void copy_brick_card_table_l_heap ();
-    PER_HEAP
     void copy_brick_card_table();
     PER_HEAP
     void clear_brick_table (uint8_t* from, uint8_t* end);
@@ -2717,7 +2710,7 @@ protected:
     PER_HEAP
     void thread_gap (uint8_t* gap_start, size_t size, generation*  gen);
     PER_HEAP
-    void loh_thread_gap_front (uint8_t* gap_start, size_t size, generation*  gen);
+    void uoh_thread_gap_front (uint8_t* gap_start, size_t size, generation*  gen);
     PER_HEAP
     void make_unused_array (uint8_t* x, size_t size, BOOL clearp=FALSE, BOOL resetp=FALSE);
     PER_HEAP
@@ -2862,9 +2855,6 @@ protected:
     PER_HEAP
     uint8_t* compute_next_boundary (int gen_number, BOOL relocating);
 #endif //!USE_REGIONS
-    PER_HEAP
-    void keep_card_live (uint8_t* o, size_t& n_gen,
-                         size_t& cg_pointers_found);
     PER_HEAP
     void mark_through_cards_helper (uint8_t** poo, size_t& ngen,
                                     size_t& cg_pointers_found,
@@ -3112,7 +3102,6 @@ protected:
     void gc_thread_function();
 
 #ifdef MARK_LIST
-#ifdef PARALLEL_MARK_LIST_SORT
     PER_HEAP
     size_t sort_mark_list();
     PER_HEAP
@@ -3121,10 +3110,6 @@ protected:
     void merge_mark_lists(size_t total_mark_list_size);
     PER_HEAP
     void append_to_mark_list(uint8_t **start, uint8_t **end);
-#else //PARALLEL_MARK_LIST_SORT
-    PER_HEAP_ISOLATED
-    void combine_mark_lists();
-#endif //PARALLEL_MARK_LIST_SORT
 #endif //MARK_LIST
 #endif //MULTIPLE_HEAPS
 
@@ -3169,7 +3154,7 @@ protected:
     void recover_bgc_settings();
 
     PER_HEAP
-    BOOL should_commit_mark_array();
+    BOOL is_bgc_in_progress();
 
     PER_HEAP
     void clear_commit_flag();
@@ -3409,9 +3394,6 @@ public:
     PER_HEAP
     void add_to_oom_history_per_heap();
 
-    PER_HEAP
-    BOOL expanded_in_fgc;
-
     PER_HEAP_ISOLATED
     uint32_t wait_for_gc_done(int32_t timeOut = INFINITE);
 
@@ -3582,9 +3564,6 @@ public:
 
     PER_HEAP_ISOLATED
     uint64_t gc_last_ephemeral_decommit_time;
-
-    PER_HEAP
-    size_t gen0_big_free_spaces;
 
 #ifdef SHORT_PLUGS
     PER_HEAP_ISOLATED
@@ -4055,7 +4034,7 @@ protected:
     // We can't process the ephemeral range concurrently so we
     // wait till final mark to process it.
     PER_HEAP
-    BOOL      processed_soh_overflow_p;
+    BOOL      processed_eph_overflow_p;
 
 #ifndef USE_REGIONS
     PER_HEAP
@@ -4120,13 +4099,11 @@ protected:
 
     PER_HEAP_ISOLATED
     uint8_t** g_mark_list;
-#ifdef PARALLEL_MARK_LIST_SORT
     PER_HEAP_ISOLATED
     uint8_t** g_mark_list_copy;
     PER_HEAP
     uint8_t*** mark_list_piece_start;
     uint8_t*** mark_list_piece_end;
-#endif //PARALLEL_MARK_LIST_SORT
 #endif //MARK_LIST
 
     PER_HEAP
@@ -5120,7 +5097,6 @@ struct loh_padding_obj
 //flags description
 #define heap_segment_flags_readonly     1
 #define heap_segment_flags_inrange      2
-#define heap_segment_flags_unmappable   4
 #define heap_segment_flags_loh          8
 #ifdef BACKGROUND_GC
 #define heap_segment_flags_swept        16
@@ -5419,13 +5395,6 @@ BOOL heap_segment_in_range_p (heap_segment* inst)
 {
     return (!(inst->flags & heap_segment_flags_readonly) ||
             ((inst->flags & heap_segment_flags_inrange) != 0));
-}
-
-inline
-BOOL heap_segment_unmappable_p (heap_segment* inst)
-{
-    return (!(inst->flags & heap_segment_flags_readonly) ||
-            ((inst->flags & heap_segment_flags_unmappable) != 0));
 }
 
 inline

@@ -23,19 +23,17 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                     break;
 
                 case Kind.DelayLoadHelper:
-                    // lea rax, [pCell] - this is the simple case which allows for only one lazy resolution
-                    // of the indirection cell; the final method pointer stored in the indirection cell
-                    // no longer receives the location of the cell so it cannot modify it repeatedly.
-                    instructionEncoder.EmitLEAQ(Register.RAX, _instanceCell);
+                    // xor eax, eax
+                    instructionEncoder.EmitZeroReg(Register.RAX);
 
                     if (!relocsOnly)
                     {
                         // push table index
-                        instructionEncoder.EmitPUSH((sbyte)_instanceCell.Table.IndexFromBeginningOfArray);
+                        instructionEncoder.EmitPUSH((sbyte)_containingImportSection.IndexFromBeginningOfArray);
                     }
 
                     // push [module]
-                    instructionEncoder.EmitPUSH(_moduleImport);
+                    instructionEncoder.EmitPUSH(factory.ModuleImport);
 
                     break;
 
@@ -48,16 +46,16 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                     if (!relocsOnly)
                     {
                         // push table index
-                        instructionEncoder.EmitPUSH((sbyte)_instanceCell.Table.IndexFromBeginningOfArray);
+                        instructionEncoder.EmitPUSH((sbyte)_containingImportSection.IndexFromBeginningOfArray);
                     }
 
                     // push [module]
-                    instructionEncoder.EmitPUSH(_moduleImport);
+                    instructionEncoder.EmitPUSH(factory.ModuleImport);
 
                     break;
 
                 case Kind.Lazy:
-                    instructionEncoder.EmitMOV(factory.Target.OperatingSystem == TargetOS.Windows ? Register.RDX : Register.RSI, _moduleImport);
+                    instructionEncoder.EmitMOV(factory.Target.OperatingSystem == TargetOS.Windows ? Register.RDX : Register.RSI, factory.ModuleImport);
 
                     break;
 
