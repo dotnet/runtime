@@ -2680,9 +2680,6 @@ void emitter::emitLoopAlign(unsigned short paddingBytes)
     /* Append this instruction to this IG's alignment list */
     id->idaNext        = emitCurIGAlignList;
     emitCurIGAlignList = id;
-
-    /* Record the last IG that has align instruction */
-    emitLastAlignedIgNum = emitCurIG->igNum;
 }
 
 //-----------------------------------------------------------------------------
