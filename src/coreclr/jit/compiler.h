@@ -837,36 +837,7 @@ public:
 #endif // defined(TARGET_64BIT)
     }
 
-    unsigned lvSize() const // Size needed for storage representation. Only used for structs or TYP_BLK.
-    {
-        // TODO-Review: Sometimes we get called on ARM with HFA struct variables that have been promoted,
-        // where the struct itself is no longer used because all access is via its member fields.
-        // When that happens, the struct is marked as unused and its type has been changed to
-        // TYP_INT (to keep the GC tracking code from looking at it).
-        // See Compiler::raAssignVars() for details. For example:
-        //      N002 (  4,  3) [00EA067C] -------------               return    struct $346
-        //      N001 (  3,  2) [00EA0628] -------------                  lclVar    struct(U) V03 loc2
-        //                                                                        float  V03.f1 (offs=0x00) -> V12 tmp7
-        //                                                                        f8 (last use) (last use) $345
-        // Here, the "struct(U)" shows that the "V03 loc2" variable is unused. Not shown is that V03
-        // is now TYP_INT in the local variable table. It's not really unused, because it's in the tree.
-
-        assert(varTypeIsStruct(lvType) || (lvType == TYP_BLK) || (lvPromoted && lvUnusedStruct));
-
-#if defined(FEATURE_SIMD) && !defined(TARGET_64BIT)
-        // For 32-bit architectures, we make local variable SIMD12 types 16 bytes instead of just 12. We can't do
-        // this for arguments, which must be passed according the defined ABI. We don't want to do this for
-        // dependently promoted struct fields, but we don't know that here. See lvaMapSimd12ToSimd16().
-        // (Note that for 64-bits, we are already rounding up to 16.)
-        if ((lvType == TYP_SIMD12) && !lvIsParam)
-        {
-            assert(lvExactSize == 12);
-            return 16;
-        }
-#endif // defined(FEATURE_SIMD) && !defined(TARGET_64BIT)
-
-        return roundUp(lvExactSize, TARGET_POINTER_SIZE);
-    }
+    unsigned lvSize() const;
 
     size_t lvArgStackSize() const;
 
@@ -1480,7 +1451,6 @@ public:
         return roundUp(GetStackByteSize(), TARGET_POINTER_SIZE) / TARGET_POINTER_SIZE;
     }
 
-    unsigned byteAlignment; // usually 8 or 16 bytes (slots/registers).
 private:
     unsigned _lateArgInx; // index into gtCallLateArgs list; UINT_MAX if this is not a late arg.
 public:
@@ -1643,10 +1613,8 @@ public:
         assert(!IsHfaArg() || !IsSplit());
 
         assert(GetByteSize() > TARGET_POINTER_SIZE * numRegs);
-        unsigned stackByteSize = GetByteSize() - TARGET_POINTER_SIZE * numRegs;
-#if !defined(OSX_ARM64_ABI)
-        stackByteSize = roundUp(stackByteSize, TARGET_POINTER_SIZE);
-#endif
+        const unsigned stackByteSize = GetByteSize() - TARGET_POINTER_SIZE * numRegs;
+        assert(IsSplit() || ((stackByteSize % m_byteAlignment) == 0));
         return stackByteSize;
     }
 
@@ -1809,7 +1777,13 @@ public:
 
 private:
     unsigned m_byteOffset;
+
+    // byte size that this argument takes including the padding after.
+    // For example, 1-byte arg on x64 with 8-byte alignment
+    // will have `m_byteSize == 8`, the same arg on apple arm64 will have `m_byteSize == 1`.
     unsigned m_byteSize;
+
+    unsigned m_byteAlignment; // usually 4 or 8 bytes (slots/registers).
 
 public:
     void SetByteOffset(unsigned byteOffset)
@@ -1824,22 +1798,29 @@ public:
         return m_byteOffset;
     }
 
-    void SetByteSize(unsigned byteSize)
+    void SetByteSize(unsigned byteSize, unsigned byteAlignment)
     {
-#if defined(DEBUG_ARG_SLOTS)
         assert(byteAlignment != 0);
+        const unsigned alignedByteSize = roundUp(byteSize, byteAlignment);
+
+#if defined(DEBUG_ARG_SLOTS)
         if (!isStruct)
         {
-            const unsigned alignedByteSize = roundUp(byteSize, byteAlignment);
             assert(alignedByteSize == getSlotCount() * TARGET_POINTER_SIZE);
         }
 #endif
-        m_byteSize = byteSize;
+        m_byteSize      = alignedByteSize;
+        m_byteAlignment = byteAlignment;
     }
 
     unsigned GetByteSize() const
     {
         return m_byteSize;
+    }
+
+    unsigned GetByteAlignment() const
+    {
+        return m_byteAlignment;
     }
 
     // Set the register numbers for a multireg argument.
@@ -3674,7 +3655,7 @@ public:
         assert(varDsc->lvType == TYP_SIMD12);
         assert(varDsc->lvExactSize == 12);
 
-#if defined(TARGET_64BIT)
+#if defined(TARGET_64BIT) && !defined(OSX_ARM64_ABI)
         assert(varDsc->lvSize() == 16);
 #endif // defined(TARGET_64BIT)
 
@@ -7416,6 +7397,7 @@ public:
     CORINFO_CLASS_HANDLE eeGetArgClass(CORINFO_SIG_INFO* sig, CORINFO_ARG_LIST_HANDLE list);
     CORINFO_CLASS_HANDLE eeGetClassFromContext(CORINFO_CONTEXT_HANDLE context);
     unsigned eeGetArgSize(CORINFO_ARG_LIST_HANDLE list, CORINFO_SIG_INFO* sig);
+    static unsigned eeGetArgAlignment(var_types type, bool isFloatHfa);
 
     // VOM info, method sigs
 
