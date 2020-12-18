@@ -138,8 +138,8 @@
 
   <!-- Set Test Wrapper running host OS -->
   <PropertyGroup>
-    <TestWrapperTargetsWindows>false</TestWrapperTargetsWindows>
-    <TestWrapperTargetsWindows Condition=" ('$(TargetsWindows)' != '' And '$(TargetsWindows)' ) OR ('$(TargetOS)' == 'Android' And '$(TargetArchitecture)' == 'arm64' )">true</TestWrapperTargetsWindows>
+     <TestWrapperTargetsWindows>true</TestWrapperTargetsWindows>
+    <TestWrapperTargetsWindows Condition="'$(TargetOS)' != 'windows' and '$(OS)' != 'Windows_NT'">false</TestWrapperTargetsWindows>
   </PropertyGroup>
 
 </Project>
