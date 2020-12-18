@@ -1563,7 +1563,7 @@ namespace System.Diagnostics.Tests
         public void MainWindowHandle_GetWithGui_ShouldRefresh_Windows()
         {
             const string ExePath = "notepad.exe";
-            Assert.True(IsProgramInstalled(ExePath));
+            Assert.True(IsProgramInstalled(ExePath), "Notepad is not installed");
 
             using (Process process = Process.Start(ExePath))
             {
@@ -1596,12 +1596,9 @@ namespace System.Diagnostics.Tests
         public void MainWindowTitle_GetWithGui_ShouldRefresh_Windows()
         {
             const string ExePath = "notepad.exe";
-            Assert.True(IsProgramInstalled(ExePath));
+            Assert.True(IsProgramInstalled(ExePath), "Notepad is not installed");
 
-            using (Process process = Process.Start(new ProcessStartInfo(ExePath)
-            {
-                WindowStyle = ProcessWindowStyle.Minimized
-            }))
+            using (Process process = Process.Start(new ProcessStartInfo(ExePath)))
             {
                 try
                 {
