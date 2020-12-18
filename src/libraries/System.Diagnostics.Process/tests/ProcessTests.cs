@@ -1638,16 +1638,16 @@ namespace System.Diagnostics.Tests
 
                 try
                 {
-                    Assert.False(GetHaveResponding(process));
+                    for (int i = 0; i < 3; i++)
+                    {
+                        Assert.False(GetHaveResponding(process));
 
-                    Assert.True(process.Responding); // sets haveResponding to true
-                    Assert.True(GetHaveResponding(process));
+                        Assert.True(process.Responding // sets haveResponding to true
+                            || PlatformDetection.IsWindowsNanoServer); // underlying WinAPI returns false on Nano
+                        Assert.True(GetHaveResponding(process));
 
-                    process.Refresh(); // sets haveResponding to false
-                    Assert.False(GetHaveResponding(process));
-
-                    Assert.True(process.Responding); // sets haveResponding to true
-                    Assert.True(GetHaveResponding(process));
+                        process.Refresh(); // sets haveResponding to false
+                    }
                 }
                 finally
                 {
