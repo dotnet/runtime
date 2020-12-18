@@ -63,7 +63,7 @@
       <OSPlatformConfig>$(TargetOS).AnyCPU.$(Configuration)</OSPlatformConfig>
       <HelixArchiveRoot>$(ArtifactsDir)helix/</HelixArchiveRoot>
       <HelixArchiveRunOnlyRoot>$(HelixArchiveRoot)runonly/</HelixArchiveRunOnlyRoot>
-      <HelixArchiveRunOnlyAppsDir>$(HelixArchiveRunOnlyRoot)$(OSPlatformConfig)/</HelixArchiveRunOnlyAppsDir>
+      <HelixArchiveRunOnlyAppsDir>$(HelixArchiveRunOnlyRoot)$(OSPlatformConfig)/console/</HelixArchiveRunOnlyAppsDir>
       <ZippedApp>$(OutputPath)/WasmConsoleSample.zip</ZippedApp>
     </PropertyGroup>
     <ZipDirectory SourceDirectory="$(AppBundleDir)" DestinationFile="$(ZippedApp)" />
