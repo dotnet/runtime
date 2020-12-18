@@ -51,7 +51,7 @@ namespace System.Net.NameResolution.PalTests
         public void TryGetAddrInfo_EmptyHost(bool justAddresses)
         {
             SocketError error = NameResolutionPal.TryGetAddrInfo("", justAddresses, AddressFamily.Unspecified, out string hostName, out string[] aliases, out IPAddress[] addresses, out int nativeErrorCode);
-            if (error == SocketError.HostNotFound && (RuntimeInformation.IsOSPlatform(OSPlatform.Linux) || RuntimeInformation.IsOSPlatform(OSPlatform.OSX)))
+            if (error == SocketError.HostNotFound && (OperatingSystem.IsLinux() || OperatingSystem.IsMacOS()))
             {
                 // On Unix, we are not guaranteed to be able to resove the local host. The ability to do so depends on the
                 // machine configurations, which varies by distro and is often inconsistent.
@@ -289,7 +289,7 @@ namespace System.Net.NameResolution.PalTests
             {
                 SocketError error = ex.SocketErrorCode;
 
-                if (error == SocketError.HostNotFound && (RuntimeInformation.IsOSPlatform(OSPlatform.Linux) || RuntimeInformation.IsOSPlatform(OSPlatform.OSX)))
+                if (error == SocketError.HostNotFound && (OperatingSystem.IsLinux() || OperatingSystem.IsMacOS()))
                 {
                     // On Unix, we are not guaranteed to be able to resove the local host. The ability to do so depends on the
                     // machine configurations, which varies by distro and is often inconsistent.
@@ -339,7 +339,7 @@ namespace System.Net.NameResolution.PalTests
             {
                 SocketError error = ex.SocketErrorCode;
 
-                if (error == SocketError.HostNotFound && (RuntimeInformation.IsOSPlatform(OSPlatform.Linux) || RuntimeInformation.IsOSPlatform(OSPlatform.OSX)))
+                if (error == SocketError.HostNotFound && (OperatingSystem.IsLinux() || OperatingSystem.IsMacOS()))
                 {
                     // On Unix, we are not guaranteed to be able to resove the local host. The ability to do so depends on the
                     // machine configurations, which varies by distro and is often inconsistent.
