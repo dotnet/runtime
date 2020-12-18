@@ -47,7 +47,7 @@ namespace Microsoft.Extensions.Http
         //
         // internal for tests
         internal readonly Dictionary<string, ActiveHandlerTrackingEntry> _activeHandlers;
-        private ReaderWriterLockSlim activeHandlersLock = new ReaderWriterLockSlim();
+        private ReaderWriterLockSlim messageHandlerLock = new ReaderWriterLockSlim();
 
         // Collection of 'expired' but not yet disposed handlers.
         //
@@ -109,6 +109,12 @@ namespace Microsoft.Extensions.Http
 
         public HttpClient CreateClient(string name)
         {
+            HttpClientFactoryOptions options = _optionsMonitor.Get(name);
+            if (options.PreserveExistingScope)
+            {
+                throw new Exception(); // todo
+            }
+
             return CreateClient(name, null);
         }
 
@@ -119,7 +125,7 @@ namespace Microsoft.Extensions.Http
                 throw new ArgumentNullException(nameof(name));
             }
 
-            HttpMessageHandler handler = GetOrCreateHandler(name, services);
+            HttpMessageHandler handler = CreateHandler(name, services);
             var client = new HttpClient(handler);
 
             HttpClientFactoryOptions options = _optionsMonitor.Get(name);
@@ -133,28 +139,34 @@ namespace Microsoft.Extensions.Http
 
         public HttpMessageHandler CreateHandler(string name)
         {
-            return GetOrCreateHandler(name, null);
+            HttpClientFactoryOptions options = _optionsMonitor.Get(name);
+            if (options.PreserveExistingScope)
+            {
+                throw new Exception(); // todo
+            }
+
+            return CreateHandler(name, null);
         }
 
-        public HttpMessageHandler GetOrCreateHandler(string name, IServiceProvider services)
+        public HttpMessageHandler CreateHandler(string name, IServiceProvider services)
         {
             if (name == null)
             {
                 throw new ArgumentNullException(nameof(name));
             }
 
+            ActiveHandlerTrackingEntry entry;
+            LifetimeTrackingHttpMessageHandler? topHandler = null;
+
             try
             {
-                activeHandlersLock.EnterUpgradeableReadLock();
-
-                ActiveHandlerTrackingEntry entry;
-                LifetimeTrackingHttpMessageHandler? topHandler = null;
+                messageHandlerLock.EnterUpgradeableReadLock();
 
                 if (!_activeHandlers.TryGetValue(name, out entry))
                 {
                     try
                     {
-                        activeHandlersLock.EnterWriteLock();
+                        messageHandlerLock.EnterWriteLock();
 
                         var createEntryResult = CreateHandlerEntry(name, services);
                         entry = createEntryResult.Entry;
@@ -163,39 +175,50 @@ namespace Microsoft.Extensions.Http
                     }
                     finally
                     {
-                        activeHandlersLock.ExitWriteLock();
+                        messageHandlerLock.ExitWriteLock();
                     }
                 }
-
-                StartHandlerEntryTimer(entry);
-
-                if (!entry.IsPrimary)
-                {
-                    return entry.Handler;
-                }
-
-                if (services == null) // created in manual scope
-                {
-                    services = entry.Scope?.ServiceProvider;
-                }
-
-                if (topHandler == null)
-                {
-                    topHandler = BuildChain(name, entry.Handler, services);
-                }
-
-                var expired = new ExpiredHandlerTrackingEntry(name, topHandler, null);
-                _expiredHandlers.Enqueue(expired); // we expire the top chain right away. it will be cleared after it gets GC'ed
-                return topHandler;
             }
             finally
             {
-                activeHandlersLock.ExitUpgradeableReadLock();
+                messageHandlerLock.ExitUpgradeableReadLock();
             }
+
+            StartHandlerEntryTimer(entry);
+
+            if (!entry.IsPrimary)
+            {
+                return entry.Handler;
+            }
+
+            if (services == null) // created in manual scope
+            {
+                services = entry.Scope?.ServiceProvider;
+            }
+
+            if (topHandler == null)
+            {
+                try
+                {
+                    messageHandlerLock.EnterWriteLock();
+
+                    topHandler = BuildTopHandler(name, entry.Handler, services);
+                }
+                finally
+                {
+                    messageHandlerLock.ExitWriteLock();
+                }
+            }
+
+            var expired = new ExpiredHandlerTrackingEntry(name, topHandler, null);
+            _expiredHandlers.Enqueue(expired); // we expire the top chain right away. it will be cleared after it gets GC'ed
+            return topHandler;
         }
 
         internal CreateEntryResult CreateHandlerEntry(string name, IServiceProvider? scopedServices)
         {
+            Debug.Assert(messageHandlerLock.IsWriteLockHeld);
+
             HttpClientFactoryOptions options = _optionsMonitor.Get(name);
             if (!options.PreserveExistingScope || options.SuppressHandlerScope || scopedServices == null)
             {
@@ -208,6 +231,8 @@ namespace Microsoft.Extensions.Http
         // Internal for tests
         internal CreateEntryResult CreateHandlerEntryInManualScope(string name)
         {
+            Debug.Assert(messageHandlerLock.IsWriteLockHeld);
+
             IServiceProvider services = _services;
             var scope = (IServiceScope)null;
 
@@ -232,6 +257,8 @@ namespace Microsoft.Extensions.Http
 
         private CreateEntryResult CreateHandlerEntryInternal(string name, IServiceProvider services, IServiceScope? scope, HttpClientFactoryOptions options)
         {
+            Debug.Assert(messageHandlerLock.IsWriteLockHeld);
+
             if (options.PreserveExistingScope && options.SuppressHandlerScope)
             {
                 throw new Exception(); // todo
@@ -279,12 +306,11 @@ namespace Microsoft.Extensions.Http
             else
             {
                 // to stop dispose on primary handler when the chain is disposed
-                var primaryHandler = new LifetimeTrackingHttpMessageHandler(new HttpClientHandler());
-                // Wrap the handler so we can ensure the inner handler outlives the outer handler.
-                topHandler = new LifetimeTrackingHttpMessageHandler(builder.Build(primaryHandler));
-
-                handler = primaryHandler;
+                handler = new LifetimeTrackingHttpMessageHandler(new HttpClientHandler());
                 isPrimary = true;
+
+                // Wrap the handler so we can ensure the inner handler outlives the outer handler.
+                topHandler = new LifetimeTrackingHttpMessageHandler(builder.Build(handler));
             }
 
             // Note that we can't start the timer here. That would introduce a very very subtle race condition
@@ -306,8 +332,10 @@ namespace Microsoft.Extensions.Http
             }
         }
 
-        internal LifetimeTrackingHttpMessageHandler BuildChain(string name, HttpMessageHandler primaryHandler, IServiceProvider? scopedServices)
+        internal LifetimeTrackingHttpMessageHandler BuildTopHandler(string name, HttpMessageHandler primaryHandler, IServiceProvider? scopedServices)
         {
+            Debug.Assert(messageHandlerLock.IsWriteLockHeld);
+
             IServiceProvider services = scopedServices ?? _services;
 
             HttpMessageHandlerBuilder builder = services.GetRequiredService<HttpMessageHandlerBuilder>();
@@ -345,7 +373,7 @@ namespace Microsoft.Extensions.Http
 
             try
             {
-                activeHandlersLock.EnterWriteLock();
+                messageHandlerLock.EnterWriteLock();
 
                 // The timer callback should be the only one removing from the active collection. If we can't find
                 // our entry in the collection, then this is a bug.
@@ -357,7 +385,7 @@ namespace Microsoft.Extensions.Http
             }
             finally
             {
-                activeHandlersLock.ExitWriteLock();
+                messageHandlerLock.ExitWriteLock();
             }
 
             // At this point the handler is no longer 'active' and will not be handed out to any new clients.
@@ -543,5 +571,7 @@ namespace Microsoft.Extensions.Http
                 TopHandler = topHandler;
             }
         }
+
+
     }
 }

@@ -98,9 +98,34 @@ namespace Microsoft.Extensions.Http
         /// from dependency injection, such as one registered using
         /// <see cref="HttpClientBuilderExtensions.AddHttpMessageHandler{THandler}(IHttpClientBuilder)"/>.
         /// </para>
+        /// <para>
+        /// Options <see cref="PreserveExistingScope"/> and <see cref="SuppressHandlerScope"/> cannot be both set to `true`.
+        /// </para>
         /// </remarks>
         public bool SuppressHandlerScope { get; set; }
 
+        /// <summary>
+        /// Gets or sets the value which determines whether the additional message handlers added by
+        /// <see cref="HttpClientBuilderExtensions.AddHttpMessageHandler{THandler}(IHttpClientBuilder)"/>
+        /// will be resolved in the existing DI scope.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// Default value is `false`.
+        /// </para>
+        /// <para>
+        /// Configurations with <see cref="PreserveExistingScope"/> set to `true` can only be used with <see cref="IScopedHttpClientFactory"/> and <see cref="IScopedHttpMessageHandlerFactory"/>.
+        /// Configurations with <see cref="PreserveExistingScope"/> set to `false` can only be used with <see cref="IHttpClientFactory"/> and <see cref="IHttpMessageHandlerFactory"/>.
+        /// </para>
+        /// <para>
+        /// Options <see cref="PreserveExistingScope"/> and <see cref="SuppressHandlerScope"/> cannot be both set to `true`.
+        /// </para>
+        /// <para>
+        /// If <see cref="PreserveExistingScope"/> set to `true`, only default primary message handler can be used, it should not be changed by methods like
+        /// <see cref="HttpClientBuilderExtensions.ConfigurePrimaryHttpMessageHandler(IHttpClientBuilder, Func{IServiceProvider, HttpMessageHandler})"/> or
+        /// <see cref="HttpClientBuilderExtensions.ConfigureHttpMessageHandlerBuilder(IHttpClientBuilder, Action{HttpMessageHandlerBuilder})"/>
+        /// </para>
+        /// </remarks>
         public bool PreserveExistingScope { get; set; }
 
         internal bool _primaryHandlerChanged;

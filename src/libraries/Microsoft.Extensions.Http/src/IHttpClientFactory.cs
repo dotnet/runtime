@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Http;
 
 namespace System.Net.Http
 {
@@ -13,12 +14,17 @@ namespace System.Net.Http
     /// A default <see cref="IHttpClientFactory"/> can be registered in an <see cref="IServiceCollection"/>
     /// by calling <see cref="HttpClientFactoryServiceCollectionExtensions.AddHttpClient(IServiceCollection)"/>.
     /// The default <see cref="IHttpClientFactory"/> will be registered in the service collection as a singleton.
+    /// To use a configuration with a default <see cref="IHttpClientFactory"/>, it should have
+    /// <see cref="HttpClientFactoryOptions.PreserveExistingScope"/> option set to `false`, which currently is a default value,
+    /// but it may be specified explicitly by calling
+    /// <see cref="HttpClientBuilderExtensions.SetPreserveExistingScope(IHttpClientBuilder, bool)"/> upon registration.
     /// </remarks>
     public interface IHttpClientFactory
     {
         /// <summary>
         /// Creates and configures an <see cref="HttpClient"/> instance using the configuration that corresponds
-        /// to the logical name specified by <paramref name="name"/>.
+        /// to the logical name specified by <paramref name="name"/>. The configuration should have
+        /// <see cref="HttpClientFactoryOptions.PreserveExistingScope"/> set to `false`.
         /// </summary>
         /// <param name="name">The logical name of the client to create.</param>
         /// <returns>A new <see cref="HttpClient"/> instance.</returns>

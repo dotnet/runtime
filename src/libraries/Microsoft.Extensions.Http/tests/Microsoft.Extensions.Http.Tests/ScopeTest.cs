@@ -23,7 +23,7 @@ namespace Microsoft.Extensions.Http
             string name = "test";
 
             serviceCollection.AddHttpClient(name)
-                .PreserveExistingScope(false)
+                .SetPreserveExistingScope(false)
                 .AddHttpMessageHandler<MessageHandlerWithScopedService>()
                 .SetHandlerLifetime(TimeSpan.FromSeconds(10));
 
@@ -84,7 +84,7 @@ namespace Microsoft.Extensions.Http
             string name = "test";
 
             serviceCollection.AddHttpClient(name)
-                .PreserveExistingScope(true)
+                .SetPreserveExistingScope(true)
                 .AddHttpMessageHandler<MessageHandlerWithScopedService>()
                 .SetHandlerLifetime(TimeSpan.FromSeconds(10));
 
@@ -145,7 +145,7 @@ namespace Microsoft.Extensions.Http
             serviceCollection.AddTransient<MessageHandlerWithScopedService>();
 
             serviceCollection.AddHttpClient<TypedClient>()
-                .PreserveExistingScope(false)
+                .SetPreserveExistingScope(false)
                 .AddHttpMessageHandler<MessageHandlerWithScopedService>()
                 .SetHandlerLifetime(TimeSpan.FromSeconds(10));
 
@@ -218,7 +218,7 @@ namespace Microsoft.Extensions.Http
             serviceCollection.AddTransient<MessageHandlerWithScopedService>();
 
             serviceCollection.AddHttpClient<TypedClient>()
-                .PreserveExistingScope(true)
+                .SetPreserveExistingScope(true)
                 .AddHttpMessageHandler<MessageHandlerWithScopedService>()
                 .SetHandlerLifetime(TimeSpan.FromSeconds(10));
 

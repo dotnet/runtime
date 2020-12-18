@@ -194,6 +194,11 @@ namespace Microsoft.Extensions.DependencyInjection
 
             builder.Services.Configure<HttpClientFactoryOptions>(builder.Name, options =>
             {
+                if (options.PreserveExistingScope)
+                {
+                    throw new Exception(); // todo
+                }
+
                 options.HttpMessageHandlerBuilderActions.Add(b => b.PrimaryHandler = configureHandler());
                 options._primaryHandlerExposed = true;
                 options._primaryHandlerChanged = true;
@@ -233,6 +238,11 @@ namespace Microsoft.Extensions.DependencyInjection
 
             builder.Services.Configure<HttpClientFactoryOptions>(builder.Name, options =>
             {
+                if (options.PreserveExistingScope)
+                {
+                    throw new Exception(); // todo
+                }
+
                 options.HttpMessageHandlerBuilderActions.Add(b => b.PrimaryHandler = configureHandler(b.Services));
                 options._primaryHandlerExposed = true;
                 options._primaryHandlerChanged = true;
@@ -266,6 +276,11 @@ namespace Microsoft.Extensions.DependencyInjection
 
             builder.Services.Configure<HttpClientFactoryOptions>(builder.Name, options =>
             {
+                if (options.PreserveExistingScope)
+                {
+                    throw new Exception(); // todo
+                }
+
                 options.HttpMessageHandlerBuilderActions.Add(b => b.PrimaryHandler = b.Services.GetRequiredService<THandler>());
                 options._primaryHandlerExposed = true;
                 options._primaryHandlerChanged = true;
@@ -578,7 +593,28 @@ namespace Microsoft.Extensions.DependencyInjection
             return builder;
         }
 
-        public static IHttpClientBuilder PreserveExistingScope(this IHttpClientBuilder builder, bool preserveExistingScope)
+        /// <summary>
+        /// Configures whether the additional message handlers added by <see cref="HttpClientBuilderExtensions.AddHttpMessageHandler{THandler}(IHttpClientBuilder)"/>
+        /// will be resolved in the existing DI scope.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// Configurations with <see cref="HttpClientFactoryOptions.PreserveExistingScope"/> set to `true` can only be used with
+        /// <see cref="IScopedHttpClientFactory"/> and <see cref="IScopedHttpMessageHandlerFactory"/>.
+        /// Configurations with <see cref="HttpClientFactoryOptions.PreserveExistingScope"/> set to `false` can only be used with
+        /// <see cref="IHttpClientFactory"/> and <see cref="IHttpMessageHandlerFactory"/>.
+        /// </para>
+        /// <para>
+        /// If <see cref="HttpClientFactoryOptions.PreserveExistingScope"/> set to `true`, only default primary message handler can be used,
+        /// it should not be changed by methods like
+        /// <see cref="HttpClientBuilderExtensions.ConfigurePrimaryHttpMessageHandler(IHttpClientBuilder, Func{IServiceProvider, HttpMessageHandler})"/> or
+        /// <see cref="HttpClientBuilderExtensions.ConfigureHttpMessageHandlerBuilder(IHttpClientBuilder, Action{HttpMessageHandlerBuilder})"/>
+        /// </para>
+        /// </remarks>
+        /// <param name="builder">The <see cref="IHttpClientBuilder"/>.</param>
+        /// <param name="preserveExistingScope">Whether the additional message handlers will be resolved in the existing DI scope</param>
+        /// <returns>The <see cref="IHttpClientBuilder"/>.</returns>
+        public static IHttpClientBuilder SetPreserveExistingScope(this IHttpClientBuilder builder, bool preserveExistingScope)
         {
             if (builder == null)
             {
@@ -587,6 +623,16 @@ namespace Microsoft.Extensions.DependencyInjection
 
             builder.Services.Configure<HttpClientFactoryOptions>(builder.Name, options =>
             {
+                if (options.SuppressHandlerScope)
+                {
+                    throw new Exception(); // todo
+                }
+
+                if (options._primaryHandlerChanged)
+                {
+                    throw new Exception(); // todo
+                }
+
                 options.PreserveExistingScope = preserveExistingScope;
             });
 
