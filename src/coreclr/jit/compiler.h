@@ -9397,6 +9397,14 @@ public:
             return (info.compRetBuffArg != BAD_VAR_NUM);
         }
 #endif // TARGET_WINDOWS && TARGET_ARM64
+        // 4. x86 unmanaged calling conventions require the address of RetBuff to be returned in eax.
+        CLANG_FORMAT_COMMENT_ANCHOR;
+#if defined(TARGET_X86)
+        if (info.compCallConv != CorInfoCallConvExtension::Managed)
+        {
+            return (info.compRetBuffArg != BAD_VAR_NUM);
+        }
+#endif
 
         return false;
 #endif // TARGET_AMD64

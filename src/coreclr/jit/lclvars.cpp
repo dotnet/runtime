@@ -535,14 +535,16 @@ void Compiler::lvaInitRetBuffArg(InitVarDscInfo* varDscInfo, bool useFixedRetBuf
         info.compRetBuffArg = varDscInfo->varNum;
         varDsc->lvType      = TYP_BYREF;
         varDsc->lvIsParam   = 1;
-        varDsc->lvIsRegArg  = 1;
+        varDsc->lvIsRegArg  = 0;
 
         if (useFixedRetBufReg && hasFixedRetBuffReg())
         {
+            varDsc->lvIsRegArg = 1;
             varDsc->SetArgReg(theFixedRetBuffReg());
         }
-        else
+        else if (varDscInfo->canEnreg(TYP_INT))
         {
+            varDsc->lvIsRegArg     = 1;
             unsigned retBuffArgNum = varDscInfo->allocRegArg(TYP_INT);
             varDsc->SetArgReg(genMapIntRegArgNumToRegNum(retBuffArgNum));
         }
@@ -579,10 +581,10 @@ void Compiler::lvaInitRetBuffArg(InitVarDscInfo* varDscInfo, bool useFixedRetBuf
         }
 #endif // FEATURE_SIMD
 
-        assert(isValidIntArgReg(varDsc->GetArgReg()));
+        assert(!varDsc->lvIsRegArg || isValidIntArgReg(varDsc->GetArgReg()));
 
 #ifdef DEBUG
-        if (verbose)
+        if (varDsc->lvIsRegArg && verbose)
         {
             printf("'__retBuf'  passed in register %s\n", getRegName(varDsc->GetArgReg()));
         }
@@ -5389,7 +5391,6 @@ void Compiler::lvaAssignVirtualFrameOffsetsToArgs()
     if (info.compRetBuffArg != BAD_VAR_NUM)
     {
         noway_assert(lclNum == info.compRetBuffArg);
-        noway_assert(lvaTable[lclNum].lvIsRegArg);
 #ifndef TARGET_X86
         argOffs =
             lvaAssignVirtualFrameOffsetToArg(lclNum, REGSIZE_BYTES, argOffs UNIX_AMD64_ABI_ONLY_ARG(&callerArgOffset));

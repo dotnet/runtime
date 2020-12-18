@@ -3269,13 +3269,6 @@ namespace Internal.JitInterface
 
             if (this.MethodBeingCompiled.IsUnmanagedCallersOnly)
             {
-#if READYTORUN
-                if (targetArchitecture == TargetArchitecture.X86 && _compilation.TypeSystemContext.Target.IsWindows)
-                {
-                    throw new RequiresRuntimeJitException("ReadyToRun: Methods with UnmanagedCallersOnlyAttribute not implemented");
-                }
-#endif
-
                 // Validate UnmanagedCallersOnlyAttribute usage
                 if (!this.MethodBeingCompiled.Signature.IsStatic) // Must be a static method
                 {

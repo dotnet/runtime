@@ -5390,7 +5390,14 @@ NOINLINE static void JIT_ReversePInvokeEnterRare2(ReversePInvokeFrame* frame)
 #endif // DEBUGGING_SUPPORTED
 }
 
-EXTERN_C void JIT_ReversePInvokeEnter(ReversePInvokeFrame* frame, CORINFO_METHOD_HANDLE handle, void* secretArg)
+// The following two methods are special.
+// They handle setting up Reverse P/Invoke calls and transitioning back to unmanaged code.
+// As a result, we may not have a thread in JIT_ReversePInvokeEnter and we will be in the wrong GC mode for the HCALL prolog.
+// Additionally, we set up and tear down SEH handlers when we're on x86, so we can't use dynamic contracts anyway.
+// As a result, we specially decorate this method to have the correct calling convention
+// and argument ordering for an HCALL, but we don't use the HCALL macros and contracts
+// since this method doesn't follow the contracts.
+void F_CALL_CONV HCCALL3(JIT_ReversePInvokeEnter, ReversePInvokeFrame* frame, CORINFO_METHOD_HANDLE handle, void* secretArg)
 {
     _ASSERTE(frame != NULL && handle != NULL);
 
@@ -5436,7 +5443,7 @@ EXTERN_C void JIT_ReversePInvokeEnter(ReversePInvokeFrame* frame, CORINFO_METHOD
 #endif
 }
 
-EXTERN_C void JIT_ReversePInvokeExit(ReversePInvokeFrame* frame)
+void F_CALL_CONV HCCALL1(JIT_ReversePInvokeExit, ReversePInvokeFrame* frame)
 {
     _ASSERTE(frame != NULL);
     _ASSERTE(frame->currentThread == GetThread());
@@ -5451,10 +5458,10 @@ EXTERN_C void JIT_ReversePInvokeExit(ReversePInvokeFrame* frame)
 #endif
 
 #ifdef PROFILING_SUPPORTED
-        if (CORProfilerTrackTransitions())
-        {
-            ProfilerUnmanagedToManagedTransitionMD(frame->pMD, COR_PRF_TRANSITION_RETURN);
-        }
+    if (CORProfilerTrackTransitions())
+    {
+        ProfilerUnmanagedToManagedTransitionMD(frame->pMD, COR_PRF_TRANSITION_RETURN);
+    }
 #endif
 }
 

@@ -110,46 +110,7 @@ public:
         return m_pMD;
     }
 
-#if defined(TARGET_X86) && !defined(FEATURE_STUBS_AS_IL)
-    PCODE GetExecStubEntryPoint()
-    {
-        WRAPPER_NO_CONTRACT;
-        return GetExecStub()->GetEntryPoint();
-    }
-
-    Stub* GetExecStub()
-    {
-        CONTRACT (Stub*)
-        {
-            NOTHROW;
-            GC_NOTRIGGER;
-            MODE_ANY;
-            PRECONDITION(IsCompletelyInited());
-            POSTCONDITION(CheckPointer(RETVAL, NULL_OK));
-        }
-        CONTRACT_END;
-
-        RETURN m_pExecStub;
-    }
-
-    UINT16 GetCbRetPop()
-    {
-        CONTRACTL
-        {
-            NOTHROW;
-            GC_NOTRIGGER;
-            MODE_ANY;
-            SUPPORTS_DAC;
-            PRECONDITION(IsCompletelyInited());
-        }
-        CONTRACTL_END;
-
-        return m_cbRetPop;
-    }
-
-#else
     PCODE GetExecStubEntryPoint();
-#endif
 
     BOOL IsCompletelyInited()
     {
@@ -165,27 +126,9 @@ public:
         return (UINT32)offsetof(UMThunkMarshInfo, m_pILStub);
     }
 
-#if defined(TARGET_X86) && !defined(FEATURE_STUBS_AS_IL)
-
-private:
-    // Compiles an unmanaged to managed thunk for the given signature. The thunk
-    // will call the stub or, if fNoStub == TRUE, directly the managed target.
-    Stub *CompileNExportThunk(LoaderHeap *pLoaderHeap, PInvokeStaticSigInfo* pSigInfo, MetaSig *pMetaSig, BOOL fNoStub);
-
-#endif // defined(TARGET_X86) && !defined(FEATURE_STUBS_AS_IL)
-
 private:
     PCODE             m_pILStub;            // IL stub for marshaling
-                                            // On x86, NULL for no-marshal signatures
                                             // On non-x86, the managed entrypoint for no-delegate no-marshal signatures
-#if defined(TARGET_X86) && !defined(FEATURE_STUBS_AS_IL)
-    UINT32            m_cbActualArgSize;    // caches m_pSig.SizeOfFrameArgumentArray()
-                                            // On x86/Linux we have to augment with numRegistersUsed * STACK_ELEM_SIZE
-    UINT16            m_cbRetPop;           // stack bytes popped by callee (for UpdateRegDisplay)
-    Stub*             m_pExecStub;          // UMEntryThunk jumps directly here
-    UINT16            m_callConv;           // unmanaged calling convention and flags (CorPinvokeMap)
-#endif // defined(TARGET_X86) && !defined(FEATURE_STUBS_AS_IL)
-
     MethodDesc *      m_pMD;                // maybe null
     Module *          m_pModule;
     Signature         m_sig;
@@ -219,23 +162,6 @@ private:
 public:
     static UMEntryThunk* CreateUMEntryThunk();
     static VOID FreeUMEntryThunk(UMEntryThunk* p);
-
-#if defined(TARGET_X86) && !defined(FEATURE_STUBS_AS_IL)
-    // Compiles an unmanaged to managed thunk with the given calling convention adaptation.
-    // - psrcofsregs are stack offsets that should be loaded to argument registers (ECX, EDX)
-    // - psrcofs are stack offsets that should be repushed for the managed target
-    // - retbufofs is the offset of the hidden byref structure argument when returning large
-    //   structures; -1 means there is none
-    // Special values recognized by psrcofsregs and psrcofs are -1 which means not present
-    // and 1 which means that this register/stack slot should get the UMEntryThunk pointer.
-    // This method is used for all reverse P/Invoke calls on x86 (the umtmlSkipStub
-    // flag determines whether the managed target is stub or the actual target method).
-    static VOID CompileUMThunkWorker(UMThunkStubInfo *pInfo,
-                                     CPUSTUBLINKER *pcpusl,
-                                     UINT *psrcofsregs,
-                                     UINT *psrcofs,
-                                     UINT retbufofs);
-#endif // TARGET_X86 && !FEATURE_STUBS_AS_IL
 
 #ifndef DACCESS_COMPILE
     VOID LoadTimeInit(PCODE                   pManagedTarget,
