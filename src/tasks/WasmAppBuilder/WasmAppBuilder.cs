@@ -236,13 +236,6 @@ public class WasmAppBuilder : Task
         }
         _fileWrites.Add(monoConfigPath);
 
-        string runv8Path = Path.Join(AppDir, "run-v8.sh");
-        using (var sw = File.CreateText(runv8Path))
-        {
-            sw.WriteLine("v8 --expose_wasm runtime.js -- --run " + Path.GetFileName(MainAssembly) + " $*");
-        }
-        _fileWrites.Add(runv8Path);
-
         return true;
     }
 

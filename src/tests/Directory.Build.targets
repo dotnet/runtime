@@ -359,6 +359,11 @@
           Include="$(ArtifactsBinDir)\WasmAppBuilder\Debug\$(NetCoreAppToolCurrent)\publish\**"
           TargetDir="WasmAppBuilder/"/>
 
+        <!-- MonoAOTCompiler always builds in Debug -->
+        <RunTimeDependencyCopyLocal
+          Include="$(ArtifactsBinDir)\MonoAOTCompiler\Debug\$(NetCoreAppToolCurrent)\**"
+          TargetDir="MonoAOTCompiler/"/>
+
         <RunTimeDependencyCopyLocal
           Include="$(RepoRoot)\src\tests\Common\wasm-test-runner\WasmTestRunner.proj"
           TargetDir="wasm-test-runner/"/>
@@ -366,6 +371,10 @@
         <RunTimeDependencyCopyLocal
           Include="$(MonoProjectRoot)\wasm\runtime-test.js"
           TargetDir="runtime-test/"/>
+
+        <RunTimeDependencyCopyLocal
+          Include="$(MonoProjectRoot)\wasm\build\WasmApp.targets"
+          TargetDir="build/"/>
     </ItemGroup>
 
     <Copy

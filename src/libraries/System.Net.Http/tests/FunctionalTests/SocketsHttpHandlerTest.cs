@@ -2458,6 +2458,7 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [ConditionalTheory(nameof(PlatformSupportsUnixDomainSockets))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/44183", TestPlatforms.Windows)]
         [InlineData(true)]
         [InlineData(false)]
         public async Task ConnectCallback_UseUnixDomainSocket_Success(bool useSsl)

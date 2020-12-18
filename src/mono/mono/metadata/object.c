@@ -9454,8 +9454,18 @@ mono_class_value_size (MonoClass *klass, guint32 *align)
 	 */
 	/*g_assert (klass->valuetype);*/
 
-	size = mono_class_instance_size (klass) - MONO_ABI_SIZEOF (MonoObject);
+	/* this call inits klass if its not inited already */
+	size = mono_class_instance_size (klass);
 
+	if (m_class_has_failure (klass)) {
+		if (align)
+			*align = 1;
+		return 0;
+	}
+
+	size = size - MONO_ABI_SIZEOF (MonoObject);
+
+	g_assert (size >= 0);
 	if (align)
 		*align = m_class_get_min_align (klass);
 

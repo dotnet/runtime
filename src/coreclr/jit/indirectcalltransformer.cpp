@@ -606,8 +606,7 @@ private:
                 origCall->gtCallThisArg = compiler->gtNewCallArgs(compiler->gtNewLclvNode(thisTempNum, TYP_REF));
             }
 
-            GenTree* methodTable = compiler->gtNewIndir(TYP_I_IMPL, thisTree);
-            methodTable->gtFlags |= GTF_IND_INVARIANT;
+            GenTree* methodTable = compiler->gtNewMethodTableLookup(thisTree);
 
             // Find target method table
             GuardedDevirtualizationCandidateInfo* guardedInfo       = origCall->gtGuardedDevirtualizationCandidateInfo;

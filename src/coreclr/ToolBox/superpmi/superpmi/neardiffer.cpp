@@ -125,17 +125,30 @@ bool NearDiffer::InitAsmDiff()
         }
 
         TargetArch coreDisTargetArchitecture = Target_Host;
-#ifdef TARGET_AMD64
-        if ((TargetArchitecture != nullptr) && (0 == _stricmp(TargetArchitecture, "arm64")))
+
+        if (TargetArchitecture != nullptr)
         {
-            coreDisTargetArchitecture = Target_Arm64;
+            if ((0 == _stricmp(TargetArchitecture, "x64")) || (0 == _stricmp(TargetArchitecture, "amd64")))
+            {
+                coreDisTargetArchitecture = Target_X64;
+            }
+            else if (0 == _stricmp(TargetArchitecture, "x86"))
+            {
+                coreDisTargetArchitecture = Target_X86;
+            }
+            else if ((0 == _stricmp(TargetArchitecture, "arm")) || (0 == _stricmp(TargetArchitecture, "arm32")))
+            {
+                coreDisTargetArchitecture = Target_Thumb;
+            }
+            else if (0 == _stricmp(TargetArchitecture, "arm64"))
+            {
+                coreDisTargetArchitecture = Target_Arm64;
+            }
+            else
+            {
+                LogError("Illegal target architecture '%s'", TargetArchitecture);
+            }
         }
-#elif defined(TARGET_X86)
-        if ((TargetArchitecture != nullptr) && (0 == _stricmp(TargetArchitecture, "arm")))
-        {
-            coreDisTargetArchitecture = Target_Thumb;
-        }
-#endif
         corAsmDiff = (*g_PtrNewDiffer)(coreDisTargetArchitecture, &CorPrinter, NearDiffer::CoreDisCompareOffsetsCallback);
     }
 #endif // USE_COREDISTOOLS

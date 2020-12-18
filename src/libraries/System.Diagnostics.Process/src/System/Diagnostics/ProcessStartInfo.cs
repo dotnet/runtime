@@ -81,11 +81,9 @@ namespace System.Diagnostics
                 {
                     IDictionary envVars = System.Environment.GetEnvironmentVariables();
 
-#pragma warning disable 0429 // CaseSensitiveEnvironmentVaribles is constant but varies depending on if we build for Unix or Windows
                     _environmentVariables = new DictionaryWrapper(new Dictionary<string, string?>(
                         envVars.Count,
-                        CaseSensitiveEnvironmentVariables ? StringComparer.Ordinal : StringComparer.OrdinalIgnoreCase));
-#pragma warning restore 0429
+                        OperatingSystem.IsWindows() ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal));
 
                     // Manual use of IDictionaryEnumerator instead of foreach to avoid DictionaryEntry box allocations.
                     IDictionaryEnumerator e = envVars.GetEnumerator();

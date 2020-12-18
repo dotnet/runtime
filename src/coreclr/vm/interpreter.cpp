@@ -384,20 +384,20 @@ void InterpreterMethodInfo::InitArgInfo(CEEInfo* comp, CORINFO_METHOD_INFO* meth
         }
         break;
 
-    case CORINFO_CALLCONV_C:
-        NYI_INTERP("InterpreterMethodInfo::InitArgInfo -- CORINFO_CALLCONV_C");
+    case IMAGE_CEE_CS_CALLCONV_C:
+        NYI_INTERP("InterpreterMethodInfo::InitArgInfo -- IMAGE_CEE_CS_CALLCONV_C");
         break;
 
-    case CORINFO_CALLCONV_STDCALL:
-        NYI_INTERP("InterpreterMethodInfo::InitArgInfo -- CORINFO_CALLCONV_STDCALL");
+    case IMAGE_CEE_CS_CALLCONV_STDCALL:
+        NYI_INTERP("InterpreterMethodInfo::InitArgInfo -- IMAGE_CEE_CS_CALLCONV_STDCALL");
         break;
 
-    case CORINFO_CALLCONV_THISCALL:
-        NYI_INTERP("InterpreterMethodInfo::InitArgInfo -- CORINFO_CALLCONV_THISCALL");
+    case IMAGE_CEE_CS_CALLCONV_THISCALL:
+        NYI_INTERP("InterpreterMethodInfo::InitArgInfo -- IMAGE_CEE_CS_CALLCONV_THISCALL");
         break;
 
-    case CORINFO_CALLCONV_FASTCALL:
-        NYI_INTERP("InterpreterMethodInfo::InitArgInfo -- CORINFO_CALLCONV_FASTCALL");
+    case IMAGE_CEE_CS_CALLCONV_FASTCALL:
+        NYI_INTERP("InterpreterMethodInfo::InitArgInfo -- IMAGE_CEE_CS_CALLCONV_FASTCALL");
         break;
 
     case CORINFO_CALLCONV_FIELD:
@@ -1261,20 +1261,20 @@ CorJitResult Interpreter::GenerateInterpreterStub(CEEInfo* comp,
         }
         break;
 
-    case CORINFO_CALLCONV_C:
-        NYI_INTERP("GenerateInterpreterStub -- CORINFO_CALLCONV_C");
+    case IMAGE_CEE_CS_CALLCONV_C:
+        NYI_INTERP("GenerateInterpreterStub -- IMAGE_CEE_CS_CALLCONV_C");
         break;
 
-    case CORINFO_CALLCONV_STDCALL:
-        NYI_INTERP("GenerateInterpreterStub -- CORINFO_CALLCONV_STDCALL");
+    case IMAGE_CEE_CS_CALLCONV_STDCALL:
+        NYI_INTERP("GenerateInterpreterStub -- IMAGE_CEE_CS_CALLCONV_STDCALL");
         break;
 
-    case CORINFO_CALLCONV_THISCALL:
-        NYI_INTERP("GenerateInterpreterStub -- CORINFO_CALLCONV_THISCALL");
+    case IMAGE_CEE_CS_CALLCONV_THISCALL:
+        NYI_INTERP("GenerateInterpreterStub -- IMAGE_CEE_CS_CALLCONV_THISCALL");
         break;
 
-    case CORINFO_CALLCONV_FASTCALL:
-        NYI_INTERP("GenerateInterpreterStub -- CORINFO_CALLCONV_FASTCALL");
+    case IMAGE_CEE_CS_CALLCONV_FASTCALL:
+        NYI_INTERP("GenerateInterpreterStub -- IMAGE_CEE_CS_CALLCONV_FASTCALL");
         break;
 
     case CORINFO_CALLCONV_FIELD:
