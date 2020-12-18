@@ -12,6 +12,7 @@ namespace Mono.Linker.Tests.Cases.Reflection
 		{
 			TestWithIntegerParameter ();
 			TestWithBindingFlags ();
+			TestWithUnknownBindingFlags (BindingFlags.Public);
 			TestWithCallingConvention ();
 			TestNullType ();
 			TestDataFlowType ();
@@ -35,6 +36,16 @@ namespace Mono.Linker.Tests.Cases.Reflection
 		static void TestWithBindingFlags ()
 		{
 			var constructor = typeof (OnlyUsedViaReflection).GetConstructor (BindingFlags.Public, GetNullValue ("some argument", 2, 3), new Type[] { }, new ParameterModifier[] { });
+			constructor.Invoke (null, new object[] { });
+		}
+
+		[RecognizedReflectionAccessPattern (typeof (Type), nameof (Type.GetConstructor), new Type[] { typeof (BindingFlags), typeof (Binder), typeof (Type[]), typeof (ParameterModifier[]) },
+			typeof (UnknownBindingFlags), ".ctor", new Type[0])]
+		[Kept]
+		static void TestWithUnknownBindingFlags (BindingFlags bindingFlags)
+		{
+			// Since the binding flags are not known linker should mark all constructors on the type
+			var constructor = typeof (UnknownBindingFlags).GetConstructor (bindingFlags, GetNullValue ("some argument", 2, 3), new Type[] { }, new ParameterModifier[] { });
 			constructor.Invoke (null, new object[] { });
 		}
 
@@ -131,6 +142,30 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			{ }
 
 			internal OnlyUsedViaReflection (int foo, int bar, int baz)
+			{ }
+		}
+
+		[Kept]
+		private class UnknownBindingFlags
+		{
+			[Kept]
+			public UnknownBindingFlags ()
+			{ }
+
+			[Kept]
+			public UnknownBindingFlags (string bar)
+			{ }
+
+			[Kept]
+			private UnknownBindingFlags (int foo)
+			{ }
+
+			[Kept]
+			protected UnknownBindingFlags (int foo, int bar)
+			{ }
+
+			[Kept]
+			internal UnknownBindingFlags (int foo, int bar, int baz)
 			{ }
 		}
 

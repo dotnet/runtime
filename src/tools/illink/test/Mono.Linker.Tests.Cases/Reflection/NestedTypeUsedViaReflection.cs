@@ -16,6 +16,7 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			TestByName ();
 			TestPrivateByName ();
 			TestByBindingFlags ();
+			TestByUnknownBindingFlags (BindingFlags.Public);
 			TestNonExistingName ();
 			TestNullType ();
 			TestIgnoreCaseBindingFlags ();
@@ -71,6 +72,16 @@ namespace Mono.Linker.Tests.Cases.Reflection
 		}
 
 		[Kept]
+		[RecognizedReflectionAccessPattern (
+			typeof (Type), nameof (Type.GetNestedType), new Type[] { typeof (string), typeof (BindingFlags) },
+			typeof (UnknownBindingFlags.PublicNestedType), null, (Type[]) null)]
+		static void TestByUnknownBindingFlags (BindingFlags bindingFlags)
+		{
+			// Since the binding flags are not known linker should mark all nested types on the type
+			_ = typeof (UnknownBindingFlags).GetNestedType (nameof (PublicNestedType), bindingFlags);
+		}
+
+		[Kept]
 		static void TestNonExistingName ()
 		{
 			_ = typeof (NestedTypeUsedViaReflection).GetNestedType ("NonExisting");
@@ -102,6 +113,16 @@ namespace Mono.Linker.Tests.Cases.Reflection
 		static void TestUnsupportedBindingFlags ()
 		{
 			_ = typeof (SuppressChangeTypeClass).GetNestedType ("SuppressChangeTypeNestedType", BindingFlags.SuppressChangeType);
+		}
+
+		[Kept]
+		private class UnknownBindingFlags
+		{
+			[Kept]
+			public static class PublicNestedType { }
+
+			[Kept]
+			private static class PrivateNestedType { }
 		}
 
 		[Kept]
