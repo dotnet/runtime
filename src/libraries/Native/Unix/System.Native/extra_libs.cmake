@@ -14,7 +14,7 @@ macro(append_extra_system_libs NativeLibsExtra)
         list(APPEND ${NativeLibsExtra} "-framework Foundation")
     endif ()
 
-    if (CLR_CMAKE_TARGET_LINUX AND HAVE_GETADDRINFO_A)
+    if (CLR_CMAKE_TARGET_LINUX)
         list(APPEND ${NativeLibsExtra} anl)
     endif ()
 endmacro()
