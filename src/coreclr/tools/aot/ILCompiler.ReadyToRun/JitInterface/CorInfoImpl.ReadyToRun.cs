@@ -1749,12 +1749,6 @@ namespace Internal.JitInterface
                 out callerModule,
                 out useInstantiatingStub);
 
-            var targetDetails = _compilation.TypeSystemContext.Target;
-            if (targetDetails.Architecture == TargetArchitecture.X86 && targetDetails.IsWindows && targetMethod.IsUnmanagedCallersOnly)
-            {
-                throw new RequiresRuntimeJitException("ReadyToRun: References to methods with UnmanagedCallersOnlyAttribute not implemented");
-            }
-
             if (pResult->thisTransform == CORINFO_THIS_TRANSFORM.CORINFO_BOX_THIS)
             {
                 // READYTORUN: FUTURE: Optionally create boxing stub at runtime
