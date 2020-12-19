@@ -1,22 +1,22 @@
 <Project>
   <PropertyGroup>
-    <RunScriptInputName Condition="!($(TargetOS)' != 'windows' and '$(OS)' != 'Windows_NT')">RunnerTemplate.cmd</RunScriptInputName>
-    <RunScriptInputName Condition="$(TargetOS)' != 'windows' and '$(OS)' != 'Windows_NT'">RunnerTemplate.sh</RunScriptInputName>
+    <RunScriptInputName Condition="!('$(TargetOS)' != 'windows' and '$(OS)' != 'Windows_NT')">RunnerTemplate.cmd</RunScriptInputName>
+    <RunScriptInputName Condition="'$(TargetOS)' != 'windows' and '$(OS)' != 'Windows_NT'">RunnerTemplate.sh</RunScriptInputName>
     <RunScriptInputName Condition="'$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'tvOS'">AppleRunnerTemplate.sh</RunScriptInputName>
     <RunScriptInputName Condition="'$(TargetOS)' == 'Android'">AndroidRunnerTemplate.sh</RunScriptInputName>
     <RunScriptInputName Condition="'$(TargetOS)' == 'Browser'">WasmRunnerTemplate.sh</RunScriptInputName>
 
     <RunScriptInputPath>$(MSBuildThisFileDirectory)$(RunScriptInputName)</RunScriptInputPath>
 
-    <RunScriptOutputName Condition="!($(TargetOS)' != 'windows' and '$(OS)' != 'Windows_NT')">RunTests.cmd</RunScriptOutputName>
-    <RunScriptOutputName Condition="$(TargetOS)' != 'windows' and '$(OS)' != 'Windows_NT'">RunTests.sh</RunScriptOutputName>
+    <RunScriptOutputName Condition="!('$(TargetOS)' != 'windows' and '$(OS)' != 'Windows_NT')">RunTests.cmd</RunScriptOutputName>
+    <RunScriptOutputName Condition="'$(TargetOS)' != 'windows' and '$(OS)' != 'Windows_NT'">RunTests.sh</RunScriptOutputName>
     <RunScriptOutputPath>$([MSBuild]::NormalizePath('$(OutDir)', '$(RunScriptOutputName)'))</RunScriptOutputPath>
 
-    <RunScriptHostDir Condition="!($(TargetOS)' != 'windows' and '$(OS)' != 'Windows_NT')">%RUNTIME_PATH%\</RunScriptHostDir>
-    <RunScriptHostDir Condition="$(TargetOS)' != 'windows' and '$(OS)' != 'Windows_NT'">$RUNTIME_PATH/</RunScriptHostDir>
+    <RunScriptHostDir Condition="!('$(TargetOS)' != 'windows' and '$(OS)' != 'Windows_NT')">%RUNTIME_PATH%\</RunScriptHostDir>
+    <RunScriptHostDir Condition="'$(TargetOS)' != 'windows' and '$(OS)' != 'Windows_NT'">$RUNTIME_PATH/</RunScriptHostDir>
 
-    <RunScriptHost Condition="!($(TargetOS)' != 'windows' and '$(OS)' != 'Windows_NT')">$(RunScriptHostDir)dotnet.exe</RunScriptHost>
-    <RunScriptHost Condition="$(TargetOS)' != 'windows' and '$(OS)' != 'Windows_NT'">$(RunScriptHostDir)dotnet</RunScriptHost>
+    <RunScriptHost Condition="!('$(TargetOS)' != 'windows' and '$(OS)' != 'Windows_NT')">$(RunScriptHostDir)dotnet.exe</RunScriptHost>
+    <RunScriptHost Condition="'$(TargetOS)' != 'windows' and '$(OS)' != 'Windows_NT'">$(RunScriptHostDir)dotnet</RunScriptHost>
   </PropertyGroup>
 
   <PropertyGroup>
