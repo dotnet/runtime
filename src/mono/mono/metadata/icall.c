@@ -1254,11 +1254,13 @@ ves_icall_System_Runtime_CompilerServices_RuntimeHelpers_InitializeArray (MonoAr
 #endif
 }
 
+#if !defined(ENABLE_NETCORE)
 gint
 ves_icall_System_Runtime_CompilerServices_RuntimeHelpers_GetOffsetToStringData (void)
 {
 	return offsetof (MonoString, chars);
 }
+#endif
 
 MonoObjectHandle
 ves_icall_System_Runtime_CompilerServices_RuntimeHelpers_GetObjectValue (MonoObjectHandle obj, MonoError *error)
@@ -7475,11 +7477,13 @@ ves_icall_System_Buffer_ByteLengthInternal (MonoArrayHandle array, MonoError* er
 	return mono_array_get_byte_length (array);
 }
 
+#if !defined(ENABLE_NETCORE)
 void
 ves_icall_System_Buffer_MemcpyInternal (gpointer dest, gconstpointer src, gint32 count)
 {
 	memcpy (dest, src, count);
 }
+#endif
 
 MonoBoolean
 ves_icall_System_Buffer_BlockCopyInternal (MonoArrayHandle src, gint32 src_offset, MonoArrayHandle dest, gint32 dest_offset, gint32 count, MonoError* error)
@@ -7651,12 +7655,14 @@ mono_icall_get_platform (void)
 }
 #endif /* !HOST_WIN32 */
 
+#if !defined(ENABLE_NETCORE)
 int
 ves_icall_System_Environment_get_Platform (void)
 {
 	return mono_icall_get_platform ();
 }
 #endif /* !ENABLE_NETCORE */
+#endif
 
 #ifndef HOST_WIN32
 static MonoStringHandle
@@ -7693,11 +7699,13 @@ mono_icall_is_64bit_os (void)
 }
 #endif /* !HOST_WIN32 */
 
+#if !defined(ENABLE_NETCORE)
 MonoBoolean
 ves_icall_System_Environment_GetIs64BitOperatingSystem (void)
 {
 	return mono_icall_is_64bit_os ();
 }
+#endif
 
 MonoStringHandle
 ves_icall_System_Environment_GetEnvironmentVariable_native (const gchar *utf8_name, MonoError *error)
@@ -8079,11 +8087,13 @@ ves_icall_System_Text_EncodingHelper_InternalCodePage (gint32 *int_code_page, Mo
 }
 #endif
 
+#if !defined(ENABLE_NETCORE)
 MonoBoolean
 ves_icall_System_Environment_get_HasShutdownStarted (void)
 {
 	return mono_runtime_is_shutting_down () || mono_domain_is_unloading (mono_domain_get ());
 }
+#endif
 
 #ifndef HOST_WIN32
 
@@ -8321,6 +8331,7 @@ ves_icall_System_TimeZoneInfo_mono_timezone_get_local_name (MonoString **result)
 
 #endif /* ENABLE_NETCORE */
 
+#if !defined(ENABLE_NETCORE)
 #ifndef PLATFORM_NO_DRIVEINFO
 MonoBoolean
 ves_icall_System_IO_DriveInfo_GetDiskFreeSpace (const gunichar2 *path_name, gint32 path_name_length, guint64 *free_bytes_avail,
@@ -8346,6 +8357,7 @@ ves_icall_System_IO_DriveInfo_GetDiskFreeSpace (const gunichar2 *path_name, gint
 	return result;
 }
 #endif /* PLATFORM_NO_DRIVEINFO */
+#endif
 
 gpointer
 ves_icall_RuntimeMethodHandle_GetFunctionPointer (MonoMethod *method, MonoError *error)
@@ -8781,6 +8793,7 @@ ves_icall_System_Runtime_InteropServices_RuntimeInformation_GetOSName (MonoError
 }
 #endif /* ENABLE_NETCORE */
 
+#if !defined(ENABLE_NETCORE)
 int
 ves_icall_Interop_Sys_DoubleToString(double value, char *format, char *buffer, int bufferLength)
 {
@@ -8798,6 +8811,7 @@ ves_icall_Interop_Sys_DoubleToString(double value, char *format, char *buffer, i
 
 	return snprintf(buffer, bufferLength, format, value);
 }
+#endif
 
 void
 ves_icall_System_Runtime_RuntimeImports_ecvt_s(char *buffer, size_t sizeInBytes, double value, int count, int* dec, int* sign)
@@ -8807,7 +8821,7 @@ ves_icall_System_Runtime_RuntimeImports_ecvt_s(char *buffer, size_t sizeInBytes,
 #endif
 }
 
-
+#if !defined(ENABLE_NETCORE)
 /* These parameters are "readonly" in corlib/System/NumberFormatter.cs */
 void
 ves_icall_System_NumberFormatter_GetFormatterTables (guint64 const **mantissas,
@@ -8824,6 +8838,7 @@ ves_icall_System_NumberFormatter_GetFormatterTables (guint64 const **mantissas,
 	*tenPowersList = Formatter_TenPowersList;
 	*decHexDigits = Formatter_DecHexDigits;
 }
+#endif
 
 static gboolean
 add_modifier_to_array (MonoDomain *domain, MonoType *type, MonoArrayHandle dest, int dest_idx, MonoError *error)
@@ -9758,6 +9773,7 @@ ves_icall_System_GC_RecordPressure (gint64 value)
 	mono_gc_add_memory_pressure (value);
 }
 
+#if !defined(ENABLE_NETCORE)
 gint64
 ves_icall_System_Diagnostics_Stopwatch_GetTimestamp (void)
 {
@@ -9775,12 +9791,15 @@ ves_icall_System_DateTime_GetSystemTimeAsFileTime (void)
 {
 	return mono_100ns_datetime ();
 }
+#endif
 
+#if !defined(ENABLE_NETCORE)
 int
 ves_icall_System_Threading_Thread_SystemMaxStackSize (void)
 {
 	return mono_thread_info_get_system_max_stack_size ();
 }
+#endif
 
 MonoBoolean
 ves_icall_System_Threading_Thread_YieldInternal (void)
