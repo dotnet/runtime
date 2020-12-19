@@ -75,10 +75,12 @@ typedef enum {
 // grep ICALL_EXPORT | sort | uniq
 ICALL_EXPORT MonoAssemblyName* ves_icall_System_Reflection_AssemblyName_GetNativeName (MonoAssembly*);
 ICALL_EXPORT MonoBoolean ves_icall_RuntimeTypeHandle_is_subclass_of (MonoType*, MonoType*);
+#if !defined(ENABLE_NETCORE)
 ICALL_EXPORT MonoBoolean ves_icall_System_Environment_GetIs64BitOperatingSystem (void);
 ICALL_EXPORT MonoBoolean ves_icall_System_Environment_get_HasShutdownStarted (void);
 ICALL_EXPORT MonoBoolean ves_icall_System_GCHandle_CheckCurrentDomain (MonoGCHandle gchandle);
 ICALL_EXPORT MonoBoolean ves_icall_System_IO_DriveInfo_GetDiskFreeSpace (const gunichar2*, gint32, guint64*, guint64*, guint64*, gint32*);
+#endif
 ICALL_EXPORT MonoBoolean ves_icall_System_Reflection_AssemblyName_ParseAssemblyName (const char*, MonoAssemblyName*, MonoBoolean*, MonoBoolean* is_token_defined_arg);
 ICALL_EXPORT MonoBoolean ves_icall_System_Runtime_CompilerServices_RuntimeHelpers_SufficientExecutionStack (void);
 ICALL_EXPORT MonoBoolean ves_icall_System_Threading_Thread_YieldInternal (void);
@@ -146,43 +148,58 @@ ICALL_EXPORT float ves_icall_System_MathF_Log2 (float);
 ICALL_EXPORT float ves_icall_System_MathF_ScaleB (float, gint32);
 ICALL_EXPORT float ves_icall_System_MathF_FusedMultiplyAdd (float, float, float);
 #endif
+#if !defined(ENABLE_NETCORE)
 ICALL_EXPORT gint ves_icall_System_Runtime_CompilerServices_RuntimeHelpers_GetOffsetToStringData (void);
+#endif
 ICALL_EXPORT gint32 ves_icall_System_Environment_get_ProcessorCount (void);
 ICALL_EXPORT gint32 ves_icall_System_Environment_get_TickCount (void);
 #if ENABLE_NETCORE
 ICALL_EXPORT gint64 ves_icall_System_Environment_get_TickCount64 (void);
 #endif
+#if !defined(ENABLE_NETCORE)
 ICALL_EXPORT gint64 ves_icall_System_DateTime_GetSystemTimeAsFileTime (void);
 ICALL_EXPORT gint64 ves_icall_System_Diagnostics_Process_GetProcessData (int, gint32, MonoProcessError*);
 ICALL_EXPORT gint64 ves_icall_System_Diagnostics_Stopwatch_GetTimestamp (void);
+#endif
 ICALL_EXPORT gint64 ves_icall_System_GC_GetTotalMemory (MonoBoolean forceCollection);
+#if !defined(ENABLE_NETCORE)
 ICALL_EXPORT gint64 ves_icall_System_Threading_Timer_GetTimeMonotonic (void);
 ICALL_EXPORT gpointer ves_icall_System_GCHandle_GetAddrOfPinnedObject (MonoGCHandle handle);
 ICALL_EXPORT int ves_icall_Interop_Sys_DoubleToString (double, char*, char*, int);
-#if !ENABLE_NETCORE
 ICALL_EXPORT int ves_icall_System_Environment_get_Platform (void);
 #endif
 ICALL_EXPORT int ves_icall_System_GC_GetCollectionCount (int);
 ICALL_EXPORT int ves_icall_System_GC_GetMaxGeneration (void);
 ICALL_EXPORT gint64 ves_icall_System_GC_GetAllocatedBytesForCurrentThread (void);
+#if !defined(ENABLE_NETCORE)
 ICALL_EXPORT int ves_icall_System_Threading_Thread_SystemMaxStackSize (void);
+#endif
 ICALL_EXPORT int ves_icall_get_method_attributes (MonoMethod* method);
 ICALL_EXPORT void ves_icall_Mono_Runtime_RegisterReportingForNativeLib (const char*, const char*);
 ICALL_EXPORT void ves_icall_Mono_Runtime_RegisterReportingForAllNativeLibs (void);
 ICALL_EXPORT void ves_icall_System_Array_GetGenericValue_icall (MonoArray**, guint32, gpointer);
 ICALL_EXPORT void ves_icall_System_Array_SetGenericValue_icall (MonoArray**, guint32, gpointer);
+
+#if !defined(ENABLE_NETCORE)
 ICALL_EXPORT void ves_icall_System_Buffer_MemcpyInternal (gpointer dest, gconstpointer src, gint32 count);
+#endif
+
 ICALL_EXPORT void ves_icall_System_Environment_Exit (int);
+
+#if !defined(ENABLE_NETCORE)
 ICALL_EXPORT void ves_icall_System_GCHandle_FreeHandle (MonoGCHandle handle);
+#endif
+
 ICALL_EXPORT void ves_icall_System_GC_InternalCollect (int generation);
 ICALL_EXPORT void ves_icall_System_GC_RecordPressure (gint64);
 ICALL_EXPORT void ves_icall_System_GC_WaitForPendingFinalizers (void);
 ICALL_EXPORT void ves_icall_System_GC_GetGCMemoryInfo (gint64*, gint64*, gint64*, gint64*, gint64*);
 
-#if !ENABLE_NETCORE
+#if !defined(ENABLE_NETCORE)
 ICALL_EXPORT void ves_icall_System_IO_LogcatTextWriter_Log (const char*, gint32, const char*);
-#endif
 ICALL_EXPORT void ves_icall_System_NumberFormatter_GetFormatterTables (guint64 const**, gint32 const**, gunichar2 const**, gunichar2 const**, gint64 const**, gint32 const**);
+#endif
+
 #if ENABLE_NETCORE
 ICALL_EXPORT void ves_icall_System_Runtime_RuntimeImports_Memmove (guint8*, guint8*, size_t);
 ICALL_EXPORT void ves_icall_System_Buffer_BulkMoveWithWriteBarrier (guint8 *, guint8 *, size_t, MonoType *);
@@ -217,6 +234,7 @@ ICALL_EXPORT gpointer ves_icall_System_Net_NetworkInformation_LinuxNetworkChange
 #endif
 #endif
 
+#if !defined(ENABLE_NETCORE)
 ICALL_EXPORT MonoBoolean ves_icall_Microsoft_Win32_NativeMethods_CloseProcess (gpointer handle);
 ICALL_EXPORT gpointer ves_icall_Microsoft_Win32_NativeMethods_GetCurrentProcess (void);
 ICALL_EXPORT gint32 ves_icall_Microsoft_Win32_NativeMethods_GetCurrentProcessId (void);
@@ -228,8 +246,8 @@ ICALL_EXPORT MonoBoolean ves_icall_Microsoft_Win32_NativeMethods_SetPriorityClas
 ICALL_EXPORT MonoBoolean ves_icall_Microsoft_Win32_NativeMethods_SetProcessWorkingSetSize (gpointer handle, gsize min, gsize max);
 ICALL_EXPORT MonoBoolean ves_icall_Microsoft_Win32_NativeMethods_TerminateProcess (gpointer handle, gint32 exitcode);
 ICALL_EXPORT gint32 ves_icall_Microsoft_Win32_NativeMethods_WaitForInputIdle (gpointer handle, gint32 milliseconds);
-
 ICALL_EXPORT MonoBoolean ves_icall_Mono_TlsProviderFactory_IsBtlsSupported (void);
+#endif
 
 ICALL_EXPORT void ves_icall_Mono_Runtime_AnnotateMicrosoftTelemetry (const char *key, const char *value);
 ICALL_EXPORT void ves_icall_Mono_Runtime_DisableMicrosoftTelemetry (void);
@@ -262,6 +280,7 @@ ICALL_EXPORT void ves_icall_Mono_SafeStringMarshal_GFree (void *c_str);
 ICALL_EXPORT char* ves_icall_Mono_SafeStringMarshal_StringToUtf8 (MonoString *volatile* s);
 ICALL_EXPORT MonoType* ves_icall_Mono_RuntimeClassHandle_GetTypeFromClass (MonoClass *klass);
 
+#if !defined(ENABLE_NETCORE)
 ICALL_EXPORT MonoBoolean ves_icall_Mono_Security_Cryptography_KeyPairPersistence_CanSecure (const gunichar2*);
 ICALL_EXPORT MonoBoolean ves_icall_Mono_Security_Cryptography_KeyPairPersistence_IsMachineProtected (const gunichar2*);
 ICALL_EXPORT MonoBoolean ves_icall_Mono_Security_Cryptography_KeyPairPersistence_IsUserProtected (const gunichar2*);
@@ -292,6 +311,7 @@ ICALL_EXPORT gpointer   ves_icall_System_Runtime_InteropServices_Marshal_ReAlloc
 ICALL_EXPORT gpointer   ves_icall_System_Runtime_InteropServices_Marshal_ReAllocHGlobal		(gpointer, gsize);
 ICALL_EXPORT      char* ves_icall_System_Runtime_InteropServices_Marshal_StringToHGlobalAnsi    (const gunichar2*, int);
 ICALL_EXPORT gunichar2*	ves_icall_System_Runtime_InteropServices_Marshal_StringToHGlobalUni	(const gunichar2*, int);
+#endif
 
 ICALL_EXPORT gpointer    ves_icall_System_Threading_Semaphore_CreateSemaphore_icall     (gint32 initialCount, gint32 maximumCount, const gunichar2 *name, gint32 name_length, gint32 *win32error);
 ICALL_EXPORT gpointer    ves_icall_System_Threading_Semaphore_OpenSemaphore_icall       (const gunichar2 *name, gint32 name_length, gint32 rights, gint32 *win32error);
