@@ -9069,6 +9069,9 @@ public:
         // be done. By default, 32B.
         unsigned short compJitAlignLoopBoundary;
 
+        // Padding limit to align a loop.
+        unsigned short compJitAlignPaddingLimit;
+
         // If set, perform adaptive loop alignment that limits number of padding based on loop size.
         bool compJitAlignLoopAdaptive;
 

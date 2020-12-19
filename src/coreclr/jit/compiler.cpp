@@ -2624,14 +2624,18 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
     opts.compJitAlignLoopMaxCodeSize = (unsigned short)JitConfig.JitAlignLoopMaxCodeSize();
 #else
     opts.compJitAlignLoopAdaptive       = true;
+    opts.compJitAlignLoopBoundary       = DEFAULT_ALIGN_LOOP_BOUNDARY;
     opts.compJitAlignLoopMinBlockWeight = DEFAULT_ALIGN_LOOP_MIN_BLOCK_WEIGHT;
 #endif
-
-    // Adaptive alignment works on 32B boundary
     if (opts.compJitAlignLoopAdaptive)
     {
-        opts.compJitAlignLoopBoundary = DEFAULT_ALIGN_LOOP_BOUNDARY;
+        opts.compJitAlignPaddingLimit = (opts.compJitAlignLoopBoundary >> 1) - 1;
     }
+    else
+    {
+        opts.compJitAlignPaddingLimit = opts.compJitAlignLoopBoundary - 1;
+    }
+
     assert(isPow2(opts.compJitAlignLoopBoundary));
 
 #if REGEN_SHORTCUTS || REGEN_CALLPAT

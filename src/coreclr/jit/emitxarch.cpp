@@ -13753,7 +13753,6 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
 
     // Make sure we set the instruction descriptor size correctly
     assert(sz == emitSizeOfInsDsc(id));
-// assert((sz == emitSizeOfInsDsc(id)) || (ins == INS_align));
 
 #if !FEATURE_FIXED_OUT_ARGS
     bool updateStackLevel = !emitIGisInProlog(ig) && !emitIGisInEpilog(ig);
