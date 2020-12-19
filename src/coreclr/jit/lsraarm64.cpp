@@ -425,6 +425,8 @@ int LinearScan::BuildNode(GenTree* tree)
         break;
 
         case GT_LOCKADD:
+        case GT_XXOR:
+        case GT_XAND:
         case GT_XADD:
         case GT_XCHG:
         {

@@ -5251,7 +5251,7 @@ void ValueNumStore::vnDumpSimdType(Compiler* comp, VNFuncApp* simdType)
 static UINT8      vnfOpAttribs[VNF_COUNT];
 static genTreeOps genTreeOpsIllegalAsVNFunc[] = {GT_IND, // When we do heap memory.
                                                  GT_NULLCHECK, GT_QMARK, GT_COLON, GT_LOCKADD, GT_XADD, GT_XCHG,
-                                                 GT_CMPXCHG, GT_LCLHEAP, GT_BOX,
+                                                 GT_CMPXCHG, GT_LCLHEAP, GT_BOX, GT_XXOR, GT_XAND,
 
                                                  // These need special semantics:
                                                  GT_COMMA, // == second argument (but with exception(s) from first).
@@ -8232,6 +8232,8 @@ void Compiler::fgValueNumberTree(GenTree* tree)
                         noway_assert("LOCKADD should not appear before lowering");
                         break;
 
+                    case GT_XXOR: // Binop
+                    case GT_XAND: // Binop
                     case GT_XADD: // Binop
                     case GT_XCHG: // Binop
                     {

@@ -2786,10 +2786,10 @@ void CodeGen::genJumpTable(GenTree* treeNode)
 }
 
 //------------------------------------------------------------------------
-// genLockedInstructions: Generate code for a GT_XADD or GT_XCHG node.
+// genLockedInstructions: Generate code for a GT_XADD, GT_XAND, GT_XXOR or GT_XCHG node.
 //
 // Arguments:
-//    treeNode - the GT_XADD/XCHG node
+//    treeNode - the GT_XADD/XAND/XXOR/XCHG node
 //
 void CodeGen::genLockedInstructions(GenTreeOp* treeNode)
 {
@@ -2810,6 +2810,12 @@ void CodeGen::genLockedInstructions(GenTreeOp* treeNode)
 
         switch (treeNode->gtOper)
         {
+            case GT_XXOR:
+                GetEmitter()->emitIns_R_R_R(INS_ldsetal, dataSize, dataReg, (targetReg == REG_NA) ? REG_ZR : targetReg, addrReg);
+                break;
+            case GT_XAND:
+                GetEmitter()->emitIns_R_R_R(INS_ldclral, dataSize, dataReg, (targetReg == REG_NA) ? REG_ZR : targetReg, addrReg);
+                break;
             case GT_XCHG:
                 GetEmitter()->emitIns_R_R_R(INS_swpal, dataSize, dataReg, targetReg, addrReg);
                 break;
@@ -2831,6 +2837,9 @@ void CodeGen::genLockedInstructions(GenTreeOp* treeNode)
     }
     else
     {
+        // These are imported normally if Atomics aren't supported.
+        assert(!treeNode->OperIs(GT_XXOR, GT_XAND));
+
         regNumber exResultReg  = treeNode->ExtractTempReg(RBM_ALLINT);
         regNumber storeDataReg = (treeNode->OperGet() == GT_XCHG) ? dataReg : treeNode->ExtractTempReg(RBM_ALLINT);
         regNumber loadReg      = (targetReg != REG_NA) ? targetReg : storeDataReg;
@@ -6221,6 +6230,10 @@ void CodeGen::genArm64EmitterUnitTests()
     theEmitter->emitIns_R_R_R(INS_ldadd, EA_8BYTE, REG_R8, REG_R9, REG_R10);
     theEmitter->emitIns_R_R_R(INS_ldadda, EA_8BYTE, REG_R8, REG_R9, REG_R10);
     theEmitter->emitIns_R_R_R(INS_ldaddal, EA_8BYTE, REG_R8, REG_R9, REG_R10);
+    theEmitter->emitIns_R_R_R(INS_ldclral, EA_4BYTE, REG_R8, REG_R9, REG_R10);
+    theEmitter->emitIns_R_R_R(INS_ldclral, EA_8BYTE, REG_R8, REG_R9, REG_R10);
+    theEmitter->emitIns_R_R_R(INS_ldsetal, EA_4BYTE, REG_R8, REG_R9, REG_R10);
+    theEmitter->emitIns_R_R_R(INS_ldsetal, EA_8BYTE, REG_R8, REG_R9, REG_R10);
     theEmitter->emitIns_R_R_R(INS_ldaddl, EA_8BYTE, REG_R8, REG_R9, REG_R10);
     theEmitter->emitIns_R_R_R(INS_swpb, EA_4BYTE, REG_R8, REG_R9, REG_R10);
     theEmitter->emitIns_R_R_R(INS_swpab, EA_4BYTE, REG_R8, REG_R9, REG_R10);
