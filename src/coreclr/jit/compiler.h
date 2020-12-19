@@ -6832,6 +6832,7 @@ public:
     //
     PhaseStatus optRedundantBranches();
     bool optRedundantBranch(BasicBlock* const block);
+    bool optJumpThread(BasicBlock* const block, BasicBlock* const domBlock);
 
 #if ASSERTION_PROP
     /**************************************************************************
