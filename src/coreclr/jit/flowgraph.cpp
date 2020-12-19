@@ -10946,6 +10946,15 @@ void Compiler::fgCompactBlocks(BasicBlock* block, BasicBlock* bNext)
             break;
     }
 
+    // Add the LOOP_ALIGN flag
+    if (bNext->isLoopAlign())
+    {
+        // Only if the new block is jump target or has label
+        if (((block->bbFlags & BBF_JMP_TARGET) != 0) || ((block->bbFlags & BBF_HAS_LABEL) != 0))
+        {
+            block->bbFlags |= BBF_LOOP_ALIGN;
+        }
+    }
     // If we're collapsing a block created after the dominators are
     // computed, copy block number the block and reuse dominator
     // information from bNext to block.
