@@ -1519,7 +1519,7 @@ public:
 
     static bool OperIsAtomicOp(genTreeOps gtOper)
     {
-        switch (oper)
+        switch (gtOper)
         {
             case GT_XADD:
             case GT_XXOR:
