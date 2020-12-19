@@ -4349,7 +4349,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                     GenTree*   op2 = impPopStack().val;
                     GenTree*   op1 = impPopStack().val;
                     genTreeOps op  = (ni == NI_System_Threading_Interlocked_Or) ? GT_XXOR : GT_XAND;
-                    retNode = gtNewOperNode(op, genActualType(callType), op1, op2);
+                    retNode        = gtNewOperNode(op, genActualType(callType), op1, op2);
                     retNode->gtFlags |= GTF_GLOB_REF | GTF_ASG;
                 }
                 break;

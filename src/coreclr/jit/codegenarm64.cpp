@@ -2811,10 +2811,12 @@ void CodeGen::genLockedInstructions(GenTreeOp* treeNode)
         switch (treeNode->gtOper)
         {
             case GT_XXOR:
-                GetEmitter()->emitIns_R_R_R(INS_ldsetal, dataSize, dataReg, (targetReg == REG_NA) ? REG_ZR : targetReg, addrReg);
+                GetEmitter()->emitIns_R_R_R(INS_ldsetal, dataSize, dataReg, (targetReg == REG_NA) ? REG_ZR : targetReg,
+                                            addrReg);
                 break;
             case GT_XAND:
-                GetEmitter()->emitIns_R_R_R(INS_ldclral, dataSize, dataReg, (targetReg == REG_NA) ? REG_ZR : targetReg, addrReg);
+                GetEmitter()->emitIns_R_R_R(INS_ldclral, dataSize, dataReg, (targetReg == REG_NA) ? REG_ZR : targetReg,
+                                            addrReg);
                 break;
             case GT_XCHG:
                 GetEmitter()->emitIns_R_R_R(INS_swpal, dataSize, dataReg, targetReg, addrReg);
