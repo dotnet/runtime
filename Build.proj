@@ -2,6 +2,8 @@
 
   <PropertyGroup>
     <TraversalGlobalProperties Condition="'$(BuildAllConfigurations)' != 'true'">BuildTargetFramework=$([MSBuild]::ValueOrDefault('$(BuildTargetFramework)', '$(NetCoreAppCurrent)'))</TraversalGlobalProperties>
+    <ScriptExt Condition="'$(OS)' == 'Windows_NT'">.cmd</ScriptExt>
+    <ScriptExt Condition="'$(OS)' != 'Windows_NT'">.sh</ScriptExt>
   </PropertyGroup>
 
   <!--
