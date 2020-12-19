@@ -1132,7 +1132,7 @@ namespace System
             }
             return (year & 3) == 0 && ((year & 15) == 0 ||
                    // TODO: optimize "(uint)year % 25 != 0" in JIT to produce:
-                   (year * -1030792151 > 171798691));
+                   ((uint)(year * -1030792151) > 171798691));
         }
 
         // Constructs a DateTime from a string. The string must specify a
