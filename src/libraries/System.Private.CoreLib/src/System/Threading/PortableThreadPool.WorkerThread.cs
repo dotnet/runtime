@@ -288,10 +288,12 @@ namespace System.Threading
             {
                 try
                 {
+                    // Thread pool threads must start in the default execution context without transferring the context, so
+                    // using UnsafeStart() instead of Start()
                     Thread workerThread = new Thread(WorkerThreadStart);
                     workerThread.IsThreadPoolThread = true;
                     workerThread.IsBackground = true;
-                    workerThread.Start();
+                    workerThread.UnsafeStart();
                 }
                 catch (ThreadStartException)
                 {
@@ -301,6 +303,7 @@ namespace System.Threading
                 {
                     return false;
                 }
+
                 return true;
             }
         }
