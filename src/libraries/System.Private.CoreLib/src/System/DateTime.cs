@@ -635,8 +635,8 @@ namespace System
                 ThrowHelper.ThrowArgumentOutOfRange_BadYearMonthDay();
             }
 
-            int y = year - 1;
-            int n = y * 365 + y / 4 - y / 100 + y / 400 + days[month - 1] + day - 1;
+            uint y = (uint)(year - 1);
+            uint n = y * 365 + y / 4 - y / 100 + y / 400 + (uint)days[month - 1] + (uint)day - 1;
             return n * TicksPerDay;
         }
 
@@ -1130,7 +1130,9 @@ namespace System
             {
                 ThrowHelper.ThrowArgumentOutOfRange_Year();
             }
-            return (year & 3) == 0 && ((year & 15) == 0 || (year % 25) != 0);
+            return (year & 3) == 0 && ((year & 15) == 0 ||
+                   // TODO: optimize "(uint)year % 25 != 0" in JIT to produce:
+                   (year * -1030792151 > 171798691));
         }
 
         // Constructs a DateTime from a string. The string must specify a
