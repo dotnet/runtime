@@ -80,6 +80,7 @@ CompPhaseNameMacro(PHASE_OPTIMIZE_VALNUM_CSES,   "Optimize Valnum CSEs",        
 #endif
 
 CompPhaseNameMacro(PHASE_VN_COPY_PROP,           "VN based copy prop",             "CP-PROP",  false, -1, false)
+CompPhaseNameMacro(PHASE_OPTIMIZE_BRANCHES,      "Redundant branch opts",          "OPT-BR",   false, -1, false)
 #if ASSERTION_PROP
 CompPhaseNameMacro(PHASE_ASSERTION_PROP_MAIN,    "Assertion prop",                 "AST-PROP", false, -1, false)
 #endif
