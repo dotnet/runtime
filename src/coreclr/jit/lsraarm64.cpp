@@ -442,6 +442,11 @@ int LinearScan::BuildNode(GenTree* tree)
                     buildInternalIntRegisterDefForNode(tree);
                 }
             }
+            else if (tree->OperIs(GT_XAND))
+            {
+                // for ldclral we need an internal register.
+                buildInternalIntRegisterDefForNode(tree);
+            }
 
             assert(!tree->gtGetOp1()->isContained());
             RefPosition* op1Use = BuildUse(tree->gtGetOp1());

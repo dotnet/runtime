@@ -2815,9 +2815,14 @@ void CodeGen::genLockedInstructions(GenTreeOp* treeNode)
                                             addrReg);
                 break;
             case GT_XAND:
-                GetEmitter()->emitIns_R_R_R(INS_ldclral, dataSize, dataReg, (targetReg == REG_NA) ? REG_ZR : targetReg,
-                                            addrReg);
-                break;
+                {
+                    // Grab a temp reg to perform `MVN` for dataReg first.
+                    regNumber tempReg = treeNode->GetSingleTempReg();
+                    GetEmitter()->emitIns_R_R(INS_mvn, dataSize, tempReg, dataReg);
+                    GetEmitter()->emitIns_R_R_R(INS_ldclral, dataSize, tempReg, (targetReg == REG_NA) ? REG_ZR : targetReg,
+                        addrReg);
+                    break;
+                }
             case GT_XCHG:
                 GetEmitter()->emitIns_R_R_R(INS_swpal, dataSize, dataReg, targetReg, addrReg);
                 break;
