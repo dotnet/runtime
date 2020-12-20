@@ -24,7 +24,7 @@ namespace System.Speech.Internal.Synthesis
         /// <summary>
         /// Create an instance of AudioBase.
         /// </summary>
-        internal AudioBase ()
+        internal AudioBase()
         {
         }
 
@@ -44,77 +44,77 @@ namespace System.Speech.Internal.Synthesis
         /// Play a wave file.
         /// </summary>
         /// <param name="wfx"></param>
-        internal abstract void Begin (byte [] wfx);
+        internal abstract void Begin(byte[] wfx);
 
         /// <summary>
         /// Play a wave file.
         /// </summary>
-        internal abstract void End ();
+        internal abstract void End();
 
         /// <summary>
         /// Play a wave file.
         /// </summary>
         /// <param name="pBuff"></param>
         /// <param name="cb"></param>
-        internal virtual void Play (IntPtr pBuff, int cb)
+        internal virtual void Play(IntPtr pBuff, int cb)
         {
-            byte [] buffer = new byte [cb];
-            Marshal.Copy (pBuff, buffer, 0, cb);
-            Play (buffer);
+            byte[] buffer = new byte[cb];
+            Marshal.Copy(pBuff, buffer, 0, cb);
+            Play(buffer);
         }
 
         /// <summary>
         /// Play a wave file.
         /// </summary>
         /// <param name="buffer"></param>
-        internal virtual void Play (byte [] buffer)
+        internal virtual void Play(byte[] buffer)
         {
-            GCHandle gc = GCHandle.Alloc (buffer);
-            Play (gc.AddrOfPinnedObject (), buffer.Length);
-            gc.Free ();
+            GCHandle gc = GCHandle.Alloc(buffer);
+            Play(gc.AddrOfPinnedObject(), buffer.Length);
+            gc.Free();
         }
 
         /// <summary>
         /// Pause the playback of a sound.
         /// </summary>
         /// <returns>MMSYSERR.NOERROR if successful</returns>
-        internal abstract void Pause ();
+        internal abstract void Pause();
 
         /// <summary>
         /// Resume the playback of a paused sound.
         /// </summary>
         /// <returns>MMSYSERR.NOERROR if successful</returns>
-        internal abstract void Resume ();
+        internal abstract void Resume();
 
         /// <summary>
         /// Throw an event synchronized with the audio stream
         /// </summary>
         /// <param name="ttsEvent"></param>
-        internal abstract void InjectEvent (TTSEvent ttsEvent);
+        internal abstract void InjectEvent(TTSEvent ttsEvent);
 
         /// <summary>
         /// File operation are synchonous no wait
         /// </summary>
-        internal abstract void WaitUntilDone ();
+        internal abstract void WaitUntilDone();
 
         /// <summary>
         /// Wait for all the queued buffers to be played
         /// </summary>
-        internal abstract void Abort ();
+        internal abstract void Abort();
 
         #endregion
 
         #region helpers
 
-        internal void PlayWaveFile (AudioData audio)
+        internal void PlayWaveFile(AudioData audio)
         {
             // allocate some memory for the largest header
             try
             {
                 // Fake a header for ALaw and ULaw
-                if (!string.IsNullOrEmpty (audio._mimeType))
+                if (!string.IsNullOrEmpty(audio._mimeType))
                 {
-                    WAVEFORMATEX wfx = new WAVEFORMATEX ();
+                    WAVEFORMATEX wfx = new WAVEFORMATEX();
 
                     wfx.nChannels = 1;
                     wfx.nSamplesPerSec = 8000;
@@ -126,107 +126,107 @@ namespace System.Speech.Internal.Synthesis
                     switch (audio._mimeType)
                     {
                         case "audio/basic":
-                            wfx.wFormatTag = (short) AudioFormat.EncodingFormat.ULaw;
+                            wfx.wFormatTag = (short)AudioFormat.EncodingFormat.ULaw;
                             break;
 
                         case "audio/x-alaw-basic":
-                            wfx.wFormatTag = (short) AudioFormat.EncodingFormat.ALaw;
+                            wfx.wFormatTag = (short)AudioFormat.EncodingFormat.ALaw;
                             break;
 
                         default:
-                            throw new FormatException (SR.Get (SRID.UnknownMimeFormat));
+                            throw new FormatException(SR.Get(SRID.UnknownMimeFormat));
                     }
 
-                    Begin (wfx.ToBytes ());
+                    Begin(wfx.ToBytes());
                     try
                     {
-                        byte [] data = new byte [(int) audio._stream.Length];
-                        audio._stream.Read (data, 0, data.Length);
-                        Play (data);
+                        byte[] data = new byte[(int)audio._stream.Length];
+                        audio._stream.Read(data, 0, data.Length);
+                        Play(data);
                     }
                     finally
                     {
-                        WaitUntilDone ();
-                        End ();
+                        WaitUntilDone();
+                        End();
                     }
                 }
                 else
                 {
-                    BinaryReader br = new BinaryReader (audio._stream);
+                    BinaryReader br = new BinaryReader(audio._stream);
 
                     try
                     {
-                        byte [] wfx =GetWaveFormat (br);
+                        byte[] wfx = GetWaveFormat(br);
 
                         if (wfx == null)
                         {
-                            throw new FormatException (SR.Get (SRID.NotValidAudioFile, audio._uri.ToString ()));
+                            throw new FormatException(SR.Get(SRID.NotValidAudioFile, audio._uri.ToString()));
                         }
 
-                        Begin (wfx);
+                        Begin(wfx);
 
                         try
                         {
                             while (true)
                             {
-                                DATAHDR dataHdr = new DATAHDR ();
+                                DATAHDR dataHdr = new DATAHDR();
 
                                 // check for the end of file (+8 for the 2 DWORD)
                                 if (audio._stream.Position + 8 >= audio._stream.Length)
                                 {
                                     break;
                                 }
-                                dataHdr._id = br.ReadUInt32 ();
-                                dataHdr._len = br.ReadInt32 ();
+                                dataHdr._id = br.ReadUInt32();
+                                dataHdr._len = br.ReadInt32();
 
                                 // Is this the WAVE data?
                                 if (dataHdr._id == DATA_MARKER)
                                 {
-                                    byte [] ab = Helpers.ReadStreamToByteArray (audio._stream, dataHdr._len);
-                                    Play (ab);
+                                    byte[] ab = Helpers.ReadStreamToByteArray(audio._stream, dataHdr._len);
+                                    Play(ab);
                                 }
                                 else
                                 {
                                     // Skip this RIFF fragment.
-                                    audio._stream.Seek (dataHdr._len, SeekOrigin.Current);
+                                    audio._stream.Seek(dataHdr._len, SeekOrigin.Current);
                                 }
                             }
                         }
                         finally
                         {
-                            WaitUntilDone ();
-                            End ();
+                            WaitUntilDone();
+                            End();
                         }
                     }
                     finally
                     {
-                        ((IDisposable) br).Dispose ();
+                        ((IDisposable)br).Dispose();
                     }
                 }
             }
             finally
             {
-                audio.Dispose ();
+                audio.Dispose();
             }
         }
 
-        internal static byte [] GetWaveFormat (BinaryReader br)
+        internal static byte[] GetWaveFormat(BinaryReader br)
         {
             // Read the riff Header
-            RIFFHDR riff = new RIFFHDR ();
+            RIFFHDR riff = new RIFFHDR();
 
-            riff._id = br.ReadUInt32 ();
-            riff._len = br.ReadInt32 ();
-            riff._type = br.ReadUInt32 ();
+            riff._id = br.ReadUInt32();
+            riff._len = br.ReadInt32();
+            riff._type = br.ReadUInt32();
 
             if (riff._id != RIFF_MARKER && riff._type != WAVE_MARKER)
             {
                 return null; ;
             }
 
-            BLOCKHDR block = new BLOCKHDR ();
-            block._id = br.ReadUInt32 ();
-            block._len = br.ReadInt32 ();
+            BLOCKHDR block = new BLOCKHDR();
+            block._id = br.ReadUInt32();
+            block._len = br.ReadInt32();
 
             if (block._id != FMT_MARKER)
             {
@@ -234,15 +234,15 @@ namespace System.Speech.Internal.Synthesis
             }
 
             // If the format is of type WAVEFORMAT then fake a cbByte with a length of zero
-            byte [] wfx;
-            wfx = br.ReadBytes (block._len);
+            byte[] wfx;
+            wfx = br.ReadBytes(block._len);
 
             // Hardcode the value of the size for the structure element 
             // as the C# compiler pads the structure to the closest 4 or 8 bytes
             if (block._len == 16)
             {
-                byte [] wfxTemp = new byte [18];
-                Array.Copy (wfx, wfxTemp, 16);
+                byte[] wfxTemp = new byte[18];
+                Array.Copy(wfx, wfxTemp, 16);
                 wfx = wfxTemp;
             }
             return wfx;
@@ -256,50 +256,50 @@ namespace System.Speech.Internal.Synthesis
         /// <param name="position"></param>
         /// <param name="cData"></param>
         /// <returns>Position in the stream for the header</returns>
-        internal static void WriteWaveHeader (Stream stream, WAVEFORMATEX waveEx, long position, int cData)
+        internal static void WriteWaveHeader(Stream stream, WAVEFORMATEX waveEx, long position, int cData)
         {
-            RIFFHDR riff = new RIFFHDR (0);
-            BLOCKHDR block = new BLOCKHDR (0);
-            DATAHDR dataHdr = new DATAHDR (0);
+            RIFFHDR riff = new RIFFHDR(0);
+            BLOCKHDR block = new BLOCKHDR(0);
+            DATAHDR dataHdr = new DATAHDR(0);
 
-            int cRiff = Marshal.SizeOf (riff);
-            int cBlock = Marshal.SizeOf (block);
+            int cRiff = Marshal.SizeOf(riff);
+            int cBlock = Marshal.SizeOf(block);
             int cWaveEx = waveEx.Length;// Marshal.SizeOf (waveEx); // The CLR automatically pad the waveEx structure to dword boundary. Force 16.
-            int cDataHdr = Marshal.SizeOf (dataHdr);
+            int cDataHdr = Marshal.SizeOf(dataHdr);
 
             int total = cRiff + cBlock + cWaveEx + cDataHdr;
 
-            using (MemoryStream memStream = new MemoryStream ())
+            using (MemoryStream memStream = new MemoryStream())
             {
-                BinaryWriter bw = new BinaryWriter (memStream);
+                BinaryWriter bw = new BinaryWriter(memStream);
                 try
                 {
                     // Write the RIFF section
                     riff._len = total + cData - 8/* - cRiff*/; // for the "WAVE" 4 characters
-                    bw.Write (riff._id);
-                    bw.Write (riff._len);
-                    bw.Write (riff._type);
+                    bw.Write(riff._id);
+                    bw.Write(riff._len);
+                    bw.Write(riff._type);
 
                     // Write the wave header section
                     block._len = cWaveEx;
-                    bw.Write (block._id);
-                    bw.Write (block._len);
+                    bw.Write(block._id);
+                    bw.Write(block._len);
 
                     // Write the FormatEx structure
-                    bw.Write (waveEx.ToBytes ());
+                    bw.Write(waveEx.ToBytes());
                     //bw.Write (waveEx.cbSize);
 
                     // Write the data section
                     dataHdr._len = cData;
-                    bw.Write (dataHdr._id);
-                    bw.Write (dataHdr._len);
+                    bw.Write(dataHdr._id);
+                    bw.Write(dataHdr._len);
 
-                    stream.Seek (position, SeekOrigin.Begin);
-                    stream.Write (memStream.GetBuffer (), 0, (int) memStream.Length);
+                    stream.Seek(position, SeekOrigin.Begin);
+                    stream.Write(memStream.GetBuffer(), 0, (int)memStream.Length);
                 }
                 finally
                 {
-                    ((IDisposable) bw).Dispose ();
+                    ((IDisposable)bw).Dispose();
                 }
             }
         }
@@ -332,7 +332,7 @@ namespace System.Speech.Internal.Synthesis
             }
         }
 
-        internal virtual byte [] WaveFormat { get { return null; } }
+        internal virtual byte[] WaveFormat { get { return null; } }
 
         #endregion
 
@@ -361,14 +361,14 @@ namespace System.Speech.Internal.Synthesis
         private const UInt32 FMT_MARKER = 0x20746d66;
         private const UInt32 DATA_MARKER = 0x61746164;
 
-        [StructLayout (LayoutKind.Sequential)]
+        [StructLayout(LayoutKind.Sequential)]
         private struct RIFFHDR
         {
             internal UInt32 _id;
             internal Int32 _len;             /* file length less header */
             internal UInt32 _type;            /* should be "WAVE" */
 
-            internal RIFFHDR (int length)
+            internal RIFFHDR(int length)
             {
                 _id = RIFF_MARKER;
                 _type = WAVE_MARKER;
@@ -376,27 +376,26 @@ namespace System.Speech.Internal.Synthesis
             }
         }
 
-        [StructLayout (LayoutKind.Sequential)]
+        [StructLayout(LayoutKind.Sequential)]
         private struct BLOCKHDR
         {
             internal UInt32 _id;              /* should be "fmt " or "data" */
             internal Int32 _len;             /* block size less header */
 
-            internal BLOCKHDR (int length)
+            internal BLOCKHDR(int length)
             {
                 _id = FMT_MARKER;
                 _len = length;
             }
-
         };
 
-        [StructLayout (LayoutKind.Sequential)]
+        [StructLayout(LayoutKind.Sequential)]
         private struct DATAHDR
         {
             internal UInt32 _id;              /* should be "fmt " or "data" */
             internal Int32 _len;              /* block size less header */
 
-            internal DATAHDR (int length)
+            internal DATAHDR(int length)
             {
                 _id = DATA_MARKER;
                 _len = length;
@@ -414,7 +413,7 @@ namespace System.Speech.Internal.Synthesis
 
     #region Internal Methods
 
-    [System.Runtime.InteropServices.TypeLibTypeAttribute (16)]
+    [System.Runtime.InteropServices.TypeLibTypeAttribute(16)]
     internal struct WAVEFORMATEX
     {
 #pragma warning disable 649
@@ -429,55 +428,55 @@ namespace System.Speech.Internal.Synthesis
 
 #pragma warning restore 649
 
-        static internal WAVEFORMATEX ToWaveHeader (byte [] waveHeader)
+        static internal WAVEFORMATEX ToWaveHeader(byte[] waveHeader)
         {
-            GCHandle gc = GCHandle.Alloc (waveHeader, GCHandleType.Pinned);
-            IntPtr ptr = gc.AddrOfPinnedObject ();
-            WAVEFORMATEX wfx = new WAVEFORMATEX ();
-            wfx.wFormatTag = Marshal.ReadInt16 (ptr);
-            wfx.nChannels = Marshal.ReadInt16 (ptr, 2);
-            wfx.nSamplesPerSec = Marshal.ReadInt32 (ptr, 4);
-            wfx.nAvgBytesPerSec = Marshal.ReadInt32 (ptr, 8);
-            wfx.nBlockAlign = Marshal.ReadInt16 (ptr, 12);
-            wfx.wBitsPerSample = Marshal.ReadInt16 (ptr, 14);
-            wfx.cbSize = Marshal.ReadInt16 (ptr, 16);
+            GCHandle gc = GCHandle.Alloc(waveHeader, GCHandleType.Pinned);
+            IntPtr ptr = gc.AddrOfPinnedObject();
+            WAVEFORMATEX wfx = new WAVEFORMATEX();
+            wfx.wFormatTag = Marshal.ReadInt16(ptr);
+            wfx.nChannels = Marshal.ReadInt16(ptr, 2);
+            wfx.nSamplesPerSec = Marshal.ReadInt32(ptr, 4);
+            wfx.nAvgBytesPerSec = Marshal.ReadInt32(ptr, 8);
+            wfx.nBlockAlign = Marshal.ReadInt16(ptr, 12);
+            wfx.wBitsPerSample = Marshal.ReadInt16(ptr, 14);
+            wfx.cbSize = Marshal.ReadInt16(ptr, 16);
 
             if (wfx.cbSize != 0)
             {
-                throw new InvalidOperationException ();
+                throw new InvalidOperationException();
             }
-            gc.Free ();
+            gc.Free();
             return wfx;
         }
 
-        static internal void AvgBytesPerSec (byte [] waveHeader, out int avgBytesPerSec, out int nBlockAlign)
+        static internal void AvgBytesPerSec(byte[] waveHeader, out int avgBytesPerSec, out int nBlockAlign)
         {
             // Hardcode the value of the size for the structure element 
             // as the C# compiler pads the structure to the closest 4 or 8 bytes
-            GCHandle gc = GCHandle.Alloc (waveHeader, GCHandleType.Pinned);
-            IntPtr ptr = gc.AddrOfPinnedObject ();
-            avgBytesPerSec = Marshal.ReadInt32 (ptr, 8);
-            nBlockAlign = Marshal.ReadInt16 (ptr, 12);
-            gc.Free ();
+            GCHandle gc = GCHandle.Alloc(waveHeader, GCHandleType.Pinned);
+            IntPtr ptr = gc.AddrOfPinnedObject();
+            avgBytesPerSec = Marshal.ReadInt32(ptr, 8);
+            nBlockAlign = Marshal.ReadInt16(ptr, 12);
+            gc.Free();
         }
 
-        internal byte [] ToBytes ()
+        internal byte[] ToBytes()
         {
-            System.Diagnostics.Debug.Assert (cbSize == 0);
-            GCHandle gc = GCHandle.Alloc (this, GCHandleType.Pinned);
-            byte [] ab = ToBytes (gc.AddrOfPinnedObject ());
-            gc.Free ();
+            System.Diagnostics.Debug.Assert(cbSize == 0);
+            GCHandle gc = GCHandle.Alloc(this, GCHandleType.Pinned);
+            byte[] ab = ToBytes(gc.AddrOfPinnedObject());
+            gc.Free();
             return ab;
         }
 
-        static internal byte [] ToBytes (IntPtr waveHeader)
+        static internal byte[] ToBytes(IntPtr waveHeader)
         {
             // Hardcode the value of the size for the structure element 
             // as the C# compiler pads the structure to the closest 4 or 8 bytes
 
-            int cbSize = Marshal.ReadInt16 (waveHeader, 16);
-            byte [] ab = new byte [18 + cbSize];
-            Marshal.Copy (waveHeader, ab, 0, 18 + cbSize);
+            int cbSize = Marshal.ReadInt16(waveHeader, 16);
+            byte[] ab = new byte[18 + cbSize];
+            Marshal.Copy(waveHeader, ab, 0, 18 + cbSize);
             return ab;
         }
 
@@ -485,7 +484,7 @@ namespace System.Speech.Internal.Synthesis
         {
             get
             {
-                WAVEFORMATEX wfx = new WAVEFORMATEX ();
+                WAVEFORMATEX wfx = new WAVEFORMATEX();
                 wfx.wFormatTag = 1;
                 wfx.nChannels = 1;
                 wfx.nSamplesPerSec = 22050;

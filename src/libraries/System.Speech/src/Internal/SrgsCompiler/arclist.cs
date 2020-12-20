@@ -28,19 +28,19 @@ namespace System.Speech.Internal.SrgsCompiler
         /// Build a List with all the arcs
         /// </summary>
         /// <returns></returns>
-        internal List<Arc> ToList ()
+        internal List<Arc> ToList()
         {
-            List<Arc> collection = new List<Arc> ();
+            List<Arc> collection = new List<Arc>();
             foreach (Arc arc in this)
             {
-                collection.Add (arc);
+                collection.Add(arc);
             }
             return collection;
         }
 
-        override protected int CompareTo (object arc1, object arc2)
+        override protected int CompareTo(object arc1, object arc2)
         {
-            return Arc.CompareContentForKey ((Arc) arc1, (Arc) arc2);
+            return Arc.CompareContentForKey((Arc)arc1, (Arc)arc2);
         }
 
         #endregion
@@ -57,7 +57,7 @@ namespace System.Speech.Internal.SrgsCompiler
         {
             get
             {
-                return (Arc) base.First;
+                return (Arc)base.First;
             }
         }
 
@@ -112,6 +112,5 @@ namespace System.Speech.Internal.SrgsCompiler
         }
 #endif
         #endregion
-
     }
 }

@@ -8,10 +8,9 @@ using System.ComponentModel;
 
 namespace System.Speech.Recognition
 {
-
     /// TODOC <_include file='doc\RecognizerBase.uex' path='docs/doc[@for="LoadGrammarCompletedEventArgs"]/*' />
     // Event args used in the LoadGrammarCompleted event.
-    
+
     public class LoadGrammarCompletedEventArgs : AsyncCompletedEventArgs
     {
         //*******************************************************************
@@ -63,5 +62,4 @@ namespace System.Speech.Recognition
         #endregion
 
     }
-
 }

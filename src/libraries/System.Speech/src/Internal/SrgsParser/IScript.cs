@@ -8,7 +8,7 @@ namespace System.Speech.Internal.SrgsParser
     /// </summary>
     internal interface IScript : IElement
     {
-        IScript Create (string rule, RuleMethodScript onInit);
+        IScript Create(string rule, RuleMethodScript onInit);
     }
 
     internal enum RuleMethodScript

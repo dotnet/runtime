@@ -18,7 +18,7 @@ namespace System.Speech.Internal.ObjectTokens
     /// <summary>
     /// Summary description for SpRegDataKey.
     /// </summary>
-    [DebuggerDisplay ("{Name}")]
+    [DebuggerDisplay("{Name}")]
     internal class RegistryDataKey : ISpDataKey, IEnumerable<RegistryDataKey>, IDisposable
     {
         //*******************************************************************
@@ -396,7 +396,6 @@ namespace System.Speech.Internal.ObjectTokens
                 0 == _sapiRegKey.GetStringValue(valueName, out unusedString) ||
                 0 == _sapiRegKey.GetDWORD(valueName, ref unusedUint) ||
                 0 == _sapiRegKey.GetData(valueName, ref unusedUint, unusedBytes));
-
         }
 
         /// <summary>
@@ -659,7 +658,4 @@ namespace System.Speech.Internal.ObjectTokens
 
         #endregion
     }
-
-
-
 }

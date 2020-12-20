@@ -13,7 +13,7 @@ namespace System.Speech.Recognition.SrgsGrammar
 {
     /// TODOC <_include file='doc\SrgsText.uex' path='docs/doc[@for="SrgsText"]/*' />	
     [Serializable]
-    [DebuggerDisplay ("{DebuggerDisplayString ()}")]
+    [DebuggerDisplay("{DebuggerDisplayString ()}")]
     public class SrgsText : SrgsElement, IElementText
     {
         //*******************************************************************
@@ -25,16 +25,16 @@ namespace System.Speech.Recognition.SrgsGrammar
         #region Constructors
 
         /// TODOC <_include file='doc\SrgsText.uex' path='docs/doc[@for="SrgsText.SrgsText1"]/*' />
-        public SrgsText ()
+        public SrgsText()
         {
         }
 
 #pragma warning disable 56507
 
         /// TODOC <_include file='doc\SrgsText.uex' path='docs/doc[@for="SrgsText.SrgsText2"]/*' />
-        public SrgsText (string text)
+        public SrgsText(string text)
         {
-            Helpers.ThrowIfNull (text, "text");
+            Helpers.ThrowIfNull(text, "text");
 
             Text = text;
         }
@@ -58,10 +58,10 @@ namespace System.Speech.Recognition.SrgsGrammar
             }
             set
             {
-                Helpers.ThrowIfNull (value, "value");
+                Helpers.ThrowIfNull(value, "value");
 
                 // Parse the text to check for errors
-                XmlParser.ParseText (null, value, null, null, -1f, null);
+                XmlParser.ParseText(null, value, null, null, -1f, null);
                 _text = value;
             }
         }
@@ -78,16 +78,16 @@ namespace System.Speech.Recognition.SrgsGrammar
 
         #region Internal Methods
 
-        internal override void WriteSrgs (XmlWriter writer)
+        internal override void WriteSrgs(XmlWriter writer)
         {
             // Write _text if any
             if (_text != null && _text.Length > 0)
             {
-                writer.WriteString (_text);
+                writer.WriteString(_text);
             }
         }
 
-        internal override string DebuggerDisplayString ()
+        internal override string DebuggerDisplayString()
         {
             return "'" + _text + "'";
         }

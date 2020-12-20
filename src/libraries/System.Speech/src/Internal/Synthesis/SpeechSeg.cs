@@ -12,7 +12,7 @@ namespace System.Speech.Internal.Synthesis
     /// <summary>
     /// 
     /// </summary>
-    internal class SpeechSeg 
+    internal class SpeechSeg
     {
         //*******************************************************************
         //
@@ -22,7 +22,7 @@ namespace System.Speech.Internal.Synthesis
 
         #region Constructors
 
-        internal SpeechSeg (TTSVoice voice, AudioData audio)
+        internal SpeechSeg(TTSVoice voice, AudioData audio)
         {
             _voice = voice;
             _audio = audio;
@@ -81,14 +81,14 @@ namespace System.Speech.Internal.Synthesis
 
         #region Internal Methods
 
-        internal void AddFrag (TextFragment textFragment)
+        internal void AddFrag(TextFragment textFragment)
         {
             if (_audio != null)
             {
-                throw new InvalidOperationException ();
+                throw new InvalidOperationException();
             }
 
-            _textFragments.Add (textFragment);
+            _textFragments.Add(textFragment);
         }
 
         #endregion
@@ -102,7 +102,7 @@ namespace System.Speech.Internal.Synthesis
         #region private Fields
 
         private TTSVoice _voice;
-        List<TextFragment> _textFragments = new List<TextFragment> ();
+        private List<TextFragment> _textFragments = new List<TextFragment>();
 #pragma warning disable 56524 // The _audio are not created in this module and should not be disposed
         private AudioData _audio;
 #pragma warning enable 56524

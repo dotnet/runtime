@@ -12,8 +12,6 @@ namespace System.Speech.Internal.GrammarBuilding
     /// </summary>
     internal sealed class GrammarBuilderWildcard : GrammarBuilderBase
     {
-
-
         //*******************************************************************
         //
         // Constructors
@@ -40,16 +38,16 @@ namespace System.Speech.Internal.GrammarBuilding
         #region Public Methods
 
         /// TODOC <_include file='doc\SpeechAudioFormatInfo.uex' path='docs/doc[@for="SpeechAudioFormatInfo.Equals"]/*' />
-        public override bool Equals (object obj)
+        public override bool Equals(object obj)
         {
             GrammarBuilderWildcard refObj = obj as GrammarBuilderWildcard;
             return refObj != null;
         }
 
         /// TODOC <_include file='doc\SpeechAudioFormatInfo.uex' path='docs/doc[@for="SpeechAudioFormatInfo.GetHashCode"]/*' />
-        public override int GetHashCode ()
+        public override int GetHashCode()
         {
-            return base.GetHashCode ();
+            return base.GetHashCode();
         }
 
         #endregion
@@ -66,9 +64,9 @@ namespace System.Speech.Internal.GrammarBuilding
         /// 
         /// </summary>
         /// <returns></returns>
-        internal override GrammarBuilderBase Clone ()
+        internal override GrammarBuilderBase Clone()
         {
-            return new GrammarBuilderWildcard ();
+            return new GrammarBuilderWildcard();
         }
 
         /// <summary>
@@ -79,7 +77,7 @@ namespace System.Speech.Internal.GrammarBuilding
         /// <param name="rule"></param>
         /// <param name="ruleIds"></param>
         /// <returns></returns>
-        internal override IElement CreateElement (IElementFactory elementFactory, IElement parent, IRule rule, IdentifierCollection ruleIds)
+        internal override IElement CreateElement(IElementFactory elementFactory, IElement parent, IRule rule, IdentifierCollection ruleIds)
         {
             // Return a ruleref to Garbage
             IRuleRef ruleRef = elementFactory.Garbage;
@@ -108,7 +106,5 @@ namespace System.Speech.Internal.GrammarBuilding
         }
 
         #endregion
-
-
     }
 }

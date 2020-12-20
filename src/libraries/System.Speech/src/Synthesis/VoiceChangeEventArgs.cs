@@ -23,7 +23,7 @@ namespace System.Speech.Synthesis
         /// </summary>
         /// <param name="prompt"></param>
         /// <param name="voice"></param>
-        internal VoiceChangeEventArgs(Prompt prompt, VoiceInfo voice) : base (prompt)
+        internal VoiceChangeEventArgs(Prompt prompt, VoiceInfo voice) : base(prompt)
         {
             _voice = voice;
         }
@@ -60,7 +60,7 @@ namespace System.Speech.Synthesis
 
         #region Private Fields
 
-        VoiceInfo _voice;
+        private VoiceInfo _voice;
 
         #endregion
     }

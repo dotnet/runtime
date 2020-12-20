@@ -5,36 +5,36 @@ using System;
 
 namespace System.Speech.Synthesis
 {
-	/// <summary>
-	/// TODOC
-	/// </summary>
+    /// <summary>
+    /// TODOC
+    /// </summary>
     public class StateChangedEventArgs : EventArgs
     {
-		//*******************************************************************
-		//
-		// Constructors
-		//
-		//*******************************************************************
+        //*******************************************************************
+        //
+        // Constructors
+        //
+        //*******************************************************************
 
-		#region Constructors
+        #region Constructors
 
         /// <summary>
         /// TODOC
         /// </summary>
         /// <param name="state"></param>
         /// <param name="previousState"></param>
-        internal StateChangedEventArgs (SynthesizerState state, SynthesizerState previousState)
+        internal StateChangedEventArgs(SynthesizerState state, SynthesizerState previousState)
         {
             _state = state;
             _previousState = previousState;
         }
 
-		#endregion
+        #endregion
 
-		//*******************************************************************
-		//
-		// Public Properties
-		//
+        //*******************************************************************
+        //
+        // Public Properties
+        //
         //*******************************************************************
 
         #region public Properties
@@ -42,8 +42,8 @@ namespace System.Speech.Synthesis
         // Use Add* naming convention.
 
         /// <summary>
-		/// TODOC
-		/// </summary>
+        /// TODOC
+        /// </summary>
         public SynthesizerState State
         {
             get
@@ -63,15 +63,15 @@ namespace System.Speech.Synthesis
             }
         }
 
-		#endregion
+        #endregion
 
-		//*******************************************************************
-		//
-		// Private Fields
-		//
-		//*******************************************************************
+        //*******************************************************************
+        //
+        // Private Fields
+        //
+        //*******************************************************************
 
-		#region Private Fields
+        #region Private Fields
 
         private SynthesizerState _state;
 

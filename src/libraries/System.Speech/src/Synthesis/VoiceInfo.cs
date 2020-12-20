@@ -20,7 +20,7 @@ namespace System.Speech.Synthesis
     /// <summary>
     /// TODOC
     /// </summary>
-    [DebuggerDisplay ("{(_name != null ? \"'\" + _name + \"' \" : \"\") +  (_culture != null ? \" '\" + _culture.ToString () + \"' \" : \"\") + (_gender != VoiceGender.NotSet ? \" '\" + _gender.ToString () + \"' \" : \"\") + (_age != VoiceAge.NotSet ? \" '\" + _age.ToString () + \"' \" : \"\") + (_variant > 0 ? \" \" + _variant.ToString () : \"\")}")]
+    [DebuggerDisplay("{(_name != null ? \"'\" + _name + \"' \" : \"\") +  (_culture != null ? \" '\" + _culture.ToString () + \"' \" : \"\") + (_gender != VoiceGender.NotSet ? \" '\" + _gender.ToString () + \"' \" : \"\") + (_age != VoiceAge.NotSet ? \" '\" + _age.ToString () + \"' \" : \"\") + (_variant > 0 ? \" \" + _variant.ToString () : \"\")}")]
     [Serializable]
     public class VoiceInfo
     {
@@ -36,9 +36,9 @@ namespace System.Speech.Synthesis
         /// TODOC
         /// </summary>
         /// <param name="name"></param>
-        internal VoiceInfo (string name)
+        internal VoiceInfo(string name)
         {
-            Helpers.ThrowIfEmptyOrNull (name, "name");
+            Helpers.ThrowIfEmptyOrNull(name, "name");
             _name = name;
         }
 
@@ -46,14 +46,14 @@ namespace System.Speech.Synthesis
         /// TODOC
         /// </summary>
         /// <param name="culture"></param>
-        internal VoiceInfo (CultureInfo culture)
+        internal VoiceInfo(CultureInfo culture)
         {
             // Fails if no culture is provided
-            Helpers.ThrowIfNull (culture, "culture");
+            Helpers.ThrowIfNull(culture, "culture");
 
-            if (culture.Equals (CultureInfo.InvariantCulture))
+            if (culture.Equals(CultureInfo.InvariantCulture))
             {
-                throw new ArgumentException (SR.Get (SRID.InvariantCultureInfo), "culture");
+                throw new ArgumentException(SR.Get(SRID.InvariantCultureInfo), "culture");
             }
             _culture = culture;
         }
@@ -69,24 +69,24 @@ namespace System.Speech.Synthesis
             _description = token.Description;
 
             // Get other attributes
-            _name = token.TokenName ();
-            SsmlParserHelpers.TryConvertAge (token.Age.ToLowerInvariant (), out _age);
-            SsmlParserHelpers.TryConvertGender (token.Gender.ToLowerInvariant (), out _gender);
+            _name = token.TokenName();
+            SsmlParserHelpers.TryConvertAge(token.Age.ToLowerInvariant(), out _age);
+            SsmlParserHelpers.TryConvertGender(token.Gender.ToLowerInvariant(), out _gender);
 
             string langId;
-            if (token.Attributes.TryGetString ("Language", out langId))
+            if (token.Attributes.TryGetString("Language", out langId))
             {
-                _culture = SapiAttributeParser.GetCultureInfoFromLanguageString (langId);
+                _culture = SapiAttributeParser.GetCultureInfoFromLanguageString(langId);
             }
 
             string assemblyName;
-            if (token.TryGetString ("Assembly", out assemblyName))
+            if (token.TryGetString("Assembly", out assemblyName))
             {
                 _assemblyName = assemblyName;
             }
 
             string clsid;
-            if (token.TryGetString ("CLSID", out clsid))
+            if (token.TryGetString("CLSID", out clsid))
             {
                 _clsid = clsid;
             }
@@ -95,27 +95,26 @@ namespace System.Speech.Synthesis
             {
                 // Enum all values and add to custom table
                 Dictionary<string, string> attrs = new Dictionary<string, string>();
-                foreach (string keyName in token.Attributes.GetValueNames ())
+                foreach (string keyName in token.Attributes.GetValueNames())
                 {
                     string attributeValue;
-                    if (token.Attributes.TryGetString (keyName, out attributeValue))
+                    if (token.Attributes.TryGetString(keyName, out attributeValue))
                     {
-                        attrs.Add (keyName, attributeValue);
+                        attrs.Add(keyName, attributeValue);
                     }
                 }
                 _attributes = new ReadOnlyDictionary<string, string>(attrs);
             }
 
             string audioFormats;
-            if (token.Attributes != null && token.Attributes.TryGetString ("AudioFormats", out audioFormats))
+            if (token.Attributes != null && token.Attributes.TryGetString("AudioFormats", out audioFormats))
             {
-                _audioFormats = new ReadOnlyCollection<SpeechAudioFormatInfo> (SapiAttributeParser.GetAudioFormatsFromString (audioFormats));
+                _audioFormats = new ReadOnlyCollection<SpeechAudioFormatInfo>(SapiAttributeParser.GetAudioFormatsFromString(audioFormats));
             }
             else
             {
-                _audioFormats = new ReadOnlyCollection<SpeechAudioFormatInfo> (new List<SpeechAudioFormatInfo> ());
+                _audioFormats = new ReadOnlyCollection<SpeechAudioFormatInfo>(new List<SpeechAudioFormatInfo>());
             }
-
         }
 
 
@@ -123,7 +122,7 @@ namespace System.Speech.Synthesis
         /// TODOC
         /// </summary>
         /// <param name="gender"></param>
-        internal VoiceInfo (VoiceGender gender)
+        internal VoiceInfo(VoiceGender gender)
         {
             _gender = gender;
         }
@@ -133,7 +132,7 @@ namespace System.Speech.Synthesis
         /// </summary>
         /// <param name="gender"></param>
         /// <param name="age"></param>
-        internal VoiceInfo (VoiceGender gender, VoiceAge age)
+        internal VoiceInfo(VoiceGender gender, VoiceAge age)
         {
             _gender = gender;
             _age = age;
@@ -145,11 +144,11 @@ namespace System.Speech.Synthesis
         /// <param name="gender"></param>
         /// <param name="age"></param>
         /// <param name="voiceAlternate"></param>
-        internal VoiceInfo (VoiceGender gender, VoiceAge age, int voiceAlternate)
+        internal VoiceInfo(VoiceGender gender, VoiceAge age, int voiceAlternate)
         {
             if (voiceAlternate < 0)
             {
-                throw new ArgumentOutOfRangeException ("voiceAlternate", SR.Get (SRID.PromptBuilderInvalidVariant));
+                throw new ArgumentOutOfRangeException("voiceAlternate", SR.Get(SRID.PromptBuilderInvalidVariant));
             }
 
             _gender = gender;
@@ -171,7 +170,7 @@ namespace System.Speech.Synthesis
         /// <summary>
         /// Tests whether two AutomationIdentifier objects are equivalent
         /// </summary>
-        public override bool Equals (object obj)
+        public override bool Equals(object obj)
         {
             // PreSharp doesn't understand that if obj is null then this will return false.
 #pragma warning disable 6506
@@ -180,16 +179,16 @@ namespace System.Speech.Synthesis
                 && _name == voice._name
                 && (_age == voice._age || _age == VoiceAge.NotSet || voice._age == VoiceAge.NotSet)
                 && (_gender == voice._gender || _gender == VoiceGender.NotSet || voice._gender == VoiceGender.NotSet)
-                && (_culture == null || voice._culture == null || _culture.Equals (voice._culture));
+                && (_culture == null || voice._culture == null || _culture.Equals(voice._culture));
 #pragma warning restore 6506
         }
 
         /// <summary>
         /// Overrides Object.GetHashCode()
         /// </summary>
-        public override int GetHashCode ()
+        public override int GetHashCode()
         {
-            return _name.GetHashCode ();
+            return _name.GetHashCode();
         }
 
         #endregion
@@ -282,7 +281,7 @@ namespace System.Speech.Synthesis
         /// TODOC
         /// </summary>
         /// <value></value>
-        [EditorBrowsable (EditorBrowsableState.Advanced)]
+        [EditorBrowsable(EditorBrowsableState.Advanced)]
         public ReadOnlyCollection<SpeechAudioFormatInfo> SupportedAudioFormats
         {
             get
@@ -296,7 +295,7 @@ namespace System.Speech.Synthesis
         /// TODOC
         /// </summary>
         /// <value></value>
-        [EditorBrowsable (EditorBrowsableState.Advanced)]
+        [EditorBrowsable(EditorBrowsableState.Advanced)]
         public IDictionary<string, string> AdditionalInfo
         {
             get
@@ -317,12 +316,12 @@ namespace System.Speech.Synthesis
 
         #region Internal Methods
 
-        internal static bool ValidateGender (VoiceGender gender)
+        internal static bool ValidateGender(VoiceGender gender)
         {
             return gender == VoiceGender.Female || gender == VoiceGender.Male || gender == VoiceGender.Neutral || gender == VoiceGender.NotSet;
         }
 
-        internal static bool ValidateAge (VoiceAge age)
+        internal static bool ValidateAge(VoiceAge age)
         {
             return age == VoiceAge.Adult || age == VoiceAge.Child || age == VoiceAge.NotSet || age == VoiceAge.Senior || age == VoiceAge.Teen;
         }
@@ -426,7 +425,6 @@ namespace System.Speech.Synthesis
 
         [NonSerialized]
         private ReadOnlyCollection<SpeechAudioFormatInfo> _audioFormats;
-
 
         #endregion
     }

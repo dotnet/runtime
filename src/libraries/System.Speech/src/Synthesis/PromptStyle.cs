@@ -22,7 +22,7 @@ namespace System.Speech.Synthesis
         /// <summary>
         /// TODOC
         /// </summary>
-        public PromptStyle ()
+        public PromptStyle()
         {
         }
 
@@ -30,7 +30,7 @@ namespace System.Speech.Synthesis
         /// TODOC
         /// </summary>
         /// <param name="rate"></param>
-        public PromptStyle (PromptRate rate)
+        public PromptStyle(PromptRate rate)
         {
             Rate = rate;
         }
@@ -39,7 +39,7 @@ namespace System.Speech.Synthesis
         /// TODOC
         /// </summary>
         /// <param name="volume"></param>
-        public PromptStyle (PromptVolume volume)
+        public PromptStyle(PromptVolume volume)
         {
             Volume = volume;
         }
@@ -48,7 +48,7 @@ namespace System.Speech.Synthesis
         /// TODOC
         /// </summary>
         /// <param name="emphasis"></param>
-        public PromptStyle (PromptEmphasis emphasis)
+        public PromptStyle(PromptEmphasis emphasis)
         {
             Emphasis = emphasis;
         }
@@ -162,7 +162,7 @@ namespace System.Speech.Synthesis
         /// <summary>
         /// TODOC
         /// </summary>
-        DayMonthYear, 
+        DayMonthYear,
         /// <summary>
         /// TODOC
         /// </summary>
@@ -260,19 +260,19 @@ namespace System.Speech.Synthesis
         /// <summary>
         /// TODOC
         /// </summary>
-        Child=10,
+        Child = 10,
         /// <summary>
         /// TODOC
         /// </summary>
-        Teen=15,
+        Teen = 15,
         /// <summary>
         /// TODOC
         /// </summary>
-        Adult=30,
+        Adult = 30,
         /// <summary>
         /// TODOC
         /// </summary>
-        Senior=65
+        Senior = 65
     }
 
     /// <summary>

@@ -6,11 +6,9 @@ using System.ComponentModel;
 
 namespace System.Speech.Recognition
 {
-
     /// TODOC <_include file='doc\EmulateRecognizeCompletedEventArgs.uex' path='docs/doc[@for="EmulateRecognizeCompletedEventArgs"]/*' />
     public class EmulateRecognizeCompletedEventArgs : AsyncCompletedEventArgs
     {
-
         //*******************************************************************
         //
         // Constructors
@@ -19,7 +17,7 @@ namespace System.Speech.Recognition
 
         #region Constructors
 
-        internal EmulateRecognizeCompletedEventArgs (RecognitionResult result, Exception error, bool cancelled, object userState)
+        internal EmulateRecognizeCompletedEventArgs(RecognitionResult result, Exception error, bool cancelled, object userState)
             : base(error, cancelled, userState)
         {
             _result = result;
@@ -54,7 +52,5 @@ namespace System.Speech.Recognition
         private RecognitionResult _result;
 
         #endregion
-
     }
-
 }

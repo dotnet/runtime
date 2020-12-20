@@ -25,7 +25,7 @@ namespace System.Speech.Synthesis
         /// <param name="duration"></param>
         /// <param name="emphasis"></param>
         /// <param name="nextViseme"></param>
-        internal VisemeReachedEventArgs (Prompt speakPrompt, int currentViseme, TimeSpan audioPosition, TimeSpan duration, SynthesizerEmphasis emphasis, int nextViseme) : base(speakPrompt)
+        internal VisemeReachedEventArgs(Prompt speakPrompt, int currentViseme, TimeSpan audioPosition, TimeSpan duration, SynthesizerEmphasis emphasis, int nextViseme) : base(speakPrompt)
         {
             _currentViseme = currentViseme;
             _audioPosition = audioPosition;
@@ -76,8 +76,8 @@ namespace System.Speech.Synthesis
         /// </summary>
         /// <value></value>
         public SynthesizerEmphasis Emphasis
-        { 
-            get { return _emphasis; } 
+        {
+            get { return _emphasis; }
         }
 
         /// <summary>
@@ -112,7 +112,7 @@ namespace System.Speech.Synthesis
         private SynthesizerEmphasis _emphasis;
 
         // Next Viseme to be synthesized
-        private int _nextViseme;                     
+        private int _nextViseme;
 
         #endregion
     }

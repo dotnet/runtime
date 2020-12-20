@@ -11,7 +11,7 @@ namespace System.Speech.Internal.Synthesis
     /// <summary>
     /// 
     /// </summary>
-    internal class TTSEvent 
+    internal class TTSEvent
     {
         //*******************************************************************
         //
@@ -21,7 +21,7 @@ namespace System.Speech.Internal.Synthesis
 
         #region Constructors
 
-        internal TTSEvent (TtsEventId id, Prompt prompt, Exception exception, VoiceInfo voice)
+        internal TTSEvent(TtsEventId id, Prompt prompt, Exception exception, VoiceInfo voice)
         {
             _evtId = id;
             _prompt = prompt;
@@ -29,8 +29,8 @@ namespace System.Speech.Internal.Synthesis
             _voice = voice;
         }
 
-        internal TTSEvent (TtsEventId id, Prompt prompt, Exception exception, VoiceInfo voice, TimeSpan audioPosition, long streamPosition, string bookmark, uint wParam, IntPtr lParam)
-            : this (id, prompt, exception, voice)
+        internal TTSEvent(TtsEventId id, Prompt prompt, Exception exception, VoiceInfo voice, TimeSpan audioPosition, long streamPosition, string bookmark, uint wParam, IntPtr lParam)
+            : this(id, prompt, exception, voice)
         {
             _audioPosition = audioPosition;
             _bookmark = bookmark;
@@ -42,7 +42,7 @@ namespace System.Speech.Internal.Synthesis
         {
         }
 
-        static internal TTSEvent CreatePhonemeEvent(string phoneme, string nextPhoneme, 
+        static internal TTSEvent CreatePhonemeEvent(string phoneme, string nextPhoneme,
                                                     TimeSpan duration, SynthesizerEmphasis emphasis,
                                                     Prompt prompt, TimeSpan audioPosition)
         {

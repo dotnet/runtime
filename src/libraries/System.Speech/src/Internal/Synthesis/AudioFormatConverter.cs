@@ -30,7 +30,7 @@ namespace System.Speech.Internal.Synthesis
         /// <param name="from">Audio format that the data will be converted from.</param>
         /// <param name="to">Audio format that the data will be converted to.</param>
         /// <returns>New array with the audio data in requested format.</returns>
-        static internal short [] Convert (byte [] data, AudioCodec from, AudioCodec to)
+        static internal short[] Convert(byte[] data, AudioCodec from, AudioCodec to)
         {
             ConvertByteShort cnvDlgt = null;
 
@@ -39,39 +39,39 @@ namespace System.Speech.Internal.Synthesis
                 case AudioCodec.PCM8:
                     switch (to)
                     {
-                        case AudioCodec.PCM16: cnvDlgt = new ConvertByteShort (ConvertLinear8LinearByteShort); break;
+                        case AudioCodec.PCM16: cnvDlgt = new ConvertByteShort(ConvertLinear8LinearByteShort); break;
                     }
                     break;
                 case AudioCodec.PCM16:
                     switch (to)
                     {
-                        case AudioCodec.PCM16: cnvDlgt = new ConvertByteShort (ConvertLinear2LinearByteShort); break;
+                        case AudioCodec.PCM16: cnvDlgt = new ConvertByteShort(ConvertLinear2LinearByteShort); break;
                     }
                     break;
 
                 case AudioCodec.G711U:
                     switch (to)
                     {
-                        case AudioCodec.PCM16: cnvDlgt = new ConvertByteShort (ConvertULaw2Linear); break;
+                        case AudioCodec.PCM16: cnvDlgt = new ConvertByteShort(ConvertULaw2Linear); break;
                     }
                     break;
                 case AudioCodec.G711A:
                     switch (to)
                     {
-                        case AudioCodec.PCM16: cnvDlgt = new ConvertByteShort (ConvertALaw2Linear); break;
+                        case AudioCodec.PCM16: cnvDlgt = new ConvertByteShort(ConvertALaw2Linear); break;
                     }
                     break;
 
                 default:
-                    throw new FormatException ();
+                    throw new FormatException();
             }
 
             if (cnvDlgt == null)
             {
-                throw new FormatException ();
+                throw new FormatException();
             }
 
-            return cnvDlgt (data, data.Length);
+            return cnvDlgt(data, data.Length);
         }
 
         /// <summary>
@@ -81,7 +81,7 @@ namespace System.Speech.Internal.Synthesis
         /// <param name="from">Audio format that the data will be converted from.</param>
         /// <param name="to">Audio format that the data will be converted to.</param>
         /// <returns>New array with the audio data in requested format.</returns>
-        static internal byte [] Convert (short [] data, AudioCodec from, AudioCodec to)
+        static internal byte[] Convert(short[] data, AudioCodec from, AudioCodec to)
         {
             ConvertShortByte cnvDlgt = null;
 
@@ -90,25 +90,25 @@ namespace System.Speech.Internal.Synthesis
                 case AudioCodec.PCM16:
                     switch (to)
                     {
-                        case AudioCodec.PCM8: cnvDlgt = new ConvertShortByte (ConvertLinear8LinearShortByte); break;
-                        case AudioCodec.PCM16: cnvDlgt = new ConvertShortByte (ConvertLinear2LinearShortByte); break;
-                        case AudioCodec.G711U: cnvDlgt = new ConvertShortByte (ConvertLinear2ULaw); break;
-                        case AudioCodec.G711A: cnvDlgt = new ConvertShortByte (ConvertLinear2ALaw); break;
+                        case AudioCodec.PCM8: cnvDlgt = new ConvertShortByte(ConvertLinear8LinearShortByte); break;
+                        case AudioCodec.PCM16: cnvDlgt = new ConvertShortByte(ConvertLinear2LinearShortByte); break;
+                        case AudioCodec.G711U: cnvDlgt = new ConvertShortByte(ConvertLinear2ULaw); break;
+                        case AudioCodec.G711A: cnvDlgt = new ConvertShortByte(ConvertLinear2ALaw); break;
                     }
                     break;
 
                 default:
-                    throw new FormatException ();
+                    throw new FormatException();
             }
 
-            return cnvDlgt (data, data.Length);
+            return cnvDlgt(data, data.Length);
         }
 
-        internal static AudioCodec TypeOf (WAVEFORMATEX format)
+        internal static AudioCodec TypeOf(WAVEFORMATEX format)
         {
             AudioCodec codec = AudioCodec.Undefined;
 
-            switch ((WaveFormatTag) format.wFormatTag)
+            switch ((WaveFormatTag)format.wFormatTag)
             {
                 case WaveFormatTag.WAVE_FORMAT_PCM:
                     switch (format.nBlockAlign / format.nChannels)
@@ -152,17 +152,17 @@ namespace System.Speech.Internal.Synthesis
         /// <param name="data">Array of 16 bit linear samples.</param>
         /// <param name="size">Size of the data in the array.</param>
         /// <returns>New buffer of 8 bit ULaw samples.</returns>
-        static internal byte [] ConvertLinear2ULaw (short [] data, int size)
+        static internal byte[] ConvertLinear2ULaw(short[] data, int size)
         {
-            byte [] newData = new byte [size];
-            _uLawCompTableCached = _uLawCompTableCached == null ? CalcLinear2ULawTable () : _uLawCompTableCached;
+            byte[] newData = new byte[size];
+            s_uLawCompTableCached = s_uLawCompTableCached == null ? CalcLinear2ULawTable() : s_uLawCompTableCached;
 
             for (int i = 0; i < size; i++)
             {
                 unchecked
                 {
                     // Extend the sign bit for the sample that is constructed from two bytes
-                    newData [i] = _uLawCompTableCached [(ushort) data [i] >> 2];
+                    newData[i] = s_uLawCompTableCached[(ushort)data[i] >> 2];
                 }
             }
             return newData;
@@ -174,14 +174,14 @@ namespace System.Speech.Internal.Synthesis
         /// <param name="data">Array of 8 bit ULaw samples.</param>
         /// <param name="size">Size of the data in the array.</param>
         /// <returns>New buffer of signed 16 bit linear samples</returns>
-        static internal short [] ConvertULaw2Linear (byte [] data, int size)
+        static internal short[] ConvertULaw2Linear(byte[] data, int size)
         {
-            short [] newData = new short [size];
+            short[] newData = new short[size];
             for (int i = 0; i < size; i++)
             {
-                int sample = ULaw_exp_table [data [i]];
+                int sample = s_ULaw_exp_table[data[i]];
 
-                newData [i] = unchecked ((short) sample);
+                newData[i] = unchecked((short)sample);
             }
 
             return newData;
@@ -205,18 +205,18 @@ namespace System.Speech.Internal.Synthesis
         ///     17 February 1987
         /// </summary>
         /// <returns>New buffer of 8 bit ULaw samples</returns>
-        static private byte [] CalcLinear2ULawTable ()
+        static private byte[] CalcLinear2ULawTable()
         {
             /*const*/
             bool ZEROTRAP = false;      // turn off the trap as per the MIL-STD
             const byte uBIAS = 0x84;              // define the add-in bias for 16 bit samples
             const int uCLIP = 32635;
 
-            byte [] table = new byte [((int) UInt16.MaxValue + 1) >> 2];
+            byte[] table = new byte[((int)UInt16.MaxValue + 1) >> 2];
 
             for (int i = 0; i < UInt16.MaxValue; i += 4)
             {
-                short data = unchecked ((short) i);
+                short data = unchecked((short)i);
 
                 int sample;
                 int sign, exponent, mantissa;
@@ -225,7 +225,7 @@ namespace System.Speech.Internal.Synthesis
                 unchecked
                 {
                     // Extend the sign bit for the sample that is constructed from two bytes
-                    sample = (int) ((data >> 2) << 2);
+                    sample = (int)((data >> 2) << 2);
 
                     // Get the sample into sign-magnitude. 
                     sign = (sample >> 8) & 0x80;          // set aside the sign
@@ -237,10 +237,10 @@ namespace System.Speech.Internal.Synthesis
 
                     // Convert from 16 bit linear to ULaw. 
                     sample = sample + uBIAS;
-                    exponent = (int) exp_lut_linear2ulaw [(sample >> 7) & 0xFF];
-                    mantissa = (int) ((sample >> (exponent + 3)) & 0x0F);
+                    exponent = (int)s_exp_lut_linear2ulaw[(sample >> 7) & 0xFF];
+                    mantissa = (int)((sample >> (exponent + 3)) & 0x0F);
 
-                    ULawbyte = (byte) (~(sign | (exponent << 4) | mantissa));
+                    ULawbyte = (byte)(~(sign | (exponent << 4) | mantissa));
                 }
 
                 if (ZEROTRAP)
@@ -248,7 +248,7 @@ namespace System.Speech.Internal.Synthesis
                     if (ULawbyte == 0) ULawbyte = 0x02; // optional CCITT trap 
                 }
 
-                table [i >> 2] = ULawbyte;
+                table[i >> 2] = ULawbyte;
             }
 
             return table;
@@ -266,17 +266,17 @@ namespace System.Speech.Internal.Synthesis
         /// <param name="data">Array of 16 bit linear samples.</param>
         /// <param name="size">Size of the data in the array.</param>
         /// <returns>New buffer of 8 bit ALaw samples.</returns>
-        static internal byte [] ConvertLinear2ALaw (short [] data, int size)
+        static internal byte[] ConvertLinear2ALaw(short[] data, int size)
         {
-            byte [] newData = new byte [size];
-            _aLawCompTableCached = _aLawCompTableCached == null ? CalcLinear2ALawTable () : _aLawCompTableCached;
+            byte[] newData = new byte[size];
+            s_aLawCompTableCached = s_aLawCompTableCached == null ? CalcLinear2ALawTable() : s_aLawCompTableCached;
 
             for (int i = 0; i < size; i++)
             {
                 unchecked
                 {
                     //newData [i] = ALaw_comp_table [(data [i] / 4) & 0x3fff];
-                    newData [i] = _aLawCompTableCached [(ushort) data [i] >> 2];
+                    newData[i] = s_aLawCompTableCached[(ushort)data[i] >> 2];
                 }
             }
             return newData;
@@ -288,15 +288,14 @@ namespace System.Speech.Internal.Synthesis
         /// <param name="data">Array of 8 bit ALaw samples.</param>
         /// <param name="size">Size of the data in the array.</param>
         /// <returns>New buffer of signed 16 bit linear samples</returns>
-        static internal short [] ConvertALaw2Linear (byte [] data, int size)
+        static internal short[] ConvertALaw2Linear(byte[] data, int size)
         {
-
-            short [] newData = new short [size];
+            short[] newData = new short[size];
             for (int i = 0; i < size; i++)
             {
-                int sample = ALaw_exp_table [data [i]];
+                int sample = s_ALaw_exp_table[data[i]];
 
-                newData [i] = unchecked ((short) sample);
+                newData[i] = unchecked((short)sample);
             }
 
             return newData;
@@ -320,15 +319,15 @@ namespace System.Speech.Internal.Synthesis
         ///     17 February 1987
         /// </summary>
         /// <returns>New buffer of 8 bit ALaw samples</returns>
-        static private byte [] CalcLinear2ALawTable ()
+        static private byte[] CalcLinear2ALawTable()
         {
             const int ACLIP = 31744;
 
-            byte [] table = new byte [((int) UInt16.MaxValue + 1) >> 2];
+            byte[] table = new byte[((int)UInt16.MaxValue + 1) >> 2];
 
             for (int i = 0; i < UInt16.MaxValue; i += 4)
             {
-                short data = unchecked ((short) i);
+                short data = unchecked((short)i);
 
                 int sample, sign, exponent, mantissa;
                 byte ALawbyte;
@@ -336,7 +335,7 @@ namespace System.Speech.Internal.Synthesis
                 unchecked
                 {
                     // Extend the sign bit for the sample that is constructed from two bytes
-                    sample = (int) ((data >> 2) << 2);
+                    sample = (int)((data >> 2) << 2);
 
                     // Get the sample into sign-magnitude. 
                     sign = ((~sample) >> 8) & 0x80;     // set aside the sign 
@@ -347,18 +346,18 @@ namespace System.Speech.Internal.Synthesis
                 // Convert from 16 bit linear to ULaw. 
                 if (sample >= 256)
                 {
-                    exponent = exp_lut_linear2alaw [(sample >> 8) & 0x7F];
+                    exponent = s_exp_lut_linear2alaw[(sample >> 8) & 0x7F];
                     mantissa = (sample >> (exponent + 3)) & 0x0F;
-                    ALawbyte = (byte) ((exponent << 4) | mantissa);
+                    ALawbyte = (byte)((exponent << 4) | mantissa);
                 }
                 else
                 {
-                    ALawbyte = (byte) (sample >> 4);
+                    ALawbyte = (byte)(sample >> 4);
                 }
 
-                ALawbyte ^= (byte) (sign ^ 0x55);
+                ALawbyte ^= (byte)(sign ^ 0x55);
 
-                table [i >> 2] = ALawbyte;
+                table[i >> 2] = ALawbyte;
             }
 
             return table;
@@ -374,14 +373,14 @@ namespace System.Speech.Internal.Synthesis
         /// <param name="data">Array of audio data in linear format.</param>
         /// <param name="size">Size of the data in the array.</param>
         /// <returns>The same array in linear format.</returns>
-        static private short [] ConvertLinear2LinearByteShort (byte [] data, int size)
+        static private short[] ConvertLinear2LinearByteShort(byte[] data, int size)
         {
-            short [] as1 = new short [size / 2];
+            short[] as1 = new short[size / 2];
             unchecked
             {
                 for (int i = 0; i < size; i += 2)
                 {
-                    as1 [i / 2] = (short) ((short) data [i] + (short) (data [i + 1] << 8));
+                    as1[i / 2] = (short)((short)data[i] + (short)(data[i + 1] << 8));
                 }
             }
             return as1;
@@ -393,14 +392,14 @@ namespace System.Speech.Internal.Synthesis
         /// <param name="data">Array of audio data in linear format.</param>
         /// <param name="size">Size of the data in the array.</param>
         /// <returns>The same array in linear format.</returns>
-        static private short [] ConvertLinear8LinearByteShort (byte [] data, int size)
+        static private short[] ConvertLinear8LinearByteShort(byte[] data, int size)
         {
-            short [] as1 = new short [size];
+            short[] as1 = new short[size];
             unchecked
             {
                 for (int i = 0; i < size; i++)
                 {
-                    as1 [i] = (short) (((short) data [i] - 128) << 8);
+                    as1[i] = (short)(((short)data[i] - 128) << 8);
                 }
             }
             return as1;
@@ -412,14 +411,14 @@ namespace System.Speech.Internal.Synthesis
         /// <param name="data">Array of audio data in linear format.</param>
         /// <param name="size">Size of the data in the array.</param>
         /// <returns>The same array in linear format.</returns>
-        static private byte [] ConvertLinear2LinearShortByte (short [] data, int size)
+        static private byte[] ConvertLinear2LinearShortByte(short[] data, int size)
         {
-            byte [] ab = new byte [size * 2];
+            byte[] ab = new byte[size * 2];
             for (int i = 0; i < size; i++)
             {
-                short s = data [i];
-                ab [2 * i] = unchecked ((byte) s);
-                ab [2 * i + 1] = unchecked ((byte) (s >> 8));
+                short s = data[i];
+                ab[2 * i] = unchecked((byte)s);
+                ab[2 * i + 1] = unchecked((byte)(s >> 8));
             }
             return ab; // the same format: do nothing
         }
@@ -430,12 +429,12 @@ namespace System.Speech.Internal.Synthesis
         /// <param name="data">Array of audio data in linear format.</param>
         /// <param name="size">Size of the data in the array.</param>
         /// <returns>The same array in linear format.</returns>
-        static private byte [] ConvertLinear8LinearShortByte (short [] data, int size)
+        static private byte[] ConvertLinear8LinearShortByte(short[] data, int size)
         {
-            byte [] ab = new byte [size];
+            byte[] ab = new byte[size];
             for (int i = 0; i < size; i++)
             {
-                ab [i] = unchecked ((byte) (((ushort) ((data [i] + 127) >> 8)) + 128));
+                ab[i] = unchecked((byte)(((ushort)((data[i] + 127) >> 8)) + 128));
             }
             return ab; // the same format: do nothing
         }
@@ -455,14 +454,14 @@ namespace System.Speech.Internal.Synthesis
         #region Converion tables for direct conversions
 
         // Cached table for aLaw and uLaw convertion (16K * 2 bytes each)
-        static private byte [] _uLawCompTableCached;
-        static private byte [] _aLawCompTableCached;
+        static private byte[] s_uLawCompTableCached;
+        static private byte[] s_aLawCompTableCached;
 
         #endregion
 
         #region Conversion tables for algorithmic conversions
 
-        private static readonly int [] exp_lut_linear2alaw = new int [128] 
+        private static readonly int[] s_exp_lut_linear2alaw = new int[128]
         {
             1,1,2,2,3,3,3,3,
             4,4,4,4,4,4,4,4,
@@ -482,7 +481,7 @@ namespace System.Speech.Internal.Synthesis
             7 ,7 ,7 ,7 ,7 ,7,7,7
         };
 
-        static private int [] exp_lut_linear2ulaw = new int [256]
+        static private int[] s_exp_lut_linear2ulaw = new int[256]
         {
             0,0,1,1,2,2,2,2,3,3,3,3,3,3,3,3,
             4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,
@@ -510,7 +509,7 @@ namespace System.Speech.Internal.Synthesis
         /// <summary>
         /// Table to converts ULaw values to Linear
         /// </summary>
-        static private int [] ULaw_exp_table = new int [256]
+        static private int[] s_ULaw_exp_table = new int[256]
         {
             -32124,-31100,-30076,-29052,-28028,-27004,-25980,-24956,
             -23932,-22908,-21884,-20860,-19836,-18812,-17788,-16764,
@@ -549,7 +548,7 @@ namespace System.Speech.Internal.Synthesis
         /// <summary>
         /// Table to converts ALaw values to Linear
         /// </summary>
-        static private int [] ALaw_exp_table = new int [256]
+        static private int[] s_ALaw_exp_table = new int[256]
         {
             -5504, -5248, -6016, -5760, -4480, -4224, -4992, -4736,
             -7552, -7296, -8064, -7808, -6528, -6272, -7040, -6784,
@@ -595,8 +594,8 @@ namespace System.Speech.Internal.Synthesis
             WAVE_FORMAT_MULAW = 0x0007
         }
         // delegates
-        delegate short [] ConvertByteShort (byte [] data, int size);
-        delegate byte [] ConvertShortByte (short [] data, int size);
+        private delegate short[] ConvertByteShort(byte[] data, int size);
+        private delegate byte[] ConvertShortByte(short[] data, int size);
 
         #endregion
     }

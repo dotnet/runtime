@@ -15,7 +15,7 @@ namespace System.Speech.Recognition.SrgsGrammar
 {
     /// TODOC <_include file='doc\PropertyTag.uex' path='docs/doc[@for="PropertyTag"]/*' />
     [Serializable]
-    [DebuggerDisplay ("{DebuggerDisplayString ()}")]
+    [DebuggerDisplay("{DebuggerDisplayString ()}")]
     public class SrgsNameValueTag : SrgsElement, IPropertyTag
     {
         //*******************************************************************
@@ -27,23 +27,23 @@ namespace System.Speech.Recognition.SrgsGrammar
         #region Constructors
 
         /// TODOC <_include file='doc\PropertyTag.uex' path='docs/doc[@for="PropertyTag.PropertyTag2"]/*' />
-        public SrgsNameValueTag ()
+        public SrgsNameValueTag()
         {
         }
 
         /// TODOC <_include file='doc\PropertyTag.uex' path='docs/doc[@for="PropertyTag.PropertyTag2"]/*' />
-        public SrgsNameValueTag (object value)
+        public SrgsNameValueTag(object value)
         {
-            Helpers.ThrowIfNull (value, "value");
+            Helpers.ThrowIfNull(value, "value");
 
             Value = value;
         }
 
         /// TODOC <_include file='doc\PropertyTag.uex' path='docs/doc[@for="PropertyTag.PropertyTag3"]/*' />
-        public SrgsNameValueTag (string name, object value)
-            : this (value)
+        public SrgsNameValueTag(string name, object value)
+            : this(value)
         {
-            _name = GetTrimmedName (name, "name");
+            _name = GetTrimmedName(name, "name");
         }
 
         #endregion
@@ -66,7 +66,7 @@ namespace System.Speech.Recognition.SrgsGrammar
             }
             set
             {
-                _name = GetTrimmedName (value, "value");
+                _name = GetTrimmedName(value, "value");
             }
         }
 
@@ -80,7 +80,7 @@ namespace System.Speech.Recognition.SrgsGrammar
             get { return _value; }
             set
             {
-                Helpers.ThrowIfNull (value, "value");
+                Helpers.ThrowIfNull(value, "value");
 
                 if ((value is String) ||
                 (value is Boolean) ||
@@ -91,7 +91,7 @@ namespace System.Speech.Recognition.SrgsGrammar
                 }
                 else
                 {
-                    throw new ArgumentException (SR.Get (SRID.InvalidValueType), "value");
+                    throw new ArgumentException(SR.Get(SRID.InvalidValueType), "value");
                 }
             }
         }
@@ -108,41 +108,41 @@ namespace System.Speech.Recognition.SrgsGrammar
 
         #region Internal methods
 
-        internal override void WriteSrgs (XmlWriter writer)
+        internal override void WriteSrgs(XmlWriter writer)
         {
             // Figure out if the tag contains a value.
             bool hasValue = Value != null;
 
             // Do not write the tag if it is empty
-            bool hasName = !string.IsNullOrEmpty (_name);
+            bool hasName = !string.IsNullOrEmpty(_name);
             // Write <tag>text</tag>
-            writer.WriteStartElement ("tag");
+            writer.WriteStartElement("tag");
 
-            StringBuilder sb = new StringBuilder ();
+            StringBuilder sb = new StringBuilder();
 
             if (hasName)
             {
-                sb.Append (_name);
-                sb.Append ("=");
+                sb.Append(_name);
+                sb.Append("=");
             }
 
             if (hasValue)
             {
                 if (Value is string)
                 {
-                    sb.AppendFormat (CultureInfo.InvariantCulture, "\"{0}\"", Value.ToString ());
+                    sb.AppendFormat(CultureInfo.InvariantCulture, "\"{0}\"", Value.ToString());
                 }
                 else
                 {
-                    sb.Append (Value.ToString ());
+                    sb.Append(Value.ToString());
                 }
             }
 
-            writer.WriteString (sb.ToString ());
-            writer.WriteEndElement ();
+            writer.WriteString(sb.ToString());
+            writer.WriteEndElement();
         }
 
-        internal override void Validate (SrgsGrammar grammar)
+        internal override void Validate(SrgsGrammar grammar)
         {
             SrgsTagFormat tagFormat = grammar.TagFormat;
             if (tagFormat == SrgsTagFormat.Default)
@@ -151,48 +151,48 @@ namespace System.Speech.Recognition.SrgsGrammar
             }
             else if (tagFormat != SrgsTagFormat.KeyValuePairs)
             {
-                XmlParser.ThrowSrgsException (SRID.SapiPropertiesAndSemantics);
+                XmlParser.ThrowSrgsException(SRID.SapiPropertiesAndSemantics);
             }
         }
 
-        void IPropertyTag.NameValue (IElement parent, string name, object value)
+        void IPropertyTag.NameValue(IElement parent, string name, object value)
         {
             _name = name;
             _value = value;
         }
 
-        internal override string DebuggerDisplayString ()
+        internal override string DebuggerDisplayString()
         {
-            StringBuilder sb = new StringBuilder ("SrgsNameValue ");
+            StringBuilder sb = new StringBuilder("SrgsNameValue ");
 
             if (_name != null)
             {
-                sb.Append (_name);
-                sb.Append (" (");
+                sb.Append(_name);
+                sb.Append(" (");
             }
 
             if (_value != null)
             {
                 if (_value is string)
                 {
-                    sb.AppendFormat (CultureInfo.InvariantCulture, "\"{0}\"", _value.ToString ());
+                    sb.AppendFormat(CultureInfo.InvariantCulture, "\"{0}\"", _value.ToString());
                 }
                 else
                 {
-                    sb.Append (_value.ToString ());
+                    sb.Append(_value.ToString());
                 }
             }
             else
             {
-                sb.Append ("null");
+                sb.Append("null");
             }
 
             if (_name != null)
             {
-                sb.Append (")");
+                sb.Append(")");
             }
 
-            return sb.ToString ();
+            return sb.ToString();
         }
 
         #endregion
@@ -212,15 +212,15 @@ namespace System.Speech.Recognition.SrgsGrammar
         /// <param name="name"></param>
         /// <param name="parameterName"></param>
         /// <returns></returns>
-        static private string GetTrimmedName (string name, string parameterName)
+        static private string GetTrimmedName(string name, string parameterName)
         {
-            Helpers.ThrowIfEmptyOrNull (name, parameterName);
+            Helpers.ThrowIfEmptyOrNull(name, parameterName);
 
             // Remove the leading and trailing spaces
-            name = name.Trim (Helpers._achTrimChars);
+            name = name.Trim(Helpers._achTrimChars);
 
             // Run again the validation code
-            Helpers.ThrowIfEmptyOrNull (name, parameterName);
+            Helpers.ThrowIfEmptyOrNull(name, parameterName);
 
             return name;
         }

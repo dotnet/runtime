@@ -23,7 +23,7 @@ namespace System.Speech.Recognition.SrgsGrammar
     /// APITODO: needs programmatic access to SRGS dom; PACOG
     /// APITODO: needs rule activation/deactivation methods
     /// </summary>
-    [Serializable]   
+    [Serializable]
     public class SrgsDocument
     {
         //*******************************************************************
@@ -37,22 +37,22 @@ namespace System.Speech.Recognition.SrgsGrammar
         /// <summary>
         /// The default constructor - creates an empty SrgsGrammar object
         /// </summary>
-        public SrgsDocument ()
+        public SrgsDocument()
         {
-            _grammar = new SrgsGrammar ();
+            _grammar = new SrgsGrammar();
         }
 
         /// <summary>
         /// 
         /// </summary>
         /// <param name="path"></param>
-        public SrgsDocument (string path)
+        public SrgsDocument(string path)
         {
-            Helpers.ThrowIfEmptyOrNull (path, "path");
+            Helpers.ThrowIfEmptyOrNull(path, "path");
 
-            using (XmlTextReader reader = new XmlTextReader (path))
+            using (XmlTextReader reader = new XmlTextReader(path))
             {
-                Load (reader);
+                Load(reader);
             }
         }
 
@@ -60,11 +60,11 @@ namespace System.Speech.Recognition.SrgsGrammar
         /// TODOC
         /// </summary>
         /// <param name="srgsGrammar"></param>
-        public SrgsDocument (XmlReader srgsGrammar)
+        public SrgsDocument(XmlReader srgsGrammar)
         {
-            Helpers.ThrowIfNull (srgsGrammar, "srgsGrammar");
+            Helpers.ThrowIfNull(srgsGrammar, "srgsGrammar");
 
-            Load (srgsGrammar);
+            Load(srgsGrammar);
         }
 
 
@@ -74,7 +74,7 @@ namespace System.Speech.Recognition.SrgsGrammar
         /// <param name="builder"></param>
         public SrgsDocument(GrammarBuilder builder)
         {
-            Helpers.ThrowIfNull (builder, "builder");
+            Helpers.ThrowIfNull(builder, "builder");
 
             // New grammar
             _grammar = new SrgsGrammar();
@@ -93,12 +93,12 @@ namespace System.Speech.Recognition.SrgsGrammar
         /// 
         /// </summary>
         /// <param name="grammarRootRule"></param>
-        public SrgsDocument (SrgsRule grammarRootRule) : this ()
+        public SrgsDocument(SrgsRule grammarRootRule) : this()
         {
-            Helpers.ThrowIfNull (grammarRootRule, "grammarRootRule");
+            Helpers.ThrowIfNull(grammarRootRule, "grammarRootRule");
 
             Root = grammarRootRule;
-            Rules.Add (grammarRootRule);
+            Rules.Add(grammarRootRule);
         }
 
         #endregion
@@ -115,15 +115,15 @@ namespace System.Speech.Recognition.SrgsGrammar
         /// TODOC
         /// </summary>
         /// <param name="srgsGrammar"></param>
-        public void WriteSrgs (XmlWriter srgsGrammar)
+        public void WriteSrgs(XmlWriter srgsGrammar)
         {
-            Helpers.ThrowIfNull (srgsGrammar, "srgsGrammar");
+            Helpers.ThrowIfNull(srgsGrammar, "srgsGrammar");
 
             // Make sure the grammar is ok
-            _grammar.Validate ();
+            _grammar.Validate();
 
             // Write the data.
-            _grammar.WriteSrgs (srgsGrammar);
+            _grammar.WriteSrgs(srgsGrammar);
         }
 
         #endregion
@@ -161,10 +161,10 @@ namespace System.Speech.Recognition.SrgsGrammar
         {
             set
             {
-                Helpers.ThrowIfNull (value, "value");
-                if (value.Equals (CultureInfo.InvariantCulture))
+                Helpers.ThrowIfNull(value, "value");
+                if (value.Equals(CultureInfo.InvariantCulture))
                 {
-                    throw new ArgumentException (SR.Get (SRID.InvariantCultureInfo), "value");
+                    throw new ArgumentException(SR.Get(SRID.InvariantCultureInfo), "value");
                 }
                 _grammar.Culture = value;
             }
@@ -214,12 +214,12 @@ namespace System.Speech.Recognition.SrgsGrammar
         {
             set
             {
-                _grammar.PhoneticAlphabet = (AlphabetType) value;
+                _grammar.PhoneticAlphabet = (AlphabetType)value;
                 _grammar.HasPhoneticAlphabetBeenSet = true;
             }
             get
             {
-                return (SrgsPhoneticAlphabet) _grammar.PhoneticAlphabet;
+                return (SrgsPhoneticAlphabet)_grammar.PhoneticAlphabet;
             }
         }
 
@@ -305,7 +305,7 @@ namespace System.Speech.Recognition.SrgsGrammar
         {
             set
             {
-                Helpers.ThrowIfEmptyOrNull (value, "value");
+                Helpers.ThrowIfEmptyOrNull(value, "value");
                 _grammar.Script = value;
             }
             get
@@ -348,33 +348,33 @@ namespace System.Speech.Recognition.SrgsGrammar
         #region Internal methods
 
         // Initialize an SrgsDocument from an Srgs text source.
-        internal void Load (XmlReader srgsGrammar)
+        internal void Load(XmlReader srgsGrammar)
         {
             // New grammar
-            _grammar = new SrgsGrammar ();
+            _grammar = new SrgsGrammar();
 
             // For SrgsGrammar, the default is IPA, for xml grammars, it is sapi.
             _grammar.PhoneticAlphabet = AlphabetType.Sapi;
 
             // create an XMl Parser
-            XmlParser srgsParser = new XmlParser (srgsGrammar, null);
+            XmlParser srgsParser = new XmlParser(srgsGrammar, null);
 
             // Creates SrgsDocument elements
-            srgsParser.ElementFactory = new SrgsElementFactory (_grammar);
+            srgsParser.ElementFactory = new SrgsElementFactory(_grammar);
 
             // Do it
-            srgsParser.Parse ();
+            srgsParser.Parse();
 
             // This provides the path the XML was loaded from.
             // {Note potentially this may also be overridden by an xml:base attribute in the XML itself.
             // But for this scenario that doesn't matter since this is used to calculate the correct base path.}
-            if (!string.IsNullOrEmpty (srgsGrammar.BaseURI))
+            if (!string.IsNullOrEmpty(srgsGrammar.BaseURI))
             {
-                _baseUri = new Uri (srgsGrammar.BaseURI);
+                _baseUri = new Uri(srgsGrammar.BaseURI);
             }
         }
 
-        static internal GrammarOptions TagFormat2GrammarOptions (SrgsTagFormat value)
+        static internal GrammarOptions TagFormat2GrammarOptions(SrgsTagFormat value)
         {
             GrammarOptions newValue = 0;
 
@@ -395,7 +395,7 @@ namespace System.Speech.Recognition.SrgsGrammar
             return newValue;
         }
 
-        static internal SrgsTagFormat GrammarOptions2TagFormat (GrammarOptions value)
+        static internal SrgsTagFormat GrammarOptions2TagFormat(GrammarOptions value)
         {
             SrgsTagFormat tagFormat = SrgsTagFormat.Default;
 

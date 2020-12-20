@@ -14,7 +14,7 @@ namespace System.Speech.Recognition.SrgsGrammar
     // Note that currently if multiple words are stored in a Token they are treated internally 
     // and in the result as multiple tokens.
     [Serializable]
-    [DebuggerDisplay ("{DebuggerDisplayString ()}")]
+    [DebuggerDisplay("{DebuggerDisplayString ()}")]
     public class SrgsToken : SrgsElement, IToken
     {
         //*******************************************************************
@@ -26,9 +26,9 @@ namespace System.Speech.Recognition.SrgsGrammar
         #region Constructors
 
         /// TODOC <_include file='doc\Token.uex' path='docs/doc[@for="Token.Token2"]/*' />
-        public SrgsToken (string text)
+        public SrgsToken(string text)
         {
-            Helpers.ThrowIfEmptyOrNull (text, "text");
+            Helpers.ThrowIfEmptyOrNull(text, "text");
             Text = text;
         }
 
@@ -51,13 +51,13 @@ namespace System.Speech.Recognition.SrgsGrammar
             }
             set
             {
-                Helpers.ThrowIfEmptyOrNull (value, "value");
+                Helpers.ThrowIfEmptyOrNull(value, "value");
 
                 // remove all spaces if any
-                string text = value.Trim (Helpers._achTrimChars);
-                if (string.IsNullOrEmpty (text) || text.IndexOf ('\"') >= 0)
+                string text = value.Trim(Helpers._achTrimChars);
+                if (string.IsNullOrEmpty(text) || text.IndexOf('\"') >= 0)
                 {
-                    throw new ArgumentException (SR.Get (SRID.InvalidTokenString), "value");
+                    throw new ArgumentException(SR.Get(SRID.InvalidTokenString), "value");
                 }
                 _text = text;
             }
@@ -72,7 +72,7 @@ namespace System.Speech.Recognition.SrgsGrammar
             }
             set
             {
-                Helpers.ThrowIfEmptyOrNull (value, "value");
+                Helpers.ThrowIfEmptyOrNull(value, "value");
                 _pronunciation = value;
             }
         }
@@ -86,7 +86,7 @@ namespace System.Speech.Recognition.SrgsGrammar
             }
             set
             {
-                Helpers.ThrowIfEmptyOrNull (value, "value");
+                Helpers.ThrowIfEmptyOrNull(value, "value");
                 _display = value;
             }
         }
@@ -101,31 +101,31 @@ namespace System.Speech.Recognition.SrgsGrammar
 
         #region Internal methods
 
-        internal override void WriteSrgs (XmlWriter writer)
+        internal override void WriteSrgs(XmlWriter writer)
         {
             // Write <token sapi:pron="_pronunciation">_text</token>
-            writer.WriteStartElement ("token");
+            writer.WriteStartElement("token");
 
             if (_display != null)
             {
-                writer.WriteAttributeString ("sapi", "display", XmlParser.sapiNamespace, _display);
+                writer.WriteAttributeString("sapi", "display", XmlParser.sapiNamespace, _display);
             }
 
             if (_pronunciation != null)
             {
-                writer.WriteAttributeString ("sapi", "pron", XmlParser.sapiNamespace, _pronunciation);
+                writer.WriteAttributeString("sapi", "pron", XmlParser.sapiNamespace, _pronunciation);
             }
 
             // If an empty string is provided, skip the WriteString 
             // to have the XmlWrite to put <token/> rather than <token></token>
             if (_text != null && _text.Length > 0)
             {
-                writer.WriteString (_text);
+                writer.WriteString(_text);
             }
-            writer.WriteEndElement ();
+            writer.WriteEndElement();
         }
 
-        internal override void Validate (SrgsGrammar grammar)
+        internal override void Validate(SrgsGrammar grammar)
         {
             if (_pronunciation != null || _display != null)
             {
@@ -138,48 +138,48 @@ namespace System.Speech.Recognition.SrgsGrammar
                 for (int iCurPron = 0, iDeliminator = 0; iCurPron < _pronunciation.Length; iCurPron = iDeliminator + 1)
                 {
                     // Find semi-colon deliminator and replace with null
-                    iDeliminator = _pronunciation.IndexOf (';', iCurPron);
+                    iDeliminator = _pronunciation.IndexOf(';', iCurPron);
                     if (iDeliminator == -1)
                     {
                         iDeliminator = _pronunciation.Length;
                     }
 
-                    string subPronunciation = _pronunciation.Substring (iCurPron, iDeliminator - iCurPron);
+                    string subPronunciation = _pronunciation.Substring(iCurPron, iDeliminator - iCurPron);
 
                     // Convert the pronunciation, will throw if error
                     switch (grammar.PhoneticAlphabet)
                     {
                         case AlphabetType.Sapi:
-                            PhonemeConverter.ConvertPronToId (subPronunciation, grammar.Culture.LCID);
+                            PhonemeConverter.ConvertPronToId(subPronunciation, grammar.Culture.LCID);
                             break;
 
                         case AlphabetType.Ups:
-                            PhonemeConverter.UpsConverter.ConvertPronToId (subPronunciation);
+                            PhonemeConverter.UpsConverter.ConvertPronToId(subPronunciation);
                             break;
 
                         case AlphabetType.Ipa:
-                            PhonemeConverter.ValidateUpsIds (subPronunciation.ToCharArray ());
+                            PhonemeConverter.ValidateUpsIds(subPronunciation.ToCharArray());
                             break;
                     }
                 }
             }
 
-            base.Validate (grammar);
+            base.Validate(grammar);
         }
 
-        internal override string DebuggerDisplayString ()
+        internal override string DebuggerDisplayString()
         {
-            StringBuilder sb = new StringBuilder ("Token '");
-            sb.Append (_text);
-            sb.Append ("'");
+            StringBuilder sb = new StringBuilder("Token '");
+            sb.Append(_text);
+            sb.Append("'");
 
             if (_pronunciation != null)
             {
-                sb.Append (" Pronunciation '");
-                sb.Append (_pronunciation);
-                sb.Append ("'");
+                sb.Append(" Pronunciation '");
+                sb.Append(_pronunciation);
+                sb.Append("'");
             }
-            return sb.ToString ();
+            return sb.ToString();
         }
 
         #endregion

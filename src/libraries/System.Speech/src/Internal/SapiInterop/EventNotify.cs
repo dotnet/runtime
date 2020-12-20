@@ -10,20 +10,19 @@ using System.Collections.Generic;
 
 namespace System.Speech.Internal.SapiInterop
 {
-
     internal class SpNotifySink : ISpNotifySink
     {
-        public SpNotifySink (EventNotify eventNotify)
+        public SpNotifySink(EventNotify eventNotify)
         {
-            _eventNotifyReference = new WeakReference (eventNotify);
+            _eventNotifyReference = new WeakReference(eventNotify);
         }
 
-        void ISpNotifySink.Notify ()
+        void ISpNotifySink.Notify()
         {
-            EventNotify eventNotify = (EventNotify) _eventNotifyReference.Target;
+            EventNotify eventNotify = (EventNotify)_eventNotifyReference.Target;
             if (eventNotify != null)
             {
-                ThreadPool.QueueUserWorkItem (new WaitCallback (eventNotify.SendNotification));
+                ThreadPool.QueueUserWorkItem(new WaitCallback(eventNotify.SendNotification));
             }
         }
 
@@ -41,17 +40,17 @@ namespace System.Speech.Internal.SapiInterop
 
         #region Constructors
 
-        internal EventNotify (ISpEventSource sapiEventSource, IAsyncDispatch dispatcher, bool additionalSapiFeatures)
+        internal EventNotify(ISpEventSource sapiEventSource, IAsyncDispatch dispatcher, bool additionalSapiFeatures)
         {
             // Remember event source  
-            _sapiEventSourceReference = new WeakReference (sapiEventSource);
+            _sapiEventSourceReference = new WeakReference(sapiEventSource);
 
             _dispatcher = dispatcher;
             _additionalSapiFeatures = additionalSapiFeatures;
 
             // Start listening to events from sapiEventSource.
-            _notifySink = new SpNotifySink (this);
-            sapiEventSource.SetNotifySink (_notifySink);
+            _notifySink = new SpNotifySink(this);
+            sapiEventSource.SetNotifySink(_notifySink);
         }
 
         #endregion Constructors
@@ -65,7 +64,7 @@ namespace System.Speech.Internal.SapiInterop
         #region Internal Methods
 
         // Finalizer is not required since ISpEventSource and AsyncOperation both implement appropriate finalizers.
-        internal void Dispose ()
+        internal void Dispose()
         {
             lock (this)
             {
@@ -73,11 +72,11 @@ namespace System.Speech.Internal.SapiInterop
                 // If Dispose() is called from a finalizer this may not be the case so check for null.
                 if (_sapiEventSourceReference != null)
                 {
-                    ISpEventSource sapiEventSource = (ISpEventSource) _sapiEventSourceReference.Target;
+                    ISpEventSource sapiEventSource = (ISpEventSource)_sapiEventSourceReference.Target;
                     if (sapiEventSource != null)
                     {
                         // Stop listening to events from sapiEventSource.
-                        sapiEventSource.SetNotifySink (null);
+                        sapiEventSource.SetNotifySink(null);
                         _notifySink = null;
                     }
                 }
@@ -85,23 +84,23 @@ namespace System.Speech.Internal.SapiInterop
             }
         }
 
-        internal void SendNotification (object ignored)
+        internal void SendNotification(object ignored)
         {
             lock (this)
             {
                 // Call dispatchEventDelegate for each SAPI event currently queued.
                 if (_sapiEventSourceReference != null)
                 {
-                    ISpEventSource sapiEventSource = (ISpEventSource) _sapiEventSourceReference.Target;
+                    ISpEventSource sapiEventSource = (ISpEventSource)_sapiEventSourceReference.Target;
                     if (sapiEventSource != null)
                     {
-                        List<SpeechEvent> speechEvents = new List<SpeechEvent> ();
+                        List<SpeechEvent> speechEvents = new List<SpeechEvent>();
                         SpeechEvent speechEvent;
-                        while (null != (speechEvent = SpeechEvent.TryCreateSpeechEvent (sapiEventSource, _additionalSapiFeatures, _audioFormat)))
+                        while (null != (speechEvent = SpeechEvent.TryCreateSpeechEvent(sapiEventSource, _additionalSapiFeatures, _audioFormat)))
                         {
-                            speechEvents.Add (speechEvent);
+                            speechEvents.Add(speechEvent);
                         }
-                        _dispatcher.Post (speechEvents.ToArray ());
+                        _dispatcher.Post(speechEvents.ToArray());
                     }
                 }
             }

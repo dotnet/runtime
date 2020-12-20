@@ -31,7 +31,7 @@ namespace System.Speech.Internal.ObjectTokens
         {
         }
 
-        static internal ObjectTokenCategory Create (string sCategoryId)
+        static internal ObjectTokenCategory Create(string sCategoryId)
         {
             RegistryDataKey key = RegistryDataKey.Open(sCategoryId, true);
             return new ObjectTokenCategory(sCategoryId, key);
@@ -47,13 +47,13 @@ namespace System.Speech.Internal.ObjectTokens
 
         #region internal Methods
 
-        internal ObjectToken OpenToken (string keyName)
+        internal ObjectToken OpenToken(string keyName)
         {
             // Check if the token is for a voice
             string tokenName = keyName;
-            if (!string.IsNullOrEmpty (tokenName) && tokenName.IndexOf ("HKEY_", StringComparison.Ordinal) != 0)
+            if (!string.IsNullOrEmpty(tokenName) && tokenName.IndexOf("HKEY_", StringComparison.Ordinal) != 0)
             {
-                tokenName = string.Format (CultureInfo.InvariantCulture, @"{0}\Tokens\{1}", Id, tokenName);
+                tokenName = string.Format(CultureInfo.InvariantCulture, @"{0}\Tokens\{1}", Id, tokenName);
             }
 
             return ObjectToken.Open(null, tokenName, false);
@@ -110,9 +110,9 @@ namespace System.Speech.Internal.ObjectTokens
             }
         }
 
-        IEnumerator IEnumerable.GetEnumerator ()
+        IEnumerator IEnumerable.GetEnumerator()
         {
-            return ((IEnumerable<ObjectToken>) this).GetEnumerator ();
+            return ((IEnumerable<ObjectToken>)this).GetEnumerator();
         }
 
         #endregion
@@ -127,9 +127,9 @@ namespace System.Speech.Internal.ObjectTokens
 
         #region Protected Methods
 
-        protected override void Dispose (bool disposing)
+        protected override void Dispose(bool disposing)
         {
-            base.Dispose (disposing);
+            base.Dispose(disposing);
         }
 
         #endregion

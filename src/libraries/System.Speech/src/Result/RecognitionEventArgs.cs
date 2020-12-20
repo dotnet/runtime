@@ -5,7 +5,6 @@ using System;
 
 namespace System.Speech.Recognition
 {
-
     /// TODOC 
 
     [Serializable]
@@ -17,7 +16,7 @@ namespace System.Speech.Recognition
         //
         //*******************************************************************
         #region Constructors
-        internal RecognitionEventArgs (RecognitionResult result)
+        internal RecognitionEventArgs(RecognitionResult result)
         {
             _result = result;
         }
@@ -58,8 +57,8 @@ namespace System.Speech.Recognition
         //*******************************************************************
         #region Constructors
 
-        internal SpeechRecognizedEventArgs (RecognitionResult result)
-            : base (result)
+        internal SpeechRecognizedEventArgs(RecognitionResult result)
+            : base(result)
         {
         }
 
@@ -77,8 +76,8 @@ namespace System.Speech.Recognition
         //*******************************************************************
         #region Constructors
 
-        internal SpeechRecognitionRejectedEventArgs (RecognitionResult result)
-            : base (result)
+        internal SpeechRecognitionRejectedEventArgs(RecognitionResult result)
+            : base(result)
         {
         }
 
@@ -96,8 +95,8 @@ namespace System.Speech.Recognition
         //*******************************************************************
         #region Constructors
 
-        internal SpeechHypothesizedEventArgs (RecognitionResult result)
-            : base (result)
+        internal SpeechHypothesizedEventArgs(RecognitionResult result)
+            : base(result)
         {
         }
 

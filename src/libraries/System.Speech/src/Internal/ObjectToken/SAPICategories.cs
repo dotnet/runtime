@@ -22,18 +22,18 @@ namespace System.Speech.Internal.ObjectTokens
 
         #region internal Methods
 
-        static internal ObjectToken DefaultToken (string category)
+        static internal ObjectToken DefaultToken(string category)
         {
-            Helpers.ThrowIfEmptyOrNull (category, "category");
+            Helpers.ThrowIfEmptyOrNull(category, "category");
 
             ObjectToken token = null;
             // Try first to get the prefered token for the current user
-            token = DefaultToken (@"HKEY_CURRENT_USER\SOFTWARE\Microsoft\Speech\" + category, _defaultTokenIdValueName);
+            token = DefaultToken(@"HKEY_CURRENT_USER\SOFTWARE\Microsoft\Speech\" + category, _defaultTokenIdValueName);
 
             // IF failed try to get it for the local machine
             if (token == null)
             {
-                token = DefaultToken (SpeechRegistryKey + category, _defaultTokenIdValueName);
+                token = DefaultToken(SpeechRegistryKey + category, _defaultTokenIdValueName);
             }
 
             return token;
@@ -45,24 +45,24 @@ namespace System.Speech.Internal.ObjectTokens
         /// for with this token. Otherwise, picks the default WAVE_MAPPER is returned.
         /// </summary>
         /// <returns></returns>
-        static internal int DefaultDeviceOut ()
+        static internal int DefaultDeviceOut()
         {
             int device = -1;
-            using (ObjectTokenCategory tokenCategory = ObjectTokenCategory.Create (@"HKEY_CURRENT_USER\SOFTWARE\Microsoft\Speech\AudioOutput"))
+            using (ObjectTokenCategory tokenCategory = ObjectTokenCategory.Create(@"HKEY_CURRENT_USER\SOFTWARE\Microsoft\Speech\AudioOutput"))
             {
                 if (tokenCategory != null)
                 {
                     string deviceName;
-                    if (tokenCategory.TryGetString (_defaultTokenIdValueName, out deviceName))
+                    if (tokenCategory.TryGetString(_defaultTokenIdValueName, out deviceName))
                     {
-                        int pos = deviceName.IndexOf ('\\');
+                        int pos = deviceName.IndexOf('\\');
                         if (pos > 0 && pos < deviceName.Length)
                         {
-                            using (RegistryDataKey deviceKey = RegistryDataKey.Create (deviceName.Substring (pos + 1), Registry.LocalMachine))
+                            using (RegistryDataKey deviceKey = RegistryDataKey.Create(deviceName.Substring(pos + 1), Registry.LocalMachine))
                             {
                                 if (deviceKey != null)
                                 {
-                                    device = AudioDeviceOut.GetDevicedId (deviceKey.Name);
+                                    device = AudioDeviceOut.GetDevicedId(deviceKey.Name);
                                 }
                             }
                         }
@@ -126,9 +126,9 @@ namespace System.Speech.Internal.ObjectTokens
 
         #region Private Methods
 
-        static private ObjectToken DefaultToken (string category, string defaultTokenIdValueName)
+        static private ObjectToken DefaultToken(string category, string defaultTokenIdValueName)
         {
-            ObjectToken token = GetPreference (category, defaultTokenIdValueName);
+            ObjectToken token = GetPreference(category, defaultTokenIdValueName);
 
             if (token != null)
             {
@@ -136,25 +136,25 @@ namespace System.Speech.Internal.ObjectTokens
                 // more recent version - if so use that.
 
                 // First lets change the category to LOCAL_MACHINE
-                using (ObjectTokenCategory tokenCategory = ObjectTokenCategory.Create (category))
+                using (ObjectTokenCategory tokenCategory = ObjectTokenCategory.Create(category))
                 {
                     if (tokenCategory != null)
                     {
                         if (token != null)
                         {
-                            foreach (ObjectToken tokenSeed in (IEnumerable<ObjectToken>) tokenCategory)
+                            foreach (ObjectToken tokenSeed in (IEnumerable<ObjectToken>)tokenCategory)
                             {
-                                token = GetHighestTokenVersion (token, tokenSeed, asVersionDefault);
+                                token = GetHighestTokenVersion(token, tokenSeed, s_asVersionDefault);
                             }
                         }
                         else
                         {
                             // If there wasn't a default, just pick one with the proper culture
-                            string [] sCultureId = new string [] { string.Format (CultureInfo.InvariantCulture, "{0:x}", CultureInfo.CurrentUICulture.LCID) };
+                            string[] sCultureId = new string[] { string.Format(CultureInfo.InvariantCulture, "{0:x}", CultureInfo.CurrentUICulture.LCID) };
 
-                            foreach (ObjectToken tokenSeed in (IEnumerable<ObjectToken>) tokenCategory)
+                            foreach (ObjectToken tokenSeed in (IEnumerable<ObjectToken>)tokenCategory)
                             {
-                                if (tokenSeed.MatchesAttributes (sCultureId))
+                                if (tokenSeed.MatchesAttributes(sCultureId))
                                 {
                                     token = tokenSeed;
                                     break;
@@ -164,7 +164,7 @@ namespace System.Speech.Internal.ObjectTokens
                             // Still nothing, picks the first one
                             if (token == null)
                             {
-                                foreach (ObjectToken tokenSeed in (IEnumerable<ObjectToken>) tokenCategory)
+                                foreach (ObjectToken tokenSeed in (IEnumerable<ObjectToken>)tokenCategory)
                                 {
                                     token = tokenSeed;
                                     break;
@@ -184,18 +184,18 @@ namespace System.Speech.Internal.ObjectTokens
         /// <param name="category"></param>
         /// <param name="defaultLocation"></param>
         /// <returns></returns>
-        private static ObjectToken GetPreference (string category, string defaultLocation)
+        private static ObjectToken GetPreference(string category, string defaultLocation)
         {
             ObjectToken token = null;
 
-            using (ObjectTokenCategory tokenCategory = ObjectTokenCategory.Create (category))
+            using (ObjectTokenCategory tokenCategory = ObjectTokenCategory.Create(category))
             {
                 if (tokenCategory != null)
                 {
                     string sToken;
-                    if (tokenCategory.TryGetString (defaultLocation, out sToken))
+                    if (tokenCategory.TryGetString(defaultLocation, out sToken))
                     {
-                        token = tokenCategory.OpenToken (sToken);
+                        token = tokenCategory.OpenToken(sToken);
                     }
                 }
             }
@@ -210,7 +210,7 @@ namespace System.Speech.Internal.ObjectTokens
         /// <param name="token2"></param>
         /// <param name="pfDidCompare"></param>
         /// <returns></returns>
-        private static int CompareTokenVersions (ObjectToken token1, ObjectToken token2, out bool pfDidCompare)
+        private static int CompareTokenVersions(ObjectToken token1, ObjectToken token2, out bool pfDidCompare)
         {
             pfDidCompare = false;
 
@@ -226,10 +226,10 @@ namespace System.Speech.Internal.ObjectTokens
                 string productLine1;
                 string version1;
                 string language1;
-                attributes1.TryGetString ("Vendor", out vendor1);
-                attributes1.TryGetString ("ProductLine", out productLine1);
-                attributes1.TryGetString ("Version", out version1);
-                attributes1.TryGetString ("Language", out language1);
+                attributes1.TryGetString("Vendor", out vendor1);
+                attributes1.TryGetString("ProductLine", out productLine1);
+                attributes1.TryGetString("Version", out version1);
+                attributes1.TryGetString("Language", out language1);
 
                 // get vendor, version, language, product line for token 2
                 if (attributes2 != null)
@@ -238,17 +238,17 @@ namespace System.Speech.Internal.ObjectTokens
                     string productLine2;
                     string version2;
                     string language2;
-                    attributes2.TryGetString ("Vendor", out vendor2);
-                    attributes2.TryGetString ("ProductLine", out productLine2);
-                    attributes2.TryGetString ("Version", out version2);
-                    attributes2.TryGetString ("Language", out language2);
+                    attributes2.TryGetString("Vendor", out vendor2);
+                    attributes2.TryGetString("ProductLine", out productLine2);
+                    attributes2.TryGetString("Version", out version2);
+                    attributes2.TryGetString("Language", out language2);
 
-                    if (((string.IsNullOrEmpty (vendor1) && string.IsNullOrEmpty (vendor2)) || (!string.IsNullOrEmpty (vendor1) && !string.IsNullOrEmpty (vendor2) && vendor1 == vendor2)) &&
-                        ((string.IsNullOrEmpty (productLine1) && string.IsNullOrEmpty (productLine2)) || (!string.IsNullOrEmpty (productLine1) && !string.IsNullOrEmpty (productLine2) && productLine1 == productLine2)) &&
-                        ((string.IsNullOrEmpty (language1) && string.IsNullOrEmpty (language2)) || (!string.IsNullOrEmpty (language1) && !string.IsNullOrEmpty (language2) && language1 == language2)))
+                    if (((string.IsNullOrEmpty(vendor1) && string.IsNullOrEmpty(vendor2)) || (!string.IsNullOrEmpty(vendor1) && !string.IsNullOrEmpty(vendor2) && vendor1 == vendor2)) &&
+                        ((string.IsNullOrEmpty(productLine1) && string.IsNullOrEmpty(productLine2)) || (!string.IsNullOrEmpty(productLine1) && !string.IsNullOrEmpty(productLine2) && productLine1 == productLine2)) &&
+                        ((string.IsNullOrEmpty(language1) && string.IsNullOrEmpty(language2)) || (!string.IsNullOrEmpty(language1) && !string.IsNullOrEmpty(language2) && language1 == language2)))
                     {
                         pfDidCompare = true;
-                        return CompareVersions (version1, version2);
+                        return CompareVersions(version1, version2);
                     }
                     else
                     {
@@ -273,13 +273,13 @@ namespace System.Speech.Internal.ObjectTokens
         /// <param name="sV1"></param>
         /// <param name="sV2"></param>
         /// <returns></returns>
-        private static int CompareVersions (string sV1, string sV2)
+        private static int CompareVersions(string sV1, string sV2)
         {
-            ushort [] v1 = new ushort [4];
-            ushort [] v2 = new ushort [4];
+            ushort[] v1 = new ushort[4];
+            ushort[] v2 = new ushort[4];
 
-            bool fV1OK = ParseVersion (sV1, v1);
-            bool fV2OK = ParseVersion (sV2, v2);
+            bool fV1OK = ParseVersion(sV1, v1);
+            bool fV2OK = ParseVersion(sV2, v2);
 
             if (!fV1OK && !fV2OK)
             {
@@ -297,11 +297,11 @@ namespace System.Speech.Internal.ObjectTokens
             {
                 for (int ul = 0; ul < 4; ul++)
                 {
-                    if (v1 [ul] > v2 [ul])
+                    if (v1[ul] > v2[ul])
                     {
                         return 1;
                     }
-                    else if (v1 [ul] < v2 [ul])
+                    else if (v1[ul] < v2[ul])
                     {
                         return -1;
                     }
@@ -320,12 +320,12 @@ namespace System.Speech.Internal.ObjectTokens
         /// <param name="s"></param>
         /// <param name="Version"></param>
         /// <returns></returns>
-        private static bool ParseVersion (string s, ushort [] Version)
+        private static bool ParseVersion(string s, ushort[] Version)
         {
             bool fIsValid = true;
-            Version [0] = Version [1] = Version [2] = Version [3] = 0;
+            Version[0] = Version[1] = Version[2] = Version[3] = 0;
 
-            if (string.IsNullOrEmpty (s))
+            if (string.IsNullOrEmpty(s))
             {
                 fIsValid = false;
             }
@@ -334,18 +334,18 @@ namespace System.Speech.Internal.ObjectTokens
                 int iPosPrev = 0;
                 for (int i = 0; i < 4 && iPosPrev < s.Length; i++)
                 {
-                    int iPosDot = s.IndexOf ('.', iPosPrev);
+                    int iPosDot = s.IndexOf('.', iPosPrev);
 
                     // read +ve integer
-                    string sInteger = s.Substring (iPosPrev, iPosDot);
+                    string sInteger = s.Substring(iPosPrev, iPosDot);
                     ushort val;
 
-                    if (!ushort.TryParse (sInteger, out val) || val > 9999)
+                    if (!ushort.TryParse(sInteger, out val) || val > 9999)
                     {
                         fIsValid = false;
                         break;
                     }
-                    Version [i] = val;
+                    Version[i] = val;
 
                     iPosPrev = iPosDot + 1;
                 }
@@ -358,15 +358,15 @@ namespace System.Speech.Internal.ObjectTokens
             return fIsValid;
         }
 
-        private static ObjectToken GetHighestTokenVersion (ObjectToken token, ObjectToken tokenSeed, string [] criterias)
+        private static ObjectToken GetHighestTokenVersion(ObjectToken token, ObjectToken tokenSeed, string[] criterias)
         {
             // if override and higher version - new preferred.
-            bool fOverride = tokenSeed.MatchesAttributes (criterias);
+            bool fOverride = tokenSeed.MatchesAttributes(criterias);
 
             if (fOverride)
             {
                 bool fDidCompare;
-                int lRes = CompareTokenVersions (tokenSeed, token, out fDidCompare);
+                int lRes = CompareTokenVersions(tokenSeed, token, out fDidCompare);
 
                 if (fDidCompare && lRes > 0)
                 {
@@ -389,7 +389,7 @@ namespace System.Speech.Internal.ObjectTokens
         private const string _defaultTokenIdValueName = "DefaultTokenId";
         //private const string g_szDefaultDefaultTokenIdValueName = "DefaultDefaultTokenId";
 
-        private static readonly string [] asVersionDefault = new string [] { "VersionDefault" };
+        private static readonly string[] s_asVersionDefault = new string[] { "VersionDefault" };
 
         #endregion
     }

@@ -17,16 +17,16 @@ namespace System.Speech.Synthesis.TtsEngine
 
     #region Public Enums
 
-    [ComImport, Guid ("A74D7C8E-4CC5-4F2F-A6EB-804DEE18500E"), InterfaceType (ComInterfaceType.InterfaceIsIUnknown)]
+    [ComImport, Guid("A74D7C8E-4CC5-4F2F-A6EB-804DEE18500E"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
     internal interface ITtsEngine
     {
         [PreserveSig]
-        void Speak (SPEAKFLAGS dwSpeakFlags, ref Guid rguidFormatId, IntPtr pWaveFormatEx, IntPtr pTextFragList, IntPtr pOutputSite);
+        void Speak(SPEAKFLAGS dwSpeakFlags, ref Guid rguidFormatId, IntPtr pWaveFormatEx, IntPtr pTextFragList, IntPtr pOutputSite);
         [PreserveSig]
-        void GetOutputFormat (ref Guid pTargetFmtId, IntPtr pTargetWaveFormatEx, out Guid pOutputFormatId, out IntPtr ppCoMemOutputWaveFormatEx);
+        void GetOutputFormat(ref Guid pTargetFmtId, IntPtr pTargetWaveFormatEx, out Guid pOutputFormatId, out IntPtr ppCoMemOutputWaveFormatEx);
     }
 
-    [StructLayout (LayoutKind.Sequential)]
+    [StructLayout(LayoutKind.Sequential)]
     internal class SPVTEXTFRAG
     {
         public IntPtr pNext;
@@ -48,11 +48,11 @@ namespace System.Speech.Synthesis.TtsEngine
         SPVST_SENTENCE = 1,
     }
 
-// Disable warning CS0649 in this block
+    // Disable warning CS0649 in this block
 #pragma warning disable 649
 
     [ComConversionLossAttribute]
-    [TypeLibTypeAttribute (16)]
+    [TypeLibTypeAttribute(16)]
     internal struct SPVSTATE
     {
         //--- Action
@@ -71,7 +71,7 @@ namespace System.Speech.Synthesis.TtsEngine
         public SPVCONTEXT Context;
     }
 
-    [System.Runtime.InteropServices.TypeLibTypeAttribute (16)]
+    [System.Runtime.InteropServices.TypeLibTypeAttribute(16)]
     internal struct SPVCONTEXT
     {
         //[MarshalAs (UnmanagedType.LPWStr)]
@@ -82,7 +82,7 @@ namespace System.Speech.Synthesis.TtsEngine
         public IntPtr pAfter;
     }
 
-    [System.Runtime.InteropServices.TypeLibTypeAttribute (16)]
+    [System.Runtime.InteropServices.TypeLibTypeAttribute(16)]
     internal struct SPVPITCH
     {
         public int MiddleAdj;
@@ -91,7 +91,7 @@ namespace System.Speech.Synthesis.TtsEngine
 
     internal static class SAPIGuids
     {
-        static internal readonly Guid SPDFID_WaveFormatEx = new Guid ("C31ADBAE-527F-4ff5-A230-F62BB61FF70C");
+        static internal readonly Guid SPDFID_WaveFormatEx = new Guid("C31ADBAE-527F-4ff5-A230-F62BB61FF70C");
     }
 
 #pragma warning restore 649
@@ -121,7 +121,7 @@ namespace System.Speech.Synthesis.TtsEngine
         SPVES_VOLUME = 8
     }
 
-    [System.Runtime.InteropServices.TypeLibTypeAttribute (16)]
+    [System.Runtime.InteropServices.TypeLibTypeAttribute(16)]
     internal enum SPVACTIONS
     {
         SPVA_Speak = 0,
@@ -133,7 +133,7 @@ namespace System.Speech.Synthesis.TtsEngine
         SPVA_ParseUnknownTag = 6,
     }
 
-    [System.Runtime.InteropServices.TypeLibTypeAttribute (16)]
+    [System.Runtime.InteropServices.TypeLibTypeAttribute(16)]
     internal enum SPPARTOFSPEECH
     {
         //--- SAPI5 public POS category values (bits 28-31)

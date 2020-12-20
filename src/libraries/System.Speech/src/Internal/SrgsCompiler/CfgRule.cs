@@ -19,14 +19,14 @@ namespace System.Speech.Internal.SrgsCompiler
 
         #region Constructors
 
-        internal CfgRule (int id, int nameOffset, uint flag)
+        internal CfgRule(int id, int nameOffset, uint flag)
         {
             _flag = flag;
             _nameOffset = nameOffset;
             _id = id;
         }
 
-        internal CfgRule (int id, int nameOffset, SPCFGRULEATTRIBUTES attributes)
+        internal CfgRule(int id, int nameOffset, SPCFGRULEATTRIBUTES attributes)
         {
             _flag = 0;
             _nameOffset = nameOffset;
@@ -63,17 +63,17 @@ namespace System.Speech.Internal.SrgsCompiler
                 }
                 else
                 {
-                    _flag &= ~(uint) 0x0001;
+                    _flag &= ~(uint)0x0001;
                 }
             }
         }
 
         internal bool DefaultActive
         {
-//			get
-//			{
-//				return ((_flag & 0x0002) != 0);
-//			}
+            //			get
+            //			{
+            //				return ((_flag & 0x0002) != 0);
+            //			}
             set
             {
                 if (value)
@@ -82,17 +82,17 @@ namespace System.Speech.Internal.SrgsCompiler
                 }
                 else
                 {
-                    _flag &= ~(uint) 0x0002;
+                    _flag &= ~(uint)0x0002;
                 }
             }
         }
 
         internal bool PropRule
         {
-//			get
-//			{
-//				return ((_flag & 0x0004) != 0);
-//			}
+            //			get
+            //			{
+            //				return ((_flag & 0x0004) != 0);
+            //			}
             set
             {
                 if (value)
@@ -101,7 +101,7 @@ namespace System.Speech.Internal.SrgsCompiler
                 }
                 else
                 {
-                    _flag &= ~(uint) 0x0004;
+                    _flag &= ~(uint)0x0004;
                 }
             }
         }
@@ -120,7 +120,7 @@ namespace System.Speech.Internal.SrgsCompiler
                 }
                 else
                 {
-                    _flag &= ~(uint) 0x0008;
+                    _flag &= ~(uint)0x0008;
                 }
             }
         }
@@ -139,7 +139,7 @@ namespace System.Speech.Internal.SrgsCompiler
                 }
                 else
                 {
-                    _flag &= ~(uint) 0x0010;
+                    _flag &= ~(uint)0x0010;
                 }
             }
         }
@@ -150,17 +150,17 @@ namespace System.Speech.Internal.SrgsCompiler
             {
                 return ((_flag & 0x0020) != 0);
             }
-//			set
-//			{
-//				if (value)
-//				{
-//					_flag |= 0x0020;
-//				}
-//				else
-//				{
-//					_flag &= ~(uint) 0x0020;
-//				}
-//			}
+            //			set
+            //			{
+            //				if (value)
+            //				{
+            //					_flag |= 0x0020;
+            //				}
+            //				else
+            //				{
+            //					_flag &= ~(uint) 0x0020;
+            //				}
+            //			}
         }
 
         internal bool Dynamic
@@ -177,7 +177,7 @@ namespace System.Speech.Internal.SrgsCompiler
                 }
                 else
                 {
-                    _flag &= ~(uint) 0x0040;
+                    _flag &= ~(uint)0x0040;
                 }
             }
         }
@@ -196,7 +196,7 @@ namespace System.Speech.Internal.SrgsCompiler
                 }
                 else
                 {
-                    _flag &= ~(uint) 0x0080;
+                    _flag &= ~(uint)0x0080;
                 }
             }
         }
@@ -211,39 +211,39 @@ namespace System.Speech.Internal.SrgsCompiler
             {
                 if (value > 0x3FFFFF)
                 {
-                    XmlParser.ThrowSrgsException (SRID.TooManyArcs);
+                    XmlParser.ThrowSrgsException(SRID.TooManyArcs);
                 }
 
-                _flag &= ~((uint) 0x3FFFFF << 8);
+                _flag &= ~((uint)0x3FFFFF << 8);
                 _flag |= value << 8;
             }
         }
 
-//		internal bool Reserved
-//		{
-//			get
-//			{
-//				return ((_flag & 0x40000000) != 0);
-//			}
-//			set
-//			{
-//				if (value)
-//				{
-//					_flag |= 0x40000000;
-//				}
-//				else
-//				{
-//					_flag &= ~(uint) 0x40000000;
-//				}
-//			}
-//		}
+        //		internal bool Reserved
+        //		{
+        //			get
+        //			{
+        //				return ((_flag & 0x40000000) != 0);
+        //			}
+        //			set
+        //			{
+        //				if (value)
+        //				{
+        //					_flag |= 0x40000000;
+        //				}
+        //				else
+        //				{
+        //					_flag &= ~(uint) 0x40000000;
+        //				}
+        //			}
+        //		}
 
         internal bool DirtyRule
         {
-//			get
-//			{
-//				return ((_flag & 0x80000000) != 0);
-//			}
+            //			get
+            //			{
+            //				return ((_flag & 0x80000000) != 0);
+            //			}
             set
             {
                 if (value)

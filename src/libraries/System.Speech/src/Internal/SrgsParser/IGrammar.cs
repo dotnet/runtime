@@ -13,7 +13,7 @@ namespace System.Speech.Internal.SrgsParser
     /// </summary>
     internal interface IGrammar : IElement
     {
-        IRule CreateRule (string id, RulePublic publicRule, RuleDynamic dynamic, bool hasSCript);
+        IRule CreateRule(string id, RulePublic publicRule, RuleDynamic dynamic, bool hasSCript);
 
         string Root { set; get; }
         System.Speech.Recognition.SrgsGrammar.SrgsTagFormat TagFormat { set; get; }

@@ -24,8 +24,8 @@ namespace System.Speech.Internal.Synthesis
         /// respect to the sample size.</param>
         /// <param name="cbwh">Size, in bytes, of the WaveHeader structure.</param>
         /// <returns>MMSYSERR</returns>
-        [DllImport ("winmm.dll")]
-        internal static extern MMSYSERR waveOutPrepareHeader (IntPtr hwo, IntPtr pwh, int cbwh);
+        [DllImport("winmm.dll")]
+        internal static extern MMSYSERR waveOutPrepareHeader(IntPtr hwo, IntPtr pwh, int cbwh);
 
         /// <summary>
         /// This function sends a data block to the specified waveform output device.
@@ -35,8 +35,8 @@ namespace System.Speech.Internal.Synthesis
         /// about the data block.</param>
         /// <param name="cbwh">Size, in bytes, of the WaveHeader structure.</param>
         /// <returns>MMSYSERR</returns>
-        [DllImport ("winmm.dll")]
-        internal static extern MMSYSERR waveOutWrite (IntPtr hwo, IntPtr pwh, int cbwh);
+        [DllImport("winmm.dll")]
+        internal static extern MMSYSERR waveOutWrite(IntPtr hwo, IntPtr pwh, int cbwh);
 
         /// <summary>
         /// This function cleans up the preparation performed by waveOutPrepareHeader.
@@ -48,8 +48,8 @@ namespace System.Speech.Internal.Synthesis
         /// to be cleaned up.</param>
         /// <param name="cbwh">Size, in bytes, of the WaveHeader structure.</param>
         /// <returns>MMSYSERR</returns>
-        [DllImport ("winmm.dll")]
-        internal static extern MMSYSERR waveOutUnprepareHeader (IntPtr hwo, IntPtr pwh, int cbwh);
+        [DllImport("winmm.dll")]
+        internal static extern MMSYSERR waveOutUnprepareHeader(IntPtr hwo, IntPtr pwh, int cbwh);
 
         /// <summary>
         /// This function opens a specified waveform output device for playback.
@@ -74,8 +74,8 @@ namespace System.Speech.Internal.Synthesis
         /// mechanism.</param>
         /// <param name="fdwOpen">Flags for opening the device.</param>
         /// <returns>MMSYSERR</returns>
-        [DllImport ("winmm.dll")]
-        internal static extern MMSYSERR waveOutOpen (ref IntPtr phwo, int uDeviceID, byte [] pwfx, WaveOutProc dwCallback, IntPtr dwInstance, uint fdwOpen);
+        [DllImport("winmm.dll")]
+        internal static extern MMSYSERR waveOutOpen(ref IntPtr phwo, int uDeviceID, byte[] pwfx, WaveOutProc dwCallback, IntPtr dwInstance, uint fdwOpen);
 
         /// <summary>
         /// This function closes the specified waveform output device.
@@ -83,8 +83,8 @@ namespace System.Speech.Internal.Synthesis
         /// <param name="hwo">Handle to the waveform-audio output device. If the function
         /// succeeds, the handle is no longer valid after this call.</param>
         /// <returns>MMSYSERR</returns>
-        [DllImport ("winmm.dll")]
-        internal static extern MMSYSERR waveOutClose (IntPtr hwo);
+        [DllImport("winmm.dll")]
+        internal static extern MMSYSERR waveOutClose(IntPtr hwo);
 
         /// <summary>
         /// This function stops playback on a specified waveform output device and
@@ -93,8 +93,8 @@ namespace System.Speech.Internal.Synthesis
         /// </summary>
         /// <param name="hwo">Handle to the waveform-audio output device.</param>
         /// <returns>MMSYSERR</returns>
-        [DllImport ("winmm.dll")]
-        internal static extern MMSYSERR waveOutReset (IntPtr hwo);
+        [DllImport("winmm.dll")]
+        internal static extern MMSYSERR waveOutReset(IntPtr hwo);
 
         /// <summary>
         /// This function pauses playback on a specified waveform output device. The
@@ -103,30 +103,30 @@ namespace System.Speech.Internal.Synthesis
         /// </summary>
         /// <param name="hwo">Handle to the waveform-audio output device.</param>
         /// <returns>MMSYSERR</returns>
-        [DllImport ("winmm.dll")]
-        internal static extern MMSYSERR waveOutPause (IntPtr hwo);
+        [DllImport("winmm.dll")]
+        internal static extern MMSYSERR waveOutPause(IntPtr hwo);
 
         /// <summary>
         /// This function restarts a paused waveform output device.
         /// </summary>
         /// <param name="hwo">Handle to the waveform-audio output device.</param>
         /// <returns>MMSYSERR</returns>
-        [DllImport ("winmm.dll")]
-        internal static extern MMSYSERR waveOutRestart (IntPtr hwo);
+        [DllImport("winmm.dll")]
+        internal static extern MMSYSERR waveOutRestart(IntPtr hwo);
 
-        internal delegate void WaveOutProc (IntPtr hwo, MM_MSG uMsg, IntPtr dwInstance, IntPtr dwParam1, IntPtr dwParam2);
+        internal delegate void WaveOutProc(IntPtr hwo, MM_MSG uMsg, IntPtr dwInstance, IntPtr dwParam1, IntPtr dwParam2);
 
         internal struct WAVEOUTCAPS
         {
-            UInt16 wMid;
-            UInt16 wPid;
-            UInt32 vDriverVersion;
-            [MarshalAs (UnmanagedType.ByValTStr, SizeConst = 32)]
+            private UInt16 wMid;
+            private UInt16 wPid;
+            private UInt32 vDriverVersion;
+            [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 32)]
             internal string szPname;
-            UInt32 dwFormats;
-            UInt16 wChannels;
-            UInt16 wReserved1;
-            UInt16 dwSupport;
+            private UInt32 dwFormats;
+            private UInt16 wChannels;
+            private UInt16 wReserved1;
+            private UInt16 dwSupport;
         }
 
         /// <summary>
@@ -140,8 +140,8 @@ namespace System.Speech.Internal.Synthesis
         /// information about the capabilities of the device.</param>
         /// <param name="cbwoc">Size, in bytes, of the WAVEOUTCAPS structure.</param>
         /// <returns>MMSYSERR</returns>
-        [DllImport ("winmm.dll")]
-        internal static extern MMSYSERR waveOutGetDevCaps (IntPtr uDeviceID, ref WAVEOUTCAPS caps, int cbwoc);
+        [DllImport("winmm.dll")]
+        internal static extern MMSYSERR waveOutGetDevCaps(IntPtr uDeviceID, ref WAVEOUTCAPS caps, int cbwoc);
 
         /// <summary>
         /// This function retrieves the number of waveform output devices present
@@ -149,8 +149,8 @@ namespace System.Speech.Internal.Synthesis
         /// </summary>
         /// <returns>The number of devices indicates success. Zero indicates that
         /// no devices are present or that an error occurred.</returns>
-        [DllImport ("winmm.dll")]
-        internal static extern int waveOutGetNumDevs ();
+        [DllImport("winmm.dll")]
+        internal static extern int waveOutGetNumDevs();
 
         // Used by MMTIME.wType
         internal const uint TIME_MS = 0x0001;
@@ -162,7 +162,6 @@ namespace System.Speech.Internal.Synthesis
         internal const uint CALLBACK_WINDOW = 0x10000;
         internal const uint CALLBACK_NULL = 0x00000000;
         internal const uint CALLBACK_FUNCTION = 0x00030000;
-
     }
     //*******************************************************************
     //
@@ -175,7 +174,7 @@ namespace System.Speech.Internal.Synthesis
     /// <summary>
     /// MM WAVEHDR structure
     /// </summary>
-    [StructLayout (LayoutKind.Sequential)]
+    [StructLayout(LayoutKind.Sequential)]
     internal struct WAVEHDR
     {
         internal IntPtr lpData; // disposed by the GCHandle

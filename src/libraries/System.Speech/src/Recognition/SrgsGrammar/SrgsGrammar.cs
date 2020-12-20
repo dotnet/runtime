@@ -33,9 +33,9 @@ namespace System.Speech.Recognition.SrgsGrammar
         /// <summary>
         /// Initializes a new instance of the Grammar class.
         /// </summary>
-        internal SrgsGrammar ()
+        internal SrgsGrammar()
         {
-            _rules = new SrgsRulesCollection ();
+            _rules = new SrgsRulesCollection();
         }
 
         #endregion
@@ -52,7 +52,7 @@ namespace System.Speech.Recognition.SrgsGrammar
         /// Write the XML fragment describing the object.
         /// |/summary|
         /// |param name="writer"|XmlWriter to which to write the XML fragment.|/param|
-        internal void WriteSrgs (XmlWriter writer)
+        internal void WriteSrgs(XmlWriter writer)
         {
             // Write <grammar 
             //          version="1.0" 
@@ -62,26 +62,26 @@ namespace System.Speech.Recognition.SrgsGrammar
             //          xmlns:sapi="http://schemas.microsoft.com/Speech/2002/06/SRGSExtensions" 
             //          root="myRule"
             //          xml:base="http://www.example.com/base-file-path">
-            writer.WriteStartElement ("grammar", XmlParser.srgsNamespace);
-            writer.WriteAttributeString ("xml", "lang", null, _culture.ToString ());
+            writer.WriteStartElement("grammar", XmlParser.srgsNamespace);
+            writer.WriteAttributeString("xml", "lang", null, _culture.ToString());
 
             if (_root != null)
             {
-                writer.WriteAttributeString ("root", _root.Id);
+                writer.WriteAttributeString("root", _root.Id);
             }
 
             // Write the attributes for strongly typed grammars
-            WriteSTGAttributes (writer);
+            WriteSTGAttributes(writer);
             if (_isModeSet)
             {
                 switch (_mode)
                 {
                     case SrgsGrammarMode.Voice:
-                        writer.WriteAttributeString ("mode", "voice");
+                        writer.WriteAttributeString("mode", "voice");
                         break;
 
                     case SrgsGrammarMode.Dtmf:
-                        writer.WriteAttributeString ("mode", "dtmf");
+                        writer.WriteAttributeString("mode", "dtmf");
                         break;
                 }
             }
@@ -107,13 +107,13 @@ namespace System.Speech.Recognition.SrgsGrammar
                     break;
 
                 default:
-                    System.Diagnostics.Debug.Assert (false, "Unknown Tag Format!!!");
+                    System.Diagnostics.Debug.Assert(false, "Unknown Tag Format!!!");
                     break;
             }
 
             if (tagFormat != null)
             {
-                writer.WriteAttributeString ("tag-format", tagFormat);
+                writer.WriteAttributeString("tag-format", tagFormat);
             }
 
             // Write the Alphabet type if not SAPI
@@ -121,45 +121,45 @@ namespace System.Speech.Recognition.SrgsGrammar
             {
                 string alphabet = _phoneticAlphabet == SrgsPhoneticAlphabet.Ipa ? "ipa" : _phoneticAlphabet == SrgsPhoneticAlphabet.Ups ? "x-microsoft-ups" : "x-microsoft-sapi";
 
-                writer.WriteAttributeString ("sapi", "alphabet", XmlParser.sapiNamespace, alphabet);
+                writer.WriteAttributeString("sapi", "alphabet", XmlParser.sapiNamespace, alphabet);
             }
 
             if (_xmlBase != null)
             {
-                writer.WriteAttributeString ("xml:base", _xmlBase.ToString ());
+                writer.WriteAttributeString("xml:base", _xmlBase.ToString());
             }
 
-            writer.WriteAttributeString ("version", "1.0");
+            writer.WriteAttributeString("version", "1.0");
 
-            writer.WriteAttributeString ("xmlns", XmlParser.srgsNamespace);
+            writer.WriteAttributeString("xmlns", XmlParser.srgsNamespace);
 
             if (_isSapiExtensionUsed)
             {
-                writer.WriteAttributeString ("xmlns", "sapi", null, XmlParser.sapiNamespace);
+                writer.WriteAttributeString("xmlns", "sapi", null, XmlParser.sapiNamespace);
             }
 
             foreach (SrgsRule rule in _rules)
             {
                 // Validate child _rules
-                rule.Validate (this);
+                rule.Validate(this);
             }
 
             // Write the tag elements if any
             foreach (string tag in _globalTags)
             {
-                writer.WriteElementString ("tag", tag);
+                writer.WriteElementString("tag", tag);
             }
 
             //Write the the references to the referenced assemblies and the various scripts
-            WriteGrammarElements (writer);
+            WriteGrammarElements(writer);
 
-            writer.WriteEndElement ();
+            writer.WriteEndElement();
         }
 
         /// |summary|
         /// Validate the SRGS element.
         /// |/summary|
-        internal void Validate ()
+        internal void Validate()
         {
             // Validation set the pronunciation so reset it to zero
             HasPronunciation = HasSapiExtension = false;
@@ -168,7 +168,7 @@ namespace System.Speech.Recognition.SrgsGrammar
             foreach (SrgsRule rule in _rules)
             {
                 // Validate child _rules
-                rule.Validate (this);
+                rule.Validate(this);
             }
 
             // Initial values for ContainsCOde and SapiExtensionUsed.
@@ -185,9 +185,9 @@ namespace System.Speech.Recognition.SrgsGrammar
             // Validate root rule reference
             if (_root != null)
             {
-                if (!_rules.Contains (_root))
+                if (!_rules.Contains(_root))
                 {
-                    XmlParser.ThrowSrgsException (SRID.RootNotDefined, _root.Id);
+                    XmlParser.ThrowSrgsException(SRID.RootNotDefined, _root.Id);
                 }
             }
 
@@ -207,23 +207,23 @@ namespace System.Speech.Recognition.SrgsGrammar
                 // SAPI semantics only for .Net Semantics
                 if (_tagFormat != SrgsTagFormat.KeyValuePairs)
                 {
-                    XmlParser.ThrowSrgsException (SRID.InvalidSemanticProcessingType);
+                    XmlParser.ThrowSrgsException(SRID.InvalidSemanticProcessingType);
                 }
             }
         }
 
-        IRule IGrammar.CreateRule (string id, RulePublic publicRule, RuleDynamic dynamic, bool hasScript)
+        IRule IGrammar.CreateRule(string id, RulePublic publicRule, RuleDynamic dynamic, bool hasScript)
         {
-            SrgsRule rule = new SrgsRule (id);
+            SrgsRule rule = new SrgsRule(id);
             if (publicRule != RulePublic.NotSet)
             {
                 rule.Scope = publicRule == RulePublic.True ? SrgsRuleScope.Public : SrgsRuleScope.Private;
             }
             rule.Dynamic = dynamic;
-            return (IRule) rule;
+            return (IRule)rule;
         }
 
-        void IElement.PostParse (IElement parent)
+        void IElement.PostParse(IElement parent)
         {
             // Check that the root rule is defined
             if (_sRoot != null)
@@ -241,32 +241,32 @@ namespace System.Speech.Recognition.SrgsGrammar
                 if (!found)
                 {
                     // "Root rule ""%s"" is undefined."
-                    XmlParser.ThrowSrgsException (SRID.RootNotDefined, _sRoot);
+                    XmlParser.ThrowSrgsException(SRID.RootNotDefined, _sRoot);
                 }
             }
 
             // Resolve the references to the scripts
             foreach (XmlParser.ForwardReference script in _scriptsForwardReference)
             {
-                SrgsRule rule = Rules [script._name];
+                SrgsRule rule = Rules[script._name];
                 if (rule != null)
                 {
                     rule.Script = rule.Script + script._value;
                 }
                 else
                 {
-                    XmlParser.ThrowSrgsException (SRID.InvalidScriptDefinition);
+                    XmlParser.ThrowSrgsException(SRID.InvalidScriptDefinition);
                 }
             }
             // Validate the whole grammar
-            Validate ();
+            Validate();
         }
 
 
 #pragma warning disable 56507 // check for null or empty strings
 
         // Add a script to this grammar or to a rule
-        internal void AddScript (string rule, string code)
+        internal void AddScript(string rule, string code)
         {
             if (rule == null)
             {
@@ -274,7 +274,7 @@ namespace System.Speech.Recognition.SrgsGrammar
             }
             else
             {
-                _scriptsForwardReference.Add (new XmlParser.ForwardReference (rule, code));
+                _scriptsForwardReference.Add(new XmlParser.ForwardReference(rule, code));
             }
         }
 
@@ -304,7 +304,6 @@ namespace System.Speech.Recognition.SrgsGrammar
             {
                 return _sRoot;
             }
-
         }
 
         /// |summary|
@@ -336,7 +335,7 @@ namespace System.Speech.Recognition.SrgsGrammar
             }
             set
             {
-                Helpers.ThrowIfNull (value, "value");
+                Helpers.ThrowIfNull(value, "value");
 
                 _culture = value;
             }
@@ -365,11 +364,11 @@ namespace System.Speech.Recognition.SrgsGrammar
         {
             get
             {
-                return (AlphabetType) _phoneticAlphabet;
+                return (AlphabetType)_phoneticAlphabet;
             }
             set
             {
-                _phoneticAlphabet = (SrgsPhoneticAlphabet) value;
+                _phoneticAlphabet = (SrgsPhoneticAlphabet)value;
             }
         }
 
@@ -456,7 +455,7 @@ namespace System.Speech.Recognition.SrgsGrammar
         {
             set
             {
-                throw new InvalidOperationException ();
+                throw new InvalidOperationException();
             }
             get
             {
@@ -486,7 +485,7 @@ namespace System.Speech.Recognition.SrgsGrammar
         {
             set
             {
-                Helpers.ThrowIfEmptyOrNull (value, "value");
+                Helpers.ThrowIfEmptyOrNull(value, "value");
                 _script = value;
             }
             get
@@ -502,7 +501,7 @@ namespace System.Speech.Recognition.SrgsGrammar
         {
             set
             {
-                throw new InvalidOperationException ();
+                throw new InvalidOperationException();
             }
             get
             {
@@ -517,7 +516,7 @@ namespace System.Speech.Recognition.SrgsGrammar
         {
             set
             {
-                throw new InvalidOperationException ();
+                throw new InvalidOperationException();
             }
             get
             {
@@ -600,78 +599,77 @@ namespace System.Speech.Recognition.SrgsGrammar
         /// Write the attributes of the grammar element for strongly typed grammars
         /// </summary>
         /// <param name="writer"></param>
-        private void WriteSTGAttributes (XmlWriter writer)
+        private void WriteSTGAttributes(XmlWriter writer)
         {
             // Write the 'language' attribute
             if (_language != null)
             {
-                writer.WriteAttributeString ("sapi", "language", XmlParser.sapiNamespace, _language);
+                writer.WriteAttributeString("sapi", "language", XmlParser.sapiNamespace, _language);
             }
 
             // Write the 'namespace' attribute
             if (_namespace != null)
             {
-                writer.WriteAttributeString ("sapi", "namespace", XmlParser.sapiNamespace, _namespace);
+                writer.WriteAttributeString("sapi", "namespace", XmlParser.sapiNamespace, _namespace);
             }
 
             // Write the 'codebehind' attribute
             foreach (string sFile in _codebehind)
             {
-                if (!string.IsNullOrEmpty (sFile))
+                if (!string.IsNullOrEmpty(sFile))
                 {
-                    writer.WriteAttributeString ("sapi", "codebehind", XmlParser.sapiNamespace, sFile);
+                    writer.WriteAttributeString("sapi", "codebehind", XmlParser.sapiNamespace, sFile);
                 }
             }
 
             // Write the 'debug' attribute
             if (_fDebug)
             {
-                writer.WriteAttributeString ("sapi", "debug", XmlParser.sapiNamespace, "True");
+                writer.WriteAttributeString("sapi", "debug", XmlParser.sapiNamespace, "True");
             }
-
         }
 
         /// <summary>
         /// Write the the references to the referenced assemblies and the various scripts
         /// </summary>
         /// <param name="writer"></param>
-        private void WriteGrammarElements (XmlWriter writer)
+        private void WriteGrammarElements(XmlWriter writer)
         {
             // Writeall the <assmblyReference> entries
             foreach (string sAssembly in _assemblyReferences)
             {
-                writer.WriteStartElement ("sapi", "assemblyReference", XmlParser.sapiNamespace);
-                writer.WriteAttributeString ("sapi", "assembly", XmlParser.sapiNamespace, sAssembly);
-                writer.WriteEndElement ();
+                writer.WriteStartElement("sapi", "assemblyReference", XmlParser.sapiNamespace);
+                writer.WriteAttributeString("sapi", "assembly", XmlParser.sapiNamespace, sAssembly);
+                writer.WriteEndElement();
             }
 
             // Writeall the <assmblyReference> entries
             foreach (string sNamespace in _usings)
             {
-                if (!string.IsNullOrEmpty (sNamespace))
+                if (!string.IsNullOrEmpty(sNamespace))
                 {
-                    writer.WriteStartElement ("sapi", "importNamespace", XmlParser.sapiNamespace);
-                    writer.WriteAttributeString ("sapi", "namespace", XmlParser.sapiNamespace, sNamespace);
-                    writer.WriteEndElement ();
+                    writer.WriteStartElement("sapi", "importNamespace", XmlParser.sapiNamespace);
+                    writer.WriteAttributeString("sapi", "namespace", XmlParser.sapiNamespace, sNamespace);
+                    writer.WriteEndElement();
                 }
             }
             // Then write the rules
-            WriteRules (writer);
+            WriteRules(writer);
 
             // At the very bottom write the scripts shared by all the rules
-            WriteGlobalScripts (writer);
+            WriteGlobalScripts(writer);
         }
 
         /// <summary>
         /// Write all Rules.
         /// </summary>
         /// <param name="writer"></param>
-        private void WriteRules (XmlWriter writer)
+        private void WriteRules(XmlWriter writer)
         {
             // Write <grammar> body and footer.
             foreach (SrgsRule rule in _rules)
             {
-                rule.WriteSrgs (writer);
+                rule.WriteSrgs(writer);
             }
         }
 
@@ -679,13 +677,13 @@ namespace System.Speech.Recognition.SrgsGrammar
         /// Write the script that are global to this grammar
         /// </summary>
         /// <param name="writer"></param>
-        private void WriteGlobalScripts (XmlWriter writer)
+        private void WriteGlobalScripts(XmlWriter writer)
         {
             if (_script.Length > 0)
             {
-                writer.WriteStartElement ("sapi", "script", XmlParser.sapiNamespace);
-                writer.WriteCData (_script);
-                writer.WriteEndElement ();
+                writer.WriteStartElement("sapi", "script", XmlParser.sapiNamespace);
+                writer.WriteCData(_script);
+                writer.WriteEndElement();
             }
         }
         #endregion
@@ -716,7 +714,7 @@ namespace System.Speech.Recognition.SrgsGrammar
 
         private SrgsTagFormat _tagFormat = SrgsTagFormat.Default;
 
-        private Collection<string> _globalTags = new Collection<string> ();
+        private Collection<string> _globalTags = new Collection<string>();
 
         private bool _isModeSet;
 
@@ -730,7 +728,7 @@ namespace System.Speech.Recognition.SrgsGrammar
         private string _language;
 
         // .Net Language for this grammar
-        private Collection<string> _codebehind = new Collection<string> ();
+        private Collection<string> _codebehind = new Collection<string>();
 
         // namespace for the code behind
         private string _namespace;
@@ -742,13 +740,13 @@ namespace System.Speech.Recognition.SrgsGrammar
         private string _script = string.Empty;
 
         // .Net language script
-        private List<XmlParser.ForwardReference> _scriptsForwardReference = new List<XmlParser.ForwardReference> ();
+        private List<XmlParser.ForwardReference> _scriptsForwardReference = new List<XmlParser.ForwardReference>();
 
         // .Net Namespaces to import
-        private Collection<string> _usings = new Collection<string> ();
+        private Collection<string> _usings = new Collection<string>();
 
         // .Net Namespaces to import
-        private Collection<string> _assemblyReferences = new Collection<string> ();
+        private Collection<string> _assemblyReferences = new Collection<string>();
         #endregion
 
     }

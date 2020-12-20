@@ -13,19 +13,19 @@ using System.Threading;
 
 namespace System.Speech.Internal.Synthesis
 {
-    abstract class ITtsEngineProxy
+    internal abstract class ITtsEngineProxy
     {
-        internal ITtsEngineProxy (int lcid)
+        internal ITtsEngineProxy(int lcid)
         {
-            _alphabetConverter = new AlphabetConverter (lcid);
+            _alphabetConverter = new AlphabetConverter(lcid);
         }
 
-        abstract internal IntPtr GetOutputFormat (IntPtr targetFormat);
-        abstract internal void AddLexicon (Uri lexicon, string mediaType);
-        abstract internal void RemoveLexicon (Uri lexicon);
-        abstract internal void Speak (List<TextFragment> frags, byte [] wfx);
-        abstract internal void ReleaseInterface ();
-        abstract internal char [] ConvertPhonemes (char [] phones, AlphabetType alphabet);
+        abstract internal IntPtr GetOutputFormat(IntPtr targetFormat);
+        abstract internal void AddLexicon(Uri lexicon, string mediaType);
+        abstract internal void RemoveLexicon(Uri lexicon);
+        abstract internal void Speak(List<TextFragment> frags, byte[] wfx);
+        abstract internal void ReleaseInterface();
+        abstract internal char[] ConvertPhonemes(char[] phones, AlphabetType alphabet);
         abstract internal AlphabetType EngineAlphabet { get; }
         internal AlphabetConverter AlphabetConverter { get { return _alphabetConverter; } }
 
@@ -43,8 +43,8 @@ namespace System.Speech.Internal.Synthesis
 
         #region Constructors
 
-        internal TtsProxySsml (TtsEngineSsml ssmlEngine, ITtsEngineSite site, int lcid)
-            : base (lcid)
+        internal TtsProxySsml(TtsEngineSsml ssmlEngine, ITtsEngineSite site, int lcid)
+            : base(lcid)
         {
             _ssmlEngine = ssmlEngine;
             _site = site;
@@ -60,36 +60,36 @@ namespace System.Speech.Internal.Synthesis
 
         #region Internal Methods
 
-        override internal IntPtr GetOutputFormat (IntPtr targetFormat)
+        override internal IntPtr GetOutputFormat(IntPtr targetFormat)
         {
-            return _ssmlEngine.GetOutputFormat (SpeakOutputFormat.WaveFormat, targetFormat);
+            return _ssmlEngine.GetOutputFormat(SpeakOutputFormat.WaveFormat, targetFormat);
         }
 
-        override internal void AddLexicon (Uri lexicon, string mediaType)
+        override internal void AddLexicon(Uri lexicon, string mediaType)
         {
-            _ssmlEngine.AddLexicon (lexicon, mediaType, _site);
+            _ssmlEngine.AddLexicon(lexicon, mediaType, _site);
         }
 
-        override internal void RemoveLexicon (Uri lexicon)
+        override internal void RemoveLexicon(Uri lexicon)
         {
-            _ssmlEngine.RemoveLexicon (lexicon, _site);
+            _ssmlEngine.RemoveLexicon(lexicon, _site);
         }
 
-        override internal void Speak (List<TextFragment> frags, byte [] wfx)
+        override internal void Speak(List<TextFragment> frags, byte[] wfx)
         {
-            GCHandle gc = GCHandle.Alloc (wfx, GCHandleType.Pinned);
+            GCHandle gc = GCHandle.Alloc(wfx, GCHandleType.Pinned);
             try
             {
-                IntPtr waveFormat = gc.AddrOfPinnedObject ();
-                _ssmlEngine.Speak (frags.ToArray (), waveFormat, _site);
+                IntPtr waveFormat = gc.AddrOfPinnedObject();
+                _ssmlEngine.Speak(frags.ToArray(), waveFormat, _site);
             }
             finally
             {
-                gc.Free ();
+                gc.Free();
             }
         }
 
-        override internal char [] ConvertPhonemes (char [] phones, AlphabetType alphabet)
+        override internal char[] ConvertPhonemes(char[] phones, AlphabetType alphabet)
         {
             if (alphabet == AlphabetType.Ipa)
             {
@@ -97,7 +97,7 @@ namespace System.Speech.Internal.Synthesis
             }
             else
             {
-                return _alphabetConverter.SapiToIpa (phones);
+                return _alphabetConverter.SapiToIpa(phones);
             }
         }
 
@@ -112,7 +112,7 @@ namespace System.Speech.Internal.Synthesis
         /// <summary>
         /// Release the COM interface for COM object
         /// </summary>
-        override internal void ReleaseInterface ()
+        override internal void ReleaseInterface()
         {
         }
 
@@ -146,8 +146,8 @@ namespace System.Speech.Internal.Synthesis
 
         #region Constructors
 
-        internal TtsProxySapi (ITtsEngine sapiEngine, IntPtr iSite, int lcid)
-            : base (lcid)
+        internal TtsProxySapi(ITtsEngine sapiEngine, IntPtr iSite, int lcid)
+            : base(lcid)
         {
             _iSite = iSite;
             _sapiEngine = sapiEngine;
@@ -163,52 +163,51 @@ namespace System.Speech.Internal.Synthesis
 
         #region Internal Methods
 
-        override internal IntPtr GetOutputFormat (IntPtr preferedFormat)
+        override internal IntPtr GetOutputFormat(IntPtr preferedFormat)
         {
             // Initialize TTS Engine
             Guid formatId = SAPIGuids.SPDFID_WaveFormatEx;
-            Guid guidNull = new Guid ();
+            Guid guidNull = new Guid();
             IntPtr coMem = IntPtr.Zero;
 
-            _sapiEngine.GetOutputFormat (ref formatId, preferedFormat, out guidNull, out coMem);
+            _sapiEngine.GetOutputFormat(ref formatId, preferedFormat, out guidNull, out coMem);
             return coMem;
         }
 
-        override internal void AddLexicon (Uri lexicon, string mediaType)
+        override internal void AddLexicon(Uri lexicon, string mediaType)
         {
             // SAPI: Ignore
         }
 
-        override internal void RemoveLexicon (Uri lexicon)
+        override internal void RemoveLexicon(Uri lexicon)
         {
             // SAPI: Ignore
         }
 
-        override internal void Speak (List<TextFragment> frags, byte [] wfx)
+        override internal void Speak(List<TextFragment> frags, byte[] wfx)
         {
-            GCHandle gc = GCHandle.Alloc (wfx, GCHandleType.Pinned);
+            GCHandle gc = GCHandle.Alloc(wfx, GCHandleType.Pinned);
             try
             {
-                IntPtr waveFormat = gc.AddrOfPinnedObject ();
-                GCHandle spvTextFragment = new GCHandle ();
+                IntPtr waveFormat = gc.AddrOfPinnedObject();
+                GCHandle spvTextFragment = new GCHandle();
 
-                if (ConvertTextFrag.ToSapi (frags, ref spvTextFragment))
+                if (ConvertTextFrag.ToSapi(frags, ref spvTextFragment))
                 {
                     Guid formatId = SAPIGuids.SPDFID_WaveFormatEx;
                     try
                     {
-                        _sapiEngine.Speak (0, ref formatId, waveFormat, spvTextFragment.AddrOfPinnedObject (), _iSite);
-
+                        _sapiEngine.Speak(0, ref formatId, waveFormat, spvTextFragment.AddrOfPinnedObject(), _iSite);
                     }
                     finally
                     {
-                        ConvertTextFrag.FreeTextSegment (ref spvTextFragment);
+                        ConvertTextFrag.FreeTextSegment(ref spvTextFragment);
                     }
                 }
             }
             finally
             {
-                gc.Free ();
+                gc.Free();
             }
         }
 
@@ -220,11 +219,11 @@ namespace System.Speech.Internal.Synthesis
             }
         }
 
-        override internal char [] ConvertPhonemes (char [] phones, AlphabetType alphabet)
+        override internal char[] ConvertPhonemes(char[] phones, AlphabetType alphabet)
         {
             if (alphabet == AlphabetType.Ipa)
             {
-                return _alphabetConverter.IpaToSapi (phones);
+                return _alphabetConverter.IpaToSapi(phones);
             }
             else
             {
@@ -235,9 +234,9 @@ namespace System.Speech.Internal.Synthesis
         /// <summary>
         /// Release the COM interface for COM object
         /// </summary>
-        override internal void ReleaseInterface ()
+        override internal void ReleaseInterface()
         {
-            Marshal.ReleaseComObject (_sapiEngine);
+            Marshal.ReleaseComObject(_sapiEngine);
         }
 
 
@@ -257,8 +256,5 @@ namespace System.Speech.Internal.Synthesis
         private IntPtr _iSite;
 
         #endregion
-
     }
-
-    
 }

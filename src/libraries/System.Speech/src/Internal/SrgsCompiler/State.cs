@@ -31,15 +31,15 @@ namespace System.Speech.Internal.SrgsCompiler
 
         #region Constructors
 
-        internal State (Rule rule, uint hState, int iSerialize)
+        internal State(Rule rule, uint hState, int iSerialize)
         {
             _rule = rule;
             _iSerialize = iSerialize;
             _id = hState;
         }
 
-        internal State (Rule rule, uint hState)
-            : this (rule, hState, (int) hState)
+        internal State(Rule rule, uint hState)
+            : this(rule, hState, (int)hState)
         {
         }
 
@@ -55,24 +55,24 @@ namespace System.Speech.Internal.SrgsCompiler
 
         #region IComparable<State> Interface implementation
 
-        int IComparable<State>.CompareTo (State state2)
+        int IComparable<State>.CompareTo(State state2)
         {
-            return Compare (this, state2);
+            return Compare(this, state2);
         }
 
         #endregion
 
-        internal void SerializeStateEntries (StreamMarshaler streamBuffer, bool tagsCannotSpanOverMultipleArcs, float [] pWeights, ref uint iArcOffset, ref int iOffset)
+        internal void SerializeStateEntries(StreamMarshaler streamBuffer, bool tagsCannotSpanOverMultipleArcs, float[] pWeights, ref uint iArcOffset, ref int iOffset)
         {
             // The arcs must be sorted before being written to disk.
-            List<Arc> outArcs = _outArcs.ToList ();
-            outArcs.Sort ();
-            Arc lastArc = outArcs.Count > 0 ? outArcs [outArcs.Count - 1] : null;
+            List<Arc> outArcs = _outArcs.ToList();
+            outArcs.Sort();
+            Arc lastArc = outArcs.Count > 0 ? outArcs[outArcs.Count - 1] : null;
 
-            IEnumerator<Arc> enumArcs = (IEnumerator<Arc>) ((IEnumerable<Arc>) outArcs).GetEnumerator ();
-            enumArcs.MoveNext ();
+            IEnumerator<Arc> enumArcs = (IEnumerator<Arc>)((IEnumerable<Arc>)outArcs).GetEnumerator();
+            enumArcs.MoveNext();
 
-            uint nextAvailableArc = (uint) outArcs.Count + iArcOffset;
+            uint nextAvailableArc = (uint)outArcs.Count + iArcOffset;
             uint saveNextAvailableArc = nextAvailableArc;
 
             // Write the arc of the first epsilon arc with an arc has more than one semantic tag
@@ -84,13 +84,13 @@ namespace System.Speech.Internal.SrgsCompiler
                 // Set the semantic property reference for the first arc
                 if (cSemantics > 0)
                 {
-                    arc.SetArcIndexForTag (0, iArcOffset, tagsCannotSpanOverMultipleArcs);
+                    arc.SetArcIndexForTag(0, iArcOffset, tagsCannotSpanOverMultipleArcs);
                 }
 
                 // Serialize the arc
                 if (cSemantics <= 1)
                 {
-                    pWeights [iOffset++] = arc.Serialize (streamBuffer, lastArc == arc, iArcOffset++);
+                    pWeights[iOffset++] = arc.Serialize(streamBuffer, lastArc == arc, iArcOffset++);
                 }
                 else
                 {
@@ -98,15 +98,15 @@ namespace System.Speech.Internal.SrgsCompiler
                     ++iArcOffset;
 
                     // more than one arc, create an epsilon transition
-                    pWeights [iOffset++] = Arc.SerializeExtraEpsilonWithTag (streamBuffer, arc, lastArc == arc, nextAvailableArc);
+                    pWeights[iOffset++] = Arc.SerializeExtraEpsilonWithTag(streamBuffer, arc, lastArc == arc, nextAvailableArc);
 
                     // reset the position of the next available slop for an arc
-                    nextAvailableArc += (uint) cSemantics - 1;
+                    nextAvailableArc += (uint)cSemantics - 1;
                 }
             }
 
-            enumArcs = (IEnumerator<Arc>) ((IEnumerable<Arc>) outArcs).GetEnumerator ();
-            enumArcs.MoveNext ();
+            enumArcs = (IEnumerator<Arc>)((IEnumerable<Arc>)outArcs).GetEnumerator();
+            enumArcs.MoveNext();
 
             // revert the position for the new arc
             nextAvailableArc = saveNextAvailableArc;
@@ -122,23 +122,23 @@ namespace System.Speech.Internal.SrgsCompiler
                     for (int i = 1; i < cSemantics - 1; i++)
                     {
                         // Set the semantic property reference
-                        arc.SetArcIndexForTag (i, iArcOffset, tagsCannotSpanOverMultipleArcs);
+                        arc.SetArcIndexForTag(i, iArcOffset, tagsCannotSpanOverMultipleArcs);
 
                         // reset the position of the next available slop for an arc
                         nextAvailableArc++;
 
                         // create an epsilon transition
-                        pWeights [iOffset++] = Arc.SerializeExtraEpsilonWithTag (streamBuffer, arc, true, nextAvailableArc);
+                        pWeights[iOffset++] = Arc.SerializeExtraEpsilonWithTag(streamBuffer, arc, true, nextAvailableArc);
 
                         // update the position of the current arc
                         ++iArcOffset;
                     }
 
                     // Set the semantic property reference
-                    arc.SetArcIndexForTag (cSemantics - 1, iArcOffset, tagsCannotSpanOverMultipleArcs);
+                    arc.SetArcIndexForTag(cSemantics - 1, iArcOffset, tagsCannotSpanOverMultipleArcs);
 
                     // Add the real arc at the end
-                    pWeights [iOffset++] = arc.Serialize (streamBuffer, true, iArcOffset++);
+                    pWeights[iOffset++] = arc.Serialize(streamBuffer, true, iArcOffset++);
 
                     // reset the position of the next available slop for an arc
                     nextAvailableArc++;
@@ -146,11 +146,11 @@ namespace System.Speech.Internal.SrgsCompiler
             }
         }
 
-        internal void SetEndArcIndexForTags ()
+        internal void SetEndArcIndexForTags()
         {
             foreach (Arc arc in _outArcs)
             {
-                arc.SetEndArcIndexForTags ();
+                arc.SetEndArcIndexForTags();
             }
         }
 
@@ -161,19 +161,19 @@ namespace System.Speech.Internal.SrgsCompiler
 
         // The Members of the list are Set, Add, Remove, Prev and Next.
 
-        internal void Init ()
+        internal void Init()
         {
-            System.Diagnostics.Debug.Assert (_next == null && _prev == null);
+            System.Diagnostics.Debug.Assert(_next == null && _prev == null);
         }
 
-        internal State Add (State state)
+        internal State Add(State state)
         {
             _next = state;
             state._prev = this;
             return state;
         }
 
-        internal void Remove ()
+        internal void Remove()
         {
             if (_prev != null)
             {
@@ -255,12 +255,12 @@ namespace System.Speech.Internal.SrgsCompiler
         }
 #endif
 
-        internal void CheckLeftRecursion (out bool fReachedEndState)
+        internal void CheckLeftRecursion(out bool fReachedEndState)
         {
             fReachedEndState = false;
-            if ((int) (_recurseFlag & RecurFlag.RF_IN_LEFT_RECUR_CHECK) != 0)
+            if ((int)(_recurseFlag & RecurFlag.RF_IN_LEFT_RECUR_CHECK) != 0)
             {
-                XmlParser.ThrowSrgsException (SRID.CircularRuleRef, _rule != null ? _rule._rule.Name : string.Empty);
+                XmlParser.ThrowSrgsException(SRID.CircularRuleRef, _rule != null ? _rule._rule.Name : string.Empty);
             }
             else
             {
@@ -276,10 +276,10 @@ namespace System.Speech.Internal.SrgsCompiler
                         {
                             State pRuleFirstNode = arc.RuleRef._firstState;
 
-                            if (((int) (pRuleFirstNode._recurseFlag & RecurFlag.RF_IN_LEFT_RECUR_CHECK) != 0) ||   // Circular RuleRef
-                                ((int) (pRuleFirstNode._recurseFlag & RecurFlag.RF_CHECKED_LEFT_RECURSION) == 0))  // Untraversed rule
+                            if (((int)(pRuleFirstNode._recurseFlag & RecurFlag.RF_IN_LEFT_RECUR_CHECK) != 0) ||   // Circular RuleRef
+                                ((int)(pRuleFirstNode._recurseFlag & RecurFlag.RF_CHECKED_LEFT_RECURSION) == 0))  // Untraversed rule
                             {
-                                pRuleFirstNode.CheckLeftRecursion (out fRuleReachedEndState);
+                                pRuleFirstNode.CheckLeftRecursion(out fRuleReachedEndState);
                             }
                             else
                             {
@@ -292,7 +292,7 @@ namespace System.Speech.Internal.SrgsCompiler
                         {
                             if (arc.End != null)
                             {
-                                arc.End.CheckLeftRecursion (out fReachedEndState);
+                                arc.End.CheckLeftRecursion(out fReachedEndState);
                             }
                             else
                             {
@@ -414,7 +414,7 @@ namespace System.Speech.Internal.SrgsCompiler
 
         // Sort based on rule first, so all states, and arcs for a rule end up together.
         // Then sort on index.
-        private static int Compare (State state1, State state2)
+        private static int Compare(State state1, State state2)
         {
             if (state1._rule._cfgRule._nameOffset != state2._rule._cfgRule._nameOffset)
             {
@@ -436,9 +436,9 @@ namespace System.Speech.Internal.SrgsCompiler
                     Arc arc1 = state1._outArcs != null && !state1._outArcs.IsEmpty ? state1._outArcs.First : null;
                     Arc arc2 = state2._outArcs != null && !state2._outArcs.IsEmpty ? state2._outArcs.First : null;
 
-                    int diff = (arc1 != null ? (arc1.RuleRef != null ? 0x1000000 : 0) + arc1.WordId : (int) state1._iSerialize) - (arc2 != null ? (arc2.RuleRef != null ? 0x1000000 : 0) + arc2.WordId : (int) state2._iSerialize);
+                    int diff = (arc1 != null ? (arc1.RuleRef != null ? 0x1000000 : 0) + arc1.WordId : (int)state1._iSerialize) - (arc2 != null ? (arc2.RuleRef != null ? 0x1000000 : 0) + arc2.WordId : (int)state2._iSerialize);
 
-                    diff = diff != 0 ? diff : (int) state1._iSerialize - (int) state2._iSerialize;
+                    diff = diff != 0 ? diff : (int)state1._iSerialize - (int)state2._iSerialize;
                     //System.Diagnostics.Debug.Assert (diff != 0);
                     return diff;
                 }
@@ -508,10 +508,10 @@ namespace System.Speech.Internal.SrgsCompiler
 #pragma warning disable 56524 // Arclist does not hold on any resouces
 
         // Collection of transitions leaving this state
-        private ArcList _outArcs = new ArcList ();
+        private ArcList _outArcs = new ArcList();
 
         // Collection of transitions entering this state
-        private ArcList _inArcs = new ArcList ();
+        private ArcList _inArcs = new ArcList();
 
 #pragma warning restore 56524 // Arclist does not hold on any resouces
 
@@ -538,6 +538,5 @@ namespace System.Speech.Internal.SrgsCompiler
         private RecurFlag _recurseFlag;
 
         #endregion
-
     }
 }

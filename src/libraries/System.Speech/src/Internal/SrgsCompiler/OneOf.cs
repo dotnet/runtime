@@ -25,19 +25,19 @@ namespace System.Speech.Internal.SrgsCompiler
         /// </summary>
         /// <param name="rule"></param>
         /// <param name="backend"></param>
-        public OneOf (Rule rule, Backend backend)
-            : base (backend, rule)
+        public OneOf(Rule rule, Backend backend)
+            : base(backend, rule)
         {
             // Create a start and end start. 
-            _startState = _backend.CreateNewState (rule);
-            _endState = _backend.CreateNewState (rule);
+            _startState = _backend.CreateNewState(rule);
+            _endState = _backend.CreateNewState(rule);
 
             //Add before the start state an epsilon arc
-            _startArc = _backend.EpsilonTransition (1.0f);
+            _startArc = _backend.EpsilonTransition(1.0f);
             _startArc.End = _startState;
 
             //Add after the end state an epsilon arc
-            _endArc = _backend.EpsilonTransition (1.0f);
+            _endArc = _backend.EpsilonTransition(1.0f);
             _endArc.Start = _endState;
         }
 
@@ -58,19 +58,19 @@ namespace System.Speech.Internal.SrgsCompiler
         /// Verify OneOf contains at least one child 'item'.
         /// </summary>
         /// <param name="parentElement"></param>
-        void IElement.PostParse (IElement parentElement)
+        void IElement.PostParse(IElement parentElement)
         {
             if (_startArc.End.OutArcs.IsEmpty)
             {
-                XmlParser.ThrowSrgsException (SRID.EmptyOneOf);
+                XmlParser.ThrowSrgsException(SRID.EmptyOneOf);
             }
 
             // Remove the extraneous arc and state if possible at the start and end
-            _startArc = TrimStart (_startArc, _backend);
-            _endArc = TrimEnd (_endArc, _backend);
+            _startArc = TrimStart(_startArc, _backend);
+            _endArc = TrimEnd(_endArc, _backend);
 
             // Connect the one-of to the parrent
-            base.PostParse ((ParseElementCollection) parentElement);
+            base.PostParse((ParseElementCollection)parentElement);
         }
 
         #endregion
@@ -88,10 +88,10 @@ namespace System.Speech.Internal.SrgsCompiler
         /// </summary>
         /// <param name="start"></param>
         /// <param name="end"></param>
-        internal override void AddArc (Arc start, Arc end)
+        internal override void AddArc(Arc start, Arc end)
         {
-            start = TrimStart (start, _backend);
-            end = TrimEnd (end, _backend);
+            start = TrimStart(start, _backend);
+            end = TrimEnd(end, _backend);
 
             State endStartState = end.Start;
             State startEndState = start.End;
@@ -99,9 +99,9 @@ namespace System.Speech.Internal.SrgsCompiler
             // Connect the previous arc with the 'start' set the intertion point
             if (start.IsEpsilonTransition & start.IsPropertylessTransition && startEndState != null && startEndState.InArcs.IsEmpty)
             {
-                System.Diagnostics.Debug.Assert (start.End == startEndState);
+                System.Diagnostics.Debug.Assert(start.End == startEndState);
                 start.End = null;
-                _backend.MoveOutputTransitionsAndDeleteState (startEndState, _startState);
+                _backend.MoveOutputTransitionsAndDeleteState(startEndState, _startState);
             }
             else
             {
@@ -111,9 +111,9 @@ namespace System.Speech.Internal.SrgsCompiler
             // Connect with the epsilon transition at the end
             if (end.IsEpsilonTransition & end.IsPropertylessTransition && endStartState != null && endStartState.OutArcs.IsEmpty)
             {
-                System.Diagnostics.Debug.Assert (end.Start == endStartState);
+                System.Diagnostics.Debug.Assert(end.Start == endStartState);
                 end.Start = null;
-                _backend.MoveInputTransitionsAndDeleteState (endStartState, _endState);
+                _backend.MoveInputTransitionsAndDeleteState(endStartState, _endState);
             }
             else
             {

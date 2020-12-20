@@ -14,7 +14,7 @@ namespace System.Speech.Recognition.SrgsGrammar
     // Note that currently if multiple words are stored in a Subset they are treated internally 
     // and in the result as multiple tokens.
     [Serializable]
-    [DebuggerDisplay ("{DebuggerDisplayString ()}")]
+    [DebuggerDisplay("{DebuggerDisplayString ()}")]
     public class SrgsSubset : SrgsElement, ISubset
     {
         //*******************************************************************
@@ -26,25 +26,25 @@ namespace System.Speech.Recognition.SrgsGrammar
         #region Constructors
 
         /// TODOC 
-        public SrgsSubset (string text)
-            : this (text, SubsetMatchingMode.Subsequence)
+        public SrgsSubset(string text)
+            : this(text, SubsetMatchingMode.Subsequence)
         {
         }
 
         /// TODOC 
-        public SrgsSubset (string text, SubsetMatchingMode matchingMode)
+        public SrgsSubset(string text, SubsetMatchingMode matchingMode)
         {
-            Helpers.ThrowIfEmptyOrNull (text, "text");
+            Helpers.ThrowIfEmptyOrNull(text, "text");
 
             if (matchingMode != SubsetMatchingMode.OrderedSubset && matchingMode != SubsetMatchingMode.Subsequence && matchingMode != SubsetMatchingMode.OrderedSubsetContentRequired && matchingMode != SubsetMatchingMode.SubsequenceContentRequired)
             {
-                throw new ArgumentException (SR.Get (SRID.InvalidSubsetAttribute), "matchingMode");
+                throw new ArgumentException(SR.Get(SRID.InvalidSubsetAttribute), "matchingMode");
             }
 
             _matchMode = matchingMode;
 
-            _text = text.Trim (Helpers._achTrimChars);
-            Helpers.ThrowIfEmptyOrNull (_text, "text");
+            _text = text.Trim(Helpers._achTrimChars);
+            Helpers.ThrowIfEmptyOrNull(_text, "text");
         }
 
         #endregion
@@ -68,7 +68,7 @@ namespace System.Speech.Recognition.SrgsGrammar
             {
                 if (value != SubsetMatchingMode.OrderedSubset && value != SubsetMatchingMode.Subsequence && value != SubsetMatchingMode.OrderedSubsetContentRequired && value != SubsetMatchingMode.SubsequenceContentRequired)
                 {
-                    throw new ArgumentException (SR.Get (SRID.InvalidSubsetAttribute), "value");
+                    throw new ArgumentException(SR.Get(SRID.InvalidSubsetAttribute), "value");
                 }
 
                 _matchMode = value;
@@ -84,9 +84,9 @@ namespace System.Speech.Recognition.SrgsGrammar
             }
             set
             {
-                Helpers.ThrowIfEmptyOrNull (value, "value");
-                value = value.Trim (Helpers._achTrimChars);
-                Helpers.ThrowIfEmptyOrNull (value, "value");
+                Helpers.ThrowIfEmptyOrNull(value, "value");
+                value = value.Trim(Helpers._achTrimChars);
+                Helpers.ThrowIfEmptyOrNull(value, "value");
 
                 _text = value;
             }
@@ -101,10 +101,10 @@ namespace System.Speech.Recognition.SrgsGrammar
         //*******************************************************************
 
         #region Internal methods
-        internal override void WriteSrgs (XmlWriter writer)
+        internal override void WriteSrgs(XmlWriter writer)
         {
             // Write <token sapi:pron="_pronunciation">_text</token>
-            writer.WriteStartElement ("sapi", "subset", XmlParser.sapiNamespace);
+            writer.WriteStartElement("sapi", "subset", XmlParser.sapiNamespace);
 
             if (_matchMode != SubsetMatchingMode.Subsequence)
             {
@@ -128,28 +128,28 @@ namespace System.Speech.Recognition.SrgsGrammar
                         break;
                 }
 
-                writer.WriteAttributeString ("sapi", "match", XmlParser.sapiNamespace, sMatchMode);
+                writer.WriteAttributeString("sapi", "match", XmlParser.sapiNamespace, sMatchMode);
             }
 
             // If an empty string is provided, skip the WriteString 
             // to have the XmlWrite to put <token/> rather than <token></token>
             if (_text != null && _text.Length > 0)
             {
-                writer.WriteString (_text);
+                writer.WriteString(_text);
             }
-            writer.WriteEndElement ();
+            writer.WriteEndElement();
         }
 
-        internal override void Validate (SrgsGrammar grammar)
+        internal override void Validate(SrgsGrammar grammar)
         {
             grammar.HasSapiExtension = true;
 
-            base.Validate (grammar);
+            base.Validate(grammar);
         }
 
-        internal override string DebuggerDisplayString ()
+        internal override string DebuggerDisplayString()
         {
-            return _text + " [" + _matchMode.ToString () + "]";
+            return _text + " [" + _matchMode.ToString() + "]";
         }
 
         #endregion

@@ -20,8 +20,8 @@ namespace System.Speech.Internal.SrgsCompiler
 
         #region Constructors
 
-        internal SemanticTag (ParseElement parent, Backend backend)
-            : base (parent._rule)
+        internal SemanticTag(ParseElement parent, Backend backend)
+            : base(parent._rule)
         {
         }
 
@@ -37,25 +37,25 @@ namespace System.Speech.Internal.SrgsCompiler
 
         /// TODOC <_include file='doc\Tag.uex' path='docs/doc[@for="Tag.RepeatProbability"]/*' />
         // The probability that this item will be repeated.
-        void ISemanticTag.Content (IElement parentElement, string sTag, int iLine)
+        void ISemanticTag.Content(IElement parentElement, string sTag, int iLine)
         {
             //Return if the Tag content is empty
-            sTag = sTag.Trim (Helpers._achTrimChars);
+            sTag = sTag.Trim(Helpers._achTrimChars);
 
-            if (string.IsNullOrEmpty (sTag))
+            if (string.IsNullOrEmpty(sTag))
             {
                 return;
             }
 
             // Build semantic properties to attach to epsilon transition.
             // <tag>script</tag>
-            _propInfo._ulId = (uint) iLine;
+            _propInfo._ulId = (uint)iLine;
             _propInfo._comValue = sTag;
 
-            ParseElementCollection parent = (ParseElementCollection) parentElement;
+            ParseElementCollection parent = (ParseElementCollection)parentElement;
 
             // Attach the semantic properties on the parent element.
-            parent.AddSemanticInterpretationTag (_propInfo);
+            parent.AddSemanticInterpretationTag(_propInfo);
         }
 
         #endregion
@@ -68,9 +68,8 @@ namespace System.Speech.Internal.SrgsCompiler
 
         #region Private Fields
 
-        private CfgGrammar.CfgProperty _propInfo = new CfgGrammar.CfgProperty ();
+        private CfgGrammar.CfgProperty _propInfo = new CfgGrammar.CfgProperty();
 
         #endregion
-
     }
 }

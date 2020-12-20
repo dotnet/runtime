@@ -16,8 +16,8 @@ namespace System.Speech.Recognition.SrgsGrammar
 {
     /// TODOC <_include file='doc\OneOf.uex' path='docs/doc[@for="OneOf"]/*' />
     [Serializable]
-    [DebuggerDisplay ("{DebuggerDisplayString ()}")]
-    [DebuggerTypeProxy (typeof (OneOfDebugDisplay))]
+    [DebuggerDisplay("{DebuggerDisplayString ()}")]
+    [DebuggerTypeProxy(typeof(OneOfDebugDisplay))]
     public class SrgsOneOf : SrgsElement, IOneOf
     {
         //*******************************************************************
@@ -29,42 +29,42 @@ namespace System.Speech.Recognition.SrgsGrammar
         #region Constructors
 
         /// TODOC <_include file='doc\OneOf.uex' path='docs/doc[@for="OneOf.OneOf1"]/*' />
-        public SrgsOneOf ()
+        public SrgsOneOf()
         {
         }
 
         /// TODOC <_include file='doc\OneOf.uex' path='docs/doc[@for="OneOf.OneOf2"]/*' />
-        public SrgsOneOf (params string [] items)
-            : this ()
+        public SrgsOneOf(params string[] items)
+            : this()
         {
-            Helpers.ThrowIfNull (items, "items");
+            Helpers.ThrowIfNull(items, "items");
 
             for (int i = 0; i < items.Length; i++)
             {
-                if (items [i] == null)
+                if (items[i] == null)
                 {
-                    throw new ArgumentNullException ("items", SR.Get (SRID.ParamsEntryNullIllegal));
+                    throw new ArgumentNullException("items", SR.Get(SRID.ParamsEntryNullIllegal));
                 }
 
-                _items.Add (new SrgsItem (items [i]));
+                _items.Add(new SrgsItem(items[i]));
             }
         }
 
         /// TODOC <_include file='doc\OneOf.uex' path='docs/doc[@for="OneOf.OneOf3"]/*' />
-        public SrgsOneOf (params SrgsItem [] items)
-            : this ()
+        public SrgsOneOf(params SrgsItem[] items)
+            : this()
         {
-            Helpers.ThrowIfNull (items, "items");
+            Helpers.ThrowIfNull(items, "items");
 
             for (int i = 0; i < items.Length; i++)
             {
-                SrgsItem item = items [i];
+                SrgsItem item = items[i];
                 if (item == null)
                 {
-                    throw new ArgumentNullException ("items", SR.Get (SRID.ParamsEntryNullIllegal));
+                    throw new ArgumentNullException("items", SR.Get(SRID.ParamsEntryNullIllegal));
                 }
 
-                _items.Add (item);
+                _items.Add(item);
             }
         }
 
@@ -82,11 +82,11 @@ namespace System.Speech.Recognition.SrgsGrammar
         /// TODOC
         /// </summary>
         /// <param name="item"></param>
-        public void Add (SrgsItem item)
+        public void Add(SrgsItem item)
         {
-            Helpers.ThrowIfNull (item, "item");
+            Helpers.ThrowIfNull(item, "item");
 
-            Items.Add (item);
+            Items.Add(item);
         }
 
         #endregion
@@ -119,23 +119,23 @@ namespace System.Speech.Recognition.SrgsGrammar
 
         #region internal Methods
 
-        internal override void WriteSrgs (XmlWriter writer)
+        internal override void WriteSrgs(XmlWriter writer)
         {
             // Write <one-of>...</one-of>
-            writer.WriteStartElement ("one-of");
+            writer.WriteStartElement("one-of");
             foreach (SrgsItem element in _items)
             {
-                element.WriteSrgs (writer);
+                element.WriteSrgs(writer);
             }
 
-            writer.WriteEndElement ();
+            writer.WriteEndElement();
         }
 
-        internal override string DebuggerDisplayString ()
+        internal override string DebuggerDisplayString()
         {
-            StringBuilder sb = new StringBuilder ("SrgsOneOf Count = ");
-            sb.Append (_items.Count);
-            return sb.ToString ();
+            StringBuilder sb = new StringBuilder("SrgsOneOf Count = ");
+            sb.Append(_items.Count);
+            return sb.ToString();
         }
 
         #endregion
@@ -153,15 +153,15 @@ namespace System.Speech.Recognition.SrgsGrammar
         /// features requiring recursion in the elements tree.
         /// </summary>
         /// <value></value>
-        internal override SrgsElement [] Children
+        internal override SrgsElement[] Children
         {
             get
             {
-                SrgsElement [] elements = new SrgsElement [_items.Count];
+                SrgsElement[] elements = new SrgsElement[_items.Count];
                 int i = 0;
                 foreach (SrgsItem item in _items)
                 {
-                    elements [i++] = item;
+                    elements[i++] = item;
                 }
                 return elements;
             }
@@ -177,7 +177,7 @@ namespace System.Speech.Recognition.SrgsGrammar
 
         #region Private Fields
 
-        private SrgsItemList _items = new SrgsItemList ();
+        private SrgsItemList _items = new SrgsItemList();
 
         #endregion
 
@@ -192,20 +192,20 @@ namespace System.Speech.Recognition.SrgsGrammar
         // Used by the debbugger display attribute
         internal class OneOfDebugDisplay
         {
-            public OneOfDebugDisplay (SrgsOneOf oneOf)
+            public OneOfDebugDisplay(SrgsOneOf oneOf)
             {
                 _items = oneOf._items;
             }
 
-            [DebuggerBrowsable (DebuggerBrowsableState.RootHidden)]
-            public SrgsItem [] AKeys
+            [DebuggerBrowsable(DebuggerBrowsableState.RootHidden)]
+            public SrgsItem[] AKeys
             {
                 get
                 {
-                    SrgsItem [] items = new SrgsItem [_items.Count];
+                    SrgsItem[] items = new SrgsItem[_items.Count];
                     for (int i = 0; i < _items.Count; i++)
                     {
-                        items [i] = _items [i];
+                        items[i] = _items[i];
                     }
                     return items;
                 }

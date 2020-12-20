@@ -15,8 +15,8 @@ namespace System.Speech.Recognition.SrgsGrammar
 {
     /// TODOC <_include file='doc\RuleRef.uex' path='docs/doc[@for="RuleRef"]/*' />
     [Serializable]
-    [ImmutableObject (true)]
-    [DebuggerDisplay ("{DebuggerDisplayString()}")]
+    [ImmutableObject(true)]
+    [DebuggerDisplay("{DebuggerDisplayString()}")]
     public class SrgsRuleRef : SrgsElement, IRuleRef
     {
         //*******************************************************************
@@ -28,60 +28,60 @@ namespace System.Speech.Recognition.SrgsGrammar
         #region Constructors
 
         /// TODOC <_include file='doc\RuleRef.uex' path='docs/doc[@for="RuleRef.RuleRef2"]/*' />
-        public SrgsRuleRef (Uri uri)
+        public SrgsRuleRef(Uri uri)
         {
-            UriInit (uri, null, null, null);
+            UriInit(uri, null, null, null);
         }
 
         /// TODOC <_include file='doc\RuleRef.uex' path='docs/doc[@for="RuleRef.RuleRef2"]/*' />
-        public SrgsRuleRef (Uri uri, string rule)
+        public SrgsRuleRef(Uri uri, string rule)
         {
-            Helpers.ThrowIfEmptyOrNull (rule, "rule");
+            Helpers.ThrowIfEmptyOrNull(rule, "rule");
 
-            UriInit (uri, rule, null, null);
+            UriInit(uri, rule, null, null);
         }
 
         /// TODOC <_include file='doc\RuleRef.uex' path='docs/doc[@for="RuleRef.RuleRef3"]/*' />
-        public SrgsRuleRef (Uri uri, string rule, string semanticKey)
+        public SrgsRuleRef(Uri uri, string rule, string semanticKey)
         {
-            Helpers.ThrowIfEmptyOrNull (semanticKey, "semanticKey");
+            Helpers.ThrowIfEmptyOrNull(semanticKey, "semanticKey");
 
-            UriInit (uri, rule, semanticKey, null);
-        }
-
-
-        /// TODOC <_include file='doc\RuleRef.uex' path='docs/doc[@for="RuleRef.RuleRef3"]/*' />
-        public SrgsRuleRef (Uri uri, string rule, string semanticKey, string parameters)
-        {
-            Helpers.ThrowIfEmptyOrNull (parameters, "parameters");
-
-            UriInit (uri, rule, semanticKey, parameters);
+            UriInit(uri, rule, semanticKey, null);
         }
 
 
         /// TODOC <_include file='doc\RuleRef.uex' path='docs/doc[@for="RuleRef.RuleRef3"]/*' />
-        public SrgsRuleRef (SrgsRule rule)
+        public SrgsRuleRef(Uri uri, string rule, string semanticKey, string parameters)
         {
-            Helpers.ThrowIfNull (rule, "rule");
+            Helpers.ThrowIfEmptyOrNull(parameters, "parameters");
 
-            _uri = new Uri ("#" + rule.Id, UriKind.Relative);
+            UriInit(uri, rule, semanticKey, parameters);
         }
 
 
         /// TODOC <_include file='doc\RuleRef.uex' path='docs/doc[@for="RuleRef.RuleRef3"]/*' />
-        public SrgsRuleRef (SrgsRule rule, string semanticKey)
-            : this (rule)
+        public SrgsRuleRef(SrgsRule rule)
         {
-            Helpers.ThrowIfEmptyOrNull (semanticKey, "semanticKey");
+            Helpers.ThrowIfNull(rule, "rule");
+
+            _uri = new Uri("#" + rule.Id, UriKind.Relative);
+        }
+
+
+        /// TODOC <_include file='doc\RuleRef.uex' path='docs/doc[@for="RuleRef.RuleRef3"]/*' />
+        public SrgsRuleRef(SrgsRule rule, string semanticKey)
+            : this(rule)
+        {
+            Helpers.ThrowIfEmptyOrNull(semanticKey, "semanticKey");
 
             _semanticKey = semanticKey;
         }
 
         /// TODOC <_include file='doc\RuleRef.uex' path='docs/doc[@for="RuleRef.RuleRef3"]/*' />
-        public SrgsRuleRef (SrgsRule rule, string semanticKey, string parameters)
-            : this (rule)
+        public SrgsRuleRef(SrgsRule rule, string semanticKey, string parameters)
+            : this(rule)
         {
-            Helpers.ThrowIfEmptyOrNull (parameters, "parameters");
+            Helpers.ThrowIfEmptyOrNull(parameters, "parameters");
 
 #pragma warning disable 56504 // The public API is not that public so remove all the parameter validation.
             _semanticKey = semanticKey;
@@ -95,12 +95,12 @@ namespace System.Speech.Recognition.SrgsGrammar
         /// Special private constructor for Special Rulerefs
         /// </summary>
         /// <param name="type"></param>
-        private SrgsRuleRef (SpecialRuleRefType type)
+        private SrgsRuleRef(SpecialRuleRefType type)
         {
             _type = type;
         }
 
-        internal SrgsRuleRef (string semanticKey, string parameters, Uri uri)
+        internal SrgsRuleRef(string semanticKey, string parameters, Uri uri)
         {
             _uri = uri;
             _semanticKey = semanticKey;
@@ -154,23 +154,23 @@ namespace System.Speech.Recognition.SrgsGrammar
         /// TODOC <_include file='doc\SpecialRuleRef.uex' path='docs/doc[@for="SpecialRuleRef.Null"]/*' />
         // The Null SpecialRuleRef defines a rule that is automatically matched: 
         // that is, matched without the user speaking any word.
-        static public readonly SrgsRuleRef Null = new SrgsRuleRef (SpecialRuleRefType.Null);
+        static public readonly SrgsRuleRef Null = new SrgsRuleRef(SpecialRuleRefType.Null);
 
         /// TODOC <_include file='doc\SpecialRuleRef.uex' path='docs/doc[@for="SpecialRuleRef.Void"]/*' />
         // The Void SpecialRuleRef defines a rule that can never be spoken. Inserting 
         // VOID into a sequence automatically makes that sequence unspeakable.
-        static public readonly SrgsRuleRef Void = new SrgsRuleRef (SpecialRuleRefType.Void);
+        static public readonly SrgsRuleRef Void = new SrgsRuleRef(SpecialRuleRefType.Void);
 
         /// TODOC <_include file='doc\SpecialRuleRef.uex' path='docs/doc[@for="SpecialRuleRef.Garbage"]/*' />
         // The Garbage SpecialRuleRef defines a rule that may match any speech up until
         // the next rule match, the next token or until the end of spoken input.
-        static public readonly SrgsRuleRef Garbage = new SrgsRuleRef (SpecialRuleRefType.Garbage);
+        static public readonly SrgsRuleRef Garbage = new SrgsRuleRef(SpecialRuleRefType.Garbage);
 
         /// TODOC <_include file='doc\RuleRef.uex' path='docs/doc[@for="RuleRef.Dictation"]/*' />
-        static public readonly SrgsRuleRef Dictation = new SrgsRuleRef (new Uri ("grammar:dictation"));
+        static public readonly SrgsRuleRef Dictation = new SrgsRuleRef(new Uri("grammar:dictation"));
 
         /// TODOC <_include file='doc\RuleRef.uex' path='docs/doc[@for="RuleRef.Dictation"]/*' />
-        static public readonly SrgsRuleRef MnemonicSpelling = new SrgsRuleRef (new Uri ("grammar:dictation#spelling"));
+        static public readonly SrgsRuleRef MnemonicSpelling = new SrgsRuleRef(new Uri("grammar:dictation#spelling"));
 
         #endregion
 
@@ -182,13 +182,13 @@ namespace System.Speech.Recognition.SrgsGrammar
 
         #region Internal methods
 
-        internal override void WriteSrgs (XmlWriter writer)
+        internal override void WriteSrgs(XmlWriter writer)
         {
             // Write <ruleref _uri="_uri" />
-            writer.WriteStartElement ("ruleref");
+            writer.WriteStartElement("ruleref");
             if (_uri != null)
             {
-                writer.WriteAttributeString ("uri", _uri.ToString ());
+                writer.WriteAttributeString("uri", _uri.ToString());
             }
             else
             {
@@ -208,33 +208,33 @@ namespace System.Speech.Recognition.SrgsGrammar
                         break;
 
                     default:
-                        XmlParser.ThrowSrgsException (SRID.InvalidSpecialRuleRef);
+                        XmlParser.ThrowSrgsException(SRID.InvalidSpecialRuleRef);
                         special = null;
                         break;
                 }
-                writer.WriteAttributeString ("special", special);
+                writer.WriteAttributeString("special", special);
             }
 
             // Write the 'name' attribute
             if (_semanticKey != null)
             {
-                writer.WriteAttributeString ("sapi", "semantic-key", XmlParser.sapiNamespace, _semanticKey);
+                writer.WriteAttributeString("sapi", "semantic-key", XmlParser.sapiNamespace, _semanticKey);
             }
 
             // Write the 'params' attribute
             if (_params != null)
             {
-                writer.WriteAttributeString ("sapi", "params", XmlParser.sapiNamespace, _params);
+                writer.WriteAttributeString("sapi", "params", XmlParser.sapiNamespace, _params);
             }
 
-            writer.WriteEndElement ();
+            writer.WriteEndElement();
         }
 
         /// <summary>
         /// Validate the SRGS element.
         /// </summary>
         /// <param name="grammar"></param>
-        internal override void Validate (SrgsGrammar grammar)
+        internal override void Validate(SrgsGrammar grammar)
         {
             bool fScript = _params != null || _semanticKey != null;
             grammar._fContainsCode |= fScript;
@@ -243,17 +243,17 @@ namespace System.Speech.Recognition.SrgsGrammar
             // Validate _uri
             if (_uri != null)
             {
-                string sUri = _uri.ToString ();
-                if (sUri [0] == '#')
+                string sUri = _uri.ToString();
+                if (sUri[0] == '#')
                 {
                     bool uriFound = false;
-                    if (sUri.IndexOf ("#grammar:dictation", StringComparison.Ordinal) == 0 || sUri.IndexOf ("#grammar:dictation#spelling", StringComparison.Ordinal) == 0)
+                    if (sUri.IndexOf("#grammar:dictation", StringComparison.Ordinal) == 0 || sUri.IndexOf("#grammar:dictation#spelling", StringComparison.Ordinal) == 0)
                     {
                         uriFound = true;
                     }
                     else
                     {
-                        sUri = sUri.Substring (1);
+                        sUri = sUri.Substring(1);
                         foreach (SrgsRule rule in grammar.Rules)
                         {
                             if (rule.Id == sUri)
@@ -266,30 +266,30 @@ namespace System.Speech.Recognition.SrgsGrammar
 
                     if (!uriFound)
                     {
-                        XmlParser.ThrowSrgsException (SRID.UndefRuleRef, sUri);
+                        XmlParser.ThrowSrgsException(SRID.UndefRuleRef, sUri);
                     }
                 }
             }
 
-            base.Validate (grammar);
+            base.Validate(grammar);
         }
 
-        internal override string DebuggerDisplayString ()
+        internal override string DebuggerDisplayString()
         {
-            StringBuilder sb = new StringBuilder ("SrgsRuleRef");
+            StringBuilder sb = new StringBuilder("SrgsRuleRef");
             if (_uri != null)
             {
-                sb.Append (" uri='");
-                sb.Append (_uri.ToString ());
-                sb.Append ("'");
+                sb.Append(" uri='");
+                sb.Append(_uri.ToString());
+                sb.Append("'");
             }
-            else 
+            else
             {
-                sb.Append (" special='");
-                sb.Append (_type.ToString ());
-                sb.Append ("'");
+                sb.Append(" special='");
+                sb.Append(_type.ToString());
+                sb.Append("'");
             }
-            return sb.ToString ();
+            return sb.ToString();
         }
 
         #endregion
@@ -309,17 +309,17 @@ namespace System.Speech.Recognition.SrgsGrammar
         /// <param name="rule"></param>
         /// <param name="semanticKey"></param>
         /// <param name="initParameters"></param>
-        private void UriInit (Uri uri, string rule, string semanticKey, string initParameters)
+        private void UriInit(Uri uri, string rule, string semanticKey, string initParameters)
         {
-            Helpers.ThrowIfNull (uri, "uri");
+            Helpers.ThrowIfNull(uri, "uri");
 
-            if (string.IsNullOrEmpty (rule))
+            if (string.IsNullOrEmpty(rule))
             {
                 _uri = uri;
             }
             else
             {
-                _uri = new Uri (uri.ToString () + "#" + rule, UriKind.RelativeOrAbsolute);
+                _uri = new Uri(uri.ToString() + "#" + rule, UriKind.RelativeOrAbsolute);
             }
             _semanticKey = semanticKey;
             _params = initParameters;

@@ -7,7 +7,6 @@ using System.Speech.AudioFormat;
 
 namespace System.Speech.Internal.SapiInterop
 {
-
     // Internal helper class that wraps a SAPI event structure.
     // A new instance is created by calling SpeechEvent.TryCreateSpeechEvent
     // Disposing this class will dispose all unmanmanaged memory.
@@ -21,7 +20,7 @@ namespace System.Speech.Internal.SapiInterop
 
         #region Constructors
 
-        private SpeechEvent(SPEVENTENUM eEventId, SPEVENTLPARAMTYPE elParamType, 
+        private SpeechEvent(SPEVENTENUM eEventId, SPEVENTLPARAMTYPE elParamType,
             ulong ullAudioStreamOffset, IntPtr wParam, IntPtr lParam)
         {
             // We make a copy of the SPEVENTEX data but that's okay because the lParam will only be deleted once.
@@ -39,7 +38,7 @@ namespace System.Speech.Internal.SapiInterop
         }
 
         private SpeechEvent(SPEVENT sapiEvent, SpeechAudioFormatInfo audioFormat)
-			: this(sapiEvent.eEventId, sapiEvent.elParamType, sapiEvent.ullAudioStreamOffset, sapiEvent.wParam, sapiEvent.lParam)
+            : this(sapiEvent.eEventId, sapiEvent.elParamType, sapiEvent.ullAudioStreamOffset, sapiEvent.wParam, sapiEvent.lParam)
         {
             if (audioFormat == null || audioFormat.EncodingFormat == 0)
             {
@@ -47,7 +46,7 @@ namespace System.Speech.Internal.SapiInterop
             }
             else
             {
-                _audioPosition = audioFormat.AverageBytesPerSecond > 0 ? new TimeSpan ((long) ((sapiEvent.ullAudioStreamOffset * TimeSpan.TicksPerSecond) / (ulong) audioFormat.AverageBytesPerSecond)) : TimeSpan.Zero;
+                _audioPosition = audioFormat.AverageBytesPerSecond > 0 ? new TimeSpan((long)((sapiEvent.ullAudioStreamOffset * TimeSpan.TicksPerSecond) / (ulong)audioFormat.AverageBytesPerSecond)) : TimeSpan.Zero;
             }
         }
 
@@ -58,37 +57,37 @@ namespace System.Speech.Internal.SapiInterop
 
         ~SpeechEvent()
         {
-            Dispose ();
+            Dispose();
         }
 
-        public void Dispose ()
+        public void Dispose()
         {
             // General code to free event data
             if (_lParam != 0)
             {
                 if (_paramType == SPEVENTLPARAMTYPE.SPET_LPARAM_IS_TOKEN || _paramType == SPEVENTLPARAMTYPE.SPET_LPARAM_IS_OBJECT)
                 {
-                    Marshal.Release ((IntPtr) _lParam);
+                    Marshal.Release((IntPtr)_lParam);
                 }
                 else
                 {
                     if (_paramType == SPEVENTLPARAMTYPE.SPET_LPARAM_IS_POINTER || _paramType == SPEVENTLPARAMTYPE.SPET_LPARAM_IS_STRING)
                     {
-                        Marshal.FreeCoTaskMem ((IntPtr) _lParam);
+                        Marshal.FreeCoTaskMem((IntPtr)_lParam);
                     }
                 }
 
                 // Update the GC
                 if (_sizeMemoryPressure > 0)
                 {
-                    GC.RemoveMemoryPressure (_sizeMemoryPressure);
+                    GC.RemoveMemoryPressure(_sizeMemoryPressure);
                     _sizeMemoryPressure = 0;
                 }
 
                 // Mark the object as beeing freed
                 _lParam = 0;
             }
-            GC.SuppressFinalize (this);
+            GC.SuppressFinalize(this);
         }
 
         #endregion

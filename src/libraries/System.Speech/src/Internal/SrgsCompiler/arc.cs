@@ -29,12 +29,12 @@ namespace System.Speech.Internal.SrgsCompiler
 
         #region Constructors
 
-        internal Arc ()
+        internal Arc()
         {
         }
 
-        internal Arc (Arc arc)
-            : this ()
+        internal Arc(Arc arc)
+            : this()
         {
             _start = arc._start;
             _end = arc._end;
@@ -51,26 +51,26 @@ namespace System.Speech.Internal.SrgsCompiler
 #endif
         }
 
-        internal Arc (Arc arc, State start, State end)
-            : this (arc)
+        internal Arc(Arc arc, State start, State end)
+            : this(arc)
         {
             _start = start;
             _end = end;
         }
 
-        internal Arc (Arc arc, State start, State end, int wordId)
-            : this (arc, start, end)
+        internal Arc(Arc arc, State start, State end, int wordId)
+            : this(arc, start, end)
         {
             _iWord = wordId;
         }
 
-        internal Arc (string sWord, Rule ruleRef, StringBlob words, float flWeight, int confidence, Rule specialRule, MatchMode matchMode, ref bool fNeedWeightTable)
-            : this (sWord, ruleRef, words, flWeight, confidence, specialRule, _serializeToken++, matchMode, ref fNeedWeightTable)
+        internal Arc(string sWord, Rule ruleRef, StringBlob words, float flWeight, int confidence, Rule specialRule, MatchMode matchMode, ref bool fNeedWeightTable)
+            : this(sWord, ruleRef, words, flWeight, confidence, specialRule, s_serializeToken++, matchMode, ref fNeedWeightTable)
         {
         }
 
-        private Arc (string sWord, Rule ruleRef, StringBlob words, float flWeight, int confidence, Rule specialRule, uint iSerialize, MatchMode matchMode, ref bool fNeedWeightTable)
-            : this (0, flWeight, confidence, 0, matchMode, ref fNeedWeightTable)
+        private Arc(string sWord, Rule ruleRef, StringBlob words, float flWeight, int confidence, Rule specialRule, uint iSerialize, MatchMode matchMode, ref bool fNeedWeightTable)
+            : this(0, flWeight, confidence, 0, matchMode, ref fNeedWeightTable)
         {
             //CfgGrammar.TraceInformation ("Arc::Arc");
             _ruleRef = ruleRef;
@@ -84,22 +84,22 @@ namespace System.Speech.Internal.SrgsCompiler
                 }
                 else
                 {
-                    words.Add (sWord, out _iWord);
+                    words.Add(sWord, out _iWord);
                 }
             }
         }
 
-        internal Arc (int iWord, float flWeight, int confidence, int ulSpecialTransitionIndex, MatchMode matchMode, ref bool fNeedWeightTable)
-            : this ()
+        internal Arc(int iWord, float flWeight, int confidence, int ulSpecialTransitionIndex, MatchMode matchMode, ref bool fNeedWeightTable)
+            : this()
         {
             //CfgGrammar.TraceInformation ("Arc::Arc");
             _confidence = confidence;
             _iWord = iWord;
             _flWeight = flWeight;
             _matchMode = matchMode;
-            _iSerialize = _serializeToken++;
+            _iSerialize = s_serializeToken++;
 
-            if (!flWeight.Equals (CfgGrammar.DEFAULT_WEIGHT))
+            if (!flWeight.Equals(CfgGrammar.DEFAULT_WEIGHT))
             {
                 fNeedWeightTable |= true;
             }
@@ -119,17 +119,17 @@ namespace System.Speech.Internal.SrgsCompiler
 
         #region IComparable<Arc> Interface implementation
 
-        public int CompareTo (Arc obj1)
+        public int CompareTo(Arc obj1)
         {
-            return Compare (this, obj1);
+            return Compare(this, obj1);
         }
 
-        int IComparer<Arc>.Compare (Arc obj1, Arc obj2)
+        int IComparer<Arc>.Compare(Arc obj1, Arc obj2)
         {
-            return Compare (obj1, obj2);
+            return Compare(obj1, obj2);
         }
 
-        private int Compare (Arc obj1, Arc obj2)
+        private int Compare(Arc obj1, Arc obj2)
         {
             if (obj1 == obj2)
                 return 0;
@@ -140,16 +140,16 @@ namespace System.Speech.Internal.SrgsCompiler
             if (obj2 == null)
                 return 1;
 
-            Arc arc1 = (Arc) obj1;
-            Arc arc2 = (Arc) obj2;
-            int diff = arc1.SortRank () - arc2.SortRank ();
-            diff = diff != 0 ? diff : (int) arc1._iSerialize - (int) arc2._iSerialize;
+            Arc arc1 = (Arc)obj1;
+            Arc arc2 = (Arc)obj2;
+            int diff = arc1.SortRank() - arc2.SortRank();
+            diff = diff != 0 ? diff : (int)arc1._iSerialize - (int)arc2._iSerialize;
 
-            System.Diagnostics.Debug.Assert (diff != 0);
+            System.Diagnostics.Debug.Assert(diff != 0);
             return diff;
         }
 
-        internal static int CompareContent (Arc arc1, Arc arc2)
+        internal static int CompareContent(Arc arc1, Arc arc2)
         {
             // Compare arcs based on IndexOfWord, IsRuleRef, SpecialTransitionIndex, Optional, and RequiredConfidence.
             // SemanticTag, StartState, EndState, Weight, and SerializeIndex are not factors.
@@ -188,48 +188,48 @@ namespace System.Speech.Internal.SrgsCompiler
             }
         }
 
-        internal static int CompareContentForKey (Arc arc1, Arc arc2)
+        internal static int CompareContentForKey(Arc arc1, Arc arc2)
         {
-            int diff = CompareContent (arc1, arc2);
+            int diff = CompareContent(arc1, arc2);
             if (diff == 0)
             {
-                return (int) arc1._iSerialize - (int) arc2._iSerialize;
+                return (int)arc1._iSerialize - (int)arc2._iSerialize;
             }
             return diff;
         }
 
         #endregion
 
-        internal float Serialize (StreamMarshaler streamBuffer, bool isLast, uint arcIndex)
+        internal float Serialize(StreamMarshaler streamBuffer, bool isLast, uint arcIndex)
         {
             //CfgGrammar.TraceInformation ("Arc::SerializeArcData");
 
-            CfgArc A = new CfgArc ();
+            CfgArc A = new CfgArc();
 
             A.LastArc = isLast;
             A.HasSemanticTag = SemanticTagCount > 0;
-            A.NextStartArcIndex = (uint) (_end != null ? _end.SerializeId : 0);
+            A.NextStartArcIndex = (uint)(_end != null ? _end.SerializeId : 0);
             if (_ruleRef != null)
             {
                 A.RuleRef = true;
-                A.TransitionIndex = (uint) _ruleRef._iSerialize; //_pFirstState.SerializeId;
+                A.TransitionIndex = (uint)_ruleRef._iSerialize; //_pFirstState.SerializeId;
             }
             else
             {
                 A.RuleRef = false;
                 if (_specialTransitionIndex != 0)
                 {
-                    A.TransitionIndex = (uint) _specialTransitionIndex;
+                    A.TransitionIndex = (uint)_specialTransitionIndex;
                 }
                 else
                 {
-                    A.TransitionIndex = (uint) _iWord;
+                    A.TransitionIndex = (uint)_iWord;
                 }
             }
 
             A.LowConfRequired = (_confidence < 0);
             A.HighConfRequired = (_confidence > 0);
-            A.MatchMode = (uint) _matchMode;
+            A.MatchMode = (uint)_matchMode;
 
             // For new arcs SerializeId is INFINITE so we set it correctly here.
             // For existing states we preserve the index from loading,
@@ -238,13 +238,13 @@ namespace System.Speech.Internal.SrgsCompiler
             //  to invalidate rules in this case.
             _iSerialize = arcIndex;
 
-            streamBuffer.WriteStream (A);
+            streamBuffer.WriteStream(A);
             return _flWeight;
         }
 
-        internal static float SerializeExtraEpsilonWithTag (StreamMarshaler streamBuffer, Arc arc, bool isLast, uint arcIndex)
+        internal static float SerializeExtraEpsilonWithTag(StreamMarshaler streamBuffer, Arc arc, bool isLast, uint arcIndex)
         {
-            CfgArc A = new CfgArc ();
+            CfgArc A = new CfgArc();
 
             A.LastArc = isLast;
             A.HasSemanticTag = true;
@@ -253,30 +253,30 @@ namespace System.Speech.Internal.SrgsCompiler
 
             A.LowConfRequired = false;
             A.HighConfRequired = false;
-            A.MatchMode = (uint) arc._matchMode;
+            A.MatchMode = (uint)arc._matchMode;
 
-            streamBuffer.WriteStream (A);
+            streamBuffer.WriteStream(A);
             return arc._flWeight;
         }
 
-        internal void SetArcIndexForTag (int iArc, uint iArcOffset, bool tagsCannotSpanOverMultipleArcs)
+        internal void SetArcIndexForTag(int iArc, uint iArcOffset, bool tagsCannotSpanOverMultipleArcs)
         {
-            _startTags [iArc]._cfgTag.StartArcIndex = iArcOffset;
-            _startTags [iArc]._cfgTag.ArcIndex = iArcOffset;
+            _startTags[iArc]._cfgTag.StartArcIndex = iArcOffset;
+            _startTags[iArc]._cfgTag.ArcIndex = iArcOffset;
             if (tagsCannotSpanOverMultipleArcs)
             {
-                _startTags [iArc]._cfgTag.EndArcIndex = iArcOffset;
+                _startTags[iArc]._cfgTag.EndArcIndex = iArcOffset;
             }
         }
 
-        internal void SetEndArcIndexForTags ()
+        internal void SetEndArcIndexForTags()
         {
             //CfgGrammar.TraceInformation ("Arc::SerializeSemanticData");
             if (_endTags != null)
             {
                 foreach (Tag tag in _endTags)
                 {
-                    tag._cfgTag.EndArcIndex = (uint) _iSerialize;
+                    tag._cfgTag.EndArcIndex = (uint)_iSerialize;
                 }
             }
         }
@@ -288,9 +288,9 @@ namespace System.Speech.Internal.SrgsCompiler
         /// <param name="arc1"></param>
         /// <param name="arc2"></param>
         /// <returns></returns>
-        internal static int CompareForDuplicateInputTransitions (Arc arc1, Arc arc2)
+        internal static int CompareForDuplicateInputTransitions(Arc arc1, Arc arc2)
         {
-            int iContentCompare = Arc.CompareContent (arc1, arc2);
+            int iContentCompare = Arc.CompareContent(arc1, arc2);
 
             if (iContentCompare != 0)
             {
@@ -298,7 +298,7 @@ namespace System.Speech.Internal.SrgsCompiler
             }
 
             // Compare by arc Id
-            return (int) (arc1._start != null ? arc1._start.Id : 0) - (int) (arc2._start != null ? arc2._start.Id : 0);
+            return (int)(arc1._start != null ? arc1._start.Id : 0) - (int)(arc2._start != null ? arc2._start.Id : 0);
         }
 
         /// <summary>
@@ -308,10 +308,10 @@ namespace System.Speech.Internal.SrgsCompiler
         /// <param name="arc1"></param>
         /// <param name="arc2"></param>
         /// <returns></returns>
-        internal static int CompareForDuplicateOutputTransitions (Arc arc1, Arc arc2)
+        internal static int CompareForDuplicateOutputTransitions(Arc arc1, Arc arc2)
         {
             // Compare content and number of other input transitions to the end state.
-            int iContentCompare = Arc.CompareContent (arc1, arc2);
+            int iContentCompare = Arc.CompareContent(arc1, arc2);
 
             if (iContentCompare != 0)
             {
@@ -319,7 +319,7 @@ namespace System.Speech.Internal.SrgsCompiler
             }
 
             // Compare by arc Id
-            return (int) (arc1._end != null ? arc1._end.Id : 0) - (int) (arc2._end != null ? arc2._end.Id : 0);
+            return (int)(arc1._end != null ? arc1._end.Id : 0) - (int)(arc2._end != null ? arc2._end.Id : 0);
         }
 
         /// <summary>
@@ -328,47 +328,47 @@ namespace System.Speech.Internal.SrgsCompiler
         /// <param name="arc1"></param>
         /// <param name="arc2"></param>
         /// <returns></returns>
-        internal static int CompareIdenticalTransitions (Arc arc1, Arc arc2)
+        internal static int CompareIdenticalTransitions(Arc arc1, Arc arc2)
         {
             // Same start arc
-            int diff = (int) (arc1._start != null ? arc1._start.Id : 0) - (int) (arc2._start != null ? arc2._start.Id : 0);
+            int diff = (int)(arc1._start != null ? arc1._start.Id : 0) - (int)(arc2._start != null ? arc2._start.Id : 0);
             if (diff == 0)
             {
                 // Same end arc
-                if ((diff = (int) (arc1._end != null ? arc1._end.Id : 0) - (int) (arc2._end != null ? arc2._end.Id : 0)) == 0)
+                if ((diff = (int)(arc1._end != null ? arc1._end.Id : 0) - (int)(arc2._end != null ? arc2._end.Id : 0)) == 0)
                 {
                     // Same tag
-                    diff = arc1.SameTags (arc2) ? 0 : 1;
+                    diff = arc1.SameTags(arc2) ? 0 : 1;
                 }
             }
             return diff;
         }
 
-        internal void AddStartTag (Tag tag)
+        internal void AddStartTag(Tag tag)
         {
             if (_startTags == null)
             {
-                _startTags = new Collection<Tag> ();
+                _startTags = new Collection<Tag>();
             }
-            _startTags.Add (tag);
+            _startTags.Add(tag);
         }
 
-        internal void AddEndTag (Tag tag)
+        internal void AddEndTag(Tag tag)
         {
             if (_endTags == null)
             {
-                _endTags = new Collection<Tag> ();
+                _endTags = new Collection<Tag>();
             }
-            _endTags.Add (tag);
+            _endTags.Add(tag);
         }
 
-        internal void ClearTags ()
+        internal void ClearTags()
         {
             _startTags = null;
             _endTags = null;
         }
 
-        static internal void CopyTags (Arc src, Arc dest, Direction move)
+        static internal void CopyTags(Arc src, Arc dest, Direction move)
         {
             // Copy the start tags if any
             if (src._startTags != null)
@@ -384,7 +384,7 @@ namespace System.Speech.Internal.SrgsCompiler
                     {
                         for (int i = 0; i < src._startTags.Count; i++)
                         {
-                            dest._startTags.Insert (i, src._startTags [i]);
+                            dest._startTags.Insert(i, src._startTags[i]);
                         }
                     }
                     else
@@ -392,7 +392,7 @@ namespace System.Speech.Internal.SrgsCompiler
                         // if dest has tags add the ones from the source to the existing ones
                         foreach (Tag tag in src._startTags)
                         {
-                            dest._startTags.Add (tag);
+                            dest._startTags.Add(tag);
                         }
                     }
                 }
@@ -412,7 +412,7 @@ namespace System.Speech.Internal.SrgsCompiler
                     {
                         for (int i = 0; i < src._endTags.Count; i++)
                         {
-                            dest._endTags.Insert (i, src._endTags [i]);
+                            dest._endTags.Insert(i, src._endTags[i]);
                         }
                     }
                     else
@@ -420,7 +420,7 @@ namespace System.Speech.Internal.SrgsCompiler
                         // if dest has tags add the ones from the source to the existing ones
                         foreach (Tag tag in src._endTags)
                         {
-                            dest._endTags.Add (tag);
+                            dest._endTags.Add(tag);
                         }
                     }
                 }
@@ -430,31 +430,31 @@ namespace System.Speech.Internal.SrgsCompiler
             src._startTags = src._endTags = null;
         }
 
-        internal void CloneTags (Arc arc, List<Tag> _tags, Dictionary<Tag, Tag> endArcs, Backend be)
+        internal void CloneTags(Arc arc, List<Tag> _tags, Dictionary<Tag, Tag> endArcs, Backend be)
         {
             if (arc._startTags != null)
             {
                 if (_startTags == null)
                 {
-                    _startTags = new Collection<Tag> ();
+                    _startTags = new Collection<Tag>();
                 }
                 foreach (Tag tag in arc._startTags)
                 {
-                    Tag newTag = new Tag (tag);
-                    _tags.Add (newTag);
-                    _startTags.Add (newTag);
-                    endArcs.Add (tag, newTag);
+                    Tag newTag = new Tag(tag);
+                    _tags.Add(newTag);
+                    _startTags.Add(newTag);
+                    endArcs.Add(tag, newTag);
 #if DEBUG
                     newTag._be = be;
 #endif
                     if (be != null)
                     {
                         int idTagName;
-                        newTag._cfgTag._nameOffset = be.Symbols.Add (tag._be.Symbols.FromOffset (tag._cfgTag._nameOffset), out idTagName);
+                        newTag._cfgTag._nameOffset = be.Symbols.Add(tag._be.Symbols.FromOffset(tag._cfgTag._nameOffset), out idTagName);
 
                         if (tag._cfgTag._valueOffset != 0 && tag._cfgTag.PropVariantType == System.Runtime.InteropServices.VarEnum.VT_EMPTY)
                         {
-                            newTag._cfgTag._valueOffset = be.Symbols.Add (tag._be.Symbols.FromOffset (tag._cfgTag._valueOffset), out idTagName);
+                            newTag._cfgTag._valueOffset = be.Symbols.Add(tag._be.Symbols.FromOffset(tag._cfgTag._valueOffset), out idTagName);
                         }
                     }
                 }
@@ -464,18 +464,18 @@ namespace System.Speech.Internal.SrgsCompiler
             {
                 if (_endTags == null)
                 {
-                    _endTags = new Collection<Tag> ();
+                    _endTags = new Collection<Tag>();
                 }
                 foreach (Tag tag in arc._endTags)
                 {
-                    Tag newTag = endArcs [tag];
-                    _endTags.Add (newTag);
-                    endArcs.Remove (tag);
+                    Tag newTag = endArcs[tag];
+                    _endTags.Add(newTag);
+                    endArcs.Remove(tag);
                 }
             }
         }
 
-        internal bool SameTags (Arc arc)
+        internal bool SameTags(Arc arc)
         {
             // no tags ok
             bool same = _startTags == null && arc._startTags == null;
@@ -486,7 +486,7 @@ namespace System.Speech.Internal.SrgsCompiler
                 same = true;
                 for (int i = 0; i < _startTags.Count; i++)
                 {
-                    same &= _startTags [i] == arc._startTags [i];
+                    same &= _startTags[i] == arc._startTags[i];
                 }
             }
 
@@ -501,23 +501,23 @@ namespace System.Speech.Internal.SrgsCompiler
                     same = true;
                     for (int i = 0; i < _endTags.Count; i++)
                     {
-                        same &= _endTags [i] == arc._endTags [i];
+                        same &= _endTags[i] == arc._endTags[i];
                     }
                 }
             }
             return same;
         }
 
-        internal void ConnectStates ()
+        internal void ConnectStates()
         {
             if (_end != null)
             {
-                _end.InArcs.Add (this);
+                _end.InArcs.Add(this);
             }
 
             if (_start != null)
             {
-                _start.OutArcs.Add (this);
+                _start.OutArcs.Add(this);
             }
         }
 
@@ -675,12 +675,12 @@ namespace System.Speech.Internal.SrgsCompiler
                 {
                     if (_start != null)
                     {
-                        _start.OutArcs.Remove (this);
+                        _start.OutArcs.Remove(this);
                     }
                     _start = value;
                     if (_start != null)
                     {
-                        _start.OutArcs.Add (this);
+                        _start.OutArcs.Add(this);
                     }
                 }
             }
@@ -699,12 +699,12 @@ namespace System.Speech.Internal.SrgsCompiler
                 {
                     if (_end != null)
                     {
-                        _end.InArcs.Remove (this);
+                        _end.InArcs.Remove(this);
                     }
                     _end = value;
                     if (_end != null)
                     {
-                        _end.InArcs.Add (this);
+                        _end.InArcs.Add(this);
                     }
                 }
             }
@@ -728,7 +728,7 @@ namespace System.Speech.Internal.SrgsCompiler
             {
                 if ((_start != null && !_start.OutArcs.IsEmpty) || (_end != null && !_end.InArcs.IsEmpty))
                 {
-                    throw new InvalidOperationException ();
+                    throw new InvalidOperationException();
                 }
                 _ruleRef = value;
             }
@@ -845,7 +845,7 @@ namespace System.Speech.Internal.SrgsCompiler
 
         // Sort arcs in a state based on type, and then on index. 
         // Arcs loaded froma file have their index preserved where possible. New dynamic states have index == INFINITE,
-        private int SortRank ()
+        private int SortRank()
         {
             int ret = 0;
 
@@ -901,7 +901,7 @@ namespace System.Speech.Internal.SrgsCompiler
         private Collection<Tag> _startTags;
         private Collection<Tag> _endTags;
 
-        private static uint _serializeToken = 1;
+        private static uint s_serializeToken = 1;
 
 #if DEBUG
         // This is where the TransitionId comes from in engine interfaces.
@@ -926,5 +926,4 @@ namespace System.Speech.Internal.SrgsCompiler
         Left
     }
     #endregion
-
 }

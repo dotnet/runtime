@@ -82,66 +82,65 @@ namespace System.Speech.Internal.SapiInterop
         SPEI_RESERVED3 = 63   // do not use
     }
 
-    [ComImport, Guid ("5EFF4AEF-8487-11D2-961C-00C04F8EE628"), InterfaceType (ComInterfaceType.InterfaceIsIUnknown)]
+    [ComImport, Guid("5EFF4AEF-8487-11D2-961C-00C04F8EE628"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
     internal interface ISpNotifySource
     {
         // ISpNotifySource Methods
-        void SetNotifySink (ISpNotifySink pNotifySink);
-        void SetNotifyWindowMessage (UInt32 hWnd, UInt32 Msg, IntPtr wParam, IntPtr lParam);
-        void Slot3 (); // void SetNotifyCallbackFunction(ref IntPtr pfnCallback, IntPtr wParam, IntPtr lParam);
-        void Slot4 (); // void SetNotifyCallbackInterface(ref IntPtr pSpCallback, IntPtr wParam, IntPtr lParam);
-        void Slot5 (); // void SetNotifyWin32Event();
+        void SetNotifySink(ISpNotifySink pNotifySink);
+        void SetNotifyWindowMessage(UInt32 hWnd, UInt32 Msg, IntPtr wParam, IntPtr lParam);
+        void Slot3(); // void SetNotifyCallbackFunction(ref IntPtr pfnCallback, IntPtr wParam, IntPtr lParam);
+        void Slot4(); // void SetNotifyCallbackInterface(ref IntPtr pSpCallback, IntPtr wParam, IntPtr lParam);
+        void Slot5(); // void SetNotifyWin32Event();
         [PreserveSig]
-        int WaitForNotifyEvent (UInt32 dwMilliseconds);
-        void Slot7 (); // IntPtr GetNotifyEventHandle();
+        int WaitForNotifyEvent(UInt32 dwMilliseconds);
+        void Slot7(); // IntPtr GetNotifyEventHandle();
     }
 
-    [ComImport, Guid ("BE7A9CCE-5F9E-11D2-960F-00C04F8EE628"), InterfaceType (ComInterfaceType.InterfaceIsIUnknown)]
+    [ComImport, Guid("BE7A9CCE-5F9E-11D2-960F-00C04F8EE628"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
     internal interface ISpEventSource : ISpNotifySource
     {
         // ISpNotifySource Methods
-        new void SetNotifySink (ISpNotifySink pNotifySink);
-        new void SetNotifyWindowMessage (UInt32 hWnd, UInt32 Msg, IntPtr wParam, IntPtr lParam);
-        new void Slot3 (); // void SetNotifyCallbackFunction(ref IntPtr pfnCallback, IntPtr wParam, IntPtr lParam);
-        new void Slot4 (); // void SetNotifyCallbackInterface(ref IntPtr pSpCallback, IntPtr wParam, IntPtr lParam);
-        new void Slot5 (); // void SetNotifyWin32Event();
+        new void SetNotifySink(ISpNotifySink pNotifySink);
+        new void SetNotifyWindowMessage(UInt32 hWnd, UInt32 Msg, IntPtr wParam, IntPtr lParam);
+        new void Slot3(); // void SetNotifyCallbackFunction(ref IntPtr pfnCallback, IntPtr wParam, IntPtr lParam);
+        new void Slot4(); // void SetNotifyCallbackInterface(ref IntPtr pSpCallback, IntPtr wParam, IntPtr lParam);
+        new void Slot5(); // void SetNotifyWin32Event();
         [PreserveSig]
-        new int WaitForNotifyEvent (UInt32 dwMilliseconds);
-        new void Slot7 (); // IntPtr GetNotifyEventHandle();
+        new int WaitForNotifyEvent(UInt32 dwMilliseconds);
+        new void Slot7(); // IntPtr GetNotifyEventHandle();
 
         // ISpEventSource Methods
-        void SetInterest (UInt64 ullEventInterest, UInt64 ullQueuedInterest);
+        void SetInterest(UInt64 ullEventInterest, UInt64 ullQueuedInterest);
         void GetEvents(UInt32 ulCount, out SPEVENT pEventArray, out UInt32 pulFetched);
-        void Slot10 (); // void GetInfo(out SPEVENTSOURCEINFO pInfo);
+        void Slot10(); // void GetInfo(out SPEVENTSOURCEINFO pInfo);
     }
 
-    [ComImport, Guid ("2373A435-6A4B-429e-A6AC-D4231A61975B"), InterfaceType (ComInterfaceType.InterfaceIsIUnknown)]
+    [ComImport, Guid("2373A435-6A4B-429e-A6AC-D4231A61975B"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
     internal interface ISpEventSource2 : ISpEventSource
     {
         // ISpNotifySource Methods
-        new void SetNotifySink (ISpNotifySink pNotifySink);
-        new void SetNotifyWindowMessage (UInt32 hWnd, UInt32 Msg, IntPtr wParam, IntPtr lParam);
-        new void Slot3 (); // void SetNotifyCallbackFunction(ref IntPtr pfnCallback, IntPtr wParam, IntPtr lParam);
-        new void Slot4 (); // void SetNotifyCallbackInterface(ref IntPtr pSpCallback, IntPtr wParam, IntPtr lParam);
-        new void Slot5 (); // void SetNotifyWin32Event();
+        new void SetNotifySink(ISpNotifySink pNotifySink);
+        new void SetNotifyWindowMessage(UInt32 hWnd, UInt32 Msg, IntPtr wParam, IntPtr lParam);
+        new void Slot3(); // void SetNotifyCallbackFunction(ref IntPtr pfnCallback, IntPtr wParam, IntPtr lParam);
+        new void Slot4(); // void SetNotifyCallbackInterface(ref IntPtr pSpCallback, IntPtr wParam, IntPtr lParam);
+        new void Slot5(); // void SetNotifyWin32Event();
         [PreserveSig]
-        new int WaitForNotifyEvent (UInt32 dwMilliseconds);
-        new void Slot7 (); // IntPtr GetNotifyEventHandle();
+        new int WaitForNotifyEvent(UInt32 dwMilliseconds);
+        new void Slot7(); // IntPtr GetNotifyEventHandle();
 
         // ISpEventSource Methods
-        new void SetInterest (UInt64 ullEventInterest, UInt64 ullQueuedInterest);
+        new void SetInterest(UInt64 ullEventInterest, UInt64 ullQueuedInterest);
         new void GetEvents(UInt32 ulCount, out SPEVENT pEventArray, out UInt32 pulFetched);
-        new void Slot10 (); // void GetInfo(out SPEVENTSOURCEINFO pInfo);
+        new void Slot10(); // void GetInfo(out SPEVENTSOURCEINFO pInfo);
 
         // ISpEventSource2 Methods
-        void GetEventsEx (UInt32 ulCount, out SPEVENTEX pEventArray, out UInt32 pulFetched);
+        void GetEventsEx(UInt32 ulCount, out SPEVENTEX pEventArray, out UInt32 pulFetched);
     }
 
-    [ComImport, Guid ("259684DC-37C3-11D2-9603-00C04F8EE628"), InterfaceType (ComInterfaceType.InterfaceIsIUnknown)]
+    [ComImport, Guid("259684DC-37C3-11D2-9603-00C04F8EE628"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
     internal interface ISpNotifySink
     {
         // ISpNotifySink Methods
-        void Notify ();
+        void Notify();
     }
-
 }

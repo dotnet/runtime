@@ -8,8 +8,8 @@ namespace System.Speech.Recognition
 {
     // Class for grammars based on a statistical language model for doing dictation.
     /// TODOC <_include file='doc\DictationGrammar.uex' path='docs/doc[@for="DictationGrammar"]/*' />
-    
-    public class DictationGrammar: Grammar
+
+    public class DictationGrammar : Grammar
     {
         // The implementation of DictationGrammar stores a Uri in the Grammar.Uri field.
         // Then when LoadGrammar is called the Uri handling part of LoadGrammar is modified to check
@@ -26,13 +26,13 @@ namespace System.Speech.Recognition
 
         // Load the generic dictation language model.
         /// TODOC <_include file='doc\DictationGrammar.uex' path='docs/doc[@for="DictationGrammar.DictationGrammar1"]/*' />
-        public DictationGrammar() : base(_defaultDictationUri, null, null)
+        public DictationGrammar() : base(s_defaultDictationUri, null, null)
         {
         }
 
         // Load a specific topic. The topic is of the form "grammar:dictation#topic"
         /// TODOC <_include file='doc\DictationGrammar.uex' path='docs/doc[@for="DictationGrammar.DictationGrammar2"]/*' />
-        public DictationGrammar(string topic) : base (new Uri(topic, UriKind.RelativeOrAbsolute), null, null)
+        public DictationGrammar(string topic) : base(new Uri(topic, UriKind.RelativeOrAbsolute), null, null)
         {
         }
 
@@ -87,10 +87,9 @@ namespace System.Speech.Recognition
 
         #region Private Fields
 
-        private static Uri _defaultDictationUri = new Uri("grammar:dictation");
+        private static Uri s_defaultDictationUri = new Uri("grammar:dictation");
 
         #endregion
-
     }
 }
 

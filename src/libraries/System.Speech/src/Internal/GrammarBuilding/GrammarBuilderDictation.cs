@@ -14,7 +14,6 @@ namespace System.Speech.Internal.GrammarBuilding
     /// </summary>
     internal sealed class GrammarBuilderDictation : GrammarBuilderBase
     {
-
         //*******************************************************************
         //
         // Constructors
@@ -26,8 +25,8 @@ namespace System.Speech.Internal.GrammarBuilding
         /// <summary>
         /// 
         /// </summary>
-        internal GrammarBuilderDictation ()
-            : this (null)
+        internal GrammarBuilderDictation()
+            : this(null)
         {
         }
 
@@ -35,7 +34,7 @@ namespace System.Speech.Internal.GrammarBuilding
         /// 
         /// </summary>
         /// <param name="category"></param>
-        internal GrammarBuilderDictation (string category)
+        internal GrammarBuilderDictation(string category)
         {
             _category = category;
         }
@@ -51,7 +50,7 @@ namespace System.Speech.Internal.GrammarBuilding
         #region Public Methods
 
         /// TODOC <_include file='doc\SpeechAudioFormatInfo.uex' path='docs/doc[@for="SpeechAudioFormatInfo.Equals"]/*' />
-        public override bool Equals (object obj)
+        public override bool Equals(object obj)
         {
             GrammarBuilderDictation refObj = obj as GrammarBuilderDictation;
             if (refObj == null)
@@ -62,9 +61,9 @@ namespace System.Speech.Internal.GrammarBuilding
         }
 
         /// TODOC <_include file='doc\SpeechAudioFormatInfo.uex' path='docs/doc[@for="SpeechAudioFormatInfo.GetHashCode"]/*' />
-        public override int GetHashCode ()
+        public override int GetHashCode()
         {
-            return _category == null ? 0 : _category.GetHashCode ();
+            return _category == null ? 0 : _category.GetHashCode();
         }
 
         #endregion
@@ -81,9 +80,9 @@ namespace System.Speech.Internal.GrammarBuilding
         /// 
         /// </summary>
         /// <returns></returns>
-        internal override GrammarBuilderBase Clone ()
+        internal override GrammarBuilderBase Clone()
         {
-            return new GrammarBuilderDictation (_category);
+            return new GrammarBuilderDictation(_category);
         }
 
         /// <summary>
@@ -94,10 +93,10 @@ namespace System.Speech.Internal.GrammarBuilding
         /// <param name="rule"></param>
         /// <param name="ruleIds"></param>
         /// <returns></returns>
-        internal override IElement CreateElement (IElementFactory elementFactory, IElement parent, IRule rule, IdentifierCollection ruleIds)
+        internal override IElement CreateElement(IElementFactory elementFactory, IElement parent, IRule rule, IdentifierCollection ruleIds)
         {
             // Return the IRuleRef to the dictation grammar
-            return CreateRuleRefToDictation (elementFactory, parent);
+            return CreateRuleRefToDictation(elementFactory, parent);
         }
 
         #endregion
@@ -137,19 +136,19 @@ namespace System.Speech.Internal.GrammarBuilding
         /// <param name="elementFactory"></param>
         /// <param name="parent"></param>
         /// <returns></returns>
-        private IRuleRef CreateRuleRefToDictation (IElementFactory elementFactory, IElement parent)
+        private IRuleRef CreateRuleRefToDictation(IElementFactory elementFactory, IElement parent)
         {
             Uri ruleUri;
-            if (!string.IsNullOrEmpty (_category) && _category == "spelling")
+            if (!string.IsNullOrEmpty(_category) && _category == "spelling")
             {
-                ruleUri = new Uri ("grammar:dictation#spelling", UriKind.RelativeOrAbsolute);
+                ruleUri = new Uri("grammar:dictation#spelling", UriKind.RelativeOrAbsolute);
             }
             else
             {
-                ruleUri = new Uri ("grammar:dictation", UriKind.RelativeOrAbsolute);
+                ruleUri = new Uri("grammar:dictation", UriKind.RelativeOrAbsolute);
             }
 
-            return elementFactory.CreateRuleRef (parent, ruleUri, null, null);
+            return elementFactory.CreateRuleRef(parent, ruleUri, null, null);
         }
 
         #endregion
@@ -169,6 +168,5 @@ namespace System.Speech.Internal.GrammarBuilding
         private readonly string _category;
 
         #endregion
-
     }
 }

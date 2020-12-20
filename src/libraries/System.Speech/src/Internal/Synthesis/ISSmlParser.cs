@@ -22,47 +22,47 @@ namespace System.Speech.Internal.Synthesis
 
     internal interface ISsmlParser
     {
-        object ProcessSpeak (string sVersion, string sBaseUri, CultureInfo culture, List<SsmlXmlAttribute> extraNamespace);
-        void ProcessText (string text, object voice, ref FragmentState fragmentState, int position, bool fIgnore);
-        void ProcessAudio (object voice, string sUri, string baseUri, bool fIgnore);
-        void ProcessBreak (object voice, ref FragmentState fragmentState, EmphasisBreak eBreak, int time, bool fIgnore);
-        void ProcessDesc (CultureInfo culture);
-        void ProcessEmphasis (bool noLevel, EmphasisWord word);
-        void ProcessMark (object voice, ref FragmentState fragmentState, string name, bool fIgnore);
-        object ProcessTextBlock (bool isParagraph, object voice, ref FragmentState fragmentState, CultureInfo culture, bool newCulture, VoiceGender gender, VoiceAge age);
-        void EndProcessTextBlock (bool isParagraph);
-        void ProcessPhoneme (ref FragmentState fragmentState, AlphabetType alphabet, string ph, char [] phoneIds);
-        void ProcessProsody (string pitch, string range, string rate, string volume, string duration, string points);
-        void ProcessSayAs (string interpretAs, string format, string detail);
-        void ProcessSub (string alias, object voice, ref FragmentState fragmentState, int position, bool fIgnore);
-        object ProcessVoice (string name, CultureInfo culture, VoiceGender gender, VoiceAge age, int variant, bool fNewCulture, List<SsmlXmlAttribute> extraNamespace);
-        void ProcessLexicon (Uri uri, string type);
-        void EndElement ();
-        void EndSpeakElement ();
+        object ProcessSpeak(string sVersion, string sBaseUri, CultureInfo culture, List<SsmlXmlAttribute> extraNamespace);
+        void ProcessText(string text, object voice, ref FragmentState fragmentState, int position, bool fIgnore);
+        void ProcessAudio(object voice, string sUri, string baseUri, bool fIgnore);
+        void ProcessBreak(object voice, ref FragmentState fragmentState, EmphasisBreak eBreak, int time, bool fIgnore);
+        void ProcessDesc(CultureInfo culture);
+        void ProcessEmphasis(bool noLevel, EmphasisWord word);
+        void ProcessMark(object voice, ref FragmentState fragmentState, string name, bool fIgnore);
+        object ProcessTextBlock(bool isParagraph, object voice, ref FragmentState fragmentState, CultureInfo culture, bool newCulture, VoiceGender gender, VoiceAge age);
+        void EndProcessTextBlock(bool isParagraph);
+        void ProcessPhoneme(ref FragmentState fragmentState, AlphabetType alphabet, string ph, char[] phoneIds);
+        void ProcessProsody(string pitch, string range, string rate, string volume, string duration, string points);
+        void ProcessSayAs(string interpretAs, string format, string detail);
+        void ProcessSub(string alias, object voice, ref FragmentState fragmentState, int position, bool fIgnore);
+        object ProcessVoice(string name, CultureInfo culture, VoiceGender gender, VoiceAge age, int variant, bool fNewCulture, List<SsmlXmlAttribute> extraNamespace);
+        void ProcessLexicon(Uri uri, string type);
+        void EndElement();
+        void EndSpeakElement();
 
-        void ProcessUnknownElement (object voice, ref FragmentState fragmentState, XmlReader reader);
-        void StartProcessUnknownAttributes (object voice, ref FragmentState fragmentState, string element, List<SsmlXmlAttribute> extraAttributes);
-        void EndProcessUnknownAttributes (object voice, ref FragmentState fragmentState, string element, List<SsmlXmlAttribute> extraAttributes);
+        void ProcessUnknownElement(object voice, ref FragmentState fragmentState, XmlReader reader);
+        void StartProcessUnknownAttributes(object voice, ref FragmentState fragmentState, string element, List<SsmlXmlAttribute> extraAttributes);
+        void EndProcessUnknownAttributes(object voice, ref FragmentState fragmentState, string element, List<SsmlXmlAttribute> extraAttributes);
 
         // Prompt data used
-        void ContainsPexml (string pexmlPrefix);
+        void ContainsPexml(string pexmlPrefix);
 
         // Prompt Engine tags
-        bool BeginPromptEngineOutput (object voice);
-        void EndPromptEngineOutput (object voice);
+        bool BeginPromptEngineOutput(object voice);
+        void EndPromptEngineOutput(object voice);
 
         // global elements
-        bool ProcessPromptEngineDatabase (object voice, string fname, string delta, string idset);
-        bool ProcessPromptEngineDiv (object voice);
-        bool ProcessPromptEngineId (object voice, string id);
+        bool ProcessPromptEngineDatabase(object voice, string fname, string delta, string idset);
+        bool ProcessPromptEngineDiv(object voice);
+        bool ProcessPromptEngineId(object voice, string id);
 
         // scoped elements
-        bool BeginPromptEngineTts (object voice);
-        void EndPromptEngineTts (object voice);
-        bool BeginPromptEngineWithTag (object voice, string tag);
-        void EndPromptEngineWithTag (object voice, string tag);
-        bool BeginPromptEngineRule (object voice, string name);
-        void EndPromptEngineRule (object voice, string name);
+        bool BeginPromptEngineTts(object voice);
+        void EndPromptEngineTts(object voice);
+        bool BeginPromptEngineWithTag(object voice, string tag);
+        void EndPromptEngineWithTag(object voice, string tag);
+        bool BeginPromptEngineRule(object voice, string name);
+        void EndPromptEngineRule(object voice, string name);
 
         // Properties
         string Ssml { get; }
@@ -73,7 +73,7 @@ namespace System.Speech.Internal.Synthesis
         internal Uri _uri;
         internal string _mediaType;
 
-        internal LexiconEntry (Uri uri, string mediaType)
+        internal LexiconEntry(Uri uri, string mediaType)
         {
             _uri = uri;
             _mediaType = mediaType;
@@ -82,25 +82,24 @@ namespace System.Speech.Internal.Synthesis
         /// <summary>
         /// Tests whether two objects are equivalent
         /// </summary>
-        public override bool Equals (object obj)
+        public override bool Equals(object obj)
         {
             LexiconEntry entry = obj as LexiconEntry;
-            return entry != null && _uri.Equals (entry._uri);
+            return entry != null && _uri.Equals(entry._uri);
         }
 
         /// <summary>
         /// Overrides Object.GetHashCode()
         /// </summary>
-        public override int GetHashCode ()
+        public override int GetHashCode()
         {
-            return _uri.GetHashCode ();
+            return _uri.GetHashCode();
         }
-
     }
 
     internal class SsmlXmlAttribute
     {
-        internal SsmlXmlAttribute (string prefix, string name, string value, string ns)
+        internal SsmlXmlAttribute(string prefix, string name, string value, string ns)
         {
             _prefix = prefix;
             _name = name;

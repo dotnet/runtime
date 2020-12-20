@@ -19,8 +19,8 @@ namespace System.Speech.Internal.SrgsCompiler
 
         #region Constructors
 
-        internal GrammarElement (Backend backend, CustomGrammar cg)
-            : base (null)
+        internal GrammarElement(Backend backend, CustomGrammar cg)
+            : base(null)
         {
             _cg = cg;
             _backend = backend;
@@ -48,7 +48,7 @@ namespace System.Speech.Internal.SrgsCompiler
             }
         }
 
-        IRule IGrammar.CreateRule (string id, RulePublic publicRule, RuleDynamic dynamic, bool hasScript)
+        IRule IGrammar.CreateRule(string id, RulePublic publicRule, RuleDynamic dynamic, bool hasScript)
         {
             SPCFGRULEATTRIBUTES dwRuleAttributes = 0;
 
@@ -79,47 +79,47 @@ namespace System.Speech.Internal.SrgsCompiler
             }
 
             // Create rule with specified attributes
-            Rule rule = GetRule (id, dwRuleAttributes);
+            Rule rule = GetRule(id, dwRuleAttributes);
 
             // Add this rule to the list of rules of the STG list
             if (publicRule == RulePublic.True || id == _sRoot || hasScript)
             {
-                _cg._rules.Add (rule);
+                _cg._rules.Add(rule);
             }
-            return (IRule) rule;
+            return (IRule)rule;
         }
 
-        void IElement.PostParse (IElement parent)
+        void IElement.PostParse(IElement parent)
         {
             if (_sRoot != null && !_hasRoot)
             {
                 // "Root rule ""%s"" is undefined."
-                XmlParser.ThrowSrgsException (SRID.RootNotDefined, _sRoot);
+                XmlParser.ThrowSrgsException(SRID.RootNotDefined, _sRoot);
             }
 
             if (_undefRules.Count > 0)
             {
                 // "Root rule ""%s"" is undefined."
-                Rule rule = _undefRules [0];
-                XmlParser.ThrowSrgsException (SRID.UndefRuleRef, rule.Name);
+                Rule rule = _undefRules[0];
+                XmlParser.ThrowSrgsException(SRID.UndefRuleRef, rule.Name);
             }
 
             // SAPI semantics only for .Net Semantics
-            bool containsCode = ((IGrammar) this).CodeBehind.Count > 0 || ((IGrammar) this).ImportNamespaces.Count > 0 || ((IGrammar) this).AssemblyReferences.Count > 0 || CustomGrammar._scriptRefs.Count > 0;
-            if (containsCode && ((IGrammar) this).TagFormat != System.Speech.Recognition.SrgsGrammar.SrgsTagFormat.KeyValuePairs)
+            bool containsCode = ((IGrammar)this).CodeBehind.Count > 0 || ((IGrammar)this).ImportNamespaces.Count > 0 || ((IGrammar)this).AssemblyReferences.Count > 0 || CustomGrammar._scriptRefs.Count > 0;
+            if (containsCode && ((IGrammar)this).TagFormat != System.Speech.Recognition.SrgsGrammar.SrgsTagFormat.KeyValuePairs)
             {
-                XmlParser.ThrowSrgsException (SRID.InvalidSemanticProcessingType);
+                XmlParser.ThrowSrgsException(SRID.InvalidSemanticProcessingType);
             }
         }
 
 
-        internal void AddScript (string name, string code)
+        internal void AddScript(string name, string code)
         {
             foreach (Rule rule in _cg._rules)
             {
                 if (rule.Name == name)
                 {
-                    rule.Script.Append (code);
+                    rule.Script.Append(code);
                     break;
                 }
             }
@@ -147,7 +147,7 @@ namespace System.Speech.Internal.SrgsCompiler
             {
                 if (value != null)
                 {
-                    _backend.SetBasePath (value.ToString ());
+                    _backend.SetBasePath(value.ToString());
                 }
             }
         }
@@ -159,7 +159,7 @@ namespace System.Speech.Internal.SrgsCompiler
         {
             set
             {
-                Helpers.ThrowIfNull (value, "value");
+                Helpers.ThrowIfNull(value, "value");
 
                 _backend.LangId = value.LCID;
             }
@@ -194,11 +194,11 @@ namespace System.Speech.Internal.SrgsCompiler
         {
             get
             {
-                return System.Speech.Recognition.SrgsGrammar.SrgsDocument.GrammarOptions2TagFormat (_backend.GrammarOptions);
+                return System.Speech.Recognition.SrgsGrammar.SrgsDocument.GrammarOptions2TagFormat(_backend.GrammarOptions);
             }
             set
             {
-                _backend.GrammarOptions = System.Speech.Recognition.SrgsGrammar.SrgsDocument.TagFormat2GrammarOptions (value);
+                _backend.GrammarOptions = System.Speech.Recognition.SrgsGrammar.SrgsDocument.TagFormat2GrammarOptions(value);
             }
         }
 
@@ -345,38 +345,38 @@ namespace System.Speech.Internal.SrgsCompiler
         /// <param name="sRuleId">Rule name</param>
         /// <param name="dwAttributes">Rule attributes</param>
         /// <returns></returns>
-        private Rule GetRule (string sRuleId, SPCFGRULEATTRIBUTES dwAttributes)
+        private Rule GetRule(string sRuleId, SPCFGRULEATTRIBUTES dwAttributes)
         {
-            System.Diagnostics.Debug.Assert (!string.IsNullOrEmpty (sRuleId));
+            System.Diagnostics.Debug.Assert(!string.IsNullOrEmpty(sRuleId));
 
             // Check if RuleID is unique.
-            Rule rule = _backend.FindRule (sRuleId);
+            Rule rule = _backend.FindRule(sRuleId);
 
             if (rule != null)
             {
                 // Rule already defined.  Check if it is a placeholder.
-                int iRule = _undefRules.IndexOf (rule);
+                int iRule = _undefRules.IndexOf(rule);
 
                 if (iRule != -1)
                 {
                     // This is a UndefinedRule created as a placeholder for a RuleRef.
                     // - Update placeholder rule with correct attributes.
-                    _backend.SetRuleAttributes (rule, dwAttributes);
+                    _backend.SetRuleAttributes(rule, dwAttributes);
 
                     // - Remove this now defined rule from UndefinedRules.
                     //   Swap top element with this rule and pop the top element.
-                    _undefRules.RemoveAt (iRule);
+                    _undefRules.RemoveAt(iRule);
                 }
                 else
                 {
                     // Multiple definitions of the same Rule.                    
-                    XmlParser.ThrowSrgsException (SRID.RuleRedefinition, sRuleId);    // "Redefinition of rule ""%s""."
+                    XmlParser.ThrowSrgsException(SRID.RuleRedefinition, sRuleId);    // "Redefinition of rule ""%s""."
                 }
             }
             else
             {
                 // Rule not yet defined.  Create a new rule and return the InitalState.
-                rule = _backend.CreateRule (sRuleId, dwAttributes);
+                rule = _backend.CreateRule(sRuleId, dwAttributes);
             }
 
             return rule;
@@ -395,10 +395,10 @@ namespace System.Speech.Internal.SrgsCompiler
         private Backend _backend;
 
         // Collection of referenced, but undefined, rules
-        private List<Rule> _undefRules = new List<Rule> ();
+        private List<Rule> _undefRules = new List<Rule>();
 
         // Collection of defined rules
-        private List<Rule> _rules = new List<Rule> ();
+        private List<Rule> _rules = new List<Rule>();
 
 
         private CustomGrammar _cg;

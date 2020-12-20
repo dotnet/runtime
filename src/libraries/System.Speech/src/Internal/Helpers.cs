@@ -23,17 +23,17 @@ namespace System.Speech.Internal
 #pragma warning disable 56507
 
         // Throws exception if the specified Rule does not have a valid Id.
-        static internal void ThrowIfEmptyOrNull (string s, string paramName)
+        static internal void ThrowIfEmptyOrNull(string s, string paramName)
         {
-            if (string.IsNullOrEmpty (s))
+            if (string.IsNullOrEmpty(s))
             {
                 if (s == null)
                 {
-                    throw new ArgumentNullException (paramName);
+                    throw new ArgumentNullException(paramName);
                 }
                 else
                 {
-                    throw new ArgumentException (SR.Get (SRID.StringCanNotBeEmpty, paramName), paramName);
+                    throw new ArgumentException(SR.Get(SRID.StringCanNotBeEmpty, paramName), paramName);
                 }
             }
         }
@@ -41,18 +41,18 @@ namespace System.Speech.Internal
 #pragma warning restore 56507
 
         // Throws exception if the specified Rule does not have a valid Id.
-        static internal void ThrowIfNull (object value, string paramName)
+        static internal void ThrowIfNull(object value, string paramName)
         {
             if (value == null)
             {
-                throw new ArgumentNullException (paramName);
+                throw new ArgumentNullException(paramName);
             }
         }
 
-        static internal bool CompareInvariantCulture (CultureInfo culture1, CultureInfo culture2)
+        static internal bool CompareInvariantCulture(CultureInfo culture1, CultureInfo culture2)
         {
             // If perfect match easy
-            if (culture1.Equals (culture2))
+            if (culture1.Equals(culture2))
             {
                 return true;
             }
@@ -66,47 +66,47 @@ namespace System.Speech.Internal
             {
                 culture2 = culture2.Parent;
             }
-            return culture1.Equals (culture2);
+            return culture1.Equals(culture2);
         }
 
         // Copy the input cfg to the output.
         // Streams point to the start of the data on entry and to the end on exit
-        static internal void CopyStream (Stream inputStream, Stream outputStream, int bytesToCopy)
+        static internal void CopyStream(Stream inputStream, Stream outputStream, int bytesToCopy)
         {
             // Copy using an intermediate buffer of a reasonable size.
             int bufferSize = bytesToCopy > 4096 ? 4096 : bytesToCopy;
-            byte [] buffer = new byte [bufferSize];
+            byte[] buffer = new byte[bufferSize];
             int bytesRead;
             while (bytesToCopy > 0)
             {
-                bytesRead = inputStream.Read (buffer, 0, bufferSize);
+                bytesRead = inputStream.Read(buffer, 0, bufferSize);
                 if (bytesRead <= 0)
                 {
-                    throw new EndOfStreamException (SR.Get (SRID.StreamEndedUnexpectedly));
+                    throw new EndOfStreamException(SR.Get(SRID.StreamEndedUnexpectedly));
                 }
-                outputStream.Write (buffer, 0, bytesRead);
+                outputStream.Write(buffer, 0, bytesRead);
                 bytesToCopy -= bytesRead;
             }
         }
 
         // Copy the input cfg to the output.
         // inputStream points to the start of the data on entry and to the end on exit
-        static internal byte [] ReadStreamToByteArray (Stream inputStream, int bytesToCopy)
+        static internal byte[] ReadStreamToByteArray(Stream inputStream, int bytesToCopy)
         {
-            byte [] outputArray = new byte [bytesToCopy];
-            BlockingRead (inputStream, outputArray, 0, bytesToCopy);
+            byte[] outputArray = new byte[bytesToCopy];
+            BlockingRead(inputStream, outputArray, 0, bytesToCopy);
             return outputArray;
         }
 
-        static internal void BlockingRead (Stream stream, byte [] buffer, int offset, int count)
+        static internal void BlockingRead(Stream stream, byte[] buffer, int offset, int count)
         {
             // Stream is not like IStream - it will block until some data is available but not necessarily all of it.
             while (count > 0)
             {
-                int read = stream.Read (buffer, offset, count);
+                int read = stream.Read(buffer, offset, count);
                 if (read <= 0) // End of stream
                 {
-                    throw new EndOfStreamException ();
+                    throw new EndOfStreamException();
                 }
                 count -= read;
                 offset += read;
@@ -124,12 +124,11 @@ namespace System.Speech.Internal
 
         #region Internal fields
 
-        internal static readonly char [] _achTrimChars = new char [] { ' ', '\t', '\n', '\r' };
+        internal static readonly char[] _achTrimChars = new char[] { ' ', '\t', '\n', '\r' };
 
         // Size of a char (avoid to use the marshal class
         internal const int _sizeOfChar = 2;
 
         #endregion
-
     }
 }

@@ -11,8 +11,6 @@ using System.Speech.Recognition;
 
 namespace System.Speech.Internal.SapiInterop
 {
-
-
     #region Enum
 
     [Flags]
@@ -30,7 +28,7 @@ namespace System.Speech.Internal.SapiInterop
         SPF_PARSE_SSML = 0x0100    // Force XML parsing as W3C SSML
     }
 
-    enum SpeechRunState
+    internal enum SpeechRunState
     {
         SPRS_DONE,
         SPRS_IS_SPEAKING
@@ -234,8 +232,8 @@ namespace System.Speech.Internal.SapiInterop
     [Flags]
     internal enum SPRESULTALPHABET
     {
-        SPRA_NONE       = 0,
-        SPRA_APP_UPS    = 0x0001,
+        SPRA_NONE = 0,
+        SPRA_APP_UPS = 0x0001,
         SPRA_ENGINE_UPS = 0x0002
     }
 
@@ -249,7 +247,7 @@ namespace System.Speech.Internal.SapiInterop
 
     /// Note:   This structure doesn't exist in SAPI.idl but is related to SPPHRASEALT.
     ///         We use it to map memory containted in the serialized result (instead of reading sequentially)
-    [StructLayout (LayoutKind.Sequential)]
+    [StructLayout(LayoutKind.Sequential)]
     internal class SPSERIALIZEDPHRASEALT
     {
         internal UInt32 ulStartElementInParent;
@@ -260,7 +258,7 @@ namespace System.Speech.Internal.SapiInterop
 
 #pragma warning restore 649
 
-    [StructLayout (LayoutKind.Sequential)]
+    [StructLayout(LayoutKind.Sequential)]
     [Serializable]
     internal struct FILETIME
     {
@@ -268,7 +266,7 @@ namespace System.Speech.Internal.SapiInterop
         internal UInt32 dwHighDateTime;
     }
 
-    [StructLayout (LayoutKind.Sequential)]
+    [StructLayout(LayoutKind.Sequential)]
     [Serializable]
     internal struct SPRECORESULTTIMES
     {
@@ -285,7 +283,7 @@ namespace System.Speech.Internal.SapiInterop
         internal UInt32 ulStartSelection;
         internal UInt32 cchSelection;
 
-        internal SPTEXTSELECTIONINFO (UInt32 ulStartActiveOffset, UInt32 cchActiveChars,
+        internal SPTEXTSELECTIONINFO(UInt32 ulStartActiveOffset, UInt32 cchActiveChars,
             UInt32 ulStartSelection, UInt32 cchSelection)
         {
             this.ulStartActiveOffset = ulStartActiveOffset;
@@ -295,7 +293,7 @@ namespace System.Speech.Internal.SapiInterop
         }
     }
 
-    [StructLayout (LayoutKind.Sequential)]
+    [StructLayout(LayoutKind.Sequential)]
     internal struct SPAUDIOSTATUS
     {
         internal Int32 cbFreeBuffSpace;
@@ -307,7 +305,7 @@ namespace System.Speech.Internal.SapiInterop
         internal UInt32 dwReserved2;
     }
 
-    [StructLayout (LayoutKind.Sequential)]
+    [StructLayout(LayoutKind.Sequential)]
     internal struct SPRECOGNIZERSTATUS
     {
         internal SPAUDIOSTATUS AudioStatus;
@@ -316,22 +314,22 @@ namespace System.Speech.Internal.SapiInterop
         internal UInt32 ulNumActive;
         internal Guid clsidEngine;
         internal UInt32 cLangIDs;
-        [MarshalAs (UnmanagedType.ByValArray, SizeConst = 20)] // SP_MAX_LANGIDS
-        internal Int16 [] aLangID;
+        [MarshalAs(UnmanagedType.ByValArray, SizeConst = 20)] // SP_MAX_LANGIDS
+        internal Int16[] aLangID;
         internal UInt64 ullRecognitionStreamTime;
     }
 
-    [StructLayout (LayoutKind.Sequential)]
+    [StructLayout(LayoutKind.Sequential)]
     internal struct SPRECOCONTEXTSTATUS
     {
         internal SPINTERFERENCE eInterference;
-        [MarshalAs (UnmanagedType.ByValArray, SizeConst = 255)]
-        internal Int16 [] szRequestTypeOfUI; // Can't really be marsalled as a string directly
+        [MarshalAs(UnmanagedType.ByValArray, SizeConst = 255)]
+        internal Int16[] szRequestTypeOfUI; // Can't really be marsalled as a string directly
         internal UInt32 dwReserved1;
         internal UInt32 dwReserved2;
     }
 
-    [StructLayout (LayoutKind.Sequential)]
+    [StructLayout(LayoutKind.Sequential)]
     internal class SPSEMANTICERRORINFO
     {
         internal UInt32 ulLineNumber;
@@ -341,7 +339,7 @@ namespace System.Speech.Internal.SapiInterop
         internal Int32 hrResultCode;
     }
 
-    [StructLayout (LayoutKind.Sequential)]
+    [StructLayout(LayoutKind.Sequential)]
     internal struct SPSERIALIZEDRESULT
     {
         internal UInt32 ulSerializedSize;       // Count in bytes (including this ULONG) of the entire phrase
@@ -350,7 +348,7 @@ namespace System.Speech.Internal.SapiInterop
 #pragma warning disable 649
 
     // Serialized result header from versions of SAPI prior to 5.3.
-    [StructLayout (LayoutKind.Sequential)]
+    [StructLayout(LayoutKind.Sequential)]
     [Serializable]
     internal class SPRESULTHEADER_Sapi51
     {
@@ -373,19 +371,18 @@ namespace System.Speech.Internal.SapiInterop
         internal float fTimePerByte;          // Conversion factor from engine stream size to time.
         internal float fInputScaleFactor;     // Conversion factor from engine stream size to input stream size.
         internal SPRECORESULTTIMES times;     // time info of result
-
     }
 
     // The SAPI 5.3 result header added extra fields.
-    [StructLayout (LayoutKind.Sequential)]
+    [StructLayout(LayoutKind.Sequential)]
     [Serializable]
     internal class SPRESULTHEADER
     {
-        internal SPRESULTHEADER ()
+        internal SPRESULTHEADER()
         {
         }
 
-        internal SPRESULTHEADER (SPRESULTHEADER_Sapi51 source)
+        internal SPRESULTHEADER(SPRESULTHEADER_Sapi51 source)
         {
             ulSerializedSize = source.ulSerializedSize;
             cbHeaderSize = source.cbHeaderSize;
@@ -408,13 +405,13 @@ namespace System.Speech.Internal.SapiInterop
             times = source.times;
         }
 
-        internal void Validate ()
+        internal void Validate()
         {
-            ValidateOffsetAndLength (0, cbHeaderSize);
-            ValidateOffsetAndLength (ulPhraseOffset, ulPhraseDataSize);
-            ValidateOffsetAndLength (ulPhraseAltOffset, ulPhraseAltDataSize);
-            ValidateOffsetAndLength (ulRetainedOffset, ulRetainedDataSize);
-            ValidateOffsetAndLength (ulDriverDataOffset, ulDriverDataSize);
+            ValidateOffsetAndLength(0, cbHeaderSize);
+            ValidateOffsetAndLength(ulPhraseOffset, ulPhraseDataSize);
+            ValidateOffsetAndLength(ulPhraseAltOffset, ulPhraseAltDataSize);
+            ValidateOffsetAndLength(ulRetainedOffset, ulRetainedDataSize);
+            ValidateOffsetAndLength(ulDriverDataOffset, ulDriverDataSize);
         }
 
         // Duplicate all the fields of SPRESULTHEADER_Sapi51 - Marshal.PtrToStructure seems to need these to be defined again.
@@ -438,14 +435,14 @@ namespace System.Speech.Internal.SapiInterop
         internal float fInputScaleFactor;
         internal SPRECORESULTTIMES times;
 
-        private void ValidateOffsetAndLength (UInt32 offset, UInt32 length)
+        private void ValidateOffsetAndLength(UInt32 offset, UInt32 length)
         {
             if (offset + length > ulSerializedSize)
             {
-                throw new FormatException (SR.Get (SRID.ResultInvalidFormat));
+                throw new FormatException(SR.Get(SRID.ResultInvalidFormat));
             }
         }
-        internal UInt32 fAlphabet; 
+        internal UInt32 fAlphabet;
         // Not present in SAPI 5.1 results; on SAPI 5.without IPA this is set to zero, with IPA it will indicate 
         // the alphabet of pronunciations the result
 
@@ -454,7 +451,7 @@ namespace System.Speech.Internal.SapiInterop
 
 
     // Serialized phrase header from versions of SAPI prior to 5.2.
-    [StructLayout (LayoutKind.Sequential)]
+    [StructLayout(LayoutKind.Sequential)]
     internal class SPSERIALIZEDPHRASE_Sapi51
     {
         internal UInt32 ulSerializedSize;          // This MUST be the first field to line up with SPSERIALIZEDPHRASE
@@ -477,7 +474,7 @@ namespace System.Speech.Internal.SapiInterop
         internal UInt32 SREnginePrivateDataOffset;
     }
 
-    [StructLayout (LayoutKind.Sequential)]
+    [StructLayout(LayoutKind.Sequential)]
     [Serializable]
     internal class SPPHRASE
     {
@@ -509,15 +506,15 @@ namespace System.Speech.Internal.SapiInterop
         /// <param name="memHandles"></param>
         /// <param name="coMem"></param>
         /// <returns></returns>
-        internal static ISpPhrase CreatePhraseFromText (string phrase, CultureInfo culture, out GCHandle [] memHandles, out IntPtr coMem)
+        internal static ISpPhrase CreatePhraseFromText(string phrase, CultureInfo culture, out GCHandle[] memHandles, out IntPtr coMem)
         {
-            string[] words = phrase.Split(new char[] { } , StringSplitOptions.RemoveEmptyEntries);
-            RecognizedWordUnit [] wordUnits = new RecognizedWordUnit [words.Length];
+            string[] words = phrase.Split(new char[] { }, StringSplitOptions.RemoveEmptyEntries);
+            RecognizedWordUnit[] wordUnits = new RecognizedWordUnit[words.Length];
             for (int i = 0; i < wordUnits.Length; i++)
-			{
-                wordUnits [i] = new RecognizedWordUnit (null, 1.0f, null, words [i], DisplayAttributes.OneTrailingSpace, TimeSpan.Zero, TimeSpan.Zero);
+            {
+                wordUnits[i] = new RecognizedWordUnit(null, 1.0f, null, words[i], DisplayAttributes.OneTrailingSpace, TimeSpan.Zero, TimeSpan.Zero);
             }
-            return CreatePhraseFromWordUnits (wordUnits, culture, out memHandles, out coMem);
+            return CreatePhraseFromWordUnits(wordUnits, culture, out memHandles, out coMem);
         }
 
         /// <summary>
@@ -530,85 +527,85 @@ namespace System.Speech.Internal.SapiInterop
         /// <param name="memHandles"></param>
         /// <param name="coMem"></param>
         /// <returns></returns>
-        internal static ISpPhrase CreatePhraseFromWordUnits (RecognizedWordUnit [] words, CultureInfo culture, out GCHandle [] memHandles, out IntPtr coMem)
+        internal static ISpPhrase CreatePhraseFromWordUnits(RecognizedWordUnit[] words, CultureInfo culture, out GCHandle[] memHandles, out IntPtr coMem)
         {
-            SPPHRASEELEMENT [] elements = new SPPHRASEELEMENT [words.Length];
+            SPPHRASEELEMENT[] elements = new SPPHRASEELEMENT[words.Length];
 
             // build the unmanaged interop layer
-            int size = Marshal.SizeOf (typeof (SPPHRASEELEMENT));
-            List<GCHandle> handles = new List<GCHandle> ();
+            int size = Marshal.SizeOf(typeof(SPPHRASEELEMENT));
+            List<GCHandle> handles = new List<GCHandle>();
 
-            coMem = Marshal.AllocCoTaskMem (size * elements.Length);
+            coMem = Marshal.AllocCoTaskMem(size * elements.Length);
             try
             {
                 for (int i = 0; i < words.Length; i++)
                 {
-                    RecognizedWordUnit word = words [i];
-                    elements [i] = new SPPHRASEELEMENT ();
+                    RecognizedWordUnit word = words[i];
+                    elements[i] = new SPPHRASEELEMENT();
 
                     // diplay + confidence
-                    elements [i].bDisplayAttributes = RecognizedWordUnit.DisplayAttributesToSapiAttributes (word.DisplayAttributes == DisplayAttributes.None ? DisplayAttributes.OneTrailingSpace : word.DisplayAttributes);
-                    elements [i].SREngineConfidence = word.Confidence;
+                    elements[i].bDisplayAttributes = RecognizedWordUnit.DisplayAttributesToSapiAttributes(word.DisplayAttributes == DisplayAttributes.None ? DisplayAttributes.OneTrailingSpace : word.DisplayAttributes);
+                    elements[i].SREngineConfidence = word.Confidence;
 
                     // Timing information
-                    elements [i].ulAudioTimeOffset = unchecked ((uint) (word._audioPosition.Ticks * 10000 / TimeSpan.TicksPerMillisecond));
-                    elements [i].ulAudioSizeTime = unchecked ((uint) (word._audioDuration.Ticks * 10000 / TimeSpan.TicksPerMillisecond));
+                    elements[i].ulAudioTimeOffset = unchecked((uint)(word._audioPosition.Ticks * 10000 / TimeSpan.TicksPerMillisecond));
+                    elements[i].ulAudioSizeTime = unchecked((uint)(word._audioDuration.Ticks * 10000 / TimeSpan.TicksPerMillisecond));
 
                     // DLP information
                     if (word.Text != null)
                     {
-                        GCHandle handle = GCHandle.Alloc (word.Text, GCHandleType.Pinned);
-                        handles.Add (handle);
-                        elements [i].pszDisplayText = handle.AddrOfPinnedObject ();
+                        GCHandle handle = GCHandle.Alloc(word.Text, GCHandleType.Pinned);
+                        handles.Add(handle);
+                        elements[i].pszDisplayText = handle.AddrOfPinnedObject();
                     }
 
                     if (word.Text == null || word.LexicalForm != word.Text)
                     {
-                        GCHandle handle = GCHandle.Alloc (word.LexicalForm, GCHandleType.Pinned);
-                        handles.Add (handle);
-                        elements [i].pszLexicalForm = handle.AddrOfPinnedObject ();
+                        GCHandle handle = GCHandle.Alloc(word.LexicalForm, GCHandleType.Pinned);
+                        handles.Add(handle);
+                        elements[i].pszLexicalForm = handle.AddrOfPinnedObject();
                     }
                     else
                     {
-                        elements [i].pszLexicalForm = elements [i].pszDisplayText;
+                        elements[i].pszLexicalForm = elements[i].pszDisplayText;
                     }
 
-                    if (!string.IsNullOrEmpty (word.Pronunciation))
+                    if (!string.IsNullOrEmpty(word.Pronunciation))
                     {
-                        GCHandle handle = GCHandle.Alloc (word.Pronunciation, GCHandleType.Pinned);
-                        handles.Add (handle);
-                        elements [i].pszPronunciation = handle.AddrOfPinnedObject ();
+                        GCHandle handle = GCHandle.Alloc(word.Pronunciation, GCHandleType.Pinned);
+                        handles.Add(handle);
+                        elements[i].pszPronunciation = handle.AddrOfPinnedObject();
                     }
 
-                    Marshal.StructureToPtr (elements [i], new IntPtr ((long) coMem + size * i), false);
+                    Marshal.StructureToPtr(elements[i], new IntPtr((long)coMem + size * i), false);
                 }
             }
             finally
             {
-                memHandles = handles.ToArray ();
+                memHandles = handles.ToArray();
             }
 
-            SPPHRASE spPhrase = new SPPHRASE ();
-            spPhrase.cbSize = (uint) Marshal.SizeOf (spPhrase.GetType ());
-            spPhrase.LangID = (ushort) culture.LCID;
-            spPhrase.Rule = new SPPHRASERULE ();
-            spPhrase.Rule.ulCountOfElements = (uint) words.Length;
+            SPPHRASE spPhrase = new SPPHRASE();
+            spPhrase.cbSize = (uint)Marshal.SizeOf(spPhrase.GetType());
+            spPhrase.LangID = (ushort)culture.LCID;
+            spPhrase.Rule = new SPPHRASERULE();
+            spPhrase.Rule.ulCountOfElements = (uint)words.Length;
 
             spPhrase.pElements = coMem;
 
             // Initialized the phrase
-            SpPhraseBuilder phraseBuilder = new SpPhraseBuilder ();
-            ((ISpPhraseBuilder) phraseBuilder).InitFromPhrase (spPhrase);
+            SpPhraseBuilder phraseBuilder = new SpPhraseBuilder();
+            ((ISpPhraseBuilder)phraseBuilder).InitFromPhrase(spPhrase);
 
-            return (ISpPhrase) phraseBuilder;
+            return (ISpPhrase)phraseBuilder;
         }
     }
 
-    [StructLayout (LayoutKind.Sequential)]
+    [StructLayout(LayoutKind.Sequential)]
     [Serializable]
     internal class SPPHRASERULE
     {
-        [MarshalAs (UnmanagedType.LPWStr)]
+        [MarshalAs(UnmanagedType.LPWStr)]
         internal string pszName;
         internal UInt32 ulId;
         internal UInt32 ulFirstElement;
@@ -619,7 +616,7 @@ namespace System.Speech.Internal.SapiInterop
         internal byte Confidence;
     }
 
-    [StructLayout (LayoutKind.Sequential)]
+    [StructLayout(LayoutKind.Sequential)]
     [Serializable]
     internal class SPPHRASEELEMENT
     {
@@ -640,14 +637,14 @@ namespace System.Speech.Internal.SapiInterop
     }
 
     // The SAPI 5.2 & 5.3 result header added extra fields.
-    [StructLayout (LayoutKind.Sequential)]
+    [StructLayout(LayoutKind.Sequential)]
     [Serializable]
     internal class SPSERIALIZEDPHRASE
     {
-        internal SPSERIALIZEDPHRASE ()
+        internal SPSERIALIZEDPHRASE()
         { }
 
-        internal SPSERIALIZEDPHRASE (SPSERIALIZEDPHRASE_Sapi51 source)
+        internal SPSERIALIZEDPHRASE(SPSERIALIZEDPHRASE_Sapi51 source)
         {
             ulSerializedSize = source.ulSerializedSize;
             cbSize = source.cbSize;
@@ -693,7 +690,7 @@ namespace System.Speech.Internal.SapiInterop
         internal UInt32 SemanticErrorInfoOffset; // Not present in SAPI 5.1 results.
     }
 
-    [StructLayout (LayoutKind.Sequential)]
+    [StructLayout(LayoutKind.Sequential)]
     [Serializable]
     internal class SPSERIALIZEDPHRASERULE
     {
@@ -707,7 +704,7 @@ namespace System.Speech.Internal.SapiInterop
         internal SByte Confidence;
     }
 
-    [StructLayout (LayoutKind.Sequential)]
+    [StructLayout(LayoutKind.Sequential)]
     internal class SPSERIALIZEDPHRASEELEMENT
     {
         internal UInt32 ulAudioTimeOffset;
@@ -726,7 +723,7 @@ namespace System.Speech.Internal.SapiInterop
         internal float SREngineConfidence;
     }
 
-    [StructLayout (LayoutKind.Sequential)]
+    [StructLayout(LayoutKind.Sequential)]
     internal class SPSERIALIZEDPHRASEPROPERTY
     {
         internal UInt32 pszNameOffset;
@@ -742,8 +739,8 @@ namespace System.Speech.Internal.SapiInterop
         internal SByte Confidence;
     }
 
-    [StructLayout (LayoutKind.Sequential)]
-    class SPPHRASEREPLACEMENT
+    [StructLayout(LayoutKind.Sequential)]
+    internal class SPPHRASEREPLACEMENT
     {
         internal byte bDisplayAttributes;
         internal UInt32 pszReplacementText;
@@ -751,7 +748,7 @@ namespace System.Speech.Internal.SapiInterop
         internal UInt32 ulCountOfElements;
     }
 
-    [StructLayout (LayoutKind.Sequential)]
+    [StructLayout(LayoutKind.Sequential)]
     internal struct SPVOICESTATUS
     {
         internal UInt32 ulCurrentStream;
@@ -767,10 +764,9 @@ namespace System.Speech.Internal.SapiInterop
         internal Int32 VisemeId;
         internal UInt32 dwReserved1;
         internal UInt32 dwReserved2;
-
     }
 
-    [StructLayout (LayoutKind.Sequential)]
+    [StructLayout(LayoutKind.Sequential)]
     internal class SPWAVEFORMATEX
     {
         public UInt32 cbUsed;
@@ -792,176 +788,176 @@ namespace System.Speech.Internal.SapiInterop
 
     #region Interface
 
-    [ComImport, Guid ("8137828F-591A-4A42-BE58-49EA7EBAAC68"), InterfaceType (ComInterfaceType.InterfaceIsIUnknown)]
+    [ComImport, Guid("8137828F-591A-4A42-BE58-49EA7EBAAC68"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
     internal interface ISpGrammarBuilder
     {
         // ISpGrammarBuilder Methods
-        void Slot1 (); // void ResetGrammar(UInt16 NewLanguage);
-        void Slot2 (); // void GetRule([MarshalAs(UnmanagedType.LPWStr)] string pszRuleName, UInt32 dwRuleId, UInt32 dwAttributes, [MarshalAs(UnmanagedType.Bool)] bool fCreateIfNotExist, out IntPtr phInitialState);
-        void Slot3 (); // void ClearRule(IntPtr hState);
-        void Slot4 (); // void CreateNewState(IntPtr hState, out IntPtr phState);
-        void Slot5 (); // void AddWordTransition(IntPtr hFromState, IntPtr hToState, [MarshalAs(UnmanagedType.LPWStr)] string psz, [MarshalAs(UnmanagedType.LPWStr)] string pszSeparators, SPGRAMMARWORDTYPE eWordType, float Weight, ref SPPROPERTYINFO pPropInfo);
-        void Slot6 (); // void AddRuleTransition(IntPtr hFromState, IntPtr hToState, IntPtr hRule, float Weight, ref SPPROPERTYINFO pPropInfo);
-        void Slot7 (); // void AddResource(IntPtr hRuleState, [MarshalAs(UnmanagedType.LPWStr)] string pszResourceName, [MarshalAs(UnmanagedType.LPWStr)] string pszResourceValue);
-        void Slot8 (); // void Commit(UInt32 dwReserved);
+        void Slot1(); // void ResetGrammar(UInt16 NewLanguage);
+        void Slot2(); // void GetRule([MarshalAs(UnmanagedType.LPWStr)] string pszRuleName, UInt32 dwRuleId, UInt32 dwAttributes, [MarshalAs(UnmanagedType.Bool)] bool fCreateIfNotExist, out IntPtr phInitialState);
+        void Slot3(); // void ClearRule(IntPtr hState);
+        void Slot4(); // void CreateNewState(IntPtr hState, out IntPtr phState);
+        void Slot5(); // void AddWordTransition(IntPtr hFromState, IntPtr hToState, [MarshalAs(UnmanagedType.LPWStr)] string psz, [MarshalAs(UnmanagedType.LPWStr)] string pszSeparators, SPGRAMMARWORDTYPE eWordType, float Weight, ref SPPROPERTYINFO pPropInfo);
+        void Slot6(); // void AddRuleTransition(IntPtr hFromState, IntPtr hToState, IntPtr hRule, float Weight, ref SPPROPERTYINFO pPropInfo);
+        void Slot7(); // void AddResource(IntPtr hRuleState, [MarshalAs(UnmanagedType.LPWStr)] string pszResourceName, [MarshalAs(UnmanagedType.LPWStr)] string pszResourceValue);
+        void Slot8(); // void Commit(UInt32 dwReserved);
     }
 
-    [ComImport, Guid ("2177DB29-7F45-47D0-8554-067E91C80502"), InterfaceType (ComInterfaceType.InterfaceIsIUnknown)]
+    [ComImport, Guid("2177DB29-7F45-47D0-8554-067E91C80502"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
     internal interface ISpRecoGrammar : ISpGrammarBuilder
     {
         // ISpGrammarBuilder Methods
-        new void Slot1 (); // void ResetGrammar(UInt16 NewLanguage);
-        new void Slot2 (); // void GetRule([MarshalAs(UnmanagedType.LPWStr)] string pszRuleName, UInt32 dwRuleId, UInt32 dwAttributes, [MarshalAs(UnmanagedType.Bool)] bool fCreateIfNotExist, out IntPtr phInitialState);
-        new void Slot3 (); // void ClearRule(IntPtr hState);
-        new void Slot4 (); // void CreateNewState(IntPtr hState, out IntPtr phState);
-        new void Slot5 (); // void AddWordTransition(IntPtr hFromState, IntPtr hToState, [MarshalAs(UnmanagedType.LPWStr)] string psz, [MarshalAs(UnmanagedType.LPWStr)] string pszSeparators, SPGRAMMARWORDTYPE eWordType, float Weight, ref SPPROPERTYINFO pPropInfo);
-        new void Slot6 (); // void AddRuleTransition(IntPtr hFromState, IntPtr hToState, IntPtr hRule, float Weight, ref SPPROPERTYINFO pPropInfo);
-        new void Slot7 (); // void AddResource(IntPtr hRuleState, [MarshalAs(UnmanagedType.LPWStr)] string pszResourceName, [MarshalAs(UnmanagedType.LPWStr)] string pszResourceValue);
-        new void Slot8 (); // void Commit(UInt32 dwReserved);
+        new void Slot1(); // void ResetGrammar(UInt16 NewLanguage);
+        new void Slot2(); // void GetRule([MarshalAs(UnmanagedType.LPWStr)] string pszRuleName, UInt32 dwRuleId, UInt32 dwAttributes, [MarshalAs(UnmanagedType.Bool)] bool fCreateIfNotExist, out IntPtr phInitialState);
+        new void Slot3(); // void ClearRule(IntPtr hState);
+        new void Slot4(); // void CreateNewState(IntPtr hState, out IntPtr phState);
+        new void Slot5(); // void AddWordTransition(IntPtr hFromState, IntPtr hToState, [MarshalAs(UnmanagedType.LPWStr)] string psz, [MarshalAs(UnmanagedType.LPWStr)] string pszSeparators, SPGRAMMARWORDTYPE eWordType, float Weight, ref SPPROPERTYINFO pPropInfo);
+        new void Slot6(); // void AddRuleTransition(IntPtr hFromState, IntPtr hToState, IntPtr hRule, float Weight, ref SPPROPERTYINFO pPropInfo);
+        new void Slot7(); // void AddResource(IntPtr hRuleState, [MarshalAs(UnmanagedType.LPWStr)] string pszResourceName, [MarshalAs(UnmanagedType.LPWStr)] string pszResourceValue);
+        new void Slot8(); // void Commit(UInt32 dwReserved);
 
         // ISpRecoGrammar Methods
-        void Slot9 (); // void GetGrammarId(out UInt64 pullGrammarId);
-        void Slot10 (); // void GetRecoContext(out ISpRecoContext ppRecoCtxt);
-        void LoadCmdFromFile ([MarshalAs (UnmanagedType.LPWStr)] string pszFileName, SPLOADOPTIONS Options);
-        void Slot12 (); // void LoadCmdFromObject(ref Guid rcid, string pszGrammarName, SPLOADOPTIONS Options);
-        void Slot13 (); // void LoadCmdFromResource(IntPtr hModule, string pszResourceName, string pszResourceType, UInt16 wLanguage, SPLOADOPTIONS Options);
-        void LoadCmdFromMemory (IntPtr pGrammar, SPLOADOPTIONS Options);
-        void Slot15 (); // void LoadCmdFromProprietaryGrammar(ref Guid rguidParam, string pszStringParam, IntPtr pvDataPrarm, UInt32 cbDataSize, SPLOADOPTIONS Options);
+        void Slot9(); // void GetGrammarId(out UInt64 pullGrammarId);
+        void Slot10(); // void GetRecoContext(out ISpRecoContext ppRecoCtxt);
+        void LoadCmdFromFile([MarshalAs(UnmanagedType.LPWStr)] string pszFileName, SPLOADOPTIONS Options);
+        void Slot12(); // void LoadCmdFromObject(ref Guid rcid, string pszGrammarName, SPLOADOPTIONS Options);
+        void Slot13(); // void LoadCmdFromResource(IntPtr hModule, string pszResourceName, string pszResourceType, UInt16 wLanguage, SPLOADOPTIONS Options);
+        void LoadCmdFromMemory(IntPtr pGrammar, SPLOADOPTIONS Options);
+        void Slot15(); // void LoadCmdFromProprietaryGrammar(ref Guid rguidParam, string pszStringParam, IntPtr pvDataPrarm, UInt32 cbDataSize, SPLOADOPTIONS Options);
         [PreserveSig]
-        int SetRuleState ([MarshalAs (UnmanagedType.LPWStr)] string pszName, IntPtr pReserved, SPRULESTATE NewState);
-        void Slot17 (); // void SetRuleIdState(UInt32 ulRuleId, SPRULESTATE NewState);
-        void LoadDictation ([MarshalAs (UnmanagedType.LPWStr)] string pszTopicName, SPLOADOPTIONS Options);
-        void Slot19 (); // void UnloadDictation();
+        int SetRuleState([MarshalAs(UnmanagedType.LPWStr)] string pszName, IntPtr pReserved, SPRULESTATE NewState);
+        void Slot17(); // void SetRuleIdState(UInt32 ulRuleId, SPRULESTATE NewState);
+        void LoadDictation([MarshalAs(UnmanagedType.LPWStr)] string pszTopicName, SPLOADOPTIONS Options);
+        void Slot19(); // void UnloadDictation();
         [PreserveSig]
-        int SetDictationState (SPRULESTATE NewState);
-        void SetWordSequenceData ([MarshalAs (UnmanagedType.LPWStr)] string pText, UInt32 cchText, ref SPTEXTSELECTIONINFO pInfo);
-        void SetTextSelection (ref SPTEXTSELECTIONINFO pInfo);
-        void Slot23 (); // void IsPronounceable(string pszWord, out SPWORDPRONOUNCEABLE pWordPronounceable);
-        void SetGrammarState (SPGRAMMARSTATE eGrammarState);
-        void Slot25 (); // void SaveCmd(IStream pStream, IntPtr ppszCoMemErrorText);
-        void Slot26 (); // void GetGrammarState(out SPGRAMMARSTATE peGrammarState);
+        int SetDictationState(SPRULESTATE NewState);
+        void SetWordSequenceData([MarshalAs(UnmanagedType.LPWStr)] string pText, UInt32 cchText, ref SPTEXTSELECTIONINFO pInfo);
+        void SetTextSelection(ref SPTEXTSELECTIONINFO pInfo);
+        void Slot23(); // void IsPronounceable(string pszWord, out SPWORDPRONOUNCEABLE pWordPronounceable);
+        void SetGrammarState(SPGRAMMARSTATE eGrammarState);
+        void Slot25(); // void SaveCmd(IStream pStream, IntPtr ppszCoMemErrorText);
+        void Slot26(); // void GetGrammarState(out SPGRAMMARSTATE peGrammarState);
     }
 
-    [ComImport, Guid ("4B37BC9E-9ED6-44a3-93D3-18F022B79EC3"), InterfaceType (ComInterfaceType.InterfaceIsIUnknown)]
+    [ComImport, Guid("4B37BC9E-9ED6-44a3-93D3-18F022B79EC3"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
     internal interface ISpRecoGrammar2
     {
-        void GetRules (out IntPtr ppCoMemRules, out UInt32 puNumRules);
-        void LoadCmdFromFile2 ([MarshalAs (UnmanagedType.LPWStr)] string pszFileName, SPLOADOPTIONS Options, [MarshalAs (UnmanagedType.LPWStr)] string pszSharingUri, [MarshalAs (UnmanagedType.LPWStr)] string pszBaseUri);
-        void LoadCmdFromMemory2 (IntPtr pGrammar, SPLOADOPTIONS Options, [MarshalAs (UnmanagedType.LPWStr)] string pszSharingUri, [MarshalAs (UnmanagedType.LPWStr)] string pszBaseUri);
-        void SetRulePriority ([MarshalAs (UnmanagedType.LPWStr)] string pszRuleName, UInt32 ulRuleId, Int32 nRulePriority);
-        void SetRuleWeight ([MarshalAs (UnmanagedType.LPWStr)] string pszRuleName, UInt32 ulRuleId, float flWeight);
-        void SetDictationWeight (float flWeight);
-        void SetGrammarLoader (ISpGrammarResourceLoader pLoader);
-        void Slot2 (); //HRESULT SetSMLSecurityManager([in] IInternetSecurityManager* pSMLSecurityManager);
+        void GetRules(out IntPtr ppCoMemRules, out UInt32 puNumRules);
+        void LoadCmdFromFile2([MarshalAs(UnmanagedType.LPWStr)] string pszFileName, SPLOADOPTIONS Options, [MarshalAs(UnmanagedType.LPWStr)] string pszSharingUri, [MarshalAs(UnmanagedType.LPWStr)] string pszBaseUri);
+        void LoadCmdFromMemory2(IntPtr pGrammar, SPLOADOPTIONS Options, [MarshalAs(UnmanagedType.LPWStr)] string pszSharingUri, [MarshalAs(UnmanagedType.LPWStr)] string pszBaseUri);
+        void SetRulePriority([MarshalAs(UnmanagedType.LPWStr)] string pszRuleName, UInt32 ulRuleId, Int32 nRulePriority);
+        void SetRuleWeight([MarshalAs(UnmanagedType.LPWStr)] string pszRuleName, UInt32 ulRuleId, float flWeight);
+        void SetDictationWeight(float flWeight);
+        void SetGrammarLoader(ISpGrammarResourceLoader pLoader);
+        void Slot2(); //HRESULT SetSMLSecurityManager([in] IInternetSecurityManager* pSMLSecurityManager);
     }
 
-    [ComImport, Guid ("F740A62F-7C15-489E-8234-940A33D9272D"), InterfaceType (ComInterfaceType.InterfaceIsIUnknown)]
+    [ComImport, Guid("F740A62F-7C15-489E-8234-940A33D9272D"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
     internal interface ISpRecoContext : ISpEventSource
     {
         // ISpNotifySource Methods
-        new void SetNotifySink (ISpNotifySink pNotifySink);
-        new void SetNotifyWindowMessage (UInt32 hWnd, UInt32 Msg, IntPtr wParam, IntPtr lParam);
-        new void Slot3 (); // void SetNotifyCallbackFunction(ref IntPtr pfnCallback, IntPtr wParam, IntPtr lParam);
-        new void Slot4 (); // void SetNotifyCallbackInterface(ref IntPtr pSpCallback, IntPtr wParam, IntPtr lParam);
-        new void Slot5 (); // void SetNotifyWin32Event();
+        new void SetNotifySink(ISpNotifySink pNotifySink);
+        new void SetNotifyWindowMessage(UInt32 hWnd, UInt32 Msg, IntPtr wParam, IntPtr lParam);
+        new void Slot3(); // void SetNotifyCallbackFunction(ref IntPtr pfnCallback, IntPtr wParam, IntPtr lParam);
+        new void Slot4(); // void SetNotifyCallbackInterface(ref IntPtr pSpCallback, IntPtr wParam, IntPtr lParam);
+        new void Slot5(); // void SetNotifyWin32Event();
         [PreserveSig]
-        new int WaitForNotifyEvent (UInt32 dwMilliseconds);
-        new void Slot7 (); // IntPtr GetNotifyEventHandle();
+        new int WaitForNotifyEvent(UInt32 dwMilliseconds);
+        new void Slot7(); // IntPtr GetNotifyEventHandle();
 
         // ISpEventSource Methods
-        new void SetInterest (UInt64 ullEventInterest, UInt64 ullQueuedInterest);
-        new void GetEvents (UInt32 ulCount, out SPEVENT pEventArray, out UInt32 pulFetched);
-        new void Slot10 (); // void GetInfo(out SPEVENTSOURCEINFO pInfo);
+        new void SetInterest(UInt64 ullEventInterest, UInt64 ullQueuedInterest);
+        new void GetEvents(UInt32 ulCount, out SPEVENT pEventArray, out UInt32 pulFetched);
+        new void Slot10(); // void GetInfo(out SPEVENTSOURCEINFO pInfo);
 
         // ISpRecoContext Methods
-        void GetRecognizer (out ISpRecognizer ppRecognizer);
-        void CreateGrammar (UInt64 ullGrammarID, out ISpRecoGrammar ppGrammar);
-        void GetStatus (out SPRECOCONTEXTSTATUS pStatus);
-        void GetMaxAlternates (out UInt32 pcAlternates);
-        void SetMaxAlternates (UInt32 cAlternates);
-        void SetAudioOptions (SPAUDIOOPTIONS Options, IntPtr pAudioFormatId, IntPtr pWaveFormatEx);
-        void Slot17 (); // void GetAudioOptions(out SPAUDIOOPTIONS pOptions, out Guid pAudioFormatId, out IntPtr ppCoMemWFEX);
-        void Slot18 (); // void DeserializeResult(ref SPSERIALIZEDRESULT pSerializedResult, out ISpRecoResult ppResult);
-        void Bookmark (SPBOOKMARKOPTIONS Options, UInt64 ullStreamPosition, IntPtr lparamEvent);
-        void Slot20 (); // void SetAdaptationData([MarshalAs(UnmanagedType.LPWStr)] string pAdaptationData, UInt32 cch);
-        void Pause (UInt32 dwReserved);
-        void Resume (UInt32 dwReserved);
-        void Slot23 (); // void SetVoice (ISpVoice pVoice, [MarshalAs (UnmanagedType.Bool)] bool fAllowFormatChanges);
-        void Slot24 (); // void GetVoice(out ISpVoice ppVoice);
-        void Slot25 (); // void SetVoicePurgeEvent(UInt64 ullEventInterest);
-        void Slot26 (); // void GetVoicePurgeEvent(out UInt64 pullEventInterest);
-        void SetContextState (SPCONTEXTSTATE eContextState);
-        void Slot28 (); // void GetContextState(out SPCONTEXTSTATE peContextState);
+        void GetRecognizer(out ISpRecognizer ppRecognizer);
+        void CreateGrammar(UInt64 ullGrammarID, out ISpRecoGrammar ppGrammar);
+        void GetStatus(out SPRECOCONTEXTSTATUS pStatus);
+        void GetMaxAlternates(out UInt32 pcAlternates);
+        void SetMaxAlternates(UInt32 cAlternates);
+        void SetAudioOptions(SPAUDIOOPTIONS Options, IntPtr pAudioFormatId, IntPtr pWaveFormatEx);
+        void Slot17(); // void GetAudioOptions(out SPAUDIOOPTIONS pOptions, out Guid pAudioFormatId, out IntPtr ppCoMemWFEX);
+        void Slot18(); // void DeserializeResult(ref SPSERIALIZEDRESULT pSerializedResult, out ISpRecoResult ppResult);
+        void Bookmark(SPBOOKMARKOPTIONS Options, UInt64 ullStreamPosition, IntPtr lparamEvent);
+        void Slot20(); // void SetAdaptationData([MarshalAs(UnmanagedType.LPWStr)] string pAdaptationData, UInt32 cch);
+        void Pause(UInt32 dwReserved);
+        void Resume(UInt32 dwReserved);
+        void Slot23(); // void SetVoice (ISpVoice pVoice, [MarshalAs (UnmanagedType.Bool)] bool fAllowFormatChanges);
+        void Slot24(); // void GetVoice(out ISpVoice ppVoice);
+        void Slot25(); // void SetVoicePurgeEvent(UInt64 ullEventInterest);
+        void Slot26(); // void GetVoicePurgeEvent(out UInt64 pullEventInterest);
+        void SetContextState(SPCONTEXTSTATE eContextState);
+        void Slot28(); // void GetContextState(out SPCONTEXTSTATE peContextState);
     }
 
-    [ComImport, Guid ("BEAD311C-52FF-437f-9464-6B21054CA73D"), InterfaceType (ComInterfaceType.InterfaceIsIUnknown)]
+    [ComImport, Guid("BEAD311C-52FF-437f-9464-6B21054CA73D"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
     internal interface ISpRecoContext2
     {
         // ISpRecoContext2 Methods
-        void SetGrammarOptions (SPGRAMMAROPTIONS eGrammarOptions);
-        void Slot2 (); // void GetGrammarOptions(out SPGRAMMAROPTIONS peGrammarOptions);
-        void SetAdaptationData2 ([MarshalAs (UnmanagedType.LPWStr)] string pAdaptationData, UInt32 cch, [MarshalAs (UnmanagedType.LPWStr)] string pTopicName, SPADAPTATIONSETTINGS eSettings, SPADAPTATIONRELEVANCE eRelevance);
+        void SetGrammarOptions(SPGRAMMAROPTIONS eGrammarOptions);
+        void Slot2(); // void GetGrammarOptions(out SPGRAMMAROPTIONS peGrammarOptions);
+        void SetAdaptationData2([MarshalAs(UnmanagedType.LPWStr)] string pAdaptationData, UInt32 cch, [MarshalAs(UnmanagedType.LPWStr)] string pTopicName, SPADAPTATIONSETTINGS eSettings, SPADAPTATIONRELEVANCE eRelevance);
     }
 
-    [ComImport, Guid ("5B4FB971-B115-4DE1-AD97-E482E3BF6EE4"), InterfaceType (ComInterfaceType.InterfaceIsIUnknown)]
+    [ComImport, Guid("5B4FB971-B115-4DE1-AD97-E482E3BF6EE4"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
     internal interface ISpProperties
     {
         // ISpProperties Methods
         [PreserveSig]
-        int SetPropertyNum ([MarshalAs (UnmanagedType.LPWStr)] string pName, Int32 lValue);
+        int SetPropertyNum([MarshalAs(UnmanagedType.LPWStr)] string pName, Int32 lValue);
         [PreserveSig]
-        int GetPropertyNum ([MarshalAs (UnmanagedType.LPWStr)] string pName, out Int32 plValue);
+        int GetPropertyNum([MarshalAs(UnmanagedType.LPWStr)] string pName, out Int32 plValue);
         [PreserveSig]
-        int SetPropertyString ([MarshalAs (UnmanagedType.LPWStr)] string pName, [MarshalAs (UnmanagedType.LPWStr)] string pValue);
+        int SetPropertyString([MarshalAs(UnmanagedType.LPWStr)] string pName, [MarshalAs(UnmanagedType.LPWStr)] string pValue);
         [PreserveSig]
-        int GetPropertyString ([MarshalAs (UnmanagedType.LPWStr)] string pName, [MarshalAs (UnmanagedType.LPWStr)] out string ppCoMemValue);
+        int GetPropertyString([MarshalAs(UnmanagedType.LPWStr)] string pName, [MarshalAs(UnmanagedType.LPWStr)] out string ppCoMemValue);
     }
 
-    [ComImport, Guid ("C2B5F241-DAA0-4507-9E16-5A1EAA2B7A5C"), InterfaceType (ComInterfaceType.InterfaceIsIUnknown)]
+    [ComImport, Guid("C2B5F241-DAA0-4507-9E16-5A1EAA2B7A5C"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
     internal interface ISpRecognizer : ISpProperties
     {
         // ISpProperties Methods
         [PreserveSig]
-        new int SetPropertyNum ([MarshalAs (UnmanagedType.LPWStr)] string pName, Int32 lValue);
+        new int SetPropertyNum([MarshalAs(UnmanagedType.LPWStr)] string pName, Int32 lValue);
         [PreserveSig]
-        new int GetPropertyNum ([MarshalAs (UnmanagedType.LPWStr)] string pName, out Int32 plValue);
+        new int GetPropertyNum([MarshalAs(UnmanagedType.LPWStr)] string pName, out Int32 plValue);
         [PreserveSig]
-        new int SetPropertyString ([MarshalAs (UnmanagedType.LPWStr)] string pName, [MarshalAs (UnmanagedType.LPWStr)] string pValue);
+        new int SetPropertyString([MarshalAs(UnmanagedType.LPWStr)] string pName, [MarshalAs(UnmanagedType.LPWStr)] string pValue);
         [PreserveSig]
-        new int GetPropertyString ([MarshalAs (UnmanagedType.LPWStr)] string pName, [MarshalAs (UnmanagedType.LPWStr)] out string ppCoMemValue);
+        new int GetPropertyString([MarshalAs(UnmanagedType.LPWStr)] string pName, [MarshalAs(UnmanagedType.LPWStr)] out string ppCoMemValue);
 
         // ISpRecognizer Methods
-        void SetRecognizer (ISpObjectToken pRecognizer);
-        void GetRecognizer (out ISpObjectToken ppRecognizer);
-        void SetInput ([MarshalAs (UnmanagedType.IUnknown)] object pUnkInput, [MarshalAs (UnmanagedType.Bool)] bool fAllowFormatChanges);
-        void Slot8 (); // void GetInputObjectToken(out ISpObjectToken ppToken);
-        void Slot9 (); // void GetInputStream(out ISpStreamFormat ppStream);
-        void CreateRecoContext (out ISpRecoContext ppNewCtxt);
-        void Slot11 ();//void GetRecoProfile(out ISpObjectToken ppToken);
-        void Slot12 (); // void SetRecoProfile(ISpObjectToken pToken);
-        void Slot13 (); // void IsSharedInstance();
-        void GetRecoState (out SPRECOSTATE pState);
-        void SetRecoState (SPRECOSTATE NewState);
-        void GetStatus (out SPRECOGNIZERSTATUS pStatus);
-        void GetFormat (SPSTREAMFORMATTYPE WaveFormatType, out Guid pFormatId, out IntPtr ppCoMemWFEX);
-        void IsUISupported ([MarshalAs (UnmanagedType.LPWStr)] string pszTypeOfUI, IntPtr pvExtraData, UInt32 cbExtraData, [MarshalAs (UnmanagedType.Bool)] out bool pfSupported);
+        void SetRecognizer(ISpObjectToken pRecognizer);
+        void GetRecognizer(out ISpObjectToken ppRecognizer);
+        void SetInput([MarshalAs(UnmanagedType.IUnknown)] object pUnkInput, [MarshalAs(UnmanagedType.Bool)] bool fAllowFormatChanges);
+        void Slot8(); // void GetInputObjectToken(out ISpObjectToken ppToken);
+        void Slot9(); // void GetInputStream(out ISpStreamFormat ppStream);
+        void CreateRecoContext(out ISpRecoContext ppNewCtxt);
+        void Slot11();//void GetRecoProfile(out ISpObjectToken ppToken);
+        void Slot12(); // void SetRecoProfile(ISpObjectToken pToken);
+        void Slot13(); // void IsSharedInstance();
+        void GetRecoState(out SPRECOSTATE pState);
+        void SetRecoState(SPRECOSTATE NewState);
+        void GetStatus(out SPRECOGNIZERSTATUS pStatus);
+        void GetFormat(SPSTREAMFORMATTYPE WaveFormatType, out Guid pFormatId, out IntPtr ppCoMemWFEX);
+        void IsUISupported([MarshalAs(UnmanagedType.LPWStr)] string pszTypeOfUI, IntPtr pvExtraData, UInt32 cbExtraData, [MarshalAs(UnmanagedType.Bool)] out bool pfSupported);
         [PreserveSig]
-        int DisplayUI (IntPtr hWndParent, [MarshalAs (UnmanagedType.LPWStr)] string pszTitle, [MarshalAs (UnmanagedType.LPWStr)] string pszTypeOfUI, IntPtr pvExtraData, UInt32 cbExtraData);
+        int DisplayUI(IntPtr hWndParent, [MarshalAs(UnmanagedType.LPWStr)] string pszTitle, [MarshalAs(UnmanagedType.LPWStr)] string pszTypeOfUI, IntPtr pvExtraData, UInt32 cbExtraData);
         [PreserveSig]
-        int EmulateRecognition (ISpPhrase pPhrase);
+        int EmulateRecognition(ISpPhrase pPhrase);
     }
 
-    [ComImport, Guid ("8FC6D974-C81E-4098-93C5-0147F61ED4D3"), InterfaceType (ComInterfaceType.InterfaceIsIUnknown)]
+    [ComImport, Guid("8FC6D974-C81E-4098-93C5-0147F61ED4D3"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
     internal interface ISpRecognizer2
     {
         // ISpRecognizer2 Methods
         [PreserveSig]
-        int EmulateRecognitionEx (ISpPhrase pPhrase, UInt32 dwCompareFlags);
-        void SetTrainingState (bool fDoingTraining, bool fAdaptFromTrainingData);
-        void ResetAcousticModelAdaptation ();
+        int EmulateRecognitionEx(ISpPhrase pPhrase, UInt32 dwCompareFlags);
+        void SetTrainingState(bool fDoingTraining, bool fAdaptFromTrainingData);
+        void ResetAcousticModelAdaptation();
     }
 
-    [ComImport, Guid ("2D5F1C0C-BD75-4b08-9478-3B11FEA2586C"), InterfaceType (ComInterfaceType.InterfaceIsDual)]
+    [ComImport, Guid("2D5F1C0C-BD75-4b08-9478-3B11FEA2586C"), InterfaceType(ComInterfaceType.InterfaceIsDual)]
     internal interface ISpeechRecognizer
     {
         // ISpeechRecognizer Methods
@@ -973,137 +969,137 @@ namespace System.Speech.Internal.SapiInterop
         object Slot6 { set; get; } // [DispId(8)] SpObjectToken Profile { set; get; }
         object Slot7 { set; get; } // [DispId(6)] SpeechRecognizerState State { set; get; }
         object Slot8 { get; } // [DispId(7)] ISpeechRecognizerStatus Status { get; }
-        [DispId (9)]
+        [DispId(9)]
         [PreserveSig]
-        int EmulateRecognition (object TextElements, ref Object ElementDisplayAttributes, Int32 LanguageId);
-        void Slot10 (); // [DispId(10)] ISpeechRecoContext CreateRecoContext();
-        void Slot11 (); // [DispId(11)] SpAudioFormat GetFormat(SpeechFormatType Type);
-        void Slot12 (); // [DispId(12)] bool SetPropertyNumber(string Name, Int32 Value);
-        void Slot13 (); // [DispId(13)] bool GetPropertyNumber(string Name, out Int32 Value);
-        void Slot14 (); // [DispId(14)] bool SetPropertyString(string Name, string Value);
-        void Slot15 (); // [DispId(15)] bool GetPropertyString(string Name, out string Value);
-        void Slot16 (); // [DispId(16)] bool IsUISupported(string TypeOfUI, ref Object ExtraData);
-        void Slot17 (); // [DispId(17)] void DisplayUI(Int32 hWndParent, string Title, string TypeOfUI, ref Object ExtraData);
-        void Slot18 (); // [DispId(18)] ISpeechObjectTokens GetRecognizers(string RequiredAttributes, string OptionalAttributes);
-        void Slot19 (); // [DispId(19)] ISpeechObjectTokens GetAudioInputs(string RequiredAttributes, string OptionalAttributes);
-        void Slot20 (); // [DispId(20)] ISpeechObjectTokens GetProfiles(string RequiredAttributes, string OptionalAttributes);
+        int EmulateRecognition(object TextElements, ref Object ElementDisplayAttributes, Int32 LanguageId);
+        void Slot10(); // [DispId(10)] ISpeechRecoContext CreateRecoContext();
+        void Slot11(); // [DispId(11)] SpAudioFormat GetFormat(SpeechFormatType Type);
+        void Slot12(); // [DispId(12)] bool SetPropertyNumber(string Name, Int32 Value);
+        void Slot13(); // [DispId(13)] bool GetPropertyNumber(string Name, out Int32 Value);
+        void Slot14(); // [DispId(14)] bool SetPropertyString(string Name, string Value);
+        void Slot15(); // [DispId(15)] bool GetPropertyString(string Name, out string Value);
+        void Slot16(); // [DispId(16)] bool IsUISupported(string TypeOfUI, ref Object ExtraData);
+        void Slot17(); // [DispId(17)] void DisplayUI(Int32 hWndParent, string Title, string TypeOfUI, ref Object ExtraData);
+        void Slot18(); // [DispId(18)] ISpeechObjectTokens GetRecognizers(string RequiredAttributes, string OptionalAttributes);
+        void Slot19(); // [DispId(19)] ISpeechObjectTokens GetAudioInputs(string RequiredAttributes, string OptionalAttributes);
+        void Slot20(); // [DispId(20)] ISpeechObjectTokens GetProfiles(string RequiredAttributes, string OptionalAttributes);
     }
 
-    [ComImport, Guid ("1A5C0354-B621-4b5a-8791-D306ED379E53"), InterfaceType (ComInterfaceType.InterfaceIsIUnknown)]
+    [ComImport, Guid("1A5C0354-B621-4b5a-8791-D306ED379E53"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
     internal interface ISpPhrase
     {
         // ISpPhrase Methods
-        void GetPhrase (out IntPtr ppCoMemPhrase);
-        void GetSerializedPhrase (out IntPtr ppCoMemPhrase);
-        void GetText (UInt32 ulStart, UInt32 ulCount, [MarshalAs (UnmanagedType.Bool)] bool fUseTextReplacements, [MarshalAs (UnmanagedType.LPWStr)] out string ppszCoMemText, out Byte pbDisplayAttributes);
+        void GetPhrase(out IntPtr ppCoMemPhrase);
+        void GetSerializedPhrase(out IntPtr ppCoMemPhrase);
+        void GetText(UInt32 ulStart, UInt32 ulCount, [MarshalAs(UnmanagedType.Bool)] bool fUseTextReplacements, [MarshalAs(UnmanagedType.LPWStr)] out string ppszCoMemText, out Byte pbDisplayAttributes);
         void Discard(UInt32 dwValueTypes);
     }
 
-    [ComImport, Guid ("20B053BE-E235-43cd-9A2A-8D17A48B7842"), InterfaceType (ComInterfaceType.InterfaceIsIUnknown)]
+    [ComImport, Guid("20B053BE-E235-43cd-9A2A-8D17A48B7842"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
     internal interface ISpRecoResult : ISpPhrase
     {
         // ISpPhrase Methods
-        new void GetPhrase (out IntPtr ppCoMemPhrase);
-        new void GetSerializedPhrase (out IntPtr ppCoMemPhrase);
-        new void GetText (UInt32 ulStart, UInt32 ulCount, [MarshalAs (UnmanagedType.Bool)] bool fUseTextReplacements, [MarshalAs (UnmanagedType.LPWStr)] out string ppszCoMemText, out Byte pbDisplayAttributes);
+        new void GetPhrase(out IntPtr ppCoMemPhrase);
+        new void GetSerializedPhrase(out IntPtr ppCoMemPhrase);
+        new void GetText(UInt32 ulStart, UInt32 ulCount, [MarshalAs(UnmanagedType.Bool)] bool fUseTextReplacements, [MarshalAs(UnmanagedType.LPWStr)] out string ppszCoMemText, out Byte pbDisplayAttributes);
         new void Discard(UInt32 dwValueTypes);
 
         // ISpRecoResult Methods
-        void Slot5 (); // void GetResultTimes(out SPRECORESULTTIMES pTimes);
-        void GetAlternates (Int32 ulStartElement, Int32 cElements, Int32 ulRequestCount, [MarshalAs (UnmanagedType.LPArray, SizeParamIndex = 2), Out] IntPtr [] ppPhrases, out Int32 pcPhrasesReturned);
-        void GetAudio (UInt32 ulStartElement, UInt32 cElements, out ISpStreamFormat ppStream);
-        void Slot8 (); // void SpeakAudio(UInt32 ulStartElement, UInt32 cElements, UInt32 dwFlags, out UInt32 pulStreamNumber);
-        void Serialize (out IntPtr ppCoMemSerializedResult);
-        void Slot10 (); // void ScaleAudio(ref Guid pAudioFormatId, IntPtr pWaveFormatEx);
-        void Slot11 (); // void GetRecoContext(out ISpRecoContext ppRecoContext);
+        void Slot5(); // void GetResultTimes(out SPRECORESULTTIMES pTimes);
+        void GetAlternates(Int32 ulStartElement, Int32 cElements, Int32 ulRequestCount, [MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 2), Out] IntPtr[] ppPhrases, out Int32 pcPhrasesReturned);
+        void GetAudio(UInt32 ulStartElement, UInt32 cElements, out ISpStreamFormat ppStream);
+        void Slot8(); // void SpeakAudio(UInt32 ulStartElement, UInt32 cElements, UInt32 dwFlags, out UInt32 pulStreamNumber);
+        void Serialize(out IntPtr ppCoMemSerializedResult);
+        void Slot10(); // void ScaleAudio(ref Guid pAudioFormatId, IntPtr pWaveFormatEx);
+        void Slot11(); // void GetRecoContext(out ISpRecoContext ppRecoContext);
     }
 
-    [ComImport, Guid ("8FCEBC98-4E49-4067-9C6C-D86A0E092E3D"), InterfaceType (ComInterfaceType.InterfaceIsIUnknown)]
+    [ComImport, Guid("8FCEBC98-4E49-4067-9C6C-D86A0E092E3D"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
     internal interface ISpPhraseAlt : ISpPhrase
     {
         // ISpPhrase Methods
-        new void GetPhrase (out IntPtr ppCoMemPhrase);
-        new void GetSerializedPhrase (out IntPtr ppCoMemPhrase);
-        new void GetText (UInt32 ulStart, UInt32 ulCount, [MarshalAs (UnmanagedType.Bool)] bool fUseTextReplacements, [MarshalAs (UnmanagedType.LPWStr)] out string ppszCoMemText, out Byte pbDisplayAttributes);
+        new void GetPhrase(out IntPtr ppCoMemPhrase);
+        new void GetSerializedPhrase(out IntPtr ppCoMemPhrase);
+        new void GetText(UInt32 ulStart, UInt32 ulCount, [MarshalAs(UnmanagedType.Bool)] bool fUseTextReplacements, [MarshalAs(UnmanagedType.LPWStr)] out string ppszCoMemText, out Byte pbDisplayAttributes);
         new void Discard(UInt32 dwValueTypes);
 
         // ISpPhraseAlt Methods
-        void GetAltInfo (out ISpPhrase ppParent, out UInt32 pulStartElementInParent, out UInt32 pcElementsInParent, out UInt32 pcElementsInAlt);
-        void Commit ();
+        void GetAltInfo(out ISpPhrase ppParent, out UInt32 pulStartElementInParent, out UInt32 pcElementsInParent, out UInt32 pcElementsInAlt);
+        void Commit();
     }
 
-    [ComImport, Guid ("27CAC6C4-88F2-41f2-8817-0C95E59F1E6E"), InterfaceType (ComInterfaceType.InterfaceIsIUnknown)]
+    [ComImport, Guid("27CAC6C4-88F2-41f2-8817-0C95E59F1E6E"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
     internal interface ISpRecoResult2 : ISpRecoResult
     {
         // ISpPhrase Methods
-        new void GetPhrase (out IntPtr ppCoMemPhrase);
-        new void GetSerializedPhrase (out IntPtr ppCoMemPhrase);
-        new void GetText (UInt32 ulStart, UInt32 ulCount, [MarshalAs (UnmanagedType.Bool)] bool fUseTextReplacements, [MarshalAs (UnmanagedType.LPWStr)] out string ppszCoMemText, out Byte pbDisplayAttributes);
+        new void GetPhrase(out IntPtr ppCoMemPhrase);
+        new void GetSerializedPhrase(out IntPtr ppCoMemPhrase);
+        new void GetText(UInt32 ulStart, UInt32 ulCount, [MarshalAs(UnmanagedType.Bool)] bool fUseTextReplacements, [MarshalAs(UnmanagedType.LPWStr)] out string ppszCoMemText, out Byte pbDisplayAttributes);
         new void Discard(UInt32 dwValueTypes);
 
         // ISpRecoResult Methods
-        new void Slot5 (); // new void GetResultTimes(out SPRECORESULTTIMES pTimes);
-        new void GetAlternates (Int32 ulStartElement, Int32 cElements, Int32 ulRequestCount, [MarshalAs (UnmanagedType.LPArray, SizeParamIndex = 2), Out] IntPtr [] ppPhrases, out Int32 pcPhrasesReturned);
-        new void GetAudio (UInt32 ulStartElement, UInt32 cElements, out ISpStreamFormat ppStream);
-        new void Slot8 (); // void SpeakAudio(UInt32 ulStartElement, UInt32 cElements, UInt32 dwFlags, out UInt32 pulStreamNumber);
-        new void Serialize (out IntPtr ppCoMemSerializedResult);
-        new void Slot10 (); // void ScaleAudio(ref Guid pAudioFormatId, IntPtr pWaveFormatEx);
-        new void Slot11 (); // void GetRecoContext(out ISpRecoContext ppRecoContext);
+        new void Slot5(); // new void GetResultTimes(out SPRECORESULTTIMES pTimes);
+        new void GetAlternates(Int32 ulStartElement, Int32 cElements, Int32 ulRequestCount, [MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 2), Out] IntPtr[] ppPhrases, out Int32 pcPhrasesReturned);
+        new void GetAudio(UInt32 ulStartElement, UInt32 cElements, out ISpStreamFormat ppStream);
+        new void Slot8(); // void SpeakAudio(UInt32 ulStartElement, UInt32 cElements, UInt32 dwFlags, out UInt32 pulStreamNumber);
+        new void Serialize(out IntPtr ppCoMemSerializedResult);
+        new void Slot10(); // void ScaleAudio(ref Guid pAudioFormatId, IntPtr pWaveFormatEx);
+        new void Slot11(); // void GetRecoContext(out ISpRecoContext ppRecoContext);
 
         // ISpRecoResult2 Methods
-        void CommitAlternate (ISpPhraseAlt pPhraseAlt, out ISpRecoResult ppNewResult);
-        void CommitText (UInt32 ulStartElement, UInt32 ulCountOfElements, [MarshalAs (UnmanagedType.LPWStr)] string pszCorrectedData, SPCOMMITFLAGS commitFlags);
-        void SetTextFeedback ([MarshalAs (UnmanagedType.LPWStr)] string pszFeedback, [MarshalAs (UnmanagedType.Bool)] bool fSuccessful);
+        void CommitAlternate(ISpPhraseAlt pPhraseAlt, out ISpRecoResult ppNewResult);
+        void CommitText(UInt32 ulStartElement, UInt32 ulCountOfElements, [MarshalAs(UnmanagedType.LPWStr)] string pszCorrectedData, SPCOMMITFLAGS commitFlags);
+        void SetTextFeedback([MarshalAs(UnmanagedType.LPWStr)] string pszFeedback, [MarshalAs(UnmanagedType.Bool)] bool fSuccessful);
     }
 
-    [ComImport, Guid ("AE39362B-45A8-4074-9B9E-CCF49AA2D0B6"), InterfaceType (ComInterfaceType.InterfaceIsIUnknown)]
+    [ComImport, Guid("AE39362B-45A8-4074-9B9E-CCF49AA2D0B6"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
     internal interface ISpXMLRecoResult : ISpRecoResult
     {
         // ISpPhrase Methods
-        new void GetPhrase (out IntPtr ppCoMemPhrase);
-        new void GetSerializedPhrase (out IntPtr ppCoMemPhrase);
-        new void GetText (UInt32 ulStart, UInt32 ulCount, [MarshalAs (UnmanagedType.Bool)] bool fUseTextReplacements, [MarshalAs (UnmanagedType.LPWStr)] out string ppszCoMemText, out Byte pbDisplayAttributes);
+        new void GetPhrase(out IntPtr ppCoMemPhrase);
+        new void GetSerializedPhrase(out IntPtr ppCoMemPhrase);
+        new void GetText(UInt32 ulStart, UInt32 ulCount, [MarshalAs(UnmanagedType.Bool)] bool fUseTextReplacements, [MarshalAs(UnmanagedType.LPWStr)] out string ppszCoMemText, out Byte pbDisplayAttributes);
         new void Discard(UInt32 dwValueTypes);
 
         // ISpRecoResult Methods
-        new void Slot5 (); // new void GetResultTimes(out SPRECORESULTTIMES pTimes);
-        new void GetAlternates (Int32 ulStartElement, Int32 cElements, Int32 ulRequestCount, [MarshalAs (UnmanagedType.LPArray, SizeParamIndex = 2), Out] IntPtr [] ppPhrases, out Int32 pcPhrasesReturned);
-        new void GetAudio (UInt32 ulStartElement, UInt32 cElements, out ISpStreamFormat ppStream);
-        new void Slot8 (); // void SpeakAudio(UInt32 ulStartElement, UInt32 cElements, UInt32 dwFlags, out UInt32 pulStreamNumber);
-        new void Serialize (out IntPtr ppCoMemSerializedResult);
-        new void Slot10 (); // void ScaleAudio(ref Guid pAudioFormatId, IntPtr pWaveFormatEx);
-        new void Slot11 (); // void GetRecoContext(out ISpRecoContext ppRecoContext);
+        new void Slot5(); // new void GetResultTimes(out SPRECORESULTTIMES pTimes);
+        new void GetAlternates(Int32 ulStartElement, Int32 cElements, Int32 ulRequestCount, [MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 2), Out] IntPtr[] ppPhrases, out Int32 pcPhrasesReturned);
+        new void GetAudio(UInt32 ulStartElement, UInt32 cElements, out ISpStreamFormat ppStream);
+        new void Slot8(); // void SpeakAudio(UInt32 ulStartElement, UInt32 cElements, UInt32 dwFlags, out UInt32 pulStreamNumber);
+        new void Serialize(out IntPtr ppCoMemSerializedResult);
+        new void Slot10(); // void ScaleAudio(ref Guid pAudioFormatId, IntPtr pWaveFormatEx);
+        new void Slot11(); // void GetRecoContext(out ISpRecoContext ppRecoContext);
 
         // ISpXMLRecoResult Methods
-        void GetXMLResult ([MarshalAs (UnmanagedType.LPWStr)] out string ppszCoMemXMLResult, SPXMLRESULTOPTIONS Options);
-        void GetXMLErrorInfo (out SPSEMANTICERRORINFO pSemanticErrorInfo);
+        void GetXMLResult([MarshalAs(UnmanagedType.LPWStr)] out string ppszCoMemXMLResult, SPXMLRESULTOPTIONS Options);
+        void GetXMLErrorInfo(out SPSEMANTICERRORINFO pSemanticErrorInfo);
     }
 
-    [ComImport, Guid ("F264DA52-E457-4696-B856-A737B717AF79"), InterfaceType (ComInterfaceType.InterfaceIsIUnknown)]
+    [ComImport, Guid("F264DA52-E457-4696-B856-A737B717AF79"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
     internal interface ISpPhraseEx : ISpPhrase
     {
         // ISpPhrase Methods
-        new void GetPhrase (out IntPtr ppCoMemPhrase);
-        new void GetSerializedPhrase (out IntPtr ppCoMemPhrase);
-        new void GetText (UInt32 ulStart, UInt32 ulCount, [MarshalAs (UnmanagedType.Bool)] bool fUseTextReplacements, [MarshalAs (UnmanagedType.LPWStr)] out string ppszCoMemText, out Byte pbDisplayAttributes);
+        new void GetPhrase(out IntPtr ppCoMemPhrase);
+        new void GetSerializedPhrase(out IntPtr ppCoMemPhrase);
+        new void GetText(UInt32 ulStart, UInt32 ulCount, [MarshalAs(UnmanagedType.Bool)] bool fUseTextReplacements, [MarshalAs(UnmanagedType.LPWStr)] out string ppszCoMemText, out Byte pbDisplayAttributes);
         new void Discard(UInt32 dwValueTypes);
 
         // ISpPhraseEx Methods
-        void GetXMLResult ([MarshalAs (UnmanagedType.LPWStr)] out string ppszCoMemXMLResult, SPXMLRESULTOPTIONS Options);
-        void GetXMLErrorInfo (out SPSEMANTICERRORINFO pSemanticErrorInfo);
-        void Slot7 (); // void GetAudio(UInt32 ulStartElement, UInt32 cElements, out ISpStreamFormat ppStream);
+        void GetXMLResult([MarshalAs(UnmanagedType.LPWStr)] out string ppszCoMemXMLResult, SPXMLRESULTOPTIONS Options);
+        void GetXMLErrorInfo(out SPSEMANTICERRORINFO pSemanticErrorInfo);
+        void Slot7(); // void GetAudio(UInt32 ulStartElement, UInt32 cElements, out ISpStreamFormat ppStream);
     }
 
-    [ComImport, Guid ("C8D7C7E2-0DDE-44b7-AFE3-B0C991FBEB5E"), InterfaceType (ComInterfaceType.InterfaceIsIUnknown)]
+    [ComImport, Guid("C8D7C7E2-0DDE-44b7-AFE3-B0C991FBEB5E"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
     internal interface ISpDisplayAlternates
     {
-        void GetDisplayAlternates (IntPtr pPhrase, UInt32 cRequestCount, [MarshalAs (UnmanagedType.LPArray, SizeParamIndex = 2), Out] IntPtr [] ppCoMemPhrases, out UInt32 pcPhrasesReturned);
+        void GetDisplayAlternates(IntPtr pPhrase, UInt32 cRequestCount, [MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 2), Out] IntPtr[] ppCoMemPhrases, out UInt32 pcPhrasesReturned);
     }
 
     /// <summary>
     /// Resource Loader interface definition
     /// </summary>
-    [ComImport, Guid ("B9AC5783-FCD0-4b21-B119-B4F8DA8FD2C3"), InterfaceType (ComInterfaceType.InterfaceIsDual)]
+    [ComImport, Guid("B9AC5783-FCD0-4b21-B119-B4F8DA8FD2C3"), InterfaceType(ComInterfaceType.InterfaceIsDual)]
     internal interface ISpGrammarResourceLoader
     {
         /// <summary>
@@ -1117,7 +1113,7 @@ namespace System.Speech.Internal.SapiInterop
         /// <param name="pbstrRedirectUrl"></param>
         /// <returns></returns>
         [PreserveSig]
-        int LoadResource (string bstrResourceUri, bool fAlwaysReload, out IStream pStream, ref string pbstrMIMEType, ref short pfModified, ref string pbstrRedirectUrl);
+        int LoadResource(string bstrResourceUri, bool fAlwaysReload, out IStream pStream, ref string pbstrMIMEType, ref short pfModified, ref string pbstrRedirectUrl);
 
         /// <summary>
         /// Converts the resourcePath to a location in the file cache and returns a reference into the 
@@ -1126,30 +1122,30 @@ namespace System.Speech.Internal.SapiInterop
         /// <param name="resourcePath"></param>
         /// <param name="mimeType"></param>
         /// <param name="redirectUrl"></param>
-        string GetLocalCopy (Uri resourcePath, out string mimeType, out Uri redirectUrl);
+        string GetLocalCopy(Uri resourcePath, out string mimeType, out Uri redirectUrl);
 
         /// <summary>
         /// Mark an entry in the file cache as unused.
         /// </summary>
         /// <param name="path"></param>
-        void ReleaseLocalCopy (string path);
+        void ReleaseLocalCopy(string path);
     }
 
-    [ComImport, Guid ("88A3342A-0BED-4834-922B-88D43173162F"), InterfaceType (ComInterfaceType.InterfaceIsIUnknown)]
+    [ComImport, Guid("88A3342A-0BED-4834-922B-88D43173162F"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
     internal interface ISpPhraseBuilder : ISpPhrase
     {
         // ISpPhrase Methods
-        new void GetPhrase (out IntPtr ppCoMemPhrase);
-        new void GetSerializedPhrase (out IntPtr ppCoMemPhrase);
-        new void GetText (UInt32 ulStart, UInt32 ulCount, [MarshalAs (UnmanagedType.Bool)] bool fUseTextReplacements, [MarshalAs (UnmanagedType.LPWStr)] out string ppszCoMemText, out Byte pbDisplayAttributes);
+        new void GetPhrase(out IntPtr ppCoMemPhrase);
+        new void GetSerializedPhrase(out IntPtr ppCoMemPhrase);
+        new void GetText(UInt32 ulStart, UInt32 ulCount, [MarshalAs(UnmanagedType.Bool)] bool fUseTextReplacements, [MarshalAs(UnmanagedType.LPWStr)] out string ppszCoMemText, out Byte pbDisplayAttributes);
         new void Discard(UInt32 dwValueTypes);
 
-        void InitFromPhrase (SPPHRASE pPhrase);
-        void Slot6 (); // InitFromSerializedPhrase(const SPSERIALIZEDPHRASE * pPhrase);
-        void Slot7 (); // AddElements(ULONG cElements, const SPPHRASEELEMENT *pElement);
-        void Slot8 (); // AddRules(const SPPHRASERULEHANDLE hParent, const SPPHRASERULE * pRule, SPPHRASERULEHANDLE * phNewRule);
-        void Slot9 (); // AddProperties(const SPPHRASEPROPERTYHANDLE hParent, const SPPHRASEPROPERTY * pProperty, SPPHRASEPROPERTYHANDLE * phNewProperty);
-        void Slot10 (); // AddReplacements(ULONG cReplacements, const SPPHRASEREPLACEMENT * pReplacements);
+        void InitFromPhrase(SPPHRASE pPhrase);
+        void Slot6(); // InitFromSerializedPhrase(const SPSERIALIZEDPHRASE * pPhrase);
+        void Slot7(); // AddElements(ULONG cElements, const SPPHRASEELEMENT *pElement);
+        void Slot8(); // AddRules(const SPPHRASERULEHANDLE hParent, const SPPHRASERULE * pRule, SPPHRASERULEHANDLE * phNewRule);
+        void Slot9(); // AddProperties(const SPPHRASEPROPERTYHANDLE hParent, const SPPHRASEPROPERTY * pProperty, SPPHRASEPROPERTYHANDLE * phNewProperty);
+        void Slot10(); // AddReplacements(ULONG cReplacements, const SPPHRASEREPLACEMENT * pReplacements);
     };
 
     #endregion
@@ -1158,13 +1154,13 @@ namespace System.Speech.Internal.SapiInterop
     #region Class
 
 
-    [ComImport, Guid ("3BEE4890-4FE9-4A37-8C1E-5E7E12791C1F")]
+    [ComImport, Guid("3BEE4890-4FE9-4A37-8C1E-5E7E12791C1F")]
     internal class SpSharedRecognizer { }
 
-    [ComImport, Guid ("41B89B6B-9399-11D2-9623-00C04F8EE628")]
+    [ComImport, Guid("41B89B6B-9399-11D2-9623-00C04F8EE628")]
     internal class SpInprocRecognizer { }
 
-    [ComImport, Guid ("777B6BBD-2FF2-11D3-88FE-00C04F8EF9B5")]
+    [ComImport, Guid("777B6BBD-2FF2-11D3-88FE-00C04F8EF9B5")]
     internal class SpPhraseBuilder { }
 
     #endregion Class

@@ -22,7 +22,7 @@ namespace System.Speech.Synthesis
         /// TODOC
         /// </summary>
         /// <param name="prompt"></param>
-        internal SpeakCompletedEventArgs (Prompt prompt) : base (prompt)
+        internal SpeakCompletedEventArgs(Prompt prompt) : base(prompt)
         {
         }
 

@@ -12,10 +12,9 @@ namespace System.Speech.Internal.GrammarBuilding
     /// <summary>
     /// 
     /// </summary>
-    [DebuggerDisplay ("{DebugSummary}")]
+    [DebuggerDisplay("{DebugSummary}")]
     internal sealed class TagElement : BuilderElements
     {
-
         //*******************************************************************
         //
         // Constructors
@@ -28,7 +27,7 @@ namespace System.Speech.Internal.GrammarBuilding
         /// 
         /// </summary>
         /// <param name="value"></param>
-        internal TagElement (object value)
+        internal TagElement(object value)
         {
             _value = value;
         }
@@ -38,10 +37,10 @@ namespace System.Speech.Internal.GrammarBuilding
         /// </summary>
         /// <param name="builder"></param>
         /// <param name="value"></param>
-        internal TagElement (GrammarBuilderBase builder, object value)
-            : this (value)
+        internal TagElement(GrammarBuilderBase builder, object value)
+            : this(value)
         {
-            Add (builder);
+            Add(builder);
         }
 
         /// <summary>
@@ -49,10 +48,10 @@ namespace System.Speech.Internal.GrammarBuilding
         /// </summary>
         /// <param name="builder"></param>
         /// <param name="value"></param>
-        internal TagElement (GrammarBuilder builder, object value)
-            : this (value)
+        internal TagElement(GrammarBuilder builder, object value)
+            : this(value)
         {
-            Add (builder);
+            Add(builder);
         }
 
         #endregion
@@ -66,24 +65,24 @@ namespace System.Speech.Internal.GrammarBuilding
         #region Public Methods
 
         /// TODOC <_include file='doc\SpeechAudioFormatInfo.uex' path='docs/doc[@for="SpeechAudioFormatInfo.Equals"]/*' />
-        public override bool Equals (object obj)
+        public override bool Equals(object obj)
         {
             TagElement refObj = obj as TagElement;
             if (refObj == null)
             {
                 return false;
             }
-            if (!base.Equals (obj))
+            if (!base.Equals(obj))
             {
                 return false;
             }
-            return _value.Equals (refObj._value);
+            return _value.Equals(refObj._value);
         }
 
         /// TODOC <_include file='doc\SpeechAudioFormatInfo.uex' path='docs/doc[@for="SpeechAudioFormatInfo.GetHashCode"]/*' />
-        public override int GetHashCode ()
+        public override int GetHashCode()
         {
-            return base.GetHashCode ();
+            return base.GetHashCode();
         }
 
         #endregion
@@ -100,10 +99,10 @@ namespace System.Speech.Internal.GrammarBuilding
         /// 
         /// </summary>
         /// <returns></returns>
-        internal override GrammarBuilderBase Clone ()
+        internal override GrammarBuilderBase Clone()
         {
-            TagElement tag = new TagElement (_value);
-            tag.CloneItems (this);
+            TagElement tag = new TagElement(_value);
+            tag.CloneItems(this);
             return tag;
         }
 
@@ -115,29 +114,29 @@ namespace System.Speech.Internal.GrammarBuilding
         /// <param name="rule"></param>
         /// <param name="ruleIds"></param>
         /// <returns></returns>
-        internal override IElement CreateElement (IElementFactory elementFactory, IElement parent, IRule rule, IdentifierCollection ruleIds)
+        internal override IElement CreateElement(IElementFactory elementFactory, IElement parent, IRule rule, IdentifierCollection ruleIds)
         {
             // Create the children elements
             IItem item = parent as IItem;
             if (item != null)
             {
-                CreateChildrenElements (elementFactory, item, rule, ruleIds);
+                CreateChildrenElements(elementFactory, item, rule, ruleIds);
             }
             else
             {
                 if (parent == rule)
                 {
-                    CreateChildrenElements (elementFactory, rule, ruleIds);
+                    CreateChildrenElements(elementFactory, rule, ruleIds);
                 }
                 else
                 {
-                    System.Diagnostics.Debug.Assert (false);
+                    System.Diagnostics.Debug.Assert(false);
                 }
             }
 
             // Create the tag element at the end only if there were some children
-            IPropertyTag tag = elementFactory.CreatePropertyTag (parent);
-            tag.NameValue (parent, null, _value);
+            IPropertyTag tag = elementFactory.CreatePropertyTag(parent);
+            tag.NameValue(parent, null, _value);
             return tag;
         }
 
@@ -172,6 +171,5 @@ namespace System.Speech.Internal.GrammarBuilding
         private readonly object _value;
 
         #endregion
-
     }
 }

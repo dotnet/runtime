@@ -10,8 +10,6 @@ namespace System.Speech.Internal.GrammarBuilding
     /// </summary>
     internal class IdentifierCollection
     {
-
-
         //*******************************************************************
         //
         // Constructors
@@ -26,7 +24,7 @@ namespace System.Speech.Internal.GrammarBuilding
         internal IdentifierCollection()
         {
             _identifiers = new List<string>();
-            CreateNewIdentifier ("_");
+            CreateNewIdentifier("_");
         }
 
         #endregion
@@ -83,6 +81,5 @@ namespace System.Speech.Internal.GrammarBuilding
         protected List<string> _identifiers;
 
         #endregion
-
     }
 }

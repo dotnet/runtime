@@ -7,7 +7,7 @@ namespace System.Speech.Internal.SrgsParser
     {
         string BaseClass { set; get; }
 
-        void CreateScript (IGrammar grammar, string rule, string method, RuleMethodScript type);
+        void CreateScript(IGrammar grammar, string rule, string method, RuleMethodScript type);
     }
 
     //*******************************************************************
@@ -47,5 +47,4 @@ namespace System.Speech.Internal.SrgsParser
     };
 
     #endregion
-
 }

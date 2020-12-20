@@ -6,7 +6,6 @@ using System;
 
 namespace System.Speech.Recognition
 {
-
     // Current recognizer state.
     /// TODOC <_include file='doc\RecognizerState.uex' path='docs/doc[@for="RecognizerState"]/*' />
     public enum RecognizerState
@@ -19,7 +18,6 @@ namespace System.Speech.Recognition
         /// TODOC <_include file='doc\RecognizerState.uex' path='docs/doc[@for="RecognizerState.Listening"]/*' />
         Listening
     }
-
 }
 
 

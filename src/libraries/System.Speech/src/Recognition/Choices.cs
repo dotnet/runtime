@@ -12,7 +12,7 @@ namespace System.Speech.Recognition
     /// 
     /// </summary>
 
-    [DebuggerDisplay ("{_oneOf.DebugSummary}")]
+    [DebuggerDisplay("{_oneOf.DebugSummary}")]
     public class Choices
     {
         //*******************************************************************
@@ -26,7 +26,7 @@ namespace System.Speech.Recognition
         /// <summary>
         /// 
         /// </summary>
-        public Choices ()
+        public Choices()
         {
         }
 
@@ -34,22 +34,22 @@ namespace System.Speech.Recognition
         /// 
         /// </summary>
         /// <param name="phrases"></param>
-        public Choices (params string [] phrases)
+        public Choices(params string[] phrases)
         {
-            Helpers.ThrowIfNull (phrases, "phrases");
+            Helpers.ThrowIfNull(phrases, "phrases");
 
-            Add (phrases);
+            Add(phrases);
         }
 
         /// <summary>
         /// 
         /// </summary>
         /// <param name="alternateChoices"></param>
-        public Choices (params GrammarBuilder [] alternateChoices)
+        public Choices(params GrammarBuilder[] alternateChoices)
         {
-            Helpers.ThrowIfNull (alternateChoices, "alternateChoices");
+            Helpers.ThrowIfNull(alternateChoices, "alternateChoices");
 
-            Add (alternateChoices);
+            Add(alternateChoices);
         }
 
         #endregion
@@ -67,15 +67,15 @@ namespace System.Speech.Recognition
         /// 
         /// </summary>
         /// <param name="phrases"></param>
-        public void Add (params string [] phrases)
+        public void Add(params string[] phrases)
         {
-            Helpers.ThrowIfNull (phrases, "phrases");
+            Helpers.ThrowIfNull(phrases, "phrases");
 
             foreach (string phrase in phrases)
             {
-                Helpers.ThrowIfEmptyOrNull (phrase, "phrase");
+                Helpers.ThrowIfEmptyOrNull(phrase, "phrase");
 
-                _oneOf.Add (phrase);
+                _oneOf.Add(phrase);
             }
         }
 
@@ -83,15 +83,15 @@ namespace System.Speech.Recognition
         /// 
         /// </summary>
         /// <param name="alternateChoices"></param>
-        public void Add (params GrammarBuilder [] alternateChoices)
+        public void Add(params GrammarBuilder[] alternateChoices)
         {
-            Helpers.ThrowIfNull (alternateChoices, "alternateChoices");
+            Helpers.ThrowIfNull(alternateChoices, "alternateChoices");
 
             foreach (GrammarBuilder alternateChoice in alternateChoices)
             {
-                Helpers.ThrowIfNull (alternateChoice, "alternateChoice");
+                Helpers.ThrowIfNull(alternateChoice, "alternateChoice");
 
-                _oneOf.Items.Add (new ItemElement (alternateChoice));
+                _oneOf.Items.Add(new ItemElement(alternateChoice));
             }
         }
 
@@ -99,9 +99,9 @@ namespace System.Speech.Recognition
         /// TODOC
         /// </summary>
         /// <returns></returns>
-        public GrammarBuilder ToGrammarBuilder ()
+        public GrammarBuilder ToGrammarBuilder()
         {
-            return new GrammarBuilder (this);
+            return new GrammarBuilder(this);
         }
 
         #endregion
@@ -133,9 +133,8 @@ namespace System.Speech.Recognition
 
         #region Private Fields
 
-        private OneOfElement _oneOf = new OneOfElement ();
+        private OneOfElement _oneOf = new OneOfElement();
 
         #endregion
-
     }
 }

@@ -379,7 +379,7 @@ namespace System.Speech.Internal.ObjectTokens
 
         //--- ISpObjectWithToken ----------------------------------------------------
         [ComImport, Guid("5B559F40-E952-11D2-BB91-00C04F8EE6C0"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
-        interface ISpObjectWithToken
+        private interface ISpObjectWithToken
         {
             [PreserveSig]
             int SetObjectToken(ISpObjectToken pToken);

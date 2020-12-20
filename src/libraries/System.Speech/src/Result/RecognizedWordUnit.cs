@@ -9,10 +9,9 @@ using System.Speech.Internal;
 
 namespace System.Speech.Recognition
 {
-
     /// TODOC <_include file='doc\RecognitionResult.uex' path='docs/doc[@for="RecognizedWordUnit"]/*' />
     [Serializable]
-    [DebuggerDisplay ("Text: {Text}")]
+    [DebuggerDisplay("Text: {Text}")]
 
     public class RecognizedWordUnit
     {
@@ -28,16 +27,16 @@ namespace System.Speech.Recognition
 
         // Constructor for recognized 'word'
         /// TODOC <_include file='doc\RecognitionResult.uex' path='docs/doc[@for="RecognizedWordUnit.ctor"]/*' />
-        public RecognizedWordUnit (string text, float confidence, string pronunciation, string lexicalForm, DisplayAttributes displayAttributes, TimeSpan audioPosition, TimeSpan audioDuration)
+        public RecognizedWordUnit(string text, float confidence, string pronunciation, string lexicalForm, DisplayAttributes displayAttributes, TimeSpan audioPosition, TimeSpan audioDuration)
         {
             if (lexicalForm == null)
             {
-                throw new ArgumentNullException ("lexicalForm");
+                throw new ArgumentNullException("lexicalForm");
             }
 
             if (confidence < 0.0f || confidence > 1.0f)
             {
-                throw new ArgumentOutOfRangeException (SR.Get (SRID.InvalidConfidence));
+                throw new ArgumentOutOfRangeException(SR.Get(SRID.InvalidConfidence));
             }
 
             _text = text == null || text.Length == 0 ? null : text;
@@ -109,14 +108,14 @@ namespace System.Speech.Recognition
 
         #region Internal Methods
 
-        internal static byte DisplayAttributesToSapiAttributes (DisplayAttributes displayAttributes)
+        internal static byte DisplayAttributesToSapiAttributes(DisplayAttributes displayAttributes)
         {
-            return (byte) ((uint) displayAttributes >> 1);
+            return (byte)((uint)displayAttributes >> 1);
         }
 
-        internal static DisplayAttributes SapiAttributesToDisplayAttributes (byte sapiAttributes)
+        internal static DisplayAttributes SapiAttributesToDisplayAttributes(byte sapiAttributes)
         {
-            return (DisplayAttributes) (sapiAttributes << 1);
+            return (DisplayAttributes)(sapiAttributes << 1);
         }
 
         #endregion
@@ -166,6 +165,5 @@ namespace System.Speech.Recognition
         /// TODOC
         ConsumeLeadingSpaces = 0x10,
     }
-
 }
 

@@ -12,7 +12,7 @@ namespace System.Speech.Recognition
     /// 
     /// </summary>
 
-    [DebuggerDisplay ("{_semanticKey.DebugSummary}")]
+    [DebuggerDisplay("{_semanticKey.DebugSummary}")]
     public class SemanticResultKey
     {
         //*******************************************************************
@@ -27,12 +27,12 @@ namespace System.Speech.Recognition
         /// 
         /// </summary>
         /// <param name="semanticResultKey"></param>
-        private SemanticResultKey (string semanticResultKey)
-            : base ()
+        private SemanticResultKey(string semanticResultKey)
+            : base()
         {
-            Helpers.ThrowIfEmptyOrNull (semanticResultKey, "semanticResultKey");
+            Helpers.ThrowIfEmptyOrNull(semanticResultKey, "semanticResultKey");
 
-            _semanticKey = new SemanticKeyElement (semanticResultKey);
+            _semanticKey = new SemanticKeyElement(semanticResultKey);
         }
 
         /// <summary>
@@ -40,16 +40,16 @@ namespace System.Speech.Recognition
         /// </summary>
         /// <param name="semanticResultKey"></param>
         /// <param name="phrases"></param>
-        public SemanticResultKey (string semanticResultKey, params string [] phrases)
-            : this (semanticResultKey)
+        public SemanticResultKey(string semanticResultKey, params string[] phrases)
+            : this(semanticResultKey)
         {
-            Helpers.ThrowIfEmptyOrNull (semanticResultKey, "semanticResultKey");
-            Helpers.ThrowIfNull (phrases, "phrases");
+            Helpers.ThrowIfEmptyOrNull(semanticResultKey, "semanticResultKey");
+            Helpers.ThrowIfNull(phrases, "phrases");
 
             // Build a grammar builder with all the phrases
             foreach (string phrase in phrases)
             {
-                _semanticKey.Add ((string) phrase.Clone ());
+                _semanticKey.Add((string)phrase.Clone());
             }
         }
 
@@ -58,16 +58,16 @@ namespace System.Speech.Recognition
         /// </summary>
         /// <param name="semanticResultKey"></param>
         /// <param name="builders"></param>
-        public SemanticResultKey (string semanticResultKey, params GrammarBuilder [] builders)
-            : this (semanticResultKey)
+        public SemanticResultKey(string semanticResultKey, params GrammarBuilder[] builders)
+            : this(semanticResultKey)
         {
-            Helpers.ThrowIfEmptyOrNull (semanticResultKey, "semanticResultKey");
-            Helpers.ThrowIfNull (builders, "phrases");
+            Helpers.ThrowIfEmptyOrNull(semanticResultKey, "semanticResultKey");
+            Helpers.ThrowIfNull(builders, "phrases");
 
             // Build a grammar builder with all the grammar builders
             foreach (GrammarBuilder builder in builders)
             {
-                _semanticKey.Add (builder.Clone ());
+                _semanticKey.Add(builder.Clone());
             }
         }
 
@@ -85,9 +85,9 @@ namespace System.Speech.Recognition
         /// TODOC
         /// </summary>
         /// <returns></returns>
-        public GrammarBuilder ToGrammarBuilder ()
+        public GrammarBuilder ToGrammarBuilder()
         {
-                return new GrammarBuilder (this);
+            return new GrammarBuilder(this);
         }
 
         #endregion
@@ -121,6 +121,5 @@ namespace System.Speech.Recognition
         private readonly SemanticKeyElement _semanticKey;
 
         #endregion
-
     }
 }

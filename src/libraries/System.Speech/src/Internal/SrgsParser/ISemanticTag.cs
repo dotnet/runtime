@@ -10,6 +10,6 @@ namespace System.Speech.Internal.SrgsParser
     /// </summary>
     internal interface ISemanticTag : IElement
     {
-        void Content (IElement parent, string value, int line);
+        void Content(IElement parent, string value, int line);
     }
 }

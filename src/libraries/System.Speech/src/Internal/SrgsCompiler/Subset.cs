@@ -27,8 +27,8 @@ namespace System.Speech.Internal.SrgsCompiler
         /// <param name="backend"></param>
         /// <param name="text"></param>
         /// <param name="mode"></param>
-        public Subset (ParseElementCollection parent, Backend backend, string text, MatchMode mode)
-            : base (parent._rule)
+        public Subset(ParseElementCollection parent, Backend backend, string text, MatchMode mode)
+            : base(parent._rule)
         {
             // replace tab, cr, lf with spaces
             foreach (char ch in Helpers._achTrimChars)
@@ -37,14 +37,14 @@ namespace System.Speech.Internal.SrgsCompiler
                 {
                     continue;
                 }
-                if (text.IndexOf (ch) >= 0)
+                if (text.IndexOf(ch) >= 0)
                 {
-                    text = text.Replace (ch, ' ');
+                    text = text.Replace(ch, ' ');
                 }
             }
 
             // Add transition to the new state with normalized token.
-            parent.AddArc (backend.SubsetTransition (text, mode));
+            parent.AddArc(backend.SubsetTransition(text, mode));
         }
 
         #endregion
@@ -60,7 +60,7 @@ namespace System.Speech.Internal.SrgsCompiler
         /// <summary>
         /// </summary>
         /// <param name="parentElement"></param>
-        void IElement.PostParse (IElement parentElement)
+        void IElement.PostParse(IElement parentElement)
         {
         }
 

@@ -20,7 +20,7 @@ namespace System.Speech.Internal.SrgsCompiler
 
         #region Constructors
 
-        internal CfgArc (CfgArc arc)
+        internal CfgArc(CfgArc arc)
         {
             _flag1 = arc._flag1;
             _flag2 = arc._flag2;
@@ -141,7 +141,7 @@ namespace System.Speech.Internal.SrgsCompiler
             {
                 if (value > 0x3FFFFFU)
                 {
-                    XmlParser.ThrowSrgsException (SRID.TooManyArcs);
+                    XmlParser.ThrowSrgsException(SRID.TooManyArcs);
                 }
 
                 _flag1 &= ~(0x3FFFFFU << 5);
@@ -172,7 +172,7 @@ namespace System.Speech.Internal.SrgsCompiler
             {
                 if (value > 0x3FFFFF)
                 {
-                    XmlParser.ThrowSrgsException (SRID.TooManyArcs);
+                    XmlParser.ThrowSrgsException(SRID.TooManyArcs);
                 }
 
                 _flag2 &= ~(0x3FFFFFU << 8);

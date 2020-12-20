@@ -8,11 +8,9 @@ using System.Text;
 
 namespace System.Speech.Internal.GrammarBuilding
 {
-
-    [DebuggerDisplay ("{DebugSummary}")]
+    [DebuggerDisplay("{DebugSummary}")]
     internal sealed class OneOfElement : BuilderElements
     {
-
         //*******************************************************************
         //
         // Constructors
@@ -21,7 +19,7 @@ namespace System.Speech.Internal.GrammarBuilding
 
         #region Constructors
 
-        internal OneOfElement ()
+        internal OneOfElement()
         {
         }
 
@@ -40,10 +38,10 @@ namespace System.Speech.Internal.GrammarBuilding
         /// 
         /// </summary>
         /// <returns></returns>
-        internal override GrammarBuilderBase Clone ()
+        internal override GrammarBuilderBase Clone()
         {
-            OneOfElement oneOf = new OneOfElement ();
-            oneOf.CloneItems (this);
+            OneOfElement oneOf = new OneOfElement();
+            oneOf.CloneItems(this);
             return oneOf;
         }
 
@@ -55,21 +53,21 @@ namespace System.Speech.Internal.GrammarBuilding
         /// <param name="rule"></param>
         /// <param name="ruleIds"></param>
         /// <returns></returns>
-        internal override IElement CreateElement (IElementFactory elementFactory, IElement parent, IRule rule, IdentifierCollection ruleIds)
+        internal override IElement CreateElement(IElementFactory elementFactory, IElement parent, IRule rule, IdentifierCollection ruleIds)
         {
             // Create and return the IOneOf representing the current object
-            IOneOf oneOf = elementFactory.CreateOneOf (parent, rule);
+            IOneOf oneOf = elementFactory.CreateOneOf(parent, rule);
             foreach (GrammarBuilderBase item in Items)
             {
                 ItemElement newItem = item as ItemElement;
                 if (newItem == null)
                 {
-                    newItem = new ItemElement (item);
+                    newItem = new ItemElement(item);
                 }
 
-                IItem element = (IItem) newItem.CreateElement (elementFactory, oneOf, rule, ruleIds);
-                element.PostParse (oneOf);
-                elementFactory.AddItem (oneOf, element);
+                IItem element = (IItem)newItem.CreateElement(elementFactory, oneOf, rule, ruleIds);
+                element.PostParse(oneOf);
+                elementFactory.AddItem(oneOf, element);
             }
             return oneOf;
         }
@@ -88,17 +86,17 @@ namespace System.Speech.Internal.GrammarBuilding
         {
             get
             {
-                StringBuilder sb = new StringBuilder ();
+                StringBuilder sb = new StringBuilder();
 
                 foreach (GrammarBuilderBase item in Items)
                 {
                     if (sb.Length > 0)
                     {
-                        sb.Append (",");
+                        sb.Append(",");
                     }
-                    sb.Append (item.DebugSummary);
+                    sb.Append(item.DebugSummary);
                 }
-                return "[" + sb.ToString () + "]";
+                return "[" + sb.ToString() + "]";
             }
         }
 

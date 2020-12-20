@@ -28,7 +28,7 @@ using System.Xml.XPath;
 namespace System.Speech.Recognition
 {
     /// TODOC <_include file='doc\RecognitionResult.uex' path='docs/doc[@for="RecognitionResult"]/*' />
-    [DebuggerDisplay ("{DebuggerDisplayString ()}")]
+    [DebuggerDisplay("{DebuggerDisplayString ()}")]
     [Serializable]
     public sealed class RecognitionResult : RecognizedPhrase, ISerializable
     {
@@ -39,13 +39,13 @@ namespace System.Speech.Recognition
         //*******************************************************************
 
         #region Constructors
-        internal RecognitionResult (IRecognizerInternal recognizer, ISpRecoResult recoResult, byte [] sapiResultBlob, int maxAlternates)
+        internal RecognitionResult(IRecognizerInternal recognizer, ISpRecoResult recoResult, byte[] sapiResultBlob, int maxAlternates)
         {
-            Initialize (recognizer, recoResult, sapiResultBlob, maxAlternates);
+            Initialize(recognizer, recoResult, sapiResultBlob, maxAlternates);
         }
 
         // empty constructor needed for some MSS unit tests
-        internal RecognitionResult ()
+        internal RecognitionResult()
         {
         }
 
@@ -54,11 +54,11 @@ namespace System.Speech.Recognition
         /// </summary>
         /// <param name="info"></param>
         /// <param name="context"></param>
-        private RecognitionResult (SerializationInfo info, StreamingContext context)
+        private RecognitionResult(SerializationInfo info, StreamingContext context)
         {
             // Get the set of serializable members for our class and base classes
-            Type thisType = this.GetType ();
-            MemberInfo [] mis = FormatterServices.GetSerializableMembers (
+            Type thisType = this.GetType();
+            MemberInfo[] mis = FormatterServices.GetSerializableMembers(
                thisType, context);
 
             // Do not copy all the field for App Domain transition
@@ -68,12 +68,12 @@ namespace System.Speech.Recognition
             foreach (MemberInfo mi in mis)
             {
                 // To ease coding, treat the member as a FieldInfo object
-                FieldInfo fi = (FieldInfo) mi;
+                FieldInfo fi = (FieldInfo)mi;
 
                 // Set the field to the deserialized value
                 if (!appDomainTransition || (mi.Name != "_recognizer" && mi.Name != "_grammar" && mi.Name != "_ruleList" && mi.Name != "_audio" && mi.Name != "_audio"))
                 {
-                    fi.SetValue (this, info.GetValue (fi.Name, fi.FieldType));
+                    fi.SetValue(this, info.GetValue(fi.Name, fi.FieldType));
                 }
             }
         }
@@ -90,18 +90,18 @@ namespace System.Speech.Recognition
 
 
         /// TODOC <_include file='doc\RecognitionResult.uex' path='docs/doc[@for="RecognitionResult.GetAudioForWordRange"]/*' />
-        public RecognizedAudio GetAudioForWordRange (RecognizedWordUnit firstWord, RecognizedWordUnit lastWord)
+        public RecognizedAudio GetAudioForWordRange(RecognizedWordUnit firstWord, RecognizedWordUnit lastWord)
         {
-            Helpers.ThrowIfNull (firstWord, "firstWord");
-            Helpers.ThrowIfNull (lastWord, "lastWord");
+            Helpers.ThrowIfNull(firstWord, "firstWord");
+            Helpers.ThrowIfNull(lastWord, "lastWord");
 
-            return Audio.GetRange (firstWord._audioPosition, lastWord._audioPosition + lastWord._audioDuration - firstWord._audioPosition);
+            return Audio.GetRange(firstWord._audioPosition, lastWord._audioPosition + lastWord._audioDuration - firstWord._audioPosition);
         }
 
-        [SecurityPermissionAttribute (SecurityAction.Demand, SerializationFormatter = true)]
-        void ISerializable.GetObjectData (SerializationInfo info, StreamingContext context)
+        [SecurityPermissionAttribute(SecurityAction.Demand, SerializationFormatter = true)]
+        void ISerializable.GetObjectData(SerializationInfo info, StreamingContext context)
         {
-            Helpers.ThrowIfNull (info, "info");
+            Helpers.ThrowIfNull(info, "info");
 
             bool appDomainTransition = context.State == StreamingContextStates.CrossAppDomain;
 
@@ -117,7 +117,7 @@ namespace System.Speech.Recognition
                         RecognizedAudio audio = Audio;
                         if (phrase.Text == null || phrase.Homophones == null || phrase.Semantics == null || (sml == null && sml != null) || (audio == null && audio != null))
                         {
-                            throw new SerializationException ();
+                            throw new SerializationException();
                         }
                     }
 #pragma warning disable 56502 // Remove the empty catch statements warnings
@@ -129,36 +129,35 @@ namespace System.Speech.Recognition
             }
 
             // Get the set of serializable members for our class and base classes
-            Type thisType = this.GetType ();
-            MemberInfo [] mis = FormatterServices.GetSerializableMembers (thisType, context);
+            Type thisType = this.GetType();
+            MemberInfo[] mis = FormatterServices.GetSerializableMembers(thisType, context);
 
             // Serialize the base class's fields to the info object
             foreach (MemberInfo mi in mis)
             {
                 if (!appDomainTransition || (mi.Name != "_recognizer" && mi.Name != "_grammar" && mi.Name != "_ruleList" && mi.Name != "_audio" && mi.Name != "_audio"))
                 {
-                    info.AddValue (mi.Name, ((FieldInfo) mi).GetValue (this));
+                    info.AddValue(mi.Name, ((FieldInfo)mi).GetValue(this));
                 }
             }
         }
         /// TODOC <_include file='doc\RecognitionResult.uex' path='docs/doc[@for="RecognitionResult.SetTextFeedback"]/*' />
-        internal bool SetTextFeedback (string text, bool isSuccessfulAction)
+        internal bool SetTextFeedback(string text, bool isSuccessfulAction)
         {
             if (_sapiRecoResult == null)
             {
-                throw new NotSupportedException (SR.Get (SRID.NotSupportedWithThisVersionOfSAPI));
+                throw new NotSupportedException(SR.Get(SRID.NotSupportedWithThisVersionOfSAPI));
             }
             try
             {
-                _sapiRecoResult.SetTextFeedback (text, isSuccessfulAction);
+                _sapiRecoResult.SetTextFeedback(text, isSuccessfulAction);
             }
             catch (COMException ex)
             {
-
                 // If we failed to set the text feedback, it is likely an inproc Recognition result. 
-                if (ex.ErrorCode == (int) SAPIErrorCodes.SPERR_NOT_SUPPORTED_FOR_INPROC_RECOGNIZER)
+                if (ex.ErrorCode == (int)SAPIErrorCodes.SPERR_NOT_SUPPORTED_FOR_INPROC_RECOGNIZER)
                 {
-                    throw new NotSupportedException (SR.Get (SRID.SapiErrorNotSupportedForInprocRecognizer));
+                    throw new NotSupportedException(SR.Get(SRID.SapiErrorNotSupportedForInprocRecognizer));
                 }
 
                 // Otherwise, this could also fail for various reasons, e.g. we have changed the recognizer under 
@@ -190,26 +189,26 @@ namespace System.Speech.Recognition
                     SpeechAudioFormatInfo audioFormat;
                     int audioLength = _sapiAudioBlob.Length;
 
-                    GCHandle gc = GCHandle.Alloc (_sapiAudioBlob, GCHandleType.Pinned);
+                    GCHandle gc = GCHandle.Alloc(_sapiAudioBlob, GCHandleType.Pinned);
                     try
                     {
-                        IntPtr audioBuffer = gc.AddrOfPinnedObject ();
+                        IntPtr audioBuffer = gc.AddrOfPinnedObject();
 
-                        SPWAVEFORMATEX audioHeader = (SPWAVEFORMATEX) Marshal.PtrToStructure (audioBuffer, typeof (SPWAVEFORMATEX));
+                        SPWAVEFORMATEX audioHeader = (SPWAVEFORMATEX)Marshal.PtrToStructure(audioBuffer, typeof(SPWAVEFORMATEX));
 
-                        IntPtr rawDataBuffer = new IntPtr ((long) audioBuffer + audioHeader.cbUsed);
-                        byte [] rawAudioData = new byte [audioLength - audioHeader.cbUsed];
-                        Marshal.Copy (rawDataBuffer, rawAudioData, 0, audioLength - (int) audioHeader.cbUsed);
+                        IntPtr rawDataBuffer = new IntPtr((long)audioBuffer + audioHeader.cbUsed);
+                        byte[] rawAudioData = new byte[audioLength - audioHeader.cbUsed];
+                        Marshal.Copy(rawDataBuffer, rawAudioData, 0, audioLength - (int)audioHeader.cbUsed);
 
-                        byte [] formatSpecificData = new byte [audioHeader.cbSize];
+                        byte[] formatSpecificData = new byte[audioHeader.cbSize];
                         if (audioHeader.cbSize > 0)
                         {
-                            IntPtr codecDataBuffer = new IntPtr ((long) audioBuffer + 38); // 38 is sizeof(SPWAVEFORMATEX) without padding.
-                            Marshal.Copy (codecDataBuffer, formatSpecificData, 0, audioHeader.cbSize);
+                            IntPtr codecDataBuffer = new IntPtr((long)audioBuffer + 38); // 38 is sizeof(SPWAVEFORMATEX) without padding.
+                            Marshal.Copy(codecDataBuffer, formatSpecificData, 0, audioHeader.cbSize);
                         }
-                        audioFormat = new SpeechAudioFormatInfo ((EncodingFormat) audioHeader.wFormatTag,
-                                                        (int) audioHeader.nSamplesPerSec, (short) audioHeader.wBitsPerSample, (short) audioHeader.nChannels, (int) audioHeader.nAvgBytesPerSec,
-                                                        (short) audioHeader.nBlockAlign,
+                        audioFormat = new SpeechAudioFormatInfo((EncodingFormat)audioHeader.wFormatTag,
+                                                        (int)audioHeader.nSamplesPerSec, (short)audioHeader.wBitsPerSample, (short)audioHeader.nChannels, (int)audioHeader.nAvgBytesPerSec,
+                                                        (short)audioHeader.nBlockAlign,
                                                         formatSpecificData);
                         DateTime startTime;
                         if (_header.times.dwTickCount == 0)
@@ -218,13 +217,13 @@ namespace System.Speech.Recognition
                         }
                         else
                         {
-                            startTime = DateTime.FromFileTime ((long) ((ulong) _header.times.ftStreamTime.dwHighDateTime << 32) + _header.times.ftStreamTime.dwLowDateTime);
+                            startTime = DateTime.FromFileTime((long)((ulong)_header.times.ftStreamTime.dwHighDateTime << 32) + _header.times.ftStreamTime.dwLowDateTime);
                         }
-                        _audio = new RecognizedAudio (rawAudioData, audioFormat, startTime, AudioPosition, AudioDuration);
+                        _audio = new RecognizedAudio(rawAudioData, audioFormat, startTime, AudioPosition, AudioDuration);
                     }
                     finally
                     {
-                        gc.Free ();
+                        gc.Free();
                     }
                 }
 
@@ -241,7 +240,7 @@ namespace System.Speech.Recognition
         {
             get
             {
-                return new ReadOnlyCollection<RecognizedPhrase> (GetAlternates ());
+                return new ReadOnlyCollection<RecognizedPhrase>(GetAlternates());
             }
         }
 
@@ -261,26 +260,26 @@ namespace System.Speech.Recognition
         /// <param name="pronunciation"></param>
         /// <param name="langId"></param>
         /// <returns>New pronunciation in IPA alphabet</returns>
-        internal string ConvertPronunciation (string pronunciation, int langId)
+        internal string ConvertPronunciation(string pronunciation, int langId)
         {
             if (_alphabetConverter == null)
             {
-                _alphabetConverter = new AlphabetConverter (langId);
+                _alphabetConverter = new AlphabetConverter(langId);
             }
             else
             {
-                _alphabetConverter.SetLanguageId (langId);
+                _alphabetConverter.SetLanguageId(langId);
             }
 
-            char [] ipa = _alphabetConverter.SapiToIpa (pronunciation.ToCharArray ());
+            char[] ipa = _alphabetConverter.SapiToIpa(pronunciation.ToCharArray());
 
             if (ipa != null)
             {
-                pronunciation = new string (ipa);
+                pronunciation = new string(ipa);
             }
             else
             {
-                Trace.TraceError ("Cannot convert the pronunciation to IPA alphabet.");
+                Trace.TraceError("Cannot convert the pronunciation to IPA alphabet.");
             }
             return pronunciation;
         }
@@ -302,7 +301,7 @@ namespace System.Speech.Recognition
                 // If this recognition result comes from a deserialize, then throw
                 if (_recognizer == null)
                 {
-                    throw new NotSupportedException (SR.Get (SRID.CantGetPropertyFromSerializedInfo, "Recognizer"));
+                    throw new NotSupportedException(SR.Get(SRID.CantGetPropertyFromSerializedInfo, "Recognizer"));
                 }
                 return _recognizer;
             }
@@ -314,9 +313,9 @@ namespace System.Speech.Recognition
             {
                 if (_audioPosition == null)
                 {
-                    _audioPosition = new TimeSpan ((long) _header.times.ullStart);
+                    _audioPosition = new TimeSpan((long)_header.times.ullStart);
                 }
-                return (TimeSpan) _audioPosition;
+                return (TimeSpan)_audioPosition;
             }
         }
 
@@ -326,9 +325,9 @@ namespace System.Speech.Recognition
             {
                 if (_audioDuration == null)
                 {
-                    _audioDuration = new TimeSpan ((long) _header.times.ullLength);
+                    _audioDuration = new TimeSpan((long)_header.times.ullLength);
                 }
-                return (TimeSpan) _audioDuration;
+                return (TimeSpan)_audioDuration;
             }
         }
 
@@ -342,7 +341,7 @@ namespace System.Speech.Recognition
 
         #region Private Methods
 
-        private void Initialize (IRecognizerInternal recognizer, ISpRecoResult recoResult, byte [] sapiResultBlob, int maxAlternates)
+        private void Initialize(IRecognizerInternal recognizer, ISpRecoResult recoResult, byte[] sapiResultBlob, int maxAlternates)
         {
             // record parameters
             _recognizer = recognizer;
@@ -356,100 +355,100 @@ namespace System.Speech.Recognition
             {
                 _sapiRecoResult = null;
             }
-            GCHandle gc = GCHandle.Alloc (sapiResultBlob, GCHandleType.Pinned);
+            GCHandle gc = GCHandle.Alloc(sapiResultBlob, GCHandleType.Pinned);
             try
             {
-                IntPtr buffer = gc.AddrOfPinnedObject ();
+                IntPtr buffer = gc.AddrOfPinnedObject();
 
-                int headerSize = Marshal.ReadInt32 (buffer, 4); // Read header size directly from buffer - 4 is the offset of cbHeaderSize.
+                int headerSize = Marshal.ReadInt32(buffer, 4); // Read header size directly from buffer - 4 is the offset of cbHeaderSize.
 
-                if (headerSize == Marshal.SizeOf (typeof (SPRESULTHEADER_Sapi51))) // SAPI 5.1 size
+                if (headerSize == Marshal.SizeOf(typeof(SPRESULTHEADER_Sapi51))) // SAPI 5.1 size
                 {
-                    SPRESULTHEADER_Sapi51 legacyHeader = (SPRESULTHEADER_Sapi51) Marshal.PtrToStructure (buffer, typeof (SPRESULTHEADER_Sapi51));
-                    _header = new SPRESULTHEADER (legacyHeader);
+                    SPRESULTHEADER_Sapi51 legacyHeader = (SPRESULTHEADER_Sapi51)Marshal.PtrToStructure(buffer, typeof(SPRESULTHEADER_Sapi51));
+                    _header = new SPRESULTHEADER(legacyHeader);
                     _isSapi53Header = false;
                 }
                 else
                 {
-                    _header = (SPRESULTHEADER) Marshal.PtrToStructure (buffer, typeof (SPRESULTHEADER));
+                    _header = (SPRESULTHEADER)Marshal.PtrToStructure(buffer, typeof(SPRESULTHEADER));
                     _isSapi53Header = true;
                 }
 
                 // Validate the header fields
-                _header.Validate ();
+                _header.Validate();
 
                 // initialize the parent to be this result - this is needed for the homophones
-                IntPtr phraseBuffer = new IntPtr ((long) buffer + (int) _header.ulPhraseOffset);
+                IntPtr phraseBuffer = new IntPtr((long)buffer + (int)_header.ulPhraseOffset);
 
-                SPSERIALIZEDPHRASE serializedPhrase = RecognizedPhrase.GetPhraseHeader (phraseBuffer, _header.ulPhraseDataSize, _isSapi53Header);
+                SPSERIALIZEDPHRASE serializedPhrase = RecognizedPhrase.GetPhraseHeader(phraseBuffer, _header.ulPhraseDataSize, _isSapi53Header);
 
                 // Get the alphabet of the main phrase, which should be the same as the current alphabet selected by us (applications).
-                bool hasIPAPronunciation = (_header.fAlphabet & (uint) SPRESULTALPHABET.SPRA_APP_UPS) != 0;
+                bool hasIPAPronunciation = (_header.fAlphabet & (uint)SPRESULTALPHABET.SPRA_APP_UPS) != 0;
 
-                InitializeFromSerializedBuffer (this, serializedPhrase, phraseBuffer, (int) _header.ulPhraseDataSize, _isSapi53Header, hasIPAPronunciation);
+                InitializeFromSerializedBuffer(this, serializedPhrase, phraseBuffer, (int)_header.ulPhraseDataSize, _isSapi53Header, hasIPAPronunciation);
 
                 if (recoResult != null)
                 {
-                    ExtractDictationAlternates (recoResult, maxAlternates);
+                    ExtractDictationAlternates(recoResult, maxAlternates);
                     // Since we took ownership of this unmanaged object we can discard information that dont need.
-                    recoResult.Discard (SapiConstants.SPDF_ALL);
+                    recoResult.Discard(SapiConstants.SPDF_ALL);
                 }
             }
             finally
             {
-                gc.Free ();
+                gc.Free();
             }
 
             // save the sapi blobs spliting it in the relevant bits
 
             // audio
-            _sapiAudioBlob = new byte [(int) _header.ulRetainedDataSize];
-            Array.Copy (sapiResultBlob, (int) _header.ulRetainedOffset, _sapiAudioBlob, 0, (int) _header.ulRetainedDataSize);
+            _sapiAudioBlob = new byte[(int)_header.ulRetainedDataSize];
+            Array.Copy(sapiResultBlob, (int)_header.ulRetainedOffset, _sapiAudioBlob, 0, (int)_header.ulRetainedDataSize);
 
             // alternates
-            _sapiAlternatesBlob = new byte [(int) _header.ulPhraseAltDataSize];
-            Array.Copy (sapiResultBlob, (int) _header.ulPhraseAltOffset, _sapiAlternatesBlob, 0, (int) _header.ulPhraseAltDataSize);
+            _sapiAlternatesBlob = new byte[(int)_header.ulPhraseAltDataSize];
+            Array.Copy(sapiResultBlob, (int)_header.ulPhraseAltOffset, _sapiAlternatesBlob, 0, (int)_header.ulPhraseAltDataSize);
         }
 
-        private Collection<RecognizedPhrase> ExtractAlternates (int numberOfAlternates, bool isSapi53Header)
+        private Collection<RecognizedPhrase> ExtractAlternates(int numberOfAlternates, bool isSapi53Header)
         {
-            Collection<RecognizedPhrase> alternates = new Collection<RecognizedPhrase> ();
+            Collection<RecognizedPhrase> alternates = new Collection<RecognizedPhrase>();
 
             if (numberOfAlternates > 0)
             {
-                GCHandle gc = GCHandle.Alloc (_sapiAlternatesBlob, GCHandleType.Pinned);
+                GCHandle gc = GCHandle.Alloc(_sapiAlternatesBlob, GCHandleType.Pinned);
                 try
                 {
-                    IntPtr buffer = gc.AddrOfPinnedObject ();
+                    IntPtr buffer = gc.AddrOfPinnedObject();
 
-                    int sizeOfSpSerializedPhraseAlt = Marshal.SizeOf (typeof (SPSERIALIZEDPHRASEALT));
+                    int sizeOfSpSerializedPhraseAlt = Marshal.SizeOf(typeof(SPSERIALIZEDPHRASEALT));
                     int offset = 0;
                     for (int i = 0; i < numberOfAlternates; i++)
                     {
-                        IntPtr altBuffer = new IntPtr ((long) buffer + offset);
-                        SPSERIALIZEDPHRASEALT alt = (SPSERIALIZEDPHRASEALT) Marshal.PtrToStructure (altBuffer, typeof (SPSERIALIZEDPHRASEALT));
+                        IntPtr altBuffer = new IntPtr((long)buffer + offset);
+                        SPSERIALIZEDPHRASEALT alt = (SPSERIALIZEDPHRASEALT)Marshal.PtrToStructure(altBuffer, typeof(SPSERIALIZEDPHRASEALT));
 
                         offset += sizeOfSpSerializedPhraseAlt; // advance over SPSERIALIZEDPHRASEALT
                         if (isSapi53Header)
                         {
-                            offset += (int) ((alt.cbAltExtra + 7) & ~7); // advance over extra data with alignment padding
+                            offset += (int)((alt.cbAltExtra + 7) & ~7); // advance over extra data with alignment padding
                         }
                         else
                         {
-                            offset += (int) alt.cbAltExtra; // no alignment padding
+                            offset += (int)alt.cbAltExtra; // no alignment padding
                         }
 
                         // we cannot use a constructor parameter because RecognitionResult also derives from RecognizedPhrase
-                        IntPtr phraseBuffer = new IntPtr ((long) buffer + (int) offset);
-                        SPSERIALIZEDPHRASE serializedPhrase = RecognizedPhrase.GetPhraseHeader (phraseBuffer, _header.ulPhraseAltDataSize - (uint) offset, _isSapi53Header);
-                        int serializedPhraseSize = (int) serializedPhrase.ulSerializedSize;
+                        IntPtr phraseBuffer = new IntPtr((long)buffer + (int)offset);
+                        SPSERIALIZEDPHRASE serializedPhrase = RecognizedPhrase.GetPhraseHeader(phraseBuffer, _header.ulPhraseAltDataSize - (uint)offset, _isSapi53Header);
+                        int serializedPhraseSize = (int)serializedPhrase.ulSerializedSize;
 
-                        RecognizedPhrase phrase = new RecognizedPhrase ();
+                        RecognizedPhrase phrase = new RecognizedPhrase();
 
                         // Get the alphabet of the raw phrase alternate, which should be the same as the engine
-                        bool hasIPAPronunciation = (_header.fAlphabet & (uint) SPRESULTALPHABET.SPRA_ENGINE_UPS) != 0;
+                        bool hasIPAPronunciation = (_header.fAlphabet & (uint)SPRESULTALPHABET.SPRA_ENGINE_UPS) != 0;
 
-                        phrase.InitializeFromSerializedBuffer (this, serializedPhrase, phraseBuffer, serializedPhraseSize, isSapi53Header, hasIPAPronunciation);
+                        phrase.InitializeFromSerializedBuffer(this, serializedPhrase, phraseBuffer, serializedPhraseSize, isSapi53Header, hasIPAPronunciation);
 
                         // TODO Suppress this line
                         if (isSapi53Header)
@@ -461,12 +460,12 @@ namespace System.Speech.Recognition
                             offset += serializedPhraseSize; // advance over phrase
                         }
 
-                        alternates.Add (phrase);
+                        alternates.Add(phrase);
                     }
                 }
                 finally
                 {
-                    gc.Free ();
+                    gc.Free();
                 }
             }
 
@@ -474,7 +473,7 @@ namespace System.Speech.Recognition
         }
 
 
-        private void ExtractDictationAlternates (ISpRecoResult recoResult, int maxAlternates)
+        private void ExtractDictationAlternates(ISpRecoResult recoResult, int maxAlternates)
         {
             // Get the alternates for dication 
             // alternates for dictation are not part of the recognition results and must be pulled out 
@@ -484,11 +483,11 @@ namespace System.Speech.Recognition
             {
                 if (Grammar is DictationGrammar)
                 {
-                    _alternates = new Collection<RecognizedPhrase> ();
-                    IntPtr [] sapiAlternates = new IntPtr [maxAlternates];
+                    _alternates = new Collection<RecognizedPhrase>();
+                    IntPtr[] sapiAlternates = new IntPtr[maxAlternates];
                     try
                     {
-                        recoResult.GetAlternates (0, -1, maxAlternates, sapiAlternates, out maxAlternates);
+                        recoResult.GetAlternates(0, -1, maxAlternates, sapiAlternates, out maxAlternates);
                     }
                     catch (COMException)
                     {
@@ -500,36 +499,36 @@ namespace System.Speech.Recognition
                     //InnerList.Capacity = (int)numSapiAlternates;
                     for (uint i = 0; i < maxAlternates; i++)
                     {
-                        ISpPhraseAlt phraseAlt = (ISpPhraseAlt) Marshal.GetObjectForIUnknown (sapiAlternates [i]);
+                        ISpPhraseAlt phraseAlt = (ISpPhraseAlt)Marshal.GetObjectForIUnknown(sapiAlternates[i]);
                         try
                         {
                             IntPtr coMemSerializedPhrase;
-                            phraseAlt.GetSerializedPhrase (out coMemSerializedPhrase);
+                            phraseAlt.GetSerializedPhrase(out coMemSerializedPhrase);
                             try
                             {
                                 // Build a recognition phrase result
-                                RecognizedPhrase phrase = new RecognizedPhrase ();
+                                RecognizedPhrase phrase = new RecognizedPhrase();
 
                                 // we cannot use a constructor parameter because RecognitionResult also derives from RecognizedPhrase
-                                SPSERIALIZEDPHRASE serializedPhrase = RecognizedPhrase.GetPhraseHeader (coMemSerializedPhrase, uint.MaxValue, _isSapi53Header);
+                                SPSERIALIZEDPHRASE serializedPhrase = RecognizedPhrase.GetPhraseHeader(coMemSerializedPhrase, uint.MaxValue, _isSapi53Header);
 
                                 //
                                 // If we are getting the alternates from SAPI, the alphabet should have already been converted 
                                 // to the alphabet we (applications) want.
                                 //
-                                bool hasIPAPronunciation = (_header.fAlphabet & (uint) SPRESULTALPHABET.SPRA_APP_UPS) != 0;
+                                bool hasIPAPronunciation = (_header.fAlphabet & (uint)SPRESULTALPHABET.SPRA_APP_UPS) != 0;
 
-                                phrase.InitializeFromSerializedBuffer (this, serializedPhrase, coMemSerializedPhrase, (int) serializedPhrase.ulSerializedSize, _isSapi53Header, hasIPAPronunciation);
-                                _alternates.Add (phrase);
+                                phrase.InitializeFromSerializedBuffer(this, serializedPhrase, coMemSerializedPhrase, (int)serializedPhrase.ulSerializedSize, _isSapi53Header, hasIPAPronunciation);
+                                _alternates.Add(phrase);
                             }
                             finally
                             {
-                                Marshal.FreeCoTaskMem (coMemSerializedPhrase);
+                                Marshal.FreeCoTaskMem(coMemSerializedPhrase);
                             }
                         }
                         finally
                         {
-                            Marshal.Release (sapiAlternates [i]);
+                            Marshal.Release(sapiAlternates[i]);
                         }
                     }
                 }
@@ -537,56 +536,56 @@ namespace System.Speech.Recognition
         }
 
 
-        private Collection<RecognizedPhrase> GetAlternates ()
+        private Collection<RecognizedPhrase> GetAlternates()
         {
             if (_alternates == null)
             {
                 // extract alternates even if ulNumPhraseAlts is 0 so that the list gets initialized to empty
-                _alternates = ExtractAlternates ((int) _header.ulNumPhraseAlts, _isSapi53Header);
+                _alternates = ExtractAlternates((int)_header.ulNumPhraseAlts, _isSapi53Header);
 
                 // If no alternated then create one from the top result
                 if (_alternates.Count == 0 && _maxAlternates > 0)
                 {
-                    RecognizedPhrase alternate = new RecognizedPhrase ();
-                    GCHandle gc = GCHandle.Alloc (_phraseBuffer, GCHandleType.Pinned);
+                    RecognizedPhrase alternate = new RecognizedPhrase();
+                    GCHandle gc = GCHandle.Alloc(_phraseBuffer, GCHandleType.Pinned);
                     try
                     {
-                        alternate.InitializeFromSerializedBuffer (this, _serializedPhrase, gc.AddrOfPinnedObject (), _phraseBuffer.Length, _isSapi53Header, _hasIPAPronunciation);
+                        alternate.InitializeFromSerializedBuffer(this, _serializedPhrase, gc.AddrOfPinnedObject(), _phraseBuffer.Length, _isSapi53Header, _hasIPAPronunciation);
                     }
                     finally
                     {
-                        gc.Free ();
+                        gc.Free();
                     }
-                    _alternates.Add (alternate);
+                    _alternates.Add(alternate);
                 }
             }
             return _alternates;
         }
 
-        internal string DebuggerDisplayString ()
+        internal string DebuggerDisplayString()
         {
-            StringBuilder sb = new StringBuilder ("Recognized text: '");
-            sb.Append (Text);
-            sb.Append ("'");
+            StringBuilder sb = new StringBuilder("Recognized text: '");
+            sb.Append(Text);
+            sb.Append("'");
             if (Semantics.Value != null)
             {
-                sb.Append (" - Semantic Value  = ");
-                sb.Append (Semantics.Value.ToString ());
+                sb.Append(" - Semantic Value  = ");
+                sb.Append(Semantics.Value.ToString());
             }
 
             if (Semantics.Count > 0)
             {
-                sb.Append (" - Semantic children count = ");
-                sb.Append (Semantics.Count.ToString (CultureInfo.InvariantCulture));
+                sb.Append(" - Semantic children count = ");
+                sb.Append(Semantics.Count.ToString(CultureInfo.InvariantCulture));
             }
 
             if (Alternates.Count > 1)
             {
-                sb.Append (" - Alternate word count = ");
-                sb.Append (Alternates.Count.ToString (CultureInfo.InvariantCulture));
+                sb.Append(" - Alternate word count = ");
+                sb.Append(Alternates.Count.ToString(CultureInfo.InvariantCulture));
             }
 
-            return sb.ToString ();
+            return sb.ToString();
         }
 
         #endregion
@@ -609,8 +608,8 @@ namespace System.Speech.Recognition
         private AlphabetConverter _alphabetConverter;
 
         // sapi blobss
-        byte [] _sapiAudioBlob;
-        byte [] _sapiAlternatesBlob;
+        private byte[] _sapiAudioBlob;
+        private byte[] _sapiAlternatesBlob;
 
         private Collection<RecognizedPhrase> _alternates;
 

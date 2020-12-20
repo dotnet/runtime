@@ -25,40 +25,40 @@ namespace System.Speech.Internal.Synthesis
         /// </summary>
         /// <param name="buffer"></param>
         /// <returns>MMSYSERR.NOERROR if successful</returns>
-        internal WaveHeader (byte [] buffer)
+        internal WaveHeader(byte[] buffer)
         {
             _dwBufferLength = buffer.Length;
-            _gcHandle = GCHandle.Alloc (buffer, GCHandleType.Pinned);
+            _gcHandle = GCHandle.Alloc(buffer, GCHandleType.Pinned);
         }
 
         /// <summary>
         /// Frees any memory allocated for the buffer.
         /// </summary>
-        ~WaveHeader ()
+        ~WaveHeader()
         {
-            Dispose (false);
+            Dispose(false);
         }
 
         /// <summary>
         /// TODOC
         /// </summary>
-        public void Dispose ()
+        public void Dispose()
         {
-            Dispose (true);
-            GC.SuppressFinalize (this);
+            Dispose(true);
+            GC.SuppressFinalize(this);
         }
 
         /// <summary>
         /// Frees any memory allocated for the buffer.
         /// </summary>
-        private void Dispose (bool disposing)
+        private void Dispose(bool disposing)
         {
             if (disposing)
             {
-                ReleaseData ();
+                ReleaseData();
                 if (_gcHandleWaveHdr.IsAllocated)
                 {
-                    _gcHandleWaveHdr.Free ();
+                    _gcHandleWaveHdr.Free();
                 }
             }
         }
@@ -73,11 +73,11 @@ namespace System.Speech.Internal.Synthesis
 
         #region Internal Methods
 
-        internal void ReleaseData ()
+        internal void ReleaseData()
         {
             if (_gcHandle.IsAllocated)
             {
-                _gcHandle.Free ();
+                _gcHandle.Free();
             }
         }
 
@@ -96,14 +96,14 @@ namespace System.Speech.Internal.Synthesis
             {
                 if (!_gcHandleWaveHdr.IsAllocated)
                 {
-                    _waveHdr.lpData = _gcHandle.AddrOfPinnedObject ();
-                    _waveHdr.dwBufferLength = (uint) _dwBufferLength;
+                    _waveHdr.lpData = _gcHandle.AddrOfPinnedObject();
+                    _waveHdr.dwBufferLength = (uint)_dwBufferLength;
                     _waveHdr.dwBytesRecorded = 0;
                     _waveHdr.dwUser = 0;
                     _waveHdr.dwFlags = 0;
                     _waveHdr.dwLoops = 0;
                     _waveHdr.lpNext = IntPtr.Zero;
-                    _gcHandleWaveHdr = GCHandle.Alloc (_waveHdr, GCHandleType.Pinned);
+                    _gcHandleWaveHdr = GCHandle.Alloc(_waveHdr, GCHandleType.Pinned);
                 }
                 return _gcHandleWaveHdr;
             }
@@ -113,7 +113,7 @@ namespace System.Speech.Internal.Synthesis
         {
             get
             {
-                return Marshal.SizeOf (_waveHdr);
+                return Marshal.SizeOf(_waveHdr);
             }
         }
 
@@ -177,11 +177,11 @@ namespace System.Speech.Internal.Synthesis
         /// be block-aligned according to the nBlockAlign member of the
         /// WaveFormat structure used to open the device.
         /// </summary>
-        private GCHandle _gcHandle = new GCHandle ();
+        private GCHandle _gcHandle = new GCHandle();
 
-        private GCHandle _gcHandleWaveHdr = new GCHandle ();
+        private GCHandle _gcHandleWaveHdr = new GCHandle();
 
-        private WAVEHDR _waveHdr = new WAVEHDR ();
+        private WAVEHDR _waveHdr = new WAVEHDR();
 
         /// <summary>
         /// Specifies the length, in bytes, of the buffer.
@@ -189,6 +189,5 @@ namespace System.Speech.Internal.Synthesis
         internal int _dwBufferLength;
 
         #endregion
-
     }
 }

@@ -8,11 +8,9 @@ using System.Speech.Recognition;
 
 namespace System.Speech.Internal.GrammarBuilding
 {
-
-    [DebuggerDisplay ("{DebugSummary}")]
+    [DebuggerDisplay("{DebugSummary}")]
     internal sealed class GrammarBuilderPhrase : GrammarBuilderBase
     {
-
         //*******************************************************************
         //
         // Constructors
@@ -25,8 +23,8 @@ namespace System.Speech.Internal.GrammarBuilding
         /// 
         /// </summary>
         /// <param name="phrase"></param>
-        internal GrammarBuilderPhrase (string phrase)
-            : this (phrase, false, SubsetMatchingMode.OrderedSubset)
+        internal GrammarBuilderPhrase(string phrase)
+            : this(phrase, false, SubsetMatchingMode.OrderedSubset)
         {
         }
 
@@ -35,8 +33,8 @@ namespace System.Speech.Internal.GrammarBuilding
         /// </summary>
         /// <param name="phrase"></param>
         /// <param name="subsetMatchingCriteria"></param>
-        internal GrammarBuilderPhrase (string phrase, SubsetMatchingMode subsetMatchingCriteria)
-            : this (phrase, true, subsetMatchingCriteria)
+        internal GrammarBuilderPhrase(string phrase, SubsetMatchingMode subsetMatchingCriteria)
+            : this(phrase, true, subsetMatchingCriteria)
         {
         }
 
@@ -46,9 +44,9 @@ namespace System.Speech.Internal.GrammarBuilding
         /// <param name="phrase"></param>
         /// <param name="subsetMatching"></param>
         /// <param name="subsetMatchingCriteria"></param>
-        private GrammarBuilderPhrase (string phrase, bool subsetMatching, SubsetMatchingMode subsetMatchingCriteria)
+        private GrammarBuilderPhrase(string phrase, bool subsetMatching, SubsetMatchingMode subsetMatchingCriteria)
         {
-            _phrase = string.Copy (phrase);
+            _phrase = string.Copy(phrase);
             _subsetMatching = subsetMatching;
             switch (subsetMatchingCriteria)
             {
@@ -73,9 +71,9 @@ namespace System.Speech.Internal.GrammarBuilding
         /// <param name="phrase"></param>
         /// <param name="subsetMatching"></param>
         /// <param name="matchMode"></param>
-        private GrammarBuilderPhrase (string phrase, bool subsetMatching, MatchMode matchMode)
+        private GrammarBuilderPhrase(string phrase, bool subsetMatching, MatchMode matchMode)
         {
-            _phrase = string.Copy (phrase);
+            _phrase = string.Copy(phrase);
             _subsetMatching = subsetMatching;
             _matchMode = matchMode;
         }
@@ -91,7 +89,7 @@ namespace System.Speech.Internal.GrammarBuilding
         #region Public Methods
 
         /// TODOC <_include file='doc\SpeechAudioFormatInfo.uex' path='docs/doc[@for="SpeechAudioFormatInfo.Equals"]/*' />
-        public override bool Equals (object obj)
+        public override bool Equals(object obj)
         {
             GrammarBuilderPhrase refObj = obj as GrammarBuilderPhrase;
             if (refObj == null)
@@ -102,9 +100,9 @@ namespace System.Speech.Internal.GrammarBuilding
         }
 
         /// TODOC <_include file='doc\SpeechAudioFormatInfo.uex' path='docs/doc[@for="SpeechAudioFormatInfo.GetHashCode"]/*' />
-        public override int GetHashCode ()
+        public override int GetHashCode()
         {
-            return _phrase.GetHashCode ();
+            return _phrase.GetHashCode();
         }
 
         #endregion
@@ -121,9 +119,9 @@ namespace System.Speech.Internal.GrammarBuilding
         /// 
         /// </summary>
         /// <returns></returns>
-        internal override GrammarBuilderBase Clone ()
+        internal override GrammarBuilderBase Clone()
         {
-            return new GrammarBuilderPhrase (_phrase, _subsetMatching, _matchMode);
+            return new GrammarBuilderPhrase(_phrase, _subsetMatching, _matchMode);
         }
 
         /// <summary>
@@ -134,9 +132,9 @@ namespace System.Speech.Internal.GrammarBuilding
         /// <param name="rule"></param>
         /// <param name="ruleIds"></param>
         /// <returns></returns>
-        internal override IElement CreateElement (IElementFactory elementFactory, IElement parent, IRule rule, IdentifierCollection ruleIds)
+        internal override IElement CreateElement(IElementFactory elementFactory, IElement parent, IRule rule, IdentifierCollection ruleIds)
         {
-            return CreatePhraseElement (elementFactory, parent);
+            return CreatePhraseElement(elementFactory, parent);
         }
 
         #endregion
@@ -154,7 +152,7 @@ namespace System.Speech.Internal.GrammarBuilding
         {
             get
             {
-                return "�" + _phrase + "�";
+                return "'" + _phrase + "'";
             }
         }
 
@@ -174,23 +172,23 @@ namespace System.Speech.Internal.GrammarBuilding
         /// <param name="elementFactory"></param>
         /// <param name="parent"></param>
         /// <returns></returns>
-        private IElement CreatePhraseElement (IElementFactory elementFactory, IElement parent)
+        private IElement CreatePhraseElement(IElementFactory elementFactory, IElement parent)
         {
             if (_subsetMatching)
             {
                 // Create and return the ISubset representing the current phrase
-                return elementFactory.CreateSubset (parent, _phrase, _matchMode);
+                return elementFactory.CreateSubset(parent, _phrase, _matchMode);
             }
             else
             {
                 if (elementFactory is SrgsElementCompilerFactory)
                 {
-                    XmlParser.ParseText (parent, _phrase, null, null, -1f, new CreateTokenCallback (elementFactory.CreateToken));
+                    XmlParser.ParseText(parent, _phrase, null, null, -1f, new CreateTokenCallback(elementFactory.CreateToken));
                 }
                 else
                 {
                     // Create and return the IElementText representing the current phrase
-                    return elementFactory.CreateText (parent, _phrase);
+                    return elementFactory.CreateText(parent, _phrase);
                 }
             }
             return null;
@@ -212,6 +210,5 @@ namespace System.Speech.Internal.GrammarBuilding
         private readonly MatchMode _matchMode;
 
         #endregion
-
     }
 }

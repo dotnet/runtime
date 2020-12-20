@@ -21,11 +21,11 @@ namespace System.Speech.Recognition.SrgsGrammar
 
         #region Interfaces Implementations
 
-        protected override void InsertItem (int index, SrgsItem item)
+        protected override void InsertItem(int index, SrgsItem item)
         {
-            Helpers.ThrowIfNull (item, "item");
+            Helpers.ThrowIfNull(item, "item");
 
-            base.InsertItem (index, item);
+            base.InsertItem(index, item);
         }
 
         #endregion

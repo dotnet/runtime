@@ -10,7 +10,6 @@ using System.Diagnostics;
 
 namespace System.Speech.Internal
 {
-
 #pragma warning disable 56528 // Override of Dispose(bool) not needed as base stream should not be closed.
 
     // Class that is used to wrap a stream that does not support Seek into one that does.
@@ -272,6 +271,4 @@ namespace System.Speech.Internal
         #endregion
     }
 #pragma warning restore 56528
-
-
 }

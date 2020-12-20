@@ -24,18 +24,18 @@ namespace System.Speech.Internal
 
         #region Constructors
 
-        internal StreamMarshaler ()
+        internal StreamMarshaler()
         {
         }
 
-        internal StreamMarshaler (Stream stream)
+        internal StreamMarshaler(Stream stream)
         {
             _stream = stream;
         }
 
-        public void Dispose ()
+        public void Dispose()
         {
-            _safeHMem.Dispose ();
+            _safeHMem.Dispose();
         }
 
         #endregion
@@ -47,40 +47,40 @@ namespace System.Speech.Internal
         //*******************************************************************
 
         #region internal Methods
-        internal void ReadArray<T> (T [] ao, int c)
+        internal void ReadArray<T>(T[] ao, int c)
         {
-            Type type = typeof (T);
-            int sizeOfOne = Marshal.SizeOf (type);
+            Type type = typeof(T);
+            int sizeOfOne = Marshal.SizeOf(type);
             int sizeObject = sizeOfOne * c;
             byte[] ab = Helpers.ReadStreamToByteArray(_stream, sizeObject);
 
-            IntPtr buffer = _safeHMem.Buffer (sizeObject);
+            IntPtr buffer = _safeHMem.Buffer(sizeObject);
 
-            Marshal.Copy (ab, 0, buffer, sizeObject);
+            Marshal.Copy(ab, 0, buffer, sizeObject);
             for (int i = 0; i < c; i++)
             {
-                ao [i] = (T) Marshal.PtrToStructure ((IntPtr) ((long) buffer + i * sizeOfOne), type);
+                ao[i] = (T)Marshal.PtrToStructure((IntPtr)((long)buffer + i * sizeOfOne), type);
             }
         }
 
-        internal void WriteArray<T> (T [] ao, int c)
+        internal void WriteArray<T>(T[] ao, int c)
         {
-            Type type = typeof (T);
-            int sizeOfOne = Marshal.SizeOf (type);
+            Type type = typeof(T);
+            int sizeOfOne = Marshal.SizeOf(type);
             int sizeObject = sizeOfOne * c;
-            byte [] ab = new byte [sizeObject];
-            IntPtr buffer = _safeHMem.Buffer (sizeObject);
+            byte[] ab = new byte[sizeObject];
+            IntPtr buffer = _safeHMem.Buffer(sizeObject);
 
             for (int i = 0; i < c; i++)
             {
-                Marshal.StructureToPtr (ao [i], (IntPtr) ((long) buffer + i * sizeOfOne), false);
+                Marshal.StructureToPtr(ao[i], (IntPtr)((long)buffer + i * sizeOfOne), false);
             }
 
-            Marshal.Copy (buffer, ab, 0, sizeObject);
-            _stream.Write (ab, 0, sizeObject);
+            Marshal.Copy(buffer, ab, 0, sizeObject);
+            _stream.Write(ab, 0, sizeObject);
         }
 
-        internal void ReadArrayChar (char [] ach, int c)
+        internal void ReadArrayChar(char[] ach, int c)
         {
             int sizeObject = c * Helpers._sizeOfChar;
 
@@ -88,17 +88,17 @@ namespace System.Speech.Internal
             {
                 byte[] ab = Helpers.ReadStreamToByteArray(_stream, sizeObject);
 
-                IntPtr buffer = _safeHMem.Buffer (sizeObject);
+                IntPtr buffer = _safeHMem.Buffer(sizeObject);
 
-                Marshal.Copy (ab, 0, buffer, sizeObject);
-                Marshal.Copy (buffer, ach, 0, c);
+                Marshal.Copy(ab, 0, buffer, sizeObject);
+                Marshal.Copy(buffer, ach, 0, c);
             }
         }
 
 #pragma warning disable 56518 // BinaryReader can't be disposed because underlying stream still in use.
 
         // Helper method to read a Unicode string from a stream.
-        internal string ReadNullTerminatedString ()
+        internal string ReadNullTerminatedString()
         {
             BinaryReader br = new BinaryReader(_stream, Encoding.Unicode);
             StringBuilder stringBuilder = new StringBuilder();
@@ -126,37 +126,37 @@ namespace System.Speech.Internal
 
             if (sizeObject > 0)
             {
-                byte [] ab = new byte [sizeObject];
-                IntPtr buffer = _safeHMem.Buffer (sizeObject);
+                byte[] ab = new byte[sizeObject];
+                IntPtr buffer = _safeHMem.Buffer(sizeObject);
 
-                Marshal.Copy (ach, 0, buffer, c);
-                Marshal.Copy (buffer, ab, 0, sizeObject);
-                _stream.Write (ab, 0, sizeObject);
+                Marshal.Copy(ach, 0, buffer, c);
+                Marshal.Copy(buffer, ab, 0, sizeObject);
+                _stream.Write(ab, 0, sizeObject);
             }
         }
 
-        internal void ReadStream (object o)
+        internal void ReadStream(object o)
         {
-            int sizeObject = Marshal.SizeOf (o.GetType ());
+            int sizeObject = Marshal.SizeOf(o.GetType());
             byte[] ab = Helpers.ReadStreamToByteArray(_stream, sizeObject);
 
-            IntPtr buffer = _safeHMem.Buffer (sizeObject);
+            IntPtr buffer = _safeHMem.Buffer(sizeObject);
 
-            Marshal.Copy (ab, 0, buffer, sizeObject);
-            Marshal.PtrToStructure (buffer, o);
+            Marshal.Copy(ab, 0, buffer, sizeObject);
+            Marshal.PtrToStructure(buffer, o);
         }
 
-        internal void WriteStream (object o)
+        internal void WriteStream(object o)
         {
-            int sizeObject = Marshal.SizeOf (o.GetType ());
-            byte [] ab = new byte [sizeObject];
-            IntPtr buffer = _safeHMem.Buffer (sizeObject);
+            int sizeObject = Marshal.SizeOf(o.GetType());
+            byte[] ab = new byte[sizeObject];
+            IntPtr buffer = _safeHMem.Buffer(sizeObject);
 
-            Marshal.StructureToPtr (o, buffer, false);
-            Marshal.Copy (buffer, ab, 0, sizeObject);
+            Marshal.StructureToPtr(o, buffer, false);
+            Marshal.Copy(buffer, ab, 0, sizeObject);
 
             // Read the Header
-            _stream.Write (ab, 0, sizeObject);
+            _stream.Write(ab, 0, sizeObject);
         }
 
         #endregion
@@ -179,10 +179,10 @@ namespace System.Speech.Internal
 
         internal uint Position
         {
-//			get
-//			{
-//				return (uint) _stream.Position;
-//			}
+            //			get
+            //			{
+            //				return (uint) _stream.Position;
+            //			}
             set
             {
                 _stream.Position = value;
@@ -199,7 +199,7 @@ namespace System.Speech.Internal
 
         #region Private Fields
 
-        private HGlobalSafeHandle _safeHMem = new HGlobalSafeHandle ();
+        private HGlobalSafeHandle _safeHMem = new HGlobalSafeHandle();
 
         private Stream _stream;
 

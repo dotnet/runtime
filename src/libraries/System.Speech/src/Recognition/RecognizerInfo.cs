@@ -16,10 +16,9 @@ namespace System.Speech.Recognition
 {
     /// TODOC <_include file='doc\RecognizerInfo.uex' path='docs/doc[@for="RecognizerInfo"]/*' />
     // This represents the attributes various speech recognizers may, or may not support.
-    
+
     public class RecognizerInfo : IDisposable
     {
-
         //*******************************************************************
         //
         // Constructors
@@ -28,7 +27,7 @@ namespace System.Speech.Recognition
 
         #region Constructors
 
-        private RecognizerInfo (ObjectToken token, CultureInfo culture)
+        private RecognizerInfo(ObjectToken token, CultureInfo culture)
         {
             // Retrieve the token name
             _id = token.Name;
@@ -41,16 +40,16 @@ namespace System.Speech.Recognition
             // Do not rely on the path to be correct in all cases.
             _sapiObjectTokenId = token.Id;
 
-            _name = token.TokenName ();
+            _name = token.TokenName();
 
             _culture = culture;
 
             // Enum all values and add to custom table
             Dictionary<string, string> attrs = new Dictionary<string, string>();
-            foreach (string keyName in token.Attributes.GetValueNames ())
+            foreach (string keyName in token.Attributes.GetValueNames())
             {
                 string attributeValue;
-                if (token.Attributes.TryGetString (keyName, out attributeValue))
+                if (token.Attributes.TryGetString(keyName, out attributeValue))
                 {
                     attrs[keyName] = attributeValue;
                 }
@@ -58,19 +57,19 @@ namespace System.Speech.Recognition
             _attributes = new ReadOnlyDictionary<string, string>(attrs);
 
             string audioFormats;
-            if (token.Attributes.TryGetString ("AudioFormats", out audioFormats))
+            if (token.Attributes.TryGetString("AudioFormats", out audioFormats))
             {
-                _supportedAudioFormats = new ReadOnlyCollection<SpeechAudioFormatInfo> (SapiAttributeParser.GetAudioFormatsFromString (audioFormats));
+                _supportedAudioFormats = new ReadOnlyCollection<SpeechAudioFormatInfo>(SapiAttributeParser.GetAudioFormatsFromString(audioFormats));
             }
             else
             {
-                _supportedAudioFormats = new ReadOnlyCollection<SpeechAudioFormatInfo> (new List<SpeechAudioFormatInfo> ());
+                _supportedAudioFormats = new ReadOnlyCollection<SpeechAudioFormatInfo>(new List<SpeechAudioFormatInfo>());
             }
 
             _objectToken = token;
         }
 
-        static internal RecognizerInfo Create (ObjectToken token)
+        static internal RecognizerInfo Create(ObjectToken token)
         {
             // Token for recognizer should have Attributes.
             if (token.Attributes == null)
@@ -82,11 +81,11 @@ namespace System.Speech.Recognition
             string langId;
 
             // must have a language id
-            if (!token.Attributes.TryGetString ("Language", out langId))
+            if (!token.Attributes.TryGetString("Language", out langId))
             {
                 return null;
             }
-            CultureInfo cultureInfo = SapiAttributeParser.GetCultureInfoFromLanguageString (langId);
+            CultureInfo cultureInfo = SapiAttributeParser.GetCultureInfoFromLanguageString(langId);
             if (cultureInfo != null)
             {
                 return new RecognizerInfo(token, cultureInfo);
@@ -201,6 +200,5 @@ namespace System.Speech.Recognition
         private ObjectToken _objectToken;
 
         #endregion
-
     }
 }

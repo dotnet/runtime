@@ -5,10 +5,9 @@ using System;
 
 namespace System.Speech.Recognition
 {
-
     /// TODOC <_include file='doc\RecognizerStateChangedEventArgs.uex' path='docs/doc[@for="RecognizerStateChangedEventArgs"]/*' />
     // EventArgs used in the SpeechRecognizer.StateChanged event.
-    
+
     public class StateChangedEventArgs : EventArgs
     {
         //*******************************************************************
@@ -57,7 +56,5 @@ namespace System.Speech.Recognition
         private RecognizerState _recognizerState;
 
         #endregion
-
     }
-
 }

@@ -22,8 +22,8 @@ namespace System.Speech.Internal.SrgsCompiler
 
         #region Constructors
 
-        internal PropertyTag (ParseElement parent, Backend backend)
-            : base (parent._rule)
+        internal PropertyTag(ParseElement parent, Backend backend)
+            : base(parent._rule)
         {
         }
 
@@ -41,11 +41,11 @@ namespace System.Speech.Internal.SrgsCompiler
 
         /// TODOC <_include file='doc\Tag.uex' path='docs/doc[@for="Tag.RepeatProbability"]/*' />
         // The probability that this item will be repeated.
-        void IPropertyTag.NameValue (IElement parent, string name, object value)
+        void IPropertyTag.NameValue(IElement parent, string name, object value)
         {
             //Return if the Tag content is empty
             string sValue = value as string;
-            if (string.IsNullOrEmpty (name) && (value == null || (sValue != null && string.IsNullOrEmpty ((sValue).Trim ()))))
+            if (string.IsNullOrEmpty(name) && (value == null || (sValue != null && string.IsNullOrEmpty((sValue).Trim()))))
             {
                 return;
             }
@@ -57,7 +57,7 @@ namespace System.Speech.Internal.SrgsCompiler
             // <tag>Name=123</tag>          pszValue = null     vValue = VT_I4
             // <tag>Name=3.14</tag>         pszValue = null     vValue = VT_R8            
 
-            if (!string.IsNullOrEmpty (name))
+            if (!string.IsNullOrEmpty(name))
             {
                 // Set property name
                 _propInfo._pszName = name;
@@ -93,17 +93,17 @@ namespace System.Speech.Internal.SrgsCompiler
             else
             {
                 // should never get here
-                System.Diagnostics.Debug.Assert (false);
+                System.Diagnostics.Debug.Assert(false);
             }
         }
 
-        void IElement.PostParse (IElement parentElement)
+        void IElement.PostParse(IElement parentElement)
         {
-            ParseElementCollection parent = (ParseElementCollection) parentElement;
-            _propInfo._ulId = (uint) parent._rule._iSerialize2;
+            ParseElementCollection parent = (ParseElementCollection)parentElement;
+            _propInfo._ulId = (uint)parent._rule._iSerialize2;
 
             // Attach the semantic properties on the parent element.
-            parent.AddSementicPropertyTag (_propInfo);
+            parent.AddSementicPropertyTag(_propInfo);
         }
 
 #pragma warning restore 56507
@@ -118,9 +118,8 @@ namespace System.Speech.Internal.SrgsCompiler
 
         #region Private Fields
 
-        private CfgGrammar.CfgProperty _propInfo = new CfgGrammar.CfgProperty ();
+        private CfgGrammar.CfgProperty _propInfo = new CfgGrammar.CfgProperty();
 
         #endregion
-
     }
 }

@@ -35,15 +35,15 @@ namespace System.Speech.Internal.SrgsCompiler
         /// <param name="originalUri">in xmlReader.Count == 1, name of the originel file</param>
         /// <param name="referencedAssemblies">List of referenced assemblies</param>
         /// <param name="keyFile">Strong name</param>
-        internal static void CompileStream (XmlReader [] xmlReaders, string filename, Stream stream, bool fOutputCfg, Uri originalUri, string [] referencedAssemblies, string keyFile)
+        internal static void CompileStream(XmlReader[] xmlReaders, string filename, Stream stream, bool fOutputCfg, Uri originalUri, string[] referencedAssemblies, string keyFile)
         {
             // raft of files to compiler is only available for class library
-            System.Diagnostics.Debug.Assert (!fOutputCfg || xmlReaders.Length == 1);
+            System.Diagnostics.Debug.Assert(!fOutputCfg || xmlReaders.Length == 1);
 
             int cReaders = xmlReaders.Length;
-            List<CustomGrammar.CfgResource> cfgResources = new List<CustomGrammar.CfgResource> ();
+            List<CustomGrammar.CfgResource> cfgResources = new List<CustomGrammar.CfgResource>();
 
-            CustomGrammar cgCombined = new CustomGrammar ();
+            CustomGrammar cgCombined = new CustomGrammar();
             for (int iReader = 0; iReader < cReaders; iReader++)
             {
                 // Set the current directory to the location where is the grammar
@@ -51,30 +51,30 @@ namespace System.Speech.Internal.SrgsCompiler
                 Uri uri = originalUri;
                 if (uri == null)
                 {
-                    if (xmlReaders [iReader].BaseURI != null && xmlReaders [iReader].BaseURI.Length > 0)
+                    if (xmlReaders[iReader].BaseURI != null && xmlReaders[iReader].BaseURI.Length > 0)
                     {
-                        uri = new Uri (xmlReaders [iReader].BaseURI);
+                        uri = new Uri(xmlReaders[iReader].BaseURI);
                     }
                 }
                 if (uri != null && (!uri.IsAbsoluteUri || uri.IsFile))
                 {
-                    srgsPath = Path.GetDirectoryName (uri.IsAbsoluteUri ? uri.AbsolutePath : uri.OriginalString);
+                    srgsPath = Path.GetDirectoryName(uri.IsAbsoluteUri ? uri.AbsolutePath : uri.OriginalString);
                 }
 
                 CultureInfo culture;
-                StringBuilder innerCode = new StringBuilder ();
-                ISrgsParser srgsParser = (ISrgsParser) new XmlParser (xmlReaders [iReader], uri);
-                object cg = CompileStream (iReader + 1, srgsParser, srgsPath, filename, stream, fOutputCfg, innerCode, cfgResources, out culture, referencedAssemblies, keyFile);
+                StringBuilder innerCode = new StringBuilder();
+                ISrgsParser srgsParser = (ISrgsParser)new XmlParser(xmlReaders[iReader], uri);
+                object cg = CompileStream(iReader + 1, srgsParser, srgsPath, filename, stream, fOutputCfg, innerCode, cfgResources, out culture, referencedAssemblies, keyFile);
                 if (!fOutputCfg)
                 {
-                    cgCombined.Combine ((CustomGrammar) cg, innerCode.ToString ());
+                    cgCombined.Combine((CustomGrammar)cg, innerCode.ToString());
                 }
             }
 
             // Create the DLL if this needs to be done
             if (!fOutputCfg)
             {
-                cgCombined.CreateAssembly (filename, cfgResources);
+                cgCombined.CreateAssembly(filename, cfgResources);
             }
         }
 
@@ -87,54 +87,54 @@ namespace System.Speech.Internal.SrgsCompiler
         /// <param name="fOutputCfg">Compile for CFG or DLL</param>
         /// <param name="referencedAssemblies">List of referenced assemblies</param>
         /// <param name="keyFile">Strong name</param>
-        internal static void CompileStream (SrgsDocument srgsGrammar, string filename, Stream stream, bool fOutputCfg, string [] referencedAssemblies, string keyFile)
+        internal static void CompileStream(SrgsDocument srgsGrammar, string filename, Stream stream, bool fOutputCfg, string[] referencedAssemblies, string keyFile)
         {
-            ISrgsParser srgsParser = (ISrgsParser) new SrgsDocumentParser (srgsGrammar.Grammar);
+            ISrgsParser srgsParser = (ISrgsParser)new SrgsDocumentParser(srgsGrammar.Grammar);
 
-            List<CustomGrammar.CfgResource> cfgResources = new List<CustomGrammar.CfgResource> ();
+            List<CustomGrammar.CfgResource> cfgResources = new List<CustomGrammar.CfgResource>();
 
-            StringBuilder innerCode = new StringBuilder ();
+            StringBuilder innerCode = new StringBuilder();
             CultureInfo culture;
 
             // Validate the grammar before compiling it. Set the tag-format and sapi flags too.
-            srgsGrammar.Grammar.Validate ();
+            srgsGrammar.Grammar.Validate();
 
-            object cg = CompileStream (1, srgsParser, null, filename, stream, fOutputCfg, innerCode, cfgResources, out culture, referencedAssemblies, keyFile);
+            object cg = CompileStream(1, srgsParser, null, filename, stream, fOutputCfg, innerCode, cfgResources, out culture, referencedAssemblies, keyFile);
 
             // Create the DLL if this needs to be done
             if (!fOutputCfg)
             {
-                CustomGrammar cgCombined = new CustomGrammar ();
-                cgCombined.Combine ((CustomGrammar) cg, innerCode.ToString ());
-                cgCombined.CreateAssembly (filename, cfgResources);
+                CustomGrammar cgCombined = new CustomGrammar();
+                cgCombined.Combine((CustomGrammar)cg, innerCode.ToString());
+                cgCombined.CreateAssembly(filename, cfgResources);
             }
         }
 
         #endregion
 
-        static private object CompileStream (int iCfg, ISrgsParser srgsParser, string srgsPath, string filename, Stream stream, bool fOutputCfg, StringBuilder innerCode, object cfgResources, out CultureInfo culture, string [] referencedAssemblies, string keyFile)
+        static private object CompileStream(int iCfg, ISrgsParser srgsParser, string srgsPath, string filename, Stream stream, bool fOutputCfg, StringBuilder innerCode, object cfgResources, out CultureInfo culture, string[] referencedAssemblies, string keyFile)
         {
-            Backend backend = new Backend ();
-            CustomGrammar cg = new CustomGrammar ();
-            SrgsElementCompilerFactory elementFactory = new SrgsElementCompilerFactory (backend, cg);
+            Backend backend = new Backend();
+            CustomGrammar cg = new CustomGrammar();
+            SrgsElementCompilerFactory elementFactory = new SrgsElementCompilerFactory(backend, cg);
             srgsParser.ElementFactory = elementFactory;
-            srgsParser.Parse ();
+            srgsParser.Parse();
 
             // Optimize in-memory graph representation of the grammar.
-            backend.Optimize ();
+            backend.Optimize();
 
             // TODO, does not work for all custom culture info
-            culture = backend.LangId == 0x540A ? new CultureInfo ("es-us") : new CultureInfo (backend.LangId);
+            culture = backend.LangId == 0x540A ? new CultureInfo("es-us") : new CultureInfo(backend.LangId);
 
             // A grammar may contains references to other files in codebehind.
             // Set the current directory to the location where is the grammar
-            if (cg._codebehind.Count > 0 && !string.IsNullOrEmpty (srgsPath))
+            if (cg._codebehind.Count > 0 && !string.IsNullOrEmpty(srgsPath))
             {
                 for (int i = 0; i < cg._codebehind.Count; i++)
                 {
-                    if (!File.Exists (cg._codebehind [i]))
+                    if (!File.Exists(cg._codebehind[i]))
                     {
-                        cg._codebehind [i] = srgsPath + "\\" + cg._codebehind [i];
+                        cg._codebehind[i] = srgsPath + "\\" + cg._codebehind[i];
                     }
                 }
             }
@@ -144,7 +144,7 @@ namespace System.Speech.Internal.SrgsCompiler
             {
                 foreach (string assembly in referencedAssemblies)
                 {
-                    cg._assemblyReferences.Add (assembly);
+                    cg._assemblyReferences.Add(assembly);
                 }
             }
 
@@ -159,44 +159,44 @@ namespace System.Speech.Internal.SrgsCompiler
             {
                 // Creates a DLL with the CFG is a resource
                 // Create the CFG
-                CustomGrammar.CfgResource resource = new CustomGrammar.CfgResource ();
-                resource.data = BuildCfg (backend).ToArray ();
-                resource.name = iCfg.ToString (CultureInfo.InvariantCulture) + ".CFG";
-                ((List<CustomGrammar.CfgResource>)cfgResources).Add (resource);
+                CustomGrammar.CfgResource resource = new CustomGrammar.CfgResource();
+                resource.data = BuildCfg(backend).ToArray();
+                resource.name = iCfg.ToString(CultureInfo.InvariantCulture) + ".CFG";
+                ((List<CustomGrammar.CfgResource>)cfgResources).Add(resource);
 
                 // Sanity check, create the DLL and checks that all the methods can be called
                 // Combine all the scripts
-                innerCode.Append (cg.CreateAssembly (iCfg, filename, culture));
+                innerCode.Append(cg.CreateAssembly(iCfg, filename, culture));
             }
             else
             {
                 //if semantic processing for a rule is defined, a script needs to be defined
                 if (cg._scriptRefs.Count > 0 && !cg.HasScript)
                 {
-                    XmlParser.ThrowSrgsException (SRID.NoScriptsForRules);
+                    XmlParser.ThrowSrgsException(SRID.NoScriptsForRules);
                 }
 
                 // Creates a CFG with IL embedded
-                CreateAssembly (backend, cg);
+                CreateAssembly(backend, cg);
 
                 // Save binary grammar to dest
-                if (!string.IsNullOrEmpty (filename))
+                if (!string.IsNullOrEmpty(filename))
                 {
                     // Create a stream if a filename was given
-                    stream = new FileStream (filename, FileMode.Create, FileAccess.Write);
+                    stream = new FileStream(filename, FileMode.Create, FileAccess.Write);
                 }
-            try
+                try
                 {
-                    using (StreamMarshaler streamHelper = new StreamMarshaler (stream))
+                    using (StreamMarshaler streamHelper = new StreamMarshaler(stream))
                     {
-                        backend.Commit (streamHelper);
+                        backend.Commit(streamHelper);
                     }
                 }
                 finally
                 {
-                    if (!string.IsNullOrEmpty (filename))
+                    if (!string.IsNullOrEmpty(filename))
                     {
-                        stream.Close ();
+                        stream.Close();
                     }
                 }
             }
@@ -209,19 +209,19 @@ namespace System.Speech.Internal.SrgsCompiler
         /// </summary>
         /// <param name="backend"></param>
         /// <returns></returns>
-        static private MemoryStream BuildCfg (Backend backend)
+        static private MemoryStream BuildCfg(Backend backend)
         {
             // Creates a DLL
-            MemoryStream cfgStream = new MemoryStream ();
+            MemoryStream cfgStream = new MemoryStream();
 
             // Save binary grammar to dest
-            using (StreamMarshaler streamHelper = new StreamMarshaler (cfgStream))
+            using (StreamMarshaler streamHelper = new StreamMarshaler(cfgStream))
             {
                 // no IL
                 backend.IL = null;
                 backend.PDB = null;
                 // Generate the binary blob
-                backend.Commit (streamHelper);
+                backend.Commit(streamHelper);
             }
             return cfgStream;
         }
@@ -233,15 +233,15 @@ namespace System.Speech.Internal.SrgsCompiler
         /// </summary>
         /// <param name="backend"></param>
         /// <param name="cg"></param>
-        static void CreateAssembly (Backend backend, CustomGrammar cg)
+        private static void CreateAssembly(Backend backend, CustomGrammar cg)
         {
             if (cg.HasScript)
             {
                 // Create the IL and checks that the signature for all the methods for scriptRefs are ok
                 // Pass a reference to the IL and scriptRefs to the backend.
-                byte [] il;
-                byte [] symbols;
-                cg.CreateAssembly (out il, out symbols);
+                byte[] il;
+                byte[] symbols;
+                cg.CreateAssembly(out il, out symbols);
                 backend.IL = il;
                 backend.PDB = symbols;
             }

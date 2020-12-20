@@ -18,13 +18,13 @@ namespace System.Speech.Internal.Synthesis
 
         #region internal Methods
 
-        internal static bool ToSapi (List<TextFragment> ssmlFrags, ref GCHandle sapiFragLast)
+        internal static bool ToSapi(List<TextFragment> ssmlFrags, ref GCHandle sapiFragLast)
         {
             bool fFirst = true;
 
             for (int iFrag = ssmlFrags.Count - 1; iFrag >= 0; iFrag--)
             {
-                TextFragment textFragment = ssmlFrags [iFrag];
+                TextFragment textFragment = ssmlFrags[iFrag];
 
                 // Remove the start and end paragraph fragments
                 if (textFragment.State.Action == TtsEngineAction.StartParagraph || textFragment.State.Action == TtsEngineAction.StartSentence)
@@ -32,27 +32,27 @@ namespace System.Speech.Internal.Synthesis
                     continue;
                 }
 
-                SPVTEXTFRAG sapiFrag = new SPVTEXTFRAG ();
+                SPVTEXTFRAG sapiFrag = new SPVTEXTFRAG();
 
                 // start with the text fragment
-                sapiFrag.gcNext = fFirst ? new GCHandle () : sapiFragLast;
-                sapiFrag.pNext = fFirst ? IntPtr.Zero : sapiFragLast.AddrOfPinnedObject ();
-                sapiFrag.gcText = GCHandle.Alloc (textFragment.TextToSpeak, GCHandleType.Pinned);
-                sapiFrag.pTextStart = sapiFrag.gcText.AddrOfPinnedObject ();
+                sapiFrag.gcNext = fFirst ? new GCHandle() : sapiFragLast;
+                sapiFrag.pNext = fFirst ? IntPtr.Zero : sapiFragLast.AddrOfPinnedObject();
+                sapiFrag.gcText = GCHandle.Alloc(textFragment.TextToSpeak, GCHandleType.Pinned);
+                sapiFrag.pTextStart = sapiFrag.gcText.AddrOfPinnedObject();
                 sapiFrag.ulTextSrcOffset = textFragment.TextOffset;
                 sapiFrag.ulTextLen = textFragment.TextLength;
 
                 // State
-                SPVSTATE sapiState = new SPVSTATE ();
+                SPVSTATE sapiState = new SPVSTATE();
                 FragmentState ssmlState = textFragment.State;
-                sapiState.eAction = (SPVACTIONS) ssmlState.Action;
-                sapiState.LangID = (Int16) ssmlState.LangId;
+                sapiState.eAction = (SPVACTIONS)ssmlState.Action;
+                sapiState.LangID = (Int16)ssmlState.LangId;
                 sapiState.EmphAdj = ssmlState.Emphasis != 1 ? 0 : 1;
                 if (ssmlState.Prosody != null)
                 {
-                    sapiState.RateAdj = SapiRate (ssmlState.Prosody.Rate);
-                    sapiState.Volume = SapiVolume (ssmlState.Prosody.Volume);
-                    sapiState.PitchAdj.MiddleAdj = SapiPitch (ssmlState.Prosody.Pitch);
+                    sapiState.RateAdj = SapiRate(ssmlState.Prosody.Rate);
+                    sapiState.Volume = SapiVolume(ssmlState.Prosody.Volume);
+                    sapiState.PitchAdj.MiddleAdj = SapiPitch(ssmlState.Prosody.Pitch);
                 }
                 else
                 {
@@ -64,22 +64,22 @@ namespace System.Speech.Internal.Synthesis
                 // Set the silence if any
                 if (sapiState.eAction == SPVACTIONS.SPVA_Silence)
                 {
-                    sapiState.SilenceMSecs = SapiSilence (ssmlState.Duration, (EmphasisBreak) ssmlState.Emphasis);
+                    sapiState.SilenceMSecs = SapiSilence(ssmlState.Duration, (EmphasisBreak)ssmlState.Emphasis);
                 }
 
                 // Set the phonemes if any
                 if (ssmlState.Phoneme != null)
                 {
                     sapiState.eAction = SPVACTIONS.SPVA_Pronounce;
-                    sapiFrag.gcPhoneme = GCHandle.Alloc (ssmlState.Phoneme, GCHandleType.Pinned);
-                    sapiState.pPhoneIds = sapiFrag.gcPhoneme.AddrOfPinnedObject ();
+                    sapiFrag.gcPhoneme = GCHandle.Alloc(ssmlState.Phoneme, GCHandleType.Pinned);
+                    sapiState.pPhoneIds = sapiFrag.gcPhoneme.AddrOfPinnedObject();
 
                     // Get rid of the text if phonemes are defined. This is to be compatible with existing
                     // TTS engines.
                 }
                 else
                 {
-                    sapiFrag.gcPhoneme = new GCHandle ();
+                    sapiFrag.gcPhoneme = new GCHandle();
                     sapiState.pPhoneIds = IntPtr.Zero;
                 }
 
@@ -99,57 +99,56 @@ namespace System.Speech.Internal.Synthesis
 
                         case "time":
                         case "date":
-                            if (!string.IsNullOrEmpty (format))
+                            if (!string.IsNullOrEmpty(format))
                             {
                                 interpretAs = interpretAs + ':' + format;
                             }
-                            sapiState.Context.pCategory = SapiCategory (sapiFrag, interpretAs, null);
+                            sapiState.Context.pCategory = SapiCategory(sapiFrag, interpretAs, null);
                             break;
 
                         default:
-                            sapiState.Context.pCategory = SapiCategory (sapiFrag, interpretAs, format);
+                            sapiState.Context.pCategory = SapiCategory(sapiFrag, interpretAs, format);
                             break;
                     }
                 }
 
                 sapiFrag.State = sapiState;
-                sapiFragLast = GCHandle.Alloc (sapiFrag, GCHandleType.Pinned);
+                sapiFragLast = GCHandle.Alloc(sapiFrag, GCHandleType.Pinned);
 
                 fFirst = false;
-
             }
             return !fFirst;
         }
 
-        private static IntPtr SapiCategory (SPVTEXTFRAG sapiFrag, string interpretAs, string format)
+        private static IntPtr SapiCategory(SPVTEXTFRAG sapiFrag, string interpretAs, string format)
         {
-            int posSayAsFormat = Array.BinarySearch<string> (_asSayAsFormat, interpretAs);
-            string sFormat = posSayAsFormat >= 0 ? _asContextFormat [posSayAsFormat] : format;
-            sapiFrag.gcSayAsCategory = GCHandle.Alloc (sFormat, GCHandleType.Pinned);
-            return sapiFrag.gcSayAsCategory.AddrOfPinnedObject ();
+            int posSayAsFormat = Array.BinarySearch<string>(s_asSayAsFormat, interpretAs);
+            string sFormat = posSayAsFormat >= 0 ? s_asContextFormat[posSayAsFormat] : format;
+            sapiFrag.gcSayAsCategory = GCHandle.Alloc(sFormat, GCHandleType.Pinned);
+            return sapiFrag.gcSayAsCategory.AddrOfPinnedObject();
         }
 
-        internal static void FreeTextSegment (ref GCHandle fragment)
+        internal static void FreeTextSegment(ref GCHandle fragment)
         {
-            SPVTEXTFRAG sapiFrag = (SPVTEXTFRAG) fragment.Target;
+            SPVTEXTFRAG sapiFrag = (SPVTEXTFRAG)fragment.Target;
             if (sapiFrag.gcNext.IsAllocated)
             {
-                FreeTextSegment (ref sapiFrag.gcNext);
+                FreeTextSegment(ref sapiFrag.gcNext);
             }
 
             // free the references to the optional elements
             if (sapiFrag.gcPhoneme.IsAllocated)
             {
-                sapiFrag.gcPhoneme.Free ();
+                sapiFrag.gcPhoneme.Free();
             }
 
             if (sapiFrag.gcSayAsCategory.IsAllocated)
             {
-                sapiFrag.gcSayAsCategory.Free ();
+                sapiFrag.gcSayAsCategory.Free();
             }
 
             // Free the text associated with this fragment
-            sapiFrag.gcText.Free ();
+            sapiFrag.gcText.Free();
             fragment.Free();
         }
 
@@ -163,12 +162,12 @@ namespace System.Speech.Internal.Synthesis
 
         #region Private Methods
 
-        private static int SapiVolume (ProsodyNumber volume)
+        private static int SapiVolume(ProsodyNumber volume)
         {
             int sapiVolume = 100;
             if (volume.SsmlAttributeId != ProsodyNumber.AbsoluteNumber)
             {
-                switch ((ProsodyVolume) (int) volume.SsmlAttributeId)
+                switch ((ProsodyVolume)(int)volume.SsmlAttributeId)
                 {
                     case ProsodyVolume.ExtraLoud:
                         sapiVolume = 100;
@@ -195,11 +194,11 @@ namespace System.Speech.Internal.Synthesis
                         break;
                 }
                 // add the relative information
-                sapiVolume = (int) ((volume.IsNumberPercent ? sapiVolume * volume.Number : volume.Number) + 0.5);
+                sapiVolume = (int)((volume.IsNumberPercent ? sapiVolume * volume.Number : volume.Number) + 0.5);
             }
             else
             {
-                sapiVolume = (int) (volume.Number + 0.5);
+                sapiVolume = (int)(volume.Number + 0.5);
             }
 
             // Check the range.
@@ -214,7 +213,7 @@ namespace System.Speech.Internal.Synthesis
             return sapiVolume;
         }
 
-        private static int SapiSilence (int duration, EmphasisBreak emphasis)
+        private static int SapiSilence(int duration, EmphasisBreak emphasis)
         {
             int sapiSilence = 1000;
 
@@ -226,7 +225,6 @@ namespace System.Speech.Internal.Synthesis
             {
                 switch (emphasis)
                 {
-
                     // No break, arbitrarily defined as 10 milliseconds
                     case EmphasisBreak.None:
                         sapiSilence = 10;
@@ -270,9 +268,8 @@ namespace System.Speech.Internal.Synthesis
         /// </summary>
         /// <param name="rate"></param>
         /// <returns></returns>
-        private static int SapiRate (ProsodyNumber rate)
+        private static int SapiRate(ProsodyNumber rate)
         {
-
             // Okay, we have a RATE element, but what do we set the rate to?
             // Rate varies on a scale from -10 to 10 for us.
             // There isn't a defined mapping between Words per Minute and rate.
@@ -284,7 +281,7 @@ namespace System.Speech.Internal.Synthesis
             int sapiRate = 0;
             if (rate.SsmlAttributeId != ProsodyNumber.AbsoluteNumber)
             {
-                switch ((ProsodyRate) (int) rate.SsmlAttributeId)
+                switch ((ProsodyRate)(int)rate.SsmlAttributeId)
                 {
                     case ProsodyRate.ExtraSlow:
                         sapiRate = -9;
@@ -304,11 +301,11 @@ namespace System.Speech.Internal.Synthesis
                 }
 
                 // add the relative information
-                sapiRate = (int) ((rate.IsNumberPercent ? ScaleNumber (rate.Number, sapiRate, 10) : sapiRate) + 0.5);
+                sapiRate = (int)((rate.IsNumberPercent ? ScaleNumber(rate.Number, sapiRate, 10) : sapiRate) + 0.5);
             }
             else
             {
-                sapiRate = ScaleNumber (rate.Number, 0, 10);
+                sapiRate = ScaleNumber(rate.Number, 0, 10);
             }
             // Check the range.
             if (sapiRate > 10)
@@ -322,13 +319,13 @@ namespace System.Speech.Internal.Synthesis
             return sapiRate;
         }
 
-        private static int SapiPitch (ProsodyNumber pitch)
+        private static int SapiPitch(ProsodyNumber pitch)
         {
             int sapiPitch = 0;
 
             if (pitch.SsmlAttributeId != ProsodyNumber.AbsoluteNumber)
             {
-                switch ((ProsodyPitch) (int) pitch.SsmlAttributeId)
+                switch ((ProsodyPitch)(int)pitch.SsmlAttributeId)
                 {
                     case ProsodyPitch.ExtraHigh:
                         sapiPitch = 9;
@@ -347,7 +344,7 @@ namespace System.Speech.Internal.Synthesis
                         break;
                 }
                 // add the relative information
-                sapiPitch = (int) ((pitch.IsNumberPercent ? sapiPitch * pitch.Number : pitch.Number) + 0.5);
+                sapiPitch = (int)((pitch.IsNumberPercent ? sapiPitch * pitch.Number : pitch.Number) + 0.5);
             }
 
             // Check the range.
@@ -362,7 +359,7 @@ namespace System.Speech.Internal.Synthesis
             return sapiPitch;
         }
 
-        private static int ScaleNumber (float value, int currentValue, int max)
+        private static int ScaleNumber(float value, int currentValue, int max)
         {
             int rate = 0;
             // Because we are on a logarithmic scale, can handle percentage changes
@@ -371,7 +368,7 @@ namespace System.Speech.Internal.Synthesis
             // 33%  --> multiply by 0.33 --> sapi rate change of -max.0
             if (value >= 0.01)
             {
-                rate = (int) (((Math.Log (value) / Math.Log (3.0)) * max) + 0.5);
+                rate = (int)(((Math.Log(value) / Math.Log(3.0)) * max) + 0.5);
                 rate += currentValue;
                 if (rate > max)
                 {
@@ -400,7 +397,7 @@ namespace System.Speech.Internal.Synthesis
 
         #region Private Methods
 
-        static readonly string [] _asSayAsFormat = new string []
+        private static readonly string[] s_asSayAsFormat = new string[]
         {
             "acronym",
             "address",
@@ -430,7 +427,7 @@ namespace System.Speech.Internal.Synthesis
             "time:hms24"
         };
 
-        static readonly string [] _asContextFormat = new string []
+        private static readonly string[] s_asContextFormat = new string[]
         {
             "name",
             "address",
@@ -461,6 +458,5 @@ namespace System.Speech.Internal.Synthesis
         };
 
         #endregion
-
     }
 }

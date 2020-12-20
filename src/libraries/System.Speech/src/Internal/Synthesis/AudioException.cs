@@ -23,21 +23,21 @@ namespace System.Speech.Internal.Synthesis
         /// <summary>
         /// TODOC
         /// </summary>
-        internal AudioException ()
+        internal AudioException()
         {
         }
 
         /// <summary>
         /// TODOC
         /// </summary>
-        internal AudioException (MMSYSERR errorCode) : base (String.Format (System.Globalization.CultureInfo.InvariantCulture, "{0} - Error Code: 0x{1:x}", SR.Get (SRID.AudioDeviceError), (int)errorCode))
+        internal AudioException(MMSYSERR errorCode) : base(String.Format(System.Globalization.CultureInfo.InvariantCulture, "{0} - Error Code: 0x{1:x}", SR.Get(SRID.AudioDeviceError), (int)errorCode))
         {
         }
 
         /// <summary>
         /// TODOC
         /// </summary>
-        protected AudioException (SerializationInfo info, StreamingContext context) : base (info, context)
+        protected AudioException(SerializationInfo info, StreamingContext context) : base(info, context)
         {
         }
 

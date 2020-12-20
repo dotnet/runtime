@@ -24,8 +24,8 @@ namespace System.Speech.Synthesis
         /// <param name="prompt"></param>
         /// <param name="bookmark"></param>
         /// <param name="audioPosition"></param>
-        internal BookmarkReachedEventArgs (Prompt prompt, string bookmark, TimeSpan audioPosition)
-            : base (prompt)
+        internal BookmarkReachedEventArgs(Prompt prompt, string bookmark, TimeSpan audioPosition)
+            : base(prompt)
         {
             _bookmark = bookmark;
             _audioPosition = audioPosition;
@@ -77,7 +77,7 @@ namespace System.Speech.Synthesis
 
         #region Private Fields
 
-        string _bookmark;
+        private string _bookmark;
 
         // Audio and stream position
         private TimeSpan _audioPosition;

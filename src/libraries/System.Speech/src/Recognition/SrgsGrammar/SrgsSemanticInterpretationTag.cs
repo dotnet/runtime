@@ -14,7 +14,7 @@ namespace System.Speech.Recognition.SrgsGrammar
 {
     /// TODOC <_include file='doc\Tag.uex' path='docs/doc[@for="Tag"]/*' />
     [Serializable]
-    [DebuggerDisplay ("{DebuggerDisplayString ()}")]
+    [DebuggerDisplay("{DebuggerDisplayString ()}")]
     public class SrgsSemanticInterpretationTag : SrgsElement, ISemanticTag
     {
         //*******************************************************************
@@ -26,16 +26,16 @@ namespace System.Speech.Recognition.SrgsGrammar
         #region Constructors
 
         /// TODOC <_include file='doc\Tag.uex' path='docs/doc[@for="Tag.Tag1"]/*' />
-        public SrgsSemanticInterpretationTag ()
+        public SrgsSemanticInterpretationTag()
         {
         }
 
 #pragma warning disable 56507
 
         /// TODOC <_include file='doc\Tag.uex' path='docs/doc[@for="Tag.Tag2"]/*' />
-        public SrgsSemanticInterpretationTag (string script)
+        public SrgsSemanticInterpretationTag(string script)
         {
-            Helpers.ThrowIfNull (script, "script");
+            Helpers.ThrowIfNull(script, "script");
 
             _script = script;
         }
@@ -59,7 +59,7 @@ namespace System.Speech.Recognition.SrgsGrammar
             }
             set
             {
-                Helpers.ThrowIfNull (value, "value");
+                Helpers.ThrowIfNull(value, "value");
 
                 _script = value;
             }
@@ -82,7 +82,7 @@ namespace System.Speech.Recognition.SrgsGrammar
         /// Validate each element and recurse through all the children srgs
         /// elements if any.
         /// </summary>
-        override internal void Validate (SrgsGrammar grammar)
+        override internal void Validate(SrgsGrammar grammar)
         {
             if (grammar.TagFormat == SrgsTagFormat.Default)
             {
@@ -90,35 +90,35 @@ namespace System.Speech.Recognition.SrgsGrammar
             }
             else if (grammar.TagFormat == SrgsTagFormat.KeyValuePairs)
             {
-                XmlParser.ThrowSrgsException (SRID.SapiPropertiesAndSemantics);
+                XmlParser.ThrowSrgsException(SRID.SapiPropertiesAndSemantics);
             }
         }
 
-        internal override void WriteSrgs (XmlWriter writer)
+        internal override void WriteSrgs(XmlWriter writer)
         {
             // Skip writing the tag if empty
-            string script = Script.Trim (Helpers._achTrimChars);
+            string script = Script.Trim(Helpers._achTrimChars);
 
             // Write <tag>script</tag>
-            writer.WriteStartElement ("tag");
+            writer.WriteStartElement("tag");
 
             // Write the script if any
             if (!string.IsNullOrEmpty(script))
             {
-                writer.WriteString (script);
+                writer.WriteString(script);
             }
-            writer.WriteEndElement ();
+            writer.WriteEndElement();
         }
 
-        internal override string DebuggerDisplayString ()
+        internal override string DebuggerDisplayString()
         {
-            StringBuilder sb = new StringBuilder ("SrgsSemanticInterpretationTag '");
-            sb.Append (_script);
-            sb.Append ("'");
-            return sb.ToString ();
+            StringBuilder sb = new StringBuilder("SrgsSemanticInterpretationTag '");
+            sb.Append(_script);
+            sb.Append("'");
+            return sb.ToString();
         }
 
-        void ISemanticTag.Content (IElement parent, string value, int line)
+        void ISemanticTag.Content(IElement parent, string value, int line)
         {
             Script = value;
         }

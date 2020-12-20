@@ -11,24 +11,24 @@ namespace System.Speech.Recognition.SrgsGrammar
     /// Summary description for Rules.
     /// </summary>
     [Serializable]
-    
+
     public sealed class SrgsRulesCollection : KeyedCollection<string, SrgsRule>
     {
         /// <summary>
         /// TODOC
         /// </summary>
         /// <param name="rules"></param>
-        public void Add (params SrgsRule [] rules)
+        public void Add(params SrgsRule[] rules)
         {
-            Helpers.ThrowIfNull (rules, "rules");
+            Helpers.ThrowIfNull(rules, "rules");
 
             for (int iRule = 0; iRule < rules.Length; iRule++)
             {
-                if (rules [iRule] == null)
+                if (rules[iRule] == null)
                 {
-                    throw new ArgumentNullException ("rules", SR.Get (SRID.ParamsEntryNullIllegal));
+                    throw new ArgumentNullException("rules", SR.Get(SRID.ParamsEntryNullIllegal));
                 }
-                base.Add (rules [iRule]);
+                base.Add(rules[iRule]);
             }
         }
 
@@ -37,11 +37,11 @@ namespace System.Speech.Recognition.SrgsGrammar
         /// </summary>
         /// <param name="rule"></param>
         /// <returns></returns>
-        protected override string GetKeyForItem (SrgsRule rule)
+        protected override string GetKeyForItem(SrgsRule rule)
         {
             if (rule == null)
             {
-                throw new ArgumentNullException ("rule");
+                throw new ArgumentNullException("rule");
             }
             return rule.Id;
         }

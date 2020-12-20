@@ -5,10 +5,9 @@ using System;
 
 namespace System.Speech.Recognition
 {
-
     /// TODOC <_include file='doc\AudioStatusChangedEventArgs.uex' path='docs/doc[@for="AudioStatusChangedEventArgs"]/*' />
     // EventArgs used in the AudioLevelUpdatedEventArgs event.
-    
+
     public class AudioLevelUpdatedEventArgs : EventArgs
     {
         //*******************************************************************
@@ -58,5 +57,4 @@ namespace System.Speech.Recognition
 
         #endregion
     }
-
 }

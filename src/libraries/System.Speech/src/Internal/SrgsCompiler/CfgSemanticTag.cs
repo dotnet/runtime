@@ -11,7 +11,7 @@ namespace System.Speech.Internal.SrgsCompiler
     /// <summary>
     /// Summary description for CfgSemanticTag.
     /// </summary>
-    [StructLayout (LayoutKind.Explicit)]
+    [StructLayout(LayoutKind.Explicit)]
     internal struct CfgSemanticTag
     {
         //*******************************************************************
@@ -22,7 +22,7 @@ namespace System.Speech.Internal.SrgsCompiler
 
         #region Constructors
 
-        internal CfgSemanticTag (CfgSemanticTag cfgTag)
+        internal CfgSemanticTag(CfgSemanticTag cfgTag)
         {
             _flag1 = cfgTag._flag1;
             _flag2 = cfgTag._flag2;
@@ -37,7 +37,7 @@ namespace System.Speech.Internal.SrgsCompiler
             StartArcIndex = 0x3FFFFF;
         }
 
-        internal CfgSemanticTag (StringBlob symbols, CfgGrammar.CfgProperty property)
+        internal CfgSemanticTag(StringBlob symbols, CfgGrammar.CfgProperty property)
         {
             //CfgGrammar.TraceInformation ("CSemanticTag::CSemanticTag");
             int iWord;
@@ -71,19 +71,19 @@ namespace System.Speech.Internal.SrgsCompiler
                     break;
 
                 case VarEnum.VT_I4:
-                    _varInt = (int) property._comValue;
+                    _varInt = (int)property._comValue;
                     break;
 
                 case VarEnum.VT_BOOL:
-                    _varInt = (bool) property._comValue ? unchecked ((int) 0xffff) : 0;
+                    _varInt = (bool)property._comValue ? unchecked((int)0xffff) : 0;
                     break;
 
                 case VarEnum.VT_R8:
-                    _varDouble = (double) property._comValue;
+                    _varDouble = (double)property._comValue;
                     break;
 
                 default:
-                    System.Diagnostics.Debug.Assert (false, "Unknown Semantic Tag type");
+                    System.Diagnostics.Debug.Assert(false, "Unknown Semantic Tag type");
                     break;
             }
 
@@ -111,10 +111,10 @@ namespace System.Speech.Internal.SrgsCompiler
             {
                 if (value > 0x3FFFFF)
                 {
-                    XmlParser.ThrowSrgsException (SRID.TooManyArcs);
+                    XmlParser.ThrowSrgsException(SRID.TooManyArcs);
                 }
 
-                _flag1 &= ~(uint) 0x3FFFFF;
+                _flag1 &= ~(uint)0x3FFFFF;
                 _flag1 |= value;
             }
         }
@@ -133,7 +133,7 @@ namespace System.Speech.Internal.SrgsCompiler
                 }
                 else
                 {
-                    _flag1 &= ~(uint) 0x400000;
+                    _flag1 &= ~(uint)0x400000;
                 }
             }
         }
@@ -148,10 +148,10 @@ namespace System.Speech.Internal.SrgsCompiler
             {
                 if (value > 0x3FFFFF)
                 {
-                    XmlParser.ThrowSrgsException (SRID.TooManyArcs);
+                    XmlParser.ThrowSrgsException(SRID.TooManyArcs);
                 }
 
-                _flag2 &= ~(uint) 0x3FFFFF;
+                _flag2 &= ~(uint)0x3FFFFF;
                 _flag2 |= value;
             }
         }
@@ -170,7 +170,7 @@ namespace System.Speech.Internal.SrgsCompiler
                 }
                 else
                 {
-                    _flag2 &= ~(uint) 0x400000;
+                    _flag2 &= ~(uint)0x400000;
                 }
             }
         }
@@ -179,36 +179,36 @@ namespace System.Speech.Internal.SrgsCompiler
         {
             get
             {
-                return (VarEnum) (_flag3 & 0xFF);
+                return (VarEnum)(_flag3 & 0xFF);
             }
             set
             {
-                uint varType = (uint) value;
+                uint varType = (uint)value;
 
                 if (varType > 0xFF)
                 {
-                    XmlParser.ThrowSrgsException (SRID.TooManyArcs);
+                    XmlParser.ThrowSrgsException(SRID.TooManyArcs);
                 }
 
-                _flag3 &= ~(uint) 0xFF;
+                _flag3 &= ~(uint)0xFF;
                 _flag3 |= varType;
             }
         }
 
         internal uint ArcIndex
         {
-			get
-			{
-				return (_flag3 >> 8) & 0x3FFFFF;
-			}
+            get
+            {
+                return (_flag3 >> 8) & 0x3FFFFF;
+            }
             set
             {
                 if (value > 0x3FFFFF)
                 {
-                    XmlParser.ThrowSrgsException (SRID.TooManyArcs);
+                    XmlParser.ThrowSrgsException(SRID.TooManyArcs);
                 }
 
-                _flag3 &= ~((uint) 0x3FFFFF << 8);
+                _flag3 &= ~((uint)0x3FFFFF << 8);
                 _flag3 |= value << 8;
             }
         }
@@ -224,31 +224,30 @@ namespace System.Speech.Internal.SrgsCompiler
         #region Internal Fields
 
         // Should be in the private section but the order for parameters is key
-        [FieldOffset (0)]
+        [FieldOffset(0)]
         private uint _flag1;
 
-        [FieldOffset (4)]
+        [FieldOffset(4)]
         private uint _flag2;
 
-        [FieldOffset (8)]
+        [FieldOffset(8)]
         private uint _flag3;
 
-        [FieldOffset (12)]
+        [FieldOffset(12)]
         internal int _nameOffset;
 
-        [FieldOffset (16)]
+        [FieldOffset(16)]
         internal uint _propId;
 
-        [FieldOffset (20)]
+        [FieldOffset(20)]
         internal int _valueOffset;
-        [FieldOffset (24)]
+        [FieldOffset(24)]
         internal int _varInt;
 
-        [FieldOffset (24)]
+        [FieldOffset(24)]
         internal double _varDouble;
 
         #endregion
-
     }
 
     [Flags]

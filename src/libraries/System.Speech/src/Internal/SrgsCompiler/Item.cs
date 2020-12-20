@@ -19,8 +19,8 @@ namespace System.Speech.Internal.SrgsCompiler
 
         #region Constructors
 
-        internal Item (Backend backend, Rule rule, int minRepeat, int maxRepeat, float repeatProbability, float weigth)
-            : base (backend, rule)
+        internal Item(Backend backend, Rule rule, int minRepeat, int maxRepeat, float repeatProbability, float weigth)
+            : base(backend, rule)
         {
             // Validated by the caller
             _minRepeat = minRepeat;
@@ -42,7 +42,7 @@ namespace System.Speech.Internal.SrgsCompiler
         ///  Process the '/item' element.
         /// </summary>
         /// <param name="parentElement"></param>
-        void IElement.PostParse (IElement parentElement)
+        void IElement.PostParse(IElement parentElement)
         {
             // Special case of no words but only tags. Returns an error as the result is ambiguous
             // <tag>var res= 1;</tag>
@@ -52,7 +52,7 @@ namespace System.Speech.Internal.SrgsCompiler
             // Should the result be 2 or 4
             if (_maxRepeat != _minRepeat && _startArc != null && _startArc == _endArc && _endArc.IsEpsilonTransition && !_endArc.IsPropertylessTransition)
             {
-                XmlParser.ThrowSrgsException ((SRID.InvalidTagInAnEmptyItem));
+                XmlParser.ThrowSrgsException((SRID.InvalidTagInAnEmptyItem));
             }
 
             // empty <item> or repeat count == 0
@@ -64,10 +64,10 @@ namespace System.Speech.Internal.SrgsCompiler
                     // Delete contents of Item.  Otherwise, we will end up with states disconnected to the rest of the rule.
                     State endState = _startArc.End;
                     _startArc.End = null;
-                    _backend.DeleteSubGraph (endState);
+                    _backend.DeleteSubGraph(endState);
                 }
                 // empty item, just add an epsilon transition.
-                _startArc = _endArc = _backend.EpsilonTransition (_repeatProbability);
+                _startArc = _endArc = _backend.EpsilonTransition(_repeatProbability);
             }
             else
             {
@@ -77,15 +77,15 @@ namespace System.Speech.Internal.SrgsCompiler
                     // Dupplicate the states/transitions graph as many times as repeat count
 
                     //Add a state before the start to be able to duplicate the graph
-                    _startArc = InsertState (_startArc, _repeatProbability, Position.Before);
+                    _startArc = InsertState(_startArc, _repeatProbability, Position.Before);
                     State startState = _startArc.End;
 
                     // If _maxRepeat = Infinite, add epsilon transition loop back to the start of this 
                     if (_maxRepeat == System.Int32.MaxValue && _minRepeat == 1)
                     {
-                        _endArc = InsertState (_endArc, 1.0f, Position.After);
+                        _endArc = InsertState(_endArc, 1.0f, Position.After);
 
-                        AddEpsilonTransition (_endArc.Start, startState, 1 - _repeatProbability);
+                        AddEpsilonTransition(_endArc.Start, startState, 1 - _repeatProbability);
                     }
                     else
                     {
@@ -95,17 +95,17 @@ namespace System.Speech.Internal.SrgsCompiler
                         for (UInt32 cnt = 1; cnt < _maxRepeat && cnt < 255; cnt++)
                         {
                             // Prepare to clone a new subgraph matching the <item> content.
-                            State newStartState = _backend.CreateNewState (_endArc.Start.Rule);
+                            State newStartState = _backend.CreateNewState(_endArc.Start.Rule);
 
                             // Clone subgraphs and update CurrentEndState.
-                            State newEndState = _backend.CloneSubGraph (currentStartState, _endArc.Start, newStartState);
+                            State newEndState = _backend.CloneSubGraph(currentStartState, _endArc.Start, newStartState);
 
                             // Connect the last state with the first state
                             //_endArc.Start.OutArcs.Add (_endArc);
                             _endArc.End = newStartState;
 
                             // reset the _endArc
-                            System.Diagnostics.Debug.Assert (newEndState.OutArcs.CountIsOne && Arc.CompareContent (_endArc, newEndState.OutArcs.First) == 0);
+                            System.Diagnostics.Debug.Assert(newEndState.OutArcs.CountIsOne && Arc.CompareContent(_endArc, newEndState.OutArcs.First) == 0);
                             _endArc = newEndState.OutArcs.First;
 
                             if (_maxRepeat == System.Int32.MaxValue)
@@ -114,16 +114,16 @@ namespace System.Speech.Internal.SrgsCompiler
                                 if (cnt == _minRepeat - 1)
                                 {
                                     // Create a new state and attach the last Arc to add
-                                    _endArc = InsertState (_endArc, 1.0f, Position.After);
+                                    _endArc = InsertState(_endArc, 1.0f, Position.After);
 
-                                    AddEpsilonTransition (_endArc.Start, newStartState, 1 - _repeatProbability);
+                                    AddEpsilonTransition(_endArc.Start, newStartState, 1 - _repeatProbability);
                                     break;
                                 }
                             }
                             else if (cnt <= _maxRepeat - _minRepeat)
                             {
                                 // If we are beyond _minRepeat, add epsilon transition frorm startState with (1-_repeatProbability).
-                                AddEpsilonTransition (startState, newStartState, 1 - _repeatProbability);
+                                AddEpsilonTransition(startState, newStartState, 1 - _repeatProbability);
                             }
 
                             // reset the current start state
@@ -136,18 +136,18 @@ namespace System.Speech.Internal.SrgsCompiler
                     {
                         if (!_endArc.IsEpsilonTransition || _endArc.SemanticTagCount > 0)
                         {
-                            _endArc = InsertState (_endArc, 1.0f, Position.After);
+                            _endArc = InsertState(_endArc, 1.0f, Position.After);
                         }
-                        AddEpsilonTransition (startState, _endArc.Start, 1 - _repeatProbability);
+                        AddEpsilonTransition(startState, _endArc.Start, 1 - _repeatProbability);
                     }
 
                     // Remove the added startState if possible
-                    _startArc = TrimStart (_startArc, _backend);
+                    _startArc = TrimStart(_startArc, _backend);
                 }
             }
 
             // Add this item to the parent list
-            base.PostParse ((ParseElementCollection) parentElement);
+            base.PostParse((ParseElementCollection)parentElement);
         }
 
         #endregion
@@ -160,9 +160,9 @@ namespace System.Speech.Internal.SrgsCompiler
 
         #region Private Methods
 
-        private void AddEpsilonTransition (State start, State end, float weigth)
+        private void AddEpsilonTransition(State start, State end, float weigth)
         {
-            Arc epsilon = _backend.EpsilonTransition (weigth);
+            Arc epsilon = _backend.EpsilonTransition(weigth);
             epsilon.Start = start;
             epsilon.End = end;
         }
@@ -186,6 +186,5 @@ namespace System.Speech.Internal.SrgsCompiler
         private const int NotSet = -1;
 
         #endregion
-
     }
 }

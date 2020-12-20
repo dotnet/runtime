@@ -26,37 +26,37 @@ namespace System.Speech.Internal.Synthesis
         /// <summary>
         /// Create an instance of AudioDeviceOut.
         /// </summary>
-        internal AudioDeviceOut (int curDevice, IAsyncDispatch asyncDispatch)
+        internal AudioDeviceOut(int curDevice, IAsyncDispatch asyncDispatch)
         {
-            _delegate = new SafeNativeMethods.WaveOutProc (CallBackProc);
+            _delegate = new SafeNativeMethods.WaveOutProc(CallBackProc);
             _asyncDispatch = asyncDispatch;
             _curDevice = curDevice;
         }
 
-        ~AudioDeviceOut ()
+        ~AudioDeviceOut()
         {
-            Dispose (false);
+            Dispose(false);
         }
 
         /// <summary>
         /// TODOC
         /// </summary>
-        public void Dispose ()
+        public void Dispose()
         {
-            Dispose (true);
-            GC.SuppressFinalize (this);
+            Dispose(true);
+            GC.SuppressFinalize(this);
         }
 
-        private void Dispose (bool disposing)
+        private void Dispose(bool disposing)
         {
             if (_deviceOpen && _hwo != IntPtr.Zero)
             {
-                SafeNativeMethods.waveOutClose (_hwo);
+                SafeNativeMethods.waveOutClose(_hwo);
                 _deviceOpen = false;
             }
             if (disposing)
             {
-                ((IDisposable) _evt).Dispose ();
+                ((IDisposable)_evt).Dispose();
             }
         }
 
@@ -76,25 +76,25 @@ namespace System.Speech.Internal.Synthesis
         /// Begin to play
         /// </summary>
         /// <param name="wfx"></param>
-        override internal void Begin (byte [] wfx)
+        override internal void Begin(byte[] wfx)
         {
             if (_deviceOpen)
             {
-                System.Diagnostics.Debug.Assert (false);
-                throw new InvalidOperationException ();
+                System.Diagnostics.Debug.Assert(false);
+                throw new InvalidOperationException();
             }
 
             // Get the alignments values
-            WAVEFORMATEX.AvgBytesPerSec (wfx, out _nAvgBytesPerSec, out _blockAlign);
+            WAVEFORMATEX.AvgBytesPerSec(wfx, out _nAvgBytesPerSec, out _blockAlign);
 
             MMSYSERR result;
             lock (_noWriteOutLock)
             {
-                result = SafeNativeMethods.waveOutOpen (ref _hwo, _curDevice, wfx, _delegate, IntPtr.Zero, SafeNativeMethods.CALLBACK_FUNCTION);
+                result = SafeNativeMethods.waveOutOpen(ref _hwo, _curDevice, wfx, _delegate, IntPtr.Zero, SafeNativeMethods.CALLBACK_FUNCTION);
 
                 if (_fPaused && result == MMSYSERR.NOERROR)
                 {
-                    result = SafeNativeMethods.waveOutPause (_hwo);
+                    result = SafeNativeMethods.waveOutPause(_hwo);
                 }
                 // set the flags
                 _aborted = false;
@@ -103,26 +103,25 @@ namespace System.Speech.Internal.Synthesis
 
             if (result != MMSYSERR.NOERROR)
             {
-                throw new AudioException (result);
+                throw new AudioException(result);
             }
 
             // Reset the counter for the number of bytes written so far
             _bytesWritten = 0;
 
             // Nothing in the queue
-            _evt.Set ();
-
+            _evt.Set();
         }
 
         /// <summary>
         /// Begin to play
         /// </summary>
-        override internal void End ()
+        override internal void End()
         {
             if (!_deviceOpen)
             {
-                System.Diagnostics.Debug.Assert (false);
-                throw new InvalidOperationException ();
+                System.Diagnostics.Debug.Assert(false);
+                throw new InvalidOperationException();
             }
             lock (_noWriteOutLock)
             {
@@ -130,20 +129,20 @@ namespace System.Speech.Internal.Synthesis
 
                 MMSYSERR result;
 
-                CheckForAbort ();
+                CheckForAbort();
 
                 if (_queueIn.Count != 0)
                 {
-                    SafeNativeMethods.waveOutReset (_hwo);
+                    SafeNativeMethods.waveOutReset(_hwo);
                 }
 
                 // Close it; no point in returning errors if this fails
-                result = SafeNativeMethods.waveOutClose (_hwo);
+                result = SafeNativeMethods.waveOutClose(_hwo);
 
                 if (result != MMSYSERR.NOERROR)
                 {
                     // This may create a dead lock
-                    System.Diagnostics.Debug.Assert (false);
+                    System.Diagnostics.Debug.Assert(false);
                 }
             }
         }
@@ -152,26 +151,26 @@ namespace System.Speech.Internal.Synthesis
         /// Play a wave file.
         /// </summary>
         /// <param name="buffer"></param>
-        override internal void Play (byte [] buffer)
+        override internal void Play(byte[] buffer)
         {
             if (!_deviceOpen)
             {
-                System.Diagnostics.Debug.Assert (false);
+                System.Diagnostics.Debug.Assert(false);
             }
             else
             {
                 int bufferSize = buffer.Length;
                 _bytesWritten += bufferSize;
 
-                System.Diagnostics.Debug.Assert (bufferSize % _blockAlign == 0);
+                System.Diagnostics.Debug.Assert(bufferSize % _blockAlign == 0);
 
-                WaveHeader waveHeader = new WaveHeader (buffer);
+                WaveHeader waveHeader = new WaveHeader(buffer);
                 GCHandle waveHdr = waveHeader.WAVEHDR;
-                MMSYSERR result = SafeNativeMethods.waveOutPrepareHeader (_hwo, waveHdr.AddrOfPinnedObject (), waveHeader.SizeHDR);
+                MMSYSERR result = SafeNativeMethods.waveOutPrepareHeader(_hwo, waveHdr.AddrOfPinnedObject(), waveHeader.SizeHDR);
 
                 if (result != MMSYSERR.NOERROR)
                 {
-                    throw new AudioException (result);
+                    throw new AudioException(result);
                 }
 
                 lock (_noWriteOutLock)
@@ -180,22 +179,22 @@ namespace System.Speech.Internal.Synthesis
                     {
                         lock (_queueIn)
                         {
-                            InItem item = new InItem (waveHeader);
+                            InItem item = new InItem(waveHeader);
 
-                            _queueIn.Add (item);
+                            _queueIn.Add(item);
 
                             // Something in the queue cannot exit anymore
-                            _evt.Reset ();
+                            _evt.Reset();
                         }
 
                         // Start playback of the first buffer
-                        result = SafeNativeMethods.waveOutWrite (_hwo, waveHdr.AddrOfPinnedObject (), waveHeader.SizeHDR);
+                        result = SafeNativeMethods.waveOutWrite(_hwo, waveHdr.AddrOfPinnedObject(), waveHeader.SizeHDR);
                         if (result != MMSYSERR.NOERROR)
                         {
                             lock (_queueIn)
                             {
-                                _queueIn.RemoveAt (_queueIn.Count - 1);
-                                throw new AudioException (result);
+                                _queueIn.RemoveAt(_queueIn.Count - 1);
+                                throw new AudioException(result);
                             }
                         }
                     }
@@ -208,7 +207,7 @@ namespace System.Speech.Internal.Synthesis
         /// Pause the playback of a sound.
         /// </summary>
         /// <returns>MMSYSERR.NOERROR if successful</returns>
-        override internal void Pause ()
+        override internal void Pause()
         {
             lock (_noWriteOutLock)
             {
@@ -216,10 +215,10 @@ namespace System.Speech.Internal.Synthesis
                 {
                     if (_deviceOpen)
                     {
-                        MMSYSERR result = SafeNativeMethods.waveOutPause (_hwo);
+                        MMSYSERR result = SafeNativeMethods.waveOutPause(_hwo);
                         if (result != MMSYSERR.NOERROR)
                         {
-                            System.Diagnostics.Debug.Assert (false, ((int) result).ToString (System.Globalization.CultureInfo.InvariantCulture));
+                            System.Diagnostics.Debug.Assert(false, ((int)result).ToString(System.Globalization.CultureInfo.InvariantCulture));
                         }
                     }
                     _fPaused = true;
@@ -231,7 +230,7 @@ namespace System.Speech.Internal.Synthesis
         /// Resume the playback of a paused sound.
         /// </summary>
         /// <returns>MMSYSERR.NOERROR if successful</returns>
-        override internal void Resume ()
+        override internal void Resume()
         {
             lock (_noWriteOutLock)
             {
@@ -239,10 +238,10 @@ namespace System.Speech.Internal.Synthesis
                 {
                     if (_deviceOpen)
                     {
-                        MMSYSERR result = SafeNativeMethods.waveOutRestart (_hwo);
+                        MMSYSERR result = SafeNativeMethods.waveOutRestart(_hwo);
                         if (result != MMSYSERR.NOERROR)
                         {
-                            System.Diagnostics.Debug.Assert (false);
+                            System.Diagnostics.Debug.Assert(false);
                         }
                     }
                 }
@@ -253,20 +252,20 @@ namespace System.Speech.Internal.Synthesis
         /// <summary>
         /// Wait for all the queued buffers to be played
         /// </summary>
-        override internal void Abort ()
+        override internal void Abort()
         {
             lock (_noWriteOutLock)
             {
                 _aborted = true;
                 if (_queueIn.Count > 0)
                 {
-                    SafeNativeMethods.waveOutReset (_hwo);
-                    _evt.WaitOne ();
+                    SafeNativeMethods.waveOutReset(_hwo);
+                    _evt.WaitOne();
                 }
             }
         }
 
-        override internal void InjectEvent (TTSEvent ttsEvent)
+        override internal void InjectEvent(TTSEvent ttsEvent)
         {
             if (_asyncDispatch != null && !_aborted)
             {
@@ -275,12 +274,12 @@ namespace System.Speech.Internal.Synthesis
                     // Throw immediately if the queue is empty
                     if (_queueIn.Count == 0)
                     {
-                        _asyncDispatch.Post (ttsEvent);
+                        _asyncDispatch.Post(ttsEvent);
                     }
                     else
                     {
                         // Will be thrown before the next write to the audio device
-                        _queueIn.Add (new InItem (ttsEvent));
+                        _queueIn.Add(new InItem(ttsEvent));
                     }
                 }
             }
@@ -289,15 +288,15 @@ namespace System.Speech.Internal.Synthesis
         /// <summary>
         /// Wait for all the queued buffers to be played
         /// </summary>
-        override internal void WaitUntilDone ()
+        override internal void WaitUntilDone()
         {
             if (!_deviceOpen)
             {
-                System.Diagnostics.Debug.Assert (false);
-                throw new InvalidOperationException ();
+                System.Diagnostics.Debug.Assert(false);
+                throw new InvalidOperationException();
             }
 
-            _evt.WaitOne ();
+            _evt.WaitOne();
         }
 
         #endregion
@@ -308,17 +307,17 @@ namespace System.Speech.Internal.Synthesis
         ///  Determine the number of available playback devices.
         /// </summary>
         /// <returns>Number of output devices</returns>
-        internal static int NumDevices ()
+        internal static int NumDevices()
         {
-            return SafeNativeMethods.waveOutGetNumDevs ();
+            return SafeNativeMethods.waveOutGetNumDevs();
         }
 
-        internal static int GetDevicedId (string name)
+        internal static int GetDevicedId(string name)
         {
-            for (int iDevice = 0; iDevice < NumDevices (); iDevice++)
+            for (int iDevice = 0; iDevice < NumDevices(); iDevice++)
             {
                 string device;
-                if (GetDeviceName (iDevice, out device) == MMSYSERR.NOERROR && string.Compare (device, name, StringComparison.OrdinalIgnoreCase) == 0)
+                if (GetDeviceName(iDevice, out device) == MMSYSERR.NOERROR && string.Compare(device, name, StringComparison.OrdinalIgnoreCase) == 0)
                 {
                     return iDevice;
                 }
@@ -332,12 +331,12 @@ namespace System.Speech.Internal.Synthesis
         /// <param name="deviceId">ID of the device</param>
         /// <param name="prodName">Destination string assigned the name</param>
         /// <returns>MMSYSERR.NOERROR if successful</returns>
-        internal static MMSYSERR GetDeviceName (int deviceId, [MarshalAs (UnmanagedType.LPWStr)] out string prodName)
+        internal static MMSYSERR GetDeviceName(int deviceId, [MarshalAs(UnmanagedType.LPWStr)] out string prodName)
         {
             prodName = string.Empty;
-            SafeNativeMethods.WAVEOUTCAPS caps = new SafeNativeMethods.WAVEOUTCAPS ();
+            SafeNativeMethods.WAVEOUTCAPS caps = new SafeNativeMethods.WAVEOUTCAPS();
 
-            MMSYSERR result = SafeNativeMethods.waveOutGetDevCaps ((IntPtr) deviceId, ref caps, Marshal.SizeOf (caps));
+            MMSYSERR result = SafeNativeMethods.waveOutGetDevCaps((IntPtr)deviceId, ref caps, Marshal.SizeOf(caps));
             if (result != MMSYSERR.NOERROR)
             {
                 return result;
@@ -366,9 +365,9 @@ namespace System.Speech.Internal.Synthesis
             {
                 if (_nAvgBytesPerSec == 0)
                 {
-                    return new TimeSpan (0);
+                    return new TimeSpan(0);
                 }
-                return new TimeSpan ((_bytesWritten * TimeSpan.TicksPerSecond) / _nAvgBytesPerSec);
+                return new TimeSpan((_bytesWritten * TimeSpan.TicksPerSecond) / _nAvgBytesPerSec);
             }
         }
 
@@ -382,30 +381,30 @@ namespace System.Speech.Internal.Synthesis
 
         #region Private Methods
 
-        private void CallBackProc (IntPtr hwo, MM_MSG uMsg, IntPtr dwInstance, IntPtr dwParam1, IntPtr dwParam2)
+        private void CallBackProc(IntPtr hwo, MM_MSG uMsg, IntPtr dwInstance, IntPtr dwParam1, IntPtr dwParam2)
         {
             if (uMsg == MM_MSG.MM_WOM_DONE)
             {
                 InItem inItem;
                 lock (_queueIn)
                 {
-                    inItem = _queueIn [0];
-                    inItem.ReleaseData ();
-                    _queueIn.RemoveAt (0);
-                    _queueOut.Add (inItem);
+                    inItem = _queueIn[0];
+                    inItem.ReleaseData();
+                    _queueIn.RemoveAt(0);
+                    _queueOut.Add(inItem);
 
                     // look for the next elements in the queue if they are events to throw!
                     while (_queueIn.Count > 0)
                     {
-                        inItem = _queueIn [0];
+                        inItem = _queueIn[0];
                         // Do we have an event or a sound buffer
                         if (inItem._waveHeader == null)
                         {
                             if (_asyncDispatch != null && !_aborted)
                             {
-                                _asyncDispatch.Post (inItem._userData);
+                                _asyncDispatch.Post(inItem._userData);
                             }
-                            _queueIn.RemoveAt (0);
+                            _queueIn.RemoveAt(0);
                         }
                         else
                         {
@@ -417,21 +416,20 @@ namespace System.Speech.Internal.Synthesis
                 // if the queue is empty, then restart the callers thread
                 if (_queueIn.Count == 0)
                 {
-                    _evt.Set ();
+                    _evt.Set();
                 }
-
             }
         }
 
-        private void ClearBuffers ()
+        private void ClearBuffers()
         {
             foreach (InItem item in _queueOut)
             {
                 WaveHeader waveHeader = item._waveHeader;
                 MMSYSERR result;
 
-                result = SafeNativeMethods.waveOutUnprepareHeader (
-                            _hwo, waveHeader.WAVEHDR.AddrOfPinnedObject (), waveHeader.SizeHDR);
+                result = SafeNativeMethods.waveOutUnprepareHeader(
+                            _hwo, waveHeader.WAVEHDR.AddrOfPinnedObject(), waveHeader.SizeHDR);
                 if (result != MMSYSERR.NOERROR)
                 {
                     //System.Diagnostics.Debug.Assert (false);
@@ -442,7 +440,7 @@ namespace System.Speech.Internal.Synthesis
             _queueOut.Clear();
         }
 
-        private void CheckForAbort ()
+        private void CheckForAbort()
         {
             if (_aborted)
             {
@@ -455,22 +453,22 @@ namespace System.Speech.Internal.Synthesis
                         if (inItem._waveHeader != null)
                         {
                             WaveHeader waveHeader = inItem._waveHeader;
-                            SafeNativeMethods.waveOutUnprepareHeader (
-                                _hwo, waveHeader.WAVEHDR.AddrOfPinnedObject (), waveHeader.SizeHDR);
+                            SafeNativeMethods.waveOutUnprepareHeader(
+                                _hwo, waveHeader.WAVEHDR.AddrOfPinnedObject(), waveHeader.SizeHDR);
                             waveHeader.Dispose();
                         }
                         else
                         {
-                            _asyncDispatch.Post (inItem._userData);
+                            _asyncDispatch.Post(inItem._userData);
                         }
                     }
-                    _queueIn.Clear ();
+                    _queueIn.Clear();
 
                     // if the queue is empty, then restart the callers thread
-                    _evt.Set ();
+                    _evt.Set();
                 }
             }
-            ClearBuffers ();
+            ClearBuffers();
         }
 
         #endregion
@@ -490,12 +488,12 @@ namespace System.Speech.Internal.Synthesis
         /// </summary>
         private class InItem : IDisposable
         {
-            internal InItem (WaveHeader waveHeader)
+            internal InItem(WaveHeader waveHeader)
             {
                 _waveHeader = waveHeader;
             }
 
-            internal InItem (object userData)
+            internal InItem(object userData)
             {
                 _userData = userData;
             }
@@ -503,21 +501,21 @@ namespace System.Speech.Internal.Synthesis
             /// <summary>
             /// TODOC
             /// </summary>
-            public void Dispose ()
+            public void Dispose()
             {
                 if (_waveHeader != null)
                 {
-                    _waveHeader.Dispose ();
+                    _waveHeader.Dispose();
                 }
 
                 GC.SuppressFinalize(this);
             }
 
-            internal void ReleaseData ()
+            internal void ReleaseData()
             {
                 if (_waveHeader != null)
                 {
-                    _waveHeader.ReleaseData ();
+                    _waveHeader.ReleaseData();
                 }
             }
 
@@ -535,9 +533,9 @@ namespace System.Speech.Internal.Synthesis
 
         #region Private Fields
 
-        private List<InItem> _queueIn = new List<InItem> ();
+        private List<InItem> _queueIn = new List<InItem>();
 
-        private List<InItem> _queueOut = new List<InItem> ();
+        private List<InItem> _queueOut = new List<InItem>();
 
         private int _blockAlign;
         private int _bytesWritten;
@@ -547,14 +545,14 @@ namespace System.Speech.Internal.Synthesis
 
         private int _curDevice;
 
-        private ManualResetEvent _evt = new ManualResetEvent (false);
+        private ManualResetEvent _evt = new ManualResetEvent(false);
 
         private SafeNativeMethods.WaveOutProc _delegate;
 
         private IAsyncDispatch _asyncDispatch;
 
         private bool _deviceOpen;
-        private object _noWriteOutLock = new object ();
+        private object _noWriteOutLock = new object();
         private bool _fPaused;
 
         #endregion

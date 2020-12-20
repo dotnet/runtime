@@ -5,10 +5,9 @@ using System;
 
 namespace System.Speech.Recognition
 {
-
     // Event args used in the RecognizerUpdateReached event, which is raised after a call is made to RequestRecognizerUpdate.
     /// TODOC <_include file='doc\RecognizerBase.uex' path='docs/doc[@for="UpdateEventArgs"]/*' />
-    
+
     public class RecognizerUpdateReachedEventArgs : EventArgs
     {
         //*******************************************************************
@@ -63,5 +62,4 @@ namespace System.Speech.Recognition
 
         #endregion
     }
-
 }

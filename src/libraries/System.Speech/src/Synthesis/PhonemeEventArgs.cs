@@ -27,7 +27,7 @@ namespace System.Speech.Synthesis
         /// <param name="duration"></param>
         /// <param name="emphasis"></param>
         /// <param name="nextPhoneme"></param>
-        internal PhonemeReachedEventArgs (Prompt prompt, string currentPhoneme, TimeSpan audioPosition, TimeSpan duration, SynthesizerEmphasis emphasis, string nextPhoneme) : base(prompt)
+        internal PhonemeReachedEventArgs(Prompt prompt, string currentPhoneme, TimeSpan audioPosition, TimeSpan duration, SynthesizerEmphasis emphasis, string nextPhoneme) : base(prompt)
         {
             _currentPhoneme = currentPhoneme;
             _audioPosition = audioPosition;
@@ -38,14 +38,14 @@ namespace System.Speech.Synthesis
 
         #endregion
 
-		//*******************************************************************
-		//
-		// Public Properties
-		//
+        //*******************************************************************
+        //
+        // Public Properties
+        //
         //*******************************************************************
 
         #region Public Properties
-       
+
         /// <summary>
         /// TODOC
         /// </summary>

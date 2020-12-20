@@ -17,7 +17,6 @@ namespace System.Speech.Internal.SrgsCompiler
 {
     internal class SrgsElementCompilerFactory : IElementFactory
     {
-
         //*******************************************************************
         //
         // Constructors
@@ -26,11 +25,11 @@ namespace System.Speech.Internal.SrgsCompiler
 
         #region Constructors
 
-        internal SrgsElementCompilerFactory (Backend backend, CustomGrammar cg)
+        internal SrgsElementCompilerFactory(Backend backend, CustomGrammar cg)
         {
             _backend = backend;
             _cg = cg;
-            _grammar = new GrammarElement (backend, cg);
+            _grammar = new GrammarElement(backend, cg);
         }
         #endregion
 
@@ -45,67 +44,67 @@ namespace System.Speech.Internal.SrgsCompiler
         /// <summary>
         /// Clear all the rules
         /// </summary>
-        void IElementFactory.RemoveAllRules ()
+        void IElementFactory.RemoveAllRules()
         {
         }
 
-        IPropertyTag IElementFactory.CreatePropertyTag (IElement parent)
+        IPropertyTag IElementFactory.CreatePropertyTag(IElement parent)
         {
-            return new PropertyTag ((ParseElementCollection) parent, _backend);
+            return new PropertyTag((ParseElementCollection)parent, _backend);
         }
 
-        ISemanticTag IElementFactory.CreateSemanticTag (IElement parent)
+        ISemanticTag IElementFactory.CreateSemanticTag(IElement parent)
         {
-            return new SemanticTag ((ParseElementCollection) parent, _backend);
+            return new SemanticTag((ParseElementCollection)parent, _backend);
         }
 
-        IElementText IElementFactory.CreateText (IElement parent, string value)
+        IElementText IElementFactory.CreateText(IElement parent, string value)
         {
             return null;
         }
 
-        IToken IElementFactory.CreateToken (IElement parent, string content, string pronunciation, string display, float reqConfidence)
+        IToken IElementFactory.CreateToken(IElement parent, string content, string pronunciation, string display, float reqConfidence)
         {
-            ParseToken ((ParseElementCollection) parent, content, pronunciation, display, reqConfidence);
+            ParseToken((ParseElementCollection)parent, content, pronunciation, display, reqConfidence);
             return null;
         }
 
-        IItem IElementFactory.CreateItem (IElement parent, IRule rule, int minRepeat, int maxRepeat, float repeatProbability, float weight)
+        IItem IElementFactory.CreateItem(IElement parent, IRule rule, int minRepeat, int maxRepeat, float repeatProbability, float weight)
         {
-            return (IItem) new Item (_backend, (Rule) rule, minRepeat, maxRepeat, repeatProbability, weight);
+            return (IItem)new Item(_backend, (Rule)rule, minRepeat, maxRepeat, repeatProbability, weight);
         }
 
-        IRuleRef IElementFactory.CreateRuleRef (IElement parent, Uri srgsUri)
+        IRuleRef IElementFactory.CreateRuleRef(IElement parent, Uri srgsUri)
         {
-            throw new NotImplementedException ();
+            throw new NotImplementedException();
         }
 
-        IRuleRef IElementFactory.CreateRuleRef (IElement parent, Uri srgsUri, string semanticKey, string parameters)
+        IRuleRef IElementFactory.CreateRuleRef(IElement parent, Uri srgsUri, string semanticKey, string parameters)
         {
-            return new RuleRef ((ParseElementCollection) parent, _backend, srgsUri, _grammar.UndefRules, semanticKey, parameters);
+            return new RuleRef((ParseElementCollection)parent, _backend, srgsUri, _grammar.UndefRules, semanticKey, parameters);
         }
 
-        void IElementFactory.InitSpecialRuleRef (IElement parent, IRuleRef specialRule)
+        void IElementFactory.InitSpecialRuleRef(IElement parent, IRuleRef specialRule)
         {
-            ((RuleRef) specialRule).InitSpecialRuleRef (_backend, (ParseElementCollection) parent);
+            ((RuleRef)specialRule).InitSpecialRuleRef(_backend, (ParseElementCollection)parent);
         }
 
-        IOneOf IElementFactory.CreateOneOf (IElement parent, IRule rule)
+        IOneOf IElementFactory.CreateOneOf(IElement parent, IRule rule)
         {
-            return (IOneOf) new OneOf ((Rule) rule, _backend);
+            return (IOneOf)new OneOf((Rule)rule, _backend);
         }
 
-        ISubset IElementFactory.CreateSubset (IElement parent, string text, MatchMode mode)
+        ISubset IElementFactory.CreateSubset(IElement parent, string text, MatchMode mode)
         {
-            return (ISubset) new Subset ((ParseElementCollection) parent, _backend, text, mode);
+            return (ISubset)new Subset((ParseElementCollection)parent, _backend, text, mode);
         }
 
-        void IElementFactory.AddScript (IGrammar grammar, string rule, string code)
+        void IElementFactory.AddScript(IGrammar grammar, string rule, string code)
         {
-            ((GrammarElement) grammar).AddScript (rule, code);
+            ((GrammarElement)grammar).AddScript(rule, code);
         }
 
-        string IElementFactory.AddScript (IGrammar grammar, string rule, string code, string filename, int line)
+        string IElementFactory.AddScript(IGrammar grammar, string rule, string code, string filename, int line)
         {
             // add the #line information
             if (line >= 0)
@@ -113,18 +112,18 @@ namespace System.Speech.Internal.SrgsCompiler
                 if (_cg._language == "C#")
                 {
                     // C#
-                    return String.Format (CultureInfo.InvariantCulture, "#line {0} \"{1}\"\n{2}", line.ToString (CultureInfo.InvariantCulture), filename, code);
+                    return String.Format(CultureInfo.InvariantCulture, "#line {0} \"{1}\"\n{2}", line.ToString(CultureInfo.InvariantCulture), filename, code);
                 }
                 else
                 {
                     // VB.Net
-                    return String.Format (CultureInfo.InvariantCulture, "#ExternalSource (\"{1}\",{0}) \n{2}\n#End ExternalSource\n", line.ToString (CultureInfo.InvariantCulture), filename, code);
+                    return String.Format(CultureInfo.InvariantCulture, "#ExternalSource (\"{1}\",{0}) \n{2}\n#End ExternalSource\n", line.ToString(CultureInfo.InvariantCulture), filename, code);
                 }
             }
             return code;
         }
 
-        void IElementFactory.AddScript (IGrammar grammar, string script, string filename, int line)
+        void IElementFactory.AddScript(IGrammar grammar, string script, string filename, int line)
         {
             // add the #line information
             if (line >= 0)
@@ -132,42 +131,42 @@ namespace System.Speech.Internal.SrgsCompiler
                 if (_cg._language == "C#")
                 {
                     // C#
-                    _cg._script.Append ("#line ");
-                    _cg._script.Append (line.ToString (CultureInfo.InvariantCulture));
-                    _cg._script.Append (" \"");
-                    _cg._script.Append (filename);
-                    _cg._script.Append ("\"\n");
-                    _cg._script.Append (script);
+                    _cg._script.Append("#line ");
+                    _cg._script.Append(line.ToString(CultureInfo.InvariantCulture));
+                    _cg._script.Append(" \"");
+                    _cg._script.Append(filename);
+                    _cg._script.Append("\"\n");
+                    _cg._script.Append(script);
                 }
                 else
                 {
                     // VB.Net
-                    _cg._script.Append ("#ExternalSource (");
-                    _cg._script.Append (" \"");
-                    _cg._script.Append (filename);
-                    _cg._script.Append ("\",");
-                    _cg._script.Append (line.ToString (CultureInfo.InvariantCulture));
-                    _cg._script.Append (")\n");
-                    _cg._script.Append (script);
-                    _cg._script.Append ("#End #ExternalSource\n");
+                    _cg._script.Append("#ExternalSource (");
+                    _cg._script.Append(" \"");
+                    _cg._script.Append(filename);
+                    _cg._script.Append("\",");
+                    _cg._script.Append(line.ToString(CultureInfo.InvariantCulture));
+                    _cg._script.Append(")\n");
+                    _cg._script.Append(script);
+                    _cg._script.Append("#End #ExternalSource\n");
                 }
             }
             else
             {
-                _cg._script.Append (script);
+                _cg._script.Append(script);
             }
         }
 
 
-        void IElementFactory.AddItem (IOneOf oneOf, IItem item)
+        void IElementFactory.AddItem(IOneOf oneOf, IItem item)
         {
         }
 
-        void IElementFactory.AddElement (IRule rule, IElement value)
+        void IElementFactory.AddElement(IRule rule, IElement value)
         {
         }
 
-        void IElementFactory.AddElement (IItem item, IElement value)
+        void IElementFactory.AddElement(IItem item, IElement value)
         {
         }
 
@@ -246,13 +245,13 @@ namespace System.Speech.Internal.SrgsCompiler
         /// <param name="pronunciation"></param>
         /// <param name="display"></param>
         /// <param name="reqConfidence"></param>
-        private void ParseToken (ParseElementCollection parent, string sToken, string pronunciation, string display, float reqConfidence)
+        private void ParseToken(ParseElementCollection parent, string sToken, string pronunciation, string display, float reqConfidence)
         {
             int requiredConfidence = (parent != null) ? parent._confidence : CfgGrammar.SP_NORMAL_CONFIDENCE;
 
             // Performs white space normalization in place
-            sToken = Backend.NormalizeTokenWhiteSpace (sToken);
-            if (string.IsNullOrEmpty (sToken))
+            sToken = Backend.NormalizeTokenWhiteSpace(sToken);
+            if (string.IsNullOrEmpty(sToken))
             {
                 return;
             }
@@ -260,7 +259,7 @@ namespace System.Speech.Internal.SrgsCompiler
             // "sapi:reqconf" Attribute
             parent._confidence = CfgGrammar.SP_NORMAL_CONFIDENCE;  // Default to normal
 
-            if (reqConfidence < 0 || reqConfidence.Equals (0.5f))
+            if (reqConfidence < 0 || reqConfidence.Equals(0.5f))
             {
                 parent._confidence = CfgGrammar.SP_NORMAL_CONFIDENCE;  // Default to normal
             }
@@ -277,74 +276,74 @@ namespace System.Speech.Internal.SrgsCompiler
             if (pronunciation != null || display != null)
             {
                 // Escape normalized token.  "/" -> "\/", "\" -> "\\"
-                string sEscapedToken = EscapeToken (sToken);
-                string sDisplayToken = display == null ? sEscapedToken : EscapeToken (display);
+                string sEscapedToken = EscapeToken(sToken);
+                string sDisplayToken = display == null ? sEscapedToken : EscapeToken(display);
 
                 if (pronunciation != null)
                 {
                     // Garbage transition is optional whereas Wildcard is not.  So we need additional epsilon transition.
-                    OneOf oneOf = pronunciation.IndexOf (';') >= 0 ? new OneOf (parent._rule, _backend) : null;
+                    OneOf oneOf = pronunciation.IndexOf(';') >= 0 ? new OneOf(parent._rule, _backend) : null;
 
                     for (int iCurPron = 0, iDeliminator = 0; iCurPron < pronunciation.Length; iCurPron = iDeliminator + 1)
                     {
                         // Find semi-colon deliminator and replace with null
-                        iDeliminator = pronunciation.IndexOf (';', iCurPron);
+                        iDeliminator = pronunciation.IndexOf(';', iCurPron);
                         if (iDeliminator == -1)
                         {
                             iDeliminator = pronunciation.Length;
                         }
 
-                        string pron = pronunciation.Substring (iCurPron, iDeliminator - iCurPron);
+                        string pron = pronunciation.Substring(iCurPron, iDeliminator - iCurPron);
                         string sSubPron = null;
                         switch (_backend.Alphabet)
                         {
                             case AlphabetType.Sapi:
-                                sSubPron = PhonemeConverter.ConvertPronToId (pron, _grammar.Backend.LangId);
+                                sSubPron = PhonemeConverter.ConvertPronToId(pron, _grammar.Backend.LangId);
                                 break;
 
                             case AlphabetType.Ipa:
                                 sSubPron = pron;
-                                PhonemeConverter.ValidateUpsIds (sSubPron);
+                                PhonemeConverter.ValidateUpsIds(sSubPron);
                                 break;
 
                             case AlphabetType.Ups:
-                                sSubPron = PhonemeConverter.UpsConverter.ConvertPronToId (pron);
+                                sSubPron = PhonemeConverter.UpsConverter.ConvertPronToId(pron);
                                 break;
                         }
 
                         // Build /D/L/P; form for this pronunciation.
-                        string sDLP = string.Format (CultureInfo.InvariantCulture, "/{0}/{1}/{2};", sDisplayToken, sEscapedToken, sSubPron);
+                        string sDLP = string.Format(CultureInfo.InvariantCulture, "/{0}/{1}/{2};", sDisplayToken, sEscapedToken, sSubPron);
 
                         // Add /D/L/P; transition to the new state.
                         if (oneOf != null)
                         {
-                            oneOf.AddArc (_backend.WordTransition (sDLP, 1.0f, requiredConfidence));
+                            oneOf.AddArc(_backend.WordTransition(sDLP, 1.0f, requiredConfidence));
                         }
                         else
                         {
-                            parent.AddArc (_backend.WordTransition (sDLP, 1.0f, requiredConfidence));
+                            parent.AddArc(_backend.WordTransition(sDLP, 1.0f, requiredConfidence));
                         }
                     }
 
                     if (oneOf != null)
                     {
-                        ((IOneOf) oneOf).PostParse (parent);
+                        ((IOneOf)oneOf).PostParse(parent);
                     }
                 }
                 else
                 {
                     // Build /D/L; form for this pronunciation.
-                    string sDLP = string.Format (CultureInfo.InvariantCulture, "/{0}/{1};", sDisplayToken, sEscapedToken);
+                    string sDLP = string.Format(CultureInfo.InvariantCulture, "/{0}/{1};", sDisplayToken, sEscapedToken);
 
                     // Add /D/L; transition to the new state.
-                    parent.AddArc (_backend.WordTransition (sDLP, 1.0f, requiredConfidence));
+                    parent.AddArc(_backend.WordTransition(sDLP, 1.0f, requiredConfidence));
                 }
             }
             else
             {
                 // Add transition to the new state with normalized token.
                 // TODO: Current implementation separates tokens containing spaces into multiple words.
-                parent.AddArc (_backend.WordTransition (sToken, 1.0f, requiredConfidence));
+                parent.AddArc(_backend.WordTransition(sToken, 1.0f, requiredConfidence));
             }
         }
 
@@ -355,33 +354,33 @@ namespace System.Speech.Internal.SrgsCompiler
         /// </summary>
         /// <param name="sToken"></param>
         /// <returns></returns>
-        private static string EscapeToken (string sToken)                     // String to escape
+        private static string EscapeToken(string sToken)                     // String to escape
         {
-            System.Diagnostics.Debug.Assert (!string.IsNullOrEmpty (sToken));
+            System.Diagnostics.Debug.Assert(!string.IsNullOrEmpty(sToken));
 
             // Easy out if no escape characters
-            if (sToken.IndexOf ("\\/", StringComparison.Ordinal) == -1)
+            if (sToken.IndexOf("\\/", StringComparison.Ordinal) == -1)
             {
                 return sToken;
             }
 
-            char [] achSrc = sToken.ToCharArray ();
-            char [] achDest = new char [achSrc.Length * 2];
+            char[] achSrc = sToken.ToCharArray();
+            char[] achDest = new char[achSrc.Length * 2];
             int iDest = 0;
 
             // Escape slashes and backslashes.
-            for (int i = 0; i < achSrc.Length; )
+            for (int i = 0; i < achSrc.Length;)
             {
-                if ((achSrc [i] == '\\') || (achSrc [i] == '/'))
+                if ((achSrc[i] == '\\') || (achSrc[i] == '/'))
                 {
-                    achDest [iDest++] = '\\';                            // Escape special character
+                    achDest[iDest++] = '\\';                            // Escape special character
                 }
 
-                achDest [iDest++] = achSrc [i++];
+                achDest[iDest++] = achSrc[i++];
             }
 
             // null terminate and update string length
-            return new string (achDest, 0, iDest);
+            return new string(achDest, 0, iDest);
         }
 
         #endregion
@@ -403,7 +402,6 @@ namespace System.Speech.Internal.SrgsCompiler
 
         // Callers param
         private CustomGrammar _cg;
-
 
         #endregion
     }

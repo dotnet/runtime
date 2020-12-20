@@ -6,69 +6,69 @@ using System.ComponentModel;
 
 namespace System.Speech.Synthesis
 {
-	/// <summary>
-	/// TODOC
-	/// </summary>
+    /// <summary>
+    /// TODOC
+    /// </summary>
     public abstract class PromptEventArgs : AsyncCompletedEventArgs
     {
-		//*******************************************************************
-		//
-		// Constructors
-		//
-		//*******************************************************************
+        //*******************************************************************
+        //
+        // Constructors
+        //
+        //*******************************************************************
 
-		#region Constructors
+        #region Constructors
 
         /// <summary>
         /// TODOC
         /// </summary>
         /// <param name="prompt"></param>
-        internal PromptEventArgs (Prompt prompt) : base (prompt._exception, prompt._exception != null, prompt)
+        internal PromptEventArgs(Prompt prompt) : base(prompt._exception, prompt._exception != null, prompt)
         {
             _prompt = prompt;
         }
 
-		#endregion
+        #endregion
 
-		//*******************************************************************
-		//
-		// Public Properties
-		//
-		//*******************************************************************
+        //*******************************************************************
+        //
+        // Public Properties
+        //
+        //*******************************************************************
 
-		#region public Properties
+        #region public Properties
 
-		// Use Add* naming convention.
+        // Use Add* naming convention.
 
-		/// <summary>
-		/// TODOC
-		/// </summary>
-		/// <value></value>
-		public Prompt Prompt
-		{
-			get
-			{
-				return _prompt;
-			}
-		}
+        /// <summary>
+        /// TODOC
+        /// </summary>
+        /// <value></value>
+        public Prompt Prompt
+        {
+            get
+            {
+                return _prompt;
+            }
+        }
 
-		#endregion
+        #endregion
 
-		//*******************************************************************
-		//
-		// Private Fields
-		//
-		//*******************************************************************
+        //*******************************************************************
+        //
+        // Private Fields
+        //
+        //*******************************************************************
 
-		#region Private Fields
+        #region Private Fields
 
         private Prompt _prompt;
 
-		#endregion
-	}
-	/// <summary>
-	/// TODOC
-	/// </summary>
+        #endregion
+    }
+    /// <summary>
+    /// TODOC
+    /// </summary>
     public class SpeakStartedEventArgs : PromptEventArgs
     {
         //*******************************************************************
@@ -83,8 +83,8 @@ namespace System.Speech.Synthesis
         /// TODOC
         /// </summary>
         /// <param name="prompt"></param>
-        internal SpeakStartedEventArgs (Prompt prompt)
-            : base (prompt)
+        internal SpeakStartedEventArgs(Prompt prompt)
+            : base(prompt)
         {
         }
 

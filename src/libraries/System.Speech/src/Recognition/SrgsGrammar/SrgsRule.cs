@@ -16,8 +16,8 @@ namespace System.Speech.Recognition.SrgsGrammar
 {
     /// TODOC <_include file='doc\Rule.uex' path='docs/doc[@for="Rule"]/*' />
     [Serializable]
-    [DebuggerDisplay ("Rule={_id.ToString()} Scope={_scope.ToString()}")]
-    [DebuggerTypeProxy (typeof (SrgsRuleDebugDisplay))]
+    [DebuggerDisplay("Rule={_id.ToString()} Scope={_scope.ToString()}")]
+    [DebuggerTypeProxy(typeof(SrgsRuleDebugDisplay))]
     public class SrgsRule : IRule
     {
         //*******************************************************************
@@ -29,35 +29,35 @@ namespace System.Speech.Recognition.SrgsGrammar
         #region Constructors
 
         /// TODOC <_include file='doc\Rule.uex' path='docs/doc[@for="Rule.Rule1"]/*' />
-        private SrgsRule ()
+        private SrgsRule()
         {
-            _elements = new SrgsElementList ();
+            _elements = new SrgsElementList();
         }
 
         /// TODOC <_include file='doc\Rule.uex' path='docs/doc[@for="Rule.Rule2"]/*' />
-        public SrgsRule (string id)
-            : this ()
+        public SrgsRule(string id)
+            : this()
         {
-            XmlParser.ValidateRuleId (id);
+            XmlParser.ValidateRuleId(id);
             Id = id;
         }
 
         /// TODOC <_include file='doc\Rule.uex' path='docs/doc[@for="Rule.Rule2"]/*' />
-        public SrgsRule (string id, params SrgsElement [] elements)
-            : this ()
+        public SrgsRule(string id, params SrgsElement[] elements)
+            : this()
         {
-            Helpers.ThrowIfNull (elements, "elements");
+            Helpers.ThrowIfNull(elements, "elements");
 
-            XmlParser.ValidateRuleId (id);
+            XmlParser.ValidateRuleId(id);
             Id = id;
 
             for (int iElement = 0; iElement < elements.Length; iElement++)
             {
-                if (elements [iElement] == null)
+                if (elements[iElement] == null)
                 {
-                    throw new ArgumentNullException ("elements", SR.Get (SRID.ParamsEntryNullIllegal));
+                    throw new ArgumentNullException("elements", SR.Get(SRID.ParamsEntryNullIllegal));
                 }
-                ((Collection<SrgsElement>) _elements).Add (elements [iElement]);
+                ((Collection<SrgsElement>)_elements).Add(elements[iElement]);
             }
         }
 
@@ -75,11 +75,11 @@ namespace System.Speech.Recognition.SrgsGrammar
         /// TODOC
         /// </summary>
         /// <param name="element"></param>
-        public void Add (SrgsElement element)
+        public void Add(SrgsElement element)
         {
-            Helpers.ThrowIfNull (element, "element");
+            Helpers.ThrowIfNull(element, "element");
 
-            Elements.Add (element);
+            Elements.Add(element);
         }
 
         #endregion
@@ -110,7 +110,7 @@ namespace System.Speech.Recognition.SrgsGrammar
             }
             set
             {
-                XmlParser.ValidateRuleId (value);
+                XmlParser.ValidateRuleId(value);
                 _id = value;
             }
         }
@@ -155,7 +155,7 @@ namespace System.Speech.Recognition.SrgsGrammar
         {
             set
             {
-                Helpers.ThrowIfEmptyOrNull (value, "value");
+                Helpers.ThrowIfEmptyOrNull(value, "value");
                 _script = value;
             }
             get
@@ -171,7 +171,7 @@ namespace System.Speech.Recognition.SrgsGrammar
         {
             set
             {
-                ValidateIdentifier (value);
+                ValidateIdentifier(value);
                 _onInit = value;
             }
             get
@@ -187,7 +187,7 @@ namespace System.Speech.Recognition.SrgsGrammar
         {
             set
             {
-                ValidateIdentifier (value);
+                ValidateIdentifier(value);
                 _onParse = value;
             }
             get
@@ -203,7 +203,7 @@ namespace System.Speech.Recognition.SrgsGrammar
         {
             set
             {
-                ValidateIdentifier (value);
+                ValidateIdentifier(value);
                 _onError = value;
             }
             get
@@ -219,7 +219,7 @@ namespace System.Speech.Recognition.SrgsGrammar
         {
             set
             {
-                ValidateIdentifier (value);
+                ValidateIdentifier(value);
                 _onRecognition = value;
             }
             get
@@ -239,63 +239,63 @@ namespace System.Speech.Recognition.SrgsGrammar
 
         #region Internal Methods
 
-        internal void WriteSrgs (XmlWriter writer)
+        internal void WriteSrgs(XmlWriter writer)
         {
             // Empty rule are not allowed
             if (Elements.Count == 0)
             {
-                XmlParser.ThrowSrgsException (SRID.InvalidEmptyRule, "rule", _id);
+                XmlParser.ThrowSrgsException(SRID.InvalidEmptyRule, "rule", _id);
             }
 
             // Write <rule id="MyRule" scope="public">
-            writer.WriteStartElement ("rule");
-            writer.WriteAttributeString ("id", _id);
+            writer.WriteStartElement("rule");
+            writer.WriteAttributeString("id", _id);
             if (_isScopeSet)
             {
                 switch (_scope)
                 {
                     case SrgsRuleScope.Private:
-                        writer.WriteAttributeString ("scope", "private");
+                        writer.WriteAttributeString("scope", "private");
                         break;
 
                     case SrgsRuleScope.Public:
-                        writer.WriteAttributeString ("scope", "public");
+                        writer.WriteAttributeString("scope", "public");
                         break;
                 }
             }
             // Write the 'baseclass' attribute
             if (_baseclass != null)
             {
-                writer.WriteAttributeString ("sapi", "baseclass", XmlParser.sapiNamespace, _baseclass);
+                writer.WriteAttributeString("sapi", "baseclass", XmlParser.sapiNamespace, _baseclass);
             }
             // Write <rule id="MyRule" sapi:dynamic="true">
             if (_dynamic != RuleDynamic.NotSet)
             {
-                writer.WriteAttributeString ("sapi", "dynamic", XmlParser.sapiNamespace, _dynamic == RuleDynamic.True ? "true" : "false");
+                writer.WriteAttributeString("sapi", "dynamic", XmlParser.sapiNamespace, _dynamic == RuleDynamic.True ? "true" : "false");
             }
 
             // Write the 'onInit' code snippet
             if (OnInit != null)
             {
-                writer.WriteAttributeString ("sapi", "onInit", XmlParser.sapiNamespace, OnInit);
+                writer.WriteAttributeString("sapi", "onInit", XmlParser.sapiNamespace, OnInit);
             }
 
             // Write <rule onParse="symbol">
             if (OnParse != null)
             {
-                writer.WriteAttributeString ("sapi", "onParse", XmlParser.sapiNamespace, OnParse);
+                writer.WriteAttributeString("sapi", "onParse", XmlParser.sapiNamespace, OnParse);
             }
 
             // Write <rule onError="symbol">
             if (OnError != null)
             {
-                writer.WriteAttributeString ("sapi", "onError", XmlParser.sapiNamespace, OnError);
+                writer.WriteAttributeString("sapi", "onError", XmlParser.sapiNamespace, OnError);
             }
 
             // Write <rule onRecognition="symbol">
             if (OnRecognition != null)
             {
-                writer.WriteAttributeString ("sapi", "onRecognition", XmlParser.sapiNamespace, OnRecognition);
+                writer.WriteAttributeString("sapi", "onRecognition", XmlParser.sapiNamespace, OnRecognition);
             }
             // Write <rule> body and footer.
             Type previousElementType = null;
@@ -303,24 +303,24 @@ namespace System.Speech.Recognition.SrgsGrammar
             foreach (SrgsElement element in _elements)
             {
                 // Insert space between consecutive SrgsText elements.
-                Type elementType = element.GetType ();
+                Type elementType = element.GetType();
 
-                if ((elementType == typeof (SrgsText)) && (elementType == previousElementType))
+                if ((elementType == typeof(SrgsText)) && (elementType == previousElementType))
                 {
-                    writer.WriteString (" ");
+                    writer.WriteString(" ");
                 }
 
                 previousElementType = elementType;
-                element.WriteSrgs (writer);
+                element.WriteSrgs(writer);
             }
 
-            writer.WriteEndElement ();
+            writer.WriteEndElement();
 
             // Write the <script> elements for the OnParse, OnError and OnRecognition code.
             // At the bottom of the code
             if (HasCode)
             {
-                WriteScriptElement (writer, _script);
+                WriteScriptElement(writer, _script);
             }
         }
 
@@ -329,7 +329,7 @@ namespace System.Speech.Recognition.SrgsGrammar
         /// Validate each element and recurse through all the children srgs
         /// elements if any.
         /// </summary>
-        internal void Validate (SrgsGrammar grammar)
+        internal void Validate(SrgsGrammar grammar)
         {
             bool fScript = HasCode || _onInit != null || _onParse != null || _onError != null || _onRecognition != null || _baseclass != null;
             grammar._fContainsCode |= fScript;
@@ -342,27 +342,27 @@ namespace System.Speech.Recognition.SrgsGrammar
 
             if (OnInit != null && Scope != SrgsRuleScope.Public)
             {
-                XmlParser.ThrowSrgsException (SRID.OnInitOnPublicRule, "OnInit", Id);
+                XmlParser.ThrowSrgsException(SRID.OnInitOnPublicRule, "OnInit", Id);
             }
 
             if (OnRecognition != null && Scope != SrgsRuleScope.Public)
             {
-                XmlParser.ThrowSrgsException (SRID.OnInitOnPublicRule, "OnRecognition", Id);
+                XmlParser.ThrowSrgsException(SRID.OnInitOnPublicRule, "OnRecognition", Id);
             }
             // Validate all the children
             foreach (SrgsElement element in _elements)
             {
-                element.Validate (grammar);
+                element.Validate(grammar);
             }
         }
 
-        void IElement.PostParse (IElement grammar)
+        void IElement.PostParse(IElement grammar)
         {
-            ((SrgsGrammar) grammar).Rules.Add (this);
+            ((SrgsGrammar)grammar).Rules.Add(this);
         }
 
 
-        void IRule.CreateScript (IGrammar grammar, string rule, string method, RuleMethodScript type)
+        void IRule.CreateScript(IGrammar grammar, string rule, string method, RuleMethodScript type)
         {
             switch (type)
             {
@@ -384,7 +384,7 @@ namespace System.Speech.Recognition.SrgsGrammar
 
                 default:
                     // unknow method!!!
-                    System.Diagnostics.Debug.Assert (false);
+                    System.Diagnostics.Debug.Assert(false);
                     break;
             }
         }
@@ -443,14 +443,14 @@ namespace System.Speech.Recognition.SrgsGrammar
 
 #pragma warning disable 56507 // check for null or empty strings
 
-        void ValidateIdentifier(string s)
+        private void ValidateIdentifier(string s)
         {
             if (s == _id)
             {
                 XmlParser.ThrowSrgsException(SRID.ConstructorNotAllowed, _id);
             }
 
-            if (s != null && (s.IndexOfAny(invalidChars) >= 0 || s.Length == 0))
+            if (s != null && (s.IndexOfAny(s_invalidChars) >= 0 || s.Length == 0))
             {
                 XmlParser.ThrowSrgsException(SRID.InvalidMethodName);
             }
@@ -493,7 +493,7 @@ namespace System.Speech.Recognition.SrgsGrammar
         private string _onError;
 
         private string _onRecognition;
-        static readonly char [] invalidChars = new char [] { '?', '*', '+', '|', '(', ')', '^', '$', '/', ';', '.', '=', '<', '>', '[', ']', '{', '}', '\\', ' ', '\t', '\r', '\n' };
+        private static readonly char[] s_invalidChars = new char[] { '?', '*', '+', '|', '(', ')', '^', '$', '/', ';', '.', '=', '<', '>', '[', ']', '{', '}', '\\', ' ', '\t', '\r', '\n' };
 
         #endregion
 
@@ -508,7 +508,7 @@ namespace System.Speech.Recognition.SrgsGrammar
         // Used by the debbugger display attribute
         internal class SrgsRuleDebugDisplay
         {
-            public SrgsRuleDebugDisplay (SrgsRule rule)
+            public SrgsRuleDebugDisplay(SrgsRule rule)
             {
                 _rule = rule;
             }
@@ -587,15 +587,15 @@ namespace System.Speech.Recognition.SrgsGrammar
                 }
             }
 
-            [DebuggerBrowsable (DebuggerBrowsableState.RootHidden)]
-            public SrgsElement [] AKeys
+            [DebuggerBrowsable(DebuggerBrowsableState.RootHidden)]
+            public SrgsElement[] AKeys
             {
                 get
                 {
-                    SrgsElement [] elements = new SrgsElement [_rule._elements.Count];
+                    SrgsElement[] elements = new SrgsElement[_rule._elements.Count];
                     for (int i = 0; i < _rule._elements.Count; i++)
                     {
-                        elements [i] = _rule._elements [i];
+                        elements[i] = _rule._elements[i];
                     }
                     return elements;
                 }

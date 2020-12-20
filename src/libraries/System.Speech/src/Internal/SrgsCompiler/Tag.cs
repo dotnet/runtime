@@ -24,22 +24,22 @@ namespace System.Speech.Internal.SrgsCompiler
 
         #region Constructors
 
-        internal Tag (Tag tag)
+        internal Tag(Tag tag)
         {
             _be = tag._be;
             _cfgTag = tag._cfgTag;
         }
 
-        internal Tag (Backend be, CfgSemanticTag cfgTag)
+        internal Tag(Backend be, CfgSemanticTag cfgTag)
         {
             _be = be;
             _cfgTag = cfgTag;
         }
 
-        internal Tag (Backend be, CfgGrammar.CfgProperty property)
+        internal Tag(Backend be, CfgGrammar.CfgProperty property)
         {
             _be = be;
-            _cfgTag = new CfgSemanticTag (be.Symbols, property);
+            _cfgTag = new CfgSemanticTag(be.Symbols, property);
         }
 
         #endregion
@@ -54,16 +54,16 @@ namespace System.Speech.Internal.SrgsCompiler
 
         #region IComparable<SemanticTag> Interface implementation
 
-        int IComparable<Tag>.CompareTo (Tag tag)
+        int IComparable<Tag>.CompareTo(Tag tag)
         {
-            return (int) _cfgTag.ArcIndex - (int) tag._cfgTag.ArcIndex;
+            return (int)_cfgTag.ArcIndex - (int)tag._cfgTag.ArcIndex;
         }
 
         #endregion
 
-        internal void Serialize (StreamMarshaler streamBuffer)
+        internal void Serialize(StreamMarshaler streamBuffer)
         {
-            streamBuffer.WriteStream (_cfgTag);
+            streamBuffer.WriteStream(_cfgTag);
         }
 
         #endregion
@@ -76,7 +76,7 @@ namespace System.Speech.Internal.SrgsCompiler
 
         #region Internal Fields
 
-        internal CfgSemanticTag _cfgTag = new CfgSemanticTag ();
+        internal CfgSemanticTag _cfgTag = new CfgSemanticTag();
 
         internal Backend _be;
 

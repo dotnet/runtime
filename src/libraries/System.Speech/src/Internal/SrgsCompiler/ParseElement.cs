@@ -37,7 +37,7 @@ namespace System.Speech.Internal.SrgsCompiler
     //      ParseElements is added to the stack, but not used.
     internal abstract class ParseElement : IElement // Compiler stack element
     {
-        internal ParseElement (Rule rule)
+        internal ParseElement(Rule rule)
         {
             _rule = rule;
         }
@@ -49,7 +49,7 @@ namespace System.Speech.Internal.SrgsCompiler
 
 #pragma warning restore 649
 
-        void IElement.PostParse (IElement parent)
+        void IElement.PostParse(IElement parent)
         {
         }
 

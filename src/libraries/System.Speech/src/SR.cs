@@ -8,14 +8,14 @@ namespace System.Speech
 {
     internal static class SR
     {
-        private static ResourceManager _resourceManager = new ResourceManager("ExceptionStringTable", typeof(SR).Assembly);
+        private static ResourceManager s_resourceManager = new ResourceManager("ExceptionStringTable", typeof(SR).Assembly);
 
         internal static string Get(SRID id, params object[] args)
         {
-            string text = _resourceManager.GetString(id.ToString());
+            string text = s_resourceManager.GetString(id.ToString());
             if (string.IsNullOrEmpty(text))
             {
-                text = _resourceManager.GetString("Unavailable");
+                text = s_resourceManager.GetString("Unavailable");
             }
             else if (args != null && args.Length != 0)
             {

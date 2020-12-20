@@ -20,18 +20,18 @@ namespace System.Speech.Internal.SapiInterop
 
         #region Constructors
 
-        internal SapiGrammar (ISpRecoGrammar sapiGrammar, SapiProxy thread)
+        internal SapiGrammar(ISpRecoGrammar sapiGrammar, SapiProxy thread)
         {
             _sapiGrammar = sapiGrammar;
             _sapiProxy = thread;
         }
 
-        public void Dispose ()
+        public void Dispose()
         {
             if (!_disposed)
             {
-                Marshal.ReleaseComObject (_sapiGrammar);
-                GC.SuppressFinalize (this);
+                Marshal.ReleaseComObject(_sapiGrammar);
+                GC.SuppressFinalize(this);
                 _disposed = true;
             }
         }
@@ -46,63 +46,63 @@ namespace System.Speech.Internal.SapiInterop
 
         #region Internal Methods
 
-        internal void SetGrammarState (SPGRAMMARSTATE state)
+        internal void SetGrammarState(SPGRAMMARSTATE state)
         {
-            _sapiProxy.Invoke2 (delegate { _sapiGrammar.SetGrammarState (state); });
+            _sapiProxy.Invoke2(delegate { _sapiGrammar.SetGrammarState(state); });
         }
 
-        internal void SetWordSequenceData (string text, SPTEXTSELECTIONINFO info)
+        internal void SetWordSequenceData(string text, SPTEXTSELECTIONINFO info)
         {
             SPTEXTSELECTIONINFO selectionInfo = info;
-            _sapiProxy.Invoke2 (delegate { _sapiGrammar.SetWordSequenceData (text, (uint) text.Length, ref selectionInfo); });
+            _sapiProxy.Invoke2(delegate { _sapiGrammar.SetWordSequenceData(text, (uint)text.Length, ref selectionInfo); });
         }
 
-        internal void LoadCmdFromMemory (IntPtr grammar, SPLOADOPTIONS options)
+        internal void LoadCmdFromMemory(IntPtr grammar, SPLOADOPTIONS options)
         {
-            _sapiProxy.Invoke2 (delegate { _sapiGrammar.LoadCmdFromMemory (grammar, options); });
+            _sapiProxy.Invoke2(delegate { _sapiGrammar.LoadCmdFromMemory(grammar, options); });
         }
 
-        internal void LoadDictation (string pszTopicName, SPLOADOPTIONS options)
+        internal void LoadDictation(string pszTopicName, SPLOADOPTIONS options)
         {
-            _sapiProxy.Invoke2 (delegate { _sapiGrammar.LoadDictation (pszTopicName, options); });
+            _sapiProxy.Invoke2(delegate { _sapiGrammar.LoadDictation(pszTopicName, options); });
         }
 
-        internal SAPIErrorCodes SetDictationState (SPRULESTATE state)
+        internal SAPIErrorCodes SetDictationState(SPRULESTATE state)
         {
-            return (SAPIErrorCodes) _sapiProxy.Invoke (delegate { return _sapiGrammar.SetDictationState (state); });
+            return (SAPIErrorCodes)_sapiProxy.Invoke(delegate { return _sapiGrammar.SetDictationState(state); });
         }
 
-        internal SAPIErrorCodes SetRuleState (string name, SPRULESTATE state)
+        internal SAPIErrorCodes SetRuleState(string name, SPRULESTATE state)
         {
-            return (SAPIErrorCodes) _sapiProxy.Invoke (delegate { return _sapiGrammar.SetRuleState (name, IntPtr.Zero, state); });
+            return (SAPIErrorCodes)_sapiProxy.Invoke(delegate { return _sapiGrammar.SetRuleState(name, IntPtr.Zero, state); });
         }
-       
+
         /*
          * The Set of methods are only available with SAPI 5.3. There is no need then to use the SAPI proxy to switch 
          * the call to an MTA thread.
          * 
          */
-        internal void SetGrammarLoader (ISpGrammarResourceLoader resourceLoader)
+        internal void SetGrammarLoader(ISpGrammarResourceLoader resourceLoader)
         {
-            SpRecoGrammar2.SetGrammarLoader (resourceLoader);
+            SpRecoGrammar2.SetGrammarLoader(resourceLoader);
         }
 
-        internal void LoadCmdFromMemory2 (IntPtr grammar, SPLOADOPTIONS options, string sharingUri, string baseUri)
+        internal void LoadCmdFromMemory2(IntPtr grammar, SPLOADOPTIONS options, string sharingUri, string baseUri)
         {
-            SpRecoGrammar2.LoadCmdFromMemory2 (grammar, options, sharingUri, baseUri);
+            SpRecoGrammar2.LoadCmdFromMemory2(grammar, options, sharingUri, baseUri);
         }
 
-        internal void SetRulePriority (string name, UInt32 id, Int32 priority)
+        internal void SetRulePriority(string name, UInt32 id, Int32 priority)
         {
-            SpRecoGrammar2.SetRulePriority (name, id, priority);
+            SpRecoGrammar2.SetRulePriority(name, id, priority);
         }
-        internal void SetRuleWeight (string name, UInt32 id, float weight)
+        internal void SetRuleWeight(string name, UInt32 id, float weight)
         {
-            SpRecoGrammar2.SetRuleWeight (name, id, weight);
+            SpRecoGrammar2.SetRuleWeight(name, id, weight);
         }
-        internal void SetDictationWeight (float weight)
+        internal void SetDictationWeight(float weight)
         {
-            SpRecoGrammar2.SetDictationWeight (weight);
+            SpRecoGrammar2.SetDictationWeight(weight);
         }
 
         #endregion
@@ -121,9 +121,9 @@ namespace System.Speech.Internal.SapiInterop
             {
                 if (_sapiGrammar2 == null)
                 {
-                    _sapiGrammar2 = (ISpRecoGrammar2) _sapiGrammar;
+                    _sapiGrammar2 = (ISpRecoGrammar2)_sapiGrammar;
                 }
-                return (ISpRecoGrammar2) _sapiGrammar2;
+                return (ISpRecoGrammar2)_sapiGrammar2;
             }
         }
 

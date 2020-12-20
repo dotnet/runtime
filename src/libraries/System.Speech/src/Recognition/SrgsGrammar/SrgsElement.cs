@@ -14,14 +14,14 @@ namespace System.Speech.Recognition.SrgsGrammar
     /// Base class for all SRGS object to build XML fragment corresponding to the object.
     /// </summary>
     [Serializable]
-    [DebuggerDisplay ("SrgsElement Children:[{_items.Count}]")]
-    [DebuggerTypeProxy (typeof (SrgsElementDebugDisplay))]
+    [DebuggerDisplay("SrgsElement Children:[{_items.Count}]")]
+    [DebuggerTypeProxy(typeof(SrgsElementDebugDisplay))]
     public abstract class SrgsElement : MarshalByRefObject, IElement
     {
         /// <summary>
         /// TODOC
         /// </summary>
-        protected SrgsElement ()
+        protected SrgsElement()
         {
         }
 
@@ -35,10 +35,10 @@ namespace System.Speech.Recognition.SrgsGrammar
         #region Internal methods
 
         // Write the XML fragment describing the object.
-        internal abstract void WriteSrgs (XmlWriter writer);
+        internal abstract void WriteSrgs(XmlWriter writer);
 
         // Debugger display string.
-        internal abstract string DebuggerDisplayString ();
+        internal abstract string DebuggerDisplayString();
 
         // Validate the SRGS element.
         /// <summary>
@@ -47,16 +47,16 @@ namespace System.Speech.Recognition.SrgsGrammar
         /// Any derived class implementing this mehod must call the base class 
         /// in order for the children to be processed.
         /// </summary>
-        internal virtual void Validate (SrgsGrammar grammar)
+        internal virtual void Validate(SrgsGrammar grammar)
         {
             foreach (SrgsElement element in Children)
             {
                 // Child validation
-                element.Validate (grammar);
+                element.Validate(grammar);
             }
         }
 
-        void IElement.PostParse (IElement parent)
+        void IElement.PostParse(IElement parent)
         {
         }
 
@@ -71,11 +71,11 @@ namespace System.Speech.Recognition.SrgsGrammar
         #region Protected Properties
 
         //TODOC Add Documentation
-        virtual internal SrgsElement [] Children
+        virtual internal SrgsElement[] Children
         {
             get
             {
-                return new SrgsElement [0];
+                return new SrgsElement[0];
             }
         }
 
@@ -92,13 +92,13 @@ namespace System.Speech.Recognition.SrgsGrammar
         // Used by the debbugger display attribute
         internal class SrgsElementDebugDisplay
         {
-            public SrgsElementDebugDisplay (SrgsElement element)
+            public SrgsElementDebugDisplay(SrgsElement element)
             {
                 _elements = element.Children;
             }
 
-            [DebuggerBrowsable (DebuggerBrowsableState.RootHidden)]
-            public SrgsElement [] AKeys
+            [DebuggerBrowsable(DebuggerBrowsableState.RootHidden)]
+            public SrgsElement[] AKeys
             {
                 get
                 {
@@ -106,7 +106,7 @@ namespace System.Speech.Recognition.SrgsGrammar
                 }
             }
 
-            private SrgsElement [] _elements;
+            private SrgsElement[] _elements;
         }
 
         #endregion

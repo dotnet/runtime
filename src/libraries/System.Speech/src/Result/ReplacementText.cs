@@ -21,8 +21,8 @@ namespace System.Speech.Recognition
     /// TODOC
     /// </summary>
     [Serializable]
-    [StructLayout (LayoutKind.Sequential)]
-    
+    [StructLayout(LayoutKind.Sequential)]
+
     public class ReplacementText
     {
         //*******************************************************************
@@ -33,7 +33,7 @@ namespace System.Speech.Recognition
 
         #region Constructors
 
-        internal ReplacementText (DisplayAttributes displayAttributes, string text, int wordIndex, int countOfWords)
+        internal ReplacementText(DisplayAttributes displayAttributes, string text, int wordIndex, int countOfWords)
         {
             _displayAttributes = displayAttributes;
             _text = text;

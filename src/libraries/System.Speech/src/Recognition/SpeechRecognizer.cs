@@ -14,12 +14,10 @@ using System.Speech.AudioFormat;
 
 namespace System.Speech.Recognition
 {
-
     /// TODOC <_include file='doc\SpeechRecognizer.uex' path='docs/doc[@for="SpeechRecognizer"]/*' />
 
     public class SpeechRecognizer : IDisposable
     {
-
         //*******************************************************************
         //
         // Constructors
@@ -29,20 +27,20 @@ namespace System.Speech.Recognition
         #region Constructors
 
         /// TODOC <_include file='doc\SpeechRecognizer.uex' path='docs/doc[@for="SpeechRecognizer.SpeechRecognizer"]/*' />
-        public SpeechRecognizer ()
+        public SpeechRecognizer()
         {
-            _sapiRecognizer = new SapiRecognizer (SapiRecognizer.RecognizerType.Shared);
+            _sapiRecognizer = new SapiRecognizer(SapiRecognizer.RecognizerType.Shared);
         }
 
         /// TODOC <_include file='doc\SpeechRecognizer.uex' path='docs/doc[@for="SpeechRecognizer.Dispose1"]/*' />
-        public void Dispose ()
+        public void Dispose()
         {
-            Dispose (true);
-            GC.SuppressFinalize (this);
+            Dispose(true);
+            GC.SuppressFinalize(this);
         }
 
         /// TODOC <_include file='doc\SpeechRecognizer.uex' path='docs/doc[@for="SpeechRecognizer.Dispose2"]/*' />
-        protected virtual void Dispose (bool disposing)
+        protected virtual void Dispose(bool disposing)
         {
             if (disposing && !_disposed)
             {
@@ -178,125 +176,125 @@ namespace System.Speech.Recognition
 
 
         /// TODOC <_include file='doc\SpeechRecognizer.uex' path='docs/doc[@for="SpeechRecognizer.LoadGrammar"]/*' />
-        public void LoadGrammar (Grammar grammar)
+        public void LoadGrammar(Grammar grammar)
         {
-            RecoBase.LoadGrammar (grammar);
+            RecoBase.LoadGrammar(grammar);
         }
 
         /// TODOC <_include file='doc\SpeechRecognizer.uex' path='docs/doc[@for="SpeechRecognizer.LoadGrammarAsync"]/*' />
-        public void LoadGrammarAsync (Grammar grammar)
+        public void LoadGrammarAsync(Grammar grammar)
         {
-            RecoBase.LoadGrammarAsync (grammar);
+            RecoBase.LoadGrammarAsync(grammar);
         }
 
         /// TODOC <_include file='doc\SpeechRecognizer.uex' path='docs/doc[@for="SpeechRecognizer.UnloadGrammar"]/*' />
-        public void UnloadGrammar (Grammar grammar)
+        public void UnloadGrammar(Grammar grammar)
         {
-            RecoBase.UnloadGrammar (grammar);
+            RecoBase.UnloadGrammar(grammar);
         }
 
         /// TODOC <_include file='doc\SpeechRecognizer.uex' path='docs/doc[@for="SpeechRecognizer.UnloadAllGrammars"]/*' />
-        public void UnloadAllGrammars ()
+        public void UnloadAllGrammars()
         {
-            RecoBase.UnloadAllGrammars ();
+            RecoBase.UnloadAllGrammars();
         }
 
         /// TODOC <_include file='doc\SpeechRecognizer.uex' path='docs/doc[@for="SpeechRecognizer.EmulateRecognize1"]/*' />
-        public RecognitionResult EmulateRecognize (string inputText)
+        public RecognitionResult EmulateRecognize(string inputText)
         {
             if (Enabled)
             {
-                return RecoBase.EmulateRecognize (inputText);
+                return RecoBase.EmulateRecognize(inputText);
             }
             else
             {
-                throw new InvalidOperationException (SR.Get (SRID.RecognizerNotEnabled));
+                throw new InvalidOperationException(SR.Get(SRID.RecognizerNotEnabled));
             }
         }
 
 
         /// TODOC <_include file='doc\SpeechRecognizer.uex' path='docs/doc[@for="SpeechRecognizer.EmulateRecognize2"]/*' />
-        public RecognitionResult EmulateRecognize (string inputText, CompareOptions compareOptions)
+        public RecognitionResult EmulateRecognize(string inputText, CompareOptions compareOptions)
         {
             if (Enabled)
             {
-                return RecoBase.EmulateRecognize (inputText, compareOptions);
+                return RecoBase.EmulateRecognize(inputText, compareOptions);
             }
             else
             {
-                throw new InvalidOperationException (SR.Get (SRID.RecognizerNotEnabled));
+                throw new InvalidOperationException(SR.Get(SRID.RecognizerNotEnabled));
             }
         }
 
         /// TODOC <_include file='doc\SpeechRecognizer.uex' path='docs/doc[@for="SpeechRecognizer.EmulateRecognize2"]/*' />
-        public RecognitionResult EmulateRecognize (RecognizedWordUnit [] wordUnits, CompareOptions compareOptions)
+        public RecognitionResult EmulateRecognize(RecognizedWordUnit[] wordUnits, CompareOptions compareOptions)
         {
             if (Enabled)
             {
-                return RecoBase.EmulateRecognize (wordUnits, compareOptions);
+                return RecoBase.EmulateRecognize(wordUnits, compareOptions);
             }
             else
             {
-                throw new InvalidOperationException (SR.Get (SRID.RecognizerNotEnabled));
+                throw new InvalidOperationException(SR.Get(SRID.RecognizerNotEnabled));
             }
         }
 
         /// TODOC <_include file='doc\SpeechRecognizer.uex' path='docs/doc[@for="SpeechRecognizer.EmulateRecognize1"]/*' />
-        public void EmulateRecognizeAsync (string inputText)
+        public void EmulateRecognizeAsync(string inputText)
         {
             if (Enabled)
             {
-                RecoBase.EmulateRecognizeAsync (inputText);
+                RecoBase.EmulateRecognizeAsync(inputText);
             }
             else
             {
-                throw new InvalidOperationException (SR.Get (SRID.RecognizerNotEnabled));
+                throw new InvalidOperationException(SR.Get(SRID.RecognizerNotEnabled));
             }
         }
 
         /// TODOC <_include file='doc\SpeechRecognizer.uex' path='docs/doc[@for="SpeechRecognizer.EmulateRecognize2"]/*' />
-        public void EmulateRecognizeAsync (string inputText, CompareOptions compareOptions)
+        public void EmulateRecognizeAsync(string inputText, CompareOptions compareOptions)
         {
             if (Enabled)
             {
-                RecoBase.EmulateRecognizeAsync (inputText, compareOptions);
+                RecoBase.EmulateRecognizeAsync(inputText, compareOptions);
             }
             else
             {
-                throw new InvalidOperationException (SR.Get (SRID.RecognizerNotEnabled));
+                throw new InvalidOperationException(SR.Get(SRID.RecognizerNotEnabled));
             }
         }
 
         /// TODOC <_include file='doc\SpeechRecognizer.uex' path='docs/doc[@for="SpeechRecognizer.EmulateRecognize2"]/*' />
-        public void EmulateRecognizeAsync (RecognizedWordUnit [] wordUnits, CompareOptions compareOptions)
+        public void EmulateRecognizeAsync(RecognizedWordUnit[] wordUnits, CompareOptions compareOptions)
         {
             if (Enabled)
             {
-                RecoBase.EmulateRecognizeAsync (wordUnits, compareOptions);
+                RecoBase.EmulateRecognizeAsync(wordUnits, compareOptions);
             }
             else
             {
-                throw new InvalidOperationException (SR.Get (SRID.RecognizerNotEnabled));
+                throw new InvalidOperationException(SR.Get(SRID.RecognizerNotEnabled));
             }
         }
 
         // Methods to pause the recognizer to do atomic updates:
         /// TODOC <_include file='doc\SpeechRecognizer.uex' path='docs/doc[@for="SpeechRecognizer.RequestRecognizerUpdate1"]/*' />
-        public void RequestRecognizerUpdate ()
+        public void RequestRecognizerUpdate()
         {
-            RecoBase.RequestRecognizerUpdate ();
+            RecoBase.RequestRecognizerUpdate();
         }
 
         /// TODOC <_include file='doc\SpeechRecognizer.uex' path='docs/doc[@for="SpeechRecognizer.RequestRecognizerUpdate2"]/*' />
-        public void RequestRecognizerUpdate (object userToken)
+        public void RequestRecognizerUpdate(object userToken)
         {
-            RecoBase.RequestRecognizerUpdate (userToken);
+            RecoBase.RequestRecognizerUpdate(userToken);
         }
 
         /// TODOC <_include file='doc\SpeechRecognizer.uex' path='docs/doc[@for="SpeechRecognizer.RequestRecognizerUpdate3"]/*' />
-        public void RequestRecognizerUpdate (object userToken, TimeSpan audioPositionAheadToRaiseUpdate)
+        public void RequestRecognizerUpdate(object userToken, TimeSpan audioPositionAheadToRaiseUpdate)
         {
-            RecoBase.RequestRecognizerUpdate (userToken, audioPositionAheadToRaiseUpdate);
+            RecoBase.RequestRecognizerUpdate(userToken, audioPositionAheadToRaiseUpdate);
         }
 
         #endregion
@@ -338,10 +336,10 @@ namespace System.Speech.Recognition
         /// TODOC <_include file='doc\SpeechRecognizer.uex' path='docs/doc[@for="SpeechRecognizer.SpeechHypothesized"]/*' />
         public event EventHandler<SpeechHypothesizedEventArgs> SpeechHypothesized
         {
-            [MethodImplAttribute (MethodImplOptions.Synchronized)]
+            [MethodImplAttribute(MethodImplOptions.Synchronized)]
             add
             {
-                Helpers.ThrowIfNull (value, "value");
+                Helpers.ThrowIfNull(value, "value");
                 if (_speechHypothesizedDelegate == null)
                 {
                     RecoBase.SpeechHypothesized += SpeechHypothesizedProxy;
@@ -349,10 +347,10 @@ namespace System.Speech.Recognition
                 _speechHypothesizedDelegate += value;
             }
 
-            [MethodImplAttribute (MethodImplOptions.Synchronized)]
+            [MethodImplAttribute(MethodImplOptions.Synchronized)]
             remove
             {
-                Helpers.ThrowIfNull (value, "value");
+                Helpers.ThrowIfNull(value, "value");
                 _speechHypothesizedDelegate -= value;
                 if (_speechHypothesizedDelegate == null)
                 {
@@ -364,10 +362,10 @@ namespace System.Speech.Recognition
         /// TODOC 
         public event EventHandler<AudioSignalProblemOccurredEventArgs> AudioSignalProblemOccurred
         {
-            [MethodImplAttribute (MethodImplOptions.Synchronized)]
+            [MethodImplAttribute(MethodImplOptions.Synchronized)]
             add
             {
-                Helpers.ThrowIfNull (value, "value");
+                Helpers.ThrowIfNull(value, "value");
                 if (_audioSignalProblemOccurredDelegate == null)
                 {
                     RecoBase.AudioSignalProblemOccurred += AudioSignalProblemOccurredProxy;
@@ -375,10 +373,10 @@ namespace System.Speech.Recognition
                 _audioSignalProblemOccurredDelegate += value;
             }
 
-            [MethodImplAttribute (MethodImplOptions.Synchronized)]
+            [MethodImplAttribute(MethodImplOptions.Synchronized)]
             remove
             {
-                Helpers.ThrowIfNull (value, "value");
+                Helpers.ThrowIfNull(value, "value");
                 _audioSignalProblemOccurredDelegate -= value;
                 if (_audioSignalProblemOccurredDelegate == null)
                 {
@@ -390,10 +388,10 @@ namespace System.Speech.Recognition
         /// TODOC 
         public event EventHandler<AudioLevelUpdatedEventArgs> AudioLevelUpdated
         {
-            [MethodImplAttribute (MethodImplOptions.Synchronized)]
+            [MethodImplAttribute(MethodImplOptions.Synchronized)]
             add
             {
-                Helpers.ThrowIfNull (value, "value");
+                Helpers.ThrowIfNull(value, "value");
                 if (_audioLevelUpdatedDelegate == null)
                 {
                     RecoBase.AudioLevelUpdated += AudioLevelUpdatedProxy;
@@ -401,10 +399,10 @@ namespace System.Speech.Recognition
                 _audioLevelUpdatedDelegate += value;
             }
 
-            [MethodImplAttribute (MethodImplOptions.Synchronized)]
+            [MethodImplAttribute(MethodImplOptions.Synchronized)]
             remove
             {
-                Helpers.ThrowIfNull (value, "value");
+                Helpers.ThrowIfNull(value, "value");
                 _audioLevelUpdatedDelegate -= value;
                 if (_audioLevelUpdatedDelegate == null)
                 {
@@ -416,10 +414,10 @@ namespace System.Speech.Recognition
         /// TODOC 
         public event EventHandler<AudioStateChangedEventArgs> AudioStateChanged
         {
-            [MethodImplAttribute (MethodImplOptions.Synchronized)]
+            [MethodImplAttribute(MethodImplOptions.Synchronized)]
             add
             {
-                Helpers.ThrowIfNull (value, "value");
+                Helpers.ThrowIfNull(value, "value");
                 if (_audioStateChangedDelegate == null)
                 {
                     RecoBase.AudioStateChanged += AudioStateChangedProxy;
@@ -427,10 +425,10 @@ namespace System.Speech.Recognition
                 _audioStateChangedDelegate += value;
             }
 
-            [MethodImplAttribute (MethodImplOptions.Synchronized)]
+            [MethodImplAttribute(MethodImplOptions.Synchronized)]
             remove
             {
-                Helpers.ThrowIfNull (value, "value");
+                Helpers.ThrowIfNull(value, "value");
                 _audioStateChangedDelegate -= value;
                 if (_audioStateChangedDelegate == null)
                 {
@@ -451,102 +449,102 @@ namespace System.Speech.Recognition
 
         // Proxy event handlers used to translate the sender from the RecognizerBase to this class:
 
-        private void StateChangedProxy (object sender, StateChangedEventArgs e)
+        private void StateChangedProxy(object sender, StateChangedEventArgs e)
         {
             EventHandler<StateChangedEventArgs> stateChangedHandler = StateChanged;
             if (stateChangedHandler != null)
             {
-                stateChangedHandler (this, e);
+                stateChangedHandler(this, e);
             }
         }
 
-        private void EmulateRecognizeCompletedProxy (object sender, EmulateRecognizeCompletedEventArgs e)
+        private void EmulateRecognizeCompletedProxy(object sender, EmulateRecognizeCompletedEventArgs e)
         {
             EventHandler<EmulateRecognizeCompletedEventArgs> emulateRecognizeCompletedHandler = EmulateRecognizeCompleted;
             if (emulateRecognizeCompletedHandler != null)
             {
-                emulateRecognizeCompletedHandler (this, e);
+                emulateRecognizeCompletedHandler(this, e);
             }
         }
 
-        private void LoadGrammarCompletedProxy (object sender, LoadGrammarCompletedEventArgs e)
+        private void LoadGrammarCompletedProxy(object sender, LoadGrammarCompletedEventArgs e)
         {
             EventHandler<LoadGrammarCompletedEventArgs> loadGrammarCompletedHandler = LoadGrammarCompleted;
             if (loadGrammarCompletedHandler != null)
             {
-                loadGrammarCompletedHandler (this, e);
+                loadGrammarCompletedHandler(this, e);
             }
         }
 
-        private void SpeechDetectedProxy (object sender, SpeechDetectedEventArgs e)
+        private void SpeechDetectedProxy(object sender, SpeechDetectedEventArgs e)
         {
             EventHandler<SpeechDetectedEventArgs> speechDetectedHandler = SpeechDetected;
             if (speechDetectedHandler != null)
             {
-                speechDetectedHandler (this, e);
+                speechDetectedHandler(this, e);
             }
         }
 
-        private void SpeechRecognizedProxy (object sender, SpeechRecognizedEventArgs e)
+        private void SpeechRecognizedProxy(object sender, SpeechRecognizedEventArgs e)
         {
             EventHandler<SpeechRecognizedEventArgs> speechRecognizedHandler = SpeechRecognized;
             if (speechRecognizedHandler != null)
             {
-                speechRecognizedHandler (this, e);
+                speechRecognizedHandler(this, e);
             }
         }
 
-        private void SpeechRecognitionRejectedProxy (object sender, SpeechRecognitionRejectedEventArgs e)
+        private void SpeechRecognitionRejectedProxy(object sender, SpeechRecognitionRejectedEventArgs e)
         {
             EventHandler<SpeechRecognitionRejectedEventArgs> speechRecognitionRejectedHandler = SpeechRecognitionRejected;
             if (speechRecognitionRejectedHandler != null)
             {
-                speechRecognitionRejectedHandler (this, e);
+                speechRecognitionRejectedHandler(this, e);
             }
         }
 
-        private void RecognizerUpdateReachedProxy (object sender, RecognizerUpdateReachedEventArgs e)
+        private void RecognizerUpdateReachedProxy(object sender, RecognizerUpdateReachedEventArgs e)
         {
             EventHandler<RecognizerUpdateReachedEventArgs> recognizerUpdateReachedHandler = RecognizerUpdateReached;
             if (recognizerUpdateReachedHandler != null)
             {
-                recognizerUpdateReachedHandler (this, e);
+                recognizerUpdateReachedHandler(this, e);
             }
         }
 
-        private void SpeechHypothesizedProxy (object sender, SpeechHypothesizedEventArgs e)
+        private void SpeechHypothesizedProxy(object sender, SpeechHypothesizedEventArgs e)
         {
             EventHandler<SpeechHypothesizedEventArgs> speechHypothesizedHandler = _speechHypothesizedDelegate;
             if (speechHypothesizedHandler != null)
             {
-                speechHypothesizedHandler (this, e);
+                speechHypothesizedHandler(this, e);
             }
         }
 
-        private void AudioSignalProblemOccurredProxy (object sender, AudioSignalProblemOccurredEventArgs e)
+        private void AudioSignalProblemOccurredProxy(object sender, AudioSignalProblemOccurredEventArgs e)
         {
             EventHandler<AudioSignalProblemOccurredEventArgs> audioSignalProblemOccurredHandler = _audioSignalProblemOccurredDelegate;
             if (audioSignalProblemOccurredHandler != null)
             {
-                audioSignalProblemOccurredHandler (this, e);
+                audioSignalProblemOccurredHandler(this, e);
             }
         }
 
-        private void AudioLevelUpdatedProxy (object sender, AudioLevelUpdatedEventArgs e)
+        private void AudioLevelUpdatedProxy(object sender, AudioLevelUpdatedEventArgs e)
         {
             EventHandler<AudioLevelUpdatedEventArgs> audioLevelUpdatedHandler = _audioLevelUpdatedDelegate;
             if (audioLevelUpdatedHandler != null)
             {
-                audioLevelUpdatedHandler (this, e);
+                audioLevelUpdatedHandler(this, e);
             }
         }
 
-        private void AudioStateChangedProxy (object sender, AudioStateChangedEventArgs e)
+        private void AudioStateChangedProxy(object sender, AudioStateChangedEventArgs e)
         {
             EventHandler<AudioStateChangedEventArgs> audioStateChangedHandler = _audioStateChangedDelegate;
             if (audioStateChangedHandler != null)
             {
-                audioStateChangedHandler (this, e);
+                audioStateChangedHandler(this, e);
             }
         }
 
@@ -630,8 +628,6 @@ namespace System.Speech.Recognition
         private EventHandler<SpeechHypothesizedEventArgs> _speechHypothesizedDelegate;
 
         #endregion
-
-
     }
 }
 

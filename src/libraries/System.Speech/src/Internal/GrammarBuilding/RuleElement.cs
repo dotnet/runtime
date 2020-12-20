@@ -13,7 +13,6 @@ namespace System.Speech.Internal.GrammarBuilding
     /// </summary>
     internal sealed class RuleElement : BuilderElements
     {
-
         //*******************************************************************
         //
         // Constructors
@@ -26,7 +25,7 @@ namespace System.Speech.Internal.GrammarBuilding
         /// 
         /// </summary>
         /// <param name="name"></param>
-        internal RuleElement (string name)
+        internal RuleElement(string name)
         {
             _name = name;
         }
@@ -36,10 +35,10 @@ namespace System.Speech.Internal.GrammarBuilding
         /// </summary>
         /// <param name="builder"></param>
         /// <param name="name"></param>
-        internal RuleElement (GrammarBuilderBase builder, string name)
-            : this (name)
+        internal RuleElement(GrammarBuilderBase builder, string name)
+            : this(name)
         {
-            Add (builder);
+            Add(builder);
         }
 
         #endregion
@@ -53,14 +52,14 @@ namespace System.Speech.Internal.GrammarBuilding
         #region Public Methods
 
         /// TODOC <_include file='doc\SpeechAudioFormatInfo.uex' path='docs/doc[@for="SpeechAudioFormatInfo.Equals"]/*' />
-        public override bool Equals (object obj)
+        public override bool Equals(object obj)
         {
             RuleElement refObj = obj as RuleElement;
             if (refObj == null)
             {
                 return false;
             }
-            if (!base.Equals (obj))
+            if (!base.Equals(obj))
             {
                 return false;
             }
@@ -68,9 +67,9 @@ namespace System.Speech.Internal.GrammarBuilding
         }
 
         /// TODOC <_include file='doc\SpeechAudioFormatInfo.uex' path='docs/doc[@for="SpeechAudioFormatInfo.GetHashCode"]/*' />
-        public override int GetHashCode ()
+        public override int GetHashCode()
         {
-            return base.GetHashCode ();
+            return base.GetHashCode();
         }
 
         #endregion
@@ -87,10 +86,10 @@ namespace System.Speech.Internal.GrammarBuilding
         /// 
         /// </summary>
         /// <returns></returns>
-        internal override GrammarBuilderBase Clone ()
+        internal override GrammarBuilderBase Clone()
         {
-            RuleElement rule = new RuleElement (_name);
-            rule.CloneItems (this);
+            RuleElement rule = new RuleElement(_name);
+            rule.CloneItems(this);
             return rule;
         }
 
@@ -102,21 +101,21 @@ namespace System.Speech.Internal.GrammarBuilding
         /// <param name="rule"></param>
         /// <param name="ruleIds"></param>
         /// <returns></returns>
-        internal override IElement CreateElement (IElementFactory elementFactory, IElement parent, IRule rule, IdentifierCollection ruleIds)
+        internal override IElement CreateElement(IElementFactory elementFactory, IElement parent, IRule rule, IdentifierCollection ruleIds)
         {
             if (_rule == null)
             {
                 IGrammar grammar = elementFactory.Grammar;
 
                 // Create the rule
-                _ruleName = ruleIds.CreateNewIdentifier (Name);
+                _ruleName = ruleIds.CreateNewIdentifier(Name);
 
-                _rule = grammar.CreateRule (_ruleName, RulePublic.False, RuleDynamic.NotSet, false);
+                _rule = grammar.CreateRule(_ruleName, RulePublic.False, RuleDynamic.NotSet, false);
 
                 // Create the children elements
-                CreateChildrenElements (elementFactory, _rule, ruleIds);
+                CreateChildrenElements(elementFactory, _rule, ruleIds);
 
-                _rule.PostParse (grammar);
+                _rule.PostParse(grammar);
             }
             return _rule;
         }
@@ -125,11 +124,11 @@ namespace System.Speech.Internal.GrammarBuilding
         /// 
         /// </summary>
         /// <returns></returns>
-        internal override int CalcCount (BuilderElements parent)
+        internal override int CalcCount(BuilderElements parent)
         {
             // clear any existing value
             _rule = null;
-            return base.CalcCount (parent);
+            return base.CalcCount(parent);
         }
 
         #endregion
@@ -185,6 +184,5 @@ namespace System.Speech.Internal.GrammarBuilding
         private IRule _rule;
 
         #endregion
-
     }
 }

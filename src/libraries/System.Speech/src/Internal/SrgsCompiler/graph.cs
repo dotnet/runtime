@@ -31,20 +31,20 @@ namespace System.Speech.Internal.SrgsCompiler
 
         #region Internal Methods
 
-        internal void Add (State state)
+        internal void Add(State state)
         {
-            state.Init ();
+            state.Init();
             if (_startState == null)
             {
                 _curState = _startState = state;
             }
             else
             {
-                _curState = _curState.Add (state);
+                _curState = _curState.Add(state);
             }
         }
 
-        internal void Remove (State state)
+        internal void Remove(State state)
         {
             if (state == _startState)
             {
@@ -55,10 +55,10 @@ namespace System.Speech.Internal.SrgsCompiler
                 _curState = state.Prev;
             }
 
-            state.Remove ();
+            state.Remove();
         }
 
-        IEnumerator IEnumerable.GetEnumerator ()
+        IEnumerator IEnumerable.GetEnumerator()
         {
             for (State item = _startState; item != null; item = item.Next)
             {
@@ -66,7 +66,7 @@ namespace System.Speech.Internal.SrgsCompiler
             }
         }
 
-        IEnumerator<State> IEnumerable<State>.GetEnumerator ()
+        IEnumerator<State> IEnumerable<State>.GetEnumerator()
         {
             for (State item = _startState; item != null; item = item.Next)
             {
@@ -79,13 +79,13 @@ namespace System.Speech.Internal.SrgsCompiler
         /// </summary>
         /// <param name="rule"></param>
         /// <returns></returns>
-        internal State CreateNewState (Rule rule)
+        internal State CreateNewState(Rule rule)
         {
             //CfgGrammar.TraceInformation ("BackEnd::CreateNewState");
             uint hNewState = CfgGrammar.NextHandle;
 
-            State newState = new State (rule, hNewState);
-            Add (newState);
+            State newState = new State(rule, hNewState);
+            Add(newState);
 #if DEBUG
             rule._cStates++;
 #endif
@@ -97,23 +97,23 @@ namespace System.Speech.Internal.SrgsCompiler
         /// </summary>
         /// <param name="state"></param>
         /// <returns></returns>
-        internal void DeleteState (State state)
+        internal void DeleteState(State state)
         {
 #if DEBUG
             state.Rule._cStates--;
 #endif
-            Remove (state);
+            Remove(state);
         }
 
         /// <summary>
         /// Optimizes the grammar network by removing the epsilon states and merging
         /// duplicate transitions.  See GrammarOptimization.doc for details.
         /// </summary>
-        internal void Optimize ()
+        internal void Optimize()
         {
             foreach (State state in this)
             {
-                NormalizeTransitionWeights (state);
+                NormalizeTransitionWeights(state);
             }
 
 #if DEBUG
@@ -127,8 +127,7 @@ namespace System.Speech.Internal.SrgsCompiler
             }
             // Remove duplicate transitions.
 #endif
-            MergeDuplicateTransitions ();
-
+            MergeDuplicateTransitions();
 
 #if DEBUG
             // Remove redundant epsilon transitions again now that identical epsilon transitions have been removed.
@@ -184,13 +183,13 @@ namespace System.Speech.Internal.SrgsCompiler
         /// </summary>
         /// <param name="srcState"></param>
         /// <param name="destState"></param>
-        internal void MoveInputTransitionsAndDeleteState (State srcState, State destState)
+        internal void MoveInputTransitionsAndDeleteState(State srcState, State destState)
         {
-            System.Diagnostics.Debug.Assert (srcState != null);
-            System.Diagnostics.Debug.Assert (srcState != destState);
+            System.Diagnostics.Debug.Assert(srcState != null);
+            System.Diagnostics.Debug.Assert(srcState != destState);
 
             // For each input transition into SourceState, change EndState to DestState.
-            List<Arc> arcs = srcState.InArcs.ToList ();
+            List<Arc> arcs = srcState.InArcs.ToList();
             foreach (Arc arc in arcs)
             {
                 // Change EndState to DestState
@@ -201,15 +200,15 @@ namespace System.Speech.Internal.SrgsCompiler
             // Replace references to SourceState with references to DestState before deleting SourceState
             if (srcState.Rule._firstState == srcState) // Update RuleInitialState reference, if necessary
             {
-                System.Diagnostics.Debug.Assert (destState != null);
+                System.Diagnostics.Debug.Assert(destState != null);
                 srcState.Rule._firstState = destState;
             }
 
             // Delete SourceState
-            System.Diagnostics.Debug.Assert (srcState != null);
+            System.Diagnostics.Debug.Assert(srcState != null);
             //System.Diagnostics.Debug.Assert (srcState.InArcs.IsEmpty);
-            System.Diagnostics.Debug.Assert (srcState.OutArcs.IsEmpty);
-            DeleteState (srcState);  // Delete state from handle table
+            System.Diagnostics.Debug.Assert(srcState.OutArcs.IsEmpty);
+            DeleteState(srcState);  // Delete state from handle table
         }
 
         /// <summary>
@@ -233,14 +232,14 @@ namespace System.Speech.Internal.SrgsCompiler
         /// </summary>
         /// <param name="srcState"></param>
         /// <param name="destState"></param>
-        internal void MoveOutputTransitionsAndDeleteState (State srcState, State destState)
+        internal void MoveOutputTransitionsAndDeleteState(State srcState, State destState)
         {
-            System.Diagnostics.Debug.Assert (srcState != null);
-            System.Diagnostics.Debug.Assert ((destState != null) && (destState != srcState));
-            System.Diagnostics.Debug.Assert (srcState.InArcs.IsEmpty);
+            System.Diagnostics.Debug.Assert(srcState != null);
+            System.Diagnostics.Debug.Assert((destState != null) && (destState != srcState));
+            System.Diagnostics.Debug.Assert(srcState.InArcs.IsEmpty);
 
             // For each output transition from SourceState, change StartState to DestState.
-            List<Arc> arcs = srcState.OutArcs.ToList ();
+            List<Arc> arcs = srcState.OutArcs.ToList();
             foreach (Arc arc in arcs)
             {
                 // Change StartState to DestState
@@ -248,10 +247,10 @@ namespace System.Speech.Internal.SrgsCompiler
             }
 
             // Delete SourceState
-            System.Diagnostics.Debug.Assert (srcState != null);
-            System.Diagnostics.Debug.Assert (srcState.InArcs.IsEmpty);
+            System.Diagnostics.Debug.Assert(srcState != null);
+            System.Diagnostics.Debug.Assert(srcState.InArcs.IsEmpty);
             //System.Diagnostics.Debug.Assert (srcState.OutArcs.IsEmpty);
-            DeleteState (srcState);  // Delete state from handle table
+            DeleteState(srcState);  // Delete state from handle table
         }
 
         #endregion
@@ -399,9 +398,9 @@ namespace System.Speech.Internal.SrgsCompiler
         /// Notes:
         /// - For best optimization, we need to move semantic properties referencing the transitions.
         /// </summary>
-        private void MergeDuplicateTransitions ()
+        private void MergeDuplicateTransitions()
         {
-            List<Arc> tempList = new List<Arc> ();
+            List<Arc> tempList = new List<Arc>();
 
             // Build collection of states with potential identical transition.
             foreach (State state in this)
@@ -409,63 +408,63 @@ namespace System.Speech.Internal.SrgsCompiler
                 if (state.OutArcs.ContainsMoreThanOneItem)
                 {
                     // Merge identical transitions in arcs 
-                    MergeIdenticalTransitions (state.OutArcs, tempList);
+                    MergeIdenticalTransitions(state.OutArcs, tempList);
                 }
             }
 
             // Collection of states with potential transitions to merge
-            Stack<State> mergeStates = new Stack<State> ();
+            Stack<State> mergeStates = new Stack<State>();
 
-            RecursiveMergeDuplicatedOutputTransition (mergeStates);
-            RecursiveMergeDuplicatedInputTransition (mergeStates);
+            RecursiveMergeDuplicatedOutputTransition(mergeStates);
+            RecursiveMergeDuplicatedInputTransition(mergeStates);
         }
 
-        private void RecursiveMergeDuplicatedInputTransition (Stack<State> mergeStates)
+        private void RecursiveMergeDuplicatedInputTransition(Stack<State> mergeStates)
         {
             // Build collection of states with potential duplicate input transitions to merge.
             foreach (State state in this)
             {
                 if (state.InArcs.ContainsMoreThanOneItem)
                 {
-                    MergeDuplicateInputTransitions (state.InArcs, mergeStates);
+                    MergeDuplicateInputTransitions(state.InArcs, mergeStates);
                 }
             }
 
             // For each state in the collection, merge any duplicate input transitions.
-            List<Arc> tempList = new List<Arc> ();
+            List<Arc> tempList = new List<Arc>();
             while (mergeStates.Count > 0)
             {
-                State state = mergeStates.Pop ();
+                State state = mergeStates.Pop();
                 if (state.InArcs.ContainsMoreThanOneItem)
                 {
                     // Merge identical transitions in arcs that may have been created
-                    MergeIdenticalTransitions (state.InArcs, tempList);
-                    MergeDuplicateInputTransitions (state.InArcs, mergeStates);
+                    MergeIdenticalTransitions(state.InArcs, tempList);
+                    MergeDuplicateInputTransitions(state.InArcs, mergeStates);
                 }
             }
         }
 
-        private void RecursiveMergeDuplicatedOutputTransition (Stack<State> mergeStates)
+        private void RecursiveMergeDuplicatedOutputTransition(Stack<State> mergeStates)
         {
             // Build collection of states with potential duplicate output transitions to merge.
             foreach (State state in this)
             {
                 if (state.OutArcs.ContainsMoreThanOneItem)
                 {
-                    MergeDuplicateOutputTransitions (state.OutArcs, mergeStates);
+                    MergeDuplicateOutputTransitions(state.OutArcs, mergeStates);
                 }
             }
 
             // For each state in the collection, merge any duplicate output transitions.
-            List<Arc> tempList = new List<Arc> ();
+            List<Arc> tempList = new List<Arc>();
             while (mergeStates.Count > 0)
             {
-                State state = mergeStates.Pop ();
+                State state = mergeStates.Pop();
                 if (state.OutArcs.ContainsMoreThanOneItem)
                 {
                     // Merge identical transitions in arcs that may have been created
-                    MergeIdenticalTransitions (state.OutArcs, tempList);
-                    MergeDuplicateOutputTransitions (state.OutArcs, mergeStates);
+                    MergeIdenticalTransitions(state.OutArcs, tempList);
+                    MergeDuplicateOutputTransitions(state.OutArcs, mergeStates);
                 }
             }
         }
@@ -491,7 +490,7 @@ namespace System.Speech.Internal.SrgsCompiler
         /// </summary>
         /// <param name="arcs">Collection of input transitions to collapse</param>
         /// <param name="mergeStates">Collection of states with potential transitions to merge</param>
-        private void MergeDuplicateInputTransitions (ArcList arcs, Stack<State> mergeStates)
+        private void MergeDuplicateInputTransitions(ArcList arcs, Stack<State> mergeStates)
         {
             List<Arc> arcsToMerge = null;
 
@@ -505,22 +504,22 @@ namespace System.Speech.Internal.SrgsCompiler
                 // Skip transitions whose end state has other incoming transitions or if the end state has more than one incoming transition
                 bool skipTransition = arc.Start == null || !arc.Start.OutArcs.CountIsOne;
                 // Find next set of duplicate output transitions (potentially with properties).
-                if (refArc != null && Arc.CompareContent (arc, refArc) == 0)
+                if (refArc != null && Arc.CompareContent(arc, refArc) == 0)
                 {
                     if (!skipTransition)
                     {
                         // Lazy init as entering this loop is a rare event
                         if (arcsToMerge == null)
                         {
-                            arcsToMerge = new List<Arc> ();
+                            arcsToMerge = new List<Arc>();
                         }
                         // Add the first element
                         if (!refSet)
                         {
-                            arcsToMerge.Add (refArc);
+                            arcsToMerge.Add(refArc);
                             refSet = true;
                         }
-                        arcsToMerge.Add (arc);
+                        arcsToMerge.Add(arc);
                     }
                 }
                 else
@@ -535,7 +534,7 @@ namespace System.Speech.Internal.SrgsCompiler
             if (arcsToMerge != null)
             {
                 // Sort the arc per content and output transition
-                arcsToMerge.Sort (Arc.CompareForDuplicateInputTransitions);
+                arcsToMerge.Sort(Arc.CompareForDuplicateInputTransitions);
 
                 refArc = null;
                 Arc commonArc = null;                   // Common property-less transition to merge into
@@ -544,7 +543,7 @@ namespace System.Speech.Internal.SrgsCompiler
 
                 foreach (Arc arc in arcsToMerge)
                 {
-                    if (refArc == null || Arc.CompareContent (arc, refArc) != 0)
+                    if (refArc == null || Arc.CompareContent(arc, refArc) != 0)
                     {
                         // Purge the last operations and reset all the local
                         refArc = arc;
@@ -552,7 +551,7 @@ namespace System.Speech.Internal.SrgsCompiler
                         // If CommonStartState changed, renormalize weights and add it to MergeStates for reoptimization.
                         if (fCommonStartStateChanged)
                         {
-                            AddToMergeStateList (mergeStates, commonStartState);
+                            AddToMergeStateList(mergeStates, commonStartState);
                         }
 
                         // Reset the arcs
@@ -568,7 +567,7 @@ namespace System.Speech.Internal.SrgsCompiler
                     // Attempt to move properties referencing duplicate arc to the right.
                     // Optimization can only be applied when the duplicate arc is not referenced by any properties
                     // and the duplicate end state is not the RuleOutitalState.
-                    if (MoveSemanticTagLeft (duplicatedArc))
+                    if (MoveSemanticTagLeft(duplicatedArc))
                     {
                         // duplicatedArc != commonArc
                         if (commonArc != null)
@@ -589,15 +588,14 @@ namespace System.Speech.Internal.SrgsCompiler
                             foreach (Arc arcOut in duplicatedStartState.OutArcs)
                             {
                                 arcOut.Weight *= duplicatedArc.Weight;
-
                             }
 
                             duplicatedArc.Weight += commonArc.Weight;// Merge duplicate arc weight with common arc
-                            Arc.CopyTags (commonArc, duplicatedArc, Direction.Left);
-                            DeleteTransition (commonArc);    // Delete successive duplicate transitions
+                            Arc.CopyTags(commonArc, duplicatedArc, Direction.Left);
+                            DeleteTransition(commonArc);    // Delete successive duplicate transitions
 
                             // Move outputs of duplicate state to common state; Delete duplicate state
-                            MoveInputTransitionsAndDeleteState (commonStartState, duplicatedStartState);
+                            MoveInputTransitionsAndDeleteState(commonStartState, duplicatedStartState);
                         }
 
                         // Label first property-less transition as CommonArc
@@ -608,7 +606,7 @@ namespace System.Speech.Internal.SrgsCompiler
                 // If CommonStartState changed, renormalize weights and add it to MergeStates for reoptimization.
                 if (fCommonStartStateChanged)
                 {
-                    AddToMergeStateList (mergeStates, commonStartState);
+                    AddToMergeStateList(mergeStates, commonStartState);
                 }
             }
         }
@@ -638,7 +636,7 @@ namespace System.Speech.Internal.SrgsCompiler
         /// </summary>
         /// <param name="arcs">Collection of output transitions to collapse</param>
         /// <param name="mergeStates">Collection of states with potential transitions to merge</param>
-        private void MergeDuplicateOutputTransitions (ArcList arcs, Stack<State> mergeStates)
+        private void MergeDuplicateOutputTransitions(ArcList arcs, Stack<State> mergeStates)
         {
             List<Arc> arcsToMerge = null;
 
@@ -652,22 +650,22 @@ namespace System.Speech.Internal.SrgsCompiler
                 // Skip transitions whose end state has other incoming transitions or if the end state has more than one incoming transition
                 bool skipTransition = arc.End == null || !arc.End.InArcs.CountIsOne;
                 // Find next set of duplicate output transitions (potentially with properties).
-                if (refArc != null && Arc.CompareContent (arc, refArc) == 0)
+                if (refArc != null && Arc.CompareContent(arc, refArc) == 0)
                 {
                     if (!skipTransition)
                     {
                         // Lazy init as entering this loop is a rare event
                         if (arcsToMerge == null)
                         {
-                            arcsToMerge = new List<Arc> ();
+                            arcsToMerge = new List<Arc>();
                         }
                         // Add the first element
                         if (!refSet)
                         {
-                            arcsToMerge.Add (refArc);
+                            arcsToMerge.Add(refArc);
                             refSet = true;
                         }
-                        arcsToMerge.Add (arc);
+                        arcsToMerge.Add(arc);
                     }
                 }
                 else
@@ -682,7 +680,7 @@ namespace System.Speech.Internal.SrgsCompiler
             if (arcsToMerge != null)
             {
                 // Sort the arc per content and output transition
-                arcsToMerge.Sort (Arc.CompareForDuplicateOutputTransitions);
+                arcsToMerge.Sort(Arc.CompareForDuplicateOutputTransitions);
 
                 refArc = null;
                 Arc commonArc = null;                   // Common property-less transition to merge into
@@ -691,7 +689,7 @@ namespace System.Speech.Internal.SrgsCompiler
 
                 foreach (Arc arc in arcsToMerge)
                 {
-                    if (refArc == null || Arc.CompareContent (arc, refArc) != 0)
+                    if (refArc == null || Arc.CompareContent(arc, refArc) != 0)
                     {
                         // Purge the last operations and reset all the local
                         refArc = arc;
@@ -699,7 +697,7 @@ namespace System.Speech.Internal.SrgsCompiler
                         // If CommonEndState changed, renormalize weights and add it to MergeStates for reoptimization.
                         if (fCommonEndStateChanged)
                         {
-                            AddToMergeStateList (mergeStates, commonEndState);
+                            AddToMergeStateList(mergeStates, commonEndState);
                         }
 
                         // Reset the arcs
@@ -715,7 +713,7 @@ namespace System.Speech.Internal.SrgsCompiler
                     // Attempt to move properties referencing duplicate arc to the right.
                     // Optimization can only be applied when the duplicate arc is not referenced by any properties
                     // and the duplicate end state is not the RuleInitalState.
-                    if ((duplicatedEndState != duplicatedEndState.Rule._firstState) && MoveSemanticTagRight (duplicatedArc))
+                    if ((duplicatedEndState != duplicatedEndState.Rule._firstState) && MoveSemanticTagRight(duplicatedArc))
                     {
                         // duplicatedArc != commonArc
                         if (commonArc != null)
@@ -739,11 +737,11 @@ namespace System.Speech.Internal.SrgsCompiler
                             }
 
                             duplicatedArc.Weight += commonArc.Weight;// Merge duplicate arc weight with common arc
-                            Arc.CopyTags (commonArc, duplicatedArc, Direction.Right);
-                            DeleteTransition (commonArc);    // Delete successive duplicate transitions
+                            Arc.CopyTags(commonArc, duplicatedArc, Direction.Right);
+                            DeleteTransition(commonArc);    // Delete successive duplicate transitions
 
                             // Move outputs of duplicate state to common state; Delete duplicate state
-                            MoveOutputTransitionsAndDeleteState (commonEndState, duplicatedEndState);
+                            MoveOutputTransitionsAndDeleteState(commonEndState, duplicatedEndState);
                         }
 
                         // Label first property-less transition as CommonArc
@@ -754,17 +752,17 @@ namespace System.Speech.Internal.SrgsCompiler
                 // If CommonEndState changed, renormalize weights and add it to MergeStates for reoptimization.
                 if (fCommonEndStateChanged)
                 {
-                    AddToMergeStateList (mergeStates, commonEndState);
+                    AddToMergeStateList(mergeStates, commonEndState);
                 }
             }
         }
 
-        private static void AddToMergeStateList (Stack<State> mergeStates, State commonEndState)
+        private static void AddToMergeStateList(Stack<State> mergeStates, State commonEndState)
         {
-            NormalizeTransitionWeights (commonEndState);
-            if (!mergeStates.Contains (commonEndState))
+            NormalizeTransitionWeights(commonEndState);
+            if (!mergeStates.Contains(commonEndState))
             {
-                mergeStates.Push (commonEndState);
+                mergeStates.Push(commonEndState);
             }
         }
 
@@ -778,7 +776,7 @@ namespace System.Speech.Internal.SrgsCompiler
         /// </summary>
         /// <param name="arc"></param>
         /// <returns></returns>
-        internal static bool MoveSemanticTagLeft (Arc arc)
+        internal static bool MoveSemanticTagLeft(Arc arc)
         {
             // ToDo: Temporarily force semantic tag references to always move with tag.  See 37583.
             //       This changes the range of words spanned by the tag, which is a bug for SAPI grammars.
@@ -789,10 +787,10 @@ namespace System.Speech.Internal.SrgsCompiler
             // Cannot move ownership across RuleRef (to maintain semantics of $$ in SemanticTag JScript).
             // Cannot move semantic tag to special transition.  (SREngine may return multiple result arcs for the transition.)
             Arc previousArc = startState.InArcs.First;
-            if ((startState.InArcs.CountIsOne) && (startState.OutArcs.CountIsOne) && CanTagsBeMoved (previousArc, arc))
+            if ((startState.InArcs.CountIsOne) && (startState.OutArcs.CountIsOne) && CanTagsBeMoved(previousArc, arc))
             {
                 // Move semantic tag ownership to the previous arc.
-                Arc.CopyTags (arc, previousArc, Direction.Left);
+                Arc.CopyTags(arc, previousArc, Direction.Left);
 
                 // Semantic tag and optionally references have been moved successfully.
                 return true;
@@ -814,9 +812,9 @@ namespace System.Speech.Internal.SrgsCompiler
         /// </summary>
         /// <param name="arc"></param>
         /// <returns></returns>
-        internal static bool MoveSemanticTagRight (Arc arc)
+        internal static bool MoveSemanticTagRight(Arc arc)
         {
-            System.Diagnostics.Debug.Assert (arc.End != null);
+            System.Diagnostics.Debug.Assert(arc.End != null);
 
             State endState = arc.End;
 
@@ -825,10 +823,10 @@ namespace System.Speech.Internal.SrgsCompiler
             // Cannot move ownership across RuleRef (to maintain semantics of $$ in SemanticTag JScript).
             // Cannot move semantic tag to special transition.  (SREngine may return multiple result arcs for the transition.)
             Arc pNextArc = endState.OutArcs.First;
-            if ((endState.InArcs.CountIsOne) && (endState.OutArcs.CountIsOne) && CanTagsBeMoved (arc, pNextArc))
+            if ((endState.InArcs.CountIsOne) && (endState.OutArcs.CountIsOne) && CanTagsBeMoved(arc, pNextArc))
             {
                 // Move semantic tag ownership to the next arc.
-                Arc.CopyTags (arc, pNextArc, Direction.Right);
+                Arc.CopyTags(arc, pNextArc, Direction.Right);
 
                 // Semantic tag and optionally references have been moved successfully.
                 return true;
@@ -845,7 +843,7 @@ namespace System.Speech.Internal.SrgsCompiler
         /// <param name="start"></param>
         /// <param name="end"></param>
         /// <returns></returns>
-        internal static bool CanTagsBeMoved (Arc start, Arc end)
+        internal static bool CanTagsBeMoved(Arc start, Arc end)
         {
             return (start.RuleRef == null) && (end.RuleRef == null) && (end.SpecialTransitionIndex == 0);
         }
@@ -860,13 +858,13 @@ namespace System.Speech.Internal.SrgsCompiler
         ///		Arc.Optional == true
         /// </summary>
         /// <param name="arc"></param>
-        private static void DeleteTransition (Arc arc)
+        private static void DeleteTransition(Arc arc)
         {
             // Arc cannot own SemanticTag
-            System.Diagnostics.Debug.Assert (arc.SemanticTagCount == 0);
+            System.Diagnostics.Debug.Assert(arc.SemanticTagCount == 0);
 
             // Arc cannot be referenced by SemanticTags
-            System.Diagnostics.Debug.Assert (arc.IsPropertylessTransition);
+            System.Diagnostics.Debug.Assert(arc.IsPropertylessTransition);
 
             // Detach arc from start and end state
             arc.Start = arc.End = null;
@@ -879,10 +877,10 @@ namespace System.Speech.Internal.SrgsCompiler
         /// </summary>
         /// <param name="arcs"></param>
         /// <param name="identicalWords"></param>
-        private static void MergeIdenticalTransitions (ArcList arcs, List<Arc> identicalWords)
+        private static void MergeIdenticalTransitions(ArcList arcs, List<Arc> identicalWords)
         {
             // Need at least two transitions to merge.
-            System.Diagnostics.Debug.Assert (arcs.ContainsMoreThanOneItem);
+            System.Diagnostics.Debug.Assert(arcs.ContainsMoreThanOneItem);
 
             // Need at least two transitions to merge.
             List<List<Arc>> segmentsToDelete = null;
@@ -891,41 +889,41 @@ namespace System.Speech.Internal.SrgsCompiler
             // Accumulate a set of transition to delete
             foreach (Arc arc in arcs)
             {
-                if (Arc.CompareContent (refArc, arc) != 0)
+                if (Arc.CompareContent(refArc, arc) != 0)
                 {
                     // Identical transition
                     if (identicalWords.Count >= 2)
                     {
-                        identicalWords.Sort (Arc.CompareIdenticalTransitions);
+                        identicalWords.Sort(Arc.CompareIdenticalTransitions);
                         if (segmentsToDelete == null)
                         {
-                            segmentsToDelete = new List<List<Arc>> ();
+                            segmentsToDelete = new List<List<Arc>>();
                         }
 
                         // Add the list of same words into a list for further processing.
                         // The expectation of having an identical transition is very low so the code
                         // may be a bit slow.
-                        segmentsToDelete.Add (new List<Arc> (identicalWords));
+                        segmentsToDelete.Add(new List<Arc>(identicalWords));
                     }
-                    identicalWords.Clear ();
+                    identicalWords.Clear();
                 }
                 refArc = arc;
-                identicalWords.Add (arc);
+                identicalWords.Add(arc);
             }
 
             // Did the last word was replicated several times?
             if (identicalWords.Count >= 2)
             {
-                MergeIdenticalTransitions (identicalWords);
+                MergeIdenticalTransitions(identicalWords);
             }
-            identicalWords.Clear ();
+            identicalWords.Clear();
 
             // Process the accumulated words
             if (segmentsToDelete != null)
             {
                 foreach (List<Arc> segmentToDelete in segmentsToDelete)
                 {
-                    MergeIdenticalTransitions (segmentToDelete);
+                    MergeIdenticalTransitions(segmentToDelete);
                 }
             }
         }
@@ -948,23 +946,23 @@ namespace System.Speech.Internal.SrgsCompiler
         /// - MoveSemanticTagReferences(DuplicateArc, CommonArc)
         /// </summary>
         /// <param name="identicalWords"></param>
-        private static void MergeIdenticalTransitions (List<Arc> identicalWords)
+        private static void MergeIdenticalTransitions(List<Arc> identicalWords)
         {
             Collection<Arc> arcsToDelete = null;
             Arc refArc = null;
             foreach (Arc arc in identicalWords)
             {
-                if (refArc != null && Arc.CompareIdenticalTransitions (refArc, arc) == 0)
+                if (refArc != null && Arc.CompareIdenticalTransitions(refArc, arc) == 0)
                 {
                     // Identical transition
                     arc.Weight += refArc.Weight;
-                    refArc.ClearTags ();
+                    refArc.ClearTags();
                     if (arcsToDelete == null)
                     {
                         // delay the creation of the collection as this operation in unfrequent.
-                        arcsToDelete = new Collection<Arc> ();
+                        arcsToDelete = new Collection<Arc>();
                     }
-                    arcsToDelete.Add (refArc);
+                    arcsToDelete.Add(refArc);
                 }
                 refArc = arc;
             }
@@ -973,7 +971,7 @@ namespace System.Speech.Internal.SrgsCompiler
                 foreach (Arc arc in arcsToDelete)
                 {
                     // arc will become an orphan
-                    DeleteTransition (arc);
+                    DeleteTransition(arc);
                 }
             }
         }
@@ -983,7 +981,7 @@ namespace System.Speech.Internal.SrgsCompiler
         /// See GrammarOptimization.doc for details.
         /// </summary>
         /// <param name="state"></param>
-        private static void NormalizeTransitionWeights (State state)
+        private static void NormalizeTransitionWeights(State state)
         {
             float flSumWeights = 0.0f;
 
@@ -994,7 +992,7 @@ namespace System.Speech.Internal.SrgsCompiler
             }
 
             // If Sum != 0 or 1, normalize transition weights by 1/Sum.
-            if (!flSumWeights.Equals (0.0f) && !flSumWeights.Equals (1.0f))
+            if (!flSumWeights.Equals(0.0f) && !flSumWeights.Equals(1.0f))
             {
                 float flNormalizationFactor = 1.0f / flSumWeights;
 
@@ -1056,8 +1054,6 @@ namespace System.Speech.Internal.SrgsCompiler
         private State _startState;
         private State _curState;
 
-
         #endregion
-
     }
 }

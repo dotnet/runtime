@@ -12,11 +12,9 @@ namespace System.Speech.Recognition
     /// 
     /// </summary>
 
-    [DebuggerDisplay ("{_tag.DebugSummary}")]
+    [DebuggerDisplay("{_tag.DebugSummary}")]
     public class SemanticResultValue
     {
-
-
         //*******************************************************************
         //
         // Constructors
@@ -29,11 +27,11 @@ namespace System.Speech.Recognition
         /// TODOC
         /// </summary>
         /// <param name="value"></param>
-        public SemanticResultValue (object value)
+        public SemanticResultValue(object value)
         {
-            Helpers.ThrowIfNull (value, "value");
+            Helpers.ThrowIfNull(value, "value");
 
-            _tag = new TagElement (value);
+            _tag = new TagElement(value);
         }
 
         /// <summary>
@@ -41,12 +39,12 @@ namespace System.Speech.Recognition
         /// </summary>
         /// <param name="phrase"></param>
         /// <param name="value"></param>
-        public SemanticResultValue (string phrase, object value)
+        public SemanticResultValue(string phrase, object value)
         {
-            Helpers.ThrowIfEmptyOrNull (phrase, "phrase");
-            Helpers.ThrowIfNull (value, "value");
+            Helpers.ThrowIfEmptyOrNull(phrase, "phrase");
+            Helpers.ThrowIfNull(value, "value");
 
-            _tag = new TagElement (new GrammarBuilderPhrase ((string) phrase.Clone ()), value);
+            _tag = new TagElement(new GrammarBuilderPhrase((string)phrase.Clone()), value);
         }
 
         /// <summary>
@@ -54,12 +52,12 @@ namespace System.Speech.Recognition
         /// </summary>
         /// <param name="builder"></param>
         /// <param name="value"></param>
-        public SemanticResultValue (GrammarBuilder builder, object value)
+        public SemanticResultValue(GrammarBuilder builder, object value)
         {
-            Helpers.ThrowIfNull (builder, "builder");
-            Helpers.ThrowIfNull (value, "value");
+            Helpers.ThrowIfNull(builder, "builder");
+            Helpers.ThrowIfNull(value, "value");
 
-            _tag = new TagElement (builder.Clone (), value);
+            _tag = new TagElement(builder.Clone(), value);
         }
 
         #endregion
@@ -77,9 +75,9 @@ namespace System.Speech.Recognition
         /// TODOC
         /// </summary>
         /// <returns></returns>
-        public GrammarBuilder ToGrammarBuilder ()
+        public GrammarBuilder ToGrammarBuilder()
         {
-            return new GrammarBuilder (this);
+            return new GrammarBuilder(this);
         }
 
         #endregion
@@ -117,6 +115,5 @@ namespace System.Speech.Recognition
         private TagElement _tag;
 
         #endregion
-
     }
 }

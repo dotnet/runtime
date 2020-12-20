@@ -11,7 +11,6 @@ namespace System.Speech.Internal.GrammarBuilding
     /// </summary>
     internal abstract class GrammarBuilderBase
     {
-
         //*******************************************************************
         //
         // Internal Methods
@@ -24,7 +23,7 @@ namespace System.Speech.Internal.GrammarBuilding
         /// 
         /// </summary>
         /// <returns></returns>
-        internal abstract GrammarBuilderBase Clone ();
+        internal abstract GrammarBuilderBase Clone();
 
         /// <summary>
         /// 
@@ -40,7 +39,7 @@ namespace System.Speech.Internal.GrammarBuilding
         /// 
         /// </summary>
         /// <returns></returns>
-        internal virtual int CalcCount (BuilderElements parent)
+        internal virtual int CalcCount(BuilderElements parent)
         {
             Marked = false;
             Parent = parent;
@@ -128,6 +127,5 @@ namespace System.Speech.Internal.GrammarBuilding
         private BuilderElements _parent;
 
         #endregion
-
     }
 }

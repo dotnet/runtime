@@ -14,7 +14,6 @@ namespace System.Speech.Internal.GrammarBuilding
     /// </summary>
     internal sealed class GrammarBuilderRuleRef : GrammarBuilderBase
     {
-
         //*******************************************************************
         //
         // Constructors
@@ -28,7 +27,7 @@ namespace System.Speech.Internal.GrammarBuilding
         /// </summary>
         /// <param name="uri"></param>
         /// <param name="rule"></param>
-        internal GrammarBuilderRuleRef (Uri uri, string rule)
+        internal GrammarBuilderRuleRef(Uri uri, string rule)
         {
             _uri = uri.OriginalString + ((rule != null) ? "#" + rule : "");
         }
@@ -37,7 +36,7 @@ namespace System.Speech.Internal.GrammarBuilding
         /// 
         /// </summary>
         /// <param name="sgrsUri"></param>
-        private GrammarBuilderRuleRef (string sgrsUri)
+        private GrammarBuilderRuleRef(string sgrsUri)
         {
             _uri = sgrsUri;
         }
@@ -53,7 +52,7 @@ namespace System.Speech.Internal.GrammarBuilding
         #region Public Methods
 
         /// TODOC <_include file='doc\SpeechAudioFormatInfo.uex' path='docs/doc[@for="SpeechAudioFormatInfo.Equals"]/*' />
-        public override bool Equals (object obj)
+        public override bool Equals(object obj)
         {
             GrammarBuilderRuleRef refObj = obj as GrammarBuilderRuleRef;
             if (refObj == null)
@@ -64,9 +63,9 @@ namespace System.Speech.Internal.GrammarBuilding
         }
 
         /// TODOC <_include file='doc\SpeechAudioFormatInfo.uex' path='docs/doc[@for="SpeechAudioFormatInfo.GetHashCode"]/*' />
-        public override int GetHashCode ()
+        public override int GetHashCode()
         {
-            return _uri.GetHashCode ();
+            return _uri.GetHashCode();
         }
 
         #endregion
@@ -83,9 +82,9 @@ namespace System.Speech.Internal.GrammarBuilding
         /// 
         /// </summary>
         /// <returns></returns>
-        internal override GrammarBuilderBase Clone ()
+        internal override GrammarBuilderBase Clone()
         {
-            return new GrammarBuilderRuleRef (_uri);
+            return new GrammarBuilderRuleRef(_uri);
         }
 
         /// <summary>
@@ -96,10 +95,10 @@ namespace System.Speech.Internal.GrammarBuilding
         /// <param name="rule"></param>
         /// <param name="ruleIds"></param>
         /// <returns></returns>
-        internal override IElement CreateElement (IElementFactory elementFactory, IElement parent, IRule rule, IdentifierCollection ruleIds)
+        internal override IElement CreateElement(IElementFactory elementFactory, IElement parent, IRule rule, IdentifierCollection ruleIds)
         {
-            Uri ruleUri = new Uri (_uri, UriKind.RelativeOrAbsolute);
-            return elementFactory.CreateRuleRef (parent, ruleUri, null, null);
+            Uri ruleUri = new Uri(_uri, UriKind.RelativeOrAbsolute);
+            return elementFactory.CreateRuleRef(parent, ruleUri, null, null);
         }
 
         #endregion
@@ -137,6 +136,5 @@ namespace System.Speech.Internal.GrammarBuilding
         private readonly string _uri;
 
         #endregion
-
     }
 }

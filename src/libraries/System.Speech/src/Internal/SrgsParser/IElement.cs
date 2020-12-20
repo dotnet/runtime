@@ -6,8 +6,8 @@ namespace System.Speech.Internal.SrgsParser
     /// <summary>
     /// Interface definition for the IElement
     /// </summary>
-    interface IElement
+    internal interface IElement
     {
-        void PostParse (IElement parent);
+        void PostParse(IElement parent);
     }
 }

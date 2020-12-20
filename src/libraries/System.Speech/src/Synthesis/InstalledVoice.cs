@@ -25,7 +25,7 @@ namespace System.Speech.Synthesis
     /// <summary>
     /// TODOC
     /// </summary>
-    [DebuggerDisplay ("{VoiceInfo.Name} [{Enabled ? \"Enabled\" : \"Disabled\"}]")]
+    [DebuggerDisplay("{VoiceInfo.Name} [{Enabled ? \"Enabled\" : \"Disabled\"}]")]
     public class InstalledVoice
     {
         //*******************************************************************
@@ -36,7 +36,7 @@ namespace System.Speech.Synthesis
 
         #region Constructors
 
-        internal InstalledVoice (VoiceSynthesis voiceSynthesizer, VoiceInfo voice)
+        internal InstalledVoice(VoiceSynthesis voiceSynthesizer, VoiceInfo voice)
         {
             _voiceSynthesizer = voiceSynthesizer;
             _voice = voice;
@@ -75,7 +75,7 @@ namespace System.Speech.Synthesis
             }
             set
             {
-                SetEnabledFlag (value, true);
+                SetEnabledFlag(value, true);
             }
         }
 
@@ -90,7 +90,7 @@ namespace System.Speech.Synthesis
         #region public Methods
 
         /// TODOC 
-        public override bool Equals (object obj)
+        public override bool Equals(object obj)
         {
             InstalledVoice ti2 = obj as InstalledVoice;
             if (ti2 == null)
@@ -99,13 +99,13 @@ namespace System.Speech.Synthesis
             }
 
 
-            return VoiceInfo.Name == ti2.VoiceInfo.Name && VoiceInfo.Age == ti2.VoiceInfo.Age && VoiceInfo.Gender == ti2.VoiceInfo.Gender && VoiceInfo.Culture.Equals (ti2.VoiceInfo.Culture);
+            return VoiceInfo.Name == ti2.VoiceInfo.Name && VoiceInfo.Age == ti2.VoiceInfo.Age && VoiceInfo.Gender == ti2.VoiceInfo.Gender && VoiceInfo.Culture.Equals(ti2.VoiceInfo.Culture);
         }
 
         /// TODOC
-        public override int GetHashCode ()
+        public override int GetHashCode()
         {
-            return VoiceInfo.Name.GetHashCode ();
+            return VoiceInfo.Name.GetHashCode();
         }
 
         #endregion Events
@@ -118,11 +118,11 @@ namespace System.Speech.Synthesis
 
         #region Internal Methods
 
-        internal static InstalledVoice Find (List<InstalledVoice> list, VoiceInfo voiceId)
+        internal static InstalledVoice Find(List<InstalledVoice> list, VoiceInfo voiceId)
         {
             foreach (InstalledVoice ti in list)
             {
-                if (ti.Enabled && ti.VoiceInfo.Equals (voiceId))
+                if (ti.Enabled && ti.VoiceInfo.Equals(voiceId))
                 {
                     return ti;
                 }
@@ -130,14 +130,14 @@ namespace System.Speech.Synthesis
             return null;
         }
 
-        internal static InstalledVoice FirstEnabled (List<InstalledVoice> list, CultureInfo culture)
+        internal static InstalledVoice FirstEnabled(List<InstalledVoice> list, CultureInfo culture)
         {
             InstalledVoice voiceFirst = null;
             foreach (InstalledVoice ti in list)
             {
                 if (ti.Enabled)
                 {
-                    if (Helpers.CompareInvariantCulture (ti.VoiceInfo.Culture, culture))
+                    if (Helpers.CompareInvariantCulture(ti.VoiceInfo.Culture, culture))
                     {
                         return ti;
                     }
@@ -150,7 +150,7 @@ namespace System.Speech.Synthesis
             return voiceFirst;
         }
 
-        internal void SetEnabledFlag (bool value, bool switchContext)
+        internal void SetEnabledFlag(bool value, bool switchContext)
         {
             try
             {
@@ -160,7 +160,7 @@ namespace System.Speech.Synthesis
                     if (_enabled == false)
                     {
                         // reset the default voice if necessary
-                        if (_voice.Equals (_voiceSynthesizer.CurrentVoice (switchContext).VoiceInfo))
+                        if (_voice.Equals(_voiceSynthesizer.CurrentVoice(switchContext).VoiceInfo))
                         {
                             _voiceSynthesizer.Voice = null;
                         }

@@ -25,7 +25,7 @@ namespace System.Speech.Internal.SapiInterop
 
         #region Constructors
 
-        internal SpStreamWrapper (Stream stream)
+        internal SpStreamWrapper(Stream stream)
         {
             _stream = stream;
             _endOfStreamPosition = stream.Length;
@@ -34,10 +34,10 @@ namespace System.Speech.Internal.SapiInterop
         /// <summary>
         /// 
         /// </summary>
-        public void Dispose ()
+        public void Dispose()
         {
-            _stream.Dispose ();
-            GC.SuppressFinalize (this);
+            _stream.Dispose();
+            GC.SuppressFinalize(this);
         }
 
         #endregion
@@ -52,17 +52,17 @@ namespace System.Speech.Internal.SapiInterop
 
         #region ISpStreamFormat interface implementation
 
-        public void Read (byte [] pv, int cb, IntPtr pcbRead)
+        public void Read(byte[] pv, int cb, IntPtr pcbRead)
         {
             if (_endOfStreamPosition >= 0 && _stream.Position + cb > _endOfStreamPosition)
             {
-                cb = (int) (_endOfStreamPosition - _stream.Position);
+                cb = (int)(_endOfStreamPosition - _stream.Position);
             }
 
             int read = 0;
             try
             {
-                read = _stream.Read (pv, 0, cb);
+                read = _stream.Read(pv, 0, cb);
             }
             catch (EndOfStreamException)
             {
@@ -71,57 +71,57 @@ namespace System.Speech.Internal.SapiInterop
 
             if (pcbRead != IntPtr.Zero)
             {
-                Marshal.WriteIntPtr (pcbRead, new IntPtr (read));
+                Marshal.WriteIntPtr(pcbRead, new IntPtr(read));
             }
         }
 
-        public void Write (byte [] pv, int cb, IntPtr pcbWritten)
+        public void Write(byte[] pv, int cb, IntPtr pcbWritten)
         {
-            throw new NotSupportedException ();
+            throw new NotSupportedException();
         }
 
-        public void Seek (long offset, int seekOrigin, IntPtr plibNewPosition)
+        public void Seek(long offset, int seekOrigin, IntPtr plibNewPosition)
         {
-            _stream.Seek (offset, (SeekOrigin) seekOrigin);
+            _stream.Seek(offset, (SeekOrigin)seekOrigin);
 
             if (plibNewPosition != IntPtr.Zero)
             {
-                Marshal.WriteIntPtr (plibNewPosition, new IntPtr (_stream.Position));
+                Marshal.WriteIntPtr(plibNewPosition, new IntPtr(_stream.Position));
             }
         }
-        public void SetSize (long libNewSize)
+        public void SetSize(long libNewSize)
         {
-            throw new NotSupportedException ();
+            throw new NotSupportedException();
         }
-        public void CopyTo (IStream pstm, long cb, IntPtr pcbRead, IntPtr pcbWritten)
+        public void CopyTo(IStream pstm, long cb, IntPtr pcbRead, IntPtr pcbWritten)
         {
-            throw new NotSupportedException ();
+            throw new NotSupportedException();
         }
-        public void Commit (int grfCommitFlags)
+        public void Commit(int grfCommitFlags)
         {
-            _stream.Flush ();
+            _stream.Flush();
         }
-        public void Revert ()
+        public void Revert()
         {
-            throw new NotSupportedException ();
+            throw new NotSupportedException();
         }
-        public void LockRegion (long libOffset, long cb, int dwLockType)
+        public void LockRegion(long libOffset, long cb, int dwLockType)
         {
-            throw new NotSupportedException ();
+            throw new NotSupportedException();
         }
-        public void UnlockRegion (long libOffset, long cb, int dwLockType)
+        public void UnlockRegion(long libOffset, long cb, int dwLockType)
         {
-            throw new NotSupportedException ();
+            throw new NotSupportedException();
         }
-        public void Stat (out STATSTG pstatstg, int grfStatFlag)
+        public void Stat(out STATSTG pstatstg, int grfStatFlag)
         {
-            pstatstg = new STATSTG ();
+            pstatstg = new STATSTG();
             pstatstg.cbSize = _stream.Length;
         }
 
-        public void Clone (out IStream ppstm)
+        public void Clone(out IStream ppstm)
         {
-            throw new NotSupportedException ();
+            throw new NotSupportedException();
         }
 
         #endregion
@@ -140,6 +140,5 @@ namespace System.Speech.Internal.SapiInterop
         protected long _endOfStreamPosition = -1;
 
         #endregion
-
     }
 }

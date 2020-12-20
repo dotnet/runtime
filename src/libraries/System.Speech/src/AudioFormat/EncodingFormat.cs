@@ -5,7 +5,6 @@ using System;
 
 namespace System.Speech.AudioFormat
 {
-
     /// TODOC <_include file='doc\EncodingFormat.uex' path='docs/doc[@for="AudioFormatTag"]/*' />
     // These enumeration values are the same values used in the WAVEFORMATEX structure used in wave files.
     public
@@ -20,5 +19,4 @@ namespace System.Speech.AudioFormat
         /// TODOC <_include file='doc\EncodingFormat.uex' path='docs/doc[@for="EncodingFormatTag.ULaw"]/*' />
         ULaw = 0x0007
     }
-
 }

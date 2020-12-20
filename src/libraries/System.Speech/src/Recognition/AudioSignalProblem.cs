@@ -5,7 +5,6 @@ using System;
 
 namespace System.Speech.Recognition
 {
-
     /// TODOC <_include file='doc\AudioSignalProblem.uex' path='docs/doc[@for="AudioSignalProblem"]/*' />
     public enum AudioSignalProblem
     {
@@ -37,5 +36,4 @@ namespace System.Speech.Recognition
         /// TODOC <_include file='doc\AudioSignalProblem.uex' path='docs/doc[@for="AudioSignalProblem.TooSlow"]/*' />
         TooSlow
     }
-
 }

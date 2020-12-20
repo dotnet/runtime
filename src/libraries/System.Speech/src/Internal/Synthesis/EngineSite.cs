@@ -32,7 +32,7 @@ namespace System.Speech.Internal.Synthesis
 
         #region Constructors
 
-        internal EngineSite (ResourceLoader resourceLoader)
+        internal EngineSite(ResourceLoader resourceLoader)
         {
             _resourceLoader = resourceLoader;
         }
@@ -64,13 +64,13 @@ namespace System.Speech.Internal.Synthesis
         /// </summary>
         /// <param name="events"></param>
         /// <param name="ulCount"></param>
-        public void AddEvents ([MarshalAs (UnmanagedType.LPArray, SizeParamIndex = 1)] SpeechEventInfo [] events, int ulCount)
+        public void AddEvents([MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 1)] SpeechEventInfo[] events, int ulCount)
         {
             try
             {
                 foreach (SpeechEventInfo sapiEvent in events)
                 {
-                    Int32 evtMask = 1 << (int) sapiEvent.EventId;
+                    Int32 evtMask = 1 << (int)sapiEvent.EventId;
 
                     if (sapiEvent.EventId == (short)TtsEventId.EndInputStream && _eventMapper != null)
                     {
@@ -103,11 +103,11 @@ namespace System.Speech.Internal.Synthesis
         /// </summary>
         /// <param name="pBuff"></param>
         /// <param name="cb"></param>
-        public int Write (IntPtr pBuff, int cb)
+        public int Write(IntPtr pBuff, int cb)
         {
             try
             {
-                _audio.Play (pBuff, cb);
+                _audio.Play(pBuff, cb);
             }
             catch (Exception e)
             {
@@ -120,16 +120,16 @@ namespace System.Speech.Internal.Synthesis
         /// <summary>
         /// Retrieves the number and type of items to be skipped in the text stream. 
         /// </summary>
-        public SkipInfo GetSkipInfo ()
+        public SkipInfo GetSkipInfo()
         {
-            return new SkipInfo (1 /*BSPVSKIPTYPE.SPVST_SENTENCE */, 1);
+            return new SkipInfo(1 /*BSPVSKIPTYPE.SPVST_SENTENCE */, 1);
         }
 
         /// <summary>
         /// Notifies that the last skip request has been completed and to pass it the results.
         /// </summary>
         /// <param name="ulNumSkipped"></param>
-        public void CompleteSkip (int ulNumSkipped)
+        public void CompleteSkip(int ulNumSkipped)
         {
             return;
         }
@@ -153,7 +153,7 @@ namespace System.Speech.Internal.Synthesis
         {
             get
             {
-                return (int) _actions;
+                return (int)_actions;
             }
         }
 
@@ -186,24 +186,24 @@ namespace System.Speech.Internal.Synthesis
         /// </summary>
         /// <param name="uri"></param>
         /// <param name="mediaType"></param>
-        public Stream LoadResource (Uri uri, string mediaType)
+        public Stream LoadResource(Uri uri, string mediaType)
         {
             try
             {
                 string localPath;
                 string mediaTypeUnused; // TODO: Should this be passed out of this function?
                 Uri baseUriUnused;
-                using (Stream stream = _resourceLoader.LoadFile (uri, out mediaTypeUnused, out baseUriUnused, out localPath))
+                using (Stream stream = _resourceLoader.LoadFile(uri, out mediaTypeUnused, out baseUriUnused, out localPath))
                 {
                     // Read the file in memory for SES and release the original file immediatly
                     // This scheme is really bad if the files being read are big but I would assume 
                     // That it should not be the case.
-                    int cLen = (int) stream.Length;
-                    MemoryStream memStream = new MemoryStream (cLen);
-                    byte [] ab = new byte [cLen];
-                    stream.Read (ab, 0, ab.Length);
-                    _resourceLoader.UnloadFile (localPath);
-                    memStream.Write (ab, 0, cLen);
+                    int cLen = (int)stream.Length;
+                    MemoryStream memStream = new MemoryStream(cLen);
+                    byte[] ab = new byte[cLen];
+                    stream.Read(ab, 0, ab.Length);
+                    _resourceLoader.UnloadFile(localPath);
+                    memStream.Write(ab, 0, cLen);
                     memStream.Position = 0;
 
                     // return in the middle of the code to appease PreSharp
@@ -229,7 +229,7 @@ namespace System.Speech.Internal.Synthesis
         {
         }
 
-        internal void SetEventsInterest (Int32 eventInterest)
+        internal void SetEventsInterest(Int32 eventInterest)
         {
             _eventInterest = eventInterest;
             if (_eventMapper != null)
@@ -327,7 +327,7 @@ namespace System.Speech.Internal.Synthesis
                     ttsEvent = TTSEvent.CreatePhonemeEvent("" + (char)((uint)sapiEvent.Param2 & 0xFFFF), // current phoneme
                                                            "" + (char)(sapiEvent.Param1 & 0xFFFF), // next phoneme
                                                            TimeSpan.FromMilliseconds(sapiEvent.Param1 >> 16),
-                                                           (SynthesizerEmphasis) ((uint)sapiEvent.Param2 >> 16),
+                                                           (SynthesizerEmphasis)((uint)sapiEvent.Param2 >> 16),
                                                            _prompt, _audio.Duration);
                     break;
                 case TtsEventId.Bookmark:
@@ -375,10 +375,9 @@ namespace System.Speech.Internal.Synthesis
         // Map the TTS events to the right format
         private TtsEventMapper _eventMapper;
 
-        const int WAVE_FORMAT_PCM = 1;
+        private const int WAVE_FORMAT_PCM = 1;
 
         #endregion
-
     }
 
     internal interface ITtsEventSink
@@ -387,7 +386,7 @@ namespace System.Speech.Internal.Synthesis
         void FlushEvent();
     }
 
-    internal abstract class TtsEventMapper: ITtsEventSink
+    internal abstract class TtsEventMapper : ITtsEventSink
     {
         internal TtsEventMapper(ITtsEventSink sink)
         {
@@ -418,14 +417,14 @@ namespace System.Speech.Internal.Synthesis
         private ITtsEventSink _sink;
     }
 
-    internal class PhonemeEventMapper: TtsEventMapper
+    internal class PhonemeEventMapper : TtsEventMapper
     {
         public enum PhonemeConversion
         {
             IpaToSapi, SapiToIpa, NoConversion
         }
 
-        internal PhonemeEventMapper(ITtsEventSink sink, PhonemeConversion conversion, AlphabetConverter alphabetConverter): base(sink)
+        internal PhonemeEventMapper(ITtsEventSink sink, PhonemeConversion conversion, AlphabetConverter alphabetConverter) : base(sink)
         {
             _queue = new Queue();
             _phonemeQueue = new Queue();
@@ -434,7 +433,7 @@ namespace System.Speech.Internal.Synthesis
             Reset();
         }
 
-        public override void AddEvent (TTSEvent evt)
+        public override void AddEvent(TTSEvent evt)
         {
             if (_conversion == PhonemeConversion.NoConversion)
             {
@@ -482,7 +481,7 @@ namespace System.Speech.Internal.Synthesis
             ConvertCompleteUnit();
             while (_queue.Count > 0)
             {
-                SendToOutput( (TTSEvent) _queue.Dequeue());
+                SendToOutput((TTSEvent)_queue.Dequeue());
             }
             _phonemeQueue.Clear();
             _lastComplete = 0;
@@ -502,7 +501,7 @@ namespace System.Speech.Internal.Synthesis
                 return;
             }
 
-            char [] source = new char[_lastComplete];
+            char[] source = new char[_lastComplete];
             _phonemes.CopyTo(0, source, 0, _lastComplete);
             _phonemes.Remove(0, _lastComplete);
             char[] target;
@@ -522,17 +521,17 @@ namespace System.Speech.Internal.Synthesis
             //
             TTSEvent ttsEvent, targetEvent, basePhonemeEvent = null;
             long totalDuration = 0;
-            basePhonemeEvent = (TTSEvent) _phonemeQueue.Peek();
-            for (int i = 0; i < _lastComplete; )
+            basePhonemeEvent = (TTSEvent)_phonemeQueue.Peek();
+            for (int i = 0; i < _lastComplete;)
             {
-                ttsEvent = (TTSEvent) _phonemeQueue.Dequeue();
+                ttsEvent = (TTSEvent)_phonemeQueue.Dequeue();
                 totalDuration += ttsEvent.PhonemeDuration.Milliseconds;
                 i += ttsEvent.Phoneme.Length;
             }
 
             targetEvent = TTSEvent.CreatePhonemeEvent(new string(target), "",
                                                       TimeSpan.FromMilliseconds(totalDuration),
-                                                      basePhonemeEvent.PhonemeEmphasis, 
+                                                      basePhonemeEvent.PhonemeEmphasis,
                                                       basePhonemeEvent.Prompt,
                                                       basePhonemeEvent.AudioPosition);
             SendToQueue(targetEvent);
@@ -588,5 +587,4 @@ namespace System.Speech.Internal.Synthesis
         private AlphabetConverter _alphabetConverter;
         private int _lastComplete;
     }
-
 }

@@ -117,8 +117,6 @@ namespace System.Speech.Internal.SapiInterop
                 }
             }
         }
-
-
     }
 
     #endregion
@@ -209,7 +207,7 @@ namespace System.Speech.Internal.SapiInterop
     }
 
     [ComImport, Guid("92A66E2B-C830-4149-83DF-6FC2BA1E7A5B"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
-    interface ISpRegDataKey : ISpDataKey
+    internal interface ISpRegDataKey : ISpDataKey
     {
         // ISpDataKey Methods
         [PreserveSig]

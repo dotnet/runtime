@@ -6,12 +6,10 @@ using System.ComponentModel;
 
 namespace System.Speech.Recognition
 {
-
     /// TODOC <_include file='doc\RecognizeCompletedEventArgs.uex' path='docs/doc[@for="RecognizeCompletedEventArgs"]/*' />
-    
+
     public class RecognizeCompletedEventArgs : AsyncCompletedEventArgs
     {
-
         //*******************************************************************
         //
         // Constructors
@@ -20,7 +18,7 @@ namespace System.Speech.Recognition
 
         #region Constructors
 
-        internal RecognizeCompletedEventArgs(RecognitionResult result, bool initialSilenceTimeout, bool babbleTimeout, 
+        internal RecognizeCompletedEventArgs(RecognitionResult result, bool initialSilenceTimeout, bool babbleTimeout,
             bool inputStreamEnded, TimeSpan audioPosition,
             Exception error, bool cancelled, object userState)
             : base(error, cancelled, userState)
@@ -91,7 +89,5 @@ namespace System.Speech.Recognition
         private TimeSpan _audioPosition;
 
         #endregion
-
     }
-
 }

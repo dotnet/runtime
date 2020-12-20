@@ -5,7 +5,6 @@ using System;
 
 namespace System.Speech.Recognition
 {
-
     /// TODOC <_include file='doc\RecognizeMode.uex' path='docs/doc[@for="RecognizeMode"]/*' />
     public enum RecognizeMode
     {
@@ -15,6 +14,5 @@ namespace System.Speech.Recognition
         /// TODOC <_include file='doc\RecognizeMode.uex' path='docs/doc[@for="RecognizeMode.Multiple"]/*' />
         Multiple
     }
-
 }
 

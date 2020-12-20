@@ -27,7 +27,7 @@ namespace System.Speech.Internal.Synthesis
         /// </summary>
         /// <param name="voiceSynthesis">Voice synthesizer used</param>
         /// <param name="ttsVoice">Default engine to use</param>
-        internal SpeakInfo (VoiceSynthesis voiceSynthesis, TTSVoice ttsVoice)
+        internal SpeakInfo(VoiceSynthesis voiceSynthesis, TTSVoice ttsVoice)
         {
             _voiceSynthesis = voiceSynthesis;
             _ttsVoice = ttsVoice;
@@ -61,40 +61,40 @@ namespace System.Speech.Internal.Synthesis
 
         #region Internal Methods
 
-        internal void SetVoice (string name, CultureInfo culture, VoiceGender gender, VoiceAge age, int variant)
+        internal void SetVoice(string name, CultureInfo culture, VoiceGender gender, VoiceAge age, int variant)
         {
-            TTSVoice ttsVoice = _voiceSynthesis.GetEngine (name, culture, gender, age, variant, false);
-            if (!ttsVoice.Equals (_ttsVoice))
+            TTSVoice ttsVoice = _voiceSynthesis.GetEngine(name, culture, gender, age, variant, false);
+            if (!ttsVoice.Equals(_ttsVoice))
             {
                 _ttsVoice = ttsVoice;
                 _fNotInTextSeg = true;
             }
         }
 
-        internal void AddAudio (AudioData audio)
+        internal void AddAudio(AudioData audio)
         {
-            AddNewSeg (null, audio);
+            AddNewSeg(null, audio);
             _fNotInTextSeg = true;
         }
 
-        internal void AddText (TTSVoice ttsVoice, TextFragment textFragment)
+        internal void AddText(TTSVoice ttsVoice, TextFragment textFragment)
         {
             if (_fNotInTextSeg || ttsVoice != _ttsVoice)
             {
-                AddNewSeg (ttsVoice, null);
+                AddNewSeg(ttsVoice, null);
                 _fNotInTextSeg = false;
             }
-            _lastSeg.AddFrag (textFragment);
+            _lastSeg.AddFrag(textFragment);
         }
 
 
-        internal SpeechSeg RemoveFirst ()
+        internal SpeechSeg RemoveFirst()
         {
             SpeechSeg speechSeg = null;
             if (_listSeg.Count > 0)
             {
-                speechSeg = _listSeg [0];
-                _listSeg.RemoveAt (0);
+                speechSeg = _listSeg[0];
+                _listSeg.RemoveAt(0);
             }
             return speechSeg;
         }
@@ -109,11 +109,11 @@ namespace System.Speech.Internal.Synthesis
 
         #region Private Method
 
-        private void AddNewSeg (TTSVoice pCurrVoice, AudioData audio)
+        private void AddNewSeg(TTSVoice pCurrVoice, AudioData audio)
         {
-            SpeechSeg pNew = new SpeechSeg (pCurrVoice, audio);
+            SpeechSeg pNew = new SpeechSeg(pCurrVoice, audio);
 
-            _listSeg.Add (pNew);
+            _listSeg.Add(pNew);
             _lastSeg = pNew;
         }
 
@@ -134,7 +134,7 @@ namespace System.Speech.Internal.Synthesis
         private bool _fNotInTextSeg = true;
 
         // list of segments (text or audio)
-        private List<SpeechSeg> _listSeg = new List<SpeechSeg> ();
+        private List<SpeechSeg> _listSeg = new List<SpeechSeg>();
 
         // current segment 
         private SpeechSeg _lastSeg;
@@ -143,7 +143,6 @@ namespace System.Speech.Internal.Synthesis
         private VoiceSynthesis _voiceSynthesis;
 
         #endregion
-
     }
 
     //*******************************************************************
@@ -154,47 +153,47 @@ namespace System.Speech.Internal.Synthesis
 
     #region Private Types
 
-    class AudioData : IDisposable
+    internal class AudioData : IDisposable
     {
-        internal AudioData (Uri uri, ResourceLoader resourceLoader)
+        internal AudioData(Uri uri, ResourceLoader resourceLoader)
         {
             _uri = uri;
             _resourceLoader = resourceLoader;
             Uri baseAudio;
-            _stream = _resourceLoader.LoadFile (uri, out _mimeType, out baseAudio, out _localFile);
+            _stream = _resourceLoader.LoadFile(uri, out _mimeType, out baseAudio, out _localFile);
         }
 
         /// <summary>
         /// Needed by IEnumerable!!!
         /// </summary>
-        public void Dispose ()
+        public void Dispose()
         {
-            Dispose (true);
-            GC.SuppressFinalize (this);
+            Dispose(true);
+            GC.SuppressFinalize(this);
         }
 
-        ~AudioData ()
+        ~AudioData()
         {
-            Dispose (false);
+            Dispose(false);
         }
 
         internal Uri _uri;
         internal string _mimeType;
         internal Stream _stream;
 
-        protected virtual void Dispose (bool disposing)
+        protected virtual void Dispose(bool disposing)
         {
             if (disposing)
             {
                 // unload the file from the cache
                 if (_localFile != null)
                 {
-                    _resourceLoader.UnloadFile (_localFile);
+                    _resourceLoader.UnloadFile(_localFile);
                 }
 
                 if (_stream != null)
                 {
-                    _stream.Dispose ();
+                    _stream.Dispose();
                     _stream = null;
                     _localFile = null;
                     _uri = null;
@@ -206,7 +205,7 @@ namespace System.Speech.Internal.Synthesis
         private ResourceLoader _resourceLoader;
     }
 
-    enum VOICEACTIONS
+    internal enum VOICEACTIONS
     {
         VA_NONE,
         VA_SPEAK,
@@ -216,5 +215,4 @@ namespace System.Speech.Internal.Synthesis
     }
 
     #endregion
-
 }

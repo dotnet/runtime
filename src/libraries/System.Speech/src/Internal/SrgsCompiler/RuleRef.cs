@@ -28,8 +28,8 @@ namespace System.Speech.Internal.SrgsCompiler
         /// </summary>
         /// <param name="type"></param>
         /// <param name="rule"></param>
-        private RuleRef (SpecialRuleRefType type, Rule rule)
-            : base (rule)
+        private RuleRef(SpecialRuleRefType type, Rule rule)
+            : base(rule)
         {
             _type = type;
         }
@@ -43,62 +43,62 @@ namespace System.Speech.Internal.SrgsCompiler
         /// <param name="undefRules"></param>
         /// <param name="semanticKey"></param>
         /// <param name="initParameters"></param>
-        internal RuleRef (ParseElementCollection parent, Backend backend, Uri uri, List<Rule> undefRules, string semanticKey, string initParameters)
-            :base (parent._rule)
+        internal RuleRef(ParseElementCollection parent, Backend backend, Uri uri, List<Rule> undefRules, string semanticKey, string initParameters)
+            : base(parent._rule)
         {
             string id = uri.OriginalString;
 
             Rule ruleRef = null;
-            int posPound = id.IndexOf ('#');
+            int posPound = id.IndexOf('#');
 
             // Get the initial state for the RuleRef.
             if (posPound == 0)
             {
                 // Internal RuleRef.  Get InitialState of RuleRef.
                 // GetRuleRef() may temporarily create a Rule placeholder for later resolution.
-                ruleRef = GetRuleRef (backend, id.Substring (1), undefRules);
+                ruleRef = GetRuleRef(backend, id.Substring(1), undefRules);
             }
             else
             {
                 // External RuleRef.  Build URL:GrammarUri#RuleName
-                StringBuilder sbExternalRuleUri = new StringBuilder ("URL:");
+                StringBuilder sbExternalRuleUri = new StringBuilder("URL:");
 
                 // Add the parameters to initialize a rule
-                if (!string.IsNullOrEmpty (initParameters))
+                if (!string.IsNullOrEmpty(initParameters))
                 {
                     // look for the # and insert the parameters
-                    sbExternalRuleUri.Append (posPound > 0 ? id.Substring (0, posPound) : id);
-                    sbExternalRuleUri.Append ('>');
-                    sbExternalRuleUri.Append (initParameters);
+                    sbExternalRuleUri.Append(posPound > 0 ? id.Substring(0, posPound) : id);
+                    sbExternalRuleUri.Append('>');
+                    sbExternalRuleUri.Append(initParameters);
                     if (posPound > 0)
                     {
-                        sbExternalRuleUri.Append (id.Substring (posPound));
+                        sbExternalRuleUri.Append(id.Substring(posPound));
                     }
                 }
                 else
                 {
-                    sbExternalRuleUri.Append (id);
+                    sbExternalRuleUri.Append(id);
                 }
 
                 // Get InitialState of external RuleRef.
-                string sExternalRuleUri = sbExternalRuleUri.ToString ();
-                ruleRef = backend.FindRule (sExternalRuleUri);
+                string sExternalRuleUri = sbExternalRuleUri.ToString();
+                ruleRef = backend.FindRule(sExternalRuleUri);
                 if (ruleRef == null)
                 {
-                    ruleRef = backend.CreateRule (sExternalRuleUri, SPCFGRULEATTRIBUTES.SPRAF_Import);
+                    ruleRef = backend.CreateRule(sExternalRuleUri, SPCFGRULEATTRIBUTES.SPRAF_Import);
                 }
             }
-            Arc rulerefArc = backend.RuleTransition (ruleRef, _rule, 1.0f);
+            Arc rulerefArc = backend.RuleTransition(ruleRef, _rule, 1.0f);
 
-            if (!string.IsNullOrEmpty (semanticKey))
+            if (!string.IsNullOrEmpty(semanticKey))
             {
-                CfgGrammar.CfgProperty propertyInfo = new CfgGrammar.CfgProperty ();
+                CfgGrammar.CfgProperty propertyInfo = new CfgGrammar.CfgProperty();
                 propertyInfo._pszName = "SemanticKey";
                 propertyInfo._comValue = semanticKey;
                 propertyInfo._comType = VarEnum.VT_EMPTY;
-                backend.AddPropertyTag (rulerefArc, rulerefArc, propertyInfo);
+                backend.AddPropertyTag(rulerefArc, rulerefArc, propertyInfo);
             }
-            parent.AddArc (rulerefArc);
+            parent.AddArc(rulerefArc);
         }
 
         #endregion
@@ -118,7 +118,7 @@ namespace System.Speech.Internal.SrgsCompiler
         /// <param name="backend"></param>
         /// <param name="parent"></param>
         /// <returns></returns>
-        internal void InitSpecialRuleRef (Backend backend, ParseElementCollection parent)
+        internal void InitSpecialRuleRef(Backend backend, ParseElementCollection parent)
         {
             Rule rule = null;
 
@@ -126,32 +126,32 @@ namespace System.Speech.Internal.SrgsCompiler
             switch (_type)
             {
                 case SpecialRuleRefType.Null:
-                    parent.AddArc (backend.EpsilonTransition (1.0f));
+                    parent.AddArc(backend.EpsilonTransition(1.0f));
                     break;
 
                 case SpecialRuleRefType.Void:
-                    rule = backend.FindRule (szSpecialVoid);
+                    rule = backend.FindRule(szSpecialVoid);
                     if (rule == null)
                     {
-                        rule = backend.CreateRule (szSpecialVoid, 0);
+                        rule = backend.CreateRule(szSpecialVoid, 0);
                         // Rule with no transitions is a void rule.
-                        ((IRule) rule).PostParse (parent);
+                        ((IRule)rule).PostParse(parent);
                     }
-                    parent.AddArc (backend.RuleTransition (rule, parent._rule, 1.0f));
+                    parent.AddArc(backend.RuleTransition(rule, parent._rule, 1.0f));
                     break;
 
                 case SpecialRuleRefType.Garbage:
                     // Garbage transition is optional whereas Wildcard is not.  So we need additional epsilon transition.
-                    OneOf oneOf = new OneOf (parent._rule, backend);
+                    OneOf oneOf = new OneOf(parent._rule, backend);
                     // Add the garbage transition
-                    oneOf.AddArc (backend.RuleTransition (CfgGrammar.SPRULETRANS_WILDCARD, parent._rule, 0.5f));
+                    oneOf.AddArc(backend.RuleTransition(CfgGrammar.SPRULETRANS_WILDCARD, parent._rule, 0.5f));
                     // Add a parallele epsilon path
-                    oneOf.AddArc (backend.EpsilonTransition (0.5f));
-                    ((IOneOf) oneOf).PostParse (parent);
+                    oneOf.AddArc(backend.EpsilonTransition(0.5f));
+                    ((IOneOf)oneOf).PostParse(parent);
                     break;
 
                 default:
-                    System.Diagnostics.Debug.Assert (false, "Unknown special ruleref type");
+                    System.Diagnostics.Debug.Assert(false, "Unknown special ruleref type");
                     break;
             }
         }
@@ -174,18 +174,18 @@ namespace System.Speech.Internal.SrgsCompiler
         /// <param name="sRuleId">Rule name</param>
         /// <param name="undefRules"></param>
         /// <returns></returns>
-        private static Rule GetRuleRef (Backend backend, string sRuleId, List<Rule> undefRules)
+        private static Rule GetRuleRef(Backend backend, string sRuleId, List<Rule> undefRules)
         {
-            System.Diagnostics.Debug.Assert (!string.IsNullOrEmpty (sRuleId));
+            System.Diagnostics.Debug.Assert(!string.IsNullOrEmpty(sRuleId));
 
             // Get specified rule.
-            Rule rule = backend.FindRule (sRuleId);
+            Rule rule = backend.FindRule(sRuleId);
 
             if (rule == null)
             {
                 // Rule doesn't exist.  Create a placeholder rule and add StateHandle to UndefinedRules.
-                rule = backend.CreateRule (sRuleId, 0);
-                undefRules.Insert (0, rule);
+                rule = backend.CreateRule(sRuleId, 0);
+                undefRules.Insert(0, rule);
             }
 
             return rule;
@@ -205,7 +205,7 @@ namespace System.Speech.Internal.SrgsCompiler
         {
             get
             {
-                return new RuleRef (SpecialRuleRefType.Null, null);
+                return new RuleRef(SpecialRuleRefType.Null, null);
             }
         }
 
@@ -213,14 +213,14 @@ namespace System.Speech.Internal.SrgsCompiler
         {
             get
             {
-                return new RuleRef (SpecialRuleRefType.Void, null);
+                return new RuleRef(SpecialRuleRefType.Void, null);
             }
         }
         static internal IRuleRef Garbage
         {
             get
             {
-                return new RuleRef (SpecialRuleRefType.Garbage, null);
+                return new RuleRef(SpecialRuleRefType.Garbage, null);
             }
         }
 
@@ -268,7 +268,7 @@ namespace System.Speech.Internal.SrgsCompiler
 
         private SpecialRuleRefType _type;
 
-        const string szSpecialVoid = "VOID";
+        private const string szSpecialVoid = "VOID";
 
         #endregion
     }

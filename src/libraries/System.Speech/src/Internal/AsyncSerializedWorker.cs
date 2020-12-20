@@ -18,7 +18,6 @@ namespace System.Speech.Internal
 
     internal class AsyncSerializedWorker : IAsyncDispatch
     {
-
         #region Constructors
 
         internal AsyncSerializedWorker(WaitCallback defaultCallback, AsyncOperation asyncOperation)
@@ -44,7 +43,7 @@ namespace System.Speech.Internal
 
         public void Post(object evt)
         {
-            AddItem(new AsyncWorkItem(DefaultCallback, evt));    
+            AddItem(new AsyncWorkItem(DefaultCallback, evt));
         }
 
         public void Post(object[] evt)
@@ -154,7 +153,7 @@ namespace System.Speech.Internal
                         }
                     }
                 }
-                
+
                 // We need to resume the worker thread if there are post-events to process
                 if (notify)
                 {
@@ -259,7 +258,7 @@ namespace System.Speech.Internal
         private WaitCallback _workerCallback;
         private WaitCallback _defaultCallback;
         private bool _isEnabled;
-       
+
         #endregion
     }
 
@@ -280,6 +279,6 @@ namespace System.Speech.Internal
         }
 
         private Delegate _dynamicCallback;
-        private object [] _postData;
+        private object[] _postData;
     }
 }

@@ -20,17 +20,17 @@ namespace System.Speech.Internal
 
         #region Internal Methods
 
-        static internal CultureInfo GetCultureInfoFromLanguageString (string valueString)
+        static internal CultureInfo GetCultureInfoFromLanguageString(string valueString)
         {
-            string [] strings = valueString.Split (';');
+            string[] strings = valueString.Split(';');
 
-            string langStringTrim = strings [0].Trim ();
+            string langStringTrim = strings[0].Trim();
 
-            if (!string.IsNullOrEmpty (langStringTrim))
+            if (!string.IsNullOrEmpty(langStringTrim))
             {
                 try
                 {
-                    return new CultureInfo (Int32.Parse (langStringTrim, NumberStyles.HexNumber, CultureInfo.InvariantCulture), false);
+                    return new CultureInfo(Int32.Parse(langStringTrim, NumberStyles.HexNumber, CultureInfo.InvariantCulture), false);
                 }
                 catch (ArgumentException)
                 {
@@ -45,23 +45,22 @@ namespace System.Speech.Internal
         static internal List<SpeechAudioFormatInfo> GetAudioFormatsFromString(string valueString)
         {
             List<SpeechAudioFormatInfo> formatList = new List<SpeechAudioFormatInfo>();
-            string [] strings = valueString.Split (';');
+            string[] strings = valueString.Split(';');
 
             for (int i = 0; i < strings.Length; i++)
             {
-                string formatString = strings [i].Trim ();
-                if (!string.IsNullOrEmpty (formatString))
+                string formatString = strings[i].Trim();
+                if (!string.IsNullOrEmpty(formatString))
                 {
-                    SpeechAudioFormatInfo formatInfo = AudioFormatConverter.ToSpeechAudioFormatInfo (formatString);
+                    SpeechAudioFormatInfo formatInfo = AudioFormatConverter.ToSpeechAudioFormatInfo(formatString);
                     if (formatInfo != null) // Skip cases where a Guid is used.
                     {
-                        formatList.Add (formatInfo);
+                        formatList.Add(formatInfo);
                     }
                 }
             }
             return formatList;
         }
-
 
         #endregion
     }

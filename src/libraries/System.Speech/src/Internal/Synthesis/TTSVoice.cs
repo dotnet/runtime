@@ -20,7 +20,7 @@ namespace System.Speech.Internal.Synthesis
 
         #region Constructors
 
-        internal TTSVoice (ITtsEngineProxy engine, VoiceInfo voiceId)
+        internal TTSVoice(ITtsEngineProxy engine, VoiceInfo voiceId)
         {
             _engine = engine;
             _voiceId = voiceId;
@@ -39,18 +39,18 @@ namespace System.Speech.Internal.Synthesis
         /// <summary>
         /// Tests whether two objects are equivalent
         /// </summary>
-        public override bool Equals (object obj)
+        public override bool Equals(object obj)
         {
             TTSVoice voice = obj as TTSVoice;
-            return voice != null && (_voiceId.Equals (voice.VoiceInfo));
+            return voice != null && (_voiceId.Equals(voice.VoiceInfo));
         }
 
         /// <summary>
         /// Overrides Object.GetHashCode()
         /// </summary>
-        public override int GetHashCode ()
+        public override int GetHashCode()
         {
-            return _voiceId.GetHashCode ();
+            return _voiceId.GetHashCode();
         }
 
         #endregion
@@ -63,33 +63,33 @@ namespace System.Speech.Internal.Synthesis
 
         #region Internal Methods
 
-        internal void UpdateLexicons (List<LexiconEntry> lexicons)
+        internal void UpdateLexicons(List<LexiconEntry> lexicons)
         {
             // Remove the lexicons that are defined in this voice but are not in the list
             for (int i = _lexicons.Count - 1; i >= 0; i--)
             {
-                LexiconEntry entry = _lexicons [i];
-                if (!lexicons.Contains (entry))
+                LexiconEntry entry = _lexicons[i];
+                if (!lexicons.Contains(entry))
                 {
                     // Remove the entry first, just in case the RemoveLexicon throws
-                    _lexicons.RemoveAt (i);
-                    TtsEngine.RemoveLexicon (entry._uri);
+                    _lexicons.RemoveAt(i);
+                    TtsEngine.RemoveLexicon(entry._uri);
                 }
             }
 
             // Addd the lexicons that are defined in this voice but are not in the list
             foreach (LexiconEntry entry in lexicons)
             {
-                if (!_lexicons.Contains (entry))
+                if (!_lexicons.Contains(entry))
                 {
                     // Remove the entry first, just in case the RemoveLexicon throws
-                    TtsEngine.AddLexicon (entry._uri, entry._mediaType);
-                    _lexicons.Add (entry);
+                    TtsEngine.AddLexicon(entry._uri, entry._mediaType);
+                    _lexicons.Add(entry);
                 }
             }
         }
 
-        internal byte [] WaveFormat (byte [] targetWaveFormat)
+        internal byte[] WaveFormat(byte[] targetWaveFormat)
         {
             // Get the Wave header if it has not been set by the user
             if (targetWaveFormat == null && _waveFormat == null)
@@ -98,7 +98,7 @@ namespace System.Speech.Internal.Synthesis
                 if (VoiceInfo.SupportedAudioFormats.Count > 0)
                 {
                     // Create the array of bytes containing the format
-                    targetWaveFormat = VoiceInfo.SupportedAudioFormats [0].WaveFormat;
+                    targetWaveFormat = VoiceInfo.SupportedAudioFormats[0].WaveFormat;
                 }
             }
 
@@ -109,39 +109,38 @@ namespace System.Speech.Internal.Synthesis
             }
 
             // New waveFormat provided?
-            if (_waveFormat == null || !Array.Equals (targetWaveFormat, _waveFormat))
+            if (_waveFormat == null || !Array.Equals(targetWaveFormat, _waveFormat))
             {
                 IntPtr waveFormat = IntPtr.Zero;
-                GCHandle targetFormat = new GCHandle ();
+                GCHandle targetFormat = new GCHandle();
 
                 if (targetWaveFormat != null)
                 {
-                    targetFormat = GCHandle.Alloc (targetWaveFormat, GCHandleType.Pinned);
+                    targetFormat = GCHandle.Alloc(targetWaveFormat, GCHandleType.Pinned);
                 }
                 try
                 {
-                    waveFormat = _engine.GetOutputFormat (targetWaveFormat != null ? targetFormat.AddrOfPinnedObject () : IntPtr.Zero);
+                    waveFormat = _engine.GetOutputFormat(targetWaveFormat != null ? targetFormat.AddrOfPinnedObject() : IntPtr.Zero);
                 }
                 finally
                 {
                     if (targetWaveFormat != null)
                     {
-                        targetFormat.Free ();
+                        targetFormat.Free();
                     }
                 }
 
                 if (waveFormat != IntPtr.Zero)
                 {
-                    _waveFormat = WAVEFORMATEX.ToBytes (waveFormat);
+                    _waveFormat = WAVEFORMATEX.ToBytes(waveFormat);
 
                     // Free the buffer
-                    Marshal.FreeCoTaskMem (waveFormat);
+                    Marshal.FreeCoTaskMem(waveFormat);
                 }
                 else
                 {
-                    _waveFormat = WAVEFORMATEX.Default.ToBytes ();
+                    _waveFormat = WAVEFORMATEX.Default.ToBytes();
                 }
-
             }
             return _waveFormat;
         }
@@ -184,10 +183,9 @@ namespace System.Speech.Internal.Synthesis
 
         private ITtsEngineProxy _engine;
         private VoiceInfo _voiceId;
-        private List<LexiconEntry> _lexicons = new List<LexiconEntry> ();
-        private byte [] _waveFormat;
+        private List<LexiconEntry> _lexicons = new List<LexiconEntry>();
+        private byte[] _waveFormat;
 
         #endregion
-
     }
 }

@@ -12,10 +12,9 @@ namespace System.Speech.Internal.GrammarBuilding
     /// <summary>
     /// 
     /// </summary>
-    [DebuggerDisplay ("{DebugSummary}")]
+    [DebuggerDisplay("{DebugSummary}")]
     internal sealed class RuleRefElement : GrammarBuilderBase
     {
-
         //*******************************************************************
         //
         // Constructors
@@ -28,7 +27,7 @@ namespace System.Speech.Internal.GrammarBuilding
         /// 
         /// </summary>
         /// <param name="rule"></param>
-        internal RuleRefElement (RuleElement rule)
+        internal RuleRefElement(RuleElement rule)
         {
             _rule = rule;
         }
@@ -38,7 +37,7 @@ namespace System.Speech.Internal.GrammarBuilding
         /// </summary>
         /// <param name="rule"></param>
         /// <param name="semanticKey"></param>
-        internal RuleRefElement (RuleElement rule, string semanticKey)
+        internal RuleRefElement(RuleElement rule, string semanticKey)
         {
             _rule = rule;
             _semanticKey = semanticKey;
@@ -55,20 +54,20 @@ namespace System.Speech.Internal.GrammarBuilding
         #region Public Methods
 
         /// TODOC <_include file='doc\SpeechAudioFormatInfo.uex' path='docs/doc[@for="SpeechAudioFormatInfo.Equals"]/*' />
-        public override bool Equals (object obj)
+        public override bool Equals(object obj)
         {
             RuleRefElement refObj = obj as RuleRefElement;
             if (refObj == null)
             {
                 return false;
             }
-            return _semanticKey == refObj._semanticKey && _rule.Equals (refObj._rule);
+            return _semanticKey == refObj._semanticKey && _rule.Equals(refObj._rule);
         }
 
         /// TODOC <_include file='doc\SpeechAudioFormatInfo.uex' path='docs/doc[@for="SpeechAudioFormatInfo.GetHashCode"]/*' />
-        public override int GetHashCode ()
+        public override int GetHashCode()
         {
-            return base.GetHashCode ();
+            return base.GetHashCode();
         }
 
         #endregion
@@ -85,18 +84,18 @@ namespace System.Speech.Internal.GrammarBuilding
         /// 
         /// </summary>
         /// <param name="item"></param>
-        internal void Add (GrammarBuilderBase item)
+        internal void Add(GrammarBuilderBase item)
         {
-            _rule.Add (item);
+            _rule.Add(item);
         }
 
         /// <summary>
         /// 
         /// </summary>
         /// <returns></returns>
-        override internal GrammarBuilderBase Clone ()
+        override internal GrammarBuilderBase Clone()
         {
-            return new RuleRefElement (_rule, _semanticKey);
+            return new RuleRefElement(_rule, _semanticKey);
         }
 
         /// <summary>
@@ -104,9 +103,9 @@ namespace System.Speech.Internal.GrammarBuilding
         /// </summary>
         /// <returns></returns>
         /// <param name="builders"></param>
-        internal void CloneItems (RuleRefElement builders)
+        internal void CloneItems(RuleRefElement builders)
         {
-            _rule.CloneItems (builders._rule);
+            _rule.CloneItems(builders._rule);
         }
 
         /// <summary>
@@ -117,10 +116,10 @@ namespace System.Speech.Internal.GrammarBuilding
         /// <param name="rule"></param>
         /// <param name="ruleIds"></param>
         /// <returns></returns>
-        override internal IElement CreateElement (IElementFactory elementFactory, IElement parent, IRule rule, IdentifierCollection ruleIds)
+        override internal IElement CreateElement(IElementFactory elementFactory, IElement parent, IRule rule, IdentifierCollection ruleIds)
         {
             // Create the new rule and add the reference to the item
-            return elementFactory.CreateRuleRef (parent, new Uri ("#" + Rule.RuleName, UriKind.Relative), _semanticKey, null);
+            return elementFactory.CreateRuleRef(parent, new Uri("#" + Rule.RuleName, UriKind.Relative), _semanticKey, null);
         }
 
         #endregion
@@ -167,6 +166,5 @@ namespace System.Speech.Internal.GrammarBuilding
         private readonly string _semanticKey;
 
         #endregion
-
     }
 }

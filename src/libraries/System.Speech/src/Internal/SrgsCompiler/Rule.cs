@@ -13,7 +13,7 @@ namespace System.Speech.Internal.SrgsCompiler
     /// <summary>
     /// Summary description for Rule.
     /// </summary>
-    [DebuggerDisplay ("{Name}")]
+    [DebuggerDisplay("{Name}")]
     internal sealed class Rule : ParseElementCollection, IRule, IComparable<Rule>
     {
         //*******************************************************************
@@ -25,24 +25,24 @@ namespace System.Speech.Internal.SrgsCompiler
         #region Constructors
 
         // Only used for the special transition
-        internal Rule (int iSerialize)
-            : base (null, null)
+        internal Rule(int iSerialize)
+            : base(null, null)
         {
             _iSerialize = iSerialize;
         }
 
-        internal Rule (Backend backend, string name, CfgRule cfgRule, int iSerialize, GrammarOptions SemanticFormat, ref int cImportedRules)
-            : base (backend, null)
+        internal Rule(Backend backend, string name, CfgRule cfgRule, int iSerialize, GrammarOptions SemanticFormat, ref int cImportedRules)
+            : base(backend, null)
         {
             _rule = this;
-            Init (name, cfgRule, iSerialize, SemanticFormat, ref cImportedRules);
+            Init(name, cfgRule, iSerialize, SemanticFormat, ref cImportedRules);
         }
 
-        internal Rule (Backend backend, string name, int offsetName, SPCFGRULEATTRIBUTES attributes, int id, int iSerialize, GrammarOptions SemanticFormat, ref int cImportedRules)
-            : base (backend, null)
+        internal Rule(Backend backend, string name, int offsetName, SPCFGRULEATTRIBUTES attributes, int id, int iSerialize, GrammarOptions SemanticFormat, ref int cImportedRules)
+            : base(backend, null)
         {
             _rule = this;
-            Init (name, new CfgRule (id, offsetName, attributes), iSerialize, SemanticFormat, ref cImportedRules);
+            Init(name, new CfgRule(id, offsetName, attributes), iSerialize, SemanticFormat, ref cImportedRules);
         }
 
         #endregion
@@ -57,7 +57,7 @@ namespace System.Speech.Internal.SrgsCompiler
 
         #region IComparable<Rule> Interface implementation
 
-        int IComparable<Rule>.CompareTo (Rule rule2)
+        int IComparable<Rule>.CompareTo(Rule rule2)
         {
             Rule rule1 = this;
 
@@ -101,12 +101,12 @@ namespace System.Speech.Internal.SrgsCompiler
         /// 
         /// </summary>
         /// <returns></returns>
-        internal void Validate ()
+        internal void Validate()
         {
             //CfgGrammar.TraceInformation ("Rule::Validate");
             if ((!_cfgRule.Dynamic) && (!_cfgRule.Import) && _id != "VOID" && _firstState.NumArcs == 0)
             {
-                XmlParser.ThrowSrgsException (SRID.EmptyRule);
+                XmlParser.ThrowSrgsException(SRID.EmptyRule);
             }
             else
             {
@@ -118,11 +118,11 @@ namespace System.Speech.Internal.SrgsCompiler
         /// 
         /// </summary>
         /// <param name="iRecursiveDepth"></param>
-        internal void PopulateDynamicRef (ref int iRecursiveDepth)
+        internal void PopulateDynamicRef(ref int iRecursiveDepth)
         {
             if (iRecursiveDepth > CfgGrammar.MAX_TRANSITIONS_COUNT)
             {
-                XmlParser.ThrowSrgsException ((SRID.MaxTransitionsCount));
+                XmlParser.ThrowSrgsException((SRID.MaxTransitionsCount));
             }
 
             foreach (Rule rule in _listRules)
@@ -130,62 +130,62 @@ namespace System.Speech.Internal.SrgsCompiler
                 if (!rule._fHasDynamicRef)
                 {
                     rule._fHasDynamicRef = true;
-                    rule.PopulateDynamicRef (ref iRecursiveDepth);
+                    rule.PopulateDynamicRef(ref iRecursiveDepth);
                 }
             }
         }
 
-        internal Rule Clone (StringBlob symbol, string ruleName)
+        internal Rule Clone(StringBlob symbol, string ruleName)
         {
-            Rule rule = new Rule (_iSerialize);
+            Rule rule = new Rule(_iSerialize);
 
             int idWord;
-            int offsetName = symbol.Add (ruleName, out idWord);
+            int offsetName = symbol.Add(ruleName, out idWord);
 
             rule._id = ruleName;
-            rule._cfgRule = new CfgRule (idWord, offsetName, (uint) _cfgRule._flag);
+            rule._cfgRule = new CfgRule(idWord, offsetName, (uint)_cfgRule._flag);
             rule._cfgRule.DirtyRule = true;
             rule._cfgRule.FirstArcIndex = 0;
             return rule;
         }
 
-        internal void Serialize (StreamMarshaler streamBuffer)
+        internal void Serialize(StreamMarshaler streamBuffer)
         {
             //CfgGrammar.TraceInformation ("CRule::Serialize");
 
             // Dynamic rules and imports have no arcs
-            _cfgRule.FirstArcIndex = _firstState != null && !_firstState.OutArcs.IsEmpty ? (uint) _firstState.SerializeId : 0;
+            _cfgRule.FirstArcIndex = _firstState != null && !_firstState.OutArcs.IsEmpty ? (uint)_firstState.SerializeId : 0;
 
             _cfgRule.DirtyRule = true;
 
-            streamBuffer.WriteStream (_cfgRule);
+            streamBuffer.WriteStream(_cfgRule);
         }
 
-        void IElement.PostParse (IElement grammar)
+        void IElement.PostParse(IElement grammar)
         {
             // Empty rule
             if (_endArc == null)
             {
-                System.Diagnostics.Debug.Assert (_startArc == null);
-                _firstState = _backend.CreateNewState (this);
+                System.Diagnostics.Debug.Assert(_startArc == null);
+                _firstState = _backend.CreateNewState(this);
             }
             else
             {
                 // The last arc may contain an epsilon value. Remove it.
-                TrimEndEpsilons (_endArc, _backend);
+                TrimEndEpsilons(_endArc, _backend);
 
                 // If the first arc was an epsilon value then there is no need to create a new state
-                if (_startArc.IsEpsilonTransition && _startArc.End != null && Graph.MoveSemanticTagRight (_startArc))
+                if (_startArc.IsEpsilonTransition && _startArc.End != null && Graph.MoveSemanticTagRight(_startArc))
                 {
                     // Discard the arc and replace it with the startArc
                     _firstState = _startArc.End;
-                    System.Diagnostics.Debug.Assert (_startArc.End == _startArc.End);
+                    System.Diagnostics.Debug.Assert(_startArc.End == _startArc.End);
                     _startArc.End = null;
                 }
                 else
                 {
                     // if _first has not be set, create it
-                    _firstState = _backend.CreateNewState (this);
+                    _firstState = _backend.CreateNewState(this);
 
                     // Attach the start and end arc to the rule
                     _startArc.Start = _firstState;
@@ -194,9 +194,9 @@ namespace System.Speech.Internal.SrgsCompiler
         }
 
 
-        void IRule.CreateScript (IGrammar grammar, string rule, string method, RuleMethodScript type)
+        void IRule.CreateScript(IGrammar grammar, string rule, string method, RuleMethodScript type)
         {
-            ((GrammarElement) grammar).CustomGrammar._scriptRefs.Add (new ScriptRef (rule, method, type));
+            ((GrammarElement)grammar).CustomGrammar._scriptRefs.Add(new ScriptRef(rule, method, type));
         }
 
         #endregion
@@ -265,7 +265,7 @@ namespace System.Speech.Internal.SrgsCompiler
 
         #region Private Methods
 
-        private void Init (string id, CfgRule cfgRule, int iSerialize, GrammarOptions SemanticFormat, ref int cImportedRules)
+        private void Init(string id, CfgRule cfgRule, int iSerialize, GrammarOptions SemanticFormat, ref int cImportedRules)
         {
             _id = id;
             _cfgRule = cfgRule;
@@ -282,7 +282,7 @@ namespace System.Speech.Internal.SrgsCompiler
             }
         }
 
-        private static void TrimEndEpsilons (Arc end, Backend backend)
+        private static void TrimEndEpsilons(Arc end, Backend backend)
         {
             Arc endArc = end;
 
@@ -290,21 +290,21 @@ namespace System.Speech.Internal.SrgsCompiler
             if (endState != null)
             {
                 // Remove the end arc if possible, check done by MoveSemanticTagRight
-                if (endArc.IsEpsilonTransition && endState.OutArcs.CountIsOne && Graph.MoveSemanticTagLeft (endArc))
+                if (endArc.IsEpsilonTransition && endState.OutArcs.CountIsOne && Graph.MoveSemanticTagLeft(endArc))
                 {
                     // State has a single input epsilon transition 
                     // Delete the input epsilon transition and delete state.
                     endArc.Start = null;
 
                     // Remove all the in arcs duplicate the arcs first
-                    foreach (Arc inArc in endState.InArcs.ToList ())
+                    foreach (Arc inArc in endState.InArcs.ToList())
                     {
                         inArc.End = null;
-                        TrimEndEpsilons (inArc, backend);
+                        TrimEndEpsilons(inArc, backend);
                     }
 
                     // Delete the input epsilon transition and delete state if appropriate.
-                    backend.DeleteState (endState);
+                    backend.DeleteState(endState);
                 }
             }
         }
@@ -337,7 +337,7 @@ namespace System.Speech.Internal.SrgsCompiler
 #if DEBUG
         internal int _cStates;
 #endif
-        internal List<Rule> _listRules = new List<Rule> ();
+        internal List<Rule> _listRules = new List<Rule>();
 
         // this is used to refer to a static rule from a dynamic rule
         internal bool _fStaticRule;
@@ -357,9 +357,9 @@ namespace System.Speech.Internal.SrgsCompiler
         // STG fields
         private string _baseclass;
 
-        private StringBuilder _script = new StringBuilder ();
+        private StringBuilder _script = new StringBuilder();
 
-        private StringBuilder _constructors = new StringBuilder ();
+        private StringBuilder _constructors = new StringBuilder();
 
         #endregion
     }

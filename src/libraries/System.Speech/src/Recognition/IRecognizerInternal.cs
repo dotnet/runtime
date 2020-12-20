@@ -5,11 +5,9 @@ using System;
 
 namespace System.Speech.Recognition
 {
-
     // Interface that all recognizers must implement in order to connect to Grammar and RecognitionResult.
     internal interface IRecognizerInternal
     {
-
         //*******************************************************************
         //
         // Internal Methods
@@ -29,7 +27,5 @@ namespace System.Speech.Recognition
         void SetDictationContext(Grammar grammar, string precedingText, string subsequentText);
 
         #endregion
-
     }
-
 }

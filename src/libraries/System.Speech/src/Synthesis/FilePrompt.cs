@@ -29,7 +29,7 @@ namespace System.Speech.Synthesis
         /// <param name="media"></param>
         /// <returns></returns>
         public FilePrompt(string path, SynthesisMediaType media)
-            : this (new Uri (path, UriKind.Relative), media)
+            : this(new Uri(path, UriKind.Relative), media)
         {
         }
 

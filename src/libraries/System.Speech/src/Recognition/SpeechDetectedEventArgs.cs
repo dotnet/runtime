@@ -5,10 +5,9 @@ using System;
 
 namespace System.Speech.Recognition
 {
-
     /// TODOC <_include file='doc\RecognizerBase.uex' path='docs/doc[@for="SpeechDetectedEventArgs"]/*' />
     // EventArgs used in the SpeechDetected event.
-    
+
     public class SpeechDetectedEventArgs : EventArgs
     {
         //*******************************************************************
@@ -57,7 +56,5 @@ namespace System.Speech.Recognition
         private TimeSpan _audioPosition;
 
         #endregion
-
     }
-
 }

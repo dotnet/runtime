@@ -5,18 +5,18 @@ using System;
 
 namespace System.Speech.Synthesis
 {
-	/// <summary>
-	/// TODOC - Summary description for SpeakProgressEventArgs.
-	/// </summary>
-	public class SpeakProgressEventArgs : PromptEventArgs
-	{
-		//*******************************************************************
-		//
-		// Constructors
-		//
-		//*******************************************************************
+    /// <summary>
+    /// TODOC - Summary description for SpeakProgressEventArgs.
+    /// </summary>
+    public class SpeakProgressEventArgs : PromptEventArgs
+    {
+        //*******************************************************************
+        //
+        // Constructors
+        //
+        //*******************************************************************
 
-		#region Constructors
+        #region Constructors
 
         /// <summary>
         /// TODOC
@@ -25,33 +25,33 @@ namespace System.Speech.Synthesis
         /// <param name="audioPosition"></param>
         /// <param name="iWordPos"></param>
         /// <param name="cWordLen"></param>
-        internal SpeakProgressEventArgs (Prompt prompt, TimeSpan audioPosition, int iWordPos, int cWordLen) : base (prompt)
+        internal SpeakProgressEventArgs(Prompt prompt, TimeSpan audioPosition, int iWordPos, int cWordLen) : base(prompt)
         {
             _audioPosition = audioPosition;
             _iWordPos = iWordPos;
             _cWordLen = cWordLen;
         }
-		#endregion
+        #endregion
 
-		//*******************************************************************
-		//
-		// Public Properties
-		//
-		//*******************************************************************
+        //*******************************************************************
+        //
+        // Public Properties
+        //
+        //*******************************************************************
 
-		#region public Properties
+        #region public Properties
 
-		/// <summary>
-		/// TODOC
-		/// </summary>
-		/// <value></value>
-		public TimeSpan AudioPosition
-		{
-			get
-			{
-				return _audioPosition;
-			}
-		}
+        /// <summary>
+        /// TODOC
+        /// </summary>
+        /// <value></value>
+        public TimeSpan AudioPosition
+        {
+            get
+            {
+                return _audioPosition;
+            }
+        }
 
         /// <summary>
         /// TODOC
@@ -100,18 +100,18 @@ namespace System.Speech.Synthesis
         #endregion
 
         //*******************************************************************
-		//
-		// Private Fields
-		//
-		//*******************************************************************
+        //
+        // Private Fields
+        //
+        //*******************************************************************
 
-		#region Private Fields
+        #region Private Fields
 
-		private TimeSpan _audioPosition;
+        private TimeSpan _audioPosition;
         private int _iWordPos;
         private int _cWordLen;
         private string _word;
 
-		#endregion
-	}
+        #endregion
+    }
 }

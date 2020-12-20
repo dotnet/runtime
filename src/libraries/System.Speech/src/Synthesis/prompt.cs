@@ -13,7 +13,7 @@ namespace System.Speech.Synthesis
     /// <summary>
     /// TODOC
     /// </summary>
-    [DebuggerDisplay ("{_text}")]
+    [DebuggerDisplay("{_text}")]
     public class Prompt
     {
         //*******************************************************************
@@ -28,8 +28,8 @@ namespace System.Speech.Synthesis
         /// TODOC
         /// </summary>
         /// <param name="textToSpeak"></param>
-        public Prompt (string textToSpeak)
-            : this (textToSpeak, SynthesisTextFormat.Text)
+        public Prompt(string textToSpeak)
+            : this(textToSpeak, SynthesisTextFormat.Text)
         {
         }
 
@@ -38,11 +38,11 @@ namespace System.Speech.Synthesis
         /// </summary>
         /// <param name="promptBuilder"></param>
         /// <returns></returns>
-        public Prompt (PromptBuilder promptBuilder)
+        public Prompt(PromptBuilder promptBuilder)
         {
-            Helpers.ThrowIfNull (promptBuilder, "promptBuilder");
+            Helpers.ThrowIfNull(promptBuilder, "promptBuilder");
 
-            _text = promptBuilder.ToXml ();
+            _text = promptBuilder.ToXml();
             _media = SynthesisMediaType.Ssml;
         }
 
@@ -54,11 +54,11 @@ namespace System.Speech.Synthesis
         /// </summary>
         /// <param name="textToSpeak"></param>
         /// <param name="media"></param>
-        public Prompt (string textToSpeak, SynthesisTextFormat media)
+        public Prompt(string textToSpeak, SynthesisTextFormat media)
         {
-            Helpers.ThrowIfNull (textToSpeak, "textToSpeak");
+            Helpers.ThrowIfNull(textToSpeak, "textToSpeak");
 
-            switch (_media = (SynthesisMediaType) media)
+            switch (_media = (SynthesisMediaType)media)
             {
                 case SynthesisMediaType.Text:
                 case SynthesisMediaType.Ssml:
@@ -66,7 +66,7 @@ namespace System.Speech.Synthesis
                     break;
 
                 default:
-                    throw new ArgumentException (SR.Get (SRID.SynthesizerUnknownMediaType), "media");
+                    throw new ArgumentException(SR.Get(SRID.SynthesizerUnknownMediaType), "media");
             }
         }
 
@@ -77,9 +77,9 @@ namespace System.Speech.Synthesis
         /// </summary>
         /// <param name="promptFile"></param>
         /// <param name="media"></param>
-        internal Prompt (Uri promptFile, SynthesisMediaType media)
+        internal Prompt(Uri promptFile, SynthesisMediaType media)
         {
-            Helpers.ThrowIfNull (promptFile, "promptFile");
+            Helpers.ThrowIfNull(promptFile, "promptFile");
 
             switch (_media = media)
             {
@@ -88,30 +88,30 @@ namespace System.Speech.Synthesis
                     string localPath;
                     string mimeType;
                     Uri baseUri;
-                    using (Stream stream = _resourceLoader.LoadFile (promptFile, out mimeType, out baseUri, out localPath))
+                    using (Stream stream = s_resourceLoader.LoadFile(promptFile, out mimeType, out baseUri, out localPath))
                     {
                         try
                         {
-                            using (TextReader reader = new StreamReader (stream))
+                            using (TextReader reader = new StreamReader(stream))
                             {
-                                _text = reader.ReadToEnd ();
+                                _text = reader.ReadToEnd();
                             }
                         }
                         finally
                         {
-                            _resourceLoader.UnloadFile (localPath);
+                            s_resourceLoader.UnloadFile(localPath);
                         }
                     }
 
                     break;
 
                 case SynthesisMediaType.WaveAudio:
-                    _text = promptFile.ToString ();
+                    _text = promptFile.ToString();
                     _audio = promptFile;
                     break;
 
                 default:
-                    throw new ArgumentException (SR.Get (SRID.SynthesizerUnknownMediaType), "media");
+                    throw new ArgumentException(SR.Get(SRID.SynthesizerUnknownMediaType), "media");
             }
         }
 
@@ -147,7 +147,7 @@ namespace System.Speech.Synthesis
             {
                 if (value != null && (_synthesizer != null || _completed))
                 {
-                    throw new ArgumentException (SR.Get (SRID.SynthesizerPromptInUse), "value");
+                    throw new ArgumentException(SR.Get(SRID.SynthesizerPromptInUse), "value");
                 }
 
                 _synthesizer = value;
@@ -209,7 +209,7 @@ namespace System.Speech.Synthesis
         /// </summary>
         private object _synthesizer;
 
-        static private ResourceLoader _resourceLoader = new ResourceLoader ();
+        static private ResourceLoader s_resourceLoader = new ResourceLoader();
 
         #endregion
     }
@@ -276,5 +276,4 @@ namespace System.Speech.Synthesis
     }
 
     #endregion
-
 }
