@@ -972,36 +972,6 @@
         <ExcludeList Include="$(XunitTestBinBase)/JIT/SIMD/Vector3Interop_ro/*">
             <Issue>https://github.com/dotnet/runtime/issues/46174</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Generics/ConstrainedCall/vt2_il_r/**">
-            <Issue>https://github.com/dotnet/runtime/issues/46124</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Generics/ConstrainedCall/vt2_il_d/**">
-            <Issue>https://github.com/dotnet/runtime/issues/46124</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/Boxing/callconv/_dbginstance_il/**">
-            <Issue>https://github.com/dotnet/runtime/issues/46124</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/Boxing/callconv/_relinstance_il/**">
-            <Issue>https://github.com/dotnet/runtime/issues/46124</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/casts/iface/_il_reliface2/**">
-            <Issue>https://github.com/dotnet/runtime/issues/46124</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/casts/iface/_il_dbgiface2/**">
-            <Issue>https://github.com/dotnet/runtime/issues/46124</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/nonvirtualcall/tailcall_r/**">
-            <Issue>https://github.com/dotnet/runtime/issues/46124</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/nonvirtualcall/tailcall_d/**">
-            <Issue>https://github.com/dotnet/runtime/issues/46124</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/CLR-x86-JIT/V2.0-Beta2/b415164/b415164/**">
-            <Issue>https://github.com/dotnet/runtime/issues/46124</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/MethodImpl/generics_override1/**">
-            <Issue>https://github.com/dotnet/runtime/issues/46124</Issue>
-        </ExcludeList>
 
         <ExcludeList Include="$(XunitTestBinBase)/JIT/HardwareIntrinsics/General/Regression/GitHub_43569/**">
             <Issue>https://github.com/dotnet/runtime/issues/43676</Issue>
