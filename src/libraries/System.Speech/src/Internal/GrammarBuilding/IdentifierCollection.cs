@@ -6,7 +6,7 @@ using System.Collections.Generic;
 namespace System.Speech.Internal.GrammarBuilding
 {
     /// <summary>
-    /// 
+    ///
     /// </summary>
     internal class IdentifierCollection
     {
@@ -19,7 +19,7 @@ namespace System.Speech.Internal.GrammarBuilding
         #region Constructors
 
         /// <summary>
-        /// 
+        ///
         /// </summary>
         internal IdentifierCollection()
         {
@@ -39,7 +39,7 @@ namespace System.Speech.Internal.GrammarBuilding
         #region Internal Methods
 
         /// <summary>
-        /// 
+        ///
         /// </summary>
         /// <param name="id"></param>
         /// <returns></returns>
@@ -76,7 +76,7 @@ namespace System.Speech.Internal.GrammarBuilding
         #region Protected Fields
 
         /// <summary>
-        /// 
+        ///
         /// </summary>
         protected List<string> _identifiers;
 

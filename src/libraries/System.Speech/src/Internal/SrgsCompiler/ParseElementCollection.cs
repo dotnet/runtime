@@ -20,7 +20,7 @@ namespace System.Speech.Internal.SrgsCompiler
         }
 
         /// <summary>
-        /// Attach a semantic tag to word. If the word is a rule ref then an 
+        /// Attach a semantic tag to word. If the word is a rule ref then an
         /// epsilon transition must be created
         /// </summary>
         /// <param name="propertyInfo"></param>
@@ -118,7 +118,7 @@ namespace System.Speech.Internal.SrgsCompiler
                 // Remove the added startState if possible, check done by MoveSemanticTagRight
                 for (State startState = startArc.End; startArc.IsEpsilonTransition && startState != null && Graph.MoveSemanticTagRight(startArc) && startState.InArcs.CountIsOne && startState.OutArcs.CountIsOne; startState = startArc.End)
                 {
-                    // State has a single input epsilon transition 
+                    // State has a single input epsilon transition
                     // Delete the input epsilon transition and delete state.
                     System.Diagnostics.Debug.Assert(startArc.End == startState);
                     startArc.End = null;
@@ -151,7 +151,7 @@ namespace System.Speech.Internal.SrgsCompiler
                 // Remove the end arc if possible, check done by MoveSemanticTagRight
                 for (State endState = endArc.Start; endArc.IsEpsilonTransition && endState != null && Graph.MoveSemanticTagLeft(endArc) && endState.InArcs.CountIsOne && endState.OutArcs.CountIsOne; endState = endArc.Start)
                 {
-                    // State has a single input epsilon transition 
+                    // State has a single input epsilon transition
                     // Delete the input epsilon transition and delete state.
                     System.Diagnostics.Debug.Assert(endArc.Start == endState);
                     endArc.Start = null;
@@ -206,7 +206,7 @@ namespace System.Speech.Internal.SrgsCompiler
                 // Successive <one-of> have 2 epsilon transition
                 if (_endArc.IsEpsilonTransition && start.IsEpsilonTransition)
                 {
-                    // Trim the start tag. 
+                    // Trim the start tag.
                     start = TrimStart(start, _backend);
 
                     // If Trimming didn't create a non epsilon, try to trim the end

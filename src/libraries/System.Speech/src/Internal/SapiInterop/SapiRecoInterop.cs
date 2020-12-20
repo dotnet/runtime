@@ -443,7 +443,7 @@ namespace System.Speech.Internal.SapiInterop
             }
         }
         internal UInt32 fAlphabet;
-        // Not present in SAPI 5.1 results; on SAPI 5.without IPA this is set to zero, with IPA it will indicate 
+        // Not present in SAPI 5.1 results; on SAPI 5.without IPA this is set to zero, with IPA it will indicate
         // the alphabet of pronunciations the result
 
         // TODO-hieung: Append SPRESULTHEADER to reflect new data on the managed side.
@@ -497,7 +497,7 @@ namespace System.Speech.Internal.SapiInterop
         internal IntPtr pSREnginePrivateData;
 
         /// <summary>
-        /// Helper function used to create a new phrase object from a 
+        /// Helper function used to create a new phrase object from a
         /// test string. Each word in the string is converted to a phrase element.
         /// This is useful to create a phrase to pass to the EmulateRecognition method.
         /// </summary>
@@ -518,7 +518,7 @@ namespace System.Speech.Internal.SapiInterop
         }
 
         /// <summary>
-        /// Helper function used to create a new phrase object from a 
+        /// Helper function used to create a new phrase object from a
         /// test string. Each word in the string is converted to a phrase element.
         /// This is useful to create a phrase to pass to the EmulateRecognition method.
         /// </summary>
@@ -1116,7 +1116,7 @@ namespace System.Speech.Internal.SapiInterop
         int LoadResource(string bstrResourceUri, bool fAlwaysReload, out IStream pStream, ref string pbstrMIMEType, ref short pfModified, ref string pbstrRedirectUrl);
 
         /// <summary>
-        /// Converts the resourcePath to a location in the file cache and returns a reference into the 
+        /// Converts the resourcePath to a location in the file cache and returns a reference into the
         /// cache
         /// </summary>
         /// <param name="resourcePath"></param>

@@ -31,7 +31,7 @@ namespace System.Speech.Internal.Synthesis
         /// <param name="voice"></param>
         internal static void Parse(string ssml, ISsmlParser engine, object voice)
         {
-            // Remove the CR and LF 
+            // Remove the CR and LF
             string ssmlNoCrLf = ssml.Replace('\n', ' ');
             ssmlNoCrLf = ssmlNoCrLf.Replace('\r', ' ');
             XmlTextReader reader = new XmlTextReader(new StringReader(ssmlNoCrLf));
@@ -230,7 +230,7 @@ namespace System.Speech.Internal.Synthesis
 
         /// <summary>
         /// Generic method to process an SSML element.
-        /// The element name is fetch from the element name array and 
+        /// The element name is fetch from the element name array and
         /// the delegate for that element will be called.
         /// </summary>
         private static void ProcessElement(XmlReader reader, ISsmlParser engine, string sElement, SsmlElement possibleElements, SsmlAttributes ssmAttributesParent, bool fIgnore, List<SsmlXmlAttribute> extraAttributes)
@@ -1124,7 +1124,7 @@ namespace System.Speech.Internal.Synthesis
                             break;
 
                         case "variant":
-                            // Ignore this field. We have no way with the current tokens to 
+                            // Ignore this field. We have no way with the current tokens to
                             // use it
                             CheckForDuplicates(ref sVariant, reader);
                             if (!int.TryParse(sVariant, out variant) || variant <= 0)

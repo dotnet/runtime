@@ -189,11 +189,11 @@ namespace System.Speech.Internal.Synthesis
 
         /// <summary>
         /// This routine converts from linear to ULaw.
-        /// 
+        ///
         /// Craig Reese: IDA/Supercomputing Research Center
         /// Joe Campbell: Department of Defense
         /// 29 September 1989
-        /// 
+        ///
         /// References:
         /// 1) CCITT Recommendation G.711  (very difficult to follow)
         /// 2) "A New Digital Technique for Implementation of Any
@@ -227,15 +227,15 @@ namespace System.Speech.Internal.Synthesis
                     // Extend the sign bit for the sample that is constructed from two bytes
                     sample = (int)((data >> 2) << 2);
 
-                    // Get the sample into sign-magnitude. 
+                    // Get the sample into sign-magnitude.
                     sign = (sample >> 8) & 0x80;          // set aside the sign
                     if (sign != 0)
                     {
                         sample = -sample;
                     }
-                    if (sample > uCLIP) sample = uCLIP;   // clip the magnitude 
+                    if (sample > uCLIP) sample = uCLIP;   // clip the magnitude
 
-                    // Convert from 16 bit linear to ULaw. 
+                    // Convert from 16 bit linear to ULaw.
                     sample = sample + uBIAS;
                     exponent = (int)s_exp_lut_linear2ulaw[(sample >> 7) & 0xFF];
                     mantissa = (int)((sample >> (exponent + 3)) & 0x0F);
@@ -245,7 +245,7 @@ namespace System.Speech.Internal.Synthesis
 
                 if (ZEROTRAP)
                 {
-                    if (ULawbyte == 0) ULawbyte = 0x02; // optional CCITT trap 
+                    if (ULawbyte == 0) ULawbyte = 0x02; // optional CCITT trap
                 }
 
                 table[i >> 2] = ULawbyte;
@@ -303,11 +303,11 @@ namespace System.Speech.Internal.Synthesis
 
         /// <summary>
         /// This routine converts from linear to ALaw.
-        /// 
+        ///
         /// Craig Reese: IDA/Supercomputing Research Center
         /// Joe Campbell: Department of Defense
         /// 29 September 1989
-        /// 
+        ///
         /// References:
         /// 1) CCITT Recommendation G.711  (very difficult to follow)
         /// 2) "A New Digital Technique for Implementation of Any
@@ -337,13 +337,13 @@ namespace System.Speech.Internal.Synthesis
                     // Extend the sign bit for the sample that is constructed from two bytes
                     sample = (int)((data >> 2) << 2);
 
-                    // Get the sample into sign-magnitude. 
-                    sign = ((~sample) >> 8) & 0x80;     // set aside the sign 
-                    if (sign == 0) sample = -sample;    // get magnitude 
-                    if (sample > ACLIP) sample = ACLIP; // clip the magnitude 
+                    // Get the sample into sign-magnitude.
+                    sign = ((~sample) >> 8) & 0x80;     // set aside the sign
+                    if (sign == 0) sample = -sample;    // get magnitude
+                    if (sample > ACLIP) sample = ACLIP; // clip the magnitude
                 }
 
-                // Convert from 16 bit linear to ULaw. 
+                // Convert from 16 bit linear to ULaw.
                 if (sample >= 256)
                 {
                     exponent = s_exp_lut_linear2alaw[(sample >> 8) & 0x7F];

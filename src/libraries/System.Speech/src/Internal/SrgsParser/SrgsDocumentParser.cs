@@ -262,7 +262,7 @@ namespace System.Speech.Internal.SrgsParser
 
         /// <summary>
         /// Break the string into individual tokens and ParseToken() each individual token.
-        /// 
+        ///
         /// Token string is a sequence of 0 or more white space delimited tokens.
         /// Tokens may also be delimited by double quotes.  In these cases, the double
         /// quotes token must be surrounded by white space or string boundary.

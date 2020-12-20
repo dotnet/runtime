@@ -7,7 +7,7 @@ using System.Speech.Internal.SrgsParser;
 namespace System.Speech.Internal.GrammarBuilding
 {
     /// <summary>
-    /// 
+    ///
     /// </summary>
     internal abstract class GrammarBuilderBase
     {
@@ -20,13 +20,13 @@ namespace System.Speech.Internal.GrammarBuilding
         #region Internal Methods
 
         /// <summary>
-        /// 
+        ///
         /// </summary>
         /// <returns></returns>
         internal abstract GrammarBuilderBase Clone();
 
         /// <summary>
-        /// 
+        ///
         /// </summary>
         /// <param name="elementFactory"></param>
         /// <param name="rule"></param>
@@ -36,7 +36,7 @@ namespace System.Speech.Internal.GrammarBuilding
         internal abstract IElement CreateElement(IElementFactory elementFactory, IElement parent, IRule rule, IdentifierCollection ruleIds);
 
         /// <summary>
-        /// 
+        ///
         /// </summary>
         /// <returns></returns>
         internal virtual int CalcCount(BuilderElements parent)
@@ -57,7 +57,7 @@ namespace System.Speech.Internal.GrammarBuilding
         #region Internal Properties
 
         /// <summary>
-        /// Used by the GrammarBuilder optimizer to count the number of children and decendant for 
+        /// Used by the GrammarBuilder optimizer to count the number of children and decendant for
         /// an element
         /// </summary>
         internal virtual int Count
@@ -106,7 +106,7 @@ namespace System.Speech.Internal.GrammarBuilding
         }
 
         /// <summary>
-        /// 
+        ///
         /// </summary>
         internal abstract string DebugSummary { get; }
 

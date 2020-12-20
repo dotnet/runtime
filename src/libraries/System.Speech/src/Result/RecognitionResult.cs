@@ -154,13 +154,13 @@ namespace System.Speech.Recognition
             }
             catch (COMException ex)
             {
-                // If we failed to set the text feedback, it is likely an inproc Recognition result. 
+                // If we failed to set the text feedback, it is likely an inproc Recognition result.
                 if (ex.ErrorCode == (int)SAPIErrorCodes.SPERR_NOT_SUPPORTED_FOR_INPROC_RECOGNIZER)
                 {
                     throw new NotSupportedException(SR.Get(SRID.SapiErrorNotSupportedForInprocRecognizer));
                 }
 
-                // Otherwise, this could also fail for various reasons, e.g. we have changed the recognizer under 
+                // Otherwise, this could also fail for various reasons, e.g. we have changed the recognizer under
                 // the hood. In any case, we dont want this function to fail.
                 return false;
             }
@@ -475,9 +475,9 @@ namespace System.Speech.Recognition
 
         private void ExtractDictationAlternates(ISpRecoResult recoResult, int maxAlternates)
         {
-            // Get the alternates for dication 
-            // alternates for dictation are not part of the recognition results and must be pulled out 
-            // from the recognition result bits. 
+            // Get the alternates for dication
+            // alternates for dictation are not part of the recognition results and must be pulled out
+            // from the recognition result bits.
 
             if (recoResult != null) // recoResult is null if we are in the case of our unit test.
             {
@@ -491,7 +491,7 @@ namespace System.Speech.Recognition
                     }
                     catch (COMException)
                     {
-                        // In some cases such as when the dictation grammar has been unloaded, the engine may not be able 
+                        // In some cases such as when the dictation grammar has been unloaded, the engine may not be able
                         // to provide the alternates. We set the alternate list to empty.
                         maxAlternates = 0;
                     }
@@ -513,7 +513,7 @@ namespace System.Speech.Recognition
                                 SPSERIALIZEDPHRASE serializedPhrase = RecognizedPhrase.GetPhraseHeader(coMemSerializedPhrase, uint.MaxValue, _isSapi53Header);
 
                                 //
-                                // If we are getting the alternates from SAPI, the alphabet should have already been converted 
+                                // If we are getting the alternates from SAPI, the alphabet should have already been converted
                                 // to the alphabet we (applications) want.
                                 //
                                 bool hasIPAPronunciation = (_header.fAlphabet & (uint)SPRESULTALPHABET.SPRA_APP_UPS) != 0;

@@ -44,7 +44,7 @@ namespace System.Speech.Recognition.SrgsGrammar
         /// <summary>
         /// Validate each element and recurse through all the children srgs
         /// elements if any.
-        /// Any derived class implementing this mehod must call the base class 
+        /// Any derived class implementing this mehod must call the base class
         /// in order for the children to be processed.
         /// </summary>
         internal virtual void Validate(SrgsGrammar grammar)

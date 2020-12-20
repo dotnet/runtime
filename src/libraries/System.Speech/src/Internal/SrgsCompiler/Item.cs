@@ -80,7 +80,7 @@ namespace System.Speech.Internal.SrgsCompiler
                     _startArc = InsertState(_startArc, _repeatProbability, Position.Before);
                     State startState = _startArc.End;
 
-                    // If _maxRepeat = Infinite, add epsilon transition loop back to the start of this 
+                    // If _maxRepeat = Infinite, add epsilon transition loop back to the start of this
                     if (_maxRepeat == System.Int32.MaxValue && _minRepeat == 1)
                     {
                         _endArc = InsertState(_endArc, 1.0f, Position.After);

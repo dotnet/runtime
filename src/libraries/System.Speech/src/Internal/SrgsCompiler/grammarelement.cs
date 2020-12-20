@@ -369,7 +369,7 @@ namespace System.Speech.Internal.SrgsCompiler
                 }
                 else
                 {
-                    // Multiple definitions of the same Rule.                    
+                    // Multiple definitions of the same Rule.
                     XmlParser.ThrowSrgsException(SRID.RuleRedefinition, sRuleId);    // "Redefinition of rule ""%s""."
                 }
             }

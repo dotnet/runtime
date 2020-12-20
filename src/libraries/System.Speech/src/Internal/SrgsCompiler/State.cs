@@ -157,7 +157,7 @@ namespace System.Speech.Internal.SrgsCompiler
         #region State linked list
 
         // The pointers for 2 linked list are stored within each state.
-        // When states are created, they added into a list, the '1' list. 
+        // When states are created, they added into a list, the '1' list.
 
         // The Members of the list are Set, Add, Remove, Prev and Next.
 

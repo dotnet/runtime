@@ -218,7 +218,7 @@ namespace System.Speech.Internal.SrgsCompiler
                 {
                     NameValuePair pair = pairs[i];
 
-                    // annonymous 
+                    // annonymous
                     if (pair._name == null)
                     {
                         values[i] = pair._value;

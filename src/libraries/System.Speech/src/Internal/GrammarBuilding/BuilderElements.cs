@@ -11,7 +11,7 @@ using System.Text;
 namespace System.Speech.Internal.GrammarBuilding
 {
     /// <summary>
-    /// 
+    ///
     /// </summary>
     [DebuggerDisplay("{DebugSummary}")]
     internal abstract class BuilderElements : GrammarBuilderBase
@@ -25,7 +25,7 @@ namespace System.Speech.Internal.GrammarBuilding
         #region Constructors
 
         /// <summary>
-        /// 
+        ///
         /// </summary>
         internal BuilderElements()
         {
@@ -42,7 +42,7 @@ namespace System.Speech.Internal.GrammarBuilding
 
         #region Public Methods
 
-        /// TODOC 
+        /// TODOC
         public override bool Equals(object obj)
         {
             BuilderElements refObj = obj as BuilderElements;
@@ -133,7 +133,7 @@ namespace System.Speech.Internal.GrammarBuilding
                                     newRules.Add(newRule);
                                 }
 
-                                // Create a ruleref and attach the 
+                                // Create a ruleref and attach the
                                 if (ruleRef == null)
                                 {
                                     ruleRef = new RuleRefElement(newRule);
@@ -141,7 +141,7 @@ namespace System.Speech.Internal.GrammarBuilding
                                 }
                                 parent.Items[current.Parent.Items.IndexOf(current)] = ruleRef;
                             }
-                            // 
+                            //
                             current.RemoveDictionaryElements(dict);
                             gb[k] = null;
                         }
@@ -161,7 +161,7 @@ namespace System.Speech.Internal.GrammarBuilding
         #region Internal Methods
 
         /// <summary>
-        /// 
+        ///
         /// </summary>
         /// <param name="phrase"></param>
         internal void Add(string phrase)
@@ -170,7 +170,7 @@ namespace System.Speech.Internal.GrammarBuilding
         }
 
         /// <summary>
-        /// 
+        ///
         /// </summary>
         /// <param name="builder"></param>
         internal void Add(GrammarBuilder builder)
@@ -182,7 +182,7 @@ namespace System.Speech.Internal.GrammarBuilding
         }
 
         /// <summary>
-        /// 
+        ///
         /// </summary>
         /// <param name="item"></param>
         internal void Add(GrammarBuilderBase item)
@@ -191,7 +191,7 @@ namespace System.Speech.Internal.GrammarBuilding
         }
 
         /// <summary>
-        /// 
+        ///
         /// </summary>
         /// <returns></returns>
         /// <param name="builders"></param>
@@ -204,7 +204,7 @@ namespace System.Speech.Internal.GrammarBuilding
         }
 
         /// <summary>
-        /// 
+        ///
         /// </summary>
         /// <param name="elementFactory"></param>
         /// <param name="parent"></param>
@@ -224,7 +224,7 @@ namespace System.Speech.Internal.GrammarBuilding
         }
 
         /// <summary>
-        /// 
+        ///
         /// </summary>
         /// <param name="elementFactory"></param>
         /// <param name="parent"></param>
@@ -245,7 +245,7 @@ namespace System.Speech.Internal.GrammarBuilding
         }
 
         /// <summary>
-        /// 
+        ///
         /// </summary>
         /// <returns></returns>
         internal override int CalcCount(BuilderElements parent)

@@ -404,7 +404,7 @@ namespace System.Speech.Internal
         private void FixInsertCase3(TreeNode node)
         {
             //
-            // Now it's RED, parent is RED, uncle is BLACK, 
+            // Now it's RED, parent is RED, uncle is BLACK,
             // We want to rotate so that its uncle is on the opposite side
             if (node == node.Parent.Right && node.Parent == node.Parent.Parent.Left)
             {
@@ -471,7 +471,7 @@ namespace System.Speech.Internal
                     // Note that onlyChild could be null.
                     // The deleted node and its only child are BLACK, and there is a real parent, therefore,
                     // the total black height was at least 2 (excluding the real parent), thus the sibling subtree also has a black height of at least 2
-                    // 
+                    //
                     FixRemovalCase2(GetSibling(onlyChild, node.Parent));
                 }
             }

@@ -28,7 +28,7 @@ namespace System.Speech.Internal.SrgsCompiler
         public OneOf(Rule rule, Backend backend)
             : base(backend, rule)
         {
-            // Create a start and end start. 
+            // Create a start and end start.
             _startState = _backend.CreateNewState(rule);
             _endState = _backend.CreateNewState(rule);
 
@@ -54,7 +54,7 @@ namespace System.Speech.Internal.SrgsCompiler
         /// <summary>
         /// Process the '/one-of' element.
         /// Connects all the arsc into an exit enf point.
-        /// 
+        ///
         /// Verify OneOf contains at least one child 'item'.
         /// </summary>
         /// <param name="parentElement"></param>

@@ -19,7 +19,7 @@ using System.Speech.Internal.SrgsParser;
 namespace System.Speech.Recognition.SrgsGrammar
 {
     /// <summary>
-    /// This class allows a _grammar to be specified in SRGS form.   
+    /// This class allows a _grammar to be specified in SRGS form.
     /// APITODO: needs programmatic access to SRGS dom; PACOG
     /// APITODO: needs rule activation/deactivation methods
     /// </summary>
@@ -43,7 +43,7 @@ namespace System.Speech.Recognition.SrgsGrammar
         }
 
         /// <summary>
-        /// 
+        ///
         /// </summary>
         /// <param name="path"></param>
         public SrgsDocument(string path)
@@ -90,7 +90,7 @@ namespace System.Speech.Recognition.SrgsGrammar
         }
 
         /// <summary>
-        /// 
+        ///
         /// </summary>
         /// <param name="grammarRootRule"></param>
         public SrgsDocument(SrgsRule grammarRootRule) : this()

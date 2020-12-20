@@ -20,7 +20,7 @@ namespace System.Speech.Internal.GrammarBuilding
         #region Constructors
 
         /// <summary>
-        /// 
+        ///
         /// </summary>
         /// <param name="phrase"></param>
         internal GrammarBuilderPhrase(string phrase)
@@ -29,7 +29,7 @@ namespace System.Speech.Internal.GrammarBuilding
         }
 
         /// <summary>
-        /// 
+        ///
         /// </summary>
         /// <param name="phrase"></param>
         /// <param name="subsetMatchingCriteria"></param>
@@ -39,7 +39,7 @@ namespace System.Speech.Internal.GrammarBuilding
         }
 
         /// <summary>
-        /// 
+        ///
         /// </summary>
         /// <param name="phrase"></param>
         /// <param name="subsetMatching"></param>
@@ -66,7 +66,7 @@ namespace System.Speech.Internal.GrammarBuilding
         }
 
         /// <summary>
-        /// 
+        ///
         /// </summary>
         /// <param name="phrase"></param>
         /// <param name="subsetMatching"></param>
@@ -116,7 +116,7 @@ namespace System.Speech.Internal.GrammarBuilding
         #region Internal Methods
 
         /// <summary>
-        /// 
+        ///
         /// </summary>
         /// <returns></returns>
         internal override GrammarBuilderBase Clone()
@@ -125,7 +125,7 @@ namespace System.Speech.Internal.GrammarBuilding
         }
 
         /// <summary>
-        /// 
+        ///
         /// </summary>
         /// <param name="elementFactory"></param>
         /// <param name="parent"></param>
@@ -167,7 +167,7 @@ namespace System.Speech.Internal.GrammarBuilding
         #region Private Methods
 
         /// <summary>
-        /// 
+        ///
         /// </summary>
         /// <param name="elementFactory"></param>
         /// <param name="parent"></param>

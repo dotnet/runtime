@@ -9,7 +9,7 @@ using System.Text;
 namespace System.Speech.Internal.GrammarBuilding
 {
     /// <summary>
-    /// 
+    ///
     /// </summary>
     internal sealed class RuleElement : BuilderElements
     {
@@ -22,7 +22,7 @@ namespace System.Speech.Internal.GrammarBuilding
         #region Constructors
 
         /// <summary>
-        /// 
+        ///
         /// </summary>
         /// <param name="name"></param>
         internal RuleElement(string name)
@@ -31,7 +31,7 @@ namespace System.Speech.Internal.GrammarBuilding
         }
 
         /// <summary>
-        /// 
+        ///
         /// </summary>
         /// <param name="builder"></param>
         /// <param name="name"></param>
@@ -83,7 +83,7 @@ namespace System.Speech.Internal.GrammarBuilding
         #region Internal Methods
 
         /// <summary>
-        /// 
+        ///
         /// </summary>
         /// <returns></returns>
         internal override GrammarBuilderBase Clone()
@@ -94,7 +94,7 @@ namespace System.Speech.Internal.GrammarBuilding
         }
 
         /// <summary>
-        /// 
+        ///
         /// </summary>
         /// <param name="elementFactory"></param>
         /// <param name="parent"></param>
@@ -121,7 +121,7 @@ namespace System.Speech.Internal.GrammarBuilding
         }
 
         /// <summary>
-        /// 
+        ///
         /// </summary>
         /// <returns></returns>
         internal override int CalcCount(BuilderElements parent)
@@ -177,7 +177,7 @@ namespace System.Speech.Internal.GrammarBuilding
         #region Private Fields
 
         /// <summary>
-        /// 
+        ///
         /// </summary>
         private readonly string _name;
         private string _ruleName;

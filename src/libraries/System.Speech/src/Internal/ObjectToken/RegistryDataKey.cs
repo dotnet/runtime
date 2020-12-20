@@ -206,7 +206,7 @@ namespace System.Speech.Internal.ObjectTokens
         }
 
         /// <summary>
-        /// Writes the specified string value from the registry. If valueName 
+        /// Writes the specified string value from the registry. If valueName
         /// is NULL then the default value of the registry key is read.
         /// </summary>
         /// <param name="valueName"></param>
@@ -262,7 +262,7 @@ namespace System.Speech.Internal.ObjectTokens
         }
 
         /// <summary>
-        /// Opens a sub-key and returns a new object which supports SpDataKey 
+        /// Opens a sub-key and returns a new object which supports SpDataKey
         /// for the specified sub-key.
         /// </summary>
         /// <param name="subKeyName"></param>
@@ -363,7 +363,7 @@ namespace System.Speech.Internal.ObjectTokens
 #pragma warning disable 56507
 
         /// <summary>
-        /// Reads the specified string value to the registry. If valueName is 
+        /// Reads the specified string value to the registry. If valueName is
         /// NULL then the default value of the registy key is read.
         /// </summary>
         /// <param name="valueName"></param>
@@ -382,7 +382,7 @@ namespace System.Speech.Internal.ObjectTokens
 #pragma warning restore 56507
 
         /// <summary>
-        /// Opens a sub-key and returns a new object which supports SpDataKey 
+        /// Opens a sub-key and returns a new object which supports SpDataKey
         /// for the specified sub-key.
         /// </summary>
         /// <param name="valueName"></param>
@@ -416,7 +416,7 @@ namespace System.Speech.Internal.ObjectTokens
         }
 
         /// <summary>
-        /// Opens a sub-key and returns a new object which supports SpDataKey 
+        /// Opens a sub-key and returns a new object which supports SpDataKey
         /// for the specified sub-key.
         /// </summary>
         /// <param name="keyName"></param>
@@ -437,7 +437,7 @@ namespace System.Speech.Internal.ObjectTokens
         }
 
         /// <summary>
-        /// Creates a sub-key and returns a new object which supports SpDataKey 
+        /// Creates a sub-key and returns a new object which supports SpDataKey
         /// for the specified sub-key.
         /// </summary>
         /// <param name="keyName"></param>
@@ -610,12 +610,12 @@ namespace System.Speech.Internal.ObjectTokens
         {
             STG_E_FILENOTFOUND = -2147287038,  // 0x80030002
             SPERR_ALREADY_INITIALIZED = -2147201022, // 0x80045002
-            SPERR_UNSUPPORTED_FORMAT = -2147201021,  // 0x80045003    
+            SPERR_UNSUPPORTED_FORMAT = -2147201021,  // 0x80045003
             SPERR_DEVICE_BUSY = -2147201018,  // 0x80045006
             SPERR_DEVICE_NOT_SUPPORTED = -2147201017,  // 0x80045007
             SPERR_DEVICE_NOT_ENABLED = -2147201016,  // 0x80045008
             SPERR_NO_DRIVER = -2147201015,  // 0x80045009
-            SPERR_TOO_MANY_GRAMMARS = -2147200990,  // 0x80045022    
+            SPERR_TOO_MANY_GRAMMARS = -2147200990,  // 0x80045022
             SPERR_INVALID_IMPORT = -2147200988,  // 0x80045024
             SPERR_AUDIO_BUFFER_OVERFLOW = -2147200977,  // 0x8004502F
             SPERR_NO_AUDIO_DATA = -2147200976,  // 0x80045030
@@ -625,8 +625,8 @@ namespace System.Speech.Internal.ObjectTokens
             SPERR_NOT_TOPLEVEL_RULE = -2147200940,  // 0x80045054
             SPERR_NOT_ACTIVE_SESSION = -2147200925,  // 0x80045063
             SPERR_SML_GENERATION_FAIL = -2147200921,  // 0x80045067
-            SPERR_SHARED_ENGINE_DISABLED = -2147200906,  // 0x80045076    
-            SPERR_RECOGNIZER_NOT_FOUND = -2147200905,  // 0x80045077    
+            SPERR_SHARED_ENGINE_DISABLED = -2147200906,  // 0x80045076
+            SPERR_RECOGNIZER_NOT_FOUND = -2147200905,  // 0x80045077
             SPERR_AUDIO_NOT_FOUND = -2147200904,  // 0x80045078
             S_OK = 0,            // 0x00000000
             S_FALSE = 1,            // 0x00000001

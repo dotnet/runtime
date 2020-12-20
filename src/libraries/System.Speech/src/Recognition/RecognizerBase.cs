@@ -37,7 +37,7 @@ namespace System.Speech.Recognition
         #region Constructors
 
         /// <summary>
-        /// 
+        ///
         /// </summary>
         public void Dispose()
         {
@@ -504,7 +504,7 @@ namespace System.Speech.Recognition
             }
             catch (COMException e)
             {
-                // SAPI 5.1 can throw this error when no recognizer 
+                // SAPI 5.1 can throw this error when no recognizer
                 if (!_supportsSapi53 && (SAPIErrorCodes)e.ErrorCode == SAPIErrorCodes.SPERR_NOT_FOUND)
                 {
                     throw new PlatformNotSupportedException(SR.Get(SRID.RecognitionNotSupported));
@@ -669,7 +669,7 @@ namespace System.Speech.Recognition
                     }
                     else
                     {
-                        // We have canceled the recognition, so now we only wait to process remaining events 
+                        // We have canceled the recognition, so now we only wait to process remaining events
                         //  until SPEI_END_SR_STREAM event arrives.
                         hasPendingTask = _handlerWaitHandle.WaitOne(eventTimeout, false);
                     }
@@ -1308,7 +1308,7 @@ namespace System.Speech.Recognition
         /// TODOC <_include file='doc\RecognizerBase.uex' path='docs/doc[@for="RecognizerBase.LoadGrammarCompleted"]/*' />
         internal event EventHandler<LoadGrammarCompletedEventArgs> LoadGrammarCompleted;
 
-        // The event fired when speech is detected. Used for barge-in.   
+        // The event fired when speech is detected. Used for barge-in.
         /// TODOC <_include file='doc\RecognizerBase.uex' path='docs/doc[@for="RecognizerBase.SpeechDetected"]/*' />
         internal event EventHandler<SpeechDetectedEventArgs> SpeechDetected;
 
@@ -1346,7 +1346,7 @@ namespace System.Speech.Recognition
             }
         }
 
-        /// TODOC 
+        /// TODOC
         internal event EventHandler<AudioSignalProblemOccurredEventArgs> AudioSignalProblemOccurred
         {
             [MethodImplAttribute(MethodImplOptions.Synchronized)]
@@ -1370,7 +1370,7 @@ namespace System.Speech.Recognition
             }
         }
 
-        /// TODOC 
+        /// TODOC
         internal event EventHandler<AudioLevelUpdatedEventArgs> AudioLevelUpdated
         {
             [MethodImplAttribute(MethodImplOptions.Synchronized)]
@@ -1394,7 +1394,7 @@ namespace System.Speech.Recognition
             }
         }
 
-        /// TODOC 
+        /// TODOC
         internal event EventHandler<AudioStateChangedEventArgs> AudioStateChanged
         {
             [MethodImplAttribute(MethodImplOptions.Synchronized)]
@@ -1436,7 +1436,7 @@ namespace System.Speech.Recognition
                     // Lock to wait for event dispatching to finish
                     lock (_thisObjectLock)
                     {
-                        // Make sure no pending posts are sent, no events are dispatched as we are disposing 
+                        // Make sure no pending posts are sent, no events are dispatched as we are disposing
 
                         if (_asyncWorkerUI != null)
                         {
@@ -1600,7 +1600,7 @@ namespace System.Speech.Recognition
 
         /// <summary>
         /// Called to load a grammar and all of its dependent rule refs.
-        /// 
+        ///
         /// Returns the CFG data for a given file and builds a tree of rule ref dependencies.
         /// </summary>
         /// <param name="bstrResourceUri"></param>
@@ -1673,7 +1673,7 @@ namespace System.Speech.Recognition
             }
             catch (Exception e)
             {
-                // Something failed. 
+                // Something failed.
                 // Save the exception and return an error to SAPI.
                 pStream = null;
                 _loadException = e;
@@ -1712,7 +1712,7 @@ namespace System.Speech.Recognition
         {
             byte[] data = grammar.CfgData;
 
-            // Pin the array: 
+            // Pin the array:
             GCHandle gcHandle = GCHandle.Alloc(data, GCHandleType.Pinned);
             IntPtr dataPtr = gcHandle.AddrOfPinnedObject();
 
@@ -1932,7 +1932,7 @@ namespace System.Speech.Recognition
                     {
                         if (_currentGrammarId == g.InternalData._grammarId)
                         {
-                            // This can only be hit if _currentGrammarId has wrapped around past 2^64. 
+                            // This can only be hit if _currentGrammarId has wrapped around past 2^64.
                             foundCollision = true;
                             break;
                         }
@@ -1973,7 +1973,7 @@ namespace System.Speech.Recognition
                 }
             }
 
-            // Grammar was not in correct state - produce exception. 
+            // Grammar was not in correct state - produce exception.
             switch (grammar.State)
             {
                 case GrammarState.Unloaded:
@@ -2067,7 +2067,7 @@ namespace System.Speech.Recognition
             }
             else
             {
-                // Fast case 
+                // Fast case
                 SAPIErrorCodes hr = SapiRecognizer.EmulateRecognition(phrase);
                 if (hr != SAPIErrorCodes.S_OK)
                 {
@@ -2484,7 +2484,7 @@ namespace System.Speech.Recognition
                 // And the Enabled property is set,
                 // then proceed and raise the event.
                 // Otherwise, the Grammar has been unloaded or deactivated so skip the event.
-                // Note: this doesn't absolutely guarantee an event won't be fired after the grammar is unloaded 
+                // Note: this doesn't absolutely guarantee an event won't be fired after the grammar is unloaded
                 // - there's a small window after this check is done and before the event fires where the grammar could get
                 // unloaded. To fix this would require more strict locking here.
                 if (((result.Grammar != null && result.Grammar.Enabled) ||
@@ -2550,7 +2550,7 @@ namespace System.Speech.Recognition
             //
             // In the inproc case, we will not be able to do simultaneous recognition, so this is
             // the recongition we are waiting for.
-            // In the shared case, we can do emulation during recognition, but we only wait for the 
+            // In the shared case, we can do emulation during recognition, but we only wait for the
             // emulate result.
             //
             if (_inproc || isEmulate)
@@ -2642,7 +2642,7 @@ namespace System.Speech.Recognition
             {
                 //
                 // TODO-hieung: This test for _isWaitingRecognition is a hack. A PHRASE_START event must be always
-                // followed by a recognition/false recognition event. But it is not the case at this point as we 
+                // followed by a recognition/false recognition event. But it is not the case at this point as we
                 // actually receive multiple SR_END_STREAM events for a single emulation, and the first SR_END_STREAM
                 // is not preceeded by a recognition event. Until we found the problem in SAPI, this is only a workaround
                 //
@@ -2910,7 +2910,7 @@ namespace System.Speech.Recognition
                 if (_bookmarkTable.Count == 0)
                 {
                     // Now reset the _nextBookmarkId.
-                    // Remember that several values are predefined and must not be used, so reset to _intialBookmarkId 
+                    // Remember that several values are predefined and must not be used, so reset to _intialBookmarkId
                     _nextBookmarkId = _firstUnusedBookmarkId;
                     _prevMaxBookmarkId = _firstUnusedBookmarkId - 1;
                 }
@@ -3205,7 +3205,7 @@ namespace System.Speech.Recognition
         private TimeSpan _babbleTimeout;
 
         internal bool _haveInputSource; // Tracks if there's an input stream set or not - only used on SpeechRecognitionEngine.
-        private Stream _inputStream;    // track the input stream open if it has been opened by this object 
+        private Stream _inputStream;    // track the input stream open if it has been opened by this object
 
         // Dictionary used to map between sapi bookmark ids and RequestRecognizerUpdate userToken values.
         private Dictionary<int, object> _bookmarkTable = new Dictionary<int, object>();
@@ -3231,7 +3231,7 @@ namespace System.Speech.Recognition
         private Exception _loadException;
         private Grammar _topLevel;
 
-        // TODO jeanfp remove that 
+        // TODO jeanfp remove that
         private bool _inproc;
 
         // private event used to hook up the SpeechRecognitionEngine RecognizeCompleted event.
@@ -3260,7 +3260,7 @@ namespace System.Speech.Recognition
 
             /// <summary>
             /// Called to load a grammar and all of its dependent rule refs.
-            /// 
+            ///
             /// Returns the CFG data for a given file and builds a tree of rule ref dependencies.
             /// </summary>
             /// <param name="bstrResourceUri"></param>
@@ -3439,7 +3439,7 @@ namespace System.Speech.Recognition
     internal interface IEnumSpObjectTokens
     {
         void Slot1(); // void Next(UInt32 celt, [MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 0), Out] ISpObjectToken[] pelt, out UInt32 pceltFetched);
-        void Slot2(); // void Skip(UInt32 celt);    
+        void Slot2(); // void Skip(UInt32 celt);
         void Slot3(); // void Reset();
         void Slot4(); // void Clone(out IEnumSpObjectTokens ppEnum);
         void Item(UInt32 Index, out ISpObjectToken ppToken);

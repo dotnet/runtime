@@ -94,7 +94,7 @@ namespace System.Speech.Internal.Synthesis
             // Get the Wave header if it has not been set by the user
             if (targetWaveFormat == null && _waveFormat == null)
             {
-                // The registry values contains a default rate 
+                // The registry values contains a default rate
                 if (VoiceInfo.SupportedAudioFormats.Count > 0)
                 {
                     // Create the array of bytes containing the format

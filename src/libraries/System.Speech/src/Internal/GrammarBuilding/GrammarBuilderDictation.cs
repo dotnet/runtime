@@ -10,7 +10,7 @@ using System.Diagnostics;
 namespace System.Speech.Internal.GrammarBuilding
 {
     /// <summary>
-    /// 
+    ///
     /// </summary>
     internal sealed class GrammarBuilderDictation : GrammarBuilderBase
     {
@@ -23,7 +23,7 @@ namespace System.Speech.Internal.GrammarBuilding
         #region Constructors
 
         /// <summary>
-        /// 
+        ///
         /// </summary>
         internal GrammarBuilderDictation()
             : this(null)
@@ -31,7 +31,7 @@ namespace System.Speech.Internal.GrammarBuilding
         }
 
         /// <summary>
-        /// 
+        ///
         /// </summary>
         /// <param name="category"></param>
         internal GrammarBuilderDictation(string category)
@@ -77,7 +77,7 @@ namespace System.Speech.Internal.GrammarBuilding
         #region Internal Methods
 
         /// <summary>
-        /// 
+        ///
         /// </summary>
         /// <returns></returns>
         internal override GrammarBuilderBase Clone()
@@ -86,7 +86,7 @@ namespace System.Speech.Internal.GrammarBuilding
         }
 
         /// <summary>
-        /// 
+        ///
         /// </summary>
         /// <param name="elementFactory"></param>
         /// <param name="parent"></param>
@@ -131,7 +131,7 @@ namespace System.Speech.Internal.GrammarBuilding
         #region Private Methods
 
         /// <summary>
-        /// 
+        ///
         /// </summary>
         /// <param name="elementFactory"></param>
         /// <param name="parent"></param>
@@ -163,7 +163,7 @@ namespace System.Speech.Internal.GrammarBuilding
         #region Private Fields
 
         /// <summary>
-        /// 
+        ///
         /// </summary>
         private readonly string _category;
 

@@ -33,15 +33,15 @@ namespace System.Speech.Internal.SapiInterop
         STG_E_FILENOTFOUND = -2147287038,  // 0x80030002
         CLASS_E_CLASSNOTAVAILABLE = -2147221231, // 0x80040111
         REGDB_E_CLASSNOTREG = -2147221164, // 0x80040154
-        SPERR_UNSUPPORTED_FORMAT = -2147201021,  // 0x80045003    
-        SPERR_UNSUPPORTED_PHONEME = -2147200902,  // 0x8004507A    
-        SPERR_VOICE_NOT_FOUND = -2147200877,  // 0x80045093    
+        SPERR_UNSUPPORTED_FORMAT = -2147201021,  // 0x80045003
+        SPERR_UNSUPPORTED_PHONEME = -2147200902,  // 0x8004507A
+        SPERR_VOICE_NOT_FOUND = -2147200877,  // 0x80045093
         //SPERR_DEVICE_BUSY = -2147201018,  // 0x80045006
         //SPERR_DEVICE_NOT_SUPPORTED = -2147201017,  // 0x80045007
         //SPERR_DEVICE_NOT_ENABLED = -2147201016,  // 0x80045008
         //SPERR_NO_DRIVER = -2147201015,  // 0x80045009
         SPERR_NOT_IN_LEX = -2147200999,  // 0x80045019
-        SPERR_TOO_MANY_GRAMMARS = -2147200990,  // 0x80045022    
+        SPERR_TOO_MANY_GRAMMARS = -2147200990,  // 0x80045022
         SPERR_INVALID_IMPORT = -2147200988,  // 0x80045024
         //SPERR_AUDIO_BUFFER_OVERFLOW = -2147200977,  // 0x8004502F
         //SPERR_NO_AUDIO_DATA = -2147200976,  // 0x80045030
@@ -52,8 +52,8 @@ namespace System.Speech.Internal.SapiInterop
         SPERR_NOT_TOPLEVEL_RULE = -2147200940,  // 0x80045054
         //SPERR_NOT_ACTIVE_SESSION = -2147200925,  // 0x80045063
         //SPERR_SML_GENERATION_FAIL = -2147200921,  // 0x80045067
-        SPERR_SHARED_ENGINE_DISABLED = -2147200906,  // 0x80045076    
-        SPERR_RECOGNIZER_NOT_FOUND = -2147200905,  // 0x80045077    
+        SPERR_SHARED_ENGINE_DISABLED = -2147200906,  // 0x80045076
+        SPERR_RECOGNIZER_NOT_FOUND = -2147200905,  // 0x80045077
         SPERR_AUDIO_NOT_FOUND = -2147200904,  // 0x80045078
         SPERR_NOT_SUPPORTED_FOR_INPROC_RECOGNIZER = -2147200893,  //  0x80045083
         SPERR_LEX_INVALID_DATA = -2147200891,        // 0x80045085
@@ -79,7 +79,7 @@ namespace System.Speech.Internal.SapiInterop
         //internal const string SPPROP_ADAPTATION_ON = "AdaptationOn";
         internal const string SPPROP_CFG_CONFIDENCE_REJECTION_THRESHOLD = "CFGConfidenceRejectionThreshold";
 
-        // internal const UInt32   SPVALUETYPE 
+        // internal const UInt32   SPVALUETYPE
         // internal const UInt32 SPDF_PROPERTY	= 0x1;
         // internal const UInt32 SPDF_REPLACEMENT	= 0x2;
         // internal const UInt32 SPDF_RULE	= 0x4;
@@ -283,7 +283,7 @@ namespace System.Speech.Internal.SapiInterop
     internal interface IEnumSpObjectTokens
     {
         void Slot1(); // void Next(UInt32 celt, [MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 0), Out] ISpObjectToken[] pelt, out UInt32 pceltFetched);
-        void Slot2(); // void Skip(UInt32 celt);    
+        void Slot2(); // void Skip(UInt32 celt);
         void Slot3(); // void Reset();
         void Slot4(); // void Clone(out IEnumSpObjectTokens ppEnum);
         void Item(UInt32 Index, out ISpObjectToken ppToken);

@@ -8,7 +8,7 @@ using System.Speech.Synthesis.TtsEngine;
 namespace System.Speech.Internal.Synthesis
 {
     /// <summary>
-    /// 
+    ///
     /// </summary>
     internal sealed class WaveHeader : IDisposable
     {

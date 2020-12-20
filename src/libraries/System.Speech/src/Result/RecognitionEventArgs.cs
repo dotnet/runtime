@@ -5,7 +5,7 @@ using System;
 
 namespace System.Speech.Recognition
 {
-    /// TODOC 
+    /// TODOC
 
     [Serializable]
     public abstract class RecognitionEventArgs : EventArgs
@@ -46,7 +46,7 @@ namespace System.Speech.Recognition
         #endregion
     }
 
-    /// TODOC 
+    /// TODOC
     [Serializable]
     public class SpeechRecognizedEventArgs : RecognitionEventArgs
     {
@@ -65,7 +65,7 @@ namespace System.Speech.Recognition
         #endregion
     }
 
-    /// TODOC 
+    /// TODOC
     [Serializable]
     public class SpeechRecognitionRejectedEventArgs : RecognitionEventArgs
     {
@@ -84,7 +84,7 @@ namespace System.Speech.Recognition
         #endregion
     }
 
-    /// TODOC 
+    /// TODOC
     [Serializable]
     public class SpeechHypothesizedEventArgs : RecognitionEventArgs
     {

@@ -9,7 +9,7 @@ using System.Speech.Internal;
 namespace System.Speech.Recognition
 {
     /// <summary>
-    /// 
+    ///
     /// </summary>
 
     [DebuggerDisplay("{_oneOf.DebugSummary}")]
@@ -24,14 +24,14 @@ namespace System.Speech.Recognition
         #region Constructors
 
         /// <summary>
-        /// 
+        ///
         /// </summary>
         public Choices()
         {
         }
 
         /// <summary>
-        /// 
+        ///
         /// </summary>
         /// <param name="phrases"></param>
         public Choices(params string[] phrases)
@@ -42,7 +42,7 @@ namespace System.Speech.Recognition
         }
 
         /// <summary>
-        /// 
+        ///
         /// </summary>
         /// <param name="alternateChoices"></param>
         public Choices(params GrammarBuilder[] alternateChoices)
@@ -64,7 +64,7 @@ namespace System.Speech.Recognition
         #region Public Methods
 
         /// <summary>
-        /// 
+        ///
         /// </summary>
         /// <param name="phrases"></param>
         public void Add(params string[] phrases)
@@ -80,7 +80,7 @@ namespace System.Speech.Recognition
         }
 
         /// <summary>
-        /// 
+        ///
         /// </summary>
         /// <param name="alternateChoices"></param>
         public void Add(params GrammarBuilder[] alternateChoices)

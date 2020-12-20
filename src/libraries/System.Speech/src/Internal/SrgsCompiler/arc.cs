@@ -529,7 +529,7 @@ namespace System.Speech.Internal.SrgsCompiler
         {
             get
             {
-                return (_ruleRef == null) &&               // Not a ruleref 
+                return (_ruleRef == null) &&               // Not a ruleref
                     (_specialTransitionIndex == 0) &&      // Not a special transition (wildcard, dictation, ...)
                     (_iWord == 0);                    // Not a word
             }
@@ -843,7 +843,7 @@ namespace System.Speech.Internal.SrgsCompiler
         }
 #endif
 
-        // Sort arcs in a state based on type, and then on index. 
+        // Sort arcs in a state based on type, and then on index.
         // Arcs loaded froma file have their index preserved where possible. New dynamic states have index == INFINITE,
         private int SortRank()
         {

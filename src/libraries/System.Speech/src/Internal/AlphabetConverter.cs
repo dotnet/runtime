@@ -9,8 +9,6 @@ using System.Reflection;
 using System.IO;
 using System.Text;
 
-#pragma warning disable 1634, 1691 // Allows suppression of certain PreSharp messages.
-
 namespace System.Speech.Internal
 {
     internal enum AlphabetType
@@ -151,7 +149,7 @@ namespace System.Speech.Internal
             //
             // We break the phoneme string into substrings of phonemes, each of which is directly convertible from
             // the mapping table. If there is ambiguity, we always choose the largest substring as we go from left
-            // to right. 
+            // to right.
             //
             // In order to do this, we check whether a given substring is a potential prefix of a convertible substring.
             //

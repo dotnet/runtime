@@ -152,12 +152,12 @@ namespace System.Speech.Recognition.SrgsGrammar
         }
 
         /// TODOC <_include file='doc\SpecialRuleRef.uex' path='docs/doc[@for="SpecialRuleRef.Null"]/*' />
-        // The Null SpecialRuleRef defines a rule that is automatically matched: 
+        // The Null SpecialRuleRef defines a rule that is automatically matched:
         // that is, matched without the user speaking any word.
         static public readonly SrgsRuleRef Null = new SrgsRuleRef(SpecialRuleRefType.Null);
 
         /// TODOC <_include file='doc\SpecialRuleRef.uex' path='docs/doc[@for="SpecialRuleRef.Void"]/*' />
-        // The Void SpecialRuleRef defines a rule that can never be spoken. Inserting 
+        // The Void SpecialRuleRef defines a rule that can never be spoken. Inserting
         // VOID into a sequence automatically makes that sequence unspeakable.
         static public readonly SrgsRuleRef Void = new SrgsRuleRef(SpecialRuleRefType.Void);
 
@@ -346,21 +346,21 @@ namespace System.Speech.Recognition.SrgsGrammar
         /// TODOC <_include file='doc\SpecialRuleRef.uex' path='docs/doc[@for="SpecialRuleRefType"]/*' />
         // Special rule references allow grammars based on CFGs to have powerful
         // additional features, such as transitions into dictation (both recognized
-        // or not recognized) and word seqeuences from SAPI 5.0. 
+        // or not recognized) and word seqeuences from SAPI 5.0.
         private enum SpecialRuleRefType
         {
             /// TODOC <_include file='doc\SpecialRuleRef.uex' path='docs/doc[@for="SpecialRuleRefType.Null"]/*' />
-            // Defines a rule that is automatically matched that is, matched without 
-            // the user speaking any word. 
+            // Defines a rule that is automatically matched that is, matched without
+            // the user speaking any word.
             Null,
             /// TODOC <_include file='doc\SpecialRuleRef.uex' path='docs/doc[@for="SpecialRuleRefType.Void"]/*' />
-            // Defines a rule that can never be spoken. Inserting VOID into a sequence 
-            // automatically makes that sequence unspeakable. 
+            // Defines a rule that can never be spoken. Inserting VOID into a sequence
+            // automatically makes that sequence unspeakable.
             Void,
             /// TODOC <_include file='doc\SpecialRuleRef.uex' path='docs/doc[@for="SpecialRuleRefType.Garbage"]/*' />
-            // Defines a rule that may match any speech up until the next rule match, 
-            // the next token or until the end of spoken input. 
-            // Designed for applications that would like to recognize some phrases 
+            // Defines a rule that may match any speech up until the next rule match,
+            // the next token or until the end of spoken input.
+            // Designed for applications that would like to recognize some phrases
             // without failing due to irrelevant, or ignorable words.
             Garbage,
         }

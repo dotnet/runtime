@@ -89,7 +89,7 @@ namespace System.Speech.Synthesis
 
         #region public Methods
 
-        /// TODOC 
+        /// TODOC
         public override bool Equals(object obj)
         {
             InstalledVoice ti2 = obj as InstalledVoice;
@@ -180,7 +180,7 @@ namespace System.Speech.Synthesis
             }
         }
 
-        #endregion 
+        #endregion
 
         //*******************************************************************
         //

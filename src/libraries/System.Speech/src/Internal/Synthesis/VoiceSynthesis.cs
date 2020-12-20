@@ -54,7 +54,7 @@ namespace System.Speech.Internal.Synthesis
             _resourceLoader = new ResourceLoader();
             _site = new EngineSite(_resourceLoader);
 
-            // No pending work and speaking is done 
+            // No pending work and speaking is done
             _evtPendingSpeak.Reset();
 
             // Create the default audio device (speaker)
@@ -98,7 +98,7 @@ namespace System.Speech.Internal.Synthesis
         }
 
         /// <summary>
-        /// 
+        ///
         /// </summary>
         public void Dispose()
         {
@@ -235,7 +235,7 @@ namespace System.Speech.Internal.Synthesis
 
             do
             {
-                // Look for one of the Xml escape string 
+                // Look for one of the Xml escape string
                 int iEscapeString = -1;
                 int pos = int.MaxValue;
                 for (int i = 0; i < _xmlEscapeStrings.Length; i++)
@@ -605,7 +605,7 @@ namespace System.Speech.Internal.Synthesis
                 // no check if the voice are valid
                 foreach (InstalledVoice voice in _installedVoices)
                 {
-                    // Either all voices if culture is 
+                    // Either all voices if culture is
                     if (culture.Equals(voice.VoiceInfo.Culture))
                     {
                         voices.Add(voice);
@@ -1140,7 +1140,7 @@ namespace System.Speech.Internal.Synthesis
                     }
                     else
                     {
-                        // More prompts to play. 
+                        // More prompts to play.
                         // Send a single notification that this one is over.
                         InjectEvent(TtsEventId.EndInputStream, prompt, exception, null);
                     }
@@ -1199,7 +1199,7 @@ namespace System.Speech.Internal.Synthesis
         {
             TTSVoice voice = null;
 
-            // The list of enabled voices can be changed by a speech application 
+            // The list of enabled voices can be changed by a speech application
             lock (_enabledVoicesLock)
             {
                 // Do we have a name?
@@ -1217,7 +1217,7 @@ namespace System.Speech.Internal.Synthesis
                     // Easy out if the voice is the default voice
                     if (defaultVoice != null || defaultVoiceId != null)
                     {
-                        // try to select the default voice 
+                        // try to select the default voice
                         viDefault = InstalledVoice.Find(_installedVoices, defaultVoice != null ? defaultVoice.VoiceInfo : defaultVoiceId);
 
                         if (viDefault != null && viDefault.Enabled && variant == 1)
@@ -1685,9 +1685,9 @@ namespace System.Speech.Internal.Synthesis
                 case TtsEventId.Phoneme:
                     // SynthesizePhoneme
                     OnPhonemeReached(new PhonemeReachedEventArgs(
-                        prompt,                                             // Prompt  
+                        prompt,                                             // Prompt
                         ttsEvent.Phoneme,                                   // Current phoneme
-                        ttsEvent.AudioPosition,                             // audioPosition                    
+                        ttsEvent.AudioPosition,                             // audioPosition
                         ttsEvent.PhonemeDuration,
                         ttsEvent.PhonemeEmphasis,
                         ttsEvent.NextPhoneme));                             // next phoneme
@@ -1696,7 +1696,7 @@ namespace System.Speech.Internal.Synthesis
                 case TtsEventId.Viseme:
                     // SynthesizeViseme
                     OnVisemeReached(new VisemeReachedEventArgs(
-                        prompt,                                             // Prompt  
+                        prompt,                                             // Prompt
                         (int)((int)ttsEvent.LParam & 0xFFFF),                   // currentViseme
                         ttsEvent.AudioPosition,                             // audioPosition
                         TimeSpan.FromMilliseconds(ttsEvent.WParam >> 16),  // duration
@@ -1712,7 +1712,7 @@ namespace System.Speech.Internal.Synthesis
         #endregion
 
         /// <summary>
-        /// 
+        ///
         /// </summary>
         private void Dispose(bool disposing)
         {
@@ -1815,7 +1815,7 @@ namespace System.Speech.Internal.Synthesis
 #pragma warning restore 56507
 
         /// <summary>
-        /// 
+        ///
         /// </summary>
         /// <param name="audio"></param>
         /// <param name="prompt"></param>
@@ -1936,7 +1936,7 @@ namespace System.Speech.Internal.Synthesis
         private IntPtr _iSite;
         private int _ttsInterest;
 
-        // Background synchronization 
+        // Background synchronization
         private ManualResetEvent _evtPendingSpeak = new ManualResetEvent(false);
         private ManualResetEvent _evtPendingGetProxy = new ManualResetEvent(false);
         private Exception _pendingException;

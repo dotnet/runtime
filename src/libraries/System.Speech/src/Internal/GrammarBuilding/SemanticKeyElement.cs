@@ -9,7 +9,7 @@ using System.Text;
 namespace System.Speech.Internal.GrammarBuilding
 {
     /// <summary>
-    /// 
+    ///
     /// </summary>
     internal sealed class SemanticKeyElement : BuilderElements
     {
@@ -22,7 +22,7 @@ namespace System.Speech.Internal.GrammarBuilding
         #region Constructors
 
         /// <summary>
-        /// 
+        ///
         /// </summary>
         /// <param name="semanticKey"></param>
         internal SemanticKeyElement(string semanticKey)
@@ -77,7 +77,7 @@ namespace System.Speech.Internal.GrammarBuilding
         #region Internal Methods
 
         /// <summary>
-        /// 
+        ///
         /// </summary>
         /// <param name="phrase"></param>
         new internal void Add(string phrase)
@@ -86,7 +86,7 @@ namespace System.Speech.Internal.GrammarBuilding
         }
 
         /// <summary>
-        /// 
+        ///
         /// </summary>
         /// <param name="builder"></param>
         new internal void Add(GrammarBuilder builder)
@@ -98,7 +98,7 @@ namespace System.Speech.Internal.GrammarBuilding
         }
 
         /// <summary>
-        /// 
+        ///
         /// </summary>
         /// <returns></returns>
         internal override GrammarBuilderBase Clone()
@@ -109,7 +109,7 @@ namespace System.Speech.Internal.GrammarBuilding
         }
 
         /// <summary>
-        /// 
+        ///
         /// </summary>
         /// <param name="elementFactory"></param>
         /// <param name="parent"></param>
@@ -157,7 +157,7 @@ namespace System.Speech.Internal.GrammarBuilding
         #region Private Fields
 
         /// <summary>
-        /// 
+        ///
         /// </summary>
         private readonly string _semanticKey;
         private readonly RuleRefElement _ruleRef;

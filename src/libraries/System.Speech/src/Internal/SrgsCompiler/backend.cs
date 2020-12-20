@@ -140,13 +140,13 @@ namespace System.Speech.Internal.SrgsCompiler
                 System.Diagnostics.Debug.Assert(_basePath.Length + 1 == cBasePath);
                 streamBuffer.WriteArrayChar(s_achZero, 1);
 
-                // Zero-pad to align following structures        
+                // Zero-pad to align following structures
                 streamBuffer.WriteArray(s_abZero3, cBasePath * Helpers._sizeOfChar & 3);
             }
 
             //
-            //  Write a dummy 0 index state entry 
-            //  
+            //  Write a dummy 0 index state entry
+            //
             CfgArc dummyArc = new CfgArc();
 
             System.Diagnostics.Debug.Assert(streamBuffer.Stream.Position - startStreamPostion == header.pArcs);
@@ -180,7 +180,7 @@ namespace System.Speech.Internal.SrgsCompiler
             // This could happen in the case of a <item repeat=0-0"> <tag /></item>
             for (int i = _tags.Count - 1; i >= 0; i--)
             {
-                // When arc are created the index is set to zero. This value changes during serialization 
+                // When arc are created the index is set to zero. This value changes during serialization
                 // if an arc references it
                 if (_tags[i]._cfgTag.ArcIndex == 0)
                 {
@@ -272,7 +272,7 @@ namespace System.Speech.Internal.SrgsCompiler
         /// <summary>
         /// Tries to find the rule's initial state handle. If both a name and an id
         /// are provided, then both have to match in order for this call to succeed.
-        /// If the rule doesn't already exist then we define it if fCreateIfNotExists, 
+        /// If the rule doesn't already exist then we define it if fCreateIfNotExists,
         /// otherwise we return an error ().
         ///
         ///     - pszRuleName   name of rule to find/define     (null: don't care)
@@ -280,7 +280,7 @@ namespace System.Speech.Internal.SrgsCompiler
         ///     - dwAttribute   rule attribute for defining the rule
         ///     - fCreateIfNotExists    creates the rule using name, id, and attributes
         ///                             in case the rule doesn't already exist
-        /// 
+        ///
         /// throws:
         ///       S_OK, E_INVALIDARG, E_OUTOFMEMORY
         ///       SPERR_RULE_NOT_FOUND        -- no rule found and we don't create a new one
@@ -355,7 +355,7 @@ namespace System.Speech.Internal.SrgsCompiler
             }
 
             //
-            //  It is important to insert this at the tail for dynamic rules to 
+            //  It is important to insert this at the tail for dynamic rules to
             //  retain their slot number.
             //
             _rules.Add(rule);
@@ -409,7 +409,7 @@ namespace System.Speech.Internal.SrgsCompiler
         /// then the arc will be to the (implicit) terminal state. If psz == null then
         /// we add an epsilon transition. Properties are pushed back to the
         /// first un-ambiguous arc in case we can share a common initial state path.
-        /// The weight will be placed on the first arc (if there exists an arc with 
+        /// The weight will be placed on the first arc (if there exists an arc with
         /// the same word but different weight we will create a new arc).
         /// </summary>
         internal Arc WordTransition(string sWord, float flWeight, int requiredConfidence)
@@ -474,7 +474,7 @@ namespace System.Speech.Internal.SrgsCompiler
         /// then the arc will be to the (implicit) terminal state. If psz == null then
         /// we add an epsilon transition. Properties are pushed back to the
         /// first un-ambiguous arc in case we can share a common initial state path.
-        /// The weight will be placed on the first arc (if there exists an arc with 
+        /// The weight will be placed on the first arc (if there exists an arc with
         /// the same word but different weight we will create a new arc).
         /// </summary>
         /// <param name="flWeight"></param>
@@ -1056,7 +1056,7 @@ namespace System.Speech.Internal.SrgsCompiler
         }
 
         /// <summary>
-        /// 
+        ///
         /// </summary>
         /// <param name="sortedStates"></param>
         /// <param name="cBasePath"></param>
@@ -1196,7 +1196,7 @@ namespace System.Speech.Internal.SrgsCompiler
                 rule._fStaticRule = (cfgRule.Dynamic) ? false : true;
                 rule._cfgRule.DirtyRule = false;
 
-                // by default loaded static rules have an exist 
+                // by default loaded static rules have an exist
                 rule._fHasExitPath = (rule._fStaticRule) ? true : false;
 
                 // or they wouldn't be there in the first place
@@ -1293,7 +1293,7 @@ namespace System.Speech.Internal.SrgsCompiler
         }
 
         /// <summary>
-        /// 
+        ///
         /// </summary>
         /// <returns></returns>
         private void ValidateAndTagRules()
@@ -1349,7 +1349,7 @@ namespace System.Speech.Internal.SrgsCompiler
         }
 
         /// <summary>
-        /// 
+        ///
         /// </summary>
         /// <param name="s"></param>
         /// <param name="flWeight"></param>

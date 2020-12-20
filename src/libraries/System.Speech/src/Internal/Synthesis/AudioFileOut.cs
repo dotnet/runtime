@@ -45,7 +45,7 @@ namespace System.Speech.Internal.Synthesis
             }
             else
             {
-                // Set the default values 
+                // Set the default values
                 _wfxOut = WAVEFORMATEX.Default;
             }
             _wfxOut.nBlockAlign = (short)(_wfxOut.nChannels * _wfxOut.wBitsPerSample / 8);

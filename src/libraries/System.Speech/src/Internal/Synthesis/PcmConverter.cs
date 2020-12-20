@@ -17,7 +17,7 @@ namespace System.Speech.Internal.Synthesis
 
         /// <summary>
         ///   Description:
-        ///   first read samples into VAPI_PCM16, then judge cases : 
+        ///   first read samples into VAPI_PCM16, then judge cases :
         ///   1. STEREO -> mono + resampling
         ///      STEREO  -> 1 mono -> reSampling
         ///   2. mono  -> STEREO + resampling
@@ -68,7 +68,7 @@ namespace System.Speech.Internal.Synthesis
 
         /// <summary>
         ///   Description:
-        ///   first read samples into VAPI_PCM16, then judge cases : 
+        ///   first read samples into VAPI_PCM16, then judge cases :
         ///   1. STEREO -> mono + resampling
         ///      STEREO  -> 1 mono -> reSampling
         ///   2. mono  -> STEREO + resampling
@@ -285,7 +285,7 @@ namespace System.Speech.Internal.Synthesis
         }
 
         /// <summary>
-        /// 
+        ///
         /// </summary>
         /// <param name="inHz"></param>
         /// <param name="outHz"></param>
@@ -353,7 +353,7 @@ namespace System.Speech.Internal.Synthesis
         }
 
         /// <summary>
-        /// 
+        ///
         /// </summary>
         /// <param name="inHz"></param>
         /// <param name="outHz"></param>

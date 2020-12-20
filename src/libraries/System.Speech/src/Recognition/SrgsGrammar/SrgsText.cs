@@ -11,7 +11,7 @@ using System.Xml;
 
 namespace System.Speech.Recognition.SrgsGrammar
 {
-    /// TODOC <_include file='doc\SrgsText.uex' path='docs/doc[@for="SrgsText"]/*' />	
+    /// TODOC <_include file='doc\SrgsText.uex' path='docs/doc[@for="SrgsText"]/*' />
     [Serializable]
     [DebuggerDisplay("{DebuggerDisplayString ()}")]
     public class SrgsText : SrgsElement, IElementText

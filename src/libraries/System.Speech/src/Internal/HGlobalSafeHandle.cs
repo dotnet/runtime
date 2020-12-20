@@ -23,7 +23,7 @@ namespace System.Speech.Internal
         {
         }
 
-        // This destructor will run only if the Dispose method 
+        // This destructor will run only if the Dispose method
         // does not get called.
         ~HGlobalSafeHandle()
         {
@@ -47,7 +47,7 @@ namespace System.Speech.Internal
         #region internal Methods
 
         /// <summary>
-        /// 
+        ///
         /// </summary>
         /// <param name="size"></param>
         /// <returns></returns>

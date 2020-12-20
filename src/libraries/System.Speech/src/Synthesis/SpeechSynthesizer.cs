@@ -41,7 +41,7 @@ namespace System.Speech.Synthesis
         }
 
         /// <summary>
-        /// 
+        ///
         /// </summary>
         ~SpeechSynthesizer()
         {

@@ -10,7 +10,7 @@ using System.Text;
 namespace System.Speech.Internal.GrammarBuilding
 {
     /// <summary>
-    /// 
+    ///
     /// </summary>
     [DebuggerDisplay("{DebugSummary}")]
     internal sealed class ItemElement : BuilderElements
@@ -24,7 +24,7 @@ namespace System.Speech.Internal.GrammarBuilding
         #region Constructors
 
         /// <summary>
-        /// 
+        ///
         /// </summary>
         /// <param name="builder"></param>
         internal ItemElement(GrammarBuilderBase builder)
@@ -33,7 +33,7 @@ namespace System.Speech.Internal.GrammarBuilding
         }
 
         /// <summary>
-        /// 
+        ///
         /// </summary>
         /// <param name="minRepeat"></param>
         /// <param name="maxRepeat"></param>
@@ -43,7 +43,7 @@ namespace System.Speech.Internal.GrammarBuilding
         }
 
         /// <summary>
-        /// 
+        ///
         /// </summary>
         /// <param name="builder"></param>
         /// <param name="minRepeat"></param>
@@ -59,7 +59,7 @@ namespace System.Speech.Internal.GrammarBuilding
         }
 
         /// <summary>
-        /// 
+        ///
         /// </summary>
         /// <param name="builders"></param>
         /// <param name="minRepeat"></param>
@@ -75,7 +75,7 @@ namespace System.Speech.Internal.GrammarBuilding
         }
 
         /// <summary>
-        /// 
+        ///
         /// </summary>
         /// <param name="builders"></param>
         internal ItemElement(GrammarBuilder builders)
@@ -128,7 +128,7 @@ namespace System.Speech.Internal.GrammarBuilding
         #region Internal Methods
 
         /// <summary>
-        /// 
+        ///
         /// </summary>
         /// <returns></returns>
         internal override GrammarBuilderBase Clone()
@@ -139,7 +139,7 @@ namespace System.Speech.Internal.GrammarBuilding
         }
 
         /// <summary>
-        /// 
+        ///
         /// </summary>
         /// <param name="elementFactory"></param>
         /// <param name="parent"></param>

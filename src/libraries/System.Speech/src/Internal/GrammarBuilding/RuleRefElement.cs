@@ -10,7 +10,7 @@ using System.Text;
 namespace System.Speech.Internal.GrammarBuilding
 {
     /// <summary>
-    /// 
+    ///
     /// </summary>
     [DebuggerDisplay("{DebugSummary}")]
     internal sealed class RuleRefElement : GrammarBuilderBase
@@ -24,7 +24,7 @@ namespace System.Speech.Internal.GrammarBuilding
         #region Constructors
 
         /// <summary>
-        /// 
+        ///
         /// </summary>
         /// <param name="rule"></param>
         internal RuleRefElement(RuleElement rule)
@@ -33,7 +33,7 @@ namespace System.Speech.Internal.GrammarBuilding
         }
 
         /// <summary>
-        /// 
+        ///
         /// </summary>
         /// <param name="rule"></param>
         /// <param name="semanticKey"></param>
@@ -81,7 +81,7 @@ namespace System.Speech.Internal.GrammarBuilding
         #region Internal Methods
 
         /// <summary>
-        /// 
+        ///
         /// </summary>
         /// <param name="item"></param>
         internal void Add(GrammarBuilderBase item)
@@ -90,7 +90,7 @@ namespace System.Speech.Internal.GrammarBuilding
         }
 
         /// <summary>
-        /// 
+        ///
         /// </summary>
         /// <returns></returns>
         override internal GrammarBuilderBase Clone()
@@ -99,7 +99,7 @@ namespace System.Speech.Internal.GrammarBuilding
         }
 
         /// <summary>
-        /// 
+        ///
         /// </summary>
         /// <returns></returns>
         /// <param name="builders"></param>
@@ -109,7 +109,7 @@ namespace System.Speech.Internal.GrammarBuilding
         }
 
         /// <summary>
-        /// 
+        ///
         /// </summary>
         /// <param name="elementFactory"></param>
         /// <param name="parent"></param>
@@ -160,7 +160,7 @@ namespace System.Speech.Internal.GrammarBuilding
         #region Private Fields
 
         /// <summary>
-        /// 
+        ///
         /// </summary>
         private readonly RuleElement _rule;
         private readonly string _semanticKey;

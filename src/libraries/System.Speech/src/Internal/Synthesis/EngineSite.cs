@@ -15,7 +15,7 @@ using System.Diagnostics;
 // Exceptions cannot get throught the COM code.
 // The engine site saves the last exception before sending it back to the client.
 // Remove all PreSharp wanings about to swallowing exceptions.
-#pragma warning disable 6500 
+#pragma warning disable 6500
 
 
 namespace System.Speech.Internal.Synthesis
@@ -116,7 +116,7 @@ namespace System.Speech.Internal.Synthesis
         }
 
         /// <summary>
-        /// Retrieves the number and type of items to be skipped in the text stream. 
+        /// Retrieves the number and type of items to be skipped in the text stream.
         /// </summary>
         public SkipInfo GetSkipInfo()
         {
@@ -168,7 +168,7 @@ namespace System.Speech.Internal.Synthesis
         }
 
         /// <summary>
-        /// Retrieves the base output volume level the engine should use during synthesis. 
+        /// Retrieves the base output volume level the engine should use during synthesis.
         /// </summary>
         public int Volume
         {
@@ -194,7 +194,7 @@ namespace System.Speech.Internal.Synthesis
                 using (Stream stream = _resourceLoader.LoadFile(uri, out mediaTypeUnused, out baseUriUnused, out localPath))
                 {
                     // Read the file in memory for SES and release the original file immediatly
-                    // This scheme is really bad if the files being read are big but I would assume 
+                    // This scheme is really bad if the files being read are big but I would assume
                     // That it should not be the case.
                     int cLen = (int)stream.Length;
                     MemoryStream memStream = new MemoryStream(cLen);
@@ -263,7 +263,7 @@ namespace System.Speech.Internal.Synthesis
         }
 
         /// <summary>
-        /// Retrieves the base output volume level the engine should use during synthesis. 
+        /// Retrieves the base output volume level the engine should use during synthesis.
         /// </summary>
         internal int VoiceVolume
         {

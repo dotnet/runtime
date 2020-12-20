@@ -107,7 +107,7 @@ namespace System.Speech.Recognition
         #region Public Properties
 
         // The value returned from the script / tags etc.
-        // This can be cast to a more useful type {currently it will be string or int until we have .Net grammars}. 
+        // This can be cast to a more useful type {currently it will be string or int until we have .Net grammars}.
         /// TODOC <_include file='doc\RecognitionResult.uex' path='docs/doc[@for="SemanticValue.Value"]/*' />
         public object Value
         {

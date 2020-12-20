@@ -132,7 +132,7 @@ namespace System.Speech.Internal.ObjectTokens
 
             if (token != null)
             {
-                // Now do special check to see if we have another token from the same vendor with a 
+                // Now do special check to see if we have another token from the same vendor with a
                 // more recent version - if so use that.
 
                 // First lets change the category to LOCAL_MACHINE
@@ -203,7 +203,7 @@ namespace System.Speech.Internal.ObjectTokens
         }
 
         /// <summary>
-        /// Takes two tokens and compares them using version info. 
+        /// Takes two tokens and compares them using version info.
         /// Note only tokens that match on Vendor, ProductLine, Language get compared, the pfDidCompare flag indicates this
         /// </summary>
         /// <param name="token1"></param>
@@ -267,7 +267,7 @@ namespace System.Speech.Internal.ObjectTokens
         }
 
         /// <summary>
-        /// Takes two version number strings and compares them. 
+        /// Takes two version number strings and compares them.
         /// If V1 or V2 invalid format then the valid string is returned as being greater.
         /// </summary>
         /// <param name="sV1"></param>
@@ -312,9 +312,9 @@ namespace System.Speech.Internal.ObjectTokens
         }
 
         /// <summary>
-        /// Takes a version number string, checks it is valid, and fills the four 
+        /// Takes a version number string, checks it is valid, and fills the four
         /// values in the Version array. Valid version stings are "a[.b[.c[.d]]]",
-        /// where a,b,c,d are +ve integers, 0 . 9999. If b,c,d are missing those 
+        /// where a,b,c,d are +ve integers, 0 . 9999. If b,c,d are missing those
         /// version values are set as zero.
         /// </summary>
         /// <param name="s"></param>

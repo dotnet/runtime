@@ -55,7 +55,7 @@ namespace System.Speech.Internal.SrgsCompiler
             // <tag>Name="string"</tag>     pszValue = "string" vValue = VT_EMPTY
             // <tag>Name=true</tag>         pszValue = null     vValue = VT_BOOL
             // <tag>Name=123</tag>          pszValue = null     vValue = VT_I4
-            // <tag>Name=3.14</tag>         pszValue = null     vValue = VT_R8            
+            // <tag>Name=3.14</tag>         pszValue = null     vValue = VT_R8
 
             if (!string.IsNullOrEmpty(name))
             {

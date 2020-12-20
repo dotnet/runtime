@@ -153,7 +153,7 @@ namespace System.Speech.Recognition
 
 
         /// <summary>
-        /// 
+        ///
         /// </summary>
         /// <param name="builder"></param>
         public Grammar(GrammarBuilder builder)
@@ -498,9 +498,9 @@ namespace System.Speech.Recognition
         #region Internal Methods
 
         /// <summary>
-        /// Called by the grammar resource loader to load ruleref. Ruleref have a name, a rule name et eventually 
+        /// Called by the grammar resource loader to load ruleref. Ruleref have a name, a rule name et eventually
         /// parameters.
-        /// 
+        ///
         /// The grammar name can be either pointing to a CFG, an Srgs or DLL (stand alone or GAC).
         /// </summary>
         /// <param name="grammarName"></param>
@@ -779,7 +779,7 @@ namespace System.Speech.Recognition
         /// <returns></returns>
         private MemoryStream LoadCfg(bool isImportedGrammar, bool stgInit)
         {
-            // No parameters to the constructors 
+            // No parameters to the constructors
             Uri uriGrammar = Uri;
             MemoryStream stream = new MemoryStream();
 
@@ -837,8 +837,8 @@ namespace System.Speech.Recognition
 
         /// <summary>
         /// Look for a grammar by rule name in a loaded assembly.
-        /// 
-        /// The search goes over the base type for the grammar "rule name" and all of its derived language 
+        ///
+        /// The search goes over the base type for the grammar "rule name" and all of its derived language
         /// dependant classes.
         /// The matching algorithm pick a class that match the culture.
         /// </summary>
@@ -890,7 +890,7 @@ namespace System.Speech.Recognition
                                 {
                                     object[] initParams = MatchInitParameters(typeTarget, onInitParameters, assembly.GetName().Name, ruleName);
 
-                                    // The CLR does the match for the right constructor based on the onInitParameters types 
+                                    // The CLR does the match for the right constructor based on the onInitParameters types
                                     return (Grammar)assembly.CreateInstance(typeTarget.FullName, false, BindingFlags.CreateInstance, null, initParams, null, null);
                                 }
                                 catch (MissingMemberException)
@@ -934,7 +934,7 @@ namespace System.Speech.Recognition
                 {
                     NameValuePair pair = pairs[i];
 
-                    // annonymous 
+                    // annonymous
                     if (pair._name == null)
                     {
                         values[i] = pair._value;
@@ -1063,7 +1063,7 @@ namespace System.Speech.Recognition
             ScriptRef[] scripts;
             stream.Position = 0;
 
-            // This must be before the SAPI load to avoid some conflict with SAPI server when getting at the 
+            // This must be before the SAPI load to avoid some conflict with SAPI server when getting at the
             // the stream
             if (System.Speech.Internal.SrgsCompiler.CfgGrammar.LoadIL(stream, out assemblyContent, out assemblyDebugSymbols, out scripts))
             {
@@ -1116,7 +1116,7 @@ namespace System.Speech.Recognition
         }
 
         /// <summary>
-        /// 
+        ///
         /// </summary>
         /// <param name="rule"></param>
         /// <param name="stream"></param>

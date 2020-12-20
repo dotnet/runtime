@@ -115,7 +115,7 @@ namespace System.Speech.Internal.SrgsParser
             }
             catch (FormatException e)
             {
-                // Adds a placeholder for the rule. 
+                // Adds a placeholder for the rule.
                 // Once all the rules and scripts are read, the placeholder will be replaced with the proper rule.
                 _parser.RemoveAllRules();
                 ThrowSrgsExceptionWithPosition(_filename, _reader, e.Message, e.InnerException);
@@ -130,7 +130,7 @@ namespace System.Speech.Internal.SrgsParser
 
         /// <summary>
         /// Break the string into individual tokens and ParseToken() each individual token.
-        /// 
+        ///
         /// Token string is a sequence of 0 or more white space delimited tokens.
         /// Tokens may also be delimited by double quotes.  In these cases, the double
         /// quotes token must be surrounded by white space or string boundary.
@@ -1083,7 +1083,7 @@ namespace System.Speech.Internal.SrgsParser
 
         /// <summary>
         /// Break the string into individual tokens and ParseToken() each individual token.
-        /// 
+        ///
         /// Token string is a sequence of 0 or more white space delimited tokens.
         /// Tokens may also be delimited by double quotes.  In these cases, the double
         /// quotes token must be surrounded by white space or string boundary.
@@ -1158,7 +1158,7 @@ namespace System.Speech.Internal.SrgsParser
 
         /// <summary>
         /// Parse the lexicon Element
-        /// 
+        ///
         /// Attributes:
         ///     uri: required
         ///     type: optional
@@ -1201,9 +1201,9 @@ namespace System.Speech.Internal.SrgsParser
 
         /// <summary>
         /// Parse the Meta Element
-        /// 
+        ///
         /// Attributes:
-        ///     name and http-equiv: one or the other but not bothsd 
+        ///     name and http-equiv: one or the other but not bothsd
         ///     content: required
         /// </summary>
         /// <param name="reader"></param>
@@ -1294,7 +1294,7 @@ namespace System.Speech.Internal.SrgsParser
             }
             else
             {
-                // Adds a placeholder for the rule. 
+                // Adds a placeholder for the rule.
                 // Once all the rules and scripts are read, the placeholder will be replaced with the proper rule.
                 _scripts.Add(new ForwardReference(sRule, _parser.AddScript(grammar, sRule, GetStringContent(reader), _filename, line)));
             }
@@ -1752,7 +1752,7 @@ namespace System.Speech.Internal.SrgsParser
             // <tag>Name="string"</tag>     pszValue = "string" vValue = VT_EMPTY
             // <tag>Name=true</tag>         pszValue = null     vValue = VT_BOOL
             // <tag>Name=123</tag>          pszValue = null     vValue = VT_I4
-            // <tag>Name=3.14</tag>         pszValue = null     vValue = VT_R8            
+            // <tag>Name=3.14</tag>         pszValue = null     vValue = VT_R8
             int iEqual = sTag.IndexOf('=');
 
             if (iEqual >= 0)
@@ -1780,7 +1780,7 @@ namespace System.Speech.Internal.SrgsParser
 
                     if (iEndQuote + 1 != cLenProperty)
                     {
-                        // Invalid string value                    
+                        // Invalid string value
                         XmlParser.ThrowSrgsException(SRID.IncorrectAttributeValue, name, sTag.Substring(iEqual));
                     }
 

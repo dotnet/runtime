@@ -33,7 +33,7 @@ namespace System.Speech.Internal.SrgsCompiler
     //  SRGSNamespace.Example/Lexicon/Meta
     //      _startState, _endState are ignored and set to 0.
     //  SRGSNamespace.Metadata / Unknown.*
-    //      _startState, _endState are ignored and set to 0. 
+    //      _startState, _endState are ignored and set to 0.
     //      ParseElements is added to the stack, but not used.
     internal abstract class ParseElement : IElement // Compiler stack element
     {

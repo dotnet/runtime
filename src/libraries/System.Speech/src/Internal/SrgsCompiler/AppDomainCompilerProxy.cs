@@ -77,7 +77,7 @@ namespace System.Speech.Internal.SrgsCompiler
                                 case RuleMethodScript.onInit:
                                     // Add the parameters for the new overload
                                     _constructors[i] += GenerateConstructor(iCfg, args, language, sRule);
-                                    // build the returned type 
+                                    // build the returned type
                                     returnType = typeof(SrgsRule[]);
                                     break;
 
@@ -144,7 +144,7 @@ namespace System.Speech.Internal.SrgsCompiler
         internal string GenerateConstructor(int iCfg, ParameterInfo[] parameters, string language, string classname)
         {
             string script = string.Empty;
-            // Select an instance of a compiler and wrap the script code with the 
+            // Select an instance of a compiler and wrap the script code with the
             // class definition
             switch (language)
             {

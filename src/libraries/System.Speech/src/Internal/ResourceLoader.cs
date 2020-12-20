@@ -102,7 +102,7 @@ namespace System.Speech.Internal
         #region Private Methods
 
         /// <summary>
-        /// Dowload data from the web. 
+        /// Dowload data from the web.
         /// Set the redirectUri as the location of the file could be redirected in ASP pages.
         /// </summary>
         /// <param name="uri"></param>
@@ -110,16 +110,16 @@ namespace System.Speech.Internal
         /// <returns></returns>
         private static Stream DownloadData(Uri uri, out Uri redirectedUri)
         {
-            // Create a request for the URL. 
+            // Create a request for the URL.
             WebRequest request = WebRequest.Create(uri);
 
-            // If required by the server, set the credentials. 
+            // If required by the server, set the credentials.
             request.Credentials = CredentialCache.DefaultCredentials;
 
-            // Get the response. 
+            // Get the response.
             using (HttpWebResponse response = (HttpWebResponse)request.GetResponse())
             {
-                // Get the stream containing content returned by the server. 
+                // Get the stream containing content returned by the server.
                 using (Stream dataStream = response.GetResponseStream())
                 {
                     redirectedUri = response.ResponseUri;

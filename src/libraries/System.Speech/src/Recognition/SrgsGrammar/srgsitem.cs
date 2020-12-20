@@ -80,7 +80,7 @@ namespace System.Speech.Recognition.SrgsGrammar
             SetRepeat(min, max);
         }
 
-        //overloads with setting the repeat. 
+        //overloads with setting the repeat.
 
         /// <summary>
         /// TODOC
@@ -216,7 +216,7 @@ namespace System.Speech.Recognition.SrgsGrammar
         }
 
         /// TODOC <_include file='doc\Item.uex' path='docs/doc[@for="Item.MaxRepeat"]/*' />
-        // The maximum number of occurrences this item can/must be repeated. 
+        // The maximum number of occurrences this item can/must be repeated.
         public int MaxRepeat
         {
             get

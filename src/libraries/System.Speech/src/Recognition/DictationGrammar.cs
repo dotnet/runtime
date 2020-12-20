@@ -14,7 +14,7 @@ namespace System.Speech.Recognition
         // The implementation of DictationGrammar stores a Uri in the Grammar.Uri field.
         // Then when LoadGrammar is called the Uri handling part of LoadGrammar is modified to check
         // if the grammar object is a DictationGrammar, in which case the SAPI dictation methods are called.
-        // The Uri is "grammar:dictation" for regular dictation and "grammar:dictation#spelling" for a spelling. 
+        // The Uri is "grammar:dictation" for regular dictation and "grammar:dictation#spelling" for a spelling.
 
         //*******************************************************************
         //

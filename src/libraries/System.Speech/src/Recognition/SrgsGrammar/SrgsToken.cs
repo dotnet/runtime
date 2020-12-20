@@ -11,7 +11,7 @@ using System.Xml;
 namespace System.Speech.Recognition.SrgsGrammar
 {
     /// TODOC <_include file='doc\Token.uex' path='docs/doc[@for="Token"]/*' />
-    // Note that currently if multiple words are stored in a Token they are treated internally 
+    // Note that currently if multiple words are stored in a Token they are treated internally
     // and in the result as multiple tokens.
     [Serializable]
     [DebuggerDisplay("{DebuggerDisplayString ()}")]
@@ -116,7 +116,7 @@ namespace System.Speech.Recognition.SrgsGrammar
                 writer.WriteAttributeString("sapi", "pron", XmlParser.sapiNamespace, _pronunciation);
             }
 
-            // If an empty string is provided, skip the WriteString 
+            // If an empty string is provided, skip the WriteString
             // to have the XmlWrite to put <token/> rather than <token></token>
             if (_text != null && _text.Length > 0)
             {

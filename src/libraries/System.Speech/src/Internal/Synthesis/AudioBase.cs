@@ -237,7 +237,7 @@ namespace System.Speech.Internal.Synthesis
             byte[] wfx;
             wfx = br.ReadBytes(block._len);
 
-            // Hardcode the value of the size for the structure element 
+            // Hardcode the value of the size for the structure element
             // as the C# compiler pads the structure to the closest 4 or 8 bytes
             if (block._len == 16)
             {
@@ -249,7 +249,7 @@ namespace System.Speech.Internal.Synthesis
         }
 
         /// <summary>
-        /// 
+        ///
         /// </summary>
         /// <param name="stream"></param>
         /// <param name="waveEx"></param>
@@ -451,7 +451,7 @@ namespace System.Speech.Internal.Synthesis
 
         static internal void AvgBytesPerSec(byte[] waveHeader, out int avgBytesPerSec, out int nBlockAlign)
         {
-            // Hardcode the value of the size for the structure element 
+            // Hardcode the value of the size for the structure element
             // as the C# compiler pads the structure to the closest 4 or 8 bytes
             GCHandle gc = GCHandle.Alloc(waveHeader, GCHandleType.Pinned);
             IntPtr ptr = gc.AddrOfPinnedObject();
@@ -471,7 +471,7 @@ namespace System.Speech.Internal.Synthesis
 
         static internal byte[] ToBytes(IntPtr waveHeader)
         {
-            // Hardcode the value of the size for the structure element 
+            // Hardcode the value of the size for the structure element
             // as the C# compiler pads the structure to the closest 4 or 8 bytes
 
             int cbSize = Marshal.ReadInt16(waveHeader, 16);

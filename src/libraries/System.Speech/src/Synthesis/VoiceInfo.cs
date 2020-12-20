@@ -239,8 +239,8 @@ namespace System.Speech.Synthesis
 
         /// <summary>
         /// TODOC
-        /// 
-        /// Return a copy of the internal Language set. This disable client  
+        ///
+        /// Return a copy of the internal Language set. This disable client
         /// applications to modify the internal languages list.
         /// </summary>
         /// <value></value>

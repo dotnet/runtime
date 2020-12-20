@@ -62,7 +62,7 @@ namespace System.Speech.Internal.SapiInterop
         SPEI_PROPERTY_STRING_CHANGE = 42,  // LPARAM pointer to buffer.  Two concatinated null terminated strings.
         SPEI_FALSE_RECOGNITION = 43,  // apparent speech with no valid recognition
         SPEI_INTERFERENCE = 44,  // LPARAM is any combination of SPINTERFERENCE flags
-        SPEI_REQUEST_UI = 45,  // LPARAM is string.  
+        SPEI_REQUEST_UI = 45,  // LPARAM is string.
         SPEI_RECO_STATE_CHANGE = 46,  // wParam contains new reco state
         SPEI_ADAPTATION = 47,  // we are now ready to accept the adaptation buffer
         SPEI_START_SR_STREAM = 48,

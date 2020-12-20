@@ -38,25 +38,25 @@ namespace System.Speech.Recognition
 
         #region public Properties
 
-        /// TODOC 
+        /// TODOC
         public AudioSignalProblem AudioSignalProblem
         {
             get { return _audioSignalProblem; }
         }
 
-        /// TODOC 
+        /// TODOC
         public int AudioLevel
         {
             get { return _audioLevel; }
         }
 
-        /// TODOC 
+        /// TODOC
         public TimeSpan AudioPosition
         {
             get { return _audioPosition; }
         }
 
-        /// TODOC 
+        /// TODOC
         public TimeSpan RecognizerAudioPosition
         {
             get { return _recognizerPosition; }

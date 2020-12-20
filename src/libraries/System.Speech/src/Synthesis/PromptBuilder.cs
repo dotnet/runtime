@@ -894,7 +894,7 @@ namespace System.Speech.Synthesis
         }
 
         /// <summary>
-        /// TODOC - Embed another prompt into this prompt. 
+        /// TODOC - Embed another prompt into this prompt.
         /// </summary>
         /// <param name="promptBuilder"></param>
         public void AppendPromptBuilder(PromptBuilder promptBuilder)
@@ -909,7 +909,7 @@ namespace System.Speech.Synthesis
         }
 
         /// <summary>
-        /// TODOC - Embed soundFile into this document. 
+        /// TODOC - Embed soundFile into this document.
         /// </summary>
         /// <param name="path"></param>
         public void AppendSsml(string path)
@@ -921,7 +921,7 @@ namespace System.Speech.Synthesis
 
 
         /// <summary>
-        /// TODOC - Embed SSML into this document. 
+        /// TODOC - Embed SSML into this document.
         /// </summary>
         /// <param name="ssmlFile"></param>
         public
@@ -945,7 +945,7 @@ namespace System.Speech.Synthesis
         }
 
         /// <summary>
-        /// TODOC - Embed ssmlFile into this document. 
+        /// TODOC - Embed ssmlFile into this document.
         /// </summary>
         /// <param name="ssmlFile"></param>
         public void AppendSsml(XmlReader ssmlFile)
@@ -1033,7 +1033,7 @@ namespace System.Speech.Synthesis
         #region public Properties
 
         /// <summary>
-        /// TODOC - [speak xml:lang] 
+        /// TODOC - [speak xml:lang]
         /// </summary>
         /// <value></value>
         public bool IsEmpty
@@ -1045,7 +1045,7 @@ namespace System.Speech.Synthesis
         }
 
         /// <summary>
-        /// TODOC - [speak xml:lang] 
+        /// TODOC - [speak xml:lang]
         /// </summary>
         /// <value></value>
         public
@@ -1213,7 +1213,7 @@ namespace System.Speech.Synthesis
         }
 
         /// <summary>
-        /// TODOC - Embed ssmlFile into this document. 
+        /// TODOC - Embed ssmlFile into this document.
         /// </summary>
         /// <param name="ssmlFile"></param>
         private void AppendSsmlInternal(XmlReader ssmlFile)

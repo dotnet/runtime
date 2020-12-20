@@ -9,7 +9,7 @@ using System.Speech.Internal;
 namespace System.Speech.Recognition
 {
     /// <summary>
-    /// 
+    ///
     /// </summary>
 
     [DebuggerDisplay("{_tag.DebugSummary}")]
@@ -91,7 +91,7 @@ namespace System.Speech.Recognition
         #region Internal Properties
 
         /// <summary>
-        /// 
+        ///
         /// </summary>
         internal TagElement Tag
         {

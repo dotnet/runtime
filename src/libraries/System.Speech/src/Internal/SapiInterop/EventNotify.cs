@@ -42,7 +42,7 @@ namespace System.Speech.Internal.SapiInterop
 
         internal EventNotify(ISpEventSource sapiEventSource, IAsyncDispatch dispatcher, bool additionalSapiFeatures)
         {
-            // Remember event source  
+            // Remember event source
             _sapiEventSourceReference = new WeakReference(sapiEventSource);
 
             _dispatcher = dispatcher;

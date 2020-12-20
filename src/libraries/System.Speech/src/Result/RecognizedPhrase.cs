@@ -589,7 +589,7 @@ namespace System.Speech.Recognition
                 throw exceptionThrown;
             }
 
-            // 
+            //
             if (doneOnParse)
             {
                 semanticValue._dictionary.Clear();
@@ -872,7 +872,7 @@ namespace System.Speech.Recognition
 
             if (grammar != null && grammar._scripts != null)
             {
-                // Check if the Inner 
+                // Check if the Inner
                 try
                 {
                     if (exceptionThrown == null)

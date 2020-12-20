@@ -79,7 +79,7 @@ namespace System.Speech.Internal.SrgsCompiler
 
 #if DEBUG
         /// <summary>
-        /// 
+        ///
         /// </summary>
         /// <param name="iRecursiveDepth"></param>
         /// <returns></returns>
@@ -98,7 +98,7 @@ namespace System.Speech.Internal.SrgsCompiler
 #endif
 
         /// <summary>
-        /// 
+        ///
         /// </summary>
         /// <returns></returns>
         internal void Validate()
@@ -115,7 +115,7 @@ namespace System.Speech.Internal.SrgsCompiler
         }
 
         /// <summary>
-        /// 
+        ///
         /// </summary>
         /// <param name="iRecursiveDepth"></param>
         internal void PopulateDynamicRef(ref int iRecursiveDepth)
@@ -292,7 +292,7 @@ namespace System.Speech.Internal.SrgsCompiler
                 // Remove the end arc if possible, check done by MoveSemanticTagRight
                 if (endArc.IsEpsilonTransition && endState.OutArcs.CountIsOne && Graph.MoveSemanticTagLeft(endArc))
                 {
-                    // State has a single input epsilon transition 
+                    // State has a single input epsilon transition
                     // Delete the input epsilon transition and delete state.
                     endArc.Start = null;
 

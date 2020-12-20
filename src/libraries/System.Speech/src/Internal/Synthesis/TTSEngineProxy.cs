@@ -134,7 +134,7 @@ namespace System.Speech.Internal.Synthesis
     }
 
     /// <summary>
-    /// 
+    ///
     /// </summary>
     internal class TtsProxySapi : ITtsEngineProxy
     {

@@ -542,7 +542,7 @@ namespace System.Speech.Recognition
         /// TODOC <_include file='doc\SpeechRecognitionEngine.uex' path='docs/doc[@for="SpeechRecognitionEngine.LoadGrammarCompleted"]/*' />
         public event EventHandler<LoadGrammarCompletedEventArgs> LoadGrammarCompleted;
 
-        // The event fired when speech is detected. Used for barge-in.   
+        // The event fired when speech is detected. Used for barge-in.
         /// TODOC <_include file='doc\SpeechRecognitionEngine.uex' path='docs/doc[@for="SpeechRecognitionEngine.SpeechDetected"]/*' />
         public event EventHandler<SpeechDetectedEventArgs> SpeechDetected;
 
@@ -584,7 +584,7 @@ namespace System.Speech.Recognition
             }
         }
 
-        /// TODOC 
+        /// TODOC
         public event EventHandler<AudioSignalProblemOccurredEventArgs> AudioSignalProblemOccurred
         {
             [MethodImplAttribute(MethodImplOptions.Synchronized)]
@@ -610,7 +610,7 @@ namespace System.Speech.Recognition
             }
         }
 
-        /// TODOC 
+        /// TODOC
         public event EventHandler<AudioLevelUpdatedEventArgs> AudioLevelUpdated
         {
             [MethodImplAttribute(MethodImplOptions.Synchronized)]
@@ -636,7 +636,7 @@ namespace System.Speech.Recognition
             }
         }
 
-        /// TODOC 
+        /// TODOC
         public event EventHandler<AudioStateChangedEventArgs> AudioStateChanged
         {
             [MethodImplAttribute(MethodImplOptions.Synchronized)]

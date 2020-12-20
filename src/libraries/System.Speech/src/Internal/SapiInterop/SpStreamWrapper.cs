@@ -32,7 +32,7 @@ namespace System.Speech.Internal.SapiInterop
         }
 
         /// <summary>
-        /// 
+        ///
         /// </summary>
         public void Dispose()
         {

@@ -97,7 +97,7 @@ namespace System.Speech.Internal.SapiInterop
 #pragma warning disable 56518 // The Binary reader cannot be disposed or it would close the underlying stream
 
         /// <summary>
-        /// Builds the 
+        /// Builds the
         /// </summary>
         /// <param name="stream"></param>
         internal void GetStreamOffsets(Stream stream)
@@ -127,7 +127,7 @@ namespace System.Speech.Internal.SapiInterop
             // If the format is of type WAVEFORMAT then fake a cbByte with a length of zero
             _wfx = br.ReadBytes(block._len);
 
-            // Hardcode the value of the size for the structure element 
+            // Hardcode the value of the size for the structure element
             // as the C# compiler pads the structure to the closest 4 or 8 bytes
             if (block._len == 16)
             {

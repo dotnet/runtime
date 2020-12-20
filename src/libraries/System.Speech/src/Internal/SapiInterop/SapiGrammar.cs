@@ -78,9 +78,9 @@ namespace System.Speech.Internal.SapiInterop
         }
 
         /*
-         * The Set of methods are only available with SAPI 5.3. There is no need then to use the SAPI proxy to switch 
+         * The Set of methods are only available with SAPI 5.3. There is no need then to use the SAPI proxy to switch
          * the call to an MTA thread.
-         * 
+         *
          */
         internal void SetGrammarLoader(ISpGrammarResourceLoader resourceLoader)
         {

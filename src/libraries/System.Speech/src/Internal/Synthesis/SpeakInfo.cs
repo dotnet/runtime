@@ -136,7 +136,7 @@ namespace System.Speech.Internal.Synthesis
         // list of segments (text or audio)
         private List<SpeechSeg> _listSeg = new List<SpeechSeg>();
 
-        // current segment 
+        // current segment
         private SpeechSeg _lastSeg;
 
         // Reference to the VoiceSynthesizer that created it

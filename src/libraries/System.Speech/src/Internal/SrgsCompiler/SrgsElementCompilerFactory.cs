@@ -222,19 +222,19 @@ namespace System.Speech.Internal.SrgsCompiler
 
         /// <summary>
         /// Add transition representing the normalized token.
-        /// 
+        ///
         /// White Space Normalization - Trim leading/trailing white spaces.
         ///                             Collapse white space sequences to a single ' '.
         /// Restrictions - Normalized token cannot be empty.
         ///                Normalized token cannot contain double-quote.
-        /// 
+        ///
         /// If (Parent == Token) And (Parent.SAPIPron.Length > 0) Then
         ///     Escape normalized token.  "/" -> "\/", "\" -> "\\"
         ///     Build /D/L/P; form from the escaped token and SAPIPron.
-        /// 
+        ///
         /// SAPIPron may be a semi-colon delimited list of pronunciations.
         /// In this case, a transition for each of the pronuncitions will be added.
-        /// 
+        ///
         /// AddTransition(NormalizedToken, Parent.EndState, NewState)
         /// Parent.EndState = NewState
         /// </summary>

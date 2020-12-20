@@ -54,12 +54,12 @@ namespace System.Speech.Recognition.SrgsGrammar
         /// |param name="writer"|XmlWriter to which to write the XML fragment.|/param|
         internal void WriteSrgs(XmlWriter writer)
         {
-            // Write <grammar 
-            //          version="1.0" 
-            //          xml:lang="en" 
+            // Write <grammar
+            //          version="1.0"
+            //          xml:lang="en"
             //          mode="voice"
             //          xmlns="http://www.w3.org/2001/06/grammar"
-            //          xmlns:sapi="http://schemas.microsoft.com/Speech/2002/06/SRGSExtensions" 
+            //          xmlns:sapi="http://schemas.microsoft.com/Speech/2002/06/SRGSExtensions"
             //          root="myRule"
             //          xml:base="http://www.example.com/base-file-path">
             writer.WriteStartElement("grammar", XmlParser.srgsNamespace);
@@ -175,7 +175,7 @@ namespace System.Speech.Recognition.SrgsGrammar
             _isSapiExtensionUsed |= HasPronunciation;
             _fContainsCode |= _language != null || _script.Length > 0 || _usings.Count > 0 || _assemblyReferences.Count > 0 || _codebehind.Count > 0 || _namespace != null || _fDebug;
             _isSapiExtensionUsed |= _fContainsCode;
-            // If the grammar contains no pronunciations, set the phonetic alphabet to SAPI. 
+            // If the grammar contains no pronunciations, set the phonetic alphabet to SAPI.
             // This way, the CFG data can be loaded by SAPI 5.1.
             if (!HasPronunciation)
             {

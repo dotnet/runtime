@@ -97,7 +97,7 @@ namespace System.Speech.Internal.Synthesis
         }
 
         /// <summary>
-        /// Retrieves the base output volume level the engine should use during synthesis. 
+        /// Retrieves the base output volume level the engine should use during synthesis.
         /// </summary>
         /// <param name="pusVolume"></param>
         void ISpEngineSite.GetVolume(out Int16 pusVolume)
@@ -106,7 +106,7 @@ namespace System.Speech.Internal.Synthesis
         }
 
         /// <summary>
-        /// Retrieves the number and type of items to be skipped in the text stream. 
+        /// Retrieves the number and type of items to be skipped in the text stream.
         /// </summary>
         /// <param name="peType"></param>
         /// <param name="plNumItems"></param>
@@ -279,19 +279,19 @@ namespace System.Speech.Internal.Synthesis
         /// </summary>
         public IntPtr Param2;   // Can be a numeric type, or pointer to string or object. Use SafeSapiLParamHandle to cleanup.
 
-        /// TODOC 
+        /// TODOC
         public static bool operator ==(SpeechEventSapi event1, SpeechEventSapi event2)
         {
             return event1.EventId == event2.EventId && event1.ParameterType == event2.ParameterType && event1.StreamNumber == event2.StreamNumber && event1.AudioStreamOffset == event2.AudioStreamOffset && event1.Param1 == event2.Param1 && event1.Param2 == event2.Param2;
         }
 
-        /// TODOC 
+        /// TODOC
         public static bool operator !=(SpeechEventSapi event1, SpeechEventSapi event2)
         {
             return !(event1 == event2);
         }
 
-        /// TODOC 
+        /// TODOC
         public override bool Equals(object obj)
         {
             if (!(obj is SpeechEventSapi))

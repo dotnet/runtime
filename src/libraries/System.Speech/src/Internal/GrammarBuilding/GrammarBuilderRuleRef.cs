@@ -10,7 +10,7 @@ using System.Diagnostics;
 namespace System.Speech.Internal.GrammarBuilding
 {
     /// <summary>
-    /// 
+    ///
     /// </summary>
     internal sealed class GrammarBuilderRuleRef : GrammarBuilderBase
     {
@@ -23,7 +23,7 @@ namespace System.Speech.Internal.GrammarBuilding
         #region Constructors
 
         /// <summary>
-        /// 
+        ///
         /// </summary>
         /// <param name="uri"></param>
         /// <param name="rule"></param>
@@ -33,7 +33,7 @@ namespace System.Speech.Internal.GrammarBuilding
         }
 
         /// <summary>
-        /// 
+        ///
         /// </summary>
         /// <param name="sgrsUri"></param>
         private GrammarBuilderRuleRef(string sgrsUri)
@@ -79,7 +79,7 @@ namespace System.Speech.Internal.GrammarBuilding
         #region Internal Methods
 
         /// <summary>
-        /// 
+        ///
         /// </summary>
         /// <returns></returns>
         internal override GrammarBuilderBase Clone()
@@ -88,7 +88,7 @@ namespace System.Speech.Internal.GrammarBuilding
         }
 
         /// <summary>
-        /// 
+        ///
         /// </summary>
         /// <param name="elementFactory"></param>
         /// <param name="parent"></param>
@@ -131,7 +131,7 @@ namespace System.Speech.Internal.GrammarBuilding
         #region Private Fields
 
         /// <summary>
-        /// 
+        ///
         /// </summary>
         private readonly string _uri;
 

@@ -9,7 +9,7 @@ using System.Speech.Internal;
 namespace System.Speech.Recognition
 {
     /// <summary>
-    /// 
+    ///
     /// </summary>
 
     [DebuggerDisplay("{_semanticKey.DebugSummary}")]
@@ -24,7 +24,7 @@ namespace System.Speech.Recognition
         #region Constructors
 
         /// <summary>
-        /// 
+        ///
         /// </summary>
         /// <param name="semanticResultKey"></param>
         private SemanticResultKey(string semanticResultKey)
@@ -36,7 +36,7 @@ namespace System.Speech.Recognition
         }
 
         /// <summary>
-        /// 
+        ///
         /// </summary>
         /// <param name="semanticResultKey"></param>
         /// <param name="phrases"></param>
@@ -54,7 +54,7 @@ namespace System.Speech.Recognition
         }
 
         /// <summary>
-        /// 
+        ///
         /// </summary>
         /// <param name="semanticResultKey"></param>
         /// <param name="builders"></param>

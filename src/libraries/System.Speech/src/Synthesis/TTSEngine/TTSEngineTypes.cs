@@ -32,12 +32,12 @@ namespace System.Speech.Synthesis.TtsEngine
         /// <summary>
         /// Constructor for the TTS engine
         /// </summary>
-        /// <param name="registryKey">Voice token registry entry 
+        /// <param name="registryKey">Voice token registry entry
         /// from where this engine was created from</param>
         protected TtsEngineSsml(string registryKey) { }
 
         /// <summary>
-        /// Queries the engine about the output format it supports. 
+        /// Queries the engine about the output format it supports.
         /// </summary>
         /// <param name="speakOutputFormat">Wave or Text</param>
         /// <param name="targetWaveFormat">Wave format header</param>
@@ -60,10 +60,10 @@ namespace System.Speech.Synthesis.TtsEngine
         abstract public void RemoveLexicon(Uri uri, ITtsEngineSite site);
 
         /// <summary>
-        /// Renders the specified text fragments array in the 
+        /// Renders the specified text fragments array in the
         /// specified output format.
         /// </summary>
-        /// <param name="fragment">Text fragment with SSML 
+        /// <param name="fragment">Text fragment with SSML
         /// attributes information</param>
         /// <param name="waveHeader">Wave format header</param>
         /// <param name="site">Engine site</param>
@@ -90,13 +90,13 @@ namespace System.Speech.Synthesis.TtsEngine
         /// <summary>
         /// Always just a numeric type - contains no unmanaged resources so does not need special clean-up.
         /// </summary>
-        public int Param1 { get { return _param1; } internal set { _param1 = value; } }   // 
+        public int Param1 { get { return _param1; } internal set { _param1 = value; } }   //
         /// <summary>
-        /// Can be a numeric type, or pointer to string. 
+        /// Can be a numeric type, or pointer to string.
         /// </summary>
         public IntPtr Param2 { get { return _param2; } internal set { _param2 = value; } }
 
-        /// TODOC 
+        /// TODOC
         public SpeechEventInfo(Int16 eventId,
                                Int16 parameterType,
                                int param1,
@@ -108,13 +108,13 @@ namespace System.Speech.Synthesis.TtsEngine
             _param2 = param2;
         }
 
-        /// TODOC 
+        /// TODOC
         public static bool operator ==(SpeechEventInfo event1, SpeechEventInfo event2)
         {
             return event1.EventId == event2.EventId && event1.ParameterType == event2.ParameterType && event1.Param1 == event2.Param1 && event1.Param2 == event2.Param2;
         }
 
-        /// TODOC 
+        /// TODOC
         public static bool operator !=(SpeechEventInfo event1, SpeechEventInfo event2)
         {
             return !(event1 == event2);
@@ -126,7 +126,7 @@ namespace System.Speech.Synthesis.TtsEngine
             return this == other;
         }
 
-        /// TODOC 
+        /// TODOC
         public override bool Equals(object obj)
         {
             if (!(obj is SpeechEventInfo))
@@ -361,7 +361,7 @@ namespace System.Speech.Synthesis.TtsEngine
         /// </summary>
         public char[] Phoneme { get { return _phoneme; } internal set { Helpers.ThrowIfNull(value, "value"); _phoneme = value; } }
 
-        /// TODOC 
+        /// TODOC
         public FragmentState(TtsEngineAction action,
                              int langId,
                              int emphasis,
@@ -380,13 +380,13 @@ namespace System.Speech.Synthesis.TtsEngine
         }
 
 
-        /// TODOC 
+        /// TODOC
         public static bool operator ==(FragmentState state1, FragmentState state2)
         {
             return state1.Action == state2.Action && state1.LangId == state2.LangId && state1.Emphasis == state2.Emphasis && state1.Duration == state2.Duration && state1.SayAs == state2.SayAs && state1.Prosody == state2.Prosody && Array.Equals(state1.Phoneme, state2.Phoneme);
         }
 
-        /// TODOC 
+        /// TODOC
         public static bool operator !=(FragmentState state1, FragmentState state2)
         {
             return !(state1 == state2);
@@ -398,7 +398,7 @@ namespace System.Speech.Synthesis.TtsEngine
             return this == other;
         }
 
-        /// TODOC 
+        /// TODOC
         public override bool Equals(object obj)
         {
             if (!(obj is FragmentState))
@@ -525,13 +525,13 @@ namespace System.Speech.Synthesis.TtsEngine
             _changeType = changeType;
         }
 
-        /// TODOC 
+        /// TODOC
         public static bool operator ==(ContourPoint point1, ContourPoint point2)
         {
             return point1.Start.Equals(point2.Start) && point1.Change.Equals(point2.Change) && point1.ChangeType.Equals(point2.ChangeType);
         }
 
-        /// TODOC 
+        /// TODOC
         public static bool operator !=(ContourPoint point1, ContourPoint point2)
         {
             return !(point1 == point2);
@@ -543,7 +543,7 @@ namespace System.Speech.Synthesis.TtsEngine
             return this == other;
         }
 
-        /// TODOC 
+        /// TODOC
         public override bool Equals(object obj)
         {
             if (!(obj is ContourPoint))
@@ -619,13 +619,13 @@ namespace System.Speech.Synthesis.TtsEngine
             _unit = ProsodyUnit.Default;
         }
 
-        /// TODOC 
+        /// TODOC
         public static bool operator ==(ProsodyNumber prosodyNumber1, ProsodyNumber prosodyNumber2)
         {
             return prosodyNumber1._ssmlAttributeId == prosodyNumber2._ssmlAttributeId && prosodyNumber1.Number.Equals(prosodyNumber2.Number) && prosodyNumber1.IsNumberPercent == prosodyNumber2.IsNumberPercent && prosodyNumber1.Unit == prosodyNumber2.Unit;
         }
 
-        /// TODOC 
+        /// TODOC
         public static bool operator !=(ProsodyNumber prosodyNumber1, ProsodyNumber prosodyNumber2)
         {
             return !(prosodyNumber1 == prosodyNumber2);
@@ -637,7 +637,7 @@ namespace System.Speech.Synthesis.TtsEngine
             return this == other;
         }
 
-        /// TODOC 
+        /// TODOC
         public override bool Equals(object obj)
         {
             if (!(obj is ProsodyNumber))

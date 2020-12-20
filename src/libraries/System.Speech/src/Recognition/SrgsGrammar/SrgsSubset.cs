@@ -11,7 +11,7 @@ using System.Xml;
 namespace System.Speech.Recognition.SrgsGrammar
 {
     /// TODOC <_include file='doc\Subset.uex' path='docs/doc[@for="Subset"]/*' />
-    // Note that currently if multiple words are stored in a Subset they are treated internally 
+    // Note that currently if multiple words are stored in a Subset they are treated internally
     // and in the result as multiple tokens.
     [Serializable]
     [DebuggerDisplay("{DebuggerDisplayString ()}")]
@@ -25,13 +25,13 @@ namespace System.Speech.Recognition.SrgsGrammar
 
         #region Constructors
 
-        /// TODOC 
+        /// TODOC
         public SrgsSubset(string text)
             : this(text, SubsetMatchingMode.Subsequence)
         {
         }
 
-        /// TODOC 
+        /// TODOC
         public SrgsSubset(string text, SubsetMatchingMode matchingMode)
         {
             Helpers.ThrowIfEmptyOrNull(text, "text");
@@ -131,7 +131,7 @@ namespace System.Speech.Recognition.SrgsGrammar
                 writer.WriteAttributeString("sapi", "match", XmlParser.sapiNamespace, sMatchMode);
             }
 
-            // If an empty string is provided, skip the WriteString 
+            // If an empty string is provided, skip the WriteString
             // to have the XmlWrite to put <token/> rather than <token></token>
             if (_text != null && _text.Length > 0)
             {
