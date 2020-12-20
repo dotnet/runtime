@@ -11,7 +11,6 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Speech.Recognition.SrgsGrammar;
 
-#pragma warning disable 1634, 1691 // Allows suppression of certain PreSharp messages.
 #pragma warning disable 56524 // The _reader and  and _xmlReader are not created in this module and should not be disposed
 
 // Remove all the check for null or empty warnings
