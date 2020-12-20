@@ -177,11 +177,11 @@ namespace System.Speech.Internal.Synthesis
         /// be block-aligned according to the nBlockAlign member of the
         /// WaveFormat structure used to open the device.
         /// </summary>
-        private GCHandle _gcHandle = new GCHandle();
+        private GCHandle _gcHandle;
 
-        private GCHandle _gcHandleWaveHdr = new GCHandle();
+        private GCHandle _gcHandleWaveHdr;
 
-        private WAVEHDR _waveHdr = new WAVEHDR();
+        private WAVEHDR _waveHdr;
 
         /// <summary>
         /// Specifies the length, in bytes, of the buffer.

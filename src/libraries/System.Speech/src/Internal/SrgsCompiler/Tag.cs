@@ -76,7 +76,7 @@ namespace System.Speech.Internal.SrgsCompiler
 
         #region Internal Fields
 
-        internal CfgSemanticTag _cfgTag = new CfgSemanticTag();
+        internal CfgSemanticTag _cfgTag;
 
         internal Backend _be;
 

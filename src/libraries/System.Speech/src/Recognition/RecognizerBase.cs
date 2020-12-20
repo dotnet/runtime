@@ -20,8 +20,6 @@ using System.Speech.Internal.ObjectTokens;
 using System.Speech.Recognition.SrgsGrammar;
 using System.Threading;
 
-#pragma warning disable 1634, 1691 // Allows suppression of certain PreSharp messages.
-
 namespace System.Speech.Recognition
 {
     /// TODOC <_include file='doc\RecognizerBase.uex' path='docs/doc[@for="RecognizerBase"]/*' />
@@ -3181,7 +3179,7 @@ namespace System.Speech.Recognition
         private bool _enabled = true; // Used by SpeechRecognizer to globally deactivate grammars.
 
         private int _maxAlternates;
-        internal AudioState _audioState = new AudioState();
+        internal AudioState _audioState;
         private SpeechAudioFormatInfo _audioFormat;
 
         private RecognizeMode _recognizeMode = RecognizeMode.Multiple; // Default for SpeechRecognizer, set explicitly on SpeechRecognitionEngine

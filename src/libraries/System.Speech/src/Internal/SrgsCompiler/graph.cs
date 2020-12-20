@@ -19,7 +19,7 @@ namespace System.Speech.Internal.SrgsCompiler
 
 #if DEBUG
     [DebuggerDisplay ("Count = {Count}")]
-    [DebuggerTypeProxy (typeof (GraphDebugDisplay))]
+    [DebuggerTypeProxy (typeof(GraphDebugDisplay))]
 #endif
     internal class Graph : IEnumerable<State>
     {

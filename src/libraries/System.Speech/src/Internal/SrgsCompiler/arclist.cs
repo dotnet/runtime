@@ -12,7 +12,7 @@ namespace System.Speech.Internal.SrgsCompiler
 {
 #if DEBUG
     [DebuggerDisplay ("Count #{Count}")]
-    [DebuggerTypeProxy (typeof (ArcListDebugDisplay))]
+    [DebuggerTypeProxy (typeof(ArcListDebugDisplay))]
 #endif
     internal class ArcList : RedBackList
     {
