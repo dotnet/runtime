@@ -39,7 +39,7 @@ namespace System.Speech.Internal.Synthesis
         internal VoiceSynthesis(WeakReference speechSynthesizer)
         {
             _asyncWorker = new AsyncSerializedWorker(new WaitCallback(ProcessPostData), null);
-            _asyncWorkerUI = new AsyncSerializedWorker(null, AsyncOperationManager.CreateOperation(null));
+            _asyncWorkerUI = new AsyncSerializedWorker(null, SynchronizationContext.Current);
 
             // Setup the event dispatcher for state changed events
             _eventStateChanged = new WaitCallback(OnStateChanged);

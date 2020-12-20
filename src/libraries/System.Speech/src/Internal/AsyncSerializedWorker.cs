@@ -20,9 +20,9 @@ namespace System.Speech.Internal
     {
         #region Constructors
 
-        internal AsyncSerializedWorker(WaitCallback defaultCallback, AsyncOperation asyncOperation)
+        internal AsyncSerializedWorker(WaitCallback defaultCallback, SynchronizationContext syncContext)
         {
-            _asyncOperation = asyncOperation;
+            _syncContext = syncContext;
             _workerPostCallback = new SendOrPostCallback(WorkerProc);
             Initialize(defaultCallback);
         }
@@ -229,13 +229,13 @@ namespace System.Speech.Internal
             {
                 if (AsyncMode)
                 {
-                    if (_asyncOperation == null)
+                    if (_syncContext == null)
                     {
                         ThreadPool.QueueUserWorkItem(_workerCallback, null);
                     }
                     else
                     {
-                        _asyncOperation.Post(_workerPostCallback, null);
+                        _syncContext.Post(_workerPostCallback, null);
                     }
                 }
                 else if (WorkItemPending != null)
@@ -249,7 +249,7 @@ namespace System.Speech.Internal
 
         #region Private Fields
 
-        private AsyncOperation _asyncOperation;
+        private SynchronizationContext _syncContext;
         private SendOrPostCallback _workerPostCallback;
 
         private Queue _queue;

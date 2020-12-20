@@ -560,7 +560,7 @@ namespace System.Speech.Recognition
 
             _asyncWorker = new AsyncSerializedWorker(new WaitCallback(DispatchEvents), null);
 
-            _asyncWorkerUI = new AsyncSerializedWorker(null, AsyncOperationManager.CreateOperation(null));
+            _asyncWorkerUI = new AsyncSerializedWorker(null, SynchronizationContext.Current);
             _asyncWorkerUI.WorkItemPending += new WaitCallback(SignalHandlerThread);
 
             _eventNotify = _sapiContext.CreateEventNotify(_asyncWorker, _supportsSapi53);
