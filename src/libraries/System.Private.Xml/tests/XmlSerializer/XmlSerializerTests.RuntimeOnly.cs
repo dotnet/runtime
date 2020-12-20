@@ -1057,7 +1057,8 @@ public static partial class XmlSerializerTests
         attrs.XmlElements.Remove(item2);
         Assert.False(attrs.XmlElements.Contains(item2));
 
-        AssertExtensions.Throws<ArgumentException>(null, () => { attrs.XmlElements.Remove(item2); });
+        // docs says nothing about throwing in this case
+        attrs.XmlElements.Remove(item2);
     }
 
     [Fact]
@@ -1089,7 +1090,8 @@ public static partial class XmlSerializerTests
         attrs.XmlArrayItems.Remove(item2);
         Assert.False(attrs.XmlArrayItems.Contains(item2));
 
-        AssertExtensions.Throws<ArgumentException>(null, () => { attrs.XmlArrayItems.Remove(item2); });
+        // docs says nothing about throwing in this case
+        attrs.XmlArrayItems.Remove(item2);
     }
 
     [Fact]
@@ -1121,7 +1123,8 @@ public static partial class XmlSerializerTests
         attrs.XmlAnyElements.Remove(item2);
         Assert.False(attrs.XmlAnyElements.Contains(item2));
 
-        AssertExtensions.Throws<ArgumentException>(null, () => { attrs.XmlAnyElements.Remove(item2); });
+        // docs says nothing about throwing in this case
+        attrs.XmlAnyElements.Remove(item2);
     }
 
     [Fact]
