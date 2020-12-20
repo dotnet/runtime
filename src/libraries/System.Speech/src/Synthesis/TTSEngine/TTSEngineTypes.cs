@@ -11,7 +11,6 @@ using System.Speech.Internal;
 
 using System.Diagnostics;
 
-#pragma warning disable 1634, 1691 // Allows suppression of certain PreSharp messages.
 #pragma warning disable 56504 // The public API is not that public so remove all the parameter validation.
 
 namespace System.Speech.Synthesis.TtsEngine

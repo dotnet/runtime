@@ -15,9 +15,7 @@ using System.Speech.Internal.SrgsParser;
 using System.Text;
 using Microsoft.CSharp;
 using Microsoft.VisualBasic;
-//using Microsoft.VJSharp;
 
-#pragma warning disable 1634, 1691 // Allows suppression of certain PreSharp messages.
 #pragma warning disable 56507 // check for null or empty strings
 
 
