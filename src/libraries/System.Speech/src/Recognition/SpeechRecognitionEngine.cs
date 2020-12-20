@@ -276,16 +276,6 @@ namespace System.Speech.Recognition
             set { RecoBase.MaxAlternates = value; }
         }
 
-        /* TODO
-	    // User profile related methods:
-        public SpeakerProfile Profile
-        {
-            get { return null; }
-        }
-        */
-
-
-
         #endregion
 
 

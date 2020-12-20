@@ -7,7 +7,7 @@
     <!-- CS0649: uninitialized interop type fields -->
     <!-- CA2249: Consider using String.Contains instead of String.IndexOf.  We compile for netcoreapp2.0 where this doesn't exist.-->
     <NoWarn>$(NoWarn);CS0649;CA2249</NoWarn>
-    <NoWarn>$(NoWarn);CS0103;CS1061;SA1000;;;CA1805;;;;;;;CS0618;CS0649;;;CS1734;CS8032;IDE0041;IDE0073;SA1001;SA1027;;SA1121;SA1129;SA1206;SA1212;SA1400;SA1518;SA1617;SYSLIB0003;SYSLIB0006;SYSLIB0014</NoWarn>
+    <NoWarn>$(NoWarn);;;SA1000;;;CA1805;;;;;;;CS0618;CS0649;;;CS1734;CS8032;IDE0041;IDE0073;SA1001;SA1027;;SA1121;SA1129;SA1206;SA1212;SA1400;SA1518;SA1617;SYSLIB0003;SYSLIB0006;SYSLIB0014</NoWarn>
     <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(TargetFramework)' == 'netstandard2.0'">SR.PlatformNotSupported_SystemSpeech</GeneratePlatformNotSupportedAssemblyMessage>
 
   </PropertyGroup>

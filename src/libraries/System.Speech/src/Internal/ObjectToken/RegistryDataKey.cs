@@ -9,8 +9,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 
-#pragma warning disable 1634, 1691 // Allows suppression of certain PreSharp messages.
-
 using System.Speech.Internal.SapiInterop;
 
 namespace System.Speech.Internal.ObjectTokens
