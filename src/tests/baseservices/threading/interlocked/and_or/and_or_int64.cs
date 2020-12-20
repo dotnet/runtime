@@ -19,68 +19,68 @@ public class Program
                 // XAnd
                 long test1Value = testData[i];
                 long test1Arg = testData[j];
-                long ret1Value = RefImpl.XAnd32(ref test1Value, test1Arg);
+                long ret1Value = RefImpl.XAnd64(ref test1Value, test1Arg);
 
                 long test2Value = testData[i];
                 long test2Arg = testData[j];
-                long ret2Value = InterlockedImpl.XAnd32(ref test2Value, test2Arg);
+                long ret2Value = InterlockedImpl.XAnd64(ref test2Value, test2Arg);
                 AssertEquals(test1Value, test2Value);
                 AssertEquals(ret1Value, ret2Value);
 
                 // XAnd_noret
                 long test3Value = testData[i];
                 long test3Arg = testData[j];
-                RefImpl.XAnd32_noret(ref test3Value, test3Arg);
+                RefImpl.XAnd64_noret(ref test3Value, test3Arg);
 
                 long test4Value = testData[i];
                 long test4Arg = testData[j];
-                InterlockedImpl.XAnd32_noret(ref test4Value, test4Arg);
+                InterlockedImpl.XAnd64_noret(ref test4Value, test4Arg);
                 AssertEquals(test3Value, test4Value);
 
                 // XOr
                 long test5Value = testData[i];
                 long test5Arg = testData[j];
-                long ret5Value = RefImpl.XOr32(ref test5Value, test5Arg);
+                long ret5Value = RefImpl.XOr64(ref test5Value, test5Arg);
 
                 long test6Value = testData[i];
                 long test6Arg = testData[j];
-                long ret6Value = InterlockedImpl.XOr32(ref test6Value, test6Arg);
+                long ret6Value = InterlockedImpl.XOr64(ref test6Value, test6Arg);
                 AssertEquals(test5Value, test6Value);
                 AssertEquals(ret5Value, ret6Value);
 
                 // XOr_noret
                 long test7Value = testData[i];
                 long test7Arg = testData[j];
-                RefImpl.XOr32_noret(ref test7Value, test7Arg);
+                RefImpl.XOr64_noret(ref test7Value, test7Arg);
 
                 long test8Value = testData[i];
                 long test8Arg = testData[j];
-                InterlockedImpl.XOr32_noret(ref test8Value, test8Arg);
+                InterlockedImpl.XOr64_noret(ref test8Value, test8Arg);
                 AssertEquals(test7Value, test8Value);
             }
 
             ThrowsNRE(() =>
             {
                 ref long nullref = ref Unsafe.NullRef<long>();
-                InterlockedImpl.XAnd32(ref nullref, testData[i]);
+                InterlockedImpl.XAnd64(ref nullref, testData[i]);
             });
 
             ThrowsNRE(() =>
             {
                 ref long nullref = ref Unsafe.NullRef<long>();
-                InterlockedImpl.XAnd32_noret(ref nullref, testData[i]);
+                InterlockedImpl.XAnd64_noret(ref nullref, testData[i]);
             });
 
             ThrowsNRE(() =>
             {
                 ref long nullref = ref Unsafe.NullRef<long>();
-                InterlockedImpl.XOr32(ref nullref, testData[i]);
+                InterlockedImpl.XOr64(ref nullref, testData[i]);
             });
 
             ThrowsNRE(() =>
             {
                 ref long nullref = ref Unsafe.NullRef<long>();
-                InterlockedImpl.XOr32_noret(ref nullref, testData[i]);
+                InterlockedImpl.XOr64_noret(ref nullref, testData[i]);
             });
         }
 
@@ -116,29 +116,29 @@ public class Program
 class RefImpl
 {
     [MethodImpl(MethodImplOptions.NoInlining)]
-    public static long XAnd32(ref long a, long b) { long src = a; a &= b; return src; }
+    public static long XAnd64(ref long a, long b) { long src = a; a &= b; return src; }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    public static void XAnd32_noret(ref long a, long b) => a &= b;
+    public static void XAnd64_noret(ref long a, long b) => a &= b;
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    public static long XOr32(ref long a, long b) { long src = a; a |= b; return src; }
+    public static long XOr64(ref long a, long b) { long src = a; a |= b; return src; }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    public static void XOr32_noret(ref long a, long b) => a |= b;
+    public static void XOr64_noret(ref long a, long b) => a |= b;
 }
 
 class InterlockedImpl
 {
     [MethodImpl(MethodImplOptions.NoInlining)]
-    public static long XAnd32(ref long a, long b) => Interlocked.And(ref a, b);
+    public static long XAnd64(ref long a, long b) => Interlocked.And(ref a, b);
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    public static void XAnd32_noret(ref long a, long b) => Interlocked.And(ref a, b);
+    public static void XAnd64_noret(ref long a, long b) => Interlocked.And(ref a, b);
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    public static long XOr32(ref long a, long b) => Interlocked.Or(ref a, b);
+    public static long XOr64(ref long a, long b) => Interlocked.Or(ref a, b);
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    public static void XOr32_noret(ref long a, long b) => Interlocked.Or(ref a, b);
+    public static void XOr64_noret(ref long a, long b) => Interlocked.Or(ref a, b);
 }
