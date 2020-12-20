@@ -1,0 +1,898 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
+using System;
+using System.Collections.Generic;
+using System.Text;
+using System.Collections;
+using System.Diagnostics;
+
+namespace System.Speech.Internal
+{
+    /// <summary>
+    /// Sorted List using the Red-Black algorithm
+    /// </summary>
+    internal abstract class RedBackList : IEnumerable
+    {
+        //*******************************************************************
+        //
+        // Constructors
+        //
+        //*******************************************************************
+
+        #region Constructors
+
+        internal RedBackList ()
+        {
+        }
+
+        #endregion
+
+        //*******************************************************************
+        //
+        // Internal Methods
+        //
+        //*******************************************************************
+
+        #region Internal Methods
+
+        internal void Add (object key)
+        {
+#if DEBUG
+            if (_root != null && _root._inEnumaration)
+            {
+                throw new InvalidOperationException ();
+            }
+#endif
+            TreeNode node = new TreeNode (key);
+            node.IsRed = true;
+            InsertNode (_root, node);
+            FixUpInsertion (node);
+
+            _root = FindRoot (node);
+        }
+
+        internal void Remove (object key)
+        {
+#if DEBUG
+            if (_root != null && _root._inEnumaration)
+            {
+                throw new InvalidOperationException ();
+            }
+#endif
+            TreeNode node = FindItem (_root, key);
+            if (node == null)
+            {
+                throw new KeyNotFoundException ();
+            }
+            TreeNode nodeRemoved = DeleteNode (node);
+            FixUpRemoval (nodeRemoved);
+
+            if (nodeRemoved == _root)
+            {
+                if (_root.Left != null)
+                {
+                    _root = FindRoot (_root.Left);
+                }
+                else if (_root.Right != null)
+                {
+                    _root = FindRoot (_root.Right);
+                }
+                else
+                {
+                    _root = null;
+                }
+            }
+            else
+            {
+                _root = FindRoot (_root);
+            }
+        }
+
+        public IEnumerator GetEnumerator ()
+        {
+            return new MyEnumerator (_root);
+        }
+
+        #endregion
+
+        //*******************************************************************
+        //
+        // Internal Properties
+        //
+        //*******************************************************************
+
+        #region Internal Properties
+
+        internal bool IsEmpty
+        {
+            get
+            {
+                return _root == null;
+            }
+        }
+
+        internal bool CountIsOne
+        {
+            get
+            {
+                return _root != null && _root.Left == null && _root.Right == null;
+            }
+        }
+
+        internal bool ContainsMoreThanOneItem
+        {
+            get
+            {
+                return _root != null && (_root.Right != null || _root.Left != null);
+            }
+        }
+
+        internal object First
+        {
+            get
+            {
+                if (_root == null)
+                {
+                    // We don't expect First to be called on empty graphs
+                    System.Diagnostics.Debug.Assert (false);
+                    return null;
+                }
+                // Set the current pointer to the last element
+                return FindMinSubTree (_root).Key;
+            }
+        }
+
+        #endregion
+
+        //*******************************************************************
+        //
+        // Protected Methods
+        //
+        //*******************************************************************
+
+        #region Protected Methods
+
+        abstract protected int CompareTo (object object1, object object2);
+
+        #endregion
+
+        //*******************************************************************
+        //
+        // Private Methods
+        //
+        //*******************************************************************
+
+        #region Private Methods
+
+        #region Implement utility operations on Tree
+
+        static private TreeNode GetUncle (TreeNode node)
+        {
+            if (node.Parent == node.Parent.Parent.Left)
+            {
+                return node.Parent.Parent.Right;
+            }
+            else
+            {
+                return node.Parent.Parent.Left;
+            }
+        }
+
+        static private TreeNode GetSibling (TreeNode node, TreeNode parent)
+        {
+            if (node == parent.Left)
+            {
+                return parent.Right;
+            }
+            else
+            {
+                return parent.Left;
+            }
+        }
+
+        static private NodeColor GetColor (TreeNode node)
+        {
+            return node == null ? NodeColor.BLACK : (node.IsRed ? NodeColor.RED : NodeColor.BLACK);
+        }
+
+
+        static private void SetColor (TreeNode node, NodeColor color)
+        {
+            if (node != null)
+            {
+                node.IsRed = (color == NodeColor.RED);
+            }
+            else
+            {
+                Debug.Assert (color == NodeColor.BLACK);
+            }
+        }
+
+        static private void TakeParent (TreeNode node, TreeNode newNode)
+        {
+            if (node.Parent == null)
+            {
+                if (newNode != null)
+                {
+                    newNode.Parent = null;
+                }
+            }
+            else if (node.Parent.Left == node)
+            {
+                node.Parent.Left = newNode;
+            }
+            else if (node.Parent.Right == node)
+            {
+                node.Parent.Right = newNode;
+            }
+            else
+            {
+                throw new InvalidOperationException ();
+            }
+        }
+
+        static private TreeNode RotateLeft (TreeNode node)
+        {
+            TreeNode newNode = node.Right;
+            node.Right = newNode.Left;
+            TakeParent (node, newNode);
+            newNode.Left = node;
+            return newNode;
+        }
+
+        static private TreeNode RotateRight (TreeNode node)
+        {
+            TreeNode newNode = node.Left;
+            node.Left = newNode.Right;
+            TakeParent (node, newNode);
+            newNode.Right = node;
+
+            return newNode;
+        }
+
+
+        static private TreeNode FindMinSubTree (TreeNode node)
+        {
+            while (node.Left != null)
+            {
+                node = node.Left;
+            }
+            return node;
+        }
+
+        static private TreeNode FindSuccessor (TreeNode node)
+        {
+            if (node.Right == null)
+            {
+                while (node.Parent != null && node.Parent.Left != node)
+                {
+                    node = node.Parent;
+                }
+
+                return node.Parent == null ? null : node.Parent;
+            }
+            else
+            {
+                return FindMinSubTree (node.Right);
+            }
+        }
+
+
+        // Return the actual node that is deleted
+        static private TreeNode DeleteNode (TreeNode node)
+        {
+            if (node.Right == null)
+            {
+                TakeParent (node, node.Left);
+
+                return node;
+            }
+            else if (node.Left == null)
+            {
+                TakeParent (node, node.Right);
+
+                return node;
+            }
+            else
+            {
+                TreeNode successor = FindSuccessor (node);
+                Debug.Assert (successor != null && successor.Left == null);
+                node.CopyNode (successor);
+                TakeParent (successor, successor.Right);
+                return successor;
+            }
+        }
+
+        #endregion Implement utility operations on Tree
+
+        // Return the root of the new subtree
+        private TreeNode InsertNode (TreeNode node, TreeNode newNode)
+        {
+            if (node == null)
+            {
+                return newNode;
+            }
+
+            int diff = CompareTo (newNode.Key, node.Key);
+
+            if (diff < 0)
+            {
+                node.Left = InsertNode (node.Left, newNode);
+            }
+            else
+            {
+                node.Right = InsertNode (node.Right, newNode);
+            }
+
+            return node;
+        }
+
+        private TreeNode FindItem (TreeNode node, object key)
+        {
+            if (node == null)
+            {
+                return null;
+            }
+            int diff = CompareTo (key, node.Key);
+            if (diff == 0)
+            {
+                return node;
+            }
+            else if (diff < 0)
+            {
+                return FindItem (node.Left, key);
+            }
+            else
+            {
+                return FindItem (node.Right, key);
+            }
+        }
+
+        private TreeNode FindRoot (TreeNode node)
+        {
+            while (node.Parent != null)
+            {
+                node = node.Parent;
+            }
+            return node;
+        }
+
+        private void FixUpInsertion (TreeNode node)
+        {
+            FixInsertCase1 (node);
+        }
+
+        private void FixInsertCase1 (TreeNode node)
+        {
+            Debug.Assert (node.IsRed);
+
+            if (node.Parent == null)
+            {
+                node.IsRed = false;
+            }
+            else
+            {
+                FixInsertCase2 (node);
+            }
+        }
+        private void FixInsertCase2 (TreeNode node)
+        {
+            if (GetColor (node.Parent) == NodeColor.BLACK)
+            {
+                return; // Tree is still valid.
+            }
+
+            // Now, its parent is RED, so it must have an uncle since its parent is not root.
+            // Also, its grandparent must be BLACK.
+            Debug.Assert (GetColor (node.Parent.Parent) == NodeColor.BLACK);
+            TreeNode uncle = GetUncle (node);
+
+            if (GetColor (uncle) == NodeColor.RED)
+            {
+                SetColor (node.Parent, NodeColor.BLACK);
+                SetColor (uncle, NodeColor.BLACK);
+                SetColor (node.Parent.Parent, NodeColor.RED);
+                FixInsertCase1 (node.Parent.Parent); // Move recursively up
+            }
+            else
+            {
+                FixInsertCase3 (node);
+            }
+        }
+
+        private void FixInsertCase3 (TreeNode node)
+        {
+            //
+            // Now it's RED, parent is RED, uncle is BLACK, 
+            // We want to rotate so that its uncle is on the opposite side
+            if (node == node.Parent.Right && node.Parent == node.Parent.Parent.Left)
+            {
+                RotateLeft (node.Parent);
+                node = node.Left;
+            }
+            else if (node == node.Parent.Left && node.Parent == node.Parent.Parent.Right)
+            {
+                RotateRight (node.Parent);
+                node = node.Right;
+            }
+            FixInsertCase4 (node);
+        }
+
+        private void FixInsertCase4 (TreeNode node)
+        {
+            //
+            // Must follow case 3, here we are finally done!
+            //
+
+            SetColor (node.Parent, NodeColor.BLACK);
+            SetColor (node.Parent.Parent, NodeColor.RED);
+            if (node == node.Parent.Left)
+            {
+                Debug.Assert (node.Parent == node.Parent.Parent.Left); // From case 3
+                RotateRight (node.Parent.Parent);
+            }
+            else
+            {
+                Debug.Assert (node.Parent == node.Parent.Parent.Right); // From case 3
+                RotateLeft (node.Parent.Parent);
+            }
+        }
+
+        private static void FixUpRemoval (TreeNode node)
+        {
+            // This node must have at most 1 child
+            Debug.Assert (node.Left == null || node.Right == null);
+
+            TreeNode onlyChild = node.Left == null ? node.Right : node.Left;
+
+            // This node should have been deleted already, and the child has replaced the this node.
+            Debug.Assert (node.Parent == null || node.Parent.Left == onlyChild || node.Parent.Right == onlyChild);
+            Debug.Assert (onlyChild == null || onlyChild.Parent == node.Parent);
+
+            //
+            // If the node removed was red, all properties still hold.
+            // Otherwise, we need fix up.
+            //
+
+            if (GetColor (node) == NodeColor.BLACK)
+            {
+                if (GetColor (onlyChild) == NodeColor.RED)
+                {
+                    SetColor (onlyChild, NodeColor.BLACK);
+                }
+                else if (node.Parent == null)  // if we remove a root node, nothing has changed.
+                {
+                    return;
+                }
+                else
+                {
+                    //
+                    // Note that onlyChild could be null.
+                    // The deleted node and its only child are BLACK, and there is a real parent, therefore,
+                    // the total black height was at least 2 (excluding the real parent), thus the sibling subtree also has a black height of at least 2
+                    // 
+                    FixRemovalCase2 (GetSibling (onlyChild, node.Parent));
+                }
+            }
+        }
+
+        private static void FixRemovalCase1 (TreeNode node)
+        {
+            Debug.Assert (GetColor (node) == NodeColor.BLACK);
+            if (node.Parent == null)
+            {
+                return;
+            }
+            else
+            {
+                FixRemovalCase2 (GetSibling (node, node.Parent));
+            }
+        }
+
+        private static void FixRemovalCase2 (TreeNode sibling)
+        {
+            Debug.Assert (sibling != null);
+            if (GetColor (sibling) == NodeColor.RED)
+            {
+                Debug.Assert (sibling.Left != null && sibling.Right != null);
+                TreeNode parent = sibling.Parent;
+                // the parent must be black
+                SetColor (parent, NodeColor.RED);
+                SetColor (sibling, NodeColor.BLACK);
+
+                if (sibling == parent.Right)
+                {
+                    RotateLeft (sibling.Parent);
+                    // new sibling was the old sibling left child, and must be non-leaf black
+                    sibling = parent.Right;
+                }
+                else
+                {
+                    RotateRight (sibling.Parent);
+                    // new sibling was the old sibling right child, and must be non-leaf black
+                    sibling = parent.Left;
+                }
+            }
+
+            // Now the sibling will be a BLACK non-leaf.
+            FixRemovalCase3 (sibling);
+        }
+
+        private static void FixRemovalCase3 (TreeNode sibling)
+        {
+            if (GetColor (sibling.Parent) == NodeColor.BLACK &&
+                GetColor (sibling) == NodeColor.BLACK &&
+                GetColor (sibling.Left) == NodeColor.BLACK &&
+                GetColor (sibling.Right) == NodeColor.BLACK)
+            {
+                SetColor (sibling, NodeColor.RED);
+                FixRemovalCase1 (sibling.Parent);
+            }
+            else
+            {
+                FixRemovalCase4 (sibling);
+            }
+        }
+
+        private static void FixRemovalCase4 (TreeNode sibling)
+        {
+            if (GetColor (sibling.Parent) == NodeColor.RED &&
+                GetColor (sibling) == NodeColor.BLACK &&
+                GetColor (sibling.Left) == NodeColor.BLACK &&
+                GetColor (sibling.Right) == NodeColor.BLACK)
+            {
+                SetColor (sibling, NodeColor.RED);
+                SetColor (sibling.Parent, NodeColor.BLACK);
+            }
+            else
+            {
+                FixRemovalCase5 (sibling);
+            }
+        }
+
+        private static void FixRemovalCase5 (TreeNode sibling)
+        {
+            if (sibling == sibling.Parent.Right &&
+                GetColor (sibling) == NodeColor.BLACK &&
+                GetColor (sibling.Left) == NodeColor.RED &&
+                GetColor (sibling.Right) == NodeColor.BLACK)
+            {
+                SetColor (sibling, NodeColor.RED);
+                SetColor (sibling.Left, NodeColor.BLACK);
+                RotateRight (sibling);
+                sibling = sibling.Parent;
+            }
+            else if (sibling == sibling.Parent.Left &&
+                GetColor (sibling) == NodeColor.BLACK &&
+                GetColor (sibling.Right) == NodeColor.RED &&
+                GetColor (sibling.Left) == NodeColor.BLACK)
+            {
+                SetColor (sibling, NodeColor.RED);
+                SetColor (sibling.Right, NodeColor.BLACK);
+                RotateLeft (sibling);
+                sibling = sibling.Parent;
+            }
+            FixRemovalCase6 (sibling);
+        }
+
+        private static void FixRemovalCase6 (TreeNode sibling)
+        {
+            Debug.Assert (GetColor (sibling) == NodeColor.BLACK);
+
+            SetColor (sibling, GetColor (sibling.Parent));
+            SetColor (sibling.Parent, NodeColor.BLACK);
+            if (sibling == sibling.Parent.Right)
+            {
+                Debug.Assert (GetColor (sibling.Right) == NodeColor.RED);
+                SetColor (sibling.Right, NodeColor.BLACK);
+                RotateLeft (sibling.Parent);
+            }
+            else
+            {
+                Debug.Assert (GetColor (sibling.Left) == NodeColor.RED);
+                SetColor (sibling.Left, NodeColor.BLACK);
+                RotateRight (sibling.Parent);
+            }
+        }
+
+#if DEBUG
+
+        private void ValidateBinaryTree (TreeNode node, out object minValue, out object maxValue)
+        {
+            if (node == null)
+            {
+                minValue = maxValue = null;
+                return;
+            }
+            object maxRight, minRight, maxLeft, minLeft;
+            ValidateBinaryTree(node.Left, out minLeft, out maxLeft );
+            ValidateBinaryTree(node.Right, out minRight, out maxRight);
+            object current = node.Key;
+            if (maxLeft != null)
+            {
+                if (CompareTo (maxLeft, current) >= 0)
+                {
+                    throw new InvalidOperationException(String.Format("Binary property violated on the left of {0}", node.ToString()));
+                }
+            }
+            if (minRight != null)
+            {
+                if (CompareTo (minRight, current) < 0)
+                {
+                    throw new InvalidOperationException(String.Format("Binary property violated on the right of {0}", node.ToString()));
+                }
+            }
+            minValue = minLeft;
+            maxValue = maxRight;
+        }
+
+        private int ValidateRedBlackNode(TreeNode node)
+        {
+            if (node == null)
+            {
+                return 1;
+            }
+            else
+            {
+                // Chilren of red node must be black
+                if (GetColor(node) == NodeColor.RED)
+                {
+                    if (GetColor(node.Left) == NodeColor.RED || GetColor(node.Right) == NodeColor.RED)
+                    {
+                        throw new InvalidOperationException(String.Format("Red node {0} has a red child\n", node.ToString()));
+                    }
+                }
+
+                //
+                // Make sure black heights are equal
+                //
+                int leftCount = ValidateRedBlackNode(node.Left);
+                int rightCount = ValidateRedBlackNode(node.Right);
+
+                if (leftCount != rightCount)
+                {
+                    throw new InvalidOperationException(String.Format("Black heights are different {0} != {1} at node {2}", leftCount, rightCount, node.ToString()));
+                }
+                return leftCount + (GetColor(node) == NodeColor.BLACK ? 1 : 0);
+            }
+        }
+
+        internal void ValidateRedBlackTree()
+        {
+            if (GetColor(_root) != NodeColor.BLACK)
+            {
+                throw new InvalidOperationException("Root node is RED");
+            }
+            object minValue, maxValue;
+            ValidateBinaryTree(_root, out minValue, out maxValue);
+            ValidateRedBlackNode(_root);
+        }
+
+        internal string ShowTree()
+        {
+            List<string> strings = new List<string>();
+            ShowTree(_root, strings, 0, 0);
+            StringBuilder sb = new StringBuilder();
+            foreach (string s in strings)
+            {
+                sb.Append("\r\n");
+                sb.Append(s);
+            }
+
+            return sb.ToString();
+        }
+
+        private int ShowTree(TreeNode node, List<string> lines, int depth, int leftLength)
+        {
+            if (lines.Count <= depth)
+            {
+                lines.Add("");
+            }
+            if (node != null)
+            {
+                int maxLength = ShowTree(node.Left, lines, depth + 1, leftLength);
+                String current = node.ToString();
+                StringBuilder builder = new StringBuilder(lines[depth]);
+                while (builder.Length < maxLength - current.Length / 2)
+                {
+                    builder.Append(' ');
+                }
+                builder.Append(current);
+                lines[depth] = builder.ToString();
+                maxLength = ShowTree(node.Right, lines, depth + 1, maxLength + 1);
+                if (lines[depth].Length < maxLength)
+                {
+                    lines[depth] += new String(' ', maxLength - lines[depth].Length);
+                }
+
+                return lines[depth].Length;
+            }
+            else
+            {
+                if (lines[depth].Length < leftLength)
+                {
+                    lines[depth] += new String(' ', leftLength - lines[depth].Length);
+                }
+                return lines[depth].Length;
+            }
+        }
+#endif
+
+        #endregion
+        
+        //*******************************************************************
+        //
+        // Private Fields
+        //
+        //*******************************************************************
+
+        #region Private Fields
+
+        private TreeNode _root;
+
+        #endregion
+
+        //*******************************************************************
+        //
+        // Private Types
+        //
+        //*******************************************************************
+
+        #region Private Types
+
+        private class MyEnumerator : IEnumerator
+        {
+            internal MyEnumerator (TreeNode node)
+            {
+                _root = node;
+            }
+
+            public object Current
+            {
+                get
+                {
+                    if (_node == null)
+                    {
+                        throw new InvalidOperationException ();
+                    }
+
+                    return _node.Key;
+                }
+            }
+
+            public bool MoveNext ()
+            {
+                if (!_moved)
+                {
+                    _node = _root != null ? FindMinSubTree (_root) : null;
+                    _moved = true;
+#if DEBUG
+                    if (_root != null)
+                    {
+                        _root._inEnumaration = true;
+                    }
+#endif
+                }
+                else
+                {
+                    _node = _node != null ? FindSuccessor (_node) : null;
+                }
+#if DEBUG
+                if (_root != null)
+                {
+                    _root._inEnumaration = _node != null;
+                }
+#endif
+                return _node != null;
+            }
+
+            public void Reset ()
+            {
+                _moved = false;
+                _node = null;
+            }
+
+            private TreeNode _node;
+            private TreeNode _root;
+            private bool _moved;
+        }
+
+#if DEBUG
+        [DebuggerDisplay ("{((System.Speech.Internal.SrgsCompiler.Arc)Key).ToString ()}")]
+#endif
+        private class TreeNode
+        {
+            internal TreeNode (object key)
+            {
+                this._key = key;
+            }
+
+            internal TreeNode Left
+            {
+                get
+                {
+                    return _leftChild;
+                }
+                set
+                {
+                    _leftChild = value;
+                    if (_leftChild != null)
+                    {
+                        _leftChild._parent = this;
+                    }
+                }
+            }
+
+            internal TreeNode Right
+            {
+                get
+                {
+                    return _rightChild;
+                }
+                set
+                {
+                    _rightChild = value;
+                    if (_rightChild != null)
+                    {
+                        _rightChild._parent = this;
+                    }
+                }
+            }
+
+            internal TreeNode Parent
+            {
+                get
+                {
+                    return _parent;
+                }
+                set
+                {
+                    _parent = value;
+                }
+            }
+
+            internal bool IsRed
+            {
+                get
+                {
+                    return _isRed;
+                }
+                set
+                {
+                    _isRed = value;
+                }
+            }
+
+            internal object Key
+            {
+                get
+                {
+                    return _key;
+                }
+            }
+
+            internal void CopyNode (TreeNode from)
+            {
+                _key = from._key;
+            }
+
+#if DEBUG
+            internal bool _inEnumaration;
+#endif
+            private object _key;
+            private bool _isRed;
+
+            private TreeNode _leftChild, _rightChild, _parent;
+        }
+
+        private enum NodeColor
+        {
+            BLACK = 0,
+            RED = 1
+        }
+
+        #endregion
+
+    }
+}

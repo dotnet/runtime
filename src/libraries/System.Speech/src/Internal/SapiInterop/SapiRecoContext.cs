@@ -1,0 +1,118 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
+using System;
+using System.Collections.Generic;
+using System.Speech.Recognition;
+using System.Speech.Internal.ObjectTokens;
+using System.Runtime.InteropServices;
+using System.Text;
+
+namespace System.Speech.Internal.SapiInterop
+{
+    internal class SapiRecoContext : IDisposable
+    {
+        //*******************************************************************
+        //
+        // Constructors
+        //
+        //*******************************************************************
+
+        #region Constructors
+
+        // This constuctor must be called in the context of the backgroung proxy if any
+        internal SapiRecoContext (ISpRecoContext recoContext, SapiProxy proxy)
+        {
+            _recoContext = recoContext;
+            _proxy = proxy;
+        }
+
+        public void Dispose ()
+        {
+            if (!_disposed)
+            {
+                // Called from the client proxy
+                _proxy.Invoke2 (delegate { Marshal.ReleaseComObject (_recoContext); });
+                _disposed = true;
+            }
+            GC.SuppressFinalize (this);
+        }
+
+        #endregion
+
+        //*******************************************************************
+        //
+        // Internal Methods
+        //
+        //*******************************************************************
+
+        #region Internal Methods
+
+        internal void SetInterest (UInt64 eventInterest, UInt64 queuedInterest)
+        {
+            _proxy.Invoke2 (delegate { _recoContext.SetInterest (eventInterest, queuedInterest); });
+        }
+
+        internal SapiGrammar CreateGrammar (UInt64 id)
+        {
+            ISpRecoGrammar sapiGrammar;
+            return (SapiGrammar) _proxy.Invoke (delegate { _recoContext.CreateGrammar (id, out sapiGrammar); return new SapiGrammar (sapiGrammar, _proxy); });
+        }
+
+        internal void SetMaxAlternates (UInt32 count)
+        {
+            _proxy.Invoke2 (delegate { _recoContext.SetMaxAlternates (count); });
+        }
+
+        internal void SetAudioOptions (SPAUDIOOPTIONS options, IntPtr audioFormatId, IntPtr waveFormatEx)
+        {
+            _proxy.Invoke2 (delegate { _recoContext.SetAudioOptions (options, audioFormatId, waveFormatEx); });
+        }
+
+        internal void Bookmark (SPBOOKMARKOPTIONS options, UInt64 position, IntPtr lparam)
+        {
+            _proxy.Invoke2 (delegate { _recoContext.Bookmark (options, position, lparam); });
+        }
+
+        internal void Resume ()
+        {
+            _proxy.Invoke2 (delegate { _recoContext.Resume (0); });
+        }
+
+        internal void SetContextState (SPCONTEXTSTATE state)
+        {
+            _proxy.Invoke2 (delegate { _recoContext.SetContextState (state); });
+        }
+
+        internal EventNotify CreateEventNotify (AsyncSerializedWorker asyncWorker, bool supportsSapi53)
+        {
+            return (EventNotify) _proxy.Invoke (delegate { return new EventNotify ((ISpEventSource) _recoContext, asyncWorker, supportsSapi53); });
+        }
+
+        internal void DisposeEventNotify (EventNotify eventNotify)
+        {
+            _proxy.Invoke2 (delegate { eventNotify.Dispose (); });
+        }
+
+        internal void SetGrammarOptions (SPGRAMMAROPTIONS options)
+        {
+            _proxy.Invoke2 (delegate { ((ISpRecoContext2) _recoContext).SetGrammarOptions (options); });
+        }
+
+        #endregion
+
+        //*******************************************************************
+        //
+        // Private Fields
+        //
+        //*******************************************************************
+
+        #region Private Fields
+
+        private ISpRecoContext _recoContext;
+        private SapiProxy _proxy;
+        private bool _disposed;
+
+        #endregion
+    }
+}
