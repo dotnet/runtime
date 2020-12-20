@@ -101,6 +101,12 @@ namespace System.Security.Cryptography.X509Certificates
 
         public void Remove(X509Certificate value)
         {
+            base.OnValidate(value);
+
+            int index = List.IndexOf(value);
+            if (index < 0)
+                throw new ArgumentException(SR.Arg_RemoveArgNotFound);
+
             List.Remove(value);
         }
 

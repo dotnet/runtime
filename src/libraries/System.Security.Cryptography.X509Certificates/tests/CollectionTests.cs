@@ -809,7 +809,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 Assert.Equal(2, originalPrivateKeyCount);
 
                 byte[] exported = collection.Export(X509ContentType.Pkcs12);
-                
+
                 using (ImportedCollection ic = Cert.Import(exported))
                 {
                     X509Certificate2Collection importedCollection = ic.Collection;
@@ -955,7 +955,8 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 il.Remove(c2);
                 Assert.Equal(0, il.Count);
 
-                AssertExtensions.Throws<ArgumentException>(null, () => il.Remove(c2));
+                //IList does not throw when item is not found
+                il.Remove(c2);
             }
         }
 
@@ -1465,7 +1466,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         public static void ImportFromPemFile_MultiplePems_Success()
         {
             string pemAggregate = TestData.RsaCertificate + TestData.ECDsaCertificate;
-    
+
             using (TempFileHolder aggregatePemFile = new TempFileHolder(pemAggregate))
             using(ImportedCollection ic = Cert.ImportFromPemFile(aggregatePemFile.FilePath))
             {
