@@ -985,7 +985,7 @@ namespace System.Speech.Internal.SrgsCompiler
                     else
                     {
                         int transitionIndex = (int)arc.TransitionIndex;
-                        int ulSpecialTransitionIndex = (int)((transitionIndex == CfgGrammar.SPWILDCARDTRANSITION || transitionIndex == CfgGrammar.SPDICTATIONTRANSITION || transitionIndex == CfgGrammar.SPTEXTBUFFERTRANSITION) ? transitionIndex : 0);
+                        int ulSpecialTransitionIndex = (transitionIndex == CfgGrammar.SPWILDCARDTRANSITION || transitionIndex == CfgGrammar.SPDICTATIONTRANSITION || transitionIndex == CfgGrammar.SPTEXTBUFFERTRANSITION) ? transitionIndex : 0;
                         newArc = new Arc((ulSpecialTransitionIndex != 0) ? 0 : (int)arc.TransitionIndex, flWeight, arc.LowConfRequired ? CfgGrammar.SP_LOW_CONFIDENCE : arc.HighConfRequired ? CfgGrammar.SP_HIGH_CONFIDENCE : CfgGrammar.SP_NORMAL_CONFIDENCE, ulSpecialTransitionIndex, MatchMode.AllWords, ref _fNeedWeightTable);
                     }
                     newArc.Start = currentState;
@@ -1125,7 +1125,7 @@ namespace System.Speech.Internal.SrgsCompiler
             header.pRules = ulOffset;
             ulOffset += (uint)(_rules.Count * Marshal.SizeOf(typeof(CfgRule)));
             header.cBasePath = cBasePath > 0 ? ulOffset : 0; //If there is no base path offset is set to zero
-            ulOffset += (uint)(((int)cBasePath * Helpers._sizeOfChar + 3) & ~3);
+            ulOffset += (uint)((cBasePath * Helpers._sizeOfChar + 3) & ~3);
             header.cArcs = cArcs;
             header.pArcs = ulOffset;
             ulOffset += (uint)(cArcs * Marshal.SizeOf(typeof(CfgArc)));

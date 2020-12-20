@@ -439,7 +439,7 @@ namespace System.Speech.Recognition
                         }
 
                         // we cannot use a constructor parameter because RecognitionResult also derives from RecognizedPhrase
-                        IntPtr phraseBuffer = new IntPtr((long)buffer + (int)offset);
+                        IntPtr phraseBuffer = new IntPtr((long)buffer + offset);
                         SPSERIALIZEDPHRASE serializedPhrase = RecognizedPhrase.GetPhraseHeader(phraseBuffer, _header.ulPhraseAltDataSize - (uint)offset, _isSapi53Header);
                         int serializedPhraseSize = (int)serializedPhrase.ulSerializedSize;
 

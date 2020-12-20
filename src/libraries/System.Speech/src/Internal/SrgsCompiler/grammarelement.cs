@@ -86,7 +86,7 @@ namespace System.Speech.Internal.SrgsCompiler
             {
                 _cg._rules.Add(rule);
             }
-            return (IRule)rule;
+            return rule;
         }
 
         void IElement.PostParse(IElement parent)

@@ -1213,7 +1213,7 @@ namespace System.Speech.Recognition
                 }
                 else
                 {
-                    firstWord = (float)firstElement;
+                    firstWord = firstElement;
                     lastWord = firstWord + (count - 1);
                 }
 
@@ -1226,7 +1226,7 @@ namespace System.Speech.Recognition
                     }
                     else
                     {
-                        ruleFirstWord = (float)child._firstElement;
+                        ruleFirstWord = child._firstElement;
                         ruleLastWord = ruleFirstWord + (child._count - 1);
                     }
                     if (ruleFirstWord <= firstElement && ruleLastWord >= lastWord)

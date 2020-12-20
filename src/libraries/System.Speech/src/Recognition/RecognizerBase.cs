@@ -1664,7 +1664,7 @@ namespace System.Speech.Recognition
                 // Must reture and IStream to enable SAPI to retreive the data
                 MemoryStream stream = new MemoryStream(grammar.CfgData);
                 SpStreamWrapper spStream = new SpStreamWrapper(stream);
-                pStream = (IStream)spStream;
+                pStream = spStream;
                 pfModified = 0;
 
                 return 0;
@@ -1727,7 +1727,7 @@ namespace System.Speech.Recognition
                         // Use the resource loader for Sapi 5.3 and above
                         // The rulerefs will be resolved locally.
 
-                        sapiGrammar.SetGrammarLoader((ISpGrammarResourceLoader)_recoThunk);
+                        sapiGrammar.SetGrammarLoader(_recoThunk);
                     }
                     sapiGrammar.LoadCmdFromMemory2(dataPtr, SPLOADOPTIONS.SPLO_STATIC, null, baseUri == null ? null : baseUri.ToString());
                 }
@@ -2213,7 +2213,7 @@ namespace System.Speech.Recognition
             // Otherwise it will be thrown later when SAPI sends the EndStream event.
             if (exception != null || cancelled)
             {
-                RecognizeCompletedEventArgs eventArgs = new RecognizeCompletedEventArgs(null, false, false, false, TimeSpan.Zero, (Exception)exception, cancelled, null);
+                RecognizeCompletedEventArgs eventArgs = new RecognizeCompletedEventArgs(null, false, false, false, TimeSpan.Zero, exception, cancelled, null);
                 _asyncWorkerUI.PostOperation(new WaitCallback(RecognizeAsyncWaitForGrammarsToLoadFailed), eventArgs);
             }
         }

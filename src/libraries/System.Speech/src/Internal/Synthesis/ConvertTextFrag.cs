@@ -167,7 +167,7 @@ namespace System.Speech.Internal.Synthesis
             int sapiVolume = 100;
             if (volume.SsmlAttributeId != ProsodyNumber.AbsoluteNumber)
             {
-                switch ((ProsodyVolume)(int)volume.SsmlAttributeId)
+                switch ((ProsodyVolume)volume.SsmlAttributeId)
                 {
                     case ProsodyVolume.ExtraLoud:
                         sapiVolume = 100;
@@ -281,7 +281,7 @@ namespace System.Speech.Internal.Synthesis
             int sapiRate = 0;
             if (rate.SsmlAttributeId != ProsodyNumber.AbsoluteNumber)
             {
-                switch ((ProsodyRate)(int)rate.SsmlAttributeId)
+                switch ((ProsodyRate)rate.SsmlAttributeId)
                 {
                     case ProsodyRate.ExtraSlow:
                         sapiRate = -9;
@@ -325,7 +325,7 @@ namespace System.Speech.Internal.Synthesis
 
             if (pitch.SsmlAttributeId != ProsodyNumber.AbsoluteNumber)
             {
-                switch ((ProsodyPitch)(int)pitch.SsmlAttributeId)
+                switch ((ProsodyPitch)pitch.SsmlAttributeId)
                 {
                     case ProsodyPitch.ExtraHigh:
                         sapiPitch = 9;

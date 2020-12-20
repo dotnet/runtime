@@ -69,7 +69,7 @@ namespace System.Speech.Internal.SrgsCompiler
             outArcs.Sort();
             Arc lastArc = outArcs.Count > 0 ? outArcs[outArcs.Count - 1] : null;
 
-            IEnumerator<Arc> enumArcs = (IEnumerator<Arc>)((IEnumerable<Arc>)outArcs).GetEnumerator();
+            IEnumerator<Arc> enumArcs = ((IEnumerable<Arc>)outArcs).GetEnumerator();
             enumArcs.MoveNext();
 
             uint nextAvailableArc = (uint)outArcs.Count + iArcOffset;
@@ -105,7 +105,7 @@ namespace System.Speech.Internal.SrgsCompiler
                 }
             }
 
-            enumArcs = (IEnumerator<Arc>)((IEnumerable<Arc>)outArcs).GetEnumerator();
+            enumArcs = ((IEnumerable<Arc>)outArcs).GetEnumerator();
             enumArcs.MoveNext();
 
             // revert the position for the new arc
@@ -436,9 +436,9 @@ namespace System.Speech.Internal.SrgsCompiler
                     Arc arc1 = state1._outArcs != null && !state1._outArcs.IsEmpty ? state1._outArcs.First : null;
                     Arc arc2 = state2._outArcs != null && !state2._outArcs.IsEmpty ? state2._outArcs.First : null;
 
-                    int diff = (arc1 != null ? (arc1.RuleRef != null ? 0x1000000 : 0) + arc1.WordId : (int)state1._iSerialize) - (arc2 != null ? (arc2.RuleRef != null ? 0x1000000 : 0) + arc2.WordId : (int)state2._iSerialize);
+                    int diff = (arc1 != null ? (arc1.RuleRef != null ? 0x1000000 : 0) + arc1.WordId : state1._iSerialize) - (arc2 != null ? (arc2.RuleRef != null ? 0x1000000 : 0) + arc2.WordId : state2._iSerialize);
 
-                    diff = diff != 0 ? diff : (int)state1._iSerialize - (int)state2._iSerialize;
+                    diff = diff != 0 ? diff : state1._iSerialize - state2._iSerialize;
                     //System.Diagnostics.Debug.Assert (diff != 0);
                     return diff;
                 }

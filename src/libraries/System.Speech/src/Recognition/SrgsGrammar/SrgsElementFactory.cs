@@ -27,17 +27,17 @@ namespace System.Speech.Recognition.SrgsGrammar
 
         IPropertyTag IElementFactory.CreatePropertyTag(IElement parent)
         {
-            return (IPropertyTag)new SrgsNameValueTag();
+            return new SrgsNameValueTag();
         }
 
         ISemanticTag IElementFactory.CreateSemanticTag(IElement parent)
         {
-            return (ISemanticTag)new SrgsSemanticInterpretationTag();
+            return new SrgsSemanticInterpretationTag();
         }
 
         IElementText IElementFactory.CreateText(IElement parent, string value)
         {
-            return (IElementText)new SrgsText(value);
+            return new SrgsText(value);
         }
 
         IToken IElementFactory.CreateToken(IElement parent, string content, string pronunciation, string display, float reqConfidence)
@@ -87,7 +87,7 @@ namespace System.Speech.Recognition.SrgsGrammar
             {
                 throw new NotSupportedException(SR.Get(SRID.ReqConfidenceNotSupported));
             }
-            return (IToken)token;
+            return token;
         }
 
         IItem IElementFactory.CreateItem(IElement parent, IRule rule, int minRepeat, int maxRepeat, float repeatProbability, float weight)
@@ -99,22 +99,22 @@ namespace System.Speech.Recognition.SrgsGrammar
             }
             item.RepeatProbability = repeatProbability;
             item.Weight = weight;
-            return (IItem)item;
+            return item;
         }
 
         IRuleRef IElementFactory.CreateRuleRef(IElement parent, Uri srgsUri)
         {
-            return (IRuleRef)new SrgsRuleRef(srgsUri);
+            return new SrgsRuleRef(srgsUri);
         }
 
         IRuleRef IElementFactory.CreateRuleRef(IElement parent, Uri srgsUri, string semanticKey, string parameters)
         {
-            return (IRuleRef)new SrgsRuleRef(semanticKey, parameters, srgsUri);
+            return new SrgsRuleRef(semanticKey, parameters, srgsUri);
         }
 
         IOneOf IElementFactory.CreateOneOf(IElement parent, IRule rule)
         {
-            return (IOneOf)new SrgsOneOf();
+            return new SrgsOneOf();
         }
 
         ISubset IElementFactory.CreateSubset(IElement parent, string text, MatchMode matchMode)
@@ -139,7 +139,7 @@ namespace System.Speech.Recognition.SrgsGrammar
                     matchingMode = SubsetMatchingMode.SubsequenceContentRequired;
                     break;
             }
-            return (ISubset)new SrgsSubset(text, matchingMode);
+            return new SrgsSubset(text, matchingMode);
         }
 
         void IElementFactory.InitSpecialRuleRef(IElement parent, IRuleRef special)

@@ -62,7 +62,7 @@ namespace System.Speech.Internal.ObjectTokens
         }
 
         protected RegistryDataKey(ISpObjectToken sapiToken) :
-            this(GetTokenIdFromToken(sapiToken), (ISpDataKey)sapiToken, false)
+            this(GetTokenIdFromToken(sapiToken), sapiToken, false)
         {
         }
 

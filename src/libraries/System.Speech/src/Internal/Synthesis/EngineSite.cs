@@ -68,7 +68,7 @@ namespace System.Speech.Internal.Synthesis
             {
                 foreach (SpeechEventInfo sapiEvent in events)
                 {
-                    Int32 evtMask = 1 << (int)sapiEvent.EventId;
+                    Int32 evtMask = 1 << sapiEvent.EventId;
 
                     if (sapiEvent.EventId == (short)TtsEventId.EndInputStream && _eventMapper != null)
                     {

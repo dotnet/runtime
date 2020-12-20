@@ -123,7 +123,7 @@ namespace System.Speech.Internal.SapiInterop
                 {
                     _sapiGrammar2 = (ISpRecoGrammar2)_sapiGrammar;
                 }
-                return (ISpRecoGrammar2)_sapiGrammar2;
+                return _sapiGrammar2;
             }
         }
 

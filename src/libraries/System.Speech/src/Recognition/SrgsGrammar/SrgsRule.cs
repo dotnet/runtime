@@ -57,7 +57,7 @@ namespace System.Speech.Recognition.SrgsGrammar
                 {
                     throw new ArgumentNullException(nameof(elements), SR.Get(SRID.ParamsEntryNullIllegal));
                 }
-                ((Collection<SrgsElement>)_elements).Add(elements[iElement]);
+                _elements.Add(elements[iElement]);
             }
         }
 

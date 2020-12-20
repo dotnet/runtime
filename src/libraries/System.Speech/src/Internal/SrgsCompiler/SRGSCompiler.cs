@@ -63,7 +63,7 @@ namespace System.Speech.Internal.SrgsCompiler
 
                 CultureInfo culture;
                 StringBuilder innerCode = new StringBuilder();
-                ISrgsParser srgsParser = (ISrgsParser)new XmlParser(xmlReaders[iReader], uri);
+                ISrgsParser srgsParser = new XmlParser(xmlReaders[iReader], uri);
                 object cg = CompileStream(iReader + 1, srgsParser, srgsPath, filename, stream, fOutputCfg, innerCode, cfgResources, out culture, referencedAssemblies, keyFile);
                 if (!fOutputCfg)
                 {
@@ -89,7 +89,7 @@ namespace System.Speech.Internal.SrgsCompiler
         /// <param name="keyFile">Strong name</param>
         internal static void CompileStream(SrgsDocument srgsGrammar, string filename, Stream stream, bool fOutputCfg, string[] referencedAssemblies, string keyFile)
         {
-            ISrgsParser srgsParser = (ISrgsParser)new SrgsDocumentParser(srgsGrammar.Grammar);
+            ISrgsParser srgsParser = new SrgsDocumentParser(srgsGrammar.Grammar);
 
             List<CustomGrammar.CfgResource> cfgResources = new List<CustomGrammar.CfgResource>();
 

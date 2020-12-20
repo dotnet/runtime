@@ -331,7 +331,7 @@ namespace System.Speech.Internal.ObjectTokens
                 if (objectWithToken != null)
                 {
                     //IntPtr ite = Marshal.GetComInterfaceForObject (this, typeof (ISpObjectToken2));
-                    int hresult = objectWithToken.SetObjectToken((ISpObjectToken)this);
+                    int hresult = objectWithToken.SetObjectToken(this);
                     if (hresult < 0)
                     {
                         throw new ArgumentException(SR.Get(SRID.TokenCannotCreateInstance));

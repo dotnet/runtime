@@ -1697,7 +1697,7 @@ namespace System.Speech.Internal.Synthesis
                     // SynthesizeViseme
                     OnVisemeReached(new VisemeReachedEventArgs(
                         prompt,                                             // Prompt
-                        (int)((int)ttsEvent.LParam & 0xFFFF),                   // currentViseme
+                        (int)ttsEvent.LParam & 0xFFFF,                   // currentViseme
                         ttsEvent.AudioPosition,                             // audioPosition
                         TimeSpan.FromMilliseconds(ttsEvent.WParam >> 16),  // duration
                         (SynthesizerEmphasis)((uint)ttsEvent.LParam >> 16),      // Emphasis

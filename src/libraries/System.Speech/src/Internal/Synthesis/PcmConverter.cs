@@ -171,7 +171,7 @@ namespace System.Speech.Internal.Synthesis
 
             for (int i = 0; i < inSamples.Length; i++)
             {
-                pdOut[i] = (float)inSamples[i];
+                pdOut[i] = inSamples[i];
             }
 
             return pdOut;
@@ -239,7 +239,7 @@ namespace System.Speech.Internal.Synthesis
 
             for (int i = 0, k = 0; i < inSamples.Length; i += 2, k++)
             {
-                outSamples[k] = unchecked((short)(((int)inSamples[i] + (int)inSamples[i + 1]) / 2));
+                outSamples[k] = unchecked((short)((inSamples[i] + inSamples[i + 1]) / 2));
             }
 
             return outSamples;
@@ -309,9 +309,9 @@ namespace System.Speech.Internal.Synthesis
             _iFilterHalf = (int)(inHz * iLimitFactor * _dHalfFilterLen);
             _iFilterLen = 2 * _iFilterHalf + 1;
 
-            _filterCoeff = WindowedLowPass(.5f / (float)iLimitFactor, (float)_iUpFactor);
+            _filterCoeff = WindowedLowPass(.5f / iLimitFactor, _iUpFactor);
 
-            _iBuffLen = (int)((float)_iFilterLen / (float)_iUpFactor);
+            _iBuffLen = (int)(_iFilterLen / (float)_iUpFactor);
 
             _leftMemory = new float[_iBuffLen];
             _rightMemory = new float[_iBuffLen];

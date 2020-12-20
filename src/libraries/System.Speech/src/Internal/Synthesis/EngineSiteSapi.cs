@@ -73,7 +73,7 @@ namespace System.Speech.Internal.Synthesis
         [PreserveSig]
         int ISpEngineSite.GetActions()
         {
-            return (int)_site.Actions;
+            return _site.Actions;
         }
 
         /// <summary>
@@ -120,7 +120,7 @@ namespace System.Speech.Internal.Synthesis
             }
             else
             {
-                peType = (int)1; // BSPVSKIPTYPE.SPVST_SENTENCE;
+                peType = 1; // BSPVSKIPTYPE.SPVST_SENTENCE;
                 plNumItems = 0;
             }
         }

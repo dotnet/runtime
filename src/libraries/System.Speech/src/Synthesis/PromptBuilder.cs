@@ -219,7 +219,7 @@ namespace System.Speech.Synthesis
             ValidateElement(stackElement, SsmlElement.Prosody);
 
             // For emphasis or Prosody the list of possible elements that can be children is different.
-            SsmlState ssmlState = (SsmlState)0;
+            SsmlState ssmlState = 0;
             SsmlElement possibleChildren = stackElement._possibleChildren;
 
             _elements.Add(new Element(ElementType.StartStyle));
@@ -240,7 +240,7 @@ namespace System.Speech.Synthesis
             if (style.Rate != PromptRate.NotSet || style.Volume != PromptVolume.NotSet)
             {
                 // two elements add a second strart style
-                if (ssmlState != (SsmlState)0)
+                if (ssmlState != 0)
                 {
                     _elements.Add(new Element(ElementType.StartStyle));
                 }
@@ -373,7 +373,7 @@ namespace System.Speech.Synthesis
 
             if (voice.Variant >= 0)
             {
-                startVoice._attributes.Add(new AttributeItem("variant", ((int)voice.Variant).ToString(CultureInfo.InvariantCulture)));
+                startVoice._attributes.Add(new AttributeItem("variant", voice.Variant.ToString(CultureInfo.InvariantCulture)));
             }
 
             _elementStack.Push(new StackElement(SsmlElement.Sentence | SsmlElement.AudioMarkTextWithStyle, SsmlState.Voice, culture));

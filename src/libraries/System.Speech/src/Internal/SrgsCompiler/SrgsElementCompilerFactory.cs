@@ -69,7 +69,7 @@ namespace System.Speech.Internal.SrgsCompiler
 
         IItem IElementFactory.CreateItem(IElement parent, IRule rule, int minRepeat, int maxRepeat, float repeatProbability, float weight)
         {
-            return (IItem)new Item(_backend, (Rule)rule, minRepeat, maxRepeat, repeatProbability, weight);
+            return new Item(_backend, (Rule)rule, minRepeat, maxRepeat, repeatProbability, weight);
         }
 
         IRuleRef IElementFactory.CreateRuleRef(IElement parent, Uri srgsUri)
@@ -89,12 +89,12 @@ namespace System.Speech.Internal.SrgsCompiler
 
         IOneOf IElementFactory.CreateOneOf(IElement parent, IRule rule)
         {
-            return (IOneOf)new OneOf((Rule)rule, _backend);
+            return new OneOf((Rule)rule, _backend);
         }
 
         ISubset IElementFactory.CreateSubset(IElement parent, string text, MatchMode mode)
         {
-            return (ISubset)new Subset((ParseElementCollection)parent, _backend, text, mode);
+            return new Subset((ParseElementCollection)parent, _backend, text, mode);
         }
 
         void IElementFactory.AddScript(IGrammar grammar, string rule, string code)

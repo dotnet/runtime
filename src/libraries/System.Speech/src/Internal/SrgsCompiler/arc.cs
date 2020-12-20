@@ -140,8 +140,8 @@ namespace System.Speech.Internal.SrgsCompiler
             if (obj2 == null)
                 return 1;
 
-            Arc arc1 = (Arc)obj1;
-            Arc arc2 = (Arc)obj2;
+            Arc arc1 = obj1;
+            Arc arc2 = obj2;
             int diff = arc1.SortRank() - arc2.SortRank();
             diff = diff != 0 ? diff : (int)arc1._iSerialize - (int)arc2._iSerialize;
 
@@ -276,7 +276,7 @@ namespace System.Speech.Internal.SrgsCompiler
             {
                 foreach (Tag tag in _endTags)
                 {
-                    tag._cfgTag.EndArcIndex = (uint)_iSerialize;
+                    tag._cfgTag.EndArcIndex = _iSerialize;
                 }
             }
         }

@@ -220,7 +220,7 @@ namespace System.Speech.Recognition.SrgsGrammar
                 rule.Scope = publicRule == RulePublic.True ? SrgsRuleScope.Public : SrgsRuleScope.Private;
             }
             rule.Dynamic = dynamic;
-            return (IRule)rule;
+            return rule;
         }
 
         void IElement.PostParse(IElement parent)

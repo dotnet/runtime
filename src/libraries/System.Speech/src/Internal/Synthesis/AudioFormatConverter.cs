@@ -212,7 +212,7 @@ namespace System.Speech.Internal.Synthesis
             const byte uBIAS = 0x84;              // define the add-in bias for 16 bit samples
             const int uCLIP = 32635;
 
-            byte[] table = new byte[((int)UInt16.MaxValue + 1) >> 2];
+            byte[] table = new byte[(ushort.MaxValue + 1) >> 2];
 
             for (int i = 0; i < UInt16.MaxValue; i += 4)
             {
@@ -225,7 +225,7 @@ namespace System.Speech.Internal.Synthesis
                 unchecked
                 {
                     // Extend the sign bit for the sample that is constructed from two bytes
-                    sample = (int)((data >> 2) << 2);
+                    sample = (data >> 2) << 2;
 
                     // Get the sample into sign-magnitude.
                     sign = (sample >> 8) & 0x80;          // set aside the sign
@@ -237,8 +237,8 @@ namespace System.Speech.Internal.Synthesis
 
                     // Convert from 16 bit linear to ULaw.
                     sample = sample + uBIAS;
-                    exponent = (int)s_exp_lut_linear2ulaw[(sample >> 7) & 0xFF];
-                    mantissa = (int)((sample >> (exponent + 3)) & 0x0F);
+                    exponent = s_exp_lut_linear2ulaw[(sample >> 7) & 0xFF];
+                    mantissa = (sample >> (exponent + 3)) & 0x0F;
 
                     ULawbyte = (byte)(~(sign | (exponent << 4) | mantissa));
                 }
@@ -323,7 +323,7 @@ namespace System.Speech.Internal.Synthesis
         {
             const int ACLIP = 31744;
 
-            byte[] table = new byte[((int)UInt16.MaxValue + 1) >> 2];
+            byte[] table = new byte[(ushort.MaxValue + 1) >> 2];
 
             for (int i = 0; i < UInt16.MaxValue; i += 4)
             {
@@ -335,7 +335,7 @@ namespace System.Speech.Internal.Synthesis
                 unchecked
                 {
                     // Extend the sign bit for the sample that is constructed from two bytes
-                    sample = (int)((data >> 2) << 2);
+                    sample = (data >> 2) << 2;
 
                     // Get the sample into sign-magnitude.
                     sign = ((~sample) >> 8) & 0x80;     // set aside the sign
@@ -380,7 +380,7 @@ namespace System.Speech.Internal.Synthesis
             {
                 for (int i = 0; i < size; i += 2)
                 {
-                    as1[i / 2] = (short)((short)data[i] + (short)(data[i + 1] << 8));
+                    as1[i / 2] = (short)(data[i] + (short)(data[i + 1] << 8));
                 }
             }
             return as1;
@@ -399,7 +399,7 @@ namespace System.Speech.Internal.Synthesis
             {
                 for (int i = 0; i < size; i++)
                 {
-                    as1[i] = (short)(((short)data[i] - 128) << 8);
+                    as1[i] = (short)((data[i] - 128) << 8);
                 }
             }
             return as1;

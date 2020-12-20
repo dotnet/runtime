@@ -145,7 +145,7 @@ namespace System.Speech.Recognition
         /// TODOC <_include file='doc\RecognitionResult.uex' path='docs/doc[@for="SemanticValue.this2"]/*' />
         public SemanticValue this[string key]
         {
-            get { return (SemanticValue)_dictionary[key]; }
+            get { return _dictionary[key]; }
             set { throw new InvalidOperationException(SR.Get(SRID.CollectionReadOnly)); }
         }
 
@@ -215,12 +215,12 @@ namespace System.Speech.Recognition
 
         ICollection<string> IDictionary<string, SemanticValue>.Keys
         {
-            get { return (ICollection<string>)_dictionary.Keys; }
+            get { return _dictionary.Keys; }
         }
 
         ICollection<SemanticValue> IDictionary<string, SemanticValue>.Values
         {
-            get { return (ICollection<SemanticValue>)_dictionary.Values; }
+            get { return _dictionary.Values; }
         }
 
         /// TODOC <_include file='doc\RecognitionResult.uex' path='docs/doc[@for="SemanticValue.GetEnumerator"]/*' />
