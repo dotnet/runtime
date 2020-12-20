@@ -62,6 +62,15 @@ namespace System.CodeDom
 
         public void Insert(int index, CodeCatchClause value) => List.Insert(index, value);
 
-        public void Remove(CodeCatchClause value) => List.Remove(value);
+        public void Remove(CodeCatchClause value)
+        {
+            base.OnValidate(value);
+
+            int index = List.IndexOf(value);
+            if (index < 0)
+                throw new ArgumentException(SR.Arg_RemoveArgNotFound);
+
+            List.Remove(value);
+        }
     }
 }

@@ -62,6 +62,15 @@ namespace System.CodeDom
 
         public void Insert(int index, CodeNamespace value) => List.Insert(index, value);
 
-        public void Remove(CodeNamespace value) => List.Remove(value);
+        public void Remove(CodeNamespace value)
+        {
+            base.OnValidate(value);
+
+            int index = List.IndexOf(value);
+            if (index < 0)
+                throw new ArgumentException(SR.Arg_RemoveArgNotFound);
+
+            List.Remove(value);
+        }
     }
 }

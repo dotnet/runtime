@@ -74,6 +74,15 @@ namespace System.Runtime.Serialization
 
         public void Insert(int index, CodeTypeReference value) => List.Insert(index, value);
 
-        public void Remove(CodeTypeReference value) => List.Remove(value);
+        public void Remove(CodeTypeReference value)
+        {
+            base.OnValidate(value);
+
+            int index = List.IndexOf(value);
+            if (index < 0)
+                throw new ArgumentException(SR.Arg_RemoveArgNotFound);
+
+            List.Remove(value);
+        }
     }
 }

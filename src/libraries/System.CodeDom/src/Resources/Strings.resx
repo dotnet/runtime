@@ -73,6 +73,9 @@
   <data name="InvalidElementType" xml:space="preserve">
     <value>Element type {0} is not supported.</value>
   </data>
+  <data name="Arg_RemoveArgNotFound" xml:space="preserve">
+    <value>Cannot remove the specified item because it was not found in the specified Collection.</value>
+  </data>
   <data name="Argument_NullComment" xml:space="preserve">
     <value>The 'Comment' property of the CodeCommentStatement '{0}' cannot be null.</value>
   </data>

@@ -98,6 +98,15 @@ namespace System.CodeDom.Compiler
 
         public void Insert(int index, CompilerError value) => List.Insert(index, value);
 
-        public void Remove(CompilerError value) => List.Remove(value);
+        public void Remove(CompilerError value)
+        {
+            base.OnValidate(value);
+
+            int index = List.IndexOf(value);
+            if (index < 0)
+                throw new ArgumentException(SR.Arg_RemoveArgNotFound);
+
+            List.Remove(value);
+        }
     }
 }
