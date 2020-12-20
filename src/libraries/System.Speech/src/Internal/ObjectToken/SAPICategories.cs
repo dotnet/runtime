@@ -24,7 +24,7 @@ namespace System.Speech.Internal.ObjectTokens
 
         static internal ObjectToken DefaultToken(string category)
         {
-            Helpers.ThrowIfEmptyOrNull(category, "category");
+            Helpers.ThrowIfEmptyOrNull(category, nameof(category));
 
             ObjectToken token = null;
             // Try first to get the prefered token for the current user

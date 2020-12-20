@@ -23,7 +23,7 @@ namespace System.Speech.Recognition.SrgsGrammar
 
         protected override void InsertItem(int index, SrgsElement element)
         {
-            Helpers.ThrowIfNull(element, "element");
+            Helpers.ThrowIfNull(element, nameof(element));
 
             base.InsertItem(index, element);
         }

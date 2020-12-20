@@ -73,7 +73,7 @@ namespace System.Speech.Synthesis
         /// <param name="name"></param>
         public void SelectVoice(string name)
         {
-            Helpers.ThrowIfEmptyOrNull(name, "name");
+            Helpers.ThrowIfEmptyOrNull(name, nameof(name));
             TTSVoice ttsVoice = VoiceSynthesizer.GetEngine(name, CultureInfo.CurrentUICulture, VoiceGender.NotSet, VoiceAge.NotSet, 1, true);
 
             if (ttsVoice == null || name != ttsVoice.VoiceInfo.Name)
@@ -123,20 +123,20 @@ namespace System.Speech.Synthesis
         /// <param name="culture"></param>
         public void SelectVoiceByHints(VoiceGender gender, VoiceAge age, int voiceAlternate, CultureInfo culture)
         {
-            Helpers.ThrowIfNull(culture, "culture");
+            Helpers.ThrowIfNull(culture, nameof(culture));
 
             if (voiceAlternate < 0)
             {
-                throw new ArgumentOutOfRangeException("voiceAlternate", SR.Get(SRID.PromptBuilderInvalidVariant));
+                throw new ArgumentOutOfRangeException(nameof(voiceAlternate), SR.Get(SRID.PromptBuilderInvalidVariant));
             }
             if (!VoiceInfo.ValidateGender(gender))
             {
-                throw new ArgumentException(SR.Get(SRID.EnumInvalid, "VoiceGender"), "gender");
+                throw new ArgumentException(SR.Get(SRID.EnumInvalid, "VoiceGender"), nameof(gender));
             }
 
             if (!VoiceInfo.ValidateAge(age))
             {
-                throw new ArgumentException(SR.Get(SRID.EnumInvalid, "VoiceAge"), "age");
+                throw new ArgumentException(SR.Get(SRID.EnumInvalid, "VoiceAge"), nameof(age));
             }
 
             TTSVoice ttsVoice = VoiceSynthesizer.GetEngine(null, culture, gender, age, voiceAlternate, true);
@@ -156,7 +156,7 @@ namespace System.Speech.Synthesis
         /// <returns></returns>
         public Prompt SpeakAsync(string textToSpeak)
         {
-            Helpers.ThrowIfNull(textToSpeak, "textToSpeak");
+            Helpers.ThrowIfNull(textToSpeak, nameof(textToSpeak));
 
             Prompt prompt = new Prompt(textToSpeak, SynthesisTextFormat.Text);
             SpeakAsync(prompt);
@@ -170,7 +170,7 @@ namespace System.Speech.Synthesis
         /// <returns></returns>
         public void SpeakAsync(Prompt prompt)
         {
-            Helpers.ThrowIfNull(prompt, "prompt");
+            Helpers.ThrowIfNull(prompt, nameof(prompt));
 
             prompt.Synthesizer = this;
             VoiceSynthesizer.SpeakAsync(prompt);
@@ -183,7 +183,7 @@ namespace System.Speech.Synthesis
         /// <returns></returns>
         public Prompt SpeakSsmlAsync(string textToSpeak)
         {
-            Helpers.ThrowIfNull(textToSpeak, "textToSpeak");
+            Helpers.ThrowIfNull(textToSpeak, nameof(textToSpeak));
 
             Prompt prompt = new Prompt(textToSpeak, SynthesisTextFormat.Ssml);
             SpeakAsync(prompt);
@@ -197,7 +197,7 @@ namespace System.Speech.Synthesis
         /// <returns></returns>
         public Prompt SpeakAsync(PromptBuilder promptBuilder)
         {
-            Helpers.ThrowIfNull(promptBuilder, "promptBuilder");
+            Helpers.ThrowIfNull(promptBuilder, nameof(promptBuilder));
 
             Prompt prompt = new Prompt(promptBuilder);
             SpeakAsync(prompt);
@@ -221,7 +221,7 @@ namespace System.Speech.Synthesis
         /// <returns></returns>
         public void Speak(Prompt prompt)
         {
-            Helpers.ThrowIfNull(prompt, "prompt");
+            Helpers.ThrowIfNull(prompt, nameof(prompt));
 
             // Avoid a dead lock if the synthesizer is Paused
             if (State == SynthesizerState.Paused)
@@ -285,7 +285,7 @@ namespace System.Speech.Synthesis
         /// <param name="prompt"></param>
         public void SpeakAsyncCancel(Prompt prompt)
         {
-            Helpers.ThrowIfNull(prompt, "prompt");
+            Helpers.ThrowIfNull(prompt, nameof(prompt));
 
             VoiceSynthesizer.Abort(prompt);
         }
@@ -305,7 +305,7 @@ namespace System.Speech.Synthesis
         // The stream is disposed when the speech synthesizer is disposed
         public void SetOutputToWaveFile(string path)
         {
-            Helpers.ThrowIfEmptyOrNull(path, "path");
+            Helpers.ThrowIfEmptyOrNull(path, nameof(path));
 
             SetOutputToNull();
             SetOutputStream(new FileStream(path, FileMode.Create, FileAccess.Write), null, true, true);
@@ -319,8 +319,8 @@ namespace System.Speech.Synthesis
         // The stream is disposed when the speech synthesizer is disposed
         public void SetOutputToWaveFile(string path, SpeechAudioFormatInfo formatInfo)
         {
-            Helpers.ThrowIfEmptyOrNull(path, "path");
-            Helpers.ThrowIfNull(formatInfo, "formatInfo");
+            Helpers.ThrowIfEmptyOrNull(path, nameof(path));
+            Helpers.ThrowIfNull(formatInfo, nameof(formatInfo));
 
             SetOutputToNull();
             SetOutputStream(new FileStream(path, FileMode.Create, FileAccess.Write), formatInfo, true, true);
@@ -332,7 +332,7 @@ namespace System.Speech.Synthesis
         /// <param name="audioDestination"></param>
         public void SetOutputToWaveStream(Stream audioDestination)
         {
-            Helpers.ThrowIfNull(audioDestination, "audioDestination");
+            Helpers.ThrowIfNull(audioDestination, nameof(audioDestination));
 
             SetOutputStream(audioDestination, null, true, false);
         }
@@ -344,8 +344,8 @@ namespace System.Speech.Synthesis
         /// <param name="formatInfo"></param>
         public void SetOutputToAudioStream(Stream audioDestination, SpeechAudioFormatInfo formatInfo)
         {
-            Helpers.ThrowIfNull(audioDestination, "audioDestination");
-            Helpers.ThrowIfNull(formatInfo, "formatInfo");
+            Helpers.ThrowIfNull(audioDestination, nameof(audioDestination));
+            Helpers.ThrowIfNull(formatInfo, nameof(formatInfo));
 
             SetOutputStream(audioDestination, formatInfo, false, false);
         }
@@ -406,11 +406,11 @@ namespace System.Speech.Synthesis
         /// <returns></returns>
         public ReadOnlyCollection<InstalledVoice> GetInstalledVoices(CultureInfo culture)
         {
-            Helpers.ThrowIfNull(culture, "culture");
+            Helpers.ThrowIfNull(culture, nameof(culture));
 
             if (culture.Equals(CultureInfo.InvariantCulture))
             {
-                throw new ArgumentException(SR.Get(SRID.InvariantCultureInfo), "culture");
+                throw new ArgumentException(SR.Get(SRID.InvariantCultureInfo), nameof(culture));
             }
 
             return VoiceSynthesizer.GetInstalledVoices(culture);
@@ -423,7 +423,7 @@ namespace System.Speech.Synthesis
         /// <param name="mediaType"></param>
         public void AddLexicon(Uri uri, string mediaType)
         {
-            Helpers.ThrowIfNull(uri, "uri");
+            Helpers.ThrowIfNull(uri, nameof(uri));
 
             VoiceSynthesizer.AddLexicon(uri, mediaType);
         }
@@ -434,7 +434,7 @@ namespace System.Speech.Synthesis
         /// <param name="uri"></param>
         public void RemoveLexicon(Uri uri)
         {
-            Helpers.ThrowIfNull(uri, "uri");
+            Helpers.ThrowIfNull(uri, nameof(uri));
 
             VoiceSynthesizer.RemoveLexicon(uri);
         }
@@ -455,13 +455,13 @@ namespace System.Speech.Synthesis
             [MethodImplAttribute(MethodImplOptions.Synchronized)]
             add
             {
-                Helpers.ThrowIfNull(value, "value");
+                Helpers.ThrowIfNull(value, nameof(value));
                 VoiceSynthesizer._speakStarted += value;
             }
             [MethodImplAttribute(MethodImplOptions.Synchronized)]
             remove
             {
-                Helpers.ThrowIfNull(value, "value");
+                Helpers.ThrowIfNull(value, nameof(value));
                 VoiceSynthesizer._speakStarted -= value;
             }
         }
@@ -474,13 +474,13 @@ namespace System.Speech.Synthesis
             [MethodImplAttribute(MethodImplOptions.Synchronized)]
             add
             {
-                Helpers.ThrowIfNull(value, "value");
+                Helpers.ThrowIfNull(value, nameof(value));
                 VoiceSynthesizer._speakCompleted += value;
             }
             [MethodImplAttribute(MethodImplOptions.Synchronized)]
             remove
             {
-                Helpers.ThrowIfNull(value, "value");
+                Helpers.ThrowIfNull(value, nameof(value));
                 VoiceSynthesizer._speakCompleted -= value;
             }
         }
@@ -493,13 +493,13 @@ namespace System.Speech.Synthesis
             [MethodImplAttribute(MethodImplOptions.Synchronized)]
             add
             {
-                Helpers.ThrowIfNull(value, "value");
+                Helpers.ThrowIfNull(value, nameof(value));
                 VoiceSynthesizer.AddEvent<SpeakProgressEventArgs>(TtsEventId.WordBoundary, ref VoiceSynthesizer._speakProgress, value);
             }
             [MethodImplAttribute(MethodImplOptions.Synchronized)]
             remove
             {
-                Helpers.ThrowIfNull(value, "value");
+                Helpers.ThrowIfNull(value, nameof(value));
                 VoiceSynthesizer.RemoveEvent<SpeakProgressEventArgs>(TtsEventId.WordBoundary, ref VoiceSynthesizer._speakProgress, value);
             }
         }
@@ -512,13 +512,13 @@ namespace System.Speech.Synthesis
             [MethodImplAttribute(MethodImplOptions.Synchronized)]
             add
             {
-                Helpers.ThrowIfNull(value, "value");
+                Helpers.ThrowIfNull(value, nameof(value));
                 VoiceSynthesizer.AddEvent<BookmarkReachedEventArgs>(TtsEventId.Bookmark, ref VoiceSynthesizer._bookmarkReached, value);
             }
             [MethodImplAttribute(MethodImplOptions.Synchronized)]
             remove
             {
-                Helpers.ThrowIfNull(value, "value");
+                Helpers.ThrowIfNull(value, nameof(value));
                 VoiceSynthesizer.RemoveEvent<BookmarkReachedEventArgs>(TtsEventId.Bookmark, ref VoiceSynthesizer._bookmarkReached, value);
             }
         }
@@ -531,13 +531,13 @@ namespace System.Speech.Synthesis
             [MethodImplAttribute(MethodImplOptions.Synchronized)]
             add
             {
-                Helpers.ThrowIfNull(value, "value");
+                Helpers.ThrowIfNull(value, nameof(value));
                 VoiceSynthesizer.AddEvent<VoiceChangeEventArgs>(TtsEventId.VoiceChange, ref VoiceSynthesizer._voiceChange, value);
             }
             [MethodImplAttribute(MethodImplOptions.Synchronized)]
             remove
             {
-                Helpers.ThrowIfNull(value, "value");
+                Helpers.ThrowIfNull(value, nameof(value));
                 VoiceSynthesizer.RemoveEvent<VoiceChangeEventArgs>(TtsEventId.VoiceChange, ref VoiceSynthesizer._voiceChange, value);
             }
         }
@@ -553,13 +553,13 @@ namespace System.Speech.Synthesis
             [MethodImplAttribute(MethodImplOptions.Synchronized)]
             add
             {
-                Helpers.ThrowIfNull(value, "value");
+                Helpers.ThrowIfNull(value, nameof(value));
                 VoiceSynthesizer.AddEvent<PhonemeReachedEventArgs>(TtsEventId.Phoneme, ref VoiceSynthesizer._phonemeReached, value);
             }
             [MethodImplAttribute(MethodImplOptions.Synchronized)]
             remove
             {
-                Helpers.ThrowIfNull(value, "value");
+                Helpers.ThrowIfNull(value, nameof(value));
                 VoiceSynthesizer.RemoveEvent<PhonemeReachedEventArgs>(TtsEventId.Phoneme, ref VoiceSynthesizer._phonemeReached, value);
             }
         }
@@ -572,13 +572,13 @@ namespace System.Speech.Synthesis
             [MethodImplAttribute(MethodImplOptions.Synchronized)]
             add
             {
-                Helpers.ThrowIfNull(value, "value");
+                Helpers.ThrowIfNull(value, nameof(value));
                 VoiceSynthesizer.AddEvent<VisemeReachedEventArgs>(TtsEventId.Viseme, ref VoiceSynthesizer._visemeReached, value);
             }
             [MethodImplAttribute(MethodImplOptions.Synchronized)]
             remove
             {
-                Helpers.ThrowIfNull(value, "value");
+                Helpers.ThrowIfNull(value, nameof(value));
                 VoiceSynthesizer.RemoveEvent<VisemeReachedEventArgs>(TtsEventId.Viseme, ref VoiceSynthesizer._visemeReached, value);
             }
         }
@@ -595,13 +595,13 @@ namespace System.Speech.Synthesis
             [MethodImplAttribute(MethodImplOptions.Synchronized)]
             add
             {
-                Helpers.ThrowIfNull(value, "value");
+                Helpers.ThrowIfNull(value, nameof(value));
                 VoiceSynthesizer._stateChanged += value;
             }
             [MethodImplAttribute(MethodImplOptions.Synchronized)]
             remove
             {
-                Helpers.ThrowIfNull(value, "value");
+                Helpers.ThrowIfNull(value, nameof(value));
                 VoiceSynthesizer._stateChanged -= value;
             }
         }
@@ -639,7 +639,7 @@ namespace System.Speech.Synthesis
             {
                 if (value < -10 || value > 10)
                 {
-                    throw new ArgumentOutOfRangeException("value", SR.Get(SRID.RateOutOfRange));
+                    throw new ArgumentOutOfRangeException(nameof(value), SR.Get(SRID.RateOutOfRange));
                 }
                 VoiceSynthesizer.Rate = value;
             }
@@ -658,7 +658,7 @@ namespace System.Speech.Synthesis
             {
                 if (value < 0 || value > 100)
                 {
-                    throw new ArgumentOutOfRangeException("value", SR.Get(SRID.ResourceUsageOutOfRange));
+                    throw new ArgumentOutOfRangeException(nameof(value), SR.Get(SRID.ResourceUsageOutOfRange));
                 }
                 VoiceSynthesizer.Volume = value;
             }

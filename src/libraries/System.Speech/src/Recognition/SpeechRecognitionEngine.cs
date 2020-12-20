@@ -39,11 +39,11 @@ namespace System.Speech.Recognition
         /// TODOC <_include file='doc\SpeechRecognitionEngine.uex' path='docs/doc[@for="SpeechRecognitionEngine.SpeechRecognitionEngine4"]/*' />
         public SpeechRecognitionEngine(CultureInfo culture)
         {
-            Helpers.ThrowIfNull(culture, "culture");
+            Helpers.ThrowIfNull(culture, nameof(culture));
 
             if (culture.Equals(CultureInfo.InvariantCulture))
             {
-                throw new ArgumentException(SR.Get(SRID.InvariantCultureInfo), "culture");
+                throw new ArgumentException(SR.Get(SRID.InvariantCultureInfo), nameof(culture));
             }
 
             // Enumerate using collection. It would also be possible to directly access the token from SAPI.
@@ -66,13 +66,13 @@ namespace System.Speech.Recognition
             }
 
             // No match even with culture having the same parent
-            throw new ArgumentException(SR.Get(SRID.RecognizerNotFound), "culture");
+            throw new ArgumentException(SR.Get(SRID.RecognizerNotFound), nameof(culture));
         }
 
         /// TODOC <_include file='doc\SpeechRecognitionEngine.uex' path='docs/doc[@for="SpeechRecognitionEngine.SpeechRecognitionEngine3"]/*' />
         public SpeechRecognitionEngine(string recognizerId)
         {
-            Helpers.ThrowIfEmptyOrNull(recognizerId, "recognizerId");
+            Helpers.ThrowIfEmptyOrNull(recognizerId, nameof(recognizerId));
 
             foreach (RecognizerInfo recognizerInfo in InstalledRecognizers())
             {
@@ -83,13 +83,13 @@ namespace System.Speech.Recognition
                 }
             }
 
-            throw new ArgumentException(SR.Get(SRID.RecognizerNotFound), "recognizerId");
+            throw new ArgumentException(SR.Get(SRID.RecognizerNotFound), nameof(recognizerId));
         }
 
         /// TODOC <_include file='doc\SpeechRecognitionEngine.uex' path='docs/doc[@for="SpeechRecognitionEngine.SpeechRecognitionEngine2"]/*' />
         public SpeechRecognitionEngine(RecognizerInfo recognizerInfo)
         {
-            Helpers.ThrowIfNull(recognizerInfo, "recognizerInfo");
+            Helpers.ThrowIfNull(recognizerInfo, nameof(recognizerInfo));
 
             Initialize(recognizerInfo);
         }
@@ -198,7 +198,7 @@ namespace System.Speech.Recognition
             {
                 if (value.TotalMilliseconds < 0.0f || value.TotalMilliseconds > 10000.0f)
                 {
-                    throw new ArgumentOutOfRangeException("value", SR.Get(SRID.EndSilenceOutOfRange));
+                    throw new ArgumentOutOfRangeException(nameof(value), SR.Get(SRID.EndSilenceOutOfRange));
                 }
                 RecoBase.UpdateRecognizerSetting(SapiConstants.SPPROP_RESPONSE_SPEED, (int)value.TotalMilliseconds);
             }
@@ -213,7 +213,7 @@ namespace System.Speech.Recognition
             {
                 if (value.TotalMilliseconds < 0.0f || value.TotalMilliseconds > 10000.0f)
                 {
-                    throw new ArgumentOutOfRangeException("value", SR.Get(SRID.EndSilenceOutOfRange));
+                    throw new ArgumentOutOfRangeException(nameof(value), SR.Get(SRID.EndSilenceOutOfRange));
                 }
                 RecoBase.UpdateRecognizerSetting(SapiConstants.SPPROP_COMPLEX_RESPONSE_SPEED, (int)value.TotalMilliseconds);
             }
@@ -309,7 +309,7 @@ namespace System.Speech.Recognition
         /// TODOC <_include file='doc\SpeechRecognitionEngine.uex' path='docs/doc[@for="SpeechRecognitionEngine.SetInput2"]/*' />
         public void SetInputToWaveFile(string path)
         {
-            Helpers.ThrowIfEmptyOrNull(path, "path");
+            Helpers.ThrowIfEmptyOrNull(path, nameof(path));
 
             RecoBase.SetInput(path);
         }
@@ -324,8 +324,8 @@ namespace System.Speech.Recognition
         /// TODOC <_include file='doc\SpeechRecognitionEngine.uex' path='docs/doc[@for="SpeechRecognitionEngine.SetInput4"]/*' />
         public void SetInputToAudioStream(Stream audioSource, SpeechAudioFormatInfo audioFormat)
         {
-            Helpers.ThrowIfNull(audioSource, "audioSource");
-            Helpers.ThrowIfNull(audioFormat, "audioFormat");
+            Helpers.ThrowIfNull(audioSource, nameof(audioSource));
+            Helpers.ThrowIfNull(audioFormat, nameof(audioFormat));
 
             RecoBase.SetInput(audioSource, audioFormat);
         }
@@ -564,7 +564,7 @@ namespace System.Speech.Recognition
             [MethodImplAttribute(MethodImplOptions.Synchronized)]
             add
             {
-                Helpers.ThrowIfNull(value, "value");
+                Helpers.ThrowIfNull(value, nameof(value));
                 if (_speechHypothesizedDelegate == null)
                 {
                     RecoBase.SpeechHypothesized += SpeechHypothesizedProxy;
@@ -575,7 +575,7 @@ namespace System.Speech.Recognition
             [MethodImplAttribute(MethodImplOptions.Synchronized)]
             remove
             {
-                Helpers.ThrowIfNull(value, "value");
+                Helpers.ThrowIfNull(value, nameof(value));
                 _speechHypothesizedDelegate -= value;
                 if (_speechHypothesizedDelegate == null)
                 {
@@ -590,7 +590,7 @@ namespace System.Speech.Recognition
             [MethodImplAttribute(MethodImplOptions.Synchronized)]
             add
             {
-                Helpers.ThrowIfNull(value, "value");
+                Helpers.ThrowIfNull(value, nameof(value));
                 if (_audioSignalProblemOccurredDelegate == null)
                 {
                     RecoBase.AudioSignalProblemOccurred += AudioSignalProblemOccurredProxy;
@@ -601,7 +601,7 @@ namespace System.Speech.Recognition
             [MethodImplAttribute(MethodImplOptions.Synchronized)]
             remove
             {
-                Helpers.ThrowIfNull(value, "value");
+                Helpers.ThrowIfNull(value, nameof(value));
                 _audioSignalProblemOccurredDelegate -= value;
                 if (_audioSignalProblemOccurredDelegate == null)
                 {
@@ -616,7 +616,7 @@ namespace System.Speech.Recognition
             [MethodImplAttribute(MethodImplOptions.Synchronized)]
             add
             {
-                Helpers.ThrowIfNull(value, "value");
+                Helpers.ThrowIfNull(value, nameof(value));
                 if (_audioLevelUpdatedDelegate == null)
                 {
                     RecoBase.AudioLevelUpdated += AudioLevelUpdatedProxy;
@@ -627,7 +627,7 @@ namespace System.Speech.Recognition
             [MethodImplAttribute(MethodImplOptions.Synchronized)]
             remove
             {
-                Helpers.ThrowIfNull(value, "value");
+                Helpers.ThrowIfNull(value, nameof(value));
                 _audioLevelUpdatedDelegate -= value;
                 if (_audioLevelUpdatedDelegate == null)
                 {
@@ -642,7 +642,7 @@ namespace System.Speech.Recognition
             [MethodImplAttribute(MethodImplOptions.Synchronized)]
             add
             {
-                Helpers.ThrowIfNull(value, "value");
+                Helpers.ThrowIfNull(value, nameof(value));
                 if (_audioStateChangedDelegate == null)
                 {
                     RecoBase.AudioStateChanged += AudioStateChangedProxy;
@@ -653,7 +653,7 @@ namespace System.Speech.Recognition
             [MethodImplAttribute(MethodImplOptions.Synchronized)]
             remove
             {
-                Helpers.ThrowIfNull(value, "value");
+                Helpers.ThrowIfNull(value, nameof(value));
                 _audioStateChangedDelegate -= value;
                 if (_audioStateChangedDelegate == null)
                 {
@@ -688,7 +688,7 @@ namespace System.Speech.Recognition
                 ObjectToken token = recognizerInfo.GetObjectToken();
                 if (token == null)
                 {
-                    throw new ArgumentException(SR.Get(SRID.NullParamIllegal), "recognizerInfo");
+                    throw new ArgumentException(SR.Get(SRID.NullParamIllegal), nameof(recognizerInfo));
                 }
                 try
                 {

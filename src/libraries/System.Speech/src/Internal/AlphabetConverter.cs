@@ -92,7 +92,7 @@ namespace System.Speech.Internal
         {
             if (langId < 0)
             {
-                throw new ArgumentException(SR.Get(SRID.MustBeGreaterThanZero), "langId");
+                throw new ArgumentException(SR.Get(SRID.MustBeGreaterThanZero), nameof(langId));
             }
             if (langId == _currentLangId)
             {

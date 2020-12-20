@@ -297,7 +297,7 @@ namespace System.Speech.Internal.SrgsCompiler
 
             if (attributes != 0 && ((attributes & ~allFlags) != 0 || ((attributes & SPCFGRULEATTRIBUTES.SPRAF_Import) != 0 && (attributes & SPCFGRULEATTRIBUTES.SPRAF_Export) != 0)))
             {
-                throw new ArgumentException(SR.Get(SRID.InvalidFlagsSet), "attributes");
+                throw new ArgumentException(SR.Get(SRID.InvalidFlagsSet), nameof(attributes));
             }
 
             // PS: 52277 - SAPI does not properly handle a rule marked as Import and TopLevel/Active/Root.

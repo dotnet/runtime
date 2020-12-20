@@ -1908,7 +1908,7 @@ namespace System.Speech.Internal.SrgsParser
         // Throws exception if the specified Rule does not have a valid Id.
         static internal void ValidateRuleId(string id)
         {
-            Helpers.ThrowIfEmptyOrNull(id, "id");
+            Helpers.ThrowIfEmptyOrNull(id, nameof(id));
 
             if (!XmlReader.IsName(id) || (id == "NULL") || (id == "VOID") || (id == "GARBAGE") || (id.IndexOfAny(s_invalidRuleIdChars) != -1))
             {

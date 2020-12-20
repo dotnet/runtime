@@ -30,8 +30,8 @@ namespace System.Speech.Recognition.SrgsGrammar
         /// <param name="outputStream"></param>
         static public void Compile(string inputPath, Stream outputStream)
         {
-            Helpers.ThrowIfEmptyOrNull(inputPath, "inputPath");
-            Helpers.ThrowIfNull(outputStream, "outputStream");
+            Helpers.ThrowIfEmptyOrNull(inputPath, nameof(inputPath));
+            Helpers.ThrowIfNull(outputStream, nameof(outputStream));
 
             using (XmlTextReader reader = new XmlTextReader(new Uri(inputPath, UriKind.RelativeOrAbsolute).ToString()))
             {
@@ -46,8 +46,8 @@ namespace System.Speech.Recognition.SrgsGrammar
         /// <param name="outputStream"></param>
         static public void Compile(SrgsDocument srgsGrammar, Stream outputStream)
         {
-            Helpers.ThrowIfNull(srgsGrammar, "srgsGrammar");
-            Helpers.ThrowIfNull(outputStream, "outputStream");
+            Helpers.ThrowIfNull(srgsGrammar, nameof(srgsGrammar));
+            Helpers.ThrowIfNull(outputStream, nameof(outputStream));
 
             SrgsCompiler.CompileStream(srgsGrammar, null, outputStream, true, null, null);
         }
@@ -59,8 +59,8 @@ namespace System.Speech.Recognition.SrgsGrammar
         /// <param name="outputStream"></param>
         static public void Compile(XmlReader reader, Stream outputStream)
         {
-            Helpers.ThrowIfNull(reader, "reader");
-            Helpers.ThrowIfNull(outputStream, "outputStream");
+            Helpers.ThrowIfNull(reader, nameof(reader));
+            Helpers.ThrowIfNull(outputStream, nameof(outputStream));
 
             SrgsCompiler.CompileStream(new XmlReader[] { reader }, null, outputStream, true, null, null, null);
         }
@@ -75,8 +75,8 @@ namespace System.Speech.Recognition.SrgsGrammar
         /// <param name="keyFile"></param>
         static public void CompileClassLibrary(string[] inputPaths, string outputPath, string[] referencedAssemblies, string keyFile)
         {
-            Helpers.ThrowIfNull(inputPaths, "inputPaths");
-            Helpers.ThrowIfEmptyOrNull(outputPath, "outputPath");
+            Helpers.ThrowIfNull(inputPaths, nameof(inputPaths));
+            Helpers.ThrowIfEmptyOrNull(outputPath, nameof(outputPath));
 
             XmlTextReader[] readers = new XmlTextReader[inputPaths.Length];
             try
@@ -85,7 +85,7 @@ namespace System.Speech.Recognition.SrgsGrammar
                 {
                     if (inputPaths[iFile] == null)
                     {
-                        throw new ArgumentException(SR.Get(SRID.ArrayOfNullIllegal), "inputPaths");
+                        throw new ArgumentException(SR.Get(SRID.ArrayOfNullIllegal), nameof(inputPaths));
                     }
                     readers[iFile] = new XmlTextReader(new Uri(inputPaths[iFile], UriKind.RelativeOrAbsolute).ToString());
                 }
@@ -113,8 +113,8 @@ namespace System.Speech.Recognition.SrgsGrammar
         /// <param name="keyFile"></param>
         static public void CompileClassLibrary(SrgsDocument srgsGrammar, string outputPath, string[] referencedAssemblies, string keyFile)
         {
-            Helpers.ThrowIfNull(srgsGrammar, "srgsGrammar");
-            Helpers.ThrowIfEmptyOrNull(outputPath, "outputPath");
+            Helpers.ThrowIfNull(srgsGrammar, nameof(srgsGrammar));
+            Helpers.ThrowIfEmptyOrNull(outputPath, nameof(outputPath));
 
             SrgsCompiler.CompileStream(srgsGrammar, outputPath, null, false, referencedAssemblies, keyFile);
         }
@@ -128,8 +128,8 @@ namespace System.Speech.Recognition.SrgsGrammar
         /// <param name="keyFile"></param>
         static public void CompileClassLibrary(XmlReader reader, string outputPath, string[] referencedAssemblies, string keyFile)
         {
-            Helpers.ThrowIfNull(reader, "reader");
-            Helpers.ThrowIfEmptyOrNull(outputPath, "outputPath");
+            Helpers.ThrowIfNull(reader, nameof(reader));
+            Helpers.ThrowIfEmptyOrNull(outputPath, nameof(outputPath));
 
             SrgsCompiler.CompileStream(new XmlReader[] { reader }, outputPath, null, false, null, referencedAssemblies, keyFile);
         }

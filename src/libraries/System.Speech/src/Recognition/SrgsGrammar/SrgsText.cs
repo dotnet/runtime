@@ -34,7 +34,7 @@ namespace System.Speech.Recognition.SrgsGrammar
         /// TODOC <_include file='doc\SrgsText.uex' path='docs/doc[@for="SrgsText.SrgsText2"]/*' />
         public SrgsText(string text)
         {
-            Helpers.ThrowIfNull(text, "text");
+            Helpers.ThrowIfNull(text, nameof(text));
 
             Text = text;
         }
@@ -58,7 +58,7 @@ namespace System.Speech.Recognition.SrgsGrammar
             }
             set
             {
-                Helpers.ThrowIfNull(value, "value");
+                Helpers.ThrowIfNull(value, nameof(value));
 
                 // Parse the text to check for errors
                 XmlParser.ParseText(null, value, null, null, -1f, null);

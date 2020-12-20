@@ -20,13 +20,13 @@ namespace System.Speech.Recognition.SrgsGrammar
         /// <param name="rules"></param>
         public void Add(params SrgsRule[] rules)
         {
-            Helpers.ThrowIfNull(rules, "rules");
+            Helpers.ThrowIfNull(rules, nameof(rules));
 
             for (int iRule = 0; iRule < rules.Length; iRule++)
             {
                 if (rules[iRule] == null)
                 {
-                    throw new ArgumentNullException("rules", SR.Get(SRID.ParamsEntryNullIllegal));
+                    throw new ArgumentNullException(nameof(rules), SR.Get(SRID.ParamsEntryNullIllegal));
                 }
                 base.Add(rules[iRule]);
             }
@@ -41,7 +41,7 @@ namespace System.Speech.Recognition.SrgsGrammar
         {
             if (rule == null)
             {
-                throw new ArgumentNullException("rule");
+                throw new ArgumentNullException(nameof(rule));
             }
             return rule.Id;
         }

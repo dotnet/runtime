@@ -92,8 +92,8 @@ namespace System.Speech.Recognition
         /// TODOC <_include file='doc\RecognitionResult.uex' path='docs/doc[@for="RecognitionResult.GetAudioForWordRange"]/*' />
         public RecognizedAudio GetAudioForWordRange(RecognizedWordUnit firstWord, RecognizedWordUnit lastWord)
         {
-            Helpers.ThrowIfNull(firstWord, "firstWord");
-            Helpers.ThrowIfNull(lastWord, "lastWord");
+            Helpers.ThrowIfNull(firstWord, nameof(firstWord));
+            Helpers.ThrowIfNull(lastWord, nameof(lastWord));
 
             return Audio.GetRange(firstWord._audioPosition, lastWord._audioPosition + lastWord._audioDuration - firstWord._audioPosition);
         }
@@ -101,7 +101,7 @@ namespace System.Speech.Recognition
         [SecurityPermissionAttribute(SecurityAction.Demand, SerializationFormatter = true)]
         void ISerializable.GetObjectData(SerializationInfo info, StreamingContext context)
         {
-            Helpers.ThrowIfNull(info, "info");
+            Helpers.ThrowIfNull(info, nameof(info));
 
             bool appDomainTransition = context.State == StreamingContextStates.CrossAppDomain;
 

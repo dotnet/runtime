@@ -335,7 +335,7 @@ namespace System.Speech.Recognition.SrgsGrammar
             }
             set
             {
-                Helpers.ThrowIfNull(value, "value");
+                Helpers.ThrowIfNull(value, nameof(value));
 
                 _culture = value;
             }
@@ -485,7 +485,7 @@ namespace System.Speech.Recognition.SrgsGrammar
         {
             set
             {
-                Helpers.ThrowIfEmptyOrNull(value, "value");
+                Helpers.ThrowIfEmptyOrNull(value, nameof(value));
                 _script = value;
             }
             get

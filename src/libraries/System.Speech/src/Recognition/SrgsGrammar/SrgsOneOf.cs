@@ -37,13 +37,13 @@ namespace System.Speech.Recognition.SrgsGrammar
         public SrgsOneOf(params string[] items)
             : this()
         {
-            Helpers.ThrowIfNull(items, "items");
+            Helpers.ThrowIfNull(items, nameof(items));
 
             for (int i = 0; i < items.Length; i++)
             {
                 if (items[i] == null)
                 {
-                    throw new ArgumentNullException("items", SR.Get(SRID.ParamsEntryNullIllegal));
+                    throw new ArgumentNullException(nameof(items), SR.Get(SRID.ParamsEntryNullIllegal));
                 }
 
                 _items.Add(new SrgsItem(items[i]));
@@ -54,14 +54,14 @@ namespace System.Speech.Recognition.SrgsGrammar
         public SrgsOneOf(params SrgsItem[] items)
             : this()
         {
-            Helpers.ThrowIfNull(items, "items");
+            Helpers.ThrowIfNull(items, nameof(items));
 
             for (int i = 0; i < items.Length; i++)
             {
                 SrgsItem item = items[i];
                 if (item == null)
                 {
-                    throw new ArgumentNullException("items", SR.Get(SRID.ParamsEntryNullIllegal));
+                    throw new ArgumentNullException(nameof(items), SR.Get(SRID.ParamsEntryNullIllegal));
                 }
 
                 _items.Add(item);
@@ -84,7 +84,7 @@ namespace System.Speech.Recognition.SrgsGrammar
         /// <param name="item"></param>
         public void Add(SrgsItem item)
         {
-            Helpers.ThrowIfNull(item, "item");
+            Helpers.ThrowIfNull(item, nameof(item));
 
             Items.Add(item);
         }

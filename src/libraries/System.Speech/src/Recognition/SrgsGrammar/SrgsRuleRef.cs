@@ -36,7 +36,7 @@ namespace System.Speech.Recognition.SrgsGrammar
         /// TODOC <_include file='doc\RuleRef.uex' path='docs/doc[@for="RuleRef.RuleRef2"]/*' />
         public SrgsRuleRef(Uri uri, string rule)
         {
-            Helpers.ThrowIfEmptyOrNull(rule, "rule");
+            Helpers.ThrowIfEmptyOrNull(rule, nameof(rule));
 
             UriInit(uri, rule, null, null);
         }
@@ -44,7 +44,7 @@ namespace System.Speech.Recognition.SrgsGrammar
         /// TODOC <_include file='doc\RuleRef.uex' path='docs/doc[@for="RuleRef.RuleRef3"]/*' />
         public SrgsRuleRef(Uri uri, string rule, string semanticKey)
         {
-            Helpers.ThrowIfEmptyOrNull(semanticKey, "semanticKey");
+            Helpers.ThrowIfEmptyOrNull(semanticKey, nameof(semanticKey));
 
             UriInit(uri, rule, semanticKey, null);
         }
@@ -53,7 +53,7 @@ namespace System.Speech.Recognition.SrgsGrammar
         /// TODOC <_include file='doc\RuleRef.uex' path='docs/doc[@for="RuleRef.RuleRef3"]/*' />
         public SrgsRuleRef(Uri uri, string rule, string semanticKey, string parameters)
         {
-            Helpers.ThrowIfEmptyOrNull(parameters, "parameters");
+            Helpers.ThrowIfEmptyOrNull(parameters, nameof(parameters));
 
             UriInit(uri, rule, semanticKey, parameters);
         }
@@ -62,7 +62,7 @@ namespace System.Speech.Recognition.SrgsGrammar
         /// TODOC <_include file='doc\RuleRef.uex' path='docs/doc[@for="RuleRef.RuleRef3"]/*' />
         public SrgsRuleRef(SrgsRule rule)
         {
-            Helpers.ThrowIfNull(rule, "rule");
+            Helpers.ThrowIfNull(rule, nameof(rule));
 
             _uri = new Uri("#" + rule.Id, UriKind.Relative);
         }
@@ -72,7 +72,7 @@ namespace System.Speech.Recognition.SrgsGrammar
         public SrgsRuleRef(SrgsRule rule, string semanticKey)
             : this(rule)
         {
-            Helpers.ThrowIfEmptyOrNull(semanticKey, "semanticKey");
+            Helpers.ThrowIfEmptyOrNull(semanticKey, nameof(semanticKey));
 
             _semanticKey = semanticKey;
         }
@@ -81,7 +81,7 @@ namespace System.Speech.Recognition.SrgsGrammar
         public SrgsRuleRef(SrgsRule rule, string semanticKey, string parameters)
             : this(rule)
         {
-            Helpers.ThrowIfEmptyOrNull(parameters, "parameters");
+            Helpers.ThrowIfEmptyOrNull(parameters, nameof(parameters));
 
 #pragma warning disable 56504 // The public API is not that public so remove all the parameter validation.
             _semanticKey = semanticKey;
@@ -311,7 +311,7 @@ namespace System.Speech.Recognition.SrgsGrammar
         /// <param name="initParameters"></param>
         private void UriInit(Uri uri, string rule, string semanticKey, string initParameters)
         {
-            Helpers.ThrowIfNull(uri, "uri");
+            Helpers.ThrowIfNull(uri, nameof(uri));
 
             if (string.IsNullOrEmpty(rule))
             {

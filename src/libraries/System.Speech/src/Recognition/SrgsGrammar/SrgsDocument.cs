@@ -48,7 +48,7 @@ namespace System.Speech.Recognition.SrgsGrammar
         /// <param name="path"></param>
         public SrgsDocument(string path)
         {
-            Helpers.ThrowIfEmptyOrNull(path, "path");
+            Helpers.ThrowIfEmptyOrNull(path, nameof(path));
 
             using (XmlTextReader reader = new XmlTextReader(path))
             {
@@ -62,7 +62,7 @@ namespace System.Speech.Recognition.SrgsGrammar
         /// <param name="srgsGrammar"></param>
         public SrgsDocument(XmlReader srgsGrammar)
         {
-            Helpers.ThrowIfNull(srgsGrammar, "srgsGrammar");
+            Helpers.ThrowIfNull(srgsGrammar, nameof(srgsGrammar));
 
             Load(srgsGrammar);
         }
@@ -74,7 +74,7 @@ namespace System.Speech.Recognition.SrgsGrammar
         /// <param name="builder"></param>
         public SrgsDocument(GrammarBuilder builder)
         {
-            Helpers.ThrowIfNull(builder, "builder");
+            Helpers.ThrowIfNull(builder, nameof(builder));
 
             // New grammar
             _grammar = new SrgsGrammar();
@@ -95,7 +95,7 @@ namespace System.Speech.Recognition.SrgsGrammar
         /// <param name="grammarRootRule"></param>
         public SrgsDocument(SrgsRule grammarRootRule) : this()
         {
-            Helpers.ThrowIfNull(grammarRootRule, "grammarRootRule");
+            Helpers.ThrowIfNull(grammarRootRule, nameof(grammarRootRule));
 
             Root = grammarRootRule;
             Rules.Add(grammarRootRule);
@@ -117,7 +117,7 @@ namespace System.Speech.Recognition.SrgsGrammar
         /// <param name="srgsGrammar"></param>
         public void WriteSrgs(XmlWriter srgsGrammar)
         {
-            Helpers.ThrowIfNull(srgsGrammar, "srgsGrammar");
+            Helpers.ThrowIfNull(srgsGrammar, nameof(srgsGrammar));
 
             // Make sure the grammar is ok
             _grammar.Validate();
@@ -161,10 +161,10 @@ namespace System.Speech.Recognition.SrgsGrammar
         {
             set
             {
-                Helpers.ThrowIfNull(value, "value");
+                Helpers.ThrowIfNull(value, nameof(value));
                 if (value.Equals(CultureInfo.InvariantCulture))
                 {
-                    throw new ArgumentException(SR.Get(SRID.InvariantCultureInfo), "value");
+                    throw new ArgumentException(SR.Get(SRID.InvariantCultureInfo), nameof(value));
                 }
                 _grammar.Culture = value;
             }
@@ -305,7 +305,7 @@ namespace System.Speech.Recognition.SrgsGrammar
         {
             set
             {
-                Helpers.ThrowIfEmptyOrNull(value, "value");
+                Helpers.ThrowIfEmptyOrNull(value, nameof(value));
                 _grammar.Script = value;
             }
             get

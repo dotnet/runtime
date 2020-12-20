@@ -34,7 +34,7 @@ namespace System.Speech.Recognition.SrgsGrammar
         /// TODOC <_include file='doc\PropertyTag.uex' path='docs/doc[@for="PropertyTag.PropertyTag2"]/*' />
         public SrgsNameValueTag(object value)
         {
-            Helpers.ThrowIfNull(value, "value");
+            Helpers.ThrowIfNull(value, nameof(value));
 
             Value = value;
         }
@@ -80,7 +80,7 @@ namespace System.Speech.Recognition.SrgsGrammar
             get { return _value; }
             set
             {
-                Helpers.ThrowIfNull(value, "value");
+                Helpers.ThrowIfNull(value, nameof(value));
 
                 if ((value is String) ||
                 (value is Boolean) ||
@@ -91,7 +91,7 @@ namespace System.Speech.Recognition.SrgsGrammar
                 }
                 else
                 {
-                    throw new ArgumentException(SR.Get(SRID.InvalidValueType), "value");
+                    throw new ArgumentException(SR.Get(SRID.InvalidValueType), nameof(value));
                 }
             }
         }

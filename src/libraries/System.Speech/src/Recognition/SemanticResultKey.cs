@@ -30,7 +30,7 @@ namespace System.Speech.Recognition
         private SemanticResultKey(string semanticResultKey)
             : base()
         {
-            Helpers.ThrowIfEmptyOrNull(semanticResultKey, "semanticResultKey");
+            Helpers.ThrowIfEmptyOrNull(semanticResultKey, nameof(semanticResultKey));
 
             _semanticKey = new SemanticKeyElement(semanticResultKey);
         }
@@ -43,8 +43,8 @@ namespace System.Speech.Recognition
         public SemanticResultKey(string semanticResultKey, params string[] phrases)
             : this(semanticResultKey)
         {
-            Helpers.ThrowIfEmptyOrNull(semanticResultKey, "semanticResultKey");
-            Helpers.ThrowIfNull(phrases, "phrases");
+            Helpers.ThrowIfEmptyOrNull(semanticResultKey, nameof(semanticResultKey));
+            Helpers.ThrowIfNull(phrases, nameof(phrases));
 
             // Build a grammar builder with all the phrases
             foreach (string phrase in phrases)
@@ -61,7 +61,7 @@ namespace System.Speech.Recognition
         public SemanticResultKey(string semanticResultKey, params GrammarBuilder[] builders)
             : this(semanticResultKey)
         {
-            Helpers.ThrowIfEmptyOrNull(semanticResultKey, "semanticResultKey");
+            Helpers.ThrowIfEmptyOrNull(semanticResultKey, nameof(semanticResultKey));
             Helpers.ThrowIfNull(builders, "phrases");
 
             // Build a grammar builder with all the grammar builders

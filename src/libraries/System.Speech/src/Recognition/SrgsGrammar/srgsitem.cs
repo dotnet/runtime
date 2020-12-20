@@ -38,7 +38,7 @@ namespace System.Speech.Recognition.SrgsGrammar
         public SrgsItem(string text)
             : this()
         {
-            Helpers.ThrowIfEmptyOrNull(text, "text");
+            Helpers.ThrowIfEmptyOrNull(text, nameof(text));
 
             _elements.Add(new SrgsText(text));
         }
@@ -47,13 +47,13 @@ namespace System.Speech.Recognition.SrgsGrammar
         public SrgsItem(params SrgsElement[] elements)
             : this()
         {
-            Helpers.ThrowIfNull(elements, "elements");
+            Helpers.ThrowIfNull(elements, nameof(elements));
 
             for (int iElement = 0; iElement < elements.Length; iElement++)
             {
                 if (elements[iElement] == null)
                 {
-                    throw new ArgumentNullException("elements", SR.Get(SRID.ParamsEntryNullIllegal));
+                    throw new ArgumentNullException(nameof(elements), SR.Get(SRID.ParamsEntryNullIllegal));
                 }
                 _elements.Add(elements[iElement]);
             }
@@ -125,7 +125,7 @@ namespace System.Speech.Recognition.SrgsGrammar
             // Negative values are not allowed
             if (count < 0 || count > 255)
             {
-                throw new ArgumentOutOfRangeException("count");
+                throw new ArgumentOutOfRangeException(nameof(count));
             }
             _minRepeat = _maxRepeat = count;
         }
@@ -140,11 +140,11 @@ namespace System.Speech.Recognition.SrgsGrammar
             // Negative values are not allowed
             if (minRepeat < 0 || minRepeat > 255)
             {
-                throw new ArgumentOutOfRangeException("minRepeat", SR.Get(SRID.InvalidMinRepeat, minRepeat));
+                throw new ArgumentOutOfRangeException(nameof(minRepeat), SR.Get(SRID.InvalidMinRepeat, minRepeat));
             }
             if (maxRepeat != int.MaxValue && (maxRepeat < 0 || maxRepeat > 255))
             {
-                throw new ArgumentOutOfRangeException("maxRepeat", SR.Get(SRID.InvalidMinRepeat, maxRepeat));
+                throw new ArgumentOutOfRangeException(nameof(maxRepeat), SR.Get(SRID.InvalidMinRepeat, maxRepeat));
             }
 
             // Max be greater or equal to min
@@ -162,7 +162,7 @@ namespace System.Speech.Recognition.SrgsGrammar
         /// <param name="element"></param>
         public void Add(SrgsElement element)
         {
-            Helpers.ThrowIfNull(element, "element");
+            Helpers.ThrowIfNull(element, nameof(element));
 
             Elements.Add(element);
         }
@@ -198,7 +198,7 @@ namespace System.Speech.Recognition.SrgsGrammar
             {
                 if (value < 0.0f || value > 1.0f)
                 {
-                    throw new ArgumentOutOfRangeException("value", SR.Get(SRID.InvalidRepeatProbability, value));
+                    throw new ArgumentOutOfRangeException(nameof(value), SR.Get(SRID.InvalidRepeatProbability, value));
                 }
 
                 _repeatProbability = value;
@@ -236,7 +236,7 @@ namespace System.Speech.Recognition.SrgsGrammar
             {
                 if (value <= 0.0f)
                 {
-                    throw new ArgumentOutOfRangeException("value", SR.Get(SRID.InvalidWeight, value));
+                    throw new ArgumentOutOfRangeException(nameof(value), SR.Get(SRID.InvalidWeight, value));
                 }
 
                 _weight = value;

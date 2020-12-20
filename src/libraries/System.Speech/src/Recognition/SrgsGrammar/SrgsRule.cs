@@ -46,7 +46,7 @@ namespace System.Speech.Recognition.SrgsGrammar
         public SrgsRule(string id, params SrgsElement[] elements)
             : this()
         {
-            Helpers.ThrowIfNull(elements, "elements");
+            Helpers.ThrowIfNull(elements, nameof(elements));
 
             XmlParser.ValidateRuleId(id);
             Id = id;
@@ -55,7 +55,7 @@ namespace System.Speech.Recognition.SrgsGrammar
             {
                 if (elements[iElement] == null)
                 {
-                    throw new ArgumentNullException("elements", SR.Get(SRID.ParamsEntryNullIllegal));
+                    throw new ArgumentNullException(nameof(elements), SR.Get(SRID.ParamsEntryNullIllegal));
                 }
                 ((Collection<SrgsElement>)_elements).Add(elements[iElement]);
             }
@@ -77,7 +77,7 @@ namespace System.Speech.Recognition.SrgsGrammar
         /// <param name="element"></param>
         public void Add(SrgsElement element)
         {
-            Helpers.ThrowIfNull(element, "element");
+            Helpers.ThrowIfNull(element, nameof(element));
 
             Elements.Add(element);
         }
@@ -155,7 +155,7 @@ namespace System.Speech.Recognition.SrgsGrammar
         {
             set
             {
-                Helpers.ThrowIfEmptyOrNull(value, "value");
+                Helpers.ThrowIfEmptyOrNull(value, nameof(value));
                 _script = value;
             }
             get

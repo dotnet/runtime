@@ -25,19 +25,19 @@ namespace System.Speech.AudioFormat
         {
             if (encodingFormat == 0)
             {
-                throw new ArgumentException(SR.Get(SRID.CannotUseCustomFormat), "encodingFormat");
+                throw new ArgumentException(SR.Get(SRID.CannotUseCustomFormat), nameof(encodingFormat));
             }
             if (samplesPerSecond <= 0)
             {
-                throw new ArgumentOutOfRangeException("samplesPerSecond", SR.Get(SRID.MustBeGreaterThanZero));
+                throw new ArgumentOutOfRangeException(nameof(samplesPerSecond), SR.Get(SRID.MustBeGreaterThanZero));
             }
             if (bitsPerSample <= 0)
             {
-                throw new ArgumentOutOfRangeException("bitsPerSample", SR.Get(SRID.MustBeGreaterThanZero));
+                throw new ArgumentOutOfRangeException(nameof(bitsPerSample), SR.Get(SRID.MustBeGreaterThanZero));
             }
             if (channelCount <= 0)
             {
-                throw new ArgumentOutOfRangeException("channelCount", SR.Get(SRID.MustBeGreaterThanZero));
+                throw new ArgumentOutOfRangeException(nameof(channelCount), SR.Get(SRID.MustBeGreaterThanZero));
             }
 
             _encodingFormat = encodingFormat;
@@ -59,11 +59,11 @@ namespace System.Speech.AudioFormat
                 case EncodingFormat.ULaw:
                     if (bitsPerSample != 8)
                     {
-                        throw new ArgumentOutOfRangeException("bitsPerSample");
+                        throw new ArgumentOutOfRangeException(nameof(bitsPerSample));
                     }
                     if (formatSpecificData != null && formatSpecificData.Length != 0)
                     {
-                        throw new ArgumentOutOfRangeException("formatSpecificData");
+                        throw new ArgumentOutOfRangeException(nameof(formatSpecificData));
                     }
                     break;
             }
@@ -77,11 +77,11 @@ namespace System.Speech.AudioFormat
             // Don't explicitly check these are sensible values - allow flexibility here as some formats may do unexpected things here.
             if (averageBytesPerSecond <= 0)
             {
-                throw new ArgumentOutOfRangeException("averageBytesPerSecond", SR.Get(SRID.MustBeGreaterThanZero));
+                throw new ArgumentOutOfRangeException(nameof(averageBytesPerSecond), SR.Get(SRID.MustBeGreaterThanZero));
             }
             if (blockAlign <= 0)
             {
-                throw new ArgumentOutOfRangeException("blockAlign", SR.Get(SRID.MustBeGreaterThanZero));
+                throw new ArgumentOutOfRangeException(nameof(blockAlign), SR.Get(SRID.MustBeGreaterThanZero));
             }
             _averageBytesPerSecond = averageBytesPerSecond;
             _blockAlign = (short)blockAlign;

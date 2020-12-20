@@ -38,7 +38,7 @@ namespace System.Speech.Internal.ObjectTokens
         {
             if (sapiObjectToken == null)
             {
-                throw new ArgumentNullException("sapiObjectToken");
+                throw new ArgumentNullException(nameof(sapiObjectToken));
             }
 
             _sapiObjectToken = sapiObjectToken;

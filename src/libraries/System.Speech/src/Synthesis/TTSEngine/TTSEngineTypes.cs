@@ -281,7 +281,7 @@ namespace System.Speech.Synthesis.TtsEngine
         /// <summary>
         /// TODOC
         /// </summary>
-        public string TextToSpeak { get { return _textToSpeak; } set { Helpers.ThrowIfEmptyOrNull(value, "value"); _textToSpeak = value; } }
+        public string TextToSpeak { get { return _textToSpeak; } set { Helpers.ThrowIfEmptyOrNull(value, nameof(value)); _textToSpeak = value; } }
 
         /// <summary>
         /// TODOC
@@ -351,15 +351,15 @@ namespace System.Speech.Synthesis.TtsEngine
         /// <summary>
         /// TODOC
         /// </summary>
-        public SayAs SayAs { get { return _sayAs; } internal set { Helpers.ThrowIfNull(value, "value"); _sayAs = value; } }
+        public SayAs SayAs { get { return _sayAs; } internal set { Helpers.ThrowIfNull(value, nameof(value)); _sayAs = value; } }
         /// <summary>
         /// TODOC
         /// </summary>
-        public Prosody Prosody { get { return _prosody; } internal set { Helpers.ThrowIfNull(value, "value"); _prosody = value; } }
+        public Prosody Prosody { get { return _prosody; } internal set { Helpers.ThrowIfNull(value, nameof(value)); _prosody = value; } }
         /// <summary>
         /// TODOC
         /// </summary>
-        public char[] Phoneme { get { return _phoneme; } internal set { Helpers.ThrowIfNull(value, "value"); _phoneme = value; } }
+        public char[] Phoneme { get { return _phoneme; } internal set { Helpers.ThrowIfNull(value, nameof(value)); _phoneme = value; } }
 
         /// TODOC
         public FragmentState(TtsEngineAction action,
@@ -460,7 +460,7 @@ namespace System.Speech.Synthesis.TtsEngine
         /// </summary>
         public void SetContourPoints(ContourPoint[] points)
         {
-            Helpers.ThrowIfNull(points, "points");
+            Helpers.ThrowIfNull(points, nameof(points));
 
             _contourPoints = (ContourPoint[])points.Clone();
         }
@@ -670,15 +670,15 @@ namespace System.Speech.Synthesis.TtsEngine
         /// <summary>
         /// TODOC
         /// </summary>
-        public string InterpretAs { get { return _interpretAs; } set { Helpers.ThrowIfEmptyOrNull(value, "value"); _interpretAs = value; } }
+        public string InterpretAs { get { return _interpretAs; } set { Helpers.ThrowIfEmptyOrNull(value, nameof(value)); _interpretAs = value; } }
         /// <summary>
         /// TODOC
         /// </summary>
-        public string Format { get { return _format; } set { Helpers.ThrowIfEmptyOrNull(value, "value"); _format = value; } }
+        public string Format { get { return _format; } set { Helpers.ThrowIfEmptyOrNull(value, nameof(value)); _format = value; } }
         /// <summary>
         /// TODOC
         /// </summary>
-        public string Detail { get { return _detail; } set { Helpers.ThrowIfEmptyOrNull(value, "value"); _detail = value; } }
+        public string Detail { get { return _detail; } set { Helpers.ThrowIfEmptyOrNull(value, nameof(value)); _detail = value; } }
 
         [MarshalAs(UnmanagedType.LPWStr)]
         private string _interpretAs;

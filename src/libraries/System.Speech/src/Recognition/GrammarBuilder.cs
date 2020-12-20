@@ -128,7 +128,7 @@ namespace System.Speech.Recognition
         /// <param name="phrase"></param>
         public void Append(string phrase)
         {
-            Helpers.ThrowIfEmptyOrNull(phrase, "phrase");
+            Helpers.ThrowIfEmptyOrNull(phrase, nameof(phrase));
 
             AddItem(new GrammarBuilderPhrase(phrase));
         }
@@ -140,8 +140,8 @@ namespace System.Speech.Recognition
         /// <param name="subsetMatchingCriteria"></param>
         public void Append(string phrase, SubsetMatchingMode subsetMatchingCriteria)
         {
-            Helpers.ThrowIfEmptyOrNull(phrase, "phrase");
-            GrammarBuilder.ValidateSubsetMatchingCriteriaArgument(subsetMatchingCriteria, "subsetMatchingCriteria");
+            Helpers.ThrowIfEmptyOrNull(phrase, nameof(phrase));
+            GrammarBuilder.ValidateSubsetMatchingCriteriaArgument(subsetMatchingCriteria, nameof(subsetMatchingCriteria));
 
             AddItem(new GrammarBuilderPhrase(phrase, subsetMatchingCriteria));
         }
@@ -154,7 +154,7 @@ namespace System.Speech.Recognition
         /// <param name="maxRepeat"></param>
         public void Append(string phrase, int minRepeat, int maxRepeat)
         {
-            Helpers.ThrowIfEmptyOrNull(phrase, "phrase");
+            Helpers.ThrowIfEmptyOrNull(phrase, nameof(phrase));
             GrammarBuilder.ValidateRepeatArguments(minRepeat, maxRepeat, "minRepeat", "maxRepeat");
 
             // Wrap the phrase in an item if min and max repeat are set
@@ -176,7 +176,7 @@ namespace System.Speech.Recognition
         /// <param name="builder"></param>
         public void Append(GrammarBuilder builder)
         {
-            Helpers.ThrowIfNull(builder, "builder");
+            Helpers.ThrowIfNull(builder, nameof(builder));
 
             // Should never happens has it is a RO value
             Helpers.ThrowIfNull(builder.InternalBuilder, "builder.InternalBuilder");
@@ -188,7 +188,7 @@ namespace System.Speech.Recognition
                 if (item == null)
                 {
                     // This should never happen!
-                    throw new ArgumentException(SR.Get(SRID.ArrayOfNullIllegal), "builder");
+                    throw new ArgumentException(SR.Get(SRID.ArrayOfNullIllegal), nameof(builder));
                 }
             }
 
@@ -208,7 +208,7 @@ namespace System.Speech.Recognition
         /// <param name="alternateChoices"></param>
         public void Append(Choices alternateChoices)
         {
-            Helpers.ThrowIfNull(alternateChoices, "alternateChoices");
+            Helpers.ThrowIfNull(alternateChoices, nameof(alternateChoices));
 
             AddItem(alternateChoices.OneOf);
         }
@@ -243,7 +243,7 @@ namespace System.Speech.Recognition
         /// <param name="maxRepeat"></param>
         public void Append(GrammarBuilder builder, int minRepeat, int maxRepeat)
         {
-            Helpers.ThrowIfNull(builder, "builder");
+            Helpers.ThrowIfNull(builder, nameof(builder));
             GrammarBuilder.ValidateRepeatArguments(minRepeat, maxRepeat, "minRepeat", "maxRepeat");
 
             // Should never happens has it is a RO value
@@ -275,7 +275,7 @@ namespace System.Speech.Recognition
         /// <param name="category"></param>
         public void AppendDictation(string category)
         {
-            Helpers.ThrowIfEmptyOrNull(category, "category");
+            Helpers.ThrowIfEmptyOrNull(category, nameof(category));
 
             AddItem(new GrammarBuilderDictation(category));
         }
@@ -296,7 +296,7 @@ namespace System.Speech.Recognition
         /// <param name="path"></param>
         public void AppendRuleReference(string path)
         {
-            Helpers.ThrowIfEmptyOrNull(path, "path");
+            Helpers.ThrowIfEmptyOrNull(path, nameof(path));
             Uri uri;
 
             try
@@ -319,8 +319,8 @@ namespace System.Speech.Recognition
         /// <param name="rule"></param>
         public void AppendRuleReference(string path, string rule)
         {
-            Helpers.ThrowIfEmptyOrNull(path, "path");
-            Helpers.ThrowIfEmptyOrNull(rule, "rule");
+            Helpers.ThrowIfEmptyOrNull(path, nameof(path));
+            Helpers.ThrowIfEmptyOrNull(rule, nameof(rule));
             Uri uri;
 
             try
@@ -366,7 +366,7 @@ namespace System.Speech.Recognition
             {
                 if (value == null)
                 {
-                    throw new ArgumentNullException("value");
+                    throw new ArgumentNullException(nameof(value));
                 }
 
                 _culture = value;
@@ -406,7 +406,7 @@ namespace System.Speech.Recognition
         /// <returns></returns>
         public static GrammarBuilder Add(string phrase, GrammarBuilder builder)
         {
-            Helpers.ThrowIfNull(builder, "builder");
+            Helpers.ThrowIfNull(builder, nameof(builder));
 
             GrammarBuilder grammar = new GrammarBuilder(phrase);
             grammar.Append(builder);
@@ -432,7 +432,7 @@ namespace System.Speech.Recognition
         /// <returns></returns>
         public static GrammarBuilder Add(GrammarBuilder builder, string phrase)
         {
-            Helpers.ThrowIfNull(builder, "builder");
+            Helpers.ThrowIfNull(builder, nameof(builder));
 
             GrammarBuilder grammar = builder.Clone();
             grammar.Append(phrase);
@@ -458,8 +458,8 @@ namespace System.Speech.Recognition
         /// <returns></returns>
         public static GrammarBuilder Add(Choices choices, GrammarBuilder builder)
         {
-            Helpers.ThrowIfNull(choices, "choices");
-            Helpers.ThrowIfNull(builder, "builder");
+            Helpers.ThrowIfNull(choices, nameof(choices));
+            Helpers.ThrowIfNull(builder, nameof(builder));
 
             GrammarBuilder grammar = new GrammarBuilder(choices);
             grammar.Append(builder);
@@ -485,8 +485,8 @@ namespace System.Speech.Recognition
         /// <returns></returns>
         public static GrammarBuilder Add(GrammarBuilder builder, Choices choices)
         {
-            Helpers.ThrowIfNull(builder, "builder");
-            Helpers.ThrowIfNull(choices, "choices");
+            Helpers.ThrowIfNull(builder, nameof(builder));
+            Helpers.ThrowIfNull(choices, nameof(choices));
 
             GrammarBuilder grammar = builder.Clone();
             grammar.Append(choices);
@@ -512,8 +512,8 @@ namespace System.Speech.Recognition
         /// <returns></returns>
         public static GrammarBuilder Add(GrammarBuilder builder1, GrammarBuilder builder2)
         {
-            Helpers.ThrowIfNull(builder1, "builder1");
-            Helpers.ThrowIfNull(builder2, "builder2");
+            Helpers.ThrowIfNull(builder1, nameof(builder1));
+            Helpers.ThrowIfNull(builder2, nameof(builder2));
 
             GrammarBuilder grammar = builder1.Clone();
             grammar.Append(builder2);

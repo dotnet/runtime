@@ -348,7 +348,7 @@ namespace System.Speech.Recognition
         /// TODOC <_include file='doc\RecognizerBase.uex' path='docs/doc[@for="RecognizerBase.EmulateRecognize1"]/*' />
         internal RecognitionResult EmulateRecognize(string inputText)
         {
-            Helpers.ThrowIfEmptyOrNull(inputText, "inputText");
+            Helpers.ThrowIfEmptyOrNull(inputText, nameof(inputText));
 
             return InternalEmulateRecognize(inputText, SpeechEmulationCompareFlags.SECFDefault, false, null);
         }
@@ -356,7 +356,7 @@ namespace System.Speech.Recognition
         /// TODOC <_include file='doc\RecognizerBase.uex' path='docs/doc[@for="RecognizerBase.EmulateRecognize1"]/*' />
         internal void EmulateRecognizeAsync(string inputText)
         {
-            Helpers.ThrowIfEmptyOrNull(inputText, "inputText");
+            Helpers.ThrowIfEmptyOrNull(inputText, nameof(inputText));
 
             InternalEmulateRecognizeAsync(inputText, SpeechEmulationCompareFlags.SECFDefault, false, null);
         }
@@ -364,7 +364,7 @@ namespace System.Speech.Recognition
         /// TODOC <_include file='doc\RecognizerBase.uex' path='docs/doc[@for="RecognizerBase.EmulateRecognize2"]/*' />
         internal RecognitionResult EmulateRecognize(string inputText, CompareOptions compareOptions)
         {
-            Helpers.ThrowIfEmptyOrNull(inputText, "inputText");
+            Helpers.ThrowIfEmptyOrNull(inputText, nameof(inputText));
 
             bool defaultCasing = compareOptions == CompareOptions.IgnoreCase || compareOptions == CompareOptions.OrdinalIgnoreCase;
 
@@ -384,7 +384,7 @@ namespace System.Speech.Recognition
         /// TODOC <_include file='doc\RecognizerBase.uex' path='docs/doc[@for="RecognizerBase.EmulateRecognize2"]/*' />
         internal void EmulateRecognizeAsync(string inputText, CompareOptions compareOptions)
         {
-            Helpers.ThrowIfEmptyOrNull(inputText, "inputText");
+            Helpers.ThrowIfEmptyOrNull(inputText, nameof(inputText));
 
             bool defaultCasing = compareOptions == CompareOptions.IgnoreCase || compareOptions == CompareOptions.OrdinalIgnoreCase;
 
@@ -413,13 +413,13 @@ namespace System.Speech.Recognition
                 // Note that even if there are no threading issues, baseUri is not supported with SAPI 5.1.
                 throw new NotSupportedException(SR.Get(SRID.NotSupportedWithThisVersionOfSAPI));
             }
-            Helpers.ThrowIfNull(wordUnits, "wordUnits");
+            Helpers.ThrowIfNull(wordUnits, nameof(wordUnits));
 
             foreach (RecognizedWordUnit wordUnit in wordUnits)
             {
                 if (wordUnit == null)
                 {
-                    throw new ArgumentException(SR.Get(SRID.ArrayOfNullIllegal), "wordUnits");
+                    throw new ArgumentException(SR.Get(SRID.ArrayOfNullIllegal), nameof(wordUnits));
                 }
             }
 
@@ -438,13 +438,13 @@ namespace System.Speech.Recognition
                 // Note that even if there are no threading issues, baseUri is not supported with SAPI 5.1.
                 throw new NotSupportedException(SR.Get(SRID.NotSupportedWithThisVersionOfSAPI));
             }
-            Helpers.ThrowIfNull(wordUnits, "wordUnits");
+            Helpers.ThrowIfNull(wordUnits, nameof(wordUnits));
 
             foreach (RecognizedWordUnit wordUnit in wordUnits)
             {
                 if (wordUnit == null)
                 {
-                    throw new ArgumentException(SR.Get(SRID.ArrayOfNullIllegal), "wordUnits");
+                    throw new ArgumentException(SR.Get(SRID.ArrayOfNullIllegal), nameof(wordUnits));
                 }
             }
 
@@ -880,7 +880,7 @@ namespace System.Speech.Recognition
 
         internal int QueryRecognizerSettingAsInt(string settingName)
         {
-            Helpers.ThrowIfEmptyOrNull(settingName, "settingName");
+            Helpers.ThrowIfEmptyOrNull(settingName, nameof(settingName));
 
             // See if property is an int.
             return SapiRecognizer.GetPropertyNum(settingName);
@@ -888,7 +888,7 @@ namespace System.Speech.Recognition
 
         internal object QueryRecognizerSetting(string settingName)
         {
-            Helpers.ThrowIfEmptyOrNull(settingName, "settingName");
+            Helpers.ThrowIfEmptyOrNull(settingName, nameof(settingName));
 
             // See if property is an int.
             try
@@ -907,14 +907,14 @@ namespace System.Speech.Recognition
 
         internal void UpdateRecognizerSetting(string settingName, string updatedValue)
         {
-            Helpers.ThrowIfEmptyOrNull(settingName, "settingName");
+            Helpers.ThrowIfEmptyOrNull(settingName, nameof(settingName));
 
             SapiRecognizer.SetPropertyString(settingName, updatedValue);
         }
 
         internal void UpdateRecognizerSetting(string settingName, int updatedValue)
         {
-            Helpers.ThrowIfEmptyOrNull(settingName, "settingName");
+            Helpers.ThrowIfEmptyOrNull(settingName, nameof(settingName));
 
             SapiRecognizer.SetPropertyNum(settingName, updatedValue);
         }
@@ -1009,7 +1009,7 @@ namespace System.Speech.Recognition
             {
                 if (value < TimeSpan.Zero)
                 {
-                    throw new ArgumentOutOfRangeException("value", SR.Get(SRID.NegativeTimesNotSupported));
+                    throw new ArgumentOutOfRangeException(nameof(value), SR.Get(SRID.NegativeTimesNotSupported));
                 }
 
                 lock (SapiRecognizer)
@@ -1031,7 +1031,7 @@ namespace System.Speech.Recognition
             {
                 if (value < TimeSpan.Zero)
                 {
-                    throw new ArgumentOutOfRangeException("value", SR.Get(SRID.NegativeTimesNotSupported));
+                    throw new ArgumentOutOfRangeException(nameof(value), SR.Get(SRID.NegativeTimesNotSupported));
                 }
 
                 lock (SapiRecognizer)
@@ -1275,7 +1275,7 @@ namespace System.Speech.Recognition
             {
                 if (value < 0)
                 {
-                    throw new ArgumentOutOfRangeException("value", SR.Get(SRID.MaxAlternatesInvalid));
+                    throw new ArgumentOutOfRangeException(nameof(value), SR.Get(SRID.MaxAlternatesInvalid));
                 }
                 if (value != _maxAlternates)
                 {
@@ -1955,7 +1955,7 @@ namespace System.Speech.Recognition
         // Do some basic parameter validation on a passed in Grammar
         private void ValidateGrammar(Grammar grammar, params GrammarState[] validStates)
         {
-            Helpers.ThrowIfNull(grammar, "grammar");
+            Helpers.ThrowIfNull(grammar, nameof(grammar));
 
             // Check if grammar is in a valid state for the caller.
             foreach (GrammarState state in validStates)
@@ -2122,7 +2122,7 @@ namespace System.Speech.Recognition
                     }
                     else
                     {
-                        throw new ArgumentException(SR.Get(SRID.RecognizerRuleNotFoundStream, ruleName), "ruleName");
+                        throw new ArgumentException(SR.Get(SRID.RecognizerRuleNotFoundStream, ruleName), nameof(ruleName));
                     }
                 }
                 else
@@ -2133,7 +2133,7 @@ namespace System.Speech.Recognition
                     }
                     else
                     {
-                        throw new ArgumentException(SR.Get(SRID.RecognizerRuleNotFound, ruleName, uri), "ruleName");
+                        throw new ArgumentException(SR.Get(SRID.RecognizerRuleNotFound, ruleName, uri), nameof(ruleName));
                     }
                 }
             }

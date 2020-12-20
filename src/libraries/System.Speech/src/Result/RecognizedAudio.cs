@@ -58,7 +58,7 @@ namespace System.Speech.Recognition
         /// TODOC <_include file='doc\RecognitionResult.uex' path='docs/doc[@for="RecognizedAudio.WriteAudio1"]/*' />
         public void WriteToWaveStream(Stream outputStream)
         {
-            Helpers.ThrowIfNull(outputStream, "outputStream");
+            Helpers.ThrowIfNull(outputStream, nameof(outputStream));
 
             using (StreamMarshaler sm = new StreamMarshaler(outputStream))
             {
@@ -75,7 +75,7 @@ namespace System.Speech.Recognition
         /// TODOC <_include file='doc\RecognitionResult.uex' path='docs/doc[@for="RecognizedAudio.WriteAudio1"]/*' />
         public void WriteToAudioStream(Stream outputStream)
         {
-            Helpers.ThrowIfNull(outputStream, "outputStream");
+            Helpers.ThrowIfNull(outputStream, nameof(outputStream));
 
             // now write the raw data
             outputStream.Write(_rawAudioData, 0, _rawAudioData.Length);
@@ -89,20 +89,20 @@ namespace System.Speech.Recognition
         {
             if (audioPosition.Ticks < 0)
             {
-                throw new ArgumentOutOfRangeException("audioPosition", SR.Get(SRID.NegativeTimesNotSupported));
+                throw new ArgumentOutOfRangeException(nameof(audioPosition), SR.Get(SRID.NegativeTimesNotSupported));
             }
             if (duration.Ticks < 0)
             {
-                throw new ArgumentOutOfRangeException("duration", SR.Get(SRID.NegativeTimesNotSupported));
+                throw new ArgumentOutOfRangeException(nameof(duration), SR.Get(SRID.NegativeTimesNotSupported));
             }
             if (audioPosition > _audioDuration)
             {
-                throw new ArgumentOutOfRangeException("audioPosition");
+                throw new ArgumentOutOfRangeException(nameof(audioPosition));
             }
 
             if (duration > audioPosition + _audioDuration)
             {
-                throw new ArgumentOutOfRangeException("duration");
+                throw new ArgumentOutOfRangeException(nameof(duration));
             }
 
             // Get the position and length in bytes offset and btyes length.

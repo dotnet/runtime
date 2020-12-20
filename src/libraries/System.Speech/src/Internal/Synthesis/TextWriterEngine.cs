@@ -44,7 +44,7 @@ namespace System.Speech.Internal.Synthesis
         {
             if (!string.IsNullOrEmpty(baseUri))
             {
-                throw new ArgumentException(SR.Get(SRID.InvalidSpeakAttribute, "baseUri", "speak"), "baseUri");
+                throw new ArgumentException(SR.Get(SRID.InvalidSpeakAttribute, "baseUri", "speak"), nameof(baseUri));
             }
 
             bool fNewCulture = culture != null && !culture.Equals(_culture);

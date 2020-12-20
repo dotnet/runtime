@@ -104,7 +104,7 @@ namespace System.Speech.Internal
                 {
                     if (value < 0)
                     {
-                        throw new ArgumentOutOfRangeException("value", SR.Get(SRID.MustBeGreaterThanZero));
+                        throw new ArgumentOutOfRangeException(nameof(value), SR.Get(SRID.MustBeGreaterThanZero));
                     }
                     // We can't check the length here so you can Seek beyond the end of the Stream. This will error later though.
 
@@ -227,7 +227,7 @@ namespace System.Speech.Internal
                         break;
 
                     default:
-                        throw new ArgumentException(SR.Get(SRID.EnumInvalid, "SeekOrigin"), "origin");
+                        throw new ArgumentException(SR.Get(SRID.EnumInvalid, "SeekOrigin"), nameof(origin));
                 }
             }
 

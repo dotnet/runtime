@@ -35,7 +35,7 @@ namespace System.Speech.Recognition.SrgsGrammar
         /// TODOC <_include file='doc\Tag.uex' path='docs/doc[@for="Tag.Tag2"]/*' />
         public SrgsSemanticInterpretationTag(string script)
         {
-            Helpers.ThrowIfNull(script, "script");
+            Helpers.ThrowIfNull(script, nameof(script));
 
             _script = script;
         }
@@ -59,7 +59,7 @@ namespace System.Speech.Recognition.SrgsGrammar
             }
             set
             {
-                Helpers.ThrowIfNull(value, "value");
+                Helpers.ThrowIfNull(value, nameof(value));
 
                 _script = value;
             }

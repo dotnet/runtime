@@ -146,7 +146,7 @@ namespace System.Speech.Internal.SrgsCompiler
             }
             catch (MissingMemberException)
             {
-                throw new ArgumentException(SR.Get(SRID.RuleScriptInvalidParameters, _grammarType.FullName, rule), "rule");
+                throw new ArgumentException(SR.Get(SRID.RuleScriptInvalidParameters, _grammarType.FullName, rule), nameof(rule));
             }
             _internetPermissionSet = PolicyLevel.CreateAppDomainLevel().GetNamedPermissionSet("Internet");
             _internetPermissionSet.AddPermission(new ReflectionPermission(PermissionState.Unrestricted));
@@ -166,7 +166,7 @@ namespace System.Speech.Internal.SrgsCompiler
             }
             catch (MissingMemberException)
             {
-                throw new ArgumentException(SR.Get(SRID.RuleScriptInvalidParameters, ruleClass.FullName, rule), "rule");
+                throw new ArgumentException(SR.Get(SRID.RuleScriptInvalidParameters, ruleClass.FullName, rule), nameof(rule));
             }
             onParse = grammar.MethodInfo(method);
         }

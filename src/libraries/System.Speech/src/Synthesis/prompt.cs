@@ -40,7 +40,7 @@ namespace System.Speech.Synthesis
         /// <returns></returns>
         public Prompt(PromptBuilder promptBuilder)
         {
-            Helpers.ThrowIfNull(promptBuilder, "promptBuilder");
+            Helpers.ThrowIfNull(promptBuilder, nameof(promptBuilder));
 
             _text = promptBuilder.ToXml();
             _media = SynthesisMediaType.Ssml;
@@ -56,7 +56,7 @@ namespace System.Speech.Synthesis
         /// <param name="media"></param>
         public Prompt(string textToSpeak, SynthesisTextFormat media)
         {
-            Helpers.ThrowIfNull(textToSpeak, "textToSpeak");
+            Helpers.ThrowIfNull(textToSpeak, nameof(textToSpeak));
 
             switch (_media = (SynthesisMediaType)media)
             {
@@ -66,7 +66,7 @@ namespace System.Speech.Synthesis
                     break;
 
                 default:
-                    throw new ArgumentException(SR.Get(SRID.SynthesizerUnknownMediaType), "media");
+                    throw new ArgumentException(SR.Get(SRID.SynthesizerUnknownMediaType), nameof(media));
             }
         }
 
@@ -79,7 +79,7 @@ namespace System.Speech.Synthesis
         /// <param name="media"></param>
         internal Prompt(Uri promptFile, SynthesisMediaType media)
         {
-            Helpers.ThrowIfNull(promptFile, "promptFile");
+            Helpers.ThrowIfNull(promptFile, nameof(promptFile));
 
             switch (_media = media)
             {
@@ -111,7 +111,7 @@ namespace System.Speech.Synthesis
                     break;
 
                 default:
-                    throw new ArgumentException(SR.Get(SRID.SynthesizerUnknownMediaType), "media");
+                    throw new ArgumentException(SR.Get(SRID.SynthesizerUnknownMediaType), nameof(media));
             }
         }
 
@@ -147,7 +147,7 @@ namespace System.Speech.Synthesis
             {
                 if (value != null && (_synthesizer != null || _completed))
                 {
-                    throw new ArgumentException(SR.Get(SRID.SynthesizerPromptInUse), "value");
+                    throw new ArgumentException(SR.Get(SRID.SynthesizerPromptInUse), nameof(value));
                 }
 
                 _synthesizer = value;

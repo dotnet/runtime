@@ -36,7 +36,7 @@ namespace System.Speech.Recognition
         /// <param name="confidence"></param>
         public SemanticValue(string keyName, object value, float confidence)
         {
-            Helpers.ThrowIfNull(keyName, "keyName");
+            Helpers.ThrowIfNull(keyName, nameof(keyName));
 
             _dictionary = new Dictionary<string, SemanticValue>();
             _confidence = confidence;
