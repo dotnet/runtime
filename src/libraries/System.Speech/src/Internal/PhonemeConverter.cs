@@ -23,12 +23,6 @@ namespace System.Speech.Internal
 
         #region Constructors
 
-        static PhonemeConverter()
-        {
-            s_phoneMaps = DecompressPhoneMaps(s_phoneMapsCompressed);
-            s_upsConverter = new PhonemeConverter(s_phoneMaps[0]);
-        }
-
         private PhonemeConverter(PhoneMap phoneMap)
         {
             _phoneMap = phoneMap;
@@ -248,7 +242,7 @@ namespace System.Speech.Internal
 
         private PhoneMap _phoneMap;
 
-        private static readonly PhoneMap[] s_phoneMaps;
+        private static readonly PhoneMap[] s_phoneMaps = DecompressPhoneMaps(s_phoneMapsCompressed);
 
         private static PhoneMapCompressed[] s_phoneMapsCompressed = new PhoneMapCompressed[]
         {
@@ -263,7 +257,7 @@ namespace System.Speech.Internal
          };
         private static char[] s_updIds = new char[] { (char)1, (char)2, (char)3, (char)4, (char)33, (char)46, (char)97, (char)98, (char)99, (char)100, (char)101, (char)102, (char)103, (char)104, (char)105, (char)106, (char)107, (char)108, (char)109, (char)110, (char)111, (char)112, (char)113, (char)114, (char)115, (char)116, (char)117, (char)118, (char)119, (char)120, (char)121, (char)122, (char)124, (char)230, (char)231, (char)240, (char)248, (char)295, (char)331, (char)339, (char)448, (char)449, (char)450, (char)451, (char)592, (char)593, (char)594, (char)595, (char)596, (char)597, (char)598, (char)599, (char)600, (char)601, (char)602, (char)603, (char)604, (char)605, (char)606, (char)607, (char)608, (char)609, (char)610, (char)611, (char)612, (char)613, (char)614, (char)615, (char)616, (char)618, (char)619, (char)620, (char)621, (char)622, (char)623, (char)624, (char)625, (char)626, (char)627, (char)628, (char)629, (char)630, (char)632, (char)633, (char)634, (char)635, (char)637, (char)638, (char)640, (char)641, (char)642, (char)643, (char)644, (char)646, (char)647, (char)648, (char)649, (char)650, (char)651, (char)652, (char)653, (char)654, (char)655, (char)656, (char)657, (char)658, (char)659, (char)660, (char)661, (char)662, (char)663, (char)664, (char)665, (char)667, (char)668, (char)669, (char)671, (char)672, (char)673, (char)674, (char)675, (char)676, (char)677, (char)678, (char)679, (char)680, (char)688, (char)689, (char)690, (char)692, (char)695, (char)700, (char)712, (char)716, (char)720, (char)721, (char)728, (char)734, (char)736, (char)737, (char)740, (char)768, (char)769, (char)771, (char)772, (char)774, (char)776, (char)778, (char)779, (char)783, (char)792, (char)793, (char)794, (char)796, (char)797, (char)798, (char)799, (char)800, (char)804, (char)805, (char)809, (char)810, (char)812, (char)815, (char)816, (char)817, (char)820, (char)825, (char)826, (char)827, (char)828, (char)829, (char)865, (char)946, (char)952, (char)967, (char)1856, (char)8214, (char)8255, (char)8319, (char)8593, (char)8594, (char)8595, (char)8599, (char)8600 };
 
-        private static readonly PhonemeConverter s_upsConverter;
+        private static readonly PhonemeConverter s_upsConverter = new PhonemeConverter(s_phoneMaps[0]);
 
         #endregion
 
