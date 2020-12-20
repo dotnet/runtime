@@ -811,7 +811,7 @@ namespace System.Speech.Internal.SrgsCompiler
                 }
                 if (rule.Constructors.Length == 0)
                 {
-                    rule.Constructors.Append(proxy.GenerateConstructor(iCfg, Array.Empty<ParameterInfo>();, language, rule.Name));
+                    rule.Constructors.Append(proxy.GenerateConstructor(iCfg, Array.Empty<ParameterInfo>(), language, rule.Name));
                 }
             }
         }

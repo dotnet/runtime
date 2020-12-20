@@ -508,7 +508,7 @@ namespace System.Speech.Internal.SapiInterop
         /// <returns></returns>
         internal static ISpPhrase CreatePhraseFromText(string phrase, CultureInfo culture, out GCHandle[] memHandles, out IntPtr coMem)
         {
-            string[] words = phrase.Split(new char[] { }, StringSplitOptions.RemoveEmptyEntries);
+            string[] words = phrase.Split(Array.Empty<char>(), StringSplitOptions.RemoveEmptyEntries);
             RecognizedWordUnit[] wordUnits = new RecognizedWordUnit[words.Length];
             for (int i = 0; i < wordUnits.Length; i++)
             {
