@@ -328,13 +328,11 @@ namespace System.DirectoryServices.Protocols.Tests
             AssertExtensions.Throws<ArgumentNullException>("value", () => attribute.Remove(null));
         }
 
-        [Theory]
-        [InlineData("vaLue", null)]
-        [InlineData(1, "value")]
-        public void Remove_InvalidValue_ThrowsArgumentException(object value, string paramName)
+        [Fact]
+        public void Remove_InvalidValue_ThrowsArgumentException()
         {
             var attribute = new DirectoryAttribute { "value" };
-            AssertExtensions.Throws<ArgumentException>(paramName, () => attribute.Remove(value));
+            AssertExtensions.Throws<ArgumentException>("value", () => attribute.Remove(1));
         }
     }
 }

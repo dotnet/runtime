@@ -165,18 +165,11 @@ namespace System.DirectoryServices.Protocols.Tests
             AssertExtensions.Throws<ArgumentNullException>("value", () => collection.Remove(null));
         }
 
-        public static IEnumerable<object[]> Remove_InvalidValue_TestData()
-        {
-            yield return new object[] { new AsqRequestControl(), null };
-            yield return new object[] { 1, "value" };
-        }
-
-        [Theory]
-        [MemberData(nameof(Remove_InvalidValue_TestData))]
-        public void Remove_InvalidValue_ThrowsArgumentException(object value, string paramName)
+        [Fact]
+        public void Remove_InvalidValue_ThrowsArgumentException()
         {
             IList collection = new DirectoryControlCollection { new AsqRequestControl() };
-            AssertExtensions.Throws<ArgumentException>(paramName, () => collection.Remove(value));
+            AssertExtensions.Throws<ArgumentException>("value", () => collection.Remove(1));
         }
     }
 }

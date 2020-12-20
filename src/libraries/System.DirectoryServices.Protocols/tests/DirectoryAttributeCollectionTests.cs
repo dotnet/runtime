@@ -161,7 +161,7 @@ namespace System.DirectoryServices.Protocols.Tests
         public static IEnumerable<object[]> Remove_InvalidValue_TestData()
         {
             yield return new object[] { null, null };
-            yield return new object[] { new DirectoryAttribute(), null };
+            //yield return new object[] { new DirectoryAttribute(), null };
             yield return new object[] { 1, "value" };
         }
 
