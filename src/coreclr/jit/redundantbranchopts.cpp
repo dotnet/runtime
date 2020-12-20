@@ -377,11 +377,13 @@ bool Compiler::optJumpThread(BasicBlock* const block, BasicBlock* const domBlock
             // Either both reach, or neither reaches.
             //
             JITDUMP(FMT_BB " is an ambiguous pred\n", predBlock->bbNum);
+            numAmbiguousPreds++;
             continue;
         }
 
         if (predBlock->bbNext == block)
         {
+            JITDUMP(FMT_BB " is a fall-through pred\n", predBlock->bbNum);
             assert(fallThroughPred == nullptr);
             fallThroughPred = predBlock;
         }
