@@ -11,8 +11,6 @@ using System.Speech.Internal.SrgsParser;
 
 #endregion
 
-#pragma warning disable 1634, 1691 // Allows suppression of certain PreSharp messages.
-
 namespace System.Speech.Internal.SrgsCompiler
 {
     internal class SrgsElementCompilerFactory : IElementFactory

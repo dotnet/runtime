@@ -561,7 +561,7 @@ namespace System.Speech.Internal.SrgsCompiler
             StringBuilder sb = new StringBuilder ();
             if (_iWord == 0 && (_ruleRef != null || _specialTransitionIndex != 0))
             {
-                sb.Append ("<");
+                sb.Append ('<');
                 if (_ruleRef != null)
                 {
                     sb.Append (_ruleRef.Name);
@@ -583,13 +583,13 @@ namespace System.Speech.Internal.SrgsCompiler
                             break;
                     }
                 }
-                sb.Append (">");
+                sb.Append ('>');
             }
             else
             {
-                sb.Append ("'");
+                sb.Append ('\'');
                 sb.Append (_iWord == 0 ? new string (new char [] { (char) 0x3b5 }) : _be != null ? _be.Words [_iWord] : _iWord.ToString (CultureInfo.InvariantCulture));
-                sb.Append ("'");
+                sb.Append ('\'');
             }
 
             if (_startTags != null || _endTags != null)
@@ -611,7 +611,7 @@ namespace System.Speech.Internal.SrgsCompiler
                     {
                         if (!first)
                         {
-                            sb.Append ("|");
+                            sb.Append ('|');
                         }
                         sb.Append (GetSemanticTag (tag));
                         first = false;
@@ -619,11 +619,11 @@ namespace System.Speech.Internal.SrgsCompiler
                 }
                 else
                 {
-                    sb.Append ("-");
+                    sb.Append ('-');
                 }
                 if (!same)
                 {
-                    sb.Append (",");
+                    sb.Append (',');
                     if (_endTags != null)
                     {
                         bool first = true;
@@ -631,7 +631,7 @@ namespace System.Speech.Internal.SrgsCompiler
                         {
                             if (!first)
                             {
-                                sb.Append ("|");
+                                sb.Append ('|');
                             }
                             sb.Append (GetSemanticTag (tag));
                             first = false;
@@ -639,10 +639,10 @@ namespace System.Speech.Internal.SrgsCompiler
                     }
                     else
                     {
-                        sb.Append ("-");
+                        sb.Append ('-');
                     }
                 }
-                sb.Append (")");
+                sb.Append (')');
             }
             return sb.ToString ();
         }
@@ -800,15 +800,15 @@ namespace System.Speech.Internal.SrgsCompiler
                 if (tagName != "=")
                 {
                     sb.Append (tagName);
-                    sb.Append ("=");
+                    sb.Append ('=');
                 }
                 sb.Append (value);
             }
             else
             {
-                sb.Append ("[");
+                sb.Append ('[');
                 sb.Append (value);
-                sb.Append ("]");
+                sb.Append (']');
             }
             return sb.ToString ();
         }

@@ -11,8 +11,6 @@ using System.Speech.Synthesis.TtsEngine;
 using System.Text;
 using System.Xml;
 
-#pragma warning disable 1634, 1691 // Allows suppression of certain PreSharp messages.
-
 namespace System.Speech.Internal.Synthesis
 {
     internal static class SsmlParser
@@ -1507,7 +1505,7 @@ namespace System.Speech.Internal.Synthesis
                 if (reader.NamespaceURI.Length > 0)
                 {
                     attribute.Append(reader.NamespaceURI);
-                    attribute.Append(":");
+                    attribute.Append(':');
                 }
                 ThrowFormatException(SRID.InvalidAttributeDefinedTwice, reader.Value, attribute);
             }

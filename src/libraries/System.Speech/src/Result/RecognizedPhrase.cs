@@ -15,8 +15,6 @@ using System.Text;
 using System.Xml;
 using System.Xml.XPath;
 
-#pragma warning disable 1634, 1691 // Allows suppression of certain PreSharp messages.
-
 #pragma warning disable 56500 // Remove all the catch all statements warnings used by the interop layer
 
 namespace System.Speech.Recognition
@@ -155,7 +153,7 @@ namespace System.Speech.Recognition
                         }
                         else if ((displayAttribute & DisplayAttributes.OneTrailingSpace) != 0)
                         {
-                            sb.Append(" ");
+                            sb.Append(' ');
                         }
                         else if ((displayAttribute & DisplayAttributes.TwoTrailingSpaces) != 0)
                         {
@@ -559,7 +557,7 @@ namespace System.Speech.Recognition
                         {
                             if (sb.Length > 0)
                             {
-                                sb.Append(" ");
+                                sb.Append(' ');
                             }
                             sb.Append(words[(int)children._firstElement + i].Text);
                         }

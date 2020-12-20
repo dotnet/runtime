@@ -324,7 +324,7 @@ namespace System.Speech.Recognition.SrgsGrammar
             {
                 if (_minRepeat != _maxRepeat || _maxRepeat != NotSet)
                 {
-                    sb.Append("[");
+                    sb.Append('[');
                     if (_minRepeat == _maxRepeat)
                     {
                         sb.Append(_minRepeat.ToString(CultureInfo.InvariantCulture));
@@ -348,11 +348,11 @@ namespace System.Speech.Recognition.SrgsGrammar
                 {
                     if (!first)
                     {
-                        sb.Append(" ");
+                        sb.Append(' ');
                     }
-                    sb.Append("{");
+                    sb.Append('{');
                     sb.Append(element.DebuggerDisplayString());
-                    sb.Append("}");
+                    sb.Append('}');
                     first = false;
                 }
             }

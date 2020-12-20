@@ -606,7 +606,7 @@ namespace System.Speech.Internal.SrgsCompiler
                 {
                     sbWhole.Append("Imports ");
                     sbWhole.Append(importNamespace);
-                    sbWhole.Append("\n");
+                    sbWhole.Append('\n');
                 }
 
                 // Add the namespace definition
@@ -614,7 +614,7 @@ namespace System.Speech.Internal.SrgsCompiler
                 {
                     sbWhole.Append("Namespace ");
                     sbWhole.Append(_namespace);
-                    sbWhole.Append("\n");
+                    sbWhole.Append('\n');
                 }
 
                 sbWhole.Append("#End ExternalSource\n");
@@ -673,14 +673,14 @@ namespace System.Speech.Internal.SrgsCompiler
             {
                 if (sbErrors.Length > 0)
                 {
-                    sbErrors.Append("\n");
+                    sbErrors.Append('\n');
                 }
                 if (error.FileName.IndexOf(_preambuleMarker, StringComparison.Ordinal) == -1)
                 {
                     sbErrors.Append(error.FileName);
-                    sbErrors.Append("(");
+                    sbErrors.Append('(');
                     sbErrors.Append(error.Line);
-                    sbErrors.Append(",");
+                    sbErrors.Append(',');
                     sbErrors.Append(error.Column);
                     sbErrors.Append("): ");
                 }

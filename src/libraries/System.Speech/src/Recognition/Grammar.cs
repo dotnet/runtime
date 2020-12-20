@@ -1004,7 +1004,7 @@ namespace System.Speech.Recognition
                     sb.Append(':');
                     sb.Append(pi.ParameterType.Name);
                 }
-                sb.Append("\"");
+                sb.Append('"');
             }
             return sb.ToString();
         }

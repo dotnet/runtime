@@ -281,13 +281,13 @@ namespace System.Speech.Recognition.SrgsGrammar
             {
                 sb.Append(" uri='");
                 sb.Append(_uri.ToString());
-                sb.Append("'");
+                sb.Append('\'');
             }
             else
             {
                 sb.Append(" special='");
                 sb.Append(_type.ToString());
-                sb.Append("'");
+                sb.Append('\'');
             }
             return sb.ToString();
         }

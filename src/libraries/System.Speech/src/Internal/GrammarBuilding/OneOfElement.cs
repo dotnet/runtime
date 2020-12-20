@@ -92,7 +92,7 @@ namespace System.Speech.Internal.GrammarBuilding
                 {
                     if (sb.Length > 0)
                     {
-                        sb.Append(",");
+                        sb.Append(',');
                     }
                     sb.Append(item.DebugSummary);
                 }

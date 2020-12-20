@@ -123,7 +123,7 @@ namespace System.Speech.Recognition.SrgsGrammar
             if (hasName)
             {
                 sb.Append(_name);
-                sb.Append("=");
+                sb.Append('=');
             }
 
             if (hasValue)
@@ -189,7 +189,7 @@ namespace System.Speech.Recognition.SrgsGrammar
 
             if (_name != null)
             {
-                sb.Append(")");
+                sb.Append(')');
             }
 
             return sb.ToString();

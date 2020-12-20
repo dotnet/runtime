@@ -201,7 +201,7 @@ namespace System.Speech.Internal.SrgsCompiler
                         }
                     }
                     sb.Append(arg.ParameterType.FullName);
-                    sb.Append(" ");
+                    sb.Append(' ');
                     sb.Append(arg.Name);
                 }
             }

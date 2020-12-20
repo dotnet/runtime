@@ -171,13 +171,13 @@ namespace System.Speech.Recognition.SrgsGrammar
         {
             StringBuilder sb = new StringBuilder("Token '");
             sb.Append(_text);
-            sb.Append("'");
+            sb.Append('\'');
 
             if (_pronunciation != null)
             {
                 sb.Append(" Pronunciation '");
                 sb.Append(_pronunciation);
-                sb.Append("'");
+                sb.Append('\'');
             }
             return sb.ToString();
         }

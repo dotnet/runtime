@@ -453,7 +453,7 @@ namespace System.Speech.Internal.SrgsCompiler
             sb.Append (_id.ToString (CultureInfo.InvariantCulture));
             if (_rule != null && _rule._firstState == this)
             {
-                sb.Append (" ");
+                sb.Append (' ');
                 sb.Append (_rule.Name);
             }
             sb.Append ("] ");
@@ -466,9 +466,9 @@ namespace System.Speech.Internal.SrgsCompiler
                     {
                         sb.Append ("\x20\x25cf\x20");
                     }
-                    sb.Append ("#");
+                    sb.Append ('#');
                     sb.Append (arc.Start != null ? arc.Start._id.ToString (CultureInfo.InvariantCulture) : "S");
-                    sb.Append (" ");
+                    sb.Append (' ');
                     sb.Append (arc.DebuggerDisplayTags ());
                     first = false;
                 }
@@ -483,9 +483,9 @@ namespace System.Speech.Internal.SrgsCompiler
                     {
                         sb.Append ("\x20\x25cf\x20");
                     }
-                    sb.Append ("#");
+                    sb.Append ('#');
                     sb.Append (arc.End != null ? arc.End._id.ToString (CultureInfo.InvariantCulture) : "E");
-                    sb.Append (" ");
+                    sb.Append (' ');
                     sb.Append (arc.DebuggerDisplayTags ());
                     first = false;
                 }

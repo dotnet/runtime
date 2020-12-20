@@ -1898,7 +1898,7 @@ namespace System.Speech.Internal.SrgsParser
                 if (reader.NamespaceURI.Length > 0)
                 {
                     attribute.Append(reader.NamespaceURI);
-                    attribute.Append(":");
+                    attribute.Append(':');
                 }
                 XmlParser.ThrowSrgsException(SRID.InvalidAttributeDefinedTwice, reader.Value, attribute);
             }

@@ -114,7 +114,7 @@ namespace System.Speech.Recognition.SrgsGrammar
         {
             StringBuilder sb = new StringBuilder("SrgsSemanticInterpretationTag '");
             sb.Append(_script);
-            sb.Append("'");
+            sb.Append('\'');
             return sb.ToString();
         }
 

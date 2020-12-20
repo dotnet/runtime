@@ -291,7 +291,7 @@ namespace System.Speech.Internal.SrgsCompiler
                         sb.Append(':');
                         sb.Append(pi.ParameterType.Name);
                     }
-                    sb.Append("\"");
+                    sb.Append('"');
                 }
             }
             return sb.ToString();

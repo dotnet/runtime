@@ -213,7 +213,7 @@ namespace System.Speech.Internal.Synthesis
             {
                 sb.AppendFormat(CultureInfo.InvariantCulture, " {0}:{1}=\"{2}\" xmlns:{3}=\"{4}\"", attribute._prefix, attribute._name, attribute._value, attribute._prefix, attribute._ns);
             }
-            sb.Append(">");
+            sb.Append('>');
 
             AddParseUnknownFragment(voice, ref fragmentState, sb.ToString());
         }
