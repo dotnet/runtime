@@ -158,15 +158,13 @@ namespace Microsoft.Extensions.Configuration.EnvironmentVariables.Test
         {
             var dict = new Hashtable()
                 {
-                    {"test__prefix__with__double__underscores__data__ConnectionString", "connection"},
-                    {"SQLCONNSTR_db1", "connStr"}
+                    {"test__prefix__with__double__underscores__data__ConnectionString", "connection"}
                 };
             var envConfigSrc = new EnvironmentVariablesConfigurationProvider("test__prefix__with__double__underscores__");
 
             envConfigSrc.Load(dict);
 
             Assert.Equal("connection", envConfigSrc.Get("data:ConnectionString"));
-            Assert.Equal("System.Data.SqlClient", envConfigSrc.Get("ConnectionStrings:db1_ProviderName"));
         }
 
         [Fact]
@@ -174,19 +172,31 @@ namespace Microsoft.Extensions.Configuration.EnvironmentVariables.Test
         {
             var dict = new Hashtable()
                 {
-                    {"_____EXPERIMENTAL__data__ConnectionString", "connection"},
-                    {"SQLCONNSTR_db1", "connStr"}
+                    {"_____EXPERIMENTAL__data__ConnectionString", "connection"}
                 };
             var envConfigSrc = new EnvironmentVariablesConfigurationProvider("_____EXPERIMENTAL__");
 
             envConfigSrc.Load(dict);
 
             Assert.Equal("connection", envConfigSrc.Get("data:ConnectionString"));
-            Assert.Equal("System.Data.SqlClient", envConfigSrc.Get("ConnectionStrings:db1_ProviderName"));
         }
 
         [Fact]
         public void ReplaceDoubleUnderscoreInEnvironmentVariablesWithDuplicatedPrefix()
+        {
+            var dict = new Hashtable()
+                {
+                    {"test__test__ConnectionString", "connection"}
+                };
+            var envConfigSrc = new EnvironmentVariablesConfigurationProvider("test__");
+
+            envConfigSrc.Load(dict);
+
+            Assert.Equal("connection", envConfigSrc.Get("test:ConnectionString"));
+        }
+
+        [Fact]
+        public void PrefixPreventsLoadingSqlConnectionStrings()
         {
             var dict = new Hashtable()
                 {
@@ -198,7 +208,7 @@ namespace Microsoft.Extensions.Configuration.EnvironmentVariables.Test
             envConfigSrc.Load(dict);
 
             Assert.Equal("connection", envConfigSrc.Get("test:ConnectionString"));
-            Assert.Equal("System.Data.SqlClient", envConfigSrc.Get("ConnectionStrings:db1_ProviderName"));
+            Assert.Throws<InvalidOperationException>(() => envConfigSrc.Get("ConnectionStrings:db1_ProviderName"));
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
