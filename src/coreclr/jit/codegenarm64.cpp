@@ -2820,7 +2820,7 @@ void CodeGen::genLockedInstructions(GenTreeOp* treeNode)
                 regNumber tempReg = treeNode->GetSingleTempReg();
                 GetEmitter()->emitIns_R_R(INS_mvn, dataSize, tempReg, dataReg);
                 GetEmitter()->emitIns_R_R_R(INS_ldclral, dataSize, tempReg, (targetReg == REG_NA) ? REG_ZR : targetReg,
-                    addrReg);
+                                            addrReg);
                 break;
             }
             case GT_XCHG:
