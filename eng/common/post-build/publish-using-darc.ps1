@@ -22,12 +22,12 @@ try {
   $optionalParams = [System.Collections.ArrayList]::new()
 
   if ("" -ne $ArtifactsPublishingAdditionalParameters) {
-    $optionalParams.Add("artifact-publishing-parameters") | Out-Null
+    $optionalParams.Add("--artifact-publishing-parameters") | Out-Null
     $optionalParams.Add($ArtifactsPublishingAdditionalParameters) | Out-Null
   }
 
   if ("" -ne $SymbolPublishingAdditionalParameters) {
-    $optionalParams.Add("symbol-publishing-parameters") | Out-Null
+    $optionalParams.Add("--symbol-publishing-parameters") | Out-Null
     $optionalParams.Add($SymbolPublishingAdditionalParameters) | Out-Null
   }
 
@@ -72,7 +72,7 @@ try {
   }
 
   Write-Host 'done.'
-} 
+}
 catch {
   Write-Host $_
   Write-PipelineTelemetryError -Category 'PromoteBuild' -Message "There was an error while trying to publish build '$BuildId' to default channels."
