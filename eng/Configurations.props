@@ -7,6 +7,8 @@
   <PropertyGroup>
     <!-- Default to portable build if not explicitly set -->
     <PortableBuild Condition="'$(PortableBuild)' == ''">true</PortableBuild>
+    <ScriptExt Condition="'$(OS)' == 'Windows_NT'">.cmd</ScriptExt>
+    <ScriptExt Condition="'$(OS)' != 'Windows_NT'">.sh</ScriptExt>
   </PropertyGroup>
 
   <PropertyGroup>
