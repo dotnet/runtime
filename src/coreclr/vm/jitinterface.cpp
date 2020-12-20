@@ -9021,16 +9021,23 @@ bool CEEInfo::resolveVirtualMethodHelper(CORINFO_DEVIRTUALIZATION_INFO * info)
     // interface method. If so, we'll use the method's class.
     //
     MethodTable* pApproxMT = pDevirtMD->GetMethodTable();
-    MethodTable* pExactMT = pApproxMT;
 
     if (pApproxMT->IsInterface())
     {
-        // Already handled above TODO refactor
+        if (pDevirtMD->HasClassInstantiation())
+        {
+            // DIMs are handled above
+            _ASSERTE(info->exactContext != NULL);
+        }
+        else
+        {
+            info->exactContext = MAKE_CLASSCONTEXT((CORINFO_CLASS_HANDLE) pApproxMT);
+        }
 
     }
     else
     {
-        pExactMT = pDevirtMD->GetExactDeclaringType(pObjMT);
+        MethodTable* pExactMT = pDevirtMD->GetExactDeclaringType(pObjMT);
         info->exactContext = MAKE_CLASSCONTEXT((CORINFO_CLASS_HANDLE) pExactMT);
     }
 

@@ -4549,7 +4549,7 @@ bool MethodContext::repIsValidStringRef(CORINFO_MODULE_HANDLE module, unsigned m
     key.A = (DWORDLONG)module;
     key.B = (DWORD)metaTOK;
 
-    bool value = (bool)IsValidStringRef->Get(key);
+    bool value = (BOOL)IsValidStringRef->Get(key);
     return value;
 }
 

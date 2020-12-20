@@ -20921,6 +20921,7 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
         }
 
         // Ask the runtime to determine the method that would be called based on the guessed-for type.
+        //
         CORINFO_DEVIRTUALIZATION_INFO dvInfo;
         dvInfo.virtualMethod = baseMethod;
         dvInfo.objClass      = likelyClass;
