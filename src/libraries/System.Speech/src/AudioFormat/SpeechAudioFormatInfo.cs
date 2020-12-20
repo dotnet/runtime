@@ -46,7 +46,7 @@ namespace System.Speech.AudioFormat
             _channelCount = channelCount;
             if (formatSpecificData == null)
             {
-                _formatSpecificData = new byte[0];
+                _formatSpecificData = Array.Empty<byte>();
             }
             else
             {

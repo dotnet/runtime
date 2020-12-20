@@ -391,7 +391,7 @@ namespace System.Speech.Internal.ObjectTokens
         {
             string unusedString;
             uint unusedUint = 0;
-            byte[] unusedBytes = new byte[0];
+            byte[] unusedBytes = Array.Empty<byte>();
 
             return (
                 0 == _sapiRegKey.GetStringValue(valueName, out unusedString) ||

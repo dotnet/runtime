@@ -1019,7 +1019,7 @@ namespace System.Speech.Recognition
         {
             if (string.IsNullOrEmpty(initParameters))
             {
-                return new NameValuePair[0];
+                return Array.Empty<NameValuePair>(); ;
             }
 
             string[] parameters = initParameters.Split(new char[] { ';' }, StringSplitOptions.None);

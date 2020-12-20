@@ -75,7 +75,7 @@ namespace System.Speech.Recognition.SrgsGrammar
         {
             get
             {
-                return new SrgsElement[0];
+                return Array.Empty<SrgsElement>();
             }
         }
 
