@@ -165,6 +165,10 @@
       <ManagedAssemblyToLink Condition="('%(ManagedAssemblyToLink.FileName).dll' != '$(MSBuildProjectName).dll')" >
         <TrimMode>link</TrimMode>
       </ManagedAssemblyToLink>
+      <ManagedAssemblyToLink Condition="('%(ManagedAssemblyToLink.FileName).dll' == '$(AssemblyName).dll')" >
+        <TrimMode>copy</TrimMode>
+      </ManagedAssemblyToLink>
+      <TrimmerRootAssembly Include="WasmTestRunner"/>
     </ItemGroup>
   </Target>
 
