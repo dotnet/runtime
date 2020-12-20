@@ -388,19 +388,7 @@ namespace System.Speech.Internal.ObjectTokens
         };
 
         #endregion
-
-        //*******************************************************************
-        //
-        // Private Fields
-        //
-        //*******************************************************************
-
         #region private Fields
-
-        // Specifier used to generate a random filename.
-        private const string sGenerateFileNameSpecifier = "{0}";
-
-        private const string SPTOKENVALUE_CLSID = "CLSID";
 
         private ISpObjectToken _sapiObjectToken;
 

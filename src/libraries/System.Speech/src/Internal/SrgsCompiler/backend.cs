@@ -1515,10 +1515,6 @@ namespace System.Speech.Internal.SrgsCompiler
         private static byte[] s_abZero3 = new byte[] { 0, 0, 0 };
 
         private static char[] s_achZero = new char[] { '\0' };
-
-        //
-        private const uint SPGF_RESET_DIRTY_FLAG = 0x80000000;
-
         private int _cImportedRules;
 
 

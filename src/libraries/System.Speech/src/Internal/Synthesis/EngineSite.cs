@@ -12,8 +12,6 @@ using System.Collections;
 using System.Text;
 using System.Diagnostics;
 
-#pragma warning disable 1634, 1691 // Allows suppression of certain PreSharp messages.
-
 // Exceptions cannot get throught the COM code.
 // The engine site saves the last exception before sending it back to the client.
 // Remove all PreSharp wanings about to swallowing exceptions.
@@ -374,8 +372,6 @@ namespace System.Speech.Internal.Synthesis
 
         // Map the TTS events to the right format
         private TtsEventMapper _eventMapper;
-
-        private const int WAVE_FORMAT_PCM = 1;
 
         #endregion
     }

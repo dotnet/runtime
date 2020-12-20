@@ -118,15 +118,8 @@ namespace System.Speech.Internal.Synthesis
 
         internal struct WAVEOUTCAPS
         {
-            private UInt16 wMid;
-            private UInt16 wPid;
-            private UInt32 vDriverVersion;
             [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 32)]
             internal string szPname;
-            private UInt32 dwFormats;
-            private UInt16 wChannels;
-            private UInt16 wReserved1;
-            private UInt16 dwSupport;
         }
 
         /// <summary>
