@@ -10953,7 +10953,8 @@ void Compiler::fgCompactBlocks(BasicBlock* block, BasicBlock* bNext)
         if (((block->bbFlags & BBF_JMP_TARGET) != 0) || ((block->bbFlags & BBF_HAS_LABEL) != 0))
         {
             block->bbFlags |= BBF_LOOP_ALIGN;
-            JITDUMP("Propagating LOOP_ALIGN flag from " FMT_BB " to " FMT_BB " during compacting.\n", bNext->bbNum, block->bbNum);
+            JITDUMP("Propagating LOOP_ALIGN flag from " FMT_BB " to " FMT_BB " during compacting.\n", bNext->bbNum,
+                    block->bbNum);
         }
     }
     // If we're collapsing a block created after the dominators are

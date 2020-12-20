@@ -4616,7 +4616,7 @@ AGAIN:
 // emitLoopAlignment: Insert an align instruction at the end of emitCurIG and
 //                    mark it as IGF_LOOP_ALIGN to indicate that next IG  is a
 //                    loop needing alignment.
-// 
+//
 void emitter::emitLoopAlignment()
 {
     if ((emitComp->opts.compJitAlignLoopBoundary > 16) && (!emitComp->opts.compJitAlignLoopAdaptive))
@@ -4727,8 +4727,9 @@ void emitter::emitSetLoopBackEdge(BasicBlock* loopTopBlock)
                 alignInstr->idaIG->igFlags &= ~IGF_LOOP_ALIGN;
             }
 
-            JITDUMP("** Skip alignment for loop IG%02u ~ IG%02u, because it encloses an aligned loop IG%02u ~ IG%02u.\n",
-                    currLoopStart, currLoopEnd, emitLastInnerLoopStartIgNum, emitLastInnerLoopEndIgNum);
+            JITDUMP(
+                "** Skip alignment for loop IG%02u ~ IG%02u, because it encloses an aligned loop IG%02u ~ IG%02u.\n",
+                currLoopStart, currLoopEnd, emitLastInnerLoopStartIgNum, emitLastInnerLoopEndIgNum);
         }
     }
 }
@@ -4838,8 +4839,8 @@ void emitter::emitLoopAlignAdjustments()
 
         // Adjust the offset of all IGs starting from next IG until we reach the IG having the next
         // align instruction or the end of IG list.
-        insGroup* adjOffIG      = alignIG->igNext;
-        insGroup* adjOffUptoIG  = alignInstr->idaNext != nullptr ? alignInstr->idaNext->idaIG : emitIGlast;
+        insGroup* adjOffIG     = alignIG->igNext;
+        insGroup* adjOffUptoIG = alignInstr->idaNext != nullptr ? alignInstr->idaNext->idaIG : emitIGlast;
         while ((adjOffIG != nullptr) && (adjOffIG->igNum <= adjOffUptoIG->igNum))
         {
             adjOffIG->igOffs -= alignBytesRemoved;
@@ -5938,7 +5939,8 @@ unsigned emitter::emitEndCodeGen(Compiler* comp,
     // emit offsets after the loop with wrong value (for example for GC ref variables).
     unsigned unusedSize = emitTotalCodeSize - actualCodeSize;
 
-    JITDUMP("Allocated method code size = %4u , actual size = %4u, unused size = %4u\n", emitTotalCodeSize, actualCodeSize, unusedSize);
+    JITDUMP("Allocated method code size = %4u , actual size = %4u, unused size = %4u\n", emitTotalCodeSize,
+            actualCodeSize, unusedSize);
 
     for (unsigned i = 0; i < unusedSize; ++i)
     {

@@ -2598,7 +2598,8 @@ void Compiler::optIdentifyLoopsForAlignment()
                 first->getBBWeight(this) >= opts.compJitAlignLoopMinBlockWeight)
             {
                 first->bbFlags |= BBF_LOOP_ALIGN;
-                JITDUMP("L%02u that starts at " FMT_BB " needs alignment, weight=%f.\n", loopInd, first->bbNum, first->getBBWeight(this));
+                JITDUMP("L%02u that starts at " FMT_BB " needs alignment, weight=%f.\n", loopInd, first->bbNum,
+                        first->getBBWeight(this));
             }
         }
     }
