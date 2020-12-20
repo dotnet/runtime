@@ -3784,6 +3784,22 @@ void Compiler::optUnrollLoops()
 #endif
         }
 
+#ifdef FEATURE_LOOP_ALIGN
+        for (block = head->bbNext;; block = block->bbNext)
+        {
+            if (block->isLoopAlign())
+            {
+                block->bbFlags &= ~BBF_LOOP_ALIGN;
+                JITDUMP("Removing align flag from unrolled loop in " FMT_BB "\n", block->bbNum);
+            }
+
+            if (block == bottom)
+            {
+                break;
+            }
+        }
+#endif
+
         /* Create the unrolled loop statement list */
         {
             BlockToBlockMap blockMap(getAllocator());
