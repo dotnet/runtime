@@ -2,8 +2,8 @@
 
   <PropertyGroup>
     <VersionProp>HostVersion</VersionProp>
-
     <InstallerName>dotnet-host</InstallerName>
+    <PackageDescription>Provides an executable implementation of the Microsoft DotNet Framework and SDK launcher module</PackageDescription>
   </PropertyGroup>
 
   <ItemGroup Condition="'$(PackageTargetRuntime)' != ''">
