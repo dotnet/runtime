@@ -2,6 +2,11 @@
 rem
 rem This file locates VS C++ compilers and cmake for windows.
 
+rem Make sure the current directory stays intact
+set VSCMD_START_DIR="%CD%"
+
+set __VSCMD_ARG_NO_LOGO=yes
+
 :SetupArgs
 :: Initialize the args that will be passed to cmake
 set __VCBuildArch=x86_amd64
