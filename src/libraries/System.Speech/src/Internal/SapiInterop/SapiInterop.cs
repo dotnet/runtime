@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using Microsoft.Win32.SafeHandles;
 using System;
 using System.Globalization;
 using System.Runtime.InteropServices;
@@ -237,7 +238,7 @@ namespace System.Speech.Internal.SapiInterop
 
         // ISpRegDataKey Method
         [PreserveSig]
-        int SetKey(IntPtr hkey, bool fReadOnly);
+        int SetKey(SafeRegistryHandle hkey, bool fReadOnly);
     }
 
     [ComImport, Guid("2D3D3845-39AF-4850-BBF9-40B49780011D"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]

@@ -2,12 +2,12 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using Microsoft.Win32;
+using Microsoft.Win32.SafeHandles;
 using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
-using System.Reflection;
 
 #pragma warning disable 1634, 1691 // Allows suppression of certain PreSharp messages.
 
@@ -29,10 +29,11 @@ namespace System.Speech.Internal.ObjectTokens
 
         #region Constructors
 
-        protected RegistryDataKey(string fullPath, IntPtr regHandle)
+        protected RegistryDataKey(string fullPath, SafeRegistryHandle regHandle)
         {
             ISpRegDataKey regKey = (ISpRegDataKey)new SpDataKey();
             SAPIErrorCodes hresult = (SAPIErrorCodes)regKey.SetKey(regHandle, false);
+            regHandle?.Close();
             if ((hresult != SAPIErrorCodes.S_OK) && (hresult != SAPIErrorCodes.SPERR_ALREADY_INITIALIZED))
             {
                 throw new InvalidOperationException();
@@ -44,7 +45,7 @@ namespace System.Speech.Internal.ObjectTokens
         }
 
         protected RegistryDataKey(string fullPath, RegistryKey managedRegKey) :
-            this(fullPath, HKEYfromRegKey(managedRegKey))
+            this(fullPath, managedRegKey.Handle)
         {
         }
 
@@ -81,10 +82,10 @@ namespace System.Speech.Internal.ObjectTokens
             string rootPath = GetFirstKeyAndParseRemainder(ref registryPath);
 
             // Get the native registry handle and subkey path
-            IntPtr regHandle = RootHKEYFromRegPath(rootPath);
+            SafeRegistryHandle regHandle = RootHKEYFromRegPath(rootPath);
 
             // If there's no root, we can't do anything.
-            if (IntPtr.Zero == regHandle)
+            if (regHandle == null || regHandle.IsInvalid)
             {
                 return null;
             }
@@ -543,38 +544,16 @@ namespace System.Speech.Internal.ObjectTokens
 
         #region Private Methods
 
-        /// <summary>
-        /// .NET4 provides direct access to the SafeHandle of a RegistryKey to facilitate
-        /// smoother interop. This reproduces the effect using reflection.
-        /// </summary>
-        /// <param name="regKey">The RegistryKey to retrieve the HKEY from</param>
-        /// <returns>An IntPtr to the HKEY of a the RegistryKey</returns>
-        private static IntPtr HKEYfromRegKey(RegistryKey regKey)
-        {
-            Type regKeyType = typeof(RegistryKey);
-            BindingFlags fieldFlags = BindingFlags.NonPublic | BindingFlags.Instance;
-            FieldInfo hkeyInfo = regKeyType.GetField("hkey", fieldFlags);
-
-            SafeHandle hkeyHandle = (SafeHandle)hkeyInfo.GetValue(regKey);
-            return hkeyHandle.DangerousGetHandle();
-        }
-
-        private static IntPtr RootHKEYFromRegPath(string rootPath)
+        private static SafeRegistryHandle RootHKEYFromRegPath(string rootPath)
         {
             RegistryKey rootKey = RegKeyFromRootPath(rootPath);
 
-            IntPtr rootHandle;
-
             if (null == rootKey)
             {
-                rootHandle = IntPtr.Zero;
-            }
-            else
-            {
-                rootHandle = HKEYfromRegKey(rootKey);
+                return null;
             }
 
-            return rootHandle;
+            return rootKey.Handle;
         }
 
         private static string GetFirstKeyAndParseRemainder(ref string registryPath)
