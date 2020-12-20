@@ -197,7 +197,7 @@ namespace System.Speech.Internal.Synthesis
                     // This scheme is really bad if the files being read are big but I would assume
                     // That it should not be the case.
                     int cLen = (int)stream.Length;
-                    MemoryStream memStream = new MemoryStream(cLen);
+                    MemoryStream memStream = new(cLen);
                     byte[] ab = new byte[cLen];
                     stream.Read(ab, 0, ab.Length);
                     _resourceLoader.UnloadFile(localPath);

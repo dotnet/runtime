@@ -111,7 +111,7 @@ namespace System.Speech.Internal.Synthesis
 
         private void AddNewSeg(TTSVoice pCurrVoice, AudioData audio)
         {
-            SpeechSeg pNew = new SpeechSeg(pCurrVoice, audio);
+            SpeechSeg pNew = new(pCurrVoice, audio);
 
             _listSeg.Add(pNew);
             _lastSeg = pNew;
@@ -134,7 +134,7 @@ namespace System.Speech.Internal.Synthesis
         private bool _fNotInTextSeg = true;
 
         // list of segments (text or audio)
-        private List<SpeechSeg> _listSeg = new List<SpeechSeg>();
+        private List<SpeechSeg> _listSeg = new();
 
         // current segment
         private SpeechSeg _lastSeg;

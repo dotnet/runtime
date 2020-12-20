@@ -84,7 +84,7 @@ namespace System.Speech.Internal.SrgsCompiler
             //CfgGrammar.TraceInformation ("BackEnd::CreateNewState");
             uint hNewState = CfgGrammar.NextHandle;
 
-            State newState = new State(rule, hNewState);
+            State newState = new(rule, hNewState);
             Add(newState);
 #if DEBUG
             rule._cStates++;
@@ -400,7 +400,7 @@ namespace System.Speech.Internal.SrgsCompiler
         /// </summary>
         private void MergeDuplicateTransitions()
         {
-            List<Arc> tempList = new List<Arc>();
+            List<Arc> tempList = new();
 
             // Build collection of states with potential identical transition.
             foreach (State state in this)
@@ -413,7 +413,7 @@ namespace System.Speech.Internal.SrgsCompiler
             }
 
             // Collection of states with potential transitions to merge
-            Stack<State> mergeStates = new Stack<State>();
+            Stack<State> mergeStates = new();
 
             RecursiveMergeDuplicatedOutputTransition(mergeStates);
             RecursiveMergeDuplicatedInputTransition(mergeStates);
@@ -431,7 +431,7 @@ namespace System.Speech.Internal.SrgsCompiler
             }
 
             // For each state in the collection, merge any duplicate input transitions.
-            List<Arc> tempList = new List<Arc>();
+            List<Arc> tempList = new();
             while (mergeStates.Count > 0)
             {
                 State state = mergeStates.Pop();
@@ -456,7 +456,7 @@ namespace System.Speech.Internal.SrgsCompiler
             }
 
             // For each state in the collection, merge any duplicate output transitions.
-            List<Arc> tempList = new List<Arc>();
+            List<Arc> tempList = new();
             while (mergeStates.Count > 0)
             {
                 State state = mergeStates.Pop();

@@ -154,23 +154,23 @@ namespace System.Speech.Recognition.SrgsGrammar
         /// TODOC <_include file='doc\SpecialRuleRef.uex' path='docs/doc[@for="SpecialRuleRef.Null"]/*' />
         // The Null SpecialRuleRef defines a rule that is automatically matched:
         // that is, matched without the user speaking any word.
-        static public readonly SrgsRuleRef Null = new SrgsRuleRef(SpecialRuleRefType.Null);
+        static public readonly SrgsRuleRef Null = new(SpecialRuleRefType.Null);
 
         /// TODOC <_include file='doc\SpecialRuleRef.uex' path='docs/doc[@for="SpecialRuleRef.Void"]/*' />
         // The Void SpecialRuleRef defines a rule that can never be spoken. Inserting
         // VOID into a sequence automatically makes that sequence unspeakable.
-        static public readonly SrgsRuleRef Void = new SrgsRuleRef(SpecialRuleRefType.Void);
+        static public readonly SrgsRuleRef Void = new(SpecialRuleRefType.Void);
 
         /// TODOC <_include file='doc\SpecialRuleRef.uex' path='docs/doc[@for="SpecialRuleRef.Garbage"]/*' />
         // The Garbage SpecialRuleRef defines a rule that may match any speech up until
         // the next rule match, the next token or until the end of spoken input.
-        static public readonly SrgsRuleRef Garbage = new SrgsRuleRef(SpecialRuleRefType.Garbage);
+        static public readonly SrgsRuleRef Garbage = new(SpecialRuleRefType.Garbage);
 
         /// TODOC <_include file='doc\RuleRef.uex' path='docs/doc[@for="RuleRef.Dictation"]/*' />
-        static public readonly SrgsRuleRef Dictation = new SrgsRuleRef(new Uri("grammar:dictation"));
+        static public readonly SrgsRuleRef Dictation = new(new Uri("grammar:dictation"));
 
         /// TODOC <_include file='doc\RuleRef.uex' path='docs/doc[@for="RuleRef.Dictation"]/*' />
-        static public readonly SrgsRuleRef MnemonicSpelling = new SrgsRuleRef(new Uri("grammar:dictation#spelling"));
+        static public readonly SrgsRuleRef MnemonicSpelling = new(new Uri("grammar:dictation#spelling"));
 
         #endregion
 
@@ -276,7 +276,7 @@ namespace System.Speech.Recognition.SrgsGrammar
 
         internal override string DebuggerDisplayString()
         {
-            StringBuilder sb = new StringBuilder("SrgsRuleRef");
+            StringBuilder sb = new("SrgsRuleRef");
             if (_uri != null)
             {
                 sb.Append(" uri='");

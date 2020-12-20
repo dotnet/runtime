@@ -164,7 +164,7 @@ namespace System.Speech.Internal.Synthesis
 
                 System.Diagnostics.Debug.Assert(bufferSize % _blockAlign == 0);
 
-                WaveHeader waveHeader = new WaveHeader(buffer);
+                WaveHeader waveHeader = new(buffer);
                 GCHandle waveHdr = waveHeader.WAVEHDR;
                 MMSYSERR result = SafeNativeMethods.waveOutPrepareHeader(_hwo, waveHdr.AddrOfPinnedObject(), waveHeader.SizeHDR);
 
@@ -179,7 +179,7 @@ namespace System.Speech.Internal.Synthesis
                     {
                         lock (_queueIn)
                         {
-                            InItem item = new InItem(waveHeader);
+                            InItem item = new(waveHeader);
 
                             _queueIn.Add(item);
 
@@ -334,7 +334,7 @@ namespace System.Speech.Internal.Synthesis
         internal static MMSYSERR GetDeviceName(int deviceId, [MarshalAs(UnmanagedType.LPWStr)] out string prodName)
         {
             prodName = string.Empty;
-            SafeNativeMethods.WAVEOUTCAPS caps = new SafeNativeMethods.WAVEOUTCAPS();
+            SafeNativeMethods.WAVEOUTCAPS caps = new();
 
             MMSYSERR result = SafeNativeMethods.waveOutGetDevCaps((IntPtr)deviceId, ref caps, Marshal.SizeOf(caps));
             if (result != MMSYSERR.NOERROR)
@@ -533,9 +533,9 @@ namespace System.Speech.Internal.Synthesis
 
         #region Private Fields
 
-        private List<InItem> _queueIn = new List<InItem>();
+        private List<InItem> _queueIn = new();
 
-        private List<InItem> _queueOut = new List<InItem>();
+        private List<InItem> _queueOut = new();
 
         private int _blockAlign;
         private int _bytesWritten;
@@ -545,14 +545,14 @@ namespace System.Speech.Internal.Synthesis
 
         private int _curDevice;
 
-        private ManualResetEvent _evt = new ManualResetEvent(false);
+        private ManualResetEvent _evt = new(false);
 
         private SafeNativeMethods.WaveOutProc _delegate;
 
         private IAsyncDispatch _asyncDispatch;
 
         private bool _deviceOpen;
-        private object _noWriteOutLock = new object();
+        private object _noWriteOutLock = new();
         private bool _fPaused;
 
         #endregion

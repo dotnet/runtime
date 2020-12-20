@@ -273,7 +273,7 @@ namespace System.Speech.Internal.SrgsCompiler
         /// <returns></returns>
         private static string FormatConstructorParameters(MethodInfo[] cis, string method)
         {
-            StringBuilder sb = new StringBuilder();
+            StringBuilder sb = new();
             for (int iCtor = 0; iCtor < cis.Length; iCtor++)
             {
                 if (cis[iCtor].Name == method)

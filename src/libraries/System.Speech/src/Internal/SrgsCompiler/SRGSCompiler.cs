@@ -41,9 +41,9 @@ namespace System.Speech.Internal.SrgsCompiler
             System.Diagnostics.Debug.Assert(!fOutputCfg || xmlReaders.Length == 1);
 
             int cReaders = xmlReaders.Length;
-            List<CustomGrammar.CfgResource> cfgResources = new List<CustomGrammar.CfgResource>();
+            List<CustomGrammar.CfgResource> cfgResources = new();
 
-            CustomGrammar cgCombined = new CustomGrammar();
+            CustomGrammar cgCombined = new();
             for (int iReader = 0; iReader < cReaders; iReader++)
             {
                 // Set the current directory to the location where is the grammar
@@ -62,7 +62,7 @@ namespace System.Speech.Internal.SrgsCompiler
                 }
 
                 CultureInfo culture;
-                StringBuilder innerCode = new StringBuilder();
+                StringBuilder innerCode = new();
                 ISrgsParser srgsParser = new XmlParser(xmlReaders[iReader], uri);
                 object cg = CompileStream(iReader + 1, srgsParser, srgsPath, filename, stream, fOutputCfg, innerCode, cfgResources, out culture, referencedAssemblies, keyFile);
                 if (!fOutputCfg)
@@ -91,9 +91,9 @@ namespace System.Speech.Internal.SrgsCompiler
         {
             ISrgsParser srgsParser = new SrgsDocumentParser(srgsGrammar.Grammar);
 
-            List<CustomGrammar.CfgResource> cfgResources = new List<CustomGrammar.CfgResource>();
+            List<CustomGrammar.CfgResource> cfgResources = new();
 
-            StringBuilder innerCode = new StringBuilder();
+            StringBuilder innerCode = new();
             CultureInfo culture;
 
             // Validate the grammar before compiling it. Set the tag-format and sapi flags too.
@@ -104,7 +104,7 @@ namespace System.Speech.Internal.SrgsCompiler
             // Create the DLL if this needs to be done
             if (!fOutputCfg)
             {
-                CustomGrammar cgCombined = new CustomGrammar();
+                CustomGrammar cgCombined = new();
                 cgCombined.Combine((CustomGrammar)cg, innerCode.ToString());
                 cgCombined.CreateAssembly(filename, cfgResources);
             }
@@ -114,9 +114,9 @@ namespace System.Speech.Internal.SrgsCompiler
 
         static private object CompileStream(int iCfg, ISrgsParser srgsParser, string srgsPath, string filename, Stream stream, bool fOutputCfg, StringBuilder innerCode, object cfgResources, out CultureInfo culture, string[] referencedAssemblies, string keyFile)
         {
-            Backend backend = new Backend();
-            CustomGrammar cg = new CustomGrammar();
-            SrgsElementCompilerFactory elementFactory = new SrgsElementCompilerFactory(backend, cg);
+            Backend backend = new();
+            CustomGrammar cg = new();
+            SrgsElementCompilerFactory elementFactory = new(backend, cg);
             srgsParser.ElementFactory = elementFactory;
             srgsParser.Parse();
 
@@ -159,7 +159,7 @@ namespace System.Speech.Internal.SrgsCompiler
             {
                 // Creates a DLL with the CFG is a resource
                 // Create the CFG
-                CustomGrammar.CfgResource resource = new CustomGrammar.CfgResource();
+                CustomGrammar.CfgResource resource = new();
                 resource.data = BuildCfg(backend).ToArray();
                 resource.name = iCfg.ToString(CultureInfo.InvariantCulture) + ".CFG";
                 ((List<CustomGrammar.CfgResource>)cfgResources).Add(resource);
@@ -187,7 +187,7 @@ namespace System.Speech.Internal.SrgsCompiler
                 }
                 try
                 {
-                    using (StreamMarshaler streamHelper = new StreamMarshaler(stream))
+                    using (StreamMarshaler streamHelper = new(stream))
                     {
                         backend.Commit(streamHelper);
                     }
@@ -212,10 +212,10 @@ namespace System.Speech.Internal.SrgsCompiler
         static private MemoryStream BuildCfg(Backend backend)
         {
             // Creates a DLL
-            MemoryStream cfgStream = new MemoryStream();
+            MemoryStream cfgStream = new();
 
             // Save binary grammar to dest
-            using (StreamMarshaler streamHelper = new StreamMarshaler(cfgStream))
+            using (StreamMarshaler streamHelper = new(cfgStream))
             {
                 // no IL
                 backend.IL = null;

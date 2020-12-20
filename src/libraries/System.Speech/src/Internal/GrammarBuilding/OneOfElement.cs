@@ -40,7 +40,7 @@ namespace System.Speech.Internal.GrammarBuilding
         /// <returns></returns>
         internal override GrammarBuilderBase Clone()
         {
-            OneOfElement oneOf = new OneOfElement();
+            OneOfElement oneOf = new();
             oneOf.CloneItems(this);
             return oneOf;
         }
@@ -86,7 +86,7 @@ namespace System.Speech.Internal.GrammarBuilding
         {
             get
             {
-                StringBuilder sb = new StringBuilder();
+                StringBuilder sb = new();
 
                 foreach (GrammarBuilderBase item in Items)
                 {

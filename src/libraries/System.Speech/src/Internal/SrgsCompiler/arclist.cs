@@ -30,7 +30,7 @@ namespace System.Speech.Internal.SrgsCompiler
         /// <returns></returns>
         internal List<Arc> ToList()
         {
-            List<Arc> collection = new List<Arc>();
+            List<Arc> collection = new();
             foreach (Arc arc in this)
             {
                 collection.Add(arc);

@@ -148,7 +148,7 @@ namespace System.Speech.Internal.Synthesis
             {
                 // Get the mime type
                 Stream localStream = _site.LoadResource(new Uri(uri, UriKind.RelativeOrAbsolute), mediaType);
-                BinaryReader reader = new BinaryReader(localStream);
+                BinaryReader reader = new(localStream);
                 byte[] waveFormat = System.Speech.Internal.Synthesis.AudioBase.GetWaveFormat(reader);
                 mediaType = null;
                 if (waveFormat != null)

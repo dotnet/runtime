@@ -154,14 +154,14 @@ namespace System.Speech.Internal
             // In order to do this, we check whether a given substring is a potential prefix of a convertible substring.
             //
 
-            StringBuilder result = new StringBuilder();
+            StringBuilder result = new();
             int startIndex; // Starting index of a substring being considered
             int endIndex;   // The ending index of the last convertible substring
             String token;           // Holds a substring of phonemes that are directly convertible from the mapping table.
             String lastConvert;     // Holds last convertible substring, starting from startIndex.
 
             String tempConvert;
-            String source = new String(phonemes);
+            String source = new(phonemes);
             int i;
 
             lastConvert = null;
@@ -245,7 +245,7 @@ namespace System.Speech.Internal
                                    "upstable_esp.upsmap", "upstable_fra.upsmap", "upstable_jpn.upsmap",
 };
         private static PhoneMapData[] s_phoneMaps = new PhoneMapData[7];
-        private static object s_staticLock = new object();
+        private static object s_staticLock = new();
 
         #endregion
 
@@ -268,7 +268,7 @@ namespace System.Speech.Internal
 
             internal PhoneMapData(Stream input)
             {
-                using (BinaryReader reader = new BinaryReader(input, System.Text.Encoding.Unicode))
+                using (BinaryReader reader = new(input, System.Text.Encoding.Unicode))
                 {
                     int size = reader.ReadInt32();
                     _convertTable = new ConversionUnit[size];

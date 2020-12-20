@@ -94,7 +94,7 @@ namespace System.Speech.Synthesis
             if (token.Attributes != null)
             {
                 // Enum all values and add to custom table
-                Dictionary<string, string> attrs = new Dictionary<string, string>();
+                Dictionary<string, string> attrs = new();
                 foreach (string keyName in token.Attributes.GetValueNames())
                 {
                     string attributeValue;

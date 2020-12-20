@@ -27,7 +27,7 @@ namespace System.Speech.Internal
             WaveFormatEx waveFormatEx = (WaveFormatEx)Marshal.PtrToStructure(waveFormatPtr, typeof(WaveFormatEx));
 
             byte[] extraData = new byte[waveFormatEx.cbSize];
-            IntPtr extraDataPtr = new IntPtr(waveFormatPtr.ToInt64() + Marshal.SizeOf(waveFormatEx));
+            IntPtr extraDataPtr = new(waveFormatPtr.ToInt64() + Marshal.SizeOf(waveFormatEx));
             for (int i = 0; i < waveFormatEx.cbSize; i++)
             {
                 extraData[i] = Marshal.ReadByte(extraDataPtr, i);
@@ -65,7 +65,7 @@ namespace System.Speech.Internal
         /// <returns></returns>
         static private SpeechAudioFormatInfo ConvertFormat(StreamFormat eFormat)
         {
-            WaveFormatEx waveEx = new WaveFormatEx();
+            WaveFormatEx waveEx = new();
             byte[] extra = null;
 
             if (eFormat >= StreamFormat.PCM_8kHz8BitMono && eFormat <= StreamFormat.PCM_48kHz16BitStereo)

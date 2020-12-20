@@ -50,7 +50,7 @@ namespace System.Speech.Recognition.SrgsGrammar
         {
             Helpers.ThrowIfEmptyOrNull(path, nameof(path));
 
-            using (XmlTextReader reader = new XmlTextReader(path))
+            using (XmlTextReader reader = new(path))
             {
                 Load(reader);
             }
@@ -357,7 +357,7 @@ namespace System.Speech.Recognition.SrgsGrammar
             _grammar.PhoneticAlphabet = AlphabetType.Sapi;
 
             // create an XMl Parser
-            XmlParser srgsParser = new XmlParser(srgsGrammar, null);
+            XmlParser srgsParser = new(srgsGrammar, null);
 
             // Creates SrgsDocument elements
             srgsParser.ElementFactory = new SrgsElementFactory(_grammar);

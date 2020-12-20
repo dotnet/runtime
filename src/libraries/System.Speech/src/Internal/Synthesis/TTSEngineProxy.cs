@@ -167,7 +167,7 @@ namespace System.Speech.Internal.Synthesis
         {
             // Initialize TTS Engine
             Guid formatId = SAPIGuids.SPDFID_WaveFormatEx;
-            Guid guidNull = new Guid();
+            Guid guidNull = new();
             IntPtr coMem = IntPtr.Zero;
 
             _sapiEngine.GetOutputFormat(ref formatId, preferedFormat, out guidNull, out coMem);
@@ -190,7 +190,7 @@ namespace System.Speech.Internal.Synthesis
             try
             {
                 IntPtr waveFormat = gc.AddrOfPinnedObject();
-                GCHandle spvTextFragment = new GCHandle();
+                GCHandle spvTextFragment = new();
 
                 if (ConvertTextFrag.ToSapi(frags, ref spvTextFragment))
                 {

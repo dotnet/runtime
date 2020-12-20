@@ -91,7 +91,7 @@ namespace System.Speech.Internal.GrammarBuilding
         protected void Optimize(Collection<RuleElement> newRules)
         {
             // Create an dictionary of [Count of elements, list of elements]
-            SortedDictionary<int, Collection<BuilderElements>> dict = new SortedDictionary<int, Collection<BuilderElements>>();
+            SortedDictionary<int, Collection<BuilderElements>> dict = new();
             GetDictionaryElements(dict);
 
             // The dictionary is sorted from the smallest buckets to the largest.
@@ -284,7 +284,7 @@ namespace System.Speech.Internal.GrammarBuilding
         {
             get
             {
-                StringBuilder sb = new StringBuilder();
+                StringBuilder sb = new();
 
                 foreach (GrammarBuilderBase item in _items)
                 {
@@ -358,7 +358,7 @@ namespace System.Speech.Internal.GrammarBuilding
         #region Private Fields
 
         // List of builder elements
-        private readonly List<GrammarBuilderBase> _items = new List<GrammarBuilderBase>();
+        private readonly List<GrammarBuilderBase> _items = new();
 
         #endregion
     }

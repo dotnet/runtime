@@ -101,7 +101,7 @@ namespace System.Speech.Internal.GrammarBuilding
         /// <returns></returns>
         internal override GrammarBuilderBase Clone()
         {
-            TagElement tag = new TagElement(_value);
+            TagElement tag = new(_value);
             tag.CloneItems(this);
             return tag;
         }

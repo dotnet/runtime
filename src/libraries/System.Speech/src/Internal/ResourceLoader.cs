@@ -125,7 +125,7 @@ namespace System.Speech.Internal
                     redirectedUri = response.ResponseUri;
 
                     // http:// Load the data from the web
-                    using (WebClient client = new WebClient())
+                    using (WebClient client = new())
                     {
                         client.UseDefaultCredentials = true;
                         return new MemoryStream(client.DownloadData(redirectedUri));

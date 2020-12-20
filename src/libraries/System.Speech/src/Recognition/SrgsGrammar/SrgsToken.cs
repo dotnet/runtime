@@ -169,7 +169,7 @@ namespace System.Speech.Recognition.SrgsGrammar
 
         internal override string DebuggerDisplayString()
         {
-            StringBuilder sb = new StringBuilder("Token '");
+            StringBuilder sb = new("Token '");
             sb.Append(_text);
             sb.Append('\'');
 

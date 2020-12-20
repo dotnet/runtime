@@ -533,7 +533,7 @@ namespace System.Speech.Internal.SapiInterop
 
             // build the unmanaged interop layer
             int size = Marshal.SizeOf(typeof(SPPHRASEELEMENT));
-            List<GCHandle> handles = new List<GCHandle>();
+            List<GCHandle> handles = new();
 
             coMem = Marshal.AllocCoTaskMem(size * elements.Length);
             try
@@ -585,7 +585,7 @@ namespace System.Speech.Internal.SapiInterop
                 memHandles = handles.ToArray();
             }
 
-            SPPHRASE spPhrase = new SPPHRASE();
+            SPPHRASE spPhrase = new();
             spPhrase.cbSize = (uint)Marshal.SizeOf(spPhrase.GetType());
             spPhrase.LangID = (ushort)culture.LCID;
             spPhrase.Rule = new SPPHRASERULE();
@@ -594,7 +594,7 @@ namespace System.Speech.Internal.SapiInterop
             spPhrase.pElements = coMem;
 
             // Initialized the phrase
-            SpPhraseBuilder phraseBuilder = new SpPhraseBuilder();
+            SpPhraseBuilder phraseBuilder = new();
             ((ISpPhraseBuilder)phraseBuilder).InitFromPhrase(spPhrase);
 
             return (ISpPhrase)phraseBuilder;

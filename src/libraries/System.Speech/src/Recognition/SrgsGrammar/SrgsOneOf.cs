@@ -133,7 +133,7 @@ namespace System.Speech.Recognition.SrgsGrammar
 
         internal override string DebuggerDisplayString()
         {
-            StringBuilder sb = new StringBuilder("SrgsOneOf Count = ");
+            StringBuilder sb = new("SrgsOneOf Count = ");
             sb.Append(_items.Count);
             return sb.ToString();
         }
@@ -177,7 +177,7 @@ namespace System.Speech.Recognition.SrgsGrammar
 
         #region Private Fields
 
-        private SrgsItemList _items = new SrgsItemList();
+        private SrgsItemList _items = new();
 
         #endregion
 

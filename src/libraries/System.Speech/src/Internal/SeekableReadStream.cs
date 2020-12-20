@@ -262,7 +262,7 @@ namespace System.Speech.Internal
         #region Private Fields
 
         private long _virtualPosition;
-        private List<byte> _buffer = new List<byte>(); // Data cached from start of stream onwards.
+        private List<byte> _buffer = new(); // Data cached from start of stream onwards.
 
         private Stream _baseStream;
         private bool _cacheDataForSeeking = true;

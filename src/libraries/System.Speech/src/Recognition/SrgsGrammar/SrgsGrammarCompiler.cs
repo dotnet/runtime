@@ -33,7 +33,7 @@ namespace System.Speech.Recognition.SrgsGrammar
             Helpers.ThrowIfEmptyOrNull(inputPath, nameof(inputPath));
             Helpers.ThrowIfNull(outputStream, nameof(outputStream));
 
-            using (XmlTextReader reader = new XmlTextReader(new Uri(inputPath, UriKind.RelativeOrAbsolute).ToString()))
+            using (XmlTextReader reader = new(new Uri(inputPath, UriKind.RelativeOrAbsolute).ToString()))
             {
                 SrgsCompiler.CompileStream(new XmlReader[] { reader }, null, outputStream, true, null, null, null);
             }
@@ -165,7 +165,7 @@ namespace System.Speech.Recognition.SrgsGrammar
             Uri orginalUri)
         {
             // Wrap stream in case Seek is not supported:
-            SeekableReadStream seekableInputStream = new SeekableReadStream(inputStream);
+            SeekableReadStream seekableInputStream = new(inputStream);
 
             // See if CFG or XML document:
             int cfgLength;

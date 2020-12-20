@@ -94,7 +94,7 @@ namespace System.Speech.Internal.SapiInterop
                     ISpEventSource sapiEventSource = (ISpEventSource)_sapiEventSourceReference.Target;
                     if (sapiEventSource != null)
                     {
-                        List<SpeechEvent> speechEvents = new List<SpeechEvent>();
+                        List<SpeechEvent> speechEvents = new();
                         SpeechEvent speechEvent;
                         while (null != (speechEvent = SpeechEvent.TryCreateSpeechEvent(sapiEventSource, _additionalSapiFeatures, _audioFormat)))
                         {

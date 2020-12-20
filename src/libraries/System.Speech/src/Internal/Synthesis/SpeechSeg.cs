@@ -102,7 +102,7 @@ namespace System.Speech.Internal.Synthesis
         #region private Fields
 
         private TTSVoice _voice;
-        private List<TextFragment> _textFragments = new List<TextFragment>();
+        private List<TextFragment> _textFragments = new();
 #pragma warning disable 56524 // The _audio are not created in this module and should not be disposed
         private AudioData _audio;
 #pragma warning enable 56524

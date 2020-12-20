@@ -780,7 +780,7 @@ namespace System.Speech.Recognition
         {
             // No parameters to the constructors
             Uri uriGrammar = Uri;
-            MemoryStream stream = new MemoryStream();
+            MemoryStream stream = new();
 
             if (uriGrammar != null)
             {
@@ -987,7 +987,7 @@ namespace System.Speech.Recognition
         /// <returns></returns>
         private static string FormatConstructorParameters(ConstructorInfo[] cis)
         {
-            StringBuilder sb = new StringBuilder();
+            StringBuilder sb = new();
             for (int iCtor = 0; iCtor < cis.Length; iCtor++)
             {
                 sb.Append(iCtor > 0 ? " or sapi:parms=\"" : "sapi:parms=\"");
@@ -1123,10 +1123,10 @@ namespace System.Speech.Recognition
         /// <returns></returns>
         private static MemoryStream CombineCfg(string rule, Stream stream, SrgsRule[] extraRules)
         {
-            using (MemoryStream streamExtra = new MemoryStream())
+            using (MemoryStream streamExtra = new())
             {
                 // Create an SrgsDocument from the set of rules
-                SrgsDocument sgrsDocument = new SrgsDocument();
+                SrgsDocument sgrsDocument = new();
                 sgrsDocument.TagFormat = SrgsTagFormat.KeyValuePairs;
                 foreach (SrgsRule srgsRule in extraRules)
                 {
@@ -1135,20 +1135,20 @@ namespace System.Speech.Recognition
 
                 SrgsGrammarCompiler.Compile(sgrsDocument, streamExtra);
 
-                using (StreamMarshaler streamMarshaler = new StreamMarshaler(stream))
+                using (StreamMarshaler streamMarshaler = new(stream))
                 {
                     long endSeekPosition = stream.Position;
-                    Backend backend = new Backend(streamMarshaler);
+                    Backend backend = new(streamMarshaler);
                     stream.Position = endSeekPosition;
 
                     streamExtra.Position = 0;
-                    MemoryStream streamCombined = new MemoryStream();
-                    using (StreamMarshaler streamExtraMarshaler = new StreamMarshaler(streamExtra))
+                    MemoryStream streamCombined = new();
+                    using (StreamMarshaler streamExtraMarshaler = new(streamExtra))
                     {
-                        Backend extra = new Backend(streamExtraMarshaler);
+                        Backend extra = new(streamExtraMarshaler);
                         Backend combined = Backend.CombineGrammar(rule, backend, extra);
 
-                        using (StreamMarshaler streamCombinedMarshaler = new StreamMarshaler(streamCombined))
+                        using (StreamMarshaler streamCombinedMarshaler = new(streamCombined))
                         {
                             combined.Commit(streamCombinedMarshaler);
                             streamCombined.Position = 0;
@@ -1223,7 +1223,7 @@ namespace System.Speech.Recognition
             long initialPosition = stream.Position;
 
             CfgGrammar.CfgHeader header;
-            using (StreamMarshaler streamHelper = new StreamMarshaler(stream)) // Use StreamMarshaler which helps deserialize certain data types
+            using (StreamMarshaler streamHelper = new(stream)) // Use StreamMarshaler which helps deserialize certain data types
             {
                 CfgGrammar.CfgSerializedHeader serializedHeader = null;
                 header = CfgGrammar.ConvertCfgHeader(streamHelper, false, true, out serializedHeader);
@@ -1315,7 +1315,7 @@ namespace System.Speech.Recognition
         private InternalGrammarData _internalData;
         private string _grammarName = string.Empty;
         private Collection<Grammar> _ruleRefs;
-        private static ResourceLoader s_resourceLoader = new ResourceLoader();
+        private static ResourceLoader s_resourceLoader = new();
 
 #if DEBUG
         private bool _loaded;

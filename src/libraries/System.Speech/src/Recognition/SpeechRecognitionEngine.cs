@@ -134,7 +134,7 @@ namespace System.Speech.Recognition
         /// TODOC <_include file='doc\SpeechRecognitionEngine.uex' path='docs/doc[@for="SpeechRecognitionEngine.InstalledRecognizers"]/*' />
         static public ReadOnlyCollection<RecognizerInfo> InstalledRecognizers()
         {
-            List<RecognizerInfo> recognizers = new List<RecognizerInfo>();
+            List<RecognizerInfo> recognizers = new();
 
             // Get list of ObjectTokens
             using (ObjectTokenCategory category = ObjectTokenCategory.Create(SAPICategories.Recognizers))

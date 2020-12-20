@@ -118,7 +118,7 @@ namespace System.Speech.Recognition.SrgsGrammar
             // Write <tag>text</tag>
             writer.WriteStartElement("tag");
 
-            StringBuilder sb = new StringBuilder();
+            StringBuilder sb = new();
 
             if (hasName)
             {
@@ -163,7 +163,7 @@ namespace System.Speech.Recognition.SrgsGrammar
 
         internal override string DebuggerDisplayString()
         {
-            StringBuilder sb = new StringBuilder("SrgsNameValue ");
+            StringBuilder sb = new("SrgsNameValue ");
 
             if (_name != null)
             {

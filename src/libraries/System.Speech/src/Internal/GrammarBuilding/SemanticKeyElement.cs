@@ -28,7 +28,7 @@ namespace System.Speech.Internal.GrammarBuilding
         internal SemanticKeyElement(string semanticKey)
         {
             _semanticKey = semanticKey;
-            RuleElement rule = new RuleElement(semanticKey);
+            RuleElement rule = new(semanticKey);
             _ruleRef = new RuleRefElement(rule, _semanticKey);
             Items.Add(rule);
             Items.Add(_ruleRef);
@@ -103,7 +103,7 @@ namespace System.Speech.Internal.GrammarBuilding
         /// <returns></returns>
         internal override GrammarBuilderBase Clone()
         {
-            SemanticKeyElement semanticKeyElement = new SemanticKeyElement(_semanticKey);
+            SemanticKeyElement semanticKeyElement = new(_semanticKey);
             semanticKeyElement._ruleRef.CloneItems(_ruleRef);
             return semanticKeyElement;
         }

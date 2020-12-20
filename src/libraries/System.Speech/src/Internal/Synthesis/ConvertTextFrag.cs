@@ -32,7 +32,7 @@ namespace System.Speech.Internal.Synthesis
                     continue;
                 }
 
-                SPVTEXTFRAG sapiFrag = new SPVTEXTFRAG();
+                SPVTEXTFRAG sapiFrag = new();
 
                 // start with the text fragment
                 sapiFrag.gcNext = fFirst ? new GCHandle() : sapiFragLast;
@@ -43,7 +43,7 @@ namespace System.Speech.Internal.Synthesis
                 sapiFrag.ulTextLen = textFragment.TextLength;
 
                 // State
-                SPVSTATE sapiState = new SPVSTATE();
+                SPVSTATE sapiState = new();
                 FragmentState ssmlState = textFragment.State;
                 sapiState.eAction = (SPVACTIONS)ssmlState.Action;
                 sapiState.LangID = (Int16)ssmlState.LangId;

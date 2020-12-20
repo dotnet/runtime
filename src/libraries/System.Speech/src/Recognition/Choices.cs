@@ -133,7 +133,7 @@ namespace System.Speech.Recognition
 
         #region Private Fields
 
-        private OneOfElement _oneOf = new OneOfElement();
+        private OneOfElement _oneOf = new();
 
         #endregion
     }

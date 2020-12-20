@@ -133,7 +133,7 @@ namespace System.Speech.Internal.GrammarBuilding
         /// <returns></returns>
         internal override GrammarBuilderBase Clone()
         {
-            ItemElement item = new ItemElement(_minRepeat, _maxRepeat);
+            ItemElement item = new(_minRepeat, _maxRepeat);
             item.CloneItems(this);
             return item;
         }

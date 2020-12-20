@@ -334,7 +334,7 @@ namespace System.Speech.Recognition
             if (subsequentText == null) { subsequentText = string.Empty; }
 #pragma warning restore 6507
 
-            SPTEXTSELECTIONINFO selectionInfo = new SPTEXTSELECTIONINFO(0, 0, (uint)precedingText.Length, 0);
+            SPTEXTSELECTIONINFO selectionInfo = new(0, 0, (uint)precedingText.Length, 0);
             string textString = precedingText + subsequentText + "\0\0";
 
             SapiGrammar sapiGrammar = grammar.InternalData._sapiGrammar;
@@ -1662,8 +1662,8 @@ namespace System.Speech.Recognition
                 }
 
                 // Must reture and IStream to enable SAPI to retreive the data
-                MemoryStream stream = new MemoryStream(grammar.CfgData);
-                SpStreamWrapper spStream = new SpStreamWrapper(stream);
+                MemoryStream stream = new(grammar.CfgData);
+                SpStreamWrapper spStream = new(stream);
                 pStream = spStream;
                 pfModified = 0;
 
@@ -2213,7 +2213,7 @@ namespace System.Speech.Recognition
             // Otherwise it will be thrown later when SAPI sends the EndStream event.
             if (exception != null || cancelled)
             {
-                RecognizeCompletedEventArgs eventArgs = new RecognizeCompletedEventArgs(null, false, false, false, TimeSpan.Zero, exception, cancelled, null);
+                RecognizeCompletedEventArgs eventArgs = new(null, false, false, false, TimeSpan.Zero, exception, cancelled, null);
                 _asyncWorkerUI.PostOperation(new WaitCallback(RecognizeAsyncWaitForGrammarsToLoadFailed), eventArgs);
             }
         }
@@ -2496,7 +2496,7 @@ namespace System.Speech.Recognition
                         _lastResult = result;
 
                         // Fire the recognition on the grammar.
-                        SpeechRecognizedEventArgs recognitionEventArgs = new SpeechRecognizedEventArgs(result);
+                        SpeechRecognizedEventArgs recognitionEventArgs = new(result);
                         result.Grammar.OnRecognitionInternal(recognitionEventArgs);
 
                         // Fire the recognition on the recognizer.
@@ -3046,7 +3046,7 @@ namespace System.Speech.Recognition
         private void FireSpeechRecognitionRejectedEvent(RecognitionResult result)
         {
             EventHandler<SpeechRecognitionRejectedEventArgs> recognitionHandler = SpeechRecognitionRejected;
-            SpeechRecognitionRejectedEventArgs recognitionEventArgs = new SpeechRecognitionRejectedEventArgs(result);
+            SpeechRecognitionRejectedEventArgs recognitionEventArgs = new(result);
             if (recognitionHandler != null)
             {
                 _asyncWorkerUI.PostOperation(recognitionHandler, this, recognitionEventArgs);
@@ -3206,14 +3206,14 @@ namespace System.Speech.Recognition
         private Stream _inputStream;    // track the input stream open if it has been opened by this object
 
         // Dictionary used to map between sapi bookmark ids and RequestRecognizerUpdate userToken values.
-        private Dictionary<int, object> _bookmarkTable = new Dictionary<int, object>();
+        private Dictionary<int, object> _bookmarkTable = new();
         private uint _nextBookmarkId = _firstUnusedBookmarkId;
         private uint _prevMaxBookmarkId = _firstUnusedBookmarkId - 1;
 
         // Lock used to wait for all pending async grammar loads to complete before starting recognition.
-        private OperationLock _waitForGrammarsToLoad = new OperationLock();
+        private OperationLock _waitForGrammarsToLoad = new();
         // Lock used to protect properties on the Grammar {Enabled, Weight etc.} from being changed while an async grammar load is in progress.
-        private object _grammarDataLock = new object();
+        private object _grammarDataLock = new();
 
         // Preset bookmark values.
         private const uint _nullBookmarkId = 0;
@@ -3222,9 +3222,9 @@ namespace System.Speech.Recognition
         private const uint _firstUnusedBookmarkId = _babbleBookmarkId + 1; // 3
 
         private AsyncSerializedWorker _asyncWorker, _asyncWorkerUI;
-        private AutoResetEvent _handlerWaitHandle = new AutoResetEvent(false);
+        private AutoResetEvent _handlerWaitHandle = new(false);
 
-        private object _thisObjectLock = new object();
+        private object _thisObjectLock = new();
 
         private Exception _loadException;
         private Grammar _topLevel;
@@ -3388,9 +3388,9 @@ namespace System.Speech.Recognition
             _event.WaitOne();
         }
 
-        private ManualResetEvent _event = new ManualResetEvent(true); // In signalled state so initially do not block
+        private ManualResetEvent _event = new(true); // In signalled state so initially do not block
         private uint _operationCount;
-        private object _thisObjectLock = new object();
+        private object _thisObjectLock = new();
     }
 
     #region Interface

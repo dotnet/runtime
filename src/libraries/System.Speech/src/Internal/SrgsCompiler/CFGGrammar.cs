@@ -93,7 +93,7 @@ namespace System.Speech.Internal.SrgsCompiler
             // For a complete check CheckValidCfgFormat is used.
             internal CfgSerializedHeader(Stream stream)
             {
-                BinaryReader br = new BinaryReader(stream);
+                BinaryReader br = new(stream);
                 ulTotalSerializedSize = br.ReadUInt32();
                 if (ulTotalSerializedSize < SP_SPCFGSERIALIZEDHEADER_500 || ulTotalSerializedSize > int.MaxValue)
                 {
@@ -153,7 +153,7 @@ namespace System.Speech.Internal.SrgsCompiler
             static internal bool IsCfg(Stream stream, out int cfgLength)
             {
                 cfgLength = 0;
-                BinaryReader br = new BinaryReader(stream);
+                BinaryReader br = new(stream);
                 uint ulTotalSerializedSize = br.ReadUInt32();
                 if (ulTotalSerializedSize < SP_SPCFGSERIALIZEDHEADER_500 || ulTotalSerializedSize > int.MaxValue)
                 {
@@ -161,7 +161,7 @@ namespace System.Speech.Internal.SrgsCompiler
                     return false;
                 }
 
-                Guid formatId = new Guid(br.ReadBytes(16));
+                Guid formatId = new(br.ReadBytes(16));
                 if (formatId != CfgGrammar._SPGDF_ContextFree)
                 {
                     // Not of cfg format
@@ -280,7 +280,7 @@ namespace System.Speech.Internal.SrgsCompiler
             //  Because in 64-bit code, pointers != sizeof(ULONG) we copy each member explicitly.
             //
 
-            CfgHeader header = new CfgHeader();
+            CfgHeader header = new();
             header.FormatId = cfgSerializedHeader.FormatId;
             header.GrammarGUID = cfgSerializedHeader.GrammarGUID;
             header.langId = cfgSerializedHeader.LangID;
@@ -377,9 +377,9 @@ namespace System.Speech.Internal.SrgsCompiler
 
         internal static ScriptRef[] LoadIL(Stream stream)
         {
-            using (StreamMarshaler streamHelper = new StreamMarshaler(stream))
+            using (StreamMarshaler streamHelper = new(stream))
             {
-                CfgSerializedHeader pFH = new CfgSerializedHeader();
+                CfgSerializedHeader pFH = new();
 
                 streamHelper.ReadStream(pFH);
 
@@ -392,9 +392,9 @@ namespace System.Speech.Internal.SrgsCompiler
             assemblyContent = assemblyDebugSymbols = null;
             scripts = null;
 
-            using (StreamMarshaler streamHelper = new StreamMarshaler(stream))
+            using (StreamMarshaler streamHelper = new(stream))
             {
-                CfgSerializedHeader pFH = new CfgSerializedHeader();
+                CfgSerializedHeader pFH = new();
 
                 streamHelper.ReadStream(pFH);
 
@@ -592,18 +592,18 @@ namespace System.Speech.Internal.SrgsCompiler
 
         #region Internal Fields
 
-        internal static Guid _SPGDF_ContextFree = new Guid(0x4ddc926d, 0x6ce7, 0x4dc0, 0x99, 0xa7, 0xaf, 0x9e, 0x6b, 0x6a, 0x4e, 0x91);
+        internal static Guid _SPGDF_ContextFree = new(0x4ddc926d, 0x6ce7, 0x4dc0, 0x99, 0xa7, 0xaf, 0x9e, 0x6b, 0x6a, 0x4e, 0x91);
 
         //
         internal const int INFINITE = unchecked((int)0xffffffff);
 
         // INFINITE
         //
-        static internal readonly Rule SPRULETRANS_TEXTBUFFER = new Rule(-1);
+        static internal readonly Rule SPRULETRANS_TEXTBUFFER = new(-1);
 
-        static internal readonly Rule SPRULETRANS_WILDCARD = new Rule(-2);
+        static internal readonly Rule SPRULETRANS_WILDCARD = new(-2);
 
-        static internal readonly Rule SPRULETRANS_DICTATION = new Rule(-3);
+        static internal readonly Rule SPRULETRANS_DICTATION = new(-3);
 
         //
         internal const int SPTEXTBUFFERTRANSITION = 0x3fffff;

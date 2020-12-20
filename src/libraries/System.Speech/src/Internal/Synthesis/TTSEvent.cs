@@ -46,7 +46,7 @@ namespace System.Speech.Internal.Synthesis
                                                     TimeSpan duration, SynthesizerEmphasis emphasis,
                                                     Prompt prompt, TimeSpan audioPosition)
         {
-            TTSEvent ttsEvent = new TTSEvent();
+            TTSEvent ttsEvent = new();
             ttsEvent._evtId = TtsEventId.Phoneme;
             ttsEvent._audioPosition = audioPosition;
             ttsEvent._prompt = prompt;

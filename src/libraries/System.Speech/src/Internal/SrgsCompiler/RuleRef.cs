@@ -61,7 +61,7 @@ namespace System.Speech.Internal.SrgsCompiler
             else
             {
                 // External RuleRef.  Build URL:GrammarUri#RuleName
-                StringBuilder sbExternalRuleUri = new StringBuilder("URL:");
+                StringBuilder sbExternalRuleUri = new("URL:");
 
                 // Add the parameters to initialize a rule
                 if (!string.IsNullOrEmpty(initParameters))
@@ -92,7 +92,7 @@ namespace System.Speech.Internal.SrgsCompiler
 
             if (!string.IsNullOrEmpty(semanticKey))
             {
-                CfgGrammar.CfgProperty propertyInfo = new CfgGrammar.CfgProperty();
+                CfgGrammar.CfgProperty propertyInfo = new();
                 propertyInfo._pszName = "SemanticKey";
                 propertyInfo._comValue = semanticKey;
                 propertyInfo._comType = VarEnum.VT_EMPTY;
@@ -142,7 +142,7 @@ namespace System.Speech.Internal.SrgsCompiler
 
                 case SpecialRuleRefType.Garbage:
                     // Garbage transition is optional whereas Wildcard is not.  So we need additional epsilon transition.
-                    OneOf oneOf = new OneOf(parent._rule, backend);
+                    OneOf oneOf = new(parent._rule, backend);
                     // Add the garbage transition
                     oneOf.AddArc(backend.RuleTransition(CfgGrammar.SPRULETRANS_WILDCARD, parent._rule, 0.5f));
                     // Add a parallele epsilon path

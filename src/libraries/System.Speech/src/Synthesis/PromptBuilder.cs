@@ -106,7 +106,7 @@ namespace System.Speech.Synthesis
             // Validate that text can be added in this context
             ValidateElement(_elementStack.Peek(), SsmlElement.Text);
 
-            Element prosodyElement = new Element(ElementType.Prosody, textToSpeak);
+            Element prosodyElement = new(ElementType.Prosody, textToSpeak);
             _elements.Add(prosodyElement);
             string sPromptRate = null;
             switch (rate)
@@ -150,7 +150,7 @@ namespace System.Speech.Synthesis
             // Validate that text can be added in this context
             ValidateElement(_elementStack.Peek(), SsmlElement.Text);
 
-            Element prosodyElement = new Element(ElementType.Prosody, textToSpeak);
+            Element prosodyElement = new(ElementType.Prosody, textToSpeak);
             _elements.Add(prosodyElement);
 
             string sVolumeLevel = null;
@@ -196,7 +196,7 @@ namespace System.Speech.Synthesis
             // Validate that text can be added in this context
             ValidateElement(_elementStack.Peek(), SsmlElement.Text);
 
-            Element emphasisElement = new Element(ElementType.Emphasis, textToSpeak);
+            Element emphasisElement = new(ElementType.Emphasis, textToSpeak);
             _elements.Add(emphasisElement);
 
             if (emphasis != PromptEmphasis.NotSet)
@@ -226,7 +226,7 @@ namespace System.Speech.Synthesis
 
             if (style.Emphasis != PromptEmphasis.NotSet)
             {
-                Element emphasisElement = new Element(ElementType.Emphasis);
+                Element emphasisElement = new(ElementType.Emphasis);
                 _elements.Add(emphasisElement);
 
                 emphasisElement._attributes = new Collection<AttributeItem>();
@@ -245,7 +245,7 @@ namespace System.Speech.Synthesis
                     _elements.Add(new Element(ElementType.StartStyle));
                 }
 
-                Element prosodyElement = new Element(ElementType.Prosody);
+                Element prosodyElement = new(ElementType.Prosody);
                 _elements.Add(prosodyElement);
 
                 if (style.Rate != PromptRate.NotSet)
@@ -347,7 +347,7 @@ namespace System.Speech.Synthesis
 
             CultureInfo culture = voice.Culture == null ? stackElement._culture : voice.Culture;
 
-            Element startVoice = new Element(ElementType.StartVoice);
+            Element startVoice = new(ElementType.StartVoice);
             startVoice._attributes = new Collection<AttributeItem>();
             _elements.Add(startVoice);
 
@@ -461,7 +461,7 @@ namespace System.Speech.Synthesis
             StackElement stackElement = _elementStack.Peek();
             ValidateElement(stackElement, SsmlElement.Paragraph);
 
-            Element startParagraph = new Element(ElementType.StartParagraph);
+            Element startParagraph = new(ElementType.StartParagraph);
             _elements.Add(startParagraph);
 
             if (culture != null)
@@ -509,7 +509,7 @@ namespace System.Speech.Synthesis
             StackElement stackElement = _elementStack.Peek();
             ValidateElement(stackElement, SsmlElement.Sentence);
 
-            Element startSentence = new Element(ElementType.StartSentence);
+            Element startSentence = new(ElementType.StartSentence);
             _elements.Add(startSentence);
 
             if (culture != null)
@@ -560,7 +560,7 @@ namespace System.Speech.Synthesis
 
             if (sayAs != SayAs.Text)
             {
-                Element sayAsElement = new Element(ElementType.SayAs, textToSpeak);
+                Element sayAsElement = new(ElementType.SayAs, textToSpeak);
                 _elements.Add(sayAsElement);
 
                 sayAsElement._attributes = new Collection<AttributeItem>();
@@ -679,7 +679,7 @@ namespace System.Speech.Synthesis
             // check for well formed document
             ValidateElement(_elementStack.Peek(), SsmlElement.Text);
 
-            Element sayAsElement = new Element(ElementType.SayAs, textToSpeak);
+            Element sayAsElement = new(ElementType.SayAs, textToSpeak);
             _elements.Add(sayAsElement);
 
             sayAsElement._attributes = new Collection<AttributeItem>();
@@ -702,7 +702,7 @@ namespace System.Speech.Synthesis
             // validate the pronunciation
             PhonemeConverter.ValidateUpsIds(pronunciation);
 
-            Element phoneElement = new Element(ElementType.Phoneme, textToSpeak);
+            Element phoneElement = new(ElementType.Phoneme, textToSpeak);
             _elements.Add(phoneElement);
 
             phoneElement._attributes = new Collection<AttributeItem>();
@@ -722,7 +722,7 @@ namespace System.Speech.Synthesis
             // check for well formed document
             ValidateElement(_elementStack.Peek(), SsmlElement.Text);
 
-            Element subElement = new Element(ElementType.Sub, textToSpeak);
+            Element subElement = new(ElementType.Sub, textToSpeak);
             _elements.Add(subElement);
 
             subElement._attributes = new Collection<AttributeItem>();
@@ -749,7 +749,7 @@ namespace System.Speech.Synthesis
             // check for well formed document
             ValidateElement(_elementStack.Peek(), SsmlElement.Break);
 
-            Element breakElement = new Element(ElementType.Break);
+            Element breakElement = new(ElementType.Break);
             _elements.Add(breakElement);
 
             string sBreak = null;
@@ -802,7 +802,7 @@ namespace System.Speech.Synthesis
                 throw new ArgumentOutOfRangeException(nameof(duration));
             }
 
-            Element breakElement = new Element(ElementType.Break);
+            Element breakElement = new(ElementType.Break);
             _elements.Add(breakElement);
 
             breakElement._attributes = new Collection<AttributeItem>();
@@ -846,7 +846,7 @@ namespace System.Speech.Synthesis
             // check for well formed document
             ValidateElement(_elementStack.Peek(), SsmlElement.Audio);
 
-            Element audioElement = new Element(ElementType.Audio);
+            Element audioElement = new(ElementType.Audio);
             _elements.Add(audioElement);
 
             audioElement._attributes = new Collection<AttributeItem>();
@@ -866,7 +866,7 @@ namespace System.Speech.Synthesis
             // check for well formed document
             ValidateElement(_elementStack.Peek(), SsmlElement.Audio);
 
-            Element audioElement = new Element(ElementType.Audio, alternateText);
+            Element audioElement = new(ElementType.Audio, alternateText);
             _elements.Add(audioElement);
 
             audioElement._attributes = new Collection<AttributeItem>();
@@ -886,7 +886,7 @@ namespace System.Speech.Synthesis
             // check for well formed document
             ValidateElement(_elementStack.Peek(), SsmlElement.Mark);
 
-            Element bookmarkElement = new Element(ElementType.Bookmark);
+            Element bookmarkElement = new(ElementType.Bookmark);
             _elements.Add(bookmarkElement);
 
             bookmarkElement._attributes = new Collection<AttributeItem>();
@@ -901,8 +901,8 @@ namespace System.Speech.Synthesis
         {
             Helpers.ThrowIfNull(promptBuilder, nameof(promptBuilder));
 
-            StringReader sr = new StringReader(promptBuilder.ToXml());
-            XmlTextReader reader = new XmlTextReader(sr);
+            StringReader sr = new(promptBuilder.ToXml());
+            XmlTextReader reader = new(sr);
             AppendSsml(reader);
             reader.Close();
             sr.Close();
@@ -974,9 +974,9 @@ namespace System.Speech.Synthesis
         /// <returns></returns>
         public string ToXml()
         {
-            using (StringWriter sw = new StringWriter(CultureInfo.InvariantCulture))
+            using (StringWriter sw = new(CultureInfo.InvariantCulture))
             {
-                using (XmlTextWriter writer = new XmlTextWriter(sw))
+                using (XmlTextWriter writer = new(sw))
                 {
                     WriteXml(writer);
 
@@ -1222,11 +1222,11 @@ namespace System.Speech.Synthesis
             StackElement stackElement = _elementStack.Peek();
             ValidateElement(_elementStack.Peek(), SsmlElement.Voice);
 
-            using (StringWriter sw = new StringWriter(CultureInfo.InvariantCulture))
+            using (StringWriter sw = new(CultureInfo.InvariantCulture))
             {
-                using (XmlTextWriter writer = new XmlTextWriter(sw))
+                using (XmlTextWriter writer = new(sw))
                 {
-                    TextWriterEngine engine = new TextWriterEngine(writer, stackElement._culture);
+                    TextWriterEngine engine = new(writer, stackElement._culture);
                     SsmlParser.Parse(ssmlFile, engine, null);
                 }
                 _elements.Add(new Element(ElementType.SsmlMarkup, sw.ToString()));
@@ -1244,16 +1244,16 @@ namespace System.Speech.Synthesis
         #region Private Fields
 
         // Stack of elements for the SSML document
-        private Stack<StackElement> _elementStack = new Stack<StackElement>();
+        private Stack<StackElement> _elementStack = new();
 
         // <xml:lang>
         private CultureInfo _culture;
 
         // list of all the elements for this prompt builder
-        private List<Element> _elements = new List<Element>();
+        private List<Element> _elements = new();
 
         // Resource loader for the prompt builder
-        private static ResourceLoader s_resourceLoader = new ResourceLoader();
+        private static ResourceLoader s_resourceLoader = new();
 
         private const string _xmlnsDefault = @"http://www.w3.org/2001/10/synthesis";
 

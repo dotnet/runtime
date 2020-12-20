@@ -209,7 +209,7 @@ namespace System.Speech.Synthesis
         /// </summary>
         private object _synthesizer;
 
-        static private ResourceLoader s_resourceLoader = new ResourceLoader();
+        static private ResourceLoader s_resourceLoader = new();
 
         #endregion
     }

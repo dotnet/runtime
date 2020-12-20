@@ -196,14 +196,14 @@ namespace System.Speech.Recognition
 
                         SPWAVEFORMATEX audioHeader = (SPWAVEFORMATEX)Marshal.PtrToStructure(audioBuffer, typeof(SPWAVEFORMATEX));
 
-                        IntPtr rawDataBuffer = new IntPtr((long)audioBuffer + audioHeader.cbUsed);
+                        IntPtr rawDataBuffer = new((long)audioBuffer + audioHeader.cbUsed);
                         byte[] rawAudioData = new byte[audioLength - audioHeader.cbUsed];
                         Marshal.Copy(rawDataBuffer, rawAudioData, 0, audioLength - (int)audioHeader.cbUsed);
 
                         byte[] formatSpecificData = new byte[audioHeader.cbSize];
                         if (audioHeader.cbSize > 0)
                         {
-                            IntPtr codecDataBuffer = new IntPtr((long)audioBuffer + 38); // 38 is sizeof(SPWAVEFORMATEX) without padding.
+                            IntPtr codecDataBuffer = new((long)audioBuffer + 38); // 38 is sizeof(SPWAVEFORMATEX) without padding.
                             Marshal.Copy(codecDataBuffer, formatSpecificData, 0, audioHeader.cbSize);
                         }
                         audioFormat = new SpeechAudioFormatInfo((EncodingFormat)audioHeader.wFormatTag,
@@ -378,7 +378,7 @@ namespace System.Speech.Recognition
                 _header.Validate();
 
                 // initialize the parent to be this result - this is needed for the homophones
-                IntPtr phraseBuffer = new IntPtr((long)buffer + (int)_header.ulPhraseOffset);
+                IntPtr phraseBuffer = new((long)buffer + (int)_header.ulPhraseOffset);
 
                 SPSERIALIZEDPHRASE serializedPhrase = RecognizedPhrase.GetPhraseHeader(phraseBuffer, _header.ulPhraseDataSize, _isSapi53Header);
 
@@ -412,7 +412,7 @@ namespace System.Speech.Recognition
 
         private Collection<RecognizedPhrase> ExtractAlternates(int numberOfAlternates, bool isSapi53Header)
         {
-            Collection<RecognizedPhrase> alternates = new Collection<RecognizedPhrase>();
+            Collection<RecognizedPhrase> alternates = new();
 
             if (numberOfAlternates > 0)
             {
@@ -425,7 +425,7 @@ namespace System.Speech.Recognition
                     int offset = 0;
                     for (int i = 0; i < numberOfAlternates; i++)
                     {
-                        IntPtr altBuffer = new IntPtr((long)buffer + offset);
+                        IntPtr altBuffer = new((long)buffer + offset);
                         SPSERIALIZEDPHRASEALT alt = (SPSERIALIZEDPHRASEALT)Marshal.PtrToStructure(altBuffer, typeof(SPSERIALIZEDPHRASEALT));
 
                         offset += sizeOfSpSerializedPhraseAlt; // advance over SPSERIALIZEDPHRASEALT
@@ -439,11 +439,11 @@ namespace System.Speech.Recognition
                         }
 
                         // we cannot use a constructor parameter because RecognitionResult also derives from RecognizedPhrase
-                        IntPtr phraseBuffer = new IntPtr((long)buffer + offset);
+                        IntPtr phraseBuffer = new((long)buffer + offset);
                         SPSERIALIZEDPHRASE serializedPhrase = RecognizedPhrase.GetPhraseHeader(phraseBuffer, _header.ulPhraseAltDataSize - (uint)offset, _isSapi53Header);
                         int serializedPhraseSize = (int)serializedPhrase.ulSerializedSize;
 
-                        RecognizedPhrase phrase = new RecognizedPhrase();
+                        RecognizedPhrase phrase = new();
 
                         // Get the alphabet of the raw phrase alternate, which should be the same as the engine
                         bool hasIPAPronunciation = (_header.fAlphabet & (uint)SPRESULTALPHABET.SPRA_ENGINE_UPS) != 0;
@@ -507,7 +507,7 @@ namespace System.Speech.Recognition
                             try
                             {
                                 // Build a recognition phrase result
-                                RecognizedPhrase phrase = new RecognizedPhrase();
+                                RecognizedPhrase phrase = new();
 
                                 // we cannot use a constructor parameter because RecognitionResult also derives from RecognizedPhrase
                                 SPSERIALIZEDPHRASE serializedPhrase = RecognizedPhrase.GetPhraseHeader(coMemSerializedPhrase, uint.MaxValue, _isSapi53Header);
@@ -546,7 +546,7 @@ namespace System.Speech.Recognition
                 // If no alternated then create one from the top result
                 if (_alternates.Count == 0 && _maxAlternates > 0)
                 {
-                    RecognizedPhrase alternate = new RecognizedPhrase();
+                    RecognizedPhrase alternate = new();
                     GCHandle gc = GCHandle.Alloc(_phraseBuffer, GCHandleType.Pinned);
                     try
                     {
@@ -564,7 +564,7 @@ namespace System.Speech.Recognition
 
         internal string DebuggerDisplayString()
         {
-            StringBuilder sb = new StringBuilder("Recognized text: '");
+            StringBuilder sb = new("Recognized text: '");
             sb.Append(Text);
             sb.Append('\'');
             if (Semantics.Value != null)

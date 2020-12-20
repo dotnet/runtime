@@ -32,7 +32,7 @@ namespace System.Speech.Internal.SapiInterop
 
             if (audioFormat != null)
             {
-                WAVEFORMATEX wfx = new WAVEFORMATEX();
+                WAVEFORMATEX wfx = new();
                 wfx.wFormatTag = (short)audioFormat.EncodingFormat;
                 wfx.nChannels = (short)audioFormat.ChannelCount;
                 wfx.nSamplesPerSec = audioFormat.SamplesPerSecond;
@@ -102,9 +102,9 @@ namespace System.Speech.Internal.SapiInterop
         /// <param name="stream"></param>
         internal void GetStreamOffsets(Stream stream)
         {
-            BinaryReader br = new BinaryReader(stream);
+            BinaryReader br = new(stream);
             // Read the riff Header
-            RIFFHDR riff = new RIFFHDR();
+            RIFFHDR riff = new();
 
             riff._id = br.ReadUInt32();
             riff._len = br.ReadInt32();
@@ -115,7 +115,7 @@ namespace System.Speech.Internal.SapiInterop
                 throw new FormatException();
             }
 
-            BLOCKHDR block = new BLOCKHDR();
+            BLOCKHDR block = new();
             block._id = br.ReadUInt32();
             block._len = br.ReadInt32();
 
@@ -138,7 +138,7 @@ namespace System.Speech.Internal.SapiInterop
 
             while (true)
             {
-                DATAHDR dataHdr = new DATAHDR();
+                DATAHDR dataHdr = new();
 
                 // check for the end of file (+8 for the 2 DWORD)
                 if (stream.Position + 8 >= stream.Length)

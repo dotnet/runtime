@@ -61,7 +61,7 @@ namespace System.Speech.Internal.SrgsCompiler
                     // Get all the method names to check the parameters
                     MethodInfo[] methods = typeClass.GetMethods(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
 
-                    ScriptRefStruct ruleScript = new ScriptRefStruct(sRule, (RuleMethodScript)methodScripts[i]);
+                    ScriptRefStruct ruleScript = new(sRule, (RuleMethodScript)methodScripts[i]);
                     bool found = false;
 
                     for (int iMethod = 0; iMethod < methods.Length; iMethod++)
@@ -174,7 +174,7 @@ namespace System.Speech.Internal.SrgsCompiler
 
         static private string WrapConstructorCSharp(int iCfg, ParameterInfo[] parameters, string classname)
         {
-            StringBuilder sb = new StringBuilder(200);
+            StringBuilder sb = new(200);
             sb.Append(" public ");
             sb.Append(classname);
             sb.Append(" (");
@@ -226,7 +226,7 @@ namespace System.Speech.Internal.SrgsCompiler
 
         static private string WrapConstructorVB(int iCfg, ParameterInfo[] parameters, string classname)
         {
-            StringBuilder sb = new StringBuilder(200);
+            StringBuilder sb = new(200);
             sb.Append("Public Sub New");
             sb.Append(" (");
             if (parameters != null)

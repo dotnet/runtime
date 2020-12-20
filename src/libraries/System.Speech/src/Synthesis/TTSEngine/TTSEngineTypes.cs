@@ -478,7 +478,7 @@ namespace System.Speech.Synthesis.TtsEngine
 
         internal Prosody Clone()
         {
-            Prosody cloned = new Prosody();
+            Prosody cloned = new();
             cloned._pitch = _pitch;
             cloned._range = _range;
             cloned._rate = _rate;
@@ -1083,7 +1083,7 @@ namespace System.Speech.Synthesis.TtsEngine
         internal int _textLength;
         internal static IntPtr FragmentToPtr(List<TextFragment> textFragments, Collection<IntPtr> memoryBlocks)
         {
-            TextFragmentInterop fragInterop = new TextFragmentInterop();
+            TextFragmentInterop fragInterop = new();
             int len = textFragments.Count;
             int sizeOfFrag = Marshal.SizeOf(fragInterop);
             IntPtr ret = Marshal.AllocCoTaskMem(sizeOfFrag * len);
@@ -1175,7 +1175,7 @@ namespace System.Speech.Synthesis.TtsEngine
                 return IntPtr.Zero;
             }
 
-            ProsodyInterop prosodyInterop = new ProsodyInterop();
+            ProsodyInterop prosodyInterop = new();
             prosodyInterop._pitch = prosody.Pitch;
             prosodyInterop._range = prosody.Range;
             prosodyInterop._rate = prosody.Rate;

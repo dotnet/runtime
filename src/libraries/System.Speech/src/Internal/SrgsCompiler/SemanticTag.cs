@@ -68,7 +68,7 @@ namespace System.Speech.Internal.SrgsCompiler
 
         #region Private Fields
 
-        private CfgGrammar.CfgProperty _propInfo = new CfgGrammar.CfgProperty();
+        private CfgGrammar.CfgProperty _propInfo = new();
 
         #endregion
     }

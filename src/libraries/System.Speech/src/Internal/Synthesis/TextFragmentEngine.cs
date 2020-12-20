@@ -77,7 +77,7 @@ namespace System.Speech.Internal.Synthesis
             if (!fIgnore)
             {
                 // Prepend the base Uri if necessary
-                Uri uri = new Uri(sUri, UriKind.RelativeOrAbsolute);
+                Uri uri = new(sUri, UriKind.RelativeOrAbsolute);
                 if (!uri.IsAbsoluteUri && !string.IsNullOrEmpty(baseUri))
                 {
                     if (baseUri[baseUri.Length - 1] != '/' && baseUri[baseUri.Length - 1] != '\\')
@@ -93,7 +93,7 @@ namespace System.Speech.Internal.Synthesis
                         }
                         baseUri += '/';
                     }
-                    StringBuilder sb = new StringBuilder(baseUri);
+                    StringBuilder sb = new(baseUri);
                     sb.Append(sUri);
                     uri = new Uri(sb.ToString(), UriKind.RelativeOrAbsolute);
                 }
@@ -196,8 +196,8 @@ namespace System.Speech.Internal.Synthesis
 
         public void ProcessUnknownElement(object voice, ref FragmentState fragmentState, XmlReader reader)
         {
-            StringWriter sw = new StringWriter(CultureInfo.InvariantCulture);
-            XmlTextWriter writer = new XmlTextWriter(sw);
+            StringWriter sw = new(CultureInfo.InvariantCulture);
+            XmlTextWriter writer = new(sw);
             writer.WriteNode(reader, false);
             writer.Close();
             string text = sw.ToString();
@@ -207,7 +207,7 @@ namespace System.Speech.Internal.Synthesis
 
         public void StartProcessUnknownAttributes(object voice, ref FragmentState fragmentState, string element, List<SsmlXmlAttribute> extraAttributes)
         {
-            StringBuilder sb = new StringBuilder();
+            StringBuilder sb = new();
             sb.AppendFormat(CultureInfo.InvariantCulture, "<{0}", element);
             foreach (SsmlXmlAttribute attribute in extraAttributes)
             {

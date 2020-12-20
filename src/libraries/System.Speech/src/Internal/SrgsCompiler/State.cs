@@ -449,7 +449,7 @@ namespace System.Speech.Internal.SrgsCompiler
 
         override public string ToString ()
         {
-            StringBuilder sb = new StringBuilder ("[#");
+            StringBuilder sb = new("[#");
             sb.Append (_id.ToString (CultureInfo.InvariantCulture));
             if (_rule != null && _rule._firstState == this)
             {
@@ -508,10 +508,10 @@ namespace System.Speech.Internal.SrgsCompiler
 #pragma warning disable 56524 // Arclist does not hold on any resouces
 
         // Collection of transitions leaving this state
-        private ArcList _outArcs = new ArcList();
+        private ArcList _outArcs = new();
 
         // Collection of transitions entering this state
-        private ArcList _inArcs = new ArcList();
+        private ArcList _inArcs = new();
 
 #pragma warning restore 56524 // Arclist does not hold on any resouces
 

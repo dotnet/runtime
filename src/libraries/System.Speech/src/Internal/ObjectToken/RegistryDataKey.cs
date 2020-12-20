@@ -88,7 +88,7 @@ namespace System.Speech.Internal.ObjectTokens
                 return null;
             }
 
-            RegistryDataKey rootKey = new RegistryDataKey(rootPath, regHandle);
+            RegistryDataKey rootKey = new(rootPath, regHandle);
 
             // If the path was only a root, we can directly return the key; otherwise,
             // we need to open a subkey and return that.
@@ -462,7 +462,7 @@ namespace System.Speech.Internal.ObjectTokens
         /// <returns></returns>
         internal string[] GetValueNames()
         {
-            List<string> valueNames = new List<string>();
+            List<string> valueNames = new();
 
             string valueName;
 

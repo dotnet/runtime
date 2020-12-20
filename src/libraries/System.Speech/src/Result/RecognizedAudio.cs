@@ -60,7 +60,7 @@ namespace System.Speech.Recognition
         {
             Helpers.ThrowIfNull(outputStream, nameof(outputStream));
 
-            using (StreamMarshaler sm = new StreamMarshaler(outputStream))
+            using (StreamMarshaler sm = new(outputStream))
             {
                 WriteWaveHeader(sm);
             }

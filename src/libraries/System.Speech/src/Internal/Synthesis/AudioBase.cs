@@ -114,7 +114,7 @@ namespace System.Speech.Internal.Synthesis
                 // Fake a header for ALaw and ULaw
                 if (!string.IsNullOrEmpty(audio._mimeType))
                 {
-                    WAVEFORMATEX wfx = new WAVEFORMATEX();
+                    WAVEFORMATEX wfx = new();
 
                     wfx.nChannels = 1;
                     wfx.nSamplesPerSec = 8000;
@@ -152,7 +152,7 @@ namespace System.Speech.Internal.Synthesis
                 }
                 else
                 {
-                    BinaryReader br = new BinaryReader(audio._stream);
+                    BinaryReader br = new(audio._stream);
 
                     try
                     {
@@ -169,7 +169,7 @@ namespace System.Speech.Internal.Synthesis
                         {
                             while (true)
                             {
-                                DATAHDR dataHdr = new DATAHDR();
+                                DATAHDR dataHdr = new();
 
                                 // check for the end of file (+8 for the 2 DWORD)
                                 if (audio._stream.Position + 8 >= audio._stream.Length)
@@ -213,7 +213,7 @@ namespace System.Speech.Internal.Synthesis
         internal static byte[] GetWaveFormat(BinaryReader br)
         {
             // Read the riff Header
-            RIFFHDR riff = new RIFFHDR();
+            RIFFHDR riff = new();
 
             riff._id = br.ReadUInt32();
             riff._len = br.ReadInt32();
@@ -224,7 +224,7 @@ namespace System.Speech.Internal.Synthesis
                 return null; ;
             }
 
-            BLOCKHDR block = new BLOCKHDR();
+            BLOCKHDR block = new();
             block._id = br.ReadUInt32();
             block._len = br.ReadInt32();
 
@@ -258,9 +258,9 @@ namespace System.Speech.Internal.Synthesis
         /// <returns>Position in the stream for the header</returns>
         internal static void WriteWaveHeader(Stream stream, WAVEFORMATEX waveEx, long position, int cData)
         {
-            RIFFHDR riff = new RIFFHDR(0);
-            BLOCKHDR block = new BLOCKHDR(0);
-            DATAHDR dataHdr = new DATAHDR(0);
+            RIFFHDR riff = new(0);
+            BLOCKHDR block = new(0);
+            DATAHDR dataHdr = new(0);
 
             int cRiff = Marshal.SizeOf(riff);
             int cBlock = Marshal.SizeOf(block);
@@ -269,9 +269,9 @@ namespace System.Speech.Internal.Synthesis
 
             int total = cRiff + cBlock + cWaveEx + cDataHdr;
 
-            using (MemoryStream memStream = new MemoryStream())
+            using (MemoryStream memStream = new())
             {
-                BinaryWriter bw = new BinaryWriter(memStream);
+                BinaryWriter bw = new(memStream);
                 try
                 {
                     // Write the RIFF section
@@ -432,7 +432,7 @@ namespace System.Speech.Internal.Synthesis
         {
             GCHandle gc = GCHandle.Alloc(waveHeader, GCHandleType.Pinned);
             IntPtr ptr = gc.AddrOfPinnedObject();
-            WAVEFORMATEX wfx = new WAVEFORMATEX();
+            WAVEFORMATEX wfx = new();
             wfx.wFormatTag = Marshal.ReadInt16(ptr);
             wfx.nChannels = Marshal.ReadInt16(ptr, 2);
             wfx.nSamplesPerSec = Marshal.ReadInt32(ptr, 4);
@@ -484,7 +484,7 @@ namespace System.Speech.Internal.Synthesis
         {
             get
             {
-                WAVEFORMATEX wfx = new WAVEFORMATEX();
+                WAVEFORMATEX wfx = new();
                 wfx.wFormatTag = 1;
                 wfx.nChannels = 1;
                 wfx.nSamplesPerSec = 22050;

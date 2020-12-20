@@ -40,7 +40,7 @@ namespace System.Speech.Internal.SrgsCompiler
 
         internal void Serialize(StringBlob symbols, StreamMarshaler streamBuffer)
         {
-            CfgScriptRef script = new CfgScriptRef();
+            CfgScriptRef script = new();
 
             // Get the symbol id for the rule
             script._idRule = symbols.Find(_rule);

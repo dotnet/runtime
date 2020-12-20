@@ -455,7 +455,7 @@ namespace System.Speech.Internal.SrgsParser
         {
             if (_grammar.TagFormat == SrgsTagFormat.KeyValuePairs)
             {
-                List<SrgsElement> list = new List<SrgsElement>();
+                List<SrgsElement> list = new();
                 foreach (SrgsElement element in elements)
                 {
                     if (!(element is SrgsNameValueTag))

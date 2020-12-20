@@ -231,7 +231,7 @@ namespace System.Speech.Internal.Synthesis
 
             // Check for special character strings "%gt;", etc... and convert them to "<" etc...
             int curPos = startInXml;
-            StringBuilder sb = new StringBuilder(text.Substring(0, curPos));
+            StringBuilder sb = new(text.Substring(0, curPos));
 
             do
             {
@@ -537,7 +537,7 @@ namespace System.Speech.Internal.Synthesis
 
         internal void AddLexicon(Uri uri, string mediaType)
         {
-            LexiconEntry lexiconEntry = new LexiconEntry(uri, mediaType);
+            LexiconEntry lexiconEntry = new(uri, mediaType);
             lock (_processingSpeakLock)
             {
                 foreach (LexiconEntry lexicon in _lexicons)
@@ -599,7 +599,7 @@ namespace System.Speech.Internal.Synthesis
             }
             else
             {
-                Collection<InstalledVoice> voices = new Collection<InstalledVoice>();
+                Collection<InstalledVoice> voices = new();
 
                 // loop all the available voices in the registry
                 // no check if the voice are valid
@@ -844,28 +844,28 @@ namespace System.Speech.Internal.Synthesis
                                     if (paramSpeak._prompt._exception == null)
                                     {
                                         // No lexicon yet
-                                        List<LexiconEntry> lexicons = new List<LexiconEntry>(); ;
+                                        List<LexiconEntry> lexicons = new(); ;
 
                                         //--- Create a single speak info structure for all the text
                                         TTSVoice voice = _currentVoice != null ? _currentVoice : GetVoice(false);
                                         //--- Create the speak info
 
-                                        SpeakInfo speakInfo = new SpeakInfo(this, voice);
+                                        SpeakInfo speakInfo = new(this, voice);
 
                                         if (paramSpeak._textToSpeak != null)
                                         {
                                             //--- Make sure we have a voice defined by now
                                             if (!paramSpeak._isXml)
                                             {
-                                                FragmentState fragmentState = new FragmentState();
+                                                FragmentState fragmentState = new();
                                                 fragmentState.Action = TtsEngineAction.Speak;
                                                 fragmentState.Prosody = new Prosody();
-                                                TextFragment textFragment = new TextFragment(fragmentState, string.Copy(paramSpeak._textToSpeak));
+                                                TextFragment textFragment = new(fragmentState, string.Copy(paramSpeak._textToSpeak));
                                                 speakInfo.AddText(voice, textFragment);
                                             }
                                             else
                                             {
-                                                TextFragmentEngine engine = new TextFragmentEngine(speakInfo, paramSpeak._textToSpeak, _pexml, _resourceLoader, lexicons);
+                                                TextFragmentEngine engine = new(speakInfo, paramSpeak._textToSpeak, _pexml, _resourceLoader, lexicons);
                                                 SsmlParser.Parse(paramSpeak._textToSpeak, engine, speakInfo.Voice);
                                             }
                                         }
@@ -1078,7 +1078,7 @@ namespace System.Speech.Internal.Synthesis
             int evtMask = 1 << (int)evtId;
             if ((evtMask & _ttsInterest) != 0)
             {
-                TTSEvent ttsEvent = new TTSEvent(evtId, prompt, exception, voiceInfo);
+                TTSEvent ttsEvent = new(evtId, prompt, exception, voiceInfo);
                 _asyncWorker.Post(ttsEvent);
             }
         }
@@ -1310,7 +1310,7 @@ namespace System.Speech.Internal.Synthesis
             TTSVoice voice = null;
 
             // Build a list with all the tokens
-            List<InstalledVoice> tokens = new List<InstalledVoice>(_installedVoices);
+            List<InstalledVoice> tokens = new(_installedVoices);
 
             // Remove all the voices that are disabled
             for (int i = tokens.Count - 1; i >= 0; i--)
@@ -1597,7 +1597,7 @@ namespace System.Speech.Internal.Synthesis
 
         private static List<InstalledVoice> BuildInstalledVoices(VoiceSynthesis voiceSynthesizer)
         {
-            List<InstalledVoice> voices = new List<InstalledVoice>();
+            List<InstalledVoice> voices = new();
 
             using (ObjectTokenCategory category = ObjectTokenCategory.Create(SAPICategories.Voices))
             {
@@ -1937,28 +1937,28 @@ namespace System.Speech.Internal.Synthesis
         private int _ttsInterest;
 
         // Background synchronization
-        private ManualResetEvent _evtPendingSpeak = new ManualResetEvent(false);
-        private ManualResetEvent _evtPendingGetProxy = new ManualResetEvent(false);
+        private ManualResetEvent _evtPendingSpeak = new(false);
+        private ManualResetEvent _evtPendingGetProxy = new(false);
         private Exception _pendingException;
-        private Queue<Parameters> _pendingSpeakQueue = new Queue<Parameters>();
+        private Queue<Parameters> _pendingSpeakQueue = new();
         private TTSVoice _pendingVoice;
 
         // Background thread
         private Thread _workerThread;
         private bool _fExitWorkerThread;
-        private object _processingSpeakLock = new object();
+        private object _processingSpeakLock = new();
 
         // Voices info
-        private Dictionary<VoiceInfo, TTSVoice> _voiceDictionary = new Dictionary<VoiceInfo, TTSVoice>();
+        private Dictionary<VoiceInfo, TTSVoice> _voiceDictionary = new();
         private List<InstalledVoice> _installedVoices;
         private static List<InstalledVoice> s_allVoices;
-        private object _enabledVoicesLock = new object();
+        private object _enabledVoicesLock = new();
 
         // Default voice
         private TTSVoice _defaultVoice;
         private TTSVoice _currentVoice;
         private bool _defaultVoiceInitialized;
-        private object _defaultVoiceLock = new object();
+        private object _defaultVoiceLock = new();
 
         private AudioBase _waveOut;
         private int _defaultRate;
@@ -1967,7 +1967,7 @@ namespace System.Speech.Internal.Synthesis
         private bool _isDisposed;
 
         // Lexicons associated with this voice
-        private List<LexiconEntry> _lexicons = new List<LexiconEntry>();
+        private List<LexiconEntry> _lexicons = new();
 
         // output object
         private SynthesizerState _synthesizerState = SynthesizerState.Ready;
@@ -1988,9 +1988,9 @@ namespace System.Speech.Internal.Synthesis
         private int _ttsEvents = (1 << (int)TtsEventId.StartInputStream) | (1 << (int)TtsEventId.EndInputStream);
 
         // make sure the object is always in safe state
-        private object _thisObjectLock = new object();
+        private object _thisObjectLock = new();
 
-        private AutoResetEvent _workerWaitHandle = new AutoResetEvent(false);
+        private AutoResetEvent _workerWaitHandle = new(false);
 
         private WeakReference _speechSyntesizer;
 

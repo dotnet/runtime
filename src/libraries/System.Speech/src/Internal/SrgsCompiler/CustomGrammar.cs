@@ -263,31 +263,31 @@ namespace System.Speech.Internal.SrgsCompiler
         internal string _namespace;
 
         // namespace for the class wrapping the inline code
-        internal List<Rule> _rules = new List<Rule>();
+        internal List<Rule> _rules = new();
 
         // code behind dll
-        internal Collection<string> _codebehind = new Collection<string>();
+        internal Collection<string> _codebehind = new();
 
         // if set generates #line statements
         internal bool _fDebugScript;
 
         // List of assemby references to import
-        internal Collection<string> _assemblyReferences = new Collection<string>();
+        internal Collection<string> _assemblyReferences = new();
 
         // List of namespaces to import
-        internal Collection<string> _importNamespaces = new Collection<string>();
+        internal Collection<string> _importNamespaces = new();
 
         // Key file for the strong name
         internal string _keyFile;
 
         // CFG scripts definition
-        internal Collection<ScriptRef> _scriptRefs = new Collection<ScriptRef>();
+        internal Collection<ScriptRef> _scriptRefs = new();
 
         // inline script
-        internal List<string> _types = new List<string>();
+        internal List<string> _types = new();
 
         // inline script
-        internal StringBuilder _script = new StringBuilder();
+        internal StringBuilder _script = new();
 
         #endregion
 
@@ -334,7 +334,7 @@ namespace System.Speech.Internal.SrgsCompiler
                         {
                             files[files.Length - 1] = scriptFile;
                             // Write the script in a temporary file
-                            using (StreamWriter sw = new StreamWriter(scriptStream))
+                            using (StreamWriter sw = new(scriptStream))
                             {
                                 sw.Write(sourceCode);
                             }
@@ -429,7 +429,7 @@ namespace System.Speech.Internal.SrgsCompiler
 
         private string WrapScriptCSharp(bool classDefinitionOnly, CultureInfo culture)
         {
-            StringBuilder sbClasses = new StringBuilder();
+            StringBuilder sbClasses = new();
 
             // Combine all the classes into a single text
             foreach (Rule rule in _rules)
@@ -452,7 +452,7 @@ namespace System.Speech.Internal.SrgsCompiler
 
         private string WrapScriptVB(bool classDefinitionOnly, CultureInfo culture)
         {
-            StringBuilder sbClasses = new StringBuilder();
+            StringBuilder sbClasses = new();
 
             // Combine all the classes into a single text
             foreach (Rule rule in _rules)
@@ -502,7 +502,7 @@ namespace System.Speech.Internal.SrgsCompiler
 
                 // Add the using
                 string usingStatements = string.Format(CultureInfo.InvariantCulture, "#line 1 \"{0}\"\nusing System;\nusing System.Collections.Generic;\nusing System.Diagnostics;\nusing {1};\nusing {1}.Recognition;\nusing {1}.Recognition.SrgsGrammar;\n", _preambuleMarker, speechNamespace);
-                StringBuilder sbWhole = new StringBuilder(_script.Length + usingStatements.Length + 200);
+                StringBuilder sbWhole = new(_script.Length + usingStatements.Length + 200);
 
                 sbWhole.Append(usingStatements);
                 foreach (string importNamespace in _importNamespaces)
@@ -597,7 +597,7 @@ namespace System.Speech.Internal.SrgsCompiler
 
                 // Add the using
                 string usingStatements = string.Format(CultureInfo.InvariantCulture, "#ExternalSource (\"{0}\", 1)\nImports System\nImports System.Collections.Generic\nImports System.Diagnostics\nImports {1}\nImports {1}.Recognition\nImports {1}.Recognition.SrgsGrammar\n", _preambuleMarker, speechNamespace);
-                StringBuilder sbWhole = new StringBuilder(_script.Length + usingStatements.Length + 200);
+                StringBuilder sbWhole = new(_script.Length + usingStatements.Length + 200);
 
                 sbWhole.Append(usingStatements);
                 foreach (string importNamespace in _importNamespaces)
@@ -666,7 +666,7 @@ namespace System.Speech.Internal.SrgsCompiler
 
         private static void ThrowCompilationErrors(CompilerResults results)
         {
-            StringBuilder sbErrors = new StringBuilder();
+            StringBuilder sbErrors = new();
             foreach (CompilerError error in results.Errors)
             {
                 if (sbErrors.Length > 0)
@@ -693,8 +693,8 @@ namespace System.Speech.Internal.SrgsCompiler
 
         private static CompilerParameters GetCompilerParameters(string outputFile, List<CfgResource> cfgResources, bool debug, Collection<string> assemblyReferences, string keyfile)
         {
-            CompilerParameters parameters = new CompilerParameters();
-            StringBuilder compilerOptions = new StringBuilder();
+            CompilerParameters parameters = new();
+            StringBuilder compilerOptions = new();
 
             // Get the compiler to use
             parameters.GenerateInMemory = false;
@@ -733,9 +733,9 @@ namespace System.Speech.Internal.SrgsCompiler
             {
                 foreach (CfgResource cfgResource in cfgResources)
                 {
-                    using (FileStream fs = new FileStream(cfgResource.name, FileMode.Create, FileAccess.Write))
+                    using (FileStream fs = new(cfgResource.name, FileMode.Create, FileAccess.Write))
                     {
-                        using (BinaryWriter sw = new BinaryWriter(fs))
+                        using (BinaryWriter sw = new(fs))
                         {
                             sw.Write(cfgResource.data, 0, cfgResource.data.Length);
                             parameters.EmbeddedResources.Add(cfgResource.name);
@@ -755,7 +755,7 @@ namespace System.Speech.Internal.SrgsCompiler
             {
                 appDomain = AppDomain.CreateDomain("Loading Domain");
                 // AppDomainCompilerProxy proxy = (AppDomainCompilerProxy) appDomain.CreateInstanceFromAndUnwrap (executingAssembly.GetName ().CodeBase, "System.Speech.Internal.SrgsCompiler.AppDomainCompilerProxy");
-                AppDomainCompilerProxy proxy = new AppDomainCompilerProxy();
+                AppDomainCompilerProxy proxy = new();
 
                 // Marshalling between App domains prevents to use complex types as they cannot
                 // be marhalled accross app domain boundaries. Use 3 arrays instead
@@ -822,7 +822,7 @@ namespace System.Speech.Internal.SrgsCompiler
             if (!string.IsNullOrEmpty(path))
             {
                 // return the memory blob with the IL for .Net Semantics
-                using (FileStream fs = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read))
+                using (FileStream fs = new(path, FileMode.Open, FileAccess.Read, FileShare.Read))
                 {
                     data = Helpers.ReadStreamToByteArray(fs, (int)fs.Length);
                 }

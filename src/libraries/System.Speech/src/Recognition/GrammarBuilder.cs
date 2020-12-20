@@ -158,7 +158,7 @@ namespace System.Speech.Recognition
             GrammarBuilder.ValidateRepeatArguments(minRepeat, maxRepeat, "minRepeat", "maxRepeat");
 
             // Wrap the phrase in an item if min and max repeat are set
-            GrammarBuilderPhrase elementPhrase = new GrammarBuilderPhrase(phrase);
+            GrammarBuilderPhrase elementPhrase = new(phrase);
             if (minRepeat != 1 || maxRepeat != 1)
             {
                 AddItem(new ItemElement(elementPhrase, minRepeat, maxRepeat));
@@ -408,7 +408,7 @@ namespace System.Speech.Recognition
         {
             Helpers.ThrowIfNull(builder, nameof(builder));
 
-            GrammarBuilder grammar = new GrammarBuilder(phrase);
+            GrammarBuilder grammar = new(phrase);
             grammar.Append(builder);
             return grammar;
         }
@@ -461,7 +461,7 @@ namespace System.Speech.Recognition
             Helpers.ThrowIfNull(choices, nameof(choices));
             Helpers.ThrowIfNull(builder, nameof(builder));
 
-            GrammarBuilder grammar = new GrammarBuilder(choices);
+            GrammarBuilder grammar = new(choices);
             grammar.Append(builder);
             return grammar;
         }
@@ -605,7 +605,7 @@ namespace System.Speech.Recognition
         {
             // Create a new Identifier Collection which will provide unique ids
             // for each rule
-            IdentifierCollection ruleIds = new IdentifierCollection();
+            IdentifierCollection ruleIds = new();
             elementFactory.Grammar.Culture = Culture;
 
             _grammarBuilder.CreateElement(elementFactory, null, null, ruleIds);
@@ -617,15 +617,15 @@ namespace System.Speech.Recognition
         /// <param name="stream"></param>
         internal void Compile(Stream stream)
         {
-            Backend backend = new Backend();
-            CustomGrammar cg = new CustomGrammar();
-            SrgsElementCompilerFactory elementFactory = new SrgsElementCompilerFactory(backend, cg);
+            Backend backend = new();
+            CustomGrammar cg = new();
+            SrgsElementCompilerFactory elementFactory = new(backend, cg);
             CreateGrammar(elementFactory);
 
             // Optimize in-memory graph representation of the grammar.
             backend.Optimize();
 
-            using (StreamMarshaler streamHelper = new StreamMarshaler(stream))
+            using (StreamMarshaler streamHelper = new(stream))
             {
                 backend.Commit(streamHelper);
             }
@@ -635,7 +635,7 @@ namespace System.Speech.Recognition
 
         internal GrammarBuilder Clone()
         {
-            GrammarBuilder builder = new GrammarBuilder();
+            GrammarBuilder builder = new();
             builder._grammarBuilder = (InternalGrammarBuilder)_grammarBuilder.Clone();
 
             return builder;
@@ -656,7 +656,7 @@ namespace System.Speech.Recognition
         {
             get
             {
-                StringBuilder sb = new StringBuilder();
+                StringBuilder sb = new();
 
                 foreach (GrammarBuilderBase item in InternalBuilder.Items)
                 {
@@ -739,7 +739,7 @@ namespace System.Speech.Recognition
             /// <returns></returns>
             internal override GrammarBuilderBase Clone()
             {
-                InternalGrammarBuilder newGrammarbuilder = new InternalGrammarBuilder();
+                InternalGrammarBuilder newGrammarbuilder = new();
                 foreach (GrammarBuilderBase i in Items)
                 {
                     newGrammarbuilder.Items.Add(i.Clone());
@@ -757,7 +757,7 @@ namespace System.Speech.Recognition
             /// <returns></returns>
             internal override IElement CreateElement(IElementFactory elementFactory, IElement parent, IRule rule, IdentifierCollection ruleIds)
             {
-                Collection<RuleElement> newRules = new Collection<RuleElement>();
+                Collection<RuleElement> newRules = new();
                 CalcCount(null);
                 Optimize(newRules);
 

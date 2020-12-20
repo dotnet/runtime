@@ -44,7 +44,7 @@ namespace System.Speech.Internal
                 throw new InvalidOperationException ();
             }
 #endif
-            TreeNode node = new TreeNode(key);
+            TreeNode node = new(key);
             node.IsRed = true;
             InsertNode(_root, node);
             FixUpInsertion(node);
@@ -671,9 +671,9 @@ namespace System.Speech.Internal
 
         internal string ShowTree()
         {
-            List<string> strings = new List<string>();
+            List<string> strings = new();
             ShowTree(_root, strings, 0, 0);
-            StringBuilder sb = new StringBuilder();
+            StringBuilder sb = new();
             foreach (string s in strings)
             {
                 sb.Append("\r\n");
@@ -693,7 +693,7 @@ namespace System.Speech.Internal
             {
                 int maxLength = ShowTree(node.Left, lines, depth + 1, leftLength);
                 String current = node.ToString();
-                StringBuilder builder = new StringBuilder(lines[depth]);
+                StringBuilder builder = new(lines[depth]);
                 while (builder.Length < maxLength - current.Length / 2)
                 {
                     builder.Append(' ');

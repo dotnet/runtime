@@ -137,7 +137,7 @@ namespace System.Speech.Internal.SrgsCompiler
 
         internal Rule Clone(StringBlob symbol, string ruleName)
         {
-            Rule rule = new Rule(_iSerialize);
+            Rule rule = new(_iSerialize);
 
             int idWord;
             int offsetName = symbol.Add(ruleName, out idWord);
@@ -337,7 +337,7 @@ namespace System.Speech.Internal.SrgsCompiler
 #if DEBUG
         internal int _cStates;
 #endif
-        internal List<Rule> _listRules = new List<Rule>();
+        internal List<Rule> _listRules = new();
 
         // this is used to refer to a static rule from a dynamic rule
         internal bool _fStaticRule;
@@ -357,9 +357,9 @@ namespace System.Speech.Internal.SrgsCompiler
         // STG fields
         private string _baseclass;
 
-        private StringBuilder _script = new StringBuilder();
+        private StringBuilder _script = new();
 
-        private StringBuilder _constructors = new StringBuilder();
+        private StringBuilder _constructors = new();
 
         #endregion
     }

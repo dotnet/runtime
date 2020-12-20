@@ -88,7 +88,7 @@ namespace System.Speech.Internal.GrammarBuilding
         /// <returns></returns>
         internal override GrammarBuilderBase Clone()
         {
-            RuleElement rule = new RuleElement(_name);
+            RuleElement rule = new(_name);
             rule.CloneItems(this);
             return rule;
         }

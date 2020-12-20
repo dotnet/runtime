@@ -112,7 +112,7 @@ namespace System.Speech.Internal.Synthesis
             if (_waveFormat == null || !Array.Equals(targetWaveFormat, _waveFormat))
             {
                 IntPtr waveFormat = IntPtr.Zero;
-                GCHandle targetFormat = new GCHandle();
+                GCHandle targetFormat = new();
 
                 if (targetWaveFormat != null)
                 {
@@ -183,7 +183,7 @@ namespace System.Speech.Internal.Synthesis
 
         private ITtsEngineProxy _engine;
         private VoiceInfo _voiceId;
-        private List<LexiconEntry> _lexicons = new List<LexiconEntry>();
+        private List<LexiconEntry> _lexicons = new();
         private byte[] _waveFormat;
 
         #endregion

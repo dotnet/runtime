@@ -112,7 +112,7 @@ namespace System.Speech.Recognition.SrgsGrammar
 
         internal override string DebuggerDisplayString()
         {
-            StringBuilder sb = new StringBuilder("SrgsSemanticInterpretationTag '");
+            StringBuilder sb = new("SrgsSemanticInterpretationTag '");
             sb.Append(_script);
             sb.Append('\'');
             return sb.ToString();

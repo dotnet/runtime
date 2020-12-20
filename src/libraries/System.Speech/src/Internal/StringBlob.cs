@@ -39,7 +39,7 @@ namespace System.Speech.Internal
                 {
                     if (pszStringArray[iPos] == '\0')
                     {
-                        string sWord = new string(pszStringArray, iStart, iPos - iStart);
+                        string sWord = new(pszStringArray, iStart, iPos - iStart);
                         _refStrings.Add(sWord);
                         _offsetStrings.Add(_totalStringSizes);
                         _strings.Add(sWord, ++_cWords);
@@ -227,13 +227,13 @@ namespace System.Speech.Internal
         #region Private Fields
 
         // List of words, end-to-end
-        private Dictionary<String, int> _strings = new Dictionary<String, int>();
+        private Dictionary<String, int> _strings = new();
 
         // List of indices in the dictionary of words
-        private List<string> _refStrings = new List<string>();
+        private List<string> _refStrings = new();
 
         // List of indices in the dictionary of words
-        private List<int> _offsetStrings = new List<int>();
+        private List<int> _offsetStrings = new();
 
         // Number of words
         private int _cWords;

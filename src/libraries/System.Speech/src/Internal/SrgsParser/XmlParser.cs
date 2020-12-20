@@ -1699,7 +1699,7 @@ namespace System.Speech.Internal.SrgsParser
 
         static private string GetStringContent(XmlReader reader)
         {
-            StringBuilder sb = new StringBuilder();
+            StringBuilder sb = new();
 
             reader.MoveToElement();                                 // Move to containing element of attributes
             if (!reader.IsEmptyElement)
@@ -1894,7 +1894,7 @@ namespace System.Speech.Internal.SrgsParser
         {
             if (!string.IsNullOrEmpty(dest))
             {
-                StringBuilder attribute = new StringBuilder(reader.LocalName);
+                StringBuilder attribute = new(reader.LocalName);
                 if (reader.NamespaceURI.Length > 0)
                 {
                     attribute.Append(reader.NamespaceURI);
@@ -1941,7 +1941,7 @@ namespace System.Speech.Internal.SrgsParser
                 }
             }
             // Validate for unique rule names
-            List<string> ruleNames = new List<string>();
+            List<string> ruleNames = new();
 
             foreach (string rule in _rules)
             {
@@ -1985,9 +1985,9 @@ namespace System.Speech.Internal.SrgsParser
         private bool _hasTagFormat;
 
         // All defined rules
-        private List<string> _rules = new List<string>();
+        private List<string> _rules = new();
 
-        private List<ForwardReference> _scripts = new List<ForwardReference>();
+        private List<ForwardReference> _scripts = new();
 
         static private readonly char[] s_invalidRuleIdChars = new char[] { '.', ':', '-', '#' };
 

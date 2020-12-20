@@ -158,7 +158,7 @@ namespace System.Speech.Synthesis
         {
             Helpers.ThrowIfNull(textToSpeak, nameof(textToSpeak));
 
-            Prompt prompt = new Prompt(textToSpeak, SynthesisTextFormat.Text);
+            Prompt prompt = new(textToSpeak, SynthesisTextFormat.Text);
             SpeakAsync(prompt);
             return prompt;
         }
@@ -185,7 +185,7 @@ namespace System.Speech.Synthesis
         {
             Helpers.ThrowIfNull(textToSpeak, nameof(textToSpeak));
 
-            Prompt prompt = new Prompt(textToSpeak, SynthesisTextFormat.Ssml);
+            Prompt prompt = new(textToSpeak, SynthesisTextFormat.Ssml);
             SpeakAsync(prompt);
             return prompt;
         }
@@ -199,7 +199,7 @@ namespace System.Speech.Synthesis
         {
             Helpers.ThrowIfNull(promptBuilder, nameof(promptBuilder));
 
-            Prompt prompt = new Prompt(promptBuilder);
+            Prompt prompt = new(promptBuilder);
             SpeakAsync(prompt);
             return prompt;
         }
@@ -777,7 +777,7 @@ namespace System.Speech.Synthesis
                 }
                 if (_voiceSynthesis == null)
                 {
-                    WeakReference wr = new WeakReference(this);
+                    WeakReference wr = new(this);
                     _voiceSynthesis = new VoiceSynthesis(wr);
                 }
                 return _voiceSynthesis;

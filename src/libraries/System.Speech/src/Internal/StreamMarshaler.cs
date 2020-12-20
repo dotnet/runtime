@@ -100,8 +100,8 @@ namespace System.Speech.Internal
         // Helper method to read a Unicode string from a stream.
         internal string ReadNullTerminatedString()
         {
-            BinaryReader br = new BinaryReader(_stream, Encoding.Unicode);
-            StringBuilder stringBuilder = new StringBuilder();
+            BinaryReader br = new(_stream, Encoding.Unicode);
+            StringBuilder stringBuilder = new();
 
             while (true)
             {
@@ -199,7 +199,7 @@ namespace System.Speech.Internal
 
         #region Private Fields
 
-        private HGlobalSafeHandle _safeHMem = new HGlobalSafeHandle();
+        private HGlobalSafeHandle _safeHMem = new();
 
         private Stream _stream;
 

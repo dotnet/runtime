@@ -214,7 +214,7 @@ namespace System.Speech.Recognition.SrgsGrammar
 
         IRule IGrammar.CreateRule(string id, RulePublic publicRule, RuleDynamic dynamic, bool hasScript)
         {
-            SrgsRule rule = new SrgsRule(id);
+            SrgsRule rule = new(id);
             if (publicRule != RulePublic.NotSet)
             {
                 rule.Scope = publicRule == RulePublic.True ? SrgsRuleScope.Public : SrgsRuleScope.Private;
@@ -714,7 +714,7 @@ namespace System.Speech.Recognition.SrgsGrammar
 
         private SrgsTagFormat _tagFormat = SrgsTagFormat.Default;
 
-        private Collection<string> _globalTags = new Collection<string>();
+        private Collection<string> _globalTags = new();
 
         private bool _isModeSet;
 
@@ -728,7 +728,7 @@ namespace System.Speech.Recognition.SrgsGrammar
         private string _language;
 
         // .Net Language for this grammar
-        private Collection<string> _codebehind = new Collection<string>();
+        private Collection<string> _codebehind = new();
 
         // namespace for the code behind
         private string _namespace;
@@ -740,13 +740,13 @@ namespace System.Speech.Recognition.SrgsGrammar
         private string _script = string.Empty;
 
         // .Net language script
-        private List<XmlParser.ForwardReference> _scriptsForwardReference = new List<XmlParser.ForwardReference>();
+        private List<XmlParser.ForwardReference> _scriptsForwardReference = new();
 
         // .Net Namespaces to import
-        private Collection<string> _usings = new Collection<string>();
+        private Collection<string> _usings = new();
 
         // .Net Namespaces to import
-        private Collection<string> _assemblyReferences = new Collection<string>();
+        private Collection<string> _assemblyReferences = new();
         #endregion
 
     }

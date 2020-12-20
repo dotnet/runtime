@@ -395,7 +395,7 @@ namespace System.Speech.Internal.SrgsCompiler
         private Backend _backend;
 
         // Collection of referenced, but undefined, rules
-        private List<Rule> _undefRules = new List<Rule>();
+        private List<Rule> _undefRules = new();
         private CustomGrammar _cg;
 
 

@@ -204,7 +204,7 @@ namespace System.Speech.Internal.SrgsCompiler
         {
             //CfgGrammar.TraceInformation ("Arc::SerializeArcData");
 
-            CfgArc A = new CfgArc();
+            CfgArc A = new();
 
             A.LastArc = isLast;
             A.HasSemanticTag = SemanticTagCount > 0;
@@ -244,7 +244,7 @@ namespace System.Speech.Internal.SrgsCompiler
 
         internal static float SerializeExtraEpsilonWithTag(StreamMarshaler streamBuffer, Arc arc, bool isLast, uint arcIndex)
         {
-            CfgArc A = new CfgArc();
+            CfgArc A = new();
 
             A.LastArc = isLast;
             A.HasSemanticTag = true;
@@ -440,7 +440,7 @@ namespace System.Speech.Internal.SrgsCompiler
                 }
                 foreach (Tag tag in arc._startTags)
                 {
-                    Tag newTag = new Tag(tag);
+                    Tag newTag = new(tag);
                     _tags.Add(newTag);
                     _startTags.Add(newTag);
                     endArcs.Add(tag, newTag);
@@ -558,7 +558,7 @@ namespace System.Speech.Internal.SrgsCompiler
 
         internal string DebuggerDisplayTags ()
         {
-            StringBuilder sb = new StringBuilder ();
+            StringBuilder sb = new();
             if (_iWord == 0 && (_ruleRef != null || _specialTransitionIndex != 0))
             {
                 sb.Append ('<');
@@ -792,7 +792,7 @@ namespace System.Speech.Internal.SrgsCompiler
 #if DEBUG
         private string GetSemanticTag (Tag tag)
         {
-            StringBuilder sb = new StringBuilder ();
+            StringBuilder sb = new();
             string value;
             string tagName = GetSemanticValue (tag._cfgTag, _be.Symbols, out value);
             if (tagName != "SemanticKey")

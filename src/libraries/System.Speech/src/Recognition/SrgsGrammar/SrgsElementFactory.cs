@@ -42,7 +42,7 @@ namespace System.Speech.Recognition.SrgsGrammar
 
         IToken IElementFactory.CreateToken(IElement parent, string content, string pronunciation, string display, float reqConfidence)
         {
-            SrgsToken token = new SrgsToken(content);
+            SrgsToken token = new(content);
             if (!string.IsNullOrEmpty(pronunciation))
             {
                 // Check if the pronunciations are ok
@@ -92,7 +92,7 @@ namespace System.Speech.Recognition.SrgsGrammar
 
         IItem IElementFactory.CreateItem(IElement parent, IRule rule, int minRepeat, int maxRepeat, float repeatProbability, float weight)
         {
-            SrgsItem item = new SrgsItem();
+            SrgsItem item = new();
             if (minRepeat != 1 || maxRepeat != 1)
             {
                 item.SetRepeat(minRepeat, maxRepeat);

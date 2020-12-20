@@ -97,7 +97,7 @@ namespace System.Speech.Internal.GrammarBuilding
         /// <returns></returns>
         internal override IElement CreateElement(IElementFactory elementFactory, IElement parent, IRule rule, IdentifierCollection ruleIds)
         {
-            Uri ruleUri = new Uri(_uri, UriKind.RelativeOrAbsolute);
+            Uri ruleUri = new(_uri, UriKind.RelativeOrAbsolute);
             return elementFactory.CreateRuleRef(parent, ruleUri, null, null);
         }
 
